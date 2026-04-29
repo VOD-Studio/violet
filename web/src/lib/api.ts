@@ -1,16 +1,10 @@
 // API 请求客户端
-// 封装 fetch 请求，自动附加 JWT 认证令牌，统一处理错误和基础配置
+// 使用 axios 封装请求，自动附加 JWT 认证令牌，统一处理错误
+
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios"
 
 /** API 基础地址，从环境变量读取，默认为本地开发地址 */
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api"
-
-/** API 响应的通用结构 */
-interface ApiResponse<T = unknown> {
-  /** 响应数据 */
-  data: T
-  /** 响应消息 */
-  message?: string
-}
 
 /** API 错误结构 */
 class ApiError extends Error {
@@ -27,119 +21,111 @@ class ApiError extends Error {
   }
 }
 
-/**
- * 从 localStorage 获取存储的 JWT 令牌
- * @returns JWT 令牌字符串，未登录时返回 null
- */
-function getToken(): string | null {
-  return localStorage.getItem("token")
-}
-
-/**
- * 发起 API 请求的核心函数
- * 自动附加 Authorization 头，处理 JSON 响应和错误
- *
- * @param endpoint - API 路径，例如 "/posts"
- * @param options - fetch 请求配置选项
- * @returns 解析后的响应数据
- */
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const token = getToken()
-
-  /** 构建请求头，包含内容类型和可选的认证令牌 */
-  const headers: Record<string, string> = {
+/** 创建 axios 实例 */
+const client = axios.create({
+  baseURL: BASE_URL,
+  timeout: 15000,
+  headers: {
     "Content-Type": "application/json",
-    ...((options.headers as Record<string, string>) ?? {}),
-  }
-
-  /* 如果存在令牌，附加到请求头 */
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  })
-
-  /* 处理 204 无内容响应 */
-  if (response.status === 204) {
-    return undefined as T
-  }
-
-  /** 解析响应 JSON */
-  const result = await response.json()
-
-  /* 请求失败时抛出 ApiError */
-  if (!response.ok) {
-    throw new ApiError(
-      response.status,
-      result.message ?? "请求失败",
-      result.errors,
-    )
-  }
-
-  return (result.data ?? result) as T
-}
+  },
+})
 
 /**
- * GET 请求
- * @param endpoint - API 路径
+ * 请求拦截器
+ * 自动从 localStorage 读取 JWT 令牌并附加到请求头
  */
-function get<T>(endpoint: string) {
-  return request<T>(endpoint, { method: "GET" })
-}
+client.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem("token")
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error),
+)
 
 /**
- * POST 请求
- * @param endpoint - API 路径
- * @param body - 请求体数据
+ * 响应拦截器
+ * 统一处理错误，401 状态码自动跳转登录页
  */
-function post<T>(endpoint: string, body?: unknown) {
-  return request<T>(endpoint, {
-    method: "POST",
-    body: body ? JSON.stringify(body) : undefined,
-  })
-}
+client.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
+    if (error.response) {
+      const { status, data } = error.response
 
-/**
- * PUT 请求
- * @param endpoint - API 路径
- * @param body - 请求体数据
- */
-function put<T>(endpoint: string, body?: unknown) {
-  return request<T>(endpoint, {
-    method: "PUT",
-    body: body ? JSON.stringify(body) : undefined,
-  })
-}
+      /* 401 未授权：清除本地令牌并跳转登录页 */
+      if (status === 401) {
+        localStorage.removeItem("token")
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login"
+        }
+      }
 
-/**
- * PATCH 请求
- * @param endpoint - API 路径
- * @param body - 请求体数据
- */
-function patch<T>(endpoint: string, body?: unknown) {
-  return request<T>(endpoint, {
-    method: "PATCH",
-    body: body ? JSON.stringify(body) : undefined,
-  })
-}
+      throw new ApiError(
+        status,
+        data?.message ?? "请求失败",
+        data?.errors,
+      )
+    }
 
-/**
- * DELETE 请求
- * @param endpoint - API 路径
- */
-function del<T>(endpoint: string) {
-  return request<T>(endpoint, { method: "DELETE" })
-}
+    /* 网络错误或其他无法响应的情况 */
+    throw new ApiError(0, "网络连接失败，请检查网络状态")
+  },
+)
 
 /** 导出的 API 客户端对象 */
-export const api = { get, post, put, patch, del }
+export const api = {
+  /**
+   * GET 请求
+   * @param endpoint - API 路径
+   * @param params - 查询参数
+   */
+  async get<T>(endpoint: string, params?: Record<string, unknown>): Promise<T> {
+    const response = await client.get(endpoint, { params })
+    return (response.data.data ?? response.data) as T
+  },
+
+  /**
+   * POST 请求
+   * @param endpoint - API 路径
+   * @param body - 请求体数据
+   */
+  async post<T>(endpoint: string, body?: unknown): Promise<T> {
+    const response = await client.post(endpoint, body)
+    return (response.data.data ?? response.data) as T
+  },
+
+  /**
+   * PUT 请求
+   * @param endpoint - API 路径
+   * @param body - 请求体数据
+   */
+  async put<T>(endpoint: string, body?: unknown): Promise<T> {
+    const response = await client.put(endpoint, body)
+    return (response.data.data ?? response.data) as T
+  },
+
+  /**
+   * PATCH 请求
+   * @param endpoint - API 路径
+   * @param body - 请求体数据
+   */
+  async patch<T>(endpoint: string, body?: unknown): Promise<T> {
+    const response = await client.patch(endpoint, body)
+    return (response.data.data ?? response.data) as T
+  },
+
+  /**
+   * DELETE 请求
+   * @param endpoint - API 路径
+   */
+  async del<T>(endpoint: string): Promise<T> {
+    const response = await client.delete(endpoint)
+    return (response.data.data ?? response.data) as T
+  },
+}
 
 /** 导出 ApiError 供外部捕获特定错误 */
 export { ApiError }
-export type { ApiResponse }

@@ -5,16 +5,13 @@
 
 import { redirect } from "react-router"
 
-/** 本地存储中 token 的键名 */
-const TOKEN_KEY = "auth_token"
-
 /**
  * 获取本地存储中的认证 token
  * @returns token 字符串，不存在则返回 null
  */
 export function getToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_KEY)
+    return localStorage.getItem("token")
   } catch {
     return null
   }
@@ -25,14 +22,14 @@ export function getToken(): string | null {
  * @param token - JWT token 字符串
  */
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token)
+  localStorage.setItem("token", token)
 }
 
 /**
  * 清除本地存储中的认证 token
  */
 export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem("token")
 }
 
 /**
@@ -60,7 +57,6 @@ function parseJwtPayload(token: string): Record<string, unknown> | null {
 function isTokenExpired(token: string): boolean {
   const payload = parseJwtPayload(token)
   if (!payload || typeof payload.exp !== "number") return true
-  // exp 以秒为单位，需要乘以 1000 转换为毫秒
   return Date.now() >= payload.exp * 1000
 }
 

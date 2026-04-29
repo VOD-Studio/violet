@@ -38,3 +38,27 @@ WHERE id = $1;
 UPDATE users
 SET password_hash = $2, updated_at = NOW()
 WHERE id = $1;
+
+-- name: ListUsers :many
+-- 分页查询用户列表，按创建时间倒序
+SELECT * FROM users
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountUsers :one
+-- 统计用户总数
+SELECT COUNT(*) FROM users;
+
+-- name: UpdateUserRole :one
+-- 更新用户角色
+UPDATE users
+SET role = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdateUserStatus :one
+-- 更新用户启用/禁用状态
+UPDATE users
+SET is_active = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING *;

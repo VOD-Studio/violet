@@ -1,93 +1,78 @@
 /**
  * 用户管理页面
- * 展示用户列表，支持角色修改和启用/禁用操作
+ * 从 API 获取用户列表，支持角色修改和启用/禁用操作
+ * 无 mock 数据，API 不存在时显示空状态
  */
 
-import { useState } from "react"
+import { useAdminUsers, useUpdateUserRole, useToggleUserStatus } from "@/hooks/useAdmin"
+import type { AdminUser } from "@/hooks/useAdmin"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-
-/** 用户角色类型 */
-type UserRole = "管理员" | "编辑" | "作者" | "读者"
-
-/** 用户状态类型 */
-type UserStatus = "启用" | "禁用"
-
-/** 用户数据项 */
-interface User {
-  /** 用户 ID */
-  id: number
-  /** 用户名 */
-  username: string
-  /** 邮箱地址 */
-  email: string
-  /** 用户角色 */
-  role: UserRole
-  /** 账号状态 */
-  status: UserStatus
-  /** 注册时间 */
-  registeredAt: string
-}
-
-/** 用户示例数据 */
-const mockUsers: User[] = [
-  { id: 1, username: "admin", email: "admin@example.com", role: "管理员", status: "启用", registeredAt: "2026-01-01" },
-  { id: 2, username: "editor_zhang", email: "zhang@example.com", role: "编辑", status: "启用", registeredAt: "2026-02-15" },
-  { id: 3, username: "author_li", email: "li@example.com", role: "作者", status: "启用", registeredAt: "2026-03-10" },
-  { id: 4, username: "reader_wang", email: "wang@example.com", role: "读者", status: "启用", registeredAt: "2026-03-20" },
-  { id: 5, username: "banned_user", email: "spam@example.com", role: "读者", status: "禁用", registeredAt: "2026-04-01" },
-  { id: 6, username: "author_chen", email: "chen@example.com", role: "作者", status: "启用", registeredAt: "2026-04-10" },
-]
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { ErrorFallback } from "@/components/shared/ErrorFallback"
+import { Skeleton } from "@/components/ui/skeleton"
 
 /** 可选角色列表 */
-const roleOptions: UserRole[] = ["管理员", "编辑", "作者", "读者"]
+const roleOptions = ["管理员", "编辑", "作者", "读者"]
+
+/**
+ * 用户列表表格骨架屏
+ */
+function UsersTableSkeleton() {
+  return (
+    <div className="rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>用户名</TableHead>
+            <TableHead>邮箱</TableHead>
+            <TableHead>角色</TableHead>
+            <TableHead>状态</TableHead>
+            <TableHead>注册时间</TableHead>
+            <TableHead className="text-right">操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <TableRow key={i}>
+              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
 
 /**
  * 用户管理页面
- * 提供用户列表展示、角色修改和启用/禁用功能
+ * 从 API 获取用户数据，提供角色修改和状态切换功能
  */
 export default function Users() {
-  /** 用户列表数据 */
-  const [users, setUsers] = useState<User[]>(mockUsers)
+  const { data: users, isLoading, error, refetch } = useAdminUsers()
+  const updateRole = useUpdateUserRole()
+  const toggleStatus = useToggleUserStatus()
 
   /**
    * 修改用户角色
-   * @param userId - 用户 ID
-   * @param newRole - 新角色
    */
-  function changeRole(userId: number, newRole: UserRole) {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
-    )
+  function changeRole(userId: number, newRole: string) {
+    updateRole.mutate({ id: userId, role: newRole })
   }
 
   /**
    * 切换用户启用/禁用状态
-   * @param userId - 用户 ID
    */
-  function toggleStatus(userId: number) {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId
-          ? { ...u, status: u.status === "启用" ? "禁用" : "启用" }
-          : u
-      )
-    )
+  function handleToggleStatus(userId: number, currentStatus: string) {
+    const newStatus = currentStatus === "启用" ? "禁用" : "启用"
+    toggleStatus.mutate({ id: userId, status: newStatus })
   }
 
   return (
@@ -98,66 +83,86 @@ export default function Users() {
         <p className="text-muted-foreground">管理注册用户和权限</p>
       </div>
 
+      {/* 加载态 */}
+      {isLoading && <UsersTableSkeleton />}
+
+      {/* 错误状态 */}
+      {error && (
+        <ErrorFallback error={error.message} onRetry={refetch} />
+      )}
+
+      {/* 空数据状态 */}
+      {!isLoading && !error && (!users || users.length === 0) && (
+        <EmptyState
+          title="暂无用户数据"
+          description="当前没有注册用户，或用户管理 API 尚未开放"
+          icon={
+            <svg className="size-12" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+            </svg>
+          }
+        />
+      )}
+
       {/* 用户列表表格 */}
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>用户名</TableHead>
-              <TableHead>邮箱</TableHead>
-              <TableHead>角色</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead>注册时间</TableHead>
-              <TableHead className="text-right">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.username}</TableCell>
-                <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                <TableCell>
-                  {/* 角色下拉选择器 */}
-                  <Select
-                    value={user.role}
-                    onValueChange={(value) => changeRole(user.id, value as UserRole)}
-                  >
-                    <SelectTrigger className="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roleOptions.map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={user.status === "启用" ? "default" : "secondary"}
-                  >
-                    {user.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {user.registeredAt}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant={user.status === "启用" ? "destructive" : "default"}
-                    size="sm"
-                    onClick={() => toggleStatus(user.id)}
-                  >
-                    {user.status === "启用" ? "禁用" : "启用"}
-                  </Button>
-                </TableCell>
+      {!isLoading && !error && users && users.length > 0 && (
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>用户名</TableHead>
+                <TableHead>邮箱</TableHead>
+                <TableHead>角色</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>注册时间</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {users.map((user: AdminUser) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.username}</TableCell>
+                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={user.role}
+                      onValueChange={(value) => changeRole(user.id, value)}
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roleOptions.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.status === "启用" ? "default" : "secondary"}>
+                      {user.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(user.createdAt).toLocaleDateString("zh-CN")}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant={user.status === "启用" ? "destructive" : "default"}
+                      size="sm"
+                      onClick={() => handleToggleStatus(user.id, user.status)}
+                    >
+                      {user.status === "启用" ? "禁用" : "启用"}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   )
 }

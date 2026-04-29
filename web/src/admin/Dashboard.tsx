@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { FileText, MessageSquare, Clock, Eye, Users } from "lucide-react"
 
 /**
  * 将 ISO 日期字符串格式化为简短的本地日期
@@ -168,7 +169,7 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               文章总数
             </CardTitle>
-            <span className="text-xl">📝</span>
+            <FileText className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -183,7 +184,7 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               评论总数
             </CardTitle>
-            <span className="text-xl">💬</span>
+            <MessageSquare className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -202,7 +203,7 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               待审核评论
             </CardTitle>
-            <span className="text-xl">⏳</span>
+            <Clock className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
@@ -229,7 +230,7 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               总浏览量
             </CardTitle>
-            <span className="text-xl">👁️</span>
+            <Eye className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -244,7 +245,7 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-muted-foreground">
               用户总数
             </CardTitle>
-            <span className="text-xl">👥</span>
+            <Users className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

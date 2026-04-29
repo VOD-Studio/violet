@@ -30,6 +30,33 @@ type Comment struct {
 	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
+type Image struct {
+	ID           uuid.UUID     `json:"id"`
+	Filename     string        `json:"filename"`
+	OriginalName string        `json:"original_name"`
+	Url          string        `json:"url"`
+	MimeType     string        `json:"mime_type"`
+	Size         int64         `json:"size"`
+	UploadedBy   uuid.NullUUID `json:"uploaded_by"`
+	CreatedAt    time.Time     `json:"created_at"`
+}
+
+type Medium struct {
+	ID                 uuid.UUID       `json:"id"`
+	Filename           string          `json:"filename"`
+	OriginalName       string          `json:"original_name"`
+	MimeType           string          `json:"mime_type"`
+	Size               int64           `json:"size"`
+	Path               string          `json:"path"`
+	Width              sql.NullInt32   `json:"width"`
+	Height             sql.NullInt32   `json:"height"`
+	Duration           sql.NullFloat64 `json:"duration"`
+	UploaderID         uuid.NullUUID   `json:"uploader_id"`
+	DownloadCount      int64           `json:"download_count"`
+	DownloadPermission string          `json:"download_permission"`
+	CreatedAt          time.Time       `json:"created_at"`
+}
+
 type Post struct {
 	ID             uuid.UUID      `json:"id"`
 	Title          string         `json:"title"`
@@ -85,6 +112,18 @@ type Tag struct {
 	ID   int32  `json:"id"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
+}
+
+type UploadChunk struct {
+	ID          uuid.UUID      `json:"id"`
+	UploadID    string         `json:"upload_id"`
+	ChunkIndex  int32          `json:"chunk_index"`
+	TotalChunks int32          `json:"total_chunks"`
+	FileHash    sql.NullString `json:"file_hash"`
+	Filename    sql.NullString `json:"filename"`
+	MimeType    sql.NullString `json:"mime_type"`
+	ChunkPath   string         `json:"chunk_path"`
+	CreatedAt   time.Time      `json:"created_at"`
 }
 
 type User struct {

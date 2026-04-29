@@ -3,26 +3,26 @@
 // 技术栈展示使用 ScrollReveal fadeUp 滚动显示动画
 // GitHub 活动集成：贡献热力图和置顶仓库
 
-import { TextReveal, ScrollReveal } from "@/components/creative"
-import { GitHubContributions } from "@/components/blog/GitHubContributions"
-import { PinnedRepos } from "@/components/blog/PinnedRepos"
-import { SEO } from "@/components/shared/SEO"
-import { StructuredData } from "@/components/shared/StructuredData"
+import { TextReveal, ScrollReveal } from "@/components/creative";
+import { GitHubContributions } from "@/components/blog/GitHubContributions";
+import { PinnedRepos } from "@/components/blog/PinnedRepos";
+import { SEO } from "@/components/shared/SEO";
+import { StructuredData } from "@/components/shared/StructuredData";
 import {
   generatePersonStructuredData,
   generateBreadcrumbStructuredData,
   SITE_CONFIG,
-} from "@/lib/seo"
+} from "@/lib/seo";
 
 /** 配置你的 GitHub 用户名 */
-const GITHUB_USERNAME = "your-github-username"
+const GITHUB_USERNAME = "promise";
 
 /** 技术栈分类结构 */
 interface TechCategory {
   /** 分类名称 */
-  name: string
+  name: string;
   /** 该分类下的技术列表 */
-  items: string[]
+  items: string[];
 }
 
 /** 个人技术栈数据 */
@@ -47,7 +47,7 @@ const TECH_STACK: TechCategory[] = [
     name: "工具",
     items: ["Git", "VS Code", "Figma", "Vim"],
   },
-]
+];
 
 /**
  * 关于页
@@ -55,11 +55,11 @@ const TECH_STACK: TechCategory[] = [
  */
 export default function About() {
   /* 作者和面包屑结构化数据 */
-  const personData = generatePersonStructuredData()
+  const personData = generatePersonStructuredData();
   const breadcrumbData = generateBreadcrumbStructuredData([
     { name: "首页", url: SITE_CONFIG.url },
     { name: "关于我", url: `${SITE_CONFIG.url}/about` },
-  ])
+  ]);
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
@@ -72,9 +72,7 @@ export default function About() {
       <StructuredData data={[personData, breadcrumbData]} />
 
       {/* 页面标题 */}
-      <h1 className="mb-8 text-3xl font-bold">
-        关于我
-      </h1>
+      <h1 className="mb-8 text-3xl font-bold">关于我</h1>
 
       {/* 个人简介，使用 TextReveal 逐行显示 */}
       <TextReveal className="mb-12">
@@ -136,5 +134,5 @@ export default function About() {
         <PinnedRepos username={GITHUB_USERNAME} />
       </ScrollReveal>
     </div>
-  )
+  );
 }

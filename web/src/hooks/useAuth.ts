@@ -1,117 +1,79 @@
 // 认证状态管理 Hook
-// 管理用户的登录状态、令牌存储和认证相关操作
+// 基于 zustand store 管理认证状态，使用 react-query 的 useMutation 处理登录/注册
 
-import { useState, useCallback, useEffect } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { useAuthStore } from "@/store"
 import type { LoginFormData, RegisterFormData } from "@/lib/validations"
-
-/** 用户信息结构 */
-interface User {
-  /** 用户 ID */
-  id: string
-  /** 用户名 */
-  username: string
-  /** 邮箱地址 */
-  email: string
-  /** 头像地址 */
-  avatar?: string
-}
 
 /** 认证响应结构 */
 interface AuthResponse {
   /** JWT 令牌 */
   token: string
   /** 用户信息 */
-  user: User
+  user: {
+    id: string
+    username: string
+    email: string
+    avatar?: string
+  }
 }
 
 /**
  * 认证状态管理 Hook
- * 提供登录、注册、登出功能，并从 localStorage 持久化令牌
+ * 使用 zustand store 管理状态，react-query 管理异步请求
  */
 export function useAuth() {
-  /** 当前用户信息 */
-  const [user, setUser] = useState<User | null>(null)
-  /** JWT 令牌 */
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("token"),
-  )
-  /** 是否正在加载 */
-  const [isLoading, setIsLoading] = useState(false)
+  const queryClient = useQueryClient()
+  const { token, user, isLoading, setAuth, clearAuth, setLoading, setUser } = useAuthStore()
 
-  /* 组件挂载时，如果有令牌则尝试获取用户信息 */
-  useEffect(() => {
-    if (token) {
-      fetchCurrentUser()
-    }
-  }, [token])
+  /** 查询当前用户信息，仅在有 token 时启用 */
+  const userQuery = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: () => api.get<AuthResponse["user"]>("/auth/me"),
+    enabled: !!token && !user,
+    retry: false,
+  })
 
-  /**
-   * 获取当前登录用户的信息
-   * 如果令牌无效则清除本地存储
-   */
-  const fetchCurrentUser = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      const userData = await api.get<User>("/auth/me")
-      setUser(userData)
-    } catch {
-      /* 令牌无效或过期，清除状态 */
-      localStorage.removeItem("token")
-      setToken(null)
-      setUser(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  /* 查询成功时更新 store 中的用户信息 */
+  if (userQuery.data && !user) {
+    setUser(userQuery.data)
+  }
 
-  /**
-   * 用户登录
-   * @param data - 登录表单数据（邮箱和密码）
-   */
-  const login = useCallback(async (data: LoginFormData) => {
-    setIsLoading(true)
-    try {
-      const response = await api.post<AuthResponse>("/auth/login", data)
-      localStorage.setItem("token", response.token)
-      setToken(response.token)
-      setUser(response.user)
-      return response
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  /* 查询失败时清除认证状态 */
+  if (userQuery.isError && token) {
+    clearAuth()
+    queryClient.removeQueries({ queryKey: ["auth"] })
+  }
 
-  /**
-   * 用户注册
-   * @param data - 注册表单数据（用户名、邮箱、密码）
-   */
-  const register = useCallback(async (data: RegisterFormData) => {
-    setIsLoading(true)
-    try {
+  /** 登录 mutation */
+  const loginMutation = useMutation({
+    mutationFn: (data: LoginFormData) =>
+      api.post<AuthResponse>("/auth/login", data),
+    onSuccess: (response) => {
+      setAuth(response.token, response.user)
+      queryClient.invalidateQueries({ queryKey: ["auth"] })
+    },
+  })
+
+  /** 注册 mutation */
+  const registerMutation = useMutation({
+    mutationFn: (data: RegisterFormData) => {
       const { confirmPassword: _, ...registerData } = data
-      const response = await api.post<AuthResponse>("/auth/register", registerData)
-      localStorage.setItem("token", response.token)
-      setToken(response.token)
-      setUser(response.user)
-      return response
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+      return api.post<AuthResponse>("/auth/register", registerData)
+    },
+    onSuccess: (response) => {
+      setAuth(response.token, response.user)
+      queryClient.invalidateQueries({ queryKey: ["auth"] })
+    },
+  })
 
-  /**
-   * 用户登出
-   * 清除令牌和用户状态
-   */
-  const logout = useCallback(() => {
-    localStorage.removeItem("token")
-    setToken(null)
-    setUser(null)
-  }, [])
-
-  /** 是否已登录 */
-  const isAuthenticated = !!token && !!user
+  /** 登出函数 */
+  const logout = () => {
+    clearAuth()
+    queryClient.removeQueries({ queryKey: ["auth"] })
+    queryClient.clear()
+  }
 
   return {
     /** 当前用户信息 */
@@ -119,16 +81,20 @@ export function useAuth() {
     /** JWT 令牌 */
     token,
     /** 是否正在加载 */
-    isLoading,
+    isLoading: isLoading || userQuery.isLoading || loginMutation.isPending || registerMutation.isPending,
     /** 是否已登录 */
-    isAuthenticated,
+    isAuthenticated: !!token && !!user,
     /** 登录函数 */
-    login,
+    login: loginMutation.mutateAsync,
     /** 注册函数 */
-    register,
+    register: registerMutation.mutateAsync,
     /** 登出函数 */
     logout,
+    /** 登录错误 */
+    loginError: loginMutation.error?.message ?? null,
+    /** 注册错误 */
+    registerError: registerMutation.error?.message ?? null,
     /** 重新获取用户信息 */
-    refetchUser: fetchCurrentUser,
+    refetchUser: userQuery.refetch,
   }
 }

@@ -1,78 +1,26 @@
 // 项目展示页
-// 使用 ProjectCard 增强组件展示项目，支持技术栈标签和 GitHub 统计
-// 包含代码沙盒示例
+// 从 API 获取项目数据，使用 ProjectCard 增强组件展示
+// 包含代码沙盒示例，API 不存在时显示空状态
 
+import { useQuery } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 import { KineticText, ScrollReveal } from "@/components/creative"
 import { ProjectCard, type ProjectData } from "@/components/blog/ProjectCard"
 import { CodeSandbox, type SandboxFile } from "@/components/blog/CodeSandbox"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { ErrorFallback } from "@/components/shared/ErrorFallback"
+import { Skeleton } from "@/components/ui/skeleton"
 
-/** 模拟项目数据，后续替换为 API 请求 */
-const MOCK_PROJECTS: ProjectData[] = [
-  {
-    id: "1",
-    title: "博客系统",
-    description: "全栈博客平台，支持 Markdown 编写、标签分类和评论功能。采用 React + Node.js + PostgreSQL 技术栈。",
-    coverImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=600&h=400&fit=crop",
-    tags: ["React", "Node.js", "TypeScript", "PostgreSQL"],
-    demoUrl: "https://example.com",
-    githubUrl: "https://github.com",
-    stars: 128,
-    forks: 32,
-  },
-  {
-    id: "2",
-    title: "任务管理工具",
-    description: "简洁高效的待办事项应用，支持拖拽排序和多视图切换。",
-    coverImage: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=600&h=400&fit=crop",
-    tags: ["React", "TypeScript", "Tailwind"],
-    githubUrl: "https://github.com",
-    stars: 56,
-    forks: 12,
-  },
-  {
-    id: "3",
-    title: "API 文档生成器",
-    description: "自动从代码注释生成 RESTful API 文档，支持实时预览和导出。",
-    coverImage: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=600&h=400&fit=crop",
-    tags: ["Node.js", "OpenAPI", "TypeScript"],
-    demoUrl: "https://example.com",
-    githubUrl: "https://github.com",
-    stars: 234,
-    forks: 45,
-  },
-  {
-    id: "4",
-    title: "图片压缩服务",
-    description: "在线图片压缩工具，支持批量上传和多种格式转换，压缩率高达 80%。",
-    coverImage: "https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=600&h=400&fit=crop",
-    tags: ["Go", "WebAssembly", "Docker"],
-    demoUrl: "https://example.com",
-    githubUrl: "https://github.com",
-    stars: 89,
-    forks: 18,
-  },
-  {
-    id: "5",
-    title: "终端美化工具",
-    description: "为终端添加丰富的配色方案和自定义提示符，支持多种 Shell。",
-    coverImage: "https://images.unsplash.com/photo-1629654297299-c8506221ca97?w=600&h=400&fit=crop",
-    tags: ["Rust", "CLI", "Linux"],
-    githubUrl: "https://github.com",
-    stars: 412,
-    forks: 67,
-  },
-  {
-    id: "6",
-    title: "实时聊天应用",
-    description: "基于 WebSocket 的即时通讯应用，支持群聊、文件传输和消息撤回。",
-    coverImage: "https://images.unsplash.com/photo-1611606063065-ee7946f0787a?w=600&h=400&fit=crop",
-    tags: ["React", "Node.js", "Redis", "Docker"],
-    demoUrl: "https://example.com",
-    githubUrl: "https://github.com",
-    stars: 167,
-    forks: 29,
-  },
-]
+/**
+ * 从 API 获取项目列表
+ */
+function useProjects() {
+  return useQuery({
+    queryKey: ["projects"],
+    queryFn: () => api.get<ProjectData[]>("/projects"),
+    placeholderData: [],
+  })
+}
 
 /** 代码沙盒示例代码 */
 const SANDBOX_FILES: SandboxFile[] = [
@@ -112,11 +60,24 @@ export default function App() {
   },
 ]
 
+/** 项目网格骨架屏 */
+function ProjectGridSkeleton() {
+  return (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-80 animate-pulse rounded-lg border bg-muted" />
+      ))}
+    </div>
+  )
+}
+
 /**
  * 项目展示页
- * 使用增强的 ProjectCard 组件和代码沙盒示例
+ * 从 API 获取项目数据，支持代码沙盒示例
  */
 export default function Projects() {
+  const { data: projects, isLoading, error, refetch } = useProjects()
+
   return (
     <div className="container mx-auto px-4 py-12">
       {/* 页面标题 */}
@@ -133,18 +94,41 @@ export default function Projects() {
         这里是我参与开发的一些开源和个人项目。
       </p>
 
+      {/* 加载态 */}
+      {isLoading && <ProjectGridSkeleton />}
+
+      {/* 错误状态 */}
+      {error && (
+        <ErrorFallback error={error.message} onRetry={refetch} />
+      )}
+
+      {/* 空数据状态 */}
+      {!isLoading && !error && (!projects || projects.length === 0) && (
+        <EmptyState
+          title="暂无项目数据"
+          description="项目数据即将上线，敬请期待"
+          icon={
+            <svg className="size-12" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+          }
+        />
+      )}
+
       {/* 项目卡片网格 */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {MOCK_PROJECTS.map((project, index) => (
-          <ScrollReveal
-            key={project.id}
-            animation="scale"
-            delay={index * 0.1}
-          >
-            <ProjectCard project={project} />
-          </ScrollReveal>
-        ))}
-      </div>
+      {!isLoading && !error && projects && projects.length > 0 && (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project, index) => (
+            <ScrollReveal
+              key={project.id}
+              animation="scale"
+              delay={index * 0.1}
+            >
+              <ProjectCard project={project} />
+            </ScrollReveal>
+          ))}
+        </div>
+      )}
 
       {/* 代码沙盒示例区域 */}
       <section className="mt-16">

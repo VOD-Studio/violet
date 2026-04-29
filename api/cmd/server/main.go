@@ -65,6 +65,13 @@ func main() {
 	tagService := service.NewTagService(queries)
 	commentService := service.NewCommentService(queries)
 	statsService := service.NewStatsService(queries)
+	settingsService := service.NewSettingsService(queries)
+	userService := service.NewUserService(queries)
+	imageService := service.NewImageService(queries, "uploads", fmt.Sprintf("http://localhost:%s/uploads", cfg.Port))
+	mediaService := service.NewMediaService(queries, "uploads")
+	downloadService := service.NewDownloadService(queries)
+	uploadService := service.NewUploadService(queries, mediaService, "uploads/chunks", "uploads", 500*1024*1024)
+	musicService := service.NewMusicService()
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService)
@@ -72,6 +79,12 @@ func main() {
 	tagHandler := handler.NewTagHandler(tagService)
 	commentHandler := handler.NewCommentHandler(commentService)
 	adminHandler := handler.NewAdminHandler(statsService)
+	settingsHandler := handler.NewSettingsHandler(settingsService)
+	userMgmtHandler := handler.NewUserManagementHandler(userService)
+	imageHandler := handler.NewImageHandler(imageService, "uploads", 10*1024*1024)
+	mediaHandler := handler.NewMediaHandler(mediaService, downloadService, "uploads")
+	uploadHandler := handler.NewUploadHandler(uploadService, fmt.Sprintf("http://localhost:%s/uploads", cfg.Port))
+	musicHandler := handler.NewMusicHandler(musicService)
 
 	// 创建 chi 路由实例
 	r := chi.NewRouter()
@@ -164,6 +177,80 @@ func main() {
 			r.Get("/", adminHandler.GetDashboardStats)      // 总览统计
 			r.Get("/views", adminHandler.GetViewTrends)     // 浏览量趋势
 		})
+	})
+
+	// 站点设置路由，需要认证 + 管理员权限
+	r.Route("/api/admin/settings", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Use(middleware.AdminRequired)
+			r.Get("/", settingsHandler.GetSettings)    // 获取站点设置
+			r.Put("/", settingsHandler.UpdateSettings) // 更新站点设置
+		})
+	})
+
+	// 用户管理路由，需要认证 + 管理员权限
+	r.Route("/api/admin/users", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Use(middleware.AdminRequired)
+			r.Get("/", userMgmtHandler.ListUsers)                       // 用户列表
+			r.Patch("/{id}/role", userMgmtHandler.UpdateUserRole)       // 修改角色
+			r.Patch("/{id}/status", userMgmtHandler.UpdateUserStatus)   // 启用/禁用
+		})
+	})
+
+	// 图片管理路由，需要认证
+	r.Route("/api/images", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Post("/upload", imageHandler.Upload) // 上传图片
+			r.Get("/", imageHandler.List)          // 图片列表
+			r.Delete("/{id}", imageHandler.Delete) // 删除图片
+		})
+	})
+
+	// 媒体管理路由
+	r.Route("/api/media", func(r chi.Router) {
+		// 公开接口：媒体详情
+		r.Get("/{id}", mediaHandler.GetMedia)
+
+		// 需要认证的接口
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Get("/", mediaHandler.ListMedia)          // 媒体列表（分页、类型筛选）
+			r.Patch("/{id}", mediaHandler.UpdateMedia) // 更新媒体信息
+			r.Delete("/{id}", mediaHandler.DeleteMedia) // 删除媒体
+			r.Get("/{id}/download", mediaHandler.Download) // 下载媒体文件
+		})
+	})
+
+	// 文件下载路由
+	r.Route("/api/files", func(r chi.Router) {
+		r.Get("/{id}/download", mediaHandler.DownloadFile) // 下载文件（支持权限控制）
+	})
+
+	// 分片上传路由，需要认证
+	r.Route("/api/upload", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Post("/init", uploadHandler.InitUpload)       // 初始化分片上传
+			r.Post("/chunk", uploadHandler.UploadChunk)     // 上传单个分片
+			r.Post("/complete", uploadHandler.CompleteUpload) // 合并分片
+			r.Post("/check", uploadHandler.CheckUpload)     // 秒传检查
+			r.Get("/{id}/chunks", uploadHandler.GetUploadedChunks) // 获取已上传分片
+		})
+	})
+
+	// 音乐嵌入路由
+	r.Route("/api/music", func(r chi.Router) {
+		r.Get("/embed", musicHandler.GetEmbedInfo) // 解析音乐链接返回嵌入信息
+	})
+
+	// 静态文件服务，提供上传文件的访问
+	fileServer := http.FileServer(http.Dir("./uploads"))
+	r.Get("/uploads/*", func(w http.ResponseWriter, r *http.Request) {
+		http.StripPrefix("/uploads/", fileServer).ServeHTTP(w, r)
 	})
 
 	r.Route("/api/comments/{id}", func(r chi.Router) {

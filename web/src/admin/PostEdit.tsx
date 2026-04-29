@@ -7,8 +7,9 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router"
 import { api } from "@/lib/api"
-import { useTags, useSavePost } from "@/hooks/useAdmin"
+import { useAdminTags, useSavePost } from "@/hooks/useAdmin"
 import type { ApiPost } from "@/hooks/useAdmin"
+import { RichTextEditor } from "@/components/editor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Camera } from "lucide-react"
 
 /**
  * 文章编辑页面
@@ -34,9 +36,9 @@ export default function PostEdit() {
   const isEditing = Boolean(id)
 
   /** 标签列表（从 API 获取） */
-  const { tags: availableTags, isLoading: tagsLoading } = useTags()
+  const { data: availableTags = [], isLoading: tagsLoading } = useAdminTags()
   /** 文章保存 Hook */
-  const { savePost, isSaving, error: saveError } = useSavePost()
+  const saveMutation = useSavePost()
 
   /* 表单状态 */
   const [title, setTitle] = useState("")
@@ -196,15 +198,13 @@ export default function PostEdit() {
             />
           </div>
 
-          {/* 内容编辑区域，后续替换为 Tiptap 富文本编辑器 */}
+          {/* 内容编辑区域 */}
           <div className="space-y-2">
-            <Label htmlFor="content">文章内容</Label>
-            <Textarea
-              id="content"
-              placeholder="请输入文章内容（后续将集成 Tiptap 富文本编辑器）"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[400px] resize-y"
+            <Label>文章内容</Label>
+            <RichTextEditor
+              content={content}
+              onChange={setContent}
+              placeholder="请输入文章内容"
             />
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function PostEdit() {
             <CardContent>
               <div className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:text-primary">
                 <div className="text-center">
-                  <p className="text-2xl">📷</p>
+                  <Camera className="mx-auto h-8 w-8" />
                   <p className="mt-1 text-sm">点击上传封面图</p>
                 </div>
               </div>
