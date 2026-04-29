@@ -36,7 +36,7 @@ func Load() *Config {
 	refreshTokenTTL := getEnvAsDuration("JWT_REFRESH_TOKEN_TTL", 7*24*time.Hour)
 
 	return &Config{
-		DatabaseURL:        getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/blog?sslmode=disable"),
+		DatabaseURL:        getEnv("DATABASE_URL", "postgres://blog:blog123@localhost:5432/blog?sslmode=disable"),
 		RedisURL:           getEnv("REDIS_URL", "redis://localhost:6379/0"),
 		JWTPrivateKeyPath:  getEnv("JWT_PRIVATE_KEY_PATH", ""),
 		JWTPublicKeyPath:   getEnv("JWT_PUBLIC_KEY_PATH", ""),
