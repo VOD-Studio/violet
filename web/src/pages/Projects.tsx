@@ -1,8 +1,10 @@
 // 项目展示页
-// 使用 Bento Grid 布局展示项目卡片，每个项目占据不同大小的网格
+// 页面标题使用 KineticText 动态文字
+// 项目卡片使用 ScrollReveal scale 动画和交错延迟
+// 项目链接按钮使用 MagneticButton 磁性效果
 
-import { motion } from "motion/react"
 import { ExternalLink, Github } from "lucide-react"
+import { KineticText, ScrollReveal, MagneticButton } from "@/components/creative"
 
 /** 项目数据结构 */
 interface Project {
@@ -90,88 +92,88 @@ function getGridSpanClass(size: Project["size"]): string {
 export default function Projects() {
   return (
     <div className="container mx-auto px-4 py-12">
-      {/* 页面标题 */}
-      <motion.h1
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      {/* 页面标题使用 KineticText 逐字符动画 */}
+      <KineticText
+        as="h1"
+        animation="fadeUp"
         className="mb-4 text-3xl font-bold"
       >
         项目
-      </motion.h1>
+      </KineticText>
 
       {/* 页面描述 */}
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mb-12 text-muted-foreground"
-      >
+      <p className="mb-12 text-muted-foreground">
         这里是我参与开发的一些开源和个人项目。
-      </motion.p>
+      </p>
 
-      {/* Bento Grid 项目卡片网格 */}
+      {/* Bento Grid 项目卡片网格，使用 ScrollReveal scale 动画交错入场 */}
       <div className="grid auto-rows-[200px] gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MOCK_PROJECTS.map((project, index) => (
-          <motion.div
+          <ScrollReveal
             key={project.id}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            className={`group flex flex-col justify-between rounded-xl border bg-card p-6 transition-shadow hover:shadow-md ${getGridSpanClass(project.size)}`}
+            animation="scale"
+            delay={index * 0.1}
           >
-            {/* 项目信息区域 */}
-            <div>
-              {/* 项目标题 */}
-              <h2 className="mb-2 text-xl font-semibold">{project.title}</h2>
+            <div
+              className={`group flex h-full flex-col justify-between rounded-xl border bg-card p-6 transition-shadow hover:shadow-md ${getGridSpanClass(project.size)}`}
+            >
+              {/* 项目信息区域 */}
+              <div>
+                {/* 项目标题 */}
+                <h2 className="mb-2 text-xl font-semibold">{project.title}</h2>
 
-              {/* 项目描述 */}
-              <p className="text-sm text-muted-foreground line-clamp-3">
-                {project.description}
-              </p>
-            </div>
-
-            {/* 底部标签和链接 */}
-            <div className="flex items-end justify-between">
-              {/* 技术标签 */}
-              <div className="flex flex-wrap gap-1.5">
-                {project.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                  >
-                    {tag}
-                  </span>
-                ))}
+                {/* 项目描述 */}
+                <p className="text-sm text-muted-foreground line-clamp-3">
+                  {project.description}
+                </p>
               </div>
 
-              {/* 项目链接按钮 */}
-              <div className="flex gap-1">
-                {project.githubUrl && (
-                  <a
-                    href={project.githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="查看源码"
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    <Github className="size-4" />
-                  </a>
-                )}
-                {project.demoUrl && (
-                  <a
-                    href={project.demoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="查看演示"
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    <ExternalLink className="size-4" />
-                  </a>
-                )}
+              {/* 底部标签和链接 */}
+              <div className="flex items-end justify-between">
+                {/* 技术标签 */}
+                <div className="flex flex-wrap gap-1.5">
+                  {project.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                {/* 项目链接按钮，使用 MagneticButton 磁性效果 */}
+                <div className="flex gap-1">
+                  {project.githubUrl && (
+                    <MagneticButton>
+                      <a
+                        href={project.githubUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="查看源码"
+                        className="inline-flex rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <Github className="size-4" />
+                      </a>
+                    </MagneticButton>
+                  )}
+                  {project.demoUrl && (
+                    <MagneticButton>
+                      <a
+                        href={project.demoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="查看演示"
+                        className="inline-flex rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <ExternalLink className="size-4" />
+                      </a>
+                    </MagneticButton>
+                  )}
+                </div>
               </div>
             </div>
-          </motion.div>
+          </ScrollReveal>
         ))}
       </div>
     </div>

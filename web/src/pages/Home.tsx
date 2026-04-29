@@ -1,6 +1,7 @@
 // 首页组件
-// 包含英雄区域、最新文章卡片列表，带有淡入动画效果
-// 调用 usePosts 获取最新文章数据
+// 英雄区域使用 KineticText 动态文字和 ParticleBackground 粒子背景
+// 文章卡片列表使用 ScrollReveal 滚动显示动画，支持交错延迟
+// "查看全部文章" 按钮使用 MagneticButton 磁性效果
 
 import { Link } from "react-router"
 import { motion } from "motion/react"
@@ -8,6 +9,12 @@ import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePosts } from "@/hooks/usePosts"
 import { PostCard } from "@/components/blog/PostCard"
+import {
+  KineticText,
+  ParticleBackground,
+  ScrollReveal,
+  MagneticButton,
+} from "@/components/creative"
 
 /**
  * 首页组件
@@ -20,25 +27,30 @@ export default function Home() {
 
   return (
     <div>
-      {/* 英雄区域 */}
-      <section className="container mx-auto flex flex-col items-center justify-center gap-6 px-4 py-24 text-center">
-        {/* 头衔，带淡入动画 */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
+      {/* 英雄区域，粒子背景覆盖整个区域 */}
+      <section className="relative container mx-auto flex flex-col items-center justify-center gap-6 overflow-hidden px-4 py-24 text-center">
+        {/* 粒子背景，absolute 定位铺满区域 */}
+        <ParticleBackground
+          className="absolute inset-0 h-full w-full"
+          particleCount={60}
+        />
+
+        {/* 标题使用 KineticText 逐字符动态入场 */}
+        <KineticText
+          as="h1"
+          animation="fadeUp"
+          splitMode="char"
+          className="relative z-10 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
         >
-          你好，我是{" "}
-          <span className="text-primary">开发者</span>
-        </motion.h1>
+          你好，我是开发者
+        </KineticText>
 
         {/* 简介，带延迟淡入动画 */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="max-w-2xl text-lg text-muted-foreground"
+          className="relative z-10 max-w-2xl text-lg text-muted-foreground"
         >
           全栈开发者，热爱开源与技术写作。专注于 React、TypeScript 和 Node.js 生态，
           在这里分享我的技术见解和项目经验。
@@ -49,7 +61,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="flex gap-3"
+          className="relative z-10 flex gap-3"
         >
           <Link to="/blog">
             <Button>
@@ -94,11 +106,17 @@ export default function Home() {
           </div>
         )}
 
-        {/* 文章卡片网格 */}
+        {/* 文章卡片网格，使用 ScrollReveal 实现交错入场 */}
         {!isLoading && !error && (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((post, index) => (
-              <PostCard key={post.id} post={post} delay={index * 0.1} />
+              <ScrollReveal
+                key={post.id}
+                animation="fadeUp"
+                delay={index * 0.1}
+              >
+                <PostCard post={post} delay={0} />
+              </ScrollReveal>
             ))}
           </div>
         )}
@@ -110,14 +128,16 @@ export default function Home() {
           </div>
         )}
 
-        {/* 查看全部文章链接 */}
+        {/* 查看全部文章按钮，使用 MagneticButton 磁性效果 */}
         <div className="mt-8 text-center">
-          <Link to="/blog">
-            <Button variant="outline">
-              查看全部文章
-              <ArrowRight className="size-4" />
-            </Button>
-          </Link>
+          <MagneticButton className="inline-block">
+            <Link to="/blog">
+              <Button variant="outline">
+                查看全部文章
+                <ArrowRight className="size-4" />
+              </Button>
+            </Link>
+          </MagneticButton>
         </div>
       </section>
     </div>

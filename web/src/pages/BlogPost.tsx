@@ -1,6 +1,7 @@
 // 文章详情页
-// 调用 API 获取文章详情，渲染 Markdown HTML 内容
-// 展示文章元信息（作者、发布时间、浏览量、标签）和评论区
+// 文章标题使用 KineticText 动态文字动画
+// 文章内容区域使用 ScrollReveal 淡入动画
+// 侧边目录区域使用 ScrollReveal 从右侧滑入
 
 import { useParams, Link } from "react-router"
 import { motion } from "motion/react"
@@ -8,6 +9,7 @@ import { ArrowLeft, Calendar, Eye, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePost } from "@/hooks/usePosts"
 import { CommentSection } from "@/components/blog/CommentSection"
+import { KineticText, ScrollReveal } from "@/components/creative"
 
 /** 格式化日期为中文格式 */
 function formatDate(dateStr: string): string {
@@ -82,10 +84,15 @@ export default function BlogPost() {
         >
           {/* 文章头部信息 */}
           <header className="mb-8">
-            {/* 文章标题 */}
-            <h1 className="mb-4 text-3xl font-bold lg:text-4xl">
+            {/* 文章标题使用 KineticText 逐字符 fadeUp 动画 */}
+            <KineticText
+              as="h1"
+              animation="fadeUp"
+              staggerDelay={0.02}
+              className="mb-4 text-3xl font-bold lg:text-4xl"
+            >
               {post.title}
-            </h1>
+            </KineticText>
 
             {/* 文章元信息 */}
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -133,14 +140,18 @@ export default function BlogPost() {
             </div>
           </header>
 
-          {/* 文章正文内容，后端返回的是 HTML */}
-          <div
-            className="prose prose-neutral dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
+          {/* 文章正文内容，使用 ScrollReveal fadeIn 动画 */}
+          <ScrollReveal animation="fadeIn" duration={0.8}>
+            <div
+              className="prose prose-neutral dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: post.content }}
+            />
+          </ScrollReveal>
 
           {/* 评论区 */}
-          <CommentSection postId={post.id} />
+          <ScrollReveal animation="fadeUp" delay={0.2}>
+            <CommentSection postId={post.id} />
+          </ScrollReveal>
         </motion.article>
       </div>
     </div>

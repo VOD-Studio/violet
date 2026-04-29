@@ -1,10 +1,13 @@
 // 应用根组件
 // 配置 React Router v7 路由，包含前台页面、认证页面和后台管理路由
+// 前台页面通过 Layout 组件内的 AnimatedOutlet 实现页面切换过渡动画
 
 import { BrowserRouter, Routes, Route } from "react-router"
 import { Layout } from "@/components/layout/Layout"
+import "@/styles/transitions.css"
 import AdminLayout from "@/components/layout/AdminLayout"
 import { adminLoader } from "@/middleware/auth"
+import { CursorEffect } from "@/components/creative"
 
 /* 前台页面组件 */
 import Home from "@/pages/Home"
@@ -41,6 +44,9 @@ function ProtectedAdmin() {
 function App() {
   return (
     <BrowserRouter>
+      {/* 全局光标跟随效果，组件内部处理 reduced-motion 和移动端降级 */}
+      <CursorEffect />
+
       <Routes>
         {/* 前台路由，统一使用 Layout 包裹（Header + Footer） */}
         <Route element={<Layout />}>

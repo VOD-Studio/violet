@@ -1,0 +1,110 @@
+/* 页面过渡动画样式 */
+/* 配合 View Transitions API 和 motion 组件使用 */
+/* 为不支持 View Transitions 的浏览器提供 CSS 动画降级方案 */
+
+/* 全局过渡容器，确保子元素在动画过程中不会溢出 */
+.page-transition-wrapper {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+/* 淡入动画 */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 淡出动画 */
+@keyframes page-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* 从右侧滑入 */
+@keyframes page-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 向左侧滑出 */
+@keyframes page-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
+
+/* 缩放进入 */
+@keyframes page-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 缩放退出 */
+@keyframes page-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+/* View Transitions API 支持 */
+/* 当浏览器支持 view-transition-name 时，使用原生过渡 */
+@supports (view-transition-name: main-content) {
+  .page-transition-wrapper {
+    view-transition-name: main-content;
+  }
+
+  /* 自定义页面淡入过渡效果 */
+  ::view-transition-old(main-content) {
+    animation: page-fade-out 0.2s ease-in forwards;
+  }
+
+  ::view-transition-new(main-content) {
+    animation: page-fade-in 0.2s ease-out forwards;
+  }
+}
+
+/* 用户偏好减少动画时，禁用所有过渡效果 */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition-wrapper {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  @supports (view-transition-name: main-content) {
+    ::view-transition-old(main-content),
+    ::view-transition-new(main-content) {
+      animation: none !important;
+    }
+  }
+}

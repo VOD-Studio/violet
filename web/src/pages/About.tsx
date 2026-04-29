@@ -1,7 +1,8 @@
 // 关于页
-// 展示个人简介和技术栈信息
+// 个人简介使用 TextReveal 逐行显示动画
+// 技术栈展示使用 ScrollReveal fadeUp 滚动显示动画
 
-import { motion } from "motion/react"
+import { TextReveal, ScrollReveal } from "@/components/creative"
 
 /** 技术栈分类结构 */
 interface TechCategory {
@@ -43,21 +44,12 @@ export default function About() {
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
       {/* 页面标题 */}
-      <motion.h1
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8 text-3xl font-bold"
-      >
+      <h1 className="mb-8 text-3xl font-bold">
         关于我
-      </motion.h1>
+      </h1>
 
-      {/* 个人简介 */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mb-12"
-      >
+      {/* 个人简介，使用 TextReveal 逐行显示 */}
+      <TextReveal className="mb-12">
         <div className="prose prose-neutral dark:prose-invert max-w-none">
           <p className="text-lg leading-relaxed text-muted-foreground">
             你好！我是一名全栈开发者，热爱技术与开源。目前专注于 Web 开发领域，
@@ -72,24 +64,18 @@ export default function About() {
             如果你对我的文章或项目感兴趣，欢迎通过社交链接与我联系。
           </p>
         </div>
-      </motion.section>
+      </TextReveal>
 
-      {/* 技术栈展示 */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
+      {/* 技术栈展示，使用 ScrollReveal fadeUp 动画 */}
+      <ScrollReveal animation="fadeUp">
         <h2 className="mb-6 text-2xl font-bold">技术栈</h2>
 
         <div className="space-y-6">
           {TECH_STACK.map((category, index) => (
-            <motion.div
+            <ScrollReveal
               key={category.name}
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
+              animation="fadeUp"
+              delay={index * 0.1}
             >
               {/* 技术分类名称 */}
               <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
@@ -107,10 +93,10 @@ export default function About() {
                   </span>
                 ))}
               </div>
-            </motion.div>
+            </ScrollReveal>
           ))}
         </div>
-      </motion.section>
+      </ScrollReveal>
     </div>
   )
 }
