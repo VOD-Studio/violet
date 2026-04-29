@@ -120,16 +120,34 @@ interface PostFormData {
 
 /* ========== 仪表盘统计 Hook ========== */
 
-/** 仪表盘统计数据结构 */
+/** 热门文章结构 */
+interface PopularPost {
+  /** 文章 ID */
+  id: number
+  /** 文章标题 */
+  title: string
+  /** URL 别名 */
+  slug: string
+  /** 浏览量 */
+  views: number
+}
+
+/** 仪表盘统计数据结构，对应 GET /api/admin/stats 返回值 */
 interface AdminStats {
   /** 文章总数 */
-  postCount: number
+  totalPosts: number
   /** 评论总数 */
-  commentCount: number
+  totalComments: number
   /** 待审核评论数 */
-  pendingCommentCount: number
+  pendingComments: number
+  /** 总浏览量 */
+  totalViews: number
+  /** 用户总数 */
+  totalUsers: number
   /** 最近文章列表 */
   recentPosts: ApiPost[]
+  /** 热门文章排行 */
+  popularPosts: PopularPost[]
 }
 
 /** useAdminStats 返回值结构 */
@@ -146,7 +164,7 @@ interface UseAdminStatsReturn {
 
 /**
  * 获取后台统计数据
- * 包含文章数、评论数、待审核评论数和最近文章
+ * 调用 GET /api/admin/stats，包含文章数、评论数、浏览量等
  */
 export function useAdminStats(): UseAdminStatsReturn {
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -157,20 +175,8 @@ export function useAdminStats(): UseAdminStatsReturn {
     try {
       setIsLoading(true)
       setError(null)
-
-      /* 并行请求文章列表、待审核评论数 */
-      const [postsData, pendingCount] = await Promise.all([
-        api.get<PaginatedResponse<ApiPost>>("/posts?limit=5&sort=latest"),
-        api.get<{ count: number }>("/admin/comments/pending/count"),
-      ])
-
-      setStats({
-        postCount: postsData.total,
-        /* 评论总数暂用 0，后端如无此接口则保持默认值 */
-        commentCount: 0,
-        pendingCommentCount: pendingCount.count,
-        recentPosts: postsData.items,
-      })
+      const data = await api.get<AdminStats>("/admin/stats")
+      setStats(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "获取统计数据失败")
     } finally {
@@ -184,6 +190,76 @@ export function useAdminStats(): UseAdminStatsReturn {
 
   return { stats, isLoading, error, refetch: fetchStats }
 }
+
+/* ========== 浏览量趋势 Hook ========== */
+
+/** 每日浏览量数据点 */
+interface DailyView {
+  /** 日期，格式 YYYY-MM-DD */
+  date: string
+  /** 浏览次数 */
+  count: number
+}
+
+/** 月度浏览量数据点 */
+interface MonthlyView {
+  /** 月份，格式 YYYY-MM */
+  month: string
+  /** 浏览次数 */
+  count: number
+}
+
+/** 浏览量趋势数据结构，对应 GET /api/admin/stats/views 返回值 */
+interface ViewTrends {
+  /** 最近 30 天每日浏览量 */
+  daily: DailyView[]
+  /** 最近 12 月月度浏览量 */
+  monthly: MonthlyView[]
+}
+
+/** useViewTrends 返回值结构 */
+interface UseViewTrendsReturn {
+  /** 趋势数据 */
+  data: ViewTrends | null
+  /** 是否加载中 */
+  isLoading: boolean
+  /** 错误信息 */
+  error: string | null
+  /** 重新获取数据 */
+  refetch: () => void
+}
+
+/**
+ * 获取浏览量趋势数据
+ * 调用 GET /api/admin/stats/views，包含每日和月度浏览量
+ */
+export function useViewTrends(): UseViewTrendsReturn {
+  const [data, setData] = useState<ViewTrends | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchViews = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const result = await api.get<ViewTrends>("/admin/stats/views")
+      setData(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "获取浏览量数据失败")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchViews()
+  }, [fetchViews])
+
+  return { data, isLoading, error, refetch: fetchViews }
+}
+
+/** 导出浏览量相关类型供页面使用 */
+export type { PopularPost, DailyView, MonthlyView, ViewTrends }
 
 /* ========== 文章管理 Hook ========== */
 
