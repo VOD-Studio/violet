@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 
 	"blog-api/config"
@@ -19,6 +20,9 @@ import (
 )
 
 func main() {
+	// 加载 .env 文件，忽略错误（生产环境通过环境变量注入）
+	_ = godotenv.Load()
+
 	ctx := context.Background()
 
 	// 加载应用配置
