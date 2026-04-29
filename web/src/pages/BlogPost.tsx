@@ -1,7 +1,7 @@
 // 文章详情页
 // 文章标题使用 KineticText 动态文字动画
 // 文章内容区域使用 ScrollReveal 淡入动画
-// 侧边目录区域使用 ScrollReveal 从右侧滑入
+// 支持通过 ::sandbox[id]:: 标记嵌入代码沙盒
 
 import { useParams, Link } from "react-router"
 import { motion } from "motion/react"
@@ -9,6 +9,7 @@ import { ArrowLeft, Calendar, Eye, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePost } from "@/hooks/usePosts"
 import { CommentSection } from "@/components/blog/CommentSection"
+import { CodeSandbox, type SandboxFile } from "@/components/blog/CodeSandbox"
 import { KineticText, ScrollReveal } from "@/components/creative"
 
 /** 格式化日期为中文格式 */
@@ -21,9 +22,153 @@ function formatDate(dateStr: string): string {
   })
 }
 
+/** 沙盒预设数据，实际项目中可从 API 获取 */
+const SANDBOX_PRESETS: Record<string, { files: SandboxFile[]; description?: string }> = {
+  "react-counter": {
+    files: [
+      {
+        path: "/App.tsx",
+        code: `import { useState } from "react"
+
+export default function App() {
+  const [count, setCount] = useState(0)
+
+  return (
+    <div style={{ padding: "2rem", textAlign: "center" }}>
+      <h1>React 计数器示例</h1>
+      <p style={{ fontSize: "1.5rem" }}>当前计数: {count}</p>
+      <button onClick={() => setCount(c => c + 1)}>
+        点击 +1
+      </button>
+    </div>
+  )
+}`,
+        active: true,
+      },
+    ],
+    description: "一个简单的 React 计数器组件",
+  },
+  "useEffect-demo": {
+    files: [
+      {
+        path: "/App.tsx",
+        code: `import { useState, useEffect } from "react"
+
+export default function App() {
+  const [seconds, setSeconds] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSeconds(s => s + 1)
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <div style={{ padding: "2rem", textAlign: "center" }}>
+      <h1>useEffect 定时器示例</h1>
+      <p style={{ fontSize: "2rem", fontVariantNumeric: "tabular-nums" }}>
+        {seconds} 秒
+      </p>
+    </div>
+  )
+}`,
+        active: true,
+      },
+    ],
+    description: "演示 useEffect 的清理函数用法",
+  },
+}
+
+/** 沙盒标记正则，匹配 ::sandbox[id]:: 或 ::sandbox[id]{description}:: */
+const SANDBOX_MARKER = /::sandbox\[([^\]]+)\](?:\{([^}]*)\})?::/g
+
+/**
+ * 解析文章内容，在沙盒标记位置插入 CodeSandbox 组件
+ * @param html 原始 HTML 内容
+ */
+function parseContentWithSandboxes(html: string) {
+  const parts: Array<{ type: "html"; content: string } | { type: "sandbox"; id: string; description?: string }> = []
+  let lastIndex = 0
+
+  for (const match of html.matchAll(SANDBOX_MARKER)) {
+    /* 添加标记之前的 HTML 内容 */
+    if (match.index > lastIndex) {
+      parts.push({ type: "html", content: html.slice(lastIndex, match.index) })
+    }
+
+    /* 添加沙盒标记 */
+    parts.push({
+      type: "sandbox",
+      id: match[1],
+      description: match[2] || undefined,
+    })
+
+    lastIndex = match.index + match[0].length
+  }
+
+  /* 添加剩余的 HTML 内容 */
+  if (lastIndex < html.length) {
+    parts.push({ type: "html", content: html.slice(lastIndex) })
+  }
+
+  return parts
+}
+
+/**
+ * 文章内容渲染组件
+ * 解析 HTML 内容，在沙盒标记位置嵌入 CodeSandbox
+ */
+function ArticleContent({ html }: { html: string }) {
+  const parts = parseContentWithSandboxes(html)
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.type === "html") {
+          return (
+            <div
+              key={`html-${index}`}
+              className="prose prose-neutral dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: part.content }}
+            />
+          )
+        }
+
+        /* 查找沙盒预设数据 */
+        const preset = SANDBOX_PRESETS[part.id]
+        if (!preset) {
+          return (
+            <div
+              key={`sandbox-${index}`}
+              className="my-6 rounded-xl border border-dashed p-6 text-center text-muted-foreground"
+            >
+              未找到沙盒配置: {part.id}
+            </div>
+          )
+        }
+
+        return (
+          <div key={`sandbox-${index}`} className="my-6">
+            {part.description && (
+              <p className="mb-2 text-sm text-muted-foreground">
+                {part.description}
+              </p>
+            )}
+            <CodeSandbox
+              files={preset.files}
+              height={400}
+            />
+          </div>
+        )
+      })}
+    </>
+  )
+}
+
 /**
  * 文章详情页
- * 展示文章内容、元信息和评论区
+ * 展示文章内容、元信息和评论区，支持嵌入代码沙盒
  */
 export default function BlogPost() {
   /* 从路由参数获取文章 slug */
@@ -84,7 +229,7 @@ export default function BlogPost() {
         >
           {/* 文章头部信息 */}
           <header className="mb-8">
-            {/* 文章标题使用 KineticText 逐字符 fadeUp 动画 */}
+            {/* 文章标题 */}
             <KineticText
               as="h1"
               animation="fadeUp"
@@ -140,12 +285,9 @@ export default function BlogPost() {
             </div>
           </header>
 
-          {/* 文章正文内容，使用 ScrollReveal fadeIn 动画 */}
+          {/* 文章正文内容，支持嵌入代码沙盒 */}
           <ScrollReveal animation="fadeIn" duration={0.8}>
-            <div
-              className="prose prose-neutral dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
+            <ArticleContent html={post.content} />
           </ScrollReveal>
 
           {/* 评论区 */}

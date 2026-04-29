@@ -1,12 +1,13 @@
 /**
  * 后台管理侧边栏组件
- * 包含导航菜单和折叠功能，当前路由自动高亮
+ * 包含导航菜单、折叠功能、主题切换，当前路由自动高亮
  */
 
 import { NavLink } from "react-router"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 
 /** 导航菜单项配置 */
 interface NavItem {
@@ -48,13 +49,14 @@ export function AdminSidebar({ collapsed }: AdminSidebarProps) {
         collapsed ? "w-16" : "w-60"
       )}
     >
-      {/* 侧边栏头部 Logo */}
-      <div className="flex h-14 items-center justify-center border-b px-4">
+      {/* 侧边栏头部 Logo 和主题切换 */}
+      <div className="flex h-14 items-center justify-between border-b px-4">
         {collapsed ? (
           <span className="text-xl font-bold">B</span>
         ) : (
           <span className="text-lg font-bold">博客后台管理</span>
         )}
+        {!collapsed && <ThemeToggle />}
       </div>
 
       {/* 导航菜单 */}

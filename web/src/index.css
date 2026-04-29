@@ -127,5 +127,7 @@
     }
   html {
     @apply font-sans;
+    /* 主题切换时的颜色过渡动画 */
+    @apply transition-colors duration-300;
     }
 }

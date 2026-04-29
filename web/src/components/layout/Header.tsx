@@ -1,10 +1,13 @@
-// 前台头部导航组件
-// 包含 Logo、导航链接、登录/用户头像，支持响应式汉堡菜单
+/**
+ * 前台头部导航组件
+ * 包含 Logo、导航链接、登录/用户头像、主题切换，支持响应式汉堡菜单
+ */
 
 import { useState } from "react"
 import { Link, useLocation } from "react-router"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
 
@@ -73,8 +76,9 @@ export function Header() {
           ))}
         </nav>
 
-        {/* 桌面端右侧：登录按钮或用户信息 */}
-        <div className="hidden items-center gap-2 md:flex">
+        {/* 桌面端右侧：主题切换 + 登录按钮或用户信息 */}
+        <div className="hidden items-center gap-1 md:flex">
+          <ThemeToggle />
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               {/* 用户头像和名称 */}
@@ -94,16 +98,18 @@ export function Header() {
           )}
         </div>
 
-        {/* 移动端汉堡菜单按钮 */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={toggleMobileMenu}
-          aria-label={isMobileMenuOpen ? "关闭菜单" : "打开菜单"}
-        >
-          {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        </Button>
+        {/* 移动端：主题切换 + 汉堡菜单按钮 */}
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMobileMenu}
+            aria-label={isMobileMenuOpen ? "关闭菜单" : "打开菜单"}
+          >
+            {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </Button>
+        </div>
       </div>
 
       {/* 移动端展开菜单 */}

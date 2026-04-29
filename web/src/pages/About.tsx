@@ -1,8 +1,14 @@
 // 关于页
 // 个人简介使用 TextReveal 逐行显示动画
 // 技术栈展示使用 ScrollReveal fadeUp 滚动显示动画
+// GitHub 活动集成：贡献热力图和置顶仓库
 
 import { TextReveal, ScrollReveal } from "@/components/creative"
+import { GitHubContributions } from "@/components/blog/GitHubContributions"
+import { PinnedRepos } from "@/components/blog/PinnedRepos"
+
+/** 配置你的 GitHub 用户名 */
+const GITHUB_USERNAME = "your-github-username"
 
 /** 技术栈分类结构 */
 interface TechCategory {
@@ -96,6 +102,16 @@ export default function About() {
             </ScrollReveal>
           ))}
         </div>
+      </ScrollReveal>
+
+      {/* GitHub 贡献热力图 */}
+      <ScrollReveal animation="fadeUp" className="mt-12">
+        <GitHubContributions username={GITHUB_USERNAME} />
+      </ScrollReveal>
+
+      {/* GitHub 置顶仓库 */}
+      <ScrollReveal animation="fadeUp" className="mt-12">
+        <PinnedRepos username={GITHUB_USERNAME} />
       </ScrollReveal>
     </div>
   )
