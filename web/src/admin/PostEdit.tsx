@@ -93,8 +93,8 @@ export default function PostEdit() {
    */
   async function handleSave(status: "draft" | "published" = "draft") {
     try {
-      await savePost(
-        {
+      await saveMutation.mutateAsync({
+        data: {
           title,
           content,
           excerpt: excerpt || undefined,
@@ -103,11 +103,11 @@ export default function PostEdit() {
           seoDescription: seoDescription || undefined,
           seoKeywords: seoKeywords || undefined,
         },
-        isEditing ? Number(id) : undefined,
-      )
+        id: isEditing ? Number(id) : undefined,
+      })
       navigate("/admin/posts")
     } catch {
-      /* 错误由 useSavePost 处理 */
+      /* 错误由 saveMutation 处理 */
     }
   }
 
@@ -155,20 +155,20 @@ export default function PostEdit() {
           </Button>
           <Button
             variant="secondary"
-            disabled={isSaving}
+            disabled={saveMutation.isPending}
             onClick={() => handleSave("draft")}
           >
-            {isSaving ? "保存中..." : "保存草稿"}
+            {saveMutation.isPending ? "保存中..." : "保存草稿"}
           </Button>
-          <Button disabled={isSaving} onClick={() => handleSave("published")}>
-            {isSaving ? "发布中..." : "发布"}
+          <Button disabled={saveMutation.isPending} onClick={() => handleSave("published")}>
+            {saveMutation.isPending ? "发布中..." : "发布"}
           </Button>
         </div>
       </div>
 
       {/* 保存错误提示 */}
-      {saveError && (
-        <p className="text-sm text-destructive">{saveError}</p>
+      {saveMutation.error && (
+        <p className="text-sm text-destructive">{saveMutation.error.message}</p>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">

@@ -1,22 +1,19 @@
 /**
  * 文章管理页面
  * 调用 API 获取文章列表，支持状态筛选和增删改操作
+ * 使用 react-query 管理数据获取和变更操作
  */
 
 import { useState } from "react"
 import { Link } from "react-router"
-import { useAdminPosts } from "@/hooks/useAdmin"
-import type { PostStatus } from "@/hooks/useAdmin"
+import { useAdminPosts, useTogglePostStatus, useDeleteAdminPost } from "@/hooks/useAdmin"
+import type { PostStatus, ApiPost } from "@/hooks/useAdmin"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { ErrorFallback } from "@/components/shared/ErrorFallback"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,59 +31,78 @@ const statusFilters: { label: string; value: "all" | PostStatus }[] = [
 
 /**
  * 将 ISO 日期字符串格式化为简短的本地日期
- * @param isoString - ISO 格式的日期字符串
- * @returns 格式化后的日期，如 "2026/4/28"
  */
 function formatDate(isoString: string | null | undefined): string {
-  if (!isoString) return "—"
+  if (!isoString) return "-"
   return new Date(isoString).toLocaleDateString("zh-CN")
+}
+
+/** 表格骨架屏 */
+function PostsTableSkeleton() {
+  return (
+    <div className="rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>标题</TableHead>
+            <TableHead>状态</TableHead>
+            <TableHead className="text-right">浏览量</TableHead>
+            <TableHead>发布时间</TableHead>
+            <TableHead className="text-right">操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <TableRow key={i}>
+              <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+              <TableCell><Skeleton className="h-5 w-12" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
 }
 
 /**
  * 文章管理页面
- * 调用后端 API 获取文章列表，提供筛选、发布切换和删除功能
  */
 export default function Posts() {
-  /** 当前状态筛选 */
   const [activeFilter, setActiveFilter] = useState<"all" | PostStatus>("all")
-  /** 当前页码 */
   const [page] = useState(1)
 
-  /** 获取文章列表数据 */
-  const { posts, isLoading, error, toggleStatus, deletePost } = useAdminPosts({
+  const { data, isLoading, error, refetch } = useAdminPosts({
     page,
     limit: 20,
     status: activeFilter === "all" ? undefined : activeFilter,
   })
+  const toggleMutation = useTogglePostStatus()
+  const deleteMutation = useDeleteAdminPost()
+
+  const posts = data?.items ?? []
 
   /**
    * 切换文章发布状态
-   * @param id - 文章 ID
    */
-  async function handleToggleStatus(id: number) {
-    try {
-      await toggleStatus(id)
-    } catch {
-      /* 错误已由 Hook 处理 */
-    }
+  async function handleToggleStatus(post: ApiPost) {
+    const newStatus: PostStatus = post.status === "published" ? "draft" : "published"
+    toggleMutation.mutate({ id: post.id, status: newStatus })
   }
 
   /**
    * 删除文章（带确认提示）
-   * @param id - 文章 ID
    */
   async function handleDelete(id: number) {
     if (!window.confirm("确定要删除这篇文章吗？此操作不可撤销。")) return
-    try {
-      await deletePost(id)
-    } catch {
-      /* 错误已由 Hook 处理 */
-    }
+    deleteMutation.mutate(id)
   }
 
   return (
     <div className="space-y-6">
-      {/* 页面头部：标题和新建按钮 */}
+      {/* 页面头部 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">文章管理</h1>
@@ -111,14 +127,22 @@ export default function Posts() {
         ))}
       </div>
 
-      {/* 加载与错误状态 */}
-      {isLoading && (
-        <p className="text-muted-foreground">加载中...</p>
+      {/* 加载态 */}
+      {isLoading && <PostsTableSkeleton />}
+
+      {/* 错误状态 */}
+      {error && <ErrorFallback error={error.message} onRetry={refetch} />}
+
+      {/* 空数据状态 */}
+      {!isLoading && !error && posts.length === 0 && (
+        <EmptyState
+          title="暂无文章"
+          description="点击上方按钮创建你的第一篇文章"
+        />
       )}
-      {error && <p className="text-destructive">{error}</p>}
 
       {/* 文章列表表格 */}
-      {!isLoading && (
+      {!isLoading && !error && posts.length > 0 && (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
@@ -131,67 +155,48 @@ export default function Posts() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {posts.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    暂无文章数据
+              {posts.map((post: ApiPost) => (
+                <TableRow key={post.id}>
+                  <TableCell className="font-medium">{post.title}</TableCell>
+                  <TableCell>
+                    <Badge variant={post.status === "published" ? "default" : "secondary"}>
+                      {post.status === "published" ? "已发布" : "草稿"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {post.views.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(post.publishedAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon-sm">
+                          <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                          </svg>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/posts/${post.id}/edit`}>编辑</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleStatus(post)}>
+                          {post.status === "published" ? "取消发布" : "发布"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDelete(post.id)}
+                        >
+                          删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ) : (
-                posts.map((post) => (
-                  <TableRow key={post.id}>
-                    <TableCell className="font-medium">{post.title}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          post.status === "published" ? "default" : "secondary"
-                        }
-                      >
-                        {post.status === "published" ? "已发布" : "草稿"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {post.views.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(post.publishedAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm">
-                            ···
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link to={`/admin/posts/${post.id}/edit`}>
-                              编辑
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleToggleStatus(post.id)}
-                          >
-                            {post.status === "published"
-                              ? "取消发布"
-                              : "发布"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleDelete(post.id)}
-                          >
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
         </div>

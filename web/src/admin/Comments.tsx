@@ -1,23 +1,16 @@
 /**
  * 评论管理页面
  * 调用 API 获取待审核评论，支持批准、标记垃圾和删除操作
+ * 使用 react-query 管理数据获取和变更
  */
 
-import { useState } from "react"
-import {
-  useAdminComments,
-  useAdminCommentActions,
-} from "@/hooks/useAdmin"
+import { useAdminComments, useAdminCommentActions } from "@/hooks/useAdmin"
 import type { ApiComment } from "@/hooks/useAdmin"
 import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { EmptyState } from "@/components/shared/EmptyState"
+import { ErrorFallback } from "@/components/shared/ErrorFallback"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,73 +21,70 @@ import {
 
 /**
  * 将 ISO 日期字符串格式化为本地日期时间
- * @param isoString - ISO 格式的日期字符串
- * @returns 格式化后的日期时间
  */
 function formatDateTime(isoString: string): string {
   return new Date(isoString).toLocaleString("zh-CN")
 }
 
+/** 表格骨架屏 */
+function CommentsTableSkeleton() {
+  return (
+    <div className="rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>作者</TableHead>
+            <TableHead>内容</TableHead>
+            <TableHead>文章</TableHead>
+            <TableHead>时间</TableHead>
+            <TableHead className="text-right">操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <TableRow key={i}>
+              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
 /**
  * 评论管理页面
- * 展示待审核评论列表，提供批准、标记垃圾和删除功能
  */
 export default function Comments() {
-  /** 获取待审核评论列表 */
-  const { comments, isLoading, error, refetch } = useAdminComments()
-  /** 评论操作函数 */
+  const { data: comments, isLoading, error, refetch } = useAdminComments()
   const { approve, markSpam, deleteComment } = useAdminCommentActions()
 
-  /** 操作中的评论 ID，用于禁用按钮防止重复点击 */
-  const [actingId, setActingId] = useState<number | null>(null)
+  const isActing = approve.isPending || markSpam.isPending || deleteComment.isPending
 
   /**
    * 批准评论
-   * @param id - 评论 ID
    */
-  async function handleApprove(id: number) {
-    try {
-      setActingId(id)
-      await approve(id)
-      refetch()
-    } catch {
-      /* 错误由 API 层抛出 */
-    } finally {
-      setActingId(null)
-    }
+  function handleApprove(id: number) {
+    approve.mutate(id)
   }
 
   /**
    * 标记为垃圾评论
-   * @param id - 评论 ID
    */
-  async function handleMarkSpam(id: number) {
-    try {
-      setActingId(id)
-      await markSpam(id)
-      refetch()
-    } catch {
-      /* 错误由 API 层抛出 */
-    } finally {
-      setActingId(null)
-    }
+  function handleMarkSpam(id: number) {
+    markSpam.mutate(id)
   }
 
   /**
    * 删除评论（带确认提示）
-   * @param id - 评论 ID
    */
-  async function handleDelete(id: number) {
+  function handleDelete(id: number) {
     if (!window.confirm("确定要删除这条评论吗？此操作不可撤销。")) return
-    try {
-      setActingId(id)
-      await deleteComment(id)
-      refetch()
-    } catch {
-      /* 错误由 API 层抛出 */
-    } finally {
-      setActingId(null)
-    }
+    deleteComment.mutate(id)
   }
 
   return (
@@ -105,12 +95,27 @@ export default function Comments() {
         <p className="text-muted-foreground">审核和管理用户评论</p>
       </div>
 
-      {/* 加载与错误状态 */}
-      {isLoading && <p className="text-muted-foreground">加载中...</p>}
-      {error && <p className="text-destructive">{error}</p>}
+      {/* 加载态 */}
+      {isLoading && <CommentsTableSkeleton />}
+
+      {/* 错误状态 */}
+      {error && <ErrorFallback error={error.message} onRetry={refetch} />}
+
+      {/* 空数据状态 */}
+      {!isLoading && !error && (!comments || comments.length === 0) && (
+        <EmptyState
+          title="暂无待审核评论"
+          description="所有评论都已审核完毕"
+          icon={
+            <svg className="size-12" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.22 48.22 0 005.253-.443c1.584-.236 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+            </svg>
+          }
+        />
+      )}
 
       {/* 评论列表表格 */}
-      {!isLoading && (
+      {!isLoading && !error && comments && comments.length > 0 && (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
@@ -123,65 +128,48 @@ export default function Comments() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {comments.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    暂无待审核评论
+              {comments.map((comment: ApiComment) => (
+                <TableRow key={comment.id}>
+                  <TableCell className="font-medium">
+                    {comment.authorName}
+                  </TableCell>
+                  <TableCell className="max-w-[240px] truncate">
+                    {comment.content}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {comment.post?.title ?? "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDateTime(comment.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" disabled={isActing}>
+                          <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                          </svg>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleApprove(comment.id)}>
+                          批准
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleMarkSpam(comment.id)}>
+                          标记垃圾
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDelete(comment.id)}
+                        >
+                          删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ) : (
-                comments.map((comment: ApiComment) => (
-                  <TableRow key={comment.id}>
-                    <TableCell className="font-medium">
-                      {comment.authorName}
-                    </TableCell>
-                    <TableCell className="max-w-[240px] truncate">
-                      {comment.content}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {comment.post?.title ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDateTime(comment.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            disabled={actingId === comment.id}
-                          >
-                            ···
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => handleApprove(comment.id)}
-                          >
-                            批准
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleMarkSpam(comment.id)}
-                          >
-                            标记垃圾
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleDelete(comment.id)}
-                          >
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
         </div>

@@ -3,7 +3,7 @@
 // 支持提交评论和加载状态
 
 import { useState } from "react"
-import { useComments } from "@/hooks/useComments"
+import { useComments, useSubmitComment } from "@/hooks/useComments"
 import { CommentItem } from "./CommentItem"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,14 +20,13 @@ interface CommentSectionProps {
  * 包含评论列表展示和评论提交表单
  */
 export function CommentSection({ postId }: CommentSectionProps) {
-  const { data: comments, isLoading, submitComment } = useComments(postId)
+  const { data: comments, isLoading } = useComments(postId)
+  const submitMutation = useSubmitComment(postId)
 
   /* 表单状态 */
   const [authorName, setAuthorName] = useState("")
   const [authorEmail, setAuthorEmail] = useState("")
   const [content, setContent] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
 
   /**
    * 处理评论提交
@@ -37,20 +36,15 @@ export function CommentSection({ postId }: CommentSectionProps) {
     e.preventDefault()
     if (!authorName.trim() || !authorEmail.trim() || !content.trim()) return
 
-    setIsSubmitting(true)
-    setSubmitError(null)
     try {
-      await submitComment({
+      await submitMutation.mutateAsync({
         authorName: authorName.trim(),
         authorEmail: authorEmail.trim(),
         content: content.trim(),
       })
-      /* 提交成功后清空评论内容，保留用户信息方便后续评论 */
       setContent("")
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "评论提交失败")
-    } finally {
-      setIsSubmitting(false)
+    } catch {
+      /* 错误由 mutation 处理 */
     }
   }
 
@@ -63,9 +57,9 @@ export function CommentSection({ postId }: CommentSectionProps) {
         <div className="py-8 text-center text-sm text-muted-foreground">
           加载评论中...
         </div>
-      ) : comments.length > 0 ? (
+      ) : (comments ?? []).length > 0 ? (
         <div className="mb-8 space-y-6">
-          {comments.map((comment) => (
+          {(comments ?? []).map((comment) => (
             <CommentItem key={comment.id} comment={comment} />
           ))}
         </div>
@@ -118,13 +112,13 @@ export function CommentSection({ postId }: CommentSectionProps) {
         </div>
 
         {/* 提交错误提示 */}
-        {submitError && (
-          <p className="text-sm text-destructive">{submitError}</p>
+        {submitMutation.error && (
+          <p className="text-sm text-destructive">{submitMutation.error.message}</p>
         )}
 
         {/* 提交按钮 */}
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "提交中..." : "发表评论"}
+        <Button type="submit" disabled={submitMutation.isPending}>
+          {submitMutation.isPending ? "提交中..." : "发表评论"}
         </Button>
       </form>
     </section>
