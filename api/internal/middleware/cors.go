@@ -16,7 +16,7 @@ func CORS(next http.Handler) http.Handler {
 			"https://yourdomain.com", // 生产环境域名
 		},
 		// 允许的 HTTP 方法
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		// 允许的请求头
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-Requested-With"},
 		// 允许前端读取的响应头

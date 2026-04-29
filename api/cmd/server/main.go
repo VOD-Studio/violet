@@ -57,9 +57,15 @@ func main() {
 	// 初始化服务层
 	emailService := service.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom)
 	authService := service.NewAuthService(queries, redisClient, emailService, cfg)
+	postService := service.NewPostService(queries)
+	tagService := service.NewTagService(queries)
+	commentService := service.NewCommentService(queries)
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService)
+	postHandler := handler.NewPostHandler(postService, tagService)
+	tagHandler := handler.NewTagHandler(tagService)
+	commentHandler := handler.NewCommentHandler(commentService)
 
 	// 创建 chi 路由实例
 	r := chi.NewRouter()
@@ -91,6 +97,66 @@ func main() {
 			r.Use(middleware.Auth(authService))
 			r.Post("/logout", authHandler.Logout) // 用户登出
 			r.Get("/me", authHandler.Me)          // 获取当前用户信息
+		})
+	})
+
+	// 文章相关路由
+	r.Route("/api/posts", func(r chi.Router) {
+		// 公开接口
+		r.Get("/", postHandler.List)            // 文章列表
+		r.Get("/{slug}", postHandler.GetBySlug) // 文章详情
+
+		// 浏览计数（公开接口）
+		r.Post("/{id}/view", postHandler.IncrementView) // 增加浏览次数
+
+		// 需要认证的接口
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Post("/", postHandler.Create)              // 创建文章
+			r.Put("/{id}", postHandler.Update)           // 更新文章
+			r.Delete("/{id}", postHandler.Delete)        // 删除文章
+			r.Patch("/{id}/status", postHandler.UpdateStatus) // 更新状态
+		})
+	})
+
+	// 标签相关路由
+	r.Route("/api/tags", func(r chi.Router) {
+		// 公开接口
+		r.Get("/", tagHandler.List) // 标签列表
+
+		// 需要认证的接口
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Post("/", tagHandler.Create)      // 创建标签
+			r.Delete("/{id}", tagHandler.Delete) // 删除标签
+		})
+	})
+
+	// 评论相关路由
+	r.Route("/api/posts/{id}/comments", func(r chi.Router) {
+		// 公开接口：获取文章评论
+		r.Get("/", commentHandler.ListApprovedComments)
+		// 公开接口：提交评论（带限流）
+		r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentHandler.CreateComment)
+	})
+
+	r.Route("/api/admin/comments", func(r chi.Router) {
+		// 管理员接口：需要认证 + 管理员权限
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Use(middleware.AdminRequired)
+			r.Get("/pending", commentHandler.ListPendingComments)         // 待审核评论列表
+			r.Get("/pending/count", commentHandler.CountPendingComments)  // 待审核数量统计
+		})
+	})
+
+	r.Route("/api/comments/{id}", func(r chi.Router) {
+		// 管理员接口：需要认证 + 管理员权限
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Use(middleware.AdminRequired)
+			r.Patch("/status", commentHandler.UpdateCommentStatus) // 审核评论
+			r.Delete("/", commentHandler.DeleteComment)            // 删除评论
 		})
 	})
 
