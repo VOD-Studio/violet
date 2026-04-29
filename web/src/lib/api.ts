@@ -2,7 +2,7 @@
 // 封装 fetch 请求，自动附加 JWT 认证令牌，统一处理错误和基础配置
 
 /** API 基础地址，从环境变量读取，默认为本地开发地址 */
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api"
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api"
 
 /** API 响应的通用结构 */
 interface ApiResponse<T = unknown> {
