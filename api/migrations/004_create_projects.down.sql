@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS site_settings;
+DROP TABLE IF EXISTS projects;

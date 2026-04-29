@@ -1,0 +1,36 @@
+# Go
+api/vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Node
+node_modules/
+dist/
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# OMC state
+.omc/
+**/.omc/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+api/tmp/

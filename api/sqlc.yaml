@@ -1,0 +1,12 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "internal/repository/queries/"
+    schema: "migrations/"
+    gen:
+      go:
+        package: "generated"
+        out: "internal/repository/generated"
+        emit_json_tags: true
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
