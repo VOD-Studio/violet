@@ -4,7 +4,7 @@ INSERT INTO users (username, email, password_hash, role, is_active, email_verifi
 VALUES (
     'admin',
     'admin@gmail.com',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$F/ZGl9XkdAWC22sj1JJSUe5GAfAJGev04trHFhsB8oPzF8rLdIKmy',
     'admin',
     true,
     true
