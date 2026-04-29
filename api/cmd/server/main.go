@@ -60,12 +60,14 @@ func main() {
 	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
 	commentService := service.NewCommentService(queries)
+	statsService := service.NewStatsService(queries)
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService)
 	postHandler := handler.NewPostHandler(postService, tagService)
 	tagHandler := handler.NewTagHandler(tagService)
 	commentHandler := handler.NewCommentHandler(commentService)
+	adminHandler := handler.NewAdminHandler(statsService)
 
 	// 创建 chi 路由实例
 	r := chi.NewRouter()
@@ -147,6 +149,16 @@ func main() {
 			r.Use(middleware.AdminRequired)
 			r.Get("/pending", commentHandler.ListPendingComments)         // 待审核评论列表
 			r.Get("/pending/count", commentHandler.CountPendingComments)  // 待审核数量统计
+		})
+	})
+
+	// 后台统计路由，需要认证 + 管理员权限
+	r.Route("/api/admin/stats", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Use(middleware.AdminRequired)
+			r.Get("/", adminHandler.GetDashboardStats)      // 总览统计
+			r.Get("/views", adminHandler.GetViewTrends)     // 浏览量趋势
 		})
 	})
 

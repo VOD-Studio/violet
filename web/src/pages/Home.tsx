@@ -15,6 +15,9 @@ import {
   ScrollReveal,
   MagneticButton,
 } from "@/components/creative"
+import { SEO } from "@/components/shared/SEO"
+import { StructuredData } from "@/components/shared/StructuredData"
+import { generateWebsiteStructuredData, SITE_CONFIG } from "@/lib/seo"
 
 /**
  * 首页组件
@@ -25,8 +28,20 @@ export default function Home() {
   const { data, isLoading, error } = usePosts({ page: 1, limit: 3 })
   const posts = data?.posts ?? []
 
+  /* 站点级别结构化数据 */
+  const websiteData = generateWebsiteStructuredData()
+
   return (
     <div>
+      {/* 首页 SEO 配置 */}
+      <SEO
+        title="首页"
+        description={SITE_CONFIG.description}
+        url={SITE_CONFIG.url}
+        type="website"
+      />
+      <StructuredData data={websiteData} />
+
       {/* 英雄区域，粒子背景覆盖整个区域 */}
       <section className="relative container mx-auto flex flex-col items-center justify-center gap-6 overflow-hidden px-4 py-24 text-center">
         {/* 粒子背景，absolute 定位铺满区域 */}

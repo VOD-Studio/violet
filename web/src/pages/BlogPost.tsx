@@ -11,6 +11,14 @@ import { usePost } from "@/hooks/usePosts"
 import { CommentSection } from "@/components/blog/CommentSection"
 import { CodeSandbox, type SandboxFile } from "@/components/blog/CodeSandbox"
 import { KineticText, ScrollReveal } from "@/components/creative"
+import { SEO } from "@/components/shared/SEO"
+import { StructuredData } from "@/components/shared/StructuredData"
+import {
+  generatePostSEO,
+  generateStructuredData,
+  generateBreadcrumbStructuredData,
+  SITE_CONFIG,
+} from "@/lib/seo"
 
 /** 格式化日期为中文格式 */
 function formatDate(dateStr: string): string {
@@ -210,8 +218,30 @@ export default function BlogPost() {
     )
   }
 
+  /* 生成文章 SEO 数据 */
+  const seoConfig = generatePostSEO(post)
+  const blogPostingData = generateStructuredData(post)
+
+  /* 面包屑结构化数据 */
+  const breadcrumbData = generateBreadcrumbStructuredData([
+    { name: "首页", url: SITE_CONFIG.url },
+    { name: "博客文章", url: `${SITE_CONFIG.url}/blog` },
+    { name: post.title, url: `${SITE_CONFIG.url}/blog/${post.slug}` },
+  ])
+
   return (
     <div className="container mx-auto px-4 py-12">
+      {/* 文章页 SEO 配置 */}
+      <SEO
+        title={post.title}
+        description={post.summary}
+        image={post.coverImage}
+        url={`${SITE_CONFIG.url}/blog/${post.slug}`}
+        type="article"
+        appendSiteName={false}
+      />
+      <StructuredData data={[blogPostingData, breadcrumbData]} />
+
       {/* 返回博客列表链接 */}
       <Link to="/blog">
         <Button variant="ghost" className="mb-6 gap-1">

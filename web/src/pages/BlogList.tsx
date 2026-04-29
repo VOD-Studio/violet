@@ -10,6 +10,9 @@ import { PostCard } from "@/components/blog/PostCard"
 import { TagFilter } from "@/components/blog/TagFilter"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SEO } from "@/components/shared/SEO"
+import { StructuredData } from "@/components/shared/StructuredData"
+import { generateBreadcrumbStructuredData, SITE_CONFIG } from "@/lib/seo"
 
 /** 每页显示的文章数量 */
 const PAGE_SIZE = 6
@@ -62,8 +65,22 @@ export default function BlogList() {
     setCurrentPage(1)
   }
 
+  /* 面包屑结构化数据 */
+  const breadcrumbData = generateBreadcrumbStructuredData([
+    { name: "首页", url: SITE_CONFIG.url },
+    { name: "博客文章", url: `${SITE_CONFIG.url}/blog` },
+  ])
+
   return (
     <div className="container mx-auto px-4 py-12">
+      {/* 文章列表页 SEO 配置 */}
+      <SEO
+        title="博客文章"
+        description="浏览所有技术文章，涵盖前端开发、后端架构、数据库、DevOps 等领域。"
+        url={`${SITE_CONFIG.url}/blog`}
+      />
+      <StructuredData data={breadcrumbData} />
+
       {/* 页面标题 */}
       <motion.h1
         initial={{ opacity: 0, y: 20 }}

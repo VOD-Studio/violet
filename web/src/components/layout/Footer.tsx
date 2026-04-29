@@ -1,14 +1,14 @@
 // 前台底部组件
 // 包含版权信息和社交链接
 
-import { Github, Twitter, Mail } from "lucide-react"
+import { Github, Twitter, Mail } from "lucide-react";
 
 /** 社交链接配置 */
 const SOCIAL_LINKS = [
   { label: "GitHub", href: "https://github.com", icon: Github },
   { label: "Twitter", href: "https://twitter.com", icon: Twitter },
   { label: "邮箱", href: "mailto:hello@example.com", icon: Mail },
-] as const
+] as const;
 
 /**
  * 前台底部组件
@@ -16,7 +16,7 @@ const SOCIAL_LINKS = [
  */
 export function Footer() {
   /** 当前年份，用于版权信息 */
-  const currentYear = new Date().getFullYear()
+  const currentYear = new Date().getFullYear();
 
   return (
     <footer className="border-t bg-muted/30">
@@ -29,7 +29,7 @@ export function Footer() {
         {/* 社交链接图标 */}
         <div className="flex items-center gap-3">
           {SOCIAL_LINKS.map((link) => {
-            const Icon = link.icon
+            const Icon = link.icon;
             return (
               <a
                 key={link.label}
@@ -41,10 +41,10 @@ export function Footer() {
               >
                 <Icon className="size-5" />
               </a>
-            )
+            );
           })}
         </div>
       </div>
     </footer>
-  )
+  );
 }

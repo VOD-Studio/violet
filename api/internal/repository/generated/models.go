@@ -54,6 +54,14 @@ type PostTag struct {
 	TagID  int32     `json:"tag_id"`
 }
 
+type PostView struct {
+	ID        int64          `json:"id"`
+	PostID    uuid.UUID      `json:"post_id"`
+	IpAddress sql.NullString `json:"ip_address"`
+	UserAgent sql.NullString `json:"user_agent"`
+	CreatedAt time.Time      `json:"created_at"`
+}
+
 type Project struct {
 	ID          uuid.UUID      `json:"id"`
 	Title       string         `json:"title"`

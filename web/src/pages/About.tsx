@@ -6,6 +6,13 @@
 import { TextReveal, ScrollReveal } from "@/components/creative"
 import { GitHubContributions } from "@/components/blog/GitHubContributions"
 import { PinnedRepos } from "@/components/blog/PinnedRepos"
+import { SEO } from "@/components/shared/SEO"
+import { StructuredData } from "@/components/shared/StructuredData"
+import {
+  generatePersonStructuredData,
+  generateBreadcrumbStructuredData,
+  SITE_CONFIG,
+} from "@/lib/seo"
 
 /** 配置你的 GitHub 用户名 */
 const GITHUB_USERNAME = "your-github-username"
@@ -47,8 +54,23 @@ const TECH_STACK: TechCategory[] = [
  * 展示个人介绍和技术栈
  */
 export default function About() {
+  /* 作者和面包屑结构化数据 */
+  const personData = generatePersonStructuredData()
+  const breadcrumbData = generateBreadcrumbStructuredData([
+    { name: "首页", url: SITE_CONFIG.url },
+    { name: "关于我", url: `${SITE_CONFIG.url}/about` },
+  ])
+
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
+      {/* 关于页 SEO 配置 */}
+      <SEO
+        title="关于我"
+        description="全栈开发者，热爱技术与开源。专注于 React、TypeScript 和 Node.js 生态，擅长构建高质量的 Web 应用。"
+        url={`${SITE_CONFIG.url}/about`}
+      />
+      <StructuredData data={[personData, breadcrumbData]} />
+
       {/* 页面标题 */}
       <h1 className="mb-8 text-3xl font-bold">
         关于我
