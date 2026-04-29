@@ -1,53 +1,67 @@
 // 文章详情页
-// 展示文章完整内容、目录导航和评论区域
+// 调用 API 获取文章详情，渲染 Markdown HTML 内容
+// 展示文章元信息（作者、发布时间、浏览量、标签）和评论区
 
 import { useParams, Link } from "react-router"
 import { motion } from "motion/react"
-import { ArrowLeft, Calendar, Clock, Tag } from "lucide-react"
+import { ArrowLeft, Calendar, Eye, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { usePost } from "@/hooks/usePosts"
+import { CommentSection } from "@/components/blog/CommentSection"
 
-/** 模拟文章数据，后续替换为 API 请求 */
-const MOCK_POST = {
-  title: "使用 React 19 构建现代 Web 应用",
-  date: "2026-04-28",
-  readTime: "8 分钟",
-  tags: ["React", "前端"],
-  content: `
-## 引言
-
-React 19 带来了许多令人兴奋的新特性，让我们一起来探索如何利用这些特性构建更好的 Web 应用。
-
-## Server Components
-
-Server Components 允许我们在服务端渲染组件，减少客户端 JavaScript 的体积。
-
-## Actions
-
-Actions 简化了表单处理和数据变更的流程。
-
-## 总结
-
-React 19 的这些新特性将彻底改变我们构建 Web 应用的方式。
-  `.trim(),
-  /** 文章目录结构 */
-  toc: [
-    { id: "introduction", title: "引言", level: 2 },
-    { id: "server-components", title: "Server Components", level: 2 },
-    { id: "actions", title: "Actions", level: 2 },
-    { id: "summary", title: "总结", level: 2 },
-  ],
+/** 格式化日期为中文格式 */
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
 }
 
 /**
  * 文章详情页
- * 展示文章内容、目录和评论区
+ * 展示文章内容、元信息和评论区
  */
 export default function BlogPost() {
-  /** 从路由参数获取文章 slug */
+  /* 从路由参数获取文章 slug */
   const { slug } = useParams<{ slug: string }>()
+  const { data: post, isLoading, error } = usePost(slug)
 
-  /* 后续使用 slug 从 API 获取文章数据 */
-  void slug
+  /* 加载态 */
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 w-32 rounded bg-muted" />
+          <div className="h-12 w-3/4 rounded bg-muted" />
+          <div className="h-4 w-1/2 rounded bg-muted" />
+          <div className="space-y-3 pt-8">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-4 rounded bg-muted" style={{ width: `${80 + Math.random() * 20}%` }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  /* 错误或文章不存在 */
+  if (error || !post) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <Link to="/blog">
+          <Button variant="ghost" className="mb-6 gap-1">
+            <ArrowLeft className="size-4" />
+            返回文章列表
+          </Button>
+        </Link>
+        <div className="py-12 text-center text-muted-foreground">
+          {error ?? "文章不存在"}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -70,81 +84,64 @@ export default function BlogPost() {
           <header className="mb-8">
             {/* 文章标题 */}
             <h1 className="mb-4 text-3xl font-bold lg:text-4xl">
-              {MOCK_POST.title}
+              {post.title}
             </h1>
 
             {/* 文章元信息 */}
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              {/* 作者 */}
+              {post.author && (
+                <span className="flex items-center gap-1">
+                  {post.author.avatar && (
+                    <img
+                      src={post.author.avatar}
+                      alt={post.author.username}
+                      className="size-5 rounded-full"
+                    />
+                  )}
+                  {post.author.username}
+                </span>
+              )}
+
               {/* 发布日期 */}
               <span className="flex items-center gap-1">
                 <Calendar className="size-4" />
-                {MOCK_POST.date}
+                {formatDate(post.createdAt)}
               </span>
 
-              {/* 阅读时长 */}
+              {/* 浏览量 */}
               <span className="flex items-center gap-1">
-                <Clock className="size-4" />
-                {MOCK_POST.readTime}
+                <Eye className="size-4" />
+                {post.views} 次浏览
               </span>
 
               {/* 标签列表 */}
-              <div className="flex items-center gap-1">
-                <Tag className="size-4" />
-                {MOCK_POST.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-muted px-2 py-0.5 text-xs"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+              {post.tags.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <Tag className="size-4" />
+                  {post.tags.map((tag) => (
+                    <Link
+                      key={tag.id}
+                      to={`/blog?tag=${tag.slug}`}
+                      className="rounded-full bg-muted px-2 py-0.5 text-xs transition-colors hover:bg-muted/80"
+                    >
+                      {tag.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           </header>
 
-          {/* 文章正文内容 */}
-          <div className="prose prose-neutral dark:prose-invert max-w-none">
-            {MOCK_POST.content.split("\n\n").map((paragraph) => {
-              if (paragraph.startsWith("## ")) {
-                return (
-                  <h2 key={paragraph} id={paragraph.replace("## ", "").toLowerCase()}>
-                    {paragraph.replace("## ", "")}
-                  </h2>
-                )
-              }
-              return <p key={paragraph}>{paragraph}</p>
-            })}
-          </div>
+          {/* 文章正文内容，后端返回的是 HTML */}
+          <div
+            className="prose prose-neutral dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
 
-          {/* 评论区占位 */}
-          <section className="mt-16 border-t pt-8">
-            <h2 className="mb-6 text-xl font-bold">评论</h2>
-            <div className="rounded-lg border bg-muted/30 p-8 text-center text-muted-foreground">
-              评论功能开发中，敬请期待
-            </div>
-          </section>
+          {/* 评论区 */}
+          <CommentSection postId={post.id} />
         </motion.article>
-
-        {/* 文章目录侧边栏 */}
-        <aside className="hidden w-56 shrink-0 lg:block">
-          <div className="sticky top-20">
-            <h3 className="mb-4 text-sm font-semibold text-muted-foreground">
-              目录
-            </h3>
-            <nav className="flex flex-col gap-1">
-              {MOCK_POST.toc.map((item) => (
-                <a
-                  key={item.id}
-                  href={`#${item.id}`}
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-                  style={{ paddingLeft: `${(item.level - 2) * 12}px` }}
-                >
-                  {item.title}
-                </a>
-              ))}
-            </nav>
-          </div>
-        </aside>
       </div>
     </div>
   )

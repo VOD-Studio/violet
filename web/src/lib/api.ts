@@ -118,6 +118,18 @@ function put<T>(endpoint: string, body?: unknown) {
 }
 
 /**
+ * PATCH 请求
+ * @param endpoint - API 路径
+ * @param body - 请求体数据
+ */
+function patch<T>(endpoint: string, body?: unknown) {
+  return request<T>(endpoint, {
+    method: "PATCH",
+    body: body ? JSON.stringify(body) : undefined,
+  })
+}
+
+/**
  * DELETE 请求
  * @param endpoint - API 路径
  */
@@ -126,7 +138,7 @@ function del<T>(endpoint: string) {
 }
 
 /** 导出的 API 客户端对象 */
-export const api = { get, post, put, del }
+export const api = { get, post, put, patch, del }
 
 /** 导出 ApiError 供外部捕获特定错误 */
 export { ApiError }

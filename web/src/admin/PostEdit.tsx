@@ -1,10 +1,14 @@
 /**
  * 文章编辑页面
- * 支持新建和编辑文章，包含标题、内容、标签、封面图、SEO 设置等功能
+ * 支持新建和编辑文章，调用后端 API 保存数据
+ * 包含标题、内容、标签、摘要和 SEO 设置
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router"
+import { api } from "@/lib/api"
+import { useTags, useSavePost } from "@/hooks/useAdmin"
+import type { ApiPost } from "@/hooks/useAdmin"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,60 +22,117 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-/** 可选标签列表 */
-const availableTags = [
-  "React", "TypeScript", "Tailwind", "Vite", "Node.js",
-  "Next.js", "CSS", "JavaScript", "Docker", "Git",
-]
-
 /**
  * 文章编辑页面
- * 包含标题输入、内容编辑、标签选择、封面图上传占位和 SEO 设置
+ * 新建模式下显示空表单，编辑模式下加载现有文章数据
  */
 export default function PostEdit() {
   const navigate = useNavigate()
-  /** 从路由参数中获取文章 ID，新建时不存在 */
+  /** 从路由参数中获取文章 ID */
   const { id } = useParams()
   /** 是否为编辑模式 */
   const isEditing = Boolean(id)
 
-  /** 文章标题 */
+  /** 标签列表（从 API 获取） */
+  const { tags: availableTags, isLoading: tagsLoading } = useTags()
+  /** 文章保存 Hook */
+  const { savePost, isSaving, error: saveError } = useSavePost()
+
+  /* 表单状态 */
   const [title, setTitle] = useState("")
-  /** 文章内容 */
   const [content, setContent] = useState("")
-  /** 已选标签 */
-  const [tags, setTags] = useState<string[]>([])
-  /** SEO 描述 */
+  const [excerpt, setExcerpt] = useState("")
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
   const [seoDescription, setSeoDescription] = useState("")
-  /** SEO 关键词 */
   const [seoKeywords, setSeoKeywords] = useState("")
+  const [pageLoading, setPageLoading] = useState(false)
+  const [pageError, setPageError] = useState<string | null>(null)
+
+  /* 编辑模式下加载文章数据 */
+  useEffect(() => {
+    if (!id) return
+
+    async function loadPost() {
+      try {
+        setPageLoading(true)
+        setPageError(null)
+        const post = await api.get<ApiPost>(`/posts/${id}`)
+        setTitle(post.title)
+        setContent(post.content ?? "")
+        setExcerpt(post.excerpt ?? "")
+        setSelectedTagIds(post.tags?.map((t) => t.id) ?? [])
+        setSeoDescription(post.seoDescription ?? "")
+        setSeoKeywords(post.seoKeywords ?? "")
+      } catch (err) {
+        setPageError(err instanceof Error ? err.message : "加载文章失败")
+      } finally {
+        setPageLoading(false)
+      }
+    }
+
+    loadPost()
+  }, [id])
 
   /**
    * 切换标签的选中状态
-   * @param tag - 标签名称
+   * @param tagId - 标签 ID
    */
-  function toggleTag(tag: string) {
-    setTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+  function toggleTag(tagId: number) {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId)
+        ? prev.filter((t) => t !== tagId)
+        : [...prev, tagId],
     )
   }
 
   /**
-   * 保存文章为草稿
-   * 后续对接 API 时实现实际保存逻辑
+   * 保存文章（草稿或发布）
+   * @param status - 目标状态，draft 为草稿，published 为发布
    */
-  function handleSave() {
-    console.log("保存草稿", { title, content, tags, seoDescription, seoKeywords })
-    navigate("/admin/posts")
+  async function handleSave(status: "draft" | "published" = "draft") {
+    try {
+      await savePost(
+        {
+          title,
+          content,
+          excerpt: excerpt || undefined,
+          status,
+          tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
+          seoDescription: seoDescription || undefined,
+          seoKeywords: seoKeywords || undefined,
+        },
+        isEditing ? Number(id) : undefined,
+      )
+      navigate("/admin/posts")
+    } catch {
+      /* 错误由 useSavePost 处理 */
+    }
   }
 
-  /**
-   * 发布文章
-   * 后续对接 API 时实现实际发布逻辑
-   */
-  function handlePublish() {
-    console.log("发布文章", { title, content, tags, seoDescription, seoKeywords })
-    navigate("/admin/posts")
+  if (pageLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {isEditing ? "编辑文章" : "新建文章"}
+          </h1>
+          <p className="text-muted-foreground">加载中...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (pageError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {isEditing ? "编辑文章" : "新建文章"}
+          </h1>
+          <p className="text-destructive">{pageError}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -90,12 +151,23 @@ export default function PostEdit() {
           <Button variant="outline" onClick={() => navigate("/admin/posts")}>
             取消
           </Button>
-          <Button variant="secondary" onClick={handleSave}>
-            保存草稿
+          <Button
+            variant="secondary"
+            disabled={isSaving}
+            onClick={() => handleSave("draft")}
+          >
+            {isSaving ? "保存中..." : "保存草稿"}
           </Button>
-          <Button onClick={handlePublish}>发布</Button>
+          <Button disabled={isSaving} onClick={() => handleSave("published")}>
+            {isSaving ? "发布中..." : "发布"}
+          </Button>
         </div>
       </div>
+
+      {/* 保存错误提示 */}
+      {saveError && (
+        <p className="text-sm text-destructive">{saveError}</p>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         {/* 左侧主编辑区 */}
@@ -109,6 +181,18 @@ export default function PostEdit() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="text-lg"
+            />
+          </div>
+
+          {/* 摘要输入 */}
+          <div className="space-y-2">
+            <Label htmlFor="excerpt">文章摘要</Label>
+            <Textarea
+              id="excerpt"
+              placeholder="请输入文章摘要（可选）"
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              className="min-h-[80px] resize-y"
             />
           </div>
 
@@ -134,22 +218,31 @@ export default function PostEdit() {
               <CardDescription>选择文章相关标签</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {availableTags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant={tags.includes(tag) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => toggleTag(tag)}
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
+              {tagsLoading ? (
+                <p className="text-sm text-muted-foreground">加载标签中...</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map((tag) => (
+                    <Badge
+                      key={tag.id}
+                      variant={
+                        selectedTagIds.includes(tag.id) ? "default" : "outline"
+                      }
+                      className="cursor-pointer"
+                      onClick={() => toggleTag(tag.id)}
+                    >
+                      {tag.name}
+                    </Badge>
+                  ))}
+                  {availableTags.length === 0 && (
+                    <p className="text-sm text-muted-foreground">暂无可用标签</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* 封面图上传 */}
+          {/* 封面图上传（占位） */}
           <Card>
             <CardHeader>
               <CardTitle>封面图</CardTitle>

@@ -1,10 +1,12 @@
 /**
  * 文章管理页面
- * 展示文章列表，支持状态筛选和增删改操作
+ * 调用 API 获取文章列表，支持状态筛选和增删改操作
  */
 
 import { useState } from "react"
 import { Link } from "react-router"
+import { useAdminPosts } from "@/hooks/useAdmin"
+import type { PostStatus } from "@/hooks/useAdmin"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -23,80 +25,63 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-/** 文章状态类型 */
-type PostStatus = "全部" | "已发布" | "草稿"
-
-/** 文章数据项 */
-interface Post {
-  /** 文章 ID */
-  id: number
-  /** 文章标题 */
-  title: string
-  /** 发布状态 */
-  status: "已发布" | "草稿"
-  /** 浏览量 */
-  views: number
-  /** 发布时间 */
-  publishedAt: string
-}
-
-/** 文章示例数据 */
-const mockPosts: Post[] = [
-  { id: 1, title: "React 19 新特性解析", status: "已发布", views: 12500, publishedAt: "2026-04-28" },
-  { id: 2, title: "TypeScript 6 升级指南", status: "已发布", views: 9800, publishedAt: "2026-04-25" },
-  { id: 3, title: "Tailwind CSS v4 迁移笔记", status: "已发布", views: 8200, publishedAt: "2026-04-20" },
-  { id: 4, title: "Vite 8 构建优化实践", status: "草稿", views: 0, publishedAt: "—" },
-  { id: 5, title: "Next.js vs Remix 深度对比", status: "草稿", views: 0, publishedAt: "—" },
-  { id: 6, title: "Docker 容器化部署教程", status: "已发布", views: 5100, publishedAt: "2026-04-10" },
-  { id: 7, title: "Git 工作流最佳实践", status: "已发布", views: 4300, publishedAt: "2026-04-05" },
+/** 筛选标签配置 */
+const statusFilters: { label: string; value: "all" | PostStatus }[] = [
+  { label: "全部", value: "all" },
+  { label: "已发布", value: "published" },
+  { label: "草稿", value: "draft" },
 ]
 
-/** 状态筛选选项 */
-const statusFilters: PostStatus[] = ["全部", "已发布", "草稿"]
+/**
+ * 将 ISO 日期字符串格式化为简短的本地日期
+ * @param isoString - ISO 格式的日期字符串
+ * @returns 格式化后的日期，如 "2026/4/28"
+ */
+function formatDate(isoString: string | null | undefined): string {
+  if (!isoString) return "—"
+  return new Date(isoString).toLocaleDateString("zh-CN")
+}
 
 /**
  * 文章管理页面
- * 提供文章列表展示、状态筛选和 CRUD 操作
+ * 调用后端 API 获取文章列表，提供筛选、发布切换和删除功能
  */
 export default function Posts() {
-  /** 当前选中的状态筛选 */
-  const [activeFilter, setActiveFilter] = useState<PostStatus>("全部")
+  /** 当前状态筛选 */
+  const [activeFilter, setActiveFilter] = useState<"all" | PostStatus>("all")
+  /** 当前页码 */
+  const [page] = useState(1)
 
-  /** 文章列表数据 */
-  const [posts, setPosts] = useState<Post[]>(mockPosts)
-
-  /**
-   * 根据当前筛选条件过滤文章
-   * @returns 过滤后的文章列表
-   */
-  const filteredPosts = activeFilter === "全部"
-    ? posts
-    : posts.filter((post) => post.status === activeFilter)
+  /** 获取文章列表数据 */
+  const { posts, isLoading, error, toggleStatus, deletePost } = useAdminPosts({
+    page,
+    limit: 20,
+    status: activeFilter === "all" ? undefined : activeFilter,
+  })
 
   /**
    * 切换文章发布状态
    * @param id - 文章 ID
    */
-  function togglePublish(id: number) {
-    setPosts((prev) =>
-      prev.map((post) =>
-        post.id === id
-          ? {
-              ...post,
-              status: post.status === "已发布" ? "草稿" : "已发布",
-              publishedAt: post.status === "草稿" ? new Date().toISOString().split("T")[0] : "—",
-            }
-          : post
-      )
-    )
+  async function handleToggleStatus(id: number) {
+    try {
+      await toggleStatus(id)
+    } catch {
+      /* 错误已由 Hook 处理 */
+    }
   }
 
   /**
-   * 删除文章
+   * 删除文章（带确认提示）
    * @param id - 文章 ID
    */
-  function deletePost(id: number) {
-    setPosts((prev) => prev.filter((post) => post.id !== id))
+  async function handleDelete(id: number) {
+    if (!window.confirm("确定要删除这篇文章吗？此操作不可撤销。")) return
+    try {
+      await deletePost(id)
+    } catch {
+      /* 错误已由 Hook 处理 */
+    }
   }
 
   return (
@@ -116,80 +101,101 @@ export default function Posts() {
       <div className="flex gap-2">
         {statusFilters.map((filter) => (
           <Button
-            key={filter}
-            variant={activeFilter === filter ? "default" : "outline"}
+            key={filter.value}
+            variant={activeFilter === filter.value ? "default" : "outline"}
             size="sm"
-            onClick={() => setActiveFilter(filter)}
+            onClick={() => setActiveFilter(filter.value)}
           >
-            {filter}
+            {filter.label}
           </Button>
         ))}
       </div>
 
+      {/* 加载与错误状态 */}
+      {isLoading && (
+        <p className="text-muted-foreground">加载中...</p>
+      )}
+      {error && <p className="text-destructive">{error}</p>}
+
       {/* 文章列表表格 */}
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>标题</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead className="text-right">浏览量</TableHead>
-              <TableHead>发布时间</TableHead>
-              <TableHead className="text-right">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPosts.length === 0 ? (
+      {!isLoading && (
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  暂无文章数据
-                </TableCell>
+                <TableHead>标题</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead className="text-right">浏览量</TableHead>
+                <TableHead>发布时间</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            ) : (
-              filteredPosts.map((post) => (
-                <TableRow key={post.id}>
-                  <TableCell className="font-medium">{post.title}</TableCell>
-                  <TableCell>
-                    <Badge variant={post.status === "已发布" ? "default" : "secondary"}>
-                      {post.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {post.views.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {post.publishedAt}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-sm">
-                          ···
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link to={`/admin/posts/${post.id}/edit`}>编辑</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => togglePublish(post.id)}>
-                          {post.status === "已发布" ? "取消发布" : "发布"}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => deletePost(post.id)}
-                        >
-                          删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+            </TableHeader>
+            <TableBody>
+              {posts.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    暂无文章数据
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : (
+                posts.map((post) => (
+                  <TableRow key={post.id}>
+                    <TableCell className="font-medium">{post.title}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          post.status === "published" ? "default" : "secondary"
+                        }
+                      >
+                        {post.status === "published" ? "已发布" : "草稿"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {post.views.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(post.publishedAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon-sm">
+                            ···
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link to={`/admin/posts/${post.id}/edit`}>
+                              编辑
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleToggleStatus(post.id)}
+                          >
+                            {post.status === "published"
+                              ? "取消发布"
+                              : "发布"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDelete(post.id)}
+                          >
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   )
 }
