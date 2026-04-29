@@ -1,12 +1,12 @@
 // 前台底部组件
 // 包含版权信息和社交链接
 
-import { Github, Twitter, Mail } from "lucide-react";
+import { GitFork, MessageCircle, Mail } from "lucide-react";
 
 /** 社交链接配置 */
 const SOCIAL_LINKS = [
-  { label: "GitHub", href: "https://github.com", icon: Github },
-  { label: "Twitter", href: "https://twitter.com", icon: Twitter },
+  { label: "GitHub", href: "https://github.com", icon: GitFork },
+  { label: "Twitter", href: "https://twitter.com", icon: MessageCircle },
   { label: "邮箱", href: "mailto:hello@example.com", icon: Mail },
 ] as const;
 
