@@ -1,6 +1,7 @@
 // 认证状态管理 Hook
 // 基于 zustand store 管理认证状态，使用 react-query 的 useMutation 处理登录/注册
 
+import { useEffect } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { useAuthStore } from "@/store"
@@ -45,15 +46,19 @@ export function useAuth() {
   })
 
   /* 查询成功时更新 store 中的用户信息 */
-  if (userQuery.data && !user) {
-    setUser(userQuery.data)
-  }
+  useEffect(() => {
+    if (userQuery.data && !user) {
+      setUser(userQuery.data)
+    }
+  }, [userQuery.data, user, setUser])
 
   /* 查询失败时清除认证状态 */
-  if (userQuery.isError && token) {
-    clearAuth()
-    queryClient.removeQueries({ queryKey: ["auth"] })
-  }
+  useEffect(() => {
+    if (userQuery.isError && token) {
+      clearAuth()
+      queryClient.removeQueries({ queryKey: ["auth"] })
+    }
+  }, [userQuery.isError, token, clearAuth, queryClient])
 
   /**
    * 登录成功后获取用户信息
