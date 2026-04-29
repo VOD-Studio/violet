@@ -84,6 +84,42 @@ type ListPostsResult struct {
 	Limit int
 }
 
+// CreateProjectRequest 创建项目请求
+type CreateProjectRequest struct {
+	// Title 项目标题
+	Title string `json:"title" validate:"required,min=1,max=255"`
+	// Description 项目描述
+	Description string `json:"description"`
+	// URL 项目演示地址
+	URL string `json:"url"`
+	// GithubURL 项目 GitHub 地址
+	GithubURL string `json:"github_url"`
+	// ImageURL 项目封面图
+	ImageURL string `json:"image_url"`
+	// TechStack 技术栈
+	TechStack []string `json:"tech_stack"`
+	// SortOrder 排序权重
+	SortOrder int `json:"sort_order"`
+}
+
+// UpdateProjectRequest 更新项目请求
+type UpdateProjectRequest struct {
+	// Title 项目标题
+	Title string `json:"title"`
+	// Description 项目描述
+	Description string `json:"description"`
+	// URL 项目演示地址
+	URL string `json:"url"`
+	// GithubURL 项目 GitHub 地址
+	GithubURL string `json:"github_url"`
+	// ImageURL 项目封面图
+	ImageURL string `json:"image_url"`
+	// TechStack 技术栈
+	TechStack []string `json:"tech_stack"`
+	// SortOrder 排序权重
+	SortOrder int `json:"sort_order"`
+}
+
 // CreateCommentRequest 创建评论请求
 type CreateCommentRequest struct {
 	// PostID 所属文章 ID

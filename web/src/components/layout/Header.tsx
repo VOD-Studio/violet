@@ -4,10 +4,19 @@
  */
 
 import { useState } from "react"
-import { Link, useLocation } from "react-router"
+import { Link, useLocation, useNavigate } from "react-router"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
 
@@ -28,6 +37,8 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   /** 当前路由路径，用于高亮当前导航项 */
   const location = useLocation()
+  /** 路由导航函数 */
+  const navigate = useNavigate()
   /** 认证状态 */
   const { isAuthenticated, user, logout } = useAuth()
 
@@ -76,19 +87,37 @@ export function Header() {
           ))}
         </nav>
 
-        {/* 桌面端右侧：主题切换 + 登录按钮或用户信息 */}
+        {/* 桌面端右侧：主题切换 + 用户菜单或登录按钮 */}
         <div className="hidden items-center gap-1 md:flex">
           <ThemeToggle />
           {isAuthenticated ? (
-            <div className="flex items-center gap-2">
-              {/* 用户头像和名称 */}
-              <span className="text-sm text-muted-foreground">
-                {user?.username}
-              </span>
-              <Button variant="ghost" size="sm" onClick={logout}>
-                退出
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="relative flex size-8 items-center justify-center rounded-full hover:bg-muted">
+                <Avatar className="size-8">
+                  <AvatarImage src={user?.avatar_url} alt={user?.username} />
+                  <AvatarFallback>
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">{user?.username}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {user?.role === "admin" && (
+                  <DropdownMenuItem onClick={() => navigate("/admin")}>
+                    管理后台
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={logout}>
+                  退出登录
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <Link to="/login">
               <Button variant="outline" size="sm">
@@ -132,17 +161,33 @@ export function Header() {
               </Link>
             ))}
 
-            {/* 移动端登录/退出按钮 */}
+            {/* 移动端登录/用户菜单 */}
             <div className="mt-2 border-t pt-2">
               {isAuthenticated ? (
-                <div className="flex items-center justify-between px-3 py-2">
-                  <span className="text-sm text-muted-foreground">
-                    {user?.username}
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={() => { logout(); closeMobileMenu() }}>
-                    退出
-                  </Button>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-md px-3 py-2 hover:bg-muted">
+                    <Avatar className="size-8">
+                      <AvatarImage src={user?.avatar_url} alt={user?.username} />
+                      <AvatarFallback>
+                        {user?.username?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col items-start">
+                      <p className="text-sm font-medium">{user?.username}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    {user?.role === "admin" && (
+                      <DropdownMenuItem onClick={() => { navigate("/admin"); closeMobileMenu() }}>
+                        管理后台
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => { logout(); closeMobileMenu() }}>
+                      退出登录
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <Link to="/login" onClick={closeMobileMenu}>
                   <Button variant="outline" size="sm" className="w-full">

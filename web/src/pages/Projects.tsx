@@ -17,7 +17,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 function useProjects() {
   return useQuery({
     queryKey: ["projects"],
-    queryFn: () => api.get<ProjectData[]>("/projects"),
+    queryFn: async () => {
+      try {
+        return await api.get<ProjectData[]>("/projects")
+      } catch {
+        return []
+      }
+    },
     placeholderData: [],
   })
 }

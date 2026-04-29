@@ -93,13 +93,13 @@ type Project struct {
 	ID          uuid.UUID      `json:"id"`
 	Title       string         `json:"title"`
 	Description sql.NullString `json:"description"`
-	TechStack   []string       `json:"tech_stack"`
-	RepoUrl     sql.NullString `json:"repo_url"`
-	DemoUrl     sql.NullString `json:"demo_url"`
+	Url         sql.NullString `json:"url"`
+	GithubUrl   sql.NullString `json:"github_url"`
 	ImageUrl    sql.NullString `json:"image_url"`
-	Featured    bool           `json:"featured"`
+	TechStack   []string       `json:"tech_stack"`
 	SortOrder   int32          `json:"sort_order"`
 	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 type SiteSetting struct {

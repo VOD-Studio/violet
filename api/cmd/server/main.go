@@ -72,6 +72,7 @@ func main() {
 	downloadService := service.NewDownloadService(queries)
 	uploadService := service.NewUploadService(queries, mediaService, "uploads/chunks", "uploads", 500*1024*1024)
 	musicService := service.NewMusicService()
+	projectService := service.NewProjectService(queries)
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService)
@@ -85,6 +86,7 @@ func main() {
 	mediaHandler := handler.NewMediaHandler(mediaService, downloadService, "uploads")
 	uploadHandler := handler.NewUploadHandler(uploadService, fmt.Sprintf("http://localhost:%s/uploads", cfg.Port))
 	musicHandler := handler.NewMusicHandler(musicService)
+	projectHandler := handler.NewProjectHandler(projectService)
 
 	// 创建 chi 路由实例
 	r := chi.NewRouter()
@@ -245,6 +247,24 @@ func main() {
 	// 音乐嵌入路由
 	r.Route("/api/music", func(r chi.Router) {
 		r.Get("/embed", musicHandler.GetEmbedInfo) // 解析音乐链接返回嵌入信息
+	})
+
+	// 项目展示路由
+	r.Route("/api/projects", func(r chi.Router) {
+		// 公开接口
+		r.Get("/", projectHandler.List)            // 项目列表
+		r.Get("/{id}", projectHandler.GetByID)     // 项目详情
+	})
+
+	// 项目管理路由，需要认证 + 管理员权限
+	r.Route("/api/admin/projects", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Use(middleware.AdminRequired)
+			r.Post("/", projectHandler.Create)          // 创建项目
+			r.Put("/{id}", projectHandler.Update)       // 更新项目
+			r.Delete("/{id}", projectHandler.Delete)    // 删除项目
+		})
 	})
 
 	// 静态文件服务，提供上传文件的访问

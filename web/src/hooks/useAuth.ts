@@ -6,17 +6,26 @@ import { api } from "@/lib/api"
 import { useAuthStore } from "@/store"
 import type { LoginFormData, RegisterFormData } from "@/lib/validations"
 
-/** 认证响应结构 */
-interface AuthResponse {
-  /** JWT 令牌 */
-  token: string
-  /** 用户信息 */
-  user: {
-    id: string
-    username: string
-    email: string
-    avatar?: string
-  }
+/** 登录响应结构 */
+interface LoginResponse {
+  /** JWT 访问令牌 */
+  access_token: string
+  /** JWT 刷新令牌 */
+  refresh_token: string
+  /** 令牌过期时间（秒） */
+  expires_in: number
+}
+
+/** 用户信息结构 */
+interface UserInfo {
+  id: string
+  username: string
+  email: string
+  avatar_url?: string
+  bio?: string
+  role?: string
+  email_verified?: boolean
+  is_active?: boolean
 }
 
 /**
@@ -27,10 +36,10 @@ export function useAuth() {
   const queryClient = useQueryClient()
   const { token, user, isLoading, setAuth, clearAuth, setLoading, setUser } = useAuthStore()
 
-  /** 查询当前用户信息，仅在有 token 时启用 */
+  /** 查询当前用户信息，仅在有 token 且未加载用户时启用 */
   const userQuery = useQuery({
     queryKey: ["auth", "me"],
-    queryFn: () => api.get<AuthResponse["user"]>("/auth/me"),
+    queryFn: () => api.get<UserInfo>("/auth/me"),
     enabled: !!token && !user,
     retry: false,
   })
@@ -46,26 +55,31 @@ export function useAuth() {
     queryClient.removeQueries({ queryKey: ["auth"] })
   }
 
+  /**
+   * 登录成功后获取用户信息
+   * 登录接口只返回 token，需要额外请求 /auth/me 获取用户数据
+   */
+  async function fetchUserAfterLogin(token: string) {
+    localStorage.setItem("token", token)
+    const userInfo = await api.get<UserInfo>("/auth/me")
+    setAuth(token, userInfo)
+    queryClient.invalidateQueries({ queryKey: ["auth"] })
+  }
+
   /** 登录 mutation */
   const loginMutation = useMutation({
     mutationFn: (data: LoginFormData) =>
-      api.post<AuthResponse>("/auth/login", data),
-    onSuccess: (response) => {
-      setAuth(response.token, response.user)
-      queryClient.invalidateQueries({ queryKey: ["auth"] })
-    },
+      api.post<LoginResponse>("/auth/login", data),
+    onSuccess: (response) => fetchUserAfterLogin(response.access_token),
   })
 
   /** 注册 mutation */
   const registerMutation = useMutation({
     mutationFn: (data: RegisterFormData) => {
       const { confirmPassword: _, ...registerData } = data
-      return api.post<AuthResponse>("/auth/register", registerData)
+      return api.post<LoginResponse>("/auth/register", registerData)
     },
-    onSuccess: (response) => {
-      setAuth(response.token, response.user)
-      queryClient.invalidateQueries({ queryKey: ["auth"] })
-    },
+    onSuccess: (response) => fetchUserAfterLogin(response.access_token),
   })
 
   /** 登出函数 */

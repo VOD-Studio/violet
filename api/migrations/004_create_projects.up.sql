@@ -3,13 +3,13 @@ CREATE TABLE projects (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title       VARCHAR(255) NOT NULL,
     description TEXT,
-    tech_stack  TEXT[],
-    repo_url    TEXT,
-    demo_url    TEXT,
+    url         TEXT,
+    github_url  TEXT,
     image_url   TEXT,
-    featured    BOOLEAN NOT NULL DEFAULT false,
+    tech_stack  TEXT[],
     sort_order  INTEGER NOT NULL DEFAULT 0,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- 站点设置表

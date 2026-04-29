@@ -10,8 +10,11 @@ interface User {
   id: string
   username: string
   email: string
-  avatar?: string
+  avatar_url?: string
+  bio?: string
   role?: string
+  email_verified?: boolean
+  is_active?: boolean
 }
 
 /** 认证状态接口 */
