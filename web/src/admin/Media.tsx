@@ -17,6 +17,7 @@ import FileUploader from "@/components/upload/FileUploader"
 import FilePreview from "@/components/upload/FilePreview"
 import MediaCard from "./MediaCard"
 import type { UploadResult } from "@/components/upload/ChunkedUpload"
+import { getUploadUrl } from "@/lib/api"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -161,7 +162,7 @@ export default function Media() {
           {previewItem && (
             <div className="space-y-4">
               <FilePreview
-                url={`/uploads/${previewItem.filename}`}
+                url={getUploadUrl(previewItem.filename)}
                 mimeType={previewItem.mime_type}
                 name={previewItem.original_name}
                 size={previewItem.size}
@@ -176,7 +177,7 @@ export default function Media() {
                   variant="outline"
                   onClick={() => {
                     const a = document.createElement("a")
-                    a.href = `/uploads/${previewItem.filename}`
+                    a.href = getUploadUrl(previewItem.filename)
                     a.download = previewItem.original_name
                     a.click()
                   }}

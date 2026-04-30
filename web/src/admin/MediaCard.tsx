@@ -7,6 +7,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import type { MediaItem } from "@/hooks/useAdmin"
+import { getUploadUrl } from "@/lib/api"
 import {
   Video,
   Music,
@@ -85,7 +86,8 @@ function VideoThumbnail({
 }) {
   const ext = filename.includes(".") ? filename.split(".").pop() : ""
   const baseName = ext ? filename.slice(0, -(ext.length + 1)) : filename
-  const thumbUrl = `/uploads/${baseName}_thumb.jpg`
+  const thumbUrl = getUploadUrl(`${baseName}_thumb.jpg`)
+  const videoUrl = getUploadUrl(filename)
 
   return (
     <div className="relative size-full">
@@ -102,7 +104,7 @@ function VideoThumbnail({
           video.preload = "metadata"
           video.muted = true
           const source = document.createElement("source")
-          source.src = `/uploads/${filename}`
+          source.src = videoUrl
           source.type = mimeType
           video.appendChild(source)
           parent.replaceChild(video, target)
@@ -119,7 +121,7 @@ function VideoThumbnail({
  * 媒体文件卡片
  */
 export default function MediaCard({ item, onDelete, onPreview }: MediaCardProps) {
-  const fileUrl = `/uploads/${item.filename}`
+  const fileUrl = getUploadUrl(item.filename)
   const isImage = item.mime_type.startsWith("image/")
   const isVideo = item.mime_type.startsWith("video/")
   const FileIcon = getFileIcon(item.mime_type)

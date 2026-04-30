@@ -6,6 +6,18 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios"
 /** API 基础地址，从环境变量读取，默认为本地开发地址 */
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api"
 
+/** 服务器根地址，用于拼接静态资源（如上传文件）的完整 URL */
+const SERVER_ORIGIN = import.meta.env.VITE_SERVER_ORIGIN ?? "http://localhost:8080"
+
+/**
+ * 获取上传文件的完整 URL
+ * @param path - 文件相对路径，如 "uuid.mp4" 或 "uuid_thumb.jpg"
+ * @returns 完整的文件访问地址
+ */
+export function getUploadUrl(path: string): string {
+  return `${SERVER_ORIGIN}/uploads/${path}`
+}
+
 /** API 错误结构 */
 class ApiError extends Error {
   /** HTTP 状态码 */
