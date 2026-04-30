@@ -1,9 +1,19 @@
 // 文件预览组件
-// 支持图片、视频、音频的预览展示
+// 支持图片、视频、音频、PDF 预览，其他文件类型显示图标和下载
 
 import { useEffect, useRef } from "react"
 import Plyr from "plyr"
 import "plyr/dist/plyr.css"
+import { Button } from "@/components/ui/button"
+import {
+  FileText,
+  FileSpreadsheet,
+  Presentation,
+  FileArchive,
+  File,
+  Download,
+  Music,
+} from "lucide-react"
 
 /** 文件预览属性 */
 interface FilePreviewProps {
@@ -23,8 +33,6 @@ interface FilePreviewProps {
 
 /**
  * 格式化文件大小
- * @param bytes - 字节数
- * @returns 格式化后的大小字符串
  */
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B"
@@ -34,10 +42,41 @@ function formatFileSize(bytes: number): string {
 }
 
 /**
- * 视频预览组件
- * 使用 Plyr 播放器
+ * 根据 MIME 类型获取文件图标
  */
-function VideoPlayer({ url, name }: { url: string; name?: string }) {
+function getFileIcon(mimeType: string) {
+  if (mimeType.includes("pdf")) return FileText
+  if (mimeType.includes("word") || mimeType.includes("document")) return FileText
+  if (mimeType.includes("excel") || mimeType.includes("sheet")) return FileSpreadsheet
+  if (mimeType.includes("powerpoint") || mimeType.includes("presentation")) return Presentation
+  if (mimeType.includes("zip") || mimeType.includes("rar") || mimeType.includes("7z") || mimeType.includes("tar") || mimeType.includes("gz")) return FileArchive
+  if (mimeType.startsWith("audio/")) return Music
+  return File
+}
+
+/**
+ * 根据 MIME 类型获取文件类型描述
+ */
+function getFileTypeLabel(mimeType: string): string {
+  if (mimeType.includes("pdf")) return "PDF 文档"
+  if (mimeType.includes("word") || mimeType.includes("document")) return "Word 文档"
+  if (mimeType.includes("excel") || mimeType.includes("sheet")) return "Excel 表格"
+  if (mimeType.includes("powerpoint") || mimeType.includes("presentation")) return "演示文稿"
+  if (mimeType.includes("zip")) return "ZIP 压缩包"
+  if (mimeType.includes("rar")) return "RAR 压缩包"
+  if (mimeType.includes("7z")) return "7Z 压缩包"
+  if (mimeType.includes("tar")) return "TAR 归档"
+  if (mimeType.includes("gz")) return "GZ 压缩包"
+  if (mimeType.startsWith("video/")) return "视频文件"
+  if (mimeType.startsWith("audio/")) return "音频文件"
+  if (mimeType.startsWith("image/")) return "图片文件"
+  return "文件"
+}
+
+/**
+ * 视频预览组件，使用 Plyr 播放器
+ */
+function VideoPlayer({ url, name, mimeType }: { url: string; name?: string; mimeType: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const playerRef = useRef<Plyr | null>(null)
 
@@ -55,10 +94,38 @@ function VideoPlayer({ url, name }: { url: string; name?: string }) {
 
   return (
     <video ref={videoRef} className="w-full rounded-lg" playsInline>
-      <source src={url} type="video/mp4" />
-      <track kind="captions" label="中文字幕" srcLang="zh" default />
+      <source src={url} type={mimeType} />
       {name ?? "视频"}
     </video>
+  )
+}
+
+/**
+ * 不可预览文件的占位展示，显示图标、类型和下载按钮
+ */
+function FilePlaceholder({ url, name, mimeType }: { url: string; name?: string; mimeType: string }) {
+  const Icon = getFileIcon(mimeType)
+  const label = getFileTypeLabel(mimeType)
+
+  function handleDownload() {
+    const a = document.createElement("a")
+    a.href = url
+    a.download = name ?? "download"
+    a.click()
+  }
+
+  return (
+    <div className="flex h-48 flex-col items-center justify-center gap-3 text-muted-foreground">
+      <Icon className="size-12" />
+      <div className="text-center">
+        <p className="text-sm font-medium">{label}</p>
+        {name && <p className="mt-1 max-w-[200px] truncate text-xs">{name}</p>}
+      </div>
+      <Button variant="outline" size="sm" onClick={handleDownload}>
+        <Download className="mr-1.5 size-3.5" />
+        下载文件
+      </Button>
+    </div>
   )
 }
 
@@ -77,6 +144,7 @@ export default function FilePreview({
   const isImage = mimeType.startsWith("image/")
   const isVideo = mimeType.startsWith("video/")
   const isAudio = mimeType.startsWith("audio/")
+  const isPDF = mimeType.includes("pdf")
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -89,7 +157,7 @@ export default function FilePreview({
             className="max-h-[400px] w-full object-contain"
           />
         )}
-        {isVideo && <VideoPlayer url={url} name={name} />}
+        {isVideo && <VideoPlayer url={url} name={name} mimeType={mimeType} />}
         {isAudio && (
           <div className="p-4">
             <audio controls className="w-full">
@@ -98,10 +166,15 @@ export default function FilePreview({
             </audio>
           </div>
         )}
-        {!isImage && !isVideo && !isAudio && (
-          <div className="flex h-32 items-center justify-center text-muted-foreground">
-            不支持预览此文件类型
-          </div>
+        {isPDF && (
+          <iframe
+            src={url}
+            title={name ?? "PDF 预览"}
+            className="h-[500px] w-full"
+          />
+        )}
+        {!isImage && !isVideo && !isAudio && !isPDF && (
+          <FilePlaceholder url={url} name={name} mimeType={mimeType} />
         )}
       </div>
 

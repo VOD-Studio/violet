@@ -14,7 +14,6 @@ import { KineticText, ScrollReveal } from "@/components/creative"
 import { SEO } from "@/components/shared/SEO"
 import { StructuredData } from "@/components/shared/StructuredData"
 import {
-  generatePostSEO,
   generateStructuredData,
   generateBreadcrumbStructuredData,
   SITE_CONFIG,
@@ -212,14 +211,13 @@ export default function BlogPost() {
           </Button>
         </Link>
         <div className="py-12 text-center text-muted-foreground">
-          {error ?? "文章不存在"}
+          {error ? String(error) : "文章不存在"}
         </div>
       </div>
     )
   }
 
-  /* 生成文章 SEO 数据 */
-  const seoConfig = generatePostSEO(post)
+  /* 生成文章结构化数据 */
   const blogPostingData = generateStructuredData(post)
 
   /* 面包屑结构化数据 */

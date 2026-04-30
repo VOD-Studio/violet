@@ -1,8 +1,7 @@
 // 确认弹窗组件
 // 用于删除等危险操作的二次确认
 
-import { useState, useEffect, useCallback } from "react"
-import { cn } from "@/lib/utils"
+import { useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 
 /** 确认弹窗属性 */

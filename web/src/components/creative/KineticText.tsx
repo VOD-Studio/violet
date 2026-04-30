@@ -1,7 +1,6 @@
 // 动态文字组件
 // 逐字符或逐词入场动画，支持交错延迟效果
 
-import { type ReactNode } from "react"
 import { motion, type Variants } from "motion/react"
 import { useReducedMotion } from "@/hooks/useReducedMotion"
 

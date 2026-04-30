@@ -4,6 +4,7 @@
  * 无 mock 数据，API 不存在时显示空状态
  */
 
+import { useState } from "react"
 import { useAdminUsers, useUpdateUserRole, useToggleUserStatus } from "@/hooks/useAdmin"
 import type { AdminUser } from "@/hooks/useAdmin"
 import { Button } from "@/components/ui/button"
@@ -13,9 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState } from "@/components/shared/EmptyState"
 import { ErrorFallback } from "@/components/shared/ErrorFallback"
 import { Skeleton } from "@/components/ui/skeleton"
-
-/** 可选角色列表 */
-const roleOptions = ["管理员", "编辑", "作者", "读者"]
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 
 /**
  * 用户列表表格骨架屏
@@ -60,19 +59,39 @@ export default function Users() {
   const updateRole = useUpdateUserRole()
   const toggleStatus = useToggleUserStatus()
 
+  /** 确认弹窗状态 */
+  const [confirmState, setConfirmState] = useState<{
+    open: boolean
+    userId: string
+    userName: string
+    newStatus: boolean
+  }>({ open: false, userId: "", userName: "", newStatus: false })
+
   /**
    * 修改用户角色
    */
-  function changeRole(userId: number, newRole: string) {
+  function changeRole(userId: string, newRole: string) {
     updateRole.mutate({ id: userId, role: newRole })
   }
 
   /**
-   * 切换用户启用/禁用状态
+   * 弹出确认弹窗
    */
-  function handleToggleStatus(userId: number, currentStatus: string) {
-    const newStatus = currentStatus === "启用" ? "禁用" : "启用"
-    toggleStatus.mutate({ id: userId, status: newStatus })
+  function handleToggleStatus(userId: string, userName: string, currentActive: boolean) {
+    setConfirmState({
+      open: true,
+      userId,
+      userName,
+      newStatus: !currentActive,
+    })
+  }
+
+  /**
+   * 确认切换状态
+   */
+  function confirmToggleStatus() {
+    toggleStatus.mutate({ id: confirmState.userId, is_active: confirmState.newStatus })
+    setConfirmState({ open: false, userId: "", userName: "", newStatus: false })
   }
 
   return (
@@ -126,35 +145,32 @@ export default function Users() {
                   <TableCell>
                     <Select
                       value={user.role}
-                      onValueChange={(value) => changeRole(user.id, value)}
+                      onValueChange={(value) => value && changeRole(user.id, value)}
                     >
                       <SelectTrigger className="w-24">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {roleOptions.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {role}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="admin">管理员</SelectItem>
+                        <SelectItem value="user">用户</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.status === "启用" ? "default" : "secondary"}>
-                      {user.status}
+                    <Badge variant={user.is_active ? "default" : "secondary"}>
+                      {user.is_active ? "启用" : "禁用"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {new Date(user.createdAt).toLocaleDateString("zh-CN")}
+                    {new Date(user.created_at).toLocaleDateString("zh-CN")}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
-                      variant={user.status === "启用" ? "destructive" : "default"}
+                      variant={user.is_active ? "destructive" : "default"}
                       size="sm"
-                      onClick={() => handleToggleStatus(user.id, user.status)}
+                      onClick={() => handleToggleStatus(user.id, user.username, user.is_active)}
                     >
-                      {user.status === "启用" ? "禁用" : "启用"}
+                      {user.is_active ? "禁用" : "启用"}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -163,6 +179,21 @@ export default function Users() {
           </Table>
         </div>
       )}
+
+      {/* 确认切换状态弹窗 */}
+      <ConfirmDialog
+        open={confirmState.open}
+        onClose={() => setConfirmState({ open: false, userId: "", userName: "", newStatus: false })}
+        onConfirm={confirmToggleStatus}
+        title={confirmState.newStatus ? "启用用户" : "禁用用户"}
+        description={
+          confirmState.newStatus
+            ? `确定要启用用户「${confirmState.userName}」吗？`
+            : `确定要禁用用户「${confirmState.userName}」吗？禁用后该用户将无法登录。`
+        }
+        confirmLabel={confirmState.newStatus ? "启用" : "禁用"}
+        destructive={!confirmState.newStatus}
+      />
     </div>
   )
 }

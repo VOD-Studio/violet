@@ -4,7 +4,6 @@
 import { useState, useCallback } from "react"
 import { useDropzone } from "react-dropzone"
 import { uploadFile, type UploadResult } from "./ChunkedUpload"
-import FilePreview from "./FilePreview"
 import { Button } from "@/components/ui/button"
 import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
@@ -41,8 +40,18 @@ interface FileUploaderProps {
 /** 默认接受的文件类型 */
 const defaultAccept: Record<string, string[]> = {
   "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"],
-  "video/*": [".mp4", ".webm", ".ogg"],
-  "audio/*": [".mp3", ".wav", ".ogg", ".flac"],
+  "video/*": [".mp4", ".webm", ".mov", ".avi", ".mkv"],
+  "audio/*": [".mp3", ".wav", ".ogg", ".flac", ".aac"],
+  "application/pdf": [".pdf"],
+  "application/msword": [".doc"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+  "application/vnd.ms-excel": [".xls"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+  "application/vnd.ms-powerpoint": [".ppt"],
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+  "application/zip": [".zip"],
+  "application/vnd.rar": [".rar"],
+  "application/x-7z-compressed": [".7z"],
 }
 
 /**
@@ -59,7 +68,7 @@ function generateId(): string {
 export default function FileUploader({
   onUpload,
   accept = defaultAccept,
-  maxSize = 100 * 1024 * 1024,
+  maxSize = 1024 * 1024 * 1024,
   multiple = true,
   className = "",
 }: FileUploaderProps) {
@@ -156,7 +165,7 @@ export default function FileUploader({
               拖拽文件到此处，或点击选择文件
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              支持图片、视频、音频文件
+              支持图片、视频、音频、文档等文件，最大 1GB
             </p>
           </div>
         )}
@@ -226,25 +235,6 @@ export default function FileUploader({
         </div>
       )}
 
-      {/* 上传完成的文件预览 */}
-      {items.some((i) => i.status === "done" && i.result) && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">已上传文件</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {items
-              .filter((i) => i.status === "done" && i.result)
-              .map((item) => (
-                <FilePreview
-                  key={item.id}
-                  url={item.result!.url}
-                  mimeType={item.file.type}
-                  name={item.file.name}
-                  size={item.file.size}
-                />
-              ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -9,7 +9,6 @@ import { ProjectCard, type ProjectData } from "@/components/blog/ProjectCard"
 import { CodeSandbox, type SandboxFile } from "@/components/blog/CodeSandbox"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { ErrorFallback } from "@/components/shared/ErrorFallback"
-import { Skeleton } from "@/components/ui/skeleton"
 
 /**
  * 从 API 获取项目列表

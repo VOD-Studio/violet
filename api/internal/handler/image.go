@@ -43,7 +43,7 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 
 	// 解析 multipart 表单
 	if err := r.ParseMultipartForm(h.maxFileSize); err != nil {
-		writeError(w, http.StatusBadRequest, "file_too_large", fmt.Sprintf("文件大小不能超过 %d MB", h.maxFileSize/1024/1024))
+		writeError(w, http.StatusBadRequest, "file_too_large", fmt.Sprintf("文件大小不能超过 %d GB", h.maxFileSize/1024/1024/1024))
 		return
 	}
 
@@ -63,14 +63,39 @@ func (h *ImageHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	allowedExts := map[string]bool{
+		// 图片格式
 		".jpg":  true,
 		".jpeg": true,
 		".png":  true,
 		".gif":  true,
 		".webp": true,
+		".svg":  true,
+		// 视频格式
+		".mp4":  true,
+		".webm": true,
+		".mov":  true,
+		".avi":  true,
+		".mkv":  true,
+		// 音频格式
+		".mp3":  true,
+		".wav":  true,
+		".ogg":  true,
+		".flac": true,
+		".aac":  true,
+		// 文档格式
+		".pdf":  true,
+		".doc":  true,
+		".docx": true,
+		".xls":  true,
+		".xlsx": true,
+		".ppt":  true,
+		".pptx": true,
+		".zip":  true,
+		".rar":  true,
+		".7z":   true,
 	}
 	if !allowedExts[ext] {
-		writeError(w, http.StatusBadRequest, "invalid_type", "不支持的图片格式，仅支持 jpg/jpeg/png/gif/webp")
+		writeError(w, http.StatusBadRequest, "invalid_type", "不支持的文件格式")
 		return
 	}
 
@@ -174,6 +199,7 @@ func (h *ImageHandler) Delete(w http.ResponseWriter, r *http.Request) {
 // detectMimeType 根据文件扩展名推断 MIME 类型
 func detectMimeType(ext string) string {
 	switch ext {
+	// 图片
 	case ".jpg", ".jpeg":
 		return "image/jpeg"
 	case ".png":
@@ -182,6 +208,51 @@ func detectMimeType(ext string) string {
 		return "image/gif"
 	case ".webp":
 		return "image/webp"
+	case ".svg":
+		return "image/svg+xml"
+	// 视频
+	case ".mp4":
+		return "video/mp4"
+	case ".webm":
+		return "video/webm"
+	case ".mov":
+		return "video/quicktime"
+	case ".avi":
+		return "video/x-msvideo"
+	case ".mkv":
+		return "video/x-matroska"
+	// 音频
+	case ".mp3":
+		return "audio/mpeg"
+	case ".wav":
+		return "audio/wav"
+	case ".ogg":
+		return "audio/ogg"
+	case ".flac":
+		return "audio/flac"
+	case ".aac":
+		return "audio/aac"
+	// 文档
+	case ".pdf":
+		return "application/pdf"
+	case ".doc":
+		return "application/msword"
+	case ".docx":
+		return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	case ".xls":
+		return "application/vnd.ms-excel"
+	case ".xlsx":
+		return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	case ".ppt":
+		return "application/vnd.ms-powerpoint"
+	case ".pptx":
+		return "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+	case ".zip":
+		return "application/zip"
+	case ".rar":
+		return "application/vnd.rar"
+	case ".7z":
+		return "application/x-7z-compressed"
 	default:
 		return "application/octet-stream"
 	}

@@ -117,7 +117,7 @@ export default function Home() {
         {/* 错误提示 */}
         {error && (
           <div className="py-12 text-center text-muted-foreground">
-            {error}
+            {String(error)}
           </div>
         )}
 

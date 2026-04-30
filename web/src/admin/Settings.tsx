@@ -1,7 +1,6 @@
 /**
  * 站点设置页面
- * 从 API 获取和保存站点设置，包含站点信息、评论设置和 SEO 配置
- * API 不存在时使用默认值
+ * 从 API 获取和保存站点设置，包含站点信息、评论设置和 GitHub 配置
  */
 
 import { useState, useEffect } from "react"
@@ -12,7 +11,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ErrorFallback } from "@/components/shared/ErrorFallback"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/shared/Toast"
@@ -45,17 +43,17 @@ function SettingsSkeleton() {
 
 /**
  * 站点设置页面
- * 管理站点基本信息、评论策略和全局 SEO 默认值
+ * 管理站点基本信息、评论策略和 GitHub 配置
  */
 export default function Settings() {
   const { data: settings, isLoading, error, refetch } = useSiteSettings()
   const saveMutation = useSaveSettings()
   const { toast } = useToast()
 
-  /* 表单状态 */
+  /** 表单状态 */
   const [form, setForm] = useState<Partial<SiteSettingsType>>({})
 
-  /* 从 API 数据初始化表单 */
+  /** 从 API 数据初始化表单 */
   useEffect(() => {
     if (settings) {
       setForm(settings)
@@ -65,7 +63,7 @@ export default function Settings() {
   /**
    * 更新表单字段
    */
-  function updateField(key: keyof SiteSettingsType, value: string | boolean) {
+  function updateField(key: keyof SiteSettingsType, value: string | boolean | number) {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -131,8 +129,8 @@ export default function Settings() {
               <Label htmlFor="site-name">站点名称</Label>
               <Input
                 id="site-name"
-                value={form.siteName ?? ""}
-                onChange={(e) => updateField("siteName", e.target.value)}
+                value={form.site_name ?? ""}
+                onChange={(e) => updateField("site_name", e.target.value)}
                 placeholder="请输入站点名称"
               />
             </div>
@@ -140,19 +138,29 @@ export default function Settings() {
               <Label htmlFor="site-description">站点描述</Label>
               <Textarea
                 id="site-description"
-                value={form.siteDescription ?? ""}
-                onChange={(e) => updateField("siteDescription", e.target.value)}
+                value={form.site_description ?? ""}
+                onChange={(e) => updateField("site_description", e.target.value)}
                 placeholder="请输入站点描述"
                 className="min-h-[80px]"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="site-logo">站点 Logo URL</Label>
+              <Label htmlFor="site-url">站点 URL</Label>
               <Input
-                id="site-logo"
-                value={form.siteLogo ?? ""}
-                onChange={(e) => updateField("siteLogo", e.target.value)}
-                placeholder="请输入 Logo 图片地址"
+                id="site-url"
+                value={form.site_url ?? ""}
+                onChange={(e) => updateField("site_url", e.target.value)}
+                placeholder="https://example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-email">管理员邮箱</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={form.admin_email ?? ""}
+                onChange={(e) => updateField("admin_email", e.target.value)}
+                placeholder="admin@example.com"
               />
             </div>
           </CardContent>
@@ -165,77 +173,80 @@ export default function Settings() {
             <CardDescription>配置评论审核和展示策略</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>评论审核策略</Label>
-              <Select
-                value={form.commentPolicy ?? "manual"}
-                onValueChange={(value) => updateField("commentPolicy", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="manual">手动审核</SelectItem>
-                  <SelectItem value="auto">自动通过</SelectItem>
-                  <SelectItem value="first">首条评论需审核</SelectItem>
-                  <SelectItem value="disabled">关闭评论</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                手动审核：所有评论需要管理员批准后才会显示
-              </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="comments-enabled"
+                checked={form.comments_enabled ?? true}
+                onChange={(e) => updateField("comments_enabled", e.target.checked)}
+                className="size-4 rounded border"
+              />
+              <Label htmlFor="comments-enabled" className="cursor-pointer">
+                启用评论功能
+              </Label>
             </div>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                id="allow-anonymous"
-                checked={form.allowAnonymous ?? false}
-                onChange={(e) => updateField("allowAnonymous", e.target.checked)}
+                id="comments-moderation"
+                checked={form.comments_moderation ?? true}
+                onChange={(e) => updateField("comments_moderation", e.target.checked)}
                 className="size-4 rounded border"
               />
-              <Label htmlFor="allow-anonymous" className="cursor-pointer">
-                允许匿名评论
+              <Label htmlFor="comments-moderation" className="cursor-pointer">
+                评论需要审核
               </Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="posts-per-page">每页文章数</Label>
+              <Input
+                id="posts-per-page"
+                type="number"
+                min="1"
+                max="50"
+                value={form.posts_per_page ?? 10}
+                onChange={(e) => updateField("posts_per_page", parseInt(e.target.value) || 10)}
+              />
             </div>
           </CardContent>
         </Card>
 
-        {/* SEO 默认设置 */}
+        {/* GitHub 配置 */}
         <Card>
           <CardHeader>
-            <CardTitle>SEO 默认设置</CardTitle>
-            <CardDescription>配置全局 SEO 默认值</CardDescription>
+            <CardTitle>GitHub 配置</CardTitle>
+            <CardDescription>配置 GitHub 用户名，用于展示贡献热力图和置顶仓库</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="seo-title-suffix">标题后缀</Label>
+              <Label htmlFor="github-username">GitHub 用户名</Label>
               <Input
-                id="seo-title-suffix"
-                value={form.seoTitleSuffix ?? ""}
-                onChange={(e) => updateField("seoTitleSuffix", e.target.value)}
-                placeholder="例如: | 我的博客"
+                id="github-username"
+                value={form.github_username ?? ""}
+                onChange={(e) => updateField("github_username", e.target.value)}
+                placeholder="请输入 GitHub 用户名"
               />
               <p className="text-xs text-muted-foreground">
-                会自动追加到每个页面标题后面
+                设置后将在关于页展示 GitHub 贡献热力图和置顶仓库
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 页脚设置 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>页脚设置</CardTitle>
+            <CardDescription>配置页面底部展示内容</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="seo-default-description">默认描述</Label>
-              <Textarea
-                id="seo-default-description"
-                value={form.seoDefaultDescription ?? ""}
-                onChange={(e) => updateField("seoDefaultDescription", e.target.value)}
-                placeholder="当页面没有单独设置描述时使用的默认内容"
-                className="min-h-[80px]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="seo-default-keywords">默认关键词</Label>
+              <Label htmlFor="footer-text">页脚文字</Label>
               <Input
-                id="seo-default-keywords"
-                value={form.seoDefaultKeywords ?? ""}
-                onChange={(e) => updateField("seoDefaultKeywords", e.target.value)}
-                placeholder="多个关键词用英文逗号分隔"
+                id="footer-text"
+                value={form.footer_text ?? ""}
+                onChange={(e) => updateField("footer_text", e.target.value)}
+                placeholder="© 2026 My Blog"
               />
             </div>
           </CardContent>

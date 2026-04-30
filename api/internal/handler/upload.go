@@ -84,6 +84,9 @@ func (h *UploadHandler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 	uploadID := r.FormValue("upload_id")
 	chunkIndexStr := r.FormValue("chunk_index")
 	totalChunksStr := r.FormValue("total_chunks")
+	fileHash := r.FormValue("file_hash")
+	filename := r.FormValue("filename")
+	mimeType := r.FormValue("mime_type")
 
 	if uploadID == "" || chunkIndexStr == "" || totalChunksStr == "" {
 		writeError(w, http.StatusBadRequest, "validation_error", "缺少必填参数")
@@ -109,7 +112,7 @@ func (h *UploadHandler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	if err := h.uploadService.UploadChunk(r.Context(), uploadID, int32(chunkIndex), int32(totalChunks), "", "", "", file); err != nil {
+	if err := h.uploadService.UploadChunk(r.Context(), uploadID, int32(chunkIndex), int32(totalChunks), fileHash, filename, mimeType, file); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "上传分片失败")
 		return
 	}

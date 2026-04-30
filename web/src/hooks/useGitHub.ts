@@ -6,8 +6,6 @@ import { useQuery } from "@tanstack/react-query"
 import {
   fetchGitHubContributions,
   fetchGitHubRepos,
-  type ContributionData,
-  type RepoData,
 } from "@/lib/github"
 
 /**

@@ -126,7 +126,7 @@ export default function BlogList() {
 
       {/* 错误提示 */}
       {error && (
-        <div className="py-12 text-center text-muted-foreground">{error}</div>
+        <div className="py-12 text-center text-muted-foreground">{String(error)}</div>
       )}
 
       {/* 文章卡片网格 */}

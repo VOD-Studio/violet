@@ -33,12 +33,17 @@ const client = axios.create({
 /**
  * 请求拦截器
  * 自动从 localStorage 读取 JWT 令牌并附加到请求头
+ * FormData 请求自动移除 Content-Type，让浏览器自动设置 boundary
  */
 client.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem("token")
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+    // FormData 请求需要浏览器自动设置 Content-Type（包含 boundary）
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"]
     }
     return config
   },

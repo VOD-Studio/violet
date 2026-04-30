@@ -70,7 +70,7 @@ func main() {
 	imageService := service.NewImageService(queries, "uploads", fmt.Sprintf("http://localhost:%s/uploads", cfg.Port))
 	mediaService := service.NewMediaService(queries, "uploads")
 	downloadService := service.NewDownloadService(queries)
-	uploadService := service.NewUploadService(queries, mediaService, "uploads/chunks", "uploads", 500*1024*1024)
+	uploadService := service.NewUploadService(queries, mediaService, "uploads/chunks", "uploads", 1024*1024*1024)
 	musicService := service.NewMusicService()
 	projectService := service.NewProjectService(queries)
 
@@ -82,7 +82,7 @@ func main() {
 	adminHandler := handler.NewAdminHandler(statsService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
 	userMgmtHandler := handler.NewUserManagementHandler(userService)
-	imageHandler := handler.NewImageHandler(imageService, "uploads", 10*1024*1024)
+	imageHandler := handler.NewImageHandler(imageService, "uploads", 1024*1024*1024)
 	mediaHandler := handler.NewMediaHandler(mediaService, downloadService, "uploads")
 	uploadHandler := handler.NewUploadHandler(uploadService, fmt.Sprintf("http://localhost:%s/uploads", cfg.Port))
 	musicHandler := handler.NewMusicHandler(musicService)

@@ -36,16 +36,17 @@ interface ApiTag {
 
 /** 评论结构 */
 interface ApiComment {
-  id: number
-  authorName: string
-  content: string
+  id: string
+  post_id: string
+  parent_id?: string
+  author_name: string
+  author_email?: string
+  author_url?: string
+  avatar_url?: string
+  body_html: string
   status: "pending" | "approved" | "spam"
-  post?: {
-    id: number
-    title: string
-    slug: string
-  }
-  createdAt: string
+  created_at: string
+  children?: ApiComment[]
 }
 
 /** 文章列表查询参数 */
@@ -192,11 +193,15 @@ export function useDeleteAdminPost() {
 
 /**
  * 获取待审核评论列表
+ * API 返回 { comments: [...], total, page, page_size } 格式
  */
 export function useAdminComments() {
   return useQuery({
     queryKey: ["admin", "comments", "pending"],
-    queryFn: () => api.get<ApiComment[]>("/admin/comments/pending"),
+    queryFn: async () => {
+      const res = await api.get<{ comments: ApiComment[] }>("/admin/comments/pending")
+      return res.comments ?? []
+    },
   })
 }
 
@@ -207,7 +212,7 @@ export function useAdminCommentActions() {
   const queryClient = useQueryClient()
 
   const approve = useMutation({
-    mutationFn: (id: number) =>
+    mutationFn: (id: string) =>
       api.patch(`/comments/${id}/status`, { status: "approved" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "comments"] })
@@ -215,7 +220,7 @@ export function useAdminCommentActions() {
   })
 
   const markSpam = useMutation({
-    mutationFn: (id: number) =>
+    mutationFn: (id: string) =>
       api.patch(`/comments/${id}/status`, { status: "spam" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "comments"] })
@@ -223,7 +228,7 @@ export function useAdminCommentActions() {
   })
 
   const deleteComment = useMutation({
-    mutationFn: (id: number) => api.del(`/comments/${id}`),
+    mutationFn: (id: string) => api.del(`/comments/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "comments"] })
     },
@@ -275,21 +280,33 @@ export function useSavePost() {
 
 /** 用户数据结构 */
 interface AdminUser {
-  id: number
+  /** 用户唯一标识 */
+  id: string
+  /** 用户名 */
   username: string
+  /** 邮箱 */
   email: string
+  /** 角色：admin / user */
   role: string
-  status: string
-  createdAt: string
+  /** 是否启用 */
+  is_active: boolean
+  /** 邮箱是否已验证 */
+  email_verified: boolean
+  /** 注册时间 */
+  created_at: string
 }
 
 /**
  * 获取用户列表
+ * API 返回 { users: [...], total, page, limit } 格式
  */
 export function useAdminUsers() {
   return useQuery({
     queryKey: ["admin", "users"],
-    queryFn: () => api.get<AdminUser[]>("/admin/users"),
+    queryFn: async () => {
+      const res = await api.get<{ users: AdminUser[] }>("/admin/users")
+      return res.users ?? []
+    },
     placeholderData: [],
   })
 }
@@ -301,7 +318,7 @@ export function useUpdateUserRole() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, role }: { id: number; role: string }) =>
+    mutationFn: ({ id, role }: { id: string; role: string }) =>
       api.patch(`/admin/users/${id}/role`, { role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] })
@@ -316,8 +333,8 @@ export function useToggleUserStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) =>
-      api.patch(`/admin/users/${id}/status`, { status }),
+    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
+      api.patch(`/admin/users/${id}/status`, { is_active }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] })
     },
@@ -328,22 +345,43 @@ export function useToggleUserStatus() {
 
 /** 媒体文件数据结构 */
 interface MediaItem {
-  id: number
-  name: string
-  url: string
-  thumbnail: string
+  /** 媒体文件唯一标识 */
+  id: string
+  /** 存储文件名 */
+  filename: string
+  /** 原始文件名 */
+  original_name: string
+  /** MIME 类型 */
+  mime_type: string
+  /** 文件大小（字节） */
   size: number
-  mimeType: string
-  createdAt: string
+  /** 文件路径 */
+  path: string
+  /** 图片宽度 */
+  width?: number
+  /** 图片高度 */
+  height?: number
+  /** 音视频时长 */
+  duration?: number
+  /** 下载次数 */
+  download_count: number
+  /** 下载权限 */
+  download_permission: string
+  /** 创建时间 */
+  created_at: string
 }
 
 /**
  * 获取媒体文件列表
+ * API 返回 { media: [...], total, page, limit } 格式
  */
 export function useAdminMedia() {
   return useQuery({
     queryKey: ["admin", "media"],
-    queryFn: () => api.get<MediaItem[]>("/images"),
+    queryFn: async () => {
+      const res = await api.get<{ media: MediaItem[] }>("/media")
+      return res.media ?? []
+    },
     placeholderData: [],
   })
 }
@@ -355,7 +393,7 @@ export function useDeleteMedia() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: number) => api.del(`/images/${id}`),
+    mutationFn: (id: string) => api.del(`/media/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "media"] })
     },

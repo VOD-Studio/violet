@@ -6,35 +6,35 @@ import { api } from "@/lib/api"
 /** 分片大小：5MB */
 const CHUNK_SIZE = 5 * 1024 * 1024
 
-/** 上传状态 */
-interface UploadState {
-  /** 文件唯一标识 */
-  fileHash: string
-  /** 已上传的分片索引列表 */
-  uploadedChunks: number[]
-  /** 总分片数 */
-  totalChunks: number
-}
-
 /** 上传结果 */
 interface UploadResult {
   url: string
-  id: number
+  id: string
   name: string
+}
+
+/** 初始化上传响应 */
+interface InitUploadResponse {
+  upload_id: string
+  total_chunks: number
 }
 
 /** 秒传检查响应 */
 interface CheckExistResponse {
   exists: boolean
+  media_id?: string
   url?: string
-  id?: number
+}
+
+/** 合并上传响应 */
+interface CompleteUploadResponse {
+  media_id: string
+  url: string
 }
 
 /**
  * 计算文件 hash 使用 Web Crypto API
  * 通过读取文件头部和尾部数据生成指纹
- * @param file - 文件对象
- * @returns 文件 hash 字符串
  */
 export async function computeFileHash(file: File): Promise<string> {
   const sampleSize = 64 * 1024
@@ -70,8 +70,6 @@ export async function computeFileHash(file: File): Promise<string> {
 
 /**
  * 将文件切分为分片
- * @param file - 文件对象
- * @returns 分片数组
  */
 function createChunks(file: File): Blob[] {
   const chunks: Blob[] = []
@@ -86,8 +84,6 @@ function createChunks(file: File): Blob[] {
 
 /**
  * 从 localStorage 获取已上传分片记录
- * @param fileHash - 文件 hash
- * @returns 已上传的分片索引列表
  */
 function getUploadedChunks(fileHash: string): number[] {
   try {
@@ -100,8 +96,6 @@ function getUploadedChunks(fileHash: string): number[] {
 
 /**
  * 保存已上传分片记录到 localStorage
- * @param fileHash - 文件 hash
- * @param chunks - 已上传的分片索引列表
  */
 function saveUploadedChunks(fileHash: string, chunks: number[]): void {
   localStorage.setItem(`upload_${fileHash}`, JSON.stringify(chunks))
@@ -109,7 +103,6 @@ function saveUploadedChunks(fileHash: string, chunks: number[]): void {
 
 /**
  * 清除已上传分片记录
- * @param fileHash - 文件 hash
  */
 function clearUploadState(fileHash: string): void {
   localStorage.removeItem(`upload_${fileHash}`)
@@ -129,9 +122,7 @@ export async function uploadFile(
 
   // 秒传检查
   const checkResult = await api.post<CheckExistResponse>("/upload/check", {
-    hash: fileHash,
-    name: file.name,
-    size: file.size,
+    file_hash: fileHash,
   })
 
   if (checkResult.exists && checkResult.url) {
@@ -139,54 +130,66 @@ export async function uploadFile(
     clearUploadState(fileHash)
     return {
       url: checkResult.url,
-      id: checkResult.id ?? 0,
+      id: checkResult.media_id ?? "",
       name: file.name,
     }
   }
 
+  // 初始化上传，获取 upload_id
+  const initResult = await api.post<InitUploadResponse>("/upload/init", {
+    filename: file.name,
+    total_size: file.size,
+    chunk_size: CHUNK_SIZE,
+    file_hash: fileHash,
+  })
+
+  const { upload_id, total_chunks } = initResult
+
   // 创建分片
   const chunks = createChunks(file)
-  const totalChunks = chunks.length
 
   // 获取断点续传状态
   let uploadedChunks = getUploadedChunks(fileHash)
 
   // 上传每个分片
-  for (let i = 0; i < totalChunks; i++) {
+  for (let i = 0; i < total_chunks; i++) {
     if (uploadedChunks.includes(i)) {
-      onProgress?.(Math.round(((i + 1) / totalChunks) * 100))
+      onProgress?.(Math.round(((i + 1) / total_chunks) * 100))
       continue
     }
 
     const formData = new FormData()
     formData.append("chunk", chunks[i])
-    formData.append("hash", fileHash)
-    formData.append("index", String(i))
-    formData.append("total", String(totalChunks))
-    formData.append("name", file.name)
+    formData.append("upload_id", upload_id)
+    formData.append("chunk_index", String(i))
+    formData.append("total_chunks", String(total_chunks))
+    formData.append("file_hash", fileHash)
+    formData.append("filename", file.name)
+    formData.append("mime_type", file.type || "application/octet-stream")
+    formData.append("total_chunks", String(total_chunks))
 
-    await api.post<{ success: boolean }>("/upload/chunk", formData)
+    await api.post<{ message: string }>("/upload/chunk", formData)
 
     uploadedChunks.push(i)
     saveUploadedChunks(fileHash, uploadedChunks)
-    onProgress?.(Math.round(((i + 1) / totalChunks) * 100))
+    onProgress?.(Math.round(((i + 1) / total_chunks) * 100))
   }
 
   // 合并分片
-  const result = await api.post<UploadResult>("/upload/merge", {
-    hash: fileHash,
-    name: file.name,
-    total: totalChunks,
-    size: file.size,
-    mimeType: file.type,
+  const result = await api.post<CompleteUploadResponse>("/upload/complete", {
+    upload_id,
   })
 
   // 清除断点续传状态
   clearUploadState(fileHash)
 
-  return result
+  return {
+    url: result.url,
+    id: result.media_id,
+    name: file.name,
+  }
 }
 
 /** 导出类型 */
-export type { UploadResult, UploadState }
+export type { UploadResult }
 export { CHUNK_SIZE }

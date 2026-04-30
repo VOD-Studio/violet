@@ -5,7 +5,7 @@
  */
 
 import { useState } from "react"
-import { Link } from "react-router"
+import { useNavigate } from "react-router"
 import { useAdminPosts, useTogglePostStatus, useDeleteAdminPost } from "@/hooks/useAdmin"
 import type { PostStatus, ApiPost } from "@/hooks/useAdmin"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { ErrorFallback } from "@/components/shared/ErrorFallback"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +22,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, Plus } from "lucide-react"
+import { toast } from "sonner"
 
 /** 筛选标签配置 */
 const statusFilters: { label: string; value: "all" | PostStatus }[] = [
@@ -71,8 +74,12 @@ function PostsTableSkeleton() {
  * 文章管理页面
  */
 export default function Posts() {
+  const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState<"all" | PostStatus>("all")
   const [page] = useState(1)
+
+  /** 删除确认弹窗状态 */
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: number }>({ open: false, id: 0 })
 
   const { data, isLoading, error, refetch } = useAdminPosts({
     page,
@@ -87,17 +94,38 @@ export default function Posts() {
   /**
    * 切换文章发布状态
    */
-  async function handleToggleStatus(post: ApiPost) {
+  function handleToggleStatus(post: ApiPost) {
     const newStatus: PostStatus = post.status === "published" ? "draft" : "published"
-    toggleMutation.mutate({ id: post.id, status: newStatus })
+    toggleMutation.mutate(
+      { id: post.id, status: newStatus },
+      {
+        onSuccess: () => toast.success(post.status === "published" ? "已取消发布" : "已发布"),
+        onError: () => toast.error("操作失败，请重试"),
+      },
+    )
   }
 
   /**
-   * 删除文章（带确认提示）
+   * 弹出删除确认
    */
-  async function handleDelete(id: number) {
-    if (!window.confirm("确定要删除这篇文章吗？此操作不可撤销。")) return
-    deleteMutation.mutate(id)
+  function handleDelete(id: number) {
+    setDeleteConfirm({ open: true, id })
+  }
+
+  /**
+   * 确认删除
+   */
+  function confirmDelete() {
+    deleteMutation.mutate(deleteConfirm.id, {
+      onSuccess: () => {
+        toast.success("文章已删除")
+        setDeleteConfirm({ open: false, id: 0 })
+      },
+      onError: () => {
+        toast.error("删除失败，请重试")
+        setDeleteConfirm({ open: false, id: 0 })
+      },
+    })
   }
 
   return (
@@ -108,8 +136,9 @@ export default function Posts() {
           <h1 className="text-2xl font-bold">文章管理</h1>
           <p className="text-muted-foreground">管理所有博客文章</p>
         </div>
-        <Button asChild>
-          <Link to="/admin/posts/new">新建文章</Link>
+        <Button onClick={() => navigate("/admin/posts/new")}>
+          <Plus className="mr-1 size-4" />
+          新建文章
         </Button>
       </div>
 
@@ -171,16 +200,12 @@ export default function Posts() {
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-sm">
-                          <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                          </svg>
-                        </Button>
+                      <DropdownMenuTrigger className="flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-muted">
+                        <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link to={`/admin/posts/${post.id}/edit`}>编辑</Link>
+                        <DropdownMenuItem onClick={() => navigate(`/admin/posts/${post.id}/edit`)}>
+                          编辑
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleToggleStatus(post)}>
                           {post.status === "published" ? "取消发布" : "发布"}
@@ -201,6 +226,17 @@ export default function Posts() {
           </Table>
         </div>
       )}
+
+      {/* 删除确认弹窗 */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, id: 0 })}
+        onConfirm={confirmDelete}
+        title="删除文章"
+        description="确定要删除这篇文章吗？此操作不可撤销。"
+        confirmLabel="删除"
+        destructive
+      />
     </div>
   )
 }

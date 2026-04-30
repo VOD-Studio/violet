@@ -29,17 +29,37 @@ var (
 
 // 支持的文件类型扩展名到 MIME 类型的映射
 var allowedUploadTypes = map[string]string{
+	// 图片
 	".jpg":  "image/jpeg",
 	".jpeg": "image/jpeg",
 	".png":  "image/png",
 	".gif":  "image/gif",
 	".webp": "image/webp",
+	".svg":  "image/svg+xml",
+	// 视频
 	".mp4":  "video/mp4",
 	".webm": "video/webm",
+	".mov":  "video/quicktime",
+	".avi":  "video/x-msvideo",
+	".mkv":  "video/x-matroska",
+	// 音频
 	".mp3":  "audio/mpeg",
 	".wav":  "audio/wav",
-	".md":   "text/markdown",
+	".ogg":  "audio/ogg",
+	".flac": "audio/flac",
+	".aac":  "audio/aac",
+	// 文档
 	".pdf":  "application/pdf",
+	".doc":  "application/msword",
+	".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	".xls":  "application/vnd.ms-excel",
+	".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	".ppt":  "application/vnd.ms-powerpoint",
+	".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+	".zip":  "application/zip",
+	".rar":  "application/vnd.rar",
+	".7z":   "application/x-7z-compressed",
+	".md":   "text/markdown",
 }
 
 // UploadService 分片上传业务服务

@@ -4,13 +4,15 @@
  * 使用 react-query 管理数据获取和变更
  */
 
+import { useState } from "react"
 import { useAdminComments, useAdminCommentActions } from "@/hooks/useAdmin"
 import type { ApiComment } from "@/hooks/useAdmin"
-import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { ErrorFallback } from "@/components/shared/ErrorFallback"
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { MoreHorizontal } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,28 +65,38 @@ export default function Comments() {
   const { data: comments, isLoading, error, refetch } = useAdminComments()
   const { approve, markSpam, deleteComment } = useAdminCommentActions()
 
+  /** 删除确认弹窗状态 */
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: "" })
+
   const isActing = approve.isPending || markSpam.isPending || deleteComment.isPending
 
   /**
    * 批准评论
    */
-  function handleApprove(id: number) {
+  function handleApprove(id: string) {
     approve.mutate(id)
   }
 
   /**
    * 标记为垃圾评论
    */
-  function handleMarkSpam(id: number) {
+  function handleMarkSpam(id: string) {
     markSpam.mutate(id)
   }
 
   /**
-   * 删除评论（带确认提示）
+   * 弹出删除确认
    */
-  function handleDelete(id: number) {
-    if (!window.confirm("确定要删除这条评论吗？此操作不可撤销。")) return
-    deleteComment.mutate(id)
+  function handleDelete(id: string) {
+    setDeleteConfirm({ open: true, id })
+  }
+
+  /**
+   * 确认删除
+   */
+  function confirmDelete() {
+    deleteComment.mutate(deleteConfirm.id)
+    setDeleteConfirm({ open: false, id: "" })
   }
 
   return (
@@ -131,25 +143,21 @@ export default function Comments() {
               {comments.map((comment: ApiComment) => (
                 <TableRow key={comment.id}>
                   <TableCell className="font-medium">
-                    {comment.authorName}
+                    {comment.author_name}
                   </TableCell>
                   <TableCell className="max-w-[240px] truncate">
-                    {comment.content}
+                    {comment.body_html}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {comment.post?.title ?? "-"}
+                    {comment.post_id ?? "-"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDateTime(comment.createdAt)}
+                    {formatDateTime(comment.created_at)}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-sm" disabled={isActing}>
-                          <svg className="size-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-                          </svg>
-                        </Button>
+                      <DropdownMenuTrigger className="flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-muted" disabled={isActing}>
+                        <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleApprove(comment.id)}>
@@ -174,6 +182,17 @@ export default function Comments() {
           </Table>
         </div>
       )}
+
+      {/* 删除确认弹窗 */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, id: "" })}
+        onConfirm={confirmDelete}
+        title="删除评论"
+        description="确定要删除这条评论吗？此操作不可撤销。"
+        confirmLabel="删除"
+        destructive
+      />
     </div>
   )
 }

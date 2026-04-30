@@ -18,17 +18,42 @@ var (
 	// ErrImageNotFound 图片不存在
 	ErrImageNotFound = errors.New("图片不存在")
 	// ErrImageTooLarge 图片文件过大
-	ErrImageTooLarge = errors.New("图片文件过大")
-	// ErrInvalidImageType 不支持的图片类型
-	ErrInvalidImageType = errors.New("不支持的图片类型")
+	ErrImageTooLarge = errors.New("文件过大")
+	// ErrInvalidImageType 不支持的文件类型
+	ErrInvalidImageType = errors.New("不支持的文件类型")
 )
 
-// 支持的图片 MIME 类型
+// 支持的文件 MIME 类型
 var allowedImageTypes = map[string]bool{
-	"image/jpeg": true,
-	"image/png":  true,
-	"image/gif":  true,
-	"image/webp": true,
+	// 图片
+	"image/jpeg":    true,
+	"image/png":     true,
+	"image/gif":     true,
+	"image/webp":    true,
+	"image/svg+xml": true,
+	// 视频
+	"video/mp4":       true,
+	"video/webm":      true,
+	"video/quicktime": true,
+	"video/x-msvideo": true,
+	"video/x-matroska": true,
+	// 音频
+	"audio/mpeg": true,
+	"audio/wav":  true,
+	"audio/ogg":  true,
+	"audio/flac": true,
+	"audio/aac":  true,
+	// 文档
+	"application/pdf": true,
+	"application/msword": true,
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
+	"application/vnd.ms-excel": true,
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
+	"application/vnd.ms-powerpoint": true,
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": true,
+	"application/zip":  true,
+	"application/vnd.rar": true,
+	"application/x-7z-compressed": true,
 }
 
 // ImageService 图片管理业务服务

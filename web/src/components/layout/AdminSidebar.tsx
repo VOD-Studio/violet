@@ -133,7 +133,7 @@ export function AdminSidebar() {
       <Separator />
       <div className="p-2">
         <NavLink to="/">
-          {({ isActive }) => (
+          {() => (
             <Button
               variant="ghost"
               className={cn(

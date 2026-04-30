@@ -123,7 +123,7 @@ export function GitHubContributions({ username }: GitHubContributionsProps) {
     return (
       <div className="rounded-xl border bg-card p-6">
         <p className="text-sm text-muted-foreground">
-          无法加载贡献数据: {error}
+          无法加载贡献数据: {String(error)}
         </p>
       </div>
     )

@@ -3,6 +3,7 @@
 
 import { useEffect, useRef } from "react"
 import { common, createLowlight } from "lowlight"
+import { toHtml } from "hast-util-to-html"
 
 /** 创建 lowlight 实例 */
 const lowlight = createLowlight(common)
@@ -34,7 +35,7 @@ export default function MarkdownPreview({ content, className = "" }: MarkdownPre
 
       if (lang && lowlight.registered(lang)) {
         const result = lowlight.highlight(lang, block.textContent ?? "")
-        block.innerHTML = result.value
+        block.innerHTML = toHtml(result)
       }
     }
   }, [content])

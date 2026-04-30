@@ -134,7 +134,7 @@ export function PinnedRepos({ username }: PinnedReposProps) {
       <div className="rounded-xl border bg-card p-6">
         <h3 className="mb-2 text-lg font-semibold">开源项目</h3>
         <p className="text-sm text-muted-foreground">
-          无法加载仓库数据: {error}
+          无法加载仓库数据: {String(error)}
         </p>
       </div>
     )
