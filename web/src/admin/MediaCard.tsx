@@ -154,7 +154,7 @@ export default function MediaCard({ item, onDelete, onPreview }: MediaCardProps)
           )}
         </button>
         {/* 文件信息 */}
-        <div className="flex items-center justify-between p-3">
+        <div className="flex items-center justify-between gap-2 border-t p-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{item.original_name}</p>
             <p className="text-xs text-muted-foreground">
