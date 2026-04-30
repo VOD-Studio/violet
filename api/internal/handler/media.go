@@ -171,6 +171,66 @@ func (h *MediaHandler) Download(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filePath)
 }
 
+// UploadThumbnail 上传视频封面缩略图
+// POST /api/media/:id/thumbnail
+// 接收 JPEG 图片，保存为 {filename}_thumb.jpg
+func (h *MediaHandler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_param", "无效的媒体 ID")
+		return
+	}
+
+	// 查询媒体记录
+	media, err := h.mediaService.GetMediaByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, service.ErrMediaNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "媒体不存在")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "查询媒体失败")
+		return
+	}
+
+	// 读取上传的缩略图文件
+	r.Body = http.MaxBytesReader(w, r.Body, 10*1024*1024)
+	if err := r.ParseMultipartForm(10 * 1024 * 1024); err != nil {
+		writeError(w, http.StatusBadRequest, "file_too_large", "缩略图大小不能超过 10 MB")
+		return
+	}
+
+	file, _, err := r.FormFile("thumbnail")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_file", "缺少缩略图文件")
+		return
+	}
+	defer file.Close()
+
+	// 保存缩略图：{filename_without_ext}_thumb.jpg
+	ext := filepath.Ext(media.Filename)
+	baseName := media.Filename[:len(media.Filename)-len(ext)]
+	thumbFilename := baseName + "_thumb.jpg"
+	thumbPath := filepath.Join(h.uploadDir, thumbFilename)
+
+	dst, err := os.Create(thumbPath)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "保存缩略图失败")
+		return
+	}
+	defer dst.Close()
+
+	if _, err := dst.ReadFrom(file); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "写入缩略图失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"message":    "缩略图上传成功",
+		"thumbnail":  thumbFilename,
+	})
+}
+
 // DownloadFile 下载文件
 // GET /api/files/:id/download
 // 支持权限控制：public 任何人可下载，user 需要登录，admin 需要管理员权限

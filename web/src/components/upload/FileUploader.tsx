@@ -3,7 +3,7 @@
 
 import { useState, useCallback } from "react"
 import { useDropzone } from "react-dropzone"
-import { uploadFile, type UploadResult } from "./ChunkedUpload"
+import { uploadFile, captureVideoThumbnail, uploadVideoThumbnail, type UploadResult } from "./ChunkedUpload"
 import { Button } from "@/components/ui/button"
 import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
@@ -98,6 +98,13 @@ export default function FileUploader({
 
         updateItem(item.id, { status: "done", progress: 100, result })
         onUpload?.(result)
+
+        // 视频文件：截取封面缩略图并上传
+        if (result.mimeType.startsWith("video/") && result.id) {
+          captureVideoThumbnail(item.file).then((blob) => {
+            if (blob) uploadVideoThumbnail(result.id, item.file, blob)
+          })
+        }
       } catch (err) {
         updateItem(item.id, {
           status: "error",

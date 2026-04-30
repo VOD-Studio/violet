@@ -11,6 +11,7 @@ interface UploadResult {
   url: string
   id: string
   name: string
+  mimeType: string
 }
 
 /** 初始化上传响应 */
@@ -132,6 +133,7 @@ export async function uploadFile(
       url: checkResult.url,
       id: checkResult.media_id ?? "",
       name: file.name,
+      mimeType: file.type || "application/octet-stream",
     }
   }
 
@@ -187,7 +189,63 @@ export async function uploadFile(
     url: result.url,
     id: result.media_id,
     name: file.name,
+    mimeType: file.type || "application/octet-stream",
   }
+}
+
+/**
+ * 从视频文件截取一帧作为封面缩略图
+ * 使用 canvas 绘制视频帧并导出为 JPEG blob
+ */
+export async function captureVideoThumbnail(file: File): Promise<Blob | null> {
+  const url = URL.createObjectURL(file)
+  try {
+    const video = document.createElement("video")
+    video.muted = true
+    video.playsInline = true
+    video.preload = "auto"
+
+    await new Promise<void>((resolve, reject) => {
+      video.onloadeddata = () => {
+        video.currentTime = Math.min(1, video.duration * 0.1)
+      }
+      video.onseeked = () => resolve()
+      video.onerror = () => reject(new Error("视频加载失败"))
+      setTimeout(() => reject(new Error("视频加载超时")), 10000)
+      video.src = url
+    })
+
+    const canvas = document.createElement("canvas")
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return null
+    ctx.drawImage(video, 0, 0)
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), "image/jpeg", 0.8)
+    })
+  } catch {
+    return null
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+/**
+ * 上传视频封面缩略图
+ * 上传成功后调用后台接口将缩略图关联到媒体记录
+ */
+export async function uploadVideoThumbnail(
+  mediaId: string,
+  file: File,
+  thumbnail: Blob,
+): Promise<void> {
+  const formData = new FormData()
+  const thumbName = file.name.replace(/\.[^.]+$/, "") + "_thumb.jpg"
+  formData.append("thumbnail", thumbnail, thumbName)
+
+  await api.post(`/media/${mediaId}/thumbnail`, formData)
 }
 
 /** 导出类型 */

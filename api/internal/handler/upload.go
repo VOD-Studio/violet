@@ -93,6 +93,11 @@ func (h *UploadHandler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if filename == "" {
+		writeError(w, http.StatusBadRequest, "validation_error", "文件名为必填项")
+		return
+	}
+
 	chunkIndex, err := strconv.Atoi(chunkIndexStr)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_param", "无效的分片索引")

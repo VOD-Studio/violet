@@ -215,11 +215,19 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID string, bas
 	// 确定文件名和 MIME 类型
 	filename := "unknown"
 	mimeType := "application/octet-stream"
-	if info.Filename.Valid {
+	if info.Filename.Valid && info.Filename.String != "" {
 		filename = info.Filename.String
 	}
-	if info.MimeType.Valid {
+	if info.MimeType.Valid && info.MimeType.String != "" {
 		mimeType = info.MimeType.String
+	}
+
+	// 兜底：从文件扩展名推断 MIME 类型
+	if mimeType == "application/octet-stream" && filename != "unknown" {
+		ext := strings.ToLower(filepath.Ext(filename))
+		if inferred, ok := allowedUploadTypes[ext]; ok {
+			mimeType = inferred
+		}
 	}
 
 	// 生成最终文件名
