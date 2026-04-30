@@ -236,11 +236,15 @@ export function useAdminCommentActions() {
 
 /**
  * 获取全部标签列表（后台管理用）
+ * API 返回 { tags: [...] } 格式，需要提取 tags 数组
  */
 export function useAdminTags() {
   return useQuery({
     queryKey: ["admin", "tags"],
-    queryFn: () => api.get<ApiTag[]>("/tags"),
+    queryFn: async () => {
+      const res = await api.get<{ tags: ApiTag[] }>("/tags")
+      return res.tags ?? []
+    },
     staleTime: 5 * 60 * 1000,
   })
 }
@@ -362,14 +366,15 @@ export function useDeleteMedia() {
 
 /** 站点设置数据结构 */
 interface SiteSettings {
-  siteName: string
-  siteDescription: string
-  siteLogo: string
-  commentPolicy: string
-  allowAnonymous: boolean
-  seoTitleSuffix: string
-  seoDefaultDescription: string
-  seoDefaultKeywords: string
+  site_name: string
+  site_description: string
+  site_url: string
+  admin_email: string
+  posts_per_page: number
+  comments_enabled: boolean
+  comments_moderation: boolean
+  github_username: string
+  footer_text: string
 }
 
 /**
@@ -394,6 +399,26 @@ export function useSaveSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] })
     },
+  })
+}
+
+/** 公开站点设置（不需要认证） */
+interface PublicSettings {
+  site_name: string
+  site_description: string
+  github_username: string
+  footer_text: string
+}
+
+/**
+ * 获取公开站点设置
+ * 用于前台页面，不需要管理员认证
+ */
+export function usePublicSettings() {
+  return useQuery({
+    queryKey: ["settings", "public"],
+    queryFn: () => api.get<PublicSettings>("/settings"),
+    staleTime: 10 * 60 * 1000,
   })
 }
 

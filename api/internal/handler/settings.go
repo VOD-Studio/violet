@@ -19,6 +19,34 @@ func NewSettingsHandler(settingsService *service.SettingsService) *SettingsHandl
 	}
 }
 
+// PublicSettings 公开的站点设置，不包含敏感信息
+type PublicSettings struct {
+	SiteName        string `json:"site_name"`
+	SiteDescription string `json:"site_description"`
+	GitHubUsername  string `json:"github_username"`
+	FooterText      string `json:"footer_text"`
+}
+
+// GetPublicSettings 获取公开站点设置
+// GET /api/settings
+// 无需认证，返回非敏感的站点配置
+func (h *SettingsHandler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
+	settings, err := h.settingsService.GetAllSettings(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "获取站点设置失败")
+		return
+	}
+
+	public := PublicSettings{
+		SiteName:        settings.SiteName,
+		SiteDescription: settings.SiteDescription,
+		GitHubUsername:  settings.GitHubUsername,
+		FooterText:      settings.FooterText,
+	}
+
+	writeJSON(w, http.StatusOK, public)
+}
+
 // GetSettings 获取站点设置
 // GET /api/admin/settings
 // 需要管理员认证，返回所有站点配置项

@@ -2,6 +2,7 @@
 // 个人简介使用 TextReveal 逐行显示动画
 // 技术栈展示使用 ScrollReveal fadeUp 滚动显示动画
 // GitHub 活动集成：贡献热力图和置顶仓库
+// GitHub 用户名从后台站点设置中读取
 
 import { TextReveal, ScrollReveal } from "@/components/creative";
 import { GitHubContributions } from "@/components/blog/GitHubContributions";
@@ -13,9 +14,7 @@ import {
   generateBreadcrumbStructuredData,
   SITE_CONFIG,
 } from "@/lib/seo";
-
-/** 配置你的 GitHub 用户名 */
-const GITHUB_USERNAME = "promise";
+import { usePublicSettings } from "@/hooks/useAdmin";
 
 /** 技术栈分类结构 */
 interface TechCategory {
@@ -54,6 +53,10 @@ const TECH_STACK: TechCategory[] = [
  * 展示个人介绍和技术栈
  */
 export default function About() {
+  /** 从后台设置获取 GitHub 用户名 */
+  const { data: settings } = usePublicSettings();
+  const githubUsername = settings?.github_username ?? "";
+
   /* 作者和面包屑结构化数据 */
   const personData = generatePersonStructuredData();
   const breadcrumbData = generateBreadcrumbStructuredData([
@@ -125,14 +128,18 @@ export default function About() {
       </ScrollReveal>
 
       {/* GitHub 贡献热力图 */}
-      <ScrollReveal animation="fadeUp" className="mt-12">
-        <GitHubContributions username={GITHUB_USERNAME} />
-      </ScrollReveal>
+      {githubUsername && (
+        <ScrollReveal animation="fadeUp" className="mt-12">
+          <GitHubContributions username={githubUsername} />
+        </ScrollReveal>
+      )}
 
       {/* GitHub 置顶仓库 */}
-      <ScrollReveal animation="fadeUp" className="mt-12">
-        <PinnedRepos username={GITHUB_USERNAME} />
-      </ScrollReveal>
+      {githubUsername && (
+        <ScrollReveal animation="fadeUp" className="mt-12">
+          <PinnedRepos username={githubUsername} />
+        </ScrollReveal>
+      )}
     </div>
   );
 }

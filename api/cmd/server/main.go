@@ -103,6 +103,9 @@ func main() {
 		fmt.Fprintf(w, `{"status":"ok","message":"博客 API 服务运行中"}`)
 	})
 
+	// 公开设置接口，无需认证
+	r.Get("/api/settings", settingsHandler.GetPublicSettings)
+
 	// 认证相关路由
 	r.Route("/api/auth", func(r chi.Router) {
 		// 公开接口，无需认证

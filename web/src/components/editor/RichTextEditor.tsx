@@ -104,6 +104,7 @@ export default function RichTextEditor({
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        link: false,
       }),
       Image.configure({
         HTMLAttributes: {
