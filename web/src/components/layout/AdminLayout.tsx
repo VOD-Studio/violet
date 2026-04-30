@@ -63,14 +63,12 @@ export default function AdminLayout() {
 
           {/* 右侧：用户头像下拉菜单 */}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar className="size-8">
-                  <AvatarFallback>
-                    {user?.username?.charAt(0)?.toUpperCase() ?? "管"}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
+            <DropdownMenuTrigger className="flex size-8 cursor-pointer items-center justify-center rounded-full hover:bg-muted">
+              <Avatar className="size-8">
+                <AvatarFallback>
+                  {user?.username?.charAt(0)?.toUpperCase() ?? "管"}
+                </AvatarFallback>
+              </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
               <DropdownMenuItem className="text-sm text-muted-foreground" disabled>

@@ -186,7 +186,7 @@ export default function Dashboard() {
             <StatIcon type="posts" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalPosts.toLocaleString() ?? 0}</div>
+            <div className="text-2xl font-bold">{(stats?.totalPosts ?? 0).toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -196,7 +196,7 @@ export default function Dashboard() {
             <StatIcon type="comments" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalComments.toLocaleString() ?? 0}</div>
+            <div className="text-2xl font-bold">{(stats?.totalComments ?? 0).toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -223,7 +223,7 @@ export default function Dashboard() {
             <StatIcon type="views" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalViews.toLocaleString() ?? 0}</div>
+            <div className="text-2xl font-bold">{(stats?.totalViews ?? 0).toLocaleString()}</div>
           </CardContent>
         </Card>
 
@@ -233,7 +233,7 @@ export default function Dashboard() {
             <StatIcon type="users" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalUsers.toLocaleString() ?? 0}</div>
+            <div className="text-2xl font-bold">{(stats?.totalUsers ?? 0).toLocaleString()}</div>
           </CardContent>
         </Card>
       </div>
