@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -87,6 +88,9 @@ func (h *UploadHandler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 	fileHash := r.FormValue("file_hash")
 	filename := r.FormValue("filename")
 	mimeType := r.FormValue("mime_type")
+
+	// 调试日志：打印接收到的分片参数
+	log.Printf("[UploadChunk] uploadID=%s chunk=%s/%s filename=%q mimeType=%q", uploadID, chunkIndexStr, totalChunksStr, filename, mimeType)
 
 	if uploadID == "" || chunkIndexStr == "" || totalChunksStr == "" {
 		writeError(w, http.StatusBadRequest, "validation_error", "缺少必填参数")

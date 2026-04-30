@@ -168,7 +168,6 @@ export async function uploadFile(
     formData.append("file_hash", fileHash)
     formData.append("filename", file.name)
     formData.append("mime_type", file.type || "application/octet-stream")
-    formData.append("total_chunks", String(total_chunks))
 
     await api.post<{ message: string }>("/upload/chunk", formData)
 
