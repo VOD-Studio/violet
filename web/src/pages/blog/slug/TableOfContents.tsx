@@ -1,7 +1,7 @@
 // 文章目录导航组件
-// 从 HTML 内容提取标题，生成侧边栏目录导航
+// 从 DOM 中提取已渲染的标题，生成侧边栏目录导航
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 
@@ -16,8 +16,6 @@ interface TocItem {
 }
 
 interface TableOfContentsProps {
-  /** HTML 内容 */
-  html: string
   /** 最小显示标题级别 */
   minLevel?: number
   /** 最大显示标题级别 */
@@ -25,56 +23,56 @@ interface TableOfContentsProps {
 }
 
 /**
- * 从 HTML 中提取标题列表
- */
-function extractHeadings(html: string, minLevel: number, maxLevel: number): TocItem[] {
-  const headings: TocItem[] = []
-  const regex = /<h([1-6])[^>]*id="toc-\d+"[^>]*>(.*?)<\/h\1>/gi
-  let match
-
-  while ((match = regex.exec(html)) !== null) {
-    const level = parseInt(match[1])
-    if (level >= minLevel && level <= maxLevel) {
-      // 提取 id
-      const idMatch = match[0].match(/id="(toc-\d+)"/)
-      const id = idMatch ? idMatch[1] : ""
-      // 提取文本内容（去除内嵌标签）
-      const textMatch = match[2].replace(/<[^>]+>/g, "").trim()
-      if (textMatch && id) {
-        headings.push({
-          id,
-          text: textMatch,
-          level,
-        })
-      }
-    }
-  }
-
-  return headings
-}
-
-/**
  * 文章目录导航组件
+ * 从已渲染的 DOM 中提取标题
  */
 export function TableOfContents({
-  html,
   minLevel = 2,
   maxLevel = 4,
 }: TableOfContentsProps) {
   const [activeId, setActiveId] = useState<string>("")
+  const [headings, setHeadings] = useState<TocItem[]>([])
 
-  // 提取标题列表
-  const headings = useMemo(
-    () => extractHeadings(html, minLevel, maxLevel),
-    [html, minLevel, maxLevel]
-  )
+  // 从 DOM 中提取标题
+  useEffect(() => {
+    const extractHeadings = () => {
+      const proseContainer = document.querySelector(".prose")
+      if (!proseContainer) return []
+
+      const headingElements = proseContainer.querySelectorAll("h1, h2, h3, h4, h5, h6")
+      const items: TocItem[] = []
+
+      headingElements.forEach((el, index) => {
+        const level = parseInt(el.tagName.charAt(1))
+        if (level >= minLevel && level <= maxLevel) {
+          // 如果没有 ID，添加一个
+          const existingId = el.getAttribute("id")
+          const id = existingId || `toc-${index}`
+          if (!existingId) {
+            el.setAttribute("id", id)
+          }
+          items.push({
+            id,
+            text: el.textContent || "",
+            level,
+          })
+        }
+      })
+
+      setHeadings(items)
+    }
+
+    // 等待 DOM 渲染完成后提取
+    const timer = setTimeout(extractHeadings, 100)
+    return () => clearTimeout(timer)
+  }, [minLevel, maxLevel])
 
   // 监听滚动，更新当前激活的标题
   useEffect(() => {
     if (headings.length === 0) return
 
     const handleScroll = () => {
-      const offset = 100 // 顶部偏移量
+      const offset = 100
       let currentId = ""
       let minDistance = Infinity
 
@@ -83,7 +81,6 @@ export function TableOfContents({
         if (el) {
           const rect = el.getBoundingClientRect()
           const distance = rect.top - offset
-          // 标题在视口上方或刚好进入视口
           if (distance < 50 && Math.abs(distance) < minDistance) {
             minDistance = Math.abs(distance)
             currentId = id
@@ -97,7 +94,7 @@ export function TableOfContents({
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
-    handleScroll() // 初始化
+    handleScroll()
 
     return () => window.removeEventListener("scroll", handleScroll)
   }, [headings, activeId])
@@ -120,7 +117,7 @@ export function TableOfContents({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.3 }}
-      className="hidden xl:block fixed right-8 top-[100px] w-56 max-h-[calc(100vh-140px)]"
+      className="hidden xl:block fixed right-8 top-25 w-56 max-h-[calc(100vh-140px)]"
     >
       {/* 标题 */}
       <div className="flex items-center justify-between mb-4 px-1">
@@ -135,15 +132,15 @@ export function TableOfContents({
       {/* 目录列表 */}
       <nav className="relative">
         {/* 进度条背景 */}
-        <div className="absolute left-[10px] top-0 bottom-0 w-[2px] bg-border/50 rounded-full" />
+        <div className="absolute left-2.5 top-0 bottom-0 w-0.5 bg-border/50 rounded-full" />
 
         {/* 激活进度条 */}
         {activeId && (
           <motion.div
-            className="absolute left-[10px] w-[2px] bg-primary rounded-full"
+            className="absolute left-2.5 w-0.5 bg-primary rounded-full"
             initial={{ height: 0 }}
             animate={{
-              height: `${((headings.findIndex(h => h.id === activeId) + 1) / headings.length) * 100}%`,
+              height: `${((headings.findIndex((h) => h.id === activeId) + 1) / headings.length) * 100}%`,
             }}
             transition={{ type: "spring", stiffness: 200, damping: 25 }}
           />
@@ -174,7 +171,7 @@ export function TableOfContents({
                   <span
                     className={cn(
                       "relative z-10 flex items-center justify-center",
-                      "w-[22px] h-[22px] rounded-full transition-all duration-200",
+                      "w-5.5 h-5.5 rounded-full transition-all duration-200",
                       isActive
                         ? "bg-primary text-primary-foreground scale-100"
                         : "bg-muted/50 text-muted-foreground group-hover:bg-muted scale-90 group-hover:scale-100"

@@ -1,60 +1,60 @@
 // 文章详情页
 // 展示文章内容、元信息和评论区，支持嵌入代码沙盒
 
-import { useParams, Link } from "react-router"
-import { motion } from "motion/react"
-import { ArrowLeft } from "lucide-react"
-import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { usePost, useIncrementView } from "@/hooks/usePosts"
-import { CommentSection } from "@/components/blog/CommentSection"
-import { ScrollReveal } from "@/components/creative"
-import { SEO } from "@/components/shared/SEO"
-import { StructuredData } from "@/components/shared/StructuredData"
-import { BackToTop } from "@/components/shared/BackToTop"
+import { useParams, Link } from "react-router";
+import { motion } from "motion/react";
+import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { usePost, useIncrementView } from "@/hooks/usePosts";
+import { CommentSection } from "@/components/blog/CommentSection";
+import { ScrollReveal } from "@/components/creative";
+import { SEO } from "@/components/shared/SEO";
+import { StructuredData } from "@/components/shared/StructuredData";
+import { BackToTop } from "@/components/shared/BackToTop";
 import {
   generateStructuredData,
   generateBreadcrumbStructuredData,
   SITE_CONFIG,
-} from "@/lib/seo"
-import { ArticleHeader } from "./ArticleHeader"
-import { ArticleContent } from "./ArticleContent"
-import { ArticleSkeleton } from "./ArticleSkeleton"
-import { ArticleError } from "./ArticleError"
-import { TableOfContents } from "./TableOfContents"
+} from "@/lib/seo";
+import { ArticleHeader } from "./ArticleHeader";
+import { ArticleContent } from "./ArticleContent";
+import { ArticleSkeleton } from "./ArticleSkeleton";
+import { ArticleError } from "./ArticleError";
+import { TableOfContents } from "./TableOfContents";
 
 /**
  * 文章详情页
  */
 export default function BlogSlug() {
-  const { slug } = useParams<{ slug: string }>()
-  const { data: post, isLoading, error } = usePost(slug)
-  const incrementViewMutation = useIncrementView()
+  const { slug } = useParams<{ slug: string }>();
+  const { data: post, isLoading, error } = usePost(slug);
+  const incrementViewMutation = useIncrementView();
 
   /* 文章加载成功后增加浏览次数 */
   useEffect(() => {
     if (post?.id) {
-      incrementViewMutation.mutate(post.id)
+      incrementViewMutation.mutate(post.id);
     }
-  }, [post?.id])
+  }, [incrementViewMutation, post?.id]);
 
   /* 加载态 */
   if (isLoading) {
-    return <ArticleSkeleton />
+    return <ArticleSkeleton />;
   }
 
   /* 错误或文章不存在 */
   if (error || !post) {
-    return <ArticleError error={error} />
+    return <ArticleError error={error} />;
   }
 
   /* 生成结构化数据 */
-  const blogPostingData = generateStructuredData(post)
+  const blogPostingData = generateStructuredData(post);
   const breadcrumbData = generateBreadcrumbStructuredData([
     { name: "首页", url: SITE_CONFIG.url },
     { name: "博客文章", url: `${SITE_CONFIG.url}/blog` },
     { name: post.title, url: `${SITE_CONFIG.url}/blog/${post.slug}` },
-  ])
+  ]);
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -98,10 +98,10 @@ export default function BlogSlug() {
       </motion.article>
 
       {/* 目录导航 */}
-      <TableOfContents html={post.contentHtml ?? ""} />
+      <TableOfContents />
 
       {/* 回到顶部 */}
       <BackToTop threshold={400} variant="rocket" />
     </div>
-  )
+  );
 }

@@ -1,7 +1,6 @@
 // 文章内容渲染组件
-// 解析 HTML 内容，为标题添加 ID 支持目录导航
+// 解析 HTML 内容，在沙盒标记位置嵌入 CodeSandbox
 
-import { useMemo } from "react"
 import { CodeSandbox } from "@/components/blog/CodeSandbox"
 import { parseContentWithSandboxes, SANDBOX_PRESETS } from "./utils"
 
@@ -11,38 +10,10 @@ interface ArticleContentProps {
 }
 
 /**
- * 为 HTML 内容中的标题添加 ID
- */
-function addHeadingIds(html: string, minLevel: number, maxLevel: number): string {
-  let index = 0
-  const regex = /<h([1-6])([^>]*)>(.*?)<\/h\1>/gi
-
-  return html.replace(regex, (match, level, attrs, content) => {
-    const levelNum = parseInt(level)
-    if (levelNum >= minLevel && levelNum <= maxLevel) {
-      // 检查是否已有 id
-      if (attrs.includes("id=")) {
-        return match
-      }
-      const id = `toc-${index}`
-      index++
-      return `<h${level} id="${id}"${attrs}>${content}</h${level}>`
-    }
-    return match
-  })
-}
-
-/**
  * 文章内容渲染组件
  */
 export function ArticleContent({ html }: ArticleContentProps) {
-  // 为标题添加 ID
-  const htmlWithIds = useMemo(
-    () => addHeadingIds(html, 2, 4),
-    [html]
-  )
-
-  const parts = parseContentWithSandboxes(htmlWithIds)
+  const parts = parseContentWithSandboxes(html)
 
   return (
     <>
@@ -57,7 +28,6 @@ export function ArticleContent({ html }: ArticleContentProps) {
           )
         }
 
-        /* 查找沙盒预设数据 */
         const preset = SANDBOX_PRESETS[part.id]
         if (!preset) {
           return (
