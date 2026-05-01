@@ -12,6 +12,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
 
 	"blog-api/internal/repository/generated"
 )
@@ -41,7 +43,12 @@ type PostService struct {
 func NewPostService(queries *generated.Queries) *PostService {
 	return &PostService{
 		queries: queries,
-		md:      goldmark.New(),
+		md: goldmark.New(
+			goldmark.WithExtensions(extension.GFM),
+			goldmark.WithRendererOptions(
+				html.WithUnsafe(), // 允许渲染原始 HTML
+			),
+		),
 	}
 }
 
