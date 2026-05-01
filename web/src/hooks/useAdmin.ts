@@ -1,186 +1,186 @@
 // 后台管理数据 Hook
 // 使用 react-query 管理仪表盘统计、文章管理、评论管理等数据
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 /* ========== 类型定义 ========== */
 
 /** 文章状态类型 */
-type PostStatus = "draft" | "published"
+type PostStatus = "draft" | "published";
 
 /** 后端返回的文章结构 */
 interface ApiPost {
-	/** 文章唯一标识（UUID 字符串） */
-	id: string
-	/** 文章标题 */
-	title: string
-	/** URL slug */
-	slug: string
-	/** 文章摘要 */
-	excerpt?: string
-	/** Markdown 正文内容 */
-	contentMarkdown?: string
-	/** 发布状态 */
-	status: PostStatus
-	/** 浏览次数 */
-	viewCount: number
-	/** 封面图片 */
-	coverImage?: string
-	/** SEO 描述 */
-	seoDescription?: string
-	/** SEO 关键词 */
-	seoKeywords?: string
-	/** 文章标签 */
-	tags?: ApiTag[]
-	/** 创建时间 */
-	createdAt: string
-	/** 更新时间 */
-	updatedAt: string
-	/** 发布时间 */
-	publishedAt?: string | null
+  /** 文章唯一标识（UUID 字符串） */
+  id: string;
+  /** 文章标题 */
+  title: string;
+  /** URL slug */
+  slug: string;
+  /** 文章摘要 */
+  excerpt?: string;
+  /** Markdown 正文内容 */
+  contentMarkdown?: string;
+  /** 发布状态 */
+  status: PostStatus;
+  /** 浏览次数 */
+  viewCount: number;
+  /** 封面图片 */
+  coverImage?: string;
+  /** SEO 描述 */
+  seoDescription?: string;
+  /** SEO 关键词 */
+  seoKeywords?: string;
+  /** 文章标签 */
+  tags?: ApiTag[];
+  /** 创建时间 */
+  createdAt: string;
+  /** 更新时间 */
+  updatedAt: string;
+  /** 发布时间 */
+  publishedAt?: string | null;
 }
 
 /** 标签结构 */
 interface ApiTag {
-	/** 标签唯一标识 */
-	id: number
-	/** 标签名称 */
-	name: string
-	/** URL slug */
-	slug: string
+  /** 标签唯一标识 */
+  id: number;
+  /** 标签名称 */
+  name: string;
+  /** URL slug */
+  slug: string;
 }
 
 /** 热门文章摘要 */
 interface PopularPost {
-	/** 文章唯一标识 */
-	id: string
-	/** 文章标题 */
-	title: string
-	/** URL slug */
-	slug: string
-	/** 浏览次数 */
-	view_count: number
+  /** 文章唯一标识 */
+  id: string;
+  /** 文章标题 */
+  title: string;
+  /** URL slug */
+  slug: string;
+  /** 浏览次数 */
+  viewCount: number;
 }
 
 /** 最近文章摘要 */
 interface RecentPost {
-	/** 文章唯一标识 */
-	id: string
-	/** 文章标题 */
-	title: string
-	/** URL slug */
-	slug: string
-	/** 发布状态 */
-	status: PostStatus
-	/** 浏览次数 */
-	view_count: number
-	/** 发布时间 */
-	published_at?: string | null
+  /** 文章唯一标识 */
+  id: string;
+  /** 文章标题 */
+  title: string;
+  /** URL slug */
+  slug: string;
+  /** 发布状态 */
+  status: PostStatus;
+  /** 浏览次数 */
+  viewCount: number;
+  /** 发布时间 */
+  published_at?: string | null;
 }
 
 /** 评论结构 */
 interface ApiComment {
-	/** 评论唯一标识 */
-	id: string
-	/** 所属文章 ID */
-	post_id: string
-	/** 父评论 ID */
-	parent_id?: string
-	/** 评论者昵称 */
-	author_name: string
-	/** 评论者邮箱 */
-	author_email?: string
-	/** 评论者网站 */
-	author_url?: string
-	/** 评论者头像 */
-	avatar_url?: string
-	/** 评论内容 HTML */
-	body_html: string
-	/** 评论状态 */
-	status: "pending" | "approved" | "spam"
-	/** 创建时间 */
-	created_at: string
-	/** 子评论列表 */
-	children?: ApiComment[]
+  /** 评论唯一标识 */
+  id: string;
+  /** 所属文章 ID */
+  post_id: string;
+  /** 父评论 ID */
+  parent_id?: string;
+  /** 评论者昵称 */
+  author_name: string;
+  /** 评论者邮箱 */
+  author_email?: string;
+  /** 评论者网站 */
+  author_url?: string;
+  /** 评论者头像 */
+  avatar_url?: string;
+  /** 评论内容 HTML */
+  body_html: string;
+  /** 评论状态 */
+  status: "pending" | "approved" | "spam";
+  /** 创建时间 */
+  created_at: string;
+  /** 子评论列表 */
+  children?: ApiComment[];
 }
 
 /** 文章列表查询参数 */
 interface PostListParams {
-	/** 页码 */
-	page?: number
-	/** 每页数量 */
-	limit?: number
-	/** 状态筛选 */
-	status?: PostStatus
+  /** 页码 */
+  page?: number;
+  /** 每页数量 */
+  limit?: number;
+  /** 状态筛选 */
+  status?: PostStatus;
 }
 
 /** 分页响应结构 */
 interface PaginatedResponse<T> {
-	/** 数据项列表 */
-	items: T[]
-	/** 总数 */
-	total: number
-	/** 当前页码 */
-	page: number
-	/** 每页数量 */
-	limit: number
-	/** 总页数 */
-	totalPages: number
+  /** 数据项列表 */
+  items: T[];
+  /** 总数 */
+  total: number;
+  /** 当前页码 */
+  page: number;
+  /** 每页数量 */
+  limit: number;
+  /** 总页数 */
+  totalPages: number;
 }
 
 /** 创建/更新文章的请求体 */
 interface PostFormData {
-	/** 文章标题 */
-	title: string
-	/** URL slug（可自定义，不填则自动生成） */
-	slug?: string
-	/** Markdown 正文内容 */
-	contentMarkdown: string
-	/** 文章摘要 */
-	excerpt?: string
-	/** 发布状态 */
-	status?: PostStatus
-	/** 标签 ID 列表 */
-	tagIds?: number[]
-	/** 封面图片 URL */
-	coverImage?: string
-	/** SEO 描述 */
-	seoDescription?: string
-	/** SEO 关键词 */
-	seoKeywords?: string
+  /** 文章标题 */
+  title: string;
+  /** URL slug（可自定义，不填则自动生成） */
+  slug?: string;
+  /** Markdown 正文内容 */
+  contentMarkdown: string;
+  /** 文章摘要 */
+  excerpt?: string;
+  /** 发布状态 */
+  status?: PostStatus;
+  /** 标签 ID 列表 */
+  tagIds?: number[];
+  /** 封面图片 URL */
+  coverImage?: string;
+  /** SEO 描述 */
+  seoDescription?: string;
+  /** SEO 关键词 */
+  seoKeywords?: string;
 }
 
 /* ========== 仪表盘统计 ========== */
 
 /** 热门文章结构 */
 interface PopularPost {
-	/** 文章唯一标识（UUID 字符串） */
-	id: string
-	/** 文章标题 */
-	title: string
-	/** URL slug */
-	slug: string
-	/** 浏览次数 */
-	viewCount: number
+  /** 文章唯一标识（UUID 字符串） */
+  id: string;
+  /** 文章标题 */
+  title: string;
+  /** URL slug */
+  slug: string;
+  /** 浏览次数 */
+  viewCount: number;
 }
 
 /** 仪表盘统计数据结构 */
 interface AdminStats {
-	/** 文章总数 */
-	total_posts: number
-	/** 评论总数 */
-	total_comments: number
-	/** 待审核评论数 */
-	pending_comments: number
-	/** 总浏览量 */
-	total_views: number
-	/** 用户总数 */
-	total_users: number
-	/** 最近文章列表 */
-	recent_posts: RecentPost[]
-	/** 热门文章列表 */
-	popular_posts: PopularPost[]
+  /** 文章总数 */
+  totalPosts: number;
+  /** 评论总数 */
+  totalComments: number;
+  /** 待审核评论数 */
+  pendingComments: number;
+  /** 总浏览量 */
+  totalViews: number;
+  /** 用户总数 */
+  totalUsers: number;
+  /** 最近文章列表 */
+  recentPosts: RecentPost[];
+  /** 热门文章列表 */
+  popularPosts: PopularPost[];
 }
 
 /**
@@ -190,33 +190,33 @@ export function useAdminStats() {
   return useQuery({
     queryKey: ["admin", "stats"],
     queryFn: () => api.get<AdminStats>("/admin/stats"),
-  })
+  });
 }
 
 /* ========== 浏览量趋势 ========== */
 
 /** 每日浏览量数据点 */
 interface DailyView {
-	/** 日期 */
-	date: string
-	/** 浏览次数 */
-	count: number
+  /** 日期 */
+  date: string;
+  /** 浏览次数 */
+  count: number;
 }
 
 /** 月度浏览量数据点 */
 interface MonthlyView {
-	/** 月份 */
-	month: string
-	/** 浏览次数 */
-	count: number
+  /** 月份 */
+  month: string;
+  /** 浏览次数 */
+  count: number;
 }
 
 /** 浏览量趋势数据结构 */
 interface ViewTrends {
-	/** 每日数据 */
-	daily: DailyView[]
-	/** 月度数据 */
-	monthly: MonthlyView[]
+  /** 每日数据 */
+  daily: DailyView[];
+  /** 月度数据 */
+  monthly: MonthlyView[];
 }
 
 /**
@@ -226,70 +226,70 @@ export function useViewTrends() {
   return useQuery({
     queryKey: ["admin", "views"],
     queryFn: () => api.get<ViewTrends>("/admin/stats/views"),
-  })
+  });
 }
 
 /* ========== 文章管理 ========== */
 
 /** 文章列表响应结构 */
 interface PostListResponse {
-	/** 文章列表 */
-	posts: ApiPost[]
-	/** 总数 */
-	total: number
-	/** 当前页码 */
-	page: number
-	/** 每页数量 */
-	limit: number
+  /** 文章列表 */
+  posts: ApiPost[];
+  /** 总数 */
+  total: number;
+  /** 当前页码 */
+  page: number;
+  /** 每页数量 */
+  limit: number;
 }
 
 /**
  * 获取后台文章列表
  */
 export function useAdminPosts(params: PostListParams = {}) {
-  const { page = 1, limit = 10, status } = params
+  const { page = 1, limit = 10, status } = params;
 
   return useQuery({
     queryKey: ["admin", "posts", { page, limit, status }],
     queryFn: () => {
-      const queryParams = new URLSearchParams()
-      queryParams.set("page", String(page))
-      queryParams.set("limit", String(limit))
-      if (status) queryParams.set("status", status)
-      return api.get<PostListResponse>(`/posts?${queryParams.toString()}`)
+      const queryParams = new URLSearchParams();
+      queryParams.set("page", String(page));
+      queryParams.set("limit", String(limit));
+      if (status) queryParams.set("status", status);
+      return api.get<PostListResponse>(`/posts?${queryParams.toString()}`);
     },
-  })
+  });
 }
 
 /**
  * 切换文章发布状态的 mutation
  */
 export function useTogglePostStatus() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: PostStatus }) =>
       api.patch(`/posts/${id}/status`, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "posts"] })
-      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
-  })
+  });
 }
 
 /**
  * 删除文章的 mutation
  */
 export function useDeleteAdminPost() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (id: string) => api.del(`/posts/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "posts"] })
-      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "posts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
     },
-  })
+  });
 }
 
 /* ========== 评论管理 ========== */
@@ -302,42 +302,44 @@ export function useAdminComments() {
   return useQuery({
     queryKey: ["admin", "comments", "pending"],
     queryFn: async () => {
-      const res = await api.get<{ comments: ApiComment[] }>("/admin/comments/pending")
-      return res.comments ?? []
+      const res = await api.get<{ comments: ApiComment[] }>(
+        "/admin/comments/pending"
+      );
+      return res.comments ?? [];
     },
-  })
+  });
 }
 
 /**
  * 评论操作 mutation hook
  */
 export function useAdminCommentActions() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   const approve = useMutation({
     mutationFn: (id: string) =>
       api.patch(`/comments/${id}/status`, { status: "approved" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "comments"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "comments"] });
     },
-  })
+  });
 
   const markSpam = useMutation({
     mutationFn: (id: string) =>
       api.patch(`/comments/${id}/status`, { status: "spam" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "comments"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "comments"] });
     },
-  })
+  });
 
   const deleteComment = useMutation({
     mutationFn: (id: string) => api.del(`/comments/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "comments"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "comments"] });
     },
-  })
+  });
 
-  return { approve, markSpam, deleteComment }
+  return { approve, markSpam, deleteComment };
 }
 
 /* ========== 标签管理 ========== */
@@ -350,11 +352,11 @@ export function useAdminTags() {
   return useQuery({
     queryKey: ["admin", "tags"],
     queryFn: async () => {
-      const res = await api.get<{ tags: ApiTag[] }>("/tags")
-      return res.tags ?? []
+      const res = await api.get<{ tags: ApiTag[] }>("/tags");
+      return res.tags ?? [];
     },
     staleTime: 5 * 60 * 1000,
-  })
+  });
 }
 
 /* ========== 文章保存 ========== */
@@ -363,20 +365,20 @@ export function useAdminTags() {
  * 文章保存 mutation hook
  */
 export function useSavePost() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ data, id }: { data: PostFormData; id?: string }) => {
       if (id) {
-        return api.put<ApiPost>(`/posts/${id}`, data)
+        return api.put<ApiPost>(`/posts/${id}`, data);
       }
-      return api.post<ApiPost>("/posts", data)
+      return api.post<ApiPost>("/posts", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "posts"] })
-      queryClient.invalidateQueries({ queryKey: ["posts"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "posts"] });
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
-  })
+  });
 }
 
 /* ========== 用户管理 ========== */
@@ -384,19 +386,19 @@ export function useSavePost() {
 /** 用户数据结构 */
 interface AdminUser {
   /** 用户唯一标识 */
-  id: string
+  id: string;
   /** 用户名 */
-  username: string
+  username: string;
   /** 邮箱 */
-  email: string
+  email: string;
   /** 角色：admin / user */
-  role: string
+  role: string;
   /** 是否启用 */
-  is_active: boolean
+  is_active: boolean;
   /** 邮箱是否已验证 */
-  email_verified: boolean
+  email_verified: boolean;
   /** 注册时间 */
-  created_at: string
+  created_at: string;
 }
 
 /**
@@ -407,41 +409,41 @@ export function useAdminUsers() {
   return useQuery({
     queryKey: ["admin", "users"],
     queryFn: async () => {
-      const res = await api.get<{ users: AdminUser[] }>("/admin/users")
-      return res.users ?? []
+      const res = await api.get<{ users: AdminUser[] }>("/admin/users");
+      return res.users ?? [];
     },
     placeholderData: [],
-  })
+  });
 }
 
 /**
  * 修改用户角色的 mutation
  */
 export function useUpdateUserRole() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, role }: { id: string; role: string }) =>
       api.patch(`/admin/users/${id}/role`, { role }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "users"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     },
-  })
+  });
 }
 
 /**
  * 切换用户状态的 mutation
  */
 export function useToggleUserStatus() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
       api.patch(`/admin/users/${id}/status`, { is_active }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "users"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     },
-  })
+  });
 }
 
 /* ========== 媒体管理 ========== */
@@ -449,29 +451,29 @@ export function useToggleUserStatus() {
 /** 媒体文件数据结构 */
 interface MediaItem {
   /** 媒体文件唯一标识 */
-  id: string
+  id: string;
   /** 存储文件名 */
-  filename: string
+  filename: string;
   /** 原始文件名 */
-  original_name: string
+  original_name: string;
   /** MIME 类型 */
-  mime_type: string
+  mime_type: string;
   /** 文件大小（字节） */
-  size: number
+  size: number;
   /** 文件路径 */
-  path: string
+  path: string;
   /** 图片宽度 */
-  width?: number
+  width?: number;
   /** 图片高度 */
-  height?: number
+  height?: number;
   /** 音视频时长 */
-  duration?: number
+  duration?: number;
   /** 下载次数 */
-  download_count: number
+  download_count: number;
   /** 下载权限 */
-  download_permission: string
+  download_permission: string;
   /** 创建时间 */
-  created_at: string
+  created_at: string;
 }
 
 /**
@@ -482,11 +484,11 @@ export function useAdminMedia() {
   return useQuery({
     queryKey: ["admin", "media"],
     queryFn: async () => {
-      const res = await api.get<{ media: MediaItem[] }>("/media")
-      return res.media ?? []
+      const res = await api.get<{ media: MediaItem[] }>("/media");
+      return res.media ?? [];
     },
     placeholderData: [],
-  })
+  });
 }
 
 /**
@@ -496,60 +498,60 @@ export function useAdminMedia() {
 export async function fetchMediaPage(
   page: number,
   limit: number,
-  mimeType?: string,
+  mimeType?: string
 ): Promise<{ items: MediaItem[]; total: number; page: number; limit: number }> {
-  const params: Record<string, unknown> = { page, limit }
-  if (mimeType) params.type = mimeType
+  const params: Record<string, unknown> = { page, limit };
+  if (mimeType) params.type = mimeType;
   const res = await api.get<{
-    media: MediaItem[]
-    total: number
-    page: number
-    limit: number
-  }>("/media", params)
+    media: MediaItem[];
+    total: number;
+    page: number;
+    limit: number;
+  }>("/media", params);
   return {
     items: res.media ?? [],
     total: res.total ?? 0,
     page: res.page ?? page,
     limit: res.limit ?? limit,
-  }
+  };
 }
 
 /**
  * 删除媒体文件的 mutation
  */
 export function useDeleteMedia() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (id: string) => api.del(`/media/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "media"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "media"] });
     },
-  })
+  });
 }
 
 /* ========== 站点设置 ========== */
 
 /** 站点设置数据结构 */
 interface SiteSettings {
-	/** 站点名称 */
-	site_name: string
-	/** 站点描述 */
-	site_description: string
-	/** 站点 URL */
-	site_url: string
-	/** 管理员邮箱 */
-	admin_email: string
-	/** 每页文章数 */
-	posts_per_page: number
-	/** 是否启用评论 */
-	comments_enabled: boolean
-	/** 评论是否需要审核 */
-	comments_moderation: boolean
-	/** GitHub 用户名 */
-	github_username: string
-	/** 页脚文本 */
-	footer_text: string
+  /** 站点名称 */
+  site_name: string;
+  /** 站点描述 */
+  site_description: string;
+  /** 站点 URL */
+  site_url: string;
+  /** 管理员邮箱 */
+  admin_email: string;
+  /** 每页文章数 */
+  posts_per_page: number;
+  /** 是否启用评论 */
+  comments_enabled: boolean;
+  /** 评论是否需要审核 */
+  comments_moderation: boolean;
+  /** GitHub 用户名 */
+  github_username: string;
+  /** 页脚文本 */
+  footer_text: string;
 }
 
 /**
@@ -559,34 +561,34 @@ export function useSiteSettings() {
   return useQuery({
     queryKey: ["admin", "settings"],
     queryFn: () => api.get<SiteSettings>("/admin/settings"),
-  })
+  });
 }
 
 /**
  * 保存站点设置的 mutation
  */
 export function useSaveSettings() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: Partial<SiteSettings>) =>
       api.put("/admin/settings", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "settings"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
     },
-  })
+  });
 }
 
 /** 公开站点设置（不需要认证） */
 interface PublicSettings {
-	/** 站点名称 */
-	site_name: string
-	/** 站点描述 */
-	site_description: string
-	/** GitHub 用户名 */
-	github_username: string
-	/** 页脚文本 */
-	footer_text: string
+  /** 站点名称 */
+  site_name: string;
+  /** 站点描述 */
+  site_description: string;
+  /** GitHub 用户名 */
+  github_username: string;
+  /** 页脚文本 */
+  footer_text: string;
 }
 
 /**
@@ -598,7 +600,7 @@ export function usePublicSettings() {
     queryKey: ["settings", "public"],
     queryFn: () => api.get<PublicSettings>("/settings"),
     staleTime: 10 * 60 * 1000,
-  })
+  });
 }
 
 /** 导出类型供页面使用 */
@@ -610,6 +612,7 @@ export type {
   PostListParams,
   PaginatedResponse,
   PostStatus,
+  RecentPost,
   PopularPost,
   DailyView,
   MonthlyView,
@@ -618,4 +621,4 @@ export type {
   AdminUser,
   MediaItem,
   SiteSettings,
-}
+};

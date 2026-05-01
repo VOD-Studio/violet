@@ -1,20 +1,27 @@
 // PopularPostsTable.tsx
 // 热门文章排行表格组件
 
-import { Link } from "react-router"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-
-interface PopularPost {
-  id: string
-  title: string
-  slug: string
-  view_count: number
-}
+import { Link } from "react-router";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import type { PopularPost } from "@/hooks/useAdmin";
 
 interface PopularPostsTableProps {
-  posts: PopularPost[]
+  posts: PopularPost[];
 }
 
 export function PopularPostsTable({ posts }: PopularPostsTableProps) {
@@ -63,7 +70,7 @@ export function PopularPostsTable({ posts }: PopularPostsTableProps) {
                     </Link>
                   </TableCell>
                   <TableCell className="text-right">
-                    {post.view_count.toLocaleString()}
+                    {post.viewCount.toLocaleString()}
                   </TableCell>
                 </TableRow>
               ))
@@ -72,5 +79,5 @@ export function PopularPostsTable({ posts }: PopularPostsTableProps) {
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }

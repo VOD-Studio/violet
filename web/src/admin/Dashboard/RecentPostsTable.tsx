@@ -1,26 +1,31 @@
 // RecentPostsTable.tsx
 // 最近文章列表表格组件
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-
-interface RecentPost {
-  id: string
-  title: string
-  slug: string
-  status: "draft" | "published"
-  view_count: number
-  published_at?: string | null
-}
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import type { RecentPost } from "@/hooks/useAdmin";
 
 interface RecentPostsTableProps {
-  posts: RecentPost[]
+  posts: RecentPost[];
 }
 
 function formatDate(isoString: string | null | undefined): string {
-  if (!isoString) return "—"
-  return new Date(isoString).toLocaleDateString("zh-CN")
+  if (!isoString) return "—";
+  return new Date(isoString).toLocaleDateString("zh-CN");
 }
 
 export function RecentPostsTable({ posts }: RecentPostsTableProps) {
@@ -64,7 +69,7 @@ export function RecentPostsTable({ posts }: RecentPostsTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {post.view_count.toLocaleString()}
+                    {post.viewCount.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(post.published_at)}
@@ -76,5 +81,5 @@ export function RecentPostsTable({ posts }: RecentPostsTableProps) {
         </Table>
       </CardContent>
     </Card>
-  )
+  );
 }

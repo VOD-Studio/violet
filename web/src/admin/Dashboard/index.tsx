@@ -3,21 +3,26 @@
  * 展示统计卡片、浏览量趋势图、热门文章排行、最近文章列表
  */
 
-import { Link } from "react-router"
-import { useAdminStats, useViewTrends } from "@/hooks/useAdmin"
-import { ErrorFallback } from "@/components/shared/ErrorFallback"
-import { StatsCard, StatsCardSkeleton } from "./Dashboard/StatsCard"
-import { ViewTrendsChart } from "./Dashboard/ViewTrendsChart"
-import { PopularPostsTable } from "./Dashboard/PopularPostsTable"
-import { RecentPostsTable } from "./Dashboard/RecentPostsTable"
-import { StatIcon } from "./Dashboard/StatIcon"
+import { Link } from "react-router";
+import { useAdminStats, useViewTrends } from "@/hooks/useAdmin";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
+import { StatsCard, StatsCardSkeleton } from "./StatsCard";
+import { ViewTrendsChart } from "./ViewTrendsChart";
+import { PopularPostsTable } from "./PopularPostsTable";
+import { RecentPostsTable } from "./RecentPostsTable";
+import { StatIcon } from "./StatIcon";
 
 /**
  * 数据看板页面
  */
 export default function Dashboard() {
-  const { data: stats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useAdminStats()
-  const { data: viewTrends, isLoading: viewsLoading } = useViewTrends()
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+    refetch: refetchStats,
+  } = useAdminStats();
+  const { data: viewTrends, isLoading: viewsLoading } = useViewTrends();
 
   /* 统计数据加载中 */
   if (statsLoading) {
@@ -34,7 +39,7 @@ export default function Dashboard() {
         </div>
         <ViewTrendsChart daily={[]} monthly={[]} isLoading={true} />
       </div>
-    )
+    );
   }
 
   /* 统计数据加载失败 */
@@ -44,7 +49,7 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">数据看板</h1>
         <ErrorFallback error={statsError.message} onRetry={refetchStats} />
       </div>
-    )
+    );
   }
 
   return (
@@ -59,38 +64,43 @@ export default function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatsCard
           title="文章总数"
-          value={stats?.total_posts ?? 0}
+          value={stats?.totalPosts ?? 0}
           icon={<StatIcon type="posts" />}
         />
         <StatsCard
           title="评论总数"
-          value={stats?.total_comments ?? 0}
+          value={stats?.totalComments ?? 0}
           icon={<StatIcon type="comments" />}
         />
         <StatsCard
           title="待审核评论"
-          value={stats?.pending_comments ?? 0}
+          value={stats?.pendingComments ?? 0}
           icon={<StatIcon type="pending" />}
-          className={stats?.pending_comments ? "border-orange-400" : undefined}
+          className={stats?.pendingComments ? "border-orange-400" : undefined}
           valueClassName="text-orange-600"
           footer={
-            stats?.pending_comments ? (
-              <Link to="/admin/comments" className="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline">
+            stats?.pendingComments ? (
+              <Link
+                to="/admin/comments"
+                className="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline"
+              >
                 前往审核
               </Link>
             ) : (
-              <p className="mt-1 text-xs text-muted-foreground">暂无待审核评论</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                暂无待审核评论
+              </p>
             )
           }
         />
         <StatsCard
           title="总浏览量"
-          value={stats?.total_views ?? 0}
+          value={stats?.totalViews ?? 0}
           icon={<StatIcon type="views" />}
         />
         <StatsCard
           title="用户总数"
-          value={stats?.total_users ?? 0}
+          value={stats?.totalUsers ?? 0}
           icon={<StatIcon type="users" />}
         />
       </div>
@@ -103,10 +113,10 @@ export default function Dashboard() {
       />
 
       {/* 热门文章排行 */}
-      <PopularPostsTable posts={stats?.popular_posts ?? []} />
+      <PopularPostsTable posts={stats?.popularPosts ?? []} />
 
       {/* 最近文章列表 */}
-      <RecentPostsTable posts={stats?.recent_posts ?? []} />
+      <RecentPostsTable posts={stats?.recentPosts ?? []} />
     </div>
-  )
+  );
 }
