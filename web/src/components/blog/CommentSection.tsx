@@ -196,11 +196,11 @@ export function CommentSection({ postId }: CommentSectionProps) {
 
       {/* 快捷评论对话框 */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>发表评论</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 py-2">
             {/* 已登录用户显示用户信息 */}
             {user ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -252,7 +252,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
               <p className="text-sm text-destructive">{submitMutation.error.message}</p>
             )}
           </form>
-          <DialogFooter>
+          <DialogFooter className="mt-4 pt-4 border-t">
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               取消
             </Button>
