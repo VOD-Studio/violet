@@ -1,6 +1,7 @@
 // 文章内容渲染组件
-// 解析 HTML 内容，在沙盒标记位置嵌入 CodeSandbox
+// 解析 HTML 内容，为标题添加 ID 支持目录导航
 
+import { useMemo } from "react"
 import { CodeSandbox } from "@/components/blog/CodeSandbox"
 import { parseContentWithSandboxes, SANDBOX_PRESETS } from "./utils"
 
@@ -10,11 +11,38 @@ interface ArticleContentProps {
 }
 
 /**
+ * 为 HTML 内容中的标题添加 ID
+ */
+function addHeadingIds(html: string, minLevel: number, maxLevel: number): string {
+  let index = 0
+  const regex = /<h([1-6])([^>]*)>(.*?)<\/h\1>/gi
+
+  return html.replace(regex, (match, level, attrs, content) => {
+    const levelNum = parseInt(level)
+    if (levelNum >= minLevel && levelNum <= maxLevel) {
+      // 检查是否已有 id
+      if (attrs.includes("id=")) {
+        return match
+      }
+      const id = `toc-${index}`
+      index++
+      return `<h${level} id="${id}"${attrs}>${content}</h${level}>`
+    }
+    return match
+  })
+}
+
+/**
  * 文章内容渲染组件
- * 解析 HTML 内容，在沙盒标记位置嵌入 CodeSandbox
  */
 export function ArticleContent({ html }: ArticleContentProps) {
-  const parts = parseContentWithSandboxes(html)
+  // 为标题添加 ID
+  const htmlWithIds = useMemo(
+    () => addHeadingIds(html, 2, 4),
+    [html]
+  )
+
+  const parts = parseContentWithSandboxes(htmlWithIds)
 
   return (
     <>
@@ -23,7 +51,7 @@ export function ArticleContent({ html }: ArticleContentProps) {
           return (
             <div
               key={`html-${index}`}
-              className="prose prose-neutral dark:prose-invert max-w-none"
+              className="prose prose-neutral dark:prose-invert max-w-none prose-headings:scroll-mt-20"
               dangerouslySetInnerHTML={{ __html: part.content }}
             />
           )
