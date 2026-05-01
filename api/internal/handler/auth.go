@@ -105,6 +105,8 @@ type TokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 	// ExpiresIn 访问令牌过期时间（秒）
 	ExpiresIn int64 `json:"expires_in"`
+	// RefreshExpiresIn 刷新令牌过期时间（秒）
+	RefreshExpiresIn int64 `json:"refresh_expires_in"`
 	// TokenType 令牌类型
 	TokenType string `json:"token_type"`
 }
@@ -207,10 +209,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, TokenResponse{
-		AccessToken:  tokenPair.AccessToken,
-		RefreshToken: tokenPair.RefreshToken,
-		ExpiresIn:    tokenPair.ExpiresIn,
-		TokenType:    "Bearer",
+		AccessToken:       tokenPair.AccessToken,
+		RefreshToken:      tokenPair.RefreshToken,
+		ExpiresIn:         tokenPair.ExpiresIn,
+		RefreshExpiresIn:  tokenPair.RefreshExpiresIn,
+		TokenType:         "Bearer",
 	})
 }
 
@@ -238,10 +241,11 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, TokenResponse{
-		AccessToken:  tokenPair.AccessToken,
-		RefreshToken: tokenPair.RefreshToken,
-		ExpiresIn:    tokenPair.ExpiresIn,
-		TokenType:    "Bearer",
+		AccessToken:       tokenPair.AccessToken,
+		RefreshToken:      tokenPair.RefreshToken,
+		ExpiresIn:         tokenPair.ExpiresIn,
+		RefreshExpiresIn:  tokenPair.RefreshExpiresIn,
+		TokenType:         "Bearer",
 	})
 }
 

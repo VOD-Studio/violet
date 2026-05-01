@@ -17,6 +17,8 @@ interface LoginResponse {
   refresh_token: string;
   /** 令牌过期时间（秒） */
   expires_in: number;
+  /** 刷新令牌过期时间（秒） */
+  refresh_expires_in: number;
 }
 
 /** 用户信息结构 */
@@ -72,7 +74,8 @@ export function useAuth() {
       .setAuth(
         response.access_token,
         response.refresh_token,
-        response.expires_in
+        response.expires_in,
+        response.refresh_expires_in
       );
 
     // 然后获取用户信息（此时 API 拦截器已有 token）

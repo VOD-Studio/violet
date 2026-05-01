@@ -80,9 +80,9 @@ async function refreshToken(): Promise<string> {
   refreshPromise = axios
     .post(`${BASE_URL}/auth/refresh`, { refresh_token: refreshToken })
     .then((res) => {
-      const { access_token, refresh_token, expires_in } = res.data
+      const { access_token, refresh_token, expires_in, refresh_expires_in } = res.data
       // 更新 zustand store
-      useAuthStore.getState().setAuth(access_token, refresh_token, expires_in)
+      useAuthStore.getState().setAuth(access_token, refresh_token, expires_in, refresh_expires_in)
       isRefreshing = false
       refreshPromise = null
       return access_token
@@ -109,7 +109,20 @@ client.interceptors.request.use(
       return config
     }
 
-    const { token } = useAuthStore.getState()
+    const { token, refreshToken: storedRefreshToken } = useAuthStore.getState()
+
+    // 如果没有 token 但有 refreshToken，尝试刷新
+    if (!token && storedRefreshToken) {
+      try {
+        const newToken = await refreshToken()
+        config.headers.Authorization = `Bearer ${newToken}`
+      } catch {
+        // 刷新失败，清除认证状态，不添加 Authorization header
+        useAuthStore.getState().clearAuth()
+      }
+      return config
+    }
+
     if (!token) {
       return config
     }

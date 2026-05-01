@@ -97,6 +97,8 @@ type TokenPair struct {
 	RefreshToken string `json:"refresh_token"`
 	// ExpiresIn 访问令牌过期时间（秒）
 	ExpiresIn int64 `json:"expires_in"`
+	// RefreshExpiresIn 刷新令牌过期时间（秒）
+	RefreshExpiresIn int64 `json:"refresh_expires_in"`
 }
 
 // NewAuthService 创建认证服务实例
@@ -605,9 +607,10 @@ func (s *AuthService) generateTokenPair(userID, email, role string) (*TokenPair,
 	}
 
 	return &TokenPair{
-		AccessToken:  accessTokenString,
-		RefreshToken: refreshTokenString,
-		ExpiresIn:    int64(s.config.JWTAccessTokenTTL.Seconds()),
+		AccessToken:       accessTokenString,
+		RefreshToken:      refreshTokenString,
+		ExpiresIn:         int64(s.config.JWTAccessTokenTTL.Seconds()),
+		RefreshExpiresIn:  int64(s.config.JWTRefreshTokenTTL.Seconds()),
 	}, nil
 }
 
