@@ -239,7 +239,7 @@ export default function Media() {
       <Segmented
         options={categoryOptions}
         value={category}
-        onChange={setCategory}
+        onChange={(v) => setCategory(v)}
       />
 
       {/* 加载态（首次） */}
@@ -305,7 +305,7 @@ export default function Media() {
                 mimeType={previewItem.mime_type}
                 name={previewItem.original_name}
                 size={previewItem.size}
-                delay={150}
+                delay={previewItem.mime_type.startsWith("image/") ? 150 : 0}
               />
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>类型: {previewItem.mime_type}</span>

@@ -2,26 +2,26 @@
 // 分段选择器组件，带滑块动画效果
 // 使用 CSS transform 实现，不受父容器高度变化影响
 
-import { useRef, useEffect, useState } from "react"
-import { motion } from "motion/react"
-import { cn } from "@/lib/utils"
+import { useRef, useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { cn } from "@/lib/utils";
 
-interface SegmentedOption<T extends string | number> {
+export interface SegmentedOption<T extends string | number> {
   /** 显示标签 */
-  label: string
+  label: string;
   /** 选项值 */
-  value: T
+  value: T;
 }
 
 interface SegmentedProps<T extends string | number> {
   /** 选项列表 */
-  options: readonly SegmentedOption<T>[] | SegmentedOption<T>[]
+  options: readonly SegmentedOption<T>[] | SegmentedOption<T>[];
   /** 当前选中值 */
-  value: T
+  value: T;
   /** 选中值变化回调 */
-  onChange: (value: T) => void
+  onChange: (value: T) => void;
   /** 自定义类名 */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -34,27 +34,27 @@ export function Segmented<T extends string | number>({
   onChange,
   className,
 }: SegmentedProps<T>) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 })
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
 
   // 计算滑块位置
   useEffect(() => {
-    if (!containerRef.current) return
-    const container = containerRef.current
-    const buttons = container.querySelectorAll("button")
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+    const buttons = container.querySelectorAll("button");
 
     buttons.forEach((btn, index) => {
       if (options[index].value === value) {
-        const containerRect = container.getBoundingClientRect()
-        const btnRect = btn.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect();
+        const btnRect = btn.getBoundingClientRect();
 
         setIndicatorStyle({
           width: btnRect.width,
           left: btnRect.left - containerRect.left,
-        })
+        });
       }
-    })
-  }, [value, options])
+    });
+  }, [value, options]);
 
   return (
     <div
@@ -76,7 +76,7 @@ export function Segmented<T extends string | number>({
 
       {/* 选项按钮 */}
       {options.map((opt) => {
-        const isActive = opt.value === value
+        const isActive = opt.value === value;
         return (
           <button
             key={opt.value}
@@ -90,8 +90,8 @@ export function Segmented<T extends string | number>({
           >
             {opt.label}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
