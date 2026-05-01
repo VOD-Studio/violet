@@ -11,91 +11,146 @@ type PostStatus = "draft" | "published"
 
 /** 后端返回的文章结构 */
 interface ApiPost {
-  id: number
-  title: string
-  slug: string
-  excerpt?: string
-  content?: string
-  status: PostStatus
-  views: number
-  coverImage?: string
-  seoDescription?: string
-  seoKeywords?: string
-  tags?: ApiTag[]
-  createdAt: string
-  updatedAt: string
-  publishedAt?: string | null
+	/** 文章唯一标识 */
+	id: number
+	/** 文章标题 */
+	title: string
+	/** URL slug */
+	slug: string
+	/** 文章摘要 */
+	excerpt?: string
+	/** 正文内容 */
+	content?: string
+	/** 发布状态 */
+	status: PostStatus
+	/** 浏览次数 */
+	viewCount: number
+	/** 封面图片 */
+	coverImage?: string
+	/** SEO 描述 */
+	seoDescription?: string
+	/** SEO 关键词 */
+	seoKeywords?: string
+	/** 文章标签 */
+	tags?: ApiTag[]
+	/** 创建时间 */
+	createdAt: string
+	/** 更新时间 */
+	updatedAt?: string
+	/** 发布时间 */
+	publishedAt?: string | null
 }
 
 /** 标签结构 */
 interface ApiTag {
-  id: number
-  name: string
-  slug: string
+	/** 标签唯一标识 */
+	id: number
+	/** 标签名称 */
+	name: string
+	/** URL slug */
+	slug: string
 }
 
 /** 评论结构 */
 interface ApiComment {
-  id: string
-  post_id: string
-  parent_id?: string
-  author_name: string
-  author_email?: string
-  author_url?: string
-  avatar_url?: string
-  body_html: string
-  status: "pending" | "approved" | "spam"
-  created_at: string
-  children?: ApiComment[]
+	/** 评论唯一标识 */
+	id: string
+	/** 所属文章 ID */
+	post_id: string
+	/** 父评论 ID */
+	parent_id?: string
+	/** 评论者昵称 */
+	author_name: string
+	/** 评论者邮箱 */
+	author_email?: string
+	/** 评论者网站 */
+	author_url?: string
+	/** 评论者头像 */
+	avatar_url?: string
+	/** 评论内容 HTML */
+	body_html: string
+	/** 评论状态 */
+	status: "pending" | "approved" | "spam"
+	/** 创建时间 */
+	created_at: string
+	/** 子评论列表 */
+	children?: ApiComment[]
 }
 
 /** 文章列表查询参数 */
 interface PostListParams {
-  page?: number
-  limit?: number
-  status?: PostStatus
+	/** 页码 */
+	page?: number
+	/** 每页数量 */
+	limit?: number
+	/** 状态筛选 */
+	status?: PostStatus
 }
 
 /** 分页响应结构 */
 interface PaginatedResponse<T> {
-  items: T[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
+	/** 数据项列表 */
+	items: T[]
+	/** 总数 */
+	total: number
+	/** 当前页码 */
+	page: number
+	/** 每页数量 */
+	limit: number
+	/** 总页数 */
+	totalPages: number
 }
 
 /** 创建/更新文章的请求体 */
 interface PostFormData {
-  title: string
-  content: string
-  excerpt?: string
-  status?: PostStatus
-  tagIds?: number[]
-  coverImage?: string
-  seoDescription?: string
-  seoKeywords?: string
+	/** 文章标题 */
+	title: string
+	/** 正文内容 */
+	content: string
+	/** 文章摘要 */
+	excerpt?: string
+	/** 发布状态 */
+	status?: PostStatus
+	/** 标签 ID 列表 */
+	tagIds?: number[]
+	/** 封面图片 */
+	coverImage?: string
+	/** SEO 描述 */
+	seoDescription?: string
+	/** SEO 关键词 */
+	seoKeywords?: string
 }
 
 /* ========== 仪表盘统计 ========== */
 
 /** 热门文章结构 */
 interface PopularPost {
-  id: number
-  title: string
-  slug: string
-  views: number
+	/** 文章唯一标识 */
+	id: number
+	/** 文章标题 */
+	title: string
+	/** URL slug */
+	slug: string
+	/** 浏览次数 */
+	viewCount: number
 }
 
 /** 仪表盘统计数据结构 */
 interface AdminStats {
-  totalPosts: number
-  totalComments: number
-  pendingComments: number
-  totalViews: number
-  totalUsers: number
-  recentPosts: ApiPost[]
-  popularPosts: PopularPost[]
+	/** 文章总数 */
+	totalPosts: number
+	/** 评论总数 */
+	totalComments: number
+	/** 待审核评论数 */
+	pendingComments: number
+	/** 总浏览量 */
+	totalViews: number
+	/** 用户总数 */
+	totalUsers: number
+	/** 最近文章列表 */
+	recentPosts: ApiPost[]
+	/** 热门文章列表 */
+	popularPosts: PopularPost[]
 }
 
 /**
@@ -112,20 +167,26 @@ export function useAdminStats() {
 
 /** 每日浏览量数据点 */
 interface DailyView {
-  date: string
-  count: number
+	/** 日期 */
+	date: string
+	/** 浏览次数 */
+	count: number
 }
 
 /** 月度浏览量数据点 */
 interface MonthlyView {
-  month: string
-  count: number
+	/** 月份 */
+	month: string
+	/** 浏览次数 */
+	count: number
 }
 
 /** 浏览量趋势数据结构 */
 interface ViewTrends {
-  daily: DailyView[]
-  monthly: MonthlyView[]
+	/** 每日数据 */
+	daily: DailyView[]
+	/** 月度数据 */
+	monthly: MonthlyView[]
 }
 
 /**
@@ -140,6 +201,18 @@ export function useViewTrends() {
 
 /* ========== 文章管理 ========== */
 
+/** 文章列表响应结构 */
+interface PostListResponse {
+	/** 文章列表 */
+	posts: ApiPost[]
+	/** 总数 */
+	total: number
+	/** 当前页码 */
+	page: number
+	/** 每页数量 */
+	limit: number
+}
+
 /**
  * 获取后台文章列表
  */
@@ -153,7 +226,7 @@ export function useAdminPosts(params: PostListParams = {}) {
       queryParams.set("page", String(page))
       queryParams.set("limit", String(limit))
       if (status) queryParams.set("status", status)
-      return api.get<PaginatedResponse<ApiPost>>(`/posts?${queryParams.toString()}`)
+      return api.get<PostListResponse>(`/posts?${queryParams.toString()}`)
     },
   })
 }
@@ -429,15 +502,24 @@ export function useDeleteMedia() {
 
 /** 站点设置数据结构 */
 interface SiteSettings {
-  site_name: string
-  site_description: string
-  site_url: string
-  admin_email: string
-  posts_per_page: number
-  comments_enabled: boolean
-  comments_moderation: boolean
-  github_username: string
-  footer_text: string
+	/** 站点名称 */
+	site_name: string
+	/** 站点描述 */
+	site_description: string
+	/** 站点 URL */
+	site_url: string
+	/** 管理员邮箱 */
+	admin_email: string
+	/** 每页文章数 */
+	posts_per_page: number
+	/** 是否启用评论 */
+	comments_enabled: boolean
+	/** 评论是否需要审核 */
+	comments_moderation: boolean
+	/** GitHub 用户名 */
+	github_username: string
+	/** 页脚文本 */
+	footer_text: string
 }
 
 /**
@@ -467,10 +549,14 @@ export function useSaveSettings() {
 
 /** 公开站点设置（不需要认证） */
 interface PublicSettings {
-  site_name: string
-  site_description: string
-  github_username: string
-  footer_text: string
+	/** 站点名称 */
+	site_name: string
+	/** 站点描述 */
+	site_description: string
+	/** GitHub 用户名 */
+	github_username: string
+	/** 页脚文本 */
+	footer_text: string
 }
 
 /**

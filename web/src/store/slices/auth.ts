@@ -1,5 +1,6 @@
 // 认证状态 slice
 // 管理 JWT token、refresh_token 和用户信息
+// 所有状态持久化到 localStorage
 
 import { create } from "zustand"
 
@@ -33,6 +34,14 @@ interface AuthState {
   clearAuth: () => void
 }
 
+/** localStorage 键名 */
+const STORAGE_KEYS = {
+  token: "token",
+  refreshToken: "refresh_token",
+  expiresAt: "token_expires_at",
+  user: "user_info",
+}
+
 /**
  * 从 localStorage 加载初始状态
  */
@@ -40,21 +49,34 @@ function loadInitialState(): {
   token: string | null
   refreshToken: string | null
   expiresAt: number | null
+  user: User | null
 } {
-  const token = localStorage.getItem("token")
-  const refreshToken = localStorage.getItem("refresh_token")
-  const expiresAtStr = localStorage.getItem("token_expires_at")
+  const token = localStorage.getItem(STORAGE_KEYS.token)
+  const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken)
+  const expiresAtStr = localStorage.getItem(STORAGE_KEYS.expiresAt)
   const expiresAt = expiresAtStr ? parseInt(expiresAtStr, 10) : null
 
-  // 如果 token 已过期，清除所有
-  if (token && expiresAt && expiresAt < Date.now()) {
-    localStorage.removeItem("token")
-    localStorage.removeItem("refresh_token")
-    localStorage.removeItem("token_expires_at")
-    return { token: null, refreshToken: null, expiresAt: null }
+  // 尝试加载用户信息
+  let user: User | null = null
+  const userStr = localStorage.getItem(STORAGE_KEYS.user)
+  if (userStr) {
+    try {
+      user = JSON.parse(userStr)
+    } catch {
+      localStorage.removeItem(STORAGE_KEYS.user)
+    }
   }
 
-  return { token, refreshToken, expiresAt }
+  // 如果 token 已过期，清除所有认证数据
+  if (token && expiresAt && expiresAt < Date.now()) {
+    localStorage.removeItem(STORAGE_KEYS.token)
+    localStorage.removeItem(STORAGE_KEYS.refreshToken)
+    localStorage.removeItem(STORAGE_KEYS.expiresAt)
+    localStorage.removeItem(STORAGE_KEYS.user)
+    return { token: null, refreshToken: null, expiresAt: null, user: null }
+  }
+
+  return { token, refreshToken, expiresAt, user }
 }
 
 const initial = loadInitialState()
@@ -66,22 +88,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: initial.token,
   refreshToken: initial.refreshToken,
   expiresAt: initial.expiresAt,
-  user: null,
+  user: initial.user,
 
   setAuth: (token, refreshToken, expiresIn, user) => {
     const expiresAt = Date.now() + expiresIn * 1000
-    localStorage.setItem("token", token)
-    localStorage.setItem("refresh_token", refreshToken)
-    localStorage.setItem("token_expires_at", String(expiresAt))
+    localStorage.setItem(STORAGE_KEYS.token, token)
+    localStorage.setItem(STORAGE_KEYS.refreshToken, refreshToken)
+    localStorage.setItem(STORAGE_KEYS.expiresAt, String(expiresAt))
+    if (user) {
+      localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user))
+    }
     set({ token, refreshToken, expiresAt, user: user ?? null })
   },
 
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user))
+    set({ user })
+  },
 
   clearAuth: () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("refresh_token")
-    localStorage.removeItem("token_expires_at")
+    localStorage.removeItem(STORAGE_KEYS.token)
+    localStorage.removeItem(STORAGE_KEYS.refreshToken)
+    localStorage.removeItem(STORAGE_KEYS.expiresAt)
+    localStorage.removeItem(STORAGE_KEYS.user)
     set({ token: null, refreshToken: null, expiresAt: null, user: null })
   },
 }))

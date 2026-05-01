@@ -397,7 +397,7 @@ export default function Dashboard() {
                       </Link>
                     </TableCell>
                     <TableCell className="text-right">
-                      {post.views.toLocaleString()}
+                      {(post.viewCount ?? 0).toLocaleString()}
                     </TableCell>
                   </TableRow>
                 ))
@@ -447,7 +447,7 @@ export default function Dashboard() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {post.views.toLocaleString()}
+                      {(post.viewCount ?? 0).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(post.publishedAt)}

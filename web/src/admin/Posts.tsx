@@ -89,7 +89,7 @@ export default function Posts() {
   const toggleMutation = useTogglePostStatus()
   const deleteMutation = useDeleteAdminPost()
 
-  const posts = data?.items ?? []
+  const posts = data?.posts ?? []
 
   /**
    * 切换文章发布状态
@@ -193,7 +193,7 @@ export default function Posts() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {post.views.toLocaleString()}
+                    {post.viewCount.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(post.publishedAt)}

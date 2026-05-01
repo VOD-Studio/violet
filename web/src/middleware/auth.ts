@@ -7,7 +7,6 @@ import { redirect } from "react-router"
 
 /**
  * 获取本地存储中的认证 token
- * @returns token 字符串，不存在则返回 null
  */
 export function getToken(): string | null {
   try {
@@ -18,25 +17,38 @@ export function getToken(): string | null {
 }
 
 /**
+ * 获取用户信息（包含 role）
+ */
+export function getUser(): { role?: string } | null {
+  try {
+    const userStr = localStorage.getItem("user_info")
+    if (!userStr) return null
+    return JSON.parse(userStr)
+  } catch {
+    return null
+  }
+}
+
+/**
  * 保存认证 token 到本地存储
- * @param token - JWT token 字符串
  */
 export function setToken(token: string): void {
   localStorage.setItem("token", token)
 }
 
 /**
- * 清除本地存储中的认证 token
+ * 清除本地存储中的认证数据
  */
-export function clearToken(): void {
+export function clearAuth(): void {
   localStorage.removeItem("token")
+  localStorage.removeItem("refresh_token")
+  localStorage.removeItem("token_expires_at")
+  localStorage.removeItem("user_info")
 }
 
 /**
  * 解析 JWT token 的 payload 部分
  * 不验证签名，仅做前端解码读取过期时间等信息
- * @param token - JWT token 字符串
- * @returns 解析后的 payload 对象，解析失败返回 null
  */
 function parseJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -51,8 +63,6 @@ function parseJwtPayload(token: string): Record<string, unknown> | null {
 
 /**
  * 检查 token 是否已过期
- * @param token - JWT token 字符串
- * @returns 已过期返回 true，未过期或解析失败返回 false
  */
 function isTokenExpired(token: string): boolean {
   const payload = parseJwtPayload(token)
@@ -61,28 +71,36 @@ function isTokenExpired(token: string): boolean {
 }
 
 /**
- * 检查用户是否已认证且 token 有效
- * 用于路由保护的 loader 函数
- * @throws 未认证或 token 过期时重定向到登录页
+ * 管理员路由 loader
+ * 检查认证状态和管理员权限，未认证或非管理员重定向到登录页
  */
-export function requireAuth(): void {
+export function adminLoader() {
   const token = getToken()
+  const user = getUser()
 
-  if (!token) {
-    throw redirect("/login")
+  if (!token || isTokenExpired(token)) {
+    clearAuth()
+    return redirect("/login")
   }
 
-  if (isTokenExpired(token)) {
-    clearToken()
-    throw redirect("/login")
+  if (user?.role !== "admin") {
+    return redirect("/login")
   }
+
+  return null
 }
 
 /**
- * 管理员路由的 loader 函数
- * 用于保护所有 /admin/* 路由
+ * 用户路由 loader（个人中心等）
+ * 检查认证状态，未认证重定向到登录页
  */
-export function adminLoader() {
-  requireAuth()
+export function authLoader() {
+  const token = getToken()
+
+  if (!token || isTokenExpired(token)) {
+    clearAuth()
+    return redirect("/login")
+  }
+
   return null
 }
