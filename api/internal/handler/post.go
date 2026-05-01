@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -367,10 +368,11 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, map[string]interface{}{
-		"id":     post.ID.String(),
-		"title":  post.Title,
-		"slug":   post.Slug,
-		"status": post.Status,
+		"id":          post.ID.String(),
+		"title":       post.Title,
+		"slug":        post.Slug,
+		"status":      post.Status,
+		"publishedAt": formatPublishedAt(post.PublishedAt),
 	})
 }
 
@@ -398,10 +400,11 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"id":     post.ID.String(),
-		"title":  post.Title,
-		"slug":   post.Slug,
-		"status": post.Status,
+		"id":          post.ID.String(),
+		"title":       post.Title,
+		"slug":        post.Slug,
+		"status":      post.Status,
+		"publishedAt": formatPublishedAt(post.PublishedAt),
 	})
 }
 
@@ -457,9 +460,10 @@ func (h *PostHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"id":     post.ID.String(),
-		"title":  post.Title,
-		"status": post.Status,
+		"id":          post.ID.String(),
+		"title":       post.Title,
+		"status":      post.Status,
+		"publishedAt": formatPublishedAt(post.PublishedAt),
 	})
 }
 
@@ -511,5 +515,13 @@ func handlePostServiceError(w http.ResponseWriter, err error) {
 	default:
 		writeError(w, http.StatusInternalServerError, "internal_error", "服务器内部错误")
 	}
+}
+
+// formatPublishedAt 格式化发布时间
+func formatPublishedAt(t sql.NullTime) string {
+	if t.Valid {
+		return t.Time.Format("2006-01-02T15:04:05Z07:00")
+	}
+	return ""
 }
 
