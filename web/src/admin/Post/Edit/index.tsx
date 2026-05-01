@@ -266,7 +266,7 @@ export default function PostEdit() {
       />
 
       {/* 回到顶部 */}
-      <BackToTop threshold={300} variant="chevron" />
+      <BackToTop threshold={300} variant="chevron" containerSelector="#admin-content" />
     </div>
   )
 }

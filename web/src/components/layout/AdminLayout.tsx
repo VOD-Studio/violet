@@ -86,7 +86,7 @@ export default function AdminLayout() {
         </header>
 
         {/* 页面内容区域 */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main id="admin-content" className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
       </div>
