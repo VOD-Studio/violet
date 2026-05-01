@@ -107,20 +107,6 @@ export function useToc({
       if (!el) return;
       const top = el.getBoundingClientRect().top + window.scrollY - offsetTop;
       window.scrollTo({ top, behavior: "smooth" });
-
-      // 等平滑滚动完成后再更新激活状态
-      let scrollCheckTimer: ReturnType<typeof setTimeout>;
-      const checkScrollEnd = () => {
-        const currentTop = el.getBoundingClientRect().top;
-        // 当元素顶部接近目标偏移位置时，认为滚动完成
-        if (Math.abs(currentTop - offsetTop) < 5) {
-          setActiveId(id);
-        } else {
-          scrollCheckTimer = setTimeout(checkScrollEnd, 50);
-        }
-      };
-      // 延迟开始检测，避免立即触发
-      scrollCheckTimer = setTimeout(checkScrollEnd, 100);
     },
     [offsetTop]
   );

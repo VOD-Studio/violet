@@ -4,40 +4,51 @@
  * 使用 react-query 管理数据获取和变更操作
  */
 
-import { useState } from "react"
-import { useNavigate } from "react-router"
-import { useAdminPosts, useTogglePostStatus, useDeleteAdminPost } from "@/hooks/useAdmin"
-import type { PostStatus, ApiPost } from "@/hooks/useAdmin"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
-import { EmptyState } from "@/components/shared/EmptyState"
-import { ErrorFallback } from "@/components/shared/ErrorFallback"
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import {
+  useAdminPosts,
+  useTogglePostStatus,
+  useDeleteAdminPost,
+} from "@/hooks/useAdmin";
+import type { PostStatus, ApiPost } from "@/hooks/useAdmin";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Plus } from "lucide-react"
-import { toast } from "sonner"
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 /** 筛选标签配置 */
 const statusFilters: { label: string; value: "all" | PostStatus }[] = [
   { label: "全部", value: "all" },
   { label: "已发布", value: "published" },
   { label: "草稿", value: "draft" },
-]
+];
 
 /**
  * 将 ISO 日期字符串格式化为简短的本地日期
  */
 function formatDate(isoString: string | null | undefined): string {
-  if (!isoString) return "-"
-  return new Date(isoString).toLocaleDateString("zh-CN")
+  if (!isoString) return "-";
+  return new Date(isoString).toLocaleDateString("zh-CN");
 }
 
 /** 表格骨架屏 */
@@ -51,65 +62,84 @@ function PostsTableSkeleton() {
             <TableHead>状态</TableHead>
             <TableHead className="text-right">浏览量</TableHead>
             <TableHead>发布时间</TableHead>
+            <TableHead>更新时间</TableHead>
             <TableHead className="text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
-              <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-              <TableCell><Skeleton className="h-5 w-12" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-40" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-5 w-12" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-16 ml-auto" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-8 ml-auto" />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }
 
 /**
  * 文章管理页面
  */
 export default function Posts() {
-  const navigate = useNavigate()
-  const [activeFilter, setActiveFilter] = useState<"all" | PostStatus>("all")
-  const [page] = useState(1)
+  const navigate = useNavigate();
+  const [activeFilter, setActiveFilter] = useState<"all" | PostStatus>("all");
+  const [page] = useState(1);
 
   /** 删除确认弹窗状态 */
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: "" })
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    id: string;
+  }>({ open: false, id: "" });
 
   const { data, isLoading, error, refetch } = useAdminPosts({
     page,
     limit: 20,
     status: activeFilter === "all" ? undefined : activeFilter,
-  })
-  const toggleMutation = useTogglePostStatus()
-  const deleteMutation = useDeleteAdminPost()
+  });
+  const toggleMutation = useTogglePostStatus();
+  const deleteMutation = useDeleteAdminPost();
 
-  const posts = data?.posts ?? []
+  const posts = data?.posts ?? [];
 
   /**
    * 切换文章发布状态
    */
   function handleToggleStatus(post: ApiPost) {
-    const newStatus: PostStatus = post.status === "published" ? "draft" : "published"
+    const newStatus: PostStatus =
+      post.status === "published" ? "draft" : "published";
     toggleMutation.mutate(
       { id: post.id, status: newStatus },
       {
-        onSuccess: () => toast.success(post.status === "published" ? "已取消发布" : "已发布"),
+        onSuccess: () =>
+          toast.success(post.status === "published" ? "已取消发布" : "已发布"),
         onError: () => toast.error("操作失败，请重试"),
-      },
-    )
+      }
+    );
   }
 
   /**
    * 弹出删除确认
    */
   function handleDelete(id: string) {
-    setDeleteConfirm({ open: true, id })
+    setDeleteConfirm({ open: true, id });
   }
 
   /**
@@ -118,14 +148,14 @@ export default function Posts() {
   function confirmDelete() {
     deleteMutation.mutate(deleteConfirm.id, {
       onSuccess: () => {
-        toast.success("文章已删除")
-        setDeleteConfirm({ open: false, id: "" })
+        toast.success("文章已删除");
+        setDeleteConfirm({ open: false, id: "" });
       },
       onError: () => {
-        toast.error("删除失败，请重试")
-        setDeleteConfirm({ open: false, id: "" })
+        toast.error("删除失败，请重试");
+        setDeleteConfirm({ open: false, id: "" });
       },
-    })
+    });
   }
 
   return (
@@ -180,6 +210,7 @@ export default function Posts() {
                 <TableHead>状态</TableHead>
                 <TableHead className="text-right">浏览量</TableHead>
                 <TableHead>发布时间</TableHead>
+                <TableHead>更新时间</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -188,7 +219,11 @@ export default function Posts() {
                 <TableRow key={post.id}>
                   <TableCell className="font-medium">{post.title}</TableCell>
                   <TableCell>
-                    <Badge variant={post.status === "published" ? "default" : "secondary"}>
+                    <Badge
+                      variant={
+                        post.status === "published" ? "default" : "secondary"
+                      }
+                    >
                       {post.status === "published" ? "已发布" : "草稿"}
                     </Badge>
                   </TableCell>
@@ -198,16 +233,25 @@ export default function Posts() {
                   <TableCell className="text-muted-foreground">
                     {formatDate(post.publishedAt)}
                   </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(post.updatedAt)}
+                  </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger className="flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-muted">
                         <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/admin/posts/${post.id}/edit`)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            navigate(`/admin/posts/${post.id}/edit`)
+                          }
+                        >
                           编辑
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleToggleStatus(post)}>
+                        <DropdownMenuItem
+                          onClick={() => handleToggleStatus(post)}
+                        >
                           {post.status === "published" ? "取消发布" : "发布"}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -238,5 +282,5 @@ export default function Posts() {
         destructive
       />
     </div>
-  )
+  );
 }
