@@ -10,6 +10,7 @@ import { api } from "@/lib/api"
 import { useAdminTags, useSavePost } from "@/hooks/useAdmin"
 import type { ApiPost } from "@/hooks/useAdmin"
 import { RichTextEditor } from "@/components/editor"
+import { uploadFile, type UploadResult } from "@/components/upload/ChunkedUpload"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,7 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Camera } from "lucide-react"
+import { Camera, X, Loader2 } from "lucide-react"
 
 /**
  * 文章编辑页面
@@ -44,11 +45,13 @@ export default function PostEdit() {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [excerpt, setExcerpt] = useState("")
+  const [coverImage, setCoverImage] = useState("")
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
   const [seoDescription, setSeoDescription] = useState("")
   const [seoKeywords, setSeoKeywords] = useState("")
   const [pageLoading, setPageLoading] = useState(false)
   const [pageError, setPageError] = useState<string | null>(null)
+  const [uploadingCover, setUploadingCover] = useState(false)
 
   /* 编辑模式下加载文章数据 */
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function PostEdit() {
         setTitle(post.title)
         setContent(post.contentMarkdown ?? "")
         setExcerpt(post.excerpt ?? "")
+        setCoverImage(post.coverImage ?? "")
         setSelectedTagIds(post.tags?.map((t) => t.id) ?? [])
         setSeoDescription(post.seoDescription ?? "")
         setSeoKeywords(post.seoKeywords ?? "")
@@ -88,6 +92,31 @@ export default function PostEdit() {
   }
 
   /**
+   * 处理封面图上传
+   */
+  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingCover(true)
+    try {
+      const result: UploadResult = await uploadFile(file)
+      setCoverImage(result.url)
+    } catch (err) {
+      console.error("封面图上传失败:", err)
+    } finally {
+      setUploadingCover(false)
+    }
+  }
+
+  /**
+   * 清除封面图
+   */
+  function clearCover() {
+    setCoverImage("")
+  }
+
+  /**
    * 保存文章（草稿或发布）
    * @param status - 目标状态，draft 为草稿，published 为发布
    */
@@ -98,6 +127,7 @@ export default function PostEdit() {
           title,
           contentMarkdown: content,
           excerpt: excerpt || undefined,
+          coverImage: coverImage || undefined,
           status,
           tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
           seoDescription: seoDescription || undefined,
@@ -242,19 +272,50 @@ export default function PostEdit() {
             </CardContent>
           </Card>
 
-          {/* 封面图上传（占位） */}
+          {/* 封面图上传 */}
           <Card>
             <CardHeader>
               <CardTitle>封面图</CardTitle>
               <CardDescription>上传文章封面图片</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:text-primary">
-                <div className="text-center">
-                  <Camera className="mx-auto h-8 w-8" />
-                  <p className="mt-1 text-sm">点击上传封面图</p>
+              {coverImage ? (
+                <div className="relative aspect-video overflow-hidden rounded-lg">
+                  <img
+                    src={coverImage}
+                    alt="封面图"
+                    className="h-full w-full object-cover"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="icon-sm"
+                    className="absolute right-2 top-2"
+                    onClick={clearCover}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-              </div>
+              ) : (
+                <label className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCoverUpload}
+                    disabled={uploadingCover}
+                  />
+                  <div className="text-center">
+                    {uploadingCover ? (
+                      <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+                    ) : (
+                      <Camera className="mx-auto h-8 w-8" />
+                    )}
+                    <p className="mt-1 text-sm">
+                      {uploadingCover ? "上传中..." : "点击上传封面图"}
+                    </p>
+                  </div>
+                </label>
+              )}
             </CardContent>
           </Card>
 
