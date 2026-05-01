@@ -182,7 +182,7 @@ export default function MediaCard({
         {/* 预览区域 */}
         <div
           onClick={hasClickAction ? handleClick : undefined}
-          className={`group relative flex h-40 w-full items-center justify-center overflow-hidden bg-muted ${hasClickAction ? "cursor-pointer" : ""}`}
+          className={`group relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-muted ${hasClickAction ? "cursor-pointer" : ""}`}
         >
           {/* 选择模式下显示选中状态图标 */}
           {selectMode && (
