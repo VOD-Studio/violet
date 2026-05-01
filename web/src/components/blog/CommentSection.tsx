@@ -2,9 +2,11 @@
 // 展示评论列表（嵌套展示）和评论表单
 // 支持提交评论和加载状态
 // 添加固定底部快捷发表按钮，避免长文章滚动问题
+// 已登录用户自动填充用户名和邮箱
 
 import { useState, useEffect, useRef } from "react"
 import { useComments, useSubmitComment } from "@/hooks/useComments"
+import { useAuthStore } from "@/store"
 import { CommentItem } from "./CommentItem"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,23 +35,34 @@ export function CommentSection({ postId }: CommentSectionProps) {
   const { data: comments, isLoading } = useComments(postId)
   const submitMutation = useSubmitComment(postId)
   const sectionRef = useRef<HTMLElement>(null)
+  const { user } = useAuthStore()
 
   /* 表单状态 */
   const [authorName, setAuthorName] = useState("")
   const [authorEmail, setAuthorEmail] = useState("")
   const [content, setContent] = useState("")
   const [showDialog, setShowDialog] = useState(false)
-  const [isSticky, setIsSticky] = useState(false)
+  const [showQuickButton, setShowQuickButton] = useState(false)
 
-  // 监听滚动，当评论区离开视口时显示固定按钮
+  // 已登录用户自动填充用户名和邮箱
+  useEffect(() => {
+    if (user) {
+      setAuthorName(user.username || "")
+      setAuthorEmail(user.email || "")
+    }
+  }, [user])
+
+  // 监听滚动，当评论区还没进入视口时显示快捷按钮
   useEffect(() => {
     const handleScroll = () => {
       if (!sectionRef.current) return
       const rect = sectionRef.current.getBoundingClientRect()
-      // 评论区在视口下方时显示固定按钮
-      setIsSticky(rect.bottom < 0)
+      // 评论区顶部在视口下方时显示快捷按钮（用户还没滚动到评论区）
+      setShowQuickButton(rect.top > window.innerHeight * 0.8)
     }
 
+    // 初始检查
+    handleScroll()
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
@@ -108,29 +121,38 @@ export function CommentSection({ postId }: CommentSectionProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <h3 className="text-lg font-semibold">发表评论</h3>
 
-          {/* 名称和邮箱 */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="comment-name">名称 *</Label>
-              <Input
-                id="comment-name"
-                placeholder="你的名称"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                required
-              />
+          {/* 已登录用户显示用户信息 */}
+          {user ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <span>以</span>
+              <span className="font-medium text-foreground">{user.username}</span>
+              <span>的身份发表评论</span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="comment-email">邮箱（可选）</Label>
-              <Input
-                id="comment-email"
-                type="email"
-                placeholder="你的邮箱（不会公开）"
-                value={authorEmail}
-                onChange={(e) => setAuthorEmail(e.target.value)}
-              />
+          ) : (
+            /* 未登录用户需要输入名称和邮箱 */
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="comment-name">名称 *</Label>
+                <Input
+                  id="comment-name"
+                  placeholder="你的名称"
+                  value={authorName}
+                  onChange={(e) => setAuthorName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="comment-email">邮箱（可选）</Label>
+                <Input
+                  id="comment-email"
+                  type="email"
+                  placeholder="你的邮箱（不会公开）"
+                  value={authorEmail}
+                  onChange={(e) => setAuthorEmail(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 评论内容 */}
           <div className="space-y-2">
@@ -158,7 +180,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
       </section>
 
       {/* 固定底部的快捷评论按钮 */}
-      {isSticky && (
+      {showQuickButton && (
         <div className="fixed bottom-6 right-6 z-50">
           <Button
             size="lg"
@@ -178,29 +200,38 @@ export function CommentSection({ postId }: CommentSectionProps) {
             <DialogTitle>发表评论</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* 名称和邮箱 */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="quick-name">名称 *</Label>
-                <Input
-                  id="quick-name"
-                  placeholder="你的名称"
-                  value={authorName}
-                  onChange={(e) => setAuthorName(e.target.value)}
-                  required
-                />
+            {/* 已登录用户显示用户信息 */}
+            {user ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>以</span>
+                <span className="font-medium text-foreground">{user.username}</span>
+                <span>的身份发表评论</span>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="quick-email">邮箱（可选）</Label>
-                <Input
-                  id="quick-email"
-                  type="email"
-                  placeholder="你的邮箱"
-                  value={authorEmail}
-                  onChange={(e) => setAuthorEmail(e.target.value)}
-                />
+            ) : (
+              /* 未登录用户需要输入名称和邮箱 */
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="quick-name">名称 *</Label>
+                  <Input
+                    id="quick-name"
+                    placeholder="你的名称"
+                    value={authorName}
+                    onChange={(e) => setAuthorName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quick-email">邮箱（可选）</Label>
+                  <Input
+                    id="quick-email"
+                    type="email"
+                    placeholder="你的邮箱"
+                    value={authorEmail}
+                    onChange={(e) => setAuthorEmail(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 评论内容 */}
             <div className="space-y-2">
@@ -226,7 +257,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={submitMutation.isPending || !authorName.trim() || !content.trim()}
+              disabled={submitMutation.isPending || (!user && !authorName.trim()) || !content.trim()}
             >
               {submitMutation.isPending ? "提交中..." : "发表"}
             </Button>
