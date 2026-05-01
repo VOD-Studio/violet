@@ -1,8 +1,18 @@
-// 确认弹窗组件
-// 用于删除等危险操作的二次确认
+/**
+ * 确认弹窗组件
+ * 用于删除等危险操作的二次确认
+ */
 
-import { useEffect, useCallback } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { AlertTriangle, Info } from "lucide-react"
 
 /** 确认弹窗属性 */
 interface ConfirmDialogProps {
@@ -20,7 +30,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string
   /** 取消按钮文字 */
   cancelLabel?: string
-  /** 是否为危险操作（红色确认按钮） */
+  /** 是否为危险操作（红色确认按钮 + 警告图标） */
   destructive?: boolean
   /** 是否正在执行 */
   isLoading?: boolean
@@ -28,7 +38,7 @@ interface ConfirmDialogProps {
 
 /**
  * 确认弹窗组件
- * 提供确认/取消操作，支持危险操作样式和加载状态
+ * 复用 Dialog 组件的动画系统，提供确认/取消操作
  */
 export function ConfirmDialog({
   open,
@@ -41,36 +51,27 @@ export function ConfirmDialog({
   destructive = false,
   isLoading = false,
 }: ConfirmDialogProps) {
-  /** 处理确认操作 */
-  const handleConfirm = useCallback(async () => {
+  async function handleConfirm() {
     await onConfirm()
-    onClose()
-  }, [onConfirm, onClose])
-
-  /** 按 Escape 关闭弹窗 */
-  useEffect(() => {
-    if (!open) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
-    }
-    document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [open, onClose])
-
-  if (!open) return null
+  }
 
   return (
-    <>
-      {/* 遮罩层 */}
-      <div
-        className="fixed inset-0 z-50 bg-black/50"
-        onClick={onClose}
-      />
-      {/* 弹窗内容 */}
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
-        <div className="mt-6 flex justify-end gap-2">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="gap-3">
+          <div className={`flex items-center gap-3 ${destructive ? "text-destructive" : "text-primary"}`}>
+            {destructive ? (
+              <AlertTriangle className="size-5" />
+            ) : (
+              <Info className="size-5" />
+            )}
+            <DialogTitle>{title}</DialogTitle>
+          </div>
+          <DialogDescription className="text-left">
+            {description}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             {cancelLabel}
           </Button>
@@ -81,8 +82,8 @@ export function ConfirmDialog({
           >
             {isLoading ? "处理中..." : confirmLabel}
           </Button>
-        </div>
-      </div>
-    </>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
