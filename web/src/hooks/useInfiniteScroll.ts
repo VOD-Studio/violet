@@ -14,17 +14,23 @@ interface UseInfiniteScrollOptions {
   onLoadMore: () => void
   /** 触发加载的提前量（像素），默认 200 */
   rootMargin?: number
+  /** 滚动容器 ref，不传则监听视口 */
+  rootRef?: React.RefObject<HTMLElement | null>
+  /** 是否启用，默认 true */
+  enabled?: boolean
 }
 
 /**
  * 通用无限滚动 Hook
- * 返回一个 ref 绑定到哨兵元素上，当该元素进入视口时触发加载
+ * 返回一个 ref 绑定到哨兵元素上，当该元素进入视口/容器时触发加载
  */
 export function useInfiniteScroll({
   hasMore,
   isLoading,
   onLoadMore,
   rootMargin = 200,
+  rootRef,
+  enabled = true,
 }: UseInfiniteScrollOptions) {
   const sentinelRef = useRef<HTMLDivElement>(null)
   /** 同步锁，防止 isLoading 异步更新期间重复触发 */
@@ -35,6 +41,8 @@ export function useInfiniteScroll({
   }, [isLoading])
 
   useEffect(() => {
+    if (!enabled) return
+
     const sentinel = sentinelRef.current
     if (!sentinel || !hasMore) return
 
@@ -45,12 +53,12 @@ export function useInfiniteScroll({
           onLoadMore()
         }
       },
-      { rootMargin: `${rootMargin}px` },
+      { root: rootRef?.current ?? null, rootMargin: `${rootMargin}px` },
     )
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [hasMore, onLoadMore, rootMargin])
+  }, [hasMore, onLoadMore, rootMargin, rootRef, enabled])
 
   return sentinelRef
 }

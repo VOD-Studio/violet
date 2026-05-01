@@ -1,6 +1,6 @@
 // 富文本编辑器组件
 // 基于 Tiptap 实现，支持格式化工具栏、图片/视频插入、字数统计
-// 工具栏固定在视口顶部，支持素材库选择图片
+// 工具栏在长内容时固定到视口顶部
 
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
@@ -12,7 +12,7 @@ import Underline from "@tiptap/extension-underline"
 import Highlight from "@tiptap/extension-highlight"
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
 import { common, createLowlight } from "lowlight"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Bold,
@@ -104,6 +104,9 @@ export default function RichTextEditor({
   const [charCount, setCharCount] = useState(0)
   const [linkDialogOpen, setLinkDialogOpen] = useState(false)
   const [imageDialogOpen, setImageDialogOpen] = useState(false)
+  const [toolbarSticky, setToolbarSticky] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const toolbarRef = useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
     extensions: [
@@ -151,6 +154,26 @@ export default function RichTextEditor({
       },
     },
   })
+
+  // 监听滚动，当工具栏滚出容器时固定到视口顶部
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!containerRef.current || !toolbarRef.current) return
+
+      const containerRect = containerRef.current.getBoundingClientRect()
+      const toolbarHeight = toolbarRef.current.offsetHeight
+
+      // 当容器顶部离开视口时，工具栏需要固定
+      if (containerRect.top < -toolbarHeight) {
+        setToolbarSticky(true)
+      } else {
+        setToolbarSticky(false)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   // 初始化字数统计
   useEffect(() => {
@@ -223,21 +246,28 @@ export default function RichTextEditor({
   if (!editor) return null
 
   return (
-    <div className={`overflow-hidden rounded-lg border bg-background ${className}`}>
-      {/* 工具栏 - sticky 定位 */}
-      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b bg-muted/30 p-2 backdrop-blur-sm">
+    <div ref={containerRef} className={`rounded-lg border bg-background ${className}`}>
+      {/* 工具栏 - 滚动时固定到视口顶部 */}
+      <div
+        ref={toolbarRef}
+        className={`flex flex-wrap items-center gap-0.5 border-b bg-muted/30 p-2 backdrop-blur-sm transition-shadow ${
+          toolbarSticky
+            ? "fixed top-0 left-0 right-0 z-50 shadow-md rounded-none"
+            : ""
+        }`}
+      >
         {/* 撤销/重做 */}
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
-          title="撤销"
+          title="撤销 (Ctrl+Z)"
         >
           <Undo2 className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
-          title="重做"
+          title="重做 (Ctrl+Shift+Z)"
         >
           <Redo2 className="h-4 w-4" />
         </ToolbarButton>
@@ -248,21 +278,21 @@ export default function RichTextEditor({
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           isActive={editor.isActive("heading", { level: 1 })}
-          title="一级标题"
+          title="一级标题 (#)"
         >
           <Heading1 className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           isActive={editor.isActive("heading", { level: 2 })}
-          title="二级标题"
+          title="二级标题 (##)"
         >
           <Heading2 className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           isActive={editor.isActive("heading", { level: 3 })}
-          title="三级标题"
+          title="三级标题 (###)"
         >
           <Heading3 className="h-4 w-4" />
         </ToolbarButton>
@@ -273,21 +303,21 @@ export default function RichTextEditor({
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           isActive={editor.isActive("bold")}
-          title="粗体"
+          title="粗体 (Ctrl+B)"
         >
           <Bold className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
           isActive={editor.isActive("italic")}
-          title="斜体"
+          title="斜体 (Ctrl+I)"
         >
           <Italic className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           isActive={editor.isActive("underline")}
-          title="下划线"
+          title="下划线 (Ctrl+U)"
         >
           <UnderlineIcon className="h-4 w-4" />
         </ToolbarButton>
@@ -312,14 +342,14 @@ export default function RichTextEditor({
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           isActive={editor.isActive("bulletList")}
-          title="无序列表"
+          title="无序列表 (-)"
         >
           <List className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           isActive={editor.isActive("orderedList")}
-          title="有序列表"
+          title="有序列表 (1.)"
         >
           <ListOrdered className="h-4 w-4" />
         </ToolbarButton>
@@ -330,14 +360,14 @@ export default function RichTextEditor({
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           isActive={editor.isActive("blockquote")}
-          title="引用"
+          title="引用 (>)"
         >
           <Quote className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           isActive={editor.isActive("codeBlock")}
-          title="代码块"
+          title="代码块 (```)"
         >
           <Code className="h-4 w-4" />
         </ToolbarButton>
@@ -370,7 +400,7 @@ export default function RichTextEditor({
         <ToolbarDivider />
 
         {/* 分割线 */}
-        <ToolbarButton onClick={insertHorizontalRule} title="分割线">
+        <ToolbarButton onClick={insertHorizontalRule} title="分割线 (---)">
           <Minus className="h-4 w-4" />
         </ToolbarButton>
 
