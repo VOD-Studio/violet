@@ -39,17 +39,18 @@ func RunMigrations(migrationsPath, databaseURL string, db *sql.DB) error {
 		return fmt.Errorf("获取迁移版本失败: %w", err)
 	}
 
-	// 如果 dirty 状态异常，直接强制跳到最新版本
+	// 如果 dirty 状态异常，先确保缺失字段存在，再强制跳到最新版本
 	if dirty {
-		fmt.Printf("检测到 dirty 状态，当前版本 %d，强制跳到最新版本 %d...\n", version, latestVersion)
+		fmt.Printf("检测到 dirty 状态，当前版本 %d，先检查缺失字段...\n", version)
+		// 执行必要的修复 SQL（确保缺失字段被添加）
+		if err := ensureLatestSchema(db); err != nil {
+			fmt.Printf("警告: 执行修复 SQL 失败: %v\n", err)
+		}
+		fmt.Printf("强制跳到最新版本 %d...\n", latestVersion)
 		if err := m.Force(latestVersion); err != nil {
 			return fmt.Errorf("强制设置版本失败: %w", err)
 		}
 		fmt.Printf("已将版本强制设置为 %d\n", latestVersion)
-		// 执行必要的修复 SQL（确保缺失字段被添加）
-		if err := runFixSQL(db); err != nil {
-			fmt.Printf("警告: 执行修复 SQL 失败: %v\n", err)
-		}
 		return nil
 	}
 
@@ -72,8 +73,8 @@ func RunMigrations(migrationsPath, databaseURL string, db *sql.DB) error {
 	return nil
 }
 
-// runFixSQL 执行必要的修复 SQL，确保缺失的字段被添加
-func runFixSQL(db *sql.DB) error {
+// ensureLatestSchema 确保数据库表结构完整，添加缺失的字段
+func ensureLatestSchema(db *sql.DB) error {
 	// 检查并添加 seo_keywords 字段（版本 9）
 	var hasColumn bool
 	row := db.QueryRow(`
