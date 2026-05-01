@@ -16,6 +16,15 @@ function formatDate(dateStr: string): string {
   })
 }
 
+/** 判断两个日期是否相同（忽略时分秒） */
+function isSameDay(date1: string, date2: string): boolean {
+  const d1 = new Date(date1)
+  const d2 = new Date(date2)
+  return d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+}
+
 interface ArticleHeaderProps {
   /** 文章详情 */
   post: PostDetail
@@ -57,7 +66,13 @@ export function ArticleHeader({ post }: ArticleHeaderProps) {
         {/* 发布日期 */}
         <span className="flex items-center gap-1">
           <Calendar className="size-4" />
-          {formatDate(post.createdAt)}
+          {post.updatedAt && !isSameDay(post.createdAt, post.updatedAt) ? (
+            <span>
+              发布于 {formatDate(post.createdAt)}，更新于 {formatDate(post.updatedAt)}
+            </span>
+          ) : (
+            formatDate(post.createdAt)
+          )}
         </span>
 
         {/* 浏览量 */}

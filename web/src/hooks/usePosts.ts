@@ -106,4 +106,14 @@ export function useDeletePost() {
   })
 }
 
+/**
+ * 增加文章浏览次数
+ * @param id 文章 ID
+ */
+export function useIncrementView() {
+  return useMutation({
+    mutationFn: (id: string) => api.post(`/posts/${id}/view`),
+  })
+}
+
 export type { Post, PostDetail, PaginatedPosts, PostsParams }

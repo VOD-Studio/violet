@@ -4,8 +4,9 @@
 import { useParams, Link } from "react-router"
 import { motion } from "motion/react"
 import { ArrowLeft } from "lucide-react"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { usePost } from "@/hooks/usePosts"
+import { usePost, useIncrementView } from "@/hooks/usePosts"
 import { CommentSection } from "@/components/blog/CommentSection"
 import { ScrollReveal } from "@/components/creative"
 import { SEO } from "@/components/shared/SEO"
@@ -20,6 +21,7 @@ import { ArticleHeader } from "./ArticleHeader"
 import { ArticleContent } from "./ArticleContent"
 import { ArticleSkeleton } from "./ArticleSkeleton"
 import { ArticleError } from "./ArticleError"
+import { TableOfContents } from "./TableOfContents"
 
 /**
  * 文章详情页
@@ -27,6 +29,14 @@ import { ArticleError } from "./ArticleError"
 export default function BlogSlug() {
   const { slug } = useParams<{ slug: string }>()
   const { data: post, isLoading, error } = usePost(slug)
+  const incrementViewMutation = useIncrementView()
+
+  /* 文章加载成功后增加浏览次数 */
+  useEffect(() => {
+    if (post?.id) {
+      incrementViewMutation.mutate(post.id)
+    }
+  }, [post?.id])
 
   /* 加载态 */
   if (isLoading) {
@@ -86,6 +96,9 @@ export default function BlogSlug() {
           <CommentSection postId={post.id} />
         </ScrollReveal>
       </motion.article>
+
+      {/* 目录导航 */}
+      <TableOfContents html={post.contentHtml ?? ""} />
 
       {/* 回到顶部 */}
       <BackToTop threshold={400} variant="rocket" />
