@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"blog-api/internal/repository/generated"
 )
@@ -11,19 +10,19 @@ import (
 // DashboardStats 后台总览统计数据
 type DashboardStats struct {
 	// TotalPosts 文章总数
-	TotalPosts int64 `json:"total_posts"`
+	TotalPosts int64 `json:"totalPosts"`
 	// TotalComments 评论总数
-	TotalComments int64 `json:"total_comments"`
+	TotalComments int64 `json:"totalComments"`
 	// PendingComments 待审核评论数
-	PendingComments int64 `json:"pending_comments"`
+	PendingComments int64 `json:"pendingComments"`
 	// TotalViews 总浏览量
-	TotalViews int64 `json:"total_views"`
+	TotalViews int64 `json:"totalViews"`
 	// TotalUsers 用户总数
-	TotalUsers int64 `json:"total_users"`
+	TotalUsers int64 `json:"totalUsers"`
 	// RecentPosts 最近文章列表
-	RecentPosts []*RecentPost `json:"recent_posts"`
+	RecentPosts []*RecentPost `json:"recentPosts"`
 	// PopularPosts 热门文章列表
-	PopularPosts []*PopularPost `json:"popular_posts"`
+	PopularPosts []*PopularPost `json:"popularPosts"`
 }
 
 // RecentPost 最近文章摘要
@@ -37,12 +36,12 @@ type RecentPost struct {
 	// Status 文章状态
 	Status string `json:"status"`
 	// ViewCount 浏览次数
-	ViewCount int32 `json:"view_count"`
-	// CreatedAt 创建时间
-	CreatedAt time.Time `json:"created_at"`
+	ViewCount int32 `json:"viewCount"`
+	// PublishedAt 发布时间
+	PublishedAt *string `json:"publishedAt,omitempty"`
 }
 
-// PopularPost 热门文章摘要
+// PopularPost 门文章摘要
 type PopularPost struct {
 	// ID 文章 ID
 	ID string `json:"id"`
@@ -51,9 +50,7 @@ type PopularPost struct {
 	// Slug URL 标识符
 	Slug string `json:"slug"`
 	// ViewCount 浏览次数
-	ViewCount int32 `json:"view_count"`
-	// CreatedAt 创建时间
-	CreatedAt time.Time `json:"created_at"`
+	ViewCount int32 `json:"viewCount"`
 }
 
 // ViewTrends 浏览量趋势数据
@@ -68,16 +65,16 @@ type ViewTrends struct {
 type DailyView struct {
 	// Date 日期，格式为 YYYY-MM-DD
 	Date string `json:"date"`
-	// Views 浏览次数
-	Views int64 `json:"views"`
+	// Count 浏览次数
+	Count int64 `json:"count"`
 }
 
 // MonthlyView 每月浏览量
 type MonthlyView struct {
 	// Month 月份，格式为 YYYY-MM
 	Month string `json:"month"`
-	// Views 浏览次数
-	Views int64 `json:"views"`
+	// Count 浏览次数
+	Count int64 `json:"count"`
 }
 
 // StatsService 统计业务服务
@@ -131,7 +128,6 @@ func (s *StatsService) GetDashboardStats(ctx context.Context) (*DashboardStats, 
 			Slug:      row.Slug,
 			Status:    row.Status,
 			ViewCount: row.ViewCount,
-			CreatedAt: row.CreatedAt,
 		}
 	}
 
@@ -147,7 +143,6 @@ func (s *StatsService) GetDashboardStats(ctx context.Context) (*DashboardStats, 
 			Title:     row.Title,
 			Slug:      row.Slug,
 			ViewCount: row.ViewCount,
-			CreatedAt: row.CreatedAt,
 		}
 	}
 
@@ -173,7 +168,7 @@ func (s *StatsService) GetViewTrends(ctx context.Context) (*ViewTrends, error) {
 	for i, row := range dailyRows {
 		daily[i] = &DailyView{
 			Date:  row.Date.Format("2006-01-02"),
-			Views: row.Views,
+			Count: row.Views,
 		}
 	}
 
@@ -186,7 +181,7 @@ func (s *StatsService) GetViewTrends(ctx context.Context) (*ViewTrends, error) {
 	for i, row := range monthlyRows {
 		monthly[i] = &MonthlyView{
 			Month: row.Month,
-			Views: row.Views,
+			Count: row.Views,
 		}
 	}
 

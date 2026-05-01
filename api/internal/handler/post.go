@@ -81,6 +81,8 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 		PublishedAt *string `json:"publishedAt,omitempty"`
 		/** 创建时间 */
 		CreatedAt string `json:"createdAt"`
+			/** 更新时间 */
+			UpdatedAt string `json:"updatedAt"`
 	}
 
 	items := make([]postListItem, 0, len(result.Posts))
@@ -91,6 +93,7 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 			Slug:       p.Slug,
 			Status:     p.Status,
 			ViewCount:  p.ViewCount,
+				UpdatedAt:  p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			IsFeatured: p.IsFeatured,
 			CreatedAt:  p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
