@@ -45,7 +45,7 @@ func main() {
 
 	// 执行数据库迁移
 	migrateURL := fmt.Sprintf("pgx5://%s", cfg.DatabaseURL[len("postgres://"):])
-	if err := migrate.RunMigrations("migrations", migrateURL); err != nil {
+	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
 

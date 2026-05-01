@@ -1,6 +1,7 @@
 package migrate
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,7 +16,8 @@ import (
 // RunMigrations 执行数据库迁移
 // migrationsPath: migrations 文件目录路径，如 "migrations"
 // databaseURL: 数据库连接字符串，如 "pgx5://user:pass@localhost:5432/db?sslmode=disable"
-func RunMigrations(migrationsPath, databaseURL string) error {
+// db: 数据库连接，用于执行额外的修复 SQL
+func RunMigrations(migrationsPath, databaseURL string, db *sql.DB) error {
 	m, err := migrate.New(
 		fmt.Sprintf("file://%s", migrationsPath),
 		databaseURL,
@@ -44,6 +46,10 @@ func RunMigrations(migrationsPath, databaseURL string) error {
 			return fmt.Errorf("强制设置版本失败: %w", err)
 		}
 		fmt.Printf("已将版本强制设置为 %d\n", latestVersion)
+		// 执行必要的修复 SQL（确保缺失字段被添加）
+		if err := runFixSQL(db); err != nil {
+			fmt.Printf("警告: 执行修复 SQL 失败: %v\n", err)
+		}
 		return nil
 	}
 
@@ -63,6 +69,32 @@ func RunMigrations(migrationsPath, databaseURL string) error {
 	}
 
 	fmt.Printf("数据库迁移完成，当前版本: %d\n", version)
+	return nil
+}
+
+// runFixSQL 执行必要的修复 SQL，确保缺失的字段被添加
+func runFixSQL(db *sql.DB) error {
+	// 检查并添加 seo_keywords 字段（版本 9）
+	var hasColumn bool
+	row := db.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns
+			WHERE table_name = 'posts' AND column_name = 'seo_keywords'
+		)
+	`)
+	if err := row.Scan(&hasColumn); err != nil {
+		return fmt.Errorf("检查 seo_keywords 字段失败: %w", err)
+	}
+
+	if !hasColumn {
+		fmt.Printf("添加缺失的 seo_keywords 字段...\n")
+		_, err := db.Exec(`ALTER TABLE posts ADD COLUMN seo_keywords VARCHAR(255)`)
+		if err != nil {
+			return fmt.Errorf("添加 seo_keywords 字段失败: %w", err)
+		}
+		fmt.Printf("已添加 seo_keywords 字段\n")
+	}
+
 	return nil
 }
 
