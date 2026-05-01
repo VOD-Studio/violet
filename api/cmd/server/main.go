@@ -14,6 +14,7 @@ import (
 
 	"blog-api/config"
 	"blog-api/internal/handler"
+	"blog-api/internal/migrate"
 	"blog-api/internal/middleware"
 	"blog-api/internal/repository/generated"
 	"blog-api/internal/service"
@@ -41,6 +42,12 @@ func main() {
 		log.Fatalf("数据库 ping 失败: %v", err)
 	}
 	log.Println("数据库连接成功")
+
+	// 执行数据库迁移
+	migrateURL := fmt.Sprintf("pgx5://%s", cfg.DatabaseURL[len("postgres://"):])
+	if err := migrate.RunMigrations("migrations", migrateURL); err != nil {
+		log.Fatalf("数据库迁移失败: %v", err)
+	}
 
 	// 初始化 Redis 客户端
 	redisOpt, err := redis.ParseURL(cfg.RedisURL)
