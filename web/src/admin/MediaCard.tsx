@@ -69,24 +69,24 @@ function getFileTypeLabel(mimeType: string): string {
 const FileIcon = (
   props: React.ComponentProps<"svg"> & { mimeType: string }
 ) => {
-  const { mimeType } = props;
-  if (mimeType.startsWith("video/")) return <Video {...props} />;
-  if (mimeType.startsWith("audio/")) return <Music {...props} />;
-  if (mimeType.startsWith("image/")) return <ImageIcon {...props} />;
-  if (mimeType.includes("pdf")) return <FileText {...props} />;
+  const { mimeType, ...svgProps } = props;
+  if (mimeType.startsWith("video/")) return <Video {...svgProps} />;
+  if (mimeType.startsWith("audio/")) return <Music {...svgProps} />;
+  if (mimeType.startsWith("image/")) return <ImageIcon {...svgProps} />;
+  if (mimeType.includes("pdf")) return <FileText {...svgProps} />;
   if (mimeType.includes("word") || mimeType.includes("document"))
-    return <FileText {...props} />;
+    return <FileText {...svgProps} />;
   if (mimeType.includes("excel") || mimeType.includes("sheet"))
-    return <FileSpreadsheet {...props} />;
+    return <FileSpreadsheet {...svgProps} />;
   if (mimeType.includes("powerpoint") || mimeType.includes("presentation"))
-    return <Presentation {...props} />;
+    return <Presentation {...svgProps} />;
   if (
     mimeType.includes("zip") ||
     mimeType.includes("rar") ||
     mimeType.includes("7z")
   )
-    return <FileArchive {...props} />;
-  return <File {...props} />;
+    return <FileArchive {...svgProps} />;
+  return <File {...svgProps} />;
 };
 
 /**

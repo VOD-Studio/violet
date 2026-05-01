@@ -10,7 +10,8 @@ function useProjects() {
     queryKey: ["projects"],
     queryFn: async () => {
       try {
-        return await api.get<ProjectData[]>("/projects")
+        const res = await api.get<{ projects: ProjectData[] }>("/projects")
+        return res.projects ?? []
       } catch {
         return []
       }
