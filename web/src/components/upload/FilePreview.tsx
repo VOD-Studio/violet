@@ -74,34 +74,40 @@ function getFileInfo(mimeType: string): { icon: typeof File; label: string } {
 
 /**
  * 图片预览，支持缩略图占位、加载态和错误态
- * 缩略图先显示，原图加载完成后平滑过渡
+ * 缩略图立即显示，delay结束后加载原图
  */
 function ImagePreview({
   url,
   thumbnailUrl,
   name,
+  delay = 0,
 }: {
   url: string;
   thumbnailUrl?: string;
   name?: string;
+  delay?: number;
 }) {
+  const [loadOriginal, setLoadOriginal] = useState(delay === 0);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">(
     "loading"
   );
 
+  // delay结束后加载原图
+  useEffect(() => {
+    if (delay === 0) return;
+    const timer = setTimeout(() => setLoadOriginal(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
   return (
     <div className="relative flex min-h-50 items-center justify-center bg-black/5">
-      {/* 缩略图占位层 */}
+      {/* 缩略图（始终显示直到原图加载完成） */}
       {thumbnailUrl && (
-        <div
-          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${status === "loaded" ? "opacity-0" : "opacity-100"}`}
-        >
-          <img
-            src={thumbnailUrl}
-            alt={name ?? "预览图片"}
-            className="max-h-125 w-full object-contain blur-sm"
-          />
-        </div>
+        <img
+          src={thumbnailUrl}
+          alt={name ?? "预览图片"}
+          className={`max-h-125 w-full object-contain blur-sm transition-opacity duration-300 ${status === "loaded" ? "opacity-0" : "opacity-100"}`}
+        />
       )}
       {/* 加载态（无缩略图时显示） */}
       {!thumbnailUrl && status === "loading" && (
@@ -114,14 +120,16 @@ function ImagePreview({
           <span className="text-sm">图片加载失败</span>
         </div>
       )}
-      {/* 原图 */}
-      <img
-        src={url}
-        alt={name ?? "预览图片"}
-        className={`max-h-125 w-full object-contain transition-opacity duration-300 ${status === "loaded" ? "opacity-100" : "opacity-0"}`}
-        onLoad={() => setStatus("loaded")}
-        onError={() => setStatus("error")}
-      />
+      {/* 原图（delay结束后才开始加载） */}
+      {loadOriginal && (
+        <img
+          src={url}
+          alt={name ?? "预览图片"}
+          className={`absolute max-h-125 w-full object-contain transition-opacity duration-300 ${status === "loaded" ? "opacity-100" : "opacity-0"}`}
+          onLoad={() => setStatus("loaded")}
+          onError={() => setStatus("error")}
+        />
+      )}
     </div>
   );
 }
@@ -227,15 +235,6 @@ export default function FilePreview({
   className = "",
   delay = 0,
 }: FilePreviewProps) {
-  const [ready, setReady] = useState(delay === 0);
-
-  // 延迟渲染，等待父容器动画完成
-  useEffect(() => {
-    if (delay === 0) return;
-    const timer = setTimeout(() => setReady(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-
   const isImage = mimeType.startsWith("image/");
   const isVideo = mimeType.startsWith("video/");
   const isAudio = mimeType.startsWith("audio/");
@@ -245,24 +244,24 @@ export default function FilePreview({
     <div className={`space-y-3 ${className}`}>
       {/* 预览区域 */}
       <div className="overflow-hidden rounded-lg border bg-background">
-        {!ready && (
-          <div className="flex min-h-50 items-center justify-center">
-            <Loader2 className="size-8 animate-spin text-muted-foreground" />
-          </div>
+        {isImage && (
+          <ImagePreview
+            url={url}
+            thumbnailUrl={thumbnailUrl}
+            name={name}
+            delay={delay}
+          />
         )}
-        {ready && isImage && (
-          <ImagePreview url={url} thumbnailUrl={thumbnailUrl} name={name} />
-        )}
-        {ready && isVideo && <VideoPreview url={url} mimeType={mimeType} />}
-        {ready && isAudio && <AudioPreview url={url} mimeType={mimeType} name={name} />}
-        {ready && isPDF && (
+        {isVideo && <VideoPreview url={url} mimeType={mimeType} />}
+        {isAudio && <AudioPreview url={url} mimeType={mimeType} name={name} />}
+        {isPDF && (
           <iframe
             src={url}
             title={name ?? "PDF 预览"}
             className="h-150 w-full"
           />
         )}
-        {ready && !isImage && !isVideo && !isAudio && !isPDF && (
+        {!isImage && !isVideo && !isAudio && !isPDF && (
           <FilePlaceholder url={url} name={name} mimeType={mimeType} />
         )}
       </div>
