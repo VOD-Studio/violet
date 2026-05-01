@@ -30,76 +30,118 @@ export function TableOfContents({
   const [activeId, setActiveId] = useState<string>("")
   const [headings, setHeadings] = useState<TocItem[]>([])
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 从 DOM 中提取标题并设置 IntersectionObserver
+  // 组件挂载后延迟执行（等待文章内容渲染）
   useEffect(() => {
-    const extractAndObserve = () => {
-      const proseContainer = document.querySelector(".prose")
-      if (!proseContainer) {
-        // prose 还未渲染，继续等待
-        setTimeout(extractAndObserve, 200)
-        return
+    timeoutRef.current = setTimeout(() => {
+      setMounted(true)
+    }, 500)
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
       }
+    }
+  }, [])
 
-      const headingElements = proseContainer.querySelectorAll("h2, h3, h4")
-      const items: TocItem[] = []
+  // 挂载后提取标题并设置观察器
+  useEffect(() => {
+    if (!mounted) return
 
-      headingElements.forEach((el, index) => {
-        const level = parseInt(el.tagName.charAt(1))
-        if (level >= minLevel && level <= maxLevel) {
-          const id = el.getAttribute("id") || `heading-${index}-${level}`
-          if (!el.getAttribute("id")) {
-            el.setAttribute("id", id)
-          }
-          el.classList.add("scroll-mt-20")
-          items.push({ id, text: el.textContent || "", level })
-        }
-      })
-
-      setHeadings(items)
-
-      // 设置 IntersectionObserver
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
-
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          // 找到最靠近顶部的可见标题
-          const visibleEntries = entries.filter(e => e.isIntersecting)
-          if (visibleEntries.length > 0) {
-            // 按距离顶部排序，取最近的
-            const closest = visibleEntries.reduce((prev, curr) => {
-              const prevTop = prev.boundingClientRect.top
-              const currTop = curr.boundingClientRect.top
-              return currTop < prevTop ? curr : prev
-            })
-            setActiveId(closest.target.getAttribute("id") || "")
-          }
-        },
-        {
-          rootMargin: "-80px 0px -70% 0px",
-          threshold: 0,
-        }
-      )
-
-      items.forEach(({ id }) => {
-        const el = document.getElementById(id)
-        if (el && observerRef.current) {
-          observerRef.current.observe(el)
-        }
-      })
+    const proseContainer = document.querySelector(".prose")
+    if (!proseContainer) {
+      // 如果还是没有，再等一会
+      timeoutRef.current = setTimeout(() => {
+        setMounted(true) // 重新触发
+      }, 300)
+      return
     }
 
-    extractAndObserve()
+    const headingElements = proseContainer.querySelectorAll("h2, h3, h4")
+    const items: TocItem[] = []
 
+    headingElements.forEach((el, index) => {
+      const level = parseInt(el.tagName.charAt(1))
+      if (level >= minLevel && level <= maxLevel) {
+        const id = el.getAttribute("id") || `heading-${index}-${level}`
+        if (!el.getAttribute("id")) {
+          el.setAttribute("id", id)
+        }
+        el.classList.add("scroll-mt-20")
+        items.push({ id, text: el.textContent || "", level })
+      }
+    })
+
+    setHeadings(items)
+
+    // 断开旧的观察器
+    if (observerRef.current) {
+      observerRef.current.disconnect()
+    }
+
+    // 创建新的观察器
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        // 找到最靠近顶部的可见标题
+        const visibleEntries = entries.filter((e) => e.isIntersecting)
+        if (visibleEntries.length > 0) {
+          const closest = visibleEntries.reduce((prev, curr) => {
+            const prevTop = Math.abs(prev.boundingClientRect.top)
+            const currTop = Math.abs(curr.boundingClientRect.top)
+            return currTop < prevTop ? curr : prev
+          })
+          const newId = closest.target.getAttribute("id") || ""
+          if (newId !== activeId) {
+            setActiveId(newId)
+          }
+        } else {
+          // 没有可见的标题，检查哪个最近
+          const allEntries = entries
+          const closestAbove = allEntries
+            .filter((e) => e.boundingClientRect.top < 80)
+            .sort((a, b) => b.boundingClientRect.top - a.boundingClientRect.top)[0]
+          if (closestAbove) {
+            const newId = closestAbove.target.getAttribute("id") || ""
+            if (newId !== activeId) {
+              setActiveId(newId)
+            }
+          }
+        }
+      },
+      {
+        rootMargin: "-80px 0px -80% 0px",
+        threshold: 0,
+      }
+    )
+
+    // 观察所有标题
+    items.forEach(({ id }) => {
+      const el = document.getElementById(id)
+      if (el && observerRef.current) {
+        observerRef.current.observe(el)
+      }
+    })
+
+    // 初始化时设置第一个标题为激活
+    if (items.length > 0 && !activeId) {
+      setActiveId(items[0].id)
+    }
+  }, [mounted, minLevel, maxLevel, activeId])
+
+  // 清理
+  useEffect(() => {
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect()
       }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
     }
-  }, [minLevel, maxLevel])
+  }, [])
 
   // 点击跳转到指定标题
   const scrollToHeading = useCallback((id: string) => {
@@ -115,7 +157,7 @@ export function TableOfContents({
 
   if (headings.length === 0) return null
 
-  // 桌面端：侧边栏固定显示
+  // 桌面端侧边栏
   const DesktopToc = () => (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -131,14 +173,14 @@ export function TableOfContents({
       </div>
 
       <nav className="relative rounded-lg border bg-card/80 backdrop-blur-sm p-2">
-        {/* 进度指示 */}
+        {/* 进度指示线 */}
         <div className="absolute left-[11px] top-2 bottom-2 w-[2px] bg-border rounded-full" />
         {activeId && (
           <motion.div
             className="absolute left-[11px] w-[2px] bg-primary rounded-full"
             initial={{ height: 0 }}
             animate={{
-              height: `${((headings.findIndex(h => h.id === activeId) + 1) / headings.length) * 100}%`,
+              height: `${((headings.findIndex((h) => h.id === activeId) + 1) / headings.length) * 100}%`,
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             style={{ top: 8 }}
@@ -191,7 +233,9 @@ export function TableOfContents({
                   <span
                     className={cn(
                       "text-[13px] truncate transition-colors",
-                      isActive ? "text-primary font-medium" : "text-muted-foreground group-hover:text-foreground"
+                      isActive
+                        ? "text-primary font-medium"
+                        : "text-muted-foreground group-hover:text-foreground"
                     )}
                   >
                     {heading.text}
@@ -205,7 +249,7 @@ export function TableOfContents({
     </motion.div>
   )
 
-  // 移动端：悬浮按钮 + 弹出面板
+  // 移动端悬浮按钮 + 弹出面板
   const MobileToc = () => (
     <>
       {/* 悬浮按钮 */}
