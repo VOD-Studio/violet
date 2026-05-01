@@ -1,12 +1,13 @@
 // API 请求客户端
 // 使用 axios 封装请求，自动附加 JWT 认证令牌，统一处理错误
+// 支持自动刷新即将过期的 token
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios"
 
-/** API 基础地址，从环境变量读取，默认为本地开发地址 */
+/** API 基础地址 */
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api"
 
-/** 服务器根地址，用于拼接静态资源（如上传文件）的完整 URL */
+/** 服务器根地址，用于拼接静态资源 URL */
 const SERVER_ORIGIN = import.meta.env.VITE_SERVER_ORIGIN ?? "http://localhost:8080"
 
 /**
@@ -20,9 +21,7 @@ export function getUploadUrl(path: string): string {
 
 /** API 错误结构 */
 class ApiError extends Error {
-  /** HTTP 状态码 */
   status: number
-  /** 错误详情 */
   errors?: Record<string, string[]>
 
   constructor(status: number, message: string, errors?: Record<string, string[]>) {
@@ -42,21 +41,95 @@ const client = axios.create({
   },
 })
 
+/** 刷新 token 锁，防止并发刷新 */
+let isRefreshing = false
+let refreshPromise: Promise<string> | null = null
+
+/**
+ * 检查 token 是否即将过期（5 分钟内）
+ */
+function isTokenExpiring(): boolean {
+  const expiresAtStr = localStorage.getItem("token_expires_at")
+  if (!expiresAtStr) return false
+  const expiresAt = parseInt(expiresAtStr, 10)
+  // 提前 5 分钟刷新
+  return expiresAt - Date.now() < 5 * 60 * 1000
+}
+
+/**
+ * 刷新 token
+ */
+async function refreshToken(): Promise<string> {
+  // 如果正在刷新，等待结果
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise
+  }
+
+  const refreshTokenValue = localStorage.getItem("refresh_token")
+  if (!refreshTokenValue) {
+    throw new Error("No refresh token")
+  }
+
+  isRefreshing = true
+  refreshPromise = axios
+    .post(`${BASE_URL}/auth/refresh`, { refresh_token: refreshTokenValue })
+    .then((res) => {
+      const { access_token, refresh_token, expires_in } = res.data
+      const expiresAt = Date.now() + expires_in * 1000
+      localStorage.setItem("token", access_token)
+      localStorage.setItem("refresh_token", refresh_token)
+      localStorage.setItem("token_expires_at", String(expiresAt))
+      isRefreshing = false
+      refreshPromise = null
+      return access_token
+    })
+    .catch((err) => {
+      isRefreshing = false
+      refreshPromise = null
+      // 刷新失败，清除认证状态
+      localStorage.removeItem("token")
+      localStorage.removeItem("refresh_token")
+      localStorage.removeItem("token_expires_at")
+      throw err
+    })
+
+  return refreshPromise
+}
+
 /**
  * 请求拦截器
- * 自动从 localStorage 读取 JWT 令牌并附加到请求头
- * FormData 请求自动移除 Content-Type，让浏览器自动设置 boundary
+ * 自动附加 token，并在即将过期时刷新
  */
 client.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
+    // 刷新接口本身不需要检查过期
+    if (config.url === "/auth/refresh") {
+      return config
+    }
+
     const token = localStorage.getItem("token")
-    if (token) {
+    if (!token) {
+      return config
+    }
+
+    // 检查是否即将过期，自动刷新
+    if (isTokenExpiring()) {
+      try {
+        const newToken = await refreshToken()
+        config.headers.Authorization = `Bearer ${newToken}`
+      } catch {
+        // 刷新失败，使用旧 token 继续（可能会 401）
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    } else {
       config.headers.Authorization = `Bearer ${token}`
     }
-    // FormData 请求需要浏览器自动设置 Content-Type（包含 boundary）
+
+    // FormData 请求让浏览器自动设置 Content-Type
     if (config.data instanceof FormData) {
       delete config.headers["Content-Type"]
     }
+
     return config
   },
   (error) => Promise.reject(error),
@@ -72,9 +145,11 @@ client.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response
 
-      /* 401 未授权：清除本地令牌并跳转登录页 */
+      /* 401 未授权：清除认证状态并跳转登录页 */
       if (status === 401) {
         localStorage.removeItem("token")
+        localStorage.removeItem("refresh_token")
+        localStorage.removeItem("token_expires_at")
         if (window.location.pathname !== "/login") {
           window.location.href = "/login"
         }
@@ -87,62 +162,37 @@ client.interceptors.response.use(
       )
     }
 
-    /* 网络错误或其他无法响应的情况 */
+    /* 网络错误 */
     throw new ApiError(0, "网络连接失败，请检查网络状态")
   },
 )
 
-/** 导出的 API 客户端对象 */
+/** 导出的 API 客户端 */
 export const api = {
-  /**
-   * GET 请求
-   * @param endpoint - API 路径
-   * @param params - 查询参数
-   */
   async get<T>(endpoint: string, params?: Record<string, unknown>): Promise<T> {
     const response = await client.get(endpoint, { params })
     return (response.data.data ?? response.data) as T
   },
 
-  /**
-   * POST 请求
-   * @param endpoint - API 路径
-   * @param body - 请求体数据
-   */
   async post<T>(endpoint: string, body?: unknown): Promise<T> {
     const response = await client.post(endpoint, body)
     return (response.data.data ?? response.data) as T
   },
 
-  /**
-   * PUT 请求
-   * @param endpoint - API 路径
-   * @param body - 请求体数据
-   */
   async put<T>(endpoint: string, body?: unknown): Promise<T> {
     const response = await client.put(endpoint, body)
     return (response.data.data ?? response.data) as T
   },
 
-  /**
-   * PATCH 请求
-   * @param endpoint - API 路径
-   * @param body - 请求体数据
-   */
   async patch<T>(endpoint: string, body?: unknown): Promise<T> {
     const response = await client.patch(endpoint, body)
     return (response.data.data ?? response.data) as T
   },
 
-  /**
-   * DELETE 请求
-   * @param endpoint - API 路径
-   */
   async del<T>(endpoint: string): Promise<T> {
     const response = await client.delete(endpoint)
     return (response.data.data ?? response.data) as T
   },
 }
 
-/** 导出 ApiError 供外部捕获特定错误 */
 export { ApiError }
