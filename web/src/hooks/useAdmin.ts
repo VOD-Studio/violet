@@ -60,7 +60,7 @@ interface PopularPost {
 	/** URL slug */
 	slug: string
 	/** 浏览次数 */
-	viewCount: number
+	view_count: number
 }
 
 /** 最近文章摘要 */
@@ -74,9 +74,9 @@ interface RecentPost {
 	/** 发布状态 */
 	status: PostStatus
 	/** 浏览次数 */
-	viewCount: number
+	view_count: number
 	/** 发布时间 */
-	publishedAt?: string | null
+	published_at?: string | null
 }
 
 /** 评论结构 */
@@ -168,19 +168,19 @@ interface PopularPost {
 /** 仪表盘统计数据结构 */
 interface AdminStats {
 	/** 文章总数 */
-	totalPosts: number
+	total_posts: number
 	/** 评论总数 */
-	totalComments: number
+	total_comments: number
 	/** 待审核评论数 */
-	pendingComments: number
+	pending_comments: number
 	/** 总浏览量 */
-	totalViews: number
+	total_views: number
 	/** 用户总数 */
-	totalUsers: number
+	total_users: number
 	/** 最近文章列表 */
-	recentPosts: RecentPost[]
+	recent_posts: RecentPost[]
 	/** 热门文章列表 */
-	popularPosts: PopularPost[]
+	popular_posts: PopularPost[]
 }
 
 /**
