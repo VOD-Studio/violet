@@ -17,6 +17,7 @@ import { CoverImageUpload } from "./CoverImageUpload"
 import { TagSelector } from "./TagSelector"
 import { SeoSettings } from "./SeoSettings"
 import { MediaPicker, type MediaItem } from "./MediaPicker"
+import { BackToTop } from "@/components/shared/BackToTop"
 
 /** 表单字段类型 */
 interface PostFormValues {
@@ -263,6 +264,9 @@ export default function PostEdit() {
         onSelect={handleMediaSelect}
         mimeTypeFilter="image"
       />
+
+      {/* 回到顶部 */}
+      <BackToTop threshold={300} variant="chevron" />
     </div>
   )
 }

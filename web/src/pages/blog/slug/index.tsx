@@ -10,6 +10,7 @@ import { CommentSection } from "@/components/blog/CommentSection"
 import { ScrollReveal } from "@/components/creative"
 import { SEO } from "@/components/shared/SEO"
 import { StructuredData } from "@/components/shared/StructuredData"
+import { BackToTop } from "@/components/shared/BackToTop"
 import {
   generateStructuredData,
   generateBreadcrumbStructuredData,
@@ -85,6 +86,9 @@ export default function BlogSlug() {
           <CommentSection postId={post.id} />
         </ScrollReveal>
       </motion.article>
+
+      {/* 回到顶部 */}
+      <BackToTop threshold={400} variant="rocket" />
     </div>
   )
 }
