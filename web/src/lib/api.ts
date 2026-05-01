@@ -5,6 +5,7 @@
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios"
 import { useAuthStore } from "@/store"
+import { getNavigate } from "@/lib/navigation"
 
 /** API 基础地址 */
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api"
@@ -152,8 +153,8 @@ client.interceptors.response.use(
       if (status === 401 && originalRequest && !originalRequest._retry) {
         originalRequest._retry = true
 
-        const { refreshToken } = useAuthStore.getState()
-        if (refreshToken) {
+        const { refreshToken: refreshTokenValue } = useAuthStore.getState()
+        if (refreshTokenValue) {
           try {
             const newToken = await refreshToken()
             originalRequest.headers.Authorization = `Bearer ${newToken}`
@@ -168,8 +169,9 @@ client.interceptors.response.use(
           useAuthStore.getState().clearAuth()
         }
 
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login"
+        const navigate = getNavigate()
+        if (navigate && window.location.pathname !== "/login") {
+          navigate("/login")
         }
       }
 

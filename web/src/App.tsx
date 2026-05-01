@@ -3,7 +3,9 @@
 // 前台页面通过 Layout 组件内的 AnimatedOutlet 实现页面切换过渡动画
 // 包裹 ToastProvider 提供全局通知能力
 
-import { BrowserRouter, Routes, Route } from "react-router";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router";
+import { useEffect } from "react";
+import { setNavigate } from "@/lib/navigation";
 import { Layout } from "@/components/layout/Layout";
 import { ToastProvider } from "@/components/shared/Toast";
 import "@/styles/transitions.css";
@@ -33,6 +35,18 @@ import Users from "@/admin/Users";
 import Settings from "@/admin/Settings";
 
 /**
+ * 初始化全局导航引用
+ * 用于 axios 拦截器等非 React 组件中进行路由跳转
+ */
+function NavigateSetter() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    setNavigate(navigate);
+  }, [navigate]);
+  return null;
+}
+
+/**
  * 后台路由保护组件
  * 在渲染 AdminLayout 前检查认证状态，未认证则重定向到登录页
  */
@@ -49,6 +63,8 @@ function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
+        {/* 全局导航初始化 */}
+        <NavigateSetter />
         {/* 全局光标跟随效果 */}
         <CursorEffect />
 
