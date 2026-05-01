@@ -38,7 +38,10 @@ interface Post {
 
 /** 文章详情，包含正文内容 */
 interface PostDetail extends Post {
-  content: string
+  /** Markdown 正文 */
+  contentMarkdown?: string
+  /** HTML 正文 */
+  contentHtml?: string
 }
 
 /** 分页响应结构 */
