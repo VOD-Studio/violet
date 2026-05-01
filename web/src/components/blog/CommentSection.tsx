@@ -58,7 +58,8 @@ export function CommentSection({ postId }: CommentSectionProps) {
       if (!sectionRef.current) return
       const rect = sectionRef.current.getBoundingClientRect()
       // 评论区顶部在视口下方时显示快捷按钮（用户还没滚动到评论区）
-      setShowQuickButton(rect.top > window.innerHeight * 0.8)
+      // 使用更合理的阈值：评论区距离视口底部还有一定距离时就显示
+      setShowQuickButton(rect.top > window.innerHeight + 200)
     }
 
     // 初始检查
@@ -179,9 +180,9 @@ export function CommentSection({ postId }: CommentSectionProps) {
         </form>
       </section>
 
-      {/* 固定底部的快捷评论按钮 */}
+      {/* 固定底部的快捷评论按钮 - 位于回到顶部按钮上方 */}
       {showQuickButton && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-20 right-8 z-50">
           <Button
             size="lg"
             className="shadow-lg rounded-full"
