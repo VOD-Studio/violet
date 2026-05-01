@@ -90,6 +90,7 @@ func main() {
 	uploadService := service.NewUploadService(queries, mediaService, "uploads/chunks", "uploads", 1024*1024*1024, cfg.UploadPathPrefix)
 	musicService := service.NewMusicService()
 	projectService := service.NewProjectService(queries)
+	stickerService := service.NewStickerService(queries)
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService, cfg.UploadPathPrefix)
@@ -104,6 +105,7 @@ func main() {
 	uploadHandler := handler.NewUploadHandler(uploadService)
 	musicHandler := handler.NewMusicHandler(musicService)
 	projectHandler := handler.NewProjectHandler(projectService)
+	stickerHandler := handler.NewStickerHandler(stickerService)
 
 	// 创建 chi 路由实例
 	r := chi.NewRouter()
@@ -278,6 +280,42 @@ func main() {
 		// 公开接口
 		r.Get("/", projectHandler.List)            // 项目列表
 		r.Get("/{id}", projectHandler.GetByID)     // 项目详情
+	})
+
+	// 表情包相关路由（公开）
+	r.Route("/api/stickers", func(r chi.Router) {
+		r.Get("/", stickerHandler.GetAllStickers)                    // 获取所有表情包组和表情包
+		r.Get("/groups/{slug}", stickerHandler.GetStickerGroupBySlug) // 获取指定组
+		// 用户收藏（需要认证）
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Get("/favorites", stickerHandler.GetFavorites)                 // 获取收藏列表
+			r.Post("/favorites/{stickerId}", stickerHandler.AddFavorite)     // 添加收藏
+			r.Delete("/favorites/{stickerId}", stickerHandler.RemoveFavorite) // 移除收藏
+		})
+	})
+
+	// 表情包管理路由（管理员）
+	r.Route("/api/admin/sticker-groups", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Use(middleware.AdminRequired)
+			r.Get("/", stickerHandler.ListAllGroups)                       // 获取所有表情包组
+			r.Post("/", stickerHandler.CreateGroup)                        // 创建表情包组
+			r.Patch("/{id}", stickerHandler.UpdateGroup)                   // 更新表情包组
+			r.Delete("/{id}", stickerHandler.DeleteGroup)                  // 删除表情包组
+			r.Get("/{id}/stickers", stickerHandler.ListGroupStickers)      // 获取组内表情包
+			r.Post("/{id}/stickers", stickerHandler.CreateSticker)         // 创建表情包
+		})
+	})
+	r.Route("/api/admin/stickers", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Use(middleware.AdminRequired)
+			r.Patch("/{id}", stickerHandler.UpdateSticker)                 // 更新表情包
+			r.Delete("/{id}", stickerHandler.DeleteSticker)               // 删除表情包
+			r.Post("/reorder", stickerHandler.UpdateStickersSortOrder)    // 批量排序
+		})
 	})
 
 	// 项目管理路由，需要认证 + 管理员权限
