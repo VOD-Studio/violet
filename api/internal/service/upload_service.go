@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/disintegration/imaging"
 	"github.com/google/uuid"
 
 	"blog-api/internal/repository/generated"
@@ -349,18 +351,69 @@ func ComputeMD5(reader io.Reader) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// generateImageThumbnail 生成图片缩略图（占位符，实际需要图片处理库）
+// generateImageThumbnail 生成图片缩略图
 // 返回缩略图文件名，格式为 {basename}_thumb.jpg
 func (s *UploadService) generateImageThumbnail(filePath, filename string) string {
-	// 图片缩略图：目前返回空，后续可集成图片处理库（如 imaging）
-	// 临时方案：直接使用原图作为缩略图
-	return ""
+	// 打开原始图片
+	img, err := imaging.Open(filePath)
+	if err != nil {
+		return ""
+	}
+
+	// 缩略图尺寸：最大宽高 300px，保持比例
+	thumb := imaging.Resize(img, 300, 0, imaging.Lanczos)
+
+	// 生成缩略图文件名
+	ext := filepath.Ext(filename)
+	baseName := filename[:len(filename)-len(ext)]
+	thumbFilename := baseName + "_thumb.jpg"
+	thumbPath := filepath.Join(s.uploadDir, thumbFilename)
+
+	// 保存为 JPEG，质量 80%
+	if err := imaging.Save(thumb, thumbPath, imaging.JPEGQuality(80)); err != nil {
+		return ""
+	}
+
+	return thumbFilename
 }
 
-// generateVideoThumbnail 生成视频缩略图（占位符，实际需要 ffmpeg）
+// generateVideoThumbnail 使用 ffmpeg 提取视频帧作为缩略图
 // 返回缩略图文件名，格式为 {basename}_thumb.jpg
 func (s *UploadService) generateVideoThumbnail(filePath, filename string) string {
-	// 视频缩略图：目前返回空，需要 ffmpeg 提取帧
-	// 前端已有 captureVideoThumbnail 可在前端生成
-	return ""
+	// 检查 ffmpeg 是否可用
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		return ""
+	}
+
+	// 生成缩略图文件名
+	ext := filepath.Ext(filename)
+	baseName := filename[:len(filename)-len(ext)]
+	thumbFilename := baseName + "_thumb.jpg"
+	thumbPath := filepath.Join(s.uploadDir, thumbFilename)
+
+	// 使用 ffmpeg 提取第 1 秒的帧
+	cmd := exec.Command("ffmpeg",
+		"-i", filePath,
+		"-ss", "1",           // 从第 1 秒开始
+		"-vframes", "1",      // 只提取 1 帧
+		"-vf", "scale=300:-1", // 缩放到宽度 300，高度自动
+		"-f", "image2",
+		thumbPath,
+		"-y",                 // 覆盖已存在的文件
+	)
+
+	// 隐藏 ffmpeg 输出
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+
+	if err := cmd.Run(); err != nil {
+		return ""
+	}
+
+	// 检查缩略图是否生成成功
+	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
+		return ""
+	}
+
+	return thumbFilename
 }
