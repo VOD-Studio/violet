@@ -155,6 +155,13 @@ export default function RichTextEditor({
     }
   }, [editor, content])
 
+  // 同步外部传入的内容变化（如 API 加载后的回填）
+  useEffect(() => {
+    if (editor && content && editor.getHTML() !== content) {
+      editor.commands.setContent(content)
+    }
+  }, [editor, content])
+
   /**
    * 设置链接
    */

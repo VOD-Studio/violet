@@ -2,40 +2,40 @@
 // 基于 zustand store 管理认证状态，使用 react-query 的 useMutation 处理登录/注册
 // 支持自动刷新即将过期的 token
 
-import { useEffect } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { api } from "@/lib/api"
-import { useAuthStore } from "@/store"
-import type { LoginFormData, RegisterFormData } from "@/lib/validations"
+import { useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useAuthStore } from "@/store";
+import type { LoginFormData, RegisterFormData } from "@/lib/validations";
 
 /** 登录响应结构 */
 interface LoginResponse {
   /** JWT 访问令牌 */
-  access_token: string
+  access_token: string;
   /** JWT 刷新令牌 */
-  refresh_token: string
+  refresh_token: string;
   /** 令牌过期时间（秒） */
-  expires_in: number
+  expires_in: number;
 }
 
 /** 用户信息结构 */
 interface UserInfo {
-  id: string
-  username: string
-  email: string
-  avatar_url?: string
-  bio?: string
-  role?: string
-  email_verified?: boolean
-  is_active?: boolean
+  id: string;
+  username: string;
+  email: string;
+  avatar_url?: string;
+  bio?: string;
+  role?: string;
+  email_verified?: boolean;
+  is_active?: boolean;
 }
 
 /**
  * 认证状态管理 Hook
  */
 export function useAuth() {
-  const queryClient = useQueryClient()
-  const { token, user, setAuth, clearAuth, setUser } = useAuthStore()
+  const queryClient = useQueryClient();
+  const { token, user, setAuth, clearAuth, setUser } = useAuthStore();
 
   /** 查询当前用户信息 */
   const userQuery = useQuery({
@@ -43,39 +43,44 @@ export function useAuth() {
     queryFn: () => api.get<UserInfo>("/auth/me"),
     enabled: !!token && !user,
     retry: false,
-  })
+  });
 
   /* 查询成功时更新 store 中的用户信息 */
   useEffect(() => {
     if (userQuery.data && !user) {
-      setUser(userQuery.data)
+      setUser(userQuery.data);
     }
-  }, [userQuery.data, user, setUser])
+  }, [userQuery.data, user, setUser]);
 
   /* 查询失败时清除认证状态 */
   useEffect(() => {
     if (userQuery.isError && token) {
-      clearAuth()
-      queryClient.removeQueries({ queryKey: ["auth"] })
+      clearAuth();
+      queryClient.removeQueries({ queryKey: ["auth"] });
     }
-  }, [userQuery.isError, token, clearAuth, queryClient])
+  }, [userQuery.isError, token, clearAuth, queryClient]);
 
   /**
    * 登录成功后保存 token 和获取用户信息
    */
   async function handleLoginSuccess(response: LoginResponse) {
     // 先保存 token，让 API 拦截器可以使用
-    const expiresAt = Date.now() + response.expires_in * 1000
-    localStorage.setItem("token", response.access_token)
-    localStorage.setItem("refresh_token", response.refresh_token)
-    localStorage.setItem("token_expires_at", String(expiresAt))
+    const expiresAt = Date.now() + response.expires_in * 1000;
+    localStorage.setItem("token", response.access_token);
+    localStorage.setItem("refresh_token", response.refresh_token);
+    localStorage.setItem("token_expires_at", String(expiresAt));
 
     // 获取用户信息
-    const userInfo = await api.get<UserInfo>("/auth/me")
+    const userInfo = await api.get<UserInfo>("/auth/me");
 
     // 更新 store
-    setAuth(response.access_token, response.refresh_token, response.expires_in, userInfo)
-    queryClient.invalidateQueries({ queryKey: ["auth"] })
+    setAuth(
+      response.access_token,
+      response.refresh_token,
+      response.expires_in,
+      userInfo
+    );
+    queryClient.invalidateQueries({ queryKey: ["auth"] });
   }
 
   /** 登录 mutation */
@@ -83,23 +88,24 @@ export function useAuth() {
     mutationFn: (data: LoginFormData) =>
       api.post<LoginResponse>("/auth/login", data),
     onSuccess: handleLoginSuccess,
-  })
+  });
 
   /** 注册 mutation */
   const registerMutation = useMutation({
     mutationFn: (data: RegisterFormData) => {
-      const { confirmPassword: _, ...registerData } = data
-      return api.post<LoginResponse>("/auth/register", registerData)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { confirmPassword: _, ...registerData } = data;
+      return api.post<LoginResponse>("/auth/register", registerData);
     },
     onSuccess: handleLoginSuccess,
-  })
+  });
 
   /** 登出函数 */
   const logout = () => {
-    clearAuth()
-    queryClient.removeQueries({ queryKey: ["auth"] })
-    queryClient.clear()
-  }
+    clearAuth();
+    queryClient.removeQueries({ queryKey: ["auth"] });
+    queryClient.clear();
+  };
 
   return {
     /** 当前用户信息 */
@@ -107,7 +113,10 @@ export function useAuth() {
     /** JWT 令牌 */
     token,
     /** 是否正在加载 */
-    isLoading: userQuery.isLoading || loginMutation.isPending || registerMutation.isPending,
+    isLoading:
+      userQuery.isLoading ||
+      loginMutation.isPending ||
+      registerMutation.isPending,
     /** 是否已登录 */
     isAuthenticated: !!token && !!user,
     /** 登录函数 */
@@ -122,37 +131,37 @@ export function useAuth() {
     registerError: registerMutation.error?.message ?? null,
     /** 重新获取用户信息 */
     refetchUser: userQuery.refetch,
-  }
+  };
 }
 
 /** 更新个人资料请求体 */
 interface UpdateProfileData {
-  username: string
-  bio?: string
-  avatar_url?: string
+  username: string;
+  bio?: string;
+  avatar_url?: string;
 }
 
 /** 修改密码请求体 */
 interface UpdatePasswordData {
-  old_password: string
-  new_password: string
+  old_password: string;
+  new_password: string;
 }
 
 /**
  * 更新个人资料 mutation hook
  */
 export function useUpdateProfile() {
-  const queryClient = useQueryClient()
-  const { setUser } = useAuthStore()
+  const queryClient = useQueryClient();
+  const { setUser } = useAuthStore();
 
   return useMutation({
     mutationFn: (data: UpdateProfileData) =>
       api.patch<UserInfo>("/auth/profile", data),
     onSuccess: (updatedUser) => {
-      setUser(updatedUser)
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] })
+      setUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     },
-  })
+  });
 }
 
 /**
@@ -162,5 +171,5 @@ export function useChangePassword() {
   return useMutation({
     mutationFn: (data: UpdatePasswordData) =>
       api.patch<{ message: string }>("/auth/password", data),
-  })
+  });
 }

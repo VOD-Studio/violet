@@ -1,33 +1,27 @@
-/**
- * 文章编辑页面
- * 支持新建和编辑文章，使用 react-hook-form 管理表单状态
- */
+// 文章编辑页面
+// 支持新建和编辑文章，使用 react-hook-form 管理表单状态
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router"
 import { useForm, Controller } from "react-hook-form"
 import { api } from "@/lib/api"
 import { useAdminTags, useSavePost } from "@/hooks/useAdmin"
-import type { ApiPost } from "@/hooks/useAdmin"
+import type { ApiPost, ApiTag } from "@/hooks/useAdmin"
 import { RichTextEditor } from "@/components/editor"
-import { uploadFile, type UploadResult } from "@/components/upload/ChunkedUpload"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Camera, X, Loader2 } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CoverImageUpload } from "./CoverImageUpload"
+import { TagSelector } from "./TagSelector"
+import { SeoSettings } from "./SeoSettings"
+import { MediaPicker, type MediaItem } from "./MediaPicker"
 
 /** 表单字段类型 */
 interface PostFormValues {
   title: string
+  slug: string
   contentMarkdown: string
   excerpt: string
   coverImage: string
@@ -46,6 +40,7 @@ export default function PostEdit() {
 
   const { data: availableTags = [], isLoading: tagsLoading } = useAdminTags()
   const saveMutation = useSavePost()
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
 
   const {
     register,
@@ -57,6 +52,7 @@ export default function PostEdit() {
   } = useForm<PostFormValues>({
     defaultValues: {
       title: "",
+      slug: "",
       contentMarkdown: "",
       excerpt: "",
       coverImage: "",
@@ -68,6 +64,8 @@ export default function PostEdit() {
 
   const coverImage = watch("coverImage")
   const tagIds = watch("tagIds")
+  const seoDescription = watch("seoDescription")
+  const seoKeywords = watch("seoKeywords")
 
   /* 编辑模式下加载文章数据 */
   useEffect(() => {
@@ -77,10 +75,11 @@ export default function PostEdit() {
       try {
         const post = await api.get<ApiPost>(`/posts/id/${id}`)
         setValue("title", post.title)
+        setValue("slug", post.slug)
         setValue("contentMarkdown", post.contentMarkdown ?? "")
         setValue("excerpt", post.excerpt ?? "")
         setValue("coverImage", post.coverImage ?? "")
-        setValue("tagIds", post.tags?.map((t) => t.id) ?? [])
+        setValue("tagIds", post.tags?.map((t: ApiTag) => t.id) ?? [])
         setValue("seoDescription", post.seoDescription ?? "")
         setValue("seoKeywords", post.seoKeywords ?? "")
       } catch (err) {
@@ -91,47 +90,18 @@ export default function PostEdit() {
     loadPost()
   }, [id, setValue])
 
-  /**
-   * 处理封面图上传
-   */
-  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    try {
-      const result: UploadResult = await uploadFile(file)
-      setValue("coverImage", result.url)
-    } catch (err) {
-      console.error("封面图上传失败:", err)
-    }
+  /* 从素材库选择图片 */
+  function handleMediaSelect(media: MediaItem) {
+    setValue("coverImage", media.path)
   }
 
-  /**
-   * 清除封面图
-   */
-  function clearCover() {
-    setValue("coverImage", "")
-  }
-
-  /**
-   * 切换标签选中状态
-   */
-  function toggleTag(tagId: number) {
-    const current = tagIds ?? []
-    setValue(
-      "tagIds",
-      current.includes(tagId) ? current.filter((t) => t !== tagId) : [...current, tagId]
-    )
-  }
-
-  /**
-   * 提交表单
-   */
+  /* 提交表单 */
   async function onSubmit(data: PostFormValues, status: "draft" | "published") {
     try {
       await saveMutation.mutateAsync({
         data: {
           title: data.title,
+          slug: data.slug || undefined,
           contentMarkdown: data.contentMarkdown,
           excerpt: data.excerpt || undefined,
           coverImage: data.coverImage || undefined,
@@ -140,7 +110,7 @@ export default function PostEdit() {
           seoDescription: data.seoDescription || undefined,
           seoKeywords: data.seoKeywords || undefined,
         },
-        id: isEditing ? Number(id) : undefined,
+        id: isEditing ? id : undefined,
       })
       navigate("/admin/posts")
     } catch {
@@ -193,9 +163,27 @@ export default function PostEdit() {
               id="title"
               placeholder="请输入文章标题"
               className={`text-lg ${errors.title ? "border-destructive" : ""}`}
-              {...register("title", { required: "标题不能为空", minLength: { value: 1, message: "标题至少 1 个字符" } })}
+              {...register("title", {
+                required: "标题不能为空",
+                minLength: { value: 1, message: "标题至少 1 个字符" },
+              })}
             />
-            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
+            {errors.title && (
+              <p className="text-sm text-destructive">{errors.title.message}</p>
+            )}
+          </div>
+
+          {/* Slug */}
+          <div className="space-y-2">
+            <Label htmlFor="slug">URL Slug（可选）</Label>
+            <Input
+              id="slug"
+              placeholder="自定义短链接，如：my-post，不填则自动生成"
+              {...register("slug")}
+            />
+            <p className="text-xs text-muted-foreground">
+              留空则根据标题自动生成，建议使用简短英文便于分享
+            </p>
           </div>
 
           {/* 摘要 */}
@@ -235,33 +223,12 @@ export default function PostEdit() {
         {/* 右侧设置面板 */}
         <div className="space-y-6">
           {/* 标签选择 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>文章标签</CardTitle>
-              <CardDescription>选择文章相关标签</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {tagsLoading ? (
-                <p className="text-sm text-muted-foreground">加载标签中...</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {availableTags.map((tag) => (
-                    <Badge
-                      key={tag.id}
-                      variant={tagIds?.includes(tag.id) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => toggleTag(tag.id)}
-                    >
-                      {tag.name}
-                    </Badge>
-                  ))}
-                  {availableTags.length === 0 && (
-                    <p className="text-sm text-muted-foreground">暂无可用标签</p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <TagSelector
+            tags={availableTags}
+            selectedIds={tagIds ?? []}
+            onChange={(ids) => setValue("tagIds", ids)}
+            loading={tagsLoading}
+          />
 
           {/* 封面图 */}
           <Card>
@@ -270,71 +237,32 @@ export default function PostEdit() {
               <CardDescription>上传文章封面图片</CardDescription>
             </CardHeader>
             <CardContent>
-              {coverImage ? (
-                <div className="relative aspect-video overflow-hidden rounded-lg">
-                  <img src={coverImage} alt="封面图" className="h-full w-full object-cover" />
-                  <Button
-                    variant="destructive"
-                    size="icon-sm"
-                    className="absolute right-2 top-2"
-                    onClick={clearCover}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <label className="flex h-32 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground transition-colors hover:border-primary hover:text-primary">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleCoverUpload}
-                    disabled={saveMutation.isPending}
-                  />
-                  <div className="text-center">
-                    {saveMutation.isPending ? (
-                      <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-                    ) : (
-                      <Camera className="mx-auto h-8 w-8" />
-                    )}
-                    <p className="mt-1 text-sm">
-                      {saveMutation.isPending ? "上传中..." : "点击上传封面图"}
-                    </p>
-                  </div>
-                </label>
-              )}
+              <CoverImageUpload
+                value={coverImage}
+                onChange={(url) => setValue("coverImage", url)}
+                disabled={saveMutation.isPending}
+                onOpenMediaPicker={() => setMediaPickerOpen(true)}
+              />
             </CardContent>
           </Card>
 
           {/* SEO 设置 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>SEO 设置</CardTitle>
-              <CardDescription>优化搜索引擎展示效果</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="seoDescription">SEO 描述</Label>
-                <Textarea
-                  id="seoDescription"
-                  placeholder="请输入搜索引擎描述摘要"
-                  className="min-h-[80px] resize-y"
-                  {...register("seoDescription")}
-                />
-                <p className="text-xs text-muted-foreground">建议 150 字以内</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="seoKeywords">SEO 关键词</Label>
-                <Input
-                  id="seoKeywords"
-                  placeholder="多个关键词用英文逗号分隔"
-                  {...register("seoKeywords")}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <SeoSettings
+            seoDescription={seoDescription}
+            seoKeywords={seoKeywords}
+            onDescriptionChange={(val) => setValue("seoDescription", val)}
+            onKeywordsChange={(val) => setValue("seoKeywords", val)}
+          />
         </div>
       </form>
+
+      {/* 素材库选择器 */}
+      <MediaPicker
+        open={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={handleMediaSelect}
+        mimeTypeFilter="image"
+      />
     </div>
   )
 }

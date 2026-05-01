@@ -186,8 +186,9 @@ export async function uploadFile(
   // 清除断点续传状态
   clearUploadState(fileHash)
 
+  // 后端返回格式为 /uploads/filename.jpeg，存储完整相对路径
   return {
-    url: result.url.replace("/uploads/", ""),
+    url: result.url,
     id: result.media_id,
     name: file.name,
     mimeType: file.type || "application/octet-stream",

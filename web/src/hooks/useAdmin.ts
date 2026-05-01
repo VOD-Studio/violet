@@ -11,8 +11,8 @@ type PostStatus = "draft" | "published"
 
 /** 后端返回的文章结构 */
 interface ApiPost {
-	/** 文章唯一标识 */
-	id: number
+	/** 文章唯一标识（UUID 字符串） */
+	id: string
 	/** 文章标题 */
 	title: string
 	/** URL slug */
@@ -105,6 +105,8 @@ interface PaginatedResponse<T> {
 interface PostFormData {
 	/** 文章标题 */
 	title: string
+	/** URL slug（可自定义，不填则自动生成） */
+	slug?: string
 	/** Markdown 正文内容 */
 	contentMarkdown: string
 	/** 文章摘要 */
@@ -125,8 +127,8 @@ interface PostFormData {
 
 /** 热门文章结构 */
 interface PopularPost {
-	/** 文章唯一标识 */
-	id: number
+	/** 文章唯一标识（UUID 字符串） */
+	id: string
 	/** 文章标题 */
 	title: string
 	/** URL slug */
@@ -238,7 +240,7 @@ export function useTogglePostStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: PostStatus }) =>
+    mutationFn: ({ id, status }: { id: string; status: PostStatus }) =>
       api.patch(`/posts/${id}/status`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "posts"] })
@@ -254,7 +256,7 @@ export function useDeleteAdminPost() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: number) => api.del(`/posts/${id}`),
+    mutationFn: (id: string) => api.del(`/posts/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "posts"] })
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] })
@@ -336,7 +338,7 @@ export function useSavePost() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ data, id }: { data: PostFormData; id?: number }) => {
+    mutationFn: ({ data, id }: { data: PostFormData; id?: string }) => {
       if (id) {
         return api.put<ApiPost>(`/posts/${id}`, data)
       }

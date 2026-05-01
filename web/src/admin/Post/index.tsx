@@ -79,7 +79,7 @@ export default function Posts() {
   const [page] = useState(1)
 
   /** 删除确认弹窗状态 */
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: number }>({ open: false, id: 0 })
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: "" })
 
   const { data, isLoading, error, refetch } = useAdminPosts({
     page,
@@ -108,7 +108,7 @@ export default function Posts() {
   /**
    * 弹出删除确认
    */
-  function handleDelete(id: number) {
+  function handleDelete(id: string) {
     setDeleteConfirm({ open: true, id })
   }
 
@@ -119,11 +119,11 @@ export default function Posts() {
     deleteMutation.mutate(deleteConfirm.id, {
       onSuccess: () => {
         toast.success("文章已删除")
-        setDeleteConfirm({ open: false, id: 0 })
+        setDeleteConfirm({ open: false, id: "" })
       },
       onError: () => {
         toast.error("删除失败，请重试")
-        setDeleteConfirm({ open: false, id: 0 })
+        setDeleteConfirm({ open: false, id: "" })
       },
     })
   }
@@ -230,7 +230,7 @@ export default function Posts() {
       {/* 删除确认弹窗 */}
       <ConfirmDialog
         open={deleteConfirm.open}
-        onClose={() => setDeleteConfirm({ open: false, id: 0 })}
+        onClose={() => setDeleteConfirm({ open: false, id: "" })}
         onConfirm={confirmDelete}
         title="删除文章"
         description="确定要删除这篇文章吗？此操作不可撤销。"

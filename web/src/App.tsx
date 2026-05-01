@@ -3,42 +3,42 @@
 // 前台页面通过 Layout 组件内的 AnimatedOutlet 实现页面切换过渡动画
 // 包裹 ToastProvider 提供全局通知能力
 
-import { BrowserRouter, Routes, Route } from "react-router"
-import { Layout } from "@/components/layout/Layout"
-import { ToastProvider } from "@/components/shared/Toast"
-import "@/styles/transitions.css"
-import AdminLayout from "@/components/layout/AdminLayout"
-import { adminLoader } from "@/middleware/auth"
-import { CursorEffect } from "@/components/creative"
+import { BrowserRouter, Routes, Route } from "react-router";
+import { Layout } from "@/components/layout/Layout";
+import { ToastProvider } from "@/components/shared/Toast";
+import "@/styles/transitions.css";
+import AdminLayout from "@/components/layout/AdminLayout";
+import { adminLoader } from "@/middleware/auth";
+import { CursorEffect } from "@/components/creative";
 
 /* 前台页面组件 */
-import Home from "@/pages/Home"
-import BlogList from "@/pages/BlogList"
-import BlogPost from "@/pages/BlogPost"
-import Projects from "@/pages/Projects"
-import About from "@/pages/About"
-import Login from "@/pages/Login"
-import Register from "@/pages/Register"
-import VerifyEmail from "@/pages/VerifyEmail"
-import Profile from "@/pages/profile"
+import Home from "@/pages/Home";
+import Blog from "@/pages/blog";
+import BlogSlug from "@/pages/blog/slug";
+import Projects from "@/pages/Projects";
+import About from "@/pages/About";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import VerifyEmail from "@/pages/VerifyEmail";
+import Profile from "@/pages/profile";
 
 /* 后台管理页面组件 */
-import Dashboard from "@/admin/Dashboard"
-import Posts from "@/admin/Posts"
-import PostEdit from "@/admin/PostEdit"
-import Comments from "@/admin/Comments"
-import Tags from "@/admin/Tags"
-import Media from "@/admin/Media"
-import Users from "@/admin/Users"
-import Settings from "@/admin/Settings"
+import Dashboard from "@/admin/Dashboard";
+import Posts from "@/admin/Post";
+import PostEdit from "@/admin/Post/Edit";
+import Comments from "@/admin/Comments";
+import Tags from "@/admin/Tags";
+import Media from "@/admin/Media";
+import Users from "@/admin/Users";
+import Settings from "@/admin/Settings";
 
 /**
  * 后台路由保护组件
  * 在渲染 AdminLayout 前检查认证状态，未认证则重定向到登录页
  */
 function ProtectedAdmin() {
-  adminLoader()
-  return <AdminLayout />
+  adminLoader();
+  return <AdminLayout />;
 }
 
 /**
@@ -56,8 +56,8 @@ function App() {
           {/* 前台路由 */}
           <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
-            <Route path="/blog" element={<BlogList />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogSlug />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/about" element={<About />} />
             <Route path="/login" element={<Login />} />
@@ -81,7 +81,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </ToastProvider>
-  )
+  );
 }
 
-export default App
+export default App;

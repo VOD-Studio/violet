@@ -2,26 +2,27 @@
 // 展示文章封面图、标题、摘要、标签、发布时间和浏览量
 // 带有 motion hover 悬浮效果
 
-import { Link } from "react-router"
-import { motion } from "motion/react"
-import { Eye, Calendar } from "lucide-react"
-import type { Post } from "@/hooks/usePosts"
+import { Link } from "react-router";
+import { motion } from "motion/react";
+import { Eye, Calendar } from "lucide-react";
+import type { Post } from "@/hooks/usePosts";
+import { getUploadUrl } from "@/lib/api";
 
 /** 格式化日期为中文格式 */
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
+  const date = new Date(dateStr);
   return date.toLocaleDateString("zh-CN", {
     year: "numeric",
     month: "long",
     day: "numeric",
-  })
+  });
 }
 
 interface PostCardProps {
   /** 文章数据 */
-  post: Post
+  post: Post;
   /** 动画延迟，用于列表中交错动画 */
-  delay?: number
+  delay?: number;
 }
 
 /**
@@ -43,7 +44,7 @@ export function PostCard({ post, delay = 0 }: PostCardProps) {
         <Link to={`/blog/${post.slug}`}>
           <div className="aspect-video overflow-hidden">
             <img
-              src={post.coverImage}
+              src={getUploadUrl(post.coverImage)}
               alt={post.title}
               className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
@@ -92,5 +93,5 @@ export function PostCard({ post, delay = 0 }: PostCardProps) {
         </div>
       </div>
     </motion.article>
-  )
+  );
 }
