@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store";
+import { toast } from "sonner";
 import type { LoginFormData, RegisterFormData } from "@/lib/validations";
 
 /** 登录响应结构 */
@@ -62,20 +63,25 @@ export function useAuth() {
 
   /**
    * 登录成功后保存 token 和获取用户信息
-   * zustand persist 会自动同步到 localStorage，无需手动写入
+   * 先设置 token，再获取用户信息（确保 API 有 Authorization）
    */
   async function handleLoginSuccess(response: LoginResponse) {
-    // 获取用户信息
-    const userInfo = await api.get<UserInfo>("/auth/me");
-
-    // 更新 store（persist 会自动写入 localStorage）
-    setAuth(
+    // 先设置 token（store 更新是同步的，API 拦截器立即能读取）
+    const expiresAt = Date.now() + response.expires_in * 1000;
+    useAuthStore.getState().setAuth(
       response.access_token,
       response.refresh_token,
-      response.expires_in,
-      userInfo
+      response.expires_in
     );
+
+    // 然后获取用户信息（此时 API 拦截器已有 token）
+    const userInfo = await api.get<UserInfo>("/auth/me");
+
+    // 最后设置用户信息
+    useAuthStore.getState().setUser(userInfo);
     queryClient.invalidateQueries({ queryKey: ["auth"] });
+
+    toast.success("登录成功");
   }
 
   /** 登录 mutation */
@@ -83,6 +89,9 @@ export function useAuth() {
     mutationFn: (data: LoginFormData) =>
       api.post<LoginResponse>("/auth/login", data),
     onSuccess: handleLoginSuccess,
+    onError: (error) => {
+      toast.error(error.message || "登录失败");
+    },
   });
 
   /** 注册 mutation */
@@ -93,6 +102,9 @@ export function useAuth() {
       return api.post<LoginResponse>("/auth/register", registerData);
     },
     onSuccess: handleLoginSuccess,
+    onError: (error) => {
+      toast.error(error.message || "注册失败");
+    },
   });
 
   /** 登出函数 */
@@ -100,6 +112,7 @@ export function useAuth() {
     clearAuth();
     queryClient.removeQueries({ queryKey: ["auth"] });
     queryClient.clear();
+    toast.success("已退出登录");
   };
 
   return {
@@ -120,10 +133,6 @@ export function useAuth() {
     register: registerMutation.mutateAsync,
     /** 登出函数 */
     logout,
-    /** 登录错误 */
-    loginError: loginMutation.error?.message ?? null,
-    /** 注册错误 */
-    registerError: registerMutation.error?.message ?? null,
     /** 重新获取用户信息 */
     refetchUser: userQuery.refetch,
   };
@@ -155,6 +164,10 @@ export function useUpdateProfile() {
     onSuccess: (updatedUser) => {
       setUser(updatedUser);
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      toast.success("个人资料已更新");
+    },
+    onError: (error) => {
+      toast.error(error.message || "更新失败");
     },
   });
 }
@@ -166,5 +179,11 @@ export function useChangePassword() {
   return useMutation({
     mutationFn: (data: UpdatePasswordData) =>
       api.patch<{ message: string }>("/auth/password", data),
+    onSuccess: () => {
+      toast.success("密码已修改");
+    },
+    onError: (error) => {
+      toast.error(error.message || "修改密码失败");
+    },
   });
 }
