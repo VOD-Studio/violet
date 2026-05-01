@@ -51,6 +51,34 @@ interface ApiTag {
 	slug: string
 }
 
+/** 热门文章摘要 */
+interface PopularPost {
+	/** 文章唯一标识 */
+	id: string
+	/** 文章标题 */
+	title: string
+	/** URL slug */
+	slug: string
+	/** 浏览次数 */
+	viewCount: number
+}
+
+/** 最近文章摘要 */
+interface RecentPost {
+	/** 文章唯一标识 */
+	id: string
+	/** 文章标题 */
+	title: string
+	/** URL slug */
+	slug: string
+	/** 发布状态 */
+	status: PostStatus
+	/** 浏览次数 */
+	viewCount: number
+	/** 发布时间 */
+	publishedAt?: string | null
+}
+
 /** 评论结构 */
 interface ApiComment {
 	/** 评论唯一标识 */
@@ -150,7 +178,7 @@ interface AdminStats {
 	/** 用户总数 */
 	totalUsers: number
 	/** 最近文章列表 */
-	recentPosts: ApiPost[]
+	recentPosts: RecentPost[]
 	/** 热门文章列表 */
 	popularPosts: PopularPost[]
 }
