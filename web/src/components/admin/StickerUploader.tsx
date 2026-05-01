@@ -215,7 +215,7 @@ export default function StickerUploader({
                 <div className="flex-shrink-0">
                   {item.status === "done" && item.result ? (
                     <img
-                      src={getUploadUrl(item.result.url)}
+                      src={getUploadUrl(item.result.thumbnail || item.result.url)}
                       alt={item.file.name}
                       className="h-10 w-10 rounded object-cover"
                     />

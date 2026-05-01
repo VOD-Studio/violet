@@ -51,3 +51,9 @@ WHERE id = $1;
 UPDATE media
 SET download_count = download_count + 1
 WHERE id = $1;
+
+-- name: UpdateMediaThumbnail :exec
+-- 更新媒体缩略图
+UPDATE media
+SET thumbnail = $2
+WHERE id = $1;

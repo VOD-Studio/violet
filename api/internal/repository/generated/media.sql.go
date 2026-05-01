@@ -41,7 +41,7 @@ const createMedia = `-- name: CreateMedia :one
 
 INSERT INTO media (filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_permission)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at
+RETURNING id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at, thumbnail
 `
 
 type CreateMediaParams struct {
@@ -87,6 +87,7 @@ func (q *Queries) CreateMedia(ctx context.Context, arg CreateMediaParams) (*Medi
 		&i.DownloadCount,
 		&i.DownloadPermission,
 		&i.CreatedAt,
+		&i.Thumbnail,
 	)
 	return &i, err
 }
@@ -103,7 +104,7 @@ func (q *Queries) DeleteMedia(ctx context.Context, id uuid.UUID) error {
 }
 
 const getMediaByID = `-- name: GetMediaByID :one
-SELECT id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at FROM media
+SELECT id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at, thumbnail FROM media
 WHERE id = $1 LIMIT 1
 `
 
@@ -125,6 +126,7 @@ func (q *Queries) GetMediaByID(ctx context.Context, id uuid.UUID) (*Medium, erro
 		&i.DownloadCount,
 		&i.DownloadPermission,
 		&i.CreatedAt,
+		&i.Thumbnail,
 	)
 	return &i, err
 }
@@ -142,7 +144,7 @@ func (q *Queries) IncrementDownloadCount(ctx context.Context, id uuid.UUID) erro
 }
 
 const listMedia = `-- name: ListMedia :many
-SELECT id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at FROM media
+SELECT id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at, thumbnail FROM media
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -176,6 +178,7 @@ func (q *Queries) ListMedia(ctx context.Context, arg ListMediaParams) ([]*Medium
 			&i.DownloadCount,
 			&i.DownloadPermission,
 			&i.CreatedAt,
+			&i.Thumbnail,
 		); err != nil {
 			return nil, err
 		}
@@ -191,7 +194,7 @@ func (q *Queries) ListMedia(ctx context.Context, arg ListMediaParams) ([]*Medium
 }
 
 const listMediaByType = `-- name: ListMediaByType :many
-SELECT id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at FROM media
+SELECT id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at, thumbnail FROM media
 WHERE mime_type LIKE $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -227,6 +230,7 @@ func (q *Queries) ListMediaByType(ctx context.Context, arg ListMediaByTypeParams
 			&i.DownloadCount,
 			&i.DownloadPermission,
 			&i.CreatedAt,
+			&i.Thumbnail,
 		); err != nil {
 			return nil, err
 		}
@@ -246,7 +250,7 @@ UPDATE media
 SET original_name = COALESCE($2, original_name),
     download_permission = COALESCE($3, download_permission)
 WHERE id = $1
-RETURNING id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at
+RETURNING id, filename, original_name, mime_type, size, path, width, height, duration, uploader_id, download_count, download_permission, created_at, thumbnail
 `
 
 type UpdateMediaParams struct {
@@ -273,6 +277,24 @@ func (q *Queries) UpdateMedia(ctx context.Context, arg UpdateMediaParams) (*Medi
 		&i.DownloadCount,
 		&i.DownloadPermission,
 		&i.CreatedAt,
+		&i.Thumbnail,
 	)
 	return &i, err
+}
+
+const updateMediaThumbnail = `-- name: UpdateMediaThumbnail :exec
+UPDATE media
+SET thumbnail = $2
+WHERE id = $1
+`
+
+type UpdateMediaThumbnailParams struct {
+	ID        uuid.UUID      `json:"id"`
+	Thumbnail sql.NullString `json:"thumbnail"`
+}
+
+// 更新媒体缩略图
+func (q *Queries) UpdateMediaThumbnail(ctx context.Context, arg UpdateMediaThumbnailParams) error {
+	_, err := q.db.ExecContext(ctx, updateMediaThumbnail, arg.ID, arg.Thumbnail)
+	return err
 }

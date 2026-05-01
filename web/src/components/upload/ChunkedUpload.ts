@@ -10,6 +10,8 @@ const CHUNK_SIZE = 5 * 1024 * 1024
 interface UploadResult {
   /** 文件相对路径，需用 getUploadUrl() 拼接完整 URL */
   url: string
+  /** 缩略图相对路径（可选） */
+  thumbnail?: string
   id: string
   name: string
   mimeType: string
@@ -21,11 +23,12 @@ interface InitUploadResponse {
   total_chunks: number
 }
 
-/** 秒传检查响应 */
+// 秒传检查响应
 interface CheckExistResponse {
   exists: boolean
   media_id?: string
   url?: string
+  thumbnail?: string
 }
 
 /** 合并上传响应 */
@@ -33,6 +36,8 @@ interface CompleteUploadResponse {
   media_id: string
   /** 相对路径，如 /uploads/xxx.jpeg */
   url: string
+  /** 缩略图相对路径 */
+  thumbnail?: string
 }
 
 /**
@@ -133,6 +138,7 @@ export async function uploadFile(
     clearUploadState(fileHash)
     return {
       url: checkResult.url,
+      thumbnail: checkResult.thumbnail,
       id: checkResult.media_id ?? "",
       name: file.name,
       mimeType: file.type || "application/octet-stream",
@@ -189,6 +195,7 @@ export async function uploadFile(
   // 后端返回格式为 /uploads/filename.jpeg，存储完整相对路径
   return {
     url: result.url,
+    thumbnail: result.thumbnail,
     id: result.media_id,
     name: file.name,
     mimeType: file.type || "application/octet-stream",

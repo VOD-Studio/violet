@@ -106,8 +106,9 @@ type UploadChunkRequest struct {
 
 // CompleteUploadResponse 合并上传响应
 type CompleteUploadResponse struct {
-	MediaID string `json:"media_id"`
-	URL     string `json:"url"`
+	MediaID   string `json:"media_id"`
+	URL       string `json:"url"`
+	Thumbnail string `json:"thumbnail,omitempty"`
 }
 
 // CheckUploadRequest 秒传检查请求
@@ -188,7 +189,7 @@ func (s *UploadService) UploadChunk(ctx context.Context, uploadID string, chunkI
 	return nil
 }
 
-// CompleteUpload 合并所有分片为完整文件
+// CompleteUpload 合并所有分片为完整文件，并生成缩略图
 func (s *UploadService) CompleteUpload(ctx context.Context, uploadID string, uploaderID *uuid.UUID) (*CompleteUploadResponse, error) {
 	// 查询分片信息
 	info, err := s.queries.GetChunkInfo(ctx, uploadID)
@@ -258,18 +259,38 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID string, upl
 		totalSize += written
 	}
 
+	// 生成缩略图
+	thumbnail := ""
+	if strings.HasPrefix(mimeType, "image/") {
+		thumbnail = s.generateImageThumbnail(finalPath, finalFilename)
+	} else if strings.HasPrefix(mimeType, "video/") {
+		thumbnail = s.generateVideoThumbnail(finalPath, finalFilename)
+	}
+
 	// 创建媒体记录
 	media, err := s.mediaSvc.CreateMedia(ctx, finalFilename, filename, mimeType, totalSize, finalFilename, nil, nil, nil, uploaderID, "public")
 	if err != nil {
 		return nil, fmt.Errorf("创建媒体记录失败: %w", err)
 	}
 
+	// 更新媒体记录的缩略图字段
+	if thumbnail != "" {
+		err = s.queries.UpdateMediaThumbnail(ctx, generated.UpdateMediaThumbnailParams{
+			ID:        uuid.MustParse(media.ID),
+			Thumbnail: toNullString(thumbnail),
+		})
+		if err != nil {
+			// 缩略图更新失败不影响主流程，仅记录日志
+		}
+	}
+
 	// 清理分片文件和记录
 	s.cleanupChunks(uploadID)
 
 	return &CompleteUploadResponse{
-		MediaID: media.ID,
-		URL:     s.uploadPathPrefix + finalFilename,
+		MediaID:   media.ID,
+		URL:       s.uploadPathPrefix + finalFilename,
+		Thumbnail: thumbnail,
 	}, nil
 }
 
@@ -326,4 +347,20 @@ func ComputeMD5(reader io.Reader) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// generateImageThumbnail 生成图片缩略图（占位符，实际需要图片处理库）
+// 返回缩略图文件名，格式为 {basename}_thumb.jpg
+func (s *UploadService) generateImageThumbnail(filePath, filename string) string {
+	// 图片缩略图：目前返回空，后续可集成图片处理库（如 imaging）
+	// 临时方案：直接使用原图作为缩略图
+	return ""
+}
+
+// generateVideoThumbnail 生成视频缩略图（占位符，实际需要 ffmpeg）
+// 返回缩略图文件名，格式为 {basename}_thumb.jpg
+func (s *UploadService) generateVideoThumbnail(filePath, filename string) string {
+	// 视频缩略图：目前返回空，需要 ffmpeg 提取帧
+	// 前端已有 captureVideoThumbnail 可在前端生成
+	return ""
 }

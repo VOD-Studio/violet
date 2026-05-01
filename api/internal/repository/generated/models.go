@@ -55,6 +55,7 @@ type Medium struct {
 	DownloadCount      int64           `json:"download_count"`
 	DownloadPermission string          `json:"download_permission"`
 	CreatedAt          time.Time       `json:"created_at"`
+	Thumbnail          sql.NullString  `json:"thumbnail"`
 }
 
 type Post struct {
