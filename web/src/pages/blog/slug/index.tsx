@@ -21,7 +21,7 @@ import { ArticleHeader } from "./ArticleHeader";
 import { ArticleContent } from "./ArticleContent";
 import { ArticleSkeleton } from "./ArticleSkeleton";
 import { ArticleError } from "./ArticleError";
-import { TableOfContents } from "./TableOfContents";
+import { TableOfContents } from "../../../components/TableOfContents";
 
 /**
  * 文章详情页
@@ -29,14 +29,14 @@ import { TableOfContents } from "./TableOfContents";
 export default function BlogSlug() {
   const { slug } = useParams<{ slug: string }>();
   const { data: post, isLoading, error } = usePost(slug);
-  const incrementViewMutation = useIncrementView();
+  const { mutate } = useIncrementView();
 
   /* 文章加载成功后增加浏览次数 */
   useEffect(() => {
     if (post?.id) {
-      incrementViewMutation.mutate(post.id);
+      mutate(post.id);
     }
-  }, [incrementViewMutation, post?.id]);
+  }, [mutate, post?.id]);
 
   /* 加载态 */
   if (isLoading) {
@@ -55,7 +55,6 @@ export default function BlogSlug() {
     { name: "博客文章", url: `${SITE_CONFIG.url}/blog` },
     { name: post.title, url: `${SITE_CONFIG.url}/blog/${post.slug}` },
   ]);
-
   return (
     <div className="container mx-auto px-4 py-12">
       {/* SEO 配置 */}
