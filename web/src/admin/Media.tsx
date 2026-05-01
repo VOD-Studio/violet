@@ -3,29 +3,36 @@
  * 支持文件上传（图片、视频、音频、文档）、分类筛选、无限滚动、预览、删除
  */
 
-import { useState, useCallback, useEffect } from "react"
-import { fetchMediaPage, useDeleteMedia, useBatchDeleteMedia } from "@/hooks/useAdmin"
-import type { MediaItem } from "@/hooks/useAdmin"
-import { usePaginatedQuery, useInfiniteScroll } from "@/hooks/useInfiniteScroll"
-import { Button } from "@/components/ui/button"
-import { EmptyState } from "@/components/shared/EmptyState"
-import { ErrorFallback } from "@/components/shared/ErrorFallback"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
-import FileUploader from "@/components/upload/FileUploader"
-import FilePreview from "@/components/upload/FilePreview"
-import MediaCard from "./MediaCard"
-import type { UploadResult } from "@/components/upload/ChunkedUpload"
-import { getUploadUrl } from "@/lib/api"
-import { toast } from "sonner"
+import { useState, useCallback } from "react";
+import {
+  fetchMediaPage,
+  useDeleteMedia,
+  useBatchDeleteMedia,
+} from "@/hooks/useAdmin";
+import type { MediaItem } from "@/hooks/useAdmin";
+import {
+  usePaginatedQuery,
+  useInfiniteScroll,
+} from "@/hooks/useInfiniteScroll";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import FileUploader from "@/components/upload/FileUploader";
+import FilePreview from "@/components/upload/FilePreview";
+import MediaCard from "./MediaCard";
+import type { UploadResult } from "@/components/upload/ChunkedUpload";
+import { getUploadUrl } from "@/lib/api";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Segmented } from "@/components/ui/Segmented"
-import { Image as ImageIcon, Upload, CheckSquare, Trash2 } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Segmented } from "@/components/ui/Segmented";
+import { Image as ImageIcon, Upload, CheckSquare, Trash2 } from "lucide-react";
 
 /** 分类选项 */
 const categoryOptions = [
@@ -34,7 +41,7 @@ const categoryOptions = [
   { label: "视频", value: "video" },
   { label: "音频", value: "audio" },
   { label: "文档", value: "application" },
-]
+];
 
 /**
  * 媒体网格骨架屏
@@ -52,54 +59,47 @@ function MediaGridSkeleton() {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 /**
  * 格式化文件大小
  */
 function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 /**
  * 媒体库页面
  */
 export default function Media() {
-  const [category, setCategory] = useState<string>("all")
-  const deleteMutation = useDeleteMedia()
-  const batchDeleteMutation = useBatchDeleteMedia()
+  const [category, setCategory] = useState<string>("all");
+  const deleteMutation = useDeleteMedia();
+  const batchDeleteMutation = useBatchDeleteMedia();
 
-  const [showUploader, setShowUploader] = useState(false)
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: "" })
-  const [previewItem, setPreviewItem] = useState<MediaItem | null>(null)
-  const [previewReady, setPreviewReady] = useState(false)
+  const [showUploader, setShowUploader] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    id: string;
+  }>({ open: false, id: "" });
+  const [previewItem, setPreviewItem] = useState<MediaItem | null>(null);
 
   // 批量选择状态
-  const [selectMode, setSelectMode] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false)
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false);
 
-  // 延迟渲染预览内容，等待 Dialog 动画完成
-  useEffect(() => {
-    if (previewItem) {
-      setPreviewReady(false)
-      const timer = setTimeout(() => setPreviewReady(true), 150)
-      return () => clearTimeout(timer)
-    } else {
-      setPreviewReady(false)
-    }
-  }, [previewItem])
-
-  const currentMimeType = category === "all" ? undefined : category
+  const currentMimeType = category === "all" ? undefined : category;
 
   const fetchFn = useCallback(
-    (page: number, limit: number) => fetchMediaPage(page, limit, currentMimeType),
-    [currentMimeType],
-  )
+    (page: number, limit: number) =>
+      fetchMediaPage(page, limit, currentMimeType),
+    [currentMimeType]
+  );
 
   const {
     items: mediaItems,
@@ -108,88 +108,84 @@ export default function Media() {
     hasMore,
     loadMore,
     reload,
-  } = usePaginatedQuery<MediaItem>(
-    ["admin", "media", category],
-    fetchFn,
-    20,
-  )
+  } = usePaginatedQuery<MediaItem>(["admin", "media", category], fetchFn, 20);
 
   const sentinelRef = useInfiniteScroll({
     hasMore,
     isLoading,
     onLoadMore: loadMore,
-  })
+  });
 
   function handleDelete(id: string) {
-    setDeleteConfirm({ open: true, id })
+    setDeleteConfirm({ open: true, id });
   }
 
   function confirmDelete() {
     deleteMutation.mutate(deleteConfirm.id, {
       onSuccess: () => {
-        toast.success("文件已删除")
-        setDeleteConfirm({ open: false, id: "" })
-        reload()
+        toast.success("文件已删除");
+        setDeleteConfirm({ open: false, id: "" });
+        reload();
       },
       onError: () => {
-        toast.error("删除失败，请重试")
-        setDeleteConfirm({ open: false, id: "" })
+        toast.error("删除失败，请重试");
+        setDeleteConfirm({ open: false, id: "" });
       },
-    })
+    });
   }
 
   // 切换选择模式
   function toggleSelectMode() {
-    setSelectMode(!selectMode)
-    setSelectedIds(new Set())
+    setSelectMode(!selectMode);
+    setSelectedIds(new Set());
   }
 
   // 选择/取消选择单个文件
   function toggleSelect(id: string) {
-    const newSelected = new Set(selectedIds)
+    const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
-      newSelected.delete(id)
+      newSelected.delete(id);
     } else {
-      newSelected.add(id)
+      newSelected.add(id);
     }
-    setSelectedIds(newSelected)
+    setSelectedIds(newSelected);
   }
 
   // 全选当前页
   function selectAll() {
-    const allIds = new Set(mediaItems.map((item) => item.id))
-    setSelectedIds(allIds)
+    const allIds = new Set(mediaItems.map((item) => item.id));
+    setSelectedIds(allIds);
   }
 
   // 清空选择
   function clearSelection() {
-    setSelectedIds(new Set())
+    setSelectedIds(new Set());
   }
 
   // 批量删除
   function confirmBatchDelete() {
-    const ids = Array.from(selectedIds)
+    const ids = Array.from(selectedIds);
     batchDeleteMutation.mutate(ids, {
       onSuccess: (data) => {
-        toast.success(`已删除 ${data.count} 个文件`)
-        setBatchDeleteConfirm(false)
-        setSelectMode(false)
-        setSelectedIds(new Set())
-        reload()
+        toast.success(`已删除 ${data.count} 个文件`);
+        setBatchDeleteConfirm(false);
+        setSelectMode(false);
+        setSelectedIds(new Set());
+        reload();
       },
       onError: () => {
-        toast.error("批量删除失败，请重试")
-        setBatchDeleteConfirm(false)
+        toast.error("批量删除失败，请重试");
+        setBatchDeleteConfirm(false);
       },
-    })
+    });
   }
 
   function handleUploadComplete(result: UploadResult) {
-    toast.success(`「${result.name}」上传成功`)
-    reload()
+    toast.success(`「${result.name}」上传成功`);
+    reload();
   }
 
-  const isEmpty = !isLoading && !error && mediaItems.length === 0
+  const isEmpty = !isLoading && !error && mediaItems.length === 0;
 
   return (
     <div className="space-y-6">
@@ -197,7 +193,9 @@ export default function Media() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">媒体库</h1>
-          <p className="text-muted-foreground">管理上传的图片、视频、音频和文档</p>
+          <p className="text-muted-foreground">
+            管理上传的图片、视频、音频和文档
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {selectMode ? (
@@ -263,7 +261,7 @@ export default function Media() {
 
       {/* 媒体网格 */}
       {mediaItems.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {mediaItems.map((item) => (
             <MediaCard
               key={item.id}
@@ -291,40 +289,45 @@ export default function Media() {
       <Dialog open={!!previewItem} onOpenChange={() => setPreviewItem(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="truncate">{previewItem?.original_name}</DialogTitle>
+            <DialogTitle className="truncate">
+              {previewItem?.original_name}
+            </DialogTitle>
           </DialogHeader>
-          {previewItem && previewReady && (
+          {previewItem && (
             <div className="space-y-4">
               <FilePreview
                 url={getUploadUrl(previewItem.path)}
-                thumbnailUrl={previewItem.thumbnail ? getUploadUrl(previewItem.thumbnail) : undefined}
+                thumbnailUrl={
+                  previewItem.thumbnail
+                    ? getUploadUrl(previewItem.thumbnail)
+                    : undefined
+                }
                 mimeType={previewItem.mime_type}
                 name={previewItem.original_name}
                 size={previewItem.size}
+                delay={150}
               />
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>类型: {previewItem.mime_type}</span>
                 <span>大小: {formatSize(previewItem.size)}</span>
-                <span>上传: {new Date(previewItem.created_at).toLocaleString("zh-CN")}</span>
+                <span>
+                  上传:{" "}
+                  {new Date(previewItem.created_at).toLocaleString("zh-CN")}
+                </span>
               </div>
               <div className="flex justify-end">
                 <Button
                   variant="outline"
                   onClick={() => {
-                    const a = document.createElement("a")
-                    a.href = getUploadUrl(previewItem.path)
-                    a.download = previewItem.original_name
-                    a.click()
+                    const a = document.createElement("a");
+                    a.href = getUploadUrl(previewItem.path);
+                    a.download = previewItem.original_name;
+                    a.click();
                   }}
                 >
                   下载文件
                 </Button>
               </div>
-            </div>
-          )}
-          {previewItem && !previewReady && (
-            <div className="flex items-center justify-center py-20">
-              <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
           )}
         </DialogContent>
@@ -362,5 +365,5 @@ export default function Media() {
         destructive
       />
     </div>
-  )
+  );
 }
