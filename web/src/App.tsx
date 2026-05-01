@@ -33,6 +33,7 @@ import Tags from "@/admin/Tags";
 import Media from "@/admin/Media";
 import Users from "@/admin/Users";
 import Settings from "@/admin/Settings";
+import Stickers from "@/admin/Stickers";
 
 /**
  * 初始化全局导航引用
@@ -91,6 +92,7 @@ function App() {
             <Route path="comments" element={<Comments />} />
             <Route path="tags" element={<Tags />} />
             <Route path="media" element={<Media />} />
+            <Route path="stickers" element={<Stickers />} />
             <Route path="users" element={<Users />} />
             <Route path="settings" element={<Settings />} />
           </Route>

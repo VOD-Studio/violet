@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react"
 import { useComments, useSubmitComment } from "@/hooks/useComments"
 import { useAuthStore } from "@/store"
 import { CommentItem } from "./CommentItem"
+import { StickerPickerButton } from "@/components/comment/StickerPicker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -158,14 +159,22 @@ export function CommentSection({ postId }: CommentSectionProps) {
           {/* 评论内容 */}
           <div className="space-y-2">
             <Label htmlFor="comment-content">评论内容 *</Label>
-            <Textarea
-              id="comment-content"
-              placeholder="写下你的评论..."
-              rows={4}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <Textarea
+                id="comment-content"
+                placeholder="写下你的评论..."
+                rows={4}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                required
+              />
+              {/* 表情选择器按钮 */}
+              <div className="absolute bottom-2 right-2">
+                <StickerPickerButton
+                  onSelect={(syntax) => setContent((prev) => prev + syntax)}
+                />
+              </div>
+            </div>
           </div>
 
           {/* 提交错误提示 */}
@@ -237,14 +246,22 @@ export function CommentSection({ postId }: CommentSectionProps) {
             {/* 评论内容 */}
             <div className="space-y-2">
               <Label htmlFor="quick-content">评论内容 *</Label>
-              <Textarea
-                id="quick-content"
-                placeholder="写下你的评论..."
-                rows={4}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Textarea
+                  id="quick-content"
+                  placeholder="写下你的评论..."
+                  rows={4}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  required
+                />
+                {/* 表情选择器按钮 */}
+                <div className="absolute bottom-2 right-2">
+                  <StickerPickerButton
+                    onSelect={(syntax) => setContent((prev) => prev + syntax)}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* 提交错误提示 */}
