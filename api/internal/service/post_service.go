@@ -404,11 +404,11 @@ func (s *PostService) renderMarkdown(md string) (string, error) {
 }
 
 // GenerateSlug 从标题生成 URL 友好的 slug
-// 支持中文字符，将中文转为拼音或保留原字符
+// 支持中文字符，限制最大长度为 50 字符
 func GenerateSlug(title string) string {
 	slug := strings.ToLower(title)
 
-	// 将中文字符之间的空格替换为连字符
+	// 将空格替换为连字符
 	slug = strings.ReplaceAll(slug, " ", "-")
 
 	// 移除不合法的字符，只保留字母、数字、连字符和中文
@@ -429,6 +429,26 @@ func GenerateSlug(title string) string {
 	}
 
 	slug = strings.Trim(string(result), "-")
+
+	// 限制最大长度为 50 字符，超出则截断并添加随机后缀
+	if len(slug) > 50 {
+		// 找到最后一个连字符位置，避免截断产生奇怪的结尾
+		runes := []rune(slug[:50])
+		lastDash := -1
+		for i := len(runes) - 1; i >= 0; i-- {
+			if runes[i] == '-' {
+				lastDash = i
+				break
+			}
+		}
+		if lastDash > 0 {
+			slug = string(runes[:lastDash])
+		} else {
+			slug = string(runes)
+		}
+		// 添加随机后缀确保唯一性
+		slug = slug + "-" + uuid.New().String()[:6]
+	}
 
 	// 如果 slug 为空，使用随机 ID
 	if slug == "" {
