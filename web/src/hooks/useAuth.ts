@@ -67,7 +67,6 @@ export function useAuth() {
    */
   async function handleLoginSuccess(response: LoginResponse) {
     // 先设置 token（store 更新是同步的，API 拦截器立即能读取）
-    const expiresAt = Date.now() + response.expires_in * 1000;
     useAuthStore.getState().setAuth(
       response.access_token,
       response.refresh_token,
