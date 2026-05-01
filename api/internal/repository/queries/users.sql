@@ -62,3 +62,10 @@ UPDATE users
 SET is_active = $2, updated_at = NOW()
 WHERE id = $1
 RETURNING *;
+
+-- name: UpdateUserProfile :one
+-- 更新用户个人资料（用户名、简介、头像）
+UPDATE users
+SET username = $2, bio = $3, avatar_url = $4, updated_at = NOW()
+WHERE id = $1
+RETURNING *;

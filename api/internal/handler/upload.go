@@ -19,14 +19,12 @@ import (
 // UploadHandler 分片上传接口处理器
 type UploadHandler struct {
 	uploadService *service.UploadService
-	baseURL       string
 }
 
 // NewUploadHandler 创建分片上传处理器实例
-func NewUploadHandler(uploadService *service.UploadService, baseURL string) *UploadHandler {
+func NewUploadHandler(uploadService *service.UploadService) *UploadHandler {
 	return &UploadHandler{
 		uploadService: uploadService,
-		baseURL:       baseURL,
 	}
 }
 
@@ -160,7 +158,7 @@ func (h *UploadHandler) CompleteUpload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	result, err := h.uploadService.CompleteUpload(r.Context(), req.UploadID, h.baseURL, uploaderID)
+	result, err := h.uploadService.CompleteUpload(r.Context(), req.UploadID, uploaderID)
 	if err != nil {
 		if errors.Is(err, service.ErrUploadNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "上传任务不存在")

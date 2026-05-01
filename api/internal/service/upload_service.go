@@ -64,21 +64,23 @@ var allowedUploadTypes = map[string]string{
 
 // UploadService 分片上传业务服务
 type UploadService struct {
-	queries     *generated.Queries
-	mediaSvc    *MediaService
-	chunkDir    string
-	uploadDir   string
-	maxFileSize int64
+	queries         *generated.Queries
+	mediaSvc        *MediaService
+	chunkDir        string
+	uploadDir       string
+	maxFileSize     int64
+	uploadPathPrefix string
 }
 
 // NewUploadService 创建分片上传服务实例
-func NewUploadService(queries *generated.Queries, mediaSvc *MediaService, chunkDir, uploadDir string, maxFileSize int64) *UploadService {
+func NewUploadService(queries *generated.Queries, mediaSvc *MediaService, chunkDir, uploadDir string, maxFileSize int64, uploadPathPrefix string) *UploadService {
 	return &UploadService{
-		queries:     queries,
-		mediaSvc:    mediaSvc,
-		chunkDir:    chunkDir,
-		uploadDir:   uploadDir,
-		maxFileSize: maxFileSize,
+		queries:         queries,
+		mediaSvc:        mediaSvc,
+		chunkDir:        chunkDir,
+		uploadDir:       uploadDir,
+		maxFileSize:     maxFileSize,
+		uploadPathPrefix: uploadPathPrefix,
 	}
 }
 
@@ -187,7 +189,7 @@ func (s *UploadService) UploadChunk(ctx context.Context, uploadID string, chunkI
 }
 
 // CompleteUpload 合并所有分片为完整文件
-func (s *UploadService) CompleteUpload(ctx context.Context, uploadID string, baseURl string, uploaderID *uuid.UUID) (*CompleteUploadResponse, error) {
+func (s *UploadService) CompleteUpload(ctx context.Context, uploadID string, uploaderID *uuid.UUID) (*CompleteUploadResponse, error) {
 	// 查询分片信息
 	info, err := s.queries.GetChunkInfo(ctx, uploadID)
 	if err != nil {
@@ -267,7 +269,7 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID string, bas
 
 	return &CompleteUploadResponse{
 		MediaID: media.ID,
-		URL:     fmt.Sprintf("%s/%s", baseURl, finalFilename),
+		URL:     s.uploadPathPrefix + finalFilename,
 	}, nil
 }
 

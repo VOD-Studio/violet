@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/hooks/useAuth"
 import { cn } from "@/lib/utils"
+import { getUploadUrl } from "@/lib/api"
 
 /** 导航链接配置列表 */
 const NAV_ITEMS = [
@@ -95,7 +96,7 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger className="relative flex size-8 items-center justify-center rounded-full hover:bg-muted">
                 <Avatar className="size-8">
-                  <AvatarImage src={user?.avatar_url} alt={user?.username} />
+                  <AvatarImage src={user?.avatar_url ? getUploadUrl(user.avatar_url) : undefined} alt={user?.username} />
                   <AvatarFallback>
                     {user?.username?.charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -111,6 +112,9 @@ export function Header() {
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  个人中心
+                </DropdownMenuItem>
                 {user?.role === "admin" && (
                   <DropdownMenuItem onClick={() => navigate("/admin")}>
                     管理后台
@@ -170,7 +174,7 @@ export function Header() {
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-md px-3 py-2 hover:bg-muted">
                     <Avatar className="size-8">
-                      <AvatarImage src={user?.avatar_url} alt={user?.username} />
+                      <AvatarImage src={user?.avatar_url ? getUploadUrl(user.avatar_url) : undefined} alt={user?.username} />
                       <AvatarFallback>
                         {user?.username?.charAt(0).toUpperCase()}
                       </AvatarFallback>
@@ -181,6 +185,9 @@ export function Header() {
                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuItem onClick={() => { navigate("/profile"); closeMobileMenu() }}>
+                      个人中心
+                    </DropdownMenuItem>
                     {user?.role === "admin" && (
                       <DropdownMenuItem onClick={() => { navigate("/admin"); closeMobileMenu() }}>
                         管理后台

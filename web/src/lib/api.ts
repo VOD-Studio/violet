@@ -11,11 +11,11 @@ const SERVER_ORIGIN = import.meta.env.VITE_SERVER_ORIGIN ?? "http://localhost:80
 
 /**
  * 获取上传文件的完整 URL
- * @param path - 文件相对路径，如 "uuid.mp4" 或 "uuid_thumb.jpg"
+ * @param path - 后端返回的相对路径，如 "/uploads/uuid.mp4"
  * @returns 完整的文件访问地址
  */
 export function getUploadUrl(path: string): string {
-  return `${SERVER_ORIGIN}/uploads/${path}`
+  return `${SERVER_ORIGIN}${path}`
 }
 
 /** API 错误结构 */

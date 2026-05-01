@@ -121,7 +121,7 @@ function VideoThumbnail({
  * 媒体文件卡片
  */
 export default function MediaCard({ item, onDelete, onPreview }: MediaCardProps) {
-  const fileUrl = getUploadUrl(item.filename)
+  const fileUrl = getUploadUrl(item.path)
   const isImage = item.mime_type.startsWith("image/")
   const isVideo = item.mime_type.startsWith("video/")
   const FileIcon = getFileIcon(item.mime_type)
@@ -142,7 +142,7 @@ export default function MediaCard({ item, onDelete, onPreview }: MediaCardProps)
             />
           ) : isVideo ? (
             <VideoThumbnail
-              filename={item.filename}
+              filename={item.path}
               mimeType={item.mime_type}
               originalName={item.original_name}
             />

@@ -18,13 +18,16 @@ type AuthHandler struct {
 	authService *service.AuthService
 	// validate 请求验证器
 	validate *validator.Validate
+	// uploadPathPrefix 上传文件路径前缀
+	uploadPathPrefix string
 }
 
 // NewAuthHandler 创建认证处理器实例
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
+func NewAuthHandler(authService *service.AuthService, uploadPathPrefix string) *AuthHandler {
 	return &AuthHandler{
-		authService: authService,
-		validate:    validator.New(),
+		authService:      authService,
+		validate:         validator.New(),
+		uploadPathPrefix: uploadPathPrefix,
 	}
 }
 
@@ -339,6 +342,68 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 	// 构建响应，不返回敏感信息
 	avatarURL := ""
+	if user.AvatarUrl.Valid && user.AvatarUrl.String != "" {
+		avatarURL = h.uploadPathPrefix + user.AvatarUrl.String
+	}
+	bio := ""
+	if user.Bio.Valid {
+		bio = user.Bio.String
+	}
+
+	writeJSON(w, http.StatusOK, UserResponse{
+		ID:            user.ID.String(),
+		Username:      user.Username,
+		Email:         user.Email,
+		AvatarURL:     avatarURL,
+		Bio:           bio,
+		Role:          user.Role,
+		EmailVerified: user.EmailVerified,
+		IsActive:      user.IsActive,
+	})
+}
+
+// --- 个人中心 ---
+
+// UpdateProfileRequest 更新个人资料请求
+type UpdateProfileRequest struct {
+	Username  string `json:"username" validate:"required,min=3,max=50"`
+	Bio       string `json:"bio"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+// UpdatePasswordRequest 修改密码请求
+type UpdatePasswordRequest struct {
+	OldPassword string `json:"old_password" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=8,max=72"`
+}
+
+// UpdateProfile 更新个人资料接口
+// PATCH /api/auth/profile
+func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
+		return
+	}
+
+	var req UpdateProfileRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		return
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		return
+	}
+
+	user, err := h.authService.UpdateProfile(r.Context(), userID, req.Username, req.Bio, req.AvatarURL)
+	if err != nil {
+		handleServiceError(w, err)
+		return
+	}
+
+	avatarURL := ""
 	if user.AvatarUrl.Valid {
 		avatarURL = user.AvatarUrl.String
 	}
@@ -356,6 +421,36 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		Role:          user.Role,
 		EmailVerified: user.EmailVerified,
 		IsActive:      user.IsActive,
+	})
+}
+
+// UpdatePassword 修改密码接口
+// PATCH /api/auth/password
+func (h *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
+		return
+	}
+
+	var req UpdatePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		return
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		return
+	}
+
+	if err := h.authService.UpdatePassword(r.Context(), userID, req.OldPassword, req.NewPassword); err != nil {
+		handleServiceError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{
+		Message: "密码修改成功",
 	})
 }
 

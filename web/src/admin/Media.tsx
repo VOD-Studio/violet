@@ -240,7 +240,7 @@ export default function Media() {
           {previewItem && (
             <div className="space-y-4">
               <FilePreview
-                url={getUploadUrl(previewItem.filename)}
+                url={getUploadUrl(previewItem.path)}
                 mimeType={previewItem.mime_type}
                 name={previewItem.original_name}
                 size={previewItem.size}
@@ -255,7 +255,7 @@ export default function Media() {
                   variant="outline"
                   onClick={() => {
                     const a = document.createElement("a")
-                    a.href = getUploadUrl(previewItem.filename)
+                    a.href = getUploadUrl(previewItem.path)
                     a.download = previewItem.original_name
                     a.click()
                   }}

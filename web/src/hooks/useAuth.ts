@@ -123,3 +123,43 @@ export function useAuth() {
     refetchUser: userQuery.refetch,
   };
 }
+
+/** 更新个人资料请求体 */
+interface UpdateProfileData {
+  username: string
+  bio?: string
+  avatar_url?: string
+}
+
+/** 修改密码请求体 */
+interface UpdatePasswordData {
+  old_password: string
+  new_password: string
+}
+
+/**
+ * 更新个人资料 mutation hook
+ */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient()
+  const { setUser } = useAuthStore()
+
+  return useMutation({
+    mutationFn: (data: UpdateProfileData) =>
+      api.patch<UserInfo>("/auth/profile", data),
+    onSuccess: (updatedUser) => {
+      setUser(updatedUser)
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] })
+    },
+  })
+}
+
+/**
+ * 修改密码 mutation hook
+ */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (data: UpdatePasswordData) =>
+      api.patch<{ message: string }>("/auth/password", data),
+  })
+}

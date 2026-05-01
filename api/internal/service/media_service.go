@@ -30,15 +30,17 @@ var validDownloadPermissions = map[string]bool{
 
 // MediaService 媒体管理业务服务
 type MediaService struct {
-	queries   *generated.Queries
-	uploadDir string
+	queries          *generated.Queries
+	uploadDir        string
+	uploadPathPrefix string
 }
 
 // NewMediaService 创建媒体管理服务实例
-func NewMediaService(queries *generated.Queries, uploadDir string) *MediaService {
+func NewMediaService(queries *generated.Queries, uploadDir string, uploadPathPrefix string) *MediaService {
 	return &MediaService{
-		queries:   queries,
-		uploadDir: uploadDir,
+		queries:          queries,
+		uploadDir:        uploadDir,
+		uploadPathPrefix: uploadPathPrefix,
 	}
 }
 
@@ -111,7 +113,7 @@ func (s *MediaService) CreateMedia(ctx context.Context, filename, originalName, 
 		return nil, fmt.Errorf("创建媒体记录失败: %w", err)
 	}
 
-	return mediaToResponse(media), nil
+	return s.mediaToResponse(media), nil
 }
 
 // GetMediaByID 按 ID 获取媒体详情
@@ -124,7 +126,7 @@ func (s *MediaService) GetMediaByID(ctx context.Context, id uuid.UUID) (*MediaRe
 		return nil, fmt.Errorf("查询媒体失败: %w", err)
 	}
 
-	return mediaToResponse(media), nil
+	return s.mediaToResponse(media), nil
 }
 
 // ListMedia 分页查询媒体列表
@@ -172,7 +174,7 @@ func (s *MediaService) ListMedia(ctx context.Context, page, limit int, mimeType 
 
 	items := make([]*MediaResponse, 0, len(mediaList))
 	for _, m := range mediaList {
-		items = append(items, mediaToResponse(m))
+		items = append(items, s.mediaToResponse(m))
 	}
 
 	return &ListMediaResult{
@@ -215,7 +217,7 @@ func (s *MediaService) UpdateMedia(ctx context.Context, id uuid.UUID, req Update
 		return nil, fmt.Errorf("更新媒体失败: %w", err)
 	}
 
-	return mediaToResponse(media), nil
+	return s.mediaToResponse(media), nil
 }
 
 // DeleteMedia 删除媒体（同时删除本地文件和数据库记录）
@@ -266,7 +268,7 @@ func (s *MediaService) CheckDownloadPermission(ctx context.Context, id uuid.UUID
 		}
 	}
 
-	return mediaToResponse(media), nil
+	return s.mediaToResponse(media), nil
 }
 
 // IncrementDownloadCount 增加下载次数
@@ -275,14 +277,14 @@ func (s *MediaService) IncrementDownloadCount(ctx context.Context, id uuid.UUID)
 }
 
 // mediaToResponse 将数据库模型转换为响应结构
-func mediaToResponse(m *generated.Medium) *MediaResponse {
+func (s *MediaService) mediaToResponse(m *generated.Medium) *MediaResponse {
 	r := &MediaResponse{
 		ID:                 m.ID.String(),
 		Filename:           m.Filename,
 		OriginalName:       m.OriginalName,
 		MimeType:           m.MimeType,
 		Size:               m.Size,
-		Path:               m.Path,
+		Path:               s.uploadPathPrefix + m.Filename,
 		DownloadCount:      m.DownloadCount,
 		DownloadPermission: m.DownloadPermission,
 		CreatedAt:          m.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),

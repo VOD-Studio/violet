@@ -28,6 +28,8 @@ type Config struct {
 	FrontendURL string
 	// Port 服务监听端口
 	Port string
+	// UploadPathPrefix 上传文件路径前缀，如 "/uploads/"
+	UploadPathPrefix string
 }
 
 // Load 从环境变量加载配置，未设置时使用默认值
@@ -46,6 +48,7 @@ func Load() *Config {
 		EmailFrom:          getEnv("EMAIL_FROM", "noreply@yourdomain.com"),
 		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:3000"),
 		Port:               getEnv("PORT", "8080"),
+		UploadPathPrefix:   getEnv("UPLOAD_PATH_PREFIX", "/uploads/"),
 	}
 }
 

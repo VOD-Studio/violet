@@ -7,6 +7,7 @@ package generated
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -221,6 +222,45 @@ type UpdateUserPasswordParams struct {
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
 	return err
+}
+
+const updateUserProfile = `-- name: UpdateUserProfile :one
+UPDATE users
+SET username = $2, bio = $3, avatar_url = $4, updated_at = NOW()
+WHERE id = $1
+RETURNING id, username, email, password_hash, avatar_url, bio, role, email_verified, is_active, created_at, updated_at
+`
+
+type UpdateUserProfileParams struct {
+	ID        uuid.UUID      `json:"id"`
+	Username  string         `json:"username"`
+	Bio       sql.NullString `json:"bio"`
+	AvatarUrl sql.NullString `json:"avatar_url"`
+}
+
+// 更新用户个人资料（用户名、简介、头像）
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (*User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserProfile,
+		arg.ID,
+		arg.Username,
+		arg.Bio,
+		arg.AvatarUrl,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.AvatarUrl,
+		&i.Bio,
+		&i.Role,
+		&i.EmailVerified,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
 }
 
 const updateUserRole = `-- name: UpdateUserRole :one

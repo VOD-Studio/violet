@@ -67,15 +67,15 @@ func main() {
 	statsService := service.NewStatsService(queries)
 	settingsService := service.NewSettingsService(queries)
 	userService := service.NewUserService(queries)
-	imageService := service.NewImageService(queries, "uploads", fmt.Sprintf("http://localhost:%s/uploads", cfg.Port))
-	mediaService := service.NewMediaService(queries, "uploads")
+	imageService := service.NewImageService(queries, "uploads", cfg.UploadPathPrefix)
+	mediaService := service.NewMediaService(queries, "uploads", cfg.UploadPathPrefix)
 	downloadService := service.NewDownloadService(queries)
-	uploadService := service.NewUploadService(queries, mediaService, "uploads/chunks", "uploads", 1024*1024*1024)
+	uploadService := service.NewUploadService(queries, mediaService, "uploads/chunks", "uploads", 1024*1024*1024, cfg.UploadPathPrefix)
 	musicService := service.NewMusicService()
 	projectService := service.NewProjectService(queries)
 
 	// 初始化处理器
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, cfg.UploadPathPrefix)
 	postHandler := handler.NewPostHandler(postService, tagService)
 	tagHandler := handler.NewTagHandler(tagService)
 	commentHandler := handler.NewCommentHandler(commentService)
@@ -84,7 +84,7 @@ func main() {
 	userMgmtHandler := handler.NewUserManagementHandler(userService)
 	imageHandler := handler.NewImageHandler(imageService, "uploads", 1024*1024*1024)
 	mediaHandler := handler.NewMediaHandler(mediaService, downloadService, "uploads")
-	uploadHandler := handler.NewUploadHandler(uploadService, fmt.Sprintf("http://localhost:%s/uploads", cfg.Port))
+	uploadHandler := handler.NewUploadHandler(uploadService)
 	musicHandler := handler.NewMusicHandler(musicService)
 	projectHandler := handler.NewProjectHandler(projectService)
 
@@ -119,8 +119,10 @@ func main() {
 		// 需要认证的接口
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(authService))
-			r.Post("/logout", authHandler.Logout) // 用户登出
-			r.Get("/me", authHandler.Me)          // 获取当前用户信息
+			r.Post("/logout", authHandler.Logout)         // 用户登出
+			r.Get("/me", authHandler.Me)                  // 获取当前用户信息
+			r.Patch("/profile", authHandler.UpdateProfile) // 更新个人资料
+			r.Patch("/password", authHandler.UpdatePassword) // 修改密码
 		})
 	})
 

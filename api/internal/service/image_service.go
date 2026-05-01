@@ -58,18 +58,18 @@ var allowedImageTypes = map[string]bool{
 
 // ImageService 图片管理业务服务
 type ImageService struct {
-	queries   *generated.Queries
-	uploadDir string
-	baseURL   string
+	queries           *generated.Queries
+	uploadDir         string
+	uploadPathPrefix  string
 }
 
 // NewImageService 创建图片管理服务实例
-// uploadDir 为本地存储目录，baseURL 为访问图片的基础 URL
-func NewImageService(queries *generated.Queries, uploadDir, baseURL string) *ImageService {
+// uploadDir 为本地存储目录，uploadPathPrefix 为路径前缀（如 "/uploads/"）
+func NewImageService(queries *generated.Queries, uploadDir, uploadPathPrefix string) *ImageService {
 	return &ImageService{
-		queries:   queries,
-		uploadDir: uploadDir,
-		baseURL:   baseURL,
+		queries:          queries,
+		uploadDir:        uploadDir,
+		uploadPathPrefix: uploadPathPrefix,
 	}
 }
 
@@ -100,7 +100,7 @@ func (s *ImageService) SaveImage(ctx context.Context, filename, originalName, mi
 	}
 
 	// 构建访问 URL
-	url := fmt.Sprintf("%s/%s", s.baseURL, filename)
+	url := s.uploadPathPrefix + filename
 
 	// 构建上传者参数
 	var uploadedBy uuid.NullUUID

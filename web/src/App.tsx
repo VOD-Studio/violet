@@ -20,6 +20,7 @@ import About from "@/pages/About"
 import Login from "@/pages/Login"
 import Register from "@/pages/Register"
 import VerifyEmail from "@/pages/VerifyEmail"
+import Profile from "@/pages/profile"
 
 /* 后台管理页面组件 */
 import Dashboard from "@/admin/Dashboard"
@@ -61,6 +62,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
 
           {/* 后台管理路由 */}

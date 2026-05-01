@@ -435,6 +435,80 @@ func (s *AuthService) GetUserByID(ctx context.Context, userID string) (*generate
 	return user, nil
 }
 
+// UpdateProfile 更新用户个人资料
+func (s *AuthService) UpdateProfile(ctx context.Context, userID, username, bio, avatarURL string) (*generated.User, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("无效的用户 ID: %w", err)
+	}
+
+	// 如果要修改用户名，检查是否已被占用
+	existing, err := s.queries.GetUserByUsername(ctx, username)
+	if err == nil && existing.ID != userUUID {
+		return nil, ErrUsernameAlreadyExists
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("查询用户名失败: %w", err)
+	}
+
+	var bioNull sql.NullString
+	if bio != "" {
+		bioNull = sql.NullString{String: bio, Valid: true}
+	}
+	var avatarNull sql.NullString
+	if avatarURL != "" {
+		avatarNull = sql.NullString{String: avatarURL, Valid: true}
+	}
+
+	user, err := s.queries.UpdateUserProfile(ctx, generated.UpdateUserProfileParams{
+		ID:        userUUID,
+		Username:  username,
+		Bio:       bioNull,
+		AvatarUrl: avatarNull,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("更新个人资料失败: %w", err)
+	}
+
+	return user, nil
+}
+
+// UpdatePassword 修改密码（需验证旧密码）
+func (s *AuthService) UpdatePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return fmt.Errorf("无效的用户 ID: %w", err)
+	}
+
+	user, err := s.queries.GetUserByID(ctx, userUUID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUserNotFound
+		}
+		return fmt.Errorf("查询用户失败: %w", err)
+	}
+
+	// 验证旧密码
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); err != nil {
+		return ErrInvalidCredentials
+	}
+
+	// 哈希新密码并更新
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("密码哈希失败: %w", err)
+	}
+
+	if err := s.queries.UpdateUserPassword(ctx, generated.UpdateUserPasswordParams{
+		ID:           userUUID,
+		PasswordHash: string(hashedPassword),
+	}); err != nil {
+		return fmt.Errorf("更新密码失败: %w", err)
+	}
+
+	return nil
+}
+
 // --- 内部辅助方法 ---
 
 // generateVerificationCode 生成 6 位数字验证码

@@ -8,6 +8,7 @@ const CHUNK_SIZE = 5 * 1024 * 1024
 
 /** 上传结果 */
 interface UploadResult {
+  /** 文件相对路径，需用 getUploadUrl() 拼接完整 URL */
   url: string
   id: string
   name: string
@@ -30,6 +31,7 @@ interface CheckExistResponse {
 /** 合并上传响应 */
 interface CompleteUploadResponse {
   media_id: string
+  /** 相对路径，如 /uploads/xxx.jpeg */
   url: string
 }
 
@@ -185,7 +187,7 @@ export async function uploadFile(
   clearUploadState(fileHash)
 
   return {
-    url: result.url,
+    url: result.url.replace("/uploads/", ""),
     id: result.media_id,
     name: file.name,
     mimeType: file.type || "application/octet-stream",
