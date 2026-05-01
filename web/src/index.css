@@ -132,3 +132,157 @@
     @apply transition-colors duration-300;
     }
 }
+
+/* 表情包样式 - Bilibili 风格 */
+.sticker-in-comment {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  border-radius: 4px;
+  margin: 0 2px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.sticker-in-comment:hover {
+  transform: scale(1.2);
+}
+
+/* 表情选择器样式 */
+.sticker-picker {
+  width: 320px;
+  max-height: 400px;
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.sticker-picker-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.sticker-picker-tab {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sticker-picker-tab:hover {
+  background: var(--accent);
+}
+
+.sticker-picker-tab.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.sticker-picker-search {
+  padding: 8px;
+}
+
+.sticker-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  padding: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.sticker-picker-item {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  padding: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sticker-picker-item:hover {
+  background: var(--accent);
+  transform: scale(1.1);
+}
+
+.sticker-picker-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 2px;
+}
+
+.sticker-picker-item-emoji {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.sticker-picker-item-kaomoji {
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* 管理后台表情包样式 */
+.sticker-group-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  background: var(--card);
+}
+
+.sticker-group-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.sticker-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 8px;
+}
+
+.sticker-admin-item {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  padding: 8px;
+  position: relative;
+  cursor: move;
+}
+
+.sticker-admin-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.sticker-admin-item-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sticker-admin-item:hover .sticker-admin-item-overlay {
+  opacity: 1;
+}
