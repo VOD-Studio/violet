@@ -37,9 +37,9 @@ func (q *Queries) CountPosts(ctx context.Context, arg CountPostsParams) (int64, 
 
 const createPost = `-- name: CreatePost :one
 
-INSERT INTO posts (title, slug, content_md, content_html, excerpt, cover_image, status, author_id, is_featured, seo_title, seo_description, published_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at
+INSERT INTO posts (title, slug, content_md, content_html, excerpt, cover_image, status, author_id, is_featured, seo_title, seo_description, seo_keywords, published_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+RETURNING id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at, seo_keywords
 `
 
 type CreatePostParams struct {
@@ -54,6 +54,7 @@ type CreatePostParams struct {
 	IsFeatured     bool           `json:"is_featured"`
 	SeoTitle       sql.NullString `json:"seo_title"`
 	SeoDescription sql.NullString `json:"seo_description"`
+	SeoKeywords    sql.NullString `json:"seo_keywords"`
 	PublishedAt    sql.NullTime   `json:"published_at"`
 }
 
@@ -72,6 +73,7 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (*Post, 
 		arg.IsFeatured,
 		arg.SeoTitle,
 		arg.SeoDescription,
+		arg.SeoKeywords,
 		arg.PublishedAt,
 	)
 	var i Post
@@ -92,6 +94,7 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (*Post, 
 		&i.PublishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SeoKeywords,
 	)
 	return &i, err
 }
@@ -108,7 +111,7 @@ func (q *Queries) DeletePost(ctx context.Context, id uuid.UUID) error {
 }
 
 const getPostByID = `-- name: GetPostByID :one
-SELECT id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at FROM posts
+SELECT id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at, seo_keywords FROM posts
 WHERE id = $1 LIMIT 1
 `
 
@@ -133,12 +136,13 @@ func (q *Queries) GetPostByID(ctx context.Context, id uuid.UUID) (*Post, error) 
 		&i.PublishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SeoKeywords,
 	)
 	return &i, err
 }
 
 const getPostBySlug = `-- name: GetPostBySlug :one
-SELECT id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at FROM posts
+SELECT id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at, seo_keywords FROM posts
 WHERE slug = $1 LIMIT 1
 `
 
@@ -163,6 +167,7 @@ func (q *Queries) GetPostBySlug(ctx context.Context, slug string) (*Post, error)
 		&i.PublishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SeoKeywords,
 	)
 	return &i, err
 }
@@ -180,7 +185,7 @@ func (q *Queries) IncrementViewCount(ctx context.Context, id uuid.UUID) error {
 }
 
 const listPosts = `-- name: ListPosts :many
-SELECT p.id, p.title, p.slug, p.content_md, p.content_html, p.excerpt, p.cover_image, p.status, p.author_id, p.view_count, p.is_featured, p.seo_title, p.seo_description, p.published_at, p.created_at, p.updated_at FROM posts p
+SELECT p.id, p.title, p.slug, p.content_md, p.content_html, p.excerpt, p.cover_image, p.status, p.author_id, p.view_count, p.is_featured, p.seo_title, p.seo_description, p.published_at, p.created_at, p.updated_at, p.seo_keywords FROM posts p
 LEFT JOIN post_tags pt ON p.id = pt.post_id
 WHERE
     (COALESCE($1::varchar, '') = '' OR p.status = $1)
@@ -232,6 +237,7 @@ func (q *Queries) ListPosts(ctx context.Context, arg ListPostsParams) ([]*Post, 
 			&i.PublishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SeoKeywords,
 		); err != nil {
 			return nil, err
 		}
@@ -249,9 +255,9 @@ func (q *Queries) ListPosts(ctx context.Context, arg ListPostsParams) ([]*Post, 
 const updatePost = `-- name: UpdatePost :one
 UPDATE posts
 SET title = $2, slug = $3, content_md = $4, content_html = $5, excerpt = $6,
-    cover_image = $7, is_featured = $8, seo_title = $9, seo_description = $10, updated_at = NOW()
+    cover_image = $7, is_featured = $8, seo_title = $9, seo_description = $10, seo_keywords = $11, updated_at = NOW()
 WHERE id = $1
-RETURNING id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at
+RETURNING id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at, seo_keywords
 `
 
 type UpdatePostParams struct {
@@ -265,6 +271,7 @@ type UpdatePostParams struct {
 	IsFeatured     bool           `json:"is_featured"`
 	SeoTitle       sql.NullString `json:"seo_title"`
 	SeoDescription sql.NullString `json:"seo_description"`
+	SeoKeywords    sql.NullString `json:"seo_keywords"`
 }
 
 // 更新文章内容，返回更新后的记录
@@ -280,6 +287,7 @@ func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) (*Post, 
 		arg.IsFeatured,
 		arg.SeoTitle,
 		arg.SeoDescription,
+		arg.SeoKeywords,
 	)
 	var i Post
 	err := row.Scan(
@@ -299,6 +307,7 @@ func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) (*Post, 
 		&i.PublishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SeoKeywords,
 	)
 	return &i, err
 }
@@ -307,7 +316,7 @@ const updatePostStatus = `-- name: UpdatePostStatus :one
 UPDATE posts
 SET status = $2, published_at = CASE WHEN $2 = 'published' AND published_at IS NULL THEN NOW() ELSE published_at END, updated_at = NOW()
 WHERE id = $1
-RETURNING id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at
+RETURNING id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at, seo_keywords
 `
 
 type UpdatePostStatusParams struct {
@@ -336,6 +345,7 @@ func (q *Queries) UpdatePostStatus(ctx context.Context, arg UpdatePostStatusPara
 		&i.PublishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SeoKeywords,
 	)
 	return &i, err
 }

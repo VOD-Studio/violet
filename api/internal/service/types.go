@@ -8,46 +8,31 @@ import (
 
 // CreatePostRequest 创建文章请求
 type CreatePostRequest struct {
-	// Title 文章标题
-	Title string `json:"title" validate:"required,min=1,max=255"`
-	// Slug URL 标识符，为空时自动生成
-	Slug string `json:"slug"`
-	// ContentMarkdown Markdown 格式的文章内容
-	ContentMarkdown string `json:"content_markdown" validate:"required"`
-	// Excerpt 文章摘要
-	Excerpt string `json:"excerpt"`
-	// CoverImage 封面图片链接
-	CoverImage string `json:"cover_image"`
-	// Status 文章状态：draft/published/archived
-	Status string `json:"status"`
-	// IsFeatured 是否置顶
-	IsFeatured bool `json:"is_featured"`
-	// SEOTitle SEO 标题
-	SEOTitle string `json:"seo_title"`
-	// SEODescription SEO 描述
-	SEODescription string `json:"seo_description"`
-	// TagIDs 标签 ID 列表
-	TagIDs []int32 `json:"tag_ids"`
+	Title          string   `json:"title" validate:"required,min=1,max=255"`
+	Slug           string   `json:"slug"`
+	ContentMarkdown string  `json:"content_markdown" validate:"required"`
+	Excerpt        string   `json:"excerpt"`
+	CoverImage     string   `json:"cover_image"`
+	Status         string   `json:"status"`
+	IsFeatured     bool     `json:"is_featured"`
+	SEOTitle       string   `json:"seo_title"`
+	SEODescription string   `json:"seo_description"`
+	SEOKeywords    string   `json:"seo_keywords"`
+	TagIDs         []int32  `json:"tag_ids"`
 }
 
 // UpdatePostRequest 更新文章请求
 type UpdatePostRequest struct {
-	// Title 文章标题
-	Title string `json:"title"`
-	// Slug URL 标识符
-	Slug string `json:"slug"`
-	// ContentMarkdown Markdown 格式的文章内容
-	ContentMarkdown string `json:"content_markdown"`
-	// Excerpt 文章摘要
-	Excerpt string `json:"excerpt"`
-	// CoverImage 封面图片链接
-	CoverImage string `json:"cover_image"`
-	// IsFeatured 是否置顶
-	IsFeatured bool `json:"is_featured"`
-	// SEOTitle SEO 标题
-	SEOTitle string `json:"seo_title"`
-	// SEODescription SEO 描述
-	SEODescription string `json:"seo_description"`
+	Title           string   `json:"title"`
+	Slug            string   `json:"slug"`
+	ContentMarkdown string   `json:"content_markdown"`
+	Excerpt         string   `json:"excerpt"`
+	CoverImage      string   `json:"cover_image"`
+	IsFeatured      bool     `json:"is_featured"`
+	SEOTitle        string   `json:"seo_title"`
+	SEODescription  string   `json:"seo_description"`
+	SEOKeywords     string   `json:"seo_keywords"`
+	TagIDs          []int32  `json:"tag_ids"`
 }
 
 // PostDetail 文章详情（包含标签信息）

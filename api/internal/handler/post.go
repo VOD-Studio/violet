@@ -61,16 +61,26 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	// 构建响应，不含正文内容
 	type postListItem struct {
-		ID          string  `json:"id"`
-		Title       string  `json:"title"`
-		Slug        string  `json:"slug"`
-		Excerpt     *string `json:"excerpt,omitempty"`
-		CoverImage  *string `json:"cover_image,omitempty"`
-		Status      string  `json:"status"`
-		ViewCount   int32   `json:"view_count"`
-		IsFeatured  bool    `json:"is_featured"`
-		PublishedAt *string `json:"published_at,omitempty"`
-		CreatedAt   string  `json:"created_at"`
+		/** 文章唯一标识 */
+		ID string `json:"id"`
+		/** 文章标题 */
+		Title string `json:"title"`
+		/** URL slug */
+		Slug string `json:"slug"`
+		/** 文章摘要 */
+		Excerpt *string `json:"excerpt,omitempty"`
+		/** 封面图片 */
+		CoverImage *string `json:"coverImage,omitempty"`
+		/** 发布状态 */
+		Status string `json:"status"`
+		/** 浏览次数 */
+		ViewCount int32 `json:"viewCount"`
+		/** 是否精选 */
+		IsFeatured bool `json:"isFeatured"`
+		/** 发布时间 */
+		PublishedAt *string `json:"publishedAt,omitempty"`
+		/** 创建时间 */
+		CreatedAt string `json:"createdAt"`
 	}
 
 	items := make([]postListItem, 0, len(result.Posts))
@@ -132,15 +142,26 @@ func (h *PostHandler) listByTag(w http.ResponseWriter, r *http.Request, tagSlug 
 	}
 
 	type postListItem struct {
-		ID         string  `json:"id"`
-		Title      string  `json:"title"`
-		Slug       string  `json:"slug"`
-		Excerpt    *string `json:"excerpt,omitempty"`
-		CoverImage *string `json:"cover_image,omitempty"`
-		Status     string  `json:"status"`
-		ViewCount  int32   `json:"view_count"`
-		IsFeatured bool    `json:"is_featured"`
-		CreatedAt  string  `json:"created_at"`
+		/** 文章唯一标识 */
+		ID string `json:"id"`
+		/** 文章标题 */
+		Title string `json:"title"`
+		/** URL slug */
+		Slug string `json:"slug"`
+		/** 文章摘要 */
+		Excerpt *string `json:"excerpt,omitempty"`
+		/** 封面图片 */
+		CoverImage *string `json:"coverImage,omitempty"`
+		/** 发布状态 */
+		Status string `json:"status"`
+		/** 浏览次数 */
+		ViewCount int32 `json:"viewCount"`
+		/** 是否精选 */
+		IsFeatured bool `json:"isFeatured"`
+		/** 发布时间 */
+		PublishedAt *string `json:"publishedAt,omitempty"`
+		/** 创建时间 */
+		CreatedAt string `json:"createdAt"`
 	}
 
 	items := make([]postListItem, 0, len(result.Posts))
@@ -221,16 +242,16 @@ func (h *PostHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 		"id":              p.ID.String(),
 		"title":           p.Title,
 		"slug":            p.Slug,
-		"content_markdown": p.ContentMd,
-		"content_html":    p.ContentHtml,
+		"contentMarkdown": p.ContentMd,
+		"contentHtml":     p.ContentHtml,
 		"excerpt":         excerpt,
-		"cover_image":     coverImage,
+		"coverImage":      coverImage,
 		"status":          p.Status,
-		"view_count":      p.ViewCount,
-		"is_featured":     p.IsFeatured,
-		"published_at":    publishedAt,
-		"created_at":      p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		"updated_at":      p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		"viewCount":       p.ViewCount,
+		"isFeatured":      p.IsFeatured,
+		"publishedAt":     publishedAt,
+		"createdAt":       p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		"updatedAt":       p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		"tags":            tags,
 	})
 }

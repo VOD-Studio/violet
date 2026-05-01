@@ -2,8 +2,8 @@
 
 -- name: CreatePost :one
 -- 创建文章，返回完整记录
-INSERT INTO posts (title, slug, content_md, content_html, excerpt, cover_image, status, author_id, is_featured, seo_title, seo_description, published_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+INSERT INTO posts (title, slug, content_md, content_html, excerpt, cover_image, status, author_id, is_featured, seo_title, seo_description, seo_keywords, published_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 RETURNING *;
 
 -- name: GetPostByID :one
@@ -41,7 +41,7 @@ WHERE
 -- 更新文章内容，返回更新后的记录
 UPDATE posts
 SET title = $2, slug = $3, content_md = $4, content_html = $5, excerpt = $6,
-    cover_image = $7, is_featured = $8, seo_title = $9, seo_description = $10, updated_at = NOW()
+    cover_image = $7, is_featured = $8, seo_title = $9, seo_description = $10, seo_keywords = $11, updated_at = NOW()
 WHERE id = $1
 RETURNING *;
 

@@ -104,11 +104,9 @@ func (s *PostService) CreatePost(ctx context.Context, req CreatePostRequest, aut
 	if req.SEODescription != "" {
 		seoDesc = sql.NullString{String: req.SEODescription, Valid: true}
 	}
-
-	// 构建发布时间
-	publishedAt := sql.NullTime{}
-	if status == "published" {
-		publishedAt = sql.NullTime{Time: sql.NullTime{}.Time, Valid: false}
+	seoKeywords := sql.NullString{}
+	if req.SEOKeywords != "" {
+		seoKeywords = sql.NullString{String: req.SEOKeywords, Valid: true}
 	}
 
 	// 创建文章记录
@@ -124,7 +122,8 @@ func (s *PostService) CreatePost(ctx context.Context, req CreatePostRequest, aut
 		IsFeatured:     req.IsFeatured,
 		SeoTitle:       seoTitle,
 		SeoDescription: seoDesc,
-		PublishedAt:    publishedAt,
+		SeoKeywords:    seoKeywords,
+		PublishedAt:    sql.NullTime{}, // 发布时间由 UpdatePostStatus 设置
 	})
 	if err != nil {
 		return nil, fmt.Errorf("创建文章失败: %w", err)
@@ -231,6 +230,7 @@ func (s *PostService) UpdatePost(ctx context.Context, id uuid.UUID, req UpdatePo
 	isFeatured := existing.IsFeatured
 	seoTitle := existing.SeoTitle
 	seoDesc := existing.SeoDescription
+	seoKeywords := existing.SeoKeywords
 
 	// 更新提供的字段
 	if req.Title != "" {
@@ -271,6 +271,9 @@ func (s *PostService) UpdatePost(ctx context.Context, id uuid.UUID, req UpdatePo
 	if req.SEODescription != "" {
 		seoDesc = sql.NullString{String: req.SEODescription, Valid: true}
 	}
+	if req.SEOKeywords != "" {
+		seoKeywords = sql.NullString{String: req.SEOKeywords, Valid: true}
+	}
 
 	// 更新文章记录
 	post, err := s.queries.UpdatePost(ctx, generated.UpdatePostParams{
@@ -284,9 +287,23 @@ func (s *PostService) UpdatePost(ctx context.Context, id uuid.UUID, req UpdatePo
 		IsFeatured:     isFeatured,
 		SeoTitle:       seoTitle,
 		SeoDescription: seoDesc,
+		SeoKeywords:    seoKeywords,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("更新文章失败: %w", err)
+	}
+
+	// 更新标签关联
+	if len(req.TagIDs) > 0 {
+		// 先删除旧的标签关联
+		s.queries.DeletePostTags(ctx, id)
+		// 再添加新的标签关联
+		for _, tagID := range req.TagIDs {
+			s.queries.CreatePostTag(ctx, generated.CreatePostTagParams{
+				PostID: id,
+				TagID:  tagID,
+			})
+		}
 	}
 
 	return post, nil

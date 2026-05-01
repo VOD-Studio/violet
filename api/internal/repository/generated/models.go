@@ -74,6 +74,7 @@ type Post struct {
 	PublishedAt    sql.NullTime   `json:"published_at"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
+	SeoKeywords    sql.NullString `json:"seo_keywords"`
 }
 
 type PostTag struct {

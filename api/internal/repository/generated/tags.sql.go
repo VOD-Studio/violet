@@ -146,7 +146,7 @@ func (q *Queries) ListPostTags(ctx context.Context, postID uuid.UUID) ([]*Tag, e
 }
 
 const listPostsByTagSlug = `-- name: ListPostsByTagSlug :many
-SELECT p.id, p.title, p.slug, p.content_md, p.content_html, p.excerpt, p.cover_image, p.status, p.author_id, p.view_count, p.is_featured, p.seo_title, p.seo_description, p.published_at, p.created_at, p.updated_at FROM posts p
+SELECT p.id, p.title, p.slug, p.content_md, p.content_html, p.excerpt, p.cover_image, p.status, p.author_id, p.view_count, p.is_featured, p.seo_title, p.seo_description, p.published_at, p.created_at, p.updated_at, p.seo_keywords FROM posts p
 INNER JOIN post_tags pt ON p.id = pt.post_id
 INNER JOIN tags t ON pt.tag_id = t.id
 WHERE t.slug = $1 AND p.status = 'published'
@@ -187,6 +187,7 @@ func (q *Queries) ListPostsByTagSlug(ctx context.Context, arg ListPostsByTagSlug
 			&i.PublishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SeoKeywords,
 		); err != nil {
 			return nil, err
 		}
