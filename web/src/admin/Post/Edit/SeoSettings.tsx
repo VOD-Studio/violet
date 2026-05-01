@@ -1,19 +1,25 @@
 // SEO 设置组件
 
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface SeoSettingsProps {
   /** SEO 描述 */
-  seoDescription: string
+  seoDescription: string;
   /** SEO 关键词 */
-  seoKeywords: string
+  seoKeywords: string;
   /** SEO 描述变化回调 */
-  onDescriptionChange: (value: string) => void
+  onDescriptionChange: (value: string) => void;
   /** SEO 关键词变化回调 */
-  onKeywordsChange: (value: string) => void
+  onKeywordsChange: (value: string) => void;
 }
 
 /**
@@ -54,5 +60,5 @@ export function SeoSettings({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

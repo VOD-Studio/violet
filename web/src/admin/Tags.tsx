@@ -3,64 +3,81 @@
  * 支持创建、删除标签，展示标签列表
  */
 
-import { useState } from "react"
-import { useAdminTags } from "@/hooks/useAdmin"
-import { api } from "@/lib/api"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
-import { EmptyState } from "@/components/shared/EmptyState"
-import { ErrorFallback } from "@/components/shared/ErrorFallback"
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
-import { Plus, Trash2, Loader2 } from "lucide-react"
-import { toast } from "sonner"
+import { useState } from "react";
+import { useAdminTags } from "@/hooks/useAdmin";
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Plus, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 /** 标签结构 */
 interface ApiTag {
-  id: number
-  name: string
-  slug: string
+  id: number;
+  name: string;
+  slug: string;
 }
 
 /**
  * 标签管理页面
  */
 export default function Tags() {
-  const { data: tags, isLoading, error, refetch } = useAdminTags()
+  const { data: tags, isLoading, error, refetch } = useAdminTags();
 
   /** 新建标签表单状态 */
-  const [newTagName, setNewTagName] = useState("")
-  const [creating, setCreating] = useState(false)
+  const [newTagName, setNewTagName] = useState("");
+  const [creating, setCreating] = useState(false);
 
   /** 删除确认弹窗状态 */
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: number; name: string }>({
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    id: number;
+    name: string;
+  }>({
     open: false,
     id: 0,
     name: "",
-  })
+  });
 
   /**
    * 创建新标签
    */
   async function handleCreate() {
     if (!newTagName.trim()) {
-      toast.error("请输入标签名称")
-      return
+      toast.error("请输入标签名称");
+      return;
     }
 
-    setCreating(true)
+    setCreating(true);
     try {
-      await api.post<ApiTag>("/tags", { name: newTagName.trim() })
-      toast.success("标签创建成功")
-      setNewTagName("")
-      refetch()
+      await api.post<ApiTag>("/tags", { name: newTagName.trim() });
+      toast.success("标签创建成功");
+      setNewTagName("");
+      refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "创建失败")
+      toast.error(err instanceof Error ? err.message : "创建失败");
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
   }
 
@@ -68,7 +85,7 @@ export default function Tags() {
    * 弹出删除确认
    */
   function handleDelete(id: number, name: string) {
-    setDeleteConfirm({ open: true, id, name })
+    setDeleteConfirm({ open: true, id, name });
   }
 
   /**
@@ -76,13 +93,13 @@ export default function Tags() {
    */
   async function confirmDelete() {
     try {
-      await api.del(`/tags/${deleteConfirm.id}`)
-      toast.success("标签已删除")
-      setDeleteConfirm({ open: false, id: 0, name: "" })
-      refetch()
+      await api.del(`/tags/${deleteConfirm.id}`);
+      toast.success("标签已删除");
+      setDeleteConfirm({ open: false, id: 0, name: "" });
+      refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "删除失败")
-      setDeleteConfirm({ open: false, id: 0, name: "" })
+      toast.error(err instanceof Error ? err.message : "删除失败");
+      setDeleteConfirm({ open: false, id: 0, name: "" });
     }
   }
 
@@ -142,7 +159,10 @@ export default function Tags() {
 
           {/* 空数据状态 */}
           {!isLoading && !error && (!tags || tags.length === 0) && (
-            <EmptyState title="暂无标签" description="点击上方按钮创建第一个标签" />
+            <EmptyState
+              title="暂无标签"
+              description="点击上方按钮创建第一个标签"
+            />
           )}
 
           {/* 标签表格 */}
@@ -159,7 +179,9 @@ export default function Tags() {
               <TableBody>
                 {tags.map((tag: ApiTag) => (
                   <TableRow key={tag.id}>
-                    <TableCell className="font-mono text-sm">{tag.id}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {tag.id}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{tag.name}</Badge>
                     </TableCell>
@@ -194,5 +216,5 @@ export default function Tags() {
         destructive
       />
     </div>
-  )
+  );
 }

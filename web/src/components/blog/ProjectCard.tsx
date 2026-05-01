@@ -2,38 +2,38 @@
 // 展示项目封面、名称、描述、技术栈标签、GitHub 链接和 Demo 链接
 // 使用 motion 实现悬停放大和阴影效果
 
-import { motion } from "motion/react"
-import { ExternalLink, Star, GitFork } from "lucide-react"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { TechStackBadge } from "./TechStackBadge"
+import { motion } from "motion/react";
+import { ExternalLink, Star, GitFork } from "lucide-react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { TechStackBadge } from "./TechStackBadge";
 
 /** 项目数据结构 */
 interface ProjectData {
   /** 项目唯一标识 */
-  id: string
+  id: string;
   /** 项目名称 */
-  title: string
+  title: string;
   /** 项目简述 */
-  description: string
+  description: string;
   /** 封面图地址 */
-  coverImage?: string
+  coverImage?: string;
   /** 技术栈标签列表 */
-  tags: string[]
+  tags: string[];
   /** GitHub 仓库地址 */
-  githubUrl?: string
+  githubUrl?: string;
   /** GitHub Star 数量 */
-  stars?: number
+  stars?: number;
   /** GitHub Fork 数量 */
-  forks?: number
+  forks?: number;
   /** 在线演示地址 */
-  demoUrl?: string
+  demoUrl?: string;
 }
 
 interface ProjectCardProps {
   /** 项目数据 */
-  project: ProjectData
+  project: ProjectData;
   /** 动画延迟，用于列表中交错动画 */
-  delay?: number
+  delay?: number;
 }
 
 /**
@@ -133,7 +133,7 @@ export function ProjectCard({ project, delay = 0 }: ProjectCardProps) {
         </CardFooter>
       </Card>
     </motion.div>
-  )
+  );
 }
 
 /**
@@ -142,9 +142,9 @@ export function ProjectCard({ project, delay = 0 }: ProjectCardProps) {
  */
 function formatCount(count: number): string {
   if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}k`
+    return `${(count / 1000).toFixed(1)}k`;
   }
-  return String(count)
+  return String(count);
 }
 
-export type { ProjectData }
+export type { ProjectData };

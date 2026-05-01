@@ -1,14 +1,26 @@
-import type { SiteSettings } from "@/hooks/useAdmin"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import type { SiteSettings } from "@/hooks/useAdmin";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface CommentSettingsFormProps {
-  form: Partial<SiteSettings>
-  updateField: (key: keyof SiteSettings, value: string | boolean | number) => void
+  form: Partial<SiteSettings>;
+  updateField: (
+    key: keyof SiteSettings,
+    value: string | boolean | number,
+  ) => void;
 }
 
-export function CommentSettingsForm({ form, updateField }: CommentSettingsFormProps) {
+export function CommentSettingsForm({
+  form,
+  updateField,
+}: CommentSettingsFormProps) {
   return (
     <Card>
       <CardHeader>
@@ -33,7 +45,9 @@ export function CommentSettingsForm({ form, updateField }: CommentSettingsFormPr
             type="checkbox"
             id="comments-moderation"
             checked={form.comments_moderation ?? true}
-            onChange={(e) => updateField("comments_moderation", e.target.checked)}
+            onChange={(e) =>
+              updateField("comments_moderation", e.target.checked)
+            }
             className="size-4 rounded border"
           />
           <Label htmlFor="comments-moderation" className="cursor-pointer">
@@ -48,10 +62,12 @@ export function CommentSettingsForm({ form, updateField }: CommentSettingsFormPr
             min="1"
             max="50"
             value={form.posts_per_page ?? 10}
-            onChange={(e) => updateField("posts_per_page", parseInt(e.target.value) || 10)}
+            onChange={(e) =>
+              updateField("posts_per_page", parseInt(e.target.value) || 10)
+            }
           />
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

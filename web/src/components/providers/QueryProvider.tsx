@@ -1,13 +1,13 @@
 // React Query 全局提供者组件
 // 封装 QueryClientProvider，配置默认查询选项
 
-import { useState } from "react"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
+import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 /** QueryProvider 组件属性 */
 interface QueryProviderProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 /**
@@ -26,7 +26,7 @@ function makeQueryClient() {
         refetchOnWindowFocus: false,
       },
     },
-  })
+  });
 }
 
 /**
@@ -34,12 +34,12 @@ function makeQueryClient() {
  * 在应用顶层包裹，提供查询客户端和开发工具
  */
 export default function QueryProvider({ children }: QueryProviderProps) {
-  const [queryClient] = useState(() => makeQueryClient())
+  const [queryClient] = useState(() => makeQueryClient());
 
   return (
     <QueryClientProvider client={queryClient}>
       {children}
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
-  )
+  );
 }

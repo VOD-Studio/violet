@@ -2,45 +2,45 @@
 // 基于 Sandpack 实现轻量级代码沙盒，支持自定义代码和依赖
 // 使用 IntersectionObserver 实现懒加载，响应式布局
 
-import { useState, useEffect, useRef, useCallback } from "react"
-import { Loader2 } from "lucide-react"
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Loader2 } from "lucide-react";
 
 /** Sandpack 主题类型 */
-type SandboxTheme = "light" | "dark" | "auto"
+type SandboxTheme = "light" | "dark" | "auto";
 
 /** 单个文件定义 */
 interface SandboxFile {
   /** 文件路径，如 "/App.tsx" */
-  path: string
+  path: string;
   /** 文件内容 */
-  code: string
+  code: string;
   /** 是否为活跃文件（默认打开的文件） */
-  active?: boolean
+  active?: boolean;
 }
 
 /** 依赖包定义 */
 interface SandboxDependency {
   /** 包名 */
-  name: string
+  name: string;
   /** 版本号 */
-  version: string
+  version: string;
 }
 
 interface CodeSandboxProps {
   /** 文件列表 */
-  files: SandboxFile[]
+  files: SandboxFile[];
   /** 额外依赖 */
-  dependencies?: SandboxDependency[]
+  dependencies?: SandboxDependency[];
   /** 主入口文件路径，默认 "/App.tsx" */
-  entry?: string
+  entry?: string;
   /** 主题，默认 "auto" 跟随系统 */
-  theme?: SandboxTheme
+  theme?: SandboxTheme;
   /** 沙盒高度，默认 400 */
-  height?: number
+  height?: number;
   /** 是否显示控制台 */
-  showConsole?: boolean
+  showConsole?: boolean;
   /** 是否显示导航栏 */
-  showNavigator?: boolean
+  showNavigator?: boolean;
 }
 
 /**
@@ -56,83 +56,87 @@ export function CodeSandbox({
   showConsole = false,
   showNavigator = false,
 }: CodeSandboxProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [isVisible, setIsVisible] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [SandpackComponent, setSandpackComponent] = useState<React.ComponentType<Record<string, unknown>> | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [SandpackComponent, setSandpackComponent] =
+    useState<React.ComponentType<Record<string, unknown>> | null>(null);
 
   /* 使用 IntersectionObserver 实现懒加载 */
-  const handleIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
-    const [entry] = entries
-    if (entry.isIntersecting) {
-      setIsVisible(true)
-    }
-  }, [])
+  const handleIntersection = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting) {
+        setIsVisible(true);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     const observer = new IntersectionObserver(handleIntersection, {
       rootMargin: "200px",
       threshold: 0,
-    })
+    });
 
-    const current = containerRef.current
+    const current = containerRef.current;
     if (current) {
-      observer.observe(current)
+      observer.observe(current);
     }
 
     return () => {
       if (current) {
-        observer.unobserve(current)
+        observer.unobserve(current);
       }
-    }
-  }, [handleIntersection])
+    };
+  }, [handleIntersection]);
 
   /* 当组件进入视口后动态加载 Sandpack */
   useEffect(() => {
-    if (!isVisible) return
+    if (!isVisible) return;
 
-    let cancelled = false
+    let cancelled = false;
 
     async function loadSandpack() {
       try {
-        const mod = await import("@codesandbox/sandpack-react")
+        const mod = await import("@codesandbox/sandpack-react");
         if (!cancelled) {
-          setSandpackComponent(() => mod.Sandpack)
-          setIsLoading(false)
+          setSandpackComponent(() => mod.Sandpack);
+          setIsLoading(false);
         }
       } catch {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    loadSandpack()
+    loadSandpack();
 
     return () => {
-      cancelled = true
-    }
-  }, [isVisible])
+      cancelled = true;
+    };
+  }, [isVisible]);
 
   /* 检测系统主题偏好 */
   const resolvedTheme = (() => {
-    if (theme !== "auto") return theme
-    if (typeof window === "undefined") return "light"
+    if (theme !== "auto") return theme;
+    if (typeof window === "undefined") return "light";
     return window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
-      : "light"
-  })()
+      : "light";
+  })();
 
   /* 构建文件映射 */
-  const filesMap: Record<string, { code: string; active?: boolean }> = {}
+  const filesMap: Record<string, { code: string; active?: boolean }> = {};
   for (const file of files) {
-    filesMap[file.path] = { code: file.code, active: file.active }
+    filesMap[file.path] = { code: file.code, active: file.active };
   }
 
   /* 构建依赖映射 */
-  const depsMap: Record<string, string> = {}
+  const depsMap: Record<string, string> = {};
   for (const dep of dependencies) {
-    depsMap[dep.name] = dep.version
+    depsMap[dep.name] = dep.version;
   }
 
   return (
@@ -180,7 +184,7 @@ export function CodeSandbox({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export type { SandboxFile, SandboxDependency, SandboxTheme }
+export type { SandboxFile, SandboxDependency, SandboxTheme };

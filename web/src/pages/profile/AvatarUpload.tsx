@@ -1,42 +1,42 @@
-import { useState, useRef } from "react"
-import { useAuth } from "@/hooks/useAuth"
-import { useUpdateProfile } from "@/hooks/useAuth"
-import { uploadFile } from "@/components/upload/ChunkedUpload"
-import { getUploadUrl } from "@/lib/api"
-import { toast } from "sonner"
-import { Camera, Loader2, User } from "lucide-react"
+import { useState, useRef } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useUpdateProfile } from "@/hooks/useAuth";
+import { uploadFile } from "@/components/upload/ChunkedUpload";
+import { getUploadUrl } from "@/lib/api";
+import { toast } from "sonner";
+import { Camera, Loader2, User } from "lucide-react";
 
 export default function AvatarUpload() {
-  const { user } = useAuth()
-  const updateProfile = useUpdateProfile()
-  const [uploading, setUploading] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const { user } = useAuth();
+  const updateProfile = useUpdateProfile();
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const avatarUrl = user?.avatar_url ? getUploadUrl(user.avatar_url) : null
+  const avatarUrl = user?.avatar_url ? getUploadUrl(user.avatar_url) : null;
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("请选择图片文件")
-      return
+      toast.error("请选择图片文件");
+      return;
     }
 
-    setUploading(true)
+    setUploading(true);
     try {
-      const result = await uploadFile(file, () => {})
+      const result = await uploadFile(file, () => {});
       await updateProfile.mutateAsync({
         username: user!.username,
         bio: user?.bio ?? "",
         avatar_url: result.url,
-      })
-      toast.success("头像更新成功")
+      });
+      toast.success("头像更新成功");
     } catch {
-      toast.error("头像上传失败")
+      toast.error("头像上传失败");
     } finally {
-      setUploading(false)
-      if (inputRef.current) inputRef.current.value = ""
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
@@ -75,5 +75,5 @@ export default function AvatarUpload() {
       />
       <p className="text-xs text-muted-foreground">点击头像更换</p>
     </div>
-  )
+  );
 }

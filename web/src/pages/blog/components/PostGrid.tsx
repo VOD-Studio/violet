@@ -1,10 +1,10 @@
-import { usePosts } from "@/hooks/usePosts"
-import { PostCard } from "@/components/blog/PostCard"
+import { usePosts } from "@/hooks/usePosts";
+import { PostCard } from "@/components/blog/PostCard";
 
 interface PostGridProps {
-  page: number
-  tag?: string
-  search?: string
+  page: number;
+  tag?: string;
+  search?: string;
 }
 
 export function PostGrid({ page, tag, search }: PostGridProps) {
@@ -13,9 +13,9 @@ export function PostGrid({ page, tag, search }: PostGridProps) {
     limit: 6,
     tag,
     search,
-  })
+  });
 
-  const posts = data?.posts ?? []
+  const posts = data?.posts ?? [];
 
   if (isLoading) {
     return (
@@ -27,7 +27,7 @@ export function PostGrid({ page, tag, search }: PostGridProps) {
           />
         ))}
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -35,15 +35,13 @@ export function PostGrid({ page, tag, search }: PostGridProps) {
       <div className="py-12 text-center text-muted-foreground">
         {String(error)}
       </div>
-    )
+    );
   }
 
   if (posts.length === 0) {
     return (
-      <div className="py-12 text-center text-muted-foreground">
-        暂无文章
-      </div>
-    )
+      <div className="py-12 text-center text-muted-foreground">暂无文章</div>
+    );
   }
 
   return (
@@ -52,5 +50,5 @@ export function PostGrid({ page, tag, search }: PostGridProps) {
         <PostCard key={post.id} post={post} delay={index * 0.05} />
       ))}
     </div>
-  )
+  );
 }

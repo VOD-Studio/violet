@@ -4,78 +4,78 @@
  * 使用 motion 实现图标切换动画
  */
 
-import { useCallback, useRef, useState } from "react"
-import { motion, AnimatePresence } from "motion/react"
-import { Moon, Sun, Monitor } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useTheme } from "@/hooks/useTheme"
-import { cn } from "@/lib/utils"
+import { useCallback, useRef, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Moon, Sun, Monitor } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/hooks/useTheme";
+import { cn } from "@/lib/utils";
 
 /** 长按触发时间阈值（毫秒） */
-const LONG_PRESS_DURATION = 500
+const LONG_PRESS_DURATION = 500;
 
 /** 主题选项配置 */
 const THEME_OPTIONS = [
   { value: "light" as const, label: "浅色", icon: Sun },
   { value: "dark" as const, label: "深色", icon: Moon },
   { value: "system" as const, label: "跟随系统", icon: Monitor },
-]
+];
 
 /**
  * 主题切换按钮
  * 点击切换 light/dark，长按弹出完整选项菜单
  */
 export function ThemeToggle({ className }: { className?: string }) {
-  const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme()
+  const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
 
   /** 是否显示长按菜单 */
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false);
 
   /** 长按计时器引用 */
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** 是否正在进行长按检测 */
-  const isLongPress = useRef(false)
+  const isLongPress = useRef(false);
 
   /** 鼠标/触摸按下时开始长按计时 */
   const handlePointerDown = useCallback(() => {
-    isLongPress.current = false
+    isLongPress.current = false;
     longPressTimer.current = setTimeout(() => {
-      isLongPress.current = true
-      setMenuOpen(true)
-    }, LONG_PRESS_DURATION)
-  }, [])
+      isLongPress.current = true;
+      setMenuOpen(true);
+    }, LONG_PRESS_DURATION);
+  }, []);
 
   /** 松开时清除计时器，如果不是长按则执行切换 */
   const handlePointerUp = useCallback(() => {
     if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
     if (!isLongPress.current) {
-      toggleTheme()
+      toggleTheme();
     }
-  }, [toggleTheme])
+  }, [toggleTheme]);
 
   /** 指针离开按钮区域时取消长按 */
   const handlePointerLeave = useCallback(() => {
     if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
-  }, [])
+  }, []);
 
   /** 从菜单选择主题 */
   const handleSelect = useCallback(
     (value: "light" | "dark" | "system") => {
-      setTheme(value)
-      setMenuOpen(false)
+      setTheme(value);
+      setMenuOpen(false);
     },
     [setTheme],
-  )
+  );
 
   /** 当前显示的图标组件 */
-  const CurrentIcon = resolvedTheme === "dark" ? Moon : Sun
+  const CurrentIcon = resolvedTheme === "dark" ? Moon : Sun;
 
   return (
     <div className={cn("relative", className)}>
@@ -125,8 +125,8 @@ export function ThemeToggle({ className }: { className?: string }) {
               className="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
             >
               {THEME_OPTIONS.map((option) => {
-                const Icon = option.icon
-                const isActive = theme === option.value
+                const Icon = option.icon;
+                const isActive = theme === option.value;
                 return (
                   <button
                     key={option.value}
@@ -147,12 +147,12 @@ export function ThemeToggle({ className }: { className?: string }) {
                       />
                     )}
                   </button>
-                )
+                );
               })}
             </motion.div>
           </>
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

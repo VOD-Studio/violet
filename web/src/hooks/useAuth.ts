@@ -75,7 +75,7 @@ export function useAuth() {
         response.access_token,
         response.refresh_token,
         response.expires_in,
-        response.refresh_expires_in
+        response.refresh_expires_in,
       );
 
     // 然后获取用户信息（此时 API 拦截器已有 token）

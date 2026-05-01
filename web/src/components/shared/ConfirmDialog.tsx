@@ -10,30 +10,30 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { AlertTriangle, Info } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Info } from "lucide-react";
 
 /** 确认弹窗属性 */
 interface ConfirmDialogProps {
   /** 是否显示弹窗 */
-  open: boolean
+  open: boolean;
   /** 关闭弹窗回调 */
-  onClose: () => void
+  onClose: () => void;
   /** 确认回调 */
-  onConfirm: () => void | Promise<void>
+  onConfirm: () => void | Promise<void>;
   /** 标题 */
-  title?: string
+  title?: string;
   /** 描述文字 */
-  description?: string
+  description?: string;
   /** 确认按钮文字 */
-  confirmLabel?: string
+  confirmLabel?: string;
   /** 取消按钮文字 */
-  cancelLabel?: string
+  cancelLabel?: string;
   /** 是否为危险操作（红色确认按钮 + 警告图标） */
-  destructive?: boolean
+  destructive?: boolean;
   /** 是否正在执行 */
-  isLoading?: boolean
+  isLoading?: boolean;
 }
 
 /**
@@ -52,14 +52,16 @@ export function ConfirmDialog({
   isLoading = false,
 }: ConfirmDialogProps) {
   async function handleConfirm() {
-    await onConfirm()
+    await onConfirm();
   }
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="gap-3">
-          <div className={`flex items-center gap-3 ${destructive ? "text-destructive" : "text-primary"}`}>
+          <div
+            className={`flex items-center gap-3 ${destructive ? "text-destructive" : "text-primary"}`}
+          >
             {destructive ? (
               <AlertTriangle className="size-5" />
             ) : (
@@ -85,5 +87,5 @@ export function ConfirmDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

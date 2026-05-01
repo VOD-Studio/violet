@@ -1,23 +1,23 @@
 // 空状态组件
 // 当列表无数据时显示友好的空状态提示
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 /** 空状态组件属性 */
 interface EmptyStateProps {
   /** 标题 */
-  title?: string
+  title?: string;
   /** 描述文字 */
-  description?: string
+  description?: string;
   /** 操作按钮文字 */
-  actionLabel?: string
+  actionLabel?: string;
   /** 操作按钮点击回调 */
-  onAction?: () => void
+  onAction?: () => void;
   /** 自定义图标（SVG 或文字） */
-  icon?: React.ReactNode
+  icon?: React.ReactNode;
   /** 自定义类名 */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -39,9 +39,7 @@ export function EmptyState({
         className,
       )}
     >
-      {icon && (
-        <div className="mb-4 text-muted-foreground">{icon}</div>
-      )}
+      {icon && <div className="mb-4 text-muted-foreground">{icon}</div>}
       <h3 className="text-lg font-medium text-foreground">{title}</h3>
       {description && (
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
@@ -52,5 +50,5 @@ export function EmptyState({
         </Button>
       )}
     </div>
-  )
+  );
 }

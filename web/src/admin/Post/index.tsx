@@ -131,7 +131,7 @@ export default function Posts() {
         onSuccess: () =>
           toast.success(post.status === "published" ? "已取消发布" : "已发布"),
         onError: () => toast.error("操作失败，请重试"),
-      }
+      },
     );
   }
 

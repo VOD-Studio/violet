@@ -1,21 +1,21 @@
 // 音乐嵌入组件
 // 支持网易云音乐和 QQ 音乐的 iframe 嵌入
 
-import { useState, useEffect } from "react"
-import { AlertCircle, Music } from "lucide-react"
+import { useState, useEffect } from "react";
+import { AlertCircle, Music } from "lucide-react";
 
 /** 音乐嵌入组件属性 */
 interface MusicEmbedProps {
   /** 音乐分享链接 */
-  url: string
+  url: string;
   /** 自定义高度 */
-  height?: number
+  height?: number;
   /** 自定义类名 */
-  className?: string
+  className?: string;
 }
 
 /** 平台类型 */
-type MusicPlatform = "netease" | "qq" | "unknown"
+type MusicPlatform = "netease" | "qq" | "unknown";
 
 /**
  * 从 URL 识别音乐平台
@@ -24,12 +24,16 @@ type MusicPlatform = "netease" | "qq" | "unknown"
  */
 function detectPlatform(url: string): MusicPlatform {
   if (url.includes("music.163.com") || url.includes("y.music.163.com")) {
-    return "netease"
+    return "netease";
   }
-  if (url.includes("y.qq.com") || url.includes("music.qq.com") || url.includes("c6.y.qq.com")) {
-    return "qq"
+  if (
+    url.includes("y.qq.com") ||
+    url.includes("music.qq.com") ||
+    url.includes("c6.y.qq.com")
+  ) {
+    return "qq";
   }
-  return "unknown"
+  return "unknown";
 }
 
 /**
@@ -39,14 +43,14 @@ function detectPlatform(url: string): MusicPlatform {
  */
 function extractNeteaseId(url: string): string | null {
   // 标准链接格式: song?id=xxx
-  const idMatch = url.match(/[?&]id=(\d+)/)
-  if (idMatch) return idMatch[1]
+  const idMatch = url.match(/[?&]id=(\d+)/);
+  if (idMatch) return idMatch[1];
 
   // 短链接格式: /song/xxx
-  const pathMatch = url.match(/\/song\/(\d+)/)
-  if (pathMatch) return pathMatch[1]
+  const pathMatch = url.match(/\/song\/(\d+)/);
+  if (pathMatch) return pathMatch[1];
 
-  return null
+  return null;
 }
 
 /**
@@ -56,14 +60,14 @@ function extractNeteaseId(url: string): string | null {
  */
 function extractQQId(url: string): string | null {
   // 标准格式: songDetail/xxx
-  const idMatch = url.match(/songDetail\/(\w+)/)
-  if (idMatch) return idMatch[1]
+  const idMatch = url.match(/songDetail\/(\w+)/);
+  if (idMatch) return idMatch[1];
 
   // 查询参数格式: songmid=xxx
-  const midMatch = url.match(/[?&]songmid=(\w+)/)
-  if (midMatch) return midMatch[1]
+  const midMatch = url.match(/[?&]songmid=(\w+)/);
+  if (midMatch) return midMatch[1];
 
-  return null
+  return null;
 }
 
 /**
@@ -73,14 +77,18 @@ function extractQQId(url: string): string | null {
  * @param songId - 歌曲 ID
  * @returns iframe src 地址
  */
-function getEmbedSrc(platform: MusicPlatform, url: string, songId: string): string {
+function getEmbedSrc(
+  platform: MusicPlatform,
+  url: string,
+  songId: string,
+): string {
   switch (platform) {
     case "netease":
-      return `https://music.163.com/outchain/player?type=2&id=${songId}&auto=0&height=66`
+      return `https://music.163.com/outchain/player?type=2&id=${songId}&auto=0&height=66`;
     case "qq":
-      return `https://y.qq.com/ryqq/player?songmid=${songId}&type=0`
+      return `https://y.qq.com/ryqq/player?songmid=${songId}&type=0`;
     default:
-      return url
+      return url;
   }
 }
 
@@ -88,38 +96,42 @@ function getEmbedSrc(platform: MusicPlatform, url: string, songId: string): stri
  * 音乐嵌入组件
  * 自动识别网易云音乐和 QQ 音乐链接，使用 iframe 嵌入播放器
  */
-export default function MusicEmbed({ url, height = 86, className = "" }: MusicEmbedProps) {
-  const [error, setError] = useState<string | null>(null)
-  const [embedSrc, setEmbedSrc] = useState<string | null>(null)
+export default function MusicEmbed({
+  url,
+  height = 86,
+  className = "",
+}: MusicEmbedProps) {
+  const [error, setError] = useState<string | null>(null);
+  const [embedSrc, setEmbedSrc] = useState<string | null>(null);
 
   useEffect(() => {
     if (!url) {
-      setError("请输入音乐链接")
-      return
+      setError("请输入音乐链接");
+      return;
     }
 
-    const platform = detectPlatform(url)
+    const platform = detectPlatform(url);
 
     if (platform === "unknown") {
-      setError("不支持的音乐平台，请使用网易云音乐或 QQ 音乐链接")
-      return
+      setError("不支持的音乐平台，请使用网易云音乐或 QQ 音乐链接");
+      return;
     }
 
-    let songId: string | null = null
+    let songId: string | null = null;
     if (platform === "netease") {
-      songId = extractNeteaseId(url)
+      songId = extractNeteaseId(url);
     } else if (platform === "qq") {
-      songId = extractQQId(url)
+      songId = extractQQId(url);
     }
 
     if (!songId) {
-      setError("无法从链接中提取歌曲信息，请检查链接格式")
-      return
+      setError("无法从链接中提取歌曲信息，请检查链接格式");
+      return;
     }
 
-    setError(null)
-    setEmbedSrc(getEmbedSrc(platform, url, songId))
-  }, [url])
+    setError(null);
+    setEmbedSrc(getEmbedSrc(platform, url, songId));
+  }, [url]);
 
   if (error) {
     return (
@@ -129,7 +141,7 @@ export default function MusicEmbed({ url, height = 86, className = "" }: MusicEm
         <AlertCircle className="h-4 w-4 flex-shrink-0" />
         <span>{error}</span>
       </div>
-    )
+    );
   }
 
   if (!embedSrc) {
@@ -140,7 +152,7 @@ export default function MusicEmbed({ url, height = 86, className = "" }: MusicEm
         <Music className="h-4 w-4" />
         <span>正在加载播放器...</span>
       </div>
-    )
+    );
   }
 
   return (
@@ -156,5 +168,5 @@ export default function MusicEmbed({ url, height = 86, className = "" }: MusicEm
         className="block"
       />
     </div>
-  )
+  );
 }

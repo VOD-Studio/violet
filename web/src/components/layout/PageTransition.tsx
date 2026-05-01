@@ -3,20 +3,20 @@
 // 支持 fade、slide、scale 三种动画类型
 // 尊重用户系统的 prefers-reduced-motion 设置
 
-import { type ReactNode, useEffect, useState } from "react"
-import { motion, type Variants } from "motion/react"
+import { type ReactNode, useEffect, useState } from "react";
+import { motion, type Variants } from "motion/react";
 
 /** 支持的动画类型 */
-type AnimationType = "fade" | "slide" | "scale"
+type AnimationType = "fade" | "slide" | "scale";
 
 /** 组件属性 */
 interface PageTransitionProps {
   /** 子元素 */
-  children: ReactNode
+  children: ReactNode;
   /** 当前路径，用作 AnimatePresence 的 key */
-  pathname: string
+  pathname: string;
   /** 动画类型，默认 fade */
-  type?: AnimationType
+  type?: AnimationType;
 }
 
 /** 淡入淡出动画变体 */
@@ -24,31 +24,31 @@ const fadeVariants: Variants = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
   exit: { opacity: 0 },
-}
+};
 
 /** 滑动动画变体 */
 const slideVariants: Variants = {
   initial: { opacity: 0, x: 30 },
   animate: { opacity: 1, x: 0 },
   exit: { opacity: 0, x: -30 },
-}
+};
 
 /** 缩放动画变体 */
 const scaleVariants: Variants = {
   initial: { opacity: 0, scale: 0.96 },
   animate: { opacity: 1, scale: 1 },
   exit: { opacity: 0, scale: 1.04 },
-}
+};
 
 /** 根据动画类型获取对应的 variants */
 function getVariants(type: AnimationType): Variants {
   switch (type) {
     case "fade":
-      return fadeVariants
+      return fadeVariants;
     case "slide":
-      return slideVariants
+      return slideVariants;
     case "scale":
-      return scaleVariants
+      return scaleVariants;
   }
 }
 
@@ -57,20 +57,20 @@ function getVariants(type: AnimationType): Variants {
  * 返回 true 表示应该使用简化动画
  */
 function useReducedMotion(): boolean {
-  const [prefersReduced, setPrefersReduced] = useState(false)
+  const [prefersReduced, setPrefersReduced] = useState(false);
 
   useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)")
-    setPrefersReduced(query.matches)
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReduced(query.matches);
 
     const handler = (event: MediaQueryListEvent) => {
-      setPrefersReduced(event.matches)
-    }
-    query.addEventListener("change", handler)
-    return () => query.removeEventListener("change", handler)
-  }, [])
+      setPrefersReduced(event.matches);
+    };
+    query.addEventListener("change", handler);
+    return () => query.removeEventListener("change", handler);
+  }, []);
 
-  return prefersReduced
+  return prefersReduced;
 }
 
 /**
@@ -83,13 +83,13 @@ export function PageTransition({
   pathname,
   type = "fade",
 }: PageTransitionProps) {
-  const prefersReduced = useReducedMotion()
+  const prefersReduced = useReducedMotion();
 
   // 用户偏好减少动画时，使用无位移的淡入淡出
-  const variants = prefersReduced ? fadeVariants : getVariants(type)
+  const variants = prefersReduced ? fadeVariants : getVariants(type);
 
   // 减少动画时缩短过渡时间
-  const duration = prefersReduced ? 0.15 : 0.3
+  const duration = prefersReduced ? 0.15 : 0.3;
 
   return (
     <motion.div
@@ -106,5 +106,5 @@ export function PageTransition({
     >
       {children}
     </motion.div>
-  )
+  );
 }

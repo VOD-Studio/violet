@@ -124,7 +124,7 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
   // 分页获取图片素材
   const fetchImages = useCallback(
     (page: number, limit: number) => fetchMediaPage(page, limit, "image"),
-    []
+    [],
   );
 
   const {
@@ -135,7 +135,7 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
   } = usePaginatedQuery<MediaItem>(
     ["editor", "media", "image"],
     fetchImages,
-    20
+    20,
   );
 
   const sentinelRef = useInfiniteScroll({
@@ -165,7 +165,7 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
     if (selected) {
       onInsert(
         getUploadUrl(selected.path),
-        alt.trim() || selected.original_name
+        alt.trim() || selected.original_name,
       );
       resetAndClose();
     }

@@ -1,14 +1,14 @@
 // 登录表单组件
 // 包含邮箱和密码输入，使用 react-hook-form + zod 进行表单验证
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Link } from "react-router"
-import { Button } from "@/components/ui/button"
-import { loginSchema, type LoginFormData } from "@/lib/validations"
-import { useAuth } from "@/hooks/useAuth"
-import { useNavigate } from "react-router"
-import { useState } from "react"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link } from "react-router";
+import { Button } from "@/components/ui/button";
+import { loginSchema, type LoginFormData } from "@/lib/validations";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router";
+import { useState } from "react";
 
 /**
  * 登录表单组件
@@ -16,11 +16,11 @@ import { useState } from "react"
  */
 export function LoginForm() {
   /** 认证 hook，提供登录功能 */
-  const { login, isLoading } = useAuth()
+  const { login, isLoading } = useAuth();
   /** 路由导航 */
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   /** 服务端错误信息 */
-  const [serverError, setServerError] = useState<string | null>(null)
+  const [serverError, setServerError] = useState<string | null>(null);
 
   /** 表单控制，使用 zod 验证 */
   const {
@@ -29,7 +29,7 @@ export function LoginForm() {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-  })
+  });
 
   /**
    * 表单提交处理
@@ -37,13 +37,13 @@ export function LoginForm() {
    */
   const onSubmit = async (data: LoginFormData) => {
     try {
-      setServerError(null)
-      await login(data)
-      navigate("/")
+      setServerError(null);
+      await login(data);
+      navigate("/");
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : "登录失败，请重试")
+      setServerError(err instanceof Error ? err.message : "登录失败，请重试");
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -96,10 +96,13 @@ export function LoginForm() {
       {/* 注册链接 */}
       <p className="text-center text-sm text-muted-foreground">
         还没有账号？{" "}
-        <Link to="/register" className="font-medium text-primary hover:underline">
+        <Link
+          to="/register"
+          className="font-medium text-primary hover:underline"
+        >
           立即注册
         </Link>
       </p>
     </form>
-  )
+  );
 }

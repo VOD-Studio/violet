@@ -2,9 +2,9 @@
 // 展示用户最近 365 天的 GitHub 贡献活动
 // 使用 CSS Grid 布局，颜色深浅表示贡献数量
 
-import { motion } from "motion/react"
-import { useGitHubContributions } from "@/hooks/useGitHub"
-import type { ContributionDay } from "@/lib/github"
+import { motion } from "motion/react";
+import { useGitHubContributions } from "@/hooks/useGitHub";
+import type { ContributionDay } from "@/lib/github";
 
 /** 各等级贡献方块的背景色 */
 const LEVEL_COLORS = [
@@ -13,20 +13,30 @@ const LEVEL_COLORS = [
   "bg-emerald-400 dark:bg-emerald-700",
   "bg-emerald-600 dark:bg-emerald-500",
   "bg-emerald-800 dark:bg-emerald-300",
-]
+];
 
 /** 星期标签，用于热力图左侧 */
-const WEEKDAY_LABELS = ["", "一", "", "三", "", "五", ""]
+const WEEKDAY_LABELS = ["", "一", "", "三", "", "五", ""];
 
 /** 月份缩写，用于热力图顶部 */
 const MONTH_LABELS = [
-  "1月", "2月", "3月", "4月", "5月", "6月",
-  "7月", "8月", "9月", "10月", "11月", "12月",
-]
+  "1月",
+  "2月",
+  "3月",
+  "4月",
+  "5月",
+  "6月",
+  "7月",
+  "8月",
+  "9月",
+  "10月",
+  "11月",
+  "12月",
+];
 
 interface GitHubContributionsProps {
   /** GitHub 用户名 */
-  username: string
+  username: string;
 }
 
 /**
@@ -52,7 +62,7 @@ function ContributionSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -61,12 +71,12 @@ function ContributionSkeleton() {
  * @returns 中文日期格式
  */
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr + "T00:00:00")
+  const date = new Date(dateStr + "T00:00:00");
   return date.toLocaleDateString("zh-CN", {
     year: "numeric",
     month: "long",
     day: "numeric",
-  })
+  });
 }
 
 /**
@@ -75,8 +85,8 @@ function formatDate(dateStr: string): string {
  * @returns 星期索引
  */
 function getDayOfWeek(dateStr: string): number {
-  const date = new Date(dateStr + "T00:00:00")
-  return date.getDay()
+  const date = new Date(dateStr + "T00:00:00");
+  return date.getDay();
 }
 
 /**
@@ -87,21 +97,21 @@ function getDayOfWeek(dateStr: string): number {
 function getMonthLabels(
   days: ContributionDay[],
 ): Array<{ label: string; weekIndex: number }> {
-  const labels: Array<{ label: string; weekIndex: number }> = []
-  let lastMonth = -1
+  const labels: Array<{ label: string; weekIndex: number }> = [];
+  let lastMonth = -1;
 
   /* 按周遍历，找到每个月第一周的位置 */
   for (let i = 0; i < days.length; i += 7) {
-    const day = days[i]
-    if (!day) continue
-    const month = new Date(day.date + "T00:00:00").getMonth()
+    const day = days[i];
+    if (!day) continue;
+    const month = new Date(day.date + "T00:00:00").getMonth();
     if (month !== lastMonth) {
-      labels.push({ label: MONTH_LABELS[month], weekIndex: Math.floor(i / 7) })
-      lastMonth = month
+      labels.push({ label: MONTH_LABELS[month], weekIndex: Math.floor(i / 7) });
+      lastMonth = month;
     }
   }
 
-  return labels
+  return labels;
 }
 
 /**
@@ -109,14 +119,14 @@ function getMonthLabels(
  * 类似 GitHub 个人主页的绿色方块贡献图
  */
 export function GitHubContributions({ username }: GitHubContributionsProps) {
-  const { data, isLoading, error } = useGitHubContributions(username)
+  const { data, isLoading, error } = useGitHubContributions(username);
 
   if (isLoading) {
     return (
       <div className="rounded-xl border bg-card p-6">
         <ContributionSkeleton />
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -126,38 +136,38 @@ export function GitHubContributions({ username }: GitHubContributionsProps) {
           无法加载贡献数据: {String(error)}
         </p>
       </div>
-    )
+    );
   }
 
-  if (!data) return null
+  if (!data) return null;
 
   /* 将贡献数据按周分组（每列 7 天） */
-  const weeks: ContributionDay[][] = []
-  let currentWeek: ContributionDay[] = []
+  const weeks: ContributionDay[][] = [];
+  let currentWeek: ContributionDay[] = [];
 
   /* 补齐第一周前面的空白天 */
-  const firstDayOfWeek = getDayOfWeek(data.days[0]?.date ?? "")
+  const firstDayOfWeek = getDayOfWeek(data.days[0]?.date ?? "");
   for (let i = 0; i < firstDayOfWeek; i++) {
-    currentWeek.push({ date: "", count: -1, level: -1 })
+    currentWeek.push({ date: "", count: -1, level: -1 });
   }
 
   for (const day of data.days) {
-    currentWeek.push(day)
+    currentWeek.push(day);
     if (currentWeek.length === 7) {
-      weeks.push(currentWeek)
-      currentWeek = []
+      weeks.push(currentWeek);
+      currentWeek = [];
     }
   }
 
   /* 补齐最后一周后面的空白天 */
   if (currentWeek.length > 0) {
     while (currentWeek.length < 7) {
-      currentWeek.push({ date: "", count: -1, level: -1 })
+      currentWeek.push({ date: "", count: -1, level: -1 });
     }
-    weeks.push(currentWeek)
+    weeks.push(currentWeek);
   }
 
-  const monthLabels = getMonthLabels(data.days)
+  const monthLabels = getMonthLabels(data.days);
 
   return (
     <motion.div
@@ -212,11 +222,8 @@ export function GitHubContributions({ username }: GitHubContributionsProps) {
                     /* 空白填充格 */
                     if (day.count === -1) {
                       return (
-                        <div
-                          key={dayIdx}
-                          className="h-3 w-3 rounded-sm"
-                        />
-                      )
+                        <div key={dayIdx} className="h-3 w-3 rounded-sm" />
+                      );
                     }
 
                     return (
@@ -225,7 +232,7 @@ export function GitHubContributions({ username }: GitHubContributionsProps) {
                         className={`h-3 w-3 rounded-sm transition-colors ${LEVEL_COLORS[day.level]}`}
                         title={`${formatDate(day.date)}: ${day.count} 次贡献`}
                       />
-                    )
+                    );
                   })}
                 </div>
               ))}
@@ -236,15 +243,12 @@ export function GitHubContributions({ username }: GitHubContributionsProps) {
           <div className="mt-3 flex items-center justify-end gap-1">
             <span className="mr-1 text-xs text-muted-foreground">少</span>
             {LEVEL_COLORS.map((color, i) => (
-              <div
-                key={i}
-                className={`h-3 w-3 rounded-sm ${color}`}
-              />
+              <div key={i} className={`h-3 w-3 rounded-sm ${color}`} />
             ))}
             <span className="ml-1 text-xs text-muted-foreground">多</span>
           </div>
         </div>
       </div>
     </motion.div>
-  )
+  );
 }

@@ -1,8 +1,8 @@
-import { ParticleBackground, KineticText } from "@/components/creative"
-import { motion } from "motion/react"
-import { Link } from "react-router"
-import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
+import { ParticleBackground, KineticText } from "@/components/creative";
+import { motion } from "motion/react";
+import { Link } from "react-router";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 export function HeroSection() {
   return (
@@ -27,8 +27,8 @@ export function HeroSection() {
         transition={{ duration: 0.6, delay: 0.2 }}
         className="relative z-10 max-w-2xl text-lg text-muted-foreground"
       >
-        全栈开发者，热爱开源与技术写作。专注于 React、TypeScript 和 Node.js 生态，
-        在这里分享我的技术见解和项目经验。
+        全栈开发者，热爱开源与技术写作。专注于 React、TypeScript 和 Node.js
+        生态， 在这里分享我的技术见解和项目经验。
       </motion.p>
 
       <motion.div
@@ -48,5 +48,5 @@ export function HeroSection() {
         </Link>
       </motion.div>
     </section>
-  )
+  );
 }

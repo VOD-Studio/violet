@@ -1,17 +1,17 @@
 // 错误回退组件
 // 当页面或组件加载失败时显示错误提示和重试按钮
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 /** 错误回退组件属性 */
 interface ErrorFallbackProps {
   /** 错误信息 */
-  error?: string | null
+  error?: string | null;
   /** 重试回调 */
-  onRetry?: () => void
+  onRetry?: () => void;
   /** 自定义类名 */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -58,5 +58,5 @@ export function ErrorFallback({
         </Button>
       )}
     </div>
-  )
+  );
 }

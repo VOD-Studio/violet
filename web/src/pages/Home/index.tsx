@@ -1,11 +1,11 @@
-import { SEO } from "@/components/shared/SEO"
-import { StructuredData } from "@/components/shared/StructuredData"
-import { generateWebsiteStructuredData, SITE_CONFIG } from "@/lib/seo"
-import { HeroSection } from "./HeroSection"
-import { RecentPostsSection } from "./RecentPostsSection"
+import { SEO } from "@/components/shared/SEO";
+import { StructuredData } from "@/components/shared/StructuredData";
+import { generateWebsiteStructuredData, SITE_CONFIG } from "@/lib/seo";
+import { HeroSection } from "./HeroSection";
+import { RecentPostsSection } from "./RecentPostsSection";
 
 export default function Home() {
-  const websiteData = generateWebsiteStructuredData()
+  const websiteData = generateWebsiteStructuredData();
 
   return (
     <div>
@@ -20,5 +20,5 @@ export default function Home() {
       <HeroSection />
       <RecentPostsSection />
     </div>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function GroupCardSkeleton() {
   return (
@@ -16,5 +16,5 @@ export function GroupCardSkeleton() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

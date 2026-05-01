@@ -1,7 +1,7 @@
 // 通知提示组件
 // 基于 sonner 实现，提供全局通知能力
 
-import { Toaster, toast } from "sonner"
+import { Toaster, toast } from "sonner";
 
 /**
  * 通知提供者组件
@@ -11,14 +11,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      <Toaster
-        position="bottom-right"
-        richColors
-        closeButton
-        duration={3000}
-      />
+      <Toaster position="bottom-right" richColors closeButton duration={3000} />
     </>
-  )
+  );
 }
 
 /**
@@ -30,15 +25,15 @@ export function useToast() {
     toast: (message: string, type: "success" | "error" | "info" = "info") => {
       switch (type) {
         case "success":
-          toast.success(message)
-          break
+          toast.success(message);
+          break;
         case "error":
-          toast.error(message)
-          break
+          toast.error(message);
+          break;
         default:
-          toast(message)
-          break
+          toast(message);
+          break;
       }
     },
-  }
+  };
 }

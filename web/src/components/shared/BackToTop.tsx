@@ -1,18 +1,18 @@
 // 回到顶部按钮组件
 // 带有创意动画效果，滚动一定距离后显示
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "motion/react"
-import { ArrowUp, Rocket, ChevronUp } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { ArrowUp, Rocket, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface BackToTopProps {
   /** 触发显示的滚动距离阈值 */
-  threshold?: number
+  threshold?: number;
   /** 滚动容器选择器，默认为 window */
-  containerSelector?: string
+  containerSelector?: string;
   /** 动画风格 */
-  variant?: "arrow" | "rocket" | "chevron"
+  variant?: "arrow" | "rocket" | "chevron";
 }
 
 /**
@@ -24,46 +24,46 @@ export function BackToTop({
   containerSelector,
   variant = "rocket",
 }: BackToTopProps) {
-  const [visible, setVisible] = useState(false)
-  const [isScrolling, setIsScrolling] = useState(false)
+  const [visible, setVisible] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
 
   useEffect(() => {
     const container = containerSelector
       ? document.querySelector(containerSelector)
-      : window
+      : window;
 
-    if (!container) return
+    if (!container) return;
 
-    let timeoutId: ReturnType<typeof setTimeout>
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     function handleScroll() {
       const scrollTop = containerSelector
         ? (container as Element).scrollTop
-        : window.scrollY
+        : window.scrollY;
 
-      setVisible(scrollTop > threshold)
-      setIsScrolling(true)
+      setVisible(scrollTop > threshold);
+      setIsScrolling(true);
 
       // 滚动停止后隐藏滚动状态
-      clearTimeout(timeoutId)
+      clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        setIsScrolling(false)
-      }, 150)
+        setIsScrolling(false);
+      }, 150);
     }
 
-    container.addEventListener("scroll", handleScroll, { passive: true })
+    container.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
-      container.removeEventListener("scroll", handleScroll)
-      clearTimeout(timeoutId)
-    }
-  }, [threshold, containerSelector])
+      container.removeEventListener("scroll", handleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [threshold, containerSelector]);
 
   function scrollToTop() {
     if (containerSelector) {
-      const container = document.querySelector(containerSelector)
-      container?.scrollTo({ top: 0, behavior: "smooth" })
+      const container = document.querySelector(containerSelector);
+      container?.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }
 
@@ -71,9 +71,9 @@ export function BackToTop({
     arrow: ArrowUp,
     rocket: Rocket,
     chevron: ChevronUp,
-  }
+  };
 
-  const Icon = icons[variant]
+  const Icon = icons[variant];
 
   return (
     <AnimatePresence>
@@ -99,7 +99,12 @@ export function BackToTop({
             <motion.div
               animate={{
                 y: isScrolling ? [-2, 2, -2] : 0,
-                rotate: variant === "rocket" ? (isScrolling ? [0, -15, 15, 0] : 0) : 0,
+                rotate:
+                  variant === "rocket"
+                    ? isScrolling
+                      ? [0, -15, 15, 0]
+                      : 0
+                    : 0,
               }}
               transition={{
                 duration: 0.5,
@@ -125,5 +130,5 @@ export function BackToTop({
         </motion.div>
       )}
     </AnimatePresence>
-  )
+  );
 }

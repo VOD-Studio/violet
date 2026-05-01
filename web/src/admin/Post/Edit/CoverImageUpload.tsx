@@ -1,21 +1,24 @@
 // 封面图上传组件
 // 支持本地上传和从素材库选择
 
-import { useState } from "react"
-import { Camera, X, Loader2, Image as ImageIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { getUploadUrl } from "@/lib/api"
-import { uploadFile, type UploadResult } from "@/components/upload/ChunkedUpload"
+import { useState } from "react";
+import { Camera, X, Loader2, Image as ImageIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getUploadUrl } from "@/lib/api";
+import {
+  uploadFile,
+  type UploadResult,
+} from "@/components/upload/ChunkedUpload";
 
 interface CoverImageUploadProps {
   /** 当前封面图 URL */
-  value: string
+  value: string;
   /** 封面图变化回调 */
-  onChange: (url: string) => void
+  onChange: (url: string) => void;
   /** 是否禁用 */
-  disabled?: boolean
+  disabled?: boolean;
   /** 打开素材库选择器 */
-  onOpenMediaPicker?: () => void
+  onOpenMediaPicker?: () => void;
 }
 
 /**
@@ -27,25 +30,25 @@ export function CoverImageUpload({
   disabled,
   onOpenMediaPicker,
 }: CoverImageUploadProps) {
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState(false);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setUploading(true)
+    setUploading(true);
     try {
-      const result: UploadResult = await uploadFile(file)
-      onChange(result.url)
+      const result: UploadResult = await uploadFile(file);
+      onChange(result.url);
     } catch (err) {
-      console.error("封面图上传失败:", err)
+      console.error("封面图上传失败:", err);
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
   }
 
   function clearCover() {
-    onChange("")
+    onChange("");
   }
 
   if (value) {
@@ -66,7 +69,7 @@ export function CoverImageUpload({
           <X className="h-4 w-4" />
         </Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -103,5 +106,5 @@ export function CoverImageUpload({
         </Button>
       )}
     </div>
-  )
+  );
 }

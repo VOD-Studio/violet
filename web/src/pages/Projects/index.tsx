@@ -1,6 +1,6 @@
-import { KineticText } from "@/components/creative"
-import { ProjectsGrid } from "./ProjectsGrid"
-import { SandboxSection } from "./SandboxSection"
+import { KineticText } from "@/components/creative";
+import { ProjectsGrid } from "./ProjectsGrid";
+import { SandboxSection } from "./SandboxSection";
 
 export default function Projects() {
   return (
@@ -20,5 +20,5 @@ export default function Projects() {
       <ProjectsGrid />
       <SandboxSection />
     </div>
-  )
+  );
 }

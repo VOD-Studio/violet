@@ -4,28 +4,35 @@
  * 使用 react-query 管理数据获取和变更
  */
 
-import { useState } from "react"
-import { useAdminComments, useAdminCommentActions } from "@/hooks/useAdmin"
-import type { ApiComment } from "@/hooks/useAdmin"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
-import { EmptyState } from "@/components/shared/EmptyState"
-import { ErrorFallback } from "@/components/shared/ErrorFallback"
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
-import { MoreHorizontal, MessageSquare } from "lucide-react"
+import { useState } from "react";
+import { useAdminComments, useAdminCommentActions } from "@/hooks/useAdmin";
+import type { ApiComment } from "@/hooks/useAdmin";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { MoreHorizontal, MessageSquare } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 /**
  * 将 ISO 日期字符串格式化为本地日期时间
  */
 function formatDateTime(isoString: string): string {
-  return new Date(isoString).toLocaleString("zh-CN")
+  return new Date(isoString).toLocaleString("zh-CN");
 }
 
 /** 表格骨架屏 */
@@ -45,58 +52,72 @@ function CommentsTableSkeleton() {
         <TableBody>
           {Array.from({ length: 4 }).map((_, i) => (
             <TableRow key={i}>
-              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-8 ml-auto" /></TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-40" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-32" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-8 ml-auto" />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }
 
 /**
  * 评论管理页面
  */
 export default function Comments() {
-  const { data: comments, isLoading, error, refetch } = useAdminComments()
-  const { approve, markSpam, deleteComment } = useAdminCommentActions()
+  const { data: comments, isLoading, error, refetch } = useAdminComments();
+  const { approve, markSpam, deleteComment } = useAdminCommentActions();
 
   /** 删除确认弹窗状态 */
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: "" })
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    id: string;
+  }>({ open: false, id: "" });
 
-  const isActing = approve.isPending || markSpam.isPending || deleteComment.isPending
+  const isActing =
+    approve.isPending || markSpam.isPending || deleteComment.isPending;
 
   /**
    * 批准评论
    */
   function handleApprove(id: string) {
-    approve.mutate(id)
+    approve.mutate(id);
   }
 
   /**
    * 标记为垃圾评论
    */
   function handleMarkSpam(id: string) {
-    markSpam.mutate(id)
+    markSpam.mutate(id);
   }
 
   /**
    * 弹出删除确认
    */
   function handleDelete(id: string) {
-    setDeleteConfirm({ open: true, id })
+    setDeleteConfirm({ open: true, id });
   }
 
   /**
    * 确认删除
    */
   function confirmDelete() {
-    deleteComment.mutate(deleteConfirm.id)
-    setDeleteConfirm({ open: false, id: "" })
+    deleteComment.mutate(deleteConfirm.id);
+    setDeleteConfirm({ open: false, id: "" });
   }
 
   return (
@@ -152,14 +173,21 @@ export default function Comments() {
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-muted" disabled={isActing}>
+                      <DropdownMenuTrigger
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-muted"
+                        disabled={isActing}
+                      >
                         <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleApprove(comment.id)}>
+                        <DropdownMenuItem
+                          onClick={() => handleApprove(comment.id)}
+                        >
                           批准
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleMarkSpam(comment.id)}>
+                        <DropdownMenuItem
+                          onClick={() => handleMarkSpam(comment.id)}
+                        >
                           标记垃圾
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -190,5 +218,5 @@ export default function Comments() {
         destructive
       />
     </div>
-  )
+  );
 }

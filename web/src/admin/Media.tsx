@@ -98,7 +98,7 @@ export default function Media() {
   const fetchFn = useCallback(
     (page: number, limit: number) =>
       fetchMediaPage(page, limit, currentMimeType),
-    [currentMimeType]
+    [currentMimeType],
   );
 
   const {

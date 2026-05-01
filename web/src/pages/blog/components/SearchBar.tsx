@@ -1,18 +1,18 @@
-import { useState } from "react"
-import { Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useState } from "react";
+import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface SearchBarProps {
-  onSearch: (keyword: string) => void
+  onSearch: (keyword: string) => void;
 }
 
 export function SearchBar({ onSearch }: SearchBarProps) {
-  const [searchInput, setSearchInput] = useState("")
+  const [searchInput, setSearchInput] = useState("");
 
   function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    onSearch(searchInput.trim())
+    e.preventDefault();
+    onSearch(searchInput.trim());
   }
 
   return (
@@ -28,5 +28,5 @@ export function SearchBar({ onSearch }: SearchBarProps) {
       </div>
       <Button type="submit">搜索</Button>
     </form>
-  )
+  );
 }

@@ -2,29 +2,29 @@
 // 展示评论者头像（Gravatar）、名称、时间和内容
 // 递归渲染嵌套回复
 
-import type { Comment } from "@/hooks/useComments"
+import type { Comment } from "@/hooks/useComments";
 
 /** 格式化时间为相对描述 */
 function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const seconds = Math.floor(diff / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-  const days = Math.floor(hours / 24)
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
   if (days > 30) {
     return date.toLocaleDateString("zh-CN", {
       year: "numeric",
       month: "long",
       day: "numeric",
-    })
+    });
   }
-  if (days > 0) return `${days} 天前`
-  if (hours > 0) return `${hours} 小时前`
-  if (minutes > 0) return `${minutes} 分钟前`
-  return "刚刚"
+  if (days > 0) return `${days} 天前`;
+  if (hours > 0) return `${hours} 小时前`;
+  if (minutes > 0) return `${minutes} 分钟前`;
+  return "刚刚";
 }
 
 /**
@@ -34,17 +34,17 @@ function formatRelativeTime(dateStr: string): string {
  */
 function getGravatarUrl(email?: string): string {
   if (!email) {
-    return `https://www.gravatar.com/avatar/?d=identicon&s=80`
+    return `https://www.gravatar.com/avatar/?d=identicon&s=80`;
   }
-  const trimmed = email.trim().toLowerCase()
-  return `https://www.gravatar.com/avatar/${trimmed}?d=identicon&s=80`
+  const trimmed = email.trim().toLowerCase();
+  return `https://www.gravatar.com/avatar/${trimmed}?d=identicon&s=80`;
 }
 
 interface CommentItemProps {
   /** 评论数据 */
-  comment: Comment
+  comment: Comment;
   /** 嵌套层级，用于控制缩进 */
-  depth?: number
+  depth?: number;
 }
 
 /**
@@ -88,5 +88,5 @@ export function CommentItem({ comment, depth = 0 }: CommentItemProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -74,7 +74,7 @@ function getFileTypeLabel(mimeType: string): string {
  * 根据 MIME 类型获取对应的 lucide 图标组件
  */
 const FileIcon = (
-  props: React.ComponentProps<"svg"> & { mimeType: string }
+  props: React.ComponentProps<"svg"> & { mimeType: string },
 ) => {
   const { mimeType, ...svgProps } = props;
   if (mimeType.startsWith("video/")) return <Video {...svgProps} />;
@@ -176,20 +176,22 @@ export default function MediaCard({
 
   return (
     <Card
-      className={`overflow-hidden transition-shadow group border-0 shadow-sm hover:shadow-md ${selected ? "ring-2 ring-primary" : ""}`}
+      className={`overflow-hidden transition-shadow group border-0 shadow-sm hover:shadow-md p-0 ${selected ? "ring-2 ring-primary" : ""}`}
     >
       <CardContent className="p-0">
         {/* 预览区域 */}
         <div
           onClick={hasClickAction ? handleClick : undefined}
-          className={`group relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-muted ${hasClickAction ? "cursor-pointer" : ""}`}
+          className={`group relative flex aspect-4/3 w-full items-center justify-center overflow-hidden bg-muted ${hasClickAction ? "cursor-pointer" : ""}`}
         >
           {/* 选择模式下显示选中状态图标 */}
           {selectMode && (
             <div className="absolute right-2 top-2 z-10">
               <CheckCircle2
                 className={`size-5 transition-colors ${
-                  selected ? "text-primary fill-primary/20" : "text-muted-foreground/50"
+                  selected
+                    ? "text-primary fill-primary/20"
+                    : "text-muted-foreground/50"
                 }`}
               />
             </div>

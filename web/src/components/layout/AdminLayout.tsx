@@ -4,28 +4,28 @@
  * 使用 zustand store 管理侧边栏状态
  */
 
-import { Outlet } from "react-router"
-import { AdminSidebar } from "./AdminSidebar"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Outlet } from "react-router";
+import { AdminSidebar } from "./AdminSidebar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { useSidebarStore } from "@/store"
-import { useAuth } from "@/hooks/useAuth"
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useSidebarStore } from "@/store";
+import { useAuth } from "@/hooks/useAuth";
 
 /**
  * 后台管理布局
  * 顶部栏包含搜索框和用户菜单，左侧可折叠侧边栏，右侧为内容区域
  */
 export default function AdminLayout() {
-  const { toggle } = useSidebarStore()
-  const { user, logout } = useAuth()
+  const { toggle } = useSidebarStore();
+  const { user, logout } = useAuth();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -51,7 +51,11 @@ export default function AdminLayout() {
                 strokeWidth={1.5}
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                />
               </svg>
             </Button>
             <Input
@@ -71,14 +75,14 @@ export default function AdminLayout() {
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem className="text-sm text-muted-foreground" disabled>
+              <DropdownMenuItem
+                className="text-sm text-muted-foreground"
+                disabled
+              >
                 {user?.username ?? "管理员"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={logout}
-              >
+              <DropdownMenuItem className="text-destructive" onClick={logout}>
                 退出登录
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -91,5 +95,5 @@ export default function AdminLayout() {
         </main>
       </div>
     </div>
-  )
+  );
 }

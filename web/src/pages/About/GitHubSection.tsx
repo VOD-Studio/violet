@@ -1,13 +1,13 @@
-import { ScrollReveal } from "@/components/creative"
-import { GitHubContributions } from "@/components/blog/GitHubContributions"
-import { PinnedRepos } from "@/components/blog/PinnedRepos"
+import { ScrollReveal } from "@/components/creative";
+import { GitHubContributions } from "@/components/blog/GitHubContributions";
+import { PinnedRepos } from "@/components/blog/PinnedRepos";
 
 interface GitHubSectionProps {
-  username: string
+  username: string;
 }
 
 export function GitHubSection({ username }: GitHubSectionProps) {
-  if (!username) return null
+  if (!username) return null;
 
   return (
     <>
@@ -19,5 +19,5 @@ export function GitHubSection({ username }: GitHubSectionProps) {
         <PinnedRepos username={username} />
       </ScrollReveal>
     </>
-  )
+  );
 }

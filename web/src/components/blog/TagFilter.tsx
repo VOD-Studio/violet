@@ -2,19 +2,19 @@
 // 展示标签列表，支持点击筛选和当前选中高亮
 // 对 tags 做安全检查，防止非数组导致崩溃
 
-import { cn } from "@/lib/utils"
-import { Skeleton } from "@/components/ui/skeleton"
-import type { Tag } from "@/hooks/useTags"
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Tag } from "@/hooks/useTags";
 
 interface TagFilterProps {
   /** 标签列表 */
-  tags: Tag[] | undefined | null
+  tags: Tag[] | undefined | null;
   /** 当前选中的标签 slug，null 表示全部 */
-  selectedTag: string | null
+  selectedTag: string | null;
   /** 标签点击回调 */
-  onTagChange: (tag: string | null) => void
+  onTagChange: (tag: string | null) => void;
   /** 是否正在加载 */
-  isLoading?: boolean
+  isLoading?: boolean;
 }
 
 /**
@@ -29,7 +29,7 @@ export function TagFilter({
   isLoading,
 }: TagFilterProps) {
   /** 安全检查：确保 tags 是有效数组 */
-  const safeTags = Array.isArray(tags) ? tags : []
+  const safeTags = Array.isArray(tags) ? tags : [];
 
   return (
     <div className="mb-8 flex flex-wrap gap-2">
@@ -69,5 +69,5 @@ export function TagFilter({
           </button>
         ))}
     </div>
-  )
+  );
 }

@@ -1,14 +1,26 @@
-import type { SiteSettings } from "@/hooks/useAdmin"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import type { SiteSettings } from "@/hooks/useAdmin";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface FooterSettingsFormProps {
-  form: Partial<SiteSettings>
-  updateField: (key: keyof SiteSettings, value: string | boolean | number) => void
+  form: Partial<SiteSettings>;
+  updateField: (
+    key: keyof SiteSettings,
+    value: string | boolean | number,
+  ) => void;
 }
 
-export function FooterSettingsForm({ form, updateField }: FooterSettingsFormProps) {
+export function FooterSettingsForm({
+  form,
+  updateField,
+}: FooterSettingsFormProps) {
   return (
     <Card>
       <CardHeader>
@@ -27,5 +39,5 @@ export function FooterSettingsForm({ form, updateField }: FooterSettingsFormProp
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

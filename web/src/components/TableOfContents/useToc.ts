@@ -108,7 +108,7 @@ export function useToc({
       const top = el.getBoundingClientRect().top + window.scrollY - offsetTop;
       window.scrollTo({ top, behavior: "smooth" });
     },
-    [offsetTop]
+    [offsetTop],
   );
 
   return { headings, activeId, scrollTo };

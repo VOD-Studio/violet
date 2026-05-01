@@ -1,33 +1,35 @@
 // 文章头部信息组件
 // 展示标题、作者、发布日期、浏览量和标签
 
-import { Link } from "react-router"
-import { Calendar, Eye, Tag } from "lucide-react"
-import { KineticText } from "@/components/creative"
-import type { PostDetail } from "@/hooks/usePosts"
+import { Link } from "react-router";
+import { Calendar, Eye, Tag } from "lucide-react";
+import { KineticText } from "@/components/creative";
+import type { PostDetail } from "@/hooks/usePosts";
 
 /** 格式化日期为中文格式 */
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
+  const date = new Date(dateStr);
   return date.toLocaleDateString("zh-CN", {
     year: "numeric",
     month: "long",
     day: "numeric",
-  })
+  });
 }
 
 /** 判断两个日期是否相同（忽略时分秒） */
 function isSameDay(date1: string, date2: string): boolean {
-  const d1 = new Date(date1)
-  const d2 = new Date(date2)
-  return d1.getFullYear() === d2.getFullYear() &&
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
     d1.getMonth() === d2.getMonth() &&
     d1.getDate() === d2.getDate()
+  );
 }
 
 interface ArticleHeaderProps {
   /** 文章详情 */
-  post: PostDetail
+  post: PostDetail;
 }
 
 /**
@@ -68,7 +70,8 @@ export function ArticleHeader({ post }: ArticleHeaderProps) {
           <Calendar className="size-4" />
           {post.updatedAt && !isSameDay(post.createdAt, post.updatedAt) ? (
             <span>
-              发布于 {formatDate(post.createdAt)}，更新于 {formatDate(post.updatedAt)}
+              发布于 {formatDate(post.createdAt)}，更新于{" "}
+              {formatDate(post.updatedAt)}
             </span>
           ) : (
             formatDate(post.createdAt)
@@ -98,5 +101,5 @@ export function ArticleHeader({ post }: ArticleHeaderProps) {
         )}
       </div>
     </header>
-  )
+  );
 }

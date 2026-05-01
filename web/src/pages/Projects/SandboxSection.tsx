@@ -1,6 +1,6 @@
-import type { SandboxFile } from "@/components/blog/CodeSandbox"
-import { CodeSandbox } from "@/components/blog/CodeSandbox"
-import { ScrollReveal } from "@/components/creative"
+import type { SandboxFile } from "@/components/blog/CodeSandbox";
+import { CodeSandbox } from "@/components/blog/CodeSandbox";
+import { ScrollReveal } from "@/components/creative";
 
 const SANDBOX_FILES: SandboxFile[] = [
   {
@@ -37,7 +37,7 @@ export default function App() {
 }`,
     active: true,
   },
-]
+];
 
 export function SandboxSection() {
   return (
@@ -50,12 +50,8 @@ export function SandboxSection() {
       </ScrollReveal>
 
       <ScrollReveal animation="fadeIn" delay={0.2}>
-        <CodeSandbox
-          files={SANDBOX_FILES}
-          height={420}
-          showConsole={false}
-        />
+        <CodeSandbox files={SANDBOX_FILES} height={420} showConsole={false} />
       </ScrollReveal>
     </section>
-  )
+  );
 }

@@ -84,7 +84,7 @@ export function useStickerGroups() {
     queryKey: ["admin", "sticker-groups"],
     queryFn: async () => {
       const res = await api.get<{ groups: StickerGroup[] }>(
-        "/admin/sticker-groups"
+        "/admin/sticker-groups",
       );
       return res.groups ?? [];
     },
@@ -193,7 +193,7 @@ export function useStickers(groupId: string) {
     queryKey: ["admin", "stickers", groupId],
     queryFn: async () => {
       const res = await api.get<{ stickers: Sticker[] }>(
-        `/admin/sticker-groups/${groupId}/stickers`
+        `/admin/sticker-groups/${groupId}/stickers`,
       );
       return res.stickers ?? [];
     },

@@ -1,38 +1,41 @@
-import { useState, useEffect } from "react"
-import { useSiteSettings, useSaveSettings } from "@/hooks/useAdmin"
-import type { SiteSettings } from "@/hooks/useAdmin"
-import { Button } from "@/components/ui/button"
-import { ErrorFallback } from "@/components/shared/ErrorFallback"
-import { useToast } from "@/components/shared/Toast"
-import { SettingsSkeleton } from "./SettingsSkeleton"
-import { SiteInfoForm } from "./SiteInfoForm"
-import { CommentSettingsForm } from "./CommentSettingsForm"
-import { GitHubSettingsForm } from "./GitHubSettingsForm"
-import { FooterSettingsForm } from "./FooterSettingsForm"
+import { useState, useEffect } from "react";
+import { useSiteSettings, useSaveSettings } from "@/hooks/useAdmin";
+import type { SiteSettings } from "@/hooks/useAdmin";
+import { Button } from "@/components/ui/button";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
+import { useToast } from "@/components/shared/Toast";
+import { SettingsSkeleton } from "./SettingsSkeleton";
+import { SiteInfoForm } from "./SiteInfoForm";
+import { CommentSettingsForm } from "./CommentSettingsForm";
+import { GitHubSettingsForm } from "./GitHubSettingsForm";
+import { FooterSettingsForm } from "./FooterSettingsForm";
 
 export default function Settings() {
-  const { data: settings, isLoading, error, refetch } = useSiteSettings()
-  const saveMutation = useSaveSettings()
-  const { toast } = useToast()
+  const { data: settings, isLoading, error, refetch } = useSiteSettings();
+  const saveMutation = useSaveSettings();
+  const { toast } = useToast();
 
-  const [form, setForm] = useState<Partial<SiteSettings>>({})
+  const [form, setForm] = useState<Partial<SiteSettings>>({});
 
   useEffect(() => {
     if (settings) {
-      setForm(settings)
+      setForm(settings);
     }
-  }, [settings])
+  }, [settings]);
 
-  function updateField(key: keyof SiteSettings, value: string | boolean | number) {
-    setForm((prev) => ({ ...prev, [key]: value }))
+  function updateField(
+    key: keyof SiteSettings,
+    value: string | boolean | number,
+  ) {
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   async function handleSave() {
     try {
-      await saveMutation.mutateAsync(form)
-      toast("设置已保存", "success")
+      await saveMutation.mutateAsync(form);
+      toast("设置已保存", "success");
     } catch {
-      toast("保存失败，请重试", "error")
+      toast("保存失败，请重试", "error");
     }
   }
 
@@ -47,7 +50,7 @@ export default function Settings() {
         </div>
         <SettingsSkeleton />
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -56,7 +59,7 @@ export default function Settings() {
         <h1 className="text-2xl font-bold">站点设置</h1>
         <ErrorFallback error={error.message} onRetry={refetch} />
       </div>
-    )
+    );
   }
 
   return (
@@ -78,5 +81,5 @@ export default function Settings() {
         <FooterSettingsForm form={form} updateField={updateField} />
       </div>
     </div>
-  )
+  );
 }

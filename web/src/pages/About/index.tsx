@@ -1,20 +1,24 @@
-import { usePublicSettings } from "@/hooks/useAdmin"
-import { SEO } from "@/components/shared/SEO"
-import { StructuredData } from "@/components/shared/StructuredData"
-import { generatePersonStructuredData, generateBreadcrumbStructuredData, SITE_CONFIG } from "@/lib/seo"
-import { BioSection } from "./BioSection"
-import { TechStackSection } from "./TechStackSection"
-import { GitHubSection } from "./GitHubSection"
+import { usePublicSettings } from "@/hooks/useAdmin";
+import { SEO } from "@/components/shared/SEO";
+import { StructuredData } from "@/components/shared/StructuredData";
+import {
+  generatePersonStructuredData,
+  generateBreadcrumbStructuredData,
+  SITE_CONFIG,
+} from "@/lib/seo";
+import { BioSection } from "./BioSection";
+import { TechStackSection } from "./TechStackSection";
+import { GitHubSection } from "./GitHubSection";
 
 export default function About() {
-  const { data: settings } = usePublicSettings()
-  const githubUsername = settings?.github_username ?? ""
+  const { data: settings } = usePublicSettings();
+  const githubUsername = settings?.github_username ?? "";
 
-  const personData = generatePersonStructuredData()
+  const personData = generatePersonStructuredData();
   const breadcrumbData = generateBreadcrumbStructuredData([
     { name: "首页", url: SITE_CONFIG.url },
     { name: "关于我", url: `${SITE_CONFIG.url}/about` },
-  ])
+  ]);
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12">
@@ -31,5 +35,5 @@ export default function About() {
       <TechStackSection />
       <GitHubSection username={githubUsername} />
     </div>
-  )
+  );
 }

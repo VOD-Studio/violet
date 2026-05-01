@@ -79,10 +79,10 @@ export default function StickerUploader({
   const updateItem = useCallback(
     (id: string, updates: Partial<FileUploadItem>) => {
       setItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+        prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
       );
     },
-    []
+    [],
   );
 
   /**
@@ -108,7 +108,7 @@ export default function StickerUploader({
         toast.error("上传失败，请重试");
       }
     },
-    [updateItem, onUpload]
+    [updateItem, onUpload],
   );
 
   /**
@@ -118,7 +118,7 @@ export default function StickerUploader({
     (acceptedFiles: File[]) => {
       // 过滤非图片文件
       const imageFiles = acceptedFiles.filter((file) =>
-        file.type.startsWith("image/")
+        file.type.startsWith("image/"),
       );
 
       if (imageFiles.length < acceptedFiles.length) {
@@ -139,7 +139,7 @@ export default function StickerUploader({
         handleUpload(item);
       }
     },
-    [handleUpload]
+    [handleUpload],
   );
 
   /**
@@ -215,7 +215,9 @@ export default function StickerUploader({
                 <div className="flex-shrink-0">
                   {item.status === "done" && item.result ? (
                     <img
-                      src={getUploadUrl(item.result.thumbnail || item.result.url)}
+                      src={getUploadUrl(
+                        item.result.thumbnail || item.result.url,
+                      )}
                       alt={item.file.name}
                       className="h-10 w-10 rounded object-cover"
                     />

@@ -303,7 +303,7 @@ export function useAdminComments() {
     queryKey: ["admin", "comments", "pending"],
     queryFn: async () => {
       const res = await api.get<{ comments: ApiComment[] }>(
-        "/admin/comments/pending"
+        "/admin/comments/pending",
       );
       return res.comments ?? [];
     },
@@ -500,7 +500,7 @@ export function useAdminMedia() {
 export async function fetchMediaPage(
   page: number,
   limit: number,
-  mimeType?: string
+  mimeType?: string,
 ): Promise<{ items: MediaItem[]; total: number; page: number; limit: number }> {
   const params: Record<string, unknown> = { page, limit };
   if (mimeType) params.type = mimeType;
@@ -540,7 +540,9 @@ export function useBatchDeleteMedia() {
 
   return useMutation({
     mutationFn: (ids: string[]) =>
-      api.post<{ message: string; count: number }>("/media/batch-delete", { ids }),
+      api.post<{ message: string; count: number }>("/media/batch-delete", {
+        ids,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "media"] });
     },

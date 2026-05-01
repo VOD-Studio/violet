@@ -1,12 +1,21 @@
-import type { SiteSettings } from "@/hooks/useAdmin"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import type { SiteSettings } from "@/hooks/useAdmin";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SiteInfoFormProps {
-  form: Partial<SiteSettings>
-  updateField: (key: keyof SiteSettings, value: string | boolean | number) => void
+  form: Partial<SiteSettings>;
+  updateField: (
+    key: keyof SiteSettings,
+    value: string | boolean | number,
+  ) => void;
 }
 
 export function SiteInfoForm({ form, updateField }: SiteInfoFormProps) {
@@ -57,5 +66,5 @@ export function SiteInfoForm({ form, updateField }: SiteInfoFormProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

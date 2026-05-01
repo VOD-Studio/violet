@@ -1,18 +1,24 @@
-import type { StickerGroup } from "@/hooks/useStickersAdmin"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
-import { getUploadUrl } from "@/lib/api"
-import { Pencil, Trash2, Star, Image as ImageIcon } from "lucide-react"
+import type { StickerGroup } from "@/hooks/useStickersAdmin";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { getUploadUrl } from "@/lib/api";
+import { Pencil, Trash2, Star, Image as ImageIcon } from "lucide-react";
 
 interface StickerGroupCardProps {
-  group: StickerGroup
-  togglingGroupId: string | null
-  onToggle: (group: StickerGroup) => void
-  onEdit: (group: StickerGroup) => void
-  onDelete: (id: string, name: string) => void
-  onManageStickers: (groupId: string) => void
+  group: StickerGroup;
+  togglingGroupId: string | null;
+  onToggle: (group: StickerGroup) => void;
+  onEdit: (group: StickerGroup) => void;
+  onDelete: (id: string, name: string) => void;
+  onManageStickers: (groupId: string) => void;
 }
 
 export function StickerGroupCard({
@@ -71,11 +77,7 @@ export function StickerGroupCard({
             <ImageIcon className="mr-1 size-3.5" />
             管理表情包
           </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => onEdit(group)}
-          >
+          <Button variant="ghost" size="icon-sm" onClick={() => onEdit(group)}>
             <Pencil className="size-3.5" />
           </Button>
           <Button
@@ -88,5 +90,5 @@ export function StickerGroupCard({
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

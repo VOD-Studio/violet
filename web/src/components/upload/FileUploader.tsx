@@ -1,40 +1,45 @@
 // 文件上传组件
 // 支持拖拽上传、多文件、上传进度、完成后预览
 
-import { useState, useCallback } from "react"
-import { useDropzone } from "react-dropzone"
-import { uploadFile, captureVideoThumbnail, uploadVideoThumbnail, type UploadResult } from "./ChunkedUpload"
-import { Button } from "@/components/ui/button"
-import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
+import {
+  uploadFile,
+  captureVideoThumbnail,
+  uploadVideoThumbnail,
+  type UploadResult,
+} from "./ChunkedUpload";
+import { Button } from "@/components/ui/button";
+import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 
 /** 单个文件上传状态 */
 interface FileUploadItem {
   /** 临时 ID */
-  id: string
+  id: string;
   /** 文件对象 */
-  file: File
+  file: File;
   /** 上传进度 0-100 */
-  progress: number
+  progress: number;
   /** 上传状态 */
-  status: "pending" | "uploading" | "done" | "error"
+  status: "pending" | "uploading" | "done" | "error";
   /** 上传结果 */
-  result?: UploadResult
+  result?: UploadResult;
   /** 错误信息 */
-  error?: string
+  error?: string;
 }
 
 /** FileUploader 组件属性 */
 interface FileUploaderProps {
   /** 上传完成回调 */
-  onUpload?: (result: UploadResult) => void
+  onUpload?: (result: UploadResult) => void;
   /** 接受的文件类型 */
-  accept?: Record<string, string[]>
+  accept?: Record<string, string[]>;
   /** 单文件最大体积（字节） */
-  maxSize?: number
+  maxSize?: number;
   /** 是否支持多文件 */
-  multiple?: boolean
+  multiple?: boolean;
   /** 自定义类名 */
-  className?: string
+  className?: string;
 }
 
 /** 默认接受的文件类型 */
@@ -44,21 +49,27 @@ const defaultAccept: Record<string, string[]> = {
   "audio/*": [".mp3", ".wav", ".ogg", ".flac", ".aac"],
   "application/pdf": [".pdf"],
   "application/msword": [".doc"],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+    ".docx",
+  ],
   "application/vnd.ms-excel": [".xls"],
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+    ".xlsx",
+  ],
   "application/vnd.ms-powerpoint": [".ppt"],
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": [
+    ".pptx",
+  ],
   "application/zip": [".zip"],
   "application/vnd.rar": [".rar"],
   "application/x-7z-compressed": [".7z"],
-}
+};
 
 /**
  * 生成临时唯一 ID
  */
 function generateId(): string {
-  return Math.random().toString(36).slice(2, 10)
+  return Math.random().toString(36).slice(2, 10);
 }
 
 /**
@@ -73,47 +84,50 @@ export default function FileUploader({
   className = "",
 }: FileUploaderProps) {
   /** 上传队列 */
-  const [items, setItems] = useState<FileUploadItem[]>([])
+  const [items, setItems] = useState<FileUploadItem[]>([]);
 
   /**
    * 更新指定文件的上传状态
    */
-  const updateItem = useCallback((id: string, updates: Partial<FileUploadItem>) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
-    )
-  }, [])
+  const updateItem = useCallback(
+    (id: string, updates: Partial<FileUploadItem>) => {
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+      );
+    },
+    [],
+  );
 
   /**
    * 执行单个文件上传
    */
   const handleUpload = useCallback(
     async (item: FileUploadItem) => {
-      updateItem(item.id, { status: "uploading", progress: 0 })
+      updateItem(item.id, { status: "uploading", progress: 0 });
 
       try {
         const result = await uploadFile(item.file, (progress) => {
-          updateItem(item.id, { progress })
-        })
+          updateItem(item.id, { progress });
+        });
 
-        updateItem(item.id, { status: "done", progress: 100, result })
-        onUpload?.(result)
+        updateItem(item.id, { status: "done", progress: 100, result });
+        onUpload?.(result);
 
         // 视频文件：截取封面缩略图并上传
         if (result.mimeType.startsWith("video/") && result.id) {
           captureVideoThumbnail(item.file).then((blob) => {
-            if (blob) uploadVideoThumbnail(result.id, item.file, blob)
-          })
+            if (blob) uploadVideoThumbnail(result.id, item.file, blob);
+          });
         }
       } catch (err) {
         updateItem(item.id, {
           status: "error",
           error: err instanceof Error ? err.message : "上传失败",
-        })
+        });
       }
     },
     [updateItem, onUpload],
-  )
+  );
 
   /**
    * 处理文件选择
@@ -125,31 +139,31 @@ export default function FileUploader({
         file,
         progress: 0,
         status: "pending" as const,
-      }))
+      }));
 
-      setItems((prev) => [...prev, ...newItems])
+      setItems((prev) => [...prev, ...newItems]);
 
       // 开始上传
       for (const item of newItems) {
-        handleUpload(item)
+        handleUpload(item);
       }
     },
     [handleUpload],
-  )
+  );
 
   /**
    * 移除上传项
    */
   const removeItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id))
-  }, [])
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept,
     maxSize,
     multiple,
-  })
+  });
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -214,7 +228,9 @@ export default function FileUploader({
                   </div>
                 )}
                 {item.status === "error" && (
-                  <p className="mt-0.5 text-xs text-destructive">{item.error}</p>
+                  <p className="mt-0.5 text-xs text-destructive">
+                    {item.error}
+                  </p>
                 )}
                 {item.status === "done" && item.result && (
                   <p className="mt-0.5 text-xs text-green-600">上传完成</p>
@@ -241,7 +257,6 @@ export default function FileUploader({
           ))}
         </div>
       )}
-
     </div>
-  )
+  );
 }

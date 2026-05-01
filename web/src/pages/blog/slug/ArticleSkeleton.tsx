@@ -1,12 +1,12 @@
 // 文章加载骨架屏组件
 
-import { useState } from "react"
+import { useState } from "react";
 
 /**
  * 文章加载骨架屏
  */
 export function ArticleSkeleton() {
-  const [key] = useState(() => Math.random())
+  const [key] = useState(() => Math.random());
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -25,5 +25,5 @@ export function ArticleSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }

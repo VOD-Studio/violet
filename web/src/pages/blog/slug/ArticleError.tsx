@@ -1,12 +1,12 @@
 // 文章错误状态组件
 
-import { Link } from "react-router"
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Link } from "react-router";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ArticleErrorProps {
   /** 错误信息 */
-  error?: unknown
+  error?: unknown;
 }
 
 /**
@@ -25,5 +25,5 @@ export function ArticleError({ error }: ArticleErrorProps) {
         {error ? String(error) : "文章不存在"}
       </div>
     </div>
-  )
+  );
 }

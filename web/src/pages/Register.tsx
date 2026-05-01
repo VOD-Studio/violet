@@ -1,8 +1,8 @@
 // 注册页
 // 展示注册表单，用户填写信息完成账号注册
 
-import { motion } from "motion/react"
-import { RegisterForm } from "@/components/auth/RegisterForm"
+import { motion } from "motion/react";
+import { RegisterForm } from "@/components/auth/RegisterForm";
 
 /**
  * 注册页
@@ -28,5 +28,5 @@ export default function Register() {
         <RegisterForm />
       </motion.div>
     </div>
-  )
+  );
 }

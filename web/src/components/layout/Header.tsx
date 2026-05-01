@@ -3,12 +3,12 @@
  * 包含 Logo、导航链接、登录/用户头像、主题切换，支持响应式汉堡菜单
  */
 
-import { useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router"
-import { Menu, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/ui/ThemeToggle"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
+import { Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,10 +17,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/hooks/useAuth"
-import { cn } from "@/lib/utils"
-import { getUploadUrl } from "@/lib/api"
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+import { getUploadUrl } from "@/lib/api";
 
 /** 导航链接配置列表 */
 const NAV_ITEMS = [
@@ -28,7 +28,7 @@ const NAV_ITEMS = [
   { label: "博客", href: "/blog" },
   { label: "项目", href: "/projects" },
   { label: "关于", href: "/about" },
-] as const
+] as const;
 
 /**
  * 前台头部导航组件
@@ -36,32 +36,32 @@ const NAV_ITEMS = [
  */
 export function Header() {
   /** 移动端菜单展开状态 */
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   /** 当前路由路径，用于高亮当前导航项 */
-  const location = useLocation()
+  const location = useLocation();
   /** 路由导航函数 */
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   /** 认证状态 */
-  const { isAuthenticated, user, logout } = useAuth()
+  const { isAuthenticated, user, logout } = useAuth();
 
   /** 切换移动端菜单显示状态 */
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen((prev) => !prev)
-  }
+    setIsMobileMenuOpen((prev) => !prev);
+  };
 
   /** 关闭移动端菜单 */
   const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false)
-  }
+    setIsMobileMenuOpen(false);
+  };
 
   /**
    * 判断导航链接是否为当前激活状态
    * 首页需要精确匹配，其他页面使用前缀匹配
    */
   const isActive = (href: string) => {
-    if (href === "/") return location.pathname === "/"
-    return location.pathname.startsWith(href)
-  }
+    if (href === "/") return location.pathname === "/";
+    return location.pathname.startsWith(href);
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -96,7 +96,14 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger className="relative flex size-8 items-center justify-center rounded-full hover:bg-muted">
                 <Avatar className="size-8">
-                  <AvatarImage src={user?.avatar_url ? getUploadUrl(user.avatar_url) : undefined} alt={user?.username} />
+                  <AvatarImage
+                    src={
+                      user?.avatar_url
+                        ? getUploadUrl(user.avatar_url)
+                        : undefined
+                    }
+                    alt={user?.username}
+                  />
                   <AvatarFallback>
                     {user?.username?.charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -107,7 +114,9 @@ export function Header() {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{user?.username}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {user?.email}
+                      </p>
                     </div>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
@@ -120,9 +129,7 @@ export function Header() {
                     管理后台
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={logout}>
-                  退出登录
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout}>退出登录</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
@@ -143,7 +150,11 @@ export function Header() {
             onClick={toggleMobileMenu}
             aria-label={isMobileMenuOpen ? "关闭菜单" : "打开菜单"}
           >
-            {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            {isMobileMenuOpen ? (
+              <X className="size-5" />
+            ) : (
+              <Menu className="size-5" />
+            )}
           </Button>
         </div>
       </div>
@@ -174,26 +185,50 @@ export function Header() {
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-md px-3 py-2 hover:bg-muted">
                     <Avatar className="size-8">
-                      <AvatarImage src={user?.avatar_url ? getUploadUrl(user.avatar_url) : undefined} alt={user?.username} />
+                      <AvatarImage
+                        src={
+                          user?.avatar_url
+                            ? getUploadUrl(user.avatar_url)
+                            : undefined
+                        }
+                        alt={user?.username}
+                      />
                       <AvatarFallback>
                         {user?.username?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col items-start">
                       <p className="text-sm font-medium">{user?.username}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {user?.email}
+                      </p>
                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end">
-                    <DropdownMenuItem onClick={() => { navigate("/profile"); closeMobileMenu() }}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        navigate("/profile");
+                        closeMobileMenu();
+                      }}
+                    >
                       个人中心
                     </DropdownMenuItem>
                     {user?.role === "admin" && (
-                      <DropdownMenuItem onClick={() => { navigate("/admin"); closeMobileMenu() }}>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          navigate("/admin");
+                          closeMobileMenu();
+                        }}
+                      >
                         管理后台
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => { logout(); closeMobileMenu() }}>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        logout();
+                        closeMobileMenu();
+                      }}
+                    >
                       退出登录
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -210,5 +245,5 @@ export function Header() {
         </div>
       )}
     </header>
-  )
+  );
 }

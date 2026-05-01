@@ -61,7 +61,7 @@ export function Segmented<T extends string | number>({
       ref={containerRef}
       className={cn(
         "relative flex gap-1 rounded-lg border bg-muted/30 p-1",
-        className
+        className,
       )}
     >
       {/* 滑块背景 - 绝对定位 */}
@@ -85,7 +85,7 @@ export function Segmented<T extends string | number>({
               "relative z-10 flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               isActive
                 ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             {opt.label}

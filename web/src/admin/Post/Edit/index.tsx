@@ -1,47 +1,53 @@
 // 文章编辑页面
 // 支持新建和编辑文章，使用 react-hook-form 管理表单状态
 
-import { useEffect, useState } from "react"
-import { useNavigate, useParams } from "react-router"
-import { useForm, Controller } from "react-hook-form"
-import { api } from "@/lib/api"
-import { useAdminTags, useSavePost } from "@/hooks/useAdmin"
-import type { ApiPost, ApiTag } from "@/hooks/useAdmin"
-import { RichTextEditor } from "@/components/editor"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CoverImageUpload } from "./CoverImageUpload"
-import { TagSelector } from "./TagSelector"
-import { SeoSettings } from "./SeoSettings"
-import { MediaPicker, type MediaItem } from "./MediaPicker"
-import { BackToTop } from "@/components/shared/BackToTop"
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router";
+import { useForm, Controller } from "react-hook-form";
+import { api } from "@/lib/api";
+import { useAdminTags, useSavePost } from "@/hooks/useAdmin";
+import type { ApiPost, ApiTag } from "@/hooks/useAdmin";
+import { RichTextEditor } from "@/components/editor";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { CoverImageUpload } from "./CoverImageUpload";
+import { TagSelector } from "./TagSelector";
+import { SeoSettings } from "./SeoSettings";
+import { MediaPicker, type MediaItem } from "./MediaPicker";
+import { BackToTop } from "@/components/shared/BackToTop";
 
 /** 表单字段类型 */
 interface PostFormValues {
-  title: string
-  slug: string
-  contentMarkdown: string
-  excerpt: string
-  coverImage: string
-  tagIds: number[]
-  seoDescription: string
-  seoKeywords: string
+  title: string;
+  slug: string;
+  contentMarkdown: string;
+  excerpt: string;
+  coverImage: string;
+  tagIds: number[];
+  seoDescription: string;
+  seoKeywords: string;
 }
 
 /**
  * 文章编辑页面
  */
 export default function PostEdit() {
-  const navigate = useNavigate()
-  const { id } = useParams()
-  const isEditing = Boolean(id)
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = Boolean(id);
 
-  const { data: availableTags = [], isLoading: tagsLoading } = useAdminTags()
-  const saveMutation = useSavePost()
-  const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
+  const { data: availableTags = [], isLoading: tagsLoading } = useAdminTags();
+  const saveMutation = useSavePost();
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   const {
     register,
@@ -61,39 +67,39 @@ export default function PostEdit() {
       seoDescription: "",
       seoKeywords: "",
     },
-  })
+  });
 
-  const coverImage = watch("coverImage")
-  const tagIds = watch("tagIds")
-  const seoDescription = watch("seoDescription")
-  const seoKeywords = watch("seoKeywords")
+  const coverImage = watch("coverImage");
+  const tagIds = watch("tagIds");
+  const seoDescription = watch("seoDescription");
+  const seoKeywords = watch("seoKeywords");
 
   /* 编辑模式下加载文章数据 */
   useEffect(() => {
-    if (!id) return
+    if (!id) return;
 
     async function loadPost() {
       try {
-        const post = await api.get<ApiPost>(`/posts/id/${id}`)
-        setValue("title", post.title)
-        setValue("slug", post.slug)
-        setValue("contentMarkdown", post.contentMarkdown ?? "")
-        setValue("excerpt", post.excerpt ?? "")
-        setValue("coverImage", post.coverImage ?? "")
-        setValue("tagIds", post.tags?.map((t: ApiTag) => t.id) ?? [])
-        setValue("seoDescription", post.seoDescription ?? "")
-        setValue("seoKeywords", post.seoKeywords ?? "")
+        const post = await api.get<ApiPost>(`/posts/id/${id}`);
+        setValue("title", post.title);
+        setValue("slug", post.slug);
+        setValue("contentMarkdown", post.contentMarkdown ?? "");
+        setValue("excerpt", post.excerpt ?? "");
+        setValue("coverImage", post.coverImage ?? "");
+        setValue("tagIds", post.tags?.map((t: ApiTag) => t.id) ?? []);
+        setValue("seoDescription", post.seoDescription ?? "");
+        setValue("seoKeywords", post.seoKeywords ?? "");
       } catch (err) {
-        console.error("加载文章失败:", err)
+        console.error("加载文章失败:", err);
       }
     }
 
-    loadPost()
-  }, [id, setValue])
+    loadPost();
+  }, [id, setValue]);
 
   /* 从素材库选择图片 */
   function handleMediaSelect(media: MediaItem) {
-    setValue("coverImage", media.path)
+    setValue("coverImage", media.path);
   }
 
   /* 提交表单 */
@@ -112,8 +118,8 @@ export default function PostEdit() {
           seoKeywords: data.seoKeywords || undefined,
         },
         id: isEditing ? id : undefined,
-      })
-      navigate("/admin/posts")
+      });
+      navigate("/admin/posts");
     } catch {
       /* 错误由 saveMutation 处理 */
     }
@@ -124,7 +130,9 @@ export default function PostEdit() {
       {/* 页面头部 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{isEditing ? "编辑文章" : "新建文章"}</h1>
+          <h1 className="text-2xl font-bold">
+            {isEditing ? "编辑文章" : "新建文章"}
+          </h1>
           <p className="text-muted-foreground">
             {isEditing ? "修改文章内容" : "撰写新的博客文章"}
           </p>
@@ -213,7 +221,9 @@ export default function PostEdit() {
                     placeholder="请输入文章内容"
                   />
                   {fieldState.error && (
-                    <p className="text-sm text-destructive">{fieldState.error.message}</p>
+                    <p className="text-sm text-destructive">
+                      {fieldState.error.message}
+                    </p>
                   )}
                 </>
               )}
@@ -266,7 +276,11 @@ export default function PostEdit() {
       />
 
       {/* 回到顶部 */}
-      <BackToTop threshold={300} variant="chevron" containerSelector="#admin-content" />
+      <BackToTop
+        threshold={300}
+        variant="chevron"
+        containerSelector="#admin-content"
+      />
     </div>
-  )
+  );
 }

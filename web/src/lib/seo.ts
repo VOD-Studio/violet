@@ -4,57 +4,58 @@
 /** SEO 配置项 */
 export interface SEOConfig {
   /** 页面标题 */
-  title: string
+  title: string;
   /** 页面描述 */
-  description: string
+  description: string;
   /** 关键词列表 */
-  keywords?: string[]
+  keywords?: string[];
   /** 作者名称 */
-  author?: string
+  author?: string;
   /** 页面图片 */
-  image?: string
+  image?: string;
   /** 页面完整 URL */
-  url?: string
+  url?: string;
   /** 页面类型，默认 website */
-  type?: "website" | "article"
+  type?: "website" | "article";
   /** 是否显示站点名称后缀 */
-  appendSiteName?: boolean
+  appendSiteName?: boolean;
 }
 
 /** 文章数据结构，用于生成 SEO 数据 */
 interface PostForSEO {
   /** 文章标题 */
-  title: string
+  title: string;
   /** 文章摘要 */
-  excerpt?: string
+  excerpt?: string;
   /** URL 别名 */
-  slug: string
+  slug: string;
   /** 封面图地址 */
-  coverImage?: string
+  coverImage?: string;
   /** 发布时间 */
-  createdAt: string
+  createdAt: string;
   /** 更新时间 */
-  updatedAt?: string
+  updatedAt?: string;
   /** 作者信息 */
   author?: {
-    username: string
-    avatar?: string
-  }
+    username: string;
+    avatar?: string;
+  };
   /** 标签列表 */
-  tags?: Array<{ name: string }>
+  tags?: Array<{ name: string }>;
 }
 
 /** 站点基础配置 */
 const SITE_CONFIG = {
   name: "开发者博客",
-  description: "全栈开发者的技术博客，分享 React、TypeScript、Node.js 等技术经验与项目实践。",
+  description:
+    "全栈开发者的技术博客，分享 React、TypeScript、Node.js 等技术经验与项目实践。",
   url: import.meta.env.VITE_SITE_URL ?? "https://example.com",
   author: "开发者",
   image: "/og-default.png",
-}
+};
 
 /** 导出站点配置供其他模块使用 */
-export { SITE_CONFIG }
+export { SITE_CONFIG };
 
 /**
  * 生成完整页面标题
@@ -65,8 +66,8 @@ export { SITE_CONFIG }
  * @returns 完整标题字符串
  */
 export function generateTitle(title: string, appendSiteName = true): string {
-  if (!appendSiteName) return title
-  return `${title} | ${SITE_CONFIG.name}`
+  if (!appendSiteName) return title;
+  return `${title} | ${SITE_CONFIG.name}`;
 }
 
 /**
@@ -77,9 +78,9 @@ export function generateTitle(title: string, appendSiteName = true): string {
  * @returns SEO 配置对象
  */
 export function generatePostSEO(post: PostForSEO): SEOConfig {
-  const keywords = post.tags?.map((tag) => tag.name) ?? []
-  const url = `${SITE_CONFIG.url}/blog/${post.slug}`
-  const image = post.coverImage ?? SITE_CONFIG.image
+  const keywords = post.tags?.map((tag) => tag.name) ?? [];
+  const url = `${SITE_CONFIG.url}/blog/${post.slug}`;
+  const image = post.coverImage ?? SITE_CONFIG.image;
 
   return {
     title: generateTitle(post.title),
@@ -90,7 +91,7 @@ export function generatePostSEO(post: PostForSEO): SEOConfig {
     url,
     type: "article",
     appendSiteName: false,
-  }
+  };
 }
 
 /**
@@ -100,9 +101,11 @@ export function generatePostSEO(post: PostForSEO): SEOConfig {
  * @param post 文章数据
  * @returns JSON-LD 对象
  */
-export function generateStructuredData(post: PostForSEO): Record<string, unknown> {
-  const url = `${SITE_CONFIG.url}/blog/${post.slug}`
-  const image = post.coverImage ?? SITE_CONFIG.image
+export function generateStructuredData(
+  post: PostForSEO,
+): Record<string, unknown> {
+  const url = `${SITE_CONFIG.url}/blog/${post.slug}`;
+  const image = post.coverImage ?? SITE_CONFIG.image;
 
   return {
     "@context": "https://schema.org",
@@ -128,7 +131,7 @@ export function generateStructuredData(post: PostForSEO): Record<string, unknown
       "@id": url,
     },
     keywords: post.tags?.map((tag) => tag.name).join(", "),
-  }
+  };
 }
 
 /**
@@ -148,7 +151,7 @@ export function generateWebsiteStructuredData(): Record<string, unknown> {
       "@type": "Person",
       name: SITE_CONFIG.author,
     },
-  }
+  };
 }
 
 /**
@@ -169,7 +172,7 @@ export function generatePersonStructuredData(
     name: name ?? SITE_CONFIG.author,
     url: SITE_CONFIG.url,
     image: avatar,
-  }
+  };
 }
 
 /**
@@ -191,7 +194,7 @@ export function generateBreadcrumbStructuredData(
       name: item.name,
       item: item.url,
     })),
-  }
+  };
 }
 
 /**
@@ -202,53 +205,53 @@ export function generateBreadcrumbStructuredData(
  * @returns meta 标签属性数组
  */
 export function generateMetaTags(config: SEOConfig): Array<{
-  name?: string
-  property?: string
-  content: string
+  name?: string;
+  property?: string;
+  content: string;
 }> {
-  const tags: Array<{ name?: string; property?: string; content: string }> = []
+  const tags: Array<{ name?: string; property?: string; content: string }> = [];
 
   /* 基础 meta 标签 */
   tags.push({
     name: "description",
     content: config.description,
-  })
+  });
 
   if (config.keywords?.length) {
     tags.push({
       name: "keywords",
       content: config.keywords.join(", "),
-    })
+    });
   }
 
   if (config.author) {
     tags.push({
       name: "author",
       content: config.author,
-    })
+    });
   }
 
   /* Open Graph 标签 */
-  tags.push({ property: "og:title", content: config.title })
-  tags.push({ property: "og:description", content: config.description })
-  tags.push({ property: "og:type", content: config.type ?? "website" })
+  tags.push({ property: "og:title", content: config.title });
+  tags.push({ property: "og:description", content: config.description });
+  tags.push({ property: "og:type", content: config.type ?? "website" });
 
   if (config.url) {
-    tags.push({ property: "og:url", content: config.url })
+    tags.push({ property: "og:url", content: config.url });
   }
 
   if (config.image) {
-    tags.push({ property: "og:image", content: config.image })
+    tags.push({ property: "og:image", content: config.image });
   }
 
   /* Twitter Card 标签 */
-  tags.push({ name: "twitter:card", content: "summary_large_image" })
-  tags.push({ name: "twitter:title", content: config.title })
-  tags.push({ name: "twitter:description", content: config.description })
+  tags.push({ name: "twitter:card", content: "summary_large_image" });
+  tags.push({ name: "twitter:title", content: config.title });
+  tags.push({ name: "twitter:description", content: config.description });
 
   if (config.image) {
-    tags.push({ name: "twitter:image", content: config.image })
+    tags.push({ name: "twitter:image", content: config.image });
   }
 
-  return tags
+  return tags;
 }

@@ -89,7 +89,7 @@ function ImagePreview({
 }) {
   const [loadOriginal, setLoadOriginal] = useState(delay === 0);
   const [status, setStatus] = useState<"loading" | "loaded" | "error">(
-    "loading"
+    "loading",
   );
 
   // delay结束后加载原图

@@ -2,9 +2,9 @@
 // 组合 Header、页面内容和 Footer，提供统一的页面结构
 // 使用 AnimatedOutlet 实现页面切换过渡动画
 
-import { Header } from "./Header"
-import { Footer } from "./Footer"
-import { AnimatedOutlet } from "./AnimatedOutlet"
+import { Header } from "./Header";
+import { Footer } from "./Footer";
+import { AnimatedOutlet } from "./AnimatedOutlet";
 
 /**
  * 前台布局组件
@@ -25,5 +25,5 @@ export function Layout() {
       {/* 底部信息栏 */}
       <Footer />
     </div>
-  )
+  );
 }

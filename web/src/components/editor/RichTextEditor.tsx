@@ -2,18 +2,18 @@
 // 基于 Tiptap 实现，支持格式化工具栏、图片/视频插入、字数统计
 // 工具栏在长内容时固定到视口顶部
 
-import { useEditor, EditorContent } from "@tiptap/react"
-import StarterKit from "@tiptap/starter-kit"
-import Image from "@tiptap/extension-image"
-import Link from "@tiptap/extension-link"
-import Placeholder from "@tiptap/extension-placeholder"
-import TextAlign from "@tiptap/extension-text-align"
-import Underline from "@tiptap/extension-underline"
-import Highlight from "@tiptap/extension-highlight"
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
-import { common, createLowlight } from "lowlight"
-import { useCallback, useEffect, useState, useRef } from "react"
-import { Button } from "@/components/ui/button"
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import TextAlign from "@tiptap/extension-text-align";
+import Underline from "@tiptap/extension-underline";
+import Highlight from "@tiptap/extension-highlight";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
+import { useCallback, useEffect, useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Bold,
   Italic,
@@ -35,22 +35,22 @@ import {
   Undo2,
   Redo2,
   Minus,
-} from "lucide-react"
-import { LinkDialog, ImageDialog } from "./EditorDialogs"
+} from "lucide-react";
+import { LinkDialog, ImageDialog } from "./EditorDialogs";
 
 /** 创建 lowlight 实例 */
-const lowlight = createLowlight(common)
+const lowlight = createLowlight(common);
 
 /** 编辑器组件属性 */
 interface RichTextEditorProps {
   /** 初始内容（HTML） */
-  content?: string
+  content?: string;
   /** 内容变化回调 */
-  onChange?: (html: string) => void
+  onChange?: (html: string) => void;
   /** 占位文本 */
-  placeholder?: string
+  placeholder?: string;
   /** 自定义类名 */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -63,11 +63,11 @@ function ToolbarButton({
   title,
   children,
 }: {
-  onClick: () => void
-  isActive?: boolean
-  disabled?: boolean
-  title: string
-  children: React.ReactNode
+  onClick: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  title: string;
+  children: React.ReactNode;
 }) {
   return (
     <Button
@@ -81,14 +81,14 @@ function ToolbarButton({
     >
       {children}
     </Button>
-  )
+  );
 }
 
 /**
  * 工具栏分隔线
  */
 function ToolbarDivider() {
-  return <div className="mx-1 h-6 w-px bg-border" />
+  return <div className="mx-1 h-6 w-px bg-border" />;
 }
 
 /**
@@ -101,12 +101,12 @@ export default function RichTextEditor({
   placeholder = "请输入文章内容...",
   className = "",
 }: RichTextEditorProps) {
-  const [charCount, setCharCount] = useState(0)
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
-  const [imageDialogOpen, setImageDialogOpen] = useState(false)
-  const [toolbarSticky, setToolbarSticky] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const toolbarRef = useRef<HTMLDivElement>(null)
+  const [charCount, setCharCount] = useState(0);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [toolbarSticky, setToolbarSticky] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -141,11 +141,11 @@ export default function RichTextEditor({
     ],
     content,
     onUpdate: ({ editor: ed }) => {
-      const html = ed.getHTML()
-      onChange?.(html)
+      const html = ed.getHTML();
+      onChange?.(html);
       // 统计纯文本字数
-      const text = ed.getText()
-      setCharCount(text.replace(/\s/g, "").length)
+      const text = ed.getText();
+      setCharCount(text.replace(/\s/g, "").length);
     },
     editorProps: {
       attributes: {
@@ -153,100 +153,118 @@ export default function RichTextEditor({
           "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[400px] p-4",
       },
     },
-  })
+  });
 
   // 监听滚动，当工具栏滚出容器时固定到视口顶部
   useEffect(() => {
     const handleScroll = () => {
-      if (!containerRef.current || !toolbarRef.current) return
+      if (!containerRef.current || !toolbarRef.current) return;
 
-      const containerRect = containerRef.current.getBoundingClientRect()
-      const toolbarHeight = toolbarRef.current.offsetHeight
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const toolbarHeight = toolbarRef.current.offsetHeight;
 
       // 当容器顶部离开视口时，工具栏需要固定
       if (containerRect.top < -toolbarHeight) {
-        setToolbarSticky(true)
+        setToolbarSticky(true);
       } else {
-        setToolbarSticky(false)
+        setToolbarSticky(false);
       }
-    }
+    };
 
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // 初始化字数统计
   useEffect(() => {
     if (editor && content) {
-      const text = editor.getText()
-      setCharCount(text.replace(/\s/g, "").length)
+      const text = editor.getText();
+      setCharCount(text.replace(/\s/g, "").length);
     }
-  }, [editor, content])
+  }, [editor, content]);
 
   // 同步外部传入的内容变化（如 API 加载后的回填）
   useEffect(() => {
     if (editor && content && editor.getHTML() !== content) {
-      editor.commands.setContent(content)
+      editor.commands.setContent(content);
     }
-  }, [editor, content])
+  }, [editor, content]);
 
   /**
    * 打开链接对话框
    */
   const openLinkDialog = useCallback(() => {
-    if (!editor) return
-    setLinkDialogOpen(true)
-  }, [editor])
+    if (!editor) return;
+    setLinkDialogOpen(true);
+  }, [editor]);
 
   /**
    * 插入链接
    */
-  const handleInsertLink = useCallback((url: string, text?: string) => {
-    if (!editor) return
+  const handleInsertLink = useCallback(
+    (url: string, text?: string) => {
+      if (!editor) return;
 
-    // 如果有选中文本且有传入 text，先替换选中文本
-    if (text) {
-      editor.chain().focus().insertContent(text).run()
-    }
+      // 如果有选中文本且有传入 text，先替换选中文本
+      if (text) {
+        editor.chain().focus().insertContent(text).run();
+      }
 
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
-  }, [editor])
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange("link")
+        .setLink({ href: url })
+        .run();
+    },
+    [editor],
+  );
 
   /**
    * 移除链接
    */
   const unsetLink = useCallback(() => {
-    if (!editor) return
-    editor.chain().focus().unsetLink().run()
-  }, [editor])
+    if (!editor) return;
+    editor.chain().focus().unsetLink().run();
+  }, [editor]);
 
   /**
    * 打开图片对话框
    */
   const openImageDialog = useCallback(() => {
-    setImageDialogOpen(true)
-  }, [])
+    setImageDialogOpen(true);
+  }, []);
 
   /**
    * 插入图片
    */
-  const handleInsertImage = useCallback((src: string, alt?: string) => {
-    if (!editor) return
-    editor.chain().focus().setImage({ src, alt: alt ?? "" }).run()
-  }, [editor])
+  const handleInsertImage = useCallback(
+    (src: string, alt?: string) => {
+      if (!editor) return;
+      editor
+        .chain()
+        .focus()
+        .setImage({ src, alt: alt ?? "" })
+        .run();
+    },
+    [editor],
+  );
 
   /**
    * 插入分割线（使用 hr 标签）
    */
   const insertHorizontalRule = useCallback(() => {
-    if (!editor) return
-    editor.chain().focus().insertContent("<hr>").run()
-  }, [editor])
+    if (!editor) return;
+    editor.chain().focus().insertContent("<hr>").run();
+  }, [editor]);
 
-  if (!editor) return null
+  if (!editor) return null;
 
   return (
-    <div ref={containerRef} className={`rounded-lg border bg-background ${className}`}>
+    <div
+      ref={containerRef}
+      className={`rounded-lg border bg-background ${className}`}
+    >
       {/* 工具栏 - 滚动时固定到视口顶部 */}
       <div
         ref={toolbarRef}
@@ -276,21 +294,27 @@ export default function RichTextEditor({
 
         {/* 标题 */}
         <ToolbarButton
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
+          }
           isActive={editor.isActive("heading", { level: 1 })}
           title="一级标题 (#)"
         >
           <Heading1 className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
           isActive={editor.isActive("heading", { level: 2 })}
           title="二级标题 (##)"
         >
           <Heading2 className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 3 }).run()
+          }
           isActive={editor.isActive("heading", { level: 3 })}
           title="三级标题 (###)"
         >
@@ -407,7 +431,11 @@ export default function RichTextEditor({
         <ToolbarDivider />
 
         {/* 插入链接和图片 */}
-        <ToolbarButton onClick={openLinkDialog} isActive={editor.isActive("link")} title="插入链接">
+        <ToolbarButton
+          onClick={openLinkDialog}
+          isActive={editor.isActive("link")}
+          title="插入链接"
+        >
           <LinkIcon className="h-4 w-4" />
         </ToolbarButton>
         {editor.isActive("link") && (
@@ -444,5 +472,5 @@ export default function RichTextEditor({
         onInsert={handleInsertImage}
       />
     </div>
-  )
+  );
 }

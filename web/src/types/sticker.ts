@@ -1,7 +1,7 @@
 // 表情包类型定义
 
 // 表情包组类型
-export type StickerGroupType = 'custom' | 'emoji' | 'kaomoji';
+export type StickerGroupType = "custom" | "emoji" | "kaomoji";
 
 // 自定义表情包（图片）
 export interface Sticker {

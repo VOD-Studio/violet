@@ -1,4 +1,4 @@
-import { TextReveal } from "@/components/creative"
+import { TextReveal } from "@/components/creative";
 
 export function BioSection() {
   return (
@@ -18,5 +18,5 @@ export function BioSection() {
         </p>
       </div>
     </TextReveal>
-  )
+  );
 }

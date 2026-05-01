@@ -1,29 +1,40 @@
 // 标签选择组件
 
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { ApiTag } from "@/hooks/useAdmin"
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import type { ApiTag } from "@/hooks/useAdmin";
 
 interface TagSelectorProps {
   /** 可选标签列表 */
-  tags: ApiTag[]
+  tags: ApiTag[];
   /** 已选中的标签 ID */
-  selectedIds: number[]
+  selectedIds: number[];
   /** 标签选中状态变化回调 */
-  onChange: (tagIds: number[]) => void
+  onChange: (tagIds: number[]) => void;
   /** 是否加载中 */
-  loading?: boolean
+  loading?: boolean;
 }
 
 /**
  * 标签选择组件
  */
-export function TagSelector({ tags, selectedIds, onChange, loading }: TagSelectorProps) {
+export function TagSelector({
+  tags,
+  selectedIds,
+  onChange,
+  loading,
+}: TagSelectorProps) {
   function toggleTag(tagId: number) {
     if (selectedIds.includes(tagId)) {
-      onChange(selectedIds.filter((id) => id !== tagId))
+      onChange(selectedIds.filter((id) => id !== tagId));
     } else {
-      onChange([...selectedIds, tagId])
+      onChange([...selectedIds, tagId]);
     }
   }
 
@@ -55,5 +66,5 @@ export function TagSelector({ tags, selectedIds, onChange, loading }: TagSelecto
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -3,86 +3,94 @@
  * 支持表情包组的创建、编辑、删除，以及组内表情包的上传和管理
  */
 
-import { useState } from "react"
-import { useStickerGroups, useUpdateStickerGroup, useDeleteStickerGroup } from "@/hooks/useStickersAdmin"
-import type { StickerGroup } from "@/hooks/useStickersAdmin"
-import { Button } from "@/components/ui/button"
-import { EmptyState } from "@/components/shared/EmptyState"
-import { ErrorFallback } from "@/components/shared/ErrorFallback"
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
-import { GroupCardSkeleton } from "./GroupCardSkeleton"
-import { StickerGroupCard } from "./StickerGroupCard"
-import { StickerGroupFormDialog } from "./StickerGroupFormDialog"
-import { StickerManageDialog } from "./StickerManageDialog"
-import { Plus, Image as ImageIcon } from "lucide-react"
-import { toast } from "sonner"
+import { useState } from "react";
+import {
+  useStickerGroups,
+  useUpdateStickerGroup,
+  useDeleteStickerGroup,
+} from "@/hooks/useStickersAdmin";
+import type { StickerGroup } from "@/hooks/useStickersAdmin";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { GroupCardSkeleton } from "./GroupCardSkeleton";
+import { StickerGroupCard } from "./StickerGroupCard";
+import { StickerGroupFormDialog } from "./StickerGroupFormDialog";
+import { StickerManageDialog } from "./StickerManageDialog";
+import { Plus, Image as ImageIcon } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Stickers() {
-  const { data: groups, isLoading, error, refetch } = useStickerGroups()
-  const updateGroup = useUpdateStickerGroup()
-  const deleteGroup = useDeleteStickerGroup()
+  const { data: groups, isLoading, error, refetch } = useStickerGroups();
+  const updateGroup = useUpdateStickerGroup();
+  const deleteGroup = useDeleteStickerGroup();
 
-  const [groupFormOpen, setGroupFormOpen] = useState(false)
-  const [editingGroup, setEditingGroup] = useState<StickerGroup | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; name: string }>({
+  const [groupFormOpen, setGroupFormOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<StickerGroup | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    id: string;
+    name: string;
+  }>({
     open: false,
     id: "",
     name: "",
-  })
-  const [stickersOpen, setStickersOpen] = useState(false)
-  const [activeGroupId, setActiveGroupId] = useState<string>("")
-  const [togglingGroupId, setTogglingGroupId] = useState<string | null>(null)
+  });
+  const [stickersOpen, setStickersOpen] = useState(false);
+  const [activeGroupId, setActiveGroupId] = useState<string>("");
+  const [togglingGroupId, setTogglingGroupId] = useState<string | null>(null);
 
   function handleCreateGroup() {
-    setEditingGroup(null)
-    setGroupFormOpen(true)
+    setEditingGroup(null);
+    setGroupFormOpen(true);
   }
 
   function handleEditGroup(group: StickerGroup) {
-    setEditingGroup(group)
-    setGroupFormOpen(true)
+    setEditingGroup(group);
+    setGroupFormOpen(true);
   }
 
   function handleDeleteGroup(id: string, name: string) {
-    setDeleteConfirm({ open: true, id, name })
+    setDeleteConfirm({ open: true, id, name });
   }
 
   function confirmDeleteGroup() {
     deleteGroup.mutate(deleteConfirm.id, {
       onSuccess: () => {
-        toast.success("组已删除")
-        setDeleteConfirm({ open: false, id: "", name: "" })
+        toast.success("组已删除");
+        setDeleteConfirm({ open: false, id: "", name: "" });
       },
       onError: () => {
-        toast.error("删除失败")
-        setDeleteConfirm({ open: false, id: "", name: "" })
+        toast.error("删除失败");
+        setDeleteConfirm({ open: false, id: "", name: "" });
       },
-    })
+    });
   }
 
   function handleManageStickers(groupId: string) {
-    setActiveGroupId(groupId)
-    setStickersOpen(true)
+    setActiveGroupId(groupId);
+    setStickersOpen(true);
   }
 
   function handleToggleGroup(group: StickerGroup) {
-    setTogglingGroupId(group.id)
+    setTogglingGroupId(group.id);
     updateGroup.mutate(
       { id: group.id, data: { is_active: !group.is_active } },
       {
         onSuccess: () => {
-          toast.success(!group.is_active ? "已启用" : "已禁用")
-          setTogglingGroupId(null)
+          toast.success(!group.is_active ? "已启用" : "已禁用");
+          setTogglingGroupId(null);
         },
         onError: () => {
-          toast.error("操作失败")
-          setTogglingGroupId(null)
+          toast.error("操作失败");
+          setTogglingGroupId(null);
         },
-      }
-    )
+      },
+    );
   }
 
-  const isEmpty = !isLoading && !error && (!groups || groups.length === 0)
+  const isEmpty = !isLoading && !error && (!groups || groups.length === 0);
 
   return (
     <div className="space-y-6">
@@ -157,5 +165,5 @@ export default function Stickers() {
         groupId={activeGroupId}
       />
     </div>
-  )
+  );
 }

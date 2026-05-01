@@ -1,16 +1,16 @@
 // 邮箱验证表单组件
 // 包含 6 位验证码输入和重新发送验证码功能
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useNavigate } from "react-router"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { verifyEmailSchema, type VerifyEmailFormData } from "@/lib/validations"
-import { api } from "@/lib/api"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { verifyEmailSchema, type VerifyEmailFormData } from "@/lib/validations";
+import { api } from "@/lib/api";
 
 /** 重新发送冷却时间，单位为秒 */
-const RESEND_COOLDOWN = 60
+const RESEND_COOLDOWN = 60;
 
 /**
  * 邮箱验证表单组件
@@ -18,13 +18,13 @@ const RESEND_COOLDOWN = 60
  */
 export function VerifyEmailForm() {
   /** 路由导航 */
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   /** 服务端错误信息 */
-  const [serverError, setServerError] = useState<string | null>(null)
+  const [serverError, setServerError] = useState<string | null>(null);
   /** 是否正在验证 */
-  const [isVerifying, setIsVerifying] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false);
   /** 重新发送冷却倒计时 */
-  const [cooldown, setCooldown] = useState(0)
+  const [cooldown, setCooldown] = useState(0);
 
   /** 表单控制，使用 zod 验证 */
   const {
@@ -33,7 +33,7 @@ export function VerifyEmailForm() {
     formState: { errors },
   } = useForm<VerifyEmailFormData>({
     resolver: zodResolver(verifyEmailSchema),
-  })
+  });
 
   /**
    * 表单提交处理
@@ -41,43 +41,43 @@ export function VerifyEmailForm() {
    */
   const onSubmit = async (data: VerifyEmailFormData) => {
     try {
-      setServerError(null)
-      setIsVerifying(true)
-      await api.post("/auth/verify-email", { code: data.code })
-      navigate("/login")
+      setServerError(null);
+      setIsVerifying(true);
+      await api.post("/auth/verify-email", { code: data.code });
+      navigate("/login");
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : "验证失败，请重试")
+      setServerError(err instanceof Error ? err.message : "验证失败，请重试");
     } finally {
-      setIsVerifying(false)
+      setIsVerifying(false);
     }
-  }
+  };
 
   /**
    * 重新发送验证码
    * 发送后启动冷却倒计时，防止频繁请求
    */
   const handleResend = async () => {
-    if (cooldown > 0) return
+    if (cooldown > 0) return;
     try {
-      await api.post("/auth/resend-verification")
-      setCooldown(RESEND_COOLDOWN)
+      await api.post("/auth/resend-verification");
+      setCooldown(RESEND_COOLDOWN);
 
       /* 每秒递减冷却计时器 */
       const timer = setInterval(() => {
         setCooldown((prev) => {
           if (prev <= 1) {
-            clearInterval(timer)
-            return 0
+            clearInterval(timer);
+            return 0;
           }
-          return prev - 1
-        })
-      }, 1000)
+          return prev - 1;
+        });
+      }, 1000);
     } catch (err) {
       setServerError(
         err instanceof Error ? err.message : "发送验证码失败，请重试",
-      )
+      );
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -128,5 +128,5 @@ export function VerifyEmailForm() {
         </Button>
       </div>
     </form>
-  )
+  );
 }

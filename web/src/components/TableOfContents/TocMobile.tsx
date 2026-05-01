@@ -47,7 +47,7 @@ export function TocMobile({
           "h-10 pl-3 pr-4 rounded-full shadow-lg",
           "bg-card/90 backdrop-blur-md border border-border/60",
           "text-sm text-muted-foreground hover:text-foreground",
-          "transition-colors duration-150 select-none"
+          "transition-colors duration-150 select-none",
         )}
       >
         <AlignLeft className="h-4 w-4 shrink-0 text-primary" />
@@ -128,7 +128,7 @@ export function TocMobile({
                             "py-2.5 px-3 rounded-xl transition-colors duration-100",
                             isActive
                               ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
                           )}
                           style={{ paddingLeft: 12 + indent }}
                         >
@@ -138,7 +138,7 @@ export function TocMobile({
                           <span
                             className={cn(
                               "text-[13px] leading-snug",
-                              isActive ? "font-medium" : "font-normal"
+                              isActive ? "font-medium" : "font-normal",
                             )}
                           >
                             {h.text}

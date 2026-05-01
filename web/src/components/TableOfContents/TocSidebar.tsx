@@ -59,7 +59,7 @@ export function TocSidebar({
                   // flex + items-start：左列（圆点+线）和右列（文字）各自从顶部对齐
                   className={cn(
                     "group flex items-start gap-3 w-full text-left",
-                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50"
+                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50",
                   )}
                   style={{ paddingLeft: indent }}
                 >
@@ -75,7 +75,7 @@ export function TocSidebar({
                           ? "bg-primary border-primary scale-125"
                           : isPassed
                             ? "bg-primary/50 border-primary/60"
-                            : "bg-background border-border group-hover:border-primary/60"
+                            : "bg-background border-border group-hover:border-primary/60",
                       )}
                     />
                     {/* 连接线：只在非最后一项显示，flex-1 填满到下一行圆点顶部 */}
@@ -84,7 +84,7 @@ export function TocSidebar({
                         aria-hidden
                         className={cn(
                           "w-px mt-1 flex-1 min-h-3 rounded-full transition-colors duration-200",
-                          connectorPassed ? "bg-primary/50" : "bg-border/40"
+                          connectorPassed ? "bg-primary/50" : "bg-border/40",
                         )}
                       />
                     )}
@@ -100,7 +100,7 @@ export function TocSidebar({
                         ? "text-primary font-semibold"
                         : isPassed
                           ? "text-muted-foreground/50"
-                          : "text-muted-foreground group-hover:text-foreground"
+                          : "text-muted-foreground group-hover:text-foreground",
                     )}
                   >
                     {h.text}

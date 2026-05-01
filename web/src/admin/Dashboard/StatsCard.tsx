@@ -1,23 +1,32 @@
 // StatsCard.tsx
 // 统计卡片组件
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatsCardProps {
-  title: string
-  value: number
-  icon: React.ReactNode
-  className?: string
-  valueClassName?: string
-  footer?: React.ReactNode
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  className?: string;
+  valueClassName?: string;
+  footer?: React.ReactNode;
 }
 
-export function StatsCard({ title, value, icon, className, valueClassName, footer }: StatsCardProps) {
+export function StatsCard({
+  title,
+  value,
+  icon,
+  className,
+  valueClassName,
+  footer,
+}: StatsCardProps) {
   return (
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
         {icon}
       </CardHeader>
       <CardContent>
@@ -27,7 +36,7 @@ export function StatsCard({ title, value, icon, className, valueClassName, foote
         {footer}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export function StatsCardSkeleton() {
@@ -41,5 +50,5 @@ export function StatsCardSkeleton() {
         <Skeleton className="h-8 w-16" />
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,13 +1,17 @@
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 
 interface PaginationProps {
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
-export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-  if (totalPages <= 1) return null
+export function Pagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: PaginationProps) {
+  if (totalPages <= 1) return null;
 
   return (
     <div className="mt-8 flex items-center justify-center gap-2">
@@ -40,5 +44,5 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
         {">"}
       </Button>
     </div>
-  )
+  );
 }

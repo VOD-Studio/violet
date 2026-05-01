@@ -4,18 +4,35 @@
  * 无 mock 数据，API 不存在时显示空状态
  */
 
-import { useState } from "react"
-import { useAdminUsers, useUpdateUserRole, useToggleUserStatus } from "@/hooks/useAdmin"
-import type { AdminUser } from "@/hooks/useAdmin"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { EmptyState } from "@/components/shared/EmptyState"
-import { ErrorFallback } from "@/components/shared/ErrorFallback"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
-import { Users as UsersIcon } from "lucide-react"
+import { useState } from "react";
+import {
+  useAdminUsers,
+  useUpdateUserRole,
+  useToggleUserStatus,
+} from "@/hooks/useAdmin";
+import type { AdminUser } from "@/hooks/useAdmin";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Users as UsersIcon } from "lucide-react";
 
 /**
  * 用户列表表格骨架屏
@@ -37,18 +54,30 @@ function UsersTableSkeleton() {
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
-              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-32" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-16" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-12" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-16" />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }
 
 /**
@@ -56,43 +85,55 @@ function UsersTableSkeleton() {
  * 从 API 获取用户数据，提供角色修改和状态切换功能
  */
 export default function Users() {
-  const { data: users, isLoading, error, refetch } = useAdminUsers()
-  const updateRole = useUpdateUserRole()
-  const toggleStatus = useToggleUserStatus()
+  const { data: users, isLoading, error, refetch } = useAdminUsers();
+  const updateRole = useUpdateUserRole();
+  const toggleStatus = useToggleUserStatus();
 
   /** 确认弹窗状态 */
   const [confirmState, setConfirmState] = useState<{
-    open: boolean
-    userId: string
-    userName: string
-    newStatus: boolean
-  }>({ open: false, userId: "", userName: "", newStatus: false })
+    open: boolean;
+    userId: string;
+    userName: string;
+    newStatus: boolean;
+  }>({ open: false, userId: "", userName: "", newStatus: false });
 
   /**
    * 修改用户角色
    */
   function changeRole(userId: string, newRole: string) {
-    updateRole.mutate({ id: userId, role: newRole })
+    updateRole.mutate({ id: userId, role: newRole });
   }
 
   /**
    * 弹出确认弹窗
    */
-  function handleToggleStatus(userId: string, userName: string, currentActive: boolean) {
+  function handleToggleStatus(
+    userId: string,
+    userName: string,
+    currentActive: boolean,
+  ) {
     setConfirmState({
       open: true,
       userId,
       userName,
       newStatus: !currentActive,
-    })
+    });
   }
 
   /**
    * 确认切换状态
    */
   function confirmToggleStatus() {
-    toggleStatus.mutate({ id: confirmState.userId, is_active: confirmState.newStatus })
-    setConfirmState({ open: false, userId: "", userName: "", newStatus: false })
+    toggleStatus.mutate({
+      id: confirmState.userId,
+      is_active: confirmState.newStatus,
+    });
+    setConfirmState({
+      open: false,
+      userId: "",
+      userName: "",
+      newStatus: false,
+    });
   }
 
   return (
@@ -107,9 +148,7 @@ export default function Users() {
       {isLoading && <UsersTableSkeleton />}
 
       {/* 错误状态 */}
-      {error && (
-        <ErrorFallback error={error.message} onRetry={refetch} />
-      )}
+      {error && <ErrorFallback error={error.message} onRetry={refetch} />}
 
       {/* 空数据状态 */}
       {!isLoading && !error && (!users || users.length === 0) && (
@@ -138,11 +177,15 @@ export default function Users() {
               {users.map((user: AdminUser) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.username}</TableCell>
-                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {user.email}
+                  </TableCell>
                   <TableCell>
                     <Select
                       value={user.role}
-                      onValueChange={(value) => value && changeRole(user.id, value)}
+                      onValueChange={(value) =>
+                        value && changeRole(user.id, value)
+                      }
                     >
                       <SelectTrigger className="w-24">
                         <SelectValue />
@@ -165,7 +208,13 @@ export default function Users() {
                     <Button
                       variant={user.is_active ? "destructive" : "default"}
                       size="sm"
-                      onClick={() => handleToggleStatus(user.id, user.username, user.is_active)}
+                      onClick={() =>
+                        handleToggleStatus(
+                          user.id,
+                          user.username,
+                          user.is_active,
+                        )
+                      }
                     >
                       {user.is_active ? "禁用" : "启用"}
                     </Button>
@@ -180,7 +229,14 @@ export default function Users() {
       {/* 确认切换状态弹窗 */}
       <ConfirmDialog
         open={confirmState.open}
-        onClose={() => setConfirmState({ open: false, userId: "", userName: "", newStatus: false })}
+        onClose={() =>
+          setConfirmState({
+            open: false,
+            userId: "",
+            userName: "",
+            newStatus: false,
+          })
+        }
         onConfirm={confirmToggleStatus}
         title={confirmState.newStatus ? "启用用户" : "禁用用户"}
         description={
@@ -192,5 +248,5 @@ export default function Users() {
         destructive={!confirmState.newStatus}
       />
     </div>
-  )
+  );
 }

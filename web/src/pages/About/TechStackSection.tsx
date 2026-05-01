@@ -1,8 +1,8 @@
-import { ScrollReveal } from "@/components/creative"
+import { ScrollReveal } from "@/components/creative";
 
 interface TechCategory {
-  name: string
-  items: string[]
+  name: string;
+  items: string[];
 }
 
 const TECH_STACK: TechCategory[] = [
@@ -26,7 +26,7 @@ const TECH_STACK: TechCategory[] = [
     name: "工具",
     items: ["Git", "VS Code", "Figma", "Vim"],
   },
-]
+];
 
 export function TechStackSection() {
   return (
@@ -58,5 +58,5 @@ export function TechStackSection() {
         ))}
       </div>
     </ScrollReveal>
-  )
+  );
 }

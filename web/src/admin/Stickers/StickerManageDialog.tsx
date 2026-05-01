@@ -1,23 +1,28 @@
-import { useState } from "react"
-import { useStickers, useCreateSticker, useUpdateSticker, useDeleteSticker } from "@/hooks/useStickersAdmin"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import {
+  useStickers,
+  useCreateSticker,
+  useUpdateSticker,
+  useDeleteSticker,
+} from "@/hooks/useStickersAdmin";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog"
-import StickerUploader from "@/components/admin/StickerUploader"
-import type { UploadResult } from "@/components/upload/ChunkedUpload"
-import { getUploadUrl } from "@/lib/api"
-import { Trash2 } from "lucide-react"
-import { toast } from "sonner"
+} from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import StickerUploader from "@/components/admin/StickerUploader";
+import type { UploadResult } from "@/components/upload/ChunkedUpload";
+import { getUploadUrl } from "@/lib/api";
+import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface StickerManageDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  groupId: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  groupId: string;
 }
 
 export function StickerManageDialog({
@@ -25,15 +30,18 @@ export function StickerManageDialog({
   onOpenChange,
   groupId,
 }: StickerManageDialogProps) {
-  const { data: stickers } = useStickers(groupId)
-  const createSticker = useCreateSticker()
-  const updateSticker = useUpdateSticker()
-  const deleteSticker = useDeleteSticker()
+  const { data: stickers } = useStickers(groupId);
+  const createSticker = useCreateSticker();
+  const updateSticker = useUpdateSticker();
+  const deleteSticker = useDeleteSticker();
 
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    id: string;
+  }>({
     open: false,
     id: "",
-  })
+  });
 
   function handleUpload(result: UploadResult) {
     createSticker.mutate(
@@ -41,8 +49,8 @@ export function StickerManageDialog({
       {
         onSuccess: () => toast.success("表情包已添加"),
         onError: () => toast.error("添加失败"),
-      }
-    )
+      },
+    );
   }
 
   function handleToggle(stickerId: string, currentEnabled: boolean) {
@@ -51,25 +59,25 @@ export function StickerManageDialog({
       {
         onSuccess: () => toast.success(!currentEnabled ? "已启用" : "已禁用"),
         onError: () => toast.error("操作失败"),
-      }
-    )
+      },
+    );
   }
 
   function handleDelete(id: string) {
-    setDeleteConfirm({ open: true, id })
+    setDeleteConfirm({ open: true, id });
   }
 
   function confirmDelete() {
     deleteSticker.mutate(deleteConfirm.id, {
       onSuccess: () => {
-        toast.success("表情包已删除")
-        setDeleteConfirm({ open: false, id: "" })
+        toast.success("表情包已删除");
+        setDeleteConfirm({ open: false, id: "" });
       },
       onError: () => {
-        toast.error("删除失败")
-        setDeleteConfirm({ open: false, id: "" })
+        toast.error("删除失败");
+        setDeleteConfirm({ open: false, id: "" });
       },
-    })
+    });
   }
 
   return (
@@ -100,7 +108,9 @@ export function StickerManageDialog({
                       <Button
                         variant="ghost"
                         size="icon-xs"
-                        onClick={() => handleToggle(sticker.id, sticker.is_active)}
+                        onClick={() =>
+                          handleToggle(sticker.id, sticker.is_active)
+                        }
                         className="bg-background/80"
                       >
                         {sticker.is_active ? (
@@ -142,5 +152,5 @@ export function StickerManageDialog({
         isLoading={deleteSticker.isPending}
       />
     </>
-  )
+  );
 }

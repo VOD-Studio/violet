@@ -11,46 +11,56 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DailyView {
-  date: string
-  count: number
+  date: string;
+  count: number;
 }
 
 interface MonthlyView {
-  month: string
-  count: number
+  month: string;
+  count: number;
 }
 
 interface ViewTrendsChartProps {
-  daily: DailyView[]
-  monthly: MonthlyView[]
-  isLoading: boolean
+  daily: DailyView[];
+  monthly: MonthlyView[];
+  isLoading: boolean;
 }
 
 function formatDayLabel(dateStr: string): string {
-  const parts = dateStr.split("-")
-  return `${Number.parseInt(parts[1])}/${Number.parseInt(parts[2])}`
+  const parts = dateStr.split("-");
+  return `${Number.parseInt(parts[1])}/${Number.parseInt(parts[2])}`;
 }
 
 function formatMonthLabel(monthStr: string): string {
-  const parts = monthStr.split("-")
-  return `${parts[0]}/${Number.parseInt(parts[1])}`
+  const parts = monthStr.split("-");
+  return `${parts[0]}/${Number.parseInt(parts[1])}`;
 }
 
-export function ViewTrendsChart({ daily, monthly, isLoading }: ViewTrendsChartProps) {
+export function ViewTrendsChart({
+  daily,
+  monthly,
+  isLoading,
+}: ViewTrendsChartProps) {
   const dailyData = daily.map((item) => ({
     date: formatDayLabel(item.date),
     views: item.count,
-  }))
+  }));
 
   const monthlyData = monthly.map((item) => ({
     month: formatMonthLabel(item.month),
     views: item.count,
-  }))
+  }));
 
   if (isLoading) {
     return (
@@ -58,7 +68,7 @@ export function ViewTrendsChart({ daily, monthly, isLoading }: ViewTrendsChartPr
         <ChartSkeleton />
         <ChartSkeleton />
       </div>
-    )
+    );
   }
 
   return (
@@ -100,7 +110,10 @@ export function ViewTrendsChart({ daily, monthly, isLoading }: ViewTrendsChartPr
                     fontSize: "13px",
                   }}
                   labelFormatter={(label) => `日期: ${label}`}
-                  formatter={(value) => [Number(value).toLocaleString(), "浏览量"]}
+                  formatter={(value) => [
+                    Number(value).toLocaleString(),
+                    "浏览量",
+                  ]}
                 />
                 <Line
                   type="monotone"
@@ -153,7 +166,10 @@ export function ViewTrendsChart({ daily, monthly, isLoading }: ViewTrendsChartPr
                     fontSize: "13px",
                   }}
                   labelFormatter={(label) => `月份: ${label}`}
-                  formatter={(value) => [Number(value).toLocaleString(), "浏览量"]}
+                  formatter={(value) => [
+                    Number(value).toLocaleString(),
+                    "浏览量",
+                  ]}
                 />
                 <Bar
                   dataKey="views"
@@ -166,7 +182,7 @@ export function ViewTrendsChart({ daily, monthly, isLoading }: ViewTrendsChartPr
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 export function ChartSkeleton() {
@@ -180,5 +196,5 @@ export function ChartSkeleton() {
         <Skeleton className="h-[300px]" />
       </CardContent>
     </Card>
-  )
+  );
 }

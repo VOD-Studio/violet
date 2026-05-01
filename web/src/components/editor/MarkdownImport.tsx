@@ -99,7 +99,7 @@ export default function MarkdownImport({
         reader.readAsText(file);
       }
     },
-    [onImport]
+    [onImport],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

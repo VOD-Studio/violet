@@ -1,7 +1,7 @@
 // 骨架屏组件
 // 用于加载态占位显示
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 /**
  * 骨架屏组件
@@ -16,7 +16,7 @@ function Skeleton({
       className={cn("animate-pulse rounded-md bg-muted", className)}
       {...props}
     />
-  )
+  );
 }
 
-export { Skeleton }
+export { Skeleton };

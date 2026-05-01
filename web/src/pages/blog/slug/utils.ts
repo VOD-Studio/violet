@@ -1,13 +1,16 @@
 // 文章内容解析工具
 // 解析 HTML 内容中的沙盒标记，支持嵌入 CodeSandbox
 
-import type { SandboxFile } from "@/components/blog/CodeSandbox"
+import type { SandboxFile } from "@/components/blog/CodeSandbox";
 
 /** 沙盒标记正则，匹配 ::sandbox[id]:: 或 ::sandbox[id]{description}:: */
-export const SANDBOX_MARKER = /::sandbox\[([^\]]+)\](?:\{([^}]*)\})?::/g
+export const SANDBOX_MARKER = /::sandbox\[([^\]]+)\](?:\{([^}]*)\})?::/g;
 
 /** 沙盒预设数据，实际项目中可从 API 获取 */
-export const SANDBOX_PRESETS: Record<string, { files: SandboxFile[]; description?: string }> = {
+export const SANDBOX_PRESETS: Record<
+  string,
+  { files: SandboxFile[]; description?: string }
+> = {
   "react-counter": {
     files: [
       {
@@ -62,27 +65,27 @@ export default function App() {
     ],
     description: "演示 useEffect 的清理函数用法",
   },
-}
+};
 
 /** 解析后的内容片段类型 */
 export type ContentPart =
   | { type: "html"; content: string }
-  | { type: "sandbox"; id: string; description?: string }
+  | { type: "sandbox"; id: string; description?: string };
 
 /**
  * 解析文章内容，在沙盒标记位置插入 CodeSandbox 组件
  * @param html 原始 HTML 内容
  */
 export function parseContentWithSandboxes(html: string): ContentPart[] {
-  if (!html) return [{ type: "html", content: "" }]
+  if (!html) return [{ type: "html", content: "" }];
 
-  const parts: ContentPart[] = []
-  let lastIndex = 0
+  const parts: ContentPart[] = [];
+  let lastIndex = 0;
 
   for (const match of html.matchAll(SANDBOX_MARKER)) {
     /* 添加标记之前的 HTML 内容 */
     if (match.index > lastIndex) {
-      parts.push({ type: "html", content: html.slice(lastIndex, match.index) })
+      parts.push({ type: "html", content: html.slice(lastIndex, match.index) });
     }
 
     /* 添加沙盒标记 */
@@ -90,15 +93,15 @@ export function parseContentWithSandboxes(html: string): ContentPart[] {
       type: "sandbox",
       id: match[1],
       description: match[2] || undefined,
-    })
+    });
 
-    lastIndex = match.index + match[0].length
+    lastIndex = match.index + match[0].length;
   }
 
   /* 添加剩余的 HTML 内容 */
   if (lastIndex < html.length) {
-    parts.push({ type: "html", content: html.slice(lastIndex) })
+    parts.push({ type: "html", content: html.slice(lastIndex) });
   }
 
-  return parts.length > 0 ? parts : [{ type: "html", content: html }]
+  return parts.length > 0 ? parts : [{ type: "html", content: html }];
 }

@@ -2,21 +2,21 @@
 // 展示用户的置顶仓库卡片，包含仓库名、描述、语言、star 和 fork 数
 // 加载时显示骨架屏
 
-import { motion } from "motion/react"
-import { Star, GitFork, ExternalLink } from "lucide-react"
-import { useGitHubRepos } from "@/hooks/useGitHub"
-import type { RepoData } from "@/lib/github"
+import { motion } from "motion/react";
+import { Star, GitFork, ExternalLink } from "lucide-react";
+import { useGitHubRepos } from "@/hooks/useGitHub";
+import type { RepoData } from "@/lib/github";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 
 interface PinnedReposProps {
   /** GitHub 用户名 */
-  username: string
+  username: string;
 }
 
 /**
@@ -39,7 +39,7 @@ function RepoCardSkeleton() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 /**
@@ -106,7 +106,7 @@ function RepoCard({ repo }: { repo: RepoData }) {
         </CardContent>
       </Card>
     </motion.a>
-  )
+  );
 }
 
 /**
@@ -114,7 +114,7 @@ function RepoCard({ repo }: { repo: RepoData }) {
  * 展示用户的置顶仓库列表，支持加载骨架屏和错误状态
  */
 export function PinnedRepos({ username }: PinnedReposProps) {
-  const { data: repos, isLoading, error } = useGitHubRepos(username)
+  const { data: repos, isLoading, error } = useGitHubRepos(username);
 
   if (isLoading) {
     return (
@@ -126,7 +126,7 @@ export function PinnedRepos({ username }: PinnedReposProps) {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -137,10 +137,10 @@ export function PinnedRepos({ username }: PinnedReposProps) {
           无法加载仓库数据: {String(error)}
         </p>
       </div>
-    )
+    );
   }
 
-  if (!repos || repos.length === 0) return null
+  if (!repos || repos.length === 0) return null;
 
   return (
     <div>
@@ -151,5 +151,5 @@ export function PinnedRepos({ username }: PinnedReposProps) {
         ))}
       </div>
     </div>
-  )
+  );
 }

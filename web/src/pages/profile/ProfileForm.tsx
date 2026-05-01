@@ -1,23 +1,26 @@
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { useAuth, useUpdateProfile } from "@/hooks/useAuth"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useAuth, useUpdateProfile } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 const profileSchema = z.object({
-  username: z.string().min(2, "用户名至少 2 个字符").max(50, "用户名最多 50 个字符"),
+  username: z
+    .string()
+    .min(2, "用户名至少 2 个字符")
+    .max(50, "用户名最多 50 个字符"),
   bio: z.string().max(200, "简介最多 200 个字符").optional(),
-})
+});
 
-type ProfileFormData = z.infer<typeof profileSchema>
+type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function ProfileForm() {
-  const { user } = useAuth()
-  const updateProfile = useUpdateProfile()
+  const { user } = useAuth();
+  const updateProfile = useUpdateProfile();
 
   const {
     register,
@@ -29,7 +32,7 @@ export default function ProfileForm() {
       username: user?.username ?? "",
       bio: user?.bio ?? "",
     },
-  })
+  });
 
   async function onSubmit(data: ProfileFormData) {
     try {
@@ -37,10 +40,10 @@ export default function ProfileForm() {
         username: data.username,
         bio: data.bio ?? "",
         avatar_url: user?.avatar_url ?? "",
-      })
-      toast.success("资料更新成功")
+      });
+      toast.success("资料更新成功");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "更新失败")
+      toast.error(err instanceof Error ? err.message : "更新失败");
     }
   }
 
@@ -75,9 +78,11 @@ export default function ProfileForm() {
       </div>
 
       <Button type="submit" disabled={!isDirty || updateProfile.isPending}>
-        {updateProfile.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+        {updateProfile.isPending && (
+          <Loader2 className="mr-1.5 size-4 animate-spin" />
+        )}
         保存修改
       </Button>
     </form>
-  )
+  );
 }

@@ -1,13 +1,13 @@
 // 注册表单组件
 // 包含用户名、邮箱、密码、确认密码输入，使用 react-hook-form + zod 验证
 
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Link, useNavigate } from "react-router"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { registerSchema, type RegisterFormData } from "@/lib/validations"
-import { useAuth } from "@/hooks/useAuth"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useNavigate } from "react-router";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { registerSchema, type RegisterFormData } from "@/lib/validations";
+import { useAuth } from "@/hooks/useAuth";
 
 /**
  * 注册表单组件
@@ -15,11 +15,11 @@ import { useAuth } from "@/hooks/useAuth"
  */
 export function RegisterForm() {
   /** 认证 hook，提供注册功能 */
-  const { register: registerUser, isLoading } = useAuth()
+  const { register: registerUser, isLoading } = useAuth();
   /** 路由导航 */
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   /** 服务端错误信息 */
-  const [serverError, setServerError] = useState<string | null>(null)
+  const [serverError, setServerError] = useState<string | null>(null);
 
   /** 表单控制，使用 zod 验证 */
   const {
@@ -28,7 +28,7 @@ export function RegisterForm() {
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-  })
+  });
 
   /**
    * 表单提交处理
@@ -36,13 +36,13 @@ export function RegisterForm() {
    */
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      setServerError(null)
-      await registerUser(data)
-      navigate("/verify-email")
+      setServerError(null);
+      await registerUser(data);
+      navigate("/verify-email");
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : "注册失败，请重试")
+      setServerError(err instanceof Error ? err.message : "注册失败，请重试");
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -136,5 +136,5 @@ export function RegisterForm() {
         </Link>
       </p>
     </form>
-  )
+  );
 }

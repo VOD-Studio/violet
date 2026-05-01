@@ -1,23 +1,29 @@
-import { useAuth } from "@/hooks/useAuth"
-import { Navigate } from "react-router"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import AvatarUpload from "./AvatarUpload"
-import ProfileForm from "./ProfileForm"
-import PasswordForm from "./PasswordForm"
+import { useAuth } from "@/hooks/useAuth";
+import { Navigate } from "react-router";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import AvatarUpload from "./AvatarUpload";
+import ProfileForm from "./ProfileForm";
+import PasswordForm from "./PasswordForm";
 
 export default function Profile() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
-    )
+    );
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -57,5 +63,5 @@ export default function Profile() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

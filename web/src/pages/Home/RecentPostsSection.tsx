@@ -1,14 +1,14 @@
-import { motion } from "motion/react"
-import { ScrollReveal, MagneticButton } from "@/components/creative"
-import { usePosts } from "@/hooks/usePosts"
-import { PostCard } from "@/components/blog/PostCard"
-import { Link } from "react-router"
-import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
+import { motion } from "motion/react";
+import { ScrollReveal, MagneticButton } from "@/components/creative";
+import { usePosts } from "@/hooks/usePosts";
+import { PostCard } from "@/components/blog/PostCard";
+import { Link } from "react-router";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 export function RecentPostsSection() {
-  const { data, isLoading, error } = usePosts({ page: 1, limit: 3 })
-  const posts = data?.posts ?? []
+  const { data, isLoading, error } = usePosts({ page: 1, limit: 3 });
+  const posts = data?.posts ?? [];
 
   return (
     <section className="container mx-auto px-4 pb-24">
@@ -41,11 +41,7 @@ export function RecentPostsSection() {
       {!isLoading && !error && (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post, index) => (
-            <ScrollReveal
-              key={post.id}
-              animation="fadeUp"
-              delay={index * 0.1}
-            >
+            <ScrollReveal key={post.id} animation="fadeUp" delay={index * 0.1}>
               <PostCard post={post} delay={0} />
             </ScrollReveal>
           ))}
@@ -53,9 +49,7 @@ export function RecentPostsSection() {
       )}
 
       {!isLoading && !error && posts.length === 0 && (
-        <div className="py-12 text-center text-muted-foreground">
-          暂无文章
-        </div>
+        <div className="py-12 text-center text-muted-foreground">暂无文章</div>
       )}
 
       <div className="mt-8 text-center">
@@ -69,5 +63,5 @@ export function RecentPostsSection() {
         </MagneticButton>
       </div>
     </section>
-  )
+  );
 }

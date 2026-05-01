@@ -15,7 +15,7 @@ interface ArticleContentProps {
  */
 function addHeadingIds(
   html: string,
-  startIndex: number
+  startIndex: number,
 ): { html: string; count: number } {
   let count = 0;
   const result = html.replace(/<h([2-4])([^>]*)>/gi, (match, level, attrs) => {
@@ -41,7 +41,7 @@ export function ArticleContent({ html }: ArticleContentProps) {
         if (part.type === "html") {
           const { html: htmlWithIds, count } = addHeadingIds(
             part.content,
-            acc.index
+            acc.index,
           );
           acc.parts.push({ ...part, content: htmlWithIds });
           acc.index += count;
@@ -50,7 +50,7 @@ export function ArticleContent({ html }: ArticleContentProps) {
         }
         return acc;
       },
-      { parts: [] as typeof parsed, index: 0 }
+      { parts: [] as typeof parsed, index: 0 },
     );
 
     return parts;

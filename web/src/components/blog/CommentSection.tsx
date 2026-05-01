@@ -4,28 +4,28 @@
 // 添加固定底部快捷发表按钮，避免长文章滚动问题
 // 已登录用户自动填充用户名和邮箱
 
-import { useState, useEffect, useRef } from "react"
-import { useComments, useSubmitComment } from "@/hooks/useComments"
-import { useAuthStore } from "@/store"
-import { CommentItem } from "./CommentItem"
-import { StickerPickerButton } from "@/components/comment/StickerPicker"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
+import { useState, useEffect, useRef } from "react";
+import { useComments, useSubmitComment } from "@/hooks/useComments";
+import { useAuthStore } from "@/store";
+import { CommentItem } from "./CommentItem";
+import { StickerPickerButton } from "@/components/comment/StickerPicker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog"
-import { MessageSquare } from "lucide-react"
-import type { Comment } from "@/hooks/useComments"
+} from "@/components/ui/dialog";
+import { MessageSquare } from "lucide-react";
+import type { Comment } from "@/hooks/useComments";
 
 interface CommentSectionProps {
   /** 文章 ID */
-  postId: string
+  postId: string;
 }
 
 /**
@@ -33,58 +33,58 @@ interface CommentSectionProps {
  * 包含评论列表展示和评论提交表单
  */
 export function CommentSection({ postId }: CommentSectionProps) {
-  const { data: comments, isLoading } = useComments(postId)
-  const submitMutation = useSubmitComment(postId)
-  const sectionRef = useRef<HTMLElement>(null)
-  const { user } = useAuthStore()
+  const { data: comments, isLoading } = useComments(postId);
+  const submitMutation = useSubmitComment(postId);
+  const sectionRef = useRef<HTMLElement>(null);
+  const { user } = useAuthStore();
 
   /* 表单状态 */
-  const [authorName, setAuthorName] = useState("")
-  const [authorEmail, setAuthorEmail] = useState("")
-  const [content, setContent] = useState("")
-  const [showDialog, setShowDialog] = useState(false)
-  const [showQuickButton, setShowQuickButton] = useState(false)
+  const [authorName, setAuthorName] = useState("");
+  const [authorEmail, setAuthorEmail] = useState("");
+  const [content, setContent] = useState("");
+  const [showDialog, setShowDialog] = useState(false);
+  const [showQuickButton, setShowQuickButton] = useState(false);
 
   // 已登录用户自动填充用户名和邮箱
   useEffect(() => {
     if (user) {
-      setAuthorName(user.username || "")
-      setAuthorEmail(user.email || "")
+      setAuthorName(user.username || "");
+      setAuthorEmail(user.email || "");
     }
-  }, [user])
+  }, [user]);
 
   // 监听滚动，当评论区还没进入视口时显示快捷按钮
   useEffect(() => {
     const handleScroll = () => {
-      if (!sectionRef.current) return
-      const rect = sectionRef.current.getBoundingClientRect()
+      if (!sectionRef.current) return;
+      const rect = sectionRef.current.getBoundingClientRect();
       // 评论区顶部在视口下方时显示快捷按钮（用户还没滚动到评论区）
       // 使用更合理的阈值：评论区距离视口底部还有一定距离时就显示
-      setShowQuickButton(rect.top > window.innerHeight + 200)
-    }
+      setShowQuickButton(rect.top > window.innerHeight + 200);
+    };
 
     // 初始检查
-    handleScroll()
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   /**
    * 处理评论提交
    * 验证表单后调用 API 提交，成功后清空表单
    */
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!authorName.trim() || !content.trim()) return
+    e.preventDefault();
+    if (!authorName.trim() || !content.trim()) return;
 
     try {
       await submitMutation.mutateAsync({
         author_name: authorName.trim(),
         author_email: authorEmail.trim() || undefined,
         body: content.trim(),
-      })
-      setContent("")
-      setShowDialog(false)
+      });
+      setContent("");
+      setShowDialog(false);
     } catch {
       /* 错误由 mutation 处理 */
     }
@@ -94,7 +94,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
    * 打开快捷评论对话框
    */
   function openQuickComment() {
-    setShowDialog(true)
+    setShowDialog(true);
   }
 
   return (
@@ -127,7 +127,9 @@ export function CommentSection({ postId }: CommentSectionProps) {
           {user ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
               <span>以</span>
-              <span className="font-medium text-foreground">{user.username}</span>
+              <span className="font-medium text-foreground">
+                {user.username}
+              </span>
               <span>的身份发表评论</span>
             </div>
           ) : (
@@ -179,7 +181,9 @@ export function CommentSection({ postId }: CommentSectionProps) {
 
           {/* 提交错误提示 */}
           {submitMutation.error && (
-            <p className="text-sm text-destructive">{submitMutation.error.message}</p>
+            <p className="text-sm text-destructive">
+              {submitMutation.error.message}
+            </p>
           )}
 
           {/* 提交按钮 */}
@@ -214,7 +218,9 @@ export function CommentSection({ postId }: CommentSectionProps) {
             {user ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>以</span>
-                <span className="font-medium text-foreground">{user.username}</span>
+                <span className="font-medium text-foreground">
+                  {user.username}
+                </span>
                 <span>的身份发表评论</span>
               </div>
             ) : (
@@ -266,7 +272,9 @@ export function CommentSection({ postId }: CommentSectionProps) {
 
             {/* 提交错误提示 */}
             {submitMutation.error && (
-              <p className="text-sm text-destructive">{submitMutation.error.message}</p>
+              <p className="text-sm text-destructive">
+                {submitMutation.error.message}
+              </p>
             )}
           </form>
           <DialogFooter className="mt-4 pt-4 border-t">
@@ -275,7 +283,11 @@ export function CommentSection({ postId }: CommentSectionProps) {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={submitMutation.isPending || (!user && !authorName.trim()) || !content.trim()}
+              disabled={
+                submitMutation.isPending ||
+                (!user && !authorName.trim()) ||
+                !content.trim()
+              }
             >
               {submitMutation.isPending ? "提交中..." : "发表"}
             </Button>
@@ -283,5 +295,5 @@ export function CommentSection({ postId }: CommentSectionProps) {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
