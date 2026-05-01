@@ -273,7 +273,9 @@ func main() {
 
 	// 音乐嵌入路由
 	r.Route("/api/music", func(r chi.Router) {
-		r.Get("/embed", musicHandler.GetEmbedInfo) // 解析音乐链接返回嵌入信息
+		r.Get("/embed", musicHandler.GetEmbedInfo)   // 解析音乐链接返回嵌入信息
+		r.Get("/playlist", musicHandler.GetPlaylist) // 解析歌单链接返回歌单信息
+		r.Get("/song", musicHandler.GetSongDetail)   // 获取歌曲详情
 	})
 
 	// 项目展示路由
