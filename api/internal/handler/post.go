@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
@@ -472,7 +473,21 @@ func (h *PostHandler) IncrementView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.postService.IncrementViewCount(r.Context(), id); err != nil {
+	// 获取客户端 IP 和 UserAgent
+	ipAddress := r.Header.Get("X-Real-IP")
+	if ipAddress == "" {
+		ipAddress = r.Header.Get("X-Forwarded-For")
+		if ipAddress != "" {
+			// X-Forwarded-For 可能包含多个 IP，取第一个
+			parts := strings.Split(ipAddress, ",")
+			ipAddress = strings.TrimSpace(parts[0])
+		} else {
+			ipAddress = r.RemoteAddr
+		}
+	}
+	userAgent := r.Header.Get("User-Agent")
+
+	if err := h.postService.IncrementViewCount(r.Context(), id, ipAddress, userAgent); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "更新浏览次数失败")
 		return
 	}

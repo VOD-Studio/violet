@@ -364,9 +364,26 @@ func (s *PostService) UpdatePostStatus(ctx context.Context, id uuid.UUID, status
 	return post, nil
 }
 
-// IncrementViewCount 增加文章浏览次数
-func (s *PostService) IncrementViewCount(ctx context.Context, id uuid.UUID) error {
-	return s.queries.IncrementViewCount(ctx, id)
+// IncrementViewCount 增加文章浏览次数并记录浏览事件
+func (s *PostService) IncrementViewCount(ctx context.Context, id uuid.UUID, ipAddress, userAgent string) error {
+	// 增加计数器
+	if err := s.queries.IncrementViewCount(ctx, id); err != nil {
+		return err
+	}
+	// 记录浏览事件用于趋势统计
+	var ip sql.NullString
+	if ipAddress != "" {
+		ip = sql.NullString{String: ipAddress, Valid: true}
+	}
+	var ua sql.NullString
+	if userAgent != "" {
+		ua = sql.NullString{String: userAgent, Valid: true}
+	}
+	return s.queries.CreatePostView(ctx, generated.CreatePostViewParams{
+		PostID:    id,
+		IpAddress: ip,
+		UserAgent: ua,
+	})
 }
 
 // AssociateTag 关联文章和标签
