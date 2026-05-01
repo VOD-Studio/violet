@@ -27,6 +27,7 @@ import Dashboard from "@/admin/Dashboard"
 import Posts from "@/admin/Posts"
 import PostEdit from "@/admin/PostEdit"
 import Comments from "@/admin/Comments"
+import Tags from "@/admin/Tags"
 import Media from "@/admin/Media"
 import Users from "@/admin/Users"
 import Settings from "@/admin/Settings"
@@ -72,6 +73,7 @@ function App() {
             <Route path="posts/new" element={<PostEdit />} />
             <Route path="posts/:id/edit" element={<PostEdit />} />
             <Route path="comments" element={<Comments />} />
+            <Route path="tags" element={<Tags />} />
             <Route path="media" element={<Media />} />
             <Route path="users" element={<Users />} />
             <Route path="settings" element={<Settings />} />
