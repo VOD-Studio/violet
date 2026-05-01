@@ -49,6 +49,16 @@ func main() {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
 
+	// 验证 posts 表结构
+	var columns string
+	row := db.QueryRow(`
+		SELECT string_agg(column_name, ', ' ORDER BY ordinal_position)
+		FROM information_schema.columns WHERE table_name = 'posts'
+	`)
+	if err := row.Scan(&columns); err == nil {
+		log.Printf("posts 表字段: %s", columns)
+	}
+
 	// 初始化 Redis 客户端
 	redisOpt, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {

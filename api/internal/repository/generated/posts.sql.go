@@ -314,7 +314,7 @@ func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) (*Post, 
 
 const updatePostStatus = `-- name: UpdatePostStatus :one
 UPDATE posts
-SET status = $2, published_at = CASE WHEN $2 = 'published' AND published_at IS NULL THEN NOW() ELSE published_at END, updated_at = NOW()
+SET status = $2, published_at = CASE WHEN $2::text = 'published' AND published_at IS NULL THEN NOW() ELSE published_at END, updated_at = NOW()
 WHERE id = $1
 RETURNING id, title, slug, content_md, content_html, excerpt, cover_image, status, author_id, view_count, is_featured, seo_title, seo_description, published_at, created_at, updated_at, seo_keywords
 `

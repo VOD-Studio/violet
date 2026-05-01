@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -455,6 +456,7 @@ func (h *PostHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 
 	post, err := h.postService.UpdatePostStatus(r.Context(), id, req.Status)
 	if err != nil {
+		log.Printf("UpdatePostStatus 错误: %v, ID: %s, Status: %s", err, idStr, req.Status)
 		handlePostServiceError(w, err)
 		return
 	}
