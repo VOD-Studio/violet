@@ -462,6 +462,8 @@ interface MediaItem {
   size: number;
   /** 文件路径 */
   path: string;
+  /** 缩略图路径 */
+  thumbnail?: string;
   /** 图片宽度 */
   width?: number;
   /** 图片高度 */
@@ -524,6 +526,21 @@ export function useDeleteMedia() {
 
   return useMutation({
     mutationFn: (id: string) => api.del(`/media/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "media"] });
+    },
+  });
+}
+
+/**
+ * 批量删除媒体文件的 mutation
+ */
+export function useBatchDeleteMedia() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      api.post<{ message: string; count: number }>("/media/batch-delete", { ids }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "media"] });
     },

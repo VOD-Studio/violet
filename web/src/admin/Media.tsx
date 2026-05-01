@@ -3,12 +3,11 @@
  * 支持文件上传（图片、视频、音频、文档）、分类筛选、无限滚动、预览、删除
  */
 
-import { useState, useCallback } from "react"
-import { fetchMediaPage, useDeleteMedia } from "@/hooks/useAdmin"
+import { useState, useCallback, useEffect } from "react"
+import { fetchMediaPage, useDeleteMedia, useBatchDeleteMedia } from "@/hooks/useAdmin"
 import type { MediaItem } from "@/hooks/useAdmin"
 import { usePaginatedQuery, useInfiniteScroll } from "@/hooks/useInfiniteScroll"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { ErrorFallback } from "@/components/shared/ErrorFallback"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -26,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Segmented } from "@/components/ui/Segmented"
-import { Image as ImageIcon, Upload } from "lucide-react"
+import { Image as ImageIcon, Upload, CheckSquare, Trash2 } from "lucide-react"
 
 /** 分类选项 */
 const categoryOptions = [
@@ -44,15 +43,13 @@ function MediaGridSkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <Card key={i} className="overflow-hidden">
-          <CardContent className="p-0">
-            <Skeleton className="h-40 w-full" />
-            <div className="border-t p-3">
-              <Skeleton className="mb-1 h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-            </div>
-          </CardContent>
-        </Card>
+        <div key={i} className="rounded-lg border bg-card overflow-hidden">
+          <Skeleton className="h-40 w-full" />
+          <div className="border-t p-3">
+            <Skeleton className="mb-1 h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+        </div>
       ))}
     </div>
   )
@@ -74,10 +71,28 @@ function formatSize(bytes: number): string {
 export default function Media() {
   const [category, setCategory] = useState<string>("all")
   const deleteMutation = useDeleteMedia()
+  const batchDeleteMutation = useBatchDeleteMedia()
 
   const [showUploader, setShowUploader] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: "" })
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null)
+  const [previewReady, setPreviewReady] = useState(false)
+
+  // 批量选择状态
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false)
+
+  // 延迟渲染预览内容，等待 Dialog 动画完成
+  useEffect(() => {
+    if (previewItem) {
+      setPreviewReady(false)
+      const timer = setTimeout(() => setPreviewReady(true), 150)
+      return () => clearTimeout(timer)
+    } else {
+      setPreviewReady(false)
+    }
+  }, [previewItem])
 
   const currentMimeType = category === "all" ? undefined : category
 
@@ -123,6 +138,52 @@ export default function Media() {
     })
   }
 
+  // 切换选择模式
+  function toggleSelectMode() {
+    setSelectMode(!selectMode)
+    setSelectedIds(new Set())
+  }
+
+  // 选择/取消选择单个文件
+  function toggleSelect(id: string) {
+    const newSelected = new Set(selectedIds)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  // 全选当前页
+  function selectAll() {
+    const allIds = new Set(mediaItems.map((item) => item.id))
+    setSelectedIds(allIds)
+  }
+
+  // 清空选择
+  function clearSelection() {
+    setSelectedIds(new Set())
+  }
+
+  // 批量删除
+  function confirmBatchDelete() {
+    const ids = Array.from(selectedIds)
+    batchDeleteMutation.mutate(ids, {
+      onSuccess: (data) => {
+        toast.success(`已删除 ${data.count} 个文件`)
+        setBatchDeleteConfirm(false)
+        setSelectMode(false)
+        setSelectedIds(new Set())
+        reload()
+      },
+      onError: () => {
+        toast.error("批量删除失败，请重试")
+        setBatchDeleteConfirm(false)
+      },
+    })
+  }
+
   function handleUploadComplete(result: UploadResult) {
     toast.success(`「${result.name}」上传成功`)
     reload()
@@ -138,10 +199,42 @@ export default function Media() {
           <h1 className="text-2xl font-bold">媒体库</h1>
           <p className="text-muted-foreground">管理上传的图片、视频、音频和文档</p>
         </div>
-        <Button onClick={() => setShowUploader(true)}>
-          <Upload className="mr-1.5 size-4" />
-          上传文件
-        </Button>
+        <div className="flex items-center gap-2">
+          {selectMode ? (
+            <>
+              <Button variant="outline" size="sm" onClick={clearSelection}>
+                清空选择 ({selectedIds.size})
+              </Button>
+              <Button variant="outline" size="sm" onClick={selectAll}>
+                全选当前页
+              </Button>
+              {selectedIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBatchDeleteConfirm(true)}
+                >
+                  <Trash2 className="mr-1.5 size-4" />
+                  删除 ({selectedIds.size})
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={toggleSelectMode}>
+                取消
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={toggleSelectMode}>
+                <CheckSquare className="mr-1.5 size-4" />
+                批量选择
+              </Button>
+              <Button onClick={() => setShowUploader(true)}>
+                <Upload className="mr-1.5 size-4" />
+                上传文件
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 分类筛选（带滑块动画） */}
@@ -175,8 +268,11 @@ export default function Media() {
             <MediaCard
               key={item.id}
               item={item}
-              onDelete={handleDelete}
-              onPreview={setPreviewItem}
+              onDelete={selectMode ? undefined : handleDelete}
+              onPreview={selectMode ? undefined : setPreviewItem}
+              selectMode={selectMode}
+              selected={selectedIds.has(item.id)}
+              onSelect={toggleSelect}
             />
           ))}
         </div>
@@ -197,10 +293,11 @@ export default function Media() {
           <DialogHeader>
             <DialogTitle className="truncate">{previewItem?.original_name}</DialogTitle>
           </DialogHeader>
-          {previewItem && (
+          {previewItem && previewReady && (
             <div className="space-y-4">
               <FilePreview
                 url={getUploadUrl(previewItem.path)}
+                thumbnailUrl={previewItem.thumbnail ? getUploadUrl(previewItem.thumbnail) : undefined}
                 mimeType={previewItem.mime_type}
                 name={previewItem.original_name}
                 size={previewItem.size}
@@ -225,6 +322,11 @@ export default function Media() {
               </div>
             </div>
           )}
+          {previewItem && !previewReady && (
+            <div className="flex items-center justify-center py-20">
+              <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -245,6 +347,17 @@ export default function Media() {
         onConfirm={confirmDelete}
         title="删除文件"
         description="确定要删除这个文件吗？此操作不可撤销。"
+        confirmLabel="删除"
+        destructive
+      />
+
+      {/* 批量删除确认弹窗 */}
+      <ConfirmDialog
+        open={batchDeleteConfirm}
+        onClose={() => setBatchDeleteConfirm(false)}
+        onConfirm={confirmBatchDelete}
+        title="批量删除文件"
+        description={`确定要删除选中的 ${selectedIds.size} 个文件吗？此操作不可撤销。`}
         confirmLabel="删除"
         destructive
       />

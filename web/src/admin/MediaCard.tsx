@@ -19,16 +19,23 @@ import {
   File,
   Trash2,
   Play,
+  CheckCircle2,
 } from "lucide-react";
 
 /** MediaCard 组件属性 */
 interface MediaCardProps {
   /** 媒体文件数据 */
   item: MediaItem;
-  /** 删除回调 */
-  onDelete: (id: string) => void;
-  /** 预览回调 */
-  onPreview: (item: MediaItem) => void;
+  /** 删除回调（可选，选择模式下隐藏删除按钮） */
+  onDelete?: (id: string) => void;
+  /** 预览回调（可选） */
+  onPreview?: (item: MediaItem) => void;
+  /** 是否处于选择模式 */
+  selectMode?: boolean;
+  /** 是否被选中 */
+  selected?: boolean;
+  /** 选择回调 */
+  onSelect?: (id: string) => void;
 }
 
 /**
@@ -91,20 +98,26 @@ const FileIcon = (
 
 /**
  * 视频封面展示组件
- * 优先使用缩略图，无缩略图时使用 video preload="metadata" 显示首帧
+ * 优先使用 API 返回的缩略图，无缩略图时尝试本地命名规则，最后使用 video preload="metadata" 显示首帧
  */
 function VideoThumbnail({
   filename,
   mimeType,
   originalName,
+  thumbnail,
 }: {
   filename: string;
   mimeType: string;
   originalName: string;
+  thumbnail?: string;
 }) {
   const ext = filename.includes(".") ? filename.split(".").pop() : "";
   const baseName = ext ? filename.slice(0, -(ext.length + 1)) : filename;
-  const thumbUrl = getUploadUrl(`${baseName}_thumb.jpg`);
+
+  // 优先使用 API 返回的缩略图路径，否则尝试本地命名规则
+  const thumbUrl = thumbnail
+    ? getUploadUrl(thumbnail)
+    : getUploadUrl(`${baseName}_thumb.jpg`);
   const videoUrl = getUploadUrl(filename);
 
   return (
@@ -143,22 +156,47 @@ export default function MediaCard({
   item,
   onDelete,
   onPreview,
+  selectMode,
+  selected,
+  onSelect,
 }: MediaCardProps) {
   const fileUrl = getUploadUrl(item.path);
   const isImage = item.mime_type.startsWith("image/");
   const isVideo = item.mime_type.startsWith("video/");
 
+  const hasClickAction = (selectMode && onSelect) || (!selectMode && onPreview);
+
+  const handleClick = () => {
+    if (selectMode && onSelect) {
+      onSelect(item.id);
+    } else if (onPreview) {
+      onPreview(item);
+    }
+  };
+
   return (
-    <Card className="overflow-hidden">
+    <Card
+      className={`overflow-hidden transition-shadow group ${selected ? "ring-2 ring-primary shadow-md" : ""}`}
+    >
       <CardContent className="p-0">
         {/* 预览区域 */}
-        <button
-          onClick={() => onPreview(item)}
-          className="group relative flex h-40 w-full cursor-pointer items-center justify-center overflow-hidden bg-muted"
+        <div
+          onClick={hasClickAction ? handleClick : undefined}
+          className={`group relative flex h-40 w-full items-center justify-center overflow-hidden bg-muted ${hasClickAction ? "cursor-pointer" : ""}`}
         >
+          {/* 选择模式下显示选中状态图标 */}
+          {selectMode && (
+            <div className="absolute right-2 top-2 z-10">
+              <CheckCircle2
+                className={`size-5 transition-colors ${
+                  selected ? "text-primary fill-primary/20" : "text-muted-foreground/50"
+                }`}
+              />
+            </div>
+          )}
           {isImage ? (
             <img
-              src={fileUrl}
+              src={item.thumbnail ? getUploadUrl(item.thumbnail) : fileUrl}
               alt={item.original_name}
               className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
@@ -167,6 +205,7 @@ export default function MediaCard({
               filename={item.path}
               mimeType={item.mime_type}
               originalName={item.original_name}
+              thumbnail={item.thumbnail}
             />
           ) : (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -176,7 +215,7 @@ export default function MediaCard({
               </span>
             </div>
           )}
-        </button>
+        </div>
         {/* 文件信息 */}
         <div className="flex items-center justify-between gap-2 border-t p-3">
           <div className="min-w-0">
@@ -186,14 +225,16 @@ export default function MediaCard({
               {new Date(item.created_at).toLocaleDateString("zh-CN")}
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="opacity-0 transition-opacity group-hover:opacity-100"
-            onClick={() => onDelete(item.id)}
-          >
-            <Trash2 className="size-4 text-destructive" />
-          </Button>
+          {!selectMode && onDelete && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="opacity-0 transition-opacity group-hover:opacity-100"
+              onClick={() => onDelete(item.id)}
+            >
+              <Trash2 className="size-4 text-destructive" />
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

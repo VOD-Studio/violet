@@ -248,6 +248,7 @@ func main() {
 			r.Get("/", mediaHandler.ListMedia)          // 媒体列表（分页、类型筛选）
 			r.Patch("/{id}", mediaHandler.UpdateMedia) // 更新媒体信息
 			r.Delete("/{id}", mediaHandler.DeleteMedia) // 删除媒体
+			r.Post("/batch-delete", mediaHandler.BatchDeleteMedia) // 批量删除媒体
 			r.Get("/{id}/download", mediaHandler.Download) // 下载媒体文件
 			r.Post("/{id}/thumbnail", mediaHandler.UploadThumbnail) // 上传视频封面缩略图
 		})

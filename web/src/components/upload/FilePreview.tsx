@@ -21,6 +21,8 @@ import {
 interface FilePreviewProps {
   /** 文件完整 URL */
   url: string
+  /** 缩略图 URL（用于图片预览占位） */
+  thumbnailUrl?: string
   /** 文件 MIME 类型 */
   mimeType: string
   /** 文件名称 */
@@ -63,26 +65,40 @@ function getFileInfo(mimeType: string): { icon: typeof File; label: string } {
 }
 
 /**
- * 图片预览，支持加载态和错误态
+ * 图片预览，支持缩略图占位、加载态和错误态
+ * 缩略图先显示，原图加载完成后平滑过渡
  */
-function ImagePreview({ url, name }: { url: string; name?: string }) {
+function ImagePreview({ url, thumbnailUrl, name }: { url: string; thumbnailUrl?: string; name?: string }) {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading")
 
   return (
     <div className="relative flex min-h-[200px] items-center justify-center bg-black/5">
-      {status === "loading" && (
+      {/* 缩略图占位层 */}
+      {thumbnailUrl && (
+        <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${status === "loaded" ? "opacity-0" : "opacity-100"}`}>
+          <img
+            src={thumbnailUrl}
+            alt={name ?? "预览图片"}
+            className="max-h-[500px] w-full object-contain blur-sm"
+          />
+        </div>
+      )}
+      {/* 加载态（无缩略图时显示） */}
+      {!thumbnailUrl && status === "loading" && (
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
       )}
+      {/* 错误态 */}
       {status === "error" && (
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <AlertCircle className="size-8" />
           <span className="text-sm">图片加载失败</span>
         </div>
       )}
+      {/* 原图 */}
       <img
         src={url}
         alt={name ?? "预览图片"}
-        className={`max-h-[500px] w-full object-contain ${status === "loaded" ? "" : "hidden"}`}
+        className={`max-h-[500px] w-full object-contain transition-opacity duration-300 ${status === "loaded" ? "opacity-100" : "opacity-0"}`}
         onLoad={() => setStatus("loaded")}
         onError={() => setStatus("error")}
       />
@@ -163,6 +179,7 @@ function FilePlaceholder({ url, name, mimeType }: { url: string; name?: string; 
  */
 export default function FilePreview({
   url,
+  thumbnailUrl,
   mimeType,
   name,
   size,
@@ -178,7 +195,7 @@ export default function FilePreview({
     <div className={`space-y-3 ${className}`}>
       {/* 预览区域 */}
       <div className="overflow-hidden rounded-lg border bg-background">
-        {isImage && <ImagePreview url={url} name={name} />}
+        {isImage && <ImagePreview url={url} thumbnailUrl={thumbnailUrl} name={name} />}
         {isVideo && <VideoPreview url={url} mimeType={mimeType} />}
         {isAudio && <AudioPreview url={url} mimeType={mimeType} name={name} />}
         {isPDF && (

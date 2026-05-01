@@ -52,6 +52,7 @@ type MediaResponse struct {
 	MimeType           string   `json:"mime_type"`
 	Size               int64    `json:"size"`
 	Path               string   `json:"path"`
+	Thumbnail          string   `json:"thumbnail,omitempty"`
 	Width              *int32   `json:"width,omitempty"`
 	Height             *int32   `json:"height,omitempty"`
 	Duration           *float64 `json:"duration,omitempty"`
@@ -243,6 +244,18 @@ func (s *MediaService) DeleteMedia(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// BatchDeleteMedia 批量删除媒体
+func (s *MediaService) BatchDeleteMedia(ctx context.Context, ids []uuid.UUID) (int, error) {
+	count := 0
+	for _, id := range ids {
+		if err := s.DeleteMedia(ctx, id); err != nil {
+			continue // 忽略失败的单项
+		}
+		count++
+	}
+	return count, nil
+}
+
 // CheckDownloadPermission 检查下载权限
 func (s *MediaService) CheckDownloadPermission(ctx context.Context, id uuid.UUID, userRole string) (*MediaResponse, error) {
 	media, err := s.queries.GetMediaByID(ctx, id)
@@ -297,6 +310,9 @@ func (s *MediaService) mediaToResponse(m *generated.Medium) *MediaResponse {
 	}
 	if m.Duration.Valid {
 		r.Duration = &m.Duration.Float64
+	}
+	if m.Thumbnail.Valid {
+		r.Thumbnail = s.uploadPathPrefix + m.Thumbnail.String
 	}
 	return r
 }

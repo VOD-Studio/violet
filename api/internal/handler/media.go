@@ -130,6 +130,51 @@ func (h *MediaHandler) DeleteMedia(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// BatchDeleteMedia 批量删除媒体
+// POST /api/media/batch-delete
+func (h *MediaHandler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IDs []string `json:"ids"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		return
+	}
+
+	if len(req.IDs) == 0 {
+		writeError(w, http.StatusBadRequest, "validation_error", "请选择要删除的文件")
+		return
+	}
+
+	// 转换ID
+	ids := make([]uuid.UUID, 0, len(req.IDs))
+	for _, idStr := range req.IDs {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			continue // 忽略无效ID
+		}
+		ids = append(ids, id)
+	}
+
+	if len(ids) == 0 {
+		writeError(w, http.StatusBadRequest, "validation_error", "无效的媒体 ID")
+		return
+	}
+
+	// 批量删除
+	count, err := h.mediaService.BatchDeleteMedia(r.Context(), ids)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "批量删除失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "批量删除成功",
+		"count":   count,
+	})
+}
+
 // Download 下载媒体文件
 // GET /api/media/{id}/download
 // 通过 downloadService 校验权限并记录下载
