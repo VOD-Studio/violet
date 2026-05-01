@@ -2,9 +2,7 @@
 // 从 HTML 内容提取标题，生成侧边栏目录导航
 
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { motion, AnimatePresence } from "motion/react"
-import { List } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 
 /** 目录项结构 */
@@ -31,22 +29,23 @@ interface TableOfContentsProps {
  */
 function extractHeadings(html: string, minLevel: number, maxLevel: number): TocItem[] {
   const headings: TocItem[] = []
-  const regex = /<h([1-6])[^>]*>(.*?)<\/h\1>/gi
+  const regex = /<h([1-6])[^>]*id="toc-\d+"[^>]*>(.*?)<\/h\1>/gi
   let match
-  let index = 0
 
   while ((match = regex.exec(html)) !== null) {
     const level = parseInt(match[1])
     if (level >= minLevel && level <= maxLevel) {
+      // 提取 id
+      const idMatch = match[0].match(/id="(toc-\d+)"/)
+      const id = idMatch ? idMatch[1] : ""
       // 提取文本内容（去除内嵌标签）
       const textMatch = match[2].replace(/<[^>]+>/g, "").trim()
-      if (textMatch) {
+      if (textMatch && id) {
         headings.push({
-          id: `toc-${index}`,
+          id,
           text: textMatch,
           level,
         })
-        index++
       }
     }
   }
@@ -63,7 +62,6 @@ export function TableOfContents({
   maxLevel = 4,
 }: TableOfContentsProps) {
   const [activeId, setActiveId] = useState<string>("")
-  const [isOpen, setIsOpen] = useState(true)
 
   // 提取标题列表
   const headings = useMemo(
@@ -76,10 +74,8 @@ export function TableOfContents({
     if (headings.length === 0) return
 
     const handleScroll = () => {
-      // 找到当前可见区域内最靠近顶部的标题
       const offset = 100 // 顶部偏移量
-
-      let currentId = headings[0]?.id
+      let currentId = ""
       let minDistance = Infinity
 
       headings.forEach(({ id }) => {
@@ -95,20 +91,22 @@ export function TableOfContents({
         }
       })
 
-      setActiveId(currentId)
+      if (currentId && currentId !== activeId) {
+        setActiveId(currentId)
+      }
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
     handleScroll() // 初始化
 
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [headings])
+  }, [headings, activeId])
 
   // 点击跳转到指定标题
   const scrollToHeading = useCallback((id: string) => {
     const el = document.getElementById(id)
     if (el) {
-      const offset = 80 // 顶部导航栏高度
+      const offset = 80
       const top = el.getBoundingClientRect().top + window.scrollY - offset
       window.scrollTo({ top, behavior: "smooth" })
       setActiveId(id)
@@ -121,77 +119,96 @@ export function TableOfContents({
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="hidden xl:block fixed right-8 top-[100px] w-60 max-h-[calc(100vh-120px)]"
+      transition={{ delay: 0.3 }}
+      className="hidden xl:block fixed right-8 top-[100px] w-56 max-h-[calc(100vh-140px)]"
     >
       {/* 标题 */}
-      <div className="flex items-center gap-2 mb-3">
-        <List className="size-4 text-primary" />
-        <span className="text-sm font-medium">目录导航</span>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="ml-auto h-6 w-6"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <motion.span
-            animate={{ rotate: isOpen ? 0 : -90 }}
-            transition={{ duration: 0.2 }}
-          >
-            ▼
-          </motion.span>
-        </Button>
+      <div className="flex items-center justify-between mb-4 px-1">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          目录
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {headings.length} 节
+        </span>
       </div>
 
-      <AnimatePresence>
-        {isOpen && (
+      {/* 目录列表 */}
+      <nav className="relative">
+        {/* 进度条背景 */}
+        <div className="absolute left-[10px] top-0 bottom-0 w-[2px] bg-border/50 rounded-full" />
+
+        {/* 激活进度条 */}
+        {activeId && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-auto max-h-[calc(100vh-180px)]"
-          >
-            <nav className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-sm">
-              <ul className="py-2">
-                {headings.map((heading, idx) => (
-                  <li
-                    key={heading.id}
+            className="absolute left-[10px] w-[2px] bg-primary rounded-full"
+            initial={{ height: 0 }}
+            animate={{
+              height: `${((headings.findIndex(h => h.id === activeId) + 1) / headings.length) * 100}%`,
+            }}
+            transition={{ type: "spring", stiffness: 200, damping: 25 }}
+          />
+        )}
+
+        <ul className="space-y-0">
+          {headings.map((heading, idx) => {
+            const isActive = activeId === heading.id
+            const indent = (heading.level - minLevel) * 8
+
+            return (
+              <motion.li
+                key={heading.id}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + idx * 0.02 }}
+              >
+                <button
+                  onClick={() => scrollToHeading(heading.id)}
+                  className={cn(
+                    "group relative w-full text-left py-2 transition-all duration-200",
+                    "flex items-center gap-2",
+                    indent > 0 && `pl-[${indent}px]`
+                  )}
+                  style={{ paddingLeft: indent > 0 ? indent : 0 }}
+                >
+                  {/* 左侧圆点指示器 */}
+                  <span
                     className={cn(
-                      "relative",
-                      idx > 0 && headings[idx - 1].level < heading.level && "mt-1"
+                      "relative z-10 flex items-center justify-center",
+                      "w-[22px] h-[22px] rounded-full transition-all duration-200",
+                      isActive
+                        ? "bg-primary text-primary-foreground scale-100"
+                        : "bg-muted/50 text-muted-foreground group-hover:bg-muted scale-90 group-hover:scale-100"
                     )}
                   >
-                    {/* 激活指示条 */}
-                    {activeId === heading.id && (
-                      <motion.div
-                        layoutId="toc-active"
-                        className="absolute left-0 top-1 bottom-1 w-1 bg-primary rounded-full"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      />
+                    {isActive && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="text-[10px] font-bold"
+                      >
+                        ✓
+                      </motion.span>
                     )}
+                  </span>
 
-                    <button
-                      onClick={() => scrollToHeading(heading.id)}
-                      className={cn(
-                        "w-full text-left text-sm py-1.5 pr-3 transition-all duration-200",
-                        "hover:text-primary hover:bg-primary/5",
-                        activeId === heading.id
-                          ? "text-primary font-medium bg-primary/10"
-                          : "text-muted-foreground",
-                        heading.level === minLevel && "pl-4",
-                        heading.level === minLevel + 1 && "pl-6",
-                        heading.level >= minLevel + 2 && "pl-8"
-                      )}
-                    >
-                      <span className="truncate block">{heading.text}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  {/* 标题文本 */}
+                  <span
+                    className={cn(
+                      "flex-1 text-[13px] leading-tight transition-colors duration-200",
+                      isActive
+                        ? "text-foreground font-semibold"
+                        : "text-muted-foreground group-hover:text-foreground",
+                      "truncate"
+                    )}
+                  >
+                    {heading.text}
+                  </span>
+                </button>
+              </motion.li>
+            )
+          })}
+        </ul>
+      </nav>
     </motion.div>
   )
 }
