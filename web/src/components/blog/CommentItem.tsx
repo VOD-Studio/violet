@@ -32,7 +32,10 @@ function formatRelativeTime(dateStr: string): string {
  * 使用 MD5 哈希邮箱后拼接 Gravatar URL
  * 由于浏览器环境不原生支持 MD5，使用 d=identicon 参数显示默认图案头像
  */
-function getGravatarUrl(email: string): string {
+function getGravatarUrl(email?: string): string {
+  if (!email) {
+    return `https://www.gravatar.com/avatar/?d=identicon&s=80`
+  }
   const trimmed = email.trim().toLowerCase()
   return `https://www.gravatar.com/avatar/${trimmed}?d=identicon&s=80`
 }
@@ -54,31 +57,32 @@ export function CommentItem({ comment, depth = 0 }: CommentItemProps) {
       <div className="flex gap-3">
         {/* 头像 */}
         <img
-          src={getGravatarUrl(comment.authorEmail)}
-          alt={comment.authorName}
+          src={getGravatarUrl(comment.author_email)}
+          alt={comment.author_name}
           className="size-8 shrink-0 rounded-full bg-muted"
         />
 
         <div className="min-w-0 flex-1">
           {/* 作者名和时间 */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{comment.authorName}</span>
+            <span className="text-sm font-medium">{comment.author_name}</span>
             <span className="text-xs text-muted-foreground">
-              {formatRelativeTime(comment.createdAt)}
+              {formatRelativeTime(comment.created_at)}
             </span>
           </div>
 
-          {/* 评论内容 */}
-          <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
-            {comment.content}
-          </p>
+          {/* 评论内容（HTML） */}
+          <div
+            className="mt-1 text-sm text-muted-foreground prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: comment.body_html }}
+          />
         </div>
       </div>
 
       {/* 递归渲染子评论 */}
-      {comment.replies && comment.replies.length > 0 && (
+      {comment.children && comment.children.length > 0 && (
         <div className="mt-3">
-          {comment.replies.map((reply) => (
+          {comment.children.map((reply) => (
             <CommentItem key={reply.id} comment={reply} depth={depth + 1} />
           ))}
         </div>

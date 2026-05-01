@@ -7,19 +7,20 @@ import { api } from "@/lib/api"
 /** 评论数据结构 */
 interface Comment {
   id: string
-  authorName: string
-  authorEmail: string
-  content: string
-  createdAt: string
-  replies: Comment[]
+  author_name: string
+  author_email?: string
+  body_html: string
+  created_at: string
+  children?: Comment[]
 }
 
-/** 提交评论的数据结构 */
+/** 提交评论的数据结构（后端使用 snake_case） */
 interface CommentSubmitData {
-  authorName: string
-  authorEmail: string
-  content: string
-  parentId?: string
+  author_name: string
+  author_email?: string
+  author_url?: string
+  body: string
+  parent_id?: string
 }
 
 /**
@@ -29,7 +30,10 @@ interface CommentSubmitData {
 export function useComments(postId: string | undefined) {
   return useQuery({
     queryKey: ["comments", postId],
-    queryFn: () => api.get<Comment[]>(`/posts/${postId}/comments`),
+    queryFn: async () => {
+      const res = await api.get<{ comments: Comment[] }>(`/posts/${postId}/comments`)
+      return res.comments ?? []
+    },
     enabled: !!postId,
   })
 }
