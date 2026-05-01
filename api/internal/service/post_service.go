@@ -352,8 +352,9 @@ func (s *PostService) UpdatePostStatus(ctx context.Context, id uuid.UUID, status
 	}
 
 	post, err := s.queries.UpdatePostStatus(ctx, generated.UpdatePostStatusParams{
-		ID:     id,
-		Status: status,
+		ID:      id,
+		Status:  status,
+		Column3: status, // 用于 CASE 表达式判断
 	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

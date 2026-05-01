@@ -52,8 +52,11 @@ WHERE id = $1;
 
 -- name: UpdatePostStatus :one
 -- 更新文章状态，发布时同时设置发布时间
+-- 使用两个参数避免 PostgreSQL 类型推断问题
 UPDATE posts
-SET status = $2, published_at = CASE WHEN $2::text = 'published' AND published_at IS NULL THEN NOW() ELSE published_at END, updated_at = NOW()
+SET status = $2,
+    published_at = CASE WHEN $3 = 'published' AND published_at IS NULL THEN NOW() ELSE published_at END,
+    updated_at = NOW()
 WHERE id = $1
 RETURNING *;
 
