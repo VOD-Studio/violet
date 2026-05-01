@@ -129,8 +129,9 @@ func main() {
 	// 文章相关路由
 	r.Route("/api/posts", func(r chi.Router) {
 		// 公开接口
-		r.Get("/", postHandler.List)            // 文章列表
-		r.Get("/{slug}", postHandler.GetBySlug) // 文章详情
+		r.Get("/", postHandler.List)                 // 文章列表
+		r.Get("/id/{id}", postHandler.GetByID)       // 按 ID 获取文章（编辑用）
+		r.Get("/{slug}", postHandler.GetBySlug)      // 按 slug 获取文章（展示用）
 
 		// 浏览计数（公开接口）
 		r.Post("/{id}/view", postHandler.IncrementView) // 增加浏览次数

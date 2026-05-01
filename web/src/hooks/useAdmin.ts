@@ -19,8 +19,8 @@ interface ApiPost {
 	slug: string
 	/** 文章摘要 */
 	excerpt?: string
-	/** 正文内容 */
-	content?: string
+	/** Markdown 正文内容 */
+	contentMarkdown?: string
 	/** 发布状态 */
 	status: PostStatus
 	/** 浏览次数 */
@@ -105,15 +105,15 @@ interface PaginatedResponse<T> {
 interface PostFormData {
 	/** 文章标题 */
 	title: string
-	/** 正文内容 */
-	content: string
+	/** Markdown 正文内容 */
+	contentMarkdown: string
 	/** 文章摘要 */
 	excerpt?: string
 	/** 发布状态 */
 	status?: PostStatus
 	/** 标签 ID 列表 */
 	tagIds?: number[]
-	/** 封面图片 */
+	/** 封面图片 URL */
 	coverImage?: string
 	/** SEO 描述 */
 	seoDescription?: string

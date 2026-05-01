@@ -58,9 +58,9 @@ export default function PostEdit() {
       try {
         setPageLoading(true)
         setPageError(null)
-        const post = await api.get<ApiPost>(`/posts/${id}`)
+        const post = await api.get<ApiPost>(`/posts/id/${id}`)
         setTitle(post.title)
-        setContent(post.content ?? "")
+        setContent(post.contentMarkdown ?? "")
         setExcerpt(post.excerpt ?? "")
         setSelectedTagIds(post.tags?.map((t) => t.id) ?? [])
         setSeoDescription(post.seoDescription ?? "")
@@ -96,7 +96,7 @@ export default function PostEdit() {
       await saveMutation.mutateAsync({
         data: {
           title,
-          content,
+          contentMarkdown: content,
           excerpt: excerpt || undefined,
           status,
           tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,

@@ -166,6 +166,17 @@ func (s *PostService) GetPostByID(ctx context.Context, id uuid.UUID) (*generated
 	return post, nil
 }
 
+// ListPostTags 获取文章的标签列表
+func (s *PostService) ListPostTags(ctx context.Context, postID uuid.UUID) ([]*generated.Tag, error) {
+	tags, err := s.queries.ListPostTags(ctx, postID)
+	if err != nil {
+		return nil, fmt.Errorf("查询文章标签失败: %w", err)
+	}
+	return tags, nil
+}
+
+// ListPosts 分页查询文章列表
+
 // ListPosts 分页查询文章列表
 func (s *PostService) ListPosts(ctx context.Context, params ListPostsParams) (*ListPostsResult, error) {
 	// 设置默认分页参数

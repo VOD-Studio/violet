@@ -256,6 +256,75 @@ func (h *PostHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetByID 按 ID 获取文章（用于编辑）
+// GET /api/posts/id/:id
+func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
+		return
+	}
+
+	post, err := h.postService.GetPostByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, service.ErrPostNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "文章不存在")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "查询文章失败")
+		return
+	}
+
+	// 查询文章标签
+	tags, err := h.postService.ListPostTags(r.Context(), post.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "查询标签失败")
+		return
+	}
+
+	type tagItem struct {
+		ID   int32  `json:"id"`
+		Name string `json:"name"`
+		Slug string `json:"slug"`
+	}
+
+	tagItems := make([]tagItem, 0, len(tags))
+	for _, t := range tags {
+		tagItems = append(tagItems, tagItem{ID: t.ID, Name: t.Name, Slug: t.Slug})
+	}
+
+	publishedAt := ""
+	if post.PublishedAt.Valid {
+		publishedAt = post.PublishedAt.Time.Format("2006-01-02T15:04:05Z07:00")
+	}
+	excerpt := ""
+	if post.Excerpt.Valid {
+		excerpt = post.Excerpt.String
+	}
+	coverImage := ""
+	if post.CoverImage.Valid {
+		coverImage = post.CoverImage.String
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"id":              post.ID.String(),
+		"title":           post.Title,
+		"slug":            post.Slug,
+		"contentMarkdown": post.ContentMd,
+		"contentHtml":     post.ContentHtml,
+		"excerpt":         excerpt,
+		"coverImage":      coverImage,
+		"status":          post.Status,
+		"viewCount":       post.ViewCount,
+		"isFeatured":      post.IsFeatured,
+		"publishedAt":     publishedAt,
+		"createdAt":       post.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		"updatedAt":       post.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		"tags":            tagItems,
+	})
+}
+
 // Create 创建文章
 // POST /api/posts
 // 需要认证
