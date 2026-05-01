@@ -4,7 +4,6 @@
  */
 
 import { useState, useCallback } from "react"
-import { motion } from "motion/react"
 import { fetchMediaPage, useDeleteMedia } from "@/hooks/useAdmin"
 import type { MediaItem } from "@/hooks/useAdmin"
 import { usePaginatedQuery, useInfiniteScroll } from "@/hooks/useInfiniteScroll"
@@ -26,20 +25,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Segmented } from "@/components/ui/Segmented"
 import { Image as ImageIcon, Upload } from "lucide-react"
 
-/** 分类筛选项 */
-interface CategoryTab {
-  label: string
-  mimeType?: string
-}
-
-const categories: CategoryTab[] = [
-  { label: "全部" },
-  { label: "图片", mimeType: "image" },
-  { label: "视频", mimeType: "video" },
-  { label: "音频", mimeType: "audio" },
-  { label: "文档", mimeType: "application" },
+/** 分类选项 */
+const categoryOptions = [
+  { label: "全部", value: "all" },
+  { label: "图片", value: "image" },
+  { label: "视频", value: "video" },
+  { label: "音频", value: "audio" },
+  { label: "文档", value: "application" },
 ]
 
 /**
@@ -74,51 +69,17 @@ function formatSize(bytes: number): string {
 }
 
 /**
- * 带滑块动画的分类标签
- */
-function CategoryTabs({
-  active,
-  onChange,
-}: {
-  active: number
-  onChange: (index: number) => void
-}) {
-  return (
-    <div className="relative flex gap-1 rounded-lg border bg-muted/30 p-1">
-      {categories.map((cat, i) => (
-        <button
-          key={cat.label}
-          onClick={() => onChange(i)}
-          className={`relative z-10 flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            i === active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {cat.label}
-          {i === active && (
-            <motion.div
-              layoutId="category-indicator"
-              className="absolute inset-0 -z-10 rounded-md bg-background shadow-sm"
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            />
-          )}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-/**
  * 媒体库页面
  */
 export default function Media() {
-  const [category, setCategory] = useState(0)
+  const [category, setCategory] = useState<string>("all")
   const deleteMutation = useDeleteMedia()
 
   const [showUploader, setShowUploader] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: "" })
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null)
 
-  const currentMimeType = categories[category].mimeType
+  const currentMimeType = category === "all" ? undefined : category
 
   const fetchFn = useCallback(
     (page: number, limit: number) => fetchMediaPage(page, limit, currentMimeType),
@@ -133,7 +94,7 @@ export default function Media() {
     loadMore,
     reload,
   } = usePaginatedQuery<MediaItem>(
-    ["admin", "media", currentMimeType ?? "all"],
+    ["admin", "media", category],
     fetchFn,
     20,
   )
@@ -143,11 +104,6 @@ export default function Media() {
     isLoading,
     onLoadMore: loadMore,
   })
-
-  function handleCategoryChange(index: number) {
-    if (index === category) return
-    setCategory(index)
-  }
 
   function handleDelete(id: string) {
     setDeleteConfirm({ open: true, id })
@@ -189,7 +145,11 @@ export default function Media() {
       </div>
 
       {/* 分类筛选（带滑块动画） */}
-      <CategoryTabs active={category} onChange={handleCategoryChange} />
+      <Segmented
+        options={categoryOptions}
+        value={category}
+        onChange={setCategory}
+      />
 
       {/* 加载态（首次） */}
       {isLoading && mediaItems.length === 0 && <MediaGridSkeleton />}

@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Segmented } from "@/components/ui/Segmented"
 import { Loader2 } from "lucide-react"
 import { api, getUploadUrl } from "@/lib/api"
 
@@ -41,6 +41,12 @@ interface ImageDialogProps {
   onClose: () => void
   onInsert: (src: string, alt?: string) => void
 }
+
+/** 图片来源选项 */
+const sourceOptions = [
+  { label: "输入 URL", value: "url" },
+  { label: "素材库", value: "media" },
+] as const
 
 /**
  * 链接插入对话框
@@ -105,9 +111,10 @@ export function LinkDialog({ open, onClose, onInsert, initialUrl }: LinkDialogPr
 
 /**
  * 图片插入对话框
- * 支持 URL 输入和从素材库选择
+ * 支持 URL 输入和从素材库选择，使用 Segmented 组件切换
  */
 export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
+  const [source, setSource] = useState<"url" | "media">("url")
   const [url, setUrl] = useState("")
   const [alt, setAlt] = useState("")
   const [media, setMedia] = useState<MediaItem[]>([])
@@ -133,6 +140,14 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
       })
   }
 
+  // 切换到素材库时加载数据
+  function handleSourceChange(value: "url" | "media") {
+    setSource(value)
+    if (value === "media") {
+      loadMedia()
+    }
+  }
+
   function handleInsertFromUrl() {
     if (!url.trim()) return
     onInsert(url.trim(), alt.trim() || undefined)
@@ -151,6 +166,7 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
     setUrl("")
     setAlt("")
     setSelectedId(null)
+    setSource("url")
     onClose()
   }
 
@@ -160,12 +176,18 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
         <DialogHeader>
           <DialogTitle>插入图片</DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="url" className="py-4" onValueChange={(v) => v === "media" && loadMedia()}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="url">输入 URL</TabsTrigger>
-            <TabsTrigger value="media">从素材库选择</TabsTrigger>
-          </TabsList>
-          <TabsContent value="url" className="space-y-4">
+
+        {/* 使用 Segmented 切换来源 */}
+        <div className="pt-4">
+          <Segmented
+            options={sourceOptions}
+            value={source}
+            onChange={handleSourceChange}
+          />
+        </div>
+
+        {source === "url" ? (
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="image-url">图片地址</Label>
               <Input
@@ -192,8 +214,9 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
                 插入
               </Button>
             </DialogFooter>
-          </TabsContent>
-          <TabsContent value="media" className="space-y-4">
+          </div>
+        ) : (
+          <div className="space-y-4 py-4">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -240,8 +263,8 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
                 插入
               </Button>
             </DialogFooter>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )
