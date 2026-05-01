@@ -30,118 +30,97 @@ export function TableOfContents({
   const [activeId, setActiveId] = useState<string>("")
   const [headings, setHeadings] = useState<TocItem[]>([])
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 组件挂载后延迟执行（等待文章内容渲染）
+  // 提取标题并设置观察器
   useEffect(() => {
-    timeoutRef.current = setTimeout(() => {
-      setMounted(true)
-    }, 500)
+    let retryCount = 0
+    const maxRetries = 5
 
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
+    const extractAndObserve = () => {
+      const proseContainer = document.querySelector(".prose")
+      if (!proseContainer && retryCount < maxRetries) {
+        retryCount++
+        setTimeout(extractAndObserve, 200)
+        return
       }
-    }
-  }, [])
 
-  // 挂载后提取标题并设置观察器
-  useEffect(() => {
-    if (!mounted) return
+      if (!proseContainer) return
 
-    const proseContainer = document.querySelector(".prose")
-    if (!proseContainer) {
-      // 如果还是没有，再等一会
-      timeoutRef.current = setTimeout(() => {
-        setMounted(true) // 重新触发
-      }, 300)
-      return
-    }
+      const headingElements = proseContainer.querySelectorAll("h2, h3, h4")
+      const items: TocItem[] = []
 
-    const headingElements = proseContainer.querySelectorAll("h2, h3, h4")
-    const items: TocItem[] = []
-
-    headingElements.forEach((el, index) => {
-      const level = parseInt(el.tagName.charAt(1))
-      if (level >= minLevel && level <= maxLevel) {
-        const id = el.getAttribute("id") || `heading-${index}-${level}`
-        if (!el.getAttribute("id")) {
-          el.setAttribute("id", id)
-        }
-        el.classList.add("scroll-mt-20")
-        items.push({ id, text: el.textContent || "", level })
-      }
-    })
-
-    setHeadings(items)
-
-    // 断开旧的观察器
-    if (observerRef.current) {
-      observerRef.current.disconnect()
-    }
-
-    // 创建新的观察器
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        // 找到最靠近顶部的可见标题
-        const visibleEntries = entries.filter((e) => e.isIntersecting)
-        if (visibleEntries.length > 0) {
-          const closest = visibleEntries.reduce((prev, curr) => {
-            const prevTop = Math.abs(prev.boundingClientRect.top)
-            const currTop = Math.abs(curr.boundingClientRect.top)
-            return currTop < prevTop ? curr : prev
-          })
-          const newId = closest.target.getAttribute("id") || ""
-          if (newId !== activeId) {
-            setActiveId(newId)
+      headingElements.forEach((el, index) => {
+        const level = parseInt(el.tagName.charAt(1))
+        if (level >= minLevel && level <= maxLevel) {
+          const id = el.getAttribute("id") || `heading-${index}-${level}`
+          if (!el.getAttribute("id")) {
+            el.setAttribute("id", id)
           }
-        } else {
-          // 没有可见的标题，检查哪个最近
-          const allEntries = entries
-          const closestAbove = allEntries
-            .filter((e) => e.boundingClientRect.top < 80)
-            .sort((a, b) => b.boundingClientRect.top - a.boundingClientRect.top)[0]
-          if (closestAbove) {
-            const newId = closestAbove.target.getAttribute("id") || ""
-            if (newId !== activeId) {
-              setActiveId(newId)
+          el.classList.add("scroll-mt-20")
+          items.push({ id, text: el.textContent || "", level })
+        }
+      })
+
+      if (items.length === 0) return
+
+      setHeadings(items)
+      setActiveId(items[0].id)
+
+      // 创建观察器
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          // 找到最靠近顶部的标题
+          let closestId = ""
+          let closestDistance = Infinity
+
+          for (const entry of entries) {
+            const top = entry.boundingClientRect.top
+            const distance = Math.abs(top - 80) // 距离顶部80px的理想位置
+
+            if (distance < closestDistance) {
+              closestDistance = distance
+              closestId = entry.target.getAttribute("id") || ""
             }
           }
+
+          // 如果有标题在视口上方，优先选中最近的上方标题
+          const aboveViewport = entries.filter(e => e.boundingClientRect.top < 80)
+          if (aboveViewport.length > 0) {
+            // 选最接近80px的那个（最靠下）
+            const closestAbove = aboveViewport.reduce((prev, curr) =>
+              curr.boundingClientRect.top > prev.boundingClientRect.top ? curr : prev
+            )
+            closestId = closestAbove.target.getAttribute("id") || ""
+          }
+
+          if (closestId && closestId !== activeId) {
+            setActiveId(closestId)
+          }
+        },
+        {
+          rootMargin: "-80px 0px -80% 0px",
+          threshold: 0,
         }
-      },
-      {
-        rootMargin: "-80px 0px -80% 0px",
-        threshold: 0,
-      }
-    )
+      )
 
-    // 观察所有标题
-    items.forEach(({ id }) => {
-      const el = document.getElementById(id)
-      if (el && observerRef.current) {
-        observerRef.current.observe(el)
-      }
-    })
-
-    // 初始化时设置第一个标题为激活
-    if (items.length > 0 && !activeId) {
-      setActiveId(items[0].id)
+      // 观察所有标题
+      items.forEach(({ id }) => {
+        const el = document.getElementById(id)
+        if (el && observerRef.current) {
+          observerRef.current.observe(el)
+        }
+      })
     }
-  }, [mounted, minLevel, maxLevel, activeId])
 
-  // 清理
-  useEffect(() => {
+    extractAndObserve()
+
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect()
       }
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
     }
-  }, [])
+  }, [minLevel, maxLevel])
 
   // 点击跳转到指定标题
   const scrollToHeading = useCallback((id: string) => {
@@ -157,102 +136,96 @@ export function TableOfContents({
 
   if (headings.length === 0) return null
 
-  // 桌面端侧边栏
-  const DesktopToc = () => (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 0.3 }}
-      className="hidden lg:block fixed right-6 top-[100px] w-52"
-    >
-      <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          目录
-        </span>
-        <span className="text-xs text-muted-foreground">{headings.length}</span>
-      </div>
-
-      <nav className="relative rounded-lg border bg-card/80 backdrop-blur-sm p-2">
-        {/* 进度指示线 */}
-        <div className="absolute left-[11px] top-2 bottom-2 w-[2px] bg-border rounded-full" />
-        {activeId && (
-          <motion.div
-            className="absolute left-[11px] w-[2px] bg-primary rounded-full"
-            initial={{ height: 0 }}
-            animate={{
-              height: `${((headings.findIndex((h) => h.id === activeId) + 1) / headings.length) * 100}%`,
-            }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            style={{ top: 8 }}
-          />
-        )}
-
-        <ul className="space-y-0.5">
-          {headings.map((heading, idx) => {
-            const isActive = activeId === heading.id
-            const indent = (heading.level - minLevel) * 10
-
-            return (
-              <motion.li
-                key={heading.id}
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.05 + idx * 0.03 }}
-              >
-                <button
-                  onClick={() => scrollToHeading(heading.id)}
-                  className={cn(
-                    "group w-full text-left py-1.5 transition-all",
-                    "flex items-center gap-2 rounded-md",
-                    isActive && "bg-primary/10",
-                    "hover:bg-muted/50"
-                  )}
-                  style={{ paddingLeft: indent > 0 ? indent : 0 }}
-                >
-                  {/* 圆点 */}
-                  <span
-                    className={cn(
-                      "w-5 h-5 rounded-full flex items-center justify-center shrink-0",
-                      "transition-all duration-200",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted border group-hover:border-primary/50"
-                    )}
-                  >
-                    {isActive && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="text-[10px]"
-                      >
-                        ✓
-                      </motion.span>
-                    )}
-                  </span>
-                  {/* 文本 */}
-                  <span
-                    className={cn(
-                      "text-[13px] truncate transition-colors",
-                      isActive
-                        ? "text-primary font-medium"
-                        : "text-muted-foreground group-hover:text-foreground"
-                    )}
-                  >
-                    {heading.text}
-                  </span>
-                </button>
-              </motion.li>
-            )
-          })}
-        </ul>
-      </nav>
-    </motion.div>
-  )
-
-  // 移动端悬浮按钮 + 弹出面板
-  const MobileToc = () => (
+  return (
     <>
-      {/* 悬浮按钮 */}
+      {/* 桌面端侧边栏 */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.3 }}
+        className="hidden lg:block fixed right-6 top-[100px] w-52"
+      >
+        <div className="flex items-center justify-between mb-3 px-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            目录
+          </span>
+          <span className="text-xs text-muted-foreground">{headings.length}</span>
+        </div>
+
+        <nav className="relative rounded-lg border bg-card/80 backdrop-blur-sm p-2">
+          <div className="absolute left-[11px] top-2 bottom-2 w-[2px] bg-border rounded-full" />
+          {activeId && (
+            <motion.div
+              className="absolute left-[11px] w-[2px] bg-primary rounded-full"
+              initial={{ height: 0 }}
+              animate={{
+                height: `${((headings.findIndex(h => h.id === activeId) + 1) / headings.length) * 100}%`,
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              style={{ top: 8 }}
+            />
+          )}
+
+          <ul className="space-y-0.5">
+            {headings.map((heading, idx) => {
+              const isActive = activeId === heading.id
+              const indent = (heading.level - minLevel) * 10
+
+              return (
+                <motion.li
+                  key={heading.id}
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.05 + idx * 0.03 }}
+                >
+                  <button
+                    onClick={() => scrollToHeading(heading.id)}
+                    className={cn(
+                      "group w-full text-left py-1.5 transition-all",
+                      "flex items-center gap-2 rounded-md",
+                      isActive && "bg-primary/10",
+                      "hover:bg-muted/50"
+                    )}
+                    style={{ paddingLeft: indent > 0 ? indent : 0 }}
+                  >
+                    <span
+                      className={cn(
+                        "w-5 h-5 rounded-full flex items-center justify-center shrink-0",
+                        "transition-all duration-200",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted border group-hover:border-primary/50"
+                      )}
+                    >
+                      {isActive && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="text-[10px]"
+                        >
+                          ✓
+                        </motion.span>
+                      )}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[13px] truncate transition-colors",
+                        isActive
+                          ? "text-primary font-medium"
+                          : "text-muted-foreground group-hover:text-foreground"
+                      )}
+                    >
+                      {heading.text}
+                    </span>
+                  </button>
+                </motion.li>
+              )
+            })}
+          </ul>
+        </nav>
+      </motion.div>
+
+      {/* 移动端悬浮按钮 */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -268,11 +241,10 @@ export function TableOfContents({
         </Button>
       </motion.div>
 
-      {/* 弹出面板 */}
+      {/* 移动端弹出面板 */}
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* 背景遮罩 */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -281,7 +253,6 @@ export function TableOfContents({
               onClick={() => setMobileOpen(false)}
             />
 
-            {/* 目录面板 */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -289,7 +260,6 @@ export function TableOfContents({
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="lg:hidden fixed bottom-0 left-0 right-0 z-50 max-h-[70vh] rounded-t-2xl bg-card border-t shadow-xl"
             >
-              {/* 头部 */}
               <div className="flex items-center justify-between px-4 py-3 border-b">
                 <span className="font-semibold">文章目录</span>
                 <Button variant="ghost" size="icon-sm" onClick={() => setMobileOpen(false)}>
@@ -297,7 +267,6 @@ export function TableOfContents({
                 </Button>
               </div>
 
-              {/* 目录列表 */}
               <div className="overflow-auto max-h-[calc(70vh - 56px)] p-4">
                 <ul className="space-y-1">
                   {headings.map((heading, idx) => {
@@ -331,13 +300,6 @@ export function TableOfContents({
           </>
         )}
       </AnimatePresence>
-    </>
-  )
-
-  return (
-    <>
-      <DesktopToc />
-      <MobileToc />
     </>
   )
 }
