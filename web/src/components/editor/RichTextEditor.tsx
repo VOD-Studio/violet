@@ -1,5 +1,6 @@
 // 富文本编辑器组件
 // 基于 Tiptap 实现，支持格式化工具栏、图片/视频插入、字数统计
+// 工具栏固定在视口顶部，支持素材库选择图片
 
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
@@ -33,7 +34,9 @@ import {
   Highlighter,
   Undo2,
   Redo2,
+  Minus,
 } from "lucide-react"
+import { LinkDialog, ImageDialog } from "./EditorDialogs"
 
 /** 创建 lowlight 实例 */
 const lowlight = createLowlight(common)
@@ -99,6 +102,8 @@ export default function RichTextEditor({
   className = "",
 }: RichTextEditorProps) {
   const [charCount, setCharCount] = useState(0)
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [imageDialogOpen, setImageDialogOpen] = useState(false)
 
   const editor = useEditor({
     extensions: [
@@ -163,41 +168,64 @@ export default function RichTextEditor({
   }, [editor, content])
 
   /**
-   * 设置链接
+   * 打开链接对话框
    */
-  const setLink = useCallback(() => {
+  const openLinkDialog = useCallback(() => {
+    if (!editor) return
+    setLinkDialogOpen(true)
+  }, [editor])
+
+  /**
+   * 插入链接
+   */
+  const handleInsertLink = useCallback((url: string, text?: string) => {
     if (!editor) return
 
-    const previousUrl = editor.getAttributes("link").href
-    const url = window.prompt("请输入链接 URL", previousUrl)
-
-    if (url === null) return
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run()
-      return
+    // 如果有选中文本且有传入 text，先替换选中文本
+    if (text) {
+      editor.chain().focus().insertContent(text).run()
     }
 
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
   }, [editor])
 
   /**
+   * 移除链接
+   */
+  const unsetLink = useCallback(() => {
+    if (!editor) return
+    editor.chain().focus().unsetLink().run()
+  }, [editor])
+
+  /**
+   * 打开图片对话框
+   */
+  const openImageDialog = useCallback(() => {
+    setImageDialogOpen(true)
+  }, [])
+
+  /**
    * 插入图片
    */
-  const insertImage = useCallback(() => {
+  const handleInsertImage = useCallback((src: string, alt?: string) => {
     if (!editor) return
+    editor.chain().focus().setImage({ src, alt: alt ?? "" }).run()
+  }, [editor])
 
-    const url = window.prompt("请输入图片 URL")
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run()
-    }
+  /**
+   * 插入分割线（使用 hr 标签）
+   */
+  const insertHorizontalRule = useCallback(() => {
+    if (!editor) return
+    editor.chain().focus().insertContent("<hr>").run()
   }, [editor])
 
   if (!editor) return null
 
   return (
     <div className={`overflow-hidden rounded-lg border bg-background ${className}`}>
-      {/* 工具栏 */}
-      <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/30 p-2">
+      {/* 工具栏 - sticky 定位 */}
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b bg-muted/30 p-2 backdrop-blur-sm">
         {/* 撤销/重做 */}
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
@@ -341,11 +369,23 @@ export default function RichTextEditor({
 
         <ToolbarDivider />
 
-        {/* 插入 */}
-        <ToolbarButton onClick={setLink} isActive={editor.isActive("link")} title="插入链接">
+        {/* 分割线 */}
+        <ToolbarButton onClick={insertHorizontalRule} title="分割线">
+          <Minus className="h-4 w-4" />
+        </ToolbarButton>
+
+        <ToolbarDivider />
+
+        {/* 插入链接和图片 */}
+        <ToolbarButton onClick={openLinkDialog} isActive={editor.isActive("link")} title="插入链接">
           <LinkIcon className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton onClick={insertImage} title="插入图片">
+        {editor.isActive("link") && (
+          <ToolbarButton onClick={unsetLink} title="移除链接">
+            <LinkIcon className="h-4 w-4 text-destructive" />
+          </ToolbarButton>
+        )}
+        <ToolbarButton onClick={openImageDialog} title="插入图片（支持素材库）">
           <ImageIcon className="h-4 w-4" />
         </ToolbarButton>
       </div>
@@ -358,6 +398,21 @@ export default function RichTextEditor({
         <span>字数: {charCount}</span>
         <span>支持 Markdown 快捷键</span>
       </div>
+
+      {/* 链接对话框 */}
+      <LinkDialog
+        open={linkDialogOpen}
+        onClose={() => setLinkDialogOpen(false)}
+        onInsert={handleInsertLink}
+        initialUrl={editor.getAttributes("link").href}
+      />
+
+      {/* 图片对话框 */}
+      <ImageDialog
+        open={imageDialogOpen}
+        onClose={() => setImageDialogOpen(false)}
+        onInsert={handleInsertImage}
+      />
     </div>
   )
 }
