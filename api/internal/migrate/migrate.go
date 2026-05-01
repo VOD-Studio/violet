@@ -21,11 +21,28 @@ func RunMigrations(migrationsPath, databaseURL string) error {
 	}
 	defer m.Close()
 
+	// 检查当前版本和 dirty 状态
+	version, dirty, err := m.Version()
+	if err != nil && err != migrate.ErrNilVersion {
+		return fmt.Errorf("获取迁移版本失败: %w", err)
+	}
+
+	// 如果 dirty 状态异常，强制修复
+	if dirty {
+		fmt.Printf("检测到 dirty 状态，当前版本 %d，尝试修复...\n", version)
+		if err := m.Force(int(version)); err != nil {
+			return fmt.Errorf("强制设置版本失败: %w", err)
+		}
+		fmt.Printf("已将版本强制设置为 %d，重新执行迁移...\n", version)
+	}
+
+	// 执行迁移
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("执行迁移失败: %w", err)
 	}
 
-	version, dirty, err := m.Version()
+	// 获取最终版本
+	version, dirty, err = m.Version()
 	if err != nil {
 		return fmt.Errorf("获取迁移版本失败: %w", err)
 	}
