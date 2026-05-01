@@ -62,18 +62,13 @@ export function useAuth() {
 
   /**
    * 登录成功后保存 token 和获取用户信息
+   * zustand persist 会自动同步到 localStorage，无需手动写入
    */
   async function handleLoginSuccess(response: LoginResponse) {
-    // 先保存 token，让 API 拦截器可以使用
-    const expiresAt = Date.now() + response.expires_in * 1000;
-    localStorage.setItem("token", response.access_token);
-    localStorage.setItem("refresh_token", response.refresh_token);
-    localStorage.setItem("token_expires_at", String(expiresAt));
-
     // 获取用户信息
     const userInfo = await api.get<UserInfo>("/auth/me");
 
-    // 更新 store
+    // 更新 store（persist 会自动写入 localStorage）
     setAuth(
       response.access_token,
       response.refresh_token,

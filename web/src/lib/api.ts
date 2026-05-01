@@ -1,8 +1,10 @@
 // API 请求客户端
 // 使用 axios 封装请求，自动附加 JWT 认证令牌，统一处理错误
 // 支持自动刷新即将过期的 token
+// token 状态统一由 zustand store 管理
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios"
+import { useAuthStore } from "@/store"
 
 /** API 基础地址 */
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api"
@@ -49,17 +51,18 @@ let refreshPromise: Promise<string> | null = null
 
 /**
  * 检查 token 是否即将过期（5 分钟内）
+ * 从 zustand store 读取过期时间
  */
 function isTokenExpiring(): boolean {
-  const expiresAtStr = localStorage.getItem("token_expires_at")
-  if (!expiresAtStr) return false
-  const expiresAt = parseInt(expiresAtStr, 10)
+  const { expiresAt } = useAuthStore.getState()
+  if (!expiresAt) return false
   // 提前 5 分钟刷新
   return expiresAt - Date.now() < 5 * 60 * 1000
 }
 
 /**
  * 刷新 token
+ * 刷新成功后更新 zustand store
  */
 async function refreshToken(): Promise<string> {
   // 如果正在刷新，等待结果
@@ -67,20 +70,18 @@ async function refreshToken(): Promise<string> {
     return refreshPromise
   }
 
-  const refreshTokenValue = localStorage.getItem("refresh_token")
-  if (!refreshTokenValue) {
+  const { refreshToken } = useAuthStore.getState()
+  if (!refreshToken) {
     throw new Error("No refresh token")
   }
 
   isRefreshing = true
   refreshPromise = axios
-    .post(`${BASE_URL}/auth/refresh`, { refresh_token: refreshTokenValue })
+    .post(`${BASE_URL}/auth/refresh`, { refresh_token: refreshToken })
     .then((res) => {
       const { access_token, refresh_token, expires_in } = res.data
-      const expiresAt = Date.now() + expires_in * 1000
-      localStorage.setItem("token", access_token)
-      localStorage.setItem("refresh_token", refresh_token)
-      localStorage.setItem("token_expires_at", String(expiresAt))
+      // 更新 zustand store
+      useAuthStore.getState().setAuth(access_token, refresh_token, expires_in)
       isRefreshing = false
       refreshPromise = null
       return access_token
@@ -89,9 +90,7 @@ async function refreshToken(): Promise<string> {
       isRefreshing = false
       refreshPromise = null
       // 刷新失败，清除认证状态
-      localStorage.removeItem("token")
-      localStorage.removeItem("refresh_token")
-      localStorage.removeItem("token_expires_at")
+      useAuthStore.getState().clearAuth()
       throw err
     })
 
@@ -109,7 +108,7 @@ client.interceptors.request.use(
       return config
     }
 
-    const token = localStorage.getItem("token")
+    const { token } = useAuthStore.getState()
     if (!token) {
       return config
     }
@@ -139,7 +138,7 @@ client.interceptors.request.use(
 
 /**
  * 响应拦截器
- * 统一处理错误，401 状态码自动跳转登录页
+ * 统一处理错误，401 状态码自动清除认证状态并跳转登录页
  */
 client.interceptors.response.use(
   (response) => response,
@@ -149,9 +148,7 @@ client.interceptors.response.use(
 
       /* 401 未授权：清除认证状态并跳转登录页 */
       if (status === 401) {
-        localStorage.removeItem("token")
-        localStorage.removeItem("refresh_token")
-        localStorage.removeItem("token_expires_at")
+        useAuthStore.getState().clearAuth()
         if (window.location.pathname !== "/login") {
           window.location.href = "/login"
         }
