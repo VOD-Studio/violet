@@ -1,7 +1,9 @@
 // 主题状态 slice
 // 管理 light/dark/system 主题偏好
+// 使用 persist 中间件自动持久化到 localStorage
 
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 /** 主题模式类型 */
 type Theme = "light" | "dark" | "system"
@@ -43,59 +45,52 @@ interface ThemeState {
 }
 
 /**
- * 从 localStorage 读取保存的主题偏好
- */
-function getInitialTheme(): Theme {
-  if (typeof window === "undefined") return "system"
-  const saved = localStorage.getItem("theme")
-  if (saved === "light" || saved === "dark" || saved === "system") {
-    return saved
-  }
-  return "system"
-}
-
-/**
  * 主题状态 store
+ * 使用 persist 中间件自动同步 localStorage
  */
-export const useThemeStore = create<ThemeState>((set, get) => {
-  const initial = getInitialTheme()
-  const resolved = resolveTheme(initial)
+export const useThemeStore = create<ThemeState>()(
+  persist(
+    (set, get) => ({
+      theme: "system",
+      resolvedTheme: "light",
 
-  // 初始时应用主题到 DOM
-  if (typeof window !== "undefined") {
-    applyTheme(resolved)
-  }
+      setTheme: (theme) => {
+        const resolved = resolveTheme(theme)
+        applyTheme(resolved)
+        set({ theme, resolvedTheme: resolved })
+      },
 
-  // 监听系统颜色方案变化
-  if (typeof window !== "undefined") {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-    mediaQuery.addEventListener("change", () => {
-      if (get().theme === "system") {
-        const newResolved = getSystemTheme()
-        applyTheme(newResolved)
-        set({ resolvedTheme: newResolved })
-      }
-    })
-  }
-
-  return {
-    theme: initial,
-    resolvedTheme: resolved,
-
-    setTheme: (theme) => {
-      const resolved = resolveTheme(theme)
-      localStorage.setItem("theme", theme)
-      applyTheme(resolved)
-      set({ theme, resolvedTheme: resolved })
+      toggleTheme: () => {
+        const current = get().theme
+        const currentResolved = resolveTheme(current)
+        const next: Theme = currentResolved === "light" ? "dark" : "light"
+        applyTheme(next)
+        set({ theme: next, resolvedTheme: next })
+      },
+    }),
+    {
+      name: "theme-storage",
+      // 从存储恢复后应用主题到 DOM
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          const resolved = resolveTheme(state.theme)
+          applyTheme(resolved)
+          state.resolvedTheme = resolved
+        }
+      },
     },
+  ),
+)
 
-    toggleTheme: () => {
-      const current = get().theme
-      const currentResolved = resolveTheme(current)
-      const next: Theme = currentResolved === "light" ? "dark" : "light"
-      localStorage.setItem("theme", next)
-      applyTheme(next)
-      set({ theme: next, resolvedTheme: next })
-    },
-  }
-})
+// 监听系统颜色方案变化（在 store 外部设置，避免重复监听）
+if (typeof window !== "undefined") {
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+  mediaQuery.addEventListener("change", () => {
+    const state = useThemeStore.getState()
+    if (state.theme === "system") {
+      const newResolved = getSystemTheme()
+      applyTheme(newResolved)
+      useThemeStore.setState({ resolvedTheme: newResolved })
+    }
+  })
+}

@@ -1,18 +1,27 @@
 // 认证状态 slice
 // 管理 JWT token、refresh_token 和用户信息
-// 所有状态持久化到 localStorage
+// 使用 persist 中间件自动持久化到 localStorage
 
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 /** 用户信息结构 */
 interface User {
+  /** 用户唯一标识 */
   id: string
+  /** 用户名 */
   username: string
+  /** 邮箱地址 */
   email: string
+  /** 头像 URL */
   avatar_url?: string
+  /** 个人简介 */
   bio?: string
+  /** 用户角色 */
   role?: string
+  /** 邮箱是否已验证 */
   email_verified?: boolean
+  /** 是否启用 */
   is_active?: boolean
 }
 
@@ -34,86 +43,38 @@ interface AuthState {
   clearAuth: () => void
 }
 
-/** localStorage 键名 */
-const STORAGE_KEYS = {
-  token: "token",
-  refreshToken: "refresh_token",
-  expiresAt: "token_expires_at",
-  user: "user_info",
-}
-
-/**
- * 从 localStorage 加载初始状态
- */
-function loadInitialState(): {
-  token: string | null
-  refreshToken: string | null
-  expiresAt: number | null
-  user: User | null
-} {
-  const token = localStorage.getItem(STORAGE_KEYS.token)
-  const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken)
-  const expiresAtStr = localStorage.getItem(STORAGE_KEYS.expiresAt)
-  const expiresAt = expiresAtStr ? parseInt(expiresAtStr, 10) : null
-
-  // 尝试加载用户信息
-  let user: User | null = null
-  const userStr = localStorage.getItem(STORAGE_KEYS.user)
-  if (userStr) {
-    try {
-      user = JSON.parse(userStr)
-    } catch {
-      localStorage.removeItem(STORAGE_KEYS.user)
-    }
-  }
-
-  // 如果 token 已过期，清除所有认证数据
-  if (token && expiresAt && expiresAt < Date.now()) {
-    localStorage.removeItem(STORAGE_KEYS.token)
-    localStorage.removeItem(STORAGE_KEYS.refreshToken)
-    localStorage.removeItem(STORAGE_KEYS.expiresAt)
-    localStorage.removeItem(STORAGE_KEYS.user)
-    return { token: null, refreshToken: null, expiresAt: null, user: null }
-  }
-
-  return { token, refreshToken, expiresAt, user }
-}
-
-const initial = loadInitialState()
-
 /**
  * 认证状态 store
+ * 使用 persist 中间件自动同步 localStorage
  */
-export const useAuthStore = create<AuthState>((set) => ({
-  token: initial.token,
-  refreshToken: initial.refreshToken,
-  expiresAt: initial.expiresAt,
-  user: initial.user,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      token: null,
+      refreshToken: null,
+      expiresAt: null,
+      user: null,
 
-  setAuth: (token, refreshToken, expiresIn, user) => {
-    const expiresAt = Date.now() + expiresIn * 1000
-    localStorage.setItem(STORAGE_KEYS.token, token)
-    localStorage.setItem(STORAGE_KEYS.refreshToken, refreshToken)
-    localStorage.setItem(STORAGE_KEYS.expiresAt, String(expiresAt))
-    if (user) {
-      localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user))
-    }
-    set({ token, refreshToken, expiresAt, user: user ?? null })
-  },
+      setAuth: (token, refreshToken, expiresIn, user) => {
+        const expiresAt = Date.now() + expiresIn * 1000
+        set({ token, refreshToken, expiresAt, user: user ?? null })
+      },
 
-  setUser: (user) => {
-    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user))
-    set({ user })
-  },
+      setUser: (user) => set({ user }),
 
-  clearAuth: () => {
-    localStorage.removeItem(STORAGE_KEYS.token)
-    localStorage.removeItem(STORAGE_KEYS.refreshToken)
-    localStorage.removeItem(STORAGE_KEYS.expiresAt)
-    localStorage.removeItem(STORAGE_KEYS.user)
-    set({ token: null, refreshToken: null, expiresAt: null, user: null })
-  },
-}))
+      clearAuth: () => set({ token: null, refreshToken: null, expiresAt: null, user: null }),
+    }),
+    {
+      name: "auth-storage",
+      // 过期检查：从存储恢复后检查 token 是否过期
+      onRehydrateStorage: () => (state) => {
+        if (state?.expiresAt && state.expiresAt < Date.now()) {
+          state.clearAuth()
+        }
+      },
+    },
+  ),
+)
 
 /** 导出类型供其他模块使用 */
 export type { User, AuthState }

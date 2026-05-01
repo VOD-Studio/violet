@@ -1,7 +1,9 @@
 // 侧边栏状态 slice
 // 管理后台侧边栏折叠状态
+// 使用 persist 中间件自动持久化到 localStorage
 
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 /** 侧边栏状态接口 */
 interface SidebarState {
@@ -15,19 +17,19 @@ interface SidebarState {
 
 /**
  * 侧边栏状态 store
+ * 使用 persist 中间件自动同步 localStorage
  */
-export const useSidebarStore = create<SidebarState>((set) => ({
-  collapsed: localStorage.getItem("sidebar-collapsed") === "true",
+export const useSidebarStore = create<SidebarState>()(
+  persist(
+    (set) => ({
+      collapsed: false,
 
-  toggle: () =>
-    set((state) => {
-      const next = !state.collapsed
-      localStorage.setItem("sidebar-collapsed", String(next))
-      return { collapsed: next }
+      toggle: () => set((state) => ({ collapsed: !state.collapsed })),
+
+      setCollapsed: (collapsed) => set({ collapsed }),
     }),
-
-  setCollapsed: (collapsed) => {
-    localStorage.setItem("sidebar-collapsed", String(collapsed))
-    set({ collapsed })
-  },
-}))
+    {
+      name: "sidebar-storage",
+    },
+  ),
+)
