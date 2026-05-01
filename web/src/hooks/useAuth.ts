@@ -36,7 +36,7 @@ interface UserInfo {
  */
 export function useAuth() {
   const queryClient = useQueryClient();
-  const { token, user, setAuth, clearAuth, setUser } = useAuthStore();
+  const { token, user, clearAuth, setUser } = useAuthStore();
 
   /** 查询当前用户信息 */
   const userQuery = useQuery({
@@ -67,11 +67,13 @@ export function useAuth() {
    */
   async function handleLoginSuccess(response: LoginResponse) {
     // 先设置 token（store 更新是同步的，API 拦截器立即能读取）
-    useAuthStore.getState().setAuth(
-      response.access_token,
-      response.refresh_token,
-      response.expires_in
-    );
+    useAuthStore
+      .getState()
+      .setAuth(
+        response.access_token,
+        response.refresh_token,
+        response.expires_in
+      );
 
     // 然后获取用户信息（此时 API 拦截器已有 token）
     const userInfo = await api.get<UserInfo>("/auth/me");

@@ -138,17 +138,36 @@ client.interceptors.request.use(
 
 /**
  * 响应拦截器
- * 统一处理错误，401 状态码自动清除认证状态并跳转登录页
+ * 统一处理错误，401 状态码先尝试刷新 token 再跳转登录页
  */
 client.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
+  async (error: AxiosError<{ message?: string; errors?: Record<string, string[]> }>) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+
     if (error.response) {
       const { status, data } = error.response
 
-      /* 401 未授权：清除认证状态并跳转登录页 */
-      if (status === 401) {
-        useAuthStore.getState().clearAuth()
+      /* 401 未授权：尝试刷新 token 后重试 */
+      if (status === 401 && originalRequest && !originalRequest._retry) {
+        originalRequest._retry = true
+
+        const { refreshToken } = useAuthStore.getState()
+        if (refreshToken) {
+          try {
+            const newToken = await refreshToken()
+            originalRequest.headers.Authorization = `Bearer ${newToken}`
+            // 重试原请求
+            return client(originalRequest)
+          } catch {
+            // 刷新失败，清除认证状态
+            useAuthStore.getState().clearAuth()
+          }
+        } else {
+          // 没有 refresh token，清除认证状态
+          useAuthStore.getState().clearAuth()
+        }
+
         if (window.location.pathname !== "/login") {
           window.location.href = "/login"
         }
