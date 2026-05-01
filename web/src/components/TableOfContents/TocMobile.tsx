@@ -42,7 +42,7 @@ export function TocMobile({
         onClick={() => setOpen(true)}
         aria-label="打开目录"
         className={cn(
-          "xl:hidden fixed bottom-24 right-4 z-40",
+          "xl:hidden fixed bottom-20 right-4 z-40",
           "flex items-center gap-2 max-w-45",
           "h-10 pl-3 pr-4 rounded-full shadow-lg",
           "bg-card/90 backdrop-blur-md border border-border/60",

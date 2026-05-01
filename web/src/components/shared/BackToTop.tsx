@@ -89,7 +89,7 @@ export function BackToTop({
             stiffness: 300,
             damping: 20,
           }}
-          className="fixed bottom-8 right-8 z-50"
+          className="fixed bottom-4 right-4 z-50"
         >
           <Button
             size="icon"

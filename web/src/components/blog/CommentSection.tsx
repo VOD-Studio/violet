@@ -182,7 +182,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
 
       {/* 固定底部的快捷评论按钮 */}
       {showQuickButton && (
-        <div className="fixed bottom-32 right-8 z-40">
+        <div className="fixed bottom-36 right-4 z-40">
           <Button
             size="lg"
             className="shadow-lg rounded-full"
