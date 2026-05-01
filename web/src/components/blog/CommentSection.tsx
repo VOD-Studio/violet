@@ -180,9 +180,9 @@ export function CommentSection({ postId }: CommentSectionProps) {
         </form>
       </section>
 
-      {/* 固定底部的快捷评论按钮 - 位于回到顶部按钮上方 */}
+      {/* 固定底部的快捷评论按钮 - 只在大屏显示，避免与移动端目录按钮重叠 */}
       {showQuickButton && (
-        <div className="fixed bottom-20 right-8 z-50">
+        <div className="hidden xl:block fixed bottom-20 right-8 z-50">
           <Button
             size="lg"
             className="shadow-lg rounded-full"
