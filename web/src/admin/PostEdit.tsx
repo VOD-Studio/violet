@@ -1,11 +1,11 @@
 /**
  * 文章编辑页面
- * 支持新建和编辑文章，调用后端 API 保存数据
- * 包含标题、内容、标签、摘要和 SEO 设置
+ * 支持新建和编辑文章，使用 react-hook-form 管理表单状态
  */
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useNavigate, useParams } from "react-router"
+import { useForm, Controller } from "react-hook-form"
 import { api } from "@/lib/api"
 import { useAdminTags, useSavePost } from "@/hooks/useAdmin"
 import type { ApiPost } from "@/hooks/useAdmin"
@@ -25,33 +25,49 @@ import {
 } from "@/components/ui/card"
 import { Camera, X, Loader2 } from "lucide-react"
 
+/** 表单字段类型 */
+interface PostFormValues {
+  title: string
+  contentMarkdown: string
+  excerpt: string
+  coverImage: string
+  tagIds: number[]
+  seoDescription: string
+  seoKeywords: string
+}
+
 /**
  * 文章编辑页面
- * 新建模式下显示空表单，编辑模式下加载现有文章数据
  */
 export default function PostEdit() {
   const navigate = useNavigate()
-  /** 从路由参数中获取文章 ID */
   const { id } = useParams()
-  /** 是否为编辑模式 */
   const isEditing = Boolean(id)
 
-  /** 标签列表（从 API 获取） */
   const { data: availableTags = [], isLoading: tagsLoading } = useAdminTags()
-  /** 文章保存 Hook */
   const saveMutation = useSavePost()
 
-  /* 表单状态 */
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-  const [excerpt, setExcerpt] = useState("")
-  const [coverImage, setCoverImage] = useState("")
-  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
-  const [seoDescription, setSeoDescription] = useState("")
-  const [seoKeywords, setSeoKeywords] = useState("")
-  const [pageLoading, setPageLoading] = useState(false)
-  const [pageError, setPageError] = useState<string | null>(null)
-  const [uploadingCover, setUploadingCover] = useState(false)
+  const {
+    register,
+    control,
+    setValue,
+    watch,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<PostFormValues>({
+    defaultValues: {
+      title: "",
+      contentMarkdown: "",
+      excerpt: "",
+      coverImage: "",
+      tagIds: [],
+      seoDescription: "",
+      seoKeywords: "",
+    },
+  })
+
+  const coverImage = watch("coverImage")
+  const tagIds = watch("tagIds")
 
   /* 编辑模式下加载文章数据 */
   useEffect(() => {
@@ -59,37 +75,21 @@ export default function PostEdit() {
 
     async function loadPost() {
       try {
-        setPageLoading(true)
-        setPageError(null)
         const post = await api.get<ApiPost>(`/posts/id/${id}`)
-        setTitle(post.title)
-        setContent(post.contentMarkdown ?? "")
-        setExcerpt(post.excerpt ?? "")
-        setCoverImage(post.coverImage ?? "")
-        setSelectedTagIds(post.tags?.map((t) => t.id) ?? [])
-        setSeoDescription(post.seoDescription ?? "")
-        setSeoKeywords(post.seoKeywords ?? "")
+        setValue("title", post.title)
+        setValue("contentMarkdown", post.contentMarkdown ?? "")
+        setValue("excerpt", post.excerpt ?? "")
+        setValue("coverImage", post.coverImage ?? "")
+        setValue("tagIds", post.tags?.map((t) => t.id) ?? [])
+        setValue("seoDescription", post.seoDescription ?? "")
+        setValue("seoKeywords", post.seoKeywords ?? "")
       } catch (err) {
-        setPageError(err instanceof Error ? err.message : "加载文章失败")
-      } finally {
-        setPageLoading(false)
+        console.error("加载文章失败:", err)
       }
     }
 
     loadPost()
-  }, [id])
-
-  /**
-   * 切换标签的选中状态
-   * @param tagId - 标签 ID
-   */
-  function toggleTag(tagId: number) {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId)
-        ? prev.filter((t) => t !== tagId)
-        : [...prev, tagId],
-    )
-  }
+  }, [id, setValue])
 
   /**
    * 处理封面图上传
@@ -98,14 +98,11 @@ export default function PostEdit() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setUploadingCover(true)
     try {
       const result: UploadResult = await uploadFile(file)
-      setCoverImage(result.url)
+      setValue("coverImage", result.url)
     } catch (err) {
       console.error("封面图上传失败:", err)
-    } finally {
-      setUploadingCover(false)
     }
   }
 
@@ -113,25 +110,35 @@ export default function PostEdit() {
    * 清除封面图
    */
   function clearCover() {
-    setCoverImage("")
+    setValue("coverImage", "")
   }
 
   /**
-   * 保存文章（草稿或发布）
-   * @param status - 目标状态，draft 为草稿，published 为发布
+   * 切换标签选中状态
    */
-  async function handleSave(status: "draft" | "published" = "draft") {
+  function toggleTag(tagId: number) {
+    const current = tagIds ?? []
+    setValue(
+      "tagIds",
+      current.includes(tagId) ? current.filter((t) => t !== tagId) : [...current, tagId]
+    )
+  }
+
+  /**
+   * 提交表单
+   */
+  async function onSubmit(data: PostFormValues, status: "draft" | "published") {
     try {
       await saveMutation.mutateAsync({
         data: {
-          title,
-          contentMarkdown: content,
-          excerpt: excerpt || undefined,
-          coverImage: coverImage || undefined,
+          title: data.title,
+          contentMarkdown: data.contentMarkdown,
+          excerpt: data.excerpt || undefined,
+          coverImage: data.coverImage || undefined,
           status,
-          tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
-          seoDescription: seoDescription || undefined,
-          seoKeywords: seoKeywords || undefined,
+          tagIds: data.tagIds.length > 0 ? data.tagIds : undefined,
+          seoDescription: data.seoDescription || undefined,
+          seoKeywords: data.seoKeywords || undefined,
         },
         id: isEditing ? Number(id) : undefined,
       })
@@ -141,40 +148,12 @@ export default function PostEdit() {
     }
   }
 
-  if (pageLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {isEditing ? "编辑文章" : "新建文章"}
-          </h1>
-          <p className="text-muted-foreground">加载中...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (pageError) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">
-            {isEditing ? "编辑文章" : "新建文章"}
-          </h1>
-          <p className="text-destructive">{pageError}</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* 页面头部 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">
-            {isEditing ? "编辑文章" : "新建文章"}
-          </h1>
+          <h1 className="text-2xl font-bold">{isEditing ? "编辑文章" : "新建文章"}</h1>
           <p className="text-muted-foreground">
             {isEditing ? "修改文章内容" : "撰写新的博客文章"}
           </p>
@@ -186,55 +165,69 @@ export default function PostEdit() {
           <Button
             variant="secondary"
             disabled={saveMutation.isPending}
-            onClick={() => handleSave("draft")}
+            onClick={handleSubmit((data) => onSubmit(data, "draft"))}
           >
             {saveMutation.isPending ? "保存中..." : "保存草稿"}
           </Button>
-          <Button disabled={saveMutation.isPending} onClick={() => handleSave("published")}>
+          <Button
+            disabled={saveMutation.isPending}
+            onClick={handleSubmit((data) => onSubmit(data, "published"))}
+          >
             {saveMutation.isPending ? "发布中..." : "发布"}
           </Button>
         </div>
       </div>
 
-      {/* 保存错误提示 */}
+      {/* 错误提示 */}
       {saveMutation.error && (
         <p className="text-sm text-destructive">{saveMutation.error.message}</p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <form className="grid gap-6 lg:grid-cols-[1fr_320px]">
         {/* 左侧主编辑区 */}
         <div className="space-y-6">
-          {/* 标题输入 */}
+          {/* 标题 */}
           <div className="space-y-2">
             <Label htmlFor="title">文章标题</Label>
             <Input
               id="title"
               placeholder="请输入文章标题"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="text-lg"
+              className={`text-lg ${errors.title ? "border-destructive" : ""}`}
+              {...register("title", { required: "标题不能为空", minLength: { value: 1, message: "标题至少 1 个字符" } })}
             />
+            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
 
-          {/* 摘要输入 */}
+          {/* 摘要 */}
           <div className="space-y-2">
             <Label htmlFor="excerpt">文章摘要</Label>
             <Textarea
               id="excerpt"
               placeholder="请输入文章摘要（可选）"
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
               className="min-h-[80px] resize-y"
+              {...register("excerpt")}
             />
           </div>
 
-          {/* 内容编辑区域 */}
+          {/* 内容 */}
           <div className="space-y-2">
             <Label>文章内容</Label>
-            <RichTextEditor
-              content={content}
-              onChange={setContent}
-              placeholder="请输入文章内容"
+            <Controller
+              name="contentMarkdown"
+              control={control}
+              rules={{ required: "内容不能为空" }}
+              render={({ field, fieldState }) => (
+                <>
+                  <RichTextEditor
+                    content={field.value}
+                    onChange={field.onChange}
+                    placeholder="请输入文章内容"
+                  />
+                  {fieldState.error && (
+                    <p className="text-sm text-destructive">{fieldState.error.message}</p>
+                  )}
+                </>
+              )}
             />
           </div>
         </div>
@@ -255,9 +248,7 @@ export default function PostEdit() {
                   {availableTags.map((tag) => (
                     <Badge
                       key={tag.id}
-                      variant={
-                        selectedTagIds.includes(tag.id) ? "default" : "outline"
-                      }
+                      variant={tagIds?.includes(tag.id) ? "default" : "outline"}
                       className="cursor-pointer"
                       onClick={() => toggleTag(tag.id)}
                     >
@@ -272,7 +263,7 @@ export default function PostEdit() {
             </CardContent>
           </Card>
 
-          {/* 封面图上传 */}
+          {/* 封面图 */}
           <Card>
             <CardHeader>
               <CardTitle>封面图</CardTitle>
@@ -281,11 +272,7 @@ export default function PostEdit() {
             <CardContent>
               {coverImage ? (
                 <div className="relative aspect-video overflow-hidden rounded-lg">
-                  <img
-                    src={coverImage}
-                    alt="封面图"
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={coverImage} alt="封面图" className="h-full w-full object-cover" />
                   <Button
                     variant="destructive"
                     size="icon-sm"
@@ -302,16 +289,16 @@ export default function PostEdit() {
                     accept="image/*"
                     className="hidden"
                     onChange={handleCoverUpload}
-                    disabled={uploadingCover}
+                    disabled={saveMutation.isPending}
                   />
                   <div className="text-center">
-                    {uploadingCover ? (
+                    {saveMutation.isPending ? (
                       <Loader2 className="mx-auto h-8 w-8 animate-spin" />
                     ) : (
                       <Camera className="mx-auto h-8 w-8" />
                     )}
                     <p className="mt-1 text-sm">
-                      {uploadingCover ? "上传中..." : "点击上传封面图"}
+                      {saveMutation.isPending ? "上传中..." : "点击上传封面图"}
                     </p>
                   </div>
                 </label>
@@ -327,31 +314,27 @@ export default function PostEdit() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="seo-description">SEO 描述</Label>
+                <Label htmlFor="seoDescription">SEO 描述</Label>
                 <Textarea
-                  id="seo-description"
+                  id="seoDescription"
                   placeholder="请输入搜索引擎描述摘要"
-                  value={seoDescription}
-                  onChange={(e) => setSeoDescription(e.target.value)}
                   className="min-h-[80px] resize-y"
+                  {...register("seoDescription")}
                 />
-                <p className="text-xs text-muted-foreground">
-                  建议 150 字以内
-                </p>
+                <p className="text-xs text-muted-foreground">建议 150 字以内</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="seo-keywords">SEO 关键词</Label>
+                <Label htmlFor="seoKeywords">SEO 关键词</Label>
                 <Input
-                  id="seo-keywords"
+                  id="seoKeywords"
                   placeholder="多个关键词用英文逗号分隔"
-                  value={seoKeywords}
-                  onChange={(e) => setSeoKeywords(e.target.value)}
+                  {...register("seoKeywords")}
                 />
               </div>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </form>
     </div>
   )
 }
