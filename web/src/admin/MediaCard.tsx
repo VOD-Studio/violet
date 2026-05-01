@@ -176,7 +176,7 @@ export default function MediaCard({
 
   return (
     <Card
-      className={`overflow-hidden transition-shadow group ${selected ? "ring-2 ring-primary shadow-md" : ""}`}
+      className={`overflow-hidden transition-shadow group border-0 shadow-sm hover:shadow-md ${selected ? "ring-2 ring-primary" : ""}`}
     >
       <CardContent className="p-0">
         {/* 预览区域 */}
@@ -217,7 +217,7 @@ export default function MediaCard({
           )}
         </div>
         {/* 文件信息 */}
-        <div className="flex items-center justify-between gap-2 border-t p-3">
+        <div className="flex items-center justify-between gap-2 p-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{item.original_name}</p>
             <p className="text-xs text-muted-foreground">
