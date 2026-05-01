@@ -6,20 +6,30 @@ import { api } from "@/lib/api"
 
 /** 文章基本信息 */
 interface Post {
+  /** 文章唯一标识 */
   id: string
+  /** 文章标题 */
   title: string
+  /** URL slug */
   slug: string
-  summary: string
+  /** 文章摘要 */
+  excerpt?: string
+  /** 封面图片 */
   coverImage?: string
+  /** 创建时间 */
   createdAt: string
+  /** 更新时间 */
   updatedAt?: string
-  views: number
+  /** 浏览次数 */
+  viewCount: number
+  /** 作者信息 */
   author?: {
     id: string
     username: string
     avatar?: string
   }
-  tags: Array<{
+  /** 标签列表 */
+  tags?: Array<{
     id: string
     name: string
     slug: string

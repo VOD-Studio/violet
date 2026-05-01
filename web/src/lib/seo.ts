@@ -26,7 +26,7 @@ interface PostForSEO {
   /** 文章标题 */
   title: string
   /** 文章摘要 */
-  summary: string
+  excerpt?: string
   /** URL 别名 */
   slug: string
   /** 封面图地址 */
@@ -83,7 +83,7 @@ export function generatePostSEO(post: PostForSEO): SEOConfig {
 
   return {
     title: generateTitle(post.title),
-    description: post.summary,
+    description: post.excerpt ?? post.title,
     keywords,
     author: post.author?.username ?? SITE_CONFIG.author,
     image,
@@ -108,7 +108,7 @@ export function generateStructuredData(post: PostForSEO): Record<string, unknown
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    description: post.summary,
+    description: post.excerpt ?? post.title,
     image,
     url,
     datePublished: post.createdAt,

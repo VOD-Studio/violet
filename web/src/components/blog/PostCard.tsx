@@ -54,7 +54,7 @@ export function PostCard({ post, delay = 0 }: PostCardProps) {
       <div className="p-6">
         {/* 标签列表 */}
         <div className="mb-3 flex flex-wrap gap-2">
-          {post.tags.map((tag) => (
+          {post.tags?.map((tag) => (
             <span
               key={tag.id}
               className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
@@ -73,7 +73,7 @@ export function PostCard({ post, delay = 0 }: PostCardProps) {
 
         {/* 文章摘要 */}
         <p className="mb-4 text-sm text-muted-foreground line-clamp-2">
-          {post.summary}
+          {post.excerpt}
         </p>
 
         {/* 底部元信息 */}
@@ -87,7 +87,7 @@ export function PostCard({ post, delay = 0 }: PostCardProps) {
           {/* 浏览量 */}
           <span className="flex items-center gap-1">
             <Eye className="size-3.5" />
-            {post.views}
+            {(post.viewCount ?? 0).toLocaleString()}
           </span>
         </div>
       </div>

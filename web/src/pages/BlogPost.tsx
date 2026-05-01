@@ -232,7 +232,7 @@ export default function BlogPost() {
       {/* 文章页 SEO 配置 */}
       <SEO
         title={post.title}
-        description={post.summary}
+        description={post.excerpt ?? post.title}
         image={post.coverImage}
         url={`${SITE_CONFIG.url}/blog/${post.slug}`}
         type="article"
@@ -292,14 +292,14 @@ export default function BlogPost() {
               {/* 浏览量 */}
               <span className="flex items-center gap-1">
                 <Eye className="size-4" />
-                {post.views} 次浏览
+                {(post.viewCount ?? 0).toLocaleString()} 次浏览
               </span>
 
               {/* 标签列表 */}
-              {post.tags.length > 0 && (
+              {(post.tags?.length ?? 0) > 0 && (
                 <div className="flex items-center gap-1">
                   <Tag className="size-4" />
-                  {post.tags.map((tag) => (
+                  {post.tags?.map((tag) => (
                     <Link
                       key={tag.id}
                       to={`/blog?tag=${tag.slug}`}
