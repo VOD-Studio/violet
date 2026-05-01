@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/google/uuid"
@@ -130,7 +131,7 @@ func (s *PostService) CreatePost(ctx context.Context, req CreatePostRequest, aut
 		SeoTitle:       seoTitle,
 		SeoDescription: seoDesc,
 		SeoKeywords:    seoKeywords,
-		PublishedAt:    sql.NullTime{}, // 发布时间由 UpdatePostStatus 设置
+		PublishedAt:    sql.NullTime{Time: time.Now(), Valid: status == "published"}, // 发布时设置时间
 	})
 	if err != nil {
 		return nil, fmt.Errorf("创建文章失败: %w", err)
