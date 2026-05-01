@@ -1,12 +1,13 @@
 /**
  * 媒体库页面
- * 支持文件上传（图片、视频、音频、文档）、预览、删除
- * 上传区域使用弹窗展示，带动画效果
+ * 支持文件上传（图片、视频、音频、文档）、分类筛选、无限滚动、预览、删除
  */
 
-import { useState } from "react"
-import { useAdminMedia, useDeleteMedia } from "@/hooks/useAdmin"
+import { useState, useCallback } from "react"
+import { motion } from "motion/react"
+import { fetchMediaPage, useDeleteMedia } from "@/hooks/useAdmin"
 import type { MediaItem } from "@/hooks/useAdmin"
+import { usePaginatedQuery, useInfiniteScroll } from "@/hooks/useInfiniteScroll"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { EmptyState } from "@/components/shared/EmptyState"
@@ -27,6 +28,20 @@ import {
 } from "@/components/ui/dialog"
 import { Image as ImageIcon, Upload } from "lucide-react"
 
+/** 分类筛选项 */
+interface CategoryTab {
+  label: string
+  mimeType?: string
+}
+
+const categories: CategoryTab[] = [
+  { label: "全部" },
+  { label: "图片", mimeType: "image" },
+  { label: "视频", mimeType: "video" },
+  { label: "音频", mimeType: "audio" },
+  { label: "文档", mimeType: "application" },
+]
+
 /**
  * 媒体网格骨架屏
  */
@@ -37,7 +52,7 @@ function MediaGridSkeleton() {
         <Card key={i} className="overflow-hidden">
           <CardContent className="p-0">
             <Skeleton className="h-40 w-full" />
-            <div className="p-3">
+            <div className="border-t p-3">
               <Skeleton className="mb-1 h-4 w-3/4" />
               <Skeleton className="h-3 w-1/2" />
             </div>
@@ -59,37 +74,91 @@ function formatSize(bytes: number): string {
 }
 
 /**
+ * 带滑块动画的分类标签
+ */
+function CategoryTabs({
+  active,
+  onChange,
+}: {
+  active: number
+  onChange: (index: number) => void
+}) {
+  return (
+    <div className="relative flex gap-1 rounded-lg border bg-muted/30 p-1">
+      {categories.map((cat, i) => (
+        <button
+          key={cat.label}
+          onClick={() => onChange(i)}
+          className={`relative z-10 flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            i === active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {cat.label}
+          {i === active && (
+            <motion.div
+              layoutId="category-indicator"
+              className="absolute inset-0 -z-10 rounded-md bg-background shadow-sm"
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            />
+          )}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/**
  * 媒体库页面
- * 支持文件上传、预览、删除
  */
 export default function Media() {
-  const { data: mediaItems, isLoading, error, refetch } = useAdminMedia()
+  const [category, setCategory] = useState(0)
   const deleteMutation = useDeleteMedia()
 
-  /** 上传区域显示状态 */
   const [showUploader, setShowUploader] = useState(false)
-
-  /** 删除确认弹窗状态 */
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: "" })
-
-  /** 预览弹窗状态 */
   const [previewItem, setPreviewItem] = useState<MediaItem | null>(null)
 
-  /**
-   * 弹出删除确认
-   */
+  const currentMimeType = categories[category].mimeType
+
+  const fetchFn = useCallback(
+    (page: number, limit: number) => fetchMediaPage(page, limit, currentMimeType),
+    [currentMimeType],
+  )
+
+  const {
+    items: mediaItems,
+    isLoading,
+    error,
+    hasMore,
+    loadMore,
+    reload,
+  } = usePaginatedQuery<MediaItem>(
+    ["admin", "media", currentMimeType ?? "all"],
+    fetchFn,
+    20,
+  )
+
+  const sentinelRef = useInfiniteScroll({
+    hasMore,
+    isLoading,
+    onLoadMore: loadMore,
+  })
+
+  function handleCategoryChange(index: number) {
+    if (index === category) return
+    setCategory(index)
+  }
+
   function handleDelete(id: string) {
     setDeleteConfirm({ open: true, id })
   }
 
-  /**
-   * 确认删除
-   */
   function confirmDelete() {
     deleteMutation.mutate(deleteConfirm.id, {
       onSuccess: () => {
         toast.success("文件已删除")
         setDeleteConfirm({ open: false, id: "" })
+        reload()
       },
       onError: () => {
         toast.error("删除失败，请重试")
@@ -98,13 +167,12 @@ export default function Media() {
     })
   }
 
-  /**
-   * 上传完成回调
-   */
   function handleUploadComplete(result: UploadResult) {
     toast.success(`「${result.name}」上传成功`)
-    refetch()
+    reload()
   }
+
+  const isEmpty = !isLoading && !error && mediaItems.length === 0
 
   return (
     <div className="space-y-6">
@@ -120,16 +188,17 @@ export default function Media() {
         </Button>
       </div>
 
-      {/* 加载态 */}
-      {isLoading && <MediaGridSkeleton />}
+      {/* 分类筛选（带滑块动画） */}
+      <CategoryTabs active={category} onChange={handleCategoryChange} />
+
+      {/* 加载态（首次） */}
+      {isLoading && mediaItems.length === 0 && <MediaGridSkeleton />}
 
       {/* 错误状态 */}
-      {error && (
-        <ErrorFallback error={error.message} onRetry={refetch} />
-      )}
+      {error && <ErrorFallback error={error} onRetry={reload} />}
 
       {/* 空数据状态 */}
-      {!isLoading && !error && (!mediaItems || mediaItems.length === 0) && (
+      {isEmpty && (
         <EmptyState
           title="暂无媒体文件"
           description="上传你的第一个文件开始管理媒体库"
@@ -139,10 +208,10 @@ export default function Media() {
         />
       )}
 
-      {/* 媒体网格展示 */}
-      {!isLoading && !error && mediaItems && mediaItems.length > 0 && (
+      {/* 媒体网格 */}
+      {mediaItems.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {mediaItems.map((item: MediaItem) => (
+          {mediaItems.map((item) => (
             <MediaCard
               key={item.id}
               item={item}
@@ -150,6 +219,15 @@ export default function Media() {
               onPreview={setPreviewItem}
             />
           ))}
+        </div>
+      )}
+
+      {/* 无限滚动哨兵 */}
+      {hasMore && (
+        <div ref={sentinelRef} className="flex justify-center py-4">
+          {isLoading && (
+            <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          )}
         </div>
       )}
 
@@ -196,10 +274,7 @@ export default function Media() {
           <DialogHeader>
             <DialogTitle>上传文件</DialogTitle>
           </DialogHeader>
-          <FileUploader
-            onUpload={handleUploadComplete}
-            multiple
-          />
+          <FileUploader onUpload={handleUploadComplete} multiple />
         </DialogContent>
       </Dialog>
 

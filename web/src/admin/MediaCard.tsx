@@ -90,17 +90,17 @@ function VideoThumbnail({
   const videoUrl = getUploadUrl(filename)
 
   return (
-    <div className="relative size-full">
+    <div className="group/thumbnail relative size-full">
       <img
         src={thumbUrl}
         alt={originalName}
-        className="size-full object-cover"
+        className="size-full object-cover transition-transform duration-300 group-hover/thumbnail:scale-105"
         onError={(e) => {
           const target = e.currentTarget as HTMLImageElement
           const parent = target.parentElement
           if (!parent) return
           const video = document.createElement("video")
-          video.className = "size-full object-cover"
+          video.className = "size-full object-cover transition-transform duration-300 group-hover/thumbnail:scale-105"
           video.preload = "metadata"
           video.muted = true
           const source = document.createElement("source")
@@ -127,18 +127,18 @@ export default function MediaCard({ item, onDelete, onPreview }: MediaCardProps)
   const FileIcon = getFileIcon(item.mime_type)
 
   return (
-    <Card className="group overflow-hidden">
+    <Card className="overflow-hidden">
       <CardContent className="p-0">
         {/* 预览区域 */}
         <button
           onClick={() => onPreview(item)}
-          className="flex h-40 w-full cursor-pointer items-center justify-center bg-muted transition-colors hover:bg-muted/80"
+          className="group relative flex h-40 w-full cursor-pointer items-center justify-center overflow-hidden bg-muted"
         >
           {isImage ? (
             <img
               src={fileUrl}
               alt={item.original_name}
-              className="size-full object-cover"
+              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : isVideo ? (
             <VideoThumbnail

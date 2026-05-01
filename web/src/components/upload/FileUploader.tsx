@@ -180,7 +180,7 @@ export default function FileUploader({
 
       {/* 上传列表 */}
       {items.length > 0 && (
-        <div className="space-y-2">
+        <div className="max-h-[300px] space-y-2 overflow-y-auto">
           {items.map((item) => (
             <div
               key={item.id}

@@ -387,6 +387,31 @@ export function useAdminMedia() {
 }
 
 /**
+ * 分页获取媒体文件列表，支持按 MIME 类型筛选
+ * 返回 { items, total, page, limit } 供 usePaginatedQuery 使用
+ */
+export async function fetchMediaPage(
+  page: number,
+  limit: number,
+  mimeType?: string,
+): Promise<{ items: MediaItem[]; total: number; page: number; limit: number }> {
+  const params: Record<string, unknown> = { page, limit }
+  if (mimeType) params.type = mimeType
+  const res = await api.get<{
+    media: MediaItem[]
+    total: number
+    page: number
+    limit: number
+  }>("/media", params)
+  return {
+    items: res.media ?? [],
+    total: res.total ?? 0,
+    page: res.page ?? page,
+    limit: res.limit ?? limit,
+  }
+}
+
+/**
  * 删除媒体文件的 mutation
  */
 export function useDeleteMedia() {
