@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 /** QueryProvider 组件属性 */
 interface QueryProviderProps {
@@ -31,7 +30,7 @@ function makeQueryClient() {
 
 /**
  * React Query 全局提供者
- * 在应用顶层包裹，提供查询客户端和开发工具
+ * 在应用顶层包裹，提供查询客户端
  */
 export default function QueryProvider({ children }: QueryProviderProps) {
   const [queryClient] = useState(() => makeQueryClient());
@@ -39,7 +38,6 @@ export default function QueryProvider({ children }: QueryProviderProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }
