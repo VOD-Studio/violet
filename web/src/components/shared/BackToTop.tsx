@@ -124,7 +124,7 @@ export function BackToTop({
               transition={{ duration: 0.3, repeat: Infinity }}
               className="absolute -bottom-2 left-1/2 -translate-x-1/2"
             >
-              <div className="h-4 w-2 rounded-full bg-gradient-to-t from-orange-500 via-yellow-400 to-transparent blur-sm" />
+              <div className="h-4 w-2 rounded-full bg-linear-to-t from-orange-500 via-yellow-400 to-transparent blur-sm" />
             </motion.div>
           )}
         </motion.div>
