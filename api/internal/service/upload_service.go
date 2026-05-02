@@ -270,7 +270,7 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID string, upl
 	}
 
 	// 创建媒体记录
-	media, err := s.mediaSvc.CreateMedia(ctx, finalFilename, filename, mimeType, totalSize, finalFilename, nil, nil, nil, uploaderID, "public")
+	media, err := s.mediaSvc.CreateMedia(ctx, finalFilename, filename, mimeType, totalSize, s.uploadPathPrefix+finalFilename, nil, nil, nil, uploaderID, "public")
 	if err != nil {
 		return nil, fmt.Errorf("创建媒体记录失败: %w", err)
 	}
@@ -291,7 +291,7 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID string, upl
 
 	return &CompleteUploadResponse{
 		MediaID:   media.ID,
-		URL:       s.uploadPathPrefix + finalFilename,
+		URL:       media.Path,
 		Thumbnail: thumbnail,
 	}, nil
 }
