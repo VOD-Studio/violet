@@ -5,13 +5,13 @@
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { AnimatedOutlet } from "./AnimatedOutlet";
-import { MusicPlayer } from "@/components/shared/MusicPlayer";
+import { SidebarWidgets } from "@/components/shared/SidebarWidgets";
 
 /**
  * 前台布局组件
  * 使用 AnimatedOutlet 渲染子路由内容，支持页面过渡动画
  * Header 固定在顶部，Footer 在底部
- * MusicPlayer 固定在页面底部，根据后台配置选择播放器版本
+ * SidebarWidgets 统一管理悬浮侧边组件（音乐播放器、回到顶部等）
  */
 export function Layout() {
   return (
@@ -27,8 +27,8 @@ export function Layout() {
       {/* 底部信息栏 */}
       <Footer />
 
-      {/* 全局音乐播放器 */}
-      <MusicPlayer />
+      {/* 悬浮侧边组件集合 */}
+      <SidebarWidgets />
     </div>
   );
 }
