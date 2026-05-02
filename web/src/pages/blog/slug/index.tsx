@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { usePost, useIncrementView } from "@/hooks/usePosts";
+import { usePostStore } from "@/store";
 import { CommentSection } from "@/components/blog/CommentSection";
 import { ScrollReveal } from "@/components/creative";
 import { SEO } from "@/components/shared/SEO";
@@ -30,6 +31,7 @@ export default function BlogSlug() {
   const { slug } = useParams<{ slug: string }>();
   const { data: post, isLoading, error } = usePost(slug);
   const { mutate } = useIncrementView();
+  const { setPostId } = usePostStore();
 
   /* 文章加载成功后增加浏览次数 */
   useEffect(() => {
@@ -37,6 +39,14 @@ export default function BlogSlug() {
       mutate(post.id);
     }
   }, [mutate, post?.id]);
+
+  /* 设置当前文章 ID 到 store，离开时清除 */
+  useEffect(() => {
+    if (post?.id) {
+      setPostId(post.id);
+    }
+    return () => setPostId(null);
+  }, [post?.id, setPostId]);
 
   /* 加载态 */
   if (isLoading) {
