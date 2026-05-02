@@ -347,7 +347,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	// 构建响应，不返回敏感信息
 	avatarURL := ""
 	if user.AvatarUrl.Valid && user.AvatarUrl.String != "" {
-		avatarURL = h.uploadPathPrefix + user.AvatarUrl.String
+		avatarURL = user.AvatarUrl.String
 	}
 	bio := ""
 	if user.Bio.Valid {
@@ -408,7 +408,7 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	avatarURL := ""
-	if user.AvatarUrl.Valid {
+	if user.AvatarUrl.Valid && user.AvatarUrl.String != "" {
 		avatarURL = user.AvatarUrl.String
 	}
 	bio := ""
