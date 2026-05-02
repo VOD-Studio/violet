@@ -297,7 +297,7 @@ func (s *MediaService) mediaToResponse(m *generated.Medium) *MediaResponse {
 		OriginalName:       m.OriginalName,
 		MimeType:           m.MimeType,
 		Size:               m.Size,
-		Path:               s.uploadPathPrefix + m.Filename,
+		Path:               m.Path,
 		DownloadCount:      m.DownloadCount,
 		DownloadPermission: m.DownloadPermission,
 		CreatedAt:          m.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
