@@ -101,6 +101,45 @@ func (q *Queries) GetActivePlaylist(ctx context.Context) (*Playlist, error) {
 	return &i, err
 }
 
+const getAllActivePlaylists = `-- name: GetAllActivePlaylists :many
+SELECT id, title, cover, creator, platform, playlist_id, song_count, songs, is_active, created_at, updated_at FROM playlists WHERE is_active = true ORDER BY created_at DESC
+`
+
+func (q *Queries) GetAllActivePlaylists(ctx context.Context) ([]*Playlist, error) {
+	rows, err := q.db.QueryContext(ctx, getAllActivePlaylists)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Playlist{}
+	for rows.Next() {
+		var i Playlist
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Cover,
+			&i.Creator,
+			&i.Platform,
+			&i.PlaylistID,
+			&i.SongCount,
+			&i.Songs,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPlaylistByID = `-- name: GetPlaylistByID :one
 
 SELECT id, title, cover, creator, platform, playlist_id, song_count, songs, is_active, created_at, updated_at FROM playlists WHERE id = $1

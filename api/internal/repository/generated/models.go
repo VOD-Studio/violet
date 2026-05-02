@@ -59,6 +59,12 @@ type Medium struct {
 	Thumbnail          sql.NullString  `json:"thumbnail"`
 }
 
+type MusicSetting struct {
+	ID            int32     `json:"id"`
+	PlayerVersion string    `json:"player_version"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
 type Playlist struct {
 	ID         uuid.UUID       `json:"id"`
 	Title      string          `json:"title"`

@@ -90,6 +90,7 @@ func main() {
 	uploadService := service.NewUploadService(queries, mediaService, "uploads/chunks", "uploads", 1024*1024*1024, cfg.UploadPathPrefix)
 	musicService := service.NewMusicService()
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
+	musicSettingsService := service.NewMusicSettingsService(queries)
 	projectService := service.NewProjectService(queries)
 	stickerService := service.NewStickerService(queries)
 
@@ -105,7 +106,7 @@ func main() {
 	mediaHandler := handler.NewMediaHandler(mediaService, downloadService, "uploads")
 	uploadHandler := handler.NewUploadHandler(uploadService)
 	musicHandler := handler.NewMusicHandler(musicService)
-	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService)
+	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
 	projectHandler := handler.NewProjectHandler(projectService)
 	stickerHandler := handler.NewStickerHandler(stickerService)
 
@@ -279,6 +280,8 @@ func main() {
 		r.Get("/playlist", musicHandler.GetPlaylist) // 解析歌单链接返回歌单信息
 		r.Get("/song", musicHandler.GetSongDetail)   // 获取歌曲详情
 		r.Get("/playlist/config/active", musicAdminHandler.GetActivePlaylist) // 获取启用的歌单配置（前台）
+		r.Get("/playlists/active", musicAdminHandler.GetAllActivePlaylists)   // 获取所有启用歌单（公开）
+		r.Get("/settings", musicAdminHandler.GetMusicSettings)                 // 获取播放器设置（公开）
 	})
 
 	// 歌单管理路由，需要认证 + 管理员权限
@@ -292,6 +295,15 @@ func main() {
 			r.Delete("/{id}", musicAdminHandler.DeletePlaylist)             // 删除歌单
 			r.Post("/{id}/activate", musicAdminHandler.SetActivePlaylist)   // 设置为启用歌单
 			r.Post("/{id}/refresh", musicAdminHandler.RefreshPlaylistSongs) // 刷新歌单歌曲
+		})
+	})
+
+	// 音乐设置管理路由，需要认证 + 管理员权限
+	r.Route("/api/admin/music", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Use(middleware.AdminRequired)
+			r.Patch("/settings", musicAdminHandler.UpdatePlayerVersion) // 更新播放器设置
 		})
 	})
 

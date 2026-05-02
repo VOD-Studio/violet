@@ -210,6 +210,25 @@ func (s *MusicPlaylistAdminService) GetActivePlaylist(ctx context.Context) (*Pla
 	return playlistToResponse(playlist, songs), nil
 }
 
+// GetAllActivePlaylists 获取所有启用的歌单列表（前台用）
+func (s *MusicPlaylistAdminService) GetAllActivePlaylists(ctx context.Context) ([]*PlaylistResponse, error) {
+	playlists, err := s.queries.GetAllActivePlaylists(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("获取启用歌单列表失败: %w", err)
+	}
+
+	responses := make([]*PlaylistResponse, 0, len(playlists))
+	for _, p := range playlists {
+		songs, err := parseSongsFromJSON(p.Songs)
+		if err != nil {
+			songs = []*SongInfo{}
+		}
+		responses = append(responses, playlistToResponse(p, songs))
+	}
+
+	return responses, nil
+}
+
 // SetActivePlaylist 设置启用的歌单
 // 先将所有歌单设置为不启用，再将指定歌单设置为启用
 func (s *MusicPlaylistAdminService) SetActivePlaylist(ctx context.Context, id uuid.UUID) (*PlaylistResponse, error) {

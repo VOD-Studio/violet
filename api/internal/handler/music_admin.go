@@ -14,12 +14,14 @@ import (
 // MusicAdminHandler 音乐后台管理接口处理器
 type MusicAdminHandler struct {
 	playlistAdminService *service.MusicPlaylistAdminService
+	musicSettingsService *service.MusicSettingsService
 }
 
 // NewMusicAdminHandler 创建音乐后台管理处理器实例
-func NewMusicAdminHandler(playlistAdminService *service.MusicPlaylistAdminService) *MusicAdminHandler {
+func NewMusicAdminHandler(playlistAdminService *service.MusicPlaylistAdminService, musicSettingsService *service.MusicSettingsService) *MusicAdminHandler {
 	return &MusicAdminHandler{
 		playlistAdminService: playlistAdminService,
+		musicSettingsService: musicSettingsService,
 	}
 }
 
@@ -235,5 +237,79 @@ func (h *MusicAdminHandler) GetActivePlaylist(w http.ResponseWriter, r *http.Req
 			"title":      playlist.Title,
 			"isActive":   playlist.IsActive,
 		},
+	})
+}
+
+// GetAllActivePlaylists 获取所有启用的歌单列表
+// GET /api/music/playlists/active
+// 公开接口，无需认证
+func (h *MusicAdminHandler) GetAllActivePlaylists(w http.ResponseWriter, r *http.Request) {
+	playlists, err := h.playlistAdminService.GetAllActivePlaylists(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "获取歌单列表失败")
+		return
+	}
+
+	// 转换为前端需要的格式
+	result := make([]map[string]interface{}, 0, len(playlists))
+	for _, p := range playlists {
+		result = append(result, map[string]interface{}{
+			"id":         p.ID,
+			"server":     p.Platform,
+			"type":       "playlist",
+			"playlistId": p.PlaylistID,
+			"title":      p.Title,
+			"isActive":   p.IsActive,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"playlists": result,
+	})
+}
+
+// GetMusicSettings 获取音乐播放器设置
+// GET /api/music/settings
+// 公开接口，无需认证
+func (h *MusicAdminHandler) GetMusicSettings(w http.ResponseWriter, r *http.Request) {
+	settings, err := h.musicSettingsService.GetMusicSettings(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "获取音乐设置失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"settings": settings,
+	})
+}
+
+// UpdatePlayerVersion 更新播放器版本
+// PATCH /api/admin/music/settings
+// 需要管理员权限
+func (h *MusicAdminHandler) UpdatePlayerVersion(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		PlayerVersion string `json:"player_version"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		return
+	}
+
+	// 验证播放器版本
+	if req.PlayerVersion != "v1" && req.PlayerVersion != "v2" {
+		writeError(w, http.StatusBadRequest, "validation_error", "播放器版本必须是 v1 或 v2")
+		return
+	}
+
+	settings, err := h.musicSettingsService.UpdatePlayerVersion(r.Context(), req.PlayerVersion)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "更新播放器版本失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"message":  "播放器版本已更新",
+		"settings": settings,
 	})
 }

@@ -43,3 +43,6 @@ DELETE FROM playlists WHERE id = $1;
 
 -- name: CountPlaylists :one
 SELECT COUNT(*) FROM playlists;
+
+-- name: GetAllActivePlaylists :many
+SELECT * FROM playlists WHERE is_active = true ORDER BY created_at DESC;
