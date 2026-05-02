@@ -1,5 +1,5 @@
 /**
- * 全局音乐播放器 (v1)
+ * APlayer 音乐播放器 (v1)
  * 使用 APlayer + Meting 实现，支持网易云/QQ音乐完整歌单
  * 独立管理按钮和状态
  */
@@ -19,7 +19,7 @@ interface PlaylistConfig {
   isActive: boolean;
 }
 
-interface GlobalMusicPlayerProps {
+interface APlayerMusicPlayerProps {
   playlists: PlaylistConfig[];
 }
 
@@ -61,7 +61,7 @@ async function fetchMetingSongs(
   return [];
 }
 
-export function GlobalMusicPlayer({ playlists }: GlobalMusicPlayerProps) {
+export function APlayerMusicPlayer({ playlists }: APlayerMusicPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<APlayer | null>(null);
   const [songs, setSongs] = useState<APlayer.Audio[]>([]);

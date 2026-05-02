@@ -5,7 +5,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { GlobalMusicPlayer } from "./GlobalMusicPlayer";
+import { APlayerMusicPlayer } from "./APlayerMusicPlayer";
 import { PlyrMusicPlayer } from "./PlyrMusicPlayer";
 
 /** 播放器设置响应 */
@@ -78,5 +78,5 @@ export function MusicPlayer() {
     return <PlyrMusicPlayer playlists={playlists} />;
   }
 
-  return <GlobalMusicPlayer playlists={playlists} />;
+  return <APlayerMusicPlayer playlists={playlists} />;
 }
