@@ -6,6 +6,7 @@ package generated
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -56,6 +57,20 @@ type Medium struct {
 	DownloadPermission string          `json:"download_permission"`
 	CreatedAt          time.Time       `json:"created_at"`
 	Thumbnail          sql.NullString  `json:"thumbnail"`
+}
+
+type Playlist struct {
+	ID         uuid.UUID       `json:"id"`
+	Title      string          `json:"title"`
+	Cover      sql.NullString  `json:"cover"`
+	Creator    sql.NullString  `json:"creator"`
+	Platform   string          `json:"platform"`
+	PlaylistID string          `json:"playlist_id"`
+	SongCount  int32           `json:"song_count"`
+	Songs      json.RawMessage `json:"songs"`
+	IsActive   bool            `json:"is_active"`
+	CreatedAt  time.Time       `json:"created_at"`
+	UpdatedAt  time.Time       `json:"updated_at"`
 }
 
 type Post struct {
