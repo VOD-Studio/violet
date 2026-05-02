@@ -22,7 +22,7 @@ export function TocSidebar({
       initial={{ opacity: 0, x: 16 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="xl:flex flex-col fixed right-8 top-24 w-70 max-h-[calc(100vh-7rem)] p-4"
+      className="hidden xl:flex flex-col fixed right-8 top-24 w-70 max-h-[calc(100vh-7rem)] p-4"
       aria-label="文章目录"
     >
       {/* 标题行 */}
