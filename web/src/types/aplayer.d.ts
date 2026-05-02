@@ -8,6 +8,11 @@ declare module "aplayer" {
     theme?: string;
   }
 
+  interface APlayerList {
+    index: number;
+    audios: APlayerAudio[];
+  }
+
   interface APlayerOptions {
     container: HTMLElement;
     fixed?: boolean;
@@ -39,6 +44,7 @@ declare module "aplayer" {
     addAudio(audio: APlayerAudio): void;
     removeAudio(index: number): void;
     switchAudio(index: number): void;
+    list: APlayerList;
   }
 
   namespace APlayer {

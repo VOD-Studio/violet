@@ -5,13 +5,13 @@
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { AnimatedOutlet } from "./AnimatedOutlet";
-import { GlobalMusicPlayer } from "@/components/shared/GlobalMusicPlayer";
+import { MusicPlayer } from "@/components/shared/MusicPlayer";
 
 /**
  * 前台布局组件
  * 使用 AnimatedOutlet 渲染子路由内容，支持页面过渡动画
  * Header 固定在顶部，Footer 在底部
- * GlobalMusicPlayer 固定在页面底部，播放后台配置的歌单
+ * MusicPlayer 固定在页面底部，根据后台配置选择播放器版本
  */
 export function Layout() {
   return (
@@ -28,7 +28,7 @@ export function Layout() {
       <Footer />
 
       {/* 全局音乐播放器 */}
-      <GlobalMusicPlayer />
+      <MusicPlayer />
     </div>
   );
 }
