@@ -1,6 +1,7 @@
 /**
  * 音乐歌单管理页面
  * 支持导入网易云/QQ音乐歌单、设置启用、删除
+ * 支持切换播放器版本 (v1: APlayer, v2: Plyr)
  */
 
 import { useState } from "react";
@@ -28,6 +29,7 @@ import {
   Trash2,
   Loader2,
   CheckCircle,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError } from "@/lib/api";
@@ -51,6 +53,13 @@ interface PlaylistListResponse {
   total: number;
 }
 
+/** 播放器设置响应 */
+interface MusicSettingsResponse {
+  settings: {
+    player_version: string;
+  };
+}
+
 /** 获取歌单列表 */
 function usePlaylists() {
   return useQuery({
@@ -58,6 +67,17 @@ function usePlaylists() {
     queryFn: async () => {
       const res = await api.get<PlaylistListResponse>("/admin/playlists");
       return res;
+    },
+  });
+}
+
+/** 获取播放器设置 */
+function useMusicSettings() {
+  return useQuery({
+    queryKey: ["admin", "music-settings"],
+    queryFn: async () => {
+      const res = await api.get<MusicSettingsResponse>("/music/settings");
+      return res.settings;
     },
   });
 }
@@ -86,6 +106,19 @@ function useUpdatePlaylist() {
   });
 }
 
+/** 更新播放器版本 */
+function useUpdatePlayerVersion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (version: string) =>
+      api.patch("/admin/music/settings", { player_version: version }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "music-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["music", "settings"] });
+    },
+  });
+}
+
 /** 删除歌单 */
 function useDeletePlaylist() {
   const queryClient = useQueryClient();
@@ -104,10 +137,13 @@ export default function PlaylistsAdmin() {
     open: boolean;
     id: string;
   }>({ open: false, id: "" });
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const { data, isLoading, error } = usePlaylists();
+  const { data: settings } = useMusicSettings();
   const createMutation = useCreatePlaylist();
   const updateMutation = useUpdatePlaylist();
+  const updateVersionMutation = useUpdatePlayerVersion();
   const deleteMutation = useDeletePlaylist();
 
   async function handleImport() {
@@ -133,11 +169,13 @@ export default function PlaylistsAdmin() {
   }
 
   function handleToggleActive(id: string, currentActive: boolean) {
+    setTogglingId(id);
     updateMutation.mutate(
       { id, is_active: !currentActive },
       {
         onSuccess: () => {
           toast.success(currentActive ? "已禁用歌单" : "已启用歌单");
+          setTogglingId(null);
         },
         onError: (err) => {
           if (err instanceof ApiError) {
@@ -145,9 +183,28 @@ export default function PlaylistsAdmin() {
           } else {
             toast.error("操作失败");
           }
+          setTogglingId(null);
         },
       }
     );
+  }
+
+  function handleVersionChange(version: string) {
+    // 如果已经是当前版本，不发送请求
+    if (currentVersion === version) return;
+
+    updateVersionMutation.mutate(version, {
+      onSuccess: () => {
+        toast.success(`已切换到 ${version === "v1" ? "APlayer" : "Plyr"} 播放器`);
+      },
+      onError: (err) => {
+        if (err instanceof ApiError) {
+          toast.error(err.message);
+        } else {
+          toast.error("切换失败");
+        }
+      },
+    });
   }
 
   function handleDelete() {
@@ -168,6 +225,7 @@ export default function PlaylistsAdmin() {
   }
 
   const playlists = data?.playlists ?? [];
+  const currentVersion = settings?.player_version || "v1";
 
   return (
     <div className="space-y-6">
@@ -175,9 +233,47 @@ export default function PlaylistsAdmin() {
       <div>
         <h1 className="text-2xl font-bold">音乐歌单</h1>
         <p className="text-muted-foreground">
-          导入网易云音乐或 QQ 音乐歌单，前台播放器将播放启用的歌单
+          导入网易云音乐或 QQ 音乐歌单，前台播放器将播放所有启用的歌单
         </p>
       </div>
+
+      {/* 播放器设置 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="size-5" />
+            播放器设置
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">播放器版本：</span>
+            <div className="flex gap-2">
+              <Button
+                variant={currentVersion === "v1" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleVersionChange("v1")}
+                disabled={updateVersionMutation.isPending}
+              >
+                APlayer (v1)
+              </Button>
+              <Button
+                variant={currentVersion === "v2" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleVersionChange("v2")}
+                disabled={updateVersionMutation.isPending}
+              >
+                Plyr (v2)
+              </Button>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {currentVersion === "v1"
+                ? "简洁风格，适合单歌单播放"
+                : "精美面板，支持多歌单合并播放"}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 导入歌单 */}
       <Card>
@@ -274,6 +370,8 @@ export default function PlaylistsAdmin() {
                           onCheckedChange={() =>
                             handleToggleActive(playlist.id, playlist.is_active)
                           }
+                          loading={togglingId === playlist.id}
+                          disabled={togglingId === playlist.id}
                         />
                         {playlist.is_active && (
                           <CheckCircle className="size-4 text-green-500" />
