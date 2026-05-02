@@ -1,1 +1,9 @@
 /uploads/
+
+# JWT keys (do not commit)
+*.pem
+jwt_private_key.pem
+jwt_public_key.pem
+
+# Build artifacts
+main
