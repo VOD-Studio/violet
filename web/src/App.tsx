@@ -35,6 +35,7 @@ import Media from "@/admin/Media";
 import Users from "@/admin/Users";
 import Settings from "@/admin/Settings";
 import Stickers from "@/admin/Stickers";
+import Playlists from "@/admin/Playlists";
 
 /**
  * 初始化全局导航引用
@@ -95,6 +96,7 @@ function App() {
             <Route path="tags" element={<Tags />} />
             <Route path="media" element={<Media />} />
             <Route path="stickers" element={<Stickers />} />
+            <Route path="playlists" element={<Playlists />} />
             <Route path="users" element={<Users />} />
             <Route path="settings" element={<Settings />} />
           </Route>
