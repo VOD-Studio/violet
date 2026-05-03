@@ -15,15 +15,30 @@ interface MusicSettingsResponse {
   };
 }
 
+/** 歌曲信息（后端返回） */
+interface SongData {
+  id: string;
+  title: string;
+  artist: string;
+  album?: string;
+  cover?: string;
+  duration?: number;
+  url: string;
+  platform?: string;
+}
+
 /** 歌单列表响应 */
 interface PlaylistsResponse {
   playlists: Array<{
     id: string;
     title: string;
-    server: string;
-    playlistId: string;
-    type: string;
-    isActive: boolean;
+    cover?: string;
+    creator?: string;
+    platform: string;
+    playlist_id: string;
+    song_count: number;
+    songs: SongData[];
+    is_active: boolean;
   }>;
 }
 
@@ -79,4 +94,18 @@ export function MusicPlayer() {
   }
 
   return <APlayerMusicPlayer playlists={playlists} />;
+}
+
+/** 将后端歌曲数据转换为播放器格式 */
+export function toPlayerSongs(songs: SongData[]) {
+  return songs
+    .filter((s) => s.url && s.url.startsWith("http"))
+    .map((s) => ({
+      id: s.id,
+      name: s.title || "未知歌曲",
+      artist: s.artist || "未知艺术家",
+      url: s.url,
+      cover: s.cover,
+      lrc: undefined as string | undefined,
+    }));
 }

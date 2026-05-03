@@ -212,7 +212,6 @@ func (h *MusicAdminHandler) RefreshPlaylistSongs(w http.ResponseWriter, r *http.
 // GetActivePlaylist 获取当前启用的歌单配置
 // GET /api/v1/music/playlist/config/active
 // 公开接口，无需认证
-// 返回歌单配置信息，前端使用 Meting API 获取完整歌曲列表
 func (h *MusicAdminHandler) GetActivePlaylist(w http.ResponseWriter, r *http.Request) {
 	playlist, err := h.playlistAdminService.GetActivePlaylist(r.Context())
 	if err != nil {
@@ -227,16 +226,8 @@ func (h *MusicAdminHandler) GetActivePlaylist(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// 返回歌单配置，前端使用 Meting API 获取歌曲
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"playlist": map[string]interface{}{
-			"id":         playlist.ID,
-			"server":     playlist.Platform, // netease, tencent, kugou, baidu
-			"type":       "playlist",
-			"playlistId": playlist.PlaylistID,
-			"title":      playlist.Title,
-			"isActive":   playlist.IsActive,
-		},
+		"playlist": playlist,
 	})
 }
 
@@ -250,21 +241,8 @@ func (h *MusicAdminHandler) GetAllActivePlaylists(w http.ResponseWriter, r *http
 		return
 	}
 
-	// 转换为前端需要的格式
-	result := make([]map[string]interface{}, 0, len(playlists))
-	for _, p := range playlists {
-		result = append(result, map[string]interface{}{
-			"id":         p.ID,
-			"server":     p.Platform,
-			"type":       "playlist",
-			"playlistId": p.PlaylistID,
-			"title":      p.Title,
-			"isActive":   p.IsActive,
-		})
-	}
-
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"playlists": result,
+		"playlists": playlists,
 	})
 }
 

@@ -141,7 +141,8 @@ func (s *MusicService) FetchQQPlaylistFromShortLink(shortLink string) (*Playlist
 		creator = matchesCreator[1]
 	}
 
-	// 从 Meting API 获取真实歌曲数和歌曲封面作为备用
+	// 从 Meting API 获取歌曲列表
+	songList := make([]*SongInfo, 0)
 	metingURL := fmt.Sprintf("https://api.injahow.cn/meting/?server=tencent&type=playlist&id=%s", playlistID)
 	req2, err := http.NewRequest("GET", metingURL, nil)
 	if err == nil {
@@ -150,23 +151,31 @@ func (s *MusicService) FetchQQPlaylistFromShortLink(shortLink string) (*Playlist
 		if err == nil {
 			defer resp2.Body.Close()
 			body2, _ := io.ReadAll(resp2.Body)
-			var songs []struct {
-				Pic string `json:"pic"`
+			var metingSongs []struct {
+				Name   string `json:"name"`
+				Artist string `json:"artist"`
+				URL    string `json:"url"`
+				Pic    string `json:"pic"`
+				Lrc    string `json:"lrc"`
 			}
-			if json.Unmarshal(body2, &songs) == nil && len(songs) > 0 {
-				// 如果没有从 HTML 获取到封面，使用第一首歌的封面
-				if cover == "" && songs[0].Pic != "" {
-					cover = songs[0].Pic
+			if json.Unmarshal(body2, &metingSongs) == nil {
+				for i, s := range metingSongs {
+					if s.URL == "" || !strings.HasPrefix(s.URL, "http") {
+						continue
+					}
+					songList = append(songList, &SongInfo{
+						ID:       fmt.Sprintf("tencent-%s-%d", playlistID, i),
+						Title:    s.Name,
+						Artist:   s.Artist,
+						Cover:    s.Pic,
+						URL:      s.URL,
+						Platform: "tencent",
+					})
 				}
-				return &PlaylistInfo{
-					ID:       playlistID,
-					Title:    title,
-					Cover:    cover,
-					Creator:  creator,
-					Platform: "tencent",
-					Count:    len(songs),
-					Songs:    []*SongInfo{},
-				}, nil
+				// 如果没有从 HTML 获取到封面，使用第一首歌的封面
+				if cover == "" && len(metingSongs) > 0 && metingSongs[0].Pic != "" {
+					cover = metingSongs[0].Pic
+				}
 			}
 		}
 	}
@@ -177,8 +186,8 @@ func (s *MusicService) FetchQQPlaylistFromShortLink(shortLink string) (*Playlist
 		Cover:    cover,
 		Creator:  creator,
 		Platform: "tencent",
-		Count:    0,
-		Songs:    []*SongInfo{},
+		Count:    len(songList),
+		Songs:    songList,
 	}, nil
 }
 
@@ -334,14 +343,30 @@ func (s *MusicService) FetchNeteasePlaylist(id string) (*PlaylistInfo, error) {
 		}
 	}
 
+	// Convert Meting API response to SongInfo
+	songList := make([]*SongInfo, 0, len(songs))
+	for i, s := range songs {
+		if s.URL == "" || !strings.HasPrefix(s.URL, "http") {
+			continue
+		}
+		songList = append(songList, &SongInfo{
+			ID:       fmt.Sprintf("netease-%s-%d", id, i),
+			Title:    s.Name,
+			Artist:   s.Artist,
+			Cover:    s.Pic,
+			URL:      s.URL,
+			Platform: "netease",
+		})
+	}
+
 	playlist := &PlaylistInfo{
 		ID:       id,
 		Title:    playlistTitle,
 		Cover:    playlistCover,
 		Creator:  playlistCreator,
-		Count:    len(songs), // Meting API 返回的完整歌曲数
+		Count:    len(songList),
 		Platform: "netease",
-		Songs:    make([]*SongInfo, 0), // 前端通过 Meting API 获取完整歌曲列表
+		Songs:    songList,
 	}
 
 	return playlist, nil

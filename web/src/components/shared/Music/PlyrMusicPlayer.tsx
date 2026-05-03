@@ -38,10 +38,19 @@ interface Song {
 interface Playlist {
   id: string;
   title: string;
-  server: string;
-  playlistId: string;
-  type: string;
-  isActive: boolean;
+  cover?: string;
+  creator?: string;
+  platform: string;
+  playlist_id: string;
+  song_count: number;
+  songs: Array<{
+    id: string;
+    title: string;
+    artist: string;
+    url: string;
+    cover?: string;
+  }>;
+  is_active: boolean;
 }
 
 /** 歌词行 */
@@ -77,44 +86,6 @@ function findCurrentLyricIndex(lyrics: LyricLine[], time: number): number {
     if (time >= lyrics[i].time) return i;
   }
   return -1;
-}
-
-/** 使用 Meting API 获取歌曲列表（过滤无效 URL） */
-async function fetchMetingSongs(
-  server: string,
-  type: string,
-  id: string
-): Promise<Song[]> {
-  const apiUrls = [
-    "https://api.injahow.cn/meting/",
-    "https://api.meting.js.org",
-    "https://api.i-meto.com/meting/api",
-  ];
-
-  for (const apiUrl of apiUrls) {
-    try {
-      const url = `${apiUrl}?server=${server}&type=${type}&id=${id}`;
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (Array.isArray(data) && data.length > 0) {
-        return data
-          .map((song: any, index: number) => ({
-            id: song.id || `${server}-${id}-${index}`,
-            name: song.name || song.title || "未知歌曲",
-            artist: song.artist || "未知艺术家",
-            url: song.url,
-            cover: song.pic || song.cover,
-            lrc: song.lrc,
-          }))
-          .filter((song: Song) => song.url && song.url.startsWith("http"));
-      }
-    } catch (e) {
-      console.warn(`Meting API ${apiUrl} failed:`, e);
-    }
-  }
-
-  return [];
 }
 
 /** 唱片碟片组件 */
@@ -389,36 +360,30 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
   const lyrics = parseLRC(lyricsText);
   const currentLyricIndex = findCurrentLyricIndex(lyrics, currentTime);
 
-  // 加载歌单歌曲
+  // 加载歌单歌曲（直接使用后端缓存数据）
   useEffect(() => {
     if (!currentPlaylist) return;
 
-    async function loadSongs() {
-      setSongsLoading(true);
-      setSongs([]);
-      setCurrentSongIndex(0);
-      setIsPlaying(false);
+    setSongsLoading(true);
+    setCurrentSongIndex(0);
+    setIsPlaying(false);
 
-      try {
-        const songsData = await fetchMetingSongs(
-          currentPlaylist.server,
-          currentPlaylist.type,
-          currentPlaylist.playlistId
-        );
-        setSongs(songsData);
-        if (songsData.length > 0) {
-          // 只有用户主动切换歌单时才自动播放，初始加载/HMR重载时不自动播放
-          shouldAutoPlayRef.current = initialLoadDoneRef.current;
-        }
-      } catch (error) {
-        console.error("加载歌曲失败:", error);
-      } finally {
-        setSongsLoading(false);
-        initialLoadDoneRef.current = true;
-      }
+    const mapped = currentPlaylist.songs
+      .filter((s) => s.url && s.url.startsWith("http"))
+      .map((s) => ({
+        id: s.id,
+        name: s.title || "未知歌曲",
+        artist: s.artist || "未知艺术家",
+        url: s.url,
+        cover: s.cover,
+      }));
+
+    setSongs(mapped);
+    if (mapped.length > 0) {
+      shouldAutoPlayRef.current = initialLoadDoneRef.current;
     }
-
-    loadSongs();
+    setSongsLoading(false);
+    initialLoadDoneRef.current = true;
   }, [currentPlaylist]);
 
   // 音频事件监听（仅在挂载时注册一次）
