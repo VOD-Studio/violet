@@ -33,5 +33,6 @@ Thumbs.db
 .env.*.local
 
 # Build
+tmp/
 api/tmp/
 api/server
