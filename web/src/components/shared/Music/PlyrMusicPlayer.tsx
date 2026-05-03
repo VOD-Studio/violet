@@ -82,7 +82,7 @@ function findCurrentLyricIndex(lyrics: LyricLine[], time: number): number {
 async function fetchMetingSongs(
   server: string,
   type: string,
-  id: string,
+  id: string
 ): Promise<Song[]> {
   const apiUrls = [
     "https://api.injahow.cn/meting/",
@@ -131,7 +131,7 @@ function VinylDisc({
 
   return (
     <div
-      className="relative rounded-full bg-gradient-to-br from-gray-700 to-gray-900 shadow-lg ring-2 ring-white/10"
+      className="relative rounded-full bg-linear-to-br from-gray-700 to-gray-900 shadow-lg ring-2 ring-white/10"
       style={{
         width: size,
         height: size,
@@ -164,8 +164,11 @@ function VinylDisc({
             draggable={false}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 to-primary/60">
-            <Music className="text-white" style={{ width: size * 0.18, height: size * 0.18 }} />
+          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary/30 to-primary/60">
+            <Music
+              className="text-white"
+              style={{ width: size * 0.18, height: size * 0.18 }}
+            />
           </div>
         )}
       </div>
@@ -203,6 +206,13 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
   const [panelView, setPanelView] = useState<"list" | "lyrics">("list");
   // 歌词文本（lrc 可能是 URL，需要异步解析）
   const [lyricsText, setLyricsText] = useState("");
+  // 播放器位置状态（用 right 定位，初始 right-4 即 16px）
+  const [position, setPosition] = useState({ right: 16, bottom: 240 });
+  // 拖拽状态
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0, posRight: 0, posBottom: 0 });
+  const hasMovedRef = useRef(false);
+  const playerRef = useRef<HTMLDivElement>(null);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const playPromiseRef = useRef<Promise<void> | null>(null);
@@ -215,6 +225,111 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
   const shouldAutoPlayRef = useRef(false);
   const songListRef = useRef<HTMLDivElement>(null);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
+
+  // 拖拽处理函数
+  const handleDragStart = useCallback(
+    (clientX: number, clientY: number) => {
+      setIsDragging(true);
+      hasMovedRef.current = false;
+      dragStartRef.current = {
+        x: clientX,
+        y: clientY,
+        posRight: position.right,
+        posBottom: position.bottom,
+      };
+    },
+    [position]
+  );
+
+  const handleDragMove = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!isDragging) return;
+
+      const deltaX = clientX - dragStartRef.current.x;
+      const deltaY = clientY - dragStartRef.current.y;
+
+      // 超过阈值才算真正拖拽
+      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+        hasMovedRef.current = true;
+      }
+
+      const playerWidth = playerRef.current?.offsetWidth || 52;
+      const playerHeight = playerRef.current?.offsetHeight || 52;
+
+      // 边界检测：
+      // - right: 往左拖(deltaX>0)时 right 增加，往右拖(deltaX<0)时 right 减小
+      // - bottom: 往下拖(deltaY>0)时 bottom 减小，往上拖(deltaY<0)时 bottom 增加
+      const newRight = Math.max(
+        0,
+        Math.min(
+          window.innerWidth - playerWidth,
+          dragStartRef.current.posRight - deltaX
+        )
+      );
+      const newBottom = Math.max(
+        0,
+        Math.min(
+          window.innerHeight - playerHeight,
+          dragStartRef.current.posBottom - deltaY
+        )
+      );
+
+      setPosition({ right: newRight, bottom: newBottom });
+    },
+    [isDragging]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // 鼠标事件
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      handleDragStart(e.clientX, e.clientY);
+    },
+    [handleDragStart]
+  );
+
+  // 触摸事件
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.touches[0];
+      handleDragStart(touch.clientX, touch.clientY);
+    },
+    [handleDragStart]
+  );
+
+  // 全局事件监听
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      handleDragMove(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      handleDragMove(touch.clientX, touch.clientY);
+    };
+
+    const handleEnd = () => {
+      handleDragEnd();
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleTouchMove);
+    window.addEventListener("touchend", handleEnd);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
 
   const currentPlaylist = playlists[currentPlaylistIndex];
   const currentSong = songs[currentSongIndex] || null;
@@ -252,7 +367,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
         const songsData = await fetchMetingSongs(
           currentPlaylist.server,
           currentPlaylist.type,
-          currentPlaylist.playlistId,
+          currentPlaylist.playlistId
         );
         setSongs(songsData);
         if (songsData.length > 0) {
@@ -346,8 +461,12 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
       const promise = audio.play();
       playPromiseRef.current = promise;
       promise.then(
-        () => { skipPauseRef.current = false; },
-        () => { skipPauseRef.current = false; },
+        () => {
+          skipPauseRef.current = false;
+        },
+        () => {
+          skipPauseRef.current = false;
+        }
       );
     } else {
       skipPauseRef.current = false;
@@ -395,9 +514,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
   const playNext = useCallback(() => {
     if (songs.length === 0) return;
     shouldAutoPlayRef.current = true;
-    setCurrentSongIndex((prev) =>
-      prev < songs.length - 1 ? prev + 1 : 0,
-    );
+    setCurrentSongIndex((prev) => (prev < songs.length - 1 ? prev + 1 : 0));
   }, [songs.length]);
 
   const handleVolumeChange = useCallback(
@@ -407,7 +524,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
       if (audioRef.current) audioRef.current.volume = newVolume;
       if (newVolume > 0) setIsMuted(false);
     },
-    [],
+    []
   );
 
   const toggleMute = useCallback(() => {
@@ -418,16 +535,13 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
     audio.muted = newMuted;
   }, [isMuted]);
 
-  const handleSeek = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const audio = audioRef.current;
-      if (!audio) return;
-      const time = parseFloat(e.target.value);
-      audio.currentTime = time;
-      setCurrentTime(time);
-    },
-    [],
-  );
+  const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const time = parseFloat(e.target.value);
+    audio.currentTime = time;
+    setCurrentTime(time);
+  }, []);
 
   const formatTime = (time: number) => {
     if (!time || isNaN(time)) return "0:00";
@@ -442,7 +556,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
       setCurrentPlaylistIndex(index);
       setShowPlaylist(false);
     },
-    [currentPlaylistIndex],
+    [currentPlaylistIndex]
   );
 
   const handleSongClick = useCallback(
@@ -453,7 +567,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
       }
       setCurrentSongIndex(index);
     },
-    [currentSongIndex, isPlaying, togglePlay],
+    [currentSongIndex, isPlaying, togglePlay]
   );
 
   return (
@@ -467,7 +581,11 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
 
       <audio ref={audioRef} preload="metadata" />
 
-      <div className="fixed bottom-24 right-4 z-50 flex flex-col items-end gap-3">
+      <div
+        ref={playerRef}
+        className="fixed z-50 flex flex-col items-end gap-3"
+        style={{ right: position.right, bottom: position.bottom }}
+      >
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -475,7 +593,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.95 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="w-[340px] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl"
+              className="w-85 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl"
               style={{ maxHeight: "calc(100vh - 200px)" }}
             >
               {/* 标题栏 */}
@@ -618,9 +736,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                                 {playlists.map((playlist, index) => (
                                   <button
                                     key={playlist.id}
-                                    onClick={() =>
-                                      handleSwitchPlaylist(index)
-                                    }
+                                    onClick={() => handleSwitchPlaylist(index)}
                                     disabled={songsLoading}
                                     className={`w-full rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${
                                       index === currentPlaylistIndex
@@ -671,7 +787,9 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                           {songs.map((song, index) => (
                             <button
                               key={song.id}
-                              data-active={index === currentSongIndex || undefined}
+                              data-active={
+                                index === currentSongIndex || undefined
+                              }
                               onClick={() => handleSongClick(index)}
                               className={`w-full px-5 py-2 text-left text-sm transition-colors ${
                                 index === currentSongIndex
@@ -696,7 +814,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                                 >
                                   {song.name}
                                 </p>
-                                <span className="max-w-[80px] truncate text-xs text-muted-foreground">
+                                <span className="max-w-20 truncate text-xs text-muted-foreground">
                                   {song.artist}
                                 </span>
                               </div>
@@ -709,7 +827,9 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                             lyrics.map((line, index) => (
                               <p
                                 key={index}
-                                data-active={index === currentLyricIndex || undefined}
+                                data-active={
+                                  index === currentLyricIndex || undefined
+                                }
                                 className={`px-5 py-1 text-sm leading-6 transition-colors ${
                                   index === currentLyricIndex
                                     ? "text-primary font-medium"
@@ -736,10 +856,15 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
 
         {/* 迷你碟片 */}
         <motion.button
-          onClick={() => setExpanded(!expanded)}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onClick={() => {
+            // 只有没移动才展开/收起
+            if (!hasMovedRef.current) setExpanded(!expanded);
+          }}
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.95 }}
-          className="group relative"
+          className={`relative cursor-grab active:cursor-grabbing ${isDragging ? "select-none" : ""}`}
         >
           <VinylDisc
             cover={currentSong?.cover}
@@ -759,7 +884,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                 exit={{ opacity: 0, y: 4 }}
                 className="absolute left-1/2 top-full mt-2 -translate-x-1/2"
               >
-                <p className="max-w-[120px] truncate text-center text-xs text-muted-foreground">
+                <p className="max-w-30 truncate text-center text-xs text-muted-foreground">
                   {currentSong.name}
                 </p>
               </motion.div>
