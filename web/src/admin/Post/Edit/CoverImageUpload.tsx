@@ -38,7 +38,7 @@ export function CoverImageUpload({
 
     setUploading(true);
     try {
-      const result: UploadResult = await uploadFile(file);
+      const result: UploadResult = await uploadFile(file, undefined, "post");
       onChange(result.url);
     } catch (err) {
       console.error("封面图上传失败:", err);

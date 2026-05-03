@@ -25,7 +25,7 @@ export default function AvatarUpload() {
 
     setUploading(true);
     try {
-      const result = await uploadFile(file, () => {});
+      const result = await uploadFile(file, () => {}, "avatar");
       await updateProfile.mutateAsync({
         username: user!.username,
         bio: user?.bio ?? "",
