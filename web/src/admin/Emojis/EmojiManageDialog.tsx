@@ -16,8 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import EmojiUploader from "@/components/admin/EmojiUploader";
-import type { UploadResult } from "@/components/upload/ChunkedUpload";
+import EmojiUploader, { type EmojiUploadResult } from "@/components/admin/EmojiUploader";
 import { Trash2, Edit, Link, Type, Check, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -54,7 +53,7 @@ export function EmojiManageDialog({
   const [showAddText, setShowAddText] = useState(false);
   const [textForm, setTextForm] = useState({ name: "", textContent: "" });
 
-  function handleUpload(result: UploadResult) {
+  function handleUpload(result: EmojiUploadResult) {
     const name = result.url.split("/").pop() || `emoji-${Date.now()}`;
     createEmoji.mutate(
       { groupId, data: { name, url: result.url } },

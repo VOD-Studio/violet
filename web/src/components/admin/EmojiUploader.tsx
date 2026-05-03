@@ -1,18 +1,22 @@
 /**
  * 表情上传组件
- * 复用现有的分片上传机制，限制只接受图片文件
+ * 使用专用的表情上传接口，文件保存到独立目录 uploads/emojis/
  */
 
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import {
-  uploadFile,
-  type UploadResult,
-} from "@/components/upload/ChunkedUpload";
 import { Button } from "@/components/ui/button";
 import { Upload, X, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getUploadUrl } from "@/lib/api";
+import { api, getUploadUrl } from "@/lib/api";
+
+/** 表情上传结果 */
+interface EmojiUploadResult {
+  url: string;       // 相对路径，如 /uploads/emojis/xxx.png
+  filename: string;  // 文件名
+  size: number;      // 文件大小
+  mime_type: string; // MIME 类型
+}
 
 /** 单个文件上传状态 */
 interface FileUploadItem {
@@ -25,7 +29,7 @@ interface FileUploadItem {
   /** 上传状态 */
   status: "pending" | "uploading" | "done" | "error";
   /** 上传结果 */
-  result?: UploadResult;
+  result?: EmojiUploadResult;
   /** 错误信息 */
   error?: string;
 }
@@ -33,7 +37,7 @@ interface FileUploadItem {
 /** EmojiUploader 组件属性 */
 interface EmojiUploaderProps {
   /** 上传完成回调 */
-  onUpload?: (result: UploadResult) => void;
+  onUpload?: (result: EmojiUploadResult) => void;
   /** 自定义类名 */
   className?: string;
   /** 最大文件数量 */
@@ -44,7 +48,7 @@ interface EmojiUploaderProps {
 
 /** 接受的图片文件类型 */
 const imageAccept: Record<string, string[]> = {
-  "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp"],
+  "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"],
 };
 
 /** 单文件最大体积：10MB */
@@ -58,8 +62,20 @@ function generateId(): string {
 }
 
 /**
+ * 上传表情图片到专用接口
+ */
+async function uploadEmojiImage(file: File): Promise<EmojiUploadResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const result = await api.post<EmojiUploadResult>("/admin/emojis/upload", formData);
+  return result;
+}
+
+/**
  * 表情上传组件
  * 专门用于上传表情图片，限制文件类型和大小
+ * 表情图片保存到独立目录，不进入素材库
  */
 export default function EmojiUploader({
   onUpload,
@@ -89,9 +105,7 @@ export default function EmojiUploader({
       updateItem(item.id, { status: "uploading", progress: 0 });
 
       try {
-        const result = await uploadFile(item.file, (progress) => {
-          updateItem(item.id, { progress });
-        });
+        const result = await uploadEmojiImage(item.file);
 
         updateItem(item.id, { status: "done", progress: 100, result });
         onUpload?.(result);
@@ -182,7 +196,7 @@ export default function EmojiUploader({
           <div className="text-center">
             <p className="text-sm font-medium">拖拽或点击上传图片</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              PNG、JPG、GIF、WebP，最大 10MB
+              PNG、JPG、GIF、WebP、SVG，最大 10MB
             </p>
           </div>
         )}
@@ -211,9 +225,7 @@ export default function EmojiUploader({
                 <div className="flex-shrink-0">
                   {item.status === "done" && item.result ? (
                     <img
-                      src={getUploadUrl(
-                        item.result.thumbnail || item.result.url,
-                      )}
+                      src={getUploadUrl(item.result.url)}
                       alt={item.file.name}
                       className="h-10 w-10 rounded object-cover"
                     />
@@ -267,3 +279,6 @@ export default function EmojiUploader({
     </div>
   );
 }
+
+/** 导出类型 */
+export type { EmojiUploadResult };
