@@ -92,7 +92,7 @@ export function APlayerMusicPlayer({ playlists }: APlayerMusicPlayerProps) {
 
   // 初始化 APlayer 并监听播放事件
   useEffect(() => {
-    if (!containerRef.current || songs.length === 0) return;
+    if (!expanded || !containerRef.current || songs.length === 0) return;
 
     if (!playerRef.current) {
       const player = new APlayer({
@@ -133,7 +133,7 @@ export function APlayerMusicPlayer({ playlists }: APlayerMusicPlayerProps) {
         playerRef.current = null;
       }
     };
-  }, [songs]);
+  }, [expanded, songs]);
 
   if (!config || songs.length === 0) return null;
 
