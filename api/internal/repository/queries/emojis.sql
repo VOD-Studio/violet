@@ -34,13 +34,13 @@ SELECT * FROM emojis WHERE group_id = $1 AND name = $2;
 SELECT * FROM emojis WHERE group_id = $1 ORDER BY sort_order;
 
 -- name: CreateEmoji :one
-INSERT INTO emojis (group_id, name, url, text_content, sort_order)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO emojis (group_id, name, url, source_url, text_content, sort_order)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: UpdateEmoji :one
 UPDATE emojis
-SET name = $2, url = $3, text_content = $4, sort_order = $5
+SET name = $2, url = $3, source_url = $4, text_content = $5, sort_order = $6
 WHERE id = $1
 RETURNING *;
 
@@ -59,3 +59,6 @@ ORDER BY eg.sort_order, e.sort_order;
 
 -- name: CountEmojiGroups :one
 SELECT COUNT(*) FROM emoji_groups;
+
+-- name: BatchUpdateGroupsStatus :exec
+UPDATE emoji_groups SET is_enabled = sqlc.arg(is_enabled) WHERE id = ANY(sqlc.arg(ids)::int[]);

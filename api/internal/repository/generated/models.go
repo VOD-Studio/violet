@@ -45,6 +45,8 @@ type Emoji struct {
 	// 排序
 	SortOrder int32     `json:"sort_order"`
 	CreatedAt time.Time `json:"created_at"`
+	// 原始来源URL（如B站CDN地址）
+	SourceUrl sql.NullString `json:"source_url"`
 }
 
 // 表情分组

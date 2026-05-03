@@ -47,22 +47,18 @@ var allowedEmojiExts = map[string]bool{
 
 // EmojiService 表情服务
 type EmojiService struct {
-	queries        *generated.Queries
-	rendererCache  *SimpleEmojiCache
-	emojiDir       string // 表情独立存储目录
-	bilibiliCookie string // B站登录 Cookie（优先使用）
-	bilibiliUsername string // B站账号
-	bilibiliPassword string // B站密码
+	queries       *generated.Queries
+	rendererCache *SimpleEmojiCache
+	emojiDir      string // 表情独立存储目录
+	bilibiliCookie string // B站登录 Cookie
 }
 
 // NewEmojiService 创建表情服务实例
-func NewEmojiService(queries *generated.Queries, emojiDir, cookie, username, password string) *EmojiService {
+func NewEmojiService(queries *generated.Queries, emojiDir, cookie string) *EmojiService {
 	return &EmojiService{
-		queries:         queries,
-		emojiDir:        emojiDir,
-		bilibiliCookie:  cookie,
-		bilibiliUsername: username,
-		bilibiliPassword: password,
+		queries:        queries,
+		emojiDir:       emojiDir,
+		bilibiliCookie: cookie,
 	}
 }
 
@@ -256,6 +252,18 @@ func (s *EmojiService) DeleteEmojiGroup(ctx context.Context, id int32) error {
 		return fmt.Errorf("删除表情分组失败: %w", err)
 	}
 	return nil
+}
+
+// BatchUpdateGroupsStatus 批量更新分组启用状态
+func (s *EmojiService) BatchUpdateGroupsStatus(ctx context.Context, ids []int32, isEnabled bool) (int64, error) {
+	err := s.queries.BatchUpdateGroupsStatus(ctx, generated.BatchUpdateGroupsStatusParams{
+		IsEnabled: isEnabled,
+		Ids:       ids,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("批量更新失败: %w", err)
+	}
+	return int64(len(ids)), nil
 }
 
 // --- 管理接口：表情操作 ---
@@ -466,13 +474,13 @@ const bilibiliEmojiAPIURL = "https://api.bilibili.com/x/emote/setting/panel?busi
 
 // BilibiliEmojiAPIResponse B站表情 API 响应结构
 type BilibiliEmojiAPIResponse struct {
-	Code int                   `json:"code"`
-	Data BilibiliEmojiData     `json:"data"`
-	Msg  string                `json:"message"`
+	Code int               `json:"code"`
+	Data BilibiliEmojiData `json:"data"`
+	Msg  string            `json:"message"`
 }
 
 type BilibiliEmojiData struct {
-	Packages []BilibiliEmojiPackage `json:"packages"`
+	Packages []BilibiliEmojiPackage `json:"user_panel_packages"`
 }
 
 type BilibiliEmojiPackage struct {
@@ -482,9 +490,8 @@ type BilibiliEmojiPackage struct {
 }
 
 type BilibiliEmote struct {
-	Text   string `json:"text"`
-	URL    string `json:"url"`
-	GifURL string `json:"gif_url"`
+	Text string `json:"text"`
+	URL  string `json:"url"`
 }
 
 // SeedBilibiliEmojis 从 B站 API 获取表情数据并写入数据库作为初始种子数据
@@ -518,16 +525,8 @@ type SeedResult struct {
 }
 
 func (s *EmojiService) fetchBilibiliEmojis() ([]BilibiliEmojiPackage, error) {
-	// 如果没有 Cookie 但有账号密码，尝试登录获取 Cookie
-	if s.bilibiliCookie == "" && s.bilibiliUsername != "" && s.bilibiliPassword != "" {
-		log.Println("尝试使用账号密码登录 B站获取 Cookie...")
-		cookie, err := s.loginBilibili()
-		if err != nil {
-			log.Printf("B站登录失败: %v，请手动设置 BILIBILI_COOKIE 环境变量", err)
-		} else {
-			s.bilibiliCookie = cookie
-			log.Println("B站登录成功，已获取 Cookie")
-		}
+	if s.bilibiliCookie == "" {
+		return nil, fmt.Errorf("未设置 B站 Cookie，请在环境变量中配置 BILIBILI_SESSDATA、BILIBILI_BILI_JCT、BILIBILI_DEDEUSERID")
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -566,131 +565,13 @@ func (s *EmojiService) fetchBilibiliEmojis() ([]BilibiliEmojiPackage, error) {
 	return apiResp.Data.Packages, nil
 }
 
-// loginBilibili 使用账号密码登录 B站获取 Cookie
-// 注意：B站登录可能需要验证码，建议直接设置 BILIBILI_COOKIE 环境变量
-func (s *EmojiService) loginBilibili() (string, error) {
-	client := &http.Client{Timeout: 30 * time.Second}
-
-	// 1. 获取登录所需的密钥信息
-	keyURL := "https://passport.bilibili.com/api/oauth2/getKey"
-	req, err := http.NewRequest("GET", keyURL, nil)
-	if err != nil {
-		return "", fmt.Errorf("创建获取密钥请求失败: %w", err)
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("获取密钥失败: %w", err)
-	}
-	defer resp.Body.Close()
-
-	keyBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("读取密钥响应失败: %w", err)
-	}
-
-	var keyResp struct {
-		Code int    `json:"code"`
-		Data struct {
-			Hash string `json:"hash"`
-			Key  string `json:"key"`
-		} `json:"data"`
-		Message string `json:"message"`
-	}
-	if err := json.Unmarshal(keyBody, &keyResp); err != nil {
-		return "", fmt.Errorf("解析密钥响应失败: %w", err)
-	}
-	if keyResp.Code != 0 {
-		return "", fmt.Errorf("获取密钥失败: code=%d, msg=%s", keyResp.Code, keyResp.Message)
-	}
-
-	// 2. 加密密码 (RSA)
-	encryptedPwd := s.encryptPassword(s.bilibiliPassword, keyResp.Data.Hash, keyResp.Data.Key)
-
-	// 3. 登录
-	loginURL := "https://passport.bilibili.com/api/oauth2/login"
-	formData := map[string][]string{
-		"username":  {s.bilibiliUsername},
-		"password":  {encryptedPwd},
-		"captcha":   {""}, // 验证码可能需要手动处理
-	}
-
-	loginReq, err := http.NewRequest("POST", loginURL, nil)
-	if err != nil {
-		return "", fmt.Errorf("创建登录请求失败: %w", err)
-	}
-	loginReq.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-	loginReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	loginReq.Header.Set("Referer", "https://passport.bilibili.com/login")
-
-	// 构建表单数据
-	var formStr string
-	for k, vs := range formData {
-		for _, v := range vs {
-			if formStr != "" {
-				formStr += "&"
-			}
-			formStr += fmt.Sprintf("%s=%s", k, urlEncode(v))
-		}
-	}
-	loginReq.Body = io.NopCloser(strings.NewReader(formStr))
-
-	loginResp, err := client.Do(loginReq)
-	if err != nil {
-		return "", fmt.Errorf("登录请求失败: %w", err)
-	}
-	defer loginResp.Body.Close()
-
-	// 从响应中提取 Cookie
-	cookies := loginResp.Cookies()
-	if len(cookies) == 0 {
-		// 尝试读取响应体获取错误信息
-		body, _ := io.ReadAll(loginResp.Body)
-		return "", fmt.Errorf("登录失败，未获取到 Cookie，响应: %s", string(body))
-	}
-
-	// 构建 Cookie 字符串
-	var cookieStr string
-	for _, c := range cookies {
-		if cookieStr != "" {
-			cookieStr += "; "
-		}
-		cookieStr += c.Name + "=" + c.Value
-	}
-
-	return cookieStr, nil
-}
-
-// encryptPassword 使用 RSA 加密密码
-func (s *EmojiService) encryptPassword(password, hash, publicKey string) string {
-	// B站登录密码加密: hash + password，然后用 RSA 公钥加密
-	data := hash + password
-
-	// 使用公钥加密 (简化实现，实际需要完整的 RSA 加密)
-	// 这里需要引入 crypto/rsa 包进行真正的加密
-	// 由于实现复杂，这里返回原始数据作为占位
-	// 实际使用时建议直接设置 Cookie
-
-	// 暂时返回明文（B站实际会拒绝），提示用户使用 Cookie 方式
-	return data
-}
-
-// urlEncode URL 编码
-func urlEncode(s string) string {
-	var result strings.Builder
-	for _, c := range s {
-		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.' || c == '~' {
-			result.WriteRune(c)
-		} else {
-			result.WriteString(fmt.Sprintf("%%%02X", c))
-		}
-	}
-	return result.String()
-}
-
 func (s *EmojiService) importBilibiliEmojis(ctx context.Context, packages []BilibiliEmojiPackage) (*SeedResult, error) {
 	result := &SeedResult{}
+
+	// 确保表情目录存在
+	if err := os.MkdirAll(s.emojiDir, 0755); err != nil {
+		return nil, fmt.Errorf("创建表情目录失败: %w", err)
+	}
 
 	for i, pkg := range packages {
 		if pkg.Text == "" || len(pkg.Emote) == 0 {
@@ -712,27 +593,29 @@ func (s *EmojiService) importBilibiliEmojis(ctx context.Context, packages []Bili
 		}
 		result.GroupsCreated++
 
-		// 创建表情
+		// 创建表情（并发下载图片）
 		for j, emote := range pkg.Emote {
-			if emote.Text == "" {
+			if emote.Text == "" || emote.URL == "" {
 				continue
 			}
 
-			// 优先使用 gif_url，若无则使用 url
-			url := emote.GifURL
-			if url == "" {
-				url = emote.URL
+			// 下载图片到本地
+			localPath, err := s.downloadEmojiImage(emote.URL)
+			if err != nil {
+				log.Printf("警告: 下载表情 %s 图片失败: %v", emote.Text, err)
+				continue
 			}
 
 			emojiParams := generated.CreateEmojiParams{
 				GroupID:     group.ID,
 				Name:        emote.Text,
-				Url:         toNullString(url),
-				TextContent: toNullString(""), // B站表情无文本内容
+				Url:         toNullString(localPath),
+				SourceUrl:   toNullString(emote.URL),
+				TextContent: toNullString(""),
 				SortOrder:   int32(j + 1),
 			}
 
-			_, err := s.queries.CreateEmoji(ctx, emojiParams)
+			_, err = s.queries.CreateEmoji(ctx, emojiParams)
 			if err != nil {
 				log.Printf("警告: 创建表情 %s 失败: %v", emote.Text, err)
 				continue
@@ -742,4 +625,60 @@ func (s *EmojiService) importBilibiliEmojis(ctx context.Context, packages []Bili
 	}
 
 	return result, nil
+}
+
+// downloadEmojiImage 下载表情图片到本地存储
+func (s *EmojiService) downloadEmojiImage(url string) (string, error) {
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", fmt.Errorf("创建下载请求失败: %w", err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+	req.Header.Set("Referer", "https://www.bilibili.com")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("下载失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("下载失败: status=%d", resp.StatusCode)
+	}
+
+	// 从 URL 或 Content-Type 推断扩展名
+	ext := ".png"
+	if strings.Contains(url, ".gif") {
+		ext = ".gif"
+	} else if ct := resp.Header.Get("Content-Type"); ct != "" {
+		switch ct {
+		case "image/gif":
+			ext = ".gif"
+		case "image/jpeg", "image/jpg":
+			ext = ".jpg"
+		case "image/webp":
+			ext = ".webp"
+		}
+	}
+
+	// 生成唯一文件名
+	filename := fmt.Sprintf("%s%s", uuid.New().String(), ext)
+	dstPath := filepath.Join(s.emojiDir, filename)
+
+	// 保存文件
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		return "", fmt.Errorf("创建文件失败: %w", err)
+	}
+	defer dst.Close()
+
+	if _, err = io.Copy(dst, resp.Body); err != nil {
+		os.Remove(dstPath)
+		return "", fmt.Errorf("保存文件失败: %w", err)
+	}
+
+	// 返回相对路径 URL
+	return "/uploads/emojis/" + filename, nil
 }

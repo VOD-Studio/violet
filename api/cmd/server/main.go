@@ -92,7 +92,7 @@ func main() {
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
 	musicSettingsService := service.NewMusicSettingsService(queries)
 	projectService := service.NewProjectService(queries)
-	emojiService := service.NewEmojiService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliUsername, cfg.BilibiliPassword)
+	emojiService := service.NewEmojiService(queries, "uploads/emojis", cfg.BilibiliCookie)
 
 	// 检查并初始化表情种子数据
 	count, err := queries.CountEmojiGroups(ctx)
@@ -341,6 +341,8 @@ func main() {
 			r.Get("/", emojiHandler.ListAllGroups)                       // 获取所有表情分组
 			r.Post("/", emojiHandler.CreateGroup)                        // 创建表情分组
 			r.Patch("/{id}", emojiHandler.UpdateGroup)                   // 更新表情分组
+				r.Patch("/batch-status", emojiHandler.BatchUpdateStatus)    // 批量更新状态
+
 			r.Delete("/{id}", emojiHandler.DeleteGroup)                  // 删除表情分组
 			r.Get("/{id}/emojis", emojiHandler.ListGroupEmojis)          // 获取分组内表情
 			r.Post("/{id}/emojis", emojiHandler.CreateEmoji)             // 创建表情

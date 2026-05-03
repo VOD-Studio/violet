@@ -1,0 +1,1 @@
+ALTER TABLE emojis DROP COLUMN source_url;
