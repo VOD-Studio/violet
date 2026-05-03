@@ -629,11 +629,13 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                     {/* 唱片 + 歌曲信息 */}
                     <div className="flex items-center gap-4 px-5 pt-5 pb-3">
                       <div className="shrink-0">
-                        <VinylDisc
-                          cover={currentSong.cover}
-                          isPlaying={isPlaying}
-                          size={80}
-                        />
+                        <motion.div layoutId="vinyl-disc">
+                          <VinylDisc
+                            cover={currentSong.cover}
+                            isPlaying={isPlaying}
+                            size={80}
+                          />
+                        </motion.div>
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="truncate text-sm font-medium">
@@ -860,12 +862,12 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
           {!expanded && (
             <motion.button
               key="mini-disc"
+              layoutId="vinyl-disc"
               onMouseDown={handleMouseDown}
               onTouchStart={handleTouchStart}
               onClick={() => {
                 if (!hasMovedRef.current) setExpanded(true);
               }}
-              exit={{ scale: 0.8, opacity: 0 }}
               transition={{ duration: 0.15 }}
               className={`cursor-grab active:cursor-grabbing ${isDragging ? "select-none" : ""}`}
             >
