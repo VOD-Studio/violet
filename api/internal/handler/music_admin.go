@@ -3,7 +3,12 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -290,4 +295,165 @@ func (h *MusicAdminHandler) UpdatePlayerVersion(w http.ResponseWriter, r *http.R
 		"message":  "播放器版本已更新",
 		"settings": settings,
 	})
+}
+
+// --- 自定义歌单接口（管理端）---
+
+// CreateCustomPlaylist 创建自定义歌单
+// POST /api/v1/admin/playlists/custom
+// 需要管理员权限
+func (h *MusicAdminHandler) CreateCustomPlaylist(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Title string `json:"title"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		return
+	}
+
+	if req.Title == "" {
+		writeError(w, http.StatusBadRequest, "validation_error", "歌单标题不能为空")
+		return
+	}
+
+	playlist, err := h.playlistAdminService.CreateCustomPlaylist(r.Context(), req.Title)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "创建自定义歌单失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, playlist)
+}
+
+// AddSongToPlaylist 向歌单添加歌曲（上传音频文件）
+// POST /api/v1/admin/playlists/{id}/songs
+// 需要管理员权限
+func (h *MusicAdminHandler) AddSongToPlaylist(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
+		return
+	}
+
+	file, header, err := r.FormFile("audio")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "缺少音频文件")
+		return
+	}
+	defer file.Close()
+
+	uploadDir := "uploads/music"
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "创建上传目录失败")
+		return
+	}
+
+	fileUUID := uuid.New().String()
+	ext := path.Ext(header.Filename)
+	if ext == "" {
+		ext = ".mp3"
+	}
+	filename := fmt.Sprintf("%s%s", fileUUID, ext)
+	filePath := path.Join(uploadDir, filename)
+
+	dst, err := os.Create(filePath)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "保存文件失败")
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "写入文件失败")
+		return
+	}
+
+	servedURL := "/uploads/music/" + filename
+
+	playlist, err := h.playlistAdminService.AddSongToPlaylist(r.Context(), id, filePath, servedURL)
+	if err != nil {
+		if errors.Is(err, service.ErrPlaylistNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "歌单不存在")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "添加歌曲失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, playlist)
+}
+
+// RemoveSongFromPlaylist 从歌单中移除歌曲
+// DELETE /api/v1/admin/playlists/{id}/songs/{index}
+// 需要管理员权限
+func (h *MusicAdminHandler) RemoveSongFromPlaylist(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
+		return
+	}
+
+	indexStr := chi.URLParam(r, "index")
+	songIndex, err := strconv.Atoi(indexStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_param", "歌曲索引无效")
+		return
+	}
+
+	playlist, err := h.playlistAdminService.RemoveSongFromPlaylist(r.Context(), id, songIndex)
+	if err != nil {
+		if errors.Is(err, service.ErrPlaylistNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "歌单不存在")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "移除歌曲失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, playlist)
+}
+
+// UpdateSongInPlaylist 更新歌单中的歌曲信息
+// PATCH /api/v1/admin/playlists/{id}/songs/{index}
+// 需要管理员权限
+func (h *MusicAdminHandler) UpdateSongInPlaylist(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
+		return
+	}
+
+	indexStr := chi.URLParam(r, "index")
+	songIndex, err := strconv.Atoi(indexStr)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_param", "歌曲索引无效")
+		return
+	}
+
+	var req struct {
+		Title  string `json:"title"`
+		Artist string `json:"artist"`
+		Cover  string `json:"cover"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		return
+	}
+
+	playlist, err := h.playlistAdminService.UpdateSongInPlaylist(r.Context(), id, songIndex, req.Title, req.Artist, req.Cover)
+	if err != nil {
+		if errors.Is(err, service.ErrPlaylistNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "歌单不存在")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "更新歌曲信息失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, playlist)
 }

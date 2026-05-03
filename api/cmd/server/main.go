@@ -265,10 +265,14 @@ func main() {
 			r.Route("/playlists", func(r chi.Router) {
 				r.Get("/", musicAdminHandler.ListPlaylists)                       // 歌单列表
 				r.Post("/", musicAdminHandler.CreatePlaylist)                     // 导入歌单
+				r.Post("/custom", musicAdminHandler.CreateCustomPlaylist)         // 创建自定义歌单
 				r.Patch("/{id}", musicAdminHandler.UpdatePlaylist)               // 更新歌单（启用/禁用）
 				r.Delete("/{id}", musicAdminHandler.DeletePlaylist)              // 删除歌单
 				r.Post("/{id}/activate", musicAdminHandler.SetActivePlaylist)    // 设置为启用歌单
 				r.Post("/{id}/refresh", musicAdminHandler.RefreshPlaylistSongs)  // 刷新歌单歌曲
+				r.Post("/{id}/songs", musicAdminHandler.AddSongToPlaylist)       // 添加歌曲到歌单
+				r.Delete("/{id}/songs/{index}", musicAdminHandler.RemoveSongFromPlaylist) // 从歌单移除歌曲
+				r.Patch("/{id}/songs/{index}", musicAdminHandler.UpdateSongInPlaylist)    // 更新歌单中的歌曲信息
 			})
 
 			r.Patch("/music/settings", musicAdminHandler.UpdatePlayerVersion) // 更新播放器设置
