@@ -63,8 +63,8 @@ const navItems: NavItem[] = [
     icon: <Image className="size-4" />,
   },
   {
-    to: "/admin/stickers",
-    label: "表情包",
+    to: "/admin/emojis",
+    label: "表情",
     icon: <Smile className="size-4" />,
   },
   {

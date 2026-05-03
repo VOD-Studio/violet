@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useSubmitComment } from "@/hooks/useComments";
 import { useAuthStore } from "@/store";
-import { StickerPickerButton } from "@/components/comment/StickerPicker";
+import { EmojiPickerButton } from "@/components/comment/EmojiPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -127,7 +127,7 @@ export function QuickCommentDialog({
               />
               {/* 表情选择器按钮 */}
               <div className="absolute bottom-2 right-2">
-                <StickerPickerButton
+                <EmojiPickerButton
                   onSelect={(syntax) => setContent((prev) => prev + syntax)}
                 />
               </div>

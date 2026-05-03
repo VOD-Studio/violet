@@ -34,7 +34,7 @@ import Tags from "@/admin/Tags";
 import Media from "@/admin/Media";
 import Users from "@/admin/Users";
 import Settings from "@/admin/Settings";
-import Stickers from "@/admin/Stickers";
+import Emojis from "@/admin/Emojis";
 import Playlists from "@/admin/Playlists";
 
 /**
@@ -95,7 +95,7 @@ function App() {
             <Route path="comments" element={<Comments />} />
             <Route path="tags" element={<Tags />} />
             <Route path="media" element={<Media />} />
-            <Route path="stickers" element={<Stickers />} />
+            <Route path="emojis" element={<Emojis />} />
             <Route path="playlists" element={<Playlists />} />
             <Route path="users" element={<Users />} />
             <Route path="settings" element={<Settings />} />
