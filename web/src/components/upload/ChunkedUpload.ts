@@ -1,4 +1,5 @@
 // 分片上传逻辑封装
+// 对接后端 /api/v1/upload/* 分片上传接口
 // 支持大文件分片上传、断点续传、秒传检测
 
 import { api } from "@/lib/api";
@@ -12,31 +13,39 @@ interface UploadResult {
   url: string;
   /** 缩略图相对路径（可选） */
   thumbnail?: string;
+  /** 文件记录 ID */
   id: string;
+  /** 原始文件名 */
   name: string;
+  /** MIME 类型 */
   mimeType: string;
 }
 
-/** 初始化上传响应 */
-interface InitUploadResponse {
-  upload_id: string;
-  total_chunks: number;
-}
-
-// 秒传检查响应
-interface CheckExistResponse {
-  exists: boolean;
-  media_id?: string;
+/** 初始化上传会话响应（含秒传和断点续传） */
+interface InitSessionResponse {
+  /** 是否秒传命中 */
+  instant: boolean;
+  /** 秒传文件 ID */
+  fileId?: string;
+  /** 秒传文件 URL */
   url?: string;
-  thumbnail?: string;
+  /** 上传会话 ID */
+  uploadId?: string;
+  /** 分片大小（字节） */
+  chunkSize: number;
+  /** 总分片数 */
+  totalChunks: number;
+  /** 断点续传已上传的分片索引 */
+  uploadedChunks: number[];
 }
 
 /** 合并上传响应 */
-interface CompleteUploadResponse {
-  media_id: string;
-  /** 相对路径，如 /uploads/xxx.jpeg */
+interface MergeResultResponse {
+  /** 文件记录 ID */
+  fileId: string;
+  /** 文件访问地址 */
   url: string;
-  /** 缩略图相对路径 */
+  /** 缩略图地址 */
   thumbnail?: string;
 }
 
@@ -118,6 +127,14 @@ function clearUploadState(fileHash: string): void {
 
 /**
  * 分片上传文件
+ *
+ * 流程：
+ * 1. 计算文件 hash
+ * 2. 调用 /upload/init（含秒传检查 + 断点续传恢复）
+ * 3. 如秒传命中，直接返回
+ * 4. 逐片上传分片 PUT /upload/{uploadId}/chunk/{index}
+ * 5. 调用 /upload/{uploadId}/complete 合并分片
+ *
  * @param file - 文件对象
  * @param onProgress - 进度回调，参数为 0-100 的百分比
  * @returns 上传结果
@@ -125,78 +142,74 @@ function clearUploadState(fileHash: string): void {
 export async function uploadFile(
   file: File,
   onProgress?: (progress: number) => void,
+  purpose?: string,
 ): Promise<UploadResult> {
   const fileHash = await computeFileHash(file);
 
-  // 秒传检查
-  const checkResult = await api.post<CheckExistResponse>("/upload/check", {
-    file_hash: fileHash,
+  // 初始化上传会话（含秒传检查 + 断点续传恢复）
+  const initResult = await api.post<InitSessionResponse>("/upload/init", {
+    fileName: file.name,
+    fileSize: file.size,
+    fileHash,
+    mimeType: file.type || "application/octet-stream",
+    chunkSize: CHUNK_SIZE,
+    purpose: purpose || "material",
   });
 
-  if (checkResult.exists && checkResult.url) {
+  // 秒传命中，直接返回
+  if (initResult.instant && initResult.url) {
     onProgress?.(100);
     clearUploadState(fileHash);
     return {
-      url: checkResult.url,
-      thumbnail: checkResult.thumbnail,
-      id: checkResult.media_id ?? "",
+      url: initResult.url,
+      id: initResult.fileId ?? "",
       name: file.name,
       mimeType: file.type || "application/octet-stream",
     };
   }
 
-  // 初始化上传，获取 upload_id
-  const initResult = await api.post<InitUploadResponse>("/upload/init", {
-    filename: file.name,
-    total_size: file.size,
-    chunk_size: CHUNK_SIZE,
-    file_hash: fileHash,
-  });
+  const uploadId = initResult.uploadId!;
+  const totalChunks = initResult.totalChunks;
 
-  const { upload_id, total_chunks } = initResult;
+  // 断点续传：使用服务端返回的已上传分片列表
+  const serverUploaded = initResult.uploadedChunks ?? [];
+  let uploadedChunks = [...serverUploaded];
+
+  // 同步到 localStorage（用于页面刷新后恢复）
+  if (uploadedChunks.length > 0) {
+    saveUploadedChunks(fileHash, uploadedChunks);
+  }
 
   // 创建分片
   const chunks = createChunks(file);
 
-  // 获取断点续传状态
-  let uploadedChunks = getUploadedChunks(fileHash);
-
   // 上传每个分片
-  for (let i = 0; i < total_chunks; i++) {
+  for (let i = 0; i < totalChunks; i++) {
     if (uploadedChunks.includes(i)) {
-      onProgress?.(Math.round(((i + 1) / total_chunks) * 100));
+      onProgress?.(Math.round(((i + 1) / totalChunks) * 100));
       continue;
     }
 
-    const formData = new FormData();
-    formData.append("chunk", chunks[i]);
-    formData.append("upload_id", upload_id);
-    formData.append("chunk_index", String(i));
-    formData.append("total_chunks", String(total_chunks));
-    formData.append("file_hash", fileHash);
-    formData.append("filename", file.name);
-    formData.append("mime_type", file.type || "application/octet-stream");
-
-    await api.post<{ message: string }>("/upload/chunk", formData);
+    // PUT /upload/{uploadId}/chunk/{index}，请求体为原始分片数据
+    await api.put(`/upload/${uploadId}/chunk/${i}`, chunks[i]);
 
     uploadedChunks.push(i);
     saveUploadedChunks(fileHash, uploadedChunks);
-    onProgress?.(Math.round(((i + 1) / total_chunks) * 100));
+    onProgress?.(Math.round(((i + 1) / totalChunks) * 100));
   }
 
-  // 合并分片
-  const result = await api.post<CompleteUploadResponse>("/upload/complete", {
-    upload_id,
-  });
+  // 合并所有分片
+  const result = await api.post<MergeResultResponse>(
+    `/upload/${uploadId}/complete`,
+  );
 
   // 清除断点续传状态
   clearUploadState(fileHash);
 
-  // 后端返回格式为 /uploads/filename.jpeg，存储完整相对路径
   return {
     url: result.url,
     thumbnail: result.thumbnail,
-    id: result.media_id,
+    id: result.fileId,
     name: file.name,
     mimeType: file.type || "application/octet-stream",
   };

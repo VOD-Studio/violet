@@ -8,7 +8,7 @@ import { useAuthStore } from "@/store";
 import { getNavigate } from "@/lib/navigation";
 
 /** API 基础地址 */
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api/v1";
 
 /** 服务器根地址，用于拼接静态资源 URL */
 const SERVER_ORIGIN =
@@ -152,8 +152,12 @@ client.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // FormData 请求让浏览器自动设置 Content-Type
-    if (config.data instanceof FormData) {
+    // FormData / Blob / ArrayBuffer 请求让浏览器自动设置 Content-Type
+    if (
+      config.data instanceof FormData ||
+      config.data instanceof Blob ||
+      config.data instanceof ArrayBuffer
+    ) {
       delete config.headers["Content-Type"];
     }
 
