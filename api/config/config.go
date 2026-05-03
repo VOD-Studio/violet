@@ -30,6 +30,12 @@ type Config struct {
 	Port string
 	// UploadPathPrefix 上传文件路径前缀，如 "/uploads/"
 	UploadPathPrefix string
+	// BilibiliCookie B站登录 Cookie，用于获取表情种子数据
+	BilibiliCookie string
+	// BilibiliUsername B站账号（用于自动获取 Cookie）
+	BilibiliUsername string
+	// BilibiliPassword B站密码（用于自动获取 Cookie）
+	BilibiliPassword string
 }
 
 // Load 从环境变量加载配置，未设置时使用默认值
@@ -49,6 +55,9 @@ func Load() *Config {
 		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:3000"),
 		Port:               getEnv("PORT", "8080"),
 		UploadPathPrefix:   getEnv("UPLOAD_PATH_PREFIX", "/uploads/"),
+		BilibiliCookie:     getEnv("BILIBILI_COOKIE", ""),
+		BilibiliUsername:   getEnv("BILIBILI_USERNAME", ""),
+		BilibiliPassword:   getEnv("BILIBILI_PASSWORD", ""),
 	}
 }
 

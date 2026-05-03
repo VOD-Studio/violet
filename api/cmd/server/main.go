@@ -92,7 +92,7 @@ func main() {
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
 	musicSettingsService := service.NewMusicSettingsService(queries)
 	projectService := service.NewProjectService(queries)
-	emojiService := service.NewEmojiService(queries, "uploads/emojis")
+	emojiService := service.NewEmojiService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliUsername, cfg.BilibiliPassword)
 
 	// 检查并初始化表情种子数据
 	count, err := queries.CountEmojiGroups(ctx)
