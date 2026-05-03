@@ -39,6 +39,7 @@ type SongInfo struct {
 	Duration int    `json:"duration"` // 秒
 	URL      string `json:"url"`      // 播放链接
 	Platform string `json:"platform"` // 来源平台
+	Lrc      string `json:"lrc,omitempty"`
 }
 
 // parsePlaylistURL 解析歌单链接
@@ -427,7 +428,7 @@ func (s *MusicService) FetchQQPlaylist(id string) (*PlaylistInfo, error) {
 		Cover:    cd.Logo,
 		Creator:  cd.Nick,
 		Count:    cd.Songnum,
-		Platform: "qq",
+		Platform: "tencent",
 		Songs:    make([]*SongInfo, 0),
 	}
 
@@ -435,7 +436,7 @@ func (s *MusicService) FetchQQPlaylist(id string) (*PlaylistInfo, error) {
 	for _, song := range cd.Songlist {
 		songInfo := &SongInfo{
 			ID:       song.Songmid,
-			Platform: "qq",
+			Platform: "tencent",
 			URL:      fmt.Sprintf("https://i.y.qq.com/v8/music/play/song?songmid=%s", song.Songmid),
 		}
 		playlist.Songs = append(playlist.Songs, songInfo)
@@ -461,7 +462,7 @@ func (s *MusicService) FetchSongDetail(platform, songID string) (*SongInfo, erro
 	switch platform {
 	case "netease":
 		return s.FetchNeteaseSongDetail(songID)
-	case "qq":
+	case "tencent":
 		return s.FetchQQSongDetail(songID)
 	default:
 		return nil, ErrUnsupportedMusicURL

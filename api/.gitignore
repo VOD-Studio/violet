@@ -1,5 +1,8 @@
 /uploads/
 
+# Config
+config.yaml
+
 # JWT keys (do not commit)
 *.pem
 jwt_private_key.pem

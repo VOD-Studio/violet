@@ -4,7 +4,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, getUploadUrl } from "@/lib/api";
 import { APlayerMusicPlayer } from "./APlayerMusicPlayer";
 import { PlyrMusicPlayer } from "./PlyrMusicPlayer";
 
@@ -25,6 +25,7 @@ interface SongData {
   duration?: number;
   url: string;
   platform?: string;
+  lrc?: string;
 }
 
 /** 歌单列表响应 */
@@ -99,13 +100,13 @@ export function MusicPlayer() {
 /** 将后端歌曲数据转换为播放器格式 */
 export function toPlayerSongs(songs: SongData[]) {
   return songs
-    .filter((s) => s.url && s.url.startsWith("http"))
+    .filter((s) => s.url)
     .map((s) => ({
       id: s.id,
       name: s.title || "未知歌曲",
       artist: s.artist || "未知艺术家",
-      url: s.url,
-      cover: s.cover,
-      lrc: undefined as string | undefined,
+      url: s.url.startsWith("/") ? getUploadUrl(s.url) : s.url,
+      cover: s.cover ? getUploadUrl(s.cover) : s.cover,
+      lrc: s.lrc as string | undefined,
     }));
 }

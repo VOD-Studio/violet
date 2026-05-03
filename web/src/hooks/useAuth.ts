@@ -31,6 +31,7 @@ interface UserInfo {
   role?: string;
   email_verified?: boolean;
   is_active?: boolean;
+  permissions?: string[];
 }
 
 /**

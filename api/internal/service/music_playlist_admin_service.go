@@ -481,30 +481,26 @@ func (s *MusicPlaylistAdminService) RemoveSongFromPlaylist(ctx context.Context, 
 }
 
 // UpdateSongInPlaylist 更新歌单中的歌曲信息
-func (s *MusicPlaylistAdminService) UpdateSongInPlaylist(ctx context.Context, playlistID uuid.UUID, songIndex int, title string, artist string, cover string) (*PlaylistResponse, error) {
-	// 获取现有歌单
+func (s *MusicPlaylistAdminService) UpdateSongInPlaylist(ctx context.Context, playlistID uuid.UUID, songIndex int, title string, artist string, cover string, lrc string) (*PlaylistResponse, error) {
 	existing, err := s.queries.GetPlaylistByID(ctx, playlistID)
 	if err != nil {
 		return nil, ErrPlaylistNotFound
 	}
 
-	// 解析歌曲列表
 	songs, err := parseSongsFromJSON(existing.Songs)
 	if err != nil {
 		return nil, fmt.Errorf("解析歌曲列表失败: %w", err)
 	}
 
-	// 验证索引
 	if songIndex < 0 || songIndex >= len(songs) {
 		return nil, fmt.Errorf("歌曲索引 %d 超出范围（共 %d 首）", songIndex, len(songs))
 	}
 
-	// 更新歌曲信息
 	songs[songIndex].Title = title
 	songs[songIndex].Artist = artist
 	songs[songIndex].Cover = cover
+	songs[songIndex].Lrc = lrc
 
-	// 序列化并更新
 	songsJSON, err := json.Marshal(songs)
 	if err != nil {
 		return nil, fmt.Errorf("序列化歌曲列表失败: %w", err)
@@ -565,7 +561,7 @@ func buildPlaylistURL(platform, playlistID string) string {
 	switch platform {
 	case "netease":
 		return fmt.Sprintf("https://music.163.com/playlist?id=%s", playlistID)
-	case "qq":
+	case "tencent":
 		return fmt.Sprintf("https://y.qq.com/n/ryqq/playlist/%s", playlistID)
 	default:
 		return ""

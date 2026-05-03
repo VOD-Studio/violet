@@ -81,14 +81,14 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 	}
 
 	var req struct {
-		Role string `json:"role" validate:"required,oneof=user admin"`
+		Role string `json:"role" validate:"required,oneof=user admin superadmin"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
-	if req.Role != "user" && req.Role != "admin" {
+	if req.Role != "user" && req.Role != "admin" && req.Role != "superadmin" {
 		writeError(w, http.StatusBadRequest, "invalid_role", "角色值无效，只能为 user 或 admin")
 		return
 	}

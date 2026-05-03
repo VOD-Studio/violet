@@ -1,9 +1,10 @@
 package config
 
 import (
-	"os"
-	"strconv"
+	"strings"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 // Config 应用配置结构体，集中管理所有配置项
@@ -32,33 +33,84 @@ type Config struct {
 	UploadPathPrefix string
 	// BilibiliCookie B站登录 Cookie，用于获取表情种子数据（自动拼接）
 	BilibiliCookie string
+	// SuperAdmin 超级管理员配置
+	SuperAdmin SuperAdminConfig
 }
 
-// Load 从环境变量加载配置，未设置时使用默认值
-func Load() *Config {
-	accessTokenTTL := getEnvAsDuration("JWT_ACCESS_TOKEN_TTL", 15*time.Minute)
-	refreshTokenTTL := getEnvAsDuration("JWT_REFRESH_TOKEN_TTL", 7*24*time.Hour)
+// SuperAdminConfig 超级管理员配置
+type SuperAdminConfig struct {
+	Enabled  bool
+	Username string
+	Email    string
+	Password string
+}
 
-	// 拼接 B站 Cookie
+// Load 从配置文件和环境变量加载配置
+// 优先级：环境变量 > config.yaml > 默认值
+func Load() *Config {
+	v := viper.New()
+
+	// 配置文件
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+	v.AddConfigPath(".")
+	v.AddConfigPath("./api")
+
+	// 环境变量覆盖（自动绑定同名键）
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	// 默认值
+	v.SetDefault("database_url", "postgres://blog:blog123@localhost:5432/blog?sslmode=disable")
+	v.SetDefault("redis_url", "redis://localhost:6379/0")
+	v.SetDefault("jwt_private_key_path", "")
+	v.SetDefault("jwt_public_key_path", "")
+	v.SetDefault("jwt_access_token_ttl", "15m")
+	v.SetDefault("jwt_refresh_token_ttl", "168h")
+	v.SetDefault("resend_api_key", "")
+	v.SetDefault("email_from", "noreply@yourdomain.com")
+	v.SetDefault("frontend_url", "http://localhost:3000")
+	v.SetDefault("port", "8080")
+	v.SetDefault("upload_path_prefix", "/uploads/")
+	v.SetDefault("bilibili_sessdata", "")
+	v.SetDefault("bilibili_bili_jct", "")
+	v.SetDefault("bilibili_dedeuserid", "")
+	v.SetDefault("superadmin.enabled", false)
+	v.SetDefault("superadmin.username", "admin")
+	v.SetDefault("superadmin.email", "admin@example.com")
+	v.SetDefault("superadmin.password", "")
+
+	// 读取配置文件（不存在也不报错）
+	_ = v.ReadInConfig()
+
+	accessTokenTTL, _ := time.ParseDuration(v.GetString("jwt_access_token_ttl"))
+	refreshTokenTTL, _ := time.ParseDuration(v.GetString("jwt_refresh_token_ttl"))
+
 	bilibiliCookie := buildBilibiliCookie(
-		getEnv("BILIBILI_SESSDATA", ""),
-		getEnv("BILIBILI_BILI_JCT", ""),
-		getEnv("BILIBILI_DEDEUSERID", ""),
+		v.GetString("bilibili_sessdata"),
+		v.GetString("bilibili_bili_jct"),
+		v.GetString("bilibili_dedeuserid"),
 	)
 
 	return &Config{
-		DatabaseURL:        getEnv("DATABASE_URL", "postgres://blog:blog123@localhost:5432/blog?sslmode=disable"),
-		RedisURL:           getEnv("REDIS_URL", "redis://localhost:6379/0"),
-		JWTPrivateKeyPath:  getEnv("JWT_PRIVATE_KEY_PATH", ""),
-		JWTPublicKeyPath:   getEnv("JWT_PUBLIC_KEY_PATH", ""),
-		JWTAccessTokenTTL:  accessTokenTTL,
+		DatabaseURL:       v.GetString("database_url"),
+		RedisURL:          v.GetString("redis_url"),
+		JWTPrivateKeyPath: v.GetString("jwt_private_key_path"),
+		JWTPublicKeyPath:  v.GetString("jwt_public_key_path"),
+		JWTAccessTokenTTL: accessTokenTTL,
 		JWTRefreshTokenTTL: refreshTokenTTL,
-		ResendAPIKey:       getEnv("RESEND_API_KEY", ""),
-		EmailFrom:          getEnv("EMAIL_FROM", "noreply@yourdomain.com"),
-		FrontendURL:        getEnv("FRONTEND_URL", "http://localhost:3000"),
-		Port:               getEnv("PORT", "8080"),
-		UploadPathPrefix:   getEnv("UPLOAD_PATH_PREFIX", "/uploads/"),
-		BilibiliCookie:     bilibiliCookie,
+		ResendAPIKey:      v.GetString("resend_api_key"),
+		EmailFrom:         v.GetString("email_from"),
+		FrontendURL:       v.GetString("frontend_url"),
+		Port:              v.GetString("port"),
+		UploadPathPrefix:  v.GetString("upload_path_prefix"),
+		BilibiliCookie:    bilibiliCookie,
+		SuperAdmin: SuperAdminConfig{
+			Enabled:  v.GetBool("superadmin.enabled"),
+			Username: v.GetString("superadmin.username"),
+			Email:    v.GetString("superadmin.email"),
+			Password: v.GetString("superadmin.password"),
+		},
 	}
 }
 
@@ -75,32 +127,4 @@ func buildBilibiliCookie(sessdata, biliJct, dedeUserID string) string {
 		cookie += "; DedeUserID=" + dedeUserID
 	}
 	return cookie
-}
-
-// getEnv 读取环境变量，若未设置则返回默认值
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
-// getEnvAsDuration 读取环境变量并解析为时间间隔，若未设置或解析失败则返回默认值
-func getEnvAsDuration(key string, fallback time.Duration) time.Duration {
-	if value, ok := os.LookupEnv(key); ok {
-		if d, err := time.ParseDuration(value); err == nil {
-			return d
-		}
-	}
-	return fallback
-}
-
-// getEnvAsInt 读取环境变量并解析为整数，若未设置或解析失败则返回默认值
-func getEnvAsInt(key string, fallback int) int {
-	if value, ok := os.LookupEnv(key); ok {
-		if i, err := strconv.Atoi(value); err == nil {
-			return i
-		}
-	}
-	return fallback
 }

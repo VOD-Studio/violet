@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -319,6 +321,7 @@ func (h *MusicAdminHandler) CreateCustomPlaylist(w http.ResponseWriter, r *http.
 
 	playlist, err := h.playlistAdminService.CreateCustomPlaylist(r.Context(), req.Title)
 	if err != nil {
+		log.Printf("[CreateCustomPlaylist] failed: %v", err)
 		writeError(w, http.StatusInternalServerError, "internal_error", "创建自定义歌单失败")
 		return
 	}
@@ -344,6 +347,23 @@ func (h *MusicAdminHandler) AddSongToPlaylist(w http.ResponseWriter, r *http.Req
 	}
 	defer file.Close()
 
+	// 校验音频文件类型
+	ext := path.Ext(header.Filename)
+	allowedExts := map[string]bool{
+		".mp3": true, ".wav": true, ".ogg": true,
+		".flac": true, ".aac": true, ".m4a": true,
+	}
+	if !allowedExts[strings.ToLower(ext)] {
+		writeError(w, http.StatusBadRequest, "invalid_file_type", "仅支持音频文件（mp3, wav, ogg, flac, aac, m4a）")
+		return
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	if contentType != "" && !strings.HasPrefix(contentType, "audio/") {
+		writeError(w, http.StatusBadRequest, "invalid_file_type", "仅支持音频文件")
+		return
+	}
+
 	uploadDir := "uploads/music"
 	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "创建上传目录失败")
@@ -351,7 +371,7 @@ func (h *MusicAdminHandler) AddSongToPlaylist(w http.ResponseWriter, r *http.Req
 	}
 
 	fileUUID := uuid.New().String()
-	ext := path.Ext(header.Filename)
+	ext = path.Ext(header.Filename)
 	if ext == "" {
 		ext = ".mp3"
 	}
@@ -438,6 +458,7 @@ func (h *MusicAdminHandler) UpdateSongInPlaylist(w http.ResponseWriter, r *http.
 		Title  string `json:"title"`
 		Artist string `json:"artist"`
 		Cover  string `json:"cover"`
+		Lrc    string `json:"lrc"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -445,7 +466,7 @@ func (h *MusicAdminHandler) UpdateSongInPlaylist(w http.ResponseWriter, r *http.
 		return
 	}
 
-	playlist, err := h.playlistAdminService.UpdateSongInPlaylist(r.Context(), id, songIndex, req.Title, req.Artist, req.Cover)
+	playlist, err := h.playlistAdminService.UpdateSongInPlaylist(r.Context(), id, songIndex, req.Title, req.Artist, req.Cover, req.Lrc)
 	if err != nil {
 		if errors.Is(err, service.ErrPlaylistNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "歌单不存在")

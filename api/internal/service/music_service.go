@@ -40,7 +40,7 @@ func (s *MusicService) ParseMusicURL(url string) (*MusicEmbedInfo, error) {
 
 	if songID := parseQQMusicSongID(url); songID != "" {
 		return &MusicEmbedInfo{
-			Platform: "qq",
+			Platform: "tencent",
 			SongID:   songID,
 			EmbedURL: "https://i.y.qq.com/nryyun/song/" + songID,
 		}, nil

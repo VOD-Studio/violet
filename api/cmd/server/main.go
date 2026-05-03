@@ -11,6 +11,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -79,10 +80,12 @@ func main() {
 	fileService := service.NewFileService(gormDB, "uploads", cfg.UploadPathPrefix)
 	uploadService := service.NewUploadService(gormDB, fileService, "uploads/tmp", "uploads", cfg.UploadPathPrefix, 1024*1024*1024)
 	musicService := service.NewMusicService()
+	musicSearchService := service.NewMusicSearchService()
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
 	musicSettingsService := service.NewMusicSettingsService(queries)
 	projectService := service.NewProjectService(queries)
 	emojiService := service.NewEmojiService(queries, "uploads/emojis", cfg.BilibiliCookie)
+	permissionService := service.NewPermissionService(queries)
 
 	count, err := queries.CountEmojiGroups(ctx)
 	if err != nil {
@@ -99,9 +102,16 @@ func main() {
 	cleanupJob := job.NewCleanupJob(gormDB, "uploads/tmp")
 	go cleanupJob.Start(ctx)
 
+	// --- 超级管理员初始化 ---
+	if cfg.SuperAdmin.Enabled {
+		if err := initSuperAdmin(ctx, queries, cfg.SuperAdmin); err != nil {
+			log.Fatalf("超级管理员初始化失败: %v", err)
+		}
+	}
+
 	// --- 处理器初始化 ---
 
-	authHandler := handler.NewAuthHandler(authService, cfg.UploadPathPrefix)
+	authHandler := handler.NewAuthHandler(authService, permissionService, cfg.UploadPathPrefix)
 	postHandler := handler.NewPostHandler(postService, tagService)
 	tagHandler := handler.NewTagHandler(tagService)
 	commentHandler := handler.NewCommentHandler(commentService)
@@ -110,7 +120,7 @@ func main() {
 	userMgmtHandler := handler.NewUserManagementHandler(userService)
 	mediaHandler := handler.NewMediaHandler(fileService, "uploads")
 	uploadHandler := handler.NewUploadHandler(uploadService)
-	musicHandler := handler.NewMusicHandler(musicService)
+	musicHandler := handler.NewMusicHandler(musicService, musicSearchService)
 	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
 	projectHandler := handler.NewProjectHandler(projectService)
 	emojiHandler := handler.NewEmojiHandler(emojiService)
@@ -225,6 +235,9 @@ func main() {
 			r.Get("/embed", musicHandler.GetEmbedInfo)                       // 解析音乐链接返回嵌入信息
 			r.Get("/playlist", musicHandler.GetPlaylist)                     // 解析歌单链接返回歌单信息
 			r.Get("/song", musicHandler.GetSongDetail)                       // 获取歌曲详情
+			r.Get("/search", musicHandler.SearchSongs)                       // 搜索歌曲
+			r.Get("/lyrics", musicHandler.GetLyrics)                         // 获取歌词
+			r.Get("/meta", musicHandler.FetchSongMeta)                       // 获取歌曲元数据（封面+歌词）
 			r.Get("/playlist/config/active", musicAdminHandler.GetActivePlaylist)  // 获取启用的歌单配置
 			r.Get("/playlists/active", musicAdminHandler.GetAllActivePlaylists)    // 获取所有启用歌单
 			r.Get("/settings", musicAdminHandler.GetMusicSettings)                  // 获取播放器设置
@@ -312,4 +325,56 @@ func main() {
 	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatalf("服务启动失败: %v", err)
 	}
+}
+
+// initSuperAdmin 初始化超级管理员账户
+// 如果用户不存在则创建，已存在则更新密码和角色
+func initSuperAdmin(ctx context.Context, queries *generated.Queries, cfg config.SuperAdminConfig) error {
+	if cfg.Email == "" || cfg.Password == "" {
+		return fmt.Errorf("超级管理员邮箱或密码未配置")
+	}
+
+	user, err := queries.GetUserByEmail(ctx, cfg.Email)
+	if err == nil {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cfg.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("密码哈希失败: %w", err)
+		}
+		err = queries.UpdateUserPassword(ctx, generated.UpdateUserPasswordParams{
+			ID:           user.ID,
+			PasswordHash: string(hashedPassword),
+		})
+		if err != nil {
+			return fmt.Errorf("更新超级管理员密码失败: %w", err)
+		}
+		_, err = queries.UpdateUserRole(ctx, generated.UpdateUserRoleParams{
+			ID:   user.ID,
+			Role: "superadmin",
+		})
+		if err != nil {
+			return fmt.Errorf("更新超级管理员角色失败: %w", err)
+		}
+		log.Printf("超级管理员已更新: %s (%s)", cfg.Username, cfg.Email)
+		return nil
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cfg.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("密码哈希失败: %w", err)
+	}
+
+	_, err = queries.CreateUser(ctx, generated.CreateUserParams{
+		Username:      cfg.Username,
+		Email:         cfg.Email,
+		PasswordHash:  string(hashedPassword),
+		Role:          "superadmin",
+		EmailVerified: true,
+		IsActive:      true,
+	})
+	if err != nil {
+		return fmt.Errorf("创建超级管理员失败: %w", err)
+	}
+
+	log.Printf("超级管理员已创建: %s (%s)", cfg.Username, cfg.Email)
+	return nil
 }

@@ -14,18 +14,16 @@ import (
 
 // AuthHandler 认证相关接口处理器
 type AuthHandler struct {
-	// authService 认证服务
 	authService *service.AuthService
-	// validate 请求验证器
+	permService *service.PermissionService
 	validate *validator.Validate
-	// uploadPathPrefix 上传文件路径前缀
 	uploadPathPrefix string
 }
 
-// NewAuthHandler 创建认证处理器实例
-func NewAuthHandler(authService *service.AuthService, uploadPathPrefix string) *AuthHandler {
+func NewAuthHandler(authService *service.AuthService, permService *service.PermissionService, uploadPathPrefix string) *AuthHandler {
 	return &AuthHandler{
 		authService:      authService,
+		permService:      permService,
 		validate:         validator.New(),
 		uploadPathPrefix: uploadPathPrefix,
 	}
@@ -129,6 +127,8 @@ type UserResponse struct {
 	EmailVerified bool `json:"email_verified"`
 	// IsActive 账户是否已激活
 	IsActive bool `json:"is_active"`
+	// Permissions 权限列表
+	Permissions []string `json:"permissions,omitempty"`
 }
 
 // Register 用户注册接口
@@ -330,21 +330,18 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/auth/me
 // 需要认证，返回当前登录用户的信息
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
-	// 从上下文获取用户 ID
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
 		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
 		return
 	}
 
-	// 查询用户信息
 	user, err := h.authService.GetUserByID(r.Context(), userID)
 	if err != nil {
 		handleServiceError(w, err)
 		return
 	}
 
-	// 构建响应，不返回敏感信息
 	avatarURL := ""
 	if user.AvatarUrl.Valid && user.AvatarUrl.String != "" {
 		avatarURL = user.AvatarUrl.String
@@ -352,6 +349,18 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	bio := ""
 	if user.Bio.Valid {
 		bio = user.Bio.String
+	}
+
+	var permissions []string
+	if h.permService != nil {
+		roleID := middleware.GetUserRoleID(r.Context())
+		if user.Role == "superadmin" {
+			for code := range h.permService.GetAllPermissions() {
+				permissions = append(permissions, code)
+			}
+		} else if roleID != nil {
+			permissions = h.permService.GetPermissionsByRoleID(*roleID)
+		}
 	}
 
 	writeJSON(w, http.StatusOK, UserResponse{
@@ -363,6 +372,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		Role:          user.Role,
 		EmailVerified: user.EmailVerified,
 		IsActive:      user.IsActive,
+		Permissions:   permissions,
 	})
 }
 

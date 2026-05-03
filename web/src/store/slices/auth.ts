@@ -11,7 +11,7 @@ interface User {
   id: string;
   /** 用户名 */
   username: string;
-  /** 邶箱地址 */
+  /** 邮箱地址 */
   email: string;
   /** 头像 URL */
   avatar_url?: string;
@@ -23,6 +23,8 @@ interface User {
   email_verified?: boolean;
   /** 是否启用 */
   is_active?: boolean;
+  /** 权限代码列表 */
+  permissions?: string[];
 }
 
 /** 认证状态接口 */

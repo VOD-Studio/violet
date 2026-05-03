@@ -19,7 +19,7 @@ export function adminLoader() {
   }
 
   // 检查是否是管理员
-  if (user?.role !== "admin") {
+  if (user?.role !== "admin" && user?.role !== "superadmin") {
     return redirect("/login");
   }
 

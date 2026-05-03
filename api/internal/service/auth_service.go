@@ -83,8 +83,10 @@ type JWTClaims struct {
 	UserID string `json:"user_id"`
 	// Email 用户邮箱
 	Email string `json:"email"`
-	// Role 用户角色
+	// Role 用户角色名称
 	Role string `json:"role"`
+	// RoleID 用户角色 ID（用于权限查询）
+	RoleID int32 `json:"role_id,omitempty"`
 	// 标准 JWT 声明
 	jwt.RegisteredClaims
 }
@@ -258,8 +260,15 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Token
 		return nil, ErrAccountNotActivated
 	}
 
+	// 获取角色 ID
+	roleID, _ := s.queries.GetUserRoleID(ctx, user.ID.String())
+	var rid int32
+	if roleID.Valid {
+		rid = roleID.Int32
+	}
+
 	// 生成令牌对
-	tokenPair, err := s.generateTokenPair(user.ID.String(), user.Email, user.Role)
+	tokenPair, err := s.generateTokenPair(user.ID.String(), user.Email, user.Role, rid)
 	if err != nil {
 		return nil, fmt.Errorf("生成令牌失败: %w", err)
 	}
@@ -308,7 +317,12 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*T
 	}
 
 	// 生成新的令牌对
-	tokenPair, err := s.generateTokenPair(userID, user.Email, user.Role)
+	roleID, _ := s.queries.GetUserRoleID(ctx, userID)
+	var rid int32
+	if roleID.Valid {
+		rid = roleID.Int32
+	}
+	tokenPair, err := s.generateTokenPair(userID, user.Email, user.Role, rid)
 	if err != nil {
 		return nil, fmt.Errorf("生成令牌失败: %w", err)
 	}
@@ -565,14 +579,14 @@ func (s *AuthService) getVerificationData(ctx context.Context, key string) (*Ver
 }
 
 // generateTokenPair 生成访问令牌和刷新令牌
-func (s *AuthService) generateTokenPair(userID, email, role string) (*TokenPair, error) {
+func (s *AuthService) generateTokenPair(userID, email, role string, roleID int32) (*TokenPair, error) {
 	now := time.Now()
 
-	// 生成访问令牌
 	accessClaims := &JWTClaims{
 		UserID: userID,
 		Email:  email,
 		Role:   role,
+		RoleID: roleID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.config.JWTAccessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(now),

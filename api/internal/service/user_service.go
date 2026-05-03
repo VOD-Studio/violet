@@ -21,8 +21,9 @@ var (
 
 // 合法的用户角色列表
 var validRoles = map[string]bool{
-	"user":  true,
-	"admin": true,
+	"user":       true,
+	"admin":      true,
+	"superadmin": true,
 }
 
 // UserService 用户管理业务服务

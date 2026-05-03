@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+import { getUploadUrl } from "@/lib/api";
 import {
   Music,
   Play,
@@ -18,10 +19,8 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
-
+  X,
   ChevronDown,
-
-
 } from "lucide-react";
 
 /** 歌曲信息 */
@@ -49,6 +48,7 @@ interface Playlist {
     artist: string;
     url: string;
     cover?: string;
+    lrc?: string;
   }>;
   is_active: boolean;
 }
@@ -103,7 +103,7 @@ function VinylDisc({
 
   return (
     <div
-      className="relative rounded-full bg-gradient-to-br from-gray-700 to-gray-900 shadow-lg ring-2 ring-white/10"
+      className="relative rounded-full bg-linear-to-br from-gray-700 to-gray-900 shadow-lg ring-2 ring-white/10"
       style={{
         width: size,
         height: size,
@@ -136,7 +136,7 @@ function VinylDisc({
             draggable={false}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 to-primary/60">
+          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary/30 to-primary/60">
             <Music
               className="text-white"
               style={{ width: size * 0.18, height: size * 0.18 }}
@@ -369,13 +369,14 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
     setIsPlaying(false);
 
     const mapped = currentPlaylist.songs
-      .filter((s) => s.url && s.url.startsWith("http"))
+      .filter((s) => s.url)
       .map((s) => ({
         id: s.id,
         name: s.title || "未知歌曲",
         artist: s.artist || "未知艺术家",
-        url: s.url,
-        cover: s.cover,
+        url: s.url.startsWith("/") ? getUploadUrl(s.url) : s.url,
+        cover: s.cover ? getUploadUrl(s.cover) : s.cover,
+        lrc: s.lrc,
       }));
 
     setSongs(mapped);
@@ -666,7 +667,10 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                       <div key={i} className="flex items-center gap-2.5 px-2">
                         <div className="size-8 rounded bg-muted animate-pulse" />
                         <div className="flex-1 space-y-1.5">
-                          <div className="h-3 rounded bg-muted animate-pulse" style={{ width: `${60 + Math.random() * 30}%` }} />
+                          <div
+                            className="h-3 rounded bg-muted animate-pulse"
+                            style={{ width: `${60 + Math.random() * 30}%` }}
+                          />
                           <div className="h-2 w-1/3 rounded bg-muted animate-pulse" />
                         </div>
                       </div>
@@ -674,7 +678,13 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                   </div>
                 </div>
               ) : songs.length === 0 ? (
-                <div className="py-12 text-center text-sm text-muted-foreground">
+                <div className="relative py-12 text-center text-sm text-muted-foreground">
+                  <button
+                    onClick={() => setExpanded(false)}
+                    className="absolute right-3 top-3 rounded-md p-1.5 transition-colors hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                   歌单暂无歌曲
                 </div>
               ) : (
@@ -846,11 +856,16 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                       style={{ scrollbarWidth: "none" }}
                     >
                       {panelView === "list" ? (
-                        <div ref={songListRef} className="px-2 pb-2 space-y-0.5">
+                        <div
+                          ref={songListRef}
+                          className="px-2 pb-2 space-y-0.5"
+                        >
                           {songs.map((song, index) => (
                             <button
                               key={song.id}
-                              data-active={index === currentSongIndex || undefined}
+                              data-active={
+                                index === currentSongIndex || undefined
+                              }
                               onClick={() => handleSongClick(index)}
                               className={`group w-full rounded-lg px-3 py-2 text-left text-sm transition-all ${
                                 index === currentSongIndex
@@ -874,10 +889,10 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                                   )}
                                   {index === currentSongIndex && isPlaying && (
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                                      <div className="flex items-end gap-[2px] h-3">
-                                        <span className="w-[2px] bg-white animate-[music-bar_0.4s_ease-in-out_infinite_alternate]" />
-                                        <span className="w-[2px] bg-white animate-[music-bar_0.4s_ease-in-out_infinite_alternate_0.2s]" />
-                                        <span className="w-[2px] bg-white animate-[music-bar_0.4s_ease-in-out_infinite_alternate_0.4s]" />
+                                      <div className="flex items-end gap-0.5 h-3">
+                                        <span className="w-0.5 bg-white animate-[music-bar_0.4s_ease-in-out_infinite_alternate]" />
+                                        <span className="w-0.5 bg-white animate-[music-bar_0.4s_ease-in-out_infinite_alternate_0.2s]" />
+                                        <span className="w-0.5 bg-white animate-[music-bar_0.4s_ease-in-out_infinite_alternate_0.4s]" />
                                       </div>
                                     </div>
                                   )}
@@ -904,11 +919,15 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                         <div ref={lyricsContainerRef} className="py-3">
                           {lyrics.length > 0 ? (
                             lyrics.map((line, index) => {
-                              const distance = Math.abs(index - currentLyricIndex);
+                              const distance = Math.abs(
+                                index - currentLyricIndex
+                              );
                               return (
                                 <p
                                   key={index}
-                                  data-active={index === currentLyricIndex || undefined}
+                                  data-active={
+                                    index === currentLyricIndex || undefined
+                                  }
                                   className={`px-5 py-1.5 text-center transition-all duration-300 ${
                                     index === currentLyricIndex
                                       ? "text-base font-semibold text-foreground"

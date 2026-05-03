@@ -8,25 +8,19 @@ import (
 	"blog-api/internal/service"
 )
 
-// contextKey 自定义 context key 类型，避免 key 冲突
 type contextKey string
 
-// UserIDKey 用户 ID 在 context 中的键名
-const UserIDKey contextKey = "userID"
-
-// UserRoleKey 用户角色在 context 中的键名
-const UserRoleKey contextKey = "userRole"
-
-// UserEmailKey 用户邮箱在 context 中的键名
-const UserEmailKey contextKey = "userEmail"
+const (
+	UserIDKey    contextKey = "userID"
+	UserRoleKey  contextKey = "userRole"
+	UserEmailKey contextKey = "userEmail"
+	UserRoleIDKey contextKey = "userRoleID"
+)
 
 // Auth JWT 认证中间件
-// 从 Authorization 请求头提取 Bearer token，使用 ES256 公钥验证签名和过期时间
-// 验证通过后将用户信息注入请求上下文
 func Auth(authService *service.AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// 获取 Authorization 请求头
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
 				w.Header().Set("Content-Type", "application/json")
@@ -35,7 +29,6 @@ func Auth(authService *service.AuthService) func(http.Handler) http.Handler {
 				return
 			}
 
-			// 解析 Bearer token 格式
 			parts := strings.SplitN(authHeader, " ", 2)
 			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 				w.Header().Set("Content-Type", "application/json")
@@ -44,10 +37,7 @@ func Auth(authService *service.AuthService) func(http.Handler) http.Handler {
 				return
 			}
 
-			tokenString := parts[1]
-
-			// 使用认证服务验证 JWT 令牌
-			claims, err := authService.ValidateToken(tokenString)
+			claims, err := authService.ValidateToken(parts[1])
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusUnauthorized)
@@ -55,36 +45,49 @@ func Auth(authService *service.AuthService) func(http.Handler) http.Handler {
 				return
 			}
 
-			// 将用户信息注入请求上下文
 			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
 			ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
 			ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
+			ctx = context.WithValue(ctx, UserRoleIDKey, claims.RoleID)
 
-			// 将请求传递给下一个处理器
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
 // AdminRequired 管理员权限中间件
-// 必须在 Auth 中间件之后使用，检查用户角色是否为 admin
 func AdminRequired(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 从上下文获取用户角色
 		role := GetUserRole(r.Context())
-		if role != "admin" {
+		if role != "admin" && role != "superadmin" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte(`{"error":"forbidden","message":"需要管理员权限"}`))
 			return
 		}
-
 		next.ServeHTTP(w, r)
 	})
 }
 
-// GetUserID 从请求上下文中获取用户 ID
-// 供下游 handler 使用，获取当前已认证用户的身份
+// RequirePermission 权限点检查中间件
+// superadmin 角色直接放行，其他角色查询内存缓存判断
+func RequirePermission(permService *service.PermissionService, codes ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			role := GetUserRole(r.Context())
+			roleID := GetUserRoleID(r.Context())
+
+			if !permService.HasPermission(role, roleID, codes...) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte(`{"error":"forbidden","message":"权限不足"}`))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func GetUserID(ctx context.Context) string {
 	if userID, ok := ctx.Value(UserIDKey).(string); ok {
 		return userID
@@ -92,7 +95,6 @@ func GetUserID(ctx context.Context) string {
 	return ""
 }
 
-// GetUserRole 从请求上下文中获取用户角色
 func GetUserRole(ctx context.Context) string {
 	if role, ok := ctx.Value(UserRoleKey).(string); ok {
 		return role
@@ -100,10 +102,16 @@ func GetUserRole(ctx context.Context) string {
 	return ""
 }
 
-// GetUserEmail 从请求上下文中获取用户邮箱
 func GetUserEmail(ctx context.Context) string {
 	if email, ok := ctx.Value(UserEmailKey).(string); ok {
 		return email
 	}
 	return ""
+}
+
+func GetUserRoleID(ctx context.Context) *int32 {
+	if roleID, ok := ctx.Value(UserRoleIDKey).(int32); ok && roleID != 0 {
+		return &roleID
+	}
+	return nil
 }

@@ -1,0 +1,33 @@
+# 博客 API 配置文件
+# 复制为 config.yaml 并填入实际值
+# 环境变量会覆盖此处配置
+
+database_url: "postgres://blog:blog123@localhost:5432/blog?sslmode=disable"
+redis_url: "redis://localhost:6379/0"
+port: "8080"
+frontend_url: "http://localhost:3000"
+
+# JWT
+jwt_private_key_path: ""
+jwt_public_key_path: ""
+jwt_access_token_ttl: "15m"
+jwt_refresh_token_ttl: "168h"
+
+# 邮件
+resend_api_key: ""
+email_from: "noreply@yourdomain.com"
+
+# 上传
+upload_path_prefix: "/uploads/"
+
+# B站表情
+bilibili_sessdata: ""
+bilibili_bili_jct: ""
+bilibili_dedeuserid: ""
+
+# 超级管理员
+superadmin:
+  enabled: false
+  username: "admin"
+  email: "admin@example.com"
+  password: ""

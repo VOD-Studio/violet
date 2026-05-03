@@ -2,25 +2,26 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"blog-api/internal/service"
 )
 
 // MusicHandler 音乐嵌入接口处理器
 type MusicHandler struct {
-	musicService *service.MusicService
+	musicService  *service.MusicService
+	searchService *service.MusicSearchService
 }
 
-// NewMusicHandler 创建音乐嵌入处理器实例
-func NewMusicHandler(musicService *service.MusicService) *MusicHandler {
+func NewMusicHandler(musicService *service.MusicService, searchService *service.MusicSearchService) *MusicHandler {
 	return &MusicHandler{
-		musicService: musicService,
+		musicService:  musicService,
+		searchService: searchService,
 	}
 }
 
 // GetEmbedInfo 解析音乐链接并返回嵌入信息
 // GET /api/v1/music/embed?url=xxx
-// 支持网易云音乐和 QQ 音乐链接
 func (h *MusicHandler) GetEmbedInfo(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
 	if url == "" {
@@ -43,7 +44,6 @@ func (h *MusicHandler) GetEmbedInfo(w http.ResponseWriter, r *http.Request) {
 
 // GetPlaylist 解析歌单链接并返回歌单信息
 // GET /api/v1/music/playlist?url=xxx
-// 支持网易云音乐和 QQ 音乐歌单
 func (h *MusicHandler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 	link := r.URL.Query().Get("url")
 	if link == "" {
@@ -90,4 +90,69 @@ func (h *MusicHandler) GetSongDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, song)
+}
+
+// SearchSongs 搜索歌曲
+// GET /api/v1/music/search?keyword=xxx&limit=10
+func (h *MusicHandler) SearchSongs(w http.ResponseWriter, r *http.Request) {
+	keyword := r.URL.Query().Get("keyword")
+	if keyword == "" {
+		writeError(w, http.StatusBadRequest, "validation_error", "搜索关键词不能为空")
+		return
+	}
+
+	limit := 10
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if n, err := strconv.Atoi(l); err == nil && n > 0 {
+			limit = n
+		}
+	}
+
+	results, err := h.searchService.SearchSongs(keyword, limit)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "搜索歌曲失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, results)
+}
+
+// GetLyrics 获取歌词
+// GET /api/v1/music/lyrics?platform=netease&id=xxx
+func (h *MusicHandler) GetLyrics(w http.ResponseWriter, r *http.Request) {
+	platform := r.URL.Query().Get("platform")
+	songID := r.URL.Query().Get("id")
+
+	if platform == "" || songID == "" {
+		writeError(w, http.StatusBadRequest, "validation_error", "平台和歌曲ID参数不能为空")
+		return
+	}
+
+	lrc, err := h.searchService.FetchLyrics(platform, songID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "获取歌词失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"lrc": lrc})
+}
+
+// FetchSongMeta 获取歌曲元数据（封面+歌词）
+// GET /api/v1/music/meta?platform=netease&id=xxx
+func (h *MusicHandler) FetchSongMeta(w http.ResponseWriter, r *http.Request) {
+	platform := r.URL.Query().Get("platform")
+	songID := r.URL.Query().Get("id")
+
+	if platform == "" || songID == "" {
+		writeError(w, http.StatusBadRequest, "validation_error", "平台和歌曲ID参数不能为空")
+		return
+	}
+
+	detail, err := h.searchService.FetchSongDetail(platform, songID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "获取歌曲元数据失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, detail)
 }
