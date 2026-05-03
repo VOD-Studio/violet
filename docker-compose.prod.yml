@@ -1,0 +1,118 @@
+# 生产环境配置
+# 使用: docker compose -f docker-compose.prod.yml up -d
+#
+# 前置条件:
+# 1. 复制 api/.env.example 到 api/.env 并修改配置
+# 2. 确保上传目录存在: mkdir -p uploads
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: blog-postgres
+    restart: always
+    # 端口不对外暴露，仅内部网络访问
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_USER: blog
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: blog
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blog -d blog"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - backend
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: blog-redis
+    restart: always
+    # 端口不对外暴露，仅内部网络访问
+    expose:
+      - "6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - backend
+
+  # Go API 服务
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: blog-api
+    restart: always
+    # 端口不对外暴露，通过 nginx 反向代理
+    expose:
+      - "8080"
+    env_file:
+      - ./api/.env
+    environment:
+      # 覆盖数据库和 Redis 连接为内部网络地址
+      DATABASE_URL: postgres://blog:${POSTGRES_PASSWORD:-changeme}@postgres:5432/blog?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      # 持久化上传文件
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - backend
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: blog-nginx
+    restart: always
+    ports:
+      - "80:80"
+      # - "443:443"  # HTTPS 端口（需要配置 SSL 证书）
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # SSL 证书（生产环境需要配置）
+      # - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+    name: blog_postgres_data
+  redis_data:
+    name: blog_redis_data
+  uploads_data:
+    name: blog_uploads_data
+
+networks:
+  backend:
+    name: blog_network

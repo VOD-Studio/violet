@@ -1,24 +1,32 @@
-# Go API 多阶段构建
+# 阶段1: 依赖下载
+FROM golang:1.25-alpine AS deps
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 阶段2: 构建
 FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
-# 安装依赖
+# 复制 go mod 文件
 COPY go.mod go.sum ./
-RUN go mod download
-
-# 编译
+# 从 deps 阶段复制依赖缓存
+COPY --from=deps /go/pkg/mod /go/pkg/mod
+# 复制源代码
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /blog-api ./cmd/server
 
-# 运行阶段
-FROM alpine:3.20
+# 构建二进制，使用 ldflags 减小体积
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server
 
-RUN apk --no-cache add ca-certificates tzdata
+# 阶段3: 运行时
+FROM gcr.io/distroless/static-debian12
 
-WORKDIR /app
-COPY --from=builder /blog-api .
+# 复制构建产物
+COPY --from=builder /server /server
 
-EXPOSE 8080
+USER nonroot:nonroot
 
-CMD ["./blog-api"]
+ENTRYPOINT ["/server"]

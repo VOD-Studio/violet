@@ -1,0 +1,13 @@
+.git
+.env*
+!.env.example
+bin/
+*.md
+*.test
+testdata/
+server
+main
+uploads/
+jwt_*.pem
+tmp/
+.omc/
