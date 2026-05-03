@@ -131,7 +131,7 @@ function VinylDisc({
 
   return (
     <div
-      className="relative rounded-full bg-linear-to-br from-gray-700 to-gray-900 shadow-lg ring-2 ring-white/10"
+      className="relative rounded-full bg-gradient-to-br from-gray-700 to-gray-900 shadow-lg ring-2 ring-white/10"
       style={{
         width: size,
         height: size,
@@ -164,7 +164,7 @@ function VinylDisc({
             draggable={false}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary/30 to-primary/60">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/30 to-primary/60">
             <Music
               className="text-white"
               style={{ width: size * 0.18, height: size * 0.18 }}
@@ -583,9 +583,10 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
 
       <div
         ref={playerRef}
-        className="fixed z-50 flex flex-col items-end gap-3"
+        className="fixed z-50"
         style={{ right: position.right, bottom: position.bottom }}
       >
+        {/* 面板 - 绝对定位，底部和碟片对齐 */}
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -593,7 +594,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.95 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="w-85 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl"
+              className="absolute bottom-0 right-0 origin-bottom-right w-85 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl"
               style={{ maxHeight: "calc(100vh - 200px)" }}
             >
               {/* 标题栏 */}
@@ -854,43 +855,44 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
           )}
         </AnimatePresence>
 
-        {/* 迷你碟片 */}
-        <motion.button
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          onClick={() => {
-            // 只有没移动才展开/收起
-            if (!hasMovedRef.current) setExpanded(!expanded);
-          }}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.95 }}
-          className={`relative cursor-grab active:cursor-grabbing ${isDragging ? "select-none" : ""}`}
-        >
-          <VinylDisc
-            cover={currentSong?.cover}
-            isPlaying={isPlaying}
-            size={52}
-          />
+        {/* 迷你碟片 - 展开时隐藏 */}
+        <AnimatePresence>
+          {!expanded && (
+            <motion.button
+              key="mini-disc"
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              onClick={() => {
+                if (!hasMovedRef.current) setExpanded(true);
+              }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className={`cursor-grab active:cursor-grabbing ${isDragging ? "select-none" : ""}`}
+            >
+              <VinylDisc
+                cover={currentSong?.cover}
+                isPlaying={isPlaying}
+                size={52}
+              />
 
-          {isPlaying && (
-            <div className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-background bg-green-500 animate-pulse" />
+              {isPlaying && (
+                <div className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-background bg-green-500 animate-pulse" />
+              )}
+
+              {currentSong && !isDragging && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute left-1/2 top-full mt-2 -translate-x-1/2"
+                >
+                  <p className="max-w-30 truncate text-center text-xs text-muted-foreground">
+                    {currentSong.name}
+                  </p>
+                </motion.div>
+              )}
+            </motion.button>
           )}
-
-          <AnimatePresence>
-            {!expanded && currentSong && (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                className="absolute left-1/2 top-full mt-2 -translate-x-1/2"
-              >
-                <p className="max-w-30 truncate text-center text-xs text-muted-foreground">
-                  {currentSong.name}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.button>
+        </AnimatePresence>
       </div>
     </>
   );
