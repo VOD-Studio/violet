@@ -215,6 +215,37 @@ func (h *EmojiHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"message": "删除成功"})
 }
 
+// BatchUpdateStatus 批量更新分组启用状态
+// PATCH /api/admin/emoji-groups/batch-status
+// 需要管理员权限
+func (h *EmojiHandler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IDs      []int32 `json:"ids"`
+		IsEnabled bool    `json:"is_enabled"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		return
+	}
+
+	if len(req.IDs) == 0 {
+		writeError(w, http.StatusBadRequest, "validation_error", "IDs 不能为空")
+		return
+	}
+
+	count, err := h.emojiService.BatchUpdateGroupsStatus(r.Context(), req.IDs, req.IsEnabled)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "批量更新失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"updated": count,
+		"message": "批量更新成功",
+	})
+}
+
 // ListGroupEmojis 获取分组内所有表情
 // GET /api/admin/emoji-groups/{id}/emojis
 // 需要管理员权限

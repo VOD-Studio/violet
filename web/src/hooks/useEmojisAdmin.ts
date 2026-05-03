@@ -11,9 +11,9 @@ export interface EmojiGroupAdmin {
   id: number
   name: string
   source: string
-  sortOrder: number
-  isEnabled: boolean
-  createdAt: string
+  sort_order: number
+  is_enabled: boolean
+  created_at: string
 }
 
 /** 单个表情结构 */
@@ -39,8 +39,8 @@ export interface CreateEmojiGroupInput {
 export interface UpdateEmojiGroupInput {
   name?: string
   source?: string
-  sortOrder?: number
-  isEnabled?: boolean
+  sort_order?: number
+  is_enabled?: boolean
 }
 
 /** 创建表情的请求体 */
@@ -57,6 +57,20 @@ export interface UpdateEmojiInput {
   url?: string
   textContent?: string
   sortOrder?: number
+}
+
+/** 分页响应结构 */
+export interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+/** 批量删除表情的请求体 */
+export interface BatchDeleteEmojisInput {
+  ids: number[]
 }
 
 /* ========== 表情分组管理 ========== */
@@ -115,9 +129,9 @@ export function useUpdateEmojiGroup() {
       const payload: Record<string, unknown> = {}
       if (data.name !== undefined) payload.name = data.name
       if (data.source !== undefined) payload.source = data.source
-      if (data.sortOrder !== undefined) payload.sort_order = data.sortOrder
-      if (data.isEnabled !== undefined) payload.is_enabled = data.isEnabled
-      return api.patch<EmojiGroupAdmin>(`/admin/emoji-groups/${id}`, payload)
+      if (data.sort_order !== undefined) payload.sort_order = data.sort_order
+      if (data.is_enabled !== undefined) payload.is_enabled = data.is_enabled
+      return api.patch(`/admin/emoji-groups/${id}`, payload)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "emoji-groups"] })
@@ -155,6 +169,43 @@ export function useEmojisByGroup(groupId: number) {
     },
     enabled: groupId > 0,
     placeholderData: [],
+  })
+}
+
+/**
+ * 分页获取分组内表情
+ */
+export function useEmojisByGroupPaginated(
+  groupId: number,
+  page: number = 1,
+  pageSize: number = 20,
+) {
+  return useQuery({
+    queryKey: ["admin", "emojis", groupId, "paginated", page, pageSize],
+    queryFn: async () => {
+      const res = await api.get<PaginatedResponse<EmojiAdmin>>(
+        `/admin/emoji-groups/${groupId}/emojis/paginated`,
+        { page, pageSize },
+      )
+      return res
+    },
+    enabled: groupId > 0,
+  })
+}
+
+/**
+ * 获取分组内表情总数
+ */
+export function useEmojiCount(groupId: number) {
+  return useQuery({
+    queryKey: ["admin", "emojis", groupId, "count"],
+    queryFn: async () => {
+      const res = await api.get<{ total: number }>(
+        `/admin/emoji-groups/${groupId}/emojis/count`,
+      )
+      return res.total ?? 0
+    },
+    enabled: groupId > 0,
   })
 }
 
@@ -225,6 +276,24 @@ export function useDeleteEmoji() {
     mutationFn: (id: number) => api.del(`/admin/emojis/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "emojis"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "emoji-groups"] })
+    },
+  })
+}
+
+/**
+ * 批量更新分组状态
+ */
+export function useBatchUpdateGroupsStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ ids, is_enabled }: { ids: number[]; is_enabled: boolean }) =>
+      api.patch<{ updated: number }>("/admin/emoji-groups/batch-status", {
+        ids,
+        is_enabled,
+      }),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "emoji-groups"] })
     },
   })

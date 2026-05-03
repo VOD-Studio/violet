@@ -19,6 +19,7 @@ export interface Emoji {
   groupId: number
   name: string
   url?: string
+  sourceUrl?: string  // 原始来源 URL（如 B站 CDN）
   textContent?: string
   sortOrder: number
 }
