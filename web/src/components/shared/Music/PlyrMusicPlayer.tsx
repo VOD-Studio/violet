@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { cn } from "@/lib/utils";
 import {
   Music,
   Play,
@@ -17,10 +18,10 @@ import {
   SkipForward,
   Volume2,
   VolumeX,
-  ListMusic,
+
   ChevronDown,
-  Loader2,
-  FileText,
+
+
 } from "lucide-react";
 
 /** 歌曲信息 */
@@ -183,6 +184,39 @@ function VinylDisc({
         }}
       />
     </div>
+  );
+}
+
+/** 溢出时自动滚动的文字 */
+function MarqueeText({
+  children,
+  className,
+}: {
+  children: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [overflow, setOverflow] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (el) setOverflow(el.scrollWidth > el.clientWidth);
+  }, [children]);
+
+  if (!overflow) {
+    return (
+      <span ref={ref} className={cn("truncate block", className)}>
+        {children}
+      </span>
+    );
+  }
+
+  return (
+    <span className="block overflow-hidden" aria-label={children}>
+      <span ref={ref} className={cn("marquee-text", className)}>
+        {children}&emsp;{children}&emsp;
+      </span>
+    </span>
   );
 }
 
@@ -605,6 +639,22 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        @keyframes music-bar {
+          from { height: 3px; }
+          to { height: 10px; }
+        }
+        @keyframes marquee-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .scrollbar-none::-webkit-scrollbar {
+          display: none;
+        }
+        .marquee-text {
+          display: inline-block;
+          white-space: nowrap;
+          animation: marquee-scroll 10s linear infinite;
+        }
       `}</style>
 
       <audio ref={audioRef} preload="metadata" />
@@ -614,7 +664,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
         className="fixed z-50"
         style={{ right: position.right, bottom: position.bottom }}
       >
-        {/* 面板 - 绝对定位，根据碟片位置动态决定展开方向 */}
+        {/* 面板 - 紧凑布局，内容区可滚动 */}
         <AnimatePresence>
           {expanded && (
             <motion.div
@@ -622,30 +672,41 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: panelAnimY, scale: 0.95 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className={`absolute w-85 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl ${panelOrigin}`}
+              className={`absolute w-85 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl ${panelOrigin} flex flex-col`}
               style={{ ...panelPositionStyle, maxHeight: panelMaxHeight }}
             >
-              {/* 标题栏 */}
-              <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {currentPlaylist?.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {songs.length} 首歌曲
-                  </p>
-                </div>
-                <button
-                  onClick={() => setExpanded(false)}
-                  className="rounded-full p-1.5 transition-colors hover:bg-muted"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              </div>
-
               {songsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-lg bg-muted animate-pulse" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 w-3/4 rounded bg-muted animate-pulse" />
+                      <div className="h-2.5 w-1/2 rounded bg-muted animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-1.5 rounded-full bg-muted animate-pulse" />
+                    <div className="flex justify-between">
+                      <div className="h-2 w-6 rounded bg-muted animate-pulse" />
+                      <div className="h-2 w-6 rounded bg-muted animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="flex justify-center gap-3">
+                    <div className="size-8 rounded-full bg-muted animate-pulse" />
+                    <div className="size-10 rounded-full bg-muted animate-pulse" />
+                    <div className="size-8 rounded-full bg-muted animate-pulse" />
+                  </div>
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="flex items-center gap-2.5 px-2">
+                        <div className="size-8 rounded bg-muted animate-pulse" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 rounded bg-muted animate-pulse" style={{ width: `${60 + Math.random() * 30}%` }} />
+                          <div className="h-2 w-1/3 rounded bg-muted animate-pulse" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ) : songs.length === 0 ? (
                 <div className="py-12 text-center text-sm text-muted-foreground">
@@ -654,29 +715,79 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
               ) : (
                 currentSong && (
                   <>
-                    {/* 唱片 + 歌曲信息 */}
-                    <div className="flex items-center gap-4 px-5 pt-5 pb-3">
-                      <div className="shrink-0">
-                        <motion.div layoutId="vinyl-disc">
-                          <VinylDisc
-                            cover={currentSong.cover}
-                            isPlaying={isPlaying}
-                            size={80}
-                          />
-                        </motion.div>
-                      </div>
+                    {/* 歌曲信息 + 关闭 */}
+                    <div className="flex items-center gap-3 border-b border-border/50 px-4 py-3 shrink-0">
+                      <motion.div
+                        layoutId="vinyl-disc"
+                        className="size-10 shrink-0 overflow-hidden rounded-lg shadow-sm"
+                      >
+                        <img
+                          src={currentSong.cover}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          draggable={false}
+                        />
+                      </motion.div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-sm font-medium">
+                        <MarqueeText className="text-sm font-medium leading-tight">
                           {currentSong.name}
-                        </h3>
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        </MarqueeText>
+                        <MarqueeText className="text-xs text-muted-foreground">
                           {currentSong.artist}
-                        </p>
+                        </MarqueeText>
                       </div>
+                      {playlists.length > 1 && (
+                        <button
+                          onClick={() => setShowPlaylist(!showPlaylist)}
+                          className={`max-w-24 shrink-0 rounded-md px-2 py-1 text-xs transition-colors hover:bg-muted ${
+                            showPlaylist ? "bg-muted" : ""
+                          }`}
+                        >
+                          <MarqueeText className="text-xs">
+                            {currentPlaylist?.title || ""}
+                          </MarqueeText>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setExpanded(false)}
+                        className="shrink-0 rounded-md p-1.5 transition-colors hover:bg-muted"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
                     </div>
 
+                    {/* 歌单选择器 */}
+                    <AnimatePresence>
+                      {showPlaylist && playlists.length > 1 && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className="overflow-hidden shrink-0"
+                        >
+                          <div className="grid grid-cols-2 gap-1.5 px-3 py-2">
+                            {playlists.map((playlist, index) => (
+                              <button
+                                key={playlist.id}
+                                onClick={() => handleSwitchPlaylist(index)}
+                                disabled={songsLoading}
+                                className={`rounded-lg px-3 py-2 text-xs text-center transition-all ${
+                                  index === currentPlaylistIndex
+                                    ? "bg-foreground text-background font-medium"
+                                    : "bg-muted/60 hover:bg-muted"
+                                }`}
+                              >
+                                {playlist.title}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     {/* 进度条 */}
-                    <div className="px-5 py-2">
+                    <div className="px-4 pt-3 pb-1 shrink-0">
                       <input
                         type="range"
                         min="0"
@@ -685,193 +796,168 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                         onChange={handleSeek}
                         className="h-1 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
                       />
-                      <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+                      <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
                         <span>{formatTime(currentTime)}</span>
                         <span>{formatTime(duration)}</span>
                       </div>
                     </div>
 
-                    {/* 播放控制 */}
-                    <div className="flex items-center justify-center gap-8 py-3">
-                      <button
-                        onClick={playPrev}
-                        className="rounded-full p-2 transition-colors hover:bg-muted"
-                      >
-                        <SkipBack className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={togglePlay}
-                        className="rounded-full bg-primary p-3.5 text-primary-foreground shadow-md transition-colors hover:bg-primary/90"
-                      >
-                        {isPlaying ? (
-                          <Pause className="h-5 w-5" />
-                        ) : (
-                          <Play className="ml-0.5 h-5 w-5" />
-                        )}
-                      </button>
-                      <button
-                        onClick={playNext}
-                        className="rounded-full p-2 transition-colors hover:bg-muted"
-                      >
-                        <SkipForward className="h-5 w-5" />
-                      </button>
-                    </div>
-
-                    {/* 音量控制 */}
-                    <div className="flex items-center gap-2 px-5 py-2">
-                      <button
-                        onClick={toggleMute}
-                        className="rounded p-1 transition-colors hover:bg-muted"
-                      >
-                        {isMuted || volume === 0 ? (
-                          <VolumeX className="h-4 w-4" />
-                        ) : (
-                          <Volume2 className="h-4 w-4" />
-                        )}
-                      </button>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={isMuted ? 0 : volume}
-                        onChange={handleVolumeChange}
-                        className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-muted accent-primary"
-                      />
-                    </div>
-
-                    {/* 歌单切换 */}
-                    {playlists.length > 1 && (
-                      <div className="border-t border-border/50">
+                    {/* 播放控制 + 音量 */}
+                    <div className="flex items-center justify-between px-4 py-3 shrink-0">
+                      <div className="flex items-center gap-3">
                         <button
-                          onClick={() => setShowPlaylist(!showPlaylist)}
-                          className="flex w-full items-center justify-between px-5 py-2.5 transition-colors hover:bg-muted/50"
+                          onClick={playPrev}
+                          className="group rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
-                          <div className="flex items-center gap-2">
-                            <ListMusic className="h-4 w-4" />
-                            <span className="text-sm">切换歌单</span>
-                          </div>
-                          <ChevronDown
-                            className={`h-4 w-4 transition-transform ${showPlaylist ? "rotate-180" : ""}`}
-                          />
+                          <SkipBack className="h-4 w-4 transition-transform group-hover:scale-110" />
                         </button>
-                        <AnimatePresence>
-                          {showPlaylist && (
-                            <motion.div
-                              initial={{ height: 0 }}
-                              animate={{ height: "auto" }}
-                              exit={{ height: 0 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="space-y-1 px-3 pb-2">
-                                {playlists.map((playlist, index) => (
-                                  <button
-                                    key={playlist.id}
-                                    onClick={() => handleSwitchPlaylist(index)}
-                                    disabled={songsLoading}
-                                    className={`w-full rounded-lg px-3 py-1.5 text-left text-sm transition-colors ${
-                                      index === currentPlaylistIndex
-                                        ? "bg-primary text-primary-foreground"
-                                        : "hover:bg-muted"
-                                    }`}
-                                  >
-                                    {playlist.title}
-                                  </button>
-                                ))}
-                              </div>
-                            </motion.div>
+                        <button
+                          onClick={togglePlay}
+                          className="rounded-full bg-foreground p-2.5 text-background shadow-md transition-all hover:scale-105 active:scale-95"
+                        >
+                          {isPlaying ? (
+                            <Pause className="h-4 w-4" />
+                          ) : (
+                            <Play className="ml-0.5 h-4 w-4" />
                           )}
-                        </AnimatePresence>
+                        </button>
+                        <button
+                          onClick={playNext}
+                          className="group rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                          <SkipForward className="h-4 w-4 transition-transform group-hover:scale-110" />
+                        </button>
                       </div>
-                    )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={toggleMute}
+                          className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                          {isMuted || volume === 0 ? (
+                            <VolumeX className="h-3.5 w-3.5" />
+                          ) : (
+                            <Volume2 className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={isMuted ? 0 : volume}
+                          onChange={handleVolumeChange}
+                          className="h-1 w-16 cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+                        />
+                      </div>
+                    </div>
 
-                    {/* 列表 / 歌词 切换标签 */}
-                    <div className="flex border-t border-border/50">
+                    {/* 标签栏 - pill 风格 */}
+                    <div className="flex gap-1 px-3 pb-2 shrink-0">
                       <button
                         onClick={() => setPanelView("list")}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm transition-colors ${
+                        className={`flex-1 rounded-lg py-1.5 text-center text-xs transition-all ${
                           panelView === "list"
-                            ? "text-primary border-b-2 border-primary"
-                            : "text-muted-foreground hover:text-foreground"
+                            ? "bg-foreground text-background font-medium"
+                            : "text-muted-foreground hover:bg-muted/50"
                         }`}
                       >
-                        <ListMusic className="h-3.5 w-3.5" />
-                        列表
+                        列表 {songs.length}
                       </button>
                       <button
                         onClick={() => setPanelView("lyrics")}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm transition-colors ${
+                        className={`flex-1 rounded-lg py-1.5 text-center text-xs transition-all ${
                           panelView === "lyrics"
-                            ? "text-primary border-b-2 border-primary"
-                            : "text-muted-foreground hover:text-foreground"
+                            ? "bg-foreground text-background font-medium"
+                            : "text-muted-foreground hover:bg-muted/50"
                         }`}
                       >
-                        <FileText className="h-3.5 w-3.5" />
                         歌词
                       </button>
                     </div>
 
-                    {/* 歌曲列表 / 歌词 */}
-                    <div className="max-h-40 overflow-y-auto">
+                    {/* 可滚动内容区 */}
+                    <div
+                      className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden scrollbar-none"
+                      style={{ scrollbarWidth: "none" }}
+                    >
                       {panelView === "list" ? (
-                        <div ref={songListRef}>
+                        <div ref={songListRef} className="px-2 pb-2 space-y-0.5">
                           {songs.map((song, index) => (
                             <button
                               key={song.id}
-                              data-active={
-                                index === currentSongIndex || undefined
-                              }
+                              data-active={index === currentSongIndex || undefined}
                               onClick={() => handleSongClick(index)}
-                              className={`w-full px-5 py-2 text-left text-sm transition-colors ${
+                              className={`group w-full rounded-lg px-3 py-2 text-left text-sm transition-all ${
                                 index === currentSongIndex
                                   ? "bg-primary/10"
-                                  : "hover:bg-muted/50"
+                                  : "hover:bg-muted/60"
                               }`}
                             >
-                              <div className="flex items-center gap-3">
-                                <span className="w-5 shrink-0 text-xs text-muted-foreground">
-                                  {index === currentSongIndex && isPlaying ? (
-                                    <Play className="inline h-3 w-3" />
+                              <div className="flex items-center gap-2.5">
+                                <div className="relative size-8 shrink-0 overflow-hidden rounded">
+                                  {song.cover ? (
+                                    <img
+                                      src={song.cover}
+                                      alt=""
+                                      className="h-full w-full object-cover"
+                                      draggable={false}
+                                    />
                                   ) : (
-                                    index + 1
+                                    <div className="flex h-full w-full items-center justify-center bg-muted">
+                                      <Music className="h-3 w-3 text-muted-foreground" />
+                                    </div>
                                   )}
-                                </span>
-                                <p
-                                  className={`min-w-0 flex-1 truncate ${
-                                    index === currentSongIndex
-                                      ? "font-medium text-primary"
-                                      : ""
-                                  }`}
-                                >
-                                  {song.name}
-                                </p>
-                                <span className="max-w-20 truncate text-xs text-muted-foreground">
-                                  {song.artist}
-                                </span>
+                                  {index === currentSongIndex && isPlaying && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                      <div className="flex items-end gap-[2px] h-3">
+                                        <span className="w-[2px] bg-white animate-[music-bar_0.4s_ease-in-out_infinite_alternate]" />
+                                        <span className="w-[2px] bg-white animate-[music-bar_0.4s_ease-in-out_infinite_alternate_0.2s]" />
+                                        <span className="w-[2px] bg-white animate-[music-bar_0.4s_ease-in-out_infinite_alternate_0.4s]" />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <MarqueeText
+                                    className={`text-sm leading-tight ${
+                                      index === currentSongIndex
+                                        ? "font-medium text-primary"
+                                        : ""
+                                    }`}
+                                  >
+                                    {song.name}
+                                  </MarqueeText>
+                                  <MarqueeText className="text-[10px] text-muted-foreground mt-0.5">
+                                    {song.artist}
+                                  </MarqueeText>
+                                </div>
                               </div>
                             </button>
                           ))}
                         </div>
                       ) : (
-                        <div ref={lyricsContainerRef} className="py-2">
+                        <div ref={lyricsContainerRef} className="py-3">
                           {lyrics.length > 0 ? (
-                            lyrics.map((line, index) => (
-                              <p
-                                key={index}
-                                data-active={
-                                  index === currentLyricIndex || undefined
-                                }
-                                className={`px-5 py-1 text-sm leading-6 transition-colors ${
-                                  index === currentLyricIndex
-                                    ? "text-primary font-medium"
-                                    : "text-muted-foreground"
-                                }`}
-                              >
-                                {line.text}
-                              </p>
-                            ))
+                            lyrics.map((line, index) => {
+                              const distance = Math.abs(index - currentLyricIndex);
+                              return (
+                                <p
+                                  key={index}
+                                  data-active={index === currentLyricIndex || undefined}
+                                  className={`px-5 py-1.5 text-center transition-all duration-300 ${
+                                    index === currentLyricIndex
+                                      ? "text-base font-semibold text-foreground"
+                                      : distance <= 2
+                                        ? "text-sm text-muted-foreground/70"
+                                        : "text-xs text-muted-foreground/40"
+                                  }`}
+                                >
+                                  {line.text}
+                                </p>
+                              );
+                            })
                           ) : (
-                            <p className="px-5 py-4 text-center text-sm text-muted-foreground">
+                            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
                               暂无歌词
                             </p>
                           )}
