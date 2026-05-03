@@ -56,3 +56,6 @@ FROM emojis e
 JOIN emoji_groups eg ON e.group_id = eg.id
 WHERE eg.is_enabled = true
 ORDER BY eg.sort_order, e.sort_order;
+
+-- name: CountEmojiGroups :one
+SELECT COUNT(*) FROM emoji_groups;

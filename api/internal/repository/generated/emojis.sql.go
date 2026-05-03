@@ -11,6 +11,17 @@ import (
 	"time"
 )
 
+const countEmojiGroups = `-- name: CountEmojiGroups :one
+SELECT COUNT(*) FROM emoji_groups
+`
+
+func (q *Queries) CountEmojiGroups(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countEmojiGroups)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createEmoji = `-- name: CreateEmoji :one
 INSERT INTO emojis (group_id, name, url, text_content, sort_order)
 VALUES ($1, $2, $3, $4, $5)
