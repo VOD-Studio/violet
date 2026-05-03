@@ -223,6 +223,8 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
   const errorCountRef = useRef(0);
   // 是否应该自动播放（意图），与 isPlaying（事实）分离
   const shouldAutoPlayRef = useRef(false);
+  // 标记是否已完成首次歌单加载（用于区分初始加载/HMR重载 vs 用户主动切歌单）
+  const initialLoadDoneRef = useRef(false);
   const songListRef = useRef<HTMLDivElement>(null);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -371,12 +373,14 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
         );
         setSongs(songsData);
         if (songsData.length > 0) {
-          shouldAutoPlayRef.current = true;
+          // 只有用户主动切换歌单时才自动播放，初始加载/HMR重载时不自动播放
+          shouldAutoPlayRef.current = initialLoadDoneRef.current;
         }
       } catch (error) {
         console.error("加载歌曲失败:", error);
       } finally {
         setSongsLoading(false);
+        initialLoadDoneRef.current = true;
       }
     }
 
@@ -570,6 +574,30 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
     [currentSongIndex, isPlaying, togglePlay]
   );
 
+  // 面板边界处理
+  const padding = 16;
+  const panelWidth = 340; // w-85 = 85 * 4
+  // 向上展开可用空间 = 碟片底部到视口顶部
+  const spaceAbove = window.innerHeight - position.bottom;
+  // 向下展开可用空间 = 碟片底部到视口底部
+  const spaceBelow = position.bottom;
+  // 上方空间不足 450px 时向下展开
+  const expandDown = spaceAbove < 450;
+  // 左侧空间不足时，面板向右偏移以贴住视口左边缘
+  const spaceToLeft = window.innerWidth - position.right;
+  const rightOffset = -Math.max(0, panelWidth - spaceToLeft);
+
+  const panelPositionStyle: React.CSSProperties = expandDown
+    ? { top: "100%", right: rightOffset }
+    : { bottom: 0, right: rightOffset };
+
+  const panelMaxHeight = expandDown
+    ? `${spaceBelow - padding}px`
+    : `${spaceAbove - padding}px`;
+
+  const panelOrigin = expandDown ? "origin-top-right" : "origin-bottom-right";
+  const panelAnimY = expandDown ? -16 : 16;
+
   return (
     <>
       <style>{`
@@ -586,16 +614,16 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
         className="fixed z-50"
         style={{ right: position.right, bottom: position.bottom }}
       >
-        {/* 面板 - 绝对定位，底部和碟片对齐 */}
+        {/* 面板 - 绝对定位，根据碟片位置动态决定展开方向 */}
         <AnimatePresence>
           {expanded && (
             <motion.div
-              initial={{ opacity: 0, y: 16, scale: 0.95 }}
+              initial={{ opacity: 0, y: panelAnimY, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 16, scale: 0.95 }}
+              exit={{ opacity: 0, y: panelAnimY, scale: 0.95 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="absolute bottom-0 right-0 origin-bottom-right w-85 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl"
-              style={{ maxHeight: "calc(100vh - 200px)" }}
+              className={`absolute w-85 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border/50 bg-background/95 shadow-2xl backdrop-blur-xl ${panelOrigin}`}
+              style={{ ...panelPositionStyle, maxHeight: panelMaxHeight }}
             >
               {/* 标题栏 */}
               <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
