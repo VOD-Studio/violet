@@ -1,5 +1,5 @@
 /**
- * 表情包上传组件
+ * 表情上传组件
  * 复用现有的分片上传机制，限制只接受图片文件
  */
 
@@ -30,8 +30,8 @@ interface FileUploadItem {
   error?: string;
 }
 
-/** StickerUploader 组件属性 */
-interface StickerUploaderProps {
+/** EmojiUploader 组件属性 */
+interface EmojiUploaderProps {
   /** 上传完成回调 */
   onUpload?: (result: UploadResult) => void;
   /** 自定义类名 */
@@ -58,20 +58,16 @@ function generateId(): string {
 }
 
 /**
- * 表情包上传组件
- * 专门用于上传表情包图片，限制文件类型和大小
+ * 表情上传组件
+ * 专门用于上传表情图片，限制文件类型和大小
  */
-export default function StickerUploader({
+export default function EmojiUploader({
   onUpload,
   className = "",
   maxFiles = 10,
   accept = imageAccept,
-}: StickerUploaderProps) {
-  /** 上传队列状态由父组件管理，这里使用内部状态 */
+}: EmojiUploaderProps) {
   const [items, setItems] = useState<FileUploadItem[]>([]);
-
-  // 需要导入 useState
-  // 我将在完整代码中修复
 
   /**
    * 更新指定文件的上传状态
@@ -172,21 +168,21 @@ export default function StickerUploader({
       {/* 拖拽上传区域 */}
       <div
         {...getRootProps()}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
+        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors ${
           isDragActive
             ? "border-primary bg-primary/5"
             : "border-muted-foreground/25 hover:border-primary hover:bg-muted/50"
         }`}
       >
         <input {...getInputProps()} />
-        <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+        <Upload className="mb-1 h-6 w-6 text-muted-foreground" />
         {isDragActive ? (
-          <p className="text-sm font-medium text-primary">松开鼠标上传表情包</p>
+          <p className="text-sm font-medium text-primary">松开鼠标上传表情</p>
         ) : (
           <div className="text-center">
-            <p className="text-sm font-medium">拖拽图片到此处，或点击选择</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              支持 PNG、JPG、GIF、WebP 等格式，最大 10MB
+            <p className="text-sm font-medium">拖拽或点击上传图片</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              PNG、JPG、GIF、WebP，最大 10MB
             </p>
           </div>
         )}

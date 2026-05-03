@@ -1,46 +1,38 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useStickers, type StickerItem } from "@/hooks/useStickers";
+import { useEmojis, type EmojiItem } from "@/hooks/useEmojis";
 import { cn } from "@/lib/utils";
-import { Search, X, Loader2, Smile, Image, PenTool } from "lucide-react";
+import { Search, X, Loader2, Smile, Image, Type } from "lucide-react";
 
-interface StickerPickerProps {
+interface EmojiPickerProps {
   onSelect: (syntax: string) => void;
   onClose?: () => void;
   className?: string;
 }
 
 // 类型图标映射
-const typeIcons: Record<string, React.ReactNode> = {
+const sourceIcons: Record<string, React.ReactNode> = {
   custom: <Image className="size-4" />,
-  emoji: <Smile className="size-4" />,
-  kaomoji: <PenTool className="size-4" />,
+  bilibili: <Smile className="size-4" />,
+  system: <Type className="size-4" />,
 };
 
-export function StickerPicker({
+export function EmojiPicker({
   onSelect,
   onClose,
   className,
-}: StickerPickerProps) {
-  const { categories, loading, error, search } = useStickers();
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+}: EmojiPickerProps) {
+  const { categories, loading, error, search } = useEmojis();
+  const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<StickerItem[]>([]);
+  const [searchResults, setSearchResults] = useState<EmojiItem[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // 热门分类和官方分类优先排序
-  const sortedCategories = useMemo(() => {
-    const hot = categories.filter((c) => c.isHot);
-    const official = categories.filter((c) => c.isOfficial && !c.isHot);
-    const others = categories.filter((c) => !c.isHot && !c.isOfficial);
-    return [...hot, ...official, ...others];
-  }, [categories]);
 
   // 初始化时选择第一个分类
   useEffect(() => {
-    if (sortedCategories.length > 0 && !activeCategory) {
-      setActiveCategory(sortedCategories[0].id);
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0].id);
     }
-  }, [sortedCategories, activeCategory]);
+  }, [categories, activeCategory]);
 
   // 搜索处理
   useEffect(() => {
@@ -62,7 +54,7 @@ export function StickerPicker({
   }, [searchQuery, searchResults, categories, activeCategory]);
 
   // 处理选择
-  const handleSelect = (item: StickerItem) => {
+  const handleSelect = (item: EmojiItem) => {
     onSelect(item.syntax);
     onClose?.();
   };
@@ -116,7 +108,7 @@ export function StickerPicker({
         </div>
       </div>
 
-      {/* 分类标签 */}
+      {/* 分组标签（按 sortOrder 排序） */}
       <div className="flex border-b border-border bg-muted/30">
         <div className="flex gap-1 p-2 overflow-x-auto scrollbar-hide">
           {loading ? (
@@ -124,7 +116,7 @@ export function StickerPicker({
               <Loader2 className="size-4 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            sortedCategories.map((category) => (
+            categories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => {
@@ -140,11 +132,8 @@ export function StickerPicker({
                     : "text-muted-foreground hover:text-foreground hover:bg-muted",
                 )}
               >
-                {typeIcons[category.type]}
+                {sourceIcons[category.source]}
                 <span>{category.name}</span>
-                {category.isHot && (
-                  <span className="text-xs text-orange-500">HOT</span>
-                )}
               </button>
             ))
           )}
@@ -169,7 +158,7 @@ export function StickerPicker({
           <div className="grid grid-cols-6 gap-2">
             {currentItems.map((item) => (
               <button
-                key={`${item.type}-${item.id}`}
+                key={`${item.source}-${item.id}`}
                 onClick={() => handleSelect(item)}
                 className={cn(
                   "flex items-center justify-center",
@@ -180,7 +169,8 @@ export function StickerPicker({
                 )}
                 title={item.name}
               >
-                {item.type === "custom" ? (
+                {/* 图片表情（custom/bilibili 有 url） */}
+                {item.source === "custom" || (item.display.startsWith("http") || item.display.startsWith("/")) ? (
                   <img
                     src={item.display}
                     alt={item.name}
@@ -188,14 +178,8 @@ export function StickerPicker({
                     loading="lazy"
                   />
                 ) : (
-                  <span
-                    className={cn(
-                      "text-center",
-                      item.type === "emoji"
-                        ? "text-xl"
-                        : "text-xs leading-tight",
-                    )}
-                  >
+                  /* 文本表情（system 或 textContent） */
+                  <span className="text-xl text-center leading-tight">
                     {item.display}
                   </span>
                 )}
@@ -206,7 +190,7 @@ export function StickerPicker({
 
         {!loading && !error && !searchQuery && currentItems.length === 0 && (
           <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-            该分类暂无表情
+            该分组暂无表情
           </div>
         )}
       </div>
@@ -223,15 +207,15 @@ export function StickerPicker({
 import { useState as useStatePopover } from "react";
 import { createPortal } from "react-dom";
 
-interface StickerPickerButtonProps {
+interface EmojiPickerButtonProps {
   onSelect: (syntax: string) => void;
   className?: string;
 }
 
-export function StickerPickerButton({
+export function EmojiPickerButton({
   onSelect,
   className,
-}: StickerPickerButtonProps) {
+}: EmojiPickerButtonProps) {
   const [isOpen, setIsOpen] = useStatePopover(false);
   const [position, setPosition] = useStatePopover({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -317,7 +301,7 @@ export function StickerPickerButton({
               left: position.left,
             }}
           >
-            <StickerPicker onSelect={onSelect} onClose={handleClose} />
+            <EmojiPicker onSelect={onSelect} onClose={handleClose} />
           </div>,
           document.body,
         )}
@@ -325,4 +309,4 @@ export function StickerPickerButton({
   );
 }
 
-export default StickerPicker;
+export default EmojiPicker;
