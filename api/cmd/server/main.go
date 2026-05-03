@@ -92,7 +92,7 @@ func main() {
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
 	musicSettingsService := service.NewMusicSettingsService(queries)
 	projectService := service.NewProjectService(queries)
-	stickerService := service.NewStickerService(queries)
+	emojiService := service.NewEmojiService(queries)
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService, cfg.UploadPathPrefix)
@@ -108,7 +108,7 @@ func main() {
 	musicHandler := handler.NewMusicHandler(musicService)
 	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
 	projectHandler := handler.NewProjectHandler(projectService)
-	stickerHandler := handler.NewStickerHandler(stickerService)
+	emojiHandler := handler.NewEmojiHandler(emojiService)
 
 	// 创建 chi 路由实例
 	r := chi.NewRouter()
@@ -314,39 +314,31 @@ func main() {
 		r.Get("/{id}", projectHandler.GetByID)     // 项目详情
 	})
 
-	// 表情包相关路由（公开）
-	r.Route("/api/stickers", func(r chi.Router) {
-		r.Get("/", stickerHandler.GetAllStickers)                    // 获取所有表情包组和表情包
-		r.Get("/groups/{slug}", stickerHandler.GetStickerGroupBySlug) // 获取指定组
-		// 用户收藏（需要认证）
-		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth(authService))
-			r.Get("/favorites", stickerHandler.GetFavorites)                 // 获取收藏列表
-			r.Post("/favorites/{stickerId}", stickerHandler.AddFavorite)     // 添加收藏
-			r.Delete("/favorites/{stickerId}", stickerHandler.RemoveFavorite) // 移除收藏
-		})
+	// 表情相关路由（公开）
+	r.Route("/api/emojis", func(r chi.Router) {
+		r.Get("/", emojiHandler.GetAllEmojis)                    // 获取所有表情分组和表情
+		r.Get("/groups/{name}", emojiHandler.GetEmojiGroupByName) // 获取指定分组
 	})
 
-	// 表情包管理路由（管理员）
-	r.Route("/api/admin/sticker-groups", func(r chi.Router) {
+	// 表情管理路由（管理员）
+	r.Route("/api/admin/emoji-groups", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(authService))
 			r.Use(middleware.AdminRequired)
-			r.Get("/", stickerHandler.ListAllGroups)                       // 获取所有表情包组
-			r.Post("/", stickerHandler.CreateGroup)                        // 创建表情包组
-			r.Patch("/{id}", stickerHandler.UpdateGroup)                   // 更新表情包组
-			r.Delete("/{id}", stickerHandler.DeleteGroup)                  // 删除表情包组
-			r.Get("/{id}/stickers", stickerHandler.ListGroupStickers)      // 获取组内表情包
-			r.Post("/{id}/stickers", stickerHandler.CreateSticker)         // 创建表情包
+			r.Get("/", emojiHandler.ListAllGroups)                       // 获取所有表情分组
+			r.Post("/", emojiHandler.CreateGroup)                        // 创建表情分组
+			r.Patch("/{id}", emojiHandler.UpdateGroup)                   // 更新表情分组
+			r.Delete("/{id}", emojiHandler.DeleteGroup)                  // 删除表情分组
+			r.Get("/{id}/emojis", emojiHandler.ListGroupEmojis)          // 获取分组内表情
+			r.Post("/{id}/emojis", emojiHandler.CreateEmoji)             // 创建表情
 		})
 	})
-	r.Route("/api/admin/stickers", func(r chi.Router) {
+	r.Route("/api/admin/emojis", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(authService))
 			r.Use(middleware.AdminRequired)
-			r.Patch("/{id}", stickerHandler.UpdateSticker)                 // 更新表情包
-			r.Delete("/{id}", stickerHandler.DeleteSticker)               // 删除表情包
-			r.Post("/reorder", stickerHandler.UpdateStickersSortOrder)    // 批量排序
+			r.Patch("/{id}", emojiHandler.UpdateEmoji)                   // 更新表情
+			r.Delete("/{id}", emojiHandler.DeleteEmoji)                  // 删除表情
 		})
 	})
 
