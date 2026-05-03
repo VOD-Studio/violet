@@ -92,7 +92,20 @@ func main() {
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
 	musicSettingsService := service.NewMusicSettingsService(queries)
 	projectService := service.NewProjectService(queries)
-	emojiService := service.NewEmojiService(queries)
+	emojiService := service.NewEmojiService(queries, "uploads/emojis")
+
+	// 检查并初始化表情种子数据
+	count, err := queries.CountEmojiGroups(ctx)
+	if err != nil {
+		log.Printf("检查表情分组数量失败: %v", err)
+	} else if count == 0 {
+		log.Println("表情分组为空，开始初始化 B站表情种子数据...")
+		if err := emojiService.SeedBilibiliEmojis(ctx); err != nil {
+			log.Printf("表情种子数据初始化失败: %v（不影响服务启动）", err)
+		}
+	} else {
+		log.Printf("表情分组已有 %d 条数据，跳过种子初始化", count)
+	}
 
 	// 初始化处理器
 	authHandler := handler.NewAuthHandler(authService, cfg.UploadPathPrefix)
@@ -337,6 +350,7 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(authService))
 			r.Use(middleware.AdminRequired)
+			r.Post("/upload", emojiHandler.UploadEmoji)                  // 上传表情图片（独立存储）
 			r.Patch("/{id}", emojiHandler.UpdateEmoji)                   // 更新表情
 			r.Delete("/{id}", emojiHandler.DeleteEmoji)                  // 删除表情
 		})

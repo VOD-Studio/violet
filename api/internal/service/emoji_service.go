@@ -2,8 +2,18 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	"blog-api/internal/repository/generated"
 )
@@ -12,18 +22,41 @@ import (
 var (
 	ErrEmojiGroupNotFound = errors.New("表情分组不存在")
 	ErrEmojiNotFound      = errors.New("表情不存在")
+	ErrEmojiTooLarge      = errors.New("表情文件过大")
+	ErrInvalidEmojiType   = errors.New("不支持的表情文件类型")
 )
+
+// 支持的表情图片 MIME 类型
+var allowedEmojiTypes = map[string]bool{
+	"image/jpeg":    true,
+	"image/png":     true,
+	"image/gif":     true,
+	"image/webp":    true,
+	"image/svg+xml": true,
+}
+
+// 支持的表情图片扩展名
+var allowedEmojiExts = map[string]bool{
+	".jpg":  true,
+	".jpeg": true,
+	".png":  true,
+	".gif":  true,
+	".webp": true,
+	".svg":  true,
+}
 
 // EmojiService 表情服务
 type EmojiService struct {
-	queries      *generated.Queries
+	queries       *generated.Queries
 	rendererCache *SimpleEmojiCache
+	emojiDir      string // 表情独立存储目录
 }
 
 // NewEmojiService 创建表情服务实例
-func NewEmojiService(queries *generated.Queries) *EmojiService {
+func NewEmojiService(queries *generated.Queries, emojiDir string) *EmojiService {
 	return &EmojiService{
-		queries: queries,
+		queries:  queries,
+		emojiDir: emojiDir,
 	}
 }
 
@@ -337,4 +370,232 @@ func emojiToResponse(e *generated.Emoji) *EmojiResponse {
 	}
 
 	return resp
+}
+
+// --- 表情文件上传（独立存储，不进入 media 表）---
+
+// EmojiUploadResponse 表情上传响应
+type EmojiUploadResponse struct {
+	URL      string `json:"url"`       // 相对路径，如 /uploads/emojis/xxx.png
+	Filename string `json:"filename"`  // 文件名
+	Size     int64  `json:"size"`      // 文件大小
+	MimeType string `json:"mime_type"` // MIME 类型
+}
+
+// UploadEmoji 上传表情图片到独立存储目录
+// 不写入 media 表，直接保存文件并返回 URL
+func (s *EmojiService) UploadEmoji(ctx context.Context, filename, mimeType string, size int64, reader io.Reader) (*EmojiUploadResponse, error) {
+	// 验证文件类型
+	ext := strings.ToLower(filepath.Ext(filename))
+	if !allowedEmojiExts[ext] {
+		return nil, ErrInvalidEmojiType
+	}
+
+	// 从 MIME 类型验证
+	if mimeType != "" && !allowedEmojiTypes[mimeType] {
+		return nil, ErrInvalidEmojiType
+	}
+
+	// 最大文件大小：10MB
+	maxSize := int64(10 * 1024 * 1024)
+	if size > maxSize {
+		return nil, ErrEmojiTooLarge
+	}
+
+	// 确保表情目录存在
+	if err := os.MkdirAll(s.emojiDir, 0755); err != nil {
+		return nil, fmt.Errorf("创建表情目录失败: %w", err)
+	}
+
+	// 生成唯一文件名
+	newFilename := fmt.Sprintf("%s%s", uuid.New().String(), ext)
+
+	// 创建目标文件
+	dstPath := filepath.Join(s.emojiDir, newFilename)
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		return nil, fmt.Errorf("保存表情文件失败: %w", err)
+	}
+	defer dst.Close()
+
+	// 复制文件内容
+	written, err := io.Copy(dst, reader)
+	if err != nil {
+		os.Remove(dstPath)
+		return nil, fmt.Errorf("写入表情文件失败: %w", err)
+	}
+
+	// 推断 MIME 类型（如果未提供）
+	if mimeType == "" {
+		switch ext {
+		case ".jpg", ".jpeg":
+			mimeType = "image/jpeg"
+		case ".png":
+			mimeType = "image/png"
+		case ".gif":
+			mimeType = "image/gif"
+		case ".webp":
+			mimeType = "image/webp"
+		case ".svg":
+			mimeType = "image/svg+xml"
+		default:
+			mimeType = "application/octet-stream"
+		}
+	}
+
+	// 返回相对路径 URL
+	relativeURL := "/uploads/emojis/" + newFilename
+
+	return &EmojiUploadResponse{
+		URL:      relativeURL,
+		Filename: newFilename,
+		Size:     written,
+		MimeType: mimeType,
+	}, nil
+}
+
+// --- B站表情种子数据 ---
+
+const bilibiliEmojiAPIURL = "https://api.bilibili.com/x/emote/setting/panel?business=reply"
+
+// BilibiliEmojiAPIResponse B站表情 API 响应结构
+type BilibiliEmojiAPIResponse struct {
+	Code int                   `json:"code"`
+	Data BilibiliEmojiData     `json:"data"`
+	Msg  string                `json:"message"`
+}
+
+type BilibiliEmojiData struct {
+	Packages []BilibiliEmojiPackage `json:"packages"`
+}
+
+type BilibiliEmojiPackage struct {
+	ID    int             `json:"id"`
+	Text  string          `json:"text"`
+	Emote []BilibiliEmote `json:"emote"`
+}
+
+type BilibiliEmote struct {
+	Text   string `json:"text"`
+	URL    string `json:"url"`
+	GifURL string `json:"gif_url"`
+}
+
+// SeedBilibiliEmojis 从 B站 API 获取表情数据并写入数据库作为初始种子数据
+func (s *EmojiService) SeedBilibiliEmojis(ctx context.Context) error {
+	log.Println("开始获取 B站表情种子数据...")
+
+	// 调用 B站 API
+	packages, err := s.fetchBilibiliEmojis()
+	if err != nil {
+		log.Printf("获取 B站表情失败: %v（不影响服务启动）", err)
+		return err
+	}
+
+	log.Printf("获取到 %d 个表情包组", len(packages))
+
+	// 写入数据库
+	result, err := s.importBilibiliEmojis(ctx, packages)
+	if err != nil {
+		log.Printf("写入 B站表情失败: %v（不影响服务启动）", err)
+		return err
+	}
+
+	log.Printf("B站表情种子数据初始化完成: 分组 %d, 表情 %d", result.GroupsCreated, result.EmojisCreated)
+	return nil
+}
+
+// SeedResult 种子数据导入结果
+type SeedResult struct {
+	GroupsCreated int
+	EmojisCreated int
+}
+
+func (s *EmojiService) fetchBilibiliEmojis() ([]BilibiliEmojiPackage, error) {
+	client := &http.Client{Timeout: 30 * time.Second}
+
+	req, err := http.NewRequest("GET", bilibiliEmojiAPIURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0")
+	req.Header.Set("Referer", "https://www.bilibili.com")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	var apiResp BilibiliEmojiAPIResponse
+	if err := json.Unmarshal(body, &apiResp); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %w", err)
+	}
+
+	if apiResp.Code != 0 {
+		return nil, fmt.Errorf("API 错误: code=%d, msg=%s", apiResp.Code, apiResp.Msg)
+	}
+
+	return apiResp.Data.Packages, nil
+}
+
+func (s *EmojiService) importBilibiliEmojis(ctx context.Context, packages []BilibiliEmojiPackage) (*SeedResult, error) {
+	result := &SeedResult{}
+
+	for i, pkg := range packages {
+		if pkg.Text == "" || len(pkg.Emote) == 0 {
+			continue
+		}
+
+		// 创建分组
+		groupParams := generated.CreateEmojiGroupParams{
+			Name:      pkg.Text,
+			Source:    "bilibili",
+			SortOrder: int32(i + 1),
+			IsEnabled: true,
+		}
+
+		group, err := s.queries.CreateEmojiGroup(ctx, groupParams)
+		if err != nil {
+			log.Printf("警告: 创建表情分组 %s 失败: %v", pkg.Text, err)
+			continue
+		}
+		result.GroupsCreated++
+
+		// 创建表情
+		for j, emote := range pkg.Emote {
+			if emote.Text == "" {
+				continue
+			}
+
+			// 优先使用 gif_url，若无则使用 url
+			url := emote.GifURL
+			if url == "" {
+				url = emote.URL
+			}
+
+			emojiParams := generated.CreateEmojiParams{
+				GroupID:     group.ID,
+				Name:        emote.Text,
+				Url:         toNullString(url),
+				TextContent: toNullString(""), // B站表情无文本内容
+				SortOrder:   int32(j + 1),
+			}
+
+			_, err := s.queries.CreateEmoji(ctx, emojiParams)
+			if err != nil {
+				log.Printf("警告: 创建表情 %s 失败: %v", emote.Text, err)
+				continue
+			}
+			result.EmojisCreated++
+		}
+	}
+
+	return result, nil
 }
