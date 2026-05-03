@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -361,6 +363,66 @@ func (h *EmojiHandler) DeleteEmoji(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "删除成功"})
+}
+
+// --- 表情文件上传（独立存储）---
+
+// UploadEmoji 上传表情图片
+// POST /api/admin/emojis/upload
+// 需要管理员权限，接受 multipart/form-data 格式的图片文件
+// 表情图片保存到独立目录 uploads/emojis/，不写入 media 表
+func (h *EmojiHandler) UploadEmoji(w http.ResponseWriter, r *http.Request) {
+	// 最大文件大小：10MB
+	maxSize := int64(10 * 1024 * 1024)
+	r.Body = http.MaxBytesReader(w, r.Body, maxSize)
+
+	// 解析 multipart 表单
+	if err := r.ParseMultipartForm(maxSize); err != nil {
+		writeError(w, http.StatusBadRequest, "file_too_large", "文件大小不能超过 10MB")
+		return
+	}
+
+	// 获取上传的文件
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_file", "缺少上传文件")
+		return
+	}
+	defer file.Close()
+
+	// 验证文件类型
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	mimeType := header.Header.Get("Content-Type")
+
+	allowedExts := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".gif":  true,
+		".webp": true,
+		".svg":  true,
+	}
+	if !allowedExts[ext] {
+		writeError(w, http.StatusBadRequest, "invalid_type", "不支持的表情文件格式，仅支持 JPG、PNG、GIF、WebP、SVG")
+		return
+	}
+
+	// 调用服务层上传表情
+	result, err := h.emojiService.UploadEmoji(r.Context(), header.Filename, mimeType, header.Size, file)
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidEmojiType) {
+			writeError(w, http.StatusBadRequest, "invalid_type", err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrEmojiTooLarge) {
+			writeError(w, http.StatusBadRequest, "file_too_large", err.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "internal_error", "保存表情文件失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
 }
 
 // --- 辅助函数 ---
