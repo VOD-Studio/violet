@@ -31,6 +31,36 @@ type Comment struct {
 	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
+// 表情
+type Emoji struct {
+	ID int32 `json:"id"`
+	// 所属分组
+	GroupID int32 `json:"group_id"`
+	// 表情名称（用于 [爱心] 标记）
+	Name string `json:"name"`
+	// 图片URL（图片类表情）
+	Url sql.NullString `json:"url"`
+	// 纯文本内容（颜文字类）
+	TextContent sql.NullString `json:"text_content"`
+	// 排序
+	SortOrder int32     `json:"sort_order"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// 表情分组
+type EmojiGroup struct {
+	ID int32 `json:"id"`
+	// 分组名称
+	Name string `json:"name"`
+	// 来源: system/bilibili/custom
+	Source string `json:"source"`
+	// 排序（越小越靠前）
+	SortOrder int32 `json:"sort_order"`
+	// 是否启用
+	IsEnabled bool      `json:"is_enabled"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Image struct {
 	ID           uuid.UUID     `json:"id"`
 	Filename     string        `json:"filename"`
@@ -131,36 +161,6 @@ type SiteSetting struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type Sticker struct {
-	ID         uuid.UUID     `json:"id"`
-	GroupID    uuid.UUID     `json:"group_id"`
-	Name       string        `json:"name"`
-	Slug       string        `json:"slug"`
-	ImageUrl   string        `json:"image_url"`
-	Width      sql.NullInt16 `json:"width"`
-	Height     sql.NullInt16 `json:"height"`
-	UsageCount int32         `json:"usage_count"`
-	SortOrder  int16         `json:"sort_order"`
-	IsActive   bool          `json:"is_active"`
-	CreatedAt  time.Time     `json:"created_at"`
-	UpdatedAt  time.Time     `json:"updated_at"`
-}
-
-type StickerGroup struct {
-	ID          uuid.UUID      `json:"id"`
-	Name        string         `json:"name"`
-	Slug        string         `json:"slug"`
-	Type        string         `json:"type"`
-	IconUrl     sql.NullString `json:"icon_url"`
-	Description sql.NullString `json:"description"`
-	SortOrder   int16          `json:"sort_order"`
-	IsHot       bool           `json:"is_hot"`
-	IsOfficial  bool           `json:"is_official"`
-	IsActive    bool           `json:"is_active"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-}
-
 type Tag struct {
 	ID   int32  `json:"id"`
 	Name string `json:"name"`
@@ -191,10 +191,4 @@ type User struct {
 	IsActive      bool           `json:"is_active"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
-}
-
-type UserFavoriteSticker struct {
-	UserID    uuid.UUID `json:"user_id"`
-	StickerID uuid.UUID `json:"sticker_id"`
-	CreatedAt time.Time `json:"created_at"`
 }
