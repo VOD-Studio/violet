@@ -34,7 +34,7 @@ func NewPostHandler(postService *service.PostService, tagService *service.TagSer
 }
 
 // List 文章列表
-// GET /api/posts
+// GET /api/v1/posts
 // 查询参数：page, limit, status, tag, search
 func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	// 解析查询参数
@@ -200,7 +200,7 @@ func (h *PostHandler) listByTag(w http.ResponseWriter, r *http.Request, tagSlug 
 }
 
 // GetBySlug 获取文章详情
-// GET /api/posts/:slug
+// GET /api/v1/posts/:slug
 func (h *PostHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	if slug == "" {
@@ -263,7 +263,7 @@ func (h *PostHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetByID 按 ID 获取文章（用于编辑）
-// GET /api/posts/id/:id
+// GET /api/v1/posts/id/:id
 func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -332,7 +332,7 @@ func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // Create 创建文章
-// POST /api/posts
+// POST /api/v1/posts
 // 需要认证
 func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req service.CreatePostRequest
@@ -378,7 +378,7 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // Update 更新文章
-// PUT /api/posts/:id
+// PUT /api/v1/posts/:id
 // 需要认证
 func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -410,7 +410,7 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 // Delete 删除文章
-// DELETE /api/posts/:id
+// DELETE /api/v1/posts/:id
 // 需要认证
 func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -431,7 +431,7 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateStatus 更新文章状态
-// PATCH /api/posts/:id/status
+// PATCH /api/v1/posts/:id/status
 // 需要认证
 func (h *PostHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -470,7 +470,7 @@ func (h *PostHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // IncrementView 增加浏览计数
-// POST /api/posts/:id/view
+// POST /api/v1/posts/:id/view
 func (h *PostHandler) IncrementView(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)

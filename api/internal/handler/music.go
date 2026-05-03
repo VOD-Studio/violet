@@ -19,7 +19,7 @@ func NewMusicHandler(musicService *service.MusicService) *MusicHandler {
 }
 
 // GetEmbedInfo 解析音乐链接并返回嵌入信息
-// GET /api/music/embed?url=xxx
+// GET /api/v1/music/embed?url=xxx
 // 支持网易云音乐和 QQ 音乐链接
 func (h *MusicHandler) GetEmbedInfo(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
@@ -42,7 +42,7 @@ func (h *MusicHandler) GetEmbedInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPlaylist 解析歌单链接并返回歌单信息
-// GET /api/music/playlist?url=xxx
+// GET /api/v1/music/playlist?url=xxx
 // 支持网易云音乐和 QQ 音乐歌单
 func (h *MusicHandler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 	link := r.URL.Query().Get("url")
@@ -69,7 +69,7 @@ func (h *MusicHandler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetSongDetail 获取歌曲详情
-// GET /api/music/song?platform=xxx&id=xxx
+// GET /api/v1/music/song?platform=xxx&id=xxx
 func (h *MusicHandler) GetSongDetail(w http.ResponseWriter, r *http.Request) {
 	platform := r.URL.Query().Get("platform")
 	songID := r.URL.Query().Get("id")

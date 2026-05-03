@@ -36,7 +36,7 @@ type userResponse struct {
 }
 
 // ListUsers 获取用户列表
-// GET /api/admin/users
+// GET /api/v1/admin/users
 // 需要管理员认证，支持分页查询
 func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -70,7 +70,7 @@ func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request
 }
 
 // UpdateUserRole 修改用户角色
-// PATCH /api/admin/users/:id/role
+// PATCH /api/v1/admin/users/:id/role
 // 需要管理员认证
 func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -111,7 +111,7 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 }
 
 // UpdateUserStatus 启用/禁用用户
-// PATCH /api/admin/users/:id/status
+// PATCH /api/v1/admin/users/:id/status
 // 需要管理员认证
 func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")

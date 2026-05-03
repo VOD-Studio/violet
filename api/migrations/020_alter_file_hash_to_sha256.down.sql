@@ -1,0 +1,2 @@
+ALTER TABLE files ALTER COLUMN file_hash TYPE CHAR(32);
+ALTER TABLE upload_sessions ALTER COLUMN file_hash TYPE CHAR(32);

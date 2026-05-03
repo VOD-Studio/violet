@@ -27,7 +27,7 @@ func NewProjectHandler(projectService *service.ProjectService) *ProjectHandler {
 }
 
 // List 项目列表
-// GET /api/projects
+// GET /api/v1/projects
 func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 	projects, err := h.projectService.ListProjects(r.Context())
 	if err != nil {
@@ -79,7 +79,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetByID 获取项目详情
-// GET /api/projects/{id}
+// GET /api/v1/projects/{id}
 func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -130,7 +130,7 @@ func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // Create 创建项目
-// POST /api/admin/projects
+// POST /api/v1/admin/projects
 // 需要认证 + 管理员权限
 func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req service.CreateProjectRequest
@@ -158,7 +158,7 @@ func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // Update 更新项目
-// PUT /api/admin/projects/{id}
+// PUT /api/v1/admin/projects/{id}
 // 需要认证 + 管理员权限
 func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -192,7 +192,7 @@ func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 // Delete 删除项目
-// DELETE /api/admin/projects/{id}
+// DELETE /api/v1/admin/projects/{id}
 // 需要认证 + 管理员权限
 func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")

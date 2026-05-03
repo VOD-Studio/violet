@@ -28,7 +28,7 @@ func NewMusicAdminHandler(playlistAdminService *service.MusicPlaylistAdminServic
 // --- 歌单管理接口（管理端）---
 
 // ListPlaylists 获取所有歌单
-// GET /api/admin/playlists
+// GET /api/v1/admin/playlists
 // 需要管理员权限
 func (h *MusicAdminHandler) ListPlaylists(w http.ResponseWriter, r *http.Request) {
 	playlists, err := h.playlistAdminService.ListPlaylists(r.Context())
@@ -43,7 +43,7 @@ func (h *MusicAdminHandler) ListPlaylists(w http.ResponseWriter, r *http.Request
 }
 
 // CreatePlaylist 创建歌单（导入链接）
-// POST /api/admin/playlists
+// POST /api/v1/admin/playlists
 // 需要管理员权限
 func (h *MusicAdminHandler) CreatePlaylist(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -86,7 +86,7 @@ func (h *MusicAdminHandler) CreatePlaylist(w http.ResponseWriter, r *http.Reques
 }
 
 // UpdatePlaylist 更新歌单信息
-// PATCH /api/admin/playlists/{id}
+// PATCH /api/v1/admin/playlists/{id}
 // 需要管理员权限
 func (h *MusicAdminHandler) UpdatePlaylist(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -126,7 +126,7 @@ func (h *MusicAdminHandler) UpdatePlaylist(w http.ResponseWriter, r *http.Reques
 }
 
 // DeletePlaylist 删除歌单
-// DELETE /api/admin/playlists/{id}
+// DELETE /api/v1/admin/playlists/{id}
 // 需要管理员权限
 func (h *MusicAdminHandler) DeletePlaylist(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -150,7 +150,7 @@ func (h *MusicAdminHandler) DeletePlaylist(w http.ResponseWriter, r *http.Reques
 }
 
 // SetActivePlaylist 设置启用的歌单
-// POST /api/admin/playlists/{id}/activate
+// POST /api/v1/admin/playlists/{id}/activate
 // 需要管理员权限
 func (h *MusicAdminHandler) SetActivePlaylist(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -177,7 +177,7 @@ func (h *MusicAdminHandler) SetActivePlaylist(w http.ResponseWriter, r *http.Req
 }
 
 // RefreshPlaylistSongs 刷新歌单歌曲（重新解析）
-// POST /api/admin/playlists/{id}/refresh
+// POST /api/v1/admin/playlists/{id}/refresh
 // 需要管理员权限
 func (h *MusicAdminHandler) RefreshPlaylistSongs(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -210,7 +210,7 @@ func (h *MusicAdminHandler) RefreshPlaylistSongs(w http.ResponseWriter, r *http.
 // --- 公开接口（前台）---
 
 // GetActivePlaylist 获取当前启用的歌单配置
-// GET /api/music/playlist/config/active
+// GET /api/v1/music/playlist/config/active
 // 公开接口，无需认证
 // 返回歌单配置信息，前端使用 Meting API 获取完整歌曲列表
 func (h *MusicAdminHandler) GetActivePlaylist(w http.ResponseWriter, r *http.Request) {
@@ -241,7 +241,7 @@ func (h *MusicAdminHandler) GetActivePlaylist(w http.ResponseWriter, r *http.Req
 }
 
 // GetAllActivePlaylists 获取所有启用的歌单列表
-// GET /api/music/playlists/active
+// GET /api/v1/music/playlists/active
 // 公开接口，无需认证
 func (h *MusicAdminHandler) GetAllActivePlaylists(w http.ResponseWriter, r *http.Request) {
 	playlists, err := h.playlistAdminService.GetAllActivePlaylists(r.Context())
@@ -269,7 +269,7 @@ func (h *MusicAdminHandler) GetAllActivePlaylists(w http.ResponseWriter, r *http
 }
 
 // GetMusicSettings 获取音乐播放器设置
-// GET /api/music/settings
+// GET /api/v1/music/settings
 // 公开接口，无需认证
 func (h *MusicAdminHandler) GetMusicSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := h.musicSettingsService.GetMusicSettings(r.Context())
@@ -284,7 +284,7 @@ func (h *MusicAdminHandler) GetMusicSettings(w http.ResponseWriter, r *http.Requ
 }
 
 // UpdatePlayerVersion 更新播放器版本
-// PATCH /api/admin/music/settings
+// PATCH /api/v1/admin/music/settings
 // 需要管理员权限
 func (h *MusicAdminHandler) UpdatePlayerVersion(w http.ResponseWriter, r *http.Request) {
 	var req struct {

@@ -28,7 +28,7 @@ type PublicSettings struct {
 }
 
 // GetPublicSettings 获取公开站点设置
-// GET /api/settings
+// GET /api/v1/settings
 // 无需认证，返回非敏感的站点配置
 func (h *SettingsHandler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := h.settingsService.GetAllSettings(r.Context())
@@ -48,7 +48,7 @@ func (h *SettingsHandler) GetPublicSettings(w http.ResponseWriter, r *http.Reque
 }
 
 // GetSettings 获取站点设置
-// GET /api/admin/settings
+// GET /api/v1/admin/settings
 // 需要管理员认证，返回所有站点配置项
 func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := h.settingsService.GetAllSettings(r.Context())
@@ -61,7 +61,7 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateSettings 更新站点设置
-// PUT /api/admin/settings
+// PUT /api/v1/admin/settings
 // 需要管理员认证，支持部分更新（只传需要修改的字段）
 func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	var req service.UpdateSettingsRequest

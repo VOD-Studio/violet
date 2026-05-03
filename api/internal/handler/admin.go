@@ -20,7 +20,7 @@ func NewAdminHandler(statsService *service.StatsService) *AdminHandler {
 }
 
 // GetDashboardStats 后台总览统计
-// GET /api/admin/stats
+// GET /api/v1/admin/stats
 // 需要管理员认证，返回文章、评论、用户等各项统计数据以及最近文章和热门文章
 func (h *AdminHandler) GetDashboardStats(w http.ResponseWriter, r *http.Request) {
 	stats, err := h.statsService.GetDashboardStats(r.Context())
@@ -33,7 +33,7 @@ func (h *AdminHandler) GetDashboardStats(w http.ResponseWriter, r *http.Request)
 }
 
 // GetViewTrends 浏览量趋势
-// GET /api/admin/stats/views
+// GET /api/v1/admin/stats/views
 // 需要管理员认证，返回最近 30 天每日浏览量和最近 12 个月每月浏览量
 func (h *AdminHandler) GetViewTrends(w http.ResponseWriter, r *http.Request) {
 	trends, err := h.statsService.GetViewTrends(r.Context())

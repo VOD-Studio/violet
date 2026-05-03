@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,28 +11,26 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"blog-api/internal/middleware"
+	"blog-api/internal/model"
 	"blog-api/internal/service"
 )
 
 // MediaHandler 媒体管理接口处理器
 type MediaHandler struct {
-	mediaService    *service.MediaService
-	downloadService *service.DownloadService
-	uploadDir       string
+	fileService *service.FileService
+	uploadDir   string
 }
 
 // NewMediaHandler 创建媒体管理处理器实例
-func NewMediaHandler(mediaService *service.MediaService, downloadService *service.DownloadService, uploadDir string) *MediaHandler {
+func NewMediaHandler(fileService *service.FileService, uploadDir string) *MediaHandler {
 	return &MediaHandler{
-		mediaService:    mediaService,
-		downloadService: downloadService,
-		uploadDir:       uploadDir,
+		fileService: fileService,
+		uploadDir:   uploadDir,
 	}
 }
 
 // GetMedia 获取媒体详情
-// GET /api/media/:id
+// GET /api/v1/media/:id
 func (h *MediaHandler) GetMedia(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -42,9 +39,9 @@ func (h *MediaHandler) GetMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	media, err := h.mediaService.GetMediaByID(r.Context(), id)
+	file, err := h.fileService.FindByID(r.Context(), id)
 	if err != nil {
-		if errors.Is(err, service.ErrMediaNotFound) {
+		if errors.Is(err, service.ErrFileNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "媒体不存在")
 			return
 		}
@@ -52,62 +49,38 @@ func (h *MediaHandler) GetMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, media)
+	writeJSON(w, http.StatusOK, fileToMediaItem(file))
 }
 
 // ListMedia 媒体列表
-// GET /api/media
+// GET /api/v1/media
 // 支持分页和类型筛选
 func (h *MediaHandler) ListMedia(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	mimeType := r.URL.Query().Get("type")
 
-	result, err := h.mediaService.ListMedia(r.Context(), page, limit, mimeType)
+	result, err := h.fileService.List(r.Context(), page, limit, mimeType)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询媒体列表失败")
 		return
 	}
 
+	items := make([]mediaItem, 0, len(result.Files))
+	for _, f := range result.Files {
+		items = append(items, fileToMediaItem(&f))
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"media": result.Media,
+		"media": items,
 		"total": result.Total,
 		"page":  result.Page,
 		"limit": result.Limit,
 	})
 }
 
-// UpdateMedia 更新媒体信息
-// PATCH /api/media/:id
-func (h *MediaHandler) UpdateMedia(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的媒体 ID")
-		return
-	}
-
-	var req service.UpdateMediaRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
-		return
-	}
-
-	media, err := h.mediaService.UpdateMedia(r.Context(), id, req)
-	if err != nil {
-		if errors.Is(err, service.ErrMediaNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "媒体不存在")
-			return
-		}
-		writeError(w, http.StatusInternalServerError, "internal_error", "更新媒体失败")
-		return
-	}
-
-	writeJSON(w, http.StatusOK, media)
-}
-
-// DeleteMedia 删除媒体
-// DELETE /api/media/:id
+// DeleteMedia 删除媒体（软删除）
+// DELETE /api/v1/media/:id
 func (h *MediaHandler) DeleteMedia(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -116,8 +89,8 @@ func (h *MediaHandler) DeleteMedia(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.mediaService.DeleteMedia(r.Context(), id); err != nil {
-		if errors.Is(err, service.ErrMediaNotFound) {
+	if err := h.fileService.SoftDelete(r.Context(), id); err != nil {
+		if errors.Is(err, service.ErrFileNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "媒体不存在")
 			return
 		}
@@ -130,8 +103,8 @@ func (h *MediaHandler) DeleteMedia(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// BatchDeleteMedia 批量删除媒体
-// POST /api/media/batch-delete
+// BatchDeleteMedia 批量删除媒体（软删除）
+// POST /api/v1/media/batch-delete
 func (h *MediaHandler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		IDs []string `json:"ids"`
@@ -147,12 +120,11 @@ func (h *MediaHandler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// 转换ID
 	ids := make([]uuid.UUID, 0, len(req.IDs))
 	for _, idStr := range req.IDs {
 		id, err := uuid.Parse(idStr)
 		if err != nil {
-			continue // 忽略无效ID
+			continue
 		}
 		ids = append(ids, id)
 	}
@@ -162,8 +134,7 @@ func (h *MediaHandler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// 批量删除
-	count, err := h.mediaService.BatchDeleteMedia(r.Context(), ids)
+	count, err := h.fileService.BatchSoftDelete(r.Context(), ids)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "批量删除失败")
 		return
@@ -175,50 +146,9 @@ func (h *MediaHandler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-// Download 下载媒体文件
-// GET /api/media/{id}/download
-// 通过 downloadService 校验权限并记录下载
-func (h *MediaHandler) Download(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的媒体 ID")
-		return
-	}
-
-	userID := middleware.GetUserID(r.Context())
-
-	media, err := h.downloadService.CheckDownloadPermission(r.Context(), userID, id)
-	if err != nil {
-		if errors.Is(err, service.ErrMediaNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "媒体不存在")
-			return
-		}
-		if errors.Is(err, service.ErrDownloadPermissionDenied) {
-			writeError(w, http.StatusForbidden, "forbidden", "无权下载此文件")
-			return
-		}
-		writeError(w, http.StatusInternalServerError, "internal_error", "检查下载权限失败")
-		return
-	}
-
-	filePath := filepath.Join(h.uploadDir, media.Filename)
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		writeError(w, http.StatusNotFound, "not_found", "文件不存在")
-		return
-	}
-
-	// 记录下载
-	go h.downloadService.RecordDownload(context.Background(), id, userID)
-
-	w.Header().Set("Content-Disposition", "attachment; filename=\""+media.OriginalName+"\"")
-	w.Header().Set("Content-Type", media.MimeType)
-	http.ServeFile(w, r, filePath)
-}
-
 // UploadThumbnail 上传视频封面缩略图
-// POST /api/media/:id/thumbnail
-// 接收 JPEG 图片，保存为 {filename}_thumb.jpg
+// POST /api/v1/media/:id/thumbnail
+// 接收 JPEG 图片，保存并更新 files 表的 thumbnail 字段
 func (h *MediaHandler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
@@ -227,10 +157,9 @@ func (h *MediaHandler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 查询媒体记录
-	media, err := h.mediaService.GetMediaByID(r.Context(), id)
+	file, err := h.fileService.FindByID(r.Context(), id)
 	if err != nil {
-		if errors.Is(err, service.ErrMediaNotFound) {
+		if errors.Is(err, service.ErrFileNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "媒体不存在")
 			return
 		}
@@ -238,25 +167,31 @@ func (h *MediaHandler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 读取上传的缩略图文件
 	r.Body = http.MaxBytesReader(w, r.Body, 10*1024*1024)
 	if err := r.ParseMultipartForm(10 * 1024 * 1024); err != nil {
 		writeError(w, http.StatusBadRequest, "file_too_large", "缩略图大小不能超过 10 MB")
 		return
 	}
 
-	file, _, err := r.FormFile("thumbnail")
+	thumbFile, _, err := r.FormFile("thumbnail")
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_file", "缺少缩略图文件")
 		return
 	}
-	defer file.Close()
+	defer thumbFile.Close()
 
-	// 保存缩略图：{filename_without_ext}_thumb.jpg
-	ext := filepath.Ext(media.Filename)
-	baseName := media.Filename[:len(media.Filename)-len(ext)]
-	thumbFilename := baseName + "_thumb.jpg"
-	thumbPath := filepath.Join(h.uploadDir, thumbFilename)
+	// 缩略图文件名: {uuid}_thumb.jpg，保存到与原文件相同的目录
+	thumbName := file.ID.String() + "_thumb.jpg"
+	// 从文件 Path 推导存储目录（如 uploads/material/video/xxx.jpg → uploads/material/video）
+	storageDir := filepath.Dir(file.Path)
+	thumbPath := filepath.Join(storageDir, thumbName)
+
+	// 确保目录存在
+	thumbDir := filepath.Dir(thumbPath)
+	if err := os.MkdirAll(thumbDir, 0755); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "保存缩略图失败")
+		return
+	}
 
 	dst, err := os.Create(thumbPath)
 	if err != nil {
@@ -265,58 +200,48 @@ func (h *MediaHandler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 	}
 	defer dst.Close()
 
-	if _, err := dst.ReadFrom(file); err != nil {
+	if _, err := dst.ReadFrom(thumbFile); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "写入缩略图失败")
 		return
 	}
 
+	// 构建 thumbnail URL 并更新数据库
+	thumbnailURL := "/" + thumbPath
+	if err := h.fileService.UpdateThumbnail(r.Context(), id, thumbnailURL); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "更新缩略图失败")
+		return
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"message":    "缩略图上传成功",
-		"thumbnail":  thumbFilename,
+		"message":   "缩略图上传成功",
+		"thumbnail": thumbnailURL,
 	})
 }
 
-// DownloadFile 下载文件
-// GET /api/files/:id/download
-// 支持权限控制：public 任何人可下载，user 需要登录，admin 需要管理员权限
-func (h *MediaHandler) DownloadFile(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的文件 ID")
-		return
+// mediaItem 前端兼容的媒体响应结构
+type mediaItem struct {
+	ID           string `json:"id"`
+	URL          string `json:"path"`
+	OriginalName string `json:"original_name"`
+	MimeType     string `json:"mime_type"`
+	Size         int64  `json:"size"`
+	Thumbnail    string `json:"thumbnail,omitempty"`
+	Width        *int   `json:"width,omitempty"`
+	Height       *int   `json:"height,omitempty"`
+	CreatedAt    string `json:"created_at"`
+}
+
+// fileToMediaItem 将 File 模型转换为前端兼容的 mediaItem
+func fileToMediaItem(f *model.File) mediaItem {
+	return mediaItem{
+		ID:           f.ID.String(),
+		URL:          f.URL,
+		OriginalName: f.OriginalName,
+		MimeType:     f.MimeType,
+		Size:         f.Size,
+		Thumbnail:    f.Thumbnail,
+		Width:        f.Width,
+		Height:       f.Height,
+		CreatedAt:    f.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
-
-	// 获取用户角色（未登录为空字符串）
-	userRole := middleware.GetUserRole(r.Context())
-
-	// 检查下载权限
-	media, err := h.mediaService.CheckDownloadPermission(r.Context(), id, userRole)
-	if err != nil {
-		if errors.Is(err, service.ErrMediaNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "文件不存在")
-			return
-		}
-		if errors.Is(err, service.ErrDownloadForbidden) {
-			writeError(w, http.StatusForbidden, "forbidden", "无权下载此文件")
-			return
-		}
-		writeError(w, http.StatusInternalServerError, "internal_error", "检查权限失败")
-		return
-	}
-
-	// 查找文件
-	filePath := filepath.Join(h.uploadDir, media.Filename)
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		writeError(w, http.StatusNotFound, "not_found", "文件不存在")
-		return
-	}
-
-	// 增加下载计数
-	go h.mediaService.IncrementDownloadCount(r.Context(), id)
-
-	// 设置下载响应头
-	w.Header().Set("Content-Disposition", "attachment; filename=\""+media.OriginalName+"\"")
-	w.Header().Set("Content-Type", media.MimeType)
-	http.ServeFile(w, r, filePath)
 }

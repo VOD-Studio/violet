@@ -27,7 +27,7 @@ func NewEmojiHandler(emojiService *service.EmojiService) *EmojiHandler {
 // --- 公开接口（用户端）---
 
 // GetAllEmojis 获取所有表情分组和表情
-// GET /api/emojis
+// GET /api/v1/emojis
 func (h *EmojiHandler) GetAllEmojis(w http.ResponseWriter, r *http.Request) {
 	groups, err := h.emojiService.GetAllEmojisForPublic(r.Context())
 	if err != nil {
@@ -41,7 +41,7 @@ func (h *EmojiHandler) GetAllEmojis(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEmojiGroupByName 获取指定表情分组
-// GET /api/emojis/groups/{name}
+// GET /api/v1/emojis/groups/{name}
 func (h *EmojiHandler) GetEmojiGroupByName(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	if name == "" {
@@ -65,7 +65,7 @@ func (h *EmojiHandler) GetEmojiGroupByName(w http.ResponseWriter, r *http.Reques
 // --- 管理接口：分组操作 ---
 
 // ListAllGroups 获取所有表情分组（含未启用）
-// GET /api/admin/emoji-groups
+// GET /api/v1/admin/emoji-groups
 // 需要管理员权限
 func (h *EmojiHandler) ListAllGroups(w http.ResponseWriter, r *http.Request) {
 	groups, err := h.emojiService.ListAllEmojiGroups(r.Context())
@@ -80,7 +80,7 @@ func (h *EmojiHandler) ListAllGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateGroup 创建表情分组
-// POST /api/admin/emoji-groups
+// POST /api/v1/admin/emoji-groups
 // 需要管理员权限
 func (h *EmojiHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -121,7 +121,7 @@ func (h *EmojiHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateGroup 更新表情分组
-// PATCH /api/admin/emoji-groups/{id}
+// PATCH /api/v1/admin/emoji-groups/{id}
 // 需要管理员权限
 func (h *EmojiHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -196,7 +196,7 @@ func (h *EmojiHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteGroup 删除表情分组
-// DELETE /api/admin/emoji-groups/{id}
+// DELETE /api/v1/admin/emoji-groups/{id}
 // 需要管理员权限
 func (h *EmojiHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -216,7 +216,7 @@ func (h *EmojiHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 // BatchUpdateStatus 批量更新分组启用状态
-// PATCH /api/admin/emoji-groups/batch-status
+// PATCH /api/v1/admin/emoji-groups/batch-status
 // 需要管理员权限
 func (h *EmojiHandler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -247,7 +247,7 @@ func (h *EmojiHandler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request)
 }
 
 // ListGroupEmojis 获取分组内所有表情
-// GET /api/admin/emoji-groups/{id}/emojis
+// GET /api/v1/admin/emoji-groups/{id}/emojis
 // 需要管理员权限
 func (h *EmojiHandler) ListGroupEmojis(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -269,7 +269,7 @@ func (h *EmojiHandler) ListGroupEmojis(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateEmoji 创建表情
-// POST /api/admin/emoji-groups/{id}/emojis
+// POST /api/v1/admin/emoji-groups/{id}/emojis
 // 需要管理员权限
 func (h *EmojiHandler) CreateEmoji(w http.ResponseWriter, r *http.Request) {
 	groupIDStr := chi.URLParam(r, "id")
@@ -316,7 +316,7 @@ func (h *EmojiHandler) CreateEmoji(w http.ResponseWriter, r *http.Request) {
 // --- 管理接口：表情操作 ---
 
 // UpdateEmoji 更新表情
-// PATCH /api/admin/emojis/{id}
+// PATCH /api/v1/admin/emojis/{id}
 // 需要管理员权限
 func (h *EmojiHandler) UpdateEmoji(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -377,7 +377,7 @@ func (h *EmojiHandler) UpdateEmoji(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteEmoji 删除表情
-// DELETE /api/admin/emojis/{id}
+// DELETE /api/v1/admin/emojis/{id}
 // 需要管理员权限
 func (h *EmojiHandler) DeleteEmoji(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -399,7 +399,7 @@ func (h *EmojiHandler) DeleteEmoji(w http.ResponseWriter, r *http.Request) {
 // --- 表情文件上传（独立存储）---
 
 // UploadEmoji 上传表情图片
-// POST /api/admin/emojis/upload
+// POST /api/v1/admin/emojis/upload
 // 需要管理员权限，接受 multipart/form-data 格式的图片文件
 // 表情图片保存到独立目录 uploads/emojis/，不写入 media 表
 func (h *EmojiHandler) UploadEmoji(w http.ResponseWriter, r *http.Request) {

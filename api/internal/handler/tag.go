@@ -27,7 +27,7 @@ func NewTagHandler(tagService *service.TagService) *TagHandler {
 }
 
 // List 标签列表
-// GET /api/tags
+// GET /api/v1/tags
 func (h *TagHandler) List(w http.ResponseWriter, r *http.Request) {
 	tags, err := h.tagService.ListTags(r.Context())
 	if err != nil {
@@ -52,7 +52,7 @@ func (h *TagHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // Create 创建标签
-// POST /api/tags
+// POST /api/v1/tags
 // 需要认证
 func (h *TagHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -86,7 +86,7 @@ func (h *TagHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // Delete 删除标签
-// DELETE /api/tags/:id
+// DELETE /api/v1/tags/:id
 // 需要认证
 func (h *TagHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")

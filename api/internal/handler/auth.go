@@ -132,7 +132,7 @@ type UserResponse struct {
 }
 
 // Register 用户注册接口
-// POST /api/auth/register
+// POST /api/v1/auth/register
 // 创建新用户并发送邮箱验证码
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
@@ -159,7 +159,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // VerifyEmail 邮箱验证接口
-// POST /api/auth/verify-email
+// POST /api/v1/auth/verify-email
 // 使用验证码验证用户邮箱
 func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	var req VerifyEmailRequest
@@ -186,7 +186,7 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login 用户登录接口
-// POST /api/auth/login
+// POST /api/v1/auth/login
 // 验证邮箱密码并返回 JWT 令牌
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
@@ -218,7 +218,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // RefreshToken 刷新令牌接口
-// POST /api/auth/refresh
+// POST /api/v1/auth/refresh
 // 使用刷新令牌获取新的访问令牌
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var req RefreshTokenRequest
@@ -250,7 +250,7 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 }
 
 // Logout 用户登出接口
-// POST /api/auth/logout
+// POST /api/v1/auth/logout
 // 需要认证，删除 Redis 中的刷新令牌
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	// 从上下文获取用户 ID
@@ -272,7 +272,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 // ForgotPassword 忘记密码接口
-// POST /api/auth/forgot-password
+// POST /api/v1/auth/forgot-password
 // 发送密码重置验证码到用户邮箱
 func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var req ForgotPasswordRequest
@@ -300,7 +300,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // ResetPassword 重置密码接口
-// POST /api/auth/reset-password
+// POST /api/v1/auth/reset-password
 // 使用重置码设置新密码
 func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var req ResetPasswordRequest
@@ -327,7 +327,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 // Me 获取当前用户信息接口
-// GET /api/auth/me
+// GET /api/v1/auth/me
 // 需要认证，返回当前登录用户的信息
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	// 从上下文获取用户 ID
@@ -382,7 +382,7 @@ type UpdatePasswordRequest struct {
 }
 
 // UpdateProfile 更新个人资料接口
-// PATCH /api/auth/profile
+// PATCH /api/v1/auth/profile
 func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
@@ -429,7 +429,7 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdatePassword 修改密码接口
-// PATCH /api/auth/password
+// PATCH /api/v1/auth/password
 func (h *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {

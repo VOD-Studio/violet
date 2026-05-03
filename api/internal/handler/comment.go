@@ -80,7 +80,7 @@ type CountResponse struct {
 }
 
 // ListApprovedComments 获取文章已审核评论
-// GET /api/posts/{id}/comments
+// GET /api/v1/posts/{id}/comments
 // 公开接口，返回已审核评论的树形结构
 func (h *CommentHandler) ListApprovedComments(w http.ResponseWriter, r *http.Request) {
 	// 从 URL 路径解析文章 ID
@@ -105,7 +105,7 @@ func (h *CommentHandler) ListApprovedComments(w http.ResponseWriter, r *http.Req
 }
 
 // CreateComment 提交评论
-// POST /api/posts/{id}/comments
+// POST /api/v1/posts/{id}/comments
 // 公开接口，需要通过限流中间件保护
 func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	// 从 URL 路径解析文章 ID
@@ -172,7 +172,7 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListPendingComments 获取待审核评论列表
-// GET /api/admin/comments/pending
+// GET /api/v1/admin/comments/pending
 // 需要管理员认证
 func (h *CommentHandler) ListPendingComments(w http.ResponseWriter, r *http.Request) {
 	// 解析分页参数
@@ -210,7 +210,7 @@ func (h *CommentHandler) ListPendingComments(w http.ResponseWriter, r *http.Requ
 }
 
 // CountPendingComments 统计待审核评论数量
-// GET /api/admin/comments/pending/count
+// GET /api/v1/admin/comments/pending/count
 // 需要管理员认证，用于后台仪表盘展示待审核数量
 func (h *CommentHandler) CountPendingComments(w http.ResponseWriter, r *http.Request) {
 	count, err := h.commentService.CountPendingComments(r.Context())
@@ -223,7 +223,7 @@ func (h *CommentHandler) CountPendingComments(w http.ResponseWriter, r *http.Req
 }
 
 // UpdateCommentStatus 审核评论
-// PATCH /api/comments/{id}/status
+// PATCH /api/v1/comments/{id}/status
 // 需要管理员认证
 func (h *CommentHandler) UpdateCommentStatus(w http.ResponseWriter, r *http.Request) {
 	// 从 URL 路径解析评论 ID
@@ -258,7 +258,7 @@ func (h *CommentHandler) UpdateCommentStatus(w http.ResponseWriter, r *http.Requ
 }
 
 // DeleteComment 删除评论
-// DELETE /api/comments/{id}
+// DELETE /api/v1/comments/{id}
 // 需要管理员认证
 func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	// 从 URL 路径解析评论 ID
