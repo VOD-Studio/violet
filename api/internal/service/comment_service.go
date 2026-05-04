@@ -4,17 +4,19 @@ package service
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"blog-api/internal/repository/generated"
+	"blog-api/internal/model"
+	"blog-api/internal/repository"
 )
 
 // 评论业务错误定义
@@ -31,193 +33,174 @@ var (
 
 // CommentService 评论服务，处理评论的创建、查询、审核等业务逻辑
 type CommentService struct {
-	// queries sqlc 生成的数据库查询接口
-	queries *generated.Queries
+	repo repository.CommentRepository
 }
 
 // NewCommentService 创建评论服务实例
-func NewCommentService(queries *generated.Queries) *CommentService {
+func NewCommentService(repo repository.CommentRepository) *CommentService {
 	return &CommentService{
-		queries: queries,
+		repo: repo,
 	}
 }
 
 // CreateCommentInput 创建评论的输入参数
 type CreateCommentInput struct {
-	// PostID 所属文章 ID
-	PostID uuid.UUID
-	// ParentID 父评论 ID，为空表示顶级评论
-	ParentID *uuid.UUID
-	// AuthorName 评论者昵称
-	AuthorName string
-	// AuthorEmail 评论者邮箱（可选）
+	PostID      uuid.UUID
+	ParentID    *uuid.UUID
+	AuthorName  string
 	AuthorEmail string
-	// AuthorURL 评论者网站（可选）
-	AuthorURL string
-	// Body 评论内容（纯文本 + 表情语法，如 "测试[smile]"）
-	Body string
-	// IP 评论者 IP 地址，用于哈希存储
-	IP string
-	// UserAgent 评论者浏览器 UA
-	UserAgent string
+	AuthorURL   string
+	Body        string
+	Pictures    []*model.CommentPicture
+	IP          string
+	UserAgent   string
 }
 
-// CommentResponse 评论响应结构，用于 API 返回
+// CommentPicture 评论图片信息
+type CommentPicture struct {
+	URL    string  `json:"url"`
+	Width  int     `json:"width"`
+	Height int     `json:"height"`
+	Size   float64 `json:"size"`
+}
+
+// CommentEmote 评论中使用的表情信息
+type CommentEmote struct {
+	ID   int32  `json:"id"`
+	Text string `json:"text"`
+	URL  string `json:"url"`
+}
+
+// CommentContent 评论内容结构
+type CommentContent struct {
+	Message  string                   `json:"message"`
+	Emote    map[string]*CommentEmote `json:"emote"`
+	Pictures []*model.CommentPicture  `json:"pictures,omitempty"`
+}
+
+// CommentResponse 评论响应结构
 type CommentResponse struct {
-	// ID 评论唯一标识
-	ID uuid.UUID `json:"id"`
-	// PostID 所属文章 ID
-	PostID uuid.UUID `json:"post_id"`
-	// ParentID 父评论 ID
-	ParentID *uuid.UUID `json:"parent_id"`
-	// Path 评论路径，用于排序和嵌套
-	Path string `json:"path"`
-	// Depth 评论嵌套层级
-	Depth int16 `json:"depth"`
-	// AuthorName 评论者昵称
-	AuthorName string `json:"author_name"`
-	// AuthorEmail 评论者邮箱
-	AuthorEmail string `json:"author_email,omitempty"`
-	// AuthorURL 评论者网站
-	AuthorURL string `json:"author_url,omitempty"`
-	// AvatarURL 头像链接
-	AvatarURL string `json:"avatar_url,omitempty"`
-	// Body 评论内容（纯文本 + 表情语法）
-	Body string `json:"body"`
-	// Status 评论状态
-	Status string `json:"status"`
-	// CreatedAt 创建时间
-	CreatedAt string `json:"created_at"`
-	// Children 子评论列表（用于树形展示）
-	Children []*CommentResponse `json:"children,omitempty"`
+	ID          uuid.UUID       `json:"id"`
+	PostID      uuid.UUID       `json:"post_id"`
+	ParentID    *uuid.UUID      `json:"parent_id"`
+	Path        string          `json:"path"`
+	Depth       int16           `json:"depth"`
+	AuthorName  string          `json:"author_name"`
+	AuthorEmail string          `json:"author_email,omitempty"`
+	AuthorURL   string          `json:"author_url,omitempty"`
+	AvatarURL   string          `json:"avatar_url,omitempty"`
+	Content     *CommentContent `json:"content"`
+	Status      string          `json:"status"`
+	CreatedAt   string          `json:"created_at"`
+	Children    []*CommentResponse `json:"children,omitempty"`
 }
 
 // CreateComment 创建评论
-// 自动生成基于 UUID 的 materialized path，计算嵌套深度，对 IP 地址进行哈希处理
 func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentInput) (*CommentResponse, error) {
 	log.Info().Str("service", "CommentService").Str("operation", "CreateComment").
 		Str("post_id", input.PostID.String()).Str("author_name", input.AuthorName).Msg("开始创建评论")
 
-	// 验证文章是否存在
-	log.Debug().Str("query", "GetPostByID").Str("post_id", input.PostID.String()).Msg("验证文章是否存在")
-	_, err := s.queries.GetPostByID(ctx, input.PostID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			log.Warn().Str("post_id", input.PostID.String()).Msg("文章不存在")
-			return nil, ErrPostNotFound
-		}
-		log.Error().Err(err).Str("post_id", input.PostID.String()).Msg("查询文章失败")
-		return nil, fmt.Errorf("查询文章失败: %w", err)
-	}
-
 	// 生成评论 ID
 	commentID := uuid.New()
 
-	// 计算 path 和 depth
-	var parentID uuid.NullUUID
+	// 计算路径和深度
 	var path string
 	var depth int16
 
 	if input.ParentID != nil {
-		// 回复评论：查询父评论
-		log.Debug().Str("query", "GetCommentByID").Str("parent_id", input.ParentID.String()).Msg("查询父评论")
-		parent, err := s.queries.GetCommentByID(ctx, *input.ParentID)
+		// 回复评论
+		parent, err := s.repo.GetByID(ctx, *input.ParentID)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				log.Warn().Str("parent_id", input.ParentID.String()).Msg("父评论不存在")
-				return nil, ErrInvalidParentComment
-			}
 			log.Error().Err(err).Str("parent_id", input.ParentID.String()).Msg("查询父评论失败")
-			return nil, fmt.Errorf("查询父评论失败: %w", err)
-		}
-
-		// 验证父评论属于同一文章
-		if parent.PostID != input.PostID {
-			log.Warn().Str("parent_id", input.ParentID.String()).
-				Str("parent_post_id", parent.PostID.String()).
-				Str("current_post_id", input.PostID.String()).Msg("父评论不属于同一文章")
 			return nil, ErrInvalidParentComment
 		}
 
-		// 检查嵌套深度限制（最大 4 层）
-		newDepth := parent.Depth + 1
-		if newDepth > 4 {
-			log.Warn().Int16("depth", newDepth).Msg("评论嵌套层级过深")
+		if parent.PostID != input.PostID {
+			log.Warn().Str("parent_post_id", parent.PostID.String()).
+				Str("input_post_id", input.PostID.String()).Msg("父评论不属于同一文章")
+			return nil, ErrInvalidParentComment
+		}
+
+		depth = parent.Depth + 1
+		if depth > 4 {
+			log.Warn().Int16("depth", depth).Msg("评论嵌套层级过深")
 			return nil, ErrCommentTooDeep
 		}
 
-		parentID = uuid.NullUUID{UUID: *input.ParentID, Valid: true}
-		path = parent.Path + "/" + commentID.String()
-		depth = newDepth
+		path = parent.Path + "." + commentID.String()
 	} else {
 		// 顶级评论
-		parentID = uuid.NullUUID{Valid: false}
 		path = commentID.String()
 		depth = 0
+	}
+
+	// 序列化图片数据
+	var picturesJSON []byte
+	if len(input.Pictures) > 0 {
+		var err error
+		picturesJSON, err = json.Marshal(input.Pictures)
+		if err != nil {
+			log.Error().Err(err).Msg("序列化图片数据失败")
+			return nil, fmt.Errorf("序列化图片数据失败: %w", err)
+		}
+	} else {
+		picturesJSON = []byte("[]")
 	}
 
 	// 对 IP 地址进行 SHA256 哈希
 	ipHash := hashIP(input.IP)
 
-	// 构建创建参数
-	params := generated.CreateCommentParams{
+	// 构建评论模型
+	comment := &model.Comment{
+		ID:          commentID,
 		PostID:      input.PostID,
-		ParentID:    parentID,
+		ParentID:    input.ParentID,
 		Path:        path,
 		Depth:       depth,
 		AuthorName:  input.AuthorName,
-		AuthorEmail: toNullString(input.AuthorEmail),
-		AuthorUrl:   toNullString(input.AuthorURL),
-		AvatarUrl:   sql.NullString{Valid: false},
+		AuthorEmail: toNullableString(input.AuthorEmail),
+		AuthorURL:   toNullableString(input.AuthorURL),
 		Body:        input.Body,
+		Pictures:    picturesJSON,
 		Status:      "pending",
-		IpHash:      toNullString(ipHash),
-		UserAgent:   toNullString(input.UserAgent),
+		IPHash:      toNullableString(ipHash),
+		UserAgent:   toNullableString(input.UserAgent),
 	}
 
-	// 写入数据库
-	log.Debug().Str("query", "CreateComment").Str("post_id", input.PostID.String()).Msg("创建评论记录")
-	comment, err := s.queries.CreateComment(ctx, params)
-	if err != nil {
-		log.Error().Err(err).Str("post_id", input.PostID.String()).Msg("创建评论失败")
+	// 创建评论
+	if err := s.repo.Create(ctx, comment); err != nil {
+		log.Error().Err(err).Msg("创建评论失败")
 		return nil, fmt.Errorf("创建评论失败: %w", err)
 	}
 
-	log.Info().Str("comment_id", comment.ID.String()).Str("post_id", input.PostID.String()).
-		Str("author_name", input.AuthorName).Msg("评论创建成功")
+	log.Info().Str("comment_id", comment.ID.String()).Msg("评论创建成功")
 	return commentToResponse(comment), nil
 }
 
-// ListApprovedComments 获取文章已审核评论树
-// 查询所有已审核评论，按 path 排序后构建树形结构
-func (s *CommentService) ListApprovedComments(ctx context.Context, postID uuid.UUID) ([]*CommentResponse, error) {
-	log.Info().Str("service", "CommentService").Str("operation", "ListApprovedComments").
-		Str("post_id", postID.String()).Msg("开始查询已审核评论")
-
-	log.Debug().Str("query", "ListApprovedCommentsByPostID").Str("post_id", postID.String()).Msg("执行数据库查询")
-	comments, err := s.queries.ListApprovedCommentsByPostID(ctx, postID)
+// ListCommentsByPostID 查询文章的评论列表
+func (s *CommentService) ListCommentsByPostID(ctx context.Context, postID uuid.UUID) ([]*CommentResponse, error) {
+	comments, err := s.repo.ListByPostID(ctx, postID, "approved")
 	if err != nil {
-		log.Error().Err(err).Str("post_id", postID.String()).Msg("查询评论列表失败")
 		return nil, fmt.Errorf("查询评论列表失败: %w", err)
 	}
 
-	log.Info().Str("post_id", postID.String()).Int("count", len(comments)).Msg("评论查询成功")
-	// 构建树形结构
-	return buildCommentTree(comments), nil
+	responses := make([]*CommentResponse, 0, len(comments))
+	for _, c := range comments {
+		responses = append(responses, commentToResponse(c))
+	}
+
+	return responses, nil
 }
 
-// ListPendingComments 获取待审核评论列表
-func (s *CommentService) ListPendingComments(ctx context.Context, limit, offset int32) ([]*CommentResponse, error) {
-	log.Info().Str("service", "CommentService").Str("operation", "ListPendingComments").
-		Int32("limit", limit).Int32("offset", offset).Msg("开始查询待审核评论")
+// ListApprovedComments 查询文章已审核评论（树形结构）
+func (s *CommentService) ListApprovedComments(ctx context.Context, postID uuid.UUID) ([]*CommentResponse, error) {
+	return s.ListCommentsByPostID(ctx, postID)
+}
 
-	log.Debug().Str("query", "ListPendingComments").Msg("执行数据库查询")
-	comments, err := s.queries.ListPendingComments(ctx, generated.ListPendingCommentsParams{
-		Limit:  limit,
-		Offset: offset,
-	})
+// ListPendingComments 查询待审核评论列表
+func (s *CommentService) ListPendingComments(ctx context.Context, limit, offset int32) ([]*CommentResponse, error) {
+	comments, err := s.repo.ListPending(ctx, limit, offset)
 	if err != nil {
-		log.Error().Err(err).Msg("查询待审核评论失败")
 		return nil, fmt.Errorf("查询待审核评论失败: %w", err)
 	}
 
@@ -225,177 +208,122 @@ func (s *CommentService) ListPendingComments(ctx context.Context, limit, offset 
 	for _, c := range comments {
 		responses = append(responses, commentToResponse(c))
 	}
-	log.Info().Int("count", len(responses)).Msg("待审核评论查询成功")
+
 	return responses, nil
 }
 
 // CountPendingComments 统计待审核评论数量
 func (s *CommentService) CountPendingComments(ctx context.Context) (int64, error) {
-	log.Debug().Str("service", "CommentService").Str("operation", "CountPendingComments").Msg("统计待审核评论数量")
-
-	log.Debug().Str("query", "CountPendingComments").Msg("执行数据库查询")
-	count, err := s.queries.CountPendingComments(ctx)
-	if err != nil {
-		log.Error().Err(err).Msg("统计待审核评论数量失败")
-		return 0, fmt.Errorf("统计待审核评论数量失败: %w", err)
-	}
-	log.Debug().Int64("count", count).Msg("统计完成")
-	return count, nil
+	return s.repo.CountPending(ctx)
 }
 
-// UpdateCommentStatus 审核评论（approved/spam/deleted）
+// UpdateCommentStatus 更新评论状态
 func (s *CommentService) UpdateCommentStatus(ctx context.Context, commentID uuid.UUID, status string) (*CommentResponse, error) {
-	log.Info().Str("service", "CommentService").Str("operation", "UpdateCommentStatus").
-		Str("comment_id", commentID.String()).Str("status", status).Msg("开始更新评论状态")
-
 	// 验证状态值
-	switch status {
-	case "approved", "spam", "deleted":
-	default:
-		log.Warn().Str("status", status).Msg("无效的评论状态")
+	if status != "approved" && status != "spam" && status != "deleted" {
 		return nil, ErrInvalidCommentStatus
 	}
 
-	// 检查评论是否存在
-	log.Debug().Str("query", "GetCommentByID").Str("comment_id", commentID.String()).Msg("检查评论是否存在")
-	_, err := s.queries.GetCommentByID(ctx, commentID)
+	// 查询评论
+	comment, err := s.repo.GetByID(ctx, commentID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			log.Warn().Str("comment_id", commentID.String()).Msg("评论不存在")
-			return nil, ErrCommentNotFound
-		}
-		log.Error().Err(err).Str("comment_id", commentID.String()).Msg("查询评论失败")
-		return nil, fmt.Errorf("查询评论失败: %w", err)
+		return nil, ErrCommentNotFound
 	}
 
 	// 更新状态
-	log.Debug().Str("query", "UpdateCommentStatus").Str("comment_id", commentID.String()).Msg("更新评论状态")
-	comment, err := s.queries.UpdateCommentStatus(ctx, generated.UpdateCommentStatusParams{
-		ID:     commentID,
-		Status: status,
-	})
-	if err != nil {
-		log.Error().Err(err).Str("comment_id", commentID.String()).Msg("更新评论状态失败")
+	comment.Status = status
+	if err := s.repo.UpdateStatus(ctx, commentID, status); err != nil {
 		return nil, fmt.Errorf("更新评论状态失败: %w", err)
 	}
 
-	log.Info().Str("comment_id", commentID.String()).Str("status", status).Msg("评论状态更新成功")
 	return commentToResponse(comment), nil
 }
 
 // DeleteComment 删除评论
 func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID) error {
-	log.Info().Str("service", "CommentService").Str("operation", "DeleteComment").
-		Str("comment_id", commentID.String()).Msg("开始删除评论")
-
-	// 检查评论是否存在
-	log.Debug().Str("query", "GetCommentByID").Str("comment_id", commentID.String()).Msg("检查评论是否存在")
-	_, err := s.queries.GetCommentByID(ctx, commentID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			log.Warn().Str("comment_id", commentID.String()).Msg("评论不存在")
-			return ErrCommentNotFound
-		}
-		log.Error().Err(err).Str("comment_id", commentID.String()).Msg("查询评论失败")
-		return fmt.Errorf("查询评论失败: %w", err)
-	}
-
-	// 执行删除
-	log.Debug().Str("query", "DeleteComment").Str("comment_id", commentID.String()).Msg("执行删除操作")
-	if err := s.queries.DeleteComment(ctx, commentID); err != nil {
-		log.Error().Err(err).Str("comment_id", commentID.String()).Msg("删除评论失败")
-		return fmt.Errorf("删除评论失败: %w", err)
-	}
-
-	log.Info().Str("comment_id", commentID.String()).Msg("评论删除成功")
-	return nil
-}
-
-// --- 内部辅助函数 ---
-
-// hashIP 对 IP 地址进行 SHA256 哈希，保护用户隐私
-func hashIP(ip string) string {
-	if ip == "" {
-		return ""
-	}
-	// 去除端口号（如有）
-	host, _, err := net.SplitHostPort(ip)
-	if err != nil {
-		host = ip
-	}
-	h := sha256.Sum256([]byte(host))
-	return hex.EncodeToString(h[:])
-}
-
-// toNullString 将普通字符串转换为 sql.NullString
-// 空字符串视为 NULL
-func toNullString(s string) sql.NullString {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return sql.NullString{Valid: false}
-	}
-	return sql.NullString{String: s, Valid: true}
+	return s.repo.Delete(ctx, commentID)
 }
 
 // commentToResponse 将数据库模型转换为 API 响应结构
-func commentToResponse(c *generated.Comment) *CommentResponse {
+func commentToResponse(c *model.Comment) *CommentResponse {
+	// 解析图片
+	var pictures []*model.CommentPicture
+	if len(c.Pictures) > 0 {
+		_ = json.Unmarshal(c.Pictures, &pictures)
+	}
+
+	// 解析表情
+	emoteMap := parseEmotesFromContent(c.Body)
+
 	r := &CommentResponse{
 		ID:         c.ID,
 		PostID:     c.PostID,
+		ParentID:   c.ParentID,
 		Path:       c.Path,
 		Depth:      c.Depth,
 		AuthorName: c.AuthorName,
-		Body:       c.Body,
-		Status:     c.Status,
-		CreatedAt:  c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		Content: &CommentContent{
+			Message:  c.Body,
+			Emote:    emoteMap,
+			Pictures: pictures,
+		},
+		Status:    c.Status,
+		CreatedAt: c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
-	if c.ParentID.Valid {
-		r.ParentID = &c.ParentID.UUID
+	if c.AuthorEmail != nil {
+		r.AuthorEmail = *c.AuthorEmail
 	}
-	if c.AuthorEmail.Valid {
-		r.AuthorEmail = c.AuthorEmail.String
+	if c.AuthorURL != nil {
+		r.AuthorURL = *c.AuthorURL
 	}
-	if c.AuthorUrl.Valid {
-		r.AuthorURL = c.AuthorUrl.String
-	}
-	if c.AvatarUrl.Valid {
-		r.AvatarURL = c.AvatarUrl.String
+	if c.AvatarURL != nil {
+		r.AvatarURL = *c.AvatarURL
 	}
 
 	return r
 }
 
-// buildCommentTree 从按 path 排序的扁平评论列表构建树形结构
-// 利用 materialized path 的前缀特性，通过 map 快速定位父节点
-func buildCommentTree(comments []*generated.Comment) []*CommentResponse {
-	if len(comments) == 0 {
-		return []*CommentResponse{}
-	}
+// parseEmotesFromContent 从评论内容中解析表情语法
+func parseEmotesFromContent(content string) map[string]*CommentEmote {
+	emoteMap := make(map[string]*CommentEmote)
 
-	// 将所有评论转为响应结构并建立 ID 到节点的映射
-	nodeMap := make(map[string]*CommentResponse, len(comments))
-	var roots []*CommentResponse
+	// 匹配 [emoji_name] 格式
+	re := regexp.MustCompile(`\[([^\]]+)\]`)
+	matches := re.FindAllStringSubmatch(content, -1)
 
-	for _, c := range comments {
-		node := commentToResponse(c)
-		node.Children = nil
-		nodeMap[c.ID.String()] = node
-	}
-
-	// 遍历所有节点，挂载到父节点下
-	for _, c := range comments {
-		node := nodeMap[c.ID.String()]
-		if c.ParentID.Valid {
-			parentNode, ok := nodeMap[c.ParentID.UUID.String()]
-			if ok {
-				parentNode.Children = append(parentNode.Children, node)
-				continue
-			}
+	for _, match := range matches {
+		if len(match) > 1 {
+			emoteText := match[0] // [smile]
+			// TODO: 从数据库查询表情信息
+			// 暂时返回空映射
+			_ = emoteText
 		}
-		// 没有有效父节点或父节点不在结果集中，作为顶级评论
-		roots = append(roots, node)
 	}
 
-	return roots
+	return emoteMap
+}
+
+// hashIP 对 IP 地址进行 SHA256 哈希
+func hashIP(ip string) string {
+	if ip == "" {
+		return ""
+	}
+
+	parsedIP := net.ParseIP(ip)
+	if parsedIP == nil {
+		return ""
+	}
+
+	hash := sha256.Sum256([]byte(parsedIP.String()))
+	return hex.EncodeToString(hash[:])
+}
+
+// toNullableString 将字符串转换为可空指针
+func toNullableString(s string) *string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	return &s
 }

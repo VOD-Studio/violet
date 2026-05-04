@@ -180,9 +180,9 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 			emojiParams := generated.CreateEmojiParams{
 				GroupID:     group.ID,
 				Name:        emote.Text,
-				Url:         toNullString(localPath),
-				SourceUrl:   toNullString(emote.URL),
-				TextContent: toNullString(""),
+				Url:         toSQLNullString(localPath),
+				SourceUrl:   toSQLNullString(emote.URL),
+				TextContent: toSQLNullString(""),
 				SortOrder:   int32(j + 1),
 			}
 

@@ -63,24 +63,6 @@ type Post struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// Comment 文章评论
-type Comment struct {
-	// ID 评论唯一标识
-	ID uuid.UUID `json:"id"`
-	// PostID 所属文章 ID
-	PostID uuid.UUID `json:"post_id"`
-	// ParentID 父评论 ID，为空表示顶级评论
-	ParentID *uuid.UUID `json:"parent_id"`
-	// Content 评论内容
-	Content string `json:"content"`
-	// Status 评论状态：pending 待审核，approved 已通过，rejected 已拒绝
-	Status string `json:"status"`
-	// CreatedAt 创建时间
-	CreatedAt time.Time `json:"created_at"`
-	// UpdatedAt 更新时间
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
 // Tag 文章标签
 type Tag struct {
 	// ID 标签唯一标识

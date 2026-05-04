@@ -196,8 +196,8 @@ func (s *EmojiService) CreateEmoji(ctx context.Context, input CreateEmojiInput) 
 	params := generated.CreateEmojiParams{
 		GroupID:     input.GroupID,
 		Name:        input.Name,
-		Url:         toNullString(input.URL),
-		TextContent: toNullString(input.TextContent),
+		Url:         toSQLNullString(input.URL),
+		TextContent: toSQLNullString(input.TextContent),
 		SortOrder:   input.SortOrder,
 	}
 
@@ -224,9 +224,9 @@ func (s *EmojiService) UpdateEmoji(ctx context.Context, input UpdateEmojiInput) 
 	params := generated.UpdateEmojiParams{
 		ID:          input.ID,
 		Name:        input.Name,
-		Url:         toNullString(input.URL),
-		SourceUrl:   toNullString(input.SourceURL),
-		TextContent: toNullString(input.TextContent),
+		Url:         toSQLNullString(input.URL),
+		SourceUrl:   toSQLNullString(input.SourceURL),
+		TextContent: toSQLNullString(input.TextContent),
 		SortOrder:   input.SortOrder,
 	}
 

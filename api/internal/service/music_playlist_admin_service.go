@@ -101,8 +101,8 @@ func (s *MusicPlaylistAdminService) CreatePlaylist(ctx context.Context, input Cr
 	// 直接使用 Meting API 的平台名称（netease/tencent）
 	params := generated.CreatePlaylistParams{
 		Title:      playlistInfo.Title,
-		Cover:      toNullString(playlistInfo.Cover),
-		Creator:    toNullString(playlistInfo.Creator),
+		Cover:      toSQLNullString(playlistInfo.Cover),
+		Creator:    toSQLNullString(playlistInfo.Creator),
 		Platform:   playlistInfo.Platform,
 		PlaylistID: playlistInfo.ID,
 		SongCount:  int32(playlistInfo.Count),
@@ -355,8 +355,8 @@ func (s *MusicPlaylistAdminService) CreateCustomPlaylist(ctx context.Context, ti
 
 	params := generated.CreatePlaylistParams{
 		Title:      title,
-		Cover:      toNullString(""),
-		Creator:    toNullString(""),
+		Cover:      toSQLNullString(""),
+		Creator:    toSQLNullString(""),
 		Platform:   "custom",
 		PlaylistID: fmt.Sprintf("custom-%s", uuid.New().String()),
 		SongCount:  0,

@@ -25,6 +25,7 @@ import (
 	"blog-api/internal/migrate"
 	"blog-api/internal/middleware"
 	"blog-api/internal/model"
+	"blog-api/internal/repository"
 	"blog-api/internal/repository/generated"
 	"blog-api/internal/service"
 )
@@ -84,11 +85,14 @@ func main() {
 
 	// --- 服务层初始化 ---
 
+	// 评论使用 GORM repository
+	commentRepo := repository.NewCommentRepository(gormDB)
+
 	emailService := service.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom)
 	authService := service.NewAuthService(queries, redisClient, emailService, cfg)
 	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
-	commentService := service.NewCommentService(queries)
+	commentService := service.NewCommentService(commentRepo)
 	statsService := service.NewStatsService(queries)
 	settingsService := service.NewSettingsService(queries)
 	userService := service.NewUserService(queries)

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
 
 type Comment struct {
@@ -28,6 +29,8 @@ type Comment struct {
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
 	Body        string         `json:"body"`
+	// 评论图片数组，格式：[{"url": "...", "width": 736, "height": 736, "size": 63.165}]
+	Pictures pqtype.NullRawMessage `json:"pictures"`
 }
 
 // 评论表情反应
