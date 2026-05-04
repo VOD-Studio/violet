@@ -2,23 +2,23 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/middleware"
+	"blog-api/internal/pkg/request"
+	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
 // AuthHandler 认证相关接口处理器
 type AuthHandler struct {
-	authService *service.AuthService
-	permService *service.PermissionService
-	validate *validator.Validate
+	authService      *service.AuthService
+	permService      *service.PermissionService
+	validate         *validator.Validate
 	uploadPathPrefix string
 }
 
@@ -142,16 +142,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "Register").Msg("处理请求")
 
 	var req RegisterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := request.DecodeAndValidate(r, h.validate, &req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
-		return
-	}
-
-	// 验证请求参数
-	if err := h.validate.Struct(req); err != nil {
-		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -162,7 +160,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, MessageResponse{
+	response.Created(w, MessageResponse{
 		Message: "注册成功，请检查邮箱获取验证码",
 	})
 	log.Info().Int("status", http.StatusCreated).Str("email", req.Email).Msg("请求处理成功")
@@ -175,16 +173,14 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "VerifyEmail").Msg("处理请求")
 
 	var req VerifyEmailRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := request.DecodeAndValidate(r, h.validate, &req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
-		return
-	}
-
-	// 验证请求参数
-	if err := h.validate.Struct(req); err != nil {
-		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -195,7 +191,7 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "邮箱验证成功",
 	})
 	log.Info().Int("status", http.StatusOK).Str("email", req.Email).Msg("请求处理成功")
@@ -208,16 +204,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "Login").Msg("处理请求")
 
 	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := request.DecodeAndValidate(r, h.validate, &req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
-		return
-	}
-
-	// 验证请求参数
-	if err := h.validate.Struct(req); err != nil {
-		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -229,12 +223,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, TokenResponse{
-		AccessToken:       tokenPair.AccessToken,
-		RefreshToken:      tokenPair.RefreshToken,
-		ExpiresIn:         tokenPair.ExpiresIn,
-		RefreshExpiresIn:  tokenPair.RefreshExpiresIn,
-		TokenType:         "Bearer",
+	response.Success(w, TokenResponse{
+		AccessToken:      tokenPair.AccessToken,
+		RefreshToken:     tokenPair.RefreshToken,
+		ExpiresIn:        tokenPair.ExpiresIn,
+		RefreshExpiresIn: tokenPair.RefreshExpiresIn,
+		TokenType:        "Bearer",
 	})
 	log.Info().Int("status", http.StatusOK).Str("email", req.Email).Msg("请求处理成功")
 }
@@ -246,16 +240,14 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "RefreshToken").Msg("处理请求")
 
 	var req RefreshTokenRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := request.DecodeAndValidate(r, h.validate, &req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
-		return
-	}
-
-	// 验证请求参数
-	if err := h.validate.Struct(req); err != nil {
-		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -267,12 +259,12 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, TokenResponse{
-		AccessToken:       tokenPair.AccessToken,
-		RefreshToken:      tokenPair.RefreshToken,
-		ExpiresIn:         tokenPair.ExpiresIn,
-		RefreshExpiresIn:  tokenPair.RefreshExpiresIn,
-		TokenType:         "Bearer",
+	response.Success(w, TokenResponse{
+		AccessToken:      tokenPair.AccessToken,
+		RefreshToken:     tokenPair.RefreshToken,
+		ExpiresIn:        tokenPair.ExpiresIn,
+		RefreshExpiresIn: tokenPair.RefreshExpiresIn,
+		TokenType:        "Bearer",
 	})
 	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
@@ -287,7 +279,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
 		log.Warn().Msg("参数验证失败：未认证")
-		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
+		response.Unauthorized(w, "未认证")
 		return
 	}
 
@@ -298,7 +290,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "已成功登出",
 	})
 	log.Info().Int("status", http.StatusOK).Str("user_id", userID).Msg("请求处理成功")
@@ -311,16 +303,14 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "ForgotPassword").Msg("处理请求")
 
 	var req ForgotPasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := request.DecodeAndValidate(r, h.validate, &req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
-		return
-	}
-
-	// 验证请求参数
-	if err := h.validate.Struct(req); err != nil {
-		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -332,7 +322,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 始终返回成功，不暴露邮箱是否存在
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "如果该邮箱已注册，您将收到密码重置邮件",
 	})
 	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
@@ -345,16 +335,14 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "ResetPassword").Msg("处理请求")
 
 	var req ResetPasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := request.DecodeAndValidate(r, h.validate, &req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
-		return
-	}
-
-	// 验证请求参数
-	if err := h.validate.Struct(req); err != nil {
-		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -365,7 +353,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "密码重置成功",
 	})
 	log.Info().Int("status", http.StatusOK).Str("email", req.Email).Msg("请求处理成功")
@@ -380,7 +368,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
 		log.Warn().Msg("参数验证失败：未认证")
-		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
+		response.Unauthorized(w, "未认证")
 		return
 	}
 
@@ -412,7 +400,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, UserResponse{
+	response.Success(w, UserResponse{
 		ID:            user.ID.String(),
 		Username:      user.Username,
 		Email:         user.Email,
@@ -451,20 +439,25 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
 		log.Warn().Msg("参数验证失败：未认证")
-		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
+		response.Unauthorized(w, "未认证")
 		return
 	}
 
 	var req UpdateProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -484,7 +477,7 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		bio = user.Bio.String
 	}
 
-	writeJSON(w, http.StatusOK, UserResponse{
+	response.Success(w, UserResponse{
 		ID:            user.ID.String(),
 		Username:      user.Username,
 		Email:         user.Email,
@@ -505,20 +498,25 @@ func (h *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
 		log.Warn().Msg("参数验证失败：未认证")
-		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
+		response.Unauthorized(w, "未认证")
 		return
 	}
 
 	var req UpdatePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -528,7 +526,7 @@ func (h *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "密码修改成功",
 	})
 	log.Info().Int("status", http.StatusOK).Str("user_id", userID).Msg("请求处理成功")
@@ -536,66 +534,26 @@ func (h *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 
 // --- 辅助函数 ---
 
-// writeJSON 写入 JSON 响应
-func writeJSON(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(data)
-}
-
-// writeError 写入统一格式的错误响应
-func writeError(w http.ResponseWriter, statusCode int, errType, message string) {
-	writeJSON(w, statusCode, ErrorResponse{
-		Error:   errType,
-		Message: message,
-	})
-}
-
 // handleServiceError 根据服务层错误类型返回对应的 HTTP 响应
 func handleServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, service.ErrEmailAlreadyExists):
-		writeError(w, http.StatusConflict, "email_exists", err.Error())
+		response.Error(w, http.StatusConflict, "email_exists", err.Error())
 	case errors.Is(err, service.ErrUsernameAlreadyExists):
-		writeError(w, http.StatusConflict, "username_exists", err.Error())
+		response.Error(w, http.StatusConflict, "username_exists", err.Error())
 	case errors.Is(err, service.ErrInvalidCredentials):
-		writeError(w, http.StatusUnauthorized, "invalid_credentials", err.Error())
+		response.Error(w, http.StatusUnauthorized, "invalid_credentials", err.Error())
 	case errors.Is(err, service.ErrAccountNotActivated):
-		writeError(w, http.StatusForbidden, "account_not_activated", err.Error())
+		response.Error(w, http.StatusForbidden, "account_not_activated", err.Error())
 	case errors.Is(err, service.ErrInvalidVerificationCode):
-		writeError(w, http.StatusBadRequest, "invalid_code", err.Error())
+		response.Error(w, http.StatusBadRequest, "invalid_code", err.Error())
 	case errors.Is(err, service.ErrTooManyAttempts):
-		writeError(w, http.StatusTooManyRequests, "too_many_attempts", err.Error())
+		response.Error(w, http.StatusTooManyRequests, "too_many_attempts", err.Error())
 	case errors.Is(err, service.ErrInvalidRefreshToken):
-		writeError(w, http.StatusUnauthorized, "invalid_refresh_token", err.Error())
+		response.Error(w, http.StatusUnauthorized, "invalid_refresh_token", err.Error())
 	case errors.Is(err, service.ErrUserNotFound):
-		writeError(w, http.StatusNotFound, "user_not_found", err.Error())
+		response.Error(w, http.StatusNotFound, "user_not_found", err.Error())
 	default:
-		writeError(w, http.StatusInternalServerError, "internal_error", "服务器内部错误")
+		response.InternalServerError(w, "服务器内部错误")
 	}
-}
-
-// formatValidationErrors 格式化验证错误为可读字符串
-func formatValidationErrors(err error) string {
-	if validationErrors, ok := err.(validator.ValidationErrors); ok {
-		var messages []string
-		for _, e := range validationErrors {
-			switch e.Tag() {
-			case "required":
-				messages = append(messages, e.Field()+" 为必填项")
-			case "email":
-				messages = append(messages, e.Field()+" 必须是有效的邮箱地址")
-			case "min":
-				messages = append(messages, e.Field()+" 长度不能少于 "+e.Param()+" 个字符")
-			case "max":
-				messages = append(messages, e.Field()+" 长度不能超过 "+e.Param()+" 个字符")
-			case "len":
-				messages = append(messages, e.Field()+" 长度必须为 "+e.Param()+" 个字符")
-			default:
-				messages = append(messages, e.Field()+" 验证失败: "+e.Tag())
-			}
-		}
-		return strings.Join(messages, "; ")
-	}
-	return "请求参数验证失败"
 }

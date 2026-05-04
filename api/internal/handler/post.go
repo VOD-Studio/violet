@@ -15,6 +15,8 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/middleware"
+	"blog-api/internal/pkg/request"
+	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
@@ -62,7 +64,7 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListPosts").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询文章列表失败")
+		response.InternalServerError(w, "查询文章列表失败")
 		return
 	}
 
@@ -88,8 +90,8 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 		PublishedAt *string `json:"publishedAt,omitempty"`
 		/** 创建时间 */
 		CreatedAt string `json:"createdAt"`
-			/** 更新时间 */
-			UpdatedAt string `json:"updatedAt"`
+		/** 更新时间 */
+		UpdatedAt string `json:"updatedAt"`
 	}
 
 	items := make([]postListItem, 0, len(result.Posts))
@@ -100,7 +102,7 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 			Slug:       p.Slug,
 			Status:     p.Status,
 			ViewCount:  p.ViewCount,
-				UpdatedAt:  p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:  p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			IsFeatured: p.IsFeatured,
 			CreatedAt:  p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
@@ -119,7 +121,7 @@ func (h *PostHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	// 设置总数响应头
 	w.Header().Set("X-Total-Count", strconv.FormatInt(result.Total, 10))
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"posts": items,
 		"total": result.Total,
 		"page":  result.Page,
@@ -137,11 +139,11 @@ func (h *PostHandler) listByTag(w http.ResponseWriter, r *http.Request, tagSlug 
 	if err != nil {
 		if errors.Is(err, service.ErrTagNotFound) {
 			log.Warn().Str("tag_slug", tagSlug).Msg("标签不存在")
-			writeError(w, http.StatusNotFound, "tag_not_found", "标签不存在")
+			response.Error(w, http.StatusNotFound, "tag_not_found", "标签不存在")
 			return
 		}
 		log.Error().Err(err).Str("operation", "GetTagBySlug").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询标签失败")
+		response.InternalServerError(w, "查询标签失败")
 		return
 	}
 
@@ -153,7 +155,7 @@ func (h *PostHandler) listByTag(w http.ResponseWriter, r *http.Request, tagSlug 
 	})
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListPosts").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询文章列表失败")
+		response.InternalServerError(w, "查询文章列表失败")
 		return
 	}
 
@@ -201,7 +203,7 @@ func (h *PostHandler) listByTag(w http.ResponseWriter, r *http.Request, tagSlug 
 	}
 
 	w.Header().Set("X-Total-Count", strconv.FormatInt(result.Total, 10))
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"posts": items,
 		"total": result.Total,
 		"page":  result.Page,
@@ -210,28 +212,65 @@ func (h *PostHandler) listByTag(w http.ResponseWriter, r *http.Request, tagSlug 
 	log.Info().Int("status", http.StatusOK).Int64("total", result.Total).Msg("请求处理成功")
 }
 
-// GetBySlug 获取文章详情
-// GET /api/v1/posts/:slug
-func (h *PostHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
-	slug := chi.URLParam(r, "slug")
-	log.Info().Str("handler", "GetBySlug").Str("slug", slug).Msg("处理请求")
+// GetByID 按 ID 或 slug 获取文章（统一端点）
+// GET /api/v1/posts/:id
+// 自动识别参数是 UUID 还是 slug
+func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	identifier := chi.URLParam(r, "id")
+	log.Info().Str("handler", "GetByID").Str("identifier", identifier).Msg("处理请求")
 
-	if slug == "" {
-		log.Warn().Msg("参数验证失败：缺少文章 slug")
-		writeError(w, http.StatusBadRequest, "invalid_param", "缺少文章 slug")
+	if identifier == "" {
+		log.Warn().Msg("参数验证失败：缺少文章标识")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "缺少文章标识")
 		return
 	}
 
-	detail, err := h.postService.GetPostBySlug(r.Context(), slug)
-	if err != nil {
-		if errors.Is(err, service.ErrPostNotFound) {
-			log.Warn().Str("slug", slug).Msg("文章不存在")
-			writeError(w, http.StatusNotFound, "not_found", "文章不存在")
+	// 尝试解析为 UUID，如果失败则当作 slug 处理
+	var detail *service.PostDetail
+	var err error
+
+	id, parseErr := uuid.Parse(identifier)
+	if parseErr == nil {
+		// 是有效的 UUID，按 ID 查询
+		log.Debug().Str("type", "uuid").Str("id", identifier).Msg("识别为 UUID")
+		post, err := h.postService.GetPostByID(r.Context(), id)
+		if err != nil {
+			if errors.Is(err, service.ErrPostNotFound) {
+				log.Warn().Str("id", identifier).Msg("文章不存在")
+				response.NotFound(w, "文章不存在")
+				return
+			}
+			log.Error().Err(err).Str("operation", "GetPostByID").Msg("服务调用失败")
+			response.InternalServerError(w, "查询文章失败")
 			return
 		}
-		log.Error().Err(err).Str("operation", "GetPostBySlug").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询文章失败")
-		return
+
+		// 查询文章标签
+		tags, err := h.postService.ListPostTags(r.Context(), post.ID)
+		if err != nil {
+			log.Error().Err(err).Str("operation", "ListPostTags").Msg("服务调用失败")
+			response.InternalServerError(w, "查询标签失败")
+			return
+		}
+
+		detail = &service.PostDetail{
+			Post: post,
+			Tags: tags,
+		}
+	} else {
+		// 不是 UUID，按 slug 查询
+		log.Debug().Str("type", "slug").Str("slug", identifier).Msg("识别为 slug")
+		detail, err = h.postService.GetPostBySlug(r.Context(), identifier)
+		if err != nil {
+			if errors.Is(err, service.ErrPostNotFound) {
+				log.Warn().Str("slug", identifier).Msg("文章不存在")
+				response.NotFound(w, "文章不存在")
+				return
+			}
+			log.Error().Err(err).Str("operation", "GetPostBySlug").Msg("服务调用失败")
+			response.InternalServerError(w, "查询文章失败")
+			return
+		}
 	}
 
 	// 构建响应
@@ -241,9 +280,9 @@ func (h *PostHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 		Slug string `json:"slug"`
 	}
 
-	tags := make([]tagItem, 0, len(detail.Tags))
+	tagItems := make([]tagItem, 0, len(detail.Tags))
 	for _, t := range detail.Tags {
-		tags = append(tags, tagItem{ID: t.ID, Name: t.Name, Slug: t.Slug})
+		tagItems = append(tagItems, tagItem{ID: t.ID, Name: t.Name, Slug: t.Slug})
 	}
 
 	p := detail.Post
@@ -259,8 +298,16 @@ func (h *PostHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 	if p.CoverImage.Valid {
 		coverImage = p.CoverImage.String
 	}
+	seoDescription := ""
+	if p.SeoDescription.Valid {
+		seoDescription = p.SeoDescription.String
+	}
+	seoKeywords := ""
+	if p.SeoKeywords.Valid {
+		seoKeywords = p.SeoKeywords.String
+	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"id":              p.ID.String(),
 		"title":           p.Title,
 		"slug":            p.Slug,
@@ -274,85 +321,11 @@ func (h *PostHandler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 		"publishedAt":     publishedAt,
 		"createdAt":       p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		"updatedAt":       p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		"tags":            tags,
-	})
-	log.Info().Int("status", http.StatusOK).Str("post_id", p.ID.String()).Msg("请求处理成功")
-}
-
-// GetByID 按 ID 获取文章（用于编辑）
-// GET /api/v1/posts/id/:id
-func (h *PostHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	log.Info().Str("handler", "GetByID").Str("id", idStr).Msg("处理请求")
-
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
-		return
-	}
-
-	post, err := h.postService.GetPostByID(r.Context(), id)
-	if err != nil {
-		if errors.Is(err, service.ErrPostNotFound) {
-			log.Warn().Str("id", idStr).Msg("文章不存在")
-			writeError(w, http.StatusNotFound, "not_found", "文章不存在")
-			return
-		}
-		log.Error().Err(err).Str("operation", "GetPostByID").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询文章失败")
-		return
-	}
-
-	// 查询文章标签
-	tags, err := h.postService.ListPostTags(r.Context(), post.ID)
-	if err != nil {
-		log.Error().Err(err).Str("operation", "ListPostTags").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询标签失败")
-		return
-	}
-
-	type tagItem struct {
-		ID   int32  `json:"id"`
-		Name string `json:"name"`
-		Slug string `json:"slug"`
-	}
-
-	tagItems := make([]tagItem, 0, len(tags))
-	for _, t := range tags {
-		tagItems = append(tagItems, tagItem{ID: t.ID, Name: t.Name, Slug: t.Slug})
-	}
-
-	publishedAt := ""
-	if post.PublishedAt.Valid {
-		publishedAt = post.PublishedAt.Time.Format("2006-01-02T15:04:05Z07:00")
-	}
-	excerpt := ""
-	if post.Excerpt.Valid {
-		excerpt = post.Excerpt.String
-	}
-	coverImage := ""
-	if post.CoverImage.Valid {
-		coverImage = post.CoverImage.String
-	}
-
-	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"id":              post.ID.String(),
-		"title":           post.Title,
-		"slug":            post.Slug,
-		"contentMarkdown": post.ContentMd,
-		"contentHtml":     post.ContentHtml,
-		"excerpt":         excerpt,
-		"coverImage":      coverImage,
-		"status":          post.Status,
-		"viewCount":       post.ViewCount,
-		"isFeatured":      post.IsFeatured,
-		"publishedAt":     publishedAt,
-		"createdAt":       post.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		"updatedAt":       post.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		"seoDescription":  seoDescription,
+		"seoKeywords":     seoKeywords,
 		"tags":            tagItems,
 	})
-	log.Info().Int("status", http.StatusOK).Str("post_id", post.ID.String()).Msg("请求处理成功")
+	log.Info().Int("status", http.StatusOK).Str("post_id", p.ID.String()).Msg("请求处理成功")
 }
 
 // Create 创建文章
@@ -364,13 +337,18 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req service.CreatePostRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -379,7 +357,7 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	authorID, err := uuid.Parse(userID)
 	if err != nil {
 		log.Warn().Err(err).Msg("参数验证失败：无效的用户身份")
-		writeError(w, http.StatusUnauthorized, "unauthorized", "无效的用户身份")
+		response.Error(w, http.StatusUnauthorized, "unauthorized", "无效的用户身份")
 		return
 	}
 
@@ -398,7 +376,7 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
+	response.Created(w, map[string]interface{}{
 		"id":          post.ID.String(),
 		"title":       post.Title,
 		"slug":        post.Slug,
@@ -418,14 +396,14 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
 		return
 	}
 
 	var req service.UpdatePostRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
@@ -436,7 +414,7 @@ func (h *PostHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"id":          post.ID.String(),
 		"title":       post.Title,
 		"slug":        post.Slug,
@@ -456,7 +434,7 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
 		return
 	}
 
@@ -466,7 +444,7 @@ func (h *PostHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "文章已删除",
 	})
 	log.Info().Int("status", http.StatusOK).Str("post_id", idStr).Msg("请求处理成功")
@@ -482,7 +460,7 @@ func (h *PostHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
 		return
 	}
 
@@ -491,13 +469,13 @@ func (h *PostHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
 		log.Warn().Err(err).Str("status", req.Status).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", "状态值无效，只能为 draft/published/archived")
+		response.Error(w, http.StatusBadRequest, "validation_error", "状态值无效，只能为 draft/published/archived")
 		return
 	}
 
@@ -508,7 +486,7 @@ func (h *PostHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"id":          post.ID.String(),
 		"title":       post.Title,
 		"status":      post.Status,
@@ -526,7 +504,7 @@ func (h *PostHandler) IncrementView(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的文章 ID")
 		return
 	}
 
@@ -546,11 +524,11 @@ func (h *PostHandler) IncrementView(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.postService.IncrementViewCount(r.Context(), id, ipAddress, userAgent); err != nil {
 		log.Error().Err(err).Str("operation", "IncrementViewCount").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "更新浏览次数失败")
+		response.InternalServerError(w, "更新浏览次数失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "ok",
 	})
 	log.Info().Int("status", http.StatusOK).Str("post_id", idStr).Msg("请求处理成功")
@@ -560,15 +538,15 @@ func (h *PostHandler) IncrementView(w http.ResponseWriter, r *http.Request) {
 func handlePostServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, service.ErrPostNotFound):
-		writeError(w, http.StatusNotFound, "not_found", "文章不存在")
+		response.NotFound(w, "文章不存在")
 	case errors.Is(err, service.ErrSlugExists):
-		writeError(w, http.StatusConflict, "slug_exists", "slug 已存在")
+		response.Error(w, http.StatusConflict, "slug_exists", "slug 已存在")
 	case errors.Is(err, service.ErrInvalidStatus):
-		writeError(w, http.StatusBadRequest, "invalid_status", "无效的文章状态")
+		response.Error(w, http.StatusBadRequest, "invalid_status", "无效的文章状态")
 	case errors.Is(err, service.ErrPostSlugInvalid):
-		writeError(w, http.StatusBadRequest, "invalid_slug", "slug 格式无效")
+		response.Error(w, http.StatusBadRequest, "invalid_slug", "slug 格式无效")
 	default:
-		writeError(w, http.StatusInternalServerError, "internal_error", "服务器内部错误")
+		response.InternalServerError(w, "服务器内部错误")
 	}
 }
 
@@ -579,4 +557,3 @@ func formatPublishedAt(t sql.NullTime) string {
 	}
 	return ""
 }
-

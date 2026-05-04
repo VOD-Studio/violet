@@ -11,6 +11,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
 
+	"blog-api/internal/pkg/request"
+	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
@@ -36,7 +38,7 @@ func (h *TagHandler) List(w http.ResponseWriter, r *http.Request) {
 	tags, err := h.tagService.ListTags(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListTags").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询标签列表失败")
+		response.InternalServerError(w, "查询标签列表失败")
 		return
 	}
 
@@ -51,7 +53,7 @@ func (h *TagHandler) List(w http.ResponseWriter, r *http.Request) {
 		items = append(items, tagItem{ID: t.ID, Name: t.Name, Slug: t.Slug})
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"tags": items,
 	})
 	log.Info().Int("status", http.StatusOK).Int("count", len(items)).Msg("请求处理成功")
@@ -68,13 +70,18 @@ func (h *TagHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -82,15 +89,15 @@ func (h *TagHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, service.ErrTagExists) {
 			log.Warn().Str("name", req.Name).Msg("标签已存在")
-			writeError(w, http.StatusConflict, "tag_exists", "标签已存在")
+			response.Error(w, http.StatusConflict, "tag_exists", "标签已存在")
 			return
 		}
 		log.Error().Err(err).Str("operation", "CreateTag").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "创建标签失败")
+		response.InternalServerError(w, "创建标签失败")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
+	response.Created(w, map[string]interface{}{
 		"id":   tag.ID,
 		"name": tag.Name,
 		"slug": tag.Slug,
@@ -108,22 +115,22 @@ func (h *TagHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的标签 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的标签 ID")
 		return
 	}
 
 	if err := h.tagService.DeleteTag(r.Context(), int32(id)); err != nil {
 		if errors.Is(err, service.ErrTagNotFound) {
 			log.Warn().Str("id", idStr).Msg("标签不存在")
-			writeError(w, http.StatusNotFound, "not_found", "标签不存在")
+			response.NotFound(w, "标签不存在")
 			return
 		}
 		log.Error().Err(err).Str("operation", "DeleteTag").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "删除标签失败")
+		response.InternalServerError(w, "删除标签失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "标签已删除",
 	})
 	log.Info().Int("status", http.StatusOK).Str("tag_id", idStr).Msg("请求处理成功")

@@ -7,6 +7,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"blog-api/internal/pkg/request"
+	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
@@ -39,7 +41,7 @@ func (h *SettingsHandler) GetPublicSettings(w http.ResponseWriter, r *http.Reque
 	settings, err := h.settingsService.GetAllSettings(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "GetAllSettings").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取站点设置失败")
+		response.InternalServerError(w, "获取站点设置失败")
 		return
 	}
 
@@ -50,7 +52,7 @@ func (h *SettingsHandler) GetPublicSettings(w http.ResponseWriter, r *http.Reque
 		FooterText:      settings.FooterText,
 	}
 
-	writeJSON(w, http.StatusOK, public)
+	response.Success(w, public)
 	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
@@ -63,11 +65,11 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	settings, err := h.settingsService.GetAllSettings(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "GetAllSettings").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取站点设置失败")
+		response.InternalServerError(w, "获取站点设置失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, settings)
+	response.Success(w, settings)
 	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
@@ -80,17 +82,17 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 	var req service.UpdateSettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	settings, err := h.settingsService.UpdateSettings(r.Context(), req)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "UpdateSettings").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "更新站点设置失败")
+		response.InternalServerError(w, "更新站点设置失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, settings)
+	response.Success(w, settings)
 	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }

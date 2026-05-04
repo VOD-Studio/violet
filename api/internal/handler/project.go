@@ -12,6 +12,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 
+	"blog-api/internal/pkg/request"
+	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
@@ -36,7 +38,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 	projects, err := h.projectService.ListProjects(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListProjects").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询项目列表失败")
+		response.InternalServerError(w, "查询项目列表失败")
 		return
 	}
 
@@ -78,7 +80,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 		items = append(items, item)
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"projects": items,
 	})
 	log.Info().Int("status", http.StatusOK).Int("count", len(items)).Msg("请求处理成功")
@@ -90,18 +92,18 @@ func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的项目 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的项目 ID")
 		return
 	}
 
 	project, err := h.projectService.GetProjectByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, service.ErrProjectNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "项目不存在")
+			response.NotFound(w, "项目不存在")
 			return
 		}
 		log.Error().Err(err).Str("operation", "GetProjectByID").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询项目失败")
+		response.InternalServerError(w, "查询项目失败")
 		return
 	}
 
@@ -122,7 +124,7 @@ func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		imageURL = project.ImageUrl.String
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"id":          project.ID.String(),
 		"title":       project.Title,
 		"description": description,
@@ -143,24 +145,29 @@ func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req service.CreateProjectRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
 	project, err := h.projectService.CreateProject(r.Context(), req)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "CreateProject").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "创建项目失败")
+		response.InternalServerError(w, "创建项目失败")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, map[string]interface{}{
+	response.Created(w, map[string]interface{}{
 		"id":         project.ID.String(),
 		"title":      project.Title,
 		"sort_order": project.SortOrder,
@@ -175,29 +182,29 @@ func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的项目 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的项目 ID")
 		return
 	}
 
 	var req service.UpdateProjectRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	project, err := h.projectService.UpdateProject(r.Context(), id, req)
 	if err != nil {
 		if errors.Is(err, service.ErrProjectNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "项目不存在")
+			response.NotFound(w, "项目不存在")
 			return
 		}
 		log.Error().Err(err).Str("operation", "UpdateProject").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "更新项目失败")
+		response.InternalServerError(w, "更新项目失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"id":         project.ID.String(),
 		"title":      project.Title,
 		"sort_order": project.SortOrder,
@@ -212,21 +219,21 @@ func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的项目 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的项目 ID")
 		return
 	}
 
 	if err := h.projectService.DeleteProject(r.Context(), id); err != nil {
 		if errors.Is(err, service.ErrProjectNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "项目不存在")
+			response.NotFound(w, "项目不存在")
 			return
 		}
 		log.Error().Err(err).Str("operation", "DeleteProject").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "删除项目失败")
+		response.InternalServerError(w, "删除项目失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "项目已删除",
 	})
 	log.Info().Int("status", http.StatusOK).Str("project_id", idStr).Msg("请求处理成功")

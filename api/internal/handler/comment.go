@@ -13,6 +13,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 
+	"blog-api/internal/pkg/request"
+	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
@@ -93,7 +95,7 @@ func (h *CommentHandler) ListApprovedComments(w http.ResponseWriter, r *http.Req
 	postID, err := uuid.Parse(postIDStr)
 	if err != nil {
 		log.Warn().Err(err).Str("post_id", postIDStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_id", "无效的文章 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_id", "无效的文章 ID")
 		return
 	}
 
@@ -101,12 +103,12 @@ func (h *CommentHandler) ListApprovedComments(w http.ResponseWriter, r *http.Req
 	comments, err := h.commentService.ListApprovedComments(r.Context(), postID)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListApprovedComments").Str("post_id", postID.String()).Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取评论失败")
+		response.InternalServerError(w, "获取评论失败")
 		return
 	}
 
 	log.Info().Int("status", http.StatusOK).Int("count", len(comments)).Msg("请求处理成功")
-	writeJSON(w, http.StatusOK, CommentListResponse{
+	response.Success(w, CommentListResponse{
 		Comments: comments,
 		Total:    len(comments),
 	})
@@ -123,7 +125,7 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	postID, err := uuid.Parse(postIDStr)
 	if err != nil {
 		log.Warn().Err(err).Str("post_id", postIDStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_id", "无效的文章 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_id", "无效的文章 ID")
 		return
 	}
 
@@ -131,14 +133,19 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	var req CreateCommentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -148,7 +155,7 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 		pid, err := uuid.Parse(*req.ParentID)
 		if err != nil {
 			log.Warn().Err(err).Str("parent_id", *req.ParentID).Msg("参数验证失败")
-			writeError(w, http.StatusBadRequest, "invalid_parent_id", "无效的父评论 ID")
+			response.Error(w, http.StatusBadRequest, "invalid_parent_id", "无效的父评论 ID")
 			return
 		}
 		parentID = &pid
@@ -184,7 +191,7 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Info().Int("status", http.StatusCreated).Str("comment_id", comment.ID.String()).Msg("请求处理成功")
-	writeJSON(w, http.StatusCreated, comment)
+	response.Created(w, comment)
 }
 
 // ListPendingComments 获取待审核评论列表
@@ -209,7 +216,7 @@ func (h *CommentHandler) ListPendingComments(w http.ResponseWriter, r *http.Requ
 	comments, err := h.commentService.ListPendingComments(r.Context(), int32(pageSize), offset)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListPendingComments").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取待审核评论失败")
+		response.InternalServerError(w, "获取待审核评论失败")
 		return
 	}
 
@@ -217,12 +224,12 @@ func (h *CommentHandler) ListPendingComments(w http.ResponseWriter, r *http.Requ
 	total, err := h.commentService.CountPendingComments(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "CountPendingComments").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取评论统计失败")
+		response.InternalServerError(w, "获取评论统计失败")
 		return
 	}
 
 	log.Info().Int("status", http.StatusOK).Int("page", page).Int("count", len(comments)).Msg("请求处理成功")
-	writeJSON(w, http.StatusOK, PendingCommentsResponse{
+	response.Success(w, PendingCommentsResponse{
 		Comments: comments,
 		Total:    total,
 		Page:     page,
@@ -239,12 +246,12 @@ func (h *CommentHandler) CountPendingComments(w http.ResponseWriter, r *http.Req
 	count, err := h.commentService.CountPendingComments(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "CountPendingComments").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取评论统计失败")
+		response.InternalServerError(w, "获取评论统计失败")
 		return
 	}
 
 	log.Info().Int("status", http.StatusOK).Int64("count", count).Msg("请求处理成功")
-	writeJSON(w, http.StatusOK, CountResponse{Count: count})
+	response.Success(w, CountResponse{Count: count})
 }
 
 // UpdateCommentStatus 审核评论
@@ -258,7 +265,7 @@ func (h *CommentHandler) UpdateCommentStatus(w http.ResponseWriter, r *http.Requ
 	commentID, err := uuid.Parse(commentIDStr)
 	if err != nil {
 		log.Warn().Err(err).Str("comment_id", commentIDStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_id", "无效的评论 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_id", "无效的评论 ID")
 		return
 	}
 
@@ -266,14 +273,19 @@ func (h *CommentHandler) UpdateCommentStatus(w http.ResponseWriter, r *http.Requ
 	var req UpdateCommentStatusRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
 		return
 	}
 
@@ -286,7 +298,7 @@ func (h *CommentHandler) UpdateCommentStatus(w http.ResponseWriter, r *http.Requ
 	}
 
 	log.Info().Int("status", http.StatusOK).Str("comment_id", commentID.String()).Str("new_status", req.Status).Msg("请求处理成功")
-	writeJSON(w, http.StatusOK, comment)
+	response.Success(w, comment)
 }
 
 // DeleteComment 删除评论
@@ -300,7 +312,7 @@ func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	commentID, err := uuid.Parse(commentIDStr)
 	if err != nil {
 		log.Warn().Err(err).Str("comment_id", commentIDStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_id", "无效的评论 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_id", "无效的评论 ID")
 		return
 	}
 
@@ -312,7 +324,7 @@ func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Info().Int("status", http.StatusOK).Str("comment_id", commentID.String()).Msg("请求处理成功")
-	writeJSON(w, http.StatusOK, MessageResponse{
+	response.Success(w, MessageResponse{
 		Message: "评论已删除",
 	})
 }
@@ -321,16 +333,16 @@ func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
 func handleCommentError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, service.ErrCommentNotFound):
-		writeError(w, http.StatusNotFound, "comment_not_found", err.Error())
+		response.Error(w, http.StatusNotFound, "comment_not_found", err.Error())
 	case errors.Is(err, service.ErrPostNotFound):
-		writeError(w, http.StatusNotFound, "post_not_found", err.Error())
+		response.Error(w, http.StatusNotFound, "post_not_found", err.Error())
 	case errors.Is(err, service.ErrInvalidParentComment):
-		writeError(w, http.StatusBadRequest, "invalid_parent", err.Error())
+		response.Error(w, http.StatusBadRequest, "invalid_parent", err.Error())
 	case errors.Is(err, service.ErrCommentTooDeep):
-		writeError(w, http.StatusBadRequest, "too_deep", err.Error())
+		response.Error(w, http.StatusBadRequest, "too_deep", err.Error())
 	case errors.Is(err, service.ErrInvalidCommentStatus):
-		writeError(w, http.StatusBadRequest, "invalid_status", err.Error())
+		response.Error(w, http.StatusBadRequest, "invalid_status", err.Error())
 	default:
-		writeError(w, http.StatusInternalServerError, "internal_error", "服务器内部错误")
+		response.InternalServerError(w, "服务器内部错误")
 	}
 }

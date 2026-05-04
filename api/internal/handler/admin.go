@@ -6,6 +6,8 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"blog-api/internal/pkg/request"
+	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
@@ -31,11 +33,11 @@ func (h *AdminHandler) GetDashboardStats(w http.ResponseWriter, r *http.Request)
 	stats, err := h.statsService.GetDashboardStats(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "GetDashboardStats").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取统计数据失败")
+		response.InternalServerError(w, "获取统计数据失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, stats)
+	response.Success(w, stats)
 	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
@@ -48,10 +50,10 @@ func (h *AdminHandler) GetViewTrends(w http.ResponseWriter, r *http.Request) {
 	trends, err := h.statsService.GetViewTrends(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "GetViewTrends").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取浏览量趋势失败")
+		response.InternalServerError(w, "获取浏览量趋势失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, trends)
+	response.Success(w, trends)
 	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }

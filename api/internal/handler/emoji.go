@@ -12,6 +12,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"blog-api/internal/pkg/request"
+	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
@@ -37,12 +39,12 @@ func (h *EmojiHandler) GetAllEmojis(w http.ResponseWriter, r *http.Request) {
 	groups, err := h.emojiService.GetAllEmojisForPublic(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "GetAllEmojisForPublic").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取表情列表失败")
+		response.InternalServerError(w, "获取表情列表失败")
 		return
 	}
 
 	log.Info().Int("status", http.StatusOK).Int("group_count", len(groups)).Msg("请求处理成功")
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"groups": groups,
 	})
 }
@@ -52,21 +54,21 @@ func (h *EmojiHandler) GetAllEmojis(w http.ResponseWriter, r *http.Request) {
 func (h *EmojiHandler) GetEmojiGroupByName(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	if name == "" {
-		writeError(w, http.StatusBadRequest, "invalid_param", "缺少分组名称")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "缺少分组名称")
 		return
 	}
 
 	group, err := h.emojiService.GetEmojiGroupByName(r.Context(), name)
 	if err != nil {
 		if errors.Is(err, service.ErrEmojiGroupNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "表情分组不存在")
+			response.NotFound(w, "表情分组不存在")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取表情分组失败")
+		response.InternalServerError(w, "获取表情分组失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, group)
+	response.Success(w, group)
 }
 
 // --- 管理接口：分组操作 ---
@@ -77,11 +79,11 @@ func (h *EmojiHandler) GetEmojiGroupByName(w http.ResponseWriter, r *http.Reques
 func (h *EmojiHandler) ListAllGroups(w http.ResponseWriter, r *http.Request) {
 	groups, err := h.emojiService.ListAllEmojiGroups(r.Context())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取表情分组列表失败")
+		response.InternalServerError(w, "获取表情分组列表失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"groups": groups,
 	})
 }
@@ -101,13 +103,13 @@ func (h *EmojiHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if req.Name == "" {
 		log.Warn().Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "validation_error", "名称为必填项")
+		response.Error(w, http.StatusBadRequest, "validation_error", "名称为必填项")
 		return
 	}
 
@@ -125,12 +127,12 @@ func (h *EmojiHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	group, err := h.emojiService.CreateEmojiGroup(r.Context(), input)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "CreateEmojiGroup").Str("name", req.Name).Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "创建表情分组失败")
+		response.InternalServerError(w, "创建表情分组失败")
 		return
 	}
 
 	log.Info().Int("status", http.StatusOK).Str("group_name", req.Name).Msg("请求处理成功")
-	writeJSON(w, http.StatusOK, group)
+	response.Success(w, group)
 }
 
 // UpdateGroup 更新表情分组
@@ -140,7 +142,7 @@ func (h *EmojiHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id := parseInt32(idStr)
 	if id == 0 {
-		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "ID 无效")
 		return
 	}
 
@@ -153,14 +155,14 @@ func (h *EmojiHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	// 获取现有数据
 	existing, err := h.emojiService.ListAllEmojiGroups(r.Context())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取表情分组失败")
+		response.InternalServerError(w, "获取表情分组失败")
 		return
 	}
 
@@ -173,7 +175,7 @@ func (h *EmojiHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if found == nil {
-		writeError(w, http.StatusNotFound, "not_found", "表情分组不存在")
+		response.NotFound(w, "表情分组不存在")
 		return
 	}
 
@@ -201,11 +203,11 @@ func (h *EmojiHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 
 	group, err := h.emojiService.UpdateEmojiGroup(r.Context(), input)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal_error", "更新表情分组失败")
+		response.InternalServerError(w, "更新表情分组失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, group)
+	response.Success(w, group)
 }
 
 // DeleteGroup 删除表情分组
@@ -218,19 +220,19 @@ func (h *EmojiHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	id := parseInt32(idStr)
 	if id == 0 {
 		log.Warn().Str("id", idStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "ID 无效")
 		return
 	}
 
 	err := h.emojiService.DeleteEmojiGroup(r.Context(), id)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "DeleteEmojiGroup").Int32("group_id", id).Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "删除表情分组失败")
+		response.InternalServerError(w, "删除表情分组失败")
 		return
 	}
 
 	log.Info().Int("status", http.StatusOK).Int32("group_id", id).Msg("请求处理成功")
-	writeJSON(w, http.StatusOK, map[string]string{"message": "删除成功"})
+	response.Success(w, map[string]string{"message": "删除成功"})
 }
 
 // BatchUpdateStatus 批量更新分组启用状态
@@ -238,27 +240,27 @@ func (h *EmojiHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 // 需要管理员权限
 func (h *EmojiHandler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		IDs      []int32 `json:"ids"`
+		IDs       []int32 `json:"ids"`
 		IsEnabled bool    `json:"is_enabled"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if len(req.IDs) == 0 {
-		writeError(w, http.StatusBadRequest, "validation_error", "IDs 不能为空")
+		response.Error(w, http.StatusBadRequest, "validation_error", "IDs 不能为空")
 		return
 	}
 
 	count, err := h.emojiService.BatchUpdateGroupsStatus(r.Context(), req.IDs, req.IsEnabled)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal_error", "批量更新失败")
+		response.InternalServerError(w, "批量更新失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"updated": count,
 		"message": "批量更新成功",
 	})
@@ -271,17 +273,17 @@ func (h *EmojiHandler) ListGroupEmojis(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id := parseInt32(idStr)
 	if id == 0 {
-		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "ID 无效")
 		return
 	}
 
 	emojis, err := h.emojiService.ListEmojisByGroup(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal_error", "获取表情列表失败")
+		response.InternalServerError(w, "获取表情列表失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"emojis": emojis,
 	})
 }
@@ -293,7 +295,7 @@ func (h *EmojiHandler) CreateEmoji(w http.ResponseWriter, r *http.Request) {
 	groupIDStr := chi.URLParam(r, "id")
 	groupID := parseInt32(groupIDStr)
 	if groupID == 0 {
-		writeError(w, http.StatusBadRequest, "invalid_param", "分组 ID 无效")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "分组 ID 无效")
 		return
 	}
 
@@ -305,12 +307,12 @@ func (h *EmojiHandler) CreateEmoji(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if req.Name == "" {
-		writeError(w, http.StatusBadRequest, "validation_error", "名称为必填项")
+		response.Error(w, http.StatusBadRequest, "validation_error", "名称为必填项")
 		return
 	}
 
@@ -324,11 +326,11 @@ func (h *EmojiHandler) CreateEmoji(w http.ResponseWriter, r *http.Request) {
 
 	emoji, err := h.emojiService.CreateEmoji(r.Context(), input)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal_error", "创建表情失败")
+		response.InternalServerError(w, "创建表情失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, emoji)
+	response.Success(w, emoji)
 }
 
 // --- 管理接口：表情操作 ---
@@ -340,7 +342,7 @@ func (h *EmojiHandler) UpdateEmoji(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id := parseInt32(idStr)
 	if id == 0 {
-		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "ID 无效")
 		return
 	}
 
@@ -352,14 +354,14 @@ func (h *EmojiHandler) UpdateEmoji(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	// 获取现有数据
 	existing, err := h.emojiService.GetEmojiByID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "not_found", "表情不存在")
+		response.NotFound(w, "表情不存在")
 		return
 	}
 
@@ -387,11 +389,11 @@ func (h *EmojiHandler) UpdateEmoji(w http.ResponseWriter, r *http.Request) {
 
 	emoji, err := h.emojiService.UpdateEmoji(r.Context(), input)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal_error", "更新表情失败")
+		response.InternalServerError(w, "更新表情失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, emoji)
+	response.Success(w, emoji)
 }
 
 // DeleteEmoji 删除表情
@@ -401,17 +403,17 @@ func (h *EmojiHandler) DeleteEmoji(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id := parseInt32(idStr)
 	if id == 0 {
-		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "ID 无效")
 		return
 	}
 
 	err := h.emojiService.DeleteEmoji(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal_error", "删除表情失败")
+		response.InternalServerError(w, "删除表情失败")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"message": "删除成功"})
+	response.Success(w, map[string]string{"message": "删除成功"})
 }
 
 // --- 表情文件上传（独立存储）---
@@ -430,7 +432,7 @@ func (h *EmojiHandler) UploadEmoji(w http.ResponseWriter, r *http.Request) {
 	// 解析 multipart 表单
 	if err := r.ParseMultipartForm(maxSize); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "file_too_large", "文件大小不能超过 10MB")
+		response.Error(w, http.StatusBadRequest, "file_too_large", "文件大小不能超过 10MB")
 		return
 	}
 
@@ -438,7 +440,7 @@ func (h *EmojiHandler) UploadEmoji(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_file", "缺少上传文件")
+		response.Error(w, http.StatusBadRequest, "invalid_file", "缺少上传文件")
 		return
 	}
 	defer file.Close()
@@ -457,7 +459,7 @@ func (h *EmojiHandler) UploadEmoji(w http.ResponseWriter, r *http.Request) {
 	}
 	if !allowedExts[ext] {
 		log.Warn().Str("ext", ext).Str("filename", header.Filename).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_type", "不支持的表情文件格式，仅支持 JPG、PNG、GIF、WebP、SVG")
+		response.Error(w, http.StatusBadRequest, "invalid_type", "不支持的表情文件格式，仅支持 JPG、PNG、GIF、WebP、SVG")
 		return
 	}
 
@@ -466,21 +468,21 @@ func (h *EmojiHandler) UploadEmoji(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidEmojiType) {
 			log.Warn().Err(err).Str("filename", header.Filename).Msg("参数验证失败")
-			writeError(w, http.StatusBadRequest, "invalid_type", err.Error())
+			response.Error(w, http.StatusBadRequest, "invalid_type", err.Error())
 			return
 		}
 		if errors.Is(err, service.ErrEmojiTooLarge) {
 			log.Warn().Err(err).Int64("size", header.Size).Msg("参数验证失败")
-			writeError(w, http.StatusBadRequest, "file_too_large", err.Error())
+			response.Error(w, http.StatusBadRequest, "file_too_large", err.Error())
 			return
 		}
 		log.Error().Err(err).Str("operation", "UploadEmoji").Str("filename", header.Filename).Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "保存表情文件失败")
+		response.InternalServerError(w, "保存表情文件失败")
 		return
 	}
 
 	log.Info().Int("status", http.StatusOK).Str("filename", header.Filename).Str("url", result.URL).Msg("请求处理成功")
-	writeJSON(w, http.StatusOK, result)
+	response.Success(w, result)
 }
 
 // --- 辅助函数 ---

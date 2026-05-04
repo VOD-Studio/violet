@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
+	"blog-api/internal/pkg/request"
+	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
@@ -49,7 +51,7 @@ func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request
 	result, err := h.userService.ListUsers(r.Context(), page, limit)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListUsers").Msg("服务调用失败")
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询用户列表失败")
+		response.InternalServerError(w, "查询用户列表失败")
 		return
 	}
 
@@ -66,7 +68,7 @@ func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request
 		})
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	response.Success(w, map[string]interface{}{
 		"users": items,
 		"total": result.Total,
 		"page":  result.Page,
@@ -85,7 +87,7 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 	targetID, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID")
 		return
 	}
 
@@ -94,13 +96,13 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
 	if req.Role != "user" && req.Role != "admin" && req.Role != "superadmin" {
 		log.Warn().Str("role", req.Role).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_role", "角色值无效，只能为 user 或 admin")
+		response.Error(w, http.StatusBadRequest, "invalid_role", "角色值无效，只能为 user 或 admin")
 		return
 	}
 
@@ -111,7 +113,7 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	writeJSON(w, http.StatusOK, userResponse{
+	response.Success(w, userResponse{
 		ID:            user.ID.String(),
 		Username:      user.Username,
 		Email:         user.Email,
@@ -133,7 +135,7 @@ func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.
 	targetID, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID")
 		return
 	}
 
@@ -142,7 +144,7 @@ func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数验证失败")
-		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
+		response.BadRequest(w, err.Error())
 		return
 	}
 
@@ -153,7 +155,7 @@ func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.
 		return
 	}
 
-	writeJSON(w, http.StatusOK, userResponse{
+	response.Success(w, userResponse{
 		ID:            user.ID.String(),
 		Username:      user.Username,
 		Email:         user.Email,
@@ -169,10 +171,10 @@ func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.
 func handleUserServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, service.ErrUserNotFound):
-		writeError(w, http.StatusNotFound, "user_not_found", "用户不存在")
+		response.Error(w, http.StatusNotFound, "user_not_found", "用户不存在")
 	case errors.Is(err, service.ErrInvalidRole):
-		writeError(w, http.StatusBadRequest, "invalid_role", err.Error())
+		response.Error(w, http.StatusBadRequest, "invalid_role", err.Error())
 	default:
-		writeError(w, http.StatusInternalServerError, "internal_error", "服务器内部错误")
+		response.InternalServerError(w, "服务器内部错误")
 	}
 }
