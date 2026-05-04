@@ -9,7 +9,7 @@ import type {
 export function usePlaylists() {
   return useQuery({
     queryKey: ["admin", "playlists"],
-    queryFn: () => api.get<PlaylistListResponse>("/admin/playlists"),
+    queryFn: () => api.get<PlaylistListResponse>("/admin/music/playlists"),
   });
 }
 
@@ -27,7 +27,7 @@ export function useCreatePlaylist() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (url: string) =>
-      api.post<PlaylistItem>("/admin/playlists", { url }),
+      api.post<PlaylistItem>("/admin/music/playlists", { url }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "playlists"] }),
   });
 }
@@ -36,7 +36,7 @@ export function useUpdatePlaylist() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
-      api.patch(`/admin/playlists/${id}`, { is_active }),
+      api.patch(`/admin/music/playlists/${id}`, { is_active }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "playlists"] }),
   });
 }
@@ -56,7 +56,7 @@ export function useUpdatePlayerVersion() {
 export function useDeletePlaylist() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.del(`/admin/playlists/${id}`),
+    mutationFn: (id: string) => api.del(`/admin/music/playlists/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "playlists"] }),
   });
 }
@@ -65,7 +65,7 @@ export function useCreateCustomPlaylist() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (title: string) =>
-      api.post<PlaylistItem>("/admin/playlists/custom", { title }),
+      api.post<PlaylistItem>("/admin/music/playlists/custom", { title }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "playlists"] }),
   });
 }
@@ -77,7 +77,7 @@ export function useUploadSong(playlistId: string) {
       const formData = new FormData();
       formData.append("audio", file);
       return api.post<PlaylistItem>(
-        `/admin/playlists/${playlistId}/songs`,
+        `/admin/music/playlists/${playlistId}/songs`,
         formData,
       );
     },
@@ -89,7 +89,7 @@ export function useDeleteSong(playlistId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (songIndex: number) =>
-      api.del<PlaylistItem>(`/admin/playlists/${playlistId}/songs/${songIndex}`),
+      api.del<PlaylistItem>(`/admin/music/playlists/${playlistId}/songs/${songIndex}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "playlists"] }),
   });
 }
@@ -105,7 +105,7 @@ export function useUpdateSong(playlistId: string) {
       data: { title: string; artist: string; cover: string; lrc: string };
     }) =>
       api.patch<PlaylistItem>(
-        `/admin/playlists/${playlistId}/songs/${index}`,
+        `/admin/music/playlists/${playlistId}/songs/${index}`,
         data,
       ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "playlists"] }),
