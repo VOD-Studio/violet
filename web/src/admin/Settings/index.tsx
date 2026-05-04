@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useSiteSettings, useSaveSettings } from "@/hooks/useAdmin";
-import type { SiteSettings } from "@/hooks/useAdmin";
+import { useSiteSettings, useSaveSettings } from "@/hooks/useAdminSettings";
+import type { SiteSettings } from "@/hooks/useAdminSettings";
 import { Button } from "@/components/ui/button";
 import { ErrorFallback } from "@/components/shared/ErrorFallback";
 import { useToast } from "@/components/shared/Toast";

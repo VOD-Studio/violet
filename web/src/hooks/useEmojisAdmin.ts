@@ -80,10 +80,10 @@ export interface BatchDeleteEmojisInput {
  */
 export function useEmojiGroups() {
   return useQuery({
-    queryKey: ["admin", "emoji-groups"],
+    queryKey: ["admin", "emojis", "groups"],
     queryFn: async () => {
       const res = await api.get<{ groups: EmojiGroupAdmin[] }>(
-        "/admin/emoji-groups",
+        "/admin/emojis/groups",
       )
       return res.groups ?? []
     },
@@ -99,7 +99,7 @@ export function useCreateEmojiGroup() {
 
   return useMutation({
     mutationFn: (data: CreateEmojiGroupInput) => {
-      return api.post<EmojiGroupAdmin>("/admin/emoji-groups", {
+      return api.post<EmojiGroupAdmin>("/admin/emojis/groups", {
         name: data.name,
         source: data.source || "custom",
         sort_order: data.sortOrder || 0,
@@ -107,7 +107,7 @@ export function useCreateEmojiGroup() {
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "emoji-groups"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "emojis", "groups"] })
     },
   })
 }
@@ -131,10 +131,10 @@ export function useUpdateEmojiGroup() {
       if (data.source !== undefined) payload.source = data.source
       if (data.sort_order !== undefined) payload.sort_order = data.sort_order
       if (data.is_enabled !== undefined) payload.is_enabled = data.is_enabled
-      return api.patch(`/admin/emoji-groups/${id}`, payload)
+      return api.patch(`/admin/emojis/groups/${id}`, payload)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "emoji-groups"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "emojis", "groups"] })
     },
   })
 }
@@ -146,9 +146,9 @@ export function useDeleteEmojiGroup() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: number) => api.del(`/admin/emoji-groups/${id}`),
+    mutationFn: (id: number) => api.del(`/admin/emojis/groups/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "emoji-groups"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "emojis", "groups"] })
     },
   })
 }
@@ -163,7 +163,7 @@ export function useEmojisByGroup(groupId: number) {
     queryKey: ["admin", "emojis", groupId],
     queryFn: async () => {
       const res = await api.get<{ emojis: EmojiAdmin[] }>(
-        `/admin/emoji-groups/${groupId}/emojis`,
+        `/admin/emojis/groups/${groupId}/emojis`,
       )
       return res.emojis ?? []
     },
@@ -184,7 +184,7 @@ export function useEmojisByGroupPaginated(
     queryKey: ["admin", "emojis", groupId, "paginated", page, pageSize],
     queryFn: async () => {
       const res = await api.get<PaginatedResponse<EmojiAdmin>>(
-        `/admin/emoji-groups/${groupId}/emojis/paginated`,
+        `/admin/emojis/groups/${groupId}/emojis/paginated`,
         { page, pageSize },
       )
       return res
@@ -201,7 +201,7 @@ export function useEmojiCount(groupId: number) {
     queryKey: ["admin", "emojis", groupId, "count"],
     queryFn: async () => {
       const res = await api.get<{ total: number }>(
-        `/admin/emoji-groups/${groupId}/emojis/count`,
+        `/admin/emojis/groups/${groupId}/emojis/count`,
       )
       return res.total ?? 0
     },
@@ -223,7 +223,7 @@ export function useCreateEmoji() {
       groupId: number
       data: CreateEmojiInput
     }) => {
-      return api.post<EmojiAdmin>(`/admin/emoji-groups/${groupId}/emojis`, {
+      return api.post<EmojiAdmin>(`/admin/emojis/groups/${groupId}/emojis`, {
         name: data.name,
         url: data.url || "",
         text_content: data.textContent || "",
@@ -234,7 +234,7 @@ export function useCreateEmoji() {
       queryClient.invalidateQueries({
         queryKey: ["admin", "emojis", groupId],
       })
-      queryClient.invalidateQueries({ queryKey: ["admin", "emoji-groups"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "emojis", "groups"] })
     },
   })
 }
@@ -289,12 +289,12 @@ export function useBatchUpdateGroupsStatus() {
 
   return useMutation({
     mutationFn: ({ ids, is_enabled }: { ids: number[]; is_enabled: boolean }) =>
-      api.patch<{ updated: number }>("/admin/emoji-groups/batch-status", {
+      api.patch<{ updated: number }>("/admin/emojis/groups/batch-status", {
         ids,
         is_enabled,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "emoji-groups"] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "emojis", "groups"] })
     },
   })
 }

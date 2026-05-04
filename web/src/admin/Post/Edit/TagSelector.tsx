@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { ApiTag } from "@/hooks/useAdmin";
+import type { ApiTag } from "@/hooks/useAdminPosts";
 
 interface TagSelectorProps {
   /** 可选标签列表 */

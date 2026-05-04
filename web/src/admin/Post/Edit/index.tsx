@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useForm, Controller } from "react-hook-form";
 import { api } from "@/lib/api";
-import { useAdminTags, useSavePost } from "@/hooks/useAdmin";
-import type { ApiPost, ApiTag } from "@/hooks/useAdmin";
+import { useAdminTags } from "@/hooks/useAdminTags";
+import { useSavePost } from "@/hooks/useAdminPosts";
+import type { ApiPost, ApiTag } from "@/hooks/useAdminPosts";
 import { RichTextEditor } from "@/components/editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,7 +81,7 @@ export default function PostEdit() {
 
     async function loadPost() {
       try {
-        const post = await api.get<ApiPost>(`/posts/id/${id}`);
+        const post = await api.get<ApiPost>(`/posts/${id}`);
         setValue("title", post.title);
         setValue("slug", post.slug);
         setValue("contentMarkdown", post.contentMarkdown ?? "");

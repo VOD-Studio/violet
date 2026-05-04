@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import { useAdminTags } from "@/hooks/useAdmin";
+import { useAdminTags } from "@/hooks/useAdminTags";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

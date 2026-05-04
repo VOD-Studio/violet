@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { PopularPost } from "@/hooks/useAdmin";
+import type { PopularPost } from "@/hooks/useAdminPosts";
 
 interface PopularPostsTableProps {
   posts: PopularPost[];

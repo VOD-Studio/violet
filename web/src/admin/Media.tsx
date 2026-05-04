@@ -8,8 +8,8 @@ import {
   fetchMediaPage,
   useDeleteMedia,
   useBatchDeleteMedia,
-} from "@/hooks/useAdmin";
-import type { MediaItem } from "@/hooks/useAdmin";
+} from "@/hooks/useAdminMedia";
+import type { MediaItem } from "@/hooks/useAdminMedia";
 import {
   usePaginatedQuery,
   useInfiniteScroll,

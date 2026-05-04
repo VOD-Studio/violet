@@ -20,7 +20,7 @@ import {
   usePaginatedQuery,
   useInfiniteScroll,
 } from "@/hooks/useInfiniteScroll";
-import { fetchMediaPage, type MediaItem } from "@/hooks/useAdmin";
+import { fetchMediaPage, type MediaItem } from "@/hooks/useAdminMedia";
 
 /** 链接插入对话框属性 */
 interface LinkDialogProps {
