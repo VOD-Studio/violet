@@ -26,16 +26,16 @@ import VerifyEmail from "@/pages/VerifyEmail";
 import Profile from "@/pages/profile";
 
 /* 后台管理页面组件 */
-import Dashboard from "@/admin/Dashboard";
-import Posts from "@/admin/Post";
-import PostEdit from "@/admin/Post/Edit";
-import Comments from "@/admin/Comments";
-import Tags from "@/admin/Tags";
-import Media from "@/admin/Media";
-import Users from "@/admin/Users";
-import Settings from "@/admin/Settings";
-import Emojis from "@/admin/Emojis";
-import Playlists from "@/admin/Playlists";
+import Dashboard from "@/pages/admin/Dashboard";
+import Posts from "@/pages/admin/Post";
+import PostEdit from "@/pages/admin/Post/Edit";
+import Comments from "@/pages/admin/Comments";
+import Tags from "@/pages/admin/Tags";
+import Media from "@/pages/admin/Media";
+import Users from "@/pages/admin/Users";
+import Settings from "@/pages/admin/Settings";
+import Emojis from "@/pages/admin/Emojis";
+import Playlists from "@/pages/admin/Playlists";
 
 /**
  * 初始化全局导航引用

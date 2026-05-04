@@ -100,18 +100,6 @@ function createChunks(file: File): Blob[] {
 }
 
 /**
- * 从 localStorage 获取已上传分片记录
- */
-function getUploadedChunks(fileHash: string): number[] {
-  try {
-    const stored = localStorage.getItem(`upload_${fileHash}`);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-/**
  * 保存已上传分片记录到 localStorage
  */
 function saveUploadedChunks(fileHash: string, chunks: number[]): void {

@@ -89,7 +89,7 @@ export function Pagination({
           >
             {page}
           </Button>
-        ),
+        )
       )}
 
       {/* 下一页 */}

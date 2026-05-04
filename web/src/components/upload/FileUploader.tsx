@@ -92,10 +92,10 @@ export default function FileUploader({
   const updateItem = useCallback(
     (id: string, updates: Partial<FileUploadItem>) => {
       setItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
       );
     },
-    [],
+    []
   );
 
   /**
@@ -126,7 +126,7 @@ export default function FileUploader({
         });
       }
     },
-    [updateItem, onUpload],
+    [updateItem, onUpload]
   );
 
   /**
@@ -148,7 +148,7 @@ export default function FileUploader({
         handleUpload(item);
       }
     },
-    [handleUpload],
+    [handleUpload]
   );
 
   /**
@@ -194,14 +194,14 @@ export default function FileUploader({
 
       {/* 上传列表 */}
       {items.length > 0 && (
-        <div className="max-h-[300px] space-y-2 overflow-y-auto">
+        <div className="max-h-75 space-y-2 overflow-y-auto">
           {items.map((item) => (
             <div
               key={item.id}
               className="flex items-center gap-3 rounded-lg border p-3"
             >
               {/* 状态图标 */}
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 {item.status === "uploading" && (
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 )}
@@ -239,7 +239,7 @@ export default function FileUploader({
 
               {/* 进度百分比 */}
               {item.status === "uploading" && (
-                <span className="flex-shrink-0 text-xs text-muted-foreground">
+                <span className="shrink-0 text-xs text-muted-foreground">
                   {item.progress}%
                 </span>
               )}
@@ -249,7 +249,7 @@ export default function FileUploader({
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => removeItem(item.id)}
-                className="flex-shrink-0"
+                className="shrink-0"
               >
                 <X className="h-4 w-4" />
               </Button>

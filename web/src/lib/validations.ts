@@ -1,71 +1,45 @@
-/**
- * 统一的表单验证逻辑
- * 提供可复用的验证器函数
- */
+import { z } from "zod";
 
-export const validators = {
-  /**
-   * 验证邮箱格式
-   */
-  email: (value: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(value) || '请输入有效的邮箱地址';
-  },
+export const loginSchema = z.object({
+  email: z.string().min(1, "此字段为必填项").email("请输入有效的邮箱地址"),
+  password: z.string().min(1, "此字段为必填项"),
+});
 
-  /**
-   * 验证密码强度
-   * - 至少 8 个字符
-   * - 必须包含大写字母
-   * - 必须包含小写字母
-   * - 必须包含数字
-   */
-  password: (value: string) => {
-    if (value.length < 8) return '密码至少 8 个字符';
-    if (!/[A-Z]/.test(value)) return '密码必须包含大写字母';
-    if (!/[a-z]/.test(value)) return '密码必须包含小写字母';
-    if (!/[0-9]/.test(value)) return '密码必须包含数字';
-    return true;
-  },
+export const registerSchema = z.object({
+  username: z.string().min(3, "用户名至少 3 个字符").max(20, "用户名最多 20 个字符"),
+  email: z.string().min(1, "此字段为必填项").email("请输入有效的邮箱地址"),
+  password: z
+    .string()
+    .min(8, "密码至少 8 个字符")
+    .regex(/[A-Z]/, "密码必须包含大写字母")
+    .regex(/[a-z]/, "密码必须包含小写字母")
+    .regex(/[0-9]/, "密码必须包含数字"),
+  confirmPassword: z.string().min(1, "此字段为必填项"),
+});
 
-  /**
-   * 验证必填字段
-   */
-  required: (value: any) => {
-    return !!value || '此字段为必填项';
-  },
+export const verifyEmailSchema = z.object({
+  code: z.string().min(6, "验证码为 6 位数字").max(6, "验证码为 6 位数字"),
+});
 
-  /**
-   * 验证最小长度
-   */
-  minLength: (min: number) => (value: string) => {
-    return value.length >= min || `至少 ${min} 个字符`;
-  },
+export const updateProfileSchema = z.object({
+  username: z.string().min(3, "用户名至少 3 个字符").max(20, "用户名最多 20 个字符"),
+  email: z.string().email("请输入有效的邮箱地址"),
+  bio: z.string().max(500, "个人简介最多 500 个字符").optional(),
+});
 
-  /**
-   * 验证最大长度
-   */
-  maxLength: (max: number) => (value: string) => {
-    return value.length <= max || `最多 ${max} 个字符`;
-  },
+export const updatePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "此字段为必填项"),
+  newPassword: z
+    .string()
+    .min(8, "密码至少 8 个字符")
+    .regex(/[A-Z]/, "密码必须包含大写字母")
+    .regex(/[a-z]/, "密码必须包含小写字母")
+    .regex(/[0-9]/, "密码必须包含数字"),
+  confirmPassword: z.string().min(1, "此字段为必填项"),
+});
 
-  /**
-   * 验证 URL 格式
-   */
-  url: (value: string) => {
-    try {
-      new URL(value);
-      return true;
-    } catch {
-      return '请输入有效的 URL';
-    }
-  },
-
-  /**
-   * 验证 slug 格式
-   * 只能包含小写字母、数字和连字符
-   */
-  slug: (value: string) => {
-    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-    return slugRegex.test(value) || '只能包含小写字母、数字和连字符';
-  },
-};
+export type LoginFormData = z.infer<typeof loginSchema>;
+export type RegisterFormData = z.infer<typeof registerSchema>;
+export type VerifyEmailFormData = z.infer<typeof verifyEmailSchema>;
+export type UpdateProfileData = z.infer<typeof updateProfileSchema>;
+export type UpdatePasswordData = z.infer<typeof updatePasswordSchema>;

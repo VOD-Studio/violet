@@ -27,7 +27,7 @@ export function ErrorFallback({
     <div
       className={cn(
         "flex flex-col items-center justify-center py-12 text-center",
-        className,
+        className
       )}
     >
       {/* 错误图标 */}

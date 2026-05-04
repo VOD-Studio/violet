@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/features/auth";
 import { cn } from "@/lib/utils";
 import { getUploadUrl } from "@/lib/api";
 
@@ -81,7 +81,7 @@ export function Header() {
                 "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted",
                 isActive(item.href)
                   ? "bg-muted text-foreground"
-                  : "text-muted-foreground",
+                  : "text-muted-foreground"
               )}
             >
               {item.label}
@@ -172,7 +172,7 @@ export function Header() {
                   "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted",
                   isActive(item.href)
                     ? "bg-muted text-foreground"
-                    : "text-muted-foreground",
+                    : "text-muted-foreground"
                 )}
               >
                 {item.label}

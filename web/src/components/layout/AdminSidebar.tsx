@@ -7,7 +7,7 @@ import { NavLink } from "react-router";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSidebarStore } from "@/store";
 import {
   LayoutDashboard,
@@ -95,7 +95,7 @@ export function AdminSidebar() {
     <aside
       className={cn(
         "flex h-full flex-col border-r bg-sidebar text-sidebar-foreground transition-all duration-300",
-        collapsed ? "w-16" : "w-60",
+        collapsed ? "w-16" : "w-60"
       )}
     >
       {/* 侧边栏头部 Logo 和主题切换 */}
@@ -121,7 +121,7 @@ export function AdminSidebar() {
                 isActive
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                collapsed && "justify-center px-2",
+                collapsed && "justify-center px-2"
               )
             }
           >
@@ -140,7 +140,7 @@ export function AdminSidebar() {
               variant="ghost"
               className={cn(
                 "w-full justify-start gap-3",
-                collapsed && "justify-center px-2",
+                collapsed && "justify-center px-2"
               )}
             >
               <Home className="size-4 shrink-0" />
