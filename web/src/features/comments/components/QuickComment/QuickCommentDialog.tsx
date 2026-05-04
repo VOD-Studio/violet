@@ -2,9 +2,8 @@
 // 包含评论表单，支持已登录用户自动填充
 
 import { useState, useEffect } from "react";
-import { useSubmitComment } from "@/hooks/useComments";
 import { useAuthStore } from "@/store";
-import { EmojiButton } from "@/features/comments";
+import { EmojiButton, useSubmitComment } from "@/features/comments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

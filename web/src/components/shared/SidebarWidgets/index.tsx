@@ -5,7 +5,7 @@
 
 import { MusicPlayer } from "@/features/music";
 import { BackToTop } from "../BackToTop";
-import { QuickComment } from "../QuickComment";
+import { QuickComment } from "@/features/comments";
 
 interface BackToTopConfig {
   /** 触发显示的滚动距离阈值 */

@@ -13,10 +13,16 @@ export { EmojiPanel } from "./components/EmojiPanel";
 export { EmojiItem } from "./components/EmojiItem";
 export { ReactionBar } from "./components/ReactionBar";
 export { ReplyIndicator } from "./components/ReplyIndicator";
+export { QuickComment } from "./components/QuickComment";
 
 // API & Hooks
 export { useComments, useSubmitComment } from "./api";
 
 // Types
-export type { Comment, CommentSubmitData, CommentReaction, CommentWithReactions } from "./types";
+export type {
+  Comment,
+  CommentSubmitData,
+  CommentReaction,
+  CommentWithReactions,
+} from "./types";
 export type { RichTextInputRef } from "./components/RichTextInput";
