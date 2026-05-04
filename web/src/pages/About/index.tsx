@@ -1,4 +1,3 @@
-import { usePublicSettings } from "@/features/admin/settings/types";
 import { SEO } from "@/components/shared/SEO";
 import { StructuredData } from "@/components/shared/StructuredData";
 import {
@@ -9,6 +8,7 @@ import {
 import { BioSection } from "./BioSection";
 import { TechStackSection } from "./TechStackSection";
 import { GitHubSection } from "./GitHubSection";
+import { usePublicSettings } from "@/features/admin/settings/api";
 
 export default function About() {
   const { data: settings } = usePublicSettings();
