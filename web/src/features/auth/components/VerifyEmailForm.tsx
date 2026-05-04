@@ -74,7 +74,7 @@ export function VerifyEmailForm() {
       }, 1000);
     } catch (err) {
       setServerError(
-        err instanceof Error ? err.message : "发送验证码失败，请重试",
+        err instanceof Error ? err.message : "发送验证码失败，请重试"
       );
     }
   };

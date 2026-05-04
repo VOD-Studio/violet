@@ -2,7 +2,7 @@
 // 展示登录表单，用户输入邮箱和密码进行登录
 
 import { motion } from "motion/react";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { LoginForm } from "@/features/auth";
 
 /**
  * 登录页

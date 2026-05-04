@@ -2,7 +2,7 @@
 // 用户输入 6 位验证码完成邮箱验证
 
 import { motion } from "motion/react";
-import { VerifyEmailForm } from "@/components/auth/VerifyEmailForm";
+import { VerifyEmailForm } from "@/features/auth";
 
 /**
  * 邮箱验证页
