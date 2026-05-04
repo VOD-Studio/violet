@@ -1,5 +1,5 @@
 import { usePosts } from "@/hooks/usePosts";
-import { PostCard } from "@/components/blog/PostCard";
+import { PostCard } from "@/features/posts";
 
 interface PostGridProps {
   page: number;

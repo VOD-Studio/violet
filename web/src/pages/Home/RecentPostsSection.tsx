@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { ScrollReveal, MagneticButton } from "@/components/creative";
 import { usePosts } from "@/hooks/usePosts";
-import { PostCard } from "@/components/blog/PostCard";
+import { PostCard } from "@/features/posts";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";

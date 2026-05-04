@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { usePost, useIncrementView } from "@/hooks/usePosts";
 import { usePostStore } from "@/store";
-import { CommentSection } from "@/components/blog/CommentSection";
+import { CommentSection } from "@/features/comments";
 import { ScrollReveal } from "@/components/creative";
 import { SEO } from "@/components/shared/SEO";
 import { StructuredData } from "@/components/shared/StructuredData";
