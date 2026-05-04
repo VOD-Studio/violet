@@ -1,8 +1,13 @@
 // 单条评论组件
 // 展示评论者头像（Gravatar）、名称、时间和内容
 // 递归渲染嵌套回复
+// 支持回复功能
 
+import { motion, AnimatePresence } from "motion/react";
+import { MessageSquare } from "lucide-react";
 import type { Comment } from "@/hooks/useComments";
+import { ReactionBar } from "./ReactionBar";
+import { CommentForm } from "./CommentForm";
 
 /** 格式化时间为相对描述 */
 function formatRelativeTime(dateStr: string): string {
@@ -43,15 +48,32 @@ function getGravatarUrl(email?: string): string {
 interface CommentItemProps {
   /** 评论数据 */
   comment: Comment;
+  /** 文章 ID（用于回复） */
+  postId: string;
   /** 嵌套层级，用于控制缩进 */
   depth?: number;
+  /** 当前回复的评论 ID */
+  replyingTo?: string | null;
+  /** 触发回复回调 */
+  onReply?: (commentId: string, authorName: string) => void;
+  /** 取消回复回调 */
+  onCancelReply?: () => void;
 }
 
 /**
  * 单条评论组件
  * 展示评论头像、作者、时间和内容，递归渲染子评论
  */
-export function CommentItem({ comment, depth = 0 }: CommentItemProps) {
+export function CommentItem({
+  comment,
+  postId,
+  depth = 0,
+  replyingTo,
+  onReply,
+  onCancelReply,
+}: CommentItemProps) {
+  const isReplying = replyingTo === comment.id;
+
   return (
     <div className={depth > 0 ? "ml-8 mt-4 border-l-2 border-muted pl-4" : ""}>
       <div className="flex gap-3">
@@ -76,14 +98,56 @@ export function CommentItem({ comment, depth = 0 }: CommentItemProps) {
             className="mt-1 text-sm text-muted-foreground prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ __html: comment.body_html }}
           />
+
+          {/* 操作栏：回复按钮 + 表情反应 */}
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              onClick={() => onReply?.(comment.id, comment.author_name)}
+              className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors"
+              aria-label={`回复 ${comment.author_name}`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>回复</span>
+            </button>
+            <ReactionBar commentId={comment.id} />
+          </div>
         </div>
       </div>
+
+      {/* 回复表单（展开动画） */}
+      <AnimatePresence>
+        {isReplying && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden mt-4 ml-11"
+          >
+            <CommentForm
+              postId={postId}
+              parentId={comment.id}
+              replyTo={comment.author_name}
+              onCancel={onCancelReply}
+              onSuccess={onCancelReply}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 递归渲染子评论 */}
       {comment.children && comment.children.length > 0 && (
         <div className="mt-3">
           {comment.children.map((reply) => (
-            <CommentItem key={reply.id} comment={reply} depth={depth + 1} />
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              postId={postId}
+              depth={depth + 1}
+              replyingTo={replyingTo}
+              onReply={onReply}
+              onCancelReply={onCancelReply}
+            />
           ))}
         </div>
       )}
