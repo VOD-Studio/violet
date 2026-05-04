@@ -34,3 +34,7 @@ SELECT u.*, r.id AS role_id, r.name AS role_name
 FROM users u
 LEFT JOIN roles r ON u.role_id = r.id
 WHERE u.id = $1;
+
+-- name: GetUserRoleID :one
+SELECT role_id FROM users WHERE id = $1;
+
