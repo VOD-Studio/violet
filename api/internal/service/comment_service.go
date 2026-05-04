@@ -45,54 +45,86 @@ func NewCommentService(repo repository.CommentRepository) *CommentService {
 
 // CreateCommentInput 创建评论的输入参数
 type CreateCommentInput struct {
-	PostID      uuid.UUID
-	ParentID    *uuid.UUID
-	AuthorName  string
+	// PostID 所属文章 ID
+	PostID uuid.UUID
+	// ParentID 父评论 ID，为空表示顶级评论
+	ParentID *uuid.UUID
+	// AuthorName 评论者昵称
+	AuthorName string
+	// AuthorEmail 评论者邮箱（可选）
 	AuthorEmail string
-	AuthorURL   string
-	Body        string
-	Pictures    []*model.CommentPicture
-	IP          string
-	UserAgent   string
+	// AuthorURL 评论者网站（可选）
+	AuthorURL string
+	// Body 评论内容（纯文本 + 表情语法，如 "测试[smile]"）
+	Body string
+	// Pictures 评论图片列表
+	Pictures []*model.CommentPicture
+	// IP 评论者 IP 地址
+	IP string
+	// UserAgent 评论者浏览器 UA
+	UserAgent string
 }
 
 // CommentPicture 评论图片信息
 type CommentPicture struct {
-	URL    string  `json:"url"`
-	Width  int     `json:"width"`
-	Height int     `json:"height"`
-	Size   float64 `json:"size"`
+	// URL 图片地址
+	URL string `json:"url"`
+	// Width 图片宽度（像素）
+	Width int `json:"width"`
+	// Height 图片高度（像素）
+	Height int `json:"height"`
+	// Size 图片大小（KB）
+	Size float64 `json:"size"`
 }
 
 // CommentEmote 评论中使用的表情信息
 type CommentEmote struct {
-	ID   int32  `json:"id"`
+	// ID 表情 ID
+	ID int32 `json:"id"`
+	// Text 表情文本标记（如 "[smile]"）
 	Text string `json:"text"`
-	URL  string `json:"url"`
+	// URL 表情图片地址
+	URL string `json:"url"`
 }
 
-// CommentContent 评论内容结构
+// CommentContent 评论内容结构（参考 Bilibili API 设计）
 type CommentContent struct {
-	Message  string                   `json:"message"`
-	Emote    map[string]*CommentEmote `json:"emote"`
-	Pictures []*model.CommentPicture  `json:"pictures,omitempty"`
+	// Message 评论文本内容（包含表情语法，如 "测试[smile]"）
+	Message string `json:"message"`
+	// Emote 评论中使用的表情映射表，key 为表情标记（如 "[smile]"），value 为表情信息
+	Emote map[string]*CommentEmote `json:"emote"`
+	// Pictures 评论图片列表
+	Pictures []*model.CommentPicture `json:"pictures,omitempty"`
 }
 
-// CommentResponse 评论响应结构
+// CommentResponse 评论响应结构（参考 Bilibili API 设计）
 type CommentResponse struct {
-	ID          uuid.UUID       `json:"id"`
-	PostID      uuid.UUID       `json:"post_id"`
-	ParentID    *uuid.UUID      `json:"parent_id"`
-	Path        string          `json:"path"`
-	Depth       int16           `json:"depth"`
-	AuthorName  string          `json:"author_name"`
-	AuthorEmail string          `json:"author_email,omitempty"`
-	AuthorURL   string          `json:"author_url,omitempty"`
-	AvatarURL   string          `json:"avatar_url,omitempty"`
-	Content     *CommentContent `json:"content"`
-	Status      string          `json:"status"`
-	CreatedAt   string          `json:"created_at"`
-	Children    []*CommentResponse `json:"children,omitempty"`
+	// ID 评论唯一标识
+	ID uuid.UUID `json:"id"`
+	// PostID 所属文章 ID
+	PostID uuid.UUID `json:"post_id"`
+	// ParentID 父评论 ID，为空表示顶级评论
+	ParentID *uuid.UUID `json:"parent_id"`
+	// Path 评论路径，用于树形结构排序（如 "uuid1.uuid2.uuid3"）
+	Path string `json:"path"`
+	// Depth 评论嵌套深度（0 表示顶级评论，最大 4 层）
+	Depth int16 `json:"depth"`
+	// AuthorName 评论者昵称
+	AuthorName string `json:"author_name"`
+	// AuthorEmail 评论者邮箱（可选）
+	AuthorEmail string `json:"author_email,omitempty"`
+	// AuthorURL 评论者网站（可选）
+	AuthorURL string `json:"author_url,omitempty"`
+	// AvatarURL 评论者头像地址（可选）
+	AvatarURL string `json:"avatar_url,omitempty"`
+	// Content 评论内容（包含文本、表情映射、图片）
+	Content *CommentContent `json:"content"`
+	// Status 评论状态：pending 待审核，approved 已通过，spam 垃圾评论，deleted 已删除
+	Status string `json:"status"`
+	// CreatedAt 创建时间（ISO 8601 格式）
+	CreatedAt string `json:"created_at"`
+	// Children 子评论列表（树形结构）
+	Children []*CommentResponse `json:"children,omitempty"`
 }
 
 // CreateComment 创建评论
