@@ -8,6 +8,7 @@ import { MessageSquare } from "lucide-react";
 import type { Comment } from "@/hooks/useComments";
 import { ReactionBar } from "./ReactionBar";
 import { CommentForm } from "./CommentForm";
+import { CommentContent } from "./CommentContent";
 
 /** 格式化时间为相对描述 */
 function formatRelativeTime(dateStr: string): string {
@@ -93,10 +94,10 @@ export function CommentItem({
             </span>
           </div>
 
-          {/* 评论内容（HTML） */}
-          <div
+          {/* 评论内容（HTML + 表情） */}
+          <CommentContent
+            html={comment.body_html}
             className="mt-1 text-sm text-muted-foreground prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: comment.body_html }}
           />
 
           {/* 操作栏：回复按钮 + 表情反应 */}

@@ -6,6 +6,7 @@
 export { CommentSection } from "./components/CommentSection";
 export { CommentItem } from "./components/CommentItem";
 export { CommentForm } from "./components/CommentForm";
+export { CommentContent } from "./components/CommentContent";
 export { RichTextInput } from "./components/RichTextInput";
 export { EmojiButton } from "./components/EmojiButton";
 export { EmojiPanel } from "./components/EmojiPanel";

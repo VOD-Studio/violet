@@ -71,7 +71,7 @@ export function CommentForm({
         return;
       }
 
-      if (!authorName.trim()) {
+      if (!user && !authorName.trim()) {
         toast.error("请输入昵称");
         return;
       }

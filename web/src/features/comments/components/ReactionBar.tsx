@@ -9,10 +9,10 @@ import { EmojiButton } from "./EmojiButton";
 import { useEmojis } from "@/hooks/useEmojis";
 import { getUploadUrl } from "@/lib/api";
 import {
+  useCommentReactions,
   useAddReaction,
   useRemoveReaction,
 } from "../hooks/useCommentReactions";
-import { useCommentReactionsContext } from "../contexts/CommentReactionsContext";
 import type { CommentReaction } from "../types";
 
 interface ReactionBarProps {
@@ -89,8 +89,9 @@ ReactionButton.displayName = "ReactionButton";
  * 显示已有的表情反应，支持添加/删除
  */
 export const ReactionBar = memo(({ commentId, className }: ReactionBarProps) => {
-  // 从 Context 获取批量查询的反应数据
-  const { reactions } = useCommentReactionsContext(commentId);
+  // 直接使用 useCommentReactions Hook 获取实时数据
+  const { data } = useCommentReactions(commentId);
+  const reactions = data?.reactions || [];
   const { groups } = useEmojis();
   const addMutation = useAddReaction(commentId);
   const removeMutation = useRemoveReaction(commentId);
