@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useSubmitComment } from "@/hooks/useComments";
 import { useAuthStore } from "@/store";
-import { EmojiPickerButton } from "@/features/comments";
+import { EmojiButton } from "@/features/comments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,7 +73,7 @@ export function QuickCommentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto overflow-x-visible">
         <DialogHeader>
           <DialogTitle>发表评论</DialogTitle>
         </DialogHeader>
@@ -133,8 +133,10 @@ export function QuickCommentDialog({
               />
               {/* 表情选择器按钮 */}
               <div className="absolute bottom-2 right-2">
-                <EmojiPickerButton
-                  onSelect={(syntax: string) => setContent((prev) => prev + syntax)}
+                <EmojiButton
+                  onSelect={(name: string) => {
+                    setContent((prev) => prev + `[${name}]`);
+                  }}
                 />
               </div>
             </div>
