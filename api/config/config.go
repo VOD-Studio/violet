@@ -12,10 +12,10 @@ import (
 type Config struct {
 	// Environment 运行环境（development、staging、production）
 	Environment string
-	// DatabaseURL PostgreSQL 数据库连接地址
-	DatabaseURL string
-	// RedisURL Redis 连接地址
-	RedisURL string
+	// Database PostgreSQL 数据库配置
+	Database DatabaseConfig
+	// Redis Redis 配置
+	Redis RedisConfig
 	// JWTPrivateKeyPath JWT ES256 私钥文件路径（PEM 格式）
 	JWTPrivateKeyPath string
 	// JWTPublicKeyPath JWT ES256 公钥文件路径（PEM 格式）
@@ -38,6 +38,38 @@ type Config struct {
 	BilibiliCookie string
 	// SuperAdmin 超级管理员配置
 	SuperAdmin SuperAdminConfig
+}
+
+// DatabaseConfig PostgreSQL 数据库配置
+type DatabaseConfig struct {
+	Host     string
+	Port     int
+	Name     string
+	User     string
+	Password string
+	SSLMode  string
+}
+
+// DSN 生成 PostgreSQL 连接字符串
+func (d *DatabaseConfig) DSN() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		d.User, d.Password, d.Host, d.Port, d.Name, d.SSLMode)
+}
+
+// RedisConfig Redis 配置
+type RedisConfig struct {
+	Host     string
+	Port     int
+	DB       int
+	Password string
+}
+
+// DSN 生成 Redis 连接字符串
+func (r *RedisConfig) DSN() string {
+	if r.Password != "" {
+		return fmt.Sprintf("redis://:%s@%s:%d/%d", r.Password, r.Host, r.Port, r.DB)
+	}
+	return fmt.Sprintf("redis://%s:%d/%d", r.Host, r.Port, r.DB)
 }
 
 // SuperAdminConfig 超级管理员配置
@@ -66,8 +98,16 @@ func Load() *Config {
 
 	// 默认值
 	v.SetDefault("environment", "development")
-	v.SetDefault("database_url", "postgres://blog:blog123@localhost:5432/blog?sslmode=disable")
-	v.SetDefault("redis_url", "redis://localhost:6379/0")
+	v.SetDefault("database.host", "localhost")
+	v.SetDefault("database.port", 5432)
+	v.SetDefault("database.name", "blog")
+	v.SetDefault("database.user", "blog")
+	v.SetDefault("database.password", "")
+	v.SetDefault("database.sslmode", "disable")
+	v.SetDefault("redis.host", "localhost")
+	v.SetDefault("redis.port", 6379)
+	v.SetDefault("redis.db", 0)
+	v.SetDefault("redis.password", "")
 	v.SetDefault("jwt_private_key_path", "")
 	v.SetDefault("jwt_public_key_path", "")
 	v.SetDefault("jwt_access_token_ttl", "15m")
@@ -105,19 +145,31 @@ func Load() *Config {
 	)
 
 	cfg := &Config{
-		Environment:       v.GetString("environment"),
-		DatabaseURL:       v.GetString("database_url"),
-		RedisURL:          v.GetString("redis_url"),
-		JWTPrivateKeyPath: v.GetString("jwt_private_key_path"),
-		JWTPublicKeyPath:  v.GetString("jwt_public_key_path"),
-		JWTAccessTokenTTL: accessTokenTTL,
+		Environment:        v.GetString("environment"),
+		Database: DatabaseConfig{
+			Host:     v.GetString("database.host"),
+			Port:     v.GetInt("database.port"),
+			Name:     v.GetString("database.name"),
+			User:     v.GetString("database.user"),
+			Password: v.GetString("database.password"),
+			SSLMode:  v.GetString("database.sslmode"),
+		},
+		Redis: RedisConfig{
+			Host:     v.GetString("redis.host"),
+			Port:     v.GetInt("redis.port"),
+			DB:       v.GetInt("redis.db"),
+			Password: v.GetString("redis.password"),
+		},
+		JWTPrivateKeyPath:  v.GetString("jwt_private_key_path"),
+		JWTPublicKeyPath:   v.GetString("jwt_public_key_path"),
+		JWTAccessTokenTTL:  accessTokenTTL,
 		JWTRefreshTokenTTL: refreshTokenTTL,
-		ResendAPIKey:      v.GetString("resend_api_key"),
-		EmailFrom:         v.GetString("email_from"),
-		FrontendURL:       v.GetString("frontend_url"),
-		Port:              v.GetString("port"),
-		UploadPathPrefix:  v.GetString("upload_path_prefix"),
-		BilibiliCookie:    bilibiliCookie,
+		ResendAPIKey:       v.GetString("resend_api_key"),
+		EmailFrom:          v.GetString("email_from"),
+		FrontendURL:        v.GetString("frontend_url"),
+		Port:               v.GetString("port"),
+		UploadPathPrefix:   v.GetString("upload_path_prefix"),
+		BilibiliCookie:     bilibiliCookie,
 		SuperAdmin: SuperAdminConfig{
 			Enabled:  v.GetBool("superadmin.enabled"),
 			Username: v.GetString("superadmin.username"),
@@ -144,14 +196,36 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("JWT_PUBLIC_KEY_PATH 未配置")
 	}
 
-	// 数据库 URL 必须配置
-	if c.DatabaseURL == "" {
-		return fmt.Errorf("DATABASE_URL 未配置")
+	// 数据库配置必须完整
+	if c.Database.Host == "" {
+		return fmt.Errorf("DB_HOST 未配置")
+	}
+	if c.Database.Port == 0 {
+		return fmt.Errorf("DB_PORT 未配置")
+	}
+	if c.Database.Name == "" {
+		return fmt.Errorf("DB_NAME 未配置")
+	}
+	if c.Database.User == "" {
+		return fmt.Errorf("DB_USER 未配置")
 	}
 
-	// Redis URL 必须配置
-	if c.RedisURL == "" {
-		return fmt.Errorf("REDIS_URL 未配置")
+	// 生产环境必须配置数据库密码和启用 SSL
+	if c.Environment == "production" {
+		if c.Database.Password == "" {
+			return fmt.Errorf("生产环境必须配置 DB_PASSWORD")
+		}
+		if c.Database.SSLMode != "require" && c.Database.SSLMode != "verify-ca" && c.Database.SSLMode != "verify-full" {
+			return fmt.Errorf("生产环境 DB_SSLMODE 必须为 require、verify-ca 或 verify-full")
+		}
+	}
+
+	// Redis 配置必须完整
+	if c.Redis.Host == "" {
+		return fmt.Errorf("REDIS_HOST 未配置")
+	}
+	if c.Redis.Port == 0 {
+		return fmt.Errorf("REDIS_PORT 未配置")
 	}
 
 	// Token TTL 必须大于 0

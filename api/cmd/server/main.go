@@ -48,7 +48,7 @@ func main() {
 
 	// --- 基础设施初始化 ---
 
-	db, err := sql.Open("pgx", cfg.DatabaseURL)
+	db, err := sql.Open("pgx", cfg.Database.DSN())
 	if err != nil {
 		log.Fatal().Err(err).Msg("数据库连接失败")
 	}
@@ -58,12 +58,12 @@ func main() {
 	}
 	log.Info().Msg("数据库连接成功")
 
-	migrateURL := fmt.Sprintf("pgx5://%s", cfg.DatabaseURL[len("postgres://"):])
+	migrateURL := fmt.Sprintf("pgx5://%s", cfg.Database.DSN()[len("postgres://"):])
 	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
 		log.Fatal().Err(err).Msg("数据库迁移失败")
 	}
 
-	redisOpt, err := redis.ParseURL(cfg.RedisURL)
+	redisOpt, err := redis.ParseURL(cfg.Redis.DSN())
 	if err != nil {
 		log.Fatal().Err(err).Msg("解析 Redis 地址失败")
 	}
@@ -73,7 +73,7 @@ func main() {
 	}
 	log.Info().Msg("Redis 连接成功")
 
-	gormDB, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
+	gormDB, err := gorm.Open(postgres.Open(cfg.Database.DSN()), &gorm.Config{})
 	if err != nil {
 		log.Fatal().Err(err).Msg("GORM 连接失败")
 	}

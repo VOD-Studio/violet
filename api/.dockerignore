@@ -11,3 +11,5 @@ uploads/
 jwt_*.pem
 tmp/
 .omc/
+config.yaml
+!config.example.yaml

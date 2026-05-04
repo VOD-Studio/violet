@@ -13,6 +13,7 @@ dev: ## 一键启动完整开发环境
 	@./dev.sh
 
 up: ## 启动 Docker 服务 (PostgreSQL + Redis)
+	@./load-config.sh
 	docker compose up -d
 	@echo "等待数据库就绪..."
 	@sleep 3
@@ -65,6 +66,10 @@ redis-shell: ## 进入 Redis 命令行
 # ==================== 后端 ====================
 
 api: ## 启动 Go API 服务
+	@if [ ! -f .env ]; then \
+		echo "⚠️  未找到 .env 文件，正在创建..."; \
+		cp .env.example .env; \
+	fi
 	cd api && go run ./cmd/server
 
 api-build: ## 编译 Go API
@@ -140,8 +145,52 @@ log: ## 查看最近提交
 
 # ==================== 环境 ====================
 
-env: ## 复制环境变量模板
-	@test -f .env || (cp .env.example .env && echo "已创建 .env") || echo ".env 已存在"
+env: ## 复制配置文件模板
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "✅ 已创建 .env"; \
+	else \
+		echo "ℹ️  .env 已存在"; \
+	fi
+	@if [ ! -f api/config.yaml ]; then \
+		cp api/config.example.yaml api/config.yaml; \
+		echo "✅ 已创建 api/config.yaml"; \
+	else \
+		echo "ℹ️  api/config.yaml 已存在"; \
+	fi
+
+setup: env ## 一键初始化项目（首次使用）
+	@echo "🚀 初始化项目..."
+	@if [ ! -f api/jwt_private_key.pem ]; then \
+		$(MAKE) generate-jwt-keys; \
+	fi
+	@docker compose up -d postgres redis
+	@echo "⏳ 等待数据库启动..."
+	@sleep 5
+	@$(MAKE) migrate
+	@echo "✅ 项目初始化完成！"
+	@echo ""
+	@echo "下一步："
+	@echo "  1. 运行 'make dev' 启动开发服务器"
+	@echo "  2. 访问 http://localhost:5173"
+
+generate-jwt-keys: ## 生成 JWT 密钥对
+	@echo "🔑 生成 JWT 密钥对..."
+	@openssl ecparam -genkey -name prime256v1 -noout -out api/jwt_private_key.pem
+	@openssl ec -in api/jwt_private_key.pem -pubout -out api/jwt_public_key.pem
+	@chmod 600 api/jwt_private_key.pem
+	@chmod 644 api/jwt_public_key.pem
+	@echo "✅ JWT 密钥已生成: api/jwt_private_key.pem, api/jwt_public_key.pem"
+
+generate-production-keys: ## 生成生产环境 JWT 密钥对
+	@echo "🔑 生成生产环境 JWT 密钥对..."
+	@mkdir -p secrets
+	@openssl ecparam -genkey -name prime256v1 -noout -out secrets/jwt_private_key.pem
+	@openssl ec -in secrets/jwt_private_key.pem -pubout -out secrets/jwt_public_key.pem
+	@chmod 600 secrets/jwt_private_key.pem
+	@chmod 644 secrets/jwt_public_key.pem
+	@echo "✅ 生产环境 JWT 密钥已生成: secrets/jwt_private_key.pem, secrets/jwt_public_key.pem"
+	@echo "⚠️  请妥善保管私钥文件，不要提交到版本控制"
 
 check: ## 检查环境依赖
 	@echo "检查环境依赖..."

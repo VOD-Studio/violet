@@ -1,6 +1,15 @@
-# 本地开发基础设施
-# 仅包含 PostgreSQL 和 Redis，Go API 在宿主机运行
-# 使用: docker compose up -d
+# Docker Compose 配置
+#
+# 本地开发模式：
+#   docker compose up -d postgres redis
+#   然后在宿主机运行: make dev
+#
+# 完整容器化部署：
+#   docker compose --env-file .env.production up -d
+#
+# 配置说明：
+#   - 本地开发：使用 api/config.yaml
+#   - 容器部署：通过环境变量配置
 
 services:
   # PostgreSQL 数据库
@@ -10,16 +19,14 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:5432:5432"
-    env_file:
-      - ./api/.env
     environment:
-      POSTGRES_USER: ${DB_USER:-blog}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      POSTGRES_DB: ${DB_NAME:-blog}
+      POSTGRES_USER: ${DATABASE_USER:-blog}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-blog123}
+      POSTGRES_DB: ${DATABASE_NAME:-blog}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-blog} -d ${DB_NAME:-blog}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-blog} -d ${DATABASE_NAME:-blog}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,15 +39,102 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:6379:6379"
+    command: >
+      sh -c "if [ -n \"$${REDIS_PASSWORD}\" ]; then
+        redis-server --requirepass \"$${REDIS_PASSWORD}\";
+      else
+        redis-server;
+      fi"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: >
+        sh -c "if [ -n \"$${REDIS_PASSWORD}\" ]; then
+          redis-cli -a \"$${REDIS_PASSWORD}\" ping;
+        else
+          redis-cli ping;
+        fi"
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
+  # Go API 服务（可选，用于完整容器化部署）
+  # 本地开发时不需要启动此服务
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: blog-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # 环境标识
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+
+      # 服务配置
+      PORT: ${PORT:-8080}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      UPLOAD_PATH_PREFIX: ${UPLOAD_PATH_PREFIX:-/uploads/}
+
+      # 数据库配置
+      DATABASE_HOST: ${DATABASE_HOST:-postgres}
+      DATABASE_PORT: ${DATABASE_PORT:-5432}
+      DATABASE_NAME: ${DATABASE_NAME:-blog}
+      DATABASE_USER: ${DATABASE_USER:-blog}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-blog123}
+      DATABASE_SSLMODE: ${DATABASE_SSLMODE:-disable}
+
+      # Redis 配置
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # JWT 配置
+      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/jwt_private_key.pem}
+      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/jwt_public_key.pem}
+      JWT_ACCESS_TOKEN_TTL: ${JWT_ACCESS_TOKEN_TTL:-15m}
+      JWT_REFRESH_TOKEN_TTL: ${JWT_REFRESH_TOKEN_TTL:-168h}
+
+      # 邮件服务
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@yourdomain.com}
+
+      # B站表情种子数据
+      BILIBILI_SESSDATA: ${BILIBILI_SESSDATA:-}
+      BILIBILI_BILI_JCT: ${BILIBILI_BILI_JCT:-}
+      BILIBILI_DEDEUSERID: ${BILIBILI_DEDEUSERID:-}
+
+      # 超级管理员
+      SUPERADMIN_ENABLED: ${SUPERADMIN_ENABLED:-false}
+      SUPERADMIN_USERNAME: ${SUPERADMIN_USERNAME:-admin}
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-admin@example.com}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
+    volumes:
+      # 挂载 JWT 密钥（只读）
+      - ./secrets/jwt_private_key.pem:/secrets/jwt_private_key.pem:ro
+      - ./secrets/jwt_public_key.pem:/secrets/jwt_public_key.pem:ro
+      # 挂载上传目录
+      - uploads_data:/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - full  # 使用 --profile full 启动 API 服务
+
 volumes:
   postgres_data:
   redis_data:
+  uploads_data:
