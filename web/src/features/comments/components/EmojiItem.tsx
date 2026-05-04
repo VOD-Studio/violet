@@ -33,6 +33,7 @@ export function EmojiItem({
 }: EmojiItemProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={cn(
         "flex items-center justify-center",

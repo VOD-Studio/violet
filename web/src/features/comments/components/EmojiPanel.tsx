@@ -164,6 +164,7 @@ export function EmojiPanel({
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={handleClearSearch}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted transition-colors"
               aria-label="清除搜索"
@@ -194,6 +195,7 @@ export function EmojiPanel({
               return (
                 <button
                   key={group.id}
+                  type="button"
                   data-group-id={group.id}
                   onClick={() => handleGroupClick(group.id)}
                   className={cn(
