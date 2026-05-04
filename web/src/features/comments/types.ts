@@ -20,3 +20,18 @@ export interface CommentSubmitData {
   body: string;
   parent_id?: string;
 }
+
+/** 表情反应统计 */
+export interface CommentReaction {
+  emoji_id: number;
+  emoji_name: string;
+  emoji_url?: string;
+  text_content?: string;
+  count: number;
+  user_reacted: boolean;
+}
+
+/** 带反应的评论 */
+export interface CommentWithReactions extends Comment {
+  reactions?: CommentReaction[];
+}

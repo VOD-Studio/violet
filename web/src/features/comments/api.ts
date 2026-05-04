@@ -5,7 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Comment, CommentSubmitData } from "./types";
+import type { Comment, CommentSubmitData, CommentReaction } from "./types";
 
 /**
  * 获取文章评论列表
@@ -42,4 +42,52 @@ export function useSubmitComment(postId: string | undefined) {
   });
 }
 
-export type { Comment, CommentSubmitData };
+/**
+ * 获取评论的表情反应
+ * @param commentId 评论 ID
+ */
+export async function getCommentReactions(
+  commentId: string,
+): Promise<{ reactions: CommentReaction[] }> {
+  return api.get(`/comments/${commentId}/reactions`);
+}
+
+/**
+ * 添加表情反应
+ * @param commentId 评论 ID
+ * @param emojiId 表情 ID
+ */
+export async function addCommentReaction(
+  commentId: string,
+  emojiId: number,
+): Promise<void> {
+  return api.post(`/comments/${commentId}/reactions`, {
+    emoji_id: emojiId,
+  });
+}
+
+/**
+ * 删除表情反应
+ * @param commentId 评论 ID
+ * @param emojiId 表情 ID
+ */
+export async function removeCommentReaction(
+  commentId: string,
+  emojiId: number,
+): Promise<void> {
+  return api.del(`/comments/${commentId}/reactions/${emojiId}`);
+}
+
+/**
+ * 批量获取评论反应
+ * @param commentIds 评论 ID 列表
+ */
+export async function getCommentReactionsBatch(
+  commentIds: string[],
+): Promise<{ reactions: Record<string, CommentReaction[]> }> {
+  return api.post("/comments/reactions/batch", {
+    comment_ids: commentIds,
+  });
+}
+
+export type { Comment, CommentSubmitData, CommentReaction };
