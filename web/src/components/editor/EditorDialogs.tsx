@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Segmented } from "@/components/ui/Segmented";
+import { Segmented } from "@/components/Segmented";
 import { Loader2 } from "lucide-react";
 import { getUploadUrl } from "@/lib/api";
 import { EmptyState } from "../shared/EmptyState";
@@ -20,7 +20,7 @@ import {
   usePaginatedQuery,
   useInfiniteScroll,
 } from "@/hooks/useInfiniteScroll";
-import { fetchMediaPage, type MediaItem } from "@/features/admin/media/types";
+import { fetchMediaPage, type MediaItem } from "@/features/admin/media";
 
 /** 链接插入对话框属性 */
 interface LinkDialogProps {
@@ -124,7 +124,7 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
   // 分页获取图片素材
   const fetchImages = useCallback(
     (page: number, limit: number) => fetchMediaPage(page, limit, "image"),
-    [],
+    []
   );
 
   const {
@@ -135,7 +135,7 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
   } = usePaginatedQuery<MediaItem>(
     ["editor", "media", "image"],
     fetchImages,
-    20,
+    20
   );
 
   const sentinelRef = useInfiniteScroll({
@@ -165,7 +165,7 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
     if (selected) {
       onInsert(
         getUploadUrl(selected.path),
-        alt.trim() || selected.original_name,
+        alt.trim() || selected.original_name
       );
       resetAndClose();
     }
