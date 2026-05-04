@@ -102,14 +102,7 @@ export function CommentForm({
         }
       }
     },
-    [
-      content,
-      authorName,
-      authorEmail,
-      parentId,
-      submitMutation,
-      onSuccess,
-    ]
+    [content, authorName, authorEmail, parentId, submitMutation, onSuccess]
   );
 
   /**
@@ -188,9 +181,6 @@ export function CommentForm({
         {/* 左侧：表情按钮 */}
         <div className="flex items-center gap-2">
           <EmojiButton onSelect={handleEmojiSelect} disabled={isSubmitting} />
-          <span className="text-xs text-muted-foreground">
-            支持 Markdown 和表情
-          </span>
         </div>
 
         {/* 右侧：操作按钮 */}

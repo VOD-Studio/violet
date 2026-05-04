@@ -48,10 +48,7 @@ export function useRichTextInput({
         const display = getDisplayByName(emojiName);
         if (display) {
           // 判断是图片还是文本
-          if (
-            display.startsWith("http") ||
-            display.startsWith("/")
-          ) {
+          if (display.startsWith("http") || display.startsWith("/")) {
             html += `<img src="${display}" alt="${emojiName}" data-emoji="${emojiName}" class="inline-block w-5 h-5 align-text-bottom mx-0.5" />`;
           } else {
             html += `<span data-emoji="${emojiName}" class="inline-block mx-0.5">${display}</span>`;
@@ -93,7 +90,9 @@ export function useRichTextInput({
         if (element.tagName === "IMG" || element.tagName === "SPAN") {
           const emojiName = element.dataset.emoji;
           if (emojiName) {
-            markdown += `[${emojiName}]`;
+            markdown += emojiName.startsWith("[")
+              ? emojiName
+              : `[${emojiName}]`;
           }
         } else if (element.tagName === "BR") {
           markdown += "\n";
@@ -163,10 +162,7 @@ export function useRichTextInput({
     emojiName: string,
     emojiDisplay: string
   ): HTMLElement {
-    if (
-      emojiDisplay.startsWith("http") ||
-      emojiDisplay.startsWith("/")
-    ) {
+    if (emojiDisplay.startsWith("http") || emojiDisplay.startsWith("/")) {
       const img = document.createElement("img");
       img.src = emojiDisplay;
       img.alt = emojiName;
@@ -194,14 +190,11 @@ export function useRichTextInput({
   /**
    * 处理粘贴事件（只保留纯文本）
    */
-  const handlePaste = useCallback(
-    (e: React.ClipboardEvent) => {
-      e.preventDefault();
-      const text = e.clipboardData.getData("text/plain");
-      document.execCommand("insertText", false, text);
-    },
-    []
-  );
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    document.execCommand("insertText", false, text);
+  }, []);
 
   /**
    * 处理键盘事件
