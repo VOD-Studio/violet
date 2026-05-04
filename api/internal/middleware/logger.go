@@ -40,11 +40,19 @@ func Logger(next http.Handler) http.Handler {
 		// 计算请求处理耗时
 		duration := time.Since(start)
 
+		// 根据状态码调整日志级别
+		logger := log.Info()
+		if wrapped.statusCode >= 500 {
+			logger = log.Error()
+		} else if wrapped.statusCode >= 400 {
+			logger = log.Warn()
+		}
+
 		// 输出请求日志
-		log.Info().
+		logger.
 			Str("method", r.Method).
 			Str("path", r.URL.Path).
-			Str("ip", r.RemoteAddr).
+			Str("ip", getClientIP(r)).
 			Int("status", wrapped.statusCode).
 			Dur("duration", duration).
 			Msg("HTTP 请求")

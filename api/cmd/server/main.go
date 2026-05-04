@@ -143,9 +143,10 @@ func main() {
 	// --- 路由注册 ---
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)    // 请求日志记录
-	r.Use(middleware.CORS)      // 跨域资源共享
-	r.Use(middleware.Recoverer) // panic 恢复
+	r.Use(middleware.Recoverer)      // panic 恢复（必须在最外层）
+	r.Use(middleware.Logger)         // 请求日志记录
+	r.Use(middleware.CORS)           // 跨域资源共享
+	r.Use(middleware.SecurityHeaders) // 安全响应头
 
 	// 健康检查（无版本前缀）
 	r.Get("/api/health", func(w http.ResponseWriter, r *http.Request) {
