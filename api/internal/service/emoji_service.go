@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/repository/generated"
 )
@@ -58,26 +57,6 @@ func NewEmojiService(queries *generated.Queries, emojiDir string) *EmojiService 
 	}
 }
 
-// RefreshCache 刷新表情缓存
-func (s *EmojiService) RefreshCache(ctx context.Context) error {
-	log.Info().Str("service", "EmojiService").Str("operation", "RefreshCache").Msg("开始刷新表情缓存")
-
-	log.Debug().Str("query", "ListAllEmojisWithGroup").Msg("查询所有表情")
-	emojis, err := s.queries.ListAllEmojisWithGroup(ctx)
-	if err != nil {
-		log.Error().Err(err).Msg("获取表情列表失败")
-		return fmt.Errorf("获取表情列表失败: %w", err)
-	}
-	s.rendererCache = NewSimpleEmojiCache(emojis)
-	log.Info().Int("count", len(emojis)).Msg("表情缓存刷新成功")
-	return nil
-}
-
-// GetCache 获取渲染器缓存
-func (s *EmojiService) GetCache() EmojiCache {
-	return s.rendererCache
-}
-
 // --- 表情分组响应类型 ---
 
 // EmojiGroupResponse 表情分组响应
@@ -102,37 +81,7 @@ type EmojiResponse struct {
 	CreatedAt   string `json:"created_at"`
 }
 
-// --- 公开接口 ---
-
-// GetAllEmojisForPublic 获取所有公开表情分组和表情
-func (s *EmojiService) GetAllEmojisForPublic(ctx context.Context) ([]*EmojiGroupResponse, error) {
-	log.Info().Str("service", "EmojiService").Str("operation", "GetAllEmojisForPublic").Msg("获取公开表情")
-
-	// 获取所有启用的分组
-	log.Debug().Str("query", "ListEmojiGroups").Msg("查询表情分组")
-	groups, err := s.queries.ListEmojiGroups(ctx)
-	if err != nil {
-		log.Error().Err(err).Msg("获取表情分组列表失败")
-		return nil, fmt.Errorf("获取表情分组列表失败: %w", err)
-	}
-
-	responses := make([]*EmojiGroupResponse, 0, len(groups))
-	for _, g := range groups {
-		resp := emojiGroupToResponse(g)
-		// 获取分组内的表情
-		emojis, err := s.queries.ListEmojisByGroup(ctx, g.ID)
-		if err == nil {
-			resp.Emojis = make([]*EmojiResponse, 0, len(emojis))
-			for _, e := range emojis {
-				resp.Emojis = append(resp.Emojis, emojiToResponse(e))
-			}
-		}
-		responses = append(responses, resp)
-	}
-
-	log.Info().Int("groups", len(responses)).Msg("公开表情获取成功")
-	return responses, nil
-}
+// --- 表情分组 CRUD ---
 
 // GetEmojiGroupByID 获取单个表情分组
 func (s *EmojiService) GetEmojiGroupByID(ctx context.Context, id int32) (*EmojiGroupResponse, error) {
@@ -142,57 +91,6 @@ func (s *EmojiService) GetEmojiGroupByID(ctx context.Context, id int32) (*EmojiG
 	}
 	return emojiGroupToResponse(group), nil
 }
-
-// ListEmojiGroups 获取所有启用的表情分组
-func (s *EmojiService) ListEmojiGroups(ctx context.Context) ([]*EmojiGroupResponse, error) {
-	groups, err := s.queries.ListEmojiGroups(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("获取表情分组列表失败: %w", err)
-	}
-
-	responses := make([]*EmojiGroupResponse, 0, len(groups))
-	for _, g := range groups {
-		responses = append(responses, emojiGroupToResponse(g))
-	}
-	return responses, nil
-}
-
-// GetEmojiGroupByName 根据名称获取表情分组
-func (s *EmojiService) GetEmojiGroupByName(ctx context.Context, name string) (*EmojiGroupResponse, error) {
-	group, err := s.queries.GetEmojiGroupByName(ctx, name)
-	if err != nil {
-		return nil, ErrEmojiGroupNotFound
-	}
-
-	resp := emojiGroupToResponse(group)
-
-	// 获取分组内的表情
-	emojis, err := s.queries.ListEmojisByGroup(ctx, group.ID)
-	if err == nil {
-		resp.Emojis = make([]*EmojiResponse, 0, len(emojis))
-		for _, e := range emojis {
-			resp.Emojis = append(resp.Emojis, emojiToResponse(e))
-		}
-	}
-
-	return resp, nil
-}
-
-// ListAllEmojiGroups 获取所有表情分组（包括禁用的）
-func (s *EmojiService) ListAllEmojiGroups(ctx context.Context) ([]*EmojiGroupResponse, error) {
-	groups, err := s.queries.ListAllEmojiGroups(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("获取表情分组列表失败: %w", err)
-	}
-
-	responses := make([]*EmojiGroupResponse, 0, len(groups))
-	for _, g := range groups {
-		responses = append(responses, emojiGroupToResponse(g))
-	}
-	return responses, nil
-}
-
-// --- 表情分组管理 ---
 
 // CreateEmojiGroupInput 创建表情分组输入
 type CreateEmojiGroupInput struct {
@@ -273,7 +171,7 @@ func (s *EmojiService) BatchUpdateGroupsStatus(ctx context.Context, ids []int32,
 	return nil
 }
 
-// --- 表情管理 ---
+// --- 表情 CRUD ---
 
 // GetEmojiByID 获取单个表情
 func (s *EmojiService) GetEmojiByID(ctx context.Context, id int32) (*EmojiResponse, error) {
@@ -282,20 +180,6 @@ func (s *EmojiService) GetEmojiByID(ctx context.Context, id int32) (*EmojiRespon
 		return nil, ErrEmojiNotFound
 	}
 	return emojiToResponse(emoji), nil
-}
-
-// ListEmojisByGroup 获取分组内的所有表情
-func (s *EmojiService) ListEmojisByGroup(ctx context.Context, groupID int32) ([]*EmojiResponse, error) {
-	emojis, err := s.queries.ListEmojisByGroup(ctx, groupID)
-	if err != nil {
-		return nil, fmt.Errorf("获取表情列表失败: %w", err)
-	}
-
-	responses := make([]*EmojiResponse, 0, len(emojis))
-	for _, e := range emojis {
-		responses = append(responses, emojiToResponse(e))
-	}
-	return responses, nil
 }
 
 // CreateEmojiInput 创建表情输入
@@ -362,50 +246,17 @@ func (s *EmojiService) DeleteEmoji(ctx context.Context, id int32) error {
 	return nil
 }
 
-// --- 类型转换辅助函数 ---
-
-func emojiGroupToResponse(g *generated.EmojiGroup) *EmojiGroupResponse {
-	return &EmojiGroupResponse{
-		ID:        g.ID,
-		Name:      g.Name,
-		Source:    g.Source,
-		SortOrder: g.SortOrder,
-		IsEnabled: g.IsEnabled,
-		CreatedAt: g.CreatedAt.Format("2006-01-02 15:04:05"),
-	}
-}
-
-func emojiToResponse(e *generated.Emoji) *EmojiResponse {
-	resp := &EmojiResponse{
-		ID:        e.ID,
-		GroupID:   e.GroupID,
-		Name:      e.Name,
-		SortOrder: e.SortOrder,
-		CreatedAt: e.CreatedAt.Format("2006-01-02 15:04:05"),
-	}
-
-	if e.Url.Valid {
-		resp.URL = e.Url.String
-	}
-	if e.TextContent.Valid {
-		resp.TextContent = e.TextContent.String
-	}
-
-	return resp
-}
-
-// --- 表情文件上传（独立存储，不进入 media 表）---
+// --- 表情文件上传 ---
 
 // EmojiUploadResponse 表情上传响应
 type EmojiUploadResponse struct {
-	URL      string `json:"url"`       // 相对路径，如 /uploads/emojis/xxx.png
-	Filename string `json:"filename"`  // 文件名
-	Size     int64  `json:"size"`      // 文件大小
-	MimeType string `json:"mime_type"` // MIME 类型
+	URL      string `json:"url"`
+	Filename string `json:"filename"`
+	Size     int64  `json:"size"`
+	MimeType string `json:"mime_type"`
 }
 
 // UploadEmoji 上传表情图片到独立存储目录
-// 不写入 media 表，直接保存文件并返回 URL
 func (s *EmojiService) UploadEmoji(ctx context.Context, filename, mimeType string, size int64, reader io.Reader) (*EmojiUploadResponse, error) {
 	// 验证文件类型
 	ext := strings.ToLower(filepath.Ext(filename))
@@ -474,4 +325,36 @@ func (s *EmojiService) UploadEmoji(ctx context.Context, filename, mimeType strin
 		Size:     written,
 		MimeType: mimeType,
 	}, nil
+}
+
+// --- 类型转换辅助函数 ---
+
+func emojiGroupToResponse(g *generated.EmojiGroup) *EmojiGroupResponse {
+	return &EmojiGroupResponse{
+		ID:        g.ID,
+		Name:      g.Name,
+		Source:    g.Source,
+		SortOrder: g.SortOrder,
+		IsEnabled: g.IsEnabled,
+		CreatedAt: g.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+}
+
+func emojiToResponse(e *generated.Emoji) *EmojiResponse {
+	resp := &EmojiResponse{
+		ID:        e.ID,
+		GroupID:   e.GroupID,
+		Name:      e.Name,
+		SortOrder: e.SortOrder,
+		CreatedAt: e.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	if e.Url.Valid {
+		resp.URL = e.Url.String
+	}
+	if e.TextContent.Valid {
+		resp.TextContent = e.TextContent.String
+	}
+
+	return resp
 }

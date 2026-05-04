@@ -3,8 +3,6 @@ package service
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -77,13 +75,6 @@ var allowedUploadTypes = map[string]string{
 	".md":   "text/markdown",
 }
 
-// detectMimeType 根据文件扩展名推断 MIME 类型
-func detectMimeType(ext string) string {
-	if mt, ok := allowedUploadTypes[strings.ToLower(ext)]; ok {
-		return mt
-	}
-	return "application/octet-stream"
-}
 
 // UploadService 分片上传业务服务
 type UploadService struct {
@@ -161,16 +152,15 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 		Str("filename", req.FileName).Int64("size", req.FileSize).Msg("开始初始化上传会话")
 
 	// 验证文件类型
-	ext := strings.ToLower(filepath.Ext(req.FileName))
-	if _, ok := allowedUploadTypes[ext]; !ok {
-		log.Warn().Str("ext", ext).Msg("不支持的文件类型")
-		return nil, ErrInvalidImageType
+	if err := s.ValidateFileType(req.FileName); err != nil {
+		log.Warn().Str("filename", req.FileName).Msg("不支持的文件类型")
+		return nil, err
 	}
 
 	// 验证文件大小
-	if req.FileSize > s.maxFileSize {
+	if err := s.ValidateFileSize(req.FileSize); err != nil {
 		log.Warn().Int64("size", req.FileSize).Int64("max", s.maxFileSize).Msg("文件过大")
-		return nil, ErrImageTooLarge
+		return nil, err
 	}
 
 	// 计算分片数量
@@ -239,6 +229,7 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 	// 推断 MIME 类型
 	mimeType := req.MimeType
 	if mimeType == "" {
+		ext := strings.ToLower(filepath.Ext(req.FileName))
 		mimeType = detectMimeType(ext)
 	}
 
@@ -532,11 +523,3 @@ func (s *UploadService) GetSession(ctx context.Context, uploadID uuid.UUID) (*mo
 	return &session, nil
 }
 
-// ComputeMD5 计算文件的 MD5 哈希值
-func ComputeMD5(reader io.Reader) (string, error) {
-	h := md5.New()
-	if _, err := io.Copy(h, reader); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
