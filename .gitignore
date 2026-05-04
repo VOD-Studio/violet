@@ -36,3 +36,6 @@ Thumbs.db
 tmp/
 api/tmp/
 api/server
+
+# Ignore all claude local
+.claude/**/*.local.*
