@@ -1,3 +1,4 @@
+// Package middleware 提供 HTTP 中间件，处理认证、日志、限流等横切关注点
 package middleware
 
 import (
@@ -131,6 +132,7 @@ func RequirePermission(permService *service.PermissionService, codes ...string) 
 	}
 }
 
+// GetUserID 从上下文中获取用户 ID
 func GetUserID(ctx context.Context) string {
 	if userID, ok := ctx.Value(UserIDKey).(string); ok {
 		return userID
@@ -138,6 +140,7 @@ func GetUserID(ctx context.Context) string {
 	return ""
 }
 
+// GetUserRole 从上下文中获取用户角色
 func GetUserRole(ctx context.Context) string {
 	if role, ok := ctx.Value(UserRoleKey).(string); ok {
 		return role
@@ -145,6 +148,7 @@ func GetUserRole(ctx context.Context) string {
 	return ""
 }
 
+// GetUserEmail 从上下文中获取用户邮箱
 func GetUserEmail(ctx context.Context) string {
 	if email, ok := ctx.Value(UserEmailKey).(string); ok {
 		return email
@@ -152,6 +156,7 @@ func GetUserEmail(ctx context.Context) string {
 	return ""
 }
 
+// GetUserRoleID 从上下文中获取用户角色 ID
 func GetUserRoleID(ctx context.Context) *int32 {
 	if roleID, ok := ctx.Value(UserRoleIDKey).(int32); ok && roleID != 0 {
 		return &roleID

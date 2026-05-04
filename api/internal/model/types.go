@@ -1,3 +1,4 @@
+// Package model 定义应用的核心数据模型和类型
 package model
 
 import (

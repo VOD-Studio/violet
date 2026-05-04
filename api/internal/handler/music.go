@@ -1,3 +1,4 @@
+// Package handler 提供 HTTP 请求处理器，负责接收请求、验证参数、调用服务层并返回响应
 package handler
 
 import (
@@ -15,6 +16,7 @@ type MusicHandler struct {
 	searchService *service.MusicSearchService
 }
 
+// NewMusicHandler 创建音乐处理器实例
 func NewMusicHandler(musicService *service.MusicService, searchService *service.MusicSearchService) *MusicHandler {
 	return &MusicHandler{
 		musicService:  musicService,

@@ -1,3 +1,4 @@
+// Package handler 提供 HTTP 请求处理器，负责接收请求、验证参数、调用服务层并返回响应
 package handler
 
 import (
@@ -21,6 +22,7 @@ type AuthHandler struct {
 	uploadPathPrefix string
 }
 
+// NewAuthHandler 创建认证处理器实例
 func NewAuthHandler(authService *service.AuthService, permService *service.PermissionService, uploadPathPrefix string) *AuthHandler {
 	return &AuthHandler{
 		authService:      authService,
@@ -96,7 +98,7 @@ type MessageResponse struct {
 	Message string `json:"message"`
 }
 
-// TokenResponse 令牌响应
+// TokenResponse 令牌响应，包含访问令牌和刷新令牌
 type TokenResponse struct {
 	// AccessToken 访问令牌
 	AccessToken string `json:"access_token"`
@@ -111,6 +113,7 @@ type TokenResponse struct {
 }
 
 // UserResponse 用户信息响应（不包含敏感信息）
+// UserResponse 用户信息响应
 type UserResponse struct {
 	// ID 用户唯一标识
 	ID string `json:"id"`
@@ -426,12 +429,14 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 // --- 个人中心 ---
 
 // UpdateProfileRequest 更新个人资料请求
+// UpdateProfileRequest 更新个人资料请求
 type UpdateProfileRequest struct {
 	Username  string `json:"username" validate:"required,min=3,max=50"`
 	Bio       string `json:"bio"`
 	AvatarURL string `json:"avatar_url"`
 }
 
+// UpdatePasswordRequest 修改密码请求
 // UpdatePasswordRequest 修改密码请求
 type UpdatePasswordRequest struct {
 	OldPassword string `json:"old_password" validate:"required"`

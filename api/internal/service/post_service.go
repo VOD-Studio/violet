@@ -1,3 +1,4 @@
+// Package service 提供业务逻辑层，封装数据访问和业务规则
 package service
 
 import (
@@ -453,6 +454,8 @@ func (s *PostService) renderMarkdown(md string) (string, error) {
 
 // GenerateSlug 从标题生成 URL 友好的 slug
 // 支持中文字符，限制最大长度为 50 字符
+// GenerateSlug 从标题生成 URL 友好的 slug
+// 将中文转为拼音，英文转为小写，空格和特殊字符转为连字符
 func GenerateSlug(title string) string {
 	slug := strings.ToLower(title)
 

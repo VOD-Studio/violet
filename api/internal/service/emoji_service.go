@@ -1,3 +1,4 @@
+// Package service 提供业务逻辑层，封装数据访问和业务规则
 package service
 
 import (

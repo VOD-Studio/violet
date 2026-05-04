@@ -1,3 +1,4 @@
+// Package middleware 提供 HTTP 中间件，处理认证、日志、限流等横切关注点
 package middleware
 
 import "net/http"

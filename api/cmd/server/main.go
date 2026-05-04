@@ -1,3 +1,5 @@
+// Package main 博客 API 服务主程序入口
+// 初始化数据库、Redis、服务层和路由，启动 HTTP 服务器
 package main
 
 import (
