@@ -10,6 +10,8 @@ import (
 
 // Config 应用配置结构体，集中管理所有配置项
 type Config struct {
+	// Environment 运行环境（development、staging、production）
+	Environment string
 	// DatabaseURL PostgreSQL 数据库连接地址
 	DatabaseURL string
 	// RedisURL Redis 连接地址
@@ -63,6 +65,7 @@ func Load() *Config {
 	v.AutomaticEnv()
 
 	// 默认值
+	v.SetDefault("environment", "development")
 	v.SetDefault("database_url", "postgres://blog:blog123@localhost:5432/blog?sslmode=disable")
 	v.SetDefault("redis_url", "redis://localhost:6379/0")
 	v.SetDefault("jwt_private_key_path", "")
@@ -102,6 +105,7 @@ func Load() *Config {
 	)
 
 	cfg := &Config{
+		Environment:       v.GetString("environment"),
 		DatabaseURL:       v.GetString("database_url"),
 		RedisURL:          v.GetString("redis_url"),
 		JWTPrivateKeyPath: v.GetString("jwt_private_key_path"),

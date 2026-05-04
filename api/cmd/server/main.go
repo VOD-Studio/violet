@@ -36,8 +36,8 @@ func main() {
 
 	// --- 日志初始化 ---
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	// 根据环境变量判断是否为开发环境
-	if os.Getenv("ENV") == "development" || os.Getenv("ENVIRONMENT") == "development" {
+	// 根据配置判断是否为开发环境
+	if cfg.Environment == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
@@ -183,9 +183,8 @@ func main() {
 
 		// 文章
 		v1.Route("/posts", func(r chi.Router) {
-			r.Get("/", postHandler.List)                  // 文章列表（分页）
-			r.Get("/id/{id}", postHandler.GetByID)        // 按 ID 获取文章（编辑用）
-			r.Get("/{slug}", postHandler.GetBySlug)       // 按 slug 获取文章（展示用）
+			r.Get("/", postHandler.List)                    // 文章列表（分页）
+			r.Get("/{id}", postHandler.GetByID)             // 按 ID 或 slug 获取文章（统一端点）
 			r.Post("/{id}/view", postHandler.IncrementView) // 增加浏览次数
 
 			r.Group(func(r chi.Router) {
@@ -246,17 +245,16 @@ func main() {
 			r.Get("/{uploadId}/status", uploadHandler.GetUploadStatus)  // 查询上传状态（断点续传）
 		})
 
-		// 音乐
+		// 音乐（公开）
 		v1.Route("/music", func(r chi.Router) {
-			r.Get("/embed", musicHandler.GetEmbedInfo)                       // 解析音乐链接返回嵌入信息
-			r.Get("/playlist", musicHandler.GetPlaylist)                     // 解析歌单链接返回歌单信息
-			r.Get("/song", musicHandler.GetSongDetail)                       // 获取歌曲详情
-			r.Get("/search", musicHandler.SearchSongs)                       // 搜索歌曲
-			r.Get("/lyrics", musicHandler.GetLyrics)                         // 获取歌词
-			r.Get("/meta", musicHandler.FetchSongMeta)                       // 获取歌曲元数据（封面+歌词）
-			r.Get("/playlist/config/active", musicAdminHandler.GetActivePlaylist)  // 获取启用的歌单配置
-			r.Get("/playlists/active", musicAdminHandler.GetAllActivePlaylists)    // 获取所有启用歌单
-			r.Get("/settings", musicAdminHandler.GetMusicSettings)                  // 获取播放器设置
+			r.Get("/embed", musicHandler.GetEmbedInfo)                      // 解析音乐链接返回嵌入信息
+			r.Get("/playlist", musicHandler.GetPlaylist)                    // 解析歌单链接返回歌单信息
+			r.Get("/song", musicHandler.GetSongDetail)                      // 获取歌曲详情
+			r.Get("/search", musicHandler.SearchSongs)                      // 搜索歌曲
+			r.Get("/lyrics", musicHandler.GetLyrics)                        // 获取歌词
+			r.Get("/meta", musicHandler.FetchSongMeta)                      // 获取歌曲元数据（封面+歌词）
+			r.Get("/playlists/active", musicAdminHandler.GetAllActivePlaylists) // 获取所有启用歌单
+			r.Get("/settings", musicAdminHandler.GetMusicSettings)          // 获取播放器设置
 		})
 
 		// 项目
@@ -291,32 +289,34 @@ func main() {
 			r.Get("/comments/pending", commentHandler.ListPendingComments)      // 待审核评论列表
 			r.Get("/comments/pending/count", commentHandler.CountPendingComments) // 待审核评论数量
 
-			r.Route("/playlists", func(r chi.Router) {
-				r.Get("/", musicAdminHandler.ListPlaylists)                       // 歌单列表
-				r.Post("/", musicAdminHandler.CreatePlaylist)                     // 导入歌单
-				r.Post("/custom", musicAdminHandler.CreateCustomPlaylist)         // 创建自定义歌单
-				r.Patch("/{id}", musicAdminHandler.UpdatePlaylist)               // 更新歌单（启用/禁用）
-				r.Delete("/{id}", musicAdminHandler.DeletePlaylist)              // 删除歌单
-				r.Post("/{id}/activate", musicAdminHandler.SetActivePlaylist)    // 设置为启用歌单
-				r.Post("/{id}/refresh", musicAdminHandler.RefreshPlaylistSongs)  // 刷新歌单歌曲
-				r.Post("/{id}/songs", musicAdminHandler.AddSongToPlaylist)       // 添加歌曲到歌单
-				r.Delete("/{id}/songs/{index}", musicAdminHandler.RemoveSongFromPlaylist) // 从歌单移除歌曲
-				r.Patch("/{id}/songs/{index}", musicAdminHandler.UpdateSongInPlaylist)    // 更新歌单中的歌曲信息
+			// 音乐管理
+			r.Route("/music", func(r chi.Router) {
+				r.Route("/playlists", func(r chi.Router) {
+					r.Get("/", musicAdminHandler.ListPlaylists)                       // 歌单列表
+					r.Post("/", musicAdminHandler.CreatePlaylist)                     // 导入歌单
+					r.Post("/custom", musicAdminHandler.CreateCustomPlaylist)         // 创建自定义歌单
+					r.Patch("/{id}", musicAdminHandler.UpdatePlaylist)               // 更新歌单（启用/禁用）
+					r.Delete("/{id}", musicAdminHandler.DeletePlaylist)              // 删除歌单
+					r.Post("/{id}/activate", musicAdminHandler.SetActivePlaylist)    // 设置为启用歌单
+					r.Post("/{id}/refresh", musicAdminHandler.RefreshPlaylistSongs)  // 刷新歌单歌曲
+					r.Post("/{id}/songs", musicAdminHandler.AddSongToPlaylist)       // 添加歌曲到歌单
+					r.Delete("/{id}/songs/{index}", musicAdminHandler.RemoveSongFromPlaylist) // 从歌单移除歌曲
+					r.Patch("/{id}/songs/{index}", musicAdminHandler.UpdateSongInPlaylist)    // 更新歌单中的歌曲信息
+				})
+				r.Patch("/settings", musicAdminHandler.UpdatePlayerVersion) // 更新播放器设置
 			})
 
-			r.Patch("/music/settings", musicAdminHandler.UpdatePlayerVersion) // 更新播放器设置
-
-			r.Route("/emoji-groups", func(r chi.Router) {
-				r.Get("/", emojiHandler.ListAllGroups)                  // 获取所有表情分组（含未启用）
-				r.Post("/", emojiHandler.CreateGroup)                   // 创建表情分组
-				r.Patch("/batch-status", emojiHandler.BatchUpdateStatus) // 批量更新分组启用状态
-				r.Patch("/{id}", emojiHandler.UpdateGroup)              // 更新表情分组
-				r.Delete("/{id}", emojiHandler.DeleteGroup)             // 删除表情分组
-				r.Get("/{id}/emojis", emojiHandler.ListGroupEmojis)    // 获取分组内表情列表
-				r.Post("/{id}/emojis", emojiHandler.CreateEmoji)        // 在分组内创建表情
-			})
-
+			// 表情管理
 			r.Route("/emojis", func(r chi.Router) {
+				r.Route("/groups", func(r chi.Router) {
+					r.Get("/", emojiHandler.ListAllGroups)                  // 获取所有表情分组（含未启用）
+					r.Post("/", emojiHandler.CreateGroup)                   // 创建表情分组
+					r.Patch("/batch-status", emojiHandler.BatchUpdateStatus) // 批量更新分组启用状态
+					r.Patch("/{id}", emojiHandler.UpdateGroup)              // 更新表情分组
+					r.Delete("/{id}", emojiHandler.DeleteGroup)             // 删除表情分组
+					r.Get("/{id}/emojis", emojiHandler.ListGroupEmojis)    // 获取分组内表情列表
+					r.Post("/{id}/emojis", emojiHandler.CreateEmoji)        // 在分组内创建表情
+				})
 				r.Post("/upload", emojiHandler.UploadEmoji)   // 上传表情图片
 				r.Patch("/{id}", emojiHandler.UpdateEmoji)    // 更新表情
 				r.Delete("/{id}", emojiHandler.DeleteEmoji)   // 删除表情
