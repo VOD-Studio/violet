@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { MessageSquare } from "lucide-react";
-import type { Comment } from "@/hooks/useComments";
+import type { Comment } from "../api";
 import { ReactionBar } from "./ReactionBar";
 import { CommentForm } from "./CommentForm";
 import { CommentContent } from "./CommentContent";

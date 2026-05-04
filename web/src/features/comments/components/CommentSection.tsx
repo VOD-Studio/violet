@@ -5,13 +5,13 @@
 // 监测评论区进入视口状态并更新 store
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useComments } from "@/hooks/useComments";
 import { usePostStore } from "@/store";
 import { CommentItem } from "./CommentItem";
 import { CommentForm } from "./CommentForm";
 import { CommentReactionsProvider } from "../contexts/CommentReactionsContext";
 import { useCommentReactionsBatch } from "../hooks/useCommentReactionsBatch";
-import type { Comment } from "@/hooks/useComments";
+import { useComments } from "../api";
+import type { Comment } from "../types";
 
 interface CommentSectionProps {
   /** 文章 ID */
