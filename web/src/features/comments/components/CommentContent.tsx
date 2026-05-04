@@ -22,7 +22,7 @@ export function CommentContent({ html, className }: CommentContentProps) {
   const { getDisplayByName } = useEmojis();
 
   const renderedContent = useMemo(() => {
-    // 匹配 [emoji_name] 语法
+    // 匹配 [emoji_name] 语法（包括被 HTML 标签包裹的情况）
     const emojiRegex = /\[([^\]]+)\]/g;
 
     // 替换表情语法为实际的表情元素
@@ -37,9 +37,9 @@ export function CommentContent({ html, className }: CommentContentProps) {
       // 判断是图片还是文本
       if (display.startsWith("http") || display.startsWith("/")) {
         const imageUrl = display.startsWith("/") ? getUploadUrl(display) : display;
-        return `<img src="${imageUrl}" alt="${emojiName}" class="inline-block w-5 h-5 align-text-bottom mx-0.5" />`;
+        return `<img src="${imageUrl}" alt="${emojiName}" class="inline-block w-5 h-5 align-text-bottom mx-0.5" style="display: inline-block;" />`;
       } else {
-        return `<span class="inline-block mx-0.5">${display}</span>`;
+        return `<span class="inline-block mx-0.5" style="display: inline-block;">${display}</span>`;
       }
     });
 
