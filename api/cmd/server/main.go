@@ -99,7 +99,8 @@ func main() {
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
 	musicSettingsService := service.NewMusicSettingsService(queries)
 	projectService := service.NewProjectService(queries)
-	emojiService := service.NewEmojiService(queries, "uploads/emojis", cfg.BilibiliCookie)
+	emojiService := service.NewEmojiService(queries, "uploads/emojis")
+	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie)
 	permissionService := service.NewPermissionService(queries)
 
 	count, err := queries.CountEmojiGroups(ctx)
@@ -107,7 +108,7 @@ func main() {
 		log.Error().Err(err).Msg("检查表情分组数量失败")
 	} else if count == 0 {
 		log.Info().Msg("表情分组为空，开始初始化 B站表情种子数据...")
-		if err := emojiService.SeedBilibiliEmojis(ctx); err != nil {
+		if err := emojiSeedService.SeedBilibiliEmojis(ctx); err != nil {
 			log.Error().Err(err).Msg("表情种子数据初始化失败（不影响服务启动）")
 		}
 	} else {

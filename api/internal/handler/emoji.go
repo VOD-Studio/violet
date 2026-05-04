@@ -253,14 +253,13 @@ func (h *EmojiHandler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	count, err := h.emojiService.BatchUpdateGroupsStatus(r.Context(), req.IDs, req.IsEnabled)
-	if err != nil {
+	if err := h.emojiService.BatchUpdateGroupsStatus(r.Context(), req.IDs, req.IsEnabled); err != nil {
 		response.InternalServerError(w, "批量更新失败")
 		return
 	}
 
 	response.Success(w, map[string]interface{}{
-		"updated": count,
+		"updated": len(req.IDs),
 		"message": "批量更新成功",
 	})
 }

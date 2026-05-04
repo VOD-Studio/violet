@@ -3,15 +3,12 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -51,15 +48,13 @@ type EmojiService struct {
 	queries       *generated.Queries
 	rendererCache *SimpleEmojiCache
 	emojiDir      string // 表情独立存储目录
-	bilibiliCookie string // B站登录 Cookie
 }
 
 // NewEmojiService 创建表情服务实例
-func NewEmojiService(queries *generated.Queries, emojiDir, cookie string) *EmojiService {
+func NewEmojiService(queries *generated.Queries, emojiDir string) *EmojiService {
 	return &EmojiService{
-		queries:        queries,
-		emojiDir:       emojiDir,
-		bilibiliCookie: cookie,
+		queries:  queries,
+		emojiDir: emojiDir,
 	}
 }
 
@@ -87,13 +82,13 @@ func (s *EmojiService) GetCache() EmojiCache {
 
 // EmojiGroupResponse 表情分组响应
 type EmojiGroupResponse struct {
-	ID        int32             `json:"id"`
-	Name      string            `json:"name"`
-	Source    string            `json:"source"`
-	SortOrder int32             `json:"sort_order"`
-	IsEnabled bool              `json:"is_enabled"`
-	CreatedAt string            `json:"created_at"`
-	Emojis    []*EmojiResponse  `json:"emojis,omitempty"`
+	ID        int32            `json:"id"`
+	Name      string           `json:"name"`
+	Source    string           `json:"source"`
+	SortOrder int32            `json:"sort_order"`
+	IsEnabled bool             `json:"is_enabled"`
+	CreatedAt string           `json:"created_at"`
+	Emojis    []*EmojiResponse `json:"emojis,omitempty"`
 }
 
 // EmojiResponse 表情响应
@@ -148,7 +143,7 @@ func (s *EmojiService) GetEmojiGroupByID(ctx context.Context, id int32) (*EmojiG
 	return emojiGroupToResponse(group), nil
 }
 
-// ListEmojiGroups 获取所有启用的表情分组（公开）
+// ListEmojiGroups 获取所有启用的表情分组
 func (s *EmojiService) ListEmojiGroups(ctx context.Context) ([]*EmojiGroupResponse, error) {
 	groups, err := s.queries.ListEmojiGroups(ctx)
 	if err != nil {
@@ -162,7 +157,7 @@ func (s *EmojiService) ListEmojiGroups(ctx context.Context) ([]*EmojiGroupRespon
 	return responses, nil
 }
 
-// GetEmojiGroupByName 获取指定名称的表情分组（含表情）
+// GetEmojiGroupByName 根据名称获取表情分组
 func (s *EmojiService) GetEmojiGroupByName(ctx context.Context, name string) (*EmojiGroupResponse, error) {
 	group, err := s.queries.GetEmojiGroupByName(ctx, name)
 	if err != nil {
@@ -170,6 +165,8 @@ func (s *EmojiService) GetEmojiGroupByName(ctx context.Context, name string) (*E
 	}
 
 	resp := emojiGroupToResponse(group)
+
+	// 获取分组内的表情
 	emojis, err := s.queries.ListEmojisByGroup(ctx, group.ID)
 	if err == nil {
 		resp.Emojis = make([]*EmojiResponse, 0, len(emojis))
@@ -181,9 +178,7 @@ func (s *EmojiService) GetEmojiGroupByName(ctx context.Context, name string) (*E
 	return resp, nil
 }
 
-// --- 管理接口：分组操作 ---
-
-// ListAllEmojiGroups 获取所有表情分组（含未启用）
+// ListAllEmojiGroups 获取所有表情分组（包括禁用的）
 func (s *EmojiService) ListAllEmojiGroups(ctx context.Context) ([]*EmojiGroupResponse, error) {
 	groups, err := s.queries.ListAllEmojiGroups(ctx)
 	if err != nil {
@@ -197,6 +192,8 @@ func (s *EmojiService) ListAllEmojiGroups(ctx context.Context) ([]*EmojiGroupRes
 	return responses, nil
 }
 
+// --- 表情分组管理 ---
+
 // CreateEmojiGroupInput 创建表情分组输入
 type CreateEmojiGroupInput struct {
 	Name      string
@@ -207,9 +204,6 @@ type CreateEmojiGroupInput struct {
 
 // CreateEmojiGroup 创建表情分组
 func (s *EmojiService) CreateEmojiGroup(ctx context.Context, input CreateEmojiGroupInput) (*EmojiGroupResponse, error) {
-	log.Info().Str("service", "EmojiService").Str("operation", "CreateEmojiGroup").
-		Str("name", input.Name).Msg("开始创建表情分组")
-
 	params := generated.CreateEmojiGroupParams{
 		Name:      input.Name,
 		Source:    input.Source,
@@ -217,14 +211,11 @@ func (s *EmojiService) CreateEmojiGroup(ctx context.Context, input CreateEmojiGr
 		IsEnabled: input.IsEnabled,
 	}
 
-	log.Debug().Str("query", "CreateEmojiGroup").Msg("创建表情分组记录")
 	group, err := s.queries.CreateEmojiGroup(ctx, params)
 	if err != nil {
-		log.Error().Err(err).Str("name", input.Name).Msg("创建表情分组失败")
 		return nil, fmt.Errorf("创建表情分组失败: %w", err)
 	}
 
-	log.Info().Int32("group_id", group.ID).Str("name", input.Name).Msg("表情分组创建成功")
 	return emojiGroupToResponse(group), nil
 }
 
@@ -255,35 +246,34 @@ func (s *EmojiService) UpdateEmojiGroup(ctx context.Context, input UpdateEmojiGr
 	return emojiGroupToResponse(group), nil
 }
 
-// DeleteEmojiGroup 删除表情分组（会同时删除分组内的所有表情）
+// DeleteEmojiGroup 删除表情分组
 func (s *EmojiService) DeleteEmojiGroup(ctx context.Context, id int32) error {
-	// 先删除分组内的表情
-	err := s.queries.DeleteEmojisByGroup(ctx, id)
-	if err != nil {
+	// 先删除分组内的所有表情
+	if err := s.queries.DeleteEmojisByGroup(ctx, id); err != nil {
 		return fmt.Errorf("删除分组内表情失败: %w", err)
 	}
 
-	// 再删除分组
-	err = s.queries.DeleteEmojiGroup(ctx, id)
-	if err != nil {
+	// 删除分组
+	if err := s.queries.DeleteEmojiGroup(ctx, id); err != nil {
 		return fmt.Errorf("删除表情分组失败: %w", err)
+	}
+
+	return nil
+}
+
+// BatchUpdateGroupsStatus 批量更新表情分组状态
+func (s *EmojiService) BatchUpdateGroupsStatus(ctx context.Context, ids []int32, isEnabled bool) error {
+	err := s.queries.BatchUpdateGroupsStatus(ctx, generated.BatchUpdateGroupsStatusParams{
+		Ids:       ids,
+		IsEnabled: isEnabled,
+	})
+	if err != nil {
+		return fmt.Errorf("批量更新表情分组状态失败: %w", err)
 	}
 	return nil
 }
 
-// BatchUpdateGroupsStatus 批量更新分组启用状态
-func (s *EmojiService) BatchUpdateGroupsStatus(ctx context.Context, ids []int32, isEnabled bool) (int64, error) {
-	err := s.queries.BatchUpdateGroupsStatus(ctx, generated.BatchUpdateGroupsStatusParams{
-		IsEnabled: isEnabled,
-		Ids:       ids,
-	})
-	if err != nil {
-		return 0, fmt.Errorf("批量更新失败: %w", err)
-	}
-	return int64(len(ids)), nil
-}
-
-// --- 管理接口：表情操作 ---
+// --- 表情管理 ---
 
 // GetEmojiByID 获取单个表情
 func (s *EmojiService) GetEmojiByID(ctx context.Context, id int32) (*EmojiResponse, error) {
@@ -294,7 +284,7 @@ func (s *EmojiService) GetEmojiByID(ctx context.Context, id int32) (*EmojiRespon
 	return emojiToResponse(emoji), nil
 }
 
-// ListEmojisByGroup 获取分组内所有表情
+// ListEmojisByGroup 获取分组内的所有表情
 func (s *EmojiService) ListEmojisByGroup(ctx context.Context, groupID int32) ([]*EmojiResponse, error) {
 	emojis, err := s.queries.ListEmojisByGroup(ctx, groupID)
 	if err != nil {
@@ -340,6 +330,7 @@ type UpdateEmojiInput struct {
 	ID          int32
 	Name        string
 	URL         string
+	SourceURL   string
 	TextContent string
 	SortOrder   int32
 }
@@ -350,6 +341,7 @@ func (s *EmojiService) UpdateEmoji(ctx context.Context, input UpdateEmojiInput) 
 		ID:          input.ID,
 		Name:        input.Name,
 		Url:         toNullString(input.URL),
+		SourceUrl:   toNullString(input.SourceURL),
 		TextContent: toNullString(input.TextContent),
 		SortOrder:   input.SortOrder,
 	}
@@ -364,14 +356,13 @@ func (s *EmojiService) UpdateEmoji(ctx context.Context, input UpdateEmojiInput) 
 
 // DeleteEmoji 删除表情
 func (s *EmojiService) DeleteEmoji(ctx context.Context, id int32) error {
-	err := s.queries.DeleteEmoji(ctx, id)
-	if err != nil {
+	if err := s.queries.DeleteEmoji(ctx, id); err != nil {
 		return fmt.Errorf("删除表情失败: %w", err)
 	}
 	return nil
 }
 
-// --- 辅助函数 ---
+// --- 类型转换辅助函数 ---
 
 func emojiGroupToResponse(g *generated.EmojiGroup) *EmojiGroupResponse {
 	return &EmojiGroupResponse{
@@ -380,7 +371,7 @@ func emojiGroupToResponse(g *generated.EmojiGroup) *EmojiGroupResponse {
 		Source:    g.Source,
 		SortOrder: g.SortOrder,
 		IsEnabled: g.IsEnabled,
-		CreatedAt: g.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CreatedAt: g.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -390,7 +381,7 @@ func emojiToResponse(e *generated.Emoji) *EmojiResponse {
 		GroupID:   e.GroupID,
 		Name:      e.Name,
 		SortOrder: e.SortOrder,
-		CreatedAt: e.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CreatedAt: e.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 
 	if e.Url.Valid {
@@ -483,220 +474,4 @@ func (s *EmojiService) UploadEmoji(ctx context.Context, filename, mimeType strin
 		Size:     written,
 		MimeType: mimeType,
 	}, nil
-}
-
-// --- B站表情种子数据 ---
-
-const bilibiliEmojiAPIURL = "https://api.bilibili.com/x/emote/setting/panel?business=reply"
-
-// BilibiliEmojiAPIResponse B站表情 API 响应结构
-type BilibiliEmojiAPIResponse struct {
-	Code int               `json:"code"`
-	Data BilibiliEmojiData `json:"data"`
-	Msg  string            `json:"message"`
-}
-
-type BilibiliEmojiData struct {
-	Packages []BilibiliEmojiPackage `json:"user_panel_packages"`
-}
-
-type BilibiliEmojiPackage struct {
-	ID    int             `json:"id"`
-	Text  string          `json:"text"`
-	Emote []BilibiliEmote `json:"emote"`
-}
-
-type BilibiliEmote struct {
-	Text string `json:"text"`
-	URL  string `json:"url"`
-}
-
-// SeedBilibiliEmojis 从 B站 API 获取表情数据并写入数据库作为初始种子数据
-func (s *EmojiService) SeedBilibiliEmojis(ctx context.Context) error {
-	log.Info().Str("service", "EmojiService").Str("operation", "SeedBilibiliEmojis").Msg("开始获取B站表情种子数据")
-
-	// 调用 B站 API
-	log.Info().Str("target", "BilibiliAPI").Msg("调用B站表情API")
-	packages, err := s.fetchBilibiliEmojis()
-	if err != nil {
-		log.Warn().Err(err).Msg("获取B站表情失败（不影响服务启动）")
-		return err
-	}
-
-	log.Info().Int("packages", len(packages)).Msg("获取到表情包组")
-
-	// 写入数据库
-	result, err := s.importBilibiliEmojis(ctx, packages)
-	if err != nil {
-		log.Warn().Err(err).Msg("写入B站表情失败（不影响服务启动）")
-		return err
-	}
-
-	log.Info().Int("groups", result.GroupsCreated).Int("emojis", result.EmojisCreated).Msg("B站表情种子数据初始化完成")
-	return nil
-}
-
-// SeedResult 种子数据导入结果
-type SeedResult struct {
-	GroupsCreated int
-	EmojisCreated int
-}
-
-func (s *EmojiService) fetchBilibiliEmojis() ([]BilibiliEmojiPackage, error) {
-	if s.bilibiliCookie == "" {
-		return nil, fmt.Errorf("未设置 B站 Cookie，请在环境变量中配置 BILIBILI_SESSDATA、BILIBILI_BILI_JCT、BILIBILI_DEDEUSERID")
-	}
-
-	client := &http.Client{Timeout: 30 * time.Second}
-
-	req, err := http.NewRequest("GET", bilibiliEmojiAPIURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("创建请求失败: %w", err)
-	}
-
-	req.Header.Set("User-Agent", "Mozilla/5.0")
-	req.Header.Set("Referer", "https://www.bilibili.com")
-	if s.bilibiliCookie != "" {
-		req.Header.Set("Cookie", s.bilibiliCookie)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("请求失败: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("读取响应失败: %w", err)
-	}
-
-	var apiResp BilibiliEmojiAPIResponse
-	if err := json.Unmarshal(body, &apiResp); err != nil {
-		return nil, fmt.Errorf("解析响应失败: %w", err)
-	}
-
-	if apiResp.Code != 0 {
-		return nil, fmt.Errorf("API 错误: code=%d, msg=%s", apiResp.Code, apiResp.Msg)
-	}
-
-	return apiResp.Data.Packages, nil
-}
-
-func (s *EmojiService) importBilibiliEmojis(ctx context.Context, packages []BilibiliEmojiPackage) (*SeedResult, error) {
-	result := &SeedResult{}
-
-	// 确保表情目录存在
-	if err := os.MkdirAll(s.emojiDir, 0755); err != nil {
-		return nil, fmt.Errorf("创建表情目录失败: %w", err)
-	}
-
-	for i, pkg := range packages {
-		if pkg.Text == "" || len(pkg.Emote) == 0 {
-			continue
-		}
-
-		// 创建分组
-		groupParams := generated.CreateEmojiGroupParams{
-			Name:      pkg.Text,
-			Source:    "bilibili",
-			SortOrder: int32(i + 1),
-			IsEnabled: true,
-		}
-
-		group, err := s.queries.CreateEmojiGroup(ctx, groupParams)
-		if err != nil {
-			log.Printf("警告: 创建表情分组 %s 失败: %v", pkg.Text, err)
-			continue
-		}
-		result.GroupsCreated++
-
-		// 创建表情（并发下载图片）
-		for j, emote := range pkg.Emote {
-			if emote.Text == "" || emote.URL == "" {
-				continue
-			}
-
-			// 下载图片到本地
-			localPath, err := s.downloadEmojiImage(emote.URL)
-			if err != nil {
-				log.Printf("警告: 下载表情 %s 图片失败: %v", emote.Text, err)
-				continue
-			}
-
-			emojiParams := generated.CreateEmojiParams{
-				GroupID:     group.ID,
-				Name:        emote.Text,
-				Url:         toNullString(localPath),
-				SourceUrl:   toNullString(emote.URL),
-				TextContent: toNullString(""),
-				SortOrder:   int32(j + 1),
-			}
-
-			_, err = s.queries.CreateEmoji(ctx, emojiParams)
-			if err != nil {
-				log.Printf("警告: 创建表情 %s 失败: %v", emote.Text, err)
-				continue
-			}
-			result.EmojisCreated++
-		}
-	}
-
-	return result, nil
-}
-
-// downloadEmojiImage 下载表情图片到本地存储
-func (s *EmojiService) downloadEmojiImage(url string) (string, error) {
-	client := &http.Client{Timeout: 30 * time.Second}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", fmt.Errorf("创建下载请求失败: %w", err)
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-	req.Header.Set("Referer", "https://www.bilibili.com")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("下载失败: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("下载失败: status=%d", resp.StatusCode)
-	}
-
-	// 从 URL 或 Content-Type 推断扩展名
-	ext := ".png"
-	if strings.Contains(url, ".gif") {
-		ext = ".gif"
-	} else if ct := resp.Header.Get("Content-Type"); ct != "" {
-		switch ct {
-		case "image/gif":
-			ext = ".gif"
-		case "image/jpeg", "image/jpg":
-			ext = ".jpg"
-		case "image/webp":
-			ext = ".webp"
-		}
-	}
-
-	// 生成唯一文件名
-	filename := fmt.Sprintf("%s%s", uuid.New().String(), ext)
-	dstPath := filepath.Join(s.emojiDir, filename)
-
-	// 保存文件
-	dst, err := os.Create(dstPath)
-	if err != nil {
-		return "", fmt.Errorf("创建文件失败: %w", err)
-	}
-	defer dst.Close()
-
-	if _, err = io.Copy(dst, resp.Body); err != nil {
-		os.Remove(dstPath)
-		return "", fmt.Errorf("保存文件失败: %w", err)
-	}
-
-	// 返回相对路径 URL
-	return "/uploads/emojis/" + filename, nil
 }
