@@ -12,9 +12,9 @@ import { api, getUploadUrl } from "@/lib/api";
 
 /** 表情上传结果 */
 interface EmojiUploadResult {
-  url: string;       // 相对路径，如 /uploads/emojis/xxx.png
-  filename: string;  // 文件名
-  size: number;      // 文件大小
+  url: string; // 相对路径，如 /uploads/emojis/xxx.png
+  filename: string; // 文件名
+  size: number; // 文件大小
   mime_type: string; // MIME 类型
 }
 
@@ -68,7 +68,10 @@ async function uploadEmojiImage(file: File): Promise<EmojiUploadResult> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const result = await api.post<EmojiUploadResult>("/admin/emojis/upload", formData);
+  const result = await api.post<EmojiUploadResult>(
+    "/admin/emojis/upload",
+    formData
+  );
   return result;
 }
 
@@ -91,10 +94,10 @@ export default function EmojiUploader({
   const updateItem = useCallback(
     (id: string, updates: Partial<FileUploadItem>) => {
       setItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
       );
     },
-    [],
+    []
   );
 
   /**
@@ -118,7 +121,7 @@ export default function EmojiUploader({
         toast.error("上传失败，请重试");
       }
     },
-    [updateItem, onUpload],
+    [updateItem, onUpload]
   );
 
   /**
@@ -128,7 +131,7 @@ export default function EmojiUploader({
     (acceptedFiles: File[]) => {
       // 过滤非图片文件
       const imageFiles = acceptedFiles.filter((file) =>
-        file.type.startsWith("image/"),
+        file.type.startsWith("image/")
       );
 
       if (imageFiles.length < acceptedFiles.length) {
@@ -149,7 +152,7 @@ export default function EmojiUploader({
         handleUpload(item);
       }
     },
-    [handleUpload],
+    [handleUpload]
   );
 
   /**

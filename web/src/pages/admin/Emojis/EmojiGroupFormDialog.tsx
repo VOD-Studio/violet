@@ -57,8 +57,8 @@ export function EmojiGroupFormDialog({
         setForm({
           name: editingGroup.name,
           source: editingGroup.source,
-          sortOrder: editingGroup.sortOrder,
-          isEnabled: editingGroup.isEnabled,
+          sortOrder: editingGroup.sort_order,
+          isEnabled: editingGroup.is_enabled,
         });
       } else {
         setForm({
@@ -93,7 +93,7 @@ export function EmojiGroupFormDialog({
             onOpenChange(false);
           },
           onError: () => toast.error("更新失败"),
-        },
+        }
       );
     } else {
       createGroup.mutate(data, {

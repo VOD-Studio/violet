@@ -22,7 +22,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { GroupCardSkeleton } from "./GroupCardSkeleton";
 import { EmojiGroupCard } from "./EmojiGroupCard";
 import { EmojiGroupFormDialog } from "./EmojiGroupFormDialog";
-import { EmojiManageDialog } from "./EmojiManageDialog";
+import { EmojiManageDialog } from "@/features/emoji-management";
 import {
   Plus,
   Smile,
@@ -86,7 +86,7 @@ export default function Emojis() {
   const [searchQuery, setSearchQuery] = useState("");
   const [groupFormOpen, setGroupFormOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<EmojiGroupAdmin | null>(
-    null,
+    null
   );
   const [deleteConfirm, setDeleteConfirm] = useState<{
     open: boolean;
@@ -165,7 +165,7 @@ export default function Emojis() {
           toast.error("操作失败");
           setTogglingGroupId(null);
         },
-      },
+      }
     );
   }
 
@@ -184,7 +184,7 @@ export default function Emojis() {
       {
         onSuccess: () => toast.success(`已启用 ${disabledIds.length} 个分组`),
         onError: () => toast.error("批量启用失败"),
-      },
+      }
     );
   }
 
@@ -203,7 +203,7 @@ export default function Emojis() {
       {
         onSuccess: () => toast.success(`已禁用 ${enabledIds.length} 个分组`),
         onError: () => toast.error("批量禁用失败"),
-      },
+      }
     );
   }
 
@@ -281,7 +281,11 @@ export default function Emojis() {
                   variant="outline"
                   size="sm"
                   onClick={handleBatchEnable}
-                  disabled={batchUpdateStatus.isPending || isLoading || stats.disabled === 0}
+                  disabled={
+                    batchUpdateStatus.isPending ||
+                    isLoading ||
+                    stats.disabled === 0
+                  }
                 >
                   {batchUpdateStatus.isPending ? (
                     <Loader2 className="mr-1 size-3.5 animate-spin" />
@@ -294,7 +298,11 @@ export default function Emojis() {
                   variant="outline"
                   size="sm"
                   onClick={handleBatchDisable}
-                  disabled={batchUpdateStatus.isPending || isLoading || stats.enabled === 0}
+                  disabled={
+                    batchUpdateStatus.isPending ||
+                    isLoading ||
+                    stats.enabled === 0
+                  }
                 >
                   {batchUpdateStatus.isPending ? (
                     <Loader2 className="mr-1 size-3.5 animate-spin" />
