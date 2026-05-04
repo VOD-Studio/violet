@@ -10,8 +10,8 @@ import {
   useAdminPosts,
   useTogglePostStatus,
   useDeleteAdminPost,
-} from "@/hooks/useAdminPosts";
-import type { PostStatus, ApiPost } from "@/hooks/useAdminPosts";
+} from "@/features/admin/posts/types";
+import type { PostStatus, ApiPost } from "@/features/admin/posts/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {

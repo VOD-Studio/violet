@@ -5,8 +5,8 @@
  */
 
 import { useState } from "react";
-import { useAdminComments, useAdminCommentActions } from "@/hooks/useAdminComments";
-import type { ApiComment } from "@/hooks/useAdminComments";
+import { useAdminComments, useAdminCommentActions } from "@/features/admin/comments/api";
+import type { ApiComment } from "@/features/admin/comments/types";
 import {
   Table,
   TableBody,

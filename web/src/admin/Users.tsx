@@ -9,8 +9,8 @@ import {
   useAdminUsers,
   useUpdateUserRole,
   useToggleUserStatus,
-} from "@/hooks/useAdminUsers";
-import type { AdminUser } from "@/hooks/useAdminUsers";
+} from "@/features/admin/users/types";
+import type { AdminUser } from "@/features/admin/users/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {

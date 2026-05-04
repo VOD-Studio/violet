@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { RecentPost } from "@/hooks/useAdminPosts";
+import type { RecentPost } from "@/features/admin/posts/types";
 
 interface RecentPostsTableProps {
   posts: RecentPost[];

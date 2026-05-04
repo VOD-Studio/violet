@@ -4,7 +4,7 @@
  */
 
 import { Link } from "react-router";
-import { useAdminStats, useViewTrends } from "@/hooks/useAdminDashboard";
+import { useAdminStats, useViewTrends } from "@/features/admin/dashboard/api";
 import { ErrorFallback } from "@/components/shared/ErrorFallback";
 import { StatsCard, StatsCardSkeleton } from "./StatsCard";
 import { ViewTrendsChart } from "./ViewTrendsChart";

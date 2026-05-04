@@ -6,7 +6,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { MediaItem } from "@/hooks/useAdminMedia";
+import type { MediaItem } from "@/features/admin/media/types";
 import { getUploadUrl } from "@/lib/api";
 import {
   Video,

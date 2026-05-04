@@ -1,4 +1,4 @@
-import type { SiteSettings } from "@/hooks/useAdminSettings";
+import type { SiteSettings } from "@/features/admin/settings/types";
 import {
   Card,
   CardContent,

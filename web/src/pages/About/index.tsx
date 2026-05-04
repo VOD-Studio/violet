@@ -1,4 +1,4 @@
-import { usePublicSettings } from "@/hooks/useAdminSettings";
+import { usePublicSettings } from "@/features/admin/settings/types";
 import { SEO } from "@/components/shared/SEO";
 import { StructuredData } from "@/components/shared/StructuredData";
 import {
