@@ -6,7 +6,7 @@
 import { useEffect, useRef } from "react";
 import { Music } from "lucide-react";
 import { MarqueeText } from "./MarqueeText";
-import type { Song } from "./usePlyrPlayer";
+import type { Song } from "../hooks/usePlyrPlayer";
 
 /** 歌词行 */
 interface LyricLine {

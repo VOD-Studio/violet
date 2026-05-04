@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, ChevronDown } from "lucide-react";
-import { usePlyrPlayer, type Playlist } from "./usePlyrPlayer";
+import { usePlyrPlayer, type Playlist } from "../hooks/usePlyrPlayer";
 import { VinylDisc } from "./VinylDisc";
 import { MarqueeText } from "./MarqueeText";
 import { PlayerProgress } from "./PlayerProgress";

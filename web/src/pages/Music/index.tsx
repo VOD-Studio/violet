@@ -5,7 +5,11 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
-import { MusicPlayer, SongList, type PlaylistInfo } from "@/components/blog/MusicPlayer";
+import {
+  MusicPlayerLegacy as MusicPlayer,
+  SongList,
+  type PlaylistInfo,
+} from "@/features/music";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +30,9 @@ export default function MusicPage() {
 
     setLoading(true);
     try {
-      const res = await api.get<PlaylistInfo>("/music/playlist", { url: url.trim() });
+      const res = await api.get<PlaylistInfo>("/music/playlist", {
+        url: url.trim(),
+      });
       setPlaylist(res);
       setCurrentIndex(0);
       toast.success(`成功导入 ${res.count} 首歌`);
@@ -69,11 +75,7 @@ export default function MusicPage() {
                 className="flex-1"
               />
               <Button onClick={handleImport} disabled={loading}>
-                {loading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  "导入"
-                )}
+                {loading ? <Loader2 className="size-4 animate-spin" /> : "导入"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
@@ -100,7 +102,8 @@ export default function MusicPage() {
                     {playlist.creator} · {playlist.count} 首
                   </p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    来源：{playlist.platform === "netease" ? "网易云音乐" : "QQ音乐"}
+                    来源：
+                    {playlist.platform === "netease" ? "网易云音乐" : "QQ音乐"}
                   </p>
                 </div>
               </div>
@@ -112,10 +115,7 @@ export default function MusicPage() {
         {playlist && playlist.songs.length > 0 && (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* 播放器 */}
-            <MusicPlayer
-              playlist={playlist.songs}
-              className="sticky top-4"
-            />
+            <MusicPlayer playlist={playlist.songs} className="sticky top-4" />
 
             {/* 歌曲列表 */}
             <Card>

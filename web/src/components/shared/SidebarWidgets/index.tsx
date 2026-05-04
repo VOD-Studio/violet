@@ -4,7 +4,7 @@
  */
 
 import { BackToTop } from "../BackToTop";
-import { MusicPlayer } from "../Music";
+import { MusicPlayerContainer } from "@/features/music-player";
 import { QuickComment } from "../QuickComment";
 
 interface BackToTopConfig {
@@ -39,7 +39,7 @@ export function SidebarWidgets({
 }: SidebarWidgetsProps) {
   return (
     <>
-      {showMusicPlayer && <MusicPlayer />}
+      {showMusicPlayer && <MusicPlayerContainer />}
       {showQuickComment && <QuickComment />}
       {showBackToTop && <BackToTop {...backToTopConfig} />}
     </>
