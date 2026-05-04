@@ -102,6 +102,7 @@ func main() {
 	emojiService := service.NewEmojiService(queries, "uploads/emojis")
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie)
 	permissionService := service.NewPermissionService(queries)
+	commentReactionService := service.NewCommentReactionService(queries)
 
 	count, err := queries.CountEmojiGroups(ctx)
 	if err != nil {
@@ -140,6 +141,7 @@ func main() {
 	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
 	projectHandler := handler.NewProjectHandler(projectService)
 	emojiHandler := handler.NewEmojiHandler(emojiService)
+	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
 
 	// --- 路由注册 ---
 
@@ -222,6 +224,16 @@ func main() {
 				r.Delete("/", commentHandler.DeleteComment)            // 删除评论
 			})
 		})
+
+		// 评论反应（公开接口）
+		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
+			r.Get("/", commentReactionHandler.GetCommentReactions)                                   // 获取评论反应
+			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentReactionHandler.AddReaction) // 添加反应（限流）
+			r.Delete("/{emoji_id}", commentReactionHandler.RemoveReaction)                           // 删除反应
+		})
+
+		// 批量获取评论反应
+		v1.Post("/comments/reactions/batch", commentReactionHandler.GetReactionsBatch)
 
 		// 媒体
 		v1.Route("/media", func(r chi.Router) {
