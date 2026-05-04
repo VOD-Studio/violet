@@ -21,11 +21,7 @@ export function QuickCommentButton({
 
   return (
     <div className="fixed bottom-36 right-4 z-40">
-      <Button
-        size="lg"
-        className="shadow-lg rounded-full"
-        onClick={onClick}
-      >
+      <Button size="lg" className="shadow-lg rounded-full" onClick={onClick}>
         <MessageSquare className="mr-2 h-5 w-5" />
         发表评论
       </Button>

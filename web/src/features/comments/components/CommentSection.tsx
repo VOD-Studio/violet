@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { useComments, useSubmitComment } from "@/hooks/useComments";
 import { useAuthStore, usePostStore } from "@/store";
 import { CommentItem } from "./CommentItem";
-import { EmojiPickerButton } from "@/components/comment/EmojiPicker";
+import { EmojiPickerButton } from "./EmojiPickerButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -151,7 +151,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
             {/* 表情选择器按钮 */}
             <div className="absolute bottom-2 right-2">
               <EmojiPickerButton
-                onSelect={(syntax) => setContent((prev) => prev + syntax)}
+                onSelect={(syntax: string) => setContent((prev) => prev + syntax)}
               />
             </div>
           </div>

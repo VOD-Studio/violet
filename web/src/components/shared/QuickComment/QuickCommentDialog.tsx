@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useSubmitComment } from "@/hooks/useComments";
 import { useAuthStore } from "@/store";
-import { EmojiPickerButton } from "@/components/comment/EmojiPicker";
+import { EmojiPickerButton } from "@/features/comments";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,7 +77,13 @@ export function QuickCommentDialog({
         <DialogHeader>
           <DialogTitle>发表评论</DialogTitle>
         </DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4 py-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+          className="space-y-4 py-2"
+        >
           {/* 已登录用户显示用户信息 */}
           {user ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -128,7 +134,7 @@ export function QuickCommentDialog({
               {/* 表情选择器按钮 */}
               <div className="absolute bottom-2 right-2">
                 <EmojiPickerButton
-                  onSelect={(syntax) => setContent((prev) => prev + syntax)}
+                  onSelect={(syntax: string) => setContent((prev) => prev + syntax)}
                 />
               </div>
             </div>
