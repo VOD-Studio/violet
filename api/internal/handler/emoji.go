@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"blog-api/internal/pkg/request"
 	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )

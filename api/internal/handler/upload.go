@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 
 	"blog-api/internal/middleware"
-	"blog-api/internal/pkg/request"
 	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )

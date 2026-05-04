@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"blog-api/internal/pkg/request"
 	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
