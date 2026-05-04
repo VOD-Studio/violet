@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api, getUploadUrl } from "@/lib/api";
 import { APlayerMusicPlayer } from "./APlayerMusicPlayer";
 import { PlyrMusicPlayer } from "./PlyrMusicPlayer";
+import type { Playlist, SongData } from "./usePlyrPlayer";
 
 /** 播放器设置响应 */
 interface MusicSettingsResponse {
@@ -15,32 +16,9 @@ interface MusicSettingsResponse {
   };
 }
 
-/** 歌曲信息（后端返回） */
-interface SongData {
-  id: string;
-  title: string;
-  artist: string;
-  album?: string;
-  cover?: string;
-  duration?: number;
-  url: string;
-  platform?: string;
-  lrc?: string;
-}
-
 /** 歌单列表响应 */
 interface PlaylistsResponse {
-  playlists: Array<{
-    id: string;
-    title: string;
-    cover?: string;
-    creator?: string;
-    platform: string;
-    playlist_id: string;
-    song_count: number;
-    songs: SongData[];
-    is_active: boolean;
-  }>;
+  playlists: Playlist[];
 }
 
 /** 获取播放器设置 */
@@ -94,7 +72,17 @@ export function MusicPlayer() {
     return <PlyrMusicPlayer playlists={playlists} />;
   }
 
-  return <APlayerMusicPlayer playlists={playlists} />;
+  // Convert to APlayer format
+  const aplayerPlaylists = playlists.map((p) => ({
+    id: p.id,
+    server: p.platform,
+    type: "playlist",
+    playlistId: p.playlist_id,
+    title: p.title,
+    isActive: p.is_active,
+  }));
+
+  return <APlayerMusicPlayer playlists={aplayerPlaylists} />;
 }
 
 /** 将后端歌曲数据转换为播放器格式 */
