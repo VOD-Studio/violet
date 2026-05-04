@@ -22,8 +22,8 @@ import (
 	"blog-api/config"
 	"blog-api/internal/handler"
 	"blog-api/internal/job"
-	"blog-api/internal/migrate"
 	"blog-api/internal/middleware"
+	"blog-api/internal/migrate"
 	"blog-api/internal/model"
 	"blog-api/internal/repository"
 	"blog-api/internal/repository/generated"
@@ -92,7 +92,7 @@ func main() {
 	authService := service.NewAuthService(queries, redisClient, emailService, cfg)
 	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
-	commentService := service.NewCommentService(commentRepo)
+	commentService := service.NewCommentService(commentRepo, queries)
 	statsService := service.NewStatsService(queries)
 	settingsService := service.NewSettingsService(queries)
 	userService := service.NewUserService(queries)
@@ -150,9 +150,9 @@ func main() {
 	// --- 路由注册 ---
 
 	r := chi.NewRouter()
-	r.Use(middleware.Recoverer)      // panic 恢复（必须在最外层）
-	r.Use(middleware.Logger)         // 请求日志记录
-	r.Use(middleware.CORS)           // 跨域资源共享
+	r.Use(middleware.Recoverer)       // panic 恢复（必须在最外层）
+	r.Use(middleware.Logger)          // 请求日志记录
+	r.Use(middleware.CORS)            // 跨域资源共享
 	r.Use(middleware.SecurityHeaders) // 安全响应头
 
 	// 健康检查（无版本前缀）
@@ -172,18 +172,18 @@ func main() {
 
 		// 认证
 		v1.Route("/auth", func(r chi.Router) {
-			r.Post("/register", authHandler.Register)           // 用户注册
-			r.Post("/verify-email", authHandler.VerifyEmail)    // 邮箱验证
-			r.Post("/login", authHandler.Login)                 // 用户登录
-			r.Post("/refresh", authHandler.RefreshToken)        // 刷新令牌
+			r.Post("/register", authHandler.Register)              // 用户注册
+			r.Post("/verify-email", authHandler.VerifyEmail)       // 邮箱验证
+			r.Post("/login", authHandler.Login)                    // 用户登录
+			r.Post("/refresh", authHandler.RefreshToken)           // 刷新令牌
 			r.Post("/forgot-password", authHandler.ForgotPassword) // 发送重置密码邮件
 			r.Post("/reset-password", authHandler.ResetPassword)   // 重置密码
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(authService))
-				r.Post("/logout", authHandler.Logout)           // 用户登出
-				r.Get("/me", authHandler.Me)                    // 获取当前用户信息
-				r.Patch("/profile", authHandler.UpdateProfile)  // 更新个人资料
+				r.Post("/logout", authHandler.Logout)            // 用户登出
+				r.Get("/me", authHandler.Me)                     // 获取当前用户信息
+				r.Patch("/profile", authHandler.UpdateProfile)   // 更新个人资料
 				r.Patch("/password", authHandler.UpdatePassword) // 修改密码
 			})
 		})
@@ -196,9 +196,9 @@ func main() {
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(authService))
-				r.Post("/", postHandler.Create)              // 创建文章
-				r.Put("/{id}", postHandler.Update)           // 更新文章
-				r.Delete("/{id}", postHandler.Delete)        // 删除文章
+				r.Post("/", postHandler.Create)                   // 创建文章
+				r.Put("/{id}", postHandler.Update)                // 更新文章
+				r.Delete("/{id}", postHandler.Delete)             // 删除文章
 				r.Patch("/{id}/status", postHandler.UpdateStatus) // 更新文章状态（发布/草稿）
 			})
 		})
@@ -209,14 +209,14 @@ func main() {
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(authService))
-				r.Post("/", tagHandler.Create)      // 创建标签
+				r.Post("/", tagHandler.Create)       // 创建标签
 				r.Delete("/{id}", tagHandler.Delete) // 删除标签
 			})
 		})
 
 		// 评论
 		v1.Route("/posts/{id}/comments", func(r chi.Router) {
-			r.Get("/", commentHandler.ListApprovedComments)  // 获取文章已审核评论
+			r.Get("/", commentHandler.ListApprovedComments)                                          // 获取文章已审核评论
 			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentHandler.CreateComment) // 提交评论（限流）
 		})
 
@@ -231,9 +231,9 @@ func main() {
 
 		// 评论反应（公开接口）
 		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
-			r.Get("/", commentReactionHandler.GetCommentReactions)                                   // 获取评论反应
+			r.Get("/", commentReactionHandler.GetCommentReactions)                                         // 获取评论反应
 			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentReactionHandler.AddReaction) // 添加反应（限流）
-			r.Delete("/{emoji_id}", commentReactionHandler.RemoveReaction)                           // 删除反应
+			r.Delete("/{emoji_id}", commentReactionHandler.RemoveReaction)                                 // 删除反应
 		})
 
 		// 批量获取评论反应
@@ -245,9 +245,9 @@ func main() {
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(authService))
-				r.Get("/", mediaHandler.ListMedia)                     // 媒体列表（分页、类型筛选）
-				r.Delete("/{id}", mediaHandler.DeleteMedia)            // 删除媒体
-				r.Post("/batch-delete", mediaHandler.BatchDeleteMedia) // 批量删除媒体
+				r.Get("/", mediaHandler.ListMedia)                      // 媒体列表（分页、类型筛选）
+				r.Delete("/{id}", mediaHandler.DeleteMedia)             // 删除媒体
+				r.Post("/batch-delete", mediaHandler.BatchDeleteMedia)  // 批量删除媒体
 				r.Post("/{id}/thumbnail", mediaHandler.UploadThumbnail) // 上传视频封面缩略图
 			})
 		})
@@ -255,34 +255,34 @@ func main() {
 		// 分片上传
 		v1.Route("/upload", func(r chi.Router) {
 			r.Use(middleware.Auth(authService))
-			r.Post("/init", uploadHandler.InitSession)                  // 初始化上传会话（含秒传检查、断点续传恢复）
-			r.Put("/{uploadId}/chunk/{index}", uploadHandler.SaveChunk) // 上传单个分片
+			r.Post("/init", uploadHandler.InitSession)                   // 初始化上传会话（含秒传检查、断点续传恢复）
+			r.Put("/{uploadId}/chunk/{index}", uploadHandler.SaveChunk)  // 上传单个分片
 			r.Post("/{uploadId}/complete", uploadHandler.CompleteUpload) // 合并所有分片为完整文件
-			r.Delete("/{uploadId}", uploadHandler.CancelUpload)         // 取消上传，清理临时分片
-			r.Get("/{uploadId}/status", uploadHandler.GetUploadStatus)  // 查询上传状态（断点续传）
+			r.Delete("/{uploadId}", uploadHandler.CancelUpload)          // 取消上传，清理临时分片
+			r.Get("/{uploadId}/status", uploadHandler.GetUploadStatus)   // 查询上传状态（断点续传）
 		})
 
 		// 音乐（公开）
 		v1.Route("/music", func(r chi.Router) {
-			r.Get("/embed", musicHandler.GetEmbedInfo)                      // 解析音乐链接返回嵌入信息
-			r.Get("/playlist", musicHandler.GetPlaylist)                    // 解析歌单链接返回歌单信息
-			r.Get("/song", musicHandler.GetSongDetail)                      // 获取歌曲详情
-			r.Get("/search", musicHandler.SearchSongs)                      // 搜索歌曲
-			r.Get("/lyrics", musicHandler.GetLyrics)                        // 获取歌词
-			r.Get("/meta", musicHandler.FetchSongMeta)                      // 获取歌曲元数据（封面+歌词）
+			r.Get("/embed", musicHandler.GetEmbedInfo)                          // 解析音乐链接返回嵌入信息
+			r.Get("/playlist", musicHandler.GetPlaylist)                        // 解析歌单链接返回歌单信息
+			r.Get("/song", musicHandler.GetSongDetail)                          // 获取歌曲详情
+			r.Get("/search", musicHandler.SearchSongs)                          // 搜索歌曲
+			r.Get("/lyrics", musicHandler.GetLyrics)                            // 获取歌词
+			r.Get("/meta", musicHandler.FetchSongMeta)                          // 获取歌曲元数据（封面+歌词）
 			r.Get("/playlists/active", musicAdminHandler.GetAllActivePlaylists) // 获取所有启用歌单
-			r.Get("/settings", musicAdminHandler.GetMusicSettings)          // 获取播放器设置
+			r.Get("/settings", musicAdminHandler.GetMusicSettings)              // 获取播放器设置
 		})
 
 		// 项目
 		v1.Route("/projects", func(r chi.Router) {
-			r.Get("/", projectHandler.List)      // 项目列表
+			r.Get("/", projectHandler.List)        // 项目列表
 			r.Get("/{id}", projectHandler.GetByID) // 项目详情
 		})
 
 		// 表情（公开）
 		v1.Route("/emojis", func(r chi.Router) {
-			r.Get("/", emojiHandler.GetAllEmojis)                  // 获取所有启用表情分组和表情
+			r.Get("/", emojiHandler.GetAllEmojis)                     // 获取所有启用表情分组和表情
 			r.Get("/groups/{name}", emojiHandler.GetEmojiGroupByName) // 按名称获取指定表情分组
 		})
 
@@ -293,30 +293,30 @@ func main() {
 			r.Use(middleware.Auth(authService))
 			r.Use(middleware.AdminRequired)
 
-			r.Get("/stats", adminHandler.GetDashboardStats)  // 仪表盘总览统计
+			r.Get("/stats", adminHandler.GetDashboardStats)   // 仪表盘总览统计
 			r.Get("/stats/views", adminHandler.GetViewTrends) // 浏览量趋势
 
-			r.Get("/settings", settingsHandler.GetSettings)   // 获取站点设置
+			r.Get("/settings", settingsHandler.GetSettings)    // 获取站点设置
 			r.Put("/settings", settingsHandler.UpdateSettings) // 更新站点设置
 
 			r.Get("/users", userMgmtHandler.ListUsers)                      // 用户列表
 			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)     // 修改用户角色
 			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus) // 启用/禁用用户
 
-			r.Get("/comments/pending", commentHandler.ListPendingComments)      // 待审核评论列表
+			r.Get("/comments/pending", commentHandler.ListPendingComments)        // 待审核评论列表
 			r.Get("/comments/pending/count", commentHandler.CountPendingComments) // 待审核评论数量
 
 			// 音乐管理
 			r.Route("/music", func(r chi.Router) {
 				r.Route("/playlists", func(r chi.Router) {
-					r.Get("/", musicAdminHandler.ListPlaylists)                       // 歌单列表
-					r.Post("/", musicAdminHandler.CreatePlaylist)                     // 导入歌单
-					r.Post("/custom", musicAdminHandler.CreateCustomPlaylist)         // 创建自定义歌单
-					r.Patch("/{id}", musicAdminHandler.UpdatePlaylist)               // 更新歌单（启用/禁用）
-					r.Delete("/{id}", musicAdminHandler.DeletePlaylist)              // 删除歌单
-					r.Post("/{id}/activate", musicAdminHandler.SetActivePlaylist)    // 设置为启用歌单
-					r.Post("/{id}/refresh", musicAdminHandler.RefreshPlaylistSongs)  // 刷新歌单歌曲
-					r.Post("/{id}/songs", musicAdminHandler.AddSongToPlaylist)       // 添加歌曲到歌单
+					r.Get("/", musicAdminHandler.ListPlaylists)                               // 歌单列表
+					r.Post("/", musicAdminHandler.CreatePlaylist)                             // 导入歌单
+					r.Post("/custom", musicAdminHandler.CreateCustomPlaylist)                 // 创建自定义歌单
+					r.Patch("/{id}", musicAdminHandler.UpdatePlaylist)                        // 更新歌单（启用/禁用）
+					r.Delete("/{id}", musicAdminHandler.DeletePlaylist)                       // 删除歌单
+					r.Post("/{id}/activate", musicAdminHandler.SetActivePlaylist)             // 设置为启用歌单
+					r.Post("/{id}/refresh", musicAdminHandler.RefreshPlaylistSongs)           // 刷新歌单歌曲
+					r.Post("/{id}/songs", musicAdminHandler.AddSongToPlaylist)                // 添加歌曲到歌单
 					r.Delete("/{id}/songs/{index}", musicAdminHandler.RemoveSongFromPlaylist) // 从歌单移除歌曲
 					r.Patch("/{id}/songs/{index}", musicAdminHandler.UpdateSongInPlaylist)    // 更新歌单中的歌曲信息
 				})
@@ -326,23 +326,23 @@ func main() {
 			// 表情管理
 			r.Route("/emojis", func(r chi.Router) {
 				r.Route("/groups", func(r chi.Router) {
-					r.Get("/", emojiHandler.ListAllGroups)                  // 获取所有表情分组（含未启用）
-					r.Post("/", emojiHandler.CreateGroup)                   // 创建表情分组
+					r.Get("/", emojiHandler.ListAllGroups)                   // 获取所有表情分组（含未启用）
+					r.Post("/", emojiHandler.CreateGroup)                    // 创建表情分组
 					r.Patch("/batch-status", emojiHandler.BatchUpdateStatus) // 批量更新分组启用状态
-					r.Patch("/{id}", emojiHandler.UpdateGroup)              // 更新表情分组
-					r.Delete("/{id}", emojiHandler.DeleteGroup)             // 删除表情分组
-					r.Get("/{id}/emojis", emojiHandler.ListGroupEmojis)    // 获取分组内表情列表
-					r.Post("/{id}/emojis", emojiHandler.CreateEmoji)        // 在分组内创建表情
+					r.Patch("/{id}", emojiHandler.UpdateGroup)               // 更新表情分组
+					r.Delete("/{id}", emojiHandler.DeleteGroup)              // 删除表情分组
+					r.Get("/{id}/emojis", emojiHandler.ListGroupEmojis)      // 获取分组内表情列表
+					r.Post("/{id}/emojis", emojiHandler.CreateEmoji)         // 在分组内创建表情
 				})
-				r.Post("/upload", emojiHandler.UploadEmoji)   // 上传表情图片
-				r.Patch("/{id}", emojiHandler.UpdateEmoji)    // 更新表情
-				r.Delete("/{id}", emojiHandler.DeleteEmoji)   // 删除表情
+				r.Post("/upload", emojiHandler.UploadEmoji) // 上传表情图片
+				r.Patch("/{id}", emojiHandler.UpdateEmoji)  // 更新表情
+				r.Delete("/{id}", emojiHandler.DeleteEmoji) // 删除表情
 			})
 
 			r.Route("/projects", func(r chi.Router) {
-				r.Post("/", projectHandler.Create)          // 创建项目
-				r.Put("/{id}", projectHandler.Update)       // 更新项目
-				r.Delete("/{id}", projectHandler.Delete)    // 删除项目
+				r.Post("/", projectHandler.Create)       // 创建项目
+				r.Put("/{id}", projectHandler.Update)    // 更新项目
+				r.Delete("/{id}", projectHandler.Delete) // 删除项目
 			})
 		})
 	})

@@ -17,6 +17,7 @@ import (
 
 	"blog-api/internal/model"
 	"blog-api/internal/repository"
+	"blog-api/internal/repository/generated"
 )
 
 // 评论业务错误定义
@@ -33,13 +34,15 @@ var (
 
 // CommentService 评论服务，处理评论的创建、查询、审核等业务逻辑
 type CommentService struct {
-	repo repository.CommentRepository
+	repo    repository.CommentRepository
+	queries *generated.Queries
 }
 
 // NewCommentService 创建评论服务实例
-func NewCommentService(repo repository.CommentRepository) *CommentService {
+func NewCommentService(repo repository.CommentRepository, queries *generated.Queries) *CommentService {
 	return &CommentService{
-		repo: repo,
+		repo:    repo,
+		queries: queries,
 	}
 }
 
@@ -85,6 +88,8 @@ type CommentEmote struct {
 	Text string `json:"text"`
 	// URL 表情图片地址
 	URL string `json:"url"`
+	// TextContent 纯文本表情内容（颜文字），如 "(╯°□°）╯︵ ┻━┻"
+	TextContent string `json:"text_content,omitempty"`
 }
 
 // CommentContent 评论内容结构（参考 Bilibili API 设计）
@@ -206,7 +211,7 @@ func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentI
 	}
 
 	log.Info().Str("comment_id", comment.ID.String()).Msg("评论创建成功")
-	return commentToResponse(comment), nil
+	return s.commentToResponse(ctx, comment), nil
 }
 
 // ListCommentsByPostID 查询文章的评论列表
@@ -218,7 +223,7 @@ func (s *CommentService) ListCommentsByPostID(ctx context.Context, postID uuid.U
 
 	responses := make([]*CommentResponse, 0, len(comments))
 	for _, c := range comments {
-		responses = append(responses, commentToResponse(c))
+		responses = append(responses, s.commentToResponse(ctx, c))
 	}
 
 	return responses, nil
@@ -238,7 +243,7 @@ func (s *CommentService) ListPendingComments(ctx context.Context, limit, offset 
 
 	responses := make([]*CommentResponse, 0, len(comments))
 	for _, c := range comments {
-		responses = append(responses, commentToResponse(c))
+		responses = append(responses, s.commentToResponse(ctx, c))
 	}
 
 	return responses, nil
@@ -268,7 +273,7 @@ func (s *CommentService) UpdateCommentStatus(ctx context.Context, commentID uuid
 		return nil, fmt.Errorf("更新评论状态失败: %w", err)
 	}
 
-	return commentToResponse(comment), nil
+	return s.commentToResponse(ctx, comment), nil
 }
 
 // DeleteComment 删除评论
@@ -277,7 +282,7 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID)
 }
 
 // commentToResponse 将数据库模型转换为 API 响应结构
-func commentToResponse(c *model.Comment) *CommentResponse {
+func (s *CommentService) commentToResponse(ctx context.Context, c *model.Comment) *CommentResponse {
 	// 解析图片
 	var pictures []*model.CommentPicture
 	if len(c.Pictures) > 0 {
@@ -285,7 +290,7 @@ func commentToResponse(c *model.Comment) *CommentResponse {
 	}
 
 	// 解析表情
-	emoteMap := parseEmotesFromContent(c.Body)
+	emoteMap := s.parseEmotesFromContent(ctx, c.Body)
 
 	r := &CommentResponse{
 		ID:         c.ID,
@@ -316,22 +321,69 @@ func commentToResponse(c *model.Comment) *CommentResponse {
 	return r
 }
 
-// parseEmotesFromContent 从评论内容中解析表情语法
-func parseEmotesFromContent(content string) map[string]*CommentEmote {
+// parseEmotesFromContent 从评论内容中解析表情标记并查询表情信息
+func (s *CommentService) parseEmotesFromContent(ctx context.Context, content string) map[string]*CommentEmote {
 	emoteMap := make(map[string]*CommentEmote)
 
 	// 匹配 [emoji_name] 格式
 	re := regexp.MustCompile(`\[([^\]]+)\]`)
 	matches := re.FindAllStringSubmatch(content, -1)
 
+	if len(matches) == 0 {
+		return emoteMap
+	}
+
+	// 提取所有表情名称（完整的 [name] 格式）
+	emoteNames := make(map[string]bool)
 	for _, match := range matches {
-		if len(match) > 1 {
-			emoteText := match[0] // [smile]
-			// TODO: 从数据库查询表情信息
-			// 暂时返回空映射
-			_ = emoteText
+		if len(match) > 0 {
+			emoteText := match[0] // 完整的表情标记，如 "[抠鼻]"
+			emoteNames[emoteText] = true
 		}
 	}
+
+	log.Debug().
+		Str("content", content).
+		Interface("emoteNames", emoteNames).
+		Msg("解析评论中的表情标记")
+
+	// 从数据库查询所有启用的表情
+	emojis, err := s.queries.ListAllEmojisWithGroup(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("查询表情信息失败")
+		return emoteMap
+	}
+
+	log.Debug().Int("emoji_count", len(emojis)).Msg("查询到的表情数量")
+
+	// 构建名称到表情的映射
+	for _, emoji := range emojis {
+		// 数据库中的 name 字段已经包含方括号，如 "[抠鼻]"
+		if emoteNames[emoji.Name] {
+			log.Debug().
+				Str("emoji_name", emoji.Name).
+				Str("emoji_url", emoji.Url.String).
+				Msg("匹配到表情")
+
+			// 构建 CommentEmote 对象
+			commentEmote := &CommentEmote{
+				ID:   emoji.ID,
+				Text: emoji.Name, // 使用数据库中的名称，已包含方括号
+			}
+
+			// 优先使用 URL（图片类表情）
+			if emoji.Url.Valid && emoji.Url.String != "" {
+				commentEmote.URL = emoji.Url.String
+			} else if emoji.TextContent.Valid && emoji.TextContent.String != "" {
+				// 如果是纯文本表情（颜文字），使用 text_content
+				commentEmote.TextContent = emoji.TextContent.String
+			}
+
+			emoteMap[emoji.Name] = commentEmote
+		}
+	}
+
+	log.Debug().Int("emote_map_size", len(emoteMap)).Msg("解析完成的表情映射表大小")
 
 	return emoteMap
 }

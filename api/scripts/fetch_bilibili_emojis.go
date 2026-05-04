@@ -198,15 +198,26 @@ func importEmojis(ctx context.Context, db *sql.DB, packages []Package) (*ImportR
 			if emote.Text == "" {
 				continue
 			}
-			url := emote.URL
+
+			// url 字段保存静态图（主要显示）
+			// gif_url 字段保存动图（可选的动态效果）
+			// source_url 字段保存 B站原始 URL
+			staticURL := emote.URL
+			var gifURL *string
 			if emote.GifURL != "" {
-				url = emote.GifURL
+				gifURL = &emote.GifURL
+			}
+
+			// source_url 保存 B站原始静态图 URL
+			var sourceURL *string
+			if emote.URL != "" {
+				sourceURL = &emote.URL
 			}
 
 			_, err := tx.ExecContext(ctx,
-				`INSERT INTO emojis (group_id, name, url, sort_order)
-				VALUES ($1, $2, $3, $4)`,
-				groupID, emote.Text, url, j+1)
+				`INSERT INTO emojis (group_id, name, url, gif_url, source_url, sort_order)
+				VALUES ($1, $2, $3, $4, $5, $6)`,
+				groupID, emote.Text, staticURL, gifURL, sourceURL, j+1)
 			if err != nil {
 				log.Printf("警告: 创建表情 %s 失败: %v", emote.Text, err)
 				continue

@@ -166,7 +166,7 @@ export default function Comments() {
                     {comment.author_name}
                   </TableCell>
                   <TableCell className="max-w-[240px] truncate">
-                    {comment.body_html}
+                    {comment.content.message}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {comment.post_id ?? "-"}

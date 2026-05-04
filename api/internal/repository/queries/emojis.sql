@@ -34,13 +34,13 @@ SELECT * FROM emojis WHERE group_id = $1 AND name = $2;
 SELECT * FROM emojis WHERE group_id = $1 ORDER BY sort_order;
 
 -- name: CreateEmoji :one
-INSERT INTO emojis (group_id, name, url, source_url, text_content, sort_order)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO emojis (group_id, name, url, gif_url, source_url, text_content, sort_order)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
 -- name: UpdateEmoji :one
 UPDATE emojis
-SET name = $2, url = $3, source_url = $4, text_content = $5, sort_order = $6
+SET name = $2, url = $3, gif_url = $4, source_url = $5, text_content = $6, sort_order = $7
 WHERE id = $1
 RETURNING *;
 

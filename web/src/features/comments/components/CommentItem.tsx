@@ -96,9 +96,25 @@ export function CommentItem({
 
           {/* 评论内容（纯文本 + 表情） */}
           <CommentContent
-            html={comment.body}
+            content={comment.content}
             className="mt-1 text-sm text-muted-foreground prose prose-sm max-w-none"
           />
+
+          {/* 评论图片 */}
+          {comment.content.pictures && comment.content.pictures.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {comment.content.pictures.map((picture, index) => (
+                <img
+                  key={index}
+                  src={picture.url.startsWith("/") ? `/uploads${picture.url}` : picture.url}
+                  alt={`评论图片 ${index + 1}`}
+                  className="max-w-60 max-h-60 rounded border border-border object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  loading="lazy"
+                  onClick={() => window.open(picture.url.startsWith("/") ? `/uploads${picture.url}` : picture.url, "_blank")}
+                />
+              ))}
+            </div>
+          )}
 
           {/* 操作栏：回复按钮 + 表情反应 */}
           <div className="flex items-center gap-3 mt-3">

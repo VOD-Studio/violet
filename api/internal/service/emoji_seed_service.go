@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,8 +43,9 @@ type BilibiliEmojiPackage struct {
 
 // BilibiliEmote B站单个表情
 type BilibiliEmote struct {
-	Text string `json:"text"`
-	URL  string `json:"url"`
+	Text   string `json:"text"`
+	URL    string `json:"url"`
+	GifURL string `json:"gif_url"`
 }
 
 // SeedResult 种子数据导入结果
@@ -166,23 +168,52 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 
 		// 创建表情（并发下载图片）
 		for j, emote := range pkg.Emote {
-			if emote.Text == "" || emote.URL == "" {
+			if emote.Text == "" {
 				continue
 			}
 
-			// 下载图片到本地
-			localPath, err := s.downloadEmojiImage(emote.URL)
-			if err != nil {
-				log.Printf("警告: 下载表情 %s 图片失败: %v", emote.Text, err)
-				continue
+			// 判断是否为颜文字（纯文本表情）
+			// 颜文字的特征：URL 为空或者 URL 就是表情文本本身
+			isTextEmoji := emote.URL == "" || emote.URL == emote.Text
+
+			var urlValue, gifUrlValue, sourceUrlValue string
+			var err error
+
+			if isTextEmoji {
+				// 颜文字：url 字段直接存储表情文本
+				urlValue = emote.Text
+				gifUrlValue = ""
+				sourceUrlValue = ""
+				log.Printf("检测到颜文字: %s，直接存储到 url 字段", emote.Text)
+			} else {
+				// 图片表情：下载静态图
+				localStaticPath, err := s.downloadEmojiImage(emote.URL)
+				if err != nil {
+					log.Printf("警告: 下载表情 %s 静态图失败: %v", emote.Text, err)
+					continue
+				}
+				urlValue = localStaticPath
+				sourceUrlValue = emote.URL
+
+				// 如果有动图，也下载
+				if emote.GifURL != "" {
+					localGifPath, err := s.downloadEmojiImage(emote.GifURL)
+					if err != nil {
+						log.Printf("警告: 下载表情 %s 动图失败（已有静态图）: %v", emote.Text, err)
+					} else {
+						gifUrlValue = localGifPath
+						log.Printf("表情 %s 下载动图: %s", emote.Text, localGifPath)
+					}
+				}
 			}
 
 			emojiParams := generated.CreateEmojiParams{
 				GroupID:     group.ID,
 				Name:        emote.Text,
-				Url:         toSQLNullString(localPath),
-				SourceUrl:   toSQLNullString(emote.URL),
-				TextContent: toSQLNullString(""),
+				Url:         sql.NullString{String: urlValue, Valid: urlValue != ""},
+				GifUrl:      sql.NullString{String: gifUrlValue, Valid: gifUrlValue != ""},
+				SourceUrl:   sql.NullString{String: sourceUrlValue, Valid: sourceUrlValue != ""},
+				TextContent: sql.NullString{String: "", Valid: false},
 				SortOrder:   int32(j + 1),
 			}
 

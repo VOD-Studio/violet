@@ -2,12 +2,34 @@
  * 评论功能类型定义
  */
 
+/** 评论图片信息 */
+export interface CommentPicture {
+  url: string;
+  width: number;
+  height: number;
+  size: number;
+}
+
+/** 评论表情信息 */
+export interface CommentEmote {
+  id: number;
+  text: string;
+  url: string;
+}
+
+/** 评论内容结构 */
+export interface CommentContent {
+  message: string;
+  emote: Record<string, CommentEmote>;
+  pictures?: CommentPicture[];
+}
+
 /** 评论数据结构 */
 export interface Comment {
   id: string;
   author_name: string;
   author_email?: string;
-  body: string;
+  content: CommentContent;
   created_at: string;
   children?: Comment[];
 }

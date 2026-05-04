@@ -63,6 +63,8 @@ type Emoji struct {
 	CreatedAt time.Time `json:"created_at"`
 	// 原始来源URL（如B站CDN地址）
 	SourceUrl sql.NullString `json:"source_url"`
+	// 动图URL（GIF/APNG等动态表情）
+	GifUrl sql.NullString `json:"gif_url"`
 }
 
 // 表情分组

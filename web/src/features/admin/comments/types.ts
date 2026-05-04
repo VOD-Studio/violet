@@ -1,5 +1,27 @@
 // 评论管理类型定义
 
+/** 评论图片信息 */
+export interface CommentPicture {
+  url: string;
+  width: number;
+  height: number;
+  size: number;
+}
+
+/** 评论表情信息 */
+export interface CommentEmote {
+  id: number;
+  text: string;
+  url: string;
+}
+
+/** 评论内容结构 */
+export interface CommentContent {
+  message: string;
+  emote: Record<string, CommentEmote>;
+  pictures?: CommentPicture[];
+}
+
 /** 评论结构 */
 export interface ApiComment {
   /** 评论唯一标识 */
@@ -16,8 +38,8 @@ export interface ApiComment {
   author_url?: string;
   /** 评论者头像 */
   avatar_url?: string;
-  /** 评论内容 HTML */
-  body_html: string;
+  /** 评论内容 */
+  content: CommentContent;
   /** 评论状态 */
   status: "pending" | "approved" | "spam";
   /** 创建时间 */

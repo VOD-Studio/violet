@@ -39,15 +39,16 @@ func (q *Queries) CountEmojiGroups(ctx context.Context) (int64, error) {
 }
 
 const createEmoji = `-- name: CreateEmoji :one
-INSERT INTO emojis (group_id, name, url, source_url, text_content, sort_order)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, group_id, name, url, text_content, sort_order, created_at, source_url
+INSERT INTO emojis (group_id, name, url, gif_url, source_url, text_content, sort_order)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, group_id, name, url, text_content, sort_order, created_at, source_url, gif_url
 `
 
 type CreateEmojiParams struct {
 	GroupID     int32          `json:"group_id"`
 	Name        string         `json:"name"`
 	Url         sql.NullString `json:"url"`
+	GifUrl      sql.NullString `json:"gif_url"`
 	SourceUrl   sql.NullString `json:"source_url"`
 	TextContent sql.NullString `json:"text_content"`
 	SortOrder   int32          `json:"sort_order"`
@@ -58,6 +59,7 @@ func (q *Queries) CreateEmoji(ctx context.Context, arg CreateEmojiParams) (*Emoj
 		arg.GroupID,
 		arg.Name,
 		arg.Url,
+		arg.GifUrl,
 		arg.SourceUrl,
 		arg.TextContent,
 		arg.SortOrder,
@@ -72,6 +74,7 @@ func (q *Queries) CreateEmoji(ctx context.Context, arg CreateEmojiParams) (*Emoj
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.SourceUrl,
+		&i.GifUrl,
 	)
 	return &i, err
 }
@@ -136,7 +139,7 @@ func (q *Queries) DeleteEmojisByGroup(ctx context.Context, groupID int32) error 
 }
 
 const getEmojiByGroupAndName = `-- name: GetEmojiByGroupAndName :one
-SELECT id, group_id, name, url, text_content, sort_order, created_at, source_url FROM emojis WHERE group_id = $1 AND name = $2
+SELECT id, group_id, name, url, text_content, sort_order, created_at, source_url, gif_url FROM emojis WHERE group_id = $1 AND name = $2
 `
 
 type GetEmojiByGroupAndNameParams struct {
@@ -156,12 +159,13 @@ func (q *Queries) GetEmojiByGroupAndName(ctx context.Context, arg GetEmojiByGrou
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.SourceUrl,
+		&i.GifUrl,
 	)
 	return &i, err
 }
 
 const getEmojiByID = `-- name: GetEmojiByID :one
-SELECT id, group_id, name, url, text_content, sort_order, created_at, source_url FROM emojis WHERE id = $1
+SELECT id, group_id, name, url, text_content, sort_order, created_at, source_url, gif_url FROM emojis WHERE id = $1
 `
 
 func (q *Queries) GetEmojiByID(ctx context.Context, id int32) (*Emoji, error) {
@@ -176,6 +180,7 @@ func (q *Queries) GetEmojiByID(ctx context.Context, id int32) (*Emoji, error) {
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.SourceUrl,
+		&i.GifUrl,
 	)
 	return &i, err
 }
@@ -251,7 +256,7 @@ func (q *Queries) ListAllEmojiGroups(ctx context.Context) ([]*EmojiGroup, error)
 }
 
 const listAllEmojisWithGroup = `-- name: ListAllEmojisWithGroup :many
-SELECT e.id, e.group_id, e.name, e.url, e.text_content, e.sort_order, e.created_at, e.source_url, eg.name as group_name, eg.source as group_source
+SELECT e.id, e.group_id, e.name, e.url, e.text_content, e.sort_order, e.created_at, e.source_url, e.gif_url, eg.name as group_name, eg.source as group_source
 FROM emojis e
 JOIN emoji_groups eg ON e.group_id = eg.id
 WHERE eg.is_enabled = true
@@ -267,6 +272,7 @@ type ListAllEmojisWithGroupRow struct {
 	SortOrder   int32          `json:"sort_order"`
 	CreatedAt   time.Time      `json:"created_at"`
 	SourceUrl   sql.NullString `json:"source_url"`
+	GifUrl      sql.NullString `json:"gif_url"`
 	GroupName   string         `json:"group_name"`
 	GroupSource string         `json:"group_source"`
 }
@@ -289,6 +295,7 @@ func (q *Queries) ListAllEmojisWithGroup(ctx context.Context) ([]*ListAllEmojisW
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.SourceUrl,
+			&i.GifUrl,
 			&i.GroupName,
 			&i.GroupSource,
 		); err != nil {
@@ -340,7 +347,7 @@ func (q *Queries) ListEmojiGroups(ctx context.Context) ([]*EmojiGroup, error) {
 }
 
 const listEmojisByGroup = `-- name: ListEmojisByGroup :many
-SELECT id, group_id, name, url, text_content, sort_order, created_at, source_url FROM emojis WHERE group_id = $1 ORDER BY sort_order
+SELECT id, group_id, name, url, text_content, sort_order, created_at, source_url, gif_url FROM emojis WHERE group_id = $1 ORDER BY sort_order
 `
 
 func (q *Queries) ListEmojisByGroup(ctx context.Context, groupID int32) ([]*Emoji, error) {
@@ -361,6 +368,7 @@ func (q *Queries) ListEmojisByGroup(ctx context.Context, groupID int32) ([]*Emoj
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.SourceUrl,
+			&i.GifUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -377,15 +385,16 @@ func (q *Queries) ListEmojisByGroup(ctx context.Context, groupID int32) ([]*Emoj
 
 const updateEmoji = `-- name: UpdateEmoji :one
 UPDATE emojis
-SET name = $2, url = $3, source_url = $4, text_content = $5, sort_order = $6
+SET name = $2, url = $3, gif_url = $4, source_url = $5, text_content = $6, sort_order = $7
 WHERE id = $1
-RETURNING id, group_id, name, url, text_content, sort_order, created_at, source_url
+RETURNING id, group_id, name, url, text_content, sort_order, created_at, source_url, gif_url
 `
 
 type UpdateEmojiParams struct {
 	ID          int32          `json:"id"`
 	Name        string         `json:"name"`
 	Url         sql.NullString `json:"url"`
+	GifUrl      sql.NullString `json:"gif_url"`
 	SourceUrl   sql.NullString `json:"source_url"`
 	TextContent sql.NullString `json:"text_content"`
 	SortOrder   int32          `json:"sort_order"`
@@ -396,6 +405,7 @@ func (q *Queries) UpdateEmoji(ctx context.Context, arg UpdateEmojiParams) (*Emoj
 		arg.ID,
 		arg.Name,
 		arg.Url,
+		arg.GifUrl,
 		arg.SourceUrl,
 		arg.TextContent,
 		arg.SortOrder,
@@ -410,6 +420,7 @@ func (q *Queries) UpdateEmoji(ctx context.Context, arg UpdateEmojiParams) (*Emoj
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.SourceUrl,
+		&i.GifUrl,
 	)
 	return &i, err
 }
