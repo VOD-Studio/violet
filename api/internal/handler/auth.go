@@ -9,7 +9,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
 
-	"blog-api/internal/middleware"
+	"blog-api/internal/pkg/auth"
 	"blog-api/internal/pkg/request"
 	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
@@ -277,8 +277,8 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "Logout").Msg("处理请求")
 
 	// 从上下文获取用户 ID
-	userID := middleware.GetUserID(r.Context())
-	if userID == "" {
+	userID, err := auth.GetUserID(r)
+	if err != nil {
 		log.Warn().Msg("参数验证失败：未认证")
 		response.Unauthorized(w, "未认证")
 		return
@@ -366,8 +366,8 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "Me").Msg("处理请求")
 
-	userID := middleware.GetUserID(r.Context())
-	if userID == "" {
+	userID, err := auth.GetUserID(r)
+	if err != nil {
 		log.Warn().Msg("参数验证失败：未认证")
 		response.Unauthorized(w, "未认证")
 		return
@@ -391,13 +391,13 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 
 	var permissions []string
 	if h.permService != nil {
-		roleID := middleware.GetUserRoleID(r.Context())
+		roleID, err := auth.GetUserRoleID(r)
 		if user.Role == "superadmin" {
 			for code := range h.permService.GetAllPermissions() {
 				permissions = append(permissions, code)
 			}
-		} else if roleID != nil {
-			permissions = h.permService.GetPermissionsByRoleID(*roleID)
+		} else if err == nil {
+			permissions = h.permService.GetPermissionsByRoleID(int32(roleID))
 		}
 	}
 
@@ -437,8 +437,8 @@ type UpdatePasswordRequest struct {
 func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "UpdateProfile").Msg("处理请求")
 
-	userID := middleware.GetUserID(r.Context())
-	if userID == "" {
+	userID, err := auth.GetUserID(r)
+	if err != nil {
 		log.Warn().Msg("参数验证失败：未认证")
 		response.Unauthorized(w, "未认证")
 		return
@@ -496,8 +496,8 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "UpdatePassword").Msg("处理请求")
 
-	userID := middleware.GetUserID(r.Context())
-	if userID == "" {
+	userID, err := auth.GetUserID(r)
+	if err != nil {
 		log.Warn().Msg("参数验证失败：未认证")
 		response.Unauthorized(w, "未认证")
 		return

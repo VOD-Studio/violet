@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"blog-api/internal/middleware"
+	"blog-api/internal/pkg/auth"
 	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
@@ -38,10 +38,15 @@ func (h *UploadHandler) InitSession(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "InitSession").Msg("处理请求")
 
 	// 从上下文获取当前用户 ID
-	userIDStr := middleware.GetUserID(r.Context())
-	userID, err := uuid.Parse(userIDStr)
+	userID, err := auth.GetUserID(r)
 	if err != nil {
-		log.Warn().Err(err).Str("user_id", userIDStr).Msg("参数验证失败")
+		log.Warn().Msg("参数验证失败：未认证")
+		response.Unauthorized(w, "未认证")
+		return
+	}
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID).Msg("参数验证失败")
 		response.Error(w, http.StatusUnauthorized, "unauthorized", "无效的用户身份")
 		return
 	}
@@ -67,7 +72,7 @@ func (h *UploadHandler) InitSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 调用服务层初始化上传会话
-	result, err := h.uploadService.InitSession(r.Context(), userID, req)
+	result, err := h.uploadService.InitSession(r.Context(), userUUID, req)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidImageType) {
 			log.Warn().Err(err).Str("file_name", req.FileName).Msg("参数验证失败")
@@ -181,16 +186,21 @@ func (h *UploadHandler) CompleteUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 从上下文获取当前用户 ID
-	userIDStr := middleware.GetUserID(r.Context())
-	userID, err := uuid.Parse(userIDStr)
+	userID, err := auth.GetUserID(r)
 	if err != nil {
-		log.Warn().Err(err).Str("user_id", userIDStr).Msg("参数验证失败")
+		log.Warn().Msg("参数验证失败：未认证")
+		response.Unauthorized(w, "未认证")
+		return
+	}
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID).Msg("参数验证失败")
 		response.Error(w, http.StatusUnauthorized, "unauthorized", "无效的用户身份")
 		return
 	}
 
 	// 调用服务层合并分片
-	result, err := h.uploadService.MergeChunks(r.Context(), uploadID, userID)
+	result, err := h.uploadService.MergeChunks(r.Context(), uploadID, userUUID)
 	if err != nil {
 		if errors.Is(err, service.ErrUploadNotFound) {
 			log.Warn().Str("upload_id", uploadID.String()).Msg("上传任务不存在")
@@ -242,16 +252,21 @@ func (h *UploadHandler) CancelUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 从上下文获取当前用户 ID
-	userIDStr := middleware.GetUserID(r.Context())
-	userID, err := uuid.Parse(userIDStr)
+	userID, err := auth.GetUserID(r)
 	if err != nil {
-		log.Warn().Err(err).Str("user_id", userIDStr).Msg("参数验证失败")
+		log.Warn().Msg("参数验证失败：未认证")
+		response.Unauthorized(w, "未认证")
+		return
+	}
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID).Msg("参数验证失败")
 		response.Error(w, http.StatusUnauthorized, "unauthorized", "无效的用户身份")
 		return
 	}
 
 	// 调用服务层取消上传
-	if err := h.uploadService.CancelUpload(r.Context(), uploadID, userID); err != nil {
+	if err := h.uploadService.CancelUpload(r.Context(), uploadID, userUUID); err != nil {
 		if errors.Is(err, service.ErrUploadNotFound) {
 			log.Warn().Str("upload_id", uploadID.String()).Msg("上传任务不存在")
 			response.NotFound(w, "上传任务不存在")

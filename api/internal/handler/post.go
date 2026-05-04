@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
-	"blog-api/internal/middleware"
+	"blog-api/internal/pkg/auth"
 	"blog-api/internal/pkg/request"
 	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
@@ -353,7 +353,12 @@ func (h *PostHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 从上下文获取作者 ID
-	userID := middleware.GetUserID(r.Context())
+	userID, err := auth.GetUserID(r)
+	if err != nil {
+		log.Warn().Msg("参数验证失败：无效的用户身份")
+		response.Unauthorized(w, "未认证")
+		return
+	}
 	authorID, err := uuid.Parse(userID)
 	if err != nil {
 		log.Warn().Err(err).Msg("参数验证失败：无效的用户身份")
