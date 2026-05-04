@@ -12,14 +12,21 @@ import (
 	"blog-api/internal/model"
 )
 
-// CommentRepository 评论仓储接口
+// CommentRepository 评论仓储接口，定义评论数据访问方法
 type CommentRepository interface {
+	// Create 创建评论
 	Create(ctx context.Context, comment *model.Comment) error
+	// GetByID 根据 ID 查询评论
 	GetByID(ctx context.Context, id uuid.UUID) (*model.Comment, error)
+	// ListByPostID 查询文章的评论列表，可按状态过滤
 	ListByPostID(ctx context.Context, postID uuid.UUID, status string) ([]*model.Comment, error)
+	// ListPending 查询待审核评论列表（分页）
 	ListPending(ctx context.Context, limit, offset int32) ([]*model.Comment, error)
+	// CountPending 统计待审核评论数量
 	CountPending(ctx context.Context) (int64, error)
+	// UpdateStatus 更新评论状态
 	UpdateStatus(ctx context.Context, id uuid.UUID, status string) error
+	// Delete 删除评论（硬删除）
 	Delete(ctx context.Context, id uuid.UUID) error
 }
 
@@ -48,15 +55,17 @@ func (r *commentRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.C
 	return &comment, nil
 }
 
-// ListByPostID 查询文章的评论列表
+// ListByPostID 查询文章的评论列表，按 path 排序（树形结构）
 func (r *commentRepository) ListByPostID(ctx context.Context, postID uuid.UUID, status string) ([]*model.Comment, error) {
 	var comments []*model.Comment
 	query := r.db.WithContext(ctx).Where("post_id = ?", postID)
 
+	// 如果指定了状态，则过滤
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
 
+	// 按 path 排序，保证父评论在子评论前面
 	err := query.Order("path ASC").Find(&comments).Error
 	if err != nil {
 		return nil, err
@@ -64,7 +73,7 @@ func (r *commentRepository) ListByPostID(ctx context.Context, postID uuid.UUID, 
 	return comments, nil
 }
 
-// UpdateStatus 更新评论状态
+// UpdateStatus 更新评论状态（pending/approved/spam/deleted）
 func (r *commentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
 	return r.db.WithContext(ctx).
 		Model(&model.Comment{}).
@@ -75,12 +84,12 @@ func (r *commentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, stat
 		}).Error
 }
 
-// Delete 删除评论
+// Delete 删除评论（硬删除，不可恢复）
 func (r *commentRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Comment{}).Error
 }
 
-// ListPending 查询待审核评论列表
+// ListPending 查询待审核评论列表，按创建时间倒序
 func (r *commentRepository) ListPending(ctx context.Context, limit, offset int32) ([]*model.Comment, error) {
 	var comments []*model.Comment
 	err := r.db.WithContext(ctx).
@@ -105,7 +114,7 @@ func (r *commentRepository) CountPending(ctx context.Context) (int64, error) {
 	return count, err
 }
 
-// GetPictures 获取评论图片列表
+// GetPictures 从 JSONB 字段解析评论图片列表
 func GetPictures(comment *model.Comment) ([]*model.CommentPicture, error) {
 	if len(comment.Pictures) == 0 {
 		return []*model.CommentPicture{}, nil
@@ -118,7 +127,7 @@ func GetPictures(comment *model.Comment) ([]*model.CommentPicture, error) {
 	return pictures, nil
 }
 
-// SetPictures 设置评论图片列表
+// SetPictures 将评论图片列表序列化为 JSONB 格式
 func SetPictures(comment *model.Comment, pictures []*model.CommentPicture) error {
 	data, err := json.Marshal(pictures)
 	if err != nil {
