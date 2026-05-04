@@ -78,7 +78,7 @@ func (r *commentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, stat
 	return r.db.WithContext(ctx).
 		Model(&model.Comment{}).
 		Where("id = ?", id).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"status":     status,
 			"updated_at": gorm.Expr("NOW()"),
 		}).Error
