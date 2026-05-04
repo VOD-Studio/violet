@@ -31,6 +31,20 @@ type Comment struct {
 	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
+// 评论表情反应
+type CommentReaction struct {
+	ID uuid.UUID `json:"id"`
+	// 评论 ID
+	CommentID uuid.UUID `json:"comment_id"`
+	// 表情 ID
+	EmojiID int32 `json:"emoji_id"`
+	// 用户 ID（登录用户）
+	UserID uuid.NullUUID `json:"user_id"`
+	// IP 哈希（匿名用户）
+	IpHash    sql.NullString `json:"ip_hash"`
+	CreatedAt time.Time      `json:"created_at"`
+}
+
 // 表情
 type Emoji struct {
 	ID int32 `json:"id"`
@@ -63,38 +77,44 @@ type EmojiGroup struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type Image struct {
-	ID           uuid.UUID     `json:"id"`
-	Filename     string        `json:"filename"`
-	OriginalName string        `json:"original_name"`
-	Url          string        `json:"url"`
-	MimeType     string        `json:"mime_type"`
-	Size         int64         `json:"size"`
-	UploadedBy   uuid.NullUUID `json:"uploaded_by"`
-	CreatedAt    time.Time     `json:"created_at"`
-}
-
-type Medium struct {
-	ID                 uuid.UUID       `json:"id"`
-	Filename           string          `json:"filename"`
-	OriginalName       string          `json:"original_name"`
-	MimeType           string          `json:"mime_type"`
-	Size               int64           `json:"size"`
-	Path               string          `json:"path"`
-	Width              sql.NullInt32   `json:"width"`
-	Height             sql.NullInt32   `json:"height"`
-	Duration           sql.NullFloat64 `json:"duration"`
-	UploaderID         uuid.NullUUID   `json:"uploader_id"`
-	DownloadCount      int64           `json:"download_count"`
-	DownloadPermission string          `json:"download_permission"`
-	CreatedAt          time.Time       `json:"created_at"`
-	Thumbnail          sql.NullString  `json:"thumbnail"`
+// 文件记录
+type File struct {
+	ID      uuid.UUID `json:"id"`
+	OwnerID uuid.UUID `json:"owner_id"`
+	// 文件类型: avatar|post|emoji|material
+	Purpose      string `json:"purpose"`
+	OriginalName string `json:"original_name"`
+	Path         string `json:"path"`
+	Url          string `json:"url"`
+	Size         int64  `json:"size"`
+	MimeType     string `json:"mime_type"`
+	// 文件哈希（SHA-256），用于秒传去重
+	FileHash string        `json:"file_hash"`
+	Width    sql.NullInt32 `json:"width"`
+	Height   sql.NullInt32 `json:"height"`
+	// 文件状态: pending|processing|ready|failed|deleted
+	Status string `json:"status"`
+	// 引用计数，>0 禁止物理删除
+	RefCount  int32        `json:"ref_count"`
+	DeletedAt sql.NullTime `json:"deleted_at"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt time.Time    `json:"updated_at"`
+	// 缩略图 URL
+	Thumbnail sql.NullString `json:"thumbnail"`
 }
 
 type MusicSetting struct {
 	ID            int32     `json:"id"`
 	PlayerVersion string    `json:"player_version"`
 	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+type Permission struct {
+	ID          int32          `json:"id"`
+	Code        string         `json:"code"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	CreatedAt   time.Time      `json:"created_at"`
 }
 
 type Playlist struct {
@@ -157,6 +177,18 @@ type Project struct {
 	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
+type Role struct {
+	ID          int32          `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	CreatedAt   time.Time      `json:"created_at"`
+}
+
+type RolePermission struct {
+	RoleID       int32 `json:"role_id"`
+	PermissionID int32 `json:"permission_id"`
+}
+
 type SiteSetting struct {
 	Key       string    `json:"key"`
 	Value     string    `json:"value"`
@@ -169,16 +201,26 @@ type Tag struct {
 	Slug string `json:"slug"`
 }
 
-type UploadChunk struct {
-	ID          uuid.UUID      `json:"id"`
-	UploadID    string         `json:"upload_id"`
-	ChunkIndex  int32          `json:"chunk_index"`
-	TotalChunks int32          `json:"total_chunks"`
-	FileHash    sql.NullString `json:"file_hash"`
-	Filename    sql.NullString `json:"filename"`
-	MimeType    sql.NullString `json:"mime_type"`
-	ChunkPath   string         `json:"chunk_path"`
-	CreatedAt   time.Time      `json:"created_at"`
+// 分片上传会话
+type UploadSession struct {
+	ID       uuid.UUID `json:"id"`
+	UserID   uuid.UUID `json:"user_id"`
+	FileName string    `json:"file_name"`
+	FileSize int64     `json:"file_size"`
+	// 文件哈希（SHA-256），用于秒传和校验
+	FileHash    string `json:"file_hash"`
+	MimeType    string `json:"mime_type"`
+	ChunkSize   int32  `json:"chunk_size"`
+	TotalChunks int32  `json:"total_chunks"`
+	// 已完成分片索引，JSON 数组
+	UploadedChunks json.RawMessage `json:"uploaded_chunks"`
+	// 会话状态: active|merging|completed|expired
+	Status    string    `json:"status"`
+	TmpPath   string    `json:"tmp_path"`
+	ExpiresAt time.Time `json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Purpose   string    `json:"purpose"`
 }
 
 type User struct {
@@ -193,4 +235,5 @@ type User struct {
 	IsActive      bool           `json:"is_active"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
+	RoleID        sql.NullInt32  `json:"role_id"`
 }

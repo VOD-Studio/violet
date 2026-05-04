@@ -142,7 +142,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Token
 	}
 
 	log.Debug().Str("query", "GetUserRoleID").Str("user_id", user.ID.String()).Msg("获取用户角色ID")
-	roleID, _ := s.queries.GetUserRoleID(ctx, user.ID.String())
+	roleID, _ := s.queries.GetUserRoleID(ctx, user.ID)
 	var rid int32
 	if roleID.Valid {
 		rid = roleID.Int32

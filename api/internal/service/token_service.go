@@ -131,7 +131,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*T
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
 
-	roleID, _ := s.queries.GetUserRoleID(ctx, userID)
+	roleID, _ := s.queries.GetUserRoleID(ctx, userUUID)
 	var rid int32
 	if roleID.Valid {
 		rid = roleID.Int32
