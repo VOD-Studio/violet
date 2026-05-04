@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/rs/zerolog/log"
+
 	"blog-api/internal/service"
 )
 
@@ -31,8 +33,11 @@ type PublicSettings struct {
 // GET /api/v1/settings
 // 无需认证，返回非敏感的站点配置
 func (h *SettingsHandler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "GetPublicSettings").Msg("处理请求")
+
 	settings, err := h.settingsService.GetAllSettings(r.Context())
 	if err != nil {
+		log.Error().Err(err).Str("operation", "GetAllSettings").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取站点设置失败")
 		return
 	}
@@ -45,36 +50,46 @@ func (h *SettingsHandler) GetPublicSettings(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeJSON(w, http.StatusOK, public)
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
 // GetSettings 获取站点设置
 // GET /api/v1/admin/settings
 // 需要管理员认证，返回所有站点配置项
 func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "GetSettings").Msg("处理请求")
+
 	settings, err := h.settingsService.GetAllSettings(r.Context())
 	if err != nil {
+		log.Error().Err(err).Str("operation", "GetAllSettings").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取站点设置失败")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, settings)
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
 // UpdateSettings 更新站点设置
 // PUT /api/v1/admin/settings
 // 需要管理员认证，支持部分更新（只传需要修改的字段）
 func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "UpdateSettings").Msg("处理请求")
+
 	var req service.UpdateSettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	settings, err := h.settingsService.UpdateSettings(r.Context(), req)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "UpdateSettings").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "更新站点设置失败")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, settings)
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }

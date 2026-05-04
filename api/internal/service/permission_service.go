@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	"log"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/repository/generated"
 )
@@ -34,13 +35,19 @@ func NewPermissionService(queries *generated.Queries) *PermissionService {
 
 // Reload 从数据库重新加载权限缓存
 func (s *PermissionService) Reload(ctx context.Context) error {
+	log.Info().Str("service", "PermissionService").Str("operation", "Reload").Msg("开始重新加载权限缓存")
+
+	log.Debug().Str("query", "ListRolePermissions").Msg("查询角色权限关联")
 	rolePerms, err := s.queries.ListRolePermissions(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("查询角色权限关联失败")
 		return err
 	}
 
+	log.Debug().Str("query", "ListPermissions").Msg("查询所有权限")
 	perms, err := s.queries.ListPermissions(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("查询所有权限失败")
 		return err
 	}
 
@@ -60,18 +67,23 @@ func (s *PermissionService) Reload(ctx context.Context) error {
 	s.rolePermissions = newRolePermissions
 	s.allPermissions = newAllPermissions
 
-	log.Printf("权限缓存已加载: %d 个权限, %d 个角色", len(perms), len(rolePerms))
+	log.Info().Int("permissions", len(perms)).Int("role_mappings", len(rolePerms)).Msg("权限缓存加载成功")
 	return nil
 }
 
 // HasPermission 检查角色是否拥有指定权限
 // superadmin 角色直接返回 true
 func (s *PermissionService) HasPermission(roleName string, roleID *int32, codes ...string) bool {
+	log.Debug().Str("service", "PermissionService").Str("operation", "HasPermission").
+		Str("role_name", roleName).Strs("codes", codes).Msg("检查权限")
+
 	if roleName == "superadmin" {
+		log.Debug().Str("role_name", roleName).Msg("超级管理员，直接通过")
 		return true
 	}
 
 	if roleID == nil {
+		log.Debug().Msg("角色ID为空，权限检查失败")
 		return false
 	}
 
@@ -80,6 +92,7 @@ func (s *PermissionService) HasPermission(roleName string, roleID *int32, codes 
 	s.mu.RUnlock()
 
 	if !ok {
+		log.Debug().Int32("role_id", *roleID).Msg("角色无权限配置")
 		return false
 	}
 
@@ -90,9 +103,11 @@ func (s *PermissionService) HasPermission(roleName string, roleID *int32, codes 
 
 	for _, code := range codes {
 		if permSet[code] {
+			log.Debug().Str("code", code).Msg("权限检查通过")
 			return true
 		}
 	}
+	log.Debug().Strs("codes", codes).Msg("权限检查失败")
 	return false
 }
 

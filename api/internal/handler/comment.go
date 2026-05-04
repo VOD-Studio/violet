@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"github.com/rs/zerolog/log"
+
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -83,10 +85,13 @@ type CountResponse struct {
 // GET /api/v1/posts/{id}/comments
 // 公开接口，返回已审核评论的树形结构
 func (h *CommentHandler) ListApprovedComments(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "ListApprovedComments").Msg("处理请求")
+
 	// 从 URL 路径解析文章 ID
 	postIDStr := chi.URLParam(r, "id")
 	postID, err := uuid.Parse(postIDStr)
 	if err != nil {
+		log.Warn().Err(err).Str("post_id", postIDStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_id", "无效的文章 ID")
 		return
 	}
@@ -94,10 +99,12 @@ func (h *CommentHandler) ListApprovedComments(w http.ResponseWriter, r *http.Req
 	// 查询已审核评论树
 	comments, err := h.commentService.ListApprovedComments(r.Context(), postID)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "ListApprovedComments").Str("post_id", postID.String()).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取评论失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Int("count", len(comments)).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, CommentListResponse{
 		Comments: comments,
 		Total:    len(comments),
@@ -108,10 +115,13 @@ func (h *CommentHandler) ListApprovedComments(w http.ResponseWriter, r *http.Req
 // POST /api/v1/posts/{id}/comments
 // 公开接口，需要通过限流中间件保护
 func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "CreateComment").Msg("处理请求")
+
 	// 从 URL 路径解析文章 ID
 	postIDStr := chi.URLParam(r, "id")
 	postID, err := uuid.Parse(postIDStr)
 	if err != nil {
+		log.Warn().Err(err).Str("post_id", postIDStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_id", "无效的文章 ID")
 		return
 	}
@@ -119,12 +129,14 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	// 解析请求体
 	var req CreateCommentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
@@ -134,6 +146,7 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	if req.ParentID != nil && *req.ParentID != "" {
 		pid, err := uuid.Parse(*req.ParentID)
 		if err != nil {
+			log.Warn().Err(err).Str("parent_id", *req.ParentID).Msg("参数验证失败")
 			writeError(w, http.StatusBadRequest, "invalid_parent_id", "无效的父评论 ID")
 			return
 		}
@@ -164,10 +177,12 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 		UserAgent:    userAgent,
 	})
 	if err != nil {
+		log.Error().Err(err).Str("operation", "CreateComment").Str("post_id", postID.String()).Msg("服务调用失败")
 		handleCommentError(w, err)
 		return
 	}
 
+	log.Info().Int("status", http.StatusCreated).Str("comment_id", comment.ID.String()).Msg("请求处理成功")
 	writeJSON(w, http.StatusCreated, comment)
 }
 
@@ -175,6 +190,8 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/admin/comments/pending
 // 需要管理员认证
 func (h *CommentHandler) ListPendingComments(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "ListPendingComments").Msg("处理请求")
+
 	// 解析分页参数
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 1 {
@@ -190,6 +207,7 @@ func (h *CommentHandler) ListPendingComments(w http.ResponseWriter, r *http.Requ
 	// 查询待审核评论
 	comments, err := h.commentService.ListPendingComments(r.Context(), int32(pageSize), offset)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "ListPendingComments").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取待审核评论失败")
 		return
 	}
@@ -197,10 +215,12 @@ func (h *CommentHandler) ListPendingComments(w http.ResponseWriter, r *http.Requ
 	// 查询总数
 	total, err := h.commentService.CountPendingComments(r.Context())
 	if err != nil {
+		log.Error().Err(err).Str("operation", "CountPendingComments").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取评论统计失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Int("page", page).Int("count", len(comments)).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, PendingCommentsResponse{
 		Comments: comments,
 		Total:    total,
@@ -213,12 +233,16 @@ func (h *CommentHandler) ListPendingComments(w http.ResponseWriter, r *http.Requ
 // GET /api/v1/admin/comments/pending/count
 // 需要管理员认证，用于后台仪表盘展示待审核数量
 func (h *CommentHandler) CountPendingComments(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "CountPendingComments").Msg("处理请求")
+
 	count, err := h.commentService.CountPendingComments(r.Context())
 	if err != nil {
+		log.Error().Err(err).Str("operation", "CountPendingComments").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取评论统计失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Int64("count", count).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, CountResponse{Count: count})
 }
 
@@ -226,10 +250,13 @@ func (h *CommentHandler) CountPendingComments(w http.ResponseWriter, r *http.Req
 // PATCH /api/v1/comments/{id}/status
 // 需要管理员认证
 func (h *CommentHandler) UpdateCommentStatus(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "UpdateCommentStatus").Msg("处理请求")
+
 	// 从 URL 路径解析评论 ID
 	commentIDStr := chi.URLParam(r, "id")
 	commentID, err := uuid.Parse(commentIDStr)
 	if err != nil {
+		log.Warn().Err(err).Str("comment_id", commentIDStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_id", "无效的评论 ID")
 		return
 	}
@@ -237,12 +264,14 @@ func (h *CommentHandler) UpdateCommentStatus(w http.ResponseWriter, r *http.Requ
 	// 解析请求体
 	var req UpdateCommentStatusRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
@@ -250,10 +279,12 @@ func (h *CommentHandler) UpdateCommentStatus(w http.ResponseWriter, r *http.Requ
 	// 调用服务层更新状态
 	comment, err := h.commentService.UpdateCommentStatus(r.Context(), commentID, req.Status)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "UpdateCommentStatus").Str("comment_id", commentID.String()).Msg("服务调用失败")
 		handleCommentError(w, err)
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("comment_id", commentID.String()).Str("new_status", req.Status).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, comment)
 }
 
@@ -261,20 +292,25 @@ func (h *CommentHandler) UpdateCommentStatus(w http.ResponseWriter, r *http.Requ
 // DELETE /api/v1/comments/{id}
 // 需要管理员认证
 func (h *CommentHandler) DeleteComment(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "DeleteComment").Msg("处理请求")
+
 	// 从 URL 路径解析评论 ID
 	commentIDStr := chi.URLParam(r, "id")
 	commentID, err := uuid.Parse(commentIDStr)
 	if err != nil {
+		log.Warn().Err(err).Str("comment_id", commentIDStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_id", "无效的评论 ID")
 		return
 	}
 
 	// 调用服务层删除评论
 	if err := h.commentService.DeleteComment(r.Context(), commentID); err != nil {
+		log.Error().Err(err).Str("operation", "DeleteComment").Str("comment_id", commentID.String()).Msg("服务调用失败")
 		handleCommentError(w, err)
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("comment_id", commentID.String()).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, MessageResponse{
 		Message: "评论已删除",
 	})

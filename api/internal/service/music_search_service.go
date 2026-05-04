@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // MusicSearchService 音乐搜索服务
@@ -38,44 +39,61 @@ type SearchResult struct {
 
 // SearchSongs 搜索歌曲（网易云）
 func (s *MusicSearchService) SearchSongs(keyword string, limit int) ([]SearchResult, error) {
+	log.Info().Str("service", "MusicSearchService").Str("operation", "SearchSongs").
+		Str("keyword", keyword).Int("limit", limit).Msg("开始搜索歌曲")
+
 	if limit <= 0 {
 		limit = 10
 	}
 
 	// 尝试 vkeys API（返回结构化结果，含歌曲 ID 和封面）
+	log.Info().Str("target", "VkeysAPI").Msg("调用vkeys搜索API")
 	results, err := s.searchViaVkeys(keyword, limit)
 	if err != nil {
-		log.Printf("[SearchSongs] vkeys API failed: %v, trying meting fallback", err)
+		log.Warn().Err(err).Msg("vkeys API失败，尝试meting fallback")
 		return s.searchViaMeting(keyword, limit)
 	}
+	log.Info().Int("count", len(results)).Msg("歌曲搜索成功")
 	return results, nil
 }
 
 // FetchLyrics 获取歌词
 func (s *MusicSearchService) FetchLyrics(platform, songID string) (string, error) {
+	log.Info().Str("service", "MusicSearchService").Str("operation", "FetchLyrics").
+		Str("platform", platform).Str("song_id", songID).Msg("开始获取歌词")
+
 	// vkeys 歌词 API（网易云）
 	if platform == "netease" || platform == "" {
+		log.Info().Str("target", "VkeysAPI").Msg("调用vkeys歌词API")
 		lrc, err := s.fetchLyricsViaVkeys(songID)
 		if err != nil {
-			log.Printf("[FetchLyrics] vkeys failed: %v, trying meting", err)
+			log.Warn().Err(err).Msg("vkeys失败，尝试meting")
 			return s.fetchLyricsViaMeting(platform, songID)
 		}
+		log.Info().Msg("歌词获取成功")
 		return lrc, nil
 	}
+	log.Info().Str("target", "MetingAPI").Msg("调用meting歌词API")
 	return s.fetchLyricsViaMeting(platform, songID)
 }
 
 // FetchSongDetail 获取歌曲详情（含封面和歌词）
 func (s *MusicSearchService) FetchSongDetail(platform, songID string) (*SearchResult, error) {
+	log.Info().Str("service", "MusicSearchService").Str("operation", "FetchSongDetail").
+		Str("platform", platform).Str("song_id", songID).Msg("开始获取歌曲详情")
+
 	// 优先用 qijieya Meting（返回完整信息）
+	log.Info().Str("target", "QijieyaAPI").Msg("调用qijieya Meting API")
 	detail, err := s.fetchDetailViaMeting("https://api.qijieya.cn/meting/", platform, songID)
 	if err != nil {
-		log.Printf("[FetchSongDetail] qijieya failed: %v, trying injahow", err)
+		log.Warn().Err(err).Msg("qijieya失败，尝试injahow")
 		detail, err = s.fetchDetailViaMeting("https://api.injahow.cn/meting/", platform, songID)
 		if err != nil {
+			log.Error().Err(err).Msg("获取歌曲详情失败")
 			return nil, fmt.Errorf("获取歌曲详情失败: %w", err)
 		}
 	}
+	log.Info().Str("title", detail.Title).Msg("歌曲详情获取成功")
 	return detail, nil
 }
 

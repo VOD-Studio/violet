@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"github.com/rs/zerolog/log"
+
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -29,8 +31,10 @@ func NewProjectHandler(projectService *service.ProjectService) *ProjectHandler {
 // List 项目列表
 // GET /api/v1/projects
 func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "List").Msg("处理请求")
 	projects, err := h.projectService.ListProjects(r.Context())
 	if err != nil {
+		log.Error().Err(err).Str("operation", "ListProjects").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询项目列表失败")
 		return
 	}
@@ -76,6 +80,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"projects": items,
 	})
+	log.Info().Int("status", http.StatusOK).Int("count", len(items)).Msg("请求处理成功")
 }
 
 // GetByID 获取项目详情
@@ -94,6 +99,7 @@ func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "not_found", "项目不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "GetProjectByID").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询项目失败")
 		return
 	}
@@ -127,6 +133,7 @@ func (h *ProjectHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		"created_at":  project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		"updated_at":  project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	})
+	log.Info().Int("status", http.StatusOK).Str("project_id", project.ID.String()).Msg("请求处理成功")
 }
 
 // Create 创建项目
@@ -140,12 +147,14 @@ func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
 
 	project, err := h.projectService.CreateProject(r.Context(), req)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "CreateProject").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "创建项目失败")
 		return
 	}
@@ -155,6 +164,7 @@ func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 		"title":      project.Title,
 		"sort_order": project.SortOrder,
 	})
+	log.Info().Int("status", http.StatusCreated).Str("project_id", project.ID.String()).Msg("请求处理成功")
 }
 
 // Update 更新项目
@@ -170,6 +180,7 @@ func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	var req service.UpdateProjectRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
@@ -180,6 +191,7 @@ func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "not_found", "项目不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "UpdateProject").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "更新项目失败")
 		return
 	}
@@ -189,6 +201,7 @@ func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
 		"title":      project.Title,
 		"sort_order": project.SortOrder,
 	})
+	log.Info().Int("status", http.StatusOK).Str("project_id", project.ID.String()).Msg("请求处理成功")
 }
 
 // Delete 删除项目
@@ -207,6 +220,7 @@ func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "not_found", "项目不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "DeleteProject").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "删除项目失败")
 		return
 	}
@@ -214,4 +228,5 @@ func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, MessageResponse{
 		Message: "项目已删除",
 	})
+	log.Info().Int("status", http.StatusOK).Str("project_id", idStr).Msg("请求处理成功")
 }

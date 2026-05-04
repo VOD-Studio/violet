@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/repository/generated"
 )
@@ -64,11 +64,16 @@ func NewEmojiService(queries *generated.Queries, emojiDir, cookie string) *Emoji
 
 // RefreshCache 刷新表情缓存
 func (s *EmojiService) RefreshCache(ctx context.Context) error {
+	log.Info().Str("service", "EmojiService").Str("operation", "RefreshCache").Msg("开始刷新表情缓存")
+
+	log.Debug().Str("query", "ListAllEmojisWithGroup").Msg("查询所有表情")
 	emojis, err := s.queries.ListAllEmojisWithGroup(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("获取表情列表失败")
 		return fmt.Errorf("获取表情列表失败: %w", err)
 	}
 	s.rendererCache = NewSimpleEmojiCache(emojis)
+	log.Info().Int("count", len(emojis)).Msg("表情缓存刷新成功")
 	return nil
 }
 
@@ -105,9 +110,13 @@ type EmojiResponse struct {
 
 // GetAllEmojisForPublic 获取所有公开表情分组和表情
 func (s *EmojiService) GetAllEmojisForPublic(ctx context.Context) ([]*EmojiGroupResponse, error) {
+	log.Info().Str("service", "EmojiService").Str("operation", "GetAllEmojisForPublic").Msg("获取公开表情")
+
 	// 获取所有启用的分组
+	log.Debug().Str("query", "ListEmojiGroups").Msg("查询表情分组")
 	groups, err := s.queries.ListEmojiGroups(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("获取表情分组列表失败")
 		return nil, fmt.Errorf("获取表情分组列表失败: %w", err)
 	}
 
@@ -125,6 +134,7 @@ func (s *EmojiService) GetAllEmojisForPublic(ctx context.Context) ([]*EmojiGroup
 		responses = append(responses, resp)
 	}
 
+	log.Info().Int("groups", len(responses)).Msg("公开表情获取成功")
 	return responses, nil
 }
 
@@ -196,6 +206,9 @@ type CreateEmojiGroupInput struct {
 
 // CreateEmojiGroup 创建表情分组
 func (s *EmojiService) CreateEmojiGroup(ctx context.Context, input CreateEmojiGroupInput) (*EmojiGroupResponse, error) {
+	log.Info().Str("service", "EmojiService").Str("operation", "CreateEmojiGroup").
+		Str("name", input.Name).Msg("开始创建表情分组")
+
 	params := generated.CreateEmojiGroupParams{
 		Name:      input.Name,
 		Source:    input.Source,
@@ -203,11 +216,14 @@ func (s *EmojiService) CreateEmojiGroup(ctx context.Context, input CreateEmojiGr
 		IsEnabled: input.IsEnabled,
 	}
 
+	log.Debug().Str("query", "CreateEmojiGroup").Msg("创建表情分组记录")
 	group, err := s.queries.CreateEmojiGroup(ctx, params)
 	if err != nil {
+		log.Error().Err(err).Str("name", input.Name).Msg("创建表情分组失败")
 		return nil, fmt.Errorf("创建表情分组失败: %w", err)
 	}
 
+	log.Info().Int32("group_id", group.ID).Str("name", input.Name).Msg("表情分组创建成功")
 	return emojiGroupToResponse(group), nil
 }
 
@@ -496,25 +512,26 @@ type BilibiliEmote struct {
 
 // SeedBilibiliEmojis 从 B站 API 获取表情数据并写入数据库作为初始种子数据
 func (s *EmojiService) SeedBilibiliEmojis(ctx context.Context) error {
-	log.Println("开始获取 B站表情种子数据...")
+	log.Info().Str("service", "EmojiService").Str("operation", "SeedBilibiliEmojis").Msg("开始获取B站表情种子数据")
 
 	// 调用 B站 API
+	log.Info().Str("target", "BilibiliAPI").Msg("调用B站表情API")
 	packages, err := s.fetchBilibiliEmojis()
 	if err != nil {
-		log.Printf("获取 B站表情失败: %v（不影响服务启动）", err)
+		log.Warn().Err(err).Msg("获取B站表情失败（不影响服务启动）")
 		return err
 	}
 
-	log.Printf("获取到 %d 个表情包组", len(packages))
+	log.Info().Int("packages", len(packages)).Msg("获取到表情包组")
 
 	// 写入数据库
 	result, err := s.importBilibiliEmojis(ctx, packages)
 	if err != nil {
-		log.Printf("写入 B站表情失败: %v（不影响服务启动）", err)
+		log.Warn().Err(err).Msg("写入B站表情失败（不影响服务启动）")
 		return err
 	}
 
-	log.Printf("B站表情种子数据初始化完成: 分组 %d, 表情 %d", result.GroupsCreated, result.EmojisCreated)
+	log.Info().Int("groups", result.GroupsCreated).Int("emojis", result.EmojisCreated).Msg("B站表情种子数据初始化完成")
 	return nil
 }
 

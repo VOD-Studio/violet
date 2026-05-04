@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	resend "github.com/resend/resend-go/v2"
+	"github.com/rs/zerolog/log"
 )
 
 // EmailService 邮件服务，封装 Resend SDK 发送各类邮件
@@ -28,6 +28,8 @@ func NewEmailService(apiKey, fromEmail string) *EmailService {
 // SendVerificationCode 发送邮箱验证码邮件
 // 向用户邮箱发送包含 6 位验证码的 HTML 邮件
 func (s *EmailService) SendVerificationCode(ctx context.Context, email, code string) error {
+	log.Info().Str("service", "EmailService").Str("operation", "SendVerificationCode").Str("email", email).Msg("开始发送验证码邮件")
+
 	html := buildVerificationEmail(code)
 
 	params := &resend.SendEmailRequest{
@@ -37,19 +39,22 @@ func (s *EmailService) SendVerificationCode(ctx context.Context, email, code str
 		Html:    html,
 	}
 
+	log.Info().Str("target", "Resend").Str("email", email).Msg("调用Resend API发送邮件")
 	_, err := s.client.Emails.SendWithContext(ctx, params)
 	if err != nil {
-		log.Printf("发送验证码邮件失败: %v", err)
+		log.Error().Err(err).Str("email", email).Msg("发送验证码邮件失败")
 		return fmt.Errorf("发送验证码邮件失败: %w", err)
 	}
 
-	log.Printf("验证码邮件已发送至 %s", email)
+	log.Info().Str("email", email).Msg("验证码邮件发送成功")
 	return nil
 }
 
 // SendPasswordResetCode 发送密码重置验证码邮件
 // 向用户邮箱发送包含 6 位重置码的 HTML 邮件
 func (s *EmailService) SendPasswordResetCode(ctx context.Context, email, code string) error {
+	log.Info().Str("service", "EmailService").Str("operation", "SendPasswordResetCode").Str("email", email).Msg("开始发送密码重置邮件")
+
 	html := buildPasswordResetEmail(code)
 
 	params := &resend.SendEmailRequest{
@@ -59,13 +64,14 @@ func (s *EmailService) SendPasswordResetCode(ctx context.Context, email, code st
 		Html:    html,
 	}
 
+	log.Info().Str("target", "Resend").Str("email", email).Msg("调用Resend API发送邮件")
 	_, err := s.client.Emails.SendWithContext(ctx, params)
 	if err != nil {
-		log.Printf("发送密码重置邮件失败: %v", err)
+		log.Error().Err(err).Str("email", email).Msg("发送密码重置邮件失败")
 		return fmt.Errorf("发送密码重置邮件失败: %w", err)
 	}
 
-	log.Printf("密码重置邮件已发送至 %s", email)
+	log.Info().Str("email", email).Msg("密码重置邮件发送成功")
 	return nil
 }
 

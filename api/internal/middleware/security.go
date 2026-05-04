@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 )
 
 // SecurityHeaders HTTP 安全头中间件
@@ -16,6 +18,11 @@ func SecurityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		// 禁用浏览器权限 API
 		w.Header().Set("Permissions-Policy", "geolocation=(), camera=(), microphone=()")
+
+		log.Debug().
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Msg("应用安全头")
 
 		next.ServeHTTP(w, r)
 	})

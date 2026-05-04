@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/middleware"
 	"blog-api/internal/service"
@@ -135,20 +136,25 @@ type UserResponse struct {
 // POST /api/v1/auth/register
 // 创建新用户并发送邮箱验证码
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "Register").Msg("处理请求")
+
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
 
 	// 调用认证服务注册用户
 	if err := h.authService.Register(r.Context(), req.Email, req.Username, req.Password); err != nil {
+		log.Error().Err(err).Str("operation", "Register").Str("email", req.Email).Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -156,26 +162,32 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, MessageResponse{
 		Message: "注册成功，请检查邮箱获取验证码",
 	})
+	log.Info().Int("status", http.StatusCreated).Str("email", req.Email).Msg("请求处理成功")
 }
 
 // VerifyEmail 邮箱验证接口
 // POST /api/v1/auth/verify-email
 // 使用验证码验证用户邮箱
 func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "VerifyEmail").Msg("处理请求")
+
 	var req VerifyEmailRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
 
 	// 调用认证服务验证邮箱
 	if err := h.authService.VerifyEmail(r.Context(), req.Email, req.Code); err != nil {
+		log.Error().Err(err).Str("operation", "VerifyEmail").Str("email", req.Email).Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -183,20 +195,25 @@ func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, MessageResponse{
 		Message: "邮箱验证成功",
 	})
+	log.Info().Int("status", http.StatusOK).Str("email", req.Email).Msg("请求处理成功")
 }
 
 // Login 用户登录接口
 // POST /api/v1/auth/login
 // 验证邮箱密码并返回 JWT 令牌
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "Login").Msg("处理请求")
+
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
@@ -204,6 +221,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// 调用认证服务登录
 	tokenPair, err := h.authService.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "Login").Str("email", req.Email).Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -215,20 +233,25 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		RefreshExpiresIn:  tokenPair.RefreshExpiresIn,
 		TokenType:         "Bearer",
 	})
+	log.Info().Int("status", http.StatusOK).Str("email", req.Email).Msg("请求处理成功")
 }
 
 // RefreshToken 刷新令牌接口
 // POST /api/v1/auth/refresh
 // 使用刷新令牌获取新的访问令牌
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "RefreshToken").Msg("处理请求")
+
 	var req RefreshTokenRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
@@ -236,6 +259,7 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	// 调用认证服务刷新令牌
 	tokenPair, err := h.authService.RefreshToken(r.Context(), req.RefreshToken)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "RefreshToken").Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -247,21 +271,26 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		RefreshExpiresIn:  tokenPair.RefreshExpiresIn,
 		TokenType:         "Bearer",
 	})
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
 // Logout 用户登出接口
 // POST /api/v1/auth/logout
 // 需要认证，删除 Redis 中的刷新令牌
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "Logout").Msg("处理请求")
+
 	// 从上下文获取用户 ID
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
+		log.Warn().Msg("参数验证失败：未认证")
 		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
 		return
 	}
 
 	// 调用认证服务登出
 	if err := h.authService.Logout(r.Context(), userID); err != nil {
+		log.Error().Err(err).Str("operation", "Logout").Str("user_id", userID).Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -269,26 +298,32 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, MessageResponse{
 		Message: "已成功登出",
 	})
+	log.Info().Int("status", http.StatusOK).Str("user_id", userID).Msg("请求处理成功")
 }
 
 // ForgotPassword 忘记密码接口
 // POST /api/v1/auth/forgot-password
 // 发送密码重置验证码到用户邮箱
 func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "ForgotPassword").Msg("处理请求")
+
 	var req ForgotPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
 
 	// 调用认证服务发送重置码
 	if err := h.authService.ForgotPassword(r.Context(), req.Email); err != nil {
+		log.Error().Err(err).Str("operation", "ForgotPassword").Str("email", req.Email).Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -297,26 +332,32 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, MessageResponse{
 		Message: "如果该邮箱已注册，您将收到密码重置邮件",
 	})
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
 // ResetPassword 重置密码接口
 // POST /api/v1/auth/reset-password
 // 使用重置码设置新密码
 func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "ResetPassword").Msg("处理请求")
+
 	var req ResetPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	// 验证请求参数
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
 
 	// 调用认证服务重置密码
 	if err := h.authService.ResetPassword(r.Context(), req.Email, req.Code, req.NewPassword); err != nil {
+		log.Error().Err(err).Str("operation", "ResetPassword").Str("email", req.Email).Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -324,20 +365,25 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, MessageResponse{
 		Message: "密码重置成功",
 	})
+	log.Info().Int("status", http.StatusOK).Str("email", req.Email).Msg("请求处理成功")
 }
 
 // Me 获取当前用户信息接口
 // GET /api/v1/auth/me
 // 需要认证，返回当前登录用户的信息
 func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "Me").Msg("处理请求")
+
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
+		log.Warn().Msg("参数验证失败：未认证")
 		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
 		return
 	}
 
 	user, err := h.authService.GetUserByID(r.Context(), userID)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "GetUserByID").Str("user_id", userID).Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -374,6 +420,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		IsActive:      user.IsActive,
 		Permissions:   permissions,
 	})
+	log.Info().Int("status", http.StatusOK).Str("user_id", userID).Msg("请求处理成功")
 }
 
 // --- 个人中心 ---
@@ -394,25 +441,31 @@ type UpdatePasswordRequest struct {
 // UpdateProfile 更新个人资料接口
 // PATCH /api/v1/auth/profile
 func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "UpdateProfile").Msg("处理请求")
+
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
+		log.Warn().Msg("参数验证失败：未认证")
 		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
 		return
 	}
 
 	var req UpdateProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
 
 	user, err := h.authService.UpdateProfile(r.Context(), userID, req.Username, req.Bio, req.AvatarURL)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "UpdateProfile").Str("user_id", userID).Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -436,29 +489,36 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		EmailVerified: user.EmailVerified,
 		IsActive:      user.IsActive,
 	})
+	log.Info().Int("status", http.StatusOK).Str("user_id", userID).Msg("请求处理成功")
 }
 
 // UpdatePassword 修改密码接口
 // PATCH /api/v1/auth/password
 func (h *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "UpdatePassword").Msg("处理请求")
+
 	userID := middleware.GetUserID(r.Context())
 	if userID == "" {
+		log.Warn().Msg("参数验证失败：未认证")
 		writeError(w, http.StatusUnauthorized, "unauthorized", "未认证")
 		return
 	}
 
 	var req UpdatePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", formatValidationErrors(err))
 		return
 	}
 
 	if err := h.authService.UpdatePassword(r.Context(), userID, req.OldPassword, req.NewPassword); err != nil {
+		log.Error().Err(err).Str("operation", "UpdatePassword").Str("user_id", userID).Msg("服务调用失败")
 		handleServiceError(w, err)
 		return
 	}
@@ -466,6 +526,7 @@ func (h *AuthHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, MessageResponse{
 		Message: "密码修改成功",
 	})
+	log.Info().Int("status", http.StatusOK).Str("user_id", userID).Msg("请求处理成功")
 }
 
 // --- 辅助函数 ---

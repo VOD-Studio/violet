@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/rs/zerolog/log"
 )
 
 // Recoverer panic 恢复中间件
@@ -12,8 +13,14 @@ func Recoverer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				// 输出 panic 信息和堆栈
-				log.Printf("[PANIC] %v\n%s", err, debug.Stack())
+				// 记录 panic 信息和堆栈
+				log.Error().
+					Str("method", r.Method).
+					Str("path", r.URL.Path).
+					Str("ip", getClientIP(r)).
+					Interface("panic", err).
+					Str("stack", string(debug.Stack())).
+					Msg("捕获 panic")
 
 				// 返回 500 错误响应
 				w.Header().Set("Content-Type", "application/json")

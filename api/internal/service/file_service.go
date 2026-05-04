@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
 	"blog-api/internal/model"
@@ -38,16 +39,21 @@ func NewFileService(db *gorm.DB, uploadDir, urlPrefix string) *FileService {
 
 // FindByHash 秒传查询，查找 status=ready 且 file_hash 匹配的记录
 func (s *FileService) FindByHash(ctx context.Context, hash string) (*model.File, error) {
+	log.Debug().Str("service", "FileService").Str("operation", "FindByHash").Str("hash", hash).Msg("查询文件哈希")
+
 	var file model.File
 	err := s.db.WithContext(ctx).
 		Where("file_hash = ? AND status = ?", hash, model.FileStatusReady).
 		First(&file).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Debug().Str("hash", hash).Msg("未找到匹配的文件")
 			return nil, nil
 		}
+		log.Error().Err(err).Str("hash", hash).Msg("查询文件哈希失败")
 		return nil, fmt.Errorf("查询文件哈希失败: %w", err)
 	}
+	log.Debug().Str("file_id", file.ID.String()).Str("hash", hash).Msg("找到匹配文件")
 	return &file, nil
 }
 
@@ -66,9 +72,14 @@ func (s *FileService) FindByID(ctx context.Context, id uuid.UUID) (*model.File, 
 
 // Create 创建文件记录
 func (s *FileService) Create(ctx context.Context, file *model.File) error {
+	log.Info().Str("service", "FileService").Str("operation", "Create").
+		Str("file_id", file.ID.String()).Str("filename", file.OriginalName).Msg("创建文件记录")
+
 	if err := s.db.WithContext(ctx).Create(file).Error; err != nil {
+		log.Error().Err(err).Str("file_id", file.ID.String()).Msg("创建文件记录失败")
 		return fmt.Errorf("创建文件记录失败: %w", err)
 	}
+	log.Info().Str("file_id", file.ID.String()).Msg("文件记录创建成功")
 	return nil
 }
 
@@ -137,6 +148,9 @@ func (s *FileService) DecrementRef(ctx context.Context, id uuid.UUID) error {
 
 // SoftDelete 软删除（设 deleted_at = now, status = deleted）
 func (s *FileService) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	log.Info().Str("service", "FileService").Str("operation", "SoftDelete").
+		Str("file_id", id.String()).Msg("开始软删除文件")
+
 	now := time.Now()
 	result := s.db.WithContext(ctx).
 		Model(&model.File{}).
@@ -146,11 +160,14 @@ func (s *FileService) SoftDelete(ctx context.Context, id uuid.UUID) error {
 			"status":     model.FileStatusDeleted,
 		})
 	if result.Error != nil {
+		log.Error().Err(result.Error).Str("file_id", id.String()).Msg("软删除文件失败")
 		return fmt.Errorf("软删除文件失败: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
+		log.Warn().Str("file_id", id.String()).Msg("文件不存在")
 		return ErrFileNotFound
 	}
+	log.Info().Str("file_id", id.String()).Msg("文件软删除成功")
 	return nil
 }
 
@@ -192,6 +209,9 @@ type FileListResult struct {
 
 // List 分页查询文件列表，支持按 MIME 类型筛选
 func (s *FileService) List(ctx context.Context, page, limit int, mimeType string) (*FileListResult, error) {
+	log.Info().Str("service", "FileService").Str("operation", "List").
+		Int("page", page).Int("limit", limit).Str("mime_type", mimeType).Msg("查询文件列表")
+
 	if page < 1 {
 		page = 1
 	}
@@ -207,14 +227,17 @@ func (s *FileService) List(ctx context.Context, page, limit int, mimeType string
 
 	var total int64
 	if err := query.Model(&model.File{}).Count(&total).Error; err != nil {
+		log.Error().Err(err).Msg("统计文件数失败")
 		return nil, fmt.Errorf("统计文件数失败: %w", err)
 	}
 
 	var files []model.File
 	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&files).Error; err != nil {
+		log.Error().Err(err).Msg("查询文件列表失败")
 		return nil, fmt.Errorf("查询文件列表失败: %w", err)
 	}
 
+	log.Info().Int64("total", total).Int("count", len(files)).Msg("文件列表查询成功")
 	return &FileListResult{
 		Files: files,
 		Total: total,

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/rs/zerolog/log"
+
 	"blog-api/internal/service"
 )
 
@@ -24,7 +26,10 @@ func NewMusicHandler(musicService *service.MusicService, searchService *service.
 // GET /api/v1/music/embed?url=xxx
 func (h *MusicHandler) GetEmbedInfo(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
+	log.Info().Str("handler", "GetEmbedInfo").Str("url", url).Msg("处理请求")
+
 	if url == "" {
+		log.Warn().Msg("参数验证失败：链接参数不能为空")
 		writeError(w, http.StatusBadRequest, "validation_error", "链接参数不能为空")
 		return
 	}
@@ -32,21 +37,27 @@ func (h *MusicHandler) GetEmbedInfo(w http.ResponseWriter, r *http.Request) {
 	info, err := h.musicService.ParseMusicURL(url)
 	if err != nil {
 		if err == service.ErrUnsupportedMusicURL {
+			log.Warn().Str("url", url).Msg("不支持的音乐链接格式")
 			writeError(w, http.StatusBadRequest, "unsupported_url", "不支持的音乐链接格式")
 			return
 		}
+		log.Error().Err(err).Str("operation", "ParseMusicURL").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "解析音乐链接失败")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, info)
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
 // GetPlaylist 解析歌单链接并返回歌单信息
 // GET /api/v1/music/playlist?url=xxx
 func (h *MusicHandler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 	link := r.URL.Query().Get("url")
+	log.Info().Str("handler", "GetPlaylist").Str("url", link).Msg("处理请求")
+
 	if link == "" {
+		log.Warn().Msg("参数验证失败：链接参数不能为空")
 		writeError(w, http.StatusBadRequest, "validation_error", "链接参数不能为空")
 		return
 	}
@@ -54,18 +65,22 @@ func (h *MusicHandler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 	playlist, err := h.musicService.ParsePlaylistURL(link)
 	if err != nil {
 		if err == service.ErrUnsupportedMusicURL {
+			log.Warn().Str("url", link).Msg("不支持的歌单链接格式")
 			writeError(w, http.StatusBadRequest, "unsupported_url", "不支持的歌单链接格式")
 			return
 		}
 		if err == service.ErrPlaylistNotFound {
+			log.Warn().Str("url", link).Msg("歌单不存在")
 			writeError(w, http.StatusNotFound, "not_found", "歌单不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "ParsePlaylistURL").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取歌单信息失败")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, playlist)
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
 // GetSongDetail 获取歌曲详情
@@ -73,8 +88,10 @@ func (h *MusicHandler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 func (h *MusicHandler) GetSongDetail(w http.ResponseWriter, r *http.Request) {
 	platform := r.URL.Query().Get("platform")
 	songID := r.URL.Query().Get("id")
+	log.Info().Str("handler", "GetSongDetail").Str("platform", platform).Str("song_id", songID).Msg("处理请求")
 
 	if platform == "" || songID == "" {
+		log.Warn().Msg("参数验证失败：平台和歌曲ID参数不能为空")
 		writeError(w, http.StatusBadRequest, "validation_error", "平台和歌曲ID参数不能为空")
 		return
 	}
@@ -82,21 +99,27 @@ func (h *MusicHandler) GetSongDetail(w http.ResponseWriter, r *http.Request) {
 	song, err := h.musicService.FetchSongDetail(platform, songID)
 	if err != nil {
 		if err == service.ErrPlaylistNotFound {
+			log.Warn().Str("platform", platform).Str("song_id", songID).Msg("歌曲不存在")
 			writeError(w, http.StatusNotFound, "not_found", "歌曲不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "FetchSongDetail").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取歌曲详情失败")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, song)
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
 // SearchSongs 搜索歌曲
 // GET /api/v1/music/search?keyword=xxx&limit=10
 func (h *MusicHandler) SearchSongs(w http.ResponseWriter, r *http.Request) {
 	keyword := r.URL.Query().Get("keyword")
+	log.Info().Str("handler", "SearchSongs").Str("keyword", keyword).Msg("处理请求")
+
 	if keyword == "" {
+		log.Warn().Msg("参数验证失败：搜索关键词不能为空")
 		writeError(w, http.StatusBadRequest, "validation_error", "搜索关键词不能为空")
 		return
 	}
@@ -110,11 +133,13 @@ func (h *MusicHandler) SearchSongs(w http.ResponseWriter, r *http.Request) {
 
 	results, err := h.searchService.SearchSongs(keyword, limit)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "SearchSongs").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "搜索歌曲失败")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, results)
+	log.Info().Int("status", http.StatusOK).Int("result_count", len(results)).Msg("请求处理成功")
 }
 
 // GetLyrics 获取歌词
@@ -122,19 +147,23 @@ func (h *MusicHandler) SearchSongs(w http.ResponseWriter, r *http.Request) {
 func (h *MusicHandler) GetLyrics(w http.ResponseWriter, r *http.Request) {
 	platform := r.URL.Query().Get("platform")
 	songID := r.URL.Query().Get("id")
+	log.Info().Str("handler", "GetLyrics").Str("platform", platform).Str("song_id", songID).Msg("处理请求")
 
 	if platform == "" || songID == "" {
+		log.Warn().Msg("参数验证失败：平台和歌曲ID参数不能为空")
 		writeError(w, http.StatusBadRequest, "validation_error", "平台和歌曲ID参数不能为空")
 		return
 	}
 
 	lrc, err := h.searchService.FetchLyrics(platform, songID)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "FetchLyrics").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取歌词失败")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"lrc": lrc})
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }
 
 // FetchSongMeta 获取歌曲元数据（封面+歌词）
@@ -142,17 +171,21 @@ func (h *MusicHandler) GetLyrics(w http.ResponseWriter, r *http.Request) {
 func (h *MusicHandler) FetchSongMeta(w http.ResponseWriter, r *http.Request) {
 	platform := r.URL.Query().Get("platform")
 	songID := r.URL.Query().Get("id")
+	log.Info().Str("handler", "FetchSongMeta").Str("platform", platform).Str("song_id", songID).Msg("处理请求")
 
 	if platform == "" || songID == "" {
+		log.Warn().Msg("参数验证失败：平台和歌曲ID参数不能为空")
 		writeError(w, http.StatusBadRequest, "validation_error", "平台和歌曲ID参数不能为空")
 		return
 	}
 
 	detail, err := h.searchService.FetchSongDetail(platform, songID)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "FetchSongDetail").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取歌曲元数据失败")
 		return
 	}
 
 	writeJSON(w, http.StatusOK, detail)
+	log.Info().Int("status", http.StatusOK).Msg("请求处理成功")
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/service"
 )
@@ -39,11 +40,14 @@ type userResponse struct {
 // GET /api/v1/admin/users
 // 需要管理员认证，支持分页查询
 func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "ListUsers").Msg("处理请求")
+
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 
 	result, err := h.userService.ListUsers(r.Context(), page, limit)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "ListUsers").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询用户列表失败")
 		return
 	}
@@ -67,6 +71,7 @@ func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request
 		"page":  result.Page,
 		"limit": result.Limit,
 	})
+	log.Info().Int("status", http.StatusOK).Int64("total", result.Total).Msg("请求处理成功")
 }
 
 // UpdateUserRole 修改用户角色
@@ -74,8 +79,11 @@ func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request
 // 需要管理员认证
 func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
+	log.Info().Str("handler", "UpdateUserRole").Str("id", idStr).Msg("处理请求")
+
 	targetID, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID")
 		return
 	}
@@ -84,17 +92,20 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 		Role string `json:"role" validate:"required,oneof=user admin superadmin"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	if req.Role != "user" && req.Role != "admin" && req.Role != "superadmin" {
+		log.Warn().Str("role", req.Role).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_role", "角色值无效，只能为 user 或 admin")
 		return
 	}
 
 	user, err := h.userService.UpdateUserRole(r.Context(), targetID, req.Role)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "UpdateUserRole").Str("user_id", idStr).Msg("服务调用失败")
 		handleUserServiceError(w, err)
 		return
 	}
@@ -108,6 +119,7 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 		EmailVerified: user.EmailVerified,
 		CreatedAt:     user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	})
+	log.Info().Int("status", http.StatusOK).Str("user_id", idStr).Str("new_role", req.Role).Msg("请求处理成功")
 }
 
 // UpdateUserStatus 启用/禁用用户
@@ -115,8 +127,11 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 // 需要管理员认证
 func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
+	log.Info().Str("handler", "UpdateUserStatus").Str("id", idStr).Msg("处理请求")
+
 	targetID, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID")
 		return
 	}
@@ -125,12 +140,14 @@ func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.
 		IsActive bool `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	user, err := h.userService.UpdateUserStatus(r.Context(), targetID, req.IsActive)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "UpdateUserStatus").Str("user_id", idStr).Msg("服务调用失败")
 		handleUserServiceError(w, err)
 		return
 	}
@@ -144,6 +161,7 @@ func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.
 		EmailVerified: user.EmailVerified,
 		CreatedAt:     user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	})
+	log.Info().Int("status", http.StatusOK).Str("user_id", idStr).Bool("is_active", req.IsActive).Msg("请求处理成功")
 }
 
 // handleUserServiceError 处理用户服务错误

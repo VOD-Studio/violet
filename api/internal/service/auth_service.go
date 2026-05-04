@@ -13,7 +13,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"os"
 	"time"
@@ -21,6 +20,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 
 	"blog-api/config"
@@ -108,7 +108,7 @@ type TokenPair struct {
 func NewAuthService(queries *generated.Queries, redisClient *redis.Client, emailSvc *EmailService, cfg *config.Config) *AuthService {
 	privateKey, publicKey, err := loadOrGenerateKeys(cfg.JWTPrivateKeyPath, cfg.JWTPublicKeyPath)
 	if err != nil {
-		log.Fatalf("加载 JWT 密钥失败: %v", err)
+		log.Fatal().Err(err).Msg("加载 JWT 密钥失败")
 	}
 
 	return &AuthService{
@@ -124,31 +124,41 @@ func NewAuthService(queries *generated.Queries, redisClient *redis.Client, email
 // Register 用户注册
 // 验证邮箱和用户名唯一性，创建未激活用户，发送邮箱验证码
 func (s *AuthService) Register(ctx context.Context, email, username, password string) error {
+	log.Info().Str("service", "AuthService").Str("operation", "Register").Str("email", email).Str("username", username).Msg("开始用户注册")
+
 	// 检查邮箱是否已被注册
+	log.Debug().Str("query", "GetUserByEmail").Str("email", email).Msg("检查邮箱是否已注册")
 	_, err := s.queries.GetUserByEmail(ctx, email)
 	if err == nil {
+		log.Warn().Str("email", email).Msg("邮箱已被注册")
 		return ErrEmailAlreadyExists
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
+		log.Error().Err(err).Str("email", email).Msg("查询邮箱失败")
 		return fmt.Errorf("查询邮箱失败: %w", err)
 	}
 
 	// 检查用户名是否已被占用
+	log.Debug().Str("query", "GetUserByUsername").Str("username", username).Msg("检查用户名是否已占用")
 	_, err = s.queries.GetUserByUsername(ctx, username)
 	if err == nil {
+		log.Warn().Str("username", username).Msg("用户名已被占用")
 		return ErrUsernameAlreadyExists
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
+		log.Error().Err(err).Str("username", username).Msg("查询用户名失败")
 		return fmt.Errorf("查询用户名失败: %w", err)
 	}
 
 	// 使用 bcrypt 对密码进行哈希处理
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Error().Err(err).Msg("密码哈希失败")
 		return fmt.Errorf("密码哈希失败: %w", err)
 	}
 
 	// 创建用户记录，初始状态为未激活且邮箱未验证
+	log.Debug().Str("query", "CreateUser").Str("email", email).Str("username", username).Msg("创建用户记录")
 	user, err := s.queries.CreateUser(ctx, generated.CreateUserParams{
 		Username:      username,
 		Email:         email,
@@ -158,25 +168,31 @@ func (s *AuthService) Register(ctx context.Context, email, username, password st
 		IsActive:      false,
 	})
 	if err != nil {
+		log.Error().Err(err).Str("email", email).Str("username", username).Msg("创建用户失败")
 		return fmt.Errorf("创建用户失败: %w", err)
 	}
 
 	// 生成 6 位数字验证码
 	code, err := generateVerificationCode()
 	if err != nil {
+		log.Error().Err(err).Msg("生成验证码失败")
 		return fmt.Errorf("生成验证码失败: %w", err)
 	}
 
 	// 将验证码的 SHA256 哈希值存入 Redis，有效期 10 分钟
+	log.Info().Str("target", "Redis").Str("key", "verify:"+email).Msg("存储验证码到Redis")
 	if err := s.storeVerificationCode(ctx, "verify:"+email, code); err != nil {
+		log.Error().Err(err).Str("email", email).Msg("存储验证码失败")
 		return fmt.Errorf("存储验证码失败: %w", err)
 	}
 
 	// 发送验证码邮件
+	log.Info().Str("target", "EmailService").Str("email", email).Msg("发送验证码邮件")
 	if err := s.emailService.SendVerificationCode(ctx, email, code); err != nil {
-		log.Printf("发送验证码邮件失败，用户 %s 已创建但未收到验证码: %v", user.ID, err)
+		log.Warn().Err(err).Str("user_id", user.ID.String()).Str("email", email).Msg("发送验证码邮件失败，用户已创建但未收到验证码")
 	}
 
+	log.Info().Str("user_id", user.ID.String()).Str("email", email).Msg("用户注册成功")
 	return nil
 }
 
@@ -184,16 +200,20 @@ func (s *AuthService) Register(ctx context.Context, email, username, password st
 // 比较用户提交的验证码与 Redis 中存储的哈希值
 // 验证成功后激活用户并更新邮箱验证状态
 func (s *AuthService) VerifyEmail(ctx context.Context, email, code string) error {
+	log.Info().Str("service", "AuthService").Str("operation", "VerifyEmail").Str("email", email).Msg("开始验证邮箱")
 	key := "verify:" + email
 
 	// 从 Redis 获取验证码数据
+	log.Info().Str("target", "Redis").Str("key", key).Msg("获取验证码数据")
 	data, err := s.getVerificationData(ctx, key)
 	if err != nil {
+		log.Warn().Str("email", email).Msg("验证码无效或已过期")
 		return ErrInvalidVerificationCode
 	}
 
 	// 检查尝试次数是否超过限制（最多 5 次）
 	if data.Attempts >= 5 {
+		log.Warn().Str("email", email).Int("attempts", data.Attempts).Msg("验证码尝试次数过多")
 		// 删除 Redis 中的验证码
 		s.redis.Del(ctx, key)
 		return ErrTooManyAttempts
@@ -207,60 +227,77 @@ func (s *AuthService) VerifyEmail(ctx context.Context, email, code string) error
 		// 增加尝试次数
 		data.Attempts++
 		s.storeVerificationData(ctx, key, *data)
+		log.Warn().Str("email", email).Int("attempts", data.Attempts).Msg("验证码错误")
 		return ErrInvalidVerificationCode
 	}
 
 	// 验证成功，删除 Redis 中的验证码
+	log.Info().Str("target", "Redis").Str("key", key).Msg("删除已使用的验证码")
 	s.redis.Del(ctx, key)
 
 	// 查询用户
+	log.Debug().Str("query", "GetUserByEmail").Str("email", email).Msg("查询用户信息")
 	user, err := s.queries.GetUserByEmail(ctx, email)
 	if err != nil {
+		log.Error().Err(err).Str("email", email).Msg("查询用户失败")
 		return fmt.Errorf("查询用户失败: %w", err)
 	}
 
 	// 更新用户激活状态
+	log.Debug().Str("query", "UpdateUserActive").Str("user_id", user.ID.String()).Msg("更新用户激活状态")
 	if err := s.queries.UpdateUserActive(ctx, generated.UpdateUserActiveParams{
 		ID:       user.ID,
 		IsActive: true,
 	}); err != nil {
+		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("更新用户激活状态失败")
 		return fmt.Errorf("更新用户激活状态失败: %w", err)
 	}
 
 	// 更新用户邮箱验证状态
+	log.Debug().Str("query", "UpdateUserVerified").Str("user_id", user.ID.String()).Msg("更新邮箱验证状态")
 	if err := s.queries.UpdateUserVerified(ctx, generated.UpdateUserVerifiedParams{
 		ID:            user.ID,
 		EmailVerified: true,
 	}); err != nil {
+		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("更新邮箱验证状态失败")
 		return fmt.Errorf("更新邮箱验证状态失败: %w", err)
 	}
 
+	log.Info().Str("user_id", user.ID.String()).Str("email", email).Msg("邮箱验证成功")
 	return nil
 }
 
 // Login 用户登录
 // 验证邮箱密码，生成访问令牌和刷新令牌
 func (s *AuthService) Login(ctx context.Context, email, password string) (*TokenPair, error) {
+	log.Info().Str("service", "AuthService").Str("operation", "Login").Str("email", email).Msg("开始用户登录")
+
 	// 按邮箱查询用户
+	log.Debug().Str("query", "GetUserByEmail").Str("email", email).Msg("查询用户信息")
 	user, err := s.queries.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("email", email).Msg("用户不存在")
 			return nil, ErrInvalidCredentials
 		}
+		log.Error().Err(err).Str("email", email).Msg("查询用户失败")
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		log.Warn().Str("email", email).Str("user_id", user.ID.String()).Msg("密码错误")
 		return nil, ErrInvalidCredentials
 	}
 
 	// 检查账户是否已激活
 	if !user.IsActive {
+		log.Warn().Str("email", email).Str("user_id", user.ID.String()).Msg("账户未激活")
 		return nil, ErrAccountNotActivated
 	}
 
 	// 获取角色 ID
+	log.Debug().Str("query", "GetUserRoleID").Str("user_id", user.ID.String()).Msg("获取用户角色ID")
 	roleID, _ := s.queries.GetUserRoleID(ctx, user.ID.String())
 	var rid int32
 	if roleID.Valid {
@@ -270,49 +307,63 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Token
 	// 生成令牌对
 	tokenPair, err := s.generateTokenPair(user.ID.String(), user.Email, user.Role, rid)
 	if err != nil {
+		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("生成令牌失败")
 		return nil, fmt.Errorf("生成令牌失败: %w", err)
 	}
 
 	// 将刷新令牌存入 Redis，有效期与配置一致
 	refreshKey := "refresh:" + user.ID.String()
+	log.Info().Str("target", "Redis").Str("key", refreshKey).Str("user_id", user.ID.String()).Msg("存储刷新令牌")
 	if err := s.redis.Set(ctx, refreshKey, tokenPair.RefreshToken, s.config.JWTRefreshTokenTTL).Err(); err != nil {
+		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("存储刷新令牌失败")
 		return nil, fmt.Errorf("存储刷新令牌失败: %w", err)
 	}
 
+	log.Info().Str("user_id", user.ID.String()).Str("email", email).Msg("用户登录成功")
 	return tokenPair, nil
 }
 
 // RefreshToken 刷新访问令牌
 // 验证刷新令牌有效性，生成新的令牌对
 func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*TokenPair, error) {
+	log.Info().Str("service", "AuthService").Str("operation", "RefreshToken").Msg("开始刷新令牌")
+
 	// 解析并验证刷新令牌
 	claims, err := s.parseToken(refreshToken)
 	if err != nil {
+		log.Warn().Err(err).Msg("刷新令牌无效")
 		return nil, ErrInvalidRefreshToken
 	}
 
 	userID := claims.UserID
+	log.Debug().Str("user_id", userID).Msg("解析刷新令牌成功")
 
 	// 从 Redis 获取存储的刷新令牌进行比对
 	refreshKey := "refresh:" + userID
+	log.Info().Str("target", "Redis").Str("key", refreshKey).Msg("验证刷新令牌")
 	storedToken, err := s.redis.Get(ctx, refreshKey).Result()
 	if err != nil {
+		log.Warn().Err(err).Str("user_id", userID).Msg("Redis中未找到刷新令牌")
 		return nil, ErrInvalidRefreshToken
 	}
 
 	// 比较令牌是否匹配
 	if storedToken != refreshToken {
+		log.Warn().Str("user_id", userID).Msg("刷新令牌不匹配")
 		return nil, ErrInvalidRefreshToken
 	}
 
 	// 查询用户信息以获取最新角色
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("无效的用户ID")
 		return nil, fmt.Errorf("无效的用户 ID: %w", err)
 	}
 
+	log.Debug().Str("query", "GetUserByID").Str("user_id", userID).Msg("查询用户信息")
 	user, err := s.queries.GetUserByID(ctx, userUUID)
 	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("查询用户失败")
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
 
@@ -324,73 +375,97 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*T
 	}
 	tokenPair, err := s.generateTokenPair(userID, user.Email, user.Role, rid)
 	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("生成新令牌失败")
 		return nil, fmt.Errorf("生成令牌失败: %w", err)
 	}
 
 	// 更新 Redis 中的刷新令牌
+	log.Info().Str("target", "Redis").Str("key", refreshKey).Msg("更新刷新令牌")
 	if err := s.redis.Set(ctx, refreshKey, tokenPair.RefreshToken, s.config.JWTRefreshTokenTTL).Err(); err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("更新刷新令牌失败")
 		return nil, fmt.Errorf("更新刷新令牌失败: %w", err)
 	}
 
+	log.Info().Str("user_id", userID).Msg("令牌刷新成功")
 	return tokenPair, nil
 }
 
 // Logout 用户登出
 // 删除 Redis 中的刷新令牌，使当前会话失效
 func (s *AuthService) Logout(ctx context.Context, userID string) error {
+	log.Info().Str("service", "AuthService").Str("operation", "Logout").Str("user_id", userID).Msg("开始用户登出")
+
 	refreshKey := "refresh:" + userID
+	log.Info().Str("target", "Redis").Str("key", refreshKey).Msg("删除刷新令牌")
 	if err := s.redis.Del(ctx, refreshKey).Err(); err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("删除刷新令牌失败")
 		return fmt.Errorf("删除刷新令牌失败: %w", err)
 	}
+
+	log.Info().Str("user_id", userID).Msg("用户登出成功")
 	return nil
 }
 
 // ForgotPassword 发送密码重置验证码
 // 向用户邮箱发送重置码，不暴露用户是否存在
 func (s *AuthService) ForgotPassword(ctx context.Context, email string) error {
+	log.Info().Str("service", "AuthService").Str("operation", "ForgotPassword").Str("email", email).Msg("开始密码重置流程")
+
 	// 查询用户是否存在
+	log.Debug().Str("query", "GetUserByEmail").Str("email", email).Msg("查询用户信息")
 	user, err := s.queries.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// 用户不存在时仍返回成功，避免暴露邮箱是否注册
+			log.Info().Str("email", email).Msg("用户不存在，但返回成功以保护隐私")
 			return nil
 		}
+		log.Error().Err(err).Str("email", email).Msg("查询用户失败")
 		return fmt.Errorf("查询用户失败: %w", err)
 	}
 
 	// 生成 6 位数字重置码
 	code, err := generateVerificationCode()
 	if err != nil {
+		log.Error().Err(err).Msg("生成重置码失败")
 		return fmt.Errorf("生成重置码失败: %w", err)
 	}
 
 	// 将重置码的 SHA256 哈希值存入 Redis
 	key := "reset:" + email
+	log.Info().Str("target", "Redis").Str("key", key).Msg("存储重置码")
 	if err := s.storeVerificationCode(ctx, key, code); err != nil {
+		log.Error().Err(err).Str("email", email).Msg("存储重置码失败")
 		return fmt.Errorf("存储重置码失败: %w", err)
 	}
 
 	// 发送重置码邮件
+	log.Info().Str("target", "EmailService").Str("email", email).Msg("发送密码重置邮件")
 	if err := s.emailService.SendPasswordResetCode(ctx, user.Email, code); err != nil {
-		log.Printf("发送密码重置邮件失败: %v", err)
+		log.Warn().Err(err).Str("email", email).Msg("发送密码重置邮件失败")
 	}
 
+	log.Info().Str("email", email).Msg("密码重置邮件已发送")
 	return nil
 }
 
 // ResetPassword 重置密码
 // 验证重置码后更新用户密码
 func (s *AuthService) ResetPassword(ctx context.Context, email, code, newPassword string) error {
+	log.Info().Str("service", "AuthService").Str("operation", "ResetPassword").Str("email", email).Msg("开始重置密码")
 	key := "reset:" + email
 
 	// 从 Redis 获取重置码数据
+	log.Info().Str("target", "Redis").Str("key", key).Msg("获取重置码数据")
 	data, err := s.getVerificationData(ctx, key)
 	if err != nil {
+		log.Warn().Str("email", email).Msg("重置码无效或已过期")
 		return ErrInvalidVerificationCode
 	}
 
 	// 检查尝试次数
 	if data.Attempts >= 5 {
+		log.Warn().Str("email", email).Int("attempts", data.Attempts).Msg("重置码尝试次数过多")
 		s.redis.Del(ctx, key)
 		return ErrTooManyAttempts
 	}
@@ -400,51 +475,66 @@ func (s *AuthService) ResetPassword(ctx context.Context, email, code, newPasswor
 	if codeHash != data.CodeHash {
 		data.Attempts++
 		s.storeVerificationData(ctx, key, *data)
+		log.Warn().Str("email", email).Int("attempts", data.Attempts).Msg("重置码错误")
 		return ErrInvalidVerificationCode
 	}
 
 	// 重置码验证成功，删除 Redis 中的数据
+	log.Info().Str("target", "Redis").Str("key", key).Msg("删除已使用的重置码")
 	s.redis.Del(ctx, key)
 
 	// 查询用户
+	log.Debug().Str("query", "GetUserByEmail").Str("email", email).Msg("查询用户信息")
 	user, err := s.queries.GetUserByEmail(ctx, email)
 	if err != nil {
+		log.Error().Err(err).Str("email", email).Msg("查询用户失败")
 		return fmt.Errorf("查询用户失败: %w", err)
 	}
 
 	// 对新密码进行哈希处理
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
+		log.Error().Err(err).Msg("密码哈希失败")
 		return fmt.Errorf("密码哈希失败: %w", err)
 	}
 
 	// 更新密码
+	log.Debug().Str("query", "UpdateUserPassword").Str("user_id", user.ID.String()).Msg("更新用户密码")
 	if err := s.queries.UpdateUserPassword(ctx, generated.UpdateUserPasswordParams{
 		ID:           user.ID,
 		PasswordHash: string(hashedPassword),
 	}); err != nil {
+		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("更新密码失败")
 		return fmt.Errorf("更新密码失败: %w", err)
 	}
 
 	// 吊销该用户的所有刷新令牌
 	refreshKey := "refresh:" + user.ID.String()
+	log.Info().Str("target", "Redis").Str("key", refreshKey).Msg("吊销所有刷新令牌")
 	s.redis.Del(ctx, refreshKey)
 
+	log.Info().Str("user_id", user.ID.String()).Str("email", email).Msg("密码重置成功")
 	return nil
 }
 
 // GetUserByID 按 ID 查询用户信息
 func (s *AuthService) GetUserByID(ctx context.Context, userID string) (*generated.User, error) {
+	log.Debug().Str("service", "AuthService").Str("operation", "GetUserByID").Str("user_id", userID).Msg("查询用户信息")
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("无效的用户ID")
 		return nil, fmt.Errorf("无效的用户 ID: %w", err)
 	}
 
+	log.Debug().Str("query", "GetUserByID").Str("user_id", userID).Msg("执行数据库查询")
 	user, err := s.queries.GetUserByID(ctx, userUUID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("user_id", userID).Msg("用户不存在")
 			return nil, ErrUserNotFound
 		}
+		log.Error().Err(err).Str("user_id", userID).Msg("查询用户失败")
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
 
@@ -453,17 +543,23 @@ func (s *AuthService) GetUserByID(ctx context.Context, userID string) (*generate
 
 // UpdateProfile 更新用户个人资料
 func (s *AuthService) UpdateProfile(ctx context.Context, userID, username, bio, avatarURL string) (*generated.User, error) {
+	log.Info().Str("service", "AuthService").Str("operation", "UpdateProfile").Str("user_id", userID).Str("username", username).Msg("开始更新用户资料")
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("无效的用户ID")
 		return nil, fmt.Errorf("无效的用户 ID: %w", err)
 	}
 
 	// 如果要修改用户名，检查是否已被占用
+	log.Debug().Str("query", "GetUserByUsername").Str("username", username).Msg("检查用户名是否可用")
 	existing, err := s.queries.GetUserByUsername(ctx, username)
 	if err == nil && existing.ID != userUUID {
+		log.Warn().Str("username", username).Str("user_id", userID).Msg("用户名已被占用")
 		return nil, ErrUsernameAlreadyExists
 	}
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Error().Err(err).Str("username", username).Msg("查询用户名失败")
 		return nil, fmt.Errorf("查询用户名失败: %w", err)
 	}
 
@@ -476,6 +572,7 @@ func (s *AuthService) UpdateProfile(ctx context.Context, userID, username, bio, 
 		avatarNull = sql.NullString{String: avatarURL, Valid: true}
 	}
 
+	log.Debug().Str("query", "UpdateUserProfile").Str("user_id", userID).Msg("更新用户资料")
 	user, err := s.queries.UpdateUserProfile(ctx, generated.UpdateUserProfileParams{
 		ID:        userUUID,
 		Username:  username,
@@ -483,45 +580,58 @@ func (s *AuthService) UpdateProfile(ctx context.Context, userID, username, bio, 
 		AvatarUrl: avatarNull,
 	})
 	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("更新个人资料失败")
 		return nil, fmt.Errorf("更新个人资料失败: %w", err)
 	}
 
+	log.Info().Str("user_id", userID).Msg("用户资料更新成功")
 	return user, nil
 }
 
 // UpdatePassword 修改密码（需验证旧密码）
 func (s *AuthService) UpdatePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
+	log.Info().Str("service", "AuthService").Str("operation", "UpdatePassword").Str("user_id", userID).Msg("开始修改密码")
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("无效的用户ID")
 		return fmt.Errorf("无效的用户 ID: %w", err)
 	}
 
+	log.Debug().Str("query", "GetUserByID").Str("user_id", userID).Msg("查询用户信息")
 	user, err := s.queries.GetUserByID(ctx, userUUID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("user_id", userID).Msg("用户不存在")
 			return ErrUserNotFound
 		}
+		log.Error().Err(err).Str("user_id", userID).Msg("查询用户失败")
 		return fmt.Errorf("查询用户失败: %w", err)
 	}
 
 	// 验证旧密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(oldPassword)); err != nil {
+		log.Warn().Str("user_id", userID).Msg("旧密码错误")
 		return ErrInvalidCredentials
 	}
 
 	// 哈希新密码并更新
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
+		log.Error().Err(err).Msg("密码哈希失败")
 		return fmt.Errorf("密码哈希失败: %w", err)
 	}
 
+	log.Debug().Str("query", "UpdateUserPassword").Str("user_id", userID).Msg("更新用户密码")
 	if err := s.queries.UpdateUserPassword(ctx, generated.UpdateUserPasswordParams{
 		ID:           userUUID,
 		PasswordHash: string(hashedPassword),
 	}); err != nil {
+		log.Error().Err(err).Str("user_id", userID).Msg("更新密码失败")
 		return fmt.Errorf("更新密码失败: %w", err)
 	}
 
+	log.Info().Str("user_id", userID).Msg("密码修改成功")
 	return nil
 }
 
@@ -664,7 +774,7 @@ func loadOrGenerateKeys(privateKeyPath, publicKeyPath string) (*ecdsa.PrivateKey
 	}
 
 	// 开发环境：生成临时密钥对
-	log.Println("警告: 未配置 JWT 密钥文件，使用临时密钥对（仅适用于开发环境）")
+	log.Warn().Msg("未配置 JWT 密钥文件，使用临时密钥对（仅适用于开发环境）")
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("生成 ECDSA 密钥失败: %w", err)

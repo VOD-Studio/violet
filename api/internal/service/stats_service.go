@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rs/zerolog/log"
+
 	"blog-api/internal/repository/generated"
 )
 
@@ -89,35 +91,49 @@ func NewStatsService(queries *generated.Queries) *StatsService {
 
 // GetDashboardStats 获取后台总览统计数据
 func (s *StatsService) GetDashboardStats(ctx context.Context) (*DashboardStats, error) {
+	log.Info().Str("service", "StatsService").Str("operation", "GetDashboardStats").Msg("开始获取后台统计数据")
+
 	// 并发查询各项统计数据
+	log.Debug().Str("query", "CountTotalPosts").Msg("统计文章总数")
 	totalPosts, err := s.queries.CountTotalPosts(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("统计文章总数失败")
 		return nil, fmt.Errorf("统计文章总数失败: %w", err)
 	}
 
+	log.Debug().Str("query", "CountTotalComments").Msg("统计评论总数")
 	totalComments, err := s.queries.CountTotalComments(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("统计评论总数失败")
 		return nil, fmt.Errorf("统计评论总数失败: %w", err)
 	}
 
+	log.Debug().Str("query", "CountAllPendingComments").Msg("统计待审核评论数")
 	pendingComments, err := s.queries.CountAllPendingComments(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("统计待审核评论数失败")
 		return nil, fmt.Errorf("统计待审核评论数失败: %w", err)
 	}
 
+	log.Debug().Str("query", "CountTotalViews").Msg("统计总浏览量")
 	totalViews, err := s.queries.CountTotalViews(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("统计总浏览量失败")
 		return nil, fmt.Errorf("统计总浏览量失败: %w", err)
 	}
 
+	log.Debug().Str("query", "CountTotalUsers").Msg("统计用户总数")
 	totalUsers, err := s.queries.CountTotalUsers(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("统计用户总数失败")
 		return nil, fmt.Errorf("统计用户总数失败: %w", err)
 	}
 
 	// 查询最近文章
+	log.Debug().Str("query", "GetRecentPosts").Msg("查询最近文章")
 	recentRows, err := s.queries.GetRecentPosts(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("查询最近文章失败")
 		return nil, fmt.Errorf("查询最近文章失败: %w", err)
 	}
 	recentPosts := make([]*RecentPost, len(recentRows))
@@ -132,8 +148,10 @@ func (s *StatsService) GetDashboardStats(ctx context.Context) (*DashboardStats, 
 	}
 
 	// 查询热门文章
+	log.Debug().Str("query", "GetPopularPosts").Msg("查询热门文章")
 	popularRows, err := s.queries.GetPopularPosts(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("查询热门文章失败")
 		return nil, fmt.Errorf("查询热门文章失败: %w", err)
 	}
 	popularPosts := make([]*PopularPost, len(popularRows))
@@ -146,6 +164,8 @@ func (s *StatsService) GetDashboardStats(ctx context.Context) (*DashboardStats, 
 		}
 	}
 
+	log.Info().Int64("posts", totalPosts).Int64("comments", totalComments).
+		Int64("views", totalViews).Msg("后台统计数据获取成功")
 	return &DashboardStats{
 		TotalPosts:      totalPosts,
 		TotalComments:   totalComments,
@@ -159,9 +179,13 @@ func (s *StatsService) GetDashboardStats(ctx context.Context) (*DashboardStats, 
 
 // GetViewTrends 获取浏览量趋势数据
 func (s *StatsService) GetViewTrends(ctx context.Context) (*ViewTrends, error) {
+	log.Info().Str("service", "StatsService").Str("operation", "GetViewTrends").Msg("开始获取浏览量趋势")
+
 	// 查询最近 30 天每日浏览量
+	log.Debug().Str("query", "GetDailyViews").Msg("查询每日浏览量")
 	dailyRows, err := s.queries.GetDailyViews(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("查询每日浏览量失败")
 		return nil, fmt.Errorf("查询每日浏览量失败: %w", err)
 	}
 	daily := make([]*DailyView, len(dailyRows))
@@ -173,8 +197,10 @@ func (s *StatsService) GetViewTrends(ctx context.Context) (*ViewTrends, error) {
 	}
 
 	// 查询最近 12 个月每月浏览量
+	log.Debug().Str("query", "GetMonthlyViews").Msg("查询每月浏览量")
 	monthlyRows, err := s.queries.GetMonthlyViews(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("查询每月浏览量失败")
 		return nil, fmt.Errorf("查询每月浏览量失败: %w", err)
 	}
 	monthly := make([]*MonthlyView, len(monthlyRows))
@@ -185,6 +211,7 @@ func (s *StatsService) GetViewTrends(ctx context.Context) (*ViewTrends, error) {
 		}
 	}
 
+	log.Info().Int("daily_count", len(daily)).Int("monthly_count", len(monthly)).Msg("浏览量趋势获取成功")
 	return &ViewTrends{
 		Daily:   daily,
 		Monthly: monthly,

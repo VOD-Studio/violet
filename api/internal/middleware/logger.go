@@ -1,9 +1,10 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // responseWriter 包装 http.ResponseWriter 以捕获状态码
@@ -39,12 +40,12 @@ func Logger(next http.Handler) http.Handler {
 		duration := time.Since(start)
 
 		// 输出请求日志
-		log.Printf("[%s] %s %s -> %d (%v)",
-			r.Method,
-			r.URL.Path,
-			r.RemoteAddr,
-			wrapped.statusCode,
-			duration,
-		)
+		log.Info().
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Str("ip", r.RemoteAddr).
+			Int("status", wrapped.statusCode).
+			Dur("duration", duration).
+			Msg("HTTP 请求")
 	})
 }

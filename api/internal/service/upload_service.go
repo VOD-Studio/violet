@@ -17,6 +17,7 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
 	"blog-api/internal/model"
@@ -171,14 +172,19 @@ type MergeResult struct {
 // 3. 断点续传恢复
 // 4. 创建新会话
 func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req InitSessionRequest) (*InitSessionResponse, error) {
+	log.Info().Str("service", "UploadService").Str("operation", "InitSession").
+		Str("filename", req.FileName).Int64("size", req.FileSize).Msg("开始初始化上传会话")
+
 	// 验证文件类型
 	ext := strings.ToLower(filepath.Ext(req.FileName))
 	if _, ok := allowedUploadTypes[ext]; !ok {
+		log.Warn().Str("ext", ext).Msg("不支持的文件类型")
 		return nil, ErrInvalidImageType
 	}
 
 	// 验证文件大小
 	if req.FileSize > s.maxFileSize {
+		log.Warn().Int64("size", req.FileSize).Int64("max", s.maxFileSize).Msg("文件过大")
 		return nil, ErrImageTooLarge
 	}
 
@@ -194,11 +200,14 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 
 	// 秒传检查：查找 file_hash + status=ready 的记录
 	if req.FileHash != "" {
+		log.Debug().Str("hash", req.FileHash).Msg("检查秒传")
 		existing, err := s.fileSvc.FindByHash(ctx, req.FileHash)
 		if err != nil {
+			log.Error().Err(err).Msg("秒传检查失败")
 			return nil, fmt.Errorf("秒传检查失败: %w", err)
 		}
 		if existing != nil {
+			log.Info().Str("file_id", existing.ID.String()).Msg("秒传命中")
 			return &InitSessionResponse{
 				Instant: true,
 				FileID:  existing.ID.String(),
@@ -214,6 +223,7 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 			Where("file_hash = ? AND user_id = ? AND status = ?", req.FileHash, userID, model.SessionStatusActive).
 			First(&session).Error
 		if err == nil {
+			log.Info().Str("session_id", session.ID.String()).Msg("断点续传恢复")
 			return &InitSessionResponse{
 				Instant:        false,
 				UploadID:       session.ID.String(),
@@ -224,6 +234,7 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 		}
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			// 数据异常（如旧会话损坏），清理旧会话后继续创建新会话
+			log.Warn().Err(err).Msg("旧会话异常，清理后重新创建")
 			s.db.WithContext(ctx).
 				Where("file_hash = ? AND user_id = ? AND status = ?", req.FileHash, userID, model.SessionStatusActive).
 				Delete(&model.UploadSession{})
@@ -236,6 +247,7 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 
 	// 创建临时分片目录
 	if err := os.MkdirAll(tmpPath, 0755); err != nil {
+		log.Error().Err(err).Str("path", tmpPath).Msg("创建分片目录失败")
 		return nil, fmt.Errorf("创建分片目录失败: %w", err)
 	}
 
@@ -269,9 +281,11 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 
 	if err := s.db.WithContext(ctx).Create(session).Error; err != nil {
 		os.RemoveAll(tmpPath)
+		log.Error().Err(err).Str("session_id", sessionID.String()).Msg("创建上传会话失败")
 		return nil, fmt.Errorf("创建上传会话失败: %w", err)
 	}
 
+	log.Info().Str("session_id", sessionID.String()).Int("total_chunks", totalChunks).Msg("上传会话创建成功")
 	return &InitSessionResponse{
 		Instant:        false,
 		UploadID:       sessionID.String(),
@@ -283,6 +297,9 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 
 // SaveChunk 保存单个分片
 func (s *UploadService) SaveChunk(ctx context.Context, uploadID uuid.UUID, index int, reader io.Reader) error {
+	log.Info().Str("service", "UploadService").Str("operation", "SaveChunk").
+		Str("upload_id", uploadID.String()).Int("index", index).Msg("开始保存分片")
+
 	// 查找会话
 	var session model.UploadSession
 	err := s.db.WithContext(ctx).
@@ -290,23 +307,28 @@ func (s *UploadService) SaveChunk(ctx context.Context, uploadID uuid.UUID, index
 		First(&session).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Warn().Str("upload_id", uploadID.String()).Msg("上传会话不存在")
 			return ErrUploadNotFound
 		}
+		log.Error().Err(err).Str("upload_id", uploadID.String()).Msg("查询上传会话失败")
 		return fmt.Errorf("查询上传会话失败: %w", err)
 	}
 
 	// 验证状态为 active
 	if session.Status != model.SessionStatusActive {
+		log.Warn().Str("upload_id", uploadID.String()).Str("status", string(session.Status)).Msg("上传会话不在活跃状态")
 		return ErrSessionNotActive
 	}
 
 	// 验证分片索引范围
 	if index < 0 || index >= session.TotalChunks {
+		log.Warn().Int("index", index).Int("total", session.TotalChunks).Msg("分片索引超出范围")
 		return fmt.Errorf("分片索引 %d 超出范围 [0, %d)", index, session.TotalChunks)
 	}
 
 	// 检查分片是否已上传
 	if slices.Contains(session.UploadedChunks, index) {
+		log.Debug().Int("index", index).Msg("分片已存在")
 		return ErrChunkAlreadyExists
 	}
 
@@ -314,11 +336,13 @@ func (s *UploadService) SaveChunk(ctx context.Context, uploadID uuid.UUID, index
 	chunkPath := filepath.Join(session.TmpPath, fmt.Sprintf("chunk_%04d", index))
 	dst, err := os.Create(chunkPath)
 	if err != nil {
+		log.Error().Err(err).Str("path", chunkPath).Msg("创建分片文件失败")
 		return fmt.Errorf("创建分片文件失败: %w", err)
 	}
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, reader); err != nil {
+		log.Error().Err(err).Str("path", chunkPath).Msg("写入分片文件失败")
 		return fmt.Errorf("写入分片文件失败: %w", err)
 	}
 
@@ -339,9 +363,11 @@ func (s *UploadService) SaveChunk(ctx context.Context, uploadID uuid.UUID, index
 			Update("uploaded_chunks", datatypes.NewJSONSlice(chunks)).Error
 	})
 	if err != nil {
+		log.Error().Err(err).Str("upload_id", uploadID.String()).Msg("更新分片记录失败")
 		return fmt.Errorf("更新分片记录失败: %w", err)
 	}
 
+	log.Info().Str("upload_id", uploadID.String()).Int("index", index).Msg("分片保存成功")
 	return nil
 }
 

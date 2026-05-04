@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rs/zerolog/log"
+
 	"blog-api/internal/repository/generated"
 )
 
@@ -46,8 +48,12 @@ type UpdateSettingsRequest struct {
 
 // GetAllSettings 获取所有站点设置
 func (s *SettingsService) GetAllSettings(ctx context.Context) (*SiteSettings, error) {
+	log.Info().Str("service", "SettingsService").Str("operation", "GetAllSettings").Msg("获取站点设置")
+
+	log.Debug().Str("query", "GetAllSettings").Msg("查询所有设置")
 	settings, err := s.queries.GetAllSettings(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("查询站点设置失败")
 		return nil, fmt.Errorf("查询站点设置失败: %w", err)
 	}
 
@@ -80,18 +86,23 @@ func (s *SettingsService) GetAllSettings(ctx context.Context) (*SiteSettings, er
 		}
 	}
 
+	log.Info().Msg("站点设置获取成功")
 	return result, nil
 }
 
 // UpdateSettings 更新站点设置
 // 只更新请求中非 nil 的字段
 func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettingsRequest) (*SiteSettings, error) {
+	log.Info().Str("service", "SettingsService").Str("operation", "UpdateSettings").Msg("开始更新站点设置")
+
 	// 逐个更新提供的字段
 	if req.SiteName != nil {
+		log.Debug().Str("query", "UpsertSetting").Str("key", "site_name").Msg("更新设置")
 		if _, err := s.queries.UpsertSetting(ctx, generated.UpsertSettingParams{
 			Key:   "site_name",
 			Value: *req.SiteName,
 		}); err != nil {
+			log.Error().Err(err).Str("key", "site_name").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 site_name 失败: %w", err)
 		}
 	}
@@ -100,6 +111,7 @@ func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettings
 			Key:   "site_description",
 			Value: *req.SiteDescription,
 		}); err != nil {
+			log.Error().Err(err).Str("key", "site_description").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 site_description 失败: %w", err)
 		}
 	}
@@ -108,6 +120,7 @@ func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettings
 			Key:   "site_url",
 			Value: *req.SiteURL,
 		}); err != nil {
+			log.Error().Err(err).Str("key", "site_url").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 site_url 失败: %w", err)
 		}
 	}
@@ -116,6 +129,7 @@ func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettings
 			Key:   "admin_email",
 			Value: *req.AdminEmail,
 		}); err != nil {
+			log.Error().Err(err).Str("key", "admin_email").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 admin_email 失败: %w", err)
 		}
 	}
@@ -124,6 +138,7 @@ func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettings
 			Key:   "posts_per_page",
 			Value: strconv.Itoa(*req.PostsPerPage),
 		}); err != nil {
+			log.Error().Err(err).Str("key", "posts_per_page").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 posts_per_page 失败: %w", err)
 		}
 	}
@@ -136,6 +151,7 @@ func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettings
 			Key:   "comments_enabled",
 			Value: val,
 		}); err != nil {
+			log.Error().Err(err).Str("key", "comments_enabled").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 comments_enabled 失败: %w", err)
 		}
 	}
@@ -148,6 +164,7 @@ func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettings
 			Key:   "comments_moderation",
 			Value: val,
 		}); err != nil {
+			log.Error().Err(err).Str("key", "comments_moderation").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 comments_moderation 失败: %w", err)
 		}
 	}
@@ -156,6 +173,7 @@ func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettings
 			Key:   "github_username",
 			Value: *req.GitHubUsername,
 		}); err != nil {
+			log.Error().Err(err).Str("key", "github_username").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 github_username 失败: %w", err)
 		}
 	}
@@ -164,10 +182,12 @@ func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettings
 			Key:   "footer_text",
 			Value: *req.FooterText,
 		}); err != nil {
+			log.Error().Err(err).Str("key", "footer_text").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 footer_text 失败: %w", err)
 		}
 	}
 
+	log.Info().Msg("站点设置更新成功")
 	// 返回更新后的完整设置
 	return s.GetAllSettings(ctx)
 }

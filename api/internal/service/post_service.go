@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
@@ -56,6 +57,9 @@ func NewPostService(queries *generated.Queries) *PostService {
 // CreatePost 创建文章
 // 自动生成 slug，将 Markdown 渲染为 HTML
 func (s *PostService) CreatePost(ctx context.Context, req CreatePostRequest, authorID uuid.UUID) (*generated.Post, error) {
+	log.Info().Str("service", "PostService").Str("operation", "CreatePost").
+		Str("title", req.Title).Str("author_id", authorID.String()).Msg("开始创建文章")
+
 	// 生成 slug
 	slug := req.Slug
 	if slug == "" {
@@ -64,21 +68,26 @@ func (s *PostService) CreatePost(ctx context.Context, req CreatePostRequest, aut
 
 	// 验证 slug 格式
 	if !isValidSlug(slug) {
+		log.Warn().Str("slug", slug).Msg("slug格式无效")
 		return nil, ErrPostSlugInvalid
 	}
 
 	// 检查 slug 是否已存在
+	log.Debug().Str("query", "GetPostBySlug").Str("slug", slug).Msg("检查slug是否已存在")
 	_, err := s.queries.GetPostBySlug(ctx, slug)
 	if err == nil {
 		// slug 已存在，追加随机后缀
 		slug = fmt.Sprintf("%s-%s", slug, uuid.New().String()[:8])
+		log.Debug().Str("new_slug", slug).Msg("slug已存在，生成新slug")
 	} else if !errors.Is(err, sql.ErrNoRows) {
+		log.Error().Err(err).Str("slug", slug).Msg("查询slug失败")
 		return nil, fmt.Errorf("查询 slug 失败: %w", err)
 	}
 
 	// 渲染 Markdown 为 HTML
 	html, err := s.renderMarkdown(req.ContentMarkdown)
 	if err != nil {
+		log.Error().Err(err).Msg("渲染Markdown失败")
 		return nil, fmt.Errorf("渲染 Markdown 失败: %w", err)
 	}
 
@@ -88,6 +97,7 @@ func (s *PostService) CreatePost(ctx context.Context, req CreatePostRequest, aut
 		status = "draft"
 	}
 	if !validPostStatuses[status] {
+		log.Warn().Str("status", status).Msg("无效的文章状态")
 		return nil, ErrInvalidStatus
 	}
 
@@ -118,6 +128,7 @@ func (s *PostService) CreatePost(ctx context.Context, req CreatePostRequest, aut
 	}
 
 	// 创建文章记录
+	log.Debug().Str("query", "CreatePost").Str("slug", slug).Msg("创建文章记录")
 	post, err := s.queries.CreatePost(ctx, generated.CreatePostParams{
 		Title:          req.Title,
 		Slug:           slug,
@@ -134,9 +145,11 @@ func (s *PostService) CreatePost(ctx context.Context, req CreatePostRequest, aut
 		PublishedAt:    sql.NullTime{Time: time.Now(), Valid: status == "published"}, // 发布时设置时间
 	})
 	if err != nil {
+		log.Error().Err(err).Str("slug", slug).Msg("创建文章失败")
 		return nil, fmt.Errorf("创建文章失败: %w", err)
 	}
 
+	log.Info().Str("post_id", post.ID.String()).Str("slug", slug).Str("title", req.Title).Msg("文章创建成功")
 	return post, nil
 }
 
@@ -330,18 +343,27 @@ func (s *PostService) UpdatePost(ctx context.Context, id uuid.UUID, req UpdatePo
 
 // DeletePost 删除文章
 func (s *PostService) DeletePost(ctx context.Context, id uuid.UUID) error {
+	log.Info().Str("service", "PostService").Str("operation", "DeletePost").
+		Str("post_id", id.String()).Msg("开始删除文章")
+
+	log.Debug().Str("query", "GetPostByID").Str("post_id", id.String()).Msg("检查文章是否存在")
 	_, err := s.queries.GetPostByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("post_id", id.String()).Msg("文章不存在")
 			return ErrPostNotFound
 		}
+		log.Error().Err(err).Str("post_id", id.String()).Msg("查询文章失败")
 		return fmt.Errorf("查询文章失败: %w", err)
 	}
 
+	log.Debug().Str("query", "DeletePost").Str("post_id", id.String()).Msg("执行删除操作")
 	if err := s.queries.DeletePost(ctx, id); err != nil {
+		log.Error().Err(err).Str("post_id", id.String()).Msg("删除文章失败")
 		return fmt.Errorf("删除文章失败: %w", err)
 	}
 
+	log.Info().Str("post_id", id.String()).Msg("文章删除成功")
 	return nil
 }
 

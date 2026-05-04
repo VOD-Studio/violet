@@ -4,13 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -30,39 +32,50 @@ func main() {
 	ctx := context.Background()
 	cfg := config.Load()
 
+	// --- 日志初始化 ---
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	// 根据环境变量判断是否为开发环境
+	if os.Getenv("ENV") == "development" || os.Getenv("ENVIRONMENT") == "development" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
+	log.Logger = log.With().Str("service", "blog-api").Logger()
+
 	// --- 基础设施初始化 ---
 
 	db, err := sql.Open("pgx", cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("数据库连接失败: %v", err)
+		log.Fatal().Err(err).Msg("数据库连接失败")
 	}
 	defer db.Close()
 	if err := db.PingContext(ctx); err != nil {
-		log.Fatalf("数据库 ping 失败: %v", err)
+		log.Fatal().Err(err).Msg("数据库 ping 失败")
 	}
-	log.Println("数据库连接成功")
+	log.Info().Msg("数据库连接成功")
 
 	migrateURL := fmt.Sprintf("pgx5://%s", cfg.DatabaseURL[len("postgres://"):])
 	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
-		log.Fatalf("数据库迁移失败: %v", err)
+		log.Fatal().Err(err).Msg("数据库迁移失败")
 	}
 
 	redisOpt, err := redis.ParseURL(cfg.RedisURL)
 	if err != nil {
-		log.Fatalf("解析 Redis 地址失败: %v", err)
+		log.Fatal().Err(err).Msg("解析 Redis 地址失败")
 	}
 	redisClient := redis.NewClient(redisOpt)
 	if err := redisClient.Ping(ctx).Err(); err != nil {
-		log.Fatalf("Redis 连接失败: %v", err)
+		log.Fatal().Err(err).Msg("Redis 连接失败")
 	}
-	log.Println("Redis 连接成功")
+	log.Info().Msg("Redis 连接成功")
 
 	gormDB, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("GORM 连接失败: %v", err)
+		log.Fatal().Err(err).Msg("GORM 连接失败")
 	}
 	if err := gormDB.AutoMigrate(&model.File{}, &model.UploadSession{}); err != nil {
-		log.Fatalf("GORM 自动迁移失败: %v", err)
+		log.Fatal().Err(err).Msg("GORM 自动迁移失败")
 	}
 
 	queries := generated.New(db)
@@ -89,14 +102,14 @@ func main() {
 
 	count, err := queries.CountEmojiGroups(ctx)
 	if err != nil {
-		log.Printf("检查表情分组数量失败: %v", err)
+		log.Error().Err(err).Msg("检查表情分组数量失败")
 	} else if count == 0 {
-		log.Println("表情分组为空，开始初始化 B站表情种子数据...")
+		log.Info().Msg("表情分组为空，开始初始化 B站表情种子数据...")
 		if err := emojiService.SeedBilibiliEmojis(ctx); err != nil {
-			log.Printf("表情种子数据初始化失败: %v（不影响服务启动）", err)
+			log.Error().Err(err).Msg("表情种子数据初始化失败（不影响服务启动）")
 		}
 	} else {
-		log.Printf("表情分组已有 %d 条数据，跳过种子初始化", count)
+		log.Info().Int64("count", count).Msg("表情分组已有数据，跳过种子初始化")
 	}
 
 	cleanupJob := job.NewCleanupJob(gormDB, "uploads/tmp")
@@ -105,7 +118,7 @@ func main() {
 	// --- 超级管理员初始化 ---
 	if cfg.SuperAdmin.Enabled {
 		if err := initSuperAdmin(ctx, queries, cfg.SuperAdmin); err != nil {
-			log.Fatalf("超级管理员初始化失败: %v", err)
+			log.Fatal().Err(err).Msg("超级管理员初始化失败")
 		}
 	}
 
@@ -321,9 +334,9 @@ func main() {
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
-	log.Printf("博客 API 服务启动，监听地址 %s", addr)
+	log.Info().Str("addr", addr).Msg("博客 API 服务启动")
 	if err := http.ListenAndServe(addr, r); err != nil {
-		log.Fatalf("服务启动失败: %v", err)
+		log.Fatal().Err(err).Msg("服务启动失败")
 	}
 }
 
@@ -354,7 +367,7 @@ func initSuperAdmin(ctx context.Context, queries *generated.Queries, cfg config.
 		if err != nil {
 			return fmt.Errorf("更新超级管理员角色失败: %w", err)
 		}
-		log.Printf("超级管理员已更新: %s (%s)", cfg.Username, cfg.Email)
+		log.Info().Str("username", cfg.Username).Str("email", cfg.Email).Msg("超级管理员已更新")
 		return nil
 	}
 
@@ -375,6 +388,6 @@ func initSuperAdmin(ctx context.Context, queries *generated.Queries, cfg config.
 		return fmt.Errorf("创建超级管理员失败: %w", err)
 	}
 
-	log.Printf("超级管理员已创建: %s (%s)", cfg.Username, cfg.Email)
+	log.Info().Str("username", cfg.Username).Str("email", cfg.Email).Msg("超级管理员已创建")
 	return nil
 }

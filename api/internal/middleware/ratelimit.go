@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog/log"
 )
 
 // CommentRateLimit 评论限流中间件
@@ -44,6 +45,11 @@ func CommentRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler
 			// 执行管道命令
 			if _, err := pipe.Exec(ctx); err != nil {
 				// Redis 出错时放行请求，避免因限流服务故障导致全部请求被拒
+				log.Error().
+					Err(err).
+					Str("ip", ip).
+					Str("path", r.URL.Path).
+					Msg("限流 Redis 操作失败，放行请求")
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -51,6 +57,12 @@ func CommentRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler
 			// 检查是否超过限制
 			count := countCmd.Val()
 			if count > 3 {
+				log.Warn().
+					Str("ip", ip).
+					Str("method", r.Method).
+					Str("path", r.URL.Path).
+					Int64("count", count).
+					Msg("触发限流")
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("Retry-After", "60")
 				w.WriteHeader(http.StatusTooManyRequests)
@@ -61,34 +73,4 @@ func CommentRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-// getClientIP 获取客户端真实 IP 地址
-// 优先从 X-Forwarded-For 和 X-Real-IP 头部获取
-func getClientIP(r *http.Request) string {
-	// 优先检查代理头
-	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-		// 取第一个 IP（原始客户端）
-		if ip := extractFirstIP(forwarded); ip != "" {
-			return ip
-		}
-	}
-
-	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
-		return realIP
-	}
-
-	// 回退到 RemoteAddr
-	return r.RemoteAddr
-}
-
-// extractFirstIP 从 X-Forwarded-For 头部提取第一个 IP
-// 格式通常为 "client, proxy1, proxy2"
-func extractFirstIP(forwarded string) string {
-	for i := 0; i < len(forwarded); i++ {
-		if forwarded[i] == ',' {
-			return forwarded[:i]
-		}
-	}
-	return forwarded
 }

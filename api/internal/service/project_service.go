@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/repository/generated"
 )
@@ -51,6 +52,9 @@ func (s *ProjectService) GetProjectByID(ctx context.Context, id uuid.UUID) (*gen
 
 // CreateProject 创建项目
 func (s *ProjectService) CreateProject(ctx context.Context, req CreateProjectRequest) (*generated.Project, error) {
+	log.Info().Str("service", "ProjectService").Str("operation", "CreateProject").
+		Str("title", req.Title).Msg("开始创建项目")
+
 	description := sql.NullString{}
 	if req.Description != "" {
 		description = sql.NullString{String: req.Description, Valid: true}
@@ -76,6 +80,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, req CreateProjectReq
 		techStack = []string{}
 	}
 
+	log.Debug().Str("query", "CreateProject").Str("title", req.Title).Msg("创建项目记录")
 	project, err := s.queries.CreateProject(ctx, generated.CreateProjectParams{
 		Title:       req.Title,
 		Description: description,
@@ -86,9 +91,11 @@ func (s *ProjectService) CreateProject(ctx context.Context, req CreateProjectReq
 		SortOrder:   int32(req.SortOrder),
 	})
 	if err != nil {
+		log.Error().Err(err).Str("title", req.Title).Msg("创建项目失败")
 		return nil, fmt.Errorf("创建项目失败: %w", err)
 	}
 
+	log.Info().Str("project_id", project.ID.String()).Str("title", req.Title).Msg("项目创建成功")
 	return project, nil
 }
 

@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path"
 
 	"github.com/bogem/id3v2"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/repository/generated"
 )
@@ -58,40 +58,43 @@ type CreatePlaylistInput struct {
 
 // CreatePlaylist 创建歌单（导入链接，解析后存储）
 func (s *MusicPlaylistAdminService) CreatePlaylist(ctx context.Context, input CreatePlaylistInput) (*PlaylistResponse, error) {
-	log.Printf("[CreatePlaylist] 开始创建歌单, URL: %s", input.URL)
+	log.Info().Str("service", "MusicPlaylistAdminService").Str("operation", "CreatePlaylist").
+		Str("url", input.URL).Msg("开始创建歌单")
 
 	// 使用已有的解析逻辑解析歌单链接
+	log.Info().Str("target", "MusicService").Msg("解析歌单链接")
 	playlistInfo, err := s.musicService.ParsePlaylistURL(input.URL)
 	if err != nil {
-		log.Printf("[CreatePlaylist] 解析歌单链接失败: %v", err)
+		log.Warn().Err(err).Str("url", input.URL).Msg("解析歌单链接失败")
 		if err == ErrUnsupportedMusicURL {
 			return nil, ErrUnsupportedMusicURL
 		}
 		return nil, fmt.Errorf("解析歌单链接失败: %w", err)
 	}
 
-	log.Printf("[CreatePlaylist] 解析成功: ID=%s, Platform=%s, Count=%d, Title=%s",
-		playlistInfo.ID, playlistInfo.Platform, playlistInfo.Count, playlistInfo.Title)
+	log.Info().Str("playlist_id", playlistInfo.ID).Str("platform", playlistInfo.Platform).
+		Int("count", playlistInfo.Count).Str("title", playlistInfo.Title).Msg("歌单解析成功")
 
 	// 检查是否已存在相同平台和 ID 的歌单
 	// 数据库直接使用 Meting API 的平台名称（netease/tencent）
+	log.Debug().Str("query", "GetPlaylistByPlatformAndID").Msg("检查歌单是否已存在")
 	existing, err := s.queries.GetPlaylistByPlatformAndID(ctx, generated.GetPlaylistByPlatformAndIDParams{
 		Platform:   playlistInfo.Platform,
 		PlaylistID: playlistInfo.ID,
 	})
 	if err == nil && existing != nil {
-		log.Printf("[CreatePlaylist] 歌单已存在: ID=%s", existing.ID)
+		log.Warn().Str("playlist_id", existing.ID.String()).Msg("歌单已存在")
 		return nil, ErrPlaylistAlreadyExists
 	}
 
 	// 将歌曲列表序列化为 JSON
 	songsJSON, err := json.Marshal(playlistInfo.Songs)
 	if err != nil {
-		log.Printf("[CreatePlaylist] 序列化歌曲列表失败: %v", err)
+		log.Error().Err(err).Msg("序列化歌曲列表失败")
 		return nil, fmt.Errorf("序列化歌曲列表失败: %w", err)
 	}
 
-	log.Printf("[CreatePlaylist] 序列化歌曲列表成功, 长度: %d bytes", len(songsJSON))
+	log.Debug().Int("json_size", len(songsJSON)).Msg("歌曲列表序列化成功")
 
 	// 创建歌单记录
 	// 直接使用 Meting API 的平台名称（netease/tencent）
@@ -106,11 +109,14 @@ func (s *MusicPlaylistAdminService) CreatePlaylist(ctx context.Context, input Cr
 		IsActive:   false, // 新创建的歌单默认不启用
 	}
 
+	log.Debug().Str("query", "CreatePlaylist").Msg("创建歌单记录")
 	playlist, err := s.queries.CreatePlaylist(ctx, params)
 	if err != nil {
+		log.Error().Err(err).Str("title", playlistInfo.Title).Msg("创建歌单失败")
 		return nil, fmt.Errorf("创建歌单失败: %w", err)
 	}
 
+	log.Info().Str("playlist_id", playlist.ID.String()).Str("title", playlistInfo.Title).Msg("歌单创建成功")
 	return playlistToResponse(playlist, playlistInfo.Songs), nil
 }
 

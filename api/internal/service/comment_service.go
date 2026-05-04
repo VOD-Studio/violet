@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"github.com/yuin/goldmark"
 
 	"blog-api/internal/repository/generated"
@@ -98,12 +99,18 @@ type CommentResponse struct {
 // CreateComment 创建评论
 // 自动生成基于 UUID 的 materialized path，计算嵌套深度，渲染 Markdown 为 HTML，对 IP 地址进行哈希处理
 func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentInput) (*CommentResponse, error) {
+	log.Info().Str("service", "CommentService").Str("operation", "CreateComment").
+		Str("post_id", input.PostID.String()).Str("author_name", input.AuthorName).Msg("开始创建评论")
+
 	// 验证文章是否存在
+	log.Debug().Str("query", "GetPostByID").Str("post_id", input.PostID.String()).Msg("验证文章是否存在")
 	_, err := s.queries.GetPostByID(ctx, input.PostID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("post_id", input.PostID.String()).Msg("文章不存在")
 			return nil, ErrPostNotFound
 		}
+		log.Error().Err(err).Str("post_id", input.PostID.String()).Msg("查询文章失败")
 		return nil, fmt.Errorf("查询文章失败: %w", err)
 	}
 
@@ -117,22 +124,29 @@ func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentI
 
 	if input.ParentID != nil {
 		// 回复评论：查询父评论
+		log.Debug().Str("query", "GetCommentByID").Str("parent_id", input.ParentID.String()).Msg("查询父评论")
 		parent, err := s.queries.GetCommentByID(ctx, *input.ParentID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
+				log.Warn().Str("parent_id", input.ParentID.String()).Msg("父评论不存在")
 				return nil, ErrInvalidParentComment
 			}
+			log.Error().Err(err).Str("parent_id", input.ParentID.String()).Msg("查询父评论失败")
 			return nil, fmt.Errorf("查询父评论失败: %w", err)
 		}
 
 		// 验证父评论属于同一文章
 		if parent.PostID != input.PostID {
+			log.Warn().Str("parent_id", input.ParentID.String()).
+				Str("parent_post_id", parent.PostID.String()).
+				Str("current_post_id", input.PostID.String()).Msg("父评论不属于同一文章")
 			return nil, ErrInvalidParentComment
 		}
 
 		// 检查嵌套深度限制（最大 4 层）
 		newDepth := parent.Depth + 1
 		if newDepth > 4 {
+			log.Warn().Int16("depth", newDepth).Msg("评论嵌套层级过深")
 			return nil, ErrCommentTooDeep
 		}
 
@@ -149,6 +163,7 @@ func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentI
 	// 渲染 Markdown 为 HTML
 	bodyHTML, err := s.renderMarkdown(input.BodyMarkdown)
 	if err != nil {
+		log.Error().Err(err).Msg("渲染Markdown失败")
 		return nil, fmt.Errorf("渲染 Markdown 失败: %w", err)
 	}
 
@@ -173,33 +188,48 @@ func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentI
 	}
 
 	// 写入数据库
+	log.Debug().Str("query", "CreateComment").Str("post_id", input.PostID.String()).Msg("创建评论记录")
 	comment, err := s.queries.CreateComment(ctx, params)
 	if err != nil {
+		log.Error().Err(err).Str("post_id", input.PostID.String()).Msg("创建评论失败")
 		return nil, fmt.Errorf("创建评论失败: %w", err)
 	}
 
+	log.Info().Str("comment_id", comment.ID.String()).Str("post_id", input.PostID.String()).
+		Str("author_name", input.AuthorName).Msg("评论创建成功")
 	return commentToResponse(comment), nil
 }
 
 // ListApprovedComments 获取文章已审核评论树
 // 查询所有已审核评论，按 path 排序后构建树形结构
 func (s *CommentService) ListApprovedComments(ctx context.Context, postID uuid.UUID) ([]*CommentResponse, error) {
+	log.Info().Str("service", "CommentService").Str("operation", "ListApprovedComments").
+		Str("post_id", postID.String()).Msg("开始查询已审核评论")
+
+	log.Debug().Str("query", "ListApprovedCommentsByPostID").Str("post_id", postID.String()).Msg("执行数据库查询")
 	comments, err := s.queries.ListApprovedCommentsByPostID(ctx, postID)
 	if err != nil {
+		log.Error().Err(err).Str("post_id", postID.String()).Msg("查询评论列表失败")
 		return nil, fmt.Errorf("查询评论列表失败: %w", err)
 	}
 
+	log.Info().Str("post_id", postID.String()).Int("count", len(comments)).Msg("评论查询成功")
 	// 构建树形结构
 	return buildCommentTree(comments), nil
 }
 
 // ListPendingComments 获取待审核评论列表
 func (s *CommentService) ListPendingComments(ctx context.Context, limit, offset int32) ([]*CommentResponse, error) {
+	log.Info().Str("service", "CommentService").Str("operation", "ListPendingComments").
+		Int32("limit", limit).Int32("offset", offset).Msg("开始查询待审核评论")
+
+	log.Debug().Str("query", "ListPendingComments").Msg("执行数据库查询")
 	comments, err := s.queries.ListPendingComments(ctx, generated.ListPendingCommentsParams{
 		Limit:  limit,
 		Offset: offset,
 	})
 	if err != nil {
+		log.Error().Err(err).Msg("查询待审核评论失败")
 		return nil, fmt.Errorf("查询待审核评论失败: %w", err)
 	}
 
@@ -207,64 +237,89 @@ func (s *CommentService) ListPendingComments(ctx context.Context, limit, offset 
 	for _, c := range comments {
 		responses = append(responses, commentToResponse(c))
 	}
+	log.Info().Int("count", len(responses)).Msg("待审核评论查询成功")
 	return responses, nil
 }
 
 // CountPendingComments 统计待审核评论数量
 func (s *CommentService) CountPendingComments(ctx context.Context) (int64, error) {
+	log.Debug().Str("service", "CommentService").Str("operation", "CountPendingComments").Msg("统计待审核评论数量")
+
+	log.Debug().Str("query", "CountPendingComments").Msg("执行数据库查询")
 	count, err := s.queries.CountPendingComments(ctx)
 	if err != nil {
+		log.Error().Err(err).Msg("统计待审核评论数量失败")
 		return 0, fmt.Errorf("统计待审核评论数量失败: %w", err)
 	}
+	log.Debug().Int64("count", count).Msg("统计完成")
 	return count, nil
 }
 
 // UpdateCommentStatus 审核评论（approved/spam/deleted）
 func (s *CommentService) UpdateCommentStatus(ctx context.Context, commentID uuid.UUID, status string) (*CommentResponse, error) {
+	log.Info().Str("service", "CommentService").Str("operation", "UpdateCommentStatus").
+		Str("comment_id", commentID.String()).Str("status", status).Msg("开始更新评论状态")
+
 	// 验证状态值
 	switch status {
 	case "approved", "spam", "deleted":
 	default:
+		log.Warn().Str("status", status).Msg("无效的评论状态")
 		return nil, ErrInvalidCommentStatus
 	}
 
 	// 检查评论是否存在
+	log.Debug().Str("query", "GetCommentByID").Str("comment_id", commentID.String()).Msg("检查评论是否存在")
 	_, err := s.queries.GetCommentByID(ctx, commentID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("comment_id", commentID.String()).Msg("评论不存在")
 			return nil, ErrCommentNotFound
 		}
+		log.Error().Err(err).Str("comment_id", commentID.String()).Msg("查询评论失败")
 		return nil, fmt.Errorf("查询评论失败: %w", err)
 	}
 
 	// 更新状态
+	log.Debug().Str("query", "UpdateCommentStatus").Str("comment_id", commentID.String()).Msg("更新评论状态")
 	comment, err := s.queries.UpdateCommentStatus(ctx, generated.UpdateCommentStatusParams{
 		ID:     commentID,
 		Status: status,
 	})
 	if err != nil {
+		log.Error().Err(err).Str("comment_id", commentID.String()).Msg("更新评论状态失败")
 		return nil, fmt.Errorf("更新评论状态失败: %w", err)
 	}
 
+	log.Info().Str("comment_id", commentID.String()).Str("status", status).Msg("评论状态更新成功")
 	return commentToResponse(comment), nil
 }
 
 // DeleteComment 删除评论
 func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID) error {
+	log.Info().Str("service", "CommentService").Str("operation", "DeleteComment").
+		Str("comment_id", commentID.String()).Msg("开始删除评论")
+
 	// 检查评论是否存在
+	log.Debug().Str("query", "GetCommentByID").Str("comment_id", commentID.String()).Msg("检查评论是否存在")
 	_, err := s.queries.GetCommentByID(ctx, commentID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("comment_id", commentID.String()).Msg("评论不存在")
 			return ErrCommentNotFound
 		}
+		log.Error().Err(err).Str("comment_id", commentID.String()).Msg("查询评论失败")
 		return fmt.Errorf("查询评论失败: %w", err)
 	}
 
 	// 执行删除
+	log.Debug().Str("query", "DeleteComment").Str("comment_id", commentID.String()).Msg("执行删除操作")
 	if err := s.queries.DeleteComment(ctx, commentID); err != nil {
+		log.Error().Err(err).Str("comment_id", commentID.String()).Msg("删除评论失败")
 		return fmt.Errorf("删除评论失败: %w", err)
 	}
 
+	log.Info().Str("comment_id", commentID.String()).Msg("评论删除成功")
 	return nil
 }
 

@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // 歌单相关错误定义
@@ -85,22 +87,29 @@ func (s *MusicService) ParsePlaylistURL(link string) (*PlaylistInfo, error) {
 
 // FetchQQPlaylistFromShortLink 从 QQ 音乐短链接获取歌单信息
 func (s *MusicService) FetchQQPlaylistFromShortLink(shortLink string) (*PlaylistInfo, error) {
+	log.Info().Str("service", "MusicService").Str("operation", "FetchQQPlaylistFromShortLink").
+		Str("url", shortLink).Msg("开始解析QQ音乐短链接")
+
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	req, err := http.NewRequest("GET", shortLink, nil)
 	if err != nil {
+		log.Error().Err(err).Msg("创建请求失败")
 		return nil, ErrPlaylistAPI
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
+	log.Info().Str("target", "QQMusicAPI").Msg("调用QQ音乐API")
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Error().Err(err).Msg("请求失败")
 		return nil, ErrPlaylistAPI
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		log.Error().Err(err).Msg("读取响应失败")
 		return nil, ErrPlaylistAPI
 	}
 
@@ -110,11 +119,13 @@ func (s *MusicService) FetchQQPlaylistFromShortLink(shortLink string) (*Playlist
 	reURL := regexp.MustCompile(`<meta property="og:url" content="([^"]+)"`)
 	matchesURL := reURL.FindStringSubmatch(htmlStr)
 	if len(matchesURL) < 2 {
+		log.Warn().Msg("未找到歌单URL")
 		return nil, ErrPlaylistNotFound
 	}
 
 	playlistID := parseQQPlaylistID(matchesURL[1])
 	if playlistID == "" {
+		log.Warn().Msg("解析歌单ID失败")
 		return nil, ErrPlaylistNotFound
 	}
 
@@ -181,6 +192,7 @@ func (s *MusicService) FetchQQPlaylistFromShortLink(shortLink string) (*Playlist
 		}
 	}
 
+	log.Info().Str("playlist_id", playlistID).Str("title", title).Int("songs", len(songList)).Msg("QQ音乐歌单解析成功")
 	return &PlaylistInfo{
 		ID:       playlistID,
 		Title:    title,

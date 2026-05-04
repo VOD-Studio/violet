@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"github.com/rs/zerolog/log"
+
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -32,9 +34,12 @@ func NewMediaHandler(fileService *service.FileService, uploadDir string) *MediaH
 // GetMedia 获取媒体详情
 // GET /api/v1/media/:id
 func (h *MediaHandler) GetMedia(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "GetMedia").Msg("处理请求")
+
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Warn().Err(err).Str("media_id", idStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_param", "无效的媒体 ID")
 		return
 	}
@@ -42,13 +47,16 @@ func (h *MediaHandler) GetMedia(w http.ResponseWriter, r *http.Request) {
 	file, err := h.fileService.FindByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, service.ErrFileNotFound) {
+			log.Warn().Str("media_id", id.String()).Msg("媒体不存在")
 			writeError(w, http.StatusNotFound, "not_found", "媒体不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "FindByID").Str("media_id", id.String()).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询媒体失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("media_id", id.String()).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, fileToMediaItem(file))
 }
 
@@ -56,12 +64,15 @@ func (h *MediaHandler) GetMedia(w http.ResponseWriter, r *http.Request) {
 // GET /api/v1/media
 // 支持分页和类型筛选
 func (h *MediaHandler) ListMedia(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "ListMedia").Msg("处理请求")
+
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	mimeType := r.URL.Query().Get("type")
 
 	result, err := h.fileService.List(r.Context(), page, limit, mimeType)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "List").Int("page", page).Int("limit", limit).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询媒体列表失败")
 		return
 	}
@@ -71,6 +82,7 @@ func (h *MediaHandler) ListMedia(w http.ResponseWriter, r *http.Request) {
 		items = append(items, fileToMediaItem(&f))
 	}
 
+	log.Info().Int("status", http.StatusOK).Int("count", len(items)).Int("page", page).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"media": items,
 		"total": result.Total,
@@ -82,22 +94,28 @@ func (h *MediaHandler) ListMedia(w http.ResponseWriter, r *http.Request) {
 // DeleteMedia 删除媒体（软删除）
 // DELETE /api/v1/media/:id
 func (h *MediaHandler) DeleteMedia(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "DeleteMedia").Msg("处理请求")
+
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Warn().Err(err).Str("media_id", idStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_param", "无效的媒体 ID")
 		return
 	}
 
 	if err := h.fileService.SoftDelete(r.Context(), id); err != nil {
 		if errors.Is(err, service.ErrFileNotFound) {
+			log.Warn().Str("media_id", id.String()).Msg("媒体不存在")
 			writeError(w, http.StatusNotFound, "not_found", "媒体不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "SoftDelete").Str("media_id", id.String()).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "删除媒体失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("media_id", id.String()).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, MessageResponse{
 		Message: "媒体已删除",
 	})
@@ -106,16 +124,20 @@ func (h *MediaHandler) DeleteMedia(w http.ResponseWriter, r *http.Request) {
 // BatchDeleteMedia 批量删除媒体（软删除）
 // POST /api/v1/media/batch-delete
 func (h *MediaHandler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "BatchDeleteMedia").Msg("处理请求")
+
 	var req struct {
 		IDs []string `json:"ids"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	if len(req.IDs) == 0 {
+		log.Warn().Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", "请选择要删除的文件")
 		return
 	}
@@ -130,16 +152,19 @@ func (h *MediaHandler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if len(ids) == 0 {
+		log.Warn().Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", "无效的媒体 ID")
 		return
 	}
 
 	count, err := h.fileService.BatchSoftDelete(r.Context(), ids)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "BatchSoftDelete").Int("count", len(ids)).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "批量删除失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Int("deleted_count", int(count)).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"message": "批量删除成功",
 		"count":   count,
@@ -150,9 +175,12 @@ func (h *MediaHandler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) 
 // POST /api/v1/media/:id/thumbnail
 // 接收 JPEG 图片，保存并更新 files 表的 thumbnail 字段
 func (h *MediaHandler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "UploadThumbnail").Msg("处理请求")
+
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Warn().Err(err).Str("media_id", idStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_param", "无效的媒体 ID")
 		return
 	}
@@ -160,21 +188,25 @@ func (h *MediaHandler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 	file, err := h.fileService.FindByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, service.ErrFileNotFound) {
+			log.Warn().Str("media_id", id.String()).Msg("媒体不存在")
 			writeError(w, http.StatusNotFound, "not_found", "媒体不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "FindByID").Str("media_id", id.String()).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询媒体失败")
 		return
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, 10*1024*1024)
 	if err := r.ParseMultipartForm(10 * 1024 * 1024); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "file_too_large", "缩略图大小不能超过 10 MB")
 		return
 	}
 
 	thumbFile, _, err := r.FormFile("thumbnail")
 	if err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_file", "缺少缩略图文件")
 		return
 	}
@@ -189,18 +221,21 @@ func (h *MediaHandler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 	// 确保目录存在
 	thumbDir := filepath.Dir(thumbPath)
 	if err := os.MkdirAll(thumbDir, 0755); err != nil {
+		log.Error().Err(err).Str("path", thumbDir).Msg("创建目录失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "保存缩略图失败")
 		return
 	}
 
 	dst, err := os.Create(thumbPath)
 	if err != nil {
+		log.Error().Err(err).Str("path", thumbPath).Msg("创建文件失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "保存缩略图失败")
 		return
 	}
 	defer dst.Close()
 
 	if _, err := dst.ReadFrom(thumbFile); err != nil {
+		log.Error().Err(err).Str("path", thumbPath).Msg("写入文件失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "写入缩略图失败")
 		return
 	}
@@ -208,10 +243,12 @@ func (h *MediaHandler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 	// 构建 thumbnail URL 并更新数据库
 	thumbnailURL := "/" + thumbPath
 	if err := h.fileService.UpdateThumbnail(r.Context(), id, thumbnailURL); err != nil {
+		log.Error().Err(err).Str("operation", "UpdateThumbnail").Str("media_id", id.String()).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "更新缩略图失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("media_id", id.String()).Str("thumbnail_url", thumbnailURL).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"message":   "缩略图上传成功",
 		"thumbnail": thumbnailURL,

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/service"
 )
@@ -38,12 +38,16 @@ func NewMusicAdminHandler(playlistAdminService *service.MusicPlaylistAdminServic
 // GET /api/v1/admin/playlists
 // 需要管理员权限
 func (h *MusicAdminHandler) ListPlaylists(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "ListPlaylists").Msg("处理请求")
+
 	playlists, err := h.playlistAdminService.ListPlaylists(r.Context())
 	if err != nil {
+		log.Error().Err(err).Str("operation", "ListPlaylists").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取歌单列表失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Int("count", len(playlists)).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"playlists": playlists,
 	})
@@ -53,16 +57,20 @@ func (h *MusicAdminHandler) ListPlaylists(w http.ResponseWriter, r *http.Request
 // POST /api/v1/admin/playlists
 // 需要管理员权限
 func (h *MusicAdminHandler) CreatePlaylist(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "CreatePlaylist").Msg("处理请求")
+
 	var req struct {
 		URL string `json:"url" validate:"required"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	if req.URL == "" {
+		log.Warn().Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", "歌单链接不能为空")
 		return
 	}
@@ -74,21 +82,26 @@ func (h *MusicAdminHandler) CreatePlaylist(w http.ResponseWriter, r *http.Reques
 	playlist, err := h.playlistAdminService.CreatePlaylist(r.Context(), input)
 	if err != nil {
 		if errors.Is(err, service.ErrUnsupportedMusicURL) {
+			log.Warn().Err(err).Str("url", req.URL).Msg("参数验证失败")
 			writeError(w, http.StatusBadRequest, "unsupported_url", "不支持的歌单链接格式")
 			return
 		}
 		if errors.Is(err, service.ErrPlaylistAlreadyExists) {
+			log.Warn().Err(err).Str("url", req.URL).Msg("歌单已存在")
 			writeError(w, http.StatusConflict, "already_exists", "歌单已存在")
 			return
 		}
 		if errors.Is(err, service.ErrPlaylistNotFound) {
+			log.Warn().Err(err).Str("url", req.URL).Msg("歌单不存在")
 			writeError(w, http.StatusNotFound, "not_found", "歌单不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "CreatePlaylist").Str("url", req.URL).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "创建歌单失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("playlist_id", playlist.ID.String()).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, playlist)
 }
 
@@ -136,9 +149,12 @@ func (h *MusicAdminHandler) UpdatePlaylist(w http.ResponseWriter, r *http.Reques
 // DELETE /api/v1/admin/playlists/{id}
 // 需要管理员权限
 func (h *MusicAdminHandler) DeletePlaylist(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "DeletePlaylist").Msg("处理请求")
+
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Warn().Err(err).Str("playlist_id", idStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
 		return
 	}
@@ -146,13 +162,16 @@ func (h *MusicAdminHandler) DeletePlaylist(w http.ResponseWriter, r *http.Reques
 	err = h.playlistAdminService.DeletePlaylist(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, service.ErrPlaylistNotFound) {
+			log.Warn().Str("playlist_id", id.String()).Msg("歌单不存在")
 			writeError(w, http.StatusNotFound, "not_found", "歌单不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "DeletePlaylist").Str("playlist_id", id.String()).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "删除歌单失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("playlist_id", id.String()).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, map[string]string{"message": "删除成功"})
 }
 
@@ -220,19 +239,24 @@ func (h *MusicAdminHandler) RefreshPlaylistSongs(w http.ResponseWriter, r *http.
 // GET /api/v1/music/playlist/config/active
 // 公开接口，无需认证
 func (h *MusicAdminHandler) GetActivePlaylist(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "GetActivePlaylist").Msg("处理请求")
+
 	playlist, err := h.playlistAdminService.GetActivePlaylist(r.Context())
 	if err != nil {
 		if errors.Is(err, service.ErrNoActivePlaylist) {
+			log.Info().Msg("暂无启用的歌单")
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"playlist": nil,
 				"message":  "暂无启用的歌单",
 			})
 			return
 		}
+		log.Error().Err(err).Str("operation", "GetActivePlaylist").Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "获取歌单失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("playlist_id", playlist.ID.String()).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"playlist": playlist,
 	})
@@ -272,27 +296,33 @@ func (h *MusicAdminHandler) GetMusicSettings(w http.ResponseWriter, r *http.Requ
 // PATCH /api/v1/admin/music/settings
 // 需要管理员权限
 func (h *MusicAdminHandler) UpdatePlayerVersion(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "UpdatePlayerVersion").Msg("处理请求")
+
 	var req struct {
 		PlayerVersion string `json:"player_version"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "请求体格式无效")
 		return
 	}
 
 	// 验证播放器版本
 	if req.PlayerVersion != "v1" && req.PlayerVersion != "v2" {
+		log.Warn().Str("player_version", req.PlayerVersion).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "validation_error", "播放器版本必须是 v1 或 v2")
 		return
 	}
 
 	settings, err := h.musicSettingsService.UpdatePlayerVersion(r.Context(), req.PlayerVersion)
 	if err != nil {
+		log.Error().Err(err).Str("operation", "UpdatePlayerVersion").Str("version", req.PlayerVersion).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "更新播放器版本失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("player_version", req.PlayerVersion).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"message":  "播放器版本已更新",
 		"settings": settings,
@@ -333,15 +363,19 @@ func (h *MusicAdminHandler) CreateCustomPlaylist(w http.ResponseWriter, r *http.
 // POST /api/v1/admin/playlists/{id}/songs
 // 需要管理员权限
 func (h *MusicAdminHandler) AddSongToPlaylist(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "AddSongToPlaylist").Msg("处理请求")
+
 	idStr := chi.URLParam(r, "id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Warn().Err(err).Str("playlist_id", idStr).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_param", "ID 无效")
 		return
 	}
 
 	file, header, err := r.FormFile("audio")
 	if err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_body", "缺少音频文件")
 		return
 	}
@@ -354,18 +388,21 @@ func (h *MusicAdminHandler) AddSongToPlaylist(w http.ResponseWriter, r *http.Req
 		".flac": true, ".aac": true, ".m4a": true,
 	}
 	if !allowedExts[strings.ToLower(ext)] {
+		log.Warn().Str("ext", ext).Str("filename", header.Filename).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_file_type", "仅支持音频文件（mp3, wav, ogg, flac, aac, m4a）")
 		return
 	}
 
 	contentType := header.Header.Get("Content-Type")
 	if contentType != "" && !strings.HasPrefix(contentType, "audio/") {
+		log.Warn().Str("content_type", contentType).Msg("参数验证失败")
 		writeError(w, http.StatusBadRequest, "invalid_file_type", "仅支持音频文件")
 		return
 	}
 
 	uploadDir := "uploads/music"
 	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		log.Error().Err(err).Str("path", uploadDir).Msg("创建目录失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "创建上传目录失败")
 		return
 	}
@@ -380,12 +417,14 @@ func (h *MusicAdminHandler) AddSongToPlaylist(w http.ResponseWriter, r *http.Req
 
 	dst, err := os.Create(filePath)
 	if err != nil {
+		log.Error().Err(err).Str("path", filePath).Msg("创建文件失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "保存文件失败")
 		return
 	}
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, file); err != nil {
+		log.Error().Err(err).Str("path", filePath).Msg("写入文件失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "写入文件失败")
 		return
 	}
@@ -395,13 +434,16 @@ func (h *MusicAdminHandler) AddSongToPlaylist(w http.ResponseWriter, r *http.Req
 	playlist, err := h.playlistAdminService.AddSongToPlaylist(r.Context(), id, filePath, servedURL)
 	if err != nil {
 		if errors.Is(err, service.ErrPlaylistNotFound) {
+			log.Warn().Str("playlist_id", id.String()).Msg("歌单不存在")
 			writeError(w, http.StatusNotFound, "not_found", "歌单不存在")
 			return
 		}
+		log.Error().Err(err).Str("operation", "AddSongToPlaylist").Str("playlist_id", id.String()).Msg("服务调用失败")
 		writeError(w, http.StatusInternalServerError, "internal_error", "添加歌曲失败")
 		return
 	}
 
+	log.Info().Int("status", http.StatusOK).Str("playlist_id", id.String()).Str("filename", header.Filename).Msg("请求处理成功")
 	writeJSON(w, http.StatusOK, playlist)
 }
 
