@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -47,6 +48,7 @@ type SuperAdminConfig struct {
 
 // Load 从配置文件和环境变量加载配置
 // 优先级：环境变量 > config.yaml > 默认值
+// 如果必需配置缺失或格式错误，会 panic
 func Load() *Config {
 	v := viper.New()
 
@@ -83,8 +85,15 @@ func Load() *Config {
 	// 读取配置文件（不存在也不报错）
 	_ = v.ReadInConfig()
 
-	accessTokenTTL, _ := time.ParseDuration(v.GetString("jwt_access_token_ttl"))
-	refreshTokenTTL, _ := time.ParseDuration(v.GetString("jwt_refresh_token_ttl"))
+	// 解析时间配置，如果格式错误则 panic
+	accessTokenTTL, err := time.ParseDuration(v.GetString("jwt_access_token_ttl"))
+	if err != nil {
+		panic(fmt.Sprintf("解析 JWT_ACCESS_TOKEN_TTL 失败: %v", err))
+	}
+	refreshTokenTTL, err := time.ParseDuration(v.GetString("jwt_refresh_token_ttl"))
+	if err != nil {
+		panic(fmt.Sprintf("解析 JWT_REFRESH_TOKEN_TTL 失败: %v", err))
+	}
 
 	bilibiliCookie := buildBilibiliCookie(
 		v.GetString("bilibili_sessdata"),
@@ -92,7 +101,7 @@ func Load() *Config {
 		v.GetString("bilibili_dedeuserid"),
 	)
 
-	return &Config{
+	cfg := &Config{
 		DatabaseURL:       v.GetString("database_url"),
 		RedisURL:          v.GetString("redis_url"),
 		JWTPrivateKeyPath: v.GetString("jwt_private_key_path"),
@@ -112,6 +121,44 @@ func Load() *Config {
 			Password: v.GetString("superadmin.password"),
 		},
 	}
+
+	// 验证必需配置
+	if err := cfg.Validate(); err != nil {
+		panic(fmt.Sprintf("配置验证失败: %v", err))
+	}
+
+	return cfg
+}
+
+// Validate 验证配置的有效性
+func (c *Config) Validate() error {
+	// JWT 密钥路径必须配置
+	if c.JWTPrivateKeyPath == "" {
+		return fmt.Errorf("JWT_PRIVATE_KEY_PATH 未配置")
+	}
+	if c.JWTPublicKeyPath == "" {
+		return fmt.Errorf("JWT_PUBLIC_KEY_PATH 未配置")
+	}
+
+	// 数据库 URL 必须配置
+	if c.DatabaseURL == "" {
+		return fmt.Errorf("DATABASE_URL 未配置")
+	}
+
+	// Redis URL 必须配置
+	if c.RedisURL == "" {
+		return fmt.Errorf("REDIS_URL 未配置")
+	}
+
+	// Token TTL 必须大于 0
+	if c.JWTAccessTokenTTL <= 0 {
+		return fmt.Errorf("JWT_ACCESS_TOKEN_TTL 必须大于 0")
+	}
+	if c.JWTRefreshTokenTTL <= 0 {
+		return fmt.Errorf("JWT_REFRESH_TOKEN_TTL 必须大于 0")
+	}
+
+	return nil
 }
 
 // buildBilibiliCookie 从三个独立字段拼接 B站 Cookie

@@ -1,5 +1,10 @@
 /uploads/
 
+# Environment variables (do not commit)
+.env
+.env.local
+.env.*.local
+
 # Config
 config.yaml
 
