@@ -9,14 +9,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/disintegration/imaging"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
@@ -87,28 +85,14 @@ func detectMimeType(ext string) string {
 	return "application/octet-stream"
 }
 
-// fileTypeFromMime 根据 MIME 类型推断文件分类目录名
-func fileTypeFromMime(mimeType string) string {
-	switch {
-	case strings.HasPrefix(mimeType, "image/"):
-		return "image"
-	case strings.HasPrefix(mimeType, "video/"):
-		return "video"
-	case strings.HasPrefix(mimeType, "audio/"):
-		return "audio"
-	default:
-		return "file"
-	}
-}
-
 // UploadService 分片上传业务服务
 type UploadService struct {
-	db          *gorm.DB   // GORM 数据库实例
-	fileSvc     *FileService // 文件管理服务
-	chunkDir    string     // 临时分片目录，如 "uploads/tmp"
-	uploadDir   string     // 最终文件目录，如 "uploads"
-	urlPrefix   string     // URL 前缀，如 "/uploads/"
-	maxFileSize int64      // 最大文件大小（字节）
+	db          *gorm.DB            // GORM 数据库实例
+	fileSvc     *FileService        // 文件管理服务
+	storageSvc  *FileStorageService // 文件存储服务
+	chunkDir    string              // 临时分片目录，如 "uploads/tmp"
+	uploadDir   string              // 最终文件目录，如 "uploads"
+	maxFileSize int64               // 最大文件大小（字节）
 }
 
 // NewUploadService 创建分片上传服务实例
@@ -116,9 +100,9 @@ func NewUploadService(db *gorm.DB, fileSvc *FileService, chunkDir, uploadDir, ur
 	return &UploadService{
 		db:          db,
 		fileSvc:     fileSvc,
+		storageSvc:  NewFileStorageService(uploadDir, urlPrefix),
 		chunkDir:    chunkDir,
 		uploadDir:   uploadDir,
-		urlPrefix:   urlPrefix,
 		maxFileSize: maxFileSize,
 	}
 }
@@ -247,7 +231,7 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 	tmpPath := filepath.Join(s.chunkDir, sessionID.String())
 
 	// 创建临时分片目录
-	if err := os.MkdirAll(tmpPath, 0755); err != nil {
+	if err := s.storageSvc.EnsureDirectory(tmpPath); err != nil {
 		log.Error().Err(err).Str("path", tmpPath).Msg("创建分片目录失败")
 		return nil, fmt.Errorf("创建分片目录失败: %w", err)
 	}
@@ -281,7 +265,7 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 	}
 
 	if err := s.db.WithContext(ctx).Create(session).Error; err != nil {
-		os.RemoveAll(tmpPath)
+		s.storageSvc.CleanupDirectory(tmpPath)
 		log.Error().Err(err).Str("session_id", sessionID.String()).Msg("创建上传会话失败")
 		return nil, fmt.Errorf("创建上传会话失败: %w", err)
 	}
@@ -433,43 +417,36 @@ func (s *UploadService) MergeChunks(ctx context.Context, uploadID uuid.UUID, use
 
 	// 确定最终文件路径
 	ext := strings.ToLower(filepath.Ext(session.FileName))
-	storageDir := session.Purpose
-	// material 按 MIME 类型分子目录：material/image, material/video, material/audio, material/file
-	if storageDir == "material" {
-		storageDir = filepath.Join(storageDir, fileTypeFromMime(session.MimeType))
-	}
 	fileUUID := uuid.New()
-	finalName := fileUUID.String() + ext
-	finalDir := filepath.Join(s.uploadDir, storageDir)
+	finalPath, fileURL := s.storageSvc.BuildFilePath(session.Purpose, session.MimeType, fileUUID, ext)
 
 	// 确保目标目录存在
-	if err := os.MkdirAll(finalDir, 0755); err != nil {
+	if err := s.storageSvc.EnsureDirectory(filepath.Dir(finalPath)); err != nil {
 		return nil, fmt.Errorf("创建文件目录失败: %w", err)
 	}
 
-	finalPath := filepath.Join(finalDir, finalName)
-
 	// 移动合并后的文件到正式目录
-	if err := os.Rename(mergedPath, finalPath); err != nil {
+	if err := s.storageSvc.MoveFile(mergedPath, finalPath); err != nil {
 		return nil, fmt.Errorf("移动文件失败: %w", err)
 	}
 
-	// 构建文件 URL
-	fileURL := s.urlPrefix + storageDir + "/" + finalName
-
 	// 获取文件大小
-	fileInfo, _ := os.Stat(finalPath)
-	var fileSize int64
-	if fileInfo != nil {
-		fileSize = fileInfo.Size()
+	fileSize, err := s.storageSvc.GetFileSize(finalPath)
+	if err != nil {
+		log.Warn().Err(err).Str("path", finalPath).Msg("获取文件大小失败")
+		fileSize = session.FileSize // 使用会话记录的大小作为后备
 	}
 
 	// 生成缩略图
 	thumbnail := ""
+	storageDir := session.Purpose
+	if storageDir == "material" {
+		storageDir = filepath.Join(storageDir, fileTypeFromMime(session.MimeType))
+	}
 	if strings.HasPrefix(session.MimeType, "image/") {
-		thumbnail = s.generateImageThumbnail(finalPath, fileUUID.String(), storageDir)
+		thumbnail = s.storageSvc.GenerateImageThumbnail(finalPath, fileUUID.String(), storageDir)
 	} else if strings.HasPrefix(session.MimeType, "video/") {
-		thumbnail = s.generateVideoThumbnail(finalPath, fileUUID.String(), storageDir)
+		thumbnail = s.storageSvc.GenerateVideoThumbnail(finalPath, fileUUID.String(), storageDir)
 	}
 
 	// 创建 files 表记录
@@ -493,7 +470,7 @@ func (s *UploadService) MergeChunks(ctx context.Context, uploadID uuid.UUID, use
 	}
 
 	// 清理 tmp 目录
-	os.RemoveAll(session.TmpPath)
+	s.storageSvc.CleanupDirectory(session.TmpPath)
 
 	// 更新 session status=completed
 	s.db.WithContext(ctx).
@@ -529,7 +506,7 @@ func (s *UploadService) CancelUpload(ctx context.Context, uploadID uuid.UUID, us
 
 	// 删除 tmp 目录
 	if session.TmpPath != "" {
-		os.RemoveAll(session.TmpPath)
+		s.storageSvc.CleanupDirectory(session.TmpPath)
 	}
 
 	// 删除 session 记录
@@ -562,71 +539,4 @@ func ComputeMD5(reader io.Reader) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-// generateImageThumbnail 生成图片缩略图
-// 最大宽度 300px，保持原始比例，保存为 JPEG 格式
-// 返回缩略图的 URL
-func (s *UploadService) generateImageThumbnail(filePath, fileUUID, fileType string) string {
-	img, err := imaging.Open(filePath)
-	if err != nil {
-		return ""
-	}
-
-	// 缩略图尺寸：最大宽 300px，保持比例
-	thumb := imaging.Resize(img, 300, 0, imaging.Lanczos)
-
-	// 缩略图文件名
-	thumbName := fileUUID + "_thumb.jpg"
-	thumbDir := filepath.Join(s.uploadDir, fileType)
-	thumbPath := filepath.Join(thumbDir, thumbName)
-
-	// 保存为 JPEG，质量 80%
-	if err := imaging.Save(thumb, thumbPath, imaging.JPEGQuality(80)); err != nil {
-		return ""
-	}
-
-	return s.urlPrefix + fileType + "/" + thumbName
-}
-
-// generateVideoThumbnail 使用 ffmpeg 提取视频第 1 秒帧作为缩略图
-// 最大宽度 300px，保存为 JPEG 格式
-// 返回缩略图的 URL
-func (s *UploadService) generateVideoThumbnail(filePath, fileUUID, fileType string) string {
-	// 检查 ffmpeg 是否可用
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		return ""
-	}
-
-	// 缩略图文件名
-	thumbName := fileUUID + "_thumb.jpg"
-	thumbDir := filepath.Join(s.uploadDir, fileType)
-	thumbPath := filepath.Join(thumbDir, thumbName)
-
-	// 确保目录存在
-	os.MkdirAll(thumbDir, 0755)
-
-	// 使用 ffmpeg 提取第 1 秒的帧
-	cmd := exec.Command("ffmpeg",
-		"-i", filePath,
-		"-ss", "1",
-		"-vframes", "1",
-		"-vf", "scale=300:-1",
-		"-f", "image2",
-		thumbPath,
-		"-y",
-	)
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-
-	if err := cmd.Run(); err != nil {
-		return ""
-	}
-
-	// 检查缩略图是否生成成功
-	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-		return ""
-	}
-
-	return s.urlPrefix + fileType + "/" + thumbName
 }
