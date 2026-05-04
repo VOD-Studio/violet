@@ -68,8 +68,8 @@ export function EmojiPicker({
     <div
       className={cn(
         "flex flex-col rounded-xl border border-border bg-background shadow-lg",
-        "w-[320px] max-h-[400px]",
-        className,
+        "w-[320px] max-h-100",
+        className
       )}
       onKeyDown={handleKeyDown}
     >
@@ -87,7 +87,7 @@ export function EmojiPicker({
               "border border-input bg-transparent",
               "text-sm placeholder:text-muted-foreground",
               "focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/30",
-              "transition-colors",
+              "transition-colors"
             )}
           />
           {searchQuery && (
@@ -121,7 +121,7 @@ export function EmojiPicker({
                   "transition-colors",
                   activeCategory === category.id && !searchQuery
                     ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
                 {sourceIcons[category.source]}
@@ -132,7 +132,7 @@ export function EmojiPicker({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 min-h-[200px]">
+      <div className="flex-1 overflow-y-auto p-2 min-h-50">
         {error && (
           <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
             {error}
@@ -156,11 +156,13 @@ export function EmojiPicker({
                   "w-10 h-10 rounded-lg",
                   "bg-muted/50 hover:bg-muted",
                   "transition-colors cursor-pointer",
-                  "focus:outline-none focus:ring-2 focus:ring-ring/50",
+                  "focus:outline-none focus:ring-2 focus:ring-ring/50"
                 )}
                 title={item.name}
               >
-                {item.source === "custom" || (item.display.startsWith("http") || item.display.startsWith("/")) ? (
+                {item.source === "custom" ||
+                item.display.startsWith("http") ||
+                item.display.startsWith("/") ? (
                   <img
                     src={item.display}
                     alt={item.name}

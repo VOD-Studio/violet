@@ -3,8 +3,8 @@
  * 统一管理回到顶部、音乐播放器、快捷评论等悬浮组件
  */
 
+import { MusicPlayer } from "@/features/music";
 import { BackToTop } from "../BackToTop";
-import { MusicPlayerContainer } from "@/features/music-player";
 import { QuickComment } from "../QuickComment";
 
 interface BackToTopConfig {
@@ -39,7 +39,7 @@ export function SidebarWidgets({
 }: SidebarWidgetsProps) {
   return (
     <>
-      {showMusicPlayer && <MusicPlayerContainer />}
+      {showMusicPlayer && <MusicPlayer />}
       {showQuickComment && <QuickComment />}
       {showBackToTop && <BackToTop {...backToTopConfig} />}
     </>
