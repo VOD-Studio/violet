@@ -2,7 +2,6 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"database/sql"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"github.com/yuin/goldmark"
 
 	"blog-api/internal/repository/generated"
 )
@@ -35,15 +33,12 @@ var (
 type CommentService struct {
 	// queries sqlc 生成的数据库查询接口
 	queries *generated.Queries
-	// markdown goldmark Markdown 渲染器
-	markdown goldmark.Markdown
 }
 
 // NewCommentService 创建评论服务实例
 func NewCommentService(queries *generated.Queries) *CommentService {
 	return &CommentService{
-		queries:  queries,
-		markdown: goldmark.New(),
+		queries: queries,
 	}
 }
 
@@ -59,8 +54,8 @@ type CreateCommentInput struct {
 	AuthorEmail string
 	// AuthorURL 评论者网站（可选）
 	AuthorURL string
-	// BodyMarkdown Markdown 格式的评论内容
-	BodyMarkdown string
+	// Body 评论内容（纯文本 + 表情语法，如 "测试[smile]"）
+	Body string
 	// IP 评论者 IP 地址，用于哈希存储
 	IP string
 	// UserAgent 评论者浏览器 UA
@@ -87,8 +82,8 @@ type CommentResponse struct {
 	AuthorURL string `json:"author_url,omitempty"`
 	// AvatarURL 头像链接
 	AvatarURL string `json:"avatar_url,omitempty"`
-	// BodyHTML 渲染后的 HTML 内容
-	BodyHTML string `json:"body_html"`
+	// Body 评论内容（纯文本 + 表情语法）
+	Body string `json:"body"`
 	// Status 评论状态
 	Status string `json:"status"`
 	// CreatedAt 创建时间
@@ -98,7 +93,7 @@ type CommentResponse struct {
 }
 
 // CreateComment 创建评论
-// 自动生成基于 UUID 的 materialized path，计算嵌套深度，渲染 Markdown 为 HTML，对 IP 地址进行哈希处理
+// 自动生成基于 UUID 的 materialized path，计算嵌套深度，对 IP 地址进行哈希处理
 func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentInput) (*CommentResponse, error) {
 	log.Info().Str("service", "CommentService").Str("operation", "CreateComment").
 		Str("post_id", input.PostID.String()).Str("author_name", input.AuthorName).Msg("开始创建评论")
@@ -161,13 +156,6 @@ func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentI
 		depth = 0
 	}
 
-	// 渲染 Markdown 为 HTML
-	bodyHTML, err := s.renderMarkdown(input.BodyMarkdown)
-	if err != nil {
-		log.Error().Err(err).Msg("渲染Markdown失败")
-		return nil, fmt.Errorf("渲染 Markdown 失败: %w", err)
-	}
-
 	// 对 IP 地址进行 SHA256 哈希
 	ipHash := hashIP(input.IP)
 
@@ -181,8 +169,7 @@ func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentI
 		AuthorEmail: toNullString(input.AuthorEmail),
 		AuthorUrl:   toNullString(input.AuthorURL),
 		AvatarUrl:   sql.NullString{Valid: false},
-		BodyMd:      input.BodyMarkdown,
-		BodyHtml:    bodyHTML,
+		Body:        input.Body,
 		Status:      "pending",
 		IpHash:      toNullString(ipHash),
 		UserAgent:   toNullString(input.UserAgent),
@@ -326,15 +313,6 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID)
 
 // --- 内部辅助函数 ---
 
-// renderMarkdown 使用 goldmark 将 Markdown 渲染为 HTML
-func (s *CommentService) renderMarkdown(md string) (string, error) {
-	var buf bytes.Buffer
-	if err := s.markdown.Convert([]byte(md), &buf); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
 // hashIP 对 IP 地址进行 SHA256 哈希，保护用户隐私
 func hashIP(ip string) string {
 	if ip == "" {
@@ -367,7 +345,7 @@ func commentToResponse(c *generated.Comment) *CommentResponse {
 		Path:       c.Path,
 		Depth:      c.Depth,
 		AuthorName: c.AuthorName,
-		BodyHTML:   c.BodyHtml,
+		Body:       c.Body,
 		Status:     c.Status,
 		CreatedAt:  c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}

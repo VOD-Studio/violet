@@ -2,8 +2,8 @@
 
 -- name: CreateComment :one
 -- 创建评论，返回完整记录
-INSERT INTO comments (post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, body_md, body_html, status, ip_hash, user_agent)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+INSERT INTO comments (post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, body, status, ip_hash, user_agent)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING *;
 
 -- name: GetCommentByID :one

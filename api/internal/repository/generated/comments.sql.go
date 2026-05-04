@@ -59,9 +59,9 @@ func (q *Queries) CountRecentCommentsByIP(ctx context.Context, arg CountRecentCo
 
 const createComment = `-- name: CreateComment :one
 
-INSERT INTO comments (post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, body_md, body_html, status, ip_hash, user_agent)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-RETURNING id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, body_md, body_html, status, ip_hash, user_agent, created_at, updated_at
+INSERT INTO comments (post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, body, status, ip_hash, user_agent)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, status, ip_hash, user_agent, created_at, updated_at, body
 `
 
 type CreateCommentParams struct {
@@ -73,8 +73,7 @@ type CreateCommentParams struct {
 	AuthorEmail sql.NullString `json:"author_email"`
 	AuthorUrl   sql.NullString `json:"author_url"`
 	AvatarUrl   sql.NullString `json:"avatar_url"`
-	BodyMd      string         `json:"body_md"`
-	BodyHtml    string         `json:"body_html"`
+	Body        string         `json:"body"`
 	Status      string         `json:"status"`
 	IpHash      sql.NullString `json:"ip_hash"`
 	UserAgent   sql.NullString `json:"user_agent"`
@@ -92,8 +91,7 @@ func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (*
 		arg.AuthorEmail,
 		arg.AuthorUrl,
 		arg.AvatarUrl,
-		arg.BodyMd,
-		arg.BodyHtml,
+		arg.Body,
 		arg.Status,
 		arg.IpHash,
 		arg.UserAgent,
@@ -109,13 +107,12 @@ func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (*
 		&i.AuthorEmail,
 		&i.AuthorUrl,
 		&i.AvatarUrl,
-		&i.BodyMd,
-		&i.BodyHtml,
 		&i.Status,
 		&i.IpHash,
 		&i.UserAgent,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Body,
 	)
 	return &i, err
 }
@@ -132,7 +129,7 @@ func (q *Queries) DeleteComment(ctx context.Context, id uuid.UUID) error {
 }
 
 const getCommentByID = `-- name: GetCommentByID :one
-SELECT id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, body_md, body_html, status, ip_hash, user_agent, created_at, updated_at FROM comments
+SELECT id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, status, ip_hash, user_agent, created_at, updated_at, body FROM comments
 WHERE id = $1 LIMIT 1
 `
 
@@ -150,19 +147,18 @@ func (q *Queries) GetCommentByID(ctx context.Context, id uuid.UUID) (*Comment, e
 		&i.AuthorEmail,
 		&i.AuthorUrl,
 		&i.AvatarUrl,
-		&i.BodyMd,
-		&i.BodyHtml,
 		&i.Status,
 		&i.IpHash,
 		&i.UserAgent,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Body,
 	)
 	return &i, err
 }
 
 const listApprovedCommentsByPostID = `-- name: ListApprovedCommentsByPostID :many
-SELECT id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, body_md, body_html, status, ip_hash, user_agent, created_at, updated_at FROM comments
+SELECT id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, status, ip_hash, user_agent, created_at, updated_at, body FROM comments
 WHERE post_id = $1 AND status = 'approved'
 ORDER BY path ASC
 `
@@ -187,13 +183,12 @@ func (q *Queries) ListApprovedCommentsByPostID(ctx context.Context, postID uuid.
 			&i.AuthorEmail,
 			&i.AuthorUrl,
 			&i.AvatarUrl,
-			&i.BodyMd,
-			&i.BodyHtml,
 			&i.Status,
 			&i.IpHash,
 			&i.UserAgent,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Body,
 		); err != nil {
 			return nil, err
 		}
@@ -209,7 +204,7 @@ func (q *Queries) ListApprovedCommentsByPostID(ctx context.Context, postID uuid.
 }
 
 const listPendingComments = `-- name: ListPendingComments :many
-SELECT id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, body_md, body_html, status, ip_hash, user_agent, created_at, updated_at FROM comments
+SELECT id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, status, ip_hash, user_agent, created_at, updated_at, body FROM comments
 WHERE status = 'pending'
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
@@ -240,13 +235,12 @@ func (q *Queries) ListPendingComments(ctx context.Context, arg ListPendingCommen
 			&i.AuthorEmail,
 			&i.AuthorUrl,
 			&i.AvatarUrl,
-			&i.BodyMd,
-			&i.BodyHtml,
 			&i.Status,
 			&i.IpHash,
 			&i.UserAgent,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Body,
 		); err != nil {
 			return nil, err
 		}
@@ -265,7 +259,7 @@ const updateCommentStatus = `-- name: UpdateCommentStatus :one
 UPDATE comments
 SET status = $2, updated_at = NOW()
 WHERE id = $1
-RETURNING id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, body_md, body_html, status, ip_hash, user_agent, created_at, updated_at
+RETURNING id, post_id, parent_id, path, depth, author_name, author_email, author_url, avatar_url, status, ip_hash, user_agent, created_at, updated_at, body
 `
 
 type UpdateCommentStatusParams struct {
@@ -287,13 +281,12 @@ func (q *Queries) UpdateCommentStatus(ctx context.Context, arg UpdateCommentStat
 		&i.AuthorEmail,
 		&i.AuthorUrl,
 		&i.AvatarUrl,
-		&i.BodyMd,
-		&i.BodyHtml,
 		&i.Status,
 		&i.IpHash,
 		&i.UserAgent,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Body,
 	)
 	return &i, err
 }

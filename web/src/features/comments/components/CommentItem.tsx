@@ -94,9 +94,9 @@ export function CommentItem({
             </span>
           </div>
 
-          {/* 评论内容（HTML + 表情） */}
+          {/* 评论内容（纯文本 + 表情） */}
           <CommentContent
-            html={comment.body_html}
+            html={comment.body}
             className="mt-1 text-sm text-muted-foreground prose prose-sm max-w-none"
           />
 

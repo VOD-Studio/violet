@@ -9,7 +9,7 @@ interface Comment {
   id: string;
   author_name: string;
   author_email?: string;
-  body_html: string;
+  body: string;
   created_at: string;
   children?: Comment[];
 }

@@ -1,0 +1,4 @@
+-- 回滚：恢复 body_md 和 body_html 字段
+ALTER TABLE comments DROP COLUMN IF EXISTS body;
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS body_md TEXT NOT NULL DEFAULT '';
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS body_html TEXT NOT NULL DEFAULT '';

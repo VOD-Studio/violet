@@ -22,13 +22,12 @@ type Comment struct {
 	AuthorEmail sql.NullString `json:"author_email"`
 	AuthorUrl   sql.NullString `json:"author_url"`
 	AvatarUrl   sql.NullString `json:"avatar_url"`
-	BodyMd      string         `json:"body_md"`
-	BodyHtml    string         `json:"body_html"`
 	Status      string         `json:"status"`
 	IpHash      sql.NullString `json:"ip_hash"`
 	UserAgent   sql.NullString `json:"user_agent"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
+	Body        string         `json:"body"`
 }
 
 // 评论表情反应

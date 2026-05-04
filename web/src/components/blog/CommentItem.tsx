@@ -71,11 +71,10 @@ export function CommentItem({ comment, depth = 0 }: CommentItemProps) {
             </span>
           </div>
 
-          {/* 评论内容（HTML） */}
-          <div
-            className="mt-1 text-sm text-muted-foreground prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: comment.body_html }}
-          />
+          {/* 评论内容（纯文本） */}
+          <div className="mt-1 text-sm text-muted-foreground prose prose-sm max-w-none">
+            {comment.body}
+          </div>
         </div>
       </div>
 

@@ -175,14 +175,14 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 
 	// 调用服务层创建评论
 	comment, err := h.commentService.CreateComment(r.Context(), service.CreateCommentInput{
-		PostID:       postID,
-		ParentID:     parentID,
-		AuthorName:   req.AuthorName,
-		AuthorEmail:  req.AuthorEmail,
-		AuthorURL:    req.AuthorURL,
-		BodyMarkdown: req.Body,
-		IP:           ip,
-		UserAgent:    userAgent,
+		PostID:      postID,
+		ParentID:    parentID,
+		AuthorName:  req.AuthorName,
+		AuthorEmail: req.AuthorEmail,
+		AuthorURL:   req.AuthorURL,
+		Body:        req.Body,
+		IP:          ip,
+		UserAgent:   userAgent,
 	})
 	if err != nil {
 		log.Error().Err(err).Str("operation", "CreateComment").Str("post_id", postID.String()).Msg("服务调用失败")
