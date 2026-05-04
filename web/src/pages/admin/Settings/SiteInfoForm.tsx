@@ -14,7 +14,7 @@ interface SiteInfoFormProps {
   form: Partial<SiteSettings>;
   updateField: (
     key: keyof SiteSettings,
-    value: string | boolean | number,
+    value: string | boolean | number
   ) => void;
 }
 

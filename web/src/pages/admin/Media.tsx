@@ -8,7 +8,7 @@ import {
   fetchMediaPage,
   useDeleteMedia,
   useBatchDeleteMedia,
-} from "@/features/admin/media/types";
+} from "@/features/admin/media";
 import type { MediaItem } from "@/features/admin/media/types";
 import {
   usePaginatedQuery,
@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Segmented } from "@/components/ui/Segmented";
+import { Segmented } from "@/components/Segmented";
 import { Image as ImageIcon, Upload, CheckSquare, Trash2 } from "lucide-react";
 
 /** 分类选项 */
@@ -98,7 +98,7 @@ export default function Media() {
   const fetchFn = useCallback(
     (page: number, limit: number) =>
       fetchMediaPage(page, limit, currentMimeType),
-    [currentMimeType],
+    [currentMimeType]
   );
 
   const {

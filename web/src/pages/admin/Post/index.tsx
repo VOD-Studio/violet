@@ -10,7 +10,7 @@ import {
   useAdminPosts,
   useTogglePostStatus,
   useDeleteAdminPost,
-} from "@/features/admin/posts/types";
+} from "@/features/admin/posts";
 import type { PostStatus, ApiPost } from "@/features/admin/posts/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -131,7 +131,7 @@ export default function Posts() {
         onSuccess: () =>
           toast.success(post.status === "published" ? "已取消发布" : "已发布"),
         onError: () => toast.error("操作失败，请重试"),
-      },
+      }
     );
   }
 

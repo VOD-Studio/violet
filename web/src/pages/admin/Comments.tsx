@@ -5,7 +5,10 @@
  */
 
 import { useState } from "react";
-import { useAdminComments, useAdminCommentActions } from "@/features/admin/comments/api";
+import {
+  useAdminComments,
+  useAdminCommentActions,
+} from "@/features/admin/comments/api";
 import type { ApiComment } from "@/features/admin/comments/types";
 import {
   Table,

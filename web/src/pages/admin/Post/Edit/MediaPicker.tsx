@@ -55,11 +55,11 @@ export function MediaPicker({
       try {
         const res = await api.get<{ media: MediaItem[] }>(
           "/media",
-          mimeTypeFilter ? { type: mimeTypeFilter } : {},
+          mimeTypeFilter ? { type: mimeTypeFilter } : {}
         );
         // 只显示图片类型
         const images = (res.media ?? []).filter((m) =>
-          m.mime_type.startsWith("image/"),
+          m.mime_type.startsWith("image/")
         );
         setMedia(images);
       } catch (err) {

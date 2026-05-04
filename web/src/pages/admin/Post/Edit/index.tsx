@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router";
 import { useForm, Controller } from "react-hook-form";
 import { api } from "@/lib/api";
 import { useAdminTags } from "@/features/admin/tags/api";
-import { useSavePost } from "@/features/admin/posts/types";
+import { useSavePost } from "@/features/admin/posts";
 import type { ApiPost, ApiTag } from "@/features/admin/posts/types";
 import { RichTextEditor } from "@/components/editor";
 import { Button } from "@/components/ui/button";

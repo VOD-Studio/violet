@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSiteSettings, useSaveSettings } from "@/features/admin/settings/types";
+import { useSiteSettings, useSaveSettings } from "@/features/admin/settings";
 import type { SiteSettings } from "@/features/admin/settings/types";
 import { Button } from "@/components/ui/button";
 import { ErrorFallback } from "@/components/shared/ErrorFallback";
@@ -25,7 +25,7 @@ export default function Settings() {
 
   function updateField(
     key: keyof SiteSettings,
-    value: string | boolean | number,
+    value: string | boolean | number
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }

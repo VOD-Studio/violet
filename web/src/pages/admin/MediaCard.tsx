@@ -74,7 +74,7 @@ function getFileTypeLabel(mimeType: string): string {
  * 根据 MIME 类型获取对应的 lucide 图标组件
  */
 const FileIcon = (
-  props: React.ComponentProps<"svg"> & { mimeType: string },
+  props: React.ComponentProps<"svg"> & { mimeType: string }
 ) => {
   const { mimeType, ...svgProps } = props;
   if (mimeType.startsWith("video/")) return <Video {...svgProps} />;

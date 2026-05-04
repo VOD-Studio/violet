@@ -9,7 +9,7 @@ import {
   useAdminUsers,
   useUpdateUserRole,
   useToggleUserStatus,
-} from "@/features/admin/users/types";
+} from "@/features/admin/users";
 import type { AdminUser } from "@/features/admin/users/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -110,7 +110,7 @@ export default function Users() {
   function handleToggleStatus(
     userId: string,
     userName: string,
-    currentActive: boolean,
+    currentActive: boolean
   ) {
     setConfirmState({
       open: true,
@@ -212,7 +212,7 @@ export default function Users() {
                         handleToggleStatus(
                           user.id,
                           user.username,
-                          user.is_active,
+                          user.is_active
                         )
                       }
                     >
