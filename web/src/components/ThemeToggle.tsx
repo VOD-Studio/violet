@@ -71,7 +71,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       setTheme(value);
       setMenuOpen(false);
     },
-    [setTheme],
+    [setTheme]
   );
 
   /** 当前显示的图标组件 */
@@ -122,7 +122,7 @@ export function ThemeToggle({ className }: { className?: string }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: -4 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
+              className="absolute right-0 top-full z-50 mt-1 min-w-35 rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
             >
               {THEME_OPTIONS.map((option) => {
                 const Icon = option.icon;
@@ -135,7 +135,7 @@ export function ThemeToggle({ className }: { className?: string }) {
                       "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors outline-none",
                       isActive
                         ? "bg-accent text-accent-foreground"
-                        : "hover:bg-muted",
+                        : "hover:bg-muted"
                     )}
                   >
                     <Icon className="size-4" />
