@@ -18,6 +18,8 @@ import type { CommentReaction } from "../types";
 interface ReactionBarProps {
   /** 评论 ID */
   commentId: string;
+  /** 初始反应数据（从评论接口获取） */
+  initialReactions?: CommentReaction[];
   /** 自定义样式类名 */
   className?: string;
 }
@@ -88,10 +90,10 @@ ReactionButton.displayName = "ReactionButton";
  * 评论表情反应栏
  * 显示已有的表情反应，支持添加/删除
  */
-export const ReactionBar = memo(({ commentId, className }: ReactionBarProps) => {
-  // 直接使用 useCommentReactions Hook 获取实时数据
+export const ReactionBar = memo(({ commentId, initialReactions = [], className }: ReactionBarProps) => {
+  // 使用 initialReactions 作为初始数据，仅在用户操作后才重新获取
   const { data } = useCommentReactions(commentId);
-  const reactions = data?.reactions || [];
+  const reactions = data?.reactions ?? initialReactions;
   const { groups } = useEmojis();
   const addMutation = useAddReaction(commentId);
   const removeMutation = useRemoveReaction(commentId);

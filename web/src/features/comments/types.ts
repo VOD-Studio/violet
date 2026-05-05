@@ -31,6 +31,7 @@ export interface Comment {
   author_email?: string;
   content: CommentContent;
   created_at: string;
+  reactions?: CommentReaction[];
   children?: Comment[];
 }
 
@@ -41,6 +42,7 @@ export interface CommentSubmitData {
   author_url?: string;
   body: string;
   parent_id?: string;
+  pictures?: CommentPicture[];
 }
 
 /** 表情反应统计 */

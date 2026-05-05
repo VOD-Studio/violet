@@ -9,6 +9,7 @@ import type { Comment } from "../api";
 import { ReactionBar } from "./ReactionBar";
 import { CommentForm } from "./CommentForm";
 import { CommentContent } from "./CommentContent";
+import { getUploadUrl } from "@/lib/api";
 
 /** 格式化时间为相对描述 */
 function formatRelativeTime(dateStr: string): string {
@@ -97,7 +98,7 @@ export function CommentItem({
           {/* 评论内容（纯文本 + 表情） */}
           <CommentContent
             content={comment.content}
-            className="mt-1 text-sm text-muted-foreground prose prose-sm max-w-none"
+            className="mt-1 text-sm text-muted-foreground max-w-none"
           />
 
           {/* 评论图片 */}
@@ -106,11 +107,18 @@ export function CommentItem({
               {comment.content.pictures.map((picture, index) => (
                 <img
                   key={index}
-                  src={picture.url.startsWith("/") ? `/uploads${picture.url}` : picture.url}
+                  src={getUploadUrl(picture.url)}
                   alt={`评论图片 ${index + 1}`}
                   className="max-w-60 max-h-60 rounded border border-border object-cover cursor-pointer hover:opacity-90 transition-opacity"
                   loading="lazy"
-                  onClick={() => window.open(picture.url.startsWith("/") ? `/uploads${picture.url}` : picture.url, "_blank")}
+                  onClick={() =>
+                    window.open(
+                      picture.url.startsWith("/")
+                        ? `/uploads${picture.url}`
+                        : picture.url,
+                      "_blank"
+                    )
+                  }
                 />
               ))}
             </div>
@@ -126,7 +134,10 @@ export function CommentItem({
               <MessageSquare className="w-3.5 h-3.5" />
               <span>回复</span>
             </button>
-            <ReactionBar commentId={comment.id} />
+            <ReactionBar
+              commentId={comment.id}
+              initialReactions={comment.reactions}
+            />
           </div>
         </div>
       </div>

@@ -34,15 +34,17 @@ var (
 
 // CommentService 评论服务，处理评论的创建、查询、审核等业务逻辑
 type CommentService struct {
-	repo    repository.CommentRepository
-	queries *generated.Queries
+	repo            repository.CommentRepository
+	queries         *generated.Queries
+	reactionService *CommentReactionService
 }
 
 // NewCommentService 创建评论服务实例
-func NewCommentService(repo repository.CommentRepository, queries *generated.Queries) *CommentService {
+func NewCommentService(repo repository.CommentRepository, queries *generated.Queries, reactionService *CommentReactionService) *CommentService {
 	return &CommentService{
-		repo:    repo,
-		queries: queries,
+		repo:            repo,
+		queries:         queries,
+		reactionService: reactionService,
 	}
 }
 
@@ -128,6 +130,8 @@ type CommentResponse struct {
 	Status string `json:"status"`
 	// CreatedAt 创建时间（ISO 8601 格式）
 	CreatedAt string `json:"created_at"`
+	// Reactions 表情反应列表
+	Reactions []CommentReactionSummary `json:"reactions,omitempty"`
 	// Children 子评论列表（树形结构）
 	Children []*CommentResponse `json:"children,omitempty"`
 }
@@ -215,23 +219,48 @@ func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentI
 }
 
 // ListCommentsByPostID 查询文章的评论列表
-func (s *CommentService) ListCommentsByPostID(ctx context.Context, postID uuid.UUID) ([]*CommentResponse, error) {
+func (s *CommentService) ListCommentsByPostID(ctx context.Context, postID uuid.UUID, userID *uuid.UUID, ipHash string) ([]*CommentResponse, error) {
 	comments, err := s.repo.ListByPostID(ctx, postID, "approved")
 	if err != nil {
 		return nil, fmt.Errorf("查询评论列表失败: %w", err)
 	}
 
+	// 收集所有评论 ID
+	commentIDs := make([]uuid.UUID, 0, len(comments))
+	for _, c := range comments {
+		commentIDs = append(commentIDs, c.ID)
+	}
+
+	// 批量获取所有评论的反应数据
+	var reactionsMap map[string][]CommentReactionSummary
+	if len(commentIDs) > 0 && s.reactionService != nil {
+		reactionsMap, err = s.reactionService.GetReactionsBatch(ctx, commentIDs, userID, ipHash)
+		if err != nil {
+			log.Error().Err(err).Msg("批量获取反应数据失败，继续返回评论")
+			reactionsMap = make(map[string][]CommentReactionSummary)
+		}
+	} else {
+		reactionsMap = make(map[string][]CommentReactionSummary)
+	}
+
 	responses := make([]*CommentResponse, 0, len(comments))
 	for _, c := range comments {
-		responses = append(responses, s.commentToResponse(ctx, c))
+		response := s.commentToResponse(ctx, c)
+		// 添加反应数据
+		if reactions, ok := reactionsMap[c.ID.String()]; ok {
+			response.Reactions = reactions
+		} else {
+			response.Reactions = []CommentReactionSummary{}
+		}
+		responses = append(responses, response)
 	}
 
 	return responses, nil
 }
 
 // ListApprovedComments 查询文章已审核评论（树形结构）
-func (s *CommentService) ListApprovedComments(ctx context.Context, postID uuid.UUID) ([]*CommentResponse, error) {
-	return s.ListCommentsByPostID(ctx, postID)
+func (s *CommentService) ListApprovedComments(ctx context.Context, postID uuid.UUID, userID *uuid.UUID, ipHash string) ([]*CommentResponse, error) {
+	return s.ListCommentsByPostID(ctx, postID, userID, ipHash)
 }
 
 // ListPendingComments 查询待审核评论列表

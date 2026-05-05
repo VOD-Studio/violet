@@ -15,13 +15,15 @@ import type { CommentReaction } from "../types";
 /**
  * 获取评论反应
  * @param commentId 评论 ID
+ * @param enabled 是否启用自动获取（默认禁用，因为数据已在评论接口中返回）
  * @returns 评论反应查询结果
  */
-export function useCommentReactions(commentId: string) {
+export function useCommentReactions(commentId: string, enabled = false) {
   return useQuery({
     queryKey: ["comment-reactions", commentId],
     queryFn: () => getCommentReactions(commentId),
     staleTime: 5 * 60 * 1000, // 5分钟内不重新请求
+    enabled, // 默认禁用自动获取
   });
 }
 
