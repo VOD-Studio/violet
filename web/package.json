@@ -42,6 +42,7 @@
     "lucide-react": "^1.14.0",
     "meting": "^2.0.2",
     "motion": "^12.38.0",
+    "nanoid": "^5.1.11",
     "plyr": "^3.8.4",
     "plyr-react": "^6.0.0",
     "react": "^19.2.5",
