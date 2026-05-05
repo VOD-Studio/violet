@@ -48,7 +48,7 @@ export function ImageGallery({
   // 处理图片点击
   const handleImageClick = (
     index: number,
-    e: React.MouseEvent<HTMLImageElement>
+    e: React.MouseEvent<HTMLDivElement>
   ) => {
     const imageUrls = images.map((img) => getUploadUrl(img.url));
     preview.openPreview(imageUrls, index, e.currentTarget);
@@ -85,19 +85,45 @@ export function ImageGallery({
     );
   }
 
-  // 评论图片模式（小缩略图）
+  // 评论图片模式（九宫格）
   if (mode === "comment") {
+    const count = images.length;
+
+    // 计算网格布局
+    const getGridClass = () => {
+      if (count === 1) return "grid-cols-1 max-w-60";
+      if (count === 2) return "grid-cols-2 max-w-90";
+      return "grid-cols-3 max-w-90"; // 3张及以上都是3列
+    };
+
+    // 是否显示"更多"遮罩（超过9张时在最后一张显示）
+    const showMoreOverlay = count > 9;
+    const displayImages = showMoreOverlay ? images.slice(0, 9) : images;
+    const moreCount = count - 9;
+
     return (
       <>
-        <div className={cn("flex flex-wrap gap-2", className)}>
-          {images.map((image, index) => (
-            <img
-              key={index}
-              src={getThumbnailUrl(image)}
-              alt=""
-              className="max-w-40 max-h-40 object-cover rounded border border-border cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={(e) => handleImageClick(index, e)}
-            />
+        <div className={cn("grid gap-1", getGridClass(), className)}>
+          {displayImages.map((image, index) => (
+            <div key={index} className="relative aspect-square">
+              <img
+                src={getThumbnailUrl(image)}
+                alt=""
+                className="w-full h-full object-cover rounded border border-border cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={(e) => handleImageClick(index, e)}
+              />
+              {/* 超过9张时在最后一张显示+N遮罩 */}
+              {showMoreOverlay && index === 8 && (
+                <div
+                  className="absolute inset-0 bg-black/50 rounded flex items-center justify-center cursor-pointer"
+                  onClick={(e) => handleImageClick(8, e)}
+                >
+                  <span className="text-white text-xl font-medium">
+                    +{moreCount}
+                  </span>
+                </div>
+              )}
+            </div>
           ))}
         </div>
         <ImagePreview
