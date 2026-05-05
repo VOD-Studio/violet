@@ -37,14 +37,16 @@ type CommentService struct {
 	repo            repository.CommentRepository
 	queries         *generated.Queries
 	reactionService *CommentReactionService
+	settingsService *SettingsService
 }
 
 // NewCommentService 创建评论服务实例
-func NewCommentService(repo repository.CommentRepository, queries *generated.Queries, reactionService *CommentReactionService) *CommentService {
+func NewCommentService(repo repository.CommentRepository, queries *generated.Queries, reactionService *CommentReactionService, settingsService *SettingsService) *CommentService {
 	return &CommentService{
 		repo:            repo,
 		queries:         queries,
 		reactionService: reactionService,
+		settingsService: settingsService,
 	}
 }
 
@@ -191,6 +193,18 @@ func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentI
 	// 对 IP 地址进行 SHA256 哈希
 	ipHash := hashIP(input.IP)
 
+	// 读取审核设置决定初始状态
+	status := "approved" // 默认已通过
+	if s.settingsService != nil {
+		settings, err := s.settingsService.GetAllSettings(ctx)
+		if err != nil {
+			log.Warn().Err(err).Msg("获取站点设置失败，评论默认通过")
+		} else if settings.CommentsModeration {
+			status = "pending"
+			log.Info().Msg("评论审核已开启，评论将进入待审核状态")
+		}
+	}
+
 	// 构建评论模型
 	comment := &model.Comment{
 		ID:          commentID,
@@ -203,7 +217,7 @@ func (s *CommentService) CreateComment(ctx context.Context, input CreateCommentI
 		AuthorURL:   toNullableString(input.AuthorURL),
 		Body:        input.Body,
 		Pictures:    picturesJSON,
-		Status:      "pending",
+		Status:      status,
 		IPHash:      toNullableString(ipHash),
 		UserAgent:   toNullableString(input.UserAgent),
 	}
@@ -281,6 +295,112 @@ func (s *CommentService) ListPendingComments(ctx context.Context, limit, offset 
 // CountPendingComments 统计待审核评论数量
 func (s *CommentService) CountPendingComments(ctx context.Context) (int64, error) {
 	return s.repo.CountPending(ctx)
+}
+
+// AdminCommentResponse 管理后台评论响应结构（包含文章标题）
+type AdminCommentResponse struct {
+	// ID 评论唯一标识
+	ID uuid.UUID `json:"id"`
+	// PostID 所属文章 ID
+	PostID uuid.UUID `json:"post_id"`
+	// PostTitle 所属文章标题
+	PostTitle string `json:"post_title"`
+	// ParentID 父评论 ID，为空表示顶级评论
+	ParentID *uuid.UUID `json:"parent_id"`
+	// Path 评论路径，用于树形结构排序
+	Path string `json:"path"`
+	// Depth 评论嵌套深度
+	Depth int16 `json:"depth"`
+	// AuthorName 评论者昵称
+	AuthorName string `json:"author_name"`
+	// AuthorEmail 评论者邮箱（可选）
+	AuthorEmail string `json:"author_email,omitempty"`
+	// AuthorURL 评论者网站（可选）
+	AuthorURL string `json:"author_url,omitempty"`
+	// AvatarURL 评论者头像地址（可选）
+	AvatarURL string `json:"avatar_url,omitempty"`
+	// Content 评论内容
+	Content *CommentContent `json:"content"`
+	// Status 评论状态
+	Status string `json:"status"`
+	// CreatedAt 创建时间
+	CreatedAt string `json:"created_at"`
+}
+
+// ListAllComments 查询所有评论（支持状态筛选、分页）
+func (s *CommentService) ListAllComments(ctx context.Context, status string, limit, offset int32) ([]*AdminCommentResponse, error) {
+	results, err := s.repo.ListAll(ctx, status, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("查询评论列表失败: %w", err)
+	}
+
+	responses := make([]*AdminCommentResponse, 0, len(results))
+	for _, r := range results {
+		resp := s.commentWithPostToResponse(ctx, r)
+		responses = append(responses, resp)
+	}
+
+	return responses, nil
+}
+
+// CountCommentsByStatus 按状态统计评论数量（status 为空时统计全部）
+func (s *CommentService) CountCommentsByStatus(ctx context.Context, status string) (int64, error) {
+	return s.repo.CountByStatus(ctx, status)
+}
+
+// BatchUpdateCommentStatus 批量更新评论状态
+func (s *CommentService) BatchUpdateCommentStatus(ctx context.Context, ids []uuid.UUID, status string) (int64, error) {
+	// 验证状态值
+	if status != "approved" && status != "spam" && status != "deleted" && status != "pending" {
+		return 0, ErrInvalidCommentStatus
+	}
+
+	if len(ids) == 0 {
+		return 0, nil
+	}
+
+	return s.repo.BatchUpdateStatus(ctx, ids, status)
+}
+
+// commentWithPostToResponse 将 CommentWithPost 转换为管理后台响应结构
+func (s *CommentService) commentWithPostToResponse(ctx context.Context, c *model.CommentWithPost) *AdminCommentResponse {
+	// 解析图片
+	var pictures []*model.CommentPicture
+	if len(c.Pictures) > 0 {
+		_ = json.Unmarshal(c.Pictures, &pictures)
+	}
+
+	// 解析表情
+	emoteMap := s.parseEmotesFromContent(ctx, c.Body)
+
+	r := &AdminCommentResponse{
+		ID:        c.ID,
+		PostID:    c.PostID,
+		PostTitle: c.PostTitle,
+		ParentID:  c.ParentID,
+		Path:      c.Path,
+		Depth:     c.Depth,
+		AuthorName: c.AuthorName,
+		Content: &CommentContent{
+			Message:  c.Body,
+			Emote:    emoteMap,
+			Pictures: pictures,
+		},
+		Status:    c.Status,
+		CreatedAt: c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+
+	if c.AuthorEmail != nil {
+		r.AuthorEmail = *c.AuthorEmail
+	}
+	if c.AuthorURL != nil {
+		r.AuthorURL = *c.AuthorURL
+	}
+	if c.AvatarURL != nil {
+		r.AvatarURL = *c.AvatarURL
+	}
+
+	return r
 }
 
 // UpdateCommentStatus 更新评论状态

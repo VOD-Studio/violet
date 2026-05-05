@@ -90,6 +90,26 @@ type CountResponse struct {
 	Count int64 `json:"count"`
 }
 
+// AdminCommentsListResponse 管理后台评论列表响应
+type AdminCommentsListResponse struct {
+	// Comments 评论列表
+	Comments []*service.AdminCommentResponse `json:"comments"`
+	// Total 评论总数
+	Total int64 `json:"total"`
+	// Page 当前页码
+	Page int `json:"page"`
+	// PageSize 每页数量
+	PageSize int `json:"page_size"`
+}
+
+// BatchUpdateStatusRequest 批量更新评论状态请求
+type BatchUpdateStatusRequest struct {
+	// IDs 评论 ID 列表
+	IDs []string `json:"ids" validate:"required,min=1,max=100,dive,uuid"`
+	// Status 新状态：pending/approved/spam/deleted
+	Status string `json:"status" validate:"required,oneof=pending approved spam deleted"`
+}
+
 // ListApprovedComments 获取文章已审核评论
 // GET /api/v1/posts/{id}/comments
 // 公开接口，返回已审核评论的树形结构
@@ -392,4 +412,103 @@ func handleCommentError(w http.ResponseWriter, err error) {
 	default:
 		response.InternalServerError(w, "服务器内部错误")
 	}
+}
+
+// ListAllComments 获取所有评论列表（支持状态筛选）
+// GET /api/v1/admin/comments
+// 需要管理员认证
+func (h *CommentHandler) ListAllComments(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "ListAllComments").Msg("处理请求")
+
+	// 解析分页参数
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	pageSize, _ := strconv.Atoi(r.URL.Query().Get("page_size"))
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	// 解析状态筛选参数（可选）
+	status := r.URL.Query().Get("status")
+
+	offset := int32((page - 1) * pageSize)
+
+	// 查询评论列表
+	comments, err := h.commentService.ListAllComments(r.Context(), status, int32(pageSize), offset)
+	if err != nil {
+		log.Error().Err(err).Str("operation", "ListAllComments").Msg("服务调用失败")
+		response.InternalServerError(w, "获取评论列表失败")
+		return
+	}
+
+	// 查询总数
+	total, err := h.commentService.CountCommentsByStatus(r.Context(), status)
+	if err != nil {
+		log.Error().Err(err).Str("operation", "CountCommentsByStatus").Msg("服务调用失败")
+		response.InternalServerError(w, "获取评论统计失败")
+		return
+	}
+
+	log.Info().Int("status", http.StatusOK).Int("page", page).Int("count", len(comments)).Str("status_filter", status).Msg("请求处理成功")
+	response.Success(w, AdminCommentsListResponse{
+		Comments: comments,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	})
+}
+
+// BatchUpdateCommentStatus 批量更新评论状态
+// PATCH /api/v1/admin/comments/batch-status
+// 需要管理员认证
+func (h *CommentHandler) BatchUpdateCommentStatus(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "BatchUpdateCommentStatus").Msg("处理请求")
+
+	// 解析请求体
+	var req BatchUpdateStatusRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
+		response.BadRequest(w, err.Error())
+		return
+	}
+
+	// 验证请求参数
+	if err := h.validate.Struct(req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
+		if validationErr, ok := err.(validator.ValidationErrors); ok {
+			details := request.FormatValidationError(validationErr)
+			response.ValidationError(w, "请求验证失败", details)
+		} else {
+			response.BadRequest(w, err.Error())
+		}
+		return
+	}
+
+	// 解析 UUID 列表
+	ids := make([]uuid.UUID, 0, len(req.IDs))
+	for _, idStr := range req.IDs {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			log.Warn().Err(err).Str("id", idStr).Msg("无效的评论 ID")
+			response.Error(w, http.StatusBadRequest, "invalid_id", "无效的评论 ID: "+idStr)
+			return
+		}
+		ids = append(ids, id)
+	}
+
+	// 调用服务层批量更新状态
+	affected, err := h.commentService.BatchUpdateCommentStatus(r.Context(), ids, req.Status)
+	if err != nil {
+		log.Error().Err(err).Str("operation", "BatchUpdateCommentStatus").Int("count", len(ids)).Msg("服务调用失败")
+		handleCommentError(w, err)
+		return
+	}
+
+	log.Info().Int("status", http.StatusOK).Int64("affected", affected).Str("new_status", req.Status).Msg("请求处理成功")
+	response.Success(w, map[string]interface{}{
+		"message":       "批量更新成功",
+		"affected_count": affected,
+	})
 }

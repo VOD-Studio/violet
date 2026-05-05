@@ -22,10 +22,16 @@ type CommentRepository interface {
 	ListByPostID(ctx context.Context, postID uuid.UUID, status string) ([]*model.Comment, error)
 	// ListPending 查询待审核评论列表（分页）
 	ListPending(ctx context.Context, limit, offset int32) ([]*model.Comment, error)
+	// ListAll 查询所有评论（支持状态筛选、分页）
+	ListAll(ctx context.Context, status string, limit, offset int32) ([]*model.CommentWithPost, error)
 	// CountPending 统计待审核评论数量
 	CountPending(ctx context.Context) (int64, error)
+	// CountByStatus 按状态统计评论数量（status 为空时统计全部）
+	CountByStatus(ctx context.Context, status string) (int64, error)
 	// UpdateStatus 更新评论状态
 	UpdateStatus(ctx context.Context, id uuid.UUID, status string) error
+	// BatchUpdateStatus 批量更新评论状态
+	BatchUpdateStatus(ctx context.Context, ids []uuid.UUID, status string) (int64, error)
 	// Delete 删除评论（硬删除）
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -112,6 +118,56 @@ func (r *commentRepository) CountPending(ctx context.Context) (int64, error) {
 		Where("status = ?", "pending").
 		Count(&count).Error
 	return count, err
+}
+
+// ListAll 查询所有评论（支持状态筛选、分页），包含文章标题
+func (r *commentRepository) ListAll(ctx context.Context, status string, limit, offset int32) ([]*model.CommentWithPost, error) {
+	var results []*model.CommentWithPost
+	query := r.db.WithContext(ctx).
+		Table("comments c").
+		Select("c.*, p.title as post_title").
+		Joins("LEFT JOIN posts p ON c.post_id = p.id")
+
+	// 如果指定了状态，则过滤
+	if status != "" {
+		query = query.Where("c.status = ?", status)
+	}
+
+	err := query.
+		Order("c.created_at DESC").
+		Limit(int(limit)).
+		Offset(int(offset)).
+		Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+// CountByStatus 按状态统计评论数量（status 为空时统计全部）
+func (r *commentRepository) CountByStatus(ctx context.Context, status string) (int64, error) {
+	var count int64
+	query := r.db.WithContext(ctx).Model(&model.Comment{})
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	err := query.Count(&count).Error
+	return count, err
+}
+
+// BatchUpdateStatus 批量更新评论状态
+func (r *commentRepository) BatchUpdateStatus(ctx context.Context, ids []uuid.UUID, status string) (int64, error) {
+	result := r.db.WithContext(ctx).
+		Model(&model.Comment{}).
+		Where("id IN ?", ids).
+		Updates(map[string]any{
+			"status":     status,
+			"updated_at": gorm.Expr("NOW()"),
+		})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
 }
 
 // GetPictures 从 JSONB 字段解析评论图片列表

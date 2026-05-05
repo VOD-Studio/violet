@@ -93,9 +93,9 @@ func main() {
 	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
 	commentReactionService := service.NewCommentReactionService(queries)
-	commentService := service.NewCommentService(commentRepo, queries, commentReactionService)
-	statsService := service.NewStatsService(queries)
 	settingsService := service.NewSettingsService(queries)
+	commentService := service.NewCommentService(commentRepo, queries, commentReactionService, settingsService)
+	statsService := service.NewStatsService(queries)
 	userService := service.NewUserService(queries)
 	fileService := service.NewFileService(gormDB, "uploads", cfg.UploadPathPrefix)
 	uploadService := service.NewUploadService(gormDB, fileService, "uploads/tmp", "uploads", cfg.UploadPathPrefix, 1024*1024*1024)
@@ -305,6 +305,8 @@ func main() {
 
 			r.Get("/comments/pending", commentHandler.ListPendingComments)        // 待审核评论列表
 			r.Get("/comments/pending/count", commentHandler.CountPendingComments) // 待审核评论数量
+			r.Get("/comments", commentHandler.ListAllComments)                   // 所有评论列表（支持状态筛选）
+			r.Patch("/comments/batch-status", commentHandler.BatchUpdateCommentStatus) // 批量更新评论状态
 
 			// 音乐管理
 			r.Route("/music", func(r chi.Router) {

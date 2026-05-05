@@ -4,20 +4,57 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { commentKeys } from "./queryKeys";
-import type { ApiComment } from "./types";
+import type { ApiComment, CommentStatusFilter, CommentStats } from "./types";
+
+interface CommentsListResponse {
+  comments: ApiComment[];
+  total: number;
+  page: number;
+  page_size: number;
+}
 
 /**
- * 获取待审核评论列表
+ * 获取评论列表（支持状态筛选）
  * API 返回 { comments: [...], total, page, page_size } 格式
  */
-export function useAdminComments() {
+export function useAdminComments(status: CommentStatusFilter = "all") {
   return useQuery({
-    queryKey: commentKeys.pending(),
+    queryKey: commentKeys.list(status),
     queryFn: async () => {
-      const res = await api.get<{ comments: ApiComment[] }>(
-        "/admin/comments/pending",
-      );
-      return res.comments ?? [];
+      // 如果是 all，使用 pending 接口（后续需要后端支持 all 接口）
+      // 暂时使用 pending 接口作为 fallback
+      const endpoint =
+        status === "all"
+          ? "/admin/comments/pending"
+          : `/admin/comments?status=${status}`;
+      const res = await api.get<CommentsListResponse>(endpoint);
+      return {
+        comments: res.comments ?? [],
+        total: res.total ?? 0,
+        page: res.page ?? 1,
+        pageSize: res.page_size ?? 20,
+      };
+    },
+  });
+}
+
+/**
+ * 获取评论统计信息
+ */
+export function useCommentStats() {
+  return useQuery({
+    queryKey: commentKeys.stats(),
+    queryFn: async (): Promise<CommentStats> => {
+      // 并行获取各状态数量
+      const [pendingRes] = await Promise.all([
+        api.get<{ count: number }>("/admin/comments/pending/count"),
+      ]);
+      return {
+        pending: pendingRes.count ?? 0,
+        approved: 0, // 后端暂不支持
+        spam: 0, // 后端暂不支持
+        total: pendingRes.count ?? 0,
+      };
     },
   });
 }
@@ -52,4 +89,48 @@ export function useAdminCommentActions() {
   });
 
   return { approve, markSpam, deleteComment };
+}
+
+/**
+ * 批量更新评论状态
+ */
+export function useBatchUpdateStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      ids,
+      status,
+    }: {
+      ids: string[];
+      status: "approved" | "spam";
+    }) => {
+      // 逐个更新状态（后端暂不支持批量接口）
+      const promises = ids.map((id) =>
+        api.patch(`/comments/${id}/status`, { status }),
+      );
+      await Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: commentKeys.all });
+    },
+  });
+}
+
+/**
+ * 批量删除评论
+ */
+export function useBatchDeleteComments() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      // 逐个删除（后端暂不支持批量删除接口）
+      const promises = ids.map((id) => api.del(`/comments/${id}`));
+      await Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: commentKeys.all });
+    },
+  });
 }

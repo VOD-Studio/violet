@@ -61,3 +61,11 @@ type CommentPicture struct {
 	// Size 图片大小（KB）
 	Size float64 `json:"size"`
 }
+
+// CommentWithPost 评论与文章信息的组合结构（用于管理后台列表）
+type CommentWithPost struct {
+	// Comment 评论数据
+	*Comment
+	// PostTitle 文章标题
+	PostTitle string `json:"post_title"`
+}

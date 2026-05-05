@@ -1,5 +1,11 @@
 // 评论管理类型定义
 
+/** 评论状态类型 */
+export type CommentStatus = "pending" | "approved" | "spam";
+
+/** 评论筛选状态（包含全部选项） */
+export type CommentStatusFilter = "all" | CommentStatus;
+
 /** 评论图片信息 */
 export interface CommentPicture {
   url: string;
@@ -28,6 +34,8 @@ export interface ApiComment {
   id: string;
   /** 所属文章 ID */
   post_id: string;
+  /** 文章标题 */
+  post_title?: string;
   /** 父评论 ID */
   parent_id?: string;
   /** 评论者昵称 */
@@ -41,9 +49,17 @@ export interface ApiComment {
   /** 评论内容 */
   content: CommentContent;
   /** 评论状态 */
-  status: "pending" | "approved" | "spam";
+  status: CommentStatus;
   /** 创建时间 */
   created_at: string;
   /** 子评论列表 */
   children?: ApiComment[];
+}
+
+/** 评论统计信息 */
+export interface CommentStats {
+  pending: number;
+  approved: number;
+  spam: number;
+  total: number;
 }
