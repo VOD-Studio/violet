@@ -37,14 +37,21 @@ export function useImagePreviewControls({
 }: UseImagePreviewControlsProps) {
   const [index, setIndex] = useState(currentIndex);
   const [scale, setScale] = useState(1);
+  const [rotate, setRotate] = useState(0);
+  const [flipX, setFlipX] = useState(false);
+  const [flipY, setFlipY] = useState(false);
 
   useEffect(() => {
     setIndex(currentIndex);
   }, [currentIndex]);
 
+  // 打开或切换图片时重置状态
   useEffect(() => {
     if (open) {
       setScale(1);
+      setRotate(0);
+      setFlipX(false);
+      setFlipY(false);
     }
   }, [open, index]);
 
@@ -68,6 +75,29 @@ export function useImagePreviewControls({
 
   const handleZoomOut = useCallback(() => {
     setScale((prev) => Math.max(prev - 0.5, 0.5));
+  }, []);
+
+  const handleRotateLeft = useCallback(() => {
+    setRotate((prev) => prev - 90);
+  }, []);
+
+  const handleRotateRight = useCallback(() => {
+    setRotate((prev) => prev + 90);
+  }, []);
+
+  const handleFlipX = useCallback(() => {
+    setFlipX((prev) => !prev);
+  }, []);
+
+  const handleFlipY = useCallback(() => {
+    setFlipY((prev) => !prev);
+  }, []);
+
+  const handleWheel = useCallback((delta: number) => {
+    setScale((prev) => {
+      const newScale = prev - delta * 0.001;
+      return Math.max(0.5, Math.min(3, newScale));
+    });
   }, []);
 
   useEffect(() => {
@@ -94,9 +124,18 @@ export function useImagePreviewControls({
       }
     };
 
+    const handleWheelEvent = (e: WheelEvent) => {
+      e.preventDefault();
+      handleWheel(e.deltaY);
+    };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose, handlePrevious, handleNext, handleZoomIn, handleZoomOut]);
+    window.addEventListener("wheel", handleWheelEvent, { passive: false });
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("wheel", handleWheelEvent);
+    };
+  }, [open, onClose, handlePrevious, handleNext, handleZoomIn, handleZoomOut, handleWheel]);
 
   useEffect(() => {
     if (open) {
@@ -110,10 +149,17 @@ export function useImagePreviewControls({
   return {
     index,
     scale,
+    rotate,
+    flipX,
+    flipY,
     setIndex,
     handlePrevious,
     handleNext,
     handleZoomIn,
     handleZoomOut,
+    handleRotateLeft,
+    handleRotateRight,
+    handleFlipX,
+    handleFlipY,
   };
 }

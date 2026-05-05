@@ -50,11 +50,18 @@ export function ImagePreview({
   const {
     index,
     scale,
+    rotate,
+    flipX,
+    flipY,
     setIndex,
     handlePrevious,
     handleNext,
     handleZoomIn,
     handleZoomOut,
+    handleRotateLeft,
+    handleRotateRight,
+    handleFlipX,
+    handleFlipY,
   } = useImagePreviewControls({
     open,
     images,
@@ -73,7 +80,7 @@ export function ImagePreview({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95"
           onClick={onClose}
         >
           {/* 控制按钮 */}
@@ -86,6 +93,10 @@ export function ImagePreview({
             onZoomOut={handleZoomOut}
             onPrevious={handlePrevious}
             onNext={handleNext}
+            onRotateLeft={handleRotateLeft}
+            onRotateRight={handleRotateRight}
+            onFlipX={handleFlipX}
+            onFlipY={handleFlipY}
           />
 
           {/* 图片容器 */}
@@ -109,6 +120,9 @@ export function ImagePreview({
               src={images[index]}
               alt={`预览图片 ${index + 1}`}
               scale={scale}
+              rotate={rotate}
+              flipX={flipX}
+              flipY={flipY}
               onLoad={() => {}}
             />
           </motion.div>
