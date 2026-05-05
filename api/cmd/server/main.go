@@ -135,7 +135,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authService, permissionService, cfg.UploadPathPrefix)
 	postHandler := handler.NewPostHandler(postService, tagService)
 	tagHandler := handler.NewTagHandler(tagService)
-	commentHandler := handler.NewCommentHandler(commentService)
+	commentHandler := handler.NewCommentHandler(commentService, fileService)
 	adminHandler := handler.NewAdminHandler(statsService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
 	userMgmtHandler := handler.NewUserManagementHandler(userService)

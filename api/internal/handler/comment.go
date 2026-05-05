@@ -23,14 +23,17 @@ import (
 type CommentHandler struct {
 	// commentService 评论服务
 	commentService *service.CommentService
+	// fileService 文件服务
+	fileService *service.FileService
 	// validate 请求验证器
 	validate *validator.Validate
 }
 
 // NewCommentHandler 创建评论处理器实例
-func NewCommentHandler(commentService *service.CommentService) *CommentHandler {
+func NewCommentHandler(commentService *service.CommentService, fileService *service.FileService) *CommentHandler {
 	return &CommentHandler{
 		commentService: commentService,
+		fileService:    fileService,
 		validate:       validator.New(),
 	}
 }
@@ -49,20 +52,8 @@ type CreateCommentRequest struct {
 	AuthorURL string `json:"author_url" validate:"omitempty,url"`
 	// Body 评论内容（Markdown 格式）
 	Body string `json:"body" validate:"required,min=1,max=5000"`
-	// Pictures 评论图片列表
-	Pictures []CommentPictureRequest `json:"pictures" validate:"omitempty,max=9,dive"`
-}
-
-// CommentPictureRequest 评论图片请求
-type CommentPictureRequest struct {
-	// URL 图片地址（原图，支持相对路径和完整 URL）
-	URL string `json:"url" validate:"required"`
-	// Width 图片宽度（像素）
-	Width int `json:"width" validate:"required,min=1"`
-	// Height 图片高度（像素）
-	Height int `json:"height" validate:"required,min=1"`
-	// Size 图片大小（KB）
-	Size float64 `json:"size" validate:"required,min=0"`
+	// PictureIDs 评论图片文件 ID 列表
+	PictureIDs []string `json:"picture_ids" validate:"omitempty,max=9,dive,uuid"`
 }
 
 // UpdateCommentStatusRequest 更新评论状态请求
@@ -191,14 +182,40 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	// 获取 User-Agent
 	userAgent := r.Header.Get("User-Agent")
 
-	// 转换图片数据
+	// 根据 file_ids 查询图片元数据
 	var pictures []*model.CommentPicture
-	for _, pic := range req.Pictures {
+	for _, fileID := range req.PictureIDs {
+		fileUUID, err := uuid.Parse(fileID)
+		if err != nil {
+			log.Warn().Err(err).Str("file_id", fileID).Msg("无效的文件 ID")
+			response.Error(w, http.StatusBadRequest, "invalid_file_id", "无效的文件 ID")
+			return
+		}
+
+		// 查询文件记录
+		file, err := h.fileService.FindByID(r.Context(), fileUUID)
+		if err != nil {
+			log.Error().Err(err).Str("file_id", fileID).Msg("查询文件失败")
+			response.Error(w, http.StatusBadRequest, "file_not_found", "文件不存在")
+			return
+		}
+
+		// 构建图片信息
+		width := 0
+		if file.Width != nil {
+			width = *file.Width
+		}
+		height := 0
+		if file.Height != nil {
+			height = *file.Height
+		}
+
 		pictures = append(pictures, &model.CommentPicture{
-			URL:    pic.URL,
-			Width:  pic.Width,
-			Height: pic.Height,
-			Size:   pic.Size,
+			URL:       file.URL,
+			Thumbnail: file.Thumbnail,
+			Width:     width,
+			Height:    height,
+			Size:      float64(file.Size) / 1024, // 转换为 KB
 		})
 	}
 
