@@ -5,7 +5,11 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getCommentReactions, addCommentReaction, removeCommentReaction } from "../api";
+import {
+  getCommentReactions,
+  addCommentReaction,
+  removeCommentReaction,
+} from "../api";
 import type { Comment, CommentReaction } from "../types";
 
 /**
@@ -32,12 +36,12 @@ function updateCommentReactions(
   reactions: CommentReaction[]
 ) {
   // 查找所有评论查询的缓存
-  const commentsQueries = queryClient.getQueriesData<{ comments: Comment[] }>({
+  const commentsQueries = queryClient.getQueriesData<Comment[]>({
     queryKey: ["comments"],
   });
 
   for (const [queryKey, data] of commentsQueries) {
-    if (!data?.comments) continue;
+    if (!data) continue;
 
     // 递归查找并更新指定评论的 reactions
     const updateComment = (comment: Comment): Comment => {
@@ -53,9 +57,8 @@ function updateCommentReactions(
       return comment;
     };
 
-    queryClient.setQueryData(queryKey, {
-      comments: data.comments.map(updateComment),
-    });
+    // 缓存数据是数组，直接更新
+    queryClient.setQueryData(queryKey, data.map(updateComment));
   }
 }
 
