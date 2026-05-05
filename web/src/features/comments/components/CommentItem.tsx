@@ -112,7 +112,6 @@ export function CommentItem({
             </button>
             <ReactionBar
               commentId={comment.id}
-              postId={postId}
               initialReactions={comment.reactions}
             />
           </div>

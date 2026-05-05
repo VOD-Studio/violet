@@ -5,12 +5,8 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  getCommentReactions,
-  addCommentReaction,
-  removeCommentReaction,
-} from "../api";
-import type { CommentReaction } from "../types";
+import { getCommentReactions, addCommentReaction, removeCommentReaction } from "../api";
+import type { Comment, CommentReaction } from "../types";
 
 /**
  * 获取评论反应
@@ -22,38 +18,64 @@ export function useCommentReactions(commentId: string, enabled = false) {
   return useQuery({
     queryKey: ["comment-reactions", commentId],
     queryFn: () => getCommentReactions(commentId),
-    staleTime: 5 * 60 * 1000, // 5分钟内不重新请求
-    enabled, // 默认禁用自动获取
+    staleTime: 5 * 60 * 1000,
+    enabled,
   });
+}
+
+/**
+ * 更新评论缓存中的 reactions
+ */
+function updateCommentReactions(
+  queryClient: ReturnType<typeof useQueryClient>,
+  commentId: string,
+  reactions: CommentReaction[]
+) {
+  // 查找所有评论查询的缓存
+  const commentsQueries = queryClient.getQueriesData<{ comments: Comment[] }>({
+    queryKey: ["comments"],
+  });
+
+  for (const [queryKey, data] of commentsQueries) {
+    if (!data?.comments) continue;
+
+    // 递归查找并更新指定评论的 reactions
+    const updateComment = (comment: Comment): Comment => {
+      if (comment.id === commentId) {
+        return { ...comment, reactions };
+      }
+      if (comment.children) {
+        return {
+          ...comment,
+          children: comment.children.map(updateComment),
+        };
+      }
+      return comment;
+    };
+
+    queryClient.setQueryData(queryKey, {
+      comments: data.comments.map(updateComment),
+    });
+  }
 }
 
 /**
  * 添加表情反应
  * @param commentId 评论 ID
- * @param postId 文章 ID（用于刷新评论列表）
  * @returns 添加表情反应的 mutation
  */
-export function useAddReaction(commentId: string, postId?: string) {
+export function useAddReaction(commentId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (emojiId: number) => addCommentReaction(commentId, emojiId),
-    onSuccess: () => {
-      // 刷新评论列表，评论数据中包含最新的 reactions
-      if (postId) {
-        queryClient.invalidateQueries({
-          queryKey: ["comments", postId],
-        });
-      }
+    onSuccess: (data) => {
+      // 用接口返回的 reactions 更新评论缓存
+      updateCommentReactions(queryClient, commentId, data.reactions);
     },
     onError: (error) => {
-      // 优先使用接口返回的错误信息
       const message = error?.message;
-      if (message) {
-        toast.error(message);
-      } else {
-        toast.error("添加表情失败，请稍后重试");
-      }
+      toast.error(message || "添加表情失败，请稍后重试");
     },
   });
 }
@@ -61,24 +83,18 @@ export function useAddReaction(commentId: string, postId?: string) {
 /**
  * 删除表情反应
  * @param commentId 评论 ID
- * @param postId 文章 ID（用于刷新评论列表）
  * @returns 删除表情反应的 mutation
  */
-export function useRemoveReaction(commentId: string, postId?: string) {
+export function useRemoveReaction(commentId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (emojiId: number) => removeCommentReaction(commentId, emojiId),
-    onSuccess: () => {
-      // 刷新评论列表
-      if (postId) {
-        queryClient.invalidateQueries({
-          queryKey: ["comments", postId],
-        });
-      }
+    onSuccess: (data) => {
+      // 用接口返回的 reactions 更新评论缓存
+      updateCommentReactions(queryClient, commentId, data.reactions);
     },
     onError: (error: any) => {
-      // 优先使用接口返回的错误信息
       const message = error.response?.data?.message || error?.message;
       if (message) {
         toast.error(message);

@@ -56,11 +56,12 @@ export async function getCommentReactions(
  * 添加表情反应
  * @param commentId 评论 ID
  * @param emojiId 表情 ID
+ * @returns 更新后的 reactions 数据
  */
 export async function addCommentReaction(
   commentId: string,
   emojiId: number,
-): Promise<void> {
+): Promise<{ reactions: CommentReaction[] }> {
   return api.post(`/comments/${commentId}/reactions`, {
     emoji_id: emojiId,
   });
@@ -70,11 +71,12 @@ export async function addCommentReaction(
  * 删除表情反应
  * @param commentId 评论 ID
  * @param emojiId 表情 ID
+ * @returns 更新后的 reactions 数据
  */
 export async function removeCommentReaction(
   commentId: string,
   emojiId: number,
-): Promise<void> {
+): Promise<{ reactions: CommentReaction[] }> {
   return api.del(`/comments/${commentId}/reactions/${emojiId}`);
 }
 
