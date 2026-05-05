@@ -5,10 +5,7 @@
 
 import { useMemo } from "react";
 import { getUploadUrl } from "@/lib/api";
-import {
-  useImagePreview,
-  ImagePreview,
-} from "@/components/shared/ImagePreview";
+import { ImageGallery } from "@/components/shared";
 import type { CommentContent as CommentContentType } from "../types";
 
 interface CommentContentProps {
@@ -23,8 +20,6 @@ interface CommentContentProps {
  * 使用后端提供的 emote 映射表渲染表情，并展示图片
  */
 export function CommentContent({ content, className }: CommentContentProps) {
-  const preview = useImagePreview();
-
   const renderedContent = useMemo(() => {
     const { message, emote } = content;
 
@@ -56,16 +51,6 @@ export function CommentContent({ content, className }: CommentContentProps) {
     return processedHtml;
   }, [content]);
 
-  // 处理图片点击预览
-  const handleImageClick = (
-    index: number,
-    e: React.MouseEvent<HTMLImageElement>
-  ) => {
-    const imageUrls =
-      content.pictures?.map((pic) => getUploadUrl(pic.url)) || [];
-    preview.openPreview(imageUrls, index, e.currentTarget);
-  };
-
   return (
     <>
       <div
@@ -75,28 +60,10 @@ export function CommentContent({ content, className }: CommentContentProps) {
 
       {/* 评论图片 */}
       {content.pictures && content.pictures.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {content.pictures.map((picture, index) => (
-            <img
-              key={index}
-              src={getUploadUrl(picture.url)}
-              alt=""
-              className="max-w-40 max-h-40 object-cover rounded border border-border cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={(e) => handleImageClick(index, e)}
-            />
-          ))}
+        <div className="mt-2">
+          <ImageGallery images={content.pictures} mode="comment" />
         </div>
       )}
-
-      {/* 图片预览 */}
-      <ImagePreview
-        open={preview.open}
-        images={preview.images}
-        currentIndex={preview.currentIndex}
-        triggerElement={preview.triggerElement}
-        onClose={preview.closePreview}
-        onIndexChange={preview.setCurrentIndex}
-      />
     </>
   );
 }

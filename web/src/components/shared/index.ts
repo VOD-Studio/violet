@@ -2,6 +2,8 @@ export { BackToTop } from "./BackToTop";
 export { ConfirmDialog } from "./ConfirmDialog";
 export { EmptyState } from "./EmptyState";
 export { ErrorFallback } from "./ErrorFallback";
+export { ImageGallery } from "./ImageGallery";
+export type { ImageItem, ImageGalleryMode } from "./ImageGallery";
 export { ImagePreview, useImagePreview } from "./ImagePreview";
 export type { ImagePreviewProps } from "./ImagePreview";
 export { LoadingSpinner } from "./LoadingSpinner";

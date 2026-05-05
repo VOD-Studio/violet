@@ -85,9 +85,10 @@ export function CommentImageUpload({
             "comment"
           );
 
-          // 上传成功，添加到图片列表（使用后端返回的尺寸）
+          // 上传成功，添加到图片列表（使用后端返回的尺寸和缩略图）
           const newImage: CommentPicture = {
             url: result.url,
+            thumbnail: result.thumbnail || result.url, // 如果没有缩略图则使用原图
             width: result.width || 0,
             height: result.height || 0,
             size: item.file.size / 1024, // 转换为 KB
@@ -167,7 +168,7 @@ export function CommentImageUpload({
           className="relative w-20 h-20 rounded border border-border overflow-hidden group"
         >
           <img
-            src={getUploadUrl(image.url)}
+            src={getUploadUrl(image.thumbnail)}
             alt=""
             className="w-full h-full object-cover"
           />

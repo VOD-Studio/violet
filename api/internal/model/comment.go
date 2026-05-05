@@ -48,10 +48,12 @@ func (Comment) TableName() string {
 	return "comments"
 }
 
-// CommentPicture 评论图片信息（参考 Bilibili API 设计）
+// CommentPicture 评论图片信息
 type CommentPicture struct {
-	// URL 图片地址
+	// URL 图片地址（原图）
 	URL string `json:"url"`
+	// Thumbnail 缩略图地址
+	Thumbnail string `json:"thumbnail"`
 	// Width 图片宽度（像素）
 	Width int `json:"width"`
 	// Height 图片高度（像素）

@@ -55,7 +55,7 @@ type CreateCommentRequest struct {
 
 // CommentPictureRequest 评论图片请求
 type CommentPictureRequest struct {
-	// URL 图片地址（支持相对路径和完整 URL）
+	// URL 图片地址（原图，支持相对路径和完整 URL）
 	URL string `json:"url" validate:"required"`
 	// Width 图片宽度（像素）
 	Width int `json:"width" validate:"required,min=1"`

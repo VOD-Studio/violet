@@ -5,6 +5,7 @@
 /** 评论图片信息 */
 export interface CommentPicture {
   url: string;
+  thumbnail: string;
   width: number;
   height: number;
   size: number;
