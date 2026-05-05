@@ -43,7 +43,7 @@ export interface CommentSubmitData {
   author_url?: string;
   body: string;
   parent_id?: string;
-  pictures?: CommentPicture[];
+  picture_ids?: string[];
 }
 
 /** 表情反应统计 */

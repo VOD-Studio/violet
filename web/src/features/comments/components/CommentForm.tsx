@@ -9,11 +9,14 @@ import { cn } from "@/lib/utils";
 import { RichTextInput, type RichTextInputRef } from "./RichTextInput";
 import { EmojiButton } from "./EmojiButton";
 import { ReplyIndicator } from "./ReplyIndicator";
-import { CommentImageUpload } from "./CommentImageUpload";
+import {
+  CommentImageButton,
+  CommentImagePreview,
+  type UploadedImage,
+} from "./CommentImageButton";
 import { useSubmitComment } from "../api";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
-import type { CommentPicture } from "../types";
 
 interface CommentFormProps {
   /** 文章 ID */
@@ -49,7 +52,21 @@ export function CommentForm({
   const [authorName, setAuthorName] = useState(user?.username || "");
   const [authorEmail, setAuthorEmail] = useState(user?.email || "");
   const [content, setContent] = useState("");
-  const [pictures, setPictures] = useState<CommentPicture[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+
+  /**
+   * 处理图片上传完成
+   */
+  const handleImageUpload = useCallback((image: UploadedImage) => {
+    setUploadedImages((prev) => [...prev, image]);
+  }, []);
+
+  /**
+   * 删除图片
+   */
+  const handleRemoveImage = useCallback((localId: string) => {
+    setUploadedImages((prev) => prev.filter((img) => img.localId !== localId));
+  }, []);
 
   /**
    * 处理表情选择
@@ -85,13 +102,13 @@ export function CommentForm({
           author_name: authorName.trim(),
           author_email: authorEmail.trim() || undefined,
           parent_id: parentId,
-          pictures: pictures.length > 0 ? pictures : undefined,
+          picture_ids: uploadedImages.length > 0 ? uploadedImages.map((img) => img.fileId) : undefined,
         });
 
         // 提交成功，清空输入
         richTextRef.current?.clear();
         setContent("");
-        setPictures([]);
+        setUploadedImages([]);
         toast.success(parentId ? "回复发表成功" : "评论发表成功");
         onSuccess?.();
       } catch (error: any) {
@@ -107,7 +124,7 @@ export function CommentForm({
         }
       }
     },
-    [content, authorName, authorEmail, parentId, submitMutation, onSuccess]
+    [content, authorName, authorEmail, parentId, uploadedImages, submitMutation, onSuccess]
   );
 
   /**
@@ -116,7 +133,7 @@ export function CommentForm({
   const handleCancelReply = useCallback(() => {
     richTextRef.current?.clear();
     setContent("");
-    setPictures([]);
+    setUploadedImages([]);
     onCancel?.();
   }, [onCancel]);
 
@@ -182,20 +199,27 @@ export function CommentForm({
         disabled={isSubmitting}
       />
 
-      {/* 图片上传区域 */}
-      <div className="px-4 py-3 border-t border-border">
-        <CommentImageUpload
-          images={pictures}
-          onChange={setPictures}
-          disabled={isSubmitting}
-        />
-      </div>
+      {/* 图片预览区域（只在有图片时显示） */}
+      {uploadedImages.length > 0 && (
+        <div className="px-4 py-3 border-t border-border">
+          <CommentImagePreview
+            images={uploadedImages}
+            onRemove={handleRemoveImage}
+          />
+        </div>
+      )}
 
       {/* 底部工具栏 */}
       <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-t border-border">
-        {/* 左侧：表情按钮 */}
+        {/* 左侧：表情按钮和图片按钮 */}
         <div className="flex items-center gap-2">
           <EmojiButton onSelect={handleEmojiSelect} disabled={isSubmitting} />
+          <CommentImageButton
+            images={uploadedImages}
+            onChange={setUploadedImages}
+            onUpload={handleImageUpload}
+            disabled={isSubmitting}
+          />
         </div>
 
         {/* 右侧：操作按钮 */}
