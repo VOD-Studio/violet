@@ -3,6 +3,8 @@
 
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { nanoid } from "nanoid";
+import { toast } from "sonner";
 import {
   uploadFile,
   captureVideoThumbnail,
@@ -64,13 +66,6 @@ const defaultAccept: Record<string, string[]> = {
   "application/vnd.rar": [".rar"],
   "application/x-7z-compressed": [".7z"],
 };
-
-/**
- * 生成临时唯一 ID
- */
-function generateId(): string {
-  return Math.random().toString(36).slice(2, 10);
-}
 
 /**
  * 文件上传组件
@@ -135,7 +130,7 @@ export default function FileUploader({
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       const newItems: FileUploadItem[] = acceptedFiles.map((file) => ({
-        id: generateId(),
+        id: nanoid(),
         file,
         progress: 0,
         status: "pending" as const,
@@ -152,6 +147,29 @@ export default function FileUploader({
   );
 
   /**
+   * 处理文件拒绝（大小超限、类型不匹配等）
+   */
+  const onDropRejected = useCallback(
+    (fileRejections: any[]) => {
+      console.log("fileRejections", fileRejections);
+      fileRejections.forEach((rejection) => {
+        const { file, errors } = rejection;
+
+        errors.forEach((error: any) => {
+          if (error.code === "file-too-large") {
+            toast.error(`文件 ${file.name} 超出大小限制`);
+          } else if (error.code === "file-invalid-type") {
+            toast.error(`文件 ${file.name} 类型不支持`);
+          } else {
+            toast.error(`文件 ${file.name} 上传失败：${error.message}`);
+          }
+        });
+      });
+    },
+    [maxSize]
+  );
+
+  /**
    * 移除上传项
    */
   const removeItem = useCallback((id: string) => {
@@ -160,10 +178,23 @@ export default function FileUploader({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept,
     maxSize,
     multiple,
   });
+
+  // 格式化文件大小显示
+  const formatMaxSize = (bytes: number): string => {
+    if (bytes >= 1024 * 1024 * 1024) {
+      return `${(bytes / (1024 * 1024 * 1024)).toFixed(0)} GB`;
+    } else if (bytes >= 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
+    } else if (bytes >= 1024) {
+      return `${(bytes / 1024).toFixed(0)} KB`;
+    }
+    return `${bytes} B`;
+  };
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -186,7 +217,7 @@ export default function FileUploader({
               拖拽文件到此处，或点击选择文件
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              支持图片、视频、音频、文档等文件，最大 1GB
+              支持图片、视频、音频、文档等文件，最大 {formatMaxSize(maxSize)}
             </p>
           </div>
         )}
