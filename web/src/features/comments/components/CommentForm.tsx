@@ -9,9 +9,11 @@ import { cn } from "@/lib/utils";
 import { RichTextInput, type RichTextInputRef } from "./RichTextInput";
 import { EmojiButton } from "./EmojiButton";
 import { ReplyIndicator } from "./ReplyIndicator";
+import { CommentImageUpload } from "./CommentImageUpload";
 import { useSubmitComment } from "../api";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
+import type { CommentPicture } from "../types";
 
 interface CommentFormProps {
   /** 文章 ID */
@@ -47,6 +49,7 @@ export function CommentForm({
   const [authorName, setAuthorName] = useState(user?.username || "");
   const [authorEmail, setAuthorEmail] = useState(user?.email || "");
   const [content, setContent] = useState("");
+  const [pictures, setPictures] = useState<CommentPicture[]>([]);
 
   /**
    * 处理表情选择
@@ -82,11 +85,13 @@ export function CommentForm({
           author_name: authorName.trim(),
           author_email: authorEmail.trim() || undefined,
           parent_id: parentId,
+          pictures: pictures.length > 0 ? pictures : undefined,
         });
 
         // 提交成功，清空输入
         richTextRef.current?.clear();
         setContent("");
+        setPictures([]);
         toast.success(parentId ? "回复发表成功" : "评论发表成功");
         onSuccess?.();
       } catch (error: any) {
@@ -111,6 +116,7 @@ export function CommentForm({
   const handleCancelReply = useCallback(() => {
     richTextRef.current?.clear();
     setContent("");
+    setPictures([]);
     onCancel?.();
   }, [onCancel]);
 
@@ -175,6 +181,15 @@ export function CommentForm({
         placeholder={replyTo ? `回复 ${replyTo}...` : "说点什么..."}
         disabled={isSubmitting}
       />
+
+      {/* 图片上传区域 */}
+      <div className="px-4 py-3 border-t border-border">
+        <CommentImageUpload
+          images={pictures}
+          onChange={setPictures}
+          disabled={isSubmitting}
+        />
+      </div>
 
       {/* 底部工具栏 */}
       <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-t border-border">

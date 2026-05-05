@@ -75,7 +75,6 @@ var allowedUploadTypes = map[string]string{
 	".md":   "text/markdown",
 }
 
-
 // UploadService 分片上传业务服务
 type UploadService struct {
 	db          *gorm.DB            // GORM 数据库实例
@@ -246,7 +245,7 @@ func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req I
 		FileSize:       req.FileSize,
 		FileHash:       req.FileHash,
 		MimeType:       mimeType,
-		Purpose:       purpose,
+		Purpose:        purpose,
 		ChunkSize:      chunkSize,
 		TotalChunks:    totalChunks,
 		UploadedChunks: datatypes.NewJSONSlice([]int{}),
@@ -444,7 +443,7 @@ func (s *UploadService) MergeChunks(ctx context.Context, uploadID uuid.UUID, use
 	fileRecord := &model.File{
 		ID:           fileUUID,
 		OwnerID:      userID,
-		Purpose:     session.Purpose,
+		Purpose:      session.Purpose,
 		OriginalName: session.FileName,
 		Path:         finalPath,
 		URL:          fileURL,
@@ -522,4 +521,3 @@ func (s *UploadService) GetSession(ctx context.Context, uploadID uuid.UUID) (*mo
 	}
 	return &session, nil
 }
-

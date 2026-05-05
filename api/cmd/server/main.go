@@ -92,7 +92,8 @@ func main() {
 	authService := service.NewAuthService(queries, redisClient, emailService, cfg)
 	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
-	commentService := service.NewCommentService(commentRepo, queries)
+	commentReactionService := service.NewCommentReactionService(queries)
+	commentService := service.NewCommentService(commentRepo, queries, commentReactionService)
 	statsService := service.NewStatsService(queries)
 	settingsService := service.NewSettingsService(queries)
 	userService := service.NewUserService(queries)
@@ -106,7 +107,6 @@ func main() {
 	emojiService := service.NewEmojiService(queries, "uploads/emojis")
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie)
 	permissionService := service.NewPermissionService(queries)
-	commentReactionService := service.NewCommentReactionService(queries)
 
 	count, err := queries.CountEmojiGroups(ctx)
 	if err != nil {
