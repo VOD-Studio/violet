@@ -13,6 +13,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 
+	"blog-api/internal/model"
 	"blog-api/internal/pkg/request"
 	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
@@ -48,6 +49,20 @@ type CreateCommentRequest struct {
 	AuthorURL string `json:"author_url" validate:"omitempty,url"`
 	// Body 评论内容（Markdown 格式）
 	Body string `json:"body" validate:"required,min=1,max=5000"`
+	// Pictures 评论图片列表
+	Pictures []CommentPictureRequest `json:"pictures" validate:"omitempty,max=9,dive"`
+}
+
+// CommentPictureRequest 评论图片请求
+type CommentPictureRequest struct {
+	// URL 图片地址（支持相对路径和完整 URL）
+	URL string `json:"url" validate:"required"`
+	// Width 图片宽度（像素）
+	Width int `json:"width" validate:"required,min=1"`
+	// Height 图片高度（像素）
+	Height int `json:"height" validate:"required,min=1"`
+	// Size 图片大小（KB）
+	Size float64 `json:"size" validate:"required,min=0"`
 }
 
 // UpdateCommentStatusRequest 更新评论状态请求
@@ -99,8 +114,11 @@ func (h *CommentHandler) ListApprovedComments(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// 查询已审核评论树
-	comments, err := h.commentService.ListApprovedComments(r.Context(), postID)
+	// 提取用户身份（从 JWT 或 IP）
+	userID, ipHash := extractUserIdentity(r)
+
+	// 查询已审核评论树（包含反应数据）
+	comments, err := h.commentService.ListApprovedComments(r.Context(), postID, userID, ipHash)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListApprovedComments").Str("post_id", postID.String()).Msg("服务调用失败")
 		response.InternalServerError(w, "获取评论失败")
@@ -173,6 +191,17 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	// 获取 User-Agent
 	userAgent := r.Header.Get("User-Agent")
 
+	// 转换图片数据
+	var pictures []*model.CommentPicture
+	for _, pic := range req.Pictures {
+		pictures = append(pictures, &model.CommentPicture{
+			URL:    pic.URL,
+			Width:  pic.Width,
+			Height: pic.Height,
+			Size:   pic.Size,
+		})
+	}
+
 	// 调用服务层创建评论
 	comment, err := h.commentService.CreateComment(r.Context(), service.CreateCommentInput{
 		PostID:      postID,
@@ -181,6 +210,7 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 		AuthorEmail: req.AuthorEmail,
 		AuthorURL:   req.AuthorURL,
 		Body:        req.Body,
+		Pictures:    pictures,
 		IP:          ip,
 		UserAgent:   userAgent,
 	})
