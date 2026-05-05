@@ -122,19 +122,24 @@ func (h *CommentReactionHandler) AddReaction(w http.ResponseWriter, r *http.Requ
 	userID, ipHash := extractUserIdentity(r)
 
 	// 添加反应
-	reaction, err := h.reactionService.AddReaction(r.Context(), commentID, req.EmojiID, userID, ipHash)
+	_, err = h.reactionService.AddReaction(r.Context(), commentID, req.EmojiID, userID, ipHash)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "AddReaction").Str("comment_id", commentID.String()).Msg("服务调用失败")
 		handleReactionError(w, err)
 		return
 	}
 
-	log.Info().Int("status", http.StatusCreated).Str("reaction_id", reaction.ID.String()).Msg("请求处理成功")
-	response.Created(w, map[string]interface{}{
-		"id":         reaction.ID,
-		"comment_id": reaction.CommentID,
-		"emoji_id":   reaction.EmojiID,
-		"created_at": reaction.CreatedAt,
+	// 获取更新后的反应列表
+	reactions, err := h.reactionService.GetCommentReactions(r.Context(), commentID, userID, ipHash)
+	if err != nil {
+		log.Error().Err(err).Str("operation", "GetCommentReactions").Str("comment_id", commentID.String()).Msg("获取反应列表失败")
+		response.InternalServerError(w, "获取表情反应列表失败")
+		return
+	}
+
+	log.Info().Int("status", http.StatusCreated).Str("comment_id", commentID.String()).Msg("请求处理成功")
+	response.Created(w, ReactionsResponse{
+		Reactions: reactions,
 	})
 }
 
@@ -173,9 +178,17 @@ func (h *CommentReactionHandler) RemoveReaction(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	log.Info().Int("status", http.StatusOK).Str("comment_id", commentID.String()).Msg("请求处理成功")
-	response.Success(w, MessageResponse{
-		Message: "表情反应已删除",
+	// 获取更新后的反应列表
+	reactions, err := h.reactionService.GetCommentReactions(r.Context(), commentID, userID, ipHash)
+	if err != nil {
+		log.Error().Err(err).Str("operation", "GetCommentReactions").Str("comment_id", commentID.String()).Msg("获取更新后的反应列表失败")
+		response.InternalServerError(w, "获取更新后的反应列表失败")
+		return
+	}
+
+	log.Info().Int("status", http.StatusOK).Str("comment_id", commentID.String()).Int("reaction_count", len(reactions)).Msg("请求处理成功")
+	response.Success(w, ReactionsResponse{
+		Reactions: reactions,
 	})
 }
 
