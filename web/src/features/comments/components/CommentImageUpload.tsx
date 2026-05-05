@@ -85,22 +85,11 @@ export function CommentImageUpload({
             "comment"
           );
 
-          // 获取图片尺寸
-          const img = new Image();
-          const dimensions = await new Promise<{
-            width: number;
-            height: number;
-          }>((resolve) => {
-            img.onload = () =>
-              resolve({ width: img.width, height: img.height });
-            img.src = URL.createObjectURL(item.file);
-          });
-
-          // 上传成功，添加到图片列表
+          // 上传成功，添加到图片列表（使用后端返回的尺寸）
           const newImage: CommentPicture = {
             url: result.url,
-            width: dimensions.width,
-            height: dimensions.height,
+            width: result.width || 0,
+            height: result.height || 0,
             size: item.file.size / 1024, // 转换为 KB
           };
 

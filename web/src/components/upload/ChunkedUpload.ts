@@ -19,6 +19,10 @@ interface UploadResult {
   name: string;
   /** MIME 类型 */
   mimeType: string;
+  /** 图片宽度（仅图片类型） */
+  width?: number;
+  /** 图片高度（仅图片类型） */
+  height?: number;
 }
 
 /** 初始化上传会话响应（含秒传和断点续传） */

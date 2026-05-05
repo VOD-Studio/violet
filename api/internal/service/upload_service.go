@@ -38,7 +38,17 @@ var (
 	ErrInvalidImageType = errors.New("不支持的文件类型")
 	// ErrImageTooLarge 文件过大
 	ErrImageTooLarge = errors.New("文件过大")
+	// ErrInvalidPurpose 不支持的上传用途
+	ErrInvalidPurpose = errors.New("不支持的上传用途")
 )
+
+// 允许的上传用途白名单
+var allowedPurposes = []string{
+	"avatar",   // 用户头像
+	"post",     // 文章封面/内容图片
+	"material", // 素材库（默认）
+	"comment",  // 评论图片
+}
 
 // 支持的文件类型扩展名到 MIME 类型的映射
 var allowedUploadTypes = map[string]string{
@@ -139,6 +149,10 @@ type MergeResult struct {
 	URL string `json:"url"`
 	// Thumbnail 缩略图地址
 	Thumbnail string `json:"thumbnail,omitempty"`
+	// Width 图片宽度（仅图片类型）
+	Width int `json:"width,omitempty"`
+	// Height 图片高度（仅图片类型）
+	Height int `json:"height,omitempty"`
 }
 
 // InitSession 初始化上传会话
@@ -149,6 +163,12 @@ type MergeResult struct {
 func (s *UploadService) InitSession(ctx context.Context, userID uuid.UUID, req InitSessionRequest) (*InitSessionResponse, error) {
 	log.Info().Str("service", "UploadService").Str("operation", "InitSession").
 		Str("filename", req.FileName).Int64("size", req.FileSize).Msg("开始初始化上传会话")
+
+	// 验证 purpose 白名单
+	if req.Purpose != "" && !slices.Contains(allowedPurposes, req.Purpose) {
+		log.Warn().Str("purpose", req.Purpose).Msg("不支持的上传用途")
+		return nil, ErrInvalidPurpose
+	}
 
 	// 验证文件类型
 	if err := s.ValidateFileType(req.FileName); err != nil {
@@ -429,12 +449,15 @@ func (s *UploadService) MergeChunks(ctx context.Context, uploadID uuid.UUID, use
 
 	// 生成缩略图
 	thumbnail := ""
+	var imageWidth, imageHeight int
 	storageDir := session.Purpose
 	if storageDir == "material" {
 		storageDir = filepath.Join(storageDir, fileTypeFromMime(session.MimeType))
 	}
 	if strings.HasPrefix(session.MimeType, "image/") {
 		thumbnail = s.storageSvc.GenerateImageThumbnail(finalPath, fileUUID.String(), storageDir)
+		// 获取图片尺寸
+		imageWidth, imageHeight = s.storageSvc.GetImageDimensions(finalPath)
 	} else if strings.HasPrefix(session.MimeType, "video/") {
 		thumbnail = s.storageSvc.GenerateVideoThumbnail(finalPath, fileUUID.String(), storageDir)
 	}
@@ -472,6 +495,8 @@ func (s *UploadService) MergeChunks(ctx context.Context, uploadID uuid.UUID, use
 		FileID:    fileUUID.String(),
 		URL:       fileURL,
 		Thumbnail: thumbnail,
+		Width:     imageWidth,
+		Height:    imageHeight,
 	}, nil
 }
 

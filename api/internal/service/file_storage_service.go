@@ -93,6 +93,18 @@ func (s *FileStorageService) GetFileSize(path string) (int64, error) {
 	return fileInfo.Size(), nil
 }
 
+// GetImageDimensions 获取图片尺寸
+// 返回宽度和高度，如果失败返回 0, 0
+func (s *FileStorageService) GetImageDimensions(path string) (int, int) {
+	img, err := imaging.Open(path)
+	if err != nil {
+		log.Warn().Err(err).Str("path", path).Msg("打开图片失败")
+		return 0, 0
+	}
+	bounds := img.Bounds()
+	return bounds.Dx(), bounds.Dy()
+}
+
 // FileExists 检查文件是否存在
 func (s *FileStorageService) FileExists(path string) bool {
 	_, err := os.Stat(path)

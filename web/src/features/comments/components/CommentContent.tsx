@@ -3,8 +3,12 @@
  * 将评论内容中的表情语法 [emoji_name] 转换为表情显示，并展示图片
  */
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { getUploadUrl } from "@/lib/api";
+import {
+  useImagePreview,
+  ImagePreview,
+} from "@/components/shared/ImagePreview";
 import type { CommentContent as CommentContentType } from "../types";
 
 interface CommentContentProps {
@@ -19,7 +23,7 @@ interface CommentContentProps {
  * 使用后端提供的 emote 映射表渲染表情，并展示图片
  */
 export function CommentContent({ content, className }: CommentContentProps) {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const preview = useImagePreview();
 
   const renderedContent = useMemo(() => {
     const { message, emote } = content;
@@ -52,6 +56,16 @@ export function CommentContent({ content, className }: CommentContentProps) {
     return processedHtml;
   }, [content]);
 
+  // 处理图片点击预览
+  const handleImageClick = (
+    index: number,
+    e: React.MouseEvent<HTMLImageElement>
+  ) => {
+    const imageUrls =
+      content.pictures?.map((pic) => getUploadUrl(pic.url)) || [];
+    preview.openPreview(imageUrls, index, e.currentTarget);
+  };
+
   return (
     <>
       <div
@@ -63,36 +77,26 @@ export function CommentContent({ content, className }: CommentContentProps) {
       {content.pictures && content.pictures.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {content.pictures.map((picture, index) => (
-            <button
+            <img
               key={index}
-              type="button"
-              onClick={() => setSelectedImage(picture.url)}
-              className="relative rounded overflow-hidden border border-border hover:opacity-90 transition-opacity"
-            >
-              <img
-                src={picture.url}
-                alt=""
-                className="max-w-40 max-h-40 object-cover"
-              />
-            </button>
+              src={getUploadUrl(picture.url)}
+              alt=""
+              className="max-w-40 max-h-40 object-cover rounded border border-border cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={(e) => handleImageClick(index, e)}
+            />
           ))}
         </div>
       )}
 
-      {/* 图片预览弹窗 */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <img
-            src={selectedImage}
-            alt=""
-            className="max-w-full max-h-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
+      {/* 图片预览 */}
+      <ImagePreview
+        open={preview.open}
+        images={preview.images}
+        currentIndex={preview.currentIndex}
+        triggerElement={preview.triggerElement}
+        onClose={preview.closePreview}
+        onIndexChange={preview.setCurrentIndex}
+      />
     </>
   );
 }

@@ -4,22 +4,23 @@
  */
 
 import { useState } from "react";
-import { useImagePreview } from "./useImagePreview";
-import { ImagePreview } from "./ImagePreview";
+import { useImagePreview, ImagePreview } from ".";
 
 /**
  * 示例 1: 单图预览
  */
 export function SingleImageExample() {
-  const { open, images, currentIndex, triggerElement, openPreview, closePreview } =
-    useImagePreview();
+  const {
+    open,
+    images,
+    currentIndex,
+    triggerElement,
+    openPreview,
+    closePreview,
+  } = useImagePreview();
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
-    openPreview(
-      ["https://picsum.photos/800/600"],
-      0,
-      e.currentTarget
-    );
+    openPreview(["https://picsum.photos/800/600"], 0, e.currentTarget);
   };
 
   return (
@@ -46,8 +47,15 @@ export function SingleImageExample() {
  * 示例 2: 多图画廊
  */
 export function ImageGalleryExample() {
-  const { open, images, currentIndex, triggerElement, openPreview, closePreview, setCurrentIndex } =
-    useImagePreview();
+  const {
+    open,
+    images,
+    currentIndex,
+    triggerElement,
+    openPreview,
+    closePreview,
+    setCurrentIndex,
+  } = useImagePreview();
 
   const galleryImages = [
     "https://picsum.photos/800/600?random=1",
@@ -56,7 +64,10 @@ export function ImageGalleryExample() {
     "https://picsum.photos/800/600?random=4",
   ];
 
-  const handleImageClick = (index: number, e: React.MouseEvent<HTMLImageElement>) => {
+  const handleImageClick = (
+    index: number,
+    e: React.MouseEvent<HTMLImageElement>
+  ) => {
     openPreview(galleryImages, index, e.currentTarget);
   };
 
@@ -90,15 +101,25 @@ export function ImageGalleryExample() {
  * 示例 3: 评论中的图片预览
  */
 export function CommentImageExample() {
-  const { open, images, currentIndex, triggerElement, openPreview, closePreview, setCurrentIndex } =
-    useImagePreview();
+  const {
+    open,
+    images,
+    currentIndex,
+    triggerElement,
+    openPreview,
+    closePreview,
+    setCurrentIndex,
+  } = useImagePreview();
 
   const commentImages = [
     "https://picsum.photos/400/300?random=5",
     "https://picsum.photos/400/300?random=6",
   ];
 
-  const handleImageClick = (index: number, e: React.MouseEvent<HTMLImageElement>) => {
+  const handleImageClick = (
+    index: number,
+    e: React.MouseEvent<HTMLImageElement>
+  ) => {
     openPreview(commentImages, index, e.currentTarget);
   };
 
