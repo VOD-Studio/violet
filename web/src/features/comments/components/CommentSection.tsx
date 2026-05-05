@@ -41,7 +41,7 @@ function collectCommentIds(comments: Comment[]): string[] {
  */
 export function CommentSection({ postId }: CommentSectionProps) {
   const { data: comments, isLoading } = useComments(postId);
-  const sectionRef = useRef<HTMLElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const { setHasReachedComments } = usePostStore();
 
   // 回复状态
@@ -60,13 +60,13 @@ export function CommentSection({ postId }: CommentSectionProps) {
   const { data: reactionsMap = {}, isLoading: isLoadingReactions } =
     useCommentReactionsBatch(commentIds);
 
-  // 监测评论区是否进入视口，更新 store 状态
+  // 监测"发表评论"表单区域是否进入视口，更新 store 状态
   useEffect(() => {
     const handleScroll = () => {
-      if (!sectionRef.current) return;
-      const rect = sectionRef.current.getBoundingClientRect();
-      // 评论区顶部距离视口底部还有一定距离时，认为已到达
-      setHasReachedComments(rect.top <= window.innerHeight + 200);
+      if (!formRef.current) return;
+      const rect = formRef.current.getBoundingClientRect();
+      // 表单区域顶部进入视口时，认为已到达
+      setHasReachedComments(rect.top <= window.innerHeight);
     };
 
     handleScroll();
@@ -89,8 +89,14 @@ export function CommentSection({ postId }: CommentSectionProps) {
   };
 
   return (
-    <section ref={sectionRef} className="mt-16 border-t pt-8">
+    <section className="mt-16 border-t pt-8">
       <h2 className="mb-6 text-xl font-bold">评论</h2>
+
+      {/* 主评论表单 - 放在评论列表上方 */}
+      <div ref={formRef} className="mb-8 space-y-4">
+        <h3 className="text-lg font-semibold">发表评论</h3>
+        <CommentForm postId={postId} />
+      </div>
 
       {/* 评论列表 */}
       {isLoading ? (
@@ -102,7 +108,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
           reactionsMap={reactionsMap}
           isLoading={isLoadingReactions}
         >
-          <div className="mb-8 space-y-6">
+          <div className="space-y-6">
             {(comments ?? []).map((comment: Comment) => (
               <CommentItem
                 key={comment.id}
@@ -116,16 +122,10 @@ export function CommentSection({ postId }: CommentSectionProps) {
           </div>
         </CommentReactionsProvider>
       ) : (
-        <div className="mb-8 rounded-lg border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-lg border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
           暂无评论，来发表第一条评论吧
         </div>
       )}
-
-      {/* 主评论表单 */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">发表评论</h3>
-        <CommentForm postId={postId} />
-      </div>
     </section>
   );
 }
