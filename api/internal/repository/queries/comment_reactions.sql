@@ -4,12 +4,13 @@ SELECT
     cr.emoji_id,
     e.name as emoji_name,
     e.url as emoji_url,
+    e.gif_url as emoji_gif_url,
     e.text_content,
     COUNT(*) as count
 FROM comment_reactions cr
 JOIN emojis e ON cr.emoji_id = e.id
 WHERE cr.comment_id = $1
-GROUP BY cr.emoji_id, e.name, e.url, e.text_content
+GROUP BY cr.emoji_id, e.name, e.url, e.gif_url, e.text_content
 ORDER BY count DESC;
 
 -- name: CheckUserReaction :one
@@ -47,12 +48,13 @@ SELECT
     cr.emoji_id,
     e.name as emoji_name,
     e.url as emoji_url,
+    e.gif_url as emoji_gif_url,
     e.text_content,
     COUNT(*) as count
 FROM comment_reactions cr
 JOIN emojis e ON cr.emoji_id = e.id
 WHERE cr.comment_id = ANY($1::uuid[])
-GROUP BY cr.comment_id, cr.emoji_id, e.name, e.url, e.text_content
+GROUP BY cr.comment_id, cr.emoji_id, e.name, e.url, e.gif_url, e.text_content
 ORDER BY cr.comment_id, count DESC;
 
 -- name: GetUserReactionsByComments :many

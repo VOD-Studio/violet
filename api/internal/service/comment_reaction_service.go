@@ -46,6 +46,8 @@ type CommentReactionSummary struct {
 	EmojiName string `json:"emoji_name"`
 	// EmojiURL 表情图片 URL（可选）
 	EmojiURL string `json:"emoji_url,omitempty"`
+	// EmojiGifURL 表情 GIF URL（可选）
+	EmojiGifURL string `json:"emoji_gif_url,omitempty"`
 	// TextContent 文本内容（可选，如 emoji 字符）
 	TextContent string `json:"text_content,omitempty"`
 	// Count 反应数量
@@ -113,6 +115,9 @@ func (s *CommentReactionService) GetCommentReactions(
 		}
 		if r.EmojiUrl.Valid {
 			summary.EmojiURL = r.EmojiUrl.String
+		}
+		if r.EmojiGifUrl.Valid {
+			summary.EmojiGifURL = r.EmojiGifUrl.String
 		}
 		if r.TextContent.Valid {
 			summary.TextContent = r.TextContent.String
@@ -334,6 +339,9 @@ func (s *CommentReactionService) GetReactionsBatch(
 		}
 		if r.EmojiUrl.Valid {
 			summary.EmojiURL = r.EmojiUrl.String
+		}
+		if r.EmojiGifUrl.Valid {
+			summary.EmojiGifURL = r.EmojiGifUrl.String
 		}
 		if r.TextContent.Valid {
 			summary.TextContent = r.TextContent.String

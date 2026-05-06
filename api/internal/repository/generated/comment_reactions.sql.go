@@ -111,12 +111,13 @@ SELECT
     cr.emoji_id,
     e.name as emoji_name,
     e.url as emoji_url,
+    e.gif_url as emoji_gif_url,
     e.text_content,
     COUNT(*) as count
 FROM comment_reactions cr
 JOIN emojis e ON cr.emoji_id = e.id
 WHERE cr.comment_id = $1
-GROUP BY cr.emoji_id, e.name, e.url, e.text_content
+GROUP BY cr.emoji_id, e.name, e.url, e.gif_url, e.text_content
 ORDER BY count DESC
 `
 
@@ -124,6 +125,7 @@ type GetReactionsByCommentRow struct {
 	EmojiID     int32          `json:"emoji_id"`
 	EmojiName   string         `json:"emoji_name"`
 	EmojiUrl    sql.NullString `json:"emoji_url"`
+	EmojiGifUrl sql.NullString `json:"emoji_gif_url"`
 	TextContent sql.NullString `json:"text_content"`
 	Count       int64          `json:"count"`
 }
@@ -142,6 +144,7 @@ func (q *Queries) GetReactionsByComment(ctx context.Context, commentID uuid.UUID
 			&i.EmojiID,
 			&i.EmojiName,
 			&i.EmojiUrl,
+			&i.EmojiGifUrl,
 			&i.TextContent,
 			&i.Count,
 		); err != nil {
@@ -164,12 +167,13 @@ SELECT
     cr.emoji_id,
     e.name as emoji_name,
     e.url as emoji_url,
+    e.gif_url as emoji_gif_url,
     e.text_content,
     COUNT(*) as count
 FROM comment_reactions cr
 JOIN emojis e ON cr.emoji_id = e.id
 WHERE cr.comment_id = ANY($1::uuid[])
-GROUP BY cr.comment_id, cr.emoji_id, e.name, e.url, e.text_content
+GROUP BY cr.comment_id, cr.emoji_id, e.name, e.url, e.gif_url, e.text_content
 ORDER BY cr.comment_id, count DESC
 `
 
@@ -178,6 +182,7 @@ type GetReactionsByCommentsRow struct {
 	EmojiID     int32          `json:"emoji_id"`
 	EmojiName   string         `json:"emoji_name"`
 	EmojiUrl    sql.NullString `json:"emoji_url"`
+	EmojiGifUrl sql.NullString `json:"emoji_gif_url"`
 	TextContent sql.NullString `json:"text_content"`
 	Count       int64          `json:"count"`
 }
@@ -197,6 +202,7 @@ func (q *Queries) GetReactionsByComments(ctx context.Context, dollar_1 []uuid.UU
 			&i.EmojiID,
 			&i.EmojiName,
 			&i.EmojiUrl,
+			&i.EmojiGifUrl,
 			&i.TextContent,
 			&i.Count,
 		); err != nil {
