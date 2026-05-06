@@ -397,7 +397,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 				permissions = append(permissions, code)
 			}
 		} else if err == nil {
-			permissions = h.permService.GetPermissionsByRoleID(int32(roleID))
+			permissions = h.permService.GetPermissionsByRoleID(roleID)
 		}
 	}
 

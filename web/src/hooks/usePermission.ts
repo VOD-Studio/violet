@@ -1,12 +1,6 @@
 import { useMemo } from "react";
 import { useAuthStore } from "@/store";
 
-// 检查当前用户是否拥有指定权限（单个权限码）
-export function usePermission(code: string): boolean;
-
-// 检查当前用户是否拥有任意一个权限（多个权限码，任一满足即返回 true）
-export function usePermission(codes: string[]): boolean;
-
 export function usePermission(code: string | string[]): boolean {
   const { user } = useAuthStore();
   const codes = Array.isArray(code) ? code : [code];

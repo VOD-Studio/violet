@@ -36,9 +36,9 @@ func GetUserEmail(r *http.Request) (string, error) {
 }
 
 // GetUserRoleID 从请求上下文中提取用户角色 ID
-func GetUserRoleID(r *http.Request) (int64, error) {
-	roleID, ok := r.Context().Value(middleware.UserRoleIDKey).(int64)
-	if !ok {
+func GetUserRoleID(r *http.Request) (int32, error) {
+	roleID, ok := r.Context().Value(middleware.UserRoleIDKey).(int32)
+	if !ok || roleID == 0 {
 		return 0, errors.New("user role ID not found in context")
 	}
 	return roleID, nil
