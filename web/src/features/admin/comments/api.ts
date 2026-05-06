@@ -97,19 +97,17 @@ export function useBatchUpdateStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       ids,
       status,
     }: {
       ids: string[];
-      status: "approved" | "spam";
-    }) => {
-      // 逐个更新状态（后端暂不支持批量接口）
-      const promises = ids.map((id) =>
-        api.patch(`/comments/${id}/status`, { status }),
-      );
-      await Promise.all(promises);
-    },
+      status: "approved" | "spam" | "pending" | "deleted";
+    }) =>
+      api.patch("/admin/comments/batch-status", {
+        ids,
+        status,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: commentKeys.all });
     },
@@ -123,11 +121,11 @@ export function useBatchDeleteComments() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (ids: string[]) => {
-      // 逐个删除（后端暂不支持批量删除接口）
-      const promises = ids.map((id) => api.del(`/comments/${id}`));
-      await Promise.all(promises);
-    },
+    mutationFn: (ids: string[]) =>
+      api.patch("/admin/comments/batch-status", {
+        ids,
+        status: "deleted",
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: commentKeys.all });
     },
