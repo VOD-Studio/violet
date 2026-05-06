@@ -221,8 +221,10 @@ export function EmojiPanel({
             {/* 颜文字分组：flex 布局自适应宽度 */}
             {/* 图片分组：grid 8列固定宽度 */}
             {(() => {
-              // 检测是否全是颜文字（没有 url）
-              const allTextEmojis = filteredEmojis.every(e => !e.url);
+              // 颜文字：url 不是真正的 URL（不以 http/https/ 开头）
+              const allTextEmojis = filteredEmojis.every(
+                e => !e.url?.startsWith('http') && !e.url?.startsWith('/')
+              );
               if (allTextEmojis) {
                 return (
                   <div className="flex flex-wrap gap-2">

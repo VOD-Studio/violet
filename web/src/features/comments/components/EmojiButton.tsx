@@ -101,11 +101,19 @@ export function EmojiButton({
   }, [isOpen]);
 
   const handleSelect = (emoji: Emoji) => {
-    // 转换为 RichTextInput 需要的格式
-    const emojiName = `[${emoji.name}]`;
-    const emojiDisplay = emoji.url
-      ? getUploadUrl(emoji.url)
-      : emoji.text_content || emoji.name;
+    // 判断是否是颜文字（url 不是真正的 URL）
+    const isTextEmoji = !emoji.url?.startsWith('http') && !emoji.url?.startsWith('/');
+
+    // 图片表情：使用 [name] 格式
+    // 颜文字：直接插入文本，不需要方括号
+    const emojiName = isTextEmoji
+      ? emoji.url || emoji.name  // 颜文字直接插入文本
+      : emoji.name;              // 图片表情保持原格式（已有方括号）
+
+    const emojiDisplay = isTextEmoji
+      ? emoji.url || emoji.name  // 颜文字显示文本
+      : getUploadUrl(emoji.url); // 图片表情显示 URL
+
     onSelect(emojiName, emojiDisplay);
     autoClose && setIsOpen(false);
   };
