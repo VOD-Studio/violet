@@ -141,7 +141,7 @@ export function EmojiPanel({
       {/* 中部：分组标签 */}
       <div className="border-b border-border bg-muted/30 relative">
         {showScrollHint && (
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-muted/30 to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-muted/30 to-transparent z-10 pointer-events-none" />
         )}
         <div
           ref={categoryScrollRef}
