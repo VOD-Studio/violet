@@ -273,7 +273,7 @@ export default function PostEdit() {
         open={mediaPickerOpen}
         onClose={() => setMediaPickerOpen(false)}
         onSelect={handleMediaSelect}
-        allowedCategories={['image']}
+        allowedCategories={["image"]}
         title="选择封面图片"
       />
 
