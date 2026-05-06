@@ -20,7 +20,10 @@ import (
 )
 
 // B站表情 API 常量
-const bilibiliEmojiAPIURL = "https://api.bilibili.com/x/emote/setting/panel?business=reply"
+const (
+	bilibiliUserAPIURL     = "https://api.bilibili.com/x/emote/user/panel/web?business=reply&web_location=333.1369"
+	bilibiliOfficialAPIURL = "https://api.bilibili.com/x/emote/setting/panel?business=reply"
+)
 
 // BilibiliEmojiAPIResponse B站表情 API 响应结构
 type BilibiliEmojiAPIResponse struct {
@@ -29,9 +32,10 @@ type BilibiliEmojiAPIResponse struct {
 	Msg  string            `json:"message"`
 }
 
-// BilibiliEmojiData B站表情数据
+// BilibiliEmojiData B站表情数据（兼容两种 API）
 type BilibiliEmojiData struct {
-	Packages []BilibiliEmojiPackage `json:"user_panel_packages"`
+	Packages          []BilibiliEmojiPackage `json:"packages"`           // 用户 API
+	UserPanelPackages []BilibiliEmojiPackage `json:"user_panel_packages"` // 官方 API
 }
 
 // BilibiliEmojiPackage B站表情包
@@ -39,6 +43,7 @@ type BilibiliEmojiPackage struct {
 	ID    int             `json:"id"`
 	Text  string          `json:"text"`
 	Emote []BilibiliEmote `json:"emote"`
+	Type  int             `json:"type"` // 13=收藏特殊包，1=普通表情包
 }
 
 // BilibiliEmote B站单个表情
@@ -59,14 +64,16 @@ type EmojiSeedService struct {
 	queries        *generated.Queries
 	emojiDir       string // 表情独立存储目录
 	bilibiliCookie string // B站登录 Cookie
+	apiType        string // API 类型：user 或 official
 }
 
 // NewEmojiSeedService 创建表情种子数据服务实例
-func NewEmojiSeedService(queries *generated.Queries, emojiDir, cookie string) *EmojiSeedService {
+func NewEmojiSeedService(queries *generated.Queries, emojiDir, cookie, apiType string) *EmojiSeedService {
 	return &EmojiSeedService{
 		queries:        queries,
 		emojiDir:       emojiDir,
 		bilibiliCookie: cookie,
+		apiType:        apiType,
 	}
 }
 
@@ -101,9 +108,23 @@ func (s *EmojiSeedService) fetchBilibiliEmojis() ([]BilibiliEmojiPackage, error)
 		return nil, fmt.Errorf("未设置 B站 Cookie，请在环境变量中配置 BILIBILI_SESSDATA、BILIBILI_BILI_JCT、BILIBILI_DEDEUSERID")
 	}
 
+	// 选择 API URL
+	var apiURL string
+	switch s.apiType {
+	case "user":
+		apiURL = bilibiliUserAPIURL
+		log.Info().Str("api", "user").Msg("使用用户收藏表情 API")
+	case "official":
+		apiURL = bilibiliOfficialAPIURL
+		log.Info().Str("api", "official").Msg("使用官方表情 API")
+	default:
+		apiURL = bilibiliUserAPIURL
+		log.Info().Str("api", "user").Msg("默认使用用户收藏表情 API")
+	}
+
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	req, err := http.NewRequest("GET", bilibiliEmojiAPIURL, nil)
+	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
@@ -134,7 +155,22 @@ func (s *EmojiSeedService) fetchBilibiliEmojis() ([]BilibiliEmojiPackage, error)
 		return nil, fmt.Errorf("API 错误: code=%d, msg=%s", apiResp.Code, apiResp.Msg)
 	}
 
-	return apiResp.Data.Packages, nil
+	// 兼容两种 API 的数据结构
+	packages := apiResp.Data.Packages
+	if len(packages) == 0 && len(apiResp.Data.UserPanelPackages) > 0 {
+		packages = apiResp.Data.UserPanelPackages
+	}
+
+	// 过滤掉特殊包（type=13 是收藏包）
+	var validPackages []BilibiliEmojiPackage
+	for _, pkg := range packages {
+		if pkg.Type == 13 || len(pkg.Emote) == 0 {
+			continue
+		}
+		validPackages = append(validPackages, pkg)
+	}
+
+	return validPackages, nil
 }
 
 // importBilibiliEmojis 导入 B站表情数据到数据库

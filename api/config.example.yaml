@@ -22,15 +22,15 @@ database:
   port: 5432
   name: blog
   user: blog
-  password: ""  # 通过 DATABASE_PASSWORD 环境变量配置
-  sslmode: disable  # 生产环境通过 DATABASE_SSLMODE=require 覆盖
+  password: "" # 通过 DATABASE_PASSWORD 环境变量配置
+  sslmode: disable # 生产环境通过 DATABASE_SSLMODE=require 覆盖
 
 # ── Redis ───────────────────────────────────
 redis:
   host: localhost
   port: 6379
   db: 0
-  password: ""  # 通过 REDIS_PASSWORD 环境变量配置（可选）
+  password: "" # 通过 REDIS_PASSWORD 环境变量配置（可选）
 
 # ── JWT ─────────────────────────────────────
 jwt_private_key_path: ./jwt_private_key.pem
@@ -39,11 +39,12 @@ jwt_access_token_ttl: 15m
 jwt_refresh_token_ttl: 168h
 
 # ── 邮件服务 (Resend) ────────────────────────
-resend_api_key: ""  # 通过 RESEND_API_KEY 环境变量配置
+resend_api_key: "" # 通过 RESEND_API_KEY 环境变量配置
 email_from: noreply@yourdomain.com
 
 # ── B站表情种子数据 ──────────────────────────
 # 通过环境变量配置：BILIBILI_SESSDATA, BILIBILI_BILI_JCT, BILIBILI_DEDEUSERID
+bilibili_api_type: "user" # user(用户收藏) 或 official(官方)
 bilibili_sessdata: ""
 bilibili_bili_jct: ""
 bilibili_dedeuserid: ""
@@ -53,4 +54,4 @@ superadmin:
   enabled: false
   username: admin
   email: admin@example.com
-  password: ""  # 通过 SUPERADMIN_PASSWORD 环境变量配置
+  password: "" # 通过 SUPERADMIN_PASSWORD 环境变量配置

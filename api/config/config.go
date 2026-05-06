@@ -24,7 +24,7 @@ type Config struct {
 	JWTAccessTokenTTL time.Duration
 	// JWTRefreshTokenTTL JWT 刷新令牌过期时间
 	JWTRefreshTokenTTL time.Duration
-	// ResendAPIKey Resend 邮件服务 API 密钥
+	// ResendAPIKey Resend 件服务 API 密钥
 	ResendAPIKey string
 	// EmailFrom 发件人邮箱地址
 	EmailFrom string
@@ -36,6 +36,8 @@ type Config struct {
 	UploadPathPrefix string
 	// BilibiliCookie B站登录 Cookie，用于获取表情种子数据（自动拼接）
 	BilibiliCookie string
+	// BilibiliAPIType B站表情 API 类型：user(用户收藏) 或 official(官方)
+	BilibiliAPIType string
 	// SuperAdmin 超级管理员配置
 	SuperAdmin SuperAdminConfig
 }
@@ -120,6 +122,7 @@ func Load() *Config {
 	v.SetDefault("bilibili_sessdata", "")
 	v.SetDefault("bilibili_bili_jct", "")
 	v.SetDefault("bilibili_dedeuserid", "")
+	v.SetDefault("bilibili_api_type", "user")
 	v.SetDefault("superadmin.enabled", false)
 	v.SetDefault("superadmin.username", "admin")
 	v.SetDefault("superadmin.email", "admin@example.com")
@@ -170,6 +173,7 @@ func Load() *Config {
 		Port:               v.GetString("port"),
 		UploadPathPrefix:   v.GetString("upload_path_prefix"),
 		BilibiliCookie:     bilibiliCookie,
+		BilibiliAPIType:    v.GetString("bilibili_api_type"),
 		SuperAdmin: SuperAdminConfig{
 			Enabled:  v.GetBool("superadmin.enabled"),
 			Username: v.GetString("superadmin.username"),

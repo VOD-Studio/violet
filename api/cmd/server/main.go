@@ -105,7 +105,7 @@ func main() {
 	musicSettingsService := service.NewMusicSettingsService(queries)
 	projectService := service.NewProjectService(queries)
 	emojiService := service.NewEmojiService(queries, "uploads/emojis")
-	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie)
+	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 	permissionService := service.NewPermissionService(queries)
 
 	count, err := queries.CountEmojiGroups(ctx)
