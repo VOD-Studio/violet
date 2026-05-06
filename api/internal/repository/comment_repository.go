@@ -124,8 +124,13 @@ func (r *commentRepository) CountPending(ctx context.Context) (int64, error) {
 func (r *commentRepository) ListAll(ctx context.Context, status string, limit, offset int32) ([]*model.CommentWithPost, error) {
 	var results []*model.CommentWithPost
 	query := r.db.WithContext(ctx).
+		Select(
+			"c.id, c.post_id, c.parent_id, c.path, c.depth, "+
+				"c.author_name, c.author_email, c.author_url, c.avatar_url, "+
+				"c.body, c.pictures, c.status, c.created_at, c.updated_at, "+
+				"p.title as post_title",
+		).
 		Table("comments c").
-		Select("c.*, p.title as post_title").
 		Joins("LEFT JOIN posts p ON c.post_id = p.id")
 
 	// 如果指定了状态，则过滤
