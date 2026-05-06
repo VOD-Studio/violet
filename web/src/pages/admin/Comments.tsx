@@ -510,7 +510,6 @@ export default function Comments() {
         <SheetContent side="right" className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle>评论详情</SheetTitle>
-            <SheetDescription>查看评论的完整信息</SheetDescription>
           </SheetHeader>
 
           {detailLoading && (
@@ -522,65 +521,69 @@ export default function Comments() {
           )}
 
           {detailComment && (
-            <div className="flex-1 space-y-6 p-6">
+            <div className="flex-1 space-y-4 p-6">
               {/* 作者信息 */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">作者信息</h3>
-                <div className="flex items-start gap-3">
-                  {detailComment.avatar_url ? (
-                    <img
-                      src={detailComment.avatar_url}
-                      alt={detailComment.author_name}
-                      className="size-12 rounded-full"
-                    />
-                  ) : (
-                    <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-                      <User className="size-6 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="flex-1 space-y-1">
-                    <p className="font-medium">{detailComment.author_name}</p>
+              <div className="flex items-center gap-3">
+                {detailComment.avatar_url ? (
+                  <img
+                    src={detailComment.avatar_url}
+                    alt={detailComment.author_name}
+                    className="size-10 rounded-full"
+                  />
+                ) : (
+                  <div className="flex size-10 items-center justify-center rounded-full bg-muted">
+                    <User className="size-5 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{detailComment.author_name}</p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     {detailComment.author_email && (
-                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Mail className="size-3.5" />
-                        <span>{detailComment.author_email}</span>
-                      </div>
-                    )}
-                    {detailComment.author_url && (
-                      <a
-                        href={detailComment.author_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-sm text-primary hover:underline"
-                      >
-                        <Globe className="size-3.5" />
-                        <span className="truncate">{detailComment.author_url}</span>
-                      </a>
+                      <span className="truncate">{detailComment.author_email}</span>
                     )}
                   </div>
                 </div>
+                <Badge variant={getStatusBadge(detailComment.status).variant}>
+                  {getStatusBadge(detailComment.status).label}
+                </Badge>
               </div>
 
               {/* 评论内容 */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">评论内容</h3>
-                <div className="rounded-lg border p-4">
-                  {detailComment.content ? (
-                    <CommentContent
-                      content={detailComment.content}
-                      className="whitespace-pre-wrap break-words text-sm"
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">无内容</p>
-                  )}
+              <div className="rounded-lg border bg-muted/30 p-4">
+                {detailComment.content ? (
+                  <CommentContent
+                    content={detailComment.content}
+                    className="whitespace-pre-wrap break-words"
+                  />
+                ) : (
+                  <p className="text-muted-foreground">无内容</p>
+                )}
+              </div>
+
+              {/* 元信息 */}
+              <div className="flex items-center gap-4 text-sm text-muted-foreground border-t pt-4">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="size-4" />
+                  <span>{formatDateTime(detailComment.created_at)}</span>
                 </div>
+                {detailComment.author_url && (
+                  <a
+                    href={detailComment.author_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-primary hover:underline"
+                  >
+                    <Globe className="size-4" />
+                    <span className="truncate max-w-[150px]">网站</span>
+                  </a>
+                )}
               </div>
 
               {/* 所属文章 */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">所属文章</h3>
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <span className="font-medium">
+              <div className="rounded-lg border p-3 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">所属文章：</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium truncate max-w-[200px]">
                     {detailComment.post_title ?? "未知文章"}
                   </span>
                   {detailComment.post_id && (
@@ -588,37 +591,20 @@ export default function Comments() {
                       href={`/posts/${detailComment.post_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-sm text-primary hover:underline"
+                      className="text-primary hover:underline text-sm"
                     >
                       查看
-                      <ExternalLink className="size-3.5" />
                     </a>
                   )}
                 </div>
               </div>
 
-              {/* 状态和时间 */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">状态信息</h3>
-                <div className="flex items-center gap-4 rounded-lg border p-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">状态：</span>
-                    <Badge variant={getStatusBadge(detailComment.status).variant}>
-                      {getStatusBadge(detailComment.status).label}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="size-3.5" />
-                    <span>{formatDateTime(detailComment.created_at)}</span>
-                  </div>
-                </div>
-              </div>
-
               {/* 操作按钮 */}
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-2 border-t pt-4">
                 {detailComment.status !== "approved" && (
                   <Button
                     variant="default"
+                    size="sm"
                     onClick={() => {
                       handleApprove(detailComment.id);
                       setDetailId(null);
@@ -632,6 +618,7 @@ export default function Comments() {
                 {detailComment.status !== "spam" && (
                   <Button
                     variant="secondary"
+                    size="sm"
                     onClick={() => {
                       handleMarkSpam(detailComment.id);
                       setDetailId(null);
@@ -644,6 +631,7 @@ export default function Comments() {
                 )}
                 <Button
                   variant="destructive"
+                  size="sm"
                   onClick={() => {
                     setDetailId(null);
                     handleDelete(detailComment.id);
