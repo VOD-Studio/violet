@@ -79,21 +79,36 @@ export function EmojiPanel({
     setActiveGroupId(groupId);
     setSearchQuery("");
 
-    // 自动滚动到选中的分组
+    // 类似 Ant Design Tabs 的滚动行为
     if (categoryScrollRef.current) {
       const container = categoryScrollRef.current;
       const activeButton = container.querySelector(`button[data-group-id="${groupId}"]`) as HTMLElement;
 
       if (activeButton) {
-        const containerRect = container.getBoundingClientRect();
-        const buttonRect = activeButton.getBoundingClientRect();
-        const buttonLeft = buttonRect.left - containerRect.left + container.scrollLeft;
-        const buttonRight = buttonLeft + buttonRect.width;
+        const containerWidth = container.clientWidth;
+        const buttonWidth = activeButton.offsetWidth;
+        const buttonLeft = activeButton.offsetLeft;
+        const buttonRight = buttonLeft + buttonWidth;
 
-        if (buttonLeft < container.scrollLeft) {
-          container.scrollTo({ left: buttonLeft - 16, behavior: 'smooth' });
-        } else if (buttonRight > container.scrollLeft + container.clientWidth) {
-          container.scrollTo({ left: buttonRight - container.clientWidth + 16, behavior: 'smooth' });
+        // 目标：让选中按钮显示在合适位置，同时露出相邻按钮的边缘提示还有更多
+        // 如果按钮在右侧边缘外，滚动让它在左侧显示，右侧露出下一个按钮边缘
+        // 如果按钮在左侧边缘外，滚动让它在右侧显示，左侧露出上一个按钮边缘
+
+        const scrollLeft = container.scrollLeft;
+        const peekMargin = 50; // 预留露出边缘的宽度
+
+        if (buttonRight > scrollLeft + containerWidth - peekMargin) {
+          // 按钮在右侧边缘或外面，滚动到按钮左侧位置，右侧露出空间
+          container.scrollTo({
+            left: buttonLeft - peekMargin,
+            behavior: 'smooth'
+          });
+        } else if (buttonLeft < scrollLeft + peekMargin) {
+          // 按钮在左侧边缘或外面，滚动让按钮显示在右侧，左侧露出空间
+          container.scrollTo({
+            left: buttonRight - containerWidth + peekMargin,
+            behavior: 'smooth'
+          });
         }
       }
     }
