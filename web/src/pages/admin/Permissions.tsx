@@ -1,214 +1,259 @@
 /**
  * 权限管理页面
- * 显示所有权限列表及拥有该权限的角色
+ * 选择角色后为其分配权限
  */
 
 import { useState, useEffect } from "react";
-import { usePermissions, useRoles, useRolePermissions } from "@/features/admin/roles";
-import type { Role } from "@/features/admin/roles/types";
-import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  useRoles,
+  usePermissions,
+  useRolePermissions,
+  useUpdateRolePermissions,
+} from "@/features/admin/roles";
+import type { Permission } from "@/features/admin/roles/types";
+import { PermissionGuard } from "@/components/shared/PermissionGuard";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorFallback } from "@/components/shared/ErrorFallback";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Shield } from "lucide-react";
+import { useToast } from "@/components/shared/Toast";
+import { Shield, Save, Loader2 } from "lucide-react";
 
 /**
- * 权限列表表格骨架屏
+ * 按模块分组权限
  */
-function PermissionsTableSkeleton() {
-  return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-40">权限码</TableHead>
-            <TableHead className="w-32">名称</TableHead>
-            <TableHead>模块</TableHead>
-            <TableHead className="w-64">拥有该权限的角色</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <TableRow key={i}>
-              <TableCell>
-                <Skeleton className="h-4 w-28" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-4 w-20" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-4 w-40" />
-              </TableCell>
-              <TableCell>
-                <Skeleton className="h-4 w-32" />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
-/**
- * 显示拥有某个权限的角色列表
- */
-function RolesWithPermission({
-  roles,
-}: {
-  roles: Role[] | undefined;
-}) {
-  if (!roles || roles.length === 0) {
-    return <span className="text-muted-foreground text-sm">无</span>;
+function groupPermissionsByModule(permissions: Permission[]): Record<string, Permission[]> {
+  const groups: Record<string, Permission[]> = {};
+  for (const perm of permissions) {
+    const module = perm.code.split(":")[0];
+    if (!groups[module]) {
+      groups[module] = [];
+    }
+    groups[module].push(perm);
   }
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {roles.map((role) => (
-        <Badge key={role.id} variant="secondary" className="text-xs">
-          {role.name}
-        </Badge>
-      ))}
-    </div>
-  );
+  return groups;
 }
+
+/**
+ * 模块名称映射
+ */
+const moduleNames: Record<string, string> = {
+  post: "文章管理",
+  comment: "评论管理",
+  tag: "标签管理",
+  media: "媒体管理",
+  emoji: "表情管理",
+  playlist: "歌单管理",
+  song: "歌曲管理",
+  user: "用户管理",
+  role: "角色管理",
+  project: "项目管理",
+  settings: "系统设置",
+  announcement: "公告管理",
+};
 
 /**
  * 权限管理页面内容
  */
 function PermissionsContent() {
-  const { data: permissions, isLoading: loadingPermissions, error: permissionsError, refetch } = usePermissions();
+  const { toast } = useToast();
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
+  const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
+
+  // 获取角色列表
   const { data: roles, isLoading: loadingRoles, error: rolesError } = useRoles();
+  // 获取所有权限
+  const { data: allPermissions, isLoading: loadingPermissions, error: permissionsError } =
+    usePermissions();
+  // 获取选中角色的权限
+  const { data: rolePermissions, isLoading: loadingRolePermissions } =
+    useRolePermissions(selectedRoleId ?? 0);
+  // 更新角色权限
+  const updatePermissions = useUpdateRolePermissions();
 
-  const isLoading = loadingPermissions || loadingRoles;
-  const error = permissionsError || rolesError;
+  const isLoading = loadingRoles || loadingPermissions;
+  const error = rolesError || permissionsError;
 
-  // 存储权限到角色的映射
-  const [permissionToRolesMap, setPermissionToRolesMap] = useState<Map<string, Role[]>>(() => new Map());
-  // 已加载的角色ID集合
-  const [loadedRoleIds, setLoadedRoleIds] = useState<Set<number>>(new Set());
+  // 当角色权限加载完成时，更新选中状态
+  useEffect(() => {
+    if (rolePermissions) {
+      setSelectedPermissions(new Set(rolePermissions.map((p) => p.code)));
+    }
+  }, [rolePermissions]);
+
+  // 选择角色
+  function handleSelectRole(role: { id: number; name: string; description?: string | null }) {
+    setSelectedRoleId(role.id);
+    setSelectedPermissions(new Set());
+  }
+
+  // 切换权限选中状态
+  function handleTogglePermission(code: string, checked: boolean) {
+    setSelectedPermissions((prev) => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(code);
+      } else {
+        newSet.delete(code);
+      }
+      return newSet;
+    });
+  }
+
+  // 保存权限
+  function handleSave() {
+    if (!selectedRoleId) return;
+
+    updatePermissions.mutate(
+      {
+        id: selectedRoleId,
+        data: { permissions: Array.from(selectedPermissions) },
+      },
+      {
+        onSuccess: () => {
+          toast("权限更新成功", "success");
+        },
+        onError: () => {
+          toast("权限更新失败", "error");
+        },
+      }
+    );
+  }
+
+  // 按模块分组权限
+  const groupedPermissions = allPermissions ? groupPermissionsByModule(allPermissions) : {};
 
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
       <div>
         <h1 className="text-2xl font-bold">权限管理</h1>
-        <p className="text-muted-foreground">查看系统所有权限及其分配情况</p>
+        <p className="text-muted-foreground">为角色分配系统权限</p>
       </div>
 
       {/* 加载态 */}
-      {isLoading && <PermissionsTableSkeleton />}
-
-      {/* 错误状态 */}
-      {error && <ErrorFallback error={error.message} onRetry={refetch} />}
-
-      {/* 空数据状态 */}
-      {!isLoading && !error && (!permissions || permissions.length === 0) && (
-        <EmptyState
-          title="暂无权限数据"
-          description="系统尚未配置任何权限"
-          icon={<Shield className="size-12" />}
-        />
+      {isLoading && (
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
       )}
 
-      {/* 权限列表表格 */}
-      {!isLoading && !error && permissions && permissions.length > 0 && (
-        <>
-          {/* 为每个角色加载权限 */}
-          {roles?.map((role) => (
-            <RolePermissionLoader
-              key={role.id}
-              role={role}
-              loadedRoleIds={loadedRoleIds}
-              setLoadedRoleIds={setLoadedRoleIds}
-              setPermissionToRolesMap={setPermissionToRolesMap}
-            />
-          ))}
+      {/* 错误状态 */}
+      {error && <ErrorFallback error={error.message} onRetry={() => {}} />}
 
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-40">权限码</TableHead>
-                  <TableHead className="w-32">名称</TableHead>
-                  <TableHead>模块</TableHead>
-                  <TableHead className="w-64">拥有该权限的角色</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {permissions.map((perm) => (
-                  <TableRow key={perm.code}>
-                    <TableCell className="font-mono text-sm">
-                      {perm.code}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {perm.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {perm.module || "-"}
-                    </TableCell>
-                    <TableCell>
-                      <RolesWithPermission
-                        roles={permissionToRolesMap.get(perm.code)}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+      {/* 主内容 */}
+      {!isLoading && !error && roles && allPermissions && (
+        <div className="grid gap-6 lg:grid-cols-[250px_1fr]">
+          {/* 左侧：角色列表 */}
+          <div className="space-y-2">
+            <h2 className="text-sm font-medium text-muted-foreground">角色列表</h2>
+            <div className="rounded-lg border">
+              {roles.map((role, index) => (
+                <button
+                  key={role.id}
+                  onClick={() => handleSelectRole(role)}
+                  className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                    selectedRoleId === role.id
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "hover:bg-muted"
+                  } ${index > 0 ? "border-t" : ""}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{role.name}</span>
+                    {role.name === "admin" && (
+                      <Badge variant="secondary" className="text-xs">
+                        管理员
+                      </Badge>
+                    )}
+                  </div>
+                  {role.description && (
+                    <p className="mt-1 text-xs text-muted-foreground">{role.description}</p>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-        </>
+
+          {/* 右侧：权限分配 */}
+          <div className="space-y-4">
+            {selectedRoleId ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-medium text-muted-foreground">
+                    权限分配
+                    {loadingRolePermissions && (
+                      <Loader2 className="ml-2 inline size-4 animate-spin" />
+                    )}
+                  </h2>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={updatePermissions.isPending || loadingRolePermissions}
+                  >
+                    {updatePermissions.isPending ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 size-4" />
+                    )}
+                    保存
+                  </Button>
+                </div>
+
+                <div className="rounded-lg border divide-y">
+                  {Object.entries(groupedPermissions).map(([module, perms]) => (
+                    <div key={module} className="p-4">
+                      <h3 className="mb-3 text-sm font-medium">
+                        {moduleNames[module] || module}
+                      </h3>
+                      <div className="space-y-2">
+                        {perms.map((perm) => (
+                          <div
+                            key={perm.code}
+                            className="flex items-center gap-3 rounded-md p-2 hover:bg-muted transition-colors"
+                          >
+                            <Checkbox
+                              id={perm.code}
+                              checked={selectedPermissions.has(perm.code)}
+                              onCheckedChange={(checked) =>
+                                handleTogglePermission(perm.code, checked as boolean)
+                              }
+                            />
+                            <label
+                              htmlFor={perm.code}
+                              className="flex-1 cursor-pointer text-sm"
+                            >
+                              <span className="font-medium">{perm.name}</span>
+                              <span className="ml-2 text-xs text-muted-foreground font-mono">
+                                {perm.code}
+                              </span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <EmptyState
+                title="请选择角色"
+                description="从左侧选择一个角色来管理其权限"
+                icon={<Shield className="size-12" />}
+              />
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
 /**
- * 加载单个角色的权限并更新映射
- */
-function RolePermissionLoader({
-  role,
-  loadedRoleIds,
-  setLoadedRoleIds,
-  setPermissionToRolesMap,
-}: {
-  role: Role;
-  loadedRoleIds: Set<number>;
-  setLoadedRoleIds: React.Dispatch<React.SetStateAction<Set<number>>>;
-  setPermissionToRolesMap: React.Dispatch<React.SetStateAction<Map<string, Role[]>>>;
-}) {
-  const { data: rolePermissions } = useRolePermissions(role.id);
-
-  // 当权限数据加载完成时，更新映射
-  useEffect(() => {
-    if (rolePermissions && !loadedRoleIds.has(role.id)) {
-      setLoadedRoleIds((prev) => new Set(prev).add(role.id));
-      setPermissionToRolesMap((prev) => {
-        const newMap = new Map(prev);
-        for (const perm of rolePermissions) {
-          const existingRoles = newMap.get(perm.code) || [];
-          newMap.set(perm.code, [...existingRoles, role]);
-        }
-        return newMap;
-      });
-    }
-  }, [rolePermissions, role, loadedRoleIds, setLoadedRoleIds, setPermissionToRolesMap]);
-
-  return null;
-}
-
-/**
  * 权限管理页面
- * 包裹在 PermissionGuard 中，需要 role:manage 权限
+ * 需要 role:manage 权限
  */
 export default function Permissions() {
   return (
