@@ -8,6 +8,7 @@ export { ImagePreview, useImagePreview } from "./ImagePreview";
 export type { ImagePreviewProps } from "./ImagePreview";
 export { LoadingSpinner } from "./LoadingSpinner";
 export { Pagination } from "./Pagination";
+export { PermissionGuard } from "./PermissionGuard";
 export { RequirePermission } from "./RequirePermission";
 export { SEO } from "./SEO";
 export { StructuredData } from "./StructuredData";

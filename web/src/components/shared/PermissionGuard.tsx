@@ -1,19 +1,21 @@
 import type { ReactNode } from "react";
 import { usePermission } from "@/hooks/usePermission";
 
-interface Props {
-  code: string | string[];
+interface PermissionGuardProps {
+  code: string | string[]; // 支持单个或多个权限码
   children: ReactNode;
-  fallback?: ReactNode;
+  fallback?: ReactNode; // 无权限时显示的内容
 }
 
 /**
- * 权限控制组件，根据用户权限决定是否渲染子元素
+ * 权限守卫组件
  * 如果用户拥有任意一个权限，则显示 children，否则显示 fallback
- * @deprecated 请使用 PermissionGuard 组件
  */
-export function RequirePermission({ code, children, fallback = null }: Props) {
+export function PermissionGuard({
+  code,
+  children,
+  fallback = null,
+}: PermissionGuardProps) {
   const hasPermission = usePermission(code);
-
   return hasPermission ? <>{children}</> : <>{fallback}</>;
 }
