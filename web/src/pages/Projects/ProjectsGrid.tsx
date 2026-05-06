@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
 import { api } from "@/lib/api";
 import { ProjectCard, type ProjectData } from "@/components/blog/ProjectCard";
 import { ScrollReveal } from "@/components/creative";
@@ -10,14 +11,37 @@ function useProjects() {
     queryKey: ["projects"],
     queryFn: async () => {
       try {
-        const res = await api.get<{ projects: ProjectData[] }>("/projects");
-        return res.projects ?? [];
+        const res = await api.get<{ projects: BackendProject[] }>("/projects");
+        // Map backend fields to frontend ProjectData format
+        return (res.projects ?? []).map((p): ProjectData => ({
+          id: p.id,
+          title: p.title,
+          description: p.description ?? "",
+          coverImage: p.image_url,
+          tags: p.tech_stack ?? [],
+          githubUrl: p.github_url,
+          demoUrl: p.url,
+        }));
       } catch {
         return [];
       }
     },
     placeholderData: [],
   });
+}
+
+/** Backend project data structure */
+interface BackendProject {
+  id: string;
+  title: string;
+  description?: string;
+  url?: string;
+  github_url?: string;
+  image_url?: string;
+  tech_stack: string[];
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export function ProjectsGrid() {
@@ -68,7 +92,9 @@ export function ProjectsGrid() {
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {projects.map((project, index) => (
         <ScrollReveal key={project.id} animation="scale" delay={index * 0.1}>
-          <ProjectCard project={project} />
+          <Link to={`/projects/${project.id}`}>
+            <ProjectCard project={project} />
+          </Link>
         </ScrollReveal>
       ))}
     </div>

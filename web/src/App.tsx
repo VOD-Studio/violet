@@ -18,6 +18,7 @@ import Home from "@/pages/Home";
 import Blog from "@/pages/blog";
 import BlogSlug from "@/pages/blog/slug";
 import Projects from "@/pages/Projects";
+import ProjectDetail from "@/pages/Projects/slug";
 import About from "@/pages/About";
 import Music from "@/pages/Music";
 import Login from "@/pages/Login";
@@ -81,6 +82,7 @@ function App() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogSlug />} />
             <Route path="/projects" element={<Projects />} />
+            <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/music" element={<Music />} />
             <Route path="/about" element={<About />} />
             <Route path="/login" element={<Login />} />
