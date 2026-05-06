@@ -133,6 +133,18 @@
     }
 }
 
+/* Sheet overlay 动画优化 - 避免关闭时闪烁 */
+[data-slot="sheet-overlay"] {
+  animation: none !important;
+  transition: opacity 0.3s ease !important;
+}
+[data-slot="sheet-overlay"][data-open] {
+  opacity: 1;
+}
+[data-slot="sheet-overlay"][data-closed] {
+  opacity: 0;
+}
+
 /* 表情包样式 - Bilibili 风格 */
 .sticker-in-comment {
   display: inline-block;
