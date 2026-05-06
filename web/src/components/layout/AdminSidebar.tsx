@@ -23,6 +23,7 @@ import {
   Shield,
   Settings,
   Home,
+  ScrollText,
 } from "lucide-react";
 
 /** 导航菜单项配置 */
@@ -94,6 +95,11 @@ const navItems: NavItem[] = [
     label: "角色管理",
     icon: <Shield className="size-4" />,
     permission: "role:manage",
+  },
+  {
+    to: "/admin/logs",
+    label: "操作日志",
+    icon: <ScrollText className="size-4" />,
   },
   {
     to: "/admin/settings",
