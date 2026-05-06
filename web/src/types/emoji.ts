@@ -21,6 +21,8 @@ export interface Emoji {
   group_id: number;
   name: string;
   url?: string;
+  gif_url?: string;
+  source_url?: string;
   text_content?: string;
   sort_order: number;
   created_at: string;

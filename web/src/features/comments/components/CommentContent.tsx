@@ -36,12 +36,13 @@ export function CommentContent({ content, className }: CommentContentProps) {
         return match;
       }
 
-      // 使用后端提供的表情 URL
-      if (emojiInfo.url) {
-        const imageUrl = emojiInfo.url.startsWith("/")
-          ? getUploadUrl(emojiInfo.url)
-          : emojiInfo.url;
-        return `<img src="${imageUrl}" alt="${emojiName}" class="inline-block w-5 h-5 align-text-bottom" style="display: inline-block;" />`;
+      // 使用后端提供的表情 URL（优先使用 gif_url）
+      const imageUrl = emojiInfo.gif_url || emojiInfo.url;
+      if (imageUrl) {
+        const fullUrl = imageUrl.startsWith("/")
+          ? getUploadUrl(imageUrl)
+          : imageUrl;
+        return `<img src="${fullUrl}" alt="${emojiName}" class="inline-block w-5 h-5 align-text-bottom" style="display: inline-block;" />`;
       } else {
         // 如果没有 URL，保留原文
         return match;

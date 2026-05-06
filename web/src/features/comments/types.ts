@@ -51,6 +51,7 @@ export interface CommentReaction {
   emoji_id: number;
   emoji_name: string;
   emoji_url?: string;
+  emoji_gif_url?: string;
   text_content?: string;
   count: number;
   user_reacted: boolean;
