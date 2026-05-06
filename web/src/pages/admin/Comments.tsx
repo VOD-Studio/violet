@@ -594,9 +594,9 @@ export default function Comments() {
                   <span className="font-medium truncate max-w-50">
                     {detailComment.post_title ?? "未知文章"}
                   </span>
-                  {detailComment.post_id && (
+                  {detailComment.post_slug && (
                     <a
-                      href={`/posts/${detailComment.post_id}`}
+                      href={`/blog/${detailComment.post_slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline text-sm"

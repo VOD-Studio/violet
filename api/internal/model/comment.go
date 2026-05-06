@@ -95,6 +95,8 @@ type CommentWithPost struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	// PostTitle 文章标题
 	PostTitle string `json:"post_title"`
+	// PostSlug 文章 slug（用于跳转链接）
+	PostSlug string `json:"post_slug"`
 }
 
 // TableName 指定表名

@@ -71,7 +71,7 @@ func (r *commentRepository) GetByIDWithPost(ctx context.Context, id uuid.UUID) (
 			"c.id, c.post_id, c.parent_id, c.path, c.depth, "+
 				"c.author_name, c.author_email, c.author_url, c.avatar_url, "+
 				"c.body, c.pictures, c.status, c.created_at, c.updated_at, "+
-				"p.title as post_title",
+				"p.title as post_title, p.slug as post_slug",
 		).
 		Table("comments c").
 		Joins("LEFT JOIN posts p ON c.post_id = p.id").
@@ -150,7 +150,7 @@ func (r *commentRepository) ListAll(ctx context.Context, status string, limit, o
 			"c.id, c.post_id, c.parent_id, c.path, c.depth, "+
 				"c.author_name, c.author_email, c.author_url, c.avatar_url, "+
 				"c.body, c.pictures, c.status, c.created_at, c.updated_at, "+
-				"p.title as post_title",
+				"p.title as post_title, p.slug as post_slug",
 		).
 		Table("comments c").
 		Joins("LEFT JOIN posts p ON c.post_id = p.id")

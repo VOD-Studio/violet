@@ -36,6 +36,8 @@ export interface ApiComment {
   post_id: string;
   /** 文章标题 */
   post_title?: string;
+  /** 文章 slug（用于跳转链接） */
+  post_slug?: string;
   /** 父评论 ID */
   parent_id?: string;
   /** 评论者昵称 */

@@ -305,6 +305,8 @@ type AdminCommentResponse struct {
 	PostID uuid.UUID `json:"post_id"`
 	// PostTitle 所属文章标题
 	PostTitle string `json:"post_title"`
+	// PostSlug 所属文章 slug（用于跳转链接）
+	PostSlug string `json:"post_slug"`
 	// ParentID 父评论 ID，为空表示顶级评论
 	ParentID *uuid.UUID `json:"parent_id"`
 	// Path 评论路径，用于树形结构排序
@@ -377,6 +379,7 @@ func (s *CommentService) commentWithPostToResponse(ctx context.Context, c *model
 		ID:        c.ID,
 		PostID:    c.PostID,
 		PostTitle: c.PostTitle,
+		PostSlug:  c.PostSlug,
 		ParentID:  c.ParentID,
 		Path:      c.Path,
 		Depth:     c.Depth,
