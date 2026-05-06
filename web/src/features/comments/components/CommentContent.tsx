@@ -41,7 +41,7 @@ export function CommentContent({ content, className }: CommentContentProps) {
         const imageUrl = emojiInfo.url.startsWith("/")
           ? getUploadUrl(emojiInfo.url)
           : emojiInfo.url;
-        return `<img src="${imageUrl}" alt="${emojiName}" class="inline-block w-5 h-5 align-text-bottom mx-0.5" style="display: inline-block;" />`;
+        return `<img src="${imageUrl}" alt="${emojiName}" class="inline-block w-5 h-5 align-text-bottom" style="display: inline-block;" />`;
       } else {
         // 如果没有 URL，保留原文
         return match;

@@ -49,9 +49,9 @@ export function useRichTextInput({
         if (display) {
           // 判断是图片还是文本
           if (display.startsWith("http") || display.startsWith("/")) {
-            html += `<img src="${display}" alt="${emojiName}" data-emoji="${emojiName}" class="inline-block w-5 h-5 align-text-bottom mx-0.5" />`;
+            html += `<img src="${display}" alt="${emojiName}" data-emoji="${emojiName}" class="inline-block w-5 h-5 align-text-bottom" />`;
           } else {
-            html += `<span data-emoji="${emojiName}" class="inline-block mx-0.5">${display}</span>`;
+            html += `<span data-emoji="${emojiName}" class="inline-block">${display}</span>`;
           }
         } else {
           // 表情不存在，保留原文
@@ -128,7 +128,7 @@ export function useRichTextInput({
         // 没有选区，追加到末尾
         const element = createEmojiElement(emojiName, emojiDisplay);
         div.appendChild(element);
-        div.appendChild(document.createTextNode(" "));
+        // div.appendChild(document.createTextNode(" "));
       } else {
         const range = selection.getRangeAt(0);
         range.deleteContents();
@@ -137,7 +137,7 @@ export function useRichTextInput({
         range.insertNode(element);
 
         // 在表情后插入空格
-        const space = document.createTextNode(" ");
+        const space = document.createTextNode("");
         range.setStartAfter(element);
         range.insertNode(space);
 
@@ -167,14 +167,14 @@ export function useRichTextInput({
       img.src = emojiDisplay;
       img.alt = emojiName;
       img.dataset.emoji = emojiName;
-      img.className = "inline-block w-5 h-5 align-text-bottom mx-0.5";
+      img.className = "inline-block w-5 h-5 align-text-bottom";
       img.draggable = false;
       return img;
     } else {
       const span = document.createElement("span");
       span.textContent = emojiDisplay;
       span.dataset.emoji = emojiName;
-      span.className = "inline-block mx-0.5";
+      span.className = "inline-block";
       return span;
     }
   }

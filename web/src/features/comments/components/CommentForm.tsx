@@ -102,7 +102,10 @@ export function CommentForm({
           author_name: authorName.trim(),
           author_email: authorEmail.trim() || undefined,
           parent_id: parentId,
-          picture_ids: uploadedImages.length > 0 ? uploadedImages.map((img) => img.fileId) : undefined,
+          picture_ids:
+            uploadedImages.length > 0
+              ? uploadedImages.map((img) => img.fileId)
+              : undefined,
         });
 
         // 提交成功，清空输入
@@ -124,7 +127,15 @@ export function CommentForm({
         }
       }
     },
-    [content, authorName, authorEmail, parentId, uploadedImages, submitMutation, onSuccess]
+    [
+      content,
+      authorName,
+      authorEmail,
+      parentId,
+      uploadedImages,
+      submitMutation,
+      onSuccess,
+    ]
   );
 
   /**
