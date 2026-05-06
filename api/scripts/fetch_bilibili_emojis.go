@@ -12,6 +12,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/viper"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -23,13 +24,16 @@ type BilibiliResponse struct {
 }
 
 type Data struct {
-	Packages []Package `json:"packages"`
+	Packages          []Package `json:"packages"`           // 用户 API
+	UserPanelPackages []Package `json:"user_panel_packages"` // 官方 API
 }
 
 type Package struct {
-	ID     int     `json:"id"`
-	Text   string  `json:"text"`
-	Emote  []Emote `json:"emote"`
+	ID    int     `json:"id"`
+	Text  string  `json:"text"`
+	URL   string  `json:"url"`  // 表情包封面图（可选）
+	Emote []Emote `json:"emote"`
+	Type  int     `json:"type"` // 13=收藏特殊包，1=普通表情包
 }
 
 type Emote struct {
@@ -46,13 +50,26 @@ type ImportResult struct {
 	EmojisUpdated int
 }
 
-const bilibiliAPIURL = "https://api.bilibili.com/x/emote/setting/panel?business=reply"
+// Bilibili API URL 配置
+const (
+	bilibiliUserAPIURL   = "https://api.bilibili.com/x/emote/user/panel/web?business=reply&web_location=333.1369"
+	bilibiliOfficialAPIURL = "https://api.bilibili.com/x/emote/setting/panel?business=reply"
+)
 
 func main() {
 	dryRun := flag.Bool("dry-run", false, "只输出数据不写入数据库")
 	dbURL := flag.String("db", "", "数据库连接URL")
-	cookie := flag.String("cookie", "", "B站登录Cookie")
+	cookie := flag.String("cookie", "", "B站登录Cookie (用户收藏表情需要登录)")
+	apiType := flag.String("api", "", "API类型: user(用户收藏) 或 official(官方)，默认从 config.yaml 读取")
 	flag.Parse()
+
+	// 加载配置文件
+	v := viper.New()
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+	v.AddConfigPath(".")
+	v.AddConfigPath("./api")
+	_ = v.ReadInConfig()
 
 	// 获取数据库连接URL
 	databaseURL := *dbURL
@@ -60,18 +77,66 @@ func main() {
 		databaseURL = os.Getenv("DATABASE_URL")
 	}
 	if databaseURL == "" {
+		// 从配置文件读取
+		databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+			v.GetString("database.user"),
+			v.GetString("database.password"),
+			v.GetString("database.host"),
+			v.GetInt("database.port"),
+			v.GetString("database.name"),
+			v.GetString("database.sslmode"))
+	}
+	if databaseURL == "" {
 		databaseURL = "postgres://blog:blog123@localhost:5432/blog?sslmode=disable"
 	}
 
-	// 获取 Cookie
+	// 获取 Cookie（优先命令行参数，其次配置文件）
 	bilibiliCookie := *cookie
 	if bilibiliCookie == "" {
 		bilibiliCookie = os.Getenv("BILIBILI_COOKIE")
 	}
+	if bilibiliCookie == "" {
+		// 从配置文件拼接 Cookie
+		sessdata := v.GetString("bilibili_sessdata")
+		biliJct := v.GetString("bilibili_bili_jct")
+		dedeUserID := v.GetString("bilibili_dedeuserid")
+		if sessdata != "" {
+			bilibiliCookie = "SESSDATA=" + sessdata
+			if biliJct != "" {
+				bilibiliCookie += "; bili_jct=" + biliJct
+			}
+			if dedeUserID != "" {
+				bilibiliCookie += "; DedeUserID=" + dedeUserID
+			}
+		}
+	}
+
+	// 获取 API 类型（优先命令行参数，其次配置文件）
+	apiTypeValue := *apiType
+	if apiTypeValue == "" {
+		apiTypeValue = v.GetString("bilibili_api_type")
+	}
+	if apiTypeValue == "" {
+		apiTypeValue = "user"
+	}
+
+	// 选择 API URL
+	var apiURL string
+	switch apiTypeValue {
+	case "user":
+		apiURL = bilibiliUserAPIURL
+		log.Println("使用用户收藏表情 API")
+	case "official":
+		apiURL = bilibiliOfficialAPIURL
+		log.Println("使用官方表情 API")
+	default:
+		apiURL = bilibiliUserAPIURL
+		log.Printf("未知 API 类型 '%s', 使用用户收藏表情 API", apiTypeValue)
+	}
 
 	// 获取 B站表情数据
 	log.Println("正在获取 B站表情数据...")
-	packages, err := fetchBilibiliEmojis(bilibiliCookie)
+	packages, err := fetchBilibiliEmojis(apiURL, bilibiliCookie)
 	if err != nil {
 		log.Fatalf("获取失败: %v", err)
 	}
@@ -109,10 +174,10 @@ func main() {
 	log.Printf("  表情: 创建 %d, 更新 %d", result.EmojisCreated, result.EmojisUpdated)
 }
 
-func fetchBilibiliEmojis(cookie string) ([]Package, error) {
+func fetchBilibiliEmojis(apiURL, cookie string) ([]Package, error) {
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	req, err := http.NewRequest("GET", bilibiliAPIURL, nil)
+	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -143,17 +208,48 @@ func fetchBilibiliEmojis(cookie string) ([]Package, error) {
 		return nil, fmt.Errorf("API错误: code=%d", bilibiliResp.Code)
 	}
 
-	return bilibiliResp.Data.Packages, nil
+	// 兼容两种 API 的数据结构
+	// 用户 API: data.packages
+	// 官方 API: data.user_panel_packages
+	packages := bilibiliResp.Data.Packages
+	if len(packages) == 0 && len(bilibiliResp.Data.UserPanelPackages) > 0 {
+		packages = bilibiliResp.Data.UserPanelPackages
+	}
+
+	// 过滤掉特殊包（type=13 是收藏包，没有实际表情）
+	var validPackages []Package
+	for _, pkg := range packages {
+		if pkg.Type == 13 || len(pkg.Emote) == 0 {
+			continue
+		}
+		validPackages = append(validPackages, pkg)
+	}
+
+	return validPackages, nil
 }
 
 func printPackages(packages []Package) {
 	for _, pkg := range packages {
 		fmt.Printf("\n分组: %s (%d 个表情)\n", pkg.Text, len(pkg.Emote))
 		for i, e := range pkg.Emote {
-			if i < 3 {
-				fmt.Printf("  %s: %s\n", e.Text, e.URL)
+			if i < 5 {
+				fmt.Printf("  %s:\n", e.Text)
+				fmt.Printf("    静态: %s\n", e.URL)
+				if e.GifURL != "" {
+					fmt.Printf("    动图: %s\n", e.GifURL)
+				} else {
+					fmt.Printf("    动图: (无)\n")
+				}
 			}
 		}
+		// 统计有动图的数量
+		gifCount := 0
+		for _, e := range pkg.Emote {
+			if e.GifURL != "" {
+				gifCount++
+			}
+		}
+		fmt.Printf("  该分组有动图的表情数: %d/%d\n", gifCount, len(pkg.Emote))
 	}
 }
 
