@@ -131,3 +131,17 @@ export function useBatchDeleteComments() {
     },
   });
 }
+
+/**
+ * 获取评论详情
+ */
+export function useCommentDetail(id: string | null) {
+  return useQuery({
+    queryKey: commentKeys.detail(id ?? ""),
+    queryFn: async (): Promise<ApiComment> => {
+      const res = await api.get<ApiComment>(`/admin/comments/${id}`);
+      return res;
+    },
+    enabled: !!id,
+  });
+}

@@ -512,3 +512,30 @@ func (h *CommentHandler) BatchUpdateCommentStatus(w http.ResponseWriter, r *http
 		"affected_count": affected,
 	})
 }
+
+// GetCommentDetail 获取评论详情
+// GET /api/v1/admin/comments/{id}
+// 需要管理员认证
+func (h *CommentHandler) GetCommentDetail(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "GetCommentDetail").Msg("处理请求")
+
+	// 从 URL 路径解析评论 ID
+	commentIDStr := chi.URLParam(r, "id")
+	commentID, err := uuid.Parse(commentIDStr)
+	if err != nil {
+		log.Warn().Err(err).Str("comment_id", commentIDStr).Msg("参数验证失败")
+		response.Error(w, http.StatusBadRequest, "invalid_id", "无效的评论 ID")
+		return
+	}
+
+	// 调用服务层获取评论详情
+	comment, err := h.commentService.GetCommentDetail(r.Context(), commentID)
+	if err != nil {
+		log.Error().Err(err).Str("operation", "GetCommentDetail").Str("comment_id", commentID.String()).Msg("服务调用失败")
+		handleCommentError(w, err)
+		return
+	}
+
+	log.Info().Int("status", http.StatusOK).Str("comment_id", commentID.String()).Msg("请求处理成功")
+	response.Success(w, comment)
+}

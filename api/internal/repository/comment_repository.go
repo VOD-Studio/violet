@@ -18,6 +18,8 @@ type CommentRepository interface {
 	Create(ctx context.Context, comment *model.Comment) error
 	// GetByID 根据 ID 查询评论
 	GetByID(ctx context.Context, id uuid.UUID) (*model.Comment, error)
+	// GetByIDWithPost 根据 ID 查询评论（包含文章标题）
+	GetByIDWithPost(ctx context.Context, id uuid.UUID) (*model.CommentWithPost, error)
 	// ListByPostID 查询文章的评论列表，可按状态过滤
 	ListByPostID(ctx context.Context, postID uuid.UUID, status string) ([]*model.Comment, error)
 	// ListPending 查询待审核评论列表（分页）
@@ -59,6 +61,26 @@ func (r *commentRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.C
 		return nil, err
 	}
 	return &comment, nil
+}
+
+// GetByIDWithPost 根据 ID 查询评论（包含文章标题）
+func (r *commentRepository) GetByIDWithPost(ctx context.Context, id uuid.UUID) (*model.CommentWithPost, error) {
+	var result model.CommentWithPost
+	err := r.db.WithContext(ctx).
+		Select(
+			"c.id, c.post_id, c.parent_id, c.path, c.depth, "+
+				"c.author_name, c.author_email, c.author_url, c.avatar_url, "+
+				"c.body, c.pictures, c.status, c.created_at, c.updated_at, "+
+				"p.title as post_title",
+		).
+		Table("comments c").
+		Joins("LEFT JOIN posts p ON c.post_id = p.id").
+		Where("c.id = ?", id).
+		Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 // ListByPostID 查询文章的评论列表，按 path 排序（树形结构）

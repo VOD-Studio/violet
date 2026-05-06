@@ -10,6 +10,7 @@ import {
   useAdminCommentActions,
   useBatchUpdateStatus,
   useBatchDeleteComments,
+  useCommentDetail,
 } from "@/features/admin/comments/api";
 import type { ApiComment, CommentStatusFilter } from "@/features/admin/comments/types";
 import {
@@ -30,9 +31,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorFallback } from "@/components/shared/ErrorFallback";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { CommentContent } from "@/features/comments";
 import {
   MoreHorizontal,
   MessageSquare,
@@ -41,6 +50,12 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
+  ExternalLink,
+  Eye,
+  User,
+  Mail,
+  Globe,
+  Clock,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -150,6 +165,10 @@ export default function Comments() {
     id: string;
     isBatch: boolean;
   }>({ open: false, id: "", isBatch: false });
+
+  // 评论详情抽屉状态
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const { data: detailComment, isLoading: detailLoading } = useCommentDetail(detailId);
 
   const comments = data?.comments ?? [];
   const isActing =
@@ -426,6 +445,12 @@ export default function Comments() {
                           <MoreHorizontal className="size-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setDetailId(comment.id)}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            查看详情
+                          </DropdownMenuItem>
                           {comment.status !== "approved" && (
                             <DropdownMenuItem
                               onClick={() => handleApprove(comment.id)}
@@ -479,6 +504,160 @@ export default function Comments() {
         confirmLabel="删除"
         destructive
       />
+
+      {/* 评论详情抽屉 */}
+      <Sheet open={!!detailId} onOpenChange={(open) => !open && setDetailId(null)}>
+        <SheetContent side="right" className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>评论详情</SheetTitle>
+            <SheetDescription>查看评论的完整信息</SheetDescription>
+          </SheetHeader>
+
+          {detailLoading && (
+            <div className="space-y-4 p-6">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          )}
+
+          {detailComment && (
+            <div className="flex-1 space-y-6 p-6">
+              {/* 作者信息 */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-muted-foreground">作者信息</h3>
+                <div className="flex items-start gap-3">
+                  {detailComment.avatar_url ? (
+                    <img
+                      src={detailComment.avatar_url}
+                      alt={detailComment.author_name}
+                      className="size-12 rounded-full"
+                    />
+                  ) : (
+                    <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                      <User className="size-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-1">
+                    <p className="font-medium">{detailComment.author_name}</p>
+                    {detailComment.author_email && (
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Mail className="size-3.5" />
+                        <span>{detailComment.author_email}</span>
+                      </div>
+                    )}
+                    {detailComment.author_url && (
+                      <a
+                        href={detailComment.author_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-sm text-primary hover:underline"
+                      >
+                        <Globe className="size-3.5" />
+                        <span className="truncate">{detailComment.author_url}</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 评论内容 */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-muted-foreground">评论内容</h3>
+                <div className="rounded-lg border p-4">
+                  {detailComment.content ? (
+                    <CommentContent
+                      content={detailComment.content}
+                      className="whitespace-pre-wrap break-words text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">无内容</p>
+                  )}
+                </div>
+              </div>
+
+              {/* 所属文章 */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-muted-foreground">所属文章</h3>
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <span className="font-medium">
+                    {detailComment.post_title ?? "未知文章"}
+                  </span>
+                  {detailComment.post_id && (
+                    <a
+                      href={`/posts/${detailComment.post_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-sm text-primary hover:underline"
+                    >
+                      查看
+                      <ExternalLink className="size-3.5" />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* 状态和时间 */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-muted-foreground">状态信息</h3>
+                <div className="flex items-center gap-4 rounded-lg border p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">状态：</span>
+                    <Badge variant={getStatusBadge(detailComment.status).variant}>
+                      {getStatusBadge(detailComment.status).label}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="size-3.5" />
+                    <span>{formatDateTime(detailComment.created_at)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="flex gap-2 pt-4">
+                {detailComment.status !== "approved" && (
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      handleApprove(detailComment.id);
+                      setDetailId(null);
+                    }}
+                    disabled={isActing}
+                  >
+                    <CheckCircle className="mr-1.5 h-4 w-4" />
+                    批准
+                  </Button>
+                )}
+                {detailComment.status !== "spam" && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      handleMarkSpam(detailComment.id);
+                      setDetailId(null);
+                    }}
+                    disabled={isActing}
+                  >
+                    <XCircle className="mr-1.5 h-4 w-4" />
+                    标记垃圾
+                  </Button>
+                )}
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setDetailId(null);
+                    handleDelete(detailComment.id);
+                  }}
+                  disabled={isActing}
+                >
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  删除
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

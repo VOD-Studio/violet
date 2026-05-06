@@ -430,6 +430,15 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID uuid.UUID)
 	return s.repo.Delete(ctx, commentID)
 }
 
+// GetCommentDetail 获取评论详情（管理后台使用）
+func (s *CommentService) GetCommentDetail(ctx context.Context, commentID uuid.UUID) (*AdminCommentResponse, error) {
+	result, err := s.repo.GetByIDWithPost(ctx, commentID)
+	if err != nil {
+		return nil, ErrCommentNotFound
+	}
+	return s.commentWithPostToResponse(ctx, result), nil
+}
+
 // commentToResponse 将数据库模型转换为 API 响应结构
 func (s *CommentService) commentToResponse(ctx context.Context, c *model.Comment) *CommentResponse {
 	// 解析图片

@@ -306,6 +306,7 @@ func main() {
 			r.Get("/comments/pending", commentHandler.ListPendingComments)        // 待审核评论列表
 			r.Get("/comments/pending/count", commentHandler.CountPendingComments) // 待审核评论数量
 			r.Get("/comments", commentHandler.ListAllComments)                   // 所有评论列表（支持状态筛选）
+			r.Get("/comments/{id}", commentHandler.GetCommentDetail)             // 评论详情
 			r.Patch("/comments/batch-status", commentHandler.BatchUpdateCommentStatus) // 批量更新评论状态
 
 			// 音乐管理
