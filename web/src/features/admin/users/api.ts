@@ -4,20 +4,30 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { userKeys } from "./queryKeys";
-import type { AdminUser } from "./types";
+import type { UserListParams, UserListResponse } from "./types";
 
 /**
- * 获取用户列表
- * API 返回 { users: [...], total, page, limit } 格式
+ * 获取用户列表（支持搜索和筛选）
+ * API 返回 UserListResponse 格式
  */
-export function useAdminUsers() {
+export function useAdminUsers(params: UserListParams = {}) {
   return useQuery({
-    queryKey: userKeys.list(),
-    queryFn: async () => {
-      const res = await api.get<{ users: AdminUser[] }>("/admin/users");
-      return res.users ?? [];
+    queryKey: userKeys.list(params),
+    queryFn: async (): Promise<UserListResponse> => {
+      const queryParams = new URLSearchParams();
+      if (params.search) queryParams.set("search", params.search);
+      if (params.role) queryParams.set("role", params.role);
+      if (params.status) queryParams.set("status", params.status);
+      if (params.page) queryParams.set("page", String(params.page));
+      if (params.limit) queryParams.set("limit", String(params.limit));
+
+      const queryString = queryParams.toString();
+      const url = queryString ? `/admin/users?${queryString}` : "/admin/users";
+
+      const res = await api.get<UserListResponse>(url);
+      return res;
     },
-    placeholderData: [],
+    placeholderData: { users: [], total: 0, page: 1, limit: 20 },
   });
 }
 
@@ -45,6 +55,21 @@ export function useToggleUserStatus() {
   return useMutation({
     mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
       api.patch(`/admin/users/${id}/status`, { is_active }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}
+
+/**
+ * 批量更新用户状态的 mutation
+ */
+export function useBatchUpdateUserStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ user_ids, is_active }: { user_ids: string[]; is_active: boolean }) =>
+      api.post(`/admin/users/batch-status`, { user_ids, is_active }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.all });
     },

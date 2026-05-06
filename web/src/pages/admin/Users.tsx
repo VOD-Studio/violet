@@ -85,9 +85,12 @@ function UsersTableSkeleton() {
  * 从 API 获取用户数据，提供角色修改和状态切换功能
  */
 export default function Users() {
-  const { data: users, isLoading, error, refetch } = useAdminUsers();
+  const { data: response, isLoading, error, refetch } = useAdminUsers();
   const updateRole = useUpdateUserRole();
   const toggleStatus = useToggleUserStatus();
+
+  const users = response?.users ?? [];
+
 
   /** 确认弹窗状态 */
   const [confirmState, setConfirmState] = useState<{
@@ -151,7 +154,7 @@ export default function Users() {
       {error && <ErrorFallback error={error.message} onRetry={refetch} />}
 
       {/* 空数据状态 */}
-      {!isLoading && !error && (!users || users.length === 0) && (
+      {!isLoading && !error && (!response || users.length === 0) && (
         <EmptyState
           title="暂无用户数据"
           description="当前没有注册用户，或用户管理 API 尚未开放"
@@ -160,7 +163,7 @@ export default function Users() {
       )}
 
       {/* 用户列表表格 */}
-      {!isLoading && !error && users && users.length > 0 && (
+      {!isLoading && !error && response && users.length > 0 && (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>

@@ -19,6 +19,8 @@ var (
 	ErrInvalidRole = errors.New("无效的用户角色")
 	// ErrCannotModifySelf 不能修改自己的角色
 	ErrCannotModifySelf = errors.New("不能修改自己的角色")
+	// ErrEmptyUserIDs 空的用户 ID 列表
+	ErrEmptyUserIDs = errors.New("用户 ID 列表不能为空")
 )
 
 // 合法的用户角色列表
@@ -50,10 +52,22 @@ type ListUsersResult struct {
 	Limit int
 }
 
-// ListUsers 分页查询用户列表
-func (s *UserService) ListUsers(ctx context.Context, page, limit int) (*ListUsersResult, error) {
+// UserFilterParams 用户筛选参数
+type UserFilterParams struct {
+	// Search 搜索关键词（匹配用户名或邮箱）
+	Search string
+	// Role 角色筛选
+	Role string
+	// IsActive 状态筛选（true=启用，false=禁用，空=全部）
+	IsActive *bool
+}
+
+// ListUsers 分页查询用户列表（支持搜索和筛选）
+func (s *UserService) ListUsers(ctx context.Context, page, limit int, filters UserFilterParams) (*ListUsersResult, error) {
 	log.Info().Str("service", "UserService").Str("operation", "ListUsers").
-		Int("page", page).Int("limit", limit).Msg("查询用户列表")
+		Int("page", page).Int("limit", limit).
+		Str("search", filters.Search).Str("role", filters.Role).
+		Msg("查询用户列表")
 
 	if page < 1 {
 		page = 1
@@ -63,18 +77,42 @@ func (s *UserService) ListUsers(ctx context.Context, page, limit int) (*ListUser
 	}
 	offset := (page - 1) * limit
 
-	log.Debug().Str("query", "ListUsers").Msg("执行数据库查询")
-	users, err := s.queries.ListUsers(ctx, generated.ListUsersParams{
+	// 构建查询参数
+	params := generated.ListUsersParams{
 		Limit:  int32(limit),
 		Offset: int32(offset),
-	})
+	}
+	if filters.Search != "" {
+		params.Search = sql.NullString{String: filters.Search, Valid: true}
+	}
+	if filters.Role != "" {
+		params.Role = sql.NullString{String: filters.Role, Valid: true}
+	}
+	if filters.IsActive != nil {
+		params.IsActive = sql.NullBool{Bool: *filters.IsActive, Valid: true}
+	}
+
+	log.Debug().Str("query", "ListUsers").Msg("执行数据库查询")
+	users, err := s.queries.ListUsers(ctx, params)
 	if err != nil {
 		log.Error().Err(err).Msg("查询用户列表失败")
 		return nil, fmt.Errorf("查询用户列表失败: %w", err)
 	}
 
-	log.Debug().Str("query", "CountUsers").Msg("统计用户总数")
-	total, err := s.queries.CountUsers(ctx)
+	// 构建统计参数
+	countParams := generated.CountUsersWithFiltersParams{}
+	if filters.Search != "" {
+		countParams.Search = sql.NullString{String: filters.Search, Valid: true}
+	}
+	if filters.Role != "" {
+		countParams.Role = sql.NullString{String: filters.Role, Valid: true}
+	}
+	if filters.IsActive != nil {
+		countParams.IsActive = sql.NullBool{Bool: *filters.IsActive, Valid: true}
+	}
+
+	log.Debug().Str("query", "CountUsersWithFilters").Msg("统计用户总数")
+	total, err := s.queries.CountUsersWithFilters(ctx, countParams)
 	if err != nil {
 		log.Error().Err(err).Msg("统计用户数失败")
 		return nil, fmt.Errorf("统计用户数失败: %w", err)
@@ -87,6 +125,37 @@ func (s *UserService) ListUsers(ctx context.Context, page, limit int) (*ListUser
 		Page:  page,
 		Limit: limit,
 	}, nil
+}
+
+// BatchUpdateUserStatus 批量更新用户启用/禁用状态
+func (s *UserService) BatchUpdateUserStatus(ctx context.Context, userIDs []uuid.UUID, isActive bool) ([]*generated.User, error) {
+	log.Info().Str("service", "UserService").Str("operation", "BatchUpdateUserStatus").
+		Int("count", len(userIDs)).Bool("is_active", isActive).Msg("批量更新用户状态")
+
+	if len(userIDs) == 0 {
+		log.Warn().Msg("用户 ID 列表为空")
+		return nil, ErrEmptyUserIDs
+	}
+
+	// 执行批量更新
+	err := s.queries.BatchUpdateUserStatus(ctx, generated.BatchUpdateUserStatusParams{
+		Column1:  userIDs,
+		IsActive: isActive,
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("批量更新用户状态失败")
+		return nil, fmt.Errorf("批量更新用户状态失败: %w", err)
+	}
+
+	// 获取更新后的用户列表
+	users, err := s.queries.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		log.Error().Err(err).Msg("获取更新后的用户列表失败")
+		return nil, fmt.Errorf("获取更新后的用户列表失败: %w", err)
+	}
+
+	log.Info().Int("count", len(users)).Bool("is_active", isActive).Msg("批量更新用户状态成功")
+	return users, nil
 }
 
 // UpdateUserRole 更新用户角色

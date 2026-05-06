@@ -40,14 +40,34 @@ type userResponse struct {
 
 // ListUsers 获取用户列表
 // GET /api/v1/admin/users
-// 需要管理员认证，支持分页查询
+// 需要管理员认证，支持分页查询和筛选
 func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "ListUsers").Msg("处理请求")
 
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	search := r.URL.Query().Get("search")
+	role := r.URL.Query().Get("role")
+	statusStr := r.URL.Query().Get("status")
 
-	result, err := h.userService.ListUsers(r.Context(), page, limit)
+	// 解析状态筛选
+	var isActive *bool
+	if statusStr != "" {
+		switch statusStr {
+		case "active":
+			isActive = &[]bool{true}[0]
+		case "inactive":
+			isActive = &[]bool{false}[0]
+		}
+	}
+
+	filters := service.UserFilterParams{
+		Search:   search,
+		Role:     role,
+		IsActive: isActive,
+	}
+
+	result, err := h.userService.ListUsers(r.Context(), page, limit, filters)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListUsers").Msg("服务调用失败")
 		response.InternalServerError(w, "查询用户列表失败")
@@ -74,6 +94,68 @@ func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request
 		"limit": result.Limit,
 	})
 	log.Info().Int("status", http.StatusOK).Int64("total", result.Total).Msg("请求处理成功")
+}
+
+// BatchUpdateUserStatus 批量启用/禁用用户
+// POST /api/v1/admin/users/batch-status
+// 需要管理员认证
+func (h *UserManagementHandler) BatchUpdateUserStatus(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "BatchUpdateUserStatus").Msg("处理请求")
+
+	var req struct {
+		UserIDs  []string `json:"user_ids" validate:"required,min=1"`
+		IsActive bool     `json:"is_active"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Warn().Err(err).Msg("参数验证失败")
+		response.BadRequest(w, err.Error())
+		return
+	}
+
+	if len(req.UserIDs) == 0 {
+		log.Warn().Msg("用户 ID 列表为空")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "用户 ID 列表不能为空")
+		return
+	}
+
+	// 解析 UUID
+	userIDs := make([]uuid.UUID, 0, len(req.UserIDs))
+	for _, idStr := range req.UserIDs {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			log.Warn().Err(err).Str("id", idStr).Msg("无效的用户 ID")
+			response.Error(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID: "+idStr)
+			return
+		}
+		userIDs = append(userIDs, id)
+	}
+
+	users, err := h.userService.BatchUpdateUserStatus(r.Context(), userIDs, req.IsActive)
+	if err != nil {
+		log.Error().Err(err).Str("operation", "BatchUpdateUserStatus").Msg("服务调用失败")
+		handleUserServiceError(w, err)
+		return
+	}
+
+	items := make([]userResponse, 0, len(users))
+	for _, u := range users {
+		items = append(items, userResponse{
+			ID:            u.ID.String(),
+			Username:      u.Username,
+			Email:         u.Email,
+			Role:          u.Role,
+			IsActive:      u.IsActive,
+			EmailVerified: u.EmailVerified,
+			CreatedAt:     u.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		})
+	}
+
+	response.Success(w, map[string]interface{}{
+		"users":     items,
+		"count":     len(items),
+		"is_active": req.IsActive,
+	})
+	log.Info().Int("status", http.StatusOK).Int("count", len(items)).Bool("is_active", req.IsActive).Msg("请求处理成功")
 }
 
 // UpdateUserRole 修改用户角色
@@ -173,6 +255,8 @@ func handleUserServiceError(w http.ResponseWriter, err error) {
 		response.Error(w, http.StatusNotFound, "user_not_found", "用户不存在")
 	case errors.Is(err, service.ErrInvalidRole):
 		response.Error(w, http.StatusBadRequest, "invalid_role", err.Error())
+	case errors.Is(err, service.ErrEmptyUserIDs):
+		response.Error(w, http.StatusBadRequest, "invalid_param", err.Error())
 	default:
 		response.InternalServerError(w, "服务器内部错误")
 	}

@@ -149,7 +149,7 @@ func main() {
 	projectHandler := handler.NewProjectHandler(projectService)
 	emojiHandler := handler.NewEmojiHandler(emojiService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
-	roleHandler := handler.NewRoleHandler(roleService)
+	roleHandler := handler.NewRoleHandler(roleService, permissionService)
 	auditHandler := handler.NewAuditHandler(auditService)
 	announcementHandler := handler.NewAnnouncementHandler(announcementService)
 
@@ -313,18 +313,22 @@ func main() {
 			r.Get("/users", userMgmtHandler.ListUsers)                      // 用户列表
 			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)     // 修改用户角色
 			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus) // 启用/禁用用户
+			r.Post("/users/batch-status", userMgmtHandler.BatchUpdateUserStatus) // 批量启用/禁用用户
+
+			// 权限管理
+			r.Get("/permissions", roleHandler.GetAllPermissions) // 获取所有权限定义
 
 			// 角色管理
-			r.Get("/roles", roleHandler.ListRoles)                               // 角色列表
-			r.Post("/roles", roleHandler.CreateRole)                             // 创建角色
-			r.Patch("/roles/{id}", roleHandler.UpdateRole)                       // 更新角色
-			r.Delete("/roles/{id}", roleHandler.DeleteRole)                      // 删除角色
-			r.Get("/roles/{id}/permissions", roleHandler.GetRolePermissions)     // 获取角色权限
+			r.Get("/roles", roleHandler.ListRoles)                                // 角色列表
+			r.Post("/roles", roleHandler.CreateRole)                              // 创建角色
+			r.Patch("/roles/{id}", roleHandler.UpdateRole)                        // 更新角色
+			r.Delete("/roles/{id}", roleHandler.DeleteRole)                       // 删除角色
+			r.Get("/roles/{id}/permissions", roleHandler.GetRolePermissions)      // 获取角色权限
 			r.Patch("/roles/{id}/permissions", roleHandler.UpdateRolePermissions) // 设置角色权限
 
 			// 操作日志
-			r.Get("/logs", auditHandler.ListLogs)                    // 操作日志列表
-			r.Get("/logs/user/{id}", auditHandler.ListLogsByUser)    // 用户操作日志
+			r.Get("/logs", auditHandler.ListLogs)                 // 操作日志列表
+			r.Get("/logs/user/{id}", auditHandler.ListLogsByUser) // 用户操作日志
 
 			// 公告管理
 			r.Get("/announcements", announcementHandler.ListAllAnnouncements)       // 公告列表
@@ -332,10 +336,10 @@ func main() {
 			r.Patch("/announcements/{id}", announcementHandler.UpdateAnnouncement)  // 更新公告
 			r.Delete("/announcements/{id}", announcementHandler.DeleteAnnouncement) // 删除公告
 
-			r.Get("/comments/pending", commentHandler.ListPendingComments)        // 待审核评论列表
-			r.Get("/comments/pending/count", commentHandler.CountPendingComments) // 待审核评论数量
-			r.Get("/comments", commentHandler.ListAllComments)                   // 所有评论列表（支持状态筛选）
-			r.Get("/comments/{id}", commentHandler.GetCommentDetail)             // 评论详情
+			r.Get("/comments/pending", commentHandler.ListPendingComments)             // 待审核评论列表
+			r.Get("/comments/pending/count", commentHandler.CountPendingComments)      // 待审核评论数量
+			r.Get("/comments", commentHandler.ListAllComments)                         // 所有评论列表（支持状态筛选）
+			r.Get("/comments/{id}", commentHandler.GetCommentDetail)                   // 评论详情
 			r.Patch("/comments/batch-status", commentHandler.BatchUpdateCommentStatus) // 批量更新评论状态
 
 			// 音乐管理

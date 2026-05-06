@@ -16,13 +16,15 @@ import (
 
 // RoleHandler 角色管理接口处理器
 type RoleHandler struct {
-	roleService *service.RoleService
+	roleService       *service.RoleService
+	permissionService *service.PermissionService
 }
 
 // NewRoleHandler 创建角色管理处理器实例
-func NewRoleHandler(roleService *service.RoleService) *RoleHandler {
+func NewRoleHandler(roleService *service.RoleService, permissionService *service.PermissionService) *RoleHandler {
 	return &RoleHandler{
-		roleService: roleService,
+		roleService:       roleService,
+		permissionService: permissionService,
 	}
 }
 
@@ -36,11 +38,11 @@ type roleListResponse struct {
 
 // roleDetailResponse 角色及其权限信息响应
 type roleDetailResponse struct {
-	ID          int32                       `json:"id"`
-	Name        string                      `json:"name"`
-	Description string                      `json:"description"`
-	CreatedAt   string                      `json:"created_at"`
-	Permissions []service.PermissionInfo    `json:"permissions"`
+	ID          int32                    `json:"id"`
+	Name        string                   `json:"name"`
+	Description string                   `json:"description"`
+	CreatedAt   string                   `json:"created_at"`
+	Permissions []service.PermissionInfo `json:"permissions"`
 }
 
 // ListRoles 获取角色列表
@@ -69,6 +71,19 @@ func (h *RoleHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
 		"roles": items,
 	})
 	log.Info().Int("status", http.StatusOK).Int("count", len(items)).Msg("请求处理成功")
+}
+
+// GetAllPermissions 获取所有权限定义
+// GET /api/v1/admin/permissions
+func (h *RoleHandler) GetAllPermissions(w http.ResponseWriter, r *http.Request) {
+	log.Info().Str("handler", "GetAllPermissions").Msg("处理请求")
+
+	permissions := h.roleService.GetAllPermissions()
+
+	response.Success(w, map[string]interface{}{
+		"permissions": permissions,
+	})
+	log.Info().Int("status", http.StatusOK).Int("count", len(permissions)).Msg("请求处理成功")
 }
 
 // CreateRole 创建角色

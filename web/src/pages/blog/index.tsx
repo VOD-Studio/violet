@@ -9,24 +9,26 @@ import { SearchBar } from "./components/SearchBar";
 import { PostGrid } from "./components/PostGrid";
 import { Pagination } from "./components/Pagination";
 import { usePosts } from "@/hooks/usePosts";
-
-const PAGE_SIZE = 6;
+import { useSiteSettings } from "@/components/shared/SettingsProvider";
 
 export default function BlogList() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  const settings = useSiteSettings();
+  const pageSize = settings.posts_per_page || 10;
+
   const { data: tags, isLoading: tagsLoading } = useTags();
   const { data } = usePosts({
     page: currentPage,
-    limit: PAGE_SIZE,
+    limit: pageSize,
     tag: selectedTag ?? undefined,
     search: search || undefined,
   });
 
   const total = data?.total ?? 0;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = Math.ceil(total / pageSize);
 
   function handleTagChange(tag: string | null) {
     setSelectedTag(tag);

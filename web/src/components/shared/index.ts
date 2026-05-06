@@ -12,5 +12,6 @@ export { Pagination } from "./Pagination";
 export { PermissionGuard } from "./PermissionGuard";
 export { RequirePermission } from "./RequirePermission";
 export { SEO } from "./SEO";
+export { SettingsProvider, useSiteSettings } from "./SettingsProvider";
 export { StructuredData } from "./StructuredData";
 export { ToastProvider, useToast } from "./Toast";

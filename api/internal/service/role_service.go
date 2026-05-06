@@ -26,8 +26,8 @@ var (
 
 // RoleService 角色管理业务服务
 type RoleService struct {
-	queries            *generated.Queries
-	permissionService  *PermissionService
+	queries           *generated.Queries
+	permissionService *PermissionService
 }
 
 // NewRoleService 创建角色管理服务实例
@@ -40,10 +40,10 @@ func NewRoleService(queries *generated.Queries, permissionService *PermissionSer
 
 // RoleWithPermissions 角色及其权限信息
 type RoleWithPermissions struct {
-	ID          int32    `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	CreatedAt   string   `json:"created_at"`
+	ID          int32            `json:"id"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	CreatedAt   string           `json:"created_at"`
 	Permissions []PermissionInfo `json:"permissions"`
 }
 
@@ -216,6 +216,23 @@ func (s *RoleService) GetRoleWithPermissions(ctx context.Context, id int32) (*Ro
 
 	log.Info().Int32("role_id", id).Int("permission_count", len(result.Permissions)).Msg("角色详情查询成功")
 	return result, nil
+}
+
+// GetAllPermissions 获取所有权限定义
+func (s *RoleService) GetAllPermissions() []PermissionInfo {
+	log.Info().Str("service", "RoleService").Str("operation", "GetAllPermissions").Msg("获取所有权限定义")
+
+	allPerms := s.permissionService.GetAllPermissions()
+	result := make([]PermissionInfo, 0, len(allPerms))
+	for code, name := range allPerms {
+		result = append(result, PermissionInfo{
+			Code: code,
+			Name: name,
+		})
+	}
+
+	log.Info().Int("count", len(result)).Msg("获取权限定义成功")
+	return result
 }
 
 // UpdateRolePermissions 更新角色权限

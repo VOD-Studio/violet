@@ -11,7 +11,25 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
+
+const batchUpdateUserStatus = `-- name: BatchUpdateUserStatus :exec
+UPDATE users
+SET is_active = $2, updated_at = NOW()
+WHERE id = ANY($1::uuid[])
+`
+
+type BatchUpdateUserStatusParams struct {
+	Column1  []uuid.UUID `json:"column_1"`
+	IsActive bool        `json:"is_active"`
+}
+
+// 批量更新用户启用/禁用状态
+func (q *Queries) BatchUpdateUserStatus(ctx context.Context, arg BatchUpdateUserStatusParams) error {
+	_, err := q.db.ExecContext(ctx, batchUpdateUserStatus, pq.Array(arg.Column1), arg.IsActive)
+	return err
+}
 
 const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*) FROM users
@@ -20,6 +38,30 @@ SELECT COUNT(*) FROM users
 // 统计用户总数
 func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countUsers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countUsersWithFilters = `-- name: CountUsersWithFilters :one
+SELECT COUNT(*) FROM users
+WHERE
+    ($1::text IS NULL OR
+     username ILIKE '%' || $1::text || '%' OR
+     email ILIKE '%' || $1::text || '%')
+    AND ($2::text IS NULL OR role = $2::text)
+    AND ($3::bool IS NULL OR is_active = $3::bool)
+`
+
+type CountUsersWithFiltersParams struct {
+	Search   sql.NullString `json:"search"`
+	Role     sql.NullString `json:"role"`
+	IsActive sql.NullBool   `json:"is_active"`
+}
+
+// 统计用户总数（带筛选条件）
+func (q *Queries) CountUsersWithFilters(ctx context.Context, arg CountUsersWithFiltersParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUsersWithFilters, arg.Search, arg.Role, arg.IsActive)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -194,20 +236,77 @@ func (q *Queries) GetUserDetail(ctx context.Context, id uuid.UUID) (*GetUserDeta
 	return &i, err
 }
 
+const getUsersByIDs = `-- name: GetUsersByIDs :many
+SELECT id, username, email, password_hash, avatar_url, bio, role, email_verified, is_active, created_at, updated_at, role_id FROM users
+WHERE id = ANY($1::uuid[])
+`
+
+// 根据 ID 列表获取用户
+func (q *Queries) GetUsersByIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]*User, error) {
+	rows, err := q.db.QueryContext(ctx, getUsersByIDs, pq.Array(dollar_1))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.PasswordHash,
+			&i.AvatarUrl,
+			&i.Bio,
+			&i.Role,
+			&i.EmailVerified,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.RoleID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, username, email, password_hash, avatar_url, bio, role, email_verified, is_active, created_at, updated_at, role_id FROM users
+WHERE
+    ($3::text IS NULL OR
+     username ILIKE '%' || $3::text || '%' OR
+     email ILIKE '%' || $3::text || '%')
+    AND ($4::text IS NULL OR role = $4::text)
+    AND ($5::bool IS NULL OR is_active = $5::bool)
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
 
 type ListUsersParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Limit    int32          `json:"limit"`
+	Offset   int32          `json:"offset"`
+	Search   sql.NullString `json:"search"`
+	Role     sql.NullString `json:"role"`
+	IsActive sql.NullBool   `json:"is_active"`
 }
 
-// 分页查询用户列表，按创建时间倒序
+// 分页查询用户列表，按创建时间倒序，支持搜索和筛选
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]*User, error) {
-	rows, err := q.db.QueryContext(ctx, listUsers, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listUsers,
+		arg.Limit,
+		arg.Offset,
+		arg.Search,
+		arg.Role,
+		arg.IsActive,
+	)
 	if err != nil {
 		return nil, err
 	}

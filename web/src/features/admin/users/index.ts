@@ -3,10 +3,11 @@ export {
   useAdminUsers,
   useUpdateUserRole,
   useToggleUserStatus,
+  useBatchUpdateUserStatus,
 } from "./api";
 
 // Types
-export type { AdminUser } from "./types";
+export type { AdminUser, UserListParams, UserListResponse } from "./types";
 
 // Query Keys
 export { userKeys } from "./queryKeys";

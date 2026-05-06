@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { setNavigate } from "@/lib/navigation";
 import { Layout } from "@/components/layout/Layout";
 import { ToastProvider } from "@/components/shared/Toast";
+import { SettingsProvider } from "@/components/shared/SettingsProvider";
 import "@/styles/transitions.css";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { adminLoader } from "@/middleware/auth";
@@ -35,6 +36,7 @@ import Tags from "@/pages/admin/Tags";
 import Media from "@/pages/admin/Media";
 import Users from "@/pages/admin/Users";
 import Roles from "@/pages/admin/Roles";
+import Permissions from "@/pages/admin/Permissions";
 import Logs from "@/pages/admin/Logs";
 import Settings from "@/pages/admin/Settings";
 import Emojis from "@/pages/admin/Emojis";
@@ -72,43 +74,47 @@ function App() {
       <BrowserRouter>
         {/* 全局导航初始化 */}
         <NavigateSetter />
-        {/* 全局光标跟随效果 */}
-        <CursorEffect />
+        {/* 全局站点设置 */}
+        <SettingsProvider>
+          {/* 全局光标跟随效果 */}
+          <CursorEffect />
 
-        <Routes>
-          {/* 前台路由 */}
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogSlug />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/projects/:id" element={<ProjectDetail />} />
-            <Route path="/music" element={<Music />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
+          <Routes>
+            {/* 前台路由 */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogSlug />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:id" element={<ProjectDetail />} />
+              <Route path="/music" element={<Music />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/profile" element={<Profile />} />
+            </Route>
 
-          {/* 后台管理路由 */}
-          <Route path="/admin" element={<ProtectedAdmin />}>
-            <Route index element={<Dashboard />} />
-            <Route path="posts" element={<Posts />} />
-            <Route path="posts/new" element={<PostEdit />} />
-            <Route path="posts/:id/edit" element={<PostEdit />} />
-            <Route path="comments" element={<Comments />} />
-            <Route path="tags" element={<Tags />} />
-            <Route path="media" element={<Media />} />
-            <Route path="emojis" element={<Emojis />} />
-            <Route path="playlists" element={<Playlists />} />
-            <Route path="users" element={<Users />} />
-            <Route path="roles" element={<Roles />} />
-            <Route path="announcements" element={<Announcements />} />
-            <Route path="logs" element={<Logs />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-        </Routes>
+            {/* 后台管理路由 */}
+            <Route path="/admin" element={<ProtectedAdmin />}>
+              <Route index element={<Dashboard />} />
+              <Route path="posts" element={<Posts />} />
+              <Route path="posts/new" element={<PostEdit />} />
+              <Route path="posts/:id/edit" element={<PostEdit />} />
+              <Route path="comments" element={<Comments />} />
+              <Route path="tags" element={<Tags />} />
+              <Route path="media" element={<Media />} />
+              <Route path="emojis" element={<Emojis />} />
+              <Route path="playlists" element={<Playlists />} />
+              <Route path="users" element={<Users />} />
+              <Route path="roles" element={<Roles />} />
+              <Route path="permissions" element={<Permissions />} />
+              <Route path="announcements" element={<Announcements />} />
+              <Route path="logs" element={<Logs />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+          </Routes>
+        </SettingsProvider>
       </BrowserRouter>
     </ToastProvider>
   );

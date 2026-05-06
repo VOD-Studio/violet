@@ -40,10 +40,26 @@ SET password_hash = $2, updated_at = NOW()
 WHERE id = $1;
 
 -- name: ListUsers :many
--- 分页查询用户列表，按创建时间倒序
+-- 分页查询用户列表，按创建时间倒序，支持搜索和筛选
 SELECT * FROM users
+WHERE
+    (sqlc.narg('search')::text IS NULL OR
+     username ILIKE '%' || sqlc.narg('search')::text || '%' OR
+     email ILIKE '%' || sqlc.narg('search')::text || '%')
+    AND (sqlc.narg('role')::text IS NULL OR role = sqlc.narg('role')::text)
+    AND (sqlc.narg('is_active')::bool IS NULL OR is_active = sqlc.narg('is_active')::bool)
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
+
+-- name: CountUsersWithFilters :one
+-- 统计用户总数（带筛选条件）
+SELECT COUNT(*) FROM users
+WHERE
+    (sqlc.narg('search')::text IS NULL OR
+     username ILIKE '%' || sqlc.narg('search')::text || '%' OR
+     email ILIKE '%' || sqlc.narg('search')::text || '%')
+    AND (sqlc.narg('role')::text IS NULL OR role = sqlc.narg('role')::text)
+    AND (sqlc.narg('is_active')::bool IS NULL OR is_active = sqlc.narg('is_active')::bool);
 
 -- name: CountUsers :one
 -- 统计用户总数
@@ -83,3 +99,14 @@ SELECT u.id, u.username, u.email, u.avatar_url, u.bio, u.role, u.role_id, u.emai
 FROM users u
 LEFT JOIN roles r ON u.role_id = r.id
 WHERE u.id = $1;
+
+-- name: BatchUpdateUserStatus :exec
+-- 批量更新用户启用/禁用状态
+UPDATE users
+SET is_active = $2, updated_at = NOW()
+WHERE id = ANY($1::uuid[]);
+
+-- name: GetUsersByIDs :many
+-- 根据 ID 列表获取用户
+SELECT id, username, email, password_hash, avatar_url, bio, role, email_verified, is_active, created_at, updated_at, role_id FROM users
+WHERE id = ANY($1::uuid[]);

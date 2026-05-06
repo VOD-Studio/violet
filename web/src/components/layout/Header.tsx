@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/features/auth";
+import { useSiteSettings } from "@/components/shared/SettingsProvider";
 import { cn } from "@/lib/utils";
 import { getUploadUrl } from "@/lib/api";
 
@@ -43,6 +44,8 @@ export function Header() {
   const navigate = useNavigate();
   /** 认证状态 */
   const { isAuthenticated, user, logout } = useAuth();
+  /** 站点设置 */
+  const settings = useSiteSettings();
 
   /** 切换移动端菜单显示状态 */
   const toggleMobileMenu = () => {
@@ -68,7 +71,7 @@ export function Header() {
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
         {/* Logo / 站点名称 */}
         <Link to="/" className="text-lg font-bold" onClick={closeMobileMenu}>
-          我的博客
+          {settings.site_name}
         </Link>
 
         {/* 桌面端导航链接 */}
