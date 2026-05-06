@@ -29,6 +29,66 @@ func (q *Queries) AddRolePermission(ctx context.Context, arg AddRolePermissionPa
 	return err
 }
 
+const countUsersByRoleID = `-- name: CountUsersByRoleID :one
+SELECT COUNT(*) FROM users WHERE role_id = $1
+`
+
+func (q *Queries) CountUsersByRoleID(ctx context.Context, roleID sql.NullInt32) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countUsersByRoleID, roleID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createRole = `-- name: CreateRole :one
+INSERT INTO roles (name, description)
+VALUES ($1, $2)
+RETURNING id, name, description, created_at
+`
+
+type CreateRoleParams struct {
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+}
+
+func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) (*Role, error) {
+	row := q.db.QueryRowContext(ctx, createRole, arg.Name, arg.Description)
+	var i Role
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
+const deleteRole = `-- name: DeleteRole :exec
+DELETE FROM roles WHERE id = $1
+`
+
+func (q *Queries) DeleteRole(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, deleteRole, id)
+	return err
+}
+
+const getPermissionByCode = `-- name: GetPermissionByCode :one
+SELECT id, code, name, description, created_at FROM permissions WHERE code = $1
+`
+
+func (q *Queries) GetPermissionByCode(ctx context.Context, code string) (*Permission, error) {
+	row := q.db.QueryRowContext(ctx, getPermissionByCode, code)
+	var i Permission
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+	)
+	return &i, err
+}
+
 const getPermissionsByRoleID = `-- name: GetPermissionsByRoleID :many
 SELECT p.code, p.name
 FROM role_permissions rp
@@ -94,6 +154,53 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (*Role, error)
 		&i.CreatedAt,
 	)
 	return &i, err
+}
+
+const getRoleWithPermissions = `-- name: GetRoleWithPermissions :many
+SELECT r.id, r.name, r.description, r.created_at, p.code AS permission_code, p.name AS permission_name
+FROM roles r
+LEFT JOIN role_permissions rp ON r.id = rp.role_id
+LEFT JOIN permissions p ON rp.permission_id = p.id
+WHERE r.id = $1
+`
+
+type GetRoleWithPermissionsRow struct {
+	ID             int32          `json:"id"`
+	Name           string         `json:"name"`
+	Description    sql.NullString `json:"description"`
+	CreatedAt      time.Time      `json:"created_at"`
+	PermissionCode sql.NullString `json:"permission_code"`
+	PermissionName sql.NullString `json:"permission_name"`
+}
+
+func (q *Queries) GetRoleWithPermissions(ctx context.Context, id int32) ([]*GetRoleWithPermissionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getRoleWithPermissions, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetRoleWithPermissionsRow{}
+	for rows.Next() {
+		var i GetRoleWithPermissionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.PermissionCode,
+			&i.PermissionName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getUserRoleID = `-- name: GetUserRoleID :one
@@ -249,6 +356,31 @@ func (q *Queries) ListRoles(ctx context.Context) ([]*Role, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateRole = `-- name: UpdateRole :one
+UPDATE roles
+SET name = $2, description = $3
+WHERE id = $1
+RETURNING id, name, description, created_at
+`
+
+type UpdateRoleParams struct {
+	ID          int32          `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+}
+
+func (q *Queries) UpdateRole(ctx context.Context, arg UpdateRoleParams) (*Role, error) {
+	row := q.db.QueryRowContext(ctx, updateRole, arg.ID, arg.Name, arg.Description)
+	var i Role
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+	)
+	return &i, err
 }
 
 const updateRolePermissions = `-- name: UpdateRolePermissions :exec

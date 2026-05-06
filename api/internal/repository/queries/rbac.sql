@@ -38,3 +38,30 @@ WHERE u.id = $1;
 -- name: GetUserRoleID :one
 SELECT role_id FROM users WHERE id = $1;
 
+-- name: CreateRole :one
+INSERT INTO roles (name, description)
+VALUES ($1, $2)
+RETURNING *;
+
+-- name: UpdateRole :one
+UPDATE roles
+SET name = $2, description = $3
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteRole :exec
+DELETE FROM roles WHERE id = $1;
+
+-- name: GetRoleWithPermissions :many
+SELECT r.id, r.name, r.description, r.created_at, p.code AS permission_code, p.name AS permission_name
+FROM roles r
+LEFT JOIN role_permissions rp ON r.id = rp.role_id
+LEFT JOIN permissions p ON rp.permission_id = p.id
+WHERE r.id = $1;
+
+-- name: CountUsersByRoleID :one
+SELECT COUNT(*) FROM users WHERE role_id = $1;
+
+-- name: GetPermissionByCode :one
+SELECT * FROM permissions WHERE code = $1;
+

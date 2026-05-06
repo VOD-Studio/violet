@@ -107,6 +107,7 @@ func main() {
 	emojiService := service.NewEmojiService(queries, "uploads/emojis")
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 	permissionService := service.NewPermissionService(queries)
+	roleService := service.NewRoleService(queries, permissionService)
 
 	count, err := queries.CountEmojiGroups(ctx)
 	if err != nil {
@@ -146,6 +147,7 @@ func main() {
 	projectHandler := handler.NewProjectHandler(projectService)
 	emojiHandler := handler.NewEmojiHandler(emojiService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
+	roleHandler := handler.NewRoleHandler(roleService)
 
 	// --- 路由注册 ---
 
@@ -302,6 +304,14 @@ func main() {
 			r.Get("/users", userMgmtHandler.ListUsers)                      // 用户列表
 			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)     // 修改用户角色
 			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus) // 启用/禁用用户
+
+			// 角色管理
+			r.Get("/roles", roleHandler.ListRoles)                               // 角色列表
+			r.Post("/roles", roleHandler.CreateRole)                             // 创建角色
+			r.Patch("/roles/{id}", roleHandler.UpdateRole)                       // 更新角色
+			r.Delete("/roles/{id}", roleHandler.DeleteRole)                      // 删除角色
+			r.Get("/roles/{id}/permissions", roleHandler.GetRolePermissions)     // 获取角色权限
+			r.Patch("/roles/{id}/permissions", roleHandler.UpdateRolePermissions) // 设置角色权限
 
 			r.Get("/comments/pending", commentHandler.ListPendingComments)        // 待审核评论列表
 			r.Get("/comments/pending/count", commentHandler.CountPendingComments) // 待审核评论数量

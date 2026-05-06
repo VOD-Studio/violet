@@ -8,6 +8,7 @@ package generated
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -147,6 +148,52 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (*User
 	return &i, err
 }
 
+const getUserDetail = `-- name: GetUserDetail :one
+SELECT u.id, u.username, u.email, u.avatar_url, u.bio, u.role, u.role_id, u.email_verified, u.is_active, u.created_at, u.updated_at,
+       r.name AS role_name, r.description AS role_description
+FROM users u
+LEFT JOIN roles r ON u.role_id = r.id
+WHERE u.id = $1
+`
+
+type GetUserDetailRow struct {
+	ID              uuid.UUID      `json:"id"`
+	Username        string         `json:"username"`
+	Email           string         `json:"email"`
+	AvatarUrl       sql.NullString `json:"avatar_url"`
+	Bio             sql.NullString `json:"bio"`
+	Role            string         `json:"role"`
+	RoleID          sql.NullInt32  `json:"role_id"`
+	EmailVerified   bool           `json:"email_verified"`
+	IsActive        bool           `json:"is_active"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	RoleName        sql.NullString `json:"role_name"`
+	RoleDescription sql.NullString `json:"role_description"`
+}
+
+// 获取用户详情（包含角色信息）
+func (q *Queries) GetUserDetail(ctx context.Context, id uuid.UUID) (*GetUserDetailRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserDetail, id)
+	var i GetUserDetailRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.AvatarUrl,
+		&i.Bio,
+		&i.Role,
+		&i.RoleID,
+		&i.EmailVerified,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.RoleName,
+		&i.RoleDescription,
+	)
+	return &i, err
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, username, email, password_hash, avatar_url, bio, role, email_verified, is_active, created_at, updated_at, role_id FROM users
 ORDER BY created_at DESC
@@ -281,7 +328,7 @@ type UpdateUserRoleParams struct {
 	Role string    `json:"role"`
 }
 
-// 更新用户角色
+// 更新用户角色（字符串）
 func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (*User, error) {
 	row := q.db.QueryRowContext(ctx, updateUserRole, arg.ID, arg.Role)
 	var i User
@@ -300,6 +347,23 @@ func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) 
 		&i.RoleID,
 	)
 	return &i, err
+}
+
+const updateUserRoleByID = `-- name: UpdateUserRoleByID :exec
+UPDATE users
+SET role_id = $2, updated_at = NOW()
+WHERE id = $1
+`
+
+type UpdateUserRoleByIDParams struct {
+	ID     uuid.UUID     `json:"id"`
+	RoleID sql.NullInt32 `json:"role_id"`
+}
+
+// 更新用户角色（使用 role_id，需要先获取角色名）
+func (q *Queries) UpdateUserRoleByID(ctx context.Context, arg UpdateUserRoleByIDParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserRoleByID, arg.ID, arg.RoleID)
+	return err
 }
 
 const updateUserStatus = `-- name: UpdateUserStatus :one

@@ -50,11 +50,17 @@ LIMIT $1 OFFSET $2;
 SELECT COUNT(*) FROM users;
 
 -- name: UpdateUserRole :one
--- 更新用户角色
+-- 更新用户角色（字符串）
 UPDATE users
 SET role = $2, updated_at = NOW()
 WHERE id = $1
 RETURNING *;
+
+-- name: UpdateUserRoleByID :exec
+-- 更新用户角色（使用 role_id，需要先获取角色名）
+UPDATE users
+SET role_id = $2, updated_at = NOW()
+WHERE id = $1;
 
 -- name: UpdateUserStatus :one
 -- 更新用户启用/禁用状态
@@ -69,3 +75,11 @@ UPDATE users
 SET username = $2, bio = $3, avatar_url = $4, updated_at = NOW()
 WHERE id = $1
 RETURNING *;
+
+-- name: GetUserDetail :one
+-- 获取用户详情（包含角色信息）
+SELECT u.id, u.username, u.email, u.avatar_url, u.bio, u.role, u.role_id, u.email_verified, u.is_active, u.created_at, u.updated_at,
+       r.name AS role_name, r.description AS role_description
+FROM users u
+LEFT JOIN roles r ON u.role_id = r.id
+WHERE u.id = $1;
