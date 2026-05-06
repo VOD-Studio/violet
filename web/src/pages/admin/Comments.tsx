@@ -73,6 +73,14 @@ function getStatusBadge(status: string) {
   }
 }
 
+// 状态筛选显示文本映射
+const statusFilterLabels: Record<CommentStatusFilter, string> = {
+  all: "全部",
+  pending: "待审核",
+  approved: "已批准",
+  spam: "垃圾",
+};
+
 /** 表格骨架屏 */
 function CommentsTableSkeleton() {
   return (
@@ -245,7 +253,9 @@ export default function Comments() {
             onValueChange={handleStatusChange}
           >
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="筛选状态" />
+              <SelectValue placeholder="筛选状态">
+                {statusFilterLabels[statusFilter]}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部</SelectItem>
