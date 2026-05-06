@@ -236,27 +236,29 @@ export function MediaLibraryDialog({
           )}
         </div>
 
-        {/* 底部操作栏 */}
+        {/* 底部操作栏 - 仅多选模式显示 */}
         {multiple && (
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <div className="flex items-center gap-2 mr-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAll}
-                disabled={mediaItems.length === 0}
-              >
-                全选
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearSelection}
-                disabled={selectedCount === 0}
-              >
-                清空 ({selectedCount})
-              </Button>
-            </div>
+            {mediaItems.length > 0 && (
+              <div className="flex items-center gap-2 mr-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                >
+                  全选
+                </Button>
+                {selectedCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearSelection}
+                  >
+                    清空 ({selectedCount})
+                  </Button>
+                )}
+              </div>
+            )}
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleClose}>
                 取消
@@ -265,17 +267,9 @@ export function MediaLibraryDialog({
                 onClick={handleConfirmMultiple}
                 disabled={selectedCount === 0}
               >
-                {confirmLabel} ({selectedCount})
+                {confirmLabel} {selectedCount > 0 && `(${selectedCount})`}
               </Button>
             </div>
-          </DialogFooter>
-        )}
-
-        {!multiple && (
-          <DialogFooter>
-            <Button variant="outline" onClick={handleClose}>
-              取消
-            </Button>
           </DialogFooter>
         )}
       </DialogContent>

@@ -1,56 +1,23 @@
 // 表情系统 Hook
-// 获取表情分组和表情，支持搜索和显示内容获取
-// 使用 React Query 实现全局单例，只请求一次
+// 获取表情分组，使用 React Query 实现全局单例
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, getUploadUrl } from "@/lib/api";
-import type { EmojiGroup, EmojisResponse } from "@/types/emoji";
-
-// 统一的表情项接口（用于选择器展示）
-export interface EmojiItem {
-  id: number;
-  name: string;
-  // 显示内容：图片URL 或文本
-  display: string;
-  // 插入语法 [表情名]
-  syntax: string;
-  // 来源类型
-  source: EmojiGroup["source"];
-}
+import type { EmojiGroup, EmojisResponse, Emoji } from "@/types/emoji";
 
 interface UseEmojisResult {
-  // 所有表情分组
   groups: EmojiGroup[];
-  // 加载状态
   loading: boolean;
-  // 错误信息
   error: string | null;
-  // 搜索功能：跨所有表情搜索
-  search: (query: string) => EmojiItem[];
-  // 根据语法 `[表情名]` 获取显示内容
+  // 根据名称获取表情（用于评论渲染）
+  getEmojiByName: (name: string) => Emoji | null;
+  // 根据名称获取显示内容（用于评论渲染）
   getDisplayByName: (name: string) => string | null;
-  // 刷新表情数据
   refresh: () => Promise<void>;
 }
 
-// 构建表情名称到显示内容的映射
-function buildEmojiMap(groups: EmojiGroup[]): Map<string, string> {
-  const map = new Map<string, string>();
-  groups.forEach((group) => {
-    (group.emojis || []).forEach((emoji) => {
-      const display = emoji.url
-        ? getUploadUrl(emoji.url)
-        : emoji.text_content || emoji.name;
-      map.set(emoji.name, display);
-    });
-  });
-  return map;
-}
-
 export function useEmojis(): UseEmojisResult {
-  // 使用 React Query 实现全局单例
-  // staleTime: Infinity 表示数据永不过期，只请求一次
   const {
     data: groups = [],
     isLoading: loading,
@@ -62,60 +29,39 @@ export function useEmojis(): UseEmojisResult {
       const response = await api.get<EmojisResponse>("/emojis");
       return response.groups || [];
     },
-    staleTime: Infinity, // 数据永不过期
-    gcTime: 1000 * 60 * 60 * 24, // 缓存 24 小时
-    refetchOnWindowFocus: false, // 窗口聚焦时不重新请求
-    refetchOnMount: false, // 组件挂载时不重新请求
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60 * 24,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const error = queryError ? "加载表情失败" : null;
 
-  // 构建表情名称映射（使用 useMemo 缓存）
-  const emojiMap = useMemo(() => buildEmojiMap(groups), [groups]);
+  // 构建表情名称映射
+  const emojiMap = new Map<string, Emoji>();
+  const displayMap = new Map<string, string>();
 
-  // 预计算所有 EmojiItem 对象（使用 useMemo 缓存）
-  // 这样 getUploadUrl 只在 groups 变化时调用一次
-  const allEmojiItems = useMemo(() => {
-    const items: EmojiItem[] = [];
-    groups.forEach((group) => {
-      (group.emojis || []).forEach((emoji) => {
-        items.push({
-          id: emoji.id,
-          name: emoji.name,
-          display: emoji.url
-            ? getUploadUrl(emoji.url)
-            : emoji.text_content || emoji.name,
-          syntax: `[${emoji.name}]`,
-          source: group.source,
-        });
-      });
+  groups.forEach((group) => {
+    (group.emojis || []).forEach((emoji) => {
+      emojiMap.set(emoji.name, emoji);
+      // 图片表情拼接域名，颜文字直接用文本
+      const display = emoji.url
+        ? getUploadUrl(emoji.url)
+        : emoji.text_content || emoji.name;
+      displayMap.set(emoji.name, display);
     });
-    return items;
-  }, [groups]);
+  });
 
-  // 搜索功能：跨所有表情搜索
-  // 使用预计算的 allEmojiItems，避免重复调用 getUploadUrl
-  const search = useCallback(
-    (query: string): EmojiItem[] => {
-      if (!query.trim()) return [];
-
-      const lowerQuery = query.toLowerCase();
-      return allEmojiItems.filter((item) =>
-        item.name.toLowerCase().includes(lowerQuery)
-      );
-    },
-    [allEmojiItems]
+  const getEmojiByName = useCallback(
+    (name: string): Emoji | null => emojiMap.get(name) || null,
+    [groups]
   );
 
-  // 根据表情名获取显示内容
   const getDisplayByName = useCallback(
-    (name: string): string | null => {
-      return emojiMap.get(name) || null;
-    },
-    [emojiMap]
+    (name: string): string | null => displayMap.get(name) || null,
+    [groups]
   );
 
-  // 刷新函数
   const refresh = useCallback(async () => {
     await refetch();
   }, [refetch]);
@@ -124,7 +70,7 @@ export function useEmojis(): UseEmojisResult {
     groups,
     loading,
     error,
-    search,
+    getEmojiByName,
     getDisplayByName,
     refresh,
   };

@@ -1,14 +1,11 @@
-/**
- * 表情按钮组件
- * 带 motion 动画的表情选择器触发按钮
- */
-
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getUploadUrl } from "@/lib/api";
 import { EmojiPanel } from "./EmojiPanel";
 import { useEmojis } from "@/hooks/useEmojis";
+import type { Emoji } from "@/types/emoji";
 
 interface EmojiButtonProps {
   /** 选择表情回调 */
@@ -23,7 +20,6 @@ interface EmojiButtonProps {
 
 /**
  * 表情按钮
- * 点击弹出表情选择面板，带流畅动画
  */
 export function EmojiButton({
   onSelect,
@@ -34,40 +30,32 @@ export function EmojiButton({
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const { groups, loading, error, search } = useEmojis();
+  const { groups, loading, error } = useEmojis();
   const [position, setPosition] = useState({ left: 0, top: 0 });
   const [isPositioned, setIsPositioned] = useState(false);
 
-  // 计算面板位置（带边界检测）
+  // 计算面板位置
   const calculatePosition = useCallback(() => {
     if (!buttonRef.current) return { left: 0, top: 0 };
 
     const buttonRect = buttonRef.current.getBoundingClientRect();
-    const panelWidth = 360; // EmojiPanel 宽度
-    const panelHeight = 420; // EmojiPanel 最大高度
+    const panelWidth = 360;
+    const panelHeight = 420;
     const gap = 8;
 
     let left = buttonRect.left;
     let top = buttonRect.bottom + gap;
 
-    // 右边界检测
     if (left + panelWidth > window.innerWidth) {
-      left = window.innerWidth - panelWidth - 16; // 留 16px 边距
+      left = window.innerWidth - panelWidth - 16;
     }
+    if (left < 16) left = 16;
 
-    // 左边界检测
-    if (left < 16) {
-      left = 16;
-    }
-
-    // 底部边界检测
     if (top + panelHeight > window.innerHeight) {
-      // 尝试显示在按钮上方
       const topPosition = buttonRect.top - panelHeight - gap;
       if (topPosition > 16) {
         top = topPosition;
       } else {
-        // 上下都放不下，显示在视口内
         top = Math.max(16, window.innerHeight - panelHeight - 16);
       }
     }
@@ -75,22 +63,16 @@ export function EmojiButton({
     return { left, top };
   }, []);
 
-  // 更新位置
   useEffect(() => {
     if (isOpen) {
-      // 立即计算位置，避免闪烁
       const pos = calculatePosition();
       setPosition(pos);
-      // 下一帧显示面板
-      requestAnimationFrame(() => {
-        setIsPositioned(true);
-      });
+      requestAnimationFrame(() => setIsPositioned(true));
     } else {
       setIsPositioned(false);
     }
   }, [isOpen, calculatePosition]);
 
-  // 点击外部关闭
   useEffect(() => {
     if (!isOpen) return;
 
@@ -109,21 +91,21 @@ export function EmojiButton({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // ESC 关闭
   useEffect(() => {
     if (!isOpen) return;
-
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setIsOpen(false);
-      }
+      if (e.key === "Escape") setIsOpen(false);
     };
-
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen]);
 
-  const handleSelect = (emojiName: string, emojiDisplay: string) => {
+  const handleSelect = (emoji: Emoji) => {
+    // 转换为 RichTextInput 需要的格式
+    const emojiName = `[${emoji.name}]`;
+    const emojiDisplay = emoji.url
+      ? getUploadUrl(emoji.url)
+      : emoji.text_content || emoji.name;
     onSelect(emojiName, emojiDisplay);
     autoClose && setIsOpen(false);
   };
@@ -156,21 +138,14 @@ export function EmojiButton({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{
-              duration: 0.15,
-              ease: "easeOut",
-            }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             className="fixed z-50"
-            style={{
-              left: `${position.left}px`,
-              top: `${position.top}px`,
-            }}
+            style={{ left: `${position.left}px`, top: `${position.top}px` }}
           >
             <EmojiPanel
               groups={groups}
               loading={loading}
               error={error}
-              onSearch={search}
               onSelect={handleSelect}
             />
           </motion.div>
