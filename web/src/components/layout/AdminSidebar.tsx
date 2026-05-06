@@ -18,6 +18,7 @@ import {
   Smile,
   Music,
   Users,
+  Shield,
   Settings,
   Home,
 } from "lucide-react";
@@ -76,6 +77,11 @@ const navItems: NavItem[] = [
     to: "/admin/users",
     label: "用户管理",
     icon: <Users className="size-4" />,
+  },
+  {
+    to: "/admin/roles",
+    label: "角色管理",
+    icon: <Shield className="size-4" />,
   },
   {
     to: "/admin/settings",

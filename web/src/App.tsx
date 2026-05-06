@@ -33,6 +33,7 @@ import Comments from "@/pages/admin/Comments";
 import Tags from "@/pages/admin/Tags";
 import Media from "@/pages/admin/Media";
 import Users from "@/pages/admin/Users";
+import Roles from "@/pages/admin/Roles";
 import Settings from "@/pages/admin/Settings";
 import Emojis from "@/pages/admin/Emojis";
 import Playlists from "@/pages/admin/Playlists";
@@ -98,6 +99,7 @@ function App() {
             <Route path="emojis" element={<Emojis />} />
             <Route path="playlists" element={<Playlists />} />
             <Route path="users" element={<Users />} />
+            <Route path="roles" element={<Roles />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
