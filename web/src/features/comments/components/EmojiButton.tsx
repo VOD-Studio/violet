@@ -17,6 +17,8 @@ interface EmojiButtonProps {
   disabled?: boolean;
   /** 自定义按钮样式 */
   className?: string;
+  /** 是否自动关闭 */
+  autoClose?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ export function EmojiButton({
   onSelect,
   disabled = false,
   className,
+  autoClose,
 }: EmojiButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -122,7 +125,7 @@ export function EmojiButton({
 
   const handleSelect = (emojiName: string, emojiDisplay: string) => {
     onSelect(emojiName, emojiDisplay);
-    setIsOpen(false);
+    autoClose && setIsOpen(false);
   };
 
   return (

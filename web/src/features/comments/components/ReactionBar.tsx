@@ -90,72 +90,78 @@ ReactionButton.displayName = "ReactionButton";
  * 评论表情反应栏
  * 显示已有的表情反应，支持添加/删除
  */
-export const ReactionBar = memo(({ commentId, initialReactions = [], className }: ReactionBarProps) => {
-  const { data } = useCommentReactions(commentId);
-  const reactions = data?.reactions ?? initialReactions;
-  const { groups } = useEmojis();
-  const addMutation = useAddReaction(commentId);
-  const removeMutation = useRemoveReaction(commentId);
+export const ReactionBar = memo(
+  ({ commentId, initialReactions = [], className }: ReactionBarProps) => {
+    const { data } = useCommentReactions(commentId);
+    const reactions = data?.reactions ?? initialReactions;
+    const { groups } = useEmojis();
+    const addMutation = useAddReaction(commentId);
+    const removeMutation = useRemoveReaction(commentId);
 
-  const isProcessing = addMutation.isPending || removeMutation.isPending;
+    const isProcessing = addMutation.isPending || removeMutation.isPending;
 
-  /**
-   * 处理表情反应点击
-   */
-  const handleReactionClick = useCallback(
-    (reaction: CommentReaction) => {
-      if (isProcessing) return;
+    /**
+     * 处理表情反应点击
+     */
+    const handleReactionClick = useCallback(
+      (reaction: CommentReaction) => {
+        if (isProcessing) return;
 
-      if (reaction.user_reacted) {
-        removeMutation.mutate(reaction.emoji_id);
-      } else {
-        addMutation.mutate(reaction.emoji_id);
-      }
-    },
-    [isProcessing, addMutation, removeMutation]
-  );
-
-  /**
-   * 处理表情选择
-   */
-  const handleEmojiSelect = useCallback(
-    (emojiName: string) => {
-      // 从所有表情分组中查找对应的表情 ID
-      let emojiId: number | null = null;
-      for (const group of groups) {
-        const emoji = group.emojis?.find((e) => e.name === emojiName);
-        if (emoji) {
-          emojiId = emoji.id;
-          break;
+        if (reaction.user_reacted) {
+          removeMutation.mutate(reaction.emoji_id);
+        } else {
+          addMutation.mutate(reaction.emoji_id);
         }
-      }
+      },
+      [isProcessing, addMutation, removeMutation]
+    );
 
-      if (emojiId === null) {
-        console.warn("未找到表情 ID:", emojiName);
-        return;
-      }
+    /**
+     * 处理表情选择
+     */
+    const handleEmojiSelect = useCallback(
+      (emojiName: string) => {
+        // 从所有表情分组中查找对应的表情 ID
+        let emojiId: number | null = null;
+        for (const group of groups) {
+          const emoji = group.emojis?.find((e) => e.name === emojiName);
+          if (emoji) {
+            emojiId = emoji.id;
+            break;
+          }
+        }
 
-      addMutation.mutate(emojiId);
-    },
-    [groups, addMutation]
-  );
+        if (emojiId === null) {
+          console.warn("未找到表情 ID:", emojiName);
+          return;
+        }
 
-  return (
-    <div className={cn("flex items-center gap-2 flex-wrap", className)}>
-      {/* 已有的表情反应 */}
-      {reactions.map((reaction) => (
-        <ReactionButton
-          key={reaction.emoji_id}
-          reaction={reaction}
-          isProcessing={isProcessing}
-          onClick={() => handleReactionClick(reaction)}
+        addMutation.mutate(emojiId);
+      },
+      [groups, addMutation]
+    );
+
+    return (
+      <div className={cn("flex items-center gap-2 flex-wrap", className)}>
+        {/* 已有的表情反应 */}
+        {reactions.map((reaction) => (
+          <ReactionButton
+            key={reaction.emoji_id}
+            reaction={reaction}
+            isProcessing={isProcessing}
+            onClick={() => handleReactionClick(reaction)}
+          />
+        ))}
+
+        {/* 添加表情按钮 */}
+        <EmojiButton
+          onSelect={handleEmojiSelect}
+          disabled={isProcessing}
+          autoClose
         />
-      ))}
-
-      {/* 添加表情按钮 */}
-      <EmojiButton onSelect={handleEmojiSelect} disabled={isProcessing} />
-    </div>
-  );
-});
+      </div>
+    );
+  }
+);
 
 ReactionBar.displayName = "ReactionBar";
