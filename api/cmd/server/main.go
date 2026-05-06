@@ -108,6 +108,7 @@ func main() {
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 	permissionService := service.NewPermissionService(queries)
 	roleService := service.NewRoleService(queries, permissionService)
+	auditService := service.NewAuditService(queries)
 
 	count, err := queries.CountEmojiGroups(ctx)
 	if err != nil {
@@ -148,6 +149,7 @@ func main() {
 	emojiHandler := handler.NewEmojiHandler(emojiService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
 	roleHandler := handler.NewRoleHandler(roleService)
+	auditHandler := handler.NewAuditHandler(auditService)
 
 	// --- 路由注册 ---
 
@@ -312,6 +314,10 @@ func main() {
 			r.Delete("/roles/{id}", roleHandler.DeleteRole)                      // 删除角色
 			r.Get("/roles/{id}/permissions", roleHandler.GetRolePermissions)     // 获取角色权限
 			r.Patch("/roles/{id}/permissions", roleHandler.UpdateRolePermissions) // 设置角色权限
+
+			// 操作日志
+			r.Get("/logs", auditHandler.ListLogs)                    // 操作日志列表
+			r.Get("/logs/user/{id}", auditHandler.ListLogsByUser)    // 用户操作日志
 
 			r.Get("/comments/pending", commentHandler.ListPendingComments)        // 待审核评论列表
 			r.Get("/comments/pending/count", commentHandler.CountPendingComments) // 待审核评论数量

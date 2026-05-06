@@ -13,6 +13,19 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+type AuditLog struct {
+	ID           int32          `json:"id"`
+	UserID       uuid.NullUUID  `json:"user_id"`
+	UserName     sql.NullString `json:"user_name"`
+	Action       string         `json:"action"`
+	ResourceType string         `json:"resource_type"`
+	ResourceID   sql.NullString `json:"resource_id"`
+	ResourceName sql.NullString `json:"resource_name"`
+	Detail       sql.NullString `json:"detail"`
+	IpAddress    sql.NullString `json:"ip_address"`
+	CreatedAt    time.Time      `json:"created_at"`
+}
+
 type Comment struct {
 	ID          uuid.UUID      `json:"id"`
 	PostID      uuid.UUID      `json:"post_id"`
