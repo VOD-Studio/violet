@@ -4,10 +4,16 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { Search, X, Loader2, Smile, Image as ImageIcon, Type } from "lucide-react";
+import {
+  Search,
+  X,
+  Loader2,
+  Smile,
+  Image as ImageIcon,
+  Type,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmojiItem } from "./EmojiItem";
-import { getUploadUrl } from "@/lib/api";
 import type { EmojiGroup, Emoji } from "@/types/emoji";
 
 interface EmojiPanelProps {
@@ -61,8 +67,8 @@ export function EmojiPanel({
       }
     };
     checkScroll();
-    window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
+    window.addEventListener("resize", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
   }, [groups]);
 
   // 当前分组
@@ -70,9 +76,9 @@ export function EmojiPanel({
 
   // 搜索过滤
   const filteredEmojis = searchQuery.trim()
-    ? groups.flatMap(g => g.emojis || []).filter(e =>
-        e.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? groups
+        .flatMap((g) => g.emojis || [])
+        .filter((e) => e.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : (activeGroup?.emojis || []).sort((a, b) => a.sort_order - b.sort_order);
 
   const handleGroupClick = (groupId: number) => {
@@ -82,7 +88,9 @@ export function EmojiPanel({
     // 类似 Ant Design Tabs 的滚动行为
     if (categoryScrollRef.current) {
       const container = categoryScrollRef.current;
-      const activeButton = container.querySelector(`button[data-group-id="${groupId}"]`) as HTMLElement;
+      const activeButton = container.querySelector(
+        `button[data-group-id="${groupId}"]`
+      ) as HTMLElement;
 
       if (activeButton) {
         const containerWidth = container.clientWidth;
@@ -101,13 +109,13 @@ export function EmojiPanel({
           // 按钮在右侧边缘或外面，滚动到按钮左侧位置，右侧露出空间
           container.scrollTo({
             left: buttonLeft - peekMargin,
-            behavior: 'smooth'
+            behavior: "smooth",
           });
         } else if (buttonLeft < scrollLeft + peekMargin) {
           // 按钮在左侧边缘或外面，滚动让按钮显示在右侧，左侧露出空间
           container.scrollTo({
             left: buttonRight - containerWidth + peekMargin,
-            behavior: 'smooth'
+            behavior: "smooth",
           });
         }
       }
@@ -156,12 +164,12 @@ export function EmojiPanel({
       {/* 中部：分组标签 */}
       <div className="border-b border-border bg-muted/30 relative">
         {showScrollHint && (
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-muted/30 to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-linear-to-l from-muted/30 to-transparent z-10 pointer-events-none" />
         )}
         <div
           ref={categoryScrollRef}
           className="flex gap-1 p-2 overflow-x-auto scrollbar-hide"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {loading ? (
             <div className="flex items-center justify-center w-full h-8">
@@ -209,15 +217,38 @@ export function EmojiPanel({
         )}
 
         {!loading && !error && filteredEmojis.length > 0 && (
-          <div className="grid grid-cols-8 gap-1">
-            {filteredEmojis.map((emoji) => (
-              <EmojiItem
-                key={emoji.id}
-                emoji={emoji}
-                onClick={() => onSelect(emoji)}
-              />
-            ))}
-          </div>
+          <>
+            {/* 颜文字分组：flex 布局自适应宽度 */}
+            {/* 图片分组：grid 8列固定宽度 */}
+            {(() => {
+              // 检测是否全是颜文字（没有 url）
+              const allTextEmojis = filteredEmojis.every(e => !e.url);
+              if (allTextEmojis) {
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    {filteredEmojis.map((emoji) => (
+                      <EmojiItem
+                        key={emoji.id}
+                        emoji={emoji}
+                        onClick={() => onSelect(emoji)}
+                      />
+                    ))}
+                  </div>
+                );
+              }
+              return (
+                <div className="grid grid-cols-8 gap-1">
+                  {filteredEmojis.map((emoji) => (
+                    <EmojiItem
+                      key={emoji.id}
+                      emoji={emoji}
+                      onClick={() => onSelect(emoji)}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
+          </>
         )}
 
         {!loading && !error && !searchQuery && filteredEmojis.length === 0 && (
