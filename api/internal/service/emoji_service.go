@@ -77,6 +77,8 @@ type EmojiResponse struct {
 	Name        string `json:"name"`
 	URL         string `json:"url,omitempty"`
 	TextContent string `json:"text_content,omitempty"`
+	GifURL      string `json:"gif_url,omitempty"`
+	SourceURL   string `json:"source_url,omitempty"`
 	SortOrder   int32  `json:"sort_order"`
 	CreatedAt   string `json:"created_at"`
 }
@@ -354,6 +356,12 @@ func emojiToResponse(e *generated.Emoji) *EmojiResponse {
 	}
 	if e.TextContent.Valid {
 		resp.TextContent = e.TextContent.String
+	}
+	if e.GifUrl.Valid {
+		resp.GifURL = e.GifUrl.String
+	}
+	if e.SourceUrl.Valid {
+		resp.SourceURL = e.SourceUrl.String
 	}
 
 	return resp
