@@ -251,9 +251,11 @@ export default function Comments() {
   }
 
   // 筛选变更时清空选择
-  function handleStatusChange(value: string) {
-    setStatusFilter(value as CommentStatusFilter);
-    setSelectedIds(new Set());
+  function handleStatusChange(value: "all" | "pending" | "approved" | "spam" | null) {
+    if (value) {
+      setStatusFilter(value);
+      setSelectedIds(new Set());
+    }
   }
 
   return (

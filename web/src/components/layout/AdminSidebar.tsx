@@ -24,6 +24,7 @@ import {
   Settings,
   Home,
   ScrollText,
+  Bell,
 } from "lucide-react";
 
 /** 导航菜单项配置 */
@@ -95,6 +96,12 @@ const navItems: NavItem[] = [
     label: "角色管理",
     icon: <Shield className="size-4" />,
     permission: "role:manage",
+  },
+  {
+    to: "/admin/announcements",
+    label: "公告管理",
+    icon: <Bell className="size-4" />,
+    permission: "announcement:manage",
   },
   {
     to: "/admin/logs",

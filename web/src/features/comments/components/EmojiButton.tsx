@@ -112,7 +112,7 @@ export function EmojiButton({
 
     const emojiDisplay = isTextEmoji
       ? emoji.url || emoji.name  // 颜文字显示文本
-      : getUploadUrl(emoji.url); // 图片表情显示 URL
+      : getUploadUrl(emoji.url || ''); // 图片表情显示 URL
 
     onSelect(emojiName, emojiDisplay);
     autoClose && setIsOpen(false);

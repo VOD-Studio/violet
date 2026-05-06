@@ -6,7 +6,6 @@ import { api } from "@/lib/api";
 import { roleKeys } from "./queryKeys";
 import type {
   Role,
-  RoleWithPermissions,
   Permission,
   CreateRoleInput,
   UpdateRoleInput,

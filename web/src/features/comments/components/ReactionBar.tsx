@@ -55,7 +55,7 @@ const ReactionButton = memo(
         {/* 表情图标或文本 */}
         {reaction.emoji_gif_url || reaction.emoji_url ? (
           <img
-            src={getUploadUrl(reaction.emoji_gif_url || reaction.emoji_url)}
+            src={getUploadUrl(reaction.emoji_gif_url || reaction.emoji_url || '')}
             alt={reaction.emoji_name}
             className="w-4 h-4 object-contain"
             loading="lazy"

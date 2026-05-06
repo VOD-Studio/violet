@@ -16,6 +16,7 @@ export interface CommentEmote {
   id: number;
   text: string;
   url: string;
+  gif_url?: string;
 }
 
 /** 评论内容结构 */

@@ -3,7 +3,7 @@
  * 从 API 获取角色列表，支持创建、编辑、删除角色和分配权限
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   useRoles,
   usePermissions,
@@ -17,7 +17,6 @@ import type { Role, Permission } from "@/features/admin/roles/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
