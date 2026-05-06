@@ -1,3 +1,4 @@
+export { AnnouncementBar } from "./AnnouncementBar";
 export { BackToTop } from "./BackToTop";
 export { ConfirmDialog } from "./ConfirmDialog";
 export { EmptyState } from "./EmptyState";

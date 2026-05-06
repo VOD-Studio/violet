@@ -6,16 +6,21 @@ import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { AnimatedOutlet } from "./AnimatedOutlet";
 import { SidebarWidgets } from "@/components/shared/SidebarWidgets";
+import { AnnouncementBar } from "@/components/shared/AnnouncementBar";
 
 /**
  * 前台布局组件
  * 使用 AnimatedOutlet 渲染子路由内容，支持页面过渡动画
  * Header 固定在顶部，Footer 在底部
+ * AnnouncementBar 显示公告信息
  * SidebarWidgets 统一管理悬浮侧边组件（音乐播放器、回到顶部等）
  */
 export function Layout() {
   return (
     <div className="flex min-h-svh flex-col">
+      {/* 公告栏 */}
+      <AnnouncementBar />
+
       {/* 顶部导航栏 */}
       <Header />
 

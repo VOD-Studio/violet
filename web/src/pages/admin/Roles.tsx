@@ -227,11 +227,11 @@ export default function Roles() {
       useRolePermissions(permissionDialog.roleId);
 
     // 当权限数据加载完成时，初始化选中状态
-    useState(() => {
+    useEffect(() => {
       if (rolePermissions) {
         setSelectedPermissions(new Set(rolePermissions.map((p) => p.code)));
       }
-    });
+    }, [rolePermissions]);
 
     if (loadingPermissions) {
       return (

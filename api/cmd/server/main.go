@@ -292,6 +292,11 @@ func main() {
 			r.Get("/groups/{name}", emojiHandler.GetEmojiGroupByName) // 按名称获取指定表情分组
 		})
 
+		// 公告（公开）
+		v1.Route("/announcements", func(r chi.Router) {
+			r.Get("/", announcementHandler.ListActiveAnnouncements) // 获取生效公告列表
+		})
+
 		// =====================================================
 		// 管理员路由（认证 + 管理员权限）
 		// =====================================================

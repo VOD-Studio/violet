@@ -62,7 +62,8 @@ INSERT INTO permissions (code, name) VALUES
     ('project:delete', '删除项目'),
     ('settings:view', '查看系统设置'),
     ('settings:update', '修改系统设置'),
-    ('role:manage', '管理角色权限')
+    ('role:manage', '管理角色权限'),
+    ('announcement:manage', '管理公告')
 ON CONFLICT (code) DO NOTHING;
 
 -- admin 角色拥有所有权限
