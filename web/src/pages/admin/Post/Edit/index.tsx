@@ -23,7 +23,7 @@ import {
 import { CoverImageUpload } from "./CoverImageUpload";
 import { TagSelector } from "./TagSelector";
 import { SeoSettings } from "./SeoSettings";
-import { MediaPicker, type MediaItem } from "./MediaPicker";
+import { MediaLibraryDialog, type MediaItem } from "@/components/media";
 import { BackToTop } from "@/components/shared/BackToTop";
 
 /** 表单字段类型 */
@@ -269,11 +269,12 @@ export default function PostEdit() {
       </form>
 
       {/* 素材库选择器 */}
-      <MediaPicker
+      <MediaLibraryDialog
         open={mediaPickerOpen}
         onClose={() => setMediaPickerOpen(false)}
         onSelect={handleMediaSelect}
-        mimeTypeFilter="image"
+        allowedCategories={['image']}
+        title="选择封面图片"
       />
 
       {/* 回到顶部 */}
