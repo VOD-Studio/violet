@@ -64,15 +64,19 @@ export function MediaLibraryDialog({
   confirmLabel = "确定",
 }: MediaLibraryDialogProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [category, setCategory] = useState(defaultCategory);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // 过滤可用的分类选项
+  // 过滤可用的分类选项（限制类型时不显示"全部"）
   const availableCategories = allowedCategories
-    ? categoryOptions.filter((opt) =>
-        opt.value === "all" ? true : allowedCategories.includes(opt.value)
-      )
+    ? categoryOptions.filter((opt) => opt.value !== "all" && allowedCategories.includes(opt.value))
     : categoryOptions;
+
+  // 默认分类：限制类型时选第一个允许的类型，否则用传入的默认值
+  const initialCategory = allowedCategories
+    ? availableCategories[0]?.value ?? "image"
+    : defaultCategory;
+
+  const [category, setCategory] = useState(initialCategory);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const currentMimeType = category === "all" ? undefined : category;
 
@@ -241,11 +245,7 @@ export function MediaLibraryDialog({
           <DialogFooter className="flex-col sm:flex-row gap-2">
             {mediaItems.length > 0 && (
               <div className="flex items-center gap-2 mr-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSelectAll}
-                >
+                <Button variant="outline" size="sm" onClick={handleSelectAll}>
                   全选
                 </Button>
                 {selectedCount > 0 && (
