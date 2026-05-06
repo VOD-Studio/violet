@@ -57,7 +57,8 @@ export function EmojiItem({
             const target = e.currentTarget;
             target.style.display = "none";
             const fallback = document.createElement("span");
-            fallback.textContent = name.charAt(0);
+            // 颜文字：显示完整文本内容
+            fallback.textContent = display || name;
             fallback.className = "text-lg text-muted-foreground";
             target.parentElement?.appendChild(fallback);
           }}

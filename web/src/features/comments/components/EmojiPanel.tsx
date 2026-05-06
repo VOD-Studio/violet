@@ -47,6 +47,7 @@ export function EmojiPanel({
   const [activeGroupId, setActiveGroupId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<EmojiItemType[]>([]);
+  const [showScrollHint, setShowScrollHint] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +57,19 @@ export function EmojiPanel({
       setActiveGroupId(groups[0].id);
     }
   }, [groups, activeGroupId]);
+
+  // 检测是否需要滚动指示器
+  useEffect(() => {
+    const checkScroll = () => {
+      if (categoryScrollRef.current) {
+        const el = categoryScrollRef.current;
+        setShowScrollHint(el.scrollWidth > el.clientWidth + 10);
+      }
+    };
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [groups]);
 
   // 搜索防抖
   useEffect(() => {
@@ -175,8 +189,11 @@ export function EmojiPanel({
         </div>
       </div>
 
-      {/* 中部：分组标签（横向滚动，带下划线指示器） */}
-      <div className="border-b border-border bg-muted/30">
+      {/* 中部：分组标签（横向滚动，右侧渐变提示） */}
+      <div className="border-b border-border bg-muted/30 relative">
+        {showScrollHint && (
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-muted/30 to-transparent z-10" />
+        )}
         <div
           ref={categoryScrollRef}
           className="flex gap-1 p-2 overflow-x-auto scrollbar-hide relative"
