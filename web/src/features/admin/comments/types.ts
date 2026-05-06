@@ -9,11 +9,11 @@ export type CommentStatusFilter = "all" | CommentStatus;
 /** 评论图片信息 */
 export interface CommentPicture {
   url: string;
+  thumbnail: string;
   width: number;
   height: number;
   size: number;
 }
-
 /** 评论表情信息 */
 export interface CommentEmote {
   id: number;

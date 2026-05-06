@@ -4,7 +4,7 @@
  * 使用 react-query 管理数据获取和变更
  */
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   useAdminComments,
   useAdminCommentActions,
@@ -12,7 +12,10 @@ import {
   useBatchDeleteComments,
   useCommentDetail,
 } from "@/features/admin/comments/api";
-import type { ApiComment, CommentStatusFilter } from "@/features/admin/comments/types";
+import type {
+  ApiComment,
+  CommentStatusFilter,
+} from "@/features/admin/comments/types";
 import {
   Table,
   TableBody,
@@ -36,7 +39,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from "@/components/ui/sheet";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorFallback } from "@/components/shared/ErrorFallback";
@@ -50,10 +52,8 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
-  ExternalLink,
   Eye,
   User,
-  Mail,
   Globe,
   Clock,
 } from "lucide-react";
@@ -168,7 +168,8 @@ export default function Comments() {
 
   // 评论详情抽屉状态
   const [detailId, setDetailId] = useState<string | null>(null);
-  const { data: detailComment, isLoading: detailLoading } = useCommentDetail(detailId);
+  const { data: detailComment, isLoading: detailLoading } =
+    useCommentDetail(detailId);
 
   const comments = data?.comments ?? [];
   const isActing =
@@ -267,10 +268,7 @@ export default function Comments() {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           {/* 状态筛选下拉框 */}
-          <Select
-            value={statusFilter}
-            onValueChange={handleStatusChange}
-          >
+          <Select value={statusFilter} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="筛选状态">
                 {statusFilterLabels[statusFilter]}
@@ -345,9 +343,7 @@ export default function Comments() {
                   : "暂无垃圾评论"
           }
           description={
-            statusFilter === "all"
-              ? "还没有任何评论"
-              : "所有评论都已审核完毕"
+            statusFilter === "all" ? "还没有任何评论" : "所有评论都已审核完毕"
           }
           icon={<MessageSquare className="size-12" />}
         />
@@ -388,7 +384,10 @@ export default function Comments() {
                 const statusBadge = getStatusBadge(comment.status);
 
                 return (
-                  <TableRow key={comment.id} className={isSelected ? "bg-muted/50" : ""}>
+                  <TableRow
+                    key={comment.id}
+                    className={isSelected ? "bg-muted/50" : ""}
+                  >
                     <TableCell>
                       <button
                         onClick={() => toggleSelect(comment.id)}
@@ -414,9 +413,9 @@ export default function Comments() {
                         <span>{comment.author_name}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[300px]">
-                      <div className="whitespace-pre-wrap break-words text-sm">
-                        {comment.content?.message ?? comment.content ?? "-"}
+                    <TableCell className="max-w-75">
+                      <div className="whitespace-pre-wrap wrap-break-word text-sm">
+                        {comment.content?.message ?? "-"}
                       </div>
                       {comment.content?.pictures &&
                         comment.content.pictures.length > 0 && (
@@ -489,12 +488,12 @@ export default function Comments() {
       {/* 删除确认弹窗 */}
       <ConfirmDialog
         open={deleteConfirm.open}
-        onClose={() => setDeleteConfirm({ open: false, id: "", isBatch: false })}
+        onClose={() =>
+          setDeleteConfirm({ open: false, id: "", isBatch: false })
+        }
         onConfirm={confirmDelete}
         title={
-          deleteConfirm.isBatch
-            ? `删除 ${selectedIds.size} 条评论`
-            : "删除评论"
+          deleteConfirm.isBatch ? `删除 ${selectedIds.size} 条评论` : "删除评论"
         }
         description={
           deleteConfirm.isBatch
@@ -506,7 +505,10 @@ export default function Comments() {
       />
 
       {/* 评论详情抽屉 */}
-      <Sheet open={!!detailId} onOpenChange={(open) => !open && setDetailId(null)}>
+      <Sheet
+        open={!!detailId}
+        onOpenChange={(open) => !open && setDetailId(null)}
+      >
         <SheetContent side="right" className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle>评论详情</SheetTitle>
@@ -536,10 +538,14 @@ export default function Comments() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{detailComment.author_name}</p>
+                  <p className="font-medium truncate">
+                    {detailComment.author_name}
+                  </p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     {detailComment.author_email && (
-                      <span className="truncate">{detailComment.author_email}</span>
+                      <span className="truncate">
+                        {detailComment.author_email}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -553,7 +559,7 @@ export default function Comments() {
                 {detailComment.content ? (
                   <CommentContent
                     content={detailComment.content}
-                    className="whitespace-pre-wrap break-words"
+                    className="whitespace-pre-wrap wrap-break-word"
                   />
                 ) : (
                   <p className="text-muted-foreground">无内容</p>
@@ -574,16 +580,18 @@ export default function Comments() {
                     className="flex items-center gap-1.5 text-primary hover:underline"
                   >
                     <Globe className="size-4" />
-                    <span className="truncate max-w-[150px]">网站</span>
+                    <span className="truncate max-w-37.5">网站</span>
                   </a>
                 )}
               </div>
 
               {/* 所属文章 */}
               <div className="rounded-lg border p-3 flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">所属文章：</span>
+                <span className="text-sm text-muted-foreground">
+                  所属文章：
+                </span>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium truncate max-w-[200px]">
+                  <span className="font-medium truncate max-w-50">
                     {detailComment.post_title ?? "未知文章"}
                   </span>
                   {detailComment.post_id && (
