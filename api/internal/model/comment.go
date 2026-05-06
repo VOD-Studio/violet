@@ -63,9 +63,41 @@ type CommentPicture struct {
 }
 
 // CommentWithPost 评论与文章信息的组合结构（用于管理后台列表）
+// 不嵌入 Comment 避免 nil 指针导致的 TableName panic
 type CommentWithPost struct {
-	// Comment 评论数据
-	*Comment
+	// ID 评论唯一标识
+	ID uuid.UUID `json:"id"`
+	// PostID 所属文章 ID
+	PostID uuid.UUID `json:"post_id"`
+	// ParentID 父评论 ID
+	ParentID *uuid.UUID `json:"parent_id"`
+	// Path 评论路径
+	Path string `json:"path"`
+	// Depth 评论嵌套深度
+	Depth int16 `json:"depth"`
+	// AuthorName 评论者昵称
+	AuthorName string `json:"author_name"`
+	// AuthorEmail 评论者邮箱
+	AuthorEmail *string `json:"author_email"`
+	// AuthorURL 评论者网站
+	AuthorURL *string `json:"author_url"`
+	// AvatarURL 评论者头像地址
+	AvatarURL *string `json:"avatar_url"`
+	// Body 评论内容
+	Body string `json:"body"`
+	// Pictures 评论图片（JSONB）
+	Pictures []byte `json:"pictures"`
+	// Status 评论状态
+	Status string `json:"status"`
+	// CreatedAt 创建时间
+	CreatedAt time.Time `json:"created_at"`
+	// UpdatedAt 更新时间
+	UpdatedAt time.Time `json:"updated_at"`
 	// PostTitle 文章标题
 	PostTitle string `json:"post_title"`
+}
+
+// TableName 指定表名
+func (CommentWithPost) TableName() string {
+	return "comments"
 }
