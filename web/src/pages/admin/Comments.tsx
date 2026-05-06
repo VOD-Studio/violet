@@ -397,9 +397,9 @@ export default function Comments() {
                     </TableCell>
                     <TableCell className="max-w-[300px]">
                       <div className="whitespace-pre-wrap break-words text-sm">
-                        {comment.content.message}
+                        {comment.content?.message ?? comment.content ?? "-"}
                       </div>
-                      {comment.content.pictures &&
+                      {comment.content?.pictures &&
                         comment.content.pictures.length > 0 && (
                           <div className="mt-1 text-xs text-muted-foreground">
                             {comment.content.pictures.length} 张图片

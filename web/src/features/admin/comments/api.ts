@@ -21,12 +21,11 @@ export function useAdminComments(status: CommentStatusFilter = "all") {
   return useQuery({
     queryKey: commentKeys.list(status),
     queryFn: async () => {
-      // 如果是 all，使用 pending 接口（后续需要后端支持 all 接口）
-      // 暂时使用 pending 接口作为 fallback
-      const endpoint =
-        status === "all"
-          ? "/admin/comments/pending"
-          : `/admin/comments?status=${status}`;
+      // 构建 API endpoint
+      let endpoint = "/admin/comments";
+      if (status !== "all") {
+        endpoint += `?status=${status}`;
+      }
       const res = await api.get<CommentsListResponse>(endpoint);
       return {
         comments: res.comments ?? [],
