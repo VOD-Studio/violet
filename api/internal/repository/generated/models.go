@@ -13,6 +13,19 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
+type Announcement struct {
+	ID        int32         `json:"id"`
+	Title     string        `json:"title"`
+	Content   string        `json:"content"`
+	Type      string        `json:"type"`
+	IsActive  bool          `json:"is_active"`
+	StartTime sql.NullTime  `json:"start_time"`
+	EndTime   sql.NullTime  `json:"end_time"`
+	CreatedBy uuid.NullUUID `json:"created_by"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+}
+
 type AuditLog struct {
 	ID           int32          `json:"id"`
 	UserID       uuid.NullUUID  `json:"user_id"`

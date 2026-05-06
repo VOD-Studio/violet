@@ -109,6 +109,7 @@ func main() {
 	permissionService := service.NewPermissionService(queries)
 	roleService := service.NewRoleService(queries, permissionService)
 	auditService := service.NewAuditService(queries)
+	announcementService := service.NewAnnouncementService(queries)
 
 	count, err := queries.CountEmojiGroups(ctx)
 	if err != nil {
@@ -150,6 +151,7 @@ func main() {
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
 	roleHandler := handler.NewRoleHandler(roleService)
 	auditHandler := handler.NewAuditHandler(auditService)
+	announcementHandler := handler.NewAnnouncementHandler(announcementService)
 
 	// --- 路由注册 ---
 
@@ -318,6 +320,12 @@ func main() {
 			// 操作日志
 			r.Get("/logs", auditHandler.ListLogs)                    // 操作日志列表
 			r.Get("/logs/user/{id}", auditHandler.ListLogsByUser)    // 用户操作日志
+
+			// 公告管理
+			r.Get("/announcements", announcementHandler.ListAllAnnouncements)       // 公告列表
+			r.Post("/announcements", announcementHandler.CreateAnnouncement)        // 创建公告
+			r.Patch("/announcements/{id}", announcementHandler.UpdateAnnouncement)  // 更新公告
+			r.Delete("/announcements/{id}", announcementHandler.DeleteAnnouncement) // 删除公告
 
 			r.Get("/comments/pending", commentHandler.ListPendingComments)        // 待审核评论列表
 			r.Get("/comments/pending/count", commentHandler.CountPendingComments) // 待审核评论数量
