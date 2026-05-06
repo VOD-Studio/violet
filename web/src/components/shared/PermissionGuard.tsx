@@ -17,10 +17,10 @@ export function PermissionGuard({
   children,
   fallback = null,
 }: PermissionGuardProps) {
+  const hasPermission = usePermission(code ?? "");
   // 未传入权限码，直接显示
   if (!code) {
     return <>{children}</>;
   }
-  const hasPermission = usePermission(code);
   return hasPermission ? <>{children}</> : <>{fallback}</>;
 }
