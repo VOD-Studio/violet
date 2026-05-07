@@ -108,6 +108,39 @@ func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request
 	log.Info().Int("status", http.StatusOK).Int64("total", result.Total).Msg("请求处理成功")
 }
 
+// GetUserDetail 获取用户详情
+// GET /api/v1/admin/users/:id
+// 需要管理员认证
+func (h *UserManagementHandler) GetUserDetail(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	log.Info().Str("handler", "GetUserDetail").Str("id", idStr).Msg("处理请求")
+
+	targetID, err := uuid.Parse(idStr)
+	if err != nil {
+		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
+		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID")
+		return
+	}
+
+	user, err := h.userService.GetUserByID(r.Context(), targetID)
+	if err != nil {
+		log.Error().Err(err).Str("operation", "GetUserDetail").Str("user_id", idStr).Msg("服务调用失败")
+		handleUserServiceError(w, err)
+		return
+	}
+
+	response.Success(w, userResponse{
+		ID:            user.ID.String(),
+		Username:      user.Username,
+		Email:         user.Email,
+		Role:          user.Role,
+		IsActive:      user.IsActive,
+		EmailVerified: user.EmailVerified,
+		CreatedAt:     user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	})
+	log.Info().Int("status", http.StatusOK).Str("user_id", idStr).Msg("请求处理成功")
+}
+
 // BatchUpdateUserStatus 批量启用/禁用用户
 // POST /api/v1/admin/users/batch-status
 // 需要管理员认证

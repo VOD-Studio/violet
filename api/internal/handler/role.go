@@ -268,6 +268,18 @@ func (h *RoleHandler) UpdateRolePermissions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// 获取当前权限列表用于对比
+	currentRole, err := h.roleService.GetRoleWithPermissions(r.Context(), int32(id))
+	if err != nil {
+		log.Error().Err(err).Msg("获取当前权限失败")
+		handleRoleServiceError(w, err)
+		return
+	}
+	currentPerms := make([]string, 0, len(currentRole.Permissions))
+	for _, p := range currentRole.Permissions {
+		currentPerms = append(currentPerms, p.Code)
+	}
+
 	var req struct {
 		Permissions []string `json:"permissions"`
 	}
@@ -284,7 +296,31 @@ func (h *RoleHandler) UpdateRolePermissions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// 记录审计日志
+	// 计算权限变更 diff
+	addedPerms := []string{}
+	removedPerms := []string{}
+	currentSet := make(map[string]bool)
+	for _, p := range currentPerms {
+		currentSet[p] = true
+	}
+	newSet := make(map[string]bool)
+	for _, p := range req.Permissions {
+		newSet[p] = true
+	}
+	// 找出新增的权限
+	for _, p := range req.Permissions {
+		if !currentSet[p] {
+			addedPerms = append(addedPerms, p)
+		}
+	}
+	// 找出移除的权限
+	for _, p := range currentPerms {
+		if !newSet[p] {
+			removedPerms = append(removedPerms, p)
+		}
+	}
+
+	// 记录审计日志（包含 diff）
 	operatorID := middleware.GetUserID(r.Context())
 	operatorUUID, _ := uuid.Parse(operatorID)
 	_ = h.auditService.LogWithDetail(r.Context(), service.AuditLogEntry{
@@ -293,10 +329,13 @@ func (h *RoleHandler) UpdateRolePermissions(w http.ResponseWriter, r *http.Reque
 		Action:       "update_role_permissions",
 		ResourceType: "role",
 		ResourceID:   idStr,
-		ResourceName: "",
+		ResourceName: currentRole.Name,
 		IPAddress:    getClientIPFromRequestRole(r),
 	}, map[string]interface{}{
-		"permissions": req.Permissions,
+		"added":   addedPerms,
+		"removed": removedPerms,
+		"current": currentPerms,
+		"new":     req.Permissions,
 	})
 
 	response.Success(w, map[string]interface{}{

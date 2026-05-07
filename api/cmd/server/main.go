@@ -312,6 +312,7 @@ func main() {
 			r.Put("/settings", settingsHandler.UpdateSettings) // 更新站点设置
 
 			r.Get("/users", userMgmtHandler.ListUsers)                      // 用户列表
+			r.Get("/users/{id}", userMgmtHandler.GetUserDetail)          // 用户详情
 			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)     // 修改用户角色
 			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus) // 启用/禁用用户
 			r.Post("/users/batch-status", userMgmtHandler.BatchUpdateUserStatus) // 批量启用/禁用用户

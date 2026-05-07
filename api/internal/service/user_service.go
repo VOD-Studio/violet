@@ -255,3 +255,22 @@ func (s *UserService) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([
 	log.Info().Int("count", len(users)).Msg("用户信息查询成功")
 	return users, nil
 }
+
+// GetUserByID 根据单个 ID 获取用户详情
+func (s *UserService) GetUserByID(ctx context.Context, userID uuid.UUID) (*generated.User, error) {
+	log.Info().Str("service", "UserService").Str("operation", "GetUserByID").
+		Str("user_id", userID.String()).Msg("查询用户详情")
+
+	user, err := s.queries.GetUserByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("user_id", userID.String()).Msg("用户不存在")
+			return nil, ErrUserNotFound
+		}
+		log.Error().Err(err).Msg("查询用户详情失败")
+		return nil, fmt.Errorf("查询用户详情失败: %w", err)
+	}
+
+	log.Info().Str("user_id", userID.String()).Msg("用户详情查询成功")
+	return user, nil
+}
