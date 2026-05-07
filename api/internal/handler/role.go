@@ -8,8 +8,10 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
+	"blog-api/internal/middleware"
 	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
@@ -18,14 +20,25 @@ import (
 type RoleHandler struct {
 	roleService       *service.RoleService
 	permissionService *service.PermissionService
+	auditService      *service.AuditService
 }
 
 // NewRoleHandler 创建角色管理处理器实例
-func NewRoleHandler(roleService *service.RoleService, permissionService *service.PermissionService) *RoleHandler {
+func NewRoleHandler(roleService *service.RoleService, permissionService *service.PermissionService, auditService *service.AuditService) *RoleHandler {
 	return &RoleHandler{
 		roleService:       roleService,
 		permissionService: permissionService,
+		auditService:      auditService,
 	}
+}
+
+// 辅助函数：获取客户端 IP
+func getClientIPFromRequestRole(r *http.Request) string {
+	ip := r.Header.Get("X-Forwarded-For")
+	if ip != "" {
+		return ip
+	}
+	return r.RemoteAddr
 }
 
 // roleListResponse 角色信息响应
@@ -181,6 +194,19 @@ func (h *RoleHandler) DeleteRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 记录审计日志
+	operatorID := middleware.GetUserID(r.Context())
+	operatorUUID, _ := uuid.Parse(operatorID)
+	_ = h.auditService.Log(r.Context(), service.AuditLogEntry{
+		UserID:       uuid.NullUUID{UUID: operatorUUID, Valid: true},
+		UserName:     middleware.GetUserEmail(r.Context()),
+		Action:       "delete_role",
+		ResourceType: "role",
+		ResourceID:   idStr,
+		ResourceName: "",
+		IPAddress:    getClientIPFromRequestRole(r),
+	})
+
 	response.Success(w, map[string]interface{}{
 		"message": "角色删除成功",
 	})
@@ -246,6 +272,21 @@ func (h *RoleHandler) UpdateRolePermissions(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// 记录审计日志
+	operatorID := middleware.GetUserID(r.Context())
+	operatorUUID, _ := uuid.Parse(operatorID)
+	_ = h.auditService.LogWithDetail(r.Context(), service.AuditLogEntry{
+		UserID:       uuid.NullUUID{UUID: operatorUUID, Valid: true},
+		UserName:     middleware.GetUserEmail(r.Context()),
+		Action:       "update_role_permissions",
+		ResourceType: "role",
+		ResourceID:   idStr,
+		ResourceName: "",
+		IPAddress:    getClientIPFromRequestRole(r),
+	}, map[string]interface{}{
+		"permissions": req.Permissions,
+	})
+
 	response.Success(w, map[string]interface{}{
 		"message": "角色权限更新成功",
 	})
@@ -263,6 +304,10 @@ func handleRoleServiceError(w http.ResponseWriter, err error) {
 		response.Error(w, http.StatusConflict, "role_in_use", "角色正在被用户使用，无法删除")
 	case errors.Is(err, service.ErrInvalidPermission):
 		response.Error(w, http.StatusBadRequest, "invalid_permission", err.Error())
+	case errors.Is(err, service.ErrCannotModifyBuiltinRole):
+		response.Error(w, http.StatusForbidden, "cannot_modify_builtin", "不能修改或删除内置角色")
+	case errors.Is(err, service.ErrPermissionAddFailed):
+		response.Error(w, http.StatusInternalServerError, "permission_add_failed", err.Error())
 	default:
 		response.InternalServerError(w, "服务器内部错误")
 	}

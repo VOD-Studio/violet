@@ -3,7 +3,7 @@
  * 支持创建、编辑、删除权限，以及为角色分配权限
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   usePermissions,
   useRoles,
@@ -109,11 +109,11 @@ function PermissionsContent() {
   const updateRolePermissions = useUpdateRolePermissions();
 
   // 当角色权限加载完成时，更新选中状态
-  useState(() => {
+  useEffect(() => {
     if (rolePermissions) {
       setSelectedPermissionCodes(new Set(rolePermissions.map((p) => p.code)));
     }
-  });
+  }, [rolePermissions]);
 
   // 创建权限
   async function handleCreate() {

@@ -109,6 +109,15 @@ export default function Users() {
     newStatus: boolean;
   }>({ open: false, userId: "", userName: "", newStatus: false });
 
+  // 角色修改确认弹窗状态
+  const [roleConfirmState, setRoleConfirmState] = useState<{
+    open: boolean;
+    userId: string;
+    userName: string;
+    currentRole: string;
+    newRole: string;
+  }>({ open: false, userId: "", userName: "", currentRole: "", newRole: "" });
+
   // 批量操作确认弹窗状态
   const [batchConfirmState, setBatchConfirmState] = useState<{
     open: boolean;
@@ -154,7 +163,39 @@ export default function Users() {
   }
 
   /**
-   * 修改用户角色
+   * 弹出角色修改确认弹窗
+   */
+  function handleRoleChange(
+    userId: string,
+    userName: string,
+    currentRole: string,
+    newRole: string
+  ) {
+    setRoleConfirmState({
+      open: true,
+      userId,
+      userName,
+      currentRole,
+      newRole,
+    });
+  }
+
+  /**
+   * 确认修改角色
+   */
+  function confirmRoleChange() {
+    updateRole.mutate({ id: roleConfirmState.userId, role: roleConfirmState.newRole });
+    setRoleConfirmState({
+      open: false,
+      userId: "",
+      userName: "",
+      currentRole: "",
+      newRole: "",
+    });
+  }
+
+  /**
+   * 修改用户角色（直接修改，无确认）
    */
   function changeRole(userId: string, newRole: string) {
     updateRole.mutate({ id: userId, role: newRole });
@@ -353,7 +394,7 @@ export default function Users() {
                     <Select
                       value={user.role}
                       onValueChange={(value) =>
-                        value && changeRole(user.id, value)
+                        value && value !== user.role && handleRoleChange(user.id, user.username, user.role, value)
                       }
                     >
                       <SelectTrigger className="w-24">
@@ -438,6 +479,29 @@ export default function Users() {
         }
         confirmLabel={batchConfirmState.is_active ? "启用" : "禁用"}
         destructive={!batchConfirmState.is_active}
+      />
+
+      {/* 角色修改确认弹窗 */}
+      <ConfirmDialog
+        open={roleConfirmState.open}
+        onClose={() =>
+          setRoleConfirmState({
+            open: false,
+            userId: "",
+            userName: "",
+            currentRole: "",
+            newRole: "",
+          })
+        }
+        onConfirm={confirmRoleChange}
+        title="修改用户角色"
+        description={
+          roleConfirmState.currentRole === "superadmin" || roleConfirmState.currentRole === "admin"
+            ? `确定要将用户「${roleConfirmState.userName}」从「${roleConfirmState.currentRole === "superadmin" ? "超级管理员" : roleConfirmState.currentRole === "admin" ? "管理员" : "用户"}」降级为「${roleConfirmState.newRole === "superadmin" ? "超级管理员" : roleConfirmState.newRole === "admin" ? "管理员" : "用户"}」吗？此操作可能会影响该用户的权限。`
+            : `确定要将用户「${roleConfirmState.userName}」的角色修改为「${roleConfirmState.newRole === "superadmin" ? "超级管理员" : roleConfirmState.newRole === "admin" ? "管理员" : "用户"}」吗？`
+        }
+        confirmLabel="确认修改"
+        destructive={roleConfirmState.currentRole === "superadmin" || roleConfirmState.currentRole === "admin"}
       />
     </div>
   );

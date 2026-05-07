@@ -133,6 +133,10 @@ func handlePermissionServiceError(w http.ResponseWriter, err error) {
 		response.Error(w, http.StatusConflict, "permission_code_exists", "权限代码已存在")
 	case errors.Is(err, service.ErrPermissionInUse):
 		response.Error(w, http.StatusConflict, "permission_in_use", "权限正在被角色使用，无法删除")
+	case errors.Is(err, service.ErrInvalidPermissionCode):
+		response.Error(w, http.StatusBadRequest, "invalid_permission_code", err.Error())
+	case errors.Is(err, service.ErrPermissionCodeTooLong):
+		response.Error(w, http.StatusBadRequest, "permission_code_too_long", err.Error())
 	default:
 		response.InternalServerError(w, "服务器内部错误")
 	}

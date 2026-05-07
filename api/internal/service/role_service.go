@@ -22,17 +22,35 @@ var (
 	ErrRoleInUse = errors.New("角色正在被用户使用，无法删除")
 	// ErrInvalidPermission 无效的权限代码
 	ErrInvalidPermission = errors.New("无效的权限代码")
+	// ErrCannotModifyBuiltinRole 不能修改内置角色
+	ErrCannotModifyBuiltinRole = errors.New("不能修改或删除内置角色")
+	// ErrPermissionAddFailed 权限添加失败
+	ErrPermissionAddFailed = errors.New("权限添加失败")
 )
+
+// 内置角色列表，不允许修改或删除
+var builtinRoles = map[string]bool{
+	"admin":      true,
+	"user":       true,
+	"superadmin": true,
+}
+
+// isBuiltinRole 检查是否为内置角色
+func isBuiltinRole(name string) bool {
+	return builtinRoles[name]
+}
 
 // RoleService 角色管理业务服务
 type RoleService struct {
+	db                *sql.DB
 	queries           *generated.Queries
 	permissionService *PermissionService
 }
 
 // NewRoleService 创建角色管理服务实例
-func NewRoleService(queries *generated.Queries, permissionService *PermissionService) *RoleService {
+func NewRoleService(db *sql.DB, queries *generated.Queries, permissionService *PermissionService) *RoleService {
 	return &RoleService{
+		db:                db,
 		queries:           queries,
 		permissionService: permissionService,
 	}
@@ -103,7 +121,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, id int32, name, descriptio
 		Int32("role_id", id).Str("name", name).Msg("开始更新角色")
 
 	// 检查角色是否存在
-	_, err := s.queries.GetRoleByID(ctx, id)
+	existingRole, err := s.queries.GetRoleByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Warn().Int32("role_id", id).Msg("角色不存在")
@@ -113,10 +131,16 @@ func (s *RoleService) UpdateRole(ctx context.Context, id int32, name, descriptio
 		return nil, fmt.Errorf("查询角色失败: %w", err)
 	}
 
+	// 检查是否为内置角色，禁止修改名称
+	if isBuiltinRole(existingRole.Name) && name != "" && name != existingRole.Name {
+		log.Warn().Int32("role_id", id).Str("name", existingRole.Name).Msg("不能修改内置角色的名称")
+		return nil, ErrCannotModifyBuiltinRole
+	}
+
 	// 如果要更新名称，检查新名称是否已被其他角色使用
 	if name != "" {
-		existingRole, err := s.queries.GetRoleByName(ctx, name)
-		if err == nil && existingRole.ID != id {
+		roleByName, err := s.queries.GetRoleByName(ctx, name)
+		if err == nil && roleByName.ID != id {
 			log.Warn().Str("name", name).Msg("角色名称已被其他角色使用")
 			return nil, ErrRoleNameExists
 		}
@@ -147,7 +171,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, id int32) error {
 		Int32("role_id", id).Msg("开始删除角色")
 
 	// 检查角色是否存在
-	_, err := s.queries.GetRoleByID(ctx, id)
+	role, err := s.queries.GetRoleByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Warn().Int32("role_id", id).Msg("角色不存在")
@@ -155,6 +179,12 @@ func (s *RoleService) DeleteRole(ctx context.Context, id int32) error {
 		}
 		log.Error().Err(err).Msg("查询角色失败")
 		return fmt.Errorf("查询角色失败: %w", err)
+	}
+
+	// 检查是否为内置角色
+	if isBuiltinRole(role.Name) {
+		log.Warn().Int32("role_id", id).Str("name", role.Name).Msg("不能删除内置角色")
+		return ErrCannotModifyBuiltinRole
 	}
 
 	// 检查是否有用户正在使用该角色
@@ -260,27 +290,52 @@ func (s *RoleService) UpdateRolePermissions(ctx context.Context, roleID int32, p
 		}
 	}
 
+	// 使用事务更新权限
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("开启事务失败")
+		return fmt.Errorf("开启事务失败: %w", err)
+	}
+	defer tx.Rollback()
+
+	txQueries := s.queries.WithTx(tx)
+
 	// 删除现有权限
-	err = s.queries.UpdateRolePermissions(ctx, roleID)
+	err = txQueries.UpdateRolePermissions(ctx, roleID)
 	if err != nil {
 		log.Error().Err(err).Msg("删除现有权限失败")
 		return fmt.Errorf("删除现有权限失败: %w", err)
 	}
 
-	// 添加新权限
+	// 添加新权限，记录失败情况
+	failedCodes := []string{}
 	for _, code := range permissionCodes {
-		perm, err := s.queries.GetPermissionByCode(ctx, code)
+		perm, err := txQueries.GetPermissionByCode(ctx, code)
 		if err != nil {
 			log.Error().Err(err).Str("code", code).Msg("查询权限失败")
+			failedCodes = append(failedCodes, code)
 			continue
 		}
-		err = s.queries.AddRolePermission(ctx, generated.AddRolePermissionParams{
+		err = txQueries.AddRolePermission(ctx, generated.AddRolePermissionParams{
 			RoleID:       roleID,
 			PermissionID: perm.ID,
 		})
 		if err != nil {
 			log.Error().Err(err).Int32("role_id", roleID).Int32("permission_id", perm.ID).Msg("添加角色权限失败")
+			failedCodes = append(failedCodes, code)
 		}
+	}
+
+	// 如果有权限添加失败，返回错误
+	if len(failedCodes) > 0 {
+		log.Warn().Strs("failed_codes", failedCodes).Msg("部分权限添加失败")
+		return fmt.Errorf("%w: %v", ErrPermissionAddFailed, failedCodes)
+	}
+
+	// 提交事务
+	if err := tx.Commit(); err != nil {
+		log.Error().Err(err).Msg("提交事务失败")
+		return fmt.Errorf("提交事务失败: %w", err)
 	}
 
 	// 重新加载权限缓存

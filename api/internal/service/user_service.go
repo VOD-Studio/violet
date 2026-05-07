@@ -17,10 +17,12 @@ import (
 var (
 	// ErrInvalidRole 无效的用户角色
 	ErrInvalidRole = errors.New("无效的用户角色")
-	// ErrCannotModifySelf 不能修改自己的角色
-	ErrCannotModifySelf = errors.New("不能修改自己的角色")
+	// ErrCannotModifySelf 不能修改自己的角色或状态
+	ErrCannotModifySelf = errors.New("不能修改自己的角色或状态")
 	// ErrEmptyUserIDs 空的用户 ID 列表
 	ErrEmptyUserIDs = errors.New("用户 ID 列表不能为空")
+	// ErrCannotModifySuperAdmin 不能操作超级管理员账户
+	ErrCannotModifySuperAdmin = errors.New("普通管理员无法操作超级管理员账户")
 )
 
 // 合法的用户角色列表
@@ -158,7 +160,7 @@ func (s *UserService) BatchUpdateUserStatus(ctx context.Context, userIDs []uuid.
 	return users, nil
 }
 
-// UpdateUserRole 更新用户角色
+// UpdateUserRole 更新用户角色（同时更新 role 字符串和 role_id 外键）
 func (s *UserService) UpdateUserRole(ctx context.Context, targetUserID uuid.UUID, role string) (*generated.User, error) {
 	log.Info().Str("service", "UserService").Str("operation", "UpdateUserRole").
 		Str("user_id", targetUserID.String()).Str("role", role).Msg("开始更新用户角色")
@@ -181,8 +183,8 @@ func (s *UserService) UpdateUserRole(ctx context.Context, targetUserID uuid.UUID
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
 
-	// 更新角色
-	log.Debug().Str("query", "UpdateUserRole").Str("user_id", targetUserID.String()).Msg("更新用户角色")
+	// 更新 role 字符串
+	log.Debug().Str("query", "UpdateUserRole").Str("user_id", targetUserID.String()).Msg("更新用户角色字符串")
 	user, err := s.queries.UpdateUserRole(ctx, generated.UpdateUserRoleParams{
 		ID:   targetUserID,
 		Role: role,
@@ -190,6 +192,26 @@ func (s *UserService) UpdateUserRole(ctx context.Context, targetUserID uuid.UUID
 	if err != nil {
 		log.Error().Err(err).Str("user_id", targetUserID.String()).Msg("更新用户角色失败")
 		return nil, fmt.Errorf("更新用户角色失败: %w", err)
+	}
+
+	// 获取对应的 role_id 并更新
+	if role != "superadmin" {
+		roleRecord, err := s.queries.GetRoleByName(ctx, role)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				log.Error().Err(err).Str("role", role).Msg("获取角色 ID 失败")
+			}
+		} else {
+			err = s.queries.UpdateUserRoleByID(ctx, generated.UpdateUserRoleByIDParams{
+				ID:     targetUserID,
+				RoleID: sql.NullInt32{Int32: roleRecord.ID, Valid: true},
+			})
+			if err != nil {
+				log.Error().Err(err).Str("user_id", targetUserID.String()).Msg("更新用户 role_id 失败")
+			} else {
+				user.RoleID = sql.NullInt32{Int32: roleRecord.ID, Valid: true}
+			}
+		}
 	}
 
 	log.Info().Str("user_id", targetUserID.String()).Str("role", role).Msg("用户角色更新成功")
@@ -217,4 +239,19 @@ func (s *UserService) UpdateUserStatus(ctx context.Context, targetUserID uuid.UU
 	}
 
 	return user, nil
+}
+
+// GetUsersByIDs 根据 ID 列表获取用户信息
+func (s *UserService) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]*generated.User, error) {
+	log.Info().Str("service", "UserService").Str("operation", "GetUsersByIDs").
+		Int("count", len(userIDs)).Msg("查询用户信息")
+
+	users, err := s.queries.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		log.Error().Err(err).Msg("查询用户信息失败")
+		return nil, fmt.Errorf("查询用户信息失败: %w", err)
+	}
+
+	log.Info().Int("count", len(users)).Msg("用户信息查询成功")
+	return users, nil
 }

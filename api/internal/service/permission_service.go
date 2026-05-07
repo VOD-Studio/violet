@@ -5,12 +5,21 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"regexp"
 	"sync"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/repository/generated"
 )
+
+// 权限代码格式正则表达式：module:action
+var permissionCodeRegex = regexp.MustCompile(`^[a-z]+:[a-z]+$`)
+
+// 缓存刷新重试次数
+const cacheReloadMaxRetries = 3
+const cacheReloadRetryDelay = 100 * time.Millisecond
 
 // 权限管理相关错误定义
 var (
@@ -20,6 +29,10 @@ var (
 	ErrPermissionCodeExists = errors.New("权限代码已存在")
 	// ErrPermissionInUse 权限正在被角色使用
 	ErrPermissionInUse = errors.New("权限正在被角色使用，无法删除")
+	// ErrInvalidPermissionCode 权限代码格式无效
+	ErrInvalidPermissionCode = errors.New("权限代码格式无效，必须是 module:action 格式（如 post:create）")
+	// ErrPermissionCodeTooLong 权限代码过长
+	ErrPermissionCodeTooLong = errors.New("权限代码长度不能超过 50 字符")
 )
 
 // PermissionService 权限服务
@@ -82,6 +95,22 @@ func (s *PermissionService) Reload(ctx context.Context) error {
 
 	log.Info().Int("permissions", len(perms)).Int("role_mappings", len(rolePerms)).Msg("权限缓存加载成功")
 	return nil
+}
+
+// ReloadWithRetry 从数据库重新加载权限缓存（带重试机制）
+func (s *PermissionService) ReloadWithRetry(ctx context.Context) error {
+	var lastErr error
+	for i := 0; i < cacheReloadMaxRetries; i++ {
+		err := s.Reload(ctx)
+		if err == nil {
+			return nil
+		}
+		lastErr = err
+		log.Warn().Err(err).Int("attempt", i+1).Msg("缓存刷新失败，准备重试")
+		time.Sleep(cacheReloadRetryDelay)
+	}
+	log.Error().Err(lastErr).Msg("缓存刷新多次重试后仍失败")
+	return lastErr
 }
 
 // HasPermission 检查角色是否拥有指定权限
@@ -153,6 +182,16 @@ func (s *PermissionService) CreatePermission(ctx context.Context, code, name str
 	log.Info().Str("service", "PermissionService").Str("operation", "CreatePermission").
 		Str("code", code).Str("name", name).Msg("开始创建权限")
 
+	// 验证权限代码格式
+	if len(code) > 50 {
+		log.Warn().Str("code", code).Int("length", len(code)).Msg("权限代码过长")
+		return nil, ErrPermissionCodeTooLong
+	}
+	if !permissionCodeRegex.MatchString(code) {
+		log.Warn().Str("code", code).Msg("权限代码格式无效")
+		return nil, ErrInvalidPermissionCode
+	}
+
 	// 检查权限代码是否已存在
 	_, err := s.queries.GetPermissionByCode(ctx, code)
 	if err == nil {
@@ -175,8 +214,8 @@ func (s *PermissionService) CreatePermission(ctx context.Context, code, name str
 		return nil, err
 	}
 
-	// 重新加载缓存
-	if err := s.Reload(ctx); err != nil {
+	// 重新加载缓存（带重试）
+	if err := s.ReloadWithRetry(ctx); err != nil {
 		log.Error().Err(err).Msg("重新加载权限缓存失败")
 	}
 
@@ -211,8 +250,8 @@ func (s *PermissionService) UpdatePermission(ctx context.Context, code, name str
 		return nil, err
 	}
 
-	// 重新加载缓存
-	if err := s.Reload(ctx); err != nil {
+	// 重新加载缓存（带重试）
+	if err := s.ReloadWithRetry(ctx); err != nil {
 		log.Error().Err(err).Msg("重新加载权限缓存失败")
 	}
 
@@ -256,8 +295,8 @@ func (s *PermissionService) DeletePermission(ctx context.Context, code string) e
 		return err
 	}
 
-	// 重新加载缓存
-	if err := s.Reload(ctx); err != nil {
+	// 重新加载缓存（带重试）
+	if err := s.ReloadWithRetry(ctx); err != nil {
 		log.Error().Err(err).Msg("重新加载权限缓存失败")
 	}
 

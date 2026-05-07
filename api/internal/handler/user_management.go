@@ -11,19 +11,31 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
+	"blog-api/internal/middleware"
 	"blog-api/internal/pkg/response"
 	"blog-api/internal/service"
 )
 
+// 辅助函数：获取客户端 IP
+func getClientIPFromRequest(r *http.Request) string {
+	ip := r.Header.Get("X-Forwarded-For")
+	if ip != "" {
+		return ip
+	}
+	return r.RemoteAddr
+}
+
 // UserManagementHandler 用户管理接口处理器
 type UserManagementHandler struct {
-	userService *service.UserService
+	userService   *service.UserService
+	auditService  *service.AuditService
 }
 
 // NewUserManagementHandler 创建用户管理处理器实例
-func NewUserManagementHandler(userService *service.UserService) *UserManagementHandler {
+func NewUserManagementHandler(userService *service.UserService, auditService *service.AuditService) *UserManagementHandler {
 	return &UserManagementHandler{
-		userService: userService,
+		userService:   userService,
+		auditService:  auditService,
 	}
 }
 
@@ -102,6 +114,9 @@ func (h *UserManagementHandler) ListUsers(w http.ResponseWriter, r *http.Request
 func (h *UserManagementHandler) BatchUpdateUserStatus(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "BatchUpdateUserStatus").Msg("处理请求")
 
+	operatorID := middleware.GetUserID(r.Context())
+	operatorRole := middleware.GetUserRole(r.Context())
+
 	var req struct {
 		UserIDs  []string `json:"user_ids" validate:"required,min=1"`
 		IsActive bool     `json:"is_active"`
@@ -130,12 +145,49 @@ func (h *UserManagementHandler) BatchUpdateUserStatus(w http.ResponseWriter, r *
 		userIDs = append(userIDs, id)
 	}
 
+	// 检查是否有超级管理员被选中（非超级管理员不能操作超级管理员）
+	if operatorRole != "superadmin" {
+		users, err := h.userService.GetUsersByIDs(r.Context(), userIDs)
+		if err != nil {
+			log.Error().Err(err).Msg("查询用户信息失败")
+			response.InternalServerError(w, "查询用户信息失败")
+			return
+		}
+		for _, u := range users {
+			if u.Role == "superadmin" {
+				log.Warn().Str("user_id", u.ID.String()).Msg("普通管理员无法操作超级管理员")
+				response.Error(w, http.StatusForbidden, "cannot_modify_superadmin", "普通管理员无法操作超级管理员账户")
+				return
+			}
+		}
+	}
+
 	users, err := h.userService.BatchUpdateUserStatus(r.Context(), userIDs, req.IsActive)
 	if err != nil {
 		log.Error().Err(err).Str("operation", "BatchUpdateUserStatus").Msg("服务调用失败")
 		handleUserServiceError(w, err)
 		return
 	}
+
+	// 记录审计日志
+	operatorUUID, _ := uuid.Parse(operatorID)
+	batchAction := "batch_disable_users"
+	if req.IsActive {
+		batchAction = "batch_enable_users"
+	}
+	_ = h.auditService.LogWithDetail(r.Context(), service.AuditLogEntry{
+		UserID:       uuid.NullUUID{UUID: operatorUUID, Valid: true},
+		UserName:     middleware.GetUserEmail(r.Context()),
+		Action:       batchAction,
+		ResourceType: "user",
+		ResourceID:   "",
+		ResourceName: "",
+		IPAddress:    getClientIPFromRequest(r),
+	}, map[string]interface{}{
+		"user_ids": req.UserIDs,
+		"count":    len(users),
+		"is_active": req.IsActive,
+	})
 
 	items := make([]userResponse, 0, len(users))
 	for _, u := range users {
@@ -165,10 +217,20 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 	idStr := chi.URLParam(r, "id")
 	log.Info().Str("handler", "UpdateUserRole").Str("id", idStr).Msg("处理请求")
 
+	operatorID := middleware.GetUserID(r.Context())
+	operatorRole := middleware.GetUserRole(r.Context())
+
 	targetID, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
 		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID")
+		return
+	}
+
+	// 检查是否在修改自己的角色
+	if operatorID == idStr {
+		log.Warn().Str("user_id", operatorID).Msg("不能修改自己的角色")
+		response.Error(w, http.StatusBadRequest, "cannot_modify_self", "不能修改自己的角色")
 		return
 	}
 
@@ -183,8 +245,23 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 
 	if req.Role != "user" && req.Role != "admin" && req.Role != "superadmin" {
 		log.Warn().Str("role", req.Role).Msg("参数验证失败")
-		response.Error(w, http.StatusBadRequest, "invalid_role", "角色值无效，只能为 user 或 admin")
+		response.Error(w, http.StatusBadRequest, "invalid_role", "角色值无效，只能为 user、admin 或 superadmin")
 		return
+	}
+
+	// 检查目标用户是否为超级管理员（非超级管理员不能操作）
+	if operatorRole != "superadmin" {
+		users, err := h.userService.GetUsersByIDs(r.Context(), []uuid.UUID{targetID})
+		if err != nil {
+			log.Error().Err(err).Msg("查询用户信息失败")
+			response.InternalServerError(w, "查询用户信息失败")
+			return
+		}
+		if len(users) > 0 && users[0].Role == "superadmin" {
+			log.Warn().Str("user_id", targetID.String()).Msg("普通管理员无法操作超级管理员")
+			response.Error(w, http.StatusForbidden, "cannot_modify_superadmin", "普通管理员无法操作超级管理员账户")
+			return
+		}
 	}
 
 	user, err := h.userService.UpdateUserRole(r.Context(), targetID, req.Role)
@@ -193,6 +270,20 @@ func (h *UserManagementHandler) UpdateUserRole(w http.ResponseWriter, r *http.Re
 		handleUserServiceError(w, err)
 		return
 	}
+
+	// 记录审计日志
+	operatorUUID, _ := uuid.Parse(operatorID)
+	_ = h.auditService.LogWithDetail(r.Context(), service.AuditLogEntry{
+		UserID:       uuid.NullUUID{UUID: operatorUUID, Valid: true},
+		UserName:     middleware.GetUserEmail(r.Context()),
+		Action:       "update_role",
+		ResourceType: "user",
+		ResourceID:   targetID.String(),
+		ResourceName: user.Username,
+		IPAddress:    getClientIPFromRequest(r),
+	}, map[string]interface{}{
+		"new_role": req.Role,
+	})
 
 	response.Success(w, userResponse{
 		ID:            user.ID.String(),
@@ -213,11 +304,36 @@ func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.
 	idStr := chi.URLParam(r, "id")
 	log.Info().Str("handler", "UpdateUserStatus").Str("id", idStr).Msg("处理请求")
 
+	operatorID := middleware.GetUserID(r.Context())
+	operatorRole := middleware.GetUserRole(r.Context())
+
 	targetID, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Warn().Err(err).Str("id", idStr).Msg("参数验证失败")
 		response.Error(w, http.StatusBadRequest, "invalid_param", "无效的用户 ID")
 		return
+	}
+
+	// 检查是否在修改自己的状态
+	if operatorID == idStr {
+		log.Warn().Str("user_id", operatorID).Msg("不能修改自己的状态")
+		response.Error(w, http.StatusBadRequest, "cannot_modify_self", "不能修改自己的状态")
+		return
+	}
+
+	// 检查目标用户是否为超级管理员（非超级管理员不能操作）
+	if operatorRole != "superadmin" {
+		users, err := h.userService.GetUsersByIDs(r.Context(), []uuid.UUID{targetID})
+		if err != nil {
+			log.Error().Err(err).Msg("查询用户信息失败")
+			response.InternalServerError(w, "查询用户信息失败")
+			return
+		}
+		if len(users) > 0 && users[0].Role == "superadmin" {
+			log.Warn().Str("user_id", targetID.String()).Msg("普通管理员无法操作超级管理员")
+			response.Error(w, http.StatusForbidden, "cannot_modify_superadmin", "普通管理员无法操作超级管理员账户")
+			return
+		}
 	}
 
 	var req struct {
@@ -235,6 +351,22 @@ func (h *UserManagementHandler) UpdateUserStatus(w http.ResponseWriter, r *http.
 		handleUserServiceError(w, err)
 		return
 	}
+
+	// 记录审计日志
+	operatorUUID, _ := uuid.Parse(operatorID)
+	action := "disable_user"
+	if req.IsActive {
+		action = "enable_user"
+	}
+	_ = h.auditService.LogWithDetail(r.Context(), service.AuditLogEntry{
+		UserID:       uuid.NullUUID{UUID: operatorUUID, Valid: true},
+		UserName:     middleware.GetUserEmail(r.Context()),
+		Action:       action,
+		ResourceType: "user",
+		ResourceID:   targetID.String(),
+		ResourceName: user.Username,
+		IPAddress:    getClientIPFromRequest(r),
+	}, nil)
 
 	response.Success(w, userResponse{
 		ID:            user.ID.String(),
@@ -257,6 +389,10 @@ func handleUserServiceError(w http.ResponseWriter, err error) {
 		response.Error(w, http.StatusBadRequest, "invalid_role", err.Error())
 	case errors.Is(err, service.ErrEmptyUserIDs):
 		response.Error(w, http.StatusBadRequest, "invalid_param", err.Error())
+	case errors.Is(err, service.ErrCannotModifySelf):
+		response.Error(w, http.StatusBadRequest, "cannot_modify_self", err.Error())
+	case errors.Is(err, service.ErrCannotModifySuperAdmin):
+		response.Error(w, http.StatusForbidden, "cannot_modify_superadmin", err.Error())
 	default:
 		response.InternalServerError(w, "服务器内部错误")
 	}

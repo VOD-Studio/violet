@@ -107,7 +107,7 @@ func main() {
 	emojiService := service.NewEmojiService(queries, "uploads/emojis")
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 	permissionService := service.NewPermissionService(queries)
-	roleService := service.NewRoleService(queries, permissionService)
+	roleService := service.NewRoleService(db, queries, permissionService)
 	auditService := service.NewAuditService(queries)
 	announcementService := service.NewAnnouncementService(queries)
 
@@ -141,7 +141,7 @@ func main() {
 	commentHandler := handler.NewCommentHandler(commentService, fileService)
 	adminHandler := handler.NewAdminHandler(statsService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
-	userMgmtHandler := handler.NewUserManagementHandler(userService)
+	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
 	mediaHandler := handler.NewMediaHandler(fileService, "uploads")
 	uploadHandler := handler.NewUploadHandler(uploadService)
 	musicHandler := handler.NewMusicHandler(musicService, musicSearchService)
@@ -149,7 +149,7 @@ func main() {
 	projectHandler := handler.NewProjectHandler(projectService)
 	emojiHandler := handler.NewEmojiHandler(emojiService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
-	roleHandler := handler.NewRoleHandler(roleService, permissionService)
+	roleHandler := handler.NewRoleHandler(roleService, permissionService, auditService)
 	auditHandler := handler.NewAuditHandler(auditService)
 	announcementHandler := handler.NewAnnouncementHandler(announcementService)
 	permissionHandler := handler.NewPermissionHandler(permissionService)
@@ -327,13 +327,16 @@ func main() {
 				r.Delete("/permissions/{code}", permissionHandler.DeletePermission) // 删除权限
 			})
 
-			// 角色管理
-			r.Get("/roles", roleHandler.ListRoles)                                // 角色列表
-			r.Post("/roles", roleHandler.CreateRole)                              // 创建角色
-			r.Patch("/roles/{id}", roleHandler.UpdateRole)                        // 更新角色
-			r.Delete("/roles/{id}", roleHandler.DeleteRole)                       // 删除角色
-			r.Get("/roles/{id}/permissions", roleHandler.GetRolePermissions)      // 获取角色权限
-			r.Patch("/roles/{id}/permissions", roleHandler.UpdateRolePermissions) // 设置角色权限
+			// 角色管理（查询不需要特殊权限，修改需要 role:manage 权限）
+			r.Get("/roles", roleHandler.ListRoles)                           // 角色列表
+			r.Get("/roles/{id}/permissions", roleHandler.GetRolePermissions) // 获取角色权限
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequirePermission(permissionService, "role:manage"))
+				r.Post("/roles", roleHandler.CreateRole)                              // 创建角色
+				r.Patch("/roles/{id}", roleHandler.UpdateRole)                        // 更新角色
+				r.Delete("/roles/{id}", roleHandler.DeleteRole)                       // 删除角色
+				r.Patch("/roles/{id}/permissions", roleHandler.UpdateRolePermissions) // 设置角色权限
+			})
 
 			// 操作日志
 			r.Get("/logs", auditHandler.ListLogs)                 // 操作日志列表
