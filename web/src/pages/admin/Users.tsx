@@ -246,28 +246,28 @@ export default function Users() {
   // 全选/取消全选
   const allSelected = users.length > 0 && selectedIds.size === users.length;
 
-  function toggleSelectAll() {
+  const toggleSelectAll = () => {
     setSelectedIds(allSelected ? new Set() : new Set(users.map((u) => u.id)));
-  }
+  };
 
-  function toggleSelectOne(userId: string) {
+  const toggleSelectOne = (userId: string) => {
     const newSet = new Set(selectedIds);
     if (newSet.has(userId)) newSet.delete(userId);
     else newSet.add(userId);
     setSelectedIds(newSet);
-  }
+  };
 
   // --- 角色修改 ---
-  function handleRoleChange(
+  const handleRoleChange = (
     userId: string,
     userName: string,
     currentRole: string,
     newRole: string
-  ) {
+  ) => {
     setRoleConfirmState({ open: true, userId, userName, currentRole, newRole });
-  }
+  };
 
-  function confirmRoleChange() {
+  const confirmRoleChange = () => {
     updateRole.mutate(
       { id: roleConfirmState.userId, role: roleConfirmState.newRole },
       {
@@ -277,14 +277,14 @@ export default function Users() {
       }
     );
     setRoleConfirmState({ open: false, userId: "", userName: "", currentRole: "", newRole: "" });
-  }
+  };
 
   // --- 状态切换 ---
-  function handleToggleStatus(userId: string, userName: string, currentActive: boolean) {
+  const handleToggleStatus = (userId: string, userName: string, currentActive: boolean) => {
     setConfirmState({ open: true, userId, userName, newStatus: !currentActive });
-  }
+  };
 
-  function confirmToggleStatus() {
+  const confirmToggleStatus = () => {
     toggleStatus.mutate(
       { id: confirmState.userId, is_active: confirmState.newStatus },
       {
@@ -294,14 +294,14 @@ export default function Users() {
     );
     setConfirmState({ open: false, userId: "", userName: "", newStatus: false });
     setSelectedIds(new Set());
-  }
+  };
 
   // --- 批量操作 ---
-  function handleBatchAction(is_active: boolean) {
+  const handleBatchAction = (is_active: boolean) => {
     setBatchConfirmState({ open: true, is_active });
-  }
+  };
 
-  function confirmBatchAction() {
+  const confirmBatchAction = () => {
     const count = selectedIds.size;
     const activating = batchConfirmState.is_active;
     batchUpdateStatus.mutate(
@@ -313,13 +313,13 @@ export default function Users() {
     );
     setBatchConfirmState({ open: false, is_active: false });
     setSelectedIds(new Set());
-  }
+  };
 
-  function handleBatchRoleChange(role: string) {
+  const handleBatchRoleChange = (role: string) => {
     setBatchRoleConfirmState({ open: true, role });
-  }
+  };
 
-  function confirmBatchRoleChange() {
+  const confirmBatchRoleChange = () => {
     const count = selectedIds.size;
     const role = batchRoleConfirmState.role;
     batchUpdateRole.mutate(
@@ -331,15 +331,15 @@ export default function Users() {
     );
     setBatchRoleConfirmState({ open: false, role: "" });
     setSelectedIds(new Set());
-  }
+  };
 
   // --- 创建用户 ---
-  function openCreateDialog() {
+  const openCreateDialog = () => {
     setCreateForm(defaultCreateForm);
     setCreateOpen(true);
-  }
+  };
 
-  function handleCreateUser() {
+  const handleCreateUser = () => {
     if (!createForm.username || !createForm.email || !createForm.password) {
       toast.error("请填写用户名、邮箱和密码");
       return;
@@ -356,10 +356,10 @@ export default function Users() {
       onError: (err) =>
         toast.error(err instanceof Error ? err.message : "创建用户失败，请重试"),
     });
-  }
+  };
 
   // --- 编辑用户 ---
-  function openEditDialog(user: AdminUser) {
+  const openEditDialog = (user: AdminUser) => {
     setEditForm({
       id: user.id,
       username: user.username,
@@ -370,9 +370,9 @@ export default function Users() {
       bio: "",
     });
     setEditOpen(true);
-  }
+  };
 
-  function handleUpdateUser() {
+  const handleUpdateUser = () => {
     if (!editForm.username || !editForm.email) {
       toast.error("用户名和邮箱不能为空");
       return;
@@ -389,14 +389,14 @@ export default function Users() {
           toast.error(err instanceof Error ? err.message : "更新失败，请重试"),
       }
     );
-  }
+  };
 
   // --- 删除用户 ---
-  function handleDeleteUser(userId: string, userName: string) {
+  const handleDeleteUser = (userId: string, userName: string) => {
     setDeleteConfirmState({ open: true, userId, userName });
-  }
+  };
 
-  function confirmDeleteUser() {
+  const confirmDeleteUser = () => {
     deleteUser.mutate(deleteConfirmState.userId, {
       onSuccess: () => toast.success("用户已删除"),
       onError: (err) =>
@@ -404,7 +404,7 @@ export default function Users() {
     });
     setDeleteConfirmState({ open: false, userId: "", userName: "" });
     setSelectedIds(new Set());
-  }
+  };
 
   return (
     <div className="space-y-6">

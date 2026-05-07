@@ -185,15 +185,15 @@ export default function Comments() {
   const isPartialSelected =
     comments.some((c) => selectedIds.has(c.id)) && !isAllSelected;
 
-  function toggleSelectAll() {
+  const toggleSelectAll = () => {
     if (isAllSelected) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(comments.map((c) => c.id)));
     }
-  }
+  };
 
-  function toggleSelect(id: string) {
+  const toggleSelect = (id: string) => {
     const newSet = new Set(selectedIds);
     if (newSet.has(id)) {
       newSet.delete(id);
@@ -201,46 +201,46 @@ export default function Comments() {
       newSet.add(id);
     }
     setSelectedIds(newSet);
-  }
+  };
 
   // 单个操作
-  function handleApprove(id: string) {
+  const handleApprove = (id: string) => {
     approve.mutate(id);
-  }
+  };
 
-  function handleMarkSpam(id: string) {
+  const handleMarkSpam = (id: string) => {
     markSpam.mutate(id);
-  }
+  };
 
-  function handleDelete(id: string) {
+  const handleDelete = (id: string) => {
     setDeleteConfirm({ open: true, id, isBatch: false });
-  }
+  };
 
   // 批量操作
-  function handleBatchApprove() {
+  const handleBatchApprove = () => {
     if (selectedIds.size === 0) return;
     batchUpdateStatus.mutate({
       ids: Array.from(selectedIds),
       status: "approved",
     });
     setSelectedIds(new Set());
-  }
+  };
 
-  function handleBatchMarkSpam() {
+  const handleBatchMarkSpam = () => {
     if (selectedIds.size === 0) return;
     batchUpdateStatus.mutate({
       ids: Array.from(selectedIds),
       status: "spam",
     });
     setSelectedIds(new Set());
-  }
+  };
 
-  function handleBatchDelete() {
+  const handleBatchDelete = () => {
     if (selectedIds.size === 0) return;
     setDeleteConfirm({ open: true, id: "", isBatch: true });
-  }
+  };
 
-  function confirmDelete() {
+  const confirmDelete = () => {
     if (deleteConfirm.isBatch) {
       batchDelete.mutate(Array.from(selectedIds));
       setSelectedIds(new Set());
@@ -248,15 +248,15 @@ export default function Comments() {
       deleteComment.mutate(deleteConfirm.id);
     }
     setDeleteConfirm({ open: false, id: "", isBatch: false });
-  }
+  };
 
   // 筛选变更时清空选择
-  function handleStatusChange(value: "all" | "pending" | "approved" | "spam" | null) {
+  const handleStatusChange = (value: "all" | "pending" | "approved" | "spam" | null) => {
     if (value) {
       setStatusFilter(value);
       setSelectedIds(new Set());
     }
-  }
+  };
 
   return (
     <div className="space-y-6">

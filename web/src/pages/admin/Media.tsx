@@ -116,11 +116,11 @@ export default function Media() {
     onLoadMore: loadMore,
   });
 
-  function handleDelete(id: string) {
+  const handleDelete = (id: string) => {
     setDeleteConfirm({ open: true, id });
-  }
+  };
 
-  function confirmDelete() {
+  const confirmDelete = () => {
     deleteMutation.mutate(deleteConfirm.id, {
       onSuccess: () => {
         toast.success("文件已删除");
@@ -132,16 +132,16 @@ export default function Media() {
         setDeleteConfirm({ open: false, id: "" });
       },
     });
-  }
+  };
 
   // 切换选择模式
-  function toggleSelectMode() {
+  const toggleSelectMode = () => {
     setSelectMode(!selectMode);
     setSelectedIds(new Set());
-  }
+  };
 
   // 选择/取消选择单个文件
-  function toggleSelect(id: string) {
+  const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(id)) {
       newSelected.delete(id);
@@ -149,21 +149,21 @@ export default function Media() {
       newSelected.add(id);
     }
     setSelectedIds(newSelected);
-  }
+  };
 
   // 全选当前页
-  function selectAll() {
+  const selectAll = () => {
     const allIds = new Set(mediaItems.map((item) => item.id));
     setSelectedIds(allIds);
-  }
+  };
 
   // 清空选择
-  function clearSelection() {
+  const clearSelection = () => {
     setSelectedIds(new Set());
-  }
+  };
 
   // 批量删除
-  function confirmBatchDelete() {
+  const confirmBatchDelete = () => {
     const ids = Array.from(selectedIds);
     batchDeleteMutation.mutate(ids, {
       onSuccess: (data) => {
@@ -178,12 +178,12 @@ export default function Media() {
         setBatchDeleteConfirm(false);
       },
     });
-  }
+  };
 
-  function handleUploadComplete(result: UploadResult) {
+  const handleUploadComplete = (result: UploadResult) => {
     toast.success(`「${result.name}」上传成功`);
     reload();
-  }
+  };
 
   const isEmpty = !isLoading && !error && mediaItems.length === 0;
 

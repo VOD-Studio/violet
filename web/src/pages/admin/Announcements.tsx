@@ -113,6 +113,21 @@ function AnnouncementsTableSkeleton() {
   );
 }
 
+/** 无权限提示组件 */
+function NoPermission() {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
+        <Bell className="size-6 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-medium">无权限访问</h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        您没有公告管理权限，请联系管理员
+      </p>
+    </div>
+  );
+}
+
 /**
  * 公告管理页面内容
  * 从 API 获取公告数据，提供创建、编辑、删除功能
@@ -154,15 +169,15 @@ function AnnouncementsContent() {
   /**
    * 打开创建公告弹窗
    */
-  function handleCreate() {
+  const handleCreate = () => {
     setForm({ title: "", content: "", type: "info", is_active: true });
     setDialog({ open: true, mode: "create" });
-  }
+  };
 
   /**
    * 打开编辑公告弹窗
    */
-  function handleEdit(announcement: Announcement) {
+  const handleEdit = (announcement: Announcement) => {
     setForm({
       title: announcement.title,
       content: announcement.content,
@@ -170,12 +185,12 @@ function AnnouncementsContent() {
       is_active: announcement.is_active,
     });
     setDialog({ open: true, mode: "edit", announcement });
-  }
+  };
 
   /**
    * 提交公告表单
    */
-  function handleSubmit() {
+  const handleSubmit = () => {
     if (!form.title.trim() || !form.content.trim()) {
       toast("标题和内容不能为空", "error");
       return;
@@ -217,19 +232,19 @@ function AnnouncementsContent() {
         }
       );
     }
-  }
+  };
 
   /**
    * 打开删除确认弹窗
    */
-  function handleDeleteClick(announcement: Announcement) {
+  const handleDeleteClick = (announcement: Announcement) => {
     setDeleteConfirm({ open: true, announcement });
-  }
+  };
 
   /**
    * 确认删除公告
    */
-  function confirmDelete() {
+  const confirmDelete = () => {
     if (deleteConfirm.announcement) {
       deleteAnnouncement.mutate(deleteConfirm.announcement.id, {
         onSuccess: () => {
@@ -241,7 +256,7 @@ function AnnouncementsContent() {
         },
       });
     }
-  }
+  };
 
   const announcements = data?.announcements || [];
   const total = data?.total || 0;
@@ -522,20 +537,5 @@ export default function Announcements() {
     <PermissionGuard code="announcement:manage" fallback={<NoPermission />}>
       <AnnouncementsContent />
     </PermissionGuard>
-  );
-}
-
-/** 无权限提示组件 */
-function NoPermission() {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted">
-        <Bell className="size-6 text-muted-foreground" />
-      </div>
-      <h3 className="text-lg font-medium">无权限访问</h3>
-      <p className="mt-1 text-sm text-muted-foreground">
-        您没有公告管理权限，请联系管理员
-      </p>
-    </div>
   );
 }

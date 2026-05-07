@@ -90,6 +90,86 @@ function RolesTableSkeleton() {
 }
 
 /**
+ * 权限分配弹窗内容组件
+ */
+interface PermissionDialogContentProps {
+  permissionDialog: {
+    open: boolean;
+    roleId: number;
+    roleName: string;
+  };
+  permissionGroups: ReturnType<typeof groupPermissionsByModule>;
+  selectedPermissions: Set<string>;
+  setSelectedPermissions: React.Dispatch<React.SetStateAction<Set<string>>>;
+}
+
+function PermissionDialogContent({
+  permissionDialog,
+  permissionGroups,
+  selectedPermissions,
+  setSelectedPermissions,
+}: PermissionDialogContentProps) {
+  const { data: rolePermissions, isLoading: loadingPermissions } =
+    useRolePermissions(permissionDialog.roleId);
+
+  // 当权限数据加载完成时，初始化选中状态
+  useEffect(() => {
+    if (rolePermissions) {
+      setSelectedPermissions(new Set(rolePermissions.map((p) => p.code)));
+    }
+  }, [rolePermissions, setSelectedPermissions]);
+
+  if (loadingPermissions) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-h-96 space-y-4 overflow-y-auto py-4">
+      {Object.entries(permissionGroups).map(([module, perms]) => (
+        <div key={module}>
+          <h4 className="mb-2 text-sm font-medium text-muted-foreground">
+            {getModuleDisplayName(module)}
+          </h4>
+          <div className="flex flex-wrap gap-3">
+            {perms.map((perm) => (
+              <label
+                key={perm.code}
+                className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 transition-colors hover:bg-accent"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedPermissions.has(perm.code)}
+                  onChange={(e) => {
+                    const newSet = new Set(selectedPermissions);
+                    if (e.target.checked) {
+                      newSet.add(perm.code);
+                    } else {
+                      newSet.delete(perm.code);
+                    }
+                    setSelectedPermissions(newSet);
+                  }}
+                  className="size-4 accent-primary"
+                />
+                <span className="text-sm">{perm.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      {Object.keys(permissionGroups).length === 0 && (
+        <p className="py-4 text-center text-sm text-muted-foreground">
+          暂无可分配的权限
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * 角色管理页面
  */
 export default function Roles() {
@@ -136,26 +216,26 @@ export default function Roles() {
   /**
    * 打开创建角色弹窗
    */
-  function handleCreate() {
+  const handleCreate = () => {
     setRoleForm({ name: "", description: "" });
     setRoleDialog({ open: true, mode: "create" });
-  }
+  };
 
   /**
    * 打开编辑角色弹窗
    */
-  function handleEdit(role: Role) {
+  const handleEdit = (role: Role) => {
     setRoleForm({
       name: role.name,
       description: role.description || "",
     });
     setRoleDialog({ open: true, mode: "edit", role });
-  }
+  };
 
   /**
    * 提交角色表单
    */
-  function handleSubmitRole() {
+  const handleSubmitRole = () => {
     const name = roleForm.name.trim();
     const description = roleForm.description.trim();
 
@@ -195,19 +275,19 @@ export default function Roles() {
         }
       );
     }
-  }
+  };
 
   /**
    * 打开删除确认弹窗
    */
-  function handleDeleteClick(role: Role) {
+  const handleDeleteClick = (role: Role) => {
     setDeleteConfirm({ open: true, role });
-  }
+  };
 
   /**
    * 确认删除角色
    */
-  function confirmDelete() {
+  const confirmDelete = () => {
     if (deleteConfirm.role) {
       deleteRole.mutate(deleteConfirm.role.id, {
         onSuccess: () => {
@@ -215,83 +295,19 @@ export default function Roles() {
         },
       });
     }
-  }
+  };
 
   /**
    * 打开权限分配弹窗
    */
-  function handleOpenPermissionDialog(roleId: number, roleName: string) {
+  const handleOpenPermissionDialog = (roleId: number, roleName: string) => {
     setPermissionDialog({ open: true, roleId, roleName });
-  }
-
-  /**
-   * 权限弹窗打开时加载角色权限
-   */
-  function PermissionDialogContent() {
-    const { data: rolePermissions, isLoading: loadingPermissions } =
-      useRolePermissions(permissionDialog.roleId);
-
-    // 当权限数据加载完成时，初始化选中状态
-    useEffect(() => {
-      if (rolePermissions) {
-        setSelectedPermissions(new Set(rolePermissions.map((p) => p.code)));
-      }
-    }, [rolePermissions]);
-
-    if (loadingPermissions) {
-      return (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
-        </div>
-      );
-    }
-
-    return (
-      <div className="max-h-96 space-y-4 overflow-y-auto py-4">
-        {Object.entries(permissionGroups).map(([module, perms]) => (
-          <div key={module}>
-            <h4 className="mb-2 text-sm font-medium text-muted-foreground">
-              {getModuleDisplayName(module)}
-            </h4>
-            <div className="flex flex-wrap gap-3">
-              {perms.map((perm) => (
-                <label
-                  key={perm.code}
-                  className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 transition-colors hover:bg-accent"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedPermissions.has(perm.code)}
-                    onChange={(e) => {
-                      const newSet = new Set(selectedPermissions);
-                      if (e.target.checked) {
-                        newSet.add(perm.code);
-                      } else {
-                        newSet.delete(perm.code);
-                      }
-                      setSelectedPermissions(newSet);
-                    }}
-                    className="size-4 accent-primary"
-                  />
-                  <span className="text-sm">{perm.name}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        ))}
-        {Object.keys(permissionGroups).length === 0 && (
-          <p className="py-4 text-center text-sm text-muted-foreground">
-            暂无可分配的权限
-          </p>
-        )}
-      </div>
-    );
-  }
+  };
 
   /**
    * 提交权限更新
    */
-  function handleSubmitPermissions() {
+  const handleSubmitPermissions = () => {
     updateRolePermissions.mutate(
       {
         id: permissionDialog.roleId,
@@ -304,7 +320,7 @@ export default function Roles() {
         },
       }
     );
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -495,7 +511,12 @@ export default function Roles() {
               勾选需要分配给该角色的权限
             </DialogDescription>
           </DialogHeader>
-          <PermissionDialogContent />
+          <PermissionDialogContent
+            permissionDialog={permissionDialog}
+            permissionGroups={permissionGroups}
+            selectedPermissions={selectedPermissions}
+            setSelectedPermissions={setSelectedPermissions}
+          />
           <DialogFooter>
             <Button
               variant="outline"

@@ -22,7 +22,7 @@ export default function MusicPage() {
   const [playlist, setPlaylist] = useState<PlaylistInfo | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  async function handleImport() {
+  const handleImport = async () => {
     if (!url.trim()) {
       toast.error("请输入歌单链接");
       return;
@@ -41,11 +41,11 @@ export default function MusicPage() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  function handleSelectSong(index: number) {
+  const handleSelectSong = (index: number) => {
     setCurrentIndex(index);
-  }
+  };
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">

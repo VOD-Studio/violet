@@ -122,7 +122,7 @@ export default function Posts() {
   /**
    * 切换文章发布状态
    */
-  function handleToggleStatus(post: ApiPost) {
+  const handleToggleStatus = (post: ApiPost) => {
     const newStatus: PostStatus =
       post.status === "published" ? "draft" : "published";
     toggleMutation.mutate(
@@ -133,19 +133,19 @@ export default function Posts() {
         onError: () => toast.error("操作失败，请重试"),
       }
     );
-  }
+  };
 
   /**
    * 弹出删除确认
    */
-  function handleDelete(id: string) {
+  const handleDelete = (id: string) => {
     setDeleteConfirm({ open: true, id });
-  }
+  };
 
   /**
    * 确认删除
    */
-  function confirmDelete() {
+  const confirmDelete = () => {
     deleteMutation.mutate(deleteConfirm.id, {
       onSuccess: () => {
         toast.success("文章已删除");
@@ -156,7 +156,7 @@ export default function Posts() {
         setDeleteConfirm({ open: false, id: "" });
       },
     });
-  }
+  };
 
   return (
     <div className="space-y-6">

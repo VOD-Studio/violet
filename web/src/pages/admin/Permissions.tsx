@@ -96,7 +96,7 @@ function PermissionsContent() {
   }, [rolePermissions]);
 
   // 创建权限
-  async function handleCreate() {
+  const handleCreate = async () => {
     if (!createForm.code.trim() || !createForm.name.trim()) {
       toast("权限码和名称不能为空", "error");
       return;
@@ -117,10 +117,10 @@ function PermissionsContent() {
       toast(message, "error");
     }
     setCreateLoading(false);
-  }
+  };
 
   // 编辑权限
-  async function handleEdit() {
+  const handleEdit = async () => {
     if (!editDialog.permission || !editForm.name.trim()) {
       toast("权限名称不能为空", "error");
       return;
@@ -139,10 +139,10 @@ function PermissionsContent() {
       toast(message, "error");
     }
     setEditLoading(false);
-  }
+  };
 
   // 删除权限
-  async function handleDelete() {
+  const handleDelete = async () => {
     if (!deleteConfirm.permission) return;
 
     setDeleteLoading(true);
@@ -156,16 +156,16 @@ function PermissionsContent() {
       toast(message, "error");
     }
     setDeleteLoading(false);
-  }
+  };
 
   // 打开编辑弹窗
-  function openEditDialog(permission: Permission) {
+  const openEditDialog = (permission: Permission) => {
     setEditForm({ name: permission.name });
     setEditDialog({ open: true, permission });
-  }
+  };
 
   // 切换权限选中状态（角色分配模式）
-  function handleTogglePermission(code: string, checked: boolean) {
+  const handleTogglePermission = (code: string, checked: boolean) => {
     setSelectedPermissionCodes((prev) => {
       const newSet = new Set(prev);
       if (checked) {
@@ -175,10 +175,10 @@ function PermissionsContent() {
       }
       return newSet;
     });
-  }
+  };
 
   // 保存角色权限
-  function handleSaveRolePermissions() {
+  const handleSaveRolePermissions = () => {
     if (!selectedRoleId) return;
 
     updateRolePermissions.mutate(
@@ -196,7 +196,7 @@ function PermissionsContent() {
         },
       }
     );
-  }
+  };
 
   const isLoading = loadingPermissions;
   const error = permissionsError;

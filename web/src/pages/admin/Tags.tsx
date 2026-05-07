@@ -62,7 +62,7 @@ export default function Tags() {
   /**
    * 创建新标签
    */
-  async function handleCreate() {
+  const handleCreate = async () => {
     if (!newTagName.trim()) {
       toast.error("请输入标签名称");
       return;
@@ -79,19 +79,19 @@ export default function Tags() {
     } finally {
       setCreating(false);
     }
-  }
+  };
 
   /**
    * 弹出删除确认
    */
-  function handleDelete(id: number, name: string) {
+  const handleDelete = (id: number, name: string) => {
     setDeleteConfirm({ open: true, id, name });
-  }
+  };
 
   /**
    * 确认删除标签
    */
-  async function confirmDelete() {
+  const confirmDelete = async () => {
     try {
       await api.del(`/tags/${deleteConfirm.id}`);
       toast.success("标签已删除");
@@ -101,7 +101,7 @@ export default function Tags() {
       toast.error(err instanceof Error ? err.message : "删除失败");
       setDeleteConfirm({ open: false, id: 0, name: "" });
     }
-  }
+  };
 
   return (
     <div className="space-y-6">

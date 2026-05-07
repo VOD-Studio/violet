@@ -10,10 +10,10 @@ interface SearchBarProps {
 export function SearchBar({ onSearch }: SearchBarProps) {
   const [searchInput, setSearchInput] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(searchInput.trim());
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="mb-6 flex gap-2">
