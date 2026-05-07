@@ -112,6 +112,16 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*User, 
 	return &i, err
 }
 
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users WHERE id = $1
+`
+
+// 删除用户（硬删除）
+func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteUser, id)
+	return err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, username, email, password_hash, avatar_url, bio, role, email_verified, is_active, created_at, updated_at, role_id FROM users
 WHERE email = $1 LIMIT 1
@@ -356,6 +366,52 @@ type UpdateUserActiveParams struct {
 func (q *Queries) UpdateUserActive(ctx context.Context, arg UpdateUserActiveParams) error {
 	_, err := q.db.ExecContext(ctx, updateUserActive, arg.ID, arg.IsActive)
 	return err
+}
+
+const updateUserByAdmin = `-- name: UpdateUserByAdmin :one
+UPDATE users
+SET username = $2, email = $3, role = $4, is_active = $5, email_verified = $6, bio = $7, updated_at = NOW()
+WHERE id = $1
+RETURNING id, username, email, password_hash, avatar_url, bio, role, email_verified, is_active, created_at, updated_at, role_id
+`
+
+type UpdateUserByAdminParams struct {
+	ID            uuid.UUID      `json:"id"`
+	Username      string         `json:"username"`
+	Email         string         `json:"email"`
+	Role          string         `json:"role"`
+	IsActive      bool           `json:"is_active"`
+	EmailVerified bool           `json:"email_verified"`
+	Bio           sql.NullString `json:"bio"`
+}
+
+// 管理员更新用户信息（用户名、邮箱、角色、状态、邮箱验证、简介）
+func (q *Queries) UpdateUserByAdmin(ctx context.Context, arg UpdateUserByAdminParams) (*User, error) {
+	row := q.db.QueryRowContext(ctx, updateUserByAdmin,
+		arg.ID,
+		arg.Username,
+		arg.Email,
+		arg.Role,
+		arg.IsActive,
+		arg.EmailVerified,
+		arg.Bio,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.AvatarUrl,
+		&i.Bio,
+		&i.Role,
+		&i.EmailVerified,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.RoleID,
+	)
+	return &i, err
 }
 
 const updateUserPassword = `-- name: UpdateUserPassword :exec

@@ -110,3 +110,14 @@ WHERE id = ANY($1::uuid[]);
 -- 根据 ID 列表获取用户
 SELECT id, username, email, password_hash, avatar_url, bio, role, email_verified, is_active, created_at, updated_at, role_id FROM users
 WHERE id = ANY($1::uuid[]);
+
+-- name: UpdateUserByAdmin :one
+-- 管理员更新用户信息（用户名、邮箱、角色、状态、邮箱验证、简介）
+UPDATE users
+SET username = $2, email = $3, role = $4, is_active = $5, email_verified = $6, bio = $7, updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteUser :exec
+-- 删除用户（硬删除）
+DELETE FROM users WHERE id = $1;

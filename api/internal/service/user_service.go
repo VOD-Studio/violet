@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/bcrypt"
 
 	"blog-api/internal/repository/generated"
 )
@@ -23,6 +24,10 @@ var (
 	ErrEmptyUserIDs = errors.New("用户 ID 列表不能为空")
 	// ErrCannotModifySuperAdmin 不能操作超级管理员账户
 	ErrCannotModifySuperAdmin = errors.New("普通管理员无法操作超级管理员账户")
+	// ErrUsernameExists 用户名已存在
+	ErrUsernameExists = errors.New("用户名已存在")
+	// ErrEmailExists 邮箱已存在
+	ErrEmailExists = errors.New("邮箱已存在")
 )
 
 // 合法的用户角色列表
@@ -339,4 +344,132 @@ func (s *UserService) GetUserByID(ctx context.Context, userID uuid.UUID) (*gener
 
 	log.Info().Str("user_id", userID.String()).Msg("用户详情查询成功")
 	return user, nil
+}
+
+// CreateUserParams 创建用户参数
+type CreateUserParams struct {
+	Username string
+	Email    string
+	Password string
+	Role     string
+	IsActive bool
+}
+
+// CreateUser 管理员创建新用户
+func (s *UserService) CreateUser(ctx context.Context, params CreateUserParams) (*generated.User, error) {
+	log.Info().Str("service", "UserService").Str("operation", "CreateUser").
+		Str("username", params.Username).Str("email", params.Email).Msg("创建新用户")
+
+	// 验证角色
+	if !validRoles[params.Role] {
+		return nil, ErrInvalidRole
+	}
+
+	// 检查用户名是否已存在
+	_, err := s.queries.GetUserByUsername(ctx, params.Username)
+	if err == nil {
+		return nil, ErrUsernameExists
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("查询用户名失败: %w", err)
+	}
+
+	// 检查邮箱是否已存在
+	_, err = s.queries.GetUserByEmail(ctx, params.Email)
+	if err == nil {
+		return nil, ErrEmailExists
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("查询邮箱失败: %w", err)
+	}
+
+	// 密码哈希
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("密码哈希失败: %w", err)
+	}
+
+	user, err := s.queries.CreateUser(ctx, generated.CreateUserParams{
+		Username:      params.Username,
+		Email:         params.Email,
+		PasswordHash:  string(hashedPassword),
+		Role:          params.Role,
+		EmailVerified: true,
+		IsActive:      params.IsActive,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("创建用户失败: %w", err)
+	}
+
+	log.Info().Str("user_id", user.ID.String()).Str("username", params.Username).Msg("用户创建成功")
+	return user, nil
+}
+
+// UpdateUserByAdminParams 管理员更新用户参数
+type UpdateUserByAdminParams struct {
+	Username      string
+	Email         string
+	Role          string
+	IsActive      bool
+	EmailVerified bool
+	Bio           string
+}
+
+// UpdateUserByAdmin 管理员更新用户信息
+func (s *UserService) UpdateUserByAdmin(ctx context.Context, targetUserID uuid.UUID, params UpdateUserByAdminParams) (*generated.User, error) {
+	log.Info().Str("service", "UserService").Str("operation", "UpdateUserByAdmin").
+		Str("user_id", targetUserID.String()).Msg("管理员更新用户信息")
+
+	// 验证角色
+	if !validRoles[params.Role] {
+		return nil, ErrInvalidRole
+	}
+
+	// 检查用户是否存在
+	_, err := s.queries.GetUserByID(ctx, targetUserID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+		return nil, fmt.Errorf("查询用户失败: %w", err)
+	}
+
+	user, err := s.queries.UpdateUserByAdmin(ctx, generated.UpdateUserByAdminParams{
+		ID:            targetUserID,
+		Username:      params.Username,
+		Email:         params.Email,
+		Role:          params.Role,
+		IsActive:      params.IsActive,
+		EmailVerified: params.EmailVerified,
+		Bio:           sql.NullString{String: params.Bio, Valid: params.Bio != ""},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("更新用户信息失败: %w", err)
+	}
+
+	log.Info().Str("user_id", targetUserID.String()).Msg("用户信息更新成功")
+	return user, nil
+}
+
+// DeleteUser 删除用户
+func (s *UserService) DeleteUser(ctx context.Context, targetUserID uuid.UUID) error {
+	log.Info().Str("service", "UserService").Str("operation", "DeleteUser").
+		Str("user_id", targetUserID.String()).Msg("删除用户")
+
+	// 检查用户是否存在
+	_, err := s.queries.GetUserByID(ctx, targetUserID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUserNotFound
+		}
+		return fmt.Errorf("查询用户失败: %w", err)
+	}
+
+	err = s.queries.DeleteUser(ctx, targetUserID)
+	if err != nil {
+		return fmt.Errorf("删除用户失败: %w", err)
+	}
+
+	log.Info().Str("user_id", targetUserID.String()).Msg("用户删除成功")
+	return nil
 }

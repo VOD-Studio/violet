@@ -43,3 +43,22 @@ export interface UserListResponse {
   /** 每页数量 */
   limit: number;
 }
+
+/** 创建用户请求参数 */
+export interface CreateUserRequest {
+  username: string;
+  email: string;
+  password: string;
+  role: string;
+  is_active: boolean;
+}
+
+/** 编辑用户请求参数 */
+export interface UpdateUserRequest {
+  username: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  email_verified: boolean;
+  bio: string;
+}

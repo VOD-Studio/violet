@@ -4,7 +4,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { userKeys } from "./queryKeys";
-import type { UserListParams, UserListResponse } from "./types";
+import type {
+  UserListParams,
+  UserListResponse,
+  CreateUserRequest,
+  UpdateUserRequest,
+} from "./types";
 
 /**
  * 获取用户列表（支持搜索和筛选）
@@ -90,3 +95,47 @@ export function useBatchUpdateUserRole() {
     },
   });
 }
+
+/**
+ * 创建用户的 mutation
+ */
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateUserRequest) => api.post("/admin/users", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}
+
+/**
+ * 编辑用户的 mutation
+ */
+export function useUpdateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string } & UpdateUserRequest) =>
+      api.put(`/admin/users/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}
+
+/**
+ * 删除用户的 mutation
+ */
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.del(`/admin/users/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}
+

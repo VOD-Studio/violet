@@ -313,6 +313,9 @@ func main() {
 
 			r.Get("/users", userMgmtHandler.ListUsers)                      // 用户列表
 			r.Get("/users/{id}", userMgmtHandler.GetUserDetail)          // 用户详情
+			r.Post("/users", userMgmtHandler.CreateUser)                    // 创建用户
+			r.Put("/users/{id}", userMgmtHandler.UpdateUser)              // 编辑用户
+			r.Delete("/users/{id}", userMgmtHandler.DeleteUser)           // 删除用户
 			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)     // 修改用户角色
 			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus) // 启用/禁用用户
 			r.Post("/users/batch-status", userMgmtHandler.BatchUpdateUserStatus) // 批量启用/禁用用户
