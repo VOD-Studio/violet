@@ -1,14 +1,35 @@
 import { useMemo } from "react";
 import { useAuthStore } from "@/store";
 
-export function usePermission(code: string | string[]): boolean {
+/**
+ * 检查用户是否拥有指定权限
+ * @param code 单个权限码或权限码数组
+ * @param mode 检查模式：'any'（默认，拥有任意一个即可）或 'all'（必须拥有全部）
+ */
+export function usePermission(
+  code: string | string[],
+  mode: "any" | "all" = "any"
+): boolean {
   const { user } = useAuthStore();
   const codes = Array.isArray(code) ? code : [code];
 
-  if (!user) return false;
-  if (user.role === "superadmin") return true;
+  return useMemo(() => {
+    if (!user) return false;
+    if (user.role === "superadmin") return true;
 
-  return codes.some((c) => user.permissions?.includes(c) ?? false);
+    const userPerms = user.permissions ?? [];
+    if (mode === "all") {
+      return codes.every((c) => userPerms.includes(c));
+    }
+    return codes.some((c) => userPerms.includes(c));
+  }, [user, codes, mode]);
+}
+
+/**
+ * 检查用户是否拥有所有指定权限（AND 模式）
+ */
+export function useAllPermissions(code: string | string[]): boolean {
+  return usePermission(code, "all");
 }
 
 // 批量权限检查，返回每个权限码对应的检查结果

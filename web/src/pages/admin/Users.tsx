@@ -95,8 +95,8 @@ function UsersTableSkeleton() {
 export default function Users() {
   // 筛选状态
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // 批量选择状态
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -128,8 +128,8 @@ export default function Users() {
   const queryParams = useMemo(() => {
     const params: { search?: string; role?: string; status?: string } = {};
     if (search) params.search = search;
-    if (roleFilter) params.role = roleFilter;
-    if (statusFilter) params.status = statusFilter;
+    if (roleFilter && roleFilter !== "all") params.role = roleFilter;
+    if (statusFilter && statusFilter !== "all") params.status = statusFilter;
     return params;
   }, [search, roleFilter, statusFilter]);
 
@@ -275,12 +275,12 @@ export default function Users() {
         </div>
 
         {/* 角色筛选 */}
-        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value ?? "")}>
+        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value ?? "all")}>
           <SelectTrigger className="w-32">
             <SelectValue placeholder="全部角色" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">全部角色</SelectItem>
+            <SelectItem value="all">全部角色</SelectItem>
             <SelectItem value="superadmin">超级管理员</SelectItem>
             <SelectItem value="admin">管理员</SelectItem>
             <SelectItem value="user">用户</SelectItem>
@@ -288,12 +288,12 @@ export default function Users() {
         </Select>
 
         {/* 状态筛选 */}
-        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? "")}>
+        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? "all")}>
           <SelectTrigger className="w-32">
             <SelectValue placeholder="全部状态" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">全部状态</SelectItem>
+            <SelectItem value="all">全部状态</SelectItem>
             <SelectItem value="active">启用</SelectItem>
             <SelectItem value="inactive">禁用</SelectItem>
           </SelectContent>

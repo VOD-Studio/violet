@@ -114,8 +114,17 @@ func (h *RoleHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 参数验证
 	if req.Name == "" {
 		response.BadRequest(w, "角色名称不能为空")
+		return
+	}
+	if len(req.Name) > 50 {
+		response.BadRequest(w, "角色名称长度不能超过 50 字符")
+		return
+	}
+	if len(req.Description) > 200 {
+		response.BadRequest(w, "角色描述长度不能超过 200 字符")
 		return
 	}
 
@@ -155,6 +164,16 @@ func (h *RoleHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Warn().Err(err).Msg("参数解析失败")
 		response.BadRequest(w, err.Error())
+		return
+	}
+
+	// 参数验证
+	if req.Name != "" && len(req.Name) > 50 {
+		response.BadRequest(w, "角色名称长度不能超过 50 字符")
+		return
+	}
+	if len(req.Description) > 200 {
+		response.BadRequest(w, "角色描述长度不能超过 200 字符")
 		return
 	}
 
