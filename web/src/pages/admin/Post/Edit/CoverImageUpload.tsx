@@ -98,6 +98,7 @@ export function CoverImageUpload({
           variant="outline"
           size="sm"
           className="w-full"
+          type="button"
           onClick={onOpenMediaPicker}
           disabled={disabled || uploading}
         >
