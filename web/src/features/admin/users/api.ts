@@ -75,3 +75,18 @@ export function useBatchUpdateUserStatus() {
     },
   });
 }
+
+/**
+ * 批量修改用户角色的 mutation
+ */
+export function useBatchUpdateUserRole() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ user_ids, role }: { user_ids: string[]; role: string }) =>
+      api.post(`/admin/users/batch-role`, { user_ids, role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}

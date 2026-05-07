@@ -9,6 +9,7 @@ import {
   useUpdateUserRole,
   useToggleUserStatus,
   useBatchUpdateUserStatus,
+  useBatchUpdateUserRole,
 } from "@/features/admin/users";
 import type { AdminUser } from "@/features/admin/users/types";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -133,6 +134,12 @@ export default function Users() {
     is_active: boolean;
   }>({ open: false, is_active: false });
 
+  // 批量修改角色确认弹窗状态
+  const [batchRoleConfirmState, setBatchRoleConfirmState] = useState<{
+    open: boolean;
+    role: string;
+  }>({ open: false, role: "" });
+
   // 查询参数
   const queryParams = useMemo(() => {
     const params: { search?: string; role?: string; status?: string; page?: number; limit?: number } = {};
@@ -156,6 +163,7 @@ export default function Users() {
   const updateRole = useUpdateUserRole();
   const toggleStatus = useToggleUserStatus();
   const batchUpdateStatus = useBatchUpdateUserStatus();
+  const batchUpdateRole = useBatchUpdateUserRole();
 
   // 全选/取消全选
   const allSelected = users.length > 0 && selectedIds.size === users.length;
@@ -211,13 +219,6 @@ export default function Users() {
   }
 
   /**
-   * 修改用户角色（直接修改，无确认）
-   */
-  function changeRole(userId: string, newRole: string) {
-    updateRole.mutate({ id: userId, role: newRole });
-  }
-
-  /**
    * 弹出单个用户确认弹窗
    */
   function handleToggleStatus(
@@ -266,6 +267,25 @@ export default function Users() {
       is_active: batchConfirmState.is_active,
     });
     setBatchConfirmState({ open: false, is_active: false });
+    setSelectedIds(new Set());
+  }
+
+  /**
+   * 弹出批量修改角色确认弹窗
+   */
+  function handleBatchRoleChange(role: string) {
+    setBatchRoleConfirmState({ open: true, role });
+  }
+
+  /**
+   * 确认批量修改角色
+   */
+  function confirmBatchRoleChange() {
+    batchUpdateRole.mutate({
+      user_ids: Array.from(selectedIds),
+      role: batchRoleConfirmState.role,
+    });
+    setBatchRoleConfirmState({ open: false, role: "" });
     setSelectedIds(new Set());
   }
 
@@ -344,6 +364,19 @@ export default function Users() {
             )}
             批量禁用
           </Button>
+          <Select
+            value=""
+            onValueChange={(value) => value && handleBatchRoleChange(value)}
+          >
+            <SelectTrigger className="w-32 h-8">
+              <SelectValue placeholder="修改角色" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="superadmin">超级管理员</SelectItem>
+              <SelectItem value="admin">管理员</SelectItem>
+              <SelectItem value="user">用户</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             size="sm"
             variant="outline"
@@ -502,6 +535,18 @@ export default function Users() {
         }
         confirmLabel={batchConfirmState.is_active ? "启用" : "禁用"}
         destructive={!batchConfirmState.is_active}
+      />
+
+      {/* 批量修改角色确认弹窗 */}
+      <ConfirmDialog
+        open={batchRoleConfirmState.open}
+        onClose={() => setBatchRoleConfirmState({ open: false, role: "" })}
+        onConfirm={confirmBatchRoleChange}
+        title="批量修改角色"
+        description={`确定要将选中的 ${selectedIds.size} 个用户的角色修改为「${batchRoleConfirmState.role === "superadmin" ? "超级管理员" : batchRoleConfirmState.role === "admin" ? "管理员" : "用户"}」吗？此操作可能会影响这些用户的权限。`}
+        confirmLabel="确认修改"
+        destructive={batchRoleConfirmState.role === "user"}
+        isLoading={batchUpdateRole.isPending}
       />
 
       {/* 角色修改确认弹窗 */}

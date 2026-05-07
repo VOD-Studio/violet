@@ -11,13 +11,13 @@ import {
   useUpdateRolePermissions,
 } from "@/features/admin/roles";
 import {
-  moduleNames,
   getModule,
   groupPermissionsByModule,
   getModuleDisplayName,
 } from "@/features/admin/roles/utils";
 import type { Permission } from "@/features/admin/roles/types";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";

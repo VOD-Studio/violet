@@ -4,6 +4,7 @@ export {
   useUpdateUserRole,
   useToggleUserStatus,
   useBatchUpdateUserStatus,
+  useBatchUpdateUserRole,
 } from "./api";
 
 // Types

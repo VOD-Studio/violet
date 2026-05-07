@@ -316,6 +316,7 @@ func main() {
 			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)     // 修改用户角色
 			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus) // 启用/禁用用户
 			r.Post("/users/batch-status", userMgmtHandler.BatchUpdateUserStatus) // 批量启用/禁用用户
+			r.Post("/users/batch-role", userMgmtHandler.BatchUpdateUserRole) // 批量修改用户角色
 
 			// 权限管理
 			r.Get("/permissions", roleHandler.GetAllPermissions) // 获取所有权限定义

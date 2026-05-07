@@ -14,13 +14,10 @@ import {
   useUpdateRolePermissions,
 } from "@/features/admin/roles";
 import {
-  moduleNames,
-  getModule,
   groupPermissionsByModule,
   getModuleDisplayName,
 } from "@/features/admin/roles/utils";
-import type { Role, Permission } from "@/features/admin/roles/types";
-import { ApiError } from "@/lib/api";
+import type { Role } from "@/features/admin/roles/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

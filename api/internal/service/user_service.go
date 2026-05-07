@@ -160,6 +160,72 @@ func (s *UserService) BatchUpdateUserStatus(ctx context.Context, userIDs []uuid.
 	return users, nil
 }
 
+// BatchUpdateUserRole 批量更新用户角色
+func (s *UserService) BatchUpdateUserRole(ctx context.Context, userIDs []uuid.UUID, role string) ([]*generated.User, error) {
+	log.Info().Str("service", "UserService").Str("operation", "BatchUpdateUserRole").
+		Int("count", len(userIDs)).Str("role", role).Msg("批量更新用户角色")
+
+	if len(userIDs) == 0 {
+		log.Warn().Msg("用户 ID 列表为空")
+		return nil, ErrEmptyUserIDs
+	}
+
+	// 验证角色值
+	if !validRoles[role] {
+		log.Warn().Str("role", role).Msg("无效的用户角色")
+		return nil, ErrInvalidRole
+	}
+
+	// 获取 role_id（superadmin 没有对应的 role_id）
+	var roleID sql.NullInt32
+	if role != "superadmin" {
+		roleRecord, err := s.queries.GetRoleByName(ctx, role)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				log.Warn().Str("role", role).Msg("角色不存在")
+			} else {
+				log.Error().Err(err).Str("role", role).Msg("获取角色 ID 失败")
+			}
+		} else {
+			roleID = sql.NullInt32{Int32: roleRecord.ID, Valid: true}
+		}
+	}
+
+	// 批量更新每个用户的角色
+	for _, userID := range userIDs {
+		// 更新 role 字符串
+		_, err := s.queries.UpdateUserRole(ctx, generated.UpdateUserRoleParams{
+			ID:   userID,
+			Role: role,
+		})
+		if err != nil {
+			log.Error().Err(err).Str("user_id", userID.String()).Msg("更新用户角色失败")
+			continue
+		}
+
+		// 更新 role_id
+		if roleID.Valid {
+			err = s.queries.UpdateUserRoleByID(ctx, generated.UpdateUserRoleByIDParams{
+				ID:     userID,
+				RoleID: roleID,
+			})
+			if err != nil {
+				log.Error().Err(err).Str("user_id", userID.String()).Msg("更新用户 role_id 失败")
+			}
+		}
+	}
+
+	// 获取更新后的用户列表
+	users, err := s.queries.GetUsersByIDs(ctx, userIDs)
+	if err != nil {
+		log.Error().Err(err).Msg("获取更新后的用户列表失败")
+		return nil, fmt.Errorf("获取更新后的用户列表失败: %w", err)
+	}
+
+	log.Info().Int("count", len(users)).Str("role", role).Msg("批量更新用户角色成功")
+	return users, nil
+}
+
 // UpdateUserRole 更新用户角色（同时更新 role 字符串和 role_id 外键）
 func (s *UserService) UpdateUserRole(ctx context.Context, targetUserID uuid.UUID, role string) (*generated.User, error) {
 	log.Info().Str("service", "UserService").Str("operation", "UpdateUserRole").
