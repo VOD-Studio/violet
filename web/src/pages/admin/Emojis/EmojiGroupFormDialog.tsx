@@ -108,7 +108,7 @@ export function EmojiGroupFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {editingGroup ? "编辑表情分组" : "创建表情分组"}
