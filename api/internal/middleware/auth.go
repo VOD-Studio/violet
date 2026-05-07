@@ -105,6 +105,28 @@ func AdminRequired(next http.Handler) http.Handler {
 	})
 }
 
+// SuperAdminRequired 超级管理员权限中间件
+func SuperAdminRequired(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		role := GetUserRole(r.Context())
+		userID := GetUserID(r.Context())
+		if role != "superadmin" {
+			log.Warn().
+				Str("user_id", userID).
+				Str("role", role).
+				Str("required", "superadmin").
+				Str("method", r.Method).
+				Str("path", r.URL.Path).
+				Msg("权限不足：需要超级管理员权限")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error":"forbidden","message":"需要超级管理员权限"}`))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // RequirePermission 权限点检查中间件
 // superadmin 角色直接放行，其他角色查询内存缓存判断
 func RequirePermission(permService *service.PermissionService, codes ...string) func(http.Handler) http.Handler {

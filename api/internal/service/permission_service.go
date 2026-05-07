@@ -3,11 +3,23 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"sync"
 
 	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/repository/generated"
+)
+
+// 权限管理相关错误定义
+var (
+	// ErrPermissionNotFound 权限不存在
+	ErrPermissionNotFound = errors.New("权限不存在")
+	// ErrPermissionCodeExists 权限代码已存在
+	ErrPermissionCodeExists = errors.New("权限代码已存在")
+	// ErrPermissionInUse 权限正在被角色使用
+	ErrPermissionInUse = errors.New("权限正在被角色使用，无法删除")
 )
 
 // PermissionService 权限服务
@@ -134,4 +146,121 @@ func (s *PermissionService) GetAllPermissions() map[string]string {
 		result[k] = v
 	}
 	return result
+}
+
+// CreatePermission 创建新权限
+func (s *PermissionService) CreatePermission(ctx context.Context, code, name string) (*generated.Permission, error) {
+	log.Info().Str("service", "PermissionService").Str("operation", "CreatePermission").
+		Str("code", code).Str("name", name).Msg("开始创建权限")
+
+	// 检查权限代码是否已存在
+	_, err := s.queries.GetPermissionByCode(ctx, code)
+	if err == nil {
+		log.Warn().Str("code", code).Msg("权限代码已存在")
+		return nil, ErrPermissionCodeExists
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		log.Error().Err(err).Msg("检查权限代码失败")
+		return nil, err
+	}
+
+	// 创建权限
+	perm, err := s.queries.CreatePermission(ctx, generated.CreatePermissionParams{
+		Code:        code,
+		Name:        name,
+		Description: sql.NullString{},
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("创建权限失败")
+		return nil, err
+	}
+
+	// 重新加载缓存
+	if err := s.Reload(ctx); err != nil {
+		log.Error().Err(err).Msg("重新加载权限缓存失败")
+	}
+
+	log.Info().Int32("permission_id", perm.ID).Str("code", code).Msg("权限创建成功")
+	return perm, nil
+}
+
+// UpdatePermission 更新权限名称
+func (s *PermissionService) UpdatePermission(ctx context.Context, code, name string) (*generated.Permission, error) {
+	log.Info().Str("service", "PermissionService").Str("operation", "UpdatePermission").
+		Str("code", code).Str("name", name).Msg("开始更新权限")
+
+	// 检查权限是否存在
+	_, err := s.queries.GetPermissionByCode(ctx, code)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("code", code).Msg("权限不存在")
+			return nil, ErrPermissionNotFound
+		}
+		log.Error().Err(err).Msg("查询权限失败")
+		return nil, err
+	}
+
+	// 更新权限
+	perm, err := s.queries.UpdatePermission(ctx, generated.UpdatePermissionParams{
+		Code:        code,
+		Name:        name,
+		Description: sql.NullString{},
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("更新权限失败")
+		return nil, err
+	}
+
+	// 重新加载缓存
+	if err := s.Reload(ctx); err != nil {
+		log.Error().Err(err).Msg("重新加载权限缓存失败")
+	}
+
+	log.Info().Int32("permission_id", perm.ID).Str("code", code).Msg("权限更新成功")
+	return perm, nil
+}
+
+// DeletePermission 删除权限
+func (s *PermissionService) DeletePermission(ctx context.Context, code string) error {
+	log.Info().Str("service", "PermissionService").Str("operation", "DeletePermission").
+		Str("code", code).Msg("开始删除权限")
+
+	// 检查权限是否存在
+	perm, err := s.queries.GetPermissionByCode(ctx, code)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Warn().Str("code", code).Msg("权限不存在")
+			return ErrPermissionNotFound
+		}
+		log.Error().Err(err).Msg("查询权限失败")
+		return err
+	}
+
+	// 检查是否有角色正在使用该权限
+	rolePerms, err := s.queries.ListRolePermissions(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("查询角色权限关联失败")
+		return err
+	}
+	for _, rp := range rolePerms {
+		if rp.PermissionCode == code {
+			log.Warn().Str("code", code).Msg("权限正在被角色使用")
+			return ErrPermissionInUse
+		}
+	}
+
+	// 删除权限
+	err = s.queries.DeletePermission(ctx, code)
+	if err != nil {
+		log.Error().Err(err).Msg("删除权限失败")
+		return err
+	}
+
+	// 重新加载缓存
+	if err := s.Reload(ctx); err != nil {
+		log.Error().Err(err).Msg("重新加载权限缓存失败")
+	}
+
+	log.Info().Int32("permission_id", perm.ID).Str("code", code).Msg("权限删除成功")
+	return nil
 }

@@ -152,6 +152,7 @@ func main() {
 	roleHandler := handler.NewRoleHandler(roleService, permissionService)
 	auditHandler := handler.NewAuditHandler(auditService)
 	announcementHandler := handler.NewAnnouncementHandler(announcementService)
+	permissionHandler := handler.NewPermissionHandler(permissionService)
 
 	// --- 路由注册 ---
 
@@ -317,6 +318,14 @@ func main() {
 
 			// 权限管理
 			r.Get("/permissions", roleHandler.GetAllPermissions) // 获取所有权限定义
+
+			// 权限 CRUD（仅限超级管理员）
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.SuperAdminRequired)
+				r.Post("/permissions", permissionHandler.CreatePermission)         // 创建权限
+				r.Patch("/permissions/{code}", permissionHandler.UpdatePermission) // 更新权限
+				r.Delete("/permissions/{code}", permissionHandler.DeletePermission) // 删除权限
+			})
 
 			// 角色管理
 			r.Get("/roles", roleHandler.ListRoles)                                // 角色列表
