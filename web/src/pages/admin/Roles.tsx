@@ -13,7 +13,14 @@ import {
   useDeleteRole,
   useUpdateRolePermissions,
 } from "@/features/admin/roles";
+import {
+  moduleNames,
+  getModule,
+  groupPermissionsByModule,
+  getModuleDisplayName,
+} from "@/features/admin/roles/utils";
 import type { Role, Permission } from "@/features/admin/roles/types";
+import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,21 +90,6 @@ function RolesTableSkeleton() {
       </Table>
     </div>
   );
-}
-
-/**
- * 权限分组
- */
-function groupPermissionsByModule(permissions: Permission[]): Map<string, Permission[]> {
-  const groups = new Map<string, Permission[]>();
-  for (const perm of permissions) {
-    const module = perm.module || "其他";
-    if (!groups.has(module)) {
-      groups.set(module, []);
-    }
-    groups.get(module)!.push(perm);
-  }
-  return groups;
 }
 
 /**
@@ -259,10 +251,10 @@ export default function Roles() {
 
     return (
       <div className="max-h-96 space-y-4 overflow-y-auto py-4">
-        {Array.from(permissionGroups.entries()).map(([module, perms]) => (
+        {Object.entries(permissionGroups).map(([module, perms]) => (
           <div key={module}>
             <h4 className="mb-2 text-sm font-medium text-muted-foreground">
-              {module}
+              {getModuleDisplayName(module)}
             </h4>
             <div className="flex flex-wrap gap-3">
               {perms.map((perm) => (
@@ -290,7 +282,7 @@ export default function Roles() {
             </div>
           </div>
         ))}
-        {permissionGroups.size === 0 && (
+        {Object.keys(permissionGroups).length === 0 && (
           <p className="py-4 text-center text-sm text-muted-foreground">
             暂无可分配的权限
           </p>

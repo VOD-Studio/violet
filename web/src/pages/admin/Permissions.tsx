@@ -10,10 +10,15 @@ import {
   useRolePermissions,
   useUpdateRolePermissions,
 } from "@/features/admin/roles";
+import {
+  moduleNames,
+  getModule,
+  groupPermissionsByModule,
+  getModuleDisplayName,
+} from "@/features/admin/roles/utils";
 import type { Permission } from "@/features/admin/roles/types";
 import { PermissionGuard } from "@/components/shared/PermissionGuard";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,31 +45,6 @@ import { useToast } from "@/components/shared/Toast";
 import { api, ApiError } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { Shield, Plus, Pencil, Trash2, Save, Loader2, Users } from "lucide-react";
-
-/**
- * 模块名称映射
- */
-const moduleNames: Record<string, string> = {
-  post: "文章管理",
-  comment: "评论管理",
-  tag: "标签管理",
-  media: "媒体管理",
-  emoji: "表情管理",
-  playlist: "歌单管理",
-  song: "歌曲管理",
-  user: "用户管理",
-  role: "角色管理",
-  project: "项目管理",
-  settings: "系统设置",
-  announcement: "公告管理",
-};
-
-/**
- * 获取权限模块
- */
-function getModule(code: string): string {
-  return code.split(":")[0];
-}
 
 /**
  * 权限管理页面内容
@@ -309,7 +289,7 @@ function PermissionsContent() {
                       </TableCell>
                       <TableCell className="font-medium">{perm.name}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {moduleNames[getModule(perm.code)] || getModule(perm.code)}
+                        {getModuleDisplayName(getModule(perm.code))}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
@@ -393,17 +373,10 @@ function PermissionsContent() {
                 </div>
 
                 <div className="rounded-lg border divide-y">
-                  {Object.entries(
-                    permissions.reduce<Record<string, Permission[]>>((acc, perm) => {
-                      const module = getModule(perm.code);
-                      if (!acc[module]) acc[module] = [];
-                      acc[module].push(perm);
-                      return acc;
-                    }, {})
-                  ).map(([module, perms]) => (
+                  {Object.entries(groupPermissionsByModule(permissions)).map(([module, perms]) => (
                     <div key={module} className="p-4">
                       <h3 className="mb-3 text-sm font-medium">
-                        {moduleNames[module] || module}
+                        {getModuleDisplayName(module)}
                       </h3>
                       <div className="space-y-2">
                         {perms.map((perm) => (

@@ -11,6 +11,7 @@ import {
   useBatchUpdateUserStatus,
 } from "@/features/admin/users";
 import type { AdminUser } from "@/features/admin/users/types";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -99,6 +100,9 @@ export default function Users() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  // 搜索防抖
+  const debouncedSearch = useDebounce(search, 300);
+
   // 分页状态
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -132,18 +136,18 @@ export default function Users() {
   // 查询参数
   const queryParams = useMemo(() => {
     const params: { search?: string; role?: string; status?: string; page?: number; limit?: number } = {};
-    if (search) params.search = search;
+    if (debouncedSearch) params.search = debouncedSearch;
     if (roleFilter && roleFilter !== "all") params.role = roleFilter;
     if (statusFilter && statusFilter !== "all") params.status = statusFilter;
     params.page = page;
     params.limit = limit;
     return params;
-  }, [search, roleFilter, statusFilter, page]);
+  }, [debouncedSearch, roleFilter, statusFilter, page]);
 
   // 筛选条件变化时重置页码
   useEffect(() => {
     setPage(1);
-  }, [search, roleFilter, statusFilter]);
+  }, [debouncedSearch, roleFilter, statusFilter]);
 
   const { data: response, isLoading, error, refetch } = useAdminUsers(queryParams);
   const users = response?.users ?? [];
