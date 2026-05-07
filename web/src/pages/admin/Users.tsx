@@ -142,7 +142,13 @@ export default function Users() {
 
   // 查询参数
   const queryParams = useMemo(() => {
-    const params: { search?: string; role?: string; status?: string; page?: number; limit?: number } = {};
+    const params: {
+      search?: string;
+      role?: string;
+      status?: string;
+      page?: number;
+      limit?: number;
+    } = {};
     if (debouncedSearch) params.search = debouncedSearch;
     if (roleFilter && roleFilter !== "all") params.role = roleFilter;
     if (statusFilter && statusFilter !== "all") params.status = statusFilter;
@@ -156,7 +162,12 @@ export default function Users() {
     setPage(1);
   }, [debouncedSearch, roleFilter, statusFilter]);
 
-  const { data: response, isLoading, error, refetch } = useAdminUsers(queryParams);
+  const {
+    data: response,
+    isLoading,
+    error,
+    refetch,
+  } = useAdminUsers(queryParams);
   const users = response?.users ?? [];
   const total = response?.total ?? 0;
 
@@ -208,7 +219,10 @@ export default function Users() {
    * 确认修改角色
    */
   function confirmRoleChange() {
-    updateRole.mutate({ id: roleConfirmState.userId, role: roleConfirmState.newRole });
+    updateRole.mutate({
+      id: roleConfirmState.userId,
+      role: roleConfirmState.newRole,
+    });
     setRoleConfirmState({
       open: false,
       userId: "",
@@ -296,7 +310,6 @@ export default function Users() {
         <h1 className="text-2xl font-bold">用户管理</h1>
         <p className="text-muted-foreground">管理注册用户和权限</p>
       </div>
-
       {/* 搜索和筛选 */}
       <div className="flex flex-wrap gap-4">
         {/* 搜索框 */}
@@ -311,7 +324,10 @@ export default function Users() {
         </div>
 
         {/* 角色筛选 */}
-        <Select value={roleFilter} onValueChange={(value) => setRoleFilter(value ?? "all")}>
+        <Select
+          value={roleFilter}
+          onValueChange={(value) => setRoleFilter(value ?? "all")}
+        >
           <SelectTrigger className="w-32">
             <SelectValue placeholder="全部角色" />
           </SelectTrigger>
@@ -324,7 +340,10 @@ export default function Users() {
         </Select>
 
         {/* 状态筛选 */}
-        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? "all")}>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value ?? "all")}
+        >
           <SelectTrigger className="w-32">
             <SelectValue placeholder="全部状态" />
           </SelectTrigger>
@@ -335,7 +354,6 @@ export default function Users() {
           </SelectContent>
         </Select>
       </div>
-
       {/* 批量操作栏 */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
@@ -386,13 +404,10 @@ export default function Users() {
           </Button>
         </div>
       )}
-
       {/* 加载态 */}
       {isLoading && <UsersTableSkeleton />}
-
       {/* 错误状态 */}
       {error && <ErrorFallback error={error.message} onRetry={refetch} />}
-
       {/* 空数据状态 */}
       {!isLoading && !error && users.length === 0 && (
         <EmptyState
@@ -404,8 +419,11 @@ export default function Users() {
           }
           icon={<UsersIcon className="size-12" />}
         />
-      )}
-
+      )}{" "}
+      <Checkbox
+      // checked={selectedIds.has(user.id)}
+      // onCheckedChange={() => toggleSelectOne(user.id)}
+      />
       {/* 用户列表表格 */}
       {!isLoading && !error && users.length > 0 && (
         <div className="rounded-lg border">
@@ -443,7 +461,14 @@ export default function Users() {
                     <Select
                       value={user.role}
                       onValueChange={(value) =>
-                        value && value !== user.role && handleRoleChange(user.id, user.username, user.role, value)
+                        value &&
+                        value !== user.role &&
+                        handleRoleChange(
+                          user.id,
+                          user.username,
+                          user.role,
+                          value
+                        )
                       }
                     >
                       <SelectTrigger className="w-24">
@@ -485,13 +510,10 @@ export default function Users() {
           </Table>
         </div>
       )}
-
       {/* 统计信息和分页 */}
       {!isLoading && !error && users.length > 0 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            共 {total} 个用户
-          </div>
+          <div className="text-sm text-muted-foreground">共 {total} 个用户</div>
           <Pagination
             currentPage={page}
             totalPages={Math.ceil(total / limit)}
@@ -499,7 +521,6 @@ export default function Users() {
           />
         </div>
       )}
-
       {/* 确认切换状态弹窗 */}
       <ConfirmDialog
         open={confirmState.open}
@@ -521,7 +542,6 @@ export default function Users() {
         confirmLabel={confirmState.newStatus ? "启用" : "禁用"}
         destructive={!confirmState.newStatus}
       />
-
       {/* 批量操作确认弹窗 */}
       <ConfirmDialog
         open={batchConfirmState.open}
@@ -536,7 +556,6 @@ export default function Users() {
         confirmLabel={batchConfirmState.is_active ? "启用" : "禁用"}
         destructive={!batchConfirmState.is_active}
       />
-
       {/* 批量修改角色确认弹窗 */}
       <ConfirmDialog
         open={batchRoleConfirmState.open}
@@ -548,7 +567,6 @@ export default function Users() {
         destructive={batchRoleConfirmState.role === "user"}
         isLoading={batchUpdateRole.isPending}
       />
-
       {/* 角色修改确认弹窗 */}
       <ConfirmDialog
         open={roleConfirmState.open}
@@ -564,12 +582,16 @@ export default function Users() {
         onConfirm={confirmRoleChange}
         title="修改用户角色"
         description={
-          roleConfirmState.currentRole === "superadmin" || roleConfirmState.currentRole === "admin"
+          roleConfirmState.currentRole === "superadmin" ||
+          roleConfirmState.currentRole === "admin"
             ? `确定要将用户「${roleConfirmState.userName}」从「${roleConfirmState.currentRole === "superadmin" ? "超级管理员" : roleConfirmState.currentRole === "admin" ? "管理员" : "用户"}」降级为「${roleConfirmState.newRole === "superadmin" ? "超级管理员" : roleConfirmState.newRole === "admin" ? "管理员" : "用户"}」吗？此操作可能会影响该用户的权限。`
             : `确定要将用户「${roleConfirmState.userName}」的角色修改为「${roleConfirmState.newRole === "superadmin" ? "超级管理员" : roleConfirmState.newRole === "admin" ? "管理员" : "用户"}」吗？`
         }
         confirmLabel="确认修改"
-        destructive={roleConfirmState.currentRole === "superadmin" || roleConfirmState.currentRole === "admin"}
+        destructive={
+          roleConfirmState.currentRole === "superadmin" ||
+          roleConfirmState.currentRole === "admin"
+        }
       />
     </div>
   );
