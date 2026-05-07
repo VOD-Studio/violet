@@ -3,7 +3,7 @@
  * 从 API 获取用户列表，支持搜索筛选、角色修改、启用/禁用和批量操作
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   useAdminUsers,
   useUpdateUserRole,
@@ -34,6 +34,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorFallback } from "@/components/shared/ErrorFallback";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Pagination } from "@/components/shared/Pagination";
 import { Users as UsersIcon, Search, Loader2 } from "lucide-react";
 
 /**
@@ -98,6 +99,10 @@ export default function Users() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  // 分页状态
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
   // 批量选择状态
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -126,11 +131,18 @@ export default function Users() {
 
   // 查询参数
   const queryParams = useMemo(() => {
-    const params: { search?: string; role?: string; status?: string } = {};
+    const params: { search?: string; role?: string; status?: string; page?: number; limit?: number } = {};
     if (search) params.search = search;
     if (roleFilter && roleFilter !== "all") params.role = roleFilter;
     if (statusFilter && statusFilter !== "all") params.status = statusFilter;
+    params.page = page;
+    params.limit = limit;
     return params;
+  }, [search, roleFilter, statusFilter, page]);
+
+  // 筛选条件变化时重置页码
+  useEffect(() => {
+    setPage(1);
   }, [search, roleFilter, statusFilter]);
 
   const { data: response, isLoading, error, refetch } = useAdminUsers(queryParams);
@@ -437,10 +449,17 @@ export default function Users() {
         </div>
       )}
 
-      {/* 统计信息 */}
+      {/* 统计信息和分页 */}
       {!isLoading && !error && users.length > 0 && (
-        <div className="text-sm text-muted-foreground">
-          共 {total} 个用户
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            共 {total} 个用户
+          </div>
+          <Pagination
+            currentPage={page}
+            totalPages={Math.ceil(total / limit)}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

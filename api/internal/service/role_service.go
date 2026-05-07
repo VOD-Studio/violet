@@ -71,6 +71,45 @@ type PermissionInfo struct {
 	Name string `json:"name"`
 }
 
+// RoleWithUserCount 角色及其用户数量
+type RoleWithUserCount struct {
+	ID          int32  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
+	UserCount   int64  `json:"user_count"`
+}
+
+// ListRolesWithUserCount 获取角色列表（包含用户数量）
+func (s *RoleService) ListRolesWithUserCount(ctx context.Context) ([]RoleWithUserCount, error) {
+	log.Info().Str("service", "RoleService").Str("operation", "ListRolesWithUserCount").Msg("查询角色列表")
+
+	roles, err := s.queries.ListRoles(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("查询角色列表失败")
+		return nil, fmt.Errorf("查询角色列表失败: %w", err)
+	}
+
+	result := make([]RoleWithUserCount, 0, len(roles))
+	for _, role := range roles {
+		count, err := s.queries.CountUsersByRoleID(ctx, sql.NullInt32{Int32: role.ID, Valid: true})
+		if err != nil {
+			log.Error().Err(err).Int32("role_id", role.ID).Msg("查询角色用户数失败")
+			count = 0
+		}
+		result = append(result, RoleWithUserCount{
+			ID:          role.ID,
+			Name:        role.Name,
+			Description: role.Description.String,
+			CreatedAt:   role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UserCount:   count,
+		})
+	}
+
+	log.Info().Int("count", len(result)).Msg("角色列表查询成功")
+	return result, nil
+}
+
 // ListRoles 获取角色列表
 func (s *RoleService) ListRoles(ctx context.Context) ([]*generated.Role, error) {
 	log.Info().Str("service", "RoleService").Str("operation", "ListRoles").Msg("查询角色列表")

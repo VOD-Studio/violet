@@ -37,7 +37,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorFallback } from "@/components/shared/ErrorFallback";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useToast } from "@/components/shared/Toast";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { Shield, Plus, Pencil, Trash2, Save, Loader2, Users } from "lucide-react";
 
@@ -132,8 +132,9 @@ function PermissionsContent() {
       setCreateDialog({ open: false });
       setCreateForm({ code: "", name: "" });
       queryClient.invalidateQueries({ queryKey: ["permissions"] });
-    } catch {
-      toast("权限创建失败", "error");
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "权限创建失败";
+      toast(message, "error");
     }
     setCreateLoading(false);
   }
@@ -153,8 +154,9 @@ function PermissionsContent() {
       toast("权限更新成功", "success");
       setEditDialog({ open: false });
       queryClient.invalidateQueries({ queryKey: ["permissions"] });
-    } catch {
-      toast("权限更新失败", "error");
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "权限更新失败";
+      toast(message, "error");
     }
     setEditLoading(false);
   }
@@ -169,8 +171,9 @@ function PermissionsContent() {
       toast("权限删除成功", "success");
       setDeleteConfirm({ open: false });
       queryClient.invalidateQueries({ queryKey: ["permissions"] });
-    } catch {
-      toast("权限删除失败", "error");
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "权限删除失败";
+      toast(message, "error");
     }
     setDeleteLoading(false);
   }
@@ -207,8 +210,9 @@ function PermissionsContent() {
         onSuccess: () => {
           toast("角色权限更新成功", "success");
         },
-        onError: () => {
-          toast("角色权限更新失败", "error");
+        onError: (error) => {
+          const message = error instanceof ApiError ? error.message : "角色权限更新失败";
+          toast(message, "error");
         },
       }
     );

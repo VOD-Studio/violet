@@ -51,6 +51,7 @@ function RolesTableSkeleton() {
             <TableHead className="w-16">ID</TableHead>
             <TableHead>角色名称</TableHead>
             <TableHead>描述</TableHead>
+            <TableHead className="w-20">用户数</TableHead>
             <TableHead>创建时间</TableHead>
             <TableHead className="text-right">操作</TableHead>
           </TableRow>
@@ -63,6 +64,9 @@ function RolesTableSkeleton() {
               </TableCell>
               <TableCell>
                 <Skeleton className="h-4 w-20" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-8" />
               </TableCell>
               <TableCell>
                 <Skeleton className="h-4 w-32" />
@@ -163,11 +167,23 @@ export default function Roles() {
    * 提交角色表单
    */
   function handleSubmitRole() {
-    if (!roleForm.name.trim()) return;
+    const name = roleForm.name.trim();
+    const description = roleForm.description.trim();
+
+    // 校验
+    if (!name) return;
+    if (name.length > 50) {
+      alert("角色名称长度不能超过 50 字符");
+      return;
+    }
+    if (description.length > 200) {
+      alert("角色描述长度不能超过 200 字符");
+      return;
+    }
 
     if (roleDialog.mode === "create") {
       createRole.mutate(
-        { name: roleForm.name.trim(), description: roleForm.description.trim() || undefined },
+        { name, description: description || undefined },
         {
           onSuccess: () => {
             setRoleDialog({ open: false, mode: "create" });
@@ -179,8 +195,8 @@ export default function Roles() {
         {
           id: roleDialog.role.id,
           data: {
-            name: roleForm.name.trim(),
-            description: roleForm.description.trim() || undefined,
+            name,
+            description: description || undefined,
           },
         },
         {
@@ -354,6 +370,9 @@ export default function Roles() {
                   <TableCell className="font-medium">{role.name}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {role.description || "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {role.user_count ?? 0}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {new Date(role.created_at).toLocaleDateString("zh-CN")}

@@ -41,12 +41,13 @@ func getClientIPFromRequestRole(r *http.Request) string {
 	return r.RemoteAddr
 }
 
-// roleListResponse 角色信息响应
+// roleListResponse 角色信息响应（含用户数量）
 type roleListResponse struct {
 	ID          int32  `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	CreatedAt   string `json:"created_at"`
+	UserCount   int64  `json:"user_count"`
 }
 
 // roleDetailResponse 角色及其权限信息响应
@@ -63,27 +64,17 @@ type roleDetailResponse struct {
 func (h *RoleHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
 	log.Info().Str("handler", "ListRoles").Msg("处理请求")
 
-	roles, err := h.roleService.ListRoles(r.Context())
+	roles, err := h.roleService.ListRolesWithUserCount(r.Context())
 	if err != nil {
 		log.Error().Err(err).Str("operation", "ListRoles").Msg("服务调用失败")
 		response.InternalServerError(w, "查询角色列表失败")
 		return
 	}
 
-	items := make([]roleListResponse, 0, len(roles))
-	for _, role := range roles {
-		items = append(items, roleListResponse{
-			ID:          role.ID,
-			Name:        role.Name,
-			Description: role.Description.String,
-			CreatedAt:   role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		})
-	}
-
 	response.Success(w, map[string]interface{}{
-		"roles": items,
+		"roles": roles,
 	})
-	log.Info().Int("status", http.StatusOK).Int("count", len(items)).Msg("请求处理成功")
+	log.Info().Int("status", http.StatusOK).Int("count", len(roles)).Msg("请求处理成功")
 }
 
 // GetAllPermissions 获取所有权限定义
@@ -140,6 +131,7 @@ func (h *RoleHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
 		Name:        role.Name,
 		Description: role.Description.String,
 		CreatedAt:   role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UserCount:   0,
 	})
 	log.Info().Int("status", http.StatusOK).Int32("role_id", role.ID).Msg("请求处理成功")
 }
@@ -189,6 +181,7 @@ func (h *RoleHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
 		Name:        role.Name,
 		Description: role.Description.String,
 		CreatedAt:   role.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UserCount:   0,
 	})
 	log.Info().Int("status", http.StatusOK).Int32("role_id", int32(id)).Msg("请求处理成功")
 }

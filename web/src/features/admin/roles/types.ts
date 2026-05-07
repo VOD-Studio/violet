@@ -10,6 +10,8 @@ export interface Role {
   description: string | null;
   /** 创建时间 */
   created_at: string;
+  /** 使用该角色的用户数量 */
+  user_count?: number;
 }
 
 /** 带权限的角色 */
