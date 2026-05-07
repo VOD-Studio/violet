@@ -408,7 +408,7 @@ export default function Roles() {
           setRoleDialog((prev) => ({ ...prev, open }))
         }
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-md sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {roleDialog.mode === "create" ? "创建角色" : "编辑角色"}

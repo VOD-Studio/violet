@@ -63,7 +63,7 @@ export function CreateCustomPlaylistDialog({
 }: CreateCustomPlaylistDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>创建自定义歌单</DialogTitle>
           <DialogDescription>

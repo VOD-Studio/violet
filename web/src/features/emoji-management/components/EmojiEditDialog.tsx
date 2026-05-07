@@ -33,7 +33,7 @@ export function EmojiEditDialog({
 }: EmojiEditDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-md sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>编辑表情</DialogTitle>
           <DialogDescription>修改表情的名称和内容</DialogDescription>

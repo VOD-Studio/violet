@@ -67,12 +67,14 @@ export function MediaLibraryDialog({
 
   // 过滤可用的分类选项（限制类型时不显示"全部"）
   const availableCategories = allowedCategories
-    ? categoryOptions.filter((opt) => opt.value !== "all" && allowedCategories.includes(opt.value))
+    ? categoryOptions.filter(
+        (opt) => opt.value !== "all" && allowedCategories.includes(opt.value)
+      )
     : categoryOptions;
 
   // 默认分类：限制类型时选第一个允许的类型，否则用传入的默认值
   const initialCategory = allowedCategories
-    ? availableCategories[0]?.value ?? "image"
+    ? (availableCategories[0]?.value ?? "image")
     : defaultCategory;
 
   const [category, setCategory] = useState(initialCategory);
@@ -147,7 +149,7 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
