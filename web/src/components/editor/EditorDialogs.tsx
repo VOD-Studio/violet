@@ -71,7 +71,7 @@ export function LinkDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md sm:max-w-lg">
+      <DialogContent className="max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
         <DialogHeader>
           <DialogTitle>插入链接</DialogTitle>
         </DialogHeader>
@@ -181,7 +181,7 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
         <DialogHeader>
           <DialogTitle>插入图片</DialogTitle>
         </DialogHeader>

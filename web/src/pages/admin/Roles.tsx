@@ -408,7 +408,7 @@ export default function Roles() {
           setRoleDialog((prev) => ({ ...prev, open }))
         }
       >
-        <DialogContent className="max-w-md sm:max-w-lg">
+        <DialogContent className="max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {roleDialog.mode === "create" ? "创建角色" : "编辑角色"}
@@ -488,7 +488,7 @@ export default function Roles() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
           <DialogHeader>
             <DialogTitle>分配权限 - {permissionDialog.roleName}</DialogTitle>
             <DialogDescription>

@@ -378,7 +378,7 @@ function AnnouncementsContent() {
         open={dialog.open}
         onOpenChange={(open) => setDialog((prev) => ({ ...prev, open }))}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {dialog.mode === "create" ? "创建公告" : "编辑公告"}

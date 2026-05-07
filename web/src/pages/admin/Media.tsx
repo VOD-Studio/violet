@@ -287,7 +287,7 @@ export default function Media() {
 
       {/* 文件预览弹窗 */}
       <Dialog open={!!previewItem} onOpenChange={() => setPreviewItem(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
           <DialogHeader>
             <DialogTitle className="truncate">
               {previewItem?.original_name}
@@ -335,7 +335,7 @@ export default function Media() {
 
       {/* 上传文件弹窗 */}
       <Dialog open={showUploader} onOpenChange={setShowUploader}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
           <DialogHeader>
             <DialogTitle>上传文件</DialogTitle>
           </DialogHeader>

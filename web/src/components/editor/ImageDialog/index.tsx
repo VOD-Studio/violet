@@ -78,7 +78,7 @@ export function ImageDialog({ open, onClose, onInsert }: ImageDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={resetAndClose}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
         <DialogHeader>
           <DialogTitle>插入图片</DialogTitle>
         </DialogHeader>

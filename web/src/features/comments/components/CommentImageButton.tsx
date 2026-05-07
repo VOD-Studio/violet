@@ -89,7 +89,7 @@ export function CommentImageButton({
 
       {/* 上传对话框 */}
       <Dialog open={showUploader} onOpenChange={setShowUploader}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
           <DialogHeader>
             <DialogTitle>上传图片</DialogTitle>
           </DialogHeader>
