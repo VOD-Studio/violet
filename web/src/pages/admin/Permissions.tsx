@@ -417,7 +417,7 @@ function PermissionsContent() {
 
       {/* 创建权限弹窗 */}
       <Dialog open={createDialog.open} onOpenChange={(open) => setCreateDialog({ open })}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>创建权限</DialogTitle>
           </DialogHeader>
@@ -461,7 +461,7 @@ function PermissionsContent() {
         open={editDialog.open}
         onOpenChange={(open) => setEditDialog({ open, permission: editDialog.permission })}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>编辑权限</DialogTitle>
           </DialogHeader>

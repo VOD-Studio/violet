@@ -57,7 +57,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader className="gap-3">
           <div
             className={`flex items-center gap-3 ${destructive ? "text-destructive" : "text-primary"}`}

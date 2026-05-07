@@ -71,7 +71,7 @@ export function LinkDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>插入链接</DialogTitle>
         </DialogHeader>
