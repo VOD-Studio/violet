@@ -10,6 +10,8 @@ import type {
   CreateRoleInput,
   UpdateRoleInput,
   UpdateRolePermissionsInput,
+  CreatePermissionInput,
+  UpdatePermissionInput,
 } from "./types";
 
 /**
@@ -132,6 +134,50 @@ export function useUpdateRolePermissions() {
       queryClient.invalidateQueries({
         queryKey: roleKeys.permissions(variables.id),
       });
+    },
+  });
+}
+
+/**
+ * 创建权限
+ */
+export function useCreatePermission() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreatePermissionInput) =>
+      api.post("/admin/permissions", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.allPermissions() });
+    },
+  });
+}
+
+/**
+ * 更新权限
+ */
+export function useUpdatePermission() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ code, data }: { code: string; data: UpdatePermissionInput }) =>
+      api.patch(`/admin/permissions/${code}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.allPermissions() });
+    },
+  });
+}
+
+/**
+ * 删除权限
+ */
+export function useDeletePermission() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (code: string) => api.del(`/admin/permissions/${code}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: roleKeys.allPermissions() });
     },
   });
 }

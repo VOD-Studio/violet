@@ -36,7 +36,6 @@ import Tags from "@/pages/admin/Tags";
 import Media from "@/pages/admin/Media";
 import Users from "@/pages/admin/Users";
 import Roles from "@/pages/admin/Roles";
-import Permissions from "@/pages/admin/Permissions";
 import Logs from "@/pages/admin/Logs";
 import Settings from "@/pages/admin/Settings";
 import Emojis from "@/pages/admin/Emojis";
@@ -108,7 +107,6 @@ function App() {
               <Route path="playlists" element={<Playlists />} />
               <Route path="users" element={<Users />} />
               <Route path="roles" element={<Roles />} />
-              <Route path="permissions" element={<Permissions />} />
               <Route path="announcements" element={<Announcements />} />
               <Route path="logs" element={<Logs />} />
               <Route path="settings" element={<Settings />} />

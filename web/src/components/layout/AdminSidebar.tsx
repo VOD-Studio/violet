@@ -93,13 +93,7 @@ const navItems: NavItem[] = [
   },
   {
     to: "/admin/roles",
-    label: "角色管理",
-    icon: <Shield className="size-4" />,
-    permission: "role:manage",
-  },
-  {
-    to: "/admin/permissions",
-    label: "权限管理",
+    label: "角色权限",
     icon: <Shield className="size-4" />,
     permission: "role:manage",
   },

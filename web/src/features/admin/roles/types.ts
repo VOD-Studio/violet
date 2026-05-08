@@ -43,5 +43,16 @@ export interface UpdateRoleInput {
 
 /** 更新角色权限输入 */
 export interface UpdateRolePermissionsInput {
-  permissions: string[]; // 权限代码列表
+  permissions: string[];
+}
+
+/** 创建权限输入 */
+export interface CreatePermissionInput {
+  code: string;
+  name: string;
+}
+
+/** 更新权限输入 */
+export interface UpdatePermissionInput {
+  name: string;
 }
