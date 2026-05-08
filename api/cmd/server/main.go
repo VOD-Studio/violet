@@ -415,9 +415,16 @@ func main() {
 
 // initSuperAdmin 初始化超级管理员账户
 // 如果用户不存在则创建，已存在则更新密码和角色
+// 同时确保 role_id 正确指向 roles 表中的 superadmin 角色
 func initSuperAdmin(ctx context.Context, queries *generated.Queries, cfg config.SuperAdminConfig) error {
 	if cfg.Email == "" || cfg.Password == "" {
 		return fmt.Errorf("超级管理员邮箱或密码未配置")
+	}
+
+	// 确保 roles 表中存在 superadmin 角色
+	superadminRole, err := queries.GetRoleByName(ctx, "superadmin")
+	if err != nil {
+		return fmt.Errorf("获取 superadmin 角色失败（请确认迁移已执行）: %w", err)
 	}
 
 	user, err := queries.GetUserByEmail(ctx, cfg.Email)
@@ -440,6 +447,13 @@ func initSuperAdmin(ctx context.Context, queries *generated.Queries, cfg config.
 		if err != nil {
 			return fmt.Errorf("更新超级管理员角色失败: %w", err)
 		}
+		err = queries.UpdateUserRoleByID(ctx, generated.UpdateUserRoleByIDParams{
+			ID:     user.ID,
+			RoleID: sql.NullInt32{Int32: superadminRole.ID, Valid: true},
+		})
+		if err != nil {
+			return fmt.Errorf("更新超级管理员角色ID失败: %w", err)
+		}
 		log.Info().Str("username", cfg.Username).Str("email", cfg.Email).Msg("超级管理员已更新")
 		return nil
 	}
@@ -449,7 +463,7 @@ func initSuperAdmin(ctx context.Context, queries *generated.Queries, cfg config.
 		return fmt.Errorf("密码哈希失败: %w", err)
 	}
 
-	_, err = queries.CreateUser(ctx, generated.CreateUserParams{
+	newUser, err := queries.CreateUser(ctx, generated.CreateUserParams{
 		Username:      cfg.Username,
 		Email:         cfg.Email,
 		PasswordHash:  string(hashedPassword),
@@ -459,6 +473,14 @@ func initSuperAdmin(ctx context.Context, queries *generated.Queries, cfg config.
 	})
 	if err != nil {
 		return fmt.Errorf("创建超级管理员失败: %w", err)
+	}
+
+	err = queries.UpdateUserRoleByID(ctx, generated.UpdateUserRoleByIDParams{
+		ID:     newUser.ID,
+		RoleID: sql.NullInt32{Int32: superadminRole.ID, Valid: true},
+	})
+	if err != nil {
+		return fmt.Errorf("设置超级管理员角色ID失败: %w", err)
 	}
 
 	log.Info().Str("username", cfg.Username).Str("email", cfg.Email).Msg("超级管理员已创建")

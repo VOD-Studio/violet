@@ -18,8 +18,8 @@ export function adminLoader() {
     return redirect("/login");
   }
 
-  // 检查是否是管理员
-  if (user?.role !== "admin" && user?.role !== "superadmin") {
+  // 检查是否拥有管理后台访问权限
+  if (!user?.permissions?.includes("admin:access")) {
     return redirect("/login");
   }
 

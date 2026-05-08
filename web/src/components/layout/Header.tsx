@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/features/auth";
+import { usePermission } from "@/hooks/usePermission";
 import { useSiteSettings } from "@/components/shared/SettingsProvider";
 import { cn } from "@/lib/utils";
 import { getUploadUrl } from "@/lib/api";
@@ -44,6 +45,7 @@ export function Header() {
   const navigate = useNavigate();
   /** 认证状态 */
   const { isAuthenticated, user, logout } = useAuth();
+  const canAccessAdmin = usePermission("admin:access");
   /** 站点设置 */
   const settings = useSiteSettings();
 
@@ -127,7 +129,7 @@ export function Header() {
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
                   个人中心
                 </DropdownMenuItem>
-                {user?.role === "admin" && (
+                {canAccessAdmin && (
                   <DropdownMenuItem onClick={() => navigate("/admin")}>
                     管理后台
                   </DropdownMenuItem>
@@ -216,7 +218,7 @@ export function Header() {
                     >
                       个人中心
                     </DropdownMenuItem>
-                    {user?.role === "admin" && (
+                    {canAccessAdmin && (
                       <DropdownMenuItem
                         onClick={() => {
                           navigate("/admin");
