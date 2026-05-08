@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { ScrollReveal } from "@/components/creative";
 
 interface TechCategory {
@@ -5,7 +6,7 @@ interface TechCategory {
   items: string[];
 }
 
-const TECH_STACK: TechCategory[] = [
+const DEFAULT_TECH_STACK: TechCategory[] = [
   {
     name: "前端",
     items: ["React", "TypeScript", "Next.js", "Tailwind CSS", "Vue.js"],
@@ -28,13 +29,28 @@ const TECH_STACK: TechCategory[] = [
   },
 ];
 
-export function TechStackSection() {
+interface TechStackSectionProps {
+  techStack?: string;
+}
+
+export function TechStackSection({ techStack }: TechStackSectionProps) {
+  const categories = useMemo<TechCategory[]>(() => {
+    if (!techStack) return DEFAULT_TECH_STACK;
+    try {
+      const parsed = JSON.parse(techStack);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      return DEFAULT_TECH_STACK;
+    } catch {
+      return DEFAULT_TECH_STACK;
+    }
+  }, [techStack]);
+
   return (
     <ScrollReveal animation="fadeUp">
       <h2 className="mb-6 text-2xl font-bold">技术栈</h2>
 
       <div className="space-y-6">
-        {TECH_STACK.map((category, index) => (
+        {categories.map((category, index) => (
           <ScrollReveal
             key={category.name}
             animation="fadeUp"

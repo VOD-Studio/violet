@@ -31,8 +31,8 @@ export default function About() {
 
       <h1 className="mb-8 text-3xl font-bold">关于我</h1>
 
-      <BioSection />
-      <TechStackSection />
+      <BioSection bio={settings?.bio} />
+      <TechStackSection techStack={settings?.tech_stack} />
       <GitHubSection username={githubUsername} />
     </div>
   );

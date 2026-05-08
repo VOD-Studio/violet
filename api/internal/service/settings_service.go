@@ -30,7 +30,10 @@ type SiteSettings struct {
 	PostsPerPage       int    `json:"posts_per_page"`
 	CommentsEnabled    bool   `json:"comments_enabled"`
 	CommentsModeration bool   `json:"comments_moderation"`
-	GitHubUsername      string `json:"github_username"`
+	GitHubUsername     string `json:"github_username"`
+	GitHubToken        string `json:"github_token"`
+	TechStack          string `json:"tech_stack"`
+	Bio                string `json:"bio"`
 	FooterText         string `json:"footer_text"`
 }
 
@@ -44,6 +47,9 @@ type UpdateSettingsRequest struct {
 	CommentsEnabled    *bool   `json:"comments_enabled"`
 	CommentsModeration *bool   `json:"comments_moderation"`
 	GitHubUsername     *string `json:"github_username"`
+	GitHubToken        *string `json:"github_token"`
+	TechStack          *string `json:"tech_stack"`
+	Bio                *string `json:"bio"`
 	FooterText         *string `json:"footer_text"`
 }
 
@@ -82,6 +88,12 @@ func (s *SettingsService) GetAllSettings(ctx context.Context) (*SiteSettings, er
 			result.CommentsModeration = setting.Value == "true"
 		case "github_username":
 			result.GitHubUsername = setting.Value
+		case "github_token":
+			result.GitHubToken = setting.Value
+		case "tech_stack":
+			result.TechStack = setting.Value
+		case "bio":
+			result.Bio = setting.Value
 		case "footer_text":
 			result.FooterText = setting.Value
 		}
@@ -176,6 +188,33 @@ func (s *SettingsService) UpdateSettings(ctx context.Context, req UpdateSettings
 		}); err != nil {
 			log.Error().Err(err).Str("key", "github_username").Msg("更新设置失败")
 			return nil, fmt.Errorf("更新 github_username 失败: %w", err)
+		}
+	}
+	if req.GitHubToken != nil {
+		if _, err := s.queries.UpsertSetting(ctx, generated.UpsertSettingParams{
+			Key:   "github_token",
+			Value: *req.GitHubToken,
+		}); err != nil {
+			log.Error().Err(err).Str("key", "github_token").Msg("更新设置失败")
+			return nil, fmt.Errorf("更新 github_token 失败: %w", err)
+		}
+	}
+	if req.TechStack != nil {
+		if _, err := s.queries.UpsertSetting(ctx, generated.UpsertSettingParams{
+			Key:   "tech_stack",
+			Value: *req.TechStack,
+		}); err != nil {
+			log.Error().Err(err).Str("key", "tech_stack").Msg("更新设置失败")
+			return nil, fmt.Errorf("更新 tech_stack 失败: %w", err)
+		}
+	}
+	if req.Bio != nil {
+		if _, err := s.queries.UpsertSetting(ctx, generated.UpsertSettingParams{
+			Key:   "bio",
+			Value: *req.Bio,
+		}); err != nil {
+			log.Error().Err(err).Str("key", "bio").Msg("更新设置失败")
+			return nil, fmt.Errorf("更新 bio 失败: %w", err)
 		}
 	}
 	if req.FooterText != nil {

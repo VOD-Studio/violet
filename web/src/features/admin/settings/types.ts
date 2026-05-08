@@ -18,6 +18,12 @@ export interface SiteSettings {
   comments_moderation: boolean;
   /** GitHub 用户名 */
   github_username: string;
+  /** GitHub Token */
+  github_token: string;
+  /** 技术栈 JSON */
+  tech_stack: string;
+  /** 个人简介 */
+  bio: string;
   /** 页脚文本 */
   footer_text: string;
 }
@@ -30,6 +36,10 @@ export interface PublicSettings {
   site_description: string;
   /** GitHub 用户名 */
   github_username: string;
+  /** 技术栈 JSON */
+  tech_stack: string;
+  /** 个人简介 */
+  bio: string;
   /** 页脚文本 */
   footer_text: string;
 }

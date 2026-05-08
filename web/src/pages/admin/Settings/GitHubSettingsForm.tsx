@@ -26,7 +26,7 @@ export function GitHubSettingsForm({
       <CardHeader>
         <CardTitle>GitHub 配置</CardTitle>
         <CardDescription>
-          配置 GitHub 用户名，用于展示贡献热力图和置顶仓库
+          配置 GitHub 集成，用于展示贡献热力图和置顶仓库
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -40,6 +40,19 @@ export function GitHubSettingsForm({
           />
           <p className="text-xs text-muted-foreground">
             设置后将在关于页展示 GitHub 贡献热力图和置顶仓库
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="github-token">GitHub Token</Label>
+          <Input
+            id="github-token"
+            type="password"
+            value={form.github_token ?? ""}
+            onChange={(e) => updateField("github_token", e.target.value)}
+            placeholder="ghp_xxxxxxxxxxxx"
+          />
+          <p className="text-xs text-muted-foreground">
+            用于调用 GitHub API 获取贡献数据，需勾选 <code>read:user</code> 权限。在 GitHub Settings → Developer settings → Tokens (classic) 中生成。
           </p>
         </div>
       </CardContent>

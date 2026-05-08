@@ -28,6 +28,8 @@ type PublicSettings struct {
 	SiteName        string `json:"site_name"`
 	SiteDescription string `json:"site_description"`
 	GitHubUsername  string `json:"github_username"`
+	TechStack       string `json:"tech_stack"`
+	Bio             string `json:"bio"`
 	FooterText      string `json:"footer_text"`
 	PostsPerPage    int    `json:"posts_per_page"`
 }
@@ -49,6 +51,8 @@ func (h *SettingsHandler) GetPublicSettings(w http.ResponseWriter, r *http.Reque
 		SiteName:        settings.SiteName,
 		SiteDescription: settings.SiteDescription,
 		GitHubUsername:  settings.GitHubUsername,
+		TechStack:       settings.TechStack,
+		Bio:             settings.Bio,
 		FooterText:      settings.FooterText,
 		PostsPerPage:    settings.PostsPerPage,
 	}

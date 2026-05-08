@@ -8,6 +8,7 @@ import { SettingsSkeleton } from "./SettingsSkeleton";
 import { SiteInfoForm } from "./SiteInfoForm";
 import { CommentSettingsForm } from "./CommentSettingsForm";
 import { GitHubSettingsForm } from "./GitHubSettingsForm";
+import { AboutSettingsForm } from "./AboutSettingsForm";
 import { FooterSettingsForm } from "./FooterSettingsForm";
 
 export default function Settings() {
@@ -76,6 +77,7 @@ export default function Settings() {
 
       <div className="grid gap-6 max-w-2xl">
         <SiteInfoForm form={form} updateField={updateField} />
+        <AboutSettingsForm form={form} updateField={updateField} />
         <CommentSettingsForm form={form} updateField={updateField} />
         <GitHubSettingsForm form={form} updateField={updateField} />
         <FooterSettingsForm form={form} updateField={updateField} />

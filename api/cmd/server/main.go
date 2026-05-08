@@ -141,6 +141,8 @@ func main() {
 	commentHandler := handler.NewCommentHandler(commentService, fileService)
 	adminHandler := handler.NewAdminHandler(statsService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
+	githubService := service.NewGitHubService(settingsService)
+	githubHandler := handler.NewGitHubHandler(githubService)
 	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
 	mediaHandler := handler.NewMediaHandler(fileService, "uploads")
 	uploadHandler := handler.NewUploadHandler(uploadService)
@@ -176,6 +178,10 @@ func main() {
 
 		// 公开站点设置
 		v1.Get("/settings", settingsHandler.GetPublicSettings) // 获取公开站点配置
+
+		// GitHub 数据（公开，Token 在后端管理）
+		v1.Get("/github/contributions", githubHandler.GetContributions) // GitHub 贡献数据
+		v1.Get("/github/repos", githubHandler.GetRepos)                 // GitHub 仓库数据
 
 		// 认证
 		v1.Route("/auth", func(r chi.Router) {
