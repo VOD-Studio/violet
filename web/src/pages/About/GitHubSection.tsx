@@ -11,7 +11,7 @@ export function GitHubSection({ username }: GitHubSectionProps) {
 
   return (
     <>
-      <ScrollReveal animation="fadeUp" className="mt-12">
+      <ScrollReveal animation="fadeUp">
         <GitHubContributions username={username} />
       </ScrollReveal>
 

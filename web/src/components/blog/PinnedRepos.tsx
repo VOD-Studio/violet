@@ -13,6 +13,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { TextMarquee } from "@/components/blog/TextMarquee";
 
 interface PinnedReposProps {
   /** GitHub 用户名 */
@@ -63,9 +64,11 @@ function RepoCard({ repo }: { repo: RepoData }) {
         <CardHeader>
           {/* 仓库名称和外部链接图标 */}
           <CardTitle className="flex items-center gap-2">
-            <span className="truncate text-base group-hover:text-primary transition-colors">
-              {repo.name}
-            </span>
+            <TextMarquee speed={30} className="text-base">
+              <span className="group-hover:text-primary transition-colors">
+                {repo.name}
+              </span>
+            </TextMarquee>
             <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
           </CardTitle>
 

@@ -21,7 +21,7 @@ export default function About() {
   ]);
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-12">
+    <div className="container mx-auto max-w-4xl px-4 py-12">
       <SEO
         title="关于我"
         description="全栈开发者，热爱技术与开源。专注于 React、TypeScript 和 Node.js 生态，擅长构建高质量的 Web 应用。"
