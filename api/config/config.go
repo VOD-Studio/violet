@@ -44,12 +44,18 @@ type Config struct {
 
 // DatabaseConfig PostgreSQL 数据库配置
 type DatabaseConfig struct {
-	Host     string
-	Port     int
-	Name     string
-	User     string
+	// Host 数据库主机地址
+	Host string
+	// Port 数据库端口
+	Port int
+	// Name 数据库名称
+	Name string
+	// User 数据库用户名
+	User string
+	// Password 数据库密码
 	Password string
-	SSLMode  string
+	// SSLMode SSL 连接模式（disable、require、verify-ca、verify-full）
+	SSLMode string
 }
 
 // DSN 生成 PostgreSQL 连接字符串
@@ -60,9 +66,13 @@ func (d *DatabaseConfig) DSN() string {
 
 // RedisConfig Redis 配置
 type RedisConfig struct {
-	Host     string
-	Port     int
-	DB       int
+	// Host Redis 主机地址
+	Host string
+	// Port Redis 端口
+	Port int
+	// DB Redis 数据库编号
+	DB int
+	// Password Redis 密码（可选）
 	Password string
 }
 
