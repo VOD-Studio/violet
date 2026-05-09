@@ -25,3 +25,25 @@ export interface Project {
   /** 更新时间 */
   updated_at: string;
 }
+
+/** 创建项目请求参数 */
+export interface CreateProjectInput {
+  title: string;
+  description?: string;
+  url?: string;
+  github_url?: string;
+  image_url?: string;
+  tech_stack?: string[];
+  sort_order?: number;
+}
+
+/** 更新项目请求参数 */
+export interface UpdateProjectInput {
+  title?: string;
+  description?: string;
+  url?: string;
+  github_url?: string;
+  image_url?: string;
+  tech_stack?: string[];
+  sort_order?: number;
+}

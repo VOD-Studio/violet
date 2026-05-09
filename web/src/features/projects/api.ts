@@ -3,9 +3,9 @@
  * 使用 react-query 管理项目列表查询和单个项目详情
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Project } from "./types";
+import type { CreateProjectInput, Project, UpdateProjectInput } from "./types";
 
 /**
  * 获取项目列表
@@ -34,5 +34,46 @@ export function useProject(id: string | undefined) {
     queryKey: ["projects", id],
     queryFn: () => api.get<Project>(`/projects/${id}`),
     enabled: !!id,
+  });
+}
+
+/**
+ * 创建项目
+ */
+export function useCreateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateProjectInput) =>
+      api.post("/admin/projects", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+/**
+ * 更新项目
+ */
+export function useUpdateProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateProjectInput }) =>
+      api.put(`/admin/projects/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+/**
+ * 删除项目
+ */
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.del(`/admin/projects/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
   });
 }
