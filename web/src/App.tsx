@@ -41,6 +41,7 @@ import Settings from "@/pages/admin/Settings";
 import Emojis from "@/pages/admin/Emojis";
 import Playlists from "@/pages/admin/Playlists";
 import Announcements from "@/pages/admin/Announcements";
+import AdminProjects from "@/pages/admin/Projects";
 
 /**
  * 初始化全局导航引用
@@ -102,6 +103,7 @@ function App() {
               <Route path="posts/:id/edit" element={<PostEdit />} />
               <Route path="comments" element={<Comments />} />
               <Route path="tags" element={<Tags />} />
+              <Route path="projects" element={<AdminProjects />} />
               <Route path="media" element={<Media />} />
               <Route path="emojis" element={<Emojis />} />
               <Route path="playlists" element={<Playlists />} />

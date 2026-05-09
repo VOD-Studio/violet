@@ -25,6 +25,7 @@ import {
   Home,
   ScrollText,
   Bell,
+  FolderKanban,
 } from "lucide-react";
 
 /** 导航菜单项配置 */
@@ -66,6 +67,12 @@ const navItems: NavItem[] = [
     label: "标签管理",
     icon: <Tag className="size-4" />,
     permission: ["tag:create", "tag:update", "tag:delete"],
+  },
+  {
+    to: "/admin/projects",
+    label: "项目管理",
+    icon: <FolderKanban className="size-4" />,
+    permission: "admin:access",
   },
   {
     to: "/admin/media",
