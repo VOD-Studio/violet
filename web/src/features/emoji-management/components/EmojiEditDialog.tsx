@@ -12,13 +12,21 @@ import { getEmojiDisplay } from "@/hooks/useEmojisAdmin";
 import { Loader2 } from "lucide-react";
 import type { EmojiAdmin, CreateEmojiInput } from "../types";
 
+/** EmojiEditDialog 组件的属性 */
 interface EmojiEditDialogProps {
+  /** 是否打开弹窗 */
   open: boolean;
+  /** 打开/关闭回调 */
   onOpenChange: (open: boolean) => void;
+  /** 正在编辑的表情 */
   emoji: EmojiAdmin | null;
+  /** 编辑表单数据 */
   form: CreateEmojiInput;
+  /** 表单数据变化回调 */
   onFormChange: (form: CreateEmojiInput) => void;
+  /** 保存回调 */
   onSave: () => void;
+  /** 是否正在保存 */
   isSaving: boolean;
 }
 

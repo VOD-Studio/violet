@@ -4,8 +4,11 @@
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/** QuickCommentButton 组件的属性 */
 interface QuickCommentButtonProps {
+  /** 点击回调 */
   onClick: () => void;
+  /** 是否可见 */
   visible: boolean;
 }
 

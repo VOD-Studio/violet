@@ -6,6 +6,7 @@
 import { motion } from "motion/react";
 import { X } from "lucide-react";
 
+/** ReplyIndicator 组件的属性 */
 interface ReplyIndicatorProps {
   /** 回复目标用户名 */
   replyTo: string;

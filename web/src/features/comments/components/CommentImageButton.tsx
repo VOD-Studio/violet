@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+/** CommentImageButton 组件的属性 */
 interface CommentImageButtonProps {
   /** 已上传的图片列表 */
   images: UploadedImage[];
@@ -30,6 +31,7 @@ interface CommentImageButtonProps {
   onUpload: (image: UploadedImage) => void;
 }
 
+/** CommentImagePreview 组件的属性 */
 interface CommentImagePreviewProps {
   /** 已上传的图片列表 */
   images: UploadedImage[];
@@ -39,12 +41,15 @@ interface CommentImagePreviewProps {
   disabled?: boolean;
 }
 
+/** 已上传的图片数据 */
 export interface UploadedImage {
   /** 本地唯一 ID（用于 React key） */
   localId: string;
   /** 后端文件 ID（用于提交） */
   fileId: string;
+  /** 图片 URL */
   url: string;
+  /** 缩略图 URL */
   thumbnail: string;
 }
 

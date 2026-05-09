@@ -10,6 +10,7 @@ import {
 } from "motion/react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
+/** MagneticButton 组件的属性 */
 interface MagneticButtonProps {
   /** 子元素 */
   children: ReactNode;

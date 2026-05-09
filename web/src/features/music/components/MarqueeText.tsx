@@ -5,8 +5,11 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
+/** MarqueeText 组件的属性 */
 interface MarqueeTextProps {
+  /** 文本内容 */
   children: string;
+  /** 自定义类名 */
   className?: string;
 }
 

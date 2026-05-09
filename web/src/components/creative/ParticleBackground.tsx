@@ -13,6 +13,7 @@ interface Particle {
   radius: number;
 }
 
+/** ParticleBackground 组件的属性 */
 interface ParticleBackgroundProps {
   /** 粒子数量，默认 80 */
   particleCount?: number;

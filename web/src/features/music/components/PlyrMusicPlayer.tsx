@@ -18,7 +18,9 @@ import { PlayerControls } from "./PlayerControls";
 import { PlayerVolume } from "./PlayerVolume";
 import { PlayerPlaylist } from "./PlayerPlaylist";
 
+/** PlyrMusicPlayer 组件的属性 */
 interface PlyrMusicPlayerProps {
+  /** 歌单列表 */
   playlists: Playlist[];
 }
 

@@ -13,6 +13,7 @@ export interface SegmentedOption<T extends string | number> {
   value: T;
 }
 
+/** Segmented 组件的属性 */
 interface SegmentedProps<T extends string | number> {
   /** 选项列表 */
   options: readonly SegmentedOption<T>[] | SegmentedOption<T>[];

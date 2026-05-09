@@ -5,6 +5,7 @@
 
 import { cn } from "@/lib/utils";
 
+/** ImagePreviewThumbnails 组件的属性 */
 interface ImagePreviewThumbnailsProps {
   /** 图片地址列表 */
   images: string[];

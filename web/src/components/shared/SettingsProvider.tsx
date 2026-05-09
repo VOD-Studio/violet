@@ -19,8 +19,9 @@ const defaultSettings: SiteSettings = {
 /** Settings Context */
 const SettingsContext = createContext<SiteSettings>(defaultSettings);
 
-/** Provider 属性 */
+/** SettingsProvider 组件的属性 */
 interface SettingsProviderProps {
+  /** 子元素 */
   children: ReactNode;
 }
 

@@ -14,10 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/** LinkDialog 组件的属性 */
 interface LinkDialogProps {
+  /** 是否打开弹窗 */
   open: boolean;
+  /** 关闭回调 */
   onClose: () => void;
+  /** 插入链接回调 */
   onInsert: (url: string, text?: string) => void;
+  /** 初始 URL */
   initialUrl?: string;
 }
 

@@ -16,9 +16,13 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 
+/** QuickCommentDrawer 组件的属性 */
 interface QuickCommentDrawerProps {
+  /** 文章 ID */
   postId: string;
+  /** 是否打开抽屉 */
   open: boolean;
+  /** 打开/关闭回调 */
   onOpenChange: (open: boolean) => void;
 }
 

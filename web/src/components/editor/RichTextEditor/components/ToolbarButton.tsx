@@ -4,6 +4,7 @@
 
 import { Button } from "@/components/ui/button";
 
+/** ToolbarButton 组件的属性 */
 interface ToolbarButtonProps {
   /** 点击事件 */
   onClick: () => void;

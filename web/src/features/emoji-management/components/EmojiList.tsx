@@ -7,16 +7,27 @@ import type { EmojiAdmin } from "../types";
 
 const PAGE_SIZE = 40;
 
+/** EmojiList 组件的属性 */
 interface EmojiListProps {
+  /** 表情列表 */
   emojis: EmojiAdmin[];
+  /** 搜索关键词 */
   searchQuery: string;
+  /** 当前页码 */
   currentPage: number;
+  /** 页码变化回调 */
   onPageChange: (page: number) => void;
+  /** 是否为批量选择模式 */
   isSelectMode: boolean;
+  /** 已选中的 ID 集合 */
   selectedIds: Set<number>;
+  /** 切换单个选中回调 */
   onToggleSelect: (id: number) => void;
+  /** 切换全选回调 */
   onToggleSelectAll: () => void;
+  /** 编辑回调 */
   onEdit: (emoji: EmojiAdmin) => void;
+  /** 删除回调 */
   onDelete: (id: number) => void;
 }
 

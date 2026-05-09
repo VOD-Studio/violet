@@ -2,6 +2,7 @@
  * 编辑器状态栏组件
  */
 
+/** EditorStatusBar 组件的属性 */
 interface EditorStatusBarProps {
   /** 字符数 */
   charCount: number;

@@ -8,6 +8,7 @@ import { getUploadUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useImagePreview, ImagePreview } from "./ImagePreview";
 
+/** 图片数据项 */
 export interface ImageItem {
   /** 原图 URL（相对路径） */
   url: string;
@@ -19,8 +20,10 @@ export interface ImageItem {
   height?: number;
 }
 
+/** 图片展示模式 */
 export type ImageGalleryMode = "single" | "gallery" | "comment";
 
+/** ImageGallery 组件的属性 */
 interface ImageGalleryProps {
   /** 图片列表 */
   images: ImageItem[];

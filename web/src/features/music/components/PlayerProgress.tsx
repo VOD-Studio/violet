@@ -3,9 +3,13 @@
  * 显示播放进度和时间，支持拖动跳转
  */
 
+/** PlayerProgress 组件的属性 */
 interface PlayerProgressProps {
+  /** 当前播放时间 */
   currentTime: number;
+  /** 总时长 */
   duration: number;
+  /** 拖动进度条回调 */
   onSeek: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 

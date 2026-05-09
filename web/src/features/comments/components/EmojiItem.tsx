@@ -6,9 +6,13 @@ import { cn } from "@/lib/utils";
 import { getUploadUrl } from "@/lib/api";
 import type { Emoji } from "@/types/emoji";
 
+/** EmojiItem 组件的属性 */
 interface EmojiItemProps {
+  /** 表情数据 */
   emoji: Emoji;
+  /** 点击回调 */
   onClick: () => void;
+  /** 自定义类名 */
   className?: string;
 }
 

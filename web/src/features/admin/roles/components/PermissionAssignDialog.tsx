@@ -14,10 +14,15 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 
+/** PermissionAssignDialog 组件的属性 */
 interface PermissionAssignDialogProps {
+  /** 是否打开弹窗 */
   open: boolean;
+  /** 角色 ID */
   roleId: number;
+  /** 角色名称 */
   roleName: string;
+  /** 关闭回调 */
   onClose: () => void;
 }
 

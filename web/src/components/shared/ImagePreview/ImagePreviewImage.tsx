@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 
+/** ImagePreviewImage 组件的属性 */
 interface ImagePreviewImageProps {
   /** 图片地址 */
   src: string;

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/** ImagePreviewControls 组件的属性 */
 interface ImagePreviewControlsProps {
   /** 当前缩放比例 */
   scale: number;

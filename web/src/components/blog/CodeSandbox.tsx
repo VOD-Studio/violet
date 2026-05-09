@@ -26,6 +26,7 @@ interface SandboxDependency {
   version: string;
 }
 
+/** CodeSandbox 组件的属性 */
 interface CodeSandboxProps {
   /** 文件列表 */
   files: SandboxFile[];

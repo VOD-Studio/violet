@@ -9,11 +9,17 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Plus } from "lucide-react";
 
+/** ImportPlaylistDialog 组件的属性 */
 interface ImportPlaylistDialogProps {
+  /** 歌单 URL */
   url: string;
+  /** 是否正在导入 */
   importing: boolean;
+  /** URL 变化回调 */
   onUrlChange: (url: string) => void;
+  /** 导入回调 */
   onImport: () => void;
+  /** 创建自定义歌单回调 */
   onCreateCustom: () => void;
 }
 
@@ -44,12 +50,19 @@ export function ImportPlaylistDialog({
   );
 }
 
+/** CreateCustomPlaylistDialog 组件的属性 */
 interface CreateCustomPlaylistDialogProps {
+  /** 是否打开弹窗 */
   open: boolean;
+  /** 歌单标题 */
   title: string;
+  /** 是否正在创建 */
   creating: boolean;
+  /** 打开/关闭回调 */
   onOpenChange: (open: boolean) => void;
+  /** 标题变化回调 */
   onTitleChange: (title: string) => void;
+  /** 创建回调 */
   onCreate: () => void;
 }
 

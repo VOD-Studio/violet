@@ -2,6 +2,7 @@ import { TocMobile } from "./TocMobile";
 import { TocSidebar } from "./TocSidebar";
 import { useToc } from "./useToc";
 
+/** TableOfContents 组件的属性 */
 interface TableOfContentsProps {
   /** 最小标题级别，默认 2（h2） */
   minLevel?: number;

@@ -10,17 +10,29 @@ import {
   X,
 } from "lucide-react";
 
+/** EmojiToolbar 组件的属性 */
 interface EmojiToolbarProps {
+  /** 搜索关键词 */
   searchQuery: string;
+  /** 搜索关键词变化回调 */
   onSearchChange: (value: string) => void;
+  /** 是否为批量选择模式 */
   isSelectMode: boolean;
+  /** 切换批量选择模式回调 */
   onToggleSelectMode: () => void;
+  /** 已选中的数量 */
   selectedCount: number;
+  /** 批量删除回调 */
   onBatchDelete: () => void;
+  /** 是否显示添加文本表单 */
   showAddText: boolean;
+  /** 切换添加文本表单回调 */
   onToggleAddText: () => void;
+  /** 文本表单数据 */
   textForm: { name: string; textContent: string };
+  /** 文本表单数据变化回调 */
   onTextFormChange: (form: { name: string; textContent: string }) => void;
+  /** 添加文本表情回调 */
   onAddTextEmoji: () => void;
 }
 

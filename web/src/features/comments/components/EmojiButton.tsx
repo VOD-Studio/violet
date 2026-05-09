@@ -7,6 +7,7 @@ import { EmojiPanel } from "./EmojiPanel";
 import { useEmojis } from "@/hooks/useEmojis";
 import type { Emoji } from "@/types/emoji";
 
+/** EmojiButton 组件的属性 */
 interface EmojiButtonProps {
   /** 选择表情回调 */
   onSelect: (emojiName: string, emojiDisplay: string) => void;

@@ -43,15 +43,25 @@ function findCurrentLyricIndex(lyrics: LyricLine[], time: number): number {
   return -1;
 }
 
+/** PlayerPlaylist 组件的属性 */
 interface PlayerPlaylistProps {
+  /** 歌曲列表 */
   songs: Song[];
+  /** 当前歌曲索引 */
   currentSongIndex: number;
+  /** 是否正在播放 */
   isPlaying: boolean;
+  /** 面板视图模式 */
   panelView: "list" | "lyrics";
+  /** 歌词文本（LRC 格式） */
   lyricsText: string;
+  /** 当前播放时间 */
   currentTime: number;
+  /** 是否展开 */
   expanded: boolean;
+  /** 点击歌曲回调 */
   onSongClick: (index: number) => void;
+  /** 切换面板视图回调 */
   onPanelViewChange: (view: "list" | "lyrics") => void;
 }
 

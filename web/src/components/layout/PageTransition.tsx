@@ -9,7 +9,7 @@ import { motion, type Variants } from "motion/react";
 /** 支持的动画类型 */
 type AnimationType = "fade" | "slide" | "scale";
 
-/** 组件属性 */
+/** PageTransition 组件的属性 */
 interface PageTransitionProps {
   /** 子元素 */
   children: ReactNode;

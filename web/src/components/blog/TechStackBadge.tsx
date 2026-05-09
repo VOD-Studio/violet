@@ -90,6 +90,7 @@ const DOT_SIZE: Record<BadgeSize, string> = {
   lg: "size-2.5",
 };
 
+/** TechStackBadge 组件的属性 */
 interface TechStackBadgeProps {
   /** 技术名称 */
   tech: string;

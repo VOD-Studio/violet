@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { TextMarquee } from "@/components/blog/TextMarquee";
 
+/** PinnedRepos 组件的属性 */
 interface PinnedReposProps {
   /** GitHub 用户名 */
   username: string;

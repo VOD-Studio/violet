@@ -2,10 +2,15 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import type { TocItem } from "./useToc";
 
+/** TocSidebar 组件的属性 */
 interface TocSidebarProps {
+  /** 标题列表 */
   headings: TocItem[];
+  /** 当前激活的标题 ID */
   activeId: string;
+  /** 选中标题回调 */
   onSelect: (id: string) => void;
+  /** 最小标题级别 */
   minLevel?: number;
 }
 

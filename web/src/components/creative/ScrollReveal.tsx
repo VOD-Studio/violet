@@ -8,6 +8,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 /** 支持的动画类型 */
 type AnimationType = "fadeUp" | "fadeIn" | "slideLeft" | "slideRight" | "scale";
 
+/** ScrollReveal 组件的属性 */
 interface ScrollRevealProps {
   /** 子元素 */
   children: ReactNode;

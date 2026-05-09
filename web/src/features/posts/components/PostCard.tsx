@@ -18,6 +18,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
+/** PostCard 组件的属性 */
 interface PostCardProps {
   /** 文章数据 */
   post: Post;

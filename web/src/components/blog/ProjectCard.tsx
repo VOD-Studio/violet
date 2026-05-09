@@ -29,6 +29,7 @@ interface ProjectData {
   demoUrl?: string;
 }
 
+/** ProjectCard 组件的属性 */
 interface ProjectCardProps {
   /** 项目数据 */
   project: ProjectData;

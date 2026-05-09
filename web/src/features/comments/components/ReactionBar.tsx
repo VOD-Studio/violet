@@ -15,6 +15,7 @@ import {
 } from "../hooks/useCommentReactions";
 import type { CommentReaction } from "../types";
 
+/** ReactionBar 组件的属性 */
 interface ReactionBarProps {
   /** 评论 ID */
   commentId: string;

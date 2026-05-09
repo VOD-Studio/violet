@@ -1,11 +1,16 @@
 import type { ReactNode } from "react";
 import { usePermission } from "@/hooks/usePermission";
 
+/** PermissionGuard 组件的属性 */
 interface PermissionGuardProps {
-  code?: string | string[]; // 支持单个或多个权限码，可选（不传则直接显示）
-  mode?: "any" | "all"; // 检查模式：'any'（默认，拥有任意一个）或 'all'（必须全部）
+  /** 支持单个或多个权限码，可选（不传则直接显示） */
+  code?: string | string[];
+  /** 检查模式：'any'（默认，拥有任意一个）或 'all'（必须全部） */
+  mode?: "any" | "all";
+  /** 子元素 */
   children: ReactNode;
-  fallback?: ReactNode; // 无权限时显示的内容
+  /** 无权限时显示的内容 */
+  fallback?: ReactNode;
 }
 
 /**

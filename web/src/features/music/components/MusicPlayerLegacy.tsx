@@ -19,24 +19,39 @@ import { cn } from "@/lib/utils";
 
 /** 歌曲信息 */
 export interface SongInfo {
+  /** 歌曲 ID */
   id: string;
+  /** 歌曲标题 */
   title: string;
+  /** 艺术家 */
   artist: string;
+  /** 专辑名 */
   album: string;
+  /** 封面图 URL */
   cover: string;
+  /** 时长（秒） */
   duration: number;
+  /** 播放地址 */
   url: string;
+  /** 来源平台 */
   platform: string;
 }
 
 /** 歌单信息 */
 export interface PlaylistInfo {
+  /** 歌单 ID */
   id: string;
+  /** 歌单标题 */
   title: string;
+  /** 封面图 URL */
   cover: string;
+  /** 创建者 */
   creator: string;
+  /** 歌曲数量 */
   count: number;
+  /** 来源平台 */
   platform: string;
+  /** 歌曲列表 */
   songs: SongInfo[];
 }
 
@@ -45,17 +60,25 @@ type PlayMode = "sequence" | "loop" | "single" | "shuffle";
 
 /** 播放器状态 */
 interface PlayerState {
+  /** 当前歌曲 */
   currentSong: SongInfo | null;
+  /** 当前播放索引 */
   currentIndex: number;
+  /** 是否正在播放 */
   isPlaying: boolean;
+  /** 当前播放时间 */
   currentTime: number;
+  /** 总时长 */
   duration: number;
+  /** 音量 */
   volume: number;
+  /** 播放模式 */
   playMode: PlayMode;
+  /** 播放列表 */
   playlist: SongInfo[];
 }
 
-/** 播放器组件属性 */
+/** MusicPlayer 组件的属性 */
 interface MusicPlayerProps {
   /** 歌单数据 */
   playlist: SongInfo[];

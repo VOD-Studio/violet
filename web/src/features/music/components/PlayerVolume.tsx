@@ -5,10 +5,15 @@
 
 import { Volume2, VolumeX } from "lucide-react";
 
+/** PlayerVolume 组件的属性 */
 interface PlayerVolumeProps {
+  /** 当前音量 */
   volume: number;
+  /** 是否静音 */
   isMuted: boolean;
+  /** 音量变化回调 */
   onVolumeChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** 切换静音回调 */
   onToggleMute: () => void;
 }
 

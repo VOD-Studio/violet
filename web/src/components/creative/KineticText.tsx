@@ -10,6 +10,7 @@ type AnimationType = "fadeUp" | "scale" | "rotate";
 /** 拆分粒度 */
 type SplitMode = "char" | "word";
 
+/** KineticText 组件的属性 */
 interface KineticTextProps {
   /** 文本内容 */
   children: string;

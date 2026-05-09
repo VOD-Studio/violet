@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Tag } from "@/hooks/useTags";
 
+/** TagFilter 组件的属性 */
 interface TagFilterProps {
   /** 标签列表 */
   tags: Tag[] | undefined | null;

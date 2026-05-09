@@ -11,6 +11,7 @@ import { CommentForm } from "./CommentForm";
 import { useComments } from "../api";
 import type { Comment } from "../types";
 
+/** CommentSection 组件的属性 */
 interface CommentSectionProps {
   /** 文章 ID */
   postId: string;

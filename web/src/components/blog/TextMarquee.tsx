@@ -1,8 +1,12 @@
 import { useRef, useState, useEffect, type ReactNode } from "react";
 
+/** TextMarquee 组件的属性 */
 interface TextMarqueeProps {
+  /** 文本内容 */
   children: ReactNode;
+  /** 滚动速度 */
   speed?: number;
+  /** 自定义类名 */
   className?: string;
 }
 

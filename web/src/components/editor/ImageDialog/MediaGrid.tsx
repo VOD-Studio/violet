@@ -14,11 +14,17 @@ import {
 } from "@/hooks/useInfiniteScroll";
 import { fetchMediaPage, type MediaItem } from "@/features/admin/media";
 
+/** MediaGrid 组件的属性 */
 interface MediaGridProps {
+  /** 替代文本 */
   alt: string;
+  /** 替代文本变化回调 */
   onAltChange: (alt: string) => void;
+  /** 当前选中的媒体 ID */
   selectedId: string | null;
+  /** 选中媒体回调 */
   onSelectId: (id: string | null) => void;
+  /** 是否已加载媒体 */
   mediaLoaded: boolean;
 }
 

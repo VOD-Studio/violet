@@ -7,6 +7,7 @@ import { MusicPlayer } from "@/features/music";
 import { BackToTop } from "../BackToTop";
 import { QuickComment } from "@/features/comments";
 
+/** 回到顶部按钮配置 */
 interface BackToTopConfig {
   /** 触发显示的滚动距离阈值 */
   threshold?: number;
@@ -16,6 +17,7 @@ interface BackToTopConfig {
   variant?: "arrow" | "rocket" | "chevron";
 }
 
+/** SidebarWidgets 组件的属性 */
 interface SidebarWidgetsProps {
   /** 是否显示回到顶部按钮 */
   showBackToTop?: boolean;

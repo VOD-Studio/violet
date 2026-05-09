@@ -34,6 +34,7 @@ const MONTH_LABELS = [
   "12月",
 ];
 
+/** GitHubContributions 组件的属性 */
 interface GitHubContributionsProps {
   /** GitHub 用户名 */
   username: string;

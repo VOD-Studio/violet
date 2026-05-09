@@ -18,9 +18,13 @@ import { type MediaItem } from "@/features/admin/media";
 import { UrlInput } from "./UrlInput";
 import { MediaGrid } from "./MediaGrid";
 
+/** ImageDialog 组件的属性 */
 interface ImageDialogProps {
+  /** 是否打开弹窗 */
   open: boolean;
+  /** 关闭回调 */
   onClose: () => void;
+  /** 插入图片回调 */
   onInsert: (src: string, alt?: string) => void;
 }
 

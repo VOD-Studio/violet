@@ -5,6 +5,7 @@
 
 import { useEffect, useCallback, useState } from "react";
 
+/** useImagePreviewControls Hook 的参数 */
 interface UseImagePreviewControlsProps {
   /** 是否打开预览 */
   open: boolean;

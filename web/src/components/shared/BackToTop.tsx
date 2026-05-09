@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowUp, Rocket, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/** BackToTop 组件的属性 */
 interface BackToTopProps {
   /** 触发显示的滚动距离阈值 */
   threshold?: number;

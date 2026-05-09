@@ -5,10 +5,15 @@
 
 import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
 
+/** PlayerControls 组件的属性 */
 interface PlayerControlsProps {
+  /** 是否正在播放 */
   isPlaying: boolean;
+  /** 切换播放/暂停回调 */
   onTogglePlay: () => void;
+  /** 上一首回调 */
   onPlayPrev: () => void;
+  /** 下一首回调 */
   onPlayNext: () => void;
 }
 

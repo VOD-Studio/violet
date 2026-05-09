@@ -5,9 +5,13 @@
 
 import { Music } from "lucide-react";
 
+/** VinylDisc 组件的属性 */
 interface VinylDiscProps {
+  /** 封面图片 URL */
   cover?: string;
+  /** 是否正在播放 */
   isPlaying: boolean;
+  /** 碟片尺寸 */
   size: number;
 }
 

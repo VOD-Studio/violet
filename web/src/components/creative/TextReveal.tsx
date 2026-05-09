@@ -5,6 +5,7 @@ import { type ReactNode, useRef, useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
+/** TextReveal 组件的属性 */
 interface TextRevealProps {
   /** 文本内容，每个子元素作为一行 */
   children: ReactNode;

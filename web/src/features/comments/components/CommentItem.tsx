@@ -46,6 +46,7 @@ function getGravatarUrl(email?: string): string {
   return `https://www.gravatar.com/avatar/${trimmed}?d=identicon&s=80`;
 }
 
+/** CommentItem 组件的属性 */
 interface CommentItemProps {
   /** 评论数据 */
   comment: Comment;

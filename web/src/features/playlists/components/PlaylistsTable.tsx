@@ -12,11 +12,17 @@ import {
 import { Music, Trash2, CheckCircle, ListMusic } from "lucide-react";
 import type { PlaylistItem } from "../types";
 
+/** PlaylistsTable 组件的属性 */
 interface PlaylistsTableProps {
+  /** 歌单列表 */
   playlists: PlaylistItem[];
+  /** 正在切换启用状态的 ID */
   togglingId: string | null;
+  /** 切换启用状态回调 */
   onToggleActive: (id: string, currentActive: boolean) => void;
+  /** 删除回调 */
   onDelete: (id: string) => void;
+  /** 管理歌曲回调 */
   onManageSongs: (playlist: PlaylistItem) => void;
 }
 

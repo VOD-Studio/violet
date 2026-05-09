@@ -10,16 +10,25 @@ import "aplayer/dist/APlayer.min.css";
 import { motion, AnimatePresence } from "motion/react";
 import { Music, Play, Loader2 } from "lucide-react";
 
+/** 歌单配置 */
 interface PlaylistConfig {
+  /** 歌单 ID */
   id: string;
+  /** 音乐平台（如 netease、tencent） */
   server: string;
+  /** 类型（如 playlist、song） */
   type: string;
+  /** 平台歌单 ID */
   playlistId: string;
+  /** 歌单标题 */
   title: string;
+  /** 是否启用 */
   isActive: boolean;
 }
 
+/** APlayerMusicPlayer 组件的属性 */
 interface APlayerMusicPlayerProps {
+  /** 歌单配置列表 */
   playlists: PlaylistConfig[];
 }
 

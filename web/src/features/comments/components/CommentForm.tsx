@@ -18,6 +18,7 @@ import { useSubmitComment } from "../api";
 import { useAuthStore } from "@/store";
 import { toast } from "sonner";
 
+/** CommentForm 组件的属性 */
 interface CommentFormProps {
   /** 文章 ID */
   postId: string;

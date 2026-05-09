@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { motion, useMotionValue, useSpring } from "motion/react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
+/** CursorEffect 组件的属性 */
 interface CursorEffectProps {
   /** 光标默认尺寸，默认 12 */
   size?: number;

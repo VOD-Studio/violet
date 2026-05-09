@@ -8,34 +8,55 @@ import { getUploadUrl } from "@/lib/api";
 
 /** 歌曲信息 */
 export interface Song {
+  /** 歌曲 ID */
   id: string;
+  /** 歌曲名称 */
   name: string;
+  /** 艺术家 */
   artist: string;
+  /** 播放地址 */
   url: string;
+  /** 封面图 URL */
   cover?: string;
+  /** 歌词（LRC 格式或 URL） */
   lrc?: string;
 }
 
 /** 后端歌曲数据格式 */
 export interface SongData {
+  /** 歌曲 ID */
   id: string;
+  /** 歌曲标题 */
   title: string;
+  /** 艺术家 */
   artist: string;
+  /** 播放地址 */
   url: string;
+  /** 封面图 URL */
   cover?: string;
+  /** 歌词 */
   lrc?: string;
 }
 
 /** 歌单信息（后端返回格式） */
 export interface Playlist {
+  /** 歌单 ID */
   id: string;
+  /** 歌单标题 */
   title: string;
+  /** 封面图 URL */
   cover?: string;
+  /** 创建者 */
   creator?: string;
+  /** 来源平台 */
   platform: string;
+  /** 平台歌单 ID */
   playlist_id: string;
+  /** 歌曲数量 */
   song_count: number;
+  /** 歌曲列表 */
   songs: SongData[];
+  /** 是否启用 */
   is_active: boolean;
 }
 

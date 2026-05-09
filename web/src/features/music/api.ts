@@ -9,13 +9,16 @@ import type { Playlist } from "./hooks/usePlyrPlayer";
 
 /** 播放器设置响应 */
 interface MusicSettingsResponse {
+  /** 设置对象 */
   settings: {
+    /** 播放器版本 */
     player_version: string;
   };
 }
 
 /** 歌单列表响应 */
 interface PlaylistsResponse {
+  /** 歌单列表 */
   playlists: Playlist[];
 }
 

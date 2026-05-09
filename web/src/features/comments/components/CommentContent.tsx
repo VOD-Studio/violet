@@ -8,6 +8,7 @@ import { getUploadUrl } from "@/lib/api";
 import { ImageGallery } from "@/components/shared";
 import type { CommentContent as CommentContentType } from "../types";
 
+/** CommentContent 组件的属性 */
 interface CommentContentProps {
   /** 评论内容对象 */
   content: CommentContentType;

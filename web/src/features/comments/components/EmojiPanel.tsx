@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { EmojiItem } from "./EmojiItem";
 import type { EmojiGroup, Emoji } from "@/types/emoji";
 
+/** EmojiPanel 组件的属性 */
 interface EmojiPanelProps {
   /** 表情分组列表 */
   groups: EmojiGroup[];

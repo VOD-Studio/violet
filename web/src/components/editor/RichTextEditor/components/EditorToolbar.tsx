@@ -8,6 +8,7 @@ import { ToolbarButton } from "./ToolbarButton";
 import { ToolbarDivider } from "./ToolbarDivider";
 import { getToolbarConfig } from "../config/toolbarConfig";
 
+/** EditorToolbar 组件的属性 */
 interface EditorToolbarProps {
   /** 编辑器实例 */
   editor: Editor;

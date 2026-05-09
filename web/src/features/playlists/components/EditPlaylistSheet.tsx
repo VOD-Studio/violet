@@ -27,8 +27,11 @@ import { ApiError } from "@/lib/api";
 import type { PlaylistItem, SearchResult } from "../types";
 import { useUploadSong, useDeleteSong, useUpdateSong } from "../api";
 
+/** EditPlaylistSheet 组件的属性 */
 interface EditPlaylistSheetProps {
+  /** 歌单数据，为 null 时关闭 */
   playlist: PlaylistItem | null;
+  /** 关闭回调 */
   onClose: () => void;
 }
 

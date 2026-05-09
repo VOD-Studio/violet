@@ -7,6 +7,7 @@ import { forwardRef, useImperativeHandle } from "react";
 import { cn } from "@/lib/utils";
 import { useRichTextInput } from "../hooks/useRichTextInput";
 
+/** RichTextInput 组件的属性 */
 interface RichTextInputProps {
   /** 内容变化回调 */
   onChange?: (markdown: string) => void;

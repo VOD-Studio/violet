@@ -1,9 +1,13 @@
 import type { ReactNode } from "react";
 import { usePermission } from "@/hooks/usePermission";
 
+/** RequirePermission 组件的属性（已废弃，请使用 PermissionGuard） */
 interface Props {
+  /** 权限码，支持单个或多个 */
   code: string | string[];
+  /** 子元素 */
   children: ReactNode;
+  /** 无权限时显示的内容 */
   fallback?: ReactNode;
 }
 
