@@ -1,5 +1,11 @@
 // 用户管理类型定义
 
+/** 用户角色类型 */
+export type UserRole = string;
+
+/** 用户状态类型 */
+export type UserStatus = "active" | "inactive";
+
 /** 用户数据结构 */
 export interface AdminUser {
   /** 用户唯一标识 */
@@ -8,8 +14,8 @@ export interface AdminUser {
   username: string;
   /** 邮箱 */
   email: string;
-  /** 角色：admin / user / superadmin */
-  role: string;
+  /** 角色 */
+  role: UserRole;
   /** 是否启用 */
   is_active: boolean;
   /** 邮箱是否已验证 */
@@ -23,9 +29,9 @@ export interface UserListParams {
   /** 搜索关键词（匹配用户名或邮箱） */
   search?: string;
   /** 角色筛选 */
-  role?: string;
+  role?: UserRole;
   /** 状态筛选 */
-  status?: string;
+  status?: UserStatus;
   /** 页码 */
   page?: number;
   /** 每页数量 */
@@ -49,7 +55,7 @@ export interface CreateUserRequest {
   username: string;
   email: string;
   password: string;
-  role: string;
+  role: UserRole;
   is_active: boolean;
 }
 
@@ -57,8 +63,30 @@ export interface CreateUserRequest {
 export interface UpdateUserRequest {
   username: string;
   email: string;
-  role: string;
+  role: UserRole;
   is_active: boolean;
   email_verified: boolean;
   bio: string;
 }
+
+/** 编辑用户表单数据（包含 ID） */
+export type EditFormData = UpdateUserRequest & { id: string };
+
+/** 角色配置（用于前端组件） */
+export interface RoleConfig {
+  value: string;
+  label: string;
+}
+
+/** 状态配置 */
+export interface StatusConfig {
+  value: UserStatus | "all";
+  label: string;
+}
+
+/** 状态选项配置 */
+export const statusOptions: StatusConfig[] = [
+  { value: "all", label: "全部状态" },
+  { value: "active", label: "启用" },
+  { value: "inactive", label: "禁用" },
+];

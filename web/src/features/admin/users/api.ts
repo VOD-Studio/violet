@@ -1,14 +1,14 @@
 // 用户管理 API Hooks
 // 使用 react-query 管理用户相关的 API 调用
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { userKeys } from "./queryKeys";
 import type {
-  UserListParams,
-  UserListResponse,
   CreateUserRequest,
   UpdateUserRequest,
+  UserListParams,
+  UserListResponse,
 } from "./types";
 
 /**
@@ -73,8 +73,13 @@ export function useBatchUpdateUserStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ user_ids, is_active }: { user_ids: string[]; is_active: boolean }) =>
-      api.post(`/admin/users/batch-status`, { user_ids, is_active }),
+    mutationFn: ({
+      user_ids,
+      is_active,
+    }: {
+      user_ids: string[];
+      is_active: boolean;
+    }) => api.post(`/admin/users/batch-status`, { user_ids, is_active }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.all });
     },
@@ -138,4 +143,3 @@ export function useDeleteUser() {
     },
   });
 }
-
