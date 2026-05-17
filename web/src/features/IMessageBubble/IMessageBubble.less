@@ -1,11 +1,16 @@
 @bubble-color: #e5e5e5;
+@sender-bubble-color: #34c759;
 @link-color: #007aff;
+@sender-link-color: white;
 @separator-color: rgba(0, 0, 0, 0.15);
+@sender-separator-color: rgba(255, 255, 255, 0.3);
 
 .imessage-bubble {
   position: relative;
   display: inline-block;
   z-index: 0;
+  display: flex;
+  // justify-content: flex-end;
 
   &__card {
     background: @bubble-color;
@@ -45,7 +50,7 @@
     clip-path: polygon(0 0, 100% 0, 0 100%);
   }
 
-  // 左下尾巴
+  // 左下尾巴遮罩
   &::after {
     content: "";
     position: absolute;
@@ -56,5 +61,37 @@
     background: var(--imessage-bubble-mask, white);
     border-radius: 100% 50% 100% 50%;
     z-index: 1;
+  }
+
+  // 发送方样式变体
+  &--sender {
+    justify-content: flex-end; // 发送方气泡整体靠右
+
+    &::before {
+      left: auto; // 清除 left 定位
+      right: 6px;
+      background: @sender-bubble-color;
+      clip-path: polygon(0 0, 100% 0, 100% 100%); // 镜像翻转
+    }
+
+    &::after {
+      left: auto; // 清除 left 定位
+      right: -6px;
+      border-radius: 50% 100% 50% 100%; // 镜像翻转
+    }
+  }
+
+  &__card--sender {
+    background: @sender-bubble-color;
+    border-radius: 10px;
+    border-bottom-right-radius: 6px; // 右下角稍小
+  }
+
+  &__link--sender {
+    color: @sender-link-color;
+  }
+
+  &--sender &__separator {
+    background: @sender-separator-color;
   }
 }

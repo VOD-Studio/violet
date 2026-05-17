@@ -9,12 +9,20 @@ interface BubbleLink {
 
 interface IMessageBubbleProps {
   links: BubbleLink[];
+  isSender?: boolean; // 是否为发送方（发送方小尾巴在右边）
 }
 
-const IMessageBubble: React.FC<IMessageBubbleProps> = ({ links }) => {
+const IMessageBubble: React.FC<IMessageBubbleProps> = ({
+  links,
+  isSender = false,
+}) => {
   return (
-    <div className="imessage-bubble">
-      <div className="imessage-bubble__card">
+    <div
+      className={`imessage-bubble ${isSender ? "imessage-bubble--sender" : ""}`}
+    >
+      <div
+        className={`imessage-bubble__card ${isSender ? "imessage-bubble__card--sender" : ""}`}
+      >
         {links.map((link, index) => (
           <React.Fragment key={index}>
             <button
@@ -22,7 +30,7 @@ const IMessageBubble: React.FC<IMessageBubbleProps> = ({ links }) => {
                 if (!link.href || link.href === "#") e.preventDefault();
                 link.onClick?.();
               }}
-              className="imessage-bubble__link"
+              className={`imessage-bubble__link ${isSender ? "imessage-bubble__link--sender" : ""}`}
             >
               {link.label}
             </button>
