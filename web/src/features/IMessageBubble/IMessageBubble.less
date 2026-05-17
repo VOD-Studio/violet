@@ -1,0 +1,60 @@
+@bubble-color: #e5e5e5;
+@link-color: #007aff;
+@separator-color: rgba(0, 0, 0, 0.15);
+
+.imessage-bubble {
+  position: relative;
+  display: inline-block;
+  z-index: 0;
+
+  &__card {
+    background: @bubble-color;
+    color: black;
+    border-radius: 10px;
+    border-bottom-left-radius: 6px;
+    overflow: hidden;
+    min-width: 160px;
+    max-width: 274px;
+  }
+
+  &__link {
+    display: block;
+    padding: 0.5em 1em;
+    font-size: 15px;
+    color: @link-color;
+    text-decoration: none;
+    text-align: center;
+    transition: background-color 0.15s ease;
+  }
+
+  &__separator {
+    height: 0.5px;
+    background: @separator-color;
+    margin: 0 8px;
+  }
+
+  // 左下尾巴
+  &::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    bottom: -9px;
+    width: 24px;
+    height: 10px;
+    background: @bubble-color;
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+  }
+
+  // 左下尾巴
+  &::after {
+    content: "";
+    position: absolute;
+    left: -6px;
+    bottom: -9px;
+    width: 15px;
+    height: 10px;
+    background: var(--imessage-bubble-mask, white);
+    border-radius: 100% 50% 100% 50%;
+    z-index: 1;
+  }
+}
