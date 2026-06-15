@@ -16,7 +16,8 @@ type PermissionRepository interface {
 	ExistsByCode(ctx context.Context, code Code) (bool, error)
 
 	// Save 保存权限点（新增或更新）
-	Save(ctx context.Context, p *Permission) error
+	// 返回数据库生成的 ID
+	Save(ctx context.Context, p *Permission) (int32, error)
 	// Delete 删除权限点（级联删除 role_permissions）
 	Delete(ctx context.Context, code Code) error
 

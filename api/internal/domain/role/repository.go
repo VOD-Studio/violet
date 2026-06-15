@@ -21,7 +21,11 @@ type RoleRepository interface {
 	ExistsByName(ctx context.Context, name RoleName) (bool, error)
 
 	// Save 保存角色（新增或更新基本信息，不含权限）
-	Save(ctx context.Context, r *Role) error
+	// 返回数据库生成的 ID（新角色 ID=0 时由 DB autoIncrement 生成）
+	Save(ctx context.Context, r *Role) (int32, error)
+	// SavePermissions 保存角色的权限关联（全量替换 role_permissions）
+	// 由 application 层在事务中调用，保证角色权限变更的一致性
+	SavePermissions(ctx context.Context, roleID int32, permissionCodes []string) error
 	// Delete 删除角色（硬删除，级联删除 role_permissions）
 	// 内置角色由领域层 CanDelete 守卫，repository 不重复校验
 	Delete(ctx context.Context, id int32) error
