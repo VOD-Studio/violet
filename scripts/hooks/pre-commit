@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# pre-commit 钩子
+#
+# 对暂存区（staged）的文件执行轻量检查：
+#   - Go 文件: gofmt 格式校验（强制，失败则阻断提交）
+#   - TS/TSX 文件: biome check（容错，biome 未安装则跳过，留给 CI）
+#
+# 设计原则：保持快速（<5s），重量级检查（go test、tsc 全量）留给 CI。
+# 失败则阻断提交，强制开发者修复。
+# biome 容错策略：避免因本地 npm 环境问题（biome 未装）阻塞合法提交，
+# 真正的代码规范校验由 CI 兜底。
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exit_code=0
+
+# 获取暂存区文件列表（仅新增/修改，排除删除）
+staged_files=$(git diff --cached --name-only --diff-filter=ACM)
+
+# ============================================================
+# Go 文件: gofmt 检查（强制）
+# ============================================================
+go_files=$(echo "$staged_files" | grep '\.go$' || true)
+if [ -n "$go_files" ]; then
+	echo "🔍 检查 Go 文件格式 (gofmt)..."
+	unformatted=""
+	for f in $go_files; do
+		if [ -f "$REPO_ROOT/$f" ]; then
+			# gofmt -l 列出格式不符的文件
+			result=$(gofmt -l "$REPO_ROOT/$f" 2>/dev/null || true)
+			if [ -n "$result" ]; then
+				unformatted="$unformatted\n  $f"
+			fi
+		fi
+	done
+	if [ -n "$unformatted" ]; then
+		echo "❌ 以下 Go 文件未格式化，请运行 gofmt -w 后重新提交:$unformatted"
+		exit_code=1
+	fi
+fi
+
+# ============================================================
+# TS/TSX 文件: biome check（容错，未安装则跳过）
+# ============================================================
+ts_files=$(echo "$staged_files" | grep -E '\.(ts|tsx|js|jsx)$' || true)
+ts_files=$(echo "$ts_files" | grep '^web/' || true)
+if [ -n "$ts_files" ]; then
+	# 探测 biome 是否可用（本地 npm 环境可能未装）
+	biome_bin="$REPO_ROOT/web/node_modules/.bin/biome"
+	if [ -x "$biome_bin" ]; then
+		echo "🔍 检查前端文件 (biome)..."
+		check_args=""
+		for f in $ts_files; do
+			rel="${f#web/}"
+			if [ -f "$REPO_ROOT/$f" ]; then
+				check_args="$check_args $rel"
+			fi
+		done
+		if [ -n "$check_args" ]; then
+			cd "$REPO_ROOT/web"
+			if ! "$biome_bin" check $check_args >/dev/null 2>&1; then
+				echo "❌ Biome 检查未通过，请运行 'cd web && npx @biomejs/biome check --write .' 后重新提交"
+				exit_code=1
+			fi
+			cd "$REPO_ROOT"
+		fi
+	else
+		# biome 未安装，跳过（CI 会兜底校验）
+		echo "ℹ️  biome 未安装在 web/node_modules，跳过前端检查（CI 兜底）"
+	fi
+fi
+
+if [ $exit_code -ne 0 ]; then
+	echo ""
+	echo "⛔ pre-commit 检查失败，提交已中止"
+	exit 1
+fi
+
+echo "✅ pre-commit 检查通过"
+exit 0
