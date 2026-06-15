@@ -3,7 +3,7 @@
 
 .PHONY: help dev up down restart logs \
         migrate migrate-down migrate-version reset-db db-shell redis-shell \
-        api api-build api-test api-lint sqlc \
+        api api-build api-test api-lint sqlc wire \
         web web-build web-preview web-lint web-format web-typecheck \
         build docker-build docker-up \
         clean install update \
@@ -85,6 +85,10 @@ api-lint: ## 后端代码检查
 sqlc: ## 生成 sqlc 代码
 	cd api && sqlc generate
 	@echo "sqlc 代码生成完成"
+
+wire: ## 生成 wire 依赖注入代码 (DDD app 层)
+	cd api && go run github.com/google/wire/cmd/wire ./internal/app/
+	@echo "wire 代码生成完成"
 
 # ==================== 前端 ====================
 
