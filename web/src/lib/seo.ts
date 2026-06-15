@@ -1,6 +1,8 @@
 // SEO 工具函数
 // 提供文章 SEO 数据生成、JSON-LD 结构化数据生成和 meta 标签配置
 
+import { env } from "@/lib/env";
+
 /** SEO 配置项 */
 export interface SEOConfig {
   /** 页面标题 */
@@ -49,7 +51,7 @@ const SITE_CONFIG = {
   name: "开发者博客",
   description:
     "全栈开发者的技术博客，分享 React、TypeScript、Node.js 等技术经验与项目实践。",
-  url: import.meta.env.VITE_SITE_URL ?? "https://example.com",
+  url: env.siteUrl,
   author: "开发者",
   image: "/og-default.png",
 };

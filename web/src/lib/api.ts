@@ -6,13 +6,13 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/store";
 import { getNavigate } from "@/lib/navigation";
+import { env } from "@/lib/env";
 
-/** API 基础地址 */
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api/v1";
+/** API 基础地址（来自集中式 env 配置，缺失时启动即报错） */
+const BASE_URL = env.apiUrl;
 
 /** 服务器根地址，用于拼接静态资源 URL */
-const SERVER_ORIGIN =
-  import.meta.env.VITE_SERVER_ORIGIN ?? "http://localhost:8080";
+const SERVER_ORIGIN = env.serverOrigin;
 
 /**
  * 获取上传文件的完整 URL
