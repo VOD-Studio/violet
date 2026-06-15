@@ -36,17 +36,17 @@ React 前端应用，博客平台的用户界面。支持文章浏览/编辑、�
 ## For AI Agents
 
 ### Working In This Directory
-- 启动开发: `npm run dev`
-- 构建: `npm run build`
-- 代码检查: `npx biome check .` (非 ESLint)
-- 格式化: `npx biome format --write .`
-- 类型检查: `npx tsc --noEmit`
+- 启动开发: `pnpm dev`
+- 构建: `pnpm build`
+- 代码检查: `pnpm lint` (非 ESLint)
+- 格式化: `pnpm format`
+- 类型检查: `pnpm typecheck`
 - **Tailwind CSS v4**: 支持任意数字值写法，如 `max-w-50` = 200px (数值×4px)，无需 `[]` 语法
 
 ### Testing Requirements
-- `npm run build` 确保 TypeScript 编译通过
-- `npx biome check .` 确保代码规范
-- `npx tsc --noEmit` 类型检查
+- `pnpm build` 确保 TypeScript 编译通过
+- `pnpm lint` 确保代码规范
+- `pnpm typecheck` 类型检查
 
 ### Common Patterns
 - 数据获取: TanStack Query v5 (useQuery/useMutation)

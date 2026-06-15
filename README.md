@@ -71,7 +71,7 @@ blog-project/
 
 ### 环境要求
 - Go 1.25+
-- Node.js 20+
+- Node.js 20+ 与 **pnpm**（前端包管理器，`npm install -g pnpm` 安装）
 - Docker & Docker Compose
 
 ### 初始化

@@ -39,22 +39,22 @@ src/
 ## 开发
 
 ```bash
-# 安装依赖
-npm install
+# 安装依赖 (推荐 pnpm，也可用 npm)
+pnpm install
 
 # 启动开发服务器 (http://localhost:5173)
-npm run dev
+pnpm dev
 
 # 类型检查
-npm run typecheck      # 或: npx tsc --noEmit
+pnpm typecheck
 
 # 代码检查与格式化 (Biome)
-npm run lint           # 检查
-npm run format         # 格式化
+pnpm lint           # 检查
+pnpm format         # 格式化
 
 # 构建生产版本
-npm run build
-npm run preview        # 预览构建结果
+pnpm build
+pnpm preview        # 预览构建结果
 ```
 
 ## 环境变量

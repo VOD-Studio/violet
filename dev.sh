@@ -46,7 +46,7 @@ cd ..
 # 启动前端
 echo "启动前端开发服务器..."
 cd web
-npm run dev &
+pnpm dev &
 WEB_PID=$!
 cd ..
 

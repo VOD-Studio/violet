@@ -99,13 +99,13 @@ wire: ## 生成 wire 依赖注入代码 (DDD app 层)
 # ==================== 前端 ====================
 
 web: ## 启动前端开发服务器
-	cd web && npm run dev
+	cd web && pnpm dev
 
 web-build: ## 构建前端生产版本
-	cd web && npm run build
+	cd web && pnpm build
 
 web-preview: ## 预览前端构建结果
-	cd web && npm run preview
+	cd web && pnpm preview
 
 web-lint: ## 前端代码检查 (Biome)
 	cd web && npx biome check .
@@ -135,14 +135,14 @@ clean: ## 清理构建产物
 	rm -rf web/node_modules/.vite
 	@echo "清理完成"
 
-install: ## 安装所有依赖
+install: ## 安装所有依赖 (后端 go mod download + 前端 pnpm install)
 	cd api && go mod download
-	cd web && npm install
+	cd web && pnpm install
 	@echo "依赖安装完成"
 
 update: ## 更新所有依赖
 	cd api && go get -u ./... && go mod tidy
-	cd web && npm update
+	cd web && pnpm update
 	@echo "依赖更新完成"
 
 # ==================== Git ====================

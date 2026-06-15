@@ -10,7 +10,7 @@ git clone <your-fork-url>
 cd mimo-blog
 
 # 2. 安装依赖
-make install
+make install          # 后端 go mod download + 前端 pnpm install
 
 # 3. 初始化环境
 make env          # 复制 .env.example 到 .env，修改敏感配置
