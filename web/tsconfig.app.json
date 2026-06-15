@@ -18,8 +18,19 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    /* 路径别名配置 */
-    "baseUrl": ".",
+    /* 严格类型检查（启用全部 strict 家族选项） */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    /* 额外安全检查 */
+    "noUncheckedIndexedAccess": false, /* TODO(P2): 开启并修复 ~50 处数组索引访问，再设为 true */
+    "exactOptionalPropertyTypes": false,
+    /* 路径别名配置（TS 5.4+ 无需 baseUrl，paths 相对于当前 tsconfig 解析） */
     "paths": {
       "@/*": [
         "./src/*"

@@ -1,5 +1,6 @@
-import { Button } from "@/components/ui/button";
+import { CheckCircle, ListMusic, Music, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -9,7 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Music, Trash2, CheckCircle, ListMusic } from "lucide-react";
 import type { PlaylistItem } from "../types";
 
 /** PlaylistsTable 组件的属性 */
@@ -86,7 +86,6 @@ export function PlaylistsTable({
                   onCheckedChange={() =>
                     onToggleActive(playlist.id, playlist.is_active)
                   }
-                  loading={togglingId === playlist.id}
                   disabled={togglingId === playlist.id}
                 />
                 {playlist.is_active && (

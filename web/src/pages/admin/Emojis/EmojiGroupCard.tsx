@@ -1,4 +1,4 @@
-import type { EmojiGroupAdmin } from "@/hooks/useEmojisAdmin";
+import { Hash, Pencil, Smile, SortAsc, Tag, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Pencil, Trash2, Smile, Tag, Hash, SortAsc } from "lucide-react";
+import type { EmojiGroupAdmin } from "@/hooks/useEmojisAdmin";
 import { cn } from "@/lib/utils";
 
 /** 来源标签的颜色映射 */
@@ -67,7 +67,7 @@ export function EmojiGroupCard({
           "bg-muted/30",
           "ring-1 ring-dashed ring-muted-foreground/30",
           "[&_*]:text-muted-foreground/60",
-        ]
+        ],
       )}
     >
       <CardHeader className="pb-2">
@@ -76,7 +76,7 @@ export function EmojiGroupCard({
             <CardTitle
               className={cn(
                 "truncate text-lg font-semibold",
-                isDisabled && "text-muted-foreground/70"
+                isDisabled && "text-muted-foreground/70",
               )}
             >
               {group.name}
@@ -86,7 +86,7 @@ export function EmojiGroupCard({
               className={cn(
                 "w-fit gap-1 border px-2 py-0.5 text-xs font-medium",
                 sourceColor,
-                isDisabled && "opacity-50"
+                isDisabled && "opacity-50",
               )}
             >
               <Tag className="size-3" />
@@ -98,16 +98,15 @@ export function EmojiGroupCard({
             <Switch
               checked={group.is_enabled}
               onCheckedChange={() => onToggle(group)}
-              loading={isToggling}
               disabled={isToggling}
               className={cn(
-                isDisabled && "data-[state=unchecked]:bg-muted-foreground/30"
+                isDisabled && "data-[state=unchecked]:bg-muted-foreground/30",
               )}
             />
             <span
               className={cn(
                 "text-xs font-medium tabular-nums",
-                group.is_enabled ? "text-primary" : "text-muted-foreground/50"
+                group.is_enabled ? "text-primary" : "text-muted-foreground/50",
               )}
             >
               {group.is_enabled ? "已启用" : "已禁用"}
@@ -122,7 +121,7 @@ export function EmojiGroupCard({
           <div
             className={cn(
               "flex items-center gap-1.5 text-muted-foreground",
-              isDisabled && "opacity-50"
+              isDisabled && "opacity-50",
             )}
           >
             <Hash className="size-3.5" />
@@ -131,7 +130,7 @@ export function EmojiGroupCard({
           <div
             className={cn(
               "flex items-center gap-1.5 text-muted-foreground",
-              isDisabled && "opacity-50"
+              isDisabled && "opacity-50",
             )}
           >
             <SortAsc className="size-3.5" />
@@ -169,7 +168,7 @@ export function EmojiGroupCard({
             title="删除"
             className={cn(
               "hover:bg-destructive/10 hover:text-destructive",
-              isDisabled && "hover:bg-transparent"
+              isDisabled && "hover:bg-transparent",
             )}
             disabled={isDisabled}
           >

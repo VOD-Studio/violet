@@ -3,45 +3,49 @@
 // 前台页面通过 Layout 组件内的 AnimatedOutlet 实现页面切换过渡动画
 // 包裹 ToastProvider 提供全局通知能力
 
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router";
 import { useEffect } from "react";
-import { setNavigate } from "@/lib/navigation";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+} from "react-router";
 import { Layout } from "@/components/layout/Layout";
-import { ToastProvider } from "@/components/shared/Toast";
 import { SettingsProvider } from "@/components/shared/SettingsProvider";
+import { ToastProvider } from "@/components/shared/Toast";
+import { setNavigate } from "@/lib/navigation";
 import "@/styles/transitions.css";
-import AdminLayout from "@/components/layout/AdminLayout";
-import { adminLoader } from "@/middleware/auth";
 import { CursorEffect } from "@/components/creative";
-
-/* 前台页面组件 */
-import Home from "@/pages/Home";
-import Blog from "@/pages/blog";
-import BlogSlug from "@/pages/blog/slug";
-import Projects from "@/pages/Projects";
-import ProjectDetail from "@/pages/Projects/slug";
+import AdminLayout from "@/components/layout/AdminLayout";
 import About from "@/pages/About";
-import Music from "@/pages/Music";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import VerifyEmail from "@/pages/VerifyEmail";
-import Profile from "@/pages/profile";
-
+import Announcements from "@/pages/admin/Announcements";
+import Comments from "@/pages/admin/Comments";
 /* 后台管理页面组件 */
 import Dashboard from "@/pages/admin/Dashboard";
+import Emojis from "@/pages/admin/Emojis";
+import Logs from "@/pages/admin/Logs";
+import Media from "@/pages/admin/Media";
+import Playlists from "@/pages/admin/Playlists";
 import Posts from "@/pages/admin/Post";
 import PostEdit from "@/pages/admin/Post/Edit";
-import Comments from "@/pages/admin/Comments";
-import Tags from "@/pages/admin/Tags";
-import Media from "@/pages/admin/Media";
-import Users from "@/pages/admin/Users";
-import Roles from "@/pages/admin/Roles";
-import Logs from "@/pages/admin/Logs";
-import Settings from "@/pages/admin/Settings";
-import Emojis from "@/pages/admin/Emojis";
-import Playlists from "@/pages/admin/Playlists";
-import Announcements from "@/pages/admin/Announcements";
 import AdminProjects from "@/pages/admin/Projects";
+import Roles from "@/pages/admin/Roles";
+import Settings from "@/pages/admin/Settings";
+import Tags from "@/pages/admin/Tags";
+import Users from "@/pages/admin/Users";
+import Blog from "@/pages/blog";
+import BlogSlug from "@/pages/blog/slug";
+/* 前台页面组件 */
+import Home from "@/pages/Home";
+import Login from "@/pages/Login";
+import Music from "@/pages/Music";
+import Projects from "@/pages/Projects";
+import ProjectDetail from "@/pages/Projects/slug";
+import Profile from "@/pages/profile";
+import Register from "@/pages/Register";
+import VerifyEmail from "@/pages/VerifyEmail";
+import { useAuthStore } from "@/store";
 
 /**
  * 初始化全局导航引用
@@ -57,10 +61,18 @@ function NavigateSetter() {
 
 /**
  * 后台路由保护组件
- * 在渲染 AdminLayout 前检查认证状态，未认证则重定向到登录页
+ * 在渲染 AdminLayout 前检查认证状态，未认证或无权限则重定向到登录页
+ * 注意：必须通过渲染 <Navigate> 触发跳转，而非在组件体内调用返回 redirect() 的函数
+ * （后者返回值会被 React 渲染流程丢弃，导致跳转失效）
  */
 function ProtectedAdmin() {
-  adminLoader();
+  const { token, expiresAt, user } = useAuthStore.getState();
+  const isAuthenticated = !!token && (!expiresAt || expiresAt >= Date.now());
+  const hasAdminAccess = user?.permissions?.includes("admin:access");
+
+  if (!isAuthenticated || !hasAdminAccess) {
+    return <Navigate to="/login" replace />;
+  }
   return <AdminLayout />;
 }
 

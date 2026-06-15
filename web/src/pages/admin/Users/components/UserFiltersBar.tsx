@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { RoleConfig } from "@/features/admin/users";
+import type { RoleConfig, UserStatus } from "@/features/admin/users";
 import { statusOptions } from "@/features/admin/users";
 
 interface UserFiltersBarProps {
@@ -19,8 +19,8 @@ interface UserFiltersBarProps {
   onSearchChange: (value: string) => void;
   roleFilter: string;
   onRoleFilterChange: (value: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (value: string) => void;
+  statusFilter: "all" | UserStatus;
+  onStatusFilterChange: (value: "all" | UserStatus) => void;
   roleFilterOptions: RoleConfig[];
 }
 
@@ -61,7 +61,9 @@ export function UserFiltersBar({
       </Select>
       <Select
         value={statusFilter}
-        onValueChange={(value) => onStatusFilterChange(value ?? "all")}
+        onValueChange={(value) =>
+          onStatusFilterChange((value ?? "all") as "all" | UserStatus)
+        }
       >
         <SelectTrigger className="w-32">
           <SelectValue placeholder="全部状态" />
