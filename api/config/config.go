@@ -56,6 +56,12 @@ type DatabaseConfig struct {
 	Password string
 	// SSLMode SSL 连接模式（disable、require、verify-ca、verify-full）
 	SSLMode string
+	// MaxOpenConns 最大打开连接数（默认 25，生产建议 25-100）
+	MaxOpenConns int
+	// MaxIdleConns 最大空闲连接数（默认 5，应 ≤ MaxOpenConns）
+	MaxIdleConns int
+	// ConnMaxLifetime 单个连接最大存活时间（默认 30m）
+	ConnMaxLifetime time.Duration
 }
 
 // DSN 生成 PostgreSQL 连接字符串
@@ -116,6 +122,9 @@ func Load() *Config {
 	v.SetDefault("database.user", "blog")
 	v.SetDefault("database.password", "")
 	v.SetDefault("database.sslmode", "disable")
+	v.SetDefault("database.max_open_conns", 25)
+	v.SetDefault("database.max_idle_conns", 5)
+	v.SetDefault("database.conn_max_lifetime", "30m")
 	v.SetDefault("redis.host", "localhost")
 	v.SetDefault("redis.port", 6379)
 	v.SetDefault("redis.db", 0)
@@ -157,15 +166,23 @@ func Load() *Config {
 		v.GetString("bilibili_dedeuserid"),
 	)
 
+	connMaxLifetime, err := time.ParseDuration(v.GetString("database.conn_max_lifetime"))
+	if err != nil {
+		panic(fmt.Sprintf("解析 database.conn_max_lifetime 失败: %v", err))
+	}
+
 	cfg := &Config{
 		Environment:        v.GetString("environment"),
 		Database: DatabaseConfig{
-			Host:     v.GetString("database.host"),
-			Port:     v.GetInt("database.port"),
-			Name:     v.GetString("database.name"),
-			User:     v.GetString("database.user"),
-			Password: v.GetString("database.password"),
-			SSLMode:  v.GetString("database.sslmode"),
+			Host:            v.GetString("database.host"),
+			Port:            v.GetInt("database.port"),
+			Name:            v.GetString("database.name"),
+			User:            v.GetString("database.user"),
+			Password:        v.GetString("database.password"),
+			SSLMode:         v.GetString("database.sslmode"),
+			MaxOpenConns:    v.GetInt("database.max_open_conns"),
+			MaxIdleConns:    v.GetInt("database.max_idle_conns"),
+			ConnMaxLifetime: connMaxLifetime,
 		},
 		Redis: RedisConfig{
 			Host:     v.GetString("redis.host"),
@@ -232,6 +249,21 @@ func (c *Config) Validate() error {
 		if c.Database.SSLMode != "require" && c.Database.SSLMode != "verify-ca" && c.Database.SSLMode != "verify-full" {
 			return fmt.Errorf("生产环境 DB_SSLMODE 必须为 require、verify-ca 或 verify-full")
 		}
+	}
+
+	// 连接池参数合理性校验（避免资源浪费或配置错误导致连接耗尽）
+	if c.Database.MaxOpenConns <= 0 {
+		return fmt.Errorf("database.max_open_conns 必须大于 0")
+	}
+	if c.Database.MaxIdleConns < 0 {
+		return fmt.Errorf("database.max_idle_conns 不能为负数")
+	}
+	if c.Database.MaxIdleConns > c.Database.MaxOpenConns {
+		return fmt.Errorf("database.max_idle_conns (%d) 不能大于 max_open_conns (%d)",
+			c.Database.MaxIdleConns, c.Database.MaxOpenConns)
+	}
+	if c.Database.ConnMaxLifetime <= 0 {
+		return fmt.Errorf("database.conn_max_lifetime 必须大于 0")
 	}
 
 	// Redis 配置必须完整

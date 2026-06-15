@@ -1,11 +1,19 @@
 # 博客项目 Makefile
 # 使用: make help
 
-.PHONY: help dev up down build migrate seed test lint clean
+.PHONY: help dev up down restart logs \
+        migrate migrate-down migrate-version reset-db db-shell redis-shell \
+        api api-build api-test api-lint sqlc \
+        web web-build web-preview web-lint web-format web-typecheck \
+        build docker-build docker-up \
+        clean install update \
+        status log \
+        env setup generate-jwt-keys generate-production-keys \
+        check
 
 # 默认目标
 help: ## 显示帮助信息
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 # ==================== 开发环境 ====================
 
@@ -13,12 +21,14 @@ dev: ## 一键启动完整开发环境
 	@./dev.sh
 
 up: ## 启动 Docker 服务 (PostgreSQL + Redis)
-	@./load-config.sh
-	docker compose up -d
+	@if [ ! -f .env ]; then echo "⚠️  缺少 .env 文件，运行 make env 创建"; exit 1; fi
+	docker compose up -d postgres redis
 	@echo "等待数据库就绪..."
-	@sleep 3
-	@echo "PostgreSQL: localhost:5432"
-	@echo "Redis: localhost:6379"
+	@until docker compose exec -T postgres pg_isready -U "$$(grep '^DATABASE_USER=' .env | cut -d= -f2)" -d "$$(grep '^DATABASE_NAME=' .env | cut -d= -f2)" >/dev/null 2>&1; do \
+		echo "  等待中..."; sleep 1; \
+	done
+	@echo "✓ PostgreSQL: localhost:5432"
+	@echo "✓ Redis: localhost:6379"
 
 down: ## 停止 Docker 服务
 	docker compose down
@@ -31,37 +41,27 @@ logs: ## 查看 Docker 日志
 
 # ==================== 数据库 ====================
 
-migrate: ## 运行数据库迁移
-	@echo "运行数据库迁移..."
-	@for f in api/migrations/*.up.sql; do \
-		echo "执行: $$f"; \
-		docker compose exec -T postgres psql -U blog -d blog -f - < "$$f" 2>/dev/null || true; \
-	done
-	@echo "迁移完成"
+migrate: ## 执行数据库迁移 (golang-migrate)
+	cd api && go run ./cmd/migrate up
 
-migrate-down: ## 回滚数据库迁移
-	@echo "回滚数据库迁移..."
-	@for f in api/migrations/*.down.sql; do \
-		echo "执行: $$f"; \
-		docker compose exec -T postgres psql -U blog -d blog -f - < "$$f" 2>/dev/null || true; \
-	done
-	@echo "回滚完成"
+migrate-down: ## 回滚最近一次迁移 (make migrate-down n=3 回滚多次)
+	cd api && go run ./cmd/migrate down -n $(or $(n),1)
 
-reset-db: ## 重置数据库 (清空所有数据)
-	@echo "重置数据库..."
-	@for f in api/migrations/*.down.sql; do \
-		docker compose exec -T postgres psql -U blog -d blog -f - < "$$f" 2>/dev/null || true; \
-	done
-	@for f in api/migrations/*.up.sql; do \
-		docker compose exec -T postgres psql -U blog -d blog -f - < "$$f" 2>/dev/null || true; \
-	done
-	@echo "数据库已重置"
+migrate-version: ## 查看当前迁移版本
+	cd api && go run ./cmd/migrate version
+
+reset-db: ## 重置数据库 (回滚全部后重新迁移，⚠️ 清空数据)
+	@echo "⚠️  即将清空所有数据，3 秒后开始 (Ctrl+C 取消)..."
+	@sleep 3
+	cd api && go run ./cmd/migrate goto 0
+	cd api && go run ./cmd/migrate up
+	@echo "✓ 数据库已重置"
 
 db-shell: ## 进入 PostgreSQL 命令行
-	docker compose exec postgres psql -U blog -d blog
+	@docker compose exec postgres psql -U "$$(grep '^DATABASE_USER=' .env | cut -d= -f2)" -d "$$(grep '^DATABASE_NAME=' .env | cut -d= -f2)"
 
 redis-shell: ## 进入 Redis 命令行
-	docker compose exec redis redis-cli
+	@docker compose exec redis sh -c 'if [ -n "$$REDIS_PASSWORD ]; then redis-cli -a "$$REDIS_PASSWORD"; else redis-cli; fi'
 
 # ==================== 后端 ====================
 
@@ -97,7 +97,7 @@ web-build: ## 构建前端生产版本
 web-preview: ## 预览前端构建结果
 	cd web && npm run preview
 
-web-lint: ## 前端代码检查
+web-lint: ## 前端代码检查 (Biome)
 	cd web && npx biome check .
 
 web-format: ## 前端代码格式化
@@ -148,13 +148,12 @@ log: ## 查看最近提交
 env: ## 复制配置文件模板
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
-		echo "✅ 已创建 .env"; \
+		echo "✅ 已创建 .env (请修改 DATABASE_PASSWORD 等敏感配置)"; \
 	else \
 		echo "ℹ️  .env 已存在"; \
 	fi
 	@if [ ! -f api/config.yaml ]; then \
-		cp api/config.example.yaml api/config.yaml; \
-		echo "✅ 已创建 api/config.yaml"; \
+		cp api/config.example.yaml api/config.yaml 2>/dev/null || echo "ℹ️  api/config.example.yaml 不存在，跳过"; \
 	else \
 		echo "ℹ️  api/config.yaml 已存在"; \
 	fi
@@ -166,7 +165,9 @@ setup: env ## 一键初始化项目（首次使用）
 	fi
 	@docker compose up -d postgres redis
 	@echo "⏳ 等待数据库启动..."
-	@sleep 5
+	@until docker compose exec -T postgres pg_isready -U "$$(grep '^DATABASE_USER=' .env | cut -d= -f2)" -d "$$(grep '^DATABASE_NAME=' .env | cut -d= -f2)" >/dev/null 2>&1; do \
+		sleep 1; \
+	done
 	@$(MAKE) migrate
 	@echo "✅ 项目初始化完成！"
 	@echo ""
@@ -174,7 +175,7 @@ setup: env ## 一键初始化项目（首次使用）
 	@echo "  1. 运行 'make dev' 启动开发服务器"
 	@echo "  2. 访问 http://localhost:5173"
 
-generate-jwt-keys: ## 生成 JWT 密钥对
+generate-jwt-keys: ## 生成 JWT 密钥对 (ES256)
 	@echo "🔑 生成 JWT 密钥对..."
 	@openssl ecparam -genkey -name prime256v1 -noout -out api/jwt_private_key.pem
 	@openssl ec -in api/jwt_private_key.pem -pubout -out api/jwt_public_key.pem
@@ -197,5 +198,3 @@ check: ## 检查环境依赖
 	@command -v go >/dev/null 2>&1 && echo "✓ Go $$(go version | cut -d' ' -f3)" || echo "✗ Go 未安装"
 	@command -v node >/dev/null 2>&1 && echo "✓ Node $$(node -v)" || echo "✗ Node 未安装"
 	@command -v docker >/dev/null 2>&1 && echo "✓ Docker $$(docker -v | cut -d' ' -f3 | tr -d ',')" || echo "✗ Docker 未安装"
-	@command -v psql >/dev/null 2>&1 && echo "✓ PostgreSQL 客户端" || echo "✗ psql 未安装"
-	@command -v redis-cli >/dev/null 2>&1 && echo "✓ Redis 客户端" || echo "✗ redis-cli 未安装"
