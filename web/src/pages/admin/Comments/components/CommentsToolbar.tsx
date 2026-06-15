@@ -2,7 +2,7 @@
  * 筛选和批量操作工具栏
  */
 
-import type { CommentStatusFilter } from "@/features/admin/comments/types";
+import { CheckCircle, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,12 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle, XCircle, Trash2 } from "lucide-react";
+import type { CommentStatusFilter } from "@/features/admin/comments/types";
 import { statusFilterLabels } from "./helpers";
 
 interface CommentsToolbarProps {
   statusFilter: CommentStatusFilter;
-  onStatusChange: (value: "all" | "pending" | "approved" | "spam" | null) => void;
+  onStatusChange: (value: CommentStatusFilter) => void;
   selectedCount: number;
   isActing: boolean;
   onBatchApprove: () => void;
@@ -37,7 +37,10 @@ export function CommentsToolbar({
     <div className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-4">
         {/* 状态筛选下拉框 */}
-        <Select value={statusFilter} onValueChange={onStatusChange}>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => onStatusChange(v as CommentStatusFilter)}
+        >
           <SelectTrigger className="w-32">
             <SelectValue placeholder="筛选状态">
               {statusFilterLabels[statusFilter]}

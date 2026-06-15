@@ -48,8 +48,9 @@ func Logger(next http.Handler) http.Handler {
 			logger = log.Warn()
 		}
 
-		// 输出请求日志
+		// 输出请求日志（携带 request_id 用于跨层链路追踪）
 		logger.
+			Str("request_id", GetRequestID(r)).
 			Str("method", r.Method).
 			Str("path", r.URL.Path).
 			Str("ip", getClientIP(r)).

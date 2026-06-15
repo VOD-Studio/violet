@@ -13,8 +13,8 @@ import {
   useUpdateUser,
   useUpdateUserRole,
 } from "@/features/admin/users";
-import { getRoleLabel } from "../api/roles";
-import type { CreateUserRequest, EditFormData, RoleFromApi } from "../types";
+import { getRoleLabel, type RoleFromApi } from "../api/roles";
+import type { CreateUserRequest, EditFormData } from "../types";
 import {
   handleMutationError,
   handleMutationSuccess,

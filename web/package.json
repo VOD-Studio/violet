@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "lint": "biome check .",
     "lint:fix": "biome check . --write",
     "format": "biome format . --write",
@@ -50,6 +51,7 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-dropzone": "^15.0.0",
+    "react-error-boundary": "^5.0.0",
     "react-hook-form": "^7.74.0",
     "react-router": "^7.14.2",
     "recharts": "^3.8.1",
@@ -62,11 +64,11 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.13",
+    "@biomejs/biome": "^2.5.0",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
+    "@vitejs/plugin-react": "^6.0.2",
     "less": "^4.6.4",
     "typescript": "~6.0.2",
     "vite": "^8.0.10"

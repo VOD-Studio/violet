@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# commit-msg 钩子
+#
+# 校验 commit message 是否符合 Conventional Commits 规范：
+#   <type>(<scope>): <subject>
+#
+# type 必须是: feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert
+# scope 可选（括号内）
+# subject 必填，描述本次变更
+#
+# 示例:
+#   feat(auth): 添加 OAuth 登录
+#   fix: 修复评论分页越界
+#   docs(api): 更新 README
+#
+# 匹配项目既有 commit 风格（如 feat(IMessageBubble):、chore(infra): 等）。
+
+set -e
+
+commit_msg_file="$1"
+commit_msg=$(cat "$commit_msg_file")
+
+# Conventional Commits 正则
+# 注意：first line 校验，多行 body 不限
+pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9_-]+\))?: .{1,}$'
+
+# 跳过 merge commit 和 revert commit（git 自动生成）
+if echo "$commit_msg" | grep -qE '^Merge |^Revert '; then
+	exit 0
+fi
+
+first_line=$(echo "$commit_msg" | head -1)
+
+if ! echo "$first_line" | grep -qE "$pattern"; then
+	echo "⛔ commit message 不符合 Conventional Commits 规范"
+	echo ""
+	echo "期望格式: <type>(<scope>): <subject>"
+	echo "  type:   feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert"
+	echo "  scope:  可选，如 (auth), (web), (infra)"
+	echo "  subject: 简短描述"
+	echo ""
+	echo "示例:"
+	echo "  feat(auth): 添加 OAuth 登录"
+	echo "  fix: 修复评论分页越界"
+	echo "  docs(api): 更新 README"
+	echo ""
+	echo "当前 message:"
+	echo "  $first_line"
+	echo ""
+	echo "修改方式:"
+	echo "  git commit --amend -m \"type(scope): 正确的描述\""
+	exit 1
+fi
+
+# subject 长度建议（非强制，warn 级别）
+subject_len=$(echo "$first_line" | wc -m)
+if [ "$subject_len" -gt 72 ]; then
+	echo "⚠️  commit message 首行过长 ($subject_len 字符，建议 ≤72)"
+fi
+
+exit 0

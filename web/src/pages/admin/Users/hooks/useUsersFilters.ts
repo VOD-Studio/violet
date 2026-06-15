@@ -28,7 +28,7 @@ export interface UseUsersFiltersReturn {
   /** 设置角色筛选 */
   setRoleFilter: (value: string) => void;
   /** 状态筛选值 */
-  statusFilter: string;
+  statusFilter: UserStatus | "all";
   /** 设置状态筛选 */
   setStatusFilter: (value: UserStatus | "all") => void;
   /** 防抖后的查询参数 */
