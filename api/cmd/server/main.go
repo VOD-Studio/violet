@@ -53,10 +53,18 @@ func main() {
 		log.Fatal().Err(err).Msg("数据库连接失败")
 	}
 	defer db.Close()
+	// 配置连接池（生产关键项，避免默认 4 连接成为瓶颈）
+	db.SetMaxOpenConns(cfg.Database.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.Database.MaxIdleConns)
+	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
 	if err := db.PingContext(ctx); err != nil {
 		log.Fatal().Err(err).Msg("数据库 ping 失败")
 	}
-	log.Info().Msg("数据库连接成功")
+	log.Info().
+		Int("max_open_conns", cfg.Database.MaxOpenConns).
+		Int("max_idle_conns", cfg.Database.MaxIdleConns).
+		Str("conn_max_lifetime", cfg.Database.ConnMaxLifetime.String()).
+		Msg("数据库连接成功")
 
 	migrateURL := fmt.Sprintf("pgx5://%s", cfg.Database.DSN()[len("postgres://"):])
 	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
@@ -159,8 +167,9 @@ func main() {
 	// --- 路由注册 ---
 
 	r := chi.NewRouter()
-	r.Use(middleware.Recoverer)       // panic 恢复（必须在最外层）
-	r.Use(middleware.Logger)          // 请求日志记录
+	r.Use(middleware.Recoverer)       // panic 恢复（必须在最外层，捕获最广）
+	r.Use(middleware.RequestID)       // 请求追踪 ID（注入 context + 响应头）
+	r.Use(middleware.Logger)          // 请求日志记录（读取 request_id）
 	r.Use(middleware.CORS)            // 跨域资源共享
 	r.Use(middleware.SecurityHeaders) // 安全响应头
 

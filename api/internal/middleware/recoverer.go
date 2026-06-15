@@ -14,8 +14,9 @@ func Recoverer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				// 记录 panic 信息和堆栈
+				// 记录 panic 信息和堆栈（携带 request_id 用于跨层链路追踪）
 				log.Error().
+					Str("request_id", GetRequestID(r)).
 					Str("method", r.Method).
 					Str("path", r.URL.Path).
 					Str("ip", getClientIP(r)).
