@@ -79,8 +79,14 @@ api-build: ## 编译 Go API
 api-test: ## 运行后端测试
 	cd api && go test ./... -v
 
-api-lint: ## 后端代码检查
-	cd api && go vet ./...
+api-lint: ## 后端代码检查 (golangci-lint 优先，不可用则回退 go vet)
+	@cd api && if command -v golangci-lint >/dev/null 2>&1; then \
+		echo "运行 golangci-lint..."; \
+		golangci-lint run ./...; \
+	else \
+		echo "⚠️  golangci-lint 未安装，回退到 go vet (建议: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)"; \
+		go vet ./...; \
+	fi
 
 sqlc: ## 生成 sqlc 代码
 	cd api && sqlc generate

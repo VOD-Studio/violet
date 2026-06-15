@@ -1,0 +1,36 @@
+# EditorConfig 跨编辑器统一基础风格
+# https://editorconfig.org
+#
+# 确保 VSCode/Vim/GoLand/IntelliJ 等编辑器在无项目配置时也保持一致格式。
+# 各语言具体规则由各自的格式化工具 (gofmt/biome) 进一步强制。
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Go: tab 缩进 (gofmt 规范)
+[*.go]
+indent_style = tab
+indent_size = 4
+
+# Makefile 必须用 tab
+[Makefile]
+indent_style = tab
+
+# Shell 脚本保持 2 空格
+[*.sh]
+indent_size = 2
+
+# Markdown 不裁剪行尾空格（双空格表示换行）
+[*.md]
+trim_trailing_whitespace = false
+
+# YAML 配置 2 空格
+[*.{yml,yaml}]
+indent_size = 2
