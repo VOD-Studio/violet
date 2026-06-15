@@ -15,13 +15,13 @@ services:
     expose:
       - "5432"
     environment:
-      POSTGRES_USER: xunrua
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-super@123}
-      POSTGRES_DB: blog
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required in production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in production}
+      POSTGRES_DB: ${POSTGRES_DB:-blog}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U xunrua -d blog"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-blog}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -63,7 +63,7 @@ services:
       - ./api/.env
     environment:
       # 覆盖数据库和 Redis 连接为内部网络地址
-      DATABASE_URL: postgres://xunrua:${POSTGRES_PASSWORD:-super@123}@postgres:5432/blog?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-blog}?sslmode=disable
       REDIS_URL: redis://redis:6379/0
     volumes:
       # 持久化上传文件
