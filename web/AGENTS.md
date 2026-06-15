@@ -27,7 +27,7 @@ React 前端应用，博客平台的用户界面。支持文章浏览/编辑、�
 | `src/pages/` | 页面级组件 (see `src/pages/AGENTS.md`) |
 | `src/hooks/` | 自定义 React Hooks (see `src/hooks/AGENTS.md`) |
 | `src/lib/` | 工具函数和第三方库封装 (see `src/lib/AGENTS.md`) |
-| `src/store/` | Redux store 配置 (see `src/store/AGENTS.md`) |
+| `src/store/` | Zustand store 配置 (see `src/store/AGENTS.md`) |
 | `src/types/` | TypeScript 类型定义 (see `src/types/AGENTS.md`) |
 | `src/styles/` | CSS 样式文件 (see `src/styles/AGENTS.md`) |
 | `src/middleware/` | 路由中间件 (认证守卫) |
@@ -50,7 +50,7 @@ React 前端应用，博客平台的用户界面。支持文章浏览/编辑、�
 
 ### Common Patterns
 - 数据获取: TanStack Query v5 (useQuery/useMutation)
-- 状态管理: Redux (全局状态) + React Query (服务端状态)
+- 状态管理: Zustand (全局客户端状态) + React Query (服务端状态)
 - 表单处理: React Hook Form + Zod 验证
 - HTTP 客户端: Axios (封装在 `src/lib/api.ts`)
 - 组件样式: Tailwind CSS v4 + CVA (class-variance-authority)
