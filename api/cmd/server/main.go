@@ -125,6 +125,9 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
 	}
+
+	// P2.5: announcement + project DDD 容器
+	contentContainer := app.NewContentContainer(gormDB)
 	authService := service.NewAuthService(queries, redisClient, emailService, cfg)
 	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
@@ -486,6 +489,31 @@ func main() {
 			r.Patch("/profile", authH.UpdateProfile)
 			r.Patch("/password", authH.ChangePassword)
 		})
+	})
+
+	// announcement + project DDD 影子路由
+	contentH := contentContainer.ContentHandler
+	// 公告（前台公开读取活跃公告）
+	r.Get("/api/v1/announcements/ddd/active", contentH.ListActiveAnnouncements)
+	// 公告（后台管理）
+	r.Route("/api/v1/admin/ddd/announcements", func(r chi.Router) {
+		r.Use(middleware.Auth(authService))
+		r.Use(middleware.AdminRequired)
+		r.Get("/", contentH.ListAnnouncements)
+		r.Get("/{id}", contentH.GetAnnouncement)
+		r.Post("/", contentH.CreateAnnouncement)
+		r.Patch("/{id}", contentH.UpdateAnnouncement)
+		r.Delete("/{id}", contentH.DeleteAnnouncement)
+	})
+	// 项目（前台公开读取）
+	r.Get("/api/v1/projects/ddd", contentH.ListProjects)
+	// 项目（后台管理）
+	r.Route("/api/v1/admin/ddd/projects", func(r chi.Router) {
+		r.Use(middleware.Auth(authService))
+		r.Use(middleware.AdminRequired)
+		r.Post("/", contentH.CreateProject)
+		r.Put("/{id}", contentH.UpdateProject)
+		r.Delete("/{id}", contentH.DeleteProject)
 	})
 
 	// 静态文件服务（无版本前缀）
