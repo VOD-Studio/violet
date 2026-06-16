@@ -95,6 +95,11 @@ func main() {
 	// 全 GORM AutoMigrate 策略：model 即 schema
 	if err := gormDB.AutoMigrate(
 		&newmodel.User{}, &newmodel.Role{}, &newmodel.Permission{}, &newmodel.RolePermission{},
+		&newmodel.Post{}, &newmodel.Tag{},
+		&newmodel.Comment{}, &newmodel.CommentReaction{},
+		&newmodel.Announcement{}, &newmodel.Project{},
+		&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
+		&newmodel.File{},
 	); err != nil {
 		log.Fatal().Err(err).Msg("DDD model 自动迁移失败")
 	}
