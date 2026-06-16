@@ -128,6 +128,9 @@ importers:
       react-hook-form:
         specifier: ^7.74.0
         version: 7.79.0(react@19.2.7)
+      react-refresh:
+        specifier: ^0.18.0
+        version: 0.18.0
       react-router:
         specifier: ^7.14.2
         version: 7.17.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -3707,6 +3710,10 @@ packages:
         optional: true
       redux:
         optional: true
+
+  react-refresh@0.18.0:
+    resolution: {integrity: sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw==}
+    engines: {node: '>=0.10.0'}
 
   react-remove-scroll-bar@2.3.8:
     resolution: {integrity: sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==}
@@ -7890,6 +7897,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.17
       redux: 5.0.1
+
+  react-refresh@0.18.0: {}
 
   react-remove-scroll-bar@2.3.8(@types/react@19.2.17)(react@19.2.7):
     dependencies:
