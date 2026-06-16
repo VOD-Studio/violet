@@ -34,7 +34,7 @@ type BilibiliEmojiAPIResponse struct {
 
 // BilibiliEmojiData B站表情数据（兼容两种 API）
 type BilibiliEmojiData struct {
-	Packages          []BilibiliEmojiPackage `json:"packages"`           // 用户 API
+	Packages          []BilibiliEmojiPackage `json:"packages"`            // 用户 API
 	UserPanelPackages []BilibiliEmojiPackage `json:"user_panel_packages"` // 官方 API
 }
 

@@ -49,9 +49,9 @@ type PermissionService struct {
 // NewPermissionService 创建权限服务实例并加载缓存
 func NewPermissionService(queries *generated.Queries) *PermissionService {
 	s := &PermissionService{
-		queries:        queries,
+		queries:         queries,
 		rolePermissions: make(map[int32][]string),
-		allPermissions: make(map[string]string),
+		allPermissions:  make(map[string]string),
 	}
 	if err := s.Reload(context.Background()); err != nil {
 		log.Printf("权限缓存加载失败: %v（将在首次请求时重试）", err)

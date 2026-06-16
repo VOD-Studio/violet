@@ -5,6 +5,7 @@
 package middleware
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -102,3 +103,20 @@ func getRequestID(r *http.Request) string {
 	}
 	return ""
 }
+
+// GetUserIDFromContext 从 request context 获取认证后的用户 ID
+func GetUserIDFromContext(r *http.Request) string {
+	if v, ok := r.Context().Value(userIDContextKey).(string); ok {
+		return v
+	}
+	return r.Header.Get("X-User-Id")
+}
+
+// SetUserIDToContext 将用户 ID 注入 context
+func SetUserIDToContext(r *http.Request, userID string) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), userIDContextKey, userID))
+}
+
+type contextKey string
+
+const userIDContextKey contextKey = "user_id"

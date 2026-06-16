@@ -376,13 +376,13 @@ func (s *CommentService) commentWithPostToResponse(ctx context.Context, c *model
 	emoteMap := s.parseEmotesFromContent(ctx, c.Body)
 
 	r := &AdminCommentResponse{
-		ID:        c.ID,
-		PostID:    c.PostID,
-		PostTitle: c.PostTitle,
-		PostSlug:  c.PostSlug,
-		ParentID:  c.ParentID,
-		Path:      c.Path,
-		Depth:     c.Depth,
+		ID:         c.ID,
+		PostID:     c.PostID,
+		PostTitle:  c.PostTitle,
+		PostSlug:   c.PostSlug,
+		ParentID:   c.ParentID,
+		Path:       c.Path,
+		Depth:      c.Depth,
 		AuthorName: c.AuthorName,
 		Content: &CommentContent{
 			Message:  c.Body,

@@ -172,7 +172,7 @@ func Load() *Config {
 	}
 
 	cfg := &Config{
-		Environment:        v.GetString("environment"),
+		Environment: v.GetString("environment"),
 		Database: DatabaseConfig{
 			Host:            v.GetString("database.host"),
 			Port:            v.GetInt("database.port"),

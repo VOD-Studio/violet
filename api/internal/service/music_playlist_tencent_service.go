@@ -226,9 +226,9 @@ func (s *MusicService) FetchQQSongDetail(mid string) (*SongInfo, error) {
 	var result struct {
 		Code int `json:"code"`
 		Data []struct {
-			Songmid   string `json:"songmid"`
-			Songname  string `json:"songname"`
-			Singer    []struct {
+			Songmid  string `json:"songmid"`
+			Songname string `json:"songname"`
+			Singer   []struct {
 				Name string `json:"name"`
 			} `json:"singer"`
 			Albumname string `json:"albumname"`
@@ -251,11 +251,11 @@ func (s *MusicService) FetchQQSongDetail(mid string) (*SongInfo, error) {
 	}
 
 	return &SongInfo{
-		ID:       song.Songmid,
-		Title:    song.Songname,
-		Artist:   strings.Join(artists, "/"),
-		Album:    song.Albumname,
-		Cover:    fmt.Sprintf("https://y.qq.com/music/photo_new/T002R300x300M000%s.jpg", song.Albummid),
-		URL:      fmt.Sprintf("https://i.y.qq.com/v8/music/play/song?songmid=%s", song.Songmid),
+		ID:     song.Songmid,
+		Title:  song.Songname,
+		Artist: strings.Join(artists, "/"),
+		Album:  song.Albumname,
+		Cover:  fmt.Sprintf("https://y.qq.com/music/photo_new/T002R300x300M000%s.jpg", song.Albummid),
+		URL:    fmt.Sprintf("https://i.y.qq.com/v8/music/play/song?songmid=%s", song.Songmid),
 	}, nil
 }

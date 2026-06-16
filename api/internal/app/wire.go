@@ -3,101 +3,121 @@
 
 // Package app 提供应用层依赖注入装配（基于 google/wire）。
 //
-// 当前阶段（P1）只装配新 DDD user 模块，与 cmd/server/main.go 中的
-// 旧手工 DI 并存。P2 模块迁移时，旧 service 逐步搬入 wire provider set，
-// 最终 main.go 只保留 config.Load + log.Init + wire 调用。
-//
-// wire 生成代码在 wire_gen.go（勿手改）。重新生成：
-//
-//	wire ./internal/app/
-//	# 或: make wire
+// P2.2d 装配 role/permission 模块的完整 DDD 依赖图，
+// user 模块（P1）保留。旧代码（role/permission service/handler）仍在 main.go 手工装配，
+// 待 P2.2d 路由切换完成后删除。
 package app
 
 import (
 	"github.com/google/wire"
 	"gorm.io/gorm"
 
+	"blog-api/internal/application/permission/command"
+	permquery "blog-api/internal/application/permission/query"
+	rolecmd "blog-api/internal/application/role/command"
+	rolequery "blog-api/internal/application/role/query"
 	"blog-api/internal/application/shared"
-	"blog-api/internal/application/user/command"
+	usercmd "blog-api/internal/application/user/command"
+	"blog-api/internal/domain/permission"
+	"blog-api/internal/domain/role"
 	"blog-api/internal/domain/user"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
+	rolehttp "blog-api/internal/interfaces/http/handler/role"
 	userhttp "blog-api/internal/interfaces/http/handler/user"
 )
 
 // ============================================================
-// Provider Sets（按层分组，便于组合）
+// Provider Sets
 // ============================================================
 
-// InfrastructureSet 基础设施层 provider 集合
-//
-// 提供 GORM repository、事件总线、密码哈希器等基础设施实现。
-// 注意：*gorm.DB 由 main.go 现有代码初始化后注入（wire 不负责创建 DB 连接，
-// 因为连接池配置、ping、迁移都在 main.go 中执行）。
+// InfrastructureSet 基础设施层
 var InfrastructureSet = wire.NewSet(
-	// 事件总线
 	infraeventbus.NewInMemory,
-	// 绑定接口
 	wire.Bind(new(shared.EventBus), new(*infraeventbus.InMemory)),
 
-	// 密码哈希器
-	command.NewBcryptHasher,
-	wire.Bind(new(command.PasswordHasher), new(*command.BcryptHasher)),
+	usercmd.NewBcryptHasher,
+	wire.Bind(new(usercmd.PasswordHasher), new(*usercmd.BcryptHasher)),
 )
 
-// UserDomainSet user 聚合的 repository provider
-//
-// *gorm.DB 由调用方（main.go）注入，wire 在此绑定接口实现。
+// UserDomainSet user 聚合 repository
 var UserDomainSet = wire.NewSet(
 	gormrepo.NewUserRepository,
 	wire.Bind(new(user.UserRepository), new(*gormrepo.UserRepository)),
 )
 
-// UserApplicationSet user 聚合的 application 层（用例）provider
-var UserApplicationSet = wire.NewSet(
-	command.NewRegisterUserHandler,
+// RoleDomainSet role/permission 聚合 repository
+var RoleDomainSet = wire.NewSet(
+	gormrepo.NewRoleRepository,
+	wire.Bind(new(role.RoleRepository), new(*gormrepo.RoleRepository)),
+	gormrepo.NewPermissionRepository,
+	wire.Bind(new(permission.PermissionRepository), new(*gormrepo.PermissionRepository)),
 )
 
-// UserInterfacesSet user 聚合的 interfaces 层（HTTP handler）provider
-var UserInterfacesSet = wire.NewSet(
-	userhttp.NewHandler,
+// UserApplicationSet
+var UserApplicationSet = wire.NewSet(usercmd.NewRegisterUserHandler)
+
+// RoleApplicationSet role/permission 用例层（CQRS）
+var RoleApplicationSet = wire.NewSet(
+	// role command
+	rolecmd.NewCreateRoleHandler,
+	rolecmd.NewUpdateRoleHandler,
+	rolecmd.NewDeleteRoleHandler,
+	rolecmd.NewReplaceRolePermissionsHandler,
+	// role query
+	rolequery.NewListRolesWithUserCountHandler,
+	rolequery.NewGetRoleWithPermissionsHandler,
+	// permission command
+	command.NewCreatePermissionHandler,
+	command.NewUpdatePermissionHandler,
+	command.NewDeletePermissionHandler,
+	// permission query
+	permquery.NewListPermissionsHandler,
 )
+
+// UserInterfacesSet
+var UserInterfacesSet = wire.NewSet(userhttp.NewHandler)
+
+// RoleInterfacesSet role/permission HTTP handler
+var RoleInterfacesSet = wire.NewSet(rolehttp.NewHandler)
 
 // ============================================================
 // 注入入口
 // ============================================================
 
-// UserContainer user 模块依赖容器
-//
-// 聚合 user 模块的所有依赖（repository、用例、handler），
-// 由 main.go 通过 InitializeUserContainer 获取后注册路由。
+// UserContainer user 模块容器（P1，保留）
 type UserContainer struct {
-	RegisterHandler *command.RegisterUserHandler
+	RegisterHandler *usercmd.RegisterUserHandler
 	UserHandler     *userhttp.Handler
 }
 
-// InitializeUserContainer 装配 user 模块依赖图
-//
-// 参数 db 由 main.go 注入（已配置连接池、已执行迁移）。
-// wire 据此自动生成依赖图，编译期校验完整性。
+// InitializeUserContainer 装配 user 模块
 func InitializeUserContainer(db *gorm.DB) (*UserContainer, func(), error) {
-	wire.Build(
-		InfrastructureSet,
-		UserDomainSet,
-		UserApplicationSet,
-		UserInterfacesSet,
-		newUserContainer,
-	)
-	return nil, nil, nil // wire 填充
+	wire.Build(InfrastructureSet, UserDomainSet, UserApplicationSet, UserInterfacesSet, newUserContainer)
+	return nil, nil, nil
 }
 
-// newUserContainer 构造容器（wire 使用）
-func newUserContainer(
-	registerHandler *command.RegisterUserHandler,
-	userHandler *userhttp.Handler,
-) *UserContainer {
-	return &UserContainer{
-		RegisterHandler: registerHandler,
-		UserHandler:     userHandler,
-	}
+func newUserContainer(registerHandler *usercmd.RegisterUserHandler, userHandler *userhttp.Handler) *UserContainer {
+	return &UserContainer{RegisterHandler: registerHandler, UserHandler: userHandler}
+}
+
+// RoleContainer role/permission 模块容器（P2.2d）
+type RoleContainer struct {
+	RoleHandler *rolehttp.Handler
+}
+
+// InitializeRoleContainer 装配 role/permission 模块依赖图
+func InitializeRoleContainer(db *gorm.DB) (*RoleContainer, func(), error) {
+	wire.Build(
+		InfrastructureSet,
+		RoleDomainSet,
+		RoleApplicationSet,
+		RoleInterfacesSet,
+		newRoleContainer,
+	)
+	return nil, nil, nil
+}
+
+func newRoleContainer(roleHandler *rolehttp.Handler) *RoleContainer {
+	return &RoleContainer{RoleHandler: roleHandler}
 }

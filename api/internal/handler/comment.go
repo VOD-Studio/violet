@@ -508,7 +508,7 @@ func (h *CommentHandler) BatchUpdateCommentStatus(w http.ResponseWriter, r *http
 
 	log.Info().Int("status", http.StatusOK).Int64("affected", affected).Str("new_status", req.Status).Msg("请求处理成功")
 	response.Success(w, map[string]interface{}{
-		"message":       "批量更新成功",
+		"message":        "批量更新成功",
 		"affected_count": affected,
 	})
 }

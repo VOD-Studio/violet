@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
-	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/application/user/command"
+	interfacesmw "blog-api/internal/interfaces/http/middleware"
 )
 
 // RegisterRequest 注册请求 DTO

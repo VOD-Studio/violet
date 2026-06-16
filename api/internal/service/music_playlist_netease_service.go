@@ -70,7 +70,7 @@ func (s *MusicService) FetchNeteasePlaylist(id string) (*PlaylistInfo, error) {
 		defer resp2.Body.Close()
 		body2, _ := io.ReadAll(resp2.Body)
 		var result struct {
-			Code int `json:"code"`
+			Code   int `json:"code"`
 			Result struct {
 				Name        string `json:"name"`
 				CoverImgUrl string `json:"coverImgUrl"`
@@ -134,11 +134,11 @@ func (s *MusicService) FetchNeteaseSongDetail(id string) (*SongInfo, error) {
 	}
 
 	var result struct {
-		Code int `json:"code"`
+		Code  int `json:"code"`
 		Songs []struct {
-			ID int64  `json:"id"`
+			ID   int64  `json:"id"`
 			Name string `json:"name"`
-			Ar []struct {
+			Ar   []struct {
 				Name string `json:"name"`
 			} `json:"ar"`
 			Al struct {

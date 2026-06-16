@@ -41,9 +41,9 @@ type RegisterUserOutput struct {
 // 5. 持久化
 // 6. 发布领域事件
 type RegisterUserHandler struct {
-	userRepo        user.UserRepository
-	eventBus        appshared.EventBus
-	passwordHasher  PasswordHasher
+	userRepo       user.UserRepository
+	eventBus       appshared.EventBus
+	passwordHasher PasswordHasher
 }
 
 // PasswordHasher 密码哈希端口（基础设施层实现 bcrypt）

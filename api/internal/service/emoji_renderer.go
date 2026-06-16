@@ -28,9 +28,9 @@ type EmojiInfo struct {
 
 // EmojiRenderer 表情渲染器
 type EmojiRenderer struct {
-	markdown     goldmark.Markdown
-	emojiCache   EmojiCache
-	emojiRegex   *regexp.Regexp
+	markdown   goldmark.Markdown
+	emojiCache EmojiCache
+	emojiRegex *regexp.Regexp
 }
 
 // NewEmojiRenderer 创建表情渲染器
@@ -60,7 +60,7 @@ func (r *EmojiRenderer) Render(md string) (string, error) {
 func (r *EmojiRenderer) replaceEmojis(md string) string {
 	return r.emojiRegex.ReplaceAllStringFunc(md, func(match string) string {
 		// 提取表情名称（去掉两边的方括号）
-		name := match[1:len(match)-1]
+		name := match[1 : len(match)-1]
 
 		if r.emojiCache != nil {
 			emoji := r.emojiCache.Get(name)

@@ -12,8 +12,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/spf13/viper"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/spf13/viper"
 )
 
 // Bilibili API 响应结构
@@ -24,14 +24,14 @@ type BilibiliResponse struct {
 }
 
 type Data struct {
-	Packages          []Package `json:"packages"`           // 用户 API
+	Packages          []Package `json:"packages"`            // 用户 API
 	UserPanelPackages []Package `json:"user_panel_packages"` // 官方 API
 }
 
 type Package struct {
 	ID    int     `json:"id"`
 	Text  string  `json:"text"`
-	URL   string  `json:"url"`  // 表情包封面图（可选）
+	URL   string  `json:"url"` // 表情包封面图（可选）
 	Emote []Emote `json:"emote"`
 	Type  int     `json:"type"` // 13=收藏特殊包，1=普通表情包
 }
@@ -52,7 +52,7 @@ type ImportResult struct {
 
 // Bilibili API URL 配置
 const (
-	bilibiliUserAPIURL   = "https://api.bilibili.com/x/emote/user/panel/web?business=reply&web_location=333.1369"
+	bilibiliUserAPIURL     = "https://api.bilibili.com/x/emote/user/panel/web?business=reply&web_location=333.1369"
 	bilibiliOfficialAPIURL = "https://api.bilibili.com/x/emote/setting/panel?business=reply"
 )
 
