@@ -44,7 +44,7 @@ type PlaylistResponse struct {
 	Songs      []*SongInfo `json:"songs"`
 	IsActive   bool        `json:"is_active"`
 	CreatedAt  string      `json:"created_at"`
-	UpdatedAt  string       `json:"updated_at"`
+	UpdatedAt  string      `json:"updated_at"`
 }
 
 // CreatePlaylistInput 创建歌单输入

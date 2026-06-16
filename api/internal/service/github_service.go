@@ -16,7 +16,7 @@ import (
 // GitHubService GitHub API 代理服务
 // 封装 GitHub GraphQL 和 REST API 调用，使用后台配置的 token
 type GitHubService struct {
-	client         *http.Client
+	client          *http.Client
 	settingsService *SettingsService
 }
 
@@ -39,20 +39,20 @@ type ContributionDay struct {
 
 // ContributionData 贡献数据响应
 type ContributionData struct {
-	TotalContributions int              `json:"totalContributions"`
+	TotalContributions int               `json:"totalContributions"`
 	Days               []ContributionDay `json:"days"`
 }
 
 // RepoData 仓库信息
 type RepoData struct {
-	Name          string  `json:"name"`
-	Description   *string `json:"description"`
-	Language      *string `json:"language"`
-	StargazerCount int    `json:"stargazerCount"`
-	ForkCount     int     `json:"forkCount"`
-	URL           string  `json:"url"`
-	IsFork        bool    `json:"isFork"`
-	LanguageColor *string `json:"languageColor"`
+	Name           string  `json:"name"`
+	Description    *string `json:"description"`
+	Language       *string `json:"language"`
+	StargazerCount int     `json:"stargazerCount"`
+	ForkCount      int     `json:"forkCount"`
+	URL            string  `json:"url"`
+	IsFork         bool    `json:"isFork"`
+	LanguageColor  *string `json:"languageColor"`
 }
 
 // GetContributions 获取 GitHub 贡献数据
@@ -129,7 +129,7 @@ func (s *GitHubService) GetContributions(ctx context.Context, username string) (
 				ContributionsCollection struct {
 					ContributionCalendar struct {
 						TotalContributions int `json:"totalContributions"`
-						Weeks []struct {
+						Weeks              []struct {
 							ContributionDays []struct {
 								Date              string `json:"date"`
 								ContributionCount int    `json:"contributionCount"`
@@ -205,13 +205,13 @@ func (s *GitHubService) GetRepos(ctx context.Context, username string) ([]RepoDa
 	}
 
 	var repos []struct {
-		Name          string  `json:"name"`
-		Description   *string `json:"description"`
-		Language      *string `json:"language"`
-		StargazersCount int   `json:"stargazers_count"`
-		ForksCount    int     `json:"forks_count"`
-		HTMLURL       string  `json:"html_url"`
-		Fork          bool    `json:"fork"`
+		Name            string  `json:"name"`
+		Description     *string `json:"description"`
+		Language        *string `json:"language"`
+		StargazersCount int     `json:"stargazers_count"`
+		ForksCount      int     `json:"forks_count"`
+		HTMLURL         string  `json:"html_url"`
+		Fork            bool    `json:"fork"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {

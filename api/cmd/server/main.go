@@ -114,6 +114,12 @@ func main() {
 	commentRepo := repository.NewCommentRepository(gormDB)
 
 	emailService := service.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom)
+
+	// P2.1: 初始化 auth/user DDD 容器（复用旧 EmailService 作为 EmailSender）
+	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailService, nil)
+	if err != nil {
+		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
+	}
 	authService := service.NewAuthService(queries, redisClient, emailService, cfg)
 	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
@@ -454,6 +460,27 @@ func main() {
 		r.Post("/permissions", roleH.CreatePermission)
 		r.Patch("/permissions/{code}", roleH.UpdatePermission)
 		r.Delete("/permissions/{code}", roleH.DeletePermission)
+	})
+
+	// auth DDD 影子路由（与旧 /api/v1/auth/* 并存）
+	// 公开路由（无需认证）
+	authH := authContainer.AuthHandler
+	r.Route("/api/v1/auth/ddd", func(r chi.Router) {
+		r.Post("/register", authH.Register)
+		r.Post("/verify-email", authH.VerifyEmail)
+		r.Post("/login", authH.Login)
+		r.Post("/refresh", authH.Refresh)
+		r.Post("/forgot-password", authH.ForgotPassword)
+		r.Post("/reset-password", authH.ResetPassword)
+
+		// 需认证路由（复用旧 Auth 中间件，通过 context 注入 user_id）
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.Auth(authService))
+			r.Post("/logout", authH.Logout)
+			r.Get("/me", authH.GetMe)
+			r.Patch("/profile", authH.UpdateProfile)
+			r.Patch("/password", authH.ChangePassword)
+		})
 	})
 
 	// 静态文件服务（无版本前缀）

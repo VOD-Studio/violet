@@ -55,7 +55,6 @@ type ReactionsBatchResponse struct {
 	Reactions map[string][]service.CommentReactionSummary `json:"reactions"`
 }
 
-
 // GetCommentReactions 获取评论的表情反应
 // GET /api/v1/comments/{comment_id}/reactions
 // 公开接口，返回评论的所有表情反应统计
