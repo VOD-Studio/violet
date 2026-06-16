@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router";
-import { api } from "@/lib/api";
+import { Link } from "@tanstack/react-router";
 import { ProjectCard, type ProjectData } from "@/components/blog/ProjectCard";
 import { ScrollReveal } from "@/components/creative";
-import { ErrorFallback } from "@/components/shared/ErrorFallback";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
+import { api } from "@/lib/api";
 
 function useProjects() {
   return useQuery({
@@ -13,15 +13,17 @@ function useProjects() {
       try {
         const res = await api.get<{ projects: BackendProject[] }>("/projects");
         // Map backend fields to frontend ProjectData format
-        return (res.projects ?? []).map((p): ProjectData => ({
-          id: p.id,
-          title: p.title,
-          description: p.description ?? "",
-          coverImage: p.image_url,
-          tags: p.tech_stack ?? [],
-          githubUrl: p.github_url,
-          demoUrl: p.url,
-        }));
+        return (res.projects ?? []).map(
+          (p): ProjectData => ({
+            id: p.id,
+            title: p.title,
+            description: p.description ?? "",
+            coverImage: p.image_url,
+            tags: p.tech_stack ?? [],
+            githubUrl: p.github_url,
+            demoUrl: p.url,
+          }),
+        );
       } catch {
         return [];
       }
@@ -52,7 +54,7 @@ export function ProjectsGrid() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
-            key={i}
+            key={`skeleton-${i}`}
             className="h-80 animate-pulse rounded-lg border bg-muted"
           />
         ))}
@@ -92,7 +94,7 @@ export function ProjectsGrid() {
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {projects.map((project, index) => (
         <ScrollReveal key={project.id} animation="scale" delay={index * 0.1}>
-          <Link to={`/projects/${project.id}`}>
+          <Link to="/projects/$id" params={{ id: project.id }}>
             <ProjectCard project={project} />
           </Link>
         </ScrollReveal>

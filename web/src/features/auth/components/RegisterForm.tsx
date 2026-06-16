@@ -1,13 +1,13 @@
 // 注册表单组件
 // 包含用户名、邮箱、密码、确认密码输入，使用 react-hook-form + zod 验证
 
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { registerSchema, type RegisterFormData } from "@/lib/validations";
 import { useAuth } from "@/hooks/useAuth";
+import { type RegisterFormData, registerSchema } from "@/lib/validations";
 
 /**
  * 注册表单组件
@@ -38,7 +38,7 @@ export function RegisterForm() {
     try {
       setServerError(null);
       await registerUser(data);
-      navigate("/verify-email");
+      navigate({ to: "/verify-email" });
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "注册失败，请重试");
     }

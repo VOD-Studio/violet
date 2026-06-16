@@ -1,8 +1,8 @@
-import { ParticleBackground, KineticText } from "@/components/creative";
-import { motion } from "motion/react";
-import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
+import { KineticText, ParticleBackground } from "@/components/creative";
+import { Button } from "@/components/ui/button";
 
 export function HeroSection() {
   return (

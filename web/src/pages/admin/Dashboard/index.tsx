@@ -3,14 +3,14 @@
  * 展示统计卡片、浏览量趋势图、热门文章排行、最近文章列表
  */
 
-import { Link } from "react-router";
-import { useAdminStats, useViewTrends } from "@/features/admin/dashboard/api";
+import { Link } from "@tanstack/react-router";
 import { ErrorFallback } from "@/components/shared/ErrorFallback";
-import { StatsCard, StatsCardSkeleton } from "./StatsCard";
-import { ViewTrendsChart } from "./ViewTrendsChart";
+import { useAdminStats, useViewTrends } from "@/features/admin/dashboard/api";
 import { PopularPostsTable } from "./PopularPostsTable";
 import { RecentPostsTable } from "./RecentPostsTable";
 import { StatIcon } from "./StatIcon";
+import { StatsCard, StatsCardSkeleton } from "./StatsCard";
+import { ViewTrendsChart } from "./ViewTrendsChart";
 
 /**
  * 数据看板页面
@@ -34,7 +34,7 @@ export default function Dashboard() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <StatsCardSkeleton key={i} />
+            <StatsCardSkeleton key={`skeleton-${i}`} />
           ))}
         </div>
         <ViewTrendsChart daily={[]} monthly={[]} isLoading={true} />

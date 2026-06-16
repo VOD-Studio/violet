@@ -4,29 +4,29 @@
  * 使用 PermissionGuard 控制菜单项权限
  */
 
-import { NavLink } from "react-router";
-import { cn } from "@/lib/utils";
+import { Link, useRouterState } from "@tanstack/react-router";
+import {
+  Bell,
+  FileText,
+  FolderKanban,
+  Home,
+  Image,
+  LayoutDashboard,
+  MessageSquare,
+  Music,
+  ScrollText,
+  Settings,
+  Shield,
+  Smile,
+  Tag,
+  Users,
+} from "lucide-react";
+import { PermissionGuard } from "@/components/shared/PermissionGuard";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { cn } from "@/lib/utils";
 import { useSidebarStore } from "@/store";
-import { PermissionGuard } from "@/components/shared/PermissionGuard";
-import {
-  LayoutDashboard,
-  FileText,
-  MessageSquare,
-  Tag,
-  Image,
-  Smile,
-  Music,
-  Users,
-  Shield,
-  Settings,
-  Home,
-  ScrollText,
-  Bell,
-  FolderKanban,
-} from "lucide-react";
 
 /** 导航菜单项配置 */
 interface NavItem {
@@ -129,12 +129,17 @@ const navItems: NavItem[] = [
  */
 export function AdminSidebar() {
   const collapsed = useSidebarStore((s) => s.collapsed);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  /** 判断导航项是否激活（end 精确匹配，否则前缀匹配） */
+  const isActive = (to: string, end?: boolean) =>
+    end ? pathname === to : pathname.startsWith(to);
 
   return (
     <aside
       className={cn(
         "flex h-full flex-col border-r bg-sidebar text-sidebar-foreground transition-all duration-300",
-        collapsed ? "w-16" : "w-60"
+        collapsed ? "w-16" : "w-60",
       )}
     >
       {/* 侧边栏头部 Logo 和主题切换 */}
@@ -151,22 +156,19 @@ export function AdminSidebar() {
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         {navItems.map((item) => (
           <PermissionGuard key={item.to} code={item.permission}>
-            <NavLink
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-                  collapsed && "justify-center px-2"
-                )
-              }
+            <Link
+              to={item.to as never}
+              className={cn(
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                isActive(item.to, item.end)
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+                collapsed && "justify-center px-2",
+              )}
             >
               <span className="shrink-0">{item.icon}</span>
               {!collapsed && <span>{item.label}</span>}
-            </NavLink>
+            </Link>
           </PermissionGuard>
         ))}
       </nav>
@@ -174,20 +176,18 @@ export function AdminSidebar() {
       {/* 底部分割线和返回前台链接 */}
       <Separator />
       <div className="p-2">
-        <NavLink to="/">
-          {() => (
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start gap-3",
-                collapsed && "justify-center px-2"
-              )}
-            >
-              <Home className="size-4 shrink-0" />
-              {!collapsed && <span>返回前台</span>}
-            </Button>
-          )}
-        </NavLink>
+        <Link to="/">
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start gap-3",
+              collapsed && "justify-center px-2",
+            )}
+          >
+            <Home className="size-4 shrink-0" />
+            {!collapsed && <span>返回前台</span>}
+          </Button>
+        </Link>
       </div>
     </aside>
   );

@@ -1,34 +1,34 @@
 // 文章详情页
 // 展示文章内容、元信息和评论区，支持嵌入代码沙盒
 
-import { useParams, Link } from "react-router";
-import { motion } from "motion/react";
+import { Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { motion } from "motion/react";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { usePost, useIncrementView } from "@/hooks/usePosts";
-import { usePostStore } from "@/store";
-import { CommentSection } from "@/features/comments";
 import { ScrollReveal } from "@/components/creative";
+import { BackToTop } from "@/components/shared/BackToTop";
 import { SEO } from "@/components/shared/SEO";
 import { StructuredData } from "@/components/shared/StructuredData";
-import { BackToTop } from "@/components/shared/BackToTop";
+import { Button } from "@/components/ui/button";
+import { CommentSection } from "@/features/comments";
+import { useIncrementView, usePost } from "@/hooks/usePosts";
 import {
-  generateStructuredData,
   generateBreadcrumbStructuredData,
+  generateStructuredData,
   SITE_CONFIG,
 } from "@/lib/seo";
-import { ArticleHeader } from "./ArticleHeader";
-import { ArticleContent } from "./ArticleContent";
-import { ArticleSkeleton } from "./ArticleSkeleton";
-import { ArticleError } from "./ArticleError";
+import { usePostStore } from "@/store";
 import { TableOfContents } from "../../../components/TableOfContents";
+import { ArticleContent } from "./ArticleContent";
+import { ArticleError } from "./ArticleError";
+import { ArticleHeader } from "./ArticleHeader";
+import { ArticleSkeleton } from "./ArticleSkeleton";
 
 /**
  * 文章详情页
  */
 export default function BlogSlug() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug = "" } = useParams({ strict: false });
   const { data: post, isLoading, error } = usePost(slug);
   const { mutate } = useIncrementView();
   const { setPostId } = usePostStore();

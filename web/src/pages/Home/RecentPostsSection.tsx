@@ -1,10 +1,10 @@
-import { motion } from "motion/react";
-import { ScrollReveal, MagneticButton } from "@/components/creative";
-import { usePosts } from "@/hooks/usePosts";
-import { PostCard } from "@/features/posts";
-import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
+import { MagneticButton, ScrollReveal } from "@/components/creative";
+import { Button } from "@/components/ui/button";
+import { PostCard } from "@/features/posts";
+import { usePosts } from "@/hooks/usePosts";
 
 export function RecentPostsSection() {
   const { data, isLoading, error } = usePosts({ page: 1, limit: 3 });
@@ -25,7 +25,7 @@ export function RecentPostsSection() {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
-              key={i}
+              key={`skeleton-${i}`}
               className="h-64 animate-pulse rounded-lg border bg-muted"
             />
           ))}

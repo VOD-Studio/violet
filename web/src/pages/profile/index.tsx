@@ -1,5 +1,3 @@
-import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router";
 import {
   Card,
   CardContent,
@@ -7,9 +5,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import AvatarUpload from "./AvatarUpload";
-import ProfileForm from "./ProfileForm";
 import PasswordForm from "./PasswordForm";
+import ProfileForm from "./ProfileForm";
 
 export default function Profile() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -22,8 +21,10 @@ export default function Profile() {
     );
   }
 
+  // 注：未认证守卫已由 routes/_public.profile.tsx 的 beforeLoad 负责，
+  // 此处保留 isAuthenticated 检查仅为防御性渲染（不跳转）。
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return null;
   }
 
   return (
