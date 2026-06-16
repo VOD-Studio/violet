@@ -33,15 +33,15 @@ type BaseModel struct {
 //   - internal/model.User（旧 DTO）：API 响应，将逐步废弃
 type User struct {
 	BaseModel
-	Username      string `gorm:"type:varchar(32);uniqueIndex;not null" json:"username"`
-	Email         string `gorm:"type:varchar(255);uniqueIndex;not null" json:"email"`
+	Username      string `gorm:"type:varchar(32);unique;not null" json:"username"`
+	Email         string `gorm:"type:varchar(255);unique;not null" json:"email"`
 	PasswordHash  string `gorm:"type:varchar(255);not null" json:"-"`
-	AvatarURL     string `gorm:"type:varchar(500);default:''" json:"avatar_url"`
-	Bio           string `gorm:"type:text;default:''" json:"bio"`
+	AvatarURL     string `gorm:"type:text" json:"avatar_url"`
+	Bio           string `gorm:"type:text" json:"bio"`
 	Role          string `gorm:"type:varchar(32);not null;default:'user'" json:"role"`
 	EmailVerified bool   `gorm:"not null;default:false" json:"email_verified"`
-	IsActive      bool   `gorm:"not null;default:true" json:"is_active"`
-	RoleID        *int32 `gorm:"index" json:"role_id,omitempty"` // 关联 roles 表（可空）
+	IsActive      bool   `gorm:"not null;default:false" json:"is_active"`
+	RoleID        *int32 `gorm:"index" json:"role_id,omitempty"`
 }
 
 // TableName 显式指定表名（GORM 默认会复数化为 users，此处显式表达意图）

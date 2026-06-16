@@ -10,7 +10,7 @@ import (
 type Post struct {
 	ID             uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	Title          string     `gorm:"type:varchar(255);not null" json:"title"`
-	Slug           string     `gorm:"type:varchar(255);uniqueIndex" json:"slug"`
+	Slug           string     `gorm:"type:varchar(255);unique" json:"slug"`
 	ContentMD      string     `gorm:"type:text;column:content_md" json:"content_md"`
 	ContentHTML    string     `gorm:"type:text;column:content_html" json:"content_html"`
 	Excerpt        string     `gorm:"type:text" json:"excerpt"`
@@ -34,8 +34,8 @@ func (Post) TableName() string { return "posts" }
 // Tag 标签表持久化模型
 type Tag struct {
 	ID        int32     `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name      string    `gorm:"type:varchar(50);uniqueIndex" json:"name"`
-	Slug      string    `gorm:"type:varchar(50);uniqueIndex" json:"slug"`
+	Name      string    `gorm:"type:varchar(50);unique" json:"name"`
+	Slug      string    `gorm:"type:varchar(50);unique" json:"slug"`
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }
 
@@ -110,7 +110,7 @@ func (Project) TableName() string { return "projects" }
 // EmojiGroup 表情分组表
 type EmojiGroup struct {
 	ID        int32     `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name      string    `gorm:"type:varchar(50);uniqueIndex" json:"name"`
+	Name      string    `gorm:"type:varchar(50);unique" json:"name"`
 	Source    string    `gorm:"type:varchar(30);default:system" json:"source"`
 	SortOrder int       `gorm:"default:0" json:"sort_order"`
 	IsEnabled bool      `gorm:"default:true" json:"is_enabled"`

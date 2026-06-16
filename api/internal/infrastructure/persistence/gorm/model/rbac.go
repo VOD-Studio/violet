@@ -19,7 +19,7 @@ func (RolePermission) TableName() string { return "role_permissions" }
 // Role 角色表持久化模型（对应 roles 表）
 type Role struct {
 	ID          int32     `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name        string    `gorm:"type:varchar(50);uniqueIndex;not null" json:"name"`
+	Name        string    `gorm:"type:varchar(50);unique;not null" json:"name"`
 	Description string    `gorm:"type:text" json:"description"`
 	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 
@@ -34,7 +34,7 @@ func (Role) TableName() string { return "roles" }
 // Permission 权限点表持久化模型（对应 permissions 表）
 type Permission struct {
 	ID          int32     `gorm:"primaryKey;autoIncrement" json:"id"`
-	Code        string    `gorm:"type:varchar(50);uniqueIndex;not null" json:"code"`
+	Code        string    `gorm:"type:varchar(50);unique;not null" json:"code"`
 	Name        string    `gorm:"type:varchar(100);not null" json:"name"`
 	Description string    `gorm:"type:text" json:"description"`
 	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
