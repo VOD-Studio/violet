@@ -7,11 +7,18 @@
 package app
 
 import (
+	command3 "blog-api/internal/application/permission/command"
+	query2 "blog-api/internal/application/permission/query"
+	command2 "blog-api/internal/application/role/command"
+	"blog-api/internal/application/role/query"
 	"blog-api/internal/application/shared"
 	"blog-api/internal/application/user/command"
+	"blog-api/internal/domain/permission"
+	role2 "blog-api/internal/domain/role"
 	user2 "blog-api/internal/domain/user"
 	"blog-api/internal/infrastructure/eventbus"
 	gorm2 "blog-api/internal/infrastructure/persistence/gorm"
+	"blog-api/internal/interfaces/http/handler/role"
 	"blog-api/internal/interfaces/http/handler/user"
 	"github.com/google/wire"
 	"gorm.io/gorm"
@@ -19,10 +26,7 @@ import (
 
 // Injectors from wire.go:
 
-// InitializeUserContainer 装配 user 模块依赖图
-//
-// 参数 db 由 main.go 注入（已配置连接池、已执行迁移）。
-// wire 据此自动生成依赖图，编译期校验完整性。
+// InitializeUserContainer 装配 user 模块
 func InitializeUserContainer(db *gorm.DB) (*UserContainer, func(), error) {
 	userRepository := gorm2.NewUserRepository(db)
 	inMemory := eventbus.NewInMemory()
@@ -34,42 +38,65 @@ func InitializeUserContainer(db *gorm.DB) (*UserContainer, func(), error) {
 	}, nil
 }
 
+// InitializeRoleContainer 装配 role/permission 模块依赖图
+func InitializeRoleContainer(db *gorm.DB) (*RoleContainer, func(), error) {
+	roleRepository := gorm2.NewRoleRepository(db)
+	listRolesWithUserCountHandler := query.NewListRolesWithUserCountHandler(roleRepository)
+	permissionRepository := gorm2.NewPermissionRepository(db)
+	getRoleWithPermissionsHandler := query.NewGetRoleWithPermissionsHandler(roleRepository, permissionRepository)
+	inMemory := eventbus.NewInMemory()
+	createRoleHandler := command2.NewCreateRoleHandler(roleRepository, inMemory)
+	updateRoleHandler := command2.NewUpdateRoleHandler(roleRepository)
+	deleteRoleHandler := command2.NewDeleteRoleHandler(roleRepository)
+	replaceRolePermissionsHandler := command2.NewReplaceRolePermissionsHandler(roleRepository, inMemory)
+	listPermissionsHandler := query2.NewListPermissionsHandler(permissionRepository)
+	createPermissionHandler := command3.NewCreatePermissionHandler(permissionRepository)
+	updatePermissionHandler := command3.NewUpdatePermissionHandler(permissionRepository)
+	deletePermissionHandler := command3.NewDeletePermissionHandler(permissionRepository)
+	handler := role.NewHandler(listRolesWithUserCountHandler, getRoleWithPermissionsHandler, createRoleHandler, updateRoleHandler, deleteRoleHandler, replaceRolePermissionsHandler, listPermissionsHandler, createPermissionHandler, updatePermissionHandler, deletePermissionHandler)
+	roleContainer := newRoleContainer(handler)
+	return roleContainer, func() {
+	}, nil
+}
+
 // wire.go:
 
-// InfrastructureSet 基础设施层 provider 集合
-//
-// 提供 GORM repository、事件总线、密码哈希器等基础设施实现。
-// 注意：*gorm.DB 由 main.go 现有代码初始化后注入（wire 不负责创建 DB 连接，
-// 因为连接池配置、ping、迁移都在 main.go 中执行）。
+// InfrastructureSet 基础设施层
 var InfrastructureSet = wire.NewSet(eventbus.NewInMemory, wire.Bind(new(shared.EventBus), new(*eventbus.InMemory)), command.NewBcryptHasher, wire.Bind(new(command.PasswordHasher), new(*command.BcryptHasher)))
 
-// UserDomainSet user 聚合的 repository provider
-//
-// *gorm.DB 由调用方（main.go）注入，wire 在此绑定接口实现。
+// UserDomainSet user 聚合 repository
 var UserDomainSet = wire.NewSet(gorm2.NewUserRepository, wire.Bind(new(user2.UserRepository), new(*gorm2.UserRepository)))
 
-// UserApplicationSet user 聚合的 application 层（用例）provider
+// RoleDomainSet role/permission 聚合 repository
+var RoleDomainSet = wire.NewSet(gorm2.NewRoleRepository, wire.Bind(new(role2.RoleRepository), new(*gorm2.RoleRepository)), gorm2.NewPermissionRepository, wire.Bind(new(permission.PermissionRepository), new(*gorm2.PermissionRepository)))
+
+// UserApplicationSet
 var UserApplicationSet = wire.NewSet(command.NewRegisterUserHandler)
 
-// UserInterfacesSet user 聚合的 interfaces 层（HTTP handler）provider
+// RoleApplicationSet role/permission 用例层（CQRS）
+var RoleApplicationSet = wire.NewSet(command2.NewCreateRoleHandler, command2.NewUpdateRoleHandler, command2.NewDeleteRoleHandler, command2.NewReplaceRolePermissionsHandler, query.NewListRolesWithUserCountHandler, query.NewGetRoleWithPermissionsHandler, command3.NewCreatePermissionHandler, command3.NewUpdatePermissionHandler, command3.NewDeletePermissionHandler, query2.NewListPermissionsHandler)
+
+// UserInterfacesSet
 var UserInterfacesSet = wire.NewSet(user.NewHandler)
 
-// UserContainer user 模块依赖容器
-//
-// 聚合 user 模块的所有依赖（repository、用例、handler），
-// 由 main.go 通过 InitializeUserContainer 获取后注册路由。
+// RoleInterfacesSet role/permission HTTP handler
+var RoleInterfacesSet = wire.NewSet(role.NewHandler)
+
+// UserContainer user 模块容器（P1，保留）
 type UserContainer struct {
 	RegisterHandler *command.RegisterUserHandler
 	UserHandler     *user.Handler
 }
 
-// newUserContainer 构造容器（wire 使用）
-func newUserContainer(
-	registerHandler *command.RegisterUserHandler,
-	userHandler *user.Handler,
-) *UserContainer {
-	return &UserContainer{
-		RegisterHandler: registerHandler,
-		UserHandler:     userHandler,
-	}
+func newUserContainer(registerHandler *command.RegisterUserHandler, userHandler *user.Handler) *UserContainer {
+	return &UserContainer{RegisterHandler: registerHandler, UserHandler: userHandler}
+}
+
+// RoleContainer role/permission 模块容器（P2.2d）
+type RoleContainer struct {
+	RoleHandler *role.Handler
+}
+
+func newRoleContainer(roleHandler *role.Handler) *RoleContainer {
+	return &RoleContainer{RoleHandler: roleHandler}
 }

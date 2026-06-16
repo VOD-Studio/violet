@@ -20,7 +20,9 @@ import (
 	"gorm.io/gorm"
 
 	"blog-api/config"
+	"blog-api/internal/app"
 	"blog-api/internal/handler"
+	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
@@ -88,6 +90,21 @@ func main() {
 	if err := gormDB.AutoMigrate(&model.File{}, &model.UploadSession{}); err != nil {
 		log.Fatal().Err(err).Msg("GORM 自动迁移失败")
 	}
+
+	// P2: DDD 新 model 的 AutoMigrate（role/permission/role_permissions/users）
+	// 全 GORM AutoMigrate 策略：model 即 schema
+	if err := gormDB.AutoMigrate(
+		&newmodel.User{}, &newmodel.Role{}, &newmodel.Permission{}, &newmodel.RolePermission{},
+	); err != nil {
+		log.Fatal().Err(err).Msg("DDD model 自动迁移失败")
+	}
+
+	// P2.2d: 初始化 role/permission DDD 依赖容器（与旧代码并存）
+	roleContainer, roleCleanup, err := app.InitializeRoleContainer(gormDB)
+	if err != nil {
+		log.Fatal().Err(err).Msg("DDD role 容器初始化失败")
+	}
+	defer roleCleanup()
 
 	queries := generated.New(db)
 
@@ -326,15 +343,15 @@ func main() {
 			r.Get("/settings", settingsHandler.GetSettings)    // 获取站点设置
 			r.Put("/settings", settingsHandler.UpdateSettings) // 更新站点设置
 
-			r.Get("/users", userMgmtHandler.ListUsers)                      // 用户列表
-			r.Get("/users/{id}", userMgmtHandler.GetUserDetail)          // 用户详情
-			r.Post("/users", userMgmtHandler.CreateUser)                    // 创建用户
-			r.Put("/users/{id}", userMgmtHandler.UpdateUser)              // 编辑用户
-			r.Delete("/users/{id}", userMgmtHandler.DeleteUser)           // 删除用户
-			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)     // 修改用户角色
-			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus) // 启用/禁用用户
+			r.Get("/users", userMgmtHandler.ListUsers)                           // 用户列表
+			r.Get("/users/{id}", userMgmtHandler.GetUserDetail)                  // 用户详情
+			r.Post("/users", userMgmtHandler.CreateUser)                         // 创建用户
+			r.Put("/users/{id}", userMgmtHandler.UpdateUser)                     // 编辑用户
+			r.Delete("/users/{id}", userMgmtHandler.DeleteUser)                  // 删除用户
+			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)          // 修改用户角色
+			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus)      // 启用/禁用用户
 			r.Post("/users/batch-status", userMgmtHandler.BatchUpdateUserStatus) // 批量启用/禁用用户
-			r.Post("/users/batch-role", userMgmtHandler.BatchUpdateUserRole) // 批量修改用户角色
+			r.Post("/users/batch-role", userMgmtHandler.BatchUpdateUserRole)     // 批量修改用户角色
 
 			// 权限管理
 			r.Get("/permissions", roleHandler.GetAllPermissions) // 获取所有权限定义
@@ -342,8 +359,8 @@ func main() {
 			// 权限 CRUD（仅限超级管理员）
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.SuperAdminRequired)
-				r.Post("/permissions", permissionHandler.CreatePermission)         // 创建权限
-				r.Patch("/permissions/{code}", permissionHandler.UpdatePermission) // 更新权限
+				r.Post("/permissions", permissionHandler.CreatePermission)          // 创建权限
+				r.Patch("/permissions/{code}", permissionHandler.UpdatePermission)  // 更新权限
 				r.Delete("/permissions/{code}", permissionHandler.DeletePermission) // 删除权限
 			})
 
@@ -413,6 +430,30 @@ func main() {
 				r.Delete("/{id}", projectHandler.Delete) // 删除项目
 			})
 		})
+	})
+
+	// ============================================================
+	// P2.2d: DDD 影子路由组（与旧路由并存，验证通过后替换）
+	// 路径前缀 /api/v1/admin/ddd/，与旧 /api/v1/admin/roles 并存
+	// 待所有模块迁移完成后（P2.7）统一替换为正式路径并删除旧路由
+	// ============================================================
+	r.Route("/api/v1/admin/ddd", func(r chi.Router) {
+		r.Use(middleware.Auth(authService))
+		r.Use(middleware.AdminRequired)
+
+		// role/permission（DDD 版）
+		roleH := roleContainer.RoleHandler
+		r.Get("/roles", roleH.ListRoles)
+		r.Get("/roles/{id}", roleH.GetRole)
+		r.Post("/roles", roleH.CreateRole)
+		r.Patch("/roles/{id}", roleH.UpdateRole)
+		r.Delete("/roles/{id}", roleH.DeleteRole)
+		r.Patch("/roles/{id}/permissions", roleH.UpdateRolePermissions)
+
+		r.Get("/permissions", roleH.ListPermissions)
+		r.Post("/permissions", roleH.CreatePermission)
+		r.Patch("/permissions/{code}", roleH.UpdatePermission)
+		r.Delete("/permissions/{code}", roleH.DeletePermission)
 	})
 
 	// 静态文件服务（无版本前缀）
