@@ -66,7 +66,7 @@
 - **依赖注入**: 引入 google/wire 编译期代码生成
 - **前端**: 路由 React.lazy 懒加载 + ErrorBoundary + env 集中化
 - **工程化**: .editorconfig + .golangci.yml + LICENSE(MIT) + README + CONTRIBUTING +
-  纯 shell Git 钩子（pre-commit gofmt + commit-msg Conventional Commits）
+  纯 shell Git 钩子（pre-commit gofmt）
 - **包管理**: 迁移到 pnpm，修复 npm workspace 探测 bug
 
 #### P2 全业务模块 DDD 迁移

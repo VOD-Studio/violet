@@ -16,7 +16,7 @@ make install          # 后端 go mod download + 前端 pnpm install
 make env          # 复制 .env.example 到 .env，修改敏感配置
 make setup        # 生成 JWT 密钥 + 启动数据库 + 迁移
 
-# 4. 启用 Git 钩子 (强制提交规范)
+# 4. 启用 Git 钩子 (代码格式检查)
 ./scripts/install-hooks.sh
 ```
 
@@ -30,43 +30,16 @@ make setup        # 生成 JWT 密钥 + 启动数据库 + 迁移
 
 ### Commit Message 格式
 
-遵循 [Conventional Commits](https://www.conventionalcommits.org/)：
-
-```
-<type>(<scope>): <subject>
-
-<body 可选>
-
-<footer 可选>
-```
-
-**type**（必填）：
-| type | 说明 |
-|------|------|
-| `feat` | 新功能 |
-| `fix` | Bug 修复 |
-| `docs` | 文档变更 |
-| `style` | 代码格式（不影响功能） |
-| `refactor` | 重构（非 feat 非 fix） |
-| `perf` | 性能优化 |
-| `test` | 测试相关 |
-| `build` | 构建系统或依赖变更 |
-| `ci` | CI 配置 |
-| `chore` | 杂项（不修改 src 或 test） |
-| `revert` | 回滚 commit |
-
-**scope**（可选）：影响范围，如 `auth`、`web`、`api`、`infra`、`db`
+commit message 无强制格式，请清晰描述本次变更的动机与内容。建议首行为简短摘要，空一行后写详细说明。
 
 **示例**：
 ```
-feat(auth): 添加 OAuth 登录
-fix(comment): 修复分页越界导致 500
-docs(api): 更新 OpenAPI 说明
-refactor(post): 文章模块迁移到 DDD
-chore(infra): 升级 PostgreSQL 16
+添加 OAuth 登录
+
+集成 Google OAuth，登录后写入 user 表并签发 JWT。
 ```
 
-> 提交时 `commit-msg` 钩子会自动校验格式，不符合则拒绝。
+> `pre-commit` 钩子会检查代码格式（Go gofmt、前端 biome），不影响 commit message 内容。
 
 ## 代码规范
 
@@ -96,7 +69,7 @@ chore(infra): 升级 PostgreSQL 16
    make api-lint && make web-lint && make web-typecheck
    go test ./...
    ```
-3. 提交时遵守 Conventional Commits 格式
+3. 提交，commit message 清晰描述变更即可（无格式强制）
 4. 推送并创建 PR，描述：
    - 变更内容与动机
    - 是否有破坏性变更

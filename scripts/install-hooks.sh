@@ -39,4 +39,3 @@ done
 echo ""
 echo "✅ Git 钩子安装完成"
 echo "   pre-commit: 对暂存的 Go/TS 文件做格式与类型检查"
-echo "   commit-msg: 校验 Conventional Commits 格式"

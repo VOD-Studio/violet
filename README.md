@@ -122,23 +122,13 @@ make build          # 构建前后端生产版本
 
 ## Git 工作流
 
-启用提交规范检查（首次 clone 后运行）：
+启用代码检查钩子（首次 clone 后运行）：
 ```bash
 ./scripts/install-hooks.sh
 ```
 
 启用后：
-- **pre-commit**: 检查 Go 文件 gofmt 格式
-- **commit-msg**: 强制 [Conventional Commits](https://www.conventionalcommits.org/) 格式
-
-Commit message 格式：
-```
-<type>(<scope>): <subject>
-
-type:   feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert
-scope:  可选，如 auth, web, infra
-subject: 简短描述
-```
+- **pre-commit**: 检查 Go 文件 gofmt 格式与前端 biome 检查
 
 ## 文档
 
