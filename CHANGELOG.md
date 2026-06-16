@@ -5,13 +5,44 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本管理遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [Unreleased] / 2.0.0-dev
 
-### 待办
+2.0 开发线启动，主题：**交互体验升级 + 类型安全路由**。
+详见 [`docs/2.0-roadmap.md`](./docs/2.0-roadmap.md)。
+
+### 新增（计划中）
+- **组件库**: 接入 [ReactBits](https://reactbits.dev/) 动效组件库（免费版 copy-paste 模式，
+  落地到 `src/components/reactbits/`），首批用于首页/项目页视觉强化
+- **路由**: 从 `react-router` v7 迁移到 [`@tanstack/react-router`](https://tanstack.com/router)
+  （代码生成的类型安全路由树 + `beforeLoad` 守卫 + 类型化 `<Link to>`）
+
+### 变更
+- 前端版本号 `web/package.json` → `2.0.0-dev`
+- 新建 `release/2.0` 开发分支，main 保持 1.x 稳定线
+
+### 待办（从 1.0 遗留）
 - P2.7 旧代码彻底删除（sqlc generated + 旧 handler/service/repository）
 - P3.2 OpenAPI 文档自动生成
 - P3.3 Prometheus 监控指标
 - P3.5 i18n 国际化
+
+## [1.0.1] - 2026-06-16
+
+### 修复
+- **web**: 修复 `$RefreshSig$ is not defined` (pnpm hoist 导致 React Fast Refresh
+  preamble 注入失败) — [9dc66ae](https://example/9dc66ae)
+- **web**: 降级 `@vitejs/plugin-react` v6→v5，适配 Fast Refresh preamble — [0753132](https://example/0753132)
+- **web**: 降级 Vite v8→v7（v8 为前沿版本，plugin-react 未完全适配），
+  彻底解决 `$RefreshSig# Changelog
+
+本项目所有重要变更记录在此文件中。
+
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
+版本管理遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+
+ 问题 — [c751227](https://example/c751227)
+
+> 补丁版本，不含功能变更。
 
 ## [1.0.0] - 2026-06-16
 
