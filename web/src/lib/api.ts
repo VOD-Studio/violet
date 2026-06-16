@@ -4,9 +4,9 @@
 // token 状态统一由 zustand store 管理
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
-import { useAuthStore } from "@/store";
-import { getNavigate } from "@/lib/navigation";
 import { env } from "@/lib/env";
+import { navigate as navigateTo } from "@/lib/navigation";
+import { useAuthStore } from "@/store";
 
 /** API 基础地址（来自集中式 env 配置，缺失时启动即报错） */
 const BASE_URL = env.apiUrl;
@@ -202,9 +202,8 @@ client.interceptors.response.use(
           useAuthStore.getState().clearAuth();
         }
 
-        const navigate = getNavigate();
-        if (navigate && window.location.pathname !== "/login") {
-          navigate("/login");
+        if (window.location.pathname !== "/login") {
+          navigateTo("/login");
         }
       }
 
