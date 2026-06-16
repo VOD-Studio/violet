@@ -73,7 +73,7 @@
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@vitejs/plugin-react": "^5",
     "jsdom": "24",
     "less": "^4.6.4",
     "typescript": "~6.0.2",
