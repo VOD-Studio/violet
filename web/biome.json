@@ -20,6 +20,22 @@
       "assist": {
         "enabled": false
       }
+    },
+    {
+      "includes": ["**/components/reactbits/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          },
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          }
+        }
+      }
     }
   ],
   "formatter": {
