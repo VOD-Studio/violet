@@ -128,6 +128,15 @@ func main() {
 
 	// P2.5: announcement + project DDD 容器
 	contentContainer := app.NewContentContainer(gormDB)
+
+	// P2.4: comment DDD 容器
+	commentContainer := app.NewCommentContainer(gormDB)
+
+	// P2.3: post DDD 容器
+	postContainer := app.NewPostContainer(gormDB)
+
+	// P2.6: emoji/music/upload DDD 容器
+	mediaContainer := app.NewMediaContainer(gormDB)
 	authService := service.NewAuthService(queries, redisClient, emailService, cfg)
 	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
@@ -514,6 +523,69 @@ func main() {
 		r.Post("/", contentH.CreateProject)
 		r.Put("/{id}", contentH.UpdateProject)
 		r.Delete("/{id}", contentH.DeleteProject)
+	})
+
+	// comment DDD 影子路由
+	commentH := commentContainer.CommentHandler
+	// 前台公开（按文章列出评论 + 发表评论）
+	r.Get("/api/v1/posts/ddd/{postId}/comments", commentH.ListByPost)
+	r.Post("/api/v1/posts/ddd/{postId}/comments", commentH.Create)
+	// 后台管理（待审核列表 + 审核 + 删除）
+	r.Route("/api/v1/admin/ddd/comments", func(r chi.Router) {
+		r.Use(middleware.Auth(authService))
+		r.Use(middleware.AdminRequired)
+		r.Get("/pending", commentH.ListPending)
+		r.Patch("/{id}/approve", commentH.Approve)
+		r.Patch("/{id}/spam", commentH.MarkSpam)
+		r.Delete("/{id}", commentH.Delete)
+	})
+
+	// post DDD 影子路由
+	postH := postContainer.PostHandler
+	// 前台公开
+	r.Get("/api/v1/posts/ddd", postH.ListPublished)
+	r.Get("/api/v1/posts/ddd/{slug}", postH.GetBySlug)
+	// 后台管理
+	r.Route("/api/v1/admin/ddd/posts", func(r chi.Router) {
+		r.Use(middleware.Auth(authService))
+		r.Use(middleware.AdminRequired)
+		r.Get("/", postH.ListAll)
+		r.Post("/", postH.Create)
+		r.Put("/{id}", postH.Update)
+		r.Patch("/{id}/publish", postH.Publish)
+		r.Delete("/{id}", postH.Delete)
+	})
+
+	// media DDD 影子路由
+	mediaH := mediaContainer.MediaHandler
+	// 表情（前台公开）
+	r.Get("/api/v1/emojis/ddd", mediaH.GetAllEmojis)
+	// 表情（后台管理）
+	r.Route("/api/v1/admin/ddd/emojis", func(r chi.Router) {
+		r.Use(middleware.Auth(authService))
+		r.Use(middleware.AdminRequired)
+		r.Get("/groups", mediaH.ListAllEmojiGroups)
+		r.Post("/groups", mediaH.CreateEmojiGroup)
+		r.Patch("/groups/{id}/enabled", mediaH.SetEmojiGroupEnabled)
+		r.Delete("/groups/{id}", mediaH.DeleteEmojiGroup)
+	})
+	// 音乐（前台公开）
+	r.Get("/api/v1/music/ddd/playlists/active", mediaH.GetActivePlaylists)
+	// 音乐（后台管理）
+	r.Route("/api/v1/admin/ddd/music", func(r chi.Router) {
+		r.Use(middleware.Auth(authService))
+		r.Use(middleware.AdminRequired)
+		r.Get("/playlists", mediaH.ListAllPlaylists)
+		r.Patch("/playlists/{id}/active", mediaH.SetPlaylistActive)
+		r.Delete("/playlists/{id}", mediaH.DeletePlaylist)
+	})
+	// 文件（后台管理）
+	r.Route("/api/v1/admin/ddd/files", func(r chi.Router) {
+		r.Use(middleware.Auth(authService))
+		r.Use(middleware.AdminRequired)
+		r.Get("/", mediaH.ListFiles)
+		r.Get("/instant", mediaH.CheckInstantUpload)
+		r.Delete("/{id}", mediaH.DeleteFile)
 	})
 
 	// 静态文件服务（无版本前缀）

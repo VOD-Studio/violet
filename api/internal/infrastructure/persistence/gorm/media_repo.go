@@ -1,0 +1,348 @@
+package gorm
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"time"
+
+	"gorm.io/gorm"
+
+	"blog-api/internal/domain/emoji"
+	"blog-api/internal/domain/music"
+	domainshared "blog-api/internal/domain/shared"
+	"blog-api/internal/domain/upload"
+	"blog-api/internal/infrastructure/persistence/gorm/model"
+)
+
+// ============================================================
+// EmojiGroupRepository
+// ============================================================
+
+type EmojiGroupRepository struct{ db *gorm.DB }
+
+func NewEmojiGroupRepository(db *gorm.DB) *EmojiGroupRepository {
+	return &EmojiGroupRepository{db: db}
+}
+
+func emojiGroupToPO(g *emoji.EmojiGroup) model.EmojiGroup {
+	po := model.EmojiGroup{
+		ID: g.ID(), Name: g.Name(), Source: g.Source(),
+		SortOrder: g.SortOrder(), IsEnabled: g.IsEnabled(),
+	}
+	emojis := make([]model.Emoji, 0, len(g.Emojis()))
+	for _, e := range g.Emojis() {
+		emojis = append(emojis, model.Emoji{
+			ID: e.ID(), GroupID: g.ID(), Name: e.Name(),
+			URL: e.URL(), SourceURL: e.SourceURL(), GifURL: e.GifURL(),
+			TextContent: e.TextContent(), SortOrder: e.SortOrder(),
+		})
+	}
+	po.Emojis = emojis
+	return po
+}
+
+func emojiGroupToDomain(po model.EmojiGroup) (*emoji.EmojiGroup, error) {
+	emojis := make([]emoji.Emoji, 0, len(po.Emojis))
+	for _, e := range po.Emojis {
+		emojis = append(emojis, emoji.NewEmoji(e.ID, e.GroupID, e.Name, e.URL))
+	}
+	return emoji.ReconstructEmojiGroup(po.ID, po.Name, po.Source, po.SortOrder, po.IsEnabled, emojis), nil
+}
+
+func (r *EmojiGroupRepository) FindByID(ctx context.Context, id int32) (*emoji.EmojiGroup, error) {
+	var po model.EmojiGroup
+	if err := r.db.WithContext(ctx).Preload("Emojis").First(&po, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, emoji.ErrNotFound
+		}
+		return nil, domainshared.Internal("查询表情分组失败", err)
+	}
+	return emojiGroupToDomain(po)
+}
+
+func (r *EmojiGroupRepository) FindAll(ctx context.Context, enabledOnly bool) ([]*emoji.EmojiGroup, error) {
+	query := r.db.WithContext(ctx).Preload("Emojis", "sort_order ASC")
+	if enabledOnly {
+		query = query.Where("is_enabled = ?", true)
+	}
+	var pos []model.EmojiGroup
+	if err := query.Order("sort_order ASC, id ASC").Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询表情分组失败", err)
+	}
+	result := make([]*emoji.EmojiGroup, 0, len(pos))
+	for _, po := range pos {
+		g, _ := emojiGroupToDomain(po)
+		result = append(result, g)
+	}
+	return result, nil
+}
+
+func (r *EmojiGroupRepository) FindByName(ctx context.Context, name string) (*emoji.EmojiGroup, error) {
+	var po model.EmojiGroup
+	if err := r.db.WithContext(ctx).Preload("Emojis").Where("name = ?", name).First(&po).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, emoji.ErrNotFound
+		}
+		return nil, domainshared.Internal("查询表情分组失败", err)
+	}
+	return emojiGroupToDomain(po)
+}
+
+func (r *EmojiGroupRepository) Save(ctx context.Context, g *emoji.EmojiGroup) (int32, error) {
+	po := emojiGroupToPO(g)
+	if po.ID == 0 {
+		if err := r.db.WithContext(ctx).Create(&po).Error; err != nil {
+			return 0, domainshared.Internal("创建表情分组失败", err)
+		}
+	} else {
+		if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
+			return 0, domainshared.Internal("保存表情分组失败", err)
+		}
+	}
+	return po.ID, nil
+}
+
+func (r *EmojiGroupRepository) Delete(ctx context.Context, id int32) error {
+	result := r.db.WithContext(ctx).Delete(&model.EmojiGroup{}, id)
+	if result.Error != nil {
+		return domainshared.Internal("删除表情分组失败", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return emoji.ErrNotFound
+	}
+	return nil
+}
+
+func (r *EmojiGroupRepository) UpdateEnabled(ctx context.Context, id int32, enabled bool) error {
+	result := r.db.WithContext(ctx).Model(&model.EmojiGroup{}).Where("id = ?", id).Update("is_enabled", enabled)
+	if result.Error != nil {
+		return domainshared.Internal("更新表情分组状态失败", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return emoji.ErrNotFound
+	}
+	return nil
+}
+
+var _ emoji.EmojiGroupRepository = (*EmojiGroupRepository)(nil)
+
+// ============================================================
+// PlaylistRepository (Music)
+// ============================================================
+
+type PlaylistRepository struct{ db *gorm.DB }
+
+func NewPlaylistRepository(db *gorm.DB) *PlaylistRepository {
+	return &PlaylistRepository{db: db}
+}
+
+func playlistToPO(p *music.Playlist) (model.Playlist, error) {
+	var songsJSON []byte
+	if len(p.Songs()) > 0 {
+		songsJSON, _ = json.Marshal(p.Songs())
+	} else {
+		songsJSON = []byte("[]")
+	}
+	po := model.Playlist{
+		ID: p.ID().UUID(), Title: p.Title(), Cover: p.Cover(),
+		Creator: p.Creator(), Platform: p.Platform(),
+		PlaylistID: p.PlaylistID(), SongCount: p.SongCount(),
+		Songs: songsJSON, IsActive: p.IsActive(),
+	}
+	return po, nil
+}
+
+func playlistToDomain(po model.Playlist) (*music.Playlist, error) {
+	var songs []music.Song
+	if len(po.Songs) > 0 {
+		_ = json.Unmarshal(po.Songs, &songs)
+	}
+	return music.ReconstructPlaylist(
+		domainshared.MustParseID(po.ID.String()),
+		po.Title, po.Cover, po.Creator, po.Platform, po.PlaylistID,
+		po.SongCount, songs, po.IsActive,
+	), nil
+}
+
+func (r *PlaylistRepository) FindByID(ctx context.Context, id domainshared.ID) (*music.Playlist, error) {
+	var po model.Playlist
+	if err := r.db.WithContext(ctx).First(&po, "id = ?", id.UUID()).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, music.ErrNotFound
+		}
+		return nil, domainshared.Internal("查询歌单失败", err)
+	}
+	return playlistToDomain(po)
+}
+
+func (r *PlaylistRepository) FindActive(ctx context.Context) ([]*music.Playlist, error) {
+	var pos []model.Playlist
+	if err := r.db.WithContext(ctx).Where("is_active = ?", true).Order("created_at DESC").Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询活跃歌单失败", err)
+	}
+	result := make([]*music.Playlist, 0, len(pos))
+	for _, po := range pos {
+		p, _ := playlistToDomain(po)
+		result = append(result, p)
+	}
+	return result, nil
+}
+
+func (r *PlaylistRepository) FindAll(ctx context.Context) ([]*music.Playlist, error) {
+	var pos []model.Playlist
+	if err := r.db.WithContext(ctx).Order("created_at DESC").Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询歌单列表失败", err)
+	}
+	result := make([]*music.Playlist, 0, len(pos))
+	for _, po := range pos {
+		p, _ := playlistToDomain(po)
+		result = append(result, p)
+	}
+	return result, nil
+}
+
+func (r *PlaylistRepository) Save(ctx context.Context, p *music.Playlist) error {
+	po, err := playlistToPO(p)
+	if err != nil {
+		return err
+	}
+	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
+		return domainshared.Internal("保存歌单失败", err)
+	}
+	return nil
+}
+
+func (r *PlaylistRepository) Delete(ctx context.Context, id domainshared.ID) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id.UUID()).Delete(&model.Playlist{})
+	if result.Error != nil {
+		return domainshared.Internal("删除歌单失败", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return music.ErrNotFound
+	}
+	return nil
+}
+
+var _ music.PlaylistRepository = (*PlaylistRepository)(nil)
+
+// ============================================================
+// FileRepository (Upload)
+// ============================================================
+
+type FileRepository struct{ db *gorm.DB }
+
+func NewFileRepository(db *gorm.DB) *FileRepository {
+	return &FileRepository{db: db}
+}
+
+func fileToPO(f *upload.File) model.File {
+	po := model.File{
+		ID: f.ID().UUID(), OwnerID: f.OwnerID().UUID(), Purpose: f.Purpose(),
+		OriginalName: f.OriginalName(), Path: f.Path(), URL: f.URL(),
+		Size: f.Size(), MimeType: f.MimeType(), FileHash: f.FileHash(),
+		Width: f.Width(), Height: f.Height(), Thumbnail: f.Thumbnail(),
+		Status: f.Status(), RefCount: f.RefCount(), DeletedAt: f.DeletedAt(),
+	}
+	if c := f.CreatedAt(); !c.IsZero() {
+		po.CreatedAt = c
+		po.UpdatedAt = f.UpdatedAt()
+	} else {
+		po.CreatedAt = time.Now()
+		po.UpdatedAt = time.Now()
+	}
+	return po
+}
+
+func fileToDomain(po model.File) (*upload.File, error) {
+	return upload.ReconstructFile(
+		domainshared.MustParseID(po.ID.String()),
+		domainshared.MustParseID(po.OwnerID.String()),
+		po.Purpose, po.OriginalName, po.Path, po.URL,
+		po.Size, po.MimeType, po.FileHash,
+		po.Width, po.Height, po.Thumbnail,
+		po.Status, po.RefCount, po.DeletedAt,
+		po.CreatedAt, po.UpdatedAt,
+	), nil
+}
+
+func (r *FileRepository) FindByID(ctx context.Context, id domainshared.ID) (*upload.File, error) {
+	var po model.File
+	if err := r.db.WithContext(ctx).First(&po, "id = ?", id.UUID()).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, upload.ErrFileNotFound
+		}
+		return nil, domainshared.Internal("查询文件失败", err)
+	}
+	return fileToDomain(po)
+}
+
+func (r *FileRepository) FindByHash(ctx context.Context, hash string) (*upload.File, error) {
+	var po model.File
+	if err := r.db.WithContext(ctx).Where("file_hash = ? AND status = ?", hash, upload.StatusReady).First(&po).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, upload.ErrFileNotFound
+		}
+		return nil, domainshared.Internal("按哈希查询文件失败", err)
+	}
+	return fileToDomain(po)
+}
+
+func (r *FileRepository) FindByOwner(ctx context.Context, ownerID domainshared.ID, purpose string, page, limit int) ([]*upload.File, int64, error) {
+	query := r.db.WithContext(ctx).Model(&model.File{}).Where("owner_id = ?", ownerID.UUID())
+	if purpose != "" {
+		query = query.Where("purpose = ?", purpose)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, domainshared.Internal("统计文件失败", err)
+	}
+	var pos []model.File
+	offset := (page - 1) * limit
+	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
+		return nil, 0, domainshared.Internal("查询文件列表失败", err)
+	}
+	result := make([]*upload.File, 0, len(pos))
+	for _, po := range pos {
+		f, _ := fileToDomain(po)
+		result = append(result, f)
+	}
+	return result, total, nil
+}
+
+func (r *FileRepository) Save(ctx context.Context, f *upload.File) error {
+	po := fileToPO(f)
+	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
+		return domainshared.Internal("保存文件失败", err)
+	}
+	return nil
+}
+
+func (r *FileRepository) Delete(ctx context.Context, id domainshared.ID) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id.UUID()).Delete(&model.File{})
+	if result.Error != nil {
+		return domainshared.Internal("删除文件失败", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return upload.ErrFileNotFound
+	}
+	return nil
+}
+
+func (r *FileRepository) UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error {
+	op := "+"
+	if delta < 0 {
+		op = ""
+	}
+	result := r.db.WithContext(ctx).Model(&model.File{}).Where("id = ?", id.UUID()).
+		Update("ref_count", gorm.Expr("GREATEST(ref_count "+op+" ?, 0)", delta))
+	if result.Error != nil {
+		return domainshared.Internal("更新引用计数失败", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return upload.ErrFileNotFound
+	}
+	return nil
+}
+
+var _ upload.FileRepository = (*FileRepository)(nil)
