@@ -114,7 +114,10 @@ web-format: ## 前端代码格式化
 	cd web && npx biome format --write .
 
 web-typecheck: ## TypeScript 类型检查
-	cd web && npx tsc --noEmit
+	cd web && pnpm typecheck
+
+web-test: ## 运行前端单元测试 (Vitest)
+	cd web && pnpm test
 
 # ==================== 构建 ====================
 

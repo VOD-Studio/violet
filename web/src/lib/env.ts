@@ -22,10 +22,14 @@ function requireEnv(key: string): string {
 }
 
 /**
- * 读取可选环境变量，缺失返回 fallback
+ * 读取可选环境变量，缺失或空字符串返回 fallback
  */
 function optionalEnv(key: string, fallback = ""): string {
-  return import.meta.env[key] ?? fallback;
+  const value = import.meta.env[key];
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  return value as string;
 }
 
 /**
