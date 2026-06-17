@@ -407,6 +407,25 @@ func playlistsToDTOs(playlists []*domainmusic.Playlist) []PlaylistDTO {
 // Upload Service
 // ============================================================
 
+// 文件上传限制
+const maxFileSize = 1024 * 1024 * 1024 // 1GB
+
+// allowedUploadTypes 支持的上传文件扩展名→MIME 映射
+var allowedUploadTypes = map[string]string{
+	".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+	".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
+	".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+	".avi": "video/x-msvideo", ".mkv": "video/x-matroska",
+	".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
+	".flac": "audio/flac", ".aac": "audio/aac",
+	".pdf": "application/pdf",
+	".doc": "application/msword", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	".xls": "application/vnd.ms-excel", ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	".ppt": "application/vnd.ms-powerpoint", ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+	".zip": "application/zip", ".rar": "application/vnd.rar", ".7z": "application/x-7z-compressed",
+	".md": "text/markdown",
+}
+
 // FileDTO 文件读模型
 type FileDTO struct {
 	ID           string `json:"id"`
@@ -425,19 +444,275 @@ type FileDTO struct {
 type UploadService struct {
 	fileRepo    domainupload.FileRepository
 	sessionRepo domainupload.UploadSessionRepository
+	storage     domainupload.ChunkStorage
+	chunkDir    string
 }
 
 // NewUploadService 构造上传服务
-func NewUploadService(fileRepo domainupload.FileRepository, sessionRepo domainupload.UploadSessionRepository) *UploadService {
-	return &UploadService{fileRepo: fileRepo, sessionRepo: sessionRepo}
+func NewUploadService(fileRepo domainupload.FileRepository, sessionRepo domainupload.UploadSessionRepository, storage domainupload.ChunkStorage, chunkDir string) *UploadService {
+	return &UploadService{fileRepo: fileRepo, sessionRepo: sessionRepo, storage: storage, chunkDir: chunkDir}
 }
 
-// CheckInstantUpload 秒传检查（按哈希查找已存在文件）
+// InitSessionInput 初始化上传会话入参
+type InitSessionInput struct {
+	UserID    string
+	FileName  string
+	FileSize  int64
+	FileHash  string
+	MimeType  string
+	ChunkSize int
+	Purpose   string
+}
+
+// InitSessionResult 初始化上传会话结果
+type InitSessionResult struct {
+	Instant        bool   `json:"instant"`
+	FileID         string `json:"file_id,omitempty"`
+	URL            string `json:"url,omitempty"`
+	UploadID       string `json:"upload_id,omitempty"`
+	ChunkSize      int    `json:"chunk_size"`
+	TotalChunks    int    `json:"total_chunks"`
+	UploadedChunks []int  `json:"uploaded_chunks"`
+}
+
+// InitSession 初始化上传会话（秒传/续传/新建）
+func (s *UploadService) InitSession(ctx context.Context, in InitSessionInput) (*InitSessionResult, error) {
+	uid, err := shared.ParseID(in.UserID)
+	if err != nil {
+		return nil, err
+	}
+	ext := strings.ToLower(filepath.Ext(in.FileName))
+	if _, ok := allowedUploadTypes[ext]; !ok {
+		return nil, shared.BadRequest("不支持的文件类型")
+	}
+	if in.FileSize > maxFileSize {
+		return nil, shared.BadRequest("文件过大（上限 1GB）")
+	}
+	purpose := in.Purpose
+	if purpose == "" {
+		purpose = "material"
+	}
+
+	// 秒传检查
+	if in.FileHash != "" {
+		if f, err := s.fileRepo.FindByHash(ctx, in.FileHash); err == nil && f != nil {
+			return &InitSessionResult{Instant: true, FileID: f.ID().String(), URL: f.URL()}, nil
+		}
+	}
+
+	chunkSize := in.ChunkSize
+	if chunkSize <= 0 {
+		chunkSize = 5 * 1024 * 1024
+	}
+	totalChunks := int((in.FileSize + int64(chunkSize) - 1) / int64(chunkSize))
+	if totalChunks == 0 {
+		totalChunks = 1
+	}
+
+	// 续传恢复
+	if in.FileHash != "" {
+		if existing, err := s.sessionRepo.FindByHash(ctx, in.FileHash, uid); err == nil && existing != nil {
+			return &InitSessionResult{
+				UploadID: existing.ID().String(), ChunkSize: existing.ChunkSize(),
+				TotalChunks: existing.TotalChunks(), UploadedChunks: existing.UploadedChunks(),
+			}, nil
+		}
+	}
+
+	// 新建会话
+	mimeType := in.MimeType
+	if mimeType == "" {
+		mimeType = allowedUploadTypes[ext]
+	}
+	sid := shared.NewID()
+	tmpPath := filepath.Join(s.chunkDir, sid.String())
+	session := domainupload.ReconstructUploadSession(
+		sid, uid, in.FileName, in.FileSize, mimeType, in.FileHash,
+		purpose, chunkSize, totalChunks, []int{}, domainupload.SessionActive, tmpPath,
+		time.Now().Add(24*time.Hour), time.Time{}, time.Time{},
+	)
+	if err := s.storage.EnsureDir(tmpPath); err != nil {
+		return nil, shared.Internal("创建分片目录失败", err)
+	}
+	if err := s.sessionRepo.Save(ctx, session); err != nil {
+		_ = s.storage.CleanupDir(tmpPath)
+		return nil, err
+	}
+	return &InitSessionResult{
+		UploadID: sid.String(), ChunkSize: chunkSize,
+		TotalChunks: totalChunks, UploadedChunks: []int{},
+	}, nil
+}
+
+// SaveChunk 保存单个分片
+func (s *UploadService) SaveChunk(ctx context.Context, uploadID string, index int, data []byte) error {
+	sid, err := shared.ParseID(uploadID)
+	if err != nil {
+		return err
+	}
+	session, err := s.sessionRepo.FindByID(ctx, sid)
+	if err != nil {
+		return err
+	}
+	if session.Status() != domainupload.SessionActive {
+		return domainupload.ErrSessionNotActive
+	}
+	if index < 0 || index >= session.TotalChunks() {
+		return domainupload.ErrChunkIndexInvalid
+	}
+	if err := s.storage.SaveChunk(session.TmpPath(), index, data); err != nil {
+		return shared.Internal("保存分片失败", err)
+	}
+	return s.sessionRepo.AppendChunk(ctx, sid, index)
+}
+
+// MergeResult 合并上传结果
+type MergeResult struct {
+	FileID    string `json:"file_id"`
+	URL       string `json:"url"`
+	Thumbnail string `json:"thumbnail,omitempty"`
+	Width     int    `json:"width,omitempty"`
+	Height    int    `json:"height,omitempty"`
+}
+
+// CompleteUpload 合并所有分片为完整文件
+func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID string) (*MergeResult, error) {
+	sid, err := shared.ParseID(uploadID)
+	if err != nil {
+		return nil, err
+	}
+	uid, err := shared.ParseID(userID)
+	if err != nil {
+		return nil, err
+	}
+	session, err := s.sessionRepo.FindByID(ctx, sid)
+	if err != nil {
+		return nil, err
+	}
+	if !session.IsComplete() {
+		return nil, domainupload.ErrUploadIncomplete
+	}
+	// CAS：active → merging
+	ok, err := s.sessionRepo.UpdateStatus(ctx, sid, domainupload.SessionActive, domainupload.SessionMerging)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, domainupload.ErrSessionNotActive
+	}
+
+	// 合并分片
+	mergedPath := filepath.Join(session.TmpPath(), "merged")
+	if err := s.storage.MergeChunks(session.TmpPath(), session.TotalChunks(), mergedPath); err != nil {
+		_, _ = s.sessionRepo.UpdateStatus(ctx, sid, domainupload.SessionMerging, domainupload.SessionActive)
+		return nil, shared.Internal("合并分片失败", err)
+	}
+
+	// 最终路径
+	ext := strings.ToLower(filepath.Ext(session.FileName()))
+	fileUUID := shared.NewID()
+	finalPath, fileURL := s.storage.BuildPath(session.Purpose(), session.MimeType(), fileUUID.String(), ext)
+	if err := s.storage.EnsureDir(filepath.Dir(finalPath)); err != nil {
+		return nil, shared.Internal("创建文件目录失败", err)
+	}
+	if err := s.storage.Move(mergedPath, finalPath); err != nil {
+		return nil, shared.Internal("移动文件失败", err)
+	}
+	fileSize, err := s.storage.FileSize(finalPath)
+	if err != nil {
+		fileSize = session.FileSize()
+	}
+
+	// 缩略图 + 尺寸
+	width, height := 0, 0
+	storageDir := session.Purpose()
+	if storageDir == "material" {
+		storageDir = filepath.Join(storageDir, mimeToCategory(session.MimeType()))
+	}
+	if strings.HasPrefix(session.MimeType(), "image/") {
+		width, height = s.storage.ImageDimensions(finalPath)
+	}
+	thumbnail := s.storage.GenerateThumbnail(finalPath, fileUUID.String(), storageDir, session.MimeType())
+
+	// File 记录
+	f, err := domainupload.NewFile(fileUUID, uid, session.Purpose(), session.FileName(), finalPath, fileURL, fileSize, session.MimeType(), session.FileHash())
+	if err != nil {
+		return nil, err
+	}
+	if width > 0 {
+		f.SetDimensions(width, height)
+	}
+	if thumbnail != "" {
+		f.SetThumbnail(thumbnail)
+	}
+	if err := s.fileRepo.Save(ctx, f); err != nil {
+		return nil, err
+	}
+
+	_ = s.storage.CleanupDir(session.TmpPath())
+	_, _ = s.sessionRepo.UpdateStatus(ctx, sid, domainupload.SessionMerging, domainupload.SessionCompleted)
+
+	return &MergeResult{
+		FileID: fileUUID.String(), URL: fileURL,
+		Thumbnail: thumbnail, Width: width, Height: height,
+	}, nil
+}
+
+// CancelUpload 取消上传
+func (s *UploadService) CancelUpload(ctx context.Context, uploadID string) error {
+	sid, err := shared.ParseID(uploadID)
+	if err != nil {
+		return err
+	}
+	session, err := s.sessionRepo.FindByID(ctx, sid)
+	if err != nil {
+		return err
+	}
+	if session.Status() != domainupload.SessionActive {
+		return domainupload.ErrSessionNotActive
+	}
+	if session.TmpPath() != "" {
+		_ = s.storage.CleanupDir(session.TmpPath())
+	}
+	return s.sessionRepo.Delete(ctx, sid)
+}
+
+// GetUploadStatus 查询上传状态（断点续传）
+func (s *UploadService) GetUploadStatus(ctx context.Context, uploadID string) (*InitSessionResult, error) {
+	sid, err := shared.ParseID(uploadID)
+	if err != nil {
+		return nil, err
+	}
+	session, err := s.sessionRepo.FindByID(ctx, sid)
+	if err != nil {
+		return nil, err
+	}
+	return &InitSessionResult{
+		UploadID: session.ID().String(), ChunkSize: session.ChunkSize(),
+		TotalChunks: session.TotalChunks(), UploadedChunks: session.UploadedChunks(),
+	}, nil
+}
+
+// mimeToCategory MIME → 分类目录
+func mimeToCategory(mimeType string) string {
+	switch {
+	case strings.HasPrefix(mimeType, "image/"):
+		return "image"
+	case strings.HasPrefix(mimeType, "video/"):
+		return "video"
+	case strings.HasPrefix(mimeType, "audio/"):
+		return "audio"
+	default:
+		return "file"
+	}
+}
+
+// CheckInstantUpload 秒传检查
 func (s *UploadService) CheckInstantUpload(ctx context.Context, hash string) (*FileDTO, bool, error) {
 	f, err := s.fileRepo.FindByHash(ctx, hash)
 	if err != nil {
 		if err == domainupload.ErrFileNotFound {
-			return nil, false, nil // 无秒传文件
+			return nil, false, nil
 		}
 		return nil, false, err
 	}
@@ -476,6 +751,82 @@ func (s *UploadService) DeleteFile(ctx context.Context, id string) error {
 		return domainupload.ErrFileInUse
 	}
 	return s.fileRepo.Delete(ctx, fid)
+}
+
+// GetFile 按 ID 获取文件详情（公开，不限 owner）
+func (s *UploadService) GetFile(ctx context.Context, id string) (*FileDTO, error) {
+	fid, err := shared.ParseID(id)
+	if err != nil {
+		return nil, err
+	}
+	f, err := s.fileRepo.FindByID(ctx, fid)
+	if err != nil {
+		return nil, err
+	}
+	dto := fileToDTO(f)
+	return &dto, nil
+}
+
+// BatchDeleteFiles 批量删除文件（软删除，返回成功删除数）
+func (s *UploadService) BatchDeleteFiles(ctx context.Context, ids []string) (int, error) {
+	if len(ids) == 0 {
+		return 0, shared.BadRequest("文件 ID 列表不能为空")
+	}
+	deleted := 0
+	for _, idStr := range ids {
+		fid, err := shared.ParseID(idStr)
+		if err != nil {
+			continue
+		}
+		f, err := s.fileRepo.FindByID(ctx, fid)
+		if err != nil {
+			continue // 不存在跳过
+		}
+		if !f.CanPhysicallyDelete() {
+			continue // 被引用跳过
+		}
+		if err := s.fileRepo.Delete(ctx, fid); err == nil {
+			deleted++
+		}
+	}
+	return deleted, nil
+}
+
+// UploadThumbnailInput 上传缩略图入参
+type UploadThumbnailInput struct {
+	FileID   string
+	FileName string
+	MimeType string
+	Content  []byte
+}
+
+// UploadThumbnail 为指定文件上传缩略图，返回缩略图 URL
+func (s *UploadService) UploadThumbnail(ctx context.Context, in UploadThumbnailInput) (string, error) {
+	fid, err := shared.ParseID(in.FileID)
+	if err != nil {
+		return "", err
+	}
+	f, err := s.fileRepo.FindByID(ctx, fid)
+	if err != nil {
+		return "", err
+	}
+	// 缩略图存到文件同目录，命名 fileUUID_thumb.<ext>
+	ext := strings.ToLower(filepath.Ext(in.FileName))
+	thumbName := fid.String() + "_thumb" + ext
+	storageDir := f.Purpose()
+	thumbPath := filepath.Join("uploads", storageDir, thumbName)
+	if err := s.storage.EnsureDir(filepath.Dir(thumbPath)); err != nil {
+		return "", shared.Internal("创建缩略图目录失败", err)
+	}
+	if err := os.WriteFile(thumbPath, in.Content, 0o644); err != nil {
+		return "", shared.Internal("保存缩略图失败", err)
+	}
+	url := "/uploads/" + storageDir + "/" + thumbName
+	f.SetThumbnail(url)
+	if err := s.fileRepo.Save(ctx, f); err != nil {
+		return "", err
+	}
+	return url, nil
 }
 
 func fileToDTO(f *domainupload.File) FileDTO {

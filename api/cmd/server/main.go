@@ -141,14 +141,12 @@ func main() {
 	postContainer := app.NewPostContainer(gormDB)
 
 	// P2.6: emoji/music/upload DDD 容器
-	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis")
+	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
 	tagService := service.NewTagService(queries)
 	commentReactionService := service.NewCommentReactionService(queries)
 	settingsService := service.NewSettingsService(queries)
 	statsService := service.NewStatsService(queries)
 	userService := service.NewUserService(queries)
-	fileService := service.NewFileService(gormDB, "uploads", cfg.UploadPathPrefix)
-	uploadService := service.NewUploadService(gormDB, fileService, "uploads/tmp", "uploads", cfg.UploadPathPrefix, 1024*1024*1024)
 	musicService := service.NewMusicService()
 	musicSearchService := service.NewMusicSearchService()
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
@@ -192,8 +190,6 @@ func main() {
 	githubService := service.NewGitHubService(settingsService)
 	githubHandler := handler.NewGitHubHandler(githubService)
 	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
-	mediaHandler := handler.NewMediaHandler(fileService, "uploads")
-	uploadHandler := handler.NewUploadHandler(uploadService)
 	musicHandler := handler.NewMusicHandler(musicService, musicSearchService)
 	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
@@ -298,27 +294,27 @@ func main() {
 		// 批量获取评论反应
 		v1.Post("/comments/reactions/batch", commentReactionHandler.GetReactionsBatch)
 
-		// 媒体
+		// 媒体（DDD mediaH）
 		v1.Route("/media", func(r chi.Router) {
-			r.Get("/{id}", mediaHandler.GetMedia) // 获取媒体详情（公开）
+			r.Get("/{id}", mediaH.GetMedia) // 获取媒体详情（公开）
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator))
-				r.Get("/", mediaHandler.ListMedia)                      // 媒体列表（分页、类型筛选）
-				r.Delete("/{id}", mediaHandler.DeleteMedia)             // 删除媒体
-				r.Post("/batch-delete", mediaHandler.BatchDeleteMedia)  // 批量删除媒体
-				r.Post("/{id}/thumbnail", mediaHandler.UploadThumbnail) // 上传视频封面缩略图
+				r.Get("/", mediaH.ListFiles)                      // 媒体列表（分页、用途筛选）
+				r.Delete("/{id}", mediaH.DeleteFile)              // 删除媒体
+				r.Post("/batch-delete", mediaH.BatchDeleteMedia)  // 批量删除媒体
+				r.Post("/{id}/thumbnail", mediaH.UploadThumbnail) // 上传缩略图
 			})
 		})
 
-		// 分片上传
+		// 分片上传（DDD mediaH）
 		v1.Route("/upload", func(r chi.Router) {
 			r.Use(middleware.Auth(tokenValidator))
-			r.Post("/init", uploadHandler.InitSession)                   // 初始化上传会话（含秒传检查、断点续传恢复）
-			r.Put("/{uploadId}/chunk/{index}", uploadHandler.SaveChunk)  // 上传单个分片
-			r.Post("/{uploadId}/complete", uploadHandler.CompleteUpload) // 合并所有分片为完整文件
-			r.Delete("/{uploadId}", uploadHandler.CancelUpload)          // 取消上传，清理临时分片
-			r.Get("/{uploadId}/status", uploadHandler.GetUploadStatus)   // 查询上传状态（断点续传）
+			r.Post("/init", mediaH.InitUploadSession)                    // 初始化上传会话（秒传/续传/新建）
+			r.Put("/{uploadId}/chunk/{index}", mediaH.SaveUploadChunk)   // 上传单个分片
+			r.Post("/{uploadId}/complete", mediaH.CompleteUpload)        // 合并所有分片
+			r.Delete("/{uploadId}", mediaH.CancelUpload)                 // 取消上传
+			r.Get("/{uploadId}/status", mediaH.GetUploadStatus)          // 查询上传状态
 		})
 
 		// 音乐（公开）
@@ -457,6 +453,11 @@ func main() {
 				r.Put("/{id}", contentH.UpdateProject)  // 更新项目
 				r.Delete("/{id}", contentH.DeleteProject) // 删除项目
 			})
+
+			// 文件管理（DDD mediaH）
+			r.Get("/files", mediaH.ListFiles)             // 文件列表
+			r.Get("/files/instant", mediaH.CheckInstantUpload) // 秒传检查
+			r.Delete("/files/{id}", mediaH.DeleteFile)    // 删除文件
 		})
 	})
 
@@ -478,15 +479,6 @@ func main() {
 		r.Patch("/playlists/{id}/active", mediaH.SetPlaylistActive)
 		r.Delete("/playlists/{id}", mediaH.DeletePlaylist)
 	})
-	// 文件（后台管理）
-	r.Route("/api/v1/admin/ddd/files", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Get("/", mediaH.ListFiles)
-		r.Get("/instant", mediaH.CheckInstantUpload)
-		r.Delete("/{id}", mediaH.DeleteFile)
-	})
-
 	// 静态文件服务（无版本前缀）
 	fileServer := http.FileServer(http.Dir("./uploads"))
 	r.Get("/uploads/*", func(w http.ResponseWriter, r *http.Request) {

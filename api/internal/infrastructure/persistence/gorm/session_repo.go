@@ -82,6 +82,45 @@ func (r *UploadSessionRepository) Save(ctx context.Context, s *upload.UploadSess
 	return nil
 }
 
+// UpdateStatus CAS 更新会话状态，仅当 oldStatus 匹配时更新为 newStatus
+func (r *UploadSessionRepository) UpdateStatus(ctx context.Context, id domainshared.ID, oldStatus, newStatus string) (bool, error) {
+	result := r.db.WithContext(ctx).
+		Model(&model.UploadSession{}).
+		Where("id = ? AND status = ?", id.UUID(), model.SessionStatus(oldStatus)).
+		Update("status", model.SessionStatus(newStatus))
+	if result.Error != nil {
+		return false, domainshared.Internal("更新会话状态失败", result.Error)
+	}
+	return result.RowsAffected > 0, nil
+}
+
+// AppendChunk 追加已上传分片索引（事务内重读 + 排序写入，防并发）
+func (r *UploadSessionRepository) AppendChunk(ctx context.Context, id domainshared.ID, index int) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var po model.UploadSession
+		if err := tx.Where("id = ? AND status = ?", id.UUID(), upload.SessionActive).First(&po).Error; err != nil {
+			return err
+		}
+		// 检查是否已存在（幂等）
+		for _, v := range po.UploadedChunks {
+			if int(v) == index {
+				return nil
+			}
+		}
+		chunks := append([]int{}, po.UploadedChunks...)
+		chunks = append(chunks, index)
+		// 排序
+		for i := 1; i < len(chunks); i++ {
+			for j := i; j > 0 && chunks[j] < chunks[j-1]; j++ {
+				chunks[j], chunks[j-1] = chunks[j-1], chunks[j]
+			}
+		}
+		return tx.Model(&model.UploadSession{}).
+			Where("id = ?", id.UUID()).
+			Update("uploaded_chunks", datatypes.NewJSONSlice(chunks)).Error
+	})
+}
+
 func (r *UploadSessionRepository) Delete(ctx context.Context, id domainshared.ID) error {
 	result := r.db.WithContext(ctx).Where("id = ?", id.UUID()).Delete(&model.UploadSession{})
 	if result.Error != nil {

@@ -3,6 +3,7 @@ package media
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -389,6 +390,152 @@ func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"message": "文件已删除"})
+}
+
+// GetMedia 获取媒体详情（公开）
+func (h *Handler) GetMedia(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	dto, err := h.uploadSvc.GetFile(r.Context(), id)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+}
+
+// BatchDeleteMedia 批量删除媒体
+func (h *Handler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IDs []string `json:"ids" validate:"required,min=1"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	deleted, err := h.uploadSvc.BatchDeleteFiles(r.Context(), req.IDs)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "批量删除完成", "deleted": deleted})
+}
+
+// UploadThumbnail 上传缩略图
+func (h *Handler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	defer file.Close()
+	content := make([]byte, header.Size)
+	if _, err := file.Read(content); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	url, err := h.uploadSvc.UploadThumbnail(r.Context(), appmedia.UploadThumbnailInput{
+		FileID: id, FileName: header.Filename,
+		MimeType: header.Header.Get("Content-Type"), Content: content,
+	})
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": map[string]any{"thumbnail": url}})
+}
+
+// ============================================================
+// 分片上传（Chunked Upload）
+// ============================================================
+
+// InitUploadSession 初始化上传会话（含秒传检查、断点续传恢复）
+func (h *Handler) InitUploadSession(w http.ResponseWriter, r *http.Request) {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	var req struct {
+		FileName  string `json:"fileName" validate:"required"`
+		FileSize  int64  `json:"fileSize" validate:"required"`
+		FileHash  string `json:"fileHash"`
+		MimeType  string `json:"mimeType"`
+		ChunkSize int    `json:"chunkSize"`
+		Purpose   string `json:"purpose"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	result, err := h.uploadSvc.InitSession(r.Context(), appmedia.InitSessionInput{
+		UserID: userID, FileName: req.FileName, FileSize: req.FileSize,
+		FileHash: req.FileHash, MimeType: req.MimeType,
+		ChunkSize: req.ChunkSize, Purpose: req.Purpose,
+	})
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": result})
+}
+
+// SaveUploadChunk 上传单个分片
+func (h *Handler) SaveUploadChunk(w http.ResponseWriter, r *http.Request) {
+	uploadID := r.PathValue("uploadId")
+	index, err := strconv.Atoi(r.PathValue("index"))
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.uploadSvc.SaveChunk(r.Context(), uploadID, index, data); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "分片已保存"})
+}
+
+// CompleteUpload 合并所有分片为完整文件
+func (h *Handler) CompleteUpload(w http.ResponseWriter, r *http.Request) {
+	uploadID := r.PathValue("uploadId")
+	userID := interfacesmw.GetUserIDFromContext(r)
+	result, err := h.uploadSvc.CompleteUpload(r.Context(), uploadID, userID)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": result})
+}
+
+// CancelUpload 取消上传，清理临时分片
+func (h *Handler) CancelUpload(w http.ResponseWriter, r *http.Request) {
+	uploadID := r.PathValue("uploadId")
+	if err := h.uploadSvc.CancelUpload(r.Context(), uploadID); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "上传已取消"})
+}
+
+// GetUploadStatus 查询上传状态（断点续传）
+func (h *Handler) GetUploadStatus(w http.ResponseWriter, r *http.Request) {
+	uploadID := r.PathValue("uploadId")
+	result, err := h.uploadSvc.GetUploadStatus(r.Context(), uploadID)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": result})
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {
