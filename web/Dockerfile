@@ -17,7 +17,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # 先拷贝 lockfile 利用 Docker 缓存
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # 安装依赖（frozen-lockfile 保证可复现）
 RUN pnpm install --frozen-lockfile
