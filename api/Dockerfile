@@ -30,9 +30,13 @@ WORKDIR /app
 # 安装 wget 与健康检查所需依赖
 RUN apk add --no-cache ca-certificates wget
 
-# 复制构建产物
-COPY --from=builder /server /server
-# 复制数据库迁移文件（main.go 使用相对路径 "migrations" 加载）
-COPY --from=builder /app/migrations ./migrations
+# 创建非 root 用户（与 distroless nonroot 一致的 UID/GID）
+RUN addgroup -g 65532 -S appgroup && adduser -u 65532 -S appuser -G appgroup
+
+# 复制构建产物与迁移文件，并设置所有权
+COPY --from=builder --chown=appuser:appgroup /server /server
+COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
+
+USER appuser:appgroup
 
 ENTRYPOINT ["/server"]

@@ -56,9 +56,8 @@ services:
       dockerfile: Dockerfile
     container_name: blog-api
     restart: always
-    # distroless 镜像默认 nonroot 用户无法读取宿主编码挂载的 JWT 密钥，
-    # 暂以 root 运行以保证密钥可读；后续可改为初始化时 chown 65532:65532
-    user: "0:0"
+    # API Dockerfile 创建 UID/GID 65532 的非 root 用户，
+    # 密钥由 scripts/init-production.sh 设为 65532:65532 或 chmod 644 可读
     # 端口不对外暴露，通过 web 容器反向代理
     expose:
       - "8080"
