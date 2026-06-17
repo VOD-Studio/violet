@@ -96,7 +96,7 @@ func main() {
 	// 记录警告但不致命退出，保证服务能启动。
 	if err := gormDB.AutoMigrate(
 		&newmodel.User{}, &newmodel.Role{}, &newmodel.Permission{}, &newmodel.RolePermission{},
-		&newmodel.Post{}, &newmodel.Tag{},
+		&newmodel.Post{}, &newmodel.PostView{}, &newmodel.Tag{},
 		&newmodel.Comment{}, &newmodel.CommentReaction{},
 		&newmodel.Announcement{}, &newmodel.Project{},
 		&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
@@ -142,7 +142,6 @@ func main() {
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB)
-	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
 	commentReactionService := service.NewCommentReactionService(queries)
 	settingsService := service.NewSettingsService(queries)
@@ -188,8 +187,6 @@ func main() {
 
 	// --- 处理器初始化 ---
 	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
-
-	postHandler := handler.NewPostHandler(postService, tagService)
 	tagHandler := handler.NewTagHandler(tagService)
 	adminHandler := handler.NewAdminHandler(statsService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
@@ -253,19 +250,12 @@ func main() {
 			})
 		})
 
-		// 文章
+		// 文章（DDD postH；前台公开 List/详情/浏览）
+		postH := postContainer.PostHandler
 		v1.Route("/posts", func(r chi.Router) {
-			r.Get("/", postHandler.List)                    // 文章列表（分页）
-			r.Get("/{id}", postHandler.GetByID)             // 按 ID 或 slug 获取文章（统一端点）
-			r.Post("/{id}/view", postHandler.IncrementView) // 增加浏览次数
-
-			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(tokenValidator))
-				r.Post("/", postHandler.Create)                   // 创建文章
-				r.Put("/{id}", postHandler.Update)                // 更新文章
-				r.Delete("/{id}", postHandler.Delete)             // 删除文章
-				r.Patch("/{id}/status", postHandler.UpdateStatus) // 更新文章状态（发布/草稿）
-			})
+			r.Get("/", postH.ListPublished)              // 已发布文章列表（分页）
+			r.Get("/{slug}", postH.GetBySlug)            // 按 slug 获取文章
+			r.Post("/{id}/view", postH.IncrementView)    // 增加浏览次数
 		})
 
 		// 标签
@@ -419,6 +409,14 @@ func main() {
 			r.Get("/comments/{id}", commentH.GetDetail)                   // 评论详情
 			r.Patch("/comments/batch-status", commentH.BatchUpdateStatus) // 批量更新评论状态
 
+			// 文章管理（DDD postH）
+			r.Get("/posts", postH.ListAll)                       // 所有文章列表
+			r.Get("/posts/{id}", postH.GetByID)                  // 文章详情
+			r.Post("/posts", postH.Create)                       // 创建文章
+			r.Put("/posts/{id}", postH.Update)                   // 更新文章
+			r.Patch("/posts/{id}/status", postH.UpdateStatus)    // 更新文章状态
+			r.Delete("/posts/{id}", postH.Delete)                // 删除文章
+
 			// 音乐管理
 			r.Route("/music", func(r chi.Router) {
 				r.Route("/playlists", func(r chi.Router) {
@@ -463,25 +461,9 @@ func main() {
 	// ============================================================
 	// P2.7/P2.8: 已迁移至官方路径的 DDD 模块
 	//   - P2.7: auth/role/permission/announcement
-	//   - P2.8: project
+	//   - P2.8: project/comment/post
 	// 下方仅保留尚未迁移模块的 shadow 路由
 	// ============================================================
-
-	// post DDD 影子路由
-	postH := postContainer.PostHandler
-	// 前台公开
-	r.Get("/api/v1/posts/ddd", postH.ListPublished)
-	r.Get("/api/v1/posts/ddd/{slug}", postH.GetBySlug)
-	// 后台管理
-	r.Route("/api/v1/admin/ddd/posts", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Get("/", postH.ListAll)
-		r.Post("/", postH.Create)
-		r.Put("/{id}", postH.Update)
-		r.Patch("/{id}/publish", postH.Publish)
-		r.Delete("/{id}", postH.Delete)
-	})
 
 	// media DDD 影子路由
 	mediaH := mediaContainer.MediaHandler

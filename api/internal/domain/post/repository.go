@@ -15,6 +15,8 @@ type PostRepository interface {
 	ExistsBySlug(ctx context.Context, slug string) (bool, error)
 	Save(ctx context.Context, p *Post) error
 	Delete(ctx context.Context, id shared.ID) error
+	// RecordView 记录浏览事件（写 post_views 表，供 admin 趋势统计）
+	RecordView(ctx context.Context, postID shared.ID, ipAddress, userAgent string) error
 }
 
 // 领域错误
