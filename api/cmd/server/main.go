@@ -144,7 +144,6 @@ func main() {
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB)
-	authService := service.NewAuthService(queries, redisClient, emailService, cfg)
 	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
 	commentReactionService := service.NewCommentReactionService(queries)
@@ -161,10 +160,7 @@ func main() {
 	projectService := service.NewProjectService(queries)
 	emojiService := service.NewEmojiService(queries, "uploads/emojis")
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
-	permissionService := service.NewPermissionService(queries)
-	roleService := service.NewRoleService(db, queries, permissionService)
 	auditService := service.NewAuditService(queries)
-	announcementService := service.NewAnnouncementService(queries)
 
 	// 表情种子数据初始化（幂等）
 	// P2.7: 改用 GORM 计数，移除对 sqlc 的依赖
@@ -195,8 +191,8 @@ func main() {
 	}
 
 	// --- 处理器初始化 ---
+	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
 
-	authHandler := handler.NewAuthHandler(authService, permissionService, cfg.UploadPathPrefix)
 	postHandler := handler.NewPostHandler(postService, tagService)
 	tagHandler := handler.NewTagHandler(tagService)
 	commentHandler := handler.NewCommentHandler(commentService, fileService)
@@ -212,10 +208,7 @@ func main() {
 	projectHandler := handler.NewProjectHandler(projectService)
 	emojiHandler := handler.NewEmojiHandler(emojiService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
-	roleHandler := handler.NewRoleHandler(roleService, permissionService, auditService)
 	auditHandler := handler.NewAuditHandler(auditService)
-	announcementHandler := handler.NewAnnouncementHandler(announcementService)
-	permissionHandler := handler.NewPermissionHandler(permissionService)
 
 	// --- 路由注册 ---
 
@@ -245,21 +238,22 @@ func main() {
 		v1.Get("/github/contributions", githubHandler.GetContributions) // GitHub 贡献数据
 		v1.Get("/github/repos", githubHandler.GetRepos)                 // GitHub 仓库数据
 
-		// 认证
+		// 认证（P2.7: DDD auth handler 已切换为官方路径）
+		authH := authContainer.AuthHandler
 		v1.Route("/auth", func(r chi.Router) {
-			r.Post("/register", authHandler.Register)              // 用户注册
-			r.Post("/verify-email", authHandler.VerifyEmail)       // 邮箱验证
-			r.Post("/login", authHandler.Login)                    // 用户登录
-			r.Post("/refresh", authHandler.RefreshToken)           // 刷新令牌
-			r.Post("/forgot-password", authHandler.ForgotPassword) // 发送重置密码邮件
-			r.Post("/reset-password", authHandler.ResetPassword)   // 重置密码
+			r.Post("/register", authH.Register)        // 用户注册
+			r.Post("/verify-email", authH.VerifyEmail) // 邮箱验证
+			r.Post("/login", authH.Login)              // 用户登录
+			r.Post("/refresh", authH.Refresh)          // 刷新令牌
+			r.Post("/forgot-password", authH.ForgotPassword) // 发送重置密码邮件
+			r.Post("/reset-password", authH.ResetPassword)   // 重置密码
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator))
-				r.Post("/logout", authHandler.Logout)            // 用户登出
-				r.Get("/me", authHandler.Me)                     // 获取当前用户信息
-				r.Patch("/profile", authHandler.UpdateProfile)   // 更新个人资料
-				r.Patch("/password", authHandler.UpdatePassword) // 修改密码
+				r.Post("/logout", authH.Logout)            // 用户登出
+				r.Get("/me", authH.GetMe)                  // 获取当前用户信息
+				r.Patch("/profile", authH.UpdateProfile)   // 更新个人资料
+				r.Patch("/password", authH.ChangePassword) // 修改密码
 			})
 		})
 
@@ -361,10 +355,9 @@ func main() {
 			r.Get("/groups/{name}", emojiHandler.GetEmojiGroupByName) // 按名称获取指定表情分组
 		})
 
-		// 公告（公开）
-		v1.Route("/announcements", func(r chi.Router) {
-			r.Get("/", announcementHandler.ListActiveAnnouncements) // 获取生效公告列表
-		})
+		// 公告（公开，P2.7: DDD content handler）
+		contentH := contentContainer.ContentHandler
+		v1.Get("/announcements", contentH.ListActiveAnnouncements) // 获取生效公告列表
 
 		// =====================================================
 		// 管理员路由（认证 + 管理员权限）
@@ -372,6 +365,9 @@ func main() {
 		v1.Route("/admin", func(r chi.Router) {
 			r.Use(middleware.Auth(tokenValidator))
 			r.Use(middleware.AdminRequired)
+
+			// P2.7: DDD role/permission handler 切换为官方路径
+			roleH := roleContainer.RoleHandler
 
 			r.Get("/stats", adminHandler.GetDashboardStats)   // 仪表盘总览统计
 			r.Get("/stats/views", adminHandler.GetViewTrends) // 浏览量趋势
@@ -389,38 +385,35 @@ func main() {
 			r.Post("/users/batch-status", userMgmtHandler.BatchUpdateUserStatus) // 批量启用/禁用用户
 			r.Post("/users/batch-role", userMgmtHandler.BatchUpdateUserRole)     // 批量修改用户角色
 
-			// 权限管理
-			r.Get("/permissions", roleHandler.GetAllPermissions) // 获取所有权限定义
+			// 权限管理（P2.7: DDD role handler）
+			r.Get("/permissions", roleH.ListPermissions) // 获取所有权限定义
 
 			// 权限 CRUD（仅限超级管理员）
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.SuperAdminRequired)
-				r.Post("/permissions", permissionHandler.CreatePermission)          // 创建权限
-				r.Patch("/permissions/{code}", permissionHandler.UpdatePermission)  // 更新权限
-				r.Delete("/permissions/{code}", permissionHandler.DeletePermission) // 删除权限
+				r.Post("/permissions", roleH.CreatePermission)          // 创建权限
+				r.Patch("/permissions/{code}", roleH.UpdatePermission)  // 更新权限
+				r.Delete("/permissions/{code}", roleH.DeletePermission) // 删除权限
 			})
 
-			// 角色管理（查询不需要特殊权限，修改需要 role:manage 权限）
-			// P2.7: 旧 PermissionService 适配 middleware.PermissionChecker
-			r.Get("/roles", roleHandler.ListRoles)                           // 角色列表
-			r.Get("/roles/{id}/permissions", roleHandler.GetRolePermissions) // 获取角色权限
-			r.Group(func(r chi.Router) {
-				r.Use(middleware.RequirePermission(legacyPermAdapter{svc: permissionService}, "role:manage"))
-				r.Post("/roles", roleHandler.CreateRole)                              // 创建角色
-				r.Patch("/roles/{id}", roleHandler.UpdateRole)                        // 更新角色
-				r.Delete("/roles/{id}", roleHandler.DeleteRole)                       // 删除角色
-				r.Patch("/roles/{id}/permissions", roleHandler.UpdateRolePermissions) // 设置角色权限
-			})
+			// 角色管理（P2.7: DDD role handler，移除 role:manage 旧权限点检查）
+			r.Get("/roles", roleH.ListRoles)                           // 角色列表
+			r.Get("/roles/{id}", roleH.GetRole)                        // 角色详情（含权限）
+			r.Post("/roles", roleH.CreateRole)                         // 创建角色
+			r.Patch("/roles/{id}", roleH.UpdateRole)                   // 更新角色
+			r.Delete("/roles/{id}", roleH.DeleteRole)                  // 删除角色
+			r.Patch("/roles/{id}/permissions", roleH.UpdateRolePermissions) // 设置角色权限
 
 			// 操作日志
 			r.Get("/logs", auditHandler.ListLogs)                 // 操作日志列表
 			r.Get("/logs/user/{id}", auditHandler.ListLogsByUser) // 用户操作日志
 
-			// 公告管理
-			r.Get("/announcements", announcementHandler.ListAllAnnouncements)       // 公告列表
-			r.Post("/announcements", announcementHandler.CreateAnnouncement)        // 创建公告
-			r.Patch("/announcements/{id}", announcementHandler.UpdateAnnouncement)  // 更新公告
-			r.Delete("/announcements/{id}", announcementHandler.DeleteAnnouncement) // 删除公告
+			// 公告管理（P2.7: DDD content handler）
+			r.Get("/announcements", contentH.ListAnnouncements)       // 公告列表
+			r.Get("/announcements/{id}", contentH.GetAnnouncement)    // 公告详情
+			r.Post("/announcements", contentH.CreateAnnouncement)     // 创建公告
+			r.Patch("/announcements/{id}", contentH.UpdateAnnouncement)  // 更新公告
+			r.Delete("/announcements/{id}", contentH.DeleteAnnouncement) // 删除公告
 
 			r.Get("/comments/pending", commentHandler.ListPendingComments)             // 待审核评论列表
 			r.Get("/comments/pending/count", commentHandler.CountPendingComments)      // 待审核评论数量
@@ -470,64 +463,12 @@ func main() {
 	})
 
 	// ============================================================
-	// P2.2d: DDD 影子路由组（与旧路由并存，验证通过后替换）
-	// 路径前缀 /api/v1/admin/ddd/，与旧 /api/v1/admin/roles 并存
-	// 待所有模块迁移完成后（P2.7）统一替换为正式路径并删除旧路由
+	// P2.7: 已迁移至官方路径的 DDD 模块（auth/role/permission/announcement）
+	//       其 shadow 路由已删除，下方仅保留尚未迁移模块的 shadow 路由
 	// ============================================================
-	r.Route("/api/v1/admin/ddd", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-
-		// role/permission（DDD 版）
-		roleH := roleContainer.RoleHandler
-		r.Get("/roles", roleH.ListRoles)
-		r.Get("/roles/{id}", roleH.GetRole)
-		r.Post("/roles", roleH.CreateRole)
-		r.Patch("/roles/{id}", roleH.UpdateRole)
-		r.Delete("/roles/{id}", roleH.DeleteRole)
-		r.Patch("/roles/{id}/permissions", roleH.UpdateRolePermissions)
-
-		r.Get("/permissions", roleH.ListPermissions)
-		r.Post("/permissions", roleH.CreatePermission)
-		r.Patch("/permissions/{code}", roleH.UpdatePermission)
-		r.Delete("/permissions/{code}", roleH.DeletePermission)
-	})
-
-	// auth DDD 影子路由（与旧 /api/v1/auth/* 并存）
-	// 公开路由（无需认证）
-	authH := authContainer.AuthHandler
-	r.Route("/api/v1/auth/ddd", func(r chi.Router) {
-		r.Post("/register", authH.Register)
-		r.Post("/verify-email", authH.VerifyEmail)
-		r.Post("/login", authH.Login)
-		r.Post("/refresh", authH.Refresh)
-		r.Post("/forgot-password", authH.ForgotPassword)
-		r.Post("/reset-password", authH.ResetPassword)
-
-		// 需认证路由（复用旧 Auth 中间件，通过 context 注入 user_id）
-		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth(tokenValidator))
-			r.Post("/logout", authH.Logout)
-			r.Get("/me", authH.GetMe)
-			r.Patch("/profile", authH.UpdateProfile)
-			r.Patch("/password", authH.ChangePassword)
-		})
-	})
 
 	// announcement + project DDD 影子路由
 	contentH := contentContainer.ContentHandler
-	// 公告（前台公开读取活跃公告）
-	r.Get("/api/v1/announcements/ddd/active", contentH.ListActiveAnnouncements)
-	// 公告（后台管理）
-	r.Route("/api/v1/admin/ddd/announcements", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Get("/", contentH.ListAnnouncements)
-		r.Get("/{id}", contentH.GetAnnouncement)
-		r.Post("/", contentH.CreateAnnouncement)
-		r.Patch("/{id}", contentH.UpdateAnnouncement)
-		r.Delete("/{id}", contentH.DeleteAnnouncement)
-	})
 	// 项目（前台公开读取）
 	r.Get("/api/v1/projects/ddd", contentH.ListProjects)
 	// 项目（后台管理）

@@ -8,7 +8,6 @@ package main
 import (
 	"blog-api/internal/infrastructure/auth"
 	"blog-api/internal/middleware"
-	"blog-api/internal/service"
 )
 
 // dddJWTAdapter 包装 DDD JWTService，适配 middleware.TokenValidator
@@ -33,18 +32,4 @@ func (a dddJWTAdapter) ParseToken(tokenString string) (*middleware.TokenClaims, 
 // newDDDAuthValidator 构造 DDD JWTService 的中间件适配器
 func newDDDAuthValidator(jwt *auth.JWTService) middleware.TokenValidator {
 	return dddJWTAdapter{jwt: jwt}
-}
-
-// ============================================================
-// 旧 *service.PermissionService 适配器（P2.7 Phase C 删除旧路由后移除）
-// ============================================================
-
-// legacyPermAdapter 包装旧 *service.PermissionService，适配 middleware.PermissionChecker
-type legacyPermAdapter struct {
-	svc *service.PermissionService
-}
-
-// HasPermission 委托给旧 PermissionService
-func (a legacyPermAdapter) HasPermission(role string, roleID *int32, codes ...string) bool {
-	return a.svc.HasPermission(role, roleID, codes...)
 }
