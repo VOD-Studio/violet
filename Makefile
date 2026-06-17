@@ -6,6 +6,7 @@
         api api-build api-test api-lint sqlc wire \
         web web-build web-preview web-lint web-format web-typecheck \
         build docker-build docker-up \
+        deploy-prod-init deploy-prod deploy-prod-down \
         clean install update \
         status log \
         env setup generate-jwt-keys generate-production-keys \
@@ -129,6 +130,15 @@ docker-build: ## 构建 Docker 镜像
 
 docker-up: ## Docker 生产模式启动
 	docker compose -f docker-compose.yml up -d --build
+
+deploy-prod-init: ## 生产环境首次初始化（生成密钥、检查 .env）
+	@./scripts/init-production.sh
+
+deploy-prod: deploy-prod-init ## 构建并启动生产环境容器
+	@docker compose --env-file api/.env -f docker-compose.prod.yml up -d --build
+
+deploy-prod-down: ## 停止生产环境容器
+	@docker compose --env-file api/.env -f docker-compose.prod.yml down
 
 # ==================== 工具 ====================
 
