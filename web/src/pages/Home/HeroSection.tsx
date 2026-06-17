@@ -1,10 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
-import Aurora from "@/components/reactbits/backgrounds/Aurora";
+import { lazy, Suspense } from "react";
 import DecryptedText from "@/components/reactbits/text-animations/DecryptedText";
 import GradientText from "@/components/reactbits/text-animations/GradientText";
 import { Button } from "@/components/ui/button";
+
+// Aurora 依赖 ogl (WebGL)，SSR 无法渲染，懒加载到客户端
+const Aurora = lazy(() => import("@/components/reactbits/backgrounds/Aurora"));
 
 /**
  * 首页 Hero 区
@@ -14,13 +17,15 @@ import { Button } from "@/components/ui/button";
 export function HeroSection() {
   return (
     <section className="relative flex min-h-[90vh] flex-col items-center justify-center gap-8 overflow-hidden px-4 text-center">
-      {/* ReactBits Aurora 极光背景 */}
+      {/* ReactBits Aurora 极光背景（客户端懒加载，SSR 时渲染占位） */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <Aurora
-          colorStops={["#5227FF", "#7CFF67", "#5227FF"]}
-          amplitude={1.0}
-          blend={0.5}
-        />
+        <Suspense fallback={null}>
+          <Aurora
+            colorStops={["#5227FF", "#7CFF67", "#5227FF"]}
+            amplitude={1.0}
+            blend={0.5}
+          />
+        </Suspense>
       </div>
 
       {/* ReactBits GradientText 流动渐变标题 */}

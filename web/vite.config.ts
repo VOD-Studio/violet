@@ -6,7 +6,6 @@
 //
 // 注：Vitest 配置在独立的 vitest.config.ts（mergeConfig 合并本文件）。
 import { resolve } from "node:path";
-import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -24,13 +23,9 @@ export default defineConfig({
     },
   },
   plugins: [
-    // TanStack Router 文件路由代码生成 —— 必须放在最前
-    tanstackRouter({
-      target: "react",
-      autoCodeSplitting: true,
-    }),
     tailwindcss(),
-    // TanStack Start SSR 插件：接管服务端渲染、hydration、入口
+    // TanStack Start：内部已包含 router 文件路由代码生成 + autoCodeSplitting + SSR
+    // 不再单独加 tanstackRouter()（会与 Start 的代码生成冲突，导致 TSRSplitComponent 未定义）
     tanstackStart({
       srcDirectory: "src",
     }),
@@ -39,3 +34,4 @@ export default defineConfig({
     nitro(),
   ],
 });
+
