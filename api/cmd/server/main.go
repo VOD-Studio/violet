@@ -27,7 +27,6 @@ import (
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
 	"blog-api/internal/model"
-	"blog-api/internal/repository"
 	"blog-api/internal/repository/generated"
 	"blog-api/internal/service"
 )
@@ -117,8 +116,7 @@ func main() {
 
 	// --- 服务层初始化 ---
 
-	// 评论使用 GORM repository
-	commentRepo := repository.NewCommentRepository(gormDB)
+	// 评论 repository 已迁移至 DDD commentContainer
 
 	emailService := service.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom)
 
@@ -148,7 +146,6 @@ func main() {
 	tagService := service.NewTagService(queries)
 	commentReactionService := service.NewCommentReactionService(queries)
 	settingsService := service.NewSettingsService(queries)
-	commentService := service.NewCommentService(commentRepo, queries, commentReactionService, settingsService)
 	statsService := service.NewStatsService(queries)
 	userService := service.NewUserService(queries)
 	fileService := service.NewFileService(gormDB, "uploads", cfg.UploadPathPrefix)
@@ -194,7 +191,6 @@ func main() {
 
 	postHandler := handler.NewPostHandler(postService, tagService)
 	tagHandler := handler.NewTagHandler(tagService)
-	commentHandler := handler.NewCommentHandler(commentService, fileService)
 	adminHandler := handler.NewAdminHandler(statsService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
 	githubService := service.NewGitHubService(settingsService)
@@ -283,18 +279,21 @@ func main() {
 			})
 		})
 
-		// 评论
-		v1.Route("/posts/{id}/comments", func(r chi.Router) {
-			r.Get("/", commentHandler.ListApprovedComments)                                          // 获取文章已审核评论
-			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentHandler.CreateComment) // 提交评论（限流）
+		// 评论（DDD commentH；评论反应仍用旧 commentReactionHandler）
+		commentH := commentContainer.CommentHandler
+		v1.Route("/posts/{postId}/comments", func(r chi.Router) {
+			r.Get("/", commentH.ListByPost)                                          // 获取文章已审核评论
+			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentH.Create) // 提交评论（限流）
 		})
 
+		// 评论审核/删除（DDD commentH，admin 权限）
 		v1.Route("/comments/{id}", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator))
 				r.Use(middleware.AdminRequired)
-				r.Patch("/status", commentHandler.UpdateCommentStatus) // 审核评论（通过/拒绝）
-				r.Delete("/", commentHandler.DeleteComment)            // 删除评论
+				r.Patch("/approve", commentH.Approve) // 审核通过
+				r.Patch("/spam", commentH.MarkSpam)   // 标记垃圾
+				r.Delete("/", commentH.Delete)        // 删除评论
 			})
 		})
 
@@ -414,11 +413,11 @@ func main() {
 			r.Patch("/announcements/{id}", contentH.UpdateAnnouncement)  // 更新公告
 			r.Delete("/announcements/{id}", contentH.DeleteAnnouncement) // 删除公告
 
-			r.Get("/comments/pending", commentHandler.ListPendingComments)             // 待审核评论列表
-			r.Get("/comments/pending/count", commentHandler.CountPendingComments)      // 待审核评论数量
-			r.Get("/comments", commentHandler.ListAllComments)                         // 所有评论列表（支持状态筛选）
-			r.Get("/comments/{id}", commentHandler.GetCommentDetail)                   // 评论详情
-			r.Patch("/comments/batch-status", commentHandler.BatchUpdateCommentStatus) // 批量更新评论状态
+			r.Get("/comments/pending", commentH.ListPending)             // 待审核评论列表
+			r.Get("/comments/pending/count", commentH.CountPending)      // 待审核评论数量
+			r.Get("/comments", commentH.ListAll)                          // 所有评论列表（支持状态筛选）
+			r.Get("/comments/{id}", commentH.GetDetail)                   // 评论详情
+			r.Patch("/comments/batch-status", commentH.BatchUpdateStatus) // 批量更新评论状态
 
 			// 音乐管理
 			r.Route("/music", func(r chi.Router) {
@@ -467,21 +466,6 @@ func main() {
 	//   - P2.8: project
 	// 下方仅保留尚未迁移模块的 shadow 路由
 	// ============================================================
-
-	// comment DDD 影子路由
-	commentH := commentContainer.CommentHandler
-	// 前台公开（按文章列出评论 + 发表评论）
-	r.Get("/api/v1/posts/ddd/{postId}/comments", commentH.ListByPost)
-	r.Post("/api/v1/posts/ddd/{postId}/comments", commentH.Create)
-	// 后台管理（待审核列表 + 审核 + 删除）
-	r.Route("/api/v1/admin/ddd/comments", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Get("/pending", commentH.ListPending)
-		r.Patch("/{id}/approve", commentH.Approve)
-		r.Patch("/{id}/spam", commentH.MarkSpam)
-		r.Delete("/{id}", commentH.Delete)
-	})
 
 	// post DDD 影子路由
 	postH := postContainer.PostHandler
