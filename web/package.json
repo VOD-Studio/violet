@@ -4,8 +4,9 @@
   "version": "2.0.0-dev",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "vite dev",
+    "build": "vite build && tsc --noEmit",
+    "start": "node .output/server/index.mjs",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -13,6 +14,9 @@
     "lint:fix": "biome check . --write",
     "format": "biome format . --write",
     "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   },
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.20.0",
@@ -26,6 +30,8 @@
     "@tanstack/react-query": "^5.100.6",
     "@tanstack/react-query-devtools": "^5.100.6",
     "@tanstack/react-router": "^1.170.15",
+    "@tanstack/react-router-ssr-query": "^1.167.1",
+    "@tanstack/react-start": "^1.168.26",
     "@tanstack/router-devtools": "^1.167.0",
     "@tanstack/router-plugin": "^1.168.18",
     "@tanstack/zod-form-adapter": "^0.42.1",
@@ -81,6 +87,7 @@
     "@vitejs/plugin-react": "^5",
     "jsdom": "24",
     "less": "^4.6.4",
+    "nitro": "3.0.260610-beta",
     "typescript": "~6.0.2",
     "vite": "^7.3.5",
     "vitest": "^2"
