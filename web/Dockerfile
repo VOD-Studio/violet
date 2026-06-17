@@ -14,6 +14,9 @@ FROM node:22-alpine AS builder
 # 安装 pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# 无 TTY 环境下让 pnpm 自动确认（如 lockfile 变化时需要清理 node_modules）
+ENV CI=true
+
 WORKDIR /app
 
 # 先拷贝 lockfile 利用 Docker 缓存
