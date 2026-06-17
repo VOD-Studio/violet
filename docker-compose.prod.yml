@@ -65,16 +65,22 @@ services:
       # 覆盖数据库和 Redis 连接为内部网络地址
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-blog}?sslmode=disable
       REDIS_URL: redis://redis:6379/0
+      # JWT 密钥路径
+      JWT_PRIVATE_KEY_PATH: /secrets/jwt_private_key.pem
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public_key.pem
     volumes:
       # 持久化上传文件
       - uploads_data:/app/uploads
+      # JWT 密钥（只读挂载）
+      - ./secrets/jwt_private_key.pem:/secrets/jwt_private_key.pem:ro
+      - ./secrets/jwt_public_key.pem:/secrets/jwt_public_key.pem:ro
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -82,28 +88,51 @@ services:
     networks:
       - backend
 
-  # Nginx 反向代理
-  nginx:
-    image: nginx:alpine
-    container_name: blog-nginx
+  # 前端生产服务（Nginx 托管静态资源 + 反向代理 API）
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: blog-web
     restart: always
     ports:
       - "80:80"
       # - "443:443"  # HTTPS 端口（需要配置 SSL 证书）
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      # SSL 证书（生产环境需要配置）
-      # - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
     networks:
       - backend
+
+  # # Nginx 反向代理（已停用：现在由 web 服务直接暴露 80 端口）
+  # # 保留作为备份/参考配置，见 ./nginx/nginx.conf 顶部注释
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: blog-nginx
+  #   restart: always
+  #   ports:
+  #     # - "80:80"  # web 服务已占用 80 端口
+  #     # - "443:443"  # HTTPS 端口（需要配置 SSL 证书）
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  #     # SSL 证书（生产环境需要配置）
+  #     # - ./nginx/ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     api:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   networks:
+  #     - backend
 
 volumes:
   postgres_data:
