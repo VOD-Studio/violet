@@ -10,14 +10,16 @@ import {
   HeadContent,
   Outlet,
   Scripts,
+  useRouter,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools as RouterDevtools } from "@tanstack/router-devtools";
 import { ThemeProvider } from "next-themes";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import QueryProvider from "@/components/providers/QueryProvider";
 import { SettingsProvider } from "@/components/shared/SettingsProvider";
 import { ToastProvider } from "@/components/shared/Toast";
 import { Toaster } from "@/components/ui/sonner";
+import { setRouter } from "@/lib/navigation";
 import type { RouterContext } from "@/router";
 import "@/index.css";
 
@@ -71,6 +73,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
   // 从 router context 取 queryClient（与 loader 共享同一实例）
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  // 客户端 hydration 后注入 router 实例到全局 navigation，
+  // 供 axios 拦截器等非组件代码执行 401 跳转（SSR 阶段不执行）
+  useEffect(() => {
+    setRouter(router);
+  }, [router]);
 
   return (
     <RootDocument>
