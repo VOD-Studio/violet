@@ -336,17 +336,60 @@ type PlaylistDTO struct {
 	Songs      []domainmusic.Song `json:"songs"`
 	IsActive   bool               `json:"is_active"`
 	CreatedAt  string             `json:"created_at"`
+	UpdatedAt  string             `json:"updated_at"`
 }
 
-// MusicService 音乐用例服务
+// MusicService 音乐用例服务（公开解析 + admin 管理）
 type MusicService struct {
-	repo domainmusic.PlaylistRepository
+	repo     domainmusic.PlaylistRepository
+	provider domainmusic.MusicProvider
+	db       MusicSettingsStore // 单行配置读写
+}
+
+// MusicSettingsStore 音乐设置存储端口（由 infrastructure 适配实现）
+type MusicSettingsStore interface {
+	GetPlayerVersion(ctx context.Context) (string, error)
+	UpdatePlayerVersion(ctx context.Context, version string) error
 }
 
 // NewMusicService 构造音乐服务
-func NewMusicService(repo domainmusic.PlaylistRepository) *MusicService {
-	return &MusicService{repo: repo}
+func NewMusicService(repo domainmusic.PlaylistRepository, provider domainmusic.MusicProvider, db MusicSettingsStore) *MusicService {
+	return &MusicService{repo: repo, provider: provider, db: db}
 }
+
+// --- 公开解析（前台） ---
+
+// ParseEmbedURL 解析音乐链接
+func (s *MusicService) ParseEmbedURL(rawURL string) (domainmusic.EmbedInfo, error) {
+	return s.provider.ParseEmbedURL(rawURL)
+}
+
+// Search 搜索歌曲
+func (s *MusicService) Search(keyword string, limit int) ([]domainmusic.Song, error) {
+	return s.provider.Search(keyword, limit)
+}
+
+// FetchLyrics 获取歌词
+func (s *MusicService) FetchLyrics(platform, songID string) (string, error) {
+	return s.provider.FetchLyrics(platform, songID)
+}
+
+// FetchSongDetail 获取歌曲详情
+func (s *MusicService) FetchSongDetail(platform, songID string) (*domainmusic.Song, error) {
+	return s.provider.FetchSongDetail(platform, songID)
+}
+
+// FetchSongMeta 获取歌曲元数据（封面+歌词）
+func (s *MusicService) FetchSongMeta(platform, songID string) (*domainmusic.SongMeta, error) {
+	return s.provider.FetchSongMeta(platform, songID)
+}
+
+// ParsePlaylistURL 解析歌单链接返回歌单元数据（公开前台）
+func (s *MusicService) ParsePlaylistURL(rawURL string) (*domainmusic.PlaylistMeta, error) {
+	return s.provider.FetchPlaylist(rawURL)
+}
+
+// --- 歌单查询（前台） ---
 
 // GetActive 获取所有活跃歌单（前台播放器）
 func (s *MusicService) GetActive(ctx context.Context) ([]PlaylistDTO, error) {
@@ -365,6 +408,21 @@ func (s *MusicService) GetAll(ctx context.Context) ([]PlaylistDTO, error) {
 	}
 	return playlistsToDTOs(playlists), nil
 }
+
+// GetPlaylist 获取歌单详情
+func (s *MusicService) GetPlaylist(ctx context.Context, id string) (PlaylistDTO, error) {
+	pid, err := shared.ParseID(id)
+	if err != nil {
+		return PlaylistDTO{}, err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return PlaylistDTO{}, err
+	}
+	return playlistToDTO(p), nil
+}
+
+// --- 歌单管理（后台） ---
 
 // SetActive 设置活跃歌单
 func (s *MusicService) SetActive(ctx context.Context, id string, active bool) error {
@@ -389,17 +447,217 @@ func (s *MusicService) DeletePlaylist(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, pid)
 }
 
+// CreatePlaylistInput 创建歌单入参（解析第三方歌单链接导入）
+type CreatePlaylistInput struct {
+	URL string // 歌单链接
+}
+
+// CreatePlaylist 导入歌单（解析链接获取歌曲列表后创建）
+func (s *MusicService) CreatePlaylist(ctx context.Context, in CreatePlaylistInput) (PlaylistDTO, error) {
+	meta, err := s.provider.FetchPlaylist(in.URL)
+	if err != nil {
+		return PlaylistDTO{}, err
+	}
+	pid := shared.NewID()
+	p, err := domainmusic.NewPlaylist(pid, meta.Title, meta.Platform, meta.PlaylistID)
+	if err != nil {
+		return PlaylistDTO{}, err
+	}
+	p.SetSongs(meta.Songs)
+	if err := s.repo.Save(ctx, p); err != nil {
+		return PlaylistDTO{}, err
+	}
+	return playlistToDTO(p), nil
+}
+
+// CreateCustomPlaylist 创建自定义空歌单
+func (s *MusicService) CreateCustomPlaylist(ctx context.Context, title string) (PlaylistDTO, error) {
+	pid := shared.NewID()
+	p, err := domainmusic.NewPlaylist(pid, title, "custom", "")
+	if err != nil {
+		return PlaylistDTO{}, err
+	}
+	if err := s.repo.Save(ctx, p); err != nil {
+		return PlaylistDTO{}, err
+	}
+	return playlistToDTO(p), nil
+}
+
+// UpdatePlaylistInput 更新歌单入参
+type UpdatePlaylistInput struct {
+	ID       string
+	Title    *string
+	IsActive *bool
+}
+
+// UpdatePlaylist 更新歌单
+func (s *MusicService) UpdatePlaylist(ctx context.Context, in UpdatePlaylistInput) error {
+	pid, err := shared.ParseID(in.ID)
+	if err != nil {
+		return err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return err
+	}
+	if in.IsActive != nil {
+		p.SetActive(*in.IsActive)
+	}
+	// Title 通过重建更新（Playlist 聚合无 SetTitle，用 Reconstruct）
+	if in.Title != nil && *in.Title != "" {
+		rebuilt := domainmusic.ReconstructPlaylist(
+			pid, *in.Title, p.Cover(), p.Creator(), p.Platform(), p.PlaylistID(),
+			len(p.Songs()), p.Songs(), p.IsActive(),
+		)
+		p = rebuilt
+	}
+	return s.repo.Save(ctx, p)
+}
+
+// RefreshPlaylistSongs 刷新歌单歌曲（重新从第三方拉取）
+func (s *MusicService) RefreshPlaylistSongs(ctx context.Context, id string) (PlaylistDTO, error) {
+	pid, err := shared.ParseID(id)
+	if err != nil {
+		return PlaylistDTO{}, err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return PlaylistDTO{}, err
+	}
+	// 用 platform + playlistID 重新拉取
+	meta, err := s.provider.FetchPlaylist(p.PlaylistID())
+	if err != nil {
+		return PlaylistDTO{}, err
+	}
+	p.SetSongs(meta.Songs)
+	if err := s.repo.Save(ctx, p); err != nil {
+		return PlaylistDTO{}, err
+	}
+	return playlistToDTO(p), nil
+}
+
+// AddSongInput 添加歌曲入参
+type AddSongInput struct {
+	PlaylistID string
+	Name       string
+	Artist     string
+	URL        string
+	Cover      string
+}
+
+// AddSong 添加歌曲到歌单
+func (s *MusicService) AddSong(ctx context.Context, in AddSongInput) error {
+	pid, err := shared.ParseID(in.PlaylistID)
+	if err != nil {
+		return err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return err
+	}
+	songs := append(p.Songs(), domainmusic.Song{
+		Name: in.Name, Artist: in.Artist, URL: in.URL, Cover: in.Cover,
+	})
+	p.SetSongs(songs)
+	return s.repo.Save(ctx, p)
+}
+
+// RemoveSong 从歌单移除指定索引歌曲
+func (s *MusicService) RemoveSong(ctx context.Context, playlistID string, index int) error {
+	pid, err := shared.ParseID(playlistID)
+	if err != nil {
+		return err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return err
+	}
+	songs := p.Songs()
+	if index < 0 || index >= len(songs) {
+		return shared.BadRequest("歌曲索引超出范围")
+	}
+	newSongs := append(songs[:index], songs[index+1:]...)
+	p.SetSongs(newSongs)
+	return s.repo.Save(ctx, p)
+}
+
+// UpdateSongInput 更新歌单内歌曲信息入参
+type UpdateSongInput struct {
+	PlaylistID string
+	Index      int
+	Name       string
+	Artist     string
+	Cover      string
+	URL        string
+}
+
+// UpdateSong 更新歌单内指定索引歌曲
+func (s *MusicService) UpdateSong(ctx context.Context, in UpdateSongInput) error {
+	pid, err := shared.ParseID(in.PlaylistID)
+	if err != nil {
+		return err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return err
+	}
+	songs := p.Songs()
+	if in.Index < 0 || in.Index >= len(songs) {
+		return shared.BadRequest("歌曲索引超出范围")
+	}
+	song := songs[in.Index]
+	if in.Name != "" {
+		song.Name = in.Name
+	}
+	if in.Artist != "" {
+		song.Artist = in.Artist
+	}
+	if in.Cover != "" {
+		song.Cover = in.Cover
+	}
+	if in.URL != "" {
+		song.URL = in.URL
+	}
+	songs[in.Index] = song
+	p.SetSongs(songs)
+	return s.repo.Save(ctx, p)
+}
+
+// MusicSettingsDTO 音乐设置读模型
+type MusicSettingsDTO struct {
+	PlayerVersion string `json:"player_version"`
+}
+
+// GetSettings 获取播放器设置
+func (s *MusicService) GetSettings(ctx context.Context) (MusicSettingsDTO, error) {
+	version, err := s.db.GetPlayerVersion(ctx)
+	if err != nil {
+		return MusicSettingsDTO{}, shared.Internal("获取播放器设置失败", err)
+	}
+	return MusicSettingsDTO{PlayerVersion: version}, nil
+}
+
+// UpdatePlayerVersion 更新播放器版本
+func (s *MusicService) UpdatePlayerVersion(ctx context.Context, version string) error {
+	if version == "" {
+		return shared.BadRequest("播放器版本不能为空")
+	}
+	return s.db.UpdatePlayerVersion(ctx, version)
+}
+
+func playlistToDTO(p *domainmusic.Playlist) PlaylistDTO {
+	return PlaylistDTO{
+		ID: p.ID().String(), Title: p.Title(), Cover: p.Cover(),
+		Creator: p.Creator(), Platform: p.Platform(), PlaylistID: p.PlaylistID(),
+		SongCount: p.SongCount(), Songs: p.Songs(), IsActive: p.IsActive(),
+	}
+}
+
 func playlistsToDTOs(playlists []*domainmusic.Playlist) []PlaylistDTO {
 	dtos := make([]PlaylistDTO, 0, len(playlists))
 	for _, p := range playlists {
-		dtos = append(dtos, PlaylistDTO{
-			ID: p.ID().String(), Title: p.Title(), Cover: p.Cover(),
-			Creator: p.Creator(), Platform: p.Platform(), PlaylistID: p.PlaylistID(),
-			SongCount: p.SongCount(), Songs: p.Songs(), IsActive: p.IsActive(),
-			CreatedAt: p.ID().String(), // placeholder
-		})
+		dtos = append(dtos, playlistToDTO(p))
 	}
-	_ = time.Now // avoid unused import
 	return dtos
 }
 

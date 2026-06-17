@@ -343,6 +343,283 @@ func (h *Handler) DeletePlaylist(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"message": "歌单已删除"})
 }
 
+// GetMusicSettings 获取播放器设置（公开）
+func (h *Handler) GetMusicSettings(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.musicSvc.GetSettings(r.Context())
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+}
+
+// UpdatePlayerVersion 更新播放器版本
+func (h *Handler) UpdatePlayerVersion(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		PlayerVersion string `json:"player_version" validate:"required"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.musicSvc.UpdatePlayerVersion(r.Context(), req.PlayerVersion); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "播放器版本已更新"})
+}
+
+// --- 公开音乐解析（前台） ---
+
+// GetMusicEmbed 解析音乐链接返回嵌入信息
+func (h *Handler) GetMusicEmbed(w http.ResponseWriter, r *http.Request) {
+	rawURL := r.URL.Query().Get("url")
+	if rawURL == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "url 参数不能为空"})
+		return
+	}
+	info, err := h.musicSvc.ParseEmbedURL(rawURL)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": info})
+}
+
+// SearchSongs 搜索歌曲
+func (h *Handler) SearchSongs(w http.ResponseWriter, r *http.Request) {
+	keyword := r.URL.Query().Get("keyword")
+	if keyword == "" {
+		keyword = r.URL.Query().Get("kw")
+	}
+	if keyword == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "keyword 参数不能为空"})
+		return
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	songs, err := h.musicSvc.Search(keyword, limit)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": songs})
+}
+
+// GetLyrics 获取歌词
+func (h *Handler) GetLyrics(w http.ResponseWriter, r *http.Request) {
+	platform := r.URL.Query().Get("platform")
+	songID := r.URL.Query().Get("id")
+	if songID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "id 参数不能为空"})
+		return
+	}
+	lrc, err := h.musicSvc.FetchLyrics(platform, songID)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": lrc})
+}
+
+// GetSongDetail 获取歌曲详情
+func (h *Handler) GetSongDetail(w http.ResponseWriter, r *http.Request) {
+	platform := r.URL.Query().Get("platform")
+	songID := r.URL.Query().Get("id")
+	if songID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "id 参数不能为空"})
+		return
+	}
+	song, err := h.musicSvc.FetchSongDetail(platform, songID)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": song})
+}
+
+// GetSongMeta 获取歌曲元数据（封面+歌词）
+func (h *Handler) GetSongMeta(w http.ResponseWriter, r *http.Request) {
+	platform := r.URL.Query().Get("platform")
+	songID := r.URL.Query().Get("id")
+	if songID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "id 参数不能为空"})
+		return
+	}
+	meta, err := h.musicSvc.FetchSongMeta(platform, songID)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": meta})
+}
+
+// ParsePlaylist 解析歌单链接返回歌单信息
+func (h *Handler) ParsePlaylist(w http.ResponseWriter, r *http.Request) {
+	rawURL := r.URL.Query().Get("url")
+	if rawURL == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "url 参数不能为空"})
+		return
+	}
+	meta, err := h.musicSvc.ParsePlaylistURL(rawURL)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": meta})
+}
+
+// --- 歌单管理（后台） ---
+
+// CreatePlaylist 导入歌单
+func (h *Handler) CreatePlaylist(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		URL string `json:"url" validate:"required"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	dto, err := h.musicSvc.CreatePlaylist(r.Context(), appmedia.CreatePlaylistInput{URL: req.URL})
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"data": dto})
+}
+
+// CreateCustomPlaylist 创建自定义歌单
+func (h *Handler) CreateCustomPlaylist(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Title string `json:"title" validate:"required"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	dto, err := h.musicSvc.CreateCustomPlaylist(r.Context(), req.Title)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"data": dto})
+}
+
+// UpdatePlaylist 更新歌单
+func (h *Handler) UpdatePlaylist(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req struct {
+		Title    *string `json:"title"`
+		IsActive *bool   `json:"is_active"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.musicSvc.UpdatePlaylist(r.Context(), appmedia.UpdatePlaylistInput{
+		ID: id, Title: req.Title, IsActive: req.IsActive,
+	}); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "歌单已更新"})
+}
+
+// RefreshPlaylist 刷新歌单歌曲
+func (h *Handler) RefreshPlaylist(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	dto, err := h.musicSvc.RefreshPlaylistSongs(r.Context(), id)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+}
+
+// GetPlaylistDetail 获取歌单详情
+func (h *Handler) GetPlaylistDetail(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	dto, err := h.musicSvc.GetPlaylist(r.Context(), id)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+}
+
+// AddSongToPlaylist 添加歌曲到歌单
+func (h *Handler) AddSongToPlaylist(w http.ResponseWriter, r *http.Request) {
+	playlistID := r.PathValue("id")
+	var req struct {
+		Name   string `json:"name"`
+		Artist string `json:"artist"`
+		URL    string `json:"url"`
+		Cover  string `json:"cover"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.musicSvc.AddSong(r.Context(), appmedia.AddSongInput{
+		PlaylistID: playlistID,
+		Name: req.Name, Artist: req.Artist, URL: req.URL, Cover: req.Cover,
+	}); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "歌曲已添加"})
+}
+
+// RemoveSongFromPlaylist 从歌单移除歌曲
+func (h *Handler) RemoveSongFromPlaylist(w http.ResponseWriter, r *http.Request) {
+	playlistID := r.PathValue("id")
+	index, err := strconv.Atoi(r.PathValue("index"))
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.musicSvc.RemoveSong(r.Context(), playlistID, index); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "歌曲已移除"})
+}
+
+// UpdateSongInPlaylist 更新歌单内歌曲
+func (h *Handler) UpdateSongInPlaylist(w http.ResponseWriter, r *http.Request) {
+	playlistID := r.PathValue("id")
+	index, err := strconv.Atoi(r.PathValue("index"))
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		Name   string `json:"name"`
+		Artist string `json:"artist"`
+		Cover  string `json:"cover"`
+		URL    string `json:"url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.musicSvc.UpdateSong(r.Context(), appmedia.UpdateSongInput{
+		PlaylistID: playlistID, Index: index,
+		Name: req.Name, Artist: req.Artist, Cover: req.Cover, URL: req.URL,
+	}); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "歌曲已更新"})
+}
+
+// ============================================================
+// Upload（分片上传 + 文件管理）
+// ============================================================
+
+// ============================================================
+// 分片上传（Chunked Upload）
+// ============================================================
+
 // ============================================================
 // Upload
 // ============================================================

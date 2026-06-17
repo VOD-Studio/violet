@@ -167,6 +167,15 @@ type Playlist struct {
 
 func (Playlist) TableName() string { return "playlists" }
 
+// MusicSetting 音乐播放器设置（单行配置，id=1）
+type MusicSetting struct {
+	ID            int32     `gorm:"primaryKey" json:"id"`
+	PlayerVersion string    `gorm:"column:player_version;type:varchar(50)" json:"player_version"`
+	UpdatedAt     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+}
+
+func (MusicSetting) TableName() string { return "music_settings" }
+
 // File 文件表
 type File struct {
 	ID           uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
