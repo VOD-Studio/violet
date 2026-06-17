@@ -128,6 +128,11 @@ func main() {
 		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
 	}
 
+	// P2.7: 中间件端口适配器
+	// middleware.Auth 已重构为接收 TokenValidator 接口，
+	// 优先使用 DDD JWTService 作为令牌校验源（与旧 AuthService 共享同一密钥对，令牌互通）。
+	tokenValidator := newDDDAuthValidator(authContainer.JWTService)
+
 	// P2.5: announcement + project DDD 容器
 	contentContainer := app.NewContentContainer(gormDB)
 
@@ -250,7 +255,7 @@ func main() {
 			r.Post("/reset-password", authHandler.ResetPassword)   // 重置密码
 
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(authService))
+				r.Use(middleware.Auth(tokenValidator))
 				r.Post("/logout", authHandler.Logout)            // 用户登出
 				r.Get("/me", authHandler.Me)                     // 获取当前用户信息
 				r.Patch("/profile", authHandler.UpdateProfile)   // 更新个人资料
@@ -265,7 +270,7 @@ func main() {
 			r.Post("/{id}/view", postHandler.IncrementView) // 增加浏览次数
 
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(authService))
+				r.Use(middleware.Auth(tokenValidator))
 				r.Post("/", postHandler.Create)                   // 创建文章
 				r.Put("/{id}", postHandler.Update)                // 更新文章
 				r.Delete("/{id}", postHandler.Delete)             // 删除文章
@@ -278,7 +283,7 @@ func main() {
 			r.Get("/", tagHandler.List) // 标签列表
 
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(authService))
+				r.Use(middleware.Auth(tokenValidator))
 				r.Post("/", tagHandler.Create)       // 创建标签
 				r.Delete("/{id}", tagHandler.Delete) // 删除标签
 			})
@@ -292,7 +297,7 @@ func main() {
 
 		v1.Route("/comments/{id}", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(authService))
+				r.Use(middleware.Auth(tokenValidator))
 				r.Use(middleware.AdminRequired)
 				r.Patch("/status", commentHandler.UpdateCommentStatus) // 审核评论（通过/拒绝）
 				r.Delete("/", commentHandler.DeleteComment)            // 删除评论
@@ -314,7 +319,7 @@ func main() {
 			r.Get("/{id}", mediaHandler.GetMedia) // 获取媒体详情（公开）
 
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(authService))
+				r.Use(middleware.Auth(tokenValidator))
 				r.Get("/", mediaHandler.ListMedia)                      // 媒体列表（分页、类型筛选）
 				r.Delete("/{id}", mediaHandler.DeleteMedia)             // 删除媒体
 				r.Post("/batch-delete", mediaHandler.BatchDeleteMedia)  // 批量删除媒体
@@ -324,7 +329,7 @@ func main() {
 
 		// 分片上传
 		v1.Route("/upload", func(r chi.Router) {
-			r.Use(middleware.Auth(authService))
+			r.Use(middleware.Auth(tokenValidator))
 			r.Post("/init", uploadHandler.InitSession)                   // 初始化上传会话（含秒传检查、断点续传恢复）
 			r.Put("/{uploadId}/chunk/{index}", uploadHandler.SaveChunk)  // 上传单个分片
 			r.Post("/{uploadId}/complete", uploadHandler.CompleteUpload) // 合并所有分片为完整文件
@@ -365,7 +370,7 @@ func main() {
 		// 管理员路由（认证 + 管理员权限）
 		// =====================================================
 		v1.Route("/admin", func(r chi.Router) {
-			r.Use(middleware.Auth(authService))
+			r.Use(middleware.Auth(tokenValidator))
 			r.Use(middleware.AdminRequired)
 
 			r.Get("/stats", adminHandler.GetDashboardStats)   // 仪表盘总览统计
@@ -396,10 +401,11 @@ func main() {
 			})
 
 			// 角色管理（查询不需要特殊权限，修改需要 role:manage 权限）
+			// P2.7: 旧 PermissionService 适配 middleware.PermissionChecker
 			r.Get("/roles", roleHandler.ListRoles)                           // 角色列表
 			r.Get("/roles/{id}/permissions", roleHandler.GetRolePermissions) // 获取角色权限
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.RequirePermission(permissionService, "role:manage"))
+				r.Use(middleware.RequirePermission(legacyPermAdapter{svc: permissionService}, "role:manage"))
 				r.Post("/roles", roleHandler.CreateRole)                              // 创建角色
 				r.Patch("/roles/{id}", roleHandler.UpdateRole)                        // 更新角色
 				r.Delete("/roles/{id}", roleHandler.DeleteRole)                       // 删除角色
@@ -469,7 +475,7 @@ func main() {
 	// 待所有模块迁移完成后（P2.7）统一替换为正式路径并删除旧路由
 	// ============================================================
 	r.Route("/api/v1/admin/ddd", func(r chi.Router) {
-		r.Use(middleware.Auth(authService))
+		r.Use(middleware.Auth(tokenValidator))
 		r.Use(middleware.AdminRequired)
 
 		// role/permission（DDD 版）
@@ -500,7 +506,7 @@ func main() {
 
 		// 需认证路由（复用旧 Auth 中间件，通过 context 注入 user_id）
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth(authService))
+			r.Use(middleware.Auth(tokenValidator))
 			r.Post("/logout", authH.Logout)
 			r.Get("/me", authH.GetMe)
 			r.Patch("/profile", authH.UpdateProfile)
@@ -514,7 +520,7 @@ func main() {
 	r.Get("/api/v1/announcements/ddd/active", contentH.ListActiveAnnouncements)
 	// 公告（后台管理）
 	r.Route("/api/v1/admin/ddd/announcements", func(r chi.Router) {
-		r.Use(middleware.Auth(authService))
+		r.Use(middleware.Auth(tokenValidator))
 		r.Use(middleware.AdminRequired)
 		r.Get("/", contentH.ListAnnouncements)
 		r.Get("/{id}", contentH.GetAnnouncement)
@@ -526,7 +532,7 @@ func main() {
 	r.Get("/api/v1/projects/ddd", contentH.ListProjects)
 	// 项目（后台管理）
 	r.Route("/api/v1/admin/ddd/projects", func(r chi.Router) {
-		r.Use(middleware.Auth(authService))
+		r.Use(middleware.Auth(tokenValidator))
 		r.Use(middleware.AdminRequired)
 		r.Post("/", contentH.CreateProject)
 		r.Put("/{id}", contentH.UpdateProject)
@@ -540,7 +546,7 @@ func main() {
 	r.Post("/api/v1/posts/ddd/{postId}/comments", commentH.Create)
 	// 后台管理（待审核列表 + 审核 + 删除）
 	r.Route("/api/v1/admin/ddd/comments", func(r chi.Router) {
-		r.Use(middleware.Auth(authService))
+		r.Use(middleware.Auth(tokenValidator))
 		r.Use(middleware.AdminRequired)
 		r.Get("/pending", commentH.ListPending)
 		r.Patch("/{id}/approve", commentH.Approve)
@@ -555,7 +561,7 @@ func main() {
 	r.Get("/api/v1/posts/ddd/{slug}", postH.GetBySlug)
 	// 后台管理
 	r.Route("/api/v1/admin/ddd/posts", func(r chi.Router) {
-		r.Use(middleware.Auth(authService))
+		r.Use(middleware.Auth(tokenValidator))
 		r.Use(middleware.AdminRequired)
 		r.Get("/", postH.ListAll)
 		r.Post("/", postH.Create)
@@ -570,7 +576,7 @@ func main() {
 	r.Get("/api/v1/emojis/ddd", mediaH.GetAllEmojis)
 	// 表情（后台管理）
 	r.Route("/api/v1/admin/ddd/emojis", func(r chi.Router) {
-		r.Use(middleware.Auth(authService))
+		r.Use(middleware.Auth(tokenValidator))
 		r.Use(middleware.AdminRequired)
 		r.Get("/groups", mediaH.ListAllEmojiGroups)
 		r.Post("/groups", mediaH.CreateEmojiGroup)
@@ -581,7 +587,7 @@ func main() {
 	r.Get("/api/v1/music/ddd/playlists/active", mediaH.GetActivePlaylists)
 	// 音乐（后台管理）
 	r.Route("/api/v1/admin/ddd/music", func(r chi.Router) {
-		r.Use(middleware.Auth(authService))
+		r.Use(middleware.Auth(tokenValidator))
 		r.Use(middleware.AdminRequired)
 		r.Get("/playlists", mediaH.ListAllPlaylists)
 		r.Patch("/playlists/{id}/active", mediaH.SetPlaylistActive)
@@ -589,7 +595,7 @@ func main() {
 	})
 	// 文件（后台管理）
 	r.Route("/api/v1/admin/ddd/files", func(r chi.Router) {
-		r.Use(middleware.Auth(authService))
+		r.Use(middleware.Auth(tokenValidator))
 		r.Use(middleware.AdminRequired)
 		r.Get("/", mediaH.ListFiles)
 		r.Get("/instant", mediaH.CheckInstantUpload)

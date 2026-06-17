@@ -33,8 +33,10 @@ type EmailSenderAdapter interface {
 
 // AuthContainer auth/user 模块依赖容器
 type AuthContainer struct {
-	AuthHandler           *authhttp.Handler
-	EnsureSuperAdmin      *authcmd.EnsureSuperAdminHandler
+	AuthHandler      *authhttp.Handler
+	EnsureSuperAdmin *authcmd.EnsureSuperAdminHandler
+	// JWTService 供 middleware.Auth 通过适配器使用（旧 *service.AuthService 删除后将成为唯一 token 校验源）
+	JWTService *infraauth.JWTService
 }
 
 // NewAuthContainer 手工装配 auth DDD 模块
@@ -92,7 +94,7 @@ func NewAuthContainer(
 		updatePf, changePwd, getMe,
 	)
 
-	return &AuthContainer{AuthHandler: authHandler, EnsureSuperAdmin: ensureSuperAdmin}, nil
+	return &AuthContainer{AuthHandler: authHandler, EnsureSuperAdmin: ensureSuperAdmin, JWTService: jwtService}, nil
 }
 
 // 编译期断言：确保 userRepo 满足接口
