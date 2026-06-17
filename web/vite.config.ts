@@ -4,6 +4,23 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+/** 依赖包名 -> chunk 名称映射 */
+const CHUNK_MAP: Record<string, string> = {
+  react: "react-vendor",
+  "react-dom": "react-vendor",
+  "react-router": "react-vendor",
+  zustand: "state-vendor",
+  "@tanstack/react-query": "state-vendor",
+  "@tiptap/react": "editor-vendor",
+  "@tiptap/starter-kit": "editor-vendor",
+  "@tiptap/pm": "editor-vendor",
+  aplayer: "music-vendor",
+  plyr: "music-vendor",
+  "plyr-react": "music-vendor",
+  "lucide-react": "icons-vendor",
+  motion: "motion-vendor",
+};
+
 export default defineConfig({
   plugins: [
     react(), // React 插件，支持 JSX 转换和快速刷新
@@ -27,41 +44,17 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // 手动分包策略：将大依赖拆分为独立 chunk，优化缓存命中率
-        manualChunks: {
-          // React 核心（react + react-dom + react-router）
-          "react-vendor": ["react", "react-dom", "react-router"],
-          // 状态管理（zustand + tanstack-query）
-          "state-vendor": ["zustand", "@tanstack/react-query"],
-          // 富文本编辑器（tiptap 全家桶，体积大）
-          "editor-vendor": [
-            "@tiptap/react",
-            "@tiptap/starter-kit",
-            "@tiptap/pm",
-          ],
-          // 音乐播放器（aplayer + plyr，体积大）
-          "music-vendor": ["aplayer", "plyr", "plyr-react"],
-          // 图标库
-          "icons-vendor": ["lucide-react"],
-          // 动画
-          "motion-vendor": ["motion"],
+        manualChunks(id: string) {
+          // 从模块路径中提取包名
+          const match = id.match(
+            /node_modules\/(?<pkg>@[^/]+\/[^/]+|[^/]+)\//,
+          );
+          const pkg = match?.groups?.pkg;
+          if (pkg) {
+            return CHUNK_MAP[pkg];
+          }
         },
       },
-    },
-  },
-  // 测试配置（Vitest）
-  test: {
-    // 测试环境
-    environment: "jsdom",
-    // 全局 setup（jest-dom 匹配器）
-    setupFiles: ["./src/test-setup.ts"],
-    // 包含/排除（alias 继承 vite resolve.alias）
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
-    exclude: ["node_modules", "dist"],
-    // coverage 配置
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "html"],
-      include: ["src/lib/**", "src/store/**", "src/middleware/**"],
     },
   },
 });
