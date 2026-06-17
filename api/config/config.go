@@ -241,13 +241,13 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("DB_USER 未配置")
 	}
 
-	// 生产环境必须配置数据库密码和启用 SSL
+	// 生产环境必须配置数据库密码；SSL 模式可为 disable（内部 Docker 网络）或启用加密传输
 	if c.Environment == "production" {
 		if c.Database.Password == "" {
 			return fmt.Errorf("生产环境必须配置 DB_PASSWORD")
 		}
-		if c.Database.SSLMode != "require" && c.Database.SSLMode != "verify-ca" && c.Database.SSLMode != "verify-full" {
-			return fmt.Errorf("生产环境 DB_SSLMODE 必须为 require、verify-ca 或 verify-full")
+		if c.Database.SSLMode != "disable" && c.Database.SSLMode != "require" && c.Database.SSLMode != "verify-ca" && c.Database.SSLMode != "verify-full" {
+			return fmt.Errorf("生产环境 DB_SSLMODE 必须为 disable、require、verify-ca 或 verify-full")
 		}
 	}
 
