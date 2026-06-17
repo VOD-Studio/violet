@@ -157,7 +157,6 @@ func main() {
 	musicSearchService := service.NewMusicSearchService()
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
 	musicSettingsService := service.NewMusicSettingsService(queries)
-	projectService := service.NewProjectService(queries)
 	emojiService := service.NewEmojiService(queries, "uploads/emojis")
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 	auditService := service.NewAuditService(queries)
@@ -205,7 +204,6 @@ func main() {
 	uploadHandler := handler.NewUploadHandler(uploadService)
 	musicHandler := handler.NewMusicHandler(musicService, musicSearchService)
 	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
-	projectHandler := handler.NewProjectHandler(projectService)
 	emojiHandler := handler.NewEmojiHandler(emojiService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
 	auditHandler := handler.NewAuditHandler(auditService)
@@ -240,6 +238,8 @@ func main() {
 
 		// 认证（P2.7: DDD auth handler 已切换为官方路径）
 		authH := authContainer.AuthHandler
+		// P2.8: DDD content handler（announcement + project）
+		contentH := contentContainer.ContentHandler
 		v1.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authH.Register)        // 用户注册
 			r.Post("/verify-email", authH.VerifyEmail) // 邮箱验证
@@ -343,10 +343,10 @@ func main() {
 			r.Get("/settings", musicAdminHandler.GetMusicSettings)              // 获取播放器设置
 		})
 
-		// 项目
+		// 项目（公开，P2.8: DDD content handler）
 		v1.Route("/projects", func(r chi.Router) {
-			r.Get("/", projectHandler.List)        // 项目列表
-			r.Get("/{id}", projectHandler.GetByID) // 项目详情
+			r.Get("/", contentH.ListProjects)  // 项目列表
+			r.Get("/{id}", contentH.GetProject) // 项目详情
 		})
 
 		// 表情（公开）
@@ -356,7 +356,6 @@ func main() {
 		})
 
 		// 公告（公开，P2.7: DDD content handler）
-		contentH := contentContainer.ContentHandler
 		v1.Get("/announcements", contentH.ListActiveAnnouncements) // 获取生效公告列表
 
 		// =====================================================
@@ -455,30 +454,19 @@ func main() {
 			})
 
 			r.Route("/projects", func(r chi.Router) {
-				r.Post("/", projectHandler.Create)       // 创建项目
-				r.Put("/{id}", projectHandler.Update)    // 更新项目
-				r.Delete("/{id}", projectHandler.Delete) // 删除项目
+				r.Post("/", contentH.CreateProject)     // 创建项目
+				r.Put("/{id}", contentH.UpdateProject)  // 更新项目
+				r.Delete("/{id}", contentH.DeleteProject) // 删除项目
 			})
 		})
 	})
 
 	// ============================================================
-	// P2.7: 已迁移至官方路径的 DDD 模块（auth/role/permission/announcement）
-	//       其 shadow 路由已删除，下方仅保留尚未迁移模块的 shadow 路由
+	// P2.7/P2.8: 已迁移至官方路径的 DDD 模块
+	//   - P2.7: auth/role/permission/announcement
+	//   - P2.8: project
+	// 下方仅保留尚未迁移模块的 shadow 路由
 	// ============================================================
-
-	// announcement + project DDD 影子路由
-	contentH := contentContainer.ContentHandler
-	// 项目（前台公开读取）
-	r.Get("/api/v1/projects/ddd", contentH.ListProjects)
-	// 项目（后台管理）
-	r.Route("/api/v1/admin/ddd/projects", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Post("/", contentH.CreateProject)
-		r.Put("/{id}", contentH.UpdateProject)
-		r.Delete("/{id}", contentH.DeleteProject)
-	})
 
 	// comment DDD 影子路由
 	commentH := commentContainer.CommentHandler
