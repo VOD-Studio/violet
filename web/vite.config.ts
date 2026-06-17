@@ -1,8 +1,7 @@
 // Vite 构建工具配置
 //
-// 注：test 字段属于 Vitest 配置。项目用 vitest@2（依赖 vite v5 类型），
-// 与当前 vite@7 类型不完全兼容，故 test 配置以独立常量 + 合并的方式注入，
-// 避免在 defineConfig 类型签名上引入 vitest/config 的旧 vite 类型。
+// 注：Vitest 配置已抽离到独立的 vitest.config.ts（mergeConfig 合并本文件），
+// 避免在 vite defineConfig 类型签名上引入 vitest/config 的旧 vite 类型。
 import { resolve } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
@@ -26,21 +25,6 @@ const CHUNK_MAP: Record<string, string> = {
   three: "three-vendor",
   "@react-three/fiber": "three-vendor",
   "@react-three/drei": "three-vendor",
-};
-
-// Vitest 配置（运行时由 vitest 读取，类型上单独声明避免与 vite defineConfig 冲突）
-const vitestConfig = {
-  test: {
-    environment: "jsdom",
-    setupFiles: ["./src/test-setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
-    exclude: ["node_modules", "dist"],
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "html"],
-      include: ["src/lib/**", "src/store/**", "src/middleware/**"],
-    },
-  },
 };
 
 export default defineConfig({
@@ -85,5 +69,5 @@ export default defineConfig({
       },
     },
   },
-  ...vitestConfig,
-} as ReturnType<typeof defineConfig>);
+});
+
