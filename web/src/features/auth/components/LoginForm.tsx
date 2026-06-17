@@ -1,14 +1,13 @@
 // 登录表单组件
 // 包含邮箱和密码输入，使用 react-hook-form + zod 进行表单验证
 
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
-import { loginSchema, type LoginFormData } from "@/lib/validations";
-import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { type LoginFormData, loginSchema } from "@/lib/validations";
 
 /**
  * 登录表单组件
@@ -39,7 +38,7 @@ export function LoginForm() {
     try {
       setServerError(null);
       await login(data);
-      navigate("/");
+      navigate({ to: "/" });
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "登录失败，请重试");
     }

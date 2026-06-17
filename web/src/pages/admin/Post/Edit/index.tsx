@@ -1,18 +1,13 @@
 // 文章编辑页面
 // 支持新建和编辑文章，使用 react-hook-form 管理表单状态
 
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { useForm, Controller } from "react-hook-form";
-import { api } from "@/lib/api";
-import { useAdminTags } from "@/features/admin/tags/api";
-import { useSavePost } from "@/features/admin/posts";
-import type { ApiPost, ApiTag } from "@/features/admin/posts/types";
+import { Controller, useForm } from "react-hook-form";
 import { RichTextEditor } from "@/components/editor";
+import { type MediaItem, MediaLibraryDialog } from "@/components/media";
+import { BackToTop } from "@/components/shared/BackToTop";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -20,11 +15,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useSavePost } from "@/features/admin/posts";
+import type { ApiPost, ApiTag } from "@/features/admin/posts/types";
+import { useAdminTags } from "@/features/admin/tags/api";
+import { api } from "@/lib/api";
 import { CoverImageUpload } from "./CoverImageUpload";
-import { TagSelector } from "./TagSelector";
 import { SeoSettings } from "./SeoSettings";
-import { MediaLibraryDialog, type MediaItem } from "@/components/media";
-import { BackToTop } from "@/components/shared/BackToTop";
+import { TagSelector } from "./TagSelector";
 
 /** 表单字段类型 */
 interface PostFormValues {
@@ -43,7 +43,7 @@ interface PostFormValues {
  */
 export default function PostEdit() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id } = useParams({ strict: false });
   const isEditing = Boolean(id);
 
   const { data: availableTags = [], isLoading: tagsLoading } = useAdminTags();
@@ -120,7 +120,7 @@ export default function PostEdit() {
         },
         id: isEditing ? id : undefined,
       });
-      navigate("/admin/posts");
+      navigate({ to: "/admin/posts" });
     } catch {
       /* 错误由 saveMutation 处理 */
     }
@@ -139,7 +139,10 @@ export default function PostEdit() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate("/admin/posts")}>
+          <Button
+            variant="outline"
+            onClick={() => navigate({ to: "/admin/posts" })}
+          >
             取消
           </Button>
           <Button

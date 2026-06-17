@@ -1,67 +1,83 @@
-import { motion } from "motion/react";
-import { ScrollReveal, MagneticButton } from "@/components/creative";
-import { usePosts } from "@/hooks/usePosts";
-import { PostCard } from "@/features/posts";
-import { Link } from "react-router";
-import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
+import { usePosts } from "@/features/posts/api";
+import { PostCard } from "@/features/posts/components/PostCard";
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0 },
+};
+
+/**
+ * 首页「近期文章」区
+ * 2.0：保留 usePosts 数据逻辑与 PostCard 业务组件，
+ * 入场动画从 creative/ScrollReveal 改为 motion whileInView。
+ */
 export function RecentPostsSection() {
   const { data, isLoading, error } = usePosts({ page: 1, limit: 3 });
-  const posts = data?.posts ?? [];
 
   return (
-    <section className="container mx-auto px-4 pb-24">
+    <section className="container mx-auto px-4 py-20">
       <motion.h2
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="mb-8 text-2xl font-bold"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-80px" }}
+        variants={fadeUp}
+        transition={{ duration: 0.5 }}
+        className="mb-10 text-center text-3xl font-bold tracking-tight sm:text-4xl"
       >
-        最新文章
+        近期文章
       </motion.h2>
 
-      {isLoading && (
+      {isLoading ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
+          {[0, 1, 2].map((n) => (
             <div
-              key={i}
+              key={n}
               className="h-64 animate-pulse rounded-lg border bg-muted"
             />
           ))}
         </div>
-      )}
-
-      {error && (
-        <div className="py-12 text-center text-muted-foreground">
-          {String(error)}
-        </div>
-      )}
-
-      {!isLoading && !error && (
+      ) : error ? (
+        <p className="py-12 text-center text-muted-foreground">
+          加载文章失败，请稍后重试
+        </p>
+      ) : data?.posts?.length ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post, index) => (
-            <ScrollReveal key={post.id} animation="fadeUp" delay={index * 0.1}>
-              <PostCard post={post} delay={0} />
-            </ScrollReveal>
+          {data.posts.map((post, index) => (
+            <motion.div
+              key={post.id}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-60px" }}
+              variants={fadeUp}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <PostCard post={post} />
+            </motion.div>
           ))}
         </div>
+      ) : (
+        <p className="py-12 text-center text-muted-foreground">暂无文章</p>
       )}
 
-      {!isLoading && !error && posts.length === 0 && (
-        <div className="py-12 text-center text-muted-foreground">暂无文章</div>
-      )}
-
-      <div className="mt-8 text-center">
-        <MagneticButton className="inline-block">
-          <Link to="/blog">
-            <Button variant="outline">
-              查看全部文章
-              <ArrowRight className="size-4" />
-            </Button>
-          </Link>
-        </MagneticButton>
-      </div>
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeUp}
+        transition={{ duration: 0.5 }}
+        className="mt-12 flex justify-center"
+      >
+        <Link
+          to="/blog"
+          className="group inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+        >
+          查看全部文章
+          <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+        </Link>
+      </motion.div>
     </section>
   );
 }

@@ -2,9 +2,9 @@
 // 展示文章封面图、标题、摘要、标签、发布时间和浏览量
 // 带有 motion hover 悬浮效果
 
-import { Link } from "react-router";
+import { Link } from "@tanstack/react-router";
+import { Calendar, Eye } from "lucide-react";
 import { motion } from "motion/react";
-import { Eye, Calendar } from "lucide-react";
 import type { Post } from "@/hooks/usePosts";
 import { getUploadUrl } from "@/lib/api";
 
@@ -42,7 +42,7 @@ export function PostCard({ post, delay = 0 }: PostCardProps) {
     >
       {/* 封面图 */}
       {post.coverImage && (
-        <Link to={`/blog/${post.slug}`}>
+        <Link to="/blog/$slug" params={{ slug: post.slug }}>
           <div className="aspect-video overflow-hidden">
             <img
               src={getUploadUrl(post.coverImage)}
@@ -67,7 +67,7 @@ export function PostCard({ post, delay = 0 }: PostCardProps) {
         </div>
 
         {/* 文章标题 */}
-        <Link to={`/blog/${post.slug}`}>
+        <Link to="/blog/$slug" params={{ slug: post.slug }}>
           <h3 className="mb-2 text-lg font-semibold transition-colors group-hover:text-primary">
             {post.title}
           </h3>

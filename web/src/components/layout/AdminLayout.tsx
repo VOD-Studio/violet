@@ -4,9 +4,8 @@
  * 使用 zustand store 管理侧边栏状态
  */
 
-import { Outlet } from "react-router";
-import { AdminSidebar } from "./AdminSidebar";
-import { Input } from "@/components/ui/input";
+import { Outlet } from "@tanstack/react-router";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,9 +14,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useSidebarStore } from "@/store";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import { useSidebarStore } from "@/store";
+import { AdminSidebar } from "./AdminSidebar";
 
 /**
  * 后台管理布局

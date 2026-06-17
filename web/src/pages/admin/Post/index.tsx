@@ -4,16 +4,23 @@
  * 使用 react-query 管理数据获取和变更操作
  */
 
+import { useNavigate } from "@tanstack/react-router";
+import { MoreHorizontal, Plus } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router";
-import {
-  useAdminPosts,
-  useTogglePostStatus,
-  useDeleteAdminPost,
-} from "@/features/admin/posts";
-import type { PostStatus, ApiPost } from "@/features/admin/posts/types";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorFallback } from "@/components/shared/ErrorFallback";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -22,19 +29,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/shared/EmptyState";
-import { ErrorFallback } from "@/components/shared/ErrorFallback";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Plus } from "lucide-react";
-import { toast } from "sonner";
+  useAdminPosts,
+  useDeleteAdminPost,
+  useTogglePostStatus,
+} from "@/features/admin/posts";
+import type { ApiPost, PostStatus } from "@/features/admin/posts/types";
 
 /** 筛选标签配置 */
 const statusFilters: { label: string; value: "all" | PostStatus }[] = [
@@ -68,7 +68,7 @@ function PostsTableSkeleton() {
         </TableHeader>
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
-            <TableRow key={i}>
+            <TableRow key={`skeleton-${i}`}>
               <TableCell>
                 <Skeleton className="h-4 w-40" />
               </TableCell>
@@ -131,7 +131,7 @@ export default function Posts() {
         onSuccess: () =>
           toast.success(post.status === "published" ? "已取消发布" : "已发布"),
         onError: () => toast.error("操作失败，请重试"),
-      }
+      },
     );
   };
 
@@ -166,7 +166,7 @@ export default function Posts() {
           <h1 className="text-2xl font-bold">文章管理</h1>
           <p className="text-muted-foreground">管理所有博客文章</p>
         </div>
-        <Button onClick={() => navigate("/admin/posts/new")}>
+        <Button onClick={() => navigate({ to: "/admin/posts/new" })}>
           <Plus className="mr-1 size-4" />
           新建文章
         </Button>
@@ -244,7 +244,10 @@ export default function Posts() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() =>
-                            navigate(`/admin/posts/${post.id}/edit`)
+                            navigate({
+                              to: "/admin/posts/$id/edit",
+                              params: { id: post.id },
+                            })
                           }
                         >
                           编辑

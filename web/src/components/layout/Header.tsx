@@ -3,12 +3,13 @@
  * 包含 Logo、导航链接、登录/用户头像、主题切换，支持响应式汉堡菜单
  */
 
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useSiteSettings } from "@/components/shared/SettingsProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,9 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/features/auth";
 import { usePermission } from "@/hooks/usePermission";
-import { useSiteSettings } from "@/components/shared/SettingsProvider";
-import { cn } from "@/lib/utils";
 import { getUploadUrl } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 /** 导航链接配置列表 */
 const NAV_ITEMS = [
@@ -40,7 +40,7 @@ export function Header() {
   /** 移动端菜单展开状态 */
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   /** 当前路由路径，用于高亮当前导航项 */
-  const location = useLocation();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   /** 路由导航函数 */
   const navigate = useNavigate();
   /** 认证状态 */
@@ -64,8 +64,8 @@ export function Header() {
    * 首页需要精确匹配，其他页面使用前缀匹配
    */
   const isActive = (href: string) => {
-    if (href === "/") return location.pathname === "/";
-    return location.pathname.startsWith(href);
+    if (href === "/") return pathname === "/";
+    return pathname.startsWith(href);
   };
 
   return (
@@ -86,7 +86,7 @@ export function Header() {
                 "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted",
                 isActive(item.href)
                   ? "bg-muted text-foreground"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground",
               )}
             >
               {item.label}
@@ -126,11 +126,11 @@ export function Header() {
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                <DropdownMenuItem onClick={() => navigate({ to: "/profile" })}>
                   个人中心
                 </DropdownMenuItem>
                 {canAccessAdmin && (
-                  <DropdownMenuItem onClick={() => navigate("/admin")}>
+                  <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
                     管理后台
                   </DropdownMenuItem>
                 )}
@@ -177,7 +177,7 @@ export function Header() {
                   "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted",
                   isActive(item.href)
                     ? "bg-muted text-foreground"
-                    : "text-muted-foreground"
+                    : "text-muted-foreground",
                 )}
               >
                 {item.label}
@@ -212,7 +212,7 @@ export function Header() {
                   <DropdownMenuContent className="w-56" align="end">
                     <DropdownMenuItem
                       onClick={() => {
-                        navigate("/profile");
+                        navigate({ to: "/profile" });
                         closeMobileMenu();
                       }}
                     >
@@ -221,7 +221,7 @@ export function Header() {
                     {canAccessAdmin && (
                       <DropdownMenuItem
                         onClick={() => {
-                          navigate("/admin");
+                          navigate({ to: "/admin" });
                           closeMobileMenu();
                         }}
                       >

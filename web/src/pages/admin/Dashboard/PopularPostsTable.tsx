@@ -1,7 +1,8 @@
 // PopularPostsTable.tsx
 // 热门文章排行表格组件
 
-import { Link } from "react-router";
+import { Link } from "@tanstack/react-router";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -17,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import type { PopularPost } from "@/features/admin/posts/types";
 
 interface PopularPostsTableProps {
@@ -63,7 +63,8 @@ export function PopularPostsTable({ posts }: PopularPostsTableProps) {
                   </TableCell>
                   <TableCell className="font-medium">
                     <Link
-                      to={`/admin/posts/${post.id}/edit`}
+                      to="/admin/posts/$id/edit"
+                      params={{ id: post.id }}
                       className="hover:underline"
                     >
                       {post.title}

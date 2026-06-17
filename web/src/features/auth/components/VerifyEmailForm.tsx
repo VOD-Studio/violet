@@ -1,13 +1,13 @@
 // 邮箱验证表单组件
 // 包含 6 位验证码输入和重新发送验证码功能
 
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { verifyEmailSchema, type VerifyEmailFormData } from "@/lib/validations";
 import { api } from "@/lib/api";
+import { type VerifyEmailFormData, verifyEmailSchema } from "@/lib/validations";
 
 /** 重新发送冷却时间，单位为秒 */
 const RESEND_COOLDOWN = 60;
@@ -44,7 +44,7 @@ export function VerifyEmailForm() {
       setServerError(null);
       setIsVerifying(true);
       await api.post("/auth/verify-email", { code: data.code });
-      navigate("/login");
+      navigate({ to: "/login" });
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "验证失败，请重试");
     } finally {
@@ -74,7 +74,7 @@ export function VerifyEmailForm() {
       }, 1000);
     } catch (err) {
       setServerError(
-        err instanceof Error ? err.message : "发送验证码失败，请重试"
+        err instanceof Error ? err.message : "发送验证码失败，请重试",
       );
     }
   };

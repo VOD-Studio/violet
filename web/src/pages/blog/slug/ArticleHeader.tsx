@@ -1,7 +1,7 @@
 // 文章头部信息组件
 // 展示标题、作者、发布日期、浏览量和标签
 
-import { Link } from "react-router";
+import { Link } from "@tanstack/react-router";
 import { Calendar, Eye, Tag } from "lucide-react";
 import { KineticText } from "@/components/creative";
 import type { PostDetail } from "@/hooks/usePosts";
@@ -91,7 +91,8 @@ export function ArticleHeader({ post }: ArticleHeaderProps) {
             {post.tags?.map((tag) => (
               <Link
                 key={tag.id}
-                to={`/blog?tag=${tag.slug}`}
+                to="/blog"
+                search={{ tag: tag.slug }}
                 className="rounded-full bg-muted px-2 py-0.5 text-xs transition-colors hover:bg-muted/80"
               >
                 {tag.name}

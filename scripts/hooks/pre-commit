@@ -53,6 +53,10 @@ if [ -n "$ts_files" ]; then
 		check_args=""
 		for f in $ts_files; do
 			rel="${f#web/}"
+			# 跳过代码生成文件（routeTree.gen.ts 等），生成代码不纳入 lint
+			case "$rel" in
+				*.gen.ts|*.gen.tsx) continue ;;
+			esac
 			if [ -f "$REPO_ROOT/$f" ]; then
 				check_args="$check_args $rel"
 			fi
