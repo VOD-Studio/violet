@@ -1,12 +1,9 @@
 # 生产环境配置
-# 使用: docker compose -f docker-compose.prod.yml up -d
+# 使用: docker compose --env-file api/.env -f docker-compose.prod.yml up -d
 #
 # 前置条件:
-# 1. 复制 api/.env.example 到 api/.env 并修改配置
+# 1. 复制 api/.env.example 到 api/.env 并修改配置（特别是 POSTGRES_PASSWORD 和 SUPERADMIN_PASSWORD）
 # 2. 上传文件由命名卷 uploads_data 持久化，无需手动创建宿主机目录
-
-env_file:
-  - ./api/.env
 
 services:
   # PostgreSQL 数据库
