@@ -14,13 +14,13 @@ type MediaContainer struct {
 }
 
 // NewMediaContainer 装配 emoji/music/upload DDD 模块
-func NewMediaContainer(db *gorm.DB) *MediaContainer {
+func NewMediaContainer(db *gorm.DB, emojiDir string) *MediaContainer {
 	emojiRepo := gormrepo.NewEmojiGroupRepository(db)
 	musicRepo := gormrepo.NewPlaylistRepository(db)
 	fileRepo := gormrepo.NewFileRepository(db)
 	sessionRepo := gormrepo.NewUploadSessionRepository(db)
 
-	emojiSvc := appmedia.NewEmojiService(emojiRepo)
+	emojiSvc := appmedia.NewEmojiService(emojiRepo, emojiDir)
 	musicSvc := appmedia.NewMusicService(musicRepo)
 	uploadSvc := appmedia.NewUploadService(fileRepo, sessionRepo)
 

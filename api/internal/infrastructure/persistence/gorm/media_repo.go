@@ -45,7 +45,10 @@ func emojiGroupToPO(g *emoji.EmojiGroup) model.EmojiGroup {
 func emojiGroupToDomain(po model.EmojiGroup) (*emoji.EmojiGroup, error) {
 	emojis := make([]emoji.Emoji, 0, len(po.Emojis))
 	for _, e := range po.Emojis {
-		emojis = append(emojis, emoji.NewEmoji(e.ID, e.GroupID, e.Name, e.URL))
+		emojis = append(emojis, emoji.ReconstructEmoji(
+			e.ID, e.GroupID, e.Name, e.URL,
+			e.SourceURL, e.GifURL, e.TextContent, e.SortOrder,
+		))
 	}
 	return emoji.ReconstructEmojiGroup(po.ID, po.Name, po.Source, po.SortOrder, po.IsEnabled, emojis), nil
 }
@@ -121,6 +124,102 @@ func (r *EmojiGroupRepository) UpdateEnabled(ctx context.Context, id int32, enab
 	}
 	if result.RowsAffected == 0 {
 		return emoji.ErrNotFound
+	}
+	return nil
+}
+
+// BatchUpdateEnabled 批量更新分组启用状态
+func (r *EmojiGroupRepository) BatchUpdateEnabled(ctx context.Context, ids []int32, enabled bool) (int64, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	result := r.db.WithContext(ctx).Model(&model.EmojiGroup{}).
+		Where("id IN ?", ids).Update("is_enabled", enabled)
+	if result.Error != nil {
+		return 0, domainshared.Internal("批量更新表情分组状态失败", result.Error)
+	}
+	return result.RowsAffected, nil
+}
+
+// ExistsByName 名称是否已存在（排除自身）
+func (r *EmojiGroupRepository) ExistsByName(ctx context.Context, name string, excludeID int32) (bool, error) {
+	var count int64
+	query := r.db.WithContext(ctx).Model(&model.EmojiGroup{}).Where("name = ?", name)
+	if excludeID > 0 {
+		query = query.Where("id <> ?", excludeID)
+	}
+	if err := query.Count(&count).Error; err != nil {
+		return false, domainshared.Internal("查询分组名称存在性失败", err)
+	}
+	return count > 0, nil
+}
+
+// FindEmojisByGroup 查询分组内所有表情
+func (r *EmojiGroupRepository) FindEmojisByGroup(ctx context.Context, groupID int32) ([]emoji.Emoji, error) {
+	var pos []model.Emoji
+	if err := r.db.WithContext(ctx).Where("group_id = ?", groupID).
+		Order("sort_order ASC, id ASC").Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询分组表情失败", err)
+	}
+	result := make([]emoji.Emoji, 0, len(pos))
+	for _, e := range pos {
+		result = append(result, emoji.ReconstructEmoji(
+			e.ID, e.GroupID, e.Name, e.URL,
+			e.SourceURL, e.GifURL, e.TextContent, e.SortOrder,
+		))
+	}
+	return result, nil
+}
+
+// FindEmojiByID 按 ID 查表情
+func (r *EmojiGroupRepository) FindEmojiByID(ctx context.Context, id int32) (emoji.Emoji, error) {
+	var po model.Emoji
+	if err := r.db.WithContext(ctx).First(&po, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return emoji.Emoji{}, emoji.ErrEmojiNotFound
+		}
+		return emoji.Emoji{}, domainshared.Internal("查询表情失败", err)
+	}
+	return emoji.ReconstructEmoji(
+		po.ID, po.GroupID, po.Name, po.URL,
+		po.SourceURL, po.GifURL, po.TextContent, po.SortOrder,
+	), nil
+}
+
+// SaveEmoji 保存表情（新增或更新），返回 ID
+func (r *EmojiGroupRepository) SaveEmoji(ctx context.Context, e emoji.Emoji) (int32, error) {
+	po := model.Emoji{
+		ID: e.ID(), GroupID: e.GroupID(), Name: e.Name(), URL: e.URL(),
+		SourceURL: e.SourceURL(), GifURL: e.GifURL(),
+		TextContent: e.TextContent(), SortOrder: e.SortOrder(),
+	}
+	if po.ID == 0 {
+		if err := r.db.WithContext(ctx).Create(&po).Error; err != nil {
+			return 0, domainshared.Internal("创建表情失败", err)
+		}
+		return po.ID, nil
+	}
+	result := r.db.WithContext(ctx).Model(&model.Emoji{}).Where("id = ?", po.ID).Updates(map[string]any{
+		"name": po.Name, "url": po.URL, "source_url": po.SourceURL,
+		"gif_url": po.GifURL, "text_content": po.TextContent, "sort_order": po.SortOrder,
+	})
+	if result.Error != nil {
+		return 0, domainshared.Internal("更新表情失败", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return 0, emoji.ErrEmojiNotFound
+	}
+	return po.ID, nil
+}
+
+// DeleteEmoji 删除表情
+func (r *EmojiGroupRepository) DeleteEmoji(ctx context.Context, id int32) error {
+	result := r.db.WithContext(ctx).Delete(&model.Emoji{}, id)
+	if result.Error != nil {
+		return domainshared.Internal("删除表情失败", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return emoji.ErrEmojiNotFound
 	}
 	return nil
 }

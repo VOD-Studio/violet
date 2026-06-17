@@ -25,6 +25,8 @@ var (
 	ErrReactionNotFound = errors.New("表情反应不存在")
 	// ErrCommentNotFound 评论不存在（迁移自 comment_service.go）
 	ErrCommentNotFound = errors.New("评论不存在")
+	// ErrEmojiNotFound 表情不存在（迁移自 emoji_service.go）
+	ErrEmojiNotFound = errors.New("表情不存在")
 )
 
 // CommentReactionService 评论反应服务，处理评论表情反应的业务逻辑

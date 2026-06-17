@@ -141,7 +141,7 @@ func main() {
 	postContainer := app.NewPostContainer(gormDB)
 
 	// P2.6: emoji/music/upload DDD 容器
-	mediaContainer := app.NewMediaContainer(gormDB)
+	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis")
 	tagService := service.NewTagService(queries)
 	commentReactionService := service.NewCommentReactionService(queries)
 	settingsService := service.NewSettingsService(queries)
@@ -153,7 +153,6 @@ func main() {
 	musicSearchService := service.NewMusicSearchService()
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
 	musicSettingsService := service.NewMusicSettingsService(queries)
-	emojiService := service.NewEmojiService(queries, "uploads/emojis")
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 	auditService := service.NewAuditService(queries)
 
@@ -197,7 +196,6 @@ func main() {
 	uploadHandler := handler.NewUploadHandler(uploadService)
 	musicHandler := handler.NewMusicHandler(musicService, musicSearchService)
 	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
-	emojiHandler := handler.NewEmojiHandler(emojiService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
 	auditHandler := handler.NewAuditHandler(auditService)
 
@@ -220,6 +218,9 @@ func main() {
 	// =====================================================
 	// API v1
 	// =====================================================
+	// DDD media handler 在 v1 闭包和 shadow 区共用，需提前声明
+	mediaH := mediaContainer.MediaHandler
+
 	r.Route("/api/v1", func(v1 chi.Router) {
 
 		// 公开站点设置
@@ -338,10 +339,10 @@ func main() {
 			r.Get("/{id}", contentH.GetProject) // 项目详情
 		})
 
-		// 表情（公开）
+		// 表情（DDD mediaH，公开）
 		v1.Route("/emojis", func(r chi.Router) {
-			r.Get("/", emojiHandler.GetAllEmojis)                     // 获取所有启用表情分组和表情
-			r.Get("/groups/{name}", emojiHandler.GetEmojiGroupByName) // 按名称获取指定表情分组
+			r.Get("/", mediaH.GetAllEmojis)                      // 获取所有启用表情分组和表情
+			r.Get("/groups/{name}", mediaH.GetEmojiGroupByName)  // 按名称获取指定表情分组
 		})
 
 		// 公告（公开，P2.7: DDD content handler）
@@ -434,20 +435,21 @@ func main() {
 				r.Patch("/settings", musicAdminHandler.UpdatePlayerVersion) // 更新播放器设置
 			})
 
-			// 表情管理
+			// 表情管理（DDD mediaH）
 			r.Route("/emojis", func(r chi.Router) {
-				r.Route("/groups", func(r chi.Router) {
-					r.Get("/", emojiHandler.ListAllGroups)                   // 获取所有表情分组（含未启用）
-					r.Post("/", emojiHandler.CreateGroup)                    // 创建表情分组
-					r.Patch("/batch-status", emojiHandler.BatchUpdateStatus) // 批量更新分组启用状态
-					r.Patch("/{id}", emojiHandler.UpdateGroup)               // 更新表情分组
-					r.Delete("/{id}", emojiHandler.DeleteGroup)              // 删除表情分组
-					r.Get("/{id}/emojis", emojiHandler.ListGroupEmojis)      // 获取分组内表情列表
-					r.Post("/{id}/emojis", emojiHandler.CreateEmoji)         // 在分组内创建表情
-				})
-				r.Post("/upload", emojiHandler.UploadEmoji) // 上传表情图片
-				r.Patch("/{id}", emojiHandler.UpdateEmoji)  // 更新表情
-				r.Delete("/{id}", emojiHandler.DeleteEmoji) // 删除表情
+				// 分组管理
+				r.Get("/groups", mediaH.ListAllEmojiGroups)                    // 所有分组（含未启用）
+				r.Post("/groups", mediaH.CreateEmojiGroup)                     // 创建分组
+				r.Patch("/groups/batch-status", mediaH.BatchUpdateEmojiGroupStatus) // 批量启用/禁用分组
+				r.Patch("/groups/{id}", mediaH.UpdateEmojiGroup)               // 更新分组
+				r.Delete("/groups/{id}", mediaH.DeleteEmojiGroup)              // 删除分组
+				// 分组内表情
+				r.Get("/groups/{id}/emojis", mediaH.ListGroupEmojis)           // 分组内表情列表
+				r.Post("/groups/{id}/emojis", mediaH.CreateEmoji)              // 在分组内创建表情
+				// 单个表情（注意 {id} 必须在 groups 之后，避免与 groups/{id} 冲突）
+				r.Post("/upload", mediaH.UploadEmoji)                          // 上传表情图片
+				r.Patch("/emojis/{id}", mediaH.UpdateEmoji)                    // 更新表情
+				r.Delete("/emojis/{id}", mediaH.DeleteEmoji)                   // 删除表情
 			})
 
 			r.Route("/projects", func(r chi.Router) {
@@ -461,23 +463,11 @@ func main() {
 	// ============================================================
 	// P2.7/P2.8: 已迁移至官方路径的 DDD 模块
 	//   - P2.7: auth/role/permission/announcement
-	//   - P2.8: project/comment/post
+	//   - P2.8: project/comment/post/emoji
 	// 下方仅保留尚未迁移模块的 shadow 路由
 	// ============================================================
 
-	// media DDD 影子路由
-	mediaH := mediaContainer.MediaHandler
-	// 表情（前台公开）
-	r.Get("/api/v1/emojis/ddd", mediaH.GetAllEmojis)
-	// 表情（后台管理）
-	r.Route("/api/v1/admin/ddd/emojis", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Get("/groups", mediaH.ListAllEmojiGroups)
-		r.Post("/groups", mediaH.CreateEmojiGroup)
-		r.Patch("/groups/{id}/enabled", mediaH.SetEmojiGroupEnabled)
-		r.Delete("/groups/{id}", mediaH.DeleteEmojiGroup)
-	})
+	// music DDD 影子路由
 	// 音乐（前台公开）
 	r.Get("/api/v1/music/ddd/playlists/active", mediaH.GetActivePlaylists)
 	// 音乐（后台管理）
