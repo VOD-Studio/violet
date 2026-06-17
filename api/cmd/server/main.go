@@ -142,15 +142,17 @@ func main() {
 	settingsContainer := app.NewSettingsContainer(gormDB)
 	tagContainer := app.NewTagContainer(gormDB)
 	githubContainer := app.NewGitHubContainer(settingsContainer.Store)
+	auditContainer := app.NewAuditContainer(gormDB)
+	statsContainer := app.NewStatsContainer(gormDB)
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
 	commentReactionService := service.NewCommentReactionService(queries)
 	// P2.8: settings 已切换 DDD settingsContainer，旧 SettingsService 不再初始化
-	statsService := service.NewStatsService(queries)
+	// P2.8: settings/stats 已切换 DDD，旧 service 不再初始化
+	auditService := service.NewAuditService(queries) // 暂留供 user_management
 	userService := service.NewUserService(queries)
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
-	auditService := service.NewAuditService(queries)
 
 	// 表情种子数据初始化（幂等）
 	// P2.7: 改用 GORM 计数，移除对 sqlc 的依赖
@@ -184,10 +186,8 @@ func main() {
 	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
 	// P2.8: tag 已切换 DDD tagContainer，旧 TagService 不再初始化
 
-	adminHandler := handler.NewAdminHandler(statsService)
 	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
-	auditHandler := handler.NewAuditHandler(auditService)
 
 	// --- 路由注册 ---
 
@@ -350,8 +350,8 @@ func main() {
 			// P2.7: DDD role/permission handler 切换为官方路径
 			roleH := roleContainer.RoleHandler
 
-			r.Get("/stats", adminHandler.GetDashboardStats)   // 仪表盘总览统计
-			r.Get("/stats/views", adminHandler.GetViewTrends) // 浏览量趋势
+			r.Get("/stats", statsContainer.StatsHandler.GetDashboardStats)   // 仪表盘总览统计
+			r.Get("/stats/views", statsContainer.StatsHandler.GetViewTrends) // 浏览量趋势
 
 			r.Get("/settings", settingsContainer.SettingsHandler.GetSettings)    // 获取站点设置
 			r.Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
@@ -386,8 +386,8 @@ func main() {
 			r.Patch("/roles/{id}/permissions", roleH.UpdateRolePermissions) // 设置角色权限
 
 			// 操作日志
-			r.Get("/logs", auditHandler.ListLogs)                 // 操作日志列表
-			r.Get("/logs/user/{id}", auditHandler.ListLogsByUser) // 用户操作日志
+			r.Get("/logs", auditContainer.AuditHandler.ListLogs)                 // 操作日志列表
+			r.Get("/logs/user/{id}", auditContainer.AuditHandler.ListLogsByUser) // 用户操作日志
 
 			// 公告管理（P2.7: DDD content handler）
 			r.Get("/announcements", contentH.ListAnnouncements)       // 公告列表
