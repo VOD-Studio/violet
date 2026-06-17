@@ -91,6 +91,54 @@ make dev
 - 后端 API: http://localhost:8080
 - 健康检查: http://localhost:8080/api/health
 
+## 生产部署
+
+一键部署命令：
+
+```bash
+make deploy-prod
+```
+
+### 前置条件
+
+- 已安装 Docker 与 Docker Compose
+- 首次部署前运行 `make deploy-prod-init`，生成 `api/.env`、`web/.env.production` 和 JWT 密钥
+- 编辑 `api/.env`，务必修改 `POSTGRES_PASSWORD` 与 `SUPERADMIN_PASSWORD` 等敏感配置
+- 确保服务器 **80 端口**空闲
+
+### 架构图
+
+```
+http://localhost
+       │
+       ▼
+   ┌───────┐
+   │  web  │ (Nginx + React 静态资源)
+   └───┬───┘
+       │ /api/* /uploads/* /health
+       ▼
+   ┌───────┐
+   │  api  │ (Go + chi)
+   └───┬───┘
+       │
+   ┌───┴───┐
+   ▼       ▼
+postgres  redis
+```
+
+### 常用命令
+
+```bash
+make deploy-prod-init   # 首次初始化（生成环境文件与 JWT 密钥）
+make deploy-prod        # 构建并启动生产环境容器
+make deploy-prod-down   # 停止生产环境容器
+```
+
+### 文件变更摘要
+
+- `docker-compose.prod.yml` 统一部署 PostgreSQL、Redis、API 与前端 Nginx
+- JWT 密钥从 `secrets/` 目录挂载到 API 容器
+
 ## 常用命令
 
 ```bash
