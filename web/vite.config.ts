@@ -47,7 +47,7 @@ export default defineConfig({
         manualChunks(id: string) {
           // 从模块路径中提取包名
           const match = id.match(
-            /node_modules\/(?<pkg>@[^/]+\/[^/]+|[^/]+)\//,
+            /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(?<pkg>@[^/]+\/[^/]+|[^/]+)\//,
           );
           const pkg = match?.groups?.pkg;
           if (pkg) {

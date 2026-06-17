@@ -78,12 +78,5 @@
     "typescript": "~6.0.2",
     "vite": "^8.0.10",
     "vitest": "^2"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "core-js",
-      "es5-ext",
-      "esbuild"
-    ]
   }
 }
