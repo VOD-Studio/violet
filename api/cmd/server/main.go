@@ -139,6 +139,7 @@ func main() {
 
 	// P2.3: post DDD 容器
 	postContainer := app.NewPostContainer(gormDB)
+	settingsContainer := app.NewSettingsContainer(gormDB)
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
@@ -182,7 +183,6 @@ func main() {
 	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
 	tagHandler := handler.NewTagHandler(tagService)
 	adminHandler := handler.NewAdminHandler(statsService)
-	settingsHandler := handler.NewSettingsHandler(settingsService)
 	githubService := service.NewGitHubService(settingsService)
 	githubHandler := handler.NewGitHubHandler(githubService)
 	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
@@ -214,7 +214,7 @@ func main() {
 	r.Route("/api/v1", func(v1 chi.Router) {
 
 		// 公开站点设置
-		v1.Get("/settings", settingsHandler.GetPublicSettings) // 获取公开站点配置
+		v1.Get("/settings", settingsContainer.SettingsHandler.GetPublicSettings) // 获取公开站点配置
 
 		// GitHub 数据（公开，Token 在后端管理）
 		v1.Get("/github/contributions", githubHandler.GetContributions) // GitHub 贡献数据
@@ -351,8 +351,8 @@ func main() {
 			r.Get("/stats", adminHandler.GetDashboardStats)   // 仪表盘总览统计
 			r.Get("/stats/views", adminHandler.GetViewTrends) // 浏览量趋势
 
-			r.Get("/settings", settingsHandler.GetSettings)    // 获取站点设置
-			r.Put("/settings", settingsHandler.UpdateSettings) // 更新站点设置
+			r.Get("/settings", settingsContainer.SettingsHandler.GetSettings)    // 获取站点设置
+			r.Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
 
 			r.Get("/users", userMgmtHandler.ListUsers)                           // 用户列表
 			r.Get("/users/{id}", userMgmtHandler.GetUserDetail)                  // 用户详情

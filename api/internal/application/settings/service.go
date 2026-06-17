@@ -1,0 +1,109 @@
+// Package settings 提供站点配置的应用用例。
+package settings
+
+import (
+	"context"
+	"strconv"
+
+	"github.com/rs/zerolog/log"
+
+	domainsettings "blog-api/internal/domain/settings"
+)
+
+// Service 站点配置用例服务
+type Service struct {
+	store domainsettings.SettingsStore
+}
+
+// NewService 构造配置服务
+func NewService(store domainsettings.SettingsStore) *Service {
+	return &Service{store: store}
+}
+
+// GetAll 获取全部站点配置
+func (s *Service) GetAll(ctx context.Context) (domainsettings.SiteSettings, error) {
+	m, err := s.store.GetAll(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("查询站点设置失败")
+		return domainsettings.SiteSettings{}, err
+	}
+	return domainsettings.SiteSettings{}.MergeFrom(m), nil
+}
+
+// GetPublic 获取公开站点配置（不含敏感字段如 github_token）
+func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
+	settings, err := s.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"site_name":           settings.SiteName,
+		"site_description":    settings.SiteDescription,
+		"site_url":            settings.SiteURL,
+		"posts_per_page":      settings.PostsPerPage,
+		"comments_enabled":    settings.CommentsEnabled,
+		"comments_moderation": settings.CommentsModeration,
+		"github_username":     settings.GitHubUsername,
+		"tech_stack":          settings.TechStack,
+		"bio":                 settings.Bio,
+		"footer_text":         settings.FooterText,
+	}, nil
+}
+
+// UpdateInput 更新入参（别名 domain 类型，供 handler 引用）
+type UpdateInput = domainsettings.UpdateInput
+
+// Update 更新站点配置（部分更新）
+func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.SiteSettings, error) {
+	updates := map[string]string{}
+	if in.SiteName != nil {
+		updates["site_name"] = *in.SiteName
+	}
+	if in.SiteDescription != nil {
+		updates["site_description"] = *in.SiteDescription
+	}
+	if in.SiteURL != nil {
+		updates["site_url"] = *in.SiteURL
+	}
+	if in.AdminEmail != nil {
+		updates["admin_email"] = *in.AdminEmail
+	}
+	if in.PostsPerPage != nil {
+		updates["posts_per_page"] = strconv.Itoa(*in.PostsPerPage)
+	}
+	if in.CommentsEnabled != nil {
+		updates["comments_enabled"] = boolStr(*in.CommentsEnabled)
+	}
+	if in.CommentsModeration != nil {
+		updates["comments_moderation"] = boolStr(*in.CommentsModeration)
+	}
+	if in.GitHubUsername != nil {
+		updates["github_username"] = *in.GitHubUsername
+	}
+	if in.GitHubToken != nil {
+		updates["github_token"] = *in.GitHubToken
+	}
+	if in.TechStack != nil {
+		updates["tech_stack"] = *in.TechStack
+	}
+	if in.Bio != nil {
+		updates["bio"] = *in.Bio
+	}
+	if in.FooterText != nil {
+		updates["footer_text"] = *in.FooterText
+	}
+	for k, v := range updates {
+		if err := s.store.Upsert(ctx, k, v); err != nil {
+			log.Error().Err(err).Str("key", k).Msg("更新配置失败")
+			return domainsettings.SiteSettings{}, err
+		}
+	}
+	return s.GetAll(ctx)
+}
+
+func boolStr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
