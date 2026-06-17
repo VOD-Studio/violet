@@ -445,3 +445,32 @@ func (r *FileRepository) UpdateRefCount(ctx context.Context, id domainshared.ID,
 }
 
 var _ upload.FileRepository = (*FileRepository)(nil)
+
+// ============================================================
+// MusicSettingStore 音乐设置单行配置读写
+// ============================================================
+
+// MusicSettingStore 实现应用层 musicSettingsStore 端口
+type MusicSettingStore struct{ db *gorm.DB }
+
+// NewMusicSettingStore 创建音乐设置存储
+func NewMusicSettingStore(db *gorm.DB) *MusicSettingStore {
+	return &MusicSettingStore{db: db}
+}
+
+func (s *MusicSettingStore) GetPlayerVersion(ctx context.Context) (string, error) {
+	var ms model.MusicSetting
+	if err := s.db.WithContext(ctx).First(&ms, 1).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", nil
+		}
+		return "", err
+	}
+	return ms.PlayerVersion, nil
+}
+
+func (s *MusicSettingStore) UpdatePlayerVersion(ctx context.Context, version string) error {
+	return s.db.WithContext(ctx).Model(&model.MusicSetting{}).
+		Where("id = ?", 1).
+		Updates(map[string]any{"player_version": version, "updated_at": time.Now()}).Error
+}

@@ -147,10 +147,6 @@ func main() {
 	settingsService := service.NewSettingsService(queries)
 	statsService := service.NewStatsService(queries)
 	userService := service.NewUserService(queries)
-	musicService := service.NewMusicService()
-	musicSearchService := service.NewMusicSearchService()
-	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
-	musicSettingsService := service.NewMusicSettingsService(queries)
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 	auditService := service.NewAuditService(queries)
 
@@ -190,8 +186,6 @@ func main() {
 	githubService := service.NewGitHubService(settingsService)
 	githubHandler := handler.NewGitHubHandler(githubService)
 	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
-	musicHandler := handler.NewMusicHandler(musicService, musicSearchService)
-	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
 	auditHandler := handler.NewAuditHandler(auditService)
 
@@ -317,16 +311,16 @@ func main() {
 			r.Get("/{uploadId}/status", mediaH.GetUploadStatus)          // 查询上传状态
 		})
 
-		// 音乐（公开）
+		// 音乐（DDD mediaH，公开）
 		v1.Route("/music", func(r chi.Router) {
-			r.Get("/embed", musicHandler.GetEmbedInfo)                          // 解析音乐链接返回嵌入信息
-			r.Get("/playlist", musicHandler.GetPlaylist)                        // 解析歌单链接返回歌单信息
-			r.Get("/song", musicHandler.GetSongDetail)                          // 获取歌曲详情
-			r.Get("/search", musicHandler.SearchSongs)                          // 搜索歌曲
-			r.Get("/lyrics", musicHandler.GetLyrics)                            // 获取歌词
-			r.Get("/meta", musicHandler.FetchSongMeta)                          // 获取歌曲元数据（封面+歌词）
-			r.Get("/playlists/active", musicAdminHandler.GetAllActivePlaylists) // 获取所有启用歌单
-			r.Get("/settings", musicAdminHandler.GetMusicSettings)              // 获取播放器设置
+			r.Get("/embed", mediaH.GetMusicEmbed)              // 解析音乐链接返回嵌入信息
+			r.Get("/playlist", mediaH.ParsePlaylist)           // 解析歌单链接返回歌单信息
+			r.Get("/song", mediaH.GetSongDetail)               // 获取歌曲详情
+			r.Get("/search", mediaH.SearchSongs)               // 搜索歌曲
+			r.Get("/lyrics", mediaH.GetLyrics)                 // 获取歌词
+			r.Get("/meta", mediaH.GetSongMeta)                 // 获取歌曲元数据（封面+歌词）
+			r.Get("/playlists/active", mediaH.GetActivePlaylists) // 获取所有启用歌单
+			r.Get("/settings", mediaH.GetMusicSettings)        // 获取播放器设置
 		})
 
 		// 项目（公开，P2.8: DDD content handler）
@@ -414,21 +408,22 @@ func main() {
 			r.Patch("/posts/{id}/status", postH.UpdateStatus)    // 更新文章状态
 			r.Delete("/posts/{id}", postH.Delete)                // 删除文章
 
-			// 音乐管理
+			// 音乐管理（DDD mediaH）
 			r.Route("/music", func(r chi.Router) {
 				r.Route("/playlists", func(r chi.Router) {
-					r.Get("/", musicAdminHandler.ListPlaylists)                               // 歌单列表
-					r.Post("/", musicAdminHandler.CreatePlaylist)                             // 导入歌单
-					r.Post("/custom", musicAdminHandler.CreateCustomPlaylist)                 // 创建自定义歌单
-					r.Patch("/{id}", musicAdminHandler.UpdatePlaylist)                        // 更新歌单（启用/禁用）
-					r.Delete("/{id}", musicAdminHandler.DeletePlaylist)                       // 删除歌单
-					r.Post("/{id}/activate", musicAdminHandler.SetActivePlaylist)             // 设置为启用歌单
-					r.Post("/{id}/refresh", musicAdminHandler.RefreshPlaylistSongs)           // 刷新歌单歌曲
-					r.Post("/{id}/songs", musicAdminHandler.AddSongToPlaylist)                // 添加歌曲到歌单
-					r.Delete("/{id}/songs/{index}", musicAdminHandler.RemoveSongFromPlaylist) // 从歌单移除歌曲
-					r.Patch("/{id}/songs/{index}", musicAdminHandler.UpdateSongInPlaylist)    // 更新歌单中的歌曲信息
+					r.Get("/", mediaH.ListAllPlaylists)                 // 歌单列表
+					r.Post("/", mediaH.CreatePlaylist)                  // 导入歌单
+					r.Post("/custom", mediaH.CreateCustomPlaylist)      // 创建自定义歌单
+					r.Get("/{id}", mediaH.GetPlaylistDetail)            // 歌单详情
+					r.Patch("/{id}", mediaH.UpdatePlaylist)             // 更新歌单
+					r.Delete("/{id}", mediaH.DeletePlaylist)            // 删除歌单
+					r.Patch("/{id}/active", mediaH.SetPlaylistActive)   // 启用/禁用歌单
+					r.Post("/{id}/refresh", mediaH.RefreshPlaylist)     // 刷新歌单歌曲
+					r.Post("/{id}/songs", mediaH.AddSongToPlaylist)     // 添加歌曲到歌单
+					r.Delete("/{id}/songs/{index}", mediaH.RemoveSongFromPlaylist) // 移除歌曲
+					r.Patch("/{id}/songs/{index}", mediaH.UpdateSongInPlaylist)    // 更新歌曲
 				})
-				r.Patch("/settings", musicAdminHandler.UpdatePlayerVersion) // 更新播放器设置
+				r.Patch("/settings", mediaH.UpdatePlayerVersion) // 更新播放器设置
 			})
 
 			// 表情管理（DDD mediaH）
@@ -464,21 +459,10 @@ func main() {
 	// ============================================================
 	// P2.7/P2.8: 已迁移至官方路径的 DDD 模块
 	//   - P2.7: auth/role/permission/announcement
-	//   - P2.8: project/comment/post/emoji
-	// 下方仅保留尚未迁移模块的 shadow 路由
+	//   - P2.8: project/comment/post/emoji/upload/media/music
+	// 所有模块已迁移至官方路径，shadow 路由全部删除
 	// ============================================================
 
-	// music DDD 影子路由
-	// 音乐（前台公开）
-	r.Get("/api/v1/music/ddd/playlists/active", mediaH.GetActivePlaylists)
-	// 音乐（后台管理）
-	r.Route("/api/v1/admin/ddd/music", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Get("/playlists", mediaH.ListAllPlaylists)
-		r.Patch("/playlists/{id}/active", mediaH.SetPlaylistActive)
-		r.Delete("/playlists/{id}", mediaH.DeletePlaylist)
-	})
 	// 静态文件服务（无版本前缀）
 	fileServer := http.FileServer(http.Dir("./uploads"))
 	r.Get("/uploads/*", func(w http.ResponseWriter, r *http.Request) {
