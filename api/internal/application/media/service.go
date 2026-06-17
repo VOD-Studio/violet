@@ -753,6 +753,82 @@ func (s *UploadService) DeleteFile(ctx context.Context, id string) error {
 	return s.fileRepo.Delete(ctx, fid)
 }
 
+// GetFile 按 ID 获取文件详情（公开，不限 owner）
+func (s *UploadService) GetFile(ctx context.Context, id string) (*FileDTO, error) {
+	fid, err := shared.ParseID(id)
+	if err != nil {
+		return nil, err
+	}
+	f, err := s.fileRepo.FindByID(ctx, fid)
+	if err != nil {
+		return nil, err
+	}
+	dto := fileToDTO(f)
+	return &dto, nil
+}
+
+// BatchDeleteFiles 批量删除文件（软删除，返回成功删除数）
+func (s *UploadService) BatchDeleteFiles(ctx context.Context, ids []string) (int, error) {
+	if len(ids) == 0 {
+		return 0, shared.BadRequest("文件 ID 列表不能为空")
+	}
+	deleted := 0
+	for _, idStr := range ids {
+		fid, err := shared.ParseID(idStr)
+		if err != nil {
+			continue
+		}
+		f, err := s.fileRepo.FindByID(ctx, fid)
+		if err != nil {
+			continue // 不存在跳过
+		}
+		if !f.CanPhysicallyDelete() {
+			continue // 被引用跳过
+		}
+		if err := s.fileRepo.Delete(ctx, fid); err == nil {
+			deleted++
+		}
+	}
+	return deleted, nil
+}
+
+// UploadThumbnailInput 上传缩略图入参
+type UploadThumbnailInput struct {
+	FileID   string
+	FileName string
+	MimeType string
+	Content  []byte
+}
+
+// UploadThumbnail 为指定文件上传缩略图，返回缩略图 URL
+func (s *UploadService) UploadThumbnail(ctx context.Context, in UploadThumbnailInput) (string, error) {
+	fid, err := shared.ParseID(in.FileID)
+	if err != nil {
+		return "", err
+	}
+	f, err := s.fileRepo.FindByID(ctx, fid)
+	if err != nil {
+		return "", err
+	}
+	// 缩略图存到文件同目录，命名 fileUUID_thumb.<ext>
+	ext := strings.ToLower(filepath.Ext(in.FileName))
+	thumbName := fid.String() + "_thumb" + ext
+	storageDir := f.Purpose()
+	thumbPath := filepath.Join("uploads", storageDir, thumbName)
+	if err := s.storage.EnsureDir(filepath.Dir(thumbPath)); err != nil {
+		return "", shared.Internal("创建缩略图目录失败", err)
+	}
+	if err := os.WriteFile(thumbPath, in.Content, 0o644); err != nil {
+		return "", shared.Internal("保存缩略图失败", err)
+	}
+	url := "/uploads/" + storageDir + "/" + thumbName
+	f.SetThumbnail(url)
+	if err := s.fileRepo.Save(ctx, f); err != nil {
+		return "", err
+	}
+	return url, nil
+}
+
 func fileToDTO(f *domainupload.File) FileDTO {
 	return FileDTO{
 		ID: f.ID().String(), OwnerID: f.OwnerID().String(),

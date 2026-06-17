@@ -392,6 +392,64 @@ func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"message": "文件已删除"})
 }
 
+// GetMedia 获取媒体详情（公开）
+func (h *Handler) GetMedia(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	dto, err := h.uploadSvc.GetFile(r.Context(), id)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+}
+
+// BatchDeleteMedia 批量删除媒体
+func (h *Handler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IDs []string `json:"ids" validate:"required,min=1"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	deleted, err := h.uploadSvc.BatchDeleteFiles(r.Context(), req.IDs)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "批量删除完成", "deleted": deleted})
+}
+
+// UploadThumbnail 上传缩略图
+func (h *Handler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	defer file.Close()
+	content := make([]byte, header.Size)
+	if _, err := file.Read(content); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	url, err := h.uploadSvc.UploadThumbnail(r.Context(), appmedia.UploadThumbnailInput{
+		FileID: id, FileName: header.Filename,
+		MimeType: header.Header.Get("Content-Type"), Content: content,
+	})
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": map[string]any{"thumbnail": url}})
+}
+
 // ============================================================
 // 分片上传（Chunked Upload）
 // ============================================================

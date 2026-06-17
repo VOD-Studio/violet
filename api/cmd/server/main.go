@@ -147,7 +147,6 @@ func main() {
 	settingsService := service.NewSettingsService(queries)
 	statsService := service.NewStatsService(queries)
 	userService := service.NewUserService(queries)
-	fileService := service.NewFileService(gormDB, "uploads", cfg.UploadPathPrefix)
 	musicService := service.NewMusicService()
 	musicSearchService := service.NewMusicSearchService()
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
@@ -191,7 +190,6 @@ func main() {
 	githubService := service.NewGitHubService(settingsService)
 	githubHandler := handler.NewGitHubHandler(githubService)
 	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
-	mediaHandler := handler.NewMediaHandler(fileService, "uploads")
 	musicHandler := handler.NewMusicHandler(musicService, musicSearchService)
 	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
@@ -296,16 +294,16 @@ func main() {
 		// 批量获取评论反应
 		v1.Post("/comments/reactions/batch", commentReactionHandler.GetReactionsBatch)
 
-		// 媒体
+		// 媒体（DDD mediaH）
 		v1.Route("/media", func(r chi.Router) {
-			r.Get("/{id}", mediaHandler.GetMedia) // 获取媒体详情（公开）
+			r.Get("/{id}", mediaH.GetMedia) // 获取媒体详情（公开）
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator))
-				r.Get("/", mediaHandler.ListMedia)                      // 媒体列表（分页、类型筛选）
-				r.Delete("/{id}", mediaHandler.DeleteMedia)             // 删除媒体
-				r.Post("/batch-delete", mediaHandler.BatchDeleteMedia)  // 批量删除媒体
-				r.Post("/{id}/thumbnail", mediaHandler.UploadThumbnail) // 上传视频封面缩略图
+				r.Get("/", mediaH.ListFiles)                      // 媒体列表（分页、用途筛选）
+				r.Delete("/{id}", mediaH.DeleteFile)              // 删除媒体
+				r.Post("/batch-delete", mediaH.BatchDeleteMedia)  // 批量删除媒体
+				r.Post("/{id}/thumbnail", mediaH.UploadThumbnail) // 上传缩略图
 			})
 		})
 
