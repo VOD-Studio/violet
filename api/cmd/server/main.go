@@ -15,12 +15,12 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"blog-api/config"
 	"blog-api/internal/app"
+	authcmd "blog-api/internal/application/auth/command"
 	"blog-api/internal/handler"
 	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/job"
@@ -161,24 +161,30 @@ func main() {
 	auditService := service.NewAuditService(queries)
 	announcementService := service.NewAnnouncementService(queries)
 
-	count, err := queries.CountEmojiGroups(ctx)
-	if err != nil {
+	// 表情种子数据初始化（幂等）
+	// P2.7: 改用 GORM 计数，移除对 sqlc 的依赖
+	var emojiGroupCount int64
+	if err := gormDB.Model(&newmodel.EmojiGroup{}).Count(&emojiGroupCount).Error; err != nil {
 		log.Error().Err(err).Msg("检查表情分组数量失败")
-	} else if count == 0 {
+	} else if emojiGroupCount == 0 {
 		log.Info().Msg("表情分组为空，开始初始化 B站表情种子数据...")
 		if err := emojiSeedService.SeedBilibiliEmojis(ctx); err != nil {
 			log.Error().Err(err).Msg("表情种子数据初始化失败（不影响服务启动）")
 		}
 	} else {
-		log.Info().Int64("count", count).Msg("表情分组已有数据，跳过种子初始化")
+		log.Info().Int64("count", emojiGroupCount).Msg("表情分组已有数据，跳过种子初始化")
 	}
 
 	cleanupJob := job.NewCleanupJob(gormDB, "uploads/tmp")
 	go cleanupJob.Start(ctx)
 
-	// --- 超级管理员初始化 ---
+	// --- 超级管理员初始化（P2.7: 改用 DDD 用例，幂等）---
 	if cfg.SuperAdmin.Enabled {
-		if err := initSuperAdmin(ctx, queries, cfg.SuperAdmin); err != nil {
+		if err := authContainer.EnsureSuperAdmin.Handle(ctx, authcmd.EnsureSuperAdminInput{
+			Email:    cfg.SuperAdmin.Email,
+			Username: cfg.SuperAdmin.Username,
+			Password: cfg.SuperAdmin.Password,
+		}); err != nil {
 			log.Fatal().Err(err).Msg("超级管理员初始化失败")
 		}
 	}
@@ -601,78 +607,4 @@ func main() {
 	if err := http.ListenAndServe(addr, r); err != nil {
 		log.Fatal().Err(err).Msg("服务启动失败")
 	}
-}
-
-// initSuperAdmin 初始化超级管理员账户
-// 如果用户不存在则创建，已存在则更新密码和角色
-// 同时确保 role_id 正确指向 roles 表中的 superadmin 角色
-func initSuperAdmin(ctx context.Context, queries *generated.Queries, cfg config.SuperAdminConfig) error {
-	if cfg.Email == "" || cfg.Password == "" {
-		return fmt.Errorf("超级管理员邮箱或密码未配置")
-	}
-
-	// 确保 roles 表中存在 superadmin 角色
-	superadminRole, err := queries.GetRoleByName(ctx, "superadmin")
-	if err != nil {
-		return fmt.Errorf("获取 superadmin 角色失败（请确认迁移已执行）: %w", err)
-	}
-
-	user, err := queries.GetUserByEmail(ctx, cfg.Email)
-	if err == nil {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cfg.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return fmt.Errorf("密码哈希失败: %w", err)
-		}
-		err = queries.UpdateUserPassword(ctx, generated.UpdateUserPasswordParams{
-			ID:           user.ID,
-			PasswordHash: string(hashedPassword),
-		})
-		if err != nil {
-			return fmt.Errorf("更新超级管理员密码失败: %w", err)
-		}
-		_, err = queries.UpdateUserRole(ctx, generated.UpdateUserRoleParams{
-			ID:   user.ID,
-			Role: "superadmin",
-		})
-		if err != nil {
-			return fmt.Errorf("更新超级管理员角色失败: %w", err)
-		}
-		err = queries.UpdateUserRoleByID(ctx, generated.UpdateUserRoleByIDParams{
-			ID:     user.ID,
-			RoleID: sql.NullInt32{Int32: superadminRole.ID, Valid: true},
-		})
-		if err != nil {
-			return fmt.Errorf("更新超级管理员角色ID失败: %w", err)
-		}
-		log.Info().Str("username", cfg.Username).Str("email", cfg.Email).Msg("超级管理员已更新")
-		return nil
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cfg.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("密码哈希失败: %w", err)
-	}
-
-	newUser, err := queries.CreateUser(ctx, generated.CreateUserParams{
-		Username:      cfg.Username,
-		Email:         cfg.Email,
-		PasswordHash:  string(hashedPassword),
-		Role:          "superadmin",
-		EmailVerified: true,
-		IsActive:      true,
-	})
-	if err != nil {
-		return fmt.Errorf("创建超级管理员失败: %w", err)
-	}
-
-	err = queries.UpdateUserRoleByID(ctx, generated.UpdateUserRoleByIDParams{
-		ID:     newUser.ID,
-		RoleID: sql.NullInt32{Int32: superadminRole.ID, Valid: true},
-	})
-	if err != nil {
-		return fmt.Errorf("设置超级管理员角色ID失败: %w", err)
-	}
-
-	log.Info().Str("username", cfg.Username).Str("email", cfg.Email).Msg("超级管理员已创建")
-	return nil
 }
