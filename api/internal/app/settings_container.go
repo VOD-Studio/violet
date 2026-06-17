@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 
 	appsettings "blog-api/internal/application/settings"
+	domainsettings "blog-api/internal/domain/settings"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	settingshttp "blog-api/internal/interfaces/http/handler/settings"
 )
@@ -12,6 +13,7 @@ import (
 type SettingsContainer struct {
 	SettingsHandler *settingshttp.Handler
 	Service         *appsettings.Service
+	Store           domainsettings.SettingsStore
 }
 
 // NewSettingsContainer 装配站点配置模块
@@ -21,5 +23,6 @@ func NewSettingsContainer(db *gorm.DB) *SettingsContainer {
 	return &SettingsContainer{
 		SettingsHandler: settingshttp.NewHandler(svc),
 		Service:         svc,
+		Store:           store,
 	}
 }

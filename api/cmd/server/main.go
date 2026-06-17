@@ -141,11 +141,12 @@ func main() {
 	postContainer := app.NewPostContainer(gormDB)
 	settingsContainer := app.NewSettingsContainer(gormDB)
 	tagContainer := app.NewTagContainer(gormDB)
+	githubContainer := app.NewGitHubContainer(settingsContainer.Store)
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
 	commentReactionService := service.NewCommentReactionService(queries)
-	settingsService := service.NewSettingsService(queries)
+	// P2.8: settings 已切换 DDD settingsContainer，旧 SettingsService 不再初始化
 	statsService := service.NewStatsService(queries)
 	userService := service.NewUserService(queries)
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
@@ -184,8 +185,6 @@ func main() {
 	// P2.8: tag 已切换 DDD tagContainer，旧 TagService 不再初始化
 
 	adminHandler := handler.NewAdminHandler(statsService)
-	githubService := service.NewGitHubService(settingsService)
-	githubHandler := handler.NewGitHubHandler(githubService)
 	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
 	auditHandler := handler.NewAuditHandler(auditService)
@@ -218,8 +217,8 @@ func main() {
 		v1.Get("/settings", settingsContainer.SettingsHandler.GetPublicSettings) // 获取公开站点配置
 
 		// GitHub 数据（公开，Token 在后端管理）
-		v1.Get("/github/contributions", githubHandler.GetContributions) // GitHub 贡献数据
-		v1.Get("/github/repos", githubHandler.GetRepos)                 // GitHub 仓库数据
+		v1.Get("/github/contributions", githubContainer.GitHubHandler.GetContributions) // GitHub 贡献数据
+		v1.Get("/github/repos", githubContainer.GitHubHandler.GetRepos)                 // GitHub 仓库数据
 
 		// 认证（P2.7: DDD auth handler 已切换为官方路径）
 		authH := authContainer.AuthHandler
