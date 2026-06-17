@@ -155,6 +155,17 @@ func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"data": items})
 }
 
+// GetProject 获取项目详情（公开）
+func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	dto, err := h.projSvc.Get(r.Context(), id)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+}
+
 type projectRequest struct {
 	Title       string   `json:"title" validate:"required"`
 	Description string   `json:"description"`

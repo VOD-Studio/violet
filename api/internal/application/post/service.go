@@ -181,6 +181,52 @@ func (s *Service) Publish(ctx context.Context, id string) error {
 	return s.repo.Save(ctx, p)
 }
 
+// UpdateStatus 更新文章状态（draft/published/archived）
+//
+// 根据状态调用对应聚合根状态机方法，保证 published_at 等不变量一致。
+func (s *Service) UpdateStatus(ctx context.Context, id, status string) (PostDTO, error) {
+	pid, err := shared.ParseID(id)
+	if err != nil {
+		return PostDTO{}, err
+	}
+	if !domain.IsValidStatus(status) {
+		return PostDTO{}, shared.BadRequest("无效的文章状态")
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return PostDTO{}, err
+	}
+	switch status {
+	case domain.StatusPublished:
+		p.Publish()
+	case domain.StatusArchived:
+		p.Archive()
+	case domain.StatusDraft:
+		p.RevertToDraft()
+	}
+	if err := s.repo.Save(ctx, p); err != nil {
+		return PostDTO{}, err
+	}
+	return toDTO(p), nil
+}
+
+// IncrementView 浏览量 +1（含浏览事件记录，供 admin 趋势统计）
+func (s *Service) IncrementView(ctx context.Context, id, ipAddress, userAgent string) error {
+	pid, err := shared.ParseID(id)
+	if err != nil {
+		return err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return err
+	}
+	p.IncrementView()
+	if err := s.repo.Save(ctx, p); err != nil {
+		return err
+	}
+	return s.repo.RecordView(ctx, pid, ipAddress, userAgent)
+}
+
 // Delete 删除文章
 func (s *Service) Delete(ctx context.Context, id string) error {
 	pid, err := shared.ParseID(id)

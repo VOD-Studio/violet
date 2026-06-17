@@ -141,6 +141,110 @@ func (r *CommentRepository) FindPending(ctx context.Context, page, limit int) ([
 	return result, total, nil
 }
 
+// CountPending 统计待审核评论数量
+func (r *CommentRepository) CountPending(ctx context.Context) (int64, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&model.Comment{}).
+		Where("status = ?", comment.StatusPending).Count(&count).Error; err != nil {
+		return 0, domainshared.Internal("统计待审核评论失败", err)
+	}
+	return count, nil
+}
+
+// commentWithPostRow 用于 join posts 表的查询结果
+type commentWithPostRow struct {
+	model.Comment
+	PostTitle *string `gorm:"column:post_title"`
+	PostSlug  *string `gorm:"column:post_slug"`
+}
+
+// rowToCommentWithPost 将 join 结果转为 CommentWithPost 读模型
+func rowToCommentWithPost(row commentWithPostRow) (*comment.CommentWithPost, error) {
+	c, err := commentToDomain(row.Comment)
+	if err != nil {
+		return nil, err
+	}
+	ref := comment.PostRef{ID: domainshared.MustParseID(row.PostID.String())}
+	if row.PostTitle != nil {
+		ref.Title = *row.PostTitle
+	}
+	if row.PostSlug != nil {
+		ref.Slug = *row.PostSlug
+	}
+	return &comment.CommentWithPost{Comment: c, Post: ref}, nil
+}
+
+// FindAll 全局评论列表（后台管理，关联文章标题/slug）
+func (r *CommentRepository) FindAll(ctx context.Context, status string, page, limit int) ([]*comment.CommentWithPost, int64, error) {
+	query := r.db.WithContext(ctx).
+		Table("comments c").
+		Select("c.*, p.title AS post_title, p.slug AS post_slug").
+		Joins("LEFT JOIN posts p ON p.id = c.post_id")
+	if status != "" {
+		query = query.Where("c.status = ?", status)
+	}
+	var total int64
+	countQuery := r.db.WithContext(ctx).
+		Table("comments c").
+		Joins("LEFT JOIN posts p ON p.id = c.post_id")
+	if status != "" {
+		countQuery = countQuery.Where("c.status = ?", status)
+	}
+	if err := countQuery.Distinct("c.id").Count(&total).Error; err != nil {
+		return nil, 0, domainshared.Internal("统计评论失败", err)
+	}
+	offset := (page - 1) * limit
+	var rows []commentWithPostRow
+	if err := query.Order("c.created_at DESC").Offset(offset).Limit(limit).Scan(&rows).Error; err != nil {
+		return nil, 0, domainshared.Internal("查询评论列表失败", err)
+	}
+	result := make([]*comment.CommentWithPost, 0, len(rows))
+	for _, row := range rows {
+		cwp, err := rowToCommentWithPost(row)
+		if err != nil {
+			return nil, 0, err
+		}
+		result = append(result, cwp)
+	}
+	return result, total, nil
+}
+
+// FindByIDWithPost 按ID查评论并关联所属文章（后台详情）
+func (r *CommentRepository) FindByIDWithPost(ctx context.Context, id domainshared.ID) (*comment.CommentWithPost, error) {
+	var row commentWithPostRow
+	err := r.db.WithContext(ctx).
+		Table("comments c").
+		Select("c.*, p.title AS post_title, p.slug AS post_slug").
+		Joins("LEFT JOIN posts p ON p.id = c.post_id").
+		Where("c.id = ?", id.UUID()).
+		Scan(&row).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, comment.ErrNotFound
+		}
+		return nil, domainshared.Internal("查询评论详情失败", err)
+	}
+	if row.ID == (model.Comment{}).ID {
+		return nil, comment.ErrNotFound
+	}
+	return rowToCommentWithPost(row)
+}
+
+// BatchUpdateStatus 批量更新评论状态，返回受影响行数
+func (r *CommentRepository) BatchUpdateStatus(ctx context.Context, ids []domainshared.ID, status string) (int64, error) {
+	uuids := make([]interface{}, len(ids))
+	for i, id := range ids {
+		uuids[i] = id.UUID()
+	}
+	result := r.db.WithContext(ctx).Model(&model.Comment{}).
+		Where("id IN ?", uuids).
+		Updates(map[string]any{"status": status, "updated_at": time.Now()})
+	if result.Error != nil {
+		return 0, domainshared.Internal("批量更新评论状态失败", result.Error)
+	}
+	return result.RowsAffected, nil
+}
+
 func (r *CommentRepository) Save(ctx context.Context, c *comment.Comment) error {
 	po, err := commentToPO(c)
 	if err != nil {

@@ -179,4 +179,17 @@ func (r *PostRepository) Delete(ctx context.Context, id domainshared.ID) error {
 	return nil
 }
 
+// RecordView 记录浏览事件（写 post_views 表）
+func (r *PostRepository) RecordView(ctx context.Context, postID domainshared.ID, ipAddress, userAgent string) error {
+	pv := model.PostView{
+		PostID:    postID.UUID(),
+		IPAddress: ipAddress,
+		UserAgent: userAgent,
+	}
+	if err := r.db.WithContext(ctx).Create(&pv).Error; err != nil {
+		return domainshared.Internal("记录浏览事件失败", err)
+	}
+	return nil
+}
+
 var _ post.PostRepository = (*PostRepository)(nil)

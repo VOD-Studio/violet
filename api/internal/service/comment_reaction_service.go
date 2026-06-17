@@ -23,6 +23,8 @@ var (
 	ErrReactionAlreadyExists = errors.New("您已经添加过这个表情了")
 	// ErrReactionNotFound 表情反应不存在
 	ErrReactionNotFound = errors.New("表情反应不存在")
+	// ErrCommentNotFound 评论不存在（迁移自 comment_service.go）
+	ErrCommentNotFound = errors.New("评论不存在")
 )
 
 // CommentReactionService 评论反应服务，处理评论表情反应的业务逻辑

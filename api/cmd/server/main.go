@@ -27,7 +27,6 @@ import (
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
 	"blog-api/internal/model"
-	"blog-api/internal/repository"
 	"blog-api/internal/repository/generated"
 	"blog-api/internal/service"
 )
@@ -97,7 +96,7 @@ func main() {
 	// 记录警告但不致命退出，保证服务能启动。
 	if err := gormDB.AutoMigrate(
 		&newmodel.User{}, &newmodel.Role{}, &newmodel.Permission{}, &newmodel.RolePermission{},
-		&newmodel.Post{}, &newmodel.Tag{},
+		&newmodel.Post{}, &newmodel.PostView{}, &newmodel.Tag{},
 		&newmodel.Comment{}, &newmodel.CommentReaction{},
 		&newmodel.Announcement{}, &newmodel.Project{},
 		&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
@@ -117,8 +116,7 @@ func main() {
 
 	// --- 服务层初始化 ---
 
-	// 评论使用 GORM repository
-	commentRepo := repository.NewCommentRepository(gormDB)
+	// 评论 repository 已迁移至 DDD commentContainer
 
 	emailService := service.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom)
 
@@ -144,11 +142,9 @@ func main() {
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB)
-	postService := service.NewPostService(queries)
 	tagService := service.NewTagService(queries)
 	commentReactionService := service.NewCommentReactionService(queries)
 	settingsService := service.NewSettingsService(queries)
-	commentService := service.NewCommentService(commentRepo, queries, commentReactionService, settingsService)
 	statsService := service.NewStatsService(queries)
 	userService := service.NewUserService(queries)
 	fileService := service.NewFileService(gormDB, "uploads", cfg.UploadPathPrefix)
@@ -157,7 +153,6 @@ func main() {
 	musicSearchService := service.NewMusicSearchService()
 	musicPlaylistAdminService := service.NewMusicPlaylistAdminService(queries, musicService)
 	musicSettingsService := service.NewMusicSettingsService(queries)
-	projectService := service.NewProjectService(queries)
 	emojiService := service.NewEmojiService(queries, "uploads/emojis")
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 	auditService := service.NewAuditService(queries)
@@ -192,10 +187,7 @@ func main() {
 
 	// --- 处理器初始化 ---
 	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
-
-	postHandler := handler.NewPostHandler(postService, tagService)
 	tagHandler := handler.NewTagHandler(tagService)
-	commentHandler := handler.NewCommentHandler(commentService, fileService)
 	adminHandler := handler.NewAdminHandler(statsService)
 	settingsHandler := handler.NewSettingsHandler(settingsService)
 	githubService := service.NewGitHubService(settingsService)
@@ -205,7 +197,6 @@ func main() {
 	uploadHandler := handler.NewUploadHandler(uploadService)
 	musicHandler := handler.NewMusicHandler(musicService, musicSearchService)
 	musicAdminHandler := handler.NewMusicAdminHandler(musicPlaylistAdminService, musicSettingsService)
-	projectHandler := handler.NewProjectHandler(projectService)
 	emojiHandler := handler.NewEmojiHandler(emojiService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
 	auditHandler := handler.NewAuditHandler(auditService)
@@ -240,6 +231,8 @@ func main() {
 
 		// 认证（P2.7: DDD auth handler 已切换为官方路径）
 		authH := authContainer.AuthHandler
+		// P2.8: DDD content handler（announcement + project）
+		contentH := contentContainer.ContentHandler
 		v1.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authH.Register)        // 用户注册
 			r.Post("/verify-email", authH.VerifyEmail) // 邮箱验证
@@ -257,19 +250,12 @@ func main() {
 			})
 		})
 
-		// 文章
+		// 文章（DDD postH；前台公开 List/详情/浏览）
+		postH := postContainer.PostHandler
 		v1.Route("/posts", func(r chi.Router) {
-			r.Get("/", postHandler.List)                    // 文章列表（分页）
-			r.Get("/{id}", postHandler.GetByID)             // 按 ID 或 slug 获取文章（统一端点）
-			r.Post("/{id}/view", postHandler.IncrementView) // 增加浏览次数
-
-			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(tokenValidator))
-				r.Post("/", postHandler.Create)                   // 创建文章
-				r.Put("/{id}", postHandler.Update)                // 更新文章
-				r.Delete("/{id}", postHandler.Delete)             // 删除文章
-				r.Patch("/{id}/status", postHandler.UpdateStatus) // 更新文章状态（发布/草稿）
-			})
+			r.Get("/", postH.ListPublished)              // 已发布文章列表（分页）
+			r.Get("/{slug}", postH.GetBySlug)            // 按 slug 获取文章
+			r.Post("/{id}/view", postH.IncrementView)    // 增加浏览次数
 		})
 
 		// 标签
@@ -283,18 +269,21 @@ func main() {
 			})
 		})
 
-		// 评论
-		v1.Route("/posts/{id}/comments", func(r chi.Router) {
-			r.Get("/", commentHandler.ListApprovedComments)                                          // 获取文章已审核评论
-			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentHandler.CreateComment) // 提交评论（限流）
+		// 评论（DDD commentH；评论反应仍用旧 commentReactionHandler）
+		commentH := commentContainer.CommentHandler
+		v1.Route("/posts/{postId}/comments", func(r chi.Router) {
+			r.Get("/", commentH.ListByPost)                                          // 获取文章已审核评论
+			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentH.Create) // 提交评论（限流）
 		})
 
+		// 评论审核/删除（DDD commentH，admin 权限）
 		v1.Route("/comments/{id}", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator))
 				r.Use(middleware.AdminRequired)
-				r.Patch("/status", commentHandler.UpdateCommentStatus) // 审核评论（通过/拒绝）
-				r.Delete("/", commentHandler.DeleteComment)            // 删除评论
+				r.Patch("/approve", commentH.Approve) // 审核通过
+				r.Patch("/spam", commentH.MarkSpam)   // 标记垃圾
+				r.Delete("/", commentH.Delete)        // 删除评论
 			})
 		})
 
@@ -343,10 +332,10 @@ func main() {
 			r.Get("/settings", musicAdminHandler.GetMusicSettings)              // 获取播放器设置
 		})
 
-		// 项目
+		// 项目（公开，P2.8: DDD content handler）
 		v1.Route("/projects", func(r chi.Router) {
-			r.Get("/", projectHandler.List)        // 项目列表
-			r.Get("/{id}", projectHandler.GetByID) // 项目详情
+			r.Get("/", contentH.ListProjects)  // 项目列表
+			r.Get("/{id}", contentH.GetProject) // 项目详情
 		})
 
 		// 表情（公开）
@@ -356,7 +345,6 @@ func main() {
 		})
 
 		// 公告（公开，P2.7: DDD content handler）
-		contentH := contentContainer.ContentHandler
 		v1.Get("/announcements", contentH.ListActiveAnnouncements) // 获取生效公告列表
 
 		// =====================================================
@@ -415,11 +403,19 @@ func main() {
 			r.Patch("/announcements/{id}", contentH.UpdateAnnouncement)  // 更新公告
 			r.Delete("/announcements/{id}", contentH.DeleteAnnouncement) // 删除公告
 
-			r.Get("/comments/pending", commentHandler.ListPendingComments)             // 待审核评论列表
-			r.Get("/comments/pending/count", commentHandler.CountPendingComments)      // 待审核评论数量
-			r.Get("/comments", commentHandler.ListAllComments)                         // 所有评论列表（支持状态筛选）
-			r.Get("/comments/{id}", commentHandler.GetCommentDetail)                   // 评论详情
-			r.Patch("/comments/batch-status", commentHandler.BatchUpdateCommentStatus) // 批量更新评论状态
+			r.Get("/comments/pending", commentH.ListPending)             // 待审核评论列表
+			r.Get("/comments/pending/count", commentH.CountPending)      // 待审核评论数量
+			r.Get("/comments", commentH.ListAll)                          // 所有评论列表（支持状态筛选）
+			r.Get("/comments/{id}", commentH.GetDetail)                   // 评论详情
+			r.Patch("/comments/batch-status", commentH.BatchUpdateStatus) // 批量更新评论状态
+
+			// 文章管理（DDD postH）
+			r.Get("/posts", postH.ListAll)                       // 所有文章列表
+			r.Get("/posts/{id}", postH.GetByID)                  // 文章详情
+			r.Post("/posts", postH.Create)                       // 创建文章
+			r.Put("/posts/{id}", postH.Update)                   // 更新文章
+			r.Patch("/posts/{id}/status", postH.UpdateStatus)    // 更新文章状态
+			r.Delete("/posts/{id}", postH.Delete)                // 删除文章
 
 			// 音乐管理
 			r.Route("/music", func(r chi.Router) {
@@ -455,61 +451,19 @@ func main() {
 			})
 
 			r.Route("/projects", func(r chi.Router) {
-				r.Post("/", projectHandler.Create)       // 创建项目
-				r.Put("/{id}", projectHandler.Update)    // 更新项目
-				r.Delete("/{id}", projectHandler.Delete) // 删除项目
+				r.Post("/", contentH.CreateProject)     // 创建项目
+				r.Put("/{id}", contentH.UpdateProject)  // 更新项目
+				r.Delete("/{id}", contentH.DeleteProject) // 删除项目
 			})
 		})
 	})
 
 	// ============================================================
-	// P2.7: 已迁移至官方路径的 DDD 模块（auth/role/permission/announcement）
-	//       其 shadow 路由已删除，下方仅保留尚未迁移模块的 shadow 路由
+	// P2.7/P2.8: 已迁移至官方路径的 DDD 模块
+	//   - P2.7: auth/role/permission/announcement
+	//   - P2.8: project/comment/post
+	// 下方仅保留尚未迁移模块的 shadow 路由
 	// ============================================================
-
-	// announcement + project DDD 影子路由
-	contentH := contentContainer.ContentHandler
-	// 项目（前台公开读取）
-	r.Get("/api/v1/projects/ddd", contentH.ListProjects)
-	// 项目（后台管理）
-	r.Route("/api/v1/admin/ddd/projects", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Post("/", contentH.CreateProject)
-		r.Put("/{id}", contentH.UpdateProject)
-		r.Delete("/{id}", contentH.DeleteProject)
-	})
-
-	// comment DDD 影子路由
-	commentH := commentContainer.CommentHandler
-	// 前台公开（按文章列出评论 + 发表评论）
-	r.Get("/api/v1/posts/ddd/{postId}/comments", commentH.ListByPost)
-	r.Post("/api/v1/posts/ddd/{postId}/comments", commentH.Create)
-	// 后台管理（待审核列表 + 审核 + 删除）
-	r.Route("/api/v1/admin/ddd/comments", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Get("/pending", commentH.ListPending)
-		r.Patch("/{id}/approve", commentH.Approve)
-		r.Patch("/{id}/spam", commentH.MarkSpam)
-		r.Delete("/{id}", commentH.Delete)
-	})
-
-	// post DDD 影子路由
-	postH := postContainer.PostHandler
-	// 前台公开
-	r.Get("/api/v1/posts/ddd", postH.ListPublished)
-	r.Get("/api/v1/posts/ddd/{slug}", postH.GetBySlug)
-	// 后台管理
-	r.Route("/api/v1/admin/ddd/posts", func(r chi.Router) {
-		r.Use(middleware.Auth(tokenValidator))
-		r.Use(middleware.AdminRequired)
-		r.Get("/", postH.ListAll)
-		r.Post("/", postH.Create)
-		r.Put("/{id}", postH.Update)
-		r.Patch("/{id}/publish", postH.Publish)
-		r.Delete("/{id}", postH.Delete)
-	})
 
 	// media DDD 影子路由
 	mediaH := mediaContainer.MediaHandler

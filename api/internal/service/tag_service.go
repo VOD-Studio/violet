@@ -6,7 +6,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+	"unicode"
 
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 
 	"blog-api/internal/repository/generated"
@@ -111,4 +114,59 @@ func (s *TagService) DeleteTag(ctx context.Context, id int32) error {
 
 	log.Info().Int32("tag_id", id).Msg("标签删除成功")
 	return nil
+}
+
+// GenerateSlug 从标题生成 URL 友好的 slug
+// 支持中文字符，限制最大长度为 50 字符
+// 迁移自 post_service.go（post 模块已迁移至 DDD）
+func GenerateSlug(title string) string {
+	slug := strings.ToLower(title)
+
+	// 将空格替换为连字符
+	slug = strings.ReplaceAll(slug, " ", "-")
+
+	// 移除不合法的字符，只保留字母、数字、连字符和中文
+	var result []rune
+	prevDash := false
+	for _, r := range slug {
+		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '-' || unicode.Is(unicode.Han, r) {
+			if r == '-' {
+				if !prevDash {
+					result = append(result, r)
+					prevDash = true
+				}
+			} else {
+				result = append(result, r)
+				prevDash = false
+			}
+		}
+	}
+
+	slug = strings.Trim(string(result), "-")
+
+	// 限制最大长度为 50 字符，超出则截断并添加随机后缀
+	if len(slug) > 50 {
+		runes := []rune(slug[:50])
+		lastDash := -1
+		for i := len(runes) - 1; i >= 0; i-- {
+			if runes[i] == '-' {
+				lastDash = i
+				break
+			}
+		}
+		if lastDash > 0 {
+			slug = string(runes[:lastDash])
+		} else {
+			slug = string(runes)
+		}
+		// 添加随机后缀确保唯一性
+		slug = slug + "-" + uuid.New().String()[:6]
+	}
+
+	// 如果 slug 为空，使用随机 ID
+	if slug == "" {
+		slug = "post-" + uuid.New().String()[:8]
+	}
+
+	return slug
 }

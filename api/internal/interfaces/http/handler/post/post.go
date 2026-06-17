@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 
@@ -27,6 +28,17 @@ func NewHandler(svc *apppost.Service) *Handler {
 func (h *Handler) GetBySlug(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
 	dto, err := h.svc.GetBySlug(r.Context(), slug)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+}
+
+// GetByID 按 ID 获取文章（后台管理）
+func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	dto, err := h.svc.GetByID(r.Context(), id)
 	if err != nil {
 		interfacesmw.RespondError(w, r, err)
 		return
@@ -131,6 +143,48 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"message": "文章已更新"})
+}
+
+// IncrementView 增加浏览计数（前台公开）
+func (h *Handler) IncrementView(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	ipAddress := r.Header.Get("X-Real-IP")
+	if ipAddress == "" {
+		ipAddress = r.Header.Get("X-Forwarded-For")
+		if ipAddress != "" {
+			ipAddress = strings.TrimSpace(strings.Split(ipAddress, ",")[0])
+		} else {
+			ipAddress = r.RemoteAddr
+		}
+	}
+	userAgent := r.Header.Get("User-Agent")
+	if err := h.svc.IncrementView(r.Context(), id, ipAddress, userAgent); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "ok"})
+}
+
+// UpdateStatus 更新文章状态（后台：draft/published/archived）
+func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req struct {
+		Status string `json:"status" validate:"required,oneof=draft published archived"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	dto, err := h.svc.UpdateStatus(r.Context(), id, req.Status)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
 }
 
 // Publish 发布文章
