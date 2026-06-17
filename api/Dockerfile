@@ -24,8 +24,12 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server
 # 阶段3: 运行时
 FROM gcr.io/distroless/static-debian12
 
+WORKDIR /app
+
 # 复制构建产物
 COPY --from=builder /server /server
+# 复制数据库迁移文件（main.go 使用相对路径 "migrations" 加载）
+COPY --from=builder /app/migrations ./migrations
 
 USER nonroot:nonroot
 
