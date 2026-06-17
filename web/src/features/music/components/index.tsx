@@ -1,11 +1,23 @@
 /**
  * 音乐播放器入口
  * 根据后台设置选择播放器版本，各组件独立管理自己的按钮
+ *
+ * 2.0 SSR：APlayer/Plyr 依赖浏览器 API（window/DOM），用 lazy 延迟加载，
+ * 避免 SSR 阶段模块求值时崩溃。顶层不再静态 import 这两个组件。
  */
 
+import { lazy, Suspense } from "react";
 import { useMusicSettings, useActivePlaylists } from "../api";
-import { APlayerMusicPlayer } from "./APlayerMusicPlayer";
-import { PlyrMusicPlayer } from "./PlyrMusicPlayer";
+
+// 浏览器专属：APlayer/Plyr 顶层访问 window，SSR 阶段不加载
+const APlayerMusicPlayer = lazy(() =>
+  import("./APlayerMusicPlayer").then((m) => ({
+    default: m.APlayerMusicPlayer,
+  })),
+);
+const PlyrMusicPlayer = lazy(() =>
+  import("./PlyrMusicPlayer").then((m) => ({ default: m.PlyrMusicPlayer })),
+);
 
 /**
  * 音乐播放器入口组件
@@ -21,20 +33,27 @@ export function MusicPlayer() {
   }
 
   const version = settings?.player_version || "v1";
-
-  if (version === "v2") {
-    return <PlyrMusicPlayer playlists={playlists} />;
-  }
+  const isV2 = version === "v2";
 
   // Convert to APlayer format
-  const aplayerPlaylists = playlists.map((p) => ({
-    id: p.id,
-    server: p.platform,
-    type: "playlist",
-    playlistId: p.playlist_id,
-    title: p.title,
-    isActive: p.is_active,
-  }));
+  const aplayerPlaylists = !isV2
+    ? playlists.map((p) => ({
+        id: p.id,
+        server: p.platform,
+        type: "playlist",
+        playlistId: p.playlist_id,
+        title: p.title,
+        isActive: p.is_active,
+      }))
+    : null;
 
-  return <APlayerMusicPlayer playlists={aplayerPlaylists} />;
+  return (
+    <Suspense fallback={null}>
+      {isV2 ? (
+        <PlyrMusicPlayer playlists={playlists} />
+      ) : (
+        <APlayerMusicPlayer playlists={aplayerPlaylists ?? []} />
+      )}
+    </Suspense>
+  );
 }

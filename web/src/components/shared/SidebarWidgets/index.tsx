@@ -1,11 +1,26 @@
 /**
  * 悬浮侧边组件集合
  * 统一管理回到顶部、音乐播放器、快捷评论等悬浮组件
+ *
+ * 2.0 SSR：MusicPlayer/QuickComment 依赖浏览器 API（APlayer/Plyr/contentEditable），
+ * 用 lazy + Suspense 延迟到客户端加载，避免 SSR 阶段 window 未定义崩溃。
  */
 
-import { MusicPlayer } from "@/features/music";
+import { lazy, Suspense } from "react";
 import { BackToTop } from "../BackToTop";
-import { QuickComment } from "@/features/comments";
+
+// 浏览器专属：含 APlayer/Plyr（顶层访问 window），SSR 阶段不加载。
+// 直接 import components/index.tsx（内部已 lazy APlayer/Plyr），绕过
+// features/music/index.ts barrel 的顶层 re-export 副作用。
+const MusicPlayer = lazy(() =>
+  import("@/features/music/components/index").then((m) => ({
+    default: m.MusicPlayer,
+  })),
+);
+// 浏览器专属：评论 RichTextInput 用 contentEditable，SSR 阶段不加载
+const QuickComment = lazy(() =>
+  import("@/features/comments").then((m) => ({ default: m.QuickComment })),
+);
 
 /** 回到顶部按钮配置 */
 interface BackToTopConfig {
@@ -41,8 +56,16 @@ export function SidebarWidgets({
 }: SidebarWidgetsProps) {
   return (
     <>
-      {showMusicPlayer && <MusicPlayer />}
-      {showQuickComment && <QuickComment />}
+      {showMusicPlayer && (
+        <Suspense fallback={null}>
+          <MusicPlayer />
+        </Suspense>
+      )}
+      {showQuickComment && (
+        <Suspense fallback={null}>
+          <QuickComment />
+        </Suspense>
+      )}
       {showBackToTop && <BackToTop {...backToTopConfig} />}
     </>
   );

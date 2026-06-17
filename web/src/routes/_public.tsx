@@ -1,22 +1,16 @@
 // 前台布局路由（pathless layout）
 //
-// 不影响 URL（不带路径段），仅为其下路由提供 Layout 外壳。
-// 对应原 react-router 的 <Route element={<Layout />}>。
+// 不影响 URL（不带路径段），仅为其下路由提供 Layout 外壳（Header/Footer/
+// AnnouncementBar/SidebarWidgets/AnimatedOutlet）。
 //
-// 注意：2.0 重构期，旧 Layout 组件（Header/AnimatedOutlet/Footer）仍依赖
-// react-router，故此处暂用一个简化的外壳，待 Phase 4 视觉重设计时一并迁移
-// Layout 内部组件到 TanStack Router。
+// 2.0：Layout 内部组件（Header/AnimatedOutlet/Footer）已迁移到 TanStack Router，
+// 接入无阻碍。Layout 通过 AnimatedOutlet 渲染子路由。
 
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { Layout } from "@/components/layout/Layout";
 
 function PublicLayout() {
-  return (
-    <div className="flex min-h-svh flex-col">
-      <main className="flex-1">
-        <Outlet />
-      </main>
-    </div>
-  );
+  return <Layout />;
 }
 
 export const Route = createFileRoute("/_public")({
