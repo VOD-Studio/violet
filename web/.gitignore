@@ -10,6 +10,11 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# TanStack Start / Nitro 构建产物
+.output
+.nitro
+
 *.local
 
 # Editor directories and files

@@ -1,1 +1,0 @@
-import{j as e,O as s}from"./index-BYCXULw0.js";function l(){return e.jsx("div",{className:"flex min-h-svh",children:e.jsx("main",{className:"flex-1 overflow-y-auto p-6",children:e.jsx(s,{})})})}export{l as component};
