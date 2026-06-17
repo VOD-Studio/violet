@@ -4,6 +4,8 @@ node_modules
 
 # Build output
 dist
+.output
+.nitro
 
 # Local env files (keep .env.production for build)
 .env.local

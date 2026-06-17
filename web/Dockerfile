@@ -1,7 +1,10 @@
 # 前端生产 Dockerfile（多阶段构建）
 #
-# 阶段 1: Node 构建前端静态资源
-# 阶段 2: Nginx 托管静态资源 + 反向代理 API
+# 2.0 SSR：从 Nginx 静态托管改为 Node 运行 TanStack Start Nitro server。
+# Nitro server 自己托管 .output/public 静态资源并处理 SSR 渲染。
+#
+# 阶段 1: Node 构建 SSR 产物（.output/）
+# 阶段 2: Node 运行时启动 Nitro server
 #
 # 用法: docker build -t mimo-blog-web ./web
 # 配合 docker-compose.prod.yml 使用
@@ -28,24 +31,29 @@ RUN pnpm install --frozen-lockfile
 # 拷贝源码
 COPY . .
 
-# 构建生产版本（tsc + vite build）
+# 构建 SSR 产物：vite build 产出 .output/（server + public）
 RUN pnpm build
 
 # ============================================================
-# 阶段 2: 运行时（Nginx 托管静态资源）
+# 阶段 2: 运行时（Node 启动 Nitro server）
 # ============================================================
-FROM nginx:alpine AS runtime
+FROM node:22-alpine AS runtime
 
-# 拷贝自定义 nginx 配置
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+WORKDIR /app
 
-# 拷贝构建产物
-COPY --from=builder /app/dist /usr/share/nginx/html
+# 拷贝 Nitro 构建产物（.output/server + .output/public）
+COPY --from=builder /app/.output ./.output
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1/ || exit 1
+# Nitro server 监听所有网络接口（容器内必须 0.0.0.0 才能被外部访问）
+ENV HOST=0.0.0.0
+ENV PORT=3000
+ENV NODE_ENV=production
 
-EXPOSE 80
+# 健康检查：探测 Nitro server 根路径
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=15s \
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/ || exit 1
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000
+
+# 启动 Nitro server
+CMD ["node", ".output/server/index.mjs"]

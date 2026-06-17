@@ -1,0 +1,1 @@
+import{j as s,O as e}from"./index-BYCXULw0.js";function n(){return s.jsx("div",{className:"flex min-h-svh flex-col",children:s.jsx("main",{className:"flex-1",children:s.jsx(e,{})})})}export{n as component};

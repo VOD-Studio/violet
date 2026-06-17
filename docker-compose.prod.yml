@@ -99,20 +99,21 @@ services:
     networks:
       - backend
 
-  # 前端生产服务（Nginx 托管静态资源 + 反向代理 API）
+  # 前端生产服务（2.0 SSR：Node 运行 TanStack Start Nitro server）
   web:
     build:
       context: ./web
       dockerfile: Dockerfile
     container_name: blog-web
     restart: always
+    # 宿主机 80 映射到容器内 Nitro server 的 3000
     ports:
-      - "80:80"
+      - "80:3000"
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
       interval: 30s
       timeout: 10s
       retries: 3
