@@ -1,9 +1,9 @@
 # 生产环境配置
-# 使用: docker compose -f docker-compose.prod.yml up -d
+# 使用: docker compose --env-file api/.env -f docker-compose.prod.yml up -d
 #
 # 前置条件:
-# 1. 复制 api/.env.example 到 api/.env 并修改配置
-# 2. 确保上传目录存在: mkdir -p uploads
+# 1. 复制 api/.env.example 到 api/.env 并修改配置（特别是 POSTGRES_PASSWORD 和 SUPERADMIN_PASSWORD）
+# 2. 上传文件由命名卷 uploads_data 持久化，无需手动创建宿主机目录
 
 services:
   # PostgreSQL 数据库
@@ -56,25 +56,42 @@ services:
       dockerfile: Dockerfile
     container_name: blog-api
     restart: always
-    # 端口不对外暴露，通过 nginx 反向代理
+    # API Dockerfile 创建 UID/GID 65532 的非 root 用户，
+    # 密钥由 scripts/init-production.sh 设为 65532:65532 或 chmod 644 可读
+    # 端口不对外暴露，通过 web 容器反向代理
     expose:
       - "8080"
     env_file:
       - ./api/.env
     environment:
-      # 覆盖数据库和 Redis 连接为内部网络地址
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-blog}?sslmode=disable
-      REDIS_URL: redis://redis:6379/0
+      # 覆盖数据库连接为内部 Docker 网络地址（API 代码读取 DATABASE_* 变量）
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${POSTGRES_DB:-blog}
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_SSLMODE: disable
+      # 覆盖 Redis 连接为内部 Docker 网络地址
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      REDIS_PASSWORD: ""
+      # JWT 密钥路径
+      JWT_PRIVATE_KEY_PATH: /secrets/jwt_private_key.pem
+      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public_key.pem
     volumes:
       # 持久化上传文件
       - uploads_data:/app/uploads
+      # JWT 密钥（只读挂载）
+      - ./secrets/jwt_private_key.pem:/secrets/jwt_private_key.pem:ro
+      - ./secrets/jwt_public_key.pem:/secrets/jwt_public_key.pem:ro
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:8080/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -82,26 +99,24 @@ services:
     networks:
       - backend
 
-  # Nginx 反向代理
-  nginx:
-    image: nginx:alpine
-    container_name: blog-nginx
+  # 前端生产服务（Nginx 托管静态资源 + 反向代理 API）
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: blog-web
     restart: always
     ports:
       - "80:80"
-      # - "443:443"  # HTTPS 端口（需要配置 SSL 证书）
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      # SSL 证书（生产环境需要配置）
-      # - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
     networks:
       - backend
 

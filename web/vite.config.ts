@@ -9,6 +9,25 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+/** 依赖包名 -> chunk 名称映射（兼容 pnpm .pnpm 虚拟存储布局） */
+const CHUNK_MAP: Record<string, string> = {
+  react: "react-vendor",
+  "react-dom": "react-vendor",
+  "@tanstack/react-router": "router-vendor",
+  zustand: "state-vendor",
+  "@tanstack/react-query": "state-vendor",
+  "@tiptap/react": "editor-vendor",
+  "@tiptap/starter-kit": "editor-vendor",
+  aplayer: "music-vendor",
+  plyr: "music-vendor",
+  "plyr-react": "music-vendor",
+  "lucide-react": "icons-vendor",
+  motion: "motion-vendor",
+  three: "three-vendor",
+  "@react-three/fiber": "three-vendor",
+  "@react-three/drei": "three-vendor",
+};
+
 // Vitest 配置（运行时由 vitest 读取，类型上单独声明避免与 vite defineConfig 冲突）
 const vitestConfig = {
   test: {
@@ -53,24 +72,15 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // 手动分包策略：将大依赖拆分为独立 chunk，优化缓存命中率
-        manualChunks: {
-          // React 核心（react + react-dom）
-          "react-vendor": ["react", "react-dom"],
-          // TanStack 路由（2.0 起替换 react-router）
-          "router-vendor": ["@tanstack/react-router"],
-          // 状态管理（zustand + tanstack-query）
-          "state-vendor": ["zustand", "@tanstack/react-query"],
-          // 富文本编辑器（tiptap 全家桶，体积大）
-          // 注：@tiptap/pm 缺少 "." 导出，不能作为 chunk 入口，跟随 starter-kit 间接打包
-          "editor-vendor": ["@tiptap/react", "@tiptap/starter-kit"],
-          // 音乐播放器（aplayer + plyr，体积大）
-          "music-vendor": ["aplayer", "plyr", "plyr-react"],
-          // 图标库
-          "icons-vendor": ["lucide-react"],
-          // 动画
-          "motion-vendor": ["motion"],
-          // 3D（ReactBits backgrounds 用，2.0 新增，体积大）
-          "three-vendor": ["three", "@react-three/fiber", "@react-three/drei"],
+        // 使用函数形式以兼容 pnpm 的 .pnpm/<pkg>/node_modules/<pkg> 虚拟存储布局
+        manualChunks(id: string) {
+          const match = id.match(
+            /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(?<pkg>@[^/]+\/[^/]+|[^/]+)\//,
+          );
+          const pkg = match?.groups?.pkg;
+          if (pkg) {
+            return CHUNK_MAP[pkg];
+          }
         },
       },
     },

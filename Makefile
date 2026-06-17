@@ -6,6 +6,7 @@
         api api-build api-test api-lint sqlc wire \
         web web-build web-preview web-lint web-format web-typecheck \
         build docker-build docker-up \
+        deploy-prod-init deploy-prod deploy-prod-down \
         clean install update \
         status log \
         env setup generate-jwt-keys generate-production-keys \
@@ -130,6 +131,15 @@ docker-build: ## 构建 Docker 镜像
 docker-up: ## Docker 生产模式启动
 	docker compose -f docker-compose.yml up -d --build
 
+deploy-prod-init: ## 生产环境首次初始化（生成密钥、检查 .env）
+	@./scripts/init-production.sh
+
+deploy-prod: deploy-prod-init ## 构建并启动生产环境容器
+	@docker compose --env-file api/.env -f docker-compose.prod.yml up -d --build
+
+deploy-prod-down: ## 停止生产环境容器
+	@docker compose --env-file api/.env -f docker-compose.prod.yml down
+
 # ==================== 工具 ====================
 
 clean: ## 清理构建产物
@@ -196,15 +206,9 @@ generate-jwt-keys: ## 生成 JWT 密钥对 (ES256)
 	@chmod 644 api/jwt_public_key.pem
 	@echo "✅ JWT 密钥已生成: api/jwt_private_key.pem, api/jwt_public_key.pem"
 
-generate-production-keys: ## 生成生产环境 JWT 密钥对
-	@echo "🔑 生成生产环境 JWT 密钥对..."
-	@mkdir -p secrets
-	@openssl ecparam -genkey -name prime256v1 -noout -out secrets/jwt_private_key.pem
-	@openssl ec -in secrets/jwt_private_key.pem -pubout -out secrets/jwt_public_key.pem
-	@chmod 600 secrets/jwt_private_key.pem
-	@chmod 644 secrets/jwt_public_key.pem
-	@echo "✅ 生产环境 JWT 密钥已生成: secrets/jwt_private_key.pem, secrets/jwt_public_key.pem"
-	@echo "⚠️  请妥善保管私钥文件，不要提交到版本控制"
+# 保留 generate-production-keys 仅为了向后兼容；实际生产环境初始化与密钥生成由 deploy-prod-init 统一处理
+generate-production-keys: deploy-prod-init ## 生成生产环境 JWT 密钥对（兼容入口，实际调用 deploy-prod-init）
+	@echo "✅ 生产环境初始化与 JWT 密钥生成已由 deploy-prod-init 完成"
 
 check: ## 检查环境依赖
 	@echo "检查环境依赖..."

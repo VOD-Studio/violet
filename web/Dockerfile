@@ -14,10 +14,13 @@ FROM node:22-alpine AS builder
 # 安装 pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# 无 TTY 环境下让 pnpm 自动确认（如 lockfile 变化时需要清理 node_modules）
+ENV CI=true
+
 WORKDIR /app
 
 # 先拷贝 lockfile 利用 Docker 缓存
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # 安装依赖（frozen-lockfile 保证可复现）
 RUN pnpm install --frozen-lockfile
@@ -41,7 +44,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=10s \
-  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1/ || exit 1
 
 EXPOSE 80
 

@@ -47,3 +47,6 @@ api/server
 
 # Ignore all claude local
 .claude/**/*.local.*
+
+# Worktrees
+.worktrees/
