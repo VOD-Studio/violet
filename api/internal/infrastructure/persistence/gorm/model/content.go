@@ -41,6 +41,17 @@ type Tag struct {
 
 func (Tag) TableName() string { return "tags" }
 
+// PostView 文章浏览记录表（供 admin 趋势统计）
+type PostView struct {
+	ID        int64     `gorm:"primaryKey;autoIncrement" json:"id"`
+	PostID    uuid.UUID `gorm:"type:uuid;column:post_id;index" json:"post_id"`
+	IPAddress string    `gorm:"type:varchar(45);column:ip_address" json:"ip_address"`
+	UserAgent string    `gorm:"type:text;column:user_agent" json:"user_agent"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+}
+
+func (PostView) TableName() string { return "post_views" }
+
 // Comment 评论表持久化模型
 type Comment struct {
 	ID          uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`

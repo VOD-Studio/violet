@@ -50,8 +50,10 @@ func (h *Handler) ListAllEmojiGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 type createEmojiGroupRequest struct {
-	Name   string `json:"name" validate:"required"`
-	Source string `json:"source"`
+	Name      string `json:"name" validate:"required"`
+	Source    string `json:"source"`
+	SortOrder int    `json:"sort_order"`
+	IsEnabled *bool  `json:"is_enabled"`
 }
 
 // CreateEmojiGroup 创建表情分组（后台）
@@ -69,12 +71,195 @@ func (h *Handler) CreateEmojiGroup(w http.ResponseWriter, r *http.Request) {
 	if source == "" {
 		source = "system"
 	}
-	id, err := h.emojiSvc.CreateGroup(r.Context(), appmedia.CreateGroupInput{Name: req.Name, Source: source})
+	enabled := true
+	if req.IsEnabled != nil {
+		enabled = *req.IsEnabled
+	}
+	id, err := h.emojiSvc.CreateGroup(r.Context(), appmedia.CreateGroupInput{
+		Name: req.Name, Source: source, SortOrder: req.SortOrder, IsEnabled: enabled,
+	})
 	if err != nil {
 		interfacesmw.RespondError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]any{"data": map[string]any{"id": id}})
+}
+
+// GetEmojiGroupByName 按名称获取分组（含表情，公开）
+func (h *Handler) GetEmojiGroupByName(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	dto, err := h.emojiSvc.GetGroupByName(r.Context(), name)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+}
+
+// UpdateEmojiGroup 更新分组
+func (h *Handler) UpdateEmojiGroup(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		Name      string `json:"name"`
+		Source    string `json:"source"`
+		SortOrder *int   `json:"sort_order"`
+		IsEnabled *bool  `json:"is_enabled"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.emojiSvc.UpdateGroup(r.Context(), appmedia.UpdateGroupInput{
+		ID: int32(id), Name: req.Name, Source: req.Source,
+		SortOrder: req.SortOrder, IsEnabled: req.IsEnabled,
+	}); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "分组已更新"})
+}
+
+// BatchUpdateEmojiGroupStatus 批量启用/禁用分组
+func (h *Handler) BatchUpdateEmojiGroupStatus(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IDs    []int32 `json:"ids" validate:"required,min=1"`
+		Enable bool    `json:"is_enabled"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	affected, err := h.emojiSvc.BatchUpdateEnabled(r.Context(), req.IDs, req.Enable)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "批量更新成功", "updated": affected})
+}
+
+// ListGroupEmojis 列出分组内表情
+func (h *Handler) ListGroupEmojis(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	emojis, err := h.emojiSvc.ListEmojisByGroup(r.Context(), int32(id))
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": emojis})
+}
+
+// CreateEmoji 在分组内创建表情
+func (h *Handler) CreateEmoji(w http.ResponseWriter, r *http.Request) {
+	groupID, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		Name        string `json:"name" validate:"required"`
+		URL         string `json:"url"`
+		TextContent string `json:"text_content"`
+		GifURL      string `json:"gif_url"`
+		SourceURL   string `json:"source_url"`
+		SortOrder   int    `json:"sort_order"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	id, err := h.emojiSvc.CreateEmoji(r.Context(), appmedia.CreateEmojiInput{
+		GroupID: int32(groupID), Name: req.Name, URL: req.URL,
+		TextContent: req.TextContent, GifURL: req.GifURL,
+		SourceURL: req.SourceURL, SortOrder: req.SortOrder,
+	})
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"data": map[string]any{"id": id}})
+}
+
+// UpdateEmoji 更新表情
+func (h *Handler) UpdateEmoji(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	var req struct {
+		Name        string `json:"name"`
+		URL         string `json:"url"`
+		TextContent string `json:"text_content"`
+		GifURL      string `json:"gif_url"`
+		SourceURL   string `json:"source_url"`
+		SortOrder   int    `json:"sort_order"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.emojiSvc.UpdateEmoji(r.Context(), appmedia.UpdateEmojiInput{
+		ID: int32(id), Name: req.Name, URL: req.URL,
+		TextContent: req.TextContent, GifURL: req.GifURL,
+		SourceURL: req.SourceURL, SortOrder: req.SortOrder,
+	}); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "表情已更新"})
+}
+
+// DeleteEmoji 删除表情
+func (h *Handler) DeleteEmoji(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.emojiSvc.DeleteEmoji(r.Context(), int32(id)); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"message": "表情已删除"})
+}
+
+// UploadEmoji 上传表情文件
+func (h *Handler) UploadEmoji(w http.ResponseWriter, r *http.Request) {
+	// 限制 10MB
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	defer file.Close()
+	content := make([]byte, header.Size)
+	if _, err := file.Read(content); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	result, err := h.emojiSvc.UploadEmoji(r.Context(), header.Filename, header.Header.Get("Content-Type"), header.Size, content)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]any{"data": result})
 }
 
 // SetEmojiGroupEnabled 启用/禁用表情分组

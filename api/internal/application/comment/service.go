@@ -50,6 +50,75 @@ func (s *Service) ListByPost(ctx context.Context, postID string, page, limit int
 	return dtos, total, nil
 }
 
+// AdminCommentDTO 后台管理评论读模型（含所属文章信息）
+type AdminCommentDTO struct {
+	CommentDTO
+	PostID    string `json:"post_id"`
+	PostTitle string `json:"post_title"`
+	PostSlug  string `json:"post_slug"`
+}
+
+// ListAll 全局评论列表（后台管理，可选状态筛选）
+func (s *Service) ListAll(ctx context.Context, status string, page, limit int) ([]AdminCommentDTO, int64, error) {
+	items, total, err := s.commentRepo.FindAll(ctx, status, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	dtos := make([]AdminCommentDTO, 0, len(items))
+	for _, cwp := range items {
+		dto := AdminCommentDTO{
+			CommentDTO: toDTO(cwp.Comment),
+			PostID:     cwp.Post.ID.String(),
+			PostTitle:  cwp.Post.Title,
+			PostSlug:   cwp.Post.Slug,
+		}
+		dtos = append(dtos, dto)
+	}
+	return dtos, total, nil
+}
+
+// CountPending 统计待审核评论数量
+func (s *Service) CountPending(ctx context.Context) (int64, error) {
+	return s.commentRepo.CountPending(ctx)
+}
+
+// GetDetail 获取评论详情（后台管理，含所属文章）
+func (s *Service) GetDetail(ctx context.Context, id string) (AdminCommentDTO, error) {
+	cid, err := shared.ParseID(id)
+	if err != nil {
+		return AdminCommentDTO{}, err
+	}
+	cwp, err := s.commentRepo.FindByIDWithPost(ctx, cid)
+	if err != nil {
+		return AdminCommentDTO{}, err
+	}
+	return AdminCommentDTO{
+		CommentDTO: toDTO(cwp.Comment),
+		PostID:     cwp.Post.ID.String(),
+		PostTitle:  cwp.Post.Title,
+		PostSlug:   cwp.Post.Slug,
+	}, nil
+}
+
+// BatchUpdateStatus 批量更新评论状态，返回受影响行数
+func (s *Service) BatchUpdateStatus(ctx context.Context, ids []string, status string) (int64, error) {
+	if !domain.IsValidStatus(status) {
+		return 0, domain.ErrInvalidStatus
+	}
+	if len(ids) == 0 {
+		return 0, shared.BadRequest("评论 ID 列表不能为空")
+	}
+	domainIDs := make([]shared.ID, 0, len(ids))
+	for _, idStr := range ids {
+		id, err := shared.ParseID(idStr)
+		if err != nil {
+			return 0, err
+		}
+		domainIDs = append(domainIDs, id)
+	}
+	return s.commentRepo.BatchUpdateStatus(ctx, domainIDs, status)
+}
+
 // ListPending 列出待审核评论
 func (s *Service) ListPending(ctx context.Context, page, limit int) ([]CommentDTO, int64, error) {
 	items, total, err := s.commentRepo.FindPending(ctx, page, limit)

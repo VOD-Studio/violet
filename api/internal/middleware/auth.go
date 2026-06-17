@@ -6,9 +6,36 @@ import (
 	"net/http"
 	"strings"
 
-	"blog-api/internal/service"
 	"github.com/rs/zerolog/log"
 )
+
+// TokenClaims 令牌声明（中间件关心的字段）
+//
+// 由 TokenValidator 实现返回，避免中间件直接依赖 *service.AuthService
+// 或 *infrastructure/auth.JWTService，保持中间件与具体实现解耦。
+type TokenClaims struct {
+	UserID string
+	Email  string
+	Role   string
+	RoleID int32
+}
+
+// TokenValidator 令牌校验端口
+//
+// 任何能从 access token 解析出 TokenClaims 的实现都能作为 Auth 中间件依赖。
+// 当前实现：*service.AuthService（旧）与 *infrastructure/auth.JWTService（DDD）皆满足。
+type TokenValidator interface {
+	// ParseToken 解析并校验 access token，返回声明
+	ParseToken(tokenString string) (*TokenClaims, error)
+}
+
+// PermissionChecker 权限点检查端口
+//
+// 任何能根据 (role, roleID, codes) 判断是否授权的实现都能作为 RequirePermission 中间件依赖。
+// 当前实现：*service.PermissionService。
+type PermissionChecker interface {
+	HasPermission(role string, roleID *int32, codes ...string) bool
+}
 
 type contextKey string
 
@@ -20,7 +47,7 @@ const (
 )
 
 // Auth JWT 认证中间件
-func Auth(authService *service.AuthService) func(http.Handler) http.Handler {
+func Auth(validator TokenValidator) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -50,7 +77,7 @@ func Auth(authService *service.AuthService) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := authService.ValidateToken(parts[1])
+			claims, err := validator.ParseToken(parts[1])
 			if err != nil {
 				log.Warn().
 					Err(err).
@@ -129,14 +156,14 @@ func SuperAdminRequired(next http.Handler) http.Handler {
 
 // RequirePermission 权限点检查中间件
 // superadmin 角色直接放行，其他角色查询内存缓存判断
-func RequirePermission(permService *service.PermissionService, codes ...string) func(http.Handler) http.Handler {
+func RequirePermission(checker PermissionChecker, codes ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			role := GetUserRole(r.Context())
 			roleID := GetUserRoleID(r.Context())
 			userID := GetUserID(r.Context())
 
-			if !permService.HasPermission(role, roleID, codes...) {
+			if !checker.HasPermission(role, roleID, codes...) {
 				log.Warn().
 					Str("user_id", userID).
 					Str("role", role).

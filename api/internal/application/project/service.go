@@ -44,6 +44,19 @@ func (s *Service) List(ctx context.Context) ([]ProjectDTO, error) {
 	return dtos, nil
 }
 
+// Get 按 ID 获取项目详情
+func (s *Service) Get(ctx context.Context, id string) (ProjectDTO, error) {
+	pid, err := parseID(id)
+	if err != nil {
+		return ProjectDTO{}, err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return ProjectDTO{}, err
+	}
+	return toDTO(p), nil
+}
+
 // CreateInput 创建项目入参
 type CreateInput struct {
 	Title       string

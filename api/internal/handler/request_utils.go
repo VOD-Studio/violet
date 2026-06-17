@@ -9,6 +9,12 @@ import (
 	"blog-api/internal/service"
 )
 
+// MessageResponse 统一消息响应
+type MessageResponse struct {
+	// Message 消息内容
+	Message string `json:"message"`
+}
+
 // extractUserIdentity 提取用户身份（从 JWT 或 IP）
 // 返回用户 ID（如果已登录）和 IP 哈希（如果未登录）
 func extractUserIdentity(r *http.Request) (*uuid.UUID, string) {

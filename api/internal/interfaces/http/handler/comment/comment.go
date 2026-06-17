@@ -62,6 +62,75 @@ func (h *Handler) ListPending(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"data": items, "total": total})
 }
 
+// ListAll 全局评论列表（后台管理，支持状态筛选）
+func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	status := r.URL.Query().Get("status")
+
+	items, total, err := h.svc.ListAll(r.Context(), status, page, limit)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"data": items, "total": total, "page": page, "limit": limit,
+	})
+}
+
+// CountPending 统计待审核评论数量（后台角标）
+func (h *Handler) CountPending(w http.ResponseWriter, r *http.Request) {
+	count, err := h.svc.CountPending(r.Context())
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"count": count})
+}
+
+// GetDetail 获取评论详情（后台管理，含所属文章）
+func (h *Handler) GetDetail(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	dto, err := h.svc.GetDetail(r.Context(), id)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+}
+
+type batchUpdateStatusRequest struct {
+	IDs    []string `json:"ids" validate:"required,min=1,max=100"`
+	Status string   `json:"status" validate:"required,oneof=pending approved spam deleted"`
+}
+
+// BatchUpdateStatus 批量更新评论状态
+func (h *Handler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request) {
+	var req batchUpdateStatusRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	affected, err := h.svc.BatchUpdateStatus(r.Context(), req.IDs, req.Status)
+	if err != nil {
+		interfacesmw.RespondError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"message": "批量更新成功", "affected_count": affected,
+	})
+}
+
 type createCommentRequest struct {
 	Body        string `json:"body" validate:"required"`
 	ParentID    string `json:"parent_id"`
