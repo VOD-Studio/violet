@@ -3,9 +3,10 @@
  * 系统操作日志查看入口（占位实现）
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/shared/EmptyState";
 import { ScrollText } from "lucide-react";
+
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
  * 操作日志页面
