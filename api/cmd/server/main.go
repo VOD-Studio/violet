@@ -140,10 +140,10 @@ func main() {
 	// P2.3: post DDD 容器
 	postContainer := app.NewPostContainer(gormDB)
 	settingsContainer := app.NewSettingsContainer(gormDB)
+	tagContainer := app.NewTagContainer(gormDB)
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
-	tagService := service.NewTagService(queries)
 	commentReactionService := service.NewCommentReactionService(queries)
 	settingsService := service.NewSettingsService(queries)
 	statsService := service.NewStatsService(queries)
@@ -181,7 +181,8 @@ func main() {
 
 	// --- 处理器初始化 ---
 	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
-	tagHandler := handler.NewTagHandler(tagService)
+	// P2.8: tag 已切换 DDD tagContainer，旧 TagService 不再初始化
+
 	adminHandler := handler.NewAdminHandler(statsService)
 	githubService := service.NewGitHubService(settingsService)
 	githubHandler := handler.NewGitHubHandler(githubService)
@@ -249,14 +250,16 @@ func main() {
 			r.Post("/{id}/view", postH.IncrementView)    // 增加浏览次数
 		})
 
-		// 标签
+		// 标签（DDD tagContainer）
+		tagH := tagContainer.TagHandler
 		v1.Route("/tags", func(r chi.Router) {
-			r.Get("/", tagHandler.List) // 标签列表
+			r.Get("/", tagH.List) // 标签列表（公开）
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator))
-				r.Post("/", tagHandler.Create)       // 创建标签
-				r.Delete("/{id}", tagHandler.Delete) // 删除标签
+				r.Use(middleware.AdminRequired)
+				r.Post("/", tagH.Create)       // 创建标签
+				r.Delete("/{id}", tagH.Delete) // 删除标签
 			})
 		})
 
