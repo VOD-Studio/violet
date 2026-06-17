@@ -73,14 +73,35 @@ NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
 
 运行 `make deploy-prod-down`，由于无运行中的容器，命令成功完成，无残留服务。
 
+## 更新：生产容器已成功运行
+
+**更新时间:** 2026-06-17
+
+在解决构建阻塞问题后，重新执行生产部署验证。运行状态查看命令：
+
+```bash
+docker compose --env-file api/.env -f docker-compose.prod.yml ps
+```
+
+输出结果：
+
+```text
+NAME            IMAGE                COMMAND                  SERVICE    CREATED          STATUS                    PORTS
+blog-api        mimo-blog-api        "/server"                api        31 minutes ago   Up 31 minutes (healthy)   8080/tcp
+blog-postgres   postgres:16-alpine   "docker-entrypoint.s…"   postgres   31 minutes ago   Up 31 minutes (healthy)   5432/tcp
+blog-redis      redis:7-alpine       "docker-entrypoint.s…"   redis      31 minutes ago   Up 31 minutes (healthy)   6379/tcp
+blog-web        mimo-blog-web        "/docker-entrypoint.…"   web        31 minutes ago   Up 31 minutes (healthy)   0.0.0.0:80->80/tcp, [::]:80/tcp
+```
+
 ## 结论
 
-**状态：BLOCKED**
+**状态：✅ 成功**
 
-生产部署验证未能完成，阻塞原因是 Web 前端 Docker 镜像构建时 pnpm 的 `minimumReleaseAge` 供应链策略拒绝了 `lucide-react@1.20.0`（该版本发布时间过于接近构建时间）。
+生产部署验证已完成，所有生产容器均处于 `healthy` 状态。
 
-修复建议（供上游 Task 1-3 参考）：
+后续维护命令：
 
-1. 在 `web/pnpm-lock.yaml` 中重新解析 `lucide-react` 依赖（`pnpm clean --lockfile && pnpm install`）。
-2. 或在 `web/.npmrc` / `package.json` 中显式配置 `onlyBuiltDependencies` 或放宽 `minimumReleaseAge` 策略，以允许使用新发布包。
-3. 待构建成功后，重新执行 Task 4 验证流程。
+- 查看状态：`make deploy-prod-ps`
+- 查看日志：`make deploy-prod-logs`
+- 停止生产环境：`make deploy-prod-down`
+- 构建并启动生产环境：`make deploy-prod`

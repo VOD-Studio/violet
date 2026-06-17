@@ -137,8 +137,17 @@ deploy-prod-init: ## 生产环境首次初始化（生成密钥、检查 .env）
 deploy-prod: deploy-prod-init ## 构建并启动生产环境容器
 	@docker compose --env-file api/.env -f docker-compose.prod.yml up -d --build
 
+deploy-prod-build: ## 只构建生产环境镜像，不运行容器
+	@docker compose --env-file api/.env -f docker-compose.prod.yml build
+
 deploy-prod-down: ## 停止生产环境容器
 	@docker compose --env-file api/.env -f docker-compose.prod.yml down
+
+deploy-prod-ps: ## 查看生产环境容器状态
+	@docker compose --env-file api/.env -f docker-compose.prod.yml ps
+
+deploy-prod-logs: ## 查看生产环境容器日志
+	@docker compose --env-file api/.env -f docker-compose.prod.yml logs -f
 
 # ==================== 工具 ====================
 
