@@ -21,11 +21,11 @@ import (
 	"blog-api/config"
 	"blog-api/internal/app"
 	authcmd "blog-api/internal/application/auth/command"
+	infraemail "blog-api/internal/infrastructure/email"
 	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
-	"blog-api/internal/model"
 	"blog-api/internal/service"
 )
 
@@ -72,9 +72,6 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("GORM 连接失败")
 	}
-	if err := gormDB.AutoMigrate(&model.File{}, &model.UploadSession{}); err != nil {
-		log.Fatal().Err(err).Msg("GORM 自动迁移失败")
-	}
 
 	// P2: DDD 新 model 的 AutoMigrate（全 GORM AutoMigrate 策略）
 	// 旧表已由 golang-migrate 创建，AutoMigrate 只补充缺失列/表，
@@ -86,7 +83,8 @@ func main() {
 		&newmodel.Comment{}, &newmodel.CommentReaction{},
 		&newmodel.Announcement{}, &newmodel.Project{},
 		&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
-		&newmodel.File{},
+		&newmodel.MusicSetting{},
+		&newmodel.File{}, &newmodel.UploadSession{},
 	); err != nil {
 		log.Warn().Err(err).Msg("DDD model AutoMigrate 部分失败（旧表约束名不一致，可忽略；新表/列已正常迁移）")
 	}
@@ -102,10 +100,9 @@ func main() {
 
 	// 评论 repository 已迁移至 DDD commentContainer
 
-	emailService := service.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom)
+	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom)
 
-	// P2.1: 初始化 auth/user DDD 容器（复用旧 EmailService 作为 EmailSender）
-	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailService, nil)
+	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailSender, nil)
 	if err != nil {
 		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
 	}

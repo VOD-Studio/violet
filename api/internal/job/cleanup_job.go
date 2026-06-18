@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"blog-api/internal/model"
+	"blog-api/internal/infrastructure/persistence/gorm/model"
 
 	"gorm.io/gorm"
 )
