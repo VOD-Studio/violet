@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 )
 
 // Post 文章表持久化模型
@@ -198,3 +199,45 @@ type File struct {
 }
 
 func (File) TableName() string { return "files" }
+
+// FileStatus 文件状态常量
+type FileStatus string
+
+const (
+	FileStatusPending   FileStatus = "pending"
+	FileStatusProcessing FileStatus = "processing"
+	FileStatusReady     FileStatus = "ready"
+	FileStatusFailed    FileStatus = "failed"
+	FileStatusDeleted   FileStatus = "deleted"
+)
+
+// SessionStatus 上传会话状态类型
+type SessionStatus string
+
+const (
+	SessionStatusActive    SessionStatus = "active"
+	SessionStatusMerging   SessionStatus = "merging"
+	SessionStatusCompleted SessionStatus = "completed"
+	SessionStatusExpired   SessionStatus = "expired"
+)
+
+// UploadSession 分片上传会话 PO
+type UploadSession struct {
+	ID             uuid.UUID                `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"uploadId"`
+	UserID         uuid.UUID                `gorm:"type:uuid;not null;index" json:"userId"`
+	FileName       string                   `gorm:"size:255;not null" json:"fileName"`
+	FileSize       int64                    `gorm:"not null" json:"fileSize"`
+	FileHash       string                   `gorm:"size:64;not null;index" json:"fileHash"`
+	MimeType       string                   `gorm:"size:100;not null" json:"mimeType"`
+	Purpose        string                   `gorm:"column:purpose;size:20;not null;default:material" json:"purpose"`
+	ChunkSize      int                      `gorm:"not null;default:5242880" json:"chunkSize"`
+	TotalChunks    int                      `gorm:"not null" json:"totalChunks"`
+	UploadedChunks datatypes.JSONSlice[int] `gorm:"type:jsonb;not null" json:"uploadedChunks"`
+	Status         SessionStatus            `gorm:"size:20;not null;default:active;index" json:"status"`
+	TmpPath        string                   `gorm:"size:500;not null" json:"-"`
+	ExpiresAt      time.Time                `gorm:"not null;index" json:"expiresAt"`
+	CreatedAt      time.Time                `json:"createdAt"`
+	UpdatedAt      time.Time                `json:"updatedAt"`
+}
+
+func (UploadSession) TableName() string { return "upload_sessions" }

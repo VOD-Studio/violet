@@ -3,7 +3,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,8 +14,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 
-	"blog-api/internal/repository/generated"
+	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 )
 
 // B站表情 API 常量
@@ -61,16 +61,16 @@ type SeedResult struct {
 
 // EmojiSeedService 表情种子数据服务
 type EmojiSeedService struct {
-	queries        *generated.Queries
-	emojiDir       string // 表情独立存储目录
-	bilibiliCookie string // B站登录 Cookie
-	apiType        string // API 类型：user 或 official
+	db             *gorm.DB // GORM 直接操作（替代 sqlc queries）
+	emojiDir       string   // 表情独立存储目录
+	bilibiliCookie string   // B站登录 Cookie
+	apiType        string   // API 类型：user 或 official
 }
 
 // NewEmojiSeedService 创建表情种子数据服务实例
-func NewEmojiSeedService(queries *generated.Queries, emojiDir, cookie, apiType string) *EmojiSeedService {
+func NewEmojiSeedService(db *gorm.DB, emojiDir, cookie, apiType string) *EmojiSeedService {
 	return &EmojiSeedService{
-		queries:        queries,
+		db:             db,
 		emojiDir:       emojiDir,
 		bilibiliCookie: cookie,
 		apiType:        apiType,
@@ -188,15 +188,14 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 		}
 
 		// 创建分组
-		groupParams := generated.CreateEmojiGroupParams{
+		group := newmodel.EmojiGroup{
 			Name:      pkg.Text,
 			Source:    "bilibili",
-			SortOrder: int32(i + 1),
+			SortOrder: i + 1,
 			IsEnabled: true,
 		}
 
-		group, err := s.queries.CreateEmojiGroup(ctx, groupParams)
-		if err != nil {
+		if err := s.db.WithContext(ctx).Create(&group).Error; err != nil {
 			log.Printf("警告: 创建表情分组 %s 失败: %v", pkg.Text, err)
 			continue
 		}
@@ -209,20 +208,16 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 			}
 
 			// 判断是否为颜文字（纯文本表情）
-			// 颜文字的特征：URL 为空或者 URL 就是表情文本本身
 			isTextEmoji := emote.URL == "" || emote.URL == emote.Text
 
 			var urlValue, gifUrlValue, sourceUrlValue string
-			var err error
 
 			if isTextEmoji {
-				// 颜文字：url 字段直接存储表情文本
 				urlValue = emote.Text
 				gifUrlValue = ""
 				sourceUrlValue = ""
 				log.Printf("检测到颜文字: %s，直接存储到 url 字段", emote.Text)
 			} else {
-				// 图片表情：下载静态图
 				localStaticPath, err := s.downloadEmojiImage(emote.URL)
 				if err != nil {
 					log.Printf("警告: 下载表情 %s 静态图失败: %v", emote.Text, err)
@@ -231,7 +226,6 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 				urlValue = localStaticPath
 				sourceUrlValue = emote.URL
 
-				// 如果有动图，也下载
 				if emote.GifURL != "" {
 					localGifPath, err := s.downloadEmojiImage(emote.GifURL)
 					if err != nil {
@@ -243,18 +237,16 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 				}
 			}
 
-			emojiParams := generated.CreateEmojiParams{
+			emoji := newmodel.Emoji{
 				GroupID:     group.ID,
 				Name:        emote.Text,
-				Url:         sql.NullString{String: urlValue, Valid: urlValue != ""},
-				GifUrl:      sql.NullString{String: gifUrlValue, Valid: gifUrlValue != ""},
-				SourceUrl:   sql.NullString{String: sourceUrlValue, Valid: sourceUrlValue != ""},
-				TextContent: sql.NullString{String: "", Valid: false},
-				SortOrder:   int32(j + 1),
+				URL:         urlValue,
+				GifURL:      gifUrlValue,
+				SourceURL:   sourceUrlValue,
+				SortOrder:   j + 1,
 			}
 
-			_, err = s.queries.CreateEmoji(ctx, emojiParams)
-			if err != nil {
+			if err := s.db.WithContext(ctx).Create(&emoji).Error; err != nil {
 				log.Printf("警告: 创建表情 %s 失败: %v", emote.Text, err)
 				continue
 			}

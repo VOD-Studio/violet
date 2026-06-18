@@ -21,13 +21,11 @@ import (
 	"blog-api/config"
 	"blog-api/internal/app"
 	authcmd "blog-api/internal/application/auth/command"
-	"blog-api/internal/handler"
+	infraemail "blog-api/internal/infrastructure/email"
 	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
-	"blog-api/internal/model"
-	"blog-api/internal/repository/generated"
 	"blog-api/internal/service"
 )
 
@@ -54,18 +52,6 @@ func main() {
 		log.Fatal().Err(err).Msg("数据库连接失败")
 	}
 	defer db.Close()
-	// 配置连接池（生产关键项，避免默认 4 连接成为瓶颈）
-	db.SetMaxOpenConns(cfg.Database.MaxOpenConns)
-	db.SetMaxIdleConns(cfg.Database.MaxIdleConns)
-	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
-	if err := db.PingContext(ctx); err != nil {
-		log.Fatal().Err(err).Msg("数据库 ping 失败")
-	}
-	log.Info().
-		Int("max_open_conns", cfg.Database.MaxOpenConns).
-		Int("max_idle_conns", cfg.Database.MaxIdleConns).
-		Str("conn_max_lifetime", cfg.Database.ConnMaxLifetime.String()).
-		Msg("数据库连接成功")
 
 	migrateURL := fmt.Sprintf("pgx5://%s", cfg.Database.DSN()[len("postgres://"):])
 	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
@@ -86,9 +72,6 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("GORM 连接失败")
 	}
-	if err := gormDB.AutoMigrate(&model.File{}, &model.UploadSession{}); err != nil {
-		log.Fatal().Err(err).Msg("GORM 自动迁移失败")
-	}
 
 	// P2: DDD 新 model 的 AutoMigrate（全 GORM AutoMigrate 策略）
 	// 旧表已由 golang-migrate 创建，AutoMigrate 只补充缺失列/表，
@@ -100,7 +83,8 @@ func main() {
 		&newmodel.Comment{}, &newmodel.CommentReaction{},
 		&newmodel.Announcement{}, &newmodel.Project{},
 		&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
-		&newmodel.File{},
+		&newmodel.MusicSetting{},
+		&newmodel.File{}, &newmodel.UploadSession{},
 	); err != nil {
 		log.Warn().Err(err).Msg("DDD model AutoMigrate 部分失败（旧表约束名不一致，可忽略；新表/列已正常迁移）")
 	}
@@ -112,16 +96,13 @@ func main() {
 	}
 	defer roleCleanup()
 
-	queries := generated.New(db)
-
 	// --- 服务层初始化 ---
 
 	// 评论 repository 已迁移至 DDD commentContainer
 
-	emailService := service.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom)
+	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom)
 
-	// P2.1: 初始化 auth/user DDD 容器（复用旧 EmailService 作为 EmailSender）
-	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailService, nil)
+	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailSender, nil)
 	if err != nil {
 		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
 	}
@@ -139,16 +120,21 @@ func main() {
 
 	// P2.3: post DDD 容器
 	postContainer := app.NewPostContainer(gormDB)
+	settingsContainer := app.NewSettingsContainer(gormDB)
+	tagContainer := app.NewTagContainer(gormDB)
+	githubContainer := app.NewGitHubContainer(settingsContainer.Store)
+	auditContainer := app.NewAuditContainer(gormDB)
+	statsContainer := app.NewStatsContainer(gormDB)
+	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
+	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
-	tagService := service.NewTagService(queries)
-	commentReactionService := service.NewCommentReactionService(queries)
-	settingsService := service.NewSettingsService(queries)
-	statsService := service.NewStatsService(queries)
-	userService := service.NewUserService(queries)
-	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
-	auditService := service.NewAuditService(queries)
+	// P2.8: comment_reaction 已切换 DDD commentReactionContainer
+	// P2.8: settings 已切换 DDD settingsContainer，旧 SettingsService 不再初始化
+	// P2.8: settings/stats 已切换 DDD，旧 service 不再初始化
+	// user_management 已切换 DDD userAdminContainer（依赖 auditContainer.Service）
+	emojiSeedService := service.NewEmojiSeedService(gormDB, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 
 	// 表情种子数据初始化（幂等）
 	// P2.7: 改用 GORM 计数，移除对 sqlc 的依赖
@@ -180,14 +166,9 @@ func main() {
 
 	// --- 处理器初始化 ---
 	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
-	tagHandler := handler.NewTagHandler(tagService)
-	adminHandler := handler.NewAdminHandler(statsService)
-	settingsHandler := handler.NewSettingsHandler(settingsService)
-	githubService := service.NewGitHubService(settingsService)
-	githubHandler := handler.NewGitHubHandler(githubService)
-	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
-	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
-	auditHandler := handler.NewAuditHandler(auditService)
+	// P2.8: tag 已切换 DDD tagContainer，旧 TagService 不再初始化
+
+	// P2.8: comment_reaction 已切换 DDD commentReactionContainer
 
 	// --- 路由注册 ---
 
@@ -214,11 +195,11 @@ func main() {
 	r.Route("/api/v1", func(v1 chi.Router) {
 
 		// 公开站点设置
-		v1.Get("/settings", settingsHandler.GetPublicSettings) // 获取公开站点配置
+		v1.Get("/settings", settingsContainer.SettingsHandler.GetPublicSettings) // 获取公开站点配置
 
 		// GitHub 数据（公开，Token 在后端管理）
-		v1.Get("/github/contributions", githubHandler.GetContributions) // GitHub 贡献数据
-		v1.Get("/github/repos", githubHandler.GetRepos)                 // GitHub 仓库数据
+		v1.Get("/github/contributions", githubContainer.GitHubHandler.GetContributions) // GitHub 贡献数据
+		v1.Get("/github/repos", githubContainer.GitHubHandler.GetRepos)                 // GitHub 仓库数据
 
 		// 认证（P2.7: DDD auth handler 已切换为官方路径）
 		authH := authContainer.AuthHandler
@@ -249,23 +230,34 @@ func main() {
 			r.Post("/{id}/view", postH.IncrementView)    // 增加浏览次数
 		})
 
-		// 标签
+		// 标签（DDD tagContainer）
+		tagH := tagContainer.TagHandler
 		v1.Route("/tags", func(r chi.Router) {
-			r.Get("/", tagHandler.List) // 标签列表
+			r.Get("/", tagH.List) // 标签列表（公开）
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator))
-				r.Post("/", tagHandler.Create)       // 创建标签
-				r.Delete("/{id}", tagHandler.Delete) // 删除标签
+				r.Use(middleware.AdminRequired)
+				r.Post("/", tagH.Create)       // 创建标签
+				r.Delete("/{id}", tagH.Delete) // 删除标签
 			})
 		})
 
-		// 评论（DDD commentH；评论反应仍用旧 commentReactionHandler）
+		// 评论（DDD commentH；评论反应 DDD commentReactionContainer）
 		commentH := commentContainer.CommentHandler
 		v1.Route("/posts/{postId}/comments", func(r chi.Router) {
 			r.Get("/", commentH.ListByPost)                                          // 获取文章已审核评论
 			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentH.Create) // 提交评论（限流）
 		})
+
+		// 评论反应（DDD commentReactionContainer）
+		crH := commentReactionContainer.CommentReactionHandler
+		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
+			r.Get("/", crH.GetCommentReactions)                                         // 获取评论反应
+			r.With(middleware.CommentRateLimit(redisClient)).Post("/", crH.AddReaction) // 添加反应（限流）
+			r.Delete("/{emoji_id}", crH.RemoveReaction)                                 // 删除反应
+		})
+		v1.Post("/comments/reactions/batch", crH.GetReactionsBatch) // 批量获取评论反应
 
 		// 评论审核/删除（DDD commentH，admin 权限）
 		v1.Route("/comments/{id}", func(r chi.Router) {
@@ -277,16 +269,6 @@ func main() {
 				r.Delete("/", commentH.Delete)        // 删除评论
 			})
 		})
-
-		// 评论反应（公开接口）
-		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
-			r.Get("/", commentReactionHandler.GetCommentReactions)                                         // 获取评论反应
-			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentReactionHandler.AddReaction) // 添加反应（限流）
-			r.Delete("/{emoji_id}", commentReactionHandler.RemoveReaction)                                 // 删除反应
-		})
-
-		// 批量获取评论反应
-		v1.Post("/comments/reactions/batch", commentReactionHandler.GetReactionsBatch)
 
 		// 媒体（DDD mediaH）
 		v1.Route("/media", func(r chi.Router) {
@@ -348,21 +330,22 @@ func main() {
 			// P2.7: DDD role/permission handler 切换为官方路径
 			roleH := roleContainer.RoleHandler
 
-			r.Get("/stats", adminHandler.GetDashboardStats)   // 仪表盘总览统计
-			r.Get("/stats/views", adminHandler.GetViewTrends) // 浏览量趋势
+			r.Get("/stats", statsContainer.StatsHandler.GetDashboardStats)   // 仪表盘总览统计
+			r.Get("/stats/views", statsContainer.StatsHandler.GetViewTrends) // 浏览量趋势
 
-			r.Get("/settings", settingsHandler.GetSettings)    // 获取站点设置
-			r.Put("/settings", settingsHandler.UpdateSettings) // 更新站点设置
+			r.Get("/settings", settingsContainer.SettingsHandler.GetSettings)    // 获取站点设置
+			r.Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
 
-			r.Get("/users", userMgmtHandler.ListUsers)                           // 用户列表
-			r.Get("/users/{id}", userMgmtHandler.GetUserDetail)                  // 用户详情
-			r.Post("/users", userMgmtHandler.CreateUser)                         // 创建用户
-			r.Put("/users/{id}", userMgmtHandler.UpdateUser)                     // 编辑用户
-			r.Delete("/users/{id}", userMgmtHandler.DeleteUser)                  // 删除用户
-			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)          // 修改用户角色
-			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus)      // 启用/禁用用户
-			r.Post("/users/batch-status", userMgmtHandler.BatchUpdateUserStatus) // 批量启用/禁用用户
-			r.Post("/users/batch-role", userMgmtHandler.BatchUpdateUserRole)     // 批量修改用户角色
+			// 用户管理（DDD userAdminContainer）
+			r.Get("/users", userAdminContainer.UserAdminHandler.ListUsers)                           // 用户列表
+			r.Get("/users/{id}", userAdminContainer.UserAdminHandler.GetUserDetail)                  // 用户详情
+			r.Post("/users", userAdminContainer.UserAdminHandler.CreateUser)                         // 创建用户
+			r.Put("/users/{id}", userAdminContainer.UserAdminHandler.UpdateUser)                     // 编辑用户
+			r.Delete("/users/{id}", userAdminContainer.UserAdminHandler.DeleteUser)                  // 删除用户
+			r.Patch("/users/{id}/role", userAdminContainer.UserAdminHandler.UpdateUserRole)          // 修改用户角色
+			r.Patch("/users/{id}/status", userAdminContainer.UserAdminHandler.UpdateUserStatus)      // 启用/禁用用户
+			r.Post("/users/batch-status", userAdminContainer.UserAdminHandler.BatchUpdateStatus) // 批量启用/禁用用户
+			r.Post("/users/batch-role", userAdminContainer.UserAdminHandler.BatchUpdateRole)     // 批量修改用户角色
 
 			// 权限管理（P2.7: DDD role handler）
 			r.Get("/permissions", roleH.ListPermissions) // 获取所有权限定义
@@ -384,8 +367,8 @@ func main() {
 			r.Patch("/roles/{id}/permissions", roleH.UpdateRolePermissions) // 设置角色权限
 
 			// 操作日志
-			r.Get("/logs", auditHandler.ListLogs)                 // 操作日志列表
-			r.Get("/logs/user/{id}", auditHandler.ListLogsByUser) // 用户操作日志
+			r.Get("/logs", auditContainer.AuditHandler.ListLogs)                 // 操作日志列表
+			r.Get("/logs/user/{id}", auditContainer.AuditHandler.ListLogsByUser) // 用户操作日志
 
 			// 公告管理（P2.7: DDD content handler）
 			r.Get("/announcements", contentH.ListAnnouncements)       // 公告列表
