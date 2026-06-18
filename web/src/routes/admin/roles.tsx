@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-
-// 角色权限 (/admin/roles) — 待迁移
-import { Placeholder } from "@/components/Placeholder";
+import Roles from "@/pages/admin/Roles";
 
 export const Route = createFileRoute("/admin/roles")({
-  component: () => <Placeholder title="角色权限" path="/admin/roles" />,
+  component: Roles,
 });

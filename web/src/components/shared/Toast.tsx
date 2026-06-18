@@ -1,19 +1,16 @@
 // 通知提示组件
 // 基于 sonner 实现，提供全局通知能力
 
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 
 /**
  * 通知提供者组件
- * 包裹应用根组件，在页面上渲染 Toaster 容器
+ * 包裹应用根组件，提供 toast 上下文
+ *
+ * 注意：Toaster 实例在 __root.tsx 中统一渲染，避免重复
  */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      {children}
-      <Toaster position="bottom-right" richColors closeButton duration={3000} />
-    </>
-  );
+  return <>{children}</>;
 }
 
 /**
