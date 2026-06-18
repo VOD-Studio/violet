@@ -1,6 +1,5 @@
 // Package auth 提供 auth/user 聚合的 HTTP handler（DDD 版）。
 //
-// P2.1 影子路由：/api/v1/auth/ddd/*，与旧 /api/v1/auth/* 并存。
 package auth
 
 import (

@@ -74,8 +74,6 @@ func main() {
 	}
 
 	// P2: DDD 新 model 的 AutoMigrate（全 GORM AutoMigrate 策略）
-	// 旧表已由 golang-migrate 创建，AutoMigrate 只补充缺失列/表，
-	// 个别约束/索引名不一致属预期（旧表用 _key 后缀，GORM 用 uni_ 前缀），
 	// 记录警告但不致命退出，保证服务能启动。
 	if err := gormDB.AutoMigrate(
 		&newmodel.User{}, &newmodel.Role{}, &newmodel.Permission{}, &newmodel.RolePermission{},
@@ -86,10 +84,8 @@ func main() {
 		&newmodel.MusicSetting{},
 		&newmodel.File{}, &newmodel.UploadSession{},
 	); err != nil {
-		log.Warn().Err(err).Msg("DDD model AutoMigrate 部分失败（旧表约束名不一致，可忽略；新表/列已正常迁移）")
 	}
 
-	// P2.2d: 初始化 role/permission DDD 依赖容器（与旧代码并存）
 	roleContainer, roleCleanup, err := app.InitializeRoleContainer(gormDB)
 	if err != nil {
 		log.Fatal().Err(err).Msg("DDD role 容器初始化失败")
@@ -98,7 +94,6 @@ func main() {
 
 	// --- 服务层初始化 ---
 
-	// 评论 repository 已迁移至 DDD commentContainer
 
 	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom)
 
@@ -107,18 +102,13 @@ func main() {
 		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
 	}
 
-	// P2.7: 中间件端口适配器
 	// middleware.Auth 已重构为接收 TokenValidator 接口，
-	// 优先使用 DDD JWTService 作为令牌校验源（与旧 AuthService 共享同一密钥对，令牌互通）。
 	tokenValidator := newDDDAuthValidator(authContainer.JWTService)
 
-	// P2.5: announcement + project DDD 容器
 	contentContainer := app.NewContentContainer(gormDB)
 
-	// P2.4: comment DDD 容器
 	commentContainer := app.NewCommentContainer(gormDB)
 
-	// P2.3: post DDD 容器
 	postContainer := app.NewPostContainer(gormDB)
 	settingsContainer := app.NewSettingsContainer(gormDB)
 	tagContainer := app.NewTagContainer(gormDB)
@@ -128,16 +118,10 @@ func main() {
 	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
 	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
 
-	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
-	// P2.8: comment_reaction 已切换 DDD commentReactionContainer
-	// P2.8: settings 已切换 DDD settingsContainer，旧 SettingsService 不再初始化
-	// P2.8: settings/stats 已切换 DDD，旧 service 不再初始化
-	// user_management 已切换 DDD userAdminContainer（依赖 auditContainer.Service）
 	emojiSeedService := service.NewEmojiSeedService(gormDB, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 
 	// 表情种子数据初始化（幂等）
-	// P2.7: 改用 GORM 计数，移除对 sqlc 的依赖
 	var emojiGroupCount int64
 	if err := gormDB.Model(&newmodel.EmojiGroup{}).Count(&emojiGroupCount).Error; err != nil {
 		log.Error().Err(err).Msg("检查表情分组数量失败")
@@ -153,7 +137,7 @@ func main() {
 	cleanupJob := job.NewCleanupJob(gormDB, "uploads/tmp")
 	go cleanupJob.Start(ctx)
 
-	// --- 超级管理员初始化（P2.7: 改用 DDD 用例，幂等）---
+	// --- 超级管理员初始化---
 	if cfg.SuperAdmin.Enabled {
 		if err := authContainer.EnsureSuperAdmin.Handle(ctx, authcmd.EnsureSuperAdminInput{
 			Email:    cfg.SuperAdmin.Email,
@@ -165,10 +149,7 @@ func main() {
 	}
 
 	// --- 处理器初始化 ---
-	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
-	// P2.8: tag 已切换 DDD tagContainer，旧 TagService 不再初始化
 
-	// P2.8: comment_reaction 已切换 DDD commentReactionContainer
 
 	// --- 路由注册 ---
 
@@ -189,7 +170,6 @@ func main() {
 	// =====================================================
 	// API v1
 	// =====================================================
-	// DDD media handler 在 v1 闭包和 shadow 区共用，需提前声明
 	mediaH := mediaContainer.MediaHandler
 
 	r.Route("/api/v1", func(v1 chi.Router) {
@@ -201,9 +181,8 @@ func main() {
 		v1.Get("/github/contributions", githubContainer.GitHubHandler.GetContributions) // GitHub 贡献数据
 		v1.Get("/github/repos", githubContainer.GitHubHandler.GetRepos)                 // GitHub 仓库数据
 
-		// 认证（P2.7: DDD auth handler 已切换为官方路径）
+		// 认证
 		authH := authContainer.AuthHandler
-		// P2.8: DDD content handler（announcement + project）
 		contentH := contentContainer.ContentHandler
 		v1.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authH.Register)        // 用户注册
@@ -305,7 +284,7 @@ func main() {
 			r.Get("/settings", mediaH.GetMusicSettings)        // 获取播放器设置
 		})
 
-		// 项目（公开，P2.8: DDD content handler）
+		// 项目（公开）
 		v1.Route("/projects", func(r chi.Router) {
 			r.Get("/", contentH.ListProjects)  // 项目列表
 			r.Get("/{id}", contentH.GetProject) // 项目详情
@@ -317,7 +296,7 @@ func main() {
 			r.Get("/groups/{name}", mediaH.GetEmojiGroupByName)  // 按名称获取指定表情分组
 		})
 
-		// 公告（公开，P2.7: DDD content handler）
+		// 公告
 		v1.Get("/announcements", contentH.ListActiveAnnouncements) // 获取生效公告列表
 
 		// =====================================================
@@ -327,7 +306,6 @@ func main() {
 			r.Use(middleware.Auth(tokenValidator))
 			r.Use(middleware.AdminRequired)
 
-			// P2.7: DDD role/permission handler 切换为官方路径
 			roleH := roleContainer.RoleHandler
 
 			r.Get("/stats", statsContainer.StatsHandler.GetDashboardStats)   // 仪表盘总览统计
@@ -347,7 +325,7 @@ func main() {
 			r.Post("/users/batch-status", userAdminContainer.UserAdminHandler.BatchUpdateStatus) // 批量启用/禁用用户
 			r.Post("/users/batch-role", userAdminContainer.UserAdminHandler.BatchUpdateRole)     // 批量修改用户角色
 
-			// 权限管理（P2.7: DDD role handler）
+			// 权限管理
 			r.Get("/permissions", roleH.ListPermissions) // 获取所有权限定义
 
 			// 权限 CRUD（仅限超级管理员）
@@ -358,7 +336,7 @@ func main() {
 				r.Delete("/permissions/{code}", roleH.DeletePermission) // 删除权限
 			})
 
-			// 角色管理（P2.7: DDD role handler，移除 role:manage 旧权限点检查）
+			// 角色管理
 			r.Get("/roles", roleH.ListRoles)                           // 角色列表
 			r.Get("/roles/{id}", roleH.GetRole)                        // 角色详情（含权限）
 			r.Post("/roles", roleH.CreateRole)                         // 创建角色
@@ -370,7 +348,7 @@ func main() {
 			r.Get("/logs", auditContainer.AuditHandler.ListLogs)                 // 操作日志列表
 			r.Get("/logs/user/{id}", auditContainer.AuditHandler.ListLogsByUser) // 用户操作日志
 
-			// 公告管理（P2.7: DDD content handler）
+			// 公告管理
 			r.Get("/announcements", contentH.ListAnnouncements)       // 公告列表
 			r.Get("/announcements/{id}", contentH.GetAnnouncement)    // 公告详情
 			r.Post("/announcements", contentH.CreateAnnouncement)     // 创建公告
@@ -440,10 +418,6 @@ func main() {
 	})
 
 	// ============================================================
-	// P2.7/P2.8: 已迁移至官方路径的 DDD 模块
-	//   - P2.7: auth/role/permission/announcement
-	//   - P2.8: project/comment/post/emoji/upload/media/music
-	// 所有模块已迁移至官方路径，shadow 路由全部删除
 	// ============================================================
 
 	// 静态文件服务（无版本前缀）

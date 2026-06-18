@@ -48,6 +48,5 @@ func GetRequestID(r *http.Request) string {
 // 供 service 层等业务代码使用：log.Ctx(ctx).Info() 即可自动带上 request_id
 func LoggerWithRequestID(ctx context.Context) context.Context {
 	// chi 的 RequestID 通过 context 传递，zerolog 的 log.Ctx() 会读取
-	// 此处保留扩展点，P1 阶段接入结构化日志时使用
 	return ctx
 }

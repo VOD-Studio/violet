@@ -1,6 +1,5 @@
 // Package role 提供 role/permission 聚合的 HTTP handler（DDD 版）。
 //
-// 与 internal/handler（旧分层）并存。P2.2d 将路由切换到此 handler，
 // 然后删除旧的 role.go / permission.go handler。
 package role
 

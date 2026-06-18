@@ -12,31 +12,14 @@ import (
 	command2 "blog-api/internal/application/role/command"
 	"blog-api/internal/application/role/query"
 	"blog-api/internal/application/shared"
-	"blog-api/internal/application/user/command"
 	"blog-api/internal/domain/permission"
 	role2 "blog-api/internal/domain/role"
-	user2 "blog-api/internal/domain/user"
 	"blog-api/internal/infrastructure/eventbus"
 	gorm2 "blog-api/internal/infrastructure/persistence/gorm"
 	"blog-api/internal/interfaces/http/handler/role"
-	"blog-api/internal/interfaces/http/handler/user"
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
-
-// Injectors from wire.go:
-
-// InitializeUserContainer 装配 user 模块
-func InitializeUserContainer(db *gorm.DB) (*UserContainer, func(), error) {
-	userRepository := gorm2.NewUserRepository(db)
-	inMemory := eventbus.NewInMemory()
-	bcryptHasher := command.NewBcryptHasher()
-	registerUserHandler := command.NewRegisterUserHandler(userRepository, inMemory, bcryptHasher)
-	handler := user.NewHandler(registerUserHandler)
-	userContainer := newUserContainer(registerUserHandler, handler)
-	return userContainer, func() {
-	}, nil
-}
 
 // InitializeRoleContainer 装配 role/permission 模块依赖图
 func InitializeRoleContainer(db *gorm.DB) (*RoleContainer, func(), error) {
@@ -62,37 +45,18 @@ func InitializeRoleContainer(db *gorm.DB) (*RoleContainer, func(), error) {
 // wire.go:
 
 // InfrastructureSet 基础设施层
-var InfrastructureSet = wire.NewSet(eventbus.NewInMemory, wire.Bind(new(shared.EventBus), new(*eventbus.InMemory)), command.NewBcryptHasher, wire.Bind(new(command.PasswordHasher), new(*command.BcryptHasher)))
-
-// UserDomainSet user 聚合 repository
-var UserDomainSet = wire.NewSet(gorm2.NewUserRepository, wire.Bind(new(user2.UserRepository), new(*gorm2.UserRepository)))
+var InfrastructureSet = wire.NewSet(eventbus.NewInMemory, wire.Bind(new(shared.EventBus), new(*eventbus.InMemory)))
 
 // RoleDomainSet role/permission 聚合 repository
 var RoleDomainSet = wire.NewSet(gorm2.NewRoleRepository, wire.Bind(new(role2.RoleRepository), new(*gorm2.RoleRepository)), gorm2.NewPermissionRepository, wire.Bind(new(permission.PermissionRepository), new(*gorm2.PermissionRepository)))
 
-// UserApplicationSet
-var UserApplicationSet = wire.NewSet(command.NewRegisterUserHandler)
-
 // RoleApplicationSet role/permission 用例层（CQRS）
 var RoleApplicationSet = wire.NewSet(command2.NewCreateRoleHandler, command2.NewUpdateRoleHandler, command2.NewDeleteRoleHandler, command2.NewReplaceRolePermissionsHandler, query.NewListRolesWithUserCountHandler, query.NewGetRoleWithPermissionsHandler, command3.NewCreatePermissionHandler, command3.NewUpdatePermissionHandler, command3.NewDeletePermissionHandler, query2.NewListPermissionsHandler)
-
-// UserInterfacesSet
-var UserInterfacesSet = wire.NewSet(user.NewHandler)
 
 // RoleInterfacesSet role/permission HTTP handler
 var RoleInterfacesSet = wire.NewSet(role.NewHandler)
 
-// UserContainer user 模块容器（P1，保留）
-type UserContainer struct {
-	RegisterHandler *command.RegisterUserHandler
-	UserHandler     *user.Handler
-}
-
-func newUserContainer(registerHandler *command.RegisterUserHandler, userHandler *user.Handler) *UserContainer {
-	return &UserContainer{RegisterHandler: registerHandler, UserHandler: userHandler}
-}
-
-// RoleContainer role/permission 模块容器（P2.2d）
+// RoleContainer role/permission 模块容器
 type RoleContainer struct {
 	RoleHandler *role.Handler
 }
