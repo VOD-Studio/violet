@@ -21,13 +21,11 @@ import (
 	"blog-api/config"
 	"blog-api/internal/app"
 	authcmd "blog-api/internal/application/auth/command"
-	"blog-api/internal/handler"
 	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
 	"blog-api/internal/model"
-	"blog-api/internal/repository/generated"
 	"blog-api/internal/service"
 )
 
@@ -54,18 +52,6 @@ func main() {
 		log.Fatal().Err(err).Msg("数据库连接失败")
 	}
 	defer db.Close()
-	// 配置连接池（生产关键项，避免默认 4 连接成为瓶颈）
-	db.SetMaxOpenConns(cfg.Database.MaxOpenConns)
-	db.SetMaxIdleConns(cfg.Database.MaxIdleConns)
-	db.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
-	if err := db.PingContext(ctx); err != nil {
-		log.Fatal().Err(err).Msg("数据库 ping 失败")
-	}
-	log.Info().
-		Int("max_open_conns", cfg.Database.MaxOpenConns).
-		Int("max_idle_conns", cfg.Database.MaxIdleConns).
-		Str("conn_max_lifetime", cfg.Database.ConnMaxLifetime.String()).
-		Msg("数据库连接成功")
 
 	migrateURL := fmt.Sprintf("pgx5://%s", cfg.Database.DSN()[len("postgres://"):])
 	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
@@ -112,8 +98,6 @@ func main() {
 	}
 	defer roleCleanup()
 
-	queries := generated.New(db)
-
 	// --- 服务层初始化 ---
 
 	// 评论 repository 已迁移至 DDD commentContainer
@@ -145,14 +129,15 @@ func main() {
 	auditContainer := app.NewAuditContainer(gormDB)
 	statsContainer := app.NewStatsContainer(gormDB)
 	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
+	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
-	commentReactionService := service.NewCommentReactionService(queries)
+	// P2.8: comment_reaction 已切换 DDD commentReactionContainer
 	// P2.8: settings 已切换 DDD settingsContainer，旧 SettingsService 不再初始化
 	// P2.8: settings/stats 已切换 DDD，旧 service 不再初始化
 	// user_management 已切换 DDD userAdminContainer（依赖 auditContainer.Service）
-	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
+	emojiSeedService := service.NewEmojiSeedService(gormDB, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 
 	// 表情种子数据初始化（幂等）
 	// P2.7: 改用 GORM 计数，移除对 sqlc 的依赖
@@ -186,7 +171,7 @@ func main() {
 	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
 	// P2.8: tag 已切换 DDD tagContainer，旧 TagService 不再初始化
 
-	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
+	// P2.8: comment_reaction 已切换 DDD commentReactionContainer
 
 	// --- 路由注册 ---
 
@@ -261,12 +246,21 @@ func main() {
 			})
 		})
 
-		// 评论（DDD commentH；评论反应仍用旧 commentReactionHandler）
+		// 评论（DDD commentH；评论反应 DDD commentReactionContainer）
 		commentH := commentContainer.CommentHandler
 		v1.Route("/posts/{postId}/comments", func(r chi.Router) {
 			r.Get("/", commentH.ListByPost)                                          // 获取文章已审核评论
 			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentH.Create) // 提交评论（限流）
 		})
+
+		// 评论反应（DDD commentReactionContainer）
+		crH := commentReactionContainer.CommentReactionHandler
+		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
+			r.Get("/", crH.GetCommentReactions)                                         // 获取评论反应
+			r.With(middleware.CommentRateLimit(redisClient)).Post("/", crH.AddReaction) // 添加反应（限流）
+			r.Delete("/{emoji_id}", crH.RemoveReaction)                                 // 删除反应
+		})
+		v1.Post("/comments/reactions/batch", crH.GetReactionsBatch) // 批量获取评论反应
 
 		// 评论审核/删除（DDD commentH，admin 权限）
 		v1.Route("/comments/{id}", func(r chi.Router) {
@@ -278,16 +272,6 @@ func main() {
 				r.Delete("/", commentH.Delete)        // 删除评论
 			})
 		})
-
-		// 评论反应（公开接口）
-		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
-			r.Get("/", commentReactionHandler.GetCommentReactions)                                         // 获取评论反应
-			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentReactionHandler.AddReaction) // 添加反应（限流）
-			r.Delete("/{emoji_id}", commentReactionHandler.RemoveReaction)                                 // 删除反应
-		})
-
-		// 批量获取评论反应
-		v1.Post("/comments/reactions/batch", commentReactionHandler.GetReactionsBatch)
 
 		// 媒体（DDD mediaH）
 		v1.Route("/media", func(r chi.Router) {
