@@ -144,14 +144,14 @@ func main() {
 	githubContainer := app.NewGitHubContainer(settingsContainer.Store)
 	auditContainer := app.NewAuditContainer(gormDB)
 	statsContainer := app.NewStatsContainer(gormDB)
+	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
 
 	// P2.6: emoji/music/upload DDD 容器
 	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
 	commentReactionService := service.NewCommentReactionService(queries)
 	// P2.8: settings 已切换 DDD settingsContainer，旧 SettingsService 不再初始化
 	// P2.8: settings/stats 已切换 DDD，旧 service 不再初始化
-	auditService := service.NewAuditService(queries) // 暂留供 user_management
-	userService := service.NewUserService(queries)
+	// user_management 已切换 DDD userAdminContainer（依赖 auditContainer.Service）
 	emojiSeedService := service.NewEmojiSeedService(queries, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
 
 	// 表情种子数据初始化（幂等）
@@ -186,7 +186,6 @@ func main() {
 	// P2.7: auth/role/permission/announcement 已切换 DDD handler，旧 handler/service 不再初始化
 	// P2.8: tag 已切换 DDD tagContainer，旧 TagService 不再初始化
 
-	userMgmtHandler := handler.NewUserManagementHandler(userService, auditService)
 	commentReactionHandler := handler.NewCommentReactionHandler(commentReactionService)
 
 	// --- 路由注册 ---
@@ -356,15 +355,16 @@ func main() {
 			r.Get("/settings", settingsContainer.SettingsHandler.GetSettings)    // 获取站点设置
 			r.Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
 
-			r.Get("/users", userMgmtHandler.ListUsers)                           // 用户列表
-			r.Get("/users/{id}", userMgmtHandler.GetUserDetail)                  // 用户详情
-			r.Post("/users", userMgmtHandler.CreateUser)                         // 创建用户
-			r.Put("/users/{id}", userMgmtHandler.UpdateUser)                     // 编辑用户
-			r.Delete("/users/{id}", userMgmtHandler.DeleteUser)                  // 删除用户
-			r.Patch("/users/{id}/role", userMgmtHandler.UpdateUserRole)          // 修改用户角色
-			r.Patch("/users/{id}/status", userMgmtHandler.UpdateUserStatus)      // 启用/禁用用户
-			r.Post("/users/batch-status", userMgmtHandler.BatchUpdateUserStatus) // 批量启用/禁用用户
-			r.Post("/users/batch-role", userMgmtHandler.BatchUpdateUserRole)     // 批量修改用户角色
+			// 用户管理（DDD userAdminContainer）
+			r.Get("/users", userAdminContainer.UserAdminHandler.ListUsers)                           // 用户列表
+			r.Get("/users/{id}", userAdminContainer.UserAdminHandler.GetUserDetail)                  // 用户详情
+			r.Post("/users", userAdminContainer.UserAdminHandler.CreateUser)                         // 创建用户
+			r.Put("/users/{id}", userAdminContainer.UserAdminHandler.UpdateUser)                     // 编辑用户
+			r.Delete("/users/{id}", userAdminContainer.UserAdminHandler.DeleteUser)                  // 删除用户
+			r.Patch("/users/{id}/role", userAdminContainer.UserAdminHandler.UpdateUserRole)          // 修改用户角色
+			r.Patch("/users/{id}/status", userAdminContainer.UserAdminHandler.UpdateUserStatus)      // 启用/禁用用户
+			r.Post("/users/batch-status", userAdminContainer.UserAdminHandler.BatchUpdateStatus) // 批量启用/禁用用户
+			r.Post("/users/batch-role", userAdminContainer.UserAdminHandler.BatchUpdateRole)     // 批量修改用户角色
 
 			// 权限管理（P2.7: DDD role handler）
 			r.Get("/permissions", roleH.ListPermissions) // 获取所有权限定义
