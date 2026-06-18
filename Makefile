@@ -7,6 +7,7 @@
         web web-build web-preview web-lint web-format web-typecheck \
         build docker-build docker-up \
         deploy-prod-init deploy-prod deploy-prod-down \
+        deploy-remote deploy-remote-skip-build deploy-remote-patch \
         clean install update \
         status log \
         env setup generate-jwt-keys generate-production-keys \
@@ -148,6 +149,17 @@ deploy-prod-ps: ## 查看生产环境容器状态
 
 deploy-prod-logs: ## 查看生产环境容器日志
 	@docker compose --env-file api/.env -f docker-compose.prod.yml logs -f
+
+# ==================== 远程部署 (rua) ====================
+
+deploy-remote: ## 完整部署到 rua 服务器（构建 + 传输 + 启动 + nginx patch）
+	@./scripts/deploy-prod.sh
+
+deploy-remote-skip-build: ## 部署到 rua（跳过构建，使用已有镜像）
+	@./scripts/deploy-prod.sh --skip-build
+
+deploy-remote-patch: ## 仅 patch rua 上的 nginx 配置
+	@./scripts/deploy-prod.sh --patch-only
 
 # ==================== 工具 ====================
 
