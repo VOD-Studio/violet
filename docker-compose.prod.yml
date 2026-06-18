@@ -58,7 +58,7 @@ services:
     restart: always
     # API Dockerfile 创建 UID/GID 65532 的非 root 用户，
     # 密钥由 scripts/init-production.sh 设为 65532:65532 或 chmod 644 可读
-    # 端口不对外暴露，通过 web 容器反向代理
+    # 端口不对外暴露，通过 nginx-proxy 反向代理 /api/v1/
     expose:
       - "8080"
     env_file:
@@ -98,6 +98,7 @@ services:
       start_period: 30s
     networks:
       - backend
+      - proxy
 
   # 前端生产服务（2.0 SSR：Node 运行 TanStack Start Nitro server）
   web:
@@ -109,6 +110,11 @@ services:
     # 宿主机 80 映射到容器内 Nitro server 的 3000
     ports:
       - "80:3000"
+    environment:
+      # nginx-proxy 虚拟主机配置
+      VIRTUAL_HOST: xun.rua.plus
+      LETSENCRYPT_HOST: xun.rua.plus
+      LETSENCRYPT_EMAIL: defect.y@qq.com
     depends_on:
       api:
         condition: service_healthy
@@ -120,6 +126,7 @@ services:
       start_period: 30s
     networks:
       - backend
+      - proxy
 
 volumes:
   postgres_data:
@@ -132,3 +139,6 @@ volumes:
 networks:
   backend:
     name: blog_network
+  proxy:
+    name: nginx-proxy
+    external: true
