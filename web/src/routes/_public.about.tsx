@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// 关于 (/about) — 待迁移
-import { Placeholder } from "@/components/Placeholder";
+import AboutPage from "@/pages/About";
 
 export const Route = createFileRoute("/_public/about")({
-  component: () => <Placeholder title="关于" path="/about" />,
+  component: AboutPage,
 });

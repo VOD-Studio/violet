@@ -263,7 +263,29 @@
   text-align: center;
 }
 
-/* 管理后台表情包样式 */
+/* 音乐播放器动画 */
+@keyframes music-disc-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes music-bar {
+  from { height: 3px; }
+  to { height: 10px; }
+}
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* 音乐播放器工具类 */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.marquee-text {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee-scroll 10s linear infinite;
+}
 .sticker-group-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -314,4 +336,28 @@
 
 .sticker-admin-item:hover .sticker-admin-item-overlay {
   opacity: 1;
+}
+
+/* 音乐播放器动画 */
+@keyframes music-disc-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes music-bar {
+  from { height: 3px; }
+  to { height: 10px; }
+}
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* 音乐播放器工具类 */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.marquee-text {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee-scroll 10s linear infinite;
 }
