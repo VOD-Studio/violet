@@ -1,6 +1,5 @@
 // Package command 提供 auth/user 聚合的写操作用例（CQRS Command 侧）。
 //
-// 迁移自旧 service/auth_service.go + verification_service.go + profile_service.go，
 // 按 CQRS 拆分为独立 command handler。
 package command
 

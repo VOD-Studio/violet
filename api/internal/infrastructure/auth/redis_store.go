@@ -14,7 +14,6 @@ import (
 
 // RedisTokenStore refresh token 的 Redis 存储
 //
-// 从旧 auth_service.go 的 refresh token 管理逻辑迁移。
 // Key 格式: refresh:<userID>，Value: refresh token 字符串，TTL: 配置的 refresh TTL。
 //
 // 用途：登录时存储、刷新时比对、登出/改密时删除（实现服务端撤销）。

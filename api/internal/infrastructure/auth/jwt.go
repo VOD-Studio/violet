@@ -1,6 +1,5 @@
 // Package auth 提供 JWT 与密码哈希的基础设施实现。
 //
-// 从旧 service/token_service.go 迁移，保持 ES256 算法与密钥加载逻辑，
 // 但按 DDD 端口/适配器模式重构为独立的基础设施实现，
 // 不再与 AuthService 耦合。
 package auth
@@ -167,7 +166,6 @@ func signToken(claims *JWTClaims, key *ecdsa.PrivateKey) (string, error) {
 }
 
 // ============================================================
-// 密钥加载（从旧 loadOrGenerateKeys/loadKeysFromFiles 迁移）
 // ============================================================
 
 // loadOrGenerateKeys 加载或生成 ES256 密钥对

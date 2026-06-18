@@ -281,5 +281,3 @@ func toDTO(u *domainuser.User) UserDTO {
 	return dto
 }
 
-// 编译期断言
-var _ = log.Info
