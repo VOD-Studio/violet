@@ -5,23 +5,14 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
+
+	"blog-api/internal/middleware"
 )
 
 // GetUserIDFromContext 从 request context 获取认证后的用户 ID
+//
+// 使用与认证中间件相同的 context key，避免跨包 key 不一致导致读取失败。
 func GetUserIDFromContext(r *http.Request) string {
-	if v, ok := r.Context().Value(userIDContextKey).(string); ok {
-		return v
-	}
-	return r.Header.Get("X-User-Id")
+	return middleware.GetUserID(r.Context())
 }
-
-// SetUserIDToContext 将用户 ID 注入 context
-func SetUserIDToContext(r *http.Request, userID string) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), userIDContextKey, userID))
-}
-
-type contextKey string
-
-const userIDContextKey contextKey = "user_id"
