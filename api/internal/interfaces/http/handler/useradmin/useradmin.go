@@ -4,10 +4,10 @@ package useradmin
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	appuseradmin "blog-api/internal/application/useradmin"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
+	"blog-api/internal/interfaces/http/response"
 )
 
 // Handler 用户管理 HTTP handler
@@ -34,8 +34,7 @@ func (h *Handler) operatorInfo(r *http.Request) (string, string, string) {
 
 // ListUsers 用户列表
 func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	page, limit := response.ParsePaging(r)
 	isActive := parseBoolPtr(r.URL.Query().Get("is_active"))
 	filter := appuseradmin.ListFilter{
 		Role:     r.URL.Query().Get("role"),
@@ -44,20 +43,20 @@ func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	users, total, err := h.svc.List(r.Context(), filter, page, limit)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": users, "total": total})
+	response.RespondPaged(w, users, page, limit, total)
 }
 
 // GetUserDetail 用户详情
 func (h *Handler) GetUserDetail(w http.ResponseWriter, r *http.Request) {
 	dto, err := h.svc.GetDetail(r.Context(), r.PathValue("id"))
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+	response.RespondOK(w, dto)
 }
 
 // CreateUser 创建用户
@@ -70,7 +69,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		IsActive *bool  `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	opID, ip, ua := h.operatorInfo(r)
@@ -87,10 +86,10 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		Role: role, IsActive: active, IPAddress: ip, UserAgent: ua,
 	}, opID)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"data": dto})
+	response.RespondCreated(w, dto)
 }
 
 // UpdateUser 更新用户
@@ -103,7 +102,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		IsActive *bool   `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	opID, ip, ua := h.operatorInfo(r)
@@ -113,20 +112,20 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		IPAddress: ip, UserAgent: ua,
 	}, opID)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+	response.RespondOK(w, dto)
 }
 
 // DeleteUser 删除用户
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	opID, ip, ua := h.operatorInfo(r)
 	if err := h.svc.Delete(r.Context(), r.PathValue("id"), opID, ip, ua); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "用户已删除"})
+	response.RespondMessage(w, http.StatusOK, "用户已删除")
 }
 
 // UpdateUserRole 修改用户角色
@@ -135,15 +134,15 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		Role string `json:"role" validate:"required"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	opID, ip, ua := h.operatorInfo(r)
 	if err := h.svc.UpdateUserRole(r.Context(), r.PathValue("id"), req.Role, opID, ip, ua); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "用户角色已更新"})
+	response.RespondMessage(w, http.StatusOK, "用户角色已更新")
 }
 
 // UpdateUserStatus 修改用户状态
@@ -152,15 +151,15 @@ func (h *Handler) UpdateUserStatus(w http.ResponseWriter, r *http.Request) {
 		IsActive bool `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	opID, ip, ua := h.operatorInfo(r)
 	if err := h.svc.UpdateUserStatus(r.Context(), r.PathValue("id"), req.IsActive, opID, ip, ua); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "用户状态已更新"})
+	response.RespondMessage(w, http.StatusOK, "用户状态已更新")
 }
 
 // BatchUpdateStatus 批量启用/禁用
@@ -170,16 +169,16 @@ func (h *Handler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request) {
 		IsActive bool     `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	opID, ip, ua := h.operatorInfo(r)
 	affected, err := h.svc.BatchUpdateStatus(r.Context(), req.IDs, req.IsActive, opID, ip, ua)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "批量更新成功", "affected": affected})
+	response.RespondOK(w, map[string]any{"affected": affected})
 }
 
 // BatchUpdateRole 批量修改角色
@@ -189,16 +188,16 @@ func (h *Handler) BatchUpdateRole(w http.ResponseWriter, r *http.Request) {
 		Role string   `json:"role" validate:"required"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	opID, ip, ua := h.operatorInfo(r)
 	affected, err := h.svc.BatchUpdateRole(r.Context(), req.IDs, req.Role, opID, ip, ua)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "批量更新成功", "affected": affected})
+	response.RespondOK(w, map[string]any{"affected": affected})
 }
 
 func parseBoolPtr(s string) *bool {
@@ -207,10 +206,4 @@ func parseBoolPtr(s string) *bool {
 	}
 	b := s == "true" || s == "1"
 	return &b
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
 }

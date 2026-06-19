@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	appsettings "blog-api/internal/application/settings"
-	interfacesmw "blog-api/internal/interfaces/http/middleware"
+	"blog-api/internal/interfaces/http/response"
 )
 
 // Handler 站点配置 HTTP handler
@@ -23,20 +23,20 @@ func NewHandler(svc *appsettings.Service) *Handler {
 func (h *Handler) GetPublicSettings(w http.ResponseWriter, r *http.Request) {
 	data, err := h.svc.GetPublic(r.Context())
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": data})
+	response.RespondOK(w, data)
 }
 
 // GetSettings 获取全部站点配置（含敏感字段，需管理员）
 func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	data, err := h.svc.GetAll(r.Context())
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": data})
+	response.RespondOK(w, data)
 }
 
 // UpdateSettings 更新站点配置
@@ -56,7 +56,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		FooterText         *string `json:"footer_text"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	data, err := h.svc.Update(r.Context(), appsettings.UpdateInput{
@@ -68,14 +68,8 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		Bio: req.Bio, FooterText: req.FooterText,
 	})
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": data})
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	response.RespondOK(w, data)
 }

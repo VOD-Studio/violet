@@ -1,4 +1,4 @@
-// Package content 提供 announcement + project 的 HTTP handler（DDD 版）。
+// Package content 提供 announcement + project 的 HTTP handler。
 package content
 
 import (
@@ -11,7 +11,7 @@ import (
 
 	appann "blog-api/internal/application/announcement"
 	appproj "blog-api/internal/application/project"
-	interfacesmw "blog-api/internal/interfaces/http/middleware"
+	"blog-api/internal/interfaces/http/response"
 )
 
 // Handler announcement + project HTTP 处理器
@@ -33,33 +33,33 @@ func NewHandler(annSvc *appann.Service, projSvc *appproj.Service) *Handler {
 func (h *Handler) ListAnnouncements(w http.ResponseWriter, r *http.Request) {
 	items, err := h.annSvc.List(r.Context())
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": items})
+	response.RespondOK(w, items)
 }
 
 func (h *Handler) ListActiveAnnouncements(w http.ResponseWriter, r *http.Request) {
 	items, err := h.annSvc.ListActive(r.Context())
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": items})
+	response.RespondOK(w, items)
 }
 
 func (h *Handler) GetAnnouncement(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	dto, err := h.annSvc.Get(r.Context(), int32(id))
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+	response.RespondOK(w, dto)
 }
 
 type announcementRequest struct {
@@ -74,11 +74,11 @@ type announcementRequest struct {
 func (h *Handler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
 	var req announcementRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	if err := h.validate.Struct(req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	in := appann.CreateInput{Title: req.Title, Content: req.Content, Type: req.Type}
@@ -94,21 +94,21 @@ func (h *Handler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := h.annSvc.Create(r.Context(), in)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"data": map[string]any{"id": id}})
+	response.RespondCreated(w, map[string]any{"id": id})
 }
 
 func (h *Handler) UpdateAnnouncement(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	var req announcementRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	in := appann.UpdateInput{ID: int32(id), Title: req.Title, Content: req.Content, Type: req.Type, IsActive: req.IsActive}
@@ -123,23 +123,23 @@ func (h *Handler) UpdateAnnouncement(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := h.annSvc.Update(r.Context(), in); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "公告已更新"})
+	response.RespondMessage(w, http.StatusOK, "公告已更新")
 }
 
 func (h *Handler) DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	if err := h.annSvc.Delete(r.Context(), int32(id)); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "公告已删除"})
+	response.RespondMessage(w, http.StatusOK, "公告已删除")
 }
 
 // ============================================================
@@ -149,10 +149,10 @@ func (h *Handler) DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	items, err := h.projSvc.List(r.Context())
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": items})
+	response.RespondOK(w, items)
 }
 
 // GetProject 获取项目详情（公开）
@@ -160,10 +160,10 @@ func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	dto, err := h.projSvc.Get(r.Context(), id)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+	response.RespondOK(w, dto)
 }
 
 type projectRequest struct {
@@ -179,11 +179,11 @@ type projectRequest struct {
 func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	var req projectRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	if err := h.validate.Struct(req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	if err := h.projSvc.Create(r.Context(), appproj.CreateInput{
@@ -191,17 +191,17 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		GithubURL: req.GithubURL, ImageURL: req.ImageURL,
 		TechStack: req.TechStack, SortOrder: req.SortOrder,
 	}); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"message": "项目已创建"})
+	response.RespondMessage(w, http.StatusCreated, "项目已创建")
 }
 
 func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var req projectRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	if err := h.projSvc.Update(r.Context(), id, appproj.UpdateInput{
@@ -209,23 +209,17 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		GithubURL: req.GithubURL, ImageURL: req.ImageURL,
 		TechStack: req.TechStack, SortOrder: req.SortOrder,
 	}); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "项目已更新"})
+	response.RespondMessage(w, http.StatusOK, "项目已更新")
 }
 
 func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := h.projSvc.Delete(r.Context(), id); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "项目已删除"})
-}
-
-func writeJSON(w http.ResponseWriter, status int, body any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
+	response.RespondMessage(w, http.StatusOK, "项目已删除")
 }
