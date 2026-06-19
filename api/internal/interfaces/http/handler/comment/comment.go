@@ -1,15 +1,14 @@
-// Package comment 提供 comment 模块的 HTTP handler（DDD 版）。
+// Package comment 提供 comment 模块的 HTTP handler。
 package comment
 
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/go-playground/validator/v10"
 
 	appcomment "blog-api/internal/application/comment"
-	interfacesmw "blog-api/internal/interfaces/http/middleware"
+	"blog-api/internal/interfaces/http/response"
 )
 
 // Handler 评论 HTTP 处理器
@@ -26,72 +25,46 @@ func NewHandler(svc *appcomment.Service) *Handler {
 // ListByPost 按文章列出评论（前台公开）
 func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
-
+	page, limit := response.ParsePaging(r)
 	items, total, err := h.svc.ListByPost(r.Context(), postID, page, limit)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": items, "total": total})
+	response.RespondPaged(w, items, page, limit, total)
 }
 
 // ListPending 列出待审核评论（后台）
 func (h *Handler) ListPending(w http.ResponseWriter, r *http.Request) {
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
-
+	page, limit := response.ParsePaging(r)
 	items, total, err := h.svc.ListPending(r.Context(), page, limit)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": items, "total": total})
+	response.RespondPaged(w, items, page, limit, total)
 }
 
 // ListAll 全局评论列表（后台管理，支持状态筛选）
 func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 || limit > 100 {
-		limit = 20
-	}
+	page, limit := response.ParsePaging(r)
 	status := r.URL.Query().Get("status")
-
 	items, total, err := h.svc.ListAll(r.Context(), status, page, limit)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"data": items, "total": total, "page": page, "limit": limit,
-	})
+	response.RespondPaged(w, items, page, limit, total)
 }
 
 // CountPending 统计待审核评论数量（后台角标）
 func (h *Handler) CountPending(w http.ResponseWriter, r *http.Request) {
 	count, err := h.svc.CountPending(r.Context())
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"count": count})
+	response.RespondOK(w, map[string]any{"count": count})
 }
 
 // GetDetail 获取评论详情（后台管理，含所属文章）
@@ -99,10 +72,10 @@ func (h *Handler) GetDetail(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	dto, err := h.svc.GetDetail(r.Context(), id)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": dto})
+	response.RespondOK(w, dto)
 }
 
 type batchUpdateStatusRequest struct {
@@ -114,21 +87,19 @@ type batchUpdateStatusRequest struct {
 func (h *Handler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request) {
 	var req batchUpdateStatusRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	if err := h.validate.Struct(req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	affected, err := h.svc.BatchUpdateStatus(r.Context(), req.IDs, req.Status)
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"message": "批量更新成功", "affected_count": affected,
-	})
+	response.RespondOK(w, map[string]any{"affected": affected})
 }
 
 type createCommentRequest struct {
@@ -145,11 +116,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
 	var req createCommentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 	if err := h.validate.Struct(req); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
 
@@ -160,44 +131,38 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Body: req.Body,
 	})
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]any{"data": dto})
+	response.RespondCreated(w, dto)
 }
 
 // Approve 审核通过
 func (h *Handler) Approve(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := h.svc.Approve(r.Context(), id); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "评论已审核通过"})
+	response.RespondMessage(w, http.StatusOK, "评论已审核通过")
 }
 
 // MarkSpam 标记垃圾
 func (h *Handler) MarkSpam(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := h.svc.MarkSpam(r.Context(), id); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "评论已标记为垃圾"})
+	response.RespondMessage(w, http.StatusOK, "评论已标记为垃圾")
 }
 
 // Delete 删除评论
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := h.svc.Delete(r.Context(), id); err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"message": "评论已删除"})
-}
-
-func writeJSON(w http.ResponseWriter, status int, body any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(body)
+	response.RespondMessage(w, http.StatusOK, "评论已删除")
 }

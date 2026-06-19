@@ -2,11 +2,10 @@
 package stats
 
 import (
-	"encoding/json"
 	"net/http"
 
 	appstats "blog-api/internal/application/stats"
-	interfacesmw "blog-api/internal/interfaces/http/middleware"
+	"blog-api/internal/interfaces/http/response"
 )
 
 // Handler 仪表盘统计 HTTP handler
@@ -23,24 +22,18 @@ func NewHandler(svc *appstats.Service) *Handler {
 func (h *Handler) GetDashboardStats(w http.ResponseWriter, r *http.Request) {
 	data, err := h.svc.GetDashboard(r.Context())
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": data})
+	response.RespondOK(w, data)
 }
 
 // GetViewTrends 浏览量趋势
 func (h *Handler) GetViewTrends(w http.ResponseWriter, r *http.Request) {
 	data, err := h.svc.GetViewTrends(r.Context())
 	if err != nil {
-		interfacesmw.RespondError(w, r, err)
+		response.RespondError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"data": data})
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	response.RespondOK(w, data)
 }
