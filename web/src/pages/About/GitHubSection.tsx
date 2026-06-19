@@ -1,4 +1,4 @@
-import { ScrollReveal } from "@/components/creative";
+import { motion } from "motion/react";
 import { GitHubContributions } from "@/components/blog/GitHubContributions";
 import { PinnedRepos } from "@/components/blog/PinnedRepos";
 
@@ -11,13 +11,24 @@ export function GitHubSection({ username }: GitHubSectionProps) {
 
   return (
     <>
-      <ScrollReveal animation="fadeUp">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
         <GitHubContributions username={username} />
-      </ScrollReveal>
+      </motion.div>
 
-      <ScrollReveal animation="fadeUp" className="mt-12">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+        className="mt-12"
+      >
         <PinnedRepos username={username} />
-      </ScrollReveal>
+      </motion.div>
     </>
   );
 }

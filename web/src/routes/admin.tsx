@@ -6,18 +6,9 @@
 // 2.0 重构期：旧 AdminLayout 组件（含 react-router Outlet）暂不接入，
 // 用简化外壳；Phase 4 视觉重设计时一并迁移后台布局（含移动端 Drawer 化）。
 
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import AdminLayout from "@/components/layout/AdminLayout";
 import { useAuthStore } from "@/store";
-
-function AdminShell() {
-  return (
-    <div className="flex min-h-svh">
-      <main className="flex-1 overflow-y-auto p-6">
-        <Outlet />
-      </main>
-    </div>
-  );
-}
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: () => {
@@ -28,5 +19,5 @@ export const Route = createFileRoute("/admin")({
       throw redirect({ to: "/login" });
     }
   },
-  component: AdminShell,
+  component: AdminLayout,
 });

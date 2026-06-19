@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { MagneticButton } from "@/components/reactbits/components/MagneticButton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { type RegisterFormData, registerSchema } from "@/lib/validations";
@@ -124,9 +125,11 @@ export function RegisterForm() {
       </div>
 
       {/* 提交按钮 */}
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "注册中..." : "注册"}
-      </Button>
+      <MagneticButton className="w-full">
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "注册中..." : "注册"}
+        </Button>
+      </MagneticButton>
 
       {/* 登录链接 */}
       <p className="text-center text-sm text-muted-foreground">

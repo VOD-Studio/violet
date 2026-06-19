@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-
-// 站点设置 (/admin/settings) — 待迁移
-import { Placeholder } from "@/components/Placeholder";
+import Settings from "@/pages/admin/Settings";
 
 export const Route = createFileRoute("/admin/settings")({
-  component: () => <Placeholder title="站点设置" path="/admin/settings" />,
+  component: Settings,
 });

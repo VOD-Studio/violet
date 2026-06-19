@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ScrollReveal } from "@/components/creative";
+import { motion } from "motion/react";
 
 interface TechCategory {
   name: string;
@@ -46,33 +46,49 @@ export function TechStackSection({ techStack }: TechStackSectionProps) {
   }, [techStack]);
 
   return (
-    <ScrollReveal animation="fadeUp">
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
       <h2 className="mb-6 text-2xl font-bold">技术栈</h2>
 
       <div className="space-y-6">
-        {categories.map((category, index) => (
-          <ScrollReveal
+        {categories.map((category, catIndex) => (
+          <motion.div
             key={category.name}
-            animation="fadeUp"
-            delay={index * 0.1}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-30px" }}
+            transition={{ duration: 0.4, delay: catIndex * 0.1, ease: "easeOut" }}
           >
             <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
               {category.name}
             </h3>
 
             <div className="flex flex-wrap gap-2">
-              {category.items.map((tech) => (
-                <span
+              {category.items.map((tech, itemIndex) => (
+                <motion.span
                   key={tech}
-                  className="rounded-lg border bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted"
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{
+                    duration: 0.3,
+                    delay: catIndex * 0.1 + itemIndex * 0.05,
+                    ease: "easeOut",
+                  }}
+                  whileHover={{ scale: 1.08, y: -2 }}
+                  className="rounded-lg border bg-card px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted cursor-default"
                 >
                   {tech}
-                </span>
+                </motion.span>
               ))}
             </div>
-          </ScrollReveal>
+          </motion.div>
         ))}
       </div>
-    </ScrollReveal>
+    </motion.div>
   );
 }

@@ -7,8 +7,8 @@
  * - 同步歌词显示
  */
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { useRef, useState, useCallback } from "react";
+import { motion, AnimatePresence, useDragControls } from "motion/react";
 import { X, ChevronDown } from "lucide-react";
 import { usePlyrPlayer, type Playlist } from "../hooks/usePlyrPlayer";
 import { VinylDisc } from "./VinylDisc";
@@ -29,9 +29,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [panelView, setPanelView] = useState<"list" | "lyrics">("list");
   const [position, setPosition] = useState({ right: 16, bottom: 240 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef({ x: 0, y: 0, posRight: 0, posBottom: 0 });
-  const hasMovedRef = useRef(false);
+  const dragControls = useDragControls();
   const playerRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -57,105 +55,6 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
     handleSwitchPlaylist,
     handleSongClick,
   } = usePlyrPlayer(playlists);
-
-  // 拖拽处理函数
-  const handleDragStart = useCallback(
-    (clientX: number, clientY: number) => {
-      setIsDragging(true);
-      hasMovedRef.current = false;
-      dragStartRef.current = {
-        x: clientX,
-        y: clientY,
-        posRight: position.right,
-        posBottom: position.bottom,
-      };
-    },
-    [position]
-  );
-
-  const handleDragMove = useCallback(
-    (clientX: number, clientY: number) => {
-      if (!isDragging) return;
-
-      const deltaX = clientX - dragStartRef.current.x;
-      const deltaY = clientY - dragStartRef.current.y;
-
-      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-        hasMovedRef.current = true;
-      }
-
-      const playerWidth = playerRef.current?.offsetWidth || 52;
-      const playerHeight = playerRef.current?.offsetHeight || 52;
-
-      const newRight = Math.max(
-        0,
-        Math.min(
-          window.innerWidth - playerWidth,
-          dragStartRef.current.posRight - deltaX
-        )
-      );
-      const newBottom = Math.max(
-        0,
-        Math.min(
-          window.innerHeight - playerHeight,
-          dragStartRef.current.posBottom - deltaY
-        )
-      );
-
-      setPosition({ right: newRight, bottom: newBottom });
-    },
-    [isDragging]
-  );
-
-  const handleDragEnd = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      handleDragStart(e.clientX, e.clientY);
-    },
-    [handleDragStart]
-  );
-
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      const touch = e.touches[0];
-      handleDragStart(touch.clientX, touch.clientY);
-    },
-    [handleDragStart]
-  );
-
-  // 全局事件监听
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      handleDragMove(e.clientX, e.clientY);
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      handleDragMove(touch.clientX, touch.clientY);
-    };
-
-    const handleEnd = () => {
-      handleDragEnd();
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleEnd);
-    window.addEventListener("touchmove", handleTouchMove);
-    window.addEventListener("touchend", handleEnd);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleEnd);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleEnd);
-    };
-  }, [isDragging, handleDragMove, handleDragEnd]);
 
   const handleSwitchPlaylistInternal = useCallback(
     (index: number) => {
@@ -187,29 +86,6 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
 
   return (
     <>
-      <style>{`
-        @keyframes music-disc-spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes music-bar {
-          from { height: 3px; }
-          to { height: 10px; }
-        }
-        @keyframes marquee-scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .scrollbar-none::-webkit-scrollbar {
-          display: none;
-        }
-        .marquee-text {
-          display: inline-block;
-          white-space: nowrap;
-          animation: marquee-scroll 10s linear infinite;
-        }
-      `}</style>
-
       <audio ref={audioRef} preload="metadata" />
 
       <div
@@ -392,19 +268,30 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
           )}
         </AnimatePresence>
 
-        {/* 迷你碟片 */}
+        {/* 迷你碟片 - 使用 Framer Motion drag */}
         <AnimatePresence>
           {!expanded && (
             <motion.button
               key="mini-disc"
               layoutId="vinyl-disc"
-              onMouseDown={handleMouseDown}
-              onTouchStart={handleTouchStart}
-              onClick={() => {
-                if (!hasMovedRef.current) setExpanded(true);
+              drag
+              dragControls={dragControls}
+              dragMomentum={false}
+              dragConstraints={{
+                left: -window.innerWidth + 52 + 16,
+                right: 0,
+                top: -window.innerHeight + 52 + 16,
+                bottom: 0,
               }}
+              onDragEnd={(_, info) => {
+                setPosition((prev) => ({
+                  right: Math.max(0, Math.min(window.innerWidth - 52, prev.right - info.offset.x)),
+                  bottom: Math.max(0, Math.min(window.innerHeight - 52, prev.bottom - info.offset.y)),
+                }));
+              }}
+              onClick={() => setExpanded(true)}
               transition={{ duration: 0.15 }}
-              className={`cursor-grab active:cursor-grabbing ${isDragging ? "select-none" : ""}`}
+              className="cursor-grab active:cursor-grabbing"
             >
               <VinylDisc
                 cover={currentSong?.cover}
@@ -416,7 +303,7 @@ export function PlyrMusicPlayer({ playlists }: PlyrMusicPlayerProps) {
                 <div className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-background bg-green-500 animate-pulse" />
               )}
 
-              {currentSong && !isDragging && (
+              {currentSong && (
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}

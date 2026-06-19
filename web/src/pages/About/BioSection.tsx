@@ -1,4 +1,4 @@
-import { TextReveal } from "@/components/creative";
+import { TextReveal } from "@/components/reactbits/text-animations";
 
 const DEFAULT_BIO = `你好！我是一名全栈开发者，热爱技术与开源。目前专注于 Web 开发领域，擅长使用 React、TypeScript 和 Node.js 构建高质量的 Web 应用。
 

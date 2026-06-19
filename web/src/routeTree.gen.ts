@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
@@ -24,12 +25,12 @@ import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminEmojisRouteImport } from './routes/admin/emojis'
 import { Route as AdminCommentsRouteImport } from './routes/admin/comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin/announcements'
-import { Route as PublicVerifyEmailRouteImport } from './routes/_public.verify-email'
-import { Route as PublicRegisterRouteImport } from './routes/_public.register'
 import { Route as PublicProfileRouteImport } from './routes/_public.profile'
 import { Route as PublicMusicRouteImport } from './routes/_public.music'
-import { Route as PublicLoginRouteImport } from './routes/_public.login'
 import { Route as PublicAboutRouteImport } from './routes/_public.about'
+import { Route as AuthVerifyEmailRouteImport } from './routes/_auth.verify-email'
+import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
+import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin/posts/index'
 import { Route as PublicProjectsIndexRouteImport } from './routes/_public.projects.index'
 import { Route as PublicBlogIndexRouteImport } from './routes/_public.blog.index'
@@ -45,6 +46,10 @@ const AdminRoute = AdminRouteImport.update({
 } as any)
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -112,16 +117,6 @@ const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
   path: '/announcements',
   getParentRoute: () => AdminRoute,
 } as any)
-const PublicVerifyEmailRoute = PublicVerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
-  getParentRoute: () => PublicRoute,
-} as any)
-const PublicRegisterRoute = PublicRegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => PublicRoute,
-} as any)
 const PublicProfileRoute = PublicProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -132,15 +127,25 @@ const PublicMusicRoute = PublicMusicRouteImport.update({
   path: '/music',
   getParentRoute: () => PublicRoute,
 } as any)
-const PublicLoginRoute = PublicLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => PublicRoute,
-} as any)
 const PublicAboutRoute = PublicAboutRouteImport.update({
   id: '/about',
   path: '/about',
   getParentRoute: () => PublicRoute,
+} as any)
+const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
   id: '/posts/',
@@ -181,12 +186,12 @@ const AdminPostsIdEditRoute = AdminPostsIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/login': typeof AuthLoginRoute
+  '/register': typeof AuthRegisterRoute
+  '/verify-email': typeof AuthVerifyEmailRoute
   '/about': typeof PublicAboutRoute
-  '/login': typeof PublicLoginRoute
   '/music': typeof PublicMusicRoute
   '/profile': typeof PublicProfileRoute
-  '/register': typeof PublicRegisterRoute
-  '/verify-email': typeof PublicVerifyEmailRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
@@ -208,12 +213,13 @@ export interface FileRoutesByFullPath {
   '/admin/posts/$id/edit': typeof AdminPostsIdEditRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof PublicIndexRoute
+  '/login': typeof AuthLoginRoute
+  '/register': typeof AuthRegisterRoute
+  '/verify-email': typeof AuthVerifyEmailRoute
   '/about': typeof PublicAboutRoute
-  '/login': typeof PublicLoginRoute
   '/music': typeof PublicMusicRoute
   '/profile': typeof PublicProfileRoute
-  '/register': typeof PublicRegisterRoute
-  '/verify-email': typeof PublicVerifyEmailRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
@@ -225,7 +231,6 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tags': typeof AdminTagsRoute
   '/admin/users': typeof AdminUsersRoute
-  '/': typeof PublicIndexRoute
   '/admin': typeof AdminIndexRoute
   '/blog/$slug': typeof PublicBlogSlugRoute
   '/projects/$id': typeof PublicProjectsIdRoute
@@ -237,14 +242,15 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_auth': typeof AuthRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/_auth/login': typeof AuthLoginRoute
+  '/_auth/register': typeof AuthRegisterRoute
+  '/_auth/verify-email': typeof AuthVerifyEmailRoute
   '/_public/about': typeof PublicAboutRoute
-  '/_public/login': typeof PublicLoginRoute
   '/_public/music': typeof PublicMusicRoute
   '/_public/profile': typeof PublicProfileRoute
-  '/_public/register': typeof PublicRegisterRoute
-  '/_public/verify-email': typeof PublicVerifyEmailRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
@@ -271,12 +277,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/about'
     | '/login'
-    | '/music'
-    | '/profile'
     | '/register'
     | '/verify-email'
+    | '/about'
+    | '/music'
+    | '/profile'
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
@@ -298,12 +304,13 @@ export interface FileRouteTypes {
     | '/admin/posts/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/about'
+    | '/'
     | '/login'
-    | '/music'
-    | '/profile'
     | '/register'
     | '/verify-email'
+    | '/about'
+    | '/music'
+    | '/profile'
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
@@ -315,7 +322,6 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tags'
     | '/admin/users'
-    | '/'
     | '/admin'
     | '/blog/$slug'
     | '/projects/$id'
@@ -326,14 +332,15 @@ export interface FileRouteTypes {
     | '/admin/posts/$id/edit'
   id:
     | '__root__'
+    | '/_auth'
     | '/_public'
     | '/admin'
+    | '/_auth/login'
+    | '/_auth/register'
+    | '/_auth/verify-email'
     | '/_public/about'
-    | '/_public/login'
     | '/_public/music'
     | '/_public/profile'
-    | '/_public/register'
-    | '/_public/verify-email'
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
@@ -357,6 +364,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AuthRoute: typeof AuthRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
 }
@@ -375,6 +383,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -468,20 +483,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnnouncementsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_public/verify-email': {
-      id: '/_public/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof PublicVerifyEmailRouteImport
-      parentRoute: typeof PublicRoute
-    }
-    '/_public/register': {
-      id: '/_public/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof PublicRegisterRouteImport
-      parentRoute: typeof PublicRoute
-    }
     '/_public/profile': {
       id: '/_public/profile'
       path: '/profile'
@@ -496,19 +497,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicMusicRouteImport
       parentRoute: typeof PublicRoute
     }
-    '/_public/login': {
-      id: '/_public/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof PublicLoginRouteImport
-      parentRoute: typeof PublicRoute
-    }
     '/_public/about': {
       id: '/_public/about'
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof PublicAboutRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/_auth/verify-email': {
+      id: '/_auth/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof AuthVerifyEmailRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/register': {
+      id: '/_auth/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/admin/posts/': {
       id: '/admin/posts/'
@@ -562,13 +577,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
+  AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthLoginRoute: AuthLoginRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
+  AuthVerifyEmailRoute: AuthVerifyEmailRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 interface PublicRouteChildren {
   PublicAboutRoute: typeof PublicAboutRoute
-  PublicLoginRoute: typeof PublicLoginRoute
   PublicMusicRoute: typeof PublicMusicRoute
   PublicProfileRoute: typeof PublicProfileRoute
-  PublicRegisterRoute: typeof PublicRegisterRoute
-  PublicVerifyEmailRoute: typeof PublicVerifyEmailRoute
   PublicIndexRoute: typeof PublicIndexRoute
   PublicBlogSlugRoute: typeof PublicBlogSlugRoute
   PublicProjectsIdRoute: typeof PublicProjectsIdRoute
@@ -578,11 +604,8 @@ interface PublicRouteChildren {
 
 const PublicRouteChildren: PublicRouteChildren = {
   PublicAboutRoute: PublicAboutRoute,
-  PublicLoginRoute: PublicLoginRoute,
   PublicMusicRoute: PublicMusicRoute,
   PublicProfileRoute: PublicProfileRoute,
-  PublicRegisterRoute: PublicRegisterRoute,
-  PublicVerifyEmailRoute: PublicVerifyEmailRoute,
   PublicIndexRoute: PublicIndexRoute,
   PublicBlogSlugRoute: PublicBlogSlugRoute,
   PublicProjectsIdRoute: PublicProjectsIdRoute,
@@ -632,6 +655,7 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  AuthRoute: AuthRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
 }

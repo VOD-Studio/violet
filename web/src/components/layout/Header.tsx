@@ -5,6 +5,7 @@
 
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useSiteSettings } from "@/components/shared/SettingsProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -165,90 +166,98 @@ export function Header() {
       </div>
 
       {/* 移动端展开菜单 */}
-      {isMobileMenuOpen && (
-        <div className="border-b bg-background md:hidden">
-          <nav className="container mx-auto flex flex-col gap-1 px-4 py-3">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={closeMobileMenu}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted",
-                  isActive(item.href)
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground",
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden border-b bg-background md:hidden"
+          >
+            <nav className="container mx-auto flex flex-col gap-1 px-4 py-3">
+              {NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={closeMobileMenu}
+                  className={cn(
+                    "rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted",
+                    isActive(item.href)
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
 
-            {/* 移动端登录/用户菜单 */}
-            <div className="mt-2 border-t pt-2">
-              {isAuthenticated ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-md px-3 py-2 hover:bg-muted">
-                    <Avatar className="size-8">
-                      <AvatarImage
-                        src={
-                          user?.avatar_url
-                            ? getUploadUrl(user.avatar_url)
-                            : undefined
-                        }
-                        alt={user?.username}
-                      />
-                      <AvatarFallback>
-                        {user?.username?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col items-start">
-                      <p className="text-sm font-medium">{user?.username}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        navigate({ to: "/profile" });
-                        closeMobileMenu();
-                      }}
-                    >
-                      个人中心
-                    </DropdownMenuItem>
-                    {canAccessAdmin && (
+              {/* 移动端登录/用户菜单 */}
+              <div className="mt-2 border-t pt-2">
+                {isAuthenticated ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-md px-3 py-2 hover:bg-muted">
+                      <Avatar className="size-8">
+                        <AvatarImage
+                          src={
+                            user?.avatar_url
+                              ? getUploadUrl(user.avatar_url)
+                              : undefined
+                          }
+                          alt={user?.username}
+                        />
+                        <AvatarFallback>
+                          {user?.username?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col items-start">
+                        <p className="text-sm font-medium">{user?.username}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {user?.email}
+                        </p>
+                      </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end">
                       <DropdownMenuItem
                         onClick={() => {
-                          navigate({ to: "/admin" });
+                          navigate({ to: "/profile" });
                           closeMobileMenu();
                         }}
                       >
-                        管理后台
+                        个人中心
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      onClick={() => {
-                        logout();
-                        closeMobileMenu();
-                      }}
-                    >
-                      退出登录
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Link to="/login" onClick={closeMobileMenu}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    登录
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </nav>
-        </div>
-      )}
+                      {canAccessAdmin && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            navigate({ to: "/admin" });
+                            closeMobileMenu();
+                          }}
+                        >
+                          管理后台
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        onClick={() => {
+                          logout();
+                          closeMobileMenu();
+                        }}
+                      >
+                        退出登录
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Link to="/login" onClick={closeMobileMenu}>
+                    <Button variant="outline" size="sm" className="w-full">
+                      登录
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { MagneticButton } from "@/components/reactbits/components/MagneticButton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { type LoginFormData, loginSchema } from "@/lib/validations";
@@ -88,9 +89,11 @@ export function LoginForm() {
       </div>
 
       {/* 提交按钮 */}
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "登录中..." : "登录"}
-      </Button>
+      <MagneticButton className="w-full">
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "登录中..." : "登录"}
+        </Button>
+      </MagneticButton>
 
       {/* 注册链接 */}
       <p className="text-center text-sm text-muted-foreground">
