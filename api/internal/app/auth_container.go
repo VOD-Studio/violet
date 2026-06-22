@@ -64,7 +64,7 @@ func NewAuthContainer(
 
 	authHandler := authhttp.NewHandler(
 		register, login, logout, refresh, verify, forgot, reset,
-		updatePf, changePwd, getMe,
+		updatePf, changePwd, getMe, cfg.Cookie,
 	)
 
 	return &AuthContainer{AuthHandler: authHandler, EnsureSuperAdmin: ensureSuperAdmin, JWTService: jwtService}, nil

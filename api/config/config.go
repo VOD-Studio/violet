@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -38,8 +39,49 @@ type Config struct {
 	BilibiliCookie string
 	// BilibiliAPIType B站表情 API 类型：user(用户收藏) 或 official(官方)
 	BilibiliAPIType string
+	// Cookie 鉴权 Cookie 配置（access/refresh token 通过 HttpOnly Cookie 下发）
+	Cookie CookieConfig
+	// CORSAllowedOrigins 允许的前端来源列表（用于跨域 Cookie 与 CSRF 防护）
+	// 生产环境通过 CORS_ALLOWED_ORIGINS 环境变量覆盖
+	CORSAllowedOrigins []string
 	// SuperAdmin 超级管理员配置
 	SuperAdmin SuperAdminConfig
+}
+
+// CookieConfig 鉴权 Cookie 配置
+//
+// access 与 refresh token 均通过 HttpOnly Cookie 下发，避免 JS 读取（防 XSS 偷取）。
+// 由此带来的 CSRF 风险通过 double-submit cookie 中间件防护（见 middleware/csrf.go）。
+type CookieConfig struct {
+	// Domain Cookie 的 Domain 属性
+	// 开发环境留空（默认为当前 host）；生产环境填站点主域名（如 example.com）以支持子域共享
+	Domain string
+	// Secure Cookie 的 Secure 属性
+	// true 时仅 HTTPS 才下发；开发环境（HTTP localhost）必须为 false
+	Secure bool
+	// SameSite Cookie 的 SameSite 属性：lax（默认，兼顾安全与可用）/ strict / none
+	// 注意：跨域开发（localhost:5173 → api:8080）必须为 none+secure，否则浏览器拒收
+	SameSite string
+	// AccessName access token Cookie 名
+	AccessName string
+	// RefreshName refresh token Cookie 名
+	RefreshName string
+	// CSRFName CSRF double-submit Cookie 名（非 HttpOnly，供前端读取回传）
+	CSRFName string
+}
+
+// SameSiteMode 返回 http.SameSite 枚举值
+//
+// 配置中用字符串以便 yaml/env 表达，运行时转枚举
+func (c CookieConfig) SameSiteMode() http.SameSite {
+	switch strings.ToLower(c.SameSite) {
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteLaxMode
+	}
 }
 
 // DatabaseConfig PostgreSQL 数据库配置
@@ -142,6 +184,19 @@ func Load() *Config {
 	v.SetDefault("bilibili_bili_jct", "")
 	v.SetDefault("bilibili_dedeuserid", "")
 	v.SetDefault("bilibili_api_type", "user")
+	// Cookie 默认值：开发环境友好（HTTP、lax、空 domain）
+	// 生产环境必须通过 COOKIE_SECURE=true、COOKIE_DOMAIN、CORS_ALLOWED_ORIGINS 覆盖
+	v.SetDefault("cookie.domain", "")
+	v.SetDefault("cookie.secure", false)
+	v.SetDefault("cookie.samesite", "lax")
+	v.SetDefault("cookie.access_name", "mimo_access")
+	v.SetDefault("cookie.refresh_name", "mimo_refresh")
+	v.SetDefault("cookie.csrf_name", "mimo_csrf")
+	// CORS 允许来源默认覆盖前端开发服务器
+	v.SetDefault("cors_allowed_origins", []string{
+		"http://localhost:3000",
+		"http://localhost:5173",
+	})
 	v.SetDefault("superadmin.enabled", false)
 	v.SetDefault("superadmin.username", "admin")
 	v.SetDefault("superadmin.email", "admin@example.com")
@@ -201,6 +256,15 @@ func Load() *Config {
 		UploadPathPrefix:   v.GetString("upload_path_prefix"),
 		BilibiliCookie:     bilibiliCookie,
 		BilibiliAPIType:    v.GetString("bilibili_api_type"),
+		Cookie: CookieConfig{
+			Domain:      v.GetString("cookie.domain"),
+			Secure:      v.GetBool("cookie.secure"),
+			SameSite:    v.GetString("cookie.samesite"),
+			AccessName:  v.GetString("cookie.access_name"),
+			RefreshName: v.GetString("cookie.refresh_name"),
+			CSRFName:    v.GetString("cookie.csrf_name"),
+		},
+		CORSAllowedOrigins: v.GetStringSlice("cors_allowed_origins"),
 		SuperAdmin: SuperAdminConfig{
 			Enabled:  v.GetBool("superadmin.enabled"),
 			Username: v.GetString("superadmin.username"),
@@ -280,6 +344,31 @@ func (c *Config) Validate() error {
 	}
 	if c.JWTRefreshTokenTTL <= 0 {
 		return fmt.Errorf("JWT_REFRESH_TOKEN_TTL 必须大于 0")
+	}
+
+	// Cookie 配置校验
+	if c.Cookie.AccessName == "" || c.Cookie.RefreshName == "" || c.Cookie.CSRFName == "" {
+		return fmt.Errorf("cookie.access_name / refresh_name / csrf_name 均不能为空")
+	}
+	switch strings.ToLower(c.Cookie.SameSite) {
+	case "", "lax", "strict", "none":
+		// 合法值
+	default:
+		return fmt.Errorf("cookie.samesite 必须为 lax/strict/none，当前: %s", c.Cookie.SameSite)
+	}
+	// SameSite=None 必须 Secure（现代浏览器强制），否则 Cookie 会被丢弃
+	if strings.ToLower(c.Cookie.SameSite) == "none" && !c.Cookie.Secure {
+		return fmt.Errorf("cookie.samesite=none 时必须 cookie.secure=true（HTTPS）")
+	}
+
+	// 生产环境安全校验
+	if c.Environment == "production" {
+		if !c.Cookie.Secure {
+			return fmt.Errorf("生产环境必须 cookie.secure=true")
+		}
+		if len(c.CORSAllowedOrigins) == 0 {
+			return fmt.Errorf("生产环境必须配置 CORS_ALLOWED_ORIGINS（且禁止使用通配符）")
+		}
 	}
 
 	return nil

@@ -38,6 +38,23 @@ jwt_public_key_path: ./jwt_public_key.pem
 jwt_access_token_ttl: 15m
 jwt_refresh_token_ttl: 168h
 
+# ── 鉴权 Cookie ─────────────────────────────
+# access/refresh token 通过 HttpOnly Cookie 下发；CSRF 通过 double-submit cookie 防护
+# 生产部署建议通过环境变量覆盖：COOKIE_DOMAIN、COOKIE_SECURE=true、COOKIE_SAMESITE
+cookie:
+  domain: ""
+  secure: false
+  samesite: lax
+  access_name: mimo_access
+  refresh_name: mimo_refresh
+  csrf_name: mimo_csrf
+
+# ── CORS 允许来源 ─────────────────────────────
+# 生产环境通过 CORS_ALLOWED_ORIGINS=a,b 配置（逗号分隔）
+cors_allowed_origins:
+  - http://localhost:3000
+  - http://localhost:5173
+
 # ── 邮件服务 (Resend) ────────────────────────
 resend_api_key: "" # 通过 RESEND_API_KEY 环境变量配置
 email_from: noreply@yourdomain.com

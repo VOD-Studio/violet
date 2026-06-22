@@ -2,11 +2,15 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 
+	"blog-api/config"
 	authcmd "blog-api/internal/application/auth/command"
 	authquery "blog-api/internal/application/auth/query"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
@@ -26,10 +30,14 @@ type Handler struct {
 	changePwd *authcmd.ChangePasswordHandler
 	getMe     *authquery.GetMeHandler
 
-	validate *validator.Validate
+	validate  *validator.Validate
+	cookieCfg config.CookieConfig
 }
 
 // NewHandler 创建 auth HTTP handler
+//
+// cookieCfg 用于 login/refresh/logout 时下发/清除 HttpOnly Cookie；
+// 详见 response.SetAuthTokenCookies / ClearAuthCookies。
 func NewHandler(
 	register *authcmd.RegisterUserHandler,
 	login *authcmd.LoginHandler,
@@ -41,13 +49,27 @@ func NewHandler(
 	updatePf *authcmd.UpdateProfileHandler,
 	changePwd *authcmd.ChangePasswordHandler,
 	getMe *authquery.GetMeHandler,
+	cookieCfg config.CookieConfig,
 ) *Handler {
 	return &Handler{
 		register: register, login: login, logout: logout, refresh: refresh,
 		verify: verify, forgot: forgot, reset: reset,
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe,
-		validate: validator.New(),
+		validate:  validator.New(),
+		cookieCfg: cookieCfg,
 	}
+}
+
+// generateCSRFToken 生成 32 字节随机 CSRF token（hex 编码成 64 字符串）
+//
+// 用于 double-submit cookie 模式：值不依赖任何状态，仅要求不可预测。
+// 返回错误时降级为空串（CSRF 中间件会拒绝空 token 的写操作，安全可控）。
+func generateCSRFToken() string {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(b)
 }
 
 // Register POST /auth/ddd/register
@@ -116,46 +138,75 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
+	// 下发 HttpOnly Cookie（access + refresh + CSRF double-submit）
+	// refresh_token 不再返回到响应体，仅通过 HttpOnly Cookie 传递（防 XSS 偷取）
+	csrf := generateCSRFToken()
+	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg)
 	response.RespondOK(w, map[string]any{
 		"access_token":       out.TokenPair.AccessToken,
-		"refresh_token":      out.TokenPair.RefreshToken,
 		"expires_in":         out.TokenPair.ExpiresIn,
 		"refresh_expires_in": out.TokenPair.RefreshExpiresIn,
 		"token_type":         "Bearer",
 	})
 }
 
-// Refresh POST /auth/ddd/refresh
+// Refresh POST /auth/refresh
+//
+// refresh_token 优先从 HttpOnly Cookie 读取；Cookie 缺失时回退到请求体（向后兼容旧客户端）。
+// 成功后下发新的 access + refresh + CSRF Cookie（token 轮转）。
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		RefreshToken string `json:"refresh_token" validate:"required"`
+	refreshToken := ""
+
+	// 优先从 Cookie 读取（推荐路径）
+	if c, err := r.Cookie(h.cookieCfg.RefreshName); err == nil && c.Value != "" {
+		refreshToken = c.Value
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.RespondError(w, r, err)
+
+	// 回退：从请求体读取（兼容旧客户端 / 显式调用场景）
+	if refreshToken == "" {
+		var req struct {
+			RefreshToken string `json:"refresh_token"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil && refreshToken == "" {
+			response.RespondError(w, r, err)
+			return
+		}
+		refreshToken = req.RefreshToken
+	}
+
+	if refreshToken == "" {
+		response.RespondError(w, r, fmt.Errorf("缺少 refresh_token"))
 		return
 	}
 
-	pair, err := h.refresh.Handle(r.Context(), authcmd.RefreshTokenInput{RefreshToken: req.RefreshToken})
+	pair, err := h.refresh.Handle(r.Context(), authcmd.RefreshTokenInput{RefreshToken: refreshToken})
 	if err != nil {
+		// refresh 失败通常意味着 refresh token 已失效，清除 Cookie 让客户端回到登录态
+		response.ClearAuthCookies(w, h.cookieCfg)
 		response.RespondError(w, r, err)
 		return
 	}
+	csrf := generateCSRFToken()
+	response.SetAuthTokenCookies(w, pair.AccessToken, pair.RefreshToken, csrf, h.cookieCfg)
 	response.RespondOK(w, map[string]any{
 		"access_token":       pair.AccessToken,
-		"refresh_token":      pair.RefreshToken,
 		"expires_in":         pair.ExpiresIn,
 		"refresh_expires_in": pair.RefreshExpiresIn,
 		"token_type":         "Bearer",
 	})
 }
 
-// Logout POST /auth/ddd/logout（需认证）
+// Logout POST /auth/logout（需认证）
+//
+// 服务端：blacklist refresh token（Redis）。
+// 客户端：清除 access + refresh + CSRF Cookie，使浏览器丢弃 token。
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	if err := h.logout.Handle(r.Context(), authcmd.LogoutInput{UserID: userID}); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
+	response.ClearAuthCookies(w, h.cookieCfg)
 	response.RespondMessage(w, http.StatusOK, "已登出")
 }
 

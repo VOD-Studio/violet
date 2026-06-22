@@ -29,6 +29,26 @@ type TokenValidator interface {
 	ParseToken(tokenString string) (*TokenClaims, error)
 }
 
+// AuthOption Auth 中间件的可选配置
+type AuthOption func(*authConfig)
+
+// authConfig Auth 中间件运行时配置
+type authConfig struct {
+	// accessCookieName 若非空，Authorization header 缺失时回退读取该 Cookie
+	accessCookieName string
+}
+
+// WithAccessCookie 启用从 Cookie 读取 access token 的回退路径
+//
+// 配合 HttpOnly Cookie 鉴权方案使用：浏览器自动携带 Cookie，
+// 服务端无需依赖客户端手动注入 Authorization header。
+// 读取顺序：Authorization header 优先（兼容旧客户端），缺失时回退 Cookie。
+func WithAccessCookie(name string) AuthOption {
+	return func(c *authConfig) {
+		c.accessCookieName = name
+	}
+}
+
 // PermissionChecker 权限点检查端口
 //
 // 任何能根据 (role, roleID, codes) 判断是否授权的实现都能作为 RequirePermission 中间件依赖。
@@ -47,44 +67,42 @@ const (
 )
 
 // Auth JWT 认证中间件
-func Auth(validator TokenValidator) func(http.Handler) http.Handler {
+//
+// token 读取顺序：
+//  1. Authorization: Bearer <token>（优先，兼容旧客户端与 SSR server 端调用）
+//  2. access Cookie（回退，配合 HttpOnly Cookie 鉴权方案，浏览器自动携带）
+//
+// 通过 WithAccessCookie(name) 启用 Cookie 回退；默认仅认 Authorization header。
+func Auth(validator TokenValidator, opts ...AuthOption) func(http.Handler) http.Handler {
+	cfg := &authConfig{}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
+			token, source := extractToken(r, cfg.accessCookieName)
+			if token == "" {
 				log.Warn().
 					Str("method", r.Method).
 					Str("path", r.URL.Path).
 					Str("ip", getClientIP(r)).
-					Msg("认证失败：缺少 Authorization 请求头")
+					Msg("认证失败：缺少 Authorization 请求头或 access Cookie")
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"error":"unauthorized","message":"缺少 Authorization 请求头"}`))
+				w.Write([]byte(`{"error":"unauthorized","message":"缺少认证凭据"}`))
 				return
 			}
 
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-				log.Warn().
-					Str("method", r.Method).
-					Str("path", r.URL.Path).
-					Str("ip", getClientIP(r)).
-					Bool("has_token", authHeader != "").
-					Msg("认证失败：Authorization 格式错误")
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"error":"unauthorized","message":"Authorization 格式应为 Bearer <token>"}`))
-				return
-			}
-
-			claims, err := validator.ParseToken(parts[1])
+			claims, err := validator.ParseToken(token)
 			if err != nil {
 				log.Warn().
 					Err(err).
 					Str("method", r.Method).
 					Str("path", r.URL.Path).
 					Str("ip", getClientIP(r)).
-					Str("token_prefix", getTokenPrefix(parts[1])).
+					Str("source", source).
+					Str("token_prefix", getTokenPrefix(token)).
 					Msg("认证失败：令牌无效或已过期")
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusUnauthorized)
@@ -96,6 +114,7 @@ func Auth(validator TokenValidator) func(http.Handler) http.Handler {
 				Str("user_id", claims.UserID).
 				Str("role", claims.Role).
 				Str("email", claims.Email).
+				Str("source", source).
 				Str("method", r.Method).
 				Str("path", r.URL.Path).
 				Msg("认证成功")
@@ -108,6 +127,26 @@ func Auth(validator TokenValidator) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// extractToken 从请求中提取 access token
+//
+// 优先级：Authorization header > access Cookie。
+// 返回值 source 用于日志（"header" / "cookie" / ""），便于排查鉴权问题。
+func extractToken(r *http.Request, accessCookieName string) (token string, source string) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader != "" {
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+			return parts[1], "header"
+		}
+	}
+	if accessCookieName != "" {
+		if c, err := r.Cookie(accessCookieName); err == nil && c.Value != "" {
+			return c.Value, "cookie"
+		}
+	}
+	return "", ""
 }
 
 // AdminRequired 管理员权限中间件
