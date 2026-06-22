@@ -72,7 +72,7 @@ func generateCSRFToken() string {
 	return hex.EncodeToString(b)
 }
 
-// Register POST /auth/ddd/register
+// Register POST /auth/register
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email    string `json:"email" validate:"required,email"`
@@ -97,7 +97,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	response.RespondMessage(w, http.StatusCreated, "注册成功，请查收验证邮件")
 }
 
-// VerifyEmail POST /auth/ddd/verify-email
+// VerifyEmail POST /auth/verify-email
 func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email string `json:"email" validate:"required,email"`
@@ -118,7 +118,7 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	response.RespondMessage(w, http.StatusOK, "邮箱验证成功")
 }
 
-// Login POST /auth/ddd/login
+// Login POST /auth/login
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email    string `json:"email" validate:"required,email"`
@@ -210,7 +210,32 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	response.RespondMessage(w, http.StatusOK, "已登出")
 }
 
-// ForgotPassword POST /auth/ddd/forgot-password
+// GetCSRFToken GET /auth/csrf-token（公开）
+//
+// 为 double-submit CSRF 防护提供初始 token：
+//   - 已登录用户：登录时已下发 mimo_csrf cookie，本端点刷新 token（防止长期不变）
+//   - 未登录用户：首次访问时取一个 CSRF cookie 才能发起 login/register（防 login CSRF）
+//
+// 响应体同时返回 token 字符串（非敏感，攻击者拿不到 cookie 也无法伪造 header）。
+func (h *Handler) GetCSRFToken(w http.ResponseWriter, r *http.Request) {
+	token := generateCSRFToken()
+	// 仅刷新 CSRF cookie，不动 access/refresh token cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     h.cookieCfg.CSRFName,
+		Value:    token,
+		Path:     "/",
+		Domain:   h.cookieCfg.Domain,
+		MaxAge:   response.AuthCookieMaxAge,
+		Secure:   h.cookieCfg.Secure,
+		HttpOnly: false, // 必须 JS 可读
+		SameSite: h.cookieCfg.SameSiteMode(),
+	})
+	response.RespondOK(w, map[string]any{
+		"csrf_token": token,
+	})
+}
+
+// ForgotPassword POST /auth/forgot-password
 func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email string `json:"email" validate:"required,email"`
@@ -227,7 +252,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	response.RespondMessage(w, http.StatusOK, "如果该邮箱已注册，重置码已发送")
 }
 
-// ResetPassword POST /auth/ddd/reset-password
+// ResetPassword POST /auth/reset-password
 func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email       string `json:"email" validate:"required,email"`
@@ -251,7 +276,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	response.RespondMessage(w, http.StatusOK, "密码已重置")
 }
 
-// GetMe GET /auth/ddd/me（需认证）
+// GetMe GET /auth/me（需认证）
 func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	dto, err := h.getMe.Handle(r.Context(), userID)
@@ -262,7 +287,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
-// UpdateProfile PATCH /auth/ddd/profile（需认证）
+// UpdateProfile PATCH /auth/profile（需认证）
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	var req struct {
@@ -292,7 +317,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ChangePassword PATCH /auth/ddd/password（需认证）
+// ChangePassword PATCH /auth/password（需认证）
 func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	var req struct {

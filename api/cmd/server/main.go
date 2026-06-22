@@ -176,6 +176,11 @@ func main() {
 
 	r.Route("/api/v1", func(v1 chi.Router) {
 
+		// CSRF 防护（仅 state-changing 方法校验；GET/HEAD/OPTIONS 免验）
+		// 与 cookie 鉴权方案配套：浏览器自动携带 cookie，必须额外校验 X-CSRF-Token
+		// 防止跨站请求伪造。豁免列表仅放确实不需要 CSRF 的 POST 端点（当前为空）。
+		v1.Use(middleware.CSRF(cfg.Cookie, nil))
+
 		// 公开站点设置
 		v1.Get("/settings", settingsContainer.SettingsHandler.GetPublicSettings) // 获取公开站点配置
 
@@ -187,6 +192,8 @@ func main() {
 		authH := authContainer.AuthHandler
 		contentH := contentContainer.ContentHandler
 		v1.Route("/auth", func(r chi.Router) {
+			// 公开端点：取 CSRF token（首次访问需要先调用此端点拿到 cookie 才能 login）
+			r.Get("/csrf-token", authH.GetCSRFToken)         // 获取 CSRF token
 			r.Post("/register", authH.Register)              // 用户注册
 			r.Post("/verify-email", authH.VerifyEmail)       // 邮箱验证
 			r.Post("/login", authH.Login)                    // 用户登录
