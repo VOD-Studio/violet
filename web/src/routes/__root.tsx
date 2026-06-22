@@ -7,7 +7,10 @@ import {
 	ScrollRestoration,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-
+import AnnouncementBar from "@widgets/AnnouncementBar";
+import Footer from "@widgets/Footer";
+import Header from "@widgets/Header";
+import MusicPlayer from "@widgets/MusicPlayer";
 import type { RouterContext } from "../router";
 import AppProvider from "../shared/api/provider";
 import { getCurrentUser } from "../shared/server/session";
@@ -50,7 +53,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
 	return (
 		<AppProvider>
-			<Outlet />
+			<AnnouncementBar />
+			<Header />
+			<main className="min-h-[60vh]">
+				<Outlet />
+			</main>
+			<Footer />
+			<MusicPlayer />
 			<TanStackDevtools
 				config={{ position: "bottom-right" }}
 				plugins={[
