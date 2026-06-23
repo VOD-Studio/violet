@@ -1,10 +1,8 @@
 import { githubKeys } from "@features/github/api/keys";
-
 import { fetchContributions } from "@features/github/api/queries";
 import Contributions from "@features/github/ui/Contributions";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
-import PostList from "@features/posts/ui/PostList";
 import { settingsKeys } from "@features/settings/api/keys";
 import {
 	fetchAnnouncements,
@@ -12,25 +10,36 @@ import {
 } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 import Hero from "@widgets/Hero";
+import ThemeToggle from "@widgets/ThemeToggle";
 
 /**
- * HomePage - 首页根组件
+ * HomePage - 首页根组件（Nexus 80/20 网格）
  *
- * Hero（react-bbits 三组件）+ 最新 6 篇文章 + GitHub 贡献图。
+ * - 上 80%：核心展示区（Hero 内部 50/50）
+ * - 下 20%：底座（机械轴体主题切换器极左 + 次要信息 + 贡献图）
  */
 function HomePage() {
 	return (
-		<>
-			<Hero />
-			<section className="container mx-auto px-4 py-16">
-				<h2 className="text-3xl font-bold mb-8">最新文章</h2>
-				<PostList query={{ page: 1, limit: 6 }} />
+		<div className="flex h-[calc(100vh-4rem)] flex-col">
+			{/* 80% 核心展示区：左 50% 视觉锚 + 右 50% 动态分发 */}
+			<section className="flex-[4] overflow-hidden border-b border-edge-hairline">
+				<Hero />
 			</section>
-			<section className="container mx-auto px-4 py-16">
-				<h2 className="text-3xl font-bold mb-8">GitHub 活动</h2>
-				<Contributions />
+			{/* 20% 底座：机械切换器极左 + 次要信息 + 贡献图 */}
+			<section className="flex flex-[1] items-stretch gap-4 px-4 py-2">
+				<div className="flex items-center">
+					<ThemeToggle />
+				</div>
+				<div className="flex flex-1 items-center justify-center font-mono text-xs text-muted-foreground">
+					<span className="hidden md:inline">
+						Cmd/Ctrl + K · 60fps · WebGL ready
+					</span>
+				</div>
+				<div className="hidden max-w-md items-center overflow-hidden lg:flex">
+					<Contributions />
+				</div>
 			</section>
-		</>
+		</div>
 	);
 }
 
@@ -38,8 +47,8 @@ function HomePage() {
  * / - 首页
  *
  * loader SSR 并发预取四组数据，dehydrate 到 HTML，hydrate 后无额外请求：
- * - 最新 6 篇文章
- * - GitHub 贡献图
+ * - 最新文章（HeroRight 用）
+ * - GitHub 贡献图（底座用）
  * - 站点配置（Hero 用）
  * - 公告（AnnouncementBar 用）
  *
@@ -49,8 +58,8 @@ export const Route = createFileRoute("/")({
 	loader: async ({ context }) => {
 		await Promise.all([
 			context.queryClient.ensureQueryData({
-				queryKey: postKeys.list({ page: 1, limit: 6 }),
-				queryFn: () => fetchPosts({ page: 1, limit: 6 }),
+				queryKey: postKeys.list({ page: 1, limit: 8 }),
+				queryFn: () => fetchPosts({ page: 1, limit: 8 }),
 			}),
 			context.queryClient.ensureQueryData({
 				queryKey: githubKeys.contributions(),
