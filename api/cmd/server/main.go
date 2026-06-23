@@ -68,6 +68,9 @@ func main() {
 	}
 	log.Info().Msg("Redis 连接成功")
 
+	// 配置受信代理（限流/IP 提取依赖；为空时一律使用 RemoteAddr）
+	middleware.SetTrustedProxies(cfg.TrustedProxies)
+
 	gormDB, err := gorm.Open(postgres.Open(cfg.Database.DSN()), &gorm.Config{})
 	if err != nil {
 		log.Fatal().Err(err).Msg("GORM 连接失败")

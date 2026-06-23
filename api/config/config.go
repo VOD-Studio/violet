@@ -46,6 +46,10 @@ type Config struct {
 	CORSAllowedOrigins []string
 	// SuperAdmin 超级管理员配置
 	SuperAdmin SuperAdminConfig
+	// TrustedProxies 受信代理 CIDR 列表（如 Nginx/CDN 出口 IP）。
+	// 非空时，仅当 RemoteAddr 命中此列表才信任 X-Forwarded-For/X-Real-IP；
+	// 为空时一律使用 RemoteAddr，拒绝任何客户端自报的转发头（防 IP 欺骗绕过限流）。
+	TrustedProxies []string
 }
 
 // CookieConfig 鉴权 Cookie 配置
@@ -201,6 +205,8 @@ func Load() *Config {
 	v.SetDefault("superadmin.username", "admin")
 	v.SetDefault("superadmin.email", "admin@example.com")
 	v.SetDefault("superadmin.password", "")
+	// 受信代理默认为空：未配置时一律使用 RemoteAddr，拒绝客户端自报转发头
+	v.SetDefault("trusted_proxies", []string{})
 
 	// 读取配置文件（不存在也不报错）
 	_ = v.ReadInConfig()
@@ -271,6 +277,7 @@ func Load() *Config {
 			Email:    v.GetString("superadmin.email"),
 			Password: v.GetString("superadmin.password"),
 		},
+		TrustedProxies: v.GetStringSlice("trusted_proxies"),
 	}
 
 	// 验证必需配置
