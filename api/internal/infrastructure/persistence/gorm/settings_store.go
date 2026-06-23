@@ -43,3 +43,18 @@ func (s *SettingsStore) Upsert(ctx context.Context, key, value string) error {
 	row := SiteSetting{Key: key, Value: value, UpdatedAt: time.Now()}
 	return s.db.WithContext(ctx).Save(&row).Error
 }
+
+// UpsertMany 批量写入或更新多个配置（单事务，原子）
+// 替代应用层逐键 Upsert 的循环，避免中途失败导致配置部分更新。
+func (s *SettingsStore) UpsertMany(ctx context.Context, kvs map[string]string) error {
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		now := time.Now()
+		for k, v := range kvs {
+			row := SiteSetting{Key: k, Value: v, UpdatedAt: now}
+			if err := tx.Save(&row).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}

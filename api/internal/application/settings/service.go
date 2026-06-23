@@ -92,9 +92,10 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	if in.FooterText != nil {
 		updates["footer_text"] = *in.FooterText
 	}
-	for k, v := range updates {
-		if err := s.store.Upsert(ctx, k, v); err != nil {
-			log.Error().Err(err).Str("key", k).Msg("更新配置失败")
+	if len(updates) > 0 {
+		// 批量原子更新，避免逐键 Upsert 中途失败导致部分更新
+		if err := s.store.UpsertMany(ctx, updates); err != nil {
+			log.Error().Err(err).Msg("批量更新配置失败")
 			return domainsettings.SiteSettings{}, err
 		}
 	}

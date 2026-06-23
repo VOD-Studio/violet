@@ -180,4 +180,26 @@ func (r *PostRepository) RecordView(ctx context.Context, postID domainshared.ID,
 	return nil
 }
 
+// IncrementViewAtomic 原子地浏览量+1 并记录浏览事件，保证两者在同一事务内提交。
+// 在 DB 内用 UPDATE ... SET view_count = view_count + 1（避免读-改-写竞态），
+// 同时写入 post_views 事件行。修复原先 Save 与 RecordView 分离导致计数与事件可能不一致。
+func (r *PostRepository) IncrementViewAtomic(ctx context.Context, postID domainshared.ID, ipAddress, userAgent string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 浏览量原子自增（DB 内 +1，避免并发覆盖）
+		if err := tx.Model(&model.Post{}).
+			Where("id = ?", postID.UUID()).
+			UpdateColumn("view_count", gorm.Expr("view_count + 1")).Error; err != nil {
+			return domainshared.Internal("更新浏览量失败", err)
+		}
+		// 浏览事件行
+		pv := model.PostView{
+			PostID: postID.UUID(), IPAddress: ipAddress, UserAgent: userAgent,
+		}
+		if err := tx.Create(&pv).Error; err != nil {
+			return domainshared.Internal("记录浏览事件失败", err)
+		}
+		return nil
+	})
+}
+
 var _ post.PostRepository = (*PostRepository)(nil)

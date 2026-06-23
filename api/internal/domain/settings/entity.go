@@ -48,6 +48,8 @@ type SettingsStore interface {
 	GetAll(ctx context.Context) (map[string]string, error)
 	// Upsert 写入或更新单个配置
 	Upsert(ctx context.Context, key, value string) error
+	// UpsertMany 批量写入或更新多个配置（单事务，原子）
+	UpsertMany(ctx context.Context, kvs map[string]string) error
 }
 
 // MergeFrom 从键值对还原配置读模型

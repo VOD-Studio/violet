@@ -24,7 +24,7 @@ func setupPostTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&model.Post{}, &model.Tag{}))
+	require.NoError(t, db.AutoMigrate(&model.Post{}, &model.Tag{}, &model.PostView{}))
 	t.Cleanup(func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
@@ -84,4 +84,27 @@ func TestPostRepository_SaveClearsTags(t *testing.T) {
 	loaded, err := repo.FindByID(context.Background(), pid)
 	require.NoError(t, err)
 	assert.Empty(t, loaded.Tags())
+}
+
+func TestPostRepository_IncrementViewAtomic(t *testing.T) {
+	db := setupPostTestDB(t)
+	repo := NewPostRepository(db)
+	pid := domainshared.NewID()
+	authorID := domainshared.NewID()
+
+	p, err := post.NewPost(pid, authorID, "View Test", "slug-view")
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(context.Background(), p))
+
+	// 原子浏览量+1 + 浏览事件（基于 ID，DB 内自增）
+	require.NoError(t, repo.IncrementViewAtomic(context.Background(), pid, "1.2.3.4", "ua"))
+
+	loaded, err := repo.FindByID(context.Background(), pid)
+	require.NoError(t, err)
+	assert.Equal(t, 1, loaded.ViewCount(), "浏览量应 +1")
+
+	// 验证浏览事件也写入
+	var viewCount int64
+	db.Model(&model.PostView{}).Where("post_id = ?", pid.UUID()).Count(&viewCount)
+	assert.Equal(t, int64(1), viewCount, "应记录 1 条浏览事件")
 }
