@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -254,7 +255,12 @@ func (p *Provider) fetchLyricsViaMeting(platform, songID string) (string, error)
 	}
 	lrc := string(body)
 	if strings.HasPrefix(strings.TrimSpace(lrc), "http") {
-		body, err = p.httpGet(strings.TrimSpace(lrc))
+		target := strings.TrimSpace(lrc)
+		// 二次请求目标由上游返回，必须显式校验防 SSRF
+		if err := safeURL(target); err != nil {
+			return "", fmt.Errorf("歌词重定向目标不安全: %w", err)
+		}
+		body, err = p.httpGet(target)
 		if err != nil {
 			return "", fmt.Errorf("获取歌词内容失败: %w", err)
 		}
@@ -294,8 +300,11 @@ func (p *Provider) fetchDetailViaMeting(baseURL, platform, songID string) (*sear
 	}
 	if r.Lrc != "" {
 		if strings.HasPrefix(r.Lrc, "http") {
-			if lrcBody, lrcErr := p.httpGet(r.Lrc); lrcErr == nil {
-				result.Lrc = strings.TrimSpace(string(lrcBody))
+			// 歌词 URL 由上游返回，显式校验防 SSRF
+			if err := safeURL(r.Lrc); err == nil {
+				if lrcBody, lrcErr := p.httpGet(r.Lrc); lrcErr == nil {
+					result.Lrc = strings.TrimSpace(string(lrcBody))
+				}
 			}
 		} else {
 			result.Lrc = r.Lrc
@@ -309,6 +318,10 @@ func (p *Provider) fetchDetailViaMeting(baseURL, platform, songID string) (*sear
 // ============================================================
 
 func (p *Provider) httpGet(target string) ([]byte, error) {
+	// SSRF 防护：拒绝非 http(s) 与内网/回环/链路本地地址
+	if err := safeURL(target); err != nil {
+		return nil, fmt.Errorf("请求目标不安全: %w", err)
+	}
 	req, err := http.NewRequest("GET", target, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建请求失败: %w", err)
@@ -319,11 +332,44 @@ func (p *Provider) httpGet(target string) ([]byte, error) {
 		return nil, fmt.Errorf("请求失败: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("上游返回 %d", resp.StatusCode)
+	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("读取响应失败: %w", err)
 	}
 	return body, nil
+}
+
+// safeURL 校验目标 URL 是否安全（防 SSRF）。
+// 拒绝：非 http/https 协议、回环、私网、链路本地、未指定地址。
+// 对主机名做 DNS 解析后逐 IP 校验，覆盖 DNS rebinding 的基础场景（解析时刻校验）。
+func safeURL(rawURL string) error {
+	if rawURL == "" {
+		return fmt.Errorf("URL 为空")
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("解析 URL 失败: %w", err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("不允许的协议: %s", u.Scheme)
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("URL 缺少主机名")
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return fmt.Errorf("解析主机 IP 失败: %w", err)
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
+			return fmt.Errorf("目标地址 %s 属于内网/保留段，拒绝访问", ip)
+		}
+	}
+	return nil
 }
 
 // ============================================================
