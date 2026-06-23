@@ -869,7 +869,10 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 	// 最终路径
 	ext := strings.ToLower(filepath.Ext(session.FileName()))
 	fileUUID := shared.NewID()
-	finalPath, fileURL := s.storage.BuildPath(session.Purpose(), session.MimeType(), fileUUID.String(), ext)
+	finalPath, fileURL, err := s.storage.BuildPath(session.Purpose(), session.MimeType(), fileUUID.String(), ext)
+	if err != nil {
+		return nil, shared.BadRequest("非法的上传用途路径: " + err.Error())
+	}
 	if err := s.storage.EnsureDir(filepath.Dir(finalPath)); err != nil {
 		return nil, shared.Internal("创建文件目录失败", err)
 	}

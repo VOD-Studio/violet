@@ -64,5 +64,6 @@ type ChunkStorage interface {
 	// GenerateThumbnail 生成缩略图（图片用 imaging，视频用 ffmpeg），返回 URL；不支持时返回空
 	GenerateThumbnail(srcPath, fileUUID, storageDir, mimeType string) string
 	// BuildPath 构建最终文件存储路径与访问 URL
-	BuildPath(purpose, mimeType string, fileUUID, ext string) (path, url string)
+	// 返回 error：purpose 含 ".." 等穿越片段时拒绝。
+	BuildPath(purpose, mimeType string, fileUUID, ext string) (path, url string, err error)
 }
