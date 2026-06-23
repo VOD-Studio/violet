@@ -17,7 +17,7 @@ import { useRef } from "react";
  * 实际正文需后端 content 字段接入（属后续 feature）。
  */
 function BlogDetailPage() {
-	const contentRef = useRef<HTMLDivElement>(null);
+	const contentRef = useRef<HTMLElement>(null);
 	const progress = useScrollProgress(contentRef);
 
 	// 占位正文（演示 TOC 提取与高亮管线）
@@ -61,10 +61,10 @@ function BlogDetailPage() {
 					</div>
 				</aside>
 
-				{/* 右侧 75%：沉浸阅读 */}
-				<main className="overflow-y-auto">
+				{/* 右侧 75%：沉浸阅读。ref 挂在滚动容器 <main>，
+				    useScrollProgress/useActiveHeading 都监听它（article 不滚动） */}
+				<main ref={contentRef} className="overflow-y-auto">
 					<article
-						ref={contentRef}
 						className="prose prose-neutral mx-auto max-w-3xl px-8 py-12 dark:prose-invert"
 						// biome-ignore lint/security/noDangerouslySetInnerHtml: 占位演示正文
 						dangerouslySetInnerHTML={{ __html: sampleHtml }}

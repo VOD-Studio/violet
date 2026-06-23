@@ -41,13 +41,22 @@ export default function ParticleField({
 			r: Math.random() * 1.6 + 0.6,
 		}));
 
-		const readColor = () => {
+		// 颜色缓存：仅在挂载与主题切换时读 getComputedStyle，避免每帧 reflow
+		let color = "hsl(210 100% 66%)";
+		const refreshColor = () => {
 			const css = getComputedStyle(document.documentElement)
 				.getPropertyValue("--neon-blue")
 				.trim();
 			// css 形如 "210 100% 66%"
-			return css ? `hsl(${css})` : "hsl(210 100% 66%)";
+			color = css ? `hsl(${css})` : "hsl(210 100% 66%)";
 		};
+		refreshColor();
+		// 主题切换时（next-themes 切 <html>.dark）重读颜色
+		const themeObs = new MutationObserver(refreshColor);
+		themeObs.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
 
 		const resize = () => {
 			const rect = canvas.getBoundingClientRect();
@@ -69,7 +78,6 @@ export default function ParticleField({
 		};
 
 		const tick = () => {
-			const color = readColor();
 			ctx.clearRect(0, 0, w, h);
 			for (const p of particles) {
 				p.x += p.vx;
@@ -136,6 +144,7 @@ export default function ParticleField({
 			window.removeEventListener("resize", resize);
 			window.removeEventListener("mousemove", onMove);
 			canvas.removeEventListener("mouseleave", onLeave);
+			themeObs.disconnect();
 		};
 	}, [count]);
 

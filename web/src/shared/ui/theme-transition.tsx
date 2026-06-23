@@ -46,18 +46,23 @@ export function useThemeTransition() {
 			};
 			const { x, y } = resolveTransitionOrigin(ev ?? {}, vp);
 
-			// 在 <html> 上写原点 + 临时挂遮罩层（由 ThemeOverlay 组件渲染）
+			// 在 <html> 上写原点 + 目标主题 + 临时挂遮罩层（由 ThemeOverlay 组件渲染）
+			const targetTheme = theme === "dark" ? "light" : "dark";
 			const root = document.documentElement;
 			root.style.setProperty("--theme-x", `${x}%`);
 			root.style.setProperty("--theme-y", `${y}%`);
 			root.dataset.themeTransitioning = "1";
+			// 显式记录目标主题，避免 ThemeOverlay 从 next-themes 的 theme 推断
+			// 出现竞态（setTheme 后 theme 已变，会读到出发色而非到达色）。
+			root.dataset.themeTarget = targetTheme;
 
 			// next-themes 切换 class（cookie 持久化由 next-themes 负责）
-			setTheme(theme === "dark" ? "light" : "dark");
+			setTheme(targetTheme);
 
 			// 400ms 后清理（与 styles.css 中 transition 时长一致）
 			window.setTimeout(() => {
 				delete root.dataset.themeTransitioning;
+				delete root.dataset.themeTarget;
 			}, 400);
 		},
 		[theme, setTheme],

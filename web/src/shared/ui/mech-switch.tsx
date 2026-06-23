@@ -45,9 +45,11 @@ const MechSwitch = React.forwardRef<HTMLButtonElement, MechSwitchProps>(
 					"after:absolute after:inset-0 after:rounded-[10px] after:-z-10",
 					// Hover：仅环境光/反射率，无 scale/位移
 					"hover:after:brightness-110 dark:hover:after:brightness-125",
-					"transition-[transform,box-shadow] duration-75 ease-out",
-					"active:translate-y-[3px]",
-					pressed && "translate-y-[3px]",
+				"transition-[transform,box-shadow] duration-75 ease-out",
+				// active: 提供鼠标按下瞬间的物理反馈（spec「Active 下压 2-4px」）
+				"active:translate-y-[3px]",
+				// pressed: 持续激活态（如当前 dark）。两者同值，不叠加冲突
+				pressed && "translate-y-[3px]",
 					// 取消浏览器默认 focus 黑框，改 ring
 					"outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
 					className,

@@ -1,4 +1,5 @@
 import { useSettings } from "@features/settings/api/queries";
+import { Magnetic } from "@shared/ui/magnetic";
 import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
 import ParticleField from "@shared/vendor/react-bits/ParticleField";
 
@@ -24,15 +25,17 @@ const HeroLeft = () => {
 					{data?.tagline ?? "Hello World"}
 				</p>
 				<h1 className="font-mono text-6xl font-bold tracking-tight md:text-8xl">
-					<DecryptedText
-						text="xunrua"
-						animateOn="view"
-						speed={60}
-						maxIterations={12}
-						parentClassName="inline-block"
-						className="bg-gradient-to-r from-neon-blue to-neon-purple bg-clip-text text-transparent"
-						encryptedClassName="text-muted-foreground"
-					/>
+					<Magnetic strength={0.3}>
+						<DecryptedText
+							text="xunrua"
+							animateOn="view"
+							speed={60}
+							maxIterations={12}
+							parentClassName="inline-block"
+							className="bg-gradient-to-r from-neon-blue to-neon-purple bg-clip-text text-transparent"
+							encryptedClassName="text-muted-foreground"
+						/>
+					</Magnetic>
 				</h1>
 			</div>
 		</div>
