@@ -1,40 +1,22 @@
-import { useSettings } from "@features/settings/api/queries";
-import { Button } from "@shared/ui/button";
-import Aurora from "@shared/vendor/react-bits/Aurora";
-import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
-import GradientText from "@shared/vendor/react-bits/GradientText";
-import { Link } from "@tanstack/react-router";
+import HeroLeft from "./HeroLeft";
+import HeroRight from "./HeroRight";
 
 /**
- * Hero - 首页头部英雄区
+ * Hero - 首页英雄区容器
  *
- * react-bits 三组件组合（首页仅用 3 个，不堆砌）：
- * - Aurora：背景渐变（WebGL 渲染）
- * - GradientText：站名渐变动画文字
- * - DecryptedText：签名解密动画
- *
- * 配置从站点 settings 读（SSR 已预取），未加载时显示占位文案避免闪烁。
+ * 由首页网格（routes/index.tsx）分配 50/50 宽度，
+ * 本组件只负责左右拼装与高度撑满。
  */
 const Hero = () => {
-	const { data } = useSettings();
-
 	return (
-		<section className="relative overflow-hidden py-24">
-			<div className="absolute inset-0 -z-10">
-				<Aurora />
+		<div className="grid h-full grid-cols-1 md:grid-cols-2">
+			<div className="min-h-[420px] border-r border-edge-hairline">
+				<HeroLeft />
 			</div>
-			<div className="container mx-auto px-4 text-center">
-				<h1 className="text-5xl md:text-7xl font-bold mb-6">
-					<GradientText>{data?.siteName ?? "Blog"}</GradientText>
-				</h1>
-				<p className="text-xl md:text-2xl text-muted-foreground mb-8">
-					<DecryptedText text={data?.tagline ?? "Hello World"} />
-				</p>
-				<Button size="lg" asChild>
-					<Link to="/blog">进入博客</Link>
-				</Button>
+			<div className="min-h-[420px] p-4">
+				<HeroRight />
 			</div>
-		</section>
+		</div>
 	);
 };
 
