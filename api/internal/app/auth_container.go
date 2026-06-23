@@ -39,6 +39,7 @@ func NewAuthContainer(
 	jwtService, err := infraauth.NewJWTService(
 		cfg.JWTPrivateKeyPath, cfg.JWTPublicKeyPath,
 		cfg.JWTAccessTokenTTL, cfg.JWTRefreshTokenTTL,
+		cfg.JWTAllowEphemeralKey,
 	)
 	if err != nil {
 		return nil, err

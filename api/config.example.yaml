@@ -37,6 +37,8 @@ jwt_private_key_path: ./jwt_private_key.pem
 jwt_public_key_path: ./jwt_public_key.pem
 jwt_access_token_ttl: 15m
 jwt_refresh_token_ttl: 168h
+# 允许未配置密钥文件时生成临时密钥（仅开发；生产必须 false，否则启动拒绝）
+jwt_allow_ephemeral_key: false
 
 # ── 鉴权 Cookie ─────────────────────────────
 # access/refresh token 通过 HttpOnly Cookie 下发；CSRF 通过 double-submit cookie 防护
