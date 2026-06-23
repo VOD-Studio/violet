@@ -35,7 +35,7 @@ type errorResponse struct {
 //	    return
 //	}
 //
-// 自动识别 DomainError 并翻译为对应 HTTP 状态码与错误码。
+// 自动识别 DomainError 并按 Code 翻译为对应 HTTP 状态码。
 func RespondError(w http.ResponseWriter, r *http.Request, err error) {
 	if err == nil {
 		return
@@ -49,10 +49,7 @@ func RespondError(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.As(err, &de) {
 		resp.Error = string(de.Code)
 		resp.Message = de.Message
-		status := de.HTTPStatus
-		if status == 0 {
-			status = http.StatusBadRequest
-		}
+		status := httpStatusForCode(de.Code)
 		WriteJSON(w, status, resp)
 		return
 	}
@@ -119,4 +116,26 @@ func RespondError(w http.ResponseWriter, r *http.Request, err error) {
 // GetRequestID 从 request 获取 request_id（由 RequestID 中间件写入响应头）
 func GetRequestID(r *http.Request) string {
 	return r.Header.Get("X-Request-Id")
+}
+
+// httpStatusForCode 领域错误码 → HTTP 状态码。
+// HTTP 语义集中在接口层（domain 不感知 HTTP）。
+func httpStatusForCode(code domainshared.ErrorCode) int {
+	switch code {
+	case domainshared.CodeNotFound:
+		return http.StatusNotFound
+	case domainshared.CodeBadRequest, domainshared.CodeValidation:
+		return http.StatusBadRequest
+	case domainshared.CodeUnauthorized:
+		return http.StatusUnauthorized
+	case domainshared.CodeForbidden:
+		return http.StatusForbidden
+	case domainshared.CodeConflict:
+		return http.StatusConflict
+	case domainshared.CodeInternal:
+		return http.StatusInternalServerError
+	default:
+		// 未知错误码兜底为 400
+		return http.StatusBadRequest
+	}
 }

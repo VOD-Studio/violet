@@ -119,7 +119,7 @@ func (i ID) Equal(other ID) bool { return i.value == other.value }
 func (i ID) UUID() uuid.UUID { return i.value }
 
 // ErrInvalidID 非法 ID 错误
-var ErrInvalidID = NewError("INVALID_ID", "ID 格式非法", 0)
+var ErrInvalidID = NewError("INVALID_ID", "ID 格式非法")
 
 // ============================================================
 // 审计字段（可被聚合嵌入）
