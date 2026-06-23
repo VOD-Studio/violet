@@ -1,3 +1,4 @@
+import { CustomCursor } from "@shared/ui/cursor";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
 	createRootRouteWithContext,
@@ -8,9 +9,11 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import AnnouncementBar from "@widgets/AnnouncementBar";
+import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
+import ThemeOverlay from "@widgets/ThemeToggle/ThemeOverlay";
 import type { RouterContext } from "../router";
 import AppProvider from "../shared/api/provider";
 import { getCurrentUser } from "../shared/server/session";
@@ -60,6 +63,9 @@ function RootComponent() {
 			</main>
 			<Footer />
 			<MusicPlayer />
+			<CommandPalette />
+			<ThemeOverlay />
+			<CustomCursor />
 			<TanStackDevtools
 				config={{ position: "bottom-right" }}
 				plugins={[
