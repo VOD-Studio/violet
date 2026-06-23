@@ -3,6 +3,9 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Tailwind v4 插件加载（详情页 prose 文章排版用） */
+@plugin "@tailwindcss/typography";
+
 /* ============================================================
  * Nexus-Blog 设计令牌 — Tailwind v4 @theme
  * 双主题：Dark = 赛博深空 / Light = 工业蓝图无尘室
