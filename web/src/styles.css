@@ -139,16 +139,31 @@
 }
 
 /* ============================================================
- * 主题切换：400ms clip-path 圆形扩散（非全屏闪烁）
- * 由 ThemeTransition 写入 --theme-transition-origin，本规则消费
+ * 主题切换：View Transitions API 圆形扩散（无闪烁）
+ * useThemeTransition 在点击点写 --theme-x/--theme-y。
+ * 旧帧置顶（z-index 高）全程可见 → 无瞬时跳变；
+ * 新帧从点击点 circle(0) 用 clip-path 展开到覆盖视口，从旧帧下方露出。
+ * @starting-style 让浏览器捕获「起始 = circle(0)」状态触发 transition。
+ * 不支持 VT 的浏览器降级为瞬时切换（见 theme-transition.tsx）。
  * ============================================================ */
-@layer utilities {
-  .theme-clip {
-    transition: clip-path 400ms cubic-bezier(0.4, 0, 0.2, 1);
-    clip-path: circle(0px at var(--theme-x, 50%) var(--theme-y, 50%));
-  }
-  .theme-clip.is-revealed {
-    clip-path: circle(150% at var(--theme-x, 50%) var(--theme-y, 50%));
+::view-transition-old(root),
+::view-transition-new(root) {
+  /* 关掉默认交叉淡入，改用 clip-path 揭示 */
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  /* 旧帧置顶，新帧从其下方圆形展开露出 */
+  z-index: 2;
+}
+::view-transition-new(root) {
+  z-index: 1;
+  /* 终态：新帧完全覆盖视口 */
+  clip-path: circle(150% at var(--theme-x, 50%) var(--theme-y, 50%));
+  transition: clip-path 450ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* 起始态：从点击点 0 半径开始（触发 transition 的起点） */
+  @starting-style {
+    clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 50%));
   }
 }
 

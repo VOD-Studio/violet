@@ -10,7 +10,6 @@ import {
 } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 import Hero from "@widgets/Hero";
-import ThemeToggle from "@widgets/ThemeToggle";
 
 /**
  * HomePage - 首页根组件（Nexus 80/20 网格）
@@ -25,15 +24,11 @@ function HomePage() {
 			<section className="flex min-h-0 flex-[4] overflow-hidden border-b border-edge-hairline">
 				<Hero />
 			</section>
-			{/* 20% 底座：机械切换器极左 + 次要信息 + 贡献图 */}
+			{/* 20% 底座：次要信息 + 贡献图（主题切换器在 Header，避免重复） */}
 			<section className="flex flex-[1] items-stretch gap-4 px-4 py-2">
-				<div className="flex items-center">
-					<ThemeToggle />
-				</div>
-				<div className="flex flex-1 items-center justify-center font-mono text-xs text-muted-foreground">
-					<span className="hidden md:inline">
-						Cmd/Ctrl + K · 60fps · WebGL ready
-					</span>
+				<div className="flex flex-1 items-center justify-center gap-6 font-mono text-xs text-muted-foreground">
+					<span className="hidden md:inline">Cmd/Ctrl + K</span>
+					<span className="hidden md:inline">60fps · WebGL ready</span>
 				</div>
 				<div className="hidden max-w-md items-center overflow-hidden lg:flex">
 					<Contributions />
