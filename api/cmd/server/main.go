@@ -245,9 +245,10 @@ func main() {
 		// 评论反应（DDD commentReactionContainer）
 		crH := commentReactionContainer.CommentReactionHandler
 		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
-			r.Get("/", crH.GetCommentReactions)                                         // 获取评论反应
-			r.With(middleware.CommentRateLimit(redisClient)).Post("/", crH.AddReaction) // 添加反应（限流）
-			r.Delete("/{emoji_id}", crH.RemoveReaction)                                 // 删除反应
+			r.Get("/", crH.GetCommentReactions)                                                          // 获取评论反应
+			r.With(middleware.CommentRateLimit(redisClient)).Post("/", crH.AddReaction)                  // 添加反应（限流）
+			r.With(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName))). // 删除反应需认证，防匿名删除他人反应
+				Delete("/{emoji_id}", crH.RemoveReaction)
 		})
 		v1.Post("/comments/reactions/batch", crH.GetReactionsBatch) // 批量获取评论反应
 
