@@ -1,4 +1,4 @@
-import { getRequestHeader } from "@tanstack/start-server-core";
+import { getRequestHeader } from "@tanstack/react-start/server";
 
 /**
  * getForwardedCookie - 从 SSR 入口请求读取 cookie header
