@@ -1,0 +1,17 @@
+# pnpm 配置（pnpm 11 起所有 settings 统一在此声明，package.json 的 pnpm 字段已废弃）
+
+# 供应链保护：pnpm 11 内置默认 minimumReleaseAge=1440（1 天），阻止安装
+# 发布未满 24h 的包以防范投毒。以下包为已知的、由间接依赖引入且版本刚发布
+# 的常用库，经人工确认为安全，单独排除以免阻塞安装；策略本身对其余新包仍然生效。
+minimumReleaseAgeExclude:
+  - browserslist
+  - exsolve
+  - isbot
+  - systeminformation
+
+# 允许执行 postinstall 构建脚本的依赖（pnpm 11 默认禁止，需显式批准）。
+# - esbuild：下载平台原生二进制（vite/rolldown 转译依赖）
+# - lightningcss：构建原生 addon（@tailwindcss/vite 依赖）
+allowBuilds:
+  esbuild: true
+  lightningcss: true
