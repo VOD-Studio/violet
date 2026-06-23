@@ -10,68 +10,70 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// CommentRateLimit 评论限流中间件
-// 基于 IP 的 Redis 滑动窗口限流，限制每个 IP 每分钟最多发送 3 条评论
-func CommentRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+// RateLimit 基于 IP 的 Redis 滑动窗口限流中间件工厂。
+//
+// key    限流维度标识（如 "comment"/"login"/"upload"），用于隔离不同接口的窗口
+// client Redis 客户端
+// window 时间窗口
+// max    窗口内最大请求数（达到即拒绝）
+func RateLimit(key string, client *redis.Client, window time.Duration, max int64) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// 获取客户端 IP 地址
 			ip := getClientIP(r)
-
-			// Redis 滑动窗口限流 key
-			key := fmt.Sprintf("ratelimit:comment:%s", ip)
+			redisKey := fmt.Sprintf("ratelimit:%s:%s", key, ip)
 
 			ctx := r.Context()
 			now := time.Now()
-			windowStart := now.Add(-1 * time.Minute)
+			windowStart := now.Add(-window)
 
-			// 使用 Redis 管道批量执行操作
-			pipe := redisClient.Pipeline()
-
+			pipe := client.Pipeline()
 			// 清除窗口外的旧记录
-			pipe.ZRemRangeByScore(ctx, key, "0", fmt.Sprintf("%d", windowStart.UnixMicro()))
-
+			pipe.ZRemRangeByScore(ctx, redisKey, "0", fmt.Sprintf("%d", windowStart.UnixMicro()))
 			// 统计当前窗口内的请求数
-			countCmd := pipe.ZCard(ctx, key)
-
+			countCmd := pipe.ZCard(ctx, redisKey)
 			// 添加当前请求到滑动窗口
-			pipe.ZAdd(ctx, key, redis.Z{
+			pipe.ZAdd(ctx, redisKey, redis.Z{
 				Score:  float64(now.UnixMicro()),
 				Member: fmt.Sprintf("%d", now.UnixNano()),
 			})
-
 			// 设置 key 过期时间，自动清理
-			pipe.Expire(ctx, key, 2*time.Minute)
+			pipe.Expire(ctx, redisKey, 2*window)
 
-			// 执行管道命令
 			if _, err := pipe.Exec(ctx); err != nil {
 				// Redis 出错时放行请求，避免因限流服务故障导致全部请求被拒
-				log.Error().
-					Err(err).
-					Str("ip", ip).
-					Str("path", r.URL.Path).
+				log.Error().Err(err).Str("ip", ip).Str("path", r.URL.Path).
 					Msg("限流 Redis 操作失败，放行请求")
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			// 检查是否超过限制
-			count := countCmd.Val()
-			if count > 3 {
-				log.Warn().
-					Str("ip", ip).
-					Str("method", r.Method).
-					Str("path", r.URL.Path).
-					Int64("count", count).
-					Msg("触发限流")
+			// 达到上限即拒绝（>= max，因为当前请求已计入）
+			if countCmd.Val() >= max {
+				log.Warn().Str("ip", ip).Str("key", key).Str("method", r.Method).
+					Str("path", r.URL.Path).Int64("count", countCmd.Val()).Msg("触发限流")
 				w.Header().Set("Content-Type", "application/json")
-				w.Header().Set("Retry-After", "60")
+				w.Header().Set("Retry-After", fmt.Sprintf("%d", int(window.Seconds())))
 				w.WriteHeader(http.StatusTooManyRequests)
-				w.Write([]byte(`{"error":"rate_limit_exceeded","message":"评论过于频繁，请稍后再试"}`))
+				w.Write([]byte(`{"error":"rate_limit_exceeded","message":"请求过于频繁，请稍后再试"}`))
 				return
 			}
 
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// CommentRateLimit 评论限流（每分钟 3 条）—— 保留以兼容现有调用
+func CommentRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimit("comment", redisClient, time.Minute, 3)
+}
+
+// AuthRateLimit 认证类接口限流（登录/注册/忘记密码/重置/验证：每分钟 5 次，防暴力与邮件轰炸）
+func AuthRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimit("auth", redisClient, time.Minute, 5)
+}
+
+// UploadRateLimit 上传类接口限流（每分钟 30 次，防资源 DoS）
+func UploadRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimit("upload", redisClient, time.Minute, 30)
 }
