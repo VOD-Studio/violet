@@ -17,7 +17,6 @@ import (
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
-	"blog-api/internal/infrastructure/auth"
 )
 
 // ============================================================
@@ -58,7 +57,7 @@ type RegisterUserInput struct {
 // 7. 发布事件
 type RegisterUserHandler struct {
 	userRepo    user.UserRepository
-	codeStore   *auth.RedisCodeStore
+	codeStore   appshared.CodeStore
 	emailSender EmailSender
 	hasher      PasswordHasher
 	bus         appshared.EventBus
@@ -67,7 +66,7 @@ type RegisterUserHandler struct {
 // NewRegisterUserHandler 构造注册用例
 func NewRegisterUserHandler(
 	repo user.UserRepository,
-	codeStore *auth.RedisCodeStore,
+	codeStore appshared.CodeStore,
 	emailSender EmailSender,
 	hasher PasswordHasher,
 	bus appshared.EventBus,
@@ -157,7 +156,7 @@ type LoginInput struct {
 
 // LoginOutput 登录出参
 type LoginOutput struct {
-	TokenPair *auth.TokenPair
+	TokenPair *appshared.TokenPair
 	UserID    string
 }
 
@@ -172,16 +171,16 @@ type LoginOutput struct {
 type LoginHandler struct {
 	userRepo   user.UserRepository
 	hasher     PasswordHasher
-	jwt        *auth.JWTService
-	tokenStore *auth.RedisTokenStore
+	jwt        appshared.TokenService
+	tokenStore appshared.TokenStore
 }
 
 // NewLoginHandler 构造登录用例
 func NewLoginHandler(
 	repo user.UserRepository,
 	hasher PasswordHasher,
-	jwt *auth.JWTService,
-	tokenStore *auth.RedisTokenStore,
+	jwt appshared.TokenService,
+	tokenStore appshared.TokenStore,
 ) *LoginHandler {
 	return &LoginHandler{userRepo: repo, hasher: hasher, jwt: jwt, tokenStore: tokenStore}
 }
@@ -210,7 +209,7 @@ func (h *LoginHandler) Handle(ctx context.Context, in LoginInput) (LoginOutput, 
 	}
 
 	// 4. 生成 token pair
-	pair, err := h.jwt.GenerateTokenPair(auth.TokenInput{
+	pair, err := h.jwt.GenerateTokenPair(appshared.TokenInput{
 		UserID: u.GetID().String(),
 		Email:  u.Email().String(),
 		Role:   string(u.Role()),
@@ -238,11 +237,11 @@ type LogoutInput struct {
 
 // LogoutHandler 登出用例（删除 Redis 中的 refresh token，实现服务端撤销）
 type LogoutHandler struct {
-	tokenStore *auth.RedisTokenStore
+	tokenStore appshared.TokenStore
 }
 
 // NewLogoutHandler 构造登出用例
-func NewLogoutHandler(tokenStore *auth.RedisTokenStore) *LogoutHandler {
+func NewLogoutHandler(tokenStore appshared.TokenStore) *LogoutHandler {
 	return &LogoutHandler{tokenStore: tokenStore}
 }
 
@@ -270,21 +269,21 @@ type RefreshTokenInput struct {
 // 5. 更新 Redis 中的 refresh token
 type RefreshTokenHandler struct {
 	userRepo   user.UserRepository
-	jwt        *auth.JWTService
-	tokenStore *auth.RedisTokenStore
+	jwt        appshared.TokenService
+	tokenStore appshared.TokenStore
 }
 
 // NewRefreshTokenHandler 构造刷新令牌用例
 func NewRefreshTokenHandler(
 	repo user.UserRepository,
-	jwt *auth.JWTService,
-	tokenStore *auth.RedisTokenStore,
+	jwt appshared.TokenService,
+	tokenStore appshared.TokenStore,
 ) *RefreshTokenHandler {
 	return &RefreshTokenHandler{userRepo: repo, jwt: jwt, tokenStore: tokenStore}
 }
 
 // Handle 执行刷新令牌
-func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) (*auth.TokenPair, error) {
+func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) (*appshared.TokenPair, error) {
 	// 1. 解析 token
 	claims, err := h.jwt.ParseToken(in.RefreshToken)
 	if err != nil {
@@ -311,7 +310,7 @@ func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) 
 	}
 
 	// 4. 生成新 token pair
-	pair, err := h.jwt.GenerateTokenPair(auth.TokenInput{
+	pair, err := h.jwt.GenerateTokenPair(appshared.TokenInput{
 		UserID: u.GetID().String(),
 		Email:  u.Email().String(),
 		Role:   string(u.Role()),
@@ -347,11 +346,11 @@ type VerifyEmailInput struct {
 // 4. 持久化
 type VerifyEmailHandler struct {
 	userRepo  user.UserRepository
-	codeStore *auth.RedisCodeStore
+	codeStore appshared.CodeStore
 }
 
 // NewVerifyEmailHandler 构造邮箱验证用例
-func NewVerifyEmailHandler(repo user.UserRepository, codeStore *auth.RedisCodeStore) *VerifyEmailHandler {
+func NewVerifyEmailHandler(repo user.UserRepository, codeStore appshared.CodeStore) *VerifyEmailHandler {
 	return &VerifyEmailHandler{userRepo: repo, codeStore: codeStore}
 }
 

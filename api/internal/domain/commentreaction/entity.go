@@ -1,4 +1,7 @@
-// Package commentreaction 提供评论反应的领域模型与端口。
+// Package commentreaction 提供评论反应的读模型与存储端口。
+//
+// 本包为查询侧（read-model）：Reaction 是面向展示的 DTO，非聚合根。
+// 反应的写模型去重/计数逻辑由存储实现层处理。
 package commentreaction
 
 import (
@@ -7,7 +10,7 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
-// Reaction 评论反应读模型
+// Reaction 评论反应读模型（面向展示的 DTO）
 type Reaction struct {
 	ID        int64  `json:"id"`
 	CommentID string `json:"comment_id"`

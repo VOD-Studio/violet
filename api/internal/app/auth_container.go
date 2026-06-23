@@ -49,10 +49,13 @@ func NewAuthContainer(
 
 	hasher := authcmd.NewBcryptHasher()
 
+	// 将 infra JWTService 适配为应用层 TokenService 端口
+	tokenService := NewTokenServiceAdapter(jwtService)
+
 	register := authcmd.NewRegisterUserHandler(userRepo, codeStore, emailSender, hasher, bus)
-	login := authcmd.NewLoginHandler(userRepo, hasher, jwtService, tokenStore)
+	login := authcmd.NewLoginHandler(userRepo, hasher, tokenService, tokenStore)
 	logout := authcmd.NewLogoutHandler(tokenStore)
-	refresh := authcmd.NewRefreshTokenHandler(userRepo, jwtService, tokenStore)
+	refresh := authcmd.NewRefreshTokenHandler(userRepo, tokenService, tokenStore)
 	verify := authcmd.NewVerifyEmailHandler(userRepo, codeStore)
 	forgot := authcmd.NewForgotPasswordHandler(userRepo, codeStore, emailSender, hasher, tokenStore)
 	reset := authcmd.NewResetPasswordHandler(userRepo, codeStore, hasher, tokenStore)
