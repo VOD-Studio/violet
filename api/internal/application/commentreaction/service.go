@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"net/http"
 
 	domaincr "blog-api/internal/domain/commentreaction"
 )
@@ -49,31 +48,7 @@ func (s *Service) Batch(ctx context.Context, commentIDs []string) ([]domaincr.Ba
 	return s.store.BatchByComments(ctx, commentIDs)
 }
 
-// ExtractIP 从请求提取客户端 IP
-func ExtractIP(r *http.Request) string {
-	ip := r.Header.Get("X-Real-IP")
-	if ip == "" {
-		ip = r.Header.Get("X-Forwarded-For")
-		if ip != "" {
-			ip = splitComma(ip)
-		}
-	}
-	if ip == "" {
-		ip = r.RemoteAddr
-	}
-	return ip
-}
-
 func hashIP(ip string) string {
 	h := sha256.Sum256([]byte(ip))
 	return hex.EncodeToString(h[:])
-}
-
-func splitComma(s string) string {
-	for i, c := range s {
-		if c == ',' {
-			return s[:i]
-		}
-	}
-	return s
 }

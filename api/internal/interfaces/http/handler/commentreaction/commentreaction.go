@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	appcr "blog-api/internal/application/commentreaction"
+	"blog-api/internal/middleware"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
 )
@@ -43,7 +44,7 @@ func (h *Handler) AddReaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID := interfacesmw.GetUserIDFromContext(r)
-	ip := appcr.ExtractIP(r)
+	ip := middleware.GetClientIP(r)
 	if err := h.svc.Add(r.Context(), appcr.AddInput{
 		CommentID: commentID, EmojiID: req.EmojiID, UserID: userID, IPAddress: ip,
 	}); err != nil {
@@ -62,7 +63,7 @@ func (h *Handler) RemoveReaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID := interfacesmw.GetUserIDFromContext(r)
-	ip := appcr.ExtractIP(r)
+	ip := middleware.GetClientIP(r)
 	if err := h.svc.Remove(r.Context(), commentID, userID, ip, int32(emojiID)); err != nil {
 		response.RespondError(w, r, err)
 		return

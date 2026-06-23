@@ -70,6 +70,11 @@ func (e *ipExtr) isTrusted(remoteAddr string) bool {
 // 仅当 RemoteAddr 命中受信代理列表时，才信任 X-Forwarded-For / X-Real-IP；
 // 否则一律使用 RemoteAddr，避免客户端伪造转发头绕过限流。
 func getClientIP(r *http.Request) string {
+	return GetClientIP(r)
+}
+
+// GetClientIP 导出版本，供 handler 层复用同一套受信代理感知逻辑。
+func GetClientIP(r *http.Request) string {
 	ipExtractorMu.RLock()
 	extr := ipExtractor
 	ipExtractorMu.RUnlock()
