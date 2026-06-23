@@ -133,39 +133,27 @@ func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, e
 	return count > 0, nil
 }
 
+// Save 保存文章并同步标签关联。
+// 用 db.Transaction 包裹全文 + 标签关联，保证原子性；通过 Association API
+// 操作 many2many 关系（替代原先手写 Begin/Commit + 裸 SQL 的脆弱实现）。
 func (r *PostRepository) Save(ctx context.Context, p *post.Post) error {
 	po := postToPO(p)
-	tx := r.db.WithContext(ctx).Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 保存文章基本信息
+		if err := tx.Save(&po).Error; err != nil {
+			return domainshared.Internal("保存文章失败", err)
 		}
-	}()
-
-	// 保存文章基本信息
-	if err := tx.Save(&po).Error; err != nil {
-		tx.Rollback()
-		return domainshared.Internal("保存文章失败", err)
-	}
-
-	// 同步标签关联（按 name 查找 tag ID）
-	if err := tx.Where("post_id = ?", po.ID).Delete(&struct {
-		PostID string `gorm:"column:post_id"`
-	}{PostID: po.ID.String()}).Error; err != nil {
-		// 用原生 SQL 清理中间表
-		tx.Exec("DELETE FROM post_tags WHERE post_id = ?", po.ID)
-	}
-	for _, tagName := range p.Tags() {
-		var tag model.Tag
-		if err := tx.Where("name = ?", tagName).First(&tag).Error; err == nil {
-			tx.Exec("INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?) ON CONFLICT DO NOTHING", po.ID, tag.ID)
+		// 同步标签关联：按 name 查 tag → 替换关联
+		tagNames := p.Tags()
+		if len(tagNames) == 0 {
+			return tx.Model(&po).Association("Tags").Clear()
 		}
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return domainshared.Internal("提交文章事务失败", err)
-	}
-	return nil
+		var tags []model.Tag
+		if err := tx.Where("name IN ?", tagNames).Find(&tags).Error; err != nil {
+			return domainshared.Internal("查询标签失败", err)
+		}
+		return tx.Model(&po).Association("Tags").Replace(&tags)
+	})
 }
 
 func (r *PostRepository) Delete(ctx context.Context, id domainshared.ID) error {
