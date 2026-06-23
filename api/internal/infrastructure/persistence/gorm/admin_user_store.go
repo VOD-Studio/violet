@@ -3,6 +3,7 @@ package gorm
 
 import (
 	"context"
+	"errors"
 
 	"gorm.io/gorm"
 
@@ -41,12 +42,19 @@ func (s *AdminUserStore) List(ctx context.Context, filter domainuseradmin.ListFi
 		query = query.Where("username LIKE ? OR email LIKE ?", like, like)
 	}
 	var total int64
-	query.Count(&total)
+	if err := query.Count(&total).Error; err != nil {
+		return domainuseradmin.ListResult{}, domainshared.Internal("用户计数失败", err)
+	}
 	var pos []newmodel.User
-	query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos)
+	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
+		return domainuseradmin.ListResult{}, domainshared.Internal("查询用户列表失败", err)
+	}
 	users := make([]domainuser.User, 0, len(pos))
 	for _, po := range pos {
-		u, _ := toDomain(po)
+		u, err := toDomain(po)
+		if err != nil {
+			return domainuseradmin.ListResult{}, domainshared.Internal("用户转换失败", err)
+		}
 		if u != nil {
 			users = append(users, *u)
 		}
@@ -58,7 +66,7 @@ func (s *AdminUserStore) List(ctx context.Context, filter domainuseradmin.ListFi
 func (s *AdminUserStore) FindByID(ctx context.Context, id domainshared.ID) (*domainuser.User, error) {
 	var po newmodel.User
 	if err := s.db.WithContext(ctx).First(&po, "id = ?", id.UUID()).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domainuser.ErrNotFound
 		}
 		return nil, domainshared.Internal("查询用户失败", err)
