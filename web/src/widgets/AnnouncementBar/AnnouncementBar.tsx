@@ -1,22 +1,20 @@
 import { useAnnouncements } from "@features/settings/api/queries";
 
 /**
- * AnnouncementBar - 公告条
+ * AnnouncementBar - 公告条（Nexus 视觉）
  *
- * 显示生效公告：优先取置顶的，无则取第一条。
- * 无公告时不渲染（return null），避免占用空间。
- * SSR 已预取公告数据，无 loading 闪烁。
+ * 极简：dark 用霓虹底 + mono 字体；light 用 primary。
+ * 无公告 return null（保持原行为）。
  */
 const AnnouncementBar = () => {
 	const { data } = useAnnouncements();
-
 	if (!data?.length) return null;
-
 	const top = data.find((a) => a.pinned) ?? data[0];
 	if (!top) return null;
 
 	return (
-		<div className="bg-primary text-primary-foreground text-center text-sm py-2 px-4">
+		<div className="border-b border-edge-hairline bg-primary/95 px-4 py-1.5 text-center font-mono text-xs text-primary-foreground dark:bg-neon-purple/20 dark:text-neon-purple">
+			<span className="mr-2">◆</span>
 			{top.content}
 		</div>
 	);
