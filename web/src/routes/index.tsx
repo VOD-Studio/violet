@@ -20,9 +20,9 @@ import ThemeToggle from "@widgets/ThemeToggle";
  */
 function HomePage() {
 	return (
-		<div className="flex h-[calc(100vh-4rem)] flex-col">
+		<div className="flex min-h-0 flex-1 flex-col">
 			{/* 80% 核心展示区：左 50% 视觉锚 + 右 50% 动态分发 */}
-			<section className="flex-[4] overflow-hidden border-b border-edge-hairline">
+			<section className="flex min-h-0 flex-[4] overflow-hidden border-b border-edge-hairline">
 				<Hero />
 			</section>
 			{/* 20% 底座：机械切换器极左 + 次要信息 + 贡献图 */}

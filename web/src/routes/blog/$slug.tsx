@@ -34,7 +34,7 @@ function BlogDetailPage() {
 	const toc = extractToc(sampleHtml);
 
 	return (
-		<div className="flex h-[calc(100vh-4rem)] flex-col">
+		<div className="flex min-h-0 flex-1 flex-col">
 			{/* 阅读进度条 */}
 			<div className="h-0.5 w-full bg-border">
 				<div
@@ -43,7 +43,7 @@ function BlogDetailPage() {
 				/>
 			</div>
 
-			<div className="grid flex-1 grid-cols-1 overflow-hidden md:grid-cols-[25%_75%]">
+			<div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[25%_75%]">
 				{/* 左侧 25%：xunrua Logo + TOC */}
 				<aside className="hidden flex-col border-r border-edge-hairline p-6 md:flex">
 					<Link to="/" className="mb-6 block font-mono text-2xl font-bold">

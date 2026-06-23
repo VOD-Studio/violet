@@ -69,12 +69,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
 	return (
 		<AppProvider>
-			<AnnouncementBar />
-			<Header />
-			<main className="min-h-[60vh]">
-				<Outlet />
-			</main>
-			<Footer />
+			<div className="flex min-h-screen flex-col">
+				<AnnouncementBar />
+				<Header />
+				<main className="flex flex-1 flex-col">
+					<Outlet />
+				</main>
+				<Footer />
+			</div>
 			<MusicPlayer />
 			<CommandPalette />
 			<ThemeOverlay />
