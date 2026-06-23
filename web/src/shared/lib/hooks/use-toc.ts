@@ -18,13 +18,15 @@ export function extractToc(html: string): TocItem[] {
 	const re =
 		/<h([23])[^>]*?(?:\sid=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/h\1>/gi;
 	const out: TocItem[] = [];
-	let m: RegExpExecArray | null;
-	while ((m = re.exec(html)) !== null) {
+	let m = re.exec(html);
+	while (m !== null) {
 		const level = Number(m[1]) as 2 | 3;
 		const text = stripTags(m[3]).trim();
-		if (!text) continue;
-		const id = m[2] || slugify(text);
-		out.push({ level, id, text });
+		if (text) {
+			const id = m[2] || slugify(text);
+			out.push({ level, id, text });
+		}
+		m = re.exec(html);
 	}
 	return out;
 }
