@@ -435,11 +435,9 @@ func main() {
 	// ============================================================
 	// ============================================================
 
-	// 静态文件服务（无版本前缀）
-	fileServer := http.FileServer(http.Dir("./uploads"))
-	r.Get("/uploads/*", func(w http.ResponseWriter, r *http.Request) {
-		http.StripPrefix("/uploads/", fileServer).ServeHTTP(w, r)
-	})
+	// 图片服务（替换裸 FileServer）：支持动态 resize/转码 + 二级缓存 + ETag/304
+	imageContainer := app.NewImageContainer("uploads")
+	r.Get("/uploads/*", imageContainer.ImageHandler.ServeImage)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Info().Str("addr", addr).Msg("博客 API 服务启动")
