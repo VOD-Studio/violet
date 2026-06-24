@@ -1,0 +1,14 @@
+{
+  "name": "Mimo Blog OpenAPI 同步",
+  "sourceType": "openapi",
+  "originType": "URL",
+  "sourceUrl": "http://localhost:8080/api/v1/openapi.json",
+  "interval": 0,
+  "enable": false,
+  "apiOverwriteMode": "MERGE",
+  "schemaOverwriteMode": "MERGE",
+  "docOverwriteMode": "MERGE",
+  "importBasePath": false,
+  "syncApiFolder": true,
+  "deleteUnmatchedResources": false
+}
