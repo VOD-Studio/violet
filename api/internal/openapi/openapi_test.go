@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,4 +48,35 @@ func TestPublicPaths(t *testing.T) {
 	for _, s := range []string{"PublicSettings", "ProjectDTO", "AnnouncementDTO", "EmojiDTO", "EmojiGroupDTO"} {
 		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
 	}
+}
+
+func TestAuthPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/auth/csrf-token", "/auth/register", "/auth/verify-email", "/auth/login",
+		"/auth/refresh", "/auth/forgot-password", "/auth/reset-password",
+		"/auth/logout", "/auth/me", "/auth/profile", "/auth/password",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing auth path %s", p)
+	}
+	for _, s := range []string{"UserDTO", "LoginToken", "ProfileResponse", "CSRFToken"} {
+		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
+	}
+	// 写操作需带 CSRF 头
+	login := spec.Paths.Find("/auth/login").Post
+	require.NotNil(t, login)
+	require.True(t, hasParam(login.Parameters, "X-CSRF-Token"))
+	// logout/me 需鉴权
+	require.NotEmpty(t, spec.Paths.Find("/auth/logout").Post.Security)
+	require.NotEmpty(t, spec.Paths.Find("/auth/me").Get.Security)
+}
+
+// hasParam 检查参数列表是否包含指定名称
+func hasParam(params openapi3.Parameters, name string) bool {
+	for _, p := range params {
+		if p.Value.Name == name {
+			return true
+		}
+	}
+	return false
 }

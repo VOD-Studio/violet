@@ -14,11 +14,13 @@ func registerSecuritySchemes(t *openapi3.T) {
 	}}
 }
 
-// securityCookie 返回 cookieAuth 安全要求（用于登录态接口）
-func securityCookie() openapi3.SecurityRequirements {
-	return openapi3.SecurityRequirements{
+// securityCookie 返回 cookieAuth 安全要求（用于登录态接口）。
+// 返回 *SecurityRequirements 以匹配 Operation.Security 字段类型。
+func securityCookie() *openapi3.SecurityRequirements {
+	sr := openapi3.SecurityRequirements{
 		{secCookieAuth: {}},
 	}
+	return &sr
 }
 
 // csrfHeaderParam 构建非 GET 写操作所需的 X-CSRF-Token 头参数
