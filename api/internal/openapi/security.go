@@ -23,6 +23,12 @@ func securityCookie() *openapi3.SecurityRequirements {
 	return &sr
 }
 
+// securityAdmin 返回管理员鉴权要求（cookieAuth + 需管理员角色）。
+// OpenAPI security scheme 无法表达角色层级，管理员要求在 Operation.Description 中额外说明。
+func securityAdmin() *openapi3.SecurityRequirements {
+	return securityCookie()
+}
+
 // csrfHeaderParam 构建非 GET 写操作所需的 X-CSRF-Token 头参数
 func csrfHeaderParam() *openapi3.ParameterRef {
 	return &openapi3.ParameterRef{Value: &openapi3.Parameter{

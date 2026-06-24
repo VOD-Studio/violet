@@ -125,3 +125,36 @@ func float64Ptr(i int) *float64 {
 func strPtr(s string) *string {
 	return &s
 }
+
+// ============================================================
+// Path 注册 helper
+// ============================================================
+
+// setOp 把一个 Operation 挂到指定 path 的指定方法上。
+// 重复对同一 path 调用会合并到同一个 PathItem（避免 Paths.Set 的覆盖问题）。
+func setOp(t *openapi3.T, path, method string, op *openapi3.Operation) {
+	item := t.Paths.Find(path)
+	if item == nil {
+		item = &openapi3.PathItem{}
+	}
+	switch method {
+	case "GET":
+		item.Get = op
+	case "POST":
+		item.Post = op
+	case "PUT":
+		item.Put = op
+	case "PATCH":
+		item.Patch = op
+	case "DELETE":
+		item.Delete = op
+	}
+	t.Paths.Set(path, item)
+}
+
+// getOp/POST/PUT/PATCH/DELETE 便捷封装
+func get(t *openapi3.T, path string, op *openapi3.Operation)   { setOp(t, path, "GET", op) }
+func post(t *openapi3.T, path string, op *openapi3.Operation)  { setOp(t, path, "POST", op) }
+func put(t *openapi3.T, path string, op *openapi3.Operation)   { setOp(t, path, "PUT", op) }
+func patch(t *openapi3.T, path string, op *openapi3.Operation) { setOp(t, path, "PATCH", op) }
+func del(t *openapi3.T, path string, op *openapi3.Operation)   { setOp(t, path, "DELETE", op) }

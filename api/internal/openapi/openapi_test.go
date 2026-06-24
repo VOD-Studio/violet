@@ -80,3 +80,30 @@ func hasParam(params openapi3.Parameters, name string) bool {
 	}
 	return false
 }
+
+func TestPostPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/posts", "/posts/{slug}", "/posts/{id}/view",
+		"/admin/posts", "/admin/posts/{id}", "/admin/posts/{id}/status",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing post path %s", p)
+	}
+	require.Contains(t, spec.Components.Schemas, "PostDTO")
+
+	// 验证同路径多方法合并：/admin/posts/{id} 应同时有 GET/PUT/DELETE
+	item := spec.Paths.Find("/admin/posts/{id}")
+	require.NotNil(t, item)
+	require.NotNil(t, item.Get, "missing GET /admin/posts/{id}")
+	require.NotNil(t, item.Put, "missing PUT /admin/posts/{id}")
+	require.NotNil(t, item.Delete, "missing DELETE /admin/posts/{id}")
+
+	// IncrementView 返回 204
+	view := spec.Paths.Find("/posts/{id}/view").Post
+	desc := view.Responses.Status(204).Value.Description
+	require.NotNil(t, desc)
+	require.Contains(t, *desc, "浏览")
+
+	// 后台接口需鉴权
+	require.NotEmpty(t, spec.Paths.Find("/admin/posts").Get.Security)
+}
