@@ -17,7 +17,10 @@ const Contributions = () => {
 	if (isLoading) {
 		return <div className="h-32 rounded-lg bg-muted animate-pulse" />;
 	}
-	if (isError || !data) {
+	// 后端在 GitHub token 未配置或上游失败时可能返回 contributions: null
+	// （而非空数组）。这里对内层数组再兜一层，避免 null.map 崩整页。
+	const contributions = Array.isArray(data?.contributions) ? data.contributions : [];
+	if (isError || !data || contributions.length === 0) {
 		return <p className="text-sm text-muted-foreground">贡献图加载失败</p>;
 	}
 
@@ -25,7 +28,7 @@ const Contributions = () => {
 		<div>
 			<p className="text-sm text-muted-foreground mb-3">过去一年共 {data.total} 次贡献</p>
 			<div className="grid grid-flow-col grid-rows-7 gap-1">
-				{data.contributions.map((c) => (
+				{contributions.map((c) => (
 					<div
 						key={c.date}
 						title={`${c.date}: ${c.count} 次`}
