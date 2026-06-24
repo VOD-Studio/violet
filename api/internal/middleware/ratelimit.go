@@ -47,7 +47,8 @@ func RateLimit(key string, client *redis.Client, window time.Duration, max int64
 				return
 			}
 
-			// 达到上限即拒绝（>= max，因为当前请求已计入）
+			// 拒绝条件：countCmd 反映的是加入当前请求之前的窗口内请求数（ZCard 在 ZAdd 之前执行）。
+			// 故 >= max 表示该请求已是第 (max+1) 个，放行前 max 个、拒绝后续。
 			if countCmd.Val() >= max {
 				log.Warn().Str("ip", ip).Str("key", key).Str("method", r.Method).
 					Str("path", r.URL.Path).Int64("count", countCmd.Val()).Msg("触发限流")

@@ -108,3 +108,25 @@ func TestPostRepository_IncrementViewAtomic(t *testing.T) {
 	db.Model(&model.PostView{}).Where("post_id = ?", pid.UUID()).Count(&viewCount)
 	assert.Equal(t, int64(1), viewCount, "应记录 1 条浏览事件")
 }
+
+func TestPostRepository_SaveRejectsUnknownTag(t *testing.T) {
+	db := setupPostTestDB(t)
+	require.NoError(t, db.Create(&model.Tag{Name: "go", Slug: "go"}).Error)
+
+	repo := NewPostRepository(db)
+	pid := domainshared.NewID()
+	authorID := domainshared.NewID()
+
+	// 包含不存在的标签 "ghost"
+	p, err := post.NewPost(pid, authorID, "Bad Tags", "slug-bad")
+	require.NoError(t, err)
+	p.SetTags([]string{"go", "ghost"})
+
+	err = repo.Save(context.Background(), p)
+	assert.Error(t, err, "未知标签应报错而非静默丢弃")
+	assert.Contains(t, err.Error(), "ghost", "错误信息应包含缺失的标签名")
+
+	// 确认文章未保存（事务回滚）
+	_, err = repo.FindByID(context.Background(), pid)
+	assert.Error(t, err, "事务回滚后文章不应存在")
+}

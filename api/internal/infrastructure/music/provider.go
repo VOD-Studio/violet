@@ -6,6 +6,7 @@
 package music
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,9 +28,36 @@ type Provider struct {
 	client *http.Client
 }
 
-// NewProvider 创建音乐解析适配器
+// NewProvider 创建音乐解析适配器。
+// 使用带 SSRF 拨号校验的 http.Transport：在 DialContext 实际解析到 IP 后
+// 立即校验（防 DNS-rebinding：safeURL 预检与拨号二次解析之间存在 TOCTOU 窗口，
+// 在拨号时刻校验则彻底关闭该窗口）。
 func NewProvider() *Provider {
-	return &Provider{client: &http.Client{Timeout: 10 * time.Second}}
+	dialer := &net.Dialer{Timeout: 5 * time.Second}
+	tr := &http.Transport{
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			host, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				return nil, fmt.Errorf("解析拨号地址失败: %w", err)
+			}
+			// 解析主机名，逐 IP 校验是否为内网/回环/保留段
+			ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
+			if err != nil {
+				return nil, fmt.Errorf("拨号前解析主机失败: %w", err)
+			}
+			for _, ip := range ips {
+				if err := assertSafeIP(ip.IP); err != nil {
+					return nil, err
+				}
+			}
+			// 校验通过后，用第一解析结果拨号（避免二次解析被 rebind）
+			if len(ips) == 0 {
+				return nil, fmt.Errorf("主机 %s 未解析到 IP", host)
+			}
+			return dialer.DialContext(ctx, network, net.JoinHostPort(ips[0].IP.String(), port))
+		},
+	}
+	return &Provider{client: &http.Client{Timeout: 10 * time.Second, Transport: tr}}
 }
 
 // ParseEmbedURL 解析音乐链接返回嵌入信息
@@ -342,9 +370,9 @@ func (p *Provider) httpGet(target string) ([]byte, error) {
 	return body, nil
 }
 
-// safeURL 校验目标 URL 是否安全（防 SSRF）。
-// 拒绝：非 http/https 协议、回环、私网、链路本地、未指定地址。
-// 对主机名做 DNS 解析后逐 IP 校验，覆盖 DNS rebinding 的基础场景（解析时刻校验）。
+// safeURL 预检目标 URL 是否安全（第一道防线：拒绝非 http(s)/空主机）。
+// 真正的 IP 校验由 NewProvider 的 DialContext 在拨号时刻完成，防 DNS-rebinding TOCTOU。
+// 此处保留 DNS 预检以便提前给出清晰错误、并在 DialContext 之外的场景（如直接构造）兜底。
 func safeURL(rawURL string) error {
 	if rawURL == "" {
 		return fmt.Errorf("URL 为空")
@@ -365,9 +393,18 @@ func safeURL(rawURL string) error {
 		return fmt.Errorf("解析主机 IP 失败: %w", err)
 	}
 	for _, ip := range ips {
-		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
-			return fmt.Errorf("目标地址 %s 属于内网/保留段，拒绝访问", ip)
+		if err := assertSafeIP(ip); err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+// assertSafeIP 校验单个 IP 不属于内网/回环/链路本地/未指定段。
+// 供 safeURL 预检与 DialContext 拨号校验共用。
+func assertSafeIP(ip net.IP) error {
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
+		return fmt.Errorf("目标地址 %s 属于内网/保留段，拒绝访问", ip)
 	}
 	return nil
 }
