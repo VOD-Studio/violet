@@ -38,15 +38,6 @@ type CommentWithPost struct {
 	Post    PostRef
 }
 
-// ReactionRepository 评论反应仓储接口
-type ReactionRepository interface {
-	FindByComment(ctx context.Context, commentID shared.ID) ([]*Reaction, error)
-	FindBatch(ctx context.Context, commentIDs []shared.ID) (map[shared.ID][]*Reaction, error)
-	Save(ctx context.Context, r *Reaction) error
-	Remove(ctx context.Context, commentID, emojiID shared.ID, userID *shared.ID, ipHash string) error
-	CountByEmoji(ctx context.Context, commentID shared.ID) (map[int32]int64, error)
-}
-
 // 领域错误
 var (
 	ErrNotFound      = shared.NotFound("评论")

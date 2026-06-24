@@ -291,11 +291,15 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	var req struct {
-		Username  string `json:"username"`
-		Bio       string `json:"bio"`
-		AvatarURL string `json:"avatar_url"`
+		Username  string `json:"username" validate:"omitempty,min=3,max=32"`
+		Bio       string `json:"bio" validate:"omitempty,max=500"`
+		AvatarURL string `json:"avatar_url" validate:"omitempty,max=2048"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}

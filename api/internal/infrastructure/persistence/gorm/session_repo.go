@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"errors"
+	"sort"
 	"time"
 
 	"gorm.io/datatypes"
@@ -99,7 +100,10 @@ func (r *UploadSessionRepository) AppendChunk(ctx context.Context, id domainshar
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var po newmodel.UploadSession
 		if err := tx.Where("id = ? AND status = ?", id.UUID(), upload.SessionActive).First(&po).Error; err != nil {
-			return err
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return upload.ErrSessionNotFound
+			}
+			return domainshared.Internal("查询上传会话失败", err)
 		}
 		// 检查是否已存在（幂等）
 		for _, v := range po.UploadedChunks {
@@ -109,12 +113,7 @@ func (r *UploadSessionRepository) AppendChunk(ctx context.Context, id domainshar
 		}
 		chunks := append([]int{}, po.UploadedChunks...)
 		chunks = append(chunks, index)
-		// 排序
-		for i := 1; i < len(chunks); i++ {
-			for j := i; j > 0 && chunks[j] < chunks[j-1]; j++ {
-				chunks[j], chunks[j-1] = chunks[j-1], chunks[j]
-			}
-		}
+		sort.Ints(chunks) // O(n log n)，替代原 O(n²) 冒泡
 		return tx.Model(&newmodel.UploadSession{}).
 			Where("id = ?", id.UUID()).
 			Update("uploaded_chunks", datatypes.NewJSONSlice(chunks)).Error
@@ -130,9 +129,12 @@ func (r *UploadSessionRepository) Delete(ctx context.Context, id domainshared.ID
 }
 
 func (r *UploadSessionRepository) DeleteExpired(ctx context.Context) error {
-	return r.db.WithContext(ctx).
+	if err := r.db.WithContext(ctx).
 		Where("expires_at < ? AND status != ?", time.Now(), upload.SessionCompleted).
-		Delete(&newmodel.UploadSession{}).Error
+		Delete(&newmodel.UploadSession{}).Error; err != nil {
+		return domainshared.Internal("清理过期上传会话失败", err)
+	}
+	return nil
 }
 
 var _ upload.UploadSessionRepository = (*UploadSessionRepository)(nil)

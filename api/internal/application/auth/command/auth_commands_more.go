@@ -5,9 +5,9 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
-	"blog-api/internal/infrastructure/auth"
 )
 
 // ============================================================
@@ -24,19 +24,19 @@ type ForgotPasswordInput struct {
 // 安全设计：即使用户不存在也返回成功（不暴露邮箱是否注册）。
 type ForgotPasswordHandler struct {
 	userRepo    user.UserRepository
-	codeStore   *auth.RedisCodeStore
+	codeStore   appshared.CodeStore
 	emailSender EmailSender
 	hasher      PasswordHasher
-	tokenStore  *auth.RedisTokenStore
+	tokenStore  appshared.TokenStore
 }
 
 // NewForgotPasswordHandler 构造忘记密码用例
 func NewForgotPasswordHandler(
 	repo user.UserRepository,
-	codeStore *auth.RedisCodeStore,
+	codeStore appshared.CodeStore,
 	emailSender EmailSender,
 	hasher PasswordHasher,
-	tokenStore *auth.RedisTokenStore,
+	tokenStore appshared.TokenStore,
 ) *ForgotPasswordHandler {
 	return &ForgotPasswordHandler{
 		userRepo: repo, codeStore: codeStore,
@@ -91,17 +91,17 @@ type ResetPasswordInput struct {
 // ResetPasswordHandler 重置密码用例
 type ResetPasswordHandler struct {
 	userRepo   user.UserRepository
-	codeStore  *auth.RedisCodeStore
+	codeStore  appshared.CodeStore
 	hasher     PasswordHasher
-	tokenStore *auth.RedisTokenStore
+	tokenStore appshared.TokenStore
 }
 
 // NewResetPasswordHandler 构造重置密码用例
 func NewResetPasswordHandler(
 	repo user.UserRepository,
-	codeStore *auth.RedisCodeStore,
+	codeStore appshared.CodeStore,
 	hasher PasswordHasher,
-	tokenStore *auth.RedisTokenStore,
+	tokenStore appshared.TokenStore,
 ) *ResetPasswordHandler {
 	return &ResetPasswordHandler{
 		userRepo: repo, codeStore: codeStore,
@@ -224,14 +224,14 @@ type ChangePasswordInput struct {
 type ChangePasswordHandler struct {
 	userRepo   user.UserRepository
 	hasher     PasswordHasher
-	tokenStore *auth.RedisTokenStore
+	tokenStore appshared.TokenStore
 }
 
 // NewChangePasswordHandler 构造修改密码用例
 func NewChangePasswordHandler(
 	repo user.UserRepository,
 	hasher PasswordHasher,
-	tokenStore *auth.RedisTokenStore,
+	tokenStore appshared.TokenStore,
 ) *ChangePasswordHandler {
 	return &ChangePasswordHandler{userRepo: repo, hasher: hasher, tokenStore: tokenStore}
 }

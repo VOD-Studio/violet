@@ -4,6 +4,7 @@ package media
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -26,6 +27,25 @@ type Handler struct {
 // NewHandler 创建 media handler
 func NewHandler(emojiSvc *appmedia.EmojiService, musicSvc *appmedia.MusicService, uploadSvc *appmedia.UploadService) *Handler {
 	return &Handler{emojiSvc: emojiSvc, musicSvc: musicSvc, uploadSvc: uploadSvc, validate: validator.New()}
+}
+
+// allowedImageMIME 允许的图片 MIME 类型白名单
+var allowedImageMIME = map[string]bool{
+	"image/png":  true,
+	"image/jpeg": true,
+	"image/gif":  true,
+	"image/webp": true,
+}
+
+// sniffImageContent 校验上传内容确为图片，返回真实 MIME。
+// 通过读取前 512 字节用 http.DetectContentType 检测，覆盖客户端伪造的 Content-Type 头，
+// 防止把 SVG/HTML 标为图片上传后经静态服务造成存储型 XSS。
+func sniffImageContent(content []byte) (string, error) {
+	mime := http.DetectContentType(content)
+	if !allowedImageMIME[mime] {
+		return "", fmt.Errorf("仅允许图片文件，检测到类型: %s", mime)
+	}
+	return mime, nil
 }
 
 // ============================================================
@@ -253,11 +273,20 @@ func (h *Handler) UploadEmoji(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 	content := make([]byte, header.Size)
-	if _, err := file.Read(content); err != nil {
+	// 用 ReadFull 处理短读：file.Read 可能返回少于 header.Size 的字节却 nil err
+	n, err := io.ReadFull(file, content)
+	if err != nil && err != io.ErrUnexpectedEOF {
 		response.RespondError(w, r, err)
 		return
 	}
-	result, err := h.emojiSvc.UploadEmoji(r.Context(), header.Filename, header.Header.Get("Content-Type"), header.Size, content)
+	content = content[:n]
+	// 嗅探真实 MIME，防客户端伪造 Content-Type 上传 SVG/HTML
+	sniffedMIME, err := sniffImageContent(content)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	result, err := h.emojiSvc.UploadEmoji(r.Context(), header.Filename, sniffedMIME, int64(len(content)), content)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -707,13 +736,20 @@ func (h *Handler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 	content := make([]byte, header.Size)
-	if _, err := file.Read(content); err != nil {
+	n, err := io.ReadFull(file, content)
+	if err != nil && err != io.ErrUnexpectedEOF {
+		response.RespondError(w, r, err)
+		return
+	}
+	content = content[:n]
+	sniffedMIME, err := sniffImageContent(content)
+	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	url, err := h.uploadSvc.UploadThumbnail(r.Context(), appmedia.UploadThumbnailInput{
 		FileID: id, FileName: header.Filename,
-		MimeType: header.Header.Get("Content-Type"), Content: content,
+		MimeType: sniffedMIME, Content: content,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -765,6 +801,8 @@ func (h *Handler) SaveUploadChunk(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
+	// 单分片上限 32MB，防 OOM
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<20)
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		response.RespondError(w, r, err)

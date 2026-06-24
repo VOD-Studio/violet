@@ -133,39 +133,27 @@ func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, e
 	return count > 0, nil
 }
 
+// Save 保存文章并同步标签关联。
+// 用 db.Transaction 包裹全文 + 标签关联，保证原子性；通过 Association API
+// 操作 many2many 关系（替代原先手写 Begin/Commit + 裸 SQL 的脆弱实现）。
 func (r *PostRepository) Save(ctx context.Context, p *post.Post) error {
 	po := postToPO(p)
-	tx := r.db.WithContext(ctx).Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 保存文章基本信息
+		if err := tx.Save(&po).Error; err != nil {
+			return domainshared.Internal("保存文章失败", err)
 		}
-	}()
-
-	// 保存文章基本信息
-	if err := tx.Save(&po).Error; err != nil {
-		tx.Rollback()
-		return domainshared.Internal("保存文章失败", err)
-	}
-
-	// 同步标签关联（按 name 查找 tag ID）
-	if err := tx.Where("post_id = ?", po.ID).Delete(&struct {
-		PostID string `gorm:"column:post_id"`
-	}{PostID: po.ID.String()}).Error; err != nil {
-		// 用原生 SQL 清理中间表
-		tx.Exec("DELETE FROM post_tags WHERE post_id = ?", po.ID)
-	}
-	for _, tagName := range p.Tags() {
-		var tag model.Tag
-		if err := tx.Where("name = ?", tagName).First(&tag).Error; err == nil {
-			tx.Exec("INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?) ON CONFLICT DO NOTHING", po.ID, tag.ID)
+		// 同步标签关联：按 name 查 tag → 替换关联
+		tagNames := p.Tags()
+		if len(tagNames) == 0 {
+			return tx.Model(&po).Association("Tags").Clear()
 		}
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return domainshared.Internal("提交文章事务失败", err)
-	}
-	return nil
+		var tags []model.Tag
+		if err := tx.Where("name IN ?", tagNames).Find(&tags).Error; err != nil {
+			return domainshared.Internal("查询标签失败", err)
+		}
+		return tx.Model(&po).Association("Tags").Replace(&tags)
+	})
 }
 
 func (r *PostRepository) Delete(ctx context.Context, id domainshared.ID) error {
@@ -190,6 +178,28 @@ func (r *PostRepository) RecordView(ctx context.Context, postID domainshared.ID,
 		return domainshared.Internal("记录浏览事件失败", err)
 	}
 	return nil
+}
+
+// IncrementViewAtomic 原子地浏览量+1 并记录浏览事件，保证两者在同一事务内提交。
+// 在 DB 内用 UPDATE ... SET view_count = view_count + 1（避免读-改-写竞态），
+// 同时写入 post_views 事件行。修复原先 Save 与 RecordView 分离导致计数与事件可能不一致。
+func (r *PostRepository) IncrementViewAtomic(ctx context.Context, postID domainshared.ID, ipAddress, userAgent string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 浏览量原子自增（DB 内 +1，避免并发覆盖）
+		if err := tx.Model(&model.Post{}).
+			Where("id = ?", postID.UUID()).
+			UpdateColumn("view_count", gorm.Expr("view_count + 1")).Error; err != nil {
+			return domainshared.Internal("更新浏览量失败", err)
+		}
+		// 浏览事件行
+		pv := model.PostView{
+			PostID: postID.UUID(), IPAddress: ipAddress, UserAgent: userAgent,
+		}
+		if err := tx.Create(&pv).Error; err != nil {
+			return domainshared.Internal("记录浏览事件失败", err)
+		}
+		return nil
+	})
 }
 
 var _ post.PostRepository = (*PostRepository)(nil)

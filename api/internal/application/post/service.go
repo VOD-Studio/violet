@@ -211,20 +211,13 @@ func (s *Service) UpdateStatus(ctx context.Context, id, status string) (PostDTO,
 }
 
 // IncrementView 浏览量 +1（含浏览事件记录，供 admin 趋势统计）
+// 通过 IncrementViewAtomic 在 DB 内原子自增并记录事件（单事务），保证一致性与并发安全。
 func (s *Service) IncrementView(ctx context.Context, id, ipAddress, userAgent string) error {
 	pid, err := shared.ParseID(id)
 	if err != nil {
 		return err
 	}
-	p, err := s.repo.FindByID(ctx, pid)
-	if err != nil {
-		return err
-	}
-	p.IncrementView()
-	if err := s.repo.Save(ctx, p); err != nil {
-		return err
-	}
-	return s.repo.RecordView(ctx, pid, ipAddress, userAgent)
+	return s.repo.IncrementViewAtomic(ctx, pid, ipAddress, userAgent)
 }
 
 // Delete 删除文章

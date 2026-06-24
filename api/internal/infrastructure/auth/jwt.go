@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/rs/zerolog/log"
 )
 
 // ============================================================
@@ -67,9 +68,11 @@ type JWTService struct {
 
 // NewJWTService 创建 JWT 服务
 //
-// privateKeyPath/publicKeyPath 为空时生成临时密钥（仅开发，会 warn）。
-func NewJWTService(privateKeyPath, publicKeyPath string, accessTTL, refreshTTL time.Duration) (*JWTService, error) {
-	priv, pub, err := loadOrGenerateKeys(privateKeyPath, publicKeyPath)
+// privateKeyPath/publicKeyPath 为空时：
+//   - allowEphemeral=true：生成临时密钥并记录警告日志（仅开发）
+//   - allowEphemeral=false：返回错误，拒绝启动（生产 fail-closed）
+func NewJWTService(privateKeyPath, publicKeyPath string, accessTTL, refreshTTL time.Duration, allowEphemeral bool) (*JWTService, error) {
+	priv, pub, err := loadOrGenerateKeys(privateKeyPath, publicKeyPath, allowEphemeral)
 	if err != nil {
 		return nil, fmt.Errorf("加载 JWT 密钥失败: %w", err)
 	}
@@ -130,14 +133,14 @@ func (s *JWTService) GenerateTokenPair(in TokenInput) (*TokenPair, error) {
 
 // ParseToken 解析并验证 JWT，返回 claims
 //
-// 强校验算法类型（防 alg 混淆攻击）。
+// 强校验：算法类型（防 alg 混淆攻击）、issuer（防跨服务令牌复用）、过期时间。
 func (s *JWTService) ParseToken(tokenString string) (*JWTClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
 			return nil, fmt.Errorf("不支持的签名算法: %v", token.Header["alg"])
 		}
 		return s.publicKey, nil
-	})
+	}, jwt.WithIssuer("blog-api"), jwt.WithExpirationRequired())
 	if err != nil {
 		return nil, fmt.Errorf("解析令牌失败: %w", err)
 	}
@@ -169,12 +172,16 @@ func signToken(claims *JWTClaims, key *ecdsa.PrivateKey) (string, error) {
 // ============================================================
 
 // loadOrGenerateKeys 加载或生成 ES256 密钥对
-func loadOrGenerateKeys(privateKeyPath, publicKeyPath string) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+//
+// allowEphemeral=false 且路径为空时返回错误（fail-closed，防生产环境静默密钥轮换）。
+func loadOrGenerateKeys(privateKeyPath, publicKeyPath string, allowEphemeral bool) (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
 	if privateKeyPath != "" && publicKeyPath != "" {
 		return loadKeysFromFiles(privateKeyPath, publicKeyPath)
 	}
-
-	// 未配置密钥文件，生成临时密钥（仅开发环境）
+	if !allowEphemeral {
+		return nil, nil, errors.New("未配置 JWT 密钥文件路径，且未启用临时密钥（jwt_allow_ephemeral_key）；生产环境必须配置密钥")
+	}
+	log.Warn().Msg("使用临时 JWT 密钥（仅开发环境）；每次重启所有令牌将失效")
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("生成 ECDSA 密钥失败: %w", err)

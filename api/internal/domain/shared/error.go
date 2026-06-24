@@ -3,7 +3,6 @@ package shared
 import (
 	"errors"
 	"fmt"
-	"net/http"
 )
 
 // ErrorCode 错误码类型（字符串常量，便于客户端识别）
@@ -14,26 +13,32 @@ import (
 //   - POST_SLUG_CONFLICT
 type ErrorCode string
 
+// 错误码常量（领域层只定义码，不感知 HTTP）
+const (
+	CodeNotFound     ErrorCode = "NOT_FOUND"
+	CodeBadRequest   ErrorCode = "BAD_REQUEST"
+	CodeUnauthorized ErrorCode = "UNAUTHORIZED"
+	CodeForbidden    ErrorCode = "FORBIDDEN"
+	CodeConflict     ErrorCode = "CONFLICT"
+	CodeValidation   ErrorCode = "VALIDATION_ERROR"
+	CodeInternal     ErrorCode = "INTERNAL_ERROR"
+)
+
 // DomainError 领域错误，统一后端错误表达
 //
-// 设计目标：收敛当前散落在 ~10 个 service 文件中的 sentinel error
-// 和 handler 内的 switch 翻译，由 interfaces 层的错误中间件统一翻译为 HTTP 响应。
+// 设计目标：收敛散落在 service 中的 sentinel error，由 interfaces 层的错误中间件
+// 统一翻译为 HTTP 响应。
 //
 // 字段说明：
 //   - Code: 机器可读错误码（客户端据此分支处理）
 //   - Message: 用户友好的错误描述（可直接展示）
-//   - HTTPStatus: 建议 HTTP 状态码（错误中间件使用；领域层不感知时设为 0）
 //   - Err: 包装的底层错误（用于日志与错误链追踪）
 //
-// 用法：
-//
-//	return shared.NewError("USER_NOT_FOUND", "用户不存在", http.StatusNotFound)
-//	return shared.NotFound("用户").WithErr(dbErr)  // 便捷构造 + 包装
+// 领域层不感知 HTTP：状态码由 interfaces 层按 Code 翻译（见 response/httpStatusForCode）。
 type DomainError struct {
-	Code       ErrorCode
-	Message    string
-	HTTPStatus int
-	Err        error
+	Code    ErrorCode
+	Message string
+	Err     error
 }
 
 // Error 实现 error 接口
@@ -59,60 +64,57 @@ func (e *DomainError) WithMessage(msg string) *DomainError {
 	return e
 }
 
-// NewError 创建领域错误
-//
-// httpStatus 为 0 表示领域层不指定 HTTP 状态，由错误中间件按 Code 兜底翻译。
-func NewError(code, message string, httpStatus int) *DomainError {
+// NewError 创建领域错误（仅错误码 + 消息，不携带 HTTP 语义）
+func NewError(code, message string) *DomainError {
 	return &DomainError{
-		Code:       ErrorCode(code),
-		Message:    message,
-		HTTPStatus: httpStatus,
+		Code:    ErrorCode(code),
+		Message: message,
 	}
 }
 
 // ============================================================
-// 便捷构造函数（按 HTTP 语义分类）
+// 便捷构造函数（按错误码分类；HTTP 状态由接口层翻译）
 // ============================================================
 
-// NotFound 资源未找到错误（404）
+// NotFound 资源未找到错误
 func NotFound(resource string) *DomainError {
-	return NewError("NOT_FOUND", fmt.Sprintf("%s不存在", resource), http.StatusNotFound)
+	return NewError(string(CodeNotFound), fmt.Sprintf("%s不存在", resource))
 }
 
-// BadRequest 参数错误（400）
+// BadRequest 参数错误
 func BadRequest(message string) *DomainError {
-	return NewError("BAD_REQUEST", message, http.StatusBadRequest)
+	return NewError(string(CodeBadRequest), message)
 }
 
-// Unauthorized 未认证（401）
+// Unauthorized 未认证
 func Unauthorized(message string) *DomainError {
 	if message == "" {
 		message = "未授权"
 	}
-	return NewError("UNAUTHORIZED", message, http.StatusUnauthorized)
+	return NewError(string(CodeUnauthorized), message)
 }
 
-// Forbidden 无权限（403）
+// Forbidden 无权限
 func Forbidden(message string) *DomainError {
 	if message == "" {
 		message = "禁止访问"
 	}
-	return NewError("FORBIDDEN", message, http.StatusForbidden)
+	return NewError(string(CodeForbidden), message)
 }
 
-// Conflict 资源冲突（409），如重复注册、slug 已存在
+// Conflict 资源冲突，如重复注册、slug 已存在
 func Conflict(message string) *DomainError {
-	return NewError("CONFLICT", message, http.StatusConflict)
+	return NewError(string(CodeConflict), message)
 }
 
-// Validation 参数校验失败（422）
+// Validation 参数校验失败
 func Validation(message string) *DomainError {
-	return NewError("VALIDATION_ERROR", message, http.StatusUnprocessableEntity)
+	return NewError(string(CodeValidation), message)
 }
 
-// Internal 内部错误（500），通常包装基础设施异常
+// Internal 内部错误，通常包装基础设施异常
 func Internal(message string, err error) *DomainError {
-	return NewError("INTERNAL_ERROR", message, http.StatusInternalServerError).WithErr(err)
+	return NewError(string(CodeInternal), message).WithErr(err)
 }
 
 // ============================================================
