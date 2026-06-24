@@ -128,6 +128,25 @@ func TestMediaPaths(t *testing.T) {
 	require.NotEmpty(t, spec.Paths.Find("/upload/init").Post.Security)
 }
 
+func TestMusicPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/music/embed", "/music/playlist", "/music/song", "/music/search",
+		"/music/lyrics", "/music/meta", "/music/playlists/active", "/music/settings",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing music path %s", p)
+	}
+	for _, s := range []string{"Song", "PlaylistDTO", "MusicEmbedInfo", "MusicSongMeta", "MusicPlaylistMeta"} {
+		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
+	}
+	// 音乐接口全部公开
+	require.Empty(t, spec.Paths.Find("/music/search").Get.Security)
+	// EmbedInfo 用 PascalCase 字段（验证无 json tag 的 struct）
+	emb := spec.Components.Schemas["MusicEmbedInfo"].Value.Properties
+	require.Contains(t, emb, "Platform")
+	require.Contains(t, emb, "EmbedURL")
+}
+
 func TestPostPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
