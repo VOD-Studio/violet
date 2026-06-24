@@ -34,3 +34,17 @@ func TestCommonSchemas(t *testing.T) {
 	require.Contains(t, spec.Components.Schemas, "ErrorResponse")
 	require.Contains(t, spec.Components.SecuritySchemes, "cookieAuth")
 }
+
+func TestPublicPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/settings", "/github/contributions", "/github/repos",
+		"/projects", "/projects/{id}", "/announcements",
+		"/emojis", "/emojis/groups/{name}",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing public path %s", p)
+	}
+	for _, s := range []string{"PublicSettings", "ProjectDTO", "AnnouncementDTO", "EmojiDTO", "EmojiGroupDTO"} {
+		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
+	}
+}

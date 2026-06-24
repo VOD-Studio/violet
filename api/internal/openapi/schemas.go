@@ -185,6 +185,18 @@ func noContentResponse(desc string) *openapi3.ResponseRef {
 	return &openapi3.ResponseRef{Value: &openapi3.Response{Description: strPtr(desc)}}
 }
 
+// responses 便捷构建 *Responses（接收 status/ref 对）。
+// 例：responses(200, dataResponse("XxxDTO", "", 200), 400, errorResponse("参数错误"))
+func responses(pairs ...any) *openapi3.Responses {
+	opts := make([]openapi3.NewResponsesOption, 0, len(pairs)/2)
+	for i := 0; i+1 < len(pairs); i += 2 {
+		status := pairs[i].(int)
+		ref := pairs[i+1].(*openapi3.ResponseRef)
+		opts = append(opts, openapi3.WithStatus(status, ref))
+	}
+	return openapi3.NewResponses(opts...)
+}
+
 // jsonBody 构建请求体（application/json）
 func jsonBody(schemaName string, required bool, desc string) *openapi3.RequestBodyRef {
 	return &openapi3.RequestBodyRef{Value: &openapi3.RequestBody{
