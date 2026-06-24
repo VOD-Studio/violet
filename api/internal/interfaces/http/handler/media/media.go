@@ -662,7 +662,7 @@ func (h *Handler) CheckInstantUpload(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, errors.New("hash 参数不能为空"))
 		return
 	}
-	dto, exists, err := h.uploadSvc.CheckInstantUpload(r.Context(), hash)
+	dto, exists, err := h.uploadSvc.CheckInstantUpload(r.Context(), hash, interfacesmw.GetUserIDFromContext(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

@@ -751,9 +751,9 @@ func (s *UploadService) InitSession(ctx context.Context, in InitSessionInput) (*
 		purpose = "material"
 	}
 
-	// 秒传检查
+	// 秒传检查(仅命中自己上传过的文件,防越权秒传他人文件)
 	if in.FileHash != "" {
-		if f, err := s.fileRepo.FindByHash(ctx, in.FileHash); err == nil && f != nil {
+		if f, err := s.fileRepo.FindByHash(ctx, in.FileHash, uid); err == nil && f != nil {
 			return &InitSessionResult{Instant: true, FileID: f.ID().String(), URL: f.URL()}, nil
 		}
 	}
@@ -996,9 +996,13 @@ func mimeToCategory(mimeType string) string {
 	}
 }
 
-// CheckInstantUpload 秒传检查
-func (s *UploadService) CheckInstantUpload(ctx context.Context, hash string) (*FileDTO, bool, error) {
-	f, err := s.fileRepo.FindByHash(ctx, hash)
+// CheckInstantUpload 秒传检查(仅命中自己上传过的文件)
+func (s *UploadService) CheckInstantUpload(ctx context.Context, hash, callerID string) (*FileDTO, bool, error) {
+	cid, err := shared.ParseID(callerID)
+	if err != nil {
+		return nil, false, shared.BadRequest("无效的调用者 ID")
+	}
+	f, err := s.fileRepo.FindByHash(ctx, hash, cid)
 	if err != nil {
 		if err == domainupload.ErrFileNotFound {
 			return nil, false, nil

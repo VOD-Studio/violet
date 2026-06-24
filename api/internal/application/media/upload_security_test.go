@@ -136,7 +136,7 @@ func (f *fakeFileRepo) FindByID(ctx context.Context, id domainshared.ID) (*domai
 	fl, _ := domainupload.NewFile(id, f.ownerID, "avatar", "f.jpg", "/uploads/f.jpg", "/uploads/f.jpg", 10, "image/jpeg", "")
 	return fl, nil
 }
-func (f *fakeFileRepo) FindByHash(ctx context.Context, hash string) (*domainupload.File, error) {
+func (f *fakeFileRepo) FindByHash(ctx context.Context, hash string, ownerID domainshared.ID) (*domainupload.File, error) {
 	return nil, nil
 }
 func (f *fakeFileRepo) FindByOwner(ctx context.Context, ownerID domainshared.ID, purpose string, page, limit int) ([]*domainupload.File, int64, error) {
