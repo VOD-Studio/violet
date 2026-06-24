@@ -2,6 +2,7 @@ package upload
 
 import (
 	"context"
+	"time"
 
 	"blog-api/internal/domain/shared"
 )
@@ -66,5 +67,7 @@ type ChunkStorage interface {
 	GenerateThumbnail(srcPath, fileUUID, storageDir, mimeType string) string
 	// BuildPath 构建最终文件存储路径与访问 URL
 	// 返回 error：purpose 含 ".." 等穿越片段时拒绝。
-	BuildPath(purpose, mimeType string, fileUUID, ext string) (path, url string, err error)
+	// BuildPath 按 purpose + 时间戳生成日期分目录路径:
+	// uploads/{purpose}/YYYY/MM/DD/HHMMSS.<uuid>.<ext>
+	BuildPath(purpose string, timestamp time.Time, fileUUID, ext string) (path, url string, err error)
 }
