@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/subtle"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -39,6 +41,7 @@ func (s *RedisTokenStore) Save(ctx context.Context, userID, refreshToken string)
 // Verify 比对存储的 refresh token 是否匹配（刷新时调用）
 //
 // 返回 (匹配?, error)。Redis 中不存在或值不匹配都返回 false（不报错）。
+// 使用 crypto/subtle.ConstantTimeCompare 防时序侧信道。
 func (s *RedisTokenStore) Verify(ctx context.Context, userID, refreshToken string) (bool, error) {
 	key := s.refreshKey(userID)
 	stored, err := s.client.Get(ctx, key).Result()
@@ -48,7 +51,7 @@ func (s *RedisTokenStore) Verify(ctx context.Context, userID, refreshToken strin
 		}
 		return false, fmt.Errorf("查询 refresh token 失败: %w", err)
 	}
-	return stored == refreshToken, nil
+	return subtle.ConstantTimeCompare([]byte(stored), []byte(refreshToken)) == 1, nil
 }
 
 // Delete 删除 refresh token（登出/改密时调用，实现服务端撤销）
@@ -100,13 +103,48 @@ func NewRedisCodeStore(client *redis.Client) *RedisCodeStore {
 }
 
 // Store 存储验证码（哈希后）
+// 显式序列化为 JSON，确保 Lua 脚本能用 cjson.decode 读取（go-redis 不自动序列化结构体）。
 func (s *RedisCodeStore) Store(ctx context.Context, prefix, identifier string, codeHash string) error {
 	key := s.codeKey(prefix, identifier)
 	data := VerificationData{CodeHash: codeHash, Attempts: 0}
-	return s.client.Set(ctx, key, data, s.ttl).Err()
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("序列化验证码失败: %w", err)
+	}
+	return s.client.Set(ctx, key, payload, s.ttl).Err()
 }
 
-// Verify 验证并消费验证码
+// verifyScript 原子验证验证码，防并发暴力破解。
+//
+// 单次 Lua 执行内完成：GET → 比对 code_hash → 匹配则 DEL / 不匹配则 attempts+1 / 超限则 DEL。
+// ARGV: [1]=期望 codeHash [2]=maxAttempt [3]=ttl(秒)
+// 返回数组: {[1]=匹配标志 0/1, [2]=当前尝试次数}
+//
+// 注：code_hash 比对在 Lua 内做字符串相等（Redis 单线程，Lua 内无并发竞态），
+// 时序侧信道在此场景不适用（验证码本身是高熵哈希，非长期密钥）。
+var verifyScript = redis.NewScript(`
+local data = redis.call('GET', KEYS[1])
+if not data then
+  return {0, -1}
+end
+local obj = cjson.decode(data)
+local attempts = tonumber(obj['attempts']) or 0
+local max = tonumber(ARGV[2])
+if attempts >= max then
+  redis.call('DEL', KEYS[1])
+  return {0, attempts}
+end
+if obj['code_hash'] == ARGV[1] then
+  redis.call('DEL', KEYS[1])
+  return {1, attempts}
+end
+attempts = attempts + 1
+obj['attempts'] = attempts
+redis.call('SET', KEYS[1], cjson.encode(obj), 'EX', tonumber(ARGV[3]))
+return {0, attempts}
+`)
+
+// Verify 验证并消费验证码（原子操作，防并发暴力破解）
 //
 // 返回 (匹配?, error)。
 // - 匹配成功: 删除 key（一次性）
@@ -114,31 +152,19 @@ func (s *RedisCodeStore) Store(ctx context.Context, prefix, identifier string, c
 // - 不匹配: 尝试次数 +1
 func (s *RedisCodeStore) Verify(ctx context.Context, prefix, identifier, codeHash string) (bool, error) {
 	key := s.codeKey(prefix, identifier)
-
-	var data VerificationData
-	if err := s.client.Get(ctx, key).Scan(&data); err != nil {
+	res, err := verifyScript.Run(ctx, s.client, []string{key}, codeHash, s.maxAttempt, int64(s.ttl.Seconds())).Result()
+	if err != nil {
 		if err == redis.Nil {
-			return false, nil // 验证码不存在或已过期
+			return false, nil
 		}
-		return false, fmt.Errorf("查询验证码失败: %w", err)
+		return false, fmt.Errorf("验证码校验失败: %w", err)
 	}
-
-	// 尝试次数超限
-	if data.Attempts >= s.maxAttempt {
-		_ = s.client.Del(ctx, key).Err()
+	vals, ok := res.([]interface{})
+	if !ok || len(vals) < 1 {
 		return false, nil
 	}
-
-	// 哈希不匹配
-	if data.CodeHash != codeHash {
-		data.Attempts++
-		_ = s.client.Set(ctx, key, data, s.ttl).Err()
-		return false, nil
-	}
-
-	// 匹配成功，删除（一次性）
-	_ = s.client.Del(ctx, key).Err()
-	return true, nil
+	matched, ok := vals[0].(int64)
+	return ok && matched == 1, nil
 }
 
 func (s *RedisCodeStore) codeKey(prefix, identifier string) string {

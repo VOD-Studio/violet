@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	domainaudit "blog-api/internal/domain/audit"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // AuditLog 操作日志 PO
@@ -60,14 +61,18 @@ func (s *AuditStore) List(ctx context.Context, page, limit int) (domainaudit.Lis
 	}
 	offset := (page - 1) * limit
 	var total int64
-	s.db.WithContext(ctx).Model(&AuditLog{}).Count(&total)
+	if err := s.db.WithContext(ctx).Model(&AuditLog{}).Count(&total).Error; err != nil {
+		return domainaudit.ListResult{}, domainshared.Internal("审计日志计数失败", err)
+	}
 	var pos []AuditLog
-	s.db.WithContext(ctx).
+	if err := s.db.WithContext(ctx).
 		Select("audit_logs.*, u.username AS user_name").
 		Joins("LEFT JOIN users u ON u.id = audit_logs.user_id").
 		Order("audit_logs.created_at DESC").
 		Offset(offset).Limit(limit).
-		Scan(&pos)
+		Scan(&pos).Error; err != nil {
+		return domainaudit.ListResult{}, domainshared.Internal("查询审计日志失败", err)
+	}
 	return domainaudit.ListResult{Logs: auditPOsToDomain(pos), Total: total}, nil
 }
 
@@ -81,14 +86,18 @@ func (s *AuditStore) ListByUser(ctx context.Context, userID string, page, limit 
 	offset := (page - 1) * limit
 	query := s.db.WithContext(ctx).Model(&AuditLog{}).Where("user_id = ?", userID)
 	var total int64
-	query.Count(&total)
+	if err := query.Count(&total).Error; err != nil {
+		return domainaudit.ListResult{}, domainshared.Internal("用户审计日志计数失败", err)
+	}
 	var pos []AuditLog
-	query.
+	if err := query.
 		Select("audit_logs.*, u.username AS user_name").
 		Joins("LEFT JOIN users u ON u.id = audit_logs.user_id").
 		Order("audit_logs.created_at DESC").
 		Offset(offset).Limit(limit).
-		Scan(&pos)
+		Scan(&pos).Error; err != nil {
+		return domainaudit.ListResult{}, domainshared.Internal("查询用户审计日志失败", err)
+	}
 	return domainaudit.ListResult{Logs: auditPOsToDomain(pos), Total: total}, nil
 }
 

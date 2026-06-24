@@ -68,6 +68,9 @@ func main() {
 	}
 	log.Info().Msg("Redis 连接成功")
 
+	// 配置受信代理（限流/IP 提取依赖；为空时一律使用 RemoteAddr）
+	middleware.SetTrustedProxies(cfg.TrustedProxies)
+
 	gormDB, err := gorm.Open(postgres.Open(cfg.Database.DSN()), &gorm.Config{})
 	if err != nil {
 		log.Fatal().Err(err).Msg("GORM 连接失败")
@@ -193,13 +196,14 @@ func main() {
 		contentH := contentContainer.ContentHandler
 		v1.Route("/auth", func(r chi.Router) {
 			// 公开端点：取 CSRF token（首次访问需要先调用此端点拿到 cookie 才能 login）
-			r.Get("/csrf-token", authH.GetCSRFToken)         // 获取 CSRF token
-			r.Post("/register", authH.Register)              // 用户注册
-			r.Post("/verify-email", authH.VerifyEmail)       // 邮箱验证
-			r.Post("/login", authH.Login)                    // 用户登录
-			r.Post("/refresh", authH.Refresh)                // 刷新令牌
-			r.Post("/forgot-password", authH.ForgotPassword) // 发送重置密码邮件
-			r.Post("/reset-password", authH.ResetPassword)   // 重置密码
+			r.Get("/csrf-token", authH.GetCSRFToken) // 获取 CSRF token
+			// 认证类接口限流（防暴力破解与邮件轰炸）
+			r.With(middleware.AuthRateLimit(redisClient)).Post("/register", authH.Register)
+			r.With(middleware.AuthRateLimit(redisClient)).Post("/verify-email", authH.VerifyEmail)
+			r.With(middleware.AuthRateLimit(redisClient)).Post("/login", authH.Login)
+			r.With(middleware.AuthRateLimit(redisClient)).Post("/refresh", authH.Refresh)
+			r.With(middleware.AuthRateLimit(redisClient)).Post("/forgot-password", authH.ForgotPassword)
+			r.With(middleware.AuthRateLimit(redisClient)).Post("/reset-password", authH.ResetPassword)
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
@@ -241,9 +245,10 @@ func main() {
 		// 评论反应（DDD commentReactionContainer）
 		crH := commentReactionContainer.CommentReactionHandler
 		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
-			r.Get("/", crH.GetCommentReactions)                                         // 获取评论反应
-			r.With(middleware.CommentRateLimit(redisClient)).Post("/", crH.AddReaction) // 添加反应（限流）
-			r.Delete("/{emoji_id}", crH.RemoveReaction)                                 // 删除反应
+			r.Get("/", crH.GetCommentReactions)                                                          // 获取评论反应
+			r.With(middleware.CommentRateLimit(redisClient)).Post("/", crH.AddReaction)                  // 添加反应（限流）
+			r.With(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName))). // 删除反应需认证，防匿名删除他人反应
+				Delete("/{emoji_id}", crH.RemoveReaction)
 		})
 		v1.Post("/comments/reactions/batch", crH.GetReactionsBatch) // 批量获取评论反应
 
@@ -274,6 +279,7 @@ func main() {
 		// 分片上传（DDD mediaH）
 		v1.Route("/upload", func(r chi.Router) {
 			r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
+			r.Use(middleware.UploadRateLimit(redisClient))
 			r.Post("/init", mediaH.InitUploadSession)                  // 初始化上传会话（秒传/续传/新建）
 			r.Put("/{uploadId}/chunk/{index}", mediaH.SaveUploadChunk) // 上传单个分片
 			r.Post("/{uploadId}/complete", mediaH.CompleteUpload)      // 合并所有分片

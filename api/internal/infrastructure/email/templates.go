@@ -1,9 +1,14 @@
 package email
 
-import "fmt"
+import (
+	"fmt"
+	"html"
+)
 
 // buildVerificationEmail 构建邮箱验证码 HTML 邮件
+// code 经 html.EscapeString 转义，防未来传入用户可控内容时产生 HTML 注入。
 func buildVerificationEmail(code string) string {
+	safe := html.EscapeString(code)
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>邮箱验证码</title></head>
@@ -31,11 +36,12 @@ func buildVerificationEmail(code string) string {
         </td></tr>
     </table>
 </body>
-</html>`, code)
+</html>`, safe)
 }
 
 // buildPasswordResetEmail 构建密码重置验证码 HTML 邮件
 func buildPasswordResetEmail(code string) string {
+	safe := html.EscapeString(code)
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>密码重置</title></head>
@@ -63,5 +69,5 @@ func buildPasswordResetEmail(code string) string {
         </td></tr>
     </table>
 </body>
-</html>`, code)
+</html>`, safe)
 }

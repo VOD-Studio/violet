@@ -25,6 +25,9 @@ type Config struct {
 	JWTAccessTokenTTL time.Duration
 	// JWTRefreshTokenTTL JWT 刷新令牌过期时间
 	JWTRefreshTokenTTL time.Duration
+	// JWTAllowEphemeralKey 允许未配置密钥时生成临时密钥（仅开发环境）。
+	// 生产环境必须为 false（默认），否则启动时拒绝加载。
+	JWTAllowEphemeralKey bool
 	// ResendAPIKey Resend 件服务 API 密钥
 	ResendAPIKey string
 	// EmailFrom 发件人邮箱地址
@@ -46,6 +49,10 @@ type Config struct {
 	CORSAllowedOrigins []string
 	// SuperAdmin 超级管理员配置
 	SuperAdmin SuperAdminConfig
+	// TrustedProxies 受信代理 CIDR 列表（如 Nginx/CDN 出口 IP）。
+	// 非空时，仅当 RemoteAddr 命中此列表才信任 X-Forwarded-For/X-Real-IP；
+	// 为空时一律使用 RemoteAddr，拒绝任何客户端自报的转发头（防 IP 欺骗绕过限流）。
+	TrustedProxies []string
 }
 
 // CookieConfig 鉴权 Cookie 配置
@@ -173,6 +180,8 @@ func Load() *Config {
 	v.SetDefault("redis.password", "")
 	v.SetDefault("jwt_private_key_path", "")
 	v.SetDefault("jwt_public_key_path", "")
+	// 默认禁止临时密钥；生产环境必须显式配置密钥文件
+	v.SetDefault("jwt_allow_ephemeral_key", false)
 	v.SetDefault("jwt_access_token_ttl", "15m")
 	v.SetDefault("jwt_refresh_token_ttl", "168h")
 	v.SetDefault("resend_api_key", "")
@@ -201,6 +210,8 @@ func Load() *Config {
 	v.SetDefault("superadmin.username", "admin")
 	v.SetDefault("superadmin.email", "admin@example.com")
 	v.SetDefault("superadmin.password", "")
+	// 受信代理默认为空：未配置时一律使用 RemoteAddr，拒绝客户端自报转发头
+	v.SetDefault("trusted_proxies", []string{})
 
 	// 读取配置文件（不存在也不报错）
 	_ = v.ReadInConfig()
@@ -245,10 +256,11 @@ func Load() *Config {
 			DB:       v.GetInt("redis.db"),
 			Password: v.GetString("redis.password"),
 		},
-		JWTPrivateKeyPath:  v.GetString("jwt_private_key_path"),
-		JWTPublicKeyPath:   v.GetString("jwt_public_key_path"),
-		JWTAccessTokenTTL:  accessTokenTTL,
-		JWTRefreshTokenTTL: refreshTokenTTL,
+		JWTPrivateKeyPath:   v.GetString("jwt_private_key_path"),
+		JWTPublicKeyPath:    v.GetString("jwt_public_key_path"),
+		JWTAccessTokenTTL:   accessTokenTTL,
+		JWTRefreshTokenTTL:  refreshTokenTTL,
+		JWTAllowEphemeralKey: v.GetBool("jwt_allow_ephemeral_key"),
 		ResendAPIKey:       v.GetString("resend_api_key"),
 		EmailFrom:          v.GetString("email_from"),
 		FrontendURL:        v.GetString("frontend_url"),
@@ -271,6 +283,7 @@ func Load() *Config {
 			Email:    v.GetString("superadmin.email"),
 			Password: v.GetString("superadmin.password"),
 		},
+		TrustedProxies: v.GetStringSlice("trusted_proxies"),
 	}
 
 	// 验证必需配置
@@ -312,6 +325,10 @@ func (c *Config) Validate() error {
 		}
 		if c.Database.SSLMode != "disable" && c.Database.SSLMode != "require" && c.Database.SSLMode != "verify-ca" && c.Database.SSLMode != "verify-full" {
 			return fmt.Errorf("生产环境 DB_SSLMODE 必须为 disable、require、verify-ca 或 verify-full")
+		}
+		// 生产环境禁止临时 JWT 密钥（防静默密钥轮换导致全量令牌失效）
+		if c.JWTAllowEphemeralKey {
+			return fmt.Errorf("生产环境禁止使用临时 JWT 密钥（jwt_allow_ephemeral_key 必须为 false）")
 		}
 	}
 

@@ -26,6 +26,22 @@ func NewLocalStorage(uploadDir, urlPrefix string) *LocalStorage {
 	return &LocalStorage{uploadDir: uploadDir, urlPrefix: urlPrefix}
 }
 
+// safePath 校验 path 解析后仍位于 uploadDir 之内，防路径穿越。
+// 调用方传入的路径（chunkDir/destPath/srcPath 等）经此校验后才允许文件系统操作。
+func (s *LocalStorage) safePath(path string) (string, error) {
+	cleanBase := filepath.Clean(s.uploadDir)
+	cleanTarget := filepath.Clean(path)
+	rel, err := filepath.Rel(cleanBase, cleanTarget)
+	if err != nil {
+		return "", fmt.Errorf("路径解析失败: %w", err)
+	}
+	// rel 以 ".." 开头即表示逃出 base
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("路径越界 uploadDir: %s", path)
+	}
+	return cleanTarget, nil
+}
+
 // EnsureDir 确保目录存在
 func (s *LocalStorage) EnsureDir(dir string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -36,10 +52,17 @@ func (s *LocalStorage) EnsureDir(dir string) error {
 
 // SaveChunk 保存单个分片到 chunkDir/chunk_NNNN
 func (s *LocalStorage) SaveChunk(chunkDir string, index int, data []byte) error {
-	if err := os.MkdirAll(chunkDir, 0o755); err != nil {
+	dir, err := s.safePath(chunkDir)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("创建分片目录失败: %w", err)
 	}
-	chunkPath := filepath.Join(chunkDir, fmt.Sprintf("chunk_%04d", index))
+	chunkPath, err := s.safePath(filepath.Join(dir, fmt.Sprintf("chunk_%04d", index)))
+	if err != nil {
+		return err
+	}
 	if err := os.WriteFile(chunkPath, data, 0o644); err != nil {
 		return fmt.Errorf("写入分片失败: %w", err)
 	}
@@ -58,22 +81,33 @@ func (s *LocalStorage) ReadChunk(chunkDir string, index int) ([]byte, error) {
 
 // MergeChunks 按 index 顺序合并所有分片到 destPath
 func (s *LocalStorage) MergeChunks(chunkDir string, totalChunks int, destPath string) error {
-	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+	dir, err := s.safePath(chunkDir)
+	if err != nil {
+		return err
+	}
+	dst, err := s.safePath(destPath)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return fmt.Errorf("创建合并目标目录失败: %w", err)
 	}
-	dst, err := os.Create(destPath)
+	out, err := os.Create(dst)
 	if err != nil {
 		return fmt.Errorf("创建合并文件失败: %w", err)
 	}
-	defer dst.Close()
+	defer out.Close()
 
 	for i := 0; i < totalChunks; i++ {
-		chunkPath := filepath.Join(chunkDir, fmt.Sprintf("chunk_%04d", i))
+		chunkPath, err := s.safePath(filepath.Join(dir, fmt.Sprintf("chunk_%04d", i)))
+		if err != nil {
+			return err
+		}
 		chunkFile, err := os.Open(chunkPath)
 		if err != nil {
 			return fmt.Errorf("打开分片 %d 失败: %w", i, err)
 		}
-		if _, err := copyTo(chunkFile, dst); err != nil {
+		if _, err := copyTo(chunkFile, out); err != nil {
 			chunkFile.Close()
 			return fmt.Errorf("合并分片 %d 失败: %w", i, err)
 		}
@@ -101,10 +135,18 @@ func (s *LocalStorage) FileSize(path string) (int64, error) {
 
 // Move 移动文件
 func (s *LocalStorage) Move(src, dst string) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+	srcSafe, err := s.safePath(src)
+	if err != nil {
+		return err
+	}
+	dstSafe, err := s.safePath(dst)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dstSafe), 0o755); err != nil {
 		return fmt.Errorf("创建目标目录失败: %w", err)
 	}
-	if err := os.Rename(src, dst); err != nil {
+	if err := os.Rename(srcSafe, dstSafe); err != nil {
 		return fmt.Errorf("移动文件失败: %w", err)
 	}
 	return nil
@@ -183,7 +225,8 @@ func (s *LocalStorage) generateVideoThumb(srcPath, fileUUID, storageDir string) 
 }
 
 // BuildPath 构建最终文件存储路径与访问 URL
-func (s *LocalStorage) BuildPath(purpose, mimeType, fileUUID, ext string) (string, string) {
+// purpose 由调用方（上传会话）提供，必须校验防路径穿越（如 purpose="../tmp"）。
+func (s *LocalStorage) BuildPath(purpose, mimeType, fileUUID, ext string) (string, string, error) {
 	dir := purpose
 	if dir == "material" {
 		dir = filepath.Join(dir, fileTypeFromMime(mimeType))
@@ -191,8 +234,15 @@ func (s *LocalStorage) BuildPath(purpose, mimeType, fileUUID, ext string) (strin
 	finalName := fileUUID + ext
 	finalDir := filepath.Join(s.uploadDir, dir)
 	finalPath := filepath.Join(finalDir, finalName)
+	// 校验最终路径仍在 uploadDir 内（覆盖 purpose 穿越）
+	if _, err := s.safePath(finalDir); err != nil {
+		return "", "", err
+	}
+	if _, err := s.safePath(finalPath); err != nil {
+		return "", "", err
+	}
 	url := s.urlPrefix + dir + "/" + finalName
-	return finalPath, url
+	return finalPath, url, nil
 }
 
 // fileTypeFromMime 根据 MIME 推断分类目录

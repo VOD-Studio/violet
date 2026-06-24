@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	domaingithub "blog-api/internal/domain/github"
@@ -97,7 +98,7 @@ func (a *Adapter) GetRepos(ctx context.Context, username, token string) ([]domai
 		return []domaingithub.RepoData{}, nil
 	}
 	pinnedNames, _ := a.fetchPinnedNames(ctx, username, token)
-	apiURL := fmt.Sprintf("https://api.github.com/users/%s/repos?sort=stars&per_page=100&type=owner", username)
+	apiURL := fmt.Sprintf("https://api.github.com/users/%s/repos?sort=stars&per_page=100&type=owner", url.PathEscape(username))
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("Authorization", "bearer "+token)

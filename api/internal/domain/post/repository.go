@@ -17,6 +17,10 @@ type PostRepository interface {
 	Delete(ctx context.Context, id shared.ID) error
 	// RecordView 记录浏览事件（写 post_views 表，供 admin 趋势统计）
 	RecordView(ctx context.Context, postID shared.ID, ipAddress, userAgent string) error
+	// IncrementViewAtomic 原子地浏览量+1 并记录浏览事件（单事务，保证一致性）。
+	// 在 DB 内用 UPDATE ... SET view_count = view_count + 1，避免读-改-写竞态；
+	// 同时写入 post_views 事件行，两者在同一事务内提交。
+	IncrementViewAtomic(ctx context.Context, postID shared.ID, ipAddress, userAgent string) error
 }
 
 // 领域错误

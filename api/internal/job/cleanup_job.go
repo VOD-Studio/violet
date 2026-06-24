@@ -45,18 +45,26 @@ func (j *CleanupJob) CleanExpiredSessions(ctx context.Context) (int, error) {
 
 	cleaned := 0
 	for _, s := range sessions {
-		// 删除临时分片目录
+		// 先 CAS 翻转状态 active→expired，仅当真正持有会话时才清理 tmp 目录，
+		// 避免与并发 SaveChunk 竞态：若 CAS 未命中（会话已被其他流程改变），跳过。
+		res := j.db.WithContext(ctx).Model(&model.UploadSession{}).
+			Where("id = ? AND status = ?", s.ID, model.SessionStatusActive).
+			Update("status", model.SessionStatusExpired)
+		if res.Error != nil {
+			log.Printf("清理: CAS 更新会话 %s 状态失败: %v", s.ID, res.Error)
+			continue
+		}
+		if res.RowsAffected == 0 {
+			// 会话状态已被其他流程改变，不属于本次清理
+			continue
+		}
+
+		// 成功翻转后才删除临时分片目录
 		if s.TmpPath != "" {
 			if err := os.RemoveAll(s.TmpPath); err != nil {
 				log.Printf("清理: 删除会话 %s 临时目录 %s 失败: %v", s.ID, s.TmpPath, err)
-				continue
+				// 状态已翻转为 expired，tmp 残留由 CleanOrphanTmp 兜底
 			}
-		}
-
-		// 更新会话状态为过期
-		if err := j.db.WithContext(ctx).Model(&s).Update("status", model.SessionStatusExpired).Error; err != nil {
-			log.Printf("清理: 更新会话 %s 状态失败: %v", s.ID, err)
-			continue
 		}
 
 		cleaned++
@@ -66,7 +74,7 @@ func (j *CleanupJob) CleanExpiredSessions(ctx context.Context) (int, error) {
 }
 
 // CleanOrphanTmp 清理孤立的临时分片目录
-// 扫描 chunkDir 下的子目录，检查是否对应有效的活跃上传会话，无效则删除
+// 扫描 chunkDir 下的子目录，批量查询对应会话；无对应会话或会话非活跃则删除目录。
 func (j *CleanupJob) CleanOrphanTmp(ctx context.Context) (int, error) {
 	entries, err := os.ReadDir(j.chunkDir)
 	if err != nil {
@@ -76,53 +84,55 @@ func (j *CleanupJob) CleanOrphanTmp(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("读取分片目录 %s 失败: %w", j.chunkDir, err)
 	}
 
-	cleaned := 0
+	// 收集所有合法 UUID 目录名
+	dirNames := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
+		if entry.IsDir() && isValidUUID(entry.Name()) {
+			dirNames = append(dirNames, entry.Name())
 		}
+	}
+	if len(dirNames) == 0 {
+		return 0, nil
+	}
 
-		dirName := entry.Name()
-		// 跳过非 UUID 格式的目录名
-		if !isValidUUID(dirName) {
-			continue
-		}
+	// 一次性批量查询存在的会话及其状态，避免 N+1
+	type sessionStatus struct {
+		ID     string `gorm:"column:id"`
+		Status model.SessionStatus
+	}
+	var existing []sessionStatus
+	if err := j.db.WithContext(ctx).Table("upload_sessions").
+		Where("id IN ?", dirNames).
+		Select("id, status").
+		Scan(&existing).Error; err != nil {
+		return 0, fmt.Errorf("批量查询会话失败: %w", err)
+	}
+	statusByID := make(map[string]model.SessionStatus, len(existing))
+	for _, e := range existing {
+		statusByID[e.ID] = e.Status
+	}
 
-		// 查询对应的会话记录
-		var session model.UploadSession
-		result := j.db.WithContext(ctx).Where("id = ?", dirName).First(&session)
-
-		if result.Error == gorm.ErrRecordNotFound {
-			// 会话不存在，删除孤立目录
+	cleaned := 0
+	for _, dirName := range dirNames {
+		status, ok := statusByID[dirName]
+		// 无对应会话（孤儿），或会话非活跃 → 删除残留目录
+		if !ok || status != model.SessionStatusActive {
 			dirPath := filepath.Join(j.chunkDir, dirName)
 			if err := os.RemoveAll(dirPath); err != nil {
-				log.Printf("清理: 删除孤立目录 %s 失败: %v", dirPath, err)
-				continue
-			}
-			cleaned++
-			continue
-		}
-		if result.Error != nil {
-			log.Printf("清理: 查询目录 %s 对应会话失败: %v", dirName, result.Error)
-			continue
-		}
-
-		// 会话存在但非活跃状态，删除残留目录
-		if session.Status != model.SessionStatusActive {
-			dirPath := filepath.Join(j.chunkDir, dirName)
-			if err := os.RemoveAll(dirPath); err != nil {
-				log.Printf("清理: 删除非活跃目录 %s 失败: %v", dirPath, err)
+				log.Printf("清理: 删除目录 %s 失败: %v", dirPath, err)
 				continue
 			}
 			cleaned++
 		}
 	}
 
+	// errors 保留用于未来 errors.Is 扩展（当前用 map 判定）
 	return cleaned, nil
 }
 
 // PhysicalDeleteFiles 物理删除已软删超过保留天数的文件
-// 先删除数据库记录，再删除磁盘文件（顺序不可反）
+// 顺序：先删磁盘文件，成功后再删 DB 行。
+// 这样 os.Remove 失败时 DB 行保留，下次 tick 重试；避免删了 DB 行却留下孤儿文件。
 // ref_count > 0 的文件会被跳过（安全检查）
 func (j *CleanupJob) PhysicalDeleteFiles(ctx context.Context, retentionDays int) (int, error) {
 	cutoff := time.Now().AddDate(0, 0, -retentionDays)
@@ -147,17 +157,18 @@ func (j *CleanupJob) PhysicalDeleteFiles(ctx context.Context, retentionDays int)
 			continue
 		}
 
-		// 先物理删除数据库记录
-		if err := j.db.WithContext(ctx).Unscoped().Delete(&f).Error; err != nil {
-			log.Printf("清理: 硬删除文件记录 %s 失败: %v", f.ID, err)
-			continue
-		}
-
-		// 再删除磁盘文件
+		// 先删磁盘文件；失败则保留 DB 行，下次 tick 重试
 		if f.Path != "" {
 			if err := os.Remove(f.Path); err != nil && !os.IsNotExist(err) {
-				log.Printf("清理: 删除物理文件 %s 失败 (记录已删除): %v", f.Path, err)
+				log.Printf("清理: 删除物理文件 %s 失败，保留 DB 行待重试: %v", f.Path, err)
+				continue
 			}
+		}
+
+		// 文件已删（或本不存在），再删 DB 行
+		if err := j.db.WithContext(ctx).Unscoped().Delete(&f).Error; err != nil {
+			log.Printf("清理: 硬删除文件记录 %s 失败（磁盘文件已删，下次将孤儿清理）: %v", f.ID, err)
+			continue
 		}
 
 		cleaned++
