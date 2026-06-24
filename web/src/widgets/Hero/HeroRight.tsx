@@ -18,13 +18,13 @@ const HeroRight = () => {
 	const { data, isLoading } = usePosts({ page: 1, limit: 8 });
 
 	return (
-		<div className="flex h-full flex-col">
-			<div className="mb-3 flex items-center justify-between">
+		<div className="flex min-h-0 flex-1 flex-col">
+			<div className="mb-3 flex shrink-0 items-center justify-between">
 				<h2 className="font-mono text-sm uppercase tracking-wider text-muted-foreground">
 					最新动态
 				</h2>
 			</div>
-			<ScrollArea className="flex-1" style={{ maxHeight: "100%" }}>
+			<ScrollArea className="min-h-0 flex-1">
 				<div className="flex flex-col gap-3 pr-2">
 					{isLoading
 						? Array.from({ length: 4 }).map((_, i) => (

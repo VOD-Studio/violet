@@ -16,7 +16,7 @@ const HeroLeft = () => {
 	const { data } = useSettings();
 
 	return (
-		<div className="relative flex h-full flex-col items-center justify-center overflow-hidden">
+		<div className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden">
 			<div className="absolute inset-0 -z-10">
 				<ParticleField />
 			</div>

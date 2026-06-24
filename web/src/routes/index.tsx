@@ -16,7 +16,8 @@ function HomePage() {
 		// min-h-0 让内部 flex 比例可分配；80/20 用 flex-[4]/flex-[1]
 		// （Tailwind v4 无 flex-4 默认类，必须用任意值语法）
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<section className="flex min-h-0 flex-[4] overflow-hidden border-b border-edge-hairline">
+			{/* 80% 区：作为 flex 容器，Hero 用 flex-1 撑满（不依赖 h-full/父级定高） */}
+			<section className="flex min-h-0 flex-[4] flex-col overflow-hidden border-b border-edge-hairline">
 				<Hero />
 			</section>
 			<section className="flex min-h-0 flex-[1] items-stretch gap-4 overflow-hidden px-4 py-2">

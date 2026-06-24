@@ -4,19 +4,19 @@ import HeroRight from "./HeroRight";
 /**
  * Hero - 首页英雄区容器
  *
- * 由首页网格分配宽高（section flex-[4] 给出 80% 高度），本组件只负责
- * 左右 50/50 拼装并撑满父级。
+ * 高度链全程走 flex-1（不依赖 h-full/父级定高，避免 flex-grow 父项下
+ * h-full 失效导致塌陷留白）：
+ * section(flex-col, flex-[4]) → 本容器(flex-1) → 左右栏(flex-1, min-h-0)。
  *
- * 高度链：section(min-h-0 flex) → 本 grid(h-full) → 左右栏(h-full)。
- * 移动端单列堆叠（grid-cols-1），各占自然高度，避免写死 min-height 撑爆矮屏。
+ * 桌面端左右 50/50（flex-row），移动端单列堆叠（flex-col）。
  */
 const Hero = () => {
 	return (
-		<div className="grid h-full grid-cols-1 md:grid-cols-2">
-			<div className="flex min-h-0 flex-col overflow-hidden border-b border-edge-hairline md:border-b-0 md:border-r">
+		<div className="flex min-h-0 flex-1 flex-col md:flex-row">
+			<div className="flex min-h-0 flex-1 flex-col overflow-hidden border-b border-edge-hairline md:border-b-0 md:border-r">
 				<HeroLeft />
 			</div>
-			<div className="flex min-h-0 flex-col p-4">
+			<div className="flex min-h-0 flex-1 flex-col p-4">
 				<HeroRight />
 			</div>
 		</div>
