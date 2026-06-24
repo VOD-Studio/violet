@@ -33,11 +33,7 @@ const HeroRight = () => {
 							))
 						: (data?.data ?? []).map((post) => (
 								<SpotlightCard key={post.id} className="p-4">
-									<Link
-										to="/blog/$slug"
-										params={{ slug: post.slug }}
-										data-cursor="magnetic"
-									>
+									<Link to="/blog/$slug" params={{ slug: post.slug }} data-cursor="magnetic">
 										<div className="mb-1 flex items-center gap-2 font-mono text-[10px] text-muted-foreground">
 											<span>{post.author.username}</span>
 											<span>·</span>

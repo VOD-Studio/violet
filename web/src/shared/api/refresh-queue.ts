@@ -20,9 +20,7 @@ let refreshing: Promise<boolean> | null = null;
  * @param doRefresh 实际执行 refresh 的函数（httpClient 注入）
  * @returns refresh 是否成功（true=可重放原请求，false=需跳登录）
  */
-export const triggerRefresh = (
-	doRefresh: () => Promise<boolean>,
-): Promise<boolean> => {
+export const triggerRefresh = (doRefresh: () => Promise<boolean>): Promise<boolean> => {
 	if (refreshing) return refreshing;
 	refreshing = doRefresh().finally(() => {
 		refreshing = null;

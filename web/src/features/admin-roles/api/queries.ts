@@ -11,8 +11,7 @@ import { roleKeys } from "./keys";
  *
  * @returns 角色列表，含每角色用户数
  */
-export const fetchRoles = async (): Promise<Role[]> =>
-	apiGet<Role[]>("/admin/roles");
+export const fetchRoles = async (): Promise<Role[]> => apiGet<Role[]>("/admin/roles");
 
 /**
  * useRoles - 角色列表 hook

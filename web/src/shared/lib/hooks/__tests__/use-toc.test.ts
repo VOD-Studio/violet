@@ -16,9 +16,7 @@ describe("extractToc", () => {
 
 	it("generates slug id when missing", () => {
 		const html = "<h2>Hello World!</h2>";
-		expect(extractToc(html)).toEqual([
-			{ level: 2, id: "hello-world", text: "Hello World!" },
-		]);
+		expect(extractToc(html)).toEqual([{ level: 2, id: "hello-world", text: "Hello World!" }]);
 	});
 
 	it("strips inner tags from text", () => {

@@ -19,8 +19,7 @@ import { commentKeys } from "./keys";
 export const useCreateComment = (postId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: CreateComment) =>
-			apiPost<null>(`/posts/${postId}/comments`, body),
+		mutationFn: (body: CreateComment) => apiPost<null>(`/posts/${postId}/comments`, body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: commentKeys.lists() });
 		},
@@ -38,8 +37,7 @@ export const useCreateComment = (postId: string) => {
 export const useAddReaction = (commentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: AddReaction) =>
-			apiPost<null>(`/comments/${commentId}/reactions`, body),
+		mutationFn: (body: AddReaction) => apiPost<null>(`/comments/${commentId}/reactions`, body),
 		onSuccess: () => {
 			qc.invalidateQueries({
 				queryKey: commentKeys.reactionList(commentId),
@@ -59,8 +57,7 @@ export const useAddReaction = (commentId: string) => {
 export const useRemoveReaction = (commentId: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (emojiId: number) =>
-			apiDelete<null>(`/comments/${commentId}/reactions/${emojiId}`),
+		mutationFn: (emojiId: number) => apiDelete<null>(`/comments/${commentId}/reactions/${emojiId}`),
 		onSuccess: () => {
 			qc.invalidateQueries({
 				queryKey: commentKeys.reactionList(commentId),

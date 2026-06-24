@@ -15,8 +15,7 @@ export interface TocItem {
  * 仅识别带 id 的标题（如 <h2 id="...">）。id 缺失时按文本 slug 生成。
  */
 export function extractToc(html: string): TocItem[] {
-	const re =
-		/<h([23])[^>]*?(?:\sid=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/h\1>/gi;
+	const re = /<h([23])[^>]*?(?:\sid=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/h\1>/gi;
 	const out: TocItem[] = [];
 	let m = re.exec(html);
 	while (m !== null) {
@@ -46,9 +45,7 @@ function slugify(s: string): string {
 /**
  * useActiveHeading - 返回当前视口内最靠上可见的 heading id（TOC 高亮）
  */
-export function useActiveHeading(
-	containerRef: React.RefObject<HTMLElement | null>,
-): string | null {
+export function useActiveHeading(containerRef: React.RefObject<HTMLElement | null>): string | null {
 	const [active, setActive] = useState<string | null>(null);
 
 	useEffect(() => {

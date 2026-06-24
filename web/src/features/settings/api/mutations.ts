@@ -17,8 +17,7 @@ import { settingsKeys } from "./keys";
 export const useUpdateSettings = () => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (body: UpdateSettings) =>
-			apiPut<AdminSiteSettings>("/admin/settings", body),
+		mutationFn: (body: UpdateSettings) => apiPut<AdminSiteSettings>("/admin/settings", body),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: settingsKeys.admin() });
 			queryClient.invalidateQueries({ queryKey: settingsKeys.public() });
@@ -35,8 +34,7 @@ export const useUpdateSettings = () => {
 export const useCreateAnnouncement = () => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (body: CreateAnnouncement) =>
-			apiPost<{ id: number }>("/admin/announcements", body),
+		mutationFn: (body: CreateAnnouncement) => apiPost<{ id: number }>("/admin/announcements", body),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: settingsKeys.adminAnnouncements(),
@@ -59,8 +57,7 @@ export const useCreateAnnouncement = () => {
 export const useUpdateAnnouncement = (id: number) => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (body: UpdateAnnouncement) =>
-			apiPatch<null>(`/admin/announcements/${id}`, body),
+		mutationFn: (body: UpdateAnnouncement) => apiPatch<null>(`/admin/announcements/${id}`, body),
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: settingsKeys.adminAnnouncements(),

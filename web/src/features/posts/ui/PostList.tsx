@@ -117,11 +117,7 @@ const PostList = ({
 	const visible = items.slice(startIdx, endIdx);
 
 	return (
-		<ScrollArea
-			ref={scrollRef}
-			className={className}
-			style={{ maxHeight: "70vh" }}
-		>
+		<ScrollArea ref={scrollRef} className={className} style={{ maxHeight: "70vh" }}>
 			<div style={{ height: layout.totalH, position: "relative" }}>
 				{visible.map((post, i) => {
 					const idx = startIdx + i;

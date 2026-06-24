@@ -16,12 +16,7 @@ const HeaderActions = () => {
 
 	return (
 		<div className="flex items-center gap-2">
-			<Button
-				variant="ghost"
-				size="icon-sm"
-				aria-label="命令面板"
-				onClick={openCommand}
-			>
+			<Button variant="ghost" size="icon-sm" aria-label="命令面板" onClick={openCommand}>
 				<Command className="size-4" />
 			</Button>
 			<ThemeToggle />

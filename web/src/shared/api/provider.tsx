@@ -27,11 +27,7 @@ export interface AppProviderProps {
 const AppProvider = ({ children }: AppProviderProps) => {
 	return (
 		<QueryClientProvider client={queryClient}>
-			<ThemeProvider
-				attribute="class"
-				defaultTheme="system"
-				disableTransitionOnChange
-			>
+			<ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange>
 				{children}
 				<Toaster />
 			</ThemeProvider>

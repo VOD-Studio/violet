@@ -23,11 +23,7 @@ export const createQueryClient = (): QueryClient =>
 				staleTime: 60_000,
 				retry: (failureCount, err) => {
 					// 业务错误（4xx）不重试
-					if (
-						err instanceof ApiError &&
-						err.status >= 400 &&
-						err.status < 500
-					) {
+					if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
 						return false;
 					}
 					return failureCount < 2;

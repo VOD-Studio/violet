@@ -28,12 +28,7 @@ const HeaderMobile = ({ onAction }: HeaderMobileProps) => {
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
 			<SheetTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="md:hidden"
-					aria-label="打开菜单"
-				>
+				<Button variant="ghost" size="icon" className="md:hidden" aria-label="打开菜单">
 					<Menu className="h-5 w-5" />
 				</Button>
 			</SheetTrigger>

@@ -22,9 +22,7 @@ export function computeScrollProgress(input: ProgressInput): number {
 /**
  * useScrollProgress - 监听容器滚动，返回进度 0..100
  */
-export function useScrollProgress(
-	ref: React.RefObject<HTMLElement | null>,
-): number {
+export function useScrollProgress(ref: React.RefObject<HTMLElement | null>): number {
 	const [progress, setProgress] = useState(0);
 
 	useEffect(() => {

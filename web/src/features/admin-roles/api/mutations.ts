@@ -17,8 +17,7 @@ import { roleKeys } from "./keys";
 export const useCreateRole = () => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (body: CreateRole) =>
-			apiPost<{ id: number }>("/admin/roles", body),
+		mutationFn: (body: CreateRole) => apiPost<{ id: number }>("/admin/roles", body),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
 		},
@@ -36,8 +35,7 @@ export const useCreateRole = () => {
 export const useUpdateRole = (id: number) => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (body: UpdateRole) =>
-			apiPatch<null>(`/admin/roles/${id}`, body),
+		mutationFn: (body: UpdateRole) => apiPatch<null>(`/admin/roles/${id}`, body),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: roleKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: roleKeys.detail(id) });
@@ -90,8 +88,7 @@ export const useUpdateRolePermissions = (id: number) => {
 export const useCreatePermission = () => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (body: CreatePermission) =>
-			apiPost<{ id: number }>("/admin/permissions", body),
+		mutationFn: (body: CreatePermission) => apiPost<{ id: number }>("/admin/permissions", body),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: roleKeys.permissions() });
 		},
@@ -109,8 +106,7 @@ export const useCreatePermission = () => {
 export const useUpdatePermission = (code: string) => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (body: UpdatePermission) =>
-			apiPatch<null>(`/admin/permissions/${code}`, body),
+		mutationFn: (body: UpdatePermission) => apiPatch<null>(`/admin/permissions/${code}`, body),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: roleKeys.permissions() });
 			queryClient.invalidateQueries({ queryKey: roleKeys.lists() });

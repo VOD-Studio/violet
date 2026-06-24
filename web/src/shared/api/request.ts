@@ -18,10 +18,7 @@ import type { PagedResponse } from "./types";
  * @param url 相对 baseURL 的路径，如 /auth/me
  * @param config axios 配置，常用于传 params
  */
-export const apiGet = async <T>(
-	url: string,
-	config?: AxiosRequestConfig,
-): Promise<T> => {
+export const apiGet = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
 	const res = await httpClient.get<UnpackedResponse<T>>(url, config);
 	return res.data.data;
 };
@@ -83,10 +80,7 @@ export const apiPatch = async <T>(
 /**
  * DELETE 写接口，返回业务数据，删除类接口通常 data 为 null
  */
-export const apiDelete = async <T>(
-	url: string,
-	config?: AxiosRequestConfig,
-): Promise<T> => {
+export const apiDelete = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
 	const res = await httpClient.delete<UnpackedResponse<T>>(url, config);
 	return res.data.data;
 };

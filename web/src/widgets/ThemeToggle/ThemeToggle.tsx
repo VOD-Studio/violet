@@ -18,11 +18,7 @@ const ThemeToggle = () => {
 	const isDark = theme === "dark";
 
 	return (
-		<MechSwitch
-			aria-label="切换主题"
-			pressed={isDark}
-			onClick={(e) => toggle(e)}
-		>
+		<MechSwitch aria-label="切换主题" pressed={isDark} onClick={(e) => toggle(e)}>
 			{isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
 		</MechSwitch>
 	);

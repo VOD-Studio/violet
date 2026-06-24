@@ -105,10 +105,7 @@ export const useCreateEmoji = (groupId: number) => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (body: CreateEmojiRequest) =>
-			apiPost<CreateResourceResult>(
-				`/admin/emojis/groups/${groupId}/emojis`,
-				body,
-			),
+			apiPost<CreateResourceResult>(`/admin/emojis/groups/${groupId}/emojis`, body),
 		onSuccess: () => {
 			qc.invalidateQueries({
 				queryKey: emojiKeys.adminGroupEmojis(groupId),
@@ -149,8 +146,7 @@ export const useUploadEmoji = () =>
 export const useUpdateEmoji = (id: number, groupId?: number) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: UpdateEmojiRequest) =>
-			apiPatch<null>(`/admin/emojis/emojis/${id}`, body),
+		mutationFn: (body: UpdateEmojiRequest) => apiPatch<null>(`/admin/emojis/emojis/${id}`, body),
 		onSuccess: () => {
 			if (groupId) {
 				qc.invalidateQueries({

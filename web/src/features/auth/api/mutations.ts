@@ -23,8 +23,7 @@ import { authKeys } from "./keys";
  */
 export const useRegister = () =>
 	useMutation({
-		mutationFn: (body: RegisterRequest) =>
-			apiPost<MessageResponse>("/auth/register", body),
+		mutationFn: (body: RegisterRequest) => apiPost<MessageResponse>("/auth/register", body),
 	});
 
 /**
@@ -34,8 +33,7 @@ export const useRegister = () =>
  */
 export const useVerifyEmail = () =>
 	useMutation({
-		mutationFn: (body: VerifyEmailRequest) =>
-			apiPost<MessageResponse>("/auth/verify-email", body),
+		mutationFn: (body: VerifyEmailRequest) => apiPost<MessageResponse>("/auth/verify-email", body),
 	});
 
 /**
@@ -49,8 +47,7 @@ export const useVerifyEmail = () =>
 export const useLogin = () => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: LoginRequest) =>
-			apiPost<TokenResponse>("/auth/login", body),
+		mutationFn: (body: LoginRequest) => apiPost<TokenResponse>("/auth/login", body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: authKeys.me() });
 		},
@@ -66,9 +63,8 @@ export const useLogin = () => {
  * @param body 可选的 refresh_token，cookie 缺失时必须提供
  * @returns 新的 token 信息
  */
-export const fetchRefresh = (
-	body: RefreshRequest = {},
-): Promise<TokenResponse> => apiPost<TokenResponse>("/auth/refresh", body);
+export const fetchRefresh = (body: RefreshRequest = {}): Promise<TokenResponse> =>
+	apiPost<TokenResponse>("/auth/refresh", body);
 
 /**
  * useRefresh - 显式刷新 token 的 hook 形态
@@ -134,12 +130,9 @@ export const useLogout = () => {
 export const useUpdateProfile = () => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: UpdateProfileRequest) =>
-			apiPatch<UpdatedProfile>("/auth/profile", body),
+		mutationFn: (body: UpdateProfileRequest) => apiPatch<UpdatedProfile>("/auth/profile", body),
 		onSuccess: (data) => {
-			qc.setQueryData<AuthUser>(authKeys.me(), (old) =>
-				old ? { ...old, ...data } : old,
-			);
+			qc.setQueryData<AuthUser>(authKeys.me(), (old) => (old ? { ...old, ...data } : old));
 		},
 	});
 };
@@ -154,8 +147,7 @@ export const useUpdateProfile = () => {
 export const useChangePassword = () => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: ChangePasswordRequest) =>
-			apiPatch<MessageResponse>("/auth/password", body),
+		mutationFn: (body: ChangePasswordRequest) => apiPatch<MessageResponse>("/auth/password", body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: authKeys.me() });
 		},

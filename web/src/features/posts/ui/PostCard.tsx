@@ -35,11 +35,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 	return (
 		<SpotlightCard className="group flex h-full flex-col">
 			{post.cover_image ? (
-				<Link
-					to="/blog/$slug"
-					params={{ slug: post.slug }}
-					className="block overflow-hidden"
-				>
+				<Link to="/blog/$slug" params={{ slug: post.slug }} className="block overflow-hidden">
 					<img
 						src={post.cover_image}
 						alt={post.title}
@@ -73,9 +69,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 					</Link>
 				</h3>
 
-				<p className="mb-4 line-clamp-2 flex-1 text-sm text-muted-foreground">
-					{post.excerpt}
-				</p>
+				<p className="mb-4 line-clamp-2 flex-1 text-sm text-muted-foreground">{post.excerpt}</p>
 
 				<div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
 					<span className="flex items-center gap-1.5">

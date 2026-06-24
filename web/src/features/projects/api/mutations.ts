@@ -30,8 +30,7 @@ export const useCreateProject = () => {
 export const useUpdateProject = (id: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: UpdateProject) =>
-			apiPut<null>(`/admin/projects/${id}`, body),
+		mutationFn: (body: UpdateProject) => apiPut<null>(`/admin/projects/${id}`, body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: projectKeys.detail(id) });
 			qc.invalidateQueries({ queryKey: projectKeys.lists() });

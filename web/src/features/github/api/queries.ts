@@ -11,9 +11,7 @@ import { githubKeys } from "./keys";
  * @returns 贡献图汇总数据
  */
 export const fetchContributions = async (): Promise<ContributionSummary> => {
-	const res = await httpClient.get<{ data: ContributionSummary }>(
-		"/github/contributions",
-	);
+	const res = await httpClient.get<{ data: ContributionSummary }>("/github/contributions");
 	return res.data.data;
 };
 

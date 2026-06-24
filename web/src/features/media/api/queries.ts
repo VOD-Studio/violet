@@ -66,9 +66,8 @@ export const useMediaList = (query: MediaListQuery = {}) =>
  *
  * @param uploadId 上传会话 ID
  */
-export const fetchUploadStatus = async (
-	uploadId: string,
-): Promise<UploadStatus> => apiGet<UploadStatus>(`/upload/${uploadId}/status`);
+export const fetchUploadStatus = async (uploadId: string): Promise<UploadStatus> =>
+	apiGet<UploadStatus>(`/upload/${uploadId}/status`);
 
 /**
  * useUploadStatus - 上传状态查询 hook
@@ -122,9 +121,7 @@ export const useAdminFiles = (query: MediaListQuery = {}) =>
  *
  * @param query 秒传检查参数
  */
-export const checkInstantUpload = async (
-	query: InstantCheckQuery,
-): Promise<InstantCheckResult> =>
+export const checkInstantUpload = async (query: InstantCheckQuery): Promise<InstantCheckResult> =>
 	apiGet<InstantCheckResult>("/admin/files/instant", {
 		params: { hash: query.hash },
 	});

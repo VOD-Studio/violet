@@ -1,8 +1,4 @@
-import axios, {
-	type AxiosError,
-	type AxiosInstance,
-	type InternalAxiosRequestConfig,
-} from "axios";
+import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";
 import { ApiError } from "./error";
@@ -57,9 +53,7 @@ export interface UnpackedResponse<T = unknown> {
  */
 const getBaseUrl = (): string => {
 	if (typeof window === "undefined") {
-		return (
-			import.meta.env.VITE_SSR_API_BASE_URL || "http://localhost:8080/api/v1"
-		);
+		return import.meta.env.VITE_SSR_API_BASE_URL || "http://localhost:8080/api/v1";
 	}
 	return import.meta.env.VITE_API_BASE_URL || "/api/v1";
 };
@@ -77,9 +71,7 @@ const getBaseUrl = (): string => {
  * @param opts SSR 时传 forwardedCookie；客户端默认不传
  * @returns 配好的 axios 实例
  */
-export const createHttpClient = (
-	opts: HttpClientOptions = {},
-): AxiosInstance => {
+export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance => {
 	const client = axios.create({
 		baseURL: opts.baseURL || getBaseUrl(),
 		timeout: 15000,

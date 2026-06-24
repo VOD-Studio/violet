@@ -19,18 +19,12 @@ const Footer = () => {
 				{data?.socials ? (
 					<div className="flex gap-5 font-mono text-xs text-muted-foreground">
 						{data.socials.github ? (
-							<a
-								className="transition-colors hover:text-neon-blue"
-								href={data.socials.github}
-							>
+							<a className="transition-colors hover:text-neon-blue" href={data.socials.github}>
 								GitHub
 							</a>
 						) : null}
 						{data.socials.twitter ? (
-							<a
-								className="transition-colors hover:text-neon-blue"
-								href={data.socials.twitter}
-							>
+							<a className="transition-colors hover:text-neon-blue" href={data.socials.twitter}>
 								Twitter
 							</a>
 						) : null}

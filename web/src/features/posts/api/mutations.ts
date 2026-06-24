@@ -1,11 +1,6 @@
 import { apiDelete, apiPatch, apiPost, apiPut } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type {
-	AdminPost,
-	CreatePost,
-	UpdatePost,
-	UpdatePostStatus,
-} from "../model/types";
+import type { AdminPost, CreatePost, UpdatePost, UpdatePostStatus } from "../model/types";
 import { postKeys } from "./keys";
 
 /**
@@ -61,8 +56,7 @@ export const useUpdatePost = (id: string) => {
 export const useUpdatePostStatus = (id: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: UpdatePostStatus) =>
-			apiPatch<AdminPost>(`/admin/posts/${id}/status`, body),
+		mutationFn: (body: UpdatePostStatus) => apiPatch<AdminPost>(`/admin/posts/${id}/status`, body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: postKeys.adminDetail(id) });
 			qc.invalidateQueries({ queryKey: postKeys.adminLists() });

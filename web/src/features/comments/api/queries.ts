@@ -46,9 +46,7 @@ export const useComments = (postId: string, query: CommentListQuery = {}) =>
  * @param commentId 评论 ID
  * @returns 按 emoji 聚合后的反应列表
  */
-export const fetchCommentReactions = async (
-	commentId: string,
-): Promise<Reaction[]> =>
+export const fetchCommentReactions = async (commentId: string): Promise<Reaction[]> =>
 	apiGet<Reaction[]>(`/comments/${commentId}/reactions`);
 
 /**
@@ -106,9 +104,8 @@ export const usePendingComments = (query: CommentListQuery = {}) =>
  *
  * @returns 待审核评论数量
  */
-export const fetchPendingCommentCount =
-	async (): Promise<PendingCountResponse> =>
-		apiGet<PendingCountResponse>("/admin/comments/pending/count");
+export const fetchPendingCommentCount = async (): Promise<PendingCountResponse> =>
+	apiGet<PendingCountResponse>("/admin/comments/pending/count");
 
 /**
  * usePendingCommentCount - 待审核评论数量 hook
@@ -153,9 +150,8 @@ export const useAdminComments = (query: AdminCommentListQuery = {}) =>
  * @param id 评论 ID
  * @returns 评论详情
  */
-export const fetchAdminCommentDetail = async (
-	id: string,
-): Promise<AdminComment> => apiGet<AdminComment>(`/admin/comments/${id}`);
+export const fetchAdminCommentDetail = async (id: string): Promise<AdminComment> =>
+	apiGet<AdminComment>(`/admin/comments/${id}`);
 
 /**
  * useAdminCommentDetail - 后台评论详情 hook

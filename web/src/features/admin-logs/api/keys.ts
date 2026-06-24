@@ -25,6 +25,5 @@ export const auditLogKeys = {
 	 * @param userId 用户 ID
 	 * @param query 分页参数
 	 */
-	user: (userId: string, query: LogListQuery) =>
-		[...auditLogKeys.byUser(), userId, query] as const,
+	user: (userId: string, query: LogListQuery) => [...auditLogKeys.byUser(), userId, query] as const,
 };

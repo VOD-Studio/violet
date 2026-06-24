@@ -15,8 +15,7 @@ import { adminUserKeys } from "./keys";
  */
 export const fetchAdminUsers = async (
 	query: UserListQuery = {},
-): Promise<PagedResponse<AdminUser>> =>
-	apiGetPaged<AdminUser>("/admin/users", { params: query });
+): Promise<PagedResponse<AdminUser>> => apiGetPaged<AdminUser>("/admin/users", { params: query });
 
 /**
  * useAdminUsers - 用户列表 hook

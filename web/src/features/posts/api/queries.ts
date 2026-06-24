@@ -19,9 +19,7 @@ import { postKeys } from "./keys";
  * @param query 分页与标签筛选
  * @returns 解包后的列表 + 分页元数据
  */
-export const fetchPosts = async (
-	query: PostListQuery = {},
-): Promise<PagedResponse<Post>> => {
+export const fetchPosts = async (query: PostListQuery = {}): Promise<PagedResponse<Post>> => {
 	const res = await httpClient.get<PagedResponse<Post>>("/posts", {
 		params: query,
 	});
@@ -72,8 +70,7 @@ export const usePost = (slug: string) =>
  */
 export const fetchAdminPosts = async (
 	query: AdminPostListQuery = {},
-): Promise<PagedResponse<AdminPost>> =>
-	apiGetPaged<AdminPost>("/admin/posts", { params: query });
+): Promise<PagedResponse<AdminPost>> => apiGetPaged<AdminPost>("/admin/posts", { params: query });
 
 /**
  * useAdminPosts - 后台文章列表 hook

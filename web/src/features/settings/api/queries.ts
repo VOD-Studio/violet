@@ -94,9 +94,7 @@ export const useAdminAnnouncements = () =>
  *
  * @param id 公告 ID
  */
-export const fetchAdminAnnouncement = (
-	id: number,
-): Promise<AdminAnnouncement> =>
+export const fetchAdminAnnouncement = (id: number): Promise<AdminAnnouncement> =>
 	apiGet<AdminAnnouncement>(`/admin/announcements/${id}`);
 
 /**

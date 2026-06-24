@@ -26,8 +26,7 @@ export const commentKeys = {
 	 *
 	 * @param commentId 评论 ID
 	 */
-	reactionList: (commentId: string) =>
-		[...commentKeys.reactions(), commentId] as const,
+	reactionList: (commentId: string) => [...commentKeys.reactions(), commentId] as const,
 	/** 后台评论维度 */
 	admin: () => [...commentKeys.all, "admin"] as const,
 	/** 后台待审核评论列表维度 */
@@ -37,8 +36,7 @@ export const commentKeys = {
 	 *
 	 * @param query 分页参数
 	 */
-	pendingList: (query: CommentListQuery) =>
-		[...commentKeys.pending(), query] as const,
+	pendingList: (query: CommentListQuery) => [...commentKeys.pending(), query] as const,
 	/** 待审核评论数量维度 */
 	pendingCount: () => [...commentKeys.pending(), "count"] as const,
 	/** 后台全部评论列表维度 */
@@ -48,8 +46,7 @@ export const commentKeys = {
 	 *
 	 * @param query 分页与状态筛选参数
 	 */
-	adminList: (query: AdminCommentListQuery) =>
-		[...commentKeys.adminLists(), query] as const,
+	adminList: (query: AdminCommentListQuery) => [...commentKeys.adminLists(), query] as const,
 	/** 后台评论详情维度 */
 	adminDetails: () => [...commentKeys.admin(), "detail"] as const,
 	/**

@@ -62,10 +62,7 @@ export const useBatchDeleteMedia = () => {
  * @param id 媒体 ID
  * @param file 缩略图文件
  */
-export const uploadThumbnail = async (
-	id: string,
-	file: File,
-): Promise<ThumbnailUploadResult> => {
+export const uploadThumbnail = async (id: string, file: File): Promise<ThumbnailUploadResult> => {
 	const form = new FormData();
 	form.append("file", file);
 	const res = await httpClient.post<UnpackedResponse<ThumbnailUploadResult>>(
@@ -83,8 +80,7 @@ export const uploadThumbnail = async (
 export const useUploadThumbnail = () => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: ({ id, file }: { id: string; file: File }) =>
-			uploadThumbnail(id, file),
+		mutationFn: ({ id, file }: { id: string; file: File }) => uploadThumbnail(id, file),
 		onSuccess: (_data, { id }) => {
 			queryClient.invalidateQueries({
 				queryKey: mediaKeys.detail(id),
@@ -106,8 +102,7 @@ export const useUploadThumbnail = () => {
  */
 export const useInitUpload = () =>
 	useMutation({
-		mutationFn: (body: InitUploadRequest) =>
-			apiPost<InitUploadResult>("/upload/init", body),
+		mutationFn: (body: InitUploadRequest) => apiPost<InitUploadResult>("/upload/init", body),
 	});
 
 /**
@@ -161,8 +156,7 @@ export const useUploadChunk = () =>
 export const useCompleteUpload = () => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (uploadId: string) =>
-			apiPost<CompleteUploadResult>(`/upload/${uploadId}/complete`),
+		mutationFn: (uploadId: string) => apiPost<CompleteUploadResult>(`/upload/${uploadId}/complete`),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
 			queryClient.invalidateQueries({

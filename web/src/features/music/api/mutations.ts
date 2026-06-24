@@ -25,8 +25,7 @@ import { musicKeys } from "./keys";
 export const useImportPlaylist = () => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: ImportPlaylistRequest) =>
-			apiPost<Playlist>("/admin/music/playlists", body),
+		mutationFn: (body: ImportPlaylistRequest) => apiPost<Playlist>("/admin/music/playlists", body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
 			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
@@ -145,8 +144,7 @@ export const useRefreshPlaylist = (id: string) => {
 export const useAddSongToPlaylist = (id: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: AddSongRequest) =>
-			apiPost<null>(`/admin/music/playlists/${id}/songs`, body),
+		mutationFn: (body: AddSongRequest) => apiPost<null>(`/admin/music/playlists/${id}/songs`, body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
 			qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
@@ -167,8 +165,7 @@ export const useAddSongToPlaylist = (id: string) => {
 export const useRemoveSongFromPlaylist = (id: string, index: number) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: () =>
-			apiDelete<null>(`/admin/music/playlists/${id}/songs/${index}`),
+		mutationFn: () => apiDelete<null>(`/admin/music/playlists/${id}/songs/${index}`),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
 			qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });

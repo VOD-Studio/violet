@@ -1,13 +1,7 @@
 import { useContributions } from "../api/queries";
 
 /** 贡献强度对应的色阶 class（双主题由 CSS 变量驱动） */
-const LEVEL_COLORS = [
-	"bg-muted",
-	"bg-primary/30",
-	"bg-primary/50",
-	"bg-primary/70",
-	"bg-primary",
-];
+const LEVEL_COLORS = ["bg-muted", "bg-primary/30", "bg-primary/50", "bg-primary/70", "bg-primary"];
 
 /**
  * Contributions - GitHub 贡献热力图
@@ -29,9 +23,7 @@ const Contributions = () => {
 
 	return (
 		<div>
-			<p className="text-sm text-muted-foreground mb-3">
-				过去一年共 {data.total} 次贡献
-			</p>
+			<p className="text-sm text-muted-foreground mb-3">过去一年共 {data.total} 次贡献</p>
 			<div className="grid grid-flow-col grid-rows-7 gap-1">
 				{data.contributions.map((c) => (
 					<div

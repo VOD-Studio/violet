@@ -22,8 +22,7 @@ export const musicKeys = {
 	 *
 	 * @param url 歌单链接
 	 */
-	playlistParse: (url: string) =>
-		[...musicKeys.publicMusic(), "playlist-parse", url] as const,
+	playlistParse: (url: string) => [...musicKeys.publicMusic(), "playlist-parse", url] as const,
 	/**
 	 * 获取歌曲详情
 	 *
@@ -53,8 +52,7 @@ export const musicKeys = {
 	songMeta: (query: { platform?: string; id: string }) =>
 		[...musicKeys.publicMusic(), "song-meta", query] as const,
 	/** 启用歌单列表，无参数 */
-	activePlaylists: () =>
-		[...musicKeys.publicMusic(), "active-playlists"] as const,
+	activePlaylists: () => [...musicKeys.publicMusic(), "active-playlists"] as const,
 	/** 播放器设置，无参数 */
 	settings: () => [...musicKeys.publicMusic(), "settings"] as const,
 
@@ -68,6 +66,5 @@ export const musicKeys = {
 	 *
 	 * @param id 歌单 ID
 	 */
-	adminDetail: (id: string) =>
-		[...musicKeys.adminPlaylists(), "detail", id] as const,
+	adminDetail: (id: string) => [...musicKeys.adminPlaylists(), "detail", id] as const,
 };

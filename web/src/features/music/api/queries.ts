@@ -24,9 +24,8 @@ import { musicKeys } from "./keys";
  * @param query 含 url 查询参数
  * @returns 嵌入信息，字段为 PascalCase
  */
-export const fetchMusicEmbed = async (
-	query: MusicEmbedQuery,
-): Promise<EmbedInfo> => apiGet<EmbedInfo>("/music/embed", { params: query });
+export const fetchMusicEmbed = async (query: MusicEmbedQuery): Promise<EmbedInfo> =>
+	apiGet<EmbedInfo>("/music/embed", { params: query });
 
 /**
  * useMusicEmbed - 解析音乐嵌入信息 hook
@@ -46,9 +45,7 @@ export const useMusicEmbed = (query: MusicEmbedQuery) =>
  * @param query 含 url 查询参数
  * @returns 歌单解析元数据，字段为 PascalCase
  */
-export const fetchPlaylistParse = async (
-	query: MusicPlaylistQuery,
-): Promise<PlaylistMeta> =>
+export const fetchPlaylistParse = async (query: MusicPlaylistQuery): Promise<PlaylistMeta> =>
 	apiGet<PlaylistMeta>("/music/playlist", { params: query });
 
 /**
@@ -90,9 +87,8 @@ export const useSongDetail = (query: MusicSongQuery) =>
  * @param query 含 keyword 与可选 limit
  * @returns 歌曲列表
  */
-export const fetchSongSearch = async (
-	query: MusicSearchQuery,
-): Promise<Song[]> => apiGet<Song[]>("/music/search", { params: query });
+export const fetchSongSearch = async (query: MusicSearchQuery): Promise<Song[]> =>
+	apiGet<Song[]>("/music/search", { params: query });
 
 /**
  * useSongSearch - 搜索歌曲 hook

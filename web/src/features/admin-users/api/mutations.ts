@@ -79,8 +79,7 @@ export const useDeleteUser = (id: string) => {
 export const useUpdateUserRole = (id: string) => {
 	const qc = useQueryClient();
 	return useMutation<MutationMessageResult, Error, UpdateUserRoleRequest>({
-		mutationFn: (body) =>
-			apiPatch<MutationMessageResult>(`/admin/users/${id}/role`, body),
+		mutationFn: (body) => apiPatch<MutationMessageResult>(`/admin/users/${id}/role`, body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminUserKeys.detail(id) });
 			qc.invalidateQueries({ queryKey: adminUserKeys.lists() });
@@ -99,8 +98,7 @@ export const useUpdateUserRole = (id: string) => {
 export const useUpdateUserStatus = (id: string) => {
 	const qc = useQueryClient();
 	return useMutation<MutationMessageResult, Error, UpdateUserStatusRequest>({
-		mutationFn: (body) =>
-			apiPatch<MutationMessageResult>(`/admin/users/${id}/status`, body),
+		mutationFn: (body) => apiPatch<MutationMessageResult>(`/admin/users/${id}/status`, body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminUserKeys.detail(id) });
 			qc.invalidateQueries({ queryKey: adminUserKeys.lists() });
@@ -118,8 +116,7 @@ export const useUpdateUserStatus = (id: string) => {
 export const useBatchUpdateUserStatus = () => {
 	const qc = useQueryClient();
 	return useMutation<BatchAffected, Error, BatchUpdateStatusRequest>({
-		mutationFn: (body) =>
-			apiPost<BatchAffected>("/admin/users/batch-status", body),
+		mutationFn: (body) => apiPost<BatchAffected>("/admin/users/batch-status", body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminUserKeys.lists() });
 		},
@@ -136,8 +133,7 @@ export const useBatchUpdateUserStatus = () => {
 export const useBatchUpdateUserRole = () => {
 	const qc = useQueryClient();
 	return useMutation<BatchAffected, Error, BatchUpdateRoleRequest>({
-		mutationFn: (body) =>
-			apiPost<BatchAffected>("/admin/users/batch-role", body),
+		mutationFn: (body) => apiPost<BatchAffected>("/admin/users/batch-role", body),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: adminUserKeys.lists() });
 		},

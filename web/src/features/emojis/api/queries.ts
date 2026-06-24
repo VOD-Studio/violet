@@ -10,8 +10,7 @@ import { emojiKeys } from "./keys";
  *
  * @returns 启用的表情分组数组
  */
-export const fetchAllEmojis = async (): Promise<EmojiGroup[]> =>
-	apiGet<EmojiGroup[]>("/emojis");
+export const fetchAllEmojis = async (): Promise<EmojiGroup[]> => apiGet<EmojiGroup[]>("/emojis");
 
 /**
  * useAllEmojis - 全部启用表情分组 hook
@@ -32,9 +31,8 @@ export const useAllEmojis = () =>
  * @param name 分组名称
  * @returns 分组详情含表情列表
  */
-export const fetchEmojiGroupByName = async (
-	name: string,
-): Promise<EmojiGroup> => apiGet<EmojiGroup>(`/emojis/groups/${name}`);
+export const fetchEmojiGroupByName = async (name: string): Promise<EmojiGroup> =>
+	apiGet<EmojiGroup>(`/emojis/groups/${name}`);
 
 /**
  * useEmojiGroupByName - 按名称获取分组 hook
@@ -79,9 +77,7 @@ export const useAllEmojiGroupsAdmin = () =>
  * @param groupId 分组 ID
  * @returns 分组内表情数组
  */
-export const fetchGroupEmojisAdmin = async (
-	groupId: number,
-): Promise<EmojiGroup["emojis"]> =>
+export const fetchGroupEmojisAdmin = async (groupId: number): Promise<EmojiGroup["emojis"]> =>
 	apiGet<EmojiGroup["emojis"]>(`/admin/emojis/groups/${groupId}/emojis`);
 
 /**

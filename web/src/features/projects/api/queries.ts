@@ -13,9 +13,8 @@ import { projectKeys } from "./keys";
  * @param query 预留分页参数，当前不生效
  * @returns 项目数组
  */
-export const fetchProjects = async (
-	query: ProjectListQuery = {},
-): Promise<Project[]> => apiGet<Project[]>("/projects", { params: query });
+export const fetchProjects = async (query: ProjectListQuery = {}): Promise<Project[]> =>
+	apiGet<Project[]>("/projects", { params: query });
 
 /**
  * useProjects - 项目列表 hook

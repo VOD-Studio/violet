@@ -17,8 +17,7 @@ export const emojiKeys = {
 	 *
 	 * @param name 分组名称
 	 */
-	publicGroupByName: (name: string) =>
-		[...emojiKeys.publicGroups(), "name", name] as const,
+	publicGroupByName: (name: string) => [...emojiKeys.publicGroups(), "name", name] as const,
 
 	/** 后台分组维度 */
 	adminGroups: () => [...emojiKeys.all, "admin-groups"] as const,
@@ -29,6 +28,5 @@ export const emojiKeys = {
 	 *
 	 * @param groupId 分组 ID
 	 */
-	adminGroupEmojis: (groupId: number) =>
-		[...emojiKeys.adminGroups(), "emojis", groupId] as const,
+	adminGroupEmojis: (groupId: number) => [...emojiKeys.adminGroups(), "emojis", groupId] as const,
 };

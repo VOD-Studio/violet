@@ -32,8 +32,7 @@ export const mediaKeys = {
 	 *
 	 * @param uploadId 上传会话 ID
 	 */
-	uploadStatus: (uploadId: string) =>
-		[...mediaKeys.uploads(), "status", uploadId] as const,
+	uploadStatus: (uploadId: string) => [...mediaKeys.uploads(), "status", uploadId] as const,
 };
 
 /**

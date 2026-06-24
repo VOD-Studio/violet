@@ -34,8 +34,7 @@ export const postKeys = {
 	 *
 	 * @param query 分页与状态筛选参数
 	 */
-	adminList: (query: AdminPostListQuery) =>
-		[...postKeys.adminLists(), query] as const,
+	adminList: (query: AdminPostListQuery) => [...postKeys.adminLists(), query] as const,
 	/** 后台文章详情维度 */
 	adminDetails: () => [...postKeys.admin(), "detail"] as const,
 	/**
