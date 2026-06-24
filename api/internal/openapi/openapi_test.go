@@ -81,6 +81,33 @@ func hasParam(params openapi3.Parameters, name string) bool {
 	return false
 }
 
+func TestTagPaths(t *testing.T) {
+	spec, _ := Spec()
+	require.NotNil(t, spec.Paths.Find("/tags"))
+	require.NotNil(t, spec.Paths.Find("/tags/{id}"))
+	require.Contains(t, spec.Components.Schemas, "TagDTO")
+}
+
+func TestCommentPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/posts/{postId}/comments", "/comments/{comment_id}/reactions",
+		"/comments/{comment_id}/reactions/{emoji_id}", "/comments/reactions/batch",
+		"/comments/{id}/approve", "/comments/{id}/spam", "/comments/{id}",
+		"/admin/comments/pending", "/admin/comments/pending/count",
+		"/admin/comments", "/admin/comments/{id}", "/admin/comments/batch-status",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing comment path %s", p)
+	}
+	for _, s := range []string{"CommentDTO", "AdminCommentDTO", "Reaction"} {
+		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
+	}
+	// 删除反应需登录（非管理员）
+	require.NotEmpty(t, spec.Paths.Find("/comments/{comment_id}/reactions/{emoji_id}").Delete.Security)
+	// 审核接口需管理员
+	require.NotEmpty(t, spec.Paths.Find("/comments/{id}/approve").Patch.Security)
+}
+
 func TestPostPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
