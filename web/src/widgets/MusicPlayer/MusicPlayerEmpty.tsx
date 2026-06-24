@@ -1,4 +1,4 @@
-import { Music } from "lucide-react";
+import Empty from "@shared/ui/empty";
 
 /**
  * MusicPlayerEmpty - 无播放列表占位
@@ -8,10 +8,7 @@ import { Music } from "lucide-react";
  */
 const MusicPlayerEmpty = () => {
 	return (
-		<div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
-			<Music className="h-12 w-12" />
-			<p>暂无可用歌单</p>
-		</div>
+		<Empty size="lg" title="暂无可用歌单" description="还没有配置任何播放列表" className="py-12" />
 	);
 };
 

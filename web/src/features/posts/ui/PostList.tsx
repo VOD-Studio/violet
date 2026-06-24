@@ -1,5 +1,6 @@
+import Empty from "@shared/ui/empty";
+import Loader from "@shared/ui/loader";
 import { ScrollArea } from "@shared/ui/scroll-area";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { usePosts } from "../api/queries";
@@ -75,26 +76,21 @@ const PostList = ({
 	}, [items, sizes]);
 
 	if (isLoading && showSkeleton) {
-		return (
-			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{Array.from({ length: query.limit ?? 6 }).map((_, i) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: 静态骨架
-					<ShimmerSkeleton key={`sk-${i}`} className="h-72" />
-				))}
-			</div>
-		);
+		return <Loader label="加载文章…" className="py-20" />;
 	}
 
 	if (isError) {
 		return (
-			<p className="py-12 text-center text-muted-foreground">
-				加载失败：{error instanceof Error ? error.message : "未知错误"}
-			</p>
+			<Empty
+				title="加载失败"
+				description={error instanceof Error ? error.message : "未知错误"}
+				className="py-20"
+			/>
 		);
 	}
 
 	if (!items.length) {
-		return <p className="py-12 text-center text-muted-foreground">暂无文章</p>;
+		return <Empty title="暂无文章" description="还没有发布任何内容" className="py-20" />;
 	}
 
 	// 垂直窗口化：找出与 [scrollTop - buffer, scrollTop + viewportH + buffer] 相交的项

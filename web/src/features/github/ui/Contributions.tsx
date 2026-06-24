@@ -1,3 +1,6 @@
+import Empty from "@shared/ui/empty";
+import Loader from "@shared/ui/loader";
+
 import { useContributions } from "../api/queries";
 
 /** 贡献强度对应的色阶 class（双主题由 CSS 变量驱动） */
@@ -7,21 +10,28 @@ const LEVEL_COLORS = ["bg-muted", "bg-primary/30", "bg-primary/50", "bg-primary/
  * Contributions - GitHub 贡献热力图
  *
  * 支持：
- * - Skeleton 加载态
- * - 错误降级（贡献图失败不影响整页，只显示提示文案）
+ * - Loader 加载态
+ * - 错误/空降级（贡献图失败不影响整页，显示 Empty）
  * - 鼠标 hover 显示当日提交数
  */
 const Contributions = () => {
 	const { data, isLoading, isError } = useContributions();
 
 	if (isLoading) {
-		return <div className="h-32 rounded-lg bg-muted animate-pulse" />;
+		return <Loader size="sm" />;
 	}
 	// 后端在 GitHub token 未配置或上游失败时可能返回 contributions: null
 	// （而非空数组）。这里对内层数组再兜一层，避免 null.map 崩整页。
 	const contributions = Array.isArray(data?.contributions) ? data.contributions : [];
 	if (isError || !data || contributions.length === 0) {
-		return <p className="text-sm text-muted-foreground">贡献图加载失败</p>;
+		return (
+			<Empty
+				size="sm"
+				title="无贡献数据"
+				description={isError ? "加载失败" : undefined}
+				className="py-4"
+			/>
+		);
 	}
 
 	return (
