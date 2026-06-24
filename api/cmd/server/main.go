@@ -26,6 +26,7 @@ import (
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
+	"blog-api/internal/openapi"
 	"blog-api/internal/service"
 )
 
@@ -179,6 +180,9 @@ func main() {
 
 	r.Route("/api/v1", func(v1 chi.Router) {
 
+		// OpenAPI 文档端点（无需 CSRF/鉴权，仅返回结构描述，供 Apifox 导入）
+		v1.Get("/openapi.json", openapi.Handler())
+
 		// CSRF 防护（仅 state-changing 方法校验；GET/HEAD/OPTIONS 免验）
 		// 与 cookie 鉴权方案配套：浏览器自动携带 cookie，必须额外校验 X-CSRF-Token
 		// 防止跨站请求伪造。豁免列表仅放确实不需要 CSRF 的 POST 端点（当前为空）。
@@ -248,7 +252,7 @@ func main() {
 			r.Get("/", crH.GetCommentReactions)                                                          // 获取评论反应
 			r.With(middleware.CommentRateLimit(redisClient)).Post("/", crH.AddReaction)                  // 添加反应（限流）
 			r.With(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName))). // 删除反应需认证，防匿名删除他人反应
-				Delete("/{emoji_id}", crH.RemoveReaction)
+															Delete("/{emoji_id}", crH.RemoveReaction)
 		})
 		v1.Post("/comments/reactions/batch", crH.GetReactionsBatch) // 批量获取评论反应
 
