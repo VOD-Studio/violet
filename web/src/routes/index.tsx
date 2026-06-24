@@ -17,17 +17,11 @@ function HomePage() {
 		// （Tailwind v4 无 flex-4 默认类，必须用任意值语法）
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
 			{/* 80% 区：作为 flex 容器，Hero 用 flex-1 撑满（不依赖 h-full/父级定高） */}
-			<section className="flex min-h-0 flex-[4] flex-col overflow-hidden border-b border-edge-hairline">
+			<section className="flex min-h-0 flex-1 flex-col overflow-hidden border-b border-edge-hairline">
 				<Hero />
 			</section>
-			<section className="flex min-h-0 flex-[1] items-stretch gap-4 overflow-hidden px-4 py-2">
-				<div className="flex flex-1 items-center justify-center gap-6 font-mono text-xs text-muted-foreground">
-					<span className="hidden md:inline">Cmd/Ctrl + K</span>
-					<span className="hidden md:inline">60fps · WebGL ready</span>
-				</div>
-				<div className="hidden max-w-md items-center overflow-hidden lg:flex">
-					<Contributions />
-				</div>
+			<section className="flex min-h-0 justify-center h-70 gap-4 overflow-hidden px-4 py-2">
+				<Contributions />
 			</section>
 		</div>
 	);
