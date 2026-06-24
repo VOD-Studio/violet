@@ -703,12 +703,13 @@ type UploadService struct {
 	fileRepo    domainupload.FileRepository
 	sessionRepo domainupload.UploadSessionRepository
 	storage     domainupload.ChunkStorage
+	processor   domainupload.ImageProcessor
 	chunkDir    string
 }
 
 // NewUploadService 构造上传服务
-func NewUploadService(fileRepo domainupload.FileRepository, sessionRepo domainupload.UploadSessionRepository, storage domainupload.ChunkStorage, chunkDir string) *UploadService {
-	return &UploadService{fileRepo: fileRepo, sessionRepo: sessionRepo, storage: storage, chunkDir: chunkDir}
+func NewUploadService(fileRepo domainupload.FileRepository, sessionRepo domainupload.UploadSessionRepository, storage domainupload.ChunkStorage, processor domainupload.ImageProcessor, chunkDir string) *UploadService {
+	return &UploadService{fileRepo: fileRepo, sessionRepo: sessionRepo, storage: storage, processor: processor, chunkDir: chunkDir}
 }
 
 // InitSessionInput 初始化上传会话入参
@@ -878,10 +879,32 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 		return nil, shared.Internal("合并分片失败", err)
 	}
 
-	// 最终路径
-	ext := strings.ToLower(filepath.Ext(session.FileName()))
+	// 图片校验 + 转码(仅图片走转码;非图片跳过保持兼容)
+	srcMime := session.MimeType()
+	finalMime := srcMime
+	finalExt := strings.ToLower(filepath.Ext(session.FileName()))
+	if s.processor != nil && strings.HasPrefix(srcMime, "image/") {
+		// 校验:非图片或损坏文件拒绝(不落盘)
+		validMime, err := s.processor.Validate(mergedPath)
+		if err != nil {
+			_ = s.storage.CleanupDir(session.TmpPath())
+			return nil, shared.BadRequest("图片校验失败: " + err.Error())
+		}
+		srcMime = validMime
+		// 转 WebP(GIF/WebP 跳过;JPEG/PNG 仅更小时采用,否则回退)
+		result, err := s.processor.Transcode(mergedPath, filepath.Dir(mergedPath), "transcoded", srcMime)
+		if err != nil {
+			_ = s.storage.CleanupDir(session.TmpPath())
+			return nil, shared.Internal("图片转码失败", err)
+		}
+		mergedPath = result.Path
+		finalMime = result.MimeType
+		finalExt = result.Ext
+	}
+
+	// 最终路径(用转码后的 ext)
 	fileUUID := shared.NewID()
-	finalPath, fileURL, err := s.storage.BuildPath(session.Purpose(), session.MimeType(), fileUUID.String(), ext)
+	finalPath, fileURL, err := s.storage.BuildPath(session.Purpose(), finalMime, fileUUID.String(), finalExt)
 	if err != nil {
 		return nil, shared.BadRequest("非法的上传用途路径: " + err.Error())
 	}
@@ -896,19 +919,28 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 		fileSize = session.FileSize()
 	}
 
-	// 缩略图 + 尺寸
+	// 尺寸 + 缩略图(用 processor,若可用)
 	width, height := 0, 0
 	storageDir := session.Purpose()
 	if storageDir == "material" {
-		storageDir = filepath.Join(storageDir, mimeToCategory(session.MimeType()))
+		storageDir = filepath.Join(storageDir, mimeToCategory(finalMime))
 	}
-	if strings.HasPrefix(session.MimeType(), "image/") {
-		width, height = s.storage.ImageDimensions(finalPath)
+	var thumbnail string
+	if s.processor != nil {
+		if strings.HasPrefix(finalMime, "image/") {
+			width, height = s.processor.Dimensions(finalPath)
+		}
+		thumbnail = s.processor.Thumbnail(finalPath, fileUUID.String(), storageDir, finalMime)
+	} else {
+		// processor 未注入(如测试)走 storage 兼容路径
+		if strings.HasPrefix(finalMime, "image/") {
+			width, height = s.storage.ImageDimensions(finalPath)
+		}
+		thumbnail = s.storage.GenerateThumbnail(finalPath, fileUUID.String(), storageDir, finalMime)
 	}
-	thumbnail := s.storage.GenerateThumbnail(finalPath, fileUUID.String(), storageDir, session.MimeType())
 
-	// File 记录
-	f, err := domainupload.NewFile(fileUUID, uid, session.Purpose(), session.FileName(), finalPath, fileURL, fileSize, session.MimeType(), session.FileHash())
+	// File 记录(用转码后的 mime)
+	f, err := domainupload.NewFile(fileUUID, uid, session.Purpose(), session.FileName(), finalPath, fileURL, fileSize, finalMime, session.FileHash())
 	if err != nil {
 		return nil, err
 	}
