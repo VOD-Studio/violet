@@ -796,6 +796,7 @@ func (h *Handler) InitUploadSession(w http.ResponseWriter, r *http.Request) {
 // SaveUploadChunk 上传单个分片
 func (h *Handler) SaveUploadChunk(w http.ResponseWriter, r *http.Request) {
 	uploadID := r.PathValue("uploadId")
+	userID := interfacesmw.GetUserIDFromContext(r)
 	index, err := strconv.Atoi(r.PathValue("index"))
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -808,7 +809,7 @@ func (h *Handler) SaveUploadChunk(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	if err := h.uploadSvc.SaveChunk(r.Context(), uploadID, index, data); err != nil {
+	if err := h.uploadSvc.SaveChunk(r.Context(), uploadID, index, data, userID); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
@@ -830,7 +831,8 @@ func (h *Handler) CompleteUpload(w http.ResponseWriter, r *http.Request) {
 // CancelUpload 取消上传，清理临时分片
 func (h *Handler) CancelUpload(w http.ResponseWriter, r *http.Request) {
 	uploadID := r.PathValue("uploadId")
-	if err := h.uploadSvc.CancelUpload(r.Context(), uploadID); err != nil {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	if err := h.uploadSvc.CancelUpload(r.Context(), uploadID, userID); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
@@ -840,7 +842,8 @@ func (h *Handler) CancelUpload(w http.ResponseWriter, r *http.Request) {
 // GetUploadStatus 查询上传状态（断点续传）
 func (h *Handler) GetUploadStatus(w http.ResponseWriter, r *http.Request) {
 	uploadID := r.PathValue("uploadId")
-	result, err := h.uploadSvc.GetUploadStatus(r.Context(), uploadID)
+	userID := interfacesmw.GetUserIDFromContext(r)
+	result, err := h.uploadSvc.GetUploadStatus(r.Context(), uploadID, userID)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

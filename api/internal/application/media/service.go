@@ -803,7 +803,7 @@ func (s *UploadService) InitSession(ctx context.Context, in InitSessionInput) (*
 }
 
 // SaveChunk 保存单个分片
-func (s *UploadService) SaveChunk(ctx context.Context, uploadID string, index int, data []byte) error {
+func (s *UploadService) SaveChunk(ctx context.Context, uploadID string, index int, data []byte, callerID string) error {
 	sid, err := shared.ParseID(uploadID)
 	if err != nil {
 		return err
@@ -811,6 +811,14 @@ func (s *UploadService) SaveChunk(ctx context.Context, uploadID string, index in
 	session, err := s.sessionRepo.FindByID(ctx, sid)
 	if err != nil {
 		return err
+	}
+	// owner 校验:防越权操作他人上传会话
+	cid, err := shared.ParseID(callerID)
+	if err != nil {
+		return shared.BadRequest("无效的调用者 ID")
+	}
+	if !session.UserID().Equal(cid) {
+		return shared.Forbidden("无权操作他人上传会话")
 	}
 	if session.Status() != domainupload.SessionActive {
 		return domainupload.ErrSessionNotActive
@@ -846,6 +854,10 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 	session, err := s.sessionRepo.FindByID(ctx, sid)
 	if err != nil {
 		return nil, err
+	}
+	// owner 校验:防越权操作他人上传会话
+	if !session.UserID().Equal(uid) {
+		return nil, shared.Forbidden("无权操作他人上传会话")
 	}
 	if !session.IsComplete() {
 		return nil, domainupload.ErrUploadIncomplete
@@ -920,7 +932,7 @@ func (s *UploadService) CompleteUpload(ctx context.Context, uploadID, userID str
 }
 
 // CancelUpload 取消上传
-func (s *UploadService) CancelUpload(ctx context.Context, uploadID string) error {
+func (s *UploadService) CancelUpload(ctx context.Context, uploadID, callerID string) error {
 	sid, err := shared.ParseID(uploadID)
 	if err != nil {
 		return err
@@ -928,6 +940,14 @@ func (s *UploadService) CancelUpload(ctx context.Context, uploadID string) error
 	session, err := s.sessionRepo.FindByID(ctx, sid)
 	if err != nil {
 		return err
+	}
+	// owner 校验:防越权操作他人上传会话
+	cid, err := shared.ParseID(callerID)
+	if err != nil {
+		return shared.BadRequest("无效的调用者 ID")
+	}
+	if !session.UserID().Equal(cid) {
+		return shared.Forbidden("无权操作他人上传会话")
 	}
 	if session.Status() != domainupload.SessionActive {
 		return domainupload.ErrSessionNotActive
@@ -939,7 +959,7 @@ func (s *UploadService) CancelUpload(ctx context.Context, uploadID string) error
 }
 
 // GetUploadStatus 查询上传状态（断点续传）
-func (s *UploadService) GetUploadStatus(ctx context.Context, uploadID string) (*InitSessionResult, error) {
+func (s *UploadService) GetUploadStatus(ctx context.Context, uploadID, callerID string) (*InitSessionResult, error) {
 	sid, err := shared.ParseID(uploadID)
 	if err != nil {
 		return nil, err
@@ -947,6 +967,14 @@ func (s *UploadService) GetUploadStatus(ctx context.Context, uploadID string) (*
 	session, err := s.sessionRepo.FindByID(ctx, sid)
 	if err != nil {
 		return nil, err
+	}
+	// owner 校验:防越权操作他人上传会话
+	cid, err := shared.ParseID(callerID)
+	if err != nil {
+		return nil, shared.BadRequest("无效的调用者 ID")
+	}
+	if !session.UserID().Equal(cid) {
+		return nil, shared.Forbidden("无权操作他人上传会话")
 	}
 	return &InitSessionResult{
 		UploadID: session.ID().String(), ChunkSize: session.ChunkSize(),
