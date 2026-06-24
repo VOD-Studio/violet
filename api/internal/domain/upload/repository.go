@@ -9,7 +9,8 @@ import (
 // FileRepository 文件仓储接口
 type FileRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*File, error)
-	FindByHash(ctx context.Context, hash string) (*File, error) // 秒传检查
+	// FindByHash 秒传检查:仅命中该 owner 自己上传过的文件,防越权秒传他人文件
+	FindByHash(ctx context.Context, hash string, ownerID shared.ID) (*File, error)
 	FindByOwner(ctx context.Context, ownerID shared.ID, purpose string, page, limit int) ([]*File, int64, error)
 	Save(ctx context.Context, f *File) error
 	Delete(ctx context.Context, id shared.ID) error
