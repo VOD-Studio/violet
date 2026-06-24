@@ -235,6 +235,30 @@ func TestAdminEmojiAndFilePaths(t *testing.T) {
 	require.NotNil(t, spec.Paths.Find("/admin/emojis/upload").Post.RequestBody)
 }
 
+func TestAllOperationsCount(t *testing.T) {
+	spec, _ := Spec()
+	count := 0
+	for _, item := range spec.Paths.Map() {
+		if item.Get != nil {
+			count++
+		}
+		if item.Post != nil {
+			count++
+		}
+		if item.Put != nil {
+			count++
+		}
+		if item.Patch != nil {
+			count++
+		}
+		if item.Delete != nil {
+			count++
+		}
+	}
+	t.Logf("registered %d operations across %d paths", count, spec.Paths.Len())
+	require.GreaterOrEqual(t, count, 90, "expected at least 90 operations, got %d", count)
+}
+
 func TestPostPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
