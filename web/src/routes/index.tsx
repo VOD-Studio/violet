@@ -19,13 +19,17 @@ import Hero from "@widgets/Hero";
  */
 function HomePage() {
 	return (
-		<div className="flex min-h-0 flex-1 flex-col">
+		// flex 子项撑满 main（flex-1），min-h-0 让内部比例可分配；
+		// 整体作为 flex 列，80%/20% 由 flex-[4]/flex-[1] 分配
+		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
 			{/* 80% 核心展示区：左 50% 视觉锚 + 右 50% 动态分发 */}
 			<section className="flex min-h-0 flex-[4] overflow-hidden border-b border-edge-hairline">
-				<Hero />
+				<div className="h-full w-full">
+					<Hero />
+				</div>
 			</section>
 			{/* 20% 底座：次要信息 + 贡献图（主题切换器在 Header，避免重复） */}
-			<section className="flex flex-[1] items-stretch gap-4 px-4 py-2">
+			<section className="flex min-h-0 flex-[1] items-stretch gap-4 overflow-hidden px-4 py-2">
 				<div className="flex flex-1 items-center justify-center gap-6 font-mono text-xs text-muted-foreground">
 					<span className="hidden md:inline">Cmd/Ctrl + K</span>
 					<span className="hidden md:inline">60fps · WebGL ready</span>
