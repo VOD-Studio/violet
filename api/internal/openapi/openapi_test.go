@@ -147,6 +147,49 @@ func TestMusicPaths(t *testing.T) {
 	require.Contains(t, emb, "EmbedURL")
 }
 
+func TestAdminUserPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/admin/users", "/admin/users/{id}", "/admin/users/{id}/role",
+		"/admin/users/{id}/status", "/admin/users/batch-status", "/admin/users/batch-role",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing admin user path %s", p)
+	}
+	require.Contains(t, spec.Components.Schemas, "AdminUserDTO")
+	// 全部需管理员
+	require.NotEmpty(t, spec.Paths.Find("/admin/users").Get.Security)
+}
+
+func TestAdminRBACPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/admin/permissions", "/admin/permissions/{code}",
+		"/admin/roles", "/admin/roles/{id}", "/admin/roles/{id}/permissions",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing rbac path %s", p)
+	}
+	for _, s := range []string{"RoleDTO", "PermissionDTO", "RoleWithPermissionsDTO"} {
+		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
+	}
+}
+
+func TestAdminStatsAndSettingsPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/admin/stats", "/admin/stats/views",
+		"/admin/settings", "/admin/logs", "/admin/logs/user/{id}",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing path %s", p)
+	}
+	for _, s := range []string{"DashboardStats", "ViewTrends", "SiteSettings", "AuditLog"} {
+		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
+	}
+	// AuditLog 用 PascalCase 字段（无 json tag）
+	al := spec.Components.Schemas["AuditLog"].Value.Properties
+	require.Contains(t, al, "Action")
+	require.Contains(t, al, "CreatedAt")
+}
+
 func TestPostPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
