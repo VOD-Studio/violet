@@ -108,6 +108,26 @@ func TestCommentPaths(t *testing.T) {
 	require.NotEmpty(t, spec.Paths.Find("/comments/{id}/approve").Patch.Security)
 }
 
+func TestMediaPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/media/{id}", "/media", "/media/batch-delete", "/media/{id}/thumbnail",
+		"/upload/init", "/upload/{uploadId}/chunk/{index}", "/upload/{uploadId}/complete",
+		"/upload/{uploadId}", "/upload/{uploadId}/status",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing media path %s", p)
+	}
+	for _, s := range []string{"FileDTO", "InitSessionResult", "MergeResult"} {
+		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
+	}
+	// /media/{id} 公开（无 security）
+	require.Empty(t, spec.Paths.Find("/media/{id}").Get.Security)
+	// /media 列表需登录
+	require.NotEmpty(t, spec.Paths.Find("/media").Get.Security)
+	// 分片上传需登录
+	require.NotEmpty(t, spec.Paths.Find("/upload/init").Post.Security)
+}
+
 func TestPostPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{

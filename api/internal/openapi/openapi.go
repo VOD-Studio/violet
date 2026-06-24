@@ -88,7 +88,7 @@ func build() (*openapi3.T, error) {
 	registerPostPaths(t)
 	registerTagPaths(t)
 	registerCommentPaths(t)
-	// registerMediaPaths(t)
+	registerMediaPaths(t)
 	// registerMusicPaths(t)
 	// registerAdminUserPaths(t)
 	// registerAdminRBACPaths(t)
