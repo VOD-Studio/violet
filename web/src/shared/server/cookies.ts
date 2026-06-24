@@ -13,5 +13,4 @@ import { getRequestHeader } from "@tanstack/react-start/server";
  *
  * @returns 完整的 Cookie header 字符串（如 "mimo_access=xxx; mimo_csrf=yyy"），无则空串
  */
-export const getForwardedCookie = (): string =>
-	getRequestHeader("cookie") ?? "";
+export const getForwardedCookie = (): string => getRequestHeader("cookie") ?? "";

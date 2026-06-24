@@ -6,21 +6,21 @@ import HeaderMobile from "./HeaderMobile";
 import HeaderNav from "./HeaderNav";
 
 /**
- * Header - 页面顶部容器
+ * Header - 页面顶部容器（非首页通用栏）
  *
- * 装配 Logo + 桌面 Nav + 移动菜单 + 操作区。
- * action 项（音乐）派发到 MusicUIStore 打开播放器。
- * sticky + backdrop-blur 提升滚动时的视觉层级。
+ * 首页有自己的 20% 底座（routes/index.tsx），
+ * 其他页（blog/about/...）仍用此 sticky header。
+ *
+ * sticky + backdrop-blur + 1px 极细边框（dark 霓虹 / light 灰）。
  */
 const Header = () => {
 	const openMusic = useMusicUIStore((s) => s.open);
-
 	const handleAction = (action: string) => {
 		if (action === "open-music") openMusic();
 	};
 
 	return (
-		<header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur">
+		<header className="sticky top-0 z-40 w-full border-b border-edge-hairline bg-background/70 backdrop-blur-xl">
 			<div className="container mx-auto flex h-16 items-center justify-between px-4">
 				<HeaderLogo />
 				<HeaderNav onAction={handleAction} />

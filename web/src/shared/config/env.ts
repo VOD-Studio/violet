@@ -27,5 +27,4 @@ export type AppEnv = ImportMetaEnv;
  *
  * 优先读 VITE_SITE_URL，缺失时回落到 localhost:5173（开发默认端口）。
  */
-export const SITE_URL =
-	import.meta.env.VITE_SITE_URL ?? "http://localhost:5173";
+export const SITE_URL = import.meta.env.VITE_SITE_URL ?? "http://localhost:5173";

@@ -1,3 +1,4 @@
+import { CustomCursor } from "@shared/ui/cursor";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
 	createRootRouteWithContext,
@@ -8,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import AnnouncementBar from "@widgets/AnnouncementBar";
+import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
@@ -43,6 +45,19 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 	}),
 	component: RootComponent,
 	shellComponent: RootDocument,
+	// 兜底：任何 loader 抛错或子树未捕获错误时，渲染在应用外壳内，
+	// 避免整页白屏（React 警告「consider setting errorComponent」）。
+	errorComponent: ({ error }) => (
+		<div className="container mx-auto px-4 py-24 text-center">
+			<p className="mb-3 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
+				System Error
+			</p>
+			<h1 className="mb-4 font-mono text-3xl font-bold">出错了</h1>
+			<p className="mx-auto mb-8 max-w-md text-sm text-muted-foreground">
+				{error instanceof Error ? error.message : "未知错误，请稍后重试"}
+			</p>
+		</div>
+	),
 });
 
 /**
@@ -53,13 +68,17 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
 	return (
 		<AppProvider>
-			<AnnouncementBar />
-			<Header />
-			<main className="min-h-[60vh]">
-				<Outlet />
-			</main>
-			<Footer />
+			<div className="flex min-h-screen flex-col">
+				<AnnouncementBar />
+				<Header />
+				<main className="flex flex-1 flex-col">
+					<Outlet />
+				</main>
+				<Footer />
+			</div>
 			<MusicPlayer />
+			<CommandPalette />
+			<CustomCursor />
 			<TanStackDevtools
 				config={{ position: "bottom-right" }}
 				plugins={[

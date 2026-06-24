@@ -1,6 +1,6 @@
 import { httpClient } from "@shared/api/http";
 import { useQuery } from "@tanstack/react-query";
-import type { ContributionSummary } from "../model/types";
+import type { ContributionSummary, Repo } from "../model/types";
 import { githubKeys } from "./keys";
 
 /**
@@ -11,9 +11,7 @@ import { githubKeys } from "./keys";
  * @returns 贡献图汇总数据
  */
 export const fetchContributions = async (): Promise<ContributionSummary> => {
-	const res = await httpClient.get<{ data: ContributionSummary }>(
-		"/github/contributions",
-	);
+	const res = await httpClient.get<{ data: ContributionSummary }>("/github/contributions");
 	return res.data.data;
 };
 
@@ -26,5 +24,29 @@ export const useContributions = () =>
 	useQuery({
 		queryKey: githubKeys.contributions(),
 		queryFn: fetchContributions,
+		staleTime: 5 * 60 * 1000,
+	});
+
+/**
+ * fetchRepos - 调 GET /api/v1/github/repos
+ *
+ * 后端持有 GitHub token，前端无需传凭证。
+ *
+ * @returns 公开仓库列表
+ */
+export const fetchRepos = async (): Promise<Repo[]> => {
+	const res = await httpClient.get<{ data: Repo[] }>("/github/repos");
+	return res.data.data;
+};
+
+/**
+ * useRepos - GitHub 仓库列表 hook
+ *
+ * staleTime 5 分钟，仓库元数据更新频率低。
+ */
+export const useRepos = () =>
+	useQuery({
+		queryKey: githubKeys.repos(),
+		queryFn: fetchRepos,
 		staleTime: 5 * 60 * 1000,
 	});
