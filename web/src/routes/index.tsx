@@ -4,28 +4,21 @@ import Contributions from "@features/github/ui/Contributions";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
 import { settingsKeys } from "@features/settings/api/keys";
-import { fetchAnnouncements, fetchSettings } from "@features/settings/api/queries";
+import {
+	fetchAnnouncements,
+	fetchSettings,
+} from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 import Hero from "@widgets/Hero";
 
-/**
- * HomePage - 首页根组件（Nexus 80/20 网格）
- *
- * - 上 80%：核心展示区（Hero 内部 50/50）
- * - 下 20%：底座（机械轴体主题切换器极左 + 次要信息 + 贡献图）
- */
 function HomePage() {
 	return (
-		// flex 子项撑满 main（flex-1），min-h-0 让内部比例可分配；
-		// 整体作为 flex 列，80%/20% 由 flex-[4]/flex-[1] 分配
+		// min-h-0 让内部 flex 比例可分配；80/20 用 flex-[4]/flex-[1]
+		// （Tailwind v4 无 flex-4 默认类，必须用任意值语法）
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			{/* 80% 核心展示区：左 50% 视觉锚 + 右 50% 动态分发 */}
 			<section className="flex min-h-0 flex-[4] overflow-hidden border-b border-edge-hairline">
-				<div className="h-full w-full">
-					<Hero />
-				</div>
+				<Hero />
 			</section>
-			{/* 20% 底座：次要信息 + 贡献图（主题切换器在 Header，避免重复） */}
 			<section className="flex min-h-0 flex-[1] items-stretch gap-4 overflow-hidden px-4 py-2">
 				<div className="flex flex-1 items-center justify-center gap-6 font-mono text-xs text-muted-foreground">
 					<span className="hidden md:inline">Cmd/Ctrl + K</span>
