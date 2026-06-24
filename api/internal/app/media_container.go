@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 
 	appmedia "blog-api/internal/application/media"
+	infrapimage "blog-api/internal/infrastructure/image"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	inframusic "blog-api/internal/infrastructure/music"
 	"blog-api/internal/infrastructure/storage"
@@ -27,7 +28,8 @@ func NewMediaContainer(db *gorm.DB, emojiDir, chunkDir, uploadDir, urlPrefix str
 
 	emojiSvc := appmedia.NewEmojiService(emojiRepo, emojiDir)
 	musicSvc := appmedia.NewMusicService(musicRepo, musicProvider, musicSettingStore)
-	uploadSvc := appmedia.NewUploadService(fileRepo, sessionRepo, localStorage, chunkDir)
+	processor := infrapimage.NewProcessor(uploadDir, urlPrefix)
+	uploadSvc := appmedia.NewUploadService(fileRepo, sessionRepo, localStorage, processor, chunkDir)
 
 	return &MediaContainer{
 		MediaHandler: mediahttp.NewHandler(emojiSvc, musicSvc, uploadSvc),

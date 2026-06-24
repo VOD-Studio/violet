@@ -177,6 +177,35 @@ func (j *CleanupJob) PhysicalDeleteFiles(ctx context.Context, retentionDays int)
 	return cleaned, nil
 }
 
+// CleanImageCache 清理图片服务磁盘缓存(uploads/.cache)下超过 retentionDays 未修改的文件。
+// 与 PhysicalDeleteFiles 类似的容错:删除失败跳过,不中断整体清理。
+func (j *CleanupJob) CleanImageCache(ctx context.Context, cacheDir string, retentionDays int) (int, error) {
+	entries, err := os.ReadDir(cacheDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil // 缓存目录尚未创建(无处理请求),正常
+		}
+		return 0, fmt.Errorf("读取缓存目录失败: %w", err)
+	}
+	cutoff := time.Now().AddDate(0, 0, -retentionDays)
+	cleaned := 0
+	for _, e := range entries {
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		// 按 ModTime 判断:超过保留期未访问(写入)的删除
+		if info.ModTime().Before(cutoff) {
+			if err := os.RemoveAll(filepath.Join(cacheDir, e.Name())); err != nil {
+				log.Printf("清理: 删除图片缓存 %s 失败: %v", e.Name(), err)
+				continue
+			}
+			cleaned++
+		}
+	}
+	return cleaned, nil
+}
+
 // Start 启动后台定时清理任务
 // 每 1 小时清理过期会话和孤立临时文件
 // 每 24 小时物理删除已软删超过 7 天的文件
@@ -222,13 +251,19 @@ func (j *CleanupJob) runHourly(ctx context.Context) {
 	}
 }
 
-// runDaily 执行每日清理：物理删除软删文件
+// runDaily 执行每日清理：物理删除软删文件 + 清理图片缓存
 func (j *CleanupJob) runDaily(ctx context.Context) {
 	files, err := j.PhysicalDeleteFiles(ctx, 7)
 	if err != nil {
 		log.Printf("清理任务: 物理删除文件出错: %v", err)
 	} else {
 		log.Printf("清理任务: 物理删除了 %d 个文件", files)
+	}
+	cache, err := j.CleanImageCache(ctx, filepath.Join("uploads", ".cache"), 7)
+	if err != nil {
+		log.Printf("清理任务: 清理图片缓存出错: %v", err)
+	} else {
+		log.Printf("清理任务: 清理了 %d 个过期图片缓存", cache)
 	}
 }
 

@@ -376,9 +376,11 @@ func (r *FileRepository) FindByID(ctx context.Context, id domainshared.ID) (*upl
 	return fileToDomain(po)
 }
 
-func (r *FileRepository) FindByHash(ctx context.Context, hash string) (*upload.File, error) {
+func (r *FileRepository) FindByHash(ctx context.Context, hash string, ownerID domainshared.ID) (*upload.File, error) {
 	var po model.File
-	if err := r.db.WithContext(ctx).Where("file_hash = ? AND status = ?", hash, upload.StatusReady).First(&po).Error; err != nil {
+	if err := r.db.WithContext(ctx).
+		Where("file_hash = ? AND owner_id = ? AND status = ?", hash, ownerID.UUID(), upload.StatusReady).
+		First(&po).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, upload.ErrFileNotFound
 		}
