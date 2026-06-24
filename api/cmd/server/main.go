@@ -180,13 +180,15 @@ func main() {
 
 	r.Route("/api/v1", func(v1 chi.Router) {
 
-		// OpenAPI 文档端点（无需 CSRF/鉴权，仅返回结构描述，供 Apifox 导入）
-		v1.Get("/openapi.json", openapi.Handler())
-
 		// CSRF 防护（仅 state-changing 方法校验；GET/HEAD/OPTIONS 免验）
 		// 与 cookie 鉴权方案配套：浏览器自动携带 cookie，必须额外校验 X-CSRF-Token
 		// 防止跨站请求伪造。豁免列表仅放确实不需要 CSRF 的 POST 端点（当前为空）。
+		// 注意：chi 要求所有 Use() 必须在任何路由注册之前调用，故先注册中间件。
+		// GET /openapi.json 经 CSRF 中间件亦免验（仅校验 state-changing 方法），符合其「无需 CSRF」意图。
 		v1.Use(middleware.CSRF(cfg.Cookie, nil))
+
+		// OpenAPI 文档端点（无需 CSRF/鉴权，仅返回结构描述，供 Apifox 导入）
+		v1.Get("/openapi.json", openapi.Handler())
 
 		// 公开站点设置
 		v1.Get("/settings", settingsContainer.SettingsHandler.GetPublicSettings) // 获取公开站点配置
