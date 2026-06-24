@@ -3,6 +3,8 @@ package gorm
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -152,6 +154,20 @@ func (r *PostRepository) Save(ctx context.Context, p *post.Post) error {
 		if err := tx.Where("name IN ?", tagNames).Find(&tags).Error; err != nil {
 			return domainshared.Internal("查询标签失败", err)
 		}
+		// 校验：所有请求的标签必须存在，避免静默丢弃未知标签
+		if len(tags) != len(tagNames) {
+			found := make(map[string]bool, len(tags))
+			for _, t := range tags {
+				found[t.Name] = true
+			}
+			missing := make([]string, 0)
+			for _, n := range tagNames {
+				if !found[n] {
+					missing = append(missing, n)
+				}
+			}
+			return domainshared.BadRequest(fmt.Sprintf("标签不存在: %s", strings.Join(missing, ", ")))
+		}
 		return tx.Model(&po).Association("Tags").Replace(&tags)
 	})
 }
@@ -163,19 +179,6 @@ func (r *PostRepository) Delete(ctx context.Context, id domainshared.ID) error {
 	}
 	if result.RowsAffected == 0 {
 		return post.ErrNotFound
-	}
-	return nil
-}
-
-// RecordView 记录浏览事件（写 post_views 表）
-func (r *PostRepository) RecordView(ctx context.Context, postID domainshared.ID, ipAddress, userAgent string) error {
-	pv := model.PostView{
-		PostID:    postID.UUID(),
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
-	}
-	if err := r.db.WithContext(ctx).Create(&pv).Error; err != nil {
-		return domainshared.Internal("记录浏览事件失败", err)
 	}
 	return nil
 }
