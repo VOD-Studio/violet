@@ -94,10 +94,10 @@ func build() (*openapi3.T, error) {
 	registerAdminRBACPaths(t)
 	registerAdminStatsPaths(t)
 	registerAdminSettingsPaths(t)
-	// registerAdminAnnouncementPaths(t)
-	// registerAdminMusicPaths(t)
-	// registerAdminEmojiPaths(t)
-	// registerAdminFilePaths(t)
+	registerAdminAnnouncementPaths(t)
+	registerAdminMusicPaths(t)
+	registerAdminEmojiPaths(t)
+	registerAdminFilePaths(t)
 
 	return t, nil
 }

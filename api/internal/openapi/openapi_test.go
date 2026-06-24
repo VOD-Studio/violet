@@ -190,6 +190,51 @@ func TestAdminStatsAndSettingsPaths(t *testing.T) {
 	require.Contains(t, al, "CreatedAt")
 }
 
+func TestAdminAnnouncementPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/admin/announcements", "/admin/announcements/{id}",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing path %s", p)
+	}
+	// /admin/announcements/{id} 同时有 GET/PATCH/DELETE
+	item := spec.Paths.Find("/admin/announcements/{id}")
+	require.NotNil(t, item.Get)
+	require.NotNil(t, item.Patch)
+	require.NotNil(t, item.Delete)
+}
+
+func TestAdminMusicPaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/admin/music/playlists", "/admin/music/playlists/custom",
+		"/admin/music/playlists/{id}", "/admin/music/playlists/{id}/active",
+		"/admin/music/playlists/{id}/refresh", "/admin/music/playlists/{id}/songs",
+		"/admin/music/playlists/{id}/songs/{index}", "/admin/music/settings",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing path %s", p)
+	}
+	// /admin/music/playlists/{id}/songs/{index} 同时有 DELETE/PATCH
+	item := spec.Paths.Find("/admin/music/playlists/{id}/songs/{index}")
+	require.NotNil(t, item.Delete)
+	require.NotNil(t, item.Patch)
+}
+
+func TestAdminEmojiAndFilePaths(t *testing.T) {
+	spec, _ := Spec()
+	for _, p := range []string{
+		"/admin/emojis/groups", "/admin/emojis/groups/{id}",
+		"/admin/emojis/groups/{id}/emojis", "/admin/emojis/groups/batch-status",
+		"/admin/emojis/upload", "/admin/emojis/emojis/{id}",
+		"/admin/files", "/admin/files/instant", "/admin/files/{id}",
+	} {
+		require.NotNil(t, spec.Paths.Find(p), "missing path %s", p)
+	}
+	require.Contains(t, spec.Components.Schemas, "EmojiUploadResult")
+	// 表情上传是 multipart
+	require.NotNil(t, spec.Paths.Find("/admin/emojis/upload").Post.RequestBody)
+}
+
 func TestPostPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
