@@ -45,7 +45,7 @@ func (noopStorage) FileSize(string) (int64, error)                              
 func (noopStorage) Move(string, string) error                                                   { return nil }
 func (noopStorage) ImageDimensions(string) (int, int)                                           { return 0, 0 }
 func (noopStorage) GenerateThumbnail(string, string, string, string) string                     { return "" }
-func (noopStorage) BuildPath(string, string, string, string) (string, string, error)            { return "", "", nil }
+func (noopStorage) BuildPath(string, time.Time, string, string) (string, string, error)        { return "", "", nil }
 
 // TestSaveChunk_RejectsNonOwner 非会话 owner 调用 SaveChunk 应返回 Forbidden
 func TestSaveChunk_RejectsNonOwner(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/disintegration/imaging"
 	"github.com/rs/zerolog/log"
@@ -226,38 +227,26 @@ func (s *LocalStorage) generateVideoThumb(srcPath, fileUUID, storageDir string) 
 
 // BuildPath 构建最终文件存储路径与访问 URL
 // purpose 由调用方（上传会话）提供，必须校验防路径穿越（如 purpose="../tmp"）。
-func (s *LocalStorage) BuildPath(purpose, mimeType, fileUUID, ext string) (string, string, error) {
-	dir := purpose
-	if dir == "material" {
-		dir = filepath.Join(dir, fileTypeFromMime(mimeType))
-	}
-	finalName := fileUUID + ext
-	finalDir := filepath.Join(s.uploadDir, dir)
-	finalPath := filepath.Join(finalDir, finalName)
-	// 校验最终路径仍在 uploadDir 内（覆盖 purpose 穿越）
+// BuildPath 按 purpose + 时间戳生成日期分目录路径：
+// uploads/{purpose}/YYYY/MM/DD/HHMMSS.<uuid>.<ext>
+// 返回 (物理路径, 相对URL)。purpose 决定一级目录,timestamp 决定日期目录与文件名时间戳前缀。
+func (s *LocalStorage) BuildPath(purpose string, timestamp time.Time, fileUUID, ext string) (string, string, error) {
+	dateDir := timestamp.Format("2006/01/02")        // YYYY/MM/DD
+	timePrefix := timestamp.Format("150405")         // HHMMSS
+	fileName := timePrefix + "." + fileUUID + ext    // HHMMSS.<uuid>.<ext>
+	finalDir := filepath.Join(s.uploadDir, purpose, dateDir) // uploads/{purpose}/YYYY/MM/DD
+	finalPath := filepath.Join(finalDir, fileName)   // uploads/{purpose}/YYYY/MM/DD/HHMMSS.<uuid>.<ext>
+	// 安全校验:最终目录与路径仍在 uploadDir 内(覆盖 purpose 穿越)
 	if _, err := s.safePath(finalDir); err != nil {
 		return "", "", err
 	}
 	if _, err := s.safePath(finalPath); err != nil {
 		return "", "", err
 	}
-	url := s.urlPrefix + dir + "/" + finalName
+	url := s.urlPrefix + purpose + "/" + dateDir + "/" + fileName // /uploads/{purpose}/YYYY/MM/DD/HHMMSS.<uuid>.<ext>
 	return finalPath, url, nil
 }
 
-// fileTypeFromMime 根据 MIME 推断分类目录
-func fileTypeFromMime(mimeType string) string {
-	switch {
-	case strings.HasPrefix(mimeType, "image/"):
-		return "image"
-	case strings.HasPrefix(mimeType, "video/"):
-		return "video"
-	case strings.HasPrefix(mimeType, "audio/"):
-		return "audio"
-	default:
-		return "file"
-	}
-}
 
 // copyTo 复制 reader 到 writer
 func copyTo(src *os.File, dst *os.File) (int64, error) {
