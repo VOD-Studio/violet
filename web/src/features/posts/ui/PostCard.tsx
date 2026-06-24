@@ -1,4 +1,3 @@
-import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -19,21 +18,17 @@ export interface PostCardProps {
 }
 
 /**
- * PostCard - 文章卡片（Nexus Spotlight 版）
+ * PostCard - 文章卡片（柔和阅读风）
  *
- * spec：
- * - 全局边缘聚光灯（SpotlightCard）冷光跟随鼠标揭示材质边界
- * - 支持 sm/md/lg 三种高度，虚拟列表混排不崩塌
- * - 封面懒加载 + hover 图片放大（transform 不引起 reflow）
- * - 标签最多 3 个，相对时间
- *
- * 仍消费现有 Post 类型（features/posts/model），不动数据层。
+ * 简洁 border 卡片 + hover 底色，封面懒加载，标签徽章。
+ * 支持 sm/md/lg 高度变体。
+ * 消费现有 Post 类型（features/posts/model），不动数据层。
  */
 const PostCard = ({ post, size = "md" }: PostCardProps) => {
-	const coverH = size === "lg" ? "h-56" : size === "sm" ? "h-32" : "h-44";
+	const coverH = size === "lg" ? "h-48" : size === "sm" ? "h-28" : "h-40";
 
 	return (
-		<SpotlightCard className="group flex h-full flex-col">
+		<div className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-accent">
 			{post.cover_image ? (
 				<Link to="/blog/$slug" params={{ slug: post.slug }} className="block overflow-hidden">
 					<img
@@ -51,7 +46,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 						{post.tags.slice(0, 3).map((tag) => (
 							<span
 								key={tag}
-								className="rounded-full border border-edge-hairline bg-muted/50 px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+								className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground"
 							>
 								{tag}
 							</span>
@@ -63,7 +58,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 					<Link
 						to="/blog/$slug"
 						params={{ slug: post.slug }}
-						className="transition-colors hover:text-neon-blue"
+						className="transition-colors hover:text-muted-foreground"
 					>
 						{post.title}
 					</Link>
@@ -71,7 +66,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 
 				<p className="mb-4 line-clamp-2 flex-1 text-sm text-muted-foreground">{post.excerpt}</p>
 
-				<div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
+				<div className="flex items-center justify-between text-[11px] text-muted-foreground">
 					<span className="flex items-center gap-1.5">
 						{post.author.avatar_url ? (
 							<img
@@ -91,7 +86,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 					</time>
 				</div>
 			</div>
-		</SpotlightCard>
+		</div>
 	);
 };
 

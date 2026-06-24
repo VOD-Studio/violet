@@ -1,7 +1,6 @@
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
 import { extractToc } from "@shared/lib/hooks/use-toc";
-import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef } from "react";
 
@@ -45,16 +44,9 @@ function BlogDetailPage() {
 
 			<div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[25%_75%]">
 				{/* 左侧 25%：xunrua Logo + TOC */}
-				<aside className="hidden flex-col border-r border-edge-hairline p-6 md:flex">
-					<Link to="/" className="mb-6 block font-mono text-2xl font-bold">
-						<DecryptedText
-							text="xunrua"
-							animateOn="view"
-							speed={50}
-							parentClassName="inline-block"
-							className="bg-gradient-to-r from-neon-blue to-neon-purple bg-clip-text text-transparent"
-							encryptedClassName="text-muted-foreground"
-						/>
+				<aside className="hidden flex-col border-r border-border p-6 md:flex">
+					<Link to="/" className="mb-6 block text-2xl font-bold">
+						xunrua
 					</Link>
 					<div className="flex-1 overflow-hidden">
 						<ArticleToc items={toc} contentRef={contentRef} />
