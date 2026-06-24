@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
+import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
 import { cn } from "@shared/lib/utils";
 
 export interface EmptyProps {
-	/** 标题（必填） */
+	/** 标题（必填，用解密动画呈现） */
 	title: string;
 	/** 描述文案（可选） */
 	description?: string;
@@ -13,75 +14,57 @@ export interface EmptyProps {
 	className?: string;
 }
 
-const RING = {
-	sm: 56,
-	md: 96,
-	lg: 128,
+const TITLE_CLASS = {
+	sm: "text-base",
+	md: "text-xl",
+	lg: "text-3xl",
 };
 
 /**
- * Empty - 发光圆环 + 噪点容器
+ * Empty - 解密乱码文字空状态
  *
- * 创意：一个 neon 描边的细圆环（容器感），内部铺极淡的网格点，
- * 暗示「这里本该有内容，现在是空的容器」。精致不消极。
+ * 与 HeroLeft 的 xunrua 同源视觉语言：标题用赛博解密动画呈现
+ * （乱码翻转为真实字母），无任何图形/插画。极客、克制、动效驱动，
+ * 和项目整体气质一致。
  *
- * 描边与发光走 CSS 变量：Dark 下冷蓝电光（neon-blue glow），
- * Light 下退为低饱和墨灰细线（铅笔素描感，无 glow）。
- * 内部网格点用 radial-gradient 平铺，零额外 DOM。
+ * 解密在元素进入视口时触发（animateOn="view"），重复挂载会重新播放。
+ * 描述与操作区是普通静态文字。
  *
  * 通用用法：
- * <Empty title="暂无文章" description="还没有发布任何内容" action={<Button>写一篇</Button>} />
+ * <Empty title="EMPTY" description="还没有发布任何内容" action={<Button>写一篇</Button>} />
  */
-const Empty = ({ title, description, action, size = "md", className }: EmptyProps) => {
-	const d = RING[size];
-
+const Empty = ({
+	title,
+	description,
+	action,
+	size = "md",
+	className,
+}: EmptyProps) => {
 	return (
 		<div
 			className={cn(
-				"flex flex-col items-center justify-center gap-4 text-center",
+				"flex flex-col items-center justify-center gap-3 text-center",
 				className,
 			)}
 			role="status"
 		>
-			{/* 发光圆环容器 */}
-			<div
-				className="relative rounded-full"
-				style={{
-					width: d,
-					height: d,
-					// neon 描边 + glow（Dark 电光感；Light 下 glow-soft 退化为白，近乎无 glow）
-					boxShadow:
-						"inset 0 0 0 1px hsl(var(--neon-blue) / 0.55), 0 0 16px hsl(var(--glow-soft) / 0.18)",
-					// 内部极淡网格点（径向小点平铺，零额外 DOM）
-					backgroundImage:
-						"radial-gradient(hsl(var(--muted-foreground) / 0.25) 1px, transparent 1px)",
-					backgroundSize: `${d / 8}px ${d / 8}px`,
-				}}
-			>
-				{/* 环上一个细小的发光点，打破纯圆的单调 */}
-				<span
-					className="absolute rounded-full bg-neon-blue"
-					style={{
-						width: d * 0.06,
-						height: d * 0.06,
-						top: -(d * 0.03),
-						left: "50%",
-						marginLeft: -(d * 0.03),
-						boxShadow: "0 0 8px hsl(var(--neon-blue) / 0.9)",
-					}}
+			<h3 className={cn("font-mono font-bold tracking-tight", TITLE_CLASS[size])}>
+				<DecryptedText
+					text={title}
+					animateOn="view"
+					speed={50}
+					maxIterations={10}
+					parentClassName="inline-block"
+					className="bg-gradient-to-r from-muted-foreground to-muted-foreground bg-clip-text text-transparent"
+					encryptedClassName="text-muted-foreground/50"
 				/>
-			</div>
+			</h3>
 
-			<div className="space-y-1">
-				<p className="font-mono text-sm font-medium tracking-wide text-foreground">
-					{title}
-				</p>
-				{description ? (
-					<p className="text-xs text-muted-foreground">{description}</p>
-				) : null}
-			</div>
+			{description ? (
+				<p className="text-xs text-muted-foreground">{description}</p>
+			) : null}
 
-			{action ? <div className="mt-1">{action}</div> : null}
+			{action ? <div className="mt-2">{action}</div> : null}
 		</div>
 	);
 };
