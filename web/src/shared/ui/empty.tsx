@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
+import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
 import { cn } from "@shared/lib/utils";
 
 export interface EmptyProps {
-	/** 标题（必填） */
+	/** 标题（必填，用解密动画呈现） */
 	title: string;
 	/** 描述文案（可选） */
 	description?: string;
@@ -13,22 +14,32 @@ export interface EmptyProps {
 	className?: string;
 }
 
-const ICON = {
-	sm: "size-6",
-	md: "size-8",
-	lg: "size-10",
+const TITLE_CLASS = {
+	sm: "text-base",
+	md: "text-xl",
+	lg: "text-3xl",
 };
 
 /**
- * Empty - 空状态（柔和阅读风）
+ * Empty - 解密乱码文字空状态
  *
- * 极简：一个柔和的空心圆图标 + 标题 + 描述 + 可选操作。
- * 克制不抢戏，任何场景适用。
+ * 与 HeroLeft 的 xunrua 同源视觉语言：标题用赛博解密动画呈现
+ * （乱码翻转为真实字母），无任何图形/插画。极客、克制、动效驱动，
+ * 和项目整体气质一致。
+ *
+ * 解密在元素进入视口时触发（animateOn="view"），重复挂载会重新播放。
+ * 描述与操作区是普通静态文字。
  *
  * 通用用法：
- * <Empty title="暂无文章" description="还没有发布任何内容" action={<Button>写一篇</Button>} />
+ * <Empty title="EMPTY" description="还没有发布任何内容" action={<Button>写一篇</Button>} />
  */
-const Empty = ({ title, description, action, size = "md", className }: EmptyProps) => {
+const Empty = ({
+	title,
+	description,
+	action,
+	size = "md",
+	className,
+}: EmptyProps) => {
 	return (
 		<div
 			className={cn(
@@ -37,23 +48,23 @@ const Empty = ({ title, description, action, size = "md", className }: EmptyProp
 			)}
 			role="status"
 		>
-			{/* 空心圆图标（柔和描边） */}
-			<div
-				className={cn(
-					"flex items-center justify-center rounded-full border border-border text-muted-foreground/40",
-					ICON[size],
-				)}
-				aria-hidden
-			>
-				<span className="text-lg leading-none">·</span>
-			</div>
+			<h3 className={cn("font-mono font-bold tracking-tight", TITLE_CLASS[size])}>
+				<DecryptedText
+					text={title}
+					animateOn="view"
+					speed={50}
+					maxIterations={10}
+					parentClassName="inline-block"
+					className="bg-gradient-to-r from-muted-foreground to-muted-foreground bg-clip-text text-transparent"
+					encryptedClassName="text-muted-foreground/50"
+				/>
+			</h3>
 
-			<div className="space-y-1">
-				<p className="text-sm font-medium text-muted-foreground">{title}</p>
-				{description ? <p className="text-xs text-muted-foreground/70">{description}</p> : null}
-			</div>
+			{description ? (
+				<p className="text-xs text-muted-foreground">{description}</p>
+			) : null}
 
-			{action ? <div className="mt-1">{action}</div> : null}
+			{action ? <div className="mt-2">{action}</div> : null}
 		</div>
 	);
 };

@@ -1,6 +1,6 @@
 import { useMusicUIStore } from "@features/music/model/ui-store";
 import { Button } from "@shared/ui/button";
-import { Skeleton } from "@shared/ui/skeleton";
+import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -29,16 +29,16 @@ const MusicPlayer = () => {
 				</div>
 				<div className="grid flex-1 grid-cols-1 gap-6 md:grid-cols-[40%_60%]">
 					<div className="flex flex-col items-center justify-center gap-4">
-						<Skeleton className="aspect-square w-64 rounded-full" />
+						<ShimmerSkeleton className="aspect-square w-64 rounded-full" />
 						<div className="w-64 space-y-2">
-							<Skeleton className="h-4 w-2/3" />
-							<Skeleton className="h-3 w-1/2" />
+							<ShimmerSkeleton className="h-4 w-2/3" />
+							<ShimmerSkeleton className="h-3 w-1/2" />
 						</div>
 					</div>
 					<div className="space-y-2">
 						{Array.from({ length: 8 }).map((_, i) => (
 							// biome-ignore lint/suspicious/noArrayIndexKey: 骨架
-							<Skeleton key={i} className="h-12 w-full rounded-md" />
+							<ShimmerSkeleton key={i} className="h-12 w-full rounded-md" />
 						))}
 					</div>
 				</div>

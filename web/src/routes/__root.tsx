@@ -1,3 +1,4 @@
+import { CustomCursor } from "@shared/ui/cursor";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
 	createRootRouteWithContext,
@@ -77,6 +78,7 @@ function RootComponent() {
 			</div>
 			<MusicPlayer />
 			<CommandPalette />
+			<CustomCursor />
 			<TanStackDevtools
 				config={{ position: "bottom-right" }}
 				plugins={[
