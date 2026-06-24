@@ -128,3 +128,38 @@ func TestCancelUpload_AllowsOwner(t *testing.T) {
 		t.Fatalf("owner 本人应通过,实际: %v", err)
 	}
 }
+
+// fakeFileRepo 假的 fileRepo,FindByID 返回固定 owner 的 File
+type fakeFileRepo struct{ ownerID domainshared.ID }
+
+func (f *fakeFileRepo) FindByID(ctx context.Context, id domainshared.ID) (*domainupload.File, error) {
+	fl, _ := domainupload.NewFile(id, f.ownerID, "avatar", "f.jpg", "/uploads/f.jpg", "/uploads/f.jpg", 10, "image/jpeg", "")
+	return fl, nil
+}
+func (f *fakeFileRepo) FindByHash(ctx context.Context, hash string) (*domainupload.File, error) {
+	return nil, nil
+}
+func (f *fakeFileRepo) FindByOwner(ctx context.Context, ownerID domainshared.ID, purpose string, page, limit int) ([]*domainupload.File, int64, error) {
+	return nil, 0, nil
+}
+func (f *fakeFileRepo) Save(ctx context.Context, fl *domainupload.File) error                       { return nil }
+func (f *fakeFileRepo) Delete(ctx context.Context, id domainshared.ID) error                        { return nil }
+func (f *fakeFileRepo) UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error     { return nil }
+
+// TestUploadThumbnail_RejectsNonOwner 非 file owner 调用 UploadThumbnail 应返回 Forbidden
+func TestUploadThumbnail_RejectsNonOwner(t *testing.T) {
+	ownerA := domainshared.NewID()
+	ownerB := domainshared.NewID()
+	fileRepo := &fakeFileRepo{ownerID: ownerA}
+	svc := NewUploadService(fileRepo, nil, noopStorage{}, "/tmp")
+	_, err := svc.UploadThumbnail(context.Background(), UploadThumbnailInput{
+		FileID: "00000000-0000-0000-0000-000000000001",
+		FileName: "t.jpg", MimeType: "image/jpeg", Content: []byte("x"),
+	}, ownerB.String())
+	if err == nil {
+		t.Fatal("非 owner 应被拒绝")
+	}
+	if !domainshared.IsDomainError(err, domainshared.CodeForbidden) {
+		t.Fatalf("应为 Forbidden,实际: %v", err)
+	}
+}

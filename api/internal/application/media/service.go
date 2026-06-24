@@ -1090,7 +1090,7 @@ type UploadThumbnailInput struct {
 }
 
 // UploadThumbnail 为指定文件上传缩略图，返回缩略图 URL
-func (s *UploadService) UploadThumbnail(ctx context.Context, in UploadThumbnailInput) (string, error) {
+func (s *UploadService) UploadThumbnail(ctx context.Context, in UploadThumbnailInput, callerID string) (string, error) {
 	fid, err := shared.ParseID(in.FileID)
 	if err != nil {
 		return "", err
@@ -1098,6 +1098,14 @@ func (s *UploadService) UploadThumbnail(ctx context.Context, in UploadThumbnailI
 	f, err := s.fileRepo.FindByID(ctx, fid)
 	if err != nil {
 		return "", err
+	}
+	// owner 校验:防越权覆盖他人文件的缩略图
+	cid, err := shared.ParseID(callerID)
+	if err != nil {
+		return "", shared.BadRequest("无效的调用者 ID")
+	}
+	if !f.OwnerID().Equal(cid) {
+		return "", shared.Forbidden("无权操作他人文件")
 	}
 	// 缩略图存到文件同目录，命名 fileUUID_thumb.<ext>
 	ext := strings.ToLower(filepath.Ext(in.FileName))

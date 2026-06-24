@@ -750,7 +750,7 @@ func (h *Handler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 	url, err := h.uploadSvc.UploadThumbnail(r.Context(), appmedia.UploadThumbnailInput{
 		FileID: id, FileName: header.Filename,
 		MimeType: sniffedMIME, Content: content,
-	})
+	}, interfacesmw.GetUserIDFromContext(r))
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
