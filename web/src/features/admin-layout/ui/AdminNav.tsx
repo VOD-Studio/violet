@@ -1,13 +1,22 @@
 import { ADMIN_NAV_ITEMS } from "@features/admin-layout/config/nav";
 import { cn } from "@shared/lib/utils";
 import { Link, useLocation } from "@tanstack/react-router";
-import { FileText, LayoutDashboard, MessageSquare, ScrollText, Shield, Users } from "lucide-react";
+import {
+	FileText,
+	LayoutDashboard,
+	MessageSquare,
+	ScrollText,
+	Shield,
+	Smile,
+	Users,
+} from "lucide-react";
 
 const ICON_MAP = {
 	LayoutDashboard,
 	Users,
 	FileText,
 	MessageSquare,
+	Smile,
 	Shield,
 	ScrollText,
 };
