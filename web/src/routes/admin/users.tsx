@@ -1,5 +1,4 @@
 import type { UserRole } from "@entities/user/model/types";
-import { ConfirmDialog } from "@features/admin-shared/ui/ConfirmDialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/DataTable";
 import { PageHeader } from "@features/admin-shared/ui/PageHeader";
 import { Pagination } from "@features/admin-shared/ui/Pagination";
@@ -7,12 +6,11 @@ import { StatusBadge } from "@features/admin-shared/ui/StatusBadge";
 import {
 	useBatchUpdateUserRole,
 	useBatchUpdateUserStatus,
-	useDeleteUser,
-	useUpdateUserRole,
-	useUpdateUserStatus,
 } from "@features/admin-users/api/mutations";
 import { useAdminUsers } from "@features/admin-users/api/queries";
 import type { AdminUser } from "@features/admin-users/model/types";
+import { UserActionCell } from "@features/admin-users/ui/UserActionCell";
+import { UserRoleCell } from "@features/admin-users/ui/UserRoleCell";
 import { Button } from "@shared/ui/button";
 import { Checkbox } from "@shared/ui/checkbox";
 import { Input } from "@shared/ui/input";
@@ -52,7 +50,7 @@ function UsersPage() {
 		[query, keyword, roleFilter, statusFilter],
 	);
 
-	const { data, isLoading, refetch } = useAdminUsers(listQuery);
+	const { data, isLoading, error, refetch } = useAdminUsers(listQuery);
 	const users = data?.data ?? [];
 	const pagination = data?.pagination;
 
@@ -240,7 +238,13 @@ function UsersPage() {
 				columns={columns}
 				data={users}
 				loading={isLoading}
+				error={error}
+				onRetry={refetch}
 				keyExtractor={(row) => row.id}
+				stickyHeader
+				maxHeight="55vh"
+				density="compact"
+				caption="用户列表"
 				emptyTitle="NO_USERS"
 				emptyDescription="没有找到用户"
 			/>
@@ -254,98 +258,5 @@ function UsersPage() {
 				/>
 			) : null}
 		</div>
-	);
-}
-
-function UserRoleCell({ user, onMutated }: { user: AdminUser; onMutated: () => void }) {
-	const updateRole = useUpdateUserRole(user.id);
-	return (
-		<Select
-			value={user.role}
-			onValueChange={(v) => {
-				updateRole.mutate(
-					{ role: v as UserRole },
-					{
-						onSuccess: () => {
-							toast.success("角色已更新");
-							onMutated();
-						},
-						onError: (err) => toast.error(err.message),
-					},
-				);
-			}}
-			disabled={updateRole.isPending}
-		>
-			<SelectTrigger className="h-8 w-32">
-				<SelectValue />
-			</SelectTrigger>
-			<SelectContent>
-				{ROLES.map((r) => (
-					<SelectItem key={r.value} value={r.value}>
-						{r.label}
-					</SelectItem>
-				))}
-			</SelectContent>
-		</Select>
-	);
-}
-
-function UserActionCell({ user, onMutated }: { user: AdminUser; onMutated: () => void }) {
-	const updateStatus = useUpdateUserStatus(user.id);
-	const deleteUser = useDeleteUser(user.id);
-	const [confirmOpen, setConfirmOpen] = useState(false);
-
-	const handleStatus = (isActive: boolean) => {
-		updateStatus.mutate(
-			{ is_active: isActive },
-			{
-				onSuccess: () => {
-					toast.success(isActive ? "用户已启用" : "用户已禁用");
-					onMutated();
-				},
-				onError: (err) => toast.error(err.message),
-			},
-		);
-	};
-
-	const handleDelete = () => {
-		deleteUser.mutate(undefined, {
-			onSuccess: () => {
-				toast.success("用户已删除");
-				setConfirmOpen(false);
-				onMutated();
-			},
-			onError: (err) => toast.error(err.message),
-		});
-	};
-
-	return (
-		<>
-			<div className="flex items-center gap-2">
-				<Button
-					variant={user.is_active ? "outline" : "default"}
-					size="sm"
-					onClick={() => handleStatus(!user.is_active)}
-					disabled={updateStatus.isPending}
-				>
-					{user.is_active ? "禁用" : "启用"}
-				</Button>
-				<Button
-					variant="destructive"
-					size="sm"
-					onClick={() => setConfirmOpen(true)}
-					disabled={deleteUser.isPending}
-				>
-					删除
-				</Button>
-			</div>
-			<ConfirmDialog
-				open={confirmOpen}
-				onOpenChange={setConfirmOpen}
-				title="删除用户"
-				description={`确认删除用户 "${user.username}"？此操作不可撤销。`}
-				onConfirm={handleDelete}
-			/>
-		</>
 	);
 }

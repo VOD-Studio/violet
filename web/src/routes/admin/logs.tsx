@@ -15,7 +15,7 @@ export const Route = createFileRoute("/admin/logs")({
 
 function LogsPage() {
 	const [query, setQuery] = useState({ page: 1, limit: 20 });
-	const { data, isLoading } = useAuditLogs(query);
+	const { data, isLoading, error, refetch } = useAuditLogs(query);
 	const logs = data?.data ?? [];
 	const pagination = data?.pagination;
 
@@ -67,7 +67,13 @@ function LogsPage() {
 				columns={columns}
 				data={logs}
 				loading={isLoading}
+				error={error}
+				onRetry={refetch}
 				keyExtractor={(row) => row.ID.toString()}
+				stickyHeader
+				maxHeight="65vh"
+				density="compact"
+				caption="操作日志列表"
 				emptyTitle="NO_LOGS"
 				emptyDescription="没有找到操作日志"
 			/>

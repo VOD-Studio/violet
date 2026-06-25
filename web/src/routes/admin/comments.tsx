@@ -1,14 +1,9 @@
-import { ConfirmDialog } from "@features/admin-shared/ui/ConfirmDialog";
+import { CommentActionCell } from "@features/admin-comments/ui/CommentActionCell";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/DataTable";
 import { PageHeader } from "@features/admin-shared/ui/PageHeader";
 import { Pagination } from "@features/admin-shared/ui/Pagination";
 import { StatusBadge } from "@features/admin-shared/ui/StatusBadge";
-import {
-	useApproveComment,
-	useBatchUpdateCommentStatus,
-	useDeleteComment,
-	useMarkCommentSpam,
-} from "@features/comments/api/mutations";
+import { useBatchUpdateCommentStatus } from "@features/comments/api/mutations";
 import { useAdminComments } from "@features/comments/api/queries";
 import type { AdminComment, Comment } from "@features/comments/model/types";
 import { Button } from "@shared/ui/button";
@@ -34,7 +29,7 @@ function CommentsPage() {
 
 	const listQuery =
 		tab === "pending" ? { ...query, status: "pending" as const } : { ...query, status: undefined };
-	const { data, isLoading, refetch } = useAdminComments(listQuery);
+	const { data, isLoading, error, refetch } = useAdminComments(listQuery);
 	const comments = data?.data ?? [];
 	const pagination = data?.pagination;
 
@@ -162,7 +157,13 @@ function CommentsPage() {
 				columns={columns}
 				data={comments}
 				loading={isLoading}
+				error={error}
+				onRetry={refetch}
 				keyExtractor={(row) => row.id}
+				stickyHeader
+				maxHeight="55vh"
+				density="compact"
+				caption="评论列表"
 				emptyTitle="NO_COMMENTS"
 				emptyDescription="没有找到评论"
 			/>
@@ -176,70 +177,5 @@ function CommentsPage() {
 				/>
 			) : null}
 		</div>
-	);
-}
-
-function CommentActionCell({ comment, onMutated }: { comment: Comment; onMutated: () => void }) {
-	const approve = useApproveComment(comment.id);
-	const markSpam = useMarkCommentSpam(comment.id);
-	const deleteComment = useDeleteComment(comment.id);
-	const [confirmOpen, setConfirmOpen] = useState(false);
-
-	const handleApprove = () => {
-		approve.mutate(undefined, {
-			onSuccess: () => {
-				toast.success("评论已通过");
-				onMutated();
-			},
-			onError: (err) => toast.error(err.message),
-		});
-	};
-
-	const handleSpam = () => {
-		markSpam.mutate(undefined, {
-			onSuccess: () => {
-				toast.success("已标记为垃圾");
-				onMutated();
-			},
-			onError: (err) => toast.error(err.message),
-		});
-	};
-
-	const handleDelete = () => {
-		deleteComment.mutate(undefined, {
-			onSuccess: () => {
-				toast.success("评论已删除");
-				setConfirmOpen(false);
-				onMutated();
-			},
-			onError: (err) => toast.error(err.message),
-		});
-	};
-
-	return (
-		<>
-			<div className="flex items-center gap-2">
-				{comment.status === "pending" && (
-					<Button size="sm" onClick={handleApprove} disabled={approve.isPending}>
-						通过
-					</Button>
-				)}
-				{comment.status !== "spam" && (
-					<Button variant="outline" size="sm" onClick={handleSpam} disabled={markSpam.isPending}>
-						垃圾
-					</Button>
-				)}
-				<Button variant="destructive" size="sm" onClick={() => setConfirmOpen(true)}>
-					删除
-				</Button>
-			</div>
-			<ConfirmDialog
-				open={confirmOpen}
-				onOpenChange={setConfirmOpen}
-				title="删除评论"
-				description="确认删除这条评论？此操作不可撤销。"
-				onConfirm={handleDelete}
-			/>
-		</>
 	);
 }
