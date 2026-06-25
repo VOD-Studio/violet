@@ -21,6 +21,16 @@ const loginSearchSchema = z.object({
 });
 
 /**
+ * 后端未返回 message 时的兜底文案（按状态码）。正常路径下后端会给出
+ * 明确原因（邮箱未验证 / 账户已被禁用 / 邮箱或密码错误 / 请求过于频繁等）。
+ */
+const FALLBACK_BY_STATUS: Record<number, string> = {
+	401: "邮箱或密码错误",
+	403: "账户不可用，请联系管理员",
+	429: "请求过于频繁，请稍后再试",
+};
+
+/**
  * /login - 登录页
  *
  * 页面挂载时预取 CSRF token，确保 login POST 能通过 double-submit 校验。
@@ -90,17 +100,15 @@ function LoginPage() {
 				}
 			},
 			onError: (err) => {
-				if (err instanceof ApiError) {
-					if (err.status === 403) {
-						toast.error("账户已被禁用，请先完成邮箱验证或联系管理员");
-						return;
-					}
-					if (err.status === 401) {
-						toast.error("邮箱或密码错误");
-						return;
-					}
-				}
-				toast.error(err.message || "登录失败，请检查邮箱和密码");
+				// 优先展示后端返回的具体原因（邮箱未验证 / 账户已被禁用 /
+				// 请求过于频繁 / 邮箱或密码错误 等）。后端已按状态码返回明确 message，
+				// 前端不再凭状态码猜文案（之前 403 一律显示「账户已被禁用」会误导未验证用户）。
+				// 仅当后端没给 message 时，按状态码给兜底。
+				const msg =
+					err instanceof ApiError
+						? err.message || FALLBACK_BY_STATUS[err.status] || "登录失败，请稍后重试"
+						: err.message || "登录失败，请检查邮箱和密码";
+				toast.error(msg);
 			},
 		});
 	};

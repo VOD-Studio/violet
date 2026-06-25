@@ -203,8 +203,13 @@ func (h *LoginHandler) Handle(ctx context.Context, in LoginInput) (LoginOutput, 
 		return LoginOutput{}, user.ErrInvalidCredentials
 	}
 
-	// 3. 校验账户状态
-	if !u.CanLogin() {
+	// 3. 校验账户状态：先判邮箱是否已验证，再判账户是否被禁用，
+	//    分别返回明确原因（之前两类状态都返回 ErrAccountDisabled，
+	//    导致未验证用户看到「账户已被禁用」的误导文案）。
+	if !u.EmailVerified() {
+		return LoginOutput{}, user.ErrEmailNotVerified
+	}
+	if !u.IsActive() {
 		return LoginOutput{}, user.ErrAccountDisabled
 	}
 
