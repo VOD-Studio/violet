@@ -1,6 +1,6 @@
 import { useAuditLogs } from "@features/admin-logs/api/queries";
 import type { AuditLog } from "@features/admin-logs/model/types";
-import { DataTable } from "@features/admin-shared/ui/DataTable";
+import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/DataTable";
 import { PageHeader } from "@features/admin-shared/ui/PageHeader";
 import { Pagination } from "@features/admin-shared/ui/Pagination";
 import { createFileRoute } from "@tanstack/react-router";
@@ -19,15 +19,23 @@ function LogsPage() {
 	const logs = data?.data ?? [];
 	const pagination = data?.pagination;
 
-	const columns = [
-		{ key: "action", header: "操作", cell: (row: AuditLog) => row.Action },
+	const columns: DataTableColumn<AuditLog>[] = [
+		{ key: "action", header: "操作", accessorKey: "Action", width: "120px" },
 		{
 			key: "resource",
 			header: "资源",
+			accessorKey: "Resource",
 			cell: (row: AuditLog) => `${row.Resource}/${row.ResourceID}`,
+			width: "140px",
 		},
-		{ key: "user", header: "用户", cell: (row: AuditLog) => row.UserID ?? "匿名" },
-		{ key: "ip", header: "IP", cell: (row: AuditLog) => row.IPAddress },
+		{
+			key: "user",
+			header: "用户",
+			accessorKey: "UserID",
+			cell: (row: AuditLog) => row.UserID ?? "匿名",
+			width: "120px",
+		},
+		{ key: "ip", header: "IP", accessorKey: "IPAddress", width: "120px" },
 		{
 			key: "detail",
 			header: "详情",
@@ -39,11 +47,15 @@ function LogsPage() {
 					</pre>
 				</details>
 			),
+			width: "100px",
+			align: "center",
 		},
 		{
 			key: "created",
 			header: "时间",
+			accessorKey: "CreatedAt",
 			cell: (row: AuditLog) => new Date(row.CreatedAt).toLocaleString("zh-CN"),
+			width: "160px",
 		},
 	];
 

@@ -1,5 +1,5 @@
 import { ConfirmDialog } from "@features/admin-shared/ui/ConfirmDialog";
-import { DataTable } from "@features/admin-shared/ui/DataTable";
+import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/DataTable";
 import { PageHeader } from "@features/admin-shared/ui/PageHeader";
 import { Pagination } from "@features/admin-shared/ui/Pagination";
 import { StatusBadge } from "@features/admin-shared/ui/StatusBadge";
@@ -45,29 +45,37 @@ function PostsPage() {
 	const posts = data?.data ?? [];
 	const pagination = data?.pagination;
 
-	const columns = [
-		{ key: "title", header: "标题", cell: (row: AdminPost) => row.title },
-		{ key: "slug", header: "Slug", cell: (row: AdminPost) => row.slug },
+	const columns: DataTableColumn<AdminPost>[] = [
+		{ key: "title", header: "标题", accessorKey: "title" },
+		{ key: "slug", header: "Slug", accessorKey: "slug" },
 		{
 			key: "status",
 			header: "状态",
 			cell: (row: AdminPost) => <StatusBadge status={row.status} kind="post" />,
+			width: "100px",
+			align: "center",
 		},
 		{
 			key: "views",
 			header: "浏览量",
-			cell: (row: AdminPost) => row.view_count,
+			accessorKey: "view_count",
+			width: "90px",
+			align: "right",
 		},
 		{
 			key: "published",
 			header: "发布时间",
+			accessorKey: "published_at",
 			cell: (row: AdminPost) =>
 				row.published_at ? new Date(row.published_at).toLocaleDateString("zh-CN") : "—",
+			width: "120px",
 		},
 		{
 			key: "actions",
 			header: "操作",
 			cell: (row: AdminPost) => <PostActionCell post={row} onMutated={refetch} />,
+			width: "140px",
+			sticky: "right",
 		},
 	];
 

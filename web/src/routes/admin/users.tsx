@@ -1,6 +1,6 @@
 import type { UserRole } from "@entities/user/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/ConfirmDialog";
-import { DataTable } from "@features/admin-shared/ui/DataTable";
+import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/DataTable";
 import { PageHeader } from "@features/admin-shared/ui/PageHeader";
 import { Pagination } from "@features/admin-shared/ui/Pagination";
 import { StatusBadge } from "@features/admin-shared/ui/StatusBadge";
@@ -107,7 +107,7 @@ function UsersPage() {
 		);
 	};
 
-	const columns = [
+	const columns: DataTableColumn<AdminUser>[] = [
 		{
 			key: "select",
 			header: (
@@ -125,14 +125,17 @@ function UsersPage() {
 					aria-label={`选择 ${row.username}`}
 				/>
 			),
-			className: "w-10",
+			width: "48px",
+			sticky: "left",
+			className: "text-center",
 		},
-		{ key: "username", header: "用户名", cell: (row: AdminUser) => row.username },
-		{ key: "email", header: "邮箱", cell: (row: AdminUser) => row.email },
+		{ key: "username", header: "用户名", accessorKey: "username" },
+		{ key: "email", header: "邮箱", accessorKey: "email" },
 		{
 			key: "role",
 			header: "角色",
 			cell: (row: AdminUser) => <UserRoleCell user={row} onMutated={refetch} />,
+			width: "140px",
 		},
 		{
 			key: "status",
@@ -140,16 +143,22 @@ function UsersPage() {
 			cell: (row: AdminUser) => (
 				<StatusBadge status={row.is_active ? "active" : "inactive"} kind="user" />
 			),
+			width: "96px",
+			align: "center",
 		},
 		{
 			key: "created",
 			header: "创建时间",
+			accessorKey: "created_at",
 			cell: (row: AdminUser) => new Date(row.created_at).toLocaleDateString("zh-CN"),
+			width: "120px",
 		},
 		{
 			key: "actions",
 			header: "操作",
 			cell: (row: AdminUser) => <UserActionCell user={row} onMutated={refetch} />,
+			width: "160px",
+			sticky: "right",
 		},
 	];
 

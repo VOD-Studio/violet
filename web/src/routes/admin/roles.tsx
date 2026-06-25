@@ -8,7 +8,7 @@ import {
 import { usePermissions, useRoles } from "@features/admin-roles/api/queries";
 import type { Permission, Role } from "@features/admin-roles/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/ConfirmDialog";
-import { DataTable } from "@features/admin-shared/ui/DataTable";
+import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/DataTable";
 import { PageHeader } from "@features/admin-shared/ui/PageHeader";
 import { Button } from "@shared/ui/button";
 import { Checkbox } from "@shared/ui/checkbox";
@@ -43,18 +43,27 @@ function RolesPage() {
 	const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
 	const [editingRole, setEditingRole] = useState<Role | null>(null);
 
-	const roleColumns = [
-		{ key: "name", header: "角色名", cell: (row: Role) => row.name },
-		{ key: "description", header: "描述", cell: (row: Role) => row.description || "—" },
+	const roleColumns: DataTableColumn<Role>[] = [
+		{ key: "name", header: "角色名", accessorKey: "name", width: "140px" },
+		{
+			key: "description",
+			header: "描述",
+			accessorKey: "description",
+			cell: (row: Role) => row.description || "—",
+		},
 		{
 			key: "permissions",
 			header: "权限",
+			accessorKey: "permission_codes",
 			cell: (row: Role) => row.permission_codes.join(", ") || "—",
 		},
 		{
 			key: "users",
 			header: "用户数",
+			accessorKey: "user_count",
 			cell: (row: Role) => row.user_count ?? "—",
+			width: "90px",
+			align: "center",
 		},
 		{
 			key: "actions",
@@ -67,6 +76,8 @@ function RolesPage() {
 					<DeleteRoleButton role={row} onDeleted={refetchRoles} />
 				</div>
 			),
+			width: "140px",
+			sticky: "right",
 		},
 	];
 

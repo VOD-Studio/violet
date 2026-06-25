@@ -1,5 +1,5 @@
 import { ConfirmDialog } from "@features/admin-shared/ui/ConfirmDialog";
-import { DataTable } from "@features/admin-shared/ui/DataTable";
+import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/DataTable";
 import { PageHeader } from "@features/admin-shared/ui/PageHeader";
 import { Pagination } from "@features/admin-shared/ui/Pagination";
 import { StatusBadge } from "@features/admin-shared/ui/StatusBadge";
@@ -73,7 +73,7 @@ function CommentsPage() {
 		);
 	};
 
-	const columns = [
+	const columns: DataTableColumn<AdminComment>[] = [
 		{
 			key: "select",
 			header: (
@@ -91,33 +91,44 @@ function CommentsPage() {
 					aria-label={`选择 ${row.author_name}`}
 				/>
 			),
-			className: "w-10",
+			width: "48px",
+			sticky: "left",
+			className: "text-center",
 		},
-		{ key: "author", header: "作者", cell: (row: Comment) => row.author_name },
+		{ key: "author", header: "作者", accessorKey: "author_name", width: "120px" },
 		{
 			key: "content",
 			header: "内容",
+			accessorKey: "body",
 			cell: (row: Comment) => <p className="max-w-xs truncate text-sm">{row.body}</p>,
 		},
 		{
 			key: "post",
 			header: "文章",
+			accessorKey: "post_title",
 			cell: (row: AdminComment) => <p className="max-w-xs truncate text-sm">{row.post_title}</p>,
+			width: "180px",
 		},
 		{
 			key: "status",
 			header: "状态",
 			cell: (row: Comment) => <StatusBadge status={row.status} kind="comment" />,
+			width: "96px",
+			align: "center",
 		},
 		{
 			key: "created",
 			header: "时间",
+			accessorKey: "created_at",
 			cell: (row: Comment) => new Date(row.created_at).toLocaleString("zh-CN"),
+			width: "150px",
 		},
 		{
 			key: "actions",
 			header: "操作",
 			cell: (row: Comment) => <CommentActionCell comment={row} onMutated={refetch} />,
+			width: "200px",
+			sticky: "right",
 		},
 	];
 
