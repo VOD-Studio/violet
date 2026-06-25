@@ -1,6 +1,7 @@
+import type { UserDTO } from "@entities/user/model/types";
 import { apiGet } from "@shared/api/request";
 import { useQuery } from "@tanstack/react-query";
-import type { AuthUser, CsrfTokenResponse } from "../model/types";
+import type { CsrfTokenResponse } from "../model/types";
 import { authKeys } from "./keys";
 
 /**
@@ -22,7 +23,7 @@ export const fetchCsrfToken = (): Promise<CsrfTokenResponse> =>
  *
  * @returns 当前登录用户完整信息
  */
-export const fetchMe = (): Promise<AuthUser> => apiGet<AuthUser>("/auth/me");
+export const fetchMe = (): Promise<UserDTO> => apiGet<UserDTO>("/auth/me");
 
 /**
  * useMe - 当前登录用户 hook

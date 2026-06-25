@@ -1,13 +1,12 @@
-import { apiPatch } from "@shared/api/request";
 import { useState } from "react";
 import type { UserDTO } from "@/entities/user/model/types";
+import { useUpdateProfile } from "@/features/auth/api/mutations";
 import { completeUpload, initUpload, uploadChunk } from "../api/mutations";
 import { avatarUrl } from "../lib/imageUrl";
 import { sha256 } from "../lib/sha256";
 
 interface AvatarUploaderProps {
 	user: UserDTO;
-	onUploaded: () => void;
 }
 
 /**
@@ -16,9 +15,10 @@ interface AvatarUploaderProps {
  * 流程：选图 → 算 SHA-256 → initUpload 秒传检查，
  * 命中则直接用返回 url，未命中则单分片上传后 completeUpload，最后更新个人资料。
  */
-export function AvatarUploader({ user, onUploaded }: AvatarUploaderProps) {
+export function AvatarUploader({ user }: AvatarUploaderProps) {
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
+	const updateProfile = useUpdateProfile();
 
 	const handleFile = async (file: File) => {
 		setBusy(true);
@@ -45,8 +45,7 @@ export function AvatarUploader({ user, onUploaded }: AvatarUploaderProps) {
 			if (!url) throw new Error("上传失败：未返回 URL");
 
 			// 更新个人资料头像
-			await apiPatch("/auth/profile", { avatar_url: url });
-			onUploaded();
+			await updateProfile.mutateAsync({ avatar_url: url });
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "上传失败");
 		} finally {

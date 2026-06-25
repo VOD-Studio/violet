@@ -1,8 +1,8 @@
+import type { UserDTO } from "@entities/user/model/types";
 import { CSRF_HEADER } from "@shared/api/csrf";
 import { apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-	AuthUser,
 	ChangePasswordRequest,
 	ForgotPasswordRequest,
 	LoginRequest,
@@ -120,7 +120,7 @@ export const useLogout = () => {
 	return useMutation({
 		mutationFn: () => apiPost<MessageResponse>("/auth/logout"),
 		onSuccess: () => {
-			qc.setQueryData<AuthUser>(authKeys.me(), undefined);
+			qc.setQueryData<UserDTO>(authKeys.me(), undefined);
 			qc.invalidateQueries({ queryKey: authKeys.me() });
 		},
 	});
@@ -139,7 +139,7 @@ export const useUpdateProfile = () => {
 	return useMutation({
 		mutationFn: (body: UpdateProfileRequest) => apiPatch<UpdatedProfile>("/auth/profile", body),
 		onSuccess: (data) => {
-			qc.setQueryData<AuthUser>(authKeys.me(), (old) => (old ? { ...old, ...data } : old));
+			qc.setQueryData<UserDTO>(authKeys.me(), (old) => (old ? { ...old, ...data } : old));
 		},
 	});
 };

@@ -13,6 +13,7 @@ import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
+import { authKeys } from "@/features/auth/api/keys";
 import type { RouterContext } from "../router";
 import AppProvider from "../shared/api/provider";
 import { getCurrentUser } from "../shared/server/session";
@@ -26,8 +27,10 @@ import appCss from "../styles.css?url";
  * beforeLoad 仅返回 auth（serializable，可通过 dehydrate 传给客户端）。。
  */
 export const Route = createRootRouteWithContext<RouterContext>()({
-	beforeLoad: async () => {
+	beforeLoad: async ({ context }) => {
 		const user = await getCurrentUser();
+		// 预填 react-query me 缓存，组件层 useMe 在 SSR 首屏可命中
+		context.queryClient.setQueryData(authKeys.me(), user);
 		return {
 			auth: {
 				isAuthenticated: user !== null,
@@ -71,7 +74,7 @@ function RootComponent() {
 		<AppProvider>
 			<div className="flex min-h-screen flex-col">
 				<AnnouncementBar />
-				<Header user={auth.user} />
+				<Header isAuthenticated={auth.isAuthenticated} />
 				<main className="flex flex-1 flex-col">
 					<Outlet />
 				</main>

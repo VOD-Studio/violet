@@ -1,5 +1,5 @@
-import type { UserDTO } from "@entities/user/model/types";
 import { useMusicUIStore } from "@features/music/model/ui-store";
+import { useMe } from "@/features/auth/api/queries";
 
 import HeaderActions from "./HeaderActions";
 import HeaderLogo from "./HeaderLogo";
@@ -7,7 +7,7 @@ import HeaderMobile from "./HeaderMobile";
 import HeaderNav from "./HeaderNav";
 
 interface HeaderProps {
-	user?: UserDTO | null;
+	isAuthenticated: boolean;
 }
 
 /**
@@ -18,7 +18,8 @@ interface HeaderProps {
  *
  * sticky + backdrop-blur + 1px 极细边框（dark 霓虹 / light 灰）。
  */
-const Header = ({ user }: HeaderProps) => {
+const Header = ({ isAuthenticated }: HeaderProps) => {
+	const { data: user } = useMe({ enabled: isAuthenticated });
 	const openMusic = useMusicUIStore((s) => s.open);
 	const handleAction = (action: string) => {
 		if (action === "open-music") openMusic();

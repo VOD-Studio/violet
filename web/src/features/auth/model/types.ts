@@ -8,14 +8,6 @@
 import type { UserRole } from "@entities/user/model/types";
 
 /**
- * AuthUser - 当前登录用户完整信息
- *
- * 对应后端 GET /auth/me 返回的 UserDTO，与 entities/user 的 UserDTO 同构，
- * 此处仅为 auth feature 内部语义复用导出，避免跨层导入歧义。
- */
-export type AuthUser = import("@entities/user/model/types").UserDTO;
-
-/**
  * CsrfTokenResponse - GET /auth/csrf-token 返回
  *
  * handler 同时下发 mimo_csrf cookie（HttpOnly=false，JS 可读）并返回 token 字符串。
