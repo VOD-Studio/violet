@@ -19,8 +19,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 				</div>
 			</aside>
 
-			{/* 主内容区 */}
-			<div className="flex flex-1 flex-col overflow-hidden">
+			{/* 主内容区：bg-muted/30 让表格卡片（bg-card）浮起，避免一片白无层次 */}
+			<div className="flex flex-1 flex-col overflow-hidden bg-muted/30">
 				<AdminHeader />
 				<main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
 			</div>
