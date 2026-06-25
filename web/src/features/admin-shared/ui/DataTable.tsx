@@ -1,10 +1,10 @@
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/button";
 import Empty from "@shared/ui/empty";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { Skeleton } from "@shared/ui/skeleton";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/ui/table";
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface DataTableColumn<T> {
 	/** 列唯一标识，同时用作 React key 与排序、固定列的引用 */
@@ -41,7 +41,7 @@ export interface DataTableProps<T> {
 	data: T[];
 	/** 行唯一键提取器 */
 	keyExtractor: (row: T) => string;
-	/** 加载中，渲染 shimmer 骨架行 */
+	/** 加载中，渲染骨架行 */
 	loading?: boolean;
 	/** 错误对象，非空时渲染错误态并可重试 */
 	error?: Error | null;
@@ -61,8 +61,6 @@ export interface DataTableProps<T> {
 	onRowClick?: (row: T) => void;
 	/** 按行数据返回附加类名，用于高亮特定行 */
 	rowClassName?: (row: T) => string | undefined;
-	/** 开启单元格聚光灯，默认 true */
-	spotlight?: boolean;
 	/** 表格无障碍标题，渲染为 caption 供屏幕阅读器概述 */
 	caption?: string;
 	/** 空状态标题 */
@@ -78,21 +76,11 @@ interface StickyOffset {
 	offset: string;
 }
 
-interface StickyStyle {
-	className: string;
-	style?: React.CSSProperties;
-}
-
 const ALIGN_CLASS: Record<"left" | "center" | "right", string> = {
 	left: "text-left",
 	center: "text-center",
 	right: "text-right",
 };
-
-/** 左侧固定列右侧内阴影：暗示内容从右侧滑入覆盖 */
-const LEFT_SHADOW = "shadow-[inset_16px_0_22px_-16px_hsl(var(--foreground)/0.26)]";
-/** 右侧固定列左侧内阴影：暗示内容从左侧滑入覆盖 */
-const RIGHT_SHADOW = "shadow-[inset_-16px_0_22px_-16px_hsl(var(--foreground)/0.26)]";
 
 /** 骨架行用固定 id，避免数组下标作为 key */
 const SKELETON_ROWS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"];
@@ -104,7 +92,10 @@ function parseWidth(width?: string): number {
 	return matched ? Number(matched[1]) : 0;
 }
 
-/** 预计算固定列的左右偏移，同侧多列按宽度累加 */
+/**
+ * 预计算固定列的左右偏移，同侧多列按宽度累加。
+ * left 列偏移=其左侧所有 left 列宽度之和；right 列同理从右累加。
+ */
 function computeStickyOffsets<T>(columns: DataTableColumn<T>[]): Map<string, StickyOffset> {
 	const map = new Map<string, StickyOffset>();
 	let left = 0;
@@ -131,32 +122,67 @@ function mergeStyle(sticky?: React.CSSProperties, width?: string): React.CSSProp
 	return { ...sticky, ...(width ? { width } : {}) };
 }
 
-/** 表头单元格的固定列与吸顶相关类名，z 轴在交叉处取高层级 */
-function headSticky(offset: StickyOffset | undefined, stickyHeader?: boolean): StickyStyle {
-	const classes: string[] = [];
-	let style: React.CSSProperties | undefined;
-	if (stickyHeader) classes.push("sticky top-0 z-20 bg-background");
-	if (offset) {
-		classes.push("sticky", offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW);
-		style = offset.side === "left" ? { left: offset.offset } : { right: offset.offset };
-	}
-	const z = stickyHeader && offset ? "z-30" : offset ? "z-10" : "";
-	if (z) classes.push(z);
-	return { className: cn(classes), style };
+/** 是否存在指定侧的固定列 */
+function hasStickySide<T>(columns: DataTableColumn<T>[], side: "left" | "right"): boolean {
+	return columns.some((c) => c.sticky === side);
 }
 
-/** 数据单元格的固定列类名，背景不透明以遮挡横向滚动内容 */
-function cellSticky(offset: StickyOffset | undefined): StickyStyle {
+/**
+ * 表头单元格的固定列与吸顶样式。
+ * z 轴层级：普通 0 < 固定列 10 < 吸顶表头 20 < 吸顶+固定交叉 30。
+ */
+function headStickyClass(offset: StickyOffset | undefined, stickyHeader?: boolean): string {
+	const classes: string[] = [];
+	if (stickyHeader) classes.push("sticky top-0 z-20 bg-background");
+	if (offset) classes.push("sticky", "bg-background");
+	const z = stickyHeader && offset ? "z-30" : offset ? "z-10" : "";
+	if (z) classes.push(z);
+	return classes.join(" ");
+}
+
+/**
+ * 数据单元格的固定列样式：背景不透明遮挡横向滚动内容，
+ * z-10 确保浮于普通单元格之上。
+ */
+function cellStickyStyle(offset: StickyOffset | undefined): {
+	className: string;
+	style?: React.CSSProperties;
+} {
 	if (!offset) return { className: "" };
 	return {
-		className: cn(
-			"sticky z-10 bg-background",
-			offset.side === "left"
-				? [LEFT_SHADOW, "border-r border-edge-hairline"]
-				: [RIGHT_SHADOW, "border-l border-edge-hairline"],
-		),
+		className: "sticky z-10 bg-background",
 		style: offset.side === "left" ? { left: offset.offset } : { right: offset.offset },
 	};
+}
+
+interface StickyShadowProps {
+	side: "left" | "right";
+	visible: boolean;
+}
+
+/**
+ * 固定列边缘阴影条（antd 风格）。
+ *
+ * 渲染在滚动容器内侧、贴着固定列的边缘，贯穿全部行高。
+ * 仅当对应方向还有可滚动内容时显示：
+ * - left 阴影：内容向左滚动（scrollLeft > 0）时，左固定列遮挡了右侧内容 → 阴影投在左列右侧。
+ * - right 阴影：内容向右未滚到底（右侧还有内容）时 → 阴影投在右列左侧。
+ */
+function StickyShadow({ side, visible }: StickyShadowProps) {
+	return (
+		<div
+			aria-hidden
+			className={cn(
+				"pointer-events-none absolute inset-y-0 z-20 w-3 transition-opacity duration-200",
+				side === "left"
+					? // 左固定列右边投阴影（内容从左侧滑出）
+						"shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.16)] dark:shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.5)]"
+					: // 右固定列左边投阴影（内容从右侧滑出）
+						"right-0 shadow-[inset_-10px_0_8px_-8px_rgba(0,0,0,0.16)] dark:shadow-[inset_-10px_0_8px_-8px_rgba(0,0,0,0.5)]",
+				visible ? "opacity-100" : "opacity-0",
+			)}
+		/>
+	);
 }
 
 /** 渲染单元格，优先 cell，否则按 accessorKey 直读并安全转为可渲染值 */
@@ -180,8 +206,9 @@ function SortIcon({ active, order }: { active: boolean; order?: "asc" | "desc" }
 /**
  * DataTable - 通用数据表格
  *
- * 基于 shadcn Table 原语封装，支持排序、固定列、吸顶表头、骨架屏、
- * 错误态与单元格聚光灯。排序与分页均为服务端驱动，组件只负责 UI 与回调。
+ * 基于 shadcn Table 原语封装，支持排序、固定列（含 antd 风格边缘阴影）、
+ * 吸顶表头、骨架屏、错误态与空状态。排序与分页均为服务端驱动，
+ * 组件只负责 UI 与回调。
  */
 export function DataTable<T>({
 	columns,
@@ -197,15 +224,42 @@ export function DataTable<T>({
 	density = "comfortable",
 	onRowClick,
 	rowClassName,
-	spotlight = true,
 	caption,
 	emptyTitle = "NO_DATA",
 	emptyDescription = "暂无数据",
 	className,
 }: DataTableProps<T>) {
 	const offsets = useMemo(() => computeStickyOffsets(columns), [columns]);
+	const hasLeftSticky = useMemo(() => hasStickySide(columns, "left"), [columns]);
+	const hasRightSticky = useMemo(() => hasStickySide(columns, "right"), [columns]);
 
-	const [spotlightActive, setSpotlightActive] = useState(false);
+	const [showLeftShadow, setShowLeftShadow] = useState(false);
+	const [showRightShadow, setShowRightShadow] = useState(false);
+	const scrollRef = useRef<HTMLDivElement>(null);
+
+	const updateShadows = useCallback(() => {
+		const el = scrollRef.current;
+		if (!el) return;
+		const { scrollLeft, clientWidth, scrollWidth } = el;
+		// 仅当横向可滚动时启用阴影判断
+		const scrollable = scrollWidth - clientWidth > 1;
+		setShowLeftShadow(scrollable && scrollLeft > 1);
+		setShowRightShadow(scrollable && scrollLeft + clientWidth < scrollWidth - 1);
+	}, []);
+
+	useEffect(() => {
+		const el = scrollRef.current;
+		if (!el) return;
+		const handle = () => updateShadows();
+		const ro = new ResizeObserver(handle);
+		ro.observe(el);
+		el.addEventListener("scroll", handle, { passive: true });
+		requestAnimationFrame(handle);
+		return () => {
+			ro.disconnect();
+			el.removeEventListener("scroll", handle);
+		};
+	}, [updateShadows]);
 
 	const cellPad = density === "compact" ? "py-1" : "py-2.5";
 	const headPad = density === "compact" ? "h-8" : "h-10";
@@ -218,44 +272,27 @@ export function DataTable<T>({
 		onSortChange({ key: col.key, order });
 	};
 
-	/** 在容器级别更新 spotlight 视口坐标 */
-	const handleSpotlightMove = (e: React.MouseEvent<HTMLDivElement>) => {
-		const el = e.currentTarget;
-		el.style.setProperty("--spot-x", `${e.clientX}px`);
-		el.style.setProperty("--spot-y", `${e.clientY}px`);
-	};
-
-	const spotlightStyle: React.CSSProperties | undefined = spotlight
-		? {
-				backgroundImage:
-					"radial-gradient(360px circle at var(--spot-x, 50%) var(--spot-y, 50%), hsl(var(--spotlight-glow) / 0.45), transparent 60%)",
-				backgroundAttachment: "fixed",
-			}
-		: undefined;
-
 	return (
-		<section
+		<div
+			ref={scrollRef}
+			role="region"
 			aria-label={caption || "数据表格"}
-			className={cn("relative overflow-auto rounded-md border border-edge-hairline", className)}
-			style={stickyHeader ? { maxHeight } : undefined}
 			aria-busy={loading ? true : undefined}
-			onMouseMove={spotlight ? handleSpotlightMove : undefined}
-			onMouseEnter={spotlight ? () => setSpotlightActive(true) : undefined}
-			onMouseLeave={spotlight ? () => setSpotlightActive(false) : undefined}
+			className={cn("relative overflow-auto rounded-md border border-border", className)}
+			style={stickyHeader ? { maxHeight } : undefined}
+			onScroll={updateShadows}
 		>
-			{spotlight ? (
-				<span
-					aria-hidden
-					className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
-					style={{ ...spotlightStyle, opacity: spotlightActive ? 1 : 0 }}
-				/>
-			) : null}
-			<table className="relative z-10 w-full caption-bottom text-sm">
+			{/* antd 风格固定列边缘阴影：贯穿全表、随滚动显隐 */}
+			{hasLeftSticky ? <StickyShadow side="left" visible={showLeftShadow} /> : null}
+			{hasRightSticky ? <StickyShadow side="right" visible={showRightShadow} /> : null}
+
+			<table className="relative w-full caption-bottom text-sm">
 				{caption ? <caption className="sr-only">{caption}</caption> : null}
 				<TableHeader>
 					<TableRow className="hover:bg-transparent">
 						{columns.map((col) => {
-							const sp = headSticky(offsets.get(col.key), stickyHeader);
+							const offset = offsets.get(col.key);
+							const stickyClass = headStickyClass(offset, stickyHeader);
 							const active = sort?.key === col.key;
 							let ariaSort: "none" | "ascending" | "descending" | undefined;
 							if (col.sortable) {
@@ -269,17 +306,17 @@ export function DataTable<T>({
 									className={cn(
 										headPad,
 										ALIGN_CLASS[col.align ?? "left"],
-										sp.className,
+										stickyClass,
 										col.className,
 									)}
-									style={mergeStyle(sp.style, col.width)}
+									style={mergeStyle(offset ? cellStickyStyle(offset).style : undefined, col.width)}
 								>
 									{col.sortable ? (
 										<button
 											type="button"
 											onClick={() => emitSort(col)}
 											className={cn(
-												"inline-flex items-center gap-1 select-none transition-colors hover:text-foreground",
+												"inline-flex select-none items-center gap-1 transition-colors hover:text-foreground",
 												col.align === "right" && "flex-row-reverse",
 												col.align === "center" && "w-full justify-center",
 											)}
@@ -323,7 +360,7 @@ export function DataTable<T>({
 										key={col.key}
 										className={cn(cellPad, ALIGN_CLASS[col.align ?? "left"])}
 									>
-										<ShimmerSkeleton className="h-4 w-full max-w-[10rem]" />
+										<Skeleton className="h-4 w-full max-w-[10rem]" />
 									</TableCell>
 								))}
 							</TableRow>
@@ -351,7 +388,8 @@ export function DataTable<T>({
 									style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
 								>
 									{columns.map((col) => {
-										const sp = cellSticky(offsets.get(col.key));
+										const offset = offsets.get(col.key);
+										const sp = cellStickyStyle(offset);
 										return (
 											<TableCell
 												key={col.key}
@@ -373,6 +411,6 @@ export function DataTable<T>({
 					)}
 				</TableBody>
 			</table>
-		</section>
+		</div>
 	);
 }
