@@ -1,4 +1,3 @@
-import { httpClient } from "@shared/api/http";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
@@ -19,12 +18,8 @@ import { postKeys } from "./keys";
  * @param query 分页与标签筛选
  * @returns 解包后的列表 + 分页元数据
  */
-export const fetchPosts = async (query: PostListQuery = {}): Promise<PagedResponse<Post>> => {
-	const res = await httpClient.get<PagedResponse<Post>>("/posts", {
-		params: query,
-	});
-	return res.data;
-};
+export const fetchPosts = async (query: PostListQuery = {}): Promise<PagedResponse<Post>> =>
+	apiGetPaged<Post>("/posts", { params: query });
 
 /**
  * usePosts - 文章列表 hook

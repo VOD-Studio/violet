@@ -1,5 +1,5 @@
 import { CSRF_HEADER } from "@shared/api/csrf";
-import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
+import { apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
 	AuthUser,
@@ -118,7 +118,7 @@ export const useResetPassword = () =>
 export const useLogout = () => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: () => apiDelete<MessageResponse>("/auth/logout"),
+		mutationFn: () => apiPost<MessageResponse>("/auth/logout"),
 		onSuccess: () => {
 			qc.setQueryData<AuthUser>(authKeys.me(), undefined);
 			qc.invalidateQueries({ queryKey: authKeys.me() });

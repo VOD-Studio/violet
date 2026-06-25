@@ -1,7 +1,7 @@
-import { httpClient } from "@shared/api/http";
+import { apiPatch } from "@shared/api/request";
 import { useState } from "react";
 import type { UserDTO } from "@/entities/user/model/types";
-import { completeUpload, initUpload, uploadChunk } from "../api/queries";
+import { completeUpload, initUpload, uploadChunk } from "../api/mutations";
 import { avatarUrl } from "../lib/imageUrl";
 import { sha256 } from "../lib/sha256";
 
@@ -13,9 +13,8 @@ interface AvatarUploaderProps {
 /**
  * AvatarUploader - 头像上传组件
  *
- * 流程:选图 → 算 SHA-256 → initUpload(秒传检查)
- *   → 命中:直接用 url
- *   → 未命中:单分片上传(chunkSize=fileSize)→ completeUpload → patch profile
+ * 流程：选图 → 算 SHA-256 → initUpload 秒传检查，
+ * 命中则直接用返回 url，未命中则单分片上传后 completeUpload，最后更新个人资料。
  */
 export function AvatarUploader({ user, onUploaded }: AvatarUploaderProps) {
 	const [busy, setBusy] = useState(false);
@@ -31,21 +30,22 @@ export function AvatarUploader({ user, onUploaded }: AvatarUploaderProps) {
 				fileSize: file.size,
 				fileHash: hash,
 				mimeType: file.type,
+				chunkSize: file.size,
 				purpose: "avatar",
 			});
 
 			let url = init.url;
-			// 秒传未命中 → 上传单分片
+			// 秒传未命中则上传单分片
 			if (!init.instant && init.upload_id) {
 				const buf = await file.arrayBuffer();
 				await uploadChunk(init.upload_id, 0, buf);
 				const merged = await completeUpload(init.upload_id);
 				url = merged.url;
 			}
-			if (!url) throw new Error("上传失败:未返回 URL");
+			if (!url) throw new Error("上传失败：未返回 URL");
 
 			// 更新个人资料头像
-			await httpClient.patch("/auth/profile", { avatar_url: url });
+			await apiPatch("/auth/profile", { avatar_url: url });
 			onUploaded();
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "上传失败");

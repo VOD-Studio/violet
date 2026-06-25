@@ -1,4 +1,3 @@
-import { httpClient } from "@shared/api/http";
 import { apiGet } from "@shared/api/request";
 import { useQuery } from "@tanstack/react-query";
 import type {
@@ -14,10 +13,7 @@ import { settingsKeys } from "./keys";
  *
  * @returns 站点配置（站名/描述/社交链接等）
  */
-export const fetchSettings = async (): Promise<SiteSettings> => {
-	const res = await httpClient.get<{ data: SiteSettings }>("/settings");
-	return res.data.data;
-};
+export const fetchSettings = async (): Promise<SiteSettings> => apiGet<SiteSettings>("/settings");
 
 /**
  * useSettings - 站点配置 hook
@@ -36,10 +32,8 @@ export const useSettings = () =>
  *
  * @returns 生效公告列表（已按 pinned 排序的由前端 AnnouncementBar 处理）
  */
-export const fetchAnnouncements = async (): Promise<Announcement[]> => {
-	const res = await httpClient.get<{ data: Announcement[] }>("/announcements");
-	return res.data.data;
-};
+export const fetchAnnouncements = async (): Promise<Announcement[]> =>
+	apiGet<Announcement[]>("/announcements");
 
 /**
  * useAnnouncements - 公告 hook

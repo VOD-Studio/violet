@@ -1,4 +1,4 @@
-import { httpClient } from "@shared/api/http";
+import { apiGet } from "@shared/api/request";
 import { useQuery } from "@tanstack/react-query";
 import type { ContributionSummary, Repo } from "../model/types";
 import { githubKeys } from "./keys";
@@ -10,10 +10,8 @@ import { githubKeys } from "./keys";
  *
  * @returns 贡献图汇总数据
  */
-export const fetchContributions = async (): Promise<ContributionSummary> => {
-	const res = await httpClient.get<{ data: ContributionSummary }>("/github/contributions");
-	return res.data.data;
-};
+export const fetchContributions = async (): Promise<ContributionSummary> =>
+	apiGet<ContributionSummary>("/github/contributions");
 
 /**
  * useContributions - GitHub 贡献图 hook
@@ -34,10 +32,7 @@ export const useContributions = () =>
  *
  * @returns 公开仓库列表
  */
-export const fetchRepos = async (): Promise<Repo[]> => {
-	const res = await httpClient.get<{ data: Repo[] }>("/github/repos");
-	return res.data.data;
-};
+export const fetchRepos = async (): Promise<Repo[]> => apiGet<Repo[]>("/github/repos");
 
 /**
  * useRepos - GitHub 仓库列表 hook

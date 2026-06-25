@@ -1,6 +1,4 @@
-import type { UnpackedResponse } from "@shared/api/http";
-import { httpClient } from "@shared/api/http";
-import { apiDelete, apiPost } from "@shared/api/request";
+import { apiDelete, apiPost, apiPut } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
 	BatchDeleteRequest,
@@ -56,8 +54,7 @@ export const useBatchDeleteMedia = () => {
 /**
  * uploadThumbnail - 上传缩略图底层请求函数
  *
- * 对接 POST /media/{id}/thumbnail，multipart/form-data，
- * 字段名固定为 file。httpClient 已自动解 envelope，此处手动取 data。
+ * 对接 POST /media/{id}/thumbnail，multipart/form-data，字段名固定为 file。
  *
  * @param id 媒体 ID
  * @param file 缩略图文件
@@ -65,11 +62,7 @@ export const useBatchDeleteMedia = () => {
 export const uploadThumbnail = async (id: string, file: File): Promise<ThumbnailUploadResult> => {
 	const form = new FormData();
 	form.append("file", file);
-	const res = await httpClient.post<UnpackedResponse<ThumbnailUploadResult>>(
-		`/media/${id}/thumbnail`,
-		form,
-	);
-	return res.data.data;
+	return apiPost<ThumbnailUploadResult>(`/media/${id}/thumbnail`, form);
 };
 
 /**
@@ -120,14 +113,10 @@ export const uploadChunk = async (
 	uploadId: string,
 	index: number,
 	data: ArrayBuffer,
-): Promise<null> => {
-	const res = await httpClient.put<UnpackedResponse<null>>(
-		`/upload/${uploadId}/chunk/${index}`,
-		data,
-		{ headers: { "Content-Type": "application/octet-stream" } },
-	);
-	return res.data.data;
-};
+): Promise<null> =>
+	apiPut<null>(`/upload/${uploadId}/chunk/${index}`, data, {
+		headers: { "Content-Type": "application/octet-stream" },
+	});
 
 /**
  * useUploadChunk - 上传单个分片 mutation
