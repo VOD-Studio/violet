@@ -1,7 +1,9 @@
+import type { UserDTO } from "@entities/user/model/types";
 import { NAV_ITEMS } from "@shared/config/nav";
 import { Button } from "@shared/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@shared/ui/sheet";
-import { Menu } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { LayoutDashboard, Menu } from "lucide-react";
 import { useState } from "react";
 
 import HeaderNavItem from "./HeaderNavItem";
@@ -14,6 +16,10 @@ export interface HeaderMobileProps {
 	 * 点击 action 项时的回调
 	 */
 	onAction?: (action: string) => void;
+	/**
+	 * 当前用户
+	 */
+	user?: UserDTO | null;
 }
 
 /**
@@ -22,8 +28,9 @@ export interface HeaderMobileProps {
  * md 以下显示汉堡图标，点击展开 Sheet 抽屉显示 nav 列表。
  * action 项点击后自动关闭抽屉（改善移动端体验）。
  */
-const HeaderMobile = ({ onAction }: HeaderMobileProps) => {
+const HeaderMobile = ({ onAction, user }: HeaderMobileProps) => {
 	const [open, setOpen] = useState(false);
+	const isAdmin = user && (user.role === "admin" || user.role === "superadmin");
 
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
@@ -33,7 +40,7 @@ const HeaderMobile = ({ onAction }: HeaderMobileProps) => {
 				</Button>
 			</SheetTrigger>
 			<SheetContent side="left">
-				<nav className="flex flex-col gap-2 mt-8">
+				<nav className="mt-8 flex flex-col gap-2">
 					{NAV_ITEMS.map((item) => (
 						<HeaderNavItem
 							key={item.label}
@@ -44,6 +51,16 @@ const HeaderMobile = ({ onAction }: HeaderMobileProps) => {
 							}}
 						/>
 					))}
+					{isAdmin ? (
+						<Link
+							to="/admin"
+							className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+							onClick={() => setOpen(false)}
+						>
+							<LayoutDashboard className="size-4" />
+							后台管理
+						</Link>
+					) : null}
 				</nav>
 			</SheetContent>
 		</Sheet>

@@ -4,10 +4,7 @@ import Contributions from "@features/github/ui/Contributions";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
 import { settingsKeys } from "@features/settings/api/keys";
-import {
-	fetchAnnouncements,
-	fetchSettings,
-} from "@features/settings/api/queries";
+import { fetchAnnouncements, fetchSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 import Hero from "@widgets/Hero";
 

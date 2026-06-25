@@ -31,17 +31,14 @@ export async function initUpload(opts: {
 	mimeType: string;
 	purpose: string;
 }): Promise<InitSessionResult> {
-	const res = await httpClient.post<{ data: InitSessionResult }>(
-		"/upload/init",
-		{
-			fileName: opts.fileName,
-			fileSize: opts.fileSize,
-			fileHash: opts.fileHash,
-			mimeType: opts.mimeType,
-			chunkSize: opts.fileSize, // 单分片:整文件作为一个 chunk
-			purpose: opts.purpose,
-		},
-	);
+	const res = await httpClient.post<{ data: InitSessionResult }>("/upload/init", {
+		fileName: opts.fileName,
+		fileSize: opts.fileSize,
+		fileHash: opts.fileHash,
+		mimeType: opts.mimeType,
+		chunkSize: opts.fileSize, // 单分片:整文件作为一个 chunk
+		purpose: opts.purpose,
+	});
 	return res.data.data;
 }
 
@@ -58,8 +55,6 @@ export async function uploadChunk(
 
 /** completeUpload - 合并所有分片,返回最终文件信息 */
 export async function completeUpload(uploadId: string): Promise<MergeResult> {
-	const res = await httpClient.post<{ data: MergeResult }>(
-		`/upload/${uploadId}/complete`,
-	);
+	const res = await httpClient.post<{ data: MergeResult }>(`/upload/${uploadId}/complete`);
 	return res.data.data;
 }

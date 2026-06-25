@@ -66,11 +66,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
  * 装配 AppProvider（QueryClient + Theme + Toaster）+ 子路由出口 + devtools。
  */
 function RootComponent() {
+	const { auth } = Route.useRouteContext();
 	return (
 		<AppProvider>
 			<div className="flex min-h-screen flex-col">
 				<AnnouncementBar />
-				<Header />
+				<Header user={auth.user} />
 				<main className="flex flex-1 flex-col">
 					<Outlet />
 				</main>

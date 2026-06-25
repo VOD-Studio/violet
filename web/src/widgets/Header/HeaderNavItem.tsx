@@ -1,6 +1,6 @@
 import type { NavItem } from "@shared/config/nav";
-import { Link } from "@tanstack/react-router";
 import { cn } from "@shared/lib/utils";
+import { Link } from "@tanstack/react-router";
 
 /**
  * HeaderNavItemProps - HeaderNavItem 组件属性

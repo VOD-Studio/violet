@@ -1,3 +1,4 @@
+import { CSRF_HEADER } from "@shared/api/csrf";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
@@ -42,12 +43,18 @@ export const useVerifyEmail = () =>
  * 成功后后端通过 HttpOnly cookie 下发 access/refresh/CSRF token，
  * 响应体仅返回 access_token 等非敏感字段。onSuccess 主动拉取最新用户信息。
  *
+ * @param csrfToken 可选的 CSRF token；当浏览器 cookie 未成功写入时，可显式传入并写入请求头。
  * @returns POST /auth/login，返回 token 信息
  */
-export const useLogin = () => {
+export const useLogin = (csrfToken?: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: LoginRequest) => apiPost<TokenResponse>("/auth/login", body),
+		mutationFn: (body: LoginRequest) =>
+			apiPost<TokenResponse>(
+				"/auth/login",
+				body,
+				csrfToken ? { headers: { [CSRF_HEADER]: csrfToken } } : undefined,
+			),
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: authKeys.me() });
 		},

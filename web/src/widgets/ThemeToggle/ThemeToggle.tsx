@@ -14,12 +14,7 @@ const ThemeToggle = () => {
 	const isDark = theme === "dark";
 
 	return (
-		<Button
-			variant="ghost"
-			size="icon-sm"
-			aria-label="切换主题"
-			onClick={(e) => toggle(e)}
-		>
+		<Button variant="ghost" size="icon-sm" aria-label="切换主题" onClick={(e) => toggle(e)}>
 			{isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
 		</Button>
 	);

@@ -95,10 +95,15 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
 
 	// 写请求自动注入 CSRF token（配合后端 double-submit 校验）
 	client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-		const token = getCSRFToken();
 		const method = config.method?.toLowerCase();
-		if (token && method && method !== "get") {
-			config.headers.set(CSRF_HEADER, token);
+		if (method && method !== "get") {
+			const existing = config.headers.get(CSRF_HEADER);
+			if (!existing) {
+				const token = getCSRFToken();
+				if (token) {
+					config.headers.set(CSRF_HEADER, token);
+				}
+			}
 		}
 		return config;
 	});
