@@ -1,4 +1,3 @@
-import { useSpotlight } from "@shared/lib/hooks/use-spotlight";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/button";
 import Empty from "@shared/ui/empty";
@@ -62,7 +61,7 @@ export interface DataTableProps<T> {
 	onRowClick?: (row: T) => void;
 	/** 按行数据返回附加类名，用于高亮特定行 */
 	rowClassName?: (row: T) => string | undefined;
-	/** 开启行 hover 聚光灯，默认 true */
+	/** 开启单元格聚光灯，默认 true */
 	spotlight?: boolean;
 	/** 表格无障碍标题，渲染为 caption 供屏幕阅读器概述 */
 	caption?: string;
@@ -90,8 +89,10 @@ const ALIGN_CLASS: Record<"left" | "center" | "right", string> = {
 	right: "text-right",
 };
 
-const LEFT_SHADOW = "shadow-[inset_-8px_0_8px_-8px_rgba(0,0,0,0.12)]";
-const RIGHT_SHADOW = "shadow-[inset_8px_0_8px_-8px_rgba(0,0,0,0.12)]";
+/** 左侧固定列内阴影：更明显，随主题深浅自适应 */
+const LEFT_SHADOW = "shadow-[inset_-14px_0_18px_-14px_hsl(var(--foreground)/0.18)]";
+/** 右侧固定列内阴影 */
+const RIGHT_SHADOW = "shadow-[inset_14px_0_18px_-14px_hsl(var(--foreground)/0.18)]";
 
 /** 骨架行用固定 id，避免数组下标作为 key */
 const SKELETON_ROWS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"];
@@ -134,15 +135,12 @@ function mergeStyle(sticky?: React.CSSProperties, width?: string): React.CSSProp
 function headSticky(offset: StickyOffset | undefined, stickyHeader?: boolean): StickyStyle {
 	const classes: string[] = [];
 	let style: React.CSSProperties | undefined;
-	if (stickyHeader) classes.push("sticky top-0 bg-background/80 backdrop-blur-xl");
+	if (stickyHeader) classes.push("sticky top-0 z-20 bg-background");
 	if (offset) {
-		classes.push(
-			"sticky bg-background/80 backdrop-blur-xl",
-			offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW,
-		);
+		classes.push("sticky", offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW);
 		style = offset.side === "left" ? { left: offset.offset } : { right: offset.offset };
 	}
-	const z = stickyHeader && offset ? "z-30" : stickyHeader ? "z-20" : offset ? "z-10" : "";
+	const z = stickyHeader && offset ? "z-30" : offset ? "z-10" : "";
 	if (z) classes.push(z);
 	return { className: cn(classes), style };
 }
@@ -151,19 +149,14 @@ function headSticky(offset: StickyOffset | undefined, stickyHeader?: boolean): S
 function cellSticky(offset: StickyOffset | undefined): StickyStyle {
 	if (!offset) return { className: "" };
 	return {
-		className: cn("sticky z-10 bg-background", offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW),
+		className: cn(
+			"sticky z-10 bg-background",
+			offset.side === "left"
+				? [LEFT_SHADOW, "border-r border-edge-hairline"]
+				: [RIGHT_SHADOW, "border-l border-edge-hairline"],
+		),
 		style: offset.side === "left" ? { left: offset.offset } : { right: offset.offset },
 	};
-}
-
-/** 行样式，逐行淡入的延迟与可选的聚光跟随背景 */
-function rowStyle(index: number, spotlight: boolean): React.CSSProperties {
-	const style: React.CSSProperties = { animationDelay: `${Math.min(index, 12) * 30}ms` };
-	if (spotlight) {
-		style.backgroundImage =
-			"radial-gradient(160px circle at var(--spot-x, 50%) var(--spot-y, 50%), hsl(var(--glow-soft) / calc(0.14 * var(--row-glow, 0))), transparent 65%)";
-	}
-	return style;
 }
 
 /** 渲染单元格，优先 cell，否则按 accessorKey 直读并安全转为可渲染值 */
@@ -188,8 +181,7 @@ function SortIcon({ active, order }: { active: boolean; order?: "asc" | "desc" }
  * DataTable - 通用数据表格
  *
  * 基于 shadcn Table 原语封装，支持排序、固定列、吸顶表头、骨架屏、
- * 错误态与行 hover 聚光灯。排序与分页均为服务端驱动，组件只负责 UI 与回调。
- * 新增能力全部可选，旧用法 columns + data + keyExtractor 完全兼容。
+ * 错误态与单元格聚光灯。排序与分页均为服务端驱动，组件只负责 UI 与回调。
  */
 export function DataTable<T>({
 	columns,
@@ -211,7 +203,6 @@ export function DataTable<T>({
 	emptyDescription = "暂无数据",
 	className,
 }: DataTableProps<T>) {
-	const onRowMove = useSpotlight();
 	const offsets = useMemo(() => computeStickyOffsets(columns), [columns]);
 
 	const cellPad = density === "compact" ? "py-1" : "py-2.5";
@@ -225,11 +216,28 @@ export function DataTable<T>({
 		onSortChange({ key: col.key, order });
 	};
 
+	/** 在容器级别更新 spotlight 视口坐标，所有单元格用 fixed attachment 统一呈现 */
+	const handleSpotlightMove = (e: React.MouseEvent<HTMLDivElement>) => {
+		const el = e.currentTarget;
+		el.style.setProperty("--spot-x", `${e.clientX}px`);
+		el.style.setProperty("--spot-y", `${e.clientY}px`);
+	};
+
+	const cellSpotlightStyle: React.CSSProperties | undefined = spotlight
+		? {
+				backgroundImage:
+					"radial-gradient(180px circle at var(--spot-x, 50%) var(--spot-y, 50%), hsl(var(--glow-soft) / 0.18), transparent 65%)",
+				backgroundAttachment: "fixed",
+			}
+		: undefined;
+
 	return (
-		<div
+		<section
+			aria-label={caption || "数据表格"}
 			className={cn("overflow-auto rounded-md border border-edge-hairline", className)}
 			style={stickyHeader ? { maxHeight } : undefined}
 			aria-busy={loading ? true : undefined}
+			onMouseMove={spotlight ? handleSpotlightMove : undefined}
 		>
 			<table className="w-full caption-bottom text-sm">
 				{caption ? <caption className="sr-only">{caption}</caption> : null}
@@ -323,15 +331,13 @@ export function DataTable<T>({
 							return (
 								<TableRow
 									key={rowKey}
-									onMouseMove={spotlight ? onRowMove : undefined}
 									onClick={onRowClick ? () => onRowClick(row) : undefined}
 									className={cn(
 										"animate-in fade-in-0 slide-in-from-bottom-1 duration-300",
 										onRowClick && "cursor-pointer",
-										spotlight && "[--row-glow:0] hover:[--row-glow:1]",
 										rowClassName?.(row),
 									)}
-									style={rowStyle(index, spotlight ?? false)}
+									style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
 								>
 									{columns.map((col) => {
 										const sp = cellSticky(offsets.get(col.key));
@@ -344,7 +350,7 @@ export function DataTable<T>({
 													sp.className,
 													col.className,
 												)}
-												style={mergeStyle(sp.style, col.width)}
+												style={mergeStyle({ ...sp.style, ...cellSpotlightStyle }, col.width)}
 											>
 												{renderCell(col, row)}
 											</TableCell>
@@ -356,6 +362,6 @@ export function DataTable<T>({
 					)}
 				</TableBody>
 			</table>
-		</div>
+		</section>
 	);
 }
