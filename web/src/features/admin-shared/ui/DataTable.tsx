@@ -145,7 +145,11 @@ function mergeStyle(sticky?: React.CSSProperties, width?: string): React.CSSProp
 function headStickyClass(offset: StickyOffset | undefined, stickyHeader?: boolean): string {
 	const classes: string[] = [];
 	if (stickyHeader) classes.push("sticky top-0 z-20 bg-background");
-	if (offset) classes.push("sticky", "bg-background");
+	if (offset) {
+		classes.push("sticky", "bg-background");
+		// 固定列表头同样补内边距，与数据单元格对齐（含 checkbox 列 pr-0 覆盖）
+		classes.push(offset.side === "left" ? "!pr-4" : "pl-4");
+	}
 	const z = stickyHeader && offset ? "z-30" : offset ? "z-10" : "";
 	if (z) classes.push(z);
 	return classes.join(" ");
@@ -160,8 +164,11 @@ function cellStickyStyle(offset: StickyOffset | undefined): {
 	style?: React.CSSProperties;
 } {
 	if (!offset) return { className: "" };
+	// 左固定列补右内边距：shadcn Table 对含 checkbox 的单元格 pr-0，
+	// 导致选择列与下一列贴在一起；用 !pr-4 覆盖，保证固定列右边距。
+	const pad = offset.side === "left" ? "!pr-4" : "pl-4";
 	return {
-		className: "sticky z-10 bg-background",
+		className: cn("sticky z-10 bg-background", pad),
 		style: offset.side === "left" ? { left: offset.offset } : { right: offset.offset },
 	};
 }
