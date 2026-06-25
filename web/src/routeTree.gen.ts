@@ -22,6 +22,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminRolesRouteImport } from './routes/admin/roles'
 import { Route as AdminPostsRouteImport } from './routes/admin/posts'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
+import { Route as AdminEmojisRouteImport } from './routes/admin/emojis'
 import { Route as AdminCommentsRouteImport } from './routes/admin/comments'
 
 const LoginRoute = LoginRouteImport.update({
@@ -89,6 +90,11 @@ const AdminLogsRoute = AdminLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEmojisRoute = AdminEmojisRouteImport.update({
+  id: '/emojis',
+  path: '/emojis',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCommentsRoute = AdminCommentsRouteImport.update({
   id: '/comments',
   path: '/comments',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/admin/comments': typeof AdminCommentsRoute
+  '/admin/emojis': typeof AdminEmojisRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/admin/comments': typeof AdminCommentsRoute
+  '/admin/emojis': typeof AdminEmojisRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/admin/comments': typeof AdminCommentsRoute
+  '/admin/emojis': typeof AdminEmojisRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/admin/comments'
+    | '/admin/emojis'
     | '/admin/logs'
     | '/admin/posts'
     | '/admin/roles'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/admin/comments'
+    | '/admin/emojis'
     | '/admin/logs'
     | '/admin/posts'
     | '/admin/roles'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/admin/comments'
+    | '/admin/emojis'
     | '/admin/logs'
     | '/admin/posts'
     | '/admin/roles'
@@ -297,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLogsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/emojis': {
+      id: '/admin/emojis'
+      path: '/emojis'
+      fullPath: '/admin/emojis'
+      preLoaderRoute: typeof AdminEmojisRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/comments': {
       id: '/admin/comments'
       path: '/comments'
@@ -309,6 +328,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminCommentsRoute: typeof AdminCommentsRoute
+  AdminEmojisRoute: typeof AdminEmojisRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminPostsRoute: typeof AdminPostsRoute
   AdminRolesRoute: typeof AdminRolesRoute
@@ -318,6 +338,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminCommentsRoute: AdminCommentsRoute,
+  AdminEmojisRoute: AdminEmojisRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminPostsRoute: AdminPostsRoute,
   AdminRolesRoute: AdminRolesRoute,
