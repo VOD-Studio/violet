@@ -72,6 +72,7 @@
     --surface-glass: 0 0% 100%;
     --edge-hairline: 240 6% 88%;       /* rgba(0,0,0,0.05) 等价 */
     --glow-soft: 0 0% 100%;            /* Light 下 glow 退化为白 */
+    --spotlight-glow: 215 90% 56%;     /* DataTable 聚光灯：light 用冷蓝 */
 
     /* 多层超柔物理阴影（no glow） */
     --shadow-physical: 0 1px 2px rgba(15,15,20,0.04), 0 4px 12px rgba(15,15,20,0.04), 0 16px 40px rgba(15,15,20,0.05);
@@ -107,6 +108,7 @@
     --surface-glass: 240 10% 8%;
     --edge-hairline: 240 6% 20%;
     --glow-soft: 210 100% 66%;
+    --spotlight-glow: 0 0% 100%;       /* DataTable 聚光灯：dark 用白 */
 
     --shadow-physical: 0 0 0 1px rgba(120,160,255,0.06), 0 0 24px rgba(80,120,255,0.05);
 

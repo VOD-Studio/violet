@@ -1,5 +1,5 @@
 import type { UserDTO } from "@entities/user/model/types";
-import { CSRF_HEADER } from "@shared/api/csrf";
+import { CSRF_HEADER, getCSRFToken } from "@shared/api/csrf";
 import { apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
@@ -49,12 +49,15 @@ export const useVerifyEmail = () =>
 export const useLogin = (csrfToken?: string) => {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: (body: LoginRequest) =>
-			apiPost<TokenResponse>(
+		mutationFn: (body: LoginRequest) => {
+			// 优先使用调用方传入的最新 token；若 state 尚未同步，回退到当前 cookie。
+			const token = csrfToken || getCSRFToken();
+			return apiPost<TokenResponse>(
 				"/auth/login",
 				body,
-				csrfToken ? { headers: { [CSRF_HEADER]: csrfToken } } : undefined,
-			),
+				token ? { headers: { [CSRF_HEADER]: token } } : undefined,
+			);
+		},
 		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: authKeys.me() });
 		},

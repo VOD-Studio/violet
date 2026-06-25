@@ -4,7 +4,7 @@ import Empty from "@shared/ui/empty";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@shared/ui/table";
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 export interface DataTableColumn<T> {
 	/** 列唯一标识，同时用作 React key 与排序、固定列的引用 */
@@ -89,10 +89,10 @@ const ALIGN_CLASS: Record<"left" | "center" | "right", string> = {
 	right: "text-right",
 };
 
-/** 左侧固定列内阴影：更明显，随主题深浅自适应 */
-const LEFT_SHADOW = "shadow-[inset_-14px_0_18px_-14px_hsl(var(--foreground)/0.18)]";
-/** 右侧固定列内阴影 */
-const RIGHT_SHADOW = "shadow-[inset_14px_0_18px_-14px_hsl(var(--foreground)/0.18)]";
+/** 左侧固定列右侧内阴影：暗示内容从右侧滑入覆盖 */
+const LEFT_SHADOW = "shadow-[inset_16px_0_22px_-16px_hsl(var(--foreground)/0.26)]";
+/** 右侧固定列左侧内阴影：暗示内容从左侧滑入覆盖 */
+const RIGHT_SHADOW = "shadow-[inset_-16px_0_22px_-16px_hsl(var(--foreground)/0.26)]";
 
 /** 骨架行用固定 id，避免数组下标作为 key */
 const SKELETON_ROWS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"];
@@ -205,6 +205,8 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
 	const offsets = useMemo(() => computeStickyOffsets(columns), [columns]);
 
+	const [spotlightActive, setSpotlightActive] = useState(false);
+
 	const cellPad = density === "compact" ? "py-1" : "py-2.5";
 	const headPad = density === "compact" ? "h-8" : "h-10";
 	const colCount = columns.length;
@@ -216,17 +218,17 @@ export function DataTable<T>({
 		onSortChange({ key: col.key, order });
 	};
 
-	/** 在容器级别更新 spotlight 视口坐标，所有单元格用 fixed attachment 统一呈现 */
+	/** 在容器级别更新 spotlight 视口坐标 */
 	const handleSpotlightMove = (e: React.MouseEvent<HTMLDivElement>) => {
 		const el = e.currentTarget;
 		el.style.setProperty("--spot-x", `${e.clientX}px`);
 		el.style.setProperty("--spot-y", `${e.clientY}px`);
 	};
 
-	const cellSpotlightStyle: React.CSSProperties | undefined = spotlight
+	const spotlightStyle: React.CSSProperties | undefined = spotlight
 		? {
 				backgroundImage:
-					"radial-gradient(180px circle at var(--spot-x, 50%) var(--spot-y, 50%), hsl(var(--glow-soft) / 0.18), transparent 65%)",
+					"radial-gradient(360px circle at var(--spot-x, 50%) var(--spot-y, 50%), hsl(var(--spotlight-glow) / 0.45), transparent 60%)",
 				backgroundAttachment: "fixed",
 			}
 		: undefined;
@@ -234,12 +236,21 @@ export function DataTable<T>({
 	return (
 		<section
 			aria-label={caption || "数据表格"}
-			className={cn("overflow-auto rounded-md border border-edge-hairline", className)}
+			className={cn("relative overflow-auto rounded-md border border-edge-hairline", className)}
 			style={stickyHeader ? { maxHeight } : undefined}
 			aria-busy={loading ? true : undefined}
 			onMouseMove={spotlight ? handleSpotlightMove : undefined}
+			onMouseEnter={spotlight ? () => setSpotlightActive(true) : undefined}
+			onMouseLeave={spotlight ? () => setSpotlightActive(false) : undefined}
 		>
-			<table className="w-full caption-bottom text-sm">
+			{spotlight ? (
+				<span
+					aria-hidden
+					className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
+					style={{ ...spotlightStyle, opacity: spotlightActive ? 1 : 0 }}
+				/>
+			) : null}
+			<table className="relative z-10 w-full caption-bottom text-sm">
 				{caption ? <caption className="sr-only">{caption}</caption> : null}
 				<TableHeader>
 					<TableRow className="hover:bg-transparent">
@@ -350,7 +361,7 @@ export function DataTable<T>({
 													sp.className,
 													col.className,
 												)}
-												style={mergeStyle({ ...sp.style, ...cellSpotlightStyle }, col.width)}
+												style={mergeStyle(sp.style, col.width)}
 											>
 												{renderCell(col, row)}
 											</TableCell>

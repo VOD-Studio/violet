@@ -6,13 +6,7 @@ import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";
-import {
-	createFileRoute,
-	redirect,
-	useNavigate,
-	useRouteContext,
-	useSearch,
-} from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouteContext, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -29,16 +23,10 @@ const loginSearchSchema = z.object({
 /**
  * /login - 登录页
  *
- * 已登录用户访问本页会被重定向到 redirect 或首页。
  * 页面挂载时预取 CSRF token，确保 login POST 能通过 double-submit 校验。
  */
 export const Route = createFileRoute("/login")({
 	validateSearch: loginSearchSchema,
-	beforeLoad: ({ context, search }) => {
-		if (context.auth.isAuthenticated) {
-			throw redirect({ to: search.redirect, replace: true });
-		}
-	},
 	component: LoginPage,
 });
 
@@ -89,8 +77,17 @@ function LoginPage() {
 		login.mutate(form, {
 			onSuccess: async () => {
 				toast.success("登录成功");
-				await queryClient.refetchQueries({ queryKey: authKeys.me() });
-				await navigate({ to: redirect, replace: true });
+				const target = redirect || "/";
+				try {
+					await navigate({ to: target, replace: true });
+				} catch {
+					window.location.href = target;
+				}
+				try {
+					await queryClient.refetchQueries({ queryKey: authKeys.me() });
+				} catch {
+					// 刷新用户信息失败不影响登录后跳转；页面加载时会再次获取。
+				}
 			},
 			onError: (err) => {
 				if (err instanceof ApiError) {
