@@ -27,11 +27,11 @@ function DashboardPage() {
 			) : stats ? (
 				<>
 					<div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-						<StatCard label="文章" value={stats.total_posts} />
-						<StatCard label="评论" value={stats.total_comments} />
-						<StatCard label="待审评论" value={stats.pending_comments} />
-						<StatCard label="总浏览" value={stats.total_views} />
-						<StatCard label="用户" value={stats.total_users} />
+						<StatCard label="文章" value={stats.total_posts ?? 0} />
+						<StatCard label="评论" value={stats.total_comments ?? 0} />
+						<StatCard label="待审评论" value={stats.pending_comments ?? 0} />
+						<StatCard label="总浏览" value={stats.total_views ?? 0} />
+						<StatCard label="用户" value={stats.total_users ?? 0} />
 					</div>
 
 					<div className="grid gap-4 lg:grid-cols-2">
@@ -48,14 +48,14 @@ function DashboardPage() {
 						<CardDescription>最近 30 日浏览量数据</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{trends.daily.length === 0 ? (
+						{(trends.daily ?? []).length === 0 ? (
 							<p className="text-sm text-muted-foreground">暂无趋势数据</p>
 						) : (
 							<ul className="max-h-64 space-y-1 overflow-auto text-sm">
-								{trends.daily.slice(-14).map((point) => (
-									<li key={point.label} className="flex justify-between">
-										<span className="text-muted-foreground">{point.label}</span>
-										<span>{point.count}</span>
+								{(trends.daily ?? []).slice(-14).map((point) => (
+									<li key={point?.label ?? Math.random()} className="flex justify-between">
+										<span className="text-muted-foreground">{point?.label}</span>
+										<span>{point?.count ?? 0}</span>
 									</li>
 								))}
 							</ul>
@@ -74,7 +74,7 @@ function StatCard({ label, value }: { label: string; value: number }) {
 				<CardDescription>{label}</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<p className="font-mono text-3xl font-bold">{value}</p>
+				<p className="font-mono text-3xl font-bold">{value ?? 0}</p>
 			</CardContent>
 		</Card>
 	);
@@ -85,7 +85,7 @@ function PostListCard({
 	posts,
 }: {
 	title: string;
-	posts: Array<{
+	posts?: Array<{
 		id: string;
 		title: string;
 		slug: string;
@@ -94,22 +94,23 @@ function PostListCard({
 		published_at?: string;
 	}>;
 }) {
+	const safePosts = posts ?? [];
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>{title}</CardTitle>
 			</CardHeader>
 			<CardContent>
-				{posts.length === 0 ? (
+				{safePosts.length === 0 ? (
 					<p className="text-sm text-muted-foreground">暂无文章</p>
 				) : (
 					<ul className="space-y-3 text-sm">
-						{posts.map((post) => (
-							<li key={post.id} className="flex items-center justify-between">
+						{safePosts.map((post) => (
+							<li key={post?.id ?? Math.random()} className="flex items-center justify-between">
 								<div className="min-w-0 flex-1">
-									<p className="truncate font-medium">{post.title}</p>
+									<p className="truncate font-medium">{post?.title ?? "—"}</p>
 									<p className="text-xs text-muted-foreground">
-										{post.published_at
+										{post?.published_at
 											? formatDistanceToNow(new Date(post.published_at), {
 													addSuffix: true,
 													locale: zhCN,
@@ -118,7 +119,7 @@ function PostListCard({
 									</p>
 								</div>
 								<span className="font-mono text-xs text-muted-foreground">
-									{post.view_count} 浏览
+									{post?.view_count ?? 0} 浏览
 								</span>
 							</li>
 						))}
