@@ -92,16 +92,26 @@ function parseWidth(width?: string): number {
 	return matched ? Number(matched[1]) : 0;
 }
 
+interface StickyBounds {
+	/** 每列的偏移（key → {side, offset}） */
+	offsets: Map<string, StickyOffset>;
+	/** 左侧 sticky 列总宽度（左固定列右边缘距容器左的像素值） */
+	leftWidth: number;
+	/** 右侧 sticky 列总宽度（右固定列左边缘距容器右的像素值） */
+	rightWidth: number;
+}
+
 /**
- * 预计算固定列的左右偏移，同侧多列按宽度累加。
+ * 预计算固定列的左右偏移与同侧总宽度。
  * left 列偏移=其左侧所有 left 列宽度之和；right 列同理从右累加。
+ * leftWidth/rightWidth 用于定位阴影条（贴在固定列的边缘）。
  */
-function computeStickyOffsets<T>(columns: DataTableColumn<T>[]): Map<string, StickyOffset> {
-	const map = new Map<string, StickyOffset>();
+function computeStickyBounds<T>(columns: DataTableColumn<T>[]): StickyBounds {
+	const offsets = new Map<string, StickyOffset>();
 	let left = 0;
 	for (const col of columns) {
 		if (col.sticky === "left") {
-			map.set(col.key, { side: "left", offset: `${left}px` });
+			offsets.set(col.key, { side: "left", offset: `${left}px` });
 			left += parseWidth(col.width);
 		}
 	}
@@ -109,11 +119,11 @@ function computeStickyOffsets<T>(columns: DataTableColumn<T>[]): Map<string, Sti
 	for (let i = columns.length - 1; i >= 0; i -= 1) {
 		const col = columns[i];
 		if (col.sticky === "right") {
-			map.set(col.key, { side: "right", offset: `${right}px` });
+			offsets.set(col.key, { side: "right", offset: `${right}px` });
 			right += parseWidth(col.width);
 		}
 	}
-	return map;
+	return { offsets, leftWidth: left, rightWidth: right };
 }
 
 /** 合并固定列偏移样式与列宽 */
@@ -158,29 +168,41 @@ function cellStickyStyle(offset: StickyOffset | undefined): {
 interface StickyShadowProps {
 	side: "left" | "right";
 	visible: boolean;
+	/** 阴影条距固定列边缘的偏移（px）：left 用 leftWidth（左固定列总宽），right 用 rightWidth */
+	offset: number;
 }
+
+/** 阴影宽度（px） */
+const SHADOW_W = 20;
 
 /**
  * 固定列边缘阴影条（antd 风格）。
  *
- * 渲染在滚动容器内侧、贴着固定列的边缘，贯穿全部行高。
- * 仅当对应方向还有可滚动内容时显示：
- * - left 阴影：内容向左滚动（scrollLeft > 0）时，左固定列遮挡了右侧内容 → 阴影投在左列右侧。
- * - right 阴影：内容向右未滚到底（右侧还有内容）时 → 阴影投在右列左侧。
+ * 用线性渐变模拟阴影（非 box-shadow，避免被 overflow 裁切），
+ * 贴在固定列的边缘、贯穿全表行高，z-30 浮于所有单元格之上。
+ * - left 阴影：贴在左固定列右边缘（left: leftWidth），向右淡出。
+ * - right 阴影：贴在右固定列左边缘（right: rightWidth），向左淡出。
+ * 仅当对应方向还有可滚动内容时显示。
  */
-function StickyShadow({ side, visible }: StickyShadowProps) {
+function StickyShadow({ side, visible, offset }: StickyShadowProps) {
+	const isLeft = side === "left";
+	// left 阴影：左端浓、右端淡（从固定列向内容方向淡出）
+	// right 阴影：右端浓、左端淡
+	const gradient = isLeft
+		? "linear-gradient(to right, hsl(var(--foreground)/0.18), transparent)"
+		: "linear-gradient(to left, hsl(var(--foreground)/0.18), transparent)";
 	return (
 		<div
 			aria-hidden
 			className={cn(
-				"pointer-events-none absolute inset-y-0 z-20 w-3 transition-opacity duration-200",
-				side === "left"
-					? // 左固定列右边投阴影（内容从左侧滑出）
-						"shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.16)] dark:shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.5)]"
-					: // 右固定列左边投阴影（内容从右侧滑出）
-						"right-0 shadow-[inset_-10px_0_8px_-8px_rgba(0,0,0,0.16)] dark:shadow-[inset_-10px_0_8px_-8px_rgba(0,0,0,0.5)]",
+				"pointer-events-none absolute inset-y-0 z-30 transition-opacity duration-200",
 				visible ? "opacity-100" : "opacity-0",
 			)}
+			style={{
+				width: SHADOW_W,
+				...(isLeft ? { left: `${offset}px` } : { right: `${offset}px` }),
+				backgroundImage: gradient,
+			}}
 		/>
 	);
 }
@@ -229,7 +251,7 @@ export function DataTable<T>({
 	emptyDescription = "暂无数据",
 	className,
 }: DataTableProps<T>) {
-	const offsets = useMemo(() => computeStickyOffsets(columns), [columns]);
+	const { offsets, leftWidth, rightWidth } = useMemo(() => computeStickyBounds(columns), [columns]);
 	const hasLeftSticky = useMemo(() => hasStickySide(columns, "left"), [columns]);
 	const hasRightSticky = useMemo(() => hasStickySide(columns, "right"), [columns]);
 
@@ -274,143 +296,155 @@ export function DataTable<T>({
 
 	return (
 		<div
-			ref={scrollRef}
 			role="region"
 			aria-label={caption || "数据表格"}
 			aria-busy={loading ? true : undefined}
-			className={cn("relative overflow-auto rounded-md border border-border", className)}
-			style={stickyHeader ? { maxHeight } : undefined}
-			onScroll={updateShadows}
+			className={cn("relative rounded-md border border-border", className)}
 		>
-			{/* antd 风格固定列边缘阴影：贯穿全表、随滚动显隐 */}
-			{hasLeftSticky ? <StickyShadow side="left" visible={showLeftShadow} /> : null}
-			{hasRightSticky ? <StickyShadow side="right" visible={showRightShadow} /> : null}
+			{/* antd 风格固定列边缘阴影：放在外层（非滚动流），不跟随横向滚动 */}
+			{hasLeftSticky ? (
+				<StickyShadow side="left" visible={showLeftShadow} offset={leftWidth} />
+			) : null}
+			{hasRightSticky ? (
+				<StickyShadow side="right" visible={showRightShadow} offset={rightWidth} />
+			) : null}
 
-			<table className="relative w-full caption-bottom text-sm">
-				{caption ? <caption className="sr-only">{caption}</caption> : null}
-				<TableHeader>
-					<TableRow className="hover:bg-transparent">
-						{columns.map((col) => {
-							const offset = offsets.get(col.key);
-							const stickyClass = headStickyClass(offset, stickyHeader);
-							const active = sort?.key === col.key;
-							let ariaSort: "none" | "ascending" | "descending" | undefined;
-							if (col.sortable) {
-								ariaSort = active ? (sort?.order === "asc" ? "ascending" : "descending") : "none";
-							}
-							return (
-								<TableHead
-									key={col.key}
-									scope="col"
-									aria-sort={ariaSort}
-									className={cn(
-										headPad,
-										ALIGN_CLASS[col.align ?? "left"],
-										stickyClass,
-										col.className,
-									)}
-									style={mergeStyle(offset ? cellStickyStyle(offset).style : undefined, col.width)}
-								>
-									{col.sortable ? (
-										<button
-											type="button"
-											onClick={() => emitSort(col)}
-											className={cn(
-												"inline-flex select-none items-center gap-1 transition-colors hover:text-foreground",
-												col.align === "right" && "flex-row-reverse",
-												col.align === "center" && "w-full justify-center",
-											)}
-										>
-											<span>{col.header}</span>
-											<SortIcon active={active} order={active ? sort?.order : undefined} />
-										</button>
-									) : (
-										col.header
-									)}
-								</TableHead>
-							);
-						})}
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{error ? (
+			{/* 滚动容器：scrollRef 挂这里，监听 scrollLeft 触发阴影显隐 */}
+			<div
+				ref={scrollRef}
+				className="overflow-auto"
+				style={stickyHeader ? { maxHeight } : undefined}
+				onScroll={updateShadows}
+			>
+				<table className="relative w-full caption-bottom text-sm">
+					{caption ? <caption className="sr-only">{caption}</caption> : null}
+					<TableHeader>
 						<TableRow className="hover:bg-transparent">
-							<TableCell colSpan={colCount}>
-								<div className="py-12" aria-live="assertive">
-									<Empty
-										title="ERROR"
-										description={error.message || "加载失败"}
-										size="sm"
-										action={
-											onRetry ? (
-												<Button variant="outline" size="sm" onClick={onRetry}>
-													重试
-												</Button>
-											) : undefined
-										}
-									/>
-								</div>
-							</TableCell>
-						</TableRow>
-					) : loading ? (
-						SKELETON_ROWS.map((sid) => (
-							<TableRow key={sid} className="hover:bg-transparent">
-								{columns.map((col) => (
-									<TableCell
+							{columns.map((col) => {
+								const offset = offsets.get(col.key);
+								const stickyClass = headStickyClass(offset, stickyHeader);
+								const active = sort?.key === col.key;
+								let ariaSort: "none" | "ascending" | "descending" | undefined;
+								if (col.sortable) {
+									ariaSort = active ? (sort?.order === "asc" ? "ascending" : "descending") : "none";
+								}
+								return (
+									<TableHead
 										key={col.key}
-										className={cn(cellPad, ALIGN_CLASS[col.align ?? "left"])}
+										scope="col"
+										aria-sort={ariaSort}
+										className={cn(
+											headPad,
+											ALIGN_CLASS[col.align ?? "left"],
+											stickyClass,
+											col.className,
+										)}
+										style={mergeStyle(
+											offset ? cellStickyStyle(offset).style : undefined,
+											col.width,
+										)}
 									>
-										<Skeleton className="h-4 w-full max-w-[10rem]" />
-									</TableCell>
-								))}
-							</TableRow>
-						))
-					) : data.length === 0 ? (
-						<TableRow className="hover:bg-transparent">
-							<TableCell colSpan={colCount}>
-								<div className="py-12" aria-live="polite">
-									<Empty title={emptyTitle} description={emptyDescription} size="sm" />
-								</div>
-							</TableCell>
-						</TableRow>
-					) : (
-						data.map((row, index) => {
-							const rowKey = keyExtractor(row);
-							return (
-								<TableRow
-									key={rowKey}
-									onClick={onRowClick ? () => onRowClick(row) : undefined}
-									className={cn(
-										"animate-in fade-in-0 slide-in-from-bottom-1 duration-300",
-										onRowClick && "cursor-pointer",
-										rowClassName?.(row),
-									)}
-									style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
-								>
-									{columns.map((col) => {
-										const offset = offsets.get(col.key);
-										const sp = cellStickyStyle(offset);
-										return (
-											<TableCell
-												key={col.key}
+										{col.sortable ? (
+											<button
+												type="button"
+												onClick={() => emitSort(col)}
 												className={cn(
-													cellPad,
-													ALIGN_CLASS[col.align ?? "left"],
-													sp.className,
-													col.className,
+													"inline-flex select-none items-center gap-1 transition-colors hover:text-foreground",
+													col.align === "right" && "flex-row-reverse",
+													col.align === "center" && "w-full justify-center",
 												)}
-												style={mergeStyle(sp.style, col.width)}
 											>
-												{renderCell(col, row)}
-											</TableCell>
-										);
-									})}
+												<span>{col.header}</span>
+												<SortIcon active={active} order={active ? sort?.order : undefined} />
+											</button>
+										) : (
+											col.header
+										)}
+									</TableHead>
+								);
+							})}
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{error ? (
+							<TableRow className="hover:bg-transparent">
+								<TableCell colSpan={colCount}>
+									<div className="py-12" aria-live="assertive">
+										<Empty
+											title="ERROR"
+											description={error.message || "加载失败"}
+											size="sm"
+											action={
+												onRetry ? (
+													<Button variant="outline" size="sm" onClick={onRetry}>
+														重试
+													</Button>
+												) : undefined
+											}
+										/>
+									</div>
+								</TableCell>
+							</TableRow>
+						) : loading ? (
+							SKELETON_ROWS.map((sid) => (
+								<TableRow key={sid} className="hover:bg-transparent">
+									{columns.map((col) => (
+										<TableCell
+											key={col.key}
+											className={cn(cellPad, ALIGN_CLASS[col.align ?? "left"])}
+										>
+											<Skeleton className="h-4 w-full max-w-[10rem]" />
+										</TableCell>
+									))}
 								</TableRow>
-							);
-						})
-					)}
-				</TableBody>
-			</table>
+							))
+						) : data.length === 0 ? (
+							<TableRow className="hover:bg-transparent">
+								<TableCell colSpan={colCount}>
+									<div className="py-12" aria-live="polite">
+										<Empty title={emptyTitle} description={emptyDescription} size="sm" />
+									</div>
+								</TableCell>
+							</TableRow>
+						) : (
+							data.map((row, index) => {
+								const rowKey = keyExtractor(row);
+								return (
+									<TableRow
+										key={rowKey}
+										onClick={onRowClick ? () => onRowClick(row) : undefined}
+										className={cn(
+											"animate-in fade-in-0 slide-in-from-bottom-1 duration-300",
+											onRowClick && "cursor-pointer",
+											rowClassName?.(row),
+										)}
+										style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
+									>
+										{columns.map((col) => {
+											const offset = offsets.get(col.key);
+											const sp = cellStickyStyle(offset);
+											return (
+												<TableCell
+													key={col.key}
+													className={cn(
+														cellPad,
+														ALIGN_CLASS[col.align ?? "left"],
+														sp.className,
+														col.className,
+													)}
+													style={mergeStyle(sp.style, col.width)}
+												>
+													{renderCell(col, row)}
+												</TableCell>
+											);
+										})}
+									</TableRow>
+								);
+							})
+						)}
+					</TableBody>
+				</table>
+			</div>
 		</div>
 	);
 }
