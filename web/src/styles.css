@@ -26,6 +26,8 @@
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-input: hsl(var(--input));
@@ -51,6 +53,8 @@
     --foreground: 240 10% 11%;         /* 墨灰 #18181B */
     --card: 0 0% 100%;
     --card-foreground: 240 10% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 11%;
     --primary: 240 10% 11%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 5% 96%;
@@ -86,6 +90,8 @@
     --foreground: 210 20% 96%;
     --card: 240 10% 6%;
     --card-foreground: 210 20% 96%;
+    --popover: 240 10% 6%;
+    --popover-foreground: 210 20% 96%;
     --primary: 210 20% 96%;
     --primary-foreground: 240 10% 6%;
     --secondary: 240 6% 12%;
