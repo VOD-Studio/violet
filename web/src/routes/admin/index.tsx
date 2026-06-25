@@ -1,6 +1,6 @@
 import { useDashboardStats, useViewTrends } from "@features/admin-stats/api/queries";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/ui/card";
-import Loader from "@shared/ui/loader";
+import { Skeleton } from "@shared/ui/skeleton";
 import { createFileRoute } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -16,15 +16,15 @@ function DashboardPage() {
 	const { data: stats, isLoading: statsLoading } = useDashboardStats();
 	const { data: trends, isLoading: trendsLoading } = useViewTrends();
 
+	if (statsLoading) {
+		return <DashboardSkeleton />;
+	}
+
 	return (
 		<div>
 			<h2 className="mb-6 font-mono text-xl font-bold tracking-tight">仪表盘</h2>
 
-			{statsLoading ? (
-				<div className="flex justify-center py-20">
-					<Loader label="加载统计数据" />
-				</div>
-			) : stats ? (
+			{stats ? (
 				<>
 					<div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
 						<StatCard label="文章" value={stats.total_posts ?? 0} />
@@ -41,7 +41,9 @@ function DashboardPage() {
 				</>
 			) : null}
 
-			{trendsLoading ? null : trends ? (
+			{trendsLoading ? (
+				<TrendsSkeleton />
+			) : trends ? (
 				<Card className="mt-4">
 					<CardHeader>
 						<CardTitle>浏览趋势</CardTitle>
@@ -63,6 +65,94 @@ function DashboardPage() {
 					</CardContent>
 				</Card>
 			) : null}
+		</div>
+	);
+}
+
+function DashboardSkeleton() {
+	return (
+		<div className="space-y-6">
+			<Skeleton className="h-7 w-32" />
+			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+				<StatCardSkeleton />
+				<StatCardSkeleton />
+				<StatCardSkeleton />
+				<StatCardSkeleton />
+				<StatCardSkeleton />
+			</div>
+			<div className="grid gap-4 lg:grid-cols-2">
+				<PostListCardSkeleton />
+				<PostListCardSkeleton />
+			</div>
+			<TrendsSkeleton />
+		</div>
+	);
+}
+
+function StatCardSkeleton() {
+	return (
+		<Card>
+			<CardHeader className="pb-2">
+				<Skeleton className="h-4 w-16" />
+			</CardHeader>
+			<CardContent>
+				<Skeleton className="h-8 w-20" />
+			</CardContent>
+		</Card>
+	);
+}
+
+function PostListCardSkeleton() {
+	return (
+		<Card>
+			<CardHeader>
+				<Skeleton className="h-5 w-24" />
+			</CardHeader>
+			<CardContent className="space-y-3">
+				<PostListItemSkeleton />
+				<PostListItemSkeleton />
+				<PostListItemSkeleton />
+				<PostListItemSkeleton />
+			</CardContent>
+		</Card>
+	);
+}
+
+function PostListItemSkeleton() {
+	return (
+		<div className="flex items-center justify-between">
+			<Skeleton className="h-4 w-2/3" />
+			<Skeleton className="h-4 w-16" />
+		</div>
+	);
+}
+
+function TrendsSkeleton() {
+	return (
+		<Card className="mt-4">
+			<CardHeader>
+				<Skeleton className="h-5 w-24" />
+				<Skeleton className="h-4 w-40" />
+			</CardHeader>
+			<CardContent className="space-y-2">
+				<TrendItemSkeleton />
+				<TrendItemSkeleton />
+				<TrendItemSkeleton />
+				<TrendItemSkeleton />
+				<TrendItemSkeleton />
+				<TrendItemSkeleton />
+				<TrendItemSkeleton />
+				<TrendItemSkeleton />
+			</CardContent>
+		</Card>
+	);
+}
+
+function TrendItemSkeleton() {
+	return (
+		<div className="flex justify-between">
+			<Skeleton className="h-4 w-20" />
+			<Skeleton className="h-4 w-12" />
 		</div>
 	);
 }
