@@ -6,6 +6,8 @@ import {
   getPaginationRowModel,
   type SortingState,
   getSortedRowModel,
+  type RowSelectionState,
+  type OnChangeFn,
 } from "@tanstack/react-table"
 import {
   Table,
@@ -21,14 +23,23 @@ import { useState } from "react"
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  rowSelection?: RowSelectionState
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>
+  emptyState?: React.ReactNode
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  rowSelection,
+  onRowSelectionChange,
+  emptyState,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
-  const [rowSelection, setRowSelection] = useState({})
+  const [localRowSelection, setLocalRowSelection] = useState<RowSelectionState>({})
+
+  const actualRowSelection = rowSelection !== undefined ? rowSelection : localRowSelection
+  const actualOnRowSelectionChange = onRowSelectionChange !== undefined ? onRowSelectionChange : setLocalRowSelection
 
   const table = useReactTable({
     data,
@@ -37,10 +48,10 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: actualOnRowSelectionChange,
     state: {
       sorting,
-      rowSelection,
+      rowSelection: actualRowSelection,
     },
   })
 
@@ -83,7 +94,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {emptyState ?? "No results."}
                 </TableCell>
               </TableRow>
             )}

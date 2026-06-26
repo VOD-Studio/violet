@@ -12,18 +12,19 @@ function AdminLayout() {
 				<h2 className="text-xl font-bold mb-4 px-2">Admin Panel</h2>
 				<Link
 					to="/admin"
+					activeOptions={{ exact: true }}
 					className="flex items-center gap-2 p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 [&.active]:bg-neutral-200 dark:[&.active]:bg-neutral-700"
 				>
 					<Home className="w-4 h-4" /> Dashboard
 				</Link>
 				<Link
-					to={"/admin/users" as string & {}}
+					to="/admin/users"
 					className="flex items-center gap-2 p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 [&.active]:bg-neutral-200 dark:[&.active]:bg-neutral-700"
 				>
 					<Users className="w-4 h-4" /> Users
 				</Link>
 				<Link
-					to={"/admin/emojis" as string & {}}
+					to="/admin/emojis"
 					className="flex items-center gap-2 p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 [&.active]:bg-neutral-200 dark:[&.active]:bg-neutral-700"
 				>
 					<Smile className="w-4 h-4" /> Emojis
