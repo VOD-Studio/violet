@@ -43,8 +43,8 @@ function BlogDetailPage() {
 			</div>
 
 			<div className="container mx-auto px-6 py-24 flex justify-center">
-				{/* Right side floating TOC (optional/hidden on small screens) */}
-				<aside className="hidden xl:block fixed left-12 top-32 w-64">
+				{/* Left side floating TOC (optional/hidden on small screens) */}
+				<aside className="hidden 2xl:block fixed left-12 top-32 w-64">
 					{/* TOC component */}
 					<ArticleToc items={toc} contentRef={contentRef} />
 				</aside>

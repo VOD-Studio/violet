@@ -285,10 +285,10 @@ export function DataTable<T>({
 	};
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: ignore
-		<div
+		<section
 			ref={scrollRef}
-			role="region"
+			// biome-ignore lint/a11y/noNoninteractiveTabindex: Scrollable region must be focusable
+			tabIndex={0}
 			aria-label={caption || "数据表格"}
 			aria-busy={loading ? true : undefined}
 			className={cn("relative overflow-auto rounded-md border border-border", className)}
@@ -434,6 +434,6 @@ export function DataTable<T>({
 					)}
 				</TableBody>
 			</table>
-		</div>
+		</section>
 	);
 }

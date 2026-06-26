@@ -59,16 +59,17 @@ export function EmojiGroupItem({ group, selected, onSelect, onMutated }: EmojiGr
 
 	return (
 		<>
-			{/* biome-ignore lint/a11y/useKeyWithClickEvents: ignore */}
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: ignore */}
 			<div
 				className={cn(
-					"group flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 transition-colors",
+					"group flex items-center gap-2 rounded-md border px-3 py-2 transition-colors",
 					selected ? "border-foreground/30 bg-accent" : "border-border bg-card hover:bg-accent/50",
 				)}
-				onClick={onSelect}
 			>
-				<div className="min-w-0 flex-1">
+				<button
+					type="button"
+					className="min-w-0 flex-1 cursor-pointer text-left focus:outline-none"
+					onClick={onSelect}
+				>
 					<div className="flex items-center gap-2">
 						<span className="truncate text-sm font-medium">{group.name}</span>
 						<Badge variant="secondary" className="shrink-0 text-[10px]">
@@ -80,10 +81,8 @@ export function EmojiGroupItem({ group, selected, onSelect, onMutated }: EmojiGr
 						<span>·</span>
 						<span>{group.is_enabled ? "启用" : "禁用"}</span>
 					</div>
-				</div>
-				{/* biome-ignore lint/a11y/useKeyWithClickEvents: ignore */}
-				{/* biome-ignore lint/a11y/noStaticElementInteractions: ignore */}
-				<div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+				</button>
+				<div className="flex shrink-0 items-center gap-1">
 					<Button
 						variant="ghost"
 						size="sm"
