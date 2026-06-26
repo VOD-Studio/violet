@@ -3,15 +3,22 @@
 
 @theme {
   --animate-blob: blob 7s infinite;
-  --color-background: #ffffff;
-  --color-foreground: #0a0a0a;
-  --color-edge-hairline: rgba(0, 0, 0, 0.05);
-  
-  /* Dark mode overrides */
-  @media (prefers-color-scheme: dark) {
-    --color-background: #0a0a0a;
-    --color-foreground: #ffffff;
-    --color-edge-hairline: rgba(255, 255, 255, 0.1);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-edge-hairline: var(--edge-hairline);
+}
+
+:root {
+  --bg: #ffffff;
+  --fg: #0a0a0a;
+  --edge-hairline: rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0a0a;
+    --fg: #ffffff;
+    --edge-hairline: rgba(255, 255, 255, 0.1);
   }
 }
 
