@@ -1,4 +1,6 @@
 import { useMusicUIStore } from "@features/music/model/ui-store";
+import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useMe } from "@/features/auth/api/queries";
 
 import HeaderActions from "./HeaderActions";
@@ -25,8 +27,24 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 		if (action === "open-music") openMusic();
 	};
 
+	const [scrolled, setScrolled] = useState(false);
+
+	useEffect(() => {
+		const handleScroll = () => setScrolled(window.scrollY > 50);
+		window.addEventListener("scroll", handleScroll);
+		return () => window.removeEventListener("scroll", handleScroll);
+	}, []);
+
 	return (
-		<header className="sticky top-0 z-40 w-full border-b border-edge-hairline bg-background/70 backdrop-blur-xl">
+		<motion.header
+			initial={{ y: -100 }}
+			animate={{ y: 0 }}
+			className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+				scrolled
+					? "border-b border-edge-hairline bg-background/70 py-2 backdrop-blur-md"
+					: "bg-transparent py-4"
+			}`}
+		>
 			<div className="container mx-auto flex h-16 items-center justify-between px-4">
 				<HeaderLogo />
 				<HeaderNav onAction={handleAction} />
@@ -35,7 +53,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 					<HeaderMobile onAction={handleAction} user={user} />
 				</div>
 			</div>
-		</header>
+		</motion.header>
 	);
 };
 
