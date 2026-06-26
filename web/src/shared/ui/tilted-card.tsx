@@ -43,7 +43,7 @@ export const TiltedCard = ({ children, className = "" }: TiltedCardProps) => {
 				rotateY,
 				transformStyle: "preserve-3d",
 			}}
-			className={`relative transition-transform duration-200 ease-out ${className}`}
+			className={`relative ${className}`}
 		>
 			<div
 				style={{
