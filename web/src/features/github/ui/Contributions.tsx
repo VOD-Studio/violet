@@ -4,7 +4,13 @@ import Loader from "@shared/ui/loader";
 import { useContributions } from "../api/queries";
 
 /** 贡献强度对应的色阶 class（双主题由 CSS 变量驱动） */
-const LEVEL_COLORS = ["bg-muted", "bg-primary/30", "bg-primary/50", "bg-primary/70", "bg-primary"];
+const LEVEL_COLORS = [
+	"bg-muted/50",
+	"bg-sky-200/40 dark:bg-sky-900/40",
+	"bg-sky-400/60 dark:bg-sky-700/60",
+	"bg-sky-600/80 dark:bg-sky-500/80",
+	"bg-sky-800 dark:bg-sky-400",
+];
 
 /**
  * Contributions - GitHub 贡献热力图

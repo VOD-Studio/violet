@@ -285,6 +285,7 @@ export function DataTable<T>({
 	};
 
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: ignore
 		<div
 			ref={scrollRef}
 			role="region"

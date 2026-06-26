@@ -59,6 +59,8 @@ export function EmojiGroupItem({ group, selected, onSelect, onMutated }: EmojiGr
 
 	return (
 		<>
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: ignore */}
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: ignore */}
 			<div
 				className={cn(
 					"group flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 transition-colors",
@@ -79,6 +81,8 @@ export function EmojiGroupItem({ group, selected, onSelect, onMutated }: EmojiGr
 						<span>{group.is_enabled ? "启用" : "禁用"}</span>
 					</div>
 				</div>
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: ignore */}
+				{/* biome-ignore lint/a11y/noStaticElementInteractions: ignore */}
 				<div className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
 					<Button
 						variant="ghost"

@@ -1,6 +1,7 @@
 import { githubKeys } from "@features/github/api/keys";
 import { fetchContributions } from "@features/github/api/queries";
 import Contributions from "@features/github/ui/Contributions";
+import PostList from "@features/posts/ui/PostList";
 import { createFileRoute } from "@tanstack/react-router";
 import Hero from "@widgets/Hero";
 
@@ -8,9 +9,13 @@ function HomePage() {
 	return (
 		<div className="flex flex-col min-h-screen">
 			<Hero />
-			<section className="container mx-auto px-6 py-24 bg-background">
-				{/* Bento Grid Posts will go here in next task */}
-				<div className="mt-24 border border-edge-hairline rounded-3xl p-8">
+			<section className="container mx-auto px-6 py-32 bg-background flex flex-col gap-32">
+				<div>
+					<h2 className="text-3xl font-bold mb-12 tracking-tight">最新文章</h2>
+					<PostList />
+				</div>
+				<div>
+					<h2 className="text-3xl font-bold mb-12 tracking-tight">开源贡献</h2>
 					<Contributions />
 				</div>
 			</section>
