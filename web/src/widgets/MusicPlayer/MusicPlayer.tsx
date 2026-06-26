@@ -1,3 +1,4 @@
+import { useAudioStore } from "@features/music/model/audio-store";
 import { useMusicUIStore } from "@features/music/model/ui-store";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -9,8 +10,8 @@ import { createPortal } from "react-dom";
  */
 const MusicPlayer = () => {
 	const { isOpen, close } = useMusicUIStore();
+	const { isPlaying, toggle, currentTrack } = useAudioStore();
 	const [mounted, setMounted] = useState(false);
-	const [isPlaying, setIsPlaying] = useState(false);
 
 	useEffect(() => setMounted(true), []);
 	if (!mounted || !isOpen) return null;
@@ -20,13 +21,12 @@ const MusicPlayer = () => {
 			className="fixed bottom-6 right-6 z-50 flex items-center gap-2"
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
-			exit={{ opacity: 0, y: 20 }}
 			whileHover={{ scale: 1.05 }}
 			whileTap={{ scale: 0.95 }}
 		>
 			<button
 				type="button"
-				onClick={() => setIsPlaying(!isPlaying)}
+				onClick={toggle}
 				className={`flex items-center gap-2 rounded-full border border-edge-hairline px-4 py-2 backdrop-blur-md transition-all ${
 					isPlaying ? "bg-foreground/10" : "bg-background/80"
 				}`}
@@ -36,7 +36,13 @@ const MusicPlayer = () => {
 						<motion.div className="h-full w-full animate-pulse bg-blue-500 blur-[2px]" />
 					)}
 				</div>
-				<span className="text-xs font-medium">{isPlaying ? "Playing..." : "Play"}</span>
+				<span className="text-xs font-medium">
+					{isPlaying
+						? currentTrack
+							? `${currentTrack.name} - ${currentTrack.artist}`
+							: "Playing..."
+						: "Play"}
+				</span>
 			</button>
 			<button
 				type="button"
