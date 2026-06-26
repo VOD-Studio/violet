@@ -6,12 +6,14 @@
   --color-background: var(--bg);
   --color-foreground: var(--fg);
   --color-edge-hairline: var(--edge-hairline);
+  --color-surface-glass: var(--surface-glass);
 }
 
 :root {
   --bg: #ffffff;
   --fg: #0a0a0a;
   --edge-hairline: rgba(0, 0, 0, 0.05);
+  --surface-glass: rgba(255, 255, 255, 0.5);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,6 +21,7 @@
     --bg: #0a0a0a;
     --fg: #ffffff;
     --edge-hairline: rgba(255, 255, 255, 0.1);
+    --surface-glass: rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -34,4 +37,14 @@ body {
   color: var(--color-foreground);
   font-family: 'Inter', 'Geist', sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.prose {
+  line-height: 1.75;
+}
+.prose pre {
+  background: var(--color-surface-glass) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-edge-hairline);
+  border-radius: 1rem;
 }

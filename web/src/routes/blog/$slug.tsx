@@ -1,8 +1,7 @@
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
 import { extractToc } from "@shared/lib/hooks/use-toc";
-import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useRef } from "react";
 
 /**
@@ -34,44 +33,31 @@ function BlogDetailPage() {
 	const toc = extractToc(sampleHtml);
 
 	return (
-		<div className="flex min-h-0 flex-1 flex-col">
-			{/* 阅读进度条 */}
-			<div className="h-0.5 w-full bg-border">
+		<>
+			{/* Fluid Progress Indicator */}
+			<div className="fixed top-0 left-0 right-0 z-50 h-1">
 				<div
-					className="h-full bg-neon-blue transition-[width] duration-150"
+					className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-[width] duration-150"
 					style={{ width: `${progress}%` }}
 				/>
 			</div>
 
-			<div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[25%_75%]">
-				{/* 左侧 25%：xunrua Logo + TOC */}
-				<aside className="hidden flex-col border-r border-edge-hairline p-6 md:flex">
-					<Link to="/" className="mb-6 block font-mono text-2xl font-bold">
-						<DecryptedText
-							text="xunrua"
-							animateOn="view"
-							speed={50}
-							parentClassName="inline-block"
-							className="bg-gradient-to-r from-neon-blue to-neon-purple bg-clip-text text-transparent"
-							encryptedClassName="text-muted-foreground"
-						/>
-					</Link>
-					<div className="flex-1 overflow-hidden">
-						<ArticleToc items={toc} contentRef={contentRef} />
-					</div>
+			<div className="container mx-auto px-6 py-24 flex justify-center">
+				{/* Right side floating TOC (optional/hidden on small screens) */}
+				<aside className="hidden xl:block fixed left-12 top-32 w-64">
+					{/* TOC component */}
+					<ArticleToc items={toc} contentRef={contentRef} />
 				</aside>
 
-				{/* 右侧 75%：沉浸阅读。ref 挂在滚动容器 <main>，
-				    useScrollProgress/useActiveHeading 都监听它（article 不滚动） */}
-				<main ref={contentRef} className="overflow-y-auto">
+				<main ref={contentRef} className="w-full max-w-3xl">
 					<article
-						className="prose prose-neutral mx-auto max-w-3xl px-8 py-12 dark:prose-invert"
+						className="prose prose-neutral dark:prose-invert max-w-none"
 						// biome-ignore lint/security/noDangerouslySetInnerHtml: 占位演示正文
 						dangerouslySetInnerHTML={{ __html: sampleHtml }}
 					/>
 				</main>
 			</div>
-		</div>
+		</>
 	);
 }
 
