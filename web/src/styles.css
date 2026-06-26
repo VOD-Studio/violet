@@ -1,200 +1,22 @@
+/* web/src/styles.css */
 @import "tailwindcss";
-@import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
-/* Tailwind v4 插件加载（详情页 prose 文章排版用） */
-@plugin "@tailwindcss/typography";
-
-/* ============================================================
- * Nexus-Blog 设计令牌 — Tailwind v4 @theme
- * 双主题：Dark = 赛博深空 / Light = 工业蓝图无尘室
- * 语义变量名保持向后兼容（background/foreground/card/border/...），
- * 这样不用动任何业务层引用。
- * ============================================================ */
 @theme {
-  --color-border: hsl(var(--border));
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-
-  /* Nexus 扩展令牌（赛博 / 工业 双轨） */
-  --color-neon-blue: hsl(var(--neon-blue));
-  --color-neon-purple: hsl(var(--neon-purple));
-  --color-neon-green: hsl(var(--neon-green));
-  --color-surface-glass: hsl(var(--surface-glass));
-  --color-edge-hairline: hsl(var(--edge-hairline));
-  --color-glow-soft: hsl(var(--glow-soft));
-
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-  --radius: 0.5rem;
-}
-
-@layer base {
-  /* ---------- Light：工业蓝图 / 无尘室 ---------- */
-  :root {
-    --background: 0 0% 98%;            /* 珍珠灰 #FAFAFA */
-    --foreground: 240 10% 11%;         /* 墨灰 #18181B */
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 11%;
-    --primary: 240 10% 11%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 10% 11%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    --accent: 240 5% 94%;
-    --accent-foreground: 240 10% 11%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 240 10% 11%;
-
-    /* Light 扩展：摒弃发光，柔阴影 + 1px 极细边框 */
-    --neon-blue: 222 47% 30%;
-    --neon-purple: 280 30% 30%;
-    --neon-green: 160 40% 25%;
-    --surface-glass: 0 0% 100%;
-    --edge-hairline: 240 6% 88%;       /* rgba(0,0,0,0.05) 等价 */
-    --glow-soft: 0 0% 100%;            /* Light 下 glow 退化为白 */
-
-    /* 多层超柔物理阴影（no glow） */
-    --shadow-physical: 0 1px 2px rgba(15,15,20,0.04), 0 4px 12px rgba(15,15,20,0.04), 0 16px 40px rgba(15,15,20,0.05);
-
-    /* Light 模式带极细微颗粒/纸张感 */
-    --bg-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
-  }
-
-  /* ---------- Dark：赛博深空 / 终端 ---------- */
-  .dark {
-    --background: 240 10% 4%;          /* 深空黑 #09090b，拒绝死黑 */
-    --foreground: 210 20% 96%;
-    --card: 240 10% 6%;
-    --card-foreground: 210 20% 96%;
-    --popover: 240 10% 6%;
-    --popover-foreground: 210 20% 96%;
-    --primary: 210 20% 96%;
-    --primary-foreground: 240 10% 6%;
-    --secondary: 240 6% 12%;
-    --secondary-foreground: 210 20% 96%;
-    --muted: 240 6% 12%;
-    --muted-foreground: 215 14% 60%;
-    --accent: 240 6% 16%;
-    --accent-foreground: 210 20% 96%;
-    --destructive: 0 62% 40%;
-    --destructive-foreground: 210 20% 96%;
-    --border: 240 6% 16%;
-    --input: 240 6% 16%;
-    --ring: 215 90% 66%;
-
-    /* Dark 扩展：霓虹冷蓝 / 电光紫 glow */
-    --neon-blue: 210 100% 66%;
-    --neon-purple: 270 100% 72%;
-    --neon-green: 150 100% 55%;
-    --surface-glass: 240 10% 8%;
-    --edge-hairline: 240 6% 20%;
-    --glow-soft: 210 100% 66%;
-
-    --shadow-physical: 0 0 0 1px rgba(120,160,255,0.06), 0 0 24px rgba(80,120,255,0.05);
-
-    /* Dark 模式无颗粒，纯净深空 */
-    --bg-grain: none;
-  }
-
-  * {
-    box-sizing: border-box;
-    border-color: hsl(var(--border));
-  }
-
-  html, body, #app {
-    min-height: 100%;
-  }
-
-  body {
-    margin: 0;
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: var(--font-sans);
-    /* 极细微颗粒/纸张质感（Light），Dark 退化为 none */
-    background-image: var(--bg-grain);
-    background-size: 200px 200px;
-    /* 主题切换由 ThemeTransition 控制 clip-path，body 自身不参与动画 */
-  }
-
-  /* 终端字体（代码块 / 解密文本 / 命令） */
-  .font-mono { font-family: var(--font-mono); }
-}
-
-/* ============================================================
- * 主题切换：View Transitions API 圆形扩散（无闪烁）
- * 关掉默认交叉淡入；圆形扩散动画由 useThemeTransition 用 Web
- * Animations API（element.animate + pseudoElement）在 ::view-transition-new(root)
- * 上驱动 clip-path circle，从点击点展开到最远角。
- * 旧帧在底层保持可见，新帧从其上圆形揭开 → 无瞬时跳变。
- * 不支持 VT 的浏览器降级为瞬时切换（见 theme-transition.tsx）。
- * ============================================================ */
-::view-transition-old(root),
-::view-transition-new(root) {
-  /* 关掉默认交叉淡入，交由 WAAPI 控制 */
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-/* ============================================================
- * 滚动遮罩：列表上下渐隐，卡片从暗影中浮现
- * .scroll-mask 配合 ScrollArea 使用
- * ============================================================ */
-@layer utilities {
-  .scroll-mask-y {
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0,
-      #000 48px,
-      #000 calc(100% - 48px),
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0,
-      #000 48px,
-      #000 calc(100% - 48px),
-      transparent 100%
-    );
+  --color-background: #ffffff;
+  --color-foreground: #0a0a0a;
+  --color-edge-hairline: rgba(0, 0, 0, 0.05);
+  
+  /* Dark mode overrides */
+  @media (prefers-color-scheme: dark) {
+    --color-background: #0a0a0a;
+    --color-foreground: #ffffff;
+    --color-edge-hairline: rgba(255, 255, 255, 0.1);
   }
 }
 
-/* ============================================================
- * 自定义游标：隐藏系统游标，由 CustomCursor 组件接管
- * 仅在 pointer:fine 设备启用（触屏关闭）
- * ============================================================ */
-@media (pointer: fine) {
-  .cursor-custom, .cursor-custom * {
-    cursor: none;
-  }
-}
-
-/* shimmer 光影扫过（骨架用） */
-@layer utilities {
-  @keyframes nexus-shimmer {
-    100% { transform: translateX(100%); }
-  }
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'Inter', 'Geist', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
