@@ -31,6 +31,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 
 	useEffect(() => {
 		const handleScroll = () => setScrolled(window.scrollY > 50);
+		handleScroll();
 		window.addEventListener("scroll", handleScroll);
 		return () => window.removeEventListener("scroll", handleScroll);
 	}, []);
@@ -41,8 +42,8 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 			animate={{ y: 0 }}
 			className={`sticky top-0 z-50 w-full transition-all duration-300 ${
 				scrolled
-					? "border-b border-edge-hairline bg-background/70 py-2 backdrop-blur-md"
-					: "bg-transparent py-4"
+					? "border-b border-edge-hairline bg-background/70 backdrop-blur-md"
+					: "bg-transparent"
 			}`}
 		>
 			<div className="container mx-auto flex h-16 items-center justify-between px-4">
