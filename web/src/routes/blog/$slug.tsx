@@ -17,7 +17,7 @@ import { useRef } from "react";
  */
 function BlogDetailPage() {
 	const contentRef = useRef<HTMLElement>(null);
-	const progress = useScrollProgress(contentRef);
+	const progress = useScrollProgress();
 
 	// 占位正文（演示 TOC 提取与高亮管线）
 	const sampleHtml = `

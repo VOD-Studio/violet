@@ -62,8 +62,12 @@ export function useActiveHeading(containerRef: React.RefObject<HTMLElement | nul
 			setActive(current);
 		};
 		onScroll();
+		window.addEventListener("scroll", onScroll, { passive: true });
 		el.addEventListener("scroll", onScroll, { passive: true });
-		return () => el.removeEventListener("scroll", onScroll);
+		return () => {
+			window.removeEventListener("scroll", onScroll);
+			el.removeEventListener("scroll", onScroll);
+		};
 	}, [containerRef]);
 
 	return active;

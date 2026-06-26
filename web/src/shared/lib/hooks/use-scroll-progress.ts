@@ -19,27 +19,43 @@ export function computeScrollProgress(input: ProgressInput): number {
 	return Math.max(0, Math.min(100, (scrollTop / max) * 100));
 }
 
-/**
- * useScrollProgress - 监听容器滚动，返回进度 0..100
- */
-export function useScrollProgress(ref: React.RefObject<HTMLElement | null>): number {
+export function useScrollProgress(ref?: React.RefObject<HTMLElement | null>): number {
 	const [progress, setProgress] = useState(0);
 
 	useEffect(() => {
-		const el = ref.current;
-		if (!el) return;
 		const onScroll = () => {
-			setProgress(
-				computeScrollProgress({
-					scrollTop: el.scrollTop,
-					scrollHeight: el.scrollHeight,
-					clientHeight: el.clientHeight,
-				}),
-			);
+			if (!ref) {
+				setProgress(
+					computeScrollProgress({
+						scrollTop: document.documentElement.scrollTop || document.body.scrollTop,
+						scrollHeight: document.documentElement.scrollHeight,
+						clientHeight: document.documentElement.clientHeight,
+					}),
+				);
+			} else {
+				const el = ref.current;
+				if (!el) return;
+				setProgress(
+					computeScrollProgress({
+						scrollTop: el.scrollTop,
+						scrollHeight: el.scrollHeight,
+						clientHeight: el.clientHeight,
+					}),
+				);
+			}
 		};
 		onScroll();
-		el.addEventListener("scroll", onScroll, { passive: true });
-		return () => el.removeEventListener("scroll", onScroll);
+
+		if (!ref) {
+			window.addEventListener("scroll", onScroll, { passive: true });
+			return () => window.removeEventListener("scroll", onScroll);
+		}
+
+		const el = ref.current;
+		if (el) {
+			el.addEventListener("scroll", onScroll, { passive: true });
+			return () => el.removeEventListener("scroll", onScroll);
+		}
 	}, [ref]);
 
 	return progress;
