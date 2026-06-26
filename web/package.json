@@ -24,6 +24,7 @@
     "@tanstack/react-router-devtools": "^1.167.0",
     "@tanstack/react-router-ssr-query": "^1.167.0",
     "@tanstack/react-start": "^1.167.0",
+    "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.167.0",
     "axios": "^1.18.0",
     "axios-retry": "^4.5.0",
