@@ -10,29 +10,16 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
-import { Route as AdminUsersRouteImport } from './routes/admin/users'
-import { Route as AdminRolesRouteImport } from './routes/admin/roles'
-import { Route as AdminPostsRouteImport } from './routes/admin/posts'
-import { Route as AdminLogsRouteImport } from './routes/admin/logs'
-import { Route as AdminEmojisRouteImport } from './routes/admin/emojis'
-import { Route as AdminCommentsRouteImport } from './routes/admin/comments'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -55,11 +42,6 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   path: '/blog/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AboutIndexRoute = AboutIndexRouteImport.update({
   id: '/about/',
   path: '/about/',
@@ -70,50 +52,12 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminRolesRoute = AdminRolesRouteImport.update({
-  id: '/roles',
-  path: '/roles',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPostsRoute = AdminPostsRouteImport.update({
-  id: '/posts',
-  path: '/posts',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLogsRoute = AdminLogsRouteImport.update({
-  id: '/logs',
-  path: '/logs',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminEmojisRoute = AdminEmojisRouteImport.update({
-  id: '/emojis',
-  path: '/emojis',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCommentsRoute = AdminCommentsRouteImport.update({
-  id: '/comments',
-  path: '/comments',
-  getParentRoute: () => AdminRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
-  '/admin/comments': typeof AdminCommentsRoute
-  '/admin/emojis': typeof AdminEmojisRoute
-  '/admin/logs': typeof AdminLogsRoute
-  '/admin/posts': typeof AdminPostsRoute
-  '/admin/roles': typeof AdminRolesRoute
-  '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/about/': typeof AboutIndexRoute
-  '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -121,15 +65,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/admin/comments': typeof AdminCommentsRoute
-  '/admin/emojis': typeof AdminEmojisRoute
-  '/admin/logs': typeof AdminLogsRoute
-  '/admin/posts': typeof AdminPostsRoute
-  '/admin/roles': typeof AdminRolesRoute
-  '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/about': typeof AboutIndexRoute
-  '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
@@ -137,17 +74,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
-  '/admin/comments': typeof AdminCommentsRoute
-  '/admin/emojis': typeof AdminEmojisRoute
-  '/admin/logs': typeof AdminLogsRoute
-  '/admin/posts': typeof AdminPostsRoute
-  '/admin/roles': typeof AdminRolesRoute
-  '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/about/': typeof AboutIndexRoute
-  '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -156,17 +85,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/login'
-    | '/admin/comments'
-    | '/admin/emojis'
-    | '/admin/logs'
-    | '/admin/posts'
-    | '/admin/roles'
-    | '/admin/users'
     | '/blog/$slug'
     | '/about/'
-    | '/admin/'
     | '/blog/'
     | '/profile/'
     | '/projects/'
@@ -174,32 +95,17 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/admin/comments'
-    | '/admin/emojis'
-    | '/admin/logs'
-    | '/admin/posts'
-    | '/admin/roles'
-    | '/admin/users'
     | '/blog/$slug'
     | '/about'
-    | '/admin'
     | '/blog'
     | '/profile'
     | '/projects'
   id:
     | '__root__'
     | '/'
-    | '/admin'
     | '/login'
-    | '/admin/comments'
-    | '/admin/emojis'
-    | '/admin/logs'
-    | '/admin/posts'
-    | '/admin/roles'
-    | '/admin/users'
     | '/blog/$slug'
     | '/about/'
-    | '/admin/'
     | '/blog/'
     | '/profile/'
     | '/projects/'
@@ -207,7 +113,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
   BlogSlugRoute: typeof BlogSlugRoute
   AboutIndexRoute: typeof AboutIndexRoute
@@ -223,13 +128,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -260,13 +158,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/about/': {
       id: '/about/'
       path: '/about'
@@ -281,76 +172,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/roles': {
-      id: '/admin/roles'
-      path: '/roles'
-      fullPath: '/admin/roles'
-      preLoaderRoute: typeof AdminRolesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/posts': {
-      id: '/admin/posts'
-      path: '/posts'
-      fullPath: '/admin/posts'
-      preLoaderRoute: typeof AdminPostsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/logs': {
-      id: '/admin/logs'
-      path: '/logs'
-      fullPath: '/admin/logs'
-      preLoaderRoute: typeof AdminLogsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/emojis': {
-      id: '/admin/emojis'
-      path: '/emojis'
-      fullPath: '/admin/emojis'
-      preLoaderRoute: typeof AdminEmojisRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/comments': {
-      id: '/admin/comments'
-      path: '/comments'
-      fullPath: '/admin/comments'
-      preLoaderRoute: typeof AdminCommentsRouteImport
-      parentRoute: typeof AdminRoute
-    }
   }
 }
 
-interface AdminRouteChildren {
-  AdminCommentsRoute: typeof AdminCommentsRoute
-  AdminEmojisRoute: typeof AdminEmojisRoute
-  AdminLogsRoute: typeof AdminLogsRoute
-  AdminPostsRoute: typeof AdminPostsRoute
-  AdminRolesRoute: typeof AdminRolesRoute
-  AdminUsersRoute: typeof AdminUsersRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminCommentsRoute: AdminCommentsRoute,
-  AdminEmojisRoute: AdminEmojisRoute,
-  AdminLogsRoute: AdminLogsRoute,
-  AdminPostsRoute: AdminPostsRoute,
-  AdminRolesRoute: AdminRolesRoute,
-  AdminUsersRoute: AdminUsersRoute,
-  AdminIndexRoute: AdminIndexRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
   BlogSlugRoute: BlogSlugRoute,
   AboutIndexRoute: AboutIndexRoute,

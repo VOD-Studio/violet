@@ -51,7 +51,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
 				<HeaderNav onAction={handleAction} />
 				<div className="flex items-center gap-2">
 					<HeaderActions user={user} />
-					<HeaderMobile onAction={handleAction} user={user} />
+					<HeaderMobile onAction={handleAction} />
 				</div>
 			</div>
 		</motion.header>

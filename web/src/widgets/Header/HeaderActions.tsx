@@ -3,7 +3,7 @@ import { Button } from "@shared/ui/button";
 import { Link } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
 import ThemeToggle from "@widgets/ThemeToggle";
-import { Command, LayoutDashboard } from "lucide-react";
+import { Command } from "lucide-react";
 
 interface HeaderActionsProps {
 	user?: UserDTO | null;
@@ -19,7 +19,6 @@ interface HeaderActionsProps {
  */
 const HeaderActions = ({ user }: HeaderActionsProps) => {
 	const openCommand = useCommandUIStore((s) => s.open);
-	const isAdmin = user && (user.role === "admin" || user.role === "superadmin");
 
 	return (
 		<div className="flex items-center gap-2">
@@ -27,14 +26,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 				<Command className="size-4" />
 			</Button>
 			<ThemeToggle />
-			{isAdmin ? (
-				<Button variant="ghost" size="sm" asChild>
-					<Link to="/admin">
-						<LayoutDashboard className="mr-1 size-4" />
-						后台
-					</Link>
-				</Button>
-			) : null}
+
 			<Button variant="ghost" size="sm" asChild>
 				<Link to={user ? "/profile" : "/login"}>{user ? "个人中心" : "登录"}</Link>
 			</Button>
