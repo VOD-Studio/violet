@@ -50,3 +50,5 @@ api/server
 
 # Worktrees
 .worktrees/
+
+**/*.rdb
