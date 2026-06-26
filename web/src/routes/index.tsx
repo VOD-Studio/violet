@@ -10,15 +10,13 @@ import Hero from "@widgets/Hero";
 
 function HomePage() {
 	return (
-		// min-h-0 让内部 flex 比例可分配；80/20 用 flex-[4]/flex-[1]
-		// （Tailwind v4 无 flex-4 默认类，必须用任意值语法）
-		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			{/* 80% 区：作为 flex 容器，Hero 用 flex-1 撑满（不依赖 h-full/父级定高） */}
-			<section className="flex min-h-0 flex-1 flex-col overflow-hidden border-b border-edge-hairline">
-				<Hero />
-			</section>
-			<section className="flex min-h-0 justify-center h-70 gap-4 overflow-hidden px-4 py-2">
-				<Contributions />
+		<div className="flex flex-col min-h-screen">
+			<Hero />
+			<section className="container mx-auto px-6 py-24 bg-background">
+				{/* Bento Grid Posts will go here in next task */}
+				<div className="mt-24 border border-edge-hairline rounded-3xl p-8">
+					<Contributions />
+				</div>
 			</section>
 		</div>
 	);
