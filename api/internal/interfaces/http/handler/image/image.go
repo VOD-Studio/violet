@@ -82,9 +82,16 @@ func (h *Handler) serveOriginal(w http.ResponseWriter, r *http.Request, relPath 
 		response.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
 		return
 	}
-	// 路径安全：clean 必须仍在 uploadDir（转成绝对路径后）之下
+	// 路径安全：clean 必须严格落在 uploadDir 之下。
+	// 用 filepath.Rel 做边界检查（而非 strings.HasPrefix），可拒绝
+	// 同名前缀兄弟目录（如 uploads-backup）的穿越。
 	root, err := filepath.Abs(h.uploadDir)
-	if err != nil || !strings.HasPrefix(clean, root) {
+	if err != nil {
+		response.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+	rel, err := filepath.Rel(root, clean)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		response.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
 		return
 	}

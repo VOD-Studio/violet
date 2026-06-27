@@ -52,7 +52,7 @@ func TestSaveChunk_RejectsNonOwner(t *testing.T) {
 	ownerA := domainshared.NewID()
 	ownerB := domainshared.NewID()
 	repo := &ownerMismatchSessionRepo{ownerID: ownerA}
-	svc := NewUploadService(nil, repo, nil, nil, "/tmp")
+	svc := NewUploadService(nil, repo, nil, nil, "/tmp", "/tmp", "/uploads/")
 	err := svc.SaveChunk(context.Background(), "00000000-0000-0000-0000-000000000001", 0, []byte("x"), ownerB.String())
 	if err == nil {
 		t.Fatal("非 owner 应被拒绝")
@@ -67,7 +67,7 @@ func TestCancelUpload_RejectsNonOwner(t *testing.T) {
 	ownerA := domainshared.NewID()
 	ownerB := domainshared.NewID()
 	repo := &ownerMismatchSessionRepo{ownerID: ownerA}
-	svc := NewUploadService(nil, repo, nil, nil, "/tmp")
+	svc := NewUploadService(nil, repo, nil, nil, "/tmp", "/tmp", "/uploads/")
 	err := svc.CancelUpload(context.Background(), "00000000-0000-0000-0000-000000000001", ownerB.String())
 	if err == nil {
 		t.Fatal("非 owner 应被拒绝")
@@ -82,7 +82,7 @@ func TestGetUploadStatus_RejectsNonOwner(t *testing.T) {
 	ownerA := domainshared.NewID()
 	ownerB := domainshared.NewID()
 	repo := &ownerMismatchSessionRepo{ownerID: ownerA}
-	svc := NewUploadService(nil, repo, nil, nil, "/tmp")
+	svc := NewUploadService(nil, repo, nil, nil, "/tmp", "/tmp", "/uploads/")
 	_, err := svc.GetUploadStatus(context.Background(), "00000000-0000-0000-0000-000000000001", ownerB.String())
 	if err == nil {
 		t.Fatal("非 owner 应被拒绝")
@@ -97,7 +97,7 @@ func TestGetUploadStatus_RejectsNonOwner(t *testing.T) {
 func TestGetUploadStatus_AllowsOwner(t *testing.T) {
 	owner := domainshared.NewID()
 	repo := &ownerMismatchSessionRepo{ownerID: owner}
-	svc := NewUploadService(nil, repo, nil, nil, "/tmp")
+	svc := NewUploadService(nil, repo, nil, nil, "/tmp", "/tmp", "/uploads/")
 	_, err := svc.GetUploadStatus(context.Background(), "00000000-0000-0000-0000-000000000001", owner.String())
 	// owner 一致 → 不应返回 Forbidden(可能因其他原因出错,但绝不应是 Forbidden)
 	if err != nil && domainshared.IsDomainError(err, domainshared.CodeForbidden) {
@@ -110,7 +110,7 @@ func TestGetUploadStatus_AllowsOwner(t *testing.T) {
 func TestSaveChunk_AllowsOwner(t *testing.T) {
 	owner := domainshared.NewID()
 	repo := &ownerMismatchSessionRepo{ownerID: owner}
-	svc := NewUploadService(nil, repo, noopStorage{}, nil, "/tmp")
+	svc := NewUploadService(nil, repo, noopStorage{}, nil, "/tmp", "/tmp", "/uploads/")
 	err := svc.SaveChunk(context.Background(), "00000000-0000-0000-0000-000000000001", 0, []byte("x"), owner.String())
 	if err != nil {
 		t.Fatalf("owner 本人应通过,实际: %v", err)
@@ -122,7 +122,7 @@ func TestSaveChunk_AllowsOwner(t *testing.T) {
 func TestCancelUpload_AllowsOwner(t *testing.T) {
 	owner := domainshared.NewID()
 	repo := &ownerMismatchSessionRepo{ownerID: owner}
-	svc := NewUploadService(nil, repo, noopStorage{}, nil, "/tmp")
+	svc := NewUploadService(nil, repo, noopStorage{}, nil, "/tmp", "/tmp", "/uploads/")
 	err := svc.CancelUpload(context.Background(), "00000000-0000-0000-0000-000000000001", owner.String())
 	if err != nil {
 		t.Fatalf("owner 本人应通过,实际: %v", err)
@@ -151,7 +151,7 @@ func TestUploadThumbnail_RejectsNonOwner(t *testing.T) {
 	ownerA := domainshared.NewID()
 	ownerB := domainshared.NewID()
 	fileRepo := &fakeFileRepo{ownerID: ownerA}
-	svc := NewUploadService(fileRepo, nil, noopStorage{}, nil, "/tmp")
+	svc := NewUploadService(fileRepo, nil, noopStorage{}, nil, "/tmp", "/tmp", "/uploads/")
 	_, err := svc.UploadThumbnail(context.Background(), UploadThumbnailInput{
 		FileID: "00000000-0000-0000-0000-000000000001",
 		FileName: "t.jpg", MimeType: "image/jpeg", Content: []byte("x"),

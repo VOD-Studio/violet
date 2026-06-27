@@ -36,8 +36,11 @@ type Config struct {
 	FrontendURL string
 	// Port 服务监听端口
 	Port string
-	// UploadPathPrefix 上传文件路径前缀，如 "/uploads/"
+	// UploadPathPrefix 上传文件 URL 前缀，如 "/uploads/"
 	UploadPathPrefix string
+	// UploadDir 上传文件存储根目录（相对进程工作目录），如 "uploads"。
+	// 派生 emojiDir/chunkDir 等子目录，不持久化绝对路径，搬家可移植。
+	UploadDir string
 	// BilibiliCookie B站登录 Cookie，用于获取表情种子数据（自动拼接）
 	BilibiliCookie string
 	// BilibiliAPIType B站表情 API 类型：user(用户收藏) 或 official(官方)
@@ -189,6 +192,7 @@ func Load() *Config {
 	v.SetDefault("frontend_url", "http://localhost:3000")
 	v.SetDefault("port", "8080")
 	v.SetDefault("upload_path_prefix", "/uploads/")
+	v.SetDefault("upload_dir", "uploads")
 	v.SetDefault("bilibili_sessdata", "")
 	v.SetDefault("bilibili_bili_jct", "")
 	v.SetDefault("bilibili_dedeuserid", "")
@@ -266,6 +270,7 @@ func Load() *Config {
 		FrontendURL:        v.GetString("frontend_url"),
 		Port:               v.GetString("port"),
 		UploadPathPrefix:   v.GetString("upload_path_prefix"),
+		UploadDir:          v.GetString("upload_dir"),
 		BilibiliCookie:     bilibiliCookie,
 		BilibiliAPIType:    v.GetString("bilibili_api_type"),
 		Cookie: CookieConfig{

@@ -63,15 +63,18 @@ type SeedResult struct {
 type EmojiSeedService struct {
 	db             *gorm.DB // GORM 直接操作（替代 sqlc queries）
 	emojiDir       string   // 表情独立存储目录
+	urlPrefix      string   // 上传 URL 前缀，如 "/uploads/"
 	bilibiliCookie string   // B站登录 Cookie
 	apiType        string   // API 类型：user 或 official
 }
 
-// NewEmojiSeedService 创建表情种子数据服务实例
-func NewEmojiSeedService(db *gorm.DB, emojiDir, cookie, apiType string) *EmojiSeedService {
+// NewEmojiSeedService 创建表情种子数据服务实例。
+// emojiDir 为物理存储目录，urlPrefix 为 URL 前缀，二者解耦（不互推）。
+func NewEmojiSeedService(db *gorm.DB, emojiDir, urlPrefix, cookie, apiType string) *EmojiSeedService {
 	return &EmojiSeedService{
 		db:             db,
 		emojiDir:       emojiDir,
+		urlPrefix:      urlPrefix,
 		bilibiliCookie: cookie,
 		apiType:        apiType,
 	}
@@ -309,6 +312,6 @@ func (s *EmojiSeedService) downloadEmojiImage(url string) (string, error) {
 		return "", fmt.Errorf("保存文件失败: %w", err)
 	}
 
-	// 返回相对路径 URL
-	return "/uploads/emojis/" + filename, nil
+	// URL 从 urlPrefix 派生，与物理目录解耦
+	return s.urlPrefix + "emojis/" + filename, nil
 }

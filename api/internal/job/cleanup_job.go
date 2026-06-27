@@ -15,15 +15,18 @@ import (
 
 // CleanupJob 定时清理任务，负责清理过期的上传会话、孤立临时文件和已软删的物理文件
 type CleanupJob struct {
-	db       *gorm.DB // GORM 数据库实例
-	chunkDir string   // 临时分片目录，如 uploads/tmp
+	db        *gorm.DB // GORM 数据库实例
+	chunkDir  string   // 临时分片目录，如 uploads/tmp
+	uploadDir string   // 上传根目录，如 uploads（用于定位 .cache 子目录）
 }
 
-// NewCleanupJob 创建定时清理任务实例
-func NewCleanupJob(db *gorm.DB, chunkDir string) *CleanupJob {
+// NewCleanupJob 创建定时清理任务实例。
+// chunkDir 为分片目录，uploadDir 为上传根目录（图片缓存位于其 .cache 子目录）。
+func NewCleanupJob(db *gorm.DB, chunkDir, uploadDir string) *CleanupJob {
 	return &CleanupJob{
-		db:       db,
-		chunkDir: chunkDir,
+		db:        db,
+		chunkDir:  chunkDir,
+		uploadDir: uploadDir,
 	}
 }
 
@@ -259,7 +262,7 @@ func (j *CleanupJob) runDaily(ctx context.Context) {
 	} else {
 		log.Printf("清理任务: 物理删除了 %d 个文件", files)
 	}
-	cache, err := j.CleanImageCache(ctx, filepath.Join("uploads", ".cache"), 7)
+	cache, err := j.CleanImageCache(ctx, filepath.Join(j.uploadDir, ".cache"), 7)
 	if err != nil {
 		log.Printf("清理任务: 清理图片缓存出错: %v", err)
 	} else {

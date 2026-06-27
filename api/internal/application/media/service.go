@@ -65,15 +65,16 @@ var extToMIME = map[string]string{
 
 // EmojiService 表情用例服务
 type EmojiService struct {
-	repo     domainemoji.EmojiGroupRepository
-	emojiDir string
+	repo      domainemoji.EmojiGroupRepository
+	emojiDir  string
+	urlPrefix string
 }
 
-// NewEmojiService 构造表情服务
+// NewEmojiService 构造表情服务。
 //
-// emojiDir 为表情文件存储目录（如 "uploads/emojis"）
-func NewEmojiService(repo domainemoji.EmojiGroupRepository, emojiDir string) *EmojiService {
-	return &EmojiService{repo: repo, emojiDir: emojiDir}
+// emojiDir 为表情文件物理存储目录，urlPrefix 为上传 URL 前缀，二者解耦。
+func NewEmojiService(repo domainemoji.EmojiGroupRepository, emojiDir, urlPrefix string) *EmojiService {
+	return &EmojiService{repo: repo, emojiDir: emojiDir, urlPrefix: urlPrefix}
 }
 
 // GetAll 获取所有启用的表情分组（前台）
@@ -288,8 +289,8 @@ func (s *EmojiService) UploadEmoji(ctx context.Context, filename, mimeType strin
 	if err := os.WriteFile(dst, content, 0o644); err != nil {
 		return nil, shared.Internal("保存表情文件失败", err)
 	}
-	// 返回相对 URL（与静态文件服务前缀对应）
-	url := "/" + s.emojiDir + "/" + newName
+	// URL 从 urlPrefix 派生，与物理目录解耦
+	url := s.urlPrefix + "emojis/" + newName
 	return &EmojiUploadResult{URL: url, Filename: newName, Size: size, MimeType: finalMIME}, nil
 }
 
@@ -705,11 +706,22 @@ type UploadService struct {
 	storage     domainupload.ChunkStorage
 	processor   domainupload.ImageProcessor
 	chunkDir    string
+	uploadDir   string // 上传根目录（缩略图等直写路径用）
+	urlPrefix   string // 上传 URL 前缀
 }
 
-// NewUploadService 构造上传服务
-func NewUploadService(fileRepo domainupload.FileRepository, sessionRepo domainupload.UploadSessionRepository, storage domainupload.ChunkStorage, processor domainupload.ImageProcessor, chunkDir string) *UploadService {
-	return &UploadService{fileRepo: fileRepo, sessionRepo: sessionRepo, storage: storage, processor: processor, chunkDir: chunkDir}
+// NewUploadService 构造上传服务。
+// uploadDir 为上传根目录，urlPrefix 为上传 URL 前缀，均用于缩略图等直写场景。
+func NewUploadService(fileRepo domainupload.FileRepository, sessionRepo domainupload.UploadSessionRepository, storage domainupload.ChunkStorage, processor domainupload.ImageProcessor, chunkDir, uploadDir, urlPrefix string) *UploadService {
+	return &UploadService{
+		fileRepo:    fileRepo,
+		sessionRepo: sessionRepo,
+		storage:     storage,
+		processor:   processor,
+		chunkDir:    chunkDir,
+		uploadDir:   uploadDir,
+		urlPrefix:   urlPrefix,
+	}
 }
 
 // InitSessionInput 初始化上传会话入参
@@ -1147,14 +1159,14 @@ func (s *UploadService) UploadThumbnail(ctx context.Context, in UploadThumbnailI
 	ext := strings.ToLower(filepath.Ext(in.FileName))
 	thumbName := fid.String() + "_thumb" + ext
 	storageDir := f.Purpose()
-	thumbPath := filepath.Join("uploads", storageDir, thumbName)
+	thumbPath := filepath.Join(s.uploadDir, storageDir, thumbName)
 	if err := s.storage.EnsureDir(filepath.Dir(thumbPath)); err != nil {
 		return "", shared.Internal("创建缩略图目录失败", err)
 	}
 	if err := os.WriteFile(thumbPath, in.Content, 0o644); err != nil {
 		return "", shared.Internal("保存缩略图失败", err)
 	}
-	url := "/uploads/" + storageDir + "/" + thumbName
+	url := s.urlPrefix + storageDir + "/" + thumbName
 	f.SetThumbnail(url)
 	if err := s.fileRepo.Save(ctx, f); err != nil {
 		return "", err

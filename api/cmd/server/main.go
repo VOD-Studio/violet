@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -121,8 +122,15 @@ func main() {
 	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
 	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
 
-	mediaContainer := app.NewMediaContainer(gormDB, "uploads/emojis", "uploads/tmp", "uploads", "/uploads/")
-	emojiSeedService := service.NewEmojiSeedService(gormDB, "uploads/emojis", cfg.BilibiliCookie, cfg.BilibiliAPIType)
+	// 上传目录与 URL 前缀：统一从配置派生，保持相对路径（搬家可移植）。
+	// 绝对路径仅在进程内按需 filepath.Abs，绝不持久化、绝不硬编码。
+	uploadRoot := cfg.UploadDir                            // "uploads"
+	emojiDir := filepath.Join(uploadRoot, "emojis")        // uploads/emojis
+	chunkDir := filepath.Join(uploadRoot, "tmp")           // uploads/tmp
+	urlPrefix := cfg.UploadPathPrefix                      // "/uploads/"
+
+	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix)
+	emojiSeedService := service.NewEmojiSeedService(gormDB, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
 
 	// 表情种子数据初始化（幂等）
 	var emojiGroupCount int64
@@ -137,7 +145,7 @@ func main() {
 		log.Info().Int64("count", emojiGroupCount).Msg("表情分组已有数据，跳过种子初始化")
 	}
 
-	cleanupJob := job.NewCleanupJob(gormDB, "uploads/tmp")
+	cleanupJob := job.NewCleanupJob(gormDB, chunkDir, uploadRoot)
 	go cleanupJob.Start(ctx)
 
 	// --- 超级管理员初始化---
@@ -442,8 +450,8 @@ func main() {
 	// ============================================================
 
 	// 图片服务（替换裸 FileServer）：支持动态 resize/转码 + 二级缓存 + ETag/304
-	imageContainer := app.NewImageContainer("uploads")
-	r.Get("/uploads/*", imageContainer.ImageHandler.ServeImage)
+	imageContainer := app.NewImageContainer(uploadRoot)
+	r.Get(urlPrefix+"*", imageContainer.ImageHandler.ServeImage)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	log.Info().Str("addr", addr).Msg("博客 API 服务启动")
