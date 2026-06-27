@@ -78,7 +78,13 @@ func (h *Handler) ServeImage(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) serveOriginal(w http.ResponseWriter, r *http.Request, relPath string) {
 	abs := filepath.Join(h.uploadDir, strings.TrimPrefix(relPath, "/uploads"))
 	clean, err := filepath.Abs(filepath.Clean(abs))
-	if err != nil || !strings.HasPrefix(clean, h.uploadDir) {
+	if err != nil {
+		response.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+		return
+	}
+	// 路径安全：clean 必须仍在 uploadDir（转成绝对路径后）之下
+	root, err := filepath.Abs(h.uploadDir)
+	if err != nil || !strings.HasPrefix(clean, root) {
 		response.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
 		return
 	}

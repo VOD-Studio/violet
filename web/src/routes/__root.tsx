@@ -6,6 +6,7 @@ import {
     Outlet,
     Scripts,
     ScrollRestoration,
+    useRouterState,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import AnnouncementBar from "@widgets/AnnouncementBar";
@@ -67,19 +68,29 @@ export const Route = createRootRouteWithContext<RouterContext>()({
  * RootComponent - 根组件
  *
  * 装配 AppProvider（QueryClient + Theme + Toaster）+ 子路由出口 + devtools。
+ * 后台路由（/admin）独立布局，不显示前台 Header/Footer。
  */
 function RootComponent() {
     const { auth } = Route.useRouteContext();
+    const pathname = useRouterState({ select: (s) => s.location.pathname });
+    const isAdminRoute = pathname.startsWith("/admin");
+
     return (
         <AppProvider>
-            <div className="flex min-h-screen flex-col">
-                <AnnouncementBar />
-                <Header isAuthenticated={auth.isAuthenticated} />
-                <main className="flex flex-1 flex-col">
-                    <Outlet />
-                </main>
-                <Footer />
-            </div>
+            {isAdminRoute ? (
+                // 后台路由：完全独立的布局，不包含前台 Header/Footer
+                <Outlet />
+            ) : (
+                // 前台路由：包含 Header/Footer 的标准布局
+                <div className="flex min-h-screen flex-col">
+                    <AnnouncementBar />
+                    <Header isAuthenticated={auth.isAuthenticated} />
+                    <main className="flex flex-1 flex-col">
+                        <Outlet />
+                    </main>
+                    <Footer />
+                </div>
+            )}
             <MusicPlayer />
             <CommandPalette />
             <CustomCursor />
