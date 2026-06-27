@@ -4,6 +4,7 @@ import { EmojiManageDialog } from "@features/admin-emojis/ui/EmojiManageDialog";
 import { GroupCardSkeleton } from "@features/admin-emojis/ui/GroupCardSkeleton";
 import { StatsCard } from "@features/admin-emojis/ui/StatsCard";
 import { StatsCardSkeleton } from "@features/admin-emojis/ui/StatsCardSkeleton";
+import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/ConfirmDialog";
 import { useBatchUpdateGroupStatus, useDeleteEmojiGroup } from "@features/emojis/api/mutations";
 import { useAllEmojiGroupsAdmin } from "@features/emojis/api/queries";
@@ -132,19 +133,16 @@ function EmojisPage() {
 	const batchPending = batchUpdateStatus.isPending;
 
 	return (
-		<div className="space-y-6">
-			{/* 页面标题 */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold">表情管理</h1>
-					<p className="text-muted-foreground">管理表情分组和表情</p>
-				</div>
+		<PageShell
+			title="表情管理"
+			description="管理表情分组和表情"
+			action={
 				<Button onClick={handleCreateGroup}>
 					<Plus className="mr-1.5 size-4" />
 					创建分组
 				</Button>
-			</div>
-
+			}
+		>
 			{/* 统计卡片 */}
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{isLoading ? (
@@ -305,6 +303,6 @@ function EmojisPage() {
 
 			{/* 表情管理弹窗 */}
 			<EmojiManageDialog open={emojisOpen} onOpenChange={setEmojisOpen} groupId={activeGroupId} />
-		</div>
+		</PageShell>
 	);
 }

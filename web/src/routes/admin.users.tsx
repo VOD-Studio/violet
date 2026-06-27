@@ -1,3 +1,4 @@
+import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
@@ -70,9 +71,8 @@ const columns: ColumnDef<User>[] = [
 
 function AdminUsers() {
 	return (
-		<div className="space-y-4">
-			<h2 className="text-2xl font-bold tracking-tight">Users</h2>
+		<PageShell title="用户管理" description="查看与管理平台用户">
 			<DataTable columns={columns} data={data} />
-		</div>
+		</PageShell>
 	);
 }

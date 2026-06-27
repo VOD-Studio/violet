@@ -1,43 +1,39 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { Home, Smile, Users } from "lucide-react";
+import { AdminSidebar } from "@features/admin-layout/ui/AdminSidebar";
+import { AdminTopBar } from "@features/admin-layout/ui/AdminTopBar";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin")({
 	component: AdminLayout,
 });
 
+/** 根据当前路由路径解析 TopBar 标题 */
+function useAdminTitle(): string {
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	if (pathname === "/admin") return "概览";
+	if (pathname.startsWith("/admin/users")) return "用户管理";
+	if (pathname.startsWith("/admin/emojis")) return "表情管理";
+	return "后台管理";
+}
+
+/**
+ * /admin - 后台布局
+ *
+ * 桌面侧边栏（AdminSidebar）+ 移动抽屉（AdminMobileNav 内嵌于 TopBar）
+ * + 顶栏（AdminTopBar）+ 内容区（Outlet）。全部语义色 token，随主题切换。
+ * 子页面共用 PageShell 渲染标题与内容壳。
+ */
 function AdminLayout() {
+	const title = useAdminTitle();
+
 	return (
-		<div className="flex h-screen w-full bg-neutral-100 dark:bg-neutral-900">
-			<aside className="w-64 flex-shrink-0 border-r bg-white dark:bg-neutral-950 p-4 flex flex-col gap-2">
-				<h2 className="text-xl font-bold mb-4 px-2">Admin Panel</h2>
-				<Link
-					to="/admin"
-					activeOptions={{ exact: true }}
-					className="flex items-center gap-2 p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 [&.active]:bg-neutral-200 dark:[&.active]:bg-neutral-700"
-				>
-					<Home className="w-4 h-4" /> Dashboard
-				</Link>
-				<Link
-					to="/admin/users"
-					className="flex items-center gap-2 p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 [&.active]:bg-neutral-200 dark:[&.active]:bg-neutral-700"
-				>
-					<Users className="w-4 h-4" /> Users
-				</Link>
-				<Link
-					to="/admin/emojis"
-					className="flex items-center gap-2 p-2 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 [&.active]:bg-neutral-200 dark:[&.active]:bg-neutral-700"
-				>
-					<Smile className="w-4 h-4" /> Emojis
-				</Link>
-			</aside>
-			<main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-				<header className="h-14 border-b bg-white dark:bg-neutral-950 flex items-center px-4 shrink-0">
-					<h1 className="font-semibold">Management</h1>
-				</header>
-				<div className="flex-1 overflow-auto p-6">
+		<div className="bg-background flex h-screen w-full">
+			<AdminSidebar />
+			<div className="flex min-w-0 flex-1 flex-col">
+				<AdminTopBar title={title} />
+				<main className="flex-1 overflow-auto p-4 md:p-6">
 					<Outlet />
-				</div>
-			</main>
+				</main>
+			</div>
 		</div>
 	);
 }

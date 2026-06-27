@@ -3,26 +3,102 @@
 
 @theme {
   --animate-blob: blob 7s infinite;
-  --color-background: var(--bg);
-  --color-foreground: var(--fg);
+
+  /* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
+  /* bg-background / text-foreground / bg-primary / border-border 等 */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* 前台遗留语义色（向后兼容） */
   --color-edge-hairline: var(--edge-hairline);
   --color-surface-glass: var(--surface-glass);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
+/*
+ * 浅色主题 —— shadcn neutral 调色板
+ * next-themes 用 attribute="class"，默认（无 .dark）即浅色。
+ */
 :root {
+  --radius: 0.625rem;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+
+  /* 前台遗留语义色（向后兼容） */
   --bg: #ffffff;
   --fg: #0a0a0a;
   --edge-hairline: rgba(0, 0, 0, 0.05);
   --surface-glass: rgba(255, 255, 255, 0.5);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0a0a0a;
-    --fg: #ffffff;
-    --edge-hairline: rgba(255, 255, 255, 0.1);
-    --surface-glass: rgba(0, 0, 0, 0.5);
-  }
+/*
+ * 暗色主题 —— 由 next-themes 在 <html> 上加 .dark 类触发
+ * （替代原来的 @media prefers-color-scheme，与 ThemeProvider attribute="class" 协同）
+ */
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+
+  /* 前台遗留语义色（向后兼容） */
+  --bg: #0a0a0a;
+  --fg: #ffffff;
+  --edge-hairline: rgba(255, 255, 255, 0.1);
+  --surface-glass: rgba(0, 0, 0, 0.5);
 }
 
 @keyframes blob {
@@ -47,4 +123,15 @@ body {
   backdrop-filter: blur(12px);
   border: 1px solid var(--color-edge-hairline);
   border-radius: 1rem;
+}
+
+/* 全局边框工具类：Tailwind v4 默认不生成 border-border，显式提供 */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border);
+  }
 }
