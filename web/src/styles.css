@@ -119,7 +119,13 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: 'Inter', 'Geist', sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 让整个页面参与 View Transition 的圆圈扩散动画 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 .prose {
