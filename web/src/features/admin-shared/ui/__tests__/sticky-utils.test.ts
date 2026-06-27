@@ -6,11 +6,11 @@ describe("sticky-utils", () => {
 	describe("computeStickyOffsets", () => {
 		it("应该标记最后一个左固定列显示阴影", () => {
 			const columns: DataTableColumn<any>[] = [
-				{ key: "select", sticky: "left", width: "48px" },
-				{ key: "expand", sticky: "left", width: "48px" },
-				{ key: "name", sticky: "left", width: "200px" },
-				{ key: "email" },
-				{ key: "status" },
+				{ key: "select", header: "", sticky: "left", width: "48px" },
+				{ key: "expand", header: "", sticky: "left", width: "48px" },
+				{ key: "name", header: "名称", sticky: "left", width: "200px" },
+				{ key: "email", header: "邮箱" },
+				{ key: "status", header: "状态" },
 			];
 
 			const offsets = computeStickyOffsets(columns);
@@ -43,10 +43,10 @@ describe("sticky-utils", () => {
 
 		it("应该标记第一个右固定列显示阴影", () => {
 			const columns: DataTableColumn<any>[] = [
-				{ key: "name" },
-				{ key: "email" },
-				{ key: "edit", sticky: "right", width: "80px" },
-				{ key: "delete", sticky: "right", width: "80px" },
+				{ key: "name", header: "名称" },
+				{ key: "email", header: "邮箱" },
+				{ key: "edit", header: "编辑", sticky: "right", width: "80px" },
+				{ key: "delete", header: "删除", sticky: "right", width: "80px" },
 			];
 
 			const offsets = computeStickyOffsets(columns);
@@ -68,9 +68,9 @@ describe("sticky-utils", () => {
 
 		it("应该处理只有一个固定列的情况", () => {
 			const columns: DataTableColumn<any>[] = [
-				{ key: "select", sticky: "left", width: "48px" },
-				{ key: "name" },
-				{ key: "email" },
+				{ key: "select", header: "", sticky: "left", width: "48px" },
+				{ key: "name", header: "名称" },
+				{ key: "email", header: "邮箱" },
 			];
 
 			const offsets = computeStickyOffsets(columns);
@@ -85,11 +85,11 @@ describe("sticky-utils", () => {
 
 		it("应该处理左右都有固定列的情况", () => {
 			const columns: DataTableColumn<any>[] = [
-				{ key: "select", sticky: "left", width: "48px" },
-				{ key: "name", sticky: "left", width: "200px" },
-				{ key: "email" },
-				{ key: "status" },
-				{ key: "actions", sticky: "right", width: "100px" },
+				{ key: "select", header: "", sticky: "left", width: "48px" },
+				{ key: "name", header: "名称", sticky: "left", width: "200px" },
+				{ key: "email", header: "邮箱" },
+				{ key: "status", header: "状态" },
+				{ key: "actions", header: "操作", sticky: "right", width: "100px" },
 			];
 
 			const offsets = computeStickyOffsets(columns);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { BulkActionBar } from "./BulkActionBar";
 import { DataTableBody } from "./DataTableBody";
@@ -12,6 +12,7 @@ import {
 	SELECT_COLUMN_KEY,
 } from "./data-table-types";
 import { computeStickyOffsets } from "./sticky-utils";
+import "./sticky-shadow.css";
 
 const DEFAULT_COLUMN_MIN_WIDTH = 80;
 
@@ -219,6 +220,56 @@ export function DataTable<T>({
 	const showFooter = total > 0;
 	const showBulkBar = bulkActions != null && selected.size > 0;
 
+	// —— 滚动状态检测：控制固定列阴影显示 ——
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const [scrollState, setScrollState] = useState({
+		isScrolledLeft: false,  // 已向左滚动（显示左侧阴影）
+		isScrolledRight: false, // 已向右滚动（显示右侧阴影）
+	});
+
+	useEffect(() => {
+		const container = scrollContainerRef.current;
+		if (!container) return;
+
+		function checkScroll() {
+			if (!container) return;
+			const { scrollLeft, scrollWidth, clientWidth } = container;
+			setScrollState({
+				isScrolledLeft: scrollLeft > 0,
+				isScrolledRight: scrollLeft < scrollWidth - clientWidth - 1,
+			});
+		}
+
+		// 初始检测
+		checkScroll();
+
+		// 监听滚动
+		container.addEventListener("scroll", checkScroll);
+		// 监听窗口大小变化（可能影响是否需要滚动）
+		window.addEventListener("resize", checkScroll);
+
+		return () => {
+			container.removeEventListener("scroll", checkScroll);
+			window.removeEventListener("resize", checkScroll);
+		};
+	}, [visibleColumns, data]);
+
+	// 计算带滚动状态的 offsets
+	const offsetsWithScroll = useMemo(() => {
+		const map = new Map(offsets);
+		for (const [key, offset] of map) {
+			// 左侧固定列：只在向左滚动时显示阴影
+			if (offset.side === "left" && offset.isLast) {
+				map.set(key, { ...offset, showShadow: scrollState.isScrolledLeft });
+			}
+			// 右侧固定列：只在向右滚动时显示阴影
+			if (offset.side === "right" && offset.isLast) {
+				map.set(key, { ...offset, showShadow: scrollState.isScrolledRight });
+			}
+		}
+		return map;
+	}, [offsets, scrollState]);
+
 	return (
 		<div className={cn("w-full space-y-0", className)}>
 			<DataTableToolbar
@@ -231,6 +282,7 @@ export function DataTable<T>({
 			/>
 
 			<div
+				ref={scrollContainerRef}
 				className="border-border bg-card overflow-auto rounded-md border"
 				style={stickyHeader ? { maxHeight } : undefined}
 				aria-busy={loading ? true : undefined}
@@ -252,7 +304,7 @@ export function DataTable<T>({
 					</colgroup>
 					<DataTableHeader
 						columns={visibleColumns}
-						offsets={offsets}
+						offsets={offsetsWithScroll}
 						stickyHeader={stickyHeader}
 						sort={sort}
 						onSortChange={onSortChange}
@@ -270,7 +322,7 @@ export function DataTable<T>({
 						columns={visibleColumns}
 						data={data}
 						keyExtractor={keyExtractor}
-						offsets={offsets}
+						offsets={offsetsWithScroll}
 						loading={loading}
 						error={error}
 						onRetry={onRetry}

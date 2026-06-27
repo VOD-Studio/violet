@@ -8,6 +8,8 @@ export interface StickyOffset {
 	offset: string;
 	/** 是否为该侧最后一个固定列（需要显示阴影） */
 	isLast: boolean;
+	/** 是否显示阴影（根据滚动状态动态计算） */
+	showShadow?: boolean;
 }
 
 /** 固定列的样式（类名 + 内联 style） */
@@ -17,19 +19,12 @@ export interface StickyStyle {
 }
 
 /**
- * 固定列与滚动列交界处的分隔投影。
+ * 固定列阴影类名
  *
- * 使用伪元素实现阴影，确保阴影层级在最上面，不会被非固定列覆盖。
- * 左侧固定列：在最后一个左固定列的右侧显示阴影；
- * 右侧固定列：在第一个右固定列的左侧显示阴影。
- *
- * after:absolute + after:top-0 + after:bottom-0 创建全高阴影层
- * after:w-[10px] 设置阴影宽度
- * after:shadow-[...] 定义阴影效果
- * after:pointer-events-none 确保不影响交互
+ * 使用独立的 CSS 文件定义伪元素，参考 Ant Design 实现
  */
-const LEFT_SHADOW = "after:absolute after:top-0 after:bottom-0 after:right-0 after:w-[10px] after:translate-x-full after:shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)] after:pointer-events-none";
-const RIGHT_SHADOW = "before:absolute before:top-0 before:bottom-0 before:left-0 before:w-[10px] before:-translate-x-full before:shadow-[8px_0_8px_-8px_rgba(0,0,0,0.15)] before:pointer-events-none";
+const LEFT_SHADOW = "sticky-shadow-left";
+const RIGHT_SHADOW = "sticky-shadow-right";
 
 /**
  * 预计算固定列的左右偏移，同侧多列按宽度累加。
@@ -101,7 +96,7 @@ export function mergeStickyStyle(
  *
  * z 轴分层（高→低）：吸顶且固定 z-50 > 吸顶 z-30 > 固定 z-40 > 普通 z-0。
  * 固定列背景强制不透明，避免横向滚动时穿透。
- * 只在最后一个固定列显示阴影（通过伪元素实现）。
+ * 只在最后一个固定列且滚动时显示阴影（通过 CSS 类名 + 伪元素实现）。
  */
 export function headStickyStyle(
 	offset: StickyOffset | undefined,
@@ -115,10 +110,9 @@ export function headStickyStyle(
 			"z-50",
 			"top-0",
 			"bg-background",
-			"relative", // 需要 relative 才能定位伪元素
 		);
-		// 只在最后一个固定列显示阴影
-		if (offset.isLast) {
+		// 只在最后一个固定列且需要显示阴影时添加类名
+		if (offset.isLast && offset.showShadow) {
 			classes.push(offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW);
 		}
 	} else if (stickyHeader) {
@@ -128,10 +122,9 @@ export function headStickyStyle(
 			"sticky",
 			"z-40",
 			"bg-background",
-			"relative", // 需要 relative 才能定位伪元素
 		);
-		// 只在最后一个固定列显示阴影
-		if (offset.isLast) {
+		// 只在最后一个固定列且需要显示阴影时添加类名
+		if (offset.isLast && offset.showShadow) {
 			classes.push(offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW);
 		}
 	} else {
@@ -146,7 +139,7 @@ export function headStickyStyle(
  *
  * 固定单元格 sticky + z-40 + 不透明 bg-card；普通单元格不定位（static），
  * 不创建独立 stacking context，保证 sticky 固定列自然盖在其上。
- * 只在最后一个固定列显示阴影（通过伪元素实现）。
+ * 只在最后一个固定列且滚动时显示阴影（通过 CSS 类名 + 伪元素实现）。
  */
 export function cellStickyStyle(offset: StickyOffset | undefined): StickyStyle {
 	if (!offset) return { className: "" };
@@ -154,10 +147,9 @@ export function cellStickyStyle(offset: StickyOffset | undefined): StickyStyle {
 		"sticky",
 		"z-40",
 		"bg-card",
-		"relative", // 需要 relative 才能定位伪元素
 	];
-	// 只在最后一个固定列显示阴影
-	if (offset.isLast) {
+	// 只在最后一个固定列且需要显示阴影时添加类名
+	if (offset.isLast && offset.showShadow) {
 		classes.push(offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW);
 	}
 	return {
