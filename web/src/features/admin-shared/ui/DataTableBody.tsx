@@ -1,12 +1,13 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 import Empty from "@/shared/ui/empty";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { TableBody, TableCell, TableRow } from "@/shared/ui/table";
 import type { DataTableColumn } from "./data-table-types";
-import { SELECT_COLUMN_KEY } from "./data-table-types";
+import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "./data-table-types";
 import { RowCheckbox } from "./RowCheckbox";
+import { RowExpander } from "./RowExpander";
 import { cellStickyStyle, mergeStickyStyle, type StickyOffset } from "./sticky-utils";
 
 const ALIGN_CLASS = {
@@ -33,6 +34,12 @@ interface DataTableBodyProps<T> {
 	selectable: boolean;
 	selectedIds: Set<string>;
 	onToggleRow: (id: string) => void;
+	expandable: boolean;
+	expandedRowKeys: Set<string>;
+	onToggleExpand: (id: string) => void;
+	renderExpandedRow?: (row: T) => ReactNode;
+	/** 整行点击回调，提供后行显示 cursor-pointer */
+	onRowClick?: (row: T) => void;
 	/** 当前页首行在全集中的序号（用于全局 aria-rowindex），通常 (page-1)*pageSize */
 	pageBaseIndex: number;
 }
@@ -41,7 +48,7 @@ interface DataTableBodyProps<T> {
  * DataTableBody - 数据行渲染
  *
  * 三态优先级：error > loading > empty > data。
- * 行选择列渲染 RowCheckbox，并标注 aria-selected / aria-rowindex。
+ * 行选择列渲染 RowCheckbox，展开列渲染 RowExpander，展开行追加详情子行。
  */
 export function DataTableBody<T>({
 	columns,
@@ -58,6 +65,11 @@ export function DataTableBody<T>({
 	selectable,
 	selectedIds,
 	onToggleRow,
+	expandable,
+	expandedRowKeys,
+	onToggleExpand,
+	renderExpandedRow,
+	onRowClick,
 	pageBaseIndex,
 }: DataTableBodyProps<T>) {
 	const cellPad = density === "compact" ? "py-1.5" : "py-2.5";
@@ -133,52 +145,83 @@ export function DataTableBody<T>({
 			{data.map((row, index) => {
 				const rowKey = keyExtractor(row);
 				const isSelected = selectable && selectedIds.has(rowKey);
+				const isExpanded = expandable && expandedRowKeys.has(rowKey);
 				return (
-					<TableRow
-						key={rowKey}
-						data-state={isSelected ? "selected" : undefined}
-						aria-selected={selectable ? isSelected : undefined}
-						aria-rowindex={pageBaseIndex + index + 1}
-					>
-						{columns.map((col) => {
-							const offset = offsets.get(col.key);
-							const sticky = cellStickyStyle(offset);
+					<Fragment key={rowKey}>
+						<TableRow
+							data-state={isSelected ? "selected" : undefined}
+							aria-selected={selectable ? isSelected : undefined}
+							aria-rowindex={pageBaseIndex + index + 1}
+							onClick={onRowClick ? () => onRowClick(row) : undefined}
+							className={onRowClick ? "cursor-pointer" : undefined}
+						>
+							{columns.map((col) => {
+								const offset = offsets.get(col.key);
+								const sticky = cellStickyStyle(offset);
 
-							// 选择列：渲染行 checkbox
-							if (col.key === SELECT_COLUMN_KEY) {
+								// 选择列：行 checkbox + 右内边距与下一列分隔
+								if (col.key === SELECT_COLUMN_KEY) {
+									return (
+										<TableCell
+											key={col.key}
+											style={mergeStickyStyle(offset, col.width)}
+											className={cn(cellPad, "pr-3", sticky.className, col.className)}
+											onClick={(e) => e.stopPropagation()}
+										>
+											{selectable && (
+												<RowCheckbox
+													selected={isSelected}
+													onToggle={() => onToggleRow(rowKey)}
+													rowNumber={pageBaseIndex + index + 1}
+												/>
+											)}
+										</TableCell>
+									);
+								}
+
+								// 展开列：行展开切换按钮
+								if (col.key === EXPAND_COLUMN_KEY) {
+									return (
+										<TableCell
+											key={col.key}
+											style={mergeStickyStyle(offset, col.width)}
+											className={cn(cellPad, "pr-3", sticky.className, col.className)}
+											onClick={(e) => e.stopPropagation()}
+										>
+											{expandable && (
+												<RowExpander
+													expanded={isExpanded}
+													onToggle={() => onToggleExpand(rowKey)}
+												/>
+											)}
+										</TableCell>
+									);
+								}
+
 								return (
 									<TableCell
 										key={col.key}
 										style={mergeStickyStyle(offset, col.width)}
-										className={cn(cellPad, sticky.className, col.className)}
-									>
-										{selectable && (
-											<RowCheckbox
-												selected={isSelected}
-												onToggle={() => onToggleRow(rowKey)}
-												rowNumber={pageBaseIndex + index + 1}
-											/>
+										className={cn(
+											cellPad,
+											ALIGN_CLASS[col.align ?? "left"],
+											sticky.className,
+											col.className,
 										)}
+									>
+										{renderCell(col, row)}
 									</TableCell>
 								);
-							}
-
-							return (
-								<TableCell
-									key={col.key}
-									style={mergeStickyStyle(offset, col.width)}
-									className={cn(
-										cellPad,
-										ALIGN_CLASS[col.align ?? "left"],
-										sticky.className,
-										col.className,
-									)}
-								>
-									{renderCell(col, row)}
+							})}
+						</TableRow>
+						{isExpanded && renderExpandedRow && (
+							<TableRow className="hover:bg-transparent">
+								<TableCell colSpan={colCount} className="bg-muted/30 p-4">
+									{renderExpandedRow(row)}
 								</TableCell>
-							);
-						})}
-					</TableRow>
+							</TableRow>
+						)}
+					</Fragment>
 				);
 			})}
 		</TableBody>

@@ -21,7 +21,7 @@ const RIGHT_SHADOW = "shadow-[inset_8px_0_8px_-8px_rgba(0,0,0,0.08)]";
 /**
  * 预计算固定列的左右偏移，同侧多列按宽度累加。
  *
- * 仅 px 宽度可精确累加；非 px（如 "20%"）回退 0，此时固定列建议显式给 px 宽度。
+ * 仅 px 宽度可精确累加；非 px（如 "20%"）回退 0。
  */
 export function computeStickyOffsets<T>(columns: DataTableColumn<T>[]): Map<string, StickyOffset> {
 	const map = new Map<string, StickyOffset>();
@@ -46,9 +46,7 @@ export function computeStickyOffsets<T>(columns: DataTableColumn<T>[]): Map<stri
 	return map;
 }
 
-/**
- * 合并固定列内联偏移与列宽。
- */
+/** 合并固定列内联偏移与列宽 */
 export function mergeStickyStyle(
 	offset: StickyOffset | undefined,
 	width?: string,
@@ -65,7 +63,8 @@ export function mergeStickyStyle(
 /**
  * 表头单元格的固定列 + 吸顶样式。
  *
- * z 轴分层：同时吸顶且固定 → z-30（交叉最高层）；仅吸顶 → z-20；仅固定 → z-10。
+ * z 轴分层（高→低）：吸顶且固定 z-40 > 吸顶 z-30 > 固定 z-20 > 普通 z-0。
+ * 固定列背景强制不透明，避免横向滚动时穿透。
  */
 export function headStickyStyle(
 	offset: StickyOffset | undefined,
@@ -73,21 +72,25 @@ export function headStickyStyle(
 ): StickyStyle {
 	const classes: string[] = [];
 
-	if (stickyHeader) {
-		classes.push("sticky", "top-0", "z-20", "bg-muted/60", "backdrop-blur");
-	}
-	if (offset) {
+	if (stickyHeader && offset) {
 		classes.push(
 			"sticky",
-			"z-10",
-			"bg-muted/60",
-			"backdrop-blur",
+			"z-40",
+			"top-0",
+			"bg-background",
 			offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW,
 		);
-	}
-	// 吸顶 + 固定交叉处取最高层
-	if (stickyHeader && offset) {
-		classes.push("z-30");
+	} else if (stickyHeader) {
+		classes.push("sticky", "z-30", "top-0", "bg-background");
+	} else if (offset) {
+		classes.push(
+			"sticky",
+			"z-20",
+			"bg-background",
+			offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW,
+		);
+	} else {
+		classes.push("relative", "z-0");
 	}
 
 	return { className: classes.join(" ") };
@@ -96,14 +99,15 @@ export function headStickyStyle(
 /**
  * 数据单元格的固定列样式。
  *
- * 背景不透明以遮挡横向滚动内容。
+ * 固定单元格 z-20 + 不透明 bg-card，普通单元格 z-0，
+ * 保证横向滚动时固定列盖在普通列之上。
  */
 export function cellStickyStyle(offset: StickyOffset | undefined): StickyStyle {
-	if (!offset) return { className: "" };
+	if (!offset) return { className: "relative z-0" };
 	return {
 		className: [
 			"sticky",
-			"z-10",
+			"z-20",
 			"bg-card",
 			offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW,
 		].join(" "),

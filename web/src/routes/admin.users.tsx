@@ -1,9 +1,11 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { DataTable } from "@features/admin-shared/ui/DataTable";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table-types";
+import { exportToCsv } from "@features/admin-shared/ui/export-csv";
+import { useDebouncedValue } from "@features/admin-shared/ui/useDebouncedValue";
 import { Badge } from "@shared/ui/badge";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Pencil, RefreshCw, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, Download, Pencil, RefreshCw, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/button";
@@ -99,8 +101,11 @@ function useMockServer() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<Error | null>(null);
 
+	// 防抖：input 受控即时显示，filter 用延迟值避免每次击键重渲染
+	const debouncedKeyword = useDebouncedValue(keyword, 300);
+
 	const filtered = useMemo(() => {
-		const q = keyword.trim().toLowerCase();
+		const q = debouncedKeyword.trim().toLowerCase();
 		if (!q) return ALL_DATA;
 		return ALL_DATA.filter(
 			(u) =>
@@ -108,7 +113,7 @@ function useMockServer() {
 				u.email.toLowerCase().includes(q) ||
 				u.role.toLowerCase().includes(q),
 		);
-	}, [keyword]);
+	}, [debouncedKeyword]);
 
 	const sorted = useMemo(() => {
 		if (!sort) return filtered;
@@ -144,7 +149,7 @@ function useMockServer() {
 		error,
 		total,
 		data,
-		isFiltered: keyword.trim().length > 0,
+		isFiltered: debouncedKeyword.trim().length > 0,
 		setPage,
 		setPageSize: (size: number) => {
 			setPageSize(size);
@@ -198,6 +203,18 @@ function AdminUsers() {
 				density={density}
 				stickyHeader
 				maxHeight="60vh"
+				resizable
+				expandable
+				renderExpandedRow={(row) => (
+					<div className="text-muted-foreground space-y-1 text-sm">
+						<p>ID：{row.id}</p>
+						<p>邮箱：{row.email}</p>
+						<p>角色：{row.role}</p>
+						<p>状态：{row.status === "active" ? "正常" : "已禁用"}</p>
+						<p>注册时间：{row.createdAt}</p>
+					</div>
+				)}
+				onRowClick={(row) => toast.info(`点击查看用户 ${row.nickname}（演示）`)}
 				caption="用户列表"
 				emptyTitle="NO_USERS"
 				emptyDescription="暂无用户"
@@ -234,6 +251,17 @@ function AdminUsers() {
 						<Button variant="outline" size="sm" onClick={() => server.refetch(true)}>
 							<AlertTriangle className="size-3.5" />
 							模拟错误
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								exportToCsv("用户列表", columns, server.data);
+								toast.success("已导出当前页 CSV");
+							}}
+						>
+							<Download className="size-3.5" />
+							导出 CSV
 						</Button>
 					</>
 				}

@@ -20,6 +20,10 @@ export interface DataTableColumn<T> {
 	sortable?: boolean;
 	/** 是否允许在列可见性菜单隐藏，默认 true */
 	hideable?: boolean;
+	/** 是否允许拖拽调整列宽，默认跟随组件 resizable */
+	resizable?: boolean;
+	/** CSV 导出时取值，默认按 accessorKey 取原始值 */
+	exportValue?: (row: T) => string | number | null;
 	/** 附加到 th 与 td 的类名 */
 	className?: string;
 }
@@ -36,7 +40,7 @@ export interface DataTableProps<T> {
 	columns: DataTableColumn<T>[];
 	/** 当前页数据，由调用方按分页参数从服务端取回 */
 	data: T[];
-	/** 行唯一键提取器，生成的 id 同时用于行选择状态 */
+	/** 行唯一键提取器，生成的 id 同时用于行选择与展开状态 */
 	keyExtractor: (row: T) => string;
 
 	/** 当前页码（从 1 开始） */
@@ -73,9 +77,26 @@ export interface DataTableProps<T> {
 	/** 批量操作区，渲染在工具栏内联提示与底部浮动操作条 */
 	bulkActions?: ReactNode;
 
+	/** 开启行展开，注入展开切换列 */
+	expandable?: boolean;
+	/** 已展开行 id 集合（受控） */
+	expandedRowKeys?: Set<string>;
+	/** 展开态变更回调 */
+	onExpandedChange?: (keys: Set<string>) => void;
+	/** 展开行渲染的内容 */
+	renderExpandedRow?: (row: T) => ReactNode;
+
+	/** 整行点击回调，提供后行显示 cursor-pointer */
+	onRowClick?: (row: T) => void;
+
+	/** 开启列宽拖拽调整，宽度持久化到 localStorage */
+	resizable?: boolean;
+	/** 列最小宽度，默认 80 */
+	columnMinWidth?: number;
+
 	/** 顶部工具栏左侧筛选槽位，由调用方自定义内容 */
 	toolbar?: ReactNode;
-	/** 列可见性持久化到 localStorage 的 key */
+	/** 列可见性与列宽持久化到 localStorage 的前缀 key */
 	storageKey?: string;
 
 	/** 当前是否处于筛选态；为 true 且无数据时空态文案改为"未找到匹配结果" */
@@ -97,5 +118,7 @@ export interface DataTableProps<T> {
 	className?: string;
 }
 
-/** 选择列保留 key，注入列时占位用 */
+/** 选择列保留 key */
 export const SELECT_COLUMN_KEY = "__select";
+/** 展开列保留 key */
+export const EXPAND_COLUMN_KEY = "__expand";

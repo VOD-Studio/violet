@@ -1,18 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/shared/lib/utils";
-import { Table } from "@/shared/ui/table";
 import { BulkActionBar } from "./BulkActionBar";
 import { DataTableBody } from "./DataTableBody";
 import { DataTableFooter } from "./DataTableFooter";
 import { DataTableHeader } from "./DataTableHeader";
 import { DataTableToolbar } from "./DataTableToolbar";
-import { type DataTableColumn, type DataTableProps, SELECT_COLUMN_KEY } from "./data-table-types";
+import {
+	type DataTableColumn,
+	type DataTableProps,
+	EXPAND_COLUMN_KEY,
+	SELECT_COLUMN_KEY,
+} from "./data-table-types";
 import { computeStickyOffsets } from "./sticky-utils";
+
+const DEFAULT_COLUMN_MIN_WIDTH = 80;
 
 /**
  * DataTable - 通用数据表格
  *
- * 组合工具栏、表格、分页；管理列可见性与行选择状态。
+ * 组合工具栏、表格、分页；管理列可见性、列宽与行选择/展开状态。
  * 分页、排序由调用方受控。
  */
 export function DataTable<T>({
@@ -34,6 +40,13 @@ export function DataTable<T>({
 	selectedIds,
 	onSelectionChange,
 	bulkActions,
+	expandable = false,
+	expandedRowKeys,
+	onExpandedChange,
+	renderExpandedRow,
+	onRowClick,
+	resizable = false,
+	columnMinWidth = DEFAULT_COLUMN_MIN_WIDTH,
 	toolbar,
 	storageKey,
 	filtered = false,
@@ -105,15 +118,66 @@ export function DataTable<T>({
 		setSelected(next);
 	}
 
-	// —— 可见列（含注入的选择列） ——
+	// —— 列宽状态（localStorage 持久化） ——
+	const widthStorageKey = storageKey ? `${storageKey}-widths` : undefined;
+	const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+		if (!widthStorageKey) return {};
+		try {
+			const raw = localStorage.getItem(widthStorageKey);
+			if (!raw) return {};
+			return JSON.parse(raw) as Record<string, number>;
+		} catch {
+			return {};
+		}
+	});
+
+	useEffect(() => {
+		if (!widthStorageKey) return;
+		try {
+			localStorage.setItem(widthStorageKey, JSON.stringify(columnWidths));
+		} catch {
+			/* 忽略 */
+		}
+	}, [columnWidths, widthStorageKey]);
+
+	function resizeColumn(key: string, width: number) {
+		setColumnWidths((prev) => ({ ...prev, [key]: width }));
+	}
+
+	// —— 行展开状态 ——
+	const [internalExpanded, setInternalExpanded] = useState<Set<string>>(new Set());
+	const expanded = expandedRowKeys ?? internalExpanded;
+	const setExpanded = (next: Set<string>) => {
+		setInternalExpanded(next);
+		onExpandedChange?.(next);
+	};
+	function toggleExpand(id: string) {
+		const next = new Set(expanded);
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
+		setExpanded(next);
+	}
+
+	// —— 可见列（含注入的选择列 / 展开列） ——
 	const baseVisible = useMemo(
 		() => columns.filter((c) => !hiddenKeys.has(c.key)),
 		[columns, hiddenKeys],
 	);
 	const visibleColumns = useMemo<DataTableColumn<T>[]>(() => {
-		if (!selectable) return baseVisible;
-		return [
-			{
+		const injected: DataTableColumn<T>[] = [];
+		if (expandable) {
+			injected.push({
+				key: EXPAND_COLUMN_KEY,
+				header: null,
+				sticky: "left",
+				width: "48px",
+				hideable: false,
+				sortable: false,
+				align: "center",
+			});
+		}
+		if (selectable) {
+			injected.push({
 				key: SELECT_COLUMN_KEY,
 				header: null,
 				sticky: "left",
@@ -121,11 +185,26 @@ export function DataTable<T>({
 				hideable: false,
 				sortable: false,
 				align: "center",
-			},
-			...baseVisible,
-		];
-	}, [baseVisible, selectable]);
+			});
+		}
+		return [...injected, ...baseVisible];
+	}, [baseVisible, selectable, expandable]);
 	const offsets = useMemo(() => computeStickyOffsets(visibleColumns), [visibleColumns]);
+
+	// 每列实际宽度（含拖拽结果），供 colgroup 使用
+	const columnWidthMap = useMemo(() => {
+		const map = new Map<string, number>();
+		for (const col of visibleColumns) {
+			const fromStore = columnWidths[col.key];
+			if (fromStore != null) {
+				map.set(col.key, fromStore);
+			} else {
+				const matched = col.width?.match(/^(\d+(?:\.\d+)?)px$/);
+				map.set(col.key, matched ? Number(matched[1]) : 0);
+			}
+		}
+		return map;
+	}, [visibleColumns, columnWidths]);
 
 	const showFooter = total > 0;
 	const showBulkBar = bulkActions != null && selected.size > 0;
@@ -142,15 +221,18 @@ export function DataTable<T>({
 			/>
 
 			<div
-				className={cn(
-					"overflow-auto rounded-md border border-border bg-card",
-					stickyHeader && "supports-[backdrop-filter]:",
-				)}
+				className="border-border bg-card overflow-auto rounded-md border"
 				style={stickyHeader ? { maxHeight } : undefined}
 				aria-busy={loading ? true : undefined}
 			>
-				<Table>
+				<table className="caption-bottom text-sm" style={{ tableLayout: "fixed", width: "100%" }}>
 					{caption ? <caption className="sr-only">{caption}</caption> : null}
+					<colgroup>
+						{visibleColumns.map((col) => {
+							const w = columnWidthMap.get(col.key);
+							return <col key={col.key} style={w ? { width: `${w}px` } : undefined} />;
+						})}
+					</colgroup>
 					<DataTableHeader
 						columns={visibleColumns}
 						offsets={offsets}
@@ -162,6 +244,10 @@ export function DataTable<T>({
 						allSelected={allSelected}
 						someSelected={someSelected}
 						onToggleSelectAll={toggleSelectAll}
+						resizable={resizable}
+						columnMinWidth={columnMinWidth}
+						columnWidthMap={columnWidthMap}
+						onResizeColumn={resizeColumn}
 					/>
 					<DataTableBody
 						columns={visibleColumns}
@@ -178,9 +264,14 @@ export function DataTable<T>({
 						selectable={selectable}
 						selectedIds={selected}
 						onToggleRow={toggleRow}
+						expandable={expandable}
+						expandedRowKeys={expanded}
+						onToggleExpand={toggleExpand}
+						renderExpandedRow={renderExpandedRow}
+						onRowClick={onRowClick}
 						pageBaseIndex={(page - 1) * pageSize}
 					/>
-				</Table>
+				</table>
 			</div>
 
 			{showFooter && (

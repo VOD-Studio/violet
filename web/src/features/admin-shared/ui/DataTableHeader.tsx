@@ -1,7 +1,8 @@
 import { cn } from "@/shared/lib/utils";
 import { TableHead, TableHeader, TableRow } from "@/shared/ui/table";
+import { ColumnResizer } from "./ColumnResizer";
 import type { DataTableColumn, DataTableSort } from "./data-table-types";
-import { SELECT_COLUMN_KEY } from "./data-table-types";
+import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "./data-table-types";
 import { SelectAllCheckbox } from "./SelectAllCheckbox";
 import { SortIcon } from "./SortIcon";
 import { headStickyStyle, mergeStickyStyle, type StickyOffset } from "./sticky-utils";
@@ -23,13 +24,17 @@ interface DataTableHeaderProps<T> {
 	allSelected: boolean;
 	someSelected: boolean;
 	onToggleSelectAll: () => void;
+	resizable: boolean;
+	columnMinWidth: number;
+	columnWidthMap: Map<string, number>;
+	onResizeColumn: (key: string, width: number) => void;
 }
 
 /**
  * DataTableHeader - 表头行
  *
- * 渲染排序列（含 aria-sort）、固定列/吸顶 sticky 样式，
- * 以及注入的选择列表头（全选当前页）。
+ * 渲染排序列（含 aria-sort）、固定列/吸顶 sticky 样式、注入的选择列
+ * （全选当前页）与展开列，以及可选的列宽拖拽手柄。
  */
 export function DataTableHeader<T>({
 	columns,
@@ -42,6 +47,10 @@ export function DataTableHeader<T>({
 	allSelected,
 	someSelected,
 	onToggleSelectAll,
+	resizable,
+	columnMinWidth,
+	columnWidthMap,
+	onResizeColumn,
 }: DataTableHeaderProps<T>) {
 	const headHeight = density === "compact" ? "h-8" : "h-10";
 
@@ -61,14 +70,14 @@ export function DataTableHeader<T>({
 					const isActive = sort?.key === col.key;
 					const align = col.align ?? "left";
 
-					// 选择列表头：渲染全选 checkbox
+					// 选择列表头：全选 checkbox + 右内边距与下一列分隔
 					if (col.key === SELECT_COLUMN_KEY) {
 						return (
 							<TableHead
 								key={col.key}
 								scope="col"
 								style={mergeStickyStyle(offset, col.width)}
-								className={cn(headHeight, sticky.className, col.className)}
+								className={cn(headHeight, "pr-3", sticky.className, col.className)}
 							>
 								{selectable && (
 									<div className="flex justify-center">
@@ -83,10 +92,24 @@ export function DataTableHeader<T>({
 						);
 					}
 
+					// 展开列表头：占位
+					if (col.key === EXPAND_COLUMN_KEY) {
+						return (
+							<TableHead
+								key={col.key}
+								scope="col"
+								style={mergeStickyStyle(offset, col.width)}
+								className={cn(headHeight, "pr-3", sticky.className, col.className)}
+							/>
+						);
+					}
+
 					let ariaSort: "none" | "ascending" | "descending" | undefined;
 					if (col.sortable) {
 						ariaSort = isActive ? (sort?.order === "asc" ? "ascending" : "descending") : "none";
 					}
+
+					const showResizer = resizable && col.resizable !== false;
 
 					return (
 						<TableHead
@@ -97,6 +120,7 @@ export function DataTableHeader<T>({
 							style={mergeStickyStyle(offset, col.width)}
 							className={cn(
 								headHeight,
+								showResizer && "relative",
 								"text-muted-foreground text-sm font-medium",
 								ALIGN_CLASS[align],
 								sticky.className,
@@ -118,6 +142,13 @@ export function DataTableHeader<T>({
 								</button>
 							) : (
 								col.header
+							)}
+							{showResizer && (
+								<ColumnResizer
+									width={columnWidthMap.get(col.key) ?? 0}
+									minWidth={columnMinWidth}
+									onResize={(w) => onResizeColumn(col.key, w)}
+								/>
 							)}
 						</TableHead>
 					);
