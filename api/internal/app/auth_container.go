@@ -35,6 +35,7 @@ func NewAuthContainer(
 	bus appshared.EventBus,
 ) (*AuthContainer, error) {
 	userRepo := gormrepo.NewUserRepository(db)
+	roleRepo := gormrepo.NewRoleRepository(db)
 
 	jwtService, err := infraauth.NewJWTService(
 		cfg.JWTPrivateKeyPath, cfg.JWTPublicKeyPath,
@@ -62,7 +63,7 @@ func NewAuthContainer(
 	updatePf := authcmd.NewUpdateProfileHandler(userRepo)
 	changePwd := authcmd.NewChangePasswordHandler(userRepo, hasher, tokenStore)
 
-	getMe := authquery.NewGetMeHandler(userRepo)
+	getMe := authquery.NewGetMeHandler(userRepo, roleRepo)
 
 	ensureSuperAdmin := authcmd.NewEnsureSuperAdminHandler(userRepo, hasher)
 

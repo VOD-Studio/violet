@@ -9,12 +9,16 @@ import { useMe } from "../api/queries";
 export function useHasPermission(code: string): boolean {
     const { data: user } = useMe({ enabled: true });
 
-    // 未登录或无权限数据时返回 false
-    if (!user?.permissions) {
+    if (!user) {
         return false;
     }
 
-    return user.permissions.includes(code);
+    // 超级管理员拥有所有权限，避免后端权限数组短暂缺失时隐藏全部操作。
+    if (user.role === "superadmin") {
+        return true;
+    }
+
+    return user.permissions?.includes(code) ?? false;
 }
 
 /**
@@ -26,9 +30,12 @@ export function useHasPermission(code: string): boolean {
 export function useHasAnyPermission(codes: string[]): boolean {
     const { data: user } = useMe({ enabled: true });
 
-    // 未登录或无权限数据时返回 false
-    if (!user?.permissions) {
+    if (!user) {
         return false;
+    }
+
+    if (user.role === "superadmin") {
+        return true;
     }
 
     return codes.some((code) => user.permissions?.includes(code));
@@ -43,9 +50,12 @@ export function useHasAnyPermission(codes: string[]): boolean {
 export function useHasAllPermissions(codes: string[]): boolean {
     const { data: user } = useMe({ enabled: true });
 
-    // 未登录或无权限数据时返回 false
-    if (!user?.permissions) {
+    if (!user) {
         return false;
+    }
+
+    if (user.role === "superadmin") {
+        return true;
     }
 
     return codes.every((code) => user.permissions?.includes(code));

@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	"blog-api/internal/domain/role"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 )
@@ -26,11 +27,15 @@ type UserDTO struct {
 // GetMeHandler 获取当前登录用户信息
 type GetMeHandler struct {
 	userRepo user.UserRepository
+	roleRepo role.RoleRepository
 }
 
 // NewGetMeHandler 构造 GetMe 用例
-func NewGetMeHandler(repo user.UserRepository) *GetMeHandler {
-	return &GetMeHandler{userRepo: repo}
+func NewGetMeHandler(userRepo user.UserRepository, roleRepo role.RoleRepository) *GetMeHandler {
+	return &GetMeHandler{
+		userRepo: userRepo,
+		roleRepo: roleRepo,
+	}
 }
 
 // Handle 执行 GetMe
@@ -45,11 +50,23 @@ func (h *GetMeHandler) Handle(ctx context.Context, userID string) (UserDTO, erro
 		return UserDTO{}, err
 	}
 
-	return toUserDTO(u), nil
+	// 查询用户角色的权限列表。查询失败不阻断 /auth/me，避免权限数据异常导致个人信息不可读。
+	var permissions []string
+	if h.roleRepo != nil {
+		roleName, err := role.ParseRoleName(string(u.Role()))
+		if err == nil {
+			r, err := h.roleRepo.FindByName(ctx, roleName)
+			if err == nil && r != nil {
+				permissions = r.PermissionCodes()
+			}
+		}
+	}
+
+	return toUserDTO(u, permissions), nil
 }
 
 // toUserDTO 领域用户转 DTO
-func toUserDTO(u *user.User) UserDTO {
+func toUserDTO(u *user.User, permissions []string) UserDTO {
 	return UserDTO{
 		ID:            u.GetID().String(),
 		Username:      u.Username().String(),
@@ -60,5 +77,6 @@ func toUserDTO(u *user.User) UserDTO {
 		EmailVerified: u.EmailVerified(),
 		IsActive:      u.IsActive(),
 		CreatedAt:     u.CreatedAt().Format(time.RFC3339),
+		Permissions:   permissions,
 	}
 }
