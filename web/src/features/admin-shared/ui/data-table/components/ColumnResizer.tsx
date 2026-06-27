@@ -122,7 +122,7 @@ export function ColumnResizer({
 				"w-1.5 cursor-col-resize",
 				"before:absolute before:inset-y-2 before:right-0 before:w-px before:bg-border",
 				// 使用伪元素扩大可点击区域
-				"after:absolute after:inset-y-0 after:right-[-6px] after:w-[18px]",
+				"after:absolute after:inset-y-0 after:-right-1.5 after:w-4.5",
 				// 悬停和激活状态
 				isDragging
 					? "bg-primary/60"
