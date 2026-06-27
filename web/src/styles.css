@@ -3,6 +3,7 @@
 
 @theme {
   --animate-blob: blob 7s infinite;
+  --animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
 
   /* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
   /* bg-background / text-foreground / bg-primary / border-border 等 */
@@ -67,6 +68,7 @@
   --fg: #0a0a0a;
   --edge-hairline: rgba(0, 0, 0, 0.05);
   --surface-glass: rgba(255, 255, 255, 0.5);
+  --glow-soft: 220 90% 60%;
 }
 
 /*
@@ -99,6 +101,7 @@
   --fg: #ffffff;
   --edge-hairline: rgba(255, 255, 255, 0.1);
   --surface-glass: rgba(0, 0, 0, 0.5);
+  --glow-soft: 210 100% 70%;
 }
 
 @keyframes blob {
@@ -106,6 +109,10 @@
   33% { transform: translate(30px, -50px) scale(1.1); }
   66% { transform: translate(-20px, 20px) scale(0.9); }
   100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes nexus-shimmer {
+  100% { transform: translateX(100%); }
 }
 
 body {
