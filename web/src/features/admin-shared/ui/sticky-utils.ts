@@ -14,9 +14,15 @@ export interface StickyStyle {
 	style?: CSSProperties;
 }
 
-/** 左/右固定列朝滚动方向的边缘投影 */
-const LEFT_SHADOW = "shadow-[inset_-8px_0_8px_-8px_rgba(0,0,0,0.08)]";
-const RIGHT_SHADOW = "shadow-[inset_8px_0_8px_-8px_rgba(0,0,0,0.08)]";
+/**
+ * 固定列与滚动列交界处的分隔投影。
+ *
+ * 左侧固定列：投影朝右（正 x 偏移），落在其右边缘与滚动列交界处；
+ * 右侧固定列：投影朝左（负 x 偏移），落在其左边缘。
+ * 用 inset box-shadow 贴在单元格内侧，避免被滚动列背景覆盖。
+ */
+const LEFT_SHADOW = "shadow-[inset_-10px_0_8px_-8px_rgba(0,0,0,0.15)]";
+const RIGHT_SHADOW = "shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.15)]";
 
 /**
  * 预计算固定列的左右偏移，同侧多列按宽度累加。
