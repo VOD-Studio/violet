@@ -4,24 +4,42 @@ import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus, Shield, Trash2, Users } from "lucide-react";
+import { Pencil, Plus, Settings, Shield, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { useAdminRoles, useDeleteRole } from "@features/admin-roles/api/queries";
 import type { RoleDTO } from "@features/admin-roles/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
+import { CreateRoleDialog } from "@features/admin-roles/ui/CreateRoleDialog";
+import { EditRoleDialog } from "@features/admin-roles/ui/EditRoleDialog";
+import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsDialog";
 
 export const Route = createFileRoute("/admin/roles")({
     component: AdminRolesPage,
 });
 
 function AdminRolesPage() {
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [editingRole, setEditingRole] = useState<RoleDTO | null>(null);
+    const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
+    const [configuringRole, setConfiguringRole] = useState<RoleDTO | null>(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deletingRole, setDeletingRole] = useState<RoleDTO | null>(null);
 
     // 查询角色列表
     const { data: roles = [], isLoading, error, refetch } = useAdminRoles();
     const deleteRole = useDeleteRole();
+
+    const handleEdit = (role: RoleDTO) => {
+        setEditingRole(role);
+        setEditDialogOpen(true);
+    };
+
+    const handleConfigurePermissions = (role: RoleDTO) => {
+        setConfiguringRole(role);
+        setPermissionsDialogOpen(true);
+    };
 
     const handleDelete = (role: RoleDTO) => {
         setDeletingRole(role);
@@ -95,11 +113,20 @@ function AdminRolesPage() {
                         <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => {
-                                // TODO: 打开编辑对话框
-                            }}
+                            onClick={() => handleConfigurePermissions(row)}
+                            title="配置权限"
                         >
-                            编辑
+                            <Settings className="size-3.5" />
+                        </Button>
+                    </PermissionGuard>
+                    <PermissionGuard permission="role:manage">
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEdit(row)}
+                            title="编辑角色"
+                        >
+                            <Pencil className="size-3.5" />
                         </Button>
                     </PermissionGuard>
                     <PermissionGuard permission="role:manage">
@@ -108,6 +135,7 @@ function AdminRolesPage() {
                             variant="ghost"
                             onClick={() => handleDelete(row)}
                             disabled={deleteRole.isPending}
+                            title="删除角色"
                         >
                             <Trash2 className="size-3.5" />
                         </Button>
@@ -140,13 +168,35 @@ function AdminRolesPage() {
                 emptyDescription="还没有创建任何角色，点击上方按钮创建第一个角色"
                 toolbar={
                     <PermissionGuard permission="role:manage">
-                        <Button size="sm" onClick={() => {}}>
+                        <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
                             <Plus className="size-3.5 mr-1" />
                             创建角色
                         </Button>
                     </PermissionGuard>
                 }
             />
+
+            {/* 创建角色对话框 */}
+            <CreateRoleDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+
+            {/* 编辑角色对话框 */}
+            {editingRole && (
+                <EditRoleDialog
+                    open={editDialogOpen}
+                    onOpenChange={setEditDialogOpen}
+                    role={editingRole}
+                />
+            )}
+
+            {/* 角色权限配置对话框 */}
+            {configuringRole && configuringRole.id && (
+                <RolePermissionsDialog
+                    open={permissionsDialogOpen}
+                    onOpenChange={setPermissionsDialogOpen}
+                    roleId={configuringRole.id}
+                    roleName={configuringRole.name}
+                />
+            )}
 
             {/* 删除确认对话框 */}
             <ConfirmDialog
