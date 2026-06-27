@@ -9,7 +9,7 @@ import HeaderMobile from "./HeaderMobile";
 import HeaderNav from "./HeaderNav";
 
 interface HeaderProps {
-	isAuthenticated: boolean;
+    isAuthenticated: boolean;
 }
 
 /**
@@ -21,41 +21,41 @@ interface HeaderProps {
  * sticky + backdrop-blur + 1px 极细边框（dark 霓虹 / light 灰）。
  */
 const Header = ({ isAuthenticated }: HeaderProps) => {
-	const { data: user } = useMe({ enabled: isAuthenticated });
-	const openMusic = useMusicUIStore((s) => s.open);
-	const handleAction = (action: string) => {
-		if (action === "open-music") openMusic();
-	};
+    const { data: user } = useMe({ enabled: isAuthenticated });
+    const openMusic = useMusicUIStore((s) => s.open);
+    const handleAction = (action: string) => {
+        if (action === "open-music") openMusic();
+    };
 
-	const [scrolled, setScrolled] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
 
-	useEffect(() => {
-		const handleScroll = () => setScrolled(window.scrollY > 50);
-		handleScroll();
-		window.addEventListener("scroll", handleScroll);
-		return () => window.removeEventListener("scroll", handleScroll);
-	}, []);
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 50);
+        handleScroll();
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
-	return (
-		<motion.header
-			initial={{ y: -100 }}
-			animate={{ y: 0 }}
-			className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-				scrolled
-					? "border-b border-edge-hairline bg-background/70 backdrop-blur-md"
-					: "bg-transparent"
-			}`}
-		>
-			<div className="container mx-auto flex h-16 items-center justify-between px-4">
-				<HeaderLogo />
-				<HeaderNav onAction={handleAction} />
-				<div className="flex items-center gap-2">
-					<HeaderActions user={user} />
-					<HeaderMobile onAction={handleAction} />
-				</div>
-			</div>
-		</motion.header>
-	);
+    return (
+        <motion.header
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
+            className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+                scrolled
+                    ? "border-b border-edge-hairline bg-background/70 backdrop-blur-md"
+                    : "bg-transparent"
+            }`}
+        >
+            <div className="container mx-auto flex h-16 items-center justify-between px-4">
+                <HeaderLogo />
+                <HeaderNav onAction={handleAction} />
+                <div className="flex items-center gap-2">
+                    <HeaderActions user={user} />
+                    <HeaderMobile onAction={handleAction} />
+                </div>
+            </div>
+        </motion.header>
+    );
 };
 
 export default Header;

@@ -13,15 +13,15 @@ import { createQueryClient } from "./shared/api/query-client";
  * - auth：SSR 期间确定的鉴权快照，client hydrate 时复用（避免二次请求）
  */
 export interface RouterContext {
-	/** TanStack Query 实例 */
-	queryClient: QueryClient;
-	/** 鉴权状态 */
-	auth: {
-		/** 是否已登录 */
-		isAuthenticated: boolean;
-		/** 当前用户（未登录为 null） */
-		user: UserDTO | null;
-	};
+    /** TanStack Query 实例 */
+    queryClient: QueryClient;
+    /** 鉴权状态 */
+    auth: {
+        /** 是否已登录 */
+        isAuthenticated: boolean;
+        /** 当前用户（未登录为 null） */
+        user: UserDTO | null;
+    };
 }
 
 /**
@@ -31,23 +31,23 @@ export interface RouterContext {
  * auth 初始为未登录态，由 __root 的 beforeLoad 在请求开始时覆盖为真实值。
  */
 export const getRouter = () => {
-	const queryClient = createQueryClient();
-	const router = createTanStackRouter({
-		routeTree,
-		scrollRestoration: true,
-		defaultPreload: "intent",
-		defaultPreloadStaleTime: 0,
-		context: {
-			queryClient,
-			auth: { isAuthenticated: false, user: null },
-		},
-	});
+    const queryClient = createQueryClient();
+    const router = createTanStackRouter({
+        routeTree,
+        scrollRestoration: true,
+        defaultPreload: "intent",
+        defaultPreloadStaleTime: 0,
+        context: {
+            queryClient,
+            auth: { isAuthenticated: false, user: null },
+        },
+    });
 
-	return router;
+    return router;
 };
 
 declare module "@tanstack/react-router" {
-	interface Register {
-		router: ReturnType<typeof getRouter>;
-	}
+    interface Register {
+        router: ReturnType<typeof getRouter>;
+    }
 }

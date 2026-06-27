@@ -1,14 +1,14 @@
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-	BatchUpdateGroupStatusRequest,
-	BatchUpdateResult,
-	CreateEmojiGroupRequest,
-	CreateEmojiRequest,
-	CreateResourceResult,
-	EmojiUploadResult,
-	UpdateEmojiGroupRequest,
-	UpdateEmojiRequest,
+    BatchUpdateGroupStatusRequest,
+    BatchUpdateResult,
+    CreateEmojiGroupRequest,
+    CreateEmojiRequest,
+    CreateResourceResult,
+    EmojiUploadResult,
+    UpdateEmojiGroupRequest,
+    UpdateEmojiRequest,
 } from "../model/types";
 import { emojiKeys } from "./keys";
 
@@ -19,15 +19,15 @@ import { emojiKeys } from "./keys";
  * 保证前台公开查询同步看到新分组（若创建为启用状态）。
  */
 export const useCreateEmojiGroup = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: CreateEmojiGroupRequest) =>
-			apiPost<CreateResourceResult>("/admin/emojis/groups", body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
-			qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateEmojiGroupRequest) =>
+            apiPost<CreateResourceResult>("/admin/emojis/groups", body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
+            qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
+        },
+    });
 };
 
 /**
@@ -40,20 +40,20 @@ export const useCreateEmojiGroup = () => {
  * @param name 分组名称，用于invalidate 按名查询缓存，可选
  */
 export const useUpdateEmojiGroup = (id: number, name?: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdateEmojiGroupRequest) =>
-			apiPatch<null>(`/admin/emojis/groups/${id}`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
-			qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
-			if (name) {
-				qc.invalidateQueries({
-					queryKey: emojiKeys.publicGroupByName(name),
-				});
-			}
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdateEmojiGroupRequest) =>
+            apiPatch<null>(`/admin/emojis/groups/${id}`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
+            qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
+            if (name) {
+                qc.invalidateQueries({
+                    queryKey: emojiKeys.publicGroupByName(name),
+                });
+            }
+        },
+    });
 };
 
 /**
@@ -63,15 +63,15 @@ export const useUpdateEmojiGroup = (id: number, name?: string) => {
  * 失效后台与公开列表，公开列表可能因启用状态变化而增减项。
  */
 export const useBatchUpdateGroupStatus = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: BatchUpdateGroupStatusRequest) =>
-			apiPatch<BatchUpdateResult>("/admin/emojis/groups/batch-status", body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
-			qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: BatchUpdateGroupStatusRequest) =>
+            apiPatch<BatchUpdateResult>("/admin/emojis/groups/batch-status", body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
+            qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
+        },
+    });
 };
 
 /**
@@ -83,14 +83,14 @@ export const useBatchUpdateGroupStatus = () => {
  * @param id 分组 ID
  */
 export const useDeleteEmojiGroup = (id: number) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiDelete<null>(`/admin/emojis/groups/${id}`),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
-			qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiDelete<null>(`/admin/emojis/groups/${id}`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
+            qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
+        },
+    });
 };
 
 /**
@@ -102,17 +102,17 @@ export const useDeleteEmojiGroup = (id: number) => {
  * @param groupId 分组 ID
  */
 export const useCreateEmoji = (groupId: number) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: CreateEmojiRequest) =>
-			apiPost<CreateResourceResult>(`/admin/emojis/groups/${groupId}/emojis`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({
-				queryKey: emojiKeys.adminGroupEmojis(groupId),
-			});
-			qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateEmojiRequest) =>
+            apiPost<CreateResourceResult>(`/admin/emojis/groups/${groupId}/emojis`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({
+                queryKey: emojiKeys.adminGroupEmojis(groupId),
+            });
+            qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
+        },
+    });
 };
 
 /**
@@ -125,13 +125,13 @@ export const useCreateEmoji = (groupId: number) => {
  * @param file 待上传的表情图片文件
  */
 export const useUploadEmoji = () =>
-	useMutation({
-		mutationFn: async (file: File) => {
-			const form = new FormData();
-			form.append("file", file);
-			return apiPost<EmojiUploadResult>("/admin/emojis/upload", form);
-		},
-	});
+    useMutation({
+        mutationFn: async (file: File) => {
+            const form = new FormData();
+            form.append("file", file);
+            return apiPost<EmojiUploadResult>("/admin/emojis/upload", form);
+        },
+    });
 
 /**
  * useUpdateEmoji - 更新表情
@@ -144,18 +144,19 @@ export const useUploadEmoji = () =>
  * @param groupId 所属分组 ID，可选，用于精准失效后台分组内列表
  */
 export const useUpdateEmoji = (id: number, groupId?: number) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdateEmojiRequest) => apiPatch<null>(`/admin/emojis/emojis/${id}`, body),
-		onSuccess: () => {
-			if (groupId) {
-				qc.invalidateQueries({
-					queryKey: emojiKeys.adminGroupEmojis(groupId),
-				});
-			}
-			qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdateEmojiRequest) =>
+            apiPatch<null>(`/admin/emojis/emojis/${id}`, body),
+        onSuccess: () => {
+            if (groupId) {
+                qc.invalidateQueries({
+                    queryKey: emojiKeys.adminGroupEmojis(groupId),
+                });
+            }
+            qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
+        },
+    });
 };
 
 /**
@@ -168,16 +169,16 @@ export const useUpdateEmoji = (id: number, groupId?: number) => {
  * @param groupId 所属分组 ID，可选，用于精准失效后台分组内列表
  */
 export const useDeleteEmoji = (id: number, groupId?: number) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiDelete<null>(`/admin/emojis/emojis/${id}`),
-		onSuccess: () => {
-			if (groupId) {
-				qc.invalidateQueries({
-					queryKey: emojiKeys.adminGroupEmojis(groupId),
-				});
-			}
-			qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiDelete<null>(`/admin/emojis/emojis/${id}`),
+        onSuccess: () => {
+            if (groupId) {
+                qc.invalidateQueries({
+                    queryKey: emojiKeys.adminGroupEmojis(groupId),
+                });
+            }
+            qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
+        },
+    });
 };

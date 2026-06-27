@@ -1,24 +1,24 @@
 {
-  "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
-  "rsc": false,
-  "tsx": true,
-  "tailwind": {
-    "config": "",
-    "css": "src/styles.css",
-    "baseColor": "neutral",
-    "cssVariables": true,
-    "prefix": ""
-  },
-  "iconLibrary": "lucide",
-  "aliases": {
-    "components": "@/shared/vendor/react-bits",
-    "utils": "@/shared/lib/utils",
-    "ui": "@/shared/ui",
-    "lib": "@/shared/lib",
-    "hooks": "@/shared/lib/hooks"
-  },
-  "registries": {
-    "@react-bits": "https://reactbits.dev/r/{name}.json"
-  }
+    "$schema": "https://ui.shadcn.com/schema.json",
+    "style": "new-york",
+    "rsc": false,
+    "tsx": true,
+    "tailwind": {
+        "config": "",
+        "css": "src/styles.css",
+        "baseColor": "neutral",
+        "cssVariables": true,
+        "prefix": ""
+    },
+    "iconLibrary": "lucide",
+    "aliases": {
+        "components": "@/shared/vendor/react-bits",
+        "utils": "@/shared/lib/utils",
+        "ui": "@/shared/ui",
+        "lib": "@/shared/lib",
+        "hooks": "@/shared/lib/hooks"
+    },
+    "registries": {
+        "@react-bits": "https://reactbits.dev/r/{name}.json"
+    }
 }

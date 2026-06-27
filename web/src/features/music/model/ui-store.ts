@@ -8,14 +8,14 @@ import { create } from "zustand";
  * 首期仅做骨架，实际播放下一期扩展。
  */
 export interface MusicUIState {
-	/** 是否打开 */
-	isOpen: boolean;
-	/** 打开播放器 */
-	open: () => void;
-	/** 关闭播放器 */
-	close: () => void;
-	/** 切换显隐 */
-	toggle: () => void;
+    /** 是否打开 */
+    isOpen: boolean;
+    /** 打开播放器 */
+    open: () => void;
+    /** 关闭播放器 */
+    close: () => void;
+    /** 切换显隐 */
+    toggle: () => void;
 }
 
 /**
@@ -25,8 +25,8 @@ export interface MusicUIState {
  * selector 消费避免无谓重渲染：useMusicUIStore(s => s.isOpen)
  */
 export const useMusicUIStore = create<MusicUIState>((set) => ({
-	isOpen: false,
-	open: () => set({ isOpen: true }),
-	close: () => set({ isOpen: false }),
-	toggle: () => set((s) => ({ isOpen: !s.isOpen })),
+    isOpen: false,
+    open: () => set({ isOpen: true }),
+    close: () => set({ isOpen: false }),
+    toggle: () => set((s) => ({ isOpen: !s.isOpen })),
 }));

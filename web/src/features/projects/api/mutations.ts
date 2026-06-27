@@ -10,13 +10,13 @@ import { projectKeys } from "./keys";
  * 成功后失效项目列表缓存。
  */
 export const useCreateProject = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: CreateProject) => apiPost<null>("/admin/projects", body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: projectKeys.lists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateProject) => apiPost<null>("/admin/projects", body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: projectKeys.lists() });
+        },
+    });
 };
 
 /**
@@ -28,14 +28,14 @@ export const useCreateProject = () => {
  * @param id 项目 ID
  */
 export const useUpdateProject = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdateProject) => apiPut<null>(`/admin/projects/${id}`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: projectKeys.detail(id) });
-			qc.invalidateQueries({ queryKey: projectKeys.lists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdateProject) => apiPut<null>(`/admin/projects/${id}`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: projectKeys.detail(id) });
+            qc.invalidateQueries({ queryKey: projectKeys.lists() });
+        },
+    });
 };
 
 /**
@@ -47,11 +47,11 @@ export const useUpdateProject = (id: string) => {
  * @param id 项目 ID
  */
 export const useDeleteProject = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiDelete<null>(`/admin/projects/${id}`),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: projectKeys.all });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiDelete<null>(`/admin/projects/${id}`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: projectKeys.all });
+        },
+    });
 };

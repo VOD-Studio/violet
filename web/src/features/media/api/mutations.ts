@@ -1,12 +1,12 @@
 import { apiDelete, apiPost, apiPut } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-	BatchDeleteRequest,
-	BatchDeleteResult,
-	CompleteUploadResult,
-	InitUploadRequest,
-	InitUploadResult,
-	ThumbnailUploadResult,
+    BatchDeleteRequest,
+    BatchDeleteResult,
+    CompleteUploadResult,
+    InitUploadRequest,
+    InitUploadResult,
+    ThumbnailUploadResult,
 } from "../model/types";
 import { adminFileKeys, mediaKeys } from "./keys";
 
@@ -19,16 +19,16 @@ import { adminFileKeys, mediaKeys } from "./keys";
  * @param id 媒体 ID
  */
 export const useDeleteMedia = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (id: string) => apiDelete<null>(`/media/${id}`),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-			queryClient.invalidateQueries({
-				queryKey: adminFileKeys.lists(),
-			});
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => apiDelete<null>(`/media/${id}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
+            queryClient.invalidateQueries({
+                queryKey: adminFileKeys.lists(),
+            });
+        },
+    });
 };
 
 /**
@@ -38,17 +38,17 @@ export const useDeleteMedia = () => {
  * 被引用未删的文件不计入 deleted。成功后 invalidate 两个列表维度。
  */
 export const useBatchDeleteMedia = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (body: BatchDeleteRequest) =>
-			apiPost<BatchDeleteResult>("/media/batch-delete", body),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-			queryClient.invalidateQueries({
-				queryKey: adminFileKeys.lists(),
-			});
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: BatchDeleteRequest) =>
+            apiPost<BatchDeleteResult>("/media/batch-delete", body),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
+            queryClient.invalidateQueries({
+                queryKey: adminFileKeys.lists(),
+            });
+        },
+    });
 };
 
 /**
@@ -60,9 +60,9 @@ export const useBatchDeleteMedia = () => {
  * @param file 缩略图文件
  */
 export const uploadThumbnail = async (id: string, file: File): Promise<ThumbnailUploadResult> => {
-	const form = new FormData();
-	form.append("file", file);
-	return apiPost<ThumbnailUploadResult>(`/media/${id}/thumbnail`, form);
+    const form = new FormData();
+    form.append("file", file);
+    return apiPost<ThumbnailUploadResult>(`/media/${id}/thumbnail`, form);
 };
 
 /**
@@ -71,16 +71,16 @@ export const uploadThumbnail = async (id: string, file: File): Promise<Thumbnail
  * 成功后 invalidate 对应媒体详情与列表，使缩略图 URL 刷新。
  */
 export const useUploadThumbnail = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: ({ id, file }: { id: string; file: File }) => uploadThumbnail(id, file),
-		onSuccess: (_data, { id }) => {
-			queryClient.invalidateQueries({
-				queryKey: mediaKeys.detail(id),
-			});
-			queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, file }: { id: string; file: File }) => uploadThumbnail(id, file),
+        onSuccess: (_data, { id }) => {
+            queryClient.invalidateQueries({
+                queryKey: mediaKeys.detail(id),
+            });
+            queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
+        },
+    });
 };
 
 // ============================================================
@@ -94,9 +94,9 @@ export const useUploadThumbnail = () => {
  * instant=true 时可直接复用返回的 url，无需再传分片。
  */
 export const useInitUpload = () =>
-	useMutation({
-		mutationFn: (body: InitUploadRequest) => apiPost<InitUploadResult>("/upload/init", body),
-	});
+    useMutation({
+        mutationFn: (body: InitUploadRequest) => apiPost<InitUploadResult>("/upload/init", body),
+    });
 
 /**
  * uploadChunk - 上传单个分片底层请求函数
@@ -110,13 +110,13 @@ export const useInitUpload = () =>
  * @param data 分片二进制内容
  */
 export const uploadChunk = async (
-	uploadId: string,
-	index: number,
-	data: ArrayBuffer,
+    uploadId: string,
+    index: number,
+    data: ArrayBuffer,
 ): Promise<null> =>
-	apiPut<null>(`/upload/${uploadId}/chunk/${index}`, data, {
-		headers: { "Content-Type": "application/octet-stream" },
-	});
+    apiPut<null>(`/upload/${uploadId}/chunk/${index}`, data, {
+        headers: { "Content-Type": "application/octet-stream" },
+    });
 
 /**
  * useUploadChunk - 上传单个分片 mutation
@@ -124,17 +124,17 @@ export const uploadChunk = async (
  * 不自动 invalidate，分片级缓存由 UI 层进度状态管理。
  */
 export const useUploadChunk = () =>
-	useMutation({
-		mutationFn: ({
-			uploadId,
-			index,
-			data,
-		}: {
-			uploadId: string;
-			index: number;
-			data: ArrayBuffer;
-		}) => uploadChunk(uploadId, index, data),
-	});
+    useMutation({
+        mutationFn: ({
+            uploadId,
+            index,
+            data,
+        }: {
+            uploadId: string;
+            index: number;
+            data: ArrayBuffer;
+        }) => uploadChunk(uploadId, index, data),
+    });
 
 /**
  * useCompleteUpload - 合并分片 mutation
@@ -143,16 +143,17 @@ export const useUploadChunk = () =>
  * 返回最终 file_id 与 url。成功后 invalidate 媒体列表使新文件可见。
  */
 export const useCompleteUpload = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (uploadId: string) => apiPost<CompleteUploadResult>(`/upload/${uploadId}/complete`),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-			queryClient.invalidateQueries({
-				queryKey: adminFileKeys.lists(),
-			});
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (uploadId: string) =>
+            apiPost<CompleteUploadResult>(`/upload/${uploadId}/complete`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
+            queryClient.invalidateQueries({
+                queryKey: adminFileKeys.lists(),
+            });
+        },
+    });
 };
 
 /**
@@ -162,9 +163,9 @@ export const useCompleteUpload = () => {
  * 返回消息信封 data 为 null。
  */
 export const useCancelUpload = () =>
-	useMutation({
-		mutationFn: (uploadId: string) => apiDelete<null>(`/upload/${uploadId}`),
-	});
+    useMutation({
+        mutationFn: (uploadId: string) => apiDelete<null>(`/upload/${uploadId}`),
+    });
 
 // ============================================================
 // admin 文件管理
@@ -177,14 +178,14 @@ export const useCancelUpload = () =>
  * 成功后 invalidate admin 文件列表与媒体列表。
  */
 export const useAdminDeleteFile = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (id: string) => apiDelete<null>(`/admin/files/${id}`),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: adminFileKeys.lists(),
-			});
-			queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => apiDelete<null>(`/admin/files/${id}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminFileKeys.lists(),
+            });
+            queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
+        },
+    });
 };

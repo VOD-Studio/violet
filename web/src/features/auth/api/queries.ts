@@ -14,7 +14,7 @@ import { authKeys } from "./keys";
  * @returns 包含 csrf_token 字符串的对象
  */
 export const fetchCsrfToken = (): Promise<CsrfTokenResponse> =>
-	apiGet<CsrfTokenResponse>("/auth/csrf-token");
+    apiGet<CsrfTokenResponse>("/auth/csrf-token");
 
 /**
  * fetchMe - 调后端 GET /auth/me 获取当前登录用户信息
@@ -34,8 +34,8 @@ export const fetchMe = (): Promise<UserDTO> => apiGet<UserDTO>("/auth/me");
  * @param options 透传 useQuery 选项，常用于禁用自动请求
  */
 export const useMe = (options: { enabled?: boolean } = {}) =>
-	useQuery({
-		queryKey: authKeys.me(),
-		queryFn: fetchMe,
-		enabled: options.enabled,
-	});
+    useQuery({
+        queryKey: authKeys.me(),
+        queryFn: fetchMe,
+        enabled: options.enabled,
+    });

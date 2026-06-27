@@ -3,9 +3,9 @@ export { DataTable } from "./components/DataTable";
 
 // 类型
 export type {
-	DataTableColumn,
-	DataTableProps,
-	DataTableSort,
+    DataTableColumn,
+    DataTableProps,
+    DataTableSort,
 } from "./types/data-table-types";
 
 // 工具函数

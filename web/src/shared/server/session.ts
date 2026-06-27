@@ -23,13 +23,13 @@ import { getServerHttpClient } from "./auth";
  * @returns 当前用户，未登录或出错时返回 null
  */
 export const getCurrentUser = createServerFn({ method: "GET" }).handler(
-	async (): Promise<UserDTO | null> => {
-		try {
-			const client = getServerHttpClient();
-			const res = await client.get<{ data: UserDTO }>("/auth/me");
-			return res.data.data;
-		} catch {
-			return null;
-		}
-	},
+    async (): Promise<UserDTO | null> => {
+        try {
+            const client = getServerHttpClient();
+            const res = await client.get<{ data: UserDTO }>("/auth/me");
+            return res.data.data;
+        } catch {
+            return null;
+        }
+    },
 );

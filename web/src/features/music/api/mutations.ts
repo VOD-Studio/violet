@@ -1,14 +1,14 @@
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-	AddSongRequest,
-	CreateCustomPlaylistRequest,
-	ImportPlaylistRequest,
-	Playlist,
-	SetPlaylistActiveRequest,
-	UpdatePlayerSettingsRequest,
-	UpdatePlaylistRequest,
-	UpdateSongRequest,
+    AddSongRequest,
+    CreateCustomPlaylistRequest,
+    ImportPlaylistRequest,
+    Playlist,
+    SetPlaylistActiveRequest,
+    UpdatePlayerSettingsRequest,
+    UpdatePlaylistRequest,
+    UpdateSongRequest,
 } from "../model/types";
 import { musicKeys } from "./keys";
 
@@ -23,14 +23,15 @@ import { musicKeys } from "./keys";
  * 失效后台列表与公开启用歌单列表，公开侧可能因新增启用歌单而变化。
  */
 export const useImportPlaylist = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: ImportPlaylistRequest) => apiPost<Playlist>("/admin/music/playlists", body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
-			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: ImportPlaylistRequest) =>
+            apiPost<Playlist>("/admin/music/playlists", body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.adminList() });
+            qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
+        },
+    });
 };
 
 /**
@@ -40,15 +41,15 @@ export const useImportPlaylist = () => {
  * 失效后台列表与公开启用列表，新建默认启用故公开侧需同步。
  */
 export const useCreateCustomPlaylist = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: CreateCustomPlaylistRequest) =>
-			apiPost<Playlist>("/admin/music/playlists/custom", body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
-			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateCustomPlaylistRequest) =>
+            apiPost<Playlist>("/admin/music/playlists/custom", body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.adminList() });
+            qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
+        },
+    });
 };
 
 /**
@@ -60,16 +61,16 @@ export const useCreateCustomPlaylist = () => {
  * @param id 歌单 ID
  */
 export const useUpdatePlaylist = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdatePlaylistRequest) =>
-			apiPatch<null>(`/admin/music/playlists/${id}`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
-			qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
-			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdatePlaylistRequest) =>
+            apiPatch<null>(`/admin/music/playlists/${id}`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.adminList() });
+            qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
+            qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
+        },
+    });
 };
 
 /**
@@ -81,14 +82,14 @@ export const useUpdatePlaylist = (id: string) => {
  * @param id 歌单 ID
  */
 export const useDeletePlaylist = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiDelete<null>(`/admin/music/playlists/${id}`),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
-			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiDelete<null>(`/admin/music/playlists/${id}`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.adminList() });
+            qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
+        },
+    });
 };
 
 /**
@@ -100,16 +101,16 @@ export const useDeletePlaylist = (id: string) => {
  * @param id 歌单 ID
  */
 export const useSetPlaylistActive = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: SetPlaylistActiveRequest) =>
-			apiPatch<null>(`/admin/music/playlists/${id}/active`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
-			qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
-			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: SetPlaylistActiveRequest) =>
+            apiPatch<null>(`/admin/music/playlists/${id}/active`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.adminList() });
+            qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
+            qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
+        },
+    });
 };
 
 /**
@@ -121,15 +122,15 @@ export const useSetPlaylistActive = (id: string) => {
  * @param id 歌单 ID
  */
 export const useRefreshPlaylist = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiPost<Playlist>(`/admin/music/playlists/${id}/refresh`),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
-			qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
-			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiPost<Playlist>(`/admin/music/playlists/${id}/refresh`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.adminList() });
+            qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
+            qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
+        },
+    });
 };
 
 /**
@@ -142,15 +143,16 @@ export const useRefreshPlaylist = (id: string) => {
  * @param id 歌单 ID
  */
 export const useAddSongToPlaylist = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: AddSongRequest) => apiPost<null>(`/admin/music/playlists/${id}/songs`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
-			qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
-			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: AddSongRequest) =>
+            apiPost<null>(`/admin/music/playlists/${id}/songs`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.adminList() });
+            qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
+            qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
+        },
+    });
 };
 
 /**
@@ -163,15 +165,15 @@ export const useAddSongToPlaylist = (id: string) => {
  * @param index 歌曲在歌单内的索引
  */
 export const useRemoveSongFromPlaylist = (id: string, index: number) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiDelete<null>(`/admin/music/playlists/${id}/songs/${index}`),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
-			qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
-			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiDelete<null>(`/admin/music/playlists/${id}/songs/${index}`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.adminList() });
+            qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
+            qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
+        },
+    });
 };
 
 /**
@@ -184,16 +186,16 @@ export const useRemoveSongFromPlaylist = (id: string, index: number) => {
  * @param index 歌曲在歌单内的索引
  */
 export const useUpdateSongInPlaylist = (id: string, index: number) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdateSongRequest) =>
-			apiPatch<null>(`/admin/music/playlists/${id}/songs/${index}`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.adminList() });
-			qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
-			qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdateSongRequest) =>
+            apiPatch<null>(`/admin/music/playlists/${id}/songs/${index}`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.adminList() });
+            qc.invalidateQueries({ queryKey: musicKeys.adminDetail(id) });
+            qc.invalidateQueries({ queryKey: musicKeys.activePlaylists() });
+        },
+    });
 };
 
 /**
@@ -203,12 +205,12 @@ export const useUpdateSongInPlaylist = (id: string, index: number) => {
  * 失效公开设置缓存，公开侧下次拉取取新版本。
  */
 export const useUpdatePlayerSettings = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdatePlayerSettingsRequest) =>
-			apiPatch<null>("/admin/music/settings", body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: musicKeys.settings() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdatePlayerSettingsRequest) =>
+            apiPatch<null>("/admin/music/settings", body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: musicKeys.settings() });
+        },
+    });
 };

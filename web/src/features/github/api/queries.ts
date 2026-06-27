@@ -11,7 +11,7 @@ import { githubKeys } from "./keys";
  * @returns 贡献图汇总数据
  */
 export const fetchContributions = async (): Promise<ContributionSummary> =>
-	apiGet<ContributionSummary>("/github/contributions");
+    apiGet<ContributionSummary>("/github/contributions");
 
 /**
  * useContributions - GitHub 贡献图 hook
@@ -19,11 +19,11 @@ export const fetchContributions = async (): Promise<ContributionSummary> =>
  * staleTime 5 分钟（贡献数据更新频率低，无需频繁刷新）。
  */
 export const useContributions = () =>
-	useQuery({
-		queryKey: githubKeys.contributions(),
-		queryFn: fetchContributions,
-		staleTime: 5 * 60 * 1000,
-	});
+    useQuery({
+        queryKey: githubKeys.contributions(),
+        queryFn: fetchContributions,
+        staleTime: 5 * 60 * 1000,
+    });
 
 /**
  * fetchRepos - 调 GET /api/v1/github/repos
@@ -40,8 +40,8 @@ export const fetchRepos = async (): Promise<Repo[]> => apiGet<Repo[]>("/github/r
  * staleTime 5 分钟，仓库元数据更新频率低。
  */
 export const useRepos = () =>
-	useQuery({
-		queryKey: githubKeys.repos(),
-		queryFn: fetchRepos,
-		staleTime: 5 * 60 * 1000,
-	});
+    useQuery({
+        queryKey: githubKeys.repos(),
+        queryFn: fetchRepos,
+        staleTime: 5 * 60 * 1000,
+    });

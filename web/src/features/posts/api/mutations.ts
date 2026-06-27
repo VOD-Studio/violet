@@ -9,9 +9,9 @@ import { postKeys } from "./keys";
  * 返回 null（后端 RespondNoContent），无需 invalidate，浏览量在下次详情请求时刷新。
  */
 export const useIncrementView = () =>
-	useMutation({
-		mutationFn: (id: string) => apiPost<null>(`/posts/${id}/view`),
-	});
+    useMutation({
+        mutationFn: (id: string) => apiPost<null>(`/posts/${id}/view`),
+    });
 
 /**
  * useCreatePost - 调后端 POST /admin/posts 创建文章
@@ -19,13 +19,13 @@ export const useIncrementView = () =>
  * 成功后失效后台文章列表缓存。
  */
 export const useCreatePost = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: CreatePost) => apiPost<AdminPost>("/admin/posts", body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: postKeys.adminLists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreatePost) => apiPost<AdminPost>("/admin/posts", body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: postKeys.adminLists() });
+        },
+    });
 };
 
 /**
@@ -36,14 +36,14 @@ export const useCreatePost = () => {
  * @param id 文章 ID
  */
 export const useUpdatePost = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdatePost) => apiPut<null>(`/admin/posts/${id}`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: postKeys.adminDetail(id) });
-			qc.invalidateQueries({ queryKey: postKeys.adminLists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdatePost) => apiPut<null>(`/admin/posts/${id}`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: postKeys.adminDetail(id) });
+            qc.invalidateQueries({ queryKey: postKeys.adminLists() });
+        },
+    });
 };
 
 /**
@@ -54,14 +54,15 @@ export const useUpdatePost = (id: string) => {
  * @param id 文章 ID
  */
 export const useUpdatePostStatus = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdatePostStatus) => apiPatch<AdminPost>(`/admin/posts/${id}/status`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: postKeys.adminDetail(id) });
-			qc.invalidateQueries({ queryKey: postKeys.adminLists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdatePostStatus) =>
+            apiPatch<AdminPost>(`/admin/posts/${id}/status`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: postKeys.adminDetail(id) });
+            qc.invalidateQueries({ queryKey: postKeys.adminLists() });
+        },
+    });
 };
 
 /**
@@ -72,11 +73,11 @@ export const useUpdatePostStatus = (id: string) => {
  * @param id 文章 ID
  */
 export const useDeletePost = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiDelete<null>(`/admin/posts/${id}`),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: postKeys.admin() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiDelete<null>(`/admin/posts/${id}`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: postKeys.admin() });
+        },
+    });
 };

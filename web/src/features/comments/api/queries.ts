@@ -2,14 +2,14 @@ import { apiGet, apiGetPaged, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
 import type {
-	AdminComment,
-	AdminCommentListQuery,
-	BatchReactionResult,
-	BatchReactionsQuery,
-	Comment,
-	CommentListQuery,
-	PendingCountResponse,
-	Reaction,
+    AdminComment,
+    AdminCommentListQuery,
+    BatchReactionResult,
+    BatchReactionsQuery,
+    Comment,
+    CommentListQuery,
+    PendingCountResponse,
+    Reaction,
 } from "../model/types";
 import { commentKeys } from "./keys";
 
@@ -23,10 +23,10 @@ import { commentKeys } from "./keys";
  * @returns 解包后的评论列表与分页元数据
  */
 export const fetchComments = async (
-	postId: string,
-	query: CommentListQuery = {},
+    postId: string,
+    query: CommentListQuery = {},
 ): Promise<PagedResponse<Comment>> =>
-	apiGetPaged<Comment>(`/posts/${postId}/comments`, { params: query });
+    apiGetPaged<Comment>(`/posts/${postId}/comments`, { params: query });
 
 /**
  * useComments - 文章评论列表 hook
@@ -35,10 +35,10 @@ export const fetchComments = async (
  * @param query 分页参数
  */
 export const useComments = (postId: string, query: CommentListQuery = {}) =>
-	useQuery({
-		queryKey: commentKeys.list(postId, query),
-		queryFn: () => fetchComments(postId, query),
-	});
+    useQuery({
+        queryKey: commentKeys.list(postId, query),
+        queryFn: () => fetchComments(postId, query),
+    });
 
 /**
  * fetchCommentReactions - 调后端 GET /comments/{commentId}/reactions 获取评论反应列表
@@ -47,7 +47,7 @@ export const useComments = (postId: string, query: CommentListQuery = {}) =>
  * @returns 按 emoji 聚合后的反应列表
  */
 export const fetchCommentReactions = async (commentId: string): Promise<Reaction[]> =>
-	apiGet<Reaction[]>(`/comments/${commentId}/reactions`);
+    apiGet<Reaction[]>(`/comments/${commentId}/reactions`);
 
 /**
  * useCommentReactions - 单条评论的反应列表 hook
@@ -55,10 +55,10 @@ export const fetchCommentReactions = async (commentId: string): Promise<Reaction
  * @param commentId 评论 ID
  */
 export const useCommentReactions = (commentId: string) =>
-	useQuery({
-		queryKey: commentKeys.reactionList(commentId),
-		queryFn: () => fetchCommentReactions(commentId),
-	});
+    useQuery({
+        queryKey: commentKeys.reactionList(commentId),
+        queryFn: () => fetchCommentReactions(commentId),
+    });
 
 /**
  * fetchBatchReactions - 调后端 POST /comments/reactions/batch 批量获取评论反应
@@ -69,9 +69,9 @@ export const useCommentReactions = (commentId: string) =>
  * @returns 每条评论对应的反应列表
  */
 export const fetchBatchReactions = async (
-	body: BatchReactionsQuery,
+    body: BatchReactionsQuery,
 ): Promise<BatchReactionResult[]> =>
-	apiPost<BatchReactionResult[]>("/comments/reactions/batch", body);
+    apiPost<BatchReactionResult[]>("/comments/reactions/batch", body);
 
 /**
  * fetchPendingComments - 调后端 GET /admin/comments/pending 拉取待审核评论列表
@@ -82,9 +82,9 @@ export const fetchBatchReactions = async (
  * @returns 解包后的待审核评论列表与分页元数据
  */
 export const fetchPendingComments = async (
-	query: CommentListQuery = {},
+    query: CommentListQuery = {},
 ): Promise<PagedResponse<Comment>> =>
-	apiGetPaged<Comment>("/admin/comments/pending", { params: query });
+    apiGetPaged<Comment>("/admin/comments/pending", { params: query });
 
 /**
  * usePendingComments - 待审核评论列表 hook
@@ -92,10 +92,10 @@ export const fetchPendingComments = async (
  * @param query 分页参数
  */
 export const usePendingComments = (query: CommentListQuery = {}) =>
-	useQuery({
-		queryKey: commentKeys.pendingList(query),
-		queryFn: () => fetchPendingComments(query),
-	});
+    useQuery({
+        queryKey: commentKeys.pendingList(query),
+        queryFn: () => fetchPendingComments(query),
+    });
 
 /**
  * fetchPendingCommentCount - 调后端 GET /admin/comments/pending/count 获取待审核评论数量
@@ -105,7 +105,7 @@ export const usePendingComments = (query: CommentListQuery = {}) =>
  * @returns 待审核评论数量
  */
 export const fetchPendingCommentCount = async (): Promise<PendingCountResponse> =>
-	apiGet<PendingCountResponse>("/admin/comments/pending/count");
+    apiGet<PendingCountResponse>("/admin/comments/pending/count");
 
 /**
  * usePendingCommentCount - 待审核评论数量 hook
@@ -113,10 +113,10 @@ export const fetchPendingCommentCount = async (): Promise<PendingCountResponse> 
  * 缓存 key 固定，便于多处复用同一份数据。
  */
 export const usePendingCommentCount = () =>
-	useQuery({
-		queryKey: commentKeys.pendingCount(),
-		queryFn: fetchPendingCommentCount,
-	});
+    useQuery({
+        queryKey: commentKeys.pendingCount(),
+        queryFn: fetchPendingCommentCount,
+    });
 
 /**
  * fetchAdminComments - 调后端 GET /admin/comments 拉取所有评论列表
@@ -127,9 +127,9 @@ export const usePendingCommentCount = () =>
  * @returns 解包后的评论列表与分页元数据
  */
 export const fetchAdminComments = async (
-	query: AdminCommentListQuery = {},
+    query: AdminCommentListQuery = {},
 ): Promise<PagedResponse<AdminComment>> =>
-	apiGetPaged<AdminComment>("/admin/comments", { params: query });
+    apiGetPaged<AdminComment>("/admin/comments", { params: query });
 
 /**
  * useAdminComments - 后台评论列表 hook
@@ -137,10 +137,10 @@ export const fetchAdminComments = async (
  * @param query 分页与状态筛选参数
  */
 export const useAdminComments = (query: AdminCommentListQuery = {}) =>
-	useQuery({
-		queryKey: commentKeys.adminList(query),
-		queryFn: () => fetchAdminComments(query),
-	});
+    useQuery({
+        queryKey: commentKeys.adminList(query),
+        queryFn: () => fetchAdminComments(query),
+    });
 
 /**
  * fetchAdminCommentDetail - 调后端 GET /admin/comments/{id} 获取评论详情
@@ -151,7 +151,7 @@ export const useAdminComments = (query: AdminCommentListQuery = {}) =>
  * @returns 评论详情
  */
 export const fetchAdminCommentDetail = async (id: string): Promise<AdminComment> =>
-	apiGet<AdminComment>(`/admin/comments/${id}`);
+    apiGet<AdminComment>(`/admin/comments/${id}`);
 
 /**
  * useAdminCommentDetail - 后台评论详情 hook
@@ -159,7 +159,7 @@ export const fetchAdminCommentDetail = async (id: string): Promise<AdminComment>
  * @param id 评论 ID
  */
 export const useAdminCommentDetail = (id: string) =>
-	useQuery({
-		queryKey: commentKeys.adminDetail(id),
-		queryFn: () => fetchAdminCommentDetail(id),
-	});
+    useQuery({
+        queryKey: commentKeys.adminDetail(id),
+        queryFn: () => fetchAdminCommentDetail(id),
+    });

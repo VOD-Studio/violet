@@ -10,14 +10,14 @@ import { Moon, Sun } from "lucide-react";
  * next-themes 的 class 注入 + cookie 持久化不变（保留架构）。
  */
 const ThemeToggle = () => {
-	const { toggle, theme } = useThemeTransition();
-	const isDark = theme === "dark";
+    const { toggle, theme } = useThemeTransition();
+    const isDark = theme === "dark";
 
-	return (
-		<Button variant="ghost" size="icon-sm" aria-label="切换主题" onClick={(e) => toggle(e)}>
-			{isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
-		</Button>
-	);
+    return (
+        <Button variant="ghost" size="icon-sm" aria-label="切换主题" onClick={(e) => toggle(e)}>
+            {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
+        </Button>
+    );
 };
 
 export default ThemeToggle;

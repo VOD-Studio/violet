@@ -15,4 +15,4 @@ import { getForwardedCookie } from "./cookies";
  * @returns 注入了当前请求 cookie 的 axios 实例
  */
 export const getServerHttpClient = (): AxiosInstance =>
-	createHttpClient({ forwardedCookie: getForwardedCookie() });
+    createHttpClient({ forwardedCookie: getForwardedCookie() });

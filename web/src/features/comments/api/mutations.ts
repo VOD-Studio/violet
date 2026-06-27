@@ -1,10 +1,10 @@
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-	AddReaction,
-	BatchUpdateCommentStatus,
-	BatchUpdateStatusResponse,
-	CreateComment,
+    AddReaction,
+    BatchUpdateCommentStatus,
+    BatchUpdateStatusResponse,
+    CreateComment,
 } from "../model/types";
 import { commentKeys } from "./keys";
 
@@ -17,13 +17,13 @@ import { commentKeys } from "./keys";
  * @param postId 文章 ID
  */
 export const useCreateComment = (postId: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: CreateComment) => apiPost<null>(`/posts/${postId}/comments`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: commentKeys.lists() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateComment) => apiPost<null>(`/posts/${postId}/comments`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: commentKeys.lists() });
+        },
+    });
 };
 
 /**
@@ -35,15 +35,15 @@ export const useCreateComment = (postId: string) => {
  * @param commentId 评论 ID
  */
 export const useAddReaction = (commentId: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: AddReaction) => apiPost<null>(`/comments/${commentId}/reactions`, body),
-		onSuccess: () => {
-			qc.invalidateQueries({
-				queryKey: commentKeys.reactionList(commentId),
-			});
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: AddReaction) => apiPost<null>(`/comments/${commentId}/reactions`, body),
+        onSuccess: () => {
+            qc.invalidateQueries({
+                queryKey: commentKeys.reactionList(commentId),
+            });
+        },
+    });
 };
 
 /**
@@ -55,15 +55,16 @@ export const useAddReaction = (commentId: string) => {
  * @param commentId 评论 ID
  */
 export const useRemoveReaction = (commentId: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (emojiId: number) => apiDelete<null>(`/comments/${commentId}/reactions/${emojiId}`),
-		onSuccess: () => {
-			qc.invalidateQueries({
-				queryKey: commentKeys.reactionList(commentId),
-			});
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (emojiId: number) =>
+            apiDelete<null>(`/comments/${commentId}/reactions/${emojiId}`),
+        onSuccess: () => {
+            qc.invalidateQueries({
+                queryKey: commentKeys.reactionList(commentId),
+            });
+        },
+    });
 };
 
 /**
@@ -74,13 +75,13 @@ export const useRemoveReaction = (commentId: string) => {
  * @param id 评论 ID
  */
 export const useApproveComment = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiPatch<null>(`/comments/${id}/approve`),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: commentKeys.admin() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiPatch<null>(`/comments/${id}/approve`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: commentKeys.admin() });
+        },
+    });
 };
 
 /**
@@ -91,13 +92,13 @@ export const useApproveComment = (id: string) => {
  * @param id 评论 ID
  */
 export const useMarkCommentSpam = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiPatch<null>(`/comments/${id}/spam`),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: commentKeys.admin() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiPatch<null>(`/comments/${id}/spam`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: commentKeys.admin() });
+        },
+    });
 };
 
 /**
@@ -108,13 +109,13 @@ export const useMarkCommentSpam = (id: string) => {
  * @param id 评论 ID
  */
 export const useDeleteComment = (id: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiDelete<null>(`/comments/${id}`),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: commentKeys.admin() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiDelete<null>(`/comments/${id}`),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: commentKeys.admin() });
+        },
+    });
 };
 
 /**
@@ -123,13 +124,13 @@ export const useDeleteComment = (id: string) => {
  * 需管理员身份。成功后失效后台评论列表与待审核数量缓存。
  */
 export const useBatchUpdateCommentStatus = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: BatchUpdateCommentStatus) =>
-			apiPatch<BatchUpdateStatusResponse>("/admin/comments/batch-status", body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: commentKeys.adminLists() });
-			qc.invalidateQueries({ queryKey: commentKeys.pending() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: BatchUpdateCommentStatus) =>
+            apiPatch<BatchUpdateStatusResponse>("/admin/comments/batch-status", body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: commentKeys.adminLists() });
+            qc.invalidateQueries({ queryKey: commentKeys.pending() });
+        },
+    });
 };

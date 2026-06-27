@@ -7,12 +7,12 @@ import { useEffect, useState } from "react";
  * 用于搜索框等高频输入避免每次击键触发重渲染或请求。
  */
 export function useDebouncedValue<T>(value: T, delay = 300): T {
-	const [debounced, setDebounced] = useState(value);
+    const [debounced, setDebounced] = useState(value);
 
-	useEffect(() => {
-		const timer = setTimeout(() => setDebounced(value), delay);
-		return () => clearTimeout(timer);
-	}, [value, delay]);
+    useEffect(() => {
+        const timer = setTimeout(() => setDebounced(value), delay);
+        return () => clearTimeout(timer);
+    }, [value, delay]);
 
-	return debounced;
+    return debounced;
 }

@@ -5,8 +5,8 @@
  * 目前只有 me 维度；写操作通过 invalidate me 触发当前用户信息刷新。
  */
 export const authKeys = {
-	/** auth 模块根 key */
-	all: ["auth"] as const,
-	/** 当前登录用户维度 */
-	me: () => [...authKeys.all, "me"] as const,
+    /** auth 模块根 key */
+    all: ["auth"] as const,
+    /** 当前登录用户维度 */
+    me: () => [...authKeys.all, "me"] as const,
 };

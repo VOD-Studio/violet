@@ -11,7 +11,7 @@ import type { InitSessionResult, InitUploadRequest, MergeResult } from "../model
  * @returns 秒传命中时带 url，否则带 upload_id 供后续分片上传
  */
 export const initUpload = (opts: InitUploadRequest): Promise<InitSessionResult> =>
-	apiPost<InitSessionResult>("/upload/init", opts);
+    apiPost<InitSessionResult>("/upload/init", opts);
 
 /**
  * uploadChunk - 上传单个分片
@@ -24,13 +24,13 @@ export const initUpload = (opts: InitUploadRequest): Promise<InitSessionResult> 
  * @param data 分片二进制内容
  */
 export const uploadChunk = async (
-	uploadId: string,
-	index: number,
-	data: ArrayBuffer,
+    uploadId: string,
+    index: number,
+    data: ArrayBuffer,
 ): Promise<void> => {
-	await apiPut<null>(`/upload/${uploadId}/chunk/${index}`, data, {
-		headers: { "Content-Type": "application/octet-stream" },
-	});
+    await apiPut<null>(`/upload/${uploadId}/chunk/${index}`, data, {
+        headers: { "Content-Type": "application/octet-stream" },
+    });
 };
 
 /**
@@ -42,4 +42,4 @@ export const uploadChunk = async (
  * @returns 最终文件 ID 与访问 URL
  */
 export const completeUpload = (uploadId: string): Promise<MergeResult> =>
-	apiPost<MergeResult>(`/upload/${uploadId}/complete`);
+    apiPost<MergeResult>(`/upload/${uploadId}/complete`);

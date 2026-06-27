@@ -7,10 +7,10 @@ import HeaderNavItem from "./HeaderNavItem";
  * HeaderNavProps - HeaderNav 组件属性
  */
 export interface HeaderNavProps {
-	/**
-	 * 点击 action 项时的回调
-	 */
-	onAction?: (action: string) => void;
+    /**
+     * 点击 action 项时的回调
+     */
+    onAction?: (action: string) => void;
 }
 
 /**
@@ -20,14 +20,14 @@ export interface HeaderNavProps {
  * 移动端用 HeaderMobile（Sheet 抽屉）。
  */
 const HeaderNav = ({ onAction }: HeaderNavProps) => {
-	const items: NavItem[] = NAV_ITEMS;
-	return (
-		<nav className="hidden md:flex items-center gap-1">
-			{items.map((item) => (
-				<HeaderNavItem key={item.label} item={item} onAction={onAction} />
-			))}
-		</nav>
-	);
+    const items: NavItem[] = NAV_ITEMS;
+    return (
+        <nav className="hidden md:flex items-center gap-1">
+            {items.map((item) => (
+                <HeaderNavItem key={item.label} item={item} onAction={onAction} />
+            ))}
+        </nav>
+    );
 };
 
 export default HeaderNav;

@@ -2,11 +2,11 @@ import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
 import type {
-	AdminPost,
-	AdminPostListQuery,
-	Post,
-	PostDetail,
-	PostListQuery,
+    AdminPost,
+    AdminPostListQuery,
+    Post,
+    PostDetail,
+    PostListQuery,
 } from "../model/types";
 import { postKeys } from "./keys";
 
@@ -19,7 +19,7 @@ import { postKeys } from "./keys";
  * @returns 解包后的列表 + 分页元数据
  */
 export const fetchPosts = async (query: PostListQuery = {}): Promise<PagedResponse<Post>> =>
-	apiGetPaged<Post>("/posts", { params: query });
+    apiGetPaged<Post>("/posts", { params: query });
 
 /**
  * usePosts - 文章列表 hook
@@ -33,10 +33,10 @@ export const fetchPosts = async (query: PostListQuery = {}): Promise<PagedRespon
  * @param query 分页与标签筛选
  */
 export const usePosts = (query: PostListQuery = {}) =>
-	useQuery({
-		queryKey: postKeys.list(query),
-		queryFn: () => fetchPosts(query),
-	});
+    useQuery({
+        queryKey: postKeys.list(query),
+        queryFn: () => fetchPosts(query),
+    });
 
 /**
  * fetchPostBySlug - 调后端 GET /posts/{slug} 按 slug 获取文章详情
@@ -44,7 +44,7 @@ export const usePosts = (query: PostListQuery = {}) =>
  * @param slug 文章 slug
  */
 export const fetchPostBySlug = async (slug: string): Promise<PostDetail> =>
-	apiGet<PostDetail>(`/posts/${slug}`);
+    apiGet<PostDetail>(`/posts/${slug}`);
 
 /**
  * usePost - 按 slug 获取文章详情 hook
@@ -52,11 +52,11 @@ export const fetchPostBySlug = async (slug: string): Promise<PostDetail> =>
  * @param slug 文章 slug，传入空串时不启用查询
  */
 export const usePost = (slug: string) =>
-	useQuery({
-		queryKey: postKeys.detail(slug),
-		queryFn: () => fetchPostBySlug(slug),
-		enabled: slug.length > 0,
-	});
+    useQuery({
+        queryKey: postKeys.detail(slug),
+        queryFn: () => fetchPostBySlug(slug),
+        enabled: slug.length > 0,
+    });
 
 /**
  * fetchAdminPosts - 调后端 GET /admin/posts 拉取所有文章列表
@@ -64,7 +64,7 @@ export const usePost = (slug: string) =>
  * @param query 分页与状态筛选
  */
 export const fetchAdminPosts = async (
-	query: AdminPostListQuery = {},
+    query: AdminPostListQuery = {},
 ): Promise<PagedResponse<AdminPost>> => apiGetPaged<AdminPost>("/admin/posts", { params: query });
 
 /**
@@ -73,10 +73,10 @@ export const fetchAdminPosts = async (
  * @param query 分页与状态筛选
  */
 export const useAdminPosts = (query: AdminPostListQuery = {}) =>
-	useQuery({
-		queryKey: postKeys.adminList(query),
-		queryFn: () => fetchAdminPosts(query),
-	});
+    useQuery({
+        queryKey: postKeys.adminList(query),
+        queryFn: () => fetchAdminPosts(query),
+    });
 
 /**
  * fetchAdminPost - 调后端 GET /admin/posts/{id} 按 ID 获取文章详情
@@ -84,7 +84,7 @@ export const useAdminPosts = (query: AdminPostListQuery = {}) =>
  * @param id 文章 ID
  */
 export const fetchAdminPost = async (id: string): Promise<AdminPost> =>
-	apiGet<AdminPost>(`/admin/posts/${id}`);
+    apiGet<AdminPost>(`/admin/posts/${id}`);
 
 /**
  * useAdminPost - 后台文章详情 hook
@@ -92,8 +92,8 @@ export const fetchAdminPost = async (id: string): Promise<AdminPost> =>
  * @param id 文章 ID，传入空串时不启用查询
  */
 export const useAdminPost = (id: string) =>
-	useQuery({
-		queryKey: postKeys.adminDetail(id),
-		queryFn: () => fetchAdminPost(id),
-		enabled: id.length > 0,
-	});
+    useQuery({
+        queryKey: postKeys.adminDetail(id),
+        queryFn: () => fetchAdminPost(id),
+        enabled: id.length > 0,
+    });

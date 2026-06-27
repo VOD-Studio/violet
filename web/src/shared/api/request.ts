@@ -19,8 +19,8 @@ import type { PagedResponse } from "./types";
  * @param config axios 配置，常用于传 params
  */
 export const apiGet = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-	const res = await httpClient.get<UnpackedResponse<T>>(url, config);
-	return res.data.data;
+    const res = await httpClient.get<UnpackedResponse<T>>(url, config);
+    return res.data.data;
 };
 
 /**
@@ -30,11 +30,11 @@ export const apiGet = async <T>(url: string, config?: AxiosRequestConfig): Promi
  * @param config axios 配置，通常传 { params: { page, limit, ... } }
  */
 export const apiGetPaged = async <T>(
-	url: string,
-	config?: AxiosRequestConfig,
+    url: string,
+    config?: AxiosRequestConfig,
 ): Promise<PagedResponse<T>> => {
-	const res = await httpClient.get<PagedResponse<T>>(url, config);
-	return res.data;
+    const res = await httpClient.get<PagedResponse<T>>(url, config);
+    return res.data;
 };
 
 /**
@@ -45,42 +45,42 @@ export const apiGetPaged = async <T>(
  * @param config axios 配置，文件上传等场景需覆盖 headers
  */
 export const apiPost = async <T>(
-	url: string,
-	body?: unknown,
-	config?: AxiosRequestConfig,
+    url: string,
+    body?: unknown,
+    config?: AxiosRequestConfig,
 ): Promise<T> => {
-	const res = await httpClient.post<UnpackedResponse<T>>(url, body, config);
-	return res.data.data;
+    const res = await httpClient.post<UnpackedResponse<T>>(url, body, config);
+    return res.data.data;
 };
 
 /**
  * PUT 写接口，返回业务数据
  */
 export const apiPut = async <T>(
-	url: string,
-	body?: unknown,
-	config?: AxiosRequestConfig,
+    url: string,
+    body?: unknown,
+    config?: AxiosRequestConfig,
 ): Promise<T> => {
-	const res = await httpClient.put<UnpackedResponse<T>>(url, body, config);
-	return res.data.data;
+    const res = await httpClient.put<UnpackedResponse<T>>(url, body, config);
+    return res.data.data;
 };
 
 /**
  * PATCH 写接口，返回业务数据
  */
 export const apiPatch = async <T>(
-	url: string,
-	body?: unknown,
-	config?: AxiosRequestConfig,
+    url: string,
+    body?: unknown,
+    config?: AxiosRequestConfig,
 ): Promise<T> => {
-	const res = await httpClient.patch<UnpackedResponse<T>>(url, body, config);
-	return res.data.data;
+    const res = await httpClient.patch<UnpackedResponse<T>>(url, body, config);
+    return res.data.data;
 };
 
 /**
  * DELETE 写接口，返回业务数据，删除类接口通常 data 为 null
  */
 export const apiDelete = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-	const res = await httpClient.delete<UnpackedResponse<T>>(url, config);
-	return res.data.data;
+    const res = await httpClient.delete<UnpackedResponse<T>>(url, config);
+    return res.data.data;
 };

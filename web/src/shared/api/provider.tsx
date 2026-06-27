@@ -10,10 +10,10 @@ const queryClient = createQueryClient();
  * AppProviderProps
  */
 export interface AppProviderProps {
-	/**
-	 * 应用子节点
-	 */
-	children: ReactNode;
+    /**
+     * 应用子节点
+     */
+    children: ReactNode;
 }
 
 /**
@@ -25,14 +25,14 @@ export interface AppProviderProps {
  * - Toaster：全局错误/成功 toast（接 QueryCache error）
  */
 const AppProvider = ({ children }: AppProviderProps) => {
-	return (
-		<QueryClientProvider client={queryClient}>
-			<ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange>
-				{children}
-				<Toaster />
-			</ThemeProvider>
-		</QueryClientProvider>
-	);
+    return (
+        <QueryClientProvider client={queryClient}>
+            <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange>
+                {children}
+                <Toaster />
+            </ThemeProvider>
+        </QueryClientProvider>
+    );
 };
 
 export default AppProvider;

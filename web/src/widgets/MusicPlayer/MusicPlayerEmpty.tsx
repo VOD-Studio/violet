@@ -7,9 +7,14 @@ import Empty from "@shared/ui/empty";
  * 后续接 GET /music/playlists/active 后替换为列表。
  */
 const MusicPlayerEmpty = () => {
-	return (
-		<Empty size="lg" title="暂无可用歌单" description="还没有配置任何播放列表" className="py-12" />
-	);
+    return (
+        <Empty
+            size="lg"
+            title="暂无可用歌单"
+            description="还没有配置任何播放列表"
+            className="py-12"
+        />
+    );
 };
 
 export default MusicPlayerEmpty;

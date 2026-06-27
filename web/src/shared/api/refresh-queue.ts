@@ -21,9 +21,9 @@ let refreshing: Promise<boolean> | null = null;
  * @returns refresh 是否成功（true=可重放原请求，false=需跳登录）
  */
 export const triggerRefresh = (doRefresh: () => Promise<boolean>): Promise<boolean> => {
-	if (refreshing) return refreshing;
-	refreshing = doRefresh().finally(() => {
-		refreshing = null;
-	});
-	return refreshing;
+    if (refreshing) return refreshing;
+    refreshing = doRefresh().finally(() => {
+        refreshing = null;
+    });
+    return refreshing;
 };

@@ -8,19 +8,19 @@ import { create } from "zustand";
  * 与 MusicUIStore 同模式（zustand 单例，不持久化）。
  */
 export interface CommandUIState {
-	/** 是否打开 */
-	isOpen: boolean;
-	/** 打开面板 */
-	open: () => void;
-	/** 关闭面板 */
-	close: () => void;
-	/** 切换显隐 */
-	toggle: () => void;
+    /** 是否打开 */
+    isOpen: boolean;
+    /** 打开面板 */
+    open: () => void;
+    /** 关闭面板 */
+    close: () => void;
+    /** 切换显隐 */
+    toggle: () => void;
 }
 
 export const useCommandUIStore = create<CommandUIState>((set) => ({
-	isOpen: false,
-	open: () => set({ isOpen: true }),
-	close: () => set({ isOpen: false }),
-	toggle: () => set((s) => ({ isOpen: !s.isOpen })),
+    isOpen: false,
+    open: () => set({ isOpen: true }),
+    close: () => set({ isOpen: false }),
+    toggle: () => set((s) => ({ isOpen: !s.isOpen })),
 }));

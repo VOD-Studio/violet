@@ -18,10 +18,10 @@ export const fetchAllEmojis = async (): Promise<EmojiGroup[]> => apiGet<EmojiGro
  * 公开数据，缓存 key 固定无参数。staleTime 与重试策略沿用 QueryClient 默认。
  */
 export const useAllEmojis = () =>
-	useQuery({
-		queryKey: emojiKeys.publicGroupList(),
-		queryFn: fetchAllEmojis,
-	});
+    useQuery({
+        queryKey: emojiKeys.publicGroupList(),
+        queryFn: fetchAllEmojis,
+    });
 
 /**
  * fetchEmojiGroupByName - 调后端 GET /emojis/groups/{name} 获取指定分组
@@ -32,7 +32,7 @@ export const useAllEmojis = () =>
  * @returns 分组详情含表情列表
  */
 export const fetchEmojiGroupByName = async (name: string): Promise<EmojiGroup> =>
-	apiGet<EmojiGroup>(`/emojis/groups/${name}`);
+    apiGet<EmojiGroup>(`/emojis/groups/${name}`);
 
 /**
  * useEmojiGroupByName - 按名称获取分组 hook
@@ -40,11 +40,11 @@ export const fetchEmojiGroupByName = async (name: string): Promise<EmojiGroup> =
  * @param name 分组名称，传空串时不启用查询避免无效请求
  */
 export const useEmojiGroupByName = (name: string) =>
-	useQuery({
-		queryKey: emojiKeys.publicGroupByName(name),
-		queryFn: () => fetchEmojiGroupByName(name),
-		enabled: !!name,
-	});
+    useQuery({
+        queryKey: emojiKeys.publicGroupByName(name),
+        queryFn: () => fetchEmojiGroupByName(name),
+        enabled: !!name,
+    });
 
 /**
  * fetchAllEmojiGroupsAdmin - 调后端 GET /admin/emojis/groups 获取全部分组
@@ -55,7 +55,7 @@ export const useEmojiGroupByName = (name: string) =>
  * @returns 全部表情分组数组含未启用
  */
 export const fetchAllEmojiGroupsAdmin = async (): Promise<EmojiGroup[]> =>
-	apiGet<EmojiGroup[]>("/admin/emojis/groups");
+    apiGet<EmojiGroup[]>("/admin/emojis/groups");
 
 /**
  * useAllEmojiGroupsAdmin - 后台全部分组列表 hook
@@ -64,10 +64,10 @@ export const fetchAllEmojiGroupsAdmin = async (): Promise<EmojiGroup[]> =>
  * emojiKeys.adminGroupList()。
  */
 export const useAllEmojiGroupsAdmin = () =>
-	useQuery({
-		queryKey: emojiKeys.adminGroupList(),
-		queryFn: fetchAllEmojiGroupsAdmin,
-	});
+    useQuery({
+        queryKey: emojiKeys.adminGroupList(),
+        queryFn: fetchAllEmojiGroupsAdmin,
+    });
 
 /**
  * fetchGroupEmojisAdmin - 调后端 GET /admin/emojis/groups/{id}/emojis 获取分组内表情
@@ -78,7 +78,7 @@ export const useAllEmojiGroupsAdmin = () =>
  * @returns 分组内表情数组
  */
 export const fetchGroupEmojisAdmin = async (groupId: number): Promise<EmojiGroup["emojis"]> =>
-	apiGet<EmojiGroup["emojis"]>(`/admin/emojis/groups/${groupId}/emojis`);
+    apiGet<EmojiGroup["emojis"]>(`/admin/emojis/groups/${groupId}/emojis`);
 
 /**
  * useGroupEmojisAdmin - 后台分组内表情列表 hook
@@ -86,8 +86,8 @@ export const fetchGroupEmojisAdmin = async (groupId: number): Promise<EmojiGroup
  * @param groupId 分组 ID，传 0 时不启用查询
  */
 export const useGroupEmojisAdmin = (groupId: number) =>
-	useQuery({
-		queryKey: emojiKeys.adminGroupEmojis(groupId),
-		queryFn: () => fetchGroupEmojisAdmin(groupId),
-		enabled: !!groupId,
-	});
+    useQuery({
+        queryKey: emojiKeys.adminGroupEmojis(groupId),
+        queryFn: () => fetchGroupEmojisAdmin(groupId),
+        enabled: !!groupId,
+    });

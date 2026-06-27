@@ -1,10 +1,9 @@
 import { cn } from "@shared/lib/utils";
 import * as React from "react";
 
-export interface ScrollAreaProps
-	extends React.HTMLAttributes<HTMLDivElement> {
-	/** 遮罩方向，默认上下渐隐 */
-	mask?: "y" | "none";
+export interface ScrollAreaProps extends React.HTMLAttributes<HTMLDivElement> {
+    /** 遮罩方向，默认上下渐隐 */
+    mask?: "y" | "none";
 }
 
 /**
@@ -16,21 +15,17 @@ export interface ScrollAreaProps
  * 不依赖 Radix ScrollArea（避免引入额外滚动条样式冲突），原生 overflow。
  */
 const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(
-	({ className, children, mask = "y", ...props }, ref) => {
-		return (
-			<div
-				ref={ref}
-				className={cn(
-					"overflow-y-auto",
-					mask === "y" && "scroll-mask-y",
-					className,
-				)}
-				{...props}
-			>
-				{children}
-			</div>
-		);
-	},
+    ({ className, children, mask = "y", ...props }, ref) => {
+        return (
+            <div
+                ref={ref}
+                className={cn("overflow-y-auto", mask === "y" && "scroll-mask-y", className)}
+                {...props}
+            >
+                {children}
+            </div>
+        );
+    },
 );
 ScrollArea.displayName = "ScrollArea";
 

@@ -1,10 +1,10 @@
 import { apiDelete, apiPatch, apiPost, apiPut } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-	AdminSiteSettings,
-	CreateAnnouncement,
-	UpdateAnnouncement,
-	UpdateSettings,
+    AdminSiteSettings,
+    CreateAnnouncement,
+    UpdateAnnouncement,
+    UpdateSettings,
 } from "../model/types";
 import { settingsKeys } from "./keys";
 
@@ -15,14 +15,14 @@ import { settingsKeys } from "./keys";
  * 成功后 invalidate 公开与管理员站点配置缓存。
  */
 export const useUpdateSettings = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdateSettings) => apiPut<AdminSiteSettings>("/admin/settings", body),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: settingsKeys.admin() });
-			queryClient.invalidateQueries({ queryKey: settingsKeys.public() });
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdateSettings) => apiPut<AdminSiteSettings>("/admin/settings", body),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: settingsKeys.admin() });
+            queryClient.invalidateQueries({ queryKey: settingsKeys.public() });
+        },
+    });
 };
 
 /**
@@ -32,18 +32,19 @@ export const useUpdateSettings = () => {
  * 成功后 invalidate 公告列表与公开公告缓存。
  */
 export const useCreateAnnouncement = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (body: CreateAnnouncement) => apiPost<{ id: number }>("/admin/announcements", body),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: settingsKeys.adminAnnouncements(),
-			});
-			queryClient.invalidateQueries({
-				queryKey: settingsKeys.announcements(),
-			});
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateAnnouncement) =>
+            apiPost<{ id: number }>("/admin/announcements", body),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: settingsKeys.adminAnnouncements(),
+            });
+            queryClient.invalidateQueries({
+                queryKey: settingsKeys.announcements(),
+            });
+        },
+    });
 };
 
 /**
@@ -55,21 +56,22 @@ export const useCreateAnnouncement = () => {
  * @param id 公告 ID
  */
 export const useUpdateAnnouncement = (id: number) => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdateAnnouncement) => apiPatch<null>(`/admin/announcements/${id}`, body),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: settingsKeys.adminAnnouncements(),
-			});
-			queryClient.invalidateQueries({
-				queryKey: settingsKeys.adminAnnouncementDetail(id),
-			});
-			queryClient.invalidateQueries({
-				queryKey: settingsKeys.announcements(),
-			});
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdateAnnouncement) =>
+            apiPatch<null>(`/admin/announcements/${id}`, body),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: settingsKeys.adminAnnouncements(),
+            });
+            queryClient.invalidateQueries({
+                queryKey: settingsKeys.adminAnnouncementDetail(id),
+            });
+            queryClient.invalidateQueries({
+                queryKey: settingsKeys.announcements(),
+            });
+        },
+    });
 };
 
 /**
@@ -80,16 +82,16 @@ export const useUpdateAnnouncement = (id: number) => {
  * @param id 公告 ID
  */
 export const useDeleteAnnouncement = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (id: number) => apiDelete<null>(`/admin/announcements/${id}`),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: settingsKeys.adminAnnouncements(),
-			});
-			queryClient.invalidateQueries({
-				queryKey: settingsKeys.announcements(),
-			});
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => apiDelete<null>(`/admin/announcements/${id}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: settingsKeys.adminAnnouncements(),
+            });
+            queryClient.invalidateQueries({
+                queryKey: settingsKeys.announcements(),
+            });
+        },
+    });
 };

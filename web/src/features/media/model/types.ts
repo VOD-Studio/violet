@@ -14,26 +14,26 @@
  * 对应后端 FileDTO，GET /media/{id} 与列表接口共用。
  */
 export interface MediaFile {
-	/** 文件 ID，UUID */
-	id: string;
-	/** 所有者用户 ID */
-	owner_id: string;
-	/** 用途分类，如 material / avatar / cover */
-	purpose: string;
-	/** 原始文件名 */
-	original_name: string;
-	/** 可访问 URL */
-	url: string;
-	/** 文件大小，单位字节 */
-	size: number;
-	/** MIME 类型 */
-	mime_type: string;
-	/** 缩略图 URL，无缩略图为空串 */
-	thumbnail: string;
-	/** 文件状态，如 active / deleted */
-	status: string;
-	/** 创建时间，RFC3339 字符串 */
-	created_at: string;
+    /** 文件 ID，UUID */
+    id: string;
+    /** 所有者用户 ID */
+    owner_id: string;
+    /** 用途分类，如 material / avatar / cover */
+    purpose: string;
+    /** 原始文件名 */
+    original_name: string;
+    /** 可访问 URL */
+    url: string;
+    /** 文件大小，单位字节 */
+    size: number;
+    /** MIME 类型 */
+    mime_type: string;
+    /** 缩略图 URL，无缩略图为空串 */
+    thumbnail: string;
+    /** 文件状态，如 active / deleted */
+    status: string;
+    /** 创建时间，RFC3339 字符串 */
+    created_at: string;
 }
 
 /**
@@ -43,12 +43,12 @@ export interface MediaFile {
  * purpose 为用途筛选，不传则返回全部用途。
  */
 export interface MediaListQuery {
-	/** 页码，从 1 开始，默认 1 */
-	page?: number;
-	/** 每页条数，默认 20，后端限制上限 100 */
-	limit?: number;
-	/** 用途筛选，如 material / avatar / cover */
-	purpose?: string;
+    /** 页码，从 1 开始，默认 1 */
+    page?: number;
+    /** 每页条数，默认 20，后端限制上限 100 */
+    limit?: number;
+    /** 用途筛选，如 material / avatar / cover */
+    purpose?: string;
 }
 
 /**
@@ -57,8 +57,8 @@ export interface MediaListQuery {
  * 对接 POST /media/batch-delete，handler 要求 ids 至少一个。
  */
 export interface BatchDeleteRequest {
-	/** 待删除媒体 ID 列表 */
-	ids: string[];
+    /** 待删除媒体 ID 列表 */
+    ids: string[];
 }
 
 /**
@@ -67,8 +67,8 @@ export interface BatchDeleteRequest {
  * 后端返回实际删除条数，被引用未删的不计入。
  */
 export interface BatchDeleteResult {
-	/** 实际删除数量 */
-	deleted: number;
+    /** 实际删除数量 */
+    deleted: number;
 }
 
 /**
@@ -77,8 +77,8 @@ export interface BatchDeleteResult {
  * 对接 POST /media/{id}/thumbnail，后端返回缩略图可访问 URL。
  */
 export interface ThumbnailUploadResult {
-	/** 缩略图 URL */
-	thumbnail: string;
+    /** 缩略图 URL */
+    thumbnail: string;
 }
 
 // ============================================================
@@ -92,18 +92,18 @@ export interface ThumbnailUploadResult {
  * fileHash 传则触发秒传或断点续传检查。
  */
 export interface InitUploadRequest {
-	/** 文件名，必填，后端据此校验扩展名 */
-	fileName: string;
-	/** 文件总大小，单位字节，必填 */
-	fileSize: number;
-	/** 文件哈希，传则启用秒传或续传恢复 */
-	fileHash?: string;
-	/** MIME 类型，不传则由扩展名推断 */
-	mimeType?: string;
-	/** 分片大小，单位字节，不传则后端默认 5MB */
-	chunkSize?: number;
-	/** 用途分类，不传则默认 material */
-	purpose?: string;
+    /** 文件名，必填，后端据此校验扩展名 */
+    fileName: string;
+    /** 文件总大小，单位字节，必填 */
+    fileSize: number;
+    /** 文件哈希，传则启用秒传或续传恢复 */
+    fileHash?: string;
+    /** MIME 类型，不传则由扩展名推断 */
+    mimeType?: string;
+    /** 分片大小，单位字节，不传则后端默认 5MB */
+    chunkSize?: number;
+    /** 用途分类，不传则默认 material */
+    purpose?: string;
 }
 
 /**
@@ -115,20 +115,20 @@ export interface InitUploadRequest {
  * - 新建会话：upload_id 为新 ID，uploaded_chunks 为空
  */
 export interface InitUploadResult {
-	/** 是否秒传命中 */
-	instant: boolean;
-	/** 秒传命中时的文件 ID */
-	file_id?: string;
-	/** 秒传命中时的可访问 URL */
-	url?: string;
-	/** 上传会话 ID，秒传命中时省略 */
-	upload_id?: string;
-	/** 分片大小，单位字节 */
-	chunk_size: number;
-	/** 总分片数 */
-	total_chunks: number;
-	/** 已上传分片索引列表，用于断点续传 */
-	uploaded_chunks: number[];
+    /** 是否秒传命中 */
+    instant: boolean;
+    /** 秒传命中时的文件 ID */
+    file_id?: string;
+    /** 秒传命中时的可访问 URL */
+    url?: string;
+    /** 上传会话 ID，秒传命中时省略 */
+    upload_id?: string;
+    /** 分片大小，单位字节 */
+    chunk_size: number;
+    /** 总分片数 */
+    total_chunks: number;
+    /** 已上传分片索引列表，用于断点续传 */
+    uploaded_chunks: number[];
 }
 
 /**
@@ -144,16 +144,16 @@ export type UploadStatus = InitUploadResult;
  * 对接 POST /upload/{uploadId}/complete。
  */
 export interface CompleteUploadResult {
-	/** 最终文件 ID */
-	file_id: string;
-	/** 可访问 URL */
-	url: string;
-	/** 缩略图 URL，无缩略图为空串 */
-	thumbnail?: string;
-	/** 图片宽度，非图片为 0 */
-	width?: number;
-	/** 图片高度，非图片为 0 */
-	height?: number;
+    /** 最终文件 ID */
+    file_id: string;
+    /** 可访问 URL */
+    url: string;
+    /** 缩略图 URL，无缩略图为空串 */
+    thumbnail?: string;
+    /** 图片宽度，非图片为 0 */
+    width?: number;
+    /** 图片高度，非图片为 0 */
+    height?: number;
 }
 
 // ============================================================
@@ -166,8 +166,8 @@ export interface CompleteUploadResult {
  * 对接 GET /admin/files/instant，后端 handler 要求 hash 非空。
  */
 export interface InstantCheckQuery {
-	/** 文件哈希，必填 */
-	hash: string;
+    /** 文件哈希，必填 */
+    hash: string;
 }
 
 /**
@@ -176,8 +176,8 @@ export interface InstantCheckQuery {
  * exists 为 false 时 file 为 null。
  */
 export interface InstantCheckResult {
-	/** 命中的文件信息，未命中为 null */
-	file: MediaFile | null;
-	/** 是否命中已存在文件 */
-	exists: boolean;
+    /** 命中的文件信息，未命中为 null */
+    file: MediaFile | null;
+    /** 是否命中已存在文件 */
+    exists: boolean;
 }

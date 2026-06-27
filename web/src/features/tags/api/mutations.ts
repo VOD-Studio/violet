@@ -9,13 +9,13 @@ import { tagKeys } from "./keys";
  * 对接 POST /api/v1/tags，成功后 invalidate 标签列表使缓存自动刷新。
  */
 export const useCreateTag = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (body: CreateTag) => apiPost<Tag>("/tags", body),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (body: CreateTag) => apiPost<Tag>("/tags", body),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
+        },
+    });
 };
 
 /**
@@ -27,11 +27,11 @@ export const useCreateTag = () => {
  * @param id 标签 ID
  */
 export const useDeleteTag = () => {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (id: number) => apiDelete<null>(`/tags/${id}`),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
-		},
-	});
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => apiDelete<null>(`/tags/${id}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
+        },
+    });
 };

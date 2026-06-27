@@ -8,14 +8,14 @@ import { LayoutDashboard, Smile, Users } from "lucide-react";
  * 对齐 @shared/config/nav.ts 的 NavRouteItem 模型。
  */
 export interface AdminNavItem {
-	/** 显示文案 */
-	label: string;
-	/** 路由路径 */
-	to: string;
-	/** lucide 图标 */
-	icon: LucideIcon;
-	/** 是否精确匹配激活（首页用 exact） */
-	exact?: boolean;
+    /** 显示文案 */
+    label: string;
+    /** 路由路径 */
+    to: string;
+    /** lucide 图标 */
+    icon: LucideIcon;
+    /** 是否精确匹配激活（首页用 exact） */
+    exact?: boolean;
 }
 
 /**
@@ -24,7 +24,7 @@ export interface AdminNavItem {
  * AdminSidebar 与 AdminMobileNav 共用此配置。
  */
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
-	{ label: "概览", to: "/admin", icon: LayoutDashboard, exact: true },
-	{ label: "用户管理", to: "/admin/users", icon: Users },
-	{ label: "表情管理", to: "/admin/emojis", icon: Smile },
+    { label: "概览", to: "/admin", icon: LayoutDashboard, exact: true },
+    { label: "用户管理", to: "/admin/users", icon: Users },
+    { label: "表情管理", to: "/admin/emojis", icon: Smile },
 ];

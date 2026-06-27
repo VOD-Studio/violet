@@ -2,7 +2,7 @@
 
 /* 左侧固定列：阴影在右边缘，使用 inset 从右向左投射 */
 .sticky-shadow-left::after {
-	content: '';
+	content: "";
 	position: absolute;
 	top: 0;
 	right: 0;
@@ -23,7 +23,7 @@
 
 /* 右侧固定列：阴影在左边缘，使用 inset 从左向右投射 */
 .sticky-shadow-right::before {
-	content: '';
+	content: "";
 	position: absolute;
 	top: 0;
 	left: 0;

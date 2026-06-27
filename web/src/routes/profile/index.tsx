@@ -15,24 +15,24 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
  * 4. 密码修改（PasswordSection）
  */
 const ProfilePage = () => {
-	const { data: user } = useMe();
+    const { data: user } = useMe();
 
-	if (!user) {
-		return null; // beforeLoad 已拦截未登录
-	}
+    if (!user) {
+        return null; // beforeLoad 已拦截未登录
+    }
 
-	return (
-		<div className="container mx-auto max-w-4xl px-4 py-8">
-			<h1 className="mb-8 text-3xl font-bold">个人中心</h1>
+    return (
+        <div className="container mx-auto max-w-4xl px-4 py-8">
+            <h1 className="mb-8 text-3xl font-bold">个人中心</h1>
 
-			<div className="space-y-6">
-				<AvatarSection user={user} />
-				<ProfileInfoSection user={user} />
-				<AccountInfoSection user={user} />
-				<PasswordSection />
-			</div>
-		</div>
-	);
+            <div className="space-y-6">
+                <AvatarSection user={user} />
+                <ProfileInfoSection user={user} />
+                <AccountInfoSection user={user} />
+                <PasswordSection />
+            </div>
+        </div>
+    );
 };
 
 /**
@@ -42,14 +42,14 @@ const ProfilePage = () => {
  * 不必等客户端 hydrate 才发现未登录（避免闪烁/二次跳转）。
  */
 export const Route = createFileRoute("/profile/")({
-	beforeLoad: ({ context, location }) => {
-		if (!context.auth.isAuthenticated) {
-			throw redirect({
-				to: "/login",
-				search: { redirect: location.href },
-				replace: true,
-			});
-		}
-	},
-	component: ProfilePage,
+    beforeLoad: ({ context, location }) => {
+        if (!context.auth.isAuthenticated) {
+            throw redirect({
+                to: "/login",
+                search: { redirect: location.href },
+                replace: true,
+            });
+        }
+    },
+    component: ProfilePage,
 });

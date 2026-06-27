@@ -3,17 +3,17 @@ import { CSRF_HEADER, getCSRFToken } from "@shared/api/csrf";
 import { apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-	ChangePasswordRequest,
-	ForgotPasswordRequest,
-	LoginRequest,
-	MessageResponse,
-	RefreshRequest,
-	RegisterRequest,
-	ResetPasswordRequest,
-	TokenResponse,
-	UpdatedProfile,
-	UpdateProfileRequest,
-	VerifyEmailRequest,
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
+    LoginRequest,
+    MessageResponse,
+    RefreshRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+    UpdatedProfile,
+    UpdateProfileRequest,
+    VerifyEmailRequest,
 } from "../model/types";
 import { authKeys } from "./keys";
 
@@ -23,9 +23,9 @@ import { authKeys } from "./keys";
  * @returns POST /auth/register，成功 data 为 null
  */
 export const useRegister = () =>
-	useMutation({
-		mutationFn: (body: RegisterRequest) => apiPost<MessageResponse>("/auth/register", body),
-	});
+    useMutation({
+        mutationFn: (body: RegisterRequest) => apiPost<MessageResponse>("/auth/register", body),
+    });
 
 /**
  * useVerifyEmail - 用验证码激活账户
@@ -33,9 +33,10 @@ export const useRegister = () =>
  * @returns POST /auth/verify-email，成功 data 为 null
  */
 export const useVerifyEmail = () =>
-	useMutation({
-		mutationFn: (body: VerifyEmailRequest) => apiPost<MessageResponse>("/auth/verify-email", body),
-	});
+    useMutation({
+        mutationFn: (body: VerifyEmailRequest) =>
+            apiPost<MessageResponse>("/auth/verify-email", body),
+    });
 
 /**
  * useLogin - 邮箱密码登录
@@ -47,21 +48,21 @@ export const useVerifyEmail = () =>
  * @returns POST /auth/login，返回 token 信息
  */
 export const useLogin = (csrfToken?: string) => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: LoginRequest) => {
-			// 优先使用调用方传入的最新 token；若 state 尚未同步，回退到当前 cookie。
-			const token = csrfToken || getCSRFToken();
-			return apiPost<TokenResponse>(
-				"/auth/login",
-				body,
-				token ? { headers: { [CSRF_HEADER]: token } } : undefined,
-			);
-		},
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: authKeys.me() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: LoginRequest) => {
+            // 优先使用调用方传入的最新 token；若 state 尚未同步，回退到当前 cookie。
+            const token = csrfToken || getCSRFToken();
+            return apiPost<TokenResponse>(
+                "/auth/login",
+                body,
+                token ? { headers: { [CSRF_HEADER]: token } } : undefined,
+            );
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: authKeys.me() });
+        },
+    });
 };
 
 /**
@@ -74,7 +75,7 @@ export const useLogin = (csrfToken?: string) => {
  * @returns 新的 token 信息
  */
 export const fetchRefresh = (body: RefreshRequest = {}): Promise<TokenResponse> =>
-	apiPost<TokenResponse>("/auth/refresh", body);
+    apiPost<TokenResponse>("/auth/refresh", body);
 
 /**
  * useRefresh - 显式刷新 token 的 hook 形态
@@ -82,9 +83,9 @@ export const fetchRefresh = (body: RefreshRequest = {}): Promise<TokenResponse> 
  * @returns POST /auth/refresh
  */
 export const useRefresh = () =>
-	useMutation({
-		mutationFn: (body: RefreshRequest) => fetchRefresh(body),
-	});
+    useMutation({
+        mutationFn: (body: RefreshRequest) => fetchRefresh(body),
+    });
 
 /**
  * useForgotPassword - 发起密码重置邮件
@@ -94,10 +95,10 @@ export const useRefresh = () =>
  * @returns POST /auth/forgot-password，成功 data 为 null
  */
 export const useForgotPassword = () =>
-	useMutation({
-		mutationFn: (body: ForgotPasswordRequest) =>
-			apiPost<MessageResponse>("/auth/forgot-password", body),
-	});
+    useMutation({
+        mutationFn: (body: ForgotPasswordRequest) =>
+            apiPost<MessageResponse>("/auth/forgot-password", body),
+    });
 
 /**
  * useResetPassword - 用验证码重置密码
@@ -105,10 +106,10 @@ export const useForgotPassword = () =>
  * @returns POST /auth/reset-password，成功 data 为 null
  */
 export const useResetPassword = () =>
-	useMutation({
-		mutationFn: (body: ResetPasswordRequest) =>
-			apiPost<MessageResponse>("/auth/reset-password", body),
-	});
+    useMutation({
+        mutationFn: (body: ResetPasswordRequest) =>
+            apiPost<MessageResponse>("/auth/reset-password", body),
+    });
 
 /**
  * useLogout - 登出并清除客户端凭据
@@ -119,14 +120,14 @@ export const useResetPassword = () =>
  * @returns POST /auth/logout，成功 data 为 null
  */
 export const useLogout = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: () => apiPost<MessageResponse>("/auth/logout"),
-		onSuccess: () => {
-			qc.setQueryData<UserDTO>(authKeys.me(), undefined);
-			qc.invalidateQueries({ queryKey: authKeys.me() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiPost<MessageResponse>("/auth/logout"),
+        onSuccess: () => {
+            qc.setQueryData<UserDTO>(authKeys.me(), undefined);
+            qc.invalidateQueries({ queryKey: authKeys.me() });
+        },
+    });
 };
 
 /**
@@ -138,13 +139,13 @@ export const useLogout = () => {
  * @returns PATCH /auth/profile，返回更新后的用户资料
  */
 export const useUpdateProfile = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: UpdateProfileRequest) => apiPatch<UpdatedProfile>("/auth/profile", body),
-		onSuccess: (data) => {
-			qc.setQueryData<UserDTO>(authKeys.me(), (old) => (old ? { ...old, ...data } : old));
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: UpdateProfileRequest) => apiPatch<UpdatedProfile>("/auth/profile", body),
+        onSuccess: (data) => {
+            qc.setQueryData<UserDTO>(authKeys.me(), (old) => (old ? { ...old, ...data } : old));
+        },
+    });
 };
 
 /**
@@ -155,11 +156,12 @@ export const useUpdateProfile = () => {
  * @returns PATCH /auth/password，成功 data 为 null
  */
 export const useChangePassword = () => {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: (body: ChangePasswordRequest) => apiPatch<MessageResponse>("/auth/password", body),
-		onSuccess: () => {
-			qc.invalidateQueries({ queryKey: authKeys.me() });
-		},
-	});
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (body: ChangePasswordRequest) =>
+            apiPatch<MessageResponse>("/auth/password", body),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: authKeys.me() });
+        },
+    });
 };
