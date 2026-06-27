@@ -19,7 +19,11 @@ interface ColumnResizerProps {
  * 性能优化：拖拽过程中通过 CSS 变量实时更新视觉效果，
  * 只在拖拽结束时才调用 onResize 持久化状态。
  */
-export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps) {
+export function ColumnResizer({
+	width,
+	minWidth,
+	onResize,
+}: ColumnResizerProps) {
 	const startX = useRef(0);
 	const startWidth = useRef(width);
 	const dragging = useRef(false);
@@ -52,7 +56,9 @@ export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps)
 		thElement.current.style.width = `${next}px`;
 
 		// 同时更新 colgroup 中对应的 col 元素
-		const colIndex = Array.from(thElement.current.parentElement?.children || []).indexOf(thElement.current);
+		const colIndex = Array.from(
+			thElement.current.parentElement?.children || [],
+		).indexOf(thElement.current);
 		const table = thElement.current.closest("table");
 		const col = table?.querySelector(`colgroup col:nth-child(${colIndex + 1})`);
 		if (col instanceof HTMLElement) {
@@ -118,7 +124,9 @@ export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps)
 				// 使用伪元素扩大可点击区域
 				"after:absolute after:inset-y-0 after:right-[-6px] after:w-[18px]",
 				// 悬停和激活状态
-				isDragging ? "bg-primary/60" : "hover:bg-primary/40 focus-visible:bg-primary/60 active:bg-primary/60",
+				isDragging
+					? "bg-primary/60"
+					: "hover:bg-primary/40 focus-visible:bg-primary/60 active:bg-primary/60",
 			)}
 		/>
 	);

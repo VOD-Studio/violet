@@ -10,9 +10,9 @@ import {
 	type DataTableProps,
 	EXPAND_COLUMN_KEY,
 	SELECT_COLUMN_KEY,
-} from "./data-table-types";
-import { computeStickyOffsets } from "./sticky-utils";
-import "./sticky-shadow.css";
+} from "../types/data-table-types";
+import { computeStickyOffsets } from "../utils/sticky-utils";
+import "../styles/sticky-shadow.css";
 
 const DEFAULT_COLUMN_MIN_WIDTH = 80;
 

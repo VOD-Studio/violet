@@ -10,7 +10,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
-import type { DataTableColumn } from "./data-table-types";
+import type { DataTableColumn } from "../types/data-table-types";
 
 interface DataTableToolbarProps<T> {
 	/** 左侧筛选槽位，由调用方自定义 */

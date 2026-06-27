@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { DataTableColumn } from "./data-table-types";
+import type { DataTableColumn } from "../types/data-table-types";
 
 /** 固定列偏移信息 */
 export interface StickyOffset {

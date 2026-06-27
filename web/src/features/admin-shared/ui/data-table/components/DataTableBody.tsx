@@ -6,11 +6,11 @@ import { Skeleton } from "@/shared/ui/skeleton";
 import { TableBody, TableCell, TableRow } from "@/shared/ui/table";
 import { TooltipProvider } from "@/shared/ui/tooltip";
 import { CellWithTooltip } from "./CellWithTooltip";
-import type { DataTableColumn } from "./data-table-types";
-import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "./data-table-types";
+import type { DataTableColumn } from "../types/data-table-types";
+import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "../types/data-table-types";
 import { RowCheckbox } from "./RowCheckbox";
 import { RowExpander } from "./RowExpander";
-import { cellStickyStyle, mergeStickyStyle, type StickyOffset } from "./sticky-utils";
+import { cellStickyStyle, mergeStickyStyle, type StickyOffset } from "../utils/sticky-utils";
 
 const ALIGN_CLASS = {
 	left: "text-left",

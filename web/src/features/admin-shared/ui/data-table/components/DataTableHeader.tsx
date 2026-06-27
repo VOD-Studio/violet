@@ -1,11 +1,11 @@
 import { cn } from "@/shared/lib/utils";
 import { TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 import { ColumnResizer } from "./ColumnResizer";
-import type { DataTableColumn, DataTableSort } from "./data-table-types";
-import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "./data-table-types";
+import type { DataTableColumn, DataTableSort } from "../types/data-table-types";
+import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "../types/data-table-types";
 import { SelectAllCheckbox } from "./SelectAllCheckbox";
 import { SortIcon } from "./SortIcon";
-import { headStickyStyle, mergeStickyStyle, type StickyOffset } from "./sticky-utils";
+import { headStickyStyle, mergeStickyStyle, type StickyOffset } from "../utils/sticky-utils";
 
 const ALIGN_CLASS = {
 	left: "text-left",

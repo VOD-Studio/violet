@@ -1,4 +1,4 @@
-import { ConfirmDialog } from "@features/admin-shared/ui/ConfirmDialog";
+import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { emojiKeys } from "@features/emojis/api/keys";
 import { useCreateEmoji, useUpdateEmoji } from "@features/emojis/api/mutations";
 import { useGroupEmojisAdmin } from "@features/emojis/api/queries";

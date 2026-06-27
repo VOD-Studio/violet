@@ -1,8 +1,8 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { DataTable } from "@features/admin-shared/ui/DataTable";
-import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table-types";
-import { exportToCsv } from "@features/admin-shared/ui/export-csv";
-import { useDebouncedValue } from "@features/admin-shared/ui/useDebouncedValue";
+import { DataTable } from "@features/admin-shared/ui/data-table";
+import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
+import { exportToCsv } from "@features/admin-shared/ui/data-table";
+import { useDebouncedValue } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/badge";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Download, Pencil, RefreshCw, Search, Trash2 } from "lucide-react";

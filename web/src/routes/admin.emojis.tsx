@@ -5,7 +5,7 @@ import { GroupCardSkeleton } from "@features/admin-emojis/ui/GroupCardSkeleton";
 import { StatsCard } from "@features/admin-emojis/ui/StatsCard";
 import { StatsCardSkeleton } from "@features/admin-emojis/ui/StatsCardSkeleton";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { ConfirmDialog } from "@features/admin-shared/ui/ConfirmDialog";
+import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { useBatchUpdateGroupStatus, useDeleteEmojiGroup } from "@features/emojis/api/mutations";
 import { useAllEmojiGroupsAdmin } from "@features/emojis/api/queries";
 import type { EmojiGroup } from "@features/emojis/model/types";

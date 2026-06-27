@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
-import type { DataTableSort } from "./data-table-types";
+import type { DataTableSort } from "../types/data-table-types";
 
 interface SortIconProps {
 	/** 是否为当前激活的排序列 */

@@ -1,4 +1,4 @@
-import type { DataTableColumn } from "./data-table-types";
+import type { DataTableColumn } from "../types/data-table-types";
 
 const CSV_MIME = "text/csv;charset=utf-8;";
 /** BOM 头，确保 Excel 正确识别 UTF-8 中文 */
