@@ -4,6 +4,8 @@ import { Button } from "@/shared/ui/button";
 import Empty from "@/shared/ui/empty";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { TableBody, TableCell, TableRow } from "@/shared/ui/table";
+import { TooltipProvider } from "@/shared/ui/tooltip";
+import { CellWithTooltip } from "./CellWithTooltip";
 import type { DataTableColumn } from "./data-table-types";
 import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "./data-table-types";
 import { RowCheckbox } from "./RowCheckbox";
@@ -141,90 +143,101 @@ export function DataTableBody<T>({
 	}
 
 	return (
-		<TableBody>
-			{data.map((row, index) => {
-				const rowKey = keyExtractor(row);
-				const isSelected = selectable && selectedIds.has(rowKey);
-				const isExpanded = expandable && expandedRowKeys.has(rowKey);
-				return (
-					<Fragment key={rowKey}>
-						<TableRow
-							data-state={isSelected ? "selected" : undefined}
-							aria-selected={selectable ? isSelected : undefined}
-							aria-rowindex={pageBaseIndex + index + 1}
-							onClick={onRowClick ? () => onRowClick(row) : undefined}
-							className={onRowClick ? "cursor-pointer" : undefined}
-						>
-							{columns.map((col) => {
-								const offset = offsets.get(col.key);
-								const sticky = cellStickyStyle(offset);
+		<TooltipProvider>
+			<TableBody>
+				{data.map((row, index) => {
+					const rowKey = keyExtractor(row);
+					const isSelected = selectable && selectedIds.has(rowKey);
+					const isExpanded = expandable && expandedRowKeys.has(rowKey);
+					return (
+						<Fragment key={rowKey}>
+							<TableRow
+								data-state={isSelected ? "selected" : undefined}
+								aria-selected={selectable ? isSelected : undefined}
+								aria-rowindex={pageBaseIndex + index + 1}
+								onClick={onRowClick ? () => onRowClick(row) : undefined}
+								className={onRowClick ? "cursor-pointer" : undefined}
+							>
+								{columns.map((col) => {
+									const offset = offsets.get(col.key);
+									const sticky = cellStickyStyle(offset);
 
-								// 选择列：行 checkbox + 右内边距与下一列分隔
-								if (col.key === SELECT_COLUMN_KEY) {
+									// 选择列：行 checkbox + 右内边距与下一列分隔
+									if (col.key === SELECT_COLUMN_KEY) {
+										return (
+											<TableCell
+												key={col.key}
+												style={mergeStickyStyle(offset, col.width)}
+												className={cn(cellPad, "pr-3", sticky.className, col.className)}
+												onClick={(e) => e.stopPropagation()}
+											>
+												{selectable && (
+													<RowCheckbox
+														selected={isSelected}
+														onToggle={() => onToggleRow(rowKey)}
+														rowNumber={pageBaseIndex + index + 1}
+													/>
+												)}
+											</TableCell>
+										);
+									}
+
+									// 展开列：行展开切换按钮
+									if (col.key === EXPAND_COLUMN_KEY) {
+										return (
+											<TableCell
+												key={col.key}
+												style={mergeStickyStyle(offset, col.width)}
+												className={cn(cellPad, "pr-3", sticky.className, col.className)}
+												onClick={(e) => e.stopPropagation()}
+											>
+												{expandable && (
+													<RowExpander
+														expanded={isExpanded}
+														onToggle={() => onToggleExpand(rowKey)}
+													/>
+												)}
+											</TableCell>
+										);
+									}
+
 									return (
 										<TableCell
 											key={col.key}
 											style={mergeStickyStyle(offset, col.width)}
-											className={cn(cellPad, "pr-3", sticky.className, col.className)}
-											onClick={(e) => e.stopPropagation()}
+											className={cn(
+												cellPad,
+												ALIGN_CLASS[col.align ?? "left"],
+												sticky.className,
+												col.className,
+											)}
 										>
-											{selectable && (
-												<RowCheckbox
-													selected={isSelected}
-													onToggle={() => onToggleRow(rowKey)}
-													rowNumber={pageBaseIndex + index + 1}
-												/>
+											{col.ellipsis || col.tooltip ? (
+												<CellWithTooltip
+													ellipsis={col.ellipsis}
+													tooltip={col.tooltip ? col.tooltip(row) : undefined}
+												>
+													{renderCell(col, row)}
+												</CellWithTooltip>
+											) : (
+												renderCell(col, row)
 											)}
 										</TableCell>
 									);
-								}
-
-								// 展开列：行展开切换按钮
-								if (col.key === EXPAND_COLUMN_KEY) {
-									return (
-										<TableCell
-											key={col.key}
-											style={mergeStickyStyle(offset, col.width)}
-											className={cn(cellPad, "pr-3", sticky.className, col.className)}
-											onClick={(e) => e.stopPropagation()}
-										>
-											{expandable && (
-												<RowExpander
-													expanded={isExpanded}
-													onToggle={() => onToggleExpand(rowKey)}
-												/>
-											)}
-										</TableCell>
-									);
-								}
-
-								return (
-									<TableCell
-										key={col.key}
-										style={mergeStickyStyle(offset, col.width)}
-										className={cn(
-											cellPad,
-											ALIGN_CLASS[col.align ?? "left"],
-											sticky.className,
-											col.className,
-										)}
-									>
-										{renderCell(col, row)}
-									</TableCell>
-								);
-							})}
-						</TableRow>
-						{isExpanded && renderExpandedRow && (
-							<TableRow className="hover:bg-transparent">
-								<TableCell colSpan={colCount} className="bg-muted/30 p-4">
-									{renderExpandedRow(row)}
-								</TableCell>
+								})}
 							</TableRow>
-						)}
-					</Fragment>
-				);
-			})}
-		</TableBody>
+							{isExpanded && renderExpandedRow && (
+								<TableRow className="hover:bg-transparent">
+									<TableCell colSpan={colCount} className="bg-muted/30 p-4">
+										{renderExpandedRow(row)}
+									</TableCell>
+								</TableRow>
+							)}
+						</Fragment>
+					);
+				})}
+			</TableBody>
+		</TooltipProvider>
 	);
 }
 

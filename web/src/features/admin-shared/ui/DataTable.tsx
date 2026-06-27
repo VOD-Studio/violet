@@ -206,6 +206,16 @@ export function DataTable<T>({
 		return map;
 	}, [visibleColumns, columnWidths]);
 
+	// 所有列宽度之和（无显式宽度的列给 120px 基准），作为 table min-width
+	// 防止容器变窄时列被挤压成一线，改为触发横向滚动
+	const totalColumnWidth = useMemo(() => {
+		let sum = 0;
+		for (const col of visibleColumns) {
+			sum += columnWidthMap.get(col.key) || 120;
+		}
+		return sum;
+	}, [visibleColumns, columnWidthMap]);
+
 	const showFooter = total > 0;
 	const showBulkBar = bulkActions != null && selected.size > 0;
 
@@ -225,7 +235,14 @@ export function DataTable<T>({
 				style={stickyHeader ? { maxHeight } : undefined}
 				aria-busy={loading ? true : undefined}
 			>
-				<table className="caption-bottom text-sm" style={{ tableLayout: "fixed", width: "100%" }}>
+				<table
+					className="caption-bottom text-sm"
+					style={{
+						tableLayout: "fixed",
+						width: "100%",
+						minWidth: `${totalColumnWidth}px`,
+					}}
+				>
 					{caption ? <caption className="sr-only">{caption}</caption> : null}
 					<colgroup>
 						{visibleColumns.map((col) => {

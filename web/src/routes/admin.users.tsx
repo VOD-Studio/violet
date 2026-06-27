@@ -47,8 +47,15 @@ function buildMockData(): User[] {
 const ALL_DATA = buildMockData();
 
 const columns: DataTableColumn<User>[] = [
-	{ key: "nickname", header: "昵称", accessorKey: "nickname", sortable: true },
-	{ key: "email", header: "邮箱", accessorKey: "email", sortable: true },
+	{ key: "nickname", header: "昵称", accessorKey: "nickname", sortable: true, ellipsis: true },
+	{
+		key: "email",
+		header: "邮箱",
+		accessorKey: "email",
+		sortable: true,
+		ellipsis: true,
+		tooltip: (row) => `点击邮箱 ${row.email} 发送邮件`,
+	},
 	{
 		key: "role",
 		header: "角色",

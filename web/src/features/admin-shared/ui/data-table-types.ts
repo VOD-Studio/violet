@@ -22,6 +22,10 @@ export interface DataTableColumn<T> {
 	hideable?: boolean;
 	/** 是否允许拖拽调整列宽，默认跟随组件 resizable */
 	resizable?: boolean;
+	/** 单元格内容超长时省略号截断，鼠标悬停 tooltip 显示全文，默认 false */
+	ellipsis?: boolean;
+	/** 鼠标悬停单元格时显示的 tooltip，提供即开启 tooltip */
+	tooltip?: (row: T) => string;
 	/** CSV 导出时取值，默认按 accessorKey 取原始值 */
 	exportValue?: (row: T) => string | number | null;
 	/** 附加到 th 与 td 的类名 */

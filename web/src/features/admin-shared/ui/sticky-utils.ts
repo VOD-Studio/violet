@@ -90,7 +90,7 @@ export function headStickyStyle(
 			offset.side === "left" ? LEFT_SHADOW : RIGHT_SHADOW,
 		);
 	} else {
-		classes.push("relative", "z-0");
+		classes.push("z-0");
 	}
 
 	return { className: classes.join(" ") };
@@ -99,11 +99,11 @@ export function headStickyStyle(
 /**
  * 数据单元格的固定列样式。
  *
- * 固定单元格 z-20 + 不透明 bg-card，普通单元格 z-0，
- * 保证横向滚动时固定列盖在普通列之上。
+ * 固定单元格 sticky + z-20 + 不透明 bg-card；普通单元格不定位（static），
+ * 不创建独立 stacking context，保证 sticky 固定列自然盖在其上。
  */
 export function cellStickyStyle(offset: StickyOffset | undefined): StickyStyle {
-	if (!offset) return { className: "relative z-0" };
+	if (!offset) return { className: "" };
 	return {
 		className: [
 			"sticky",

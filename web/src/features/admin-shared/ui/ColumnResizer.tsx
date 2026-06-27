@@ -24,7 +24,9 @@ export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps)
 	function onPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
 		dragging.current = true;
 		startX.current = e.clientX;
-		startWidth.current = width;
+		// 直接从 DOM 读真实渲染宽度，避免 prop 为 0 或与实际不符导致起始错位
+		const th = e.currentTarget.closest("th");
+		startWidth.current = th ? th.offsetWidth : width;
 		e.currentTarget.setPointerCapture(e.pointerId);
 		e.stopPropagation();
 		e.preventDefault();
