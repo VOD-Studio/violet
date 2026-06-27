@@ -17,7 +17,7 @@ const SIBLING_COUNT = 1;
  * Pagination - 简单数字分页
  *
  * 首尾页 + 当前页前后各 SIBLING_COUNT 页，超距用省略号收拢，
- * 边界自动禁用上一页/下一页。仅用于后台少量数据的轻量分页。
+ * 边界自动禁用上一页/下一页。
  */
 export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
 	if (totalPages <= 1) return null;

@@ -5,6 +5,8 @@ import Empty from "@/shared/ui/empty";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { TableBody, TableCell, TableRow } from "@/shared/ui/table";
 import type { DataTableColumn } from "./data-table-types";
+import { SELECT_COLUMN_KEY } from "./data-table-types";
+import { RowCheckbox } from "./RowCheckbox";
 import { cellStickyStyle, mergeStickyStyle, type StickyOffset } from "./sticky-utils";
 
 const ALIGN_CLASS = {
@@ -13,7 +15,6 @@ const ALIGN_CLASS = {
 	right: "text-right",
 } as const;
 
-/** 骨架行用固定 id，避免数组下标作为 key */
 const SKELETON_ROWS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"];
 
 interface DataTableBodyProps<T> {
@@ -25,15 +26,22 @@ interface DataTableBodyProps<T> {
 	error?: Error | null;
 	onRetry?: () => void;
 	density: "comfortable" | "compact";
+	/** 筛选态：为 true 且无数据时使用"未找到匹配结果"文案 */
+	filtered?: boolean;
 	emptyTitle?: string;
 	emptyDescription?: string;
+	selectable: boolean;
+	selectedIds: Set<string>;
+	onToggleRow: (id: string) => void;
+	/** 当前页首行在全集中的序号（用于全局 aria-rowindex），通常 (page-1)*pageSize */
+	pageBaseIndex: number;
 }
 
 /**
  * DataTableBody - 数据行渲染
  *
  * 三态优先级：error > loading > empty > data。
- * 固定列单元格应用 sticky 样式（背景不透明遮挡横向滚动内容）。
+ * 行选择列渲染 RowCheckbox，并标注 aria-selected / aria-rowindex。
  */
 export function DataTableBody<T>({
 	columns,
@@ -44,8 +52,13 @@ export function DataTableBody<T>({
 	error,
 	onRetry,
 	density,
+	filtered = false,
 	emptyTitle,
 	emptyDescription,
+	selectable,
+	selectedIds,
+	onToggleRow,
+	pageBaseIndex,
 }: DataTableBodyProps<T>) {
 	const cellPad = density === "compact" ? "py-1.5" : "py-2.5";
 	const colCount = columns.length;
@@ -57,7 +70,7 @@ export function DataTableBody<T>({
 					<TableCell colSpan={colCount} className="p-0">
 						<div className="py-12" aria-live="assertive">
 							<Empty
-								title={emptyTitle ?? "ERROR"}
+								title="ERROR"
 								description={error.message || "加载失败"}
 								size="sm"
 								action={
@@ -100,16 +113,14 @@ export function DataTableBody<T>({
 	}
 
 	if (data.length === 0) {
+		const title = filtered ? "NO_MATCH" : (emptyTitle ?? "NO_DATA");
+		const desc = filtered ? "未找到匹配结果，请调整筛选条件" : (emptyDescription ?? "暂无数据");
 		return (
 			<TableBody>
 				<TableRow className="hover:bg-transparent">
 					<TableCell colSpan={colCount} className="p-0">
 						<div className="py-12" aria-live="polite">
-							<Empty
-								title={emptyTitle ?? "NO_DATA"}
-								description={emptyDescription ?? "暂无数据"}
-								size="sm"
-							/>
+							<Empty title={title} description={desc} size="sm" />
 						</div>
 					</TableCell>
 				</TableRow>
@@ -119,13 +130,39 @@ export function DataTableBody<T>({
 
 	return (
 		<TableBody>
-			{data.map((row) => {
+			{data.map((row, index) => {
 				const rowKey = keyExtractor(row);
+				const isSelected = selectable && selectedIds.has(rowKey);
 				return (
-					<TableRow key={rowKey}>
+					<TableRow
+						key={rowKey}
+						data-state={isSelected ? "selected" : undefined}
+						aria-selected={selectable ? isSelected : undefined}
+						aria-rowindex={pageBaseIndex + index + 1}
+					>
 						{columns.map((col) => {
 							const offset = offsets.get(col.key);
 							const sticky = cellStickyStyle(offset);
+
+							// 选择列：渲染行 checkbox
+							if (col.key === SELECT_COLUMN_KEY) {
+								return (
+									<TableCell
+										key={col.key}
+										style={mergeStickyStyle(offset, col.width)}
+										className={cn(cellPad, sticky.className, col.className)}
+									>
+										{selectable && (
+											<RowCheckbox
+												selected={isSelected}
+												onToggle={() => onToggleRow(rowKey)}
+												rowNumber={pageBaseIndex + index + 1}
+											/>
+										)}
+									</TableCell>
+								);
+							}
+
 							return (
 								<TableCell
 									key={col.key}

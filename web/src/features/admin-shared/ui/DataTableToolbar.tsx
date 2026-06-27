@@ -13,23 +13,25 @@ import {
 import type { DataTableColumn } from "./data-table-types";
 
 interface DataTableToolbarProps<T> {
-	/** 左侧筛选槽位（搜索框/下拉等，调用方自定义） */
+	/** 左侧筛选槽位，由调用方自定义 */
 	toolbar?: ReactNode;
-	/** 全部列定义（用于列可见性菜单，含 hideable 过滤） */
+	/** 全部列定义（含 hideable 过滤后用于可见性菜单） */
 	columns: DataTableColumn<T>[];
 	/** 当前隐藏的列 key 集合 */
 	hiddenKeys: Set<string>;
 	/** 切换某列可见性 */
 	onToggleColumn: (key: string) => void;
-	/** 重置：清空所有隐藏列 */
+	/** 清空所有隐藏列 */
 	onResetColumns: () => void;
+	/** 当前选中行数，>0 时内联显示提示 */
+	selectedCount?: number;
 }
 
 /**
  * DataTableToolbar - 顶部工具栏
  *
- * 左侧 toolbar 槽位由调用方填充业务筛选；右侧列可见性菜单，
- * 仅展示 hideable !== false 的列，含"重置"恢复全部显示。
+ * 左侧筛选槽位由调用方填充；右侧列可见性菜单。
+ * 选中行时内联显示已选数量。
  */
 export function DataTableToolbar<T>({
 	toolbar,
@@ -37,13 +39,13 @@ export function DataTableToolbar<T>({
 	hiddenKeys,
 	onToggleColumn,
 	onResetColumns,
+	selectedCount = 0,
 }: DataTableToolbarProps<T>) {
 	const hideableColumns = columns.filter((c) => c.hideable !== false);
 	const hasHideable = hideableColumns.length > 0;
 	const anyHidden = hiddenKeys.size > 0;
 
-	// 无筛选槽且无可隐藏列时不渲染工具栏
-	if (!toolbar && !hasHideable) return null;
+	if (!toolbar && !hasHideable && selectedCount === 0) return null;
 
 	return (
 		<div className="flex flex-wrap items-center gap-3 px-1 pb-3">
@@ -51,6 +53,12 @@ export function DataTableToolbar<T>({
 				<div className="flex flex-1 flex-wrap items-center gap-2">{toolbar}</div>
 			) : (
 				<div className="flex-1" />
+			)}
+
+			{selectedCount > 0 && (
+				<span className="text-muted-foreground text-xs">
+					已选 <span className="text-foreground font-medium">{selectedCount}</span> 项
+				</span>
 			)}
 
 			{hasHideable && (

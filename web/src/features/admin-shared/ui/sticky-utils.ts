@@ -14,7 +14,7 @@ export interface StickyStyle {
 	style?: CSSProperties;
 }
 
-/** 左/右固定列朝滚动方向的克制投影（低透明度，shadcn 风） */
+/** 左/右固定列朝滚动方向的边缘投影 */
 const LEFT_SHADOW = "shadow-[inset_-8px_0_8px_-8px_rgba(0,0,0,0.08)]";
 const RIGHT_SHADOW = "shadow-[inset_8px_0_8px_-8px_rgba(0,0,0,0.08)]";
 

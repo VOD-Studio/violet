@@ -1,20 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Table } from "@/shared/ui/table";
+import { BulkActionBar } from "./BulkActionBar";
 import { DataTableBody } from "./DataTableBody";
 import { DataTableFooter } from "./DataTableFooter";
 import { DataTableHeader } from "./DataTableHeader";
 import { DataTableToolbar } from "./DataTableToolbar";
-import type { DataTableProps } from "./data-table-types";
+import { type DataTableColumn, type DataTableProps, SELECT_COLUMN_KEY } from "./data-table-types";
 import { computeStickyOffsets } from "./sticky-utils";
 
 /**
- * DataTable - 通用数据表格（自研，纯服务端分页/排序）
+ * DataTable - 通用数据表格
  *
- * 组装工具栏 + 表格 + 分页，收口列可见性状态（localStorage 持久化）。
- * 固定列偏移按可见列实时计算，隐藏列后偏移自动重算。
- * 三态优先级：error > loading > empty > data。
- * 全语义色 token，shadcn 克制风，零硬编码色。
+ * 组合工具栏、表格、分页；管理列可见性与行选择状态。
+ * 分页、排序由调用方受控。
  */
 export function DataTable<T>({
 	columns,
@@ -24,13 +23,20 @@ export function DataTable<T>({
 	pageSize,
 	total,
 	onPageChange,
+	pageSizeOptions,
+	onPageSizeChange,
 	sort,
 	onSortChange,
 	loading,
 	error,
 	onRetry,
+	selectable = false,
+	selectedIds,
+	onSelectionChange,
+	bulkActions,
 	toolbar,
 	storageKey,
+	filtered = false,
 	density = "comfortable",
 	stickyHeader = false,
 	maxHeight = "60vh",
@@ -39,14 +45,13 @@ export function DataTable<T>({
 	emptyDescription,
 	className,
 }: DataTableProps<T>) {
-	// —— 列可见性状态（localStorage 持久化） ——
+	// —— 列可见性状态 ——
 	const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => {
 		if (!storageKey) return new Set();
 		try {
 			const raw = localStorage.getItem(storageKey);
 			if (!raw) return new Set();
-			const arr = JSON.parse(raw) as string[];
-			return new Set(arr);
+			return new Set(JSON.parse(raw) as string[]);
 		} catch {
 			return new Set();
 		}
@@ -57,7 +62,7 @@ export function DataTable<T>({
 		try {
 			localStorage.setItem(storageKey, JSON.stringify([...hiddenKeys]));
 		} catch {
-			// localStorage 不可用（隐私模式等）静默忽略
+			/* 忽略：localStorage 写入失败不影响功能 */
 		}
 	}, [hiddenKeys, storageKey]);
 
@@ -70,18 +75,60 @@ export function DataTable<T>({
 		});
 	}
 
-	function resetColumns() {
-		setHiddenKeys(new Set());
+	// —— 行选择状态（受控优先，否则内部自管；均跨页保持） ——
+	const [internalSelected, setInternalSelected] = useState<Set<string>>(new Set());
+	const selected = selectedIds ?? internalSelected;
+	const setSelected = (next: Set<string>) => {
+		setInternalSelected(next);
+		onSelectionChange?.(next);
+	};
+
+	const pageIds = useMemo(() => data.map(keyExtractor), [data, keyExtractor]);
+	const selectedOnPage = pageIds.filter((id) => selected.has(id));
+	const allSelected = pageIds.length > 0 && selectedOnPage.length === pageIds.length;
+	const someSelected = selectedOnPage.length > 0 && !allSelected;
+
+	function toggleSelectAll() {
+		const next = new Set(selected);
+		if (allSelected || someSelected) {
+			for (const id of pageIds) next.delete(id);
+		} else {
+			for (const id of pageIds) next.add(id);
+		}
+		setSelected(next);
 	}
 
-	// —— 按可见性过滤列，并据此计算固定列偏移 ——
-	const visibleColumns = useMemo(
+	function toggleRow(id: string) {
+		const next = new Set(selected);
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
+		setSelected(next);
+	}
+
+	// —— 可见列（含注入的选择列） ——
+	const baseVisible = useMemo(
 		() => columns.filter((c) => !hiddenKeys.has(c.key)),
 		[columns, hiddenKeys],
 	);
+	const visibleColumns = useMemo<DataTableColumn<T>[]>(() => {
+		if (!selectable) return baseVisible;
+		return [
+			{
+				key: SELECT_COLUMN_KEY,
+				header: null,
+				sticky: "left",
+				width: "48px",
+				hideable: false,
+				sortable: false,
+				align: "center",
+			},
+			...baseVisible,
+		];
+	}, [baseVisible, selectable]);
 	const offsets = useMemo(() => computeStickyOffsets(visibleColumns), [visibleColumns]);
 
-	const hasFooter = total > 0;
+	const showFooter = total > 0;
+	const showBulkBar = bulkActions != null && selected.size > 0;
 
 	return (
 		<div className={cn("w-full space-y-0", className)}>
@@ -90,7 +137,8 @@ export function DataTable<T>({
 				columns={columns}
 				hiddenKeys={hiddenKeys}
 				onToggleColumn={toggleColumn}
-				onResetColumns={resetColumns}
+				onResetColumns={() => setHiddenKeys(new Set())}
+				selectedCount={selectable ? selected.size : 0}
 			/>
 
 			<div
@@ -110,6 +158,10 @@ export function DataTable<T>({
 						sort={sort}
 						onSortChange={onSortChange}
 						density={density}
+						selectable={selectable}
+						allSelected={allSelected}
+						someSelected={someSelected}
+						onToggleSelectAll={toggleSelectAll}
 					/>
 					<DataTableBody
 						columns={visibleColumns}
@@ -120,19 +172,32 @@ export function DataTable<T>({
 						error={error}
 						onRetry={onRetry}
 						density={density}
+						filtered={filtered}
 						emptyTitle={emptyTitle}
 						emptyDescription={emptyDescription}
+						selectable={selectable}
+						selectedIds={selected}
+						onToggleRow={toggleRow}
+						pageBaseIndex={(page - 1) * pageSize}
 					/>
 				</Table>
 			</div>
 
-			{hasFooter && (
+			{showFooter && (
 				<DataTableFooter
 					page={page}
 					pageSize={pageSize}
 					total={total}
 					onPageChange={onPageChange}
+					pageSizeOptions={pageSizeOptions}
+					onPageSizeChange={onPageSizeChange}
 				/>
+			)}
+
+			{showBulkBar && (
+				<BulkActionBar selectedCount={selected.size} onClear={() => setSelected(new Set())}>
+					{bulkActions}
+				</BulkActionBar>
 			)}
 		</div>
 	);
