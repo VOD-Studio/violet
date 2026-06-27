@@ -27,8 +27,15 @@ export function imageUrl(path: string, opts: ImageOpts = {}): string {
 	return qs ? `${path}?${qs}` : path;
 }
 
-/** 头像专用:200x200 缩略图 + WebP */
-export function avatarUrl(path: string): string {
-	if (!path) return "";
+/**
+ * 头像专用:200x200 缩略图 + WebP
+ * 如果 path 为空或无效，返回默认头像（使用 UI Avatars 生成）
+ */
+export function avatarUrl(path: string, username?: string): string {
+	if (!path || path.trim() === "") {
+		// 使用 UI Avatars 生成默认头像
+		const name = username ? encodeURIComponent(username) : "User";
+		return `https://ui-avatars.com/api/?name=${name}&size=200&background=random`;
+	}
 	return imageUrl(path, { w: 200, thumb: "200x200", format: "webp" });
 }

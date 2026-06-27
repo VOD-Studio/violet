@@ -56,7 +56,7 @@ export function AvatarUploader({ user }: AvatarUploaderProps) {
 	return (
 		<div className="flex flex-col items-center gap-2">
 			<img
-				src={avatarUrl(user.avatar_url)}
+				src={avatarUrl(user.avatar_url, user.username)}
 				alt={`${user.username} 的头像`}
 				className="h-24 w-24 rounded-full object-cover"
 			/>
