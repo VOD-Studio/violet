@@ -65,7 +65,9 @@ func (r *EmojiGroupRepository) FindByID(ctx context.Context, id int32) (*emoji.E
 }
 
 func (r *EmojiGroupRepository) FindAll(ctx context.Context, enabledOnly bool) ([]*emoji.EmojiGroup, error) {
-	query := r.db.WithContext(ctx).Preload("Emojis", "sort_order ASC")
+	query := r.db.WithContext(ctx).Preload("Emojis", func(db *gorm.DB) *gorm.DB {
+		return db.Order("sort_order ASC")
+	})
 	if enabledOnly {
 		query = query.Where("is_enabled = ?", true)
 	}
