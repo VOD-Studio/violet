@@ -48,8 +48,6 @@ function AdminUsers() {
     const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
     // 权限检查
-    const canUpdateRole = useHasPermission("user:update-role");
-    const canBan = useHasPermission("user:ban");
     const canUpdateUser = useHasPermission("user:list"); // 编辑用户权限
 
     // 查询角色列表
@@ -312,7 +310,7 @@ function AdminUsers() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {roles.map((role) => (
-                                        <SelectItem key={role.name} value={role.name}>
+                                        <SelectItem key={role.name} value={role.name || ""}>
                                             设为{role.description || role.name}
                                         </SelectItem>
                                     ))}
@@ -376,7 +374,7 @@ function AdminUsers() {
                             <SelectContent>
                                 <SelectItem value="all">全部角色</SelectItem>
                                 {roles.map((role) => (
-                                    <SelectItem key={role.name} value={role.name}>
+                                    <SelectItem key={role.name} value={role.name || ""}>
                                         {role.description || role.name}
                                     </SelectItem>
                                 ))}
@@ -448,8 +446,6 @@ function AdminUsers() {
             title="确认删除用户"
             description="此操作不可撤销，确定要删除这个用户吗？"
             confirmLabel="删除"
-            cancelLabel="取消"
-            variant="destructive"
             onConfirm={handleConfirmDelete}
             loading={deleteUser.isPending}
         />

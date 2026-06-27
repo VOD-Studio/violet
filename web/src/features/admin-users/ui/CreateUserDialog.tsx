@@ -35,8 +35,8 @@ const createUserSchema = z.object({
         .regex(/^[a-zA-Z0-9_-]+$/, "用户名只能包含字母、数字、下划线和连字符"),
     email: z.string().email("请输入有效的邮箱地址"),
     password: z.string().min(6, "密码至少 6 位"),
-    role: z.enum(["user", "admin", "superadmin"]).default("user"),
-    is_active: z.boolean().default(true),
+    role: z.enum(["user", "admin", "superadmin"]),
+    is_active: z.boolean(),
 });
 
 type CreateUserForm = z.infer<typeof createUserSchema>;
@@ -55,14 +55,7 @@ interface CreateUserDialogProps {
 export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) {
     const createUser = useCreateUser();
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        setValue,
-        watch,
-        reset,
-    } = useForm<CreateUserForm>({
+    const form = useForm<CreateUserForm>({
         resolver: zodResolver(createUserSchema),
         defaultValues: {
             username: "",
@@ -72,6 +65,15 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
             is_active: true,
         },
     });
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        setValue,
+        watch,
+        reset,
+    } = form;
 
     const role = watch("role");
     const isActive = watch("is_active");

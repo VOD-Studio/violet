@@ -3,7 +3,6 @@ import { DataTable } from "@features/admin-shared/ui/data-table";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/badge";
 import { createFileRoute } from "@tanstack/react-router";
-import { Shield } from "lucide-react";
 import { useMemo } from "react";
 import { useAdminPermissions } from "@features/admin-permissions/api/queries";
 import type { PermissionDTO } from "@features/admin-permissions/model/types";
@@ -70,11 +69,6 @@ function AdminPermissionsPage() {
         <PageShell
             title="权限管理"
             description="查看系统所有权限定义"
-            icon={Shield}
-            breadcrumb={[
-                { label: "后台管理", href: "/admin" },
-                { label: "权限管理" },
-            ]}
         >
             <div className="space-y-6">
                 {/* 权限分组展示 */}
@@ -96,10 +90,14 @@ function AdminPermissionsPage() {
                 </div>
 
                 {/* 权限详细列表 */}
-                <DataTable
+                <DataTable<PermissionDTO>
                     data={permissions}
                     columns={columns}
-                    searchable={false}
+                    keyExtractor={(row) => String(row.id)}
+                    page={1}
+                    pageSize={permissions.length}
+                    total={permissions.length}
+                    onPageChange={() => {}}
                     selectable={false}
                     loading={isLoading}
                     error={error ? new Error(error.message) : null}

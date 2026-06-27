@@ -121,13 +121,15 @@ function AdminRolesPage() {
         <PageShell
             title="角色管理"
             description="管理系统角色和权限配置"
-            icon={Shield}
-            breadcrumb={[{ label: "后台管理", href: "/admin" }, { label: "角色管理" }]}
         >
-            <DataTable
+            <DataTable<RoleDTO>
                 data={roles}
                 columns={columns}
-                searchable={false}
+                keyExtractor={(row) => String(row.id)}
+                page={1}
+                pageSize={roles.length}
+                total={roles.length}
+                onPageChange={() => {}}
                 selectable={false}
                 loading={isLoading}
                 error={error ? new Error(error.message) : null}
@@ -153,17 +155,12 @@ function AdminRolesPage() {
                 onConfirm={handleConfirmDelete}
                 title="确认删除角色"
                 description={
-                    <>
-                        确定要删除角色 <strong>{deletingRole?.name}</strong> 吗？
-                        {(deletingRole?.user_count || 0) > 0 && (
-                            <p className="text-destructive mt-2">
-                                警告：该角色下有 {deletingRole?.user_count} 个用户，删除后这些用户将失去此角色。
-                            </p>
-                        )}
-                    </>
+                    `确定要删除角色 ${deletingRole?.name} 吗？` +
+                    ((deletingRole?.user_count || 0) > 0
+                        ? `\n警告：该角色下有 ${deletingRole?.user_count} 个用户，删除后这些用户将失去此角色。`
+                        : "")
                 }
-                confirmText="删除"
-                variant="destructive"
+                confirmLabel="删除"
                 loading={deleteRole.isPending}
             />
         </PageShell>
