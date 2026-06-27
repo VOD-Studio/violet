@@ -109,7 +109,8 @@ export function DataTableHeader<T>({
 						ariaSort = isActive ? (sort?.order === "asc" ? "ascending" : "descending") : "none";
 					}
 
-					const showResizer = resizable && col.resizable !== false;
+					// 右侧固定列不显示拖拽手柄（因为固定在最右侧，调整宽度无意义）
+					const showResizer = resizable && col.resizable !== false && offset?.side !== "right";
 
 					return (
 						<TableHead

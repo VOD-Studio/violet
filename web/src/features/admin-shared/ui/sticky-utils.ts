@@ -29,10 +29,14 @@ const RIGHT_SHADOW = "sticky-shadow-right";
 /**
  * 预计算固定列的左右偏移，同侧多列按宽度累加。
  *
- * 仅 px 宽度可精确累加；非 px（如 "20%"）回退 0。
+ * 优先使用 widthMap 中的实际宽度（包含拖拽调整后的值），
+ * 回退到 col.width 字符串解析。
  * 标记每侧最后一个固定列，用于显示阴影。
  */
-export function computeStickyOffsets<T>(columns: DataTableColumn<T>[]): Map<string, StickyOffset> {
+export function computeStickyOffsets<T>(
+	columns: DataTableColumn<T>[],
+	widthMap?: Map<string, number>,
+): Map<string, StickyOffset> {
 	const map = new Map<string, StickyOffset>();
 
 	// 收集左侧固定列
@@ -42,7 +46,9 @@ export function computeStickyOffsets<T>(columns: DataTableColumn<T>[]): Map<stri
 		if (col.sticky === "left") {
 			leftSticky.push(col);
 			map.set(col.key, { side: "left", offset: `${left}px`, isLast: false });
-			left += parseWidth(col.width);
+			// 优先使用 widthMap 中的实际宽度
+			const width = widthMap?.get(col.key) ?? parseWidth(col.width);
+			left += width;
 		}
 	}
 	// 标记最后一个左固定列
@@ -62,7 +68,9 @@ export function computeStickyOffsets<T>(columns: DataTableColumn<T>[]): Map<stri
 		if (col?.sticky === "right") {
 			rightSticky.push(col);
 			map.set(col.key, { side: "right", offset: `${right}px`, isLast: false });
-			right += parseWidth(col.width);
+			// 优先使用 widthMap 中的实际宽度
+			const width = widthMap?.get(col.key) ?? parseWidth(col.width);
+			right += width;
 		}
 	}
 	// 标记第一个右固定列（从右往左最后一个）

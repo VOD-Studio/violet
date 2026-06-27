@@ -1,27 +1,29 @@
+/* 固定列阴影效果 - 参考 Ant Design 实现 */
+
 /* 左侧固定列：阴影在右边缘，使用 inset 从右向左投射 */
 .sticky-shadow-left::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 30px;
-  transform: translateX(100%);
-  box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.15);
-  pointer-events: none;
-  transition: box-shadow 0.3s;
+	content: '';
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 30px;
+	transform: translateX(100%);
+	box-shadow: inset 10px 0 8px -8px hsl(var(--border) / 0.5);
+	pointer-events: none;
+	transition: box-shadow 0.3s;
 }
 
 /* 右侧固定列：阴影在左边缘，使用 inset 从左向右投射 */
 .sticky-shadow-right::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 30px;
-  transform: translateX(-100%);
-  box-shadow: inset -10px 0 8px -8px rgba(0, 0, 0, 0.15);
-  pointer-events: none;
-  transition: box-shadow 0.3s;
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	width: 30px;
+	transform: translateX(-100%);
+	box-shadow: inset -10px 0 8px -8px hsl(var(--border) / 0.5);
+	pointer-events: none;
+	transition: box-shadow 0.3s;
 }

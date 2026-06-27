@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { BulkActionBar } from "./BulkActionBar";
 import { DataTableBody } from "./DataTableBody";
@@ -143,6 +143,10 @@ export function DataTable<T>({
 
 	function resizeColumn(key: string, width: number) {
 		setColumnWidths((prev) => ({ ...prev, [key]: width }));
+		// 拖拽后延迟检测滚动状态，因为 DOM 需要时间更新
+		setTimeout(() => {
+			checkScroll();
+		}, 0);
 	}
 
 	// —— 行展开状态 ——
@@ -190,7 +194,6 @@ export function DataTable<T>({
 		}
 		return [...injected, ...baseVisible];
 	}, [baseVisible, selectable, expandable]);
-	const offsets = useMemo(() => computeStickyOffsets(visibleColumns), [visibleColumns]);
 
 	// 每列实际宽度（含拖拽结果），供 colgroup 使用
 	const columnWidthMap = useMemo(() => {
@@ -207,6 +210,11 @@ export function DataTable<T>({
 		return map;
 	}, [visibleColumns, columnWidths]);
 
+	const offsets = useMemo(
+		() => computeStickyOffsets(visibleColumns, columnWidthMap),
+		[visibleColumns, columnWidthMap],
+	);
+
 	// 所有列宽度之和（无显式宽度的列给 120px 基准），作为 table min-width
 	// 防止容器变窄时列被挤压成一线，改为触发横向滚动
 	const totalColumnWidth = useMemo(() => {
@@ -220,6 +228,38 @@ export function DataTable<T>({
 	const showFooter = total > 0;
 	const showBulkBar = bulkActions != null && selected.size > 0;
 
+	// —— 首次渲染后，从 DOM 读取所有列的实际宽度 ——
+	const tableRef = useRef<HTMLTableElement>(null);
+	const hasInitializedWidths = useRef(false);
+
+	useEffect(() => {
+		if (hasInitializedWidths.current || !tableRef.current) return;
+
+		// 读取所有 th 的实际宽度
+		const ths = tableRef.current.querySelectorAll("thead th");
+		const initialWidths: Record<string, number> = {};
+		let hasAnyWidth = false;
+
+		ths.forEach((th, index) => {
+			const col = visibleColumns[index];
+			if (!col) return;
+
+			// 如果已经有存储的宽度，跳过
+			if (columnWidths[col.key] != null) return;
+
+			const width = th.getBoundingClientRect().width;
+			if (width > 0) {
+				initialWidths[col.key] = Math.round(width);
+				hasAnyWidth = true;
+			}
+		});
+
+		if (hasAnyWidth) {
+			setColumnWidths((prev) => ({ ...prev, ...initialWidths }));
+			hasInitializedWidths.current = true;
+		}
+	}, [visibleColumns, columnWidths]);
+
 	// —— 滚动状态检测：控制固定列阴影显示 ——
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [scrollState, setScrollState] = useState({
@@ -227,18 +267,20 @@ export function DataTable<T>({
 		isScrolledRight: false, // 已向右滚动（显示右侧阴影）
 	});
 
+	// 提取 checkScroll 函数，供拖拽后手动调用
+	const checkScroll = useCallback(() => {
+		const container = scrollContainerRef.current;
+		if (!container) return;
+		const { scrollLeft, scrollWidth, clientWidth } = container;
+		setScrollState({
+			isScrolledLeft: scrollLeft > 0,
+			isScrolledRight: scrollLeft < scrollWidth - clientWidth - 1,
+		});
+	}, []);
+
 	useEffect(() => {
 		const container = scrollContainerRef.current;
 		if (!container) return;
-
-		function checkScroll() {
-			if (!container) return;
-			const { scrollLeft, scrollWidth, clientWidth } = container;
-			setScrollState({
-				isScrolledLeft: scrollLeft > 0,
-				isScrolledRight: scrollLeft < scrollWidth - clientWidth - 1,
-			});
-		}
 
 		// 初始检测
 		checkScroll();
@@ -252,7 +294,7 @@ export function DataTable<T>({
 			container.removeEventListener("scroll", checkScroll);
 			window.removeEventListener("resize", checkScroll);
 		};
-	}, [visibleColumns, data]);
+	}, [visibleColumns, data, checkScroll]);
 
 	// 计算带滚动状态的 offsets
 	const offsetsWithScroll = useMemo(() => {
@@ -288,6 +330,7 @@ export function DataTable<T>({
 				aria-busy={loading ? true : undefined}
 			>
 				<table
+					ref={tableRef}
 					className="caption-bottom text-sm"
 					style={{
 						tableLayout: "fixed",
