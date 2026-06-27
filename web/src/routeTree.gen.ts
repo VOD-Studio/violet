@@ -19,6 +19,8 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminRolesRouteImport } from './routes/admin.roles'
+import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
 import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
 
 const LoginRoute = LoginRouteImport.update({
@@ -71,6 +73,16 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPermissionsRoute = AdminPermissionsRouteImport.update({
+  id: '/permissions',
+  path: '/permissions',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEmojisRoute = AdminEmojisRouteImport.update({
   id: '/emojis',
   path: '/emojis',
@@ -82,6 +94,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/about/': typeof AboutIndexRoute
@@ -94,6 +108,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/about': typeof AboutIndexRoute
@@ -108,6 +124,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/about/': typeof AboutIndexRoute
@@ -123,6 +141,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/admin/emojis'
+    | '/admin/permissions'
+    | '/admin/roles'
     | '/admin/users'
     | '/blog/$slug'
     | '/about/'
@@ -135,6 +155,8 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/admin/emojis'
+    | '/admin/permissions'
+    | '/admin/roles'
     | '/admin/users'
     | '/blog/$slug'
     | '/about'
@@ -148,6 +170,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/admin/emojis'
+    | '/admin/permissions'
+    | '/admin/roles'
     | '/admin/users'
     | '/blog/$slug'
     | '/about/'
@@ -240,6 +264,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/permissions': {
+      id: '/admin/permissions'
+      path: '/permissions'
+      fullPath: '/admin/permissions'
+      preLoaderRoute: typeof AdminPermissionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/emojis': {
       id: '/admin/emojis'
       path: '/emojis'
@@ -252,12 +290,16 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminEmojisRoute: typeof AdminEmojisRoute
+  AdminPermissionsRoute: typeof AdminPermissionsRoute
+  AdminRolesRoute: typeof AdminRolesRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminEmojisRoute: AdminEmojisRoute,
+  AdminPermissionsRoute: AdminPermissionsRoute,
+  AdminRolesRoute: AdminRolesRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
