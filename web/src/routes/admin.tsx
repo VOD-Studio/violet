@@ -1,8 +1,33 @@
 import { AdminSidebar } from "@features/admin-layout/ui/AdminSidebar";
 import { AdminTopBar } from "@features/admin-layout/ui/AdminTopBar";
-import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin")({
+    beforeLoad: async ({ context }) => {
+        const { auth } = context;
+
+        // 检查用户是否已登录
+        if (!auth.isAuthenticated || !auth.user) {
+            throw redirect({
+                to: "/",
+                replace: true,
+            });
+        }
+
+        // 检查用户是否有 admin:access 权限
+        const hasAdminPermission = auth.user.permissions?.includes("admin:access");
+
+        // 检查用户是否是管理员角色（admin 或 superadmin）
+        const isAdminRole = auth.user.role === "admin" || auth.user.role === "superadmin";
+
+        // 必须同时满足：有 admin:access 权限 或 是管理员角色
+        if (!hasAdminPermission && !isAdminRole) {
+            throw redirect({
+                to: "/",
+                replace: true,
+            });
+        }
+    },
     component: AdminLayout,
 });
 
