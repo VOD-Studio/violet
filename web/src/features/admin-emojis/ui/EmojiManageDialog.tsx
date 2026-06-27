@@ -281,7 +281,7 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
 
 			<ConfirmDialog
 				open={deleteConfirm.open}
-				onOpenChange={(o) => setDeleteConfirm({ open: o, ids: [] })}
+				onOpenChange={(o: boolean) => setDeleteConfirm({ open: o, ids: [] })}
 				title="删除表情"
 				description={
 					deleteConfirm.ids.length > 1
