@@ -109,8 +109,17 @@ export function DataTableHeader<T>({
 						ariaSort = isActive ? (sort?.order === "asc" ? "ascending" : "descending") : "none";
 					}
 
+					// 检查下一列是否是右固定列
+					const nextCol = columns[index + 1];
+					const nextIsRightSticky = nextCol?.sticky === "right";
+
 					// 右侧固定列不显示拖拽手柄（因为固定在最右侧，调整宽度无意义）
-					const showResizer = resizable && col.resizable !== false && offset?.side !== "right";
+					// 右侧固定列左侧的列也不显示拖拽手柄（避免影响右固定列的位置）
+					const showResizer =
+						resizable &&
+						col.resizable !== false &&
+						offset?.side !== "right" &&
+						!nextIsRightSticky;
 
 					return (
 						<TableHead

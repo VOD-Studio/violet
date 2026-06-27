@@ -9,9 +9,16 @@
 	bottom: 0;
 	width: 30px;
 	transform: translateX(100%);
-	box-shadow: inset 10px 0 8px -8px hsl(var(--border) / 0.5);
+	/* 暗色模式使用更柔和的阴影 */
+	box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.15);
 	pointer-events: none;
 	transition: box-shadow 0.3s;
+}
+
+@media (prefers-color-scheme: dark) {
+	.sticky-shadow-left::after {
+		box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.4);
+	}
 }
 
 /* 右侧固定列：阴影在左边缘，使用 inset 从左向右投射 */
@@ -23,7 +30,23 @@
 	bottom: 0;
 	width: 30px;
 	transform: translateX(-100%);
-	box-shadow: inset -10px 0 8px -8px hsl(var(--border) / 0.5);
+	/* 暗色模式使用更柔和的阴影 */
+	box-shadow: inset -10px 0 8px -8px rgba(0, 0, 0, 0.15);
 	pointer-events: none;
 	transition: box-shadow 0.3s;
+}
+
+@media (prefers-color-scheme: dark) {
+	.sticky-shadow-right::before {
+		box-shadow: inset -10px 0 8px -8px rgba(0, 0, 0, 0.4);
+	}
+}
+
+/* 支持通过 class 切换的暗色模式 */
+.dark .sticky-shadow-left::after {
+	box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.4);
+}
+
+.dark .sticky-shadow-right::before {
+	box-shadow: inset -10px 0 8px -8px rgba(0, 0, 0, 0.4);
 }
