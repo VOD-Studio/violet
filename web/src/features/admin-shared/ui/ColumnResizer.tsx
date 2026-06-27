@@ -26,7 +26,7 @@ export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps)
 	const thElement = useRef<HTMLTableCellElement | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
 
-	function onPointerDown(e: React.PointerEvent<HTMLButtonElement>) {
+	const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
 		dragging.current = true;
 		setIsDragging(true);
 		startX.current = e.clientX;
@@ -41,9 +41,9 @@ export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps)
 		// 防止拖拽时选中文本
 		document.body.style.userSelect = "none";
 		document.body.style.cursor = "col-resize";
-	}
+	};
 
-	function onPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+	const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
 		if (!dragging.current || !thElement.current) return;
 		const delta = e.clientX - startX.current;
 		const next = Math.max(minWidth, Math.round(startWidth.current + delta));
@@ -58,9 +58,9 @@ export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps)
 		if (col instanceof HTMLElement) {
 			col.style.width = `${next}px`;
 		}
-	}
+	};
 
-	function onPointerUp(e: React.PointerEvent<HTMLButtonElement>) {
+	const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
 		if (!dragging.current) return;
 
 		dragging.current = false;
@@ -83,16 +83,16 @@ export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps)
 		}
 
 		thElement.current = null;
-	}
+	};
 
 	// 处理指针离开按钮区域的情况
-	function onPointerLeave() {
+	const onPointerLeave = () => {
 		// 如果正在拖拽，不重置状态（因为我们使用了 setPointerCapture）
 		// 如果没有拖拽，确保重置 isDragging 状态
 		if (!dragging.current && isDragging) {
 			setIsDragging(false);
 		}
-	}
+	};
 
 	return (
 		<button

@@ -141,13 +141,13 @@ export function DataTable<T>({
 		}
 	}, [columnWidths, widthStorageKey]);
 
-	function resizeColumn(key: string, width: number) {
+	const resizeColumn = (key: string, width: number) => {
 		setColumnWidths((prev) => ({ ...prev, [key]: width }));
 		// 拖拽后延迟检测滚动状态，因为 DOM 需要时间更新
 		setTimeout(() => {
 			checkScroll();
 		}, 0);
-	}
+	};
 
 	// —— 行展开状态 ——
 	const [internalExpanded, setInternalExpanded] = useState<Set<string>>(new Set());
@@ -156,12 +156,12 @@ export function DataTable<T>({
 		setInternalExpanded(next);
 		onExpandedChange?.(next);
 	};
-	function toggleExpand(id: string) {
+	const toggleExpand = (id: string) => {
 		const next = new Set(expanded);
 		if (next.has(id)) next.delete(id);
 		else next.add(id);
 		setExpanded(next);
-	}
+	};
 
 	// —— 可见列（含注入的选择列 / 展开列） ——
 	const baseVisible = useMemo(
