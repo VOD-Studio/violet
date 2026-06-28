@@ -68,8 +68,8 @@ func (h *ForgotPasswordHandler) Handle(ctx context.Context, in ForgotPasswordInp
 		return shared.Internal("存储重置码失败", err)
 	}
 
-	// 发送重置邮件
-	if err := h.emailSender.SendVerificationCode(ctx, email.String(), code); err != nil {
+	// 发送重置邮件（用专门的重置码模板，而非注册验证模板）
+	if err := h.emailSender.SendPasswordResetCode(ctx, email.String(), code); err != nil {
 		log.Warn().Err(err).Str("email", email.String()).Msg("发送重置邮件失败")
 	}
 

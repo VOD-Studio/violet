@@ -22,6 +22,7 @@ import (
 	"blog-api/config"
 	"blog-api/internal/app"
 	authcmd "blog-api/internal/application/auth/command"
+	appshared "blog-api/internal/application/shared"
 	infraemail "blog-api/internal/infrastructure/email"
 	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/job"
@@ -99,9 +100,13 @@ func main() {
 
 	// --- 服务层初始化 ---
 
-	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom)
+	// 邮件发送：devMode 下打印验证码明文到日志，方便开发期联调（无需配置 Resend）。
+	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
 
-	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailSender, nil)
+	// 事件总线：当前无异步事件订阅者，用 NoopEventBus 占位（非 nil），
+	// 避免 RegisterUserHandler.Publish 在 nil bus 上触发 panic。
+	// 后续接入真实事件总线（如发欢迎邮件、统计）时替换为 InMemory 实现。
+	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailSender, appshared.NoopEventBus{})
 	if err != nil {
 		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
 	}

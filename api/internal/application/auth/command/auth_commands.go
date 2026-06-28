@@ -33,6 +33,7 @@ type PasswordHasher interface {
 // EmailSender 邮件发送端口
 type EmailSender interface {
 	SendVerificationCode(ctx context.Context, email, code string) error
+	SendPasswordResetCode(ctx context.Context, email, code string) error
 }
 
 // ============================================================
@@ -79,6 +80,12 @@ func NewRegisterUserHandler(
 }
 
 // Handle 执行用户注册
+//
+// 查重策略（处理「已注册但未验证」的死号）：
+//   - email 已存在且已验证 → 冲突，不可覆盖
+//   - email 已存在但未验证 → 覆盖该记录（更新 username/password）并重发验证码，
+//     让中断的注册流程能继续。覆盖前校验新 username 未被其他已验证用户占用。
+//   - email 不存在 → 正常注册新用户
 func (h *RegisterUserHandler) Handle(ctx context.Context, in RegisterUserInput) error {
 	// 1. 值对象校验
 	email, err := user.ParseEmail(in.Email)
@@ -90,39 +97,50 @@ func (h *RegisterUserHandler) Handle(ctx context.Context, in RegisterUserInput) 
 		return err
 	}
 
-	// 2. 唯一性查重
-	emailExists, err := h.userRepo.ExistsByEmail(ctx, email)
-	if err != nil {
-		return err
-	}
-	if emailExists {
-		return user.ErrEmailExists
-	}
-	usernameExists, err := h.userRepo.ExistsByUsername(ctx, username)
-	if err != nil {
-		return err
-	}
-	if usernameExists {
-		return user.ErrUsernameExists
-	}
-
-	// 3. 密码哈希
+	// 2. 密码哈希（查重前先算好，覆盖/新建都要用）
 	hash, err := h.hasher.Hash(in.Password)
 	if err != nil {
 		return shared.Internal("密码哈希失败", err)
 	}
 
-	// 4. 工厂创建聚合
-	u := user.NewUser(shared.NewID(), email, username, hash)
-	// 注册用户默认未激活（需邮箱验证）
-	u.Deactivate()
+	// 3. email 查重：区分已验证 / 未验证
+	existing, err := h.userRepo.FindByEmail(ctx, email)
+	if err != nil && !shared.IsDomainError(err, shared.CodeNotFound) {
+		return err
+	}
 
-	// 5. 持久化
+	var u *user.User
+	if existing != nil {
+		// 已验证用户不可覆盖
+		if err := existing.ReRegister(username, hash); err != nil {
+			return err // ReRegister 内部对已验证用户返回 ErrEmailExists
+		}
+		// 覆盖前校验：新 username 未被其他已验证用户占用
+		if err := h.checkUsernameAvailable(ctx, username, existing.GetID()); err != nil {
+			return err
+		}
+		u = existing
+	} else {
+		// 新用户：username 不能与任何已存在用户（含未验证死号）冲突
+		usernameExists, err := h.userRepo.ExistsByUsername(ctx, username)
+		if err != nil {
+			return err
+		}
+		if usernameExists {
+			// 可能是别人未验证的死号占用了该 username，但为避免误覆盖他人账号，
+			// 这里直接报冲突，让用户换 username（覆盖仅以 email 为准）
+			return user.ErrUsernameExists
+		}
+		u = user.NewUser(shared.NewID(), email, username, hash)
+		u.Deactivate() // 注册用户默认未激活（需邮箱验证）
+	}
+
+	// 4. 持久化（新建 or 覆盖更新）
 	if err := h.userRepo.Save(ctx, u); err != nil {
 		return err
 	}
 
-	// 6. 生成验证码并存 Redis
+	// 5. 生成验证码并存 Redis
 	code, err := generateVerificationCode()
 	if err != nil {
 		return shared.Internal("生成验证码失败", err)
@@ -132,16 +150,39 @@ func (h *RegisterUserHandler) Handle(ctx context.Context, in RegisterUserInput) 
 		log.Error().Err(err).Msg("存储验证码失败")
 	}
 
-	// 7. 发送验证邮件（失败不阻塞注册）
+	// 6. 发送验证邮件（失败不阻塞注册）
 	if err := h.emailSender.SendVerificationCode(ctx, email.String(), code); err != nil {
 		log.Warn().Err(err).Str("email", email.String()).Msg("发送验证邮件失败")
 	}
 
-	// 8. 发布事件
+	// 7. 发布事件
 	if events := u.PullEvents(); len(events) > 0 {
 		_ = h.bus.Publish(ctx, events)
 	}
 
+	return nil
+}
+
+// checkUsernameAvailable 校验 username 未被「其他已验证用户」占用
+//
+// 覆盖未验证账号时调用：允许占用其他未验证死号的 username，但不能撞已验证用户的。
+func (h *RegisterUserHandler) checkUsernameAvailable(ctx context.Context, username user.Username, excludeID shared.ID) error {
+	holder, err := h.userRepo.FindByUsername(ctx, username)
+	if err != nil && !shared.IsDomainError(err, shared.CodeNotFound) {
+		return err
+	}
+	if holder == nil {
+		return nil // 无人占用
+	}
+	// 占用者是当前正在覆盖的用户自己 → 允许
+	if holder.GetID() == excludeID {
+		return nil
+	}
+	// 占用者已验证 → 不可占用
+	if holder.EmailVerified() {
+		return user.ErrUsernameExists
+	}
+	// 占用者是另一个未验证死号 → 允许覆盖其 username（注册流程以 email 为准）
 	return nil
 }
 
