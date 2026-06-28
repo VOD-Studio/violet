@@ -126,9 +126,7 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
                             disabled={updateRole.isPending}
                         />
                         {errors.description && (
-                            <p className="text-destructive text-sm">
-                                {errors.description.message}
-                            </p>
+                            <p className="text-destructive text-sm">{errors.description.message}</p>
                         )}
                     </div>
 

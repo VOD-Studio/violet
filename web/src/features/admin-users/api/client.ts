@@ -62,7 +62,10 @@ export const updateUserRole = async (id: string, data: UpdateUserRoleRequest): P
 /**
  * 修改用户状态
  */
-export const updateUserStatus = async (id: string, data: UpdateUserStatusRequest): Promise<void> => {
+export const updateUserStatus = async (
+    id: string,
+    data: UpdateUserStatusRequest,
+): Promise<void> => {
     return apiPatch<void>(`/admin/users/${id}/status`, data);
 };
 
@@ -78,6 +81,8 @@ export const batchUpdateStatus = async (
 /**
  * 批量修改用户角色
  */
-export const batchUpdateRole = async (data: BatchUpdateRoleRequest): Promise<BatchUpdateResponse> => {
+export const batchUpdateRole = async (
+    data: BatchUpdateRoleRequest,
+): Promise<BatchUpdateResponse> => {
     return apiPost<BatchUpdateResponse>("/admin/users/batch/role", data);
 };

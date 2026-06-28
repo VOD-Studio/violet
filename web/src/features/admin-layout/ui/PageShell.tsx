@@ -27,9 +27,7 @@ export function PageShell({ description, action, children }: PageShellProps) {
         <div className="space-y-6">
             {/* 副标题和操作区 */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                {description && (
-                    <p className="text-muted-foreground text-sm">{description}</p>
-                )}
+                {description && <p className="text-muted-foreground text-sm">{description}</p>}
                 {action && <div className="flex items-center gap-2">{action}</div>}
             </div>
             {/* 页面内容 */}

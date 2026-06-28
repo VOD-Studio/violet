@@ -66,18 +66,12 @@ function AdminPermissionsPage() {
     ];
 
     return (
-        <PageShell
-            title="权限管理"
-            description="查看系统所有权限定义"
-        >
+        <PageShell title="权限管理" description="查看系统所有权限定义">
             <div className="space-y-6">
                 {/* 权限分组展示 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {Object.entries(groupedPermissions).map(([group, perms]) => (
-                        <div
-                            key={group}
-                            className="bg-card rounded-lg border p-4 space-y-2"
-                        >
+                        <div key={group} className="bg-card rounded-lg border p-4 space-y-2">
                             <div className="flex items-center justify-between">
                                 <h3 className="font-semibold text-sm uppercase">{group}</h3>
                                 <Badge variant="secondary">{perms.length}</Badge>

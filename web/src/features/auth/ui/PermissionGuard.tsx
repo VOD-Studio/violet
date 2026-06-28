@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
-import { useHasAllPermissions, useHasAnyPermission, useHasPermission } from "../hooks/usePermissions";
+import {
+    useHasAllPermissions,
+    useHasAnyPermission,
+    useHasPermission,
+} from "../hooks/usePermissions";
 
 /**
  * PermissionGuardProps - 权限守卫组件属性
@@ -51,19 +55,13 @@ export function PermissionGuard({
     children,
 }: PermissionGuardProps) {
     // 单个权限检查
-    const hasSinglePermission = useHasPermission(
-        typeof permission === "string" ? permission : ""
-    );
+    const hasSinglePermission = useHasPermission(typeof permission === "string" ? permission : "");
 
     // 多个权限检查（满足任一）
-    const hasAnyPermission = useHasAnyPermission(
-        Array.isArray(permission) ? permission : []
-    );
+    const hasAnyPermission = useHasAnyPermission(Array.isArray(permission) ? permission : []);
 
     // 多个权限检查（需要全部满足）
-    const hasAllPermissions = useHasAllPermissions(
-        Array.isArray(permission) ? permission : []
-    );
+    const hasAllPermissions = useHasAllPermissions(Array.isArray(permission) ? permission : []);
 
     // 确定是否有权限
     let hasPermission = false;

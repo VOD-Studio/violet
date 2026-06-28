@@ -119,7 +119,8 @@ export function RolePermissionsDialog({
                         const selectedCount = groupCodes.filter((code) =>
                             selectedCodes.has(code),
                         ).length;
-                        const allSelected = groupCodes.length > 0 && selectedCount === groupCodes.length;
+                        const allSelected =
+                            groupCodes.length > 0 && selectedCount === groupCodes.length;
                         const someSelected = selectedCount > 0 && selectedCount < groupCodes.length;
 
                         return (
@@ -131,7 +132,11 @@ export function RolePermissionsDialog({
                                             id={`group-${group}`}
                                             checked={allSelected}
                                             onCheckedChange={() => handleToggleGroup(group)}
-                                            className={someSelected ? "data-[state=checked]:bg-primary/50" : ""}
+                                            className={
+                                                someSelected
+                                                    ? "data-[state=checked]:bg-primary/50"
+                                                    : ""
+                                            }
                                         />
                                         <Label
                                             htmlFor={`group-${group}`}

@@ -112,9 +112,7 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
                             disabled={createRole.isPending}
                         />
                         {errors.description && (
-                            <p className="text-destructive text-sm">
-                                {errors.description.message}
-                            </p>
+                            <p className="text-destructive text-sm">{errors.description.message}</p>
                         )}
                     </div>
 
