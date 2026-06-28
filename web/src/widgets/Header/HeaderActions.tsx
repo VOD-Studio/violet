@@ -72,9 +72,14 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
                     </Button>
                 </>
             ) : (
-                <Button variant="ghost" size="sm" asChild>
-                    <Link to="/login">登录</Link>
-                </Button>
+                <>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link to="/register">注册</Link>
+                    </Button>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link to="/login">登录</Link>
+                    </Button>
+                </>
             )}
         </div>
     );

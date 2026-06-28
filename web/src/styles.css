@@ -4,6 +4,7 @@
 @theme {
   --animate-blob: blob 7s infinite;
   --animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
+  --animate-caret-blink: caret-blink 1s ease infinite;
 
   /* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
   /* bg-background / text-foreground / bg-primary / border-border 等 */
@@ -113,6 +114,11 @@
 
 @keyframes nexus-shimmer {
   100% { transform: translateX(100%); }
+}
+
+@keyframes caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 body {

@@ -1,23 +1,33 @@
 import { authKeys } from "@features/auth/api/keys";
 import { useLogin } from "@features/auth/api/mutations";
 import { fetchCsrfToken } from "@features/auth/api/queries";
-import type { LoginRequest } from "@features/auth/model/types";
+import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";
-import { createFileRoute, useNavigate, useRouteContext, useSearch } from "@tanstack/react-router";
+import {
+    createFileRoute,
+    Link,
+    useNavigate,
+    useRouteContext,
+    useSearch,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 /**
  * loginSearchSchema - 登录页 URL 查询参数
  *
- * redirect: 登录成功后跳转的目标路径，默认回到首页。
+ * - redirect: 登录成功后跳转的目标路径，默认回到首页。
+ * - email: 预填邮箱（注册/找回密码成功后跳转时传入，省去用户重复输入）。
  */
 const loginSearchSchema = z.object({
     redirect: z.string().optional().catch("/"),
+    email: z.string().optional().catch(""),
 });
 
 /**
@@ -41,12 +51,19 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-    const { redirect } = useSearch({ from: "/login" });
+    const { redirect, email: prefilledEmail } = useSearch({ from: "/login" });
     const navigate = useNavigate();
     const { queryClient } = useRouteContext({ from: "/login" });
 
-    const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
-    const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
+    const {
+        register: registerField,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<LoginFormData>({
+        resolver: zodResolver(loginSchema),
+        defaultValues: { email: prefilledEmail ?? "", password: "" },
+    });
+
     const [csrfToken, setCsrfToken] = useState<string>("");
     const login = useLogin(csrfToken);
 
@@ -68,23 +85,8 @@ function LoginPage() {
         };
     }, []);
 
-    const validate = (): boolean => {
-        const next: typeof errors = {};
-        if (!form.email || !/^\S+@\S+\.\S+$/.test(form.email)) {
-            next.email = "请输入有效的邮箱地址";
-        }
-        if (!form.password || form.password.length < 8) {
-            next.password = "密码至少 8 位";
-        }
-        setErrors(next);
-        return Object.keys(next).length === 0;
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!validate()) return;
-
-        login.mutate(form, {
+    const onSubmit = handleSubmit((data) => {
+        login.mutate(data, {
             onSuccess: async () => {
                 toast.success("登录成功");
                 const target = redirect || "/";
@@ -111,7 +113,7 @@ function LoginPage() {
                 toast.error(msg);
             },
         });
-    };
+    });
 
     return (
         <div className="container mx-auto flex flex-1 items-center justify-center px-4 py-16">
@@ -121,19 +123,18 @@ function LoginPage() {
                     <p className="mt-2 text-sm text-muted-foreground">请输入邮箱和密码访问后台</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={onSubmit} className="space-y-4">
                     <div className="space-y-1">
                         <Label htmlFor="email">邮箱</Label>
                         <Input
                             id="email"
                             type="email"
                             placeholder="you@example.com"
-                            value={form.email}
-                            onChange={(e) => setForm({ ...form, email: e.target.value })}
                             aria-invalid={!!errors.email}
+                            {...registerField("email")}
                         />
                         {errors.email ? (
-                            <p className="text-xs text-destructive">{errors.email}</p>
+                            <p className="text-xs text-destructive">{errors.email.message}</p>
                         ) : null}
                     </div>
 
@@ -143,13 +144,27 @@ function LoginPage() {
                             id="password"
                             type="password"
                             placeholder="••••••••"
-                            value={form.password}
-                            onChange={(e) => setForm({ ...form, password: e.target.value })}
                             aria-invalid={!!errors.password}
+                            {...registerField("password")}
                         />
                         {errors.password ? (
-                            <p className="text-xs text-destructive">{errors.password}</p>
+                            <p className="text-xs text-destructive">{errors.password.message}</p>
                         ) : null}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                        <Link
+                            to="/register"
+                            className="text-muted-foreground hover:text-foreground"
+                        >
+                            没有账号？注册
+                        </Link>
+                        <Link
+                            to="/forgot-password"
+                            className="text-muted-foreground hover:text-foreground"
+                        >
+                            忘记密码？
+                        </Link>
                     </div>
 
                     <Button
