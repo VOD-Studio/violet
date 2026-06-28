@@ -126,8 +126,12 @@ func (h *UpdateRoleHandler) Handle(ctx context.Context, in UpdateRoleInput) erro
 		}
 	}
 
-	// 3. 更新描述
-	rl.UpdateDescription(in.Description)
+	// 3. 更新描述（内置角色守卫：UpdateDescription 现在返回 error）
+	if in.Description != "" {
+		if err := rl.UpdateDescription(in.Description); err != nil {
+			return err
+		}
+	}
 
 	// 4. 持久化
 	_, err = h.roleRepo.Save(ctx, rl)
@@ -226,8 +230,10 @@ func (h *ReplaceRolePermissionsHandler) Handle(ctx context.Context, in ReplaceRo
 		}
 	}
 
-	// 3. 聚合方法（记录事件）
-	rl.ReplacePermissions(in.PermissionCodes)
+	// 3. 聚合方法（内置角色守卫 + 记录事件）
+	if err := rl.ReplacePermissions(in.PermissionCodes); err != nil {
+		return err
+	}
 
 	// 4. 持久化权限关联
 	if err := h.roleRepo.SavePermissions(ctx, in.RoleID, in.PermissionCodes); err != nil {

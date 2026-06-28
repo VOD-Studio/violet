@@ -115,6 +115,8 @@ func (r Role) IsAdmin() bool {
 }
 
 // IsSuperAdmin 是否为超级管理员
+//
+// 用于权限守卫：superadmin 拥有所有权限、不可被普通管理员降级/删除。
 func (r Role) IsSuperAdmin() bool {
 	return r == RoleSuperAdmin
 }

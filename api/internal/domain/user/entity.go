@@ -185,6 +185,13 @@ func (u *User) ChangePassword(newHash PasswordHash) {
 	u.RecordEvent(NewUserPasswordChanged(u.GetID()))
 }
 
+// ChangeUsername 修改用户名
+//
+// 值对象校验由调用方在 ParseUsername 完成，此处仅赋值并更新时间戳。
+func (u *User) ChangeUsername(name Username) {
+	u.username = name
+}
+
 // ChangeRole 修改角色
 //
 // 校验角色合法性，保证聚合内 role 始终是有效枚举值。
@@ -253,6 +260,9 @@ func (u *User) AvatarURL() string { return u.avatarURL }
 func (u *User) Bio() string { return u.bio }
 
 func (u *User) Role() Role { return u.role }
+
+// IsSuperAdmin 是否为超级管理员（便捷方法，权限守卫常用）
+func (u *User) IsSuperAdmin() bool { return u.role.IsSuperAdmin() }
 
 func (u *User) EmailVerified() bool { return u.emailVerified }
 

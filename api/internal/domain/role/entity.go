@@ -174,8 +174,15 @@ func (r *Role) Rename(newName RoleName) error {
 }
 
 // UpdateDescription 更新角色描述
-func (r *Role) UpdateDescription(desc string) {
+// UpdateDescription 更新角色描述
+//
+// 内置角色（user/admin/superadmin）禁止修改描述，保证系统角色定义稳定。
+func (r *Role) UpdateDescription(desc string) error {
+	if r.name.IsBuiltin() {
+		return ErrCannotModifyBuiltin
+	}
 	r.description = desc
+	return nil
 }
 
 // Grant 授予角色一个权限点
@@ -197,13 +204,19 @@ func (r *Role) Revoke(permissionCode string) {
 
 // ReplacePermissions 用新的权限集合完全替换当前权限
 //
+// 内置角色（user/admin/superadmin）禁止替换权限：superadmin 通配放行由中间件保证，
+// admin/user 的权限应通过受控方式调整，避免被普通管理员篡改导致权限体系崩塌。
 // 记录 RolePermissionsChanged 事件。
-func (r *Role) ReplacePermissions(codes []string) {
+func (r *Role) ReplacePermissions(codes []string) error {
+	if r.name.IsBuiltin() {
+		return ErrCannotModifyBuiltin
+	}
 	r.permissions = make(map[string]struct{}, len(codes))
 	for _, code := range codes {
 		r.permissions[code] = struct{}{}
 	}
 	r.RecordEvent(NewRolePermissionsChanged(r.roleID))
+	return nil
 }
 
 // HasPermission 角色是否拥有指定权限点

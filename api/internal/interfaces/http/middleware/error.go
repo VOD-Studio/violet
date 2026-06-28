@@ -16,3 +16,8 @@ import (
 func GetUserIDFromContext(r *http.Request) string {
 	return middleware.GetUserID(r.Context())
 }
+
+// GetUserRoleFromContext 从 request context 获取认证后的用户角色
+func GetUserRoleFromContext(r *http.Request) string {
+	return middleware.GetUserRole(r.Context())
+}

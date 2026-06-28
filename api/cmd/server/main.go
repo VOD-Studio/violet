@@ -24,6 +24,7 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 	appshared "blog-api/internal/application/shared"
 	infraemail "blog-api/internal/infrastructure/email"
+	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
@@ -102,6 +103,10 @@ func main() {
 
 	// 邮件发送：devMode 下打印验证码明文到日志，方便开发期联调（无需配置 Resend）。
 	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
+
+	// 权限检查服务：RequirePermission 中间件依赖。superadmin 通配放行，
+	// 其他角色按 role_permissions 表判断（带 5min 内存缓存）。
+	permissionChecker := service.NewPermissionService(gormrepo.NewRoleRepository(gormDB), 0)
 
 	// 事件总线：当前无异步事件订阅者，用 NoopEventBus 占位（非 nil），
 	// 避免 RegisterUserHandler.Publish 在 nil bus 上触发 panic。
@@ -351,18 +356,28 @@ func main() {
 			r.Get("/stats/views", statsContainer.StatsHandler.GetViewTrends) // 浏览量趋势
 
 			r.Get("/settings", settingsContainer.SettingsHandler.GetSettings)    // 获取站点设置
-			r.Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
+			r.With(middleware.RequirePermission(permissionChecker, "settings:update")).
+				Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
 
 			// 用户管理（DDD userAdminContainer）
-			r.Get("/users", userAdminContainer.UserAdminHandler.ListUsers)                       // 用户列表
-			r.Get("/users/{id}", userAdminContainer.UserAdminHandler.GetUserDetail)              // 用户详情
-			r.Post("/users", userAdminContainer.UserAdminHandler.CreateUser)                     // 创建用户
-			r.Put("/users/{id}", userAdminContainer.UserAdminHandler.UpdateUser)                 // 编辑用户
-			r.Delete("/users/{id}", userAdminContainer.UserAdminHandler.DeleteUser)              // 删除用户
-			r.Patch("/users/{id}/role", userAdminContainer.UserAdminHandler.UpdateUserRole)      // 修改用户角色
-			r.Patch("/users/{id}/status", userAdminContainer.UserAdminHandler.UpdateUserStatus)  // 启用/禁用用户
-			r.Post("/users/batch-status", userAdminContainer.UserAdminHandler.BatchUpdateStatus) // 批量启用/禁用用户
-			r.Post("/users/batch-role", userAdminContainer.UserAdminHandler.BatchUpdateRole)     // 批量修改用户角色
+			r.With(middleware.RequirePermission(permissionChecker, "user:list")).
+				Get("/users", userAdminContainer.UserAdminHandler.ListUsers) // 用户列表
+			r.With(middleware.RequirePermission(permissionChecker, "user:list")).
+				Get("/users/{id}", userAdminContainer.UserAdminHandler.GetUserDetail) // 用户详情
+			r.With(middleware.RequirePermission(permissionChecker, "user:update-role")).
+				Post("/users", userAdminContainer.UserAdminHandler.CreateUser) // 创建用户
+			r.With(middleware.RequirePermission(permissionChecker, "user:update-role")).
+				Put("/users/{id}", userAdminContainer.UserAdminHandler.UpdateUser) // 编辑用户
+			r.With(middleware.RequirePermission(permissionChecker, "user:ban")).
+				Delete("/users/{id}", userAdminContainer.UserAdminHandler.DeleteUser) // 删除用户
+			r.With(middleware.RequirePermission(permissionChecker, "user:update-role")).
+				Patch("/users/{id}/role", userAdminContainer.UserAdminHandler.UpdateUserRole) // 修改用户角色
+			r.With(middleware.RequirePermission(permissionChecker, "user:ban")).
+				Patch("/users/{id}/status", userAdminContainer.UserAdminHandler.UpdateUserStatus) // 启用/禁用用户
+			r.With(middleware.RequirePermission(permissionChecker, "user:ban")).
+				Post("/users/batch-status", userAdminContainer.UserAdminHandler.BatchUpdateStatus) // 批量启用/禁用用户
+			r.With(middleware.RequirePermission(permissionChecker, "user:update-role")).
+				Post("/users/batch-role", userAdminContainer.UserAdminHandler.BatchUpdateRole) // 批量修改用户角色
 
 			// 权限管理
 			r.Get("/permissions", roleH.ListPermissions) // 获取所有权限定义
@@ -375,13 +390,17 @@ func main() {
 				r.Delete("/permissions/{code}", roleH.DeletePermission) // 删除权限
 			})
 
-			// 角色管理
-			r.Get("/roles", roleH.ListRoles)                                // 角色列表
-			r.Get("/roles/{id}", roleH.GetRole)                             // 角色详情（含权限）
-			r.Post("/roles", roleH.CreateRole)                              // 创建角色
-			r.Patch("/roles/{id}", roleH.UpdateRole)                        // 更新角色
-			r.Delete("/roles/{id}", roleH.DeleteRole)                       // 删除角色
-			r.Patch("/roles/{id}/permissions", roleH.UpdateRolePermissions) // 设置角色权限
+			// 角色管理（均需 role:manage 权限）
+			r.Get("/roles", roleH.ListRoles) // 角色列表（查看不限）
+			r.Get("/roles/{id}", roleH.GetRole) // 角色详情（查看不限）
+			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
+				Post("/roles", roleH.CreateRole) // 创建角色
+			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
+				Patch("/roles/{id}", roleH.UpdateRole) // 更新角色
+			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
+				Delete("/roles/{id}", roleH.DeleteRole) // 删除角色
+			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
+				Patch("/roles/{id}/permissions", roleH.UpdateRolePermissions) // 设置角色权限
 
 			// 操作日志
 			r.Get("/logs", auditContainer.AuditHandler.ListLogs)                 // 操作日志列表

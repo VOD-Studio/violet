@@ -31,6 +31,8 @@ type AdminUserStore interface {
 	List(ctx context.Context, filter ListFilter, page, limit int) (ListResult, error)
 	// FindByID 按 ID 查找（admin 不限条件）
 	FindByID(ctx context.Context, id shared.ID) (*user.User, error)
+	// FindByIDs 按 ID 批量查找（批量操作前的安全校验用）
+	FindByIDs(ctx context.Context, ids []shared.ID) ([]*user.User, error)
 	// Save 保存用户（upsert）
 	Save(ctx context.Context, u *user.User) error
 	// Delete 删除用户

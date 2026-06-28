@@ -135,6 +135,7 @@ func toRoleDTO(rl *role.Role) approle.RoleDTO {
 		ID:              rl.RoleID(),
 		Name:            rl.Name().String(),
 		Description:     rl.Description(),
+		IsBuiltin:       rl.Name().IsBuiltin(),
 		PermissionCodes: rl.PermissionCodes(),
 		CreatedAt:       rl.CreatedAt().Format(time.RFC3339),
 	}

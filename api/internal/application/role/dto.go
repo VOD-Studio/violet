@@ -17,6 +17,7 @@ type RoleDTO struct {
 	ID              int32    `json:"id"`
 	Name            string   `json:"name"`
 	Description     string   `json:"description"`
+	IsBuiltin       bool     `json:"is_builtin"`              // 是否内置角色（不可删/不可改名/不可改权限）
 	PermissionCodes []string `json:"permission_codes"`
 	CreatedAt       string   `json:"created_at"`
 	UserCount       int64    `json:"user_count,omitempty"` // 仅列表查询时填充

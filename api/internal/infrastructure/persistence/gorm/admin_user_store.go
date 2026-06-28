@@ -74,6 +74,30 @@ func (s *AdminUserStore) FindByID(ctx context.Context, id domainshared.ID) (*dom
 	return toDomain(po)
 }
 
+// FindByIDs 按 ID 批量查找（批量操作前的安全校验用）
+func (s *AdminUserStore) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*domainuser.User, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	uuids := make([]string, 0, len(ids))
+	for _, id := range ids {
+		uuids = append(uuids, id.UUID().String())
+	}
+	var pos []newmodel.User
+	if err := s.db.WithContext(ctx).Where("id IN ?", uuids).Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("批量查询用户失败", err)
+	}
+	users := make([]*domainuser.User, 0, len(pos))
+	for i := range pos {
+		u, err := toDomain(pos[i])
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
 // Save 保存用户
 func (s *AdminUserStore) Save(ctx context.Context, u *domainuser.User) error {
 	po := toPO(u)
