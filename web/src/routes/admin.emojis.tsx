@@ -43,7 +43,7 @@ function EmojisPage() {
     const [emojisOpen, setEmojisOpen] = useState(false);
     const [activeGroupId, setActiveGroupId] = useState(0);
 
-    const deleteGroup = useDeleteEmojiGroup(deleteConfirm.group?.id ?? 0);
+    const deleteGroup = useDeleteEmojiGroup();
 
     const stats = useMemo(() => {
         if (!groups) return { total: 0, enabled: 0, disabled: 0 };
@@ -78,16 +78,19 @@ function EmojisPage() {
 
     function confirmDeleteGroup() {
         if (!deleteConfirm.group) return;
-        deleteGroup.mutate(undefined, {
-            onSuccess: () => {
-                toast.success("分组已删除");
-                setDeleteConfirm({ open: false, group: null });
+        deleteGroup.mutate(
+            { id: deleteConfirm.group.id },
+            {
+                onSuccess: () => {
+                    toast.success("分组已删除");
+                    setDeleteConfirm({ open: false, group: null });
+                },
+                onError: (err) => {
+                    toast.error(err.message);
+                    setDeleteConfirm({ open: false, group: null });
+                },
             },
-            onError: (err) => {
-                toast.error(err.message);
-                setDeleteConfirm({ open: false, group: null });
-            },
-        });
+        );
     }
 
     function handleManageEmojis(groupId: number) {

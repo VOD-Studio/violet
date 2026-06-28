@@ -36,7 +36,7 @@ export function EmojiGroupFormDialog({
     groupCount,
 }: EmojiGroupFormDialogProps) {
     const createGroup = useCreateEmojiGroup();
-    const updateGroup = useUpdateEmojiGroup(editingGroup?.id ?? 0, editingGroup?.name);
+    const updateGroup = useUpdateEmojiGroup();
 
     const [form, setForm] = useState<GroupFormState>({
         name: "",
@@ -74,13 +74,16 @@ export function EmojiGroupFormDialog({
         };
 
         if (editingGroup) {
-            updateGroup.mutate(body, {
-                onSuccess: () => {
-                    toast.success("分组已更新");
-                    onOpenChange(false);
+            updateGroup.mutate(
+                { id: editingGroup.id, name: editingGroup.name, body },
+                {
+                    onSuccess: () => {
+                        toast.success("分组已更新");
+                        onOpenChange(false);
+                    },
+                    onError: (err) => toast.error(err.message),
                 },
-                onError: (err) => toast.error(err.message),
-            });
+            );
         } else {
             createGroup.mutate(body, {
                 onSuccess: () => {
@@ -121,7 +124,11 @@ export function EmojiGroupFormDialog({
                             value={form.source}
                             onValueChange={(value) => setForm((p) => ({ ...p, source: value }))}
                         >
-                            <SelectTrigger id="group-source" className="mt-1.5">
+                            <SelectTrigger
+                                id="group-source"
+                                className="mt-1.5 w-full"
+                                onPointerDown={(e) => e.stopPropagation()}
+                            >
                                 <SelectValue placeholder="选择来源" />
                             </SelectTrigger>
                             <SelectContent>

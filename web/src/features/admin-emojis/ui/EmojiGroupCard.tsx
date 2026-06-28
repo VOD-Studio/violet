@@ -37,7 +37,7 @@ interface EmojiGroupCardProps {
  * 内部用 useUpdateEmojiGroup 切换启用状态，编辑/删除/管理表情走回调交父层。
  */
 export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: EmojiGroupCardProps) {
-    const updateGroup = useUpdateEmojiGroup(group.id, group.name);
+    const updateGroup = useUpdateEmojiGroup();
     const sourceColor = SOURCE_COLORS[group.source] ?? SOURCE_COLORS.custom;
     const sourceLabel = SOURCE_LABELS[group.source] ?? group.source;
     const isDisabled = !group.is_enabled;
@@ -45,7 +45,7 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 
     const handleToggle = () => {
         updateGroup.mutate(
-            { is_enabled: !group.is_enabled },
+            { id: group.id, name: group.name, body: { is_enabled: !group.is_enabled } },
             {
                 onSuccess: () => toast.success(group.is_enabled ? "已禁用" : "已启用"),
                 onError: (err) => toast.error(err.message),

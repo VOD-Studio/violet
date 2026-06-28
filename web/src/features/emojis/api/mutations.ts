@@ -35,22 +35,18 @@ export const useCreateEmojiGroup = () => {
  *
  * 调后端 PATCH /admin/emojis/groups/{id}，部分更新分组字段。
  * 失效后台列表、公开列表，以及该分组按名查询的缓存。
- *
- * @param id 分组 ID
- * @param name 分组名称，用于invalidate 按名查询缓存，可选
+ * id/name 在 mutate({ id, name, body }) 时传入（模式 B，避免可变参数绑死 hook）。
  */
-export const useUpdateEmojiGroup = (id: number, name?: string) => {
+export const useUpdateEmojiGroup = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (body: UpdateEmojiGroupRequest) =>
+        mutationFn: ({ id, body }: { id: number; body: UpdateEmojiGroupRequest; name?: string }) =>
             apiPatch<null>(`/admin/emojis/groups/${id}`, body),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
-            qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
+        onSuccess: async (_data, { name }) => {
+            await qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
+            await qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
             if (name) {
-                qc.invalidateQueries({
-                    queryKey: emojiKeys.publicGroupByName(name),
-                });
+                await qc.invalidateQueries({ queryKey: emojiKeys.publicGroupByName(name) });
             }
         },
     });
@@ -78,14 +74,12 @@ export const useBatchUpdateGroupStatus = () => {
  * useDeleteEmojiGroup - 删除表情分组
  *
  * 调后端 DELETE /admin/emojis/groups/{id}，分组内表情一并级联删除。
- * 失效后台与公开列表。
- *
- * @param id 分组 ID
+ * 失效后台与公开列表。id 在 mutate({ id }) 时传入（模式 B）。
  */
-export const useDeleteEmojiGroup = (id: number) => {
+export const useDeleteEmojiGroup = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: () => apiDelete<null>(`/admin/emojis/groups/${id}`),
+        mutationFn: ({ id }: { id: number }) => apiDelete<null>(`/admin/emojis/groups/${id}`),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: emojiKeys.adminGroupList() });
             qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
@@ -98,18 +92,15 @@ export const useDeleteEmojiGroup = (id: number) => {
  *
  * 调后端 POST /admin/emojis/groups/{id}/emojis，新建表情记录。
  * 失效该分组内表情列表与公开列表，公开侧需同步新表情。
- *
- * @param groupId 分组 ID
+ * groupId 在 mutate({ groupId, body }) 时传入（模式 B）。
  */
-export const useCreateEmoji = (groupId: number) => {
+export const useCreateEmoji = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (body: CreateEmojiRequest) =>
+        mutationFn: ({ groupId, body }: { groupId: number; body: CreateEmojiRequest }) =>
             apiPost<CreateResourceResult>(`/admin/emojis/groups/${groupId}/emojis`, body),
-        onSuccess: () => {
-            qc.invalidateQueries({
-                queryKey: emojiKeys.adminGroupEmojis(groupId),
-            });
+        onSuccess: (_data, { groupId }) => {
+            qc.invalidateQueries({ queryKey: emojiKeys.adminGroupEmojis(groupId) });
             qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
         },
     });
@@ -137,22 +128,17 @@ export const useUploadEmoji = () =>
  * useUpdateEmoji - 更新表情
  *
  * 调后端 PATCH /admin/emojis/emojis/{id}，更新表情字段。
- * 失效该表情所属分组的表情列表与公开列表。groupId 用于精准 invalidate，
- * 未提供时仅失效公开列表，后台分组内列表由列表级 invalidate 兜底。
- *
- * @param id 表情 ID
- * @param groupId 所属分组 ID，可选，用于精准失效后台分组内列表
+ * 失效该表情所属分组的表情列表与公开列表。id/groupId 在 mutate
+ * ({ id, groupId, body }) 时传入（模式 B），避免可变 id 绑死 hook。
  */
-export const useUpdateEmoji = (id: number, groupId?: number) => {
+export const useUpdateEmoji = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (body: UpdateEmojiRequest) =>
+        mutationFn: ({ id, body }: { id: number; groupId?: number; body: UpdateEmojiRequest }) =>
             apiPatch<null>(`/admin/emojis/emojis/${id}`, body),
-        onSuccess: () => {
+        onSuccess: (_data, { groupId }) => {
             if (groupId) {
-                qc.invalidateQueries({
-                    queryKey: emojiKeys.adminGroupEmojis(groupId),
-                });
+                qc.invalidateQueries({ queryKey: emojiKeys.adminGroupEmojis(groupId) });
             }
             qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
         },
@@ -163,20 +149,17 @@ export const useUpdateEmoji = (id: number, groupId?: number) => {
  * useDeleteEmoji - 删除表情
  *
  * 调后端 DELETE /admin/emojis/emojis/{id}，删除单条表情记录。
- * 失效该表情所属分组的表情列表与公开列表。
- *
- * @param id 表情 ID
- * @param groupId 所属分组 ID，可选，用于精准失效后台分组内列表
+ * 失效该表情所属分组的表情列表与公开列表。id/groupId 在
+ * mutate({ id, groupId }) 时传入（模式 B）。
  */
-export const useDeleteEmoji = (id: number, groupId?: number) => {
+export const useDeleteEmoji = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: () => apiDelete<null>(`/admin/emojis/emojis/${id}`),
-        onSuccess: () => {
+        mutationFn: ({ id }: { id: number; groupId?: number }) =>
+            apiDelete<null>(`/admin/emojis/emojis/${id}`),
+        onSuccess: (_data, { groupId }) => {
             if (groupId) {
-                qc.invalidateQueries({
-                    queryKey: emojiKeys.adminGroupEmojis(groupId),
-                });
+                qc.invalidateQueries({ queryKey: emojiKeys.adminGroupEmojis(groupId) });
             }
             qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
         },

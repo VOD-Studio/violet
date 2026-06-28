@@ -1,12 +1,9 @@
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
-import { emojiKeys } from "@features/emojis/api/keys";
-import { useCreateEmoji, useUpdateEmoji } from "@features/emojis/api/mutations";
+import { useCreateEmoji, useDeleteEmoji, useUpdateEmoji } from "@features/emojis/api/mutations";
 import { useGroupEmojisAdmin } from "@features/emojis/api/queries";
 import type { Emoji, EmojiUploadResult } from "@features/emojis/model/types";
-import { apiDelete } from "@shared/api/request";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@shared/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/tabs";
-import { useQueryClient } from "@tanstack/react-query";
 import { Images, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,12 +23,12 @@ interface EmojiManageDialogProps {
  *
  * Tabs 切换管理与上传。管理侧含搜索、批量选择删除、添加文本表情、
  * 单条编辑删除；上传侧批量上传图片并立即落库。
- * 删除走 apiDelete 逐条调用并失效缓存，以支持批量 id 场景。
  */
 export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDialogProps) {
-    const qc = useQueryClient();
     const { data: emojis = [] } = useGroupEmojisAdmin(groupId);
-    const createEmoji = useCreateEmoji(groupId);
+    const createEmoji = useCreateEmoji();
+    const updateEmoji = useUpdateEmoji();
+    const deleteEmoji = useDeleteEmoji();
 
     const [activeTab, setActiveTab] = useState("manage");
     const [searchQuery, setSearchQuery] = useState("");
@@ -56,33 +53,41 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
         textContent: "",
     });
 
-    const updateEmoji = useUpdateEmoji(editDialog.emoji?.id ?? 0, groupId);
+    // 内层弹窗（编辑/删除确认）打开时，阻止外层被 Radix 嵌套关闭事件连关。
+    // 批次 2 将用互斥状态彻底根治，此处为同步精简守卫。
+    const handleOpenChange = (o: boolean) => {
+        if (!o && (editDialog.open || deleteConfirm.open)) return;
+        onOpenChange(o);
+    };
 
     const handleSearchChange = (value: string) => {
         setSearchQuery(value);
         setCurrentPage(1);
     };
 
-    function handleUpload(result: EmojiUploadResult) {
+    const handleUpload = (result: EmojiUploadResult) => {
         const name = result.url.split("/").pop() ?? "emoji";
         createEmoji.mutate(
-            { name, url: result.url },
+            { groupId, body: { name, url: result.url } },
             {
                 onSuccess: () => toast.success("表情已添加"),
                 onError: (err) => toast.error(err.message),
             },
         );
-    }
+    };
 
-    function handleAddTextEmoji() {
+    const handleAddTextEmoji = () => {
         if (!textForm.name.trim() || !textForm.textContent.trim()) {
             toast.error("请填写名称和文本内容");
             return;
         }
         createEmoji.mutate(
             {
-                name: textForm.name.trim(),
-                text_content: textForm.textContent.trim(),
+                groupId,
+                body: {
+                    name: textForm.name.trim(),
+                    text_content: textForm.textContent.trim(),
+                },
             },
             {
                 onSuccess: () => {
@@ -93,18 +98,18 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
                 onError: (err) => toast.error(err.message),
             },
         );
-    }
+    };
 
-    function startEdit(emoji: Emoji) {
+    const startEdit = (emoji: Emoji) => {
         setEditDialog({ open: true, emoji });
         setEditForm({
             name: emoji.name,
             url: emoji.url,
             textContent: emoji.text_content ?? "",
         });
-    }
+    };
 
-    function handleSaveEdit() {
+    const handleSaveEdit = () => {
         if (!editDialog.emoji) return;
         if (!editForm.name.trim()) {
             toast.error("请填写名称");
@@ -112,9 +117,13 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
         }
         updateEmoji.mutate(
             {
-                name: editForm.name.trim(),
-                url: editForm.url || undefined,
-                text_content: editForm.textContent || undefined,
+                id: editDialog.emoji.id,
+                groupId,
+                body: {
+                    name: editForm.name.trim(),
+                    url: editForm.url || undefined,
+                    text_content: editForm.textContent || undefined,
+                },
             },
             {
                 onSuccess: () => {
@@ -124,27 +133,27 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
                 onError: (err) => toast.error(err.message),
             },
         );
-    }
+    };
 
-    function handleDelete(id: number) {
+    const handleDelete = (id: number) => {
         setDeleteConfirm({ open: true, ids: [id] });
-    }
+    };
 
-    function handleBatchDelete() {
+    const handleBatchDelete = () => {
         if (selectedIds.size === 0) {
             toast.error("请先选择要删除的表情");
             return;
         }
         setDeleteConfirm({ open: true, ids: Array.from(selectedIds) });
-    }
+    };
 
-    async function confirmDelete() {
+    const confirmDelete = async () => {
         setDeleting(true);
         let ok = 0;
         let fail = 0;
         for (const id of deleteConfirm.ids) {
             try {
-                await apiDelete<null>(`/admin/emojis/emojis/${id}`);
+                await deleteEmoji.mutateAsync({ id, groupId });
                 ok++;
             } catch {
                 fail++;
@@ -156,9 +165,7 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
         setDeleteConfirm({ open: false, ids: [] });
         setSelectedIds(new Set());
         setIsSelectMode(false);
-        qc.invalidateQueries({ queryKey: emojiKeys.adminGroupEmojis(groupId) });
-        qc.invalidateQueries({ queryKey: emojiKeys.publicGroupList() });
-    }
+    };
 
     const toggleSelect = (id: number) => {
         setSelectedIds((prev) => {
@@ -193,7 +200,7 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
 
     return (
         <>
-            <Dialog open={open} onOpenChange={onOpenChange}>
+            <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogContent className="flex max-h-[85vh] max-w-xl flex-col sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
@@ -201,9 +208,11 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
                             管理表情
                             {emojis.length > 0 && (
                                 <span className="text-sm font-normal text-muted-foreground">
-                                    共 {emojis.length} 个{imageCount > 0 && ` (图片 ${imageCount}`}
-                                    {imageCount > 0 && textCount > 0 && ", "}
-                                    {textCount > 0 && `文本 ${textCount})`}
+                                    共 {emojis.length} 个{(imageCount > 0 || textCount > 0) && " ("}
+                                    {imageCount > 0 && `图片 ${imageCount}`}
+                                    {imageCount > 0 && textCount > 0 && "，"}
+                                    {textCount > 0 && `文本 ${textCount}`}
+                                    {(imageCount > 0 || textCount > 0) && ")"}
                                 </span>
                             )}
                         </DialogTitle>
