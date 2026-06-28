@@ -44,7 +44,7 @@ export function DataTableFooter({
                     >
                         <SelectTrigger
                             size="sm"
-                            className="h-7 w-[88px] text-xs"
+                            className="h-7 w-[112px] text-xs"
                             aria-label="每页条数"
                         >
                             <SelectValue />
