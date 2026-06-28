@@ -3,6 +3,7 @@ import { AccountInfoSection } from "@features/profile/ui/AccountInfoSection";
 import { AvatarSection } from "@features/profile/ui/AvatarSection";
 import { PasswordSection } from "@features/profile/ui/PasswordSection";
 import { ProfileInfoSection } from "@features/profile/ui/ProfileInfoSection";
+import { isSessionActive } from "@shared/api/session";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 /**
@@ -43,7 +44,9 @@ const ProfilePage = () => {
  */
 export const Route = createFileRoute("/profile/")({
     beforeLoad: ({ context, location }) => {
-        if (!context.auth.isAuthenticated) {
+        // 仅当网络判定未登录 且 客户端确实无活跃会话时才跳登录。
+        // token 过期的瞬态失败（sessionActive 仍 true）不踢人，原地等 refresh/弹窗恢复。
+        if (!context.auth.isAuthenticated && !isSessionActive()) {
             throw redirect({
                 to: "/login",
                 search: { redirect: location.href },

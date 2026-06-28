@@ -19,6 +19,15 @@ import (
 // 设置 1 小时避免每次请求都重写 Cookie，同时不让 Cookie 比 JWT 活得太久
 const AuthCookieMaxAge = 3600
 
+// RefreshCookiePath refresh token Cookie 的 Path。
+//
+// 必须匹配 refresh/logout 路由的实际挂载路径（chi 以 full path 匹配 cookie）：
+//   r.Route("/api/v1", ...) → v1.Route("/auth", ...) → /api/v1/auth/*
+// Cookie Path 是 URL 路径前缀，浏览器仅当请求路径等于或位于该前缀下时才发送。
+// 历史上误写为 "/auth"，导致请求 /api/v1/auth/refresh 时浏览器不附带 refresh
+// cookie，后端读到"缺少 refresh_token"。Set 与 Clear 必须用同一值，否则无法清除。
+const RefreshCookiePath = "/api/v1/auth"
+
 // SetAuthTokenCookies 下发 access + refresh 两个 HttpOnly Cookie
 //
 // 同时下发一个非 HttpOnly 的 CSRF double-submit Cookie（供前端读取回传 X-CSRF-Token）。
@@ -45,10 +54,11 @@ func SetAuthTokenCookies(w http.ResponseWriter, access, refresh, csrfToken strin
 	http.SetCookie(w, accessCookie)
 
 	// refresh token：HttpOnly（JS 不可读）+ 长 MaxAge（与 JWTRefreshTokenTTL 对齐）
+	// Path 限定 /api/v1/auth：仅 refresh/logout 路由会收到，缩小暴露面。
 	refreshCookie := &http.Cookie{
 		Name:     cfg.RefreshName,
 		Value:    refresh,
-		Path:     "/auth", // 仅 /auth/refresh 与 /auth/logout 可发，缩小暴露面
+		Path:     RefreshCookiePath,
 		Domain:   cfg.Domain,
 		MaxAge:   int((168 * time.Hour).Seconds()), // 7 天，与默认 refresh TTL 一致
 		Secure:   cfg.Secure,
@@ -85,7 +95,7 @@ func ClearAuthCookies(w http.ResponseWriter, cfg config.CookieConfig) {
 		httpOnly bool
 	}{
 		{cfg.AccessName, "/", true},
-		{cfg.RefreshName, "/auth", true},
+		{cfg.RefreshName, RefreshCookiePath, true},
 		{cfg.CSRFName, "/", false},
 	} {
 		http.SetCookie(w, &http.Cookie{

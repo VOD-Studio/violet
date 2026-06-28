@@ -15,8 +15,10 @@ import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
 import { authKeys } from "@/features/auth/api/keys";
+import { LoginDialog } from "@/features/auth/ui/LoginDialog";
 import type { RouterContext } from "../router";
 import AppProvider from "../shared/api/provider";
+import { markSessionActive } from "../shared/api/session";
 import { getCurrentUser } from "../shared/server/session";
 
 import appCss from "../styles.css?url";
@@ -32,6 +34,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         const user = await getCurrentUser();
         // 预填 react-query me 缓存，组件层 useMe 在 SSR 首屏可命中
         context.queryClient.setQueryData(authKeys.me(), user);
+        // 客户端同步 sessionActive：SSR 已确认登录的用户，hydrate 后立即把
+        // 响应式 session 标志置 true，让 Header 等订阅者与守卫的客户端逻辑生效。
+        // （markSessionActive 内部已有 SSR 守卫，这里直接调用安全）
+        if (user && typeof window !== "undefined") {
+            markSessionActive();
+        }
         return {
             auth: {
                 isAuthenticated: user !== null,
@@ -93,6 +101,7 @@ function RootComponent() {
             )}
             <MusicPlayer />
             <CommandPalette />
+            <LoginDialog />
             <CustomCursor />
             <TanStackDevtools
                 config={{ position: "bottom-right" }}

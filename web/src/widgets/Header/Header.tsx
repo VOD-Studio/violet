@@ -1,4 +1,5 @@
 import { useMusicUIStore } from "@features/music/model/ui-store";
+import { useSessionStore } from "@shared/api/session";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useMe } from "@/features/auth/api/queries";
@@ -21,7 +22,12 @@ interface HeaderProps {
  * sticky + backdrop-blur + 1px 极细边框（dark 霓虹 / light 灰）。
  */
 const Header = ({ isAuthenticated }: HeaderProps) => {
-    const { data: user } = useMe({ enabled: isAuthenticated });
+    // 登录态来源合并：SSR 静态快照（首屏）OR 客户端响应式 sessionActive（登录/登出瞬间）。
+    // 单用 isAuthenticated 会导致登录成功后 useMe 仍 enabled:false，读不到新写入的 me，
+    // Header 不刷新成"个人中心"。sessionActive 是 Zustand 响应式，登录/登出立即触发 re-render。
+    const sessionActive = useSessionStore((s) => s.sessionActive);
+    const enabled = isAuthenticated || sessionActive;
+    const { data: user } = useMe({ enabled });
     const openMusic = useMusicUIStore((s) => s.open);
     const handleAction = (action: string) => {
         if (action === "open-music") openMusic();

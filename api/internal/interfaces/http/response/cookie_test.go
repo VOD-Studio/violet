@@ -49,7 +49,8 @@ func TestSetAuthTokenCookies_AccessCookieIsHttpOnly(t *testing.T) {
 	assert.Equal(t, "/", c.Path)
 }
 
-// TestSetAuthTokenCookies_RefreshCookieScopedToAuth refresh cookie Path 限定 /auth，
+// TestSetAuthTokenCookies_RefreshCookieScopedToAuth refresh cookie Path 限定 /api/v1/auth，
+// 匹配 refresh/logout 路由的实际挂载路径（chi 以 full path 匹配 cookie），
 // 缩小暴露面（仅 refresh 与 logout 端点会收到）
 func TestSetAuthTokenCookies_RefreshCookieScopedToAuth(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -59,7 +60,7 @@ func TestSetAuthTokenCookies_RefreshCookieScopedToAuth(t *testing.T) {
 
 	c := findCookie(t, w.Result().Cookies(), "mimo_refresh")
 	assert.True(t, c.HttpOnly, "refresh cookie 必须 HttpOnly")
-	assert.Equal(t, "/auth", c.Path, "refresh cookie Path 必须限定 /auth")
+	assert.Equal(t, RefreshCookiePath, c.Path, "refresh cookie Path 必须匹配 refresh/logout 路由前缀")
 	assert.Equal(t, "refresh-token", c.Value)
 }
 
@@ -130,8 +131,8 @@ func TestClearAuthCookies_RemovesAllThree(t *testing.T) {
 	}
 }
 
-// TestClearAuthCookies_PathMatchesSet refresh cookie Path 必须是 /auth，
-// 与 SetAuthTokenCookies 一致，否则浏览器不会真正删除
+// TestClearAuthCookies_PathMatchesSet refresh cookie Path 必须与 SetAuthTokenCookies 一致，
+// 否则浏览器不会真正删除
 func TestClearAuthCookies_PathMatchesSet(t *testing.T) {
 	cfg := testCookieCfg()
 

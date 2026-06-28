@@ -1,8 +1,10 @@
 import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
+import { requestReplay, setReplayer } from "./auth-gate";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";
 import { ApiError } from "./error";
 import { triggerRefresh } from "./refresh-queue";
+import { scheduleRefresh, setRefresher } from "./token-scheduler";
 import type { Envelope, Pagination } from "./types";
 
 // 让 axios 配置对象携带 __retried 标记，防止 401 自动 refresh 死循环。
@@ -11,6 +13,16 @@ import type { Envelope, Pagination } from "./types";
 declare module "axios" {
     interface AxiosRequestConfig {
         __retried?: boolean;
+        /**
+         * 跳过 authGate（弹窗+挂起重放）的 401 处理。
+         *
+         * 用于「身份探活」类请求（getCurrentUser、useMe 的 fetchMe）：
+         * 它们只需要一个干净的通过/失败信号来决定 UI 状态，
+         * 不应触发登录弹窗或把请求挂起——否则登出后导航重跑 getCurrentUser
+         * 会撞 401 → 弹窗 + beforeLoad 永久挂起。
+         * 设为 true 时，401 走普通错误归一化直接 reject，由调用方 try/catch 兜底。
+         */
+        __skipAuthGate?: boolean;
     }
 }
 
@@ -125,17 +137,33 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
             // 401：触发 refresh（去重队列）后重放原请求一次
             // __retried 标记防止 refresh 返回 401 时无限循环
             if (status === 401 && err.config && !err.config.__retried) {
-                const ok = await triggerRefresh(async () => {
+                const expiresIn = await triggerRefresh(async () => {
                     try {
-                        await client.post("/auth/refresh", {}, { __retried: true });
-                        return true;
+                        const res = await client.post("/auth/refresh", {}, { __retried: true });
+                        // 解包 envelope 拿 expires_in：成功响应已被 success interceptor
+                        // 拆成 { data } 形态，data 即 TokenResponse
+                        const data = (res.data as UnpackedResponse).data as
+                            | { expires_in?: number }
+                            | undefined;
+                        return data?.expires_in ?? null;
                     } catch {
-                        return false;
+                        return null;
                     }
                 });
-                if (ok) {
+                if (expiresIn) {
+                    // 响应式 refresh 成功：用新 expires_in 重新 arm 主动刷新定时器
+                    scheduleRefresh(expiresIn);
                     err.config.__retried = true;
                     return client.request(err.config);
+                }
+                // refresh 失败。
+                // __skipAuthGate（身份探活请求 getCurrentUser/fetchMe）：不走弹窗挂起，
+                // fall through 到下方归一化抛 401，由调用方 try/catch 处理。
+                // 否则交给 authGate 挂起原请求 + 弹出登录弹窗，
+                // 用户重登成功后 flush() 用新 cookie 重放，取消则 rejectAll()。
+                if (!err.config.__skipAuthGate) {
+                    // SSR 端未注册 replayer，requestReplay 内部会直接抛 401 兜底。
+                    return requestReplay(err.config);
                 }
             }
 
@@ -179,5 +207,31 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
  *
  * 客户端全局共享，浏览器自动管理 cookie，无跨请求串扰问题。
  * SSR 不使用此变量——每请求通过 createHttpClient({ forwardedCookie }) 独立创建。
+ *
+ * 仅客户端单例向 authGate 注册 replayer：
+ * refresh 失败后弹窗登录，重放请求复用此实例（带新 cookie）。
+ * SSR 实例不注册，requestReplay 会直接抛 401 兜底（让 SSR 调用方处理）。
  */
 export const httpClient = createHttpClient();
+// 仅客户端注册 replayer：SSR 期间不应弹窗/挂起重放。
+// 若在 SSR 也注册，getCurrentUser 的 /auth/me 401 → /auth/refresh 401 链路会
+// 把原请求推入 authGate 挂起队列等待 flush()，而 SSR 永远不会 flush → 渲染死锁。
+// SSR 不注册时，requestReplay 直接 reject(401)，由 getCurrentUser 的 try/catch 兜成 null。
+if (typeof window !== "undefined") {
+    setReplayer((config) => httpClient.request(config));
+    // 主动刷新实现：定时器到期时调用，单飞复用 triggerRefresh 防并发。
+    // 成功返回新 expires_in 供调度器重新 arm；失败返回 null（交由响应式兜底）。
+    setRefresher(() =>
+        triggerRefresh(async () => {
+            try {
+                const r = await httpClient.post("/auth/refresh", {}, { __retried: true });
+                const data = (r.data as UnpackedResponse).data as
+                    | { expires_in?: number }
+                    | undefined;
+                return data?.expires_in ?? null;
+            } catch {
+                return null;
+            }
+        }),
+    );
+}

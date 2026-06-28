@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -14,6 +13,7 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 	authquery "blog-api/internal/application/auth/query"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
+	"blog-api/internal/domain/user"
 	"blog-api/internal/interfaces/http/response"
 )
 
@@ -175,7 +175,10 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if refreshToken == "" {
-		response.RespondError(w, r, fmt.Errorf("缺少 refresh_token"))
+		// 没带 refresh token = 会话不存在/已过期，属鉴权失败而非服务端错误。
+		// 必须返回 401（ErrInvalidCredentials）以触发前端的降级链路（弹窗重登），
+		// 而非 500——裸 error 会被 RespondError 兜底成 INTERNAL_ERROR。
+		response.RespondError(w, r, user.ErrInvalidCredentials)
 		return
 	}
 

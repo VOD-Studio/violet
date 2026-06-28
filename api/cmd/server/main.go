@@ -190,10 +190,13 @@ func main() {
 
 		// CSRF 防护（仅 state-changing 方法校验；GET/HEAD/OPTIONS 免验）
 		// 与 cookie 鉴权方案配套：浏览器自动携带 cookie，必须额外校验 X-CSRF-Token
-		// 防止跨站请求伪造。豁免列表仅放确实不需要 CSRF 的 POST 端点（当前为空）。
+		// 防止跨站请求伪造。
+		// 豁免 /auth/refresh：refresh token 走 HttpOnly Cookie，本身即为
+		// proof-of-possession，无法被 CSRF 攻击盗用；且前端 cookie 写入偶发
+		// 失败会导致 403 误伤自动刷新，故豁免。其他 POST 仍需双重提交校验。
 		// 注意：chi 要求所有 Use() 必须在任何路由注册之前调用，故先注册中间件。
 		// GET /openapi.json 经 CSRF 中间件亦免验（仅校验 state-changing 方法），符合其「无需 CSRF」意图。
-		v1.Use(middleware.CSRF(cfg.Cookie, nil))
+		v1.Use(middleware.CSRF(cfg.Cookie, []string{"/api/v1/auth/refresh"}))
 
 		// OpenAPI 文档端点（无需 CSRF/鉴权，仅返回结构描述，供 Apifox 导入）
 		v1.Get("/openapi.json", openapi.Handler())
@@ -215,7 +218,9 @@ func main() {
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/register", authH.Register)
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/verify-email", authH.VerifyEmail)
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/login", authH.Login)
-			r.With(middleware.AuthRateLimit(redisClient)).Post("/refresh", authH.Refresh)
+			// refresh 用独立桶（30/min）：前端并发请求自动刷新时可能短时多次调用，
+			// 与防爆破的 auth 桶（5/min）隔离，避免误伤。
+			r.With(middleware.RefreshRateLimit(redisClient)).Post("/refresh", authH.Refresh)
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/forgot-password", authH.ForgotPassword)
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/reset-password", authH.ResetPassword)
 

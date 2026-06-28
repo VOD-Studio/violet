@@ -1,6 +1,8 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { CSRF_HEADER, getCSRFToken } from "@shared/api/csrf";
 import { apiPatch, apiPost } from "@shared/api/request";
+import { clearSessionActive, markSessionActive } from "@shared/api/session";
+import { clearRefresh, scheduleRefresh } from "@shared/api/token-scheduler";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
     ChangePasswordRequest,
@@ -59,8 +61,13 @@ export const useLogin = (csrfToken?: string) => {
                 token ? { headers: { [CSRF_HEADER]: token } } : undefined,
             );
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             qc.invalidateQueries({ queryKey: authKeys.me() });
+            // 登录成功：标记会话活跃（守卫据此不再因瞬态失败踢人）+ arm 主动刷新定时器
+            markSessionActive();
+            if (data?.expires_in) {
+                scheduleRefresh(data.expires_in);
+            }
         },
     });
 };
@@ -123,9 +130,17 @@ export const useLogout = () => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: () => apiPost<MessageResponse>("/auth/logout"),
-        onSuccess: () => {
+        onSuccess: async () => {
+            // 登出后清会话状态。注意：不能用 invalidateQueries——它会触发 refetch，
+            // 而 cookie 已被后端清除 → fetchMe 必然 401 → 进 401 拦截器 → 尝试 refresh →
+            // refresh 也 401 → authGate 弹出登录窗（bug：登出反而触发登录弹窗）。
+            // 正确做法：取消进行中的 me 查询 + 直接置缓存 undefined（不发任何请求），
+            // useMe 订阅者立即翻回未登录态，Header 同步刷新。
+            await qc.cancelQueries({ queryKey: authKeys.me() });
             qc.setQueryData<UserDTO>(authKeys.me(), undefined);
-            qc.invalidateQueries({ queryKey: authKeys.me() });
+            // 登出：停止主动刷新 + 清除会话活跃标志（守卫据此允许踢人/跳登录）
+            clearRefresh();
+            clearSessionActive();
         },
     });
 };

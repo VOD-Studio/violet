@@ -74,6 +74,16 @@ func AuthRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 	return RateLimit("auth", redisClient, time.Minute, 5)
 }
 
+// RefreshRateLimit 刷新令牌接口限流（每分钟 30 次）。
+//
+// refresh 走独立 key，避免与登录/注册共用的 "auth" 桶互相挤占：
+// 前端并发请求触发自动刷新时可能短时多次调用，若与防爆破的 5/min 共桶
+// 会被 429 误伤。refresh 由 HttpOnly Cookie proof-of-possession 保护，
+// 无爆破风险，故配额放宽。
+func RefreshRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimit("refresh", redisClient, time.Minute, 30)
+}
+
 // UploadRateLimit 上传类接口限流（每分钟 30 次，防资源 DoS）
 func UploadRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 	return RateLimit("upload", redisClient, time.Minute, 30)

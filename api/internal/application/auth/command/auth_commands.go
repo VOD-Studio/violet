@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -305,13 +306,20 @@ func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) 
 	}
 
 	// 3. 重新查询用户（获取最新角色）
+	//    token 已通过签名校验，若 subject 不是合法 ID，说明是失效/异常凭证，
+	//    应映射为 401（触发前端重登）而非 500。
 	id, err := shared.ParseID(claims.UserID)
 	if err != nil {
-		return nil, shared.Internal("无效的用户 ID", err)
+		return nil, user.ErrInvalidCredentials
 	}
 	u, err := h.userRepo.FindByID(ctx, id)
 	if err != nil {
-		return nil, err
+		// 用户已被删除（token 仍有效但用户不存在）→ 401 强制重登；
+		// 仅真实 DB 故障才视为 500。
+		if errors.Is(err, user.ErrNotFound) {
+			return nil, user.ErrInvalidCredentials
+		}
+		return nil, shared.Internal("查询用户失败", err)
 	}
 
 	// 4. 生成新 token pair
