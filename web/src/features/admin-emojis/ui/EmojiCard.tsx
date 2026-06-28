@@ -26,8 +26,8 @@ export function EmojiCard({
     onEdit,
     onDelete,
 }: EmojiCardProps) {
-    const baseClass = `group relative rounded-lg border p-1 transition-all duration-200 ${
-        isSelected ? "ring-2 ring-primary ring-offset-1" : "hover:border-primary/50 hover:shadow-sm"
+    const baseClass = `group relative rounded-lg border-2 p-1 transition-all duration-200 ${
+        isSelected ? "border-primary" : "border-transparent hover:border-primary/50 hover:shadow-sm"
     } ${isSelectMode ? "cursor-pointer" : ""}`;
 
     const body: ReactNode = (

@@ -1,4 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/shared/ui/button";
@@ -12,17 +14,9 @@ import {
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/shared/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Switch } from "@/shared/ui/switch";
-import { Loader2 } from "lucide-react";
 import { useCreateUser } from "../api/queries";
-import { useEffect } from "react";
 
 /**
  * 创建用户表单验证规则
@@ -160,8 +154,17 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                         {/* 角色 */}
                         <div className="space-y-2">
                             <Label htmlFor="role">角色</Label>
-                            <Select value={role} onValueChange={(value) => setValue("role", value as "user" | "admin" | "superadmin")}>
-                                <SelectTrigger id="role" className="w-full">
+                            <Select
+                                value={role}
+                                onValueChange={(value) =>
+                                    setValue("role", value as "user" | "admin" | "superadmin")
+                                }
+                            >
+                                <SelectTrigger
+                                    id="role"
+                                    className="w-full"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

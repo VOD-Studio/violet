@@ -42,7 +42,7 @@ export function EmojiToolbar({
 }: EmojiToolbarProps) {
     return (
         <>
-            <div className="mb-4 flex shrink-0 items-center gap-2">
+            <div className="mb-4 flex shrink-0 items-center gap-2 px-1 pt-1">
                 <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -85,12 +85,12 @@ export function EmojiToolbar({
             </div>
 
             {showAddText && (
-                <div className="mb-4 flex shrink-0 gap-2 rounded-lg border bg-muted/50 p-3">
+                <div className="mb-4 flex shrink-0 items-center gap-2 rounded-lg border bg-muted/50 p-3">
                     <Input
                         placeholder="名称"
                         value={textForm.name}
                         onChange={(e) => onTextFormChange({ ...textForm, name: e.target.value })}
-                        className="w-32"
+                        className="h-9 w-32"
                     />
                     <Input
                         placeholder="文本内容，如 (・∀・)"
@@ -98,13 +98,13 @@ export function EmojiToolbar({
                         onChange={(e) =>
                             onTextFormChange({ ...textForm, textContent: e.target.value })
                         }
-                        className="flex-1"
+                        className="h-9 flex-1"
                     />
-                    <Button size="sm" onClick={onAddTextEmoji}>
+                    <Button className="h-9 shrink-0" onClick={onAddTextEmoji}>
                         <Check className="mr-1 size-4" />
                         添加
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={onToggleAddText}>
+                    <Button variant="ghost" className="h-9 shrink-0" onClick={onToggleAddText}>
                         <X className="size-4" />
                     </Button>
                 </div>

@@ -1,4 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/shared/ui/button";
@@ -12,17 +14,9 @@ import {
 } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/shared/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Switch } from "@/shared/ui/switch";
-import { Loader2 } from "lucide-react";
 import { useUpdateUser } from "../api/queries";
-import { useEffect } from "react";
 import type { AdminUserDTO } from "../model/types";
 
 /**
@@ -36,11 +30,7 @@ const editUserSchema = z.object({
         .max(32, "用户名最多 32 个字符")
         .regex(/^[a-zA-Z0-9_-]+$/, "用户名只能包含字母、数字、下划线和连字符"),
     email: z.string().email("请输入有效的邮箱地址"),
-    password: z
-        .string()
-        .min(6, "密码至少 6 位")
-        .optional()
-        .or(z.literal("")),
+    password: z.string().min(6, "密码至少 6 位").optional().or(z.literal("")),
     role: z.enum(["user", "admin", "superadmin"]),
     is_active: z.boolean(),
 });
@@ -200,7 +190,11 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                                     setValue("role", value as "user" | "admin" | "superadmin")
                                 }
                             >
-                                <SelectTrigger id="edit-role" className="w-full">
+                                <SelectTrigger
+                                    id="edit-role"
+                                    className="w-full"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
