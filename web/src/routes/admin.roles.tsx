@@ -113,7 +113,7 @@ function AdminRolesPage() {
                     <div className="flex items-center gap-2">
                         <PermissionGuard permission="role:manage">
                             <Button
-                                size="sm"
+                                size="icon-sm"
                                 variant="ghost"
                                 onClick={() => handleConfigurePermissions(row)}
                                 disabled={isBuiltin}
@@ -124,7 +124,7 @@ function AdminRolesPage() {
                         </PermissionGuard>
                         <PermissionGuard permission="role:manage">
                             <Button
-                                size="sm"
+                                size="icon-sm"
                                 variant="ghost"
                                 onClick={() => handleEdit(row)}
                                 disabled={isBuiltin}
@@ -135,7 +135,7 @@ function AdminRolesPage() {
                         </PermissionGuard>
                         <PermissionGuard permission="role:manage">
                             <Button
-                                size="sm"
+                                size="icon-sm"
                                 variant="ghost"
                                 onClick={() => handleDelete(row)}
                                 disabled={isBuiltin || deleteRole.isPending}
@@ -151,7 +151,18 @@ function AdminRolesPage() {
     ];
 
     return (
-        <PageShell title="角色管理" description="管理系统角色和权限配置">
+        <PageShell
+            title="角色管理"
+            description="管理系统角色和权限配置"
+            action={
+                <PermissionGuard permission="role:manage">
+                    <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                        <Plus className="size-3.5" />
+                        创建角色
+                    </Button>
+                </PermissionGuard>
+            }
+        >
             <DataTable<RoleDTO>
                 data={roles}
                 columns={columns}
@@ -168,14 +179,6 @@ function AdminRolesPage() {
                 caption="角色列表"
                 emptyTitle="暂无角色"
                 emptyDescription="还没有创建任何角色，点击上方按钮创建第一个角色"
-                toolbar={
-                    <PermissionGuard permission="role:manage">
-                        <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-                            <Plus className="size-3.5 mr-1" />
-                            创建角色
-                        </Button>
-                    </PermissionGuard>
-                }
             />
 
             {/* 创建角色对话框 */}

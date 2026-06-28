@@ -140,8 +140,8 @@ function EmojisPage() {
             title="表情管理"
             description="管理表情分组和表情"
             action={
-                <Button onClick={handleCreateGroup}>
-                    <Plus className="mr-1.5 size-4" />
+                <Button size="sm" onClick={handleCreateGroup}>
+                    <Plus className="size-3.5" />
                     创建分组
                 </Button>
             }
