@@ -80,14 +80,14 @@ export function DataTable<T>({
         }
     }, [hiddenKeys, storageKey]);
 
-    function toggleColumn(key: string) {
+    const toggleColumn = (key: string) => {
         setHiddenKeys((prev) => {
             const next = new Set(prev);
             if (next.has(key)) next.delete(key);
             else next.add(key);
             return next;
         });
-    }
+    };
 
     // —— 行选择状态（受控优先，否则内部自管；均跨页保持） ——
     const [internalSelected, setInternalSelected] = useState<Set<string>>(new Set());
@@ -102,7 +102,7 @@ export function DataTable<T>({
     const allSelected = pageIds.length > 0 && selectedOnPage.length === pageIds.length;
     const someSelected = selectedOnPage.length > 0 && !allSelected;
 
-    function toggleSelectAll() {
+    const toggleSelectAll = () => {
         const next = new Set(selected);
         if (allSelected || someSelected) {
             for (const id of pageIds) next.delete(id);
@@ -110,14 +110,14 @@ export function DataTable<T>({
             for (const id of pageIds) next.add(id);
         }
         setSelected(next);
-    }
+    };
 
-    function toggleRow(id: string) {
+    const toggleRow = (id: string) => {
         const next = new Set(selected);
         if (next.has(id)) next.delete(id);
         else next.add(id);
         setSelected(next);
-    }
+    };
 
     // —— 列宽状态（localStorage 持久化） ——
     const widthStorageKey = storageKey ? `${storageKey}-widths` : undefined;
