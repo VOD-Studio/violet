@@ -1,7 +1,8 @@
 import { Button } from "@shared/ui/button";
-import { AlertCircle, Loader2, Upload, X } from "lucide-react";
+import { AlertCircle, FileText, Film, Loader2, Music, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useChunkedUpload } from "@/features/upload/hooks/use-chunked-upload";
 
 /** 上传结果至少含可访问 url，列表缩略图据此预览 */
 export interface UploadResult {
@@ -14,15 +15,21 @@ interface UploadItem<T> {
     id: string;
     file: File;
     status: ItemStatus;
+    progress: number; // 0-100
     result?: T;
     error?: string;
 }
 
 interface UploaderProps<T extends UploadResult> {
-    /** 上传单文件，由调用方绑定具体接口 */
-    upload: (file: File) => Promise<T>;
+    /**
+     * 自定义上传单文件函数（后门）。
+     * 传了则用自定义逻辑（如表情/头像专用接口），不传则走默认分片上传（秒传+进度）。
+     */
+    upload?: (file: File, onProgress?: (percent: number) => void) => Promise<T>;
     /** 单文件成功回调，调用方据此落库 */
     onUploaded?: (result: T) => void;
+    /** 用途分类（仅默认分片上传模式生效），默认 material */
+    purpose?: string;
     /** 接受的 MIME，逗号分隔 */
     accept?: string;
     /** 单文件最大字节 */
@@ -41,12 +48,16 @@ const DEFAULT_MAX_SIZE = 10 * 1024 * 1024;
 /**
  * Uploader - 通用文件上传组件
  *
- * 拖拽与点击多选，逐个调用调用方注入的 upload 函数，列表展示每项状态。
- * 不绑定具体上传接口，由调用方传入 upload 与 onUploaded 处理业务落库。
+ * 拖拽与点击多选，支持两种模式：
+ * - **默认分片上传**（不传 upload）：SHA-256 秒传 + 断点续传 + 分片进度条，适合大文件/通用素材
+ * - **自定义上传**（传 upload）：调用方绑定具体接口（如表情上传），向后兼容
+ *
+ * 列表展示每项状态与进度，文件类型自动识别图标。
  */
 export function Uploader<T extends UploadResult>({
-    upload,
+    upload: customUpload,
     onUploaded,
+    purpose = "material",
     accept = "image/*",
     maxSize = DEFAULT_MAX_SIZE,
     maxFiles = 20,
@@ -59,28 +70,39 @@ export function Uploader<T extends UploadResult>({
     const [items, setItems] = useState<UploadItem<T>[]>([]);
     const [isDragActive, setIsDragActive] = useState(false);
 
+    // 默认分片上传能力（customUpload 存在时不使用）
+    const { uploadFile: chunkedUpload } = useChunkedUpload({ purpose });
+
     const updateItem = useCallback((id: string, updates: Partial<UploadItem<T>>) => {
         setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...updates } : it)));
     }, []);
 
     const uploadOne = useCallback(
         (item: UploadItem<T>) => {
-            updateItem(item.id, { status: "uploading" });
-            upload(item.file)
-                .then((result) => {
-                    updateItem(item.id, { status: "done", result });
-                    onUploaded?.(result);
-                    toast.success(`「${item.file.name}」上传成功`);
-                })
-                .catch((err: unknown) => {
-                    updateItem(item.id, {
-                        status: "error",
-                        error: err instanceof Error ? err.message : "上传失败",
-                    });
-                    toast.error("上传失败，请重试");
+            updateItem(item.id, { status: "uploading", progress: 0 });
+
+            const onProgress = (percent: number) => {
+                updateItem(item.id, { progress: percent });
+            };
+
+            const run = customUpload
+                ? customUpload(item.file, onProgress)
+                : (chunkedUpload(item.file, (p) => onProgress(p.percent)) as unknown as Promise<T>);
+
+            run.then((result) => {
+                updateItem(item.id, { status: "done", result, progress: 100 });
+                onUploaded?.(result);
+                toast.success(`「${item.file.name}」上传成功`);
+            }).catch((err: unknown) => {
+                updateItem(item.id, {
+                    status: "error",
+                    progress: 0,
+                    error: err instanceof Error ? err.message : "上传失败",
                 });
+                toast.error("上传失败，请重试");
+            });
         },
-        [upload, updateItem, onUploaded],
+        [customUpload, chunkedUpload, updateItem, onUploaded],
     );
 
     const acceptFiles = useCallback(
@@ -95,6 +117,7 @@ export function Uploader<T extends UploadResult>({
                 id: `upload-${idRef.current++}`,
                 file,
                 status: "uploading",
+                progress: 0,
             }));
             setItems((prev) => [...prev, ...newItems]);
             for (const it of newItems) uploadOne(it);
@@ -125,7 +148,8 @@ export function Uploader<T extends UploadResult>({
 
     return (
         <div className={`space-y-4 ${className ?? ""}`}>
-            <div
+            <button
+                type="button"
                 onDrop={handleDrop}
                 onDragOver={(e) => {
                     e.preventDefault();
@@ -133,7 +157,7 @@ export function Uploader<T extends UploadResult>({
                 }}
                 onDragLeave={() => setIsDragActive(false)}
                 onClick={() => inputRef.current?.click()}
-                className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors ${
+                className={`flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
                     isDragActive
                         ? "border-primary bg-primary/5"
                         : "border-muted-foreground/25 hover:border-primary hover:bg-muted/50"
@@ -158,7 +182,7 @@ export function Uploader<T extends UploadResult>({
                         ) : null}
                     </div>
                 )}
-            </div>
+            </button>
 
             {items.length > 0 && (
                 <div className="space-y-2">
@@ -172,7 +196,7 @@ export function Uploader<T extends UploadResult>({
                             </Button>
                         )}
                     </div>
-                    <div className="max-h-[200px] space-y-2 overflow-y-auto">
+                    <div className="max-h-60 space-y-2 overflow-y-auto">
                         {items.map((item) => (
                             <div
                                 key={item.id}
@@ -180,10 +204,11 @@ export function Uploader<T extends UploadResult>({
                             >
                                 <div className="shrink-0">
                                     {item.status === "done" && item.result ? (
-                                        <img
-                                            src={item.result.url}
-                                            alt={item.file.name}
-                                            className="size-10 rounded object-cover"
+                                        <FileThumb
+                                            url={item.result.url}
+                                            name={item.file.name}
+                                            mime={item.file.type}
+                                            className="size-10"
                                         />
                                     ) : (
                                         <div className="flex size-10 items-center justify-center rounded bg-muted">
@@ -198,6 +223,14 @@ export function Uploader<T extends UploadResult>({
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm">{item.file.name}</p>
+                                    {item.status === "uploading" && (
+                                        <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
+                                            <div
+                                                className="h-full rounded-full bg-primary transition-all"
+                                                style={{ width: `${item.progress}%` }}
+                                            />
+                                        </div>
+                                    )}
                                     {item.status === "error" && (
                                         <p className="mt-0.5 text-xs text-destructive">
                                             {item.error}
@@ -217,6 +250,35 @@ export function Uploader<T extends UploadResult>({
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+/**
+ * FileThumb - 文件缩略图/图标
+ *
+ * 图片显示缩略图，其他类型显示对应图标。
+ */
+function FileThumb({
+    url,
+    name,
+    mime,
+    className,
+}: {
+    url: string;
+    name: string;
+    mime: string;
+    className?: string;
+}) {
+    if (mime.startsWith("image/")) {
+        return <img src={url} alt={name} className={`${className ?? ""} rounded object-cover`} />;
+    }
+    const Icon = mime.startsWith("video/") ? Film : mime.startsWith("audio/") ? Music : FileText;
+    return (
+        <div
+            className={`${className ?? ""} flex items-center justify-center rounded bg-muted text-muted-foreground`}
+        >
+            <Icon className="size-4" />
         </div>
     );
 }

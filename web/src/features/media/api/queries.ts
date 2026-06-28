@@ -6,7 +6,6 @@ import type {
     InstantCheckResult,
     MediaFile,
     MediaListQuery,
-    UploadStatus,
 } from "../model/types";
 import { adminFileKeys, mediaKeys } from "./keys";
 
@@ -57,30 +56,6 @@ export const useMediaList = (query: MediaListQuery = {}) =>
     useQuery({
         queryKey: mediaKeys.list(query),
         queryFn: () => fetchMediaList(query),
-    });
-
-/**
- * fetchUploadStatus - 调后端 GET /upload/{uploadId}/status 查询分片上传状态
- *
- * 用于断点续传场景，返回已上传分片索引列表。
- *
- * @param uploadId 上传会话 ID
- */
-export const fetchUploadStatus = async (uploadId: string): Promise<UploadStatus> =>
-    apiGet<UploadStatus>(`/upload/${uploadId}/status`);
-
-/**
- * useUploadStatus - 上传状态查询 hook
- *
- * 默认 enabled 随 uploadId 是否存在切换，避免空字符串误请求。
- *
- * @param uploadId 上传会话 ID
- */
-export const useUploadStatus = (uploadId: string) =>
-    useQuery({
-        queryKey: mediaKeys.uploadStatus(uploadId),
-        queryFn: () => fetchUploadStatus(uploadId),
-        enabled: !!uploadId,
     });
 
 // ============================================================

@@ -4,7 +4,7 @@ import type { MediaListQuery } from "../model/types";
  * mediaKeys - 媒体文件查询的 query key 工厂
  *
  * 用工厂模式集中管理 key，避免散落字符串导致缓存失效不彻底。
- * 子键按 list/detail/upload 维度组织，便于按维度 invalidate。
+ * 子键按 list/detail 维度组织，便于按维度 invalidate。
  */
 export const mediaKeys = {
     /** 媒体模块根 key */
@@ -25,14 +25,6 @@ export const mediaKeys = {
      * @param id 媒体 ID
      */
     detail: (id: string) => [...mediaKeys.details(), id] as const,
-    /** 上传会话状态维度 */
-    uploads: () => [...mediaKeys.all, "upload"] as const,
-    /**
-     * 具体上传会话状态
-     *
-     * @param uploadId 上传会话 ID
-     */
-    uploadStatus: (uploadId: string) => [...mediaKeys.uploads(), "status", uploadId] as const,
 };
 
 /**

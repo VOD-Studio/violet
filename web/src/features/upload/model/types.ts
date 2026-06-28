@@ -1,71 +1,81 @@
 /**
  * upload 模块类型定义
  *
- * 对接后端分片上传三步接口：初始化、上传分片、合并。
- * 头像场景按单分片处理，整文件作为一个 chunk。
- *
+ * 对接后端分片上传接口链路：初始化会话 → 上传分片 → 合并完成。
  * 字段来源：application/media/service.go 的 InitUploadSession 与 Merge 结果，
  * 已带 json tag，snake_case。
+ *
+ * upload 模块是项目级「上传能力」归属地：
+ * - 裸请求函数（initUpload/uploadChunk/completeUpload）
+ * - 通用分片上传 hook（useChunkedUpload，封装秒传/续传/进度）
+ * - 工具（sha256 / imageUrl）
+ * 业务侧的「资源管理」（如 media 模块的 list/delete/metadata）依赖本模块的上传能力。
  */
 
 /**
  * InitUploadRequest - 初始化上传会话请求体
  *
- * 对应后端 handler media.initUploadSession 的请求结构，
- * 字段命名 camelCase 与后端 json tag 一致。
+ * 对应后端 handler media.initUploadSession 的请求结构。
+ * fileHash/mimeType/chunkSize/purpose 均可选，不传时由后端补默认值。
  */
 export interface InitUploadRequest {
-    /** 文件名，必填 */
+    /** 文件名，必填，后端据此校验扩展名 */
     fileName: string;
-    /** 文件字节数，必填 */
+    /** 文件总大小，单位字节，必填 */
     fileSize: number;
-    /** 文件 SHA-256 哈希，命中则秒传 */
-    fileHash: string;
-    /** MIME 类型，如 image/png */
-    mimeType: string;
-    /** 单分片大小，头像场景取 fileSize */
-    chunkSize: number;
-    /** 用途标识，头像场景为 avatar */
-    purpose: string;
+    /** 文件 SHA-256 哈希，传则启用秒传或续传恢复 */
+    fileHash?: string;
+    /** MIME 类型，不传则由扩展名推断 */
+    mimeType?: string;
+    /** 单分片大小，不传则后端默认 5MB */
+    chunkSize?: number;
+    /** 用途分类，不传则默认 material */
+    purpose?: string;
 }
 
 /**
- * InitSessionResult - 初始化上传会话响应
+ * InitUploadResult - 初始化上传会话响应
  *
- * instant 为 true 时秒传命中，直接使用 url 无需再传分片；
- * 否则用 upload_id 逐片上传后合并。
+ * 三种形态：
+ * - 秒传命中：instant=true，返回 file_id 与 url
+ * - 续传恢复：upload_id 对应已有会话，uploaded_chunks 列出已上传分片
+ * - 新建会话：upload_id 为新 ID，uploaded_chunks 为空
  */
-export interface InitSessionResult {
+export interface InitUploadResult {
     /** 是否秒传命中 */
     instant: boolean;
-    /** 秒传命中时复用的已存在文件 ID */
+    /** 秒传命中时的文件 ID */
     file_id?: string;
-    /** 秒传命中时复用的文件访问 URL */
+    /** 秒传命中时的可访问 URL */
     url?: string;
-    /** 新建或续传会话 ID */
+    /** 上传会话 ID，秒传命中时省略 */
     upload_id?: string;
-    /** 单分片大小 */
+    /** 分片大小，单位字节 */
     chunk_size: number;
-    /** 总分片数，头像场景为 1 */
+    /** 总分片数 */
     total_chunks: number;
-    /** 已上传分片索引，续传时非空 */
+    /** 已上传分片索引列表，用于断点续传 */
     uploaded_chunks: number[];
 }
 
 /**
- * MergeResult - 合并分片完成上传响应
+ * CompleteUploadResult - 合并分片完成上传响应
  *
  * 对应后端 Merge 结果，返回最终文件信息。
  */
-export interface MergeResult {
+export interface CompleteUploadResult {
     /** 文件 ID */
     file_id: string;
     /** 文件访问 URL */
     url: string;
-    /** 缩略图 URL，图片类文件存在 */
+    /** 缩略图 URL，无缩略图为空串 */
     thumbnail?: string;
-    /** 图片宽度，像素 */
+    /** 图片宽度，非图片为 0 */
     width?: number;
-    /** 图片高度，像素 */
+    /** 图片高度，非图片为 0 */
     height?: number;
 }
+
+/** 向后兼容别名：旧代码用 MergeResult / InitSessionResult */
+export type MergeResult = CompleteUploadResult;
+export type InitSessionResult = InitUploadResult;

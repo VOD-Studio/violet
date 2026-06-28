@@ -1,17 +1,23 @@
-import { apiPost, apiPut } from "@shared/api/request";
-import type { InitSessionResult, InitUploadRequest, MergeResult } from "../model/types";
+/**
+ * upload 模块 API - 分片上传裸请求函数
+ *
+ * 项目级「上传能力」的底层封装，不依赖 React Query。
+ * 通用分片上传流程（秒传/续传/进度）由 useChunkedUpload hook 编排，
+ * 业务侧（头像/表情/素材）直接复用本模块的裸函数或 hook。
+ */
+import { apiDelete, apiGet, apiPost, apiPut } from "@shared/api/request";
+import type { CompleteUploadResult, InitUploadRequest, InitUploadResult } from "../model/types";
 
 /**
  * initUpload - 初始化上传会话
  *
  * 调后端 POST /upload/init，按 fileHash 判断秒传或续传。
- * 头像场景按单分片处理，chunkSize 取 fileSize，省去多分片并发。
  *
  * @param opts 文件元信息与用途
  * @returns 秒传命中时带 url，否则带 upload_id 供后续分片上传
  */
-export const initUpload = (opts: InitUploadRequest): Promise<InitSessionResult> =>
-    apiPost<InitSessionResult>("/upload/init", opts);
+export const initUpload = (opts: InitUploadRequest): Promise<InitUploadResult> =>
+    apiPost<InitUploadResult>("/upload/init", opts);
 
 /**
  * uploadChunk - 上传单个分片
@@ -41,5 +47,22 @@ export const uploadChunk = async (
  * @param uploadId 上传会话 ID
  * @returns 最终文件 ID 与访问 URL
  */
-export const completeUpload = (uploadId: string): Promise<MergeResult> =>
-    apiPost<MergeResult>(`/upload/${uploadId}/complete`);
+export const completeUpload = (uploadId: string): Promise<CompleteUploadResult> =>
+    apiPost<CompleteUploadResult>(`/upload/${uploadId}/complete`);
+
+/**
+ * cancelUpload - 取消上传，清理临时分片
+ *
+ * 调后端 DELETE /upload/{uploadId}，后端清理临时分片并删除会话。
+ */
+export const cancelUpload = (uploadId: string): Promise<void> => {
+    return apiDelete<null>(`/upload/${uploadId}`).then(() => undefined);
+};
+
+/**
+ * getUploadStatus - 查询上传会话状态（断点续传）
+ *
+ * 调后端 GET /upload/{uploadId}/status。
+ */
+export const getUploadStatus = (uploadId: string): Promise<InitUploadResult> =>
+    apiGet<InitUploadResult>(`/upload/${uploadId}/status`);
