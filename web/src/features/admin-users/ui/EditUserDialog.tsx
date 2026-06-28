@@ -1,3 +1,4 @@
+import { useAdminRoles } from "@features/admin-roles/api/queries";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -21,7 +22,9 @@ import type { AdminUserDTO } from "../model/types";
 
 /**
  * 编辑用户表单验证规则
- * 注意：密码字段可选（不修改时留空）
+ * 注意：
+ * - 密码字段可选（不修改时留空）
+ * - role 为字符串（值来自 /admin/roles 接口返回的角色 name，不再硬编码）
  */
 const editUserSchema = z.object({
     username: z
@@ -31,7 +34,7 @@ const editUserSchema = z.object({
         .regex(/^[a-zA-Z0-9_-]+$/, "用户名只能包含字母、数字、下划线和连字符"),
     email: z.string().email("请输入有效的邮箱地址"),
     password: z.string().min(6, "密码至少 6 位").optional().or(z.literal("")),
-    role: z.enum(["user", "admin", "superadmin"]),
+    role: z.string().min(1, "请选择角色"),
     is_active: z.boolean(),
 });
 
@@ -52,6 +55,8 @@ interface EditUserDialogProps {
  */
 export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps) {
     const updateUser = useUpdateUser();
+    // 动态拉取角色列表（接口返回的角色，而非硬编码），staleTime 由 useAdminRoles 控制（30min）
+    const { data: roles } = useAdminRoles();
 
     const {
         register,
@@ -93,7 +98,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
             username: string;
             email: string;
             password?: string;
-            role: "user" | "admin" | "superadmin";
+            role: string;
             is_active: boolean;
         } = {
             username: data.username,
@@ -184,12 +189,7 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                         {/* 角色 */}
                         <div className="space-y-2">
                             <Label htmlFor="edit-role">角色</Label>
-                            <Select
-                                value={role}
-                                onValueChange={(value) =>
-                                    setValue("role", value as "user" | "admin" | "superadmin")
-                                }
-                            >
+                            <Select value={role} onValueChange={(value) => setValue("role", value)}>
                                 <SelectTrigger
                                     id="edit-role"
                                     className="w-full"
@@ -198,9 +198,11 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="user">普通用户</SelectItem>
-                                    <SelectItem value="admin">管理员</SelectItem>
-                                    <SelectItem value="superadmin">超级管理员</SelectItem>
+                                    {(roles ?? []).map((r) => (
+                                        <SelectItem key={r.name} value={r.name ?? ""}>
+                                            {r.description || r.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

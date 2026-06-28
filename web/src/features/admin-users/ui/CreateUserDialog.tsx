@@ -1,3 +1,4 @@
+import { useAdminRoles } from "@features/admin-roles/api/queries";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -20,6 +21,7 @@ import { useCreateUser } from "../api/queries";
 
 /**
  * 创建用户表单验证规则
+ * role 为字符串（值来自 /admin/roles 接口返回的角色 name，不再硬编码）
  */
 const createUserSchema = z.object({
     username: z
@@ -29,7 +31,7 @@ const createUserSchema = z.object({
         .regex(/^[a-zA-Z0-9_-]+$/, "用户名只能包含字母、数字、下划线和连字符"),
     email: z.string().email("请输入有效的邮箱地址"),
     password: z.string().min(6, "密码至少 6 位"),
-    role: z.enum(["user", "admin", "superadmin"]),
+    role: z.string().min(1, "请选择角色"),
     is_active: z.boolean(),
 });
 
@@ -48,6 +50,8 @@ interface CreateUserDialogProps {
  */
 export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) {
     const createUser = useCreateUser();
+    // 动态拉取角色列表（接口返回的角色，而非硬编码）
+    const { data: roles } = useAdminRoles();
 
     const form = useForm<CreateUserForm>({
         resolver: zodResolver(createUserSchema),
@@ -154,12 +158,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                         {/* 角色 */}
                         <div className="space-y-2">
                             <Label htmlFor="role">角色</Label>
-                            <Select
-                                value={role}
-                                onValueChange={(value) =>
-                                    setValue("role", value as "user" | "admin" | "superadmin")
-                                }
-                            >
+                            <Select value={role} onValueChange={(value) => setValue("role", value)}>
                                 <SelectTrigger
                                     id="role"
                                     className="w-full"
@@ -168,9 +167,11 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="user">普通用户</SelectItem>
-                                    <SelectItem value="admin">管理员</SelectItem>
-                                    <SelectItem value="superadmin">超级管理员</SelectItem>
+                                    {(roles ?? []).map((r) => (
+                                        <SelectItem key={r.name} value={r.name ?? ""}>
+                                            {r.description || r.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

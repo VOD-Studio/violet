@@ -18,7 +18,7 @@ export interface AdminUserDTO {
     /** 邮箱 */
     email: string;
     /** 角色：user / admin / superadmin */
-    role: "user" | "admin" | "superadmin";
+    role: string;
     /** 邮箱是否已验证 */
     email_verified: boolean;
     /** 账户是否启用 */
@@ -72,7 +72,7 @@ export interface CreateUserRequest {
     /** 密码，至少 6 位 */
     password: string;
     /** 角色，缺省 user */
-    role?: "user" | "admin" | "superadmin";
+    role?: string;
     /** 是否启用，缺省 true */
     is_active?: boolean;
 }
@@ -88,7 +88,7 @@ export interface UpdateUserRequest {
     /** 密码 */
     password?: string;
     /** 角色 */
-    role?: "user" | "admin" | "superadmin";
+    role?: string;
     /** 是否启用 */
     is_active?: boolean;
 }
@@ -98,7 +98,7 @@ export interface UpdateUserRequest {
  */
 export interface UpdateUserRoleRequest {
     /** 角色 */
-    role: "user" | "admin" | "superadmin";
+    role: string;
 }
 
 /**
@@ -126,7 +126,7 @@ export interface BatchUpdateRoleRequest {
     /** 用户 ID 列表 */
     ids: string[];
     /** 角色 */
-    role: "user" | "admin" | "superadmin";
+    role: string;
 }
 
 /**

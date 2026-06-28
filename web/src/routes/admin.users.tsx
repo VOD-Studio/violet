@@ -131,7 +131,7 @@ function AdminUsers() {
         );
     };
 
-    const handleBatchChangeRole = (role: "user" | "admin" | "superadmin") => {
+    const handleBatchChangeRole = (role: string) => {
         if (selectedIds.size === 0) return;
         batchUpdateRole.mutate(
             {
@@ -296,11 +296,7 @@ function AdminUsers() {
                             <PermissionGuard permission="user:update-role">
                                 <Select
                                     value="batch-role"
-                                    onValueChange={(role) =>
-                                        handleBatchChangeRole(
-                                            role as "user" | "admin" | "superadmin",
-                                        )
-                                    }
+                                    onValueChange={(role) => handleBatchChangeRole(role)}
                                     disabled={selectedIds.size === 0 || batchUpdateRole.isPending}
                                 >
                                     <SelectTrigger className="h-9 w-[140px]">

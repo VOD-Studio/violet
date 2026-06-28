@@ -3,7 +3,8 @@
  *
  * 封装所有 /admin/users 相关的 API 调用
  */
-import { apiDelete, apiGet, apiGetPaged, apiPatch, apiPost } from "@/shared/api/request";
+import { apiDelete, apiGet, apiGetPaged, apiPatch, apiPost, apiPut } from "@/shared/api/request";
+import type { PagedResponse } from "@/shared/api/types";
 import type {
     AdminUserDTO,
     BatchUpdateResponse,
@@ -15,7 +16,6 @@ import type {
     UpdateUserRoleRequest,
     UpdateUserStatusRequest,
 } from "../model/types";
-import type { PagedResponse } from "@/shared/api/types";
 
 /**
  * 获取用户列表（分页 + 筛选）
@@ -40,9 +40,11 @@ export const createUser = async (data: CreateUserRequest): Promise<AdminUserDTO>
 
 /**
  * 更新用户
+ *
+ * 后端注册的是 PUT /admin/users/{id}（非 PATCH），用 apiPut 对齐。
  */
 export const updateUser = async (id: string, data: UpdateUserRequest): Promise<AdminUserDTO> => {
-    return apiPatch<AdminUserDTO>(`/admin/users/${id}`, data);
+    return apiPut<AdminUserDTO>(`/admin/users/${id}`, data);
 };
 
 /**
