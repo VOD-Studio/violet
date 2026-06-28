@@ -105,6 +105,7 @@ function AdminRolesPage() {
         {
             key: "actions",
             header: "操作",
+						sticky:"right",
             cell: (row) => (
                 <div className="flex items-center gap-2">
                     <PermissionGuard permission="role:manage">
