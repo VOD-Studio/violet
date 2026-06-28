@@ -372,7 +372,12 @@ function AdminUsers() {
                         </div>
                     )}
                     onRowClick={(row) => {
-                        // 检查编辑用户权限
+                        // 受保护用户（超管/自己）不可通过行点击编辑
+                        const isProtected = row.role === "superadmin" || row.id === currentUserId;
+                        if (isProtected) {
+                            toast.error("不可编辑此用户");
+                            return;
+                        }
                         if (canUpdateUser) {
                             setEditingUser(row);
                             setEditDialogOpen(true);
