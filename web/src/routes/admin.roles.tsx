@@ -1,18 +1,18 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { DataTable } from "@features/admin-shared/ui/data-table";
+import { useAdminRoles, useDeleteRole } from "@features/admin-roles/api/queries";
+import type { RoleDTO } from "@features/admin-roles/model/types";
+import { CreateRoleDialog } from "@features/admin-roles/ui/CreateRoleDialog";
+import { EditRoleDialog } from "@features/admin-roles/ui/EditRoleDialog";
+import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsDialog";
+import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
+import { DataTable } from "@features/admin-shared/ui/data-table";
+import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Settings, Shield, Trash2, Users } from "lucide-react";
 import { useState } from "react";
-import { useAdminRoles, useDeleteRole } from "@features/admin-roles/api/queries";
-import type { RoleDTO } from "@features/admin-roles/model/types";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
-import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
-import { CreateRoleDialog } from "@features/admin-roles/ui/CreateRoleDialog";
-import { EditRoleDialog } from "@features/admin-roles/ui/EditRoleDialog";
-import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsDialog";
 
 export const Route = createFileRoute("/admin/roles")({
     component: AdminRolesPage,
@@ -92,9 +92,7 @@ function AdminRolesPage() {
             header: "权限数",
             sortable: true,
             cell: (row) => (
-                <Badge variant="secondary">
-                    {row.permission_codes?.length || 0} 个权限
-                </Badge>
+                <Badge variant="secondary">{row.permission_codes?.length || 0} 个权限</Badge>
             ),
         },
         {
@@ -146,10 +144,7 @@ function AdminRolesPage() {
     ];
 
     return (
-        <PageShell
-            title="角色管理"
-            description="管理系统角色和权限配置"
-        >
+        <PageShell title="角色管理" description="管理系统角色和权限配置">
             <DataTable<RoleDTO>
                 data={roles}
                 columns={columns}
@@ -189,7 +184,7 @@ function AdminRolesPage() {
             )}
 
             {/* 角色权限配置对话框 */}
-            {configuringRole && configuringRole.id && (
+            {configuringRole?.id && (
                 <RolePermissionsDialog
                     open={permissionsDialogOpen}
                     onOpenChange={setPermissionsDialogOpen}

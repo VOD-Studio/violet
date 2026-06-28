@@ -12,6 +12,9 @@ import { EmojiList } from "./EmojiList";
 import { type EmojiTextForm, EmojiToolbar } from "./EmojiToolbar";
 import { EmojiUploader } from "./EmojiUploader";
 
+/** 内层弹窗类型：edit/delete 同一时刻仅一个 open */
+type InnerDialog = "edit" | "delete" | null;
+
 interface EmojiManageDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -39,14 +42,12 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
     const [textForm, setTextForm] = useState<EmojiTextForm>({ name: "", textContent: "" });
     const [deleting, setDeleting] = useState(false);
 
-    const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; ids: number[] }>({
-        open: false,
-        ids: [],
-    });
-    const [editDialog, setEditDialog] = useState<{ open: boolean; emoji: Emoji | null }>({
-        open: false,
-        emoji: null,
-    });
+    const [deleteConfirm, setDeleteConfirm] = useState<number[]>([]);
+    const [editEmoji, setEditEmoji] = useState<Emoji | null>(null);
+    // 内层弹窗互斥：edit/delete 同一时刻仅一个 open，且 open 期间拦截外层
+    // ManageDialog 的关闭（取消编辑不关管理弹窗）
+    const [innerDialog, setInnerDialog] = useState<InnerDialog>(null);
+    const closeInner = () => setInnerDialog(null);
     const [editForm, setEditForm] = useState<EmojiEditForm>({
         name: "",
         url: "",
@@ -54,9 +55,8 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
     });
 
     // 内层弹窗（编辑/删除确认）打开时，阻止外层被 Radix 嵌套关闭事件连关。
-    // 批次 2 将用互斥状态彻底根治，此处为同步精简守卫。
     const handleOpenChange = (o: boolean) => {
-        if (!o && (editDialog.open || deleteConfirm.open)) return;
+        if (!o && innerDialog !== null) return;
         onOpenChange(o);
     };
 
@@ -101,23 +101,24 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
     };
 
     const startEdit = (emoji: Emoji) => {
-        setEditDialog({ open: true, emoji });
+        setEditEmoji(emoji);
         setEditForm({
             name: emoji.name,
             url: emoji.url,
             textContent: emoji.text_content ?? "",
         });
+        setInnerDialog("edit");
     };
 
     const handleSaveEdit = () => {
-        if (!editDialog.emoji) return;
+        if (!editEmoji) return;
         if (!editForm.name.trim()) {
             toast.error("请填写名称");
             return;
         }
         updateEmoji.mutate(
             {
-                id: editDialog.emoji.id,
+                id: editEmoji.id,
                 groupId,
                 body: {
                     name: editForm.name.trim(),
@@ -128,7 +129,8 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
             {
                 onSuccess: () => {
                     toast.success("表情已更新");
-                    setEditDialog({ open: false, emoji: null });
+                    closeInner();
+                    setEditEmoji(null);
                 },
                 onError: (err) => toast.error(err.message),
             },
@@ -136,7 +138,8 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
     };
 
     const handleDelete = (id: number) => {
-        setDeleteConfirm({ open: true, ids: [id] });
+        setDeleteConfirm([id]);
+        setInnerDialog("delete");
     };
 
     const handleBatchDelete = () => {
@@ -144,14 +147,15 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
             toast.error("请先选择要删除的表情");
             return;
         }
-        setDeleteConfirm({ open: true, ids: Array.from(selectedIds) });
+        setDeleteConfirm(Array.from(selectedIds));
+        setInnerDialog("delete");
     };
 
     const confirmDelete = async () => {
         setDeleting(true);
         let ok = 0;
         let fail = 0;
-        for (const id of deleteConfirm.ids) {
+        for (const id of deleteConfirm) {
             try {
                 await deleteEmoji.mutateAsync({ id, groupId });
                 ok++;
@@ -162,9 +166,10 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
         if (ok > 0) toast.success(`已删除 ${ok} 个表情`);
         if (fail > 0) toast.error(`${fail} 个表情删除失败`);
         setDeleting(false);
-        setDeleteConfirm({ open: false, ids: [] });
+        setDeleteConfirm([]);
         setSelectedIds(new Set());
         setIsSelectMode(false);
+        closeInner();
     };
 
     const toggleSelect = (id: number) => {
@@ -282,9 +287,11 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
             </Dialog>
 
             <EmojiEditDialog
-                open={editDialog.open}
-                onOpenChange={(o) => setEditDialog({ open: o, emoji: null })}
-                emoji={editDialog.emoji}
+                open={innerDialog === "edit"}
+                onOpenChange={(o) => {
+                    if (!o) closeInner();
+                }}
+                emoji={editEmoji}
                 form={editForm}
                 onFormChange={setEditForm}
                 onSave={handleSaveEdit}
@@ -292,12 +299,14 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
             />
 
             <ConfirmDialog
-                open={deleteConfirm.open}
-                onOpenChange={(o: boolean) => setDeleteConfirm({ open: o, ids: [] })}
+                open={innerDialog === "delete"}
+                onOpenChange={(o: boolean) => {
+                    if (!o) closeInner();
+                }}
                 title="删除表情"
                 description={
-                    deleteConfirm.ids.length > 1
-                        ? `确定要删除这 ${deleteConfirm.ids.length} 个表情吗？此操作不可撤销。`
+                    deleteConfirm.length > 1
+                        ? `确定要删除这 ${deleteConfirm.length} 个表情吗？此操作不可撤销。`
                         : "确定要删除这个表情吗？此操作不可撤销。"
                 }
                 confirmLabel="删除"
