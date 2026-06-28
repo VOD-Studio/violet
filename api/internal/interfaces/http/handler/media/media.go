@@ -704,6 +704,59 @@ func (h *Handler) GetMedia(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
+// ListAllFiles 全局文件列表（后台素材管理，不限 owner）
+func (h *Handler) ListAllFiles(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	page, limit := response.ParsePaging(r)
+	files, total, err := h.uploadSvc.ListAllFiles(r.Context(), appmedia.ListAllFilesInput{
+		Page:         page,
+		Limit:        limit,
+		Purpose:      q.Get("purpose"),
+		MimeCategory: q.Get("type"),
+		Category:     q.Get("category"),
+		Keyword:      q.Get("keyword"),
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondPaged(w, files, page, limit, total)
+}
+
+// UpdateFileMetadata 更新素材元数据（描述/分类/文件名）
+func (h *Handler) UpdateFileMetadata(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		AltText      *string `json:"alt_text"`
+		Category     *string `json:"category"`
+		OriginalName *string `json:"original_name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	id := r.PathValue("id")
+	altText := ""
+	if req.AltText != nil {
+		altText = *req.AltText
+	}
+	category := ""
+	if req.Category != nil {
+		category = *req.Category
+	}
+	originalName := ""
+	if req.OriginalName != nil {
+		originalName = *req.OriginalName
+	}
+	dto, err := h.uploadSvc.UpdateFileMetadata(r.Context(), appmedia.UpdateFileMetadataInput{
+		ID: id, AltText: altText, Category: category, OriginalName: originalName,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
 // BatchDeleteMedia 批量删除媒体
 func (h *Handler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) {
 	var req struct {

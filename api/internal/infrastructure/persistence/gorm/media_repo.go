@@ -343,7 +343,8 @@ func fileToPO(f *upload.File) model.File {
 		OriginalName: f.OriginalName(), Path: f.Path(), URL: f.URL(),
 		Size: f.Size(), MimeType: f.MimeType(), FileHash: f.FileHash(),
 		Width: f.Width(), Height: f.Height(), Thumbnail: f.Thumbnail(),
-		Status: f.Status(), RefCount: f.RefCount(), DeletedAt: f.DeletedAt(),
+		Status: f.Status(), RefCount: f.RefCount(), AltText: f.AltText(), Category: f.Category(),
+		DeletedAt: f.DeletedAt(),
 	}
 	if c := f.CreatedAt(); !c.IsZero() {
 		po.CreatedAt = c
@@ -362,7 +363,7 @@ func fileToDomain(po model.File) (*upload.File, error) {
 		po.Purpose, po.OriginalName, po.Path, po.URL,
 		po.Size, po.MimeType, po.FileHash,
 		po.Width, po.Height, po.Thumbnail,
-		po.Status, po.RefCount, po.DeletedAt,
+		po.Status, po.RefCount, po.AltText, po.Category, po.DeletedAt,
 		po.CreatedAt, po.UpdatedAt,
 	), nil
 }
@@ -411,6 +412,43 @@ func (r *FileRepository) FindByOwner(ctx context.Context, ownerID domainshared.I
 		result = append(result, f)
 	}
 	return result, total, nil
+}
+
+// FindAll 全局查询文件列表（后台素材管理用，不限 owner）
+//
+// 支持按 purpose/category/mimePrefix/keyword 筛选，默认排除软删除文件。
+func (r *FileRepository) FindAll(ctx context.Context, filter upload.FileListFilter, page, limit int) (*upload.FileListResult, error) {
+	query := r.db.WithContext(ctx).Model(&model.File{})
+	if filter.Purpose != "" {
+		query = query.Where("purpose = ?", filter.Purpose)
+	}
+	if filter.Category != "" {
+		query = query.Where("category = ?", filter.Category)
+	}
+	if filter.MimePrefix != "" {
+		query = query.Where("mime_type LIKE ?", filter.MimePrefix+"%")
+	}
+	if filter.Keyword != "" {
+		query = query.Where("original_name ILIKE ?", "%"+filter.Keyword+"%")
+	}
+	if !filter.IncludeDeleted {
+		query = query.Where("deleted_at IS NULL")
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, domainshared.Internal("统计文件失败", err)
+	}
+	var pos []model.File
+	offset := (page - 1) * limit
+	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询文件列表失败", err)
+	}
+	files := make([]*upload.File, 0, len(pos))
+	for _, po := range pos {
+		f, _ := fileToDomain(po)
+		files = append(files, f)
+	}
+	return &upload.FileListResult{Files: files, Total: total}, nil
 }
 
 func (r *FileRepository) Save(ctx context.Context, f *upload.File) error {

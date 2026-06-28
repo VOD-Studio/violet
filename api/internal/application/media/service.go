@@ -696,6 +696,8 @@ type FileDTO struct {
 	MimeType     string `json:"mime_type"`
 	Thumbnail    string `json:"thumbnail"`
 	Status       string `json:"status"`
+	AltText      string `json:"alt_text"`
+	Category     string `json:"category"`
 	CreatedAt    string `json:"created_at"`
 }
 
@@ -1129,6 +1131,87 @@ func (s *UploadService) BatchDeleteFiles(ctx context.Context, ids []string) (int
 	return deleted, nil
 }
 
+// ListAllFilesInput 全局文件列表查询入参（后台素材管理用）
+type ListAllFilesInput struct {
+	Page    int
+	Limit   int
+	Purpose string // 用途筛选
+	// MIME 类型筛选：image / video / audio / file，后端转成前缀查询
+	MimeCategory string
+	Category     string // 自定义分类筛选
+	Keyword      string // 关键词搜索（文件名）
+}
+
+// ListAllFiles 全局查询文件列表（后台素材管理，不限 owner）
+func (s *UploadService) ListAllFiles(ctx context.Context, in ListAllFilesInput) ([]FileDTO, int64, error) {
+	page := in.Page
+	if page < 1 {
+		page = 1
+	}
+	limit := in.Limit
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	// mimeCategory → mimePrefix 转换
+	mimePrefix := ""
+	switch in.MimeCategory {
+	case "image":
+		mimePrefix = "image/"
+	case "video":
+		mimePrefix = "video/"
+	case "audio":
+		mimePrefix = "audio/"
+	case "file":
+		// 「文件」指非媒体类型，用 NOT IN 排除图片/视频/音频（这里简化为不过滤，
+		// 由前端在结果中按需展示；精确排除需仓储支持 NOT LIKE，暂不做）
+	}
+	result, err := s.fileRepo.FindAll(ctx, domainupload.FileListFilter{
+		Purpose:    in.Purpose,
+		Category:   in.Category,
+		MimePrefix: mimePrefix,
+		Keyword:    in.Keyword,
+	}, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	dtos := make([]FileDTO, 0, len(result.Files))
+	for _, f := range result.Files {
+		dtos = append(dtos, fileToDTO(f))
+	}
+	return dtos, result.Total, nil
+}
+
+// UpdateFileMetadataInput 更新素材元数据入参
+type UpdateFileMetadataInput struct {
+	ID           string
+	AltText      string // 描述/替代文本
+	Category     string // 自定义分类
+	OriginalName string // 重命名（空则不变）
+}
+
+// UpdateFileMetadata 更新素材元数据（描述/分类/文件名）
+func (s *UploadService) UpdateFileMetadata(ctx context.Context, in UpdateFileMetadataInput) (FileDTO, error) {
+	fid, err := shared.ParseID(in.ID)
+	if err != nil {
+		return FileDTO{}, err
+	}
+	f, err := s.fileRepo.FindByID(ctx, fid)
+	if err != nil {
+		return FileDTO{}, err
+	}
+	if len(in.AltText) > 500 {
+		return FileDTO{}, shared.BadRequest("描述不能超过 500 字符")
+	}
+	if len(in.Category) > 50 {
+		return FileDTO{}, shared.BadRequest("分类不能超过 50 字符")
+	}
+	f.UpdateMetadata(in.AltText, in.Category, in.OriginalName)
+	if err := s.fileRepo.Save(ctx, f); err != nil {
+		return FileDTO{}, err
+	}
+	return fileToDTO(f), nil
+}
+
 // UploadThumbnailInput 上传缩略图入参
 type UploadThumbnailInput struct {
 	FileID   string
@@ -1180,6 +1263,7 @@ func fileToDTO(f *domainupload.File) FileDTO {
 		Purpose: f.Purpose(), OriginalName: f.OriginalName(),
 		URL: f.URL(), Size: f.Size(), MimeType: f.MimeType(),
 		Thumbnail: f.Thumbnail(), Status: f.Status(),
+		AltText: f.AltText(), Category: f.Category(),
 		CreatedAt: f.CreatedAt().Format(time.RFC3339),
 	}
 }

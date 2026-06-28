@@ -142,9 +142,12 @@ func (f *fakeFileRepo) FindByHash(ctx context.Context, hash string, ownerID doma
 func (f *fakeFileRepo) FindByOwner(ctx context.Context, ownerID domainshared.ID, purpose string, page, limit int) ([]*domainupload.File, int64, error) {
 	return nil, 0, nil
 }
-func (f *fakeFileRepo) Save(ctx context.Context, fl *domainupload.File) error                       { return nil }
-func (f *fakeFileRepo) Delete(ctx context.Context, id domainshared.ID) error                        { return nil }
-func (f *fakeFileRepo) UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error     { return nil }
+func (f *fakeFileRepo) FindAll(ctx context.Context, filter domainupload.FileListFilter, page, limit int) (*domainupload.FileListResult, error) {
+	return &domainupload.FileListResult{}, nil
+}
+func (f *fakeFileRepo) Save(ctx context.Context, fl *domainupload.File) error                   { return nil }
+func (f *fakeFileRepo) Delete(ctx context.Context, id domainshared.ID) error                    { return nil }
+func (f *fakeFileRepo) UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error { return nil }
 
 // TestUploadThumbnail_RejectsNonOwner 非 file owner 调用 UploadThumbnail 应返回 Forbidden
 func TestUploadThumbnail_RejectsNonOwner(t *testing.T) {

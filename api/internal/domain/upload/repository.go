@@ -13,9 +13,33 @@ type FileRepository interface {
 	// FindByHash 秒传检查:仅命中该 owner 自己上传过的文件,防越权秒传他人文件
 	FindByHash(ctx context.Context, hash string, ownerID shared.ID) (*File, error)
 	FindByOwner(ctx context.Context, ownerID shared.ID, purpose string, page, limit int) ([]*File, int64, error)
+	// FindAll 全局查询文件列表（后台素材管理用，不限 owner）
+	FindAll(ctx context.Context, filter FileListFilter, page, limit int) (*FileListResult, error)
 	Save(ctx context.Context, f *File) error
 	Delete(ctx context.Context, id shared.ID) error
 	UpdateRefCount(ctx context.Context, id shared.ID, delta int) error
+}
+
+// FileListFilter 文件列表查询过滤器
+//
+// 用于后台全局素材管理（不限 owner）。所有字段可选，传零值表示不过滤。
+type FileListFilter struct {
+	// 用途分类筛选（material/avatar/post/emoji），空则全部
+	Purpose string
+	// 自定义分类筛选，空则全部
+	Category string
+	// MIME 类型前缀筛选（如 image/、video/），空则全部
+	MimePrefix string
+	// 关键词搜索（匹配 original_name），空则不搜索
+	Keyword string
+	// 是否包含已软删除的文件，默认 false
+	IncludeDeleted bool
+}
+
+// FileListResult 文件列表查询结果
+type FileListResult struct {
+	Files []*File
+	Total int64
 }
 
 // UploadSessionRepository 上传会话仓储接口

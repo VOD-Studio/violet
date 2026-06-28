@@ -193,6 +193,8 @@ type File struct {
 	Thumbnail    string     `gorm:"type:varchar(500)" json:"thumbnail"`
 	Status       string     `gorm:"type:varchar(20);default:pending" json:"status"`
 	RefCount     int        `gorm:"default:0" json:"ref_count"`
+	AltText      string     `gorm:"type:varchar(500);column:alt_text;default:''" json:"alt_text"`
+	Category     string     `gorm:"type:varchar(50);column:category;default:''" json:"category"`
 	DeletedAt    *time.Time `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 	CreatedAt    time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt    time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`

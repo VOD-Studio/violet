@@ -62,6 +62,8 @@ type File struct {
 	thumbnail    string
 	status       string
 	refCount     int
+	altText      string // 图片替代文本/素材描述（无障碍 + SEO）
+	category     string // 用户自定义分类（与系统 purpose 正交）
 	deletedAt    *time.Time
 	timestamps   shared.Timestamps
 }
@@ -80,13 +82,14 @@ func NewFile(id, ownerID shared.ID, purpose, originalName, path, url string, siz
 }
 
 // ReconstructFile 从持久化数据重建
-func ReconstructFile(id, ownerID shared.ID, purpose, originalName, path, url string, size int64, mimeType, fileHash string, width, height *int, thumbnail, status string, refCount int, deletedAt *time.Time, createdAt, updatedAt time.Time) *File {
+func ReconstructFile(id, ownerID shared.ID, purpose, originalName, path, url string, size int64, mimeType, fileHash string, width, height *int, thumbnail, status string, refCount int, altText, category string, deletedAt *time.Time, createdAt, updatedAt time.Time) *File {
 	return &File{
 		id: id, ownerID: ownerID, purpose: purpose,
 		originalName: originalName, path: path, url: url,
 		size: size, mimeType: mimeType, fileHash: fileHash,
 		width: width, height: height, thumbnail: thumbnail,
-		status: status, refCount: refCount, deletedAt: deletedAt,
+		status: status, refCount: refCount, altText: altText, category: category,
+		deletedAt: deletedAt,
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }
@@ -126,6 +129,18 @@ func (f *File) MarkProcessing() { f.status = StatusProcessing }
 // MarkReady 标记就绪
 func (f *File) MarkReady() { f.status = StatusReady }
 
+// UpdateMetadata 更新素材元数据（描述 + 自定义分类 + 文件名）
+//
+// altText 用于图片无障碍/SEO，category 是用户自定义分类（与系统 purpose 正交）。
+// originalName 可选重命名（传空串则保持不变）。
+func (f *File) UpdateMetadata(altText, category, originalName string) {
+	f.altText = altText
+	f.category = category
+	if originalName != "" {
+		f.originalName = originalName
+	}
+}
+
 // 访问器
 func (f *File) ID() shared.ID         { return f.id }
 func (f *File) OwnerID() shared.ID    { return f.ownerID }
@@ -141,6 +156,8 @@ func (f *File) Height() *int          { return f.height }
 func (f *File) Thumbnail() string     { return f.thumbnail }
 func (f *File) Status() string        { return f.status }
 func (f *File) RefCount() int         { return f.refCount }
+func (f *File) AltText() string       { return f.altText }
+func (f *File) Category() string      { return f.category }
 func (f *File) DeletedAt() *time.Time { return f.deletedAt }
 func (f *File) CreatedAt() time.Time  { return f.timestamps.CreatedAt }
 func (f *File) UpdatedAt() time.Time  { return f.timestamps.UpdatedAt }

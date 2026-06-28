@@ -468,10 +468,19 @@ func main() {
 				r.Delete("/{id}", contentH.DeleteProject) // 删除项目
 			})
 
-			// 文件管理（DDD mediaH）
-			r.Get("/files", mediaH.ListFiles)                  // 文件列表
+			// 媒体素材管理（DDD mediaH，细粒度权限）
+			// 全局素材列表：media:upload 或 media:delete 任一即可查看
+			r.With(middleware.RequirePermission(permissionChecker, "media:upload", "media:delete")).
+				Get("/media", mediaH.ListAllFiles) // 全局素材列表（不限 owner）
 			r.Get("/files/instant", mediaH.CheckInstantUpload) // 秒传检查
-			r.Delete("/files/{id}", mediaH.DeleteFile)         // 删除文件
+			// 更新素材元数据：media:upload（可编辑描述/分类/重命名）
+			r.With(middleware.RequirePermission(permissionChecker, "media:upload")).
+				Patch("/media/{id}", mediaH.UpdateFileMetadata) // 更新素材元数据
+			// 删除素材：media:delete
+			r.With(middleware.RequirePermission(permissionChecker, "media:delete")).
+				Delete("/media/{id}", mediaH.DeleteFile) // 删除素材
+			r.With(middleware.RequirePermission(permissionChecker, "media:delete")).
+				Delete("/files/{id}", mediaH.DeleteFile) // 删除文件（兼容旧入口）
 		})
 	})
 
