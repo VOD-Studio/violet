@@ -23,6 +23,7 @@ import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
+import { Route as AdminMediaRouteImport } from './routes/admin.media'
 import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -95,6 +96,11 @@ const AdminPermissionsRoute = AdminPermissionsRouteImport.update({
   path: '/permissions',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminMediaRoute = AdminMediaRouteImport.update({
+  id: '/media',
+  path: '/media',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEmojisRoute = AdminEmojisRouteImport.update({
   id: '/emojis',
   path: '/emojis',
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/users': typeof AdminUsersRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/users': typeof AdminUsersRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/users': typeof AdminUsersRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/admin/emojis'
+    | '/admin/media'
     | '/admin/permissions'
     | '/admin/roles'
     | '/admin/users'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/admin/emojis'
+    | '/admin/media'
     | '/admin/permissions'
     | '/admin/roles'
     | '/admin/users'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/admin/emojis'
+    | '/admin/media'
     | '/admin/permissions'
     | '/admin/roles'
     | '/admin/users'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPermissionsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/media': {
+      id: '/admin/media'
+      path: '/media'
+      fullPath: '/admin/media'
+      preLoaderRoute: typeof AdminMediaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/emojis': {
       id: '/admin/emojis'
       path: '/emojis'
@@ -330,6 +349,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminEmojisRoute: typeof AdminEmojisRoute
+  AdminMediaRoute: typeof AdminMediaRoute
   AdminPermissionsRoute: typeof AdminPermissionsRoute
   AdminRolesRoute: typeof AdminRolesRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -338,6 +358,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminEmojisRoute: AdminEmojisRoute,
+  AdminMediaRoute: AdminMediaRoute,
   AdminPermissionsRoute: AdminPermissionsRoute,
   AdminRolesRoute: AdminRolesRoute,
   AdminUsersRoute: AdminUsersRoute,

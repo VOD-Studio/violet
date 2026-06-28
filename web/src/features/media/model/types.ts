@@ -32,6 +32,10 @@ export interface MediaFile {
     thumbnail: string;
     /** 文件状态，如 active / deleted */
     status: string;
+    /** 替代文本/素材描述（无障碍 + SEO） */
+    alt_text?: string;
+    /** 用户自定义分类 */
+    category?: string;
     /** 创建时间，RFC3339 字符串 */
     created_at: string;
 }
@@ -49,6 +53,40 @@ export interface MediaListQuery {
     limit?: number;
     /** 用途筛选，如 material / avatar / cover */
     purpose?: string;
+}
+
+/**
+ * AdminMediaListQuery - 后台全局素材列表查询参数
+ *
+ * 对接 GET /admin/media，支持多维筛选。
+ */
+export interface AdminMediaListQuery {
+    /** 页码，默认 1 */
+    page?: number;
+    /** 每页条数，默认 20 */
+    limit?: number;
+    /** 用途筛选 */
+    purpose?: string;
+    /** MIME 类型筛选（image/video/audio/file） */
+    type?: string;
+    /** 自定义分类筛选 */
+    category?: string;
+    /** 关键词搜索（文件名） */
+    keyword?: string;
+}
+
+/**
+ * UpdateMediaRequest - 更新素材元数据请求体
+ *
+ * 对接 PATCH /admin/media/{id}，所有字段可选。
+ */
+export interface UpdateMediaRequest {
+    /** 替代文本/描述 */
+    alt_text?: string;
+    /** 自定义分类 */
+    category?: string;
+    /** 重命名（空则不变） */
+    original_name?: string;
 }
 
 /**

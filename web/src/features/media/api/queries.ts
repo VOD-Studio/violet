@@ -2,6 +2,7 @@ import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
 import type {
+    AdminMediaListQuery,
     InstantCheckQuery,
     InstantCheckResult,
     MediaFile,
@@ -63,30 +64,30 @@ export const useMediaList = (query: MediaListQuery = {}) =>
 // ============================================================
 
 /**
- * fetchAdminFiles - 调后端 GET /admin/files 拉取文件列表
+ * fetchAdminMedia - 调后端 GET /admin/media 拉取全局素材列表
  *
- * 需管理员身份，与 /media 复用同一 handler，purpose 为用途筛选。
+ * 需 media:upload 或 media:delete 权限，不限 owner，支持多维筛选。
  *
- * @param query 分页与用途筛选
+ * @param query 分页 + purpose/type/category/keyword 筛选
  */
-export const fetchAdminFiles = async (
-    query: MediaListQuery = {},
+export const fetchAdminMedia = async (
+    query: AdminMediaListQuery = {},
 ): Promise<PagedResponse<MediaFile>> => {
-    const { page, limit, purpose } = query;
-    return apiGetPaged<MediaFile>("/admin/files", {
-        params: { page, limit, purpose },
+    const { page, limit, purpose, type, category, keyword } = query;
+    return apiGetPaged<MediaFile>("/admin/media", {
+        params: { page, limit, purpose, type, category, keyword },
     });
 };
 
 /**
- * useAdminFiles - admin 文件列表 hook
+ * useAdminMedia - 全局素材列表 hook（后台素材管理用）
  *
- * @param query 分页与用途筛选
+ * @param query 分页与多维筛选
  */
-export const useAdminFiles = (query: MediaListQuery = {}) =>
+export const useAdminMedia = (query: AdminMediaListQuery = {}) =>
     useQuery({
         queryKey: adminFileKeys.list(query),
-        queryFn: () => fetchAdminFiles(query),
+        queryFn: () => fetchAdminMedia(query),
     });
 
 /**

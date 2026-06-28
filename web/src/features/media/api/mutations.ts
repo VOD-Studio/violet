@@ -5,9 +5,15 @@
  * 上传能力（init/chunk/complete）已统一归到 upload 模块，
  * 本模块不重复定义，需要上传时 import features/upload。
  */
-import { apiDelete, apiPost } from "@shared/api/request";
+import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { BatchDeleteRequest, BatchDeleteResult, ThumbnailUploadResult } from "../model/types";
+import type {
+    BatchDeleteRequest,
+    BatchDeleteResult,
+    MediaFile,
+    ThumbnailUploadResult,
+    UpdateMediaRequest,
+} from "../model/types";
 import { adminFileKeys, mediaKeys } from "./keys";
 
 /**
@@ -88,15 +94,35 @@ export const useUploadThumbnail = () => {
 // ============================================================
 
 /**
- * useAdminDeleteFile - admin 删除文件 mutation
+ * useAdminDeleteFile - admin 删除素材 mutation
  *
- * 对接 DELETE /admin/files/{id}，与 /media/{id} 复用 handler。
- * 成功后 invalidate admin 文件列表与媒体列表。
+ * 对接 DELETE /admin/media/{id}，需 media:delete 权限。
+ * 成功后 invalidate admin 素材列表与媒体列表。
  */
 export const useAdminDeleteFile = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (id: string) => apiDelete<null>(`/admin/files/${id}`),
+        mutationFn: (id: string) => apiDelete<null>(`/admin/media/${id}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: adminFileKeys.lists(),
+            });
+            queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
+        },
+    });
+};
+
+/**
+ * useUpdateMediaMetadata - 更新素材元数据 mutation
+ *
+ * 对接 PATCH /admin/media/{id}，需 media:upload 权限。
+ * 更新 alt_text/category/original_name，成功后 invalidate 列表。
+ */
+export const useUpdateMediaMetadata = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: UpdateMediaRequest }) =>
+            apiPatch<MediaFile>(`/admin/media/${id}`, data),
         onSuccess: () => {
             queryClient.invalidateQueries({
                 queryKey: adminFileKeys.lists(),
