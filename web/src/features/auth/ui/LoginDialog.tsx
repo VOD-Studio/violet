@@ -1,4 +1,3 @@
-import type { UserDTO } from "@entities/user/model/types";
 import { authKeys } from "@features/auth/api/keys";
 import { useLogin } from "@features/auth/api/mutations";
 import { fetchCsrfToken } from "@features/auth/api/queries";
@@ -148,7 +147,9 @@ export function LoginDialog() {
         }
         // 用户主动放弃重登：拒绝挂起请求、清会话状态、回首页。
         rejectAll();
-        qc.setQueryData<UserDTO>(authKeys.me(), undefined);
+        // removeQueries 真正清除 me 缓存（v5 中 setQueryData(undefined) 是 no-op），
+        // 让 Header 等订阅者立即翻回未登录态。
+        qc.removeQueries({ queryKey: authKeys.me() });
         // 清除会话活跃标志：用户明确放弃重登 = 主动登出语义，
         // 守卫此后可正常踢人；下次访问受保护页会重新走未登录流程。
         clearSessionActive();

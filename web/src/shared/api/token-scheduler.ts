@@ -35,12 +35,31 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let doRefresh: (() => Promise<number | null>) | null = null;
 
 /**
+ * onSessionExpired - 刷新彻底失败时的降级回调（由 http.ts 注入）
+ *
+ * 主动刷新失败意味着会话已事实失效（refresh token 也过期/被拒），
+ * 此时没有"原业务请求"可挂起重放，但应立即提示用户重新登录。
+ * 注入实现调用 authGate.notifySessionExpired() 弹出登录窗。
+ * 保持本模块"纯 JS 无依赖"：不直接 import auth-gate，与 setRefresher 同模式。
+ */
+let onSessionExpired: (() => void) | null = null;
+
+/**
  * setRefresher - http 模块注册刷新实现
  *
  * @param fn 返回新 expires_in（秒）；失败返回 null
  */
 export const setRefresher = (fn: (() => Promise<number | null>) | null): void => {
     doRefresh = fn;
+};
+
+/**
+ * setOnSessionExpired - 注册会话失效降级回调
+ *
+ * @param fn 刷新失败时调用（弹登录窗）；传 null 解绑
+ */
+export const setOnSessionExpired = (fn: (() => void) | null): void => {
+    onSessionExpired = fn;
 };
 
 /**
@@ -74,8 +93,12 @@ export const scheduleRefresh = (expiresInSeconds: number): void => {
 /**
  * proactiveRefresh - 定时器触发的主动刷新
  *
- * 成功 → 用新 expires_in 重新 arm；失败 → 清调度（交由响应式 401 拦截兜底，
- * 或最终弹登录窗）。
+ * 成功 → 用新 expires_in 重新 arm；
+ * 失败 → 清调度 + 通知会话失效（弹登录窗）。
+ *
+ * 失败降级是必须的：主动刷新 401 意味着 refresh token 已失效，若不通知，
+ * 用户会停留在"看似登录"的页面（Header 仍显示个人中心），直到下一次业务请求
+ * 撞 401 才被响应式链路处理——而停在页面无操作时则永远不提示。
  */
 const proactiveRefresh = async (): Promise<void> => {
     if (!doRefresh) return;
@@ -84,11 +107,14 @@ const proactiveRefresh = async (): Promise<void> => {
         if (newExpiresIn && newExpiresIn > 0) {
             scheduleRefresh(newExpiresIn);
         } else {
-            // 刷新失败：不再 arm，后续请求撞 401 时由响应式链路处理
+            // 刷新失败（doRefresh 返回 null）：refresh token 已失效，弹登录窗
             clearRefresh();
+            onSessionExpired?.();
         }
     } catch {
+        // 刷新异常（网络等）：同样视为会话失效，弹登录窗兜底
         clearRefresh();
+        onSessionExpired?.();
     }
 };
 
@@ -100,4 +126,17 @@ export const clearRefresh = (): void => {
         clearTimeout(timer);
         timer = null;
     }
+};
+
+/**
+ * triggerProactiveRefreshNow - DEV 验证用：立即执行一次主动刷新
+ *
+ * 不等待定时器到期，直接复用 proactiveRefresh 走完整链路：
+ *   doRefresh → 成功 arm / 失败弹窗
+ *
+ * 仅用于开发期验证「主动刷新失败 → 弹登录窗」修复，生产环境不应调用。
+ * 配合调短后端 access/refresh TTL，可快速触发 refresh 401 场景。
+ */
+export const triggerProactiveRefreshNow = (): void => {
+    void proactiveRefresh();
 };

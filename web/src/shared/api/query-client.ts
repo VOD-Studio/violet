@@ -35,3 +35,15 @@ export const createQueryClient = (): QueryClient =>
             },
         },
     });
+
+/**
+ * clientQueryClient - 客户端 QueryClient 单例
+ *
+ * 供 QueryClientProvider（所有 useQuery/useMutation 订阅）与非组件层代码
+ * （如 http 拦截器清 me 缓存）共用同一实例。
+ *
+ * 仅客户端有效：SSR 端每请求由 router context 独立创建实例（避免跨请求缓存串扰），
+ * 不使用此单例。非组件代码（http.ts 的 onSessionExpired）也只在客户端注册，
+ * 故读取此单例安全。
+ */
+export const clientQueryClient = createQueryClient();

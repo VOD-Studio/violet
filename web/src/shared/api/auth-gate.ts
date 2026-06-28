@@ -1,5 +1,6 @@
 import type { AxiosRequestConfig, AxiosResponse } from "axios";
 import { ApiError } from "./error";
+import { clearSessionActive } from "./session";
 
 /**
  * authGate - 鉴权降级编排器（单例，纯 JS，无 React 依赖）
@@ -130,6 +131,35 @@ export const flush = async (): Promise<void> => {
         dialogOpen = true;
         opener();
     }
+};
+
+/**
+ * notifySessionExpired - 会话失效处理（清会话状态 + 开门弹窗）
+ *
+ * 用于「主动刷新失败」场景：access token 到期、定时器主动 POST /auth/refresh
+ * 返回 401。此时没有"原业务请求"可挂起重放（不像响应式链路撞 401 那样有 config），
+ * 但用户的登录态已经事实失效。
+ *
+ * 完整处理（缺一不可，否则 401 风暴）：
+ *   1. clearSessionActive() —— useMe 的 enabled = isAuthenticated || sessionActive，
+ *      不清的话 useMe 仍 enabled，持续拉 /auth/me → 401 → React Query retry → 雪崩。
+ *   2. 弹窗 opener() —— 提示用户重新登录。
+ *
+ * me 缓存的清理由 http.ts 注入的 onSessionExpired 回调额外负责（authGate 无 queryClient）。
+ *
+ * 与 requestReplay 的区别：
+ *   - requestReplay(config)：响应式链路，有具体请求需挂起 + 重放
+ *   - notifySessionExpired：主动刷新链路，无请求可挂起，只清状态 + 开门
+ *
+ * SSR 未注册 opener 时为 no-op，交由守卫 beforeLoad 兜底。
+ */
+export const notifySessionExpired = (): void => {
+    // 1. 先清会话状态：让 useMe 的 enabled 立即翻 false，停止后续 /auth/me 拉取
+    clearSessionActive();
+    // 2. 弹窗：无 opener（SSR）或弹窗已开时跳过，避免重复弹窗
+    if (!opener || dialogOpen) return;
+    dialogOpen = true;
+    opener();
 };
 
 /**

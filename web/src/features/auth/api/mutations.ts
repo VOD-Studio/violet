@@ -134,10 +134,14 @@ export const useLogout = () => {
             // 登出后清会话状态。注意：不能用 invalidateQueries——它会触发 refetch，
             // 而 cookie 已被后端清除 → fetchMe 必然 401 → 进 401 拦截器 → 尝试 refresh →
             // refresh 也 401 → authGate 弹出登录窗（bug：登出反而触发登录弹窗）。
-            // 正确做法：取消进行中的 me 查询 + 直接置缓存 undefined（不发任何请求），
-            // useMe 订阅者立即翻回未登录态，Header 同步刷新。
+            // 正确做法：取消进行中的 me 查询 + 直接移除缓存（不发任何请求），
+            // useMe 订阅者立即翻回未登录态，Header 同步刷新成「登录」。
+            //
+            // 必须用 removeQueries 而非 setQueryData(..., undefined)：
+            // React Query v5 中 setQueryData 传 undefined 是 no-op（数据不会被清），
+            // 会导致登出后 me 缓存仍是旧用户，Header 继续显示「个人中心 + 登出」。
             await qc.cancelQueries({ queryKey: authKeys.me() });
-            qc.setQueryData<UserDTO>(authKeys.me(), undefined);
+            qc.removeQueries({ queryKey: authKeys.me() });
             // 登出：停止主动刷新 + 清除会话活跃标志（守卫据此允许踢人/跳登录）
             clearRefresh();
             clearSessionActive();

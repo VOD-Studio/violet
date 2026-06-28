@@ -1,10 +1,12 @@
+import { authKeys } from "@features/auth/api/keys";
 import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
-import { requestReplay, setReplayer } from "./auth-gate";
+import { notifySessionExpired, requestReplay, setReplayer } from "./auth-gate";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";
 import { ApiError } from "./error";
+import { clientQueryClient } from "./query-client";
 import { triggerRefresh } from "./refresh-queue";
-import { scheduleRefresh, setRefresher } from "./token-scheduler";
+import { scheduleRefresh, setOnSessionExpired, setRefresher } from "./token-scheduler";
 import type { Envelope, Pagination } from "./types";
 
 // 让 axios 配置对象携带 __retried 标记，防止 401 自动 refresh 死循环。
@@ -234,4 +236,13 @@ if (typeof window !== "undefined") {
             }
         }),
     );
+    // 主动刷新失败降级：refresh token 也失效时，完整清理会话状态 + 弹登录窗。
+    // 必须清 me 缓存：否则 useMe 在 me stale 后会 refetch /auth/me → 401，
+    // 而 401 走 __skipAuthGate 不弹窗只 retry → 401 风暴。
+    // notifySessionExpired 内部已 clearSessionActive（让 useMe.enabled 翻 false），
+    // 此处再补 removeQueries 清掉陈旧 me 缓存，双重保险切断 401 链。
+    setOnSessionExpired(() => {
+        clientQueryClient.removeQueries({ queryKey: authKeys.me() });
+        notifySessionExpired();
+    });
 }
