@@ -40,6 +40,8 @@ type CreateUserForm = z.infer<typeof createUserSchema>;
 interface CreateUserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** 当前登录用户是否为超级管理员（控制 superadmin 选项可见性） */
+    isOperatorSuperAdmin?: boolean;
 }
 
 /**
@@ -47,8 +49,14 @@ interface CreateUserDialogProps {
  *
  * 使用 React Hook Form + Zod 进行表单验证
  * 提交成功后自动关闭对话框并重置表单
+ *
+ * 角色限制：superadmin 选项仅当操作者是超管时可见（普通 admin 不可创建超管）。
  */
-export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) {
+export function CreateUserDialog({
+    open,
+    onOpenChange,
+    isOperatorSuperAdmin = false,
+}: CreateUserDialogProps) {
     const createUser = useCreateUser();
     // 动态拉取角色列表（接口返回的角色，而非硬编码）
     const { data: roles } = useAdminRoles();
@@ -167,11 +175,16 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {(roles ?? []).map((r) => (
-                                        <SelectItem key={r.name} value={r.name ?? ""}>
-                                            {r.description || r.name}
-                                        </SelectItem>
-                                    ))}
+                                    {(roles ?? [])
+                                        // superadmin 选项仅当操作者是超管时可见
+                                        .filter(
+                                            (r) => r.name !== "superadmin" || isOperatorSuperAdmin,
+                                        )
+                                        .map((r) => (
+                                            <SelectItem key={r.name} value={r.name ?? ""}>
+                                                {r.description || r.name}
+                                            </SelectItem>
+                                        ))}
                                 </SelectContent>
                             </Select>
                         </div>

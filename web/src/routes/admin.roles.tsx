@@ -105,42 +105,48 @@ function AdminRolesPage() {
         {
             key: "actions",
             header: "操作",
-						sticky:"right",
-            cell: (row) => (
-                <div className="flex items-center gap-2">
-                    <PermissionGuard permission="role:manage">
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleConfigurePermissions(row)}
-                            title="配置权限"
-                        >
-                            <Settings className="size-3.5" />
-                        </Button>
-                    </PermissionGuard>
-                    <PermissionGuard permission="role:manage">
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(row)}
-                            title="编辑角色"
-                        >
-                            <Pencil className="size-3.5" />
-                        </Button>
-                    </PermissionGuard>
-                    <PermissionGuard permission="role:manage">
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(row)}
-                            disabled={deleteRole.isPending}
-                            title="删除角色"
-                        >
-                            <Trash2 className="size-3.5" />
-                        </Button>
-                    </PermissionGuard>
-                </div>
-            ),
+            sticky: "right",
+            cell: (row) => {
+                // 内置角色（user/admin/superadmin）不可删/不可改名/不可改权限
+                const isBuiltin = row.is_builtin;
+                return (
+                    <div className="flex items-center gap-2">
+                        <PermissionGuard permission="role:manage">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleConfigurePermissions(row)}
+                                disabled={isBuiltin}
+                                title={isBuiltin ? "内置角色不可修改权限" : "配置权限"}
+                            >
+                                <Settings className="size-3.5" />
+                            </Button>
+                        </PermissionGuard>
+                        <PermissionGuard permission="role:manage">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEdit(row)}
+                                disabled={isBuiltin}
+                                title={isBuiltin ? "内置角色不可编辑" : "编辑角色"}
+                            >
+                                <Pencil className="size-3.5" />
+                            </Button>
+                        </PermissionGuard>
+                        <PermissionGuard permission="role:manage">
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDelete(row)}
+                                disabled={isBuiltin || deleteRole.isPending}
+                                title={isBuiltin ? "内置角色不可删除" : "删除角色"}
+                            >
+                                <Trash2 className="size-3.5" />
+                            </Button>
+                        </PermissionGuard>
+                    </div>
+                );
+            },
         },
     ];
 

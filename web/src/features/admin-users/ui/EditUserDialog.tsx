@@ -44,6 +44,10 @@ interface EditUserDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     user: AdminUserDTO;
+    /** 当前登录用户 ID（用于禁止改自己角色） */
+    currentUserId?: string;
+    /** 当前登录用户是否为超级管理员（控制 superadmin 选项可见性） */
+    isOperatorSuperAdmin?: boolean;
 }
 
 /**
@@ -52,11 +56,22 @@ interface EditUserDialogProps {
  * 使用 React Hook Form + Zod 进行表单验证
  * 密码字段可选，不填写表示不修改密码
  * 提交成功后自动关闭对话框
+ *
+ * 角色限制：目标是超管 / 编辑自己 → 禁用角色选择；superadmin 选项仅超管可选。
  */
-export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps) {
+export function EditUserDialog({
+    open,
+    onOpenChange,
+    user,
+    currentUserId,
+    isOperatorSuperAdmin = false,
+}: EditUserDialogProps) {
     const updateUser = useUpdateUser();
     // 动态拉取角色列表（接口返回的角色，而非硬编码），staleTime 由 useAdminRoles 控制（30min）
     const { data: roles } = useAdminRoles();
+
+    // 角色是否不可选：目标是超管（不可降级）或编辑自己（不可改自己角色）
+    const roleDisabled = user.role === "superadmin" || user.id === currentUserId;
 
     const {
         register,
@@ -189,7 +204,11 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                         {/* 角色 */}
                         <div className="space-y-2">
                             <Label htmlFor="edit-role">角色</Label>
-                            <Select value={role} onValueChange={(value) => setValue("role", value)}>
+                            <Select
+                                value={role}
+                                onValueChange={(value) => setValue("role", value)}
+                                disabled={roleDisabled}
+                            >
                                 <SelectTrigger
                                     id="edit-role"
                                     className="w-full"
@@ -198,13 +217,25 @@ export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {(roles ?? []).map((r) => (
-                                        <SelectItem key={r.name} value={r.name ?? ""}>
-                                            {r.description || r.name}
-                                        </SelectItem>
-                                    ))}
+                                    {(roles ?? [])
+                                        // superadmin 选项仅当操作者是超管时可见
+                                        .filter(
+                                            (r) => r.name !== "superadmin" || isOperatorSuperAdmin,
+                                        )
+                                        .map((r) => (
+                                            <SelectItem key={r.name} value={r.name ?? ""}>
+                                                {r.description || r.name}
+                                            </SelectItem>
+                                        ))}
                                 </SelectContent>
                             </Select>
+                            {roleDisabled ? (
+                                <p className="text-xs text-muted-foreground">
+                                    {user.role === "superadmin"
+                                        ? "不可修改超级管理员的角色"
+                                        : "不可修改自己的角色"}
+                                </p>
+                            ) : null}
                         </div>
 
                         {/* 启用状态 */}

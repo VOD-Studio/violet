@@ -20,6 +20,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Download, Pencil, Plus, RefreshCw, Search, Trash2, UserCog } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useMe } from "@/features/auth/api/queries";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -48,6 +49,10 @@ function AdminUsers() {
     // 权限检查
     const canUpdateUser = useHasPermission("user:list"); // 编辑用户权限
 
+    // 当前登录用户（用于「是不是自己」的判断，禁止删/改自己）
+    const { data: me } = useMe();
+    const currentUserId = me?.id;
+
     // 查询角色列表
     const { data: roles = [] } = useAdminRoles();
 
@@ -72,6 +77,14 @@ function AdminUsers() {
     const batchUpdateStatus = useBatchUpdateStatus();
     const batchUpdateRole = useBatchUpdateRole();
     const deleteUser = useDeleteUser();
+
+    // 批量选中是否含受保护用户（超级管理员或自己）——含则禁用批量改/禁用
+    const selectedHasProtected = useMemo(() => {
+        if (!response?.data || selectedIds.size === 0) return false;
+        return response.data.some(
+            (u) => selectedIds.has(u.id) && (u.role === "superadmin" || u.id === currentUserId),
+        );
+    }, [response?.data, selectedIds, currentUserId]);
 
     // 客户端排序（如果后端不支持排序）
     const sortedData = useMemo(() => {
@@ -204,38 +217,44 @@ function AdminUsers() {
             sticky: "right",
             width: "96px",
             align: "center",
-            cell: (row) => (
-                <div className="flex justify-center gap-1">
-                    <PermissionGuard permission="user:list">
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            title="编辑"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingUser(row);
-                                setEditDialogOpen(true);
-                            }}
-                        >
-                            <Pencil className="size-3.5" />
-                        </Button>
-                    </PermissionGuard>
-                    <PermissionGuard permission="user:ban">
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            title="删除"
-                            className="hover:bg-destructive/10 hover:text-destructive"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(row);
-                            }}
-                        >
-                            <Trash2 className="size-3.5" />
-                        </Button>
-                    </PermissionGuard>
-                </div>
-            ),
+            cell: (row) => {
+                // 安全防护：不可操作超级管理员和自己（删/改/禁用）
+                const isProtected = row.role === "superadmin" || row.id === currentUserId;
+                return (
+                    <div className="flex justify-center gap-1">
+                        <PermissionGuard permission="user:list">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                title={isProtected ? "不可编辑此用户" : "编辑"}
+                                disabled={isProtected}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingUser(row);
+                                    setEditDialogOpen(true);
+                                }}
+                            >
+                                <Pencil className="size-3.5" />
+                            </Button>
+                        </PermissionGuard>
+                        <PermissionGuard permission="user:ban">
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                title={isProtected ? "不可删除此用户" : "删除"}
+                                className="hover:bg-destructive/10 hover:text-destructive"
+                                disabled={isProtected}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(row);
+                                }}
+                            >
+                                <Trash2 className="size-3.5" />
+                            </Button>
+                        </PermissionGuard>
+                    </div>
+                );
+            },
         },
     ];
 
@@ -277,7 +296,11 @@ function AdminUsers() {
                                     variant="outline"
                                     className="h-9"
                                     onClick={handleBatchEnable}
-                                    disabled={selectedIds.size === 0 || batchUpdateStatus.isPending}
+                                    disabled={
+                                        selectedIds.size === 0 ||
+                                        batchUpdateStatus.isPending ||
+                                        selectedHasProtected
+                                    }
                                 >
                                     启用
                                 </Button>
@@ -287,7 +310,11 @@ function AdminUsers() {
                                     variant="destructive"
                                     className="h-9"
                                     onClick={handleBatchDisable}
-                                    disabled={selectedIds.size === 0 || batchUpdateStatus.isPending}
+                                    disabled={
+                                        selectedIds.size === 0 ||
+                                        batchUpdateStatus.isPending ||
+                                        selectedHasProtected
+                                    }
                                 >
                                     <Trash2 className="size-3.5" />
                                     批量禁用
@@ -297,7 +324,11 @@ function AdminUsers() {
                                 <Select
                                     value="batch-role"
                                     onValueChange={(role) => handleBatchChangeRole(role)}
-                                    disabled={selectedIds.size === 0 || batchUpdateRole.isPending}
+                                    disabled={
+                                        selectedIds.size === 0 ||
+                                        batchUpdateRole.isPending ||
+                                        selectedHasProtected
+                                    }
                                 >
                                     <SelectTrigger className="h-9 w-[140px]">
                                         <UserCog className="size-3.5 mr-1" />
@@ -427,7 +458,11 @@ function AdminUsers() {
             </PageShell>
 
             {/* 创建用户对话框 */}
-            <CreateUserDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
+            <CreateUserDialog
+                open={createDialogOpen}
+                onOpenChange={setCreateDialogOpen}
+                isOperatorSuperAdmin={me?.role === "superadmin"}
+            />
 
             {/* 编辑用户对话框 */}
             {editingUser && (
@@ -435,6 +470,8 @@ function AdminUsers() {
                     open={editDialogOpen}
                     onOpenChange={setEditDialogOpen}
                     user={editingUser}
+                    currentUserId={currentUserId}
+                    isOperatorSuperAdmin={me?.role === "superadmin"}
                 />
             )}
 
