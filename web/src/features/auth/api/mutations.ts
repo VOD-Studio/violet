@@ -26,7 +26,9 @@ import { authKeys } from "./keys";
  */
 export const useRegister = () =>
     useMutation({
-        mutationFn: (body: RegisterRequest) => apiPost<MessageResponse>("/auth/register", body),
+        mutationFn: (body: RegisterRequest) =>
+            // 主动认证请求，401/403 是业务结果，不触发 authGate 弹窗
+            apiPost<MessageResponse>("/auth/register", body, { __skipAuthGate: true }),
     });
 
 /**
@@ -37,7 +39,7 @@ export const useRegister = () =>
 export const useVerifyEmail = () =>
     useMutation({
         mutationFn: (body: VerifyEmailRequest) =>
-            apiPost<MessageResponse>("/auth/verify-email", body),
+            apiPost<MessageResponse>("/auth/verify-email", body, { __skipAuthGate: true }),
     });
 
 /**
@@ -55,11 +57,12 @@ export const useLogin = (csrfToken?: string) => {
         mutationFn: (body: LoginRequest) => {
             // 优先使用调用方传入的最新 token；若 state 尚未同步，回退到当前 cookie。
             const token = csrfToken || getCSRFToken();
-            return apiPost<TokenResponse>(
-                "/auth/login",
-                body,
-                token ? { headers: { [CSRF_HEADER]: token } } : undefined,
-            );
+            return apiPost<TokenResponse>("/auth/login", body, {
+                headers: token ? { [CSRF_HEADER]: token } : undefined,
+                // login 本身就是认证请求，401 是正常业务结果（密码错/账户禁用），
+                // 不应触发 authGate 的 refresh 重试 + 登录弹窗（否则登录失败还弹窗）。
+                __skipAuthGate: true,
+            });
         },
         onSuccess: (data) => {
             qc.invalidateQueries({ queryKey: authKeys.me() });
@@ -104,7 +107,8 @@ export const useRefresh = () =>
 export const useForgotPassword = () =>
     useMutation({
         mutationFn: (body: ForgotPasswordRequest) =>
-            apiPost<MessageResponse>("/auth/forgot-password", body),
+            // 公开接口，无需登录；401/403 是业务结果，不触发 authGate 弹窗
+            apiPost<MessageResponse>("/auth/forgot-password", body, { __skipAuthGate: true }),
     });
 
 /**
@@ -115,7 +119,7 @@ export const useForgotPassword = () =>
 export const useResetPassword = () =>
     useMutation({
         mutationFn: (body: ResetPasswordRequest) =>
-            apiPost<MessageResponse>("/auth/reset-password", body),
+            apiPost<MessageResponse>("/auth/reset-password", body, { __skipAuthGate: true }),
     });
 
 /**
@@ -129,7 +133,8 @@ export const useResetPassword = () =>
 export const useLogout = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: () => apiPost<MessageResponse>("/auth/logout"),
+        mutationFn: () =>
+            apiPost<MessageResponse>("/auth/logout", undefined, { __skipAuthGate: true }),
         onSuccess: async () => {
             // 登出后清会话状态。注意：不能用 invalidateQueries——它会触发 refetch，
             // 而 cookie 已被后端清除 → fetchMe 必然 401 → 进 401 拦截器 → 尝试 refresh →

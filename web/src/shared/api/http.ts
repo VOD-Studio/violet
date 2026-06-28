@@ -136,9 +136,20 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
         async (err: AxiosError) => {
             const status = err.response?.status ?? 0;
 
-            // 401：触发 refresh（去重队列）后重放原请求一次
-            // __retried 标记防止 refresh 返回 401 时无限循环
-            if (status === 401 && err.config && !err.config.__retried) {
+            // 401 处理。两类请求需要跳过整个 refresh + authGate 流程：
+            //   1. 主动认证请求（login/register/verify-email/logout 等）：401 是确定性
+            //      业务结果，尝试 refresh 毫无意义（未登录必然 401），且会浪费一次请求。
+            //   2. 身份探活请求（getCurrentUser/fetchMe）：只需要干净的通过/失败信号。
+            // 这两类直接 fall through 到下方归一化抛 401，由调用方处理。
+            //
+            // 其余业务请求撞 401（token 过期）：触发 refresh（去重队列）后重放原请求一次。
+            // __retried 标记防止 refresh 返回 401 时无限循环。
+            if (
+                status === 401 &&
+                err.config &&
+                !err.config.__retried &&
+                !err.config.__skipAuthGate
+            ) {
                 const expiresIn = await triggerRefresh(async () => {
                     try {
                         const res = await client.post("/auth/refresh", {}, { __retried: true });
@@ -158,15 +169,10 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
                     err.config.__retried = true;
                     return client.request(err.config);
                 }
-                // refresh 失败。
-                // __skipAuthGate（身份探活请求 getCurrentUser/fetchMe）：不走弹窗挂起，
-                // fall through 到下方归一化抛 401，由调用方 try/catch 处理。
-                // 否则交给 authGate 挂起原请求 + 弹出登录弹窗，
+                // refresh 失败：交给 authGate 挂起原请求 + 弹出登录弹窗，
                 // 用户重登成功后 flush() 用新 cookie 重放，取消则 rejectAll()。
-                if (!err.config.__skipAuthGate) {
-                    // SSR 端未注册 replayer，requestReplay 内部会直接抛 401 兜底。
-                    return requestReplay(err.config);
-                }
+                // SSR 端未注册 replayer，requestReplay 内部会直接抛 401 兜底。
+                return requestReplay(err.config);
             }
 
             // 归一化错误：把后端错误结构（不在 data 下）转成 ApiError 抛出
