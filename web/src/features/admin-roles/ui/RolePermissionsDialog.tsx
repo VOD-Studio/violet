@@ -12,7 +12,7 @@ import {
 } from "@shared/ui/dialog";
 import { Label } from "@shared/ui/label";
 import { Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRoleDetail, useUpdateRolePermissions } from "../api/queries";
 
 interface RolePermissionsDialogProps {
@@ -46,19 +46,8 @@ export function RolePermissionsDialog({
         }
     }, [roleDetail]);
 
-    // 按权限代码分组
-    const groupedPermissions = useMemo(() => {
-        const groups: Record<string, typeof permissions> = {};
-        permissions.forEach((permission) => {
-            if (!permission.code) return;
-            const prefix = permission.code.split(":")[0] || "other";
-            if (!groups[prefix]) {
-                groups[prefix] = [];
-            }
-            groups[prefix].push(permission);
-        });
-        return groups;
-    }, [permissions]);
+    // 后端已返回树：permissions 为 menu 数组，每个 menu.children 为其 action
+    const menuTree = permissions;
 
     const handleToggle = (code: string) => {
         setSelectedCodes((prev) => {
@@ -72,8 +61,8 @@ export function RolePermissionsDialog({
         });
     };
 
-    const handleToggleGroup = (group: string) => {
-        const groupCodes = groupedPermissions[group].map((p) => p.code).filter(Boolean) as string[];
+    const handleToggleGroup = (menu: (typeof permissions)[number]) => {
+        const groupCodes = (menu.children || []).map((p) => p.code).filter(Boolean) as string[];
         const allSelected = groupCodes.every((code) => selectedCodes.has(code));
 
         setSelectedCodes((prev) => {
@@ -118,8 +107,10 @@ export function RolePermissionsDialog({
                 </DialogHeader>
 
                 <div className="space-y-6">
-                    {Object.entries(groupedPermissions).map(([group, perms]) => {
-                        const groupCodes = perms.map((p) => p.code).filter(Boolean) as string[];
+                    {menuTree.map((menu) => {
+                        const actions = menu.children || [];
+                        if (actions.length === 0) return null;
+                        const groupCodes = actions.map((p) => p.code).filter(Boolean) as string[];
                         const selectedCount = groupCodes.filter((code) =>
                             selectedCodes.has(code),
                         ).length;
@@ -128,14 +119,14 @@ export function RolePermissionsDialog({
                         const someSelected = selectedCount > 0 && selectedCount < groupCodes.length;
 
                         return (
-                            <div key={group} className="space-y-3">
+                            <div key={menu.id} className="space-y-3">
                                 {/* 分组标题 */}
                                 <div className="flex items-center justify-between border-b pb-2">
                                     <div className="flex items-center gap-2">
                                         <Checkbox
-                                            id={`group-${group}`}
+                                            id={`group-${menu.id}`}
                                             checked={allSelected}
-                                            onCheckedChange={() => handleToggleGroup(group)}
+                                            onCheckedChange={() => handleToggleGroup(menu)}
                                             className={
                                                 someSelected
                                                     ? "data-[state=checked]:bg-primary/50"
@@ -143,10 +134,10 @@ export function RolePermissionsDialog({
                                             }
                                         />
                                         <Label
-                                            htmlFor={`group-${group}`}
-                                            className="font-semibold text-sm uppercase cursor-pointer"
+                                            htmlFor={`group-${menu.id}`}
+                                            className="font-semibold text-sm cursor-pointer"
                                         >
-                                            {group}
+                                            {menu.name}
                                         </Label>
                                         <Badge variant="secondary">
                                             {selectedCount}/{groupCodes.length}
@@ -156,7 +147,7 @@ export function RolePermissionsDialog({
 
                                 {/* 权限列表 */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
-                                    {perms.map((permission) => {
+                                    {actions.map((permission) => {
                                         if (!permission.code) return null;
                                         const isChecked = selectedCodes.has(permission.code);
 
