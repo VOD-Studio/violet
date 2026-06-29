@@ -1,78 +1,53 @@
 version: "2"
 
-# golangci-lint 配置
-# 文档: https://golangci-lint.run/usage/configuration/
-#
-# 启用主流 linter，平衡严格度与误报。
-# 运行: golangci-lint run 或 make api-lint (集成后)
-#
-# 注意：本配置首次启用时，存量代码可能产生大量告警。
-# 建议分两步：先 fix 现有问题，再在 CI 中设为阻断。
-
 run:
   timeout: 5m
-  # 测试文件也检查
   tests: true
-
-
 
 linters:
   default: none
   enable:
-    # 默认启用的核心 linter
-    - errcheck        # 检查未处理的 error 返回值
-    - gosimple        # 简化代码建议
-    - govet           # go vet 检查
-    - ineffassign     # 检测无效赋值
-    - staticcheck     # 综合静态分析 (最强的 linter)
-    - unused          # 检测未使用的代码
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - revive
+    - gofmt
+    - misspell
+    - unconvert
+    - prealloc
+    - copyloopvar
+    - gosec
 
-    # 代码质量增强
-    - revive          # golint 的替代，可配置的代码规范
-    - gofmt           # 强制 gofmt 格式
-    - misspell        # 拼写错误检测
-    - unconvert       # 检测冗余类型转换
-    - prealloc        # slice 预分配建议
-    - exportloopref   # 检测循环变量引用问题 (Go <1.22)
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+    gosec:
+      excludes:
+        - G104
 
-    # 安全相关
-    - gosec           # 安全扫描
-
-linters-settings:
-  errcheck:
-    # 允许忽略 *_test.go 中的 error 返回值
-    exclude-functions:
-      - (io.Closer).Close
-  revive:
+  exclusions:
+    paths:
+      - internal/repository/generated
+      - internal/app/wire_gen.go$
+      - ".*_gen\\.go$"
     rules:
-      - name: exported
-        disabled: true  # 存量代码导出注释不全，暂不强制
-  gosec:
-    excludes:
-      - G104  # audit: 未检查 error (errcheck 已覆盖)
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+      - path: cmd/server/main\.go
+        linters:
+          - gosec
 
 issues:
-  exclude-dirs:
-    - internal/repository/generated  # sqlc 生成
-    - internal/app/wire_gen.go$      # wire 生成 (按文件跳过)
-  exclude-files:
-    - ".*_gen\\.go$"                 # 所有 _gen.go 文件
-  # 每个文件最多报告的问题数
   max-issues-per-linter: 0
   max-same-issues: 0
-  # 排除规则
-  exclude-rules:
-    # 测试文件放宽部分规则
-    - path: _test\.go
-      linters:
-        - gosec
-        - errcheck
-    # main 包允许 Panic (启动失败)
-    - path: cmd/server/main\.go
-      linters:
-        - gosec
-  # 修复建议 (不自动修复，仅报告)
   fix: false
-
-output:
-  sort-results: true
