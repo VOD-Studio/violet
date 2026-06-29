@@ -1,0 +1,322 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Badge } from "@shared/ui/badge";
+import { Button } from "@shared/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@shared/ui/dialog";
+import { Input } from "@shared/ui/input";
+import { Label } from "@shared/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/ui/select";
+import { Textarea } from "@shared/ui/textarea";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
+import { useAdminPermissions, useCreatePermission, useUpdatePermission } from "../api/queries";
+import type { PermissionDTO, PermissionType } from "../model/types";
+
+/**
+ * 创建/编辑权限表单 Schema
+ *
+ * code 校验依赖 type：menu 允许纯 module 名（post），action 要求 module:action（post:create）。
+ * 用 superRefine 把 type 作为上下文做差异化校验。
+ */
+const permissionSchema = z
+    .object({
+        type: z.enum(["menu", "action"]),
+        parentId: z.string().optional(),
+        code: z.string().min(1, "权限代码不能为空").max(50, "权限代码最多 50 字符"),
+        name: z.string().min(1, "权限名称不能为空").max(100, "名称最多 100 字符"),
+        description: z.string().max(500, "描述最多 500 字符").optional().or(z.literal("")),
+        sort: z.number().int("排序为整数").min(0, "排序为非负整数"),
+    })
+    .superRefine((data, ctx) => {
+        if (data.type === "menu") {
+            // menu：纯 module 名
+            if (!/^[a-z]+$/.test(data.code)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["code"],
+                    message: "menu 代码必须为纯小写字母，如 post、user",
+                });
+            }
+        } else {
+            // action：module:action，且必须选父 menu
+            if (!/^[a-z]+:[a-z][a-z-]*$/.test(data.code)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["code"],
+                    message: "action 代码必须为 module:action 格式，如 post:create",
+                });
+            }
+            if (!data.parentId) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["parentId"],
+                    message: "action 必须选择所属分组",
+                });
+            }
+        }
+    });
+
+type PermissionForm = z.infer<typeof permissionSchema>;
+
+interface CreatePermissionDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    /** 传入则编辑模式，否则新建 */
+    editing?: PermissionDTO | null;
+}
+
+export function CreatePermissionDialog({
+    open,
+    onOpenChange,
+    editing,
+}: CreatePermissionDialogProps) {
+    const isEdit = !!editing;
+    const isBuiltin = !!editing?.is_builtin;
+    const createPermission = useCreatePermission();
+    const updatePermission = useUpdatePermission();
+    const { data: permissions = [] } = useAdminPermissions();
+
+    // 仅 menu 节点可作为父
+    const menus = permissions.filter((p) => p.type === "menu");
+
+    const {
+        register,
+        handleSubmit,
+        control,
+        reset,
+        formState: { errors },
+    } = useForm<PermissionForm>({
+        resolver: zodResolver(permissionSchema),
+        defaultValues: {
+            type: "action",
+            parentId: "",
+            code: "",
+            name: "",
+            description: "",
+            sort: 0,
+        },
+    });
+
+    // 对话框开关 / 编辑对象变化时重置表单
+    useEffect(() => {
+        if (!open) return;
+        if (editing) {
+            reset({
+                type: (editing.type as PermissionType) || "action",
+                parentId: editing.parent_id != null ? String(editing.parent_id) : "",
+                code: editing.code || "",
+                name: editing.name || "",
+                description: editing.description || "",
+                sort: editing.sort || 0,
+            });
+        } else {
+            reset({ type: "action", parentId: "", code: "", name: "", description: "", sort: 0 });
+        }
+    }, [open, editing, reset]);
+
+    const onSubmit = (data: PermissionForm) => {
+        const parentId = data.type === "action" && data.parentId ? Number(data.parentId) : null;
+        if (isEdit && editing?.id) {
+            updatePermission.mutate(
+                {
+                    id: editing.id,
+                    data: {
+                        // 内置不改 code；非内置可改
+                        code: isBuiltin ? undefined : data.code,
+                        name: data.name,
+                        description: data.description || undefined,
+                        parent_id: parentId,
+                        sort: data.sort,
+                    },
+                },
+                { onSuccess: () => onOpenChange(false) },
+            );
+        } else {
+            createPermission.mutate(
+                {
+                    code: data.code,
+                    name: data.name,
+                    description: data.description || undefined,
+                    type: data.type,
+                    parent_id: parentId,
+                    sort: data.sort,
+                },
+                { onSuccess: () => onOpenChange(false) },
+            );
+        }
+    };
+
+    const pending = createPermission.isPending || updatePermission.isPending;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>{isEdit ? "编辑权限" : "创建权限"}</DialogTitle>
+                    <DialogDescription>
+                        {isEdit
+                            ? "修改权限定义"
+                            : "新建权限点（menu 为分组容器，action 为可授权操作）"}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                    {/* 类型 */}
+                    <div className="space-y-2">
+                        <Label>类型</Label>
+                        <Controller
+                            control={control}
+                            name="type"
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    disabled={isBuiltin || isEdit}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="action">action（操作权限）</SelectItem>
+                                        <SelectItem value="menu">menu（分组容器）</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                        {isBuiltin && (
+                            <p className="text-muted-foreground text-xs">
+                                <Badge variant="secondary">内置</Badge> 类型不可更改
+                            </p>
+                        )}
+                    </div>
+
+                    {/* 父节点（action 必选；条件渲染读 control 中 type 的值） */}
+                    <Controller
+                        control={control}
+                        name="type"
+                        render={({ field: typeField }) =>
+                            typeField.value === "action" ? (
+                                <div className="space-y-2">
+                                    <Label>
+                                        所属分组 <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Controller
+                                        control={control}
+                                        name="parentId"
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value ?? ""}
+                                                onValueChange={field.onChange}
+                                                disabled={pending}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="选择 menu 分组" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {menus.map((m) => (
+                                                        <SelectItem key={m.id} value={String(m.id)}>
+                                                            {m.name} ({m.code})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    {errors.parentId && (
+                                        <p className="text-destructive text-sm">
+                                            {errors.parentId.message}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : (
+                                <></>
+                            )
+                        }
+                    />
+
+                    {/* 代码 */}
+                    <div className="space-y-2">
+                        <Label htmlFor="code">
+                            权限代码 <span className="text-destructive">*</span>
+                        </Label>
+                        <Input id="code" disabled={isBuiltin || pending} {...register("code")} />
+                        {errors.code && (
+                            <p className="text-destructive text-sm">{errors.code.message}</p>
+                        )}
+                        <p className="text-muted-foreground text-xs">
+                            menu 为纯小写字母（如 post）；action 为 module:action（如 post:create）
+                        </p>
+                    </div>
+
+                    {/* 名称 */}
+                    <div className="space-y-2">
+                        <Label htmlFor="name">
+                            权限名称 <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                            id="name"
+                            placeholder="如：创建文章"
+                            disabled={pending}
+                            {...register("name")}
+                        />
+                        {errors.name && (
+                            <p className="text-destructive text-sm">{errors.name.message}</p>
+                        )}
+                    </div>
+
+                    {/* 描述 */}
+                    <div className="space-y-2">
+                        <Label htmlFor="description">描述</Label>
+                        <Textarea
+                            id="description"
+                            rows={2}
+                            disabled={pending}
+                            {...register("description")}
+                        />
+                        {errors.description && (
+                            <p className="text-destructive text-sm">{errors.description.message}</p>
+                        )}
+                    </div>
+
+                    {/* 排序 */}
+                    <div className="space-y-2">
+                        <Label htmlFor="sort">排序</Label>
+                        <Input
+                            id="sort"
+                            type="number"
+                            min={0}
+                            disabled={pending}
+                            {...register("sort", { valueAsNumber: true })}
+                        />
+                        {errors.sort && (
+                            <p className="text-destructive text-sm">{errors.sort.message}</p>
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                            disabled={pending}
+                        >
+                            取消
+                        </Button>
+                        <Button type="submit" disabled={pending}>
+                            {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+                            {isEdit ? "保存" : "创建"}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
