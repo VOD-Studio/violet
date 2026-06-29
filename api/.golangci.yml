@@ -1,3 +1,5 @@
+version: "2"
+
 # golangci-lint 配置
 # 文档: https://golangci-lint.run/usage/configuration/
 #
@@ -15,7 +17,7 @@ run:
 
 
 linters:
-  disable-all: true
+  default: none
   enable:
     # 默认启用的核心 linter
     - errcheck        # 检查未处理的 error 返回值
