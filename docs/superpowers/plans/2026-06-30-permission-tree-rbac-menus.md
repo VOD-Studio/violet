@@ -917,21 +917,32 @@ Modify `web/src/features/admin-permissions/model/types.ts`，整体替换为：
  * admin-permissions 模块类型定义
  */
 
-/** 权限类型 */
+/** 权限类型：menu 为分组容器，action 为可授权操作 */
 export type PermissionType = "menu" | "action";
 
 /**
  * PermissionDTO - 权限数据传输对象（支持树形）
+ *
+ * 对应后端 GET /admin/permissions 返回的权限对象（已聚合为 menu→action 两层树）
  */
 export interface PermissionDTO {
+    /** 权限 ID */
     id?: number;
+    /** 权限代码（menu 为纯 module 名如 post；action 为 module:action 如 post:create） */
     code?: string;
+    /** 权限显示名称 */
     name?: string;
+    /** 权限描述 */
     description?: string;
+    /** 权限类型：menu（分组容器）| action（可授权操作） */
     type?: PermissionType;
+    /** 父权限 ID（action 指向所属 menu；menu 为 null） */
     parent_id?: number | null;
+    /** 排序值（升序） */
     sort?: number;
+    /** 是否内置权限（内置不可删、不可改 code） */
     is_builtin?: boolean;
+    /** 子权限列表（仅 menu 节点有，为其下 action） */
     children?: PermissionDTO[];
 }
 
@@ -939,11 +950,17 @@ export interface PermissionDTO {
  * CreatePermissionRequest - 创建权限请求
  */
 export interface CreatePermissionRequest {
+    /** 权限代码（必填） */
     code: string;
+    /** 权限名称（必填） */
     name: string;
+    /** 权限描述 */
     description?: string;
+    /** 权限类型，默认 action */
     type?: PermissionType;
+    /** 父权限 ID（action 必填指向 menu；menu 为 null） */
     parent_id?: number | null;
+    /** 排序值，默认 0 */
     sort?: number;
 }
 
@@ -951,10 +968,15 @@ export interface CreatePermissionRequest {
  * UpdatePermissionRequest - 更新权限请求
  */
 export interface UpdatePermissionRequest {
+    /** 权限代码（内置权限不可改，提交时后端忽略） */
     code?: string;
+    /** 权限名称 */
     name?: string;
+    /** 权限描述 */
     description?: string;
+    /** 父权限 ID */
     parent_id?: number | null;
+    /** 排序值 */
     sort?: number;
 }
 ```
@@ -1012,6 +1034,8 @@ git commit -m "feat(admin/permissions): 前端类型支持树形 + 修复 update
 
 Create `web/src/features/admin-permissions/ui/CreatePermissionDialog.tsx`:
 
+> 表单规范：全字段纳入 zod schema + react-hook-form。`code` 用 `z.superRefine` 做 type 感知校验（menu 允许纯 module 名、action 要求 `module:action`）；`type`/`parentId` 用 `Controller` 包 shadcn `Select`（非受控组件必须用 Controller）。
+
 ```tsx
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
@@ -1035,8 +1059,8 @@ import {
 import { Textarea } from "@shared/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import {
     useAdminPermissions,
@@ -1045,6 +1069,52 @@ import {
 } from "../api/queries";
 import type { PermissionDTO, PermissionType } from "../model/types";
 
+/**
+ * 创建/编辑权限表单 Schema
+ *
+ * code 校验依赖 type：menu 允许纯 module 名（post），action 要求 module:action（post:create）。
+ * 用 superRefine 把 type 作为上下文做差异化校验。
+ */
+const permissionSchema = z
+    .object({
+        type: z.enum(["menu", "action"]),
+        parentId: z.string().optional(),
+        code: z.string().min(1, "权限代码不能为空").max(50, "权限代码最多 50 字符"),
+        name: z.string().min(1, "权限名称不能为空").max(100, "名称最多 100 字符"),
+        description: z.string().max(500, "描述最多 500 字符").optional().or(z.literal("")),
+        sort: z.coerce.number().int("排序为整数").min(0, "排序为非负整数"),
+    })
+    .superRefine((data, ctx) => {
+        if (data.type === "menu") {
+            // menu：纯 module 名
+            if (!/^[a-z]+$/.test(data.code)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["code"],
+                    message: "menu 代码必须为纯小写字母，如 post、user",
+                });
+            }
+        } else {
+            // action：module:action，且必须选父 menu
+            if (!/^[a-z]+:[a-z][a-z-]*$/.test(data.code)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["code"],
+                    message: "action 代码必须为 module:action 格式，如 post:create",
+                });
+            }
+            if (!data.parentId) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["parentId"],
+                    message: "action 必须选择所属分组",
+                });
+            }
+        }
+    });
+
+type PermissionForm = z.infer<typeof permissionSchema>;
+
 interface CreatePermissionDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -1052,33 +1122,16 @@ interface CreatePermissionDialogProps {
     editing?: PermissionDTO | null;
 }
 
-/** code 校验：menu 允许纯 module 名，action 要求 module:action */
-const codeSchema = z
-    .string()
-    .min(1, "权限代码不能为空")
-    .max(50, "权限代码最多 50 字符")
-    .regex(/^[a-z]+(:[a-z][a-z-]*)?$/, "格式：menu 为 post；action 为 post:create");
-
-const baseSchema = z.object({
-    name: z.string().min(1, "权限名称不能为空").max(100, "名称最多 100 字符"),
-    description: z.string().max(500, "描述最多 500 字符").optional().or(z.literal("")),
-    sort: z.coerce.number().int().min(0, "排序为非负整数").default(0),
-});
-
-type FormValues = z.infer<typeof baseSchema> & { code: string };
-
 export function CreatePermissionDialog({
     open,
     onOpenChange,
     editing,
 }: CreatePermissionDialogProps) {
     const isEdit = !!editing;
+    const isBuiltin = !!editing?.is_builtin;
     const createPermission = useCreatePermission();
     const updatePermission = useUpdatePermission();
     const { data: permissions = [] } = useAdminPermissions();
-
-    const [type, setType] = useState<PermissionType>("action");
-    const [parentId, setParentId] = useState<string>("");
 
     // 仅 menu 节点可作为父
     const menus = permissions.filter((p) => p.type === "menu");
@@ -1086,52 +1139,43 @@ export function CreatePermissionDialog({
     const {
         register,
         handleSubmit,
+        control,
         reset,
-        setValue,
-        watch,
         formState: { errors },
-    } = useForm<FormValues>({
-        resolver: zodResolver(baseSchema as never),
-        defaultValues: { code: "", name: "", description: "", sort: 0 },
+    } = useForm<PermissionForm>({
+        resolver: zodResolver(permissionSchema),
+        defaultValues: { type: "action", parentId: "", code: "", name: "", description: "", sort: 0 },
     });
 
-    const codeValue = watch("code");
-
-    // 编辑模式初始化
+    // 对话框开关 / 编辑对象变化时重置表单
     useEffect(() => {
-        if (open && editing) {
-            setType((editing.type as PermissionType) || "action");
-            setParentId(editing.parent_id != null ? String(editing.parent_id) : "");
-            setValue("code", editing.code || "");
-            setValue("name", editing.name || "");
-            setValue("description", editing.description || "");
-            setValue("sort", editing.sort || 0);
-        } else if (open) {
-            setType("action");
-            setParentId("");
-            reset({ code: "", name: "", description: "", sort: 0 });
+        if (!open) return;
+        if (editing) {
+            reset({
+                type: (editing.type as PermissionType) || "action",
+                parentId: editing.parent_id != null ? String(editing.parent_id) : "",
+                code: editing.code || "",
+                name: editing.name || "",
+                description: editing.description || "",
+                sort: editing.sort || 0,
+            });
+        } else {
+            reset({ type: "action", parentId: "", code: "", name: "", description: "", sort: 0 });
         }
-    }, [open, editing, reset, setValue]);
+    }, [open, editing, reset]);
 
-    // 校验 code：action 必须有冒号
-    const codeError =
-        !codeValue ? "权限代码不能为空" :
-        type === "action" && !codeValue.includes(":") ? "action 必须为 module:action 格式" :
-        !/^[a-z]+(:[a-z][a-z-]*)?$/.test(codeValue) ? "格式不合法" :
-        null;
-
-    const onSubmit = (data: FormValues) => {
-        if (codeError) return;
+    const onSubmit = (data: PermissionForm) => {
+        const parentId = data.type === "action" && data.parentId ? Number(data.parentId) : null;
         if (isEdit && editing?.id) {
             updatePermission.mutate(
                 {
                     id: editing.id,
                     data: {
+                        // 内置不改 code；非内置可改
+                        code: isBuiltin ? undefined : data.code,
                         name: data.name,
                         description: data.description || undefined,
-                        // 内置不改 code；非内置可改
-                        code: editing.is_builtin ? undefined : data.code,
-                        parent_id: type === "action" && parentId ? Number(parentId) : null,
+                        parent_id: parentId,
                         sort: data.sort,
                     },
                 },
@@ -1143,8 +1187,8 @@ export function CreatePermissionDialog({
                     code: data.code,
                     name: data.name,
                     description: data.description || undefined,
-                    type,
-                    parent_id: type === "action" && parentId ? Number(parentId) : null,
+                    type: data.type,
+                    parent_id: parentId,
                     sort: data.sort,
                 },
                 { onSuccess: () => onOpenChange(false) },
@@ -1152,7 +1196,6 @@ export function CreatePermissionDialog({
         }
     };
 
-    const isBuiltin = !!editing?.is_builtin;
     const pending = createPermission.isPending || updatePermission.isPending;
 
     return (
@@ -1171,19 +1214,25 @@ export function CreatePermissionDialog({
                     {/* 类型 */}
                     <div className="space-y-2">
                         <Label>类型</Label>
-                        <Select
-                            value={type}
-                            onValueChange={(v) => setType(v as PermissionType)}
-                            disabled={isBuiltin || isEdit}
-                        >
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="action">action（操作权限）</SelectItem>
-                                <SelectItem value="menu">menu（分组容器）</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <Controller
+                            control={control}
+                            name="type"
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    disabled={isBuiltin || isEdit}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="action">action（操作权限）</SelectItem>
+                                        <SelectItem value="menu">menu（分组容器）</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                         {isBuiltin && (
                             <p className="text-muted-foreground text-xs">
                                 <Badge variant="secondary">内置</Badge> 类型不可更改
@@ -1191,49 +1240,59 @@ export function CreatePermissionDialog({
                         )}
                     </div>
 
-                    {/* 父节点（action 必选） */}
-                    {type === "action" && (
-                        <div className="space-y-2">
-                            <Label>
-                                所属分组 <span className="text-destructive">*</span>
-                            </Label>
-                            <Select
-                                value={parentId}
-                                onValueChange={setParentId}
-                                disabled={pending}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="选择 menu 分组" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {menus.map((m) => (
-                                        <SelectItem key={m.id} value={String(m.id)}>
-                                            {m.name} ({m.code})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
+                    {/* 父节点（action 必选；条件渲染读 control 中 type 的值） */}
+                    <Controller
+                        control={control}
+                        name="type"
+                        render={({ field: typeField }) =>
+                            typeField.value === "action" ? (
+                                <div className="space-y-2">
+                                    <Label>
+                                        所属分组 <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Controller
+                                        control={control}
+                                        name="parentId"
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value ?? ""}
+                                                onValueChange={field.onChange}
+                                                disabled={pending}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="选择 menu 分组" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {menus.map((m) => (
+                                                        <SelectItem key={m.id} value={String(m.id)}>
+                                                            {m.name} ({m.code})
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    {errors.parentId && (
+                                        <p className="text-destructive text-sm">
+                                            {errors.parentId.message}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : null
+                        }
+                    />
 
                     {/* 代码 */}
                     <div className="space-y-2">
                         <Label htmlFor="code">
                             权限代码 <span className="text-destructive">*</span>
                         </Label>
-                        <Input
-                            id="code"
-                            placeholder={type === "action" ? "如 post:create" : "如 post"}
-                            disabled={isBuiltin || pending}
-                            {...register("code")}
-                        />
-                        {(errors.code || codeError) && (
-                            <p className="text-destructive text-sm">{codeError || errors.code?.message}</p>
+                        <Input id="code" disabled={isBuiltin || pending} {...register("code")} />
+                        {errors.code && (
+                            <p className="text-destructive text-sm">{errors.code.message}</p>
                         )}
                         <p className="text-muted-foreground text-xs">
-                            {type === "menu"
-                                ? "纯小写字母，如 post、user"
-                                : "module:action 全小写，如 post:create"}
+                            menu 为纯小写字母（如 post）；action 为 module:action（如 post:create）
                         </p>
                     </div>
 
@@ -1249,18 +1308,17 @@ export function CreatePermissionDialog({
                     {/* 描述 */}
                     <div className="space-y-2">
                         <Label htmlFor="description">描述</Label>
-                        <Textarea
-                            id="description"
-                            rows={2}
-                            disabled={pending}
-                            {...register("description")}
-                        />
+                        <Textarea id="description" rows={2} disabled={pending} {...register("description")} />
+                        {errors.description && (
+                            <p className="text-destructive text-sm">{errors.description.message}</p>
+                        )}
                     </div>
 
                     {/* 排序 */}
                     <div className="space-y-2">
                         <Label htmlFor="sort">排序</Label>
                         <Input id="sort" type="number" min={0} disabled={pending} {...register("sort")} />
+                        {errors.sort && <p className="text-destructive text-sm">{errors.sort.message}</p>}
                     </div>
 
                     <DialogFooter>
@@ -1272,7 +1330,7 @@ export function CreatePermissionDialog({
                         >
                             取消
                         </Button>
-                        <Button type="submit" disabled={pending || !!codeError}>
+                        <Button type="submit" disabled={pending}>
                             {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
                             {isEdit ? "保存" : "创建"}
                         </Button>
@@ -1283,6 +1341,8 @@ export function CreatePermissionDialog({
     );
 }
 ```
+
+> 关键点：所有字段（含 type/parentId/code/sort）都在 `permissionSchema` 内，无任何 useState。Select 用 `Controller` 接入。`code`/`parentId` 的 type 感知校验在 `superRefine` 里集中处理。`sort` 用 `z.coerce.number()` 让 `<input type=number>` 的字符串值自动转数字。
 
 - [ ] **Step 2: 类型检查**
 
@@ -1885,6 +1945,8 @@ Modify `web/src/features/tags/model/types.ts`，在文件末尾追加：
 ```ts
 /**
  * UpdateTagRequest - 更新标签请求体
+ *
+ * 对接后端 PATCH /api/v1/tags/{id} 的请求体，slug 由后端按 name 自动重算。
  */
 export interface UpdateTagRequest {
     /** 标签名，必填 */
@@ -2235,39 +2297,68 @@ Create `web/src/features/admin-announcements/model/types.ts`:
 ```ts
 /**
  * admin-announcements 模块类型定义
+ *
  * 对齐后端 application/announcement.AnnouncementDTO
  */
 
+/** 公告类型枚举 */
 export type AnnouncementType = "info" | "warning" | "success" | "error";
 
+/**
+ * AnnouncementDTO - 公告数据传输对象
+ */
 export interface AnnouncementDTO {
+    /** 公告 ID */
     id: number;
+    /** 公告标题 */
     title: string;
+    /** 公告正文 */
     content: string;
+    /** 公告类型 */
     type: AnnouncementType;
+    /** 是否启用 */
     is_active: boolean;
-    /** RFC3339 字符串，可选 */
+    /** 生效开始时间（RFC3339 字符串，可选） */
     start_time?: string;
-    /** RFC3339 字符串，可选 */
+    /** 生效结束时间（RFC3339 字符串，可选） */
     end_time?: string;
+    /** 创建时间（RFC3339 字符串） */
     created_at: string;
 }
 
+/**
+ * CreateAnnouncementRequest - 创建公告请求
+ */
 export interface CreateAnnouncementRequest {
+    /** 公告标题 */
     title: string;
+    /** 公告正文 */
     content: string;
+    /** 公告类型 */
     type: AnnouncementType;
+    /** 是否启用 */
     is_active?: boolean;
+    /** 生效开始时间（RFC3339 字符串，可选） */
     start_time?: string;
+    /** 生效结束时间（RFC3339 字符串，可选） */
     end_time?: string;
 }
 
+/**
+ * UpdateAnnouncementRequest - 更新公告请求
+ */
 export interface UpdateAnnouncementRequest {
+    /** 公告标题 */
     title: string;
+    /** 公告正文 */
     content: string;
+    /** 公告类型 */
     type: AnnouncementType;
+    /** 是否启用 */
     is_active?: boolean;
+    /** 生效开始时间（RFC3339 字符串，可选） */
     start_time?: string;
+    /** 生效结束时间（RFC3339 字符串，可选） */
     end_time?: string;
 }
 ```
@@ -2405,6 +2496,8 @@ git commit -m "feat(admin/announcements): 公告管理 data layer（types/keys/c
 
 Create `web/src/features/admin-announcements/ui/AnnouncementDialog.tsx`:
 
+> 表单规范：全字段纳入 zod schema + react-hook-form，无 useState。`type` 用 `Controller` 包 `Select`；`isActive` 用 `Controller` 包 `Switch`；`startTime`/`endTime` 用 RHF 的 `register`（`<input type=datetime-local>` 是受控原生输入，可直接 register）。提交时把 datetime-local 字符串转 RFC3339。
+
 ```tsx
 import { Button } from "@shared/ui/button";
 import {
@@ -2428,8 +2521,8 @@ import { Switch } from "@shared/ui/switch";
 import { Textarea } from "@shared/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import {
     useCreateAnnouncement,
@@ -2437,15 +2530,39 @@ import {
 } from "../api/queries";
 import type { AnnouncementDTO, AnnouncementType } from "../model/types";
 
-const schema = z.object({
-    title: z.string().min(1, "标题不能为空").max(200, "标题最多 200 字符"),
-    content: z.string().min(1, "内容不能为空"),
-});
-type FormValues = z.infer<typeof schema>;
+/**
+ * 创建/编辑公告表单 Schema
+ *
+ * startTime/endTime 为 datetime-local 字符串（可空），用 superRefine 校验：
+ * 若都填了，开始不得晚于结束。
+ */
+const announcementSchema = z
+    .object({
+        title: z.string().min(1, "标题不能为空").max(200, "标题最多 200 字符"),
+        content: z.string().min(1, "内容不能为空"),
+        type: z.enum(["info", "warning", "success", "error"]),
+        isActive: z.boolean(),
+        startTime: z.string().optional().or(z.literal("")),
+        endTime: z.string().optional().or(z.literal("")),
+    })
+    .superRefine((data, ctx) => {
+        if (data.startTime && data.endTime) {
+            if (new Date(data.startTime) > new Date(data.endTime)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["endTime"],
+                    message: "结束时间不得早于开始时间",
+                });
+            }
+        }
+    });
+
+type AnnouncementForm = z.infer<typeof announcementSchema>;
 
 interface AnnouncementDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** 传入则编辑模式，否则新建 */
     editing?: AnnouncementDTO | null;
 }
 
@@ -2461,49 +2578,53 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
     const createAnn = useCreateAnnouncement();
     const updateAnn = useUpdateAnnouncement();
 
-    const [type, setType] = useState<AnnouncementType>("info");
-    const [isActive, setIsActive] = useState(true);
-    const [startTime, setStartTime] = useState("");
-    const [endTime, setEndTime] = useState("");
-
     const {
         register,
         handleSubmit,
+        control,
         reset,
         formState: { errors },
-    } = useForm<FormValues>({
-        resolver: zodResolver(schema),
-        defaultValues: { title: "", content: "" },
+    } = useForm<AnnouncementForm>({
+        resolver: zodResolver(announcementSchema),
+        defaultValues: {
+            title: "",
+            content: "",
+            type: "info",
+            isActive: true,
+            startTime: "",
+            endTime: "",
+        },
     });
 
+    // 对话框开关 / 编辑对象变化时重置表单
     useEffect(() => {
-        if (open) {
-            reset({
-                title: editing?.title || "",
-                content: editing?.content || "",
-            });
-            setType(editing?.type || "info");
-            setIsActive(editing?.is_active ?? true);
-            setStartTime(editing?.start_time ? editing.start_time.slice(0, 16) : "");
-            setEndTime(editing?.end_time ? editing.end_time.slice(0, 16) : "");
-        }
+        if (!open) return;
+        reset({
+            title: editing?.title || "",
+            content: editing?.content || "",
+            type: (editing?.type as AnnouncementType) || "info",
+            isActive: editing?.is_active ?? true,
+            // RFC3339 → datetime-local（取前 16 位 "YYYY-MM-DDTHH:mm"）
+            startTime: editing?.start_time ? editing.start_time.slice(0, 16) : "",
+            endTime: editing?.end_time ? editing.end_time.slice(0, 16) : "",
+        });
     }, [open, editing, reset]);
 
-    const toRFC3339 = (local: string) => {
+    /** datetime-local 字符串 → RFC3339；空串返回 undefined */
+    const toRFC3339 = (local: string): string | undefined => {
         if (!local) return undefined;
-        // local 是 datetime-local 格式 "YYYY-MM-DDTHH:mm"，补秒+时区
         const d = new Date(local);
-        return isNaN(d.getTime()) ? undefined : d.toISOString();
+        return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
     };
 
-    const onSubmit = (data: FormValues) => {
+    const onSubmit = (data: AnnouncementForm) => {
         const payload = {
             title: data.title,
             content: data.content,
-            type,
-            is_active: isActive,
-            start_time: toRFC3339(startTime),
-            end_time: toRFC3339(endTime),
+            type: data.type,
+            is_active: data.isActive,
+            start_time: toRFC3339(data.startTime ?? ""),
+            end_time: toRFC3339(data.endTime ?? ""),
         };
         if (isEdit && editing?.id) {
             updateAnn.mutate(
@@ -2527,6 +2648,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                    {/* 标题 */}
                     <div className="space-y-2">
                         <Label htmlFor="ann-title">
                             标题 <span className="text-destructive">*</span>
@@ -2537,51 +2659,65 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                         )}
                     </div>
 
+                    {/* 类型 */}
                     <div className="space-y-2">
-                        <Label htmlFor="ann-type">类型</Label>
-                        <Select value={type} onValueChange={(v) => setType(v as AnnouncementType)}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {TYPE_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value}>
-                                        {o.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <Label>类型</Label>
+                        <Controller
+                            control={control}
+                            name="type"
+                            render={({ field }) => (
+                                <Select value={field.value} onValueChange={field.onChange}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {TYPE_OPTIONS.map((o) => (
+                                            <SelectItem key={o.value} value={o.value}>
+                                                {o.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
                     </div>
 
+                    {/* 内容 */}
                     <div className="space-y-2">
                         <Label htmlFor="ann-content">
                             内容 <span className="text-destructive">*</span>
                         </Label>
-                        <Textarea
-                            id="ann-content"
-                            rows={4}
-                            disabled={pending}
-                            {...register("content")}
-                        />
+                        <Textarea id="ann-content" rows={4} disabled={pending} {...register("content")} />
                         {errors.content && (
                             <p className="text-destructive text-sm">{errors.content.message}</p>
                         )}
                     </div>
 
+                    {/* 启用 */}
                     <div className="flex items-center gap-2">
-                        <Switch checked={isActive} onCheckedChange={setIsActive} id="ann-active" />
+                        <Controller
+                            control={control}
+                            name="isActive"
+                            render={({ field }) => (
+                                <Switch
+                                    id="ann-active"
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            )}
+                        />
                         <Label htmlFor="ann-active">启用</Label>
                     </div>
 
+                    {/* 生效区间 */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
                             <Label htmlFor="ann-start">生效开始（可选）</Label>
                             <Input
                                 id="ann-start"
                                 type="datetime-local"
-                                value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
                                 disabled={pending}
+                                {...register("startTime")}
                             />
                         </div>
                         <div className="space-y-2">
@@ -2589,10 +2725,12 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                             <Input
                                 id="ann-end"
                                 type="datetime-local"
-                                value={endTime}
-                                onChange={(e) => setEndTime(e.target.value)}
                                 disabled={pending}
+                                {...register("endTime")}
                             />
+                            {errors.endTime && (
+                                <p className="text-destructive text-sm">{errors.endTime.message}</p>
+                            )}
                         </div>
                     </div>
 
@@ -2616,6 +2754,8 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
     );
 }
 ```
+
+> 关键点：所有字段（title/content/type/isActive/startTime/endTime）都在 `announcementSchema` 内，无 useState。`type`、`isActive` 用 `Controller`（非受控组件）；`startTime`/`endTime` 是原生受控 `datetime-local`，直接 `register` 即可。开始/结束时序校验在 `superRefine` 里。
 
 - [ ] **Step 2: 写公告管理页**
 
