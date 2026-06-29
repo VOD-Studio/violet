@@ -37,6 +37,12 @@ export type FileKind =
 
 /**
  * 根据 MIME 类型 + 文件名判断文件大类（预览分发用）
+ *
+ * 注意 OOXML 文档的 mime 都含 `officedocument` 命名空间前缀，例如：
+ *   docx: application/vnd.openxmlformats-officedocument.wordprocessingml.document
+ *   xlsx: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+ *   pptx: application/vnd.openxmlformats-officedocument.presentationml.presentation
+ * 因此不能用宽泛的 includes("document")（会误命中 pptx），需按扩展名优先 + 精确 mime 子串。
  */
 export function getFileKind(mimeType: string, name?: string): FileKind {
     const ext = getExtension(name);
@@ -44,16 +50,14 @@ export function getFileKind(mimeType: string, name?: string): FileKind {
     if (mimeType.startsWith("video/")) return "video";
     if (mimeType.startsWith("audio/")) return "audio";
     if (mimeType.includes("pdf")) return "pdf";
-    // Word: .docx 可预览，老式 .doc 二进制走占位
-    if (mimeType.includes("word") || mimeType.includes("document") || ext === "docx") {
-        return ext === "doc" ? "other" : "docx";
-    }
-    if (mimeType.includes("excel") || mimeType.includes("sheet") || ext === "xlsx") {
-        return "spreadsheet";
-    }
-    if (mimeType.includes("powerpoint") || mimeType.includes("presentation") || ext === "pptx") {
-        return "presentation";
-    }
+
+    // Office 文档：扩展名优先（最可靠），辅以精确 mime 子串（wordprocessingml/spreadsheetml/presentationml）
+    if (ext === "docx" || mimeType.includes("wordprocessingml")) return "docx";
+    if (ext === "xlsx" || mimeType.includes("spreadsheetml")) return "spreadsheet";
+    if (ext === "pptx" || mimeType.includes("presentationml")) return "presentation";
+    // 老式 Office 二进制（.doc/.xls/.ppt）走占位
+    if (ext === "doc" || ext === "xls" || ext === "ppt") return "other";
+
     if (
         mimeType.includes("zip") ||
         mimeType.includes("rar") ||
