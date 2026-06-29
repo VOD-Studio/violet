@@ -48,13 +48,13 @@ export function VideoPreview({
         return () => document.removeEventListener("fullscreenchange", handler);
     }, []);
 
-    // 播放中 3 秒无操作自动隐藏控制栏（菜单展开时不隐藏）
-    // biome-ignore lint/correctness/useExhaustiveDependencies: currentTime 仅用于重置计时，无需作为依赖
+    // 播放中 3 秒无鼠标操作自动隐藏控制栏（菜单展开时不隐藏）
+    // 鼠标移动会 setControlsVisible(true) 触发本 effect 重启计时，实现"动则显，静则隐"
     useEffect(() => {
         if (!state.isPlaying || !controlsVisible || menuOpen) return;
         const timer = setTimeout(() => setControlsVisible(false), 3000);
         return () => clearTimeout(timer);
-    }, [state.isPlaying, controlsVisible, state.currentTime, menuOpen]);
+    }, [state.isPlaying, controlsVisible, menuOpen]);
 
     // 鼠标移动时显示控制栏
     const handleMouseMove = useCallback(() => {

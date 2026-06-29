@@ -33,13 +33,16 @@ export function useAudioPlayer({
 
     const options = useMemo(
         () => ({
-            waveColor: "hsl(var(--muted-foreground) / 0.3)",
+            // 波形样式：圆角粗条，柔和的未播放色 + 鲜明的进度色
+            waveColor: "hsl(var(--muted-foreground) / 0.25)",
             progressColor: "hsl(var(--primary))",
             cursorColor: "hsl(var(--primary))",
-            cursorWidth: 2,
-            barWidth: 2,
-            barRadius: 1,
+            cursorWidth: 1,
+            barWidth: 3,
+            barRadius: 3,
             barGap: 2,
+            // 归一化波形高度，让小音量也可见
+            normalize: true,
             height: waveHeight,
             url,
         }),

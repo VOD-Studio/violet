@@ -226,13 +226,16 @@ export function VideoControls({
                                 <button
                                     type="button"
                                     key={rate}
-                                    className={`min-w-16 px-3 py-1 text-left text-xs hover:bg-white/20 ${rate === state.playbackRate ? "text-primary" : "text-white"}`}
+                                    className={`flex min-w-20 items-center justify-between gap-2 px-3 py-1 text-left text-xs hover:bg-white/20 ${rate === state.playbackRate ? "font-bold text-white" : "text-white/70"}`}
                                     onClick={() => {
                                         onSetPlaybackRate(rate);
                                         onMenuOpenChange(false);
                                     }}
                                 >
-                                    {rate === 1 ? "正常" : `${rate}x`}
+                                    <span>{rate === 1 ? "正常" : `${rate}x`}</span>
+                                    {rate === state.playbackRate ? (
+                                        <span className="text-white">✓</span>
+                                    ) : null}
                                 </button>
                             ))}
                         </div>

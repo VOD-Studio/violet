@@ -25,49 +25,40 @@ export function AudioPreview({
 
     return (
         <div
-            className={`rounded-lg border bg-card p-5 focus:outline-none ${className ?? ""}`}
+            className={`flex flex-col gap-4 rounded-lg border bg-card p-6 focus:outline-none ${className ?? ""}`}
             // biome-ignore lint/a11y/noNoninteractiveTabindex: 音频播放器需聚焦接收键盘快捷键
             tabIndex={0}
             role="region"
             aria-label={name ?? "音频预览"}
         >
-            <div className="flex items-start gap-4">
+            {/* 顶部：封面图标 */}
+            <div className="flex justify-center">
                 <AudioCoverIcon />
-
-                <div className="min-w-0 flex-1">
-                    {name ? (
-                        <p className="mb-3 truncate text-sm font-medium" title={name}>
-                            {name}
-                        </p>
-                    ) : null}
-
-                    {/* 波形容器（必须始终渲染，wavesurfer 才能初始化） */}
-                    <div className="relative w-full">
-                        <div ref={containerRef} className="w-full" />
-                        {/* 加载/错误遮罩叠在波形上方 */}
-                        {loadStatus !== "ready" ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-card">
-                                <AudioOverlay loadStatus={loadStatus} onRetry={player.retry} />
-                            </div>
-                        ) : null}
-                    </div>
-
-                    {/* 控制栏（就绪后显示） */}
-                    {loadStatus === "ready" ? (
-                        <div className="mt-4">
-                            <AudioControls
-                                state={state}
-                                onTogglePlay={player.togglePlay}
-                                onStop={player.stop}
-                                onSetVolume={player.setVolume}
-                                onToggleMute={player.toggleMute}
-                                onSetPlaybackRate={player.setPlaybackRate}
-                                onToggleLoop={player.toggleLoop}
-                            />
-                        </div>
-                    ) : null}
-                </div>
             </div>
+
+            {/* 波形容器（必须始终渲染，wavesurfer 才能初始化） */}
+            <div className="relative w-full">
+                <div ref={containerRef} className="min-h-20 w-full" />
+                {/* 加载/错误遮罩叠在波形上方 */}
+                {loadStatus !== "ready" ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-card">
+                        <AudioOverlay loadStatus={loadStatus} onRetry={player.retry} />
+                    </div>
+                ) : null}
+            </div>
+
+            {/* 控制栏（就绪后显示） */}
+            {loadStatus === "ready" ? (
+                <AudioControls
+                    state={state}
+                    onTogglePlay={player.togglePlay}
+                    onStop={player.stop}
+                    onSetVolume={player.setVolume}
+                    onToggleMute={player.toggleMute}
+                    onSetPlaybackRate={player.setPlaybackRate}
+                    onToggleLoop={player.toggleLoop}
+                />
+            ) : null}
         </div>
     );
 }

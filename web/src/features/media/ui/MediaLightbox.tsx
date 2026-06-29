@@ -112,13 +112,13 @@ export function MediaLightbox({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="max-w-[90vw] gap-0 border-none bg-background/95 p-0 sm:rounded-lg"
+                className="max-w-[95vw] gap-0 border-none bg-background/95 p-0 sm:max-w-[1200px] sm:rounded-lg"
                 showCloseButton
             >
                 <DialogTitle className="sr-only">{file.original_name}</DialogTitle>
 
-                {/* 顶部切换条：上一个/文件名/下一个 */}
-                <div className="flex items-center gap-2 border-b px-3 py-2">
+                {/* 顶部切换条：上一个/计数/下一个（文件名由各预览套件自行展示，避免重复） */}
+                <div className="flex items-center justify-center gap-2 border-b px-3 py-2">
                     <button
                         type="button"
                         onClick={goPrev}
@@ -128,12 +128,6 @@ export function MediaLightbox({
                     >
                         <ChevronLeft className="size-4" />
                     </button>
-                    <span
-                        className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
-                        title={file.original_name}
-                    >
-                        {file.original_name}
-                    </span>
                     <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
                         {index + 1} / {files.length}
                     </span>
