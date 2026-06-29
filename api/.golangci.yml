@@ -11,12 +11,8 @@ run:
   timeout: 5m
   # 测试文件也检查
   tests: true
-  # 跳过生成代码 (sqlc、wire 等不应被 lint)
-  skip-dirs:
-    - internal/repository/generated  # sqlc 生成
-    - internal/app/wire_gen.go$      # wire 生成 (按文件跳过)
-  skip-files:
-    - ".*_gen\\.go$"                 # 所有 _gen.go 文件
+
+
 
 linters:
   disable-all: true
@@ -54,6 +50,11 @@ linters-settings:
       - G104  # audit: 未检查 error (errcheck 已覆盖)
 
 issues:
+  exclude-dirs:
+    - internal/repository/generated  # sqlc 生成
+    - internal/app/wire_gen.go$      # wire 生成 (按文件跳过)
+  exclude-files:
+    - ".*_gen\\.go$"                 # 所有 _gen.go 文件
   # 每个文件最多报告的问题数
   max-issues-per-linter: 0
   max-same-issues: 0
