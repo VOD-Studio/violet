@@ -386,9 +386,9 @@ func main() {
 			// 权限 CRUD（仅限超级管理员）
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.SuperAdminRequired)
-				r.Post("/permissions", roleH.CreatePermission)          // 创建权限
-				r.Patch("/permissions/{code}", roleH.UpdatePermission)  // 更新权限
-				r.Delete("/permissions/{code}", roleH.DeletePermission) // 删除权限
+				r.Post("/permissions", roleH.CreatePermission)        // 创建权限
+				r.Patch("/permissions/{id}", roleH.UpdatePermission)  // 更新权限
+				r.Delete("/permissions/{id}", roleH.DeletePermission) // 删除权限
 			})
 
 			// 角色管理（均需 role:manage 权限）

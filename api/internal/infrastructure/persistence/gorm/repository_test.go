@@ -49,12 +49,37 @@ func setupTestDB(t *testing.T) *gorm.DB {
 }
 
 // seedPermissions 插入权限点种子数据
+// permCodes 把权限代码字符串解析为 permission.Code
+func permCodes(codes ...string) []permission.Code {
+	out := make([]permission.Code, 0, len(codes))
+	for _, c := range codes {
+		code, err := permission.ParseCode(c)
+		if err != nil {
+			panic(err)
+		}
+		out = append(out, code)
+	}
+	return out
+}
+
 func seedPermissions(t *testing.T, db *gorm.DB, codes ...string) {
 	t.Helper()
-	for _, code := range codes {
-		perm := model.Permission{Code: code, Name: code + " 权限", Description: "测试权限"}
+	for _, code := range permCodes(codes...) {
+		perm := model.Permission{Code: code.String(), Name: code.String() + " 权限", Description: "测试权限", Type: "action"}
 		require.NoError(t, db.Create(&perm).Error)
 	}
+}
+
+// seedPermissionsWithIDs 插入权限种子数据，返回 code→id 映射
+func seedPermissionsWithIDs(t *testing.T, db *gorm.DB, codes ...string) map[string]int32 {
+	t.Helper()
+	m := make(map[string]int32)
+	for _, code := range permCodes(codes...) {
+		perm := model.Permission{Code: code.String(), Name: code.String() + " 权限", Description: "测试权限", Type: "action"}
+		require.NoError(t, db.Create(&perm).Error)
+		m[code.String()] = perm.ID
+	}
+	return m
 }
 
 // seedRole 插入角色种子数据
@@ -305,7 +330,7 @@ func TestPermissionRepository_SaveAndFind(t *testing.T) {
 	ctx := context.Background()
 
 	code, _ := permission.ParseCode("test:action")
-	p := permission.NewPermission(0, code, "测试权限", "测试描述")
+	p := permission.NewPermission(0, code, "测试权限", "测试描述", nil, "action", 0, false)
 
 	_, err := repo.Save(ctx, p)
 	require.NoError(t, err)
@@ -352,12 +377,12 @@ func TestPermissionRepository_Delete(t *testing.T) {
 	repo := NewPermissionRepository(db)
 	ctx := context.Background()
 
-	seedPermissions(t, db, "post:create")
+	ids := seedPermissionsWithIDs(t, db, "post:create")
+	id := ids["post:create"]
 
-	code, _ := permission.ParseCode("post:create")
-	require.NoError(t, repo.Delete(ctx, code))
+	require.NoError(t, repo.Delete(ctx, id))
 
-	_, err := repo.FindByCode(ctx, code)
+	_, err := repo.FindByID(ctx, id)
 	assert.ErrorIs(t, err, permission.ErrNotFound)
 }
 
@@ -366,8 +391,7 @@ func TestPermissionRepository_Delete_NotFound(t *testing.T) {
 	repo := NewPermissionRepository(db)
 	ctx := context.Background()
 
-	code, _ := permission.ParseCode("nonexistent:code")
-	err := repo.Delete(ctx, code)
+	err := repo.Delete(ctx, 99999)
 	assert.ErrorIs(t, err, permission.ErrNotFound)
 }
 
@@ -378,15 +402,14 @@ func TestPermissionRepository_CountRoles(t *testing.T) {
 	ctx := context.Background()
 
 	// 种权限和角色
-	seedPermissions(t, db, "post:create")
+	ids := seedPermissionsWithIDs(t, db, "post:create")
 	rl := seedRole(t, db, "editor", "编辑")
 
 	// 角色关联权限
 	require.NoError(t, roleRepo.SavePermissions(ctx, rl.ID, []string{"post:create"}))
 
 	// 应有 1 个角色使用该权限
-	code, _ := permission.ParseCode("post:create")
-	count, err := permRepo.CountRoles(ctx, code)
+	count, err := permRepo.CountRoles(ctx, ids["post:create"])
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), count)
 }

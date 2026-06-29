@@ -76,6 +76,14 @@ func (m *MockRoleRepository) CountUsers(ctx context.Context, roleID int32) (int6
 // MockPermissionRepository permission.PermissionRepository 的 mock 实现
 type MockPermissionRepository struct{ mock.Mock }
 
+func (m *MockPermissionRepository) FindByID(ctx context.Context, id int32) (*permission.Permission, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*permission.Permission), args.Error(1)
+}
+
 func (m *MockPermissionRepository) FindByCode(ctx context.Context, code permission.Code) (*permission.Permission, error) {
 	args := m.Called(ctx, code)
 	if args.Get(0) == nil {
@@ -102,12 +110,12 @@ func (m *MockPermissionRepository) Save(ctx context.Context, p *permission.Permi
 	return int32(args.Int(0)), args.Error(1)
 }
 
-func (m *MockPermissionRepository) Delete(ctx context.Context, code permission.Code) error {
-	return m.Called(ctx, code).Error(0)
+func (m *MockPermissionRepository) Delete(ctx context.Context, id int32) error {
+	return m.Called(ctx, id).Error(0)
 }
 
-func (m *MockPermissionRepository) CountRoles(ctx context.Context, code permission.Code) (int64, error) {
-	args := m.Called(ctx, code)
+func (m *MockPermissionRepository) CountRoles(ctx context.Context, id int32) (int64, error) {
+	args := m.Called(ctx, id)
 	return args.Get(0).(int64), args.Error(1)
 }
 

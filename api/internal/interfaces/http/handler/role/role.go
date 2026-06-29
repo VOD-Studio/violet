@@ -206,6 +206,9 @@ type CreatePermissionRequest struct {
 	Code        string `json:"code" validate:"required"`
 	Name        string `json:"name" validate:"required"`
 	Description string `json:"description"`
+	Type        string `json:"type"`     // "menu" | "action"，默认 action
+	ParentID    *int32 `json:"parent_id"`
+	Sort        int    `json:"sort"`
 }
 
 // CreatePermission 创建权限点
@@ -222,6 +225,7 @@ func (h *Handler) CreatePermission(w http.ResponseWriter, r *http.Request) {
 
 	out, err := h.permCreate.Handle(r.Context(), apppermcmd.CreatePermissionInput{
 		Code: req.Code, Name: req.Name, Description: req.Description,
+		Type: req.Type, ParentID: req.ParentID, Sort: req.Sort,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -232,13 +236,20 @@ func (h *Handler) CreatePermission(w http.ResponseWriter, r *http.Request) {
 
 // UpdatePermissionRequest 更新权限请求 DTO
 type UpdatePermissionRequest struct {
-	Name        string `json:"name" validate:"required"`
+	Code        string `json:"code"`
+	Name        string `json:"name"`
 	Description string `json:"description"`
+	ParentID    *int32 `json:"parent_id"`
+	Sort        *int   `json:"sort"`
 }
 
 // UpdatePermission 更新权限点
 func (h *Handler) UpdatePermission(w http.ResponseWriter, r *http.Request) {
-	code := r.PathValue("code")
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
 
 	var req UpdatePermissionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -247,7 +258,8 @@ func (h *Handler) UpdatePermission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.permUpdate.Handle(r.Context(), apppermcmd.UpdatePermissionInput{
-		Code: code, Name: req.Name, Description: req.Description,
+		ID: int32(id), Code: req.Code, Name: req.Name, Description: req.Description,
+		ParentID: req.ParentID, Sort: req.Sort,
 	}); err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -257,9 +269,13 @@ func (h *Handler) UpdatePermission(w http.ResponseWriter, r *http.Request) {
 
 // DeletePermission 删除权限点
 func (h *Handler) DeletePermission(w http.ResponseWriter, r *http.Request) {
-	code := r.PathValue("code")
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
 
-	if err := h.permDelete.Handle(r.Context(), apppermcmd.DeletePermissionInput{Code: code}); err != nil {
+	if err := h.permDelete.Handle(r.Context(), apppermcmd.DeletePermissionInput{ID: int32(id)}); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
