@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { motion, useAnimationFrame, useMotionValue, useTransform } from "motion/react";
 import type { ReactNode } from "react";
-import { motion, useMotionValue, useAnimationFrame, useTransform } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface GradientTextProps {
     children: ReactNode;
@@ -60,6 +60,7 @@ export default function GradientText({
         }
     });
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: vendor file
     useEffect(() => {
         elapsedRef.current = 0;
         progress.set(0);
