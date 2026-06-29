@@ -45,5 +45,5 @@ func TestParseToken_RejectsWrongIssuer(t *testing.T) {
 	pair, _ := svc.GenerateTokenPair(TokenInput{UserID: "u1"})
 	claims, err := svc.ParseToken(pair.AccessToken)
 	require.NoError(t, err)
-	assert.Equal(t, "blog-api", claims.RegisteredClaims.Issuer)
+	assert.Equal(t, "blog-api", claims.Issuer)
 }

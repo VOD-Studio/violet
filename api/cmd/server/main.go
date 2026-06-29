@@ -91,6 +91,7 @@ func main() {
 		&newmodel.MusicSetting{},
 		&newmodel.File{}, &newmodel.UploadSession{},
 	); err != nil {
+		log.Warn().Err(err).Msg("AutoMigrate error")
 	}
 
 	roleContainer, roleCleanup, err := app.InitializeRoleContainer(gormDB)

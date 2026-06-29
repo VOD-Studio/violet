@@ -65,11 +65,11 @@ func toDomain(po model.User) (*user.User, error) {
 		return nil, domainshared.BadRequest("数据库中存在非法角色: " + po.Role)
 	}
 
-	id := domainshared.ID{} // 通过 UUID 重建 ID
+	// 通过 UUID 重建 ID
 	// 注意：shared.ID 的 value 是私有的，需通过 MustParseID 重建
 	// 此处用 po.ID.String() 解析，保证 ID 重建一致性
 	rebuiltID := domainshared.MustParseID(po.ID.String())
-	id = rebuiltID
+	id := rebuiltID
 
 	return user.ReconstructUser(
 		id,

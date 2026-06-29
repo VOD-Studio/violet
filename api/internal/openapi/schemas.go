@@ -59,7 +59,7 @@ func registerCommonSchemas(t *openapi3.T) {
 			"request_id": optStr("请求追踪 ID"),
 			"details": {Value: &openapi3.Schema{
 				Type:                 &openapi3.Types{openapi3.TypeObject},
-				AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.BoolPtr(true)},
+				AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.Ptr(true)},
 				Description:          "字段级校验错误详情",
 			}},
 		},

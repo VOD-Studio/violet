@@ -66,7 +66,7 @@ func (t *Transformer) Transform(srcPath string, params domainimage.TransformPara
 		format = "jpeg"
 	}
 	var buf bytes.Buffer
-	mime := "image/jpeg"
+	var mime string
 	switch format {
 	case "webp":
 		if err := webp.Encode(&buf, img, nil); err != nil {
