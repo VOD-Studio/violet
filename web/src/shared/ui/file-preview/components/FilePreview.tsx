@@ -1,15 +1,28 @@
 /**
  * FilePreview - 文件预览主分发器
  *
- * 按文件类型（MIME + 扩展名）路由到对应的预览组件：
+ * 按文件类型（MIME + 扩展名）路由到对应的预览套件：
  * - 图片 → FilePreviewImage（file-preview 套件内）
  * - 视频 → VideoPreview（video-preview 套件）
  * - 音频 → AudioPreview（audio-preview 套件）
- * - 其余（PDF/Office/压缩包/代码/Markdown 等）暂走 FilePlaceholder
- *   后续阶段逐步接入 PDF/文档/压缩包/代码/Markdown 预览。
+ * - PDF → PdfPreview（pdf-preview 套件）
+ * - Word .docx → DocxPreview（docx-preview 套件）
+ * - Excel .xlsx → SpreadsheetPreview（spreadsheet-preview 套件）
+ * - 压缩包 → ArchivePreview（archive-preview 套件）
+ * - 代码 → CodePreview（code-preview 套件）
+ * - Markdown → MarkdownPreview（markdown-preview 套件）
+ *
+ * 不可靠预览类型（PPTX 演示文稿、老式 .doc 二进制、RAR/7z、加密 Office）
+ * → FilePlaceholder 下载占位。
  */
 
+import { ArchivePreview } from "@/shared/ui/archive-preview";
 import { AudioPreview } from "@/shared/ui/audio-preview";
+import { CodePreview } from "@/shared/ui/code-preview";
+import { DocxPreview } from "@/shared/ui/docx-preview";
+import { MarkdownPreview } from "@/shared/ui/markdown-preview";
+import { PdfPreview } from "@/shared/ui/pdf-preview";
+import { SpreadsheetPreview } from "@/shared/ui/spreadsheet-preview";
 import { VideoPreview } from "@/shared/ui/video-preview";
 import type { FilePreviewComponentProps } from "../types/file-preview-types";
 import { getFileKind } from "../utils/mime-utils";
@@ -51,8 +64,19 @@ export function FilePreview({
                 );
             case "audio":
                 return <AudioPreview url={url} mimeType={mimeType} name={name} />;
-            // 其余类型（pdf/docx/spreadsheet/presentation/archive/markdown/code/text/other）
-            // 后续阶段逐步接入，暂走占位
+            case "pdf":
+                return <PdfPreview url={url} name={name} />;
+            case "docx":
+                return <DocxPreview url={url} name={name} />;
+            case "spreadsheet":
+                return <SpreadsheetPreview url={url} name={name} />;
+            case "archive":
+                return <ArchivePreview url={url} name={name} mimeType={mimeType} />;
+            case "markdown":
+                return <MarkdownPreview url={url} name={name} />;
+            case "code":
+                return <CodePreview url={url} name={name} />;
+            // presentation(PPTX)/老式.doc/text/other → 占位下载
             default:
                 return (
                     <FilePlaceholder
