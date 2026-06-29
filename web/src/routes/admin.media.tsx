@@ -1,5 +1,6 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { adminFileKeys } from "@features/media/api/keys";
 import { useAdminDeleteFile } from "@features/media/api/mutations";
 import { useAdminMedia } from "@features/media/api/queries";
 import type { AdminMediaListQuery, MediaFile } from "@features/media/model/types";
@@ -8,6 +9,7 @@ import { MediaGrid } from "@features/media/ui/MediaGrid";
 import { MediaLightbox } from "@features/media/ui/MediaLightbox";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Images, Pencil, Search, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
@@ -60,6 +62,7 @@ function AdminMediaPage() {
     };
     const { data, isLoading } = useAdminMedia(query);
     const deleteMutation = useAdminDeleteFile();
+    const queryClient = useQueryClient();
 
     const files = data?.data ?? [];
 
@@ -191,6 +194,12 @@ function AdminMediaPage() {
                         maxFiles={10}
                         label="拖拽文件到此处或点击上传"
                         hint="支持图片、视频、音频、文档，单文件最大 1GB"
+                        onUploaded={() => {
+                            // 上传成功后刷新素材列表
+                            queryClient.invalidateQueries({
+                                queryKey: adminFileKeys.lists(),
+                            });
+                        }}
                     />
                 </DialogContent>
             </Dialog>

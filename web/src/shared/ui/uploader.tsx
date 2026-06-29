@@ -200,7 +200,7 @@ export function Uploader<T extends UploadResult>({
                         {items.map((item) => (
                             <div
                                 key={item.id}
-                                className="flex items-center gap-3 rounded-lg border p-2"
+                                className="flex max-w-full items-center gap-3 overflow-hidden rounded-lg border p-2"
                             >
                                 <div className="shrink-0">
                                     {item.status === "done" && item.result ? (
