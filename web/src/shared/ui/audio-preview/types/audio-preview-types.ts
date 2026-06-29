@@ -42,6 +42,4 @@ export interface AudioPreviewProps {
     className?: string;
     /** 是否自动播放 */
     autoPlay?: boolean;
-    /** 波形高度（px），默认 80 */
-    waveHeight?: number;
 }

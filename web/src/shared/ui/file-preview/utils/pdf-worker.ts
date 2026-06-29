@@ -1,15 +1,17 @@
 /**
- * pdfjs worker 配置（react-pdf v10）
+ * pdfjs worker 配置（react-pdf v10 + Vite）
  *
- * react-pdf v10 内部依赖自己的 pdfjs 实例，必须用 react-pdf 导出的 pdfjs
- * 来设置 workerSrc，直接用 pdfjs-dist 的 GlobalWorkerOptions 不生效。
+ * react-pdf v10 在 Vite + React.lazy 组合下用 ?url 导入 worker 会失败
+ * （wojtekmaj/react-pdf#1843）。改用 Vite 官方推荐的 new URL(..., import.meta.url)
+ * 方式，Vite 会正确处理 worker 资源的产出与引用。
  *
- * 通过 ?url 导入让 Vite 把 worker 作为独立资源处理，避免 fake worker 警告。
- *
- * @see https://github.com/wojtekmaj/react-pdf#how-do-i-make-this-work-with-vite-or-snowpack
+ * @see https://vite.dev/guide/assets#new-url-url-import-meta-url
+ * @see https://github.com/wojtekmaj/react-pdf/issues/1843
  */
-
-import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { pdfjs } from "react-pdf";
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+// Vite 会把 worker 作为独立 chunk 产出，运行时解析为正确的绝对 URL
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url,
+).toString();

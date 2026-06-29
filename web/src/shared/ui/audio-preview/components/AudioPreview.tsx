@@ -1,64 +1,64 @@
 /**
- * 音频预览主组件
+ * 音频预览主组件（音乐播放器风格）
  *
- * 完整的音频预览体验（wavesurfer.js 波形）：
- * - 波形可视化 + 可点击 seek
- * - 自定义控制栏（播放/暂停/停止、音量、倍速、循环）
- * - 加载/错误状态遮罩 + 重试
- * - 键盘快捷键（空格/←→/↑↓/M）
+ * 布局：封面图标 + 歌曲名 + 可拖拽进度条 + 精致控件（播放/音量/倍速/循环）。
+ * 基于原生 <audio>，无波形依赖，加载/错误状态 + 重试，键盘快捷键。
  */
 
+import { Disc3 } from "lucide-react";
 import { useAudioPlayer } from "../hooks/useAudioPlayer";
 import type { AudioPreviewProps } from "../types/audio-preview-types";
 import { AudioControls } from "./AudioControls";
-import { AudioCoverIcon, AudioOverlay } from "./AudioOverlay";
+import { AudioOverlay } from "./AudioOverlay";
 
-export function AudioPreview({
-    url,
-    name,
-    className,
-    autoPlay = false,
-    waveHeight = 80,
-}: AudioPreviewProps) {
-    const player = useAudioPlayer({ url, autoPlay, waveHeight });
-    const { state, loadStatus, containerRef } = player;
+export function AudioPreview({ url, name, className, autoPlay = false }: AudioPreviewProps) {
+    const player = useAudioPlayer({ url, autoPlay });
+    const { state, loadStatus, audioRef } = player;
 
     return (
         <div
-            className={`flex flex-col gap-4 rounded-lg border bg-card p-6 focus:outline-none ${className ?? ""}`}
+            ref={player.containerRef}
+            className={`flex flex-col items-center gap-5 rounded-lg border bg-gradient-to-b from-card to-muted/30 p-8 focus:outline-none ${className ?? ""}`}
             // biome-ignore lint/a11y/noNoninteractiveTabindex: 音频播放器需聚焦接收键盘快捷键
             tabIndex={0}
             role="region"
             aria-label={name ?? "音频预览"}
         >
-            {/* 顶部：封面图标 */}
-            <div className="flex justify-center">
-                <AudioCoverIcon />
+            {/* 隐藏的 audio 元素 */}
+            {/* biome-ignore lint/a11y/useMediaCaption: 内部素材预览，无字幕需求 */}
+            <audio ref={audioRef} src={url} preload="metadata" className="hidden" />
+
+            {/* 封面图标（带旋转动画） */}
+            <div
+                className={`flex size-32 items-center justify-center rounded-full bg-primary/10 shadow-inner ${state.isPlaying ? "animate-spin [animation-duration:6s]" : ""}`}
+            >
+                <Disc3 className="size-16 text-primary" />
             </div>
 
-            {/* 波形容器（必须始终渲染，wavesurfer 才能初始化） */}
-            <div className="relative w-full">
-                <div ref={containerRef} className="min-h-20 w-full" />
-                {/* 加载/错误遮罩叠在波形上方 */}
-                {loadStatus !== "ready" ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-card">
-                        <AudioOverlay loadStatus={loadStatus} onRetry={player.retry} />
-                    </div>
-                ) : null}
-            </div>
-
-            {/* 控制栏（就绪后显示） */}
-            {loadStatus === "ready" ? (
-                <AudioControls
-                    state={state}
-                    onTogglePlay={player.togglePlay}
-                    onStop={player.stop}
-                    onSetVolume={player.setVolume}
-                    onToggleMute={player.toggleMute}
-                    onSetPlaybackRate={player.setPlaybackRate}
-                    onToggleLoop={player.toggleLoop}
-                />
+            {/* 歌曲名 */}
+            {name ? (
+                <p className="max-w-full truncate text-center text-base font-medium" title={name}>
+                    {name}
+                </p>
             ) : null}
+
+            {/* 加载/错误态 */}
+            {loadStatus !== "ready" ? (
+                <AudioOverlay loadStatus={loadStatus} onRetry={player.retry} />
+            ) : (
+                /* 控制栏 */
+                <div className="w-full max-w-md">
+                    <AudioControls
+                        state={state}
+                        onTogglePlay={player.togglePlay}
+                        onSeek={player.seek}
+                        onSetVolume={player.setVolume}
+                        onToggleMute={player.toggleMute}
+                        onSetPlaybackRate={player.setPlaybackRate}
+                        onToggleLoop={player.toggleLoop}
+                    />
+                </div>
+            )}
         </div>
     );
 }

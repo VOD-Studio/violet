@@ -4,7 +4,7 @@
  * 覆盖波形区域的三种状态：加载中、加载失败（含重试）。
  */
 
-import { AlertCircle, Loader2, RotateCcw, Volume2 } from "lucide-react";
+import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import type { AudioLoadStatus } from "../types/audio-preview-types";
 
@@ -41,13 +41,4 @@ export function AudioOverlay({ loadStatus, onRetry }: AudioOverlayProps) {
     }
 
     return null;
-}
-
-/** 音频封面图标（无波形时的占位视觉） */
-export function AudioCoverIcon() {
-    return (
-        <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary/10">
-            <Volume2 className="size-8 text-primary" />
-        </div>
-    );
 }
