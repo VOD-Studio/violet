@@ -38,6 +38,7 @@ export function FilePreview({
     showInfo = true,
     className,
     delay = 0,
+    unframed = false,
     ref,
 }: FilePreviewComponentProps) {
     const kind = getFileKind(mimeType, name);
@@ -91,7 +92,13 @@ export function FilePreview({
 
     return (
         <div className={`space-y-3 ${className ?? ""}`} ref={ref}>
-            <div className="overflow-hidden rounded-lg border bg-background">{renderPreview()}</div>
+            <div
+                className={
+                    unframed ? "overflow-hidden" : "overflow-hidden rounded-lg border bg-background"
+                }
+            >
+                {renderPreview()}
+            </div>
 
             {showInfo && name ? (
                 <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">

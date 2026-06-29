@@ -54,6 +54,9 @@ export function MediaLightbox({
     }, [imageFileIndices, index]);
 
     const isCurrentImage = !!file && file.mime_type.startsWith("image/");
+    // 视频/音频有自己的播放器快捷键（←→ 快进退），灯箱不拦截其键盘事件
+    const isCurrentMediaWithShortcuts =
+        !!file && (file.mime_type.startsWith("video/") || file.mime_type.startsWith("audio/"));
 
     const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
@@ -74,16 +77,17 @@ export function MediaLightbox({
         if (index < files.length - 1) onIndexChange(index + 1);
     }, [index, files.length, onIndexChange]);
 
-    // 视频预览时键盘左右切换（图片预览有自己的键盘逻辑）
+    // 非媒体类型（文档/压缩包/代码等）的键盘左右切换
+    // 图片走 ImagePreview（有自己的键盘逻辑），视频/音频走播放器（有快进退快捷键）
     useEffect(() => {
-        if (!open || isCurrentImage) return;
+        if (!open || isCurrentImage || isCurrentMediaWithShortcuts) return;
         const handler = (e: KeyboardEvent) => {
             if (e.key === "ArrowLeft") goPrev();
             if (e.key === "ArrowRight") goNext();
         };
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [open, isCurrentImage, goPrev, goNext]);
+    }, [open, isCurrentImage, isCurrentMediaWithShortcuts, goPrev, goNext]);
 
     // 图片预览：全屏 ImagePreview
     if (open && isCurrentImage) {
@@ -101,28 +105,49 @@ export function MediaLightbox({
 
     if (!file) return null;
 
-    // 视频/音频/其他：Dialog 内嵌 FilePreview
+    // 视频/音频/文档/其他：Dialog 内嵌 FilePreview（各套件自带完整 UI）
+    // 容器用中性深色底 + 顶部切换条，避免浮动箭头盖住各预览的控制栏/工具栏
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="max-w-4xl border-none bg-black/90 p-0 sm:rounded-lg"
+                className="max-w-5xl gap-0 border-none bg-background/95 p-0 sm:rounded-lg"
                 showCloseButton
             >
                 <DialogTitle className="sr-only">{file.original_name}</DialogTitle>
-                <div className="relative flex min-h-[50vh] items-center justify-center p-4">
-                    {/* 左箭头 */}
-                    {index > 0 ? (
-                        <button
-                            type="button"
-                            onClick={goPrev}
-                            className="absolute top-1/2 left-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                            aria-label="上一个"
-                        >
-                            <ChevronLeft className="size-6" />
-                        </button>
-                    ) : null}
 
-                    {/* 内容 */}
+                {/* 顶部切换条：上一个/文件名/下一个 */}
+                <div className="flex items-center gap-2 border-b px-3 py-2">
+                    <button
+                        type="button"
+                        onClick={goPrev}
+                        disabled={index <= 0}
+                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
+                        aria-label="上一个"
+                    >
+                        <ChevronLeft className="size-4" />
+                    </button>
+                    <span
+                        className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+                        title={file.original_name}
+                    >
+                        {file.original_name}
+                    </span>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
+                        {index + 1} / {files.length}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={goNext}
+                        disabled={index >= files.length - 1}
+                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
+                        aria-label="下一个"
+                    >
+                        <ChevronRight className="size-4" />
+                    </button>
+                </div>
+
+                {/* 预览内容（各套件自带边框/工具栏，用 unframed 避免双层边框） */}
+                <div className="max-h-[80vh] overflow-auto p-4">
                     <FilePreview
                         url={file.url}
                         thumbnailUrl={file.thumbnail || undefined}
@@ -130,28 +155,9 @@ export function MediaLightbox({
                         name={file.original_name}
                         size={file.size}
                         showInfo={false}
+                        unframed
                         className="max-w-full"
                     />
-
-                    {/* 右箭头 */}
-                    {index < files.length - 1 ? (
-                        <button
-                            type="button"
-                            onClick={goNext}
-                            className="absolute top-1/2 right-2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-                            aria-label="下一个"
-                        >
-                            <ChevronRight className="size-6" />
-                        </button>
-                    ) : null}
-                </div>
-
-                {/* 底部信息 */}
-                <div className="border-t border-white/10 px-4 py-2 text-xs text-white/60">
-                    <span className="truncate">{file.original_name}</span>
-                    <span className="ml-2">
-                        {index + 1} / {files.length}
-                    </span>
                 </div>
             </DialogContent>
         </Dialog>

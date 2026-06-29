@@ -18,6 +18,8 @@ export interface FilePreviewProps {
     className?: string;
     /** 延迟渲染时间（毫秒），用于等待父容器动画完成 */
     delay?: number;
+    /** 无外框模式：不渲染外层 border/背景包裹（各预览套件自带边框时使用，避免双层） */
+    unframed?: boolean;
 }
 
 /** 带转发 ref 的属性（主组件用） */
