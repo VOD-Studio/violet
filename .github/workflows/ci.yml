@@ -1,7 +1,7 @@
 # CI 流水线
 #
-# PR 和 push 到 main 时触发，并行跑后端（Go）和前端（TS）检查。
-# 后端: go vet + go test + golangci-lint + build
+# PR 和 push 到 main / release/2.0 时触发，并行跑后端与前端检查。
+# 后端: go vet + go test + golangci-lint + build + Docker 镜像构建验证
 # 前端: biome check + tsc + vitest + build
 #
 # 任一 job 失败则 PR 检查失败，阻止合并。
@@ -10,9 +10,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, release/2.0]
   pull_request:
-    branches: [main]
+    branches: [main, release/2.0]
 
 # 同一 PR 多次 push 时取消旧的运行
 concurrency:
@@ -57,6 +57,9 @@ jobs:
           version: latest
           working-directory: api
           args: --timeout 5m
+
+      - name: Docker 镜像构建验证
+        run: docker build -t blog-api:ci .
 
   # ============================================================
   # 前端检查（TypeScript）
