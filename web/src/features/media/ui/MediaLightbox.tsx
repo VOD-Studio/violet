@@ -106,11 +106,13 @@ export function MediaLightbox({
     if (!file) return null;
 
     // 视频/音频/文档/其他：Dialog 内嵌 FilePreview（各套件自带完整 UI）
-    // 容器用中性深色底 + 顶部切换条，避免浮动箭头盖住各预览的控制栏/工具栏
+    // 视频贴边占满宽度（控制栏进度条需占满），其余类型留 padding
+    const isVideo = file.mime_type.startsWith("video/");
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="max-w-5xl gap-0 border-none bg-background/95 p-0 sm:rounded-lg"
+                className="max-w-[90vw] gap-0 border-none bg-background/95 p-0 sm:rounded-lg"
                 showCloseButton
             >
                 <DialogTitle className="sr-only">{file.original_name}</DialogTitle>
@@ -147,7 +149,7 @@ export function MediaLightbox({
                 </div>
 
                 {/* 预览内容（各套件自带边框/工具栏，用 unframed 避免双层边框） */}
-                <div className="max-h-[80vh] overflow-auto p-4">
+                <div className={`max-h-[82vh] overflow-auto ${isVideo ? "" : "p-4"}`}>
                     <FilePreview
                         url={file.url}
                         thumbnailUrl={file.thumbnail || undefined}

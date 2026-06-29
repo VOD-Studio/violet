@@ -23,6 +23,9 @@ import { formatTime } from "../utils/format";
 
 interface VideoControlsProps {
     state: VideoPlayerState;
+    /** 倍速菜单是否展开（受控，用于父组件阻止控制栏自动隐藏） */
+    menuOpen: boolean;
+    onMenuOpenChange: (open: boolean) => void;
     onTogglePlay: () => void;
     onSeek: (time: number) => void;
     onSetVolume: (volume: number) => void;
@@ -34,6 +37,8 @@ interface VideoControlsProps {
 
 export function VideoControls({
     state,
+    menuOpen,
+    onMenuOpenChange,
     onTogglePlay,
     onSeek,
     onSetVolume,
@@ -45,9 +50,26 @@ export function VideoControls({
     const [isDragging, setIsDragging] = useState(false);
     const [hoverTime, setHoverTime] = useState<number | null>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
+    const rateRef = useRef<HTMLDivElement>(null);
 
     const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
     const bufferedPercent = useBufferedPercent(state.currentTime, state.duration);
+
+    // 倍速菜单：点击外部关闭
+    useEffect(() => {
+        if (!menuOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (rateRef.current && !rateRef.current.contains(e.target as Node)) {
+                onMenuOpenChange(false);
+            }
+        };
+        // 延迟绑定避免触发本次 click
+        const timer = setTimeout(() => document.addEventListener("click", handler), 0);
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener("click", handler);
+        };
+    }, [menuOpen, onMenuOpenChange]);
 
     // 根据进度条位置计算时间
     const getTimeFromEvent = (clientX: number): number => {
@@ -187,28 +209,34 @@ export function VideoControls({
                 <div className="flex-1" />
 
                 {/* 倍速 */}
-                <div className="group/rate relative">
+                <div ref={rateRef} className="relative">
                     <Button
                         type="button"
                         size="sm"
                         variant="ghost"
                         className="text-xs text-white hover:bg-white/20"
                         title="倍速"
+                        onClick={() => onMenuOpenChange(!menuOpen)}
                     >
                         {state.playbackRate}x
                     </Button>
-                    <div className="absolute bottom-full right-0 mb-1 hidden flex-col rounded-md bg-black/90 py-1 group-hover/rate:flex">
-                        {PLAYBACK_RATES.map((rate) => (
-                            <button
-                                type="button"
-                                key={rate}
-                                className={`px-3 py-1 text-left text-xs hover:bg-white/20 ${rate === state.playbackRate ? "text-primary" : "text-white"}`}
-                                onClick={() => onSetPlaybackRate(rate)}
-                            >
-                                {rate === 1 ? "正常" : `${rate}x`}
-                            </button>
-                        ))}
-                    </div>
+                    {menuOpen ? (
+                        <div className="absolute right-0 bottom-full z-50 mb-1 flex flex-col rounded-md bg-black/90 py-1 shadow-lg">
+                            {PLAYBACK_RATES.map((rate) => (
+                                <button
+                                    type="button"
+                                    key={rate}
+                                    className={`min-w-16 px-3 py-1 text-left text-xs hover:bg-white/20 ${rate === state.playbackRate ? "text-primary" : "text-white"}`}
+                                    onClick={() => {
+                                        onSetPlaybackRate(rate);
+                                        onMenuOpenChange(false);
+                                    }}
+                                >
+                                    {rate === 1 ? "正常" : `${rate}x`}
+                                </button>
+                            ))}
+                        </div>
+                    ) : null}
                 </div>
 
                 {/* 全屏 */}

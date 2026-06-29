@@ -43,12 +43,12 @@ export function VideoInfo({ metadata, duration }: VideoInfoProps) {
     if (items.length === 0) return null;
 
     return (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-3 py-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/10 bg-black px-3 py-2 text-xs text-white/60">
             {items.map(({ icon: Icon, label, value }) => (
                 <span key={label} className="flex items-center gap-1">
                     <Icon className="size-3" />
-                    <span className="text-muted-foreground/70">{label}:</span>
-                    <span className="font-medium text-foreground">{value}</span>
+                    <span className="text-white/40">{label}:</span>
+                    <span className="font-medium text-white">{value}</span>
                 </span>
             ))}
         </div>

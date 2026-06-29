@@ -31,6 +31,8 @@ export function VideoPreview({
 
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [controlsVisible, setControlsVisible] = useState(true);
+    // 倍速菜单展开时暂停控制栏自动隐藏
+    const [menuOpen, setMenuOpen] = useState(false);
 
     // 绑定媒体事件（url 变化时重新绑定）
     // biome-ignore lint/correctness/useExhaustiveDependencies: bindEvents 引用稳定，仅需响应 url 变化
@@ -46,13 +48,13 @@ export function VideoPreview({
         return () => document.removeEventListener("fullscreenchange", handler);
     }, []);
 
-    // 播放中 3 秒无操作自动隐藏控制栏
+    // 播放中 3 秒无操作自动隐藏控制栏（菜单展开时不隐藏）
     // biome-ignore lint/correctness/useExhaustiveDependencies: currentTime 仅用于重置计时，无需作为依赖
     useEffect(() => {
-        if (!state.isPlaying || !controlsVisible) return;
+        if (!state.isPlaying || !controlsVisible || menuOpen) return;
         const timer = setTimeout(() => setControlsVisible(false), 3000);
         return () => clearTimeout(timer);
-    }, [state.isPlaying, controlsVisible, state.currentTime]);
+    }, [state.isPlaying, controlsVisible, state.currentTime, menuOpen]);
 
     // 鼠标移动时显示控制栏
     const handleMouseMove = useCallback(() => {
@@ -98,6 +100,8 @@ export function VideoPreview({
                 {loadStatus === "ready" && controlsVisible ? (
                     <VideoControls
                         state={state}
+                        menuOpen={menuOpen}
+                        onMenuOpenChange={setMenuOpen}
                         onTogglePlay={player.togglePlay}
                         onSeek={player.seek}
                         onSetVolume={player.setVolume}
