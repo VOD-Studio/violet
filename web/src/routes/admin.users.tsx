@@ -3,7 +3,7 @@ import { useAdminRoles } from "@features/admin-roles/api/queries";
 import { getRoleBadgeVariant, getRoleDisplayName } from "@features/admin-roles/lib/utils";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
-import { DataTable, exportToCsv, useDebouncedValue } from "@features/admin-shared/ui/data-table";
+import { DataTable, exportToCsv } from "@features/admin-shared/ui/data-table";
 import {
     useAdminUsers,
     useBatchUpdateRole,
@@ -17,12 +17,12 @@ import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/badge";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Pencil, Plus, RefreshCw, Search, Trash2, UserCog } from "lucide-react";
+import { Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMe } from "@/features/auth/api/queries";
 import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
+import { SearchInput } from "@/shared/ui/search-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
 export const Route = createFileRoute("/admin/users")({
@@ -56,9 +56,7 @@ function AdminUsers() {
     // 查询角色列表
     const { data: roles = [] } = useAdminRoles();
 
-    // 防抖搜索关键词
-    const debouncedKeyword = useDebouncedValue(keyword, 300);
-
+    // 防抖搜索关键词（由 SearchInput 内部防抖，onSearch 回写）
     // 查询用户列表
     const {
         data: response,
@@ -68,7 +66,7 @@ function AdminUsers() {
     } = useAdminUsers({
         page,
         limit: pageSize,
-        keyword: debouncedKeyword,
+        keyword: keyword || undefined,
         role: roleFilter === "all" ? undefined : roleFilter,
         is_active: statusFilter === "all" ? undefined : statusFilter === "active",
     });
@@ -349,11 +347,7 @@ function AdminUsers() {
                     error={error ? new Error(error.message) : null}
                     onRetry={() => refetch()}
                     storageKey="admin-users-columns"
-                    filtered={
-                        debouncedKeyword.length > 0 ||
-                        roleFilter !== "all" ||
-                        statusFilter !== "all"
-                    }
+                    filtered={keyword.length > 0 || roleFilter !== "all" || statusFilter !== "all"}
                     density={density}
                     stickyHeader
                     maxHeight="60vh"
@@ -390,16 +384,14 @@ function AdminUsers() {
                     emptyDescription="还没有任何用户，点击上方按钮创建第一个用户"
                     toolbar={
                         <>
-                            <div className="relative min-w-50 max-w-[320px] flex-1">
-                                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
+                            <div className="min-w-50 max-w-[320px] flex-1">
+                                <SearchInput
+                                    defaultValue=""
                                     placeholder="搜索用户名 / 邮箱..."
-                                    value={keyword}
-                                    onChange={(e) => {
-                                        setKeyword(e.target.value);
+                                    onSearch={(v) => {
+                                        setKeyword(v);
                                         setPage(1);
                                     }}
-                                    className="pl-9"
                                 />
                             </div>
                             <Select value={roleFilter} onValueChange={setRoleFilter}>

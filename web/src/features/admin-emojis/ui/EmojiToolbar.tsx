@@ -1,6 +1,7 @@
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
-import { Check, CheckSquare, Plus, Search, Square, Trash2, X } from "lucide-react";
+import { Check, CheckSquare, Plus, Square, Trash2, X } from "lucide-react";
+import { SearchInput } from "@/shared/ui/search-input";
 
 export interface EmojiTextForm {
     name: string;
@@ -43,13 +44,11 @@ export function EmojiToolbar({
     return (
         <>
             <div className="mb-4 flex shrink-0 items-center gap-2 px-1 pt-1">
-                <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
+                <div className="flex-1">
+                    <SearchInput
                         placeholder="搜索表情名称..."
-                        value={searchQuery}
-                        onChange={(e) => onSearchChange(e.target.value)}
-                        className="pl-9"
+                        defaultValue={searchQuery}
+                        onSearch={onSearchChange}
                     />
                 </div>
 

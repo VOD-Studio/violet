@@ -13,11 +13,11 @@ import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
 import { Card, CardContent } from "@shared/ui/card";
 import Empty from "@shared/ui/empty";
-import { Input } from "@shared/ui/input";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle, Layers, Loader2, Plus, Power, PowerOff, Search } from "lucide-react";
+import { CheckCircle, Layers, Loader2, Plus, Power, PowerOff } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { SearchInput } from "@/shared/ui/search-input";
 
 /**
  * /admin/emojis - 表情管理
@@ -181,13 +181,11 @@ function EmojisPage() {
                 <Card>
                     <CardContent className="py-4">
                         <div className="flex flex-wrap items-center gap-3">
-                            <div className="relative min-w-[200px] max-w-[400px] flex-1">
-                                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
+                            <div className="min-w-[200px] max-w-[400px] flex-1">
+                                <SearchInput
                                     placeholder="搜索分组名称..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9"
+                                    onValueChange={setSearchQuery}
                                 />
                             </div>
 

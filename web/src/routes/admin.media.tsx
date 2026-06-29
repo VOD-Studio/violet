@@ -10,10 +10,9 @@ import { MediaCoverDialog } from "@features/media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/media/ui/MediaGrid";
 import { MediaLightbox } from "@features/media/ui/MediaLightbox";
 import { Button } from "@shared/ui/button";
-import { Input } from "@shared/ui/input";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Images, Pencil, Search, Trash2, Upload } from "lucide-react";
+import { Images, Pencil, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -23,6 +22,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/shared/ui/dialog";
+import { SearchInput } from "@/shared/ui/search-input";
 import { Segmented, viewTypeSegments } from "@/shared/ui/segmented";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Uploader } from "@/shared/ui/uploader";
@@ -156,16 +156,15 @@ function AdminMediaPage() {
                     </SelectContent>
                 </Select>
 
-                <div className="relative flex-1">
-                    <Search className="absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
+                <div className="flex-1">
+                    <SearchInput
+                        size="sm"
+                        defaultValue=""
                         placeholder="搜索文件名…"
-                        value={keyword}
-                        onChange={(e) => {
-                            setKeyword(e.target.value);
+                        onSearch={(v) => {
+                            setKeyword(v);
                             setPage(1);
                         }}
-                        className="h-8 pl-7 text-xs"
                     />
                 </div>
 
