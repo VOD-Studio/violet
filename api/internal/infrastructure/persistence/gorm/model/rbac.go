@@ -37,6 +37,10 @@ type Permission struct {
 	Code        string    `gorm:"type:varchar(50);unique;not null" json:"code"`
 	Name        string    `gorm:"type:varchar(100);not null" json:"name"`
 	Description string    `gorm:"type:text" json:"description"`
+	ParentID    *int32    `gorm:"column:parent_id" json:"parent_id"`
+	Type        string    `gorm:"type:varchar(10);not null;default:action" json:"type"`
+	Sort        int       `gorm:"not null;default:0" json:"sort"`
+	IsBuiltin   bool      `gorm:"not null;default:false" json:"is_builtin"`
 	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }
 

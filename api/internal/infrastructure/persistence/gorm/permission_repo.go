@@ -28,6 +28,10 @@ func permissionToPO(p *permission.Permission) model.Permission {
 		Code:        p.Code().String(),
 		Name:        p.Name(),
 		Description: p.Description(),
+		ParentID:    p.ParentID(),
+		Type:        p.Type(),
+		Sort:        p.Sort(),
+		IsBuiltin:   p.IsBuiltin(),
 	}
 }
 
@@ -37,7 +41,20 @@ func permissionToDomain(po model.Permission) (*permission.Permission, error) {
 	if err != nil {
 		return nil, err
 	}
-	return permission.NewPermission(po.ID, code, po.Name, po.Description), nil
+	return permission.NewPermission(po.ID, code, po.Name, po.Description, po.ParentID, po.Type, po.Sort, po.IsBuiltin), nil
+}
+
+// FindByID 按 ID 查找权限点
+func (r *PermissionRepository) FindByID(ctx context.Context, id int32) (*permission.Permission, error) {
+	var po model.Permission
+	err := r.db.WithContext(ctx).First(&po, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, permission.ErrNotFound
+		}
+		return nil, domainshared.Internal("查询权限失败", err)
+	}
+	return permissionToDomain(po)
 }
 
 // FindByCode 按代码查找权限点
@@ -98,9 +115,9 @@ func (r *PermissionRepository) Save(ctx context.Context, p *permission.Permissio
 	return po.ID, nil
 }
 
-// Delete 删除权限点（级联删除 role_permissions 关联，由数据库 ON DELETE CASCADE 保证）
-func (r *PermissionRepository) Delete(ctx context.Context, code permission.Code) error {
-	result := r.db.WithContext(ctx).Where("code = ?", code.String()).Delete(&model.Permission{})
+// Delete 按 ID 删除权限点（级联删除 role_permissions 关联，由数据库 ON DELETE CASCADE 保证）
+func (r *PermissionRepository) Delete(ctx context.Context, id int32) error {
+	result := r.db.WithContext(ctx).Delete(&model.Permission{}, id)
 	if result.Error != nil {
 		return domainshared.Internal("删除权限失败", result.Error)
 	}
@@ -111,12 +128,11 @@ func (r *PermissionRepository) Delete(ctx context.Context, code permission.Code)
 }
 
 // CountRoles 统计使用该权限点的角色数
-func (r *PermissionRepository) CountRoles(ctx context.Context, code permission.Code) (int64, error) {
+func (r *PermissionRepository) CountRoles(ctx context.Context, id int32) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).
 		Table("role_permissions").
-		Joins("JOIN permissions ON permissions.id = role_permissions.permission_id").
-		Where("permissions.code = ?", code.String()).
+		Where("permission_id = ?", id).
 		Count(&count).Error
 	if err != nil {
 		return 0, domainshared.Internal("统计权限使用数失败", err)
