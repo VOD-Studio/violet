@@ -7,6 +7,7 @@ package permission
 
 import (
 	"regexp"
+	"strings"
 
 	"blog-api/internal/domain/shared"
 )
@@ -14,11 +15,13 @@ import (
 // CodeMaxLength 权限代码最大长度
 const CodeMaxLength = 50
 
-// permissionCodePattern 权限代码格式：module:action（全小写，action 允许连字符）
+// permissionCodePattern 权限代码格式：
+// - menu 节点：纯 module 名，如 post、user
+// - action 节点：module:action，如 post:create、comment:approve
 //
 // 注意：action 部分允许连字符以兼容既有权限点如 fetch-meta、manage-group、update-role。
 // 用 \x{} 而非 \u 转义（Go regexp RE2 不支持 \u）。
-var permissionCodePattern = regexp.MustCompile(`^[a-z]+:[a-z][a-z-]*$`)
+var permissionCodePattern = regexp.MustCompile(`^[a-z]+(:[a-z][a-z-]*)?$`)
 
 // ============================================================
 // Code 值对象
@@ -57,6 +60,9 @@ func (c Code) String() string { return c.value }
 
 // Equal 比较两个权限代码是否相同
 func (c Code) Equal(other Code) bool { return c.value == other.value }
+
+// IsMenu 是否为 menu 分组节点（不含冒号）
+func (c Code) IsMenu() bool { return !strings.Contains(c.value, ":") }
 
 // 预定义权限代码常量（与 migration 025_rbac 种子数据对应）
 //
@@ -116,15 +122,27 @@ type Permission struct {
 	name string
 	// description 权限描述
 	description string
+	// parentID 父权限 ID（action 指向所属 menu；menu 为 nil）
+	parentID *int32
+	// permType 权限类型："menu"（分组容器）| "action"（可授权操作）
+	permType string
+	// sort 排序值（升序）
+	sort int
+	// isBuiltin 是否内置权限（内置不可删、不可改 code）
+	isBuiltin bool
 }
 
 // NewPermission 创建权限点
-func NewPermission(id int32, code Code, name, description string) *Permission {
+func NewPermission(id int32, code Code, name, description string, parentID *int32, permType string, sort int, isBuiltin bool) *Permission {
 	return &Permission{
 		id:          id,
 		code:        code,
 		name:        name,
 		description: description,
+		parentID:    parentID,
+		permType:    permType,
+		sort:        sort,
+		isBuiltin:   isBuiltin,
 	}
 }
 
@@ -140,8 +158,41 @@ func (p *Permission) Name() string { return p.name }
 // Description 返回权限描述
 func (p *Permission) Description() string { return p.description }
 
-// UpdateName 更新权限显示名称
+// ParentID 返回父权限 ID（nil 表示顶层 menu）
+func (p *Permission) ParentID() *int32 { return p.parentID }
+
+// Type 返回权限类型（menu / action）
+func (p *Permission) Type() string { return p.permType }
+
+// Sort 返回排序值
+func (p *Permission) Sort() int { return p.sort }
+
+// IsBuiltin 返回是否内置权限
+func (p *Permission) IsBuiltin() bool { return p.isBuiltin }
+
+// UpdateName 更新权限显示名称（内置也可改）
 func (p *Permission) UpdateName(name string) { p.name = name }
 
-// UpdateDescription 更新权限描述
+// UpdateDescription 更新权限描述（内置也可改）
 func (p *Permission) UpdateDescription(desc string) { p.description = desc }
+
+// UpdateParent 更新父节点（内置也可改）
+func (p *Permission) UpdateParent(parentID *int32) { p.parentID = parentID }
+
+// UpdateSort 更新排序（内置也可改）
+func (p *Permission) UpdateSort(sort int) { p.sort = sort }
+
+// UpdateCode 更新权限代码——内置权限禁止
+func (p *Permission) UpdateCode(c Code) error {
+	if p.isBuiltin {
+		return ErrCannotModifyBuiltin
+	}
+	p.code = c
+	return nil
+}
+
+// 领域错误（与 repository.go 的错误分开，放 entity 便于 command 层引用）
+var (
+	// ErrCannotModifyBuiltin 内置权限不可改 code 或删除
+	ErrCannotModifyBuiltin = shared.BadRequest("内置权限不可修改代码或删除")
+)

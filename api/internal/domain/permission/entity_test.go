@@ -12,7 +12,9 @@ func TestParseCode(t *testing.T) {
 		{"valid", "post:create", "post:create", false},
 		{"valid single char segments", "a:b", "a:b", false},
 		{"valid multi word action", "comment:approve", "comment:approve", false},
-		{"missing colon", "postcreate", "", true},
+		{"no colon now valid as menu", "postcreate", "postcreate", false},
+		{"valid menu code (no colon)", "post", "post", false},
+		{"valid menu code single char", "a", "a", false},
 		{"missing action", "post:", "", true},
 		{"missing module", ":create", "", true},
 		{"uppercase module", "Post:create", "", true},
@@ -43,13 +45,13 @@ func TestMustParse(t *testing.T) {
 		t.Errorf("MustParse = %v, want post:create", c)
 	}
 
-	// 非法代码应 panic
+	// 非法代码应 panic（含大写与标点，放宽后仍非法）
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("MustParse 非法代码应 panic")
 		}
 	}()
-	MustParse("invalid")
+	MustParse("Invalid!")
 }
 
 func TestCode_Equal(t *testing.T) {
@@ -93,7 +95,7 @@ func TestPredefinedCodes(t *testing.T) {
 
 func TestPermission_CRUD(t *testing.T) {
 	code, _ := ParseCode("test:action")
-	p := NewPermission(1, code, "测试权限", "用于单元测试")
+	p := NewPermission(1, code, "测试权限", "用于单元测试", nil, "action", 0, false)
 
 	if p.ID() != 1 {
 		t.Errorf("ID = %d, want 1", p.ID())
@@ -113,5 +115,43 @@ func TestPermission_CRUD(t *testing.T) {
 	}
 	if p.Description() != "更新后的描述" {
 		t.Errorf("更新后 Description = %s", p.Description())
+	}
+}
+
+func TestCode_IsMenu(t *testing.T) {
+	menu, _ := ParseCode("post")
+	action, _ := ParseCode("post:create")
+	if !menu.IsMenu() {
+		t.Error("post 应为 menu")
+	}
+	if action.IsMenu() {
+		t.Error("post:create 不应为 menu")
+	}
+}
+
+func TestPermission_BuiltinGuard(t *testing.T) {
+	code, _ := ParseCode("post:create")
+	// 内置权限
+	builtin := NewPermission(1, code, "创建文章", "", nil, "action", 0, true)
+	if err := builtin.UpdateCode(code); err != ErrCannotModifyBuiltin {
+		t.Errorf("内置权限改 code 应返回 ErrCannotModifyBuiltin, got %v", err)
+	}
+	// 内置权限仍可改名/描述/parent/sort
+	builtin.UpdateName("新名")
+	builtin.UpdateParent(nil)
+	builtin.UpdateSort(5)
+	if builtin.Name() != "新名" {
+		t.Error("内置权限应可改名")
+	}
+
+	// 非内置权限可改 code
+	custom, _ := ParseCode("custom:do")
+	nonBuiltin := NewPermission(2, custom, "自定义", "", nil, "action", 0, false)
+	newCode, _ := ParseCode("custom:done")
+	if err := nonBuiltin.UpdateCode(newCode); err != nil {
+		t.Errorf("非内置权限改 code 不应报错, got %v", err)
+	}
+	if nonBuiltin.Code().String() != "custom:done" {
+		t.Error("非内置权限 code 未更新")
 	}
 }
