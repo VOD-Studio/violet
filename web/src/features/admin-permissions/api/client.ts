@@ -1,7 +1,7 @@
 /**
  * admin-permissions API 客户端
  */
-import { apiDelete, apiGet, apiPost, apiPut } from "@/shared/api/request";
+import { apiDelete, apiGet, apiPatch, apiPost } from "@/shared/api/request";
 import type {
     CreatePermissionRequest,
     PermissionDTO,
@@ -31,14 +31,14 @@ export const createPermission = async (data: CreatePermissionRequest): Promise<P
 /**
  * 更新权限
  *
- * PUT /admin/permissions/{id}
+ * PATCH /admin/permissions/{id}
  * 需要超级管理员权限
  */
 export const updatePermission = async (
     id: number,
     data: UpdatePermissionRequest,
 ): Promise<PermissionDTO> => {
-    return apiPut<PermissionDTO>(`/admin/permissions/${id}`, data);
+    return apiPatch<PermissionDTO>(`/admin/permissions/${id}`, data);
 };
 
 /**
