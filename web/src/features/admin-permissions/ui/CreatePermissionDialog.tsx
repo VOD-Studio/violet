@@ -91,6 +91,7 @@ export function CreatePermissionDialog({
         register,
         handleSubmit,
         control,
+        watch,
         reset,
         formState: { errors },
     } = useForm<PermissionForm>({
@@ -198,49 +199,41 @@ export function CreatePermissionDialog({
                         )}
                     </div>
 
-                    {/* 父节点（action 必选；条件渲染读 control 中 type 的值） */}
-                    <Controller
-                        control={control}
-                        name="type"
-                        render={({ field: typeField }) =>
-                            typeField.value === "action" ? (
-                                <div className="space-y-2">
-                                    <Label>
-                                        所属分组 <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Controller
-                                        control={control}
-                                        name="parentId"
-                                        render={({ field }) => (
-                                            <Select
-                                                value={field.value ?? ""}
-                                                onValueChange={field.onChange}
-                                                disabled={pending}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="选择 menu 分组" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {menus.map((m) => (
-                                                        <SelectItem key={m.id} value={String(m.id)}>
-                                                            {m.name} ({m.code})
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        )}
-                                    />
-                                    {errors.parentId && (
-                                        <p className="text-destructive text-sm">
-                                            {errors.parentId.message}
-                                        </p>
-                                    )}
-                                </div>
-                            ) : (
-                                <></>
-                            )
-                        }
-                    />
+                    {/* 父节点（action 必选；menu 类型不渲染） */}
+                    {watch("type") === "action" && (
+                        <div className="space-y-2">
+                            <Label>
+                                所属分组 <span className="text-destructive">*</span>
+                            </Label>
+                            <Controller
+                                control={control}
+                                name="parentId"
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value ?? ""}
+                                        onValueChange={field.onChange}
+                                        disabled={pending}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="选择 menu 分组" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {menus.map((m) => (
+                                                <SelectItem key={m.id} value={String(m.id)}>
+                                                    {m.name} ({m.code})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {errors.parentId && (
+                                <p className="text-destructive text-sm">
+                                    {errors.parentId.message}
+                                </p>
+                            )}
+                        </div>
+                    )}
 
                     {/* 代码 */}
                     <div className="space-y-2">
