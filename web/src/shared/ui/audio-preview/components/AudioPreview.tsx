@@ -41,12 +41,16 @@ export function AudioPreview({
                         </p>
                     ) : null}
 
-                    {/* 波形 / 加载遮罩 */}
-                    {loadStatus === "ready" ? (
+                    {/* 波形容器（必须始终渲染，wavesurfer 才能初始化） */}
+                    <div className="relative w-full">
                         <div ref={containerRef} className="w-full" />
-                    ) : (
-                        <AudioOverlay loadStatus={loadStatus} onRetry={player.retry} />
-                    )}
+                        {/* 加载/错误遮罩叠在波形上方 */}
+                        {loadStatus !== "ready" ? (
+                            <div className="absolute inset-0 flex items-center justify-center bg-card">
+                                <AudioOverlay loadStatus={loadStatus} onRetry={player.retry} />
+                            </div>
+                        ) : null}
+                    </div>
 
                     {/* 控制栏（就绪后显示） */}
                     {loadStatus === "ready" ? (

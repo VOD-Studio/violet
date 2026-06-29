@@ -7,7 +7,6 @@
 
 import { useWavesurfer } from "@wavesurfer/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type WaveSurfer from "wavesurfer.js";
 import type { AudioLoadStatus, AudioPlayerState } from "../types/audio-preview-types";
 
 interface UseAudioPlayerOptions {
@@ -30,8 +29,7 @@ export function useAudioPlayer({
     const [playbackRate, setPlaybackRateState] = useState(1);
     const [isLooping, setIsLooping] = useState(false);
     const [isEnded, setIsEnded] = useState(false);
-    const [loadStatus, setLoadStatus] = useState<AudioLoadStatus>("loading");
-    const wsRefRef = useRef<WaveSurfer | null>(null);
+    const [hasError, setHasError] = useState(false);
 
     const options = useMemo(
         () => ({
@@ -53,15 +51,9 @@ export function useAudioPlayer({
         ...options,
     });
 
-    // 缓存 wavesurfer 实例引用（用于事件监听与销毁后的判断）
-    useEffect(() => {
-        wsRefRef.current = wavesurfer;
-    }, [wavesurfer]);
-
     // ready 时初始化音量/倍速/时长，按需自动播放
     useEffect(() => {
         if (!isReady || !wavesurfer) return;
-        setLoadStatus("ready");
         setDuration(wavesurfer.getDuration());
         wavesurfer.setVolume(volume);
         wavesurfer.setPlaybackRate(playbackRate);
@@ -70,7 +62,7 @@ export function useAudioPlayer({
         }
     }, [isReady, wavesurfer, autoPlay, volume, playbackRate]);
 
-    // 监听结束事件（处理循环）
+    // 监听结束事件（处理循环）+ 错误
     useEffect(() => {
         if (!wavesurfer) return;
         const onTimeupdate = () => setIsEnded(false);
@@ -83,7 +75,7 @@ export function useAudioPlayer({
                 setIsEnded(true);
             }
         };
-        const onError = () => setLoadStatus("error");
+        const onError = () => setHasError(true);
         wavesurfer.on("timeupdate", onTimeupdate);
         wavesurfer.on("finish", onEnd);
         wavesurfer.on("error", onError);
@@ -94,12 +86,15 @@ export function useAudioPlayer({
         };
     }, [wavesurfer, isLooping]);
 
-    // url 变化时重置加载状态
+    // url 变化时重置错误状态
     // biome-ignore lint/correctness/useExhaustiveDependencies: url 是重置触发器，函数体内未直接使用
     useEffect(() => {
-        setLoadStatus("loading");
+        setHasError(false);
         setIsEnded(false);
     }, [url]);
+
+    // 加载状态派生自 wavesurfer isReady（容器必须始终渲染才能初始化）
+    const loadStatus: AudioLoadStatus = hasError ? "error" : isReady ? "ready" : "loading";
 
     // ---- 控制方法 ----
     const togglePlay = useCallback(() => {
@@ -217,8 +212,8 @@ export function useAudioPlayer({
 
     const retry = useCallback(() => {
         if (!wavesurfer) return;
-        setLoadStatus("loading");
-        // 重新加载：调用 setOptions 再 decoders 触发重载较复杂，这里用重新加载 url
+        setHasError(false);
+        // 重新加载音频
         wavesurfer.load(url);
     }, [wavesurfer, url]);
 

@@ -104,7 +104,17 @@ export function FilePreview({
                 return <MarkdownPreview url={url} name={name} />;
             case "code":
                 return <CodePreview url={url} name={name} />;
-            // presentation(PPTX)/老式.doc/text/other → 占位下载
+            // presentation(PPTX 演示文稿)：纯前端无法高保真预览，走占位
+            case "presentation":
+                return (
+                    <FilePlaceholder
+                        url={url}
+                        name={name}
+                        mimeType={mimeType}
+                        hint="演示文稿暂不支持在线预览，请下载查看"
+                    />
+                );
+            // 老式 .doc/text/other → 占位下载
             default:
                 return (
                     <FilePlaceholder

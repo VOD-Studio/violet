@@ -49,28 +49,24 @@ export function PdfPreview({ url, name, className, initialPage, initialScale }: 
                 />
             ) : null}
 
-            {/* 文档区 */}
+            {/* 文档区（Document 必须始终渲染，否则 onLoadSuccess 永不触发 → 死锁 loading） */}
             <div className="flex-1 overflow-auto bg-muted/30 p-4">
-                {pdf.loadStatus !== "ready" ? (
-                    <PdfOverlay loadStatus={pdf.loadStatus} onRetry={pdf.retry} />
-                ) : (
-                    <Document
-                        file={url}
-                        onLoadSuccess={pdf.handleLoadSuccess}
-                        onLoadError={pdf.handleLoadError}
-                        loading={<PdfOverlay loadStatus="loading" onRetry={pdf.retry} />}
-                        error={<PdfOverlay loadStatus="error" onRetry={pdf.retry} />}
-                        className="flex justify-center"
-                    >
-                        <Page
-                            pageNumber={pdf.currentPage}
-                            scale={pdf.scale}
-                            renderTextLayer
-                            renderAnnotationLayer
-                            className="shadow-md"
-                        />
-                    </Document>
-                )}
+                <Document
+                    file={url}
+                    onLoadSuccess={pdf.handleLoadSuccess}
+                    onLoadError={pdf.handleLoadError}
+                    loading={<PdfOverlay loadStatus="loading" onRetry={pdf.retry} />}
+                    error={<PdfOverlay loadStatus="error" onRetry={pdf.retry} />}
+                    className="flex justify-center"
+                >
+                    <Page
+                        pageNumber={pdf.currentPage}
+                        scale={pdf.scale}
+                        renderTextLayer
+                        renderAnnotationLayer
+                        className="shadow-md"
+                    />
+                </Document>
             </div>
         </div>
     );
