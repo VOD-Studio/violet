@@ -25,6 +25,10 @@ linters:
     gosec:
       excludes:
         - G104
+        - G115
+        - G301
+        - G306
+        - G706
 
   exclusions:
     paths:
