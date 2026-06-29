@@ -73,7 +73,8 @@ function MediaCard({
                     />
                 ) : isVideo && hasThumbnail ? (
                     <img
-                        src={file.thumbnail}
+                        // 用 updated_at 作版本号破缓存：更新封面后时间戳变化，URL 随之变化触发重载
+                        src={`${file.thumbnail}?v=${encodeURIComponent(file.updated_at ?? file.created_at)}`}
                         alt={file.alt_text || file.original_name}
                         loading="lazy"
                         className="h-full w-full object-cover transition-transform group-hover:scale-105"

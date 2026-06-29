@@ -699,6 +699,7 @@ type FileDTO struct {
 	AltText      string `json:"alt_text"`
 	Category     string `json:"category"`
 	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
 // UploadService 文件上传用例服务
@@ -1265,5 +1266,6 @@ func fileToDTO(f *domainupload.File) FileDTO {
 		Thumbnail: f.Thumbnail(), Status: f.Status(),
 		AltText: f.AltText(), Category: f.Category(),
 		CreatedAt: f.CreatedAt().Format(time.RFC3339),
+		UpdatedAt: f.UpdatedAt().Format(time.RFC3339),
 	}
 }

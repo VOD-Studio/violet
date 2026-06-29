@@ -85,6 +85,8 @@ export const useUploadThumbnail = () => {
                 queryKey: mediaKeys.detail(id),
             });
             queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
+            // admin 素材管理页用 adminFileKeys，必须一并 invalidate 才会刷新
+            queryClient.invalidateQueries({ queryKey: adminFileKeys.lists() });
         },
     });
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { Film } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/shared/ui/button";
 
 interface FramePickerProps {
@@ -17,25 +17,21 @@ interface FramePickerProps {
     confirmLabel?: string;
 }
 
+const SEEK_DEBOUNCE_MS = 120;
+
 /**
  * FramePicker - 视频选帧器（B站风格）
  *
  * 通用组件，可在素材管理、文章编辑器、视频上传等多处复用。
  *
- * 交互：
- * - 上方 video 预览区，显示当前帧
- * - 下方可拖动的进度条，拖动时实时 seek 到对应时间点并预览
- * - 时间显示（当前 / 总时长）
- * - 「设为封面」按钮：用 canvas 截取当前帧为 JPEG Blob，调 onConfirm
+ * 交互优化（解决拖动卡顿 + 加帧预览）：
+ * - 拖动进度条时只更新 UI 位置，不立即 seek；松手/停顿 120ms 后才 seek（防抖），
+ *   避免频繁 seek 导致画面闪烁卡顿
+ * - hover/拖动进度条时显示浮动帧预览气泡（第二个隐藏 video seek + canvas 截图）
+ * - 主视频区显示当前选中帧
  *
  * 截帧原理：video.currentTime seek → canvas.drawImage → toBlob("image/jpeg")
  * 需要 video 设置 crossOrigin="anonymous" 避免 canvas 污染（tainted）。
- *
- * @example
- * <FramePicker
- *   src={file.url}
- *   onConfirm={(blob) => uploadThumbnail(file.id, new File([blob], "cover.jpg"))}
- * />
  */
 export function FramePicker({
     src,
@@ -44,33 +40,35 @@ export function FramePicker({
     submitting = false,
     confirmLabel = "设为封面",
 }: FramePickerProps) {
+    // 主视频（预览区）
     const videoRef = useRef<HTMLVideoElement>(null);
+    // 预览视频（hover/drag 时实时截帧用）
+    const previewVideoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const seekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const previewSeekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const trackRef = useRef<HTMLDivElement>(null);
+
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [isSeeking, setIsSeeking] = useState(false);
-    const [error, setError] = useState<string>("");
+    const [error, setError] = useState("");
+    // hover 预览气泡
+    const [hoverPercent, setHoverPercent] = useState<number | null>(null);
+    const [hoverTime, setHoverTime] = useState(0);
+    const [previewSrc, setPreviewSrc] = useState("");
 
-    // 视频元数据加载完成，获取时长
+    // 视频元数据加载完成
     const handleLoadedMetadata = () => {
         const video = videoRef.current;
         if (!video) return;
         setDuration(video.duration);
         // 默认定位到第 1 秒（与后端 ffmpeg 兜底一致）
-        video.currentTime = Math.min(1, video.duration);
+        const initial = Math.min(1, video.duration);
+        video.currentTime = initial;
+        setCurrentTime(initial);
     };
 
-    // 拖动进度条：实时 seek
-    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const video = videoRef.current;
-        if (!video) return;
-        const time = Number.parseFloat(e.target.value);
-        setCurrentTime(time);
-        setIsSeeking(true);
-        video.currentTime = time;
-    };
-
-    // seek 完成，更新当前时间
     const handleSeeked = () => {
         const video = videoRef.current;
         if (!video) return;
@@ -78,26 +76,87 @@ export function FramePicker({
         setIsSeeking(false);
     };
 
-    // 视频加载失败
-    const handleError = () => {
-        setError("视频加载失败，可能是格式不支持或跨域限制");
+    const handleError = () => setError("视频加载失败，可能是格式不支持或跨域限制");
+
+    // 清理定时器
+    useEffect(() => {
+        return () => {
+            if (seekTimerRef.current) clearTimeout(seekTimerRef.current);
+            if (previewSeekTimerRef.current) clearTimeout(previewSeekTimerRef.current);
+        };
+    }, []);
+
+    // 拖动进度条：防抖 seek（拖动时只更新 UI，停顿后才实际 seek）
+    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const time = Number.parseFloat(e.target.value);
+        setCurrentTime(time);
+        setIsSeeking(true);
+        // 拖动时也更新预览气泡位置
+        setHoverTime(time);
+        const percent = duration > 0 ? (time / duration) * 100 : 0;
+        setHoverPercent(percent);
+
+        if (seekTimerRef.current) clearTimeout(seekTimerRef.current);
+        seekTimerRef.current = setTimeout(() => {
+            const video = videoRef.current;
+            if (video) video.currentTime = time;
+        }, SEEK_DEBOUNCE_MS);
     };
 
-    // 截取当前帧为 JPEG Blob
+    // hover 进度条：显示预览气泡
+    const handleTrackMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const track = trackRef.current;
+        if (!track || duration === 0) return;
+        const rect = track.getBoundingClientRect();
+        const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const time = percent * duration;
+        setHoverPercent(percent * 100);
+        setHoverTime(time);
+
+        // 防抖 seek 预览视频
+        if (previewSeekTimerRef.current) clearTimeout(previewSeekTimerRef.current);
+        previewSeekTimerRef.current = setTimeout(() => {
+            const pv = previewVideoRef.current;
+            if (pv) pv.currentTime = time;
+        }, 80);
+    };
+
+    const handleTrackLeave = () => {
+        setHoverPercent(null);
+    };
+
+    // 预览视频 seeked：截帧更新气泡
+    const handlePreviewSeeked = () => {
+        const pv = previewVideoRef.current;
+        const canvas = canvasRef.current;
+        if (!pv || !canvas) return;
+        const w = pv.videoWidth;
+        const h = pv.videoHeight;
+        if (w === 0 || h === 0) return;
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        try {
+            ctx.drawImage(pv, 0, 0, w, h);
+            setPreviewSrc(canvas.toDataURL("image/jpeg", 0.7));
+        } catch {
+            // canvas 污染时静默
+        }
+    };
+
+    // 截取当前帧为 JPEG Blob（确认时用）
     const captureFrame = useCallback(async (): Promise<Blob | null> => {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         if (!video || !canvas) return null;
-
         const w = video.videoWidth;
         const h = video.videoHeight;
         if (w === 0 || h === 0) return null;
-
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext("2d");
         if (!ctx) return null;
-
         try {
             ctx.drawImage(video, 0, 0, w, h);
             return new Promise<Blob | null>((resolve) => {
@@ -137,30 +196,86 @@ export function FramePicker({
                         onError={handleError}
                     />
                 )}
+                {isSeeking ? (
+                    <div className="absolute right-2 bottom-2 rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-white">
+                        定位中…
+                    </div>
+                ) : null}
             </div>
 
-            {/* 进度条 + 时间 */}
+            {/* 进度条 + 帧预览气泡 */}
             {!error ? (
                 <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                        <span className="w-12 text-right font-mono text-xs text-muted-foreground">
-                            {formatTime(currentTime)}
-                        </span>
-                        <input
-                            type="range"
-                            min={0}
-                            max={duration || 0}
-                            step={0.1}
-                            value={currentTime}
-                            onChange={handleSliderChange}
-                            className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-muted accent-primary"
-                            disabled={isSeeking && false}
-                        />
-                        <span className="w-12 font-mono text-xs text-muted-foreground">
-                            {formatTime(duration)}
-                        </span>
+                    <div className="relative">
+                        {/* 帧预览气泡 */}
+                        {hoverPercent !== null ? (
+                            <div
+                                className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 -translate-y-full"
+                                style={{ left: `${hoverPercent}%` }}
+                            >
+                                <div className="overflow-hidden rounded border bg-black shadow-lg">
+                                    {previewSrc ? (
+                                        <img
+                                            src={previewSrc}
+                                            alt="帧预览"
+                                            className="h-20 w-32 object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex h-20 w-32 items-center justify-center text-[10px] text-muted-foreground">
+                                            加载中…
+                                        </div>
+                                    )}
+                                    <p className="bg-black/80 py-0.5 text-center font-mono text-[10px] text-white">
+                                        {formatTime(hoverTime)}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {/* 可交互的进度条轨道 */}
+                        <div
+                            ref={trackRef}
+                            className="flex h-6 cursor-pointer items-center"
+                            onMouseMove={handleTrackMove}
+                            onMouseLeave={handleTrackLeave}
+                        >
+                            <div className="relative h-1.5 w-full rounded-full bg-muted">
+                                {/* 已播放进度 */}
+                                <div
+                                    className="absolute top-0 left-0 h-full rounded-full bg-primary"
+                                    style={{
+                                        width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+                                    }}
+                                />
+                                {/* 拖动手柄 */}
+                                <div
+                                    className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-background shadow"
+                                    style={{
+                                        left: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+                                    }}
+                                />
+                            </div>
+                            {/* 原生 range 覆盖在上层（透明，仅接收交互） */}
+                            <input
+                                type="range"
+                                min={0}
+                                max={duration || 0}
+                                step={0.05}
+                                value={currentTime}
+                                onChange={handleSliderChange}
+                                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                aria-label="选择帧位置"
+                            />
+                        </div>
                     </div>
-                    <p className="text-center text-xs text-muted-foreground">拖动滑块选择封面帧</p>
+
+                    <div className="flex items-center justify-between font-mono text-xs text-muted-foreground">
+                        <span>{formatTime(currentTime)}</span>
+                        <span className="text-center text-[11px]">
+                            拖动滑块或悬停预览选择封面帧
+                        </span>
+                        <span>{formatTime(duration)}</span>
+                    </div>
                 </div>
             ) : null}
 
@@ -181,7 +296,16 @@ export function FramePicker({
                 </Button>
             </div>
 
-            {/* 隐藏的 canvas 用于截帧 */}
+            {/* 隐藏的预览视频 + canvas */}
+            {/* biome-ignore lint/a11y/useMediaCaption: 预览截帧用，无字幕需求 */}
+            <video
+                ref={previewVideoRef}
+                src={src}
+                crossOrigin="anonymous"
+                preload="metadata"
+                className="hidden"
+                onSeeked={handlePreviewSeeked}
+            />
             <canvas ref={canvasRef} className="hidden" />
         </div>
     );

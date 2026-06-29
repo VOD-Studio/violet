@@ -38,6 +38,8 @@ export interface MediaFile {
     category?: string;
     /** 创建时间，RFC3339 字符串 */
     created_at: string;
+    /** 更新时间，RFC3339 字符串（缩略图版本号用） */
+    updated_at?: string;
 }
 
 /**
