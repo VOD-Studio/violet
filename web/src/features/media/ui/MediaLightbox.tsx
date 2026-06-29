@@ -91,7 +91,7 @@ export function MediaLightbox({
         <>
             <Dialog open={open} onOpenChange={onOpenChange} modal={!fullscreenOpen}>
                 <DialogContent
-                    className="max-w-[95vw] gap-0 border-none bg-background/95 p-0 sm:max-w-[1200px] sm:rounded-lg"
+                    className="max-w-[95vw] gap-0 border-none bg-background/95 p-0 sm:max-w-300 sm:rounded-lg"
                     showCloseButton
                     onInteractOutside={fullscreenOpen ? blockDialogDismiss : undefined}
                     onEscapeKeyDown={fullscreenOpen ? blockDialogDismiss : undefined}
