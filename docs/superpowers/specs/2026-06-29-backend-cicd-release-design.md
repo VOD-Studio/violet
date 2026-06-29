@@ -67,7 +67,7 @@ tag v* / workflow_dispatch ──► deploy.yml (self-hosted runner @ rua)
   ├─ docker build
   │     → blog-api:<git-tag>
   │     → blog-api:latest
-  ├─ DB 迁移门禁：docker compose run --rm api /migrate up
+  ├─ DB 迁移门禁：docker compose run --rm --no-deps api /migrate up
   │     （失败 → 中止，不重启 api）
   ├─ 部署：docker compose -f docker-compose.prod.yml
   │         -f docker-compose.ci.yml up -d --no-build --no-deps api
@@ -105,14 +105,15 @@ tag v* / workflow_dispatch ──► deploy.yml (self-hosted runner @ rua)
 
 ### 5.3 数据库迁移门禁
 
-**现状缺口**：`api/Dockerfile` 只构建 `./cmd/server`，没有 `migrate` 二进制；`docker-compose.prod.yml` 的 api 容器 `ENTRYPOINT` 是 `/server`，compose up 不执行迁移。迁移目前完全靠人手动跑（`make migrate`）。
+**现状**：`api/cmd/server/main.go` 启动时调用 `internal/migrate.RunMigrations` 自动执行迁移，失败则 `log.Fatal` 退出；镜像内没有独立的 `migrate` 二进制。迁移因此成为 server 启动的副作用，缺乏独立、可观测、可门控的步骤；更关键的是，`compose up --no-deps api` 会先停旧容器再启新容器，一旦新版本迁移失败，旧版本已被停止，无法保持线上可用。
 
 **方案**：
 
-- `api/Dockerfile` 增加构建 `./cmd/migrate`，产出 `/migrate` 二进制（与 `/server` 同一 builder 阶段，运行时阶段一并 COPY）。
-- `deploy.yml` 在部署 api 之前，先执行一次性迁移容器：
-  `docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml run --rm api /migrate up`
-- 迁移 step 设为门禁：退出码非 0 则**立即中止整个部署 job**，api 服务不重启，线上继续跑旧版本。
+- `api/Dockerfile` 额外构建 `./cmd/migrate`，产出 `/migrate` 二进制（与 `/server` 同一 builder 阶段，运行时阶段一并 COPY）。
+- `deploy.yml` 在替换 api 容器**之前**，先用一次性容器执行迁移作为显式门禁：
+  `docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml run --rm --no-deps api /migrate up`
+- 迁移 step 设为门禁：退出码非 0 则**立即中止整个部署 job**，api 容器不替换，线上继续跑旧版本。
+- server 启动时的自动迁移保留作为兜底，golang-migrate `up` 幂等，已迁移时返回 `ErrNoChange`。
 - golang-migrate 的版本号顺序保证向前兼容；破坏性迁移需在评审时单独关注（文档提示）。
 
 ### 5.4 镜像版本化与回滚
