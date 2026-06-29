@@ -14,6 +14,10 @@ func registerTagPaths(t *openapi3.T) {
 		"name": reqStr("标签名"),
 	}, "name")
 
+	registerSchema(t, "UpdateTagRequest", openapi3.Schemas{
+		"name": reqStr("标签名"),
+	}, "name")
+
 	// GET /tags（公开，非分页）
 	get(t, "/tags", &openapi3.Operation{
 		Tags:    []string{"标签"},
@@ -34,6 +38,23 @@ func registerTagPaths(t *openapi3.T) {
 		Responses: responses(
 			201, dataResponse("TagDTO", "新建标签", 201),
 			400, errorResponse("请求参数错误或标签名重复"),
+		),
+	})
+
+	// PATCH /tags/{id}（需 tag:update 权限）
+	patch(t, "/tags/{id}", &openapi3.Operation{
+		Tags:        []string{"标签"},
+		Summary:     "更新标签",
+		Description: "需 tag:update 权限。slug 按 name 自动重算。",
+		Security:    securityAdmin(),
+		Parameters: openapi3.Parameters{
+			pathIntParam("id", "标签 ID"), csrfHeaderParam(),
+		},
+		RequestBody: jsonBody("UpdateTagRequest", true, "新标签名"),
+		Responses: responses(
+			200, dataResponse("TagDTO", "更新后的标签", 200),
+			400, errorResponse("标签名不能为空"),
+			404, errorResponse("标签不存在"),
 		),
 	})
 
