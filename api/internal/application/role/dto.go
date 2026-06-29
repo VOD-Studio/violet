@@ -23,12 +23,17 @@ type RoleDTO struct {
 	UserCount       int64    `json:"user_count,omitempty"` // 仅列表查询时填充
 }
 
-// PermissionDTO 权限读模型
+// PermissionDTO 权限读模型（支持树形：menu 节点带 children）
 type PermissionDTO struct {
-	ID          int32  `json:"id"`
-	Code        string `json:"code"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          int32           `json:"id"`
+	Code        string          `json:"code"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Type        string          `json:"type"`              // "menu" | "action"
+	ParentID    *int32          `json:"parent_id"`
+	Sort        int             `json:"sort"`
+	IsBuiltin   bool            `json:"is_builtin"`
+	Children    []PermissionDTO `json:"children,omitempty"` // 仅 menu 有
 }
 
 // RoleWithPermissionsDTO 角色含权限详情（GetRoleWithPermissions 返回）
