@@ -37,7 +37,7 @@ func sessionToPO(s *upload.UploadSession) (newmodel.UploadSession, error) {
 func sessionToDomain(po newmodel.UploadSession) (*upload.UploadSession, error) {
 	chunks := make([]int, 0, len(po.UploadedChunks))
 	for _, v := range po.UploadedChunks {
-		chunks = append(chunks, int(v))
+		chunks = append(chunks, v)
 	}
 	return upload.ReconstructUploadSession(
 		domainshared.MustParseID(po.ID.String()),
@@ -107,7 +107,7 @@ func (r *UploadSessionRepository) AppendChunk(ctx context.Context, id domainshar
 		}
 		// 检查是否已存在（幂等）
 		for _, v := range po.UploadedChunks {
-			if int(v) == index {
+			if v == index {
 				return nil
 			}
 		}
