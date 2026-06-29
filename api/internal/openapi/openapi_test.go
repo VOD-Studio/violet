@@ -163,7 +163,7 @@ func TestAdminUserPaths(t *testing.T) {
 func TestAdminRBACPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
-		"/admin/permissions", "/admin/permissions/{code}",
+		"/admin/permissions", "/admin/permissions/{id}",
 		"/admin/roles", "/admin/roles/{id}", "/admin/roles/{id}/permissions",
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing rbac path %s", p)

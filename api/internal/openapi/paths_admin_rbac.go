@@ -16,9 +16,14 @@ func registerAdminRBACPaths(t *openapi3.T) {
 
 	registerSchema(t, "PermissionDTO", openapi3.Schemas{
 		"id":          optInt32("权限 ID"),
-		"code":        reqStr("权限代码"),
+		"code":        reqStr("权限代码（menu 为纯 module 名如 post；action 为 module:action 如 post:create）"),
 		"name":        reqStr("权限名称"),
 		"description": optStr("权限描述"),
+		"type":        optStr("权限类型：menu（分组容器）| action（可授权操作）"),
+		"parent_id":   optInt32("父权限 ID（action 指向所属 menu；menu 为 null）"),
+		"sort":        optInt("排序值（升序）"),
+		"is_builtin":  optBool("是否内置权限（内置不可删、不可改 code）"),
+		"children":    refArray("子权限列表（仅 menu 节点有）", "PermissionDTO"),
 	})
 
 	// RoleWithPermissionsDTO：内嵌 RoleDTO + permissions 列表
@@ -47,15 +52,21 @@ func registerAdminRBACPaths(t *openapi3.T) {
 	}, "permission_codes")
 
 	registerSchema(t, "CreatePermissionRequest", openapi3.Schemas{
-		"code":        reqStr("权限代码"),
+		"code":        reqStr("权限代码（menu 为纯 module 名；action 为 module:action）"),
 		"name":        reqStr("权限名称"),
 		"description": optStr("权限描述"),
+		"type":        optStr("权限类型：menu | action（默认 action）"),
+		"parent_id":   optInt32("父权限 ID（action 必填指向 menu；menu 为 null）"),
+		"sort":        optInt("排序值（默认 0）"),
 	}, "code", "name")
 
 	registerSchema(t, "UpdatePermissionRequest", openapi3.Schemas{
-		"name":        reqStr("权限名称"),
+		"code":        optStr("权限代码（内置权限不可改，提交时忽略）"),
+		"name":        optStr("权限名称"),
 		"description": optStr("权限描述"),
-	}, "name")
+		"parent_id":   optInt32("父权限 ID"),
+		"sort":        optInt("排序值"),
+	})
 
 	// id 响应（创建返回）
 	idResp := func(desc string) *openapi3.ResponseRef {
@@ -101,13 +112,13 @@ func registerAdminRBACPaths(t *openapi3.T) {
 		),
 	})
 
-	patch(t, "/admin/permissions/{code}", &openapi3.Operation{
+	patch(t, "/admin/permissions/{id}", &openapi3.Operation{
 		Tags:        []string{"权限管理"},
 		Summary:     "更新权限",
-		Description: "更新权限。需超级管理员权限。",
+		Description: "更新权限。需超级管理员权限。内置权限不可改 code。",
 		Security:    securityAdmin(),
 		Parameters: openapi3.Parameters{
-			pathStrParam("code", "权限代码"), csrfHeaderParam(),
+			pathIntParam("id", "权限 ID"), csrfHeaderParam(),
 		},
 		RequestBody: jsonBody("UpdatePermissionRequest", true, "待更新字段"),
 		Responses: responses(
@@ -116,13 +127,13 @@ func registerAdminRBACPaths(t *openapi3.T) {
 		),
 	})
 
-	del(t, "/admin/permissions/{code}", &openapi3.Operation{
+	del(t, "/admin/permissions/{id}", &openapi3.Operation{
 		Tags:        []string{"权限管理"},
 		Summary:     "删除权限",
-		Description: "删除权限。需超级管理员权限。",
+		Description: "删除权限。需超级管理员权限。内置权限不可删；被角色使用中的权限不可删。",
 		Security:    securityAdmin(),
 		Parameters: openapi3.Parameters{
-			pathStrParam("code", "权限代码"), csrfHeaderParam(),
+			pathIntParam("id", "权限 ID"), csrfHeaderParam(),
 		},
 		Responses: responses(
 			200, messageResponse("权限已删除"),
