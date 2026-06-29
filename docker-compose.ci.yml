@@ -1,0 +1,8 @@
+# CI/CD 部署专用 override
+# 用法: docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --no-build --no-deps api
+# 将 api 服务从本地构建改为引用预构建镜像 blog-api:latest，
+# 配合 --no-build 复用 deploy step 已构建并打好版本 tag 的镜像。
+# 手动流程 make deploy-remote 只用 docker-compose.prod.yml，本文件不影响它。
+services:
+  api:
+    image: blog-api:latest
