@@ -80,7 +80,7 @@ export function ImagePreview({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95"
+                    className="fixed inset-0 z-9999 flex items-center justify-center bg-black/95"
                     onClick={onClose}
                 >
                     {/* 控制按钮 */}
