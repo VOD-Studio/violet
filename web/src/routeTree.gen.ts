@@ -26,6 +26,7 @@ import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
 import { Route as AdminMediaRouteImport } from './routes/admin.media'
 import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
+import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -112,6 +113,11 @@ const AdminEmojisRoute = AdminEmojisRouteImport.update({
   path: '/emojis',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/emojis': typeof AdminEmojisRoute
   '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/emojis': typeof AdminEmojisRoute
   '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/emojis': typeof AdminEmojisRoute
   '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/admin/announcements'
     | '/admin/emojis'
     | '/admin/media'
     | '/admin/permissions'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/admin/announcements'
     | '/admin/emojis'
     | '/admin/media'
     | '/admin/permissions'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/register'
+    | '/admin/announcements'
     | '/admin/emojis'
     | '/admin/media'
     | '/admin/permissions'
@@ -363,10 +375,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEmojisRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/announcements': {
+      id: '/admin/announcements'
+      path: '/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AdminAnnouncementsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminEmojisRoute: typeof AdminEmojisRoute
   AdminMediaRoute: typeof AdminMediaRoute
   AdminPermissionsRoute: typeof AdminPermissionsRoute
@@ -377,6 +397,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminEmojisRoute: AdminEmojisRoute,
   AdminMediaRoute: AdminMediaRoute,
   AdminPermissionsRoute: AdminPermissionsRoute,
