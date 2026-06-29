@@ -45,9 +45,11 @@ jobs:
     steps:
       - name: 解析目标版本
         id: ver
+        env:
+          VER_INPUT: ${{ inputs.version }}
         run: |
-          if [ -n "${{ inputs.version }}" ]; then
-            echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          if [ -n "$VER_INPUT" ]; then
+            echo "tag=$VER_INPUT" >> "$GITHUB_OUTPUT"
             echo "rollback=true" >> "$GITHUB_OUTPUT"
           else
             echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
@@ -63,7 +65,7 @@ jobs:
             PREV="$(cat /root/docker/mimo-blog/.current-version)"
           fi
           echo "prev_tag=${PREV}" >> "$GITHUB_OUTPUT"
-          echo "当前线上版本: ${PREV:-（无，疑似首次部署）}"
+          echo "当前线上版本: ${PREV:-无，疑似首次部署}"
 
       - name: Checkout 代码
         uses: actions/checkout@v4
@@ -82,6 +84,7 @@ jobs:
       - name: 回滚模式复用缓存镜像
         if: ${{ inputs.skip_build == 'true' }}
         run: |
+          docker image inspect blog-api:${{ steps.ver.outputs.tag }} >/dev/null 2>&1 || { echo "::error::rua 本地无 blog-api:${{ steps.ver.outputs.tag }} 镜像，回滚中止"; exit 1; }
           docker tag blog-api:${{ steps.ver.outputs.tag }} blog-api:latest
           echo "已将 blog-api:${{ steps.ver.outputs.tag }} 复用为 latest"
 
@@ -91,13 +94,14 @@ jobs:
           cp docker-compose.ci.yml   /root/docker/mimo-blog/docker-compose.ci.yml
 
       - name: 数据库迁移门禁
+        id: migrate
         working-directory: /root/docker/mimo-blog
         run: |
           docker compose \
             --env-file api/.env \
             -f docker-compose.prod.yml \
             -f docker-compose.ci.yml \
-            run --rm --no-deps api /migrate up
+            run --rm --no-deps --entrypoint /migrate api up
 
       - name: 部署 api 服务
         id: deploy
@@ -125,7 +129,7 @@ jobs:
           exit 1
 
       - name: 自动回滚到上一版本
-        if: failure() && steps.prev.outputs.prev_tag != '' && steps.ver.outputs.rollback != 'true'
+        if: failure() && steps.migrate.outcome == 'success' && steps.prev.outputs.prev_tag != '' && steps.ver.outputs.rollback != 'true'
         working-directory: /root/docker/mimo-blog
         run: |
           PREV="${{ steps.prev.outputs.prev_tag }}"
