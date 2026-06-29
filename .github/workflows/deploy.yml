@@ -1,0 +1,160 @@
+# CD 发布流水线
+#
+# 触发:
+#   - 打 v* tag: 自动发版到 rua 生产环境
+#   - workflow_dispatch: 手动触发，可选 version 回滚到历史 tag
+#
+# 运行在 rua 的 self-hosted runner 上，本地构建并部署，不穿越 GFW、无需镜像仓库。
+# 流程: 构建 → 迁移门禁 → 部署 api → 健康检查 → 失败自动回滚 → 创建 Release
+
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '目标版本 tag，用于手动回滚，如 v2.0.1。留空则部署触发的 tag。'
+        required: false
+        default: ''
+      skip_build:
+        description: '跳过构建，回滚时复用本地缓存镜像'
+        required: false
+        type: boolean
+        default: false
+
+# 生产部署串行，绝不并发、绝不取消进行中的部署
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # 创建 GitHub Release 需要
+
+jobs:
+  deploy:
+    name: 部署到 rua 生产环境
+    runs-on: [self-hosted, rua]
+    environment: production
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: 解析目标版本
+        id: ver
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "rollback=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "rollback=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "目标版本: ${{ steps.ver.outputs.tag }}"
+
+      - name: 快照当前线上版本作为回滚目标
+        id: prev
+        run: |
+          PREV=""
+          if [ -f /root/docker/mimo-blog/.current-version ]; then
+            PREV="$(cat /root/docker/mimo-blog/.current-version)"
+          fi
+          echo "prev_tag=${PREV}" >> "$GITHUB_OUTPUT"
+          echo "当前线上版本: ${PREV:-（无，疑似首次部署）}"
+
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ver.outputs.tag }}
+
+      - name: 构建镜像
+        if: ${{ inputs.skip_build != 'true' }}
+        run: |
+          docker build \
+            -t blog-api:${{ steps.ver.outputs.tag }} \
+            -t blog-api:latest \
+            -f api/Dockerfile api/
+          echo "已构建 blog-api:${{ steps.ver.outputs.tag }} 与 blog-api:latest"
+
+      - name: 回滚模式复用缓存镜像
+        if: ${{ inputs.skip_build == 'true' }}
+        run: |
+          docker tag blog-api:${{ steps.ver.outputs.tag }} blog-api:latest
+          echo "已将 blog-api:${{ steps.ver.outputs.tag }} 复用为 latest"
+
+      - name: 同步 compose 文件到部署目录
+        run: |
+          cp docker-compose.prod.yml /root/docker/mimo-blog/docker-compose.prod.yml
+          cp docker-compose.ci.yml   /root/docker/mimo-blog/docker-compose.ci.yml
+
+      - name: 数据库迁移门禁
+        working-directory: /root/docker/mimo-blog
+        run: |
+          docker compose \
+            --env-file api/.env \
+            -f docker-compose.prod.yml \
+            -f docker-compose.ci.yml \
+            run --rm --no-deps api /migrate up
+
+      - name: 部署 api 服务
+        id: deploy
+        working-directory: /root/docker/mimo-blog
+        run: |
+          docker compose \
+            --env-file api/.env \
+            -f docker-compose.prod.yml \
+            -f docker-compose.ci.yml \
+            up -d --no-build --no-deps api
+
+      - name: 健康检查
+        id: health
+        working-directory: /root/docker/mimo-blog
+        run: |
+          for i in $(seq 1 15); do
+            if docker compose exec -T api wget -qO- http://localhost:8080/api/health 2>/dev/null | grep -q '"status":"ok"'; then
+              echo "健康检查通过，第 ${i} 次尝试"
+              exit 0
+            fi
+            echo "等待 api 就绪 (${i}/15)..."
+            sleep 6
+          done
+          echo "::error::健康检查失败，api 未在超时内就绪"
+          exit 1
+
+      - name: 自动回滚到上一版本
+        if: failure() && steps.prev.outputs.prev_tag != '' && steps.ver.outputs.rollback != 'true'
+        working-directory: /root/docker/mimo-blog
+        run: |
+          PREV="${{ steps.prev.outputs.prev_tag }}"
+          echo "部署失败，自动回滚到 ${PREV}"
+          docker tag "blog-api:${PREV}" blog-api:latest
+          docker compose \
+            --env-file api/.env \
+            -f docker-compose.prod.yml \
+            -f docker-compose.ci.yml \
+            up -d --no-build --no-deps api
+          for i in $(seq 1 10); do
+            if docker compose exec -T api wget -qO- http://localhost:8080/api/health 2>/dev/null | grep -q '"status":"ok"'; then
+              echo "回滚成功，线上已恢复到 ${PREV}"
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::回滚后健康检查仍失败，需人工介入"
+          exit 1
+
+      - name: 更新版本锚点
+        if: success() && steps.ver.outputs.rollback != 'true'
+        run: |
+          echo "${{ steps.ver.outputs.tag }}" > /root/docker/mimo-blog/.current-version
+          echo "版本锚点已更新为 ${{ steps.ver.outputs.tag }}"
+
+      - name: 创建 GitHub Release
+        if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
