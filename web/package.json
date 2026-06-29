@@ -13,7 +13,8 @@
         "test": "vitest run",
         "format": "biome format",
         "lint": "biome lint",
-        "check": "biome check"
+        "check": "biome check",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "@hookform/resolvers": "^5.4.0",

@@ -304,7 +304,7 @@ func (p *Provider) fetchDetailViaMeting(baseURL, platform, songID string) (*sear
 		return nil, err
 	}
 	if isMetingError(body) {
-		return nil, fmt.Errorf("Meting API 返回错误")
+		return nil, fmt.Errorf("meting API 返回错误")
 	}
 	var raw []struct {
 		ID     string `json:"id"`

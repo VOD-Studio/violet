@@ -99,7 +99,7 @@ func registerPublicPaths(t *openapi3.T) {
 							Properties: openapi3.Schemas{
 								"data": {Value: &openapi3.Schema{
 									Type:                 &openapi3.Types{openapi3.TypeObject},
-									AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.BoolPtr(true)},
+									AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.Ptr(true)},
 									Description:          "GitHub 贡献数据（结构由 GitHub API 决定）",
 								}},
 								"meta": {Ref: "#/components/schemas/" + compMeta},

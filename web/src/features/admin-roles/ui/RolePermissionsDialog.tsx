@@ -1,4 +1,7 @@
+import { useAdminPermissions } from "@features/admin-permissions/api/queries";
+import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
+import { Checkbox } from "@shared/ui/checkbox";
 import {
     Dialog,
     DialogContent,
@@ -7,13 +10,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@shared/ui/dialog";
-import { Checkbox } from "@shared/ui/checkbox";
 import { Label } from "@shared/ui/label";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useAdminPermissions } from "@features/admin-permissions/api/queries";
 import { useRoleDetail, useUpdateRolePermissions } from "../api/queries";
-import { Badge } from "@shared/ui/badge";
 
 interface RolePermissionsDialogProps {
     open: boolean;
@@ -80,10 +80,14 @@ export function RolePermissionsDialog({
             const next = new Set(prev);
             if (allSelected) {
                 // 取消选中该组的所有权限
-                groupCodes.forEach((code) => next.delete(code));
+                groupCodes.forEach((code) => {
+                    next.delete(code);
+                });
             } else {
                 // 选中该组的所有权限
-                groupCodes.forEach((code) => next.add(code));
+                groupCodes.forEach((code) => {
+                    next.add(code);
+                });
             }
             return next;
         });

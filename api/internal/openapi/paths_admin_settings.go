@@ -45,7 +45,7 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		"ResourceID": optStr("操作资源 ID"),
 		"Detail": {Value: &openapi3.Schema{
 			Type:                 &openapi3.Types{openapi3.TypeObject},
-			AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.BoolPtr(true)},
+			AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.Ptr(true)},
 			Description:          "操作详情（动态字段）",
 		}},
 		"IPAddress": optStr("操作 IP"),
