@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -110,8 +111,12 @@ func (p *Processor) Transcode(srcPath, destDir, fileUUID, srcMime string) (domai
 	return domainupload.ProcessResult{Path: origDst, MimeType: srcMime, Ext: ext}, nil
 }
 
-// Thumbnail 生成缩略图(图片用 imaging,最大宽 300px,JPEG 80%)
+// Thumbnail 生成缩略图(图片用 imaging,最大宽 300px,JPEG 80%；视频用 ffmpeg 抽第 1 秒帧)
 func (p *Processor) Thumbnail(srcPath, fileUUID, storageDir, mime string) string {
+	// 视频用 ffmpeg 抽第 1 秒帧作为缩略图
+	if strings.HasPrefix(mime, "video/") {
+		return p.videoThumbnail(srcPath, fileUUID, storageDir)
+	}
 	if !strings.HasPrefix(mime, "image/") {
 		return ""
 	}
@@ -127,6 +132,29 @@ func (p *Processor) Thumbnail(srcPath, fileUUID, storageDir, mime string) string
 		return ""
 	}
 	if err := imaging.Save(thumb, thumbPath, imaging.JPEGQuality(80)); err != nil {
+		return ""
+	}
+	return p.urlPrefix + storageDir + "/" + thumbName
+}
+
+// videoThumbnail 用 ffmpeg 抽取视频第 1 秒帧生成缩略图
+//
+// ffmpeg 不可用时静默降级（返回空串），不影响上传主流程。
+// 命令：ffmpeg -i <src> -ss 1 -vframes 1 -vf scale=300:-1 -f image2 <thumb> -y
+func (p *Processor) videoThumbnail(srcPath, fileUUID, storageDir string) string {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		return "" // ffmpeg 不可用，静默降级
+	}
+	thumbName := fileUUID + "_thumb.jpg"
+	thumbDir := filepath.Join(p.uploadDir, storageDir)
+	thumbPath := filepath.Join(thumbDir, thumbName)
+	if err := os.MkdirAll(thumbDir, 0o755); err != nil {
+		return ""
+	}
+	// -ss 1: 抽第 1 秒；-vframes 1: 只抽 1 帧；scale=300:-1: 宽 300px 等比缩放
+	cmd := exec.Command("ffmpeg", "-i", srcPath, "-ss", "1", "-vframes", "1",
+		"-vf", "scale=300:-1", "-f", "image2", thumbPath, "-y")
+	if err := cmd.Run(); err != nil {
 		return ""
 	}
 	return p.urlPrefix + storageDir + "/" + thumbName

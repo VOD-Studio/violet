@@ -5,6 +5,7 @@ import { useAdminDeleteFile } from "@features/media/api/mutations";
 import { useAdminMedia } from "@features/media/api/queries";
 import type { AdminMediaListQuery, MediaFile } from "@features/media/model/types";
 import { EditMediaDialog } from "@features/media/ui/EditMediaDialog";
+import { MediaCoverDialog } from "@features/media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/media/ui/MediaGrid";
 import { MediaLightbox } from "@features/media/ui/MediaLightbox";
 import { Button } from "@shared/ui/button";
@@ -48,6 +49,8 @@ function AdminMediaPage() {
     const [uploadOpen, setUploadOpen] = useState(false);
     const [editFile, setEditFile] = useState<MediaFile | null>(null);
     const [editOpen, setEditOpen] = useState(false);
+    const [coverFile, setCoverFile] = useState<MediaFile | null>(null);
+    const [coverOpen, setCoverOpen] = useState(false);
     const [deleteFile, setDeleteFile] = useState<MediaFile | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [previewIndex, setPreviewIndex] = useState<number>(-1);
@@ -69,6 +72,11 @@ function AdminMediaPage() {
     const handleEdit = (file: MediaFile) => {
         setEditFile(file);
         setEditOpen(true);
+    };
+
+    const handlePickCover = (file: MediaFile) => {
+        setCoverFile(file);
+        setCoverOpen(true);
     };
 
     const handleDelete = (file: MediaFile) => {
@@ -170,6 +178,7 @@ function AdminMediaPage() {
                     onPreview={handlePreview}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onPickCover={handlePickCover}
                 />
             ) : (
                 <MediaTable
@@ -206,6 +215,9 @@ function AdminMediaPage() {
 
             {/* 编辑弹窗 */}
             <EditMediaDialog open={editOpen} onOpenChange={setEditOpen} file={editFile} />
+
+            {/* 视频选帧设封面弹窗 */}
+            <MediaCoverDialog open={coverOpen} onOpenChange={setCoverOpen} file={coverFile} />
 
             {/* 删除确认 */}
             <ConfirmDialog

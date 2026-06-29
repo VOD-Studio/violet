@@ -9,6 +9,8 @@ interface MediaGridProps {
     onPreview?: (file: MediaFile) => void;
     onEdit?: (file: MediaFile) => void;
     onDelete?: (file: MediaFile) => void;
+    /** 选帧设封面（仅视频卡片显示此按钮） */
+    onPickCover?: (file: MediaFile) => void;
 }
 
 /**
@@ -16,8 +18,9 @@ interface MediaGridProps {
  *
  * 响应式网格，每个卡片展示缩略图 + 文件名 + 类型 badge + 大小 + 悬停操作。
  * 图片用缩略图（imageUrl 带 thumb 参数），非图片显示对应图标。
+ * 视频卡片有缩略图时显示缩略图，并额外提供「选帧设封面」按钮。
  */
-export function MediaGrid({ files, onPreview, onEdit, onDelete }: MediaGridProps) {
+export function MediaGrid({ files, onPreview, onEdit, onDelete, onPickCover }: MediaGridProps) {
     return (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {files.map((file) => (
@@ -27,6 +30,7 @@ export function MediaGrid({ files, onPreview, onEdit, onDelete }: MediaGridProps
                     onPreview={onPreview}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onPickCover={onPickCover}
                 />
             ))}
         </div>
@@ -38,15 +42,19 @@ function MediaCard({
     onPreview,
     onEdit,
     onDelete,
+    onPickCover,
 }: {
     file: MediaFile;
     onPreview?: (file: MediaFile) => void;
     onEdit?: (file: MediaFile) => void;
     onDelete?: (file: MediaFile) => void;
+    onPickCover?: (file: MediaFile) => void;
 }) {
     const isImage = file.mime_type.startsWith("image/");
     const isVideo = file.mime_type.startsWith("video/");
     const isAudio = file.mime_type.startsWith("audio/");
+    // 视频/图片有缩略图时优先显示缩略图
+    const hasThumbnail = !!file.thumbnail;
 
     return (
         <div className="group relative overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-md">
@@ -59,6 +67,13 @@ function MediaCard({
                 {isImage ? (
                     <img
                         src={imageUrl(file.url, { thumb: "300x300", format: "webp" })}
+                        alt={file.alt_text || file.original_name}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                ) : isVideo && hasThumbnail ? (
+                    <img
+                        src={file.thumbnail}
                         alt={file.alt_text || file.original_name}
                         loading="lazy"
                         className="h-full w-full object-cover transition-transform group-hover:scale-105"
@@ -81,6 +96,17 @@ function MediaCard({
 
             {/* 悬停操作 */}
             <div className="absolute top-1 right-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                {isVideo && onPickCover ? (
+                    <Button
+                        size="icon-sm"
+                        variant="secondary"
+                        className="size-7 shadow-sm"
+                        onClick={() => onPickCover(file)}
+                        title="选帧设封面"
+                    >
+                        <Film className="size-3" />
+                    </Button>
+                ) : null}
                 {onEdit ? (
                     <Button
                         size="icon-sm"
