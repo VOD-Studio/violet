@@ -207,11 +207,21 @@ export function FramePicker({
             {!error ? (
                 <div className="space-y-2">
                     <div className="relative">
-                        {/* 帧预览气泡 */}
+                        {/* 帧预览气泡：根据 hoverPercent 动态调整水平偏移，
+                            边缘时贴边避免气泡被压缩/超出视口 */}
                         {hoverPercent !== null ? (
                             <div
-                                className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 -translate-y-full"
-                                style={{ left: `${hoverPercent}%` }}
+                                className="pointer-events-none absolute -top-1 z-10 -translate-y-full"
+                                style={{
+                                    left: `${hoverPercent}%`,
+                                    // 0-12% 左贴边，12-88% 居中，88-100% 右贴边
+                                    transform:
+                                        hoverPercent < 12
+                                            ? "translateX(0) translateY(-100%)"
+                                            : hoverPercent > 88
+                                              ? "translateX(-100%) translateY(-100%)"
+                                              : "translateX(-50%) translateY(-100%)",
+                                }}
                             >
                                 <div className="overflow-hidden rounded border bg-black shadow-lg">
                                     {previewSrc ? (
