@@ -2,32 +2,64 @@
  * FilePreview - 文件预览主分发器
  *
  * 按文件类型（MIME + 扩展名）路由到对应的预览套件：
- * - 图片 → FilePreviewImage（file-preview 套件内）
- * - 视频 → VideoPreview（video-preview 套件）
- * - 音频 → AudioPreview（audio-preview 套件）
- * - PDF → PdfPreview（pdf-preview 套件）
- * - Word .docx → DocxPreview（docx-preview 套件）
- * - Excel .xlsx → SpreadsheetPreview（spreadsheet-preview 套件）
- * - 压缩包 → ArchivePreview（archive-preview 套件）
- * - 代码 → CodePreview（code-preview 套件）
- * - Markdown → MarkdownPreview（markdown-preview 套件）
+ * - 图片 → FilePreviewImage（file-preview 套件内，静态加载）
+ * - 视频 → VideoPreview（video-preview 套件，懒加载）
+ * - 音频 → AudioPreview（audio-preview 套件，懒加载）
+ * - PDF → PdfPreview（pdf-preview 套件，懒加载）
+ * - Word .docx → DocxPreview（docx-preview 套件，懒加载）
+ * - Excel .xlsx → SpreadsheetPreview（spreadsheet-preview 套件，懒加载）
+ * - 压缩包 → ArchivePreview（archive-preview 套件，懒加载）
+ * - 代码 → CodePreview（code-preview 套件，懒加载）
+ * - Markdown → MarkdownPreview（markdown-preview 套件，懒加载）
+ *
+ * 体积优化：除图片/占位外的预览套件均用 React.lazy 懒加载，
+ * 避免素材页首屏打包 wavesurfer/react-pdf/xlsx 等大体积库。
  *
  * 不可靠预览类型（PPTX 演示文稿、老式 .doc 二进制、RAR/7z、加密 Office）
  * → FilePlaceholder 下载占位。
  */
 
-import { ArchivePreview } from "@/shared/ui/archive-preview";
-import { AudioPreview } from "@/shared/ui/audio-preview";
-import { CodePreview } from "@/shared/ui/code-preview";
-import { DocxPreview } from "@/shared/ui/docx-preview";
-import { MarkdownPreview } from "@/shared/ui/markdown-preview";
-import { PdfPreview } from "@/shared/ui/pdf-preview";
-import { SpreadsheetPreview } from "@/shared/ui/spreadsheet-preview";
-import { VideoPreview } from "@/shared/ui/video-preview";
+import { Loader2 } from "lucide-react";
+import { lazy, Suspense } from "react";
 import type { FilePreviewComponentProps } from "../types/file-preview-types";
 import { getFileKind } from "../utils/mime-utils";
+import { ContentImage } from "./ContentImage";
 import { FilePlaceholder } from "./FilePlaceholder";
-import { FilePreviewImage } from "./ImagePreview";
+
+// 懒加载各预览套件（按需加载，避免首屏打包大体积库）
+const VideoPreview = lazy(() =>
+    import("@/shared/ui/video-preview").then((m) => ({ default: m.VideoPreview })),
+);
+const AudioPreview = lazy(() =>
+    import("@/shared/ui/audio-preview").then((m) => ({ default: m.AudioPreview })),
+);
+const PdfPreview = lazy(() =>
+    import("@/shared/ui/pdf-preview").then((m) => ({ default: m.PdfPreview })),
+);
+const DocxPreview = lazy(() =>
+    import("@/shared/ui/docx-preview").then((m) => ({ default: m.DocxPreview })),
+);
+const SpreadsheetPreview = lazy(() =>
+    import("@/shared/ui/spreadsheet-preview").then((m) => ({ default: m.SpreadsheetPreview })),
+);
+const ArchivePreview = lazy(() =>
+    import("@/shared/ui/archive-preview").then((m) => ({ default: m.ArchivePreview })),
+);
+const CodePreview = lazy(() =>
+    import("@/shared/ui/code-preview").then((m) => ({ default: m.CodePreview })),
+);
+const MarkdownPreview = lazy(() =>
+    import("@/shared/ui/markdown-preview").then((m) => ({ default: m.MarkdownPreview })),
+);
+
+/** 懒加载预览的加载占位 */
+function PreviewFallback() {
+    return (
+        <div className="flex h-40 items-center justify-center">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </div>
+    );
+}
 
 export function FilePreview({
     url,
@@ -47,12 +79,7 @@ export function FilePreview({
         switch (kind) {
             case "image":
                 return (
-                    <FilePreviewImage
-                        url={url}
-                        thumbnailUrl={thumbnailUrl}
-                        name={name}
-                        delay={delay}
-                    />
+                    <ContentImage url={url} thumbnailUrl={thumbnailUrl} name={name} delay={delay} />
                 );
             case "video":
                 return (
@@ -97,7 +124,7 @@ export function FilePreview({
                     unframed ? "overflow-hidden" : "overflow-hidden rounded-lg border bg-background"
                 }
             >
-                {renderPreview()}
+                <Suspense fallback={<PreviewFallback />}>{renderPreview()}</Suspense>
             </div>
 
             {showInfo && name ? (
