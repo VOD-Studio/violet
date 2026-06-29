@@ -11,30 +11,27 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
-# 复制 go mod 文件
 COPY go.mod go.sum ./
-# 从 deps 阶段复制依赖缓存
 COPY --from=deps /go/pkg/mod /go/pkg/mod
-# 复制源代码
 COPY . .
 
-# 构建二进制，使用 ldflags 减小体积
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server
+# 构建 server 与 migrate 两个二进制，ldflags 去除调试信息减小体积
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /migrate ./cmd/migrate
 
-# 阶段3: 运行时
-# 使用 alpine 代替 distroless，保留 shell/wget 以便健康检查和调试
+# 阶段3: 运行时，保留 shell 与 wget 以便健康检查和调试
 FROM alpine:3.20
 
 WORKDIR /app
 
-# 安装 wget 与健康检查所需依赖
 RUN apk add --no-cache ca-certificates wget
 
-# 创建非 root 用户（与 distroless nonroot 一致的 UID/GID）
+# 创建非 root 用户，UID/GID 与 distroless nonroot 保持一致
 RUN addgroup -g 65532 -S appgroup && adduser -u 65532 -S appuser -G appgroup
 
-# 复制构建产物与迁移文件，并设置所有权
+# 复制构建产物与迁移文件并设置所有权
 COPY --from=builder --chown=appuser:appgroup /server /server
+COPY --from=builder --chown=appuser:appgroup /migrate /migrate
 COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
 
 USER appuser:appgroup
