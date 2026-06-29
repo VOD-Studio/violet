@@ -39,7 +39,7 @@ make rollback v=v2.0.0
 迁移 step 失败时 api 容器不会被替换，线上继续跑旧版本。常见原因：
 
 - 迁移 SQL 语法错误：修迁移文件，重新打 tag。
-- dirty 状态：在 rua 执行 `docker compose run --rm --no-deps api /migrate version` 查看，必要时 `/migrate force <v>` 修复。
+- dirty 状态：在 rua 执行 `docker compose run --rm --no-deps --entrypoint /migrate api version` 查看，必要时 `docker compose run --rm --no-deps --entrypoint /migrate api force <v>` 修复。
 
 ## 紧急情况：CI 不可用时的手动兜底
 

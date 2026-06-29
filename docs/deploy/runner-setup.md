@@ -33,7 +33,7 @@ CI 检查跑在 GitHub-hosted runner；生产部署跑在 rua 上的 self-hosted
 
 - `deploy.yml` 只在 tag push 与手动 dispatch 时运行，不响应 pull_request，避免在 rua 执行未评审代码。
 - runner 进程以受限用户运行，不要用 root 注册。
-- 保持 runner 更新：定期 `cd /root/actions-runner && sudo ./svc.sh stop && ./config.sh --ephemeral` 或下载新版替换后重启服务。
+- 保持 runner 更新：下载新版 actions-runner 包解压覆盖原目录后，执行 `sudo ./svc.sh stop && sudo ./svc.sh install && sudo ./svc.sh start` 重启服务。
 
 ## 排错
 
