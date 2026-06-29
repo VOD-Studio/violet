@@ -1,11 +1,10 @@
 /**
- * 图片内容预览（复用 image-preview 套件）
+ * 图片内容预览
  *
- * 内嵌在 FilePreview 卡片中的图片缩略展示，点击触发 image-preview 套件的
- * 全屏预览（缩放/旋转/翻转/动画）。
- *
- * 不自建图片预览逻辑，统一委托给 @/shared/ui/image-preview 套件，
- * 避免与全屏 ImagePreview 组件重复造轮子。
+ * 内嵌在 FilePreview 中的图片展示。点击图片触发全屏预览：
+ * - 优先调用 onImageClick，由调用方在顶层（modal Dialog 之外）渲染全屏 ImagePreview，
+ *   避免全屏层嵌在 modal Dialog 内被锁定而无法交互。
+ * - 未传 onImageClick 时（向后兼容），本组件自渲染全屏 ImagePreview。
  */
 
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -13,7 +12,14 @@ import { useEffect, useRef, useState } from "react";
 import { ImagePreview, useImagePreview } from "@/shared/ui/image-preview";
 import type { ImagePreviewProps, LoadStatus } from "../types/file-preview-types";
 
-export function ContentImage({ url, thumbnailUrl, name, delay = 0, className }: ImagePreviewProps) {
+export function ContentImage({
+    url,
+    thumbnailUrl,
+    name,
+    delay = 0,
+    className,
+    onImageClick,
+}: ImagePreviewProps) {
     const preview = useImagePreview();
     const imgRef = useRef<HTMLImageElement>(null);
     const [status, setStatus] = useState<LoadStatus>("loading");
@@ -52,7 +58,13 @@ export function ContentImage({ url, thumbnailUrl, name, delay = 0, className }: 
             {loadOriginal ? (
                 <button
                     type="button"
-                    onClick={() => preview.openPreview([url], 0, imgRef.current ?? undefined)}
+                    onClick={() => {
+                        if (onImageClick) {
+                            onImageClick(url, imgRef.current);
+                        } else {
+                            preview.openPreview([url], 0, imgRef.current ?? undefined);
+                        }
+                    }}
                     className="absolute inset-0 cursor-zoom-in"
                     title="点击全屏预览"
                 >
@@ -67,14 +79,16 @@ export function ContentImage({ url, thumbnailUrl, name, delay = 0, className }: 
                 </button>
             ) : null}
 
-            {/* 全屏预览（image-preview 套件） */}
-            <ImagePreview
-                open={preview.open}
-                onClose={preview.closePreview}
-                images={preview.images}
-                currentIndex={preview.currentIndex}
-                triggerElement={preview.triggerElement}
-            />
+            {/* 全屏预览（仅未提供 onImageClick 时自渲染；提供时由调用方在顶层渲染） */}
+            {!onImageClick ? (
+                <ImagePreview
+                    open={preview.open}
+                    onClose={preview.closePreview}
+                    images={preview.images}
+                    currentIndex={preview.currentIndex}
+                    triggerElement={preview.triggerElement}
+                />
+            ) : null}
         </div>
     );
 }

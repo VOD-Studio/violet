@@ -71,6 +71,7 @@ export function FilePreview({
     className,
     delay = 0,
     unframed = false,
+    onImageClick,
     ref,
 }: FilePreviewComponentProps) {
     const kind = getFileKind(mimeType, name);
@@ -79,7 +80,13 @@ export function FilePreview({
         switch (kind) {
             case "image":
                 return (
-                    <ContentImage url={url} thumbnailUrl={thumbnailUrl} name={name} delay={delay} />
+                    <ContentImage
+                        url={url}
+                        thumbnailUrl={thumbnailUrl}
+                        name={name}
+                        delay={delay}
+                        onImageClick={onImageClick}
+                    />
                 );
             case "video":
                 return (

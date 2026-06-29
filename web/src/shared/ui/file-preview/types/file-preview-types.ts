@@ -20,6 +20,11 @@ export interface FilePreviewProps {
     delay?: number;
     /** 无外框模式：不渲染外层 border/背景包裹（各预览套件自带边框时使用，避免双层） */
     unframed?: boolean;
+    /**
+     * 点击图片触发全屏预览的回调（透传给 ContentImage）。
+     * 调用方应在 modal Dialog 之外的顶层渲染全屏 ImagePreview。
+     */
+    onImageClick?: (url: string, trigger?: HTMLElement | null) => void;
 }
 
 /** 带转发 ref 的属性（主组件用） */
@@ -51,6 +56,12 @@ export interface ImagePreviewProps {
     delay?: number;
     /** 自定义类名 */
     className?: string;
+    /**
+     * 点击图片触发全屏预览的回调。
+     * 由调用方在合适层级（通常是顶层、modal Dialog 之外）渲染全屏 ImagePreview，
+     * 避免全屏层嵌在 modal Dialog 内被锁定而无法交互。
+     */
+    onImageClick?: (url: string, trigger?: HTMLElement | null) => void;
 }
 
 /** 加载/错误状态 */

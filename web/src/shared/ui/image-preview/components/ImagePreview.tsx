@@ -5,6 +5,7 @@
  */
 
 import { AnimatePresence, motion } from "motion/react";
+import { createPortal } from "react-dom";
 import { useImagePreviewControls } from "../hooks/useImagePreviewControls";
 import type { ImagePreviewProps } from "../types/image-preview-types";
 import { ImagePreviewControls } from "./ImagePreviewControls";
@@ -72,7 +73,9 @@ export function ImagePreview({
 
     const initialPosition = getInitialPosition(triggerElement);
 
-    return (
+    // 通过 portal 渲染到 body，脱离父级（如 Radix Dialog Content 的 transform）
+    // 创建的 containing block / stacking context，确保 fixed 全屏定位在任意嵌套下都生效。
+    return createPortal(
         <AnimatePresence>
             {open ? (
                 <motion.div
@@ -100,20 +103,25 @@ export function ImagePreview({
                     />
 
                     {/* 图片容器 */}
+                    {/* 进入/退出动画仅作用于 transform（GPU 合成层属性，不触发 reflow），
+                        配合 will-change 提升，避免与图片加载过程中的布局变化相互干扰导致掉帧。 */}
                     <motion.div
                         initial={{
                             x: initialPosition.x,
                             y: initialPosition.y,
                             scale: initialPosition.scale,
+                            opacity: 0,
                         }}
-                        animate={{ x: 0, y: 0, scale: 1 }}
+                        animate={{ x: 0, y: 0, scale: 1, opacity: 1 }}
                         exit={{
                             x: initialPosition.x,
                             y: initialPosition.y,
                             scale: initialPosition.scale,
+                            opacity: 0,
                         }}
                         transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
                         className="relative max-h-[90vh] max-w-[90vw]"
+                        style={{ willChange: "transform, opacity" }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <ImagePreviewImage
@@ -138,6 +146,7 @@ export function ImagePreview({
                     />
                 </motion.div>
             ) : null}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body,
     );
 }

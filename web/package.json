@@ -14,7 +14,9 @@
         "format": "biome format",
         "lint": "biome lint",
         "check": "biome check",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "sync:pdf-worker": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\"",
+        "postinstall": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\""
     },
     "dependencies": {
         "@hookform/resolvers": "^5.4.0",
@@ -41,7 +43,6 @@
         "motion": "^12.40.0",
         "next-themes": "^0.4.6",
         "ogl": "^1.0.11",
-        "pdfjs-dist": "^6.1.200",
         "radix-ui": "^1.6.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",

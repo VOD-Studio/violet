@@ -169,6 +169,13 @@ export function useVideoPlayer({
         video.addEventListener("ratechange", onRateChange);
         video.addEventListener("error", onError);
 
+        // 兜底：<video> 在插入 DOM 后即开始请求（preload="metadata"），loadedmetadata
+        // 是异步事件，可能在 useEffect 绑定监听器之前就已触发导致事件丢失 → 永久 loading。
+        // 若元数据已就绪，直接复用处理函数同步置 ready。
+        if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+            onLoadedMetadata();
+        }
+
         return () => {
             video.removeEventListener("loadedmetadata", onLoadedMetadata);
             video.removeEventListener("timeupdate", onTimeUpdate);

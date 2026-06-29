@@ -1,6 +1,6 @@
 import type { MediaFile } from "@features/media/model/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
 import { FilePreview } from "@/shared/ui/file-preview";
 import { ImagePreview } from "@/shared/ui/image-preview";
@@ -19,10 +19,8 @@ interface MediaLightboxProps {
 /**
  * MediaLightbox - 素材灯箱预览
  *
- * 按文件类型分流：
- * - 图片：用 ImagePreview 全屏预览（缩放/旋转/翻转/动画/缩略图导航），
- *   并在当前页所有图片之间切换。
- * - 视频/音频/其他：用 Dialog 内嵌 FilePreview 展示。
+ * 所有类型统一走 Dialog 内嵌 FilePreview；图片的 FilePreview 分支（ContentImage）
+ * 点击后仍可触发全屏 ImagePreview（缩放/旋转/翻转/动画）。
  */
 export function MediaLightbox({
     open,
@@ -30,44 +28,23 @@ export function MediaLightbox({
     files,
     index,
     onIndexChange,
-    triggerElement,
 }: MediaLightboxProps) {
     const file = files[index];
 
-    // 当前页所有图片及其在 files 中的索引，用于 ImagePreview 多图切换
-    const { imageUrls, imageFileIndices } = useMemo(() => {
-        const urls: string[] = [];
-        const indices: number[] = [];
-        files.forEach((f, i) => {
-            if (f.mime_type.startsWith("image/")) {
-                urls.push(f.url);
-                indices.push(i);
-            }
-        });
-        return { imageUrls: urls, imageFileIndices: indices };
-    }, [files]);
+    // 全屏图片预览：渲染在 Dialog 之外（顶层），避免嵌在 modal Dialog 内被锁定导致
+    // 控制按钮无法点击、点周围关全屏时连带关 Dialog 等问题。
+    const [fullscreen, setFullscreen] = useState<{
+        url: string;
+        trigger: HTMLElement | null;
+    } | null>(null);
+    const openFullscreen = useCallback((url: string, trigger?: HTMLElement | null) => {
+        setFullscreen({ url, trigger: trigger ?? null });
+    }, []);
+    const closeFullscreen = useCallback(() => setFullscreen(null), []);
 
-    // 当前文件在图片列表中的索引
-    const imageIndex = useMemo(() => {
-        const i = imageFileIndices.indexOf(index);
-        return i === -1 ? 0 : i;
-    }, [imageFileIndices, index]);
-
-    const isCurrentImage = !!file && file.mime_type.startsWith("image/");
     // 视频/音频有自己的播放器快捷键（←→ 快进退），灯箱不拦截其键盘事件
     const isCurrentMediaWithShortcuts =
         !!file && (file.mime_type.startsWith("video/") || file.mime_type.startsWith("audio/"));
-
-    const close = useCallback(() => onOpenChange(false), [onOpenChange]);
-
-    // 图片预览的索引变化回调：把图片列表索引映射回 files 索引
-    const handleImageIndexChange = useCallback(
-        (imageIdx: number) => {
-            const fileIdx = imageFileIndices[imageIdx];
-            if (fileIdx !== undefined) onIndexChange(fileIdx);
-        },
-        [imageFileIndices, onIndexChange],
-    );
 
     const goPrev = useCallback(() => {
         if (index > 0) onIndexChange(index - 1);
@@ -77,37 +54,39 @@ export function MediaLightbox({
         if (index < files.length - 1) onIndexChange(index + 1);
     }, [index, files.length, onIndexChange]);
 
-    // 非媒体类型（文档/压缩包/代码等）的键盘左右切换
-    // 图片走 ImagePreview（有自己的键盘逻辑），视频/音频走播放器（有快进退快捷键）
+    // 非媒体类型（图片/文档/压缩包/代码等）的键盘左右切换
+    // 视频/音频走播放器（有快进退快捷键），不在此拦截
     useEffect(() => {
-        if (!open || isCurrentImage || isCurrentMediaWithShortcuts) return;
+        if (!open || isCurrentMediaWithShortcuts) return;
         const handler = (e: KeyboardEvent) => {
             if (e.key === "ArrowLeft") goPrev();
             if (e.key === "ArrowRight") goNext();
         };
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [open, isCurrentImage, isCurrentMediaWithShortcuts, goPrev, goNext]);
-
-    // 图片预览：全屏 ImagePreview
-    if (open && isCurrentImage) {
-        return (
-            <ImagePreview
-                open={open}
-                onClose={close}
-                images={imageUrls}
-                currentIndex={imageIndex}
-                onIndexChange={handleImageIndexChange}
-                triggerElement={triggerElement}
-            />
-        );
-    }
+    }, [open, isCurrentMediaWithShortcuts, goPrev, goNext]);
 
     if (!file) return null;
 
-    // 视频/音频/文档/其他：Dialog 内嵌 FilePreview（各套件自带完整 UI）
+    // 所有类型统一走 Dialog 内嵌 FilePreview（各套件自带完整 UI）；
+    // 图片的 FilePreview 分支（ContentImage）点击后触发全屏 ImagePreview。
     // 视频贴边占满宽度（控制栏进度条需占满），其余类型留 padding
     const isVideo = file.mime_type.startsWith("video/");
+
+    // 关键：全屏 ImagePreview 与 modal Dialog 不能同时存在。
+    // Radix modal Dialog 的 DismissableLayer 会把 Content 外部的 pointerdown 判定为关闭信号，
+    // 且 FocusScope 会锁定焦点 —— 导致全屏层嵌在 Dialog 期间：点全屏背景连 Dialog 一起关、
+    // 放大/旋转等按钮无法点击。因此全屏期间卸载 Dialog，关闭全屏后再恢复。
+    if (fullscreen) {
+        return (
+            <ImagePreview
+                open
+                onClose={closeFullscreen}
+                images={[fullscreen.url]}
+                triggerElement={fullscreen.trigger}
+            />
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -153,6 +132,7 @@ export function MediaLightbox({
                         showInfo={false}
                         unframed
                         className="max-w-full"
+                        onImageClick={openFullscreen}
                     />
                 </div>
             </DialogContent>
