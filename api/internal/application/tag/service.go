@@ -63,6 +63,36 @@ func (s *Service) Delete(ctx context.Context, id int32) error {
 	return s.repo.Delete(ctx, id)
 }
 
+// UpdateInput 更新标签入参
+type UpdateInput struct {
+	ID   int32
+	Name string
+}
+
+// Update 更新标签（重算 slug；若 slug 冲突则追加短 uuid）
+func (s *Service) Update(ctx context.Context, in UpdateInput) (TagDTO, error) {
+	t, err := s.repo.FindByID(ctx, in.ID)
+	if err != nil {
+		return TagDTO{}, err
+	}
+	newSlug := GenerateSlug(in.Name)
+	// slug 变化且已被其他标签占用，追加短 uuid 避免冲突
+	if newSlug != t.Slug() {
+		exists, err := s.repo.ExistsBySlug(ctx, newSlug)
+		if err != nil {
+			return TagDTO{}, err
+		}
+		if exists {
+			newSlug = newSlug + "-" + uuid.New().String()[:6]
+		}
+	}
+	updated := domaintag.NewTag(t.ID(), in.Name, newSlug)
+	if _, err := s.repo.Save(ctx, updated); err != nil {
+		return TagDTO{}, err
+	}
+	return toDTO(updated), nil
+}
+
 func toDTO(t domaintag.Tag) TagDTO {
 	return TagDTO{ID: t.ID(), Name: t.Name(), Slug: t.Slug()}
 }

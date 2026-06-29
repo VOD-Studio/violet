@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	apptag "blog-api/internal/application/tag"
+	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/interfaces/http/response"
 )
 
@@ -45,6 +46,35 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondCreated(w, dto)
+}
+
+// updateTagRequest 更新标签请求
+type updateTagRequest struct {
+	Name string `json:"name"`
+}
+
+// Update 更新标签（后台）
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	var req updateTagRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if req.Name == "" {
+		response.RespondError(w, r, domainshared.BadRequest("标签名不能为空"))
+		return
+	}
+	dto, err := h.svc.Update(r.Context(), apptag.UpdateInput{ID: int32(id), Name: req.Name})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
 }
 
 // Delete 删除标签（后台）

@@ -260,8 +260,12 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
 				r.Use(middleware.AdminRequired)
-				r.Post("/", tagH.Create)       // 创建标签
-				r.Delete("/{id}", tagH.Delete) // 删除标签
+				r.With(middleware.RequirePermission(permissionChecker, "tag:create")).
+					Post("/", tagH.Create)                       // 创建标签
+				r.With(middleware.RequirePermission(permissionChecker, "tag:update")).
+					Patch("/{id}", tagH.Update)                  // 编辑标签
+				r.With(middleware.RequirePermission(permissionChecker, "tag:delete")).
+					Delete("/{id}", tagH.Delete)                 // 删除标签
 			})
 		})
 
