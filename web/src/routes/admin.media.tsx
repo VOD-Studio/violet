@@ -1,5 +1,6 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { adminFileKeys } from "@features/media/api/keys";
 import { useAdminDeleteFile } from "@features/media/api/mutations";
 import { useAdminMedia } from "@features/media/api/queries";
@@ -44,6 +45,8 @@ function AdminMediaPage() {
     const [fileType, setFileType] = useState<string>("");
     const [keyword, setKeyword] = useState<string>("");
     const [view, setView] = useState<ViewMode>("grid");
+    const [page, setPage] = useState(1);
+    const pageSize = 60;
 
     // 弹窗状态
     const [uploadOpen, setUploadOpen] = useState(false);
@@ -57,8 +60,8 @@ function AdminMediaPage() {
 
     // 查询参数
     const query: AdminMediaListQuery = {
-        page: 1,
-        limit: 60,
+        page,
+        limit: pageSize,
         purpose: purpose || undefined,
         type: fileType || undefined,
         keyword: keyword || undefined,
@@ -68,6 +71,8 @@ function AdminMediaPage() {
     const queryClient = useQueryClient();
 
     const files = data?.data ?? [];
+    const total = data?.pagination?.total ?? 0;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     const handleEdit = (file: MediaFile) => {
         setEditFile(file);
@@ -116,7 +121,10 @@ function AdminMediaPage() {
             <div className="flex flex-wrap items-center gap-2">
                 <Select
                     value={purpose || "all"}
-                    onValueChange={(v) => setPurpose(v === "all" ? "" : v)}
+                    onValueChange={(v) => {
+                        setPurpose(v === "all" ? "" : v);
+                        setPage(1);
+                    }}
                 >
                     <SelectTrigger className="h-8 w-[120px] text-xs">
                         <SelectValue placeholder="用途" />
@@ -132,7 +140,10 @@ function AdminMediaPage() {
 
                 <Select
                     value={fileType || "all"}
-                    onValueChange={(v) => setFileType(v === "all" ? "" : v)}
+                    onValueChange={(v) => {
+                        setFileType(v === "all" ? "" : v);
+                        setPage(1);
+                    }}
                 >
                     <SelectTrigger className="h-8 w-[120px] text-xs">
                         <SelectValue placeholder="类型" />
@@ -150,7 +161,10 @@ function AdminMediaPage() {
                     <Input
                         placeholder="搜索文件名…"
                         value={keyword}
-                        onChange={(e) => setKeyword(e.target.value)}
+                        onChange={(e) => {
+                            setKeyword(e.target.value);
+                            setPage(1);
+                        }}
                         className="h-8 pl-7 text-xs"
                     />
                 </div>
@@ -188,6 +202,11 @@ function AdminMediaPage() {
                     onPreview={handlePreview}
                 />
             )}
+
+            {/* 分页 */}
+            {files.length > 0 ? (
+                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            ) : null}
 
             {/* 上传弹窗 */}
             <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
