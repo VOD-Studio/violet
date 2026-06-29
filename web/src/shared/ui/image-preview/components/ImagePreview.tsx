@@ -16,10 +16,11 @@ import { ImagePreviewThumbnails } from "./ImagePreviewThumbnails";
  * 计算动画起点位置
  * 用于实现从触发元素到全屏的平滑过渡动画
  */
-function getInitialPosition(triggerElement?: HTMLElement | null) {
-    if (!triggerElement) return { x: 0, y: 0, scale: 0.8 };
+function getInitialPosition(triggerElement?: HTMLElement | null, triggerRect?: DOMRect | null) {
+    // 优先用调用方快照的 rect（触发元素可能已被卸载，运行时读不到正确位置）
+    const rect = triggerRect ?? triggerElement?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0, scale: 0.8 };
 
-    const rect = triggerElement.getBoundingClientRect();
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
 
@@ -47,6 +48,8 @@ export function ImagePreview({
     currentIndex = 0,
     onIndexChange,
     triggerElement,
+    triggerRect,
+    onExitComplete,
 }: ImagePreviewProps) {
     const {
         index,
@@ -63,6 +66,7 @@ export function ImagePreview({
         handleRotateRight,
         handleFlipX,
         handleFlipY,
+        handleReset,
     } = useImagePreviewControls({
         open,
         images,
@@ -71,12 +75,12 @@ export function ImagePreview({
         onClose,
     });
 
-    const initialPosition = getInitialPosition(triggerElement);
+    const initialPosition = getInitialPosition(triggerElement, triggerRect);
 
     // 通过 portal 渲染到 body，脱离父级（如 Radix Dialog Content 的 transform）
     // 创建的 containing block / stacking context，确保 fixed 全屏定位在任意嵌套下都生效。
     return createPortal(
-        <AnimatePresence>
+        <AnimatePresence onExitComplete={onExitComplete}>
             {open ? (
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -100,6 +104,7 @@ export function ImagePreview({
                         onRotateRight={handleRotateRight}
                         onFlipX={handleFlipX}
                         onFlipY={handleFlipY}
+                        onReset={handleReset}
                     />
 
                     {/* 图片容器 */}
@@ -132,6 +137,7 @@ export function ImagePreview({
                             flipX={flipX}
                             flipY={flipY}
                             onLoad={() => {}}
+                            onReset={handleReset}
                         />
                     </motion.div>
 

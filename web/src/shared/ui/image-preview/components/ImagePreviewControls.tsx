@@ -8,6 +8,7 @@ import {
     ChevronRight,
     FlipHorizontal,
     FlipVertical,
+    Maximize2,
     RotateCcw,
     RotateCw,
     X,
@@ -42,6 +43,8 @@ interface ImagePreviewControlsProps {
     onFlipX?: () => void;
     /** 垂直翻转回调 */
     onFlipY?: () => void;
+    /** 重置（缩放/旋转/翻转恢复初始）回调 */
+    onReset?: () => void;
 }
 
 /**
@@ -60,6 +63,7 @@ export function ImagePreviewControls({
     onRotateRight,
     onFlipX,
     onFlipY,
+    onReset,
 }: ImagePreviewControlsProps) {
     // 阻止事件冒泡
     const handleClick = (callback: () => void) => (e: React.MouseEvent) => {
@@ -145,6 +149,23 @@ export function ImagePreviewControls({
                         >
                             <FlipVertical className="h-5 w-5" />
                         </Button>
+                    ) : null}
+
+                    {/* 重置（缩放/旋转/翻转恢复初始） */}
+                    {onReset ? (
+                        <>
+                            {/* 分隔线 */}
+                            <div className="mx-1 h-6 w-px bg-white/20" />
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleClick(onReset)}
+                                className="text-white hover:bg-white/20 active:scale-100"
+                                title="重置（也可双击图片）"
+                            >
+                                <Maximize2 className="h-5 w-5" />
+                            </Button>
+                        </>
                     ) : null}
                 </div>
 

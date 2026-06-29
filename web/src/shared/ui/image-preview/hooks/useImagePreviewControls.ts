@@ -95,6 +95,14 @@ export function useImagePreviewControls({
         setFlipY((prev) => !prev);
     }, []);
 
+    // 重置缩放/旋转/翻转为初始状态（图片位置在 ImagePreviewImage 内自行重置）
+    const handleReset = useCallback(() => {
+        setScale(1);
+        setRotate(0);
+        setFlipX(false);
+        setFlipY(false);
+    }, []);
+
     const handleWheel = useCallback((delta: number) => {
         setScale((prev) => {
             const newScale = prev - delta * 0.001;
@@ -163,5 +171,6 @@ export function useImagePreviewControls({
         handleRotateRight,
         handleFlipX,
         handleFlipY,
+        handleReset,
     };
 }

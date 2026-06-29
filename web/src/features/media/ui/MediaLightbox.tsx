@@ -33,14 +33,26 @@ export function MediaLightbox({
 
     // 全屏图片预览：渲染在 Dialog 之外（顶层），避免嵌在 modal Dialog 内被锁定导致
     // 控制按钮无法点击、点周围关全屏时连带关 Dialog 等问题。
+    // fullscreen 存数据，fullscreenOpen 控开关：关闭时先把 open 置 false 让
+    // ImagePreview 内部 AnimatePresence 播放退出动画（缩回淡出），动画结束
+    // （onExitComplete）才真正清数据，避免直接卸载导致闪退、无关闭动画。
+    //
+    // 注意：全屏期间 Dialog 卸载会让触发图片 DOM 也被移除，因此打开时即快照
+    // 触发元素的 rect，关闭动画据此缩回正确位置（而非运行时读已卸载的 DOM）。
     const [fullscreen, setFullscreen] = useState<{
         url: string;
-        trigger: HTMLElement | null;
+        triggerRect: DOMRect | null;
     } | null>(null);
+    const [fullscreenOpen, setFullscreenOpen] = useState(false);
     const openFullscreen = useCallback((url: string, trigger?: HTMLElement | null) => {
-        setFullscreen({ url, trigger: trigger ?? null });
+        setFullscreen({ url, triggerRect: trigger ? trigger.getBoundingClientRect() : null });
+        setFullscreenOpen(true);
     }, []);
-    const closeFullscreen = useCallback(() => setFullscreen(null), []);
+    const closeFullscreen = useCallback(() => setFullscreenOpen(false), []);
+    const handleFullscreenExitComplete = useCallback(() => setFullscreen(null), []);
+    // 全屏期间把 Dialog 切为 modal={false}（避免 Radix modal 锁定全屏层），但 modal={false}
+    // 默认会响应外部点击/ESC 关闭——这里阻止之，防止全屏期间 Dialog 被误关。
+    const blockDialogDismiss = useCallback((e: Event) => e.preventDefault(), []);
 
     // 视频/音频有自己的播放器快捷键（←→ 快进退），灯箱不拦截其键盘事件
     const isCurrentMediaWithShortcuts =
@@ -70,72 +82,75 @@ export function MediaLightbox({
 
     // 所有类型统一走 Dialog 内嵌 FilePreview（各套件自带完整 UI）；
     // 图片的 FilePreview 分支（ContentImage）点击后触发全屏 ImagePreview。
-    // 视频贴边占满宽度（控制栏进度条需占满），其余类型留 padding
+    // 视频贴边占满宽度（控制栏进度条需占满），其余类型留 padding。
+    // 全屏期间 Dialog 切为 modal={false}（详见上面 blockDialogDismiss 注释），
+    // 与全屏 ImagePreview 同时渲染，关闭时重叠过渡而非串行。
     const isVideo = file.mime_type.startsWith("video/");
 
-    // 关键：全屏 ImagePreview 与 modal Dialog 不能同时存在。
-    // Radix modal Dialog 的 DismissableLayer 会把 Content 外部的 pointerdown 判定为关闭信号，
-    // 且 FocusScope 会锁定焦点 —— 导致全屏层嵌在 Dialog 期间：点全屏背景连 Dialog 一起关、
-    // 放大/旋转等按钮无法点击。因此全屏期间卸载 Dialog，关闭全屏后再恢复。
-    if (fullscreen) {
-        return (
-            <ImagePreview
-                open
-                onClose={closeFullscreen}
-                images={[fullscreen.url]}
-                triggerElement={fullscreen.trigger}
-            />
-        );
-    }
-
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-                className="max-w-[95vw] gap-0 border-none bg-background/95 p-0 sm:max-w-[1200px] sm:rounded-lg"
-                showCloseButton
-            >
-                <DialogTitle className="sr-only">{file.original_name}</DialogTitle>
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange} modal={!fullscreenOpen}>
+                <DialogContent
+                    className="max-w-[95vw] gap-0 border-none bg-background/95 p-0 sm:max-w-[1200px] sm:rounded-lg"
+                    showCloseButton
+                    onInteractOutside={fullscreenOpen ? blockDialogDismiss : undefined}
+                    onEscapeKeyDown={fullscreenOpen ? blockDialogDismiss : undefined}
+                >
+                    <DialogTitle className="sr-only">{file.original_name}</DialogTitle>
 
-                {/* 顶部切换条：上一个/计数/下一个（文件名由各预览套件自行展示，避免重复） */}
-                <div className="flex items-center justify-center gap-2 border-b px-3 py-2">
-                    <button
-                        type="button"
-                        onClick={goPrev}
-                        disabled={index <= 0}
-                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
-                        aria-label="上一个"
-                    >
-                        <ChevronLeft className="size-4" />
-                    </button>
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
-                        {index + 1} / {files.length}
-                    </span>
-                    <button
-                        type="button"
-                        onClick={goNext}
-                        disabled={index >= files.length - 1}
-                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
-                        aria-label="下一个"
-                    >
-                        <ChevronRight className="size-4" />
-                    </button>
-                </div>
+                    {/* 顶部切换条：上一个/计数/下一个（文件名由各预览套件自行展示，避免重复） */}
+                    <div className="flex items-center justify-center gap-2 border-b px-3 py-2">
+                        <button
+                            type="button"
+                            onClick={goPrev}
+                            disabled={index <= 0}
+                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
+                            aria-label="上一个"
+                        >
+                            <ChevronLeft className="size-4" />
+                        </button>
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
+                            {index + 1} / {files.length}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={goNext}
+                            disabled={index >= files.length - 1}
+                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
+                            aria-label="下一个"
+                        >
+                            <ChevronRight className="size-4" />
+                        </button>
+                    </div>
 
-                {/* 预览内容（各套件自带边框/工具栏，用 unframed 避免双层边框） */}
-                <div className={`max-h-[82vh] overflow-auto ${isVideo ? "" : "p-4"}`}>
-                    <FilePreview
-                        url={file.url}
-                        thumbnailUrl={file.thumbnail || undefined}
-                        mimeType={file.mime_type}
-                        name={file.original_name}
-                        size={file.size}
-                        showInfo={false}
-                        unframed
-                        className="max-w-full"
-                        onImageClick={openFullscreen}
-                    />
-                </div>
-            </DialogContent>
-        </Dialog>
+                    {/* 预览内容（各套件自带边框/工具栏，用 unframed 避免双层边框） */}
+                    <div className={`max-h-[82vh] overflow-auto ${isVideo ? "" : "p-4"}`}>
+                        <FilePreview
+                            url={file.url}
+                            thumbnailUrl={file.thumbnail || undefined}
+                            mimeType={file.mime_type}
+                            name={file.original_name}
+                            size={file.size}
+                            showInfo={false}
+                            unframed
+                            className="max-w-full"
+                            onImageClick={openFullscreen}
+                        />
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* 全屏图片预览：与 Dialog 同时存在，渲染在其上层（z-9999）。
+                关闭时全屏淡出缩回，Dialog 在底层自然显露，二者重叠过渡。 */}
+            {fullscreen ? (
+                <ImagePreview
+                    open={fullscreenOpen}
+                    onClose={closeFullscreen}
+                    onExitComplete={handleFullscreenExitComplete}
+                    images={[fullscreen.url]}
+                    triggerRect={fullscreen.triggerRect}
+                />
+            ) : null}
+        </>
     );
 }

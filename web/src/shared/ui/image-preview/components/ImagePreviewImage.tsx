@@ -22,6 +22,8 @@ interface ImagePreviewImageProps {
     flipY?: boolean;
     /** 加载完成回调 */
     onLoad: () => void;
+    /** 双击图片重置（缩放/旋转/翻转恢复初始）回调 */
+    onReset?: () => void;
 }
 
 /**
@@ -42,6 +44,7 @@ export function ImagePreviewImage({
     flipX = false,
     flipY = false,
     onLoad,
+    onReset,
 }: ImagePreviewImageProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [isMoving, setIsMoving] = useState(false);
@@ -159,6 +162,7 @@ export function ImagePreviewImage({
                         cursor: "grab",
                     }}
                     onMouseDown={handleMouseDown}
+                    onDoubleClick={onReset}
                     whileDrag={{ cursor: "grabbing" }}
                     draggable={false}
                 />
