@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Images, LayoutDashboard, Shield, Smile, UserCog, Users } from "lucide-react";
+import { Images, LayoutDashboard, Shield, Smile, Tag, UserCog, Users } from "lucide-react";
 
 /**
  * AdminNavItem - 后台导航项
@@ -28,6 +28,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     { label: "用户管理", to: "/admin/users", icon: Users },
     { label: "角色管理", to: "/admin/roles", icon: UserCog },
     { label: "权限管理", to: "/admin/permissions", icon: Shield },
+    { label: "标签管理", to: "/admin/tags", icon: Tag },
     { label: "素材管理", to: "/admin/media", icon: Images },
     { label: "表情管理", to: "/admin/emojis", icon: Smile },
 ];

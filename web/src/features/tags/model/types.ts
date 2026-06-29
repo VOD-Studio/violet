@@ -23,3 +23,13 @@ export interface CreateTag {
     /** 标签名，必填 */
     name: string;
 }
+
+/**
+ * UpdateTagRequest - 更新标签请求体
+ *
+ * 对接后端 PATCH /api/v1/tags/{id} 的请求体，slug 由后端按 name 自动重算。
+ */
+export interface UpdateTagRequest {
+    /** 标签名，必填 */
+    name: string;
+}

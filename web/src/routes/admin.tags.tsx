@@ -1,0 +1,138 @@
+import { PageShell } from "@features/admin-layout/ui/PageShell";
+import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
+import { DataTable } from "@features/admin-shared/ui/data-table";
+import { TagDialog } from "@features/admin-tags/ui/TagDialog";
+import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
+import { useDeleteTag } from "@features/tags/api/mutations";
+import { useTags } from "@features/tags/api/queries";
+import type { Tag } from "@features/tags/model/types";
+import { Button } from "@shared/ui/button";
+import { createFileRoute } from "@tanstack/react-router";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+
+export const Route = createFileRoute("/admin/tags")({
+    component: AdminTagsPage,
+});
+
+function AdminTagsPage() {
+    const { data: tags = [], isLoading, error, refetch } = useTags();
+    const deleteTag = useDeleteTag();
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [editing, setEditing] = useState<Tag | null>(null);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleting, setDeleting] = useState<Tag | null>(null);
+
+    const handleEdit = (t: Tag) => {
+        setEditing(t);
+        setDialogOpen(true);
+    };
+    const handleCreate = () => {
+        setEditing(null);
+        setDialogOpen(true);
+    };
+    const handleDelete = (t: Tag) => {
+        setDeleting(t);
+        setDeleteOpen(true);
+    };
+    const confirmDelete = () => {
+        if (!deleting?.id) return;
+        deleteTag.mutate(deleting.id, {
+            onSuccess: () => {
+                setDeleteOpen(false);
+                setDeleting(null);
+            },
+        });
+    };
+
+    const columns: DataTableColumn<Tag>[] = [
+        {
+            key: "name",
+            header: "标签名",
+            sortable: true,
+            cell: (row) => <span className="font-medium">{row.name}</span>,
+        },
+        {
+            key: "slug",
+            header: "Slug",
+            cell: (row) => (
+                <code className="text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-xs">
+                    {row.slug}
+                </code>
+            ),
+        },
+        {
+            key: "actions_col",
+            header: "操作",
+            sticky: "right",
+            cell: (row) => (
+                <div className="flex items-center gap-2">
+                    <PermissionGuard permission="tag:update">
+                        <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => handleEdit(row)}
+                            title="编辑"
+                        >
+                            <Pencil className="size-3.5" />
+                        </Button>
+                    </PermissionGuard>
+                    <PermissionGuard permission="tag:delete">
+                        <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(row)}
+                            title="删除"
+                        >
+                            <Trash2 className="size-3.5" />
+                        </Button>
+                    </PermissionGuard>
+                </div>
+            ),
+        },
+    ];
+
+    return (
+        <PageShell
+            title="标签管理"
+            description="管理文章标签"
+            action={
+                <PermissionGuard permission="tag:create">
+                    <Button size="sm" onClick={handleCreate}>
+                        <Plus className="size-3.5" />
+                        创建标签
+                    </Button>
+                </PermissionGuard>
+            }
+        >
+            <DataTable<Tag>
+                data={tags}
+                columns={columns}
+                keyExtractor={(row) => String(row.id)}
+                page={1}
+                pageSize={tags.length}
+                total={tags.length}
+                onPageChange={() => {}}
+                selectable={false}
+                loading={isLoading}
+                error={error ? new Error(error.message) : null}
+                onRetry={() => refetch()}
+                storageKey="admin-tags-columns"
+                caption="标签列表"
+                emptyTitle="暂无标签"
+                emptyDescription="还没有创建任何标签"
+            />
+            <TagDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
+            <ConfirmDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                onConfirm={confirmDelete}
+                title="确认删除标签"
+                description={`确定要删除标签 ${deleting?.name} 吗？`}
+                confirmLabel="删除"
+                loading={deleteTag.isPending}
+            />
+        </PageShell>
+    );
+}

@@ -21,6 +21,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminTagsRouteImport } from './routes/admin.tags'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
 import { Route as AdminMediaRouteImport } from './routes/admin.media'
@@ -86,6 +87,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTagsRoute = AdminTagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRolesRoute = AdminRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/tags': typeof AdminTagsRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/about/': typeof AboutIndexRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/tags': typeof AdminTagsRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/about': typeof AboutIndexRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/roles': typeof AdminRolesRoute
+  '/admin/tags': typeof AdminTagsRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/about/': typeof AboutIndexRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
     | '/admin/media'
     | '/admin/permissions'
     | '/admin/roles'
+    | '/admin/tags'
     | '/admin/users'
     | '/blog/$slug'
     | '/about/'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/admin/media'
     | '/admin/permissions'
     | '/admin/roles'
+    | '/admin/tags'
     | '/admin/users'
     | '/blog/$slug'
     | '/about'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/admin/media'
     | '/admin/permissions'
     | '/admin/roles'
+    | '/admin/tags'
     | '/admin/users'
     | '/blog/$slug'
     | '/about/'
@@ -316,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/tags': {
+      id: '/admin/tags'
+      path: '/tags'
+      fullPath: '/admin/tags'
+      preLoaderRoute: typeof AdminTagsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/roles': {
       id: '/admin/roles'
       path: '/roles'
@@ -352,6 +371,7 @@ interface AdminRouteChildren {
   AdminMediaRoute: typeof AdminMediaRoute
   AdminPermissionsRoute: typeof AdminPermissionsRoute
   AdminRolesRoute: typeof AdminRolesRoute
+  AdminTagsRoute: typeof AdminTagsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -361,6 +381,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMediaRoute: AdminMediaRoute,
   AdminPermissionsRoute: AdminPermissionsRoute,
   AdminRolesRoute: AdminRolesRoute,
+  AdminTagsRoute: AdminTagsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
