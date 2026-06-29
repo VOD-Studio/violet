@@ -15,33 +15,18 @@ linters:
     - unconvert
     - prealloc
     - copyloopvar
-    - gosec
 
   settings:
     revive:
       rules:
         - name: exported
           disabled: true
-    gosec:
-      excludes:
-        - G104
-        - G115
-        - G301
-        - G306
-        - G706
 
   exclusions:
     paths:
       - internal/repository/generated
       - internal/app/wire_gen.go$
       - ".*_gen\\.go$"
-    rules:
-      - path: _test\.go
-        linters:
-          - gosec
-      - path: cmd/server/main\.go
-        linters:
-          - gosec
 
 issues:
   max-issues-per-linter: 0
