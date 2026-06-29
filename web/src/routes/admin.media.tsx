@@ -129,7 +129,7 @@ function AdminMediaPage() {
                         setPage(1);
                     }}
                 >
-                    <SelectTrigger className="h-8 w-[120px] text-xs">
+                    <SelectTrigger className="h-8 w-30 text-xs">
                         <SelectValue placeholder="用途" />
                     </SelectTrigger>
                     <SelectContent>
@@ -148,7 +148,7 @@ function AdminMediaPage() {
                         setPage(1);
                     }}
                 >
-                    <SelectTrigger className="h-8 w-[120px] text-xs">
+                    <SelectTrigger className="h-8 w-30 text-xs">
                         <SelectValue placeholder="类型" />
                     </SelectTrigger>
                     <SelectContent>
