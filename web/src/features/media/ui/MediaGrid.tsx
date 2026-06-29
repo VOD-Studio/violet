@@ -6,7 +6,11 @@ import { Button } from "@/shared/ui/button";
 
 interface MediaGridProps {
     files: MediaFile[];
-    onPreview?: (file: MediaFile) => void;
+    /**
+     * 预览回调，附带触发元素用于图片预览的展开动画
+     * （点击的缩略图 DOM 节点）
+     */
+    onPreview?: (file: MediaFile, trigger?: HTMLElement | null) => void;
     onEdit?: (file: MediaFile) => void;
     onDelete?: (file: MediaFile) => void;
     /** 选帧设封面（仅视频卡片显示此按钮） */
@@ -45,7 +49,7 @@ function MediaCard({
     onPickCover,
 }: {
     file: MediaFile;
-    onPreview?: (file: MediaFile) => void;
+    onPreview?: (file: MediaFile, trigger?: HTMLElement | null) => void;
     onEdit?: (file: MediaFile) => void;
     onDelete?: (file: MediaFile) => void;
     onPickCover?: (file: MediaFile) => void;
@@ -61,7 +65,7 @@ function MediaCard({
             {/* 缩略图区 */}
             <button
                 type="button"
-                onClick={() => onPreview?.(file)}
+                onClick={(e) => onPreview?.(file, e.currentTarget)}
                 className="flex aspect-square w-full items-center justify-center overflow-hidden bg-muted"
             >
                 {isImage ? (

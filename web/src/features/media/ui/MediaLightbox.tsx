@@ -1,25 +1,28 @@
 import type { MediaFile } from "@features/media/model/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
+import { FilePreview } from "@/shared/ui/file-preview";
+import { ImagePreview } from "@/shared/ui/image-preview";
 
 interface MediaLightboxProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     files: MediaFile[];
-    /** 当前预览的文件索引 */
+    /** 当前预览的文件索引（在 files 中的位置） */
     index: number;
     onIndexChange: (index: number) => void;
+    /** 触发预览的元素（用于图片预览从该位置展开动画） */
+    triggerElement?: HTMLElement | null;
 }
 
 /**
  * MediaLightbox - 素材灯箱预览
  *
- * 自建轻量灯箱（无第三方依赖）：
- * - 图片大图居中展示
- * - 视频用 <video controls>
- * - 其他类型显示文件信息卡片
- * - 左右箭头切换、ESC 关闭
+ * 按文件类型分流：
+ * - 图片：用 ImagePreview 全屏预览（缩放/旋转/翻转/动画/缩略图导航），
+ *   并在当前页所有图片之间切换。
+ * - 视频/音频/其他：用 Dialog 内嵌 FilePreview 展示。
  */
 export function MediaLightbox({
     open,
@@ -27,8 +30,41 @@ export function MediaLightbox({
     files,
     index,
     onIndexChange,
+    triggerElement,
 }: MediaLightboxProps) {
     const file = files[index];
+
+    // 当前页所有图片及其在 files 中的索引，用于 ImagePreview 多图切换
+    const { imageUrls, imageFileIndices } = useMemo(() => {
+        const urls: string[] = [];
+        const indices: number[] = [];
+        files.forEach((f, i) => {
+            if (f.mime_type.startsWith("image/")) {
+                urls.push(f.url);
+                indices.push(i);
+            }
+        });
+        return { imageUrls: urls, imageFileIndices: indices };
+    }, [files]);
+
+    // 当前文件在图片列表中的索引
+    const imageIndex = useMemo(() => {
+        const i = imageFileIndices.indexOf(index);
+        return i === -1 ? 0 : i;
+    }, [imageFileIndices, index]);
+
+    const isCurrentImage = !!file && file.mime_type.startsWith("image/");
+
+    const close = useCallback(() => onOpenChange(false), [onOpenChange]);
+
+    // 图片预览的索引变化回调：把图片列表索引映射回 files 索引
+    const handleImageIndexChange = useCallback(
+        (imageIdx: number) => {
+            const fileIdx = imageFileIndices[imageIdx];
+            if (fileIdx !== undefined) onIndexChange(fileIdx);
+        },
+        [imageFileIndices, onIndexChange],
+    );
 
     const goPrev = useCallback(() => {
         if (index > 0) onIndexChange(index - 1);
@@ -38,22 +74,34 @@ export function MediaLightbox({
         if (index < files.length - 1) onIndexChange(index + 1);
     }, [index, files.length, onIndexChange]);
 
-    // 键盘左右切换
+    // 视频预览时键盘左右切换（图片预览有自己的键盘逻辑）
     useEffect(() => {
-        if (!open) return;
+        if (!open || isCurrentImage) return;
         const handler = (e: KeyboardEvent) => {
             if (e.key === "ArrowLeft") goPrev();
             if (e.key === "ArrowRight") goNext();
         };
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [open, goPrev, goNext]);
+    }, [open, isCurrentImage, goPrev, goNext]);
+
+    // 图片预览：全屏 ImagePreview
+    if (open && isCurrentImage) {
+        return (
+            <ImagePreview
+                open={open}
+                onClose={close}
+                images={imageUrls}
+                currentIndex={imageIndex}
+                onIndexChange={handleImageIndexChange}
+                triggerElement={triggerElement}
+            />
+        );
+    }
 
     if (!file) return null;
 
-    const isImage = file.mime_type.startsWith("image/");
-    const isVideo = file.mime_type.startsWith("video/");
-
+    // 视频/音频/其他：Dialog 内嵌 FilePreview
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
@@ -75,25 +123,15 @@ export function MediaLightbox({
                     ) : null}
 
                     {/* 内容 */}
-                    {isImage ? (
-                        <img
-                            src={file.url}
-                            alt={file.alt_text || file.original_name}
-                            className="max-h-[80vh] max-w-full object-contain"
-                        />
-                    ) : isVideo ? (
-                        // 管理后台内部预览，无需字幕轨道
-                        // biome-ignore lint/a11y/useMediaCaption: 内部素材预览，无字幕需求
-                        <video src={file.url} controls className="max-h-[80vh] max-w-full" />
-                    ) : (
-                        <div className="rounded-lg bg-white/5 p-8 text-center text-white">
-                            <p className="text-lg font-medium">{file.original_name}</p>
-                            <p className="mt-2 text-sm text-white/60">
-                                {file.mime_type} · {(file.size / 1024).toFixed(1)} KB
-                            </p>
-                            <p className="mt-4 text-xs text-white/40">此文件类型不支持预览</p>
-                        </div>
-                    )}
+                    <FilePreview
+                        url={file.url}
+                        thumbnailUrl={file.thumbnail || undefined}
+                        mimeType={file.mime_type}
+                        name={file.original_name}
+                        size={file.size}
+                        showInfo={false}
+                        className="max-w-full"
+                    />
 
                     {/* 右箭头 */}
                     {index < files.length - 1 ? (

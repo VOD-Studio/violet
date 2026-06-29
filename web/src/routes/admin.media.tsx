@@ -57,6 +57,8 @@ function AdminMediaPage() {
     const [deleteFile, setDeleteFile] = useState<MediaFile | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [previewIndex, setPreviewIndex] = useState<number>(-1);
+    // 图片预览的触发元素，用于从卡片位置展开动画
+    const [previewTrigger, setPreviewTrigger] = useState<HTMLElement | null>(null);
 
     // 查询参数
     const query: AdminMediaListQuery = {
@@ -101,9 +103,10 @@ function AdminMediaPage() {
         });
     };
 
-    const handlePreview = (file: MediaFile) => {
+    const handlePreview = (file: MediaFile, trigger?: HTMLElement | null) => {
         const idx = files.findIndex((f) => f.id === file.id);
         setPreviewIndex(idx);
+        setPreviewTrigger(trigger ?? null);
     };
 
     return (
@@ -251,10 +254,16 @@ function AdminMediaPage() {
             {/* 灯箱预览 */}
             <MediaLightbox
                 open={previewIndex >= 0}
-                onOpenChange={(o) => !o && setPreviewIndex(-1)}
+                onOpenChange={(o) => {
+                    if (!o) {
+                        setPreviewIndex(-1);
+                        setPreviewTrigger(null);
+                    }
+                }}
                 files={files}
                 index={Math.max(0, previewIndex)}
                 onIndexChange={setPreviewIndex}
+                triggerElement={previewTrigger}
             />
         </PageShell>
     );
@@ -275,7 +284,7 @@ function MediaTable({
     files: MediaFile[];
     onEdit?: (file: MediaFile) => void;
     onDelete?: (file: MediaFile) => void;
-    onPreview?: (file: MediaFile) => void;
+    onPreview?: (file: MediaFile, trigger?: HTMLElement | null) => void;
 }) {
     return (
         <div className="overflow-x-auto rounded-lg border">
@@ -298,7 +307,7 @@ function MediaTable({
                             <td className="px-3 py-2">
                                 <button
                                     type="button"
-                                    onClick={() => onPreview?.(file)}
+                                    onClick={(e) => onPreview?.(file, e.currentTarget)}
                                     className="block size-10 overflow-hidden rounded bg-muted"
                                 >
                                     {file.mime_type.startsWith("image/") ? (
