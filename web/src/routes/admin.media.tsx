@@ -289,6 +289,13 @@ function MediaTable({
                                             alt=""
                                             className="size-full object-cover"
                                         />
+                                    ) : file.mime_type.startsWith("video/") && file.thumbnail ? (
+                                        <img
+                                            // 用 updated_at 破缓存，与 MediaGrid 一致
+                                            src={`${file.thumbnail}?v=${encodeURIComponent(file.updated_at ?? file.created_at)}`}
+                                            alt=""
+                                            className="size-full object-cover"
+                                        />
                                     ) : (
                                         <span className="flex size-full items-center justify-center text-[10px] text-muted-foreground">
                                             {file.mime_type.split("/")[0]?.slice(0, 4)}
