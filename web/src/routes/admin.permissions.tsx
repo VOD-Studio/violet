@@ -6,12 +6,13 @@ import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import { useIsSuperAdmin } from "@features/auth/hooks/usePermissions";
-import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/tooltip";
 import { createFileRoute } from "@tanstack/react-router";
-import { Lock, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { cn } from "@/shared/lib/utils";
 
 export const Route = createFileRoute("/admin/permissions")({
     component: AdminPermissionsPage,
@@ -19,8 +20,12 @@ export const Route = createFileRoute("/admin/permissions")({
 
 interface FlatRow {
     row: PermissionDTO;
+    /** 0=menu 行，1=action 行 */
     depth: number;
+    /** 所属 menu 的 id（action 行用于判断是否随父折叠而隐藏） */
     menuId: string;
+    /** action 行：父 menu 是否展开（menu 行恒为 true） */
+    visible: boolean;
 }
 
 function AdminPermissionsPage() {
@@ -32,14 +37,21 @@ function AdminPermissionsPage() {
     const [editing, setEditing] = useState<PermissionDTO | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState<PermissionDTO | null>(null);
-    const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-    // 默认展开所有 menu
-    const allMenuKeys = useMemo(
-        () => new Set(tree.filter((p) => p.type === "menu").map((p) => String(p.id))),
-        [tree],
-    );
-    const expandedKeys = expanded.size ? expanded : allMenuKeys;
+    // 已折叠的 menu id 集合（默认全部展开，集合为空）
+    const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+    const toggleMenu = (menuId: string) => {
+        setCollapsed((prev) => {
+            const next = new Set(prev);
+            if (next.has(menuId)) {
+                next.delete(menuId);
+            } else {
+                next.add(menuId);
+            }
+            return next;
+        });
+    };
 
     const handleEdit = (p: PermissionDTO) => {
         setEditing(p);
@@ -63,28 +75,56 @@ function AdminPermissionsPage() {
         });
     };
 
-    // 把树压平成可展开的两层行：menu 行 + 其下 action 行（action 仅在展开时显示）
+    // 把树压平成两层行：menu 行 + 其下 action 行（action 仅在父展开时显示）
     const flatRows = useMemo<FlatRow[]>(() => {
         const rows: FlatRow[] = [];
         tree.forEach((menu) => {
-            rows.push({ row: menu, depth: 0, menuId: String(menu.id) });
-            const isOpen = expandedKeys.has(String(menu.id));
-            if (isOpen) {
+            const menuId = String(menu.id);
+            const isCollapsed = collapsed.has(menuId);
+            rows.push({ row: menu, depth: 0, menuId, visible: true });
+            if (!isCollapsed) {
                 (menu.children || []).forEach((action) => {
-                    rows.push({ row: action, depth: 1, menuId: String(menu.id) });
+                    rows.push({ row: action, depth: 1, menuId, visible: true });
                 });
             }
         });
         return rows;
-    }, [tree, expandedKeys]);
+    }, [tree, collapsed]);
 
     const columns: DataTableColumn<FlatRow>[] = [
+        {
+            key: "expand",
+            header: "",
+            width: "40px",
+            hideable: false,
+            cell: (r) => {
+                // 仅 menu 行显示展开/折叠箭头
+                if (r.row.type !== "menu") return null;
+                const isCollapsed = collapsed.has(r.menuId);
+                return (
+                    <button
+                        type="button"
+                        onClick={() => toggleMenu(r.menuId)}
+                        className="hover:bg-accent flex size-6 items-center justify-center rounded transition-colors"
+                        aria-expanded={!isCollapsed}
+                        aria-label={isCollapsed ? "展开" : "折叠"}
+                    >
+                        <ChevronRight
+                            className={cn(
+                                "size-4 transition-transform",
+                                !isCollapsed && "rotate-90",
+                            )}
+                        />
+                    </button>
+                );
+            },
+        },
         {
             key: "code",
             header: "代码",
             sortable: true,
             cell: (r) => (
-                <div className="flex items-center gap-2" style={{ paddingLeft: r.depth * 24 }}>
+                <div className="flex items-center gap-2" style={{ paddingLeft: r.depth * 20 }}>
                     <code className="text-primary bg-primary/10 rounded px-2 py-0.5 text-sm">
                         {r.row.code}
                     </code>
@@ -129,27 +169,39 @@ function AdminPermissionsPage() {
                 const isBuiltin = !!r.row.is_builtin;
                 return (
                     <div className="flex items-center gap-2">
-                        <PermissionGuard permission="admin:access">
-                            <Button
-                                size="icon-sm"
-                                variant="ghost"
-                                onClick={() => handleEdit(r.row)}
-                                title="编辑"
-                            >
-                                <Pencil className="size-3.5" />
-                            </Button>
-                        </PermissionGuard>
-                        <PermissionGuard permission="admin:access">
-                            <Button
-                                size="icon-sm"
-                                variant="ghost"
-                                onClick={() => handleDelete(r.row)}
-                                disabled={isBuiltin}
-                                title={isBuiltin ? "内置权限不可删除" : "删除"}
-                            >
-                                <Trash2 className="size-3.5" />
-                            </Button>
-                        </PermissionGuard>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                {/* span 包裹：让 Radix Tooltip 能附着到可能 disabled 的按钮上 */}
+                                <span>
+                                    <Button
+                                        size="icon-sm"
+                                        variant="ghost"
+                                        onClick={() => handleEdit(r.row)}
+                                        disabled={!isSuperAdmin}
+                                    >
+                                        <Pencil className="size-3.5" />
+                                    </Button>
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>编辑</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span>
+                                    <Button
+                                        size="icon-sm"
+                                        variant="ghost"
+                                        onClick={() => handleDelete(r.row)}
+                                        disabled={isBuiltin || !isSuperAdmin}
+                                    >
+                                        <Trash2 className="size-3.5" />
+                                    </Button>
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {isBuiltin ? "内置权限不可删除" : "删除"}
+                            </TooltipContent>
+                        </Tooltip>
                     </div>
                 );
             },
@@ -157,81 +209,53 @@ function AdminPermissionsPage() {
     ];
 
     return (
-        <PageShell
-            title="权限管理"
-            description="管理系统权限定义（menu 分组 + action 操作）"
-            action={
-                isSuperAdmin ? (
-                    <Button size="sm" onClick={handleCreate}>
-                        <Plus className="size-3.5" />
-                        新建权限
-                    </Button>
-                ) : null
-            }
-        >
-            {/* 展开/折叠控件 */}
-            <div className="flex items-center gap-2 text-sm">
-                <Button variant="ghost" size="sm" onClick={() => setExpanded(new Set(allMenuKeys))}>
-                    全部展开
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setExpanded(new Set())}>
-                    全部折叠
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                        const ids = tree.filter((p) => p.type === "menu").map((p) => String(p.id));
-                        setExpanded((prev) => {
-                            const next = new Set(prev);
-                            ids.forEach((id) => {
-                                if (next.has(id)) {
-                                    next.delete(id);
-                                } else {
-                                    next.add(id);
-                                }
-                            });
-                            return next;
-                        });
-                    }}
-                >
-                    切换
-                </Button>
-            </div>
+        <TooltipProvider>
+            <PageShell
+                title="权限管理"
+                description="管理系统权限定义（menu 分组 + action 操作）"
+                action={
+                    isSuperAdmin ? (
+                        <Button size="sm" onClick={handleCreate}>
+                            <Plus className="size-3.5" />
+                            新建权限
+                        </Button>
+                    ) : null
+                }
+            >
+                <DataTable<FlatRow>
+                    data={flatRows}
+                    columns={columns}
+                    keyExtractor={(r) => `${r.menuId}-${r.row.id}`}
+                    page={1}
+                    pageSize={flatRows.length}
+                    total={flatRows.length}
+                    onPageChange={() => {}}
+                    selectable={false}
+                    loading={isLoading}
+                    error={error ? new Error(error.message) : null}
+                    onRetry={() => refetch()}
+                    storageKey="admin-permissions-columns"
+                    caption="权限列表"
+                    emptyTitle="暂无权限"
+                    emptyDescription="系统中还没有定义任何权限"
+                />
 
-            <DataTable<FlatRow>
-                data={flatRows}
-                columns={columns}
-                keyExtractor={(r) => `${r.menuId}-${r.row.id}`}
-                page={1}
-                pageSize={flatRows.length}
-                total={flatRows.length}
-                onPageChange={() => {}}
-                selectable={false}
-                loading={isLoading}
-                error={error ? new Error(error.message) : null}
-                onRetry={() => refetch()}
-                storageKey="admin-permissions-columns"
-                caption="权限列表"
-                emptyTitle="暂无权限"
-                emptyDescription="系统中还没有定义任何权限"
-            />
+                <CreatePermissionDialog
+                    open={dialogOpen}
+                    onOpenChange={setDialogOpen}
+                    editing={editing}
+                />
 
-            <CreatePermissionDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-                editing={editing}
-            />
-
-            <ConfirmDialog
-                open={deleteOpen}
-                onOpenChange={setDeleteOpen}
-                onConfirm={confirmDelete}
-                title="确认删除权限"
-                description={`确定要删除权限 ${deleting?.name}（${deleting?.code}）吗？`}
-                confirmLabel="删除"
-                loading={deletePermission.isPending}
-            />
-        </PageShell>
+                <ConfirmDialog
+                    open={deleteOpen}
+                    onOpenChange={setDeleteOpen}
+                    onConfirm={confirmDelete}
+                    title="确认删除权限"
+                    description={`确定要删除权限 ${deleting?.name}（${deleting?.code}）吗？`}
+                    confirmLabel="删除"
+                    loading={deletePermission.isPending}
+                />
+            </PageShell>
+        </TooltipProvider>
     );
 }
