@@ -8,6 +8,7 @@
         build docker-build docker-up \
         deploy-prod-init deploy-prod deploy-prod-down \
         deploy-remote deploy-remote-skip-build deploy-remote-patch \
+        deploy-ci rollback \
         clean install update \
         status log \
         env setup generate-jwt-keys generate-production-keys \
@@ -160,6 +161,19 @@ deploy-remote-skip-build: ## 部署到 rua（跳过构建，使用已有镜像�
 
 deploy-remote-patch: ## 仅 patch rua 上的 nginx 配置
 	@./scripts/deploy-prod.sh --patch-only
+
+# ==================== CI/CD 触发 (gh CLI) ====================
+
+deploy-ci: ## 手动触发 deploy 工作流部署最新代码，需 gh CLI 已登录
+	@command -v gh >/dev/null 2>&1 || { echo "✗ 需安装并登录 gh CLI"; exit 1; }
+	gh workflow run deploy.yml
+	@echo "✅ 已触发 deploy 工作流，查看: gh run list --workflow=deploy.yml"
+
+rollback: ## 回滚到历史版本，用法: make rollback v=v2.0.0
+	@if [ -z "$(v)" ]; then echo "用法: make rollback v=v2.0.0"; exit 1; fi
+	@command -v gh >/dev/null 2>&1 || { echo "✗ 需安装并登录 gh CLI"; exit 1; }
+	gh workflow run deploy.yml -f version=$(v) -f skip_build=true
+	@echo "✅ 已触发回滚到 $(v)，查看: gh run list --workflow=deploy.yml"
 
 # ==================== 工具 ====================
 
