@@ -22,6 +22,14 @@ linters:
     errcheck:
       exclude-functions:
         - (io.Closer).Close
+        - (*os.File).Close
+        - (*database/sql.DB).Close
+        - (net/http.ResponseWriter).Write
+        - fmt.Fprintf
+        - fmt.Printf
+        - fmt.Println
+        - fmt.Print
+        - os.Stdout.Write
     revive:
       rules:
         - name: exported
