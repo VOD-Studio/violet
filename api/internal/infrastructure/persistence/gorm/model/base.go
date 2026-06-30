@@ -39,9 +39,11 @@ type User struct {
 	AvatarURL     string `gorm:"type:text" json:"avatar_url"`
 	Bio           string `gorm:"type:text" json:"bio"`
 	Role          string `gorm:"type:varchar(32);not null;default:'user'" json:"role"`
-	EmailVerified bool   `gorm:"not null;default:false" json:"email_verified"`
-	IsActive      bool   `gorm:"not null;default:false" json:"is_active"`
-	RoleID        *int32 `gorm:"index" json:"role_id,omitempty"`
+	// IsBuiltinSuperAdmin 内置超管标志位（区分通配符超管与被委派超管）
+	IsBuiltinSuperAdmin bool  `gorm:"not null;default:false" json:"is_builtin_super_admin"`
+	EmailVerified       bool  `gorm:"not null;default:false" json:"email_verified"`
+	IsActive            bool  `gorm:"not null;default:false" json:"is_active"`
+	RoleID              *int32 `gorm:"index" json:"role_id,omitempty"`
 }
 
 // TableName 显式指定表名（GORM 默认会复数化为 users，此处显式表达意图）

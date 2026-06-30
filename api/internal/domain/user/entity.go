@@ -91,6 +91,13 @@ type User struct {
 	bio string
 	// role 角色
 	role Role
+	// isBuiltinSuperAdmin 是否为内置超级管理员
+	//
+	// 区分"内置超管"（系统初始化的唯一超管，通配符权限，靠标志位短路）
+	// 与"被委派超管"（被内置超管授予 superadmin 角色的用户，按 role_permissions 表授权）。
+	// 内置超管：拥有 user:assign-superadmin 语义、可授权他人、不可被任何人降级/删除。
+	// 被委派超管：不能再授权第三人（授权链不可传递）。
+	isBuiltinSuperAdmin bool
 	// emailVerified 邮箱是否已验证
 	emailVerified bool
 	// isActive 是否启用
@@ -139,20 +146,22 @@ func ReconstructUser(
 	avatarURL string,
 	bio string,
 	role Role,
+	isBuiltinSuperAdmin bool,
 	emailVerified bool,
 	isActive bool,
 	createdAt time.Time,
 	updatedAt time.Time,
 ) *User {
 	u := &User{
-		email:         email,
-		username:      username,
-		passwordHash:  passwordHash,
-		avatarURL:     avatarURL,
-		bio:           bio,
-		role:          role,
-		emailVerified: emailVerified,
-		isActive:      isActive,
+		email:               email,
+		username:            username,
+		passwordHash:        passwordHash,
+		avatarURL:           avatarURL,
+		bio:                 bio,
+		role:                role,
+		isBuiltinSuperAdmin: isBuiltinSuperAdmin,
+		emailVerified:       emailVerified,
+		isActive:            isActive,
 		timestamps: shared.Timestamps{
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
@@ -201,6 +210,16 @@ func (u *User) ChangeRole(role Role) error {
 	}
 	u.role = role
 	return nil
+}
+
+// MarkAsBuiltinSuperAdmin 标记为内置超级管理员
+//
+// 仅由 EnsureSuperAdmin（启动期幂等校正内置超管）调用。
+// 内置超管拥有通配符权限（靠 JWT 标志位短路）、可授权他人、不可被任何人降级/删除。
+func (u *User) MarkAsBuiltinSuperAdmin() {
+	u.isBuiltinSuperAdmin = true
+	// 内置超管必然是 superadmin 角色
+	u.role = RoleSuperAdmin
 }
 
 // Activate 启用账户
@@ -263,6 +282,12 @@ func (u *User) Role() Role { return u.role }
 
 // IsSuperAdmin 是否为超级管理员（便捷方法，权限守卫常用）
 func (u *User) IsSuperAdmin() bool { return u.role.IsSuperAdmin() }
+
+// IsBuiltinSuperAdmin 是否为内置超级管理员
+//
+// 区别于 IsSuperAdmin：被委派超管也是 superadmin 角色，但 isBuiltinSuperAdmin=false。
+// 通配符权限、授权权、不可降级/删除等"主权"都以此为准。
+func (u *User) IsBuiltinSuperAdmin() bool { return u.isBuiltinSuperAdmin }
 
 func (u *User) EmailVerified() bool { return u.emailVerified }
 

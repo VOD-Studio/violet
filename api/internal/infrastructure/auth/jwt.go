@@ -28,10 +28,11 @@ import (
 // 与旧 auth_types.go 的 JWTClaims 保持兼容，
 // 供 middleware.Auth 读取 UserID/Role 等 context 注入。
 type JWTClaims struct {
-	UserID string `json:"user_id"`
-	Email  string `json:"email"`
-	Role   string `json:"role"`
-	RoleID int32  `json:"role_id"`
+	UserID              string `json:"user_id"`
+	Email               string `json:"email"`
+	Role                string `json:"role"`
+	RoleID              int32  `json:"role_id"`
+	IsBuiltinSuperAdmin bool   `json:"is_builtin_super_admin"`
 	jwt.RegisteredClaims
 }
 
@@ -45,10 +46,11 @@ type TokenPair struct {
 
 // TokenInput 生成令牌的入参
 type TokenInput struct {
-	UserID string
-	Email  string
-	Role   string
-	RoleID int32
+	UserID              string
+	Email               string
+	Role                string
+	RoleID              int32
+	IsBuiltinSuperAdmin bool
 }
 
 // ============================================================
@@ -90,10 +92,11 @@ func (s *JWTService) GenerateTokenPair(in TokenInput) (*TokenPair, error) {
 
 	// 访问令牌（含 RoleID）
 	accessClaims := &JWTClaims{
-		UserID: in.UserID,
-		Email:  in.Email,
-		Role:   in.Role,
-		RoleID: in.RoleID,
+		UserID:              in.UserID,
+		Email:               in.Email,
+		Role:                in.Role,
+		RoleID:              in.RoleID,
+		IsBuiltinSuperAdmin: in.IsBuiltinSuperAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessTTL)),
 			IssuedAt:  jwt.NewNumericDate(now),

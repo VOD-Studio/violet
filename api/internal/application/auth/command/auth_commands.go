@@ -257,9 +257,10 @@ func (h *LoginHandler) Handle(ctx context.Context, in LoginInput) (LoginOutput, 
 
 	// 4. 生成 token pair
 	pair, err := h.jwt.GenerateTokenPair(appshared.TokenInput{
-		UserID: u.GetID().String(),
-		Email:  u.Email().String(),
-		Role:   string(u.Role()),
+		UserID:              u.GetID().String(),
+		Email:               u.Email().String(),
+		Role:                string(u.Role()),
+		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
 	})
 	if err != nil {
 		return LoginOutput{}, shared.Internal("生成令牌失败", err)
@@ -365,9 +366,10 @@ func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) 
 
 	// 4. 生成新 token pair
 	pair, err := h.jwt.GenerateTokenPair(appshared.TokenInput{
-		UserID: u.GetID().String(),
-		Email:  u.Email().String(),
-		Role:   string(u.Role()),
+		UserID:              u.GetID().String(),
+		Email:               u.Email().String(),
+		Role:                string(u.Role()),
+		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
 	})
 	if err != nil {
 		return nil, shared.Internal("生成令牌失败", err)

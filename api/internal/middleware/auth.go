@@ -14,10 +14,11 @@ import (
 // 由 TokenValidator 实现返回，避免中间件直接依赖 *service.AuthService
 // 或 *infrastructure/auth.JWTService，保持中间件与具体实现解耦。
 type TokenClaims struct {
-	UserID string
-	Email  string
-	Role   string
-	RoleID int32
+	UserID              string
+	Email               string
+	Role                string
+	RoleID              int32
+	IsBuiltinSuperAdmin bool
 }
 
 // TokenValidator 令牌校验端口
@@ -51,19 +52,21 @@ func WithAccessCookie(name string) AuthOption {
 
 // PermissionChecker 权限点检查端口
 //
-// 任何能根据 (role, roleID, codes) 判断是否授权的实现都能作为 RequirePermission 中间件依赖。
+// 任何能根据 (role, isBuiltinSuperAdmin, roleID, codes) 判断是否授权的实现都能作为 RequirePermission 中间件依赖。
+// isBuiltinSuperAdmin 承载通配符语义：内置超管短路拥有所有权限，不查权限表。
 // 当前实现：*service.PermissionService。
 type PermissionChecker interface {
-	HasPermission(role string, roleID *int32, codes ...string) bool
+	HasPermission(role string, isBuiltinSuperAdmin bool, roleID *int32, codes ...string) bool
 }
 
 type contextKey string
 
 const (
-	UserIDKey     contextKey = "userID"
-	UserRoleKey   contextKey = "userRole"
-	UserEmailKey  contextKey = "userEmail"
-	UserRoleIDKey contextKey = "userRoleID"
+	UserIDKey                   contextKey = "userID"
+	UserRoleKey                 contextKey = "userRole"
+	UserEmailKey                contextKey = "userEmail"
+	UserRoleIDKey               contextKey = "userRoleID"
+	UserIsBuiltinSuperAdminKey  contextKey = "userIsBuiltinSuperAdmin"
 )
 
 // Auth JWT 认证中间件
@@ -123,6 +126,7 @@ func Auth(validator TokenValidator, opts ...AuthOption) func(http.Handler) http.
 			ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
 			ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
 			ctx = context.WithValue(ctx, UserRoleIDKey, claims.RoleID)
+			ctx = context.WithValue(ctx, UserIsBuiltinSuperAdminKey, claims.IsBuiltinSuperAdmin)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -194,15 +198,16 @@ func SuperAdminRequired(next http.Handler) http.Handler {
 }
 
 // RequirePermission 权限点检查中间件
-// superadmin 角色直接放行，其他角色查询内存缓存判断
+// 内置超管（isBuiltinSuperAdmin=true）直接放行，其他角色查询内存缓存判断
 func RequirePermission(checker PermissionChecker, codes ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			role := GetUserRole(r.Context())
+			isBuiltin := GetUserIsBuiltinSuperAdmin(r.Context())
 			roleID := GetUserRoleID(r.Context())
 			userID := GetUserID(r.Context())
 
-			if !checker.HasPermission(role, roleID, codes...) {
+			if !checker.HasPermission(role, isBuiltin, roleID, codes...) {
 				log.Warn().
 					Str("user_id", userID).
 					Str("role", role).
@@ -250,4 +255,12 @@ func GetUserRoleID(ctx context.Context) *int32 {
 		return &roleID
 	}
 	return nil
+}
+
+// GetUserIsBuiltinSuperAdmin 从上下文中获取是否为内置超级管理员
+//
+// 承载通配符权限语义：true 时 HasPermission 短路放行所有权限码。
+func GetUserIsBuiltinSuperAdmin(ctx context.Context) bool {
+	isBuiltin, ok := ctx.Value(UserIsBuiltinSuperAdminKey).(bool)
+	return ok && isBuiltin
 }

@@ -13,8 +13,8 @@ export function useHasPermission(code: string): boolean {
         return false;
     }
 
-    // 超级管理员拥有所有权限，避免后端权限数组短暂缺失时隐藏全部操作。
-    if (user.role === "superadmin") {
+    // 内置超级管理员拥有通配符权限（所有权限），避免后端权限数组短暂缺失时隐藏全部操作。
+    if (user.is_builtin_super_admin) {
         return true;
     }
 
@@ -34,7 +34,7 @@ export function useHasAnyPermission(codes: string[]): boolean {
         return false;
     }
 
-    if (user.role === "superadmin") {
+    if (user.is_builtin_super_admin) {
         return true;
     }
 
@@ -54,7 +54,7 @@ export function useHasAllPermissions(codes: string[]): boolean {
         return false;
     }
 
-    if (user.role === "superadmin") {
+    if (user.is_builtin_super_admin) {
         return true;
     }
 
@@ -79,6 +79,9 @@ export function useIsAdmin(): boolean {
 /**
  * useIsSuperAdmin - 检查当前用户是否为超级管理员
  *
+ * 注意：内置超管和被委派超管都是 superadmin 角色。
+ * 若需区分"内置超管"（通配符权限、可授权他人），请用 useIsBuiltinSuperAdmin。
+ *
  * @returns 是否为超级管理员
  */
 export function useIsSuperAdmin(): boolean {
@@ -89,4 +92,22 @@ export function useIsSuperAdmin(): boolean {
     }
 
     return user.role === "superadmin";
+}
+
+/**
+ * useIsBuiltinSuperAdmin - 检查当前用户是否为内置超级管理员
+ *
+ * 内置超管拥有通配符权限、可授权他人当超管、不可被任何人降级/删除。
+ * 被委派超管虽为 superadmin 角色，但本 hook 返回 false。
+ *
+ * @returns 是否为内置超级管理员
+ */
+export function useIsBuiltinSuperAdmin(): boolean {
+    const { data: user } = useMe({ enabled: true });
+
+    if (!user) {
+        return false;
+    }
+
+    return user.is_builtin_super_admin === true;
 }

@@ -39,15 +39,16 @@ func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, aud
 
 // UserDTO 用户读模型（管理后台）
 type UserDTO struct {
-	ID            string `json:"id"`
-	Username      string `json:"username"`
-	Email         string `json:"email"`
-	Role          string `json:"role"`
-	EmailVerified bool   `json:"email_verified"`
-	IsActive      bool   `json:"is_active"`
-	Bio           string `json:"bio"`
-	Avatar        string `json:"avatar"`
-	CreatedAt     string `json:"created_at"`
+	ID                  string `json:"id"`
+	Username            string `json:"username"`
+	Email               string `json:"email"`
+	Role                string `json:"role"`
+	IsBuiltinSuperAdmin bool   `json:"is_builtin_super_admin"`
+	EmailVerified       bool   `json:"email_verified"`
+	IsActive            bool   `json:"is_active"`
+	Bio                 string `json:"bio"`
+	Avatar              string `json:"avatar"`
+	CreatedAt           string `json:"created_at"`
 }
 
 // List 用户列表（分页 + 筛选）
@@ -89,8 +90,9 @@ type CreateInput struct {
 
 // Create 创建用户
 //
-// 安全守卫：授予 superadmin 角色需操作者本身是 superadmin（防止 admin 越权提权）。
-func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operatorRole string) (UserDTO, error) {
+// 安全守卫：授予 superadmin 角色需操作者是内置超管（持有 user:assign-superadmin 语义）。
+// 被委派超管不能授权第三人，授权链不可传递。
+func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool) (UserDTO, error) {
 	email, err := domainuser.ParseEmail(in.Email)
 	if err != nil {
 		return UserDTO{}, err
@@ -99,9 +101,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operat
 	if err != nil {
 		return UserDTO{}, err
 	}
-	// 守卫：只有 superadmin 才能创建 superadmin 用户
-	if domainuser.Role(in.Role).IsSuperAdmin() && !domainuser.Role(operatorRole).IsSuperAdmin() {
-		return UserDTO{}, shared.Forbidden("仅超级管理员可授予超级管理员角色")
+	// 守卫：只有内置超管才能创建 superadmin 用户（被委派超管不可，授权链不可传递）
+	if domainuser.Role(in.Role).IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		return UserDTO{}, shared.Forbidden("仅内置超级管理员可授予超级管理员角色")
 	}
 	hash, err := s.hasher.Hash(in.Password)
 	if err != nil {
@@ -141,11 +143,12 @@ type UpdateInput struct {
 // Update 更新用户
 //
 // 安全守卫：
-//   - 不可修改超级管理员的角色/状态（仅超管自身的基础信息如密码/头像可改）
+//   - 不可修改内置超级管理员的角色/状态（仅可改其基础信息如密码/头像）
+//   - 被委派超管可被内置超管降级/禁用；被委派超管不可处置其他超管
 //   - 不可修改自己的角色（防止自升降）
-//   - 授予 superadmin 角色需操作者本身是 superadmin
+//   - 授予 superadmin 角色需操作者是内置超管（授权链不可传递）
 //   - username 变更需持久化（修复此前 _ = un 丢弃导致用户名不更新的 bug）
-func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operatorRole string) (UserDTO, error) {
+func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool) (UserDTO, error) {
 	uid, err := shared.ParseID(in.ID)
 	if err != nil {
 		return UserDTO{}, err
@@ -158,22 +161,29 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 	isSelf := u.GetID().String() == operatorID
 	// 角色变更守卫
 	if in.Role != nil {
-		if u.IsSuperAdmin() {
-			// 不可改超管角色
-			return UserDTO{}, shared.Forbidden("不可修改超级管理员的角色")
+		if u.IsBuiltinSuperAdmin() {
+			// 不可改内置超管角色
+			return UserDTO{}, shared.Forbidden("不可修改内置超级管理员的角色")
+		}
+		// 被委派超管只能由内置超管改角色
+		if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+			return UserDTO{}, shared.Forbidden("仅内置超级管理员可修改其他超管的角色")
 		}
 		if isSelf {
 			return UserDTO{}, shared.Forbidden("不可修改自己的角色")
 		}
-		// 授予 superadmin 需操作者是 superadmin
-		if domainuser.Role(*in.Role).IsSuperAdmin() && !domainuser.Role(operatorRole).IsSuperAdmin() {
-			return UserDTO{}, shared.Forbidden("仅超级管理员可授予超级管理员角色")
+		// 授予 superadmin 需操作者是内置超管（授权链不可传递）
+		if domainuser.Role(*in.Role).IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+			return UserDTO{}, shared.Forbidden("仅内置超级管理员可授予超级管理员角色")
 		}
 	}
-	// 状态变更守卫：不可禁用超管，不可禁用自己
+	// 状态变更守卫：不可禁用内置超管；被委派超管仅内置超管可禁用；不可禁用自己
 	if in.IsActive != nil && !*in.IsActive {
-		if u.IsSuperAdmin() {
-			return UserDTO{}, shared.Forbidden("不可禁用超级管理员")
+		if u.IsBuiltinSuperAdmin() {
+			return UserDTO{}, shared.Forbidden("不可禁用内置超级管理员")
+		}
+		if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+			return UserDTO{}, shared.Forbidden("仅内置超级管理员可禁用其他超管")
 		}
 		if isSelf {
 			return UserDTO{}, shared.Forbidden("不可禁用自己的账户")
@@ -216,8 +226,9 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 
 // Delete 删除用户
 //
-// 安全守卫：不可删除超级管理员；不可删除自己。
-func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole, ip, ua string) error {
+// 安全守卫：不可删除内置超级管理员；被委派超管仅内置超管可删；不可删除自己。
+// 即内置超管可删除任何人（除自己和其它内置超管）。
+func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) error {
 	uid, err := shared.ParseID(id)
 	if err != nil {
 		return err
@@ -226,8 +237,12 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole, ip, 
 	if err != nil {
 		return err
 	}
-	if u.IsSuperAdmin() {
-		return shared.Forbidden("不可删除超级管理员")
+	if u.IsBuiltinSuperAdmin() {
+		return shared.Forbidden("不可删除内置超级管理员")
+	}
+	// 被委派超管仅内置超管可删
+	if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		return shared.Forbidden("仅内置超级管理员可删除其他超管")
 	}
 	if u.GetID().String() == operatorID {
 		return shared.Forbidden("不可删除自己")
@@ -240,8 +255,9 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole, ip, 
 
 // UpdateUserRole 修改单个用户角色
 //
-// 安全守卫：不可改超管角色；不可改自己角色；授予 superadmin 需操作者是 superadmin。
-func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, operatorRole, ip, ua string) error {
+// 安全守卫：不可改内置超管角色；被委派超管仅内置超管可改；不可改自己角色；
+// 授予 superadmin 需操作者是内置超管（授权链不可传递）。
+func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) error {
 	uid, err := shared.ParseID(id)
 	if err != nil {
 		return err
@@ -250,14 +266,17 @@ func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, oper
 	if err != nil {
 		return err
 	}
-	if u.IsSuperAdmin() {
-		return shared.Forbidden("不可修改超级管理员的角色")
+	if u.IsBuiltinSuperAdmin() {
+		return shared.Forbidden("不可修改内置超级管理员的角色")
+	}
+	if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		return shared.Forbidden("仅内置超级管理员可修改其他超管的角色")
 	}
 	if u.GetID().String() == operatorID {
 		return shared.Forbidden("不可修改自己的角色")
 	}
-	if domainuser.Role(role).IsSuperAdmin() && !domainuser.Role(operatorRole).IsSuperAdmin() {
-		return shared.Forbidden("仅超级管理员可授予超级管理员角色")
+	if domainuser.Role(role).IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		return shared.Forbidden("仅内置超级管理员可授予超级管理员角色")
 	}
 	if err := u.ChangeRole(domainuser.Role(role)); err != nil {
 		return err
@@ -270,8 +289,8 @@ func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, oper
 
 // UpdateUserStatus 修改单个用户状态
 //
-// 安全守卫：不可禁用超管；不可禁用自己（启用不受限）。
-func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool, operatorID, operatorRole, ip, ua string) error {
+// 安全守卫：不可禁用内置超管；被委派超管仅内置超管可禁用；不可禁用自己（启用不受限）。
+func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) error {
 	uid, err := shared.ParseID(id)
 	if err != nil {
 		return err
@@ -281,8 +300,11 @@ func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool
 		return err
 	}
 	if !isActive {
-		if u.IsSuperAdmin() {
-			return shared.Forbidden("不可禁用超级管理员")
+		if u.IsBuiltinSuperAdmin() {
+			return shared.Forbidden("不可禁用内置超级管理员")
+		}
+		if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+			return shared.Forbidden("仅内置超级管理员可禁用其他超管")
 		}
 		if u.GetID().String() == operatorID {
 			return shared.Forbidden("不可禁用自己的账户")
@@ -301,21 +323,24 @@ func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool
 
 // BatchUpdateStatus 批量启用/禁用
 //
-// 安全守卫：目标集合含超级管理员或操作者自己时拒绝（禁用场景）。
-func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActive bool, operatorID, operatorRole, ip, ua string) (int64, error) {
+// 安全守卫：禁用场景下，目标含内置超管/被委派超管（操作者非内置超管时）/操作者自己时拒绝。
+func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActive bool, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) (int64, error) {
 	ids, err := parseIDs(idStrs)
 	if err != nil {
 		return 0, err
 	}
 	if !isActive {
-		// 禁用场景需校验目标不含超管和自己
+		// 禁用场景需校验目标不含内置超管/被委派超管（操作者非内置超管时）/自己
 		users, err := s.store.FindByIDs(ctx, ids)
 		if err != nil {
 			return 0, err
 		}
 		for _, u := range users {
-			if u.IsSuperAdmin() {
-				return 0, shared.Forbidden("选中的用户中包含超级管理员，不可批量禁用")
+			if u.IsBuiltinSuperAdmin() {
+				return 0, shared.Forbidden("选中的用户中包含内置超级管理员，不可批量禁用")
+			}
+			if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+				return 0, shared.Forbidden("选中的用户中包含超级管理员，仅内置超管可批量禁用")
 			}
 			if u.GetID().String() == operatorID {
 				return 0, shared.Forbidden("选中的用户中包含自己，不可批量禁用")
@@ -334,24 +359,28 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActi
 
 // BatchUpdateRole 批量修改角色
 //
-// 安全守卫：目标含超级管理员时拒绝（不可改超管角色）；授予 superadmin 需操作者是 superadmin；
+// 安全守卫：授予 superadmin 需操作者是内置超管（授权链不可传递）；
+// 目标含内置超管时拒绝（不可改内置超管角色）；被委派超管仅内置超管可改；
 // 目标含操作者自己时拒绝（不可改自己角色）。
-func (s *Service) BatchUpdateRole(ctx context.Context, idStrs []string, role, operatorID, operatorRole, ip, ua string) (int64, error) {
+func (s *Service) BatchUpdateRole(ctx context.Context, idStrs []string, role, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) (int64, error) {
 	ids, err := parseIDs(idStrs)
 	if err != nil {
 		return 0, err
 	}
-	// 授予 superadmin 需操作者是 superadmin
-	if domainuser.Role(role).IsSuperAdmin() && !domainuser.Role(operatorRole).IsSuperAdmin() {
-		return 0, shared.Forbidden("仅超级管理员可授予超级管理员角色")
+	// 授予 superadmin 需操作者是内置超管（授权链不可传递）
+	if domainuser.Role(role).IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		return 0, shared.Forbidden("仅内置超级管理员可授予超级管理员角色")
 	}
 	users, err := s.store.FindByIDs(ctx, ids)
 	if err != nil {
 		return 0, err
 	}
 	for _, u := range users {
-		if u.IsSuperAdmin() {
-			return 0, shared.Forbidden("选中的用户中包含超级管理员，不可批量修改其角色")
+		if u.IsBuiltinSuperAdmin() {
+			return 0, shared.Forbidden("选中的用户中包含内置超级管理员，不可批量修改其角色")
+		}
+		if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+			return 0, shared.Forbidden("选中的用户中包含超级管理员，仅内置超管可批量修改其角色")
 		}
 		if u.GetID().String() == operatorID {
 			return 0, shared.Forbidden("选中的用户中包含自己，不可批量修改自己角色")
@@ -382,7 +411,8 @@ func parseIDs(idStrs []string) ([]shared.ID, error) {
 func toDTO(u *domainuser.User) UserDTO {
 	dto := UserDTO{
 		ID: u.GetID().String(), Username: u.Username().String(), Email: u.Email().String(),
-		Role: string(u.Role()), EmailVerified: u.EmailVerified(), IsActive: u.IsActive(),
+		Role: string(u.Role()), IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
+		EmailVerified: u.EmailVerified(), IsActive: u.IsActive(),
 		Avatar: u.AvatarURL(), Bio: u.Bio(),
 		CreatedAt: u.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
 	}

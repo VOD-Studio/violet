@@ -94,6 +94,7 @@ var (
 	UserList           = MustParse("user:list")
 	UserUpdateRole     = MustParse("user:update-role")
 	UserBan            = MustParse("user:ban")
+	UserAssignSuperAdmin = MustParse("user:assign-superadmin")
 	ProjectCreate      = MustParse("project:create")
 	ProjectUpdate      = MustParse("project:update")
 	ProjectDelete      = MustParse("project:delete")

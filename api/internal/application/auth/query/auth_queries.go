@@ -12,16 +12,17 @@ import (
 
 // UserDTO 用户读模型（query 返回，供 HTTP handler 序列化）
 type UserDTO struct {
-	ID            string   `json:"id"`
-	Username      string   `json:"username"`
-	Email         string   `json:"email"`
-	AvatarURL     string   `json:"avatar_url"`
-	Bio           string   `json:"bio"`
-	Role          string   `json:"role"`
-	EmailVerified bool     `json:"email_verified"`
-	IsActive      bool     `json:"is_active"`
-	CreatedAt     string   `json:"created_at"`
-	Permissions   []string `json:"permissions,omitempty"`
+	ID                  string   `json:"id"`
+	Username            string   `json:"username"`
+	Email               string   `json:"email"`
+	AvatarURL           string   `json:"avatar_url"`
+	Bio                 string   `json:"bio"`
+	Role                string   `json:"role"`
+	IsBuiltinSuperAdmin bool     `json:"is_builtin_super_admin"`
+	EmailVerified       bool     `json:"email_verified"`
+	IsActive            bool     `json:"is_active"`
+	CreatedAt           string   `json:"created_at"`
+	Permissions         []string `json:"permissions,omitempty"`
 }
 
 // GetMeHandler 获取当前登录用户信息
@@ -50,9 +51,10 @@ func (h *GetMeHandler) Handle(ctx context.Context, userID string) (UserDTO, erro
 		return UserDTO{}, err
 	}
 
-	// 查询用户角色的权限列表。查询失败不阻断 /auth/me，避免权限数据异常导致个人信息不可读。
+	// 内置超管：通配符权限，不依赖 role_permissions 表。前端按 is_builtin_super_admin 标志短路。
+	// 被委派超管 / admin / user：查 role_permissions 表取权限码列表。
 	var permissions []string
-	if h.roleRepo != nil {
+	if !u.IsBuiltinSuperAdmin() && h.roleRepo != nil {
 		roleName, err := role.ParseRoleName(string(u.Role()))
 		if err == nil {
 			r, err := h.roleRepo.FindByName(ctx, roleName)
@@ -68,15 +70,16 @@ func (h *GetMeHandler) Handle(ctx context.Context, userID string) (UserDTO, erro
 // toUserDTO 领域用户转 DTO
 func toUserDTO(u *user.User, permissions []string) UserDTO {
 	return UserDTO{
-		ID:            u.GetID().String(),
-		Username:      u.Username().String(),
-		Email:         u.Email().String(),
-		AvatarURL:     u.AvatarURL(),
-		Bio:           u.Bio(),
-		Role:          string(u.Role()),
-		EmailVerified: u.EmailVerified(),
-		IsActive:      u.IsActive(),
-		CreatedAt:     u.CreatedAt().Format(time.RFC3339),
-		Permissions:   permissions,
+		ID:                  u.GetID().String(),
+		Username:            u.Username().String(),
+		Email:               u.Email().String(),
+		AvatarURL:           u.AvatarURL(),
+		Bio:                 u.Bio(),
+		Role:                string(u.Role()),
+		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
+		EmailVerified:       u.EmailVerified(),
+		IsActive:            u.IsActive(),
+		CreatedAt:           u.CreatedAt().Format(time.RFC3339),
+		Permissions:         permissions,
 	}
 }

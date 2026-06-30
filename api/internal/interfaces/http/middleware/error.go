@@ -21,3 +21,8 @@ func GetUserIDFromContext(r *http.Request) string {
 func GetUserRoleFromContext(r *http.Request) string {
 	return middleware.GetUserRole(r.Context())
 }
+
+// GetUserIsBuiltinSuperAdminFromContext 从 request context 获取是否为内置超级管理员
+func GetUserIsBuiltinSuperAdminFromContext(r *http.Request) bool {
+	return middleware.GetUserIsBuiltinSuperAdmin(r.Context())
+}

@@ -45,11 +45,12 @@ func NewPermissionService(roleRepo domainrole.RoleRepository, ttl time.Duration)
 
 // HasPermission 判断角色是否拥有所有指定权限码
 //
-// superadmin 直接放行；其他角色查缓存（过期则重新加载全部角色权限）。
+// 内置超管（isBuiltinSuperAdmin=true）通配放行：拥有所有权限，新增权限自动拥有，无需手动分配。
+// 其他角色（含被委派超管）查缓存（过期则重新加载全部角色权限）。
 // 任一权限码缺失即返回 false。
-func (s *PermissionService) HasPermission(role string, roleID *int32, codes ...string) bool {
-	// 超级管理员通配：拥有所有权限
-	if role == "superadmin" {
+func (s *PermissionService) HasPermission(role string, isBuiltinSuperAdmin bool, roleID *int32, codes ...string) bool {
+	// 内置超级管理员通配：拥有所有权限
+	if isBuiltinSuperAdmin {
 		return true
 	}
 	// 无权限码要求视为通过（仅做角色层校验的场景）
@@ -71,7 +72,7 @@ func (s *PermissionService) HasPermission(role string, roleID *int32, codes ...s
 
 // Refresh 强制清空缓存，下次查询重新加载
 //
-// 在角色权限变更后调用，确保新权限立即生效（superadmin 不受影响，无需调用）。
+// 在角色权限变更后调用，确保新权限立即生效（内置超管靠标志位短路，不受影响）。
 func (s *PermissionService) Refresh() {
 	s.mu.Lock()
 	s.cache = nil

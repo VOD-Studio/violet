@@ -20,9 +20,10 @@ func NewHandler(svc *appuseradmin.Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-func (h *Handler) operatorInfo(r *http.Request) (string, string, string, string) {
+func (h *Handler) operatorInfo(r *http.Request) (string, string, bool, string, string) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	role := interfacesmw.GetUserRoleFromContext(r)
+	isBuiltinSuperAdmin := interfacesmw.GetUserIsBuiltinSuperAdminFromContext(r)
 	ip := r.Header.Get("X-Real-IP")
 	if ip == "" {
 		ip = r.Header.Get("X-Forwarded-For")
@@ -30,7 +31,7 @@ func (h *Handler) operatorInfo(r *http.Request) (string, string, string, string)
 	if ip == "" {
 		ip = r.RemoteAddr
 	}
-	return userID, role, ip, r.Header.Get("User-Agent")
+	return userID, role, isBuiltinSuperAdmin, ip, r.Header.Get("User-Agent")
 }
 
 // ListUsers 用户列表
@@ -73,7 +74,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	opID, opRole, ip, ua := h.operatorInfo(r)
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
 	active := true
 	if req.IsActive != nil {
 		active = *req.IsActive
@@ -85,7 +86,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	dto, err := h.svc.Create(r.Context(), appuseradmin.CreateInput{
 		Username: req.Username, Email: req.Email, Password: req.Password,
 		Role: role, IsActive: active, IPAddress: ip, UserAgent: ua,
-	}, opID, opRole)
+	}, opID, opRole, opIsBuiltin)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -106,12 +107,12 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	opID, opRole, ip, ua := h.operatorInfo(r)
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
 	dto, err := h.svc.Update(r.Context(), appuseradmin.UpdateInput{
 		ID: r.PathValue("id"), Username: req.Username, Email: req.Email,
 		Password: req.Password, Role: req.Role, IsActive: req.IsActive,
 		IPAddress: ip, UserAgent: ua,
-	}, opID, opRole)
+	}, opID, opRole, opIsBuiltin)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -121,8 +122,8 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 // DeleteUser 删除用户
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	opID, opRole, ip, ua := h.operatorInfo(r)
-	if err := h.svc.Delete(r.Context(), r.PathValue("id"), opID, opRole, ip, ua); err != nil {
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
+	if err := h.svc.Delete(r.Context(), r.PathValue("id"), opID, opRole, opIsBuiltin, ip, ua); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
@@ -138,8 +139,8 @@ func (h *Handler) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	opID, opRole, ip, ua := h.operatorInfo(r)
-	if err := h.svc.UpdateUserRole(r.Context(), r.PathValue("id"), req.Role, opID, opRole, ip, ua); err != nil {
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
+	if err := h.svc.UpdateUserRole(r.Context(), r.PathValue("id"), req.Role, opID, opRole, opIsBuiltin, ip, ua); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
@@ -155,8 +156,8 @@ func (h *Handler) UpdateUserStatus(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	opID, opRole, ip, ua := h.operatorInfo(r)
-	if err := h.svc.UpdateUserStatus(r.Context(), r.PathValue("id"), req.IsActive, opID, opRole, ip, ua); err != nil {
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
+	if err := h.svc.UpdateUserStatus(r.Context(), r.PathValue("id"), req.IsActive, opID, opRole, opIsBuiltin, ip, ua); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
@@ -173,8 +174,8 @@ func (h *Handler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	opID, opRole, ip, ua := h.operatorInfo(r)
-	affected, err := h.svc.BatchUpdateStatus(r.Context(), req.IDs, req.IsActive, opID, opRole, ip, ua)
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
+	affected, err := h.svc.BatchUpdateStatus(r.Context(), req.IDs, req.IsActive, opID, opRole, opIsBuiltin, ip, ua)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -192,8 +193,8 @@ func (h *Handler) BatchUpdateRole(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	opID, opRole, ip, ua := h.operatorInfo(r)
-	affected, err := h.svc.BatchUpdateRole(r.Context(), req.IDs, req.Role, opID, opRole, ip, ua)
+	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
+	affected, err := h.svc.BatchUpdateRole(r.Context(), req.IDs, req.Role, opID, opRole, opIsBuiltin, ip, ua)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

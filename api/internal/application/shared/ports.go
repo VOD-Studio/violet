@@ -19,18 +19,20 @@ type TokenPair struct {
 
 // TokenInput 生成令牌入参
 type TokenInput struct {
-	UserID string
-	Email  string
-	Role   string
-	RoleID int32
+	UserID              string
+	Email               string
+	Role                string
+	RoleID              int32
+	IsBuiltinSuperAdmin bool
 }
 
 // Claims 解析出的令牌声明
 type Claims struct {
-	UserID string
-	Email  string
-	Role   string
-	RoleID int32
+	UserID              string
+	Email               string
+	Role                string
+	RoleID              int32
+	IsBuiltinSuperAdmin bool
 }
 
 // TokenService JWT 签发/验签端口

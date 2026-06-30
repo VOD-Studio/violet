@@ -52,6 +52,8 @@ function AdminUsers() {
     // 当前登录用户（用于「是不是自己」的判断，禁止删/改自己）
     const { data: me } = useMe();
     const currentUserId = me?.id;
+    // 当前登录用户是否为内置超管（决定能否处置其他超管、授权他人）
+    const isOperatorBuiltinSuperAdmin = me?.is_builtin_super_admin === true;
 
     // 查询角色列表
     const { data: roles = [] } = useAdminRoles();
@@ -76,11 +78,12 @@ function AdminUsers() {
     const batchUpdateRole = useBatchUpdateRole();
     const deleteUser = useDeleteUser();
 
-    // 批量选中是否含受保护用户（超级管理员或自己）——含则禁用批量改/禁用
+    // 批量选中是否含受保护用户（内置超管或自己）——含则禁用批量改/禁用
+    // 注：被委派超管可被内置超管批量处置，故此处只保护内置超管。
     const selectedHasProtected = useMemo(() => {
         if (!response?.data || selectedIds.size === 0) return false;
         return response.data.some(
-            (u) => selectedIds.has(u.id) && (u.role === "superadmin" || u.id === currentUserId),
+            (u) => selectedIds.has(u.id) && (u.is_builtin_super_admin || u.id === currentUserId),
         );
     }, [response?.data, selectedIds, currentUserId]);
 
@@ -216,8 +219,11 @@ function AdminUsers() {
             width: "96px",
             align: "center",
             cell: (row) => {
-                // 安全防护：不可操作超级管理员和自己（删/改/禁用）
-                const isProtected = row.role === "superadmin" || row.id === currentUserId;
+                // 安全防护：内置超管不可被任何人操作；被委派超管仅内置超管可操作；自己不可被操作
+                const isProtected =
+                    row.is_builtin_super_admin ||
+                    (!isOperatorBuiltinSuperAdmin && row.role === "superadmin") ||
+                    row.id === currentUserId;
                 return (
                     <div className="flex justify-center gap-1">
                         <PermissionGuard permission="user:list">
@@ -366,8 +372,11 @@ function AdminUsers() {
                         </div>
                     )}
                     onRowClick={(row) => {
-                        // 受保护用户（超管/自己）不可通过行点击编辑
-                        const isProtected = row.role === "superadmin" || row.id === currentUserId;
+                        // 受保护用户（内置超管/被委派超管且操作者非内置超管/自己）不可通过行点击编辑
+                        const isProtected =
+                            row.is_builtin_super_admin ||
+                            (!isOperatorBuiltinSuperAdmin && row.role === "superadmin") ||
+                            row.id === currentUserId;
                         if (isProtected) {
                             toast.error("不可编辑此用户");
                             return;
@@ -458,7 +467,7 @@ function AdminUsers() {
             <CreateUserDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
-                isOperatorSuperAdmin={me?.role === "superadmin"}
+                isOperatorSuperAdmin={isOperatorBuiltinSuperAdmin}
             />
 
             {/* 编辑用户对话框 */}
@@ -468,7 +477,7 @@ function AdminUsers() {
                     onOpenChange={setEditDialogOpen}
                     user={editingUser}
                     currentUserId={currentUserId}
-                    isOperatorSuperAdmin={me?.role === "superadmin"}
+                    isOperatorSuperAdmin={isOperatorBuiltinSuperAdmin}
                 />
             )}
 

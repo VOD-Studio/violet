@@ -22,10 +22,11 @@ func (a dddJWTAdapter) ParseToken(tokenString string) (*middleware.TokenClaims, 
 		return nil, err
 	}
 	return &middleware.TokenClaims{
-		UserID: c.UserID,
-		Email:  c.Email,
-		Role:   c.Role,
-		RoleID: c.RoleID,
+		UserID:              c.UserID,
+		Email:               c.Email,
+		Role:                c.Role,
+		RoleID:              c.RoleID,
+		IsBuiltinSuperAdmin: c.IsBuiltinSuperAdmin,
 	}, nil
 }
 

@@ -39,7 +39,7 @@ interface EditUserDialogProps {
     user: AdminUserDTO;
     /** 当前登录用户 ID（用于禁止改自己角色） */
     currentUserId?: string;
-    /** 当前登录用户是否为超级管理员（控制 superadmin 选项可见性） */
+    /** 当前登录用户是否为内置超级管理员（控制 superadmin 选项可见性；授权链不可传递） */
     isOperatorSuperAdmin?: boolean;
 }
 
@@ -50,7 +50,8 @@ interface EditUserDialogProps {
  * 密码字段可选，不填写表示不修改密码
  * 提交成功后自动关闭对话框
  *
- * 角色限制：目标是超管 / 编辑自己 → 禁用角色选择；superadmin 选项仅超管可选。
+ * 角色限制：目标是内置超管 / 编辑自己 → 禁用角色选择；
+ * superadmin 选项仅内置超管可选（被委派超管不可授权他人）。
  */
 export function EditUserDialog({
     open,
@@ -63,8 +64,9 @@ export function EditUserDialog({
     // 动态拉取角色列表（接口返回的角色，而非硬编码），staleTime 由 useAdminRoles 控制（30min）
     const { data: roles } = useAdminRoles();
 
-    // 角色是否不可选：目标是超管（不可降级）或编辑自己（不可改自己角色）
-    const roleDisabled = user.role === "superadmin" || user.id === currentUserId;
+    // 角色是否不可选：目标是内置超管（不可降级）或编辑自己（不可改自己角色）
+    // 被委派超管可由内置超管改角色，故不在此禁用
+    const roleDisabled = user.is_builtin_super_admin || user.id === currentUserId;
 
     const {
         register,
@@ -234,8 +236,8 @@ export function EditUserDialog({
                     </Select>
                     {roleDisabled ? (
                         <p className="text-xs text-muted-foreground">
-                            {user.role === "superadmin"
-                                ? "不可修改超级管理员的角色"
+                            {user.is_builtin_super_admin
+                                ? "不可修改内置超级管理员的角色"
                                 : "不可修改自己的角色"}
                         </p>
                     ) : null}

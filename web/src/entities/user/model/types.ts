@@ -17,6 +17,8 @@ export interface UserDTO {
     bio: string;
     /** 角色：user / admin / superadmin */
     role: UserRole;
+    /** 是否为内置超级管理员（通配符权限，授权链起点） */
+    is_builtin_super_admin: boolean;
     /** 邮箱是否已验证 */
     email_verified: boolean;
     /** 账户是否启用 */

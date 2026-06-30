@@ -21,6 +21,7 @@ func NewTokenServiceAdapter(inner *infraauth.JWTService) appshared.TokenService 
 func (a *jwtTokenServiceAdapter) GenerateTokenPair(in appshared.TokenInput) (*appshared.TokenPair, error) {
 	pair, err := a.inner.GenerateTokenPair(infraauth.TokenInput{
 		UserID: in.UserID, Email: in.Email, Role: in.Role, RoleID: in.RoleID,
+		IsBuiltinSuperAdmin: in.IsBuiltinSuperAdmin,
 	})
 	if err != nil {
 		return nil, err
@@ -36,7 +37,10 @@ func (a *jwtTokenServiceAdapter) ParseToken(token string) (*appshared.Claims, er
 	if err != nil {
 		return nil, err
 	}
-	return &appshared.Claims{UserID: c.UserID, Email: c.Email, Role: c.Role, RoleID: c.RoleID}, nil
+	return &appshared.Claims{
+		UserID: c.UserID, Email: c.Email, Role: c.Role, RoleID: c.RoleID,
+		IsBuiltinSuperAdmin: c.IsBuiltinSuperAdmin,
+	}, nil
 }
 
 func (a *jwtTokenServiceAdapter) AccessTTL() time.Duration  { return a.inner.AccessTTL() }
