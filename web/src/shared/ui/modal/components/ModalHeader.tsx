@@ -53,14 +53,25 @@ export function ModalHeader({
                         </DialogPrimitive.Description>
                     )}
                 </div>
-                {showCloseButton && (
-                    <DialogPrimitive.Close
-                        className="rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:outline-hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
-                        aria-label="关闭"
-                    >
-                        <XIcon />
-                    </DialogPrimitive.Close>
-                )}
+                {/* 标题可见时：关闭按钮走 flex 流，靠右。
+                    标题仅 a11y（lightbox）时：标题脱离布局，关闭按钮改绝对定位钉右上角，
+                    避免它独自占一行贴在错位的位置。 */}
+                {showCloseButton &&
+                    (titleSrOnly ? (
+                        <DialogPrimitive.Close
+                            className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-md bg-background/80 text-foreground opacity-70 backdrop-blur transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:outline-hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+                            aria-label="关闭"
+                        >
+                            <XIcon />
+                        </DialogPrimitive.Close>
+                    ) : (
+                        <DialogPrimitive.Close
+                            className="rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:outline-hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+                            aria-label="关闭"
+                        >
+                            <XIcon />
+                        </DialogPrimitive.Close>
+                    ))}
             </div>
         </div>
     );
