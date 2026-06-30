@@ -1,33 +1,20 @@
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
-import {
-    DataTable,
-    type DataTableColumn,
-} from "@features/admin-shared/ui/data-table";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { projectKeys } from "@features/projects/api/keys";
+import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import {
     useCreateProject,
     useDeleteProject,
     useUpdateProject,
 } from "@features/projects/api/mutations";
 import { useProjects } from "@features/projects/api/queries";
-import type {
-    CreateProject,
-    Project,
-} from "@features/projects/model/types";
+import type { CreateProject, Project } from "@features/projects/model/types";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
 import { Modal } from "@shared/ui/modal";
 import { Textarea } from "@shared/ui/textarea";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-    ExternalLink,
-    Github,
-    Pencil,
-    Plus,
-    Trash2,
-} from "lucide-react";
+import { Code, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -111,7 +98,7 @@ function AdminProjectsPage() {
                             rel="noreferrer"
                             className="text-muted-foreground hover:text-primary"
                         >
-                            <Github className="size-4" />
+                            <Code className="size-4" />
                         </a>
                     )}
                 </div>
@@ -123,18 +110,10 @@ function AdminProjectsPage() {
             sticky: "right",
             cell: (row) => (
                 <div className="flex items-center gap-1">
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => openEdit(row)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(row)}>
                         <Pencil className="size-4" />
                     </Button>
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDeleteId(row.id)}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => setDeleteId(row.id)}>
                         <Trash2 className="size-4" />
                     </Button>
                 </div>
@@ -201,22 +180,21 @@ function ProjectDialog({
     const isEditing = !!editingId;
 
     const { data: projects = [] } = useProjects();
-    const editing = isEditing
-        ? projects.find((p) => p.id === editingId)
-        : undefined;
+    const editing = isEditing ? projects.find((p) => p.id === editingId) : undefined;
 
-    const { register, handleSubmit, reset } = useForm<CreateProject>({
-        values: isEditing && editing
-            ? {
-                  title: editing.title,
-                  description: editing.description,
-                  url: editing.url,
-                  github_url: editing.github_url,
-                  image_url: editing.image_url,
-                  tech_stack: editing.tech_stack,
-                  sort_order: editing.sort_order,
-              }
-            : EMPTY,
+    const { register, handleSubmit } = useForm<CreateProject>({
+        values:
+            isEditing && editing
+                ? {
+                      title: editing.title,
+                      description: editing.description,
+                      url: editing.url,
+                      github_url: editing.github_url,
+                      image_url: editing.image_url,
+                      tech_stack: editing.tech_stack,
+                      sort_order: editing.sort_order,
+                  }
+                : EMPTY,
     });
 
     const onSubmit = (values: CreateProject) => {
@@ -244,19 +222,12 @@ function ProjectDialog({
                 </Button>
             }
         >
-            <form
-                id="project-form"
-                onSubmit={handleSubmit(onSubmit)}
-                className="space-y-4"
-            >
+            <form id="project-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-1.5">
                     <label htmlFor="project-title" className="text-sm font-medium">
                         标题 *
                     </label>
-                    <Input
-                        id="project-title"
-                        {...register("title", { required: true })}
-                    />
+                    <Input id="project-title" {...register("title", { required: true })} />
                 </div>
                 <div className="space-y-1.5">
                     <label htmlFor="project-desc" className="text-sm font-medium">
