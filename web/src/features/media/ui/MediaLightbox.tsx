@@ -1,9 +1,9 @@
 import type { MediaFile } from "@features/media/model/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
 import { FilePreview } from "@/shared/ui/file-preview";
 import { ImagePreview } from "@/shared/ui/image-preview";
+import { Modal } from "@/shared/ui/modal";
 
 interface MediaLightboxProps {
     open: boolean;
@@ -89,56 +89,60 @@ export function MediaLightbox({
 
     return (
         <>
-            <Dialog open={open} onOpenChange={onOpenChange} modal={!fullscreenOpen}>
-                <DialogContent
-                    className="max-w-[95vw] gap-0 border-none bg-background/95 p-0 sm:max-w-300 sm:rounded-lg"
-                    showCloseButton
-                    onInteractOutside={fullscreenOpen ? blockDialogDismiss : undefined}
-                    onEscapeKeyDown={fullscreenOpen ? blockDialogDismiss : undefined}
-                >
-                    <DialogTitle className="sr-only">{file.original_name}</DialogTitle>
+            <Modal
+                open={open}
+                onOpenChange={onOpenChange}
+                modal={!fullscreenOpen}
+                size="xl"
+                footer={null}
+                unstyled
+                showCloseButton
+                titleSrOnly
+                title={file.original_name}
+                onInteractOutside={fullscreenOpen ? blockDialogDismiss : undefined}
+                onEscapeKeyDown={fullscreenOpen ? blockDialogDismiss : undefined}
+                className="max-w-[95vw] gap-0 border-none bg-background/95 sm:rounded-lg"
+            >
+                {/* 顶部切换条：上一个/计数/下一个（文件名由各预览套件自行展示，避免重复） */}
+                <div className="flex items-center justify-center gap-2 border-b px-3 py-2">
+                    <button
+                        type="button"
+                        onClick={goPrev}
+                        disabled={index <= 0}
+                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
+                        aria-label="上一个"
+                    >
+                        <ChevronLeft className="size-4" />
+                    </button>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
+                        {index + 1} / {files.length}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={goNext}
+                        disabled={index >= files.length - 1}
+                        className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
+                        aria-label="下一个"
+                    >
+                        <ChevronRight className="size-4" />
+                    </button>
+                </div>
 
-                    {/* 顶部切换条：上一个/计数/下一个（文件名由各预览套件自行展示，避免重复） */}
-                    <div className="flex items-center justify-center gap-2 border-b px-3 py-2">
-                        <button
-                            type="button"
-                            onClick={goPrev}
-                            disabled={index <= 0}
-                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
-                            aria-label="上一个"
-                        >
-                            <ChevronLeft className="size-4" />
-                        </button>
-                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
-                            {index + 1} / {files.length}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={goNext}
-                            disabled={index >= files.length - 1}
-                            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
-                            aria-label="下一个"
-                        >
-                            <ChevronRight className="size-4" />
-                        </button>
-                    </div>
-
-                    {/* 预览内容（各套件自带边框/工具栏，用 unframed 避免双层边框） */}
-                    <div className={`max-h-[82vh] overflow-auto ${isVideo ? "" : "p-4"}`}>
-                        <FilePreview
-                            url={file.url}
-                            thumbnailUrl={file.thumbnail || undefined}
-                            mimeType={file.mime_type}
-                            name={file.original_name}
-                            size={file.size}
-                            showInfo={false}
-                            unframed
-                            className="max-w-full"
-                            onImageClick={openFullscreen}
-                        />
-                    </div>
-                </DialogContent>
-            </Dialog>
+                {/* 预览内容（各套件自带边框/工具栏，用 unframed 避免双层边框） */}
+                <div className={`max-h-[82vh] overflow-auto ${isVideo ? "" : "p-4"}`}>
+                    <FilePreview
+                        url={file.url}
+                        thumbnailUrl={file.thumbnail || undefined}
+                        mimeType={file.mime_type}
+                        name={file.original_name}
+                        size={file.size}
+                        showInfo={false}
+                        unframed
+                        className="max-w-full"
+                        onImageClick={openFullscreen}
+                    />
+                </div>
+            </Modal>
 
             {/* 全屏图片预览：与 Dialog 同时存在，渲染在其上层（z-9999）。
                 关闭时全屏淡出缩回，Dialog 在底层自然显露，二者重叠过渡。 */}

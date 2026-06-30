@@ -2,7 +2,7 @@ import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { useCreateEmoji, useDeleteEmoji, useUpdateEmoji } from "@features/emojis/api/mutations";
 import { useGroupEmojisAdmin } from "@features/emojis/api/queries";
 import type { Emoji, EmojiUploadResult } from "@features/emojis/model/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@shared/ui/dialog";
+import { Modal } from "@shared/ui/modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/tabs";
 import { Images, Upload } from "lucide-react";
 import { useState } from "react";
@@ -205,28 +205,33 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
 
     return (
         <>
-            <Dialog open={open} onOpenChange={handleOpenChange}>
-                <DialogContent className="flex max-h-[85vh] max-w-xl flex-col sm:max-w-2xl md:max-w-3xl lg:max-w-4xl">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <Images className="size-5" />
-                            管理表情
-                            {emojis.length > 0 && (
-                                <span className="text-sm font-normal text-muted-foreground">
-                                    共 {emojis.length} 个{(imageCount > 0 || textCount > 0) && " ("}
-                                    {imageCount > 0 && `图片 ${imageCount}`}
-                                    {imageCount > 0 && textCount > 0 && "，"}
-                                    {textCount > 0 && `文本 ${textCount}`}
-                                    {(imageCount > 0 || textCount > 0) && ")"}
-                                </span>
-                            )}
-                        </DialogTitle>
-                    </DialogHeader>
-
+            <Modal
+                open={open}
+                onOpenChange={handleOpenChange}
+                size="xl"
+                footer={null}
+                scrollable={false}
+                title={
+                    <span className="flex items-center gap-2">
+                        <Images className="size-5" />
+                        管理表情
+                        {emojis.length > 0 && (
+                            <span className="text-sm font-normal text-muted-foreground">
+                                共 {emojis.length} 个{(imageCount > 0 || textCount > 0) && " ("}
+                                {imageCount > 0 && `图片 ${imageCount}`}
+                                {imageCount > 0 && textCount > 0 && "，"}
+                                {textCount > 0 && `文本 ${textCount}`}
+                                {(imageCount > 0 || textCount > 0) && ")"}
+                            </span>
+                        )}
+                    </span>
+                }
+            >
+                <div className="flex h-full flex-col">
                     <Tabs
                         value={activeTab}
                         onValueChange={setActiveTab}
-                        className="flex flex-1 flex-col overflow-hidden"
+                        className="flex h-full flex-col overflow-hidden"
                     >
                         <TabsList className="shrink-0">
                             <TabsTrigger value="manage">
@@ -283,8 +288,8 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
                             <EmojiUploader onUpload={handleUpload} maxFiles={20} />
                         </TabsContent>
                     </Tabs>
-                </DialogContent>
-            </Dialog>
+                </div>
+            </Modal>
 
             <EmojiEditDialog
                 open={innerDialog === "edit"}
