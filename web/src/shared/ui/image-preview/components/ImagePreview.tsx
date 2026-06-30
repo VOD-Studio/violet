@@ -37,21 +37,27 @@ const VIEWPORT_W_RATIO = 0.9;
 const VIEWPORT_H_RATIO = 0.9;
 
 /**
- * 按图片宽高比 + 视口约束(90vw×90vh) 计算 contain 显示盒（确定像素）。
+ * 按原图 natural 尺寸 + 视口约束(90vw×90vh) 计算 contain 显示盒（确定像素）。
  *
- * 用于渐进加载：缩略图体积小（natural 仅 300px 宽），但宽高比与原图一致（后端等比缩放）。
- * 用此比例算出原图将占据的显示盒，把该 width/height 显式设给容器——
- * 不能用 max-w/max-h（只限上限不放大，300px 缩略图不会被它拉到原图的 800px），
- * 也不能配 absolute 子元素（容器会塌成 0）。
+ * contain 真实语义：保持比例、不超过视口、**也不超过原图 natural**（小图不放大）。
+ * 探测原图 natural 后算出原图将占据的显示盒，把该 width/height 显式设给容器——
+ * 不能用 max-w/max-h（只限上限不放大，配合 absolute 子元素会塌成 0）。
  */
-function computeContainBox(ratio: number): { width: number; height: number } {
+function computeContainBox(
+    naturalW: number,
+    naturalH: number,
+): { width: number; height: number } {
     const maxW = window.innerWidth * VIEWPORT_W_RATIO;
     const maxH = window.innerHeight * VIEWPORT_H_RATIO;
-    // 候选1：按高度满铺，宽按比例；不超宽则取
+    const ratio = naturalW / naturalH;
+    // 视口内按比例的最大盒
     const w1 = maxH * ratio;
-    if (w1 <= maxW) return { width: w1, height: maxH };
-    // 候选2：按宽度满铺，高按比例
-    return { width: maxW, height: maxW / ratio };
+    const fit = w1 <= maxW ? { width: w1, height: maxH } : { width: maxW, height: maxW / ratio };
+    // contain：不超过原图 natural（小图不放大）
+    return {
+        width: Math.min(fit.width, naturalW),
+        height: Math.min(fit.height, naturalH),
+    };
 }
 
 /**
@@ -109,46 +115,43 @@ export function ImagePreview({
     const [flyInSettled, setFlyInSettled] = useState(false);
     // 原图是否加载完成（完成后缩略图+模糊层淡出）
     const [originalLoaded, setOriginalLoaded] = useState(false);
-    // 原图比例（宽/高）。由缩略图 onLoad 读 naturalWidth/Height 得到（后端缩略图等比缩放，
-    // 比例=原图比例）。null 表示尚未拿到。
-    const [imageRatio, setImageRatio] = useState<number | null>(null);
-    // 原图目标显示盒（确定像素值）。用比例 + 视口约束(90vw/90vh)按 contain 算出，
+    // 原图 natural 尺寸（探测原图得到）。据此算原图 contain 盒撑开容器。
+    const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
+    // 原图目标显示盒（确定像素值）。用原图 natural + 视口约束(90vw/90vh) 按 contain 算出，
     // 显式设给容器——不能用 max-w/max-h：那只是上限不放大，且配合 absolute 子元素会塌成 0。
     // 缩略图层 h-full/w-full 撑满此盒，从而"缩略图显示成原图大小"。
     const [box, setBox] = useState<{ width: number; height: number } | null>(null);
     // 缩略图+模糊层是否可见（原图加载完成淡出后隐藏）
     const showThumbLayer = useThumb && !originalLoaded;
 
-    // 打开/切换图时，立刻探测缩略图的 natural size 拿到原图比例（缩略图等比缩放，
-    // 比例=原图），据此算出原图目标显示盒。用 new Image() 探测——缩略图体积小，
-    // 加载远快于原图，且比例到手即可精确算盒，不必等原图加载。
+    // 打开/切换图时，立刻探测原图 natural size（new Image() 即后台预载原图），
+    // 据此算出原图目标显示盒。原图加载完（onload）即缓存命中，<img> 秒显替换缩略图。
     useEffect(() => {
         if (!open || !useThumb || !thumb) {
-            setImageRatio(null);
+            setNaturalSize(null);
             setBox(null);
             return;
         }
         const probe = new Image();
         probe.onload = () => {
             if (probe.naturalWidth && probe.naturalHeight) {
-                const ratio = probe.naturalWidth / probe.naturalHeight;
-                setImageRatio(ratio);
-                setBox(computeContainBox(ratio));
+                setNaturalSize({ w: probe.naturalWidth, h: probe.naturalHeight });
+                setBox(computeContainBox(probe.naturalWidth, probe.naturalHeight));
             }
         };
-        probe.src = thumb;
+        probe.src = images[index];
         return () => {
             probe.onload = null;
         };
-    }, [open, useThumb, thumb]);
+    }, [open, useThumb, thumb, index, images]);
 
-    // 比例已知后响应窗口 resize 重算盒
+    // 原图尺寸已知后响应窗口 resize 重算盒
     useEffect(() => {
-        if (imageRatio == null) return;
-        const onResize = () => setBox(computeContainBox(imageRatio));
+        if (naturalSize == null) return;
+        const onResize = () => setBox(computeContainBox(naturalSize.w, naturalSize.h));
         window.addEventListener("resize", onResize);
         return () => window.removeEventListener("resize", onResize);
-    }, [imageRatio]);
+    }, [naturalSize]);
 
     // 切换图片时重置渐进加载状态
     // biome-ignore lint/correctness/useExhaustiveDependencies: index 是重置触发器
