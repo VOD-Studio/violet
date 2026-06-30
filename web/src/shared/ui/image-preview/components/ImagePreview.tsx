@@ -160,29 +160,42 @@ export function ImagePreview({
                     >
                         {/* 缩略图层（飞入阶段可见；原图加载完成后淡出）。
                             用与原图相同的 contain 约束渲染，因后端缩略图等比缩放、
-                            宽高比与原图一致，盒自然重合，替换无尺寸跳变。 */}
-                        {showThumbLayer ? (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <img
-                                    src={thumb}
-                                    alt=""
-                                    aria-hidden
-                                    className="max-h-[90vh] max-w-full select-none object-contain"
-                                    draggable={false}
-                                />
-                                {/* 模糊层：覆盖拉伸后的缩略图盒 */}
-                                <div
-                                    className="absolute inset-0 bg-black/5 backdrop-blur-xl"
-                                    aria-hidden
-                                />
-                            </div>
-                        ) : null}
+                            宽高比与原图一致，盒自然重合，替换无尺寸跳变。
+                            AnimatePresence + motion.div：原图 onLoad 后整体淡出，
+                            与原图淡入交叉过渡，而非硬切消失。 */}
+                        <AnimatePresence>
+                            {showThumbLayer ? (
+                                <motion.div
+                                    initial={{ opacity: 1 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="absolute inset-0 flex items-center justify-center"
+                                >
+                                    <img
+                                        src={thumb}
+                                        alt=""
+                                        aria-hidden
+                                        className="max-h-[90vh] max-w-full select-none object-contain"
+                                        draggable={false}
+                                    />
+                                    {/* 模糊层：覆盖拉伸后的缩略图盒 */}
+                                    <div
+                                        className="absolute inset-0 bg-black/5 backdrop-blur-xl"
+                                        aria-hidden
+                                    />
+                                </motion.div>
+                            ) : null}
+                        </AnimatePresence>
 
-                        {/* 原图层：飞入动画稳定后才开始加载（shouldLoad 门控） */}
+                        {/* 原图层：飞入动画稳定后才开始加载（shouldLoad 门控）。
+                            useThumb 时关闭 spinner——缩略图层本身即是加载占位，
+                            避免模糊缩略图上再叠一个转圈的双重指示。 */}
                         <ImagePreviewImage
                             src={images[index]}
                             alt={`预览图片 ${index + 1}`}
                             shouldLoad={!useThumb || flyInSettled}
+                            showSpinner={!useThumb}
                             scale={scale}
                             rotate={rotate}
                             flipX={flipX}

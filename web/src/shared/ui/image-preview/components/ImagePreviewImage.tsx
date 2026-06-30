@@ -24,6 +24,8 @@ interface ImagePreviewImageProps {
     flipY?: boolean;
     /** 加载完成回调 */
     onLoad: () => void;
+    /** 是否显示加载指示器（默认 true；当外层已有缩略图占位时传 false，避免双重加载指示） */
+    showSpinner?: boolean;
     /** 双击图片重置（缩放/旋转/翻转恢复初始）回调 */
     onReset?: () => void;
 }
@@ -47,6 +49,7 @@ export function ImagePreviewImage({
     flipX = false,
     flipY = false,
     onLoad,
+    showSpinner = true,
     onReset,
 }: ImagePreviewImageProps) {
     const [isLoading, setIsLoading] = useState(true);
@@ -174,8 +177,8 @@ export function ImagePreviewImage({
                 />
             </AnimatePresence>
 
-            {/* 加载指示器 */}
-            {isLoading ? (
+            {/* 加载指示器（外层有缩略图占位时关闭，避免双重加载指示） */}
+            {showSpinner && isLoading ? (
                 <div className="absolute inset-0 flex items-center justify-center">
                     <div className="size-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
                 </div>
