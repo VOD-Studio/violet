@@ -74,15 +74,17 @@ export function ImagePreviewControls({
     // 阻止事件冒泡：控制区任何点击都不应冒泡到外层（外层 onClick=关闭预览）。
     // 关键：disabled 按钮因 disabled:pointer-events-none 会让点击穿透到外层，
     // 因此必须在容器层拦截，而不是仅靠按钮自身的 stopPropagation。
-    // 用 onClickCapture 在捕获阶段拦截，避免 a11y 规则（div 非交互元素不应只有 onClick）。
-    const stop = (e: React.MouseEvent) => e.stopPropagation();
+    // 必须用 onClick（冒泡阶段）而非 onClickCapture：在 capture 阶段调 stopPropagation 会
+    // 同时阻止 target 阶段与冒泡阶段，导致按钮自身的 onClick 永远不触发（点了没反应）。
+    // 用冒泡阶段：按钮 onClick 先在 target 触发，再冒泡到此处被拦截，不再到外层 onClose。
 
     return (
         <>
             {/* 顶部工具栏 */}
-            {/* onClickCapture：整个工具栏区域（含 disabled 按钮穿透的点击）都不冒泡 */}
+            {/* onClick：整个工具栏区域（含 disabled 按钮穿透的点击）都不冒泡到外层关闭 */}
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: 此 div 非交互元素，onClick 仅用于拦截事件冒泡到外层 onClose，真正的键盘交互由内部按钮提供 */}
             <div
-                onClickCapture={stop}
+                onClick={(e) => e.stopPropagation()}
                 className="absolute inset-x-0 top-0 z-50 flex items-center justify-between bg-linear-to-b from-black/50 to-transparent p-4"
             >
                 {/* 左侧：缩放、旋转、翻转 */}
