@@ -105,6 +105,8 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://xunrua.top/api/v1}
     container_name: blog-web
     restart: always
     # 宿主机 80 映射到容器内 Nitro server 的 3000
@@ -112,8 +114,8 @@ services:
       - "80:3000"
     environment:
       # nginx-proxy 虚拟主机配置
-      VIRTUAL_HOST: xun.rua.plus
-      LETSENCRYPT_HOST: xun.rua.plus
+      VIRTUAL_HOST: ${VIRTUAL_HOST:-xunrua.top}
+      LETSENCRYPT_HOST: ${LETSENCRYPT_HOST:-xunrua.top}
       LETSENCRYPT_EMAIL: defect.y@qq.com
     depends_on:
       api:

@@ -1,33 +1,31 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-05-09 | Updated: 2026-05-09 -->
+<!-- Generated: 2026-05-09 | Updated: 2026-06-30 -->
 
 # internal
 
 ## Purpose
-Go 应用核心业务代码，遵循 Go 标准 internal 包约定，不可被外部模块导入。包含 HTTP 分层的所有层级。
+Go 应用核心业务代码，遵循 Go 标准 internal 包约定，不可被外部模块导入。采用 DDD 四层架构（domain → application → infrastructure → interfaces）。
 
 ## Subdirectories
 | Directory | Purpose |
 |-----------|---------|
-| `handler/` | HTTP 处理层，参数校验和响应封装 (see `handler/AGENTS.md`) |
-| `middleware/` | HTTP 中间件 (认证、CORS、限流等) (see `middleware/AGENTS.md`) |
-| `model/` | 数据模型和类型定义 (see `model/AGENTS.md`) |
-| `repository/` | 数据访问层 + sqlc 生成代码 (see `repository/AGENTS.md`) |
-| `service/` | 业务逻辑层 (see `service/AGENTS.md`) |
-| `pkg/` | 内部工具包 (see `pkg/AGENTS.md`) |
-| `job/` | 后台定时任务 (see `job/AGENTS.md`) |
-| `migrate/` | 数据库迁移辅助 |
+| `app/` | 依赖注入容器，每个模块的装配入口 |
+| `domain/` | 领域层：包含聚合根、值对象、仓储端口（接口）、领域错误 |
+| `application/` | 应用层：用例编排（CQRS 读写分离） |
+| `infrastructure/` | 基础设施层：GORM 仓储实现、外部 API 适配器（auth/email/github/music/storage） |
+| `interfaces/` | 接口层：HTTP handler、中间件适配等 |
+| `middleware/` | 全局 HTTP 中间件（认证/限流/CORS/审计） |
+| `job/` | 定时任务（文件清理等） |
+| `migrate/` | 数据库迁移执行器 |
+| `service/` | 启动期数据种子服务 |
 
 ## For AI Agents
 
 ### Working In This Directory
-- 严格分层调用: handler → service → repository，禁止跨层调用
-- 新增功能需在各层同步添加代码
-- model 包定义跨层共享的数据结构
+- 依赖方向严格限制为: interfaces → application → domain ← infrastructure。domain 层零外部依赖。
+- 新增功能需遵循 DDD 规范，在各层增加相应实现（详情见 api/README.md「如何新增一个模块」）。
 
 ### Common Patterns
-- 依赖注入: 各层通过接口解耦
-- 错误传播: 自定义错误类型在各层间传递
-- 统一响应: handler 层使用 pkg/response 封装响应
+- 仓储接口定义在 domain 层，具体实现在 infrastructure/persistence/gorm。
+- 统一错误使用 domain/shared.DomainError，在 interfaces 层统一翻译为 HTTP 状态码与结构化响应。
 
-<!-- MANUAL: Any manually added notes below this line are preserved on regeneration -->

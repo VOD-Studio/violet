@@ -2,16 +2,17 @@
 set -euo pipefail
 
 # deploy-prod.sh
-# 一键部署到生产环境 (rua 服务器)
+# 一键部署到生产环境
 #
 # 用法:
-#   ./scripts/deploy-prod.sh              # 完整部署（构建 + 传输 + 启动 + nginx patch）
-#   ./scripts/deploy-prod.sh --skip-build  # 跳过本地构建（使用已有 images.tar.gz）
-#   ./scripts/deploy-prod.sh --patch-only  # 仅 patch nginx 配置
+#   ./scripts/deploy-prod.sh                          # 完整部署到 rua
+#   ./scripts/deploy-prod.sh --host xun               # 完整部署到 xun
+#   ./scripts/deploy-prod.sh --skip-build              # 跳过本地构建
+#   ./scripts/deploy-prod.sh --host xun --patch-only   # 仅 patch nginx 配置
 #
 # 前置条件:
-#   1. 已配置 SSH 免密登录到 rua 服务器
-#   2. rua 上已运行 nginx-proxy + acme-companion
+#   1. 已配置 SSH 免密登录到目标服务器
+#   2. 目标服务器上已运行 nginx-proxy + acme-companion
 
 # ==================== 配置 ====================
 REMOTE_HOST="rua"
@@ -22,17 +23,20 @@ SKIP_BUILD=false
 PATCH_ONLY=false
 
 # ==================== 参数解析 ====================
-for arg in "$@"; do
-    case $arg in
-        --skip-build) SKIP_BUILD=true ;;
-        --patch-only) PATCH_ONLY=true ;;
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --host) REMOTE_HOST="$2"; shift 2 ;;
+        --host=*) REMOTE_HOST="${1#*=}"; shift ;;
+        --skip-build) SKIP_BUILD=true; shift ;;
+        --patch-only) PATCH_ONLY=true; shift ;;
         -h|--help)
-            echo "用法: $0 [--skip-build] [--patch-only]"
-            echo "  --skip-build  跳过本地构建，使用已有镜像"
-            echo "  --patch-only  仅 patch nginx 配置"
+            echo "用法: $0 [--host <host>] [--skip-build] [--patch-only]"
+            echo "  --host <host>  目标服务器（SSH Host，默认: rua）"
+            echo "  --skip-build   跳过本地构建，使用已有镜像"
+            echo "  --patch-only   仅 patch nginx 配置"
             exit 0
             ;;
-        *) echo "未知参数: $arg"; exit 1 ;;
+        *) echo "未知参数: $1"; exit 1 ;;
     esac
 done
 
@@ -152,23 +156,18 @@ ssh "$REMOTE_HOST" "cd $REMOTE_DIR && bash scripts/patch-nginx-api.sh"
 # ==================== 验证 ====================
 info "验证部署..."
 
-# 检查 API 健康
-if ssh "$REMOTE_HOST" "curl -sk https://xun.rua.plus/api/v1/announcements" 2>/dev/null | grep -q '"data"'; then
-    ok "API 可通过 https://xun.rua.plus/api/v1/ 访问"
-else
-    warn "API 访问验证失败，请手动检查"
-fi
+# 尝试多个可能的域名
+for domain in "$REMOTE_HOST.rua.plus" "xunrua.top" "xun.rua.plus"; do
+    if ssh "$REMOTE_HOST" "curl -sk \"https://$domain/api/v1/announcements\"" 2>/dev/null | grep -q '"data"'; then
+        ok "API 可通过 https://$domain/api/v1/ 访问"
+        DEPLOY_DOMAIN="$domain"
+        break
+    fi
+done
 
-# 检查前端
-if ssh "$REMOTE_HOST" "curl -sk https://xun.rua.plus/" 2>/dev/null | grep -q 'Blog Project'; then
-    ok "前端可访问"
-else
-    warn "前端访问验证失败，请手动检查"
+if [ -z "${DEPLOY_DOMAIN:-}" ]; then
+    warn "API 访问验证失败，请手动检查"
 fi
 
 echo ""
 ok "🎉 部署完成！"
-echo ""
-echo "访问地址:"
-echo "  前端: https://xun.rua.plus/"
-echo "  API:  https://xun.rua.plus/api/v1/announcements"

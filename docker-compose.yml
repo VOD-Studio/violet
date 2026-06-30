@@ -18,7 +18,7 @@ services:
     container_name: blog-postgres
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DATABASE_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${DATABASE_USER:?DATABASE_USER is required (set in .env)}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required (set in .env)}
@@ -85,23 +85,24 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       UPLOAD_PATH_PREFIX: ${UPLOAD_PATH_PREFIX:-/uploads/}
 
-      # 数据库配置
-      DATABASE_HOST: ${DATABASE_HOST:-postgres}
-      DATABASE_PORT: ${DATABASE_PORT:-5432}
+      # 数据库配置（容器内通过 Docker 网络连接）
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
       DATABASE_NAME: ${DATABASE_NAME:-blog}
       DATABASE_USER: ${DATABASE_USER:?DATABASE_USER is required (set in .env)}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required (set in .env)}
       DATABASE_SSLMODE: ${DATABASE_SSLMODE:-disable}
 
-      # Redis 配置
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
+      # Redis 配置（容器内通过 Docker 网络连接）
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       REDIS_DB: ${REDIS_DB:-0}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
 
       # JWT 配置
-      JWT_PRIVATE_KEY_PATH: ${JWT_PRIVATE_KEY_PATH:-/secrets/jwt_private_key.pem}
-      JWT_PUBLIC_KEY_PATH: ${JWT_PUBLIC_KEY_PATH:-/secrets/jwt_public_key.pem}
+      JWT_PRIVATE_KEY_PATH: /app/jwt_private_key.pem
+      JWT_PUBLIC_KEY_PATH: /app/jwt_public_key.pem
+      JWT_ALLOW_EPHEMERAL_KEY: false
       JWT_ACCESS_TOKEN_TTL: ${JWT_ACCESS_TOKEN_TTL:-15m}
       JWT_REFRESH_TOKEN_TTL: ${JWT_REFRESH_TOKEN_TTL:-168h}
 
@@ -120,13 +121,13 @@ services:
       SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-admin@example.com}
       SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
     volumes:
-      # 挂载 JWT 密钥（只读）
-      - ./secrets/jwt_private_key.pem:/secrets/jwt_private_key.pem:ro
-      - ./secrets/jwt_public_key.pem:/secrets/jwt_public_key.pem:ro
+      # 挂载 JWT 密钥（只读，到 config.yaml 默认路径）
+      - ./secrets/jwt_private_key.pem:/app/jwt_private_key.pem:ro
+      - ./secrets/jwt_public_key.pem:/app/jwt_public_key.pem:ro
       # 挂载上传目录
       - uploads_data:/uploads
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:8080/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
