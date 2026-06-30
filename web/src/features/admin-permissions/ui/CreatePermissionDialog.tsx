@@ -177,73 +177,74 @@ export function CreatePermissionDialog({
             }
         >
             <form id="permission-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* 类型 + 所属分组：action 时两列同行，menu 时类型独占一行 */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {/* 类型 */}
+                {/* 类型：独占一行（仅 action / menu 两选项，占半行过窄） */}
+                <div className="space-y-2">
+                    <Label>类型</Label>
+                    <Controller
+                        control={control}
+                        name="type"
+                        render={({ field }) => (
+                            <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                disabled={isBuiltin || isEdit}
+                            >
+                                <SelectTrigger
+                                    className="w-full"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="action">action（操作权限）</SelectItem>
+                                    <SelectItem value="menu">menu（分组容器）</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {isBuiltin && (
+                        <p className="text-muted-foreground text-xs">
+                            <Badge variant="secondary">内置</Badge> 类型不可更改
+                        </p>
+                    )}
+                </div>
+
+                {/* 父节点（action 必选；menu 类型不渲染） */}
+                {watch("type") === "action" && (
                     <div className="space-y-2">
-                        <Label>类型</Label>
+                        <Label>
+                            所属分组 <span className="text-destructive">*</span>
+                        </Label>
                         <Controller
                             control={control}
-                            name="type"
+                            name="parentId"
                             render={({ field }) => (
                                 <Select
-                                    value={field.value}
+                                    value={field.value ?? ""}
                                     onValueChange={field.onChange}
-                                    disabled={isBuiltin || isEdit}
+                                    disabled={pending}
                                 >
-                                    <SelectTrigger>
-                                        <SelectValue />
+                                    <SelectTrigger
+                                        className="w-full"
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                    >
+                                        <SelectValue placeholder="选择 menu 分组" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="action">action（操作权限）</SelectItem>
-                                        <SelectItem value="menu">menu（分组容器）</SelectItem>
+                                        {menus.map((m) => (
+                                            <SelectItem key={m.id} value={String(m.id)}>
+                                                {m.name} ({m.code})
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             )}
                         />
-                        {isBuiltin && (
-                            <p className="text-muted-foreground text-xs">
-                                <Badge variant="secondary">内置</Badge> 类型不可更改
-                            </p>
+                        {errors.parentId && (
+                            <p className="text-destructive text-sm">{errors.parentId.message}</p>
                         )}
                     </div>
-
-                    {/* 父节点（action 必选；menu 类型不渲染，类型自动占满整行） */}
-                    {watch("type") === "action" && (
-                        <div className="space-y-2">
-                            <Label>
-                                所属分组 <span className="text-destructive">*</span>
-                            </Label>
-                            <Controller
-                                control={control}
-                                name="parentId"
-                                render={({ field }) => (
-                                    <Select
-                                        value={field.value ?? ""}
-                                        onValueChange={field.onChange}
-                                        disabled={pending}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="选择 menu 分组" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {menus.map((m) => (
-                                                <SelectItem key={m.id} value={String(m.id)}>
-                                                    {m.name} ({m.code})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                            {errors.parentId && (
-                                <p className="text-destructive text-sm">
-                                    {errors.parentId.message}
-                                </p>
-                            )}
-                        </div>
-                    )}
-                </div>
+                )}
 
                 {/* 代码 */}
                 <div className="space-y-2">
