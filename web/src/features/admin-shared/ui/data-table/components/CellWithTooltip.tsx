@@ -15,23 +15,33 @@ interface CellWithTooltipProps {
  *
  * ellipsis 开启时内容单行截断，悬停显示 tooltip（优先用 tooltip 文案，
  * 缺省回退 children 的字符串形式）。
+ *
+ * tooltip 内容通过 Portal 渲染到 body，显式指定 side/sideOffset/align，
+ * 避免在固定列/滚动容器内因定位上下文导致提示框错位到屏幕左上角。
  */
 export function CellWithTooltip({ children, tooltip, ellipsis }: CellWithTooltipProps) {
     const tip = tooltip ?? (typeof children === "string" ? children : undefined);
-    const content = ellipsis ? <span className="block truncate">{children}</span> : children;
 
-    if (!tip) return content;
+    if (!tip) {
+        return ellipsis ? <span className="block truncate">{children}</span> : children;
+    }
 
     return (
         <Tooltip>
             <TooltipTrigger asChild>
                 <span
-                    className={ellipsis ? "block cursor-default truncate" : "inline cursor-default"}
+                    className={
+                        ellipsis
+                            ? "block w-full cursor-default truncate text-left"
+                            : "inline cursor-default"
+                    }
                 >
                     {children}
                 </span>
             </TooltipTrigger>
-            <TooltipContent>{tip}</TooltipContent>
+            <TooltipContent side="top" align="center" sideOffset={6}>
+                {tip}
+            </TooltipContent>
         </Tooltip>
     );
 }
