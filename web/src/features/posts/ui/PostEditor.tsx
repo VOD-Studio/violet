@@ -253,15 +253,18 @@ export function PostEditor({ postId }: PostEditorProps) {
                         placeholder="文章标题…"
                         className="h-12 border-none bg-transparent px-4 text-2xl font-bold shadow-none focus-visible:ring-0"
                     />
-                    <Input
-                        value={slug}
-                        onChange={(e) => {
-                            slugTouched.current = true;
-                            setSlug(slugify(e.target.value));
-                        }}
-                        placeholder="url-slug"
-                        className="mx-4 font-mono text-sm text-muted-foreground"
-                    />
+                    <div className="mx-4 flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <span className="shrink-0 select-none font-mono">/blog/</span>
+                        <Input
+                            value={slug}
+                            onChange={(e) => {
+                                slugTouched.current = true;
+                                setSlug(slugify(e.target.value));
+                            }}
+                            placeholder="url-slug"
+                            className="h-8 flex-1 border-none bg-transparent px-0 font-mono text-sm shadow-none focus-visible:ring-0"
+                        />
+                    </div>
                     <div className="min-h-0 flex-1">
                         <RichTextEditor
                             ref={editorRef}

@@ -159,8 +159,8 @@ export function MediaPicker({
                     </Select>
                 ) : null}
                 <SearchInput
-                    value={keyword}
-                    onValueChange={(v) => {
+                    defaultValue={keyword}
+                    onSearch={(v) => {
                         setKeyword(v);
                         setPage(1);
                     }}

@@ -6,21 +6,45 @@
  * 按钮基于编辑器命令的 active 态高亮、disabled 态置灰。
  */
 import type { Editor } from "@tiptap/react";
-import { Baseline, ImagePlus, Palette } from "lucide-react";
+import { ChevronDown, ImagePlus, Upload } from "lucide-react";
+import type { MouseEvent } from "react";
 import { useMemo } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
+import { ColorSwatch } from "@/shared/ui/color-picker";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu";
 import { buildToolbarItems, TOOLBAR_DIVIDER, type ToolbarItem } from "./toolbar-items";
 
 interface EditorToolbarProps {
     editor: Editor | null;
-    /** 图片插入回调（由父组件注入：弹出素材选择/本地上传菜单） */
+    /** 从素材库选择图片 */
     onPickImage: () => void;
+    /** 上传本地图片到编辑器 */
+    onUploadImage: () => void;
     /** 链接插入回调（由父组件注入：打开输入弹窗） */
     onInsertLink: () => void;
 }
 
-export function EditorToolbar({ editor, onPickImage, onInsertLink }: EditorToolbarProps) {
+/**
+ * 阻止工具栏按钮的默认 mousedown 行为，避免点击时编辑器失焦。
+ * 这是 Tiptap 工具栏的标准做法：命令自身会 chain().focus()，但若 mousedown 让
+ * ProseMirror 失去选区，命令仍会因选区丢失而失效。
+ */
+function keepFocus(e: MouseEvent) {
+    e.preventDefault();
+}
+
+export function EditorToolbar({
+    editor,
+    onPickImage,
+    onUploadImage,
+    onInsertLink,
+}: EditorToolbarProps) {
     const items = useMemo(() => buildToolbarItems(onInsertLink), [onInsertLink]);
     if (!editor) return null;
 
@@ -45,6 +69,7 @@ export function EditorToolbar({ editor, onPickImage, onInsertLink }: EditorToolb
                 size="icon-sm"
                 title={item.title}
                 disabled={disabled}
+                onMouseDown={keepFocus}
                 onClick={() => item.run(editor)}
                 className={cn(active && "bg-accent text-accent-foreground")}
             >
@@ -54,43 +79,39 @@ export function EditorToolbar({ editor, onPickImage, onInsertLink }: EditorToolb
     };
 
     return (
-        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-edge-hairline bg-background/80 px-2 py-1.5 backdrop-blur">
+        <div
+            className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-edge-hairline bg-background/80 px-2 py-1.5 backdrop-blur"
+            // 容器统一拦截 mousedown，避免按钮点击让编辑器失焦（#1）
+            onMouseDown={keepFocus}
+        >
             {items.map(renderItem)}
             <span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
-            {/* 文字颜色：原生 color input，简洁无依赖 */}
-            <label
-                className="relative flex size-7 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-accent"
-                title="文字颜色"
-            >
-                <Palette className="size-4" />
-                <input
-                    type="color"
-                    className="absolute inset-0 size-full cursor-pointer opacity-0"
-                    onChange={(e) => {
-                        const color = e.target.value;
-                        if (color) editor.chain().focus().setColor(color).run();
-                    }}
-                />
-            </label>
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                title="清除颜色"
-                onClick={() => editor.chain().focus().unsetColor().run()}
-            >
-                <Baseline className="size-4" />
-            </Button>
+            {/* 文字颜色色板 */}
+            <ColorSwatch
+                value={editor.getAttributes("textStyle").color as string | undefined}
+                onChange={(c) => editor.chain().focus().setColor(c).run()}
+                onClear={() => editor.chain().focus().unsetColor().run()}
+            />
             <span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                title="插入图片"
-                onClick={onPickImage}
-            >
-                <ImagePlus />
-            </Button>
+            {/* 图片：素材库选择 / 本地上传 二选一 */}
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon-sm" title="插入图片">
+                        <ImagePlus />
+                        <ChevronDown className="size-3 opacity-50" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={onPickImage}>
+                        <ImagePlus className="size-3.5" />
+                        从素材库选择
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onUploadImage}>
+                        <Upload className="size-3.5" />
+                        上传本地图片
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </div>
     );
 }

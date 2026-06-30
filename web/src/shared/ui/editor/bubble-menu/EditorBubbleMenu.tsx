@@ -7,6 +7,7 @@
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Bold, Code, Italic, Link as LinkIcon } from "lucide-react";
+import type { MouseEvent } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 
@@ -16,12 +17,19 @@ interface EditorBubbleMenuProps {
     onInsertLink: () => void;
 }
 
+/** 阻止 mousedown 让编辑器失焦（同 EditorToolbar 的 keepFocus） */
+function keepFocus(e: MouseEvent) {
+    e.preventDefault();
+}
+
 export function EditorBubbleMenu({ editor, onInsertLink }: EditorBubbleMenuProps) {
     return (
         <BubbleMenu
             editor={editor}
             options={{ placement: "bottom", offset: 8 }}
             className="flex items-center gap-0.5 rounded-lg border border-edge-hairline bg-popover p-1 shadow-lg"
+            // BubbleMenu 自身点击不应收起选区
+            onMouseDown={keepFocus}
         >
             <Button
                 variant="ghost"

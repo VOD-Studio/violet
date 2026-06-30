@@ -6,11 +6,17 @@
  */
 import type { Editor } from "@tiptap/react";
 import { Columns2, Grid2x2, Rows2, Table as TableIcon, Trash2, Undo2 } from "lucide-react";
+import type { MouseEvent } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 
 interface TableToolbarProps {
     editor: Editor;
+}
+
+/** 阻止 mousedown 让编辑器失焦 */
+function keepFocus(e: MouseEvent) {
+    e.preventDefault();
 }
 
 export function TableToolbar({ editor }: TableToolbarProps) {
@@ -20,7 +26,11 @@ export function TableToolbar({ editor }: TableToolbarProps) {
     const canSplit = editor.can().splitCell();
 
     return (
-        <div className="flex flex-wrap items-center gap-0.5 border-b border-edge-hairline bg-muted/40 px-2 py-1">
+        <div
+            className="flex flex-wrap items-center gap-0.5 border-b border-edge-hairline bg-muted/40 px-2 py-1"
+            // 容器统一拦截 mousedown，避免按钮点击让编辑器失焦
+            onMouseDown={keepFocus}
+        >
             <span className="px-1 text-[11px] text-muted-foreground">
                 <TableIcon className="mr-1 inline size-3" />
                 表格

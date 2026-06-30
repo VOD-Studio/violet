@@ -20,7 +20,11 @@ import { ModalHeader } from "./ModalHeader";
 function isInsideRadixFloating(event: { target: EventTarget | null }): boolean {
     const target = event.target as HTMLElement | null;
     if (!target) return false;
-    return !!target.closest("[data-radix-popper-content-wrapper]");
+    return !!target.closest(
+        // 覆盖各类 Radix 浮层：Select（popper 包裹 / listbox / viewport）、
+        // DropdownMenu、Popover、Tooltip 等，避免嵌套点击误关 Dialog。
+        "[data-radix-popper-content-wrapper], [role=listbox], [data-radix-select-viewport], [data-radix-menu-content], [data-radix-popper-anchor]",
+    );
 }
 
 /**

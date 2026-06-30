@@ -200,6 +200,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                 <EditorToolbar
                     editor={editor}
                     onPickImage={handlePickImage}
+                    onUploadImage={() => pickLocalFileRef.current?.()}
                     onInsertLink={openLinkDialog}
                 />
                 {editor ? <TableToolbar editor={editor} /> : null}
