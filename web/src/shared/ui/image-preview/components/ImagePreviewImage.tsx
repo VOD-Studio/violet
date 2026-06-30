@@ -10,6 +10,8 @@ import { useEffect, useRef, useState } from "react";
 interface ImagePreviewImageProps {
     /** 图片地址 */
     src: string;
+    /** 是否开始加载（false 时不设置 src，不发起请求；用于飞入动画稳定后再加载原图） */
+    shouldLoad?: boolean;
     /** 图片描述 */
     alt: string;
     /** 缩放比例 */
@@ -38,6 +40,7 @@ interface ImagePreviewImageProps {
  */
 export function ImagePreviewImage({
     src,
+    shouldLoad = true,
     alt,
     scale,
     rotate = 0,
@@ -148,7 +151,7 @@ export function ImagePreviewImage({
                 <motion.img
                     ref={imgRef}
                     key={src}
-                    src={src}
+                    src={shouldLoad ? src : undefined}
                     alt={alt}
                     initial={{ opacity: 0 }}
                     // 图片始终参与外层飞入动画的透明度过渡，不等待 isLoading。
