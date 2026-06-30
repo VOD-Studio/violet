@@ -1,29 +1,54 @@
+import { fetchProjects, useProjects } from "@features/projects/api/queries";
+import { projectKeys } from "@features/projects/api/keys";
 import { TiltedCard } from "@shared/ui/tilted-card";
 import { createFileRoute } from "@tanstack/react-router";
 
-const mockProjects = [
-    { id: 1, title: "Nexus Blog", desc: "A geeky, aesthetic blog system." },
-    { id: 2, title: "Fluid UI", desc: "React component library." },
-];
-
 const ProjectsPage = () => {
-    return (
-        <div className="container mx-auto px-6 py-32 min-h-screen">
-            <h1 className="text-4xl font-bold mb-16 tracking-tight">Projects</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {mockProjects.map((p) => (
-                    <TiltedCard key={p.id} className="h-64">
-                        <div className="h-full rounded-3xl border border-edge-hairline p-8 hover:bg-muted/50 transition-colors">
-                            <h3 className="text-2xl font-bold mb-4">{p.title}</h3>
-                            <p className="text-muted-foreground">{p.desc}</p>
-                        </div>
-                    </TiltedCard>
-                ))}
+    // 列表数据由 loader 预取并脱水合，这里复用缓存
+    const { data: projects = [], isLoading, error } = useProjects();
+
+    if (error) {
+        return (
+            <div className="container mx-auto px-6 py-32 text-muted-foreground">
+                加载失败
             </div>
+        );
+    }
+
+    return (
+        <div className="container mx-auto min-h-screen px-6 py-32">
+            <h1 className="mb-16 text-4xl font-bold tracking-tight">Projects</h1>
+            {isLoading ? (
+                <div className="text-muted-foreground">加载中…</div>
+            ) : projects.length === 0 ? (
+                <div className="text-muted-foreground">暂无项目</div>
+            ) : (
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                    {projects.map((p) => (
+                        <TiltedCard key={p.id} className="h-64">
+                            <div className="h-full rounded-3xl border border-edge-hairline p-8 transition-colors hover:bg-muted/50">
+                                <h3 className="mb-4 text-2xl font-bold">
+                                    {p.title}
+                                </h3>
+                                <p className="text-muted-foreground">
+                                    {p.description}
+                                </p>
+                            </div>
+                        </TiltedCard>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
 
 export const Route = createFileRoute("/projects/")({
+    // SSR 预取项目列表，脱水合后首屏直出
+    loader: async ({ context }) => {
+        await context.queryClient.ensureQueryData({
+            queryKey: projectKeys.list({}),
+            queryFn: () => fetchProjects({}),
+        });
+    },
     component: ProjectsPage,
 });
