@@ -1,0 +1,131 @@
+/**
+ * editor styles - ProseMirror 编辑器内部排版样式
+ *
+ * 编辑器内 .ProseMirror 容器使用 prose 排版（由调用方加 className），
+ * 此处仅补充 prose 不覆盖的部分：占位符、列表任务框、表格控制、代码块高亮主题、
+ * 选中高亮、图片选中态等交互态。
+ */
+
+/* 占位符（at-rule，Tiptap 在空段落上加 .is-empty.is-editor-empty:before） */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--muted-foreground, hsl(0 0% 45%));
+  pointer-events: none;
+  height: 0;
+}
+
+/* 任务列表：勾选框对齐 */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+  user-select: none;
+}
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 表格：选中单元格高亮 */
+.ProseMirror .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--primary) / 0.08);
+  pointer-events: none;
+  z-index: 2;
+}
+.ProseMirror .tableWrapper {
+  overflow-x: auto;
+}
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.75rem 0;
+  overflow: hidden;
+  table-layout: fixed;
+}
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid var(--border, hsl(0 0% 85%));
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  position: relative;
+  min-width: 1em;
+}
+.ProseMirror th {
+  background: hsl(var(--muted) / 0.5);
+  font-weight: 600;
+  text-align: left;
+}
+
+/* 代码块：lowlight 产出的 hljs 类，浅色/深色双主题 */
+.ProseMirror pre {
+  background: hsl(240 10% 8%);
+  color: hsl(60 6% 90%);
+  border-radius: 0.5rem;
+  padding: 0.875rem 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.ProseMirror pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.ProseMirror pre .hljs-comment,
+.ProseMirror pre .hljs-quote {
+  color: hsl(220 6% 55%);
+  font-style: italic;
+}
+.ProseMirror pre .hljs-keyword,
+.ProseMirror pre .hljs-selector-tag,
+.ProseMirror pre .hljs-built_in {
+  color: hsl(280 60% 70%);
+}
+.ProseMirror pre .hljs-string,
+.ProseMirror pre .hljs-attr {
+  color: hsl(95 60% 65%);
+}
+.ProseMirror pre .hljs-number,
+.ProseMirror pre .hljs-literal {
+  color: hsl(30 90% 65%);
+}
+.ProseMirror pre .hljs-title,
+.ProseMirror pre .hljs-section,
+.ProseMirror pre .hljs-name {
+  color: hsl(200 80% 70%);
+}
+.ProseMirror pre .hljs-type,
+.ProseMirror pre .hljs-class .hljs-title {
+  color: hsl(180 70% 65%);
+}
+
+/* 图片选中态：节点选中时加蓝色描边 */
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* 编辑器聚焦时无原生 outline（工具栏已在视觉上表达焦点） */
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* 链接编辑光标处不显示原生 caret 闪烁异常 */
+.ProseMirror .ProseMirror-gapcursor::after {
+  border-top-color: currentColor;
+}

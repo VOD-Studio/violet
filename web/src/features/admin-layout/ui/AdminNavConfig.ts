@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+    FileText,
     FolderKanban,
     Images,
     LayoutDashboard,
@@ -38,6 +39,7 @@ export interface AdminNavItem {
  */
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     { label: "概览", to: "/admin", icon: LayoutDashboard, exact: true },
+    { label: "文章管理", to: "/admin/posts", icon: FileText },
     { label: "用户管理", to: "/admin/users", icon: Users },
     { label: "角色管理", to: "/admin/roles", icon: UserCog },
     { label: "权限管理", to: "/admin/permissions", icon: Shield },
