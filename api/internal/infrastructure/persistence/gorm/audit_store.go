@@ -66,6 +66,7 @@ func (s *AuditStore) List(ctx context.Context, page, limit int) (domainaudit.Lis
 	}
 	var pos []AuditLog
 	if err := s.db.WithContext(ctx).
+		Model(&AuditLog{}).
 		Select("audit_logs.*, u.username AS user_name").
 		Joins("LEFT JOIN users u ON u.id = audit_logs.user_id").
 		Order("audit_logs.created_at DESC").
