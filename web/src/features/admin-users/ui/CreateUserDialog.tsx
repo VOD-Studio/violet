@@ -5,16 +5,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/shared/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { Modal } from "@/shared/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Switch } from "@/shared/ui/switch";
 import { useCreateUser } from "../api/queries";
@@ -101,125 +94,116 @@ export function CreateUserDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle>创建用户</DialogTitle>
-                    <DialogDescription>创建一个新的用户账户</DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <div className="space-y-4 py-4">
-                        {/* 用户名 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="username">
-                                用户名 <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                                id="username"
-                                {...register("username")}
-                                placeholder="请输入用户名（3-32 字符）"
-                                aria-invalid={!!errors.username}
-                            />
-                            {errors.username && (
-                                <p className="text-sm text-destructive">
-                                    {errors.username.message}
-                                </p>
-                            )}
-                        </div>
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="创建用户"
+            description="创建一个新的用户账户"
+            size="md"
+            footer={
+                <>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={createUser.isPending}
+                    >
+                        取消
+                    </Button>
+                    <Button type="submit" form="create-user-form" disabled={createUser.isPending}>
+                        {createUser.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+                        创建
+                    </Button>
+                </>
+            }
+        >
+            <form id="create-user-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* 用户名 */}
+                <div className="space-y-2">
+                    <Label htmlFor="username">
+                        用户名 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                        id="username"
+                        {...register("username")}
+                        placeholder="请输入用户名（3-32 字符）"
+                        aria-invalid={!!errors.username}
+                    />
+                    {errors.username && (
+                        <p className="text-sm text-destructive">{errors.username.message}</p>
+                    )}
+                </div>
 
-                        {/* 邮箱 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="email">
-                                邮箱 <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                {...register("email")}
-                                placeholder="请输入邮箱地址"
-                                aria-invalid={!!errors.email}
-                            />
-                            {errors.email && (
-                                <p className="text-sm text-destructive">{errors.email.message}</p>
-                            )}
-                        </div>
+                {/* 邮箱 */}
+                <div className="space-y-2">
+                    <Label htmlFor="email">
+                        邮箱 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                        id="email"
+                        type="email"
+                        {...register("email")}
+                        placeholder="请输入邮箱地址"
+                        aria-invalid={!!errors.email}
+                    />
+                    {errors.email && (
+                        <p className="text-sm text-destructive">{errors.email.message}</p>
+                    )}
+                </div>
 
-                        {/* 密码 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="password">
-                                密码 <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                {...register("password")}
-                                placeholder="请输入密码（至少 6 位）"
-                                aria-invalid={!!errors.password}
-                            />
-                            {errors.password && (
-                                <p className="text-sm text-destructive">
-                                    {errors.password.message}
-                                </p>
-                            )}
-                        </div>
+                {/* 密码 */}
+                <div className="space-y-2">
+                    <Label htmlFor="password">
+                        密码 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                        id="password"
+                        type="password"
+                        {...register("password")}
+                        placeholder="请输入密码（至少 6 位）"
+                        aria-invalid={!!errors.password}
+                    />
+                    {errors.password && (
+                        <p className="text-sm text-destructive">{errors.password.message}</p>
+                    )}
+                </div>
 
-                        {/* 角色 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="role">角色</Label>
-                            <Select value={role} onValueChange={(value) => setValue("role", value)}>
-                                <SelectTrigger
-                                    id="role"
-                                    className="w-full"
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {(roles ?? [])
-                                        // superadmin 选项仅当操作者是超管时可见
-                                        .filter(
-                                            (r) => r.name !== "superadmin" || isOperatorSuperAdmin,
-                                        )
-                                        .map((r) => (
-                                            <SelectItem key={r.name} value={r.name ?? ""}>
-                                                {r.description || r.name}
-                                            </SelectItem>
-                                        ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* 启用状态 */}
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="is_active" className="cursor-pointer">
-                                启用账户
-                            </Label>
-                            <Switch
-                                id="is_active"
-                                checked={isActive}
-                                onCheckedChange={(checked) => setValue("is_active", checked)}
-                            />
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={createUser.isPending}
+                {/* 角色 */}
+                <div className="space-y-2">
+                    <Label htmlFor="role">角色</Label>
+                    <Select value={role} onValueChange={(value) => setValue("role", value)}>
+                        <SelectTrigger
+                            id="role"
+                            className="w-full"
+                            onPointerDown={(e) => e.stopPropagation()}
                         >
-                            取消
-                        </Button>
-                        <Button type="submit" disabled={createUser.isPending}>
-                            {createUser.isPending && (
-                                <Loader2 className="mr-2 size-4 animate-spin" />
-                            )}
-                            创建
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {(roles ?? [])
+                                // superadmin 选项仅当操作者是超管时可见
+                                .filter((r) => r.name !== "superadmin" || isOperatorSuperAdmin)
+                                .map((r) => (
+                                    <SelectItem key={r.name} value={r.name ?? ""}>
+                                        {r.description || r.name}
+                                    </SelectItem>
+                                ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* 启用状态 */}
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="is_active" className="cursor-pointer">
+                        启用账户
+                    </Label>
+                    <Switch
+                        id="is_active"
+                        checked={isActive}
+                        onCheckedChange={(checked) => setValue("is_active", checked)}
+                    />
+                </div>
+            </form>
+        </Modal>
     );
 }

@@ -5,16 +5,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/shared/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { Modal } from "@/shared/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Switch } from "@/shared/ui/switch";
 import { useUpdateUser } from "../api/queries";
@@ -138,137 +131,128 @@ export function EditUserDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle>编辑用户</DialogTitle>
-                    <DialogDescription>修改用户账户信息</DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <div className="space-y-4 py-4">
-                        {/* 用户名 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-username">
-                                用户名 <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                                id="edit-username"
-                                {...register("username")}
-                                placeholder="请输入用户名（3-32 字符）"
-                                aria-invalid={!!errors.username}
-                            />
-                            {errors.username && (
-                                <p className="text-sm text-destructive">
-                                    {errors.username.message}
-                                </p>
-                            )}
-                        </div>
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="编辑用户"
+            description="修改用户账户信息"
+            size="md"
+            footer={
+                <>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={updateUser.isPending}
+                    >
+                        取消
+                    </Button>
+                    <Button type="submit" form="edit-user-form" disabled={updateUser.isPending}>
+                        {updateUser.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+                        保存
+                    </Button>
+                </>
+            }
+        >
+            <form id="edit-user-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* 用户名 */}
+                <div className="space-y-2">
+                    <Label htmlFor="edit-username">
+                        用户名 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                        id="edit-username"
+                        {...register("username")}
+                        placeholder="请输入用户名（3-32 字符）"
+                        aria-invalid={!!errors.username}
+                    />
+                    {errors.username && (
+                        <p className="text-sm text-destructive">{errors.username.message}</p>
+                    )}
+                </div>
 
-                        {/* 邮箱 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-email">
-                                邮箱 <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                                id="edit-email"
-                                type="email"
-                                {...register("email")}
-                                placeholder="请输入邮箱地址"
-                                aria-invalid={!!errors.email}
-                            />
-                            {errors.email && (
-                                <p className="text-sm text-destructive">{errors.email.message}</p>
-                            )}
-                        </div>
+                {/* 邮箱 */}
+                <div className="space-y-2">
+                    <Label htmlFor="edit-email">
+                        邮箱 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                        id="edit-email"
+                        type="email"
+                        {...register("email")}
+                        placeholder="请输入邮箱地址"
+                        aria-invalid={!!errors.email}
+                    />
+                    {errors.email && (
+                        <p className="text-sm text-destructive">{errors.email.message}</p>
+                    )}
+                </div>
 
-                        {/* 密码 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-password">密码</Label>
-                            <Input
-                                id="edit-password"
-                                type="password"
-                                {...register("password")}
-                                placeholder="留空表示不修改密码"
-                                aria-invalid={!!errors.password}
-                            />
-                            {errors.password && (
-                                <p className="text-sm text-destructive">
-                                    {errors.password.message}
-                                </p>
-                            )}
-                            <p className="text-xs text-muted-foreground">
-                                不修改密码请留空，修改密码需至少 6 位
-                            </p>
-                        </div>
+                {/* 密码 */}
+                <div className="space-y-2">
+                    <Label htmlFor="edit-password">密码</Label>
+                    <Input
+                        id="edit-password"
+                        type="password"
+                        {...register("password")}
+                        placeholder="留空表示不修改密码"
+                        aria-invalid={!!errors.password}
+                    />
+                    {errors.password && (
+                        <p className="text-sm text-destructive">{errors.password.message}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                        不修改密码请留空，修改密码需至少 6 位
+                    </p>
+                </div>
 
-                        {/* 角色 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-role">角色</Label>
-                            <Select
-                                value={role}
-                                onValueChange={(value) => setValue("role", value)}
-                                disabled={roleDisabled}
-                            >
-                                <SelectTrigger
-                                    id="edit-role"
-                                    className="w-full"
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {(roles ?? [])
-                                        // superadmin 选项仅当操作者是超管时可见
-                                        .filter(
-                                            (r) => r.name !== "superadmin" || isOperatorSuperAdmin,
-                                        )
-                                        .map((r) => (
-                                            <SelectItem key={r.name} value={r.name ?? ""}>
-                                                {r.description || r.name}
-                                            </SelectItem>
-                                        ))}
-                                </SelectContent>
-                            </Select>
-                            {roleDisabled ? (
-                                <p className="text-xs text-muted-foreground">
-                                    {user.role === "superadmin"
-                                        ? "不可修改超级管理员的角色"
-                                        : "不可修改自己的角色"}
-                                </p>
-                            ) : null}
-                        </div>
-
-                        {/* 启用状态 */}
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="edit-is_active" className="cursor-pointer">
-                                启用账户
-                            </Label>
-                            <Switch
-                                id="edit-is_active"
-                                checked={isActive}
-                                onCheckedChange={(checked) => setValue("is_active", checked)}
-                            />
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={updateUser.isPending}
+                {/* 角色 */}
+                <div className="space-y-2">
+                    <Label htmlFor="edit-role">角色</Label>
+                    <Select
+                        value={role}
+                        onValueChange={(value) => setValue("role", value)}
+                        disabled={roleDisabled}
+                    >
+                        <SelectTrigger
+                            id="edit-role"
+                            className="w-full"
+                            onPointerDown={(e) => e.stopPropagation()}
                         >
-                            取消
-                        </Button>
-                        <Button type="submit" disabled={updateUser.isPending}>
-                            {updateUser.isPending && (
-                                <Loader2 className="mr-2 size-4 animate-spin" />
-                            )}
-                            保存
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {(roles ?? [])
+                                // superadmin 选项仅当操作者是超管时可见
+                                .filter((r) => r.name !== "superadmin" || isOperatorSuperAdmin)
+                                .map((r) => (
+                                    <SelectItem key={r.name} value={r.name ?? ""}>
+                                        {r.description || r.name}
+                                    </SelectItem>
+                                ))}
+                        </SelectContent>
+                    </Select>
+                    {roleDisabled ? (
+                        <p className="text-xs text-muted-foreground">
+                            {user.role === "superadmin"
+                                ? "不可修改超级管理员的角色"
+                                : "不可修改自己的角色"}
+                        </p>
+                    ) : null}
+                </div>
+
+                {/* 启用状态 */}
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-is_active" className="cursor-pointer">
+                        启用账户
+                    </Label>
+                    <Switch
+                        id="edit-is_active"
+                        checked={isActive}
+                        onCheckedChange={(checked) => setValue("is_active", checked)}
+                    />
+                </div>
+            </form>
+        </Modal>
     );
 }

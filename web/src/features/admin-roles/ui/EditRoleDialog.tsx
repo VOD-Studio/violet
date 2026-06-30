@@ -1,16 +1,9 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@shared/ui/dialog";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";
+import { Modal } from "@shared/ui/modal";
 import { Textarea } from "@shared/ui/textarea";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -86,68 +79,66 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>编辑角色</DialogTitle>
-                    <DialogDescription>修改角色信息</DialogDescription>
-                </DialogHeader>
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="编辑角色"
+            description="修改角色信息"
+            size="sm"
+            footer={
+                <>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={updateRole.isPending}
+                    >
+                        取消
+                    </Button>
+                    <Button type="submit" form="edit-role-form" disabled={updateRole.isPending}>
+                        {updateRole.isPending && <Loader2 className="mr-1 size-4 animate-spin" />}
+                        保存
+                    </Button>
+                </>
+            }
+        >
+            <form id="edit-role-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* 角色名称 */}
+                <div className="space-y-2">
+                    <Label htmlFor="name">
+                        角色名称 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                        id="name"
+                        placeholder="如：editor"
+                        {...register("name")}
+                        disabled={updateRole.isPending}
+                    />
+                    {errors.name && (
+                        <p className="text-destructive text-sm">{errors.name.message}</p>
+                    )}
+                    <p className="text-muted-foreground text-xs">
+                        只能包含字母、数字、下划线和连字符
+                    </p>
+                </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* 角色名称 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="name">
-                            角色名称 <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                            id="name"
-                            placeholder="如：editor"
-                            {...register("name")}
-                            disabled={updateRole.isPending}
-                        />
-                        {errors.name && (
-                            <p className="text-destructive text-sm">{errors.name.message}</p>
-                        )}
-                        <p className="text-muted-foreground text-xs">
-                            只能包含字母、数字、下划线和连字符
-                        </p>
-                    </div>
-
-                    {/* 角色描述 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="description">
-                            角色描述 <span className="text-destructive">*</span>
-                        </Label>
-                        <Textarea
-                            id="description"
-                            placeholder="如：内容编辑"
-                            rows={3}
-                            {...register("description")}
-                            disabled={updateRole.isPending}
-                        />
-                        {errors.description && (
-                            <p className="text-destructive text-sm">{errors.description.message}</p>
-                        )}
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={updateRole.isPending}
-                        >
-                            取消
-                        </Button>
-                        <Button type="submit" disabled={updateRole.isPending}>
-                            {updateRole.isPending && (
-                                <Loader2 className="mr-1 size-4 animate-spin" />
-                            )}
-                            保存
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                {/* 角色描述 */}
+                <div className="space-y-2">
+                    <Label htmlFor="description">
+                        角色描述 <span className="text-destructive">*</span>
+                    </Label>
+                    <Textarea
+                        id="description"
+                        placeholder="如：内容编辑"
+                        rows={3}
+                        {...register("description")}
+                        disabled={updateRole.isPending}
+                    />
+                    {errors.description && (
+                        <p className="text-destructive text-sm">{errors.description.message}</p>
+                    )}
+                </div>
+            </form>
+        </Modal>
     );
 }

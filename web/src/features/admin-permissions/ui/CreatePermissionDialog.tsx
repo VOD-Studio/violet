@@ -1,16 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@shared/ui/dialog";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";
+import { Modal } from "@shared/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/ui/select";
 import { Textarea } from "@shared/ui/textarea";
 import { Loader2 } from "lucide-react";
@@ -158,158 +151,154 @@ export function CreatePermissionDialog({
     const pending = createPermission.isPending || updatePermission.isPending;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>{isEdit ? "编辑权限" : "创建权限"}</DialogTitle>
-                    <DialogDescription>
-                        {isEdit
-                            ? "修改权限定义"
-                            : "新建权限点（menu 为分组容器，action 为可授权操作）"}
-                    </DialogDescription>
-                </DialogHeader>
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title={isEdit ? "编辑权限" : "创建权限"}
+            description={
+                isEdit ? "修改权限定义" : "新建权限点（menu 为分组容器，action 为可授权操作）"
+            }
+            size="sm"
+            footer={
+                <>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={pending}
+                    >
+                        取消
+                    </Button>
+                    <Button type="submit" form="permission-form" disabled={pending}>
+                        {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+                        {isEdit ? "保存" : "创建"}
+                    </Button>
+                </>
+            }
+        >
+            <form id="permission-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* 类型 */}
+                <div className="space-y-2">
+                    <Label>类型</Label>
+                    <Controller
+                        control={control}
+                        name="type"
+                        render={({ field }) => (
+                            <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                disabled={isBuiltin || isEdit}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="action">action（操作权限）</SelectItem>
+                                    <SelectItem value="menu">menu（分组容器）</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {isBuiltin && (
+                        <p className="text-muted-foreground text-xs">
+                            <Badge variant="secondary">内置</Badge> 类型不可更改
+                        </p>
+                    )}
+                </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* 类型 */}
+                {/* 父节点（action 必选；menu 类型不渲染） */}
+                {watch("type") === "action" && (
                     <div className="space-y-2">
-                        <Label>类型</Label>
+                        <Label>
+                            所属分组 <span className="text-destructive">*</span>
+                        </Label>
                         <Controller
                             control={control}
-                            name="type"
+                            name="parentId"
                             render={({ field }) => (
                                 <Select
-                                    value={field.value}
+                                    value={field.value ?? ""}
                                     onValueChange={field.onChange}
-                                    disabled={isBuiltin || isEdit}
+                                    disabled={pending}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue />
+                                        <SelectValue placeholder="选择 menu 分组" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="action">action（操作权限）</SelectItem>
-                                        <SelectItem value="menu">menu（分组容器）</SelectItem>
+                                        {menus.map((m) => (
+                                            <SelectItem key={m.id} value={String(m.id)}>
+                                                {m.name} ({m.code})
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             )}
                         />
-                        {isBuiltin && (
-                            <p className="text-muted-foreground text-xs">
-                                <Badge variant="secondary">内置</Badge> 类型不可更改
-                            </p>
+                        {errors.parentId && (
+                            <p className="text-destructive text-sm">{errors.parentId.message}</p>
                         )}
                     </div>
+                )}
 
-                    {/* 父节点（action 必选；menu 类型不渲染） */}
-                    {watch("type") === "action" && (
-                        <div className="space-y-2">
-                            <Label>
-                                所属分组 <span className="text-destructive">*</span>
-                            </Label>
-                            <Controller
-                                control={control}
-                                name="parentId"
-                                render={({ field }) => (
-                                    <Select
-                                        value={field.value ?? ""}
-                                        onValueChange={field.onChange}
-                                        disabled={pending}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="选择 menu 分组" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {menus.map((m) => (
-                                                <SelectItem key={m.id} value={String(m.id)}>
-                                                    {m.name} ({m.code})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                            {errors.parentId && (
-                                <p className="text-destructive text-sm">
-                                    {errors.parentId.message}
-                                </p>
-                            )}
-                        </div>
+                {/* 代码 */}
+                <div className="space-y-2">
+                    <Label htmlFor="code">
+                        权限代码 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input id="code" disabled={isBuiltin || pending} {...register("code")} />
+                    {errors.code && (
+                        <p className="text-destructive text-sm">{errors.code.message}</p>
                     )}
+                    <p className="text-muted-foreground text-xs">
+                        menu 为纯小写字母（如 post）；action 为 module:action（如 post:create）
+                    </p>
+                </div>
 
-                    {/* 代码 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="code">
-                            权限代码 <span className="text-destructive">*</span>
-                        </Label>
-                        <Input id="code" disabled={isBuiltin || pending} {...register("code")} />
-                        {errors.code && (
-                            <p className="text-destructive text-sm">{errors.code.message}</p>
-                        )}
-                        <p className="text-muted-foreground text-xs">
-                            menu 为纯小写字母（如 post）；action 为 module:action（如 post:create）
-                        </p>
-                    </div>
+                {/* 名称 */}
+                <div className="space-y-2">
+                    <Label htmlFor="name">
+                        权限名称 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                        id="name"
+                        placeholder="如：创建文章"
+                        disabled={pending}
+                        {...register("name")}
+                    />
+                    {errors.name && (
+                        <p className="text-destructive text-sm">{errors.name.message}</p>
+                    )}
+                </div>
 
-                    {/* 名称 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="name">
-                            权限名称 <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                            id="name"
-                            placeholder="如：创建文章"
-                            disabled={pending}
-                            {...register("name")}
-                        />
-                        {errors.name && (
-                            <p className="text-destructive text-sm">{errors.name.message}</p>
-                        )}
-                    </div>
+                {/* 描述 */}
+                <div className="space-y-2">
+                    <Label htmlFor="description">描述</Label>
+                    <Textarea
+                        id="description"
+                        rows={2}
+                        disabled={pending}
+                        {...register("description")}
+                    />
+                    {errors.description && (
+                        <p className="text-destructive text-sm">{errors.description.message}</p>
+                    )}
+                </div>
 
-                    {/* 描述 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="description">描述</Label>
-                        <Textarea
-                            id="description"
-                            rows={2}
-                            disabled={pending}
-                            {...register("description")}
-                        />
-                        {errors.description && (
-                            <p className="text-destructive text-sm">{errors.description.message}</p>
-                        )}
-                    </div>
-
-                    {/* 排序 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="sort">排序</Label>
-                        <Input
-                            id="sort"
-                            type="number"
-                            min={0}
-                            disabled={pending}
-                            {...register("sort", { valueAsNumber: true })}
-                        />
-                        {errors.sort && (
-                            <p className="text-destructive text-sm">{errors.sort.message}</p>
-                        )}
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={pending}
-                        >
-                            取消
-                        </Button>
-                        <Button type="submit" disabled={pending}>
-                            {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
-                            {isEdit ? "保存" : "创建"}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                {/* 排序 */}
+                <div className="space-y-2">
+                    <Label htmlFor="sort">排序</Label>
+                    <Input
+                        id="sort"
+                        type="number"
+                        min={0}
+                        disabled={pending}
+                        {...register("sort", { valueAsNumber: true })}
+                    />
+                    {errors.sort && (
+                        <p className="text-destructive text-sm">{errors.sort.message}</p>
+                    )}
+                </div>
+            </form>
+        </Modal>
     );
 }

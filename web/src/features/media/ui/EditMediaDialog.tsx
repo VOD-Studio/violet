@@ -6,16 +6,9 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/api/error";
 import { Button } from "@/shared/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { Modal } from "@/shared/ui/modal";
 
 interface EditMediaDialogProps {
     open: boolean;
@@ -83,62 +76,60 @@ export function EditMediaDialog({ open, onOpenChange, file }: EditMediaDialogPro
     });
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>编辑素材</DialogTitle>
-                    <DialogDescription>修改文件名、描述或分类</DialogDescription>
-                </DialogHeader>
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="编辑素材"
+            description="修改文件名、描述或分类"
+            size="sm"
+            footer={
+                <>
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                        取消
+                    </Button>
+                    <Button
+                        type="submit"
+                        form="edit-media-form"
+                        disabled={updateMutation.isPending}
+                    >
+                        {updateMutation.isPending ? (
+                            <>
+                                <Loader2 className="size-4 animate-spin" />
+                                保存中…
+                            </>
+                        ) : (
+                            "保存"
+                        )}
+                    </Button>
+                </>
+            }
+        >
+            <form id="edit-media-form" onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-1">
+                    <Label htmlFor="original_name">文件名</Label>
+                    <Input
+                        id="original_name"
+                        {...register("original_name", { required: "请输入文件名" })}
+                    />
+                    {errors.original_name ? (
+                        <p className="text-xs text-destructive">{errors.original_name.message}</p>
+                    ) : null}
+                </div>
 
-                <form onSubmit={onSubmit} className="space-y-4">
-                    <div className="space-y-1">
-                        <Label htmlFor="original_name">文件名</Label>
-                        <Input
-                            id="original_name"
-                            {...register("original_name", { required: "请输入文件名" })}
-                        />
-                        {errors.original_name ? (
-                            <p className="text-xs text-destructive">
-                                {errors.original_name.message}
-                            </p>
-                        ) : null}
-                    </div>
+                <div className="space-y-1">
+                    <Label htmlFor="alt_text">描述 / 替代文本</Label>
+                    <Input id="alt_text" placeholder="用于无障碍和 SEO" {...register("alt_text")} />
+                </div>
 
-                    <div className="space-y-1">
-                        <Label htmlFor="alt_text">描述 / 替代文本</Label>
-                        <Input
-                            id="alt_text"
-                            placeholder="用于无障碍和 SEO"
-                            {...register("alt_text")}
-                        />
-                    </div>
-
-                    <div className="space-y-1">
-                        <Label htmlFor="category">分类</Label>
-                        <Input
-                            id="category"
-                            placeholder="自定义分类，如 banner、截图"
-                            {...register("category")}
-                        />
-                    </div>
-
-                    <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                            取消
-                        </Button>
-                        <Button type="submit" disabled={updateMutation.isPending}>
-                            {updateMutation.isPending ? (
-                                <>
-                                    <Loader2 className="size-4 animate-spin" />
-                                    保存中…
-                                </>
-                            ) : (
-                                "保存"
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                <div className="space-y-1">
+                    <Label htmlFor="category">分类</Label>
+                    <Input
+                        id="category"
+                        placeholder="自定义分类，如 banner、截图"
+                        {...register("category")}
+                    />
+                </div>
+            </form>
+        </Modal>
     );
 }

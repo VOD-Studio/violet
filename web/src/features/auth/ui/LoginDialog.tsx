@@ -12,16 +12,9 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { Modal } from "@/shared/ui/modal";
 
 /**
  * 后端未返回 message 时的兜底文案（按状态码）。与 /login 页面保持一致。
@@ -151,67 +144,67 @@ export function LoginDialog() {
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-105">
-                <DialogHeader>
-                    <DialogTitle>重新登录</DialogTitle>
-                    <DialogDescription>
-                        登录状态已失效，请重新登录后继续。成功后将自动恢复你正在进行的操作。
-                    </DialogDescription>
-                </DialogHeader>
+        <Modal
+            open={isOpen}
+            onOpenChange={handleOpenChange}
+            title="重新登录"
+            description="登录状态已失效，请重新登录后继续。成功后将自动恢复你正在进行的操作。"
+            size="sm"
+            footer={
+                <>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleOpenChange(false)}
+                        disabled={login.isPending}
+                    >
+                        取消
+                    </Button>
+                    <Button
+                        type="submit"
+                        form="login-dialog-form"
+                        disabled={login.isPending || !csrfToken}
+                    >
+                        {login.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+                        {login.isPending ? "登录中…" : "登录"}
+                    </Button>
+                </>
+            }
+        >
+            <form id="login-dialog-form" onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="login-dialog-email">邮箱</Label>
+                    <Input
+                        id="login-dialog-email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        aria-invalid={!!errors.email}
+                        autoComplete="email"
+                    />
+                    {errors.email ? (
+                        <p className="text-sm text-destructive">{errors.email}</p>
+                    ) : null}
+                </div>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="login-dialog-email">邮箱</Label>
-                            <Input
-                                id="login-dialog-email"
-                                type="email"
-                                placeholder="you@example.com"
-                                value={form.email}
-                                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                aria-invalid={!!errors.email}
-                                autoComplete="email"
-                            />
-                            {errors.email ? (
-                                <p className="text-sm text-destructive">{errors.email}</p>
-                            ) : null}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="login-dialog-password">密码</Label>
-                            <Input
-                                id="login-dialog-password"
-                                type="password"
-                                placeholder="••••••••"
-                                value={form.password}
-                                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                                aria-invalid={!!errors.password}
-                                autoComplete="current-password"
-                            />
-                            {errors.password ? (
-                                <p className="text-sm text-destructive">{errors.password}</p>
-                            ) : null}
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => handleOpenChange(false)}
-                            disabled={login.isPending}
-                        >
-                            取消
-                        </Button>
-                        <Button type="submit" disabled={login.isPending || !csrfToken}>
-                            {login.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-                            {login.isPending ? "登录中…" : "登录"}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                <div className="space-y-2">
+                    <Label htmlFor="login-dialog-password">密码</Label>
+                    <Input
+                        id="login-dialog-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        aria-invalid={!!errors.password}
+                        autoComplete="current-password"
+                    />
+                    {errors.password ? (
+                        <p className="text-sm text-destructive">{errors.password}</p>
+                    ) : null}
+                </div>
+            </form>
+        </Modal>
     );
 }
 

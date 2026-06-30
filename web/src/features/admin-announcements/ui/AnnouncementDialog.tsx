@@ -1,15 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@shared/ui/dialog";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";
+import { Modal } from "@shared/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/ui/select";
 import { Switch } from "@shared/ui/switch";
 import { Textarea } from "@shared/ui/textarea";
@@ -129,122 +122,121 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
     const pending = createAnn.isPending || updateAnn.isPending;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>{isEdit ? "编辑公告" : "创建公告"}</DialogTitle>
-                    <DialogDescription>
-                        {isEdit ? "修改公告内容与生效设置" : "新建一条站点公告"}
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* 标题 */}
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title={isEdit ? "编辑公告" : "创建公告"}
+            description={isEdit ? "修改公告内容与生效设置" : "新建一条站点公告"}
+            size="md"
+            footer={
+                <>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={pending}
+                    >
+                        取消
+                    </Button>
+                    <Button type="submit" form="announcement-form" disabled={pending}>
+                        {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+                        {isEdit ? "保存" : "创建"}
+                    </Button>
+                </>
+            }
+        >
+            <form id="announcement-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* 标题 */}
+                <div className="space-y-2">
+                    <Label htmlFor="ann-title">
+                        标题 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input id="ann-title" disabled={pending} {...register("title")} />
+                    {errors.title && (
+                        <p className="text-destructive text-sm">{errors.title.message}</p>
+                    )}
+                </div>
+
+                {/* 类型 */}
+                <div className="space-y-2">
+                    <Label>类型</Label>
+                    <Controller
+                        control={control}
+                        name="type"
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TYPE_OPTIONS.map((o) => (
+                                        <SelectItem key={o.value} value={o.value}>
+                                            {o.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                </div>
+
+                {/* 内容 */}
+                <div className="space-y-2">
+                    <Label htmlFor="ann-content">
+                        内容 <span className="text-destructive">*</span>
+                    </Label>
+                    <Textarea
+                        id="ann-content"
+                        rows={4}
+                        disabled={pending}
+                        {...register("content")}
+                    />
+                    {errors.content && (
+                        <p className="text-destructive text-sm">{errors.content.message}</p>
+                    )}
+                </div>
+
+                {/* 启用 */}
+                <div className="flex items-center gap-2">
+                    <Controller
+                        control={control}
+                        name="isActive"
+                        render={({ field }) => (
+                            <Switch
+                                id="ann-active"
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        )}
+                    />
+                    <Label htmlFor="ann-active">启用</Label>
+                </div>
+
+                {/* 生效区间 */}
+                <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                        <Label htmlFor="ann-title">
-                            标题 <span className="text-destructive">*</span>
-                        </Label>
-                        <Input id="ann-title" disabled={pending} {...register("title")} />
-                        {errors.title && (
-                            <p className="text-destructive text-sm">{errors.title.message}</p>
+                        <Label htmlFor="ann-start">生效开始（可选）</Label>
+                        <Input
+                            id="ann-start"
+                            type="datetime-local"
+                            disabled={pending}
+                            {...register("startTime")}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="ann-end">生效结束（可选）</Label>
+                        <Input
+                            id="ann-end"
+                            type="datetime-local"
+                            disabled={pending}
+                            {...register("endTime")}
+                        />
+                        {errors.endTime && (
+                            <p className="text-destructive text-sm">{errors.endTime.message}</p>
                         )}
                     </div>
-
-                    {/* 类型 */}
-                    <div className="space-y-2">
-                        <Label>类型</Label>
-                        <Controller
-                            control={control}
-                            name="type"
-                            render={({ field }) => (
-                                <Select value={field.value} onValueChange={field.onChange}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {TYPE_OPTIONS.map((o) => (
-                                            <SelectItem key={o.value} value={o.value}>
-                                                {o.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        />
-                    </div>
-
-                    {/* 内容 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="ann-content">
-                            内容 <span className="text-destructive">*</span>
-                        </Label>
-                        <Textarea
-                            id="ann-content"
-                            rows={4}
-                            disabled={pending}
-                            {...register("content")}
-                        />
-                        {errors.content && (
-                            <p className="text-destructive text-sm">{errors.content.message}</p>
-                        )}
-                    </div>
-
-                    {/* 启用 */}
-                    <div className="flex items-center gap-2">
-                        <Controller
-                            control={control}
-                            name="isActive"
-                            render={({ field }) => (
-                                <Switch
-                                    id="ann-active"
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                            )}
-                        />
-                        <Label htmlFor="ann-active">启用</Label>
-                    </div>
-
-                    {/* 生效区间 */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                            <Label htmlFor="ann-start">生效开始（可选）</Label>
-                            <Input
-                                id="ann-start"
-                                type="datetime-local"
-                                disabled={pending}
-                                {...register("startTime")}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="ann-end">生效结束（可选）</Label>
-                            <Input
-                                id="ann-end"
-                                type="datetime-local"
-                                disabled={pending}
-                                {...register("endTime")}
-                            />
-                            {errors.endTime && (
-                                <p className="text-destructive text-sm">{errors.endTime.message}</p>
-                            )}
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={pending}
-                        >
-                            取消
-                        </Button>
-                        <Button type="submit" disabled={pending}>
-                            {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
-                            {isEdit ? "保存" : "创建"}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                </div>
+            </form>
+        </Modal>
     );
 }

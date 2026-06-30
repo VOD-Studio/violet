@@ -2,16 +2,9 @@ import { useCreateTag, useUpdateTag } from "@features/tags/api/mutations";
 import type { Tag } from "@features/tags/model/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@shared/ui/dialog";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";
+import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -62,40 +55,40 @@ export function TagDialog({ open, onOpenChange, editing }: TagDialogProps) {
     const pending = createTag.isPending || updateTag.isPending;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>{isEdit ? "编辑标签" : "创建标签"}</DialogTitle>
-                    <DialogDescription>
-                        {isEdit ? "修改标签名称（slug 将自动重算）" : "新建一个标签"}
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="tag-name">
-                            标签名 <span className="text-destructive">*</span>
-                        </Label>
-                        <Input id="tag-name" disabled={pending} {...register("name")} />
-                        {errors.name && (
-                            <p className="text-destructive text-sm">{errors.name.message}</p>
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={pending}
-                        >
-                            取消
-                        </Button>
-                        <Button type="submit" disabled={pending}>
-                            {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
-                            {isEdit ? "保存" : "创建"}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title={isEdit ? "编辑标签" : "创建标签"}
+            description={isEdit ? "修改标签名称（slug 将自动重算）" : "新建一个标签"}
+            size="sm"
+            footer={
+                <>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={pending}
+                    >
+                        取消
+                    </Button>
+                    <Button type="submit" form="tag-form" disabled={pending}>
+                        {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+                        {isEdit ? "保存" : "创建"}
+                    </Button>
+                </>
+            }
+        >
+            <form id="tag-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="tag-name">
+                        标签名 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input id="tag-name" disabled={pending} {...register("name")} />
+                    {errors.name && (
+                        <p className="text-destructive text-sm">{errors.name.message}</p>
+                    )}
+                </div>
+            </form>
+        </Modal>
     );
 }

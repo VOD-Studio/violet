@@ -1,12 +1,5 @@
 import { Button } from "@shared/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@shared/ui/dialog";
+import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
 
 interface ConfirmDialogProps {
@@ -23,8 +16,7 @@ interface ConfirmDialogProps {
 /**
  * ConfirmDialog - 通用确认弹窗
  *
- * 危险操作（删除等）的二次确认。确认按钮支持 loading 态防止重复提交，
- * 排版与项目其他 Dialog 一致（标题 + 描述 + 右下角操作区）。
+ * 危险操作（删除等）的二次确认。确认按钮支持 loading 态防止重复提交。
  */
 export function ConfirmDialog({
     open,
@@ -37,13 +29,15 @@ export function ConfirmDialog({
     onConfirm,
 }: ConfirmDialogProps) {
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent showCloseButton={false} className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title={title}
+            description={description}
+            size="sm"
+            showCloseButton={false}
+            footer={
+                <>
                     <Button
                         variant="outline"
                         onClick={() => onOpenChange(false)}
@@ -55,8 +49,8 @@ export function ConfirmDialog({
                         {loading && <Loader2 className="mr-1 size-4 animate-spin" />}
                         {confirmLabel}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </>
+            }
+        />
     );
 }

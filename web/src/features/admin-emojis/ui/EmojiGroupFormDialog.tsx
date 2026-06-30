@@ -1,8 +1,8 @@
 import { useCreateEmojiGroup, useUpdateEmojiGroup } from "@features/emojis/api/mutations";
 import type { EmojiGroup } from "@features/emojis/model/types";
 import { Button } from "@shared/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@shared/ui/dialog";
 import { Input } from "@shared/ui/input";
+import { Modal } from "@shared/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/ui/select";
 import { Switch } from "@shared/ui/switch";
 import { Loader2 } from "lucide-react";
@@ -98,78 +98,13 @@ export function EmojiGroupFormDialog({
     const submitting = createGroup.isPending || updateGroup.isPending;
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{editingGroup ? "编辑表情分组" : "创建表情分组"}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                    <div>
-                        <label htmlFor="group-name" className="text-sm font-medium">
-                            名称
-                        </label>
-                        <Input
-                            id="group-name"
-                            value={form.name}
-                            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                            placeholder="如：经典表情"
-                            className="mt-1.5"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="group-source" className="text-sm font-medium">
-                            来源
-                        </label>
-                        <Select
-                            value={form.source}
-                            onValueChange={(value) => setForm((p) => ({ ...p, source: value }))}
-                        >
-                            <SelectTrigger
-                                id="group-source"
-                                className="mt-1.5 w-full"
-                                onPointerDown={(e) => e.stopPropagation()}
-                            >
-                                <SelectValue placeholder="选择来源" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="system">系统</SelectItem>
-                                <SelectItem value="bilibili">B站</SelectItem>
-                                <SelectItem value="custom">自定义</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div>
-                        <label htmlFor="group-sort" className="text-sm font-medium">
-                            排序权重
-                        </label>
-                        <Input
-                            id="group-sort"
-                            type="number"
-                            value={form.sortOrder}
-                            onChange={(e) =>
-                                setForm((p) => ({
-                                    ...p,
-                                    sortOrder: Number.parseInt(e.target.value, 10) || 0,
-                                }))
-                            }
-                            placeholder="数字越小越靠前"
-                            className="mt-1.5"
-                        />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <label htmlFor="group-enabled" className="text-sm font-medium">
-                            启用状态
-                        </label>
-                        <Switch
-                            id="group-enabled"
-                            checked={form.isEnabled}
-                            onCheckedChange={(checked) =>
-                                setForm((p) => ({ ...p, isEnabled: checked }))
-                            }
-                        />
-                    </div>
-                </div>
-                <DialogFooter className="mt-6 flex-col gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title={editingGroup ? "编辑表情分组" : "创建表情分组"}
+            size="md"
+            footer={
+                <>
                     <Button
                         variant="outline"
                         onClick={() => onOpenChange(false)}
@@ -185,8 +120,75 @@ export function EmojiGroupFormDialog({
                         {submitting && <Loader2 className="mr-1 size-4 animate-spin" />}
                         {editingGroup ? "更新" : "创建"}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </>
+            }
+        >
+            <div className="space-y-4">
+                <div>
+                    <label htmlFor="group-name" className="text-sm font-medium">
+                        名称
+                    </label>
+                    <Input
+                        id="group-name"
+                        value={form.name}
+                        onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                        placeholder="如：经典表情"
+                        className="mt-1.5"
+                    />
+                </div>
+                <div>
+                    <label htmlFor="group-source" className="text-sm font-medium">
+                        来源
+                    </label>
+                    <Select
+                        value={form.source}
+                        onValueChange={(value) => setForm((p) => ({ ...p, source: value }))}
+                    >
+                        <SelectTrigger
+                            id="group-source"
+                            className="mt-1.5 w-full"
+                            onPointerDown={(e) => e.stopPropagation()}
+                        >
+                            <SelectValue placeholder="选择来源" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="system">系统</SelectItem>
+                            <SelectItem value="bilibili">B站</SelectItem>
+                            <SelectItem value="custom">自定义</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div>
+                    <label htmlFor="group-sort" className="text-sm font-medium">
+                        排序权重
+                    </label>
+                    <Input
+                        id="group-sort"
+                        type="number"
+                        value={form.sortOrder}
+                        onChange={(e) =>
+                            setForm((p) => ({
+                                ...p,
+                                sortOrder: Number.parseInt(e.target.value, 10) || 0,
+                            }))
+                        }
+                        placeholder="数字越小越靠前"
+                        className="mt-1.5"
+                    />
+                </div>
+                <div className="flex items-center justify-between">
+                    <label htmlFor="group-enabled" className="text-sm font-medium">
+                        启用状态
+                    </label>
+                    <Switch
+                        id="group-enabled"
+                        checked={form.isEnabled}
+                        onCheckedChange={(checked) =>
+                            setForm((p) => ({ ...p, isEnabled: checked }))
+                        }
+                    />
+                </div>
+            </div>
+        </Modal>
     );
 }
