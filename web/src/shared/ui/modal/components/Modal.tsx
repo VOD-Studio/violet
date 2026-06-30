@@ -8,6 +8,22 @@ import { ModalFooter } from "./ModalFooter";
 import { ModalHeader } from "./ModalHeader";
 
 /**
+ * 判断事件目标是否落在 Radix 浮层（Select/Popover/Tooltip 等独立 Portal）内。
+ *
+ * Radix Dialog 与 Select 各自走独立 Portal，Dialog 无法感知 Select 的弹出层，
+ * 导致 Select 打开时点击其选项（或点别处收起 Select）会被 Dialog 误判为
+ * "点击外部"而关闭整个弹窗。拦截此类事件即可修复。
+ *
+ * 参数用结构类型而非 React.SyntheticEvent：Radix 的 onInteractOutside /
+ * onPointerDownOutside 回调参数是 CustomEvent，只保证有 target 与 preventDefault。
+ */
+function isInsideRadixFloating(event: { target: EventTarget | null }): boolean {
+    const target = event.target as HTMLElement | null;
+    if (!target) return false;
+    return !!target.closest("[data-radix-popper-content-wrapper]");
+}
+
+/**
  * Modal - 统一 Modal 组件
  *
  * 吸收三段式滚动布局（header 固定 / body 可滚 / footer 固定）+ motion 进出动画。
@@ -60,7 +76,21 @@ export function Modal({
                         <DialogPrimitive.Content
                             forceMount
                             onEscapeKeyDown={onEscapeKeyDown}
-                            onInteractOutside={onInteractOutside}
+                            // 合并外部交互处理：
+                            // 1. Select/Popover 等 Radix 浮层的点击不算"外部"（修复 Select 关 Dialog 的 bug）
+                            // 2. 再交给调用方传入的 onInteractOutside（如 lightbox 全屏期间阻断关闭）
+                            onInteractOutside={(e) => {
+                                if (isInsideRadixFloating(e)) {
+                                    e.preventDefault();
+                                    return;
+                                }
+                                onInteractOutside?.(e);
+                            }}
+                            onPointerDownOutside={(e) => {
+                                if (isInsideRadixFloating(e)) {
+                                    e.preventDefault();
+                                }
+                            }}
                             asChild
                         >
                             <motion.div
