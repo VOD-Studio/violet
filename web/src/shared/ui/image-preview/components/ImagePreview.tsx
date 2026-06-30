@@ -5,6 +5,7 @@
  */
 
 import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useImagePreviewControls } from "../hooks/useImagePreviewControls";
 import type { ImagePreviewProps } from "../types/image-preview-types";
@@ -45,6 +46,7 @@ export function ImagePreview({
     open,
     onClose,
     images,
+    thumbnails,
     currentIndex = 0,
     onIndexChange,
     triggerElement,
@@ -76,6 +78,24 @@ export function ImagePreview({
     });
 
     const initialPosition = getInitialPosition(triggerElement, triggerRect);
+
+    // 当前图是否有可用缩略图（无则回退原图飞入）
+    const thumb = thumbnails?.[index];
+    const useThumb = !!thumb;
+
+    // 飞入动画是否已稳定（稳定后才开始加载原图，避免与飞入争抢解码资源掉帧）
+    const [flyInSettled, setFlyInSettled] = useState(false);
+    // 原图是否加载完成（完成后缩略图+模糊层淡出）
+    const [originalLoaded, setOriginalLoaded] = useState(false);
+    // 缩略图+模糊层是否可见（原图加载完成淡出后隐藏）
+    const showThumbLayer = useThumb && !originalLoaded;
+
+    // 切换图片时重置渐进加载状态
+    // biome-ignore lint/correctness/useExhaustiveDependencies: index 是重置触发器
+    useEffect(() => {
+        setFlyInSettled(false);
+        setOriginalLoaded(false);
+    }, [index]);
 
     // 通过 portal 渲染到 body，脱离父级（如 Radix Dialog Content 的 transform）
     // 创建的 containing block / stacking context，确保 fixed 全屏定位在任意嵌套下都生效。
@@ -109,7 +129,7 @@ export function ImagePreview({
                         onReset={handleReset}
                     />
 
-                    {/* 图片容器 */}
+                    {/* 图片容器（飞入动画作用于此外层；内部缩略图层 + 原图层） */}
                     {/* 进入/退出动画仅作用于 transform（GPU 合成层属性，不触发 reflow），
                         配合 will-change 提升，避免与图片加载过程中的布局变化相互干扰导致掉帧。 */}
                     <motion.div
@@ -127,18 +147,49 @@ export function ImagePreview({
                             opacity: 0,
                         }}
                         transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+                        onAnimationComplete={() => setFlyInSettled(true)}
                         className="relative max-h-[90vh] max-w-[90vw]"
-                        style={{ willChange: "transform, opacity" }}
+                        style={{
+                            willChange: "transform, opacity",
+                            // 飞入未稳定 + 有缩略图层期间，容器不拦截事件，
+                            // 避免其几何尺寸覆盖到顶部工具栏导致工具栏点不动。
+                            // 原图加载完成后才允许图片拖拽交互。
+                            pointerEvents: showThumbLayer && !flyInSettled ? "none" : "auto",
+                        }}
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* 缩略图层（飞入阶段可见；原图加载完成后淡出）。
+                            用与原图相同的 contain 约束渲染，因后端缩略图等比缩放、
+                            宽高比与原图一致，盒自然重合，替换无尺寸跳变。 */}
+                        {showThumbLayer ? (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <img
+                                    src={thumb}
+                                    alt=""
+                                    aria-hidden
+                                    className="max-h-[90vh] max-w-full select-none object-contain"
+                                    draggable={false}
+                                />
+                                {/* 模糊层：覆盖拉伸后的缩略图盒 */}
+                                <div
+                                    className="absolute inset-0 bg-black/5 backdrop-blur-xl"
+                                    aria-hidden
+                                />
+                            </div>
+                        ) : null}
+
+                        {/* 原图层：飞入动画稳定后才开始加载（shouldLoad 门控） */}
                         <ImagePreviewImage
                             src={images[index]}
                             alt={`预览图片 ${index + 1}`}
+                            shouldLoad={!useThumb || flyInSettled}
                             scale={scale}
                             rotate={rotate}
                             flipX={flipX}
                             flipY={flipY}
-                            onLoad={() => {}}
+                            onLoad={() => {
+                                if (useThumb) setOriginalLoaded(true);
+                            }}
                             onReset={handleReset}
                         />
                     </motion.div>
