@@ -5,12 +5,11 @@
  * 支持单选（封面/图片插入）与多选（多图插入）。
  * 底部确认按钮回传选中 MediaFile[]。
  *
- * 复用 useAdminMedia + Modal + 自定义选择网格（不复用 MediaGrid，
- * 因 MediaGrid 的卡片是为管理设计的：含编辑/删除按钮，不适合选择场景）。
+ * 通过 mediaType 限定可选素材类型（如封面图只选 image）。
  */
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { useAdminMedia } from "@features/media/api/queries";
-import type { AdminMediaListQuery, MediaFile } from "@features/media/model/types";
+import type { AdminMediaListQuery, MediaFile, MediaType } from "@features/media/model/types";
 import { Check, FileText, Film, Music } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { imageUrl } from "@/features/upload/lib/imageUrl";
@@ -29,6 +28,8 @@ export interface MediaPickerProps {
     multiple?: boolean;
     /** 标题 */
     title?: string;
+    /** 限定可选素材类型；如封面图传 "image" 则只显示图片且隐藏类型筛选 */
+    mediaType?: MediaType;
 }
 
 const PAGE_SIZE = 40;
@@ -39,27 +40,30 @@ export function MediaPicker({
     onConfirm,
     multiple = false,
     title = "选择素材",
+    mediaType,
 }: MediaPickerProps) {
-    const [purpose, setPurpose] = useState("");
-    const [fileType, setFileType] = useState("");
+    // 用 "all" 作为「全部」占位值（Radix Select 不支持空字符串 value）
+    const [purpose, setPurpose] = useState("all");
+    const [fileType, setFileType] = useState<string>(mediaType ?? "all");
     const [keyword, setKeyword] = useState("");
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState<MediaFile[]>([]);
 
-    // 打开时重置选择与筛选
+    // 打开时重置选择与筛选；mediaType 变化时同步
     useEffect(() => {
         if (open) {
             setSelected([]);
             setPage(1);
+            setFileType(mediaType ?? "all");
         }
-    }, [open]);
+    }, [open, mediaType]);
 
     const query: AdminMediaListQuery = useMemo(
         () => ({
             page,
             limit: PAGE_SIZE,
-            purpose: purpose || undefined,
-            type: fileType || undefined,
+            purpose: purpose === "all" ? undefined : purpose,
+            type: fileType === "all" ? undefined : fileType,
             keyword: keyword || undefined,
         }),
         [page, purpose, fileType, keyword],
@@ -126,31 +130,34 @@ export function MediaPicker({
                         <SelectValue placeholder="用途" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">全部用途</SelectItem>
+                        <SelectItem value="all">全部用途</SelectItem>
                         <SelectItem value="material">素材</SelectItem>
                         <SelectItem value="cover">封面</SelectItem>
                         <SelectItem value="avatar">头像</SelectItem>
                         <SelectItem value="post">文章</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select
-                    value={fileType}
-                    onValueChange={(v) => {
-                        setFileType(v);
-                        setPage(1);
-                    }}
-                >
-                    <SelectTrigger className="w-32">
-                        <SelectValue placeholder="类型" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="">全部类型</SelectItem>
-                        <SelectItem value="image">图片</SelectItem>
-                        <SelectItem value="video">视频</SelectItem>
-                        <SelectItem value="audio">音频</SelectItem>
-                        <SelectItem value="file">文件</SelectItem>
-                    </SelectContent>
-                </Select>
+                {/* mediaType 限定时不显示类型选择器 */}
+                {!mediaType ? (
+                    <Select
+                        value={fileType}
+                        onValueChange={(v) => {
+                            setFileType(v);
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="w-32">
+                            <SelectValue placeholder="类型" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">全部类型</SelectItem>
+                            <SelectItem value="image">图片</SelectItem>
+                            <SelectItem value="video">视频</SelectItem>
+                            <SelectItem value="audio">音频</SelectItem>
+                            <SelectItem value="file">文件</SelectItem>
+                        </SelectContent>
+                    </Select>
+                ) : null}
                 <SearchInput
                     value={keyword}
                     onValueChange={(v) => {

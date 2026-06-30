@@ -5,4 +5,8 @@
  */
 
 export { exportMarkdown, importMarkdownFile } from "./lib/markdown-utils";
-export { RichTextEditor, type RichTextEditorProps } from "./RichTextEditor";
+export {
+    RichTextEditor,
+    type RichTextEditorHandle,
+    type RichTextEditorProps,
+} from "./RichTextEditor";

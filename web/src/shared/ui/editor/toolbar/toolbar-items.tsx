@@ -7,6 +7,10 @@
 import type { Editor } from "@tiptap/react";
 import type { LucideIcon } from "lucide-react";
 import {
+    AlignCenter,
+    AlignJustify,
+    AlignLeft,
+    AlignRight,
     Bold,
     Code,
     Code2,
@@ -119,6 +123,42 @@ export const formatItems: ToolbarItem[] = [
     },
 ];
 
+/** 对齐组 */
+export const alignItems: ToolbarItem[] = [
+    {
+        id: "alignLeft",
+        icon: AlignLeft,
+        title: "左对齐",
+        run: (e) => e.chain().focus().setTextAlign("left").run(),
+        isActive: (e) => e.isActive({ textAlign: "left" }),
+        canRun: (e) => e.can().setTextAlign("left"),
+    },
+    {
+        id: "alignCenter",
+        icon: AlignCenter,
+        title: "居中",
+        run: (e) => e.chain().focus().setTextAlign("center").run(),
+        isActive: (e) => e.isActive({ textAlign: "center" }),
+        canRun: (e) => e.can().setTextAlign("center"),
+    },
+    {
+        id: "alignRight",
+        icon: AlignRight,
+        title: "右对齐",
+        run: (e) => e.chain().focus().setTextAlign("right").run(),
+        isActive: (e) => e.isActive({ textAlign: "right" }),
+        canRun: (e) => e.can().setTextAlign("right"),
+    },
+    {
+        id: "alignJustify",
+        icon: AlignJustify,
+        title: "两端对齐",
+        run: (e) => e.chain().focus().setTextAlign("justify").run(),
+        isActive: (e) => e.isActive({ textAlign: "justify" }),
+        canRun: (e) => e.can().setTextAlign("justify"),
+    },
+];
+
 /** 段落 / 标题组 */
 export const headingItems: ToolbarItem[] = [
     {
@@ -212,31 +252,33 @@ export const blockItems: ToolbarItem[] = [
         run: (e) => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
         isActive: () => false,
     },
-    {
+];
+
+/**
+ * buildToolbarItems - 构造工具栏项（注入链接插入回调）
+ *
+ * @param onInsertLink 点击「插入链接」时的回调（由父组件打开输入弹窗）
+ */
+export function buildToolbarItems(
+    onInsertLink: () => void,
+): Array<ToolbarItem | typeof TOOLBAR_DIVIDER> {
+    const linkItem: ToolbarItem = {
         id: "link",
         icon: LinkIcon,
         title: "插入链接",
-        run: (e) => {
-            const prev = e.getAttributes("link").href as string | undefined;
-            const url = window.prompt("链接地址", prev ?? "https://");
-            if (url === null) return;
-            if (url === "") {
-                e.chain().focus().extendMarkRange("link").unsetLink().run();
-                return;
-            }
-            e.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
-        },
+        run: () => onInsertLink(),
         isActive: (e) => e.isActive("link"),
-    },
-];
-
-/** 全部工具栏项（按分组顺序，含分隔符） */
-export const allToolbarItems: Array<ToolbarItem | typeof TOOLBAR_DIVIDER> = [
-    ...historyItems,
-    TOOLBAR_DIVIDER,
-    ...headingItems,
-    TOOLBAR_DIVIDER,
-    ...formatItems,
-    TOOLBAR_DIVIDER,
-    ...blockItems,
-];
+    };
+    return [
+        ...historyItems,
+        TOOLBAR_DIVIDER,
+        ...headingItems,
+        TOOLBAR_DIVIDER,
+        ...formatItems,
+        TOOLBAR_DIVIDER,
+        ...alignItems,
+        TOOLBAR_DIVIDER,
+        ...blockItems,
+        linkItem,
+    ];
+}

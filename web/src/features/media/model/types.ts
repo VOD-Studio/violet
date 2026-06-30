@@ -57,8 +57,11 @@ export interface MediaListQuery {
     purpose?: string;
 }
 
+/** 素材类型（按 MIME 大类划分） */
+export type MediaType = "image" | "video" | "audio" | "file";
+
 /**
- * AdminMediaListQuery - 后台全局素材列表查询参数
+ * AdminMediaListQuery - 管理端素材列表查询参数
  *
  * 对接 GET /admin/media，支持多维筛选。
  */
@@ -70,7 +73,7 @@ export interface AdminMediaListQuery {
     /** 用途筛选 */
     purpose?: string;
     /** MIME 类型筛选（image/video/audio/file） */
-    type?: string;
+    type?: MediaType | string;
     /** 自定义分类筛选 */
     category?: string;
     /** 关键词搜索（文件名） */

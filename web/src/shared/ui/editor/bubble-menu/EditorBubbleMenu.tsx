@@ -12,24 +12,15 @@ import { Button } from "@/shared/ui/button";
 
 interface EditorBubbleMenuProps {
     editor: Editor;
+    /** 链接插入回调（由父组件打开输入弹窗） */
+    onInsertLink: () => void;
 }
 
-export function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
-    const setLink = () => {
-        const prev = editor.getAttributes("link").href as string | undefined;
-        const url = window.prompt("链接地址", prev ?? "https://");
-        if (url === null) return;
-        if (url === "") {
-            editor.chain().focus().extendMarkRange("link").unsetLink().run();
-            return;
-        }
-        editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
-    };
-
+export function EditorBubbleMenu({ editor, onInsertLink }: EditorBubbleMenuProps) {
     return (
         <BubbleMenu
             editor={editor}
-            options={{ placement: "top", offset: 8 }}
+            options={{ placement: "bottom", offset: 8 }}
             className="flex items-center gap-0.5 rounded-lg border border-edge-hairline bg-popover p-1 shadow-lg"
         >
             <Button
@@ -59,7 +50,7 @@ export function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
             <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={setLink}
+                onClick={onInsertLink}
                 className={cn(editor.isActive("link") && "bg-accent")}
             >
                 <LinkIcon />

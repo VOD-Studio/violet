@@ -37,7 +37,7 @@ const STATUS_META: Record<string, { label: string; variant: "default" | "seconda
     };
 
 const STATUS_OPTIONS = [
-    { value: "", label: "全部状态" },
+    { value: "all", label: "全部状态" },
     { value: "draft", label: "草稿" },
     { value: "published", label: "已发布" },
     { value: "archived", label: "已归档" },
@@ -47,7 +47,7 @@ const PAGE_SIZE = 10;
 
 function AdminPostsPage() {
     const navigate = useNavigate();
-    const [status, setStatus] = useState("");
+    const [status, setStatus] = useState("all");
     const [page, setPage] = useState(1);
 
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -56,7 +56,7 @@ function AdminPostsPage() {
     const { data, isLoading, error, refetch } = useAdminPosts({
         page,
         limit: PAGE_SIZE,
-        status: status || undefined,
+        status: status === "all" ? undefined : status,
     });
     const deletePost = useDeletePost(deleting?.id ?? "");
 

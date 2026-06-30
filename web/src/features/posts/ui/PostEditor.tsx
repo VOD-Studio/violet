@@ -20,7 +20,7 @@ import { useTags } from "@features/tags/api/queries";
 import { clientQueryClient as queryClient } from "@shared/api/query-client";
 import { apiPatch } from "@shared/api/request";
 import { Button } from "@shared/ui/button";
-import { RichTextEditor } from "@shared/ui/editor";
+import { RichTextEditor, type RichTextEditorHandle } from "@shared/ui/editor";
 import { Input } from "@shared/ui/input";
 import { useNavigate } from "@tanstack/react-router";
 import { X } from "lucide-react";
@@ -62,6 +62,7 @@ export function PostEditor({ postId }: PostEditorProps) {
     const [coverPickerOpen, setCoverPickerOpen] = useState(false);
     const [imagePickerOpen, setImagePickerOpen] = useState(false);
     const [initialized, setInitialized] = useState(false);
+    const editorRef = useRef<RichTextEditorHandle>(null);
 
     const draftKey = useMemo(() => `${DRAFT_PREFIX}${slug || "untitled"}`, [slug]);
 
@@ -200,11 +201,11 @@ export function PostEditor({ postId }: PostEditorProps) {
         if (files[0]) setCoverImage(files[0].url);
     };
 
-    // 插入素材库图片到编辑器：用受控 value 拼接的方式不可行（会重置光标），
-    // 故通过 ref 触发编辑器命令。此处简化为：选中的图片 URL 直接附加到 content 末尾。
+    // 插入素材库图片：通过 ref 调编辑器命令，在光标处插入（非字符串拼接，避免光标重置）
     const handleInsertImages = (files: MediaFile[]) => {
-        const md = files.map((f) => `![${f.alt_text || f.original_name}](${f.url})`).join("\n\n");
-        setContent((prev) => `${prev}${prev ? "\n\n" : ""}${md}`);
+        editorRef.current?.insertImages(
+            files.map((f) => ({ src: f.url, alt: f.alt_text || f.original_name })),
+        );
     };
 
     const saving = createPost.isPending || updatePost.isPending;
@@ -245,12 +246,12 @@ export function PostEditor({ postId }: PostEditorProps) {
             {/* 主体：编辑器 + 侧边栏 */}
             <div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_320px]">
                 {/* 左：编辑器 */}
-                <div className="flex min-h-0 flex-col gap-3">
+                <div className="flex min-h-0 flex-col gap-2">
                     <Input
                         value={title}
                         onChange={(e) => handleTitleChange(e.target.value)}
                         placeholder="文章标题…"
-                        className="h-12 border-none bg-transparent px-0 text-2xl font-bold shadow-none focus-visible:ring-0"
+                        className="h-12 border-none bg-transparent px-4 text-2xl font-bold shadow-none focus-visible:ring-0"
                     />
                     <Input
                         value={slug}
@@ -259,10 +260,11 @@ export function PostEditor({ postId }: PostEditorProps) {
                             setSlug(slugify(e.target.value));
                         }}
                         placeholder="url-slug"
-                        className="font-mono text-sm text-muted-foreground"
+                        className="mx-4 font-mono text-sm text-muted-foreground"
                     />
                     <div className="min-h-0 flex-1">
                         <RichTextEditor
+                            ref={editorRef}
                             value={content}
                             onChange={setContent}
                             exportName={slug || "article"}
@@ -399,12 +401,14 @@ export function PostEditor({ postId }: PostEditorProps) {
                 open={coverPickerOpen}
                 onOpenChange={setCoverPickerOpen}
                 onConfirm={handlePickCover}
+                mediaType="image"
                 title="选择封面图"
             />
             <MediaPicker
                 open={imagePickerOpen}
                 onOpenChange={setImagePickerOpen}
                 onConfirm={handleInsertImages}
+                mediaType="image"
                 multiple
                 title="选择图片插入正文"
             />
