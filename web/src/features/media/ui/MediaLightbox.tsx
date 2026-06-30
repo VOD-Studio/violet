@@ -41,13 +41,21 @@ export function MediaLightbox({
     // 触发元素的 rect，关闭动画据此缩回正确位置（而非运行时读已卸载的 DOM）。
     const [fullscreen, setFullscreen] = useState<{
         url: string;
+        thumbnail: string | null;
         triggerRect: DOMRect | null;
     } | null>(null);
     const [fullscreenOpen, setFullscreenOpen] = useState(false);
-    const openFullscreen = useCallback((url: string, trigger?: HTMLElement | null) => {
-        setFullscreen({ url, triggerRect: trigger ? trigger.getBoundingClientRect() : null });
-        setFullscreenOpen(true);
-    }, []);
+    const openFullscreen = useCallback(
+        (url: string, trigger?: HTMLElement | null, thumbnail?: string) => {
+            setFullscreen({
+                url,
+                thumbnail: thumbnail ?? null,
+                triggerRect: trigger ? trigger.getBoundingClientRect() : null,
+            });
+            setFullscreenOpen(true);
+        },
+        [],
+    );
     const closeFullscreen = useCallback(() => setFullscreenOpen(false), []);
     const handleFullscreenExitComplete = useCallback(() => setFullscreen(null), []);
     // 全屏期间把 Dialog 切为 modal={false}（避免 Radix modal 锁定全屏层），但 modal={false}
@@ -152,6 +160,7 @@ export function MediaLightbox({
                     onClose={closeFullscreen}
                     onExitComplete={handleFullscreenExitComplete}
                     images={[fullscreen.url]}
+                    thumbnails={fullscreen.thumbnail ? [fullscreen.thumbnail] : undefined}
                     triggerRect={fullscreen.triggerRect}
                 />
             ) : null}
