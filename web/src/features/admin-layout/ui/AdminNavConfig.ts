@@ -1,8 +1,12 @@
 import type { LucideIcon } from "lucide-react";
 import {
+    FolderKanban,
     Images,
     LayoutDashboard,
     Megaphone,
+    MessageSquare,
+    ScrollText,
+    Settings,
     Shield,
     Smile,
     Tag,
@@ -39,6 +43,10 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     { label: "权限管理", to: "/admin/permissions", icon: Shield },
     { label: "标签管理", to: "/admin/tags", icon: Tag },
     { label: "公告管理", to: "/admin/announcements", icon: Megaphone },
+    { label: "评论审核", to: "/admin/comments", icon: MessageSquare },
+    { label: "项目管理", to: "/admin/projects", icon: FolderKanban },
     { label: "素材管理", to: "/admin/media", icon: Images },
     { label: "表情管理", to: "/admin/emojis", icon: Smile },
+    { label: "站点设置", to: "/admin/settings", icon: Settings },
+    { label: "操作日志", to: "/admin/logs", icon: ScrollText },
 ];
