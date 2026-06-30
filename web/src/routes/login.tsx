@@ -1,6 +1,6 @@
 import { authKeys } from "@features/auth/api/keys";
 import { useLogin } from "@features/auth/api/mutations";
-import { fetchCsrfToken } from "@features/auth/api/queries";
+import { useCsrfToken } from "@features/auth/api/queries";
 import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@shared/api/error";
@@ -14,7 +14,6 @@ import {
     useRouteContext,
     useSearch,
 } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -43,7 +42,7 @@ const FALLBACK_BY_STATUS: Record<number, string> = {
 /**
  * /login - 登录页
  *
- * 页面挂载时预取 CSRF token，确保 login POST 能通过 double-submit 校验。
+ * useCsrfToken 自动获取 CSRF token，确保 login POST 通过 double-submit 校验。
  */
 export const Route = createFileRoute("/login")({
     validateSearch: loginSearchSchema,
@@ -64,26 +63,8 @@ function LoginPage() {
         defaultValues: { email: prefilledEmail ?? "", password: "" },
     });
 
-    const [csrfToken, setCsrfToken] = useState<string>("");
+    const csrfToken = useCsrfToken();
     const login = useLogin(csrfToken);
-
-    useEffect(() => {
-        let cancelled = false;
-        fetchCsrfToken()
-            .then((res) => {
-                if (cancelled) return;
-                // 后端会同时设置 mimo_csrf cookie，但某些浏览器/代理场景下可能写入失败。
-                // 这里把响应体中的 token 也保存到 state，作为显式 header 回传，形成双保险。
-                setCsrfToken(res.csrf_token);
-            })
-            .catch(() => {
-                // CSRF 获取失败仍允许用户尝试登录；axios interceptor 会尝试从 cookie 中读取 token。
-                // 若后端返回 403，错误提示会引导用户刷新页面。
-            });
-        return () => {
-            cancelled = true;
-        };
-    }, []);
 
     const onSubmit = handleSubmit((data) => {
         login.mutate(data, {

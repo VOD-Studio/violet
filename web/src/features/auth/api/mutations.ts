@@ -147,6 +147,9 @@ export const useLogout = () => {
             // 会导致登出后 me 缓存仍是旧用户，Header 继续显示「个人中心 + 登出」。
             await qc.cancelQueries({ queryKey: authKeys.me() });
             qc.removeQueries({ queryKey: authKeys.me() });
+            // 登出清 CSRF token 缓存：后端已清 mimo_csrf cookie，
+            // 缓存留旧 token 会让下次登录页命中陈旧值，与新 cookie 对不上。
+            qc.removeQueries({ queryKey: authKeys.csrfToken() });
             // 登出：停止主动刷新 + 清除会话活跃标志（守卫据此允许踢人/跳登录）
             clearRefresh();
             clearSessionActive();

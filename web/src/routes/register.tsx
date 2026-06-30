@@ -1,11 +1,11 @@
 import { useRegister, useVerifyEmail } from "@features/auth/api/mutations";
-import { fetchCsrfToken } from "@features/auth/api/queries";
+import { useCsrfToken } from "@features/auth/api/queries";
 import { type RegisterFormData, registerSchema } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@shared/api/error";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MailCheck } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/button";
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/register")({
 
 function RegisterPage() {
     const navigate = useNavigate();
-    const [csrfToken, setCsrfToken] = useState("");
+    const csrfToken = useCsrfToken();
     const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
     const [code, setCode] = useState("");
 
@@ -47,19 +47,6 @@ function RegisterPage() {
 
     const registerMutation = useRegister();
     const verifyMutation = useVerifyEmail();
-
-    // 预取 CSRF token（注册是公开 POST 接口，需 double-submit）
-    useEffect(() => {
-        let cancelled = false;
-        fetchCsrfToken()
-            .then((res) => {
-                if (!cancelled) setCsrfToken(res.csrf_token);
-            })
-            .catch(() => {});
-        return () => {
-            cancelled = true;
-        };
-    }, []);
 
     // 步骤 1：提交注册
     const onSubmitRegister = handleSubmit((data) => {

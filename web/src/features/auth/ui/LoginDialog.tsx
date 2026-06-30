@@ -1,6 +1,6 @@
 import { authKeys } from "@features/auth/api/keys";
 import { useLogin } from "@features/auth/api/mutations";
-import { fetchCsrfToken } from "@features/auth/api/queries";
+import { useCsrfToken } from "@features/auth/api/queries";
 import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
 import type { LoginRequest } from "@features/auth/model/types";
 import { flush, rejectAll, setOpener } from "@shared/api/auth-gate";
@@ -53,9 +53,11 @@ export function LoginDialog() {
     // qc 在 AppProvider 树内解析（LoginDialog 挂在 __root 的 AppProvider 子树）
     const qc = useQueryClient();
     const login = useLogin();
+    // 仅在弹窗打开时取 token，避免全局挂载时的无谓请求；
+    // useQuery 自动去重，StrictMode 双调用与反复开关都只触发一次请求
+    const csrfToken = useCsrfToken({ enabled: isOpen });
     const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
     const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
-    const [csrfToken, setCsrfToken] = useState<string>("");
     // 区分「程序化关闭」（登录成功后调 close()）与「用户取消」（点关闭/遮罩/ESC）。
     // 两者都会让 isOpen 翻 false → 触发 onOpenChange(false)，但只有用户取消才该
     // 拒绝挂起请求 + 清会话。登录成功时置 true，让 handleOpenChange 跳过取消逻辑。
@@ -67,23 +69,6 @@ export function LoginDialog() {
         setOpener(() => open());
         return () => setOpener(null);
     }, [open]);
-
-    // 弹窗打开时预取 CSRF token（双保险：cookie + 显式 header）
-    useEffect(() => {
-        if (!isOpen) return;
-        let cancelled = false;
-        fetchCsrfToken()
-            .then((res) => {
-                if (cancelled) return;
-                setCsrfToken(res.csrf_token);
-            })
-            .catch(() => {
-                // 获取失败仍允许尝试登录，interceptor 会回退读 cookie
-            });
-        return () => {
-            cancelled = true;
-        };
-    }, [isOpen]);
 
     const validate = (): boolean => {
         const next: typeof errors = {};

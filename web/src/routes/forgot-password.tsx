@@ -1,5 +1,5 @@
 import { useForgotPassword, useResetPassword } from "@features/auth/api/mutations";
-import { fetchCsrfToken } from "@features/auth/api/queries";
+import { useCsrfToken } from "@features/auth/api/queries";
 import {
     type ForgotPasswordFormData,
     forgotPasswordSchema,
@@ -9,7 +9,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MailCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/api/error";
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/forgot-password")({
 
 function ForgotPasswordPage() {
     const navigate = useNavigate();
-    const [csrfToken, setCsrfToken] = useState("");
+    const csrfToken = useCsrfToken();
     const [sentEmail, setSentEmail] = useState<string | null>(null);
 
     // 步骤 1 表单：邮箱
@@ -66,18 +66,6 @@ function ForgotPasswordPage() {
 
     const forgotMutation = useForgotPassword();
     const resetMutation = useResetPassword();
-
-    useEffect(() => {
-        let cancelled = false;
-        fetchCsrfToken()
-            .then((res) => {
-                if (!cancelled) setCsrfToken(res.csrf_token);
-            })
-            .catch(() => {});
-        return () => {
-            cancelled = true;
-        };
-    }, []);
 
     // 步骤 1：发送重置码
     const onSubmitEmail = handleSubmitEmail((data) => {

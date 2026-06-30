@@ -17,6 +17,30 @@ export const fetchCsrfToken = (): Promise<CsrfTokenResponse> =>
     apiGet<CsrfTokenResponse>("/auth/csrf-token");
 
 /**
+ * useCsrfToken - 获取 CSRF token 的 hook 形态
+ *
+ * double-submit 模式下，未登录用户发起 login/register 前需先取 CSRF cookie。
+ * 用 useQuery 包裹：同一 queryKey 的 in-flight 请求自动去重，规避 React
+ * StrictMode dev 双调用 effect 带来的重复请求与 token/cookie 竞态。
+ *
+ * staleTime 与后端 mimo_csrf cookie MaxAge 对齐，避免页面反复进出或弹窗
+ * 反复开关时重复请求；登出时由 useLogout 清缓存以防陈旧 token 命中。
+ *
+ * @param options enabled 可按需关闭，LoginDialog 仅在弹窗打开时请求
+ * @returns CSRF token 字符串，未取到返回空串
+ */
+export const useCsrfToken = (options: { enabled?: boolean } = {}): string => {
+    const { data } = useQuery({
+        queryKey: authKeys.csrfToken(),
+        queryFn: fetchCsrfToken,
+        enabled: options.enabled,
+        // mimo_csrf cookie MaxAge 为 1 小时，token 在此期间有效
+        staleTime: 60 * 60 * 1000,
+    });
+    return data?.csrf_token ?? "";
+};
+
+/**
  * fetchMe - 调后端 GET /auth/me 获取当前登录用户信息
  *
  * 需携带 access token cookie，httpClient 自动 withCredentials。
