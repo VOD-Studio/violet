@@ -25,7 +25,9 @@ import { Route as AdminTagsRouteImport } from './routes/admin.tags'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
 import { Route as AdminMediaRouteImport } from './routes/admin.media'
+import { Route as AdminLogsRouteImport } from './routes/admin.logs'
 import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
+import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -108,9 +110,19 @@ const AdminMediaRoute = AdminMediaRouteImport.update({
   path: '/media',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLogsRoute = AdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEmojisRoute = AdminEmojisRouteImport.update({
   id: '/emojis',
   path: '/emojis',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCommentsRoute = AdminCommentsRouteImport.update({
+  id: '/comments',
+  path: '/comments',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
@@ -126,7 +138,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/logs': typeof AdminLogsRoute
   '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -145,7 +159,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/logs': typeof AdminLogsRoute
   '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -166,7 +182,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
+  '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/logs': typeof AdminLogsRoute
   '/admin/media': typeof AdminMediaRoute
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -188,7 +206,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/admin/announcements'
+    | '/admin/comments'
     | '/admin/emojis'
+    | '/admin/logs'
     | '/admin/media'
     | '/admin/permissions'
     | '/admin/roles'
@@ -207,7 +227,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/admin/announcements'
+    | '/admin/comments'
     | '/admin/emojis'
+    | '/admin/logs'
     | '/admin/media'
     | '/admin/permissions'
     | '/admin/roles'
@@ -227,7 +249,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/admin/announcements'
+    | '/admin/comments'
     | '/admin/emojis'
+    | '/admin/logs'
     | '/admin/media'
     | '/admin/permissions'
     | '/admin/roles'
@@ -368,11 +392,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMediaRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/logs': {
+      id: '/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AdminLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/emojis': {
       id: '/admin/emojis'
       path: '/emojis'
       fullPath: '/admin/emojis'
       preLoaderRoute: typeof AdminEmojisRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/comments': {
+      id: '/admin/comments'
+      path: '/comments'
+      fullPath: '/admin/comments'
+      preLoaderRoute: typeof AdminCommentsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/announcements': {
@@ -387,7 +425,9 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
+  AdminCommentsRoute: typeof AdminCommentsRoute
   AdminEmojisRoute: typeof AdminEmojisRoute
+  AdminLogsRoute: typeof AdminLogsRoute
   AdminMediaRoute: typeof AdminMediaRoute
   AdminPermissionsRoute: typeof AdminPermissionsRoute
   AdminRolesRoute: typeof AdminRolesRoute
@@ -398,7 +438,9 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
+  AdminCommentsRoute: AdminCommentsRoute,
   AdminEmojisRoute: AdminEmojisRoute,
+  AdminLogsRoute: AdminLogsRoute,
   AdminMediaRoute: AdminMediaRoute,
   AdminPermissionsRoute: AdminPermissionsRoute,
   AdminRolesRoute: AdminRolesRoute,
