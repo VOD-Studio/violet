@@ -44,6 +44,29 @@ func registerPostPaths(t *openapi3.T) {
 		"status": strEnum("文章状态", "draft", "published", "archived"),
 	}, "status")
 
+	// 归档文章项（精简字段，不含正文）
+	registerSchema(t, "ArchiveItemDTO", openapi3.Schemas{
+		"id":           reqStr("文章 ID（UUID）"),
+		"slug":         reqStr("URL slug"),
+		"title":        reqStr("标题"),
+		"excerpt":      optStr("摘要"),
+		"cover_image":  optStr("封面图 URL"),
+		"tags":         strArray("标签名列表"),
+		"published_at": reqStr("发布时间（RFC3339）"),
+	}, "id", "slug", "title", "published_at")
+
+	// 某年的归档数据
+	registerSchema(t, "ArchiveYearDTO", openapi3.Schemas{
+		"year":  optInt("年份"),
+		"count": optInt("该年文章数"),
+		"items": refArray("该年全部文章（倒序）", "ArchiveItemDTO"),
+	})
+
+	// 归档年份索引
+	registerSchema(t, "ArchiveYearsDTO", openapi3.Schemas{
+		"years": intArray("含已发布文章的年份列表（倒序）"),
+	})
+
 	// ============ 前台公开 ============
 
 	get(t, "/posts", &openapi3.Operation{
@@ -56,6 +79,28 @@ func registerPostPaths(t *openapi3.T) {
 		},
 		Responses: responses(
 			200, dataArrayResponse("PostDTO", "已发布文章列表", 200, true),
+		),
+	})
+
+	get(t, "/posts/archive", &openapi3.Operation{
+		Tags:       []string{"文章"},
+		Summary:    "归档年份索引",
+		Description: "返回所有含已发布文章的年份（倒序）。供归档页渲染年份导航，" +
+			"再按年调用 /posts/archive/{year} 懒加载。",
+		Responses: responses(
+			200, dataResponse("ArchiveYearsDTO", "归档年份索引", 200),
+		),
+	})
+
+	get(t, "/posts/archive/{year}", &openapi3.Operation{
+		Tags:       []string{"文章"},
+		Summary:    "指定年份归档",
+		Description: "返回指定年份全部已发布文章的精简项（倒序，不含正文）。" +
+			"前端按月分组展示。",
+		Parameters: openapi3.Parameters{pathStrParam("year", "年份（如 2026）")},
+		Responses: responses(
+			200, dataResponse("ArchiveYearDTO", "该年归档数据", 200),
+			400, errorResponse("无效的年份"),
 		),
 	})
 

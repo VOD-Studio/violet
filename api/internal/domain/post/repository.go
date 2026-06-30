@@ -19,6 +19,12 @@ type PostRepository interface {
 	// 在 DB 内用 UPDATE ... SET view_count = view_count + 1，避免读-改-写竞态；
 	// 同时写入 post_views 事件行，两者在同一事务内提交。
 	IncrementViewAtomic(ctx context.Context, postID shared.ID, ipAddress, userAgent string) error
+	// FindArchiveYears 返回所有含已发布文章的年份（倒序、去重）。
+	// 供公开归档页生成年份索引。
+	FindArchiveYears(ctx context.Context) ([]int, error)
+	// FindPublishedByYear 返回指定年份的全部已发布文章（按 published_at 倒序）。
+	// 供公开归档页按年懒加载，结果在应用层/前端再按月分组。
+	FindPublishedByYear(ctx context.Context, year int) ([]*Post, error)
 }
 
 // 领域错误

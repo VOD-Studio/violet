@@ -30,6 +30,26 @@ type PostDTO struct {
 	UpdatedAt      string   `json:"updated_at"`
 }
 
+// ArchiveItemDTO 归档文章项（精简字段，不含正文，避免响应过大）。
+// 归档页一次拉取某年全部文章，故仅携带展示所需字段。
+type ArchiveItemDTO struct {
+	ID          string   `json:"id"`          // 文章 ID
+	Slug        string   `json:"slug"`        // URL slug（用于跳转详情）
+	Title       string   `json:"title"`       // 标题
+	Excerpt     string   `json:"excerpt"`     // 摘要
+	CoverImage  string   `json:"cover_image"` // 封面图 URL
+	Tags        []string `json:"tags"`        // 标签名列表
+	PublishedAt string   `json:"published_at"` // 发布时间（RFC3339）
+}
+
+// ArchiveYearDTO 某年的归档数据。
+// Items 为该年全部已发布文章的扁平倒序列表，月份分组由前端完成。
+type ArchiveYearDTO struct {
+	Year  int              `json:"year"`  // 年份
+	Count int              `json:"count"` // 该年文章数
+	Items []ArchiveItemDTO `json:"items"` // 该年全部文章（倒序）
+}
+
 // Service 文章用例服务
 type Service struct {
 	repo domain.PostRepository
@@ -229,6 +249,34 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, pid)
 }
 
+// ListArchiveYears 返回归档年份索引（倒序）。
+// 供公开归档页渲染年份导航，单独成接口以便前端懒加载各年文章。
+func (s *Service) ListArchiveYears(ctx context.Context) ([]int, error) {
+	return s.repo.FindArchiveYears(ctx)
+}
+
+// GetArchiveByYear 返回指定年份的归档数据（精简文章项，倒序）。
+// year 合法性校验：排除明显非法值，避免无效查询。
+func (s *Service) GetArchiveByYear(ctx context.Context, year int) (ArchiveYearDTO, error) {
+	const minYear = 1900
+	if year < minYear || year > time.Now().Year()+1 {
+		return ArchiveYearDTO{}, shared.BadRequest("无效的年份")
+	}
+	posts, err := s.repo.FindPublishedByYear(ctx, year)
+	if err != nil {
+		return ArchiveYearDTO{}, err
+	}
+	items := make([]ArchiveItemDTO, 0, len(posts))
+	for _, p := range posts {
+		items = append(items, toArchiveItem(p))
+	}
+	return ArchiveYearDTO{
+		Year:  year,
+		Count: len(items),
+		Items: items,
+	}, nil
+}
+
 func toDTO(p *domain.Post) PostDTO {
 	dto := PostDTO{
 		ID: p.ID().String(), Title: p.Title(), Slug: p.Slug(),
@@ -245,6 +293,23 @@ func toDTO(p *domain.Post) PostDTO {
 		dto.PublishedAt = p.PublishedAt().Format(time.RFC3339)
 	}
 	return dto
+}
+
+// toArchiveItem 将领域 Post 转为精简归档项（不含正文）。
+func toArchiveItem(p *domain.Post) ArchiveItemDTO {
+	item := ArchiveItemDTO{
+		ID:          p.ID().String(),
+		Slug:        p.Slug(),
+		Title:       p.Title(),
+		Excerpt:     p.Excerpt(),
+		CoverImage:  p.CoverImage(),
+		Tags:        p.Tags(),
+		PublishedAt: "", // 已发布文章必有 published_at，保险起见默认空串
+	}
+	if p.PublishedAt() != nil {
+		item.PublishedAt = p.PublishedAt().Format(time.RFC3339)
+	}
+	return item
 }
 
 func toDTOs(items []*domain.Post) []PostDTO {

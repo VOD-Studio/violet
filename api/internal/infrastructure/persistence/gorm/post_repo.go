@@ -205,4 +205,42 @@ func (r *PostRepository) IncrementViewAtomic(ctx context.Context, postID domains
 	})
 }
 
+// FindArchiveYears 返回所有含已发布文章的年份（倒序、去重）。
+// 仅取 published_at 的年份分量，过滤未发布与无发布时间的文章。
+func (r *PostRepository) FindArchiveYears(ctx context.Context) ([]int, error) {
+	var years []int
+	err := r.db.WithContext(ctx).
+		Model(&model.Post{}).
+		Where("status = ? AND published_at IS NOT NULL", post.StatusPublished).
+		Distinct("EXTRACT(YEAR FROM published_at)").
+		Order("EXTRACT(YEAR FROM published_at) DESC").
+		Pluck("EXTRACT(YEAR FROM published_at)", &years).
+		Error
+	if err != nil {
+		return nil, domainshared.Internal("归档年份查询失败", err)
+	}
+	return years, nil
+}
+
+// FindPublishedByYear 返回指定年份的全部已发布文章（按 published_at 倒序）。
+// Preload Tags 以便归档项携带标签名。
+func (r *PostRepository) FindPublishedByYear(ctx context.Context, year int) ([]*post.Post, error) {
+	var pos []model.Post
+	err := r.db.WithContext(ctx).
+		Preload("Tags").
+		Where("status = ? AND published_at IS NOT NULL AND EXTRACT(YEAR FROM published_at) = ?",
+			post.StatusPublished, year).
+		Order("published_at DESC").
+		Find(&pos).Error
+	if err != nil {
+		return nil, domainshared.Internal("按年查询归档文章失败", err)
+	}
+	result := make([]*post.Post, 0, len(pos))
+	for _, po := range pos {
+		p, _ := postToDomain(po)
+		result = append(result, p)
+	}
+	return result, nil
+}
+
 var _ post.PostRepository = (*PostRepository)(nil)

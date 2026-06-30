@@ -4,11 +4,13 @@ package post
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
 
 	apppost "blog-api/internal/application/post"
+	domainshared "blog-api/internal/domain/shared"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
 )
@@ -56,6 +58,34 @@ func (h *Handler) ListPublished(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondPaged(w, items, page, limit, total)
+}
+
+// ArchiveYears 归档年份索引（前台公开）。
+// 返回所有含已发布文章的年份（倒序），供归档页渲染年份导航并按年懒加载。
+func (h *Handler) ArchiveYears(w http.ResponseWriter, r *http.Request) {
+	years, err := h.svc.ListArchiveYears(r.Context())
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]any{"years": years})
+}
+
+// ArchiveByYear 指定年份归档（前台公开）。
+// 返回该年全部已发布文章的精简项（倒序），前端再按月分组展示。
+func (h *Handler) ArchiveByYear(w http.ResponseWriter, r *http.Request) {
+	yearStr := r.PathValue("year")
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
+		response.RespondError(w, r, domainshared.BadRequest("无效的年份"))
+		return
+	}
+	dto, err := h.svc.GetArchiveByYear(r.Context(), year)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
 }
 
 // ListAll 列出所有文章（后台）

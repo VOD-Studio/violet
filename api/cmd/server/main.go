@@ -247,9 +247,11 @@ func main() {
 		// 文章（DDD postH；前台公开 List/详情/浏览）
 		postH := postContainer.PostHandler
 		v1.Route("/posts", func(r chi.Router) {
-			r.Get("/", postH.ListPublished)           // 已发布文章列表（分页）
-			r.Get("/{slug}", postH.GetBySlug)         // 按 slug 获取文章
-			r.Post("/{id}/view", postH.IncrementView) // 增加浏览次数
+			r.Get("/", postH.ListPublished)            // 已发布文章列表（分页）
+			r.Get("/archive", postH.ArchiveYears)      // 归档年份索引
+			r.Get("/archive/{year}", postH.ArchiveByYear) // 指定年份归档
+			r.Get("/{slug}", postH.GetBySlug)          // 按 slug 获取文章
+			r.Post("/{id}/view", postH.IncrementView)  // 增加浏览次数
 		})
 
 		// 标签（DDD tagContainer）
