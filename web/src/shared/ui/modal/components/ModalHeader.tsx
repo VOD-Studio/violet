@@ -59,7 +59,7 @@ export function ModalHeader({
                 {showCloseButton &&
                     (titleSrOnly ? (
                         <DialogPrimitive.Close
-                            className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-md bg-background/80 text-foreground opacity-70 backdrop-blur transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:outline-hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+                            className="absolute top-2 right-3 z-10 flex size-7 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-muted hover:opacity-100 focus:ring-2 focus:ring-ring focus:outline-hidden [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
                             aria-label="关闭"
                         >
                             <XIcon />
