@@ -10,7 +10,7 @@
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ImagePreview, useImagePreview } from "@/shared/ui/image-preview";
-import type { ImagePreviewProps, LoadStatus } from "../types/file-preview-types";
+import type { ImagePreviewProps } from "../types/file-preview-types";
 
 export function ContentImage({
     url,
@@ -22,40 +22,49 @@ export function ContentImage({
 }: ImagePreviewProps) {
     const preview = useImagePreview();
     const imgRef = useRef<HTMLImageElement>(null);
-    const [status, setStatus] = useState<LoadStatus>("loading");
-    const [loadOriginal, setLoadOriginal] = useState(delay === 0);
+    // 原图是否预载失败
+    const [hasError, setHasError] = useState(false);
+    // 原图是否已预载解码完成。用 new Image() 后台预载（不阻塞主线程解码），
+    // onload 后才渲染可见 <img>（命中缓存秒显），避免弹窗打开时大图同步解码卡顿。
+    const [decoded, setDecoded] = useState(false);
 
+    // delay 到期后开始预载原图（delay=0 立即预载）
     useEffect(() => {
-        if (delay === 0) return;
-        const timer = setTimeout(() => setLoadOriginal(true), delay);
+        const start = delay === 0 ? 0 : delay;
+        const timer = setTimeout(() => {
+            const probe = new Image();
+            probe.onload = () => setDecoded(true);
+            probe.onerror = () => setHasError(true);
+            probe.src = url;
+        }, start);
         return () => clearTimeout(timer);
-    }, [delay]);
+    }, [delay, url]);
 
     return (
         <div
             className={`relative flex min-h-50 items-center justify-center bg-black/5 ${className ?? ""}`}
         >
-            {/* 缩略图占位（始终显示直到原图加载完成） */}
+            {/* 缩略图占位（原图预载解码完成后淡出） */}
             {thumbnailUrl ? (
                 <img
                     src={thumbnailUrl}
                     alt={name ?? "预览图片"}
-                    className={`max-h-125 w-full object-contain blur-sm transition-opacity duration-300 ${status === "loaded" ? "opacity-0" : "opacity-100"}`}
+                    className={`max-h-125 w-full object-contain blur-sm transition-opacity duration-300 ${decoded ? "opacity-0" : "opacity-100"}`}
                 />
             ) : null}
-            {/* 加载态（无缩略图时显示） */}
-            {!thumbnailUrl && status === "loading" ? (
+            {/* 加载态（无缩略图且原图未解码完成时显示） */}
+            {!thumbnailUrl && !decoded && !hasError ? (
                 <Loader2 className="size-8 animate-spin text-muted-foreground" />
             ) : null}
             {/* 错误态 */}
-            {status === "error" ? (
+            {hasError ? (
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <AlertCircle className="size-8" />
                     <span className="text-sm">图片加载失败</span>
                 </div>
             ) : null}
-            {/* 原图（可点击触发全屏预览） */}
-            {loadOriginal ? (
+            {/* 原图（预载解码完成后渲染，命中缓存秒显；可点击触发全屏预览） */}
+            {decoded ? (
                 <button
                     type="button"
                     onClick={() => {
@@ -72,9 +81,8 @@ export function ContentImage({
                         ref={imgRef}
                         src={url}
                         alt={name ?? "预览图片"}
-                        className={`max-h-125 w-full object-contain transition-opacity duration-300 ${status === "loaded" ? "opacity-100" : "opacity-0"}`}
-                        onLoad={() => setStatus("loaded")}
-                        onError={() => setStatus("error")}
+                        // decoded=true 时原图已预载解码，此处命中缓存，直接显示不等待
+                        className="max-h-125 w-full object-contain opacity-100 transition-opacity duration-300"
                     />
                 </button>
             ) : null}
