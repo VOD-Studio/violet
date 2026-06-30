@@ -12,6 +12,22 @@
 2. **缺模糊层**：缩略图飞入后，表面应有一层模糊效果。
 3. **工具栏无法点击**：点击工具栏按钮**完全没反应**（不是关闭、不是延时，而是点不动），说明工具栏被某个层盖住，点击落不到按钮上。
 
+### 关键澄清：缩略图拉伸 ≠ 模糊层显示原图
+
+缩略图源尺寸远小于原图（后端 `Thumbnail` 规则：`imaging.Resize(img, 300, 0, Lanczos)` —— **最大宽 300px、高度等比**）。因此：
+
+- **缩略图层必须被拉伸填充到原图的目标显示尺寸**，再用模糊层覆盖这个拉伸后的缩略图。
+- **绝不能**让模糊层覆盖原图本身——那样原图在替换前就可见了，失去"飞入缩略图"的意义。
+
+**为何可行（无需调用方传原图尺寸）**：后端缩略图是等比缩放，**宽高比与原图完全相同**。而原图的 contain 盒（`max-h-[90vh] max-w-full object-contain`）只取决于宽高比、与实际像素无关。因此：
+
+1. 缩略图加载完成（`onLoad`）时，读取其 `naturalWidth/naturalHeight` 得到宽高比。
+2. 用与原图完全相同的 contain 约束（同样的 `max-h/max-w`）渲染缩略图，它自然会占据与原图一致的盒尺寸。
+3. 缩略图 `object-contain` 拉伸/缩放到该盒，模糊层 `absolute inset-0` 覆盖该盒。
+4. 原图加载完成后，因为宽高比相同，占据的盒与缩略图盒**完全重合**，替换时无尺寸跳变。
+
+> 边界：若某张图无缩略图（`thumbnails` 对应位为空），该图回退原图飞入（不渲染缩略图层/模糊层）。
+
 ## 设计
 
 ### 数据流
@@ -75,14 +91,14 @@ onImageClick?: (url: string, trigger?: HTMLElement | null, thumbnailUrl?: string
 
 ```
 <motion.div 飞入动画容器> (relative, 飞入 transform + opacity)
-   ├── 缩略图层 (absolute inset-0, 显示 thumb img)
-   │    └── 模糊层 (absolute inset-0, backdrop-blur 或 filter:blur)
-   └── 原图层 (ImagePreviewImage)  ← 动画稳定后才挂载/加载
+   ├── 缩略图层 (absolute inset-0, thumb img 用与原图相同的 max-h/max-w + object-contain，拉伸到原图盒)
+   │    └── 模糊层 (absolute inset-0, 覆盖拉伸后的缩略图盒；原图替换后淡出)
+   └── 原图层 (ImagePreviewImage)  ← 动画稳定后才挂载/加载，盒与缩略图盒重合
 </motion.div>
 ```
 
 - 飞入动画（transform + opacity）仍作用于外层 `motion.div`，缩略图/原图共享这个变换。
-- 缩略图层 `absolute inset-0`，尺寸跟随容器（=原图尺寸），保证模糊均匀。
+- 缩略图层用与**原图完全相同**的 contain 约束渲染，因宽高比相同（后端等比缩放），其盒与原图盒重合；缩略图被 `object-contain` 拉伸到该盒，模糊层覆盖之。详见上方"关键澄清"。
 - 原图层在 `onAnimationComplete` 后才设置 `src`（用 state 控制是否加载），`onLoad` 后触发缩略图+模糊层淡出。
 
 **`ImagePreviewImage.tsx`**——保持职责（原图的缩放/拖拽/旋转），但需要：
