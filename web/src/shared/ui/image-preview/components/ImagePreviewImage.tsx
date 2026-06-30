@@ -151,7 +151,10 @@ export function ImagePreviewImage({
                     src={src}
                     alt={alt}
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: isLoading ? 0 : 1 }}
+                    // 图片始终参与外层飞入动画的透明度过渡，不等待 isLoading。
+                    // 否则打开时图片先透明、onLoad 后才显现，与飞入动画错位造成"闪一下"。
+                    // 加载态由下方的 spinner 覆盖层指示，不靠图片透明度。
+                    animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
                     onLoad={handleLoad}

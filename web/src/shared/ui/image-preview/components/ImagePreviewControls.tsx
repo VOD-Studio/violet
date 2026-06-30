@@ -71,10 +71,20 @@ export function ImagePreviewControls({
         callback();
     };
 
+    // 阻止事件冒泡：控制区任何点击都不应冒泡到外层（外层 onClick=关闭预览）。
+    // 关键：disabled 按钮因 disabled:pointer-events-none 会让点击穿透到外层，
+    // 因此必须在容器层拦截，而不是仅靠按钮自身的 stopPropagation。
+    // 用 onClickCapture 在捕获阶段拦截，避免 a11y 规则（div 非交互元素不应只有 onClick）。
+    const stop = (e: React.MouseEvent) => e.stopPropagation();
+
     return (
         <>
             {/* 顶部工具栏 */}
-            <div className="absolute inset-x-0 top-0 z-50 flex items-center justify-between bg-linear-to-b from-black/50 to-transparent p-4">
+            {/* onClickCapture：整个工具栏区域（含 disabled 按钮穿透的点击）都不冒泡 */}
+            <div
+                onClickCapture={stop}
+                className="absolute inset-x-0 top-0 z-50 flex items-center justify-between bg-linear-to-b from-black/50 to-transparent p-4"
+            >
                 {/* 左侧：缩放、旋转、翻转 */}
                 <div className="flex items-center gap-2">
                     {/* 缩放 */}
@@ -83,7 +93,7 @@ export function ImagePreviewControls({
                         size="icon"
                         onClick={handleClick(onZoomOut)}
                         disabled={scale <= 0.5}
-                        className="text-white hover:bg-white/20 active:scale-100"
+                        className="text-white hover:bg-white/15 hover:text-white active:scale-100"
                     >
                         <ZoomOut className="h-5 w-5" />
                     </Button>
@@ -95,7 +105,7 @@ export function ImagePreviewControls({
                         size="icon"
                         onClick={handleClick(onZoomIn)}
                         disabled={scale >= 3}
-                        className="text-white hover:bg-white/20 active:scale-100"
+                        className="text-white hover:bg-white/15 hover:text-white active:scale-100"
                     >
                         <ZoomIn className="h-5 w-5" />
                     </Button>
@@ -109,7 +119,7 @@ export function ImagePreviewControls({
                             variant="ghost"
                             size="icon"
                             onClick={handleClick(onRotateLeft)}
-                            className="text-white hover:bg-white/20 active:scale-100"
+                            className="text-white hover:bg-white/15 hover:text-white active:scale-100"
                             title="左旋转"
                         >
                             <RotateCcw className="h-5 w-5" />
@@ -120,7 +130,7 @@ export function ImagePreviewControls({
                             variant="ghost"
                             size="icon"
                             onClick={handleClick(onRotateRight)}
-                            className="text-white hover:bg-white/20 active:scale-100"
+                            className="text-white hover:bg-white/15 hover:text-white active:scale-100"
                             title="右旋转"
                         >
                             <RotateCw className="h-5 w-5" />
@@ -133,7 +143,7 @@ export function ImagePreviewControls({
                             variant="ghost"
                             size="icon"
                             onClick={handleClick(onFlipX)}
-                            className="text-white hover:bg-white/20 active:scale-100"
+                            className="text-white hover:bg-white/15 hover:text-white active:scale-100"
                             title="水平翻转"
                         >
                             <FlipHorizontal className="h-5 w-5" />
@@ -144,7 +154,7 @@ export function ImagePreviewControls({
                             variant="ghost"
                             size="icon"
                             onClick={handleClick(onFlipY)}
-                            className="text-white hover:bg-white/20 active:scale-100"
+                            className="text-white hover:bg-white/15 hover:text-white active:scale-100"
                             title="垂直翻转"
                         >
                             <FlipVertical className="h-5 w-5" />
@@ -160,7 +170,7 @@ export function ImagePreviewControls({
                                 variant="ghost"
                                 size="icon"
                                 onClick={handleClick(onReset)}
-                                className="text-white hover:bg-white/20 active:scale-100"
+                                className="text-white hover:bg-white/15 hover:text-white active:scale-100"
                                 title="重置（也可双击图片）"
                             >
                                 <Maximize2 className="h-5 w-5" />
@@ -180,21 +190,21 @@ export function ImagePreviewControls({
                         variant="ghost"
                         size="icon"
                         onClick={handleClick(onClose)}
-                        className="text-white hover:bg-white/20 active:scale-100"
+                        className="text-white hover:bg-white/15 hover:text-white active:scale-100"
                     >
                         <X className="h-5 w-5" />
                     </Button>
                 </div>
             </div>
 
-            {/* 左右切换按钮 */}
+            {/* 左右切换按钮：每个按钮自身也 stopPropagation，防 disabled 穿透 */}
             {totalImages > 1 ? (
                 <>
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={handleClick(onPrevious)}
-                        className="absolute top-1/2 left-4 z-50 h-12 w-12 -translate-y-1/2 text-white hover:bg-white/20 active:translate-y-[-50%]!"
+                        className="absolute top-1/2 left-4 z-50 h-12 w-12 -translate-y-1/2 text-white hover:bg-white/15 hover:text-white active:translate-y-[-50%]!"
                     >
                         <ChevronLeft className="h-8 w-8" />
                     </Button>
@@ -202,7 +212,7 @@ export function ImagePreviewControls({
                         variant="ghost"
                         size="icon"
                         onClick={handleClick(onNext)}
-                        className="absolute top-1/2 right-4 z-50 h-12 w-12 -translate-y-1/2 text-white hover:bg-white/20 active:translate-y-[-50%]!"
+                        className="absolute top-1/2 right-4 z-50 h-12 w-12 -translate-y-1/2 text-white hover:bg-white/15 hover:text-white active:translate-y-[-50%]!"
                     >
                         <ChevronRight className="h-8 w-8" />
                     </Button>

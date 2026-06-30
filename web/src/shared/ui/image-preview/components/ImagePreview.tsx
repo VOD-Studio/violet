@@ -86,7 +86,9 @@ export function ImagePreview({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    // 与图片的 transform 动画时长一致（0.3s），避免遮罩先于图片完成
+                    // 造成"先黑后飞"的割裂闪烁感
+                    transition={{ duration: 0.3 }}
                     className="fixed inset-0 z-9999 flex items-center justify-center bg-black/95"
                     onClick={onClose}
                 >
