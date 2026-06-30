@@ -212,7 +212,7 @@ function AdminPermissionsPage() {
         <TooltipProvider>
             <PageShell
                 title="权限管理"
-                description="管理系统权限定义（menu 分组 + action 操作）"
+                description="管理系统权限定义"
                 action={
                     isSuperAdmin ? (
                         <Button size="sm" onClick={handleCreate}>
