@@ -32,6 +32,28 @@ function getInitialPosition(triggerElement?: HTMLElement | null, triggerRect?: D
     };
 }
 
+/** 视口约束：图片最大占 90vw × 90vh */
+const VIEWPORT_W_RATIO = 0.9;
+const VIEWPORT_H_RATIO = 0.9;
+
+/**
+ * 按图片宽高比 + 视口约束(90vw×90vh) 计算 contain 显示盒（确定像素）。
+ *
+ * 用于渐进加载：缩略图体积小（natural 仅 300px 宽），但宽高比与原图一致（后端等比缩放）。
+ * 用此比例算出原图将占据的显示盒，把该 width/height 显式设给容器——
+ * 不能用 max-w/max-h（只限上限不放大，300px 缩略图不会被它拉到原图的 800px），
+ * 也不能配 absolute 子元素（容器会塌成 0）。
+ */
+function computeContainBox(ratio: number): { width: number; height: number } {
+    const maxW = window.innerWidth * VIEWPORT_W_RATIO;
+    const maxH = window.innerHeight * VIEWPORT_H_RATIO;
+    // 候选1：按高度满铺，宽按比例；不超宽则取
+    const w1 = maxH * ratio;
+    if (w1 <= maxW) return { width: w1, height: maxH };
+    // 候选2：按宽度满铺，高按比例
+    return { width: maxW, height: maxW / ratio };
+}
+
 /**
  * 图片预览主组件
  *
@@ -87,8 +109,46 @@ export function ImagePreview({
     const [flyInSettled, setFlyInSettled] = useState(false);
     // 原图是否加载完成（完成后缩略图+模糊层淡出）
     const [originalLoaded, setOriginalLoaded] = useState(false);
+    // 原图比例（宽/高）。由缩略图 onLoad 读 naturalWidth/Height 得到（后端缩略图等比缩放，
+    // 比例=原图比例）。null 表示尚未拿到。
+    const [imageRatio, setImageRatio] = useState<number | null>(null);
+    // 原图目标显示盒（确定像素值）。用比例 + 视口约束(90vw/90vh)按 contain 算出，
+    // 显式设给容器——不能用 max-w/max-h：那只是上限不放大，且配合 absolute 子元素会塌成 0。
+    // 缩略图层 h-full/w-full 撑满此盒，从而"缩略图显示成原图大小"。
+    const [box, setBox] = useState<{ width: number; height: number } | null>(null);
     // 缩略图+模糊层是否可见（原图加载完成淡出后隐藏）
     const showThumbLayer = useThumb && !originalLoaded;
+
+    // 打开/切换图时，立刻探测缩略图的 natural size 拿到原图比例（缩略图等比缩放，
+    // 比例=原图），据此算出原图目标显示盒。用 new Image() 探测——缩略图体积小，
+    // 加载远快于原图，且比例到手即可精确算盒，不必等原图加载。
+    useEffect(() => {
+        if (!open || !useThumb || !thumb) {
+            setImageRatio(null);
+            setBox(null);
+            return;
+        }
+        const probe = new Image();
+        probe.onload = () => {
+            if (probe.naturalWidth && probe.naturalHeight) {
+                const ratio = probe.naturalWidth / probe.naturalHeight;
+                setImageRatio(ratio);
+                setBox(computeContainBox(ratio));
+            }
+        };
+        probe.src = thumb;
+        return () => {
+            probe.onload = null;
+        };
+    }, [open, useThumb, thumb]);
+
+    // 比例已知后响应窗口 resize 重算盒
+    useEffect(() => {
+        if (imageRatio == null) return;
+        const onResize = () => setBox(computeContainBox(imageRatio));
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+    }, [imageRatio]);
 
     // 切换图片时重置渐进加载状态
     // biome-ignore lint/correctness/useExhaustiveDependencies: index 是重置触发器
@@ -129,83 +189,94 @@ export function ImagePreview({
                         onReset={handleReset}
                     />
 
-                    {/* 图片容器（飞入动画作用于此外层；内部缩略图层 + 原图层） */}
-                    {/* 进入/退出动画仅作用于 transform（GPU 合成层属性，不触发 reflow），
-                        配合 will-change 提升，避免与图片加载过程中的布局变化相互干扰导致掉帧。 */}
-                    <motion.div
-                        initial={{
-                            x: initialPosition.x,
-                            y: initialPosition.y,
-                            scale: initialPosition.scale,
-                            opacity: 0,
-                        }}
-                        animate={{ x: 0, y: 0, scale: 1, opacity: 1 }}
-                        exit={{
-                            x: initialPosition.x,
-                            y: initialPosition.y,
-                            scale: initialPosition.scale,
-                            opacity: 0,
-                        }}
-                        transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-                        onAnimationComplete={() => setFlyInSettled(true)}
-                        className="relative max-h-[90vh] max-w-[90vw]"
-                        style={{
-                            willChange: "transform, opacity",
-                            // 飞入未稳定 + 有缩略图层期间，容器不拦截事件，
-                            // 避免其几何尺寸覆盖到顶部工具栏导致工具栏点不动。
-                            // 原图加载完成后才允许图片拖拽交互。
-                            pointerEvents: showThumbLayer && !flyInSettled ? "none" : "auto",
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* 缩略图层（飞入阶段可见；原图加载完成后淡出）。
-                            用与原图相同的 contain 约束渲染，因后端缩略图等比缩放、
-                            宽高比与原图一致，盒自然重合，替换无尺寸跳变。
-                            AnimatePresence + motion.div：原图 onLoad 后整体淡出，
-                            与原图淡入交叉过渡，而非硬切消失。 */}
-                        <AnimatePresence>
-                            {showThumbLayer ? (
-                                <motion.div
-                                    initial={{ opacity: 1 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute inset-0 flex items-center justify-center"
-                                >
-                                    <img
-                                        src={thumb}
-                                        alt=""
-                                        aria-hidden
-                                        className="max-h-[90vh] max-w-full select-none object-contain"
-                                        draggable={false}
-                                    />
-                                    {/* 模糊层：覆盖拉伸后的缩略图盒 */}
-                                    <div
-                                        className="absolute inset-0 bg-black/5 backdrop-blur-xl"
-                                        aria-hidden
-                                    />
-                                </motion.div>
-                            ) : null}
-                        </AnimatePresence>
-
-                        {/* 原图层：飞入动画稳定后才开始加载（shouldLoad 门控）。
-                            useThumb 时关闭 spinner——缩略图层本身即是加载占位，
-                            避免模糊缩略图上再叠一个转圈的双重指示。 */}
-                        <ImagePreviewImage
-                            src={images[index]}
-                            alt={`预览图片 ${index + 1}`}
-                            shouldLoad={!useThumb || flyInSettled}
-                            showSpinner={!useThumb}
-                            scale={scale}
-                            rotate={rotate}
-                            flipX={flipX}
-                            flipY={flipY}
-                            onLoad={() => {
-                                if (useThumb) setOriginalLoaded(true);
+                    {/* 图片容器（飞入动画作用于此外层；内部缩略图层 + 原图层）。
+                        定尺寸关键：用 box 的确定 width/height 显式撑开容器（JS 按原图比例
+                        + 90vw/90vh 算出，不靠 max-w/max-h——那只是上限不放大，且配合 absolute
+                        子元素会塌成 0）。缩略图层 h-full/w-full 撑满此盒，故缩略图显示成原图大小。
+                        box 未就绪（缩略图比例未探测到）时不渲染容器，避免 0×0 闪现。
+                        进入/退出动画仅作用于 transform（GPU 合成层属性，不触发 reflow）。 */}
+                    {box ? (
+                        <motion.div
+                            initial={{
+                                x: initialPosition.x,
+                                y: initialPosition.y,
+                                scale: initialPosition.scale,
+                                opacity: 0,
                             }}
-                            onReset={handleReset}
-                        />
-                    </motion.div>
+                            animate={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+                            exit={{
+                                x: initialPosition.x,
+                                y: initialPosition.y,
+                                scale: initialPosition.scale,
+                                opacity: 0,
+                            }}
+                            transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+                            onAnimationComplete={() => setFlyInSettled(true)}
+                            className="relative"
+                            style={{
+                                width: box.width,
+                                height: box.height,
+                                willChange: "transform, opacity",
+                                // 飞入未稳定 + 有缩略图层期间，容器不拦截事件，
+                                // 避免其几何尺寸覆盖到顶部工具栏导致工具栏点不动。
+                                // 原图加载完成后才允许图片拖拽交互。
+                                pointerEvents: showThumbLayer && !flyInSettled ? "none" : "auto",
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* 缩略图层（绝对覆盖容器；原图加载完成后淡出）。
+                                h-full/w-full + object-fill 撑满容器（=原图盒），
+                                从而缩略图被拉伸显示成原图大小。
+                                AnimatePresence + motion.div：原图 onLoad 后整体淡出，
+                                与原图淡入交叉过渡，而非硬切消失。 */}
+                            <AnimatePresence>
+                                {showThumbLayer ? (
+                                    <motion.div
+                                        initial={{ opacity: 1 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute inset-0"
+                                    >
+                                        <img
+                                            src={thumb}
+                                            alt=""
+                                            aria-hidden
+                                            className="h-full w-full select-none object-fill"
+                                            draggable={false}
+                                        />
+                                        {/* 模糊层：覆盖拉伸后的缩略图盒 */}
+                                        <div
+                                            className="absolute inset-0 bg-black/5 backdrop-blur-sm"
+                                            aria-hidden
+                                        />
+                                    </motion.div>
+                                ) : null}
+                            </AnimatePresence>
+
+                            {/* 原图层（绝对覆盖容器，与缩略图层盒重合）。
+                                h-full/w-full 撑满同一容器，与缩略图同盒，替换无尺寸跳变。
+                                shouldLoad 门控：飞入动画稳定后才开始加载原图。
+                                useThumb 时关闭 spinner——缩略图层本身即是加载占位，
+                                避免模糊缩略图上再叠一个转圈的双重指示。 */}
+                            <div className="absolute inset-0">
+                                <ImagePreviewImage
+                                    src={images[index]}
+                                    alt={`预览图片 ${index + 1}`}
+                                    shouldLoad={!useThumb || flyInSettled}
+                                    showSpinner={!useThumb}
+                                    scale={scale}
+                                    rotate={rotate}
+                                    flipX={flipX}
+                                    flipY={flipY}
+                                    onLoad={() => {
+                                        if (useThumb) setOriginalLoaded(true);
+                                    }}
+                                    onReset={handleReset}
+                                />
+                            </div>
+                        </motion.div>
+                    ) : null}
 
                     {/* 缩略图导航 */}
                     <ImagePreviewThumbnails

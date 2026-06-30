@@ -151,30 +151,32 @@ export function ImagePreviewImage({
     return (
         <div className="relative">
             <AnimatePresence mode="wait">
-                <motion.img
-                    ref={imgRef}
-                    key={src}
-                    src={shouldLoad ? src : undefined}
-                    alt={alt}
-                    initial={{ opacity: 0 }}
-                    // 图片始终参与外层飞入动画的透明度过渡，不等待 isLoading。
-                    // 否则打开时图片先透明、onLoad 后才显现，与飞入动画错位造成"闪一下"。
-                    // 加载态由下方的 spinner 覆盖层指示，不靠图片透明度。
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    onLoad={handleLoad}
-                    className="max-h-[90vh] max-w-full select-none object-contain"
-                    style={{
-                        transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${flipX ? "-" : ""}${scale}, ${flipY ? "-" : ""}${scale}) rotate(${rotate}deg)`,
-                        transition: isMoving ? "none" : "transform 0.3s ease-out",
-                        cursor: "grab",
-                    }}
-                    onMouseDown={handleMouseDown}
-                    onDoubleClick={onReset}
-                    whileDrag={{ cursor: "grabbing" }}
-                    draggable={false}
-                />
+                {shouldLoad && (
+                    <motion.img
+                        ref={imgRef}
+                        key={src}
+                        src={shouldLoad ? src : undefined}
+                        alt={alt}
+                        initial={{ opacity: 0 }}
+                        // 图片始终参与外层飞入动画的透明度过渡，不等待 isLoading。
+                        // 否则打开时图片先透明、onLoad 后才显现，与飞入动画错位造成"闪一下"。
+                        // 加载态由下方的 spinner 覆盖层指示，不靠图片透明度。
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        onLoad={handleLoad}
+                        className="max-h-[90vh] max-w-full select-none object-contain"
+                        style={{
+                            transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${flipX ? "-" : ""}${scale}, ${flipY ? "-" : ""}${scale}) rotate(${rotate}deg)`,
+                            transition: isMoving ? "none" : "transform 0.3s ease-out",
+                            cursor: "grab",
+                        }}
+                        onMouseDown={handleMouseDown}
+                        onDoubleClick={onReset}
+                        whileDrag={{ cursor: "grabbing" }}
+                        draggable={false}
+                    />
+                )}
             </AnimatePresence>
 
             {/* 加载指示器（外层有缩略图占位时关闭，避免双重加载指示） */}
