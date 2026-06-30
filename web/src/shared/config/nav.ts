@@ -38,6 +38,7 @@ export type NavItem = NavRouteItem | NavActionItem;
 export const NAV_ITEMS: NavItem[] = [
     { type: "route", label: "首页", to: "/" },
     { type: "route", label: "博客", to: "/blog" },
+    { type: "route", label: "归档", to: "/blog/archive" },
     { type: "route", label: "关于", to: "/about" },
     { type: "route", label: "项目", to: "/projects" },
     { type: "action", label: "音乐", action: "open-music" },

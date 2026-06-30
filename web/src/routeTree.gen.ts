@@ -19,6 +19,7 @@ import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
+import { Route as BlogArchiveRouteImport } from './routes/blog/archive'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTagsRouteImport } from './routes/admin.tags'
@@ -80,6 +81,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AboutIndexRoute = AboutIndexRouteImport.update({
   id: '/about/',
   path: '/about/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogArchiveRoute = BlogArchiveRouteImport.update({
+  id: '/blog/archive',
+  path: '/blog/archive',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/admin/tags': typeof AdminTagsRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/blog/archive': typeof BlogArchiveRoute
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/admin/tags': typeof AdminTagsRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/blog/archive': typeof BlogArchiveRoute
   '/about': typeof AboutIndexRoute
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/admin/tags': typeof AdminTagsRoute
   '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/blog/archive': typeof BlogArchiveRoute
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/admin/tags'
     | '/admin/users'
     | '/blog/$slug'
+    | '/blog/archive'
     | '/about/'
     | '/admin/'
     | '/blog/'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/admin/tags'
     | '/admin/users'
     | '/blog/$slug'
+    | '/blog/archive'
     | '/about'
     | '/admin'
     | '/blog'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/admin/tags'
     | '/admin/users'
     | '/blog/$slug'
+    | '/blog/archive'
     | '/about/'
     | '/admin/'
     | '/blog/'
@@ -296,6 +308,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   BlogSlugRoute: typeof BlogSlugRoute
+  BlogArchiveRoute: typeof BlogArchiveRoute
   AboutIndexRoute: typeof AboutIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
@@ -372,6 +385,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about/'
       preLoaderRoute: typeof AboutIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/archive': {
+      id: '/blog/archive'
+      path: '/blog/archive'
+      fullPath: '/blog/archive'
+      preLoaderRoute: typeof BlogArchiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/$slug': {
@@ -500,6 +520,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   BlogSlugRoute: BlogSlugRoute,
+  BlogArchiveRoute: BlogArchiveRoute,
   AboutIndexRoute: AboutIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
