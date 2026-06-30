@@ -60,7 +60,7 @@ export function ContentImage({
                     type="button"
                     onClick={() => {
                         if (onImageClick) {
-                            onImageClick(url, imgRef.current);
+                            onImageClick(url, imgRef.current, thumbnailUrl);
                         } else {
                             preview.openPreview([url], 0, imgRef.current ?? undefined);
                         }
