@@ -5,6 +5,13 @@ export interface ImagePreviewProps {
     onClose: () => void;
     /** 图片列表 */
     images: string[];
+    /**
+     * 缩略图地址列表（与 images 一一对应；飞入动画用缩略图，原图加载完成后替换）。
+     * 后端缩略图为等比缩放（最大宽 300px），宽高比与原图一致，
+     * 用与原图相同的 contain 约束渲染即可自然重合，替换时无尺寸跳变。
+     * 不传或对应位为空 → 回退原图飞入（向后兼容）。
+     */
+    thumbnails?: string[];
     /** 当前显示的图片索引 */
     currentIndex?: number;
     /** 索引变化回调 */
