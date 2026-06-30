@@ -73,14 +73,20 @@ export function Segmented<V extends string = string>({
                 className,
             )}
         >
-            {/* 滑块：绝对定位，根据 activeIndex 平移，宽度均分 */}
+            {/*
+              滑块：绝对定位，根据 activeIndex 平移。
+              容器布局：左右各 p-0.5（共 0.25rem）+ 段间 gap-0.5（每段间 0.125rem）。
+              滑块宽度需均分"可用宽度"：总内距 = 0.25rem + (count-1)*0.125rem = count*0.125rem + 0.125rem。
+              单段宽度 = (100% - count*0.125rem - 0.125rem) / count = 100%/count - 0.125rem*(1+1/count)。
+              每段左偏移 = i * (单段宽度 + 一个gap)。
+            */}
             {count > 0 ? (
                 <span
                     aria-hidden="true"
-                    className="absolute top-0.5 bottom-0.5 rounded-[calc(var(--radius-lg)-2px)] bg-background shadow-sm ring-1 ring-black/5 transition-transform duration-200 ease-out dark:ring-white/10"
+                    className="absolute top-0.5 bottom-0.5 left-0.5 rounded-[calc(var(--radius-lg)-2px)] bg-background shadow-sm ring-1 ring-black/5 transition-transform duration-200 ease-out dark:ring-white/10"
                     style={{
-                        width: `calc((100% - 0.25rem) / ${count})`,
-                        transform: `translateX(calc(${activeIndex} * 100% + ${activeIndex} * 0.125rem))`,
+                        width: `calc((100% - 0.25rem - ${count - 1} * 0.125rem) / ${count})`,
+                        transform: `translateX(calc(${activeIndex} * (100% + 0.125rem)))`,
                     }}
                 />
             ) : null}
