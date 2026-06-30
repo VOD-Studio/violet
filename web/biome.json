@@ -7,7 +7,14 @@
     },
     "files": {
         "ignoreUnknown": true,
-        "includes": ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx", "**/*.json"]
+        "includes": [
+            "**/*.js",
+            "**/*.jsx",
+            "**/*.ts",
+            "**/*.tsx",
+            "**/*.json",
+            "!src/shared/vendor"
+        ]
     },
     "formatter": {
         "enabled": true,
