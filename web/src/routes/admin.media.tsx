@@ -15,13 +15,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Images, Pencil, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/ui/dialog";
+import { Modal } from "@/shared/ui/modal";
 import { SearchInput } from "@/shared/ui/search-input";
 import { Segmented, viewTypeSegments } from "@/shared/ui/segmented";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -211,28 +205,29 @@ function AdminMediaPage() {
             ) : null}
 
             {/* 上传弹窗 */}
-            <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-                <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>上传素材</DialogTitle>
-                        <DialogDescription>支持拖拽多文件，分片上传含进度</DialogDescription>
-                    </DialogHeader>
-                    <Uploader
-                        purpose="material"
-                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.md"
-                        maxSize={1024 * 1024 * 1024}
-                        maxFiles={10}
-                        label="拖拽文件到此处或点击上传"
-                        hint="支持图片、视频、音频、文档，单文件最大 1GB"
-                        onUploaded={() => {
-                            // 上传成功后刷新素材列表
-                            queryClient.invalidateQueries({
-                                queryKey: adminFileKeys.lists(),
-                            });
-                        }}
-                    />
-                </DialogContent>
-            </Dialog>
+            <Modal
+                open={uploadOpen}
+                onOpenChange={setUploadOpen}
+                title="上传素材"
+                description="支持拖拽多文件，分片上传含进度"
+                size="md"
+                footer={null}
+            >
+                <Uploader
+                    purpose="material"
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.md"
+                    maxSize={1024 * 1024 * 1024}
+                    maxFiles={10}
+                    label="拖拽文件到此处或点击上传"
+                    hint="支持图片、视频、音频、文档，单文件最大 1GB"
+                    onUploaded={() => {
+                        // 上传成功后刷新素材列表
+                        queryClient.invalidateQueries({
+                            queryKey: adminFileKeys.lists(),
+                        });
+                    }}
+                />
+            </Modal>
 
             {/* 编辑弹窗 */}
             <EditMediaDialog open={editOpen} onOpenChange={setEditOpen} file={editFile} />

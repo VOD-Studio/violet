@@ -2,14 +2,8 @@ import { useUploadThumbnail } from "@features/media/api/mutations";
 import type { MediaFile } from "@features/media/model/types";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/api/error";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/shared/ui/dialog";
 import { FramePicker } from "@/shared/ui/frame-picker";
+import { Modal } from "@/shared/ui/modal";
 
 interface MediaCoverDialogProps {
     open: boolean;
@@ -50,21 +44,20 @@ export function MediaCoverDialog({ open, onOpenChange, file }: MediaCoverDialogP
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>选择视频封面</DialogTitle>
-                    <DialogDescription>
-                        拖动滑块选择一帧作为封面，或使用默认的第 1 秒
-                    </DialogDescription>
-                </DialogHeader>
-                <FramePicker
-                    src={file.url}
-                    onConfirm={handleConfirm}
-                    onCancel={() => onOpenChange(false)}
-                    submitting={uploadThumb.isPending}
-                />
-            </DialogContent>
-        </Dialog>
+        <Modal
+            open={open}
+            onOpenChange={onOpenChange}
+            title="选择视频封面"
+            description="拖动滑块选择一帧作为封面，或使用默认的第 1 秒"
+            size="lg"
+            footer={null}
+        >
+            <FramePicker
+                src={file.url}
+                onConfirm={handleConfirm}
+                onCancel={() => onOpenChange(false)}
+                submitting={uploadThumb.isPending}
+            />
+        </Modal>
     );
 }
