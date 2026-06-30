@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
+import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -20,12 +21,16 @@ import { useState } from "react";
 /** 评论分页大小 */
 const PAGE_SIZE = 20;
 
-/** 状态 tab 配置 */
-const STATUS_TABS: { label: string; value: CommentStatus | undefined }[] = [
-    { label: "待审核", value: "pending" },
-    { label: "已通过", value: "approved" },
-    { label: "垃圾", value: "spam" },
-    { label: "已删除", value: "deleted" },
+/** 筛选值："all" 表示全部，其余为具体状态 */
+type CommentFilter = "all" | CommentStatus;
+
+/** 状态分段配置（"全部" + 四种状态） */
+const STATUS_SEGMENTS: SegmentedItem<CommentFilter>[] = [
+    { value: "all", label: "全部" },
+    { value: "pending", label: "待审核" },
+    { value: "approved", label: "已通过" },
+    { value: "spam", label: "垃圾" },
+    { value: "deleted", label: "已删除" },
 ];
 
 /** 状态 -> 徽标文案与样式 */
@@ -43,10 +48,13 @@ const STATUS_BADGE: Record<
 };
 
 function AdminCommentsPage() {
-    const [status, setStatus] = useState<CommentStatus | undefined>("pending");
+    const [filter, setFilter] = useState<CommentFilter>("pending");
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    // "all" -> 不传 status（查全部）；其余直接作为状态筛选
+    const status: CommentStatus | undefined = filter === "all" ? undefined : filter;
 
     const { data, isLoading, error, refetch } = useAllComments({
         status,
@@ -58,8 +66,8 @@ function AdminCommentsPage() {
     const deleteMut = useDeleteComment();
     const batchMut = useBatchUpdateComments();
 
-    const switchTab = (s: CommentStatus | undefined) => {
-        setStatus(s);
+    const switchFilter = (f: CommentFilter) => {
+        setFilter(f);
         setPage(1);
         setSelected(new Set());
     };
@@ -151,17 +159,8 @@ function AdminCommentsPage() {
 
     return (
         <PageShell title="评论审核" description="审核与管理文章评论">
-            <div className="mb-4 flex items-center gap-2">
-                {STATUS_TABS.map((tab) => (
-                    <Button
-                        key={tab.label}
-                        size="sm"
-                        variant={status === tab.value ? "default" : "outline"}
-                        onClick={() => switchTab(tab.value)}
-                    >
-                        {tab.label}
-                    </Button>
-                ))}
+            <div className="mb-4">
+                <Segmented value={filter} onValueChange={switchFilter} segments={STATUS_SEGMENTS} />
             </div>
 
             {selected.size > 0 && (
