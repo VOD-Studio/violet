@@ -105,8 +105,14 @@ func auditPOsToDomain(pos []AuditLog) []domainaudit.AuditLog {
 	logs := make([]domainaudit.AuditLog, 0, len(pos))
 	for _, po := range pos {
 		l := domainaudit.AuditLog{
-			ID: po.ID, Action: po.Action, Resource: po.ResourceType,
-			ResourceID: po.ResourceID, IPAddress: po.IPAddress, CreatedAt: po.CreatedAt,
+			ID:           po.ID,
+			Action:       po.Action,
+			Resource:     po.ResourceType,
+			ResourceID:   po.ResourceID,
+			ResourceName: po.ResourceName, // 补回：资源名称（如用户名/文章标题）
+			UserName:     po.UserName,     // 补回：操作人用户名（JOIN users）
+			IPAddress:    po.IPAddress,
+			CreatedAt:    po.CreatedAt,
 		}
 		if po.UserID != nil {
 			uid := *po.UserID

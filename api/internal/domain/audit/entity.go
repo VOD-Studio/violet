@@ -10,15 +10,16 @@ import (
 
 // AuditLog 操作日志实体
 type AuditLog struct {
-	ID        int64
-	UserID    *string // 可空（匿名操作）
-	Action    string  // 操作类型：create/update/delete/login 等
-	Resource  string  // 资源类型：user/post/comment 等
-	ResourceID string // 资源 ID
-	Detail    map[string]any // 变更详情
-	IPAddress string
-	UserAgent string
-	CreatedAt time.Time
+	ID           int64          `json:"id"`            // 日志主键
+	UserID       *string        `json:"user_id"`       // 操作人 ID（可空：匿名操作）
+	UserName     string         `json:"user_name"`     // 操作人用户名（JOIN users 查出，可空）
+	Action       string         `json:"action"`        // 操作类型：create/update/delete/login 等
+	Resource     string         `json:"resource"`      // 资源类型：user/post/comment 等
+	ResourceID   string         `json:"resource_id"`   // 资源 ID
+	ResourceName string         `json:"resource_name"` // 资源名称（如用户名/文章标题，可空）
+	Detail       map[string]any `json:"detail"`        // 变更详情
+	IPAddress    string         `json:"ip_address"`    // 来源 IP
+	CreatedAt    time.Time      `json:"created_at"`    // 发生时间（RFC3339）
 }
 
 // ListResult 日志列表结果（含分页）

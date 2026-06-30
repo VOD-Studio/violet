@@ -18,10 +18,14 @@ func NewService(store domainaudit.AuditStore) *Service {
 }
 
 // Log 写入操作日志（简化版）
+//
+// ua（User-Agent）参数保留以维持调用方兼容，但当前 PO 无 user_agent 列，
+// 不持久化；待后端补齐该列后再恢复写入。
 func (s *Service) Log(ctx context.Context, action, resource, resourceID, userID, ip, ua string) error {
+	_ = ua // PO 无 user_agent 列，暂不持久化
 	entry := domainaudit.AuditLog{
 		Action: action, Resource: resource, ResourceID: resourceID,
-		IPAddress: ip, UserAgent: ua,
+		IPAddress: ip,
 	}
 	if userID != "" {
 		entry.UserID = &userID
@@ -30,10 +34,14 @@ func (s *Service) Log(ctx context.Context, action, resource, resourceID, userID,
 }
 
 // LogWithDetail 写入带详情的操作日志
+//
+// ua（User-Agent）参数保留以维持调用方兼容，但当前 PO 无 user_agent 列，
+// 不持久化；待后端补齐该列后再恢复写入。
 func (s *Service) LogWithDetail(ctx context.Context, action, resource, resourceID, userID, ip, ua string, detail map[string]any) error {
+	_ = ua // PO 无 user_agent 列，暂不持久化
 	entry := domainaudit.AuditLog{
 		Action: action, Resource: resource, ResourceID: resourceID,
-		Detail: detail, IPAddress: ip, UserAgent: ua,
+		Detail: detail, IPAddress: ip,
 	}
 	if userID != "" {
 		entry.UserID = &userID
