@@ -6,26 +6,7 @@
  * 选中高亮、图片选中态等交互态。
  */
 
-/*
- * 排版颜色强制跟随主题 token，不依赖 typography 插件的硬编码色值。
- * 避免 prose-neutral 的固定灰色在深色主题下对比度异常（标题看起来发白/正文不可见）。
- */
-.ProseMirror.prose {
-  --tw-prose-body: var(--color-foreground);
-  --tw-prose-headings: var(--color-foreground);
-  --tw-prose-bold: var(--color-foreground);
-  --tw-prose-lead: var(--color-foreground);
-  --tw-prose-links: var(--color-primary);
-  --tw-prose-counters: var(--color-muted-foreground);
-  --tw-prose-bullets: var(--color-muted-foreground);
-  --tw-prose-hr: var(--color-border);
-  --tw-prose-quotes: var(--color-foreground);
-  --tw-prose-quote-borders: var(--color-border);
-  --tw-prose-captions: var(--color-muted-foreground);
-  --tw-prose-code: var(--color-foreground);
-  --tw-prose-th: var(--color-foreground);
-  --tw-prose-td: var(--color-foreground);
-}
+/* 排版颜色由全局 .prose（styles.css）统一映射到主题 token，此处不重复 */
 
 /* 占位符（at-rule，Tiptap 在空段落上加 .is-empty.is-editor-empty:before） */
 .ProseMirror p.is-editor-empty:first-child::before {

@@ -2,13 +2,14 @@ import type { PostDetail } from "@entities/post/model/types";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
+import { apiPost } from "@shared/api/request";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
-import { extractToc } from "@shared/lib/hooks/use-toc";
 import { extractMarkdownToc } from "@shared/lib/markdown";
+import { BackToTop } from "@shared/ui/back-to-top";
 import { markdownComponents } from "@shared/ui/markdown-preview/components/markdown-components";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
@@ -18,12 +19,10 @@ import remarkGfm from "remark-gfm";
  *
  * loader SSR 预取文章（按 slug），组件读缓存。
  *
- * 正文支持双渲染：
- * - 优先 content_html（后端预渲染 HTML，SSR 友好，dangerouslySetInnerHTML 直出）
- * - fallback content_md（react-markdown + rehype-slug 客户端渲染，复用 markdownComponents）
- *
- * TOC 同步双源：有 content_html 时从 HTML 提取（标题已带 id），
- * 否则从 content_md 提取（github-slugger 生成 id，与 rehype-slug 一致）。
+ * 正文统一用 react-markdown 渲染 content_md（复用 markdownComponents 手写样式映射），
+ * 不再用 content_html 直出（避免样式不受控）。
+ * TOC 从 content_md 提取（github-slugger id 与 rehype-slug 一致，锚点可跳转）。
+ * 进入页面时调用 POST /posts/{id}/view 增加浏览量。
  * 路由 head 映射 SEO 字段（title/description/og:image）。
  */
 function BlogDetailPage() {
@@ -31,6 +30,14 @@ function BlogDetailPage() {
     const { data: post, isLoading, error } = usePost(slug);
     const contentRef = useRef<HTMLElement>(null);
     const progress = useScrollProgress();
+
+    // 进入页面增加浏览量（仅一次，失败静默不影响阅读）
+    useEffect(() => {
+        if (!post?.id) return;
+        apiPost(`/posts/${post.id}/view`).catch(() => {
+            /* 浏览量统计失败不阻塞阅读 */
+        });
+    }, [post?.id]);
 
     if (isLoading) {
         return (
@@ -68,18 +75,16 @@ function BlogDetailPage() {
         );
     }
 
-    // 双渲染判定：有可用 HTML（非空且看起来像 HTML）则直出，否则用 markdown
-    const hasHtml = post.content_html && post.content_html.trim().length > 0;
-    const useHtml = hasHtml && /<[a-z][\s\S]*>/i.test(post.content_html);
-    // TOC：HTML 优先（标题已带 id），否则从 markdown 提取
-    const toc = useHtml ? extractToc(post.content_html) : extractMarkdownToc(post.content_md);
+    const toc = extractMarkdownToc(post.content_md);
+    // 浏览量乐观显示 +1（本次访问）
+    const viewCount = post.view_count + 1;
 
     return (
         <>
-            {/* 顶部阅读进度条 */}
+            {/* 顶部阅读进度条（无 transition 避免底部抖动） */}
             <div className="fixed top-0 left-0 right-0 z-50 h-1">
                 <div
-                    className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-[width] duration-150"
+                    className="h-full bg-linear-to-r from-cyan-400 to-blue-500"
                     style={{ width: `${progress}%` }}
                 />
             </div>
@@ -124,7 +129,7 @@ function BlogDetailPage() {
                         ) : null}
                         <span className="inline-flex items-center gap-1.5">
                             <Eye className="size-3.5" />
-                            {post.view_count} 次阅读
+                            {viewCount} 次阅读
                         </span>
                     </div>
                 </header>
@@ -135,7 +140,7 @@ function BlogDetailPage() {
                         <img
                             src={post.cover_image}
                             alt={post.title}
-                            className="aspect-[2/1] w-full object-cover"
+                            className="aspect-2/1 w-full object-cover"
                         />
                     </div>
                 ) : null}
@@ -151,28 +156,23 @@ function BlogDetailPage() {
                         </aside>
                     ) : null}
 
-                    {/* 正文：优先 content_html 直出，否则 react-markdown 渲染 content_md */}
+                    {/* 正文：react-markdown 渲染 content_md，复用 markdownComponents 样式 */}
                     <main
                         ref={contentRef}
                         className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
                     >
-                        {useHtml ? (
-                            <div
-                                // biome-ignore lint/security/noDangerouslySetInnerHtml: 后端/编辑器预渲染的 HTML 正文
-                                dangerouslySetInnerHTML={{ __html: post.content_html }}
-                            />
-                        ) : (
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                rehypePlugins={[rehypeSlug]}
-                                components={markdownComponents}
-                            >
-                                {post.content_md}
-                            </ReactMarkdown>
-                        )}
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeSlug]}
+                            components={markdownComponents}
+                        >
+                            {post.content_md}
+                        </ReactMarkdown>
                     </main>
                 </div>
             </article>
+
+            <BackToTop />
         </>
     );
 }

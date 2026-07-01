@@ -152,6 +152,24 @@ body {
 
 .prose {
   line-height: 1.75;
+  /*
+   * 排版颜色强制跟随主题 token，不依赖 typography 插件硬编码色值。
+   * 避免 proseNeutral 的固定灰色在主题下对比度异常（文字发灰不可读）。
+   */
+  --tw-prose-body: var(--color-foreground);
+  --tw-prose-headings: var(--color-foreground);
+  --tw-prose-bold: var(--color-foreground);
+  --tw-prose-lead: var(--color-foreground);
+  --tw-prose-links: var(--color-primary);
+  --tw-prose-counters: var(--color-muted-foreground);
+  --tw-prose-bullets: var(--color-muted-foreground);
+  --tw-prose-hr: var(--color-border);
+  --tw-prose-quotes: var(--color-foreground);
+  --tw-prose-quote-borders: var(--color-border);
+  --tw-prose-captions: var(--color-muted-foreground);
+  --tw-prose-code: var(--color-foreground);
+  --tw-prose-th: var(--color-foreground);
+  --tw-prose-td: var(--color-foreground);
 }
 .prose pre {
   background: var(--color-surface-glass) !important;

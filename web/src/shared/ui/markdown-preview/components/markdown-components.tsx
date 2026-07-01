@@ -9,22 +9,30 @@
 import type { Components } from "react-markdown";
 
 export const markdownComponents: Components = {
-    h1: ({ children }) => <h1 className="mb-4 mt-6 text-2xl font-bold first:mt-0">{children}</h1>,
+    h1: ({ children }) => (
+        <h1 className="mb-5 mt-10 text-3xl font-bold tracking-tight first:mt-0">{children}</h1>
+    ),
     h2: ({ children }) => (
-        <h2 className="mb-3 mt-5 border-b pb-1 text-xl font-bold first:mt-0">{children}</h2>
+        <h2 className="mb-4 mt-10 border-b border-edge-hairline pb-2 text-2xl font-bold tracking-tight first:mt-0">
+            {children}
+        </h2>
     ),
     h3: ({ children }) => (
-        <h3 className="mb-2 mt-4 text-lg font-semibold first:mt-0">{children}</h3>
+        <h3 className="mb-3 mt-8 text-xl font-semibold tracking-tight first:mt-0">{children}</h3>
     ),
     h4: ({ children }) => (
-        <h4 className="mb-2 mt-3 text-base font-semibold first:mt-0">{children}</h4>
+        <h4 className="mb-3 mt-6 text-lg font-semibold first:mt-0">{children}</h4>
     ),
-    p: ({ children }) => <p className="my-3 leading-7">{children}</p>,
-    ul: ({ children }) => <ul className="my-3 list-disc space-y-1 pl-6">{children}</ul>,
-    ol: ({ children }) => <ol className="my-3 list-decimal space-y-1 pl-6">{children}</ol>,
-    li: ({ children }) => <li className="leading-7">{children}</li>,
+    p: ({ children }) => <p className="my-5 leading-8 text-foreground/90">{children}</p>,
+    ul: ({ children }) => (
+        <ul className="my-5 list-disc space-y-2 pl-6 text-foreground/90">{children}</ul>
+    ),
+    ol: ({ children }) => (
+        <ol className="my-5 list-decimal space-y-2 pl-6 text-foreground/90">{children}</ol>
+    ),
+    li: ({ children }) => <li className="leading-8">{children}</li>,
     blockquote: ({ children }) => (
-        <blockquote className="my-3 border-l-4 border-primary/40 bg-muted/40 py-1 pl-4 italic">
+        <blockquote className="my-6 border-l-4 border-primary/50 bg-muted/40 py-2 pl-5 italic text-foreground/80">
             {children}
         </blockquote>
     ),
@@ -33,25 +41,27 @@ export const markdownComponents: Components = {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary underline hover:opacity-80"
+            className="text-primary underline underline-offset-2 transition-opacity hover:opacity-80"
         >
             {children}
         </a>
     ),
-    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+    strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
     em: ({ children }) => <em className="italic">{children}</em>,
     del: ({ children }) => <del className="text-muted-foreground line-through">{children}</del>,
-    hr: () => <hr className="my-6 border-border" />,
+    hr: () => <hr className="my-8 border-edge-hairline" />,
     table: ({ children }) => (
-        <div className="my-4 overflow-x-auto">
+        <div className="my-6 overflow-x-auto">
             <table className="w-full border-collapse text-sm">{children}</table>
         </div>
     ),
     thead: ({ children }) => <thead className="bg-muted/50">{children}</thead>,
     th: ({ children }) => (
-        <th className="border px-3 py-1.5 text-left font-semibold">{children}</th>
+        <th className="border border-edge-hairline px-3 py-2 text-left font-semibold">
+            {children}
+        </th>
     ),
-    td: ({ children }) => <td className="border px-3 py-1.5">{children}</td>,
+    td: ({ children }) => <td className="border border-edge-hairline px-3 py-2">{children}</td>,
     // 内联代码
     code: ({ className, children, ...props }) => {
         const isBlock = className?.includes("language-");
@@ -72,7 +82,7 @@ export const markdownComponents: Components = {
         );
     },
     pre: ({ children }) => (
-        <pre className="my-4 overflow-x-auto rounded-lg bg-[#24292e] p-4 text-sm text-white/90 [&_code]:!bg-transparent [&_code]:!p-0 [&_code]:!text-inherit">
+        <pre className="my-6 overflow-x-auto rounded-lg bg-[#1e1e2e] p-4 text-sm leading-relaxed text-white/90 [&_code]:!bg-transparent [&_code]:!p-0 [&_code]:!text-inherit">
             {children}
         </pre>
     ),
@@ -80,7 +90,7 @@ export const markdownComponents: Components = {
         <img
             src={typeof src === "string" ? src : undefined}
             alt={alt ?? ""}
-            className="my-4 max-w-full rounded-lg"
+            className="my-6 max-w-full rounded-lg"
             loading="lazy"
         />
     ),
