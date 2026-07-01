@@ -84,7 +84,11 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
                     </SelectContent>
                 </Select>
             </div>
-            {/* 可编辑代码区：NodeViewContent 透传 contentEditable，lowlight 按 language 高亮 */}
+            {/*
+             * 可编辑代码区：NodeViewContent 透传 contentEditable。
+             * CodeBlockLowlight 通过 node.attrs.language 应用 ProseMirror decoration（hljs-*），
+             * language-xxx class 仅供 CSS 兜底。结构用 pre（as 仅支持 div，故用 pre 透传）。
+             */}
             <NodeViewContent<"pre">
                 as="pre"
                 className={`!m-0 !bg-transparent overflow-x-auto p-4 text-[0.85rem] leading-6 text-[#e6edf3] ${language ? `language-${language}` : ""}`}

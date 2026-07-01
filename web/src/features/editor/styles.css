@@ -137,6 +137,27 @@
 .ProseMirror pre .hljs-link {
   color: #a5d6ff;
 }
+/* JSON / 其他语言的标点、属性、meta */
+.ProseMirror pre .hljs-punctuation,
+.ProseMirror pre .hljs-meta {
+  color: #c9d1d9;
+}
+.ProseMirror pre .hljs-property,
+.ProseMirror pre .hljs-symbol,
+.ProseMirror pre .hljs-bullet {
+  color: #79c0ff;
+}
+.ProseMirror pre .hljs-params {
+  color: #ffa657;
+}
+.ProseMirror pre .hljs-deletion {
+  color: #ffa198;
+  background-color: #490202;
+}
+.ProseMirror pre .hljs-addition {
+  color: #aff5b4;
+  background-color: #033a16;
+}
 
 /* 图片选中态：节点选中时加蓝色描边 */
 .ProseMirror img.ProseMirror-selectednode {
