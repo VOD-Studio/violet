@@ -66,13 +66,17 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
                     value={language}
                     onValueChange={(v) => updateAttributes({ language: v === "text" ? null : v })}
                 >
-                    <SelectTrigger className="h-6 w-36 border-none bg-transparent px-1 font-mono text-xs text-white/70 hover:text-white">
+                    <SelectTrigger className="h-6 w-36 border-none bg-white/5 px-1 font-mono text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white focus:ring-0">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
                             {LANGUAGES.map((l) => (
-                                <SelectItem key={l.value} value={l.value}>
+                                <SelectItem
+                                    key={l.value}
+                                    value={l.value}
+                                    className="focus:bg-accent focus:text-accent-foreground"
+                                >
                                     {l.label}
                                 </SelectItem>
                             ))}

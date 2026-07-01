@@ -19,15 +19,31 @@ interface CodeBlockProps {
     children?: React.ReactNode;
 }
 
+/**
+ * nodeToText - 把 react-markdown 传入的 React 节点递归提取为纯文本
+ *
+ * react-markdown 对围栏代码块传的 children 是 React 元素数组（非字符串），
+ * 直接 String() 会得到 "[object Object]"，需递归取 props.children / 字符串叶子。
+ */
+function nodeToText(node: React.ReactNode): string {
+    if (node == null || typeof node === "boolean") return "";
+    if (typeof node === "string" || typeof node === "number") return String(node);
+    if (Array.isArray(node)) return node.map(nodeToText).join("");
+    if (typeof node === "object" && "props" in node) {
+        const props = (node as React.ReactElement<{ children?: React.ReactNode }>).props;
+        return nodeToText(props.children);
+    }
+    return "";
+}
+
 export function CodeBlock({ className, children }: CodeBlockProps) {
     const match = /language-(\w+)/.exec(className || "");
     const language = match?.[1] ?? "";
-    // 围栏代码块：有 language- 前缀 或 父级是 pre（多行代码）
-    // react-markdown 中行内 code 不会有 className 且不含换行
-    const code = String(children ?? "").replace(/\n$/, "");
+    // 提取纯文本代码内容（react-markdown 传的是节点，非字符串）
+    const code = nodeToText(children).replace(/\n$/, "");
 
     if (!match) {
-        // 行内代码：纯样式（markdownComponents 的行内样式由 code 映射处理，这里兜底）
+        // 行内代码：纯样式
         return (
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-primary">
                 {children}
