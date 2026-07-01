@@ -70,10 +70,10 @@
   text-align: left;
 }
 
-/* 代码块：lowlight 产出的 hljs 类，浅色/深色双主题 */
+/* 代码块：lowlight 产出的 hljs 类，GitHub Dark 色板 */
 .ProseMirror pre {
-  background: hsl(240 10% 8%);
-  color: hsl(60 6% 90%);
+  background: #24292e;
+  color: #e6edf3;
   border-radius: 0.5rem;
   padding: 0.875rem 1rem;
   overflow-x: auto;
@@ -81,6 +81,14 @@
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.85rem;
   line-height: 1.6;
+}
+/*
+ * 兜底：所有 hljs-* span 默认用前景色（避免 xml 等未定义 token 显示白色）。
+ * lowlight 对 TS 泛型 <T> 会误判为 xml，导致后续代码进入 XML 模式，
+ * 用兜底色保证可读性。
+ */
+.ProseMirror pre span[class*="hljs-"] {
+  color: #e6edf3;
 }
 .ProseMirror pre code {
   background: none;
