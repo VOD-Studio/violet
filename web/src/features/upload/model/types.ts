@@ -1,16 +1,12 @@
 /**
  * upload 模块类型定义
  *
- * 对接后端分片上传接口链路：初始化会话 → 上传分片 → 合并完成。
- * 字段来源：application/media/service.go 的 InitUploadSession 与 Merge 结果，
- * 已带 json tag，snake_case。
+ * 项目级「上传能力」归属地：分片上传链路（初始化 → 分片 → 合并）、秒传检查、
+ * 缩略图上传。业务侧的资源管理（如 admin-media 的列表/删除/元数据）依赖本模块的上传能力。
  *
- * upload 模块是项目级「上传能力」归属地：
- * - 裸请求函数（initUpload/uploadChunk/completeUpload）
- * - 通用分片上传 hook（useChunkedUpload，封装秒传/续传/进度）
- * - 工具（sha256 / imageUrl）
- * 业务侧的「资源管理」（如 media 模块的 list/delete/metadata）依赖本模块的上传能力。
+ * 字段来源：application/media/service.go，已带 json tag，snake_case。
  */
+import type { MediaFile } from "@entities/media/model/types";
 
 /**
  * InitUploadRequest - 初始化上传会话请求体
@@ -74,6 +70,38 @@ export interface CompleteUploadResult {
     width?: number;
     /** 图片高度，非图片为 0 */
     height?: number;
+}
+
+/**
+ * InstantCheckQuery - 秒传检查查询参数
+ *
+ * 对接 GET /admin/files/instant，后端 handler 要求 hash 非空。
+ */
+export interface InstantCheckQuery {
+    /** 文件哈希，必填 */
+    hash: string;
+}
+
+/**
+ * InstantCheckResult - 秒传检查结果
+ *
+ * exists 为 false 时 file 为 null。
+ */
+export interface InstantCheckResult {
+    /** 命中的文件信息，未命中为 null */
+    file: MediaFile | null;
+    /** 是否命中已存在文件 */
+    exists: boolean;
+}
+
+/**
+ * ThumbnailUploadResult - 缩略图上传结果
+ *
+ * 对接 POST /media/{id}/thumbnail，后端返回缩略图可访问 URL。
+ */
+export interface ThumbnailUploadResult {
+    /** 缩略图 URL */
+    thumbnail: string;
 }
 
 /** 向后兼容别名：旧代码用 MergeResult / InitSessionResult */

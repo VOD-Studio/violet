@@ -6,7 +6,13 @@
  * 业务侧（头像/表情/素材）直接复用本模块的裸函数或 hook。
  */
 import { apiDelete, apiGet, apiPost, apiPut } from "@shared/api/request";
-import type { CompleteUploadResult, InitUploadRequest, InitUploadResult } from "../model/types";
+import { useMutation } from "@tanstack/react-query";
+import type {
+    CompleteUploadResult,
+    InitUploadRequest,
+    InitUploadResult,
+    ThumbnailUploadResult,
+} from "../model/types";
 
 /**
  * initUpload - 初始化上传会话
@@ -66,3 +72,29 @@ export const cancelUpload = (uploadId: string): Promise<void> => {
  */
 export const getUploadStatus = (uploadId: string): Promise<InitUploadResult> =>
     apiGet<InitUploadResult>(`/upload/${uploadId}/status`);
+
+/**
+ * uploadThumbnail - 上传缩略图底层请求函数
+ *
+ * 对接 POST /media/{id}/thumbnail，multipart/form-data，字段名固定为 file。
+ * 上传成功后的缓存失效由调用方按所属 slice 的 key 自行处理。
+ *
+ * @param id 媒体 ID
+ * @param file 缩略图文件
+ */
+export const uploadThumbnail = async (id: string, file: File): Promise<ThumbnailUploadResult> => {
+    const form = new FormData();
+    form.append("file", file);
+    return apiPost<ThumbnailUploadResult>(`/media/${id}/thumbnail`, form);
+};
+
+/**
+ * useUploadThumbnail - 上传缩略图 mutation
+ *
+ * 不内置 invalidate：缩略图关联的列表 key 属消费方 slice（media/admin-media），
+ * 由调用方在 onSuccess 自行失效。
+ */
+export const useUploadThumbnail = () =>
+    useMutation({
+        mutationFn: ({ id, file }: { id: string; file: File }) => uploadThumbnail(id, file),
+    });

@@ -1,10 +1,8 @@
 /**
  * media 模块类型定义
  *
- * 领域读模型 MediaFile、MediaType 见 entities/media，此处转出供模块内部消费。
- * 其余为媒体管理的查询参数、写操作请求体与结果。
- *
- * 字段来源：application/media/service.go 的 FileDTO，带 json tag，snake_case。
+ * 前台素材库的查询参数与批量删除。领域读模型 MediaFile、MediaType 见 entities/media。
+ * 后台管理类型见 admin-media，上传类型见 upload。
  */
 import type { MediaFile, MediaType } from "@entities/media/model/types";
 
@@ -21,40 +19,6 @@ export interface MediaListQuery {
     limit?: number;
     /** 用途筛选，如 material / avatar / cover */
     purpose?: string;
-}
-
-/**
- * AdminMediaListQuery - 管理端素材列表查询参数
- *
- * 对接 GET /admin/media，支持多维筛选。
- */
-export interface AdminMediaListQuery {
-    /** 页码，默认 1 */
-    page?: number;
-    /** 每页条数，默认 20 */
-    limit?: number;
-    /** 用途筛选 */
-    purpose?: string;
-    /** MIME 类型筛选，image/video/audio/file */
-    type?: MediaType | string;
-    /** 自定义分类筛选 */
-    category?: string;
-    /** 关键词搜索，文件名 */
-    keyword?: string;
-}
-
-/**
- * UpdateMediaRequest - 更新素材元数据请求体
- *
- * 对接 PATCH /admin/media/{id}，所有字段可选。
- */
-export interface UpdateMediaRequest {
-    /** 替代文本/描述 */
-    alt_text?: string;
-    /** 自定义分类 */
-    category?: string;
-    /** 重命名，空则不变 */
-    original_name?: string;
 }
 
 /**
@@ -77,37 +41,5 @@ export interface BatchDeleteResult {
     deleted: number;
 }
 
-/**
- * ThumbnailUploadResult - 缩略图上传结果
- *
- * 对接 POST /media/{id}/thumbnail，后端返回缩略图可访问 URL。
- */
-export interface ThumbnailUploadResult {
-    /** 缩略图 URL */
-    thumbnail: string;
-}
-
-/**
- * InstantCheckQuery - 秒传检查查询参数
- *
- * 对接 GET /admin/files/instant，后端 handler 要求 hash 非空。
- */
-export interface InstantCheckQuery {
-    /** 文件哈希，必填 */
-    hash: string;
-}
-
-/**
- * InstantCheckResult - 秒传检查结果
- *
- * exists 为 false 时 file 为 null。
- */
-export interface InstantCheckResult {
-    /** 命中的文件信息，未命中为 null */
-    file: MediaFile | null;
-    /** 是否命中已存在文件 */
-    exists: boolean;
-}
-
-// 领域读模型转出，供 media 模块内部与历史引用方使用
+// 领域读模型转出
 export type { MediaFile, MediaType };

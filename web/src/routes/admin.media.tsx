@@ -1,14 +1,15 @@
+import type { MediaFile } from "@entities/media/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
+import { adminMediaKeys } from "@features/admin-media/api/keys";
+import { useAdminDeleteFile } from "@features/admin-media/api/mutations";
+import { useAdminMedia } from "@features/admin-media/api/queries";
+import type { AdminMediaListQuery } from "@features/admin-media/model/types";
+import { EditMediaDialog } from "@features/admin-media/ui/EditMediaDialog";
+import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
+import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
+import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
-import { adminFileKeys } from "@features/media/api/keys";
-import { useAdminDeleteFile } from "@features/media/api/mutations";
-import { useAdminMedia } from "@features/media/api/queries";
-import type { AdminMediaListQuery, MediaFile } from "@features/media/model/types";
-import { EditMediaDialog } from "@features/media/ui/EditMediaDialog";
-import { MediaCoverDialog } from "@features/media/ui/MediaCoverDialog";
-import { MediaGrid } from "@features/media/ui/MediaGrid";
-import { MediaLightbox } from "@features/media/ui/MediaLightbox";
 import { Button } from "@shared/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -223,7 +224,7 @@ function AdminMediaPage() {
                     onUploaded={() => {
                         // 上传成功后刷新素材列表
                         queryClient.invalidateQueries({
-                            queryKey: adminFileKeys.lists(),
+                            queryKey: adminMediaKeys.lists(),
                         });
                     }}
                 />

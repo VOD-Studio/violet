@@ -6,8 +6,8 @@
  */
 
 import type { MediaFile } from "@entities/media/model/types";
+import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
 import type { PostForm } from "@features/admin-posts/model/schema";
-import { MediaPicker } from "@features/media/ui/MediaPicker";
 import { useTags } from "@features/tags/api/queries";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";

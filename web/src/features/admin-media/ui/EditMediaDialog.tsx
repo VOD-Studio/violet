@@ -1,5 +1,5 @@
-import { useUpdateMediaMetadata } from "@features/media/api/mutations";
-import type { MediaFile } from "@features/media/model/types";
+import type { MediaFile } from "@entities/media/model/types";
+import { useUpdateMediaMetadata } from "@features/admin-media/api/mutations";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";

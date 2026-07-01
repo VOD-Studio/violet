@@ -1,4 +1,4 @@
-import type { MediaFile } from "@features/media/model/types";
+import type { MediaFile } from "@entities/media/model/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { FilePreview } from "@/shared/ui/file-preview";

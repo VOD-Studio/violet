@@ -7,13 +7,13 @@
  */
 
 import type { MediaFile } from "@entities/media/model/types";
+import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
 import { publishPost, useCreatePost, useUpdatePost } from "@features/admin-posts/api/mutations";
 import { useAdminPost } from "@features/admin-posts/api/queries";
 import { type PostForm, postSchema } from "@features/admin-posts/model/schema";
 import type { CreatePost } from "@features/admin-posts/model/types";
 import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
-import { MediaPicker } from "@features/media/ui/MediaPicker";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { slugify } from "@shared/lib/slug";
 import { RichTextEditor, type RichTextEditorHandle } from "@shared/ui/editor";

@@ -7,9 +7,9 @@
  *
  * 通过 mediaType 限定可选素材类型（如封面图只选 image）。
  */
+
+import type { MediaFile, MediaType } from "@entities/media/model/types";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
-import { useAdminMedia } from "@features/media/api/queries";
-import type { AdminMediaListQuery, MediaFile, MediaType } from "@features/media/model/types";
 import { Check, FileText, Film, Music } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { imageUrl } from "@/features/upload/lib/imageUrl";
@@ -18,6 +18,8 @@ import { Button } from "@/shared/ui/button";
 import { Modal } from "@/shared/ui/modal";
 import { SearchInput } from "@/shared/ui/search-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { useAdminMedia } from "../api/queries";
+import type { AdminMediaListQuery } from "../model/types";
 
 export interface MediaPickerProps {
     open: boolean;
