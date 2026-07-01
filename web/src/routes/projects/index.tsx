@@ -8,12 +8,17 @@ const ProjectsPage = () => {
     const { data: projects = [], isLoading, error } = useProjects();
 
     if (error) {
-        return <div className="container mx-auto px-6 py-32 text-muted-foreground">加载失败</div>;
+        return <div className="container mx-auto px-4 py-12 text-muted-foreground">加载失败</div>;
     }
 
     return (
-        <div className="container mx-auto min-h-screen px-6 py-32">
-            <h1 className="mb-16 text-4xl font-bold tracking-tight">Projects</h1>
+        <div className="container mx-auto px-4 py-12">
+            <header className="mb-10">
+                <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                    All Projects
+                </p>
+                <h1 className="font-mono text-4xl font-bold">项目</h1>
+            </header>
             {isLoading ? (
                 <div className="text-muted-foreground">加载中…</div>
             ) : projects.length === 0 ? (
