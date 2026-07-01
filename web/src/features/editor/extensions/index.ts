@@ -9,7 +9,6 @@
  * 注册后 editor.getMarkdown() 取 MD，setContent(md, {contentType:'markdown'}) 写 MD。
  */
 
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import Image from "@tiptap/extension-image";
@@ -29,6 +28,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
 import { SlashCommand } from "../slash-menu/SlashCommand";
 import { buildSlashItems } from "../slash-menu/slash-items";
+import { createCodeBlockExtension } from "../ui/CodeBlockView";
 
 /** 低光高亮实例：注册常用语言，按需可扩展 */
 const lowlight = createLowlight(common);
@@ -77,8 +77,8 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
         TableRow,
         TableHeader,
         TableCell,
-        // —— 代码块（高亮）——
-        CodeBlockLowlight.configure({ lowlight }),
+        // —— 代码块（高亮 + 语言下拉 nodeView）——
+        createCodeBlockExtension(lowlight),
         // —— 占位符 ——
         Placeholder.configure({ placeholder }),
         // —— Markdown 双向序列化 ——

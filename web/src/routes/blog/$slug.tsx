@@ -4,9 +4,11 @@ import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import { apiPost } from "@shared/api/request";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
+import { extractToc } from "@shared/lib/hooks/use-toc";
 import { extractMarkdownToc } from "@shared/lib/markdown";
 import { BackToTop } from "@shared/ui/back-to-top";
 import { markdownComponents } from "@shared/ui/markdown-preview/components/markdown-components";
+import { HtmlContent } from "@shared/ui/markdown-preview/HtmlContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -75,7 +77,11 @@ function BlogDetailPage() {
         );
     }
 
-    const toc = extractMarkdownToc(post.content_md);
+    // 双路径渲染判定：content_html 非空且含 HTML 标签 → 走 HtmlContent，否则 MD
+    const useHtml =
+        post.content_html.trim().length > 0 && /<[a-z][\s\S]*>/i.test(post.content_html);
+    // TOC：HTML 优先（标题已带 id），否则从 markdown 提取
+    const toc = useHtml ? extractToc(post.content_html) : extractMarkdownToc(post.content_md);
     // 浏览量乐观显示 +1（本次访问）
     const viewCount = post.view_count + 1;
 
@@ -156,18 +162,27 @@ function BlogDetailPage() {
                         </aside>
                     ) : null}
 
-                    {/* 正文：react-markdown 渲染 content_md，复用 markdownComponents 样式 */}
+                    {/*
+                     * 正文双路径渲染：
+                     * - content_html 有效：HtmlContent（rehype-raw + sanitize 安全渲染，无 dangerouslySetInnerHTML）
+                     * - 否则：ReactMarkdown 渲染 content_md
+                     * 两条路径共用 markdownComponents（含 shiki 代码块），样式一致
+                     */}
                     <main
                         ref={contentRef}
                         className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
                     >
-                        <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeSlug]}
-                            components={markdownComponents}
-                        >
-                            {post.content_md}
-                        </ReactMarkdown>
+                        {useHtml ? (
+                            <HtmlContent html={post.content_html} />
+                        ) : (
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeSlug]}
+                                components={markdownComponents}
+                            >
+                                {post.content_md}
+                            </ReactMarkdown>
+                        )}
                     </main>
                 </div>
             </article>

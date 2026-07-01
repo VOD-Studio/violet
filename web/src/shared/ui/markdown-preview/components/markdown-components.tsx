@@ -7,6 +7,7 @@
  */
 
 import type { Components } from "react-markdown";
+import { CodeBlock } from "./CodeBlock";
 
 export const markdownComponents: Components = {
     h1: ({ children }) => (
@@ -62,30 +63,10 @@ export const markdownComponents: Components = {
         </th>
     ),
     td: ({ children }) => <td className="border border-edge-hairline px-3 py-2">{children}</td>,
-    // 内联代码
-    code: ({ className, children, ...props }) => {
-        const isBlock = className?.includes("language-");
-        if (isBlock) {
-            return (
-                <code className={`${className ?? ""} block`} {...props}>
-                    {children}
-                </code>
-            );
-        }
-        return (
-            <code
-                className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-primary"
-                {...props}
-            >
-                {children}
-            </code>
-        );
-    },
-    pre: ({ children }) => (
-        <pre className="my-6 overflow-x-auto rounded-lg bg-[#1e1e2e] p-4 text-sm leading-relaxed text-white/90 [&_code]:!bg-transparent [&_code]:!p-0 [&_code]:!text-inherit">
-            {children}
-        </pre>
-    ),
+    // 代码：围栏块走 CodeBlock（shiki 高亮 + 语言标签 + 复制），行内走纯样式
+    code: ({ className, children }) => <CodeBlock className={className}>{children}</CodeBlock>,
+    // pre 由 CodeBlock 内部接管，此处直接透传避免双重包裹
+    pre: ({ children }) => <>{children}</>,
     img: ({ src, alt }) => (
         <img
             src={typeof src === "string" ? src : undefined}
