@@ -8,26 +8,29 @@
  * SiteSettings - 站点公开设置
  *
  * 对接后端 GET /api/v1/settings，公开子集。
- * 字段对齐 application/settings/service.go 的 GetPublic 返回 map。
+ * 字段对齐 application/settings/service.go 的 GetPublic 返回 map（snake_case）。
  */
 export interface SiteSettings {
     /** 站点名称 */
-    siteName: string;
+    site_name: string;
     /** 站点描述 */
-    description: string;
-    /** 站长昵称 */
-    authorName: string;
-    /** 站长签名/标语 */
-    tagline: string;
-    /** 社交链接 */
-    socials: {
-        /** GitHub 主页 */
-        github?: string;
-        /** Twitter 主页 */
-        twitter?: string;
-        /** 联系邮箱 */
-        email?: string;
-    };
+    site_description: string;
+    /** 站点 URL */
+    site_url: string;
+    /** 每页文章数 */
+    posts_per_page: number;
+    /** 是否启用评论 */
+    comments_enabled: boolean;
+    /** 评论是否需审核 */
+    comments_moderation: boolean;
+    /** GitHub 用户名 */
+    github_username: string;
+    /** 技术栈（单字符串） */
+    tech_stack: string;
+    /** 个人简介 */
+    bio: string;
+    /** 页脚文案 */
+    footer_text: string;
 }
 
 /**
