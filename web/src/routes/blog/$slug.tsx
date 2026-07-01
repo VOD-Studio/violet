@@ -3,17 +3,23 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
-import { extractToc } from "@shared/lib/hooks/use-toc";
+import type { TocItem } from "@shared/lib/hooks/use-toc";
+import { markdownComponents } from "@shared/ui/markdown-preview/components/markdown-components";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import GithubSlugger from "github-slugger";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
 import { useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeSlug from "rehype-slug";
+import remarkGfm from "remark-gfm";
 
 /**
  * /blog/$slug - 文章详情页
  *
  * loader SSR 预取文章（按 slug），组件读缓存。
- * 正文用后端预渲染的 content_html（dangerouslySetInnerHTML + 全局 prose 样式）。
- * 左侧 TOC（由 content_html 提取）+ 顶部阅读进度条。
+ * 正文用 react-markdown 渲染 content_md（前端渲染，后端 content_html 不可靠——
+ * 当前存储的是原始 markdown 而非渲染后 HTML），rehype-slug 给标题加 id 供 TOC 锚定。
+ * 左侧 TOC（由 markdown 标题提取）+ 顶部阅读进度条。
  * 路由 head 映射 SEO 字段（title/description/og:image）。
  */
 function BlogDetailPage() {
@@ -58,7 +64,7 @@ function BlogDetailPage() {
         );
     }
 
-    const toc = extractToc(post.content_html);
+    const toc = extractMarkdownToc(post.content_md);
 
     return (
         <>
@@ -137,18 +143,43 @@ function BlogDetailPage() {
                         </aside>
                     ) : null}
 
-                    {/* 正文 */}
-                    <main ref={contentRef} className="min-w-0 max-w-3xl flex-1">
-                        <div
-                            className="prose prose-neutral dark:prose-invert max-w-none"
-                            // biome-ignore lint/security/noDangerouslySetInnerHtml: 后端预渲染的 HTML 正文，受信任来源
-                            dangerouslySetInnerHTML={{ __html: post.content_html }}
-                        />
+                    {/* 正文：react-markdown 渲染 content_md，复用项目的 markdownComponents */}
+                    <main
+                        ref={contentRef}
+                        className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
+                    >
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeSlug]}
+                            components={markdownComponents}
+                        >
+                            {post.content_md}
+                        </ReactMarkdown>
                     </main>
                 </div>
             </article>
         </>
     );
+}
+
+/**
+ * extractMarkdownToc - 从 Markdown 源码提取 H2/H3 标题目录
+ *
+ * id 用 github-slugger 生成，与 rehype-slug 渲染出的标题 id 一致，
+ * 保证 TOC 锚点能正确跳转。
+ */
+function extractMarkdownToc(md: string): TocItem[] {
+    const slugger = new GithubSlugger();
+    const lines = md.split("\n");
+    const out: TocItem[] = [];
+    for (const line of lines) {
+        const m = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
+        if (!m) continue;
+        const level = m[1].length as 2 | 3;
+        const text = m[2].replace(/[*_`~]/g, "").trim();
+        if (text) out.push({ level, text, id: slugger.slug(text) });
+    }
+    return out;
 }
 
 /** 日期格式化：2026-01-15 → "2026 年 1 月 15 日" */
