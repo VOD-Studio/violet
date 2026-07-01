@@ -3,7 +3,7 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 
 import type { UserDTO } from "./entities/user/model/types";
 import { routeTree } from "./routeTree.gen";
-import { createQueryClient } from "./shared/api/query-client";
+import { clientQueryClient } from "./shared/api/query-client";
 
 /**
  * RouterContext - 全路由共享的上下文
@@ -31,14 +31,13 @@ export interface RouterContext {
  * auth 初始为未登录态，由 __root 的 beforeLoad 在请求开始时覆盖为真实值。
  */
 export const getRouter = () => {
-    const queryClient = createQueryClient();
     const router = createTanStackRouter({
         routeTree,
         scrollRestoration: true,
         defaultPreload: "intent",
         defaultPreloadStaleTime: 0,
         context: {
-            queryClient,
+            queryClient: clientQueryClient,
             auth: { isAuthenticated: false, user: null },
         },
     });

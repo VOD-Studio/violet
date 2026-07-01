@@ -45,6 +45,7 @@ const FALLBACK_BY_STATUS: Record<number, string> = {
  * useCsrfToken 自动获取 CSRF token，确保 login POST 通过 double-submit 校验。
  */
 export const Route = createFileRoute("/login")({
+    ssr: false,
     validateSearch: loginSearchSchema,
     component: LoginPage,
 });

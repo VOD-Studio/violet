@@ -4,6 +4,7 @@ import { isSessionActive } from "@shared/api/session";
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin")({
+    ssr: false,
     beforeLoad: async ({ context }) => {
         const { auth } = context;
 

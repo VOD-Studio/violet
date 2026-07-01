@@ -1,4 +1,4 @@
-import { fetchArchiveYears } from "@features/archive/api/client";
+import { fetchArchiveYear, fetchArchiveYears } from "@features/archive/api/client";
 import { archiveKeys } from "@features/archive/api/keys";
 import { useArchiveYear, useArchiveYears } from "@features/archive/api/queries";
 import type { ArchiveItem } from "@features/archive/model/types";
@@ -170,12 +170,23 @@ function ArchivePage() {
 }
 
 export const Route = createFileRoute("/blog/archive")({
-    // SSR 预取年份索引（极小），各年文章由客户端懒加载
+    // SSR 预取年份索引 + 最近一年文章（首屏直出，与组件默认激活 years[0] 一致）
     loader: async ({ context }) => {
-        await context.queryClient.ensureQueryData({
+        const index = await context.queryClient.fetchQuery({
             queryKey: archiveKeys.years(),
             queryFn: () => fetchArchiveYears(),
         });
+        const latest = index?.years?.[0];
+        if (latest) {
+            await context.queryClient
+                .ensureQueryData({
+                    queryKey: archiveKeys.year(latest),
+                    queryFn: () => fetchArchiveYear(latest),
+                })
+                .catch(() => {
+                    /* 最近年文章失败不阻塞，客户端懒加载兜底 */
+                });
+        }
     },
     component: ArchivePage,
 });

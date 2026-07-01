@@ -26,6 +26,7 @@ import { ResendButton } from "@/shared/ui/resend-button";
  * 重发验证码：重新调 register 接口（后端会覆盖旧码并重发）。
  */
 export const Route = createFileRoute("/register")({
+    ssr: false,
     component: RegisterPage,
 });
 

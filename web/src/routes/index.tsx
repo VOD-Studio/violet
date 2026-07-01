@@ -1,6 +1,8 @@
 import { githubKeys } from "@features/github/api/keys";
 import { fetchContributions } from "@features/github/api/queries";
 import Contributions from "@features/github/ui/Contributions";
+import { postKeys } from "@features/posts/api/keys";
+import { fetchPosts } from "@features/posts/api/queries";
 import PostList from "@features/posts/ui/PostList";
 import { createFileRoute } from "@tanstack/react-router";
 import Hero from "@widgets/Hero";
@@ -37,7 +39,16 @@ function HomePage() {
  */
 export const Route = createFileRoute("/")({
     loader: async ({ context }) => {
-        // 装饰性：单独预取，失败不阻塞（catch 后缓存为空，底座自然降级）
+        // 文章列表 SSR 预取：HTML 直出文章内容，利于 SEO 与首屏
+        await context.queryClient
+            .ensureQueryData({
+                queryKey: postKeys.list({}),
+                queryFn: () => fetchPosts({}),
+            })
+            .catch(() => {
+                /* 文章列表失败不阻塞，底座降级为加载态 */
+            });
+        // GitHub 贡献图（装饰性次要信息，失败降级）
         await context.queryClient
             .ensureQueryData({
                 queryKey: githubKeys.contributions(),

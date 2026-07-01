@@ -31,6 +31,7 @@ import { ResendButton } from "@/shared/ui/resend-button";
  * 重发重置码：重新调 forgot-password 接口。
  */
 export const Route = createFileRoute("/forgot-password")({
+    ssr: false,
     component: ForgotPasswordPage,
 });
 
