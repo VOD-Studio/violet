@@ -87,7 +87,7 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
             {/* 可编辑代码区：NodeViewContent 透传 contentEditable，lowlight 按 language 高亮 */}
             <NodeViewContent<"pre">
                 as="pre"
-                className={`!m-0 overflow-x-auto p-4 ${language ? `language-${language}` : ""}`}
+                className={`!m-0 !bg-transparent overflow-x-auto p-4 text-[0.85rem] leading-6 text-[#e6edf3] ${language ? `language-${language}` : ""}`}
             />
         </NodeViewWrapper>
     );

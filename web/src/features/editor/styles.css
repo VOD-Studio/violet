@@ -88,32 +88,54 @@
   color: inherit;
   font-size: inherit;
 }
+/*
+ * hljs token 颜色对齐 GitHub Dark 主题（shiki github-dark 同色板），
+ * 确保编辑器（lowlight）与前台（shiki）视觉一致。
+ */
 .ProseMirror pre .hljs-comment,
 .ProseMirror pre .hljs-quote {
-  color: hsl(220 6% 55%);
+  color: #8b949e;
   font-style: italic;
 }
 .ProseMirror pre .hljs-keyword,
 .ProseMirror pre .hljs-selector-tag,
-.ProseMirror pre .hljs-built_in {
-  color: hsl(280 60% 70%);
+.ProseMirror pre .hljs-built_in,
+.ProseMirror pre .hljs-literal {
+  color: #ff7b72;
 }
 .ProseMirror pre .hljs-string,
-.ProseMirror pre .hljs-attr {
-  color: hsl(95 60% 65%);
+.ProseMirror pre .hljs-attr,
+.ProseMirror pre .hljs-meta-string {
+  color: #a5d6ff;
 }
-.ProseMirror pre .hljs-number,
-.ProseMirror pre .hljs-literal {
-  color: hsl(30 90% 65%);
+.ProseMirror pre .hljs-number {
+  color: #79c0ff;
 }
 .ProseMirror pre .hljs-title,
 .ProseMirror pre .hljs-section,
-.ProseMirror pre .hljs-name {
-  color: hsl(200 80% 70%);
+.ProseMirror pre .hljs-name,
+.ProseMirror pre .hljs-selector-id,
+.ProseMirror pre .hljs-selector-class {
+  color: #d2a8ff;
 }
 .ProseMirror pre .hljs-type,
-.ProseMirror pre .hljs-class .hljs-title {
-  color: hsl(180 70% 65%);
+.ProseMirror pre .hljs-class .hljs-title,
+.ProseMirror pre .hljs-function .hljs-title {
+  color: #ffa657;
+}
+.ProseMirror pre .hljs-tag {
+  color: #7ee787;
+}
+.ProseMirror pre .hljs-attribute {
+  color: #79c0ff;
+}
+.ProseMirror pre .hljs-variable,
+.ProseMirror pre .hljs-template-variable {
+  color: #ffa657;
+}
+.ProseMirror pre .hljs-regexp,
+.ProseMirror pre .hljs-link {
+  color: #a5d6ff;
 }
 
 /* 图片选中态：节点选中时加蓝色描边 */
