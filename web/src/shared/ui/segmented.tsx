@@ -94,12 +94,18 @@ export function Segmented<V extends string = string>({
         });
     }, [activeIndex]);
 
-    // 激活项变化或尺寸变化时重新计算滑块位置
+    // 激活项变化或容器/按钮尺寸变化时重新计算滑块位置
     useLayoutEffect(updateSlider, [updateSlider]);
     useEffect(() => {
-        const handleResize = () => updateSlider();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
+        const container = containerRef.current;
+        if (!container) return;
+
+        const resizeObserver = new ResizeObserver(updateSlider);
+        resizeObserver.observe(container);
+        for (const btn of container.querySelectorAll("button")) {
+            resizeObserver.observe(btn);
+        }
+        return () => resizeObserver.disconnect();
     }, [updateSlider]);
 
     return (
