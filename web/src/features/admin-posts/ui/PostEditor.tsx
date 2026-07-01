@@ -69,7 +69,8 @@ export function PostEditor({ postId }: PostEditorProps) {
     } = form;
 
     const slugValue = useWatch({ control, name: "slug" });
-    const draftKey = `${DRAFT_PREFIX}${slugValue || "untitled"}`;
+    // 新建模式固定用一个 key，避免随 slug 变化留下旧草稿；编辑模式按 postId 隔离
+    const draftKey = isEdit ? `${DRAFT_PREFIX}edit:${postId}` : `${DRAFT_PREFIX}new`;
 
     // 编辑模式：数据到达后预填，仅初始化一次
     useEffect(() => {
@@ -92,7 +93,7 @@ export function PostEditor({ postId }: PostEditorProps) {
     // 新建模式：尝试恢复本地草稿，仅初始化一次
     useEffect(() => {
         if (!isEdit && !initialized.current) {
-            const draft = localStorage.getItem(`${DRAFT_PREFIX}untitled`);
+            const draft = localStorage.getItem(`${DRAFT_PREFIX}new`);
             if (draft) {
                 try {
                     const d = JSON.parse(draft) as Partial<PostForm>;
