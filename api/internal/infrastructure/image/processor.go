@@ -13,8 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/disintegration/imaging"
 	webp "github.com/HugoSmits86/nativewebp"
+	"github.com/disintegration/imaging"
+	_ "golang.org/x/image/webp"
 
 	domainupload "blog-api/internal/domain/upload"
 )
@@ -43,6 +44,12 @@ func (p *Processor) Validate(path string) (string, error) {
 	if !strings.HasPrefix(mime, "image/") {
 		return "", fmt.Errorf("非图片文件,检测到 %s", mime)
 	}
+
+	// 对于 WebP，如果头部确认为 RIFF...WEBP，直接放行，避免因 VP8X 动图导致解码失败
+	if mime == "image/webp" && len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP" {
+		return mime, nil
+	}
+
 	// 真正解码验证(防改扩展名的损坏文件)
 	if _, err := imaging.Open(path); err != nil {
 		return "", fmt.Errorf("解码失败: %w", err)
@@ -53,11 +60,21 @@ func (p *Processor) Validate(path string) (string, error) {
 // Dimensions 取宽高(非图片返回 0,0)
 func (p *Processor) Dimensions(path string) (int, int) {
 	img, err := imaging.Open(path)
-	if err != nil {
-		return 0, 0
+	if err == nil {
+		b := img.Bounds()
+		return b.Dx(), b.Dy()
 	}
-	b := img.Bounds()
-	return b.Dx(), b.Dy()
+
+	// 如果标准库解码失败（如 VP8X 动图），尝试手动解析 WebP 头部获取宽高
+	data, err := os.ReadFile(path)
+	if err == nil && len(data) >= 30 {
+		if string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP" && string(data[12:16]) == "VP8X" {
+			w := 1 + int(data[24]) + (int(data[25]) << 8) + (int(data[26]) << 16)
+			h := 1 + int(data[27]) + (int(data[28]) << 8) + (int(data[29]) << 16)
+			return w, h
+		}
+	}
+	return 0, 0
 }
 
 // Transcode 转 WebP;GIF/WebP 跳过,JPEG/PNG 解码后编码,
@@ -122,6 +139,10 @@ func (p *Processor) Thumbnail(srcPath, fileUUID, storageDir, mime string) string
 	}
 	img, err := imaging.Open(srcPath)
 	if err != nil {
+		// 对于无法解码的动图 WebP (VP8X)，直接用原图作为缩略图
+		if mime == "image/webp" {
+			return p.urlPrefix + storageDir + "/" + fileUUID + ".webp"
+		}
 		return ""
 	}
 	thumb := imaging.Resize(img, 300, 0, imaging.Lanczos)
