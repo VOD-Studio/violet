@@ -16,7 +16,6 @@ import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { markdownToHtml } from "@shared/lib/markdown";
 import { slugify } from "@shared/lib/slug";
 import { Input } from "@shared/ui/input";
 import { useNavigate } from "@tanstack/react-router";
@@ -145,9 +144,10 @@ export function PostEditor({ postId }: PostEditorProps) {
     const buildPayload = (data: PostForm): CreatePost => ({
         title: data.title.trim(),
         slug: data.slug.trim(),
+        // 编辑器以 HTML 序列化（保留颜色/对齐等样式），content_md 与 content_html
+        // 均存 HTML（后端原样存储）。Markdown 会丢失颜色，故不以 md 为存储格式。
         content_md: data.content_md,
-        // 提交时把 markdown 渲染成 HTML 存储（后端不渲染，原样存储）
-        content_html: markdownToHtml(data.content_md),
+        content_html: data.content_md,
         excerpt: data.excerpt.trim() || undefined,
         cover_image: data.cover_image || undefined,
         seo_title: data.seo_title.trim() || undefined,

@@ -3,10 +3,13 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import { apiPost } from "@shared/api/request";
+import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
+import { extractToc } from "@shared/lib/hooks/use-toc";
 import { extractMarkdownToc } from "@shared/lib/markdown";
 import { BackToTop } from "@shared/ui/back-to-top";
 import { markdownComponents } from "@shared/ui/markdown-preview/components/markdown-components";
+import { HtmlContent } from "@shared/ui/markdown-preview/HtmlContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -30,6 +33,7 @@ function BlogDetailPage() {
     const { data: post, isLoading, error } = usePost(slug);
     const contentRef = useRef<HTMLElement>(null);
     const progress = useScrollProgress();
+    const articleImages = useArticleImagePreview();
 
     // 进入页面增加浏览量（仅一次，失败静默不影响阅读）
     useEffect(() => {
@@ -75,11 +79,12 @@ function BlogDetailPage() {
         );
     }
 
-    // 正文统一从 content_md 渲染（react-markdown + shiki 代码块）。
-    // 不渲染 content_html：它是 marked+highlight.js 生成（hljs-* 标记），
-    // 与前台 shiki 高亮体系不一致，且重渲染会丢失高亮。content_html 仅留作 SEO/降级。
-    // TOC 从 markdown 提取（github-slugger id 与 rehype-slug 一致，锚点可跳转）
-    const toc = extractMarkdownToc(post.content_md);
+    // 正文渲染：优先 content_html（编辑器 HTML，保留颜色/对齐等样式），
+    // 用 HtmlContent 安全渲染（rehype-raw + sanitize）。
+    // 兼容旧数据：若 content_html 为空，降级到 content_md（react-markdown）。
+    const hasHtml = post.content_html.trim().length > 0;
+    // TOC：从 HTML 提取标题（编辑器输出的 h2/h3 已有 id）
+    const toc = hasHtml ? extractToc(post.content_html) : extractMarkdownToc(post.content_md);
     // 浏览量乐观显示 +1（本次访问）
     const viewCount = post.view_count + 1;
 
@@ -161,24 +166,31 @@ function BlogDetailPage() {
                     ) : null}
 
                     {/*
-                     * 正文统一用 react-markdown 渲染 content_md：
-                     * 复用 markdownComponents（含 shiki 代码块），前台显示与编辑器一致。
+                     * 正文渲染：优先 content_html（HtmlContent 安全渲染，保留颜色等样式），
+                     * 降级 content_md（react-markdown + shiki 代码块）。
                      */}
                     <main
                         ref={contentRef}
+                        data-article-content
+                        onClick={articleImages.bind.onClick}
                         className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
                     >
-                        <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeSlug]}
-                            components={markdownComponents}
-                        >
-                            {post.content_md}
-                        </ReactMarkdown>
+                        {hasHtml ? (
+                            <HtmlContent html={post.content_html} />
+                        ) : (
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeSlug]}
+                                components={markdownComponents}
+                            >
+                                {post.content_md}
+                            </ReactMarkdown>
+                        )}
                     </main>
                 </div>
             </article>
 
+            {articleImages.preview}
             <BackToTop />
         </>
     );

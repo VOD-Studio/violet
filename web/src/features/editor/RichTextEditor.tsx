@@ -35,15 +35,17 @@ import { TableToolbar } from "./toolbar/TableToolbar";
 export interface RichTextEditorHandle {
     /** 在光标处插入多张图片 */
     insertImages: (images: Array<{ src: string; alt?: string }>) => void;
-    /** 取当前 Markdown */
+    /** 取当前 HTML */
+    getHTML: () => string;
+    /** 取当前 Markdown（降级用，不含颜色等样式） */
     getMarkdown: () => string;
 }
 
 export interface RichTextEditorProps {
-    /** 受控值（Markdown 字符串） */
+    /** 受控值（HTML 字符串，保留颜色/对齐等样式） */
     value: string;
-    /** 值变更回调（Markdown 字符串） */
-    onChange: (md: string) => void;
+    /** 值变更回调（HTML 字符串） */
+    onChange: (html: string) => void;
     /** 占位符 */
     placeholder?: string;
     /** 导出 .md 时的文件名（不含扩展名） */
@@ -93,7 +95,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                 }),
             ],
             content: value,
-            contentType: "markdown" as const,
+            contentType: "html" as const,
             editorProps: {
                 attributes: {
                     class: cn(
@@ -105,7 +107,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                 },
             },
             onUpdate: ({ editor }) => {
-                onChangeRef.current(editor.getMarkdown());
+                // 用 HTML 序列化（保留颜色/对齐等 inline 样式，Markdown 会丢失这些）
+                onChangeRef.current(editor.getHTML());
             },
         });
 
@@ -129,6 +132,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                     });
                     chain.run();
                 },
+                getHTML: () => editor?.getHTML() ?? "",
                 getMarkdown: () => editor?.getMarkdown() ?? "",
             }),
             [editor],
@@ -137,10 +141,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         // 外部 value 变更时同步进编辑器（仅在差异时，避免光标跳动）
         useEffect(() => {
             if (!editor) return;
-            const current = editor.getMarkdown();
+            const current = editor.getHTML();
             if (value !== current) {
                 editor.commands.setContent(value || "", {
-                    contentType: "markdown",
+                    contentType: "html",
                     emitUpdate: false,
                 });
             }
