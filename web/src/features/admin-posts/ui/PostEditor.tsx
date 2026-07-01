@@ -16,6 +16,7 @@ import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { markdownToHtml } from "@shared/lib/markdown";
 import { slugify } from "@shared/lib/slug";
 import { Input } from "@shared/ui/input";
 import { useNavigate } from "@tanstack/react-router";
@@ -145,9 +146,8 @@ export function PostEditor({ postId }: PostEditorProps) {
         title: data.title.trim(),
         slug: data.slug.trim(),
         content_md: data.content_md,
-        // 详情页由前端 react-markdown 渲染 content_md，content_html 不再可靠
-        // （后端原样存储，不渲染）。留空避免下游误用为 HTML。
-        content_html: "",
+        // 提交时把 markdown 渲染成 HTML 存储（后端不渲染，原样存储）
+        content_html: markdownToHtml(data.content_md),
         excerpt: data.excerpt.trim() || undefined,
         cover_image: data.cover_image || undefined,
         seo_title: data.seo_title.trim() || undefined,

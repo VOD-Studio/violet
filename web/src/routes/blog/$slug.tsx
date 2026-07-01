@@ -3,10 +3,10 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
-import type { TocItem } from "@shared/lib/hooks/use-toc";
+import { extractToc } from "@shared/lib/hooks/use-toc";
+import { extractMarkdownToc } from "@shared/lib/markdown";
 import { markdownComponents } from "@shared/ui/markdown-preview/components/markdown-components";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import GithubSlugger from "github-slugger";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
 import { useRef } from "react";
 import ReactMarkdown from "react-markdown";
@@ -17,9 +17,13 @@ import remarkGfm from "remark-gfm";
  * /blog/$slug - 文章详情页
  *
  * loader SSR 预取文章（按 slug），组件读缓存。
- * 正文用 react-markdown 渲染 content_md（前端渲染，后端 content_html 不可靠——
- * 当前存储的是原始 markdown 而非渲染后 HTML），rehype-slug 给标题加 id 供 TOC 锚定。
- * 左侧 TOC（由 markdown 标题提取）+ 顶部阅读进度条。
+ *
+ * 正文支持双渲染：
+ * - 优先 content_html（后端预渲染 HTML，SSR 友好，dangerouslySetInnerHTML 直出）
+ * - fallback content_md（react-markdown + rehype-slug 客户端渲染，复用 markdownComponents）
+ *
+ * TOC 同步双源：有 content_html 时从 HTML 提取（标题已带 id），
+ * 否则从 content_md 提取（github-slugger 生成 id，与 rehype-slug 一致）。
  * 路由 head 映射 SEO 字段（title/description/og:image）。
  */
 function BlogDetailPage() {
@@ -64,7 +68,11 @@ function BlogDetailPage() {
         );
     }
 
-    const toc = extractMarkdownToc(post.content_md);
+    // 双渲染判定：有可用 HTML（非空且看起来像 HTML）则直出，否则用 markdown
+    const hasHtml = post.content_html && post.content_html.trim().length > 0;
+    const useHtml = hasHtml && /<[a-z][\s\S]*>/i.test(post.content_html);
+    // TOC：HTML 优先（标题已带 id），否则从 markdown 提取
+    const toc = useHtml ? extractToc(post.content_html) : extractMarkdownToc(post.content_md);
 
     return (
         <>
@@ -143,43 +151,30 @@ function BlogDetailPage() {
                         </aside>
                     ) : null}
 
-                    {/* 正文：react-markdown 渲染 content_md，复用项目的 markdownComponents */}
+                    {/* 正文：优先 content_html 直出，否则 react-markdown 渲染 content_md */}
                     <main
                         ref={contentRef}
                         className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
                     >
-                        <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeSlug]}
-                            components={markdownComponents}
-                        >
-                            {post.content_md}
-                        </ReactMarkdown>
+                        {useHtml ? (
+                            <div
+                                // biome-ignore lint/security/noDangerouslySetInnerHtml: 后端/编辑器预渲染的 HTML 正文
+                                dangerouslySetInnerHTML={{ __html: post.content_html }}
+                            />
+                        ) : (
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeSlug]}
+                                components={markdownComponents}
+                            >
+                                {post.content_md}
+                            </ReactMarkdown>
+                        )}
                     </main>
                 </div>
             </article>
         </>
     );
-}
-
-/**
- * extractMarkdownToc - 从 Markdown 源码提取 H2/H3 标题目录
- *
- * id 用 github-slugger 生成，与 rehype-slug 渲染出的标题 id 一致，
- * 保证 TOC 锚点能正确跳转。
- */
-function extractMarkdownToc(md: string): TocItem[] {
-    const slugger = new GithubSlugger();
-    const lines = md.split("\n");
-    const out: TocItem[] = [];
-    for (const line of lines) {
-        const m = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
-        if (!m) continue;
-        const level = m[1].length as 2 | 3;
-        const text = m[2].replace(/[*_`~]/g, "").trim();
-        if (text) out.push({ level, text, id: slugger.slug(text) });
-    }
-    return out;
 }
 
 /** 日期格式化：2026-01-15 → "2026 年 1 月 15 日" */
