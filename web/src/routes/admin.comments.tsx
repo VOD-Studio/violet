@@ -5,7 +5,7 @@ import {
     useDeleteComment,
     useMarkCommentSpam,
 } from "@features/admin-comments/api/queries";
-import type { AdminCommentDTO, CommentStatus } from "@features/admin-comments/model/types";
+import type { AdminComment, CommentStatus } from "@features/admin-comments/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
@@ -72,7 +72,7 @@ function AdminCommentsPage() {
         setSelected(new Set());
     };
 
-    const columns: DataTableColumn<AdminCommentDTO>[] = [
+    const columns: DataTableColumn<AdminComment>[] = [
         {
             key: "body",
             header: "评论内容",
@@ -195,7 +195,7 @@ function AdminCommentsPage() {
                 </div>
             )}
 
-            <DataTable<AdminCommentDTO>
+            <DataTable<AdminComment>
                 data={data?.data ?? []}
                 columns={columns}
                 keyExtractor={(row) => row.id}

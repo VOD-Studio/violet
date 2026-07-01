@@ -1,3 +1,4 @@
+import type { EmojiGroup } from "@entities/emoji/model/types";
 import { EmojiGroupCard } from "@features/admin-emojis/ui/EmojiGroupCard";
 import { EmojiGroupFormDialog } from "@features/admin-emojis/ui/EmojiGroupFormDialog";
 import { EmojiManageDialog } from "@features/admin-emojis/ui/EmojiManageDialog";
@@ -8,7 +9,6 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { useBatchUpdateGroupStatus, useDeleteEmojiGroup } from "@features/emojis/api/mutations";
 import { useAllEmojiGroupsAdmin } from "@features/emojis/api/queries";
-import type { EmojiGroup } from "@features/emojis/model/types";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
 import { Card, CardContent } from "@shared/ui/card";

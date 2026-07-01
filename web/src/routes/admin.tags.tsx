@@ -1,3 +1,4 @@
+import type { Tag } from "@entities/tag/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
@@ -6,7 +7,6 @@ import { TagDialog } from "@features/admin-tags/ui/TagDialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { useDeleteTag } from "@features/tags/api/mutations";
 import { useTags } from "@features/tags/api/queries";
-import type { Tag } from "@features/tags/model/types";
 import { Button } from "@shared/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2 } from "lucide-react";

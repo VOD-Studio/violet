@@ -1,4 +1,4 @@
-import type { Emoji } from "@features/emojis/model/types";
+import type { Emoji } from "@entities/emoji/model/types";
 import { Button } from "@shared/ui/button";
 import { Check, Edit, Link, Trash2, Type } from "lucide-react";
 import type { ReactNode } from "react";

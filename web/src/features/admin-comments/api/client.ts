@@ -1,9 +1,9 @@
-import { apiDelete, apiGet, apiGetPaged, apiPatch } from "@shared/api/request";
-import type { PagedResponse } from "@shared/api/types";
+import { apiDelete, apiGet, apiGetPaged, apiPatch } from "@/shared/api/request";
+import type { PagedResponse } from "@/shared/api/types";
 import type {
-    AdminCommentDTO,
+    AdminComment,
     BatchUpdateCommentsRequest,
-    CommentDTO,
+    Comment,
     CommentListQuery,
 } from "../model/types";
 
@@ -12,8 +12,7 @@ const BASE = "/admin/comments";
 /** listPendingComments - 调 GET /admin/comments/pending（待审核列表，分页） */
 export const listPendingComments = async (
     query: { page?: number; limit?: number } = {},
-): Promise<PagedResponse<CommentDTO>> =>
-    apiGetPaged<CommentDTO>(`${BASE}/pending`, { params: query });
+): Promise<PagedResponse<Comment>> => apiGetPaged<Comment>(`${BASE}/pending`, { params: query });
 
 /** countPendingComments - 调 GET /admin/comments/pending/count */
 export const countPendingComments = async (): Promise<{ count: number }> =>
@@ -22,11 +21,11 @@ export const countPendingComments = async (): Promise<{ count: number }> =>
 /** listAllComments - 调 GET /admin/comments（全部列表，按状态筛选，分页） */
 export const listAllComments = async (
     query: CommentListQuery = {},
-): Promise<PagedResponse<AdminCommentDTO>> => apiGetPaged<AdminCommentDTO>(BASE, { params: query });
+): Promise<PagedResponse<AdminComment>> => apiGetPaged<AdminComment>(BASE, { params: query });
 
 /** getCommentDetail - 调 GET /admin/comments/{id} */
-export const getCommentDetail = async (id: string): Promise<AdminCommentDTO> =>
-    apiGet<AdminCommentDTO>(`${BASE}/${id}`);
+export const getCommentDetail = async (id: string): Promise<AdminComment> =>
+    apiGet<AdminComment>(`${BASE}/${id}`);
 
 /** batchUpdateComments - 调 PATCH /admin/comments/batch-status */
 export const batchUpdateComments = async (

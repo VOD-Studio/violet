@@ -1,46 +1,12 @@
 /**
  * media 模块类型定义
  *
- * 仅包含媒体资源管理相关类型（读模型/列表查询/批量删除/缩略图/admin）。
- * 上传相关类型（InitUploadRequest/CompleteUploadResult 等）已统一归到
- * upload 模块，本模块不重复定义。
+ * 领域读模型 MediaFile、MediaType 见 entities/media，此处转出供模块内部消费。
+ * 其余为媒体管理的查询参数、写操作请求体与结果。
  *
  * 字段来源：application/media/service.go 的 FileDTO，带 json tag，snake_case。
  */
-
-/**
- * MediaFile - 媒体文件读模型
- *
- * 对应后端 FileDTO，GET /media/{id} 与列表接口共用。
- */
-export interface MediaFile {
-    /** 文件 ID，UUID */
-    id: string;
-    /** 所有者用户 ID */
-    owner_id: string;
-    /** 用途分类，如 material / avatar / cover */
-    purpose: string;
-    /** 原始文件名 */
-    original_name: string;
-    /** 可访问 URL */
-    url: string;
-    /** 文件大小，单位字节 */
-    size: number;
-    /** MIME 类型 */
-    mime_type: string;
-    /** 缩略图 URL，无缩略图为空串 */
-    thumbnail: string;
-    /** 文件状态，如 active / deleted */
-    status: string;
-    /** 替代文本/素材描述（无障碍 + SEO） */
-    alt_text?: string;
-    /** 用户自定义分类 */
-    category?: string;
-    /** 创建时间，RFC3339 字符串 */
-    created_at: string;
-    /** 更新时间，RFC3339 字符串（缩略图版本号用） */
-    updated_at?: string;
-}
+import type { MediaFile, MediaType } from "@entities/media/model/types";
 
 /**
  * MediaListQuery - 媒体列表查询参数
@@ -57,9 +23,6 @@ export interface MediaListQuery {
     purpose?: string;
 }
 
-/** 素材类型（按 MIME 大类划分） */
-export type MediaType = "image" | "video" | "audio" | "file";
-
 /**
  * AdminMediaListQuery - 管理端素材列表查询参数
  *
@@ -72,11 +35,11 @@ export interface AdminMediaListQuery {
     limit?: number;
     /** 用途筛选 */
     purpose?: string;
-    /** MIME 类型筛选（image/video/audio/file） */
+    /** MIME 类型筛选，image/video/audio/file */
     type?: MediaType | string;
     /** 自定义分类筛选 */
     category?: string;
-    /** 关键词搜索（文件名） */
+    /** 关键词搜索，文件名 */
     keyword?: string;
 }
 
@@ -90,7 +53,7 @@ export interface UpdateMediaRequest {
     alt_text?: string;
     /** 自定义分类 */
     category?: string;
-    /** 重命名（空则不变） */
+    /** 重命名，空则不变 */
     original_name?: string;
 }
 
@@ -124,10 +87,6 @@ export interface ThumbnailUploadResult {
     thumbnail: string;
 }
 
-// ============================================================
-// admin 文件管理
-// ============================================================
-
 /**
  * InstantCheckQuery - 秒传检查查询参数
  *
@@ -149,3 +108,6 @@ export interface InstantCheckResult {
     /** 是否命中已存在文件 */
     exists: boolean;
 }
+
+// 领域读模型转出，供 media 模块内部与历史引用方使用
+export type { MediaFile, MediaType };

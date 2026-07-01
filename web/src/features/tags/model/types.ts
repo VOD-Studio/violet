@@ -1,17 +1,10 @@
 /**
- * Tag - 标签读模型
+ * tags 模块类型定义
  *
- * 对接后端 GET /api/v1/tags 与 POST /api/v1/tags 返回字段，
- * 对应后端 application/tag.TagDTO。
+ * 领域读模型 Tag 见 entities/tag，此处转出供模块内部消费。
+ * 写操作请求体留在本模块。
  */
-export interface Tag {
-    /** 标签 ID */
-    id: number;
-    /** 标签名 */
-    name: string;
-    /** URL 友好的 slug */
-    slug: string;
-}
+import type { Tag } from "@entities/tag/model/types";
 
 /**
  * CreateTag - 创建标签请求体
@@ -33,3 +26,6 @@ export interface UpdateTagRequest {
     /** 标签名，必填 */
     name: string;
 }
+
+// 领域读模型转出
+export type { Tag };

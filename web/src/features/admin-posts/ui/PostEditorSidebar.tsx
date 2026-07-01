@@ -5,8 +5,8 @@
  * 标签列表与封面选择器封装在内部。
  */
 
+import type { MediaFile } from "@entities/media/model/types";
 import type { PostForm } from "@features/admin-posts/model/schema";
-import type { MediaFile } from "@features/media/model/types";
 import { MediaPicker } from "@features/media/ui/MediaPicker";
 import { useTags } from "@features/tags/api/queries";
 import { Input } from "@shared/ui/input";

@@ -1,7 +1,7 @@
+import type { Emoji, EmojiUploadResult } from "@entities/emoji/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { useCreateEmoji, useDeleteEmoji, useUpdateEmoji } from "@features/emojis/api/mutations";
 import { useGroupEmojisAdmin } from "@features/emojis/api/queries";
-import type { Emoji, EmojiUploadResult } from "@features/emojis/model/types";
 import { Modal } from "@shared/ui/modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/tabs";
 import { Images, Upload } from "lucide-react";

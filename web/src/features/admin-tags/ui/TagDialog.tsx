@@ -1,6 +1,6 @@
+import type { Tag } from "@entities/tag/model/types";
 import { type TagForm, tagSchema } from "@features/admin-tags/model/schema";
 import { useCreateTag, useUpdateTag } from "@features/tags/api/mutations";
-import type { Tag } from "@features/tags/model/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";

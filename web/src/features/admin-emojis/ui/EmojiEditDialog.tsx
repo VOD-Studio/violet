@@ -1,4 +1,4 @@
-import type { Emoji } from "@features/emojis/model/types";
+import type { Emoji } from "@entities/emoji/model/types";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
 import { Modal } from "@shared/ui/modal";
