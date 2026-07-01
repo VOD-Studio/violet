@@ -1,9 +1,9 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
+import { useDeletePost, useUpdatePostStatus } from "@features/admin-posts/api/mutations";
+import { useAdminPosts } from "@features/admin-posts/api/queries";
+import type { AdminPost } from "@features/admin-posts/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { useDeletePost, useUpdatePostStatus } from "@features/posts/api/mutations";
-import { useAdminPosts } from "@features/posts/api/queries";
-import type { AdminPost } from "@features/posts/model/types";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
 import {

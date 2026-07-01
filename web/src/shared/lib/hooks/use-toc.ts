@@ -1,3 +1,4 @@
+import { slugify } from "@shared/lib/slug";
 import { useEffect, useState } from "react";
 
 export interface TocItem {
@@ -32,14 +33,6 @@ export function extractToc(html: string): TocItem[] {
 
 function stripTags(s: string): string {
     return s.replace(/<[^>]+>/g, "");
-}
-
-function slugify(s: string): string {
-    return s
-        .trim()
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, "-")
-        .replace(/^-+|-+$/g, "");
 }
 
 /**

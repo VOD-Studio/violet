@@ -1,4 +1,4 @@
-import { PostEditor } from "@features/posts/ui/PostEditor";
+import { PostEditor } from "@features/admin-posts/ui/PostEditor";
 import { createFileRoute } from "@tanstack/react-router";
 
 /**
