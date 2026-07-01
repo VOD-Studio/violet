@@ -44,24 +44,13 @@ const PostList = ({
     return (
         <div
             className={cn(
-                "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[240px] grid-flow-row-dense",
+                "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start",
                 className,
             )}
         >
             {items.map((post, i) => {
                 const size = mixedSizes[i % mixedSizes.length] ?? "md";
-                // Define bento grid spans based on size
-                const spanClass =
-                    size === "lg"
-                        ? "md:col-span-2 md:row-span-2"
-                        : size === "md"
-                          ? "md:row-span-2"
-                          : "md:row-span-1";
-                return (
-                    <div key={post.id} className={spanClass}>
-                        <PostCard post={post} size={size} />
-                    </div>
-                );
+                return <PostCard key={post.id} post={post} size={size} />;
             })}
         </div>
     );

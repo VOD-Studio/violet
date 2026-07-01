@@ -43,10 +43,7 @@ const VIEWPORT_H_RATIO = 0.9;
  * 探测原图 natural 后算出原图将占据的显示盒，把该 width/height 显式设给容器——
  * 不能用 max-w/max-h（只限上限不放大，配合 absolute 子元素会塌成 0）。
  */
-function computeContainBox(
-    naturalW: number,
-    naturalH: number,
-): { width: number; height: number } {
+function computeContainBox(naturalW: number, naturalH: number): { width: number; height: number } {
     const maxW = window.innerWidth * VIEWPORT_W_RATIO;
     const maxH = window.innerHeight * VIEWPORT_H_RATIO;
     const ratio = naturalW / naturalH;

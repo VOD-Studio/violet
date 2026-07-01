@@ -19,9 +19,9 @@ interface AvatarGroupProps {
 }
 
 const sizeClass = {
-    xs: "size-5 text-[10px]",
-    sm: "size-6 text-xs",
-    md: "size-8 text-sm",
+    xs: "size-5 text-[8px]",
+    sm: "size-6 text-[10px]",
+    md: "size-8 text-xs",
 } as const;
 
 /**
@@ -36,14 +36,15 @@ export function AvatarGroup({ users, size = "sm", max = 5, className }: AvatarGr
     const overflow = users.length - visible.length;
 
     return (
-        <div className={cn("flex items-center", className)}>
-            <div className="flex -space-x-2">
-                {visible.map((u) => (
+        <div className={cn("group flex items-center", className)}>
+            <div className="flex -space-x-1 group-hover:space-x-1">
+                {visible.map((u, i) => (
                     <span
-                        key={u.username}
+                        key={i}
                         title={u.username}
+                        style={{ zIndex: visible.length - i }}
                         className={cn(
-                            "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted font-medium text-foreground ring-2 ring-background",
+                            "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted font-medium text-foreground transition-all duration-300",
                             sizeClass[size],
                         )}
                     >
@@ -61,8 +62,9 @@ export function AvatarGroup({ users, size = "sm", max = 5, className }: AvatarGr
                 ))}
                 {overflow > 0 ? (
                     <span
+                        style={{ zIndex: visible.length + 1 }}
                         className={cn(
-                            "inline-flex shrink-0 items-center justify-center rounded-full bg-muted font-medium text-muted-foreground ring-2 ring-background",
+                            "relative inline-flex shrink-0 items-center justify-center rounded-full bg-muted font-medium text-muted-foreground transition-all duration-300",
                             sizeClass[size],
                         )}
                     >

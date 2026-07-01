@@ -136,7 +136,10 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                         name="type"
                         render={({ field }) => (
                             <Select value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger>
+                                <SelectTrigger
+                                    className="w-full"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

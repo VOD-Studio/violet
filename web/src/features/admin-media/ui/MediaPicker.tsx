@@ -128,7 +128,7 @@ export function MediaPicker({
                         setPage(1);
                     }}
                 >
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-32" onPointerDown={(e) => e.stopPropagation()}>
                         <SelectValue placeholder="用途" />
                     </SelectTrigger>
                     <SelectContent>
@@ -148,7 +148,7 @@ export function MediaPicker({
                             setPage(1);
                         }}
                     >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-32" onPointerDown={(e) => e.stopPropagation()}>
                             <SelectValue placeholder="类型" />
                         </SelectTrigger>
                         <SelectContent>

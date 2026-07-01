@@ -36,7 +36,7 @@ const HeaderNavItem = ({ item, onAction }: HeaderNavItemProps) => {
                 to={item.to}
                 className={cn(BASE, "group")}
                 activeProps={{ className: "text-foreground bg-accent" }}
-                activeOptions={{ exact: item.to === "/" }}
+                activeOptions={{ exact: item.exact ?? false }}
             >
                 {item.label}
             </Link>

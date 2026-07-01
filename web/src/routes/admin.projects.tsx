@@ -17,7 +17,7 @@ import { Textarea } from "@shared/ui/textarea";
 import { createFileRoute } from "@tanstack/react-router";
 import { Code, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 /** 创建/编辑表单初值 */
 const EMPTY: CreateProject = {
@@ -183,7 +183,7 @@ function ProjectDialog({
     const { data: projects = [] } = useProjects();
     const editing = isEditing ? projects.find((p) => p.id === editingId) : undefined;
 
-    const { register, handleSubmit } = useForm<CreateProject>({
+    const { register, handleSubmit, control } = useForm<CreateProject>({
         values:
             isEditing && editing
                 ? {
@@ -261,19 +261,31 @@ function ProjectDialog({
                         <label htmlFor="project-stack" className="text-sm font-medium">
                             技术栈（逗号分隔）
                         </label>
-                        <Input
-                            id="project-stack"
-                            {...register("tech_stack", {
-                                setValueAs: (v: string) =>
-                                    v
-                                        ? v
-                                              .split(",")
-                                              .map((s) => s.trim())
-                                              .filter(Boolean)
-                                        : [],
-                            })}
-                            defaultValue=""
-                            placeholder="React, Go, PostgreSQL"
+                        <Controller
+                            name="tech_stack"
+                            control={control}
+                            defaultValue={[]}
+                            render={({ field }) => (
+                                <Input
+                                    id="project-stack"
+                                    value={
+                                        Array.isArray(field.value)
+                                            ? field.value.join(", ")
+                                            : (field.value ?? "")
+                                    }
+                                    onChange={(e) =>
+                                        field.onChange(
+                                            e.target.value
+                                                ? e.target.value
+                                                      .split(",")
+                                                      .map((s) => s.trim())
+                                                      .filter(Boolean)
+                                                : [],
+                                        )
+                                    }
+                                    placeholder="React, Go, PostgreSQL"
+                                />
+                            )}
                         />
                     </div>
                     <div className="space-y-1.5">

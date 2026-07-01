@@ -3,6 +3,7 @@ import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { ImageOff } from "lucide-react";
 
 import type { Post } from "../model/types";
 
@@ -34,7 +35,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
     const coverH = size === "lg" ? "h-56" : size === "sm" ? "h-32" : "h-44";
 
     return (
-        <SpotlightCard className="group flex h-full flex-col">
+        <SpotlightCard className="group flex flex-col">
             {post.cover_image ? (
                 <Link
                     to="/blog/$slug"
@@ -48,9 +49,19 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
                         className={`w-full ${coverH} object-cover transition-transform duration-500 group-hover:scale-105`}
                     />
                 </Link>
-            ) : null}
+            ) : (
+                <Link
+                    to="/blog/$slug"
+                    params={{ slug: post.slug }}
+                    className="block overflow-hidden"
+                >
+                    <div className={`flex w-full ${coverH} items-center justify-center bg-muted`}>
+                        <ImageOff className="h-8 w-8 text-muted-foreground/50" />
+                    </div>
+                </Link>
+            )}
 
-            <div className="flex flex-1 flex-col p-5">
+            <div className="flex flex-col p-5">
                 {post.tags.length > 0 ? (
                     <div className="mb-2 flex flex-wrap gap-1.5">
                         {post.tags.slice(0, 3).map((tag) => (
@@ -74,15 +85,13 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
                     </Link>
                 </h3>
 
-                <p className="mb-4 line-clamp-2 flex-1 text-sm text-muted-foreground">
-                    {post.excerpt}
-                </p>
+                <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">{post.excerpt}</p>
 
                 <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                        {post.author ? <AvatarGroup users={[post.author]} size="xs" /> : null}
+                    <div className="flex items-center gap-1.5">
+                        {post.author ? <AvatarGroup users={[post.author]} /> : null}
                         {post.author?.username}
-                    </span>
+                    </div>
                     <time>
                         {formatDistanceToNow(new Date(post.published_at), {
                             addSuffix: true,
