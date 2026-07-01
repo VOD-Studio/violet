@@ -1,3 +1,4 @@
+import { AvatarGroup } from "@shared/ui/avatar-group";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
@@ -79,15 +80,8 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 
                 <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
                     <span className="flex items-center gap-1.5">
-                        {post.author.avatar_url ? (
-                            <img
-                                src={post.author.avatar_url}
-                                alt=""
-                                className="size-4 rounded-full"
-                                loading="lazy"
-                            />
-                        ) : null}
-                        {post.author.username}
+                        {post.author ? <AvatarGroup users={[post.author]} size="xs" /> : null}
+                        {post.author?.username}
                     </span>
                     <time>
                         {formatDistanceToNow(new Date(post.published_at), {

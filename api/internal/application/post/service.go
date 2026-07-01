@@ -7,6 +7,7 @@ import (
 
 	domain "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
+	userdomain "blog-api/internal/domain/user"
 )
 
 // PostDTO 文章读模型
@@ -20,6 +21,7 @@ type PostDTO struct {
 	CoverImage     string   `json:"cover_image"`
 	Status         string   `json:"status"`
 	AuthorID       string   `json:"author_id"`
+	Author         *AuthorDTO `json:"author,omitempty"`
 	ViewCount      int      `json:"view_count"`
 	IsFeatured     bool     `json:"is_featured"`
 	SEOTitle       string   `json:"seo_title"`
@@ -28,6 +30,12 @@ type PostDTO struct {
 	Tags           []string `json:"tags"`
 	CreatedAt      string   `json:"created_at"`
 	UpdatedAt      string   `json:"updated_at"`
+}
+
+// AuthorDTO 文章作者信息，列表与详情按 author_id 批量/单个填充
+type AuthorDTO struct {
+	Username  string `json:"username"`
+	AvatarURL string `json:"avatar_url"`
 }
 
 // ArchiveItemDTO 归档文章项（精简字段，不含正文，避免响应过大）。
@@ -39,7 +47,7 @@ type ArchiveItemDTO struct {
 	Excerpt     string   `json:"excerpt"`     // 摘要
 	CoverImage  string   `json:"cover_image"` // 封面图 URL
 	Tags        []string `json:"tags"`        // 标签名列表
-	PublishedAt string   `json:"published_at"` // 发布时间（RFC3339）
+	PublishedAt string  `json:"published_at"` // 发布时间（RFC3339）
 }
 
 // ArchiveYearDTO 某年的归档数据。
@@ -52,12 +60,15 @@ type ArchiveYearDTO struct {
 
 // Service 文章用例服务
 type Service struct {
-	repo domain.PostRepository
+	repo     domain.PostRepository
+	userRepo userdomain.UserRepository
 }
 
 // NewService 构造文章用例服务
-func NewService(repo domain.PostRepository) *Service {
-	return &Service{repo: repo}
+//
+// userRepo 用于按 author_id 填充 PostDTO.Author，nil 时跳过填充。
+func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository) *Service {
+	return &Service{repo: repo, userRepo: userRepo}
 }
 
 // GetBySlug 按 slug 获取已发布文章
@@ -66,7 +77,9 @@ func (s *Service) GetBySlug(ctx context.Context, slug string) (PostDTO, error) {
 	if err != nil {
 		return PostDTO{}, err
 	}
-	return toDTO(p), nil
+	dto := toDTO(p)
+	s.fillAuthor(ctx, []PostDTO{dto})
+	return dto, nil
 }
 
 // GetByID 按 ID 获取文章（后台）
@@ -79,7 +92,9 @@ func (s *Service) GetByID(ctx context.Context, id string) (PostDTO, error) {
 	if err != nil {
 		return PostDTO{}, err
 	}
-	return toDTO(p), nil
+	dto := toDTO(p)
+	s.fillAuthor(ctx, []PostDTO{dto})
+	return dto, nil
 }
 
 // ListPublished 列出已发布文章（前台）
@@ -88,7 +103,9 @@ func (s *Service) ListPublished(ctx context.Context, page, limit int, tag string
 	if err != nil {
 		return nil, 0, err
 	}
-	return toDTOs(items), total, nil
+	dtos := toDTOs(items)
+	s.fillAuthor(ctx, dtos)
+	return dtos, total, nil
 }
 
 // ListAll 列出所有文章（后台）
@@ -97,7 +114,9 @@ func (s *Service) ListAll(ctx context.Context, page, limit int, status string) (
 	if err != nil {
 		return nil, 0, err
 	}
-	return toDTOs(items), total, nil
+	dtos := toDTOs(items)
+	s.fillAuthor(ctx, dtos)
+	return dtos, total, nil
 }
 
 // CreateInput 创建文章入参
@@ -275,6 +294,49 @@ func (s *Service) GetArchiveByYear(ctx context.Context, year int) (ArchiveYearDT
 		Count: len(items),
 		Items: items,
 	}, nil
+}
+
+// fillAuthor 为 PostDTO 列表按 author_id 批量填充 Author。
+//
+// 收集去重后的 author_id → userRepo.FindByIDs 批量查 → 回填；
+// 作者缺失时不报错，PostDTO.Author 保持 nil，列表正常返回。
+func (s *Service) fillAuthor(ctx context.Context, dtos []PostDTO) {
+	if len(dtos) == 0 || s.userRepo == nil {
+		return
+	}
+	seen := make(map[string]struct{}, len(dtos))
+	ids := make([]shared.ID, 0, len(dtos))
+	for _, d := range dtos {
+		if d.AuthorID == "" {
+			continue
+		}
+		if _, ok := seen[d.AuthorID]; ok {
+			continue
+		}
+		seen[d.AuthorID] = struct{}{}
+		if id, err := shared.ParseID(d.AuthorID); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	users, err := s.userRepo.FindByIDs(ctx, ids)
+	if err != nil {
+		return // 作者信息缺失不阻塞文章列表
+	}
+	authors := make(map[string]*AuthorDTO, len(users))
+	for _, u := range users {
+		authors[u.GetID().String()] = &AuthorDTO{
+			Username:  u.Username().String(),
+			AvatarURL: u.AvatarURL(),
+		}
+	}
+	for i := range dtos {
+		if a, ok := authors[dtos[i].AuthorID]; ok {
+			dtos[i].Author = a
+		}
+	}
 }
 
 func toDTO(p *domain.Post) PostDTO {

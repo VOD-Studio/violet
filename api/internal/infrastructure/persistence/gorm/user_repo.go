@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	domainshared "blog-api/internal/domain/shared"
@@ -99,6 +100,32 @@ func (r *UserRepository) FindByID(ctx context.Context, id domainshared.ID) (*use
 		return nil, domainshared.Internal("查询用户失败", err)
 	}
 	return toDomain(po)
+}
+
+// FindByIDs 按 ID 批量查找用户（文章列表填充作者等）
+//
+// 空切片直接返回空结果；缺失的 ID 静默跳过，由调用方处理 author 缺失。
+func (r *UserRepository) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*user.User, error) {
+	if len(ids) == 0 {
+		return []*user.User{}, nil
+	}
+	uuids := make([]uuid.UUID, 0, len(ids))
+	for _, id := range ids {
+		uuids = append(uuids, id.UUID())
+	}
+	var pos []model.User
+	if err := r.db.WithContext(ctx).Where("id IN ?", uuids).Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("批量查询用户失败", err)
+	}
+	users := make([]*user.User, 0, len(pos))
+	for i := range pos {
+		u, err := toDomain(pos[i])
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
 }
 
 // FindByEmail 按邮箱查找用户

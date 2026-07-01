@@ -18,6 +18,8 @@ import (
 type UserRepository interface {
 	// FindByID 按 ID 查找用户
 	FindByID(ctx context.Context, id shared.ID) (*User, error)
+	// FindByIDs 按 ID 批量查找用户（文章列表填充作者等）
+	FindByIDs(ctx context.Context, ids []shared.ID) ([]*User, error)
 	// FindByEmail 按邮箱查找用户（用于登录、注册查重）
 	FindByEmail(ctx context.Context, email Email) (*User, error)
 	// FindByUsername 按用户名查找用户（用于注册查重）

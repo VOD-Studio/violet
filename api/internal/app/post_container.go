@@ -15,6 +15,7 @@ type PostContainer struct {
 
 func NewPostContainer(db *gorm.DB) *PostContainer {
 	repo := gormrepo.NewPostRepository(db)
-	svc := apppost.NewService(repo)
+	userRepo := gormrepo.NewUserRepository(db)
+	svc := apppost.NewService(repo, userRepo)
 	return &PostContainer{PostHandler: posthttp.NewHandler(svc)}
 }
