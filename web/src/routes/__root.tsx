@@ -10,7 +10,6 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import AnnouncementBar from "@widgets/AnnouncementBar";
-import { AuthDebugPanelDev } from "@widgets/AuthDebugPanel/AuthDebugPanel";
 import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
@@ -104,7 +103,6 @@ function RootComponent() {
             <CommandPalette />
             <LoginDialog />
             <CustomCursor />
-            <AuthDebugPanelDev />
             <TanStackDevtools
                 config={{ position: "bottom-right" }}
                 plugins={[
