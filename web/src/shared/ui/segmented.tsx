@@ -2,6 +2,14 @@
 
 import { LayoutGrid, Table } from "lucide-react";
 import type * as React from "react";
+import {
+    type CSSProperties,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from "react";
 import { cn } from "@/shared/lib/utils";
 
 /**
@@ -39,6 +47,9 @@ const sizeMap = {
  * 容器用 bg-muted（圆角胶囊），滑块用 bg-background + shadow-sm，
  * 文字根据选中态切换前景色。
  *
+ * 滑块尺寸与位置根据当前激活按钮的实际 DOM 尺寸动态计算，
+ * 因此各段文字长度不同时仍能精确包裹当前选中项。
+ *
  * 常用于「网格/表格」视图切换、「列表/卡片」布局切换等二选一/多选一场景。
  *
  * @example
@@ -62,34 +73,45 @@ export function Segmented<V extends string = string>({
         0,
         segments.findIndex((s) => s.value === value),
     );
-    const count = segments.length;
+
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [sliderStyle, setSliderStyle] = useState<CSSProperties>({});
+
+    const updateSlider = useCallback(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        const buttons = Array.from(container.querySelectorAll("button"));
+        const activeBtn = buttons[activeIndex];
+        if (!activeBtn) return;
+        setSliderStyle({
+            left: activeBtn.offsetLeft,
+            width: activeBtn.offsetWidth,
+        });
+    }, [activeIndex]);
+
+    // 激活项变化或尺寸变化时重新计算滑块位置
+    useLayoutEffect(updateSlider, [updateSlider]);
+    useEffect(() => {
+        const handleResize = () => updateSlider();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [updateSlider]);
 
     return (
         <div
+            ref={containerRef}
             data-slot="segmented"
             className={cn(
-                "relative inline-flex w-fit items-center gap-0.5 rounded-lg bg-muted p-0.5 text-muted-foreground",
+                "relative inline-flex w-fit items-stretch gap-0.5 rounded-lg bg-muted p-0.5 text-muted-foreground",
                 sizeMap[size],
                 className,
             )}
         >
-            {/*
-              滑块：绝对定位，根据 activeIndex 平移。
-              容器布局：左右各 p-0.5（共 0.25rem）+ 段间 gap-0.5（每段间 0.125rem）。
-              滑块宽度需均分"可用宽度"：总内距 = 0.25rem + (count-1)*0.125rem = count*0.125rem + 0.125rem。
-              单段宽度 = (100% - count*0.125rem - 0.125rem) / count = 100%/count - 0.125rem*(1+1/count)。
-              每段左偏移 = i * (单段宽度 + 一个gap)。
-            */}
-            {count > 0 ? (
-                <span
-                    aria-hidden="true"
-                    className="absolute top-0.5 bottom-0.5 left-0.5 rounded-[calc(var(--radius-lg)-2px)] bg-background shadow-sm ring-1 ring-black/5 transition-transform duration-200 ease-out dark:ring-white/10"
-                    style={{
-                        width: `calc((100% - 0.25rem - ${count - 1} * 0.125rem) / ${count})`,
-                        transform: `translateX(calc(${activeIndex} * (100% + 0.125rem)))`,
-                    }}
-                />
-            ) : null}
+            <span
+                aria-hidden="true"
+                className="absolute top-0.5 bottom-0.5 rounded-[calc(var(--radius-lg)-2px)] bg-background shadow-sm ring-1 ring-black/5 transition-[left,width] duration-200 ease-out dark:ring-white/10"
+                style={sliderStyle}
+            />
             {segments.map((seg, i) => {
                 const isActive = i === activeIndex;
                 return (
@@ -99,7 +121,7 @@ export function Segmented<V extends string = string>({
                         aria-pressed={isActive}
                         onClick={() => onValueChange(seg.value)}
                         className={cn(
-                            "relative z-10 inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            "relative z-10 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                             isActive
                                 ? "text-foreground"
                                 : "text-muted-foreground hover:text-foreground",
