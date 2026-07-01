@@ -2,7 +2,7 @@ import { Button } from "@shared/ui/button";
 import { AlertCircle, FileText, Film, Loader2, Music, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useChunkedUpload } from "@/features/upload/hooks/use-chunked-upload";
+import { useChunkedUpload } from "../hooks/use-chunked-upload";
 
 /** 上传结果至少含可访问 url，列表缩略图据此预览 */
 export interface UploadResult {

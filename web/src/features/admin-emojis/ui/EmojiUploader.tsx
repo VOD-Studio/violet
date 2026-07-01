@@ -1,6 +1,6 @@
 import type { EmojiUploadResult } from "@entities/emoji/model/types";
 import { useUploadEmoji } from "@features/admin-emojis/api/mutations";
-import { Uploader } from "@shared/ui/uploader";
+import { Uploader } from "@features/upload/ui/Uploader";
 import { useCallback } from "react";
 
 interface EmojiUploaderProps {

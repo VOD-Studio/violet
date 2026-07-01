@@ -10,6 +10,7 @@ import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
+import { Uploader } from "@features/upload/ui/Uploader";
 import { Button } from "@shared/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -20,7 +21,6 @@ import { Modal } from "@/shared/ui/modal";
 import { SearchInput } from "@/shared/ui/search-input";
 import { Segmented, viewTypeSegments } from "@/shared/ui/segmented";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
-import { Uploader } from "@/shared/ui/uploader";
 
 type ViewMode = "grid" | "table";
 
