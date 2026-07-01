@@ -7,23 +7,9 @@ import { Textarea } from "@shared/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { useUpdateRole } from "../api/queries";
+import { type RoleForm, roleSchema } from "../model/schema";
 import type { RoleDTO } from "../model/types";
-
-/**
- * 编辑角色表单 Schema
- */
-const editRoleSchema = z.object({
-    name: z
-        .string()
-        .min(2, "角色名称至少 2 个字符")
-        .max(50, "角色名称最多 50 个字符")
-        .regex(/^[a-zA-Z0-9_-]+$/, "角色名称只能包含字母、数字、下划线和连字符"),
-    description: z.string().min(2, "角色描述至少 2 个字符").max(200, "角色描述最多 200 个字符"),
-});
-
-type EditRoleForm = z.infer<typeof editRoleSchema>;
 
 interface EditRoleDialogProps {
     open: boolean;
@@ -42,8 +28,8 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
         handleSubmit,
         formState: { errors },
         reset,
-    } = useForm<EditRoleForm>({
-        resolver: zodResolver(editRoleSchema),
+    } = useForm<RoleForm>({
+        resolver: zodResolver(roleSchema),
         defaultValues: {
             name: role.name || "",
             description: role.description || "",
@@ -65,7 +51,7 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
         }
     }, [open, reset]);
 
-    const onSubmit = (data: EditRoleForm) => {
+    const onSubmit = (data: RoleForm) => {
         if (!role.id) return;
         updateRole.mutate(
             { id: role.id, data },

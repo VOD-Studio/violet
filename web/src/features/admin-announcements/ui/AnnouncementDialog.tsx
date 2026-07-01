@@ -9,38 +9,9 @@ import { Textarea } from "@shared/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
 import { useCreateAnnouncement, useUpdateAnnouncement } from "../api/queries";
+import { type AnnouncementForm, announcementSchema } from "../model/schema";
 import type { AnnouncementDTO, AnnouncementType } from "../model/types";
-
-/**
- * 创建/编辑公告表单 Schema
- *
- * startTime/endTime 为 datetime-local 字符串（可空），用 superRefine 校验：
- * 若都填了，开始不得晚于结束。
- */
-const announcementSchema = z
-    .object({
-        title: z.string().min(1, "标题不能为空").max(200, "标题最多 200 字符"),
-        content: z.string().min(1, "内容不能为空"),
-        type: z.enum(["info", "warning", "success", "error"]),
-        isActive: z.boolean(),
-        startTime: z.string().optional().or(z.literal("")),
-        endTime: z.string().optional().or(z.literal("")),
-    })
-    .superRefine((data, ctx) => {
-        if (data.startTime && data.endTime) {
-            if (new Date(data.startTime) > new Date(data.endTime)) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["endTime"],
-                    message: "结束时间不得早于开始时间",
-                });
-            }
-        }
-    });
-
-type AnnouncementForm = z.infer<typeof announcementSchema>;
 
 interface AnnouncementDialogProps {
     open: boolean;

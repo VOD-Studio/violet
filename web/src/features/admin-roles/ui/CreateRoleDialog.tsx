@@ -7,22 +7,8 @@ import { Textarea } from "@shared/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { useCreateRole } from "../api/queries";
-
-/**
- * 创建角色表单 Schema
- */
-const createRoleSchema = z.object({
-    name: z
-        .string()
-        .min(2, "角色名称至少 2 个字符")
-        .max(50, "角色名称最多 50 个字符")
-        .regex(/^[a-zA-Z0-9_-]+$/, "角色名称只能包含字母、数字、下划线和连字符"),
-    description: z.string().min(2, "角色描述至少 2 个字符").max(200, "角色描述最多 200 个字符"),
-});
-
-type CreateRoleForm = z.infer<typeof createRoleSchema>;
+import { type RoleForm, roleSchema } from "../model/schema";
 
 interface CreateRoleDialogProps {
     open: boolean;
@@ -40,8 +26,8 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
         handleSubmit,
         formState: { errors },
         reset,
-    } = useForm<CreateRoleForm>({
-        resolver: zodResolver(createRoleSchema),
+    } = useForm<RoleForm>({
+        resolver: zodResolver(roleSchema),
         defaultValues: {
             name: "",
             description: "",
@@ -55,7 +41,7 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
         }
     }, [open, reset]);
 
-    const onSubmit = (data: CreateRoleForm) => {
+    const onSubmit = (data: RoleForm) => {
         createRole.mutate(data, {
             onSuccess: () => {
                 onOpenChange(false);

@@ -1,3 +1,4 @@
+import { type TagForm, tagSchema } from "@features/admin-tags/model/schema";
 import { useCreateTag, useUpdateTag } from "@features/tags/api/mutations";
 import type { Tag } from "@features/tags/model/types";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,12 +9,6 @@ import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-
-const tagSchema = z.object({
-    name: z.string().min(1, "标签名不能为空").max(50, "标签名最多 50 字符"),
-});
-type TagForm = z.infer<typeof tagSchema>;
 
 interface TagDialogProps {
     open: boolean;

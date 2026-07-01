@@ -3,7 +3,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -11,24 +10,7 @@ import { Modal } from "@/shared/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Switch } from "@/shared/ui/switch";
 import { useCreateUser } from "../api/queries";
-
-/**
- * 创建用户表单验证规则
- * role 为字符串（值来自 /admin/roles 接口返回的角色 name，不再硬编码）
- */
-const createUserSchema = z.object({
-    username: z
-        .string()
-        .min(3, "用户名至少 3 个字符")
-        .max(32, "用户名最多 32 个字符")
-        .regex(/^[a-zA-Z0-9_-]+$/, "用户名只能包含字母、数字、下划线和连字符"),
-    email: z.string().email("请输入有效的邮箱地址"),
-    password: z.string().min(6, "密码至少 6 位"),
-    role: z.string().min(1, "请选择角色"),
-    is_active: z.boolean(),
-});
-
-type CreateUserForm = z.infer<typeof createUserSchema>;
+import { type CreateUserForm, createUserSchema } from "../model/schema";
 
 interface CreateUserDialogProps {
     open: boolean;
