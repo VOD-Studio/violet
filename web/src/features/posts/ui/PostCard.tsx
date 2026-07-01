@@ -88,17 +88,10 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
                 <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">{post.excerpt}</p>
 
                 <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                        {post?.author?.avatar_url ? (
-                            <img
-                                src={post.author.avatar_url}
-                                alt=""
-                                className="size-4 rounded-full"
-                                loading="lazy"
-                            />
-                        ) : null}
-                        {post?.author?.username}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                        {post.author ? <AvatarGroup users={[post.author]} /> : null}
+                        {post.author?.username}
+                    </div>
                     <time>
                         {formatDistanceToNow(new Date(post.published_at), {
                             addSuffix: true,
