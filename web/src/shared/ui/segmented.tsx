@@ -20,6 +20,8 @@ export interface SegmentedItem<V extends string = string> {
     value: V;
     /** 显示内容（文本或图标） */
     label: React.ReactNode;
+    /** 是否禁用该段 */
+    disabled?: boolean;
 }
 
 interface SegmentedProps<V extends string = string> {
@@ -31,6 +33,8 @@ interface SegmentedProps<V extends string = string> {
     segments: SegmentedItem<V>[];
     /** 尺寸，默认 sm（与按钮高度对齐） */
     size?: "sm" | "default";
+    /** 块级模式：宽度填满容器，各段等分 */
+    block?: boolean;
     /** 自定义类名 */
     className?: string;
 }
@@ -67,6 +71,7 @@ export function Segmented<V extends string = string>({
     onValueChange,
     segments,
     size = "sm",
+    block = false,
     className,
 }: SegmentedProps<V>) {
     const activeIndex = Math.max(
@@ -102,7 +107,8 @@ export function Segmented<V extends string = string>({
             ref={containerRef}
             data-slot="segmented"
             className={cn(
-                "relative inline-flex w-fit items-stretch gap-0.5 rounded-lg bg-muted p-0.5 text-muted-foreground",
+                "relative flex items-stretch gap-0.5 rounded-lg bg-muted p-0.5 text-muted-foreground",
+                block ? "w-full" : "inline-flex w-fit",
                 sizeMap[size],
                 className,
             )}
@@ -119,12 +125,15 @@ export function Segmented<V extends string = string>({
                         key={seg.value}
                         type="button"
                         aria-pressed={isActive}
+                        disabled={seg.disabled}
                         onClick={() => onValueChange(seg.value)}
                         className={cn(
-                            "relative z-10 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            "relative z-10 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 font-medium whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+                            block && "flex-1",
                             isActive
                                 ? "text-foreground"
                                 : "text-muted-foreground hover:text-foreground",
+                            seg.disabled && !isActive && "hover:text-muted-foreground",
                         )}
                     >
                         {seg.label}
