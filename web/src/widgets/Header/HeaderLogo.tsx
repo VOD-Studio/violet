@@ -11,7 +11,7 @@ const HeaderLogo = () => {
     const { data } = useSettings();
     return (
         <Link to="/" className="text-xl font-bold tracking-tight">
-            {data?.siteName ?? "Blog"}
+            {data?.site_name ?? "Blog"}
         </Link>
     );
 };

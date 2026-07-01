@@ -1,6 +1,7 @@
 import { githubKeys } from "@features/github/api/keys";
-import { fetchContributions } from "@features/github/api/queries";
+import { fetchContributions, fetchRepos } from "@features/github/api/queries";
 import Contributions from "@features/github/ui/Contributions";
+import RepoList from "@features/github/ui/RepoList";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
 import PostList from "@features/posts/ui/PostList";
@@ -19,6 +20,10 @@ function HomePage() {
                 <div>
                     <h2 className="text-3xl font-bold mb-12 tracking-tight">开源贡献</h2>
                     <Contributions />
+                </div>
+                <div>
+                    <h2 className="text-3xl font-bold mb-12 tracking-tight">开源项目</h2>
+                    <RepoList />
                 </div>
             </section>
         </div>
@@ -56,6 +61,15 @@ export const Route = createFileRoute("/")({
             })
             .catch(() => {
                 /* GitHub 端点未就绪（404 等）→ 贡献区降级，不影响主页 */
+            });
+        // GitHub 仓库列表（装饰性次要信息，失败降级）
+        await context.queryClient
+            .ensureQueryData({
+                queryKey: githubKeys.repos(),
+                queryFn: fetchRepos,
+            })
+            .catch(() => {
+                /* GitHub 端点未就绪（404 等）→ 仓库区降级，不影响主页 */
             });
     },
     component: HomePage,
