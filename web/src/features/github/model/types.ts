@@ -6,8 +6,6 @@ export interface Contribution {
     date: string;
     /** 当日提交数 */
     count: number;
-    /** 强度等级 0-4（0=无提交，4=最活跃） */
-    level: 0 | 1 | 2 | 3 | 4;
 }
 
 /**
@@ -20,9 +18,9 @@ export interface ContributionSummary {
     /** 按日的贡献列表 */
     contributions: Contribution[];
     /** 总提交数 */
-    total: number;
-    /** 当前连续天数 */
-    currentStreak: number;
+    total_contributions: number;
+    /** 用户名称 */
+    username: string;
 }
 
 /**
