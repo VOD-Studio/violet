@@ -1,5 +1,5 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
-import { useUpdateEmojiGroup } from "@features/emojis/api/mutations";
+import { useUpdateEmojiGroup } from "@features/admin-emojis/api/mutations";
 import { cn } from "@shared/lib/utils";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";

@@ -6,12 +6,9 @@
  * - DTO 与领域 Song 带 json tag，序列化为 snake_case；
  * - 公开解析返回的 EmbedInfo/SongMeta/PlaylistMeta 无 json tag，
  *   Go 默认按字段名输出为 PascalCase，故此处对应字段用 PascalCase。
- * 若后端后续为这三类补 json tag，需同步改此处为 snake_case。
+ *
+ * 后台歌单管理写操作请求体见 admin-music。
  */
-
-// ============================================================
-// 读模型（snake_case，DTO 与领域 Song 带 json tag）
-// ============================================================
 
 /**
  * Song - 歌曲信息
@@ -38,7 +35,7 @@ export interface Song {
  * 故标可选，消费方按可选处理。
  */
 export interface Playlist {
-    /** 歌单 ID（UUID） */
+    /** 歌单 ID，UUID */
     id: string;
     /** 歌单标题 */
     title: string;
@@ -56,9 +53,9 @@ export interface Playlist {
     songs: Song[];
     /** 是否启用，公开接口仅返回启用歌单 */
     is_active: boolean;
-    /** 创建时间（RFC3339），后端当前未填充，恒为空串 */
+    /** 创建时间，RFC3339，后端当前未填充，恒为空串 */
     created_at?: string;
-    /** 更新时间（RFC3339），后端当前未填充，恒为空串 */
+    /** 更新时间，RFC3339，后端当前未填充，恒为空串 */
     updated_at?: string;
 }
 
@@ -72,16 +69,11 @@ export interface MusicSettings {
     player_version: string;
 }
 
-// ============================================================
-// 公开解析返回类型（PascalCase，后端 domain struct 无 json tag）
-// ============================================================
-
 /**
  * EmbedInfo - 音乐嵌入信息
  *
  * 对应后端 domain/music/repository.go 的 EmbedInfo，无 json tag，
  * Go 默认按字段名序列化为 PascalCase。
- * GetMusicEmbed 接口返回此结构，供前端拼接嵌入播放器。
  */
 export interface EmbedInfo {
     /** 来源平台标识，netease 或 tencent */
@@ -95,9 +87,7 @@ export interface EmbedInfo {
 /**
  * SongMeta - 歌曲元数据
  *
- * 对应后端 domain/music/repository.go 的 SongMeta，无 json tag，
- * 字段序列化为 PascalCase。
- * GetSongMeta 接口返回封面与歌词合并结果。
+ * 对应后端 domain/music/repository.go 的 SongMeta，无 json tag，PascalCase。
  */
 export interface SongMeta {
     /** 封面图 URL */
@@ -109,9 +99,7 @@ export interface SongMeta {
 /**
  * PlaylistMeta - 歌单解析元数据
  *
- * 对应后端 domain/music/repository.go 的 PlaylistMeta，无 json tag，
- * 字段序列化为 PascalCase。
- * ParsePlaylist 接口返回第三方歌单解析结果，title/creator/cover 可能为空。
+ * 对应后端 domain/music/repository.go 的 PlaylistMeta，无 json tag，PascalCase。
  */
 export interface PlaylistMeta {
     /** 歌单标题 */
@@ -128,107 +116,10 @@ export interface PlaylistMeta {
     Songs: Song[];
 }
 
-// ============================================================
-// 请求体（snake_case，对应 handler 内联结构带 json tag）
-// ============================================================
-
-/**
- * ImportPlaylistRequest - 导入歌单请求体
- *
- * 对应后端 CreatePlaylist handler 的内联结构，url 必填。
- * 后端解析链接拉取歌曲后创建歌单，返回 Playlist。
- */
-export interface ImportPlaylistRequest {
-    /** 第三方歌单链接，必填 */
-    url: string;
-}
-
-/**
- * CreateCustomPlaylistRequest - 创建自定义歌单请求体
- *
- * 对应后端 CreateCustomPlaylist handler 的内联结构，title 必填。
- * 后端创建 platform 为 custom 的空歌单。
- */
-export interface CreateCustomPlaylistRequest {
-    /** 歌单标题，必填 */
-    title: string;
-}
-
-/**
- * UpdatePlaylistRequest - 更新歌单请求体
- *
- * 对应后端 UpdatePlaylist handler 的内联结构。
- * title 与 is_active 均为可选指针，传值才更新，省略保持原值。
- */
-export interface UpdatePlaylistRequest {
-    /** 歌单标题，传值才更新 */
-    title?: string;
-    /** 是否启用，传值才更新 */
-    is_active?: boolean;
-}
-
-/**
- * SetPlaylistActiveRequest - 启用/禁用歌单请求体
- *
- * 对应后端 SetPlaylistActive handler 的内联结构，active 控制目标状态。
- */
-export interface SetPlaylistActiveRequest {
-    /** 目标启用状态 */
-    active: boolean;
-}
-
-/**
- * AddSongRequest - 添加歌曲到歌单请求体
- *
- * 对应后端 AddSongToPlaylist handler 的内联结构，字段均可选。
- */
-export interface AddSongRequest {
-    /** 歌曲名 */
-    name?: string;
-    /** 艺人名 */
-    artist?: string;
-    /** 播放地址 */
-    url?: string;
-    /** 封面图 URL */
-    cover?: string;
-}
-
-/**
- * UpdateSongRequest - 更新歌单内歌曲请求体
- *
- * 对应后端 UpdateSongInPlaylist handler 的内联结构。
- * 后端用零值判断跳过，空串不会清空字段。
- */
-export interface UpdateSongRequest {
-    /** 歌曲名 */
-    name?: string;
-    /** 艺人名 */
-    artist?: string;
-    /** 播放地址 */
-    url?: string;
-    /** 封面图 URL */
-    cover?: string;
-}
-
-/**
- * UpdatePlayerSettingsRequest - 更新播放器设置请求体
- *
- * 对应后端 UpdatePlayerVersion handler 的内联结构，player_version 必填。
- */
-export interface UpdatePlayerSettingsRequest {
-    /** 播放器版本号，必填 */
-    player_version: string;
-}
-
-// ============================================================
-// 查询参数
-// ============================================================
-
 /**
  * MusicSearchQuery - 搜索歌曲查询参数
  *
- * 后端 SearchSongs handler 解析 keyword 与 limit，keyword 必填，
- * limit 省略时后端默认 10。
+ * 后端 SearchSongs 解析 keyword 与 limit，keyword 必填，limit 省略时默认 10。
  */
 export interface MusicSearchQuery {
     /** 搜索关键词，必填 */
@@ -240,7 +131,6 @@ export interface MusicSearchQuery {
 /**
  * MusicSongQuery - 获取歌曲详情/歌词/元数据查询参数
  *
- * 后端 GetSongDetail/GetLyrics/GetSongMeta 共用此参数形态。
  * id 必填，platform 可选，省略时后端默认走 netease 解析路径。
  */
 export interface MusicSongQuery {
@@ -250,17 +140,13 @@ export interface MusicSongQuery {
     platform?: string;
 }
 
-/**
- * MusicEmbedQuery - 解析音乐链接查询参数
- */
+/** MusicEmbedQuery - 解析音乐链接查询参数 */
 export interface MusicEmbedQuery {
     /** 音乐链接，必填，支持网易云与 QQ 音乐 */
     url: string;
 }
 
-/**
- * MusicPlaylistQuery - 解析歌单链接查询参数
- */
+/** MusicPlaylistQuery - 解析歌单链接查询参数 */
 export interface MusicPlaylistQuery {
     /** 歌单链接，必填 */
     url: string;

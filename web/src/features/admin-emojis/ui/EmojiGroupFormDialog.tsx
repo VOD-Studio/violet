@@ -1,5 +1,5 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
-import { useCreateEmojiGroup, useUpdateEmojiGroup } from "@features/emojis/api/mutations";
+import { useCreateEmojiGroup, useUpdateEmojiGroup } from "@features/admin-emojis/api/mutations";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
 import { Modal } from "@shared/ui/modal";

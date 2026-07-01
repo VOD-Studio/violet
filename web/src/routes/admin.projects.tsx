@@ -1,13 +1,14 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import {
     useCreateProject,
     useDeleteProject,
     useUpdateProject,
-} from "@features/projects/api/mutations";
+} from "@features/admin-projects/api/mutations";
+import type { CreateProject } from "@features/admin-projects/model/types";
+import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { useProjects } from "@features/projects/api/queries";
-import type { CreateProject, Project } from "@features/projects/model/types";
+import type { Project } from "@features/projects/model/types";
 import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";

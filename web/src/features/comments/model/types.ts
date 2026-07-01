@@ -1,19 +1,14 @@
 /**
  * comments 模块类型定义
  *
- * 领域读模型 Comment、CommentPicture、AdminComment、CommentStatus 见 entities/comment，
- * 此处转出供模块内部消费。评论支持嵌套回复与状态机，反应为 emoji 点赞聚合。
+ * 领域读模型 Comment、CommentPicture、AdminComment 见 entities/comment，
+ * 此处转出供模块内部消费。评论支持嵌套回复，反应为 emoji 点赞聚合。
  *
  * 字段来源：
  * - Comment / AdminComment 见 application/comment/service.go。
  * - Reaction / BatchResult 见 domain/commentreaction/entity.go。
  */
-import type {
-    AdminComment,
-    Comment,
-    CommentPicture,
-    CommentStatus,
-} from "@entities/comment/model/types";
+import type { AdminComment, Comment, CommentPicture } from "@entities/comment/model/types";
 
 /**
  * Reaction - 评论反应读模型
@@ -63,18 +58,6 @@ export interface CommentListQuery {
 }
 
 /**
- * AdminCommentListQuery - 后台评论列表查询参数
- */
-export interface AdminCommentListQuery {
-    /** 页码，从 1 开始 */
-    page?: number;
-    /** 每页条数 */
-    limit?: number;
-    /** 状态筛选，省略返回全部 */
-    status?: CommentStatus;
-}
-
-/**
  * CreateComment - 提交评论请求体
  *
  * 对应 handler comment.createCommentRequest。
@@ -112,38 +95,6 @@ export interface AddReaction {
 export interface BatchReactionsQuery {
     /** 评论 ID 列表，至少一个 */
     comment_ids: string[];
-}
-
-/**
- * BatchUpdateCommentStatus - 批量更新评论状态请求体
- *
- * 对应 handler comment.batchUpdateStatusRequest。
- */
-export interface BatchUpdateCommentStatus {
-    /** 评论 ID 列表，1 到 100 条 */
-    ids: string[];
-    /** 目标状态 */
-    status: CommentStatus;
-}
-
-/**
- * PendingCountResponse - 待审核评论数量响应
- *
- * 后端 CountPending 返回 { count }。
- */
-export interface PendingCountResponse {
-    /** 待审核评论数量 */
-    count: number;
-}
-
-/**
- * BatchUpdateStatusResponse - 批量更新状态响应
- *
- * 后端 BatchUpdateStatus 返回 { affected }。
- */
-export interface BatchUpdateStatusResponse {
-    /** 受影响行数 */
-    affected: number;
 }
 
 // 领域读模型转出
