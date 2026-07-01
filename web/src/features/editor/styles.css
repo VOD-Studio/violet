@@ -83,12 +83,13 @@
   line-height: 1.6;
 }
 /*
- * 兜底：所有 hljs-* span 默认用前景色（避免 xml 等未定义 token 显示白色）。
- * lowlight 对 TS 泛型 <T> 会误判为 xml，导致后续代码进入 XML 模式，
- * 用兜底色保证可读性。
+ * 兜底：编辑器代码块内所有 hljs-* token 默认浅灰色。
+ * 用 :where() 把特异性降为 0，确保具体 token 规则（hljs-keyword 等）始终覆盖。
+ * 解决 lowlight 对 TS 泛型误判为 xml、JSON 标点等未定义 token 显示白色的问题。
+ * 仅作用于 .ProseMirror pre 内，不影响前台 CodeBlock（shiki）。
  */
-.ProseMirror pre span[class*="hljs-"] {
-  color: #e6edf3;
+.ProseMirror pre :where([class*="hljs-"]) {
+  color: #c9d1d9;
 }
 .ProseMirror pre code {
   background: none;
