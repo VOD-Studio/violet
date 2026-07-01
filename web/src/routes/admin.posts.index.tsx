@@ -240,7 +240,12 @@ function RowActions({ row, onDelete }: { row: AdminPost; onDelete: (p: AdminPost
         <div className="flex items-center justify-end">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon-sm" title="更多操作">
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="更多操作"
+                        className="w-auto min-w-8 px-1.5"
+                    >
                         <MoreHorizontal />
                         <ChevronDown className="size-3 opacity-50" />
                     </Button>

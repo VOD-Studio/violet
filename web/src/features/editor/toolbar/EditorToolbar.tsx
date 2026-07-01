@@ -96,7 +96,13 @@ export function EditorToolbar({
             {/* 图片：素材库选择 / 本地上传 二选一 */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="ghost" size="icon-sm" title="插入图片">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        title="插入图片"
+                        className="w-auto min-w-8 px-1.5"
+                    >
                         <ImagePlus />
                         <ChevronDown className="size-3 opacity-50" />
                     </Button>
