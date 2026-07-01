@@ -1,40 +1,68 @@
+import type { PostDetail } from "@entities/post/model/types";
+import { postKeys } from "@features/posts/api/keys";
+import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
 import { extractToc } from "@shared/lib/hooks/use-toc";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft, Calendar, Eye } from "lucide-react";
 import { useRef } from "react";
 
 /**
- * /blog/$slug - 文章详情页（Nexus Morph 布局）
+ * /blog/$slug - 文章详情页
  *
- * spec：详情页打破 50/50，右侧展开至 75% 沉浸阅读，
- * 左侧收缩 25% 固定侧栏：xunrua 上移作 Logo + 下方动态 TOC。
- *
- * 阅读进度条（顶部）与 TOC 高亮同步。
- *
- * 注：首期文章正文 HTML 仍为占位（演示 TOC 提取与高亮管线），
- * 实际正文需后端 content 字段接入（属后续 feature）。
+ * loader SSR 预取文章（按 slug），组件读缓存。
+ * 正文用后端预渲染的 content_html（dangerouslySetInnerHTML + 全局 prose 样式）。
+ * 左侧 TOC（由 content_html 提取）+ 顶部阅读进度条。
+ * 路由 head 映射 SEO 字段（title/description/og:image）。
  */
 function BlogDetailPage() {
+    const { slug } = Route.useParams();
+    const { data: post, isLoading, error } = usePost(slug);
     const contentRef = useRef<HTMLElement>(null);
     const progress = useScrollProgress();
 
-    // 占位正文（演示 TOC 提取与高亮管线）
-    const sampleHtml = `
-		<h2 id="intro">引言</h2>
-		<p>Nexus-Blog 是一个极客物理美学的博客系统。</p>
-		<h2 id="arch">架构</h2>
-		<p>保留 FSD 分层与 TanStack Start SSR。</p>
-		<h3 id="arch-ui">UI 层</h3>
-		<p>完全重写视觉，双主题。</p>
-		<h2 id="conclusion">总结</h2>
-		<p>60fps 与无 reflow 是铁律。</p>
-	`;
-    const toc = extractToc(sampleHtml);
+    if (isLoading) {
+        return (
+            <div className="container mx-auto px-6 py-32">
+                <div className="mx-auto max-w-3xl animate-pulse">
+                    <div className="mb-6 h-10 w-3/4 rounded bg-muted" />
+                    <div className="mb-8 h-4 w-1/2 rounded bg-muted" />
+                    <div className="space-y-3">
+                        {[85, 70, 90, 60, 80, 55, 75, 65].map((w) => (
+                            <div
+                                key={w}
+                                className="h-4 rounded bg-muted"
+                                style={{ width: `${w}%` }}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !post) {
+        return (
+            <div className="container mx-auto flex flex-col items-center px-6 py-32 text-center">
+                <h1 className="mb-3 font-mono text-2xl font-bold">文章加载失败</h1>
+                <p className="mb-6 text-muted-foreground">该文章可能不存在或已被删除。</p>
+                <Link
+                    to="/blog"
+                    className="inline-flex items-center gap-2 rounded-lg border border-edge-hairline px-4 py-2 text-sm transition-colors hover:bg-accent"
+                >
+                    <ArrowLeft className="size-4" />
+                    返回博客
+                </Link>
+            </div>
+        );
+    }
+
+    const toc = extractToc(post.content_html);
 
     return (
         <>
-            {/* Fluid Progress Indicator */}
+            {/* 顶部阅读进度条 */}
             <div className="fixed top-0 left-0 right-0 z-50 h-1">
                 <div
                     className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-[width] duration-150"
@@ -42,25 +70,116 @@ function BlogDetailPage() {
                 />
             </div>
 
-            <div className="container mx-auto px-6 py-24 flex justify-center">
-                {/* Left side floating TOC (optional/hidden on small screens) */}
-                <aside className="hidden 2xl:block fixed left-12 top-32 w-64">
-                    {/* TOC component */}
-                    <ArticleToc items={toc} contentRef={contentRef} />
-                </aside>
+            <article className="container mx-auto px-6 py-16">
+                {/* 返回链接 */}
+                <Link
+                    to="/blog"
+                    className="mb-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                    <ArrowLeft className="size-4" />
+                    博客
+                </Link>
 
-                <main ref={contentRef} className="w-full max-w-3xl">
-                    <article
-                        className="prose prose-neutral dark:prose-invert max-w-none"
-                        // biome-ignore lint/security/noDangerouslySetInnerHtml: 占位演示正文
-                        dangerouslySetInnerHTML={{ __html: sampleHtml }}
-                    />
-                </main>
-            </div>
+                {/* 文章头 */}
+                <header className="mx-auto mb-12 max-w-3xl">
+                    {/* 标签 */}
+                    {post.tags.length > 0 ? (
+                        <div className="mb-4 flex flex-wrap gap-2">
+                            {post.tags.map((tag) => (
+                                <span
+                                    key={tag}
+                                    className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground"
+                                >
+                                    #{tag}
+                                </span>
+                            ))}
+                        </div>
+                    ) : null}
+
+                    <h1 className="mb-5 text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+                        {post.title}
+                    </h1>
+
+                    {/* 元信息 */}
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                        {post.published_at ? (
+                            <span className="inline-flex items-center gap-1.5">
+                                <Calendar className="size-3.5" />
+                                {formatDate(post.published_at)}
+                            </span>
+                        ) : null}
+                        <span className="inline-flex items-center gap-1.5">
+                            <Eye className="size-3.5" />
+                            {post.view_count} 次阅读
+                        </span>
+                    </div>
+                </header>
+
+                {/* 封面图 */}
+                {post.cover_image ? (
+                    <div className="mx-auto mb-12 max-w-4xl overflow-hidden rounded-2xl">
+                        <img
+                            src={post.cover_image}
+                            alt={post.title}
+                            className="aspect-[2/1] w-full object-cover"
+                        />
+                    </div>
+                ) : null}
+
+                {/* 正文 + TOC */}
+                <div className="relative mx-auto flex max-w-6xl justify-center gap-8">
+                    {/* 左侧 TOC（大屏） */}
+                    {toc.length > 1 ? (
+                        <aside className="hidden w-56 shrink-0 2xl:block">
+                            <div className="sticky top-24">
+                                <ArticleToc items={toc} contentRef={contentRef} />
+                            </div>
+                        </aside>
+                    ) : null}
+
+                    {/* 正文 */}
+                    <main ref={contentRef} className="min-w-0 max-w-3xl flex-1">
+                        <div
+                            className="prose prose-neutral dark:prose-invert max-w-none"
+                            // biome-ignore lint/security/noDangerouslySetInnerHtml: 后端预渲染的 HTML 正文，受信任来源
+                            dangerouslySetInnerHTML={{ __html: post.content_html }}
+                        />
+                    </main>
+                </div>
+            </article>
         </>
     );
 }
 
+/** 日期格式化：2026-01-15 → "2026 年 1 月 15 日" */
+function formatDate(s: string): string {
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" });
+}
+
 export const Route = createFileRoute("/blog/$slug")({
+    loader: async ({ context, params }) => {
+        const post = await context.queryClient.ensureQueryData({
+            queryKey: postKeys.detail(params.slug),
+            queryFn: () => fetchPostBySlug(params.slug),
+        });
+        return post;
+    },
+    // 动态 SEO：映射文章的 seo_title / seo_description / 封面图
+    head: ({ loaderData }) => {
+        const post = loaderData as PostDetail | undefined;
+        if (!post) return { meta: [] };
+        return {
+            meta: [
+                { title: post.seo_title || post.title },
+                { name: "description", content: post.seo_description || post.excerpt },
+                { property: "og:title", content: post.seo_title || post.title },
+                { property: "og:description", content: post.seo_description || post.excerpt },
+                ...(post.cover_image ? [{ property: "og:image", content: post.cover_image }] : []),
+                { property: "og:type", content: "article" },
+            ],
+        };
+    },
     component: BlogDetailPage,
 });
