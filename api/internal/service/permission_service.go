@@ -25,9 +25,9 @@ type PermissionService struct {
 	roleRepo domainrole.RoleRepository
 	ttl      time.Duration
 
-	mu         sync.RWMutex
-	cache      map[string]map[string]struct{} // role名 → 权限码集合
-	loadedAt   time.Time
+	mu       sync.RWMutex
+	cache    map[string]map[string]struct{} // role名 → 权限码集合
+	loadedAt time.Time
 }
 
 // NewPermissionService 创建权限检查服务

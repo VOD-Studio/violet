@@ -3,8 +3,8 @@ package app
 import (
 	"gorm.io/gorm"
 
-	authcmd "blog-api/internal/application/auth/command"
 	appaudit "blog-api/internal/application/audit"
+	authcmd "blog-api/internal/application/auth/command"
 	appuseradmin "blog-api/internal/application/useradmin"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	useradminhttp "blog-api/internal/interfaces/http/handler/useradmin"

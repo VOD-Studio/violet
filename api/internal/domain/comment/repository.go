@@ -52,7 +52,6 @@ type Reaction struct {
 	emojiID   int32
 	userID    *shared.ID
 	ipHash    string
-	createdAt shared.Timestamps
 }
 
 // NewReaction 创建反应

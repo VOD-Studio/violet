@@ -57,13 +57,15 @@ func (a *Adapter) GetContributions(ctx context.Context, username, token string) 
 		return nil, err
 	}
 	var result struct {
-		Errors []struct{ Message string `json:"message"` } `json:"errors"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
 		Data struct {
 			User struct {
 				ContributionsCollection struct {
 					ContributionCalendar struct {
 						TotalContributions int `json:"totalContributions"`
-						Weeks []struct {
+						Weeks              []struct {
 							ContributionDays []struct {
 								Date              string `json:"date"`
 								ContributionCount int    `json:"contributionCount"`
@@ -179,7 +181,9 @@ func (a *Adapter) fetchPinnedNames(ctx context.Context, username, token string) 
 		Data struct {
 			User struct {
 				PinnedItems struct {
-					Nodes []struct{ Name string `json:"name"` } `json:"nodes"`
+					Nodes []struct {
+						Name string `json:"name"`
+					} `json:"nodes"`
 				} `json:"pinnedItems"`
 			} `json:"user"`
 		} `json:"data"`

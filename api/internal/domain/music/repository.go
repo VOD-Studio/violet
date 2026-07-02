@@ -43,18 +43,18 @@ type EmbedInfo struct {
 
 // SongMeta 歌曲元数据（封面+歌词）
 type SongMeta struct {
-	Cover string
+	Cover  string
 	Lyrics string
 }
 
 // PlaylistMeta 歌单元数据（导入/刷新时解析第三方歌单）
 type PlaylistMeta struct {
-	Title    string
-	Cover    string
-	Creator  string
-	Platform string
+	Title      string
+	Cover      string
+	Creator    string
+	Platform   string
 	PlaylistID string
-	Songs    []Song
+	Songs      []Song
 }
 
 var ErrNotFound = shared.NotFound("歌单")

@@ -5,8 +5,8 @@ import (
 
 	appmedia "blog-api/internal/application/media"
 	infrapimage "blog-api/internal/infrastructure/image"
-	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	inframusic "blog-api/internal/infrastructure/music"
+	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	"blog-api/internal/infrastructure/storage"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
 )

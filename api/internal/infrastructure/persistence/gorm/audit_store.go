@@ -14,16 +14,16 @@ import (
 
 // AuditLog 操作日志 PO
 type AuditLog struct {
-	ID           int64          `gorm:"primaryKey;autoIncrement" json:"id"`
-	UserID       *string        `gorm:"type:uuid;column:user_id" json:"user_id"`
-	UserName     string         `gorm:"->" json:"user_name"` // join users.username
-	Action       string         `gorm:"type:varchar(50)" json:"action"`
-	ResourceType string         `gorm:"type:varchar(50);column:resource_type" json:"resource_type"`
-	ResourceID   string         `gorm:"type:varchar(255);column:resource_id" json:"resource_id"`
-	ResourceName string         `gorm:"type:varchar(255);column:resource_name" json:"resource_name"`
-	Detail       string         `gorm:"type:jsonb" json:"detail"`
-	IPAddress    string         `gorm:"type:varchar(45);column:ip_address" json:"ip_address"`
-	CreatedAt    time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	ID           int64     `gorm:"primaryKey;autoIncrement" json:"id"`
+	UserID       *string   `gorm:"type:uuid;column:user_id" json:"user_id"`
+	UserName     string    `gorm:"->" json:"user_name"` // join users.username
+	Action       string    `gorm:"type:varchar(50)" json:"action"`
+	ResourceType string    `gorm:"type:varchar(50);column:resource_type" json:"resource_type"`
+	ResourceID   string    `gorm:"type:varchar(255);column:resource_id" json:"resource_id"`
+	ResourceName string    `gorm:"type:varchar(255);column:resource_name" json:"resource_name"`
+	Detail       string    `gorm:"type:jsonb" json:"detail"`
+	IPAddress    string    `gorm:"type:varchar(45);column:ip_address" json:"ip_address"`
+	CreatedAt    time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }
 
 func (AuditLog) TableName() string { return "audit_logs" }

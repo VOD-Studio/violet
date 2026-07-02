@@ -94,6 +94,18 @@ func registerPostPaths(t *openapi3.T) {
 		"years": intArray("含已发布文章的年份列表（倒序）"),
 	})
 
+	// 文章版本快照
+	registerSchema(t, "PostVersionDTO", openapi3.Schemas{
+		"id":         reqStr("版本 ID（UUID）"),
+		"post_id":    reqStr("文章 ID（UUID）"),
+		"title":      reqStr("标题"),
+		"content_md": optStr("Markdown 原文（列表接口可能不返回）"),
+		"tags":       strArray("标签列表"),
+		"author_id":  reqStr("操作者 ID（UUID）"),
+		"summary":    reqStr("快照备注/摘要"),
+		"created_at": reqStr("生成时间（RFC3339）"),
+	})
+
 	// ============ 前台公开 ============
 
 	get(t, "/posts", &openapi3.Operation{
@@ -110,8 +122,8 @@ func registerPostPaths(t *openapi3.T) {
 	})
 
 	get(t, "/posts/archive", &openapi3.Operation{
-		Tags:       []string{"文章"},
-		Summary:    "归档年份索引",
+		Tags:    []string{"文章"},
+		Summary: "归档年份索引",
 		Description: "返回所有含已发布文章的年份（倒序）。供归档页渲染年份导航，" +
 			"再按年调用 /posts/archive/{year} 懒加载。",
 		Responses: responses(
@@ -120,8 +132,8 @@ func registerPostPaths(t *openapi3.T) {
 	})
 
 	get(t, "/posts/archive/{year}", &openapi3.Operation{
-		Tags:       []string{"文章"},
-		Summary:    "指定年份归档",
+		Tags:    []string{"文章"},
+		Summary: "指定年份归档",
 		Description: "返回指定年份全部已发布文章的精简项（倒序，不含正文）。" +
 			"前端按月分组展示。",
 		Parameters: openapi3.Parameters{pathStrParam("year", "年份（如 2026）")},
@@ -269,6 +281,46 @@ func registerPostPaths(t *openapi3.T) {
 		Responses: responses(
 			200, dataResponse("ImportResultDTO", "解析结果", 200),
 			400, errorResponse("URL 无效或解析失败"),
+		),
+	})
+
+	get(t, "/admin/posts/{id}/versions", &openapi3.Operation{
+		Tags:        []string{"文章版本管理"},
+		Summary:     "获取文章历史版本列表",
+		Description: "列出指定文章的所有历史快照，倒序排列。不包含正文以减少开销。需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{pathStrParam("id", "文章 ID（UUID）")},
+		Responses: responses(
+			200, dataArrayResponse("PostVersionDTO", "文章历史版本列表", 200, false),
+		),
+	})
+
+	get(t, "/admin/posts/versions/{versionId}", &openapi3.Operation{
+		Tags:        []string{"文章版本管理"},
+		Summary:     "获取指定历史版本详情",
+		Description: "获取指定历史版本快照详情（包含完整正文内容）。需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{pathStrParam("versionId", "版本 ID（UUID）")},
+		Responses: responses(
+			200, dataResponse("PostVersionDTO", "历史版本详情", 200),
+			404, errorResponse("版本不存在"),
+		),
+	})
+
+	post(t, "/admin/posts/{id}/versions/{versionId}/restore", &openapi3.Operation{
+		Tags:        []string{"文章版本管理"},
+		Summary:     "回滚文章至指定版本",
+		Description: "将当前文章内容替换为指定历史版本的内容，并在此基础上生成一条“回滚”快照。需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters: openapi3.Parameters{
+			pathStrParam("id", "文章 ID（UUID）"),
+			pathStrParam("versionId", "版本 ID（UUID）"),
+			csrfHeaderParam(),
+		},
+		Responses: responses(
+			200, messageResponse("已回滚到指定版本"),
+			404, errorResponse("文章或版本不存在"),
+			400, errorResponse("请求参数错误或历史版本不属于该文章"),
 		),
 	})
 }

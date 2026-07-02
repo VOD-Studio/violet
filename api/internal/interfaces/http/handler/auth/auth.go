@@ -12,8 +12,8 @@ import (
 	"blog-api/config"
 	authcmd "blog-api/internal/application/auth/command"
 	authquery "blog-api/internal/application/auth/query"
-	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/domain/user"
+	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
 )
 

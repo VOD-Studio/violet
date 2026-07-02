@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -241,6 +242,70 @@ func (r *PostRepository) FindPublishedByYear(ctx context.Context, year int) ([]*
 		result = append(result, p)
 	}
 	return result, nil
+}
+
+func postVersionToPO(v *post.PostVersion) model.PostVersion {
+	tagsBytes, _ := json.Marshal(v.Tags())
+	return model.PostVersion{
+		ID:          v.ID().UUID(),
+		PostID:      v.PostID().UUID(),
+		Title:       v.Title(),
+		ContentMD:   v.ContentMD(),
+		ContentHTML: v.ContentHTML(),
+		Excerpt:     v.Excerpt(),
+		CoverImage:  v.CoverImage(),
+		Tags:        string(tagsBytes),
+		AuthorID:    v.AuthorID().UUID(),
+		Summary:     v.Summary(),
+		CreatedAt:   v.CreatedAt(),
+	}
+}
+
+func postVersionToDomain(po model.PostVersion) (*post.PostVersion, error) {
+	var tags []string
+	if po.Tags != "" {
+		_ = json.Unmarshal([]byte(po.Tags), &tags)
+	}
+	return post.ReconstructPostVersion(
+		domainshared.MustParseID(po.ID.String()),
+		domainshared.MustParseID(po.PostID.String()),
+		po.Title, po.ContentMD, po.ContentHTML,
+		po.Excerpt, po.CoverImage, tags,
+		domainshared.MustParseID(po.AuthorID.String()),
+		po.Summary, po.CreatedAt,
+	), nil
+}
+
+func (r *PostRepository) SaveVersion(ctx context.Context, version *post.PostVersion) error {
+	po := postVersionToPO(version)
+	if err := r.db.WithContext(ctx).Create(&po).Error; err != nil {
+		return domainshared.Internal("保存版本快照失败", err)
+	}
+	return nil
+}
+
+func (r *PostRepository) FindVersionsByPostID(ctx context.Context, postID domainshared.ID) ([]*post.PostVersion, error) {
+	var pos []model.PostVersion
+	if err := r.db.WithContext(ctx).Where("post_id = ?", postID.UUID()).Order("created_at DESC").Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询版本列表失败", err)
+	}
+	result := make([]*post.PostVersion, 0, len(pos))
+	for _, po := range pos {
+		p, _ := postVersionToDomain(po)
+		result = append(result, p)
+	}
+	return result, nil
+}
+
+func (r *PostRepository) GetVersionByID(ctx context.Context, versionID domainshared.ID) (*post.PostVersion, error) {
+	var po model.PostVersion
+	if err := r.db.WithContext(ctx).First(&po, "id = ?", versionID.UUID()).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, post.ErrNotFound // Using ErrNotFound from post pkg
+		}
+		return nil, domainshared.Internal("查询版本快照失败", err)
+	}
+	return postVersionToDomain(po)
 }
 
 var _ post.PostRepository = (*PostRepository)(nil)

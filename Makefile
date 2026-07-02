@@ -76,7 +76,7 @@ api: ## 启动 Go API 服务
 	cd api && go run ./cmd/server
 
 api-build: ## 编译 Go API
-	cd api && go build -o bin/server ./cmd/server
+	cd api && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/server ./cmd/server
 	@echo "编译完成: api/bin/server"
 
 api-test: ## 运行后端测试
@@ -98,6 +98,11 @@ sqlc: ## 生成 sqlc 代码
 wire: ## 生成 wire 依赖注入代码 (DDD app 层)
 	cd api && go run github.com/google/wire/cmd/wire ./internal/app/
 	@echo "wire 代码生成完成"
+
+apifox: ## 生成 OpenAPI 文档并导入到 Apifox
+	@echo "生成并上传 OpenAPI 文档到 Apifox..."
+	cd api && go run ./cmd/export-openapi/main.go && apifox import --project 8484856 --format openapi --file ./openapi.json
+	@echo "Apifox 更新完成"
 
 # ==================== 前端 ====================
 

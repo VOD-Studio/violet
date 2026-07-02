@@ -5,7 +5,6 @@
 package announcement
 
 import (
-	"regexp"
 	"time"
 
 	"blog-api/internal/domain/shared"
@@ -123,6 +122,3 @@ func (a *Announcement) EndTime() *time.Time   { return a.endTime }
 func (a *Announcement) CreatedBy() *shared.ID { return a.createdBy }
 func (a *Announcement) CreatedAt() time.Time  { return a.timestamps.CreatedAt }
 func (a *Announcement) UpdatedAt() time.Time  { return a.timestamps.UpdatedAt }
-
-// 校验 title 格式（防止注入）
-var titlePattern = regexp.MustCompile(`^.{1,255}$`)

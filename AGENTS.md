@@ -1,59 +1,36 @@
-<!-- Generated: 2026-05-09 | Updated: 2026-05-09 -->
+# mimo-blog (blog-project)
 
-# blog-project
+全栈博客平台 monorepo。
 
-## Purpose
-全栈博客平台，Go 后端 (api/) + React 前端 (web/)，支持文章管理、音乐播放、评论互动、Emoji 系统、项目管理等功能。使用 Docker Compose 编排 PostgreSQL + Redis 基础设施。
+## 架构与代码边界
+- **后端 (`api/`)**: Go 1.25, Chi 路由, PostgreSQL 16, Redis 7。
+  - **关键**: 后端正在进行 DDD 架构重构，新旧架构并存。
+  - 新代码使用 DDD 结构: `internal/{domain,application,infrastructure,interfaces,app}`。依赖注入使用 `wire` 管理。
+  - 旧代码使用传统分层: `internal/{handler,service,repository}`（迁移中，请勿混用架构模式）。
+- **前端 (`web/`)**: React 19, Vite, Tailwind CSS v4。
+  - **关键**: 使用 **`pnpm`** 作为包管理器，**切勿使用 `npm` 或 `yarn`**。
+  - 状态管理: Zustand + TanStack Query。
 
-## Key Files
-| File | Description |
-|------|-------------|
-| `Makefile` | 项目管理命令入口 (dev/up/down/migrate/build) |
-| `docker-compose.yml` | 本地开发 Docker 编排 (PostgreSQL 16 + Redis 7) |
-| `docker-compose.prod.yml` | 生产环境 Docker 编排 |
-| `dev.sh` | 一键启动开发环境脚本 |
-| `.env.example` | 环境变量模板 |
-| `.env` | 本地环境变量 (gitignored) |
-| `.gitignore` | Git 忽略规则 |
+## 开发流与命令 (Makefile)
+所有核心操作都通过根目录的 `Makefile` 统管：
+- **启动本地开发**: `make dev` (一键启动 Postgres、Redis、API 和 Web)
+- **数据库迁移**: `make migrate` (使用 golang-migrate)
 
-## Subdirectories
-| Directory | Purpose |
-|-----------|---------|
-| `api/` | Go 后端服务 (see `api/AGENTS.md`) |
-| `web/` | React 前端应用 (see `web/AGENTS.md`) |
-| `docs/` | 项目文档 (see `docs/AGENTS.md`) |
-| `nginx/` | Nginx 反向代理配置 (see `nginx/AGENTS.md`) |
-| `secrets/` | 生产环境密钥文件 (JWT 等，gitignored) |
-| `tmp/` | 临时文件 |
+### 后端 (`api/`) 须知
+- **数据库代码生成**: 修改 SQL 查询后，**必须**运行 `make sqlc`。
+- **依赖注入生成**: 修改 DDD 的依赖注入项后，**必须**运行 `make wire`。
+- **测试**: `make api-test`
+- **代码检查**: `make api-lint` (使用 golangci-lint)
 
-## For AI Agents
-
-### Working In This Directory
-- 本地开发: `make dev` 或 `./dev.sh` 一键启动
-- Docker 服务: `make up` 启动 PostgreSQL + Redis
-- 数据库迁移: `make migrate` / `make reset-db`
-- 前端使用 Tailwind CSS v4，支持任意数字值写法 (如 `max-w-50` = 200px)
-- 前端代码检查使用 Biome (非 ESLint/Prettier)
-- 后端使用 sqlc 生成数据库查询代码
-
-### Testing Requirements
-- 后端: `cd api && go test ./...`
-- 前端: `cd web && npx biome check .`
-- TypeScript 类型检查: `cd web && npx tsc --noEmit`
-
-### Common Patterns
-- 后端分层: handler → service → repository (严格分层)
-- 前端: React + TanStack Query + Zustand/Redux 状态管理
-- API 路由: chi router (Go)
-- 数据库: PostgreSQL + sqlc 代码生成
-
-## Dependencies
-
-### External
-- Go 1.25+ - 后端语言
-- Node.js - 前端运行时
-- Docker & Docker Compose - 容器化基础设施
-- PostgreSQL 16 - 主数据库
-- Redis 7 - 缓存/会话
+### 前端 (`web/`) 须知
+- **代码检查与格式化**: 使用 **Biome** (非 ESLint/Prettier)。命令: `make web-lint` 和 `make web-format`。
+- **类型检查**: `make web-typecheck`
+- **测试**: `make web-test`
+- **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-arbitrary-values` skill。
 
 <!-- MANUAL: Any manually added notes below this line are preserved on regeneration -->
+
+## 提交流程规范
+- 每次完成一个任务或一个功能点都要进行 Git 提交，由 AI 根据情况自行决定合适的提交粒度。
+- 提交信息必须使用**中文**，并严格符合历史的 Conventional Commits 格式（例如：`feat(api): 添加新功能`，`fix(web): 修复页面 bug`）。
+- **请勿推送（Do NOT push）**，仅在本地进行 commit。

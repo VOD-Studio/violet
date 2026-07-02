@@ -9,15 +9,15 @@ import (
 
 // ContributionData GitHub 贡献数据
 type ContributionData struct {
-	Username      string         `json:"username"`
-	TotalContributions int       `json:"total_contributions"`
-	Contributions []Contribution `json:"contributions"`
+	Username           string         `json:"username"`
+	TotalContributions int            `json:"total_contributions"`
+	Contributions      []Contribution `json:"contributions"`
 }
 
 // Contribution 单日贡献
 type Contribution struct {
-	Date string `json:"date"`
-	Count int   `json:"count"`
+	Date  string `json:"date"`
+	Count int    `json:"count"`
 }
 
 // RepoData 仓库数据

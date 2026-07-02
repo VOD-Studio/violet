@@ -90,11 +90,6 @@ func refArray(desc, schemaName string) *openapi3.SchemaRef {
 	}}
 }
 
-// ref 指向命名 schema 的引用字段
-func ref(schemaName string, desc string) *openapi3.SchemaRef {
-	return &openapi3.SchemaRef{Ref: "#/components/schemas/" + schemaName, Value: &openapi3.Schema{Description: desc}}
-}
-
 // ============================================================
 // 组件注册 helper
 // ============================================================
@@ -105,11 +100,6 @@ func registerSchema(t *openapi3.T, name string, fields openapi3.Schemas, require
 	t.Components.Schemas[name] = &openapi3.SchemaRef{Value: &openapi3.Schema{
 		Type: &openapi3.Types{openapi3.TypeObject}, Properties: fields, Required: required,
 	}}
-}
-
-// registerSchemaRef 注册一个已构造好的 SchemaRef 到 Components（用于非 object schema）
-func registerSchemaRef(t *openapi3.T, name string, sr *openapi3.SchemaRef) {
-	t.Components.Schemas[name] = sr
 }
 
 // ============================================================

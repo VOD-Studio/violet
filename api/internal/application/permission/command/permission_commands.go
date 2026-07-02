@@ -76,7 +76,7 @@ func (h *CreatePermissionHandler) Handle(ctx context.Context, in CreatePermissio
 // UpdatePermissionInput 更新权限点入参
 type UpdatePermissionInput struct {
 	ID          int32
-	Code        string  // 非空且与现有不同时尝试改 code（内置会报错）
+	Code        string // 非空且与现有不同时尝试改 code（内置会报错）
 	Name        string
 	Description string
 	ParentID    *int32

@@ -23,29 +23,35 @@ func (m *ownerMismatchSessionRepo) FindByID(ctx context.Context, id domainshared
 func (m *ownerMismatchSessionRepo) FindByHash(ctx context.Context, hash string, userID domainshared.ID) (*domainupload.UploadSession, error) {
 	return nil, nil
 }
-func (m *ownerMismatchSessionRepo) Save(ctx context.Context, s *domainupload.UploadSession) error { return nil }
+func (m *ownerMismatchSessionRepo) Save(ctx context.Context, s *domainupload.UploadSession) error {
+	return nil
+}
 func (m *ownerMismatchSessionRepo) UpdateStatus(ctx context.Context, id domainshared.ID, oldStatus, newStatus string) (bool, error) {
 	return false, nil
 }
-func (m *ownerMismatchSessionRepo) AppendChunk(ctx context.Context, id domainshared.ID, index int) error { return nil }
-func (m *ownerMismatchSessionRepo) Delete(ctx context.Context, id domainshared.ID) error                { return nil }
-func (m *ownerMismatchSessionRepo) DeleteExpired(ctx context.Context) error                            { return nil }
+func (m *ownerMismatchSessionRepo) AppendChunk(ctx context.Context, id domainshared.ID, index int) error {
+	return nil
+}
+func (m *ownerMismatchSessionRepo) Delete(ctx context.Context, id domainshared.ID) error { return nil }
+func (m *ownerMismatchSessionRepo) DeleteExpired(ctx context.Context) error              { return nil }
 
 var _ domainupload.UploadSessionRepository = (*ownerMismatchSessionRepo)(nil)
 
 // noopStorage ChunkStorage 的 no-op 实现,让放行用例能走完流程而不 panic
 type noopStorage struct{}
 
-func (noopStorage) EnsureDir(string) error                                                      { return nil }
-func (noopStorage) SaveChunk(string, int, []byte) error                                         { return nil }
-func (noopStorage) ReadChunk(string, int) ([]byte, error)                                       { return nil, nil }
-func (noopStorage) MergeChunks(string, int, string) error                                       { return nil }
-func (noopStorage) CleanupDir(string) error                                                     { return nil }
-func (noopStorage) FileSize(string) (int64, error)                                              { return 0, nil }
-func (noopStorage) Move(string, string) error                                                   { return nil }
-func (noopStorage) ImageDimensions(string) (int, int)                                           { return 0, 0 }
-func (noopStorage) GenerateThumbnail(string, string, string, string) string                     { return "" }
-func (noopStorage) BuildPath(string, time.Time, string, string) (string, string, error)        { return "", "", nil }
+func (noopStorage) EnsureDir(string) error                                  { return nil }
+func (noopStorage) SaveChunk(string, int, []byte) error                     { return nil }
+func (noopStorage) ReadChunk(string, int) ([]byte, error)                   { return nil, nil }
+func (noopStorage) MergeChunks(string, int, string) error                   { return nil }
+func (noopStorage) CleanupDir(string) error                                 { return nil }
+func (noopStorage) FileSize(string) (int64, error)                          { return 0, nil }
+func (noopStorage) Move(string, string) error                               { return nil }
+func (noopStorage) ImageDimensions(string) (int, int)                       { return 0, 0 }
+func (noopStorage) GenerateThumbnail(string, string, string, string) string { return "" }
+func (noopStorage) BuildPath(string, time.Time, string, string) (string, string, error) {
+	return "", "", nil
+}
 
 // TestSaveChunk_RejectsNonOwner 非会话 owner 调用 SaveChunk 应返回 Forbidden
 func TestSaveChunk_RejectsNonOwner(t *testing.T) {
@@ -145,9 +151,11 @@ func (f *fakeFileRepo) FindByOwner(ctx context.Context, ownerID domainshared.ID,
 func (f *fakeFileRepo) FindAll(ctx context.Context, filter domainupload.FileListFilter, page, limit int) (*domainupload.FileListResult, error) {
 	return &domainupload.FileListResult{}, nil
 }
-func (f *fakeFileRepo) Save(ctx context.Context, fl *domainupload.File) error                   { return nil }
-func (f *fakeFileRepo) Delete(ctx context.Context, id domainshared.ID) error                    { return nil }
-func (f *fakeFileRepo) UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error { return nil }
+func (f *fakeFileRepo) Save(ctx context.Context, fl *domainupload.File) error { return nil }
+func (f *fakeFileRepo) Delete(ctx context.Context, id domainshared.ID) error  { return nil }
+func (f *fakeFileRepo) UpdateRefCount(ctx context.Context, id domainshared.ID, delta int) error {
+	return nil
+}
 
 // TestUploadThumbnail_RejectsNonOwner 非 file owner 调用 UploadThumbnail 应返回 Forbidden
 func TestUploadThumbnail_RejectsNonOwner(t *testing.T) {
@@ -156,7 +164,7 @@ func TestUploadThumbnail_RejectsNonOwner(t *testing.T) {
 	fileRepo := &fakeFileRepo{ownerID: ownerA}
 	svc := NewUploadService(fileRepo, nil, noopStorage{}, nil, "/tmp", "/tmp", "/uploads/")
 	_, err := svc.UploadThumbnail(context.Background(), UploadThumbnailInput{
-		FileID: "00000000-0000-0000-0000-000000000001",
+		FileID:   "00000000-0000-0000-0000-000000000001",
 		FileName: "t.jpg", MimeType: "image/jpeg", Content: []byte("x"),
 	}, ownerB.String())
 	if err == nil {

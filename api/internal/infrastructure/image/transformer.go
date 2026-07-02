@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/disintegration/imaging"
 	webp "github.com/HugoSmits86/nativewebp"
+	"github.com/disintegration/imaging"
 
 	domainimage "blog-api/internal/domain/image"
 )

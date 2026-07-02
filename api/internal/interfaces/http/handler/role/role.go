@@ -206,7 +206,7 @@ type CreatePermissionRequest struct {
 	Code        string `json:"code" validate:"required"`
 	Name        string `json:"name" validate:"required"`
 	Description string `json:"description"`
-	Type        string `json:"type"`     // "menu" | "action"，默认 action
+	Type        string `json:"type"` // "menu" | "action"，默认 action
 	ParentID    *int32 `json:"parent_id"`
 	Sort        int    `json:"sort"`
 }
