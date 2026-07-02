@@ -19,7 +19,7 @@ func NewTag(id int32, name, slug string) Tag {
 	return Tag{id: id, name: name, slug: slug}
 }
 
-func (t Tag) ID() int32   { return t.id }
+func (t Tag) ID() int32    { return t.id }
 func (t Tag) Name() string { return t.name }
 func (t Tag) Slug() string { return t.slug }
 

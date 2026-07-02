@@ -11,8 +11,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/domain/post"
+	domainshared "blog-api/internal/domain/shared"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
 )
 

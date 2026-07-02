@@ -241,12 +241,12 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 			}
 
 			emoji := newmodel.Emoji{
-				GroupID:     group.ID,
-				Name:        emote.Text,
-				URL:         urlValue,
-				GifURL:      gifUrlValue,
-				SourceURL:   sourceUrlValue,
-				SortOrder:   j + 1,
+				GroupID:   group.ID,
+				Name:      emote.Text,
+				URL:       urlValue,
+				GifURL:    gifUrlValue,
+				SourceURL: sourceUrlValue,
+				SortOrder: j + 1,
 			}
 
 			if err := s.db.WithContext(ctx).Create(&emoji).Error; err != nil {

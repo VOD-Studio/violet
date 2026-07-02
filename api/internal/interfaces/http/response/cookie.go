@@ -22,7 +22,9 @@ const AuthCookieMaxAge = 3600
 // RefreshCookiePath refresh token Cookie 的 Path。
 //
 // 必须匹配 refresh/logout 路由的实际挂载路径（chi 以 full path 匹配 cookie）：
-//   r.Route("/api/v1", ...) → v1.Route("/auth", ...) → /api/v1/auth/*
+//
+//	r.Route("/api/v1", ...) → v1.Route("/auth", ...) → /api/v1/auth/*
+//
 // Cookie Path 是 URL 路径前缀，浏览器仅当请求路径等于或位于该前缀下时才发送。
 // 历史上误写为 "/auth"，导致请求 /api/v1/auth/refresh 时浏览器不附带 refresh
 // cookie，后端读到"缺少 refresh_token"。Set 与 Clear 必须用同一值，否则无法清除。

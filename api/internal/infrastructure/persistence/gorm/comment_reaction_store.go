@@ -30,14 +30,14 @@ func parseUUID(s string) uuid.UUID {
 // ListByComment 查询评论反应（join emojis 取 name/url）
 func (s *CommentReactionStore) ListByComment(ctx context.Context, commentID string) ([]domaincr.Reaction, error) {
 	var rows []struct {
-		ID        uuid.UUID `gorm:"column:id"`
-		CommentID uuid.UUID `gorm:"column:comment_id"`
+		ID        uuid.UUID  `gorm:"column:id"`
+		CommentID uuid.UUID  `gorm:"column:comment_id"`
 		UserID    *uuid.UUID `gorm:"column:user_id"`
-		EmojiID   int32     `gorm:"column:emoji_id"`
-		EmojiName string    `gorm:"column:emoji_name"`
-		EmojiURL  string    `gorm:"column:emoji_url"`
-		IPHash    string    `gorm:"column:ip_hash"`
-		CreatedAt time.Time `gorm:"column:created_at"`
+		EmojiID   int32      `gorm:"column:emoji_id"`
+		EmojiName string     `gorm:"column:emoji_name"`
+		EmojiURL  string     `gorm:"column:emoji_url"`
+		IPHash    string     `gorm:"column:ip_hash"`
+		CreatedAt time.Time  `gorm:"column:created_at"`
 	}
 	err := s.db.WithContext(ctx).
 		Table("comment_reactions cr").

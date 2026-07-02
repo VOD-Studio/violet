@@ -62,11 +62,11 @@ type PermissionChecker interface {
 type contextKey string
 
 const (
-	UserIDKey                   contextKey = "userID"
-	UserRoleKey                 contextKey = "userRole"
-	UserEmailKey                contextKey = "userEmail"
-	UserRoleIDKey               contextKey = "userRoleID"
-	UserIsBuiltinSuperAdminKey  contextKey = "userIsBuiltinSuperAdmin"
+	UserIDKey                  contextKey = "userID"
+	UserRoleKey                contextKey = "userRole"
+	UserEmailKey               contextKey = "userEmail"
+	UserRoleIDKey              contextKey = "userRoleID"
+	UserIsBuiltinSuperAdminKey contextKey = "userIsBuiltinSuperAdmin"
 )
 
 // Auth JWT 认证中间件

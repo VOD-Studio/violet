@@ -35,7 +35,7 @@ type Envelope struct {
 
 // Meta 响应元数据（消息或分页信息）
 type Meta struct {
-	Message    string     `json:"message,omitempty"`
+	Message    string      `json:"message,omitempty"`
 	Pagination *Pagination `json:"pagination,omitempty"`
 }
 
@@ -142,6 +142,7 @@ const (
 // ParsePaging 从 query 解析 offset 分页参数（page + limit）
 //
 // 统一默认值（page=1, limit=20）、上限（limit≤100）、边界保护。
+//
 //	page, limit := resp.ParsePaging(r)
 func ParsePaging(r *http.Request) (page, limit int) {
 	page, _ = strconv.Atoi(r.URL.Query().Get("page"))
@@ -161,6 +162,7 @@ func ParsePaging(r *http.Request) (page, limit int) {
 // ParsePagingWithMax 同 ParsePaging，但允许自定义 limit 上限
 //
 // 前台展示场景可能需要更小的上限（如 limit≤50）：
+//
 //	page, limit := resp.ParsePagingWithMax(r, 50)
 func ParsePagingWithMax(r *http.Request, max int) (page, limit int) {
 	page, limit = ParsePaging(r)

@@ -28,7 +28,7 @@ type Post struct {
 	UpdatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 	// 软删除：GORM 识别 gorm.DeletedAt 后 Delete 自动改 UPDATE，查询自动过滤 deleted_at IS NULL。
 	// 不加 index tag，索引由 migration 038 以部分索引建立，避免 AutoMigrate 建全表索引覆盖。
-	DeletedAt      gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 
 	// 多对多关联标签
 	Tags []Tag `gorm:"many2many:post_tags;"`
@@ -210,11 +210,11 @@ func (File) TableName() string { return "files" }
 type FileStatus string
 
 const (
-	FileStatusPending   FileStatus = "pending"
+	FileStatusPending    FileStatus = "pending"
 	FileStatusProcessing FileStatus = "processing"
-	FileStatusReady     FileStatus = "ready"
-	FileStatusFailed    FileStatus = "failed"
-	FileStatusDeleted   FileStatus = "deleted"
+	FileStatusReady      FileStatus = "ready"
+	FileStatusFailed     FileStatus = "failed"
+	FileStatusDeleted    FileStatus = "deleted"
 )
 
 // SessionStatus 上传会话状态类型

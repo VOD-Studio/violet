@@ -135,10 +135,10 @@ func main() {
 
 	// 上传目录与 URL 前缀：统一从配置派生，保持相对路径（搬家可移植）。
 	// 绝对路径仅在进程内按需 filepath.Abs，绝不持久化、绝不硬编码。
-	uploadRoot := cfg.UploadDir                            // "uploads"
-	emojiDir := filepath.Join(uploadRoot, "emojis")        // uploads/emojis
-	chunkDir := filepath.Join(uploadRoot, "tmp")           // uploads/tmp
-	urlPrefix := cfg.UploadPathPrefix                      // "/uploads/"
+	uploadRoot := cfg.UploadDir                     // "uploads"
+	emojiDir := filepath.Join(uploadRoot, "emojis") // uploads/emojis
+	chunkDir := filepath.Join(uploadRoot, "tmp")    // uploads/tmp
+	urlPrefix := cfg.UploadPathPrefix               // "/uploads/"
 
 	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix)
 	emojiSeedService := service.NewEmojiSeedService(gormDB, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
@@ -247,11 +247,11 @@ func main() {
 		// 文章（DDD postH；前台公开 List/详情/浏览）
 		postH := postContainer.PostHandler
 		v1.Route("/posts", func(r chi.Router) {
-			r.Get("/", postH.ListPublished)            // 已发布文章列表（分页）
-			r.Get("/archive", postH.ArchiveYears)      // 归档年份索引
+			r.Get("/", postH.ListPublished)               // 已发布文章列表（分页）
+			r.Get("/archive", postH.ArchiveYears)         // 归档年份索引
 			r.Get("/archive/{year}", postH.ArchiveByYear) // 指定年份归档
-			r.Get("/{slug}", postH.GetBySlug)          // 按 slug 获取文章
-			r.Post("/{id}/view", postH.IncrementView)  // 增加浏览次数
+			r.Get("/{slug}", postH.GetBySlug)             // 按 slug 获取文章
+			r.Post("/{id}/view", postH.IncrementView)     // 增加浏览次数
 		})
 
 		// 标签（DDD tagContainer）
@@ -263,11 +263,11 @@ func main() {
 				r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
 				r.Use(middleware.AdminRequired)
 				r.With(middleware.RequirePermission(permissionChecker, "tag:create")).
-					Post("/", tagH.Create)                       // 创建标签
+					Post("/", tagH.Create) // 创建标签
 				r.With(middleware.RequirePermission(permissionChecker, "tag:update")).
-					Patch("/{id}", tagH.Update)                  // 编辑标签
+					Patch("/{id}", tagH.Update) // 编辑标签
 				r.With(middleware.RequirePermission(permissionChecker, "tag:delete")).
-					Delete("/{id}", tagH.Delete)                 // 删除标签
+					Delete("/{id}", tagH.Delete) // 删除标签
 			})
 		})
 
@@ -362,7 +362,7 @@ func main() {
 			r.Get("/stats", statsContainer.StatsHandler.GetDashboardStats)   // 仪表盘总览统计
 			r.Get("/stats/views", statsContainer.StatsHandler.GetViewTrends) // 浏览量趋势
 
-			r.Get("/settings", settingsContainer.SettingsHandler.GetSettings)    // 获取站点设置
+			r.Get("/settings", settingsContainer.SettingsHandler.GetSettings) // 获取站点设置
 			r.With(middleware.RequirePermission(permissionChecker, "settings:update")).
 				Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
 
@@ -398,7 +398,7 @@ func main() {
 			})
 
 			// 角色管理（均需 role:manage 权限）
-			r.Get("/roles", roleH.ListRoles) // 角色列表（查看不限）
+			r.Get("/roles", roleH.ListRoles)    // 角色列表（查看不限）
 			r.Get("/roles/{id}", roleH.GetRole) // 角色详情（查看不限）
 			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
 				Post("/roles", roleH.CreateRole) // 创建角色
@@ -427,14 +427,14 @@ func main() {
 			r.Patch("/comments/batch-status", commentH.BatchUpdateStatus) // 批量更新评论状态
 
 			// 文章管理（DDD postH）
-			r.Get("/posts", postH.ListAll)                    // 所有文章列表
-			r.Get("/posts/{id}", postH.GetByID)               // 文章详情
-			r.Post("/posts", postH.Create)                    // 创建文章
-			r.Post("/posts/import-url", postH.ImportURL)      // 导入远程链接文档
-			r.Put("/posts/{id}", postH.Update)                // 更新文章
-			r.Patch("/posts/{id}/status", postH.UpdateStatus)    // 更新文章状态
-			r.Patch("/posts/{id}/featured", postH.SetFeatured)   // 切换精选标记
-			r.Delete("/posts/{id}", postH.Delete)                // 删除文章
+			r.Get("/posts", postH.ListAll)                     // 所有文章列表
+			r.Get("/posts/{id}", postH.GetByID)                // 文章详情
+			r.Post("/posts", postH.Create)                     // 创建文章
+			r.Post("/posts/import-url", postH.ImportURL)       // 导入远程链接文档
+			r.Put("/posts/{id}", postH.Update)                 // 更新文章
+			r.Patch("/posts/{id}/status", postH.UpdateStatus)  // 更新文章状态
+			r.Patch("/posts/{id}/featured", postH.SetFeatured) // 切换精选标记
+			r.Delete("/posts/{id}", postH.Delete)              // 删除文章
 
 			// 音乐管理（DDD mediaH）
 			r.Route("/music", func(r chi.Router) {

@@ -16,24 +16,24 @@ import (
 
 // PostDTO 文章读模型
 type PostDTO struct {
-	ID             string   `json:"id"`
-	Title          string   `json:"title"`
-	Slug           string   `json:"slug"`
-	ContentMD      string   `json:"content_md"`
-	ContentHTML    string   `json:"content_html"`
-	Excerpt        string   `json:"excerpt"`
-	CoverImage     string   `json:"cover_image"`
-	Status         string   `json:"status"`
-	AuthorID       string   `json:"author_id"`
+	ID             string     `json:"id"`
+	Title          string     `json:"title"`
+	Slug           string     `json:"slug"`
+	ContentMD      string     `json:"content_md"`
+	ContentHTML    string     `json:"content_html"`
+	Excerpt        string     `json:"excerpt"`
+	CoverImage     string     `json:"cover_image"`
+	Status         string     `json:"status"`
+	AuthorID       string     `json:"author_id"`
 	Author         *AuthorDTO `json:"author,omitempty"`
-	ViewCount      int      `json:"view_count"`
-	IsFeatured     bool     `json:"is_featured"`
-	SEOTitle       string   `json:"seo_title"`
-	SEODescription string   `json:"seo_description"`
-	PublishedAt    string   `json:"published_at,omitempty"`
-	Tags           []string `json:"tags"`
-	CreatedAt      string   `json:"created_at"`
-	UpdatedAt      string   `json:"updated_at"`
+	ViewCount      int        `json:"view_count"`
+	IsFeatured     bool       `json:"is_featured"`
+	SEOTitle       string     `json:"seo_title"`
+	SEODescription string     `json:"seo_description"`
+	PublishedAt    string     `json:"published_at,omitempty"`
+	Tags           []string   `json:"tags"`
+	CreatedAt      string     `json:"created_at"`
+	UpdatedAt      string     `json:"updated_at"`
 }
 
 // AuthorDTO 文章作者信息，列表与详情按 author_id 批量/单个填充
@@ -62,13 +62,13 @@ type PostListItemDTO struct {
 // ArchiveItemDTO 归档文章项（精简字段，不含正文，避免响应过大）。
 // 归档页一次拉取某年全部文章，故仅携带展示所需字段。
 type ArchiveItemDTO struct {
-	ID          string   `json:"id"`          // 文章 ID
-	Slug        string   `json:"slug"`        // URL slug（用于跳转详情）
-	Title       string   `json:"title"`       // 标题
-	Excerpt     string   `json:"excerpt"`     // 摘要
-	CoverImage  string   `json:"cover_image"` // 封面图 URL
-	Tags        []string `json:"tags"`        // 标签名列表
-	PublishedAt string  `json:"published_at"` // 发布时间（RFC3339）
+	ID          string   `json:"id"`           // 文章 ID
+	Slug        string   `json:"slug"`         // URL slug（用于跳转详情）
+	Title       string   `json:"title"`        // 标题
+	Excerpt     string   `json:"excerpt"`      // 摘要
+	CoverImage  string   `json:"cover_image"`  // 封面图 URL
+	Tags        []string `json:"tags"`         // 标签名列表
+	PublishedAt string   `json:"published_at"` // 发布时间（RFC3339）
 }
 
 // ArchiveYearDTO 某年的归档数据。
@@ -436,14 +436,6 @@ func toArchiveItem(p *domain.Post) ArchiveItemDTO {
 		item.PublishedAt = p.PublishedAt().Format(time.RFC3339)
 	}
 	return item
-}
-
-func toDTOs(items []*domain.Post) []PostDTO {
-	dtos := make([]PostDTO, 0, len(items))
-	for _, p := range items {
-		dtos = append(dtos, toDTO(p))
-	}
-	return dtos
 }
 
 // toListItemDTO 将领域 Post 转为不含正文的列表项。

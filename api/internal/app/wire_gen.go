@@ -17,6 +17,7 @@ import (
 	"blog-api/internal/infrastructure/eventbus"
 	gorm2 "blog-api/internal/infrastructure/persistence/gorm"
 	"blog-api/internal/interfaces/http/handler/role"
+
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )

@@ -96,7 +96,7 @@ func TestTransform_CorruptFile(t *testing.T) {
 func TestTransform_FallbackWebP(t *testing.T) {
 	tmp := filepath.Join(t.TempDir(), "animated.webp")
 	// 伪造一个有 WebP 头部的假文件，正常 decode 会失败
-	fakeWebP := []byte("RIFF1234WEBPVP8X...") 
+	fakeWebP := []byte("RIFF1234WEBPVP8X...")
 	if err := os.WriteFile(tmp, fakeWebP, 0o644); err != nil {
 		t.Fatal(err)
 	}

@@ -110,8 +110,8 @@ func registerPostPaths(t *openapi3.T) {
 	})
 
 	get(t, "/posts/archive", &openapi3.Operation{
-		Tags:       []string{"文章"},
-		Summary:    "归档年份索引",
+		Tags:    []string{"文章"},
+		Summary: "归档年份索引",
 		Description: "返回所有含已发布文章的年份（倒序）。供归档页渲染年份导航，" +
 			"再按年调用 /posts/archive/{year} 懒加载。",
 		Responses: responses(
@@ -120,8 +120,8 @@ func registerPostPaths(t *openapi3.T) {
 	})
 
 	get(t, "/posts/archive/{year}", &openapi3.Operation{
-		Tags:       []string{"文章"},
-		Summary:    "指定年份归档",
+		Tags:    []string{"文章"},
+		Summary: "指定年份归档",
 		Description: "返回指定年份全部已发布文章的精简项（倒序，不含正文）。" +
 			"前端按月分组展示。",
 		Parameters: openapi3.Parameters{pathStrParam("year", "年份（如 2026）")},

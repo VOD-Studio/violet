@@ -5,13 +5,13 @@ import "context"
 
 // DashboardStats 后台总览统计
 type DashboardStats struct {
-	TotalPosts      int64          `json:"total_posts"`
-	TotalComments   int64          `json:"total_comments"`
-	PendingComments int64          `json:"pending_comments"`
-	TotalViews      int64          `json:"total_views"`
-	TotalUsers      int64          `json:"total_users"`
-	RecentPosts     []PostSummary  `json:"recent_posts"`
-	PopularPosts    []PostSummary  `json:"popular_posts"`
+	TotalPosts      int64         `json:"total_posts"`
+	TotalComments   int64         `json:"total_comments"`
+	PendingComments int64         `json:"pending_comments"`
+	TotalViews      int64         `json:"total_views"`
+	TotalUsers      int64         `json:"total_users"`
+	RecentPosts     []PostSummary `json:"recent_posts"`
+	PopularPosts    []PostSummary `json:"popular_posts"`
 }
 
 // PostSummary 文章摘要

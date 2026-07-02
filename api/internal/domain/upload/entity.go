@@ -89,7 +89,7 @@ func ReconstructFile(id, ownerID shared.ID, purpose, originalName, path, url str
 		size: size, mimeType: mimeType, fileHash: fileHash,
 		width: width, height: height, thumbnail: thumbnail,
 		status: status, refCount: refCount, altText: altText, category: category,
-		deletedAt: deletedAt,
+		deletedAt:  deletedAt,
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }

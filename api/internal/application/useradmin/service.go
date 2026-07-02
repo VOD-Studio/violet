@@ -6,9 +6,9 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	domainuseradmin "blog-api/internal/domain/useradmin"
-	"blog-api/internal/domain/shared"
 )
 
 // ListFilter 用户列表筛选条件（别名 domain 类型）
@@ -418,4 +418,3 @@ func toDTO(u *domainuser.User) UserDTO {
 	}
 	return dto
 }
-

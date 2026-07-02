@@ -231,11 +231,11 @@ func (s *LocalStorage) generateVideoThumb(srcPath, fileUUID, storageDir string) 
 // uploads/{purpose}/YYYY/MM/DD/HHMMSS.<uuid>.<ext>
 // 返回 (物理路径, 相对URL)。purpose 决定一级目录,timestamp 决定日期目录与文件名时间戳前缀。
 func (s *LocalStorage) BuildPath(purpose string, timestamp time.Time, fileUUID, ext string) (string, string, error) {
-	dateDir := timestamp.Format("2006/01/02")        // YYYY/MM/DD
-	timePrefix := timestamp.Format("150405")         // HHMMSS
-	fileName := timePrefix + "." + fileUUID + ext    // HHMMSS.<uuid>.<ext>
+	dateDir := timestamp.Format("2006/01/02")                // YYYY/MM/DD
+	timePrefix := timestamp.Format("150405")                 // HHMMSS
+	fileName := timePrefix + "." + fileUUID + ext            // HHMMSS.<uuid>.<ext>
 	finalDir := filepath.Join(s.uploadDir, purpose, dateDir) // uploads/{purpose}/YYYY/MM/DD
-	finalPath := filepath.Join(finalDir, fileName)   // uploads/{purpose}/YYYY/MM/DD/HHMMSS.<uuid>.<ext>
+	finalPath := filepath.Join(finalDir, fileName)           // uploads/{purpose}/YYYY/MM/DD/HHMMSS.<uuid>.<ext>
 	// 安全校验:最终目录与路径仍在 uploadDir 内(覆盖 purpose 穿越)
 	if _, err := s.safePath(finalDir); err != nil {
 		return "", "", err
@@ -246,7 +246,6 @@ func (s *LocalStorage) BuildPath(purpose string, timestamp time.Time, fileUUID, 
 	url := s.urlPrefix + purpose + "/" + dateDir + "/" + fileName // /uploads/{purpose}/YYYY/MM/DD/HHMMSS.<uuid>.<ext>
 	return finalPath, url, nil
 }
-
 
 // copyTo 复制 reader 到 writer
 func copyTo(src *os.File, dst *os.File) (int64, error) {

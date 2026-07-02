@@ -280,4 +280,3 @@ func (r *CommentRepository) Delete(ctx context.Context, id domainshared.ID) erro
 }
 
 var _ comment.CommentRepository = (*CommentRepository)(nil)
-
