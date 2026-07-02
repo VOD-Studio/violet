@@ -5,7 +5,6 @@
  * 基于 Tiptap BubbleMenu，自动跟随选区定位。
  */
 
-import { posToDOMRect } from "@tiptap/core";
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Bold, Code, Italic, Link as LinkIcon } from "lucide-react";
@@ -26,18 +25,6 @@ function keepFocus(e: MouseEvent) {
     e.preventDefault();
 }
 
-/** 判断选择区是否仍位于容器可视区域内 */
-function selectionInView(editor: Editor, container: HTMLElement | Window | undefined): boolean {
-    if (!container || container instanceof Window) return true;
-    const view = editor.view;
-    const { selection } = view.state;
-    if (selection.empty) return false;
-    const rect = posToDOMRect(view, selection.from, selection.to);
-    const containerRect = container.getBoundingClientRect();
-    // 选择区完全在容器上方或下方时视为不可见
-    return rect.bottom >= containerRect.top && rect.top <= containerRect.bottom;
-}
-
 export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorBubbleMenuProps) {
     return (
         <BubbleMenu
@@ -47,20 +34,15 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
             updateDelay={60}
             // resizeDelay：滚动/resize 时立即更新位置，避免菜单跟随延迟
             resizeDelay={0}
-            // 仅在有实际文本选区、且选择区位于编辑器可视区内时显示
+            // 仅在有实际文本选区时显示，避免光标态误触发
             shouldShow={({ state }) => {
                 const { selection } = state;
-                return (
-                    !selection.empty &&
-                    !editor.isActive("codeBlock") &&
-                    selectionInView(editor, scrollTarget)
-                );
+                return !selection.empty && !editor.isActive("codeBlock");
             }}
             options={{
                 placement: "top",
-                strategy: "fixed",
                 offset: 8,
-                // flip：顶部空间不足（如靠近工具栏）时自动翻转到下方
+                // flip：顶部空间不足时自动翻转到下方
                 flip: true,
                 // shift：贴边时水平偏移，避免浮窗溢出视口
                 shift: true,
