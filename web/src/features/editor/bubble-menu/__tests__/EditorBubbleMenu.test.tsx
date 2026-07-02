@@ -32,12 +32,20 @@ const fakeEditor = {
 } as unknown as Parameters<typeof EditorBubbleMenu>[0]["editor"];
 
 describe("EditorBubbleMenu", () => {
-    it("使用 fixed 定位策略并设置高于工具栏的 z-index", () => {
-        render(<EditorBubbleMenu editor={fakeEditor} onInsertLink={() => {}} />);
+    it("使用 fixed 定位策略、高于工具栏的 z-index，并传入内部滚动容器", () => {
+        const fakeScrollTarget = document.createElement("div");
+        render(
+            <EditorBubbleMenu
+                editor={fakeEditor}
+                scrollTarget={fakeScrollTarget}
+                onInsertLink={() => {}}
+            />,
+        );
 
         expect(capturedProps).not.toBeNull();
         const options = capturedProps?.options as Record<string, unknown> | undefined;
         expect(options?.strategy).toBe("fixed");
+        expect(options?.scrollTarget).toBe(fakeScrollTarget);
 
         const className = capturedProps?.className as string | undefined;
         expect(className).toMatch(/\bz-\d+/);

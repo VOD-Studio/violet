@@ -13,6 +13,8 @@ import { Button } from "@/shared/ui/button";
 
 interface EditorBubbleMenuProps {
     editor: Editor;
+    /** 编辑器内部滚动容器，用于 BubbleMenu 监听滚动并更新位置 */
+    scrollTarget?: HTMLElement | Window;
     /** 链接插入回调（由父组件打开输入弹窗） */
     onInsertLink: () => void;
 }
@@ -22,7 +24,7 @@ function keepFocus(e: MouseEvent) {
     e.preventDefault();
 }
 
-export function EditorBubbleMenu({ editor, onInsertLink }: EditorBubbleMenuProps) {
+export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorBubbleMenuProps) {
     return (
         <BubbleMenu
             editor={editor}
@@ -42,6 +44,9 @@ export function EditorBubbleMenu({ editor, onInsertLink }: EditorBubbleMenuProps
                 flip: true,
                 // shift：贴边时水平偏移，避免浮窗溢出视口
                 shift: true,
+                // scrollTarget：监听编辑器内部滚动容器，否则默认只监听 window，
+                // 导致自定义 overflow-y-auto 容器内滚动时菜单不跟随。
+                scrollTarget,
             }}
             className="z-50 flex items-center gap-0.5 rounded-lg border border-edge-hairline bg-popover p-1 shadow-lg"
             // BubbleMenu 自身点击不应收起选区

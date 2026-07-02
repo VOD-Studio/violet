@@ -79,6 +79,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         // onPickImageRef 让 handlePickImage 始终引用最新回调，避免循环依赖
         const onPickImageRef = useRef(onPickImage);
         onPickImageRef.current = onPickImage;
+        // 编辑器内部滚动容器，传给 BubbleMenu 作为 scrollTarget，
+        // 使其在自定义 overflow 容器滚动时也能跟随选区更新位置
+        const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
 
         const handlePickImage = useCallback(() => {
             if (onPickImageRef.current) {
@@ -227,9 +230,13 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                     onInsertLink={openLinkDialog}
                 />
                 {editor ? <TableToolbar editor={editor} /> : null}
-                <div className="flex-1 overflow-y-auto px-4 py-3">
+                <div ref={setScrollContainer} className="flex-1 overflow-y-auto px-4 py-3">
                     {editor ? (
-                        <EditorBubbleMenu editor={editor} onInsertLink={openLinkDialog} />
+                        <EditorBubbleMenu
+                            editor={editor}
+                            scrollTarget={scrollContainer ?? undefined}
+                            onInsertLink={openLinkDialog}
+                        />
                     ) : null}
                     <EditorContent editor={editor} />
                 </div>
