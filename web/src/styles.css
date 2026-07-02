@@ -190,3 +190,27 @@ body {
     border-color: var(--color-border);
   }
 }
+
+/* 代码块滚动条：细窄圆角暗色 */
+.code-block-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.code-block-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.code-block-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-block-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+.code-block-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+}

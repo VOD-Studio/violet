@@ -97,13 +97,13 @@ function FencedCodeBlock({ code, language }: { code: string; language: string })
                 </div>
             ) : html ? (
                 <div
-                    className="shiki-code overflow-x-auto px-4 py-3 text-sm leading-relaxed [&_pre]:!m-0 [&_pre]:!bg-transparent [&_pre]:!p-0 [&_code]:!font-mono [&_code]:!text-sm"
+                    className="shiki-code code-block-scrollbar overflow-x-auto px-4 py-3 text-sm leading-relaxed [&_pre]:!m-0 [&_pre]:!bg-transparent [&_pre]:!p-0 [&_code]:!font-mono [&_code]:!text-sm"
                     // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki 本地高亮输出，非用户直接输入
                     dangerouslySetInnerHTML={{ __html: html }}
                 />
             ) : (
                 // 高亮失败降级：纯文本
-                <pre className="overflow-x-auto px-4 py-3 text-sm leading-relaxed text-white/90">
+                <pre className="code-block-scrollbar overflow-x-auto px-4 py-3 text-sm leading-relaxed text-white/90">
                     <code>{code}</code>
                 </pre>
             )}
