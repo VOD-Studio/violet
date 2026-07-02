@@ -3,6 +3,7 @@
  *
  * 挂在正文容器 ref 上：拦截容器内 <img> 的点击，收集所有图片 src，
  * 用 ImagePreview 打开全屏预览（缩放/旋转）。
+ * 传入缩略图列表（imageUrl 生成 600px 缩略），防止原图过大导致预览卡顿。
  *
  * 用法：const { bind, preview } = useArticleImagePreview();
  *       <div ref={bind}>...正文...</div>
@@ -10,6 +11,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
+import { imageUrl } from "@/features/upload/lib/imageUrl";
 import { ImagePreview } from "@/shared/ui/image-preview";
 
 export function useArticleImagePreview() {
@@ -17,9 +19,10 @@ export function useArticleImagePreview() {
     const [state, setState] = useState<{
         open: boolean;
         images: string[];
+        thumbnails: string[];
         index: number;
         trigger: HTMLElement | null;
-    }>({ open: false, images: [], index: 0, trigger: null });
+    }>({ open: false, images: [], thumbnails: [], index: 0, trigger: null });
 
     /** 容器点击事件：命中 img 时打开预览 */
     const onClick = useCallback((e: React.MouseEvent) => {
@@ -35,6 +38,8 @@ export function useArticleImagePreview() {
         setState({
             open: true,
             images: srcs,
+            // 缩略图：原图 600px 宽 webp，用于预览飞入动画 + 翻页占位，防原图卡顿
+            thumbnails: srcs.map((s) => imageUrl(s, { w: 600, format: "webp" })),
             index: Math.max(0, idx),
             trigger: target as HTMLImageElement,
         });
@@ -49,6 +54,7 @@ export function useArticleImagePreview() {
             open={state.open}
             onClose={close}
             images={state.images}
+            thumbnails={state.thumbnails}
             currentIndex={state.index}
             onIndexChange={(index) => setState((s) => ({ ...s, index }))}
             triggerElement={state.trigger}

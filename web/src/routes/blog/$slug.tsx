@@ -8,14 +8,10 @@ import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
 import { extractToc } from "@shared/lib/hooks/use-toc";
 import { extractMarkdownToc } from "@shared/lib/markdown";
 import { BackToTop } from "@shared/ui/back-to-top";
-import { markdownComponents } from "@shared/ui/markdown-preview/components/markdown-components";
-import { HtmlContent } from "@shared/ui/markdown-preview/HtmlContent";
+import { ArticleContent } from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
 import { useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import rehypeSlug from "rehype-slug";
-import remarkGfm from "remark-gfm";
 
 /**
  * /blog/$slug - 文章详情页
@@ -79,12 +75,14 @@ function BlogDetailPage() {
         );
     }
 
-    // 正文渲染：优先 content_html（编辑器 HTML，保留颜色/对齐等样式），
-    // 用 HtmlContent 安全渲染（rehype-raw + sanitize）。
-    // 兼容旧数据：若 content_html 为空，降级到 content_md（react-markdown）。
-    const hasHtml = post.content_html.trim().length > 0;
-    // TOC：从 HTML 提取标题（编辑器输出的 h2/h3 已有 id）
-    const toc = hasHtml ? extractToc(post.content_html) : extractMarkdownToc(post.content_md);
+    // 正文渲染：统一用 ArticleContent 自动识别 content_md 是 Markdown 还是 HTML。
+    // 新文章（HTML 序列化，保留颜色）走 HtmlContent；旧文章（Markdown）走 react-markdown。
+    // 优先 content_md（规范来源），空则用 content_html。
+    const body = post.content_md.trim() ? post.content_md : post.content_html;
+    const bodyIsHtml = /<(p|div|h[1-6]|ul|ol|li|blockquote|pre|code|table|img|span)\b[\s>]/i.test(
+        body,
+    );
+    const toc = bodyIsHtml ? extractToc(body) : extractMarkdownToc(body);
     // 浏览量乐观显示 +1（本次访问）
     const viewCount = post.view_count + 1;
 
@@ -166,8 +164,8 @@ function BlogDetailPage() {
                     ) : null}
 
                     {/*
-                     * 正文渲染：优先 content_html（HtmlContent 安全渲染，保留颜色等样式），
-                     * 降级 content_md（react-markdown + shiki 代码块）。
+                     * 正文渲染：统一用 body（content_md 优先），
+                     * ArticleContent 自动识别 HTML / Markdown 并正确渲染。
                      */}
                     <main
                         ref={contentRef}
@@ -175,17 +173,7 @@ function BlogDetailPage() {
                         onClick={articleImages.bind.onClick}
                         className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
                     >
-                        {hasHtml ? (
-                            <HtmlContent html={post.content_html} />
-                        ) : (
-                            <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                rehypePlugins={[rehypeSlug]}
-                                components={markdownComponents}
-                            >
-                                {post.content_md}
-                            </ReactMarkdown>
-                        )}
+                        <ArticleContent content={body} />
                     </main>
                 </div>
             </article>
