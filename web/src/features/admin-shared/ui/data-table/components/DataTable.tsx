@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
-import { BulkActionBar } from "./BulkActionBar";
-import { DataTableBody } from "./DataTableBody";
-import { DataTableFooter } from "./DataTableFooter";
-import { DataTableHeader } from "./DataTableHeader";
-import { DataTableToolbar } from "./DataTableToolbar";
 import {
     type DataTableColumn,
     type DataTableProps,
@@ -12,6 +7,11 @@ import {
     SELECT_COLUMN_KEY,
 } from "../types/data-table-types";
 import { computeStickyOffsets } from "../utils/sticky-utils";
+import { BulkActionBar } from "./BulkActionBar";
+import { DataTableBody } from "./DataTableBody";
+import { DataTableFooter } from "./DataTableFooter";
+import { DataTableHeader } from "./DataTableHeader";
+import { DataTableToolbar } from "./DataTableToolbar";
 import "../styles/sticky-shadow.css";
 
 const DEFAULT_COLUMN_MIN_WIDTH = 80;
@@ -210,6 +210,20 @@ export function DataTable<T>({
         return map;
     }, [visibleColumns, columnWidths]);
 
+    // colgroup 使用的 CSS 宽度字符串：拖拽结果转 px，否则用列定义的原始 width
+    const colgroupWidthMap = useMemo(() => {
+        const map = new Map<string, string>();
+        for (const col of visibleColumns) {
+            const fromStore = columnWidths[col.key];
+            if (fromStore != null) {
+                map.set(col.key, `${fromStore}px`);
+            } else if (col.width) {
+                map.set(col.key, col.width);
+            }
+        }
+        return map;
+    }, [visibleColumns, columnWidths]);
+
     const offsets = useMemo(
         () => computeStickyOffsets(visibleColumns, columnWidthMap),
         [visibleColumns, columnWidthMap],
@@ -341,10 +355,8 @@ export function DataTable<T>({
                     {caption ? <caption className="sr-only">{caption}</caption> : null}
                     <colgroup>
                         {visibleColumns.map((col) => {
-                            const w = columnWidthMap.get(col.key);
-                            return (
-                                <col key={col.key} style={w ? { width: `${w}px` } : undefined} />
-                            );
+                            const w = colgroupWidthMap.get(col.key);
+                            return <col key={col.key} style={w ? { width: w } : undefined} />;
                         })}
                     </colgroup>
                     <DataTableHeader
