@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 
 	"blog-api/internal/domain/announcement"
@@ -141,7 +142,7 @@ func projectToPO(p *project.Project) model.Project {
 	po := model.Project{
 		ID: p.ID().UUID(), Title: p.Title(), Description: p.Description(),
 		URL: p.URL(), GithubURL: p.GithubURL(), ImageURL: p.ImageURL(),
-		TechStack: p.TechStack(), SortOrder: p.SortOrder(),
+		TechStack: pq.StringArray(p.TechStack()), SortOrder: p.SortOrder(),
 	}
 	if c := p.CreatedAt(); !c.IsZero() {
 		po.CreatedAt = c
@@ -157,7 +158,7 @@ func projectToDomain(po model.Project) (*project.Project, error) {
 	return project.ReconstructProject(
 		domainshared.MustParseID(po.ID.String()),
 		po.Title, po.Description, po.URL, po.GithubURL, po.ImageURL,
-		po.TechStack, po.SortOrder, po.CreatedAt, po.UpdatedAt,
+		[]string(po.TechStack), po.SortOrder, po.CreatedAt, po.UpdatedAt,
 	), nil
 }
 

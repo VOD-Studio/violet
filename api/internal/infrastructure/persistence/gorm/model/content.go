@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -126,16 +127,16 @@ func (Announcement) TableName() string { return "announcements" }
 
 // Project 项目表
 type Project struct {
-	ID          uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	Title       string    `gorm:"type:varchar(255);not null" json:"title"`
-	Description string    `gorm:"type:text" json:"description"`
-	URL         string    `gorm:"type:text" json:"url"`
-	GithubURL   string    `gorm:"type:text;column:github_url" json:"github_url"`
-	ImageURL    string    `gorm:"type:text;column:image_url" json:"image_url"`
-	TechStack   []string  `gorm:"type:text[];column:tech_stack" json:"tech_stack"`
-	SortOrder   int       `gorm:"default:0" json:"sort_order"`
-	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID          uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	Title       string         `gorm:"type:varchar(255);not null" json:"title"`
+	Description string         `gorm:"type:text" json:"description"`
+	URL         string         `gorm:"type:text" json:"url"`
+	GithubURL   string         `gorm:"type:text;column:github_url" json:"github_url"`
+	ImageURL    string         `gorm:"type:text;column:image_url" json:"image_url"`
+	TechStack   pq.StringArray `gorm:"type:text[];column:tech_stack" json:"tech_stack"`
+	SortOrder   int            `gorm:"default:0" json:"sort_order"`
+	CreatedAt   time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt   time.Time      `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 func (Project) TableName() string { return "projects" }
