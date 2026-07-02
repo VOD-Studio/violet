@@ -310,11 +310,13 @@ type RefreshTokenInput struct {
 // RefreshTokenHandler 刷新令牌用例
 //
 // 编排：
-// 1. 解析 refresh token
-// 2. 与 Redis 中存储的比对
-// 3. 重新查询用户信息
-// 4. 生成新 token pair
-// 5. 更新 Redis 中的 refresh token
+// 1. 解析 refresh token（验签 + exp + issuer）
+// 2. 重新查询用户（获取最新角色）
+// 3. 生成新 token pair
+// 4. 原子轮换：校验旧 token + 写入新 token + 重用检测（见 ADR-0001 不变量 1、2）
+//
+// 重用检测：若入参 token 与 Redis 当前值不匹配（重放已废弃 token），整个家族被吊销，
+// 返回 ErrInvalidCredentials 触发前端强制重登。
 type RefreshTokenHandler struct {
 	userRepo   user.UserRepository
 	jwt        appshared.TokenService
@@ -332,22 +334,13 @@ func NewRefreshTokenHandler(
 
 // Handle 执行刷新令牌
 func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) (*appshared.TokenPair, error) {
-	// 1. 解析 token
+	// 1. 解析 token（验签 + 过期 + 颁发者）
 	claims, err := h.jwt.ParseToken(in.RefreshToken)
 	if err != nil {
 		return nil, user.ErrInvalidCredentials
 	}
 
-	// 2. 比对 Redis
-	matched, err := h.tokenStore.Verify(ctx, claims.UserID, in.RefreshToken)
-	if err != nil {
-		return nil, shared.Internal("验证 refresh token 失败", err)
-	}
-	if !matched {
-		return nil, user.ErrInvalidCredentials
-	}
-
-	// 3. 重新查询用户（获取最新角色）
+	// 2. 重新查询用户（获取最新角色）
 	//    token 已通过签名校验，若 subject 不是合法 ID，说明是失效/异常凭证，
 	//    应映射为 401（触发前端重登）而非 500。
 	id, err := shared.ParseID(claims.UserID)
@@ -364,7 +357,7 @@ func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) 
 		return nil, shared.Internal("查询用户失败", err)
 	}
 
-	// 4. 生成新 token pair
+	// 3. 生成新 token pair（JWT 签名必须在 Go 内完成）
 	pair, err := h.jwt.GenerateTokenPair(appshared.TokenInput{
 		UserID:              u.GetID().String(),
 		Email:               u.Email().String(),
@@ -375,12 +368,23 @@ func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) 
 		return nil, shared.Internal("生成令牌失败", err)
 	}
 
-	// 5. 更新 Redis
-	if err := h.tokenStore.Save(ctx, u.GetID().String(), pair.RefreshToken); err != nil {
-		return nil, shared.Internal("更新 refresh token 失败", err)
+	// 4. 原子轮换：单次 Redis 操作内校验旧 token + 写入新 token + 重用检测。
+	//    见 ADR-0001：Verify+Save 非原子会导致并发刷新铸出多对 token；
+	//    重用旧 token 时吊销整个家族。
+	res, err := h.tokenStore.Rotate(ctx, u.GetID().String(), in.RefreshToken, pair.RefreshToken)
+	if err != nil {
+		return nil, shared.Internal("轮换 refresh token 失败", err)
 	}
-
-	return pair, nil
+	switch res {
+	case appshared.RotateSuccess:
+		return pair, nil
+	case appshared.RotateReused:
+		// 重用已废弃 token → 整个家族已被吊销 → 401 强制重登
+		return nil, user.ErrInvalidCredentials
+	default:
+		// RotateInvalid：无存储 token（已登出）→ 401
+		return nil, user.ErrInvalidCredentials
+	}
 }
 
 // ============================================================

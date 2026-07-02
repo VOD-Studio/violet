@@ -144,8 +144,13 @@ func (h *ResetPasswordHandler) Handle(ctx context.Context, in ResetPasswordInput
 		return err
 	}
 
-	// 撤销所有现有 refresh token（强制重新登录）
-	_ = h.tokenStore.Delete(ctx, u.GetID().String())
+	// 撤销所有现有 refresh token（强制重新登录）。
+	// 不忽略 Redis 错误：见 ADR-0001 不变量 3，吊销失败会让旧 token 在 TTL 内仍可用。
+	// 但密码 DB 写入已成功，返回 500 会让用户误以为改密失败，故仅记日志 + 返回成功，
+	// 接受「Redis 故障下旧 token 可能短暂有效」的降级（运维据此排查 Redis）。
+	if err := h.tokenStore.Delete(ctx, u.GetID().String()); err != nil {
+		log.Error().Err(err).Stringer("userID", u.GetID()).Msg("改密码后吊销 refresh token 失败")
+	}
 
 	return nil
 }
@@ -265,8 +270,12 @@ func (h *ChangePasswordHandler) Handle(ctx context.Context, in ChangePasswordInp
 		return err
 	}
 
-	// 撤销现有 refresh token
-	_ = h.tokenStore.Delete(ctx, u.GetID().String())
+	// 撤销现有 refresh token。
+	// 不忽略 Redis 错误（见 ADR-0001 不变量 3）：吊销失败仅记日志，仍返回成功——
+	// 重置密码 DB 写入已完成，返回错误会让用户以为重置失败。
+	if err := h.tokenStore.Delete(ctx, u.GetID().String()); err != nil {
+		log.Error().Err(err).Stringer("userID", u.GetID()).Msg("重置密码后吊销 refresh token 失败")
+	}
 
 	return nil
 }

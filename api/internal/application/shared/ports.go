@@ -43,10 +43,27 @@ type TokenService interface {
 	RefreshTTL() time.Duration
 }
 
+// RotateResult 原子轮换 refresh token 的结果，区分三种语义以便调用方精确处理
+// （详见 ADR-0001 不变量 1、2）。
+type RotateResult int
+
+const (
+	// RotateSuccess 旧 token 匹配，已原子地写入新 token。
+	RotateSuccess RotateResult = iota
+	// RotateReused 入参 token 与当前存储值不匹配（重用已废弃的 token），
+	// 整个 token 家族已被吊销。调用方应返回 401 强制重登。
+	RotateReused
+	// RotateInvalid 当前无存储 token（已登出或从未登录）。
+	RotateInvalid
+)
+
 // TokenStore refresh token 存储端口
 type TokenStore interface {
 	Save(ctx context.Context, userID, refreshToken string) error
 	Verify(ctx context.Context, userID, refreshToken string) (bool, error)
+	// Rotate 原子地校验旧 token 并写入新 token，单次 Redis 操作内完成（见 ADR-0001 不变量 1）。
+	// 旧 token 不匹配时吊销整个家族（不变量 2），返回 RotateReused。
+	Rotate(ctx context.Context, userID, oldToken, newToken string) (RotateResult, error)
 	Delete(ctx context.Context, userID string) error
 }
 

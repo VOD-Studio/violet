@@ -6,6 +6,7 @@ package mocks
 
 import (
 	"context"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 
@@ -13,6 +14,7 @@ import (
 	"blog-api/internal/domain/permission"
 	"blog-api/internal/domain/role"
 	"blog-api/internal/domain/shared"
+	domainuser "blog-api/internal/domain/user"
 )
 
 // ============================================================
@@ -130,5 +132,128 @@ func (m *MockEventBus) Publish(ctx context.Context, events []shared.DomainEvent)
 	return m.Called(ctx, events).Error(0)
 }
 
+// ============================================================
+// TokenStore Mock
+// ============================================================
+
+// MockTokenStore application/shared.TokenStore 的 mock 实现
+type MockTokenStore struct{ mock.Mock }
+
+func (m *MockTokenStore) Save(ctx context.Context, userID, refreshToken string) error {
+	return m.Called(ctx, userID, refreshToken).Error(0)
+}
+
+func (m *MockTokenStore) Verify(ctx context.Context, userID, refreshToken string) (bool, error) {
+	args := m.Called(ctx, userID, refreshToken)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockTokenStore) Rotate(ctx context.Context, userID, oldToken, newToken string) (appshared.RotateResult, error) {
+	args := m.Called(ctx, userID, oldToken, newToken)
+	return args.Get(0).(appshared.RotateResult), args.Error(1)
+}
+
+func (m *MockTokenStore) Delete(ctx context.Context, userID string) error {
+	return m.Called(ctx, userID).Error(0)
+}
+
+// ============================================================
+// TokenService Mock
+// ============================================================
+
+// MockTokenService application/shared.TokenService 的 mock 实现
+type MockTokenService struct{ mock.Mock }
+
+func (m *MockTokenService) GenerateTokenPair(in appshared.TokenInput) (*appshared.TokenPair, error) {
+	args := m.Called(in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*appshared.TokenPair), args.Error(1)
+}
+
+func (m *MockTokenService) ParseToken(token string) (*appshared.Claims, error) {
+	args := m.Called(token)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*appshared.Claims), args.Error(1)
+}
+
+func (m *MockTokenService) AccessTTL() time.Duration {
+	return m.Called().Get(0).(time.Duration)
+}
+
+func (m *MockTokenService) RefreshTTL() time.Duration {
+	return m.Called().Get(0).(time.Duration)
+}
+
+// ============================================================
+// User Repository Mock
+// ============================================================
+
+// MockUserRepository user.UserRepository 的 mock 实现
+type MockUserRepository struct{ mock.Mock }
+
+func (m *MockUserRepository) FindByID(ctx context.Context, id shared.ID) (*domainuser.User, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domainuser.User), args.Error(1)
+}
+
+func (m *MockUserRepository) FindByIDs(ctx context.Context, ids []shared.ID) ([]*domainuser.User, error) {
+	args := m.Called(ctx, ids)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domainuser.User), args.Error(1)
+}
+
+func (m *MockUserRepository) FindByEmail(ctx context.Context, email domainuser.Email) (*domainuser.User, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domainuser.User), args.Error(1)
+}
+
+func (m *MockUserRepository) FindByUsername(ctx context.Context, username domainuser.Username) (*domainuser.User, error) {
+	args := m.Called(ctx, username)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domainuser.User), args.Error(1)
+}
+
+func (m *MockUserRepository) ExistsByEmail(ctx context.Context, email domainuser.Email) (bool, error) {
+	args := m.Called(ctx, email)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockUserRepository) ExistsByUsername(ctx context.Context, username domainuser.Username) (bool, error) {
+	args := m.Called(ctx, username)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockUserRepository) Save(ctx context.Context, u *domainuser.User) error {
+	return m.Called(ctx, u).Error(0)
+}
+
+func (m *MockUserRepository) Delete(ctx context.Context, id shared.ID) error {
+	return m.Called(ctx, id).Error(0)
+}
+
+func (m *MockUserRepository) Count(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
 // 编译期断言
-var _ appshared.EventBus = (*MockEventBus)(nil)
+var (
+	_ appshared.EventBus   = (*MockEventBus)(nil)
+	_ appshared.TokenStore = (*MockTokenStore)(nil)
+	_ appshared.TokenService = (*MockTokenService)(nil)
+	_ domainuser.UserRepository = (*MockUserRepository)(nil)
+)

@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	appshared "blog-api/internal/application/shared"
 )
 
 // ============================================================
@@ -61,6 +63,61 @@ func (s *RedisTokenStore) Delete(ctx context.Context, userID string) error {
 		return fmt.Errorf("删除 refresh token 失败: %w", err)
 	}
 	return nil
+}
+
+// rotateScript 原子轮换 refresh token，单次 Lua 内完成校验旧 + 写入新 + 重用检测。
+// 见 ADR-0001 不变量 1（原子轮换）与 2（重用即吊销家族）。
+//
+// KEYS[1] = refresh:<userID>
+// ARGV[1] = 期望的旧 token（入参）
+// ARGV[2] = 要写入的新 token
+// ARGV[3] = TTL（秒）
+//
+// 返回码：
+//   0 = 轮换成功（旧 token 匹配，已写入新 token）
+//   1 = 重用（旧 token 不匹配，已 DEL 整个家族）
+//   2 = 无 token（key 不存在）
+//
+// Redis 单线程执行 Lua，天然无并发竞态；比对在 Lua 内做字符串相等，
+// 时序侧信道不适用（refresh token 是高熵随机串，非短期低熵凭证）。
+var rotateScript = redis.NewScript(`
+local cur = redis.call('GET', KEYS[1])
+if not cur then
+  return 2
+end
+if cur == ARGV[1] then
+  redis.call('SET', KEYS[1], ARGV[2], 'EX', tonumber(ARGV[3]))
+  return 0
+end
+redis.call('DEL', KEYS[1])
+return 1
+`)
+
+// Rotate 原子轮换 refresh token（刷新时调用）。
+//
+// 单次 Redis 操作内完成：校验旧 token → 写入新 token；若旧 token 不匹配则
+// 吊销整个家族（DEL）。返回结果码区分成功 / 重用 / 无 token。
+func (s *RedisTokenStore) Rotate(ctx context.Context, userID, oldToken, newToken string) (appshared.RotateResult, error) {
+	key := s.refreshKey(userID)
+	res, err := rotateScript.Run(ctx, s.client, []string{key}, oldToken, newToken, int64(s.ttl.Seconds())).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return appshared.RotateInvalid, nil
+		}
+		return appshared.RotateInvalid, fmt.Errorf("轮换 refresh token 失败: %w", err)
+	}
+	code, ok := res.(int64)
+	if !ok {
+		return appshared.RotateInvalid, fmt.Errorf("轮换 refresh token 返回非预期类型: %T", res)
+	}
+	switch code {
+	case 0:
+		return appshared.RotateSuccess, nil
+	case 1:
+		return appshared.RotateReused, nil
+	default:
+		return appshared.RotateInvalid, nil
+	}
 }
 
 func (s *RedisTokenStore) refreshKey(userID string) string {
