@@ -173,7 +173,7 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	
+
 	csrf := generateCSRFToken()
 	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg)
 	response.RespondOK(w, map[string]any{
@@ -203,7 +203,7 @@ func (h *Handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	
+
 	csrf := generateCSRFToken()
 	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg)
 	response.RespondOK(w, map[string]any{
@@ -292,7 +292,7 @@ func (h *Handler) GetCSRFToken(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		Domain:   h.cookieCfg.Domain,
-		MaxAge:   response.AuthCookieMaxAge,
+		MaxAge:   response.CSRFCookieMaxAge,
 		Secure:   h.cookieCfg.Secure,
 		HttpOnly: false, // 必须 JS 可读
 		SameSite: h.cookieCfg.SameSiteMode(),

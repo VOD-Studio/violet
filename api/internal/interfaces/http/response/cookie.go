@@ -19,6 +19,12 @@ import (
 // 设置 1 小时避免每次请求都重写 Cookie，同时不让 Cookie 比 JWT 活得太久
 const AuthCookieMaxAge = 3600
 
+// CSRFCookieMaxAge CSRF double-submit Cookie 的 MaxAge（秒）
+// 必须覆盖「access token 过期后通过 refresh token 续期」的窗口，
+// 否则 CSRF cookie 先过期会导致 POST /auth/refresh 因缺 header 被 403 拒绝，
+// 用户误判为登录过期。取 7 天与默认 refresh token TTL 对齐。
+const CSRFCookieMaxAge = 7 * 24 * 3600
+
 // RefreshCookiePath refresh token Cookie 的 Path。
 //
 // 必须匹配 refresh/logout 路由的实际挂载路径（chi 以 full path 匹配 cookie）：
@@ -77,7 +83,7 @@ func SetAuthTokenCookies(w http.ResponseWriter, access, refresh, csrfToken strin
 			Value:    csrfToken,
 			Path:     "/",
 			Domain:   cfg.Domain,
-			MaxAge:   AuthCookieMaxAge,
+			MaxAge:   CSRFCookieMaxAge,
 			Secure:   cfg.Secure,
 			HttpOnly: false,
 			SameSite: cfg.SameSiteMode(),

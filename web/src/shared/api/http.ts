@@ -5,6 +5,7 @@ import { notifySessionExpired, requestReplay, setReplayer } from "./auth-gate";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";
 import { ApiError } from "./error";
 import { clientQueryClient } from "./query-client";
+import { markSessionActive } from "./session";
 import { triggerRefresh } from "./refresh-queue";
 import { scheduleRefresh, setOnSessionExpired, setRefresher } from "./token-scheduler";
 import type { Envelope, Pagination } from "./types";
@@ -166,6 +167,10 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
                 if (expiresIn) {
                     // 响应式 refresh 成功：用新 expires_in 重新 arm 主动刷新定时器
                     scheduleRefresh(expiresIn);
+                    // 页面重新加载后若 access token 已过期，SSR 判定未登录导致
+                    // useMe 被禁用、Header 显示"登录"；刷新成功后应恢复会话活跃态，
+                    // 让 Header 等订阅者重新拉取当前用户。
+                    markSessionActive();
                     err.config.__retried = true;
                     return client.request(err.config);
                 }
