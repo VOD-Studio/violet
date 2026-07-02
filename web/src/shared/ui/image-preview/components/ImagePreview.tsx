@@ -273,6 +273,8 @@ export function ImagePreview({
                                         if (useThumb) setOriginalLoaded(true);
                                     }}
                                     onReset={handleReset}
+                                    onSwipeLeft={handleNext}
+                                    onSwipeRight={handlePrevious}
                                 />
                             </div>
                         </motion.div>

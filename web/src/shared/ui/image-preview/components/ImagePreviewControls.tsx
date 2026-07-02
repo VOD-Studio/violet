@@ -85,57 +85,57 @@ export function ImagePreviewControls({
             {/* biome-ignore lint/a11y/useKeyWithClickEvents: 此 div 非交互元素，onClick 仅用于拦截事件冒泡到外层 onClose，真正的键盘交互由内部按钮提供 */}
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute inset-x-0 top-0 z-50 flex items-center justify-between bg-linear-to-b from-black/50 to-transparent p-4"
+                className="absolute inset-x-0 top-0 z-50 flex items-center justify-between gap-2 bg-linear-to-b from-black/50 to-transparent p-2 sm:p-4"
             >
                 {/* 左侧：缩放、旋转、翻转 */}
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-1 sm:gap-2">
                     {/* 缩放 */}
                     <Button
                         variant="ghost"
-                        size="icon"
+                        size="icon-sm"
                         onClick={handleClick(onZoomOut)}
                         disabled={scale <= 0.5}
-                        className="text-white hover:bg-white/15 hover:text-white active:scale-100"
+                        className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
                     >
-                        <ZoomOut className="h-5 w-5" />
+                        <ZoomOut className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
-                    <span className="min-w-12.5 text-center text-sm text-white">
+                    <span className="min-w-10 shrink-0 text-center text-xs text-white sm:min-w-12.5 sm:text-sm">
                         {Math.round(scale * 100)}%
                     </span>
                     <Button
                         variant="ghost"
-                        size="icon"
+                        size="icon-sm"
                         onClick={handleClick(onZoomIn)}
                         disabled={scale >= 3}
-                        className="text-white hover:bg-white/15 hover:text-white active:scale-100"
+                        className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
                     >
-                        <ZoomIn className="h-5 w-5" />
+                        <ZoomIn className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
 
                     {/* 分隔线 */}
-                    <div className="mx-1 h-6 w-px bg-white/20" />
+                    <div className="mx-0.5 h-5 w-px bg-white/20 sm:mx-1 sm:h-6" />
 
                     {/* 旋转 */}
                     {onRotateLeft ? (
                         <Button
                             variant="ghost"
-                            size="icon"
+                            size="icon-sm"
                             onClick={handleClick(onRotateLeft)}
-                            className="text-white hover:bg-white/15 hover:text-white active:scale-100"
+                            className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
                             title="左旋转"
                         >
-                            <RotateCcw className="h-5 w-5" />
+                            <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Button>
                     ) : null}
                     {onRotateRight ? (
                         <Button
                             variant="ghost"
-                            size="icon"
+                            size="icon-sm"
                             onClick={handleClick(onRotateRight)}
-                            className="text-white hover:bg-white/15 hover:text-white active:scale-100"
+                            className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
                             title="右旋转"
                         >
-                            <RotateCw className="h-5 w-5" />
+                            <RotateCw className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Button>
                     ) : null}
 
@@ -143,23 +143,23 @@ export function ImagePreviewControls({
                     {onFlipX ? (
                         <Button
                             variant="ghost"
-                            size="icon"
+                            size="icon-sm"
                             onClick={handleClick(onFlipX)}
-                            className="text-white hover:bg-white/15 hover:text-white active:scale-100"
+                            className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
                             title="水平翻转"
                         >
-                            <FlipHorizontal className="h-5 w-5" />
+                            <FlipHorizontal className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Button>
                     ) : null}
                     {onFlipY ? (
                         <Button
                             variant="ghost"
-                            size="icon"
+                            size="icon-sm"
                             onClick={handleClick(onFlipY)}
-                            className="text-white hover:bg-white/15 hover:text-white active:scale-100"
+                            className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
                             title="垂直翻转"
                         >
-                            <FlipVertical className="h-5 w-5" />
+                            <FlipVertical className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Button>
                     ) : null}
 
@@ -167,56 +167,56 @@ export function ImagePreviewControls({
                     {onReset ? (
                         <>
                             {/* 分隔线 */}
-                            <div className="mx-1 h-6 w-px bg-white/20" />
+                            <div className="mx-0.5 h-5 w-px bg-white/20 sm:mx-1 sm:h-6" />
                             <Button
                                 variant="ghost"
-                                size="icon"
+                                size="icon-sm"
                                 onClick={handleClick(onReset)}
-                                className="text-white hover:bg-white/15 hover:text-white active:scale-100"
+                                className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
                                 title="重置（也可双击图片）"
                             >
-                                <Maximize2 className="h-5 w-5" />
+                                <Maximize2 className="h-4 w-4 sm:h-5 sm:w-5" />
                             </Button>
                         </>
                     ) : null}
                 </div>
 
                 {/* 右侧：图片计数、关闭 */}
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                     {totalImages > 1 ? (
-                        <span className="text-sm text-white">
+                        <span className="text-xs text-white sm:text-sm">
                             {currentIndex + 1} / {totalImages}
                         </span>
                     ) : null}
                     <Button
                         variant="ghost"
-                        size="icon"
+                        size="icon-sm"
                         onClick={handleClick(onClose)}
-                        className="text-white hover:bg-white/15 hover:text-white active:scale-100"
+                        className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
                     >
-                        <X className="h-5 w-5" />
+                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                 </div>
             </div>
 
-            {/* 左右切换按钮：每个按钮自身也 stopPropagation，防 disabled 穿透 */}
+            {/* 左右切换按钮：移动端隐藏，使用滑动手势/缩略图切换；桌面端显示 */}
             {totalImages > 1 ? (
                 <>
                     <Button
                         variant="ghost"
-                        size="icon"
+                        size="icon-sm"
                         onClick={handleClick(onPrevious)}
-                        className="absolute top-1/2 left-4 z-50 h-12 w-12 -translate-y-1/2 text-white hover:bg-white/15 hover:text-white active:translate-y-[-50%]!"
+                        className="absolute top-1/2 left-2 z-50 hidden h-10 w-10 -translate-y-1/2 text-white hover:bg-white/15 hover:text-white active:translate-y-[-50%]! sm:left-4 sm:flex sm:h-12 sm:w-12"
                     >
-                        <ChevronLeft className="h-8 w-8" />
+                        <ChevronLeft className="h-6 w-6 sm:h-8 sm:w-8" />
                     </Button>
                     <Button
                         variant="ghost"
-                        size="icon"
+                        size="icon-sm"
                         onClick={handleClick(onNext)}
-                        className="absolute top-1/2 right-4 z-50 h-12 w-12 -translate-y-1/2 text-white hover:bg-white/15 hover:text-white active:translate-y-[-50%]!"
+                        className="absolute top-1/2 right-2 z-50 hidden h-10 w-10 -translate-y-1/2 text-white hover:bg-white/15 hover:text-white active:translate-y-[-50%]! sm:right-4 sm:flex sm:h-12 sm:w-12"
                     >
-                        <ChevronRight className="h-8 w-8" />
+                        <ChevronRight className="h-6 w-6 sm:h-8 sm:w-8" />
                     </Button>
                 </>
             ) : null}

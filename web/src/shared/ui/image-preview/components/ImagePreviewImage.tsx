@@ -28,6 +28,12 @@ interface ImagePreviewImageProps {
     showSpinner?: boolean;
     /** 双击图片重置（缩放/旋转/翻转恢复初始）回调 */
     onReset?: () => void;
+    /** 水平轻扫切换图片的回调 */
+    onSwipeLeft?: () => void;
+    /** 水平轻扫切换图片的回调 */
+    onSwipeRight?: () => void;
+    /** 轻扫触发阈值（像素，默认 50） */
+    swipeThreshold?: number;
 }
 
 /**
@@ -51,6 +57,9 @@ export function ImagePreviewImage({
     onLoad,
     showSpinner = true,
     onReset,
+    onSwipeLeft,
+    onSwipeRight,
+    swipeThreshold = 50,
 }: ImagePreviewImageProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [isMoving, setIsMoving] = useState(false);
@@ -74,17 +83,66 @@ export function ImagePreviewImage({
     const handleMouseDown = (e: React.MouseEvent<HTMLImageElement>) => {
         if (e.button !== 0) return; // 只响应左键
         e.preventDefault();
+        startDrag(e.clientX, e.clientY);
+    };
 
+    // 触摸开始拖拽
+    const handleTouchStart = (e: React.TouchEvent<HTMLImageElement>) => {
+        if (e.touches.length !== 1) return;
+        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+    };
+
+    const startDrag = (clientX: number, clientY: number) => {
         startPositionRef.current = {
             x: position.x,
             y: position.y,
-            mouseX: e.clientX,
-            mouseY: e.clientY,
+            mouseX: clientX,
+            mouseY: clientY,
         };
         setIsMoving(true);
     };
 
-    // 全局鼠标移动
+    // 拖拽结束后的边界吸附
+    const snapToBounds = () => {
+        if (!imgRef.current) return;
+
+        const imgWidth = imgRef.current.offsetWidth * scale;
+        const imgHeight = imgRef.current.offsetHeight * scale;
+        const clientWidth = window.innerWidth;
+        const clientHeight = window.innerHeight;
+
+        // 图片小于视口时，回到中心
+        if (imgWidth <= clientWidth && imgHeight <= clientHeight) {
+            setPosition({ x: 0, y: 0 });
+            return;
+        }
+
+        // 图片大于视口时，做边界检查
+        const offsetX = (imgWidth - clientWidth) / 2;
+        const offsetY = (imgHeight - clientHeight) / 2;
+
+        let fixX = position.x;
+        let fixY = position.y;
+
+        if (imgWidth > clientWidth) {
+            if (fixX > offsetX) fixX = offsetX;
+            else if (fixX < -offsetX) fixX = -offsetX;
+        } else {
+            fixX = 0;
+        }
+
+        if (imgHeight > clientHeight) {
+            if (fixY > offsetY) fixY = offsetY;
+            else if (fixY < -offsetY) fixY = -offsetY;
+        } else {
+            fixY = 0;
+        }
+
+        setPosition({ x: fixX, y: fixY });
+    };
+
+    // 全局鼠标/触摸移动
+    // biome-ignore lint/correctness/useExhaustiveDependencies: 事件订阅与拖拽状态同步，依赖项由调用方保证稳定
     useEffect(() => {
         if (!isMoving) return;
 
@@ -98,53 +156,56 @@ export function ImagePreviewImage({
             });
         };
 
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length !== 1) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - startPositionRef.current.mouseX;
+            const deltaY = touch.clientY - startPositionRef.current.mouseY;
+
+            setPosition({
+                x: startPositionRef.current.x + deltaX,
+                y: startPositionRef.current.y + deltaY,
+            });
+        };
+
         const handleMouseUp = () => {
             setIsMoving(false);
+            snapToBounds();
+        };
 
-            // 检查是否需要调整位置
-            if (!imgRef.current) return;
+        const handleTouchEnd = (e: TouchEvent) => {
+            setIsMoving(false);
 
-            const imgWidth = imgRef.current.offsetWidth * scale;
-            const imgHeight = imgRef.current.offsetHeight * scale;
-            const clientWidth = window.innerWidth;
-            const clientHeight = window.innerHeight;
-
-            // 图片小于视口时，回到中心
-            if (imgWidth <= clientWidth && imgHeight <= clientHeight) {
-                setPosition({ x: 0, y: 0 });
-                return;
+            // 未缩放时识别水平轻扫切换图片
+            const touch = e.changedTouches[0];
+            if (touch && scale <= 1) {
+                const deltaX = touch.clientX - startPositionRef.current.mouseX;
+                const deltaY = touch.clientY - startPositionRef.current.mouseY;
+                if (Math.abs(deltaX) > swipeThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
+                    if (deltaX > 0) {
+                        onSwipeRight?.();
+                    } else {
+                        onSwipeLeft?.();
+                    }
+                    // 轻扫触发切换后不再执行边界吸附
+                    return;
+                }
             }
 
-            // 图片大于视口时，做边界检查
-            const offsetX = (imgWidth - clientWidth) / 2;
-            const offsetY = (imgHeight - clientHeight) / 2;
-
-            let fixX = position.x;
-            let fixY = position.y;
-
-            if (imgWidth > clientWidth) {
-                if (fixX > offsetX) fixX = offsetX;
-                else if (fixX < -offsetX) fixX = -offsetX;
-            } else {
-                fixX = 0;
-            }
-
-            if (imgHeight > clientHeight) {
-                if (fixY > offsetY) fixY = offsetY;
-                else if (fixY < -offsetY) fixY = -offsetY;
-            } else {
-                fixY = 0;
-            }
-
-            setPosition({ x: fixX, y: fixY });
+            snapToBounds();
         };
 
         window.addEventListener("mousemove", handleMouseMove);
         window.addEventListener("mouseup", handleMouseUp);
+        window.addEventListener("touchmove", handleTouchMove, { passive: false });
+        window.addEventListener("touchend", handleTouchEnd);
 
         return () => {
             window.removeEventListener("mousemove", handleMouseMove);
             window.removeEventListener("mouseup", handleMouseUp);
+            window.removeEventListener("touchmove", handleTouchMove);
+            window.removeEventListener("touchend", handleTouchEnd);
         };
     }, [isMoving, scale, position.x, position.y]);
 
@@ -170,8 +231,10 @@ export function ImagePreviewImage({
                             transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${flipX ? "-" : ""}${scale}, ${flipY ? "-" : ""}${scale}) rotate(${rotate}deg)`,
                             transition: isMoving ? "none" : "transform 0.3s ease-out",
                             cursor: "grab",
+                            touchAction: "none",
                         }}
                         onMouseDown={handleMouseDown}
+                        onTouchStart={handleTouchStart}
                         onDoubleClick={onReset}
                         whileDrag={{ cursor: "grabbing" }}
                         draggable={false}

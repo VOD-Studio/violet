@@ -34,30 +34,32 @@ export function ImagePreviewThumbnails({
     }
 
     return (
-        <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 gap-2 rounded-lg bg-black/50 p-2 backdrop-blur-sm">
-            {images.map((img, i) => (
-                <button
-                    type="button"
-                    key={img}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onSelect(i);
-                    }}
-                    className={cn(
-                        "size-12 overflow-hidden rounded border-2 transition-all",
-                        i === currentIndex
-                            ? "scale-110 border-white"
-                            : "border-white/30 hover:border-white/60",
-                    )}
-                >
-                    <img
-                        src={img}
-                        alt={`缩略图 ${i + 1}`}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                    />
-                </button>
-            ))}
+        <div className="absolute bottom-2 left-1/2 z-50 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-x-auto rounded-lg bg-black/50 p-1.5 backdrop-blur-sm sm:bottom-4 sm:p-2">
+            <div className="flex gap-1.5 sm:gap-2">
+                {images.map((img, i) => (
+                    <button
+                        type="button"
+                        key={img}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onSelect(i);
+                        }}
+                        className={cn(
+                            "size-10 shrink-0 overflow-hidden rounded border-2 transition-all sm:size-12",
+                            i === currentIndex
+                                ? "scale-110 border-white"
+                                : "border-white/30 hover:border-white/60",
+                        )}
+                    >
+                        <img
+                            src={img}
+                            alt={`缩略图 ${i + 1}`}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                        />
+                    </button>
+                ))}
+            </div>
         </div>
     );
 }
