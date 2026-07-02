@@ -2,18 +2,30 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { __resetForTest, triggerRefresh } from "../refresh-queue";
 
 /**
- * refresh-queue 单测：验证单飞（同 tab 并发去重）与跨 tab 互斥。
+ * refresh-queue 单测：验证单 tab 单飞 + 跨 tab 互斥（ifAvailable 语义）。
  *
- * navigator.locks.request 用桩模拟「串行执行回调」（真实行为：同一时刻一个持锁，
- * 释放后下一个执行）。单飞契约是核心：并发 401 只触发一次实际 refresh。
+ * navigator.locks.request 用桩模拟：
+ * - 锁可用时回调收到 truthy lock，执行真正逻辑；
+ * - 锁被占用时（模拟其他 tab 持锁）回调收到 null，跳过。
  */
 describe("triggerRefresh", () => {
+    // 模拟锁是否被占用：测试可设为 true 模拟"另一 tab 正持锁"
+    let lockHeldByOther = false;
+
     beforeEach(() => {
         __resetForTest();
-        // 模拟 navigator.locks.request：立即执行回调（串行语义简化）
+        lockHeldByOther = false;
         vi.stubGlobal("navigator", {
             locks: {
-                request: async (_name: string, cb: () => Promise<unknown>) => cb(),
+                request: async (
+                    _name: string,
+                    _options: { ifAvailable?: boolean },
+                    cb: (lock: { name: string } | null) => Promise<unknown>,
+                ) => {
+                    // ifAvailable 语义：锁被占用 → 回调收 null；否则收假 lock 对象
+                    const lock = lockHeldByOther ? null : { name: _name };
+                    return cb(lock);
+                },
             },
         });
     });
@@ -51,27 +63,23 @@ describe("triggerRefresh", () => {
         expect(doRefresh).toHaveBeenCalledTimes(1);
     });
 
-    it("一个周期结束后可再次 refresh（标志复位）", async () => {
+    it("一个周期结束后可再次 refresh（单飞状态复位）", async () => {
         const doRefresh = vi.fn(async () => 900);
         await triggerRefresh(doRefresh);
-        // 新周期：标志已复位，应再次真正执行 refresh
         const res = await triggerRefresh(doRefresh);
         expect(doRefresh).toHaveBeenCalledTimes(2);
         expect(res).toBe(900);
     });
 
-    it("排队 tab（本轮已刷新）跳过 refresh 返回哨兵", async () => {
-        // 模拟跨 tab：第一次 triggerRefresh 设 refreshedThisRound=true，
-        // 模拟排队 tab 在同一周期内再次拿锁 → 应跳过 doRefresh 返回哨兵
+    it("锁被其他 tab 持有时跳过 doRefresh 返回哨兵", async () => {
+        // 模拟另一 tab 正持锁：本 tab 的 ifAvailable 请求拿到 null
+        lockHeldByOther = true;
         const doRefresh = vi.fn(async () => 900);
-        // 手动模拟「本轮已刷新」状态（真实场景由持锁 tab 设置）
-        await triggerRefresh(async () => {
-            const r = await doRefresh();
-            return r;
-        });
-        // 此时 refreshedThisRound 在 finally 已复位；为模拟排队场景，
-        // 直接验证「无锁支持」与「有锁支持」的差异已由前几个用例覆盖。
-        // 此用例确认复位后行为正常
-        expect(doRefresh).toHaveBeenCalledTimes(1);
+
+        const res = await triggerRefresh(doRefresh);
+
+        // 跳过 doRefresh，返回 truthy 哨兵（让原请求重放）
+        expect(doRefresh).not.toHaveBeenCalled();
+        expect(res).toBe(1);
     });
 });
