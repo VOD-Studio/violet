@@ -220,3 +220,24 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondMessage(w, http.StatusOK, "文章已删除")
 }
+
+// ImportURL 导入远程链接文档：解析网页正文为 HTML，供编辑器插入
+func (h *Handler) ImportURL(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		URL string `json:"url" validate:"required,url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	res, err := h.svc.ImportURL(r.Context(), req.URL)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, res)
+}

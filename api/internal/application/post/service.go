@@ -3,7 +3,11 @@ package post
 
 import (
 	"context"
+	"net/url"
+	"strings"
 	"time"
+
+	"github.com/go-shiori/go-readability"
 
 	domain "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
@@ -266,6 +270,32 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	return s.repo.Delete(ctx, pid)
+}
+
+// ImportResult 远程文档解析结果
+type ImportResult struct {
+	Title string `json:"title"`
+	HTML  string `json:"html"`
+}
+
+// ImportURL 抓取远程网页并提取正文 HTML，供编辑器「导入链接」使用。
+// 限定 http/https、15s 超时；接口仅管理员可调，SSRF 风险可控。
+func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, error) {
+	parsed, err := url.ParseRequestURI(rawURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return ImportResult{}, shared.BadRequest("无效的 URL")
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return ImportResult{}, shared.BadRequest("仅支持 http/https 链接")
+	}
+	article, err := readability.FromURL(rawURL, 15*time.Second)
+	if err != nil {
+		return ImportResult{}, shared.BadRequest("解析远程文档失败：" + err.Error())
+	}
+	if strings.TrimSpace(article.Content) == "" {
+		return ImportResult{}, shared.BadRequest("未能从该链接提取到正文")
+	}
+	return ImportResult{Title: article.Title, HTML: article.Content}, nil
 }
 
 // ListArchiveYears 返回归档年份索引（倒序）。

@@ -77,3 +77,20 @@ export async function publishPost(id: string): Promise<void> {
     queryClient.invalidateQueries({ queryKey: adminPostKeys.detail(id) });
     queryClient.invalidateQueries({ queryKey: adminPostKeys.lists() });
 }
+
+/** ImportPostUrlResult - 远程链接文档解析结果 */
+export interface ImportPostUrlResult {
+    /** 网页标题，可为空 */
+    title?: string;
+    /** 提取出的正文 HTML */
+    html: string;
+}
+
+/**
+ * importPostUrl - 调后端 POST /admin/posts/import-url 解析远程链接正文
+ *
+ * 后端 readability 代理解析，返回标题与正文 HTML，供编辑器 setContent 插入。
+ */
+export async function importPostUrl(url: string): Promise<ImportPostUrlResult> {
+    return apiPost<ImportPostUrlResult>("/admin/posts/import-url", { url });
+}

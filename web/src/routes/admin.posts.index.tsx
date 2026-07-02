@@ -213,7 +213,7 @@ function AdminPostsPage() {
                 onOpenChange={setDeleteOpen}
                 onConfirm={confirmDelete}
                 title="确认删除文章"
-                description={`确定要删除文章「${deleting?.title}」吗？此操作不可撤销。`}
+                description={`确定要删除文章「${deleting?.title}」吗？文章将移至回收站，后续可恢复。`}
                 confirmLabel="删除"
                 loading={deletePost.isPending}
             />

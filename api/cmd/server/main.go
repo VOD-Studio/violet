@@ -430,6 +430,7 @@ func main() {
 			r.Get("/posts", postH.ListAll)                    // 所有文章列表
 			r.Get("/posts/{id}", postH.GetByID)               // 文章详情
 			r.Post("/posts", postH.Create)                    // 创建文章
+			r.Post("/posts/import-url", postH.ImportURL)      // 导入远程链接文档
 			r.Put("/posts/{id}", postH.Update)                // 更新文章
 			r.Patch("/posts/{id}/status", postH.UpdateStatus) // 更新文章状态
 			r.Delete("/posts/{id}", postH.Delete)             // 删除文章

@@ -15,7 +15,7 @@
  * 默认行为是打开本地上传文件选择器。
  */
 import { EditorContent, useEditor } from "@tiptap/react";
-import { Download, FileText, FileUp } from "lucide-react";
+import { Download, FileText, FileUp, Globe } from "lucide-react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
@@ -52,6 +52,8 @@ export interface RichTextEditorProps {
     exportName?: string;
     /** 自定义图片插入（工具栏+斜杠菜单点击图片时）；不传则用本地上传 */
     onPickImage?: () => void;
+    /** 自定义远程链接导入；不传则不显示「链接」按钮。返回 null 表示取消或失败 */
+    onImportUrl?: (url: string) => Promise<{ html: string; title?: string } | null>;
     /** 外部 className */
     className?: string;
     /** 最小高度，默认 420 */
@@ -66,6 +68,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             placeholder,
             exportName = "article",
             onPickImage,
+            onImportUrl,
             className,
             minHeight = 420,
         },
@@ -139,13 +142,15 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         );
 
         // 外部 value 变更时同步进编辑器（仅在差异时，避免光标跳动）
+        // emitUpdate 必须为 true：setContent 后触发 update 事件，useWordCount 才能刷新字数；
+        // 回吐的 HTML 与父级 value 收敛后即停止，不会循环
         useEffect(() => {
             if (!editor) return;
             const current = editor.getHTML();
             if (value !== current) {
                 editor.commands.setContent(value || "", {
                     contentType: "html",
-                    emitUpdate: false,
+                    emitUpdate: true,
                 });
             }
         }, [value, editor]);
@@ -194,6 +199,20 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             }
         };
 
+        // —— 远程链接导入弹窗 ——
+        const [urlDialogOpen, setUrlDialogOpen] = useState(false);
+        const handleImportUrlConfirm = (url: string) => {
+            if (!editor || !onImportUrl) return;
+            const trimmed = url.trim();
+            if (!trimmed) return;
+            // PromptDialog 确认后立即关闭，解析异步进行；成功由 onImportUrl 调用方 toast
+            void onImportUrl(trimmed).then((result) => {
+                if (result?.html) {
+                    editor.commands.setContent(result.html, { contentType: "html" });
+                }
+            });
+        };
+
         return (
             <div
                 className={cn(
@@ -226,20 +245,28 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                         >
                             <FileText /> 源码
                         </Button>
-                        <label>
-                            <input
-                                type="file"
-                                accept=".md,.markdown,.txt"
-                                className="hidden"
-                                onChange={handleImport}
-                            />
-                            <span
-                                className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-                                title="导入 .md 文件"
-                            >
+                        <Button asChild size="xs" variant="ghost" title="导入 .md 文件">
+                            <label className="cursor-pointer">
+                                <input
+                                    type="file"
+                                    accept=".md,.markdown,.txt"
+                                    className="hidden"
+                                    onChange={handleImport}
+                                />
                                 <FileUp /> 导入
-                            </span>
-                        </label>
+                            </label>
+                        </Button>
+                        {onImportUrl ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="xs"
+                                title="导入远程链接文档"
+                                onClick={() => setUrlDialogOpen(true)}
+                            >
+                                <Globe /> 链接
+                            </Button>
+                        ) : null}
                         <Button
                             type="button"
                             variant="ghost"
@@ -271,6 +298,18 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                     defaultValue={sourceDefault}
                     confirmLabel="应用"
                     onConfirm={handleSourceConfirm}
+                />
+                {/* 远程链接导入弹窗 */}
+                <PromptDialog
+                    open={urlDialogOpen}
+                    onOpenChange={setUrlDialogOpen}
+                    title="导入远程链接"
+                    description="粘贴网页地址，解析正文并替换当前内容"
+                    label="网页 URL"
+                    defaultValue="https://"
+                    placeholder="https://example.com/article"
+                    confirmLabel="导入"
+                    onConfirm={handleImportUrlConfirm}
                 />
             </div>
         );

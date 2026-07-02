@@ -5,13 +5,14 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 // Post 文章表持久化模型
 type Post struct {
 	ID             uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	Title          string     `gorm:"type:varchar(255);not null" json:"title"`
-	Slug           string     `gorm:"type:varchar(255);unique" json:"slug"`
+	Slug           string     `gorm:"type:varchar(255)" json:"slug"`
 	ContentMD      string     `gorm:"type:text;column:content_md" json:"content_md"`
 	ContentHTML    string     `gorm:"type:text;column:content_html" json:"content_html"`
 	Excerpt        string     `gorm:"type:text" json:"excerpt"`
@@ -25,6 +26,9 @@ type Post struct {
 	PublishedAt    *time.Time `gorm:"column:published_at" json:"published_at,omitempty"`
 	CreatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	// 软删除：GORM 识别 gorm.DeletedAt 后 Delete 自动改 UPDATE，查询自动过滤 deleted_at IS NULL。
+	// 不加 index tag，索引由 migration 038 以部分索引建立，避免 AutoMigrate 建全表索引覆盖。
+	DeletedAt      gorm.DeletedAt `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 
 	// 多对多关联标签
 	Tags []Tag `gorm:"many2many:post_tags;"`

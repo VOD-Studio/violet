@@ -44,6 +44,15 @@ func registerPostPaths(t *openapi3.T) {
 		"status": strEnum("文章状态", "draft", "published", "archived"),
 	}, "status")
 
+	registerSchema(t, "ImportURLRequest", openapi3.Schemas{
+		"url": reqStr("远程网页 URL，仅限 http/https"),
+	}, "url")
+
+	registerSchema(t, "ImportResultDTO", openapi3.Schemas{
+		"title": optStr("网页标题"),
+		"html":  optStr("提取出的正文 HTML"),
+	})
+
 	// 归档文章项（精简字段，不含正文）
 	registerSchema(t, "ArchiveItemDTO", openapi3.Schemas{
 		"id":           reqStr("文章 ID（UUID）"),
@@ -214,6 +223,19 @@ func registerPostPaths(t *openapi3.T) {
 		Responses: responses(
 			200, messageResponse("文章已删除"),
 			404, errorResponse("文章不存在"),
+		),
+	})
+
+	post(t, "/admin/posts/import-url", &openapi3.Operation{
+		Tags:        []string{"文章管理"},
+		Summary:     "导入远程链接文档",
+		Description: "解析远程网页正文为 HTML 返回，供编辑器「导入链接」插入。需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("ImportURLRequest", true, "待解析的 URL"),
+		Responses: responses(
+			200, dataResponse("ImportResultDTO", "解析结果", 200),
+			400, errorResponse("URL 无效或解析失败"),
 		),
 	})
 }

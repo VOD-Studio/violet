@@ -8,7 +8,7 @@
 
 import type { MediaFile } from "@entities/media/model/types";
 import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
-import { publishPost, useCreatePost, useUpdatePost } from "@features/admin-posts/api/mutations";
+import { importPostUrl, publishPost, useCreatePost, useUpdatePost } from "@features/admin-posts/api/mutations";
 import { useAdminPost } from "@features/admin-posts/api/queries";
 import { type PostForm, postSchema } from "@features/admin-posts/model/schema";
 import type { CreatePost } from "@features/admin-posts/model/types";
@@ -201,6 +201,19 @@ export function PostEditor({ postId }: PostEditorProps) {
         );
     };
 
+    // 导入远程链接：调后端代理解析，成功回填编辑器；失败 toast 并返回 null
+    const handleImportUrl = async (url: string) => {
+        const toastId = toast.loading("正在解析远程文档…");
+        try {
+            const result = await importPostUrl(url);
+            toast.success("已导入远程文档", { id: toastId });
+            return result;
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "导入失败", { id: toastId });
+            return null;
+        }
+    };
+
     const saving = createPost.isPending || updatePost.isPending;
 
     if (isEdit && isLoading) {
@@ -271,6 +284,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                                     onChange={field.onChange}
                                     exportName={slugValue || "article"}
                                     onPickImage={() => setImagePickerOpen(true)}
+                                    onImportUrl={handleImportUrl}
                                     className="h-full"
                                     minHeight={400}
                                 />
