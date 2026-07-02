@@ -219,7 +219,7 @@ export function ImagePreviewImage({
     }, [isMoving, scale, position.x, position.y]);
 
     return (
-        <div className="relative">
+        <div className="relative h-full w-full">
             <AnimatePresence mode="wait">
                 {shouldLoad && (
                     <motion.img
@@ -235,7 +235,7 @@ export function ImagePreviewImage({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onLoad={handleLoad}
-                        className="max-h-[90vh] max-w-full select-none object-contain"
+                        className="absolute inset-0 h-full w-full select-none object-contain"
                         style={{
                             transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${flipX ? "-" : ""}${scale}, ${flipY ? "-" : ""}${scale}) rotate(${rotate}deg)`,
                             transition: isMoving ? "none" : "transform 0.3s ease-out",

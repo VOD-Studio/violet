@@ -5,7 +5,7 @@
  */
 
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useImagePreviewControls } from "../hooks/useImagePreviewControls";
 import type { ImagePreviewProps } from "../types/image-preview-types";
@@ -157,10 +157,10 @@ export function ImagePreview({
         return () => window.removeEventListener("resize", onResize);
     }, [naturalSize]);
 
-    // 切换图片时重置原图加载状态，让缩略图层重新显示并由原图替换。
-    // 不需要重置 flyInSettled：切换不重新播放飞入动画，外层容器已稳定。
+    // 切换图片时同步重置原图加载状态，让缩略图层立即重新显示并覆盖旧图，
+    // 避免 paint 前旧图在大图盒左上角闪现。
     // biome-ignore lint/correctness/useExhaustiveDependencies: index 是重置触发器
-    useEffect(() => {
+    useLayoutEffect(() => {
         setOriginalLoaded(false);
     }, [index]);
 
