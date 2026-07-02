@@ -44,6 +44,7 @@ secrets/*.pem
 tmp/
 api/tmp/
 api/server
+api/bin/
 
 # Ignore all claude local
 .claude/**/*.local.*
