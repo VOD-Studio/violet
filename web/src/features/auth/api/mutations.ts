@@ -76,6 +76,34 @@ export const useLogin = (csrfToken?: string) => {
 };
 
 /**
+ * googleLogin - POST /auth/google 
+ */
+export const googleLogin = (credential: string, csrfToken?: string) => {
+    const token = csrfToken || getCSRFToken();
+    return apiPost<TokenResponse>("/auth/google", { credential }, {
+        headers: token ? { [CSRF_HEADER]: token } : undefined,
+        __skipAuthGate: true,
+    });
+};
+
+/**
+ * useGoogleLoginMutation - Google 登录
+ */
+export const useGoogleLoginMutation = (csrfToken?: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (credential: string) => googleLogin(credential, csrfToken),
+        onSuccess: (data) => {
+            qc.invalidateQueries({ queryKey: authKeys.me() });
+            markSessionActive();
+            if (data?.expires_in) {
+                scheduleRefresh(data.expires_in);
+            }
+        },
+    });
+};
+
+/**
  * fetchRefresh - 显式刷新 access token
  *
  * httpClient 在 401 时已自动调用本接口，此处导出供手动刷新场景使用。

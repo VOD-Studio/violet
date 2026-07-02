@@ -43,6 +43,7 @@ type User struct {
 	IsBuiltinSuperAdmin bool   `gorm:"not null;default:false" json:"is_builtin_super_admin"`
 	EmailVerified       bool   `gorm:"not null;default:false" json:"email_verified"`
 	IsActive            bool   `gorm:"not null;default:false" json:"is_active"`
+	GoogleID            *string `gorm:"type:varchar(255);uniqueIndex" json:"google_id"`
 	RoleID              *int32 `gorm:"index" json:"role_id,omitempty"`
 }
 

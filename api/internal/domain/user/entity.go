@@ -91,6 +91,8 @@ type User struct {
 	bio string
 	// role 角色
 	role Role
+	// googleID 绑定的 Google 账号 Subject
+	googleID *string
 	// isBuiltinSuperAdmin 是否为内置超级管理员
 	//
 	// 区分"内置超管"（系统初始化的唯一超管，通配符权限，靠标志位短路）
@@ -146,6 +148,7 @@ func ReconstructUser(
 	avatarURL string,
 	bio string,
 	role Role,
+	googleID *string,
 	isBuiltinSuperAdmin bool,
 	emailVerified bool,
 	isActive bool,
@@ -159,6 +162,7 @@ func ReconstructUser(
 		avatarURL:           avatarURL,
 		bio:                 bio,
 		role:                role,
+		googleID:            googleID,
 		isBuiltinSuperAdmin: isBuiltinSuperAdmin,
 		emailVerified:       emailVerified,
 		isActive:            isActive,
@@ -222,6 +226,11 @@ func (u *User) MarkAsBuiltinSuperAdmin() {
 	u.role = RoleSuperAdmin
 }
 
+// SetGoogleID 设置绑定的 Google ID
+func (u *User) SetGoogleID(id string) {
+	u.googleID = &id
+}
+
 // Activate 启用账户
 func (u *User) Activate() { u.isActive = true }
 
@@ -279,6 +288,9 @@ func (u *User) AvatarURL() string { return u.avatarURL }
 func (u *User) Bio() string { return u.bio }
 
 func (u *User) Role() Role { return u.role }
+
+// GoogleID 获取绑定的 Google ID
+func (u *User) GoogleID() *string { return u.googleID }
 
 // IsSuperAdmin 是否为超级管理员（便捷方法，权限守卫常用）
 func (u *User) IsSuperAdmin() bool { return u.role.IsSuperAdmin() }

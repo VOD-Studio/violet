@@ -21,6 +21,7 @@ import (
 type Handler struct {
 	register  *authcmd.RegisterUserHandler
 	login     *authcmd.LoginHandler
+	google    *authcmd.GoogleLoginHandler
 	logout    *authcmd.LogoutHandler
 	refresh   *authcmd.RefreshTokenHandler
 	verify    *authcmd.VerifyEmailHandler
@@ -41,6 +42,7 @@ type Handler struct {
 func NewHandler(
 	register *authcmd.RegisterUserHandler,
 	login *authcmd.LoginHandler,
+	google *authcmd.GoogleLoginHandler,
 	logout *authcmd.LogoutHandler,
 	refresh *authcmd.RefreshTokenHandler,
 	verify *authcmd.VerifyEmailHandler,
@@ -52,7 +54,7 @@ func NewHandler(
 	cookieCfg config.CookieConfig,
 ) *Handler {
 	return &Handler{
-		register: register, login: login, logout: logout, refresh: refresh,
+		register: register, login: login, google: google, logout: logout, refresh: refresh,
 		verify: verify, forgot: forgot, reset: reset,
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe,
 		validate:  validator.New(),
@@ -140,6 +142,36 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	// 下发 HttpOnly Cookie（access + refresh + CSRF double-submit）
 	// refresh_token 不再返回到响应体，仅通过 HttpOnly Cookie 传递（防 XSS 偷取）
+	csrf := generateCSRFToken()
+	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg)
+	response.RespondOK(w, map[string]any{
+		"access_token":       out.TokenPair.AccessToken,
+		"expires_in":         out.TokenPair.ExpiresIn,
+		"refresh_expires_in": out.TokenPair.RefreshExpiresIn,
+		"token_type":         "Bearer",
+	})
+}
+
+// GoogleLogin POST /auth/google
+func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Credential string `json:"credential" validate:"required"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+
+	out, err := h.google.Handle(r.Context(), authcmd.GoogleLoginInput{Credential: req.Credential})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	
 	csrf := generateCSRFToken()
 	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg)
 	response.RespondOK(w, map[string]any{

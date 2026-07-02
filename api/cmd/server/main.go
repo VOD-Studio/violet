@@ -229,6 +229,7 @@ func main() {
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/register", authH.Register)
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/verify-email", authH.VerifyEmail)
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/login", authH.Login)
+			r.With(middleware.AuthRateLimit(redisClient)).Post("/google", authH.GoogleLogin)
 			// refresh 用独立桶（30/min）：前端并发请求自动刷新时可能短时多次调用，
 			// 与防爆破的 auth 桶（5/min）隔离，避免误伤。
 			r.With(middleware.RefreshRateLimit(redisClient)).Post("/refresh", authH.Refresh)

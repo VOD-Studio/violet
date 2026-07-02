@@ -1,5 +1,5 @@
 import { authKeys } from "@features/auth/api/keys";
-import { useLogin } from "@features/auth/api/mutations";
+import { useLogin, useGoogleLoginMutation } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
 import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
 import type { LoginRequest } from "@features/auth/model/types";
@@ -12,6 +12,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { GoogleLogin } from "@react-oauth/google";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Modal } from "@/shared/ui/modal";
@@ -49,6 +50,7 @@ export function LoginDialog() {
     // 仅在弹窗打开时取 token，避免全局挂载时的无谓请求；
     // useQuery 自动去重，StrictMode 双调用与反复开关都只触发一次请求
     const csrfToken = useCsrfToken({ enabled: isOpen });
+    const googleLogin = useGoogleLoginMutation(csrfToken);
     const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
     const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
     // 区分「程序化关闭」（登录成功后调 close()）与「用户取消」（点关闭/遮罩/ESC）。
@@ -156,17 +158,17 @@ export function LoginDialog() {
                         type="button"
                         variant="outline"
                         onClick={() => handleOpenChange(false)}
-                        disabled={login.isPending}
+                        disabled={login.isPending || googleLogin.isPending}
                     >
                         取消
                     </Button>
                     <Button
                         type="submit"
                         form="login-dialog-form"
-                        disabled={login.isPending || !csrfToken}
+                        disabled={login.isPending || googleLogin.isPending || !csrfToken}
                     >
-                        {login.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-                        {login.isPending ? "登录中…" : "登录"}
+                        {(login.isPending || googleLogin.isPending) && <Loader2 className="mr-2 size-4 animate-spin" />}
+                        {login.isPending || googleLogin.isPending ? "登录中…" : "登录"}
                     </Button>
                 </>
             }
@@ -202,6 +204,47 @@ export function LoginDialog() {
                     {errors.password ? (
                         <p className="text-sm text-destructive">{errors.password}</p>
                     ) : null}
+                </div>
+                
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                            或者
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex justify-center">
+                    <GoogleLogin
+                        onSuccess={(credentialResponse) => {
+                            if (credentialResponse.credential) {
+                                googleLogin.mutate(credentialResponse.credential, {
+                                    onSuccess: async () => {
+                                        toast.success("登录成功");
+                                        closingForSuccess.current = true;
+                                        close();
+                                        setForm({ email: "", password: "" });
+                                        try {
+                                            await flush();
+                                        } catch {}
+                                    },
+                                    onError: (err) => {
+                                        const msg =
+                                            err instanceof ApiError
+                                                ? err.message || FALLBACK_BY_STATUS[err.status] || "登录失败，请稍后再试"
+                                                : err.message || "登录失败，请检查网络";
+                                        toast.error(msg);
+                                    },
+                                });
+                            }
+                        }}
+                        onError={() => {
+                            toast.error("Google 登录失败");
+                        }}
+                    />
                 </div>
             </form>
         </Modal>
