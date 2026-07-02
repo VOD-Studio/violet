@@ -76,7 +76,7 @@ api: ## 启动 Go API 服务
 	cd api && go run ./cmd/server
 
 api-build: ## 编译 Go API
-	cd api && go build -o bin/server ./cmd/server
+	cd api && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/server ./cmd/server
 	@echo "编译完成: api/bin/server"
 
 api-test: ## 运行后端测试
