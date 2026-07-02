@@ -8,13 +8,14 @@
 
 import type { MediaFile } from "@entities/media/model/types";
 import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { adminPostKeys } from "@features/admin-posts/api/keys";
 import {
     importPostUrl,
     publishPost,
     useCreatePost,
     useUpdatePost,
 } from "@features/admin-posts/api/mutations";
-import { useAdminPost } from "@features/admin-posts/api/queries";
+import { fetchAdminPost, useAdminPost } from "@features/admin-posts/api/queries";
 import { type PostForm, postSchema } from "@features/admin-posts/model/schema";
 import type { CreatePost } from "@features/admin-posts/model/types";
 import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
@@ -24,6 +25,7 @@ import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { slugify } from "@shared/lib/slug";
 import { Input } from "@shared/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -43,6 +45,7 @@ export function PostEditor({ postId }: PostEditorProps) {
     const { data: existing, isLoading } = useAdminPost(postId ?? "");
     const createPost = useCreatePost();
     const updatePost = useUpdatePost(postId ?? "");
+    const queryClient = useQueryClient();
 
     const editorRef = useRef<RichTextEditorHandle>(null);
     const initialized = useRef(false);
@@ -226,6 +229,25 @@ export function PostEditor({ postId }: PostEditorProps) {
 
     const saving = createPost.isPending || updatePost.isPending;
 
+    const handleRestored = async () => {
+        if (!postId) return;
+        const freshData = await queryClient.fetchQuery({
+            queryKey: adminPostKeys.detail(postId),
+            queryFn: () => fetchAdminPost(postId),
+        });
+        reset({
+            title: freshData.title,
+            slug: freshData.slug,
+            content_md: freshData.content_md,
+            excerpt: freshData.excerpt,
+            cover_image: freshData.cover_image,
+            seo_title: freshData.seo_title,
+            seo_description: freshData.seo_description,
+            tags: freshData.tags,
+            is_featured: freshData.is_featured,
+        });
+    };
+
     if (isEdit && isLoading) {
         return (
             <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -321,6 +343,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                 postId={postId ?? ""}
                 open={versionsOpen}
                 onOpenChange={setVersionsOpen}
+                onRestored={handleRestored}
             />
         </div>
     );

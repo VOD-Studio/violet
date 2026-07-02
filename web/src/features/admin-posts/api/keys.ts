@@ -12,4 +12,8 @@ export const adminPostKeys = {
     details: () => [...adminPostKeys.all, "detail"] as const,
     /** 具体详情，按 ID */
     detail: (id: string) => [...adminPostKeys.details(), id] as const,
+    /** 历史版本维度 */
+    versions: (postId: string) => [...adminPostKeys.detail(postId), "versions"] as const,
+    /** 具体历史版本，按版本 ID */
+    version: (versionId: string) => ["admin-posts", "versions", versionId] as const,
 };

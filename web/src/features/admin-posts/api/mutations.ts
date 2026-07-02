@@ -122,7 +122,7 @@ export function useRestoreVersion(postId: string, versionId: string) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: adminPostKeys.detail(postId) });
-            queryClient.invalidateQueries({ queryKey: ["admin-posts", postId, "versions"] });
+            queryClient.invalidateQueries({ queryKey: adminPostKeys.versions(postId) });
         },
     });
 }

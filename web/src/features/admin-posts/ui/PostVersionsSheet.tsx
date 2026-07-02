@@ -11,9 +11,15 @@ interface PostVersionsSheetProps {
     postId: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onRestored?: () => void;
 }
 
-export function PostVersionsSheet({ postId, open, onOpenChange }: PostVersionsSheetProps) {
+export function PostVersionsSheet({
+    postId,
+    open,
+    onOpenChange,
+    onRestored,
+}: PostVersionsSheetProps) {
     const { data: versions, isLoading } = usePostVersions(postId);
     const [previewId, setPreviewId] = useState<string | null>(null);
 
@@ -71,6 +77,7 @@ export function PostVersionsSheet({ postId, open, onOpenChange }: PostVersionsSh
                     onRestored={() => {
                         setPreviewId(null);
                         onOpenChange(false);
+                        onRestored?.();
                     }}
                 />
             )}
