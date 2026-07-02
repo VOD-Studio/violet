@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"net/http"
 	"regexp"
 	"strings"
-
-	"google.golang.org/api/idtoken"
 
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/shared"
@@ -48,17 +48,36 @@ func NewGoogleLoginHandler(
 
 // Handle 执行谷歌登录
 func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (LoginOutput, error) {
-	payload, err := idtoken.Validate(ctx, in.Credential, h.clientID)
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://www.googleapis.com/oauth2/v3/userinfo", nil)
 	if err != nil {
+		return LoginOutput{}, shared.Internal("构建 Google API 请求失败", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+in.Credential)
+	
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return LoginOutput{}, shared.Internal("请求 Google API 失败", err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
 		return LoginOutput{}, user.ErrInvalidCredentials
 	}
-
-	emailStr, ok := payload.Claims["email"].(string)
-	if !ok {
-		return LoginOutput{}, shared.BadRequest("Google token missing email")
+	
+	var payload struct {
+		Email   string `json:"email"`
+		Subject string `json:"sub"`
+		Picture string `json:"picture"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return LoginOutput{}, shared.Internal("解析 Google 响应失败", err)
 	}
 
-	email, err := user.ParseEmail(emailStr)
+	if payload.Email == "" {
+		return LoginOutput{}, shared.BadRequest("Google 账号缺少邮箱信息")
+	}
+
+	email, err := user.ParseEmail(payload.Email)
 	if err != nil {
 		return LoginOutput{}, err
 	}
@@ -90,8 +109,8 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 		u.VerifyEmail()       // 谷歌账号已验证
 		u.SetGoogleID(subject)
 		
-		if pic, ok := payload.Claims["picture"].(string); ok && pic != "" {
-			u.UpdateProfile(pic, "")
+		if payload.Picture != "" {
+			u.UpdateProfile(payload.Picture, "")
 		}
 
 		u.Activate()          // 激活账号
@@ -107,8 +126,8 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 		}
 		
 		// 如果用户还没有头像，使用 Google 提供的头像
-		if pic, ok := payload.Claims["picture"].(string); ok && pic != "" && u.AvatarURL() == "" {
-			u.UpdateProfile(pic, u.Bio())
+		if payload.Picture != "" && u.AvatarURL() == "" {
+			u.UpdateProfile(payload.Picture, u.Bio())
 			changed = true
 		}
 
