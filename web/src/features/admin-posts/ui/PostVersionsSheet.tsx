@@ -56,10 +56,10 @@ export function PostVersionsSheet({
                                                 {v.summary}
                                             </span>
                                             <Button
-                                                variant="secondary"
+                                                variant="outline"
                                                 size="sm"
                                                 onClick={() => setPreviewId(v.id)}
-                                                className="h-8 shrink-0 rounded-full px-4 text-xs font-medium transition-all group-hover:bg-primary group-hover:text-primary-foreground"
+                                                className="h-8 shrink-0 rounded-full px-4 text-xs font-medium shadow-none transition-all hover:bg-primary hover:text-primary-foreground"
                                             >
                                                 预览
                                             </Button>
@@ -126,7 +126,7 @@ function VersionPreviewDialog({
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="max-w-4xl h-[100dvh] sm:h-[85vh] flex flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl border-border/50 shadow-2xl">
+            <DialogContent className="max-w-4xl sm:max-w-4xl lg:max-w-5xl h-[100dvh] sm:h-[85vh] flex flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl border-border/50 shadow-2xl">
                 <DialogHeader className="border-b bg-muted/20 p-6">
                     <DialogTitle className="text-xl font-semibold flex items-center gap-2">
                         <History className="size-5 text-primary" />
