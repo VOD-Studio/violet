@@ -126,7 +126,7 @@ function VersionPreviewDialog({
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl border-border/50 shadow-2xl">
+            <DialogContent className="max-w-4xl h-[100dvh] sm:h-[85vh] flex flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl border-border/50 shadow-2xl">
                 <DialogHeader className="border-b bg-muted/20 p-6">
                     <DialogTitle className="text-xl font-semibold flex items-center gap-2">
                         <History className="size-5 text-primary" />
