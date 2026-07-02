@@ -86,7 +86,7 @@ in_xun && /listen 443 ssl/ { has_ssl = 1 }
 # 在 xun HTTPS block 中找到 location / { 并在其前面插入
 in_xun && has_ssl && !patched && /^[[:space:]]*location \/ \{/ {
     print "    location ^~ /api/v1/ {"
-    print "        proxy_pass http://blog-api:8080/api/v1/;"
+    print "        proxy_pass http://blog-api:9090/api/v1/;"
     print "        proxy_set_header Host $host;"
     print "        proxy_set_header X-Real-IP $remote_addr;"
     print "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;"

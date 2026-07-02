@@ -70,7 +70,7 @@ type CookieConfig struct {
 	// true 时仅 HTTPS 才下发；开发环境（HTTP localhost）必须为 false
 	Secure bool
 	// SameSite Cookie 的 SameSite 属性：lax（默认，兼顾安全与可用）/ strict / none
-	// 注意：跨域开发（localhost:5173 → api:8080）必须为 none+secure，否则浏览器拒收
+	// 注意：跨域开发（localhost:5173 → api:9090）必须为 none+secure，否则浏览器拒收
 	SameSite string
 	// AccessName access token Cookie 名
 	AccessName string
@@ -190,7 +190,7 @@ func Load() *Config {
 	v.SetDefault("resend_api_key", "")
 	v.SetDefault("email_from", "noreply@yourdomain.com")
 	v.SetDefault("frontend_url", "http://localhost:3000")
-	v.SetDefault("port", "8080")
+	v.SetDefault("port", "9090")
 	v.SetDefault("upload_path_prefix", "/uploads/")
 	v.SetDefault("upload_dir", "uploads")
 	v.SetDefault("bilibili_sessdata", "")

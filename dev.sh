@@ -53,7 +53,7 @@ cd ..
 echo ""
 echo "开发环境已启动:"
 echo "  前端: http://localhost:5173"
-echo "  API:  http://localhost:8080"
+echo "  API:  http://localhost:9090"
 echo "  数据库: localhost:5432"
 echo "  Redis: localhost:6379"
 echo ""
