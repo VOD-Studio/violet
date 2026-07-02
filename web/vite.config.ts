@@ -4,22 +4,27 @@ import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
 import viteReact from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
+
+// 读取 .env / .env.local，使 dev 反向代理目标可配置，不污染已提交文件
+const env = loadEnv("development", process.cwd(), "");
+const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:9090";
 
 const config = defineConfig({
     resolve: { tsconfigPaths: true },
     plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
-    // dev 反向代理：浏览器同源请求 /api/* 和 /uploads/* 由 Vite 转发到 Go 后端 :9090，
+    // dev 反向代理：浏览器同源请求 /api/* 和 /uploads/* 由 Vite 转发到 Go 后端，
+    // 目标地址可通过 VITE_API_PROXY_TARGET 配置，默认 localhost:9090。
     // 与生产 nginx 反代行为一致（避免 dev 时跨域 Cookie/CSRF 边界问题）。
     // SSR 路径不走这里——服务端用 VITE_SSR_API_BASE_URL 直连后端。
     server: {
         proxy: {
             "/api": {
-                target: "http://localhost:9090",
+                target: apiProxyTarget,
                 changeOrigin: true,
             },
             "/uploads": {
-                target: "http://localhost:9090",
+                target: apiProxyTarget,
                 changeOrigin: true,
             },
         },
