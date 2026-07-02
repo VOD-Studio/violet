@@ -1,16 +1,23 @@
 /**
- * HtmlContent - 安全渲染 HTML 字符串（无 dangerouslySetInnerHTML）
+ * HtmlContent - 安全渲染 HTML 字符串（content_html）
  *
- * 用 react-markdown + rehype-raw（解析 HTML 为 HAST）+ rehype-sanitize（白名单清洗防 XSS），
- * 最终渲染为 React 元素。复用 markdownComponents（含 shiki 代码块），与 MD 路径渲染一致。
+ * 直接走 hast 管道：hast-util-raw 把 HTML 解析为 hast → hast-util-sanitize 白名单清洗 →
+ * hast-util-to-jsx-runtime 渲染为 React（复用 markdownComponents，含 shiki 代码块）。
  *
- * 用途：渲染文章的 content_html（编辑器/后端预渲染的 HTML）。
+ * 刻意不经过 react-markdown / remark-parse：后者会把整段 HTML 当 markdown 重新解析，
+ * 代码块内的空行会被 CommonMark 当作 HTML 块边界截断，导致一个代码块被拆成多段、
+ * 混入段落，格式全乱。HTML 内容必须按 HTML 解析，这是本组件存在的意义。
  */
-import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
-import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
-import rehypeSlug from "rehype-slug";
+
+import type { Nodes } from "hast";
+import { raw } from "hast-util-raw";
+import { defaultSchema, sanitize } from "hast-util-sanitize";
+import { toJsxRuntime } from "hast-util-to-jsx-runtime";
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { markdownComponents } from "./components/markdown-components";
+
+// raw 节点（{ type: "raw"; value: html }）由 mdast-util-to-hast 全局扩展进 hast 的
+// RootContentMap，hast-util-raw 据此把 HTML 字符串解析为正式 hast 节点。
 
 /**
  * sanitize schema：在默认白名单基础上放宽，允许 class/style（shiki 高亮 + 排版所需）、
@@ -42,6 +49,11 @@ const schema = {
     ],
 };
 
+/** HTML 字符串 → hast：包成 raw 节点交给 hast-util-raw 解析，纯 HTML 不经过 markdown */
+function htmlToHast(html: string): Nodes {
+    return raw({ type: "root", children: [{ type: "raw", value: html }] });
+}
+
 export interface HtmlContentProps {
     /** HTML 字符串 */
     html: string;
@@ -50,16 +62,15 @@ export interface HtmlContentProps {
 }
 
 export function HtmlContent({ html, className }: HtmlContentProps) {
+    const cleaned = sanitize(htmlToHast(html), schema);
     return (
         <div className={className}>
-            <ReactMarkdown
-                remarkPlugins={[]}
-                // 顺序：raw 先把 HTML 解析进 AST，sanitize 再清洗，slug 补标题 id
-                rehypePlugins={[rehypeRaw, [rehypeSanitize, schema], rehypeSlug]}
-                components={markdownComponents}
-            >
-                {html}
-            </ReactMarkdown>
+            {toJsxRuntime(cleaned, {
+                Fragment,
+                jsx,
+                jsxs,
+                components: markdownComponents,
+            })}
         </div>
     );
 }
