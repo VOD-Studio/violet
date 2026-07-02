@@ -1,6 +1,7 @@
 /* web/src/styles.css */
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@plugin "tailwindcss-animate";
 
 @theme {
   --animate-blob: blob 7s infinite;

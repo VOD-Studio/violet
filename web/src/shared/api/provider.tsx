@@ -1,3 +1,4 @@
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "@shared/ui/sonner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
@@ -22,15 +23,20 @@ export interface AppProviderProps {
  *   （与 http 拦截器等非组件代码共用同一实例，避免缓存串扰）
  * - ThemeProvider（next-themes）：双主题，cookie 持久化防 FOUC
  * - Toaster：全局错误/成功 toast（接 QueryCache error）
+ * - GoogleOAuthProvider: Google 登录
  */
 const AppProvider = ({ children }: AppProviderProps) => {
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
     return (
-        <QueryClientProvider client={clientQueryClient}>
-            <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange>
-                {children}
-                <Toaster />
-            </ThemeProvider>
-        </QueryClientProvider>
+        <GoogleOAuthProvider clientId={googleClientId}>
+            <QueryClientProvider client={clientQueryClient}>
+                <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange>
+                    {children}
+                    <Toaster />
+                </ThemeProvider>
+            </QueryClientProvider>
+        </GoogleOAuthProvider>
     );
 };
 

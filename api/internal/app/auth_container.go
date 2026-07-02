@@ -55,6 +55,8 @@ func NewAuthContainer(
 
 	register := authcmd.NewRegisterUserHandler(userRepo, codeStore, emailSender, hasher, bus)
 	login := authcmd.NewLoginHandler(userRepo, hasher, tokenService, tokenStore)
+	google := authcmd.NewGoogleLoginHandler(userRepo, tokenService, tokenStore, cfg.GoogleClientID, hasher)
+	github := authcmd.NewGithubLoginHandler(userRepo, tokenService, tokenStore, cfg.GithubClientID, cfg.GithubClientSecret, hasher)
 	logout := authcmd.NewLogoutHandler(tokenStore)
 	refresh := authcmd.NewRefreshTokenHandler(userRepo, tokenService, tokenStore)
 	verify := authcmd.NewVerifyEmailHandler(userRepo, codeStore)
@@ -68,7 +70,7 @@ func NewAuthContainer(
 	ensureSuperAdmin := authcmd.NewEnsureSuperAdminHandler(userRepo, hasher)
 
 	authHandler := authhttp.NewHandler(
-		register, login, logout, refresh, verify, forgot, reset,
+		register, login, google, github, logout, refresh, verify, forgot, reset,
 		updatePf, changePwd, getMe, cfg.Cookie,
 	)
 

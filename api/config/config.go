@@ -28,6 +28,12 @@ type Config struct {
 	// JWTAllowEphemeralKey 允许未配置密钥时生成临时密钥（仅开发环境）。
 	// 生产环境必须为 false（默认），否则启动时拒绝加载。
 	JWTAllowEphemeralKey bool
+	// GoogleClientID Google OAuth 客户端 ID
+	GoogleClientID string
+	// GithubClientID Github OAuth 客户端 ID
+	GithubClientID string
+	// GithubClientSecret Github OAuth 客户端密钥
+	GithubClientSecret string
 	// ResendAPIKey Resend 件服务 API 密钥
 	ResendAPIKey string
 	// EmailFrom 发件人邮箱地址
@@ -187,6 +193,9 @@ func Load() *Config {
 	v.SetDefault("jwt_allow_ephemeral_key", false)
 	v.SetDefault("jwt_access_token_ttl", "15m")
 	v.SetDefault("jwt_refresh_token_ttl", "168h")
+	v.SetDefault("google_client_id", "")
+	v.SetDefault("github_client_id", "")
+	v.SetDefault("github_client_secret", "")
 	v.SetDefault("resend_api_key", "")
 	v.SetDefault("email_from", "noreply@yourdomain.com")
 	v.SetDefault("frontend_url", "http://localhost:3000")
@@ -265,6 +274,9 @@ func Load() *Config {
 		JWTAccessTokenTTL:    accessTokenTTL,
 		JWTRefreshTokenTTL:   refreshTokenTTL,
 		JWTAllowEphemeralKey: v.GetBool("jwt_allow_ephemeral_key"),
+		GoogleClientID:       v.GetString("google_client_id"),
+		GithubClientID:       v.GetString("github_client_id"),
+		GithubClientSecret:   v.GetString("github_client_secret"),
 		ResendAPIKey:         v.GetString("resend_api_key"),
 		EmailFrom:            v.GetString("email_from"),
 		FrontendURL:          v.GetString("frontend_url"),

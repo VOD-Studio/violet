@@ -40,6 +40,9 @@ jwt_refresh_token_ttl: 168h
 # 允许未配置密钥文件时生成临时密钥（仅开发；生产必须 false，否则启动拒绝）
 jwt_allow_ephemeral_key: false
 
+# ── Google OAuth ─────────────────────────────
+google_client_id: "" # 通过 GOOGLE_CLIENT_ID 环境变量配置
+
 # ── 鉴权 Cookie ─────────────────────────────
 # access/refresh token 通过 HttpOnly Cookie 下发；CSRF 通过 double-submit cookie 防护
 # 生产部署建议通过环境变量覆盖：COOKIE_DOMAIN、COOKIE_SECURE=true、COOKIE_SAMESITE

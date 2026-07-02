@@ -1,15 +1,16 @@
 import { authKeys } from "@features/auth/api/keys";
-import { useLogin } from "@features/auth/api/mutations";
+import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
 import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
 import type { LoginRequest } from "@features/auth/model/types";
+import { useGoogleLogin } from "@react-oauth/google";
 import { flush, rejectAll, setOpener } from "@shared/api/auth-gate";
 import { ApiError } from "@shared/api/error";
 import { clearSessionActive } from "@shared/api/session";
 import { Button } from "@shared/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Github, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/shared/ui/input";
@@ -45,10 +46,44 @@ export function LoginDialog() {
 
     // qc 在 AppProvider 树内解析（LoginDialog 挂在 __root 的 AppProvider 子树）
     const qc = useQueryClient();
-    const login = useLogin();
-    // 仅在弹窗打开时取 token，避免全局挂载时的无谓请求；
-    // useQuery 自动去重，StrictMode 双调用与反复开关都只触发一次请求
     const csrfToken = useCsrfToken({ enabled: isOpen });
+    const login = useLogin();
+    const googleLogin = useGoogleLoginMutation(csrfToken);
+
+    const handleGoogleLogin = useGoogleLogin({
+        flow: "implicit",
+        onSuccess: (tokenResponse) => {
+            googleLogin.mutate(tokenResponse.access_token, {
+                onSuccess: async () => {
+                    closingForSuccess.current = true;
+                    toast.success("登录成功");
+                    close();
+                    setForm({ email: "", password: "" });
+                    try {
+                        await flush();
+                    } catch {}
+                },
+                onError: (err) => {
+                    const msg =
+                        err instanceof ApiError
+                            ? err.message ||
+                              FALLBACK_BY_STATUS[err.status] ||
+                              "登录失败，请稍后再试"
+                            : err.message || "登录失败，请检查网络";
+                    toast.error(msg);
+                },
+            });
+        },
+        onError: () => toast.error("Google 登录失败，请重试"),
+    });
+
+    const handleGithubLogin = () => {
+        window.location.href =
+            "https://github.com/login/oauth/authorize?client_id=" +
+            import.meta.env.VITE_GITHUB_CLIENT_ID +
+            "&scope=user:email";
+    };
+
     const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
     const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
     // 区分「程序化关闭」（登录成功后调 close()）与「用户取消」（点关闭/遮罩/ESC）。
@@ -156,17 +191,19 @@ export function LoginDialog() {
                         type="button"
                         variant="outline"
                         onClick={() => handleOpenChange(false)}
-                        disabled={login.isPending}
+                        disabled={login.isPending || googleLogin.isPending}
                     >
                         取消
                     </Button>
                     <Button
                         type="submit"
                         form="login-dialog-form"
-                        disabled={login.isPending || !csrfToken}
+                        disabled={login.isPending || googleLogin.isPending || !csrfToken}
                     >
-                        {login.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-                        {login.isPending ? "登录中…" : "登录"}
+                        {(login.isPending || googleLogin.isPending) && (
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                        )}
+                        {login.isPending || googleLogin.isPending ? "登录中…" : "登录"}
                     </Button>
                 </>
             }
@@ -202,6 +239,60 @@ export function LoginDialog() {
                     {errors.password ? (
                         <p className="text-sm text-destructive">{errors.password}</p>
                     ) : null}
+                </div>
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">或者</span>
+                    </div>
+                </div>
+
+                <div className="flex justify-center">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-12 rounded-full"
+                        onClick={() => handleGoogleLogin()}
+                        disabled={googleLogin.isPending}
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 48 48"
+                            className="size-6"
+                        >
+                            <title>Google</title>
+                            <path
+                                fill="#EA4335"
+                                d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"
+                            />
+                            <path
+                                fill="#4285F4"
+                                d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                            />
+                            <path
+                                fill="#FBBC05"
+                                d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                            />
+                            <path
+                                fill="#34A853"
+                                d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                            />
+                            <path fill="none" d="M0 0h48v48H0z" />
+                        </svg>
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="ml-4 size-12 rounded-full"
+                        onClick={() => handleGithubLogin()}
+                    >
+                        <Github className="size-6" />
+                    </Button>
                 </div>
             </form>
         </Modal>
