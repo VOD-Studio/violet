@@ -1,10 +1,10 @@
 import { cn } from "@shared/lib/utils";
 import Empty from "@shared/ui/empty";
-import Loader from "@shared/ui/loader";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/tooltip";
 
 import { useContributions } from "../api/queries";
 import type { Contribution } from "../model/types";
+import ContributionsSkeleton from "./ContributionsSkeleton";
 
 const WEEK_DAYS = 7;
 const WEEKS_SHOWN = 53;
@@ -198,7 +198,7 @@ const Contributions = ({ className }: ContributionsProps) => {
     const { data, isLoading, isError, error } = useContributions();
 
     if (isLoading) {
-        return <Loader label="加载贡献数据…" className={cn("py-12", className)} />;
+        return <ContributionsSkeleton className={className} />;
     }
 
     if (isError) {

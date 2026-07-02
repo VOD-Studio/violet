@@ -1,5 +1,4 @@
 import { Button } from "@shared/ui/button";
-import Loader from "@shared/ui/loader";
 import { Link } from "@tanstack/react-router";
 
 export interface ComingSoonProps {
@@ -19,7 +18,6 @@ const ComingSoon = ({ title }: ComingSoonProps) => {
                     In Construction
                 </p>
                 <h1 className="font-mono text-4xl font-bold">{title}</h1>
-                <Loader label="正在构建…" />
                 <Button asChild variant="outline">
                     <Link to="/">返回首页</Link>
                 </Button>

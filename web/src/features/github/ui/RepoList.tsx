@@ -1,10 +1,10 @@
 import { cn } from "@shared/lib/utils";
 import Empty from "@shared/ui/empty";
-import Loader from "@shared/ui/loader";
 import { ExternalLink, GitFork, Star } from "lucide-react";
 
 import { useRepos } from "../api/queries";
 import type { Repo } from "../model/types";
+import RepoListSkeleton from "./RepoListSkeleton";
 
 interface RepoCardProps {
     repo: Repo;
@@ -63,7 +63,7 @@ const RepoList = ({ className }: RepoListProps) => {
     const { data: repos = [], isLoading, isError, error } = useRepos();
 
     if (isLoading) {
-        return <Loader label="加载仓库…" className={cn("py-20", className)} />;
+        return <RepoListSkeleton className={className} />;
     }
 
     if (isError) {

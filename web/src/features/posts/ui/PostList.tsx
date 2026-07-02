@@ -1,10 +1,10 @@
 import { cn } from "@shared/lib/utils";
 import Empty from "@shared/ui/empty";
-import Loader from "@shared/ui/loader";
 
 import { usePosts } from "../api/queries";
 import type { PostListQuery } from "../model/types";
 import PostCard from "./PostCard";
+import PostListSkeleton from "./PostListSkeleton";
 
 export interface PostListProps {
     query?: PostListQuery;
@@ -24,7 +24,7 @@ const PostList = ({
     const items = data?.data ?? [];
 
     if (isLoading && showSkeleton) {
-        return <Loader label="加载文章…" className="py-20" />;
+        return <PostListSkeleton mixedSizes={mixedSizes} />;
     }
 
     if (isError) {
