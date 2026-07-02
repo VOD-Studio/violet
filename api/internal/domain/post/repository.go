@@ -25,6 +25,11 @@ type PostRepository interface {
 	// FindPublishedByYear 返回指定年份的全部已发布文章（按 published_at 倒序）。
 	// 供公开归档页按年懒加载，结果在应用层/前端再按月分组。
 	FindPublishedByYear(ctx context.Context, year int) ([]*Post, error)
+
+	// --- 历史版本控制 ---
+	SaveVersion(ctx context.Context, version *PostVersion) error
+	FindVersionsByPostID(ctx context.Context, postID shared.ID) ([]*PostVersion, error)
+	GetVersionByID(ctx context.Context, versionID shared.ID) (*PostVersion, error)
 }
 
 // 领域错误

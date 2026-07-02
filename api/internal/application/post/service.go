@@ -36,6 +36,18 @@ type PostDTO struct {
 	UpdatedAt      string     `json:"updated_at"`
 }
 
+// PostVersionDTO 文章版本 DTO
+type PostVersionDTO struct {
+	ID        string   `json:"id"`
+	PostID    string   `json:"post_id"`
+	Title     string   `json:"title"`
+	ContentMD string   `json:"content_md,omitempty"` // 列表时不返回长文本
+	Tags      []string `json:"tags"`
+	AuthorID  string   `json:"author_id"`
+	Summary   string   `json:"summary"`
+	CreatedAt string   `json:"created_at"`
+}
+
 // AuthorDTO 文章作者信息，列表与详情按 author_id 批量/单个填充
 type AuthorDTO struct {
 	Username  string `json:"username"`
@@ -180,6 +192,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 	if err := s.repo.Save(ctx, p); err != nil {
 		return PostDTO{}, err
 	}
+	// 创建初始版本快照
+	v := domain.NewPostVersion(p, authorID, "初始版本")
+	_ = s.repo.SaveVersion(ctx, v) // 快照失败不阻塞创建
 	return toDTO(p), nil
 }
 
@@ -198,8 +213,12 @@ type UpdateInput struct {
 }
 
 // Update 更新文章
-func (s *Service) Update(ctx context.Context, in UpdateInput) error {
+func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID string) error {
 	pid, err := shared.ParseID(in.ID)
+	if err != nil {
+		return err
+	}
+	opID, err := shared.ParseID(operatorID)
 	if err != nil {
 		return err
 	}
@@ -219,12 +238,25 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) error {
 			return err
 		}
 	}
+	oldContent := p.ContentMD()
+	oldTitle := p.Title()
+
 	if err := p.UpdateContent(in.Title, in.ContentMD, in.ContentHTML, in.Excerpt, in.CoverImage); err != nil {
 		return err
 	}
 	p.UpdateSEO(in.SEOTitle, in.SEODescription)
 	p.SetTags(in.Tags)
-	return s.repo.Save(ctx, p)
+
+	if err := s.repo.Save(ctx, p); err != nil {
+		return err
+	}
+	
+	// 如果内容或标题发生实质性变化，则自动保存快照
+	if oldContent != in.ContentMD || oldTitle != in.Title {
+		v := domain.NewPostVersion(p, opID, "自动保存")
+		_ = s.repo.SaveVersion(ctx, v)
+	}
+	return nil
 }
 
 // SetFeatured 设置文章精选标记（后台）
@@ -304,6 +336,82 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	return s.repo.Delete(ctx, pid)
+}
+
+// ListVersions 列出文章的历史版本（不含正文）
+func (s *Service) ListVersions(ctx context.Context, postID string) ([]PostVersionDTO, error) {
+	pid, err := shared.ParseID(postID)
+	if err != nil {
+		return nil, err
+	}
+	versions, err := s.repo.FindVersionsByPostID(ctx, pid)
+	if err != nil {
+		return nil, err
+	}
+	dtos := make([]PostVersionDTO, 0, len(versions))
+	for _, v := range versions {
+		dtos = append(dtos, toVersionDTO(v, false))
+	}
+	return dtos, nil
+}
+
+// GetVersion 获取指定历史版本的详情
+func (s *Service) GetVersion(ctx context.Context, versionID string) (PostVersionDTO, error) {
+	vid, err := shared.ParseID(versionID)
+	if err != nil {
+		return PostVersionDTO{}, err
+	}
+	v, err := s.repo.GetVersionByID(ctx, vid)
+	if err != nil {
+		return PostVersionDTO{}, err
+	}
+	return toVersionDTO(v, true), nil
+}
+
+// RestoreVersion 回滚文章到指定版本
+func (s *Service) RestoreVersion(ctx context.Context, postID, versionID, operatorID string) error {
+	pid, err := shared.ParseID(postID)
+	if err != nil {
+		return err
+	}
+	vid, err := shared.ParseID(versionID)
+	if err != nil {
+		return err
+	}
+	opID, err := shared.ParseID(operatorID)
+	if err != nil {
+		return err
+	}
+
+	// 1. 查找当前文章
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return err
+	}
+	// 2. 查找历史版本
+	v, err := s.repo.GetVersionByID(ctx, vid)
+	if err != nil {
+		return err
+	}
+	if v.PostID() != p.ID() {
+		return shared.BadRequest("历史版本不属于该文章")
+	}
+
+	// 3. 覆盖文章内容
+	if err := p.UpdateContent(v.Title(), v.ContentMD(), v.ContentHTML(), v.Excerpt(), v.CoverImage()); err != nil {
+		return err
+	}
+	p.SetTags(v.Tags())
+
+	if err := s.repo.Save(ctx, p); err != nil {
+		return err
+	}
+
+	// 4. 为回滚操作生成一个新的快照
+	newV := domain.NewPostVersion(p, opID, "回滚至历史版本 "+v.CreatedAt().Format(time.RFC3339))
+	_ = s.repo.SaveVersion(ctx, newV)
+
+	return nil
 }
 
 // ImportResult 远程文档解析结果
@@ -436,6 +544,22 @@ func toArchiveItem(p *domain.Post) ArchiveItemDTO {
 		item.PublishedAt = p.PublishedAt().Format(time.RFC3339)
 	}
 	return item
+}
+
+func toVersionDTO(v *domain.PostVersion, includeContent bool) PostVersionDTO {
+	dto := PostVersionDTO{
+		ID:        v.ID().String(),
+		PostID:    v.PostID().String(),
+		Title:     v.Title(),
+		Tags:      v.Tags(),
+		AuthorID:  v.AuthorID().String(),
+		Summary:   v.Summary(),
+		CreatedAt: v.CreatedAt().Format(time.RFC3339),
+	}
+	if includeContent {
+		dto.ContentMD = v.ContentMD()
+	}
+	return dto
 }
 
 // toListItemDTO 将领域 Post 转为不含正文的列表项。

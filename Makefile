@@ -99,6 +99,11 @@ wire: ## 生成 wire 依赖注入代码 (DDD app 层)
 	cd api && go run github.com/google/wire/cmd/wire ./internal/app/
 	@echo "wire 代码生成完成"
 
+apifox: ## 生成 OpenAPI 文档并导入到 Apifox
+	@echo "生成并上传 OpenAPI 文档到 Apifox..."
+	cd api && go run ./cmd/export-openapi/main.go && apifox import --project 8484856 --format openapi --file ./openapi.json
+	@echo "Apifox 更新完成"
+
 # ==================== 前端 ====================
 
 web: ## 启动前端开发服务器

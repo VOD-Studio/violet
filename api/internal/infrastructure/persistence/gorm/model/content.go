@@ -36,6 +36,23 @@ type Post struct {
 
 func (Post) TableName() string { return "posts" }
 
+// PostVersion 文章历史版本表
+type PostVersion struct {
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	PostID      uuid.UUID `gorm:"type:uuid;column:post_id;index;not null" json:"post_id"`
+	Title       string    `gorm:"type:varchar(255);not null" json:"title"`
+	ContentMD   string    `gorm:"type:text;column:content_md" json:"content_md"`
+	ContentHTML string    `gorm:"type:text;column:content_html" json:"content_html"`
+	Excerpt     string    `gorm:"type:text" json:"excerpt"`
+	CoverImage  string    `gorm:"type:text;column:cover_image" json:"cover_image"`
+	Tags        string    `gorm:"type:jsonb" json:"tags"` // JSON array of tag names
+	AuthorID    uuid.UUID `gorm:"type:uuid;column:author_id;not null" json:"author_id"`
+	Summary     string    `gorm:"type:varchar(255)" json:"summary"`
+	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+}
+
+func (PostVersion) TableName() string { return "post_versions" }
+
 // Tag 标签表持久化模型
 type Tag struct {
 	ID        int32     `gorm:"primaryKey;autoIncrement" json:"id"`

@@ -141,6 +141,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // Update 更新文章
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	userID := interfacesmw.GetUserIDFromContext(r)
 	var req createPostRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -152,7 +153,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		Excerpt: req.Excerpt, CoverImage: req.CoverImage,
 		SEOTitle: req.SEOTitle, SEODescription: req.SEODescription,
 		Tags: req.Tags,
-	}); err != nil {
+	}, userID); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
@@ -258,4 +259,39 @@ func (h *Handler) ImportURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondOK(w, res)
+}
+
+// ListVersions 获取文章的历史版本列表
+func (h *Handler) ListVersions(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	versions, err := h.svc.ListVersions(r.Context(), id)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, versions)
+}
+
+// GetVersion 获取指定的历史版本详情
+func (h *Handler) GetVersion(w http.ResponseWriter, r *http.Request) {
+	versionID := r.PathValue("versionId")
+	v, err := h.svc.GetVersion(r.Context(), versionID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, v)
+}
+
+// RestoreVersion 将文章回滚到指定版本
+func (h *Handler) RestoreVersion(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	versionID := r.PathValue("versionId")
+	userID := interfacesmw.GetUserIDFromContext(r)
+
+	if err := h.svc.RestoreVersion(r.Context(), id, versionID, userID); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "已回滚到指定版本")
 }

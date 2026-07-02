@@ -84,7 +84,7 @@ func main() {
 	// 记录警告但不致命退出，保证服务能启动。
 	if err := gormDB.AutoMigrate(
 		&newmodel.User{}, &newmodel.Role{}, &newmodel.Permission{}, &newmodel.RolePermission{},
-		&newmodel.Post{}, &newmodel.PostView{}, &newmodel.Tag{},
+		&newmodel.Post{}, &newmodel.PostVersion{}, &newmodel.PostView{}, &newmodel.Tag{},
 		&newmodel.Comment{}, &newmodel.CommentReaction{},
 		&newmodel.Announcement{}, &newmodel.Project{},
 		&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
@@ -435,6 +435,11 @@ func main() {
 			r.Patch("/posts/{id}/status", postH.UpdateStatus)  // 更新文章状态
 			r.Patch("/posts/{id}/featured", postH.SetFeatured) // 切换精选标记
 			r.Delete("/posts/{id}", postH.Delete)              // 删除文章
+			
+			// 文章版本管理
+			r.Get("/posts/{id}/versions", postH.ListVersions)
+			r.Get("/posts/versions/{versionId}", postH.GetVersion)
+			r.Post("/posts/{id}/versions/{versionId}/restore", postH.RestoreVersion)
 
 			// 音乐管理（DDD mediaH）
 			r.Route("/music", func(r chi.Router) {
