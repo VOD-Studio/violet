@@ -63,3 +63,38 @@ describe("HtmlContent", () => {
         expect(container.querySelector(".bg-muted")).toBeNull();
     });
 });
+
+describe("HtmlContent 标题锚点 id", () => {
+    it("无 id 的 heading 渲染后应补上 id（与 extractToc 生成的 slug 一致）", () => {
+        // 模拟 TipTap getHTML 产出：heading 无 id
+        const html = "<h2>你好世界</h2><h3>子标题</h3>";
+        const { container } = render(<HtmlContent html={html} />);
+
+        const h2 = container.querySelector("h2");
+        const h3 = container.querySelector("h3");
+        expect(h2?.id).toBe("你好世界");
+        expect(h3?.id).toBe("子标题");
+    });
+
+    it("已有 id 的 heading 保持不变", () => {
+        const html = '<h2 id="custom-id">标题</h2>';
+        const { container } = render(<HtmlContent html={html} />);
+        expect(container.querySelector("h2")?.id).toBe("custom-id");
+    });
+
+    it("渲染出的 heading id 与 extractToc 提取的 id 完全一致（含重复文本去重）", async () => {
+        // 端到端契约：目录点击 scrollIntoView 依赖 extractToc 的 id == DOM 的 id
+        const { extractToc } = await import("@/shared/lib/hooks/use-toc");
+        const html = [
+            "<h2>项目背景</h2>",
+            "<h3>技术选型</h3>",
+            "<h2>核心实现</h2>",
+            "<h2>总结</h2>", // 重复文本触发去重
+            "<h2>总结</h2>",
+        ].join("");
+        const toc = extractToc(html);
+        const { container } = render(<HtmlContent html={html} />);
+        const domIds = Array.from(container.querySelectorAll("h2,h3,h4")).map((h) => h.id);
+        expect(domIds).toEqual(toc.map((it) => it.id));
+    });
+});

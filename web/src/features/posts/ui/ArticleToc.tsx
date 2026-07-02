@@ -9,6 +9,8 @@ export interface ArticleTocProps {
     contentRef: RefObject<HTMLElement | null>;
     /** 点击某条目后的回调（移动端用于关闭 Sheet） */
     onNavigate?: () => void;
+    /** 隐藏内部「Contents」标题（当外层已提供标题时，如移动端 SheetHeader） */
+    hideTitle?: boolean;
 }
 
 /** 每个层级的呈现：缩进、字号、节点图标类型。集中所有层级差异，避免散落的分支。 */
@@ -28,7 +30,7 @@ const LEVEL_CONFIG: Record<2 | 3 | 4, { indent: string; text: string; marker: "c
  * - 与阅读进度同步高亮当前 heading（useActiveHeading，IntersectionObserver）
  * - 上下渐隐遮罩（ScrollArea）
  */
-const ArticleToc = ({ items, contentRef, onNavigate }: ArticleTocProps) => {
+const ArticleToc = ({ items, contentRef, onNavigate, hideTitle }: ArticleTocProps) => {
     const active = useActiveHeading(contentRef);
 
     if (!items.length) return null;
@@ -43,9 +45,11 @@ const ArticleToc = ({ items, contentRef, onNavigate }: ArticleTocProps) => {
 
     return (
         <nav aria-label="目录" className="flex h-full flex-col">
-            <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                Contents
-            </p>
+            {hideTitle ? null : (
+                <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Contents
+                </p>
+            )}
             <ScrollArea className="flex-1">
                 <ul className="space-y-0.5">
                     {items.map((it) => {

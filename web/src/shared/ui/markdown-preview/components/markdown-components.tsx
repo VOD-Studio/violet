@@ -11,16 +11,18 @@ import { cn } from "@/shared/lib/utils";
 import { CodeBlock } from "./CodeBlock";
 
 export const markdownComponents: Components = {
-    h1: ({ children, style, className }) => (
+    h1: ({ children, style, className, id }) => (
         <h1
+            id={id}
             style={style}
             className={cn("mb-5 mt-10 text-3xl font-bold tracking-tight first:mt-0", className)}
         >
             {children}
         </h1>
     ),
-    h2: ({ children, style, className }) => (
+    h2: ({ children, style, className, id }) => (
         <h2
+            id={id}
             style={style}
             className={cn(
                 "mb-4 mt-10 border-b border-edge-hairline pb-2 text-2xl font-bold tracking-tight first:mt-0",
@@ -30,16 +32,21 @@ export const markdownComponents: Components = {
             {children}
         </h2>
     ),
-    h3: ({ children, style, className }) => (
+    h3: ({ children, style, className, id }) => (
         <h3
+            id={id}
             style={style}
             className={cn("mb-3 mt-8 text-xl font-semibold tracking-tight first:mt-0", className)}
         >
             {children}
         </h3>
     ),
-    h4: ({ children, style, className }) => (
-        <h4 style={style} className={cn("mb-3 mt-6 text-lg font-semibold first:mt-0", className)}>
+    h4: ({ children, style, className, id }) => (
+        <h4
+            id={id}
+            style={style}
+            className={cn("mb-3 mt-6 text-lg font-semibold first:mt-0", className)}
+        >
             {children}
         </h4>
     ),
