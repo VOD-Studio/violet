@@ -1,18 +1,18 @@
 import { authKeys } from "@features/auth/api/keys";
-import { useLogin, useGoogleLoginMutation } from "@features/auth/api/mutations";
+import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
 import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
 import type { LoginRequest } from "@features/auth/model/types";
+import { useGoogleLogin } from "@react-oauth/google";
 import { flush, rejectAll, setOpener } from "@shared/api/auth-gate";
 import { ApiError } from "@shared/api/error";
 import { clearSessionActive } from "@shared/api/session";
 import { Button } from "@shared/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Github, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useGoogleLogin } from "@react-oauth/google";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Modal } from "@/shared/ui/modal";
@@ -76,6 +76,13 @@ export function LoginDialog() {
         },
         onError: () => toast.error("Google 登录失败，请重试"),
     });
+
+    const handleGithubLogin = () => {
+        window.location.href =
+            "https://github.com/login/oauth/authorize?client_id=" +
+            import.meta.env.VITE_GITHUB_CLIENT_ID +
+            "&scope=user:email";
+    };
 
     const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
     const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
@@ -257,6 +264,7 @@ export function LoginDialog() {
                             viewBox="0 0 48 48"
                             className="size-6"
                         >
+                            <title>Google</title>
                             <path
                                 fill="#EA4335"
                                 d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"
@@ -275,6 +283,15 @@ export function LoginDialog() {
                             />
                             <path fill="none" d="M0 0h48v48H0z" />
                         </svg>
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="ml-4 size-12 rounded-full"
+                        onClick={() => handleGithubLogin()}
+                    >
+                        <Github className="size-6" />
                     </Button>
                 </div>
             </form>

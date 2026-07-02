@@ -76,14 +76,18 @@ export const useLogin = (csrfToken?: string) => {
 };
 
 /**
- * googleLogin - POST /auth/google 
+ * googleLogin - POST /auth/google
  */
 export const googleLogin = (credential: string, csrfToken?: string) => {
     const token = csrfToken || getCSRFToken();
-    return apiPost<TokenResponse>("/auth/google", { credential }, {
-        headers: token ? { [CSRF_HEADER]: token } : undefined,
-        __skipAuthGate: true,
-    });
+    return apiPost<TokenResponse>(
+        "/auth/google",
+        { credential },
+        {
+            headers: token ? { [CSRF_HEADER]: token } : undefined,
+            __skipAuthGate: true,
+        },
+    );
 };
 
 /**
@@ -93,6 +97,38 @@ export const useGoogleLoginMutation = (csrfToken?: string) => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (credential: string) => googleLogin(credential, csrfToken),
+        onSuccess: (data) => {
+            qc.invalidateQueries({ queryKey: authKeys.me() });
+            markSessionActive();
+            if (data?.expires_in) {
+                scheduleRefresh(data.expires_in);
+            }
+        },
+    });
+};
+
+/**
+ * githubLogin - POST /auth/github
+ */
+export const githubLogin = (credential: string, csrfToken?: string) => {
+    const token = csrfToken || getCSRFToken();
+    return apiPost<TokenResponse>(
+        "/auth/github",
+        { credential },
+        {
+            headers: token ? { [CSRF_HEADER]: token } : undefined,
+            __skipAuthGate: true,
+        },
+    );
+};
+
+/**
+ * useGithubLoginMutation - GitHub 登录
+ */
+export const useGithubLoginMutation = (csrfToken?: string) => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (credential: string) => githubLogin(credential, csrfToken),
         onSuccess: (data) => {
             qc.invalidateQueries({ queryKey: authKeys.me() });
             markSessionActive();

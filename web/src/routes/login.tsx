@@ -1,8 +1,9 @@
 import { authKeys } from "@features/auth/api/keys";
-import { useLogin, useGoogleLoginMutation } from "@features/auth/api/mutations";
+import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
 import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useGoogleLogin } from "@react-oauth/google";
 import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
@@ -14,7 +15,7 @@ import {
     useRouteContext,
     useSearch,
 } from "@tanstack/react-router";
-import { useGoogleLogin } from "@react-oauth/google";
+import { Github } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -94,6 +95,13 @@ function LoginPage() {
         },
         onError: () => toast.error("Google 登录失败，请重试"),
     });
+
+    const handleGithubLogin = () => {
+        window.location.href =
+            "https://github.com/login/oauth/authorize?client_id=" +
+            import.meta.env.VITE_GITHUB_CLIENT_ID +
+            "&scope=user:email";
+    };
 
     const onSubmit = handleSubmit((data) => {
         login.mutate(data, {
@@ -210,6 +218,7 @@ function LoginPage() {
                                     viewBox="0 0 48 48"
                                     className="size-6"
                                 >
+                                    <title>Google</title>
                                     <path
                                         fill="#EA4335"
                                         d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"
@@ -228,6 +237,15 @@ function LoginPage() {
                                     />
                                     <path fill="none" d="M0 0h48v48H0z" />
                                 </svg>
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="ml-4 size-12 rounded-full"
+                                onClick={() => handleGithubLogin()}
+                            >
+                                <Github className="size-6" />
                             </Button>
                         </div>
                     </div>
