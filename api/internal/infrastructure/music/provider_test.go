@@ -17,7 +17,7 @@ func TestSafeURL_RejectsPrivateIP(t *testing.T) {
 }
 
 func TestSafeURL_RejectsLoopback(t *testing.T) {
-	require.Error(t, safeURL("http://localhost:8080/admin"))
+	require.Error(t, safeURL("http://localhost:9090/admin"))
 	require.Error(t, safeURL("http://127.0.0.1/admin"))
 	require.Error(t, safeURL("http://[::1]/admin"))
 }

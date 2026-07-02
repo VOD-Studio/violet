@@ -34,7 +34,7 @@ make generate-jwt-keys
 make api
 ```
 
-服务默认监听 `:8080`，API 前缀 `/api/v1`。
+服务默认监听 `:9090`，API 前缀 `/api/v1`。
 
 ## 目录结构
 

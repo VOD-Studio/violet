@@ -88,8 +88,8 @@ make dev
 
 启动后：
 - 前端: http://localhost:5173
-- 后端 API: http://localhost:8080
-- 健康检查: http://localhost:8080/api/health
+- 后端 API: http://localhost:9090
+- 健康检查: http://localhost:9090/api/health
 
 ## 生产部署
 

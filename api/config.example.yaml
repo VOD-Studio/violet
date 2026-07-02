@@ -12,7 +12,7 @@
 environment: development
 
 # ── 服务配置 ────────────────────────────────
-port: 8080
+port: 9090
 frontend_url: http://localhost:5173
 upload_path_prefix: /uploads/
 

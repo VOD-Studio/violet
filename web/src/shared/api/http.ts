@@ -67,7 +67,7 @@ export interface UnpackedResponse<T = unknown> {
  */
 const getBaseUrl = (): string => {
     if (typeof window === "undefined") {
-        return import.meta.env.VITE_SSR_API_BASE_URL || "http://localhost:8080/api/v1";
+        return import.meta.env.VITE_SSR_API_BASE_URL || "http://localhost:9090/api/v1";
     }
     return import.meta.env.VITE_API_BASE_URL || "/api/v1";
 };

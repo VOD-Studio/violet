@@ -118,7 +118,7 @@ jobs:
         working-directory: /root/docker/mimo-blog
         run: |
           for i in $(seq 1 15); do
-            if docker compose exec -T api wget -qO- http://localhost:8080/api/health 2>/dev/null | grep -q '"status":"ok"'; then
+            if docker compose exec -T api wget -qO- http://localhost:9090/api/health 2>/dev/null | grep -q '"status":"ok"'; then
               echo "健康检查通过，第 ${i} 次尝试"
               exit 0
             fi
@@ -141,7 +141,7 @@ jobs:
             -f docker-compose.ci.yml \
             up -d --no-build --no-deps api
           for i in $(seq 1 10); do
-            if docker compose exec -T api wget -qO- http://localhost:8080/api/health 2>/dev/null | grep -q '"status":"ok"'; then
+            if docker compose exec -T api wget -qO- http://localhost:9090/api/health 2>/dev/null | grep -q '"status":"ok"'; then
               echo "回滚成功，线上已恢复到 ${PREV}"
               exit 0
             fi
