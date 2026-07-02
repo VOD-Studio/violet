@@ -62,10 +62,7 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
         <NodeViewWrapper className="my-4 overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]">
             {/* 顶部：语言下拉 */}
             <div className="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
-                <Select
-                    value={language}
-                    onValueChange={(v) => updateAttributes({ language: v === "text" ? null : v })}
-                >
+                <Select value={language} onValueChange={(v) => updateAttributes({ language: v })}>
                     <SelectTrigger className="h-6 w-36 border-none bg-white/5 px-1 font-mono text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white focus:ring-0">
                         <SelectValue />
                     </SelectTrigger>

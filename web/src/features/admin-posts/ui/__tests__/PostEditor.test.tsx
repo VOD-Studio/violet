@@ -41,6 +41,8 @@ vi.mock("@features/editor", async () => {
 // 数据层：编辑态返回样例文章
 vi.mock("@features/admin-posts/api/queries", () => ({
     useAdminPost: () => ({ data: existing, isLoading: false }),
+    usePostVersions: () => ({ data: [], isLoading: false }),
+    fetchAdminPost: () => Promise.resolve(existing),
 }));
 vi.mock("@features/admin-posts/api/mutations", () => ({
     useCreatePost: () => ({ mutate: () => {}, isPending: false }),
@@ -49,10 +51,17 @@ vi.mock("@features/admin-posts/api/mutations", () => ({
     importPostUrl: () => Promise.resolve({ html: "" }),
 }));
 vi.mock("@tanstack/react-router", () => ({ useNavigate: () => () => {} }));
+vi.mock("@tanstack/react-query", () => ({
+    useQueryClient: () => ({
+        fetchQuery: () => Promise.resolve(existing),
+        invalidateQueries: () => {},
+    }),
+}));
 
 // 切断子组件依赖链，避免拖入 @entities 值导入与无关渲染
 vi.mock("@features/admin-posts/ui/PostEditorSidebar", () => ({ PostEditorSidebar: () => null }));
 vi.mock("@features/admin-posts/ui/PostEditorToolbar", () => ({ PostEditorToolbar: () => null }));
+vi.mock("@features/admin-posts/ui/PostVersionsSheet", () => ({ PostVersionsSheet: () => null }));
 vi.mock("@features/admin-media/ui/MediaPicker", () => ({ MediaPicker: () => null }));
 
 import { PostEditor } from "@features/admin-posts/ui/PostEditor";

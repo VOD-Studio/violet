@@ -238,7 +238,7 @@ export function PostEditor({ postId }: PostEditorProps) {
         reset({
             title: freshData.title,
             slug: freshData.slug,
-            content_md: freshData.content_md,
+            content_html: freshData.content_html,
             excerpt: freshData.excerpt,
             cover_image: freshData.cover_image,
             seo_title: freshData.seo_title,

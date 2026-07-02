@@ -37,12 +37,14 @@ function nodeToText(node: React.ReactNode): string {
 }
 
 export function CodeBlock({ className, children }: CodeBlockProps) {
-    const match = /language-(\w+)/.exec(className || "");
+    const match = /language-(\S+)/.exec(className || "");
     const language = match?.[1] ?? "";
     // 提取纯文本代码内容（react-markdown 传的是节点，非字符串）
     const code = nodeToText(children).replace(/\n$/, "");
+    // 围栏代码块判定：有 language class，或内容跨行（pre/code 结构、历史无 class 数据）
+    const isFenced = !!match || code.includes("\n");
 
-    if (!match) {
+    if (!isFenced) {
         // 行内代码：纯样式
         return (
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-primary">

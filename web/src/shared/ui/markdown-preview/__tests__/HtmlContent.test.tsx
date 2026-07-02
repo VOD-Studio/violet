@@ -50,4 +50,16 @@ describe("HtmlContent", () => {
 
         expect(container.querySelector("pre")?.textContent).toContain("if a < b && c > d {}");
     });
+
+    it("无 language class 的 pre/code 仍按围栏代码块渲染，不降级为行内代码", () => {
+        // 编辑器将「自动/纯文本」存为 language:null，序列化后丢失 language-text class，
+        // 但前台必须仍识别为围栏代码块，否则会变成行内 <code> 样式。
+        const html = "<pre><code>const a = 1;\nconst b = 2;</code></pre>";
+        const { container } = render(<HtmlContent html={html} />);
+
+        // 应有围栏代码块外层容器，而非行内代码的 bg-muted 样式
+        expect(container.querySelector(".bg-\\[\\#24292e\\]")).toBeTruthy();
+        expect(container.querySelector("pre")).toBeTruthy();
+        expect(container.querySelector(".bg-muted")).toBeNull();
+    });
 });
