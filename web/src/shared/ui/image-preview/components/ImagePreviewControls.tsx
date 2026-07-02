@@ -8,7 +8,7 @@ import {
     ChevronRight,
     FlipHorizontal,
     FlipVertical,
-    Maximize2,
+    RefreshCcw,
     RotateCcw,
     RotateCw,
     X,
@@ -175,7 +175,7 @@ export function ImagePreviewControls({
                                 className="text-white hover:bg-white/15 hover:text-white active:scale-100 sm:size-9"
                                 title="重置（也可双击图片）"
                             >
-                                <Maximize2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <RefreshCcw className="h-4 w-4 sm:h-5 sm:w-5" />
                             </Button>
                         </>
                     ) : null}
