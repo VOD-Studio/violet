@@ -143,11 +143,6 @@ func (m *MockTokenStore) Save(ctx context.Context, userID, refreshToken string) 
 	return m.Called(ctx, userID, refreshToken).Error(0)
 }
 
-func (m *MockTokenStore) Verify(ctx context.Context, userID, refreshToken string) (bool, error) {
-	args := m.Called(ctx, userID, refreshToken)
-	return args.Bool(0), args.Error(1)
-}
-
 func (m *MockTokenStore) Rotate(ctx context.Context, userID, oldToken, newToken string) (appshared.RotateResult, error) {
 	args := m.Called(ctx, userID, oldToken, newToken)
 	return args.Get(0).(appshared.RotateResult), args.Error(1)

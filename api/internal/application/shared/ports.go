@@ -60,7 +60,6 @@ const (
 // TokenStore refresh token 存储端口
 type TokenStore interface {
 	Save(ctx context.Context, userID, refreshToken string) error
-	Verify(ctx context.Context, userID, refreshToken string) (bool, error)
 	// Rotate 原子地校验旧 token 并写入新 token，单次 Redis 操作内完成（见 ADR-0001 不变量 1）。
 	// 旧 token 不匹配时吊销整个家族（不变量 2），返回 RotateReused。
 	Rotate(ctx context.Context, userID, oldToken, newToken string) (RotateResult, error)

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -38,22 +37,6 @@ func (s *RedisTokenStore) Save(ctx context.Context, userID, refreshToken string)
 		return fmt.Errorf("存储 refresh token 失败: %w", err)
 	}
 	return nil
-}
-
-// Verify 比对存储的 refresh token 是否匹配（刷新时调用）
-//
-// 返回 (匹配?, error)。Redis 中不存在或值不匹配都返回 false（不报错）。
-// 使用 crypto/subtle.ConstantTimeCompare 防时序侧信道。
-func (s *RedisTokenStore) Verify(ctx context.Context, userID, refreshToken string) (bool, error) {
-	key := s.refreshKey(userID)
-	stored, err := s.client.Get(ctx, key).Result()
-	if err != nil {
-		if err == redis.Nil {
-			return false, nil // 不存在视为不匹配
-		}
-		return false, fmt.Errorf("查询 refresh token 失败: %w", err)
-	}
-	return subtle.ConstantTimeCompare([]byte(stored), []byte(refreshToken)) == 1, nil
 }
 
 // Delete 删除 refresh token（登出/改密时调用，实现服务端撤销）
