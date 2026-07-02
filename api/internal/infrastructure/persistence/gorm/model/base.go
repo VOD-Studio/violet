@@ -44,6 +44,7 @@ type User struct {
 	EmailVerified       bool   `gorm:"not null;default:false" json:"email_verified"`
 	IsActive            bool   `gorm:"not null;default:false" json:"is_active"`
 	GoogleID            *string `gorm:"type:varchar(255);uniqueIndex" json:"google_id"`
+	GithubID            *string `gorm:"type:varchar(255);uniqueIndex" json:"github_id"`
 	RoleID              *int32 `gorm:"index" json:"role_id,omitempty"`
 }
 
