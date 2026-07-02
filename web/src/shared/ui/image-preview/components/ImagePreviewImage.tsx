@@ -34,6 +34,8 @@ interface ImagePreviewImageProps {
     onSwipeRight?: () => void;
     /** 轻扫触发阈值（像素，默认 50） */
     swipeThreshold?: number;
+    /** 重置信号：变化时强制将拖拽位置恢复到中心 */
+    resetKey?: number;
 }
 
 /**
@@ -60,6 +62,7 @@ export function ImagePreviewImage({
     onSwipeLeft,
     onSwipeRight,
     swipeThreshold = 50,
+    resetKey,
 }: ImagePreviewImageProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [isMoving, setIsMoving] = useState(false);
@@ -73,6 +76,12 @@ export function ImagePreviewImage({
         setPosition({ x: 0, y: 0 });
         setIsLoading(true);
     }, [src]);
+
+    // 外部触发重置（缩放/旋转/翻转恢复初始）时，同步清空拖拽偏移，让图片回到中心。
+    // biome-ignore lint/correctness/useExhaustiveDependencies: resetKey 是父组件传入的重置信号，必须作为依赖
+    useEffect(() => {
+        setPosition({ x: 0, y: 0 });
+    }, [resetKey]);
 
     const handleLoad = () => {
         setIsLoading(false);

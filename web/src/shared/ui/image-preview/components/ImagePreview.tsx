@@ -5,7 +5,7 @@
  */
 
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useImagePreviewControls } from "../hooks/useImagePreviewControls";
 import type { ImagePreviewProps } from "../types/image-preview-types";
@@ -102,6 +102,13 @@ export function ImagePreview({
         onClose,
     });
 
+    // 重置时同步清空图片拖拽位置，避免放大拖拽后点重置/双击图片仍停留在偏移位置。
+    const [resetKey, setResetKey] = useState(0);
+    const handleResetAll = useCallback(() => {
+        handleReset();
+        setResetKey((prev) => prev + 1);
+    }, [handleReset]);
+
     const initialPosition = getInitialPosition(triggerElement, triggerRect);
 
     // 当前图是否有可用缩略图（无则回退原图飞入）
@@ -186,7 +193,7 @@ export function ImagePreview({
                         onRotateRight={handleRotateRight}
                         onFlipX={handleFlipX}
                         onFlipY={handleFlipY}
-                        onReset={handleReset}
+                        onReset={handleResetAll}
                     />
 
                     {/* 图片容器（飞入动画作用于此外层；内部缩略图层 + 原图层）。
@@ -272,9 +279,10 @@ export function ImagePreview({
                                     onLoad={() => {
                                         if (useThumb) setOriginalLoaded(true);
                                     }}
-                                    onReset={handleReset}
+                                    onReset={handleResetAll}
                                     onSwipeLeft={handleNext}
                                     onSwipeRight={handlePrevious}
+                                    resetKey={resetKey}
                                 />
                             </div>
                         </motion.div>
