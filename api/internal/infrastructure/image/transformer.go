@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"os"
 
 	"github.com/disintegration/imaging"
 	webp "github.com/HugoSmits86/nativewebp"
@@ -28,6 +29,13 @@ var _ domainimage.ImageTransformer = (*Transformer)(nil)
 func (t *Transformer) Transform(srcPath string, params domainimage.TransformParams) (domainimage.TransformResult, error) {
 	img, err := imaging.Open(srcPath)
 	if err != nil {
+		// 对于无法解码的 WebP(例如 VP8X 动图)，直接降级返回原图，避免报错 422
+		data, readErr := os.ReadFile(srcPath)
+		if readErr == nil && len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP" {
+			sum := sha256.Sum256(data)
+			etag := hex.EncodeToString(sum[:16])
+			return domainimage.TransformResult{Bytes: data, MimeType: "image/webp", ETag: etag}, nil
+		}
 		return domainimage.TransformResult{}, fmt.Errorf("解码失败: %w", err)
 	}
 

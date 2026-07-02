@@ -2,6 +2,7 @@ package image
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -89,4 +90,26 @@ func TestTransform_CorruptFile(t *testing.T) {
 		t.Fatal("不存在文件应返回 error")
 	}
 	_ = tmp
+}
+
+// TestTransform_FallbackWebP 无法解码的 WebP(如 VP8X)应降级返回原图，而不是抛出 error
+func TestTransform_FallbackWebP(t *testing.T) {
+	tmp := filepath.Join(t.TempDir(), "animated.webp")
+	// 伪造一个有 WebP 头部的假文件，正常 decode 会失败
+	fakeWebP := []byte("RIFF1234WEBPVP8X...") 
+	if err := os.WriteFile(tmp, fakeWebP, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tr := NewTransformer()
+	res, err := tr.Transform(tmp, domainimage.TransformParams{Width: 50, Format: "jpeg"})
+	if err != nil {
+		t.Fatalf("遇到有效的 WebP 头部但不兼容时，应降级成功，不应报错: %v", err)
+	}
+	if string(res.Bytes) != string(fakeWebP) {
+		t.Fatal("应该返回原始字节内容")
+	}
+	if res.MimeType != "image/webp" {
+		t.Fatalf("MimeType 应被重置为 image/webp, got: %s", res.MimeType)
+	}
 }
