@@ -1,5 +1,6 @@
 import { projectKeys } from "@features/projects/api/keys";
 import { fetchProjects, useProjects } from "@features/projects/api/queries";
+import ProjectsSkeleton from "@features/projects/ui/ProjectsSkeleton";
 import { TiltedCard } from "@shared/ui/tilted-card";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -20,7 +21,7 @@ const ProjectsPage = () => {
                 <h1 className="font-mono text-4xl font-bold">项目</h1>
             </header>
             {isLoading ? (
-                <div className="text-muted-foreground">加载中…</div>
+                <ProjectsSkeleton />
             ) : projects.length === 0 ? (
                 <div className="text-muted-foreground">暂无项目</div>
             ) : (

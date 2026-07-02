@@ -1,6 +1,8 @@
 import { fetchArchiveYear, fetchArchiveYears } from "@features/archive/api/client";
 import { archiveKeys } from "@features/archive/api/keys";
 import { useArchiveYear, useArchiveYears } from "@features/archive/api/queries";
+import ArchiveSkeleton from "@features/archive/ui/ArchiveSkeleton";
+import ArchiveYearSkeleton from "@features/archive/ui/ArchiveYearSkeleton";
 import type { ArchiveItem } from "@features/archive/model/types";
 import { Badge } from "@shared/ui/badge";
 import { createFileRoute } from "@tanstack/react-router";
@@ -63,7 +65,7 @@ function YearSection({
             <h2 className="mb-4 text-xl font-bold">
                 {year} <span className="text-muted-foreground">· {data?.count ?? 0} 篇</span>
             </h2>
-            {isLoading && <div className="text-muted-foreground">加载中…</div>}
+            {isLoading && <ArchiveYearSkeleton year={year} />}
             {error && (
                 <button type="button" onClick={() => refetch()} className="text-destructive">
                     加载失败，点击重试
@@ -150,7 +152,7 @@ function ArchivePage() {
             )}
 
             {isLoading ? (
-                <div className="text-muted-foreground">加载中…</div>
+                <ArchiveSkeleton />
             ) : years.length === 0 ? (
                 <div className="text-muted-foreground">暂无文章</div>
             ) : (
