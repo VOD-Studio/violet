@@ -4,6 +4,8 @@
  * 选中任意文本时出现，提供最常用的快速格式化：粗体 / 斜体 / 行内代码 / 链接。
  * 基于 Tiptap BubbleMenu，自动跟随选区定位。
  */
+
+import { posToDOMRect } from "@tiptap/core";
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Bold, Code, Italic, Link as LinkIcon } from "lucide-react";
@@ -24,6 +26,18 @@ function keepFocus(e: MouseEvent) {
     e.preventDefault();
 }
 
+/** 判断选择区是否仍位于容器可视区域内 */
+function selectionInView(editor: Editor, container: HTMLElement | Window | undefined): boolean {
+    if (!container || container instanceof Window) return true;
+    const view = editor.view;
+    const { selection } = view.state;
+    if (selection.empty) return false;
+    const rect = posToDOMRect(view, selection.from, selection.to);
+    const containerRect = container.getBoundingClientRect();
+    // 选择区完全在容器上方或下方时视为不可见
+    return rect.bottom >= containerRect.top && rect.top <= containerRect.bottom;
+}
+
 export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorBubbleMenuProps) {
     return (
         <BubbleMenu
@@ -31,10 +45,16 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
             // updateDelay：选区变化后延迟定位，等编辑器布局稳定再测量，
             // 修复首次选中位置偏移（首次 rect 未稳定导致 Floating UI 计算错位）
             updateDelay={60}
-            // 仅在有实际文本选区时显示，避免光标态误触发
+            // resizeDelay：滚动/resize 时立即更新位置，避免菜单跟随延迟
+            resizeDelay={0}
+            // 仅在有实际文本选区、且选择区位于编辑器可视区内时显示
             shouldShow={({ state }) => {
                 const { selection } = state;
-                return !selection.empty && !editor.isActive("codeBlock");
+                return (
+                    !selection.empty &&
+                    !editor.isActive("codeBlock") &&
+                    selectionInView(editor, scrollTarget)
+                );
             }}
             options={{
                 placement: "top",
