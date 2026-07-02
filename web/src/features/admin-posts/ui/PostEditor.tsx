@@ -55,7 +55,7 @@ export function PostEditor({ postId }: PostEditorProps) {
         defaultValues: {
             title: "",
             slug: "",
-            content_md: "",
+            content_html: "",
             excerpt: "",
             cover_image: "",
             seo_title: "",
@@ -83,7 +83,7 @@ export function PostEditor({ postId }: PostEditorProps) {
             reset({
                 title: existing.title,
                 slug: existing.slug,
-                content_md: existing.content_md,
+                content_html: existing.content_html,
                 excerpt: existing.excerpt,
                 cover_image: existing.cover_image,
                 seo_title: existing.seo_title,
@@ -105,7 +105,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                     reset({
                         title: d.title ?? "",
                         slug: d.slug ?? "",
-                        content_md: d.content_md ?? "",
+                        content_html: d.content_html ?? "",
                         excerpt: d.excerpt ?? "",
                         cover_image: d.cover_image ?? "",
                         seo_title: d.seo_title ?? "",
@@ -132,7 +132,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                 JSON.stringify({
                     title: values.title,
                     slug: values.slug,
-                    content_md: values.content_md,
+                    content_html: values.content_html,
                     excerpt: values.excerpt,
                     cover_image: values.cover_image,
                     seo_title: values.seo_title,
@@ -284,7 +284,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                     <div className="min-h-0 flex-1">
                         <Controller
                             control={control}
-                            name="content_md"
+                            name="content_html"
                             render={({ field }) => (
                                 <RichTextEditor
                                     ref={editorRef}

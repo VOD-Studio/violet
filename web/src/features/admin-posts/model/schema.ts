@@ -11,8 +11,12 @@ export const postSchema = z.object({
     title: z.string().min(1, "请填写标题"),
     /** slug，必填，格式由 slugify 保证 */
     slug: z.string().min(1, "请填写 slug"),
-    /** Markdown 正文 */
-    content_md: z.string(),
+    /**
+     * 正文 HTML 字符串。
+     *
+     * 编辑器 value 契约为 HTML，保留颜色/对齐等 inline 样式；后端字段仍称 content_html。
+     */
+    content_html: z.string(),
     /** 摘要 */
     excerpt: z.string(),
     /** 封面图 URL */
