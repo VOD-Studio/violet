@@ -61,6 +61,7 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "Mimo-Blog")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -69,7 +70,10 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return LoginOutput{}, user.ErrInvalidCredentials
+		// 读取详细错误
+		var errBody bytes.Buffer
+		_, _ = errBody.ReadFrom(resp.Body)
+		return LoginOutput{}, shared.Internal("Github 令牌交换失败: "+errBody.String(), errors.New(resp.Status))
 	}
 
 	var tokenRes struct {
@@ -89,6 +93,7 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 	}
 	reqInfo.Header.Set("Authorization", "Bearer "+tokenRes.AccessToken)
 	reqInfo.Header.Set("Accept", "application/json")
+	reqInfo.Header.Set("User-Agent", "Mimo-Blog")
 
 	respInfo, err := http.DefaultClient.Do(reqInfo)
 	if err != nil {
@@ -97,7 +102,9 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 	defer respInfo.Body.Close()
 
 	if respInfo.StatusCode != http.StatusOK {
-		return LoginOutput{}, user.ErrInvalidCredentials
+		var errBody bytes.Buffer
+		_, _ = errBody.ReadFrom(respInfo.Body)
+		return LoginOutput{}, shared.Internal("请求 Github User 失败: "+errBody.String(), errors.New(respInfo.Status))
 	}
 
 	var userInfo struct {
@@ -119,6 +126,7 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 		if err == nil {
 			reqEmail.Header.Set("Authorization", "Bearer "+tokenRes.AccessToken)
 			reqEmail.Header.Set("Accept", "application/json")
+			reqEmail.Header.Set("User-Agent", "Mimo-Blog")
 			respEmail, err := http.DefaultClient.Do(reqEmail)
 			if err == nil {
 				defer respEmail.Body.Close()
