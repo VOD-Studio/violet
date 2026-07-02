@@ -113,3 +113,16 @@ export interface ImportPostUrlResult {
 export async function importPostUrl(url: string): Promise<ImportPostUrlResult> {
     return apiPost<ImportPostUrlResult>("/admin/posts/import-url", { url });
 }
+
+export function useRestoreVersion(postId: string, versionId: string) {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async () => {
+            await apiPost(`/admin/posts/${postId}/versions/${versionId}/restore`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: adminPostKeys.detail(postId) });
+            queryClient.invalidateQueries({ queryKey: ["admin-posts", postId, "versions"] });
+        },
+    });
+}

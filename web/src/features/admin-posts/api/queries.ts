@@ -1,7 +1,7 @@
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
-import type { AdminPost, AdminPostListItem, AdminPostListQuery } from "../model/types";
+import type { AdminPost, AdminPostListItem, AdminPostListQuery, PostVersionDTO } from "../model/types";
 import { adminPostKeys } from "./keys";
 
 /**
@@ -44,3 +44,23 @@ export const useAdminPost = (id: string) =>
         queryFn: () => fetchAdminPost(id),
         enabled: id.length > 0,
     });
+
+export function usePostVersions(postId: string) {
+    return useQuery({
+        queryKey: ["admin-posts", postId, "versions"],
+        queryFn: async () => {
+            return await apiGet<PostVersionDTO[]>(`/admin/posts/${postId}/versions`);
+        },
+        enabled: !!postId,
+    });
+}
+
+export function usePostVersion(versionId: string) {
+    return useQuery({
+        queryKey: ["admin-posts", "versions", versionId],
+        queryFn: async () => {
+            return await apiGet<PostVersionDTO>(`/admin/posts/versions/${versionId}`);
+        },
+        enabled: !!versionId,
+    });
+}

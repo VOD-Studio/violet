@@ -105,3 +105,17 @@ export interface AdminPostListItem {
  * 列表用 AdminPostListItem，勿混用。
  */
 export type AdminPost = PostDetail;
+
+/**
+ * PostVersionDTO - 文章历史版本
+ */
+export interface PostVersionDTO {
+    id: string;
+    post_id: string;
+    title: string;
+    content_md?: string;
+    tags: string[];
+    author_id: string;
+    summary: string;
+    created_at: string;
+}
