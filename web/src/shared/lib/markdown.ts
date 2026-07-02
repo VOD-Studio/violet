@@ -38,18 +38,20 @@ export function markdownToHtml(md: string): string {
 }
 
 /**
- * extractMarkdownToc - 从 markdown 源码提取 H2/H3 目录
+ * extractMarkdownToc - 从 markdown 源码提取 H2/H3/H4 目录
  *
  * id 用 github-slugger 生成，与 markdownToHtml / rehype-slug 渲染出的标题 id 一致。
  */
-export function extractMarkdownToc(md: string): Array<{ level: 2 | 3; text: string; id: string }> {
+export function extractMarkdownToc(
+    md: string,
+): Array<{ level: 2 | 3 | 4; text: string; id: string }> {
     const slugger = new GithubSlugger();
     const lines = md.split("\n");
-    const out: Array<{ level: 2 | 3; text: string; id: string }> = [];
+    const out: Array<{ level: 2 | 3 | 4; text: string; id: string }> = [];
     for (const line of lines) {
-        const m = /^(#{2,3})\s+(.+?)\s*$/.exec(line);
+        const m = /^(#{2,4})\s+(.+?)\s*$/.exec(line);
         if (!m) continue;
-        const level = m[1].length as 2 | 3;
+        const level = m[1].length as 2 | 3 | 4;
         const text = m[2].replace(/[*_`~]/g, "").trim();
         if (text) out.push({ level, text, id: slugger.slug(text) });
     }

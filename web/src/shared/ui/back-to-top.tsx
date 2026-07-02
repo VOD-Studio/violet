@@ -11,9 +11,14 @@ import { cn } from "@/shared/lib/utils";
 export interface BackToTopProps {
     /** 显示阈值（滚动距离 px），默认 400 */
     threshold?: number;
+    /**
+     * 自定义定位/外层类。默认 `fixed bottom-8 right-8`；
+     * 传入时会替换默认定位（用于嵌入共享 fixed 容器，如与目录浮动按钮竖列排列）。
+     */
+    className?: string;
 }
 
-export function BackToTop({ threshold = 400 }: BackToTopProps) {
+export function BackToTop({ threshold = 400, className }: BackToTopProps) {
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
@@ -33,8 +38,9 @@ export function BackToTop({ threshold = 400 }: BackToTopProps) {
             onClick={scrollToTop}
             aria-label="返回顶部"
             className={cn(
-                "group fixed bottom-8 right-8 z-40 flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 shadow-lg backdrop-blur transition-all duration-300 hover:border-primary/50",
+                "group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 shadow-lg backdrop-blur transition-all duration-300 hover:border-primary/50",
                 "hover:bg-accent active:scale-90",
+                className ?? "fixed bottom-8 right-8 z-40",
                 visible
                     ? "translate-y-0 scale-100 opacity-100"
                     : "pointer-events-none translate-y-4 scale-75 opacity-0",

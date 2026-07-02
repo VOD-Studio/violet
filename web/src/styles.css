@@ -190,6 +190,15 @@ body {
   ::file-selector-button {
     border-color: var(--color-border);
   }
+
+  /*
+   * 文章标题锚点滚动偏移：点击目录跳转时，标题不被 sticky 头部（64px）遮挡。
+   * 80px = 头部 64px + 缓冲 16px，与 archive 页 scroll-mt-20 约定一致。
+   * 用 :where() 保持低优先级；同时覆盖 Markdown(.prose) 与 HTML(HtmlContent) 两路。
+   */
+  :where([data-article-content]) :is(h2, h3, h4)[id] {
+    scroll-margin-top: 80px;
+  }
 }
 
 /* 代码块滚动条：细窄圆角暗色 */
