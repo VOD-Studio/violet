@@ -12,10 +12,7 @@ const ArchiveSkeleton = ({ className }: ArchiveSkeletonProps) => {
         <div className={cn("space-y-10", className)}>
             <div className="flex flex-wrap gap-2">
                 {Array.from({ length: 5 }, (_, i) => (
-                    <ShimmerSkeleton
-                        key={i}
-                        className="h-8 w-16 rounded-full"
-                    />
+                    <ShimmerSkeleton key={i} className="h-8 w-16 rounded-full" />
                 ))}
             </div>
 

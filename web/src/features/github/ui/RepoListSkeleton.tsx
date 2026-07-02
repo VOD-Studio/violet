@@ -9,12 +9,7 @@ const RepoListSkeleton = ({ className }: RepoListSkeletonProps) => {
     const cards = Array.from({ length: 6 }, (_, i) => i);
 
     return (
-        <div
-            className={cn(
-                "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3",
-                className,
-            )}
-        >
+        <div className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3", className)}>
             {cards.map((index) => (
                 <div
                     key={index}

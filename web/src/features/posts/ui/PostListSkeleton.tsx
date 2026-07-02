@@ -20,8 +20,7 @@ const PostListSkeleton = ({
             )}
         >
             {cards.map((size, index) => {
-                const coverH =
-                    size === "lg" ? "h-56" : size === "sm" ? "h-32" : "h-44";
+                const coverH = size === "lg" ? "h-56" : size === "sm" ? "h-32" : "h-44";
 
                 return (
                     <div
