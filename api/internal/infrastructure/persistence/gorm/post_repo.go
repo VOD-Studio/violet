@@ -95,7 +95,7 @@ func (r *PostRepository) FindPublished(ctx context.Context, page, limit int, tag
 	}
 	var pos []model.Post
 	offset := (page - 1) * limit
-	if err := query.Preload("Tags").Order("published_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
+	if err := query.Preload("Tags").Order("is_featured DESC, published_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
 		return nil, 0, domainshared.Internal("查询文章列表失败", err)
 	}
 	result := make([]*post.Post, 0, len(pos))

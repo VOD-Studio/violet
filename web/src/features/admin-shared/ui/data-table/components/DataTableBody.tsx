@@ -42,6 +42,8 @@ interface DataTableBodyProps<T> {
     renderExpandedRow?: (row: T) => ReactNode;
     /** 整行点击回调，提供后行显示 cursor-pointer */
     onRowClick?: (row: T) => void;
+    /** 根据行数据返回行类名，用于高亮特定状态 */
+    rowClassName?: (row: T) => string;
     /** 当前页首行在全集中的序号（用于全局 aria-rowindex），通常 (page-1)*pageSize */
     pageBaseIndex: number;
 }
@@ -72,6 +74,7 @@ export function DataTableBody<T>({
     onToggleExpand,
     renderExpandedRow,
     onRowClick,
+    rowClassName,
     pageBaseIndex,
 }: DataTableBodyProps<T>) {
     const cellPad = density === "compact" ? "py-1.5" : "py-2.5";
@@ -160,7 +163,10 @@ export function DataTableBody<T>({
                                 aria-selected={selectable ? isSelected : undefined}
                                 aria-rowindex={pageBaseIndex + index + 1}
                                 onClick={onRowClick ? () => onRowClick(row) : undefined}
-                                className={onRowClick ? "cursor-pointer" : undefined}
+                                className={cn(
+                                    onRowClick && "cursor-pointer",
+                                    rowClassName?.(row),
+                                )}
                             >
                                 {columns.map((col) => {
                                     const offset = offsets.get(col.key);

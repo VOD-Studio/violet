@@ -46,6 +46,7 @@ export function DataTable<T>({
     onExpandedChange,
     renderExpandedRow,
     onRowClick,
+    rowClassName,
     resizable = false,
     columnMinWidth = DEFAULT_COLUMN_MIN_WIDTH,
     toolbar,
@@ -395,6 +396,7 @@ export function DataTable<T>({
                         onToggleExpand={toggleExpand}
                         renderExpandedRow={renderExpandedRow}
                         onRowClick={onRowClick}
+                        rowClassName={rowClassName}
                         pageBaseIndex={(page - 1) * pageSize}
                     />
                 </table>

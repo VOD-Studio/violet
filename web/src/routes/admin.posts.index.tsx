@@ -118,6 +118,21 @@ function AdminPostsPage() {
             },
         },
         {
+            key: "is_featured",
+            header: "精选",
+            width: "80px",
+            align: "center",
+            cell: (row) =>
+                row.is_featured ? (
+                    <Badge variant="default">
+                        <Star className="size-3" />
+                        精选
+                    </Badge>
+                ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                ),
+        },
+        {
             key: "tags",
             header: "标签",
             cell: (row) =>
@@ -199,6 +214,7 @@ function AdminPostsPage() {
                 loading={isLoading}
                 error={error ? new Error(error.message) : null}
                 onRetry={() => refetch()}
+                rowClassName={(row) => (row.is_featured ? "bg-primary/5" : "")}
                 storageKey="admin-posts-columns"
                 caption="文章列表"
                 emptyTitle="暂无文章"

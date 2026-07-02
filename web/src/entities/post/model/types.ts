@@ -27,6 +27,8 @@ export interface Post {
     published_at: string;
     /** 标签名列表 */
     tags: string[];
+    /** 是否精选 */
+    is_featured: boolean;
     /** 作者信息，后端按 author_id join 填充，缺失时省略 */
     author?: {
         /** 作者用户名 */

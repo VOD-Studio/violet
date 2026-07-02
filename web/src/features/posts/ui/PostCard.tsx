@@ -1,9 +1,10 @@
 import { AvatarGroup } from "@shared/ui/avatar-group";
+import { Badge } from "@shared/ui/badge";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { ImageOff } from "lucide-react";
+import { ImageOff, Star } from "lucide-react";
 
 import type { Post } from "../model/types";
 
@@ -36,30 +37,38 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 
     return (
         <SpotlightCard className="group flex flex-col">
-            {post.cover_image ? (
-                <Link
-                    to="/blog/$slug"
-                    params={{ slug: post.slug }}
-                    className="block overflow-hidden"
-                >
-                    <img
-                        src={post.cover_image}
-                        alt={post.title}
-                        loading="lazy"
-                        className={`w-full ${coverH} object-cover transition-transform duration-500 group-hover:scale-105`}
-                    />
-                </Link>
-            ) : (
-                <Link
-                    to="/blog/$slug"
-                    params={{ slug: post.slug }}
-                    className="block overflow-hidden"
-                >
-                    <div className={`flex w-full ${coverH} items-center justify-center bg-muted`}>
-                        <ImageOff className="h-8 w-8 text-muted-foreground/50" />
-                    </div>
-                </Link>
-            )}
+            <div className="relative">
+                {post.cover_image ? (
+                    <Link
+                        to="/blog/$slug"
+                        params={{ slug: post.slug }}
+                        className="block overflow-hidden"
+                    >
+                        <img
+                            src={post.cover_image}
+                            alt={post.title}
+                            loading="lazy"
+                            className={`w-full ${coverH} object-cover transition-transform duration-500 group-hover:scale-105`}
+                        />
+                    </Link>
+                ) : (
+                    <Link
+                        to="/blog/$slug"
+                        params={{ slug: post.slug }}
+                        className="block overflow-hidden"
+                    >
+                        <div className={`flex w-full ${coverH} items-center justify-center bg-muted`}>
+                            <ImageOff className="h-8 w-8 text-muted-foreground/50" />
+                        </div>
+                    </Link>
+                )}
+                {post.is_featured && (
+                    <Badge variant="default" className="absolute top-2 left-2 z-10 gap-1">
+                        <Star className="size-3" />
+                        精选
+                    </Badge>
+                )}
+            </div>
 
             <div className="flex flex-col p-5">
                 {post.tags.length > 0 ? (

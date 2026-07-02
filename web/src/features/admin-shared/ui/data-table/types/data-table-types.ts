@@ -92,6 +92,8 @@ export interface DataTableProps<T> {
 
     /** 整行点击回调，提供后行显示 cursor-pointer */
     onRowClick?: (row: T) => void;
+    /** 根据行数据返回行类名，用于高亮特定状态 */
+    rowClassName?: (row: T) => string;
 
     /** 开启列宽拖拽调整，宽度持久化到 localStorage */
     resizable?: boolean;

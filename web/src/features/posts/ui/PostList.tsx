@@ -21,7 +21,9 @@ const PostList = ({
 }: PostListProps) => {
     const { data, isLoading, isError, error } = usePosts(query);
 
-    const items = data?.data ?? [];
+    const items = [...(data?.data ?? [])].sort(
+        (a, b) => Number(b.is_featured) - Number(a.is_featured),
+    );
 
     if (isLoading && showSkeleton) {
         return <PostListSkeleton mixedSizes={mixedSizes} />;
