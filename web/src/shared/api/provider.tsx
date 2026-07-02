@@ -26,7 +26,9 @@ export interface AppProviderProps {
  * - GoogleOAuthProvider: Google 登录
  */
 const AppProvider = ({ children }: AppProviderProps) => {
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+    // 如果没有配置 client_id，传入一个占位符避免 @react-oauth/google 抛出致命错误崩溃。
+    // 在具体使用的地方（如 LoginDialog），我们可以通过判断环境变量来禁用相关按钮。
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "missing_client_id";
 
     return (
         <GoogleOAuthProvider clientId={googleClientId}>

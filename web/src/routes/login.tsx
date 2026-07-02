@@ -101,7 +101,8 @@ function LoginPage() {
         window.location.href =
             "https://github.com/login/oauth/authorize?client_id=" +
             import.meta.env.VITE_GITHUB_CLIENT_ID +
-            "&redirect_uri=" + redirectUri +
+            "&redirect_uri=" +
+            redirectUri +
             "&scope=user:email";
     };
 
@@ -212,8 +213,16 @@ function LoginPage() {
                                 variant="outline"
                                 size="icon"
                                 className="size-12 rounded-full"
-                                onClick={() => handleGoogleLogin()}
-                                disabled={googleLogin.isPending}
+                                onClick={() => {
+                                    if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+                                        toast.error("系统未配置 Google 登录");
+                                        return;
+                                    }
+                                    handleGoogleLogin();
+                                }}
+                                disabled={
+                                    googleLogin.isPending || !import.meta.env.VITE_GOOGLE_CLIENT_ID
+                                }
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -245,7 +254,14 @@ function LoginPage() {
                                 variant="outline"
                                 size="icon"
                                 className="ml-4 size-12 rounded-full"
-                                onClick={() => handleGithubLogin()}
+                                onClick={() => {
+                                    if (!import.meta.env.VITE_GITHUB_CLIENT_ID) {
+                                        toast.error("系统未配置 GitHub 登录");
+                                        return;
+                                    }
+                                    handleGithubLogin();
+                                }}
+                                disabled={!import.meta.env.VITE_GITHUB_CLIENT_ID}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
