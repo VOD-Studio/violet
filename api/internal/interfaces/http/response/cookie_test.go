@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,12 +25,17 @@ func testCookieCfg() config.CookieConfig {
 	}
 }
 
+// testTTLs 构造测试用 token TTL（access 15m / refresh 7d，对齐生产默认值）
+func testTTLs() config.TokenTTLs {
+	return config.TokenTTLs{Access: 15 * time.Minute, Refresh: 7 * 24 * time.Hour}
+}
+
 // TestSetAuthTokenCookies_SetsAllThreeCookies 验证 access + refresh + CSRF 三个 Cookie 全部下发
 func TestSetAuthTokenCookies_SetsAllThreeCookies(t *testing.T) {
 	w := httptest.NewRecorder()
 	cfg := testCookieCfg()
 
-	SetAuthTokenCookies(w, "access-token", "refresh-token", "csrf-token", cfg)
+	SetAuthTokenCookies(w, "access-token", "refresh-token", "csrf-token", cfg, testTTLs())
 
 	cookies := w.Result().Cookies()
 	names := cookieNames(cookies)
@@ -41,7 +47,7 @@ func TestSetAuthTokenCookies_AccessCookieIsHttpOnly(t *testing.T) {
 	w := httptest.NewRecorder()
 	cfg := testCookieCfg()
 
-	SetAuthTokenCookies(w, "access-token", "refresh-token", "csrf-token", cfg)
+	SetAuthTokenCookies(w, "access-token", "refresh-token", "csrf-token", cfg, testTTLs())
 
 	c := findCookie(t, w.Result().Cookies(), "mimo_access")
 	assert.True(t, c.HttpOnly, "access cookie 必须 HttpOnly")
@@ -56,12 +62,29 @@ func TestSetAuthTokenCookies_RefreshCookieScopedToAuth(t *testing.T) {
 	w := httptest.NewRecorder()
 	cfg := testCookieCfg()
 
-	SetAuthTokenCookies(w, "access-token", "refresh-token", "csrf-token", cfg)
+	SetAuthTokenCookies(w, "access-token", "refresh-token", "csrf-token", cfg, testTTLs())
 
 	c := findCookie(t, w.Result().Cookies(), "mimo_refresh")
 	assert.True(t, c.HttpOnly, "refresh cookie 必须 HttpOnly")
 	assert.Equal(t, RefreshCookiePath, c.Path, "refresh cookie Path 必须匹配 refresh/logout 路由前缀")
 	assert.Equal(t, "refresh-token", c.Value)
+}
+
+// TestSetAuthTokenCookies_RefreshCookieMaxAgeFollowsTTL refresh cookie 的 MaxAge 必须取自
+// 传入的 ttls.Refresh，与其承载的 refresh JWT 的 exp 对齐。
+// 历史上这里硬编码 168h，当运维把 JWT_REFRESH_TOKEN_TTL 调大于 7d 时，cookie 会比它
+// 装着的 refresh JWT 先过期，导致用户被迫重新登录。本测试用非默认 TTL（30d）回归。
+func TestSetAuthTokenCookies_RefreshCookieMaxAgeFollowsTTL(t *testing.T) {
+	w := httptest.NewRecorder()
+	cfg := testCookieCfg()
+	// 非默认值：30 天，确保不是碰巧等于旧的硬编码 7d
+	ttls := config.TokenTTLs{Access: 15 * time.Minute, Refresh: 30 * 24 * time.Hour}
+
+	SetAuthTokenCookies(w, "access-token", "refresh-token", "csrf-token", cfg, ttls)
+
+	c := findCookie(t, w.Result().Cookies(), "mimo_refresh")
+	assert.Equal(t, int(ttls.Refresh.Seconds()), c.MaxAge,
+		"refresh cookie MaxAge 必须等于 ttls.Refresh，与 refresh JWT exp 对齐")
 }
 
 // TestSetAuthTokenCookies_CSRFCookieNotHttpOnly CSRF double-submit cookie
@@ -70,7 +93,7 @@ func TestSetAuthTokenCookies_CSRFCookieNotHttpOnly(t *testing.T) {
 	w := httptest.NewRecorder()
 	cfg := testCookieCfg()
 
-	SetAuthTokenCookies(w, "access-token", "refresh-token", "csrf-token", cfg)
+	SetAuthTokenCookies(w, "access-token", "refresh-token", "csrf-token", cfg, testTTLs())
 
 	c := findCookie(t, w.Result().Cookies(), "mimo_csrf")
 	assert.False(t, c.HttpOnly, "CSRF cookie 必须非 HttpOnly（前端要读取）")
@@ -83,7 +106,7 @@ func TestSetAuthTokenCookies_EmptyCSRFTokenSkipsCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	cfg := testCookieCfg()
 
-	SetAuthTokenCookies(w, "access-token", "refresh-token", "", cfg)
+	SetAuthTokenCookies(w, "access-token", "refresh-token", "", cfg, testTTLs())
 
 	cookies := w.Result().Cookies()
 	for _, c := range cookies {
@@ -107,7 +130,7 @@ func TestSetAuthTokenCookies_SameSiteMode(t *testing.T) {
 			cfg := testCookieCfg()
 			cfg.SameSite = tc.config
 
-			SetAuthTokenCookies(w, "a", "r", "c", cfg)
+			SetAuthTokenCookies(w, "a", "r", "c", cfg, testTTLs())
 
 			c := findCookie(t, w.Result().Cookies(), "mimo_access")
 			assert.Equal(t, tc.want, c.SameSite)
@@ -137,7 +160,7 @@ func TestClearAuthCookies_PathMatchesSet(t *testing.T) {
 	cfg := testCookieCfg()
 
 	setW := httptest.NewRecorder()
-	SetAuthTokenCookies(setW, "a", "r", "c", cfg)
+	SetAuthTokenCookies(setW, "a", "r", "c", cfg, testTTLs())
 	clearW := httptest.NewRecorder()
 	ClearAuthCookies(clearW, cfg)
 

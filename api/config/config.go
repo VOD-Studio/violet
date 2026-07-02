@@ -86,6 +86,16 @@ type CookieConfig struct {
 	CSRFName string
 }
 
+// TokenTTLs access/refresh JWT 的过期时长，用于设置承载它们的 Cookie 的 MaxAge。
+//
+// 两个 TTL 总是一起出现（登录/刷新同时签发两种 token），收进一个类型避免参数列表
+// 肥胀。Cookie 的 MaxAge 应与其承载的 JWT 的 exp 对齐，否则会出现「JWT 仍有效但
+// 装它的 Cookie 已被浏览器删除」的错位（对 refresh token 尤其致命）。
+type TokenTTLs struct {
+	Access  time.Duration
+	Refresh time.Duration
+}
+
 // SameSiteMode 返回 http.SameSite 枚举值
 //
 // 配置中用字符串以便 yaml/env 表达，运行时转枚举

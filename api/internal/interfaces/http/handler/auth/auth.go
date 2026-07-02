@@ -34,11 +34,13 @@ type Handler struct {
 
 	validate  *validator.Validate
 	cookieCfg config.CookieConfig
+	ttls      config.TokenTTLs
 }
 
 // NewHandler 创建 auth HTTP handler
 //
 // cookieCfg 用于 login/refresh/logout 时下发/清除 HttpOnly Cookie；
+// ttls 提供 access/refresh JWT 过期时长，用于设置承载 refresh token 的 Cookie 的 MaxAge；
 // 详见 response.SetAuthTokenCookies / ClearAuthCookies。
 func NewHandler(
 	register *authcmd.RegisterUserHandler,
@@ -54,6 +56,7 @@ func NewHandler(
 	changePwd *authcmd.ChangePasswordHandler,
 	getMe *authquery.GetMeHandler,
 	cookieCfg config.CookieConfig,
+	ttls config.TokenTTLs,
 ) *Handler {
 	return &Handler{
 		register: register, login: login, google: google, github: github, logout: logout, refresh: refresh,
@@ -61,6 +64,7 @@ func NewHandler(
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe,
 		validate:  validator.New(),
 		cookieCfg: cookieCfg,
+		ttls:      ttls,
 	}
 }
 
@@ -145,7 +149,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	// 下发 HttpOnly Cookie（access + refresh + CSRF double-submit）
 	// refresh_token 不再返回到响应体，仅通过 HttpOnly Cookie 传递（防 XSS 偷取）
 	csrf := generateCSRFToken()
-	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg)
+	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg, h.ttls)
 	response.RespondOK(w, map[string]any{
 		"access_token":       out.TokenPair.AccessToken,
 		"expires_in":         out.TokenPair.ExpiresIn,
@@ -175,7 +179,7 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	csrf := generateCSRFToken()
-	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg)
+	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg, h.ttls)
 	response.RespondOK(w, map[string]any{
 		"access_token":       out.TokenPair.AccessToken,
 		"expires_in":         out.TokenPair.ExpiresIn,
@@ -205,7 +209,7 @@ func (h *Handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	csrf := generateCSRFToken()
-	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg)
+	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg, h.ttls)
 	response.RespondOK(w, map[string]any{
 		"access_token":       out.TokenPair.AccessToken,
 		"expires_in":         out.TokenPair.ExpiresIn,
@@ -254,7 +258,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	csrf := generateCSRFToken()
-	response.SetAuthTokenCookies(w, pair.AccessToken, pair.RefreshToken, csrf, h.cookieCfg)
+	response.SetAuthTokenCookies(w, pair.AccessToken, pair.RefreshToken, csrf, h.cookieCfg, h.ttls)
 	response.RespondOK(w, map[string]any{
 		"access_token":       pair.AccessToken,
 		"expires_in":         pair.ExpiresIn,

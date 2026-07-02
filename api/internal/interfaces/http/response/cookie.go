@@ -9,20 +9,26 @@ package response
 
 import (
 	"net/http"
-	"time"
 
 	"blog-api/config"
 )
 
 // AuthCookieMaxAge access token Cookie 的 MaxAge（秒）
-// 与 JWTAccessTokenTTL 解耦：取一个保守的固定值，实际过期以 JWT claims 为准
-// 设置 1 小时避免每次请求都重写 Cookie，同时不让 Cookie 比 JWT 活得太久
+//
+// 与 JWTAccessTokenTTL 故意解耦：Cookie 只是「信封」，真正的过期判据是 access JWT
+// 的 exp claim（由 middleware.Auth 校验）。取一个比默认 access TTL（15m）更长的固定
+// 值（1h），目的是让信封不必在每次 /auth/refresh 续期（每 15m 一次）时都被重写，
+// 减少无谓的 Cookie 下发。代价是 access JWT 过期后信封仍残留约 45 分钟——无害，
+// 因为过期的 JWT 会被中间件拒绝，残留 Cookie 不会造成越权。
 const AuthCookieMaxAge = 3600
 
 // CSRFCookieMaxAge CSRF double-submit Cookie 的 MaxAge（秒）
-// 必须覆盖「access token 过期后通过 refresh token 续期」的窗口，
-// 否则 CSRF cookie 先过期会导致 POST /auth/refresh 因缺 header 被 403 拒绝，
-// 用户误判为登录过期。取 7 天与默认 refresh token TTL 对齐。
+//
+// 取 7 天，与默认 refresh token TTL 对齐，确保 CSRF Cookie 覆盖整个 refresh 生命周期。
+// 注意：POST /auth/refresh 本身被显式豁免 CSRF 校验（见 main.go 豁免列表），所以
+// 本常量保护的不是 refresh，而是其余所有写操作（logout、改密码、发文章等）——
+// 让用户在 7 天 refresh 窗口内做任何写操作都不会因 CSRF Cookie 先过期而被 403。
+// CSRF Cookie 在每次 login/refresh 时都会重发，活跃用户实际不会见到它过期。
 const CSRFCookieMaxAge = 7 * 24 * 3600
 
 // RefreshCookiePath refresh token Cookie 的 Path。
@@ -41,13 +47,18 @@ const RefreshCookiePath = "/api/v1/auth"
 // 同时下发一个非 HttpOnly 的 CSRF double-submit Cookie（供前端读取回传 X-CSRF-Token）。
 // 必须在 WriteHeader（即 RespondOK / RespondMessage）之前调用。
 //
+// refresh Cookie 的 MaxAge 取 ttls.Refresh，与其承载的 refresh JWT 的 exp 对齐，
+// 避免「JWT 仍有效但 Cookie 已被浏览器删除」导致用户被迫重新登录。
+// access Cookie 的 MaxAge 取 AuthCookieMaxAge（见其注释，与 access TTL 解耦）。
+//
 // 参数：
 //   - w: HTTP 响应写入器
 //   - access: access token 字符串
 //   - refresh: refresh token 字符串
 //   - csrfToken: CSRF double-submit token（由上层生成，见 middleware/csrf.go）
 //   - cfg: Cookie 配置
-func SetAuthTokenCookies(w http.ResponseWriter, access, refresh, csrfToken string, cfg config.CookieConfig) {
+//   - ttls: access/refresh JWT 过期时长（用于设置 refresh Cookie 的 MaxAge）
+func SetAuthTokenCookies(w http.ResponseWriter, access, refresh, csrfToken string, cfg config.CookieConfig, ttls config.TokenTTLs) {
 	// access token：HttpOnly（JS 不可读）+ 短 MaxAge
 	accessCookie := &http.Cookie{
 		Name:     cfg.AccessName,
@@ -61,14 +72,14 @@ func SetAuthTokenCookies(w http.ResponseWriter, access, refresh, csrfToken strin
 	}
 	http.SetCookie(w, accessCookie)
 
-	// refresh token：HttpOnly（JS 不可读）+ 长 MaxAge（与 JWTRefreshTokenTTL 对齐）
+	// refresh token：HttpOnly（JS 不可读）+ MaxAge 与 refresh JWT exp 对齐
 	// Path 限定 /api/v1/auth：仅 refresh/logout 路由会收到，缩小暴露面。
 	refreshCookie := &http.Cookie{
 		Name:     cfg.RefreshName,
 		Value:    refresh,
 		Path:     RefreshCookiePath,
 		Domain:   cfg.Domain,
-		MaxAge:   int((168 * time.Hour).Seconds()), // 7 天，与默认 refresh TTL 一致
+		MaxAge:   int(ttls.Refresh.Seconds()),
 		Secure:   cfg.Secure,
 		HttpOnly: true,
 		SameSite: cfg.SameSiteMode(),
