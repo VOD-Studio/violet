@@ -1,5 +1,5 @@
 import { authKeys } from "@features/auth/api/keys";
-import { useLogin } from "@features/auth/api/mutations";
+import { useLogin, useGoogleLoginMutation } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
 import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,7 @@ import {
     useRouteContext,
     useSearch,
 } from "@tanstack/react-router";
+import { GoogleLogin } from "@react-oauth/google";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -66,6 +67,7 @@ function LoginPage() {
 
     const csrfToken = useCsrfToken();
     const login = useLogin(csrfToken);
+    const googleLogin = useGoogleLoginMutation(csrfToken);
 
     const onSubmit = handleSubmit((data) => {
         login.mutate(data, {
@@ -152,10 +154,51 @@ function LoginPage() {
                     <Button
                         type="submit"
                         className="w-full"
-                        disabled={login.isPending || !csrfToken}
+                        disabled={login.isPending || googleLogin.isPending || !csrfToken}
                     >
-                        {login.isPending ? "登录中…" : "登录"}
+                        {login.isPending || googleLogin.isPending ? "登录中…" : "登录"}
                     </Button>
+
+                    <div className="mt-4 flex flex-col items-center gap-2">
+                        <div className="relative w-full">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-2 text-muted-foreground">
+                                    或者
+                                </span>
+                            </div>
+                        </div>
+                        <GoogleLogin
+                            onSuccess={(credentialResponse) => {
+                                if (credentialResponse.credential) {
+                                    googleLogin.mutate(credentialResponse.credential, {
+                                        onSuccess: async () => {
+                                            toast.success("登录成功");
+                                            const target = redirect || "/";
+                                            try {
+                                                await navigate({ to: target, replace: true });
+                                            } catch {
+                                                window.location.href = target;
+                                            }
+                                            try {
+                                                await queryClient.refetchQueries({ queryKey: authKeys.me() });
+                                            } catch {
+                                                // ignore
+                                            }
+                                        },
+                                        onError: (err) => {
+                                            toast.error(err instanceof ApiError ? err.message : "登录失败");
+                                        },
+                                    });
+                                }
+                            }}
+                            onError={() => {
+                                toast.error("Google 登录失败，请重试");
+                            }}
+                        />
+                    </div>
                 </form>
             </div>
         </div>
