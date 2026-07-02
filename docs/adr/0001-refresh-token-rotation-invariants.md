@@ -1,6 +1,6 @@
 # Refresh Token 轮换与吊销的不变量
 
-Status: proposed
+Status: accepted
 
 ## 背景
 
@@ -12,18 +12,20 @@ Status: proposed
 2. **重用即吊销家族**：检测到已被轮换掉的旧 refresh token 再次出现时，必须立即吊销当前家族（删除白名单单槽），迫使用户重新登录——因为重用只可能意味着 token 被窃取。
 3. **吊销不可静默失败**：登出 / 改密码 / 重置密码触发吊销时，Redis 写入错误必须被处理，否则会出现"改了密码但旧 token 仍可用"的认证不变量破坏。
 
-## 当前实现的偏离（审计发现）
-
-- **偏离 1（违反不变量 1）**：`RefreshTokenHandler.Handle`（`internal/application/auth/command/auth_commands.go`）的 `Verify` + `Save` 是两次独立 Redis 调用，非原子。同文件的 code store 已用 Lua 脚本（`redis_store.go` 的 `verifyScript`）防竞态，refresh 路径未学。
-- **偏离 2（违反不变量 2）**：重放旧 token 时 `Verify` 返回 false → 401，但 handler 不删除当前仍有效的 token，无家族吊销。
-- **偏离 3（违反不变量 3）**：改密码（`auth_commands_more.go`）/ 重置密码的 `tokenStore.Delete(...)` 返回值被 `_ =` 丢弃，Redis 抖动时吊销静默失败。
-
-## 决策（待实施）
+## 决策（已实施）
 
 - 用一个 Lua 脚本把 Verify + 重用检测 + Save 合并为单次原子操作，满足不变量 1 与 2。脚本逻辑：`GET` 当前值 → 与入参比较 → 若匹配则 `SET` 新值（轮换成功）；若入参非空但与存储值不匹配（重用）则 `DEL`（家族吊销）；返回结果码区分成功 / 重用 / 无效。
 - 吊销操作（logout / change-password / reset-password）的 `Delete` 错误不再忽略，失败时记日志并视情况返回错误，满足不变量 3。
+- 前端用 navigator.locks.request 把 refresh 包成跨 tab 互斥锁，消除多 tab 并发刷新触发家族吊销的误伤；排队 tab 跳过 refresh（cookie 已被持锁 tab 更新），直接重放原请求。
+
+## 实施（2026-07）
+
+- 后端：`RedisTokenStore.Rotate`（Lua `rotateScript`）+ `TokenStore` port 扩展 `RotateResult` 枚举；`RefreshTokenHandler` 改用 `Rotate`；改密两处 `_ = Delete` 改为记日志。
+- 前端：`refresh-queue.ts` 用 `navigator.locks.request` 互斥，排队 tab 跳过返回哨兵。
+- 测试：后端 8 个（Rotate 4 + Refresh handler 4），前端 5 个（单飞 + 回退 + 周期复位）。
 
 ## Consequences
 
 - 引入 Lua 脚本后，Redis 必须支持 `EVAL`（单机/哨兵/集群均满足，已是 code store 的前提）。
 - "重用即吊销家族"会导致：用户在多标签页并发刷新时，若竞态失败，可能被误判为重用而强制登出。这是该不变量固有的用户体验代价，标准实践接受此权衡（安全优先）。
+- 跨 tab 互斥依赖 Web Locks API（现代浏览器支持）；不支持时回退到单 tab 单飞，多 tab 场景降级但仍可用。
