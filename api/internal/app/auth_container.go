@@ -13,6 +13,7 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 	authquery "blog-api/internal/application/auth/query"
 	appshared "blog-api/internal/application/shared"
+	appsettings "blog-api/internal/application/settings"
 	"blog-api/internal/domain/user"
 	infraauth "blog-api/internal/infrastructure/auth"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
@@ -33,6 +34,7 @@ func NewAuthContainer(
 	cfg *config.Config,
 	emailSender authcmd.EmailSender,
 	bus appshared.EventBus,
+	settingsSvc *appsettings.Service,
 ) (*AuthContainer, error) {
 	userRepo := gormrepo.NewUserRepository(db)
 	roleRepo := gormrepo.NewRoleRepository(db)
@@ -71,7 +73,7 @@ func NewAuthContainer(
 
 	authHandler := authhttp.NewHandler(
 		register, login, google, github, logout, refresh, verify, forgot, reset,
-		updatePf, changePwd, getMe, cfg.Cookie,
+		updatePf, changePwd, getMe, settingsSvc, cfg.Cookie,
 		config.TokenTTLs{Access: cfg.JWTAccessTokenTTL, Refresh: cfg.JWTRefreshTokenTTL},
 	)
 

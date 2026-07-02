@@ -112,7 +112,9 @@ func main() {
 	// 事件总线：当前无异步事件订阅者，用 NoopEventBus 占位（非 nil），
 	// 避免 RegisterUserHandler.Publish 在 nil bus 上触发 panic。
 	// 后续接入真实事件总线（如发欢迎邮件、统计）时替换为 InMemory 实现。
-	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailSender, appshared.NoopEventBus{})
+	settingsContainer := app.NewSettingsContainer(gormDB)
+
+	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailSender, appshared.NoopEventBus{}, settingsContainer.Service)
 	if err != nil {
 		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
 	}
@@ -125,7 +127,6 @@ func main() {
 	commentContainer := app.NewCommentContainer(gormDB)
 
 	postContainer := app.NewPostContainer(gormDB)
-	settingsContainer := app.NewSettingsContainer(gormDB)
 	tagContainer := app.NewTagContainer(gormDB)
 	githubContainer := app.NewGitHubContainer(settingsContainer.Store)
 	auditContainer := app.NewAuditContainer(gormDB)

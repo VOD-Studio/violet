@@ -49,6 +49,8 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		PostsPerPage       *int    `json:"posts_per_page"`
 		CommentsEnabled    *bool   `json:"comments_enabled"`
 		CommentsModeration *bool   `json:"comments_moderation"`
+		GoogleLoginEnabled *bool   `json:"google_login_enabled"`
+		GithubLoginEnabled *bool   `json:"github_login_enabled"`
 		GitHubUsername     *string `json:"github_username"`
 		GitHubToken        *string `json:"github_token"`
 		TechStack          *string `json:"tech_stack"`
@@ -63,9 +65,10 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		SiteName: req.SiteName, SiteDescription: req.SiteDescription,
 		SiteURL: req.SiteURL, AdminEmail: req.AdminEmail,
 		PostsPerPage: req.PostsPerPage, CommentsEnabled: req.CommentsEnabled,
-		CommentsModeration: req.CommentsModeration, GitHubUsername: req.GitHubUsername,
-		GitHubToken: req.GitHubToken, TechStack: req.TechStack,
-		Bio: req.Bio, FooterText: req.FooterText,
+		CommentsModeration: req.CommentsModeration,
+		GoogleLoginEnabled: req.GoogleLoginEnabled, GithubLoginEnabled: req.GithubLoginEnabled,
+		GitHubUsername: req.GitHubUsername, GitHubToken: req.GitHubToken,
+		TechStack: req.TechStack, Bio: req.Bio, FooterText: req.FooterText,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

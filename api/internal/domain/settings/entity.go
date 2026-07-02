@@ -19,6 +19,8 @@ type SiteSettings struct {
 	PostsPerPage       int    `json:"posts_per_page"`
 	CommentsEnabled    bool   `json:"comments_enabled"`
 	CommentsModeration bool   `json:"comments_moderation"`
+	GoogleLoginEnabled bool   `json:"google_login_enabled"`
+	GithubLoginEnabled bool   `json:"github_login_enabled"`
 	GitHubUsername     string `json:"github_username"`
 	GitHubToken        string `json:"github_token"`
 	TechStack          string `json:"tech_stack"`
@@ -35,6 +37,8 @@ type UpdateInput struct {
 	PostsPerPage       *int
 	CommentsEnabled    *bool
 	CommentsModeration *bool
+	GoogleLoginEnabled *bool
+	GithubLoginEnabled *bool
 	GitHubUsername     *string
 	GitHubToken        *string
 	TechStack          *string
@@ -69,12 +73,20 @@ func fromMap(m map[string]string) SiteSettings {
 	}
 	s.CommentsEnabled = m["comments_enabled"] == "true"
 	s.CommentsModeration = m["comments_moderation"] == "true"
+	s.GoogleLoginEnabled = parseBoolDefaultTrue(m["google_login_enabled"])
+	s.GithubLoginEnabled = parseBoolDefaultTrue(m["github_login_enabled"])
 	s.GitHubUsername = m["github_username"]
 	s.GitHubToken = m["github_token"]
 	s.TechStack = m["tech_stack"]
 	s.Bio = m["bio"]
 	s.FooterText = m["footer_text"]
 	return s
+}
+
+// parseBoolDefaultTrue 解析布尔配置，未设置时默认启用。
+// 键存在时按 "true"/"false" 解析；键不存在时返回 true，保证升级后已有功能不中断。
+func parseBoolDefaultTrue(v string) bool {
+	return v == "" || v == "true"
 }
 
 func parseInt(s string) (int, bool) {
@@ -93,3 +105,6 @@ func parseInt(s string) (int, bool) {
 
 // ErrInvalidSetting 无效配置
 var ErrInvalidSetting = shared.BadRequest("无效的站点配置")
+
+// ErrOAuthProviderDisabled OAuth 登录方式已被管理员禁用
+var ErrOAuthProviderDisabled = shared.BadRequest("该登录方式已禁用")

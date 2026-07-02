@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -12,6 +13,8 @@ import (
 	"blog-api/config"
 	authcmd "blog-api/internal/application/auth/command"
 	authquery "blog-api/internal/application/auth/query"
+	appsettings "blog-api/internal/application/settings"
+	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/user"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -31,6 +34,7 @@ type Handler struct {
 	updatePf  *authcmd.UpdateProfileHandler
 	changePwd *authcmd.ChangePasswordHandler
 	getMe     *authquery.GetMeHandler
+	settings  *appsettings.Service
 
 	validate  *validator.Validate
 	cookieCfg config.CookieConfig
@@ -55,13 +59,14 @@ func NewHandler(
 	updatePf *authcmd.UpdateProfileHandler,
 	changePwd *authcmd.ChangePasswordHandler,
 	getMe *authquery.GetMeHandler,
+	settings *appsettings.Service,
 	cookieCfg config.CookieConfig,
 	ttls config.TokenTTLs,
 ) *Handler {
 	return &Handler{
 		register: register, login: login, google: google, github: github, logout: logout, refresh: refresh,
 		verify: verify, forgot: forgot, reset: reset,
-		updatePf: updatePf, changePwd: changePwd, getMe: getMe,
+		updatePf: updatePf, changePwd: changePwd, getMe: getMe, settings: settings,
 		validate:  validator.New(),
 		cookieCfg: cookieCfg,
 		ttls:      ttls,
@@ -78,6 +83,25 @@ func generateCSRFToken() string {
 		return ""
 	}
 	return hex.EncodeToString(b)
+}
+
+// ensureOAuthEnabled 校验指定 OAuth 登录方式是否被管理员启用
+func (h *Handler) ensureOAuthEnabled(ctx context.Context, provider string) error {
+	settings, err := h.settings.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+	switch provider {
+	case "google":
+		if !settings.GoogleLoginEnabled {
+			return domainsettings.ErrOAuthProviderDisabled
+		}
+	case "github":
+		if !settings.GithubLoginEnabled {
+			return domainsettings.ErrOAuthProviderDisabled
+		}
+	}
+	return nil
 }
 
 // Register POST /auth/register
@@ -171,6 +195,10 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
+	if err := h.ensureOAuthEnabled(r.Context(), "google"); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
 
 	out, err := h.google.Handle(r.Context(), authcmd.GoogleLoginInput{Credential: req.Credential})
 	if err != nil {
@@ -198,6 +226,10 @@ func (h *Handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.validate.Struct(req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.ensureOAuthEnabled(r.Context(), "github"); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}

@@ -37,16 +37,18 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		return nil, err
 	}
 	return map[string]any{
-		"site_name":           settings.SiteName,
-		"site_description":    settings.SiteDescription,
-		"site_url":            settings.SiteURL,
-		"posts_per_page":      settings.PostsPerPage,
-		"comments_enabled":    settings.CommentsEnabled,
-		"comments_moderation": settings.CommentsModeration,
-		"github_username":     settings.GitHubUsername,
-		"tech_stack":          settings.TechStack,
-		"bio":                 settings.Bio,
-		"footer_text":         settings.FooterText,
+		"site_name":            settings.SiteName,
+		"site_description":     settings.SiteDescription,
+		"site_url":             settings.SiteURL,
+		"posts_per_page":       settings.PostsPerPage,
+		"comments_enabled":     settings.CommentsEnabled,
+		"comments_moderation":  settings.CommentsModeration,
+		"google_login_enabled": settings.GoogleLoginEnabled,
+		"github_login_enabled": settings.GithubLoginEnabled,
+		"github_username":      settings.GitHubUsername,
+		"tech_stack":           settings.TechStack,
+		"bio":                  settings.Bio,
+		"footer_text":          settings.FooterText,
 	}, nil
 }
 
@@ -76,6 +78,12 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	}
 	if in.CommentsModeration != nil {
 		updates["comments_moderation"] = boolStr(*in.CommentsModeration)
+	}
+	if in.GoogleLoginEnabled != nil {
+		updates["google_login_enabled"] = boolStr(*in.GoogleLoginEnabled)
+	}
+	if in.GithubLoginEnabled != nil {
+		updates["github_login_enabled"] = boolStr(*in.GithubLoginEnabled)
 	}
 	if in.GitHubUsername != nil {
 		updates["github_username"] = *in.GitHubUsername
