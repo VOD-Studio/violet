@@ -1,5 +1,6 @@
 import { projectKeys } from "@features/projects/api/keys";
 import { fetchProjects, useProjects } from "@features/projects/api/queries";
+import { ProjectCard } from "@features/projects/ui/ProjectCard";
 import ProjectsSkeleton from "@features/projects/ui/ProjectsSkeleton";
 import { TiltedCard } from "@shared/ui/tilted-card";
 import { createFileRoute } from "@tanstack/react-router";
@@ -27,11 +28,8 @@ const ProjectsPage = () => {
             ) : (
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                     {projects.map((p) => (
-                        <TiltedCard key={p.id} className="h-64">
-                            <div className="h-full rounded-3xl border border-edge-hairline p-8 transition-colors hover:bg-muted/50">
-                                <h3 className="mb-4 text-2xl font-bold">{p.title}</h3>
-                                <p className="text-muted-foreground">{p.description}</p>
-                            </div>
+                        <TiltedCard key={p.id}>
+                            <ProjectCard project={p} />
                         </TiltedCard>
                     ))}
                 </div>
