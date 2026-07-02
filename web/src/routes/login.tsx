@@ -97,9 +97,11 @@ function LoginPage() {
     });
 
     const handleGithubLogin = () => {
+        const redirectUri = encodeURIComponent(window.location.origin + "/auth/github/callback");
         window.location.href =
             "https://github.com/login/oauth/authorize?client_id=" +
             import.meta.env.VITE_GITHUB_CLIENT_ID +
+            "&redirect_uri=" + redirectUri +
             "&scope=user:email";
     };
 
