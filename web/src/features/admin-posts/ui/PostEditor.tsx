@@ -19,6 +19,7 @@ import { type PostForm, postSchema } from "@features/admin-posts/model/schema";
 import type { CreatePost } from "@features/admin-posts/model/types";
 import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
+import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
 import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { slugify } from "@shared/lib/slug";
@@ -49,6 +50,7 @@ export function PostEditor({ postId }: PostEditorProps) {
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [imagePickerOpen, setImagePickerOpen] = useState(false);
+    const [versionsOpen, setVersionsOpen] = useState(false);
 
     const form = useForm<PostForm>({
         resolver: zodResolver(postSchema),
@@ -240,6 +242,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                 onBack={() => navigate({ to: "/admin/posts" })}
                 onSaveDraft={onSaveDraft}
                 onPublish={onPublish}
+                onOpenVersions={() => setVersionsOpen(true)}
             />
 
             {/* 主体：编辑器 + 侧边栏 */}
@@ -313,6 +316,11 @@ export function PostEditor({ postId }: PostEditorProps) {
                 mediaType="image"
                 multiple
                 title="选择图片插入正文"
+            />
+            <PostVersionsSheet
+                postId={postId ?? ""}
+                open={versionsOpen}
+                onOpenChange={setVersionsOpen}
             />
         </div>
     );
