@@ -6,6 +6,8 @@ interface PostEditorToolbarProps {
     isEdit: boolean;
     /** 提交进行中，禁用按钮 */
     saving: boolean;
+    /** 额外禁用状态，如加载骨架屏时 */
+    disabled?: boolean;
     onBack: () => void;
     onSaveDraft: () => void;
     onPublish: () => void;
@@ -16,11 +18,14 @@ interface PostEditorToolbarProps {
 export function PostEditorToolbar({
     isEdit,
     saving,
+    disabled = false,
     onBack,
     onSaveDraft,
     onPublish,
     onOpenVersions,
 }: PostEditorToolbarProps) {
+    const isDisabled = saving || disabled;
+
     return (
         <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -31,14 +36,14 @@ export function PostEditorToolbar({
             </div>
             <div className="flex items-center gap-2">
                 {isEdit && (
-                    <Button variant="outline" onClick={onOpenVersions}>
+                    <Button variant="outline" onClick={onOpenVersions} disabled={isDisabled}>
                         <History className="size-4" /> 历史版本
                     </Button>
                 )}
-                <Button variant="outline" onClick={onSaveDraft} disabled={saving}>
+                <Button variant="outline" onClick={onSaveDraft} disabled={isDisabled}>
                     保存草稿
                 </Button>
-                <Button onClick={onPublish} disabled={saving}>
+                <Button onClick={onPublish} disabled={isDisabled}>
                     发布
                 </Button>
             </div>

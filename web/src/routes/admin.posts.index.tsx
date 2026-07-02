@@ -92,7 +92,13 @@ function AdminPostsPage() {
             cell: (row) => (
                 <button
                     type="button"
-                    onClick={() => navigate({ to: "/admin/posts/$id", params: { id: row.id } })}
+                    onClick={() =>
+                        navigate({
+                            to: "/admin/posts/$id",
+                            params: { id: row.id },
+                            state: { post: row } as Record<string, unknown>,
+                        })
+                    }
                     className="font-medium text-left hover:text-primary hover:underline"
                 >
                     {row.title}
@@ -273,7 +279,13 @@ function RowActions({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                        onClick={() => navigate({ to: "/admin/posts/$id", params: { id: row.id } })}
+                        onClick={() =>
+                            navigate({
+                                to: "/admin/posts/$id",
+                                params: { id: row.id },
+                                state: { post: row } as Record<string, unknown>,
+                            })
+                        }
                     >
                         <Pencil className="size-3.5" />
                         编辑

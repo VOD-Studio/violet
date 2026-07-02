@@ -17,7 +17,7 @@ import {
 } from "@features/admin-posts/api/mutations";
 import { fetchAdminPost, useAdminPost } from "@features/admin-posts/api/queries";
 import { type PostForm, postSchema } from "@features/admin-posts/model/schema";
-import type { CreatePost } from "@features/admin-posts/model/types";
+import type { AdminPostListItem, CreatePost } from "@features/admin-posts/model/types";
 import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
@@ -34,11 +34,13 @@ import { toast } from "sonner";
 export interface PostEditorProps {
     /** 编辑模式时传入文章 ID；新建模式传空 */
     postId?: string;
+    /** 编辑模式：从列表页带过来的初始数据，用于骨架屏预填 */
+    initialData?: AdminPostListItem;
 }
 
 const DRAFT_PREFIX = "post-draft:";
 
-export function PostEditor({ postId }: PostEditorProps) {
+export function PostEditor({ postId, initialData }: PostEditorProps) {
     const navigate = useNavigate();
     const isEdit = !!postId;
 
@@ -58,15 +60,15 @@ export function PostEditor({ postId }: PostEditorProps) {
     const form = useForm<PostForm>({
         resolver: zodResolver(postSchema),
         defaultValues: {
-            title: "",
-            slug: "",
+            title: initialData?.title ?? "",
+            slug: initialData?.slug ?? "",
             content_html: "",
-            excerpt: "",
-            cover_image: "",
+            excerpt: initialData?.excerpt ?? "",
+            cover_image: initialData?.cover_image ?? "",
             seo_title: "",
             seo_description: "",
-            tags: [],
-            is_featured: false,
+            tags: initialData?.tags ?? [],
+            is_featured: initialData?.is_featured ?? false,
         },
     });
     const {
@@ -250,8 +252,61 @@ export function PostEditor({ postId }: PostEditorProps) {
 
     if (isEdit && isLoading) {
         return (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-                加载中…
+            <div className="flex h-full flex-col gap-4">
+                <PostEditorToolbar
+                    isEdit={isEdit}
+                    saving={false}
+                    disabled
+                    onBack={() => navigate({ to: "/admin/posts" })}
+                    onSaveDraft={() => {}}
+                    onPublish={() => {}}
+                    onOpenVersions={() => setVersionsOpen(true)}
+                />
+
+                <div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_320px]">
+                    <div className="flex min-h-0 flex-col gap-2">
+                        <Input
+                            value={initialData?.title ?? ""}
+                            readOnly
+                            placeholder="文章标题…"
+                            className="h-12 border-none bg-transparent px-4 text-2xl font-bold shadow-none focus-visible:ring-0"
+                        />
+                        <div className="mx-4 flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <span className="shrink-0 select-none font-mono">/blog/</span>
+                            <Input
+                                value={initialData?.slug ?? ""}
+                                readOnly
+                                placeholder="url-slug"
+                                className="h-8 flex-1 border-none bg-transparent px-0 font-mono text-sm shadow-none focus-visible:ring-0"
+                            />
+                        </div>
+                        <div className="min-h-0 flex-1">
+                            <div className="flex h-full flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background">
+                                <div className="flex h-10 items-center gap-1 border-b border-edge-hairline bg-muted/30 px-2">
+                                    <div className="h-6 w-6 animate-pulse rounded bg-muted" />
+                                    <div className="h-6 w-6 animate-pulse rounded bg-muted" />
+                                    <div className="h-6 w-6 animate-pulse rounded bg-muted" />
+                                    <div className="ml-auto h-6 w-20 animate-pulse rounded bg-muted" />
+                                </div>
+                                <div className="flex-1 space-y-3 p-4">
+                                    <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                                    <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
+                                    <div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
+                                    <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+                                    <div className="h-4 w-4/5 animate-pulse rounded bg-muted" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="overflow-y-auto">
+                        <PostEditorSidebar
+                            control={control}
+                            register={register}
+                            setValue={setValue}
+                        />
+                    </div>
+                </div>
             </div>
         );
     }
