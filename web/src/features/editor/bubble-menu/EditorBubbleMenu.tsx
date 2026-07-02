@@ -36,13 +36,14 @@ export function EditorBubbleMenu({ editor, onInsertLink }: EditorBubbleMenuProps
             }}
             options={{
                 placement: "top",
+                strategy: "fixed",
                 offset: 8,
                 // flip：顶部空间不足（如靠近工具栏）时自动翻转到下方
                 flip: true,
                 // shift：贴边时水平偏移，避免浮窗溢出视口
                 shift: true,
             }}
-            className="flex items-center gap-0.5 rounded-lg border border-edge-hairline bg-popover p-1 shadow-lg"
+            className="z-50 flex items-center gap-0.5 rounded-lg border border-edge-hairline bg-popover p-1 shadow-lg"
             // BubbleMenu 自身点击不应收起选区
             onMouseDown={keepFocus}
         >
