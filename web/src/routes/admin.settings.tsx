@@ -28,6 +28,8 @@ function AdminSettingsPage() {
                 posts_per_page: data.posts_per_page,
                 comments_enabled: data.comments_enabled,
                 comments_moderation: data.comments_moderation,
+                google_login_enabled: data.google_login_enabled,
+                github_login_enabled: data.github_login_enabled,
                 github_username: data.github_username,
                 github_token: data.github_token,
                 tech_stack: data.tech_stack,
@@ -64,6 +66,10 @@ function AdminSettingsPage() {
                     <Field label="管理员邮箱">
                         <Input type="email" {...register("admin_email")} />
                     </Field>
+                </section>
+
+                <section className="space-y-4">
+                    <h3 className="text-sm font-semibold">内容</h3>
                     <Field label="每页文章数">
                         <Input
                             type="number"
@@ -101,7 +107,33 @@ function AdminSettingsPage() {
                 </section>
 
                 <section className="space-y-4">
-                    <h3 className="text-sm font-semibold">GitHub 集成</h3>
+                    <h3 className="text-sm font-semibold">认证</h3>
+                    <Controller
+                        control={control}
+                        name="google_login_enabled"
+                        render={({ field }) => (
+                            <SwitchField
+                                label="启用 Google 登录"
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        )}
+                    />
+                    <Controller
+                        control={control}
+                        name="github_login_enabled"
+                        render={({ field }) => (
+                            <SwitchField
+                                label="启用 GitHub 登录"
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        )}
+                    />
+                </section>
+
+                <section className="space-y-4">
+                    <h3 className="text-sm font-semibold">GitHub 资料</h3>
                     <Field label="GitHub 用户名">
                         <Input {...register("github_username")} />
                     </Field>

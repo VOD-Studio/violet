@@ -20,6 +20,10 @@ export interface SiteSettingsDTO {
     comments_enabled: boolean;
     /** 评论是否需审核 */
     comments_moderation: boolean;
+    /** 是否启用 Google 登录 */
+    google_login_enabled: boolean;
+    /** 是否启用 GitHub 登录 */
+    github_login_enabled: boolean;
     /** GitHub 用户名 */
     github_username: string;
     /** GitHub Token */
@@ -48,6 +52,10 @@ export interface UpdateSettingsRequest {
     comments_enabled: boolean;
     /** 评论是否需审核 */
     comments_moderation: boolean;
+    /** 是否启用 Google 登录 */
+    google_login_enabled: boolean;
+    /** 是否启用 GitHub 登录 */
+    github_login_enabled: boolean;
     /** GitHub 用户名 */
     github_username: string;
     /** GitHub Token */
