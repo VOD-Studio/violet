@@ -32,4 +32,11 @@ describe("extractToc", () => {
     it("returns empty for no headings", () => {
         expect(extractToc("<p>nope</p>")).toEqual([]);
     });
+
+    it("deduplicates ids for headings with identical text", () => {
+        const html = "<h2>Summary</h2><p>x</p><h2>Summary</h2>";
+        const toc = extractToc(html);
+        expect(toc).toHaveLength(2);
+        expect(new Set(toc.map((it) => it.id)).size).toBe(2);
+    });
 });

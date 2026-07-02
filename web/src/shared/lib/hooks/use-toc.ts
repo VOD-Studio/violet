@@ -18,12 +18,20 @@ export interface TocItem {
 export function extractToc(html: string): TocItem[] {
     const re = /<h([23])[^>]*?(?:\sid=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/h\1>/gi;
     const out: TocItem[] = [];
+    const seen = new Map<string, number>();
     let m = re.exec(html);
     while (m !== null) {
         const level = Number(m[1]) as 2 | 3;
         const text = stripTags(m[3]).trim();
         if (text) {
-            const id = m[2] || slugify(text);
+            let id = m[2] || slugify(text);
+            // 去重：重复 id 追加递增序号，与 github-slugger 行为一致
+            const count = seen.get(id) ?? 0;
+            seen.set(id, count + 1);
+            if (count > 0) {
+                id = `${id}-${count}`;
+                seen.set(id, 1);
+            }
             out.push({ level, id, text });
         }
         m = re.exec(html);
