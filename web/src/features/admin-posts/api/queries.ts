@@ -1,7 +1,7 @@
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
-import type { AdminPost, AdminPostListQuery } from "../model/types";
+import type { AdminPost, AdminPostListItem, AdminPostListQuery } from "../model/types";
 import { adminPostKeys } from "./keys";
 
 /**
@@ -11,7 +11,8 @@ import { adminPostKeys } from "./keys";
  */
 export const fetchAdminPosts = async (
     query: AdminPostListQuery = {},
-): Promise<PagedResponse<AdminPost>> => apiGetPaged<AdminPost>("/admin/posts", { params: query });
+): Promise<PagedResponse<AdminPostListItem>> =>
+    apiGetPaged<AdminPostListItem>("/admin/posts", { params: query });
 
 /**
  * useAdminPosts - 后台文章列表 hook

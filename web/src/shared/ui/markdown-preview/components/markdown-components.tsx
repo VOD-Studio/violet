@@ -7,24 +7,47 @@
  */
 
 import type { Components } from "react-markdown";
+import { cn } from "@/shared/lib/utils";
 import { CodeBlock } from "./CodeBlock";
 
 export const markdownComponents: Components = {
-    h1: ({ children }) => (
-        <h1 className="mb-5 mt-10 text-3xl font-bold tracking-tight first:mt-0">{children}</h1>
+    h1: ({ children, style, className }) => (
+        <h1
+            style={style}
+            className={cn("mb-5 mt-10 text-3xl font-bold tracking-tight first:mt-0", className)}
+        >
+            {children}
+        </h1>
     ),
-    h2: ({ children }) => (
-        <h2 className="mb-4 mt-10 border-b border-edge-hairline pb-2 text-2xl font-bold tracking-tight first:mt-0">
+    h2: ({ children, style, className }) => (
+        <h2
+            style={style}
+            className={cn(
+                "mb-4 mt-10 border-b border-edge-hairline pb-2 text-2xl font-bold tracking-tight first:mt-0",
+                className,
+            )}
+        >
             {children}
         </h2>
     ),
-    h3: ({ children }) => (
-        <h3 className="mb-3 mt-8 text-xl font-semibold tracking-tight first:mt-0">{children}</h3>
+    h3: ({ children, style, className }) => (
+        <h3
+            style={style}
+            className={cn("mb-3 mt-8 text-xl font-semibold tracking-tight first:mt-0", className)}
+        >
+            {children}
+        </h3>
     ),
-    h4: ({ children }) => (
-        <h4 className="mb-3 mt-6 text-lg font-semibold first:mt-0">{children}</h4>
+    h4: ({ children, style, className }) => (
+        <h4 style={style} className={cn("mb-3 mt-6 text-lg font-semibold first:mt-0", className)}>
+            {children}
+        </h4>
     ),
-    p: ({ children }) => <p className="my-5 leading-8 text-foreground/90">{children}</p>,
+    p: ({ children, style, className }) => (
+        <p style={style} className={cn("my-5 leading-8 text-foreground/90", className)}>
+            {children}
+        </p>
+    ),
     ul: ({ children }) => (
         <ul className="my-5 list-disc space-y-2 pl-6 text-foreground/90">{children}</ul>
     ),

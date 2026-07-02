@@ -75,10 +75,9 @@ function BlogDetailPage() {
         );
     }
 
-    // 正文渲染：统一用 ArticleContent 自动识别 content_md 是 Markdown 还是 HTML。
-    // 新文章（HTML 序列化，保留颜色）走 HtmlContent；旧文章（Markdown）走 react-markdown。
-    // 优先 content_md（规范来源），空则用 content_html。
-    const body = post.content_md.trim() ? post.content_md : post.content_html;
+    // 正文渲染：content_html 为权威源（保颜色/对齐等 inline 样式），空则降级 content_md。
+    // ArticleContent 自动识别 HTML / Markdown 并正确渲染。
+    const body = post.content_html.trim() ? post.content_html : post.content_md;
     const bodyIsHtml = /<(p|div|h[1-6]|ul|ol|li|blockquote|pre|code|table|img|span)\b[\s>]/i.test(
         body,
     );

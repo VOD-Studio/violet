@@ -432,8 +432,9 @@ func main() {
 			r.Post("/posts", postH.Create)                    // 创建文章
 			r.Post("/posts/import-url", postH.ImportURL)      // 导入远程链接文档
 			r.Put("/posts/{id}", postH.Update)                // 更新文章
-			r.Patch("/posts/{id}/status", postH.UpdateStatus) // 更新文章状态
-			r.Delete("/posts/{id}", postH.Delete)             // 删除文章
+			r.Patch("/posts/{id}/status", postH.UpdateStatus)    // 更新文章状态
+			r.Patch("/posts/{id}/featured", postH.SetFeatured)   // 切换精选标记
+			r.Delete("/posts/{id}", postH.Delete)                // 删除文章
 
 			// 音乐管理（DDD mediaH）
 			r.Route("/music", func(r chi.Router) {

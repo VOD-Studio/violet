@@ -8,7 +8,12 @@
 
 import type { MediaFile } from "@entities/media/model/types";
 import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
-import { importPostUrl, publishPost, useCreatePost, useUpdatePost } from "@features/admin-posts/api/mutations";
+import {
+    importPostUrl,
+    publishPost,
+    useCreatePost,
+    useUpdatePost,
+} from "@features/admin-posts/api/mutations";
 import { useAdminPost } from "@features/admin-posts/api/queries";
 import { type PostForm, postSchema } from "@features/admin-posts/model/schema";
 import type { CreatePost } from "@features/admin-posts/model/types";
@@ -56,7 +61,7 @@ export function PostEditor({ postId }: PostEditorProps) {
             seo_title: "",
             seo_description: "",
             tags: [],
-            featured: false,
+            is_featured: false,
         },
     });
     const {
@@ -84,7 +89,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                 seo_title: existing.seo_title,
                 seo_description: existing.seo_description,
                 tags: existing.tags,
-                featured: existing.is_featured,
+                is_featured: existing.is_featured,
             });
             initialized.current = true;
         }
@@ -106,7 +111,7 @@ export function PostEditor({ postId }: PostEditorProps) {
                         seo_title: d.seo_title ?? "",
                         seo_description: d.seo_description ?? "",
                         tags: d.tags ?? [],
-                        featured: false,
+                        is_featured: false,
                     });
                 } catch {
                     /* 忽略损坏的草稿 */
@@ -144,19 +149,22 @@ export function PostEditor({ postId }: PostEditorProps) {
     const buildPayload = (data: PostForm): CreatePost => ({
         title: data.title.trim(),
         slug: data.slug.trim(),
-        // 编辑器以 HTML 序列化（保留颜色/对齐等样式），content_md 与 content_html
-        // 均存 HTML（后端原样存储）。Markdown 会丢失颜色，故不以 md 为存储格式。
-        content_md: data.content_md,
-        content_html: data.content_md,
         excerpt: data.excerpt.trim() || undefined,
         cover_image: data.cover_image || undefined,
         seo_title: data.seo_title.trim() || undefined,
         seo_description: data.seo_description.trim() || undefined,
         tags: data.tags.length > 0 ? data.tags : undefined,
+        is_featured: data.is_featured,
     });
 
     const handleSave = (data: PostForm, publish: boolean) => {
-        const payload = buildPayload(data);
+        // 编辑器同时产出两种格式：content_html 保颜色/对齐作为展示权威源；
+        // content_md 为 lossy Markdown，供前台降级显示与搜索/导出。
+        const payload: CreatePost = {
+            ...buildPayload(data),
+            content_html: editorRef.current?.getHTML() ?? "",
+            content_md: editorRef.current?.getMarkdown() ?? "",
+        };
         const finish = () => {
             toast.success(publish ? "已发布" : isEdit ? "已保存" : "已创建");
             localStorage.removeItem(draftKey);

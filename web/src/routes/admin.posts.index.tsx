@@ -1,7 +1,11 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { useDeletePost, useUpdatePostStatus } from "@features/admin-posts/api/mutations";
+import {
+    useDeletePost,
+    useSetFeatured,
+    useUpdatePostStatus,
+} from "@features/admin-posts/api/mutations";
 import { useAdminPosts } from "@features/admin-posts/api/queries";
-import type { AdminPost } from "@features/admin-posts/model/types";
+import type { AdminPostListItem } from "@features/admin-posts/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/badge";
@@ -14,7 +18,7 @@ import {
     DropdownMenuTrigger,
 } from "@shared/ui/dropdown-menu";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Archive, ChevronDown, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, MoreHorizontal, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -51,7 +55,7 @@ function AdminPostsPage() {
     const [page, setPage] = useState(1);
 
     const [deleteOpen, setDeleteOpen] = useState(false);
-    const [deleting, setDeleting] = useState<AdminPost | null>(null);
+    const [deleting, setDeleting] = useState<AdminPostListItem | null>(null);
 
     const { data, isLoading, error, refetch } = useAdminPosts({
         page,
@@ -80,7 +84,7 @@ function AdminPostsPage() {
         });
     };
 
-    const columns: DataTableColumn<AdminPost>[] = [
+    const columns: DataTableColumn<AdminPostListItem>[] = [
         {
             key: "title",
             header: "标题",
@@ -177,7 +181,7 @@ function AdminPostsPage() {
                 </Button>
             }
         >
-            <DataTable<AdminPost>
+            <DataTable<AdminPostListItem>
                 data={posts}
                 columns={columns}
                 keyExtractor={(row) => row.id}
@@ -222,15 +226,32 @@ function AdminPostsPage() {
 }
 
 /** 行操作下拉：编辑 / 状态切换 / 删除 */
-function RowActions({ row, onDelete }: { row: AdminPost; onDelete: (p: AdminPost) => void }) {
+function RowActions({
+    row,
+    onDelete,
+}: {
+    row: AdminPostListItem;
+    onDelete: (p: AdminPostListItem) => void;
+}) {
     const navigate = useNavigate();
     const updateStatus = useUpdatePostStatus(row.id);
+    const setFeatured = useSetFeatured(row.id);
 
     const changeStatus = (status: "draft" | "published" | "archived") => {
         updateStatus.mutate(
             { status },
             {
                 onSuccess: () => toast.success("状态已更新"),
+                onError: (err) => toast.error(err.message),
+            },
+        );
+    };
+
+    const toggleFeatured = () => {
+        setFeatured.mutate(
+            { is_featured: !row.is_featured },
+            {
+                onSuccess: () => toast.success(row.is_featured ? "已取消加精" : "已加精"),
                 onError: (err) => toast.error(err.message),
             },
         );
@@ -274,6 +295,11 @@ function RowActions({ row, onDelete }: { row: AdminPost; onDelete: (p: AdminPost
                             归档
                         </DropdownMenuItem>
                     ) : null}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={toggleFeatured}>
+                        <Star className="size-3.5" />
+                        {row.is_featured ? "取消加精" : "加精"}
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem variant="destructive" onClick={() => onDelete(row)}>
                         <Trash2 className="size-3.5" />

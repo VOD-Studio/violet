@@ -131,15 +131,14 @@ export function PostEditorSidebar({ control, register, setValue }: PostEditorSid
                 )}
             />
 
-            {/* TODO: featured 当前未接入提交，CreatePost 无 is_featured 字段，待后端支持后接入 */}
             <Controller
                 control={control}
-                name="featured"
+                name="is_featured"
                 render={({ field }) => (
                     <section className="flex items-center justify-between">
-                        <Label htmlFor="featured">精选文章</Label>
+                        <Label htmlFor="is_featured">精选文章</Label>
                         <Switch
-                            id="featured"
+                            id="is_featured"
                             checked={field.value}
                             onCheckedChange={field.onChange}
                         />

@@ -42,6 +42,23 @@ type AuthorDTO struct {
 	AvatarURL string `json:"avatar_url"`
 }
 
+// PostListItemDTO 文章列表项，不含正文，避免响应过大。
+// ListPublished 与 ListAll 共用；详情接口仍返回完整 PostDTO。
+type PostListItemDTO struct {
+	ID          string     `json:"id"`
+	Slug        string     `json:"slug"`
+	Title       string     `json:"title"`
+	Excerpt     string     `json:"excerpt"`
+	CoverImage  string     `json:"cover_image"`
+	Status      string     `json:"status"`
+	IsFeatured  bool       `json:"is_featured"`
+	ViewCount   int        `json:"view_count"`
+	PublishedAt string     `json:"published_at,omitempty"`
+	Tags        []string   `json:"tags"`
+	AuthorID    string     `json:"-"` // 内部用于批量填充 Author，不暴露给前端
+	Author      *AuthorDTO `json:"author,omitempty"`
+}
+
 // ArchiveItemDTO 归档文章项（精简字段，不含正文，避免响应过大）。
 // 归档页一次拉取某年全部文章，故仅携带展示所需字段。
 type ArchiveItemDTO struct {
@@ -101,25 +118,25 @@ func (s *Service) GetByID(ctx context.Context, id string) (PostDTO, error) {
 	return dto, nil
 }
 
-// ListPublished 列出已发布文章（前台）
-func (s *Service) ListPublished(ctx context.Context, page, limit int, tag string) ([]PostDTO, int64, error) {
+// ListPublished 列出已发布文章（前台），返回不含正文的列表项，避免响应过大
+func (s *Service) ListPublished(ctx context.Context, page, limit int, tag string) ([]PostListItemDTO, int64, error) {
 	items, total, err := s.repo.FindPublished(ctx, page, limit, tag)
 	if err != nil {
 		return nil, 0, err
 	}
-	dtos := toDTOs(items)
-	s.fillAuthor(ctx, dtos)
+	dtos := toListItemDTOs(items)
+	s.fillListItemAuthor(ctx, dtos)
 	return dtos, total, nil
 }
 
-// ListAll 列出所有文章（后台）
-func (s *Service) ListAll(ctx context.Context, page, limit int, status string) ([]PostDTO, int64, error) {
+// ListAll 列出所有文章（后台），返回不含正文的列表项，避免响应过大
+func (s *Service) ListAll(ctx context.Context, page, limit int, status string) ([]PostListItemDTO, int64, error) {
 	items, total, err := s.repo.FindAll(ctx, page, limit, status)
 	if err != nil {
 		return nil, 0, err
 	}
-	dtos := toDTOs(items)
-	s.fillAuthor(ctx, dtos)
+	dtos := toListItemDTOs(items)
+	s.fillListItemAuthor(ctx, dtos)
 	return dtos, total, nil
 }
 
@@ -208,6 +225,23 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) error {
 	p.UpdateSEO(in.SEOTitle, in.SEODescription)
 	p.SetTags(in.Tags)
 	return s.repo.Save(ctx, p)
+}
+
+// SetFeatured 设置文章精选标记（后台）
+func (s *Service) SetFeatured(ctx context.Context, id string, featured bool) (PostDTO, error) {
+	pid, err := shared.ParseID(id)
+	if err != nil {
+		return PostDTO{}, err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return PostDTO{}, err
+	}
+	p.SetFeatured(featured)
+	if err := s.repo.Save(ctx, p); err != nil {
+		return PostDTO{}, err
+	}
+	return toDTO(p), nil
 }
 
 // Publish 发布文章
@@ -410,4 +444,67 @@ func toDTOs(items []*domain.Post) []PostDTO {
 		dtos = append(dtos, toDTO(p))
 	}
 	return dtos
+}
+
+// toListItemDTO 将领域 Post 转为不含正文的列表项。
+func toListItemDTO(p *domain.Post) PostListItemDTO {
+	dto := PostListItemDTO{
+		ID: p.ID().String(), Slug: p.Slug(), Title: p.Title(),
+		Excerpt: p.Excerpt(), CoverImage: p.CoverImage(),
+		Status: p.Status(), IsFeatured: p.IsFeatured(),
+		ViewCount: p.ViewCount(), Tags: p.Tags(),
+		AuthorID: p.AuthorID().String(),
+	}
+	if p.PublishedAt() != nil {
+		dto.PublishedAt = p.PublishedAt().Format(time.RFC3339)
+	}
+	return dto
+}
+
+func toListItemDTOs(items []*domain.Post) []PostListItemDTO {
+	dtos := make([]PostListItemDTO, 0, len(items))
+	for _, p := range items {
+		dtos = append(dtos, toListItemDTO(p))
+	}
+	return dtos
+}
+
+// fillListItemAuthor 为列表项批量填充 Author，逻辑与 fillAuthor 一致。
+func (s *Service) fillListItemAuthor(ctx context.Context, dtos []PostListItemDTO) {
+	if len(dtos) == 0 || s.userRepo == nil {
+		return
+	}
+	seen := make(map[string]struct{}, len(dtos))
+	ids := make([]shared.ID, 0, len(dtos))
+	for _, d := range dtos {
+		if d.AuthorID == "" {
+			continue
+		}
+		if _, ok := seen[d.AuthorID]; ok {
+			continue
+		}
+		seen[d.AuthorID] = struct{}{}
+		if id, err := shared.ParseID(d.AuthorID); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	users, err := s.userRepo.FindByIDs(ctx, ids)
+	if err != nil {
+		return // 作者信息缺失不阻塞文章列表
+	}
+	authors := make(map[string]*AuthorDTO, len(users))
+	for _, u := range users {
+		authors[u.GetID().String()] = &AuthorDTO{
+			Username:  u.Username().String(),
+			AvatarURL: u.AvatarURL(),
+		}
+	}
+	for i := range dtos {
+		if a, ok := authors[dtos[i].AuthorID]; ok {
+			dtos[i].Author = a
+		}
+	}
 }

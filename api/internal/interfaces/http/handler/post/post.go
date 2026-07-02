@@ -201,6 +201,24 @@ func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
+// SetFeatured 设置文章精选标记（后台）
+func (h *Handler) SetFeatured(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req struct {
+		IsFeatured bool `json:"is_featured"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	dto, err := h.svc.SetFeatured(r.Context(), id, req.IsFeatured)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
 // Publish 发布文章
 func (h *Handler) Publish(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")

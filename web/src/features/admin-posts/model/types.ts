@@ -40,6 +40,8 @@ export interface CreatePost {
     seo_description?: string;
     /** 标签名列表 */
     tags?: string[];
+    /** 是否精选 */
+    is_featured?: boolean;
 }
 
 /**
@@ -58,9 +60,48 @@ export interface UpdatePostStatus {
 }
 
 /**
- * AdminPost - 后台文章，列表与详情共用 PostDTO 结构
+ * SetFeatured - 切换精选标记请求体
+ */
+export interface SetFeatured {
+    /** 是否精选 */
+    is_featured: boolean;
+}
+
+/**
+ * AdminPostListItem - 后台文章列表项
  *
- * 后端 ListAll 与 GetByID 均返回 PostDTO，字段与 PostDetail 一致，
- * 故直接复用 PostDetail 类型。
+ * 后端 ListAll 返回 PostListItemDTO（不含正文，避免响应过大），
+ * 字段比详情 AdminPost 精简，故单独建模。
+ */
+export interface AdminPostListItem {
+    /** 文章 ID */
+    id: string;
+    /** slug */
+    slug: string;
+    /** 标题 */
+    title: string;
+    /** 摘要 */
+    excerpt: string;
+    /** 封面图 URL */
+    cover_image: string;
+    /** 状态 */
+    status: string;
+    /** 是否精选 */
+    is_featured: boolean;
+    /** 浏览量 */
+    view_count: number;
+    /** 发布时间，RFC3339，草稿可能为空 */
+    published_at?: string;
+    /** 标签名列表 */
+    tags: string[];
+    /** 作者信息，缺失时省略 */
+    author?: { username: string; avatar_url: string };
+}
+
+/**
+ * AdminPost - 后台文章详情
+ *
+ * 后端 GetByID 返回完整 PostDTO，字段与 PostDetail 一致，故直接复用。
+ * 列表用 AdminPostListItem，勿混用。
  */
 export type AdminPost = PostDetail;

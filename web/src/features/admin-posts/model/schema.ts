@@ -23,8 +23,8 @@ export const postSchema = z.object({
     seo_description: z.string(),
     /** 标签名列表 */
     tags: z.array(z.string()),
-    /** TODO: 是否精选，当前未接入提交，CreatePost 无 is_featured 字段，待后端支持后接入 */
-    featured: z.boolean(),
+    /** 是否精选 */
+    is_featured: z.boolean(),
 });
 
 /** PostForm - 文章表单类型，由 schema 推导 */

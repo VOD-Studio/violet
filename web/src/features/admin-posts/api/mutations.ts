@@ -1,7 +1,13 @@
 import { clientQueryClient as queryClient } from "@shared/api/query-client";
 import { apiDelete, apiPatch, apiPost, apiPut } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { AdminPost, CreatePost, UpdatePost, UpdatePostStatus } from "../model/types";
+import type {
+    AdminPost,
+    CreatePost,
+    SetFeatured,
+    UpdatePost,
+    UpdatePostStatus,
+} from "../model/types";
 import { adminPostKeys } from "./keys";
 
 /** useInvalidateAdminPosts - 失效后台文章全部列表与详情缓存 */
@@ -49,6 +55,19 @@ export const useUpdatePostStatus = (id: string) => {
     return useMutation({
         mutationFn: (body: UpdatePostStatus) =>
             apiPatch<AdminPost>(`/admin/posts/${id}/status`, body),
+        onSuccess: () => invalidate(),
+    });
+};
+
+/**
+ * useSetFeatured - 调后端 PATCH /admin/posts/{id}/featured 切换精选标记
+ *
+ * @param id 文章 ID
+ */
+export const useSetFeatured = (id: string) => {
+    const invalidate = useInvalidateAdminPosts();
+    return useMutation({
+        mutationFn: (body: SetFeatured) => apiPatch<AdminPost>(`/admin/posts/${id}/featured`, body),
         onSuccess: () => invalidate(),
     });
 };

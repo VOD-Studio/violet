@@ -28,6 +28,20 @@ func registerPostPaths(t *openapi3.T) {
 		"updated_at":      optStr("更新时间（RFC3339）"),
 	})
 
+	// 文章列表项（不含正文，避免响应过大）。ListPublished 与 ListAll 共用。
+	registerSchema(t, "PostListItemDTO", openapi3.Schemas{
+		"id":           reqStr("文章 ID（UUID）"),
+		"slug":         reqStr("URL slug"),
+		"title":        reqStr("标题"),
+		"excerpt":      optStr("摘要"),
+		"cover_image":  optStr("封面图 URL"),
+		"status":       strEnum("状态", "draft", "published", "archived"),
+		"is_featured":  optBool("是否精选"),
+		"view_count":   optInt("浏览数"),
+		"published_at": optStr("发布时间（RFC3339，可空）"),
+		"tags":         strArray("标签名列表"),
+	}, "id", "slug", "title")
+
 	registerSchema(t, "CreatePostRequest", openapi3.Schemas{
 		"title":           reqStr("标题"),
 		"slug":            reqStr("URL slug"),
@@ -43,6 +57,10 @@ func registerPostPaths(t *openapi3.T) {
 	registerSchema(t, "UpdatePostStatusRequest", openapi3.Schemas{
 		"status": strEnum("文章状态", "draft", "published", "archived"),
 	}, "status")
+
+	registerSchema(t, "SetFeaturedRequest", openapi3.Schemas{
+		"is_featured": optBool("是否精选"),
+	}, "is_featured")
 
 	registerSchema(t, "ImportURLRequest", openapi3.Schemas{
 		"url": reqStr("远程网页 URL，仅限 http/https"),
@@ -87,7 +105,7 @@ func registerPostPaths(t *openapi3.T) {
 			pageParam(), limitParam(50), queryStrParam("tag", "按标签 slug 过滤"),
 		},
 		Responses: responses(
-			200, dataArrayResponse("PostDTO", "已发布文章列表", 200, true),
+			200, dataArrayResponse("PostListItemDTO", "已发布文章列表", 200, true),
 		),
 	})
 
@@ -153,7 +171,7 @@ func registerPostPaths(t *openapi3.T) {
 			}},
 		},
 		Responses: responses(
-			200, dataArrayResponse("PostDTO", "文章列表", 200, true),
+			200, dataArrayResponse("PostListItemDTO", "文章列表", 200, true),
 		),
 	})
 
@@ -206,6 +224,21 @@ func registerPostPaths(t *openapi3.T) {
 			pathStrParam("id", "文章 ID（UUID）"), csrfHeaderParam(),
 		},
 		RequestBody: jsonBody("UpdatePostStatusRequest", true, "目标状态"),
+		Responses: responses(
+			200, dataResponse("PostDTO", "更新后的文章", 200),
+			404, errorResponse("文章不存在"),
+		),
+	})
+
+	patch(t, "/admin/posts/{id}/featured", &openapi3.Operation{
+		Tags:        []string{"文章管理"},
+		Summary:     "切换精选标记",
+		Description: "设置或取消文章的精选状态。需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters: openapi3.Parameters{
+			pathStrParam("id", "文章 ID（UUID）"), csrfHeaderParam(),
+		},
+		RequestBody: jsonBody("SetFeaturedRequest", true, "精选标记"),
 		Responses: responses(
 			200, dataResponse("PostDTO", "更新后的文章", 200),
 			404, errorResponse("文章不存在"),

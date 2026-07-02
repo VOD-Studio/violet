@@ -20,9 +20,13 @@ const schema = {
     ...defaultSchema,
     attributes: {
         ...defaultSchema.attributes,
+        // 允许 class/style，承载编辑器产出的颜色、对齐等 inline 样式
         "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "class", "style", "id"],
+        // Highlight 多色高亮把颜色存在 data-color
+        mark: [...(defaultSchema.attributes?.mark ?? []), "data-color"],
     },
     // 允许 article 正文中常见的额外标签
+    // span：承载文本颜色；u：下划线；其余为编辑器/富文本常用元素
     tagNames: [
         ...(defaultSchema.tagNames ?? []),
         "img",
@@ -33,6 +37,8 @@ const schema = {
         "mark",
         "kbd",
         "abbr",
+        "span",
+        "u",
     ],
 };
 
