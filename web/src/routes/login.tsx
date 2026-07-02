@@ -76,16 +76,16 @@ function LoginPage() {
             googleLogin.mutate(tokenResponse.access_token, {
                 onSuccess: async () => {
                     toast.success("登录成功");
-                    setAuth(true, "token", "refresh_token", 3600, 7200); // UI store sync
+                    const target = redirect || "/";
+                    try {
+                        await navigate({ to: target, replace: true });
+                    } catch {
+                        window.location.href = target;
+                    }
                     try {
                         await queryClient.refetchQueries({ queryKey: authKeys.me() });
                     } catch {
                         // ignore
-                    }
-                    if (window.history.length > 1) {
-                        router.history.back();
-                    } else {
-                        navigate({ to: "/" });
                     }
                 },
                 onError: (err) => {
