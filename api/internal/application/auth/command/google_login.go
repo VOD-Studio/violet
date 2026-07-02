@@ -89,14 +89,30 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 		u = user.NewUser(shared.NewID(), email, username, hash)
 		u.VerifyEmail()       // 谷歌账号已验证
 		u.SetGoogleID(subject)
+		
+		if pic, ok := payload.Claims["picture"].(string); ok && pic != "" {
+			u.UpdateProfile(pic, "")
+		}
+
 		u.Activate()          // 激活账号
 		if err := h.userRepo.Save(ctx, u); err != nil {
 			return LoginOutput{}, err
 		}
 	} else {
 		// 用户存在，检查并绑定 Google ID
+		changed := false
 		if u.GoogleID() == nil {
 			u.SetGoogleID(subject)
+			changed = true
+		}
+		
+		// 如果用户还没有头像，使用 Google 提供的头像
+		if pic, ok := payload.Claims["picture"].(string); ok && pic != "" && u.AvatarURL() == "" {
+			u.UpdateProfile(pic, u.Bio())
+			changed = true
+		}
+
+		if changed {
 			if err := h.userRepo.Save(ctx, u); err != nil {
 				return LoginOutput{}, err
 			}
