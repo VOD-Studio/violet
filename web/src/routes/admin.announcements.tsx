@@ -67,16 +67,19 @@ function AdminAnnouncementsPage() {
             key: "title",
             header: "标题",
             sortable: true,
+            width: "40%",
             cell: (row) => <span className="font-medium">{row.title}</span>,
         },
         {
             key: "type",
             header: "类型",
+            width: "80px",
             cell: (row) => <Badge variant="outline">{TYPE_LABEL[row.type]}</Badge>,
         },
         {
             key: "range",
             header: "生效区间",
+            width: "220px",
             ellipsis: true,
             cell: (row) => (
                 <span className="text-muted-foreground text-sm">
@@ -87,6 +90,7 @@ function AdminAnnouncementsPage() {
         {
             key: "is_active",
             header: "状态",
+            width: "80px",
             cell: (row) => (
                 <Badge variant={row.is_active ? "default" : "secondary"}>
                     {row.is_active ? "启用" : "停用"}
@@ -97,6 +101,7 @@ function AdminAnnouncementsPage() {
             key: "actions_col",
             header: "操作",
             sticky: "right",
+            width: "100px",
             cell: (row) => (
                 <div className="flex items-center gap-2">
                     <PermissionGuard permission="announcement:manage">
@@ -150,6 +155,7 @@ function AdminAnnouncementsPage() {
                 error={error ? new Error(error.message) : null}
                 onRetry={() => refetch()}
                 storageKey="admin-announcements-columns"
+                resizable
                 caption="公告列表"
                 emptyTitle="暂无公告"
                 emptyDescription="还没有创建任何公告"
