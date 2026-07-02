@@ -16,10 +16,7 @@ const ArchiveYearSkeleton = ({ year }: ArchiveYearSkeletonProps) => {
                         <ShimmerSkeleton className="mb-2 h-5 w-16 rounded-md" />
                         <ul className="space-y-2 border-l-2 border-border pl-4">
                             {Array.from({ length: 3 }, (_, itemIndex) => (
-                                <li
-                                    key={itemIndex}
-                                    className="flex items-start gap-3"
-                                >
+                                <li key={itemIndex} className="flex items-start gap-3">
                                     <ShimmerSkeleton className="mt-0.5 h-4 w-10 rounded-md" />
                                     <div className="flex flex-1 flex-col gap-1">
                                         <ShimmerSkeleton className="h-4 w-full rounded-md" />

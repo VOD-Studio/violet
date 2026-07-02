@@ -21,10 +21,7 @@ const ContributionsSkeleton = ({ className }: ContributionsSkeletonProps) => {
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
                     <span>少</span>
                     {Array.from({ length: 5 }, (_, i) => (
-                        <ShimmerSkeleton
-                            key={i}
-                            className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm"
-                        />
+                        <ShimmerSkeleton key={i} className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-sm" />
                     ))}
                     <span>多</span>
                 </div>
