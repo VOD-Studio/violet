@@ -84,3 +84,17 @@ export function formatNsToMs(ns: number): string {
     if (!Number.isFinite(ns) || ns < 0) return "0ms";
     return `${(ns / 1_000_000).toFixed(2)}ms`;
 }
+
+/**
+ * thresholdColor - 按百分比返回阈值颜色 token
+ *
+ * MetricCard 的环形进度与数字按使用率变色：>85% 红、>60% 警示黄，其余健康绿。
+ *
+ * @param percent 0-100 的使用率
+ * @returns CSS 变量字符串
+ */
+export function thresholdColor(percent: number): string {
+    if (percent > 85) return "var(--destructive)";
+    if (percent > 60) return "var(--chart-4)";
+    return "var(--chart-2)";
+}

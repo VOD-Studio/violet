@@ -6,6 +6,7 @@ import {
     formatPercent,
     formatRate,
     formatUptime,
+    thresholdColor,
 } from "../format";
 
 describe("formatBytes", () => {
@@ -101,5 +102,22 @@ describe("formatNsToMs", () => {
     it("非有限值与负数返回 0ms", () => {
         expect(formatNsToMs(Number.NaN)).toBe("0ms");
         expect(formatNsToMs(-100)).toBe("0ms");
+    });
+});
+
+describe("thresholdColor", () => {
+    it(">85% 返回红色", () => {
+        expect(thresholdColor(86)).toBe("var(--destructive)");
+        expect(thresholdColor(100)).toBe("var(--destructive)");
+    });
+
+    it("60-85% 返回警示色", () => {
+        expect(thresholdColor(61)).toBe("var(--chart-4)");
+        expect(thresholdColor(85)).toBe("var(--chart-4)");
+    });
+
+    it("<=60% 返回健康色", () => {
+        expect(thresholdColor(60)).toBe("var(--chart-2)");
+        expect(thresholdColor(0)).toBe("var(--chart-2)");
     });
 });
