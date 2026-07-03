@@ -26,7 +26,7 @@
 - **代码检查与格式化**: 使用 **Biome** (非 ESLint/Prettier)。命令: `make web-lint` 和 `make web-format`。
 - **类型检查**: `make web-typecheck`
 - **测试**: `make web-test`
-- **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-arbitrary-values` skill。
+- **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-canonical-classes` skill。
 
 <!-- MANUAL: Any manually added notes below this line are preserved on regeneration -->
 
