@@ -20,7 +20,7 @@ export function RuntimePanel({ data }: { data?: Snapshot }) {
         { label: "上次 GC", value: fmtNsToMs(runtime.gc.lastPauseNs) },
     ];
     return (
-        <div className="bg-card rounded-xl border p-4">
+        <div>
             <h3 className="mb-3 font-semibold">运行时</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {items.map((it) => (

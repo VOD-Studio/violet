@@ -5,7 +5,7 @@ import type { Snapshot } from "../model/types";
 export function DependencyPanel({ data }: { data?: Snapshot }) {
     if (!data) return null;
     return (
-        <div className="bg-card rounded-xl border p-4">
+        <div>
             <h3 className="mb-3 font-semibold">依赖状态</h3>
             <div className="grid gap-3 sm:grid-cols-2">
                 <DepCard

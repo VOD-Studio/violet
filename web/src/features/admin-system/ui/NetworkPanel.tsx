@@ -6,7 +6,7 @@ export function NetworkPanel({ data }: { data?: Snapshot }) {
     if (!data) return null;
     const { network } = data;
     return (
-        <div className="bg-card rounded-xl border p-4">
+        <div>
             <h3 className="mb-3 font-semibold">网络</h3>
             <div className="mb-3 grid grid-cols-2 gap-3">
                 <div className="bg-muted/50 rounded-lg p-2">
