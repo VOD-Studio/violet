@@ -57,7 +57,9 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
                         params={{ slug: post.slug }}
                         className="block overflow-hidden"
                     >
-                        <div className={`flex w-full ${coverH} items-center justify-center bg-muted`}>
+                        <div
+                            className={`flex w-full ${coverH} items-center justify-center bg-muted`}
+                        >
                             <ImageOff className="h-8 w-8 text-muted-foreground/50" />
                         </div>
                     </Link>

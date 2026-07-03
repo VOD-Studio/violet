@@ -108,7 +108,9 @@ func (r *PostRepository) FindPublished(ctx context.Context, page, limit int, tag
 
 func (r *PostRepository) FindAll(ctx context.Context, page, limit int, status string) ([]*post.Post, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Post{})
-	if status != "" {
+	if status == "trashed" {
+		query = query.Unscoped().Where("deleted_at IS NOT NULL")
+	} else if status != "" {
 		query = query.Where("status = ?", status)
 	}
 	var total int64
@@ -182,6 +184,59 @@ func (r *PostRepository) Delete(ctx context.Context, id domainshared.ID) error {
 		return post.ErrNotFound
 	}
 	return nil
+}
+
+func (r *PostRepository) Restore(ctx context.Context, id domainshared.ID) error {
+	result := r.db.WithContext(ctx).Unscoped().Model(&model.Post{}).Where("id = ?", id.UUID()).Update("deleted_at", nil)
+	if result.Error != nil {
+		return domainshared.Internal("恢复文章失败", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return post.ErrNotFound
+	}
+	return nil
+}
+
+func (r *PostRepository) HardDelete(ctx context.Context, id domainshared.ID) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		uuid := id.UUID()
+		
+		// 1. Delete comment reactions for comments belonging to this post
+		if err := tx.Unscoped().Where("comment_id IN (SELECT id FROM comments WHERE post_id = ?)", uuid).Delete(&model.CommentReaction{}).Error; err != nil {
+			return domainshared.Internal("删除评论反应失败", err)
+		}
+		
+		// 2. Delete comments
+		if err := tx.Unscoped().Where("post_id = ?", uuid).Delete(&model.Comment{}).Error; err != nil {
+			return domainshared.Internal("删除评论失败", err)
+		}
+		
+		// 3. Delete post versions
+		if err := tx.Unscoped().Where("post_id = ?", uuid).Delete(&model.PostVersion{}).Error; err != nil {
+			return domainshared.Internal("删除历史版本失败", err)
+		}
+		
+		// 4. Delete post views
+		if err := tx.Unscoped().Where("post_id = ?", uuid).Delete(&model.PostView{}).Error; err != nil {
+			return domainshared.Internal("删除浏览记录失败", err)
+		}
+		
+		// 5. Delete post_tags mappings
+		if err := tx.Exec("DELETE FROM post_tags WHERE post_id = ?", uuid).Error; err != nil {
+			return domainshared.Internal("删除标签关联失败", err)
+		}
+		
+		// 6. Delete post itself
+		result := tx.Unscoped().Where("id = ?", uuid).Delete(&model.Post{})
+		if result.Error != nil {
+			return domainshared.Internal("彻底删除文章失败", result.Error)
+		}
+		if result.RowsAffected == 0 {
+			return post.ErrNotFound
+		}
+		
+		return nil
+	})
 }
 
 // IncrementViewAtomic 原子地浏览量+1 并记录浏览事件，保证两者在同一事务内提交。

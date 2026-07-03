@@ -437,7 +437,9 @@ func main() {
 			r.Put("/posts/{id}", postH.Update)                 // 更新文章
 			r.Patch("/posts/{id}/status", postH.UpdateStatus)  // 更新文章状态
 			r.Patch("/posts/{id}/featured", postH.SetFeatured) // 切换精选标记
-			r.Delete("/posts/{id}", postH.Delete)              // 删除文章
+			r.Delete("/posts/{id}", postH.Delete)              // 软删除文章
+			r.Post("/posts/{id}/restore", postH.Restore)       // 恢复文章
+			r.Delete("/posts/{id}/hard", postH.HardDelete)     // 彻底删除文章
 			
 			// 文章版本管理
 			r.Get("/posts/{id}/versions", postH.ListVersions)

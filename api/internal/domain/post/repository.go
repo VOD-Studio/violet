@@ -15,6 +15,8 @@ type PostRepository interface {
 	ExistsBySlug(ctx context.Context, slug string) (bool, error)
 	Save(ctx context.Context, p *Post) error
 	Delete(ctx context.Context, id shared.ID) error
+	Restore(ctx context.Context, id shared.ID) error
+	HardDelete(ctx context.Context, id shared.ID) error
 	// IncrementViewAtomic 原子地浏览量+1 并记录浏览事件（单事务，保证一致性）。
 	// 在 DB 内用 UPDATE ... SET view_count = view_count + 1，避免读-改-写竞态；
 	// 同时写入 post_views 事件行，两者在同一事务内提交。

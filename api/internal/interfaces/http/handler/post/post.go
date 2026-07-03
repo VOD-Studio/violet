@@ -230,15 +230,36 @@ func (h *Handler) Publish(w http.ResponseWriter, r *http.Request) {
 	response.RespondMessage(w, http.StatusOK, "文章已发布")
 }
 
-// Delete 删除文章
+// Delete 删除文章 (移至回收站)
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if err := h.svc.Delete(r.Context(), id); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondMessage(w, http.StatusOK, "文章已删除")
+	response.RespondMessage(w, http.StatusOK, "文章已移至回收站")
 }
+
+// Restore 恢复已删除的文章
+func (h *Handler) Restore(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := h.svc.Restore(r.Context(), id); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "文章已恢复")
+}
+
+// HardDelete 彻底删除文章
+func (h *Handler) HardDelete(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := h.svc.HardDelete(r.Context(), id); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "文章已彻底删除")
+}
+
 
 // ImportURL 导入远程链接文档：解析网页正文为 HTML，供编辑器插入
 func (h *Handler) ImportURL(w http.ResponseWriter, r *http.Request) {

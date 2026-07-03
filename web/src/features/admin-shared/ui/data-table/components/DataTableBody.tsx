@@ -163,10 +163,7 @@ export function DataTableBody<T>({
                                 aria-selected={selectable ? isSelected : undefined}
                                 aria-rowindex={pageBaseIndex + index + 1}
                                 onClick={onRowClick ? () => onRowClick(row) : undefined}
-                                className={cn(
-                                    onRowClick && "cursor-pointer",
-                                    rowClassName?.(row),
-                                )}
+                                className={cn(onRowClick && "cursor-pointer", rowClassName?.(row))}
                             >
                                 {columns.map((col) => {
                                     const offset = offsets.get(col.key);
