@@ -89,6 +89,7 @@ function AdminPostsPage() {
             key: "title",
             header: "标题",
             sortable: false,
+            ellipsis: true,
             cell: (row) => (
                 <button
                     type="button"
