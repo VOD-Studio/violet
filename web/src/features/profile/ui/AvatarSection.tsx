@@ -1,6 +1,6 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { AvatarUploader } from "@features/upload/ui/AvatarUploader";
-import { Card } from "@shared/ui/card";
+import { Card } from "@shared/ui/base/card";
 
 interface AvatarSectionProps {
     user: UserDTO;

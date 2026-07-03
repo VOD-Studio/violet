@@ -18,7 +18,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { Download, FileText, FileUp, Globe } from "lucide-react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { PromptDialog } from "@/shared/ui/prompt-dialog";
 import { EditorBubbleMenu } from "./bubble-menu/EditorBubbleMenu";
 import "./styles.css";

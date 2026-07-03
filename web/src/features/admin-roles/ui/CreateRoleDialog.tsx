@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@shared/ui/button";
-import { Input } from "@shared/ui/input";
-import { Label } from "@shared/ui/label";
+import { Button } from "@shared/ui/base/button";
+import { Input } from "@shared/ui/base/input";
+import { Label } from "@shared/ui/base/label";
 import { Modal } from "@shared/ui/modal";
-import { Textarea } from "@shared/ui/textarea";
+import { Textarea } from "@shared/ui/base/textarea";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";

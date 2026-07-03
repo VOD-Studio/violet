@@ -11,7 +11,7 @@
  */
 
 import { Download } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { useDocxRender } from "../hooks/useDocxRender";
 import type { DocxPreviewProps } from "../types/docx-preview-types";
 import { DocxOverlay } from "./DocxOverlay";

@@ -1,6 +1,6 @@
 import { NAV_ITEMS } from "@shared/config/nav";
-import { Button } from "@shared/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@shared/ui/sheet";
+import { Button } from "@shared/ui/base/button";
+import { Sheet, SheetContent, SheetTrigger } from "@shared/ui/base/sheet";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 

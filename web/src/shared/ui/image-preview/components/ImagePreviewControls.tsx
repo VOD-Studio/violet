@@ -15,7 +15,7 @@ import {
     ZoomIn,
     ZoomOut,
 } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 
 /** ImagePreviewControls 组件的属性 */
 interface ImagePreviewControlsProps {

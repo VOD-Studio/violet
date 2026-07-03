@@ -1,6 +1,6 @@
 import type { Project } from "@features/projects/model/types";
-import { Badge } from "@shared/ui/badge";
-import { Button } from "@shared/ui/button";
+import { Badge } from "@shared/ui/base/badge";
+import { Button } from "@shared/ui/base/button";
 import { Code, ExternalLink } from "lucide-react";
 
 interface ProjectCardProps {

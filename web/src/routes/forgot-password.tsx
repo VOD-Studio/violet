@@ -13,9 +13,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiError } from "@/shared/api/error";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
+import { Button } from "@/shared/ui/base/button";
+import { Input } from "@/shared/ui/base/input";
+import { Label } from "@/shared/ui/base/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/ui/otp";
 import { ResendButton } from "@/shared/ui/resend-button";
 

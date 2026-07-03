@@ -5,7 +5,7 @@
  */
 
 import { ChevronLeft, ChevronRight, Download, Maximize, Minus, Plus } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 
 interface PdfToolbarProps {
     currentPage: number;

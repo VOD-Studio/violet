@@ -7,7 +7,7 @@
 
 import type { MediaFile, MediaType } from "@entities/media/model/types";
 import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import { ImagePlus } from "lucide-react";
 import { useState } from "react";
 

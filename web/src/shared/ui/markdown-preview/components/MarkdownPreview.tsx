@@ -12,7 +12,7 @@ import { AlertCircle, Check, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { useMarkdown } from "../hooks/useMarkdown";
 import type { MarkdownPreviewProps } from "../types/markdown-preview-types";
 import { markdownComponents } from "./markdown-components";

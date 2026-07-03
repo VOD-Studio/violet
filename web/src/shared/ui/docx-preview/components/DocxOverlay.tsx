@@ -3,7 +3,7 @@
  */
 
 import { AlertCircle, FileText, RotateCcw } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import type { DocxLoadStatus } from "../types/docx-preview-types";
 
 interface DocxOverlayProps {

@@ -8,8 +8,8 @@
 import { Baseline, Palette } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu";
+import { Button } from "@/shared/ui/base/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/shared/ui/base/dropdown-menu";
 
 /** 预设色板 */
 const PRESET_COLORS = [

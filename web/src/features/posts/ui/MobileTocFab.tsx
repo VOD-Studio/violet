@@ -7,7 +7,7 @@
  * 与 BackToTop 在详情页共享同一个 fixed 容器（flex-col 竖列），避免右下角重叠。
  */
 import ArticleToc, { type ArticleTocProps } from "@features/posts/ui/ArticleToc";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@shared/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@shared/ui/base/sheet";
 import { ListTree } from "lucide-react";
 import { useState } from "react";
 

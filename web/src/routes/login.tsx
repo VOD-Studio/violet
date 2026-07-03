@@ -6,9 +6,9 @@ import { type LoginFormData, loginSchema } from "@features/auth/model/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useGoogleLogin } from "@react-oauth/google";
 import { ApiError } from "@shared/api/error";
-import { Button } from "@shared/ui/button";
-import { Input } from "@shared/ui/input";
-import { Label } from "@shared/ui/label";
+import { Button } from "@shared/ui/base/button";
+import { Input } from "@shared/ui/base/input";
+import { Label } from "@shared/ui/base/label";
 import {
     createFileRoute,
     Link,

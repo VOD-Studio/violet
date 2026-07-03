@@ -1,6 +1,6 @@
 import type { Emoji } from "@entities/emoji/model/types";
-import { Button } from "@shared/ui/button";
-import { Input } from "@shared/ui/input";
+import { Button } from "@shared/ui/base/button";
+import { Input } from "@shared/ui/base/input";
 import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
 

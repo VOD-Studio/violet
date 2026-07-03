@@ -1,8 +1,8 @@
 import { notifySessionExpired } from "@shared/api/auth-gate";
 import { useSessionStore } from "@shared/api/session";
 import { triggerProactiveRefreshNow } from "@shared/api/token-scheduler";
-import { Badge } from "@shared/ui/badge";
-import { Button } from "@shared/ui/button";
+import { Badge } from "@shared/ui/base/badge";
+import { Button } from "@shared/ui/base/button";
 import { Bug, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

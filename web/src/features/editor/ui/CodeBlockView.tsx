@@ -16,7 +16,7 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/shared/ui/select";
+} from "@/shared/ui/base/select";
 
 /** 常用语言（与 lowlight common 对齐） */
 const LANGUAGES = [

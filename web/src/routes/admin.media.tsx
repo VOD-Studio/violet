@@ -11,7 +11,7 @@ import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { Uploader } from "@features/upload/ui/Uploader";
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Images, Pencil, Trash2, Upload } from "lucide-react";
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { Modal } from "@/shared/ui/modal";
 import { SearchInput } from "@/shared/ui/search-input";
 import { Segmented, viewTypeSegments } from "@/shared/ui/segmented";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/base/select";
 
 type ViewMode = "grid" | "table";
 

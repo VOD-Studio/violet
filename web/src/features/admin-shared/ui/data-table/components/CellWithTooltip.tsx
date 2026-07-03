@@ -9,7 +9,7 @@ import {
     useState,
 } from "react";
 import { cn } from "@/shared/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/ui/base/tooltip";
 
 interface CellWithTooltipProps {
     /** 单元格内容 */

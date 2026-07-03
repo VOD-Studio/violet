@@ -1,4 +1,4 @@
-import { Checkbox } from "@/shared/ui/checkbox";
+import { Checkbox } from "@/shared/ui/base/checkbox";
 
 interface RowCheckboxProps {
     /** 该行是否被选中 */

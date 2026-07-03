@@ -1,9 +1,9 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { useUpdateProfile } from "@features/auth/api/mutations";
-import { Button } from "@shared/ui/button";
-import { Card } from "@shared/ui/card";
-import { Input } from "@shared/ui/input";
-import { Label } from "@shared/ui/label";
+import { Button } from "@shared/ui/base/button";
+import { Card } from "@shared/ui/base/card";
+import { Input } from "@shared/ui/base/input";
+import { Label } from "@shared/ui/base/label";
 import { Check, Edit2, User, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

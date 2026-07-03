@@ -1,7 +1,7 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
 import { ApiError } from "@shared/api/error";
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@shared/ui/dropdown-menu";
+} from "@shared/ui/base/dropdown-menu";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
 import ThemeToggle from "@widgets/ThemeToggle";

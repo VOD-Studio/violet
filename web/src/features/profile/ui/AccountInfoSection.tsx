@@ -1,7 +1,7 @@
 import type { UserDTO } from "@entities/user/model/types";
-import { Badge } from "@shared/ui/badge";
-import { Card } from "@shared/ui/card";
-import { Separator } from "@shared/ui/separator";
+import { Badge } from "@shared/ui/base/badge";
+import { Card } from "@shared/ui/base/card";
+import { Separator } from "@shared/ui/base/separator";
 import { Calendar, Mail, Shield } from "lucide-react";
 
 interface AccountInfoSectionProps {

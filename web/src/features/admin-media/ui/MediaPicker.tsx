@@ -14,10 +14,10 @@ import { Check, FileText, Film, Music } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { imageUrl } from "@/features/upload/lib/imageUrl";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { Modal } from "@/shared/ui/modal";
 import { SearchInput } from "@/shared/ui/search-input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/base/select";
 import { useAdminMedia } from "../api/queries";
 import type { AdminMediaListQuery } from "../model/types";
 

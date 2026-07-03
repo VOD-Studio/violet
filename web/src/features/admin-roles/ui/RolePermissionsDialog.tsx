@@ -1,8 +1,8 @@
 import { useAdminPermissions } from "@features/admin-permissions/api/queries";
-import { Badge } from "@shared/ui/badge";
-import { Button } from "@shared/ui/button";
-import { Checkbox } from "@shared/ui/checkbox";
-import { Label } from "@shared/ui/label";
+import { Badge } from "@shared/ui/base/badge";
+import { Button } from "@shared/ui/base/button";
+import { Checkbox } from "@shared/ui/base/checkbox";
+import { Label } from "@shared/ui/base/label";
 import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";

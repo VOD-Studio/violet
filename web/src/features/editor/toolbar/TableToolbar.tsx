@@ -8,7 +8,7 @@ import type { Editor } from "@tiptap/react";
 import { Columns2, Grid2x2, Rows2, Table as TableIcon, Trash2, Undo2 } from "lucide-react";
 import type { MouseEvent } from "react";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 
 interface TableToolbarProps {
     editor: Editor;

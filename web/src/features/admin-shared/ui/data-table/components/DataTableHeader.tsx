@@ -1,5 +1,5 @@
 import { cn } from "@/shared/lib/utils";
-import { TableHead, TableHeader, TableRow } from "@/shared/ui/table";
+import { TableHead, TableHeader, TableRow } from "@/shared/ui/base/table";
 import { ColumnResizer } from "./ColumnResizer";
 import type { DataTableColumn, DataTableSort } from "../types/data-table-types";
 import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "../types/data-table-types";

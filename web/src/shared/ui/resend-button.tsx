@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, type ButtonProps } from "@/shared/ui/button";
+import { Button, type ButtonProps } from "@/shared/ui/base/button";
 
 /**
  * ResendButton - 验证码倒计时重发按钮

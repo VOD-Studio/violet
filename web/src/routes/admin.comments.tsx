@@ -9,8 +9,8 @@ import type { AdminComment, CommentStatus } from "@features/admin-comments/model
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { Badge } from "@shared/ui/badge";
-import { Button } from "@shared/ui/button";
+import { Badge } from "@shared/ui/base/badge";
+import { Button } from "@shared/ui/base/button";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";

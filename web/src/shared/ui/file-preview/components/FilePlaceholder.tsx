@@ -1,5 +1,5 @@
 import { Download } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { getFileInfo } from "../utils/mime-utils";
 
 interface FilePlaceholderProps {

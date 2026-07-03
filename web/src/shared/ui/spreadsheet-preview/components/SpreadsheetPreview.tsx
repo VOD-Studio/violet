@@ -10,7 +10,7 @@
  */
 
 import { AlertCircle, Download, RotateCcw, Table } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { useSpreadsheet } from "../hooks/useSpreadsheet";
 import type { CellValue, SpreadsheetPreviewProps } from "../types/spreadsheet-preview-types";
 

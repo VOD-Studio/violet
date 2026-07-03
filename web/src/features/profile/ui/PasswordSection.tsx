@@ -1,8 +1,8 @@
 import { useChangePassword } from "@features/auth/api/mutations";
-import { Button } from "@shared/ui/button";
-import { Card } from "@shared/ui/card";
-import { Input } from "@shared/ui/input";
-import { Label } from "@shared/ui/label";
+import { Button } from "@shared/ui/base/button";
+import { Card } from "@shared/ui/base/card";
+import { Input } from "@shared/ui/base/input";
+import { Label } from "@shared/ui/base/label";
 import { useNavigate } from "@tanstack/react-router";
 import { Check, Lock, X } from "lucide-react";
 import { useState } from "react";

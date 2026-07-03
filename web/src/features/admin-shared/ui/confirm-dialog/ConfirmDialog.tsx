@@ -1,4 +1,4 @@
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
 

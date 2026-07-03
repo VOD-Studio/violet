@@ -5,11 +5,11 @@
  * 确认时回传输入值；取消或关闭传空（调用方可判断）。
  */
 import { useEffect, useState } from "react";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
+import { Button } from "@/shared/ui/base/button";
+import { Input } from "@/shared/ui/base/input";
+import { Label } from "@/shared/ui/base/label";
 import { Modal } from "@/shared/ui/modal";
-import { Textarea } from "@/shared/ui/textarea";
+import { Textarea } from "@/shared/ui/base/textarea";
 
 export interface PromptDialogProps {
     open: boolean;

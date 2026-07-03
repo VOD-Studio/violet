@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/base/card";
 import type { ReactNode } from "react";
 
 interface StatsCardProps {

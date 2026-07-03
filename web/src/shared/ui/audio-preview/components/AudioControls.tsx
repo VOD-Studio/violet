@@ -7,7 +7,7 @@
 
 import { Pause, Play, Repeat, Repeat1, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { AUDIO_PLAYBACK_RATES, type AudioPlayerState } from "../types/audio-preview-types";
 import { formatTime } from "../utils/format";
 

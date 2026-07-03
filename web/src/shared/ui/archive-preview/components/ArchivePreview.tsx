@@ -11,7 +11,7 @@
 
 import { AlertCircle, Download, FileArchive, RotateCcw } from "lucide-react";
 import { useMemo } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { useArchive } from "../hooks/useArchive";
 import type { ArchivePreviewProps } from "../types/archive-preview-types";
 import { formatSize } from "../utils/format";

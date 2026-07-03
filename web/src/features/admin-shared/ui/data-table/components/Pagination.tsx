@@ -1,4 +1,4 @@
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /** 分页序列项：页码或省略号（left/right 区分两侧） */

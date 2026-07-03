@@ -24,7 +24,7 @@ import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
 import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { slugify } from "@shared/lib/slug";
-import { Input } from "@shared/ui/input";
+import { Input } from "@shared/ui/base/input";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";

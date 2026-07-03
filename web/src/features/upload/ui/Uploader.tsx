@@ -1,4 +1,4 @@
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import { AlertCircle, FileText, Film, Loader2, Music, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";

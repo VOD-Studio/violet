@@ -1,5 +1,5 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@shared/ui/base/card";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Smile, TrendingUp, Users } from "lucide-react";
 

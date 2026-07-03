@@ -14,7 +14,7 @@
     "aliases": {
         "components": "@/shared/vendor/react-bits",
         "utils": "@/shared/lib/utils",
-        "ui": "@/shared/ui",
+        "ui": "@/shared/ui/base",
         "lib": "@/shared/lib",
         "hooks": "@/shared/lib/hooks"
     },

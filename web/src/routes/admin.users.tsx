@@ -15,7 +15,7 @@ import { CreateUserDialog } from "@features/admin-users/ui/CreateUserDialog";
 import { EditUserDialog } from "@features/admin-users/ui/EditUserDialog";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
-import { Badge } from "@shared/ui/badge";
+import { Badge } from "@shared/ui/base/badge";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -23,9 +23,9 @@ import { toast } from "sonner";
 import { useMe } from "@/features/auth/api/queries";
 import { avatarUrl } from "@/features/upload/lib/imageUrl";
 import { AvatarGroup } from "@/shared/ui/avatar-group/AvatarGroup";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { SearchInput } from "@/shared/ui/search-input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/base/select";
 
 export const Route = createFileRoute("/admin/users")({
     component: AdminUsers,

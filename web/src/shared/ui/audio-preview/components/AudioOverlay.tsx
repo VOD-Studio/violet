@@ -5,7 +5,7 @@
  */
 
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import type { AudioLoadStatus } from "../types/audio-preview-types";
 
 interface AudioOverlayProps {

@@ -10,7 +10,7 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import { Bold, Code, Italic, Link as LinkIcon } from "lucide-react";
 import type { MouseEvent } from "react";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 
 interface EditorBubbleMenuProps {
     editor: Editor;

@@ -10,14 +10,14 @@ import { ChevronDown, ImagePlus, Upload } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useMemo } from "react";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { ColorSwatch } from "@/shared/ui/color-picker";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
+} from "@/shared/ui/base/dropdown-menu";
 import { buildToolbarItems, TOOLBAR_DIVIDER, type ToolbarItem } from "./toolbar-items";
 
 interface EditorToolbarProps {

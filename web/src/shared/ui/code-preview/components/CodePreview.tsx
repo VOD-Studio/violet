@@ -11,7 +11,7 @@
 
 import { AlertCircle, Check, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { useCodeHighlight } from "../hooks/useCodeHighlight";
 import type { CodePreviewProps } from "../types/code-preview-types";
 import { inferLanguage } from "../utils/language";
