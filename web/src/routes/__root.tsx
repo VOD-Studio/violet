@@ -1,4 +1,5 @@
 import { CustomCursor } from "@shared/ui/cursor";
+import { SystemThemeTransition } from "@shared/ui/theme-transition";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
     createRootRouteWithContext,
@@ -84,6 +85,7 @@ function RootComponent() {
 
     return (
         <AppProvider>
+            <SystemThemeTransition />
             {isAdminRoute ? (
                 // 后台路由：完全独立的布局，不包含前台 Header/Footer
                 <Outlet />
