@@ -337,6 +337,11 @@ func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) 
 	// 1. 解析 token（验签 + 过期 + 颁发者）
 	claims, err := h.jwt.ParseToken(in.RefreshToken)
 	if err != nil {
+		log.Warn().
+			Str("reason", "parse_failed").
+			Err(err).
+			Str("token_prefix", tokenPrefix(in.RefreshToken)).
+			Msg("refresh 失败：令牌解析失败（验签/过期/颁发者）")
 		return nil, user.ErrInvalidCredentials
 	}
 
@@ -345,6 +350,10 @@ func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) 
 	//    应映射为 401（触发前端重登）而非 500。
 	id, err := shared.ParseID(claims.UserID)
 	if err != nil {
+		log.Warn().
+			Str("reason", "invalid_subject").
+			Str("subject", claims.UserID).
+			Msg("refresh 失败：subject 不是合法用户 ID")
 		return nil, user.ErrInvalidCredentials
 	}
 	u, err := h.userRepo.FindByID(ctx, id)
@@ -352,6 +361,10 @@ func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) 
 		// 用户已被删除（token 仍有效但用户不存在）→ 401 强制重登；
 		// 仅真实 DB 故障才视为 500。
 		if errors.Is(err, user.ErrNotFound) {
+			log.Warn().
+				Str("reason", "user_not_found").
+				Str("user_id", id.String()).
+				Msg("refresh 失败：用户不存在（可能已删除）")
 			return nil, user.ErrInvalidCredentials
 		}
 		return nil, shared.Internal("查询用户失败", err)
@@ -380,11 +393,29 @@ func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) 
 		return pair, nil
 	case appshared.RotateReused:
 		// 重用已废弃 token → 整个家族已被吊销 → 401 强制重登
+		log.Warn().
+			Str("reason", "rotate_reused").
+			Str("user_id", u.GetID().String()).
+			Str("token_prefix", tokenPrefix(in.RefreshToken)).
+			Msg("refresh 失败：检测到 refresh token 重用，家族已被吊销")
 		return nil, user.ErrInvalidCredentials
 	default:
 		// RotateInvalid：无存储 token（已登出）→ 401
+		log.Warn().
+			Str("reason", "rotate_invalid").
+			Str("user_id", u.GetID().String()).
+			Str("token_prefix", tokenPrefix(in.RefreshToken)).
+			Msg("refresh 失败：白名单无此 token（已登出或被覆盖）")
 		return nil, user.ErrInvalidCredentials
 	}
+}
+
+// tokenPrefix 返回 refresh token 的脱敏前缀（前 16 字符），用于日志关联而不泄露完整凭证。
+func tokenPrefix(token string) string {
+	if len(token) > 16 {
+		return token[:16]
+	}
+	return token
 }
 
 // ============================================================
