@@ -95,6 +95,10 @@ export interface SystemDiskInfoDTO {
     usedBytes: number;
     /** 使用率（0-100） */
     usedPercent: number;
+    /** IO 累计读取字节（按设备关联 disk.IOCounters，取不到为 0） */
+    readBytes: number;
+    /** IO 累计写入字节 */
+    writeBytes: number;
 }
 
 /** SystemNetworkInfoDTO - 网络信息，对齐后端 NetworkInfo */
