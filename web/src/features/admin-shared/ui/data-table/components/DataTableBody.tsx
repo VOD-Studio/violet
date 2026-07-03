@@ -5,17 +5,23 @@ import Empty from "@/shared/ui/empty";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { TableBody, TableCell, TableRow } from "@/shared/ui/table";
 import { TooltipProvider } from "@/shared/ui/tooltip";
-import { CellWithTooltip } from "./CellWithTooltip";
 import type { DataTableColumn } from "../types/data-table-types";
 import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "../types/data-table-types";
+import { cellStickyStyle, mergeStickyStyle, type StickyOffset } from "../utils/sticky-utils";
+import { CellWithTooltip } from "./CellWithTooltip";
 import { RowCheckbox } from "./RowCheckbox";
 import { RowExpander } from "./RowExpander";
-import { cellStickyStyle, mergeStickyStyle, type StickyOffset } from "../utils/sticky-utils";
 
 const ALIGN_CLASS = {
     left: "text-left",
     center: "text-center",
     right: "text-right",
+} as const;
+
+const ALIGN_FLEX_CLASS = {
+    left: "justify-start",
+    center: "justify-center",
+    right: "justify-end",
 } as const;
 
 const SKELETON_ROWS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"];
@@ -123,7 +129,14 @@ export function DataTableBody<T>({
                                         sticky.className,
                                     )}
                                 >
-                                    <Skeleton className="h-4 w-full max-w-[10rem]" />
+                                    <div
+                                        className={cn(
+                                            "flex items-center",
+                                            ALIGN_FLEX_CLASS[col.align ?? "left"],
+                                        )}
+                                    >
+                                        <Skeleton className="h-4 w-full max-w-[10rem]" />
+                                    </div>
                                 </TableCell>
                             );
                         })}
@@ -163,10 +176,7 @@ export function DataTableBody<T>({
                                 aria-selected={selectable ? isSelected : undefined}
                                 aria-rowindex={pageBaseIndex + index + 1}
                                 onClick={onRowClick ? () => onRowClick(row) : undefined}
-                                className={cn(
-                                    onRowClick && "cursor-pointer",
-                                    rowClassName?.(row),
-                                )}
+                                className={cn(onRowClick && "cursor-pointer", rowClassName?.(row))}
                             >
                                 {columns.map((col) => {
                                     const offset = offsets.get(col.key);
@@ -232,18 +242,27 @@ export function DataTableBody<T>({
                                                 col.className,
                                             )}
                                         >
-                                            {col.ellipsis || col.tooltip ? (
-                                                <CellWithTooltip
-                                                    ellipsis={col.ellipsis}
-                                                    tooltip={
-                                                        col.tooltip ? col.tooltip(row) : undefined
-                                                    }
-                                                >
-                                                    {renderCell(col, row)}
-                                                </CellWithTooltip>
-                                            ) : (
-                                                renderCell(col, row)
-                                            )}
+                                            <div
+                                                className={cn(
+                                                    "flex items-center",
+                                                    ALIGN_FLEX_CLASS[col.align ?? "left"],
+                                                )}
+                                            >
+                                                {col.ellipsis || col.tooltip ? (
+                                                    <CellWithTooltip
+                                                        ellipsis={col.ellipsis}
+                                                        tooltip={
+                                                            col.tooltip
+                                                                ? col.tooltip(row)
+                                                                : undefined
+                                                        }
+                                                    >
+                                                        {renderCell(col, row)}
+                                                    </CellWithTooltip>
+                                                ) : (
+                                                    renderCell(col, row)
+                                                )}
+                                            </div>
                                         </TableCell>
                                     );
                                 })}
