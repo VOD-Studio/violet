@@ -42,12 +42,7 @@ func registerAdminEmojiPaths(t *openapi3.T) {
 		"sort_order":   optInt("排序权重"),
 	})
 
-	registerSchema(t, "EmojiUploadResult", openapi3.Schemas{
-		"url":       reqStr("访问 URL"),
-		"filename":  reqStr("文件名"),
-		"size":      optInt64("字节数"),
-		"mime_type": optStr("MIME 类型"),
-	})
+	// EmojiUploadResult schema 已随 POST /uploads/emoji 端点迁移至 paths_media.go
 
 	affectedResp := func(desc string) *openapi3.ResponseRef {
 		return &openapi3.ResponseRef{Value: &openapi3.Response{
@@ -189,20 +184,9 @@ func registerAdminEmojiPaths(t *openapi3.T) {
 	})
 
 	// ---- 单个表情 ----
-	post(t, "/admin/emojis/upload", &openapi3.Operation{
-		Tags:        []string{"表情管理"},
-		Summary:     "上传表情图片",
-		Description: "上传表情图片（multipart/form-data，字段 file，≤10MB，扩展名白名单 jpg/jpeg/png/gif/webp/svg）。需管理员权限。",
-		Security:    securityAdmin(),
-		Parameters:  openapi3.Parameters{csrfHeaderParam()},
-		RequestBody: binaryBody("multipart/form-data", "表情图片（字段名 file）"),
-		Responses: responses(
-			200, dataResponse("EmojiUploadResult", "上传结果", 200),
-			400, errorResponse("文件类型不允许"),
-		),
-	})
+	// 表情图片上传已收敛到 POST /uploads/emoji（见 paths_media.go）
 
-	patch(t, "/admin/emojis/emojis/{id}", &openapi3.Operation{
+	patch(t, "/admin/emojis/{id}", &openapi3.Operation{
 		Tags:        []string{"表情管理"},
 		Summary:     "更新表情",
 		Description: "更新单个表情。需管理员权限。",
@@ -217,7 +201,7 @@ func registerAdminEmojiPaths(t *openapi3.T) {
 		),
 	})
 
-	del(t, "/admin/emojis/emojis/{id}", &openapi3.Operation{
+	del(t, "/admin/emojis/{id}", &openapi3.Operation{
 		Tags:        []string{"表情管理"},
 		Summary:     "删除表情",
 		Description: "删除单个表情。需管理员权限。",

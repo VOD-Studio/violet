@@ -1,6 +1,8 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
     useDeletePost,
+    useHardDeletePost,
+    useRestorePost,
     useSetFeatured,
     useUpdatePostStatus,
 } from "@features/admin-posts/api/mutations";
@@ -45,6 +47,7 @@ const STATUS_OPTIONS = [
     { value: "draft", label: "草稿" },
     { value: "published", label: "已发布" },
     { value: "archived", label: "已归档" },
+    { value: "trashed", label: "回收站" },
 ];
 
 const PAGE_SIZE = 10;
@@ -63,6 +66,7 @@ function AdminPostsPage() {
         status: status === "all" ? undefined : status,
     });
     const deletePost = useDeletePost(deleting?.id ?? "");
+    const hardDeletePost = useHardDeletePost(deleting?.id ?? "");
 
     const posts = data?.data ?? [];
     const total = data?.pagination?.total ?? 0;
@@ -74,9 +78,10 @@ function AdminPostsPage() {
 
     const confirmDelete = () => {
         if (!deleting?.id) return;
-        deletePost.mutate(undefined, {
+        const mutation = status === "trashed" ? hardDeletePost : deletePost;
+        mutation.mutate(undefined, {
             onSuccess: () => {
-                toast.success("文章已删除");
+                toast.success(status === "trashed" ? "文章已彻底删除" : "文章已移至回收站");
                 setDeleteOpen(false);
                 setDeleting(null);
             },
@@ -111,6 +116,9 @@ function AdminPostsPage() {
             header: "状态",
             width: "100px",
             cell: (row) => {
+                if (status === "trashed") {
+                    return <Badge variant="destructive">已删除</Badge>;
+                }
                 const meta = STATUS_META[row.status] ?? {
                     label: row.status,
                     variant: "outline" as const,
@@ -183,6 +191,7 @@ function AdminPostsPage() {
             cell: (row) => (
                 <RowActions
                     row={row}
+                    viewStatus={status}
                     onDelete={(p) => {
                         setDeleting(p);
                         setDeleteOpen(true);
@@ -240,9 +249,13 @@ function AdminPostsPage() {
                 onOpenChange={setDeleteOpen}
                 onConfirm={confirmDelete}
                 title="确认删除文章"
-                description={`确定要删除文章「${deleting?.title}」吗？文章将移至回收站，后续可恢复。`}
-                confirmLabel="删除"
-                loading={deletePost.isPending}
+                description={
+                    status === "trashed"
+                        ? `确定要彻底删除文章「${deleting?.title}」吗？此操作无法恢复！`
+                        : `确定要删除文章「${deleting?.title}」吗？文章将移至回收站，后续可恢复。`
+                }
+                confirmLabel={status === "trashed" ? "彻底删除" : "删除"}
+                loading={status === "trashed" ? hardDeletePost.isPending : deletePost.isPending}
             />
         </PageShell>
     );
@@ -251,14 +264,17 @@ function AdminPostsPage() {
 /** 行操作下拉：编辑 / 状态切换 / 删除 */
 function RowActions({
     row,
+    viewStatus,
     onDelete,
 }: {
     row: AdminPostListItem;
+    viewStatus: string;
     onDelete: (p: AdminPostListItem) => void;
 }) {
     const navigate = useNavigate();
     const updateStatus = useUpdatePostStatus(row.id);
     const setFeatured = useSetFeatured(row.id);
+    const restorePost = useRestorePost(row.id);
 
     const changeStatus = (status: "draft" | "published" | "archived") => {
         updateStatus.mutate(
@@ -279,6 +295,36 @@ function RowActions({
             },
         );
     };
+
+    const handleRestore = () => {
+        restorePost.mutate(undefined, {
+            onSuccess: () => toast.success("文章已恢复"),
+            onError: (err) => toast.error(err.message),
+        });
+    };
+
+    if (viewStatus === "trashed") {
+        return (
+            <div className="flex items-center justify-end gap-2">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRestore}
+                    disabled={restorePost.isPending}
+                >
+                    恢复
+                </Button>
+                <Button
+                    variant="destructive"
+                    size="icon-sm"
+                    title="彻底删除"
+                    onClick={() => onDelete(row)}
+                >
+                    <Trash2 className="size-3.5" />
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="flex items-center justify-end">

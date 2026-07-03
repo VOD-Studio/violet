@@ -329,7 +329,7 @@ func (s *Service) IncrementView(ctx context.Context, id, ipAddress, userAgent st
 	return s.repo.IncrementViewAtomic(ctx, pid, ipAddress, userAgent)
 }
 
-// Delete 删除文章
+// Delete 删除文章 (软删除)
 func (s *Service) Delete(ctx context.Context, id string) error {
 	pid, err := shared.ParseID(id)
 	if err != nil {
@@ -337,6 +337,25 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	}
 	return s.repo.Delete(ctx, pid)
 }
+
+// Restore 恢复已删除的文章
+func (s *Service) Restore(ctx context.Context, id string) error {
+	pid, err := shared.ParseID(id)
+	if err != nil {
+		return err
+	}
+	return s.repo.Restore(ctx, pid)
+}
+
+// HardDelete 彻底删除文章
+func (s *Service) HardDelete(ctx context.Context, id string) error {
+	pid, err := shared.ParseID(id)
+	if err != nil {
+		return err
+	}
+	return s.repo.HardDelete(ctx, pid)
+}
+
 
 // ListVersions 列出文章的历史版本（不含正文）
 func (s *Service) ListVersions(ctx context.Context, postID string) ([]PostVersionDTO, error) {

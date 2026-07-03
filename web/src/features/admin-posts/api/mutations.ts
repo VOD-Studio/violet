@@ -73,7 +73,7 @@ export const useSetFeatured = (id: string) => {
 };
 
 /**
- * useDeletePost - 调后端 DELETE /admin/posts/{id} 删除文章
+ * useDeletePost - 调后端 DELETE /admin/posts/{id} 删除文章 (移至回收站)
  *
  * @param id 文章 ID
  */
@@ -81,6 +81,32 @@ export const useDeletePost = (id: string) => {
     const invalidate = useInvalidateAdminPosts();
     return useMutation({
         mutationFn: () => apiDelete<null>(`/admin/posts/${id}`),
+        onSuccess: () => invalidate(),
+    });
+};
+
+/**
+ * useRestorePost - 调后端 POST /admin/posts/{id}/restore 恢复文章
+ *
+ * @param id 文章 ID
+ */
+export const useRestorePost = (id: string) => {
+    const invalidate = useInvalidateAdminPosts();
+    return useMutation({
+        mutationFn: () => apiPost<null>(`/admin/posts/${id}/restore`),
+        onSuccess: () => invalidate(),
+    });
+};
+
+/**
+ * useHardDeletePost - 调后端 DELETE /admin/posts/{id}/hard 彻底删除文章
+ *
+ * @param id 文章 ID
+ */
+export const useHardDeletePost = (id: string) => {
+    const invalidate = useInvalidateAdminPosts();
+    return useMutation({
+        mutationFn: () => apiDelete<null>(`/admin/posts/${id}/hard`),
         onSuccess: () => invalidate(),
     });
 };

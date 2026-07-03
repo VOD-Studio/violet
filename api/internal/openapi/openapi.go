@@ -97,7 +97,6 @@ func build() (*openapi3.T, error) {
 	registerAdminAnnouncementPaths(t)
 	registerAdminMusicPaths(t)
 	registerAdminEmojiPaths(t)
-	registerAdminFilePaths(t)
 
 	return t, nil
 }

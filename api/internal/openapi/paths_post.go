@@ -259,14 +259,42 @@ func registerPostPaths(t *openapi3.T) {
 
 	del(t, "/admin/posts/{id}", &openapi3.Operation{
 		Tags:        []string{"文章管理"},
-		Summary:     "删除文章",
-		Description: "删除文章。需管理员权限。",
+		Summary:     "软删除文章",
+		Description: "将文章移至回收站。需管理员权限。",
 		Security:    securityAdmin(),
 		Parameters: openapi3.Parameters{
 			pathStrParam("id", "文章 ID（UUID）"), csrfHeaderParam(),
 		},
 		Responses: responses(
-			200, messageResponse("文章已删除"),
+			200, messageResponse("文章已移至回收站"),
+			404, errorResponse("文章不存在"),
+		),
+	})
+
+	post(t, "/admin/posts/{id}/restore", &openapi3.Operation{
+		Tags:        []string{"文章管理"},
+		Summary:     "恢复文章",
+		Description: "从回收站恢复文章。需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters: openapi3.Parameters{
+			pathStrParam("id", "文章 ID（UUID）"), csrfHeaderParam(),
+		},
+		Responses: responses(
+			200, messageResponse("文章已恢复"),
+			404, errorResponse("文章不存在"),
+		),
+	})
+
+	del(t, "/admin/posts/{id}/hard", &openapi3.Operation{
+		Tags:        []string{"文章管理"},
+		Summary:     "彻底删除文章",
+		Description: "物理删除文章及其关联数据。需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters: openapi3.Parameters{
+			pathStrParam("id", "文章 ID（UUID）"), csrfHeaderParam(),
+		},
+		Responses: responses(
+			200, messageResponse("文章已彻底删除"),
 			404, errorResponse("文章不存在"),
 		),
 	})

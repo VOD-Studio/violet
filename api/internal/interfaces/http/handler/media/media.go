@@ -776,10 +776,15 @@ func (h *Handler) BatchDeleteMedia(w http.ResponseWriter, r *http.Request) {
 
 // UploadThumbnail 上传缩略图
 func (h *Handler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	// fileId 经 multipart form 字段提交（端点脱离 /media/{id}，不再从 path 取）
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		response.RespondError(w, r, err)
+		return
+	}
+	id := r.FormValue("fileId")
+	if id == "" {
+		response.RespondError(w, r, errors.New("fileId 不能为空"))
 		return
 	}
 	file, header, err := r.FormFile("file")

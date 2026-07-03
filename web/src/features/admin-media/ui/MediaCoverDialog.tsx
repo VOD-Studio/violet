@@ -17,9 +17,9 @@ interface MediaCoverDialogProps {
  * MediaCoverDialog - 视频选帧设封面对话框
  *
  * 内嵌通用 FramePicker 组件，用户拖动进度条选择帧后，
- * 截取 JPEG 上传到 POST /media/{id}/thumbnail 更新封面。
+ * 截取 JPEG 上传到 POST /uploads/thumbnail 更新封面。
  *
- * 注意：当前走用户态接口（/media/{id}/thumbnail），有 owner 校验，
+ * 走统一上传接口（/uploads/thumbnail，fileId 经 multipart 字段提交），有 owner 校验，
  * 仅能给自己上传的素材设封面。上传能力归 upload，成功后失效后台素材列表刷新缩略图。
  */
 export function MediaCoverDialog({ open, onOpenChange, file }: MediaCoverDialogProps) {

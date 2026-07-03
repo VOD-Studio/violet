@@ -75,7 +75,7 @@ export interface CompleteUploadResult {
 /**
  * InstantCheckQuery - 秒传检查查询参数
  *
- * 对接 GET /admin/files/instant，后端 handler 要求 hash 非空。
+ * 对接 GET /uploads/instant，后端 handler 要求 hash 非空。
  */
 export interface InstantCheckQuery {
     /** 文件哈希，必填 */
@@ -97,7 +97,7 @@ export interface InstantCheckResult {
 /**
  * ThumbnailUploadResult - 缩略图上传结果
  *
- * 对接 POST /media/{id}/thumbnail，后端返回缩略图可访问 URL。
+ * 对接 POST /uploads/thumbnail，后端返回缩略图可访问 URL。
  */
 export interface ThumbnailUploadResult {
     /** 缩略图 URL */
