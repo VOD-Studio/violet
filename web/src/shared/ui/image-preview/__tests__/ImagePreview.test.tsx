@@ -10,7 +10,7 @@ interface MotionDivProps {
 }
 
 function MotionDiv({ children, onAnimationComplete, ...rest }: MotionDivProps) {
-    // 模拟真实 framer-motion：只在首次 mount 时触发一次动画完成回调，
+    // 模拟真实 motion：只在首次 mount 时触发一次动画完成回调，
     // 切换 index 不会重新 mount 外层容器，因此不会再次触发。
     const hasCompleted = useRef(false);
     if (!hasCompleted.current) {

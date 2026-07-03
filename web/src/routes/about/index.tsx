@@ -1,13 +1,13 @@
 import { useSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Code, ExternalLink } from "lucide-react";
 
 /**
  * /about - 关于页
  *
  * 数据来自 useSettings（已全局预取，零后端改动）。
- * 设计对齐首页 Hero 的极简 + aurora 光斑 + framer-motion 入场动画。
+ * 设计对齐首页 Hero 的极简 + aurora 光斑 + motion 入场动画。
  * 区块：Hero（站点名/描述）→ 个人简介 → 技术栈标签云 → 社交链接卡片。
  */
 function AboutPage() {

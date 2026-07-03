@@ -59,7 +59,6 @@
         "date-fns": "^4.4.0",
         "docx-preview": "^0.3.7",
         "fflate": "^0.8.3",
-        "framer-motion": "^12.41.0",
         "github-slugger": "^2.0.0",
         "hast-util-raw": "^9.1.0",
         "hast-util-sanitize": "^5.0.2",
