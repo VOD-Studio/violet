@@ -9,7 +9,7 @@ import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
 import { extractToc } from "@shared/lib/hooks/use-toc";
 import { extractMarkdownToc } from "@shared/lib/markdown";
 import { BackToTop } from "@shared/ui/back-to-top";
-import { ArticleContent } from "@shared/ui/markdown-preview/ArticleContent";
+import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
 import { useEffect, useRef } from "react";

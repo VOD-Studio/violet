@@ -13,7 +13,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@shared/ui/base/sheet";
-import { ArticleContent } from "@shared/ui/markdown-preview/ArticleContent";
+import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { Clock, History } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

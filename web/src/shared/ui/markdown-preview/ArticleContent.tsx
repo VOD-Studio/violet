@@ -8,6 +8,7 @@
  * 自动检测：内容含 HTML 标签（<p>、<h2>、<div> 等）→ HtmlContent 安全渲染；
  * 否则 → react-markdown + shiki 代码块渲染。两条路径共用 markdownComponents。
  */
+import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
@@ -28,7 +29,7 @@ function isHTML(content: string): boolean {
     );
 }
 
-export function ArticleContent({ content, className }: ArticleContentProps) {
+function ArticleContent({ content, className }: ArticleContentProps) {
     if (isHTML(content)) {
         return <HtmlContent html={content} className={className} />;
     }
@@ -44,3 +45,6 @@ export function ArticleContent({ content, className }: ArticleContentProps) {
         </div>
     );
 }
+
+/** 正文渲染开销较大，props 不变时跳过重渲染，避免目录高亮/滚动状态变化触发整篇文章重排。 */
+export default memo(ArticleContent);
