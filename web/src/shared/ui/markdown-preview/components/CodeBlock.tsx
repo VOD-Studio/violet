@@ -61,13 +61,14 @@ function FencedCodeBlock({ code, language }: { code: string; language: string })
     const { html, loading } = useShikiHighlight(code, language);
     const [copied, setCopied] = useState(false);
 
-    const handleCopy = async () => {
+    const handleCopy = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
         try {
             await navigator.clipboard.writeText(code);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch {
-            /* 复制失败忽略 */
+        } catch (err) {
+            console.error("复制代码失败", err);
         }
     };
 
