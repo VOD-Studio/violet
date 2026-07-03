@@ -56,7 +56,7 @@ export function RotaryDial() {
                                         delay: choice.angle * 0.002,
                                     }}
                                     onClick={(e) => handleSelect(choice.value, e)}
-                                    className="absolute flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background shadow-sm outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="absolute z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background shadow-sm outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
                                     aria-label={choice.label}
                                 >
                                     <Icon className="pointer-events-none size-4 text-foreground" />
