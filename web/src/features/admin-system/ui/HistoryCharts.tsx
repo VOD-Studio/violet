@@ -1,5 +1,5 @@
 import { Activity, Cpu, Gauge, HardDrive, MemoryStick, Network } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
     type ChartConfig,
@@ -7,22 +7,19 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/shared/ui/base/chart";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/base/tabs";
+import { Segmented } from "@/shared/ui/segmented";
 import { fmtBytes, fmtTime } from "../model/format";
 import type { HistoryResponse } from "../model/types";
 
-interface HistoryChartsProps {
-    data?: HistoryResponse;
-    isLoading: boolean;
-}
+type TabValue = "cpu" | "mem" | "disk" | "net" | "load" | "runtime";
 
 const tabsConfig = [
-    { value: "cpu", label: "CPU", icon: Cpu },
-    { value: "mem", label: "内存", icon: MemoryStick },
-    { value: "disk", label: "磁盘 IO", icon: HardDrive },
-    { value: "net", label: "网络 IO", icon: Network },
-    { value: "load", label: "负载", icon: Gauge },
-    { value: "runtime", label: "运行时", icon: Activity },
+    { value: "cpu" as TabValue, label: "CPU", icon: Cpu },
+    { value: "mem" as TabValue, label: "内存", icon: MemoryStick },
+    { value: "disk" as TabValue, label: "磁盘 IO", icon: HardDrive },
+    { value: "net" as TabValue, label: "网络 IO", icon: Network },
+    { value: "load" as TabValue, label: "负载", icon: Gauge },
+    { value: "runtime" as TabValue, label: "运行时", icon: Activity },
 ] as const;
 
 /**
@@ -42,44 +39,43 @@ export function HistoryCharts({ data, isLoading }: HistoryChartsProps) {
         );
     }
 
+    return <ChartsWithSegmented points={data.points} />;
+}
+
+function ChartsWithSegmented({ points }: { points: HistoryResponse["points"] }) {
+    const [activeTab, setActiveTab] = useState<TabValue>("cpu");
+
     return (
-        <Tabs defaultValue="cpu" className="bg-card rounded-xl border p-4">
-            <TabsList className="flex-wrap">
-                {tabsConfig.map((t) => (
-                    <TabsTrigger key={t.value} value={t.value} className="gap-1.5">
-                        <t.icon className="size-4" />
-                        {t.label}
-                    </TabsTrigger>
-                ))}
-            </TabsList>
-            <ChartsContent points={data.points} />
-        </Tabs>
+        <div className="bg-card rounded-xl border p-4">
+            <Segmented
+                value={activeTab}
+                onValueChange={(v) => setActiveTab(v as TabValue)}
+                segments={tabsConfig.map((t) => ({
+                    value: t.value,
+                    label: (
+                        <>
+                            <t.icon className="size-3.5" />
+                            {t.label}
+                        </>
+                    ),
+                }))}
+                block
+            />
+            <div className="mt-4 h-72">
+                {activeTab === "cpu" && <CPUChart points={points} />}
+                {activeTab === "mem" && <MemoryChart points={points} />}
+                {activeTab === "disk" && <DiskChart points={points} />}
+                {activeTab === "net" && <NetworkChart points={points} />}
+                {activeTab === "load" && <LoadChart points={points} />}
+                {activeTab === "runtime" && <RuntimeChart points={points} />}
+            </div>
+        </div>
     );
 }
 
-function ChartsContent({ points }: { points: HistoryResponse["points"] }) {
-    return (
-        <div className="mt-4 h-72">
-            <TabsContent value="cpu" className="mt-0 h-full">
-                <CPUChart points={points} />
-            </TabsContent>
-            <TabsContent value="mem" className="mt-0 h-full">
-                <MemoryChart points={points} />
-            </TabsContent>
-            <TabsContent value="disk" className="mt-0 h-full">
-                <DiskChart points={points} />
-            </TabsContent>
-            <TabsContent value="net" className="mt-0 h-full">
-                <NetworkChart points={points} />
-            </TabsContent>
-            <TabsContent value="load" className="mt-0 h-full">
-                <LoadChart points={points} />
-            </TabsContent>
-            <TabsContent value="runtime" className="mt-0 h-full">
-                <RuntimeChart points={points} />
-            </TabsContent>
-        </div>
-    );
+interface HistoryChartsProps {
+    data?: HistoryResponse;
+    isLoading: boolean;
 }
 
 // ---- 各 Tab 图表 ----
