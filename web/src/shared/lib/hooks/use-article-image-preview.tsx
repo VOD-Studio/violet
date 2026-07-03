@@ -42,21 +42,27 @@ export function useArticleImagePreview() {
     }, []);
 
     /** 容器点击事件：命中 img 时打开预览 */
-    const onClick = useCallback((e: React.MouseEvent) => {
-        const target = e.target as HTMLElement;
-        if (target.tagName !== "IMG") return;
-        e.preventDefault();
-        openPreview(target);
-    }, [openPreview]);
+    const onClick = useCallback(
+        (e: React.MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName !== "IMG") return;
+            e.preventDefault();
+            openPreview(target);
+        },
+        [openPreview],
+    );
 
     /** 容器键盘事件：聚焦的图片按 Enter/Space 时打开预览 */
-    const onKeyDown = useCallback((e: React.KeyboardEvent) => {
-        const target = e.target as HTMLElement;
-        if (target.tagName !== "IMG") return;
-        if (e.key !== "Enter" && e.key !== " ") return;
-        e.preventDefault();
-        openPreview(target);
-    }, [openPreview]);
+    const onKeyDown = useCallback(
+        (e: React.KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName !== "IMG") return;
+            if (e.key !== "Enter" && e.key !== " ") return;
+            e.preventDefault();
+            openPreview(target);
+        },
+        [openPreview],
+    );
 
     const close = useCallback(() => {
         setState((s) => ({ ...s, open: false }));

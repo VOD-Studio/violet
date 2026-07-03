@@ -3,9 +3,9 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { CreatePermissionRequest, UpdatePermissionRequest } from "../model/types";
 import * as api from "./client";
 import { adminPermissionsKeys } from "./keys";
-import type { CreatePermissionRequest, UpdatePermissionRequest } from "../model/types";
 
 /**
  * useAdminPermissions - 查询权限列表

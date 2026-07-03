@@ -3,9 +3,15 @@ import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
-import { Modal } from "@shared/ui/modal";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/ui/base/select";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@shared/ui/base/select";
 import { Textarea } from "@shared/ui/base/textarea";
+import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";

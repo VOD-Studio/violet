@@ -23,7 +23,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Archive, ChevronDown, MoreHorizontal, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/base/select";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/ui/base/select";
 
 /**
  * /admin/posts - 文章管理列表页

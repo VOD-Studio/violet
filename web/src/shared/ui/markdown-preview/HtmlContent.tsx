@@ -13,8 +13,8 @@ import type { Element, Nodes } from "hast";
 import { raw } from "hast-util-raw";
 import { defaultSchema, sanitize } from "hast-util-sanitize";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
-import { slugify } from "@/shared/lib/slug";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import { slugify } from "@/shared/lib/slug";
 import { markdownComponents } from "./components/markdown-components";
 
 // raw 节点（{ type: "raw"; value: html }）由 mdast-util-to-hast 全局扩展进 hast 的

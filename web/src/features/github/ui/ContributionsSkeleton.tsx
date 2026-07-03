@@ -1,5 +1,5 @@
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { cn } from "@shared/lib/utils";
+import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 
 export interface ContributionsSkeletonProps {
     className?: string;

@@ -1,6 +1,6 @@
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import type { ReactNode } from "react";
 import type React from "react";
+import type { ReactNode } from "react";
 
 interface TiltedCardProps {
     children: ReactNode;

@@ -2,13 +2,13 @@
  * admin-roles API 客户端
  */
 import { apiDelete, apiGet, apiPost, apiPut } from "@/shared/api/request";
-import type { RoleDTO } from "../model/types";
 import type {
     CreateRoleRequest,
     RoleWithPermissionsDTO,
     UpdateRolePermissionsRequest,
     UpdateRoleRequest,
 } from "../model/role-detail-types";
+import type { RoleDTO } from "../model/types";
 
 /**
  * 获取所有角色列表

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeStickyOffsets } from "../utils/sticky-utils";
 import type { DataTableColumn } from "../types/data-table-types";
+import { computeStickyOffsets } from "../utils/sticky-utils";
 
 describe("sticky-utils", () => {
     describe("computeStickyOffsets", () => {

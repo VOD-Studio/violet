@@ -5,8 +5,6 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import * as api from "./client";
-import { adminUsersKeys } from "./keys";
 import type {
     BatchUpdateRoleRequest,
     BatchUpdateStatusRequest,
@@ -16,6 +14,8 @@ import type {
     UpdateUserRoleRequest,
     UpdateUserStatusRequest,
 } from "../model/types";
+import * as api from "./client";
+import { adminUsersKeys } from "./keys";
 
 /**
  * useAdminUsers - 查询用户列表

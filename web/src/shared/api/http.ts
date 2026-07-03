@@ -5,8 +5,8 @@ import { notifySessionExpired, requestReplay, setReplayer } from "./auth-gate";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";
 import { ApiError } from "./error";
 import { clientQueryClient } from "./query-client";
-import { markSessionActive } from "./session";
 import { triggerRefresh } from "./refresh-queue";
+import { markSessionActive } from "./session";
 import { scheduleRefresh, setOnSessionExpired, setRefresher } from "./token-scheduler";
 import type { Envelope, Pagination } from "./types";
 

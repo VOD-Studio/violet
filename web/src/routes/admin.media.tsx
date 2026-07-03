@@ -17,10 +17,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Images, Pencil, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/ui/base/select";
 import { Modal } from "@/shared/ui/modal";
 import { SearchInput } from "@/shared/ui/search-input";
 import { Segmented, viewTypeSegments } from "@/shared/ui/segmented";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/base/select";
 
 type ViewMode = "grid" | "table";
 

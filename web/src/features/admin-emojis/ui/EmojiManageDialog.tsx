@@ -6,8 +6,8 @@ import {
 } from "@features/admin-emojis/api/mutations";
 import { useGroupEmojisAdmin } from "@features/admin-emojis/api/queries";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
-import { Modal } from "@shared/ui/modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
+import { Modal } from "@shared/ui/modal";
 import { Images, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
-import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
 import { cn } from "@shared/lib/utils";
+import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
+import type { ReactNode } from "react";
 
 export interface EmptyProps {
     /** 标题（必填，用解密动画呈现） */

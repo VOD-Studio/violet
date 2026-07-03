@@ -6,9 +6,15 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/shared/ui/base/button";
 import { Input } from "@/shared/ui/base/input";
 import { Label } from "@/shared/ui/base/label";
-import { Modal } from "@/shared/ui/modal";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/base/select";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/ui/base/select";
 import { Switch } from "@/shared/ui/base/switch";
+import { Modal } from "@/shared/ui/modal";
 import { useUpdateUser } from "../api/queries";
 import { type EditUserForm, editUserSchema } from "../model/schema";
 import type { AdminUserDTO } from "../model/types";

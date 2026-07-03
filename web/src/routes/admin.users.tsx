@@ -24,8 +24,14 @@ import { useMe } from "@/features/auth/api/queries";
 import { avatarUrl } from "@/features/upload/lib/imageUrl";
 import { AvatarGroup } from "@/shared/ui/avatar-group/AvatarGroup";
 import { Button } from "@/shared/ui/base/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/ui/base/select";
 import { SearchInput } from "@/shared/ui/search-input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/base/select";
 
 export const Route = createFileRoute("/admin/users")({
     component: AdminUsers,
