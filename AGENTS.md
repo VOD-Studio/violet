@@ -34,6 +34,7 @@
 
 - 每次完成一个任务或一个功能点都要进行 Git 提交。
 - 提交信息必须使用**中文**，并严格符合历史的 Conventional Commits 格式，例如 `feat(api): 添加新功能`、`fix(web): 修复页面 bug`。
+- **body 用 bullet points 列出改动事实**，不写散文、不夹带主观评判。详细的决策过程应写在 PR 描述或 ADR。
 - **请勿推送**，仅在本地进行 commit。
 
 ### 提交原子性
@@ -118,3 +119,72 @@
 - body 里的每一项改动是否都指向同一个目标？
 
 如果任一答案为否，就再拆分。
+
+### 提交信息风格反例
+
+下面两种提交信息的原子性没问题，但 body 写成散文，夹带主观评判和过多背景说明，同样不合格。
+
+**反例一：把 body 写成设计论证**
+
+```text
+fix(web): 用 navigator.locks ifAvailable 实现真正的跨 tab 互斥
+
+此前用 refreshedThisRound 模块级标志判断「本轮是否已刷新」是错的：
+模块变量每 tab 独立，跨 tab 不共享，排队 tab 仍看到自己的 false 照样
+执行 doRefresh → 触发家族吊销。逻辑自欺欺人。
+
+改用 navigator.locks.request 的 ifAvailable:true：锁被其他 tab 持有时
+回调收到 null，该 tab 直接跳过 refresh 返回哨兵。这才是真正的跨 tab
+互斥原语——同一 origin 同一时刻只有一个 tab 真正执行 doRefresh。
+
+跳过 tab 重放原请求即可：cookie 跨同源 tab 共享，持锁 tab 成功后新
+cookie 自动可见；持锁失败则重放再 401 走 auth-gate。
+
+补充「锁被其他 tab 持有 → 跳过 doRefresh」用例，此前无法真正验证。
+```
+
+问题：
+- body 是大段散文，不是 bullet points
+- 「逻辑自欺欺人」是情绪词，不应出现在提交信息
+- 旧方案为什么错、新方案为什么对，这些论证应该放在 PR 描述或 ADR
+
+应改为：
+
+```text
+fix(web): 用 navigator.locks ifAvailable 实现跨 tab 互斥
+
+- 移除 refreshedThisRound 模块级标志
+- 改用 navigator.locks.request({ ifAvailable: true }) 保证同 origin 单 tab 执行 refresh
+- 跳过 refresh 的 tab 直接重放原请求，依赖共享 cookie 获取新凭证
+- 补充锁被占用时跳过 doRefresh 的测试用例
+```
+
+**反例二：把 body 写成设计讨论**
+
+```text
+refactor(api): 删除 TokenStore.Verify 死代码
+
+refresh 改用原子 Rotate 后，Verify 已无调用者（grep 确认零引用）。
+此前保留是出于「未来可能只读校验」的推测，属于 speculative generality——
+YAGNI，删之。Rotate 的 Lua 内部已用字符串比对完成校验，无需独立 Verify。
+
+涉及：TokenStore 接口、RedisTokenStore 实现、MockTokenStore 三处同步删除，
+以及随之失效的 crypto/subtle import。CodeStore.Verify（验证码存储）不受影响。
+编译期断言（auth_adapters.go）确保所有实现同步更新。
+```
+
+问题：
+- 出现 YAGNI、speculative generality 等设计讨论用语
+- 「此前保留是出于……」这种历史心路历程没必要写
+- 仍然是散文，不是 bullet points
+
+应改为：
+
+```text
+refactor(api): 删除 TokenStore.Verify 死代码
+
+- refresh 改用原子 Rotate 后 Verify 已无调用者
+- 同步删除 TokenStore 接口、RedisTokenStore、MockTokenStore 中的 Verify
+- 移除 crypto/subtle 中失效的 import
+- CodeStore.Verify 保持不变
+```
