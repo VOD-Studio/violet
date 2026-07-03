@@ -134,6 +134,9 @@ func main() {
 	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
 	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
 
+	// 服务器监控模块（DDD）：启动 30s 采样 goroutine，随 appCtx 退出
+	systemContainer := app.NewSystemContainer(gormDB, redisClient, ctx)
+
 	// 上传目录与 URL 前缀：统一从配置派生，保持相对路径（搬家可移植）。
 	// 绝对路径仅在进程内按需 filepath.Abs，绝不持久化、绝不硬编码。
 	uploadRoot := cfg.UploadDir                     // "uploads"
@@ -444,7 +447,7 @@ func main() {
 			r.Delete("/posts/{id}", postH.Delete)              // 软删除文章
 			r.Post("/posts/{id}/restore", postH.Restore)       // 恢复文章
 			r.Delete("/posts/{id}/hard", postH.HardDelete)     // 彻底删除文章
-			
+
 			// 文章版本管理
 			r.Get("/posts/{id}/versions", postH.ListVersions)
 			r.Get("/posts/versions/{versionId}", postH.GetVersion)
@@ -501,6 +504,12 @@ func main() {
 			// 删除素材：media:delete
 			r.With(middleware.RequirePermission(permissionChecker, "media:delete")).
 				Delete("/media/{id}", mediaH.DeleteFile) // 删除素材
+
+			// 服务器监控（admin-only）
+			r.Route("/system", func(r chi.Router) {
+				r.Get("/snapshot", systemContainer.SystemHandler.GetSnapshot) // 实时快照
+				r.Get("/history", systemContainer.SystemHandler.GetHistory)   // 历史趋势
+			})
 		})
 	})
 
