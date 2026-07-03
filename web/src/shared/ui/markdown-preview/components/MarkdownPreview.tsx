@@ -13,6 +13,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/shared/ui/base/button";
+import { copyText } from "@/shared/lib/clipboard";
 import { useMarkdown } from "../hooks/useMarkdown";
 import type { MarkdownPreviewProps } from "../types/markdown-preview-types";
 import { markdownComponents } from "./markdown-components";
@@ -22,12 +23,10 @@ export function MarkdownPreview({ url, name, className }: MarkdownPreviewProps) 
     const [copied, setCopied] = useState(false);
 
     async function handleCopy() {
-        try {
-            await navigator.clipboard.writeText(source);
+        const ok = await copyText(source);
+        if (ok) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // 忽略复制失败
         }
     }
 

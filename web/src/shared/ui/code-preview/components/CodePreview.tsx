@@ -12,6 +12,7 @@
 import { AlertCircle, Check, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/shared/ui/base/button";
+import { copyText } from "@/shared/lib/clipboard";
 import { useCodeHighlight } from "../hooks/useCodeHighlight";
 import type { CodePreviewProps } from "../types/code-preview-types";
 import { inferLanguage } from "../utils/language";
@@ -31,9 +32,11 @@ export function CodePreview({
         try {
             const res = await fetch(url);
             const text = await res.text();
-            await navigator.clipboard.writeText(text);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            const ok = await copyText(text);
+            if (ok) {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }
         } catch {
             // 忽略复制失败
         }

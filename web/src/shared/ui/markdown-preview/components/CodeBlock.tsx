@@ -10,6 +10,7 @@
  */
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { copyText } from "@/shared/lib/clipboard";
 import { useShikiHighlight } from "@/shared/ui/code-preview/use-shiki-highlight";
 
 interface CodeBlockProps {
@@ -63,12 +64,12 @@ function FencedCodeBlock({ code, language }: { code: string; language: string })
 
     const handleCopy = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
-        try {
-            await navigator.clipboard.writeText(code);
+        const ok = await copyText(code);
+        if (ok) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error("复制代码失败", err);
+        } else {
+            console.error("复制代码失败");
         }
     };
 
