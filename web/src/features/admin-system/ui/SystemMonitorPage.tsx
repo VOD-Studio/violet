@@ -10,17 +10,27 @@ import { useState } from "react";
 import { systemKeys } from "../api/keys";
 import { useSystemHistory, useSystemSnapshot } from "../api/queries";
 import { ConsoleView } from "./ConsoleView";
+import { DiskIOWave } from "./DiskIOWave";
+import { DiskLiquidGrid } from "./DiskLiquidCard";
+import { RuntimePulse } from "./RuntimePulse";
 import { StreamView } from "./StreamView";
-import { DiskTable } from "./sections/DiskTable";
-import { HostAndRuntimePanel } from "./sections/HostAndRuntimePanel";
 
 /** 监控页视图类型 */
 type MonitorView = "stream" | "console";
+
+/** 磁盘明细展示模式：液位容器 / IO 心跳波 */
+type DiskMode = "liquid" | "io";
 
 /** viewSegments - Segmented 视图切换配置（声明在此处，避免每次渲染重建） */
 const VIEW_SEGMENTS: SegmentedItem<MonitorView>[] = [
     { value: "stream", label: "时序带" },
     { value: "console", label: "控制台" },
+];
+
+/** diskSegments - 磁盘明细模式切换配置 */
+const DISK_SEGMENTS: SegmentedItem<DiskMode>[] = [
+    { value: "liquid", label: "液位" },
+    { value: "io", label: "IO" },
 ];
 
 /** SystemMonitorPage - 服务监控页面容器
@@ -31,6 +41,7 @@ const VIEW_SEGMENTS: SegmentedItem<MonitorView>[] = [
  */
 export function SystemMonitorPage() {
     const [view, setView] = useState<MonitorView>("stream");
+    const [diskMode, setDiskMode] = useState<DiskMode>("liquid");
     const [polling, setPolling] = useState(true);
     const qc = useQueryClient();
 
@@ -97,19 +108,30 @@ export function SystemMonitorPage() {
                         <ConsoleView snapshot={snapshotQ.data} history={historyQ.data} />
                     )}
 
-                    {/* 两个视图共用的明细区块 */}
+                    {/* 磁盘明细：液位 / IO 两种模式切换 */}
                     <section className="space-y-3">
-                        <SectionTitle icon={<Activity className="size-3.5" />}>磁盘</SectionTitle>
-                        <DiskTable disks={snapshotQ.data.disk} />
+                        <div className="flex items-center justify-between">
+                            <SectionTitle icon={<Activity className="size-3.5" />}>
+                                磁盘
+                            </SectionTitle>
+                            <Segmented
+                                value={diskMode}
+                                onValueChange={setDiskMode}
+                                segments={DISK_SEGMENTS}
+                                size="sm"
+                            />
+                        </div>
+                        {diskMode === "liquid" ? (
+                            <DiskLiquidGrid disks={snapshotQ.data.disk} />
+                        ) : (
+                            <DiskIOWave history={historyQ.data} disks={snapshotQ.data.disk} />
+                        )}
                     </section>
+
+                    {/* 运行时脉搏 */}
                     <section className="space-y-3">
-                        <SectionTitle icon={<Activity className="size-3.5" />}>
-                            主机与运行时
-                        </SectionTitle>
-                        <HostAndRuntimePanel
-                            host={snapshotQ.data.host}
-                            runtime={snapshotQ.data.runtime}
-                        />
+                        <SectionTitle icon={<Activity className="size-3.5" />}>运行时</SectionTitle>
+                        <RuntimePulse runtime={snapshotQ.data.runtime} history={historyQ.data} />
                     </section>
                 </div>
             ) : (
