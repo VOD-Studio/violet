@@ -11,9 +11,9 @@ export interface TocItem {
 }
 
 /**
- * extractToc - 从 HTML 字符串提取 H2/H3/H4 与 id（纯函数）
+ * extractToc - 从 HTML 字符串提取 H2/H3/H4 与 id，纯函数
  *
- * 仅识别带 id 的标题（如 <h2 id="...">）。id 缺失时按文本 slug 生成。
+ * 仅识别带 id 的标题，如 <h2 id="...">。id 缺失时按文本 slug 生成。
  */
 export function extractToc(html: string): TocItem[] {
     const re = /<h([234])[^>]*?(?:\sid=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/h\1>/gi;
@@ -43,29 +43,31 @@ function stripTags(s: string): string {
     return s.replace(/<[^>]+>/g, "");
 }
 
+/** 默认触发线偏移，与 styles.css 的 scroll-margin-top: 80px 一致，作为读取失败时的兜底 */
+const DEFAULT_TRIGGER_OFFSET = 80;
+
 /**
- * pickActiveHeading - 从「当前可见的 heading id 集合」中选出当前章节（纯函数）
+ * pickActiveByPosition - 在文档顺序的标题中取最后一个顶部已越过触发线的，纯函数
  *
- * 规则：按文档顺序，取可见集合里的最后一个 —— 即最近一个滚过顶部高亮线的标题。
- * visibleIds 无序（来自 IntersectionObserver 回调），orderedIds 给出文档顺序。
- * 无可见项时返回 null（说明还在第一个标题之前）。
+ * offsets[i] 为第 i 个标题顶部相对触发线的有符号距离，<= 0 表示已越过触发线进入阅读区。
+ * 取文档顺序里最后一个已越过的标题；若全部尚未越过，回落到第一个标题，保证首章可见即高亮。
+ * 空列表返回 null。
  */
-export function pickActiveHeading(visibleIds: string[], orderedIds: string[]): string | null {
-    if (visibleIds.length === 0) return null;
-    const visible = new Set(visibleIds);
-    let current: string | null = null;
-    for (const id of orderedIds) {
-        if (visible.has(id)) current = id;
+export function pickActiveByPosition(offsets: number[]): number | null {
+    if (offsets.length === 0) return null;
+    let last = -1;
+    for (let i = 0; i < offsets.length; i++) {
+        if (offsets[i] <= 0) last = i;
     }
-    return current;
+    return last === -1 ? 0 : last;
 }
 
 /**
- * useActiveHeading - 返回当前视口内最靠上可见的 heading id（TOC 高亮）
+ * useActiveHeading - 返回当前阅读位置的 heading id，供 TOC 高亮
  *
- * 用 IntersectionObserver 监听容器内 h2/h3/h4[id]，rootMargin 把「高亮触发线」
- * 设在距顶部约 80px（与 sticky 头部高度 + 缓冲一致，对齐 scroll-mt-20）。
- * 进入该线的标题加入可见集合，由 pickActiveHeading 按文档顺序选出当前章节。
+ * 以「最后一个顶部越过触发线的标题」为当前章节：滚到哪高亮哪，既不会提前选中下一章，
+ * 也不会在大段正文里丢失高亮。触发线偏移直接读 CSS scroll-margin-top，与点击锚点跳转的
+ * 停留位置共享同一来源；读不到时回落到默认 80px。
  */
 export function useActiveHeading(containerRef: React.RefObject<HTMLElement | null>): string | null {
     const [active, setActive] = useState<string | null>(null);
@@ -75,25 +77,38 @@ export function useActiveHeading(containerRef: React.RefObject<HTMLElement | nul
         if (!el) return;
 
         const headings = Array.from(el.querySelectorAll<HTMLElement>("h2[id], h3[id], h4[id]"));
+        if (headings.length === 0) return;
         const orderedIds = headings.map((h) => h.id);
-        if (orderedIds.length === 0) return;
 
-        const visible = new Set<string>();
-        const observer = new IntersectionObserver(
-            (entries) => {
-                for (const entry of entries) {
-                    const id = entry.target.id;
-                    if (entry.isIntersecting) visible.add(id);
-                    else visible.delete(id);
-                }
-                setActive(pickActiveHeading(Array.from(visible), orderedIds));
-            },
-            // 顶部 80px 为「已滚过」触发线；底部 -50% 收窄可见区，避免一次点亮过多
-            { rootMargin: "-80px 0px -50% 0px", threshold: 0 },
-        );
+        const triggerOffset =
+            Number.parseFloat(getComputedStyle(headings[0]).scrollMarginTop) ||
+            DEFAULT_TRIGGER_OFFSET;
 
-        for (const h of headings) observer.observe(h);
-        return () => observer.disconnect();
+        const update = () => {
+            const offsets = headings.map((h) => h.getBoundingClientRect().top - triggerOffset);
+            const idx = pickActiveByPosition(offsets);
+            setActive(idx === null ? null : orderedIds[idx]);
+        };
+
+        update();
+
+        // 滚动与尺寸变化用 rAF 合并，避免每帧重复读布局
+        let frame = 0;
+        const schedule = () => {
+            if (frame) return;
+            frame = requestAnimationFrame(() => {
+                frame = 0;
+                update();
+            });
+        };
+
+        window.addEventListener("scroll", schedule, { passive: true });
+        window.addEventListener("resize", schedule, { passive: true });
+        return () => {
+            window.removeEventListener("scroll", schedule);
+            window.removeEventListener("resize", schedule);
+            if (frame) cancelAnimationFrame(frame);
+        };
     }, [containerRef]);
 
     return active;
