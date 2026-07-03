@@ -321,7 +321,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
             {/* 主体：编辑器 + 侧边栏 */}
             <div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_320px]">
                 {/* 左：编辑器 */}
-                <div className="flex min-h-0 flex-col gap-2">
+                <div data-testid="editor-workspace" className="flex min-h-0 min-w-0 flex-col gap-2">
                     <Input
                         {...register("title", {
                             onChange: (e) => {
