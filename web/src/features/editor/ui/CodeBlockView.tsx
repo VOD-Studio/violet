@@ -88,7 +88,7 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
              */}
             <NodeViewContent<"pre">
                 as="pre"
-                className={`!m-0 !bg-transparent overflow-x-auto p-4 text-[0.85rem] leading-6 text-[#e6edf3] ${language ? `language-${language}` : ""}`}
+                className={`m-0! bg-transparent! overflow-x-auto p-4 text-[0.85rem] leading-6 text-[#e6edf3] ${language ? `language-${language}` : ""}`}
             />
         </NodeViewWrapper>
     );

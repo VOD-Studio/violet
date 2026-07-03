@@ -106,7 +106,7 @@ function CodeBlock({ html, showLineNumbers }: { html: string; showLineNumbers: b
                 </div>
             ) : null}
             <div
-                className="shiki-code flex-1 overflow-x-auto px-4 py-3 [&_pre]:!bg-transparent [&_pre]:!m-0 [&_pre]:p-0 [&_code]:!font-mono [&_code]:!text-xs [&_code]:!leading-relaxed"
+                className="shiki-code flex-1 overflow-x-auto px-4 py-3 [&_pre]:bg-transparent! [&_pre]:m-0! [&_pre]:p-0 [&_code]:font-mono! [&_code]:text-xs! [&_code]:leading-relaxed!"
                 // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki 输出的 HTML 来自受信任的代码高亮，无用户输入
                 dangerouslySetInnerHTML={{ __html: html }}
             />
