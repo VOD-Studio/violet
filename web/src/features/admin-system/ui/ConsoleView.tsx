@@ -12,6 +12,7 @@ import type { SystemHistoryDTO, SystemSamplePointDTO, SystemSnapshotDTO } from "
 import { DependencyPanel } from "./DependencyPanel";
 import { formatPercent, formatRate, formatUptime } from "./format";
 import { MetricCard } from "./MetricCard";
+import { useFirstRender } from "./useFirstRender";
 
 /** ConsoleViewProps - 控制台指标卡视图 props */
 interface ConsoleViewProps {
@@ -184,6 +185,8 @@ interface DetailChartProps {
 function DetailChart({ history, metric }: DetailChartProps) {
     const meta = METRIC_META[metric];
     const config: ChartConfig = { value: { label: meta.label, color: meta.color } };
+    // 首屏基于历史数据播放动画，轮询刷新走静态避免抖动（recharts 不支持续接动画）
+    const isFirst = useFirstRender(history.points);
     const data = history.points.map((p) => ({ ts: p.ts, value: meta.accessor(p) }));
 
     return (
@@ -232,7 +235,9 @@ function DetailChart({ history, metric }: DetailChartProps) {
                     stroke={meta.color}
                     strokeWidth={1.5}
                     fill={`url(#detail-${metric})`}
-                    isAnimationActive={false}
+                    isAnimationActive={isFirst}
+                    animationDuration={1200}
+                    animationEasing="ease-out"
                     dot={false}
                 />
             </AreaChart>

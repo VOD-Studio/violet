@@ -9,6 +9,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import type { SystemHistoryDTO, SystemSamplePointDTO, SystemSnapshotDTO } from "../model/types";
 import { formatPercent, formatRate } from "./format";
 import { DependencyStatus } from "./sections/DependencyStatus";
+import { useFirstRender } from "./useFirstRender";
 
 /** StreamViewProps - 心率式时序带视图 props */
 interface StreamViewProps {
@@ -104,6 +105,8 @@ interface MetricChartProps {
 /** MetricChart - 单指标的紧凑时序 AreaChart（无 y 轴刻度，靠 tooltip 读数） */
 function MetricChart({ title, points, color, accessor, formatValue, domain }: MetricChartProps) {
     const config: ChartConfig = { value: { label: title, color } };
+    // 首屏播放动画，轮询刷新走静态避免抖动（recharts 不支持续接动画）
+    const isFirst = useFirstRender(points);
     const data = points.map((p) => ({
         ts: p.ts,
         value: accessor(p),
@@ -158,7 +161,9 @@ function MetricChart({ title, points, color, accessor, formatValue, domain }: Me
                         stroke={color}
                         strokeWidth={1.5}
                         fill={`url(#grad-${title})`}
-                        isAnimationActive={false}
+                        isAnimationActive={isFirst}
+                        animationDuration={1200}
+                        animationEasing="ease-out"
                         dot={false}
                     />
                 </AreaChart>
