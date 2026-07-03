@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+    Activity,
     FileText,
     FolderKanban,
     Images,
@@ -50,5 +51,6 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     { label: "素材管理", to: "/admin/media", icon: Images },
     { label: "表情管理", to: "/admin/emojis", icon: Smile },
     { label: "站点设置", to: "/admin/settings", icon: Settings },
+    { label: "系统监控", to: "/admin/system", icon: Activity },
     { label: "操作日志", to: "/admin/logs", icon: ScrollText },
 ];
