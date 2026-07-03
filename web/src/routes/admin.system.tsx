@@ -7,15 +7,28 @@ import { MetricCard } from "@features/admin-system/ui/MetricCard";
 import { NetworkPanel } from "@features/admin-system/ui/NetworkPanel";
 import { RuntimePanel } from "@features/admin-system/ui/RuntimePanel";
 import { createFileRoute } from "@tanstack/react-router";
-import { Activity, Cpu, HardDrive, MemoryStick, RefreshCw } from "lucide-react";
+import {
+    Activity,
+    Cpu,
+    Database,
+    HardDrive,
+    MemoryStick,
+    RefreshCw,
+    Terminal,
+    Wifi,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/shared/ui/base/button";
 import { Switch } from "@/shared/ui/base/switch";
+import { Segmented } from "@/shared/ui/segmented";
 
 export const Route = createFileRoute("/admin/system")({ component: SystemMonitorPage });
 
 function SystemMonitorPage() {
     const [autoRefresh, setAutoRefresh] = useState(true);
+    const [activePanel, setActivePanel] = useState<"runtime" | "dependencies" | "network">(
+        "runtime",
+    );
     const snapshot = useSystemSnapshot(autoRefresh);
     const history = useSystemHistory(autoRefresh);
     const snap = snapshot.data;
@@ -100,12 +113,47 @@ function SystemMonitorPage() {
                 <HistoryCharts data={history.data} isLoading={history.isLoading} />
 
                 {/* 详情面板 */}
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <RuntimePanel data={snap} />
-                    <div className="space-y-4">
-                        <DependencyPanel data={snap} />
-                        <NetworkPanel data={snap} />
-                    </div>
+                <div className="bg-card rounded-xl border p-4">
+                    <Segmented
+                        value={activePanel}
+                        onValueChange={(v) =>
+                            setActivePanel(v as "runtime" | "dependencies" | "network")
+                        }
+                        segments={[
+                            {
+                                value: "runtime",
+                                label: (
+                                    <>
+                                        <Terminal className="size-3.5" />
+                                        运行时
+                                    </>
+                                ),
+                            },
+                            {
+                                value: "dependencies",
+                                label: (
+                                    <>
+                                        <Database className="size-3.5" />
+                                        依赖状态
+                                    </>
+                                ),
+                            },
+                            {
+                                value: "network",
+                                label: (
+                                    <>
+                                        <Wifi className="size-3.5" />
+                                        网络
+                                    </>
+                                ),
+                            },
+                        ]}
+                        block
+                        className="mb-4"
+                    />
+                    {activePanel === "runtime" && <RuntimePanel data={snap} />}
+                    {activePanel === "dependencies" && <DependencyPanel data={snap} />}
+                    {activePanel === "network" && <NetworkPanel data={snap} />}
                 </div>
             </div>
         </PageShell>
