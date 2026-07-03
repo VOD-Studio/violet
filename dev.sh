@@ -37,9 +37,13 @@ done
 echo "✓ 数据库已就绪 (等待 ${WAITED}s)"
 
 # 启动后端（启动时会自动执行数据库迁移）
-echo "启动 Go API..."
+echo "启动 Go API (支持热更新)..."
 cd api
-go run ./cmd/server &
+if command -v air >/dev/null 2>&1; then
+  air &
+else
+  go run github.com/air-verse/air@latest &
+fi
 API_PID=$!
 cd ..
 
