@@ -23,8 +23,8 @@ export function PieMenuToggle() {
     const current = choices.find((c) => c.value === theme) ?? choices[0];
     const CurrentIcon = current.icon;
 
-    const handleSelect = (value: ThemeOption) => {
-        switchTheme(value);
+    const handleSelect = (value: ThemeOption, e: React.MouseEvent) => {
+        switchTheme(value, { clientX: e.clientX, clientY: e.clientY });
         setOpen(false);
     };
 
@@ -70,16 +70,25 @@ export function PieMenuToggle() {
                             const Icon = choice.icon;
 
                             return (
-                                <g key={choice.value}>
+                                <g
+                                    key={choice.value}
+                                    className="cursor-pointer"
+                                    onClick={(e) => handleSelect(choice.value, e)}
+                                >
                                     <motion.path
                                         d={sectorPath(startAngle, endAngle)}
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: index * 0.04 }}
-                                        className="cursor-pointer fill-muted stroke-border transition-colors hover:fill-accent"
-                                        onClick={() => handleSelect(choice.value)}
+                                        className="fill-muted stroke-border transition-colors hover:fill-accent"
                                     />
-                                    <foreignObject x={lx - 10} y={ly - 10} width="20" height="20">
+                                    <foreignObject
+                                        x={lx - 10}
+                                        y={ly - 10}
+                                        width="20"
+                                        height="20"
+                                        className="pointer-events-none"
+                                    >
                                         <div className="flex h-full w-full items-center justify-center">
                                             <Icon className={`size-4 ${choice.color}`} />
                                         </div>

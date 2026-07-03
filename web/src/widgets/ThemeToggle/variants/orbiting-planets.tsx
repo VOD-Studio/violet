@@ -51,12 +51,17 @@ export function OrbitingPlanets() {
                         transition={{ type: "spring", stiffness: 200, damping: 20 }}
                         onMouseEnter={() => setHovered(choice.value)}
                         onMouseLeave={() => setHovered(null)}
-                        onClick={() => switchTheme(choice.value)}
+                        onClick={(e) =>
+                            switchTheme(choice.value, {
+                                clientX: e.clientX,
+                                clientY: e.clientY,
+                            })
+                        }
                         className="absolute flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background shadow-sm outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
                         aria-label={choice.label}
                     >
                         <Icon
-                            className={`size-4 transition-transform ${choice.color} ${hovered === choice.value ? "scale-110" : ""}`}
+                            className={`pointer-events-none size-4 transition-transform ${choice.color} ${hovered === choice.value ? "scale-110" : ""}`}
                         />
                     </motion.button>
                 );
@@ -74,7 +79,7 @@ export function OrbitingPlanets() {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
-                    <current.icon className={`size-5 ${current.color}`} />
+                    <current.icon className={`pointer-events-none size-5 ${current.color}`} />
                 </motion.div>
             </motion.button>
         </div>

@@ -15,8 +15,8 @@ export function SceneButton() {
     const currentIndex = theme ? cycleOrder.indexOf(theme) : 0;
     const next = cycleOrder[(currentIndex + 1) % cycleOrder.length];
 
-    const handleClick = () => {
-        switchTheme(next);
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        switchTheme(next, { clientX: e.clientX, clientY: e.clientY });
     };
 
     return (

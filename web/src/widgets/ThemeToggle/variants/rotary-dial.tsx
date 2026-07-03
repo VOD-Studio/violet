@@ -26,12 +26,8 @@ export function RotaryDial() {
     const current = choices.find((c) => c.value === theme) ?? choices[0];
     const CurrentIcon = current.icon;
 
-    const handleSelect = (value: ThemeOption) => {
-        const rect = containerRef.current?.getBoundingClientRect();
-        switchTheme(value, {
-            clientX: rect ? rect.left + rect.width / 2 : undefined,
-            clientY: rect ? rect.top + rect.height / 2 : undefined,
-        });
+    const handleSelect = (value: ThemeOption, e: React.MouseEvent) => {
+        switchTheme(value, { clientX: e.clientX, clientY: e.clientY });
         setOpen(false);
     };
 
@@ -59,11 +55,11 @@ export function RotaryDial() {
                                         damping: 22,
                                         delay: choice.angle * 0.002,
                                     }}
-                                    onClick={() => handleSelect(choice.value)}
+                                    onClick={(e) => handleSelect(choice.value, e)}
                                     className="absolute flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background shadow-sm outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
                                     aria-label={choice.label}
                                 >
-                                    <Icon className="size-4 text-foreground" />
+                                    <Icon className="pointer-events-none size-4 text-foreground" />
                                 </motion.button>
                             );
                         })}
@@ -90,7 +86,7 @@ export function RotaryDial() {
                     animate={{ rotate: 0, opacity: 1 }}
                     transition={{ duration: 0.2 }}
                 >
-                    <CurrentIcon className="size-5 text-foreground" />
+                    <CurrentIcon className="pointer-events-none size-5 text-foreground" />
                 </motion.div>
                 <span className="sr-only">切换主题</span>
             </button>

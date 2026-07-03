@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
     CubeToggle,
+    CyclicThemeButton,
     OrbitingPlanets,
     PieMenuToggle,
     RotaryDial,
@@ -11,16 +12,17 @@ import {
 /**
  * ThemeLab - 主题切换器实验页
  *
- * 并排展示六种创意主题切换器原型，方便对比挑选。
+ * 并排展示七种创意主题切换器原型，方便对比挑选。
  */
 function ThemeLab() {
     const cards = [
         { title: "1. 三段拨动", description: "SegmentedToggle", component: SegmentedToggle },
         { title: "2. 旋钮", description: "RotaryDial", component: RotaryDial },
         { title: "3. 三分圆盘", description: "PieMenuToggle", component: PieMenuToggle },
-        { title: "4. 天体轨道", description: "OrbitingPlanets", component: OrbitingPlanets },
-        { title: "5. 翻转立方", description: "CubeToggle", component: CubeToggle },
-        { title: "6. 情景插画", description: "SceneButton", component: SceneButton },
+        { title: "4. 单键循环", description: "CyclicThemeButton", component: CyclicThemeButton },
+        { title: "5. 天体轨道", description: "OrbitingPlanets", component: OrbitingPlanets },
+        { title: "6. 翻转立方", description: "CubeToggle", component: CubeToggle },
+        { title: "7. 情景插画", description: "SceneButton", component: SceneButton },
     ];
 
     return (

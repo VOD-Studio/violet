@@ -22,7 +22,7 @@ export function CubeToggle() {
 
     const current = choices.find((c) => c.value === theme) ?? choices[0];
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         const nextIndex = (choices.findIndex((c) => c.value === theme) + 1) % choices.length;
         const next = choices[nextIndex];
         if (!next) return;
@@ -31,12 +31,12 @@ export function CubeToggle() {
         if (newRotation === rotation) {
             const fallbackRotation = rotation + 120;
             setRotation(fallbackRotation);
-            switchTheme(next.value);
+            switchTheme(next.value, { clientX: e.clientX, clientY: e.clientY });
             return;
         }
 
         setRotation(newRotation);
-        switchTheme(next.value);
+        switchTheme(next.value, { clientX: e.clientX, clientY: e.clientY });
     };
 
     return (
