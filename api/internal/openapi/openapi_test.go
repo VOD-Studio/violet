@@ -111,13 +111,13 @@ func TestCommentPaths(t *testing.T) {
 func TestMediaPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
-		"/media/{id}", "/media", "/media/batch-delete", "/media/{id}/thumbnail",
-		"/upload/init", "/upload/{uploadId}/chunk/{index}", "/upload/{uploadId}/complete",
-		"/upload/{uploadId}", "/upload/{uploadId}/status",
+		"/media/{id}", "/media", "/media/batch-delete",
+		"/uploads", "/uploads/{uploadId}/chunks/{index}", "/uploads/{uploadId}/complete",
+		"/uploads/{uploadId}", "/uploads/thumbnail", "/uploads/emoji", "/uploads/instant",
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing media path %s", p)
 	}
-	for _, s := range []string{"FileDTO", "InitSessionResult", "MergeResult"} {
+	for _, s := range []string{"FileDTO", "InitSessionResult", "MergeResult", "EmojiUploadResult"} {
 		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
 	}
 	// /media/{id} 公开（无 security）
@@ -125,7 +125,7 @@ func TestMediaPaths(t *testing.T) {
 	// /media 列表需登录
 	require.NotEmpty(t, spec.Paths.Find("/media").Get.Security)
 	// 分片上传需登录
-	require.NotEmpty(t, spec.Paths.Find("/upload/init").Post.Security)
+	require.NotEmpty(t, spec.Paths.Find("/uploads").Post.Security)
 }
 
 func TestMusicPaths(t *testing.T) {
@@ -220,19 +220,22 @@ func TestAdminMusicPaths(t *testing.T) {
 	require.NotNil(t, item.Patch)
 }
 
-func TestAdminEmojiAndFilePaths(t *testing.T) {
+func TestAdminEmojiPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
 		"/admin/emojis/groups", "/admin/emojis/groups/{id}",
 		"/admin/emojis/groups/{id}/emojis", "/admin/emojis/groups/batch-status",
-		"/admin/emojis/upload", "/admin/emojis/emojis/{id}",
-		"/admin/files", "/admin/files/instant", "/admin/files/{id}",
+		"/admin/emojis/{id}",
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing path %s", p)
 	}
-	require.Contains(t, spec.Components.Schemas, "EmojiUploadResult")
-	// 表情上传是 multipart
-	require.NotNil(t, spec.Paths.Find("/admin/emojis/upload").Post.RequestBody)
+	// 表情上传已迁移到 /uploads/emoji（multipart），admin 侧不再有 upload 端点
+	require.Nil(t, spec.Paths.Find("/admin/emojis/upload"))
+	require.Nil(t, spec.Paths.Find("/admin/emojis/emojis/{id}"))
+	// /admin/files/* 全部移除：instant 迁至 /uploads/instant，列表/删除收敛到 /admin/media
+	require.Nil(t, spec.Paths.Find("/admin/files"))
+	require.Nil(t, spec.Paths.Find("/admin/files/instant"))
+	require.Nil(t, spec.Paths.Find("/admin/files/{id}"))
 }
 
 func TestAllOperationsCount(t *testing.T) {

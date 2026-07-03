@@ -308,22 +308,26 @@ func main() {
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
-				r.Get("/", mediaH.ListFiles)                      // 媒体列表（分页、用途筛选）
-				r.Delete("/{id}", mediaH.DeleteFile)              // 删除媒体
-				r.Post("/batch-delete", mediaH.BatchDeleteMedia)  // 批量删除媒体
-				r.Post("/{id}/thumbnail", mediaH.UploadThumbnail) // 上传缩略图
+				r.Get("/", mediaH.ListFiles)                     // 媒体列表（分页、用途筛选）
+				r.Delete("/{id}", mediaH.DeleteFile)             // 删除媒体
+				r.Post("/batch-delete", mediaH.BatchDeleteMedia) // 批量删除媒体
 			})
 		})
 
-		// 分片上传（DDD mediaH）
-		v1.Route("/upload", func(r chi.Router) {
+		// 上传（DDD mediaH）—— 统一入口，分片协议 / 整体上传 / 秒传检查
+		// 收敛原 /upload/*、/media/{id}/thumbnail、/admin/emojis/upload、/admin/files/instant
+		// 鉴权统一为登录即可（与上传语义一致），并叠加 UploadRateLimit。
+		v1.Route("/uploads", func(r chi.Router) {
 			r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
 			r.Use(middleware.UploadRateLimit(redisClient))
-			r.Post("/init", mediaH.InitUploadSession)                  // 初始化上传会话（秒传/续传/新建）
-			r.Put("/{uploadId}/chunk/{index}", mediaH.SaveUploadChunk) // 上传单个分片
-			r.Post("/{uploadId}/complete", mediaH.CompleteUpload)      // 合并所有分片
-			r.Delete("/{uploadId}", mediaH.CancelUpload)               // 取消上传
-			r.Get("/{uploadId}/status", mediaH.GetUploadStatus)        // 查询上传状态
+			r.Post("/", mediaH.InitUploadSession)                       // 初始化上传会话（秒传/续传/新建）
+			r.Put("/{uploadId}/chunks/{index}", mediaH.SaveUploadChunk) // 上传单个分片
+			r.Post("/{uploadId}/complete", mediaH.CompleteUpload)       // 合并所有分片
+			r.Delete("/{uploadId}", mediaH.CancelUpload)                // 取消上传
+			r.Get("/{uploadId}", mediaH.GetUploadStatus)                // 查询上传状态（断点续传）
+			r.Post("/thumbnail", mediaH.UploadThumbnail)                // 上传缩略图（fileId 经 multipart 字段）
+			r.Post("/emoji", mediaH.UploadEmoji)                        // 上传表情图片（返回 URL，非创建 emoji 记录）
+			r.Get("/instant", mediaH.CheckInstantUpload)                // 秒传检查（?hash=）
 		})
 
 		// 音乐（DDD mediaH，公开）
@@ -476,9 +480,9 @@ func main() {
 				r.Get("/groups/{id}/emojis", mediaH.ListGroupEmojis) // 分组内表情列表
 				r.Post("/groups/{id}/emojis", mediaH.CreateEmoji)    // 在分组内创建表情
 				// 单个表情（注意 {id} 必须在 groups 之后，避免与 groups/{id} 冲突）
-				r.Post("/upload", mediaH.UploadEmoji)        // 上传表情图片
-				r.Patch("/emojis/{id}", mediaH.UpdateEmoji)  // 更新表情
-				r.Delete("/emojis/{id}", mediaH.DeleteEmoji) // 删除表情
+				r.Patch("/{id}", mediaH.UpdateEmoji)  // 更新表情
+				r.Delete("/{id}", mediaH.DeleteEmoji) // 删除表情
+				// 表情图片上传已收敛到前台 POST /uploads/emoji
 			})
 
 			r.Route("/projects", func(r chi.Router) {
@@ -491,15 +495,12 @@ func main() {
 			// 全局素材列表：media:upload 或 media:delete 任一即可查看
 			r.With(middleware.RequirePermission(permissionChecker, "media:upload", "media:delete")).
 				Get("/media", mediaH.ListAllFiles) // 全局素材列表（不限 owner）
-			r.Get("/files/instant", mediaH.CheckInstantUpload) // 秒传检查
 			// 更新素材元数据：media:upload（可编辑描述/分类/重命名）
 			r.With(middleware.RequirePermission(permissionChecker, "media:upload")).
 				Patch("/media/{id}", mediaH.UpdateFileMetadata) // 更新素材元数据
 			// 删除素材：media:delete
 			r.With(middleware.RequirePermission(permissionChecker, "media:delete")).
 				Delete("/media/{id}", mediaH.DeleteFile) // 删除素材
-			r.With(middleware.RequirePermission(permissionChecker, "media:delete")).
-				Delete("/files/{id}", mediaH.DeleteFile) // 删除文件（兼容旧入口）
 		})
 	})
 

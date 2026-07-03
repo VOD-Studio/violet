@@ -51,6 +51,13 @@ func registerMediaPaths(t *openapi3.T) {
 		"ids": strArray("文件 ID 列表"),
 	}, "ids")
 
+	registerSchema(t, "EmojiUploadResult", openapi3.Schemas{
+		"url":       reqStr("访问 URL"),
+		"filename":  reqStr("文件名"),
+		"size":      optInt64("字节数"),
+		"mime_type": optStr("MIME 类型"),
+	})
+
 	// ============ 媒体 ============
 
 	// GET /media/{id}（公开）
@@ -120,16 +127,14 @@ func registerMediaPaths(t *openapi3.T) {
 		),
 	})
 
-	// POST /media/{id}/thumbnail（登录，multipart）
-	post(t, "/media/{id}/thumbnail", &openapi3.Operation{
-		Tags:        []string{"媒体"},
+	// POST /uploads/thumbnail（登录，multipart）—— 为媒体上传缩略图
+	post(t, "/uploads/thumbnail", &openapi3.Operation{
+		Tags:        []string{"上传"},
 		Summary:     "上传缩略图",
-		Description: "为媒体文件上传缩略图（multipart/form-data，字段 file，≤10MB，仅图片）。需登录。",
+		Description: "为媒体文件上传缩略图（multipart/form-data，字段 file + fileId，≤10MB，仅图片）。需登录，受上传限流保护。",
 		Security:    securityCookie(),
-		Parameters: openapi3.Parameters{
-			pathStrParam("id", "文件 ID（UUID）"), csrfHeaderParam(),
-		},
-		RequestBody: binaryBody("multipart/form-data", "缩略图文件（字段名 file）"),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: binaryBody("multipart/form-data", "缩略图文件（字段名 file）+ fileId（所属媒体 ID）"),
 		Responses: responses(
 			200, &openapi3.ResponseRef{Value: &openapi3.Response{
 				Description: strPtr("缩略图 URL"),
@@ -150,10 +155,60 @@ func registerMediaPaths(t *openapi3.T) {
 		),
 	})
 
+	// POST /uploads/emoji（登录，multipart）—— 上传表情图片（返回 URL，非创建 emoji 记录）
+	post(t, "/uploads/emoji", &openapi3.Operation{
+		Tags:        []string{"上传"},
+		Summary:     "上传表情图片",
+		Description: "上传表情图片（multipart/form-data，字段 file，≤10MB，扩展名白名单 jpg/jpeg/png/gif/webp/svg）。需登录，受上传限流保护。",
+		Security:    securityCookie(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: binaryBody("multipart/form-data", "表情图片（字段名 file）"),
+		Responses: responses(
+			200, dataResponse("EmojiUploadResult", "上传结果", 200),
+			400, errorResponse("文件类型不允许"),
+		),
+	})
+
+	// GET /uploads/instant（登录）—— 秒传检查
+	get(t, "/uploads/instant", &openapi3.Operation{
+		Tags:        []string{"上传"},
+		Summary:     "秒传检查",
+		Description: "按文件哈希检查是否已存在（秒传）。需登录，受上传限流保护。",
+		Security:    securityCookie(),
+		Parameters: openapi3.Parameters{
+			&openapi3.ParameterRef{Value: &openapi3.Parameter{
+				Name: "hash", In: openapi3.ParameterInQuery, Required: true,
+				Schema:      &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}}},
+				Description: "文件哈希（必填）",
+			}},
+		},
+		Responses: responses(
+			200, &openapi3.ResponseRef{Value: &openapi3.Response{
+				Description: strPtr("秒传检查结果"),
+				Content: openapi3.Content{
+					"application/json": {Schema: &openapi3.SchemaRef{Value: &openapi3.Schema{
+						Type: &openapi3.Types{openapi3.TypeObject},
+						Properties: openapi3.Schemas{
+							"data": {Value: &openapi3.Schema{
+								Type: &openapi3.Types{openapi3.TypeObject},
+								Properties: openapi3.Schemas{
+									"file":   {Ref: "#/components/schemas/FileDTO", Value: &openapi3.Schema{Description: "命中的文件（存在时）"}},
+									"exists": optBool("是否已存在"),
+								},
+							}},
+							"meta": {Ref: "#/components/schemas/" + compMeta},
+						},
+					}}},
+				},
+			}},
+			400, errorResponse("缺少 hash"),
+		),
+	})
+
 	// ============ 分片上传（登录 + 上传限流）============
 
-	post(t, "/upload/init", &openapi3.Operation{
-		Tags:        []string{"分片上传"},
+	post(t, "/uploads", &openapi3.Operation{
+		Tags:        []string{"上传"},
 		Summary:     "初始化上传会话",
 		Description: "初始化上传会话（秒传/续传/新建）。需登录，受上传限流保护。",
 		Security:    securityCookie(),
@@ -165,8 +220,8 @@ func registerMediaPaths(t *openapi3.T) {
 		),
 	})
 
-	put(t, "/upload/{uploadId}/chunk/{index}", &openapi3.Operation{
-		Tags:        []string{"分片上传"},
+	put(t, "/uploads/{uploadId}/chunks/{index}", &openapi3.Operation{
+		Tags:        []string{"上传"},
 		Summary:     "上传单个分片",
 		Description: "上传单个分片（原始二进制 body，≤32MB）。需登录，受上传限流保护。",
 		Security:    securityCookie(),
@@ -182,8 +237,8 @@ func registerMediaPaths(t *openapi3.T) {
 		),
 	})
 
-	post(t, "/upload/{uploadId}/complete", &openapi3.Operation{
-		Tags:        []string{"分片上传"},
+	post(t, "/uploads/{uploadId}/complete", &openapi3.Operation{
+		Tags:        []string{"上传"},
 		Summary:     "合并所有分片",
 		Description: "合并所有分片完成上传。需登录，受上传限流保护。",
 		Security:    securityCookie(),
@@ -196,8 +251,8 @@ func registerMediaPaths(t *openapi3.T) {
 		),
 	})
 
-	del(t, "/upload/{uploadId}", &openapi3.Operation{
-		Tags:        []string{"分片上传"},
+	del(t, "/uploads/{uploadId}", &openapi3.Operation{
+		Tags:        []string{"上传"},
 		Summary:     "取消上传",
 		Description: "取消上传会话并清理已上传分片。需登录，受上传限流保护。",
 		Security:    securityCookie(),
@@ -209,8 +264,8 @@ func registerMediaPaths(t *openapi3.T) {
 		),
 	})
 
-	get(t, "/upload/{uploadId}/status", &openapi3.Operation{
-		Tags:        []string{"分片上传"},
+	get(t, "/uploads/{uploadId}", &openapi3.Operation{
+		Tags:        []string{"上传"},
 		Summary:     "查询上传状态",
 		Description: "查询上传会话状态（断点续传用）。需登录，受上传限流保护。",
 		Security:    securityCookie(),

@@ -72,7 +72,7 @@ export const useCreateEmoji = () => {
 };
 
 /**
- * useUploadEmoji - 上传表情图片，POST /admin/emojis/upload
+ * useUploadEmoji - 上传表情图片，POST /uploads/emoji
  *
  * multipart/form-data，服务端嗅探真实 MIME 防伪造，返回相对 URL。
  * 文件不落库，仅返回 URL，故无需 invalidate。
@@ -82,16 +82,16 @@ export const useUploadEmoji = () =>
         mutationFn: async (file: File) => {
             const form = new FormData();
             form.append("file", file);
-            return apiPost<EmojiUploadResult>("/admin/emojis/upload", form);
+            return apiPost<EmojiUploadResult>("/uploads/emoji", form);
         },
     });
 
-/** useUpdateEmoji - 更新表情，PATCH /admin/emojis/emojis/{id} */
+/** useUpdateEmoji - 更新表情，PATCH /admin/emojis/{id} */
 export const useUpdateEmoji = () => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: ({ id, body }: { id: number; groupId?: number; body: UpdateEmojiRequest }) =>
-            apiPatch<null>(`/admin/emojis/emojis/${id}`, body),
+            apiPatch<null>(`/admin/emojis/${id}`, body),
         onSuccess: (_data, { groupId }) => {
             if (groupId) {
                 qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupEmojis(groupId) });
@@ -100,12 +100,12 @@ export const useUpdateEmoji = () => {
     });
 };
 
-/** useDeleteEmoji - 删除表情，DELETE /admin/emojis/emojis/{id} */
+/** useDeleteEmoji - 删除表情，DELETE /admin/emojis/{id} */
 export const useDeleteEmoji = () => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: ({ id }: { id: number; groupId?: number }) =>
-            apiDelete<null>(`/admin/emojis/emojis/${id}`),
+            apiDelete<null>(`/admin/emojis/${id}`),
         onSuccess: (_data, { groupId }) => {
             if (groupId) {
                 qc.invalidateQueries({ queryKey: adminEmojiKeys.adminGroupEmojis(groupId) });

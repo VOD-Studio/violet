@@ -4,12 +4,12 @@ import type { InstantCheckQuery, InstantCheckResult } from "../model/types";
 import { uploadKeys } from "./keys";
 
 /**
- * checkInstantUpload - 调后端 GET /admin/files/instant 检查秒传
+ * checkInstantUpload - 调后端 GET /uploads/instant 检查秒传
  *
- * 需管理员身份。hash 命中时返回已存在文件，否则 exists 为 false。
+ * 登录即可（与上传语义同源）。hash 命中时返回已存在文件，否则 exists 为 false。
  */
 export const checkInstantUpload = async (query: InstantCheckQuery): Promise<InstantCheckResult> =>
-    apiGet<InstantCheckResult>("/admin/files/instant", {
+    apiGet<InstantCheckResult>("/uploads/instant", {
         params: { hash: query.hash },
     });
 
