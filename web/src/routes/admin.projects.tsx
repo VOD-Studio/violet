@@ -1,5 +1,5 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { Cover } from "@features/admin-media/ui/Cover";
 import {
     useCreateProject,
     useDeleteProject,
@@ -180,7 +180,6 @@ function ProjectDialog({
     const createMut = useCreateProject();
     const updateMut = useUpdateProject(editingId ?? "");
     const isEditing = !!editingId;
-    const [coverPickerOpen, setCoverPickerOpen] = useState(false);
 
     const { data: projects = [] } = useProjects();
     const editing = isEditing ? projects.find((p) => p.id === editingId) : undefined;
@@ -252,60 +251,24 @@ function ProjectDialog({
                         <Input id="project-github" {...register("github_url")} />
                     </div>
                 </div>
-                <Controller
-                    name="image_url"
-                    control={control}
-                    render={({ field }) => (
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium">封面图</label>
-                            {field.value ? (
-                                <div className="group relative overflow-hidden rounded-lg border border-edge-hairline">
-                                    <img
-                                        src={field.value}
-                                        alt="封面"
-                                        className="aspect-video w-full object-cover"
-                                    />
-                                    <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            size="xs"
-                                            onClick={() => setCoverPickerOpen(true)}
-                                        >
-                                            更换
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            size="xs"
-                                            onClick={() => field.onChange("")}
-                                        >
-                                            移除
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setCoverPickerOpen(true)}
-                                >
-                                    从素材库选择
-                                </Button>
-                            )}
-                            <MediaPicker
-                                open={coverPickerOpen}
-                                onOpenChange={setCoverPickerOpen}
-                                mediaType="image"
+                <div className="space-y-1.5">
+                    <label htmlFor="project-cover" className="text-sm font-medium">
+                        封面图
+                    </label>
+                    <Controller
+                        name="image_url"
+                        control={control}
+                        render={({ field }) => (
+                            <Cover
+                                id="project-cover"
+                                value={field.value}
+                                onChange={field.onChange}
+                                onClear={() => field.onChange("")}
                                 title="选择项目封面图"
-                                onConfirm={(files) => {
-                                    if (files[0]) field.onChange(files[0].url);
-                                }}
                             />
-                        </div>
-                    )}
-                />
+                        )}
+                    />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label htmlFor="project-stack" className="text-sm font-medium">
