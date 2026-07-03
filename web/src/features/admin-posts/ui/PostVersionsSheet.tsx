@@ -1,7 +1,7 @@
-import { Button } from "@shared/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@shared/ui/dialog";
+import { Button } from "@shared/ui/base/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@shared/ui/base/dialog";
 import { ArticleContent } from "@shared/ui/markdown-preview/ArticleContent";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@shared/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@shared/ui/base/sheet";
 import { Clock, History } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

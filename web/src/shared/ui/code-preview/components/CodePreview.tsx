@@ -11,7 +11,7 @@
 
 import { AlertCircle, Check, Copy, RotateCcw } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { useCodeHighlight } from "../hooks/useCodeHighlight";
 import type { CodePreviewProps } from "../types/code-preview-types";
 import { inferLanguage } from "../utils/language";
@@ -98,7 +98,6 @@ function CodeBlock({ html, showLineNumbers }: { html: string; showLineNumbers: b
                     aria-hidden="true"
                 >
                     {Array.from({ length: lineCount }, (_, i) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: 行号列，index 即行号，天然唯一稳定
                         <div key={`line-${i + 1}`}>{i + 1}</div>
                     ))}
                 </div>

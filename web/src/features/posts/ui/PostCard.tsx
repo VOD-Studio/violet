@@ -1,5 +1,5 @@
 import { AvatarGroup } from "@shared/ui/avatar-group";
-import { Badge } from "@shared/ui/badge";
+import { Badge } from "@shared/ui/base/badge";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";

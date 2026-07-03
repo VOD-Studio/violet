@@ -10,7 +10,7 @@
  */
 
 import { AlertCircle, Download, RotateCcw, Table } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { useSpreadsheet } from "../hooks/useSpreadsheet";
 import type { CellValue, SpreadsheetPreviewProps } from "../types/spreadsheet-preview-types";
 
@@ -82,7 +82,6 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
                         <tbody>
                             {activeSheet.data.map((row, rowIdx) => (
                                 <tr
-                                    // biome-ignore lint/suspicious/noArrayIndexKey: 表格行，index 即行位置，天然稳定
                                     key={`row-${rowIdx}`}
                                     className={
                                         rowIdx === 0
@@ -96,7 +95,6 @@ export function SpreadsheetPreview({ url, name, className }: SpreadsheetPreviewP
                                     </td>
                                     {row.map((cell, colIdx) => (
                                         <td
-                                            // biome-ignore lint/suspicious/noArrayIndexKey: 表格单元格，行列 index 复合即唯一坐标
                                             key={`cell-${rowIdx}-${colIdx}`}
                                             className="border-border px-2 py-1"
                                         >

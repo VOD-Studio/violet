@@ -1,5 +1,5 @@
 import { cn } from "@shared/lib/utils";
-import { Dialog, DialogContent } from "@shared/ui/dialog";
+import { Dialog, DialogContent } from "@shared/ui/base/dialog";
 import * as React from "react";
 
 export interface CommandListProps {

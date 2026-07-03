@@ -1,8 +1,8 @@
 import { useAdminPermissions } from "@features/admin-permissions/api/queries";
-import { Badge } from "@shared/ui/badge";
-import { Button } from "@shared/ui/button";
-import { Checkbox } from "@shared/ui/checkbox";
-import { Label } from "@shared/ui/label";
+import { Badge } from "@shared/ui/base/badge";
+import { Button } from "@shared/ui/base/button";
+import { Checkbox } from "@shared/ui/base/checkbox";
+import { Label } from "@shared/ui/base/label";
 import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -159,8 +159,9 @@ export function RolePermissionsDialog({
                             {/* 权限列表 */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
                                 {actions.map((permission) => {
-                                    if (!permission.code) return null;
-                                    const isChecked = selectedCodes.has(permission.code);
+                                    const code = permission.code;
+                                    if (!code) return null;
+                                    const isChecked = selectedCodes.has(code);
 
                                     return (
                                         <div
@@ -170,9 +171,7 @@ export function RolePermissionsDialog({
                                             <Checkbox
                                                 id={`permission-${permission.id}`}
                                                 checked={isChecked}
-                                                onCheckedChange={() =>
-                                                    handleToggle(permission.code!)
-                                                }
+                                                onCheckedChange={() => handleToggle(code)}
                                             />
                                             <div className="flex-1">
                                                 <Label

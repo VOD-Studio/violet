@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from "@shared/ui/card";
+import { Card, CardContent, CardHeader } from "@shared/ui/base/card";
 
 /**
  * StatsCardSkeleton - 统计卡片骨架屏

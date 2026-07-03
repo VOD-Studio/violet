@@ -1,4 +1,4 @@
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import { History, X } from "lucide-react";
 
 interface PostEditorToolbarProps {

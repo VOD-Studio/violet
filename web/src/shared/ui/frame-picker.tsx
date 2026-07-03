@@ -2,7 +2,7 @@
 
 import { Film } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 
 interface FramePickerProps {
     /** 视频 URL */

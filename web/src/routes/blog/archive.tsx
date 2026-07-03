@@ -4,7 +4,7 @@ import { useArchiveYear, useArchiveYears } from "@features/archive/api/queries";
 import ArchiveSkeleton from "@features/archive/ui/ArchiveSkeleton";
 import ArchiveYearSkeleton from "@features/archive/ui/ArchiveYearSkeleton";
 import type { ArchiveItem } from "@features/archive/model/types";
-import { Badge } from "@shared/ui/badge";
+import { Badge } from "@shared/ui/base/badge";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";

@@ -1,6 +1,6 @@
 import { Columns3, RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -9,7 +9,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
+} from "@/shared/ui/base/dropdown-menu";
 import type { DataTableColumn } from "../types/data-table-types";
 
 interface DataTableToolbarProps<T> {

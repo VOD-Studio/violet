@@ -1,4 +1,4 @@
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import { useThemeTransition } from "@shared/ui/theme-transition";
 import { Moon, Sun } from "lucide-react";
 

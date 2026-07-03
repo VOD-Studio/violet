@@ -1,10 +1,10 @@
 import { Fragment, type ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import Empty from "@/shared/ui/empty";
-import { Skeleton } from "@/shared/ui/skeleton";
-import { TableBody, TableCell, TableRow } from "@/shared/ui/table";
-import { TooltipProvider } from "@/shared/ui/tooltip";
+import { Skeleton } from "@/shared/ui/base/skeleton";
+import { TableBody, TableCell, TableRow } from "@/shared/ui/base/table";
+import { TooltipProvider } from "@/shared/ui/base/tooltip";
 import type { DataTableColumn } from "../types/data-table-types";
 import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "../types/data-table-types";
 import { cellStickyStyle, mergeStickyStyle, type StickyOffset } from "../utils/sticky-utils";

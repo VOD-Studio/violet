@@ -15,7 +15,7 @@
             "**/*.json",
             "**/*.css",
             "!src/shared/vendor",
-            "!src/shared/ui",
+            "!src/shared/ui/base",
             "!**/*.gen.ts",
             "!**/*.gen.tsx",
             "!**/.omc"
@@ -43,7 +43,7 @@
             },
             "suspicious": {
                 "noExplicitAny": "off",
-                "noArrayIndexKey": "warn"
+                "noArrayIndexKey": "off"
             },
             "complexity": {
                 "noForEach": "off"

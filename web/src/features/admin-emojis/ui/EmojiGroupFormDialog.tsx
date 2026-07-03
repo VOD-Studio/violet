@@ -1,10 +1,10 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
 import { useCreateEmojiGroup, useUpdateEmojiGroup } from "@features/admin-emojis/api/mutations";
-import { Button } from "@shared/ui/button";
-import { Input } from "@shared/ui/input";
+import { Button } from "@shared/ui/base/button";
+import { Input } from "@shared/ui/base/input";
 import { Modal } from "@shared/ui/modal";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/ui/select";
-import { Switch } from "@shared/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@shared/ui/base/select";
+import { Switch } from "@shared/ui/base/switch";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";

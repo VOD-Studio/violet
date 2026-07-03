@@ -3,7 +3,7 @@
  */
 
 import { AlertCircle, RotateCcw } from "lucide-react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import type { PdfLoadStatus } from "../types/pdf-preview-types";
 
 interface PdfOverlayProps {

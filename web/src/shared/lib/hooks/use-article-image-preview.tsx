@@ -24,17 +24,13 @@ export function useArticleImagePreview() {
         trigger: HTMLElement | null;
     }>({ open: false, images: [], thumbnails: [], index: 0, trigger: null });
 
-    /** 容器点击事件：命中 img 时打开预览 */
-    const onClick = useCallback((e: React.MouseEvent) => {
-        const target = e.target as HTMLElement;
-        if (target.tagName !== "IMG") return;
+    const openPreview = useCallback((target: HTMLElement) => {
         const container = target.closest("[data-article-content]") as HTMLElement | null;
         if (!container) return;
         const imgs = Array.from(container.querySelectorAll("img"));
         const srcs = imgs.map((img) => img.getAttribute("src") || "").filter(Boolean);
         const idx = imgs.indexOf(target as HTMLImageElement);
         if (srcs.length === 0) return;
-        e.preventDefault();
         setState({
             open: true,
             images: srcs,
@@ -44,6 +40,23 @@ export function useArticleImagePreview() {
             trigger: target as HTMLImageElement,
         });
     }, []);
+
+    /** 容器点击事件：命中 img 时打开预览 */
+    const onClick = useCallback((e: React.MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName !== "IMG") return;
+        e.preventDefault();
+        openPreview(target);
+    }, [openPreview]);
+
+    /** 容器键盘事件：聚焦的图片按 Enter/Space 时打开预览 */
+    const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.tagName !== "IMG") return;
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        openPreview(target);
+    }, [openPreview]);
 
     const close = useCallback(() => {
         setState((s) => ({ ...s, open: false }));
@@ -67,6 +80,7 @@ export function useArticleImagePreview() {
             ref: containerRef,
             "data-article-content": true,
             onClick,
+            onKeyDown,
         },
         /** ImagePreview 元素，渲染到组件末尾 */
         preview: previewElement,

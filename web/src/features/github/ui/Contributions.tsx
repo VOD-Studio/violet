@@ -1,6 +1,6 @@
 import { cn } from "@shared/lib/utils";
 import Empty from "@shared/ui/empty";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
 
 import { useContributions } from "../api/queries";
 import type { Contribution } from "../model/types";

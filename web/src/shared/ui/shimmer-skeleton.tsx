@@ -1,5 +1,5 @@
 import { cn } from "@shared/lib/utils";
-import * as React from "react";
+import type * as React from "react";
 
 /**
  * ShimmerSkeleton - 光影扫过精密骨架

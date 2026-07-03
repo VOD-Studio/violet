@@ -171,6 +171,7 @@ function BlogDetailPage() {
                         ref={contentRef}
                         data-article-content
                         onClick={articleImages.bind.onClick}
+                        onKeyDown={articleImages.bind.onKeyDown}
                         className="prose prose-neutral dark:prose-invert min-w-0 max-w-3xl flex-1"
                     >
                         <ArticleContent content={body} />

@@ -1,4 +1,4 @@
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import {
     Sheet,
     SheetClose,
@@ -6,7 +6,7 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-} from "@shared/ui/sheet";
+} from "@shared/ui/base/sheet";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { AdminSidebarBody } from "./AdminSidebarBody";

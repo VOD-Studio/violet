@@ -10,20 +10,20 @@ import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem } from "@features/admin-posts/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
-import { Badge } from "@shared/ui/badge";
-import { Button } from "@shared/ui/button";
+import { Badge } from "@shared/ui/base/badge";
+import { Button } from "@shared/ui/base/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@shared/ui/dropdown-menu";
+} from "@shared/ui/base/dropdown-menu";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Archive, ChevronDown, MoreHorizontal, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/base/select";
 
 /**
  * /admin/posts - 文章管理列表页

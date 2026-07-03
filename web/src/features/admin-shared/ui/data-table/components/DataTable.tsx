@@ -309,7 +309,7 @@ export function DataTable<T>({
             container.removeEventListener("scroll", checkScroll);
             window.removeEventListener("resize", checkScroll);
         };
-    }, [visibleColumns, data, checkScroll]);
+    }, [checkScroll]);
 
     // 计算带滚动状态的 offsets
     const offsetsWithScroll = useMemo(() => {

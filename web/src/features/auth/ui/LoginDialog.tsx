@@ -8,14 +8,14 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { flush, rejectAll, setOpener } from "@shared/api/auth-gate";
 import { ApiError } from "@shared/api/error";
 import { clearSessionActive } from "@shared/api/session";
-import { Button } from "@shared/ui/button";
+import { Button } from "@shared/ui/base/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Input } from "@/shared/ui/input";
-import { Label } from "@/shared/ui/label";
+import { Input } from "@/shared/ui/base/input";
+import { Label } from "@/shared/ui/base/label";
 import { Modal } from "@/shared/ui/modal";
 
 /**

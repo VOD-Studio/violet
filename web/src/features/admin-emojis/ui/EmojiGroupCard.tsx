@@ -1,10 +1,10 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
 import { useUpdateEmojiGroup } from "@features/admin-emojis/api/mutations";
 import { cn } from "@shared/lib/utils";
-import { Badge } from "@shared/ui/badge";
-import { Button } from "@shared/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@shared/ui/card";
-import { Switch } from "@shared/ui/switch";
+import { Badge } from "@shared/ui/base/badge";
+import { Button } from "@shared/ui/base/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@shared/ui/base/card";
+import { Switch } from "@shared/ui/base/switch";
 import { Hash, Pencil, Smile, SortAsc, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 

@@ -17,7 +17,7 @@ import {
     VolumeX,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/base/button";
 import { PLAYBACK_RATES, type VideoPlayerState } from "../types/video-preview-types";
 import { formatTime } from "../utils/format";
 

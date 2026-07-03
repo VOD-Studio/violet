@@ -1,4 +1,4 @@
-import { Separator } from "@shared/ui/separator";
+import { Separator } from "@shared/ui/base/separator";
 import { AdminSidebarBody } from "./AdminSidebarBody";
 
 /**

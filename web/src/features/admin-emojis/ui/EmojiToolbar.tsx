@@ -1,5 +1,5 @@
-import { Button } from "@shared/ui/button";
-import { Input } from "@shared/ui/input";
+import { Button } from "@shared/ui/base/button";
+import { Input } from "@shared/ui/base/input";
 import { Check, CheckSquare, Plus, Square, Trash2, X } from "lucide-react";
 import { SearchInput } from "@/shared/ui/search-input";
 
