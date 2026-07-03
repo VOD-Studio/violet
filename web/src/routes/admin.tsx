@@ -44,7 +44,6 @@ function useAdminTitle(): string {
     if (pathname.startsWith("/admin/users")) return "用户管理";
     if (pathname.startsWith("/admin/emojis")) return "表情管理";
     if (pathname.startsWith("/admin/posts")) return "文章管理";
-    if (pathname.startsWith("/admin/system")) return "服务器监控";
     return "后台管理";
 }
 
