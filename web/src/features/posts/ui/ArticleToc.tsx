@@ -65,6 +65,8 @@ const ArticleToc = ({ items, contentRef, onNavigate, hideTitle }: ArticleTocProp
     const active = useActiveHeading(contentRef);
     const { tree, parentMap } = useMemo(() => buildTree(items), [items]);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+    const [manualActive, setManualActive] = useState<string | null>(null);
+    const displayedActive = manualActive ?? active;
 
     const toggle = useCallback((id: string) => {
         setCollapsed((prev) => {
@@ -77,6 +79,7 @@ const ArticleToc = ({ items, contentRef, onNavigate, hideTitle }: ArticleTocProp
 
     const handleClick = useCallback(
         (id: string) => {
+            setManualActive(id);
             const el = document.getElementById(id);
             if (el) {
                 el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -86,12 +89,23 @@ const ArticleToc = ({ items, contentRef, onNavigate, hideTitle }: ArticleTocProp
         [onNavigate],
     );
 
+    /** 用户主动滚动时恢复 IntersectionObserver 驱动的高亮 */
+    useEffect(() => {
+        const clear = () => setManualActive(null);
+        window.addEventListener("wheel", clear, { passive: true });
+        window.addEventListener("touchstart", clear, { passive: true });
+        return () => {
+            window.removeEventListener("wheel", clear);
+            window.removeEventListener("touchstart", clear);
+        };
+    }, []);
+
     /** 高亮项变化时自动展开其所有父级 */
     useEffect(() => {
-        if (!active) return;
+        if (!displayedActive) return;
         setCollapsed((prev) => {
             const next = new Set(prev);
-            let id = active;
+            let id = displayedActive;
             while (parentMap.has(id)) {
                 const pid = parentMap.get(id);
                 if (!pid) break;
@@ -100,7 +114,7 @@ const ArticleToc = ({ items, contentRef, onNavigate, hideTitle }: ArticleTocProp
             }
             return next;
         });
-    }, [active, parentMap]);
+    }, [displayedActive, parentMap]);
 
     if (!items.length) return null;
 
@@ -117,7 +131,7 @@ const ArticleToc = ({ items, contentRef, onNavigate, hideTitle }: ArticleTocProp
                         <TreeNode
                             key={node.id}
                             node={node}
-                            active={active}
+                            active={displayedActive}
                             collapsed={collapsed}
                             onToggle={toggle}
                             onNavigate={handleClick}
@@ -182,10 +196,7 @@ function TreeNode({ node, active, collapsed, onToggle, onNavigate }: TreeNodePro
                         />
                     </button>
                 ) : (
-                    <span
-                        aria-hidden
-                        className="flex size-4 shrink-0 items-center justify-center"
-                    >
+                    <span aria-hidden className="flex size-4 shrink-0 items-center justify-center">
                         <span
                             className={
                                 "size-1.5 rounded-full " +
