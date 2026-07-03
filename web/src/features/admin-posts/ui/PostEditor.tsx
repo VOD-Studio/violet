@@ -300,11 +300,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                     </div>
 
                     <div className="overflow-y-auto">
-                        <PostEditorSidebar
-                            control={control}
-                            register={register}
-                            setValue={setValue}
-                        />
+                        <PostEditorSidebar control={control} register={register} />
                     </div>
                 </div>
             </div>
@@ -382,7 +378,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                 </div>
 
                 {/* 右：侧边栏 */}
-                <PostEditorSidebar control={control} register={register} setValue={setValue} />
+                <PostEditorSidebar control={control} register={register} />
             </div>
 
             {/* 插入正文图片选择器 */}

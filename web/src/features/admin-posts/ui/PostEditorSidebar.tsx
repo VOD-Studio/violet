@@ -5,20 +5,13 @@
  * 标签列表与封面选择器封装在内部。
  */
 
-import type { MediaFile } from "@entities/media/model/types";
-import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { Cover } from "@features/admin-media/ui/Cover";
 import type { PostForm } from "@features/admin-posts/model/schema";
 import { useTags } from "@features/tags/api/queries";
 import { Input } from "@shared/ui/input";
 import { Label } from "@shared/ui/label";
 import { X } from "lucide-react";
-import { useState } from "react";
-import {
-    type Control,
-    Controller,
-    type UseFormRegister,
-    type UseFormSetValue,
-} from "react-hook-form";
+import { type Control, Controller, type UseFormRegister } from "react-hook-form";
 import { Badge } from "@/shared/ui/badge";
 import { Switch } from "@/shared/ui/switch";
 import { Textarea } from "@/shared/ui/textarea";
@@ -26,16 +19,10 @@ import { Textarea } from "@/shared/ui/textarea";
 interface PostEditorSidebarProps {
     control: Control<PostForm>;
     register: UseFormRegister<PostForm>;
-    setValue: UseFormSetValue<PostForm>;
 }
 
-export function PostEditorSidebar({ control, register, setValue }: PostEditorSidebarProps) {
+export function PostEditorSidebar({ control, register }: PostEditorSidebarProps) {
     const { data: tags = [] } = useTags();
-    const [coverPickerOpen, setCoverPickerOpen] = useState(false);
-
-    const handlePickCover = (files: MediaFile[]) => {
-        if (files[0]) setValue("cover_image", files[0].url);
-    };
 
     return (
         <aside className="flex flex-col gap-4 overflow-y-auto rounded-lg border border-edge-hairline bg-background p-4">
@@ -46,30 +33,12 @@ export function PostEditorSidebar({ control, register, setValue }: PostEditorSid
                 render={({ field }) => (
                     <section className="space-y-2">
                         <Label>封面图</Label>
-                        {field.value ? (
-                            <div className="group relative overflow-hidden rounded-lg border border-edge-hairline">
-                                <img
-                                    src={field.value}
-                                    alt="封面"
-                                    className="aspect-video w-full object-cover"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setCoverPickerOpen(true)}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm text-white opacity-0 transition-opacity group-hover:opacity-100"
-                                >
-                                    更换封面
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={() => setCoverPickerOpen(true)}
-                                className="flex aspect-video w-full items-center justify-center rounded-lg border border-dashed border-edge-hairline text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-                            >
-                                选择封面图
-                            </button>
-                        )}
+                        <Cover
+                            value={field.value}
+                            onChange={field.onChange}
+                            onClear={() => field.onChange("")}
+                            title="选择封面图"
+                        />
                     </section>
                 )}
             />
@@ -173,15 +142,6 @@ export function PostEditorSidebar({ control, register, setValue }: PostEditorSid
                     />
                 </div>
             </section>
-
-            {/* 封面图选择器 */}
-            <MediaPicker
-                open={coverPickerOpen}
-                onOpenChange={setCoverPickerOpen}
-                onConfirm={handlePickCover}
-                mediaType="image"
-                title="选择封面图"
-            />
         </aside>
     );
 }
