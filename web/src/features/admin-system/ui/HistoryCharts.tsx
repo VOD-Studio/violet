@@ -2,10 +2,10 @@ import { Activity, Cpu, Gauge, HardDrive, MemoryStick, Network } from "lucide-re
 import { useMemo } from "react";
 import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
+    type ChartConfig,
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
-    type ChartConfig,
 } from "@/shared/ui/base/chart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/base/tabs";
 import { fmtBytes, fmtTime } from "../model/format";

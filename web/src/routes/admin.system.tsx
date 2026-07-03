@@ -1,8 +1,3 @@
-import { Activity, Cpu, HardDrive, MemoryStick, RefreshCw } from "lucide-react";
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Button } from "@/shared/ui/base/button";
-import { Switch } from "@/shared/ui/base/switch";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useSystemHistory, useSystemSnapshot } from "@features/admin-system/api/queries";
 import { fmtBytes, fmtUptime } from "@features/admin-system/model/format";
@@ -11,6 +6,11 @@ import { HistoryCharts } from "@features/admin-system/ui/HistoryCharts";
 import { MetricCard } from "@features/admin-system/ui/MetricCard";
 import { NetworkPanel } from "@features/admin-system/ui/NetworkPanel";
 import { RuntimePanel } from "@features/admin-system/ui/RuntimePanel";
+import { createFileRoute } from "@tanstack/react-router";
+import { Activity, Cpu, HardDrive, MemoryStick, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/shared/ui/base/button";
+import { Switch } from "@/shared/ui/base/switch";
 
 export const Route = createFileRoute("/admin/system")({ component: SystemMonitorPage });
 
@@ -27,13 +27,13 @@ function SystemMonitorPage() {
             description="服务器硬件、应用运行时与依赖状态的实时监控"
             action={
                 <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm">
                         <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
                         <span className="text-muted-foreground">自动刷新</span>
                         {autoRefresh && (
                             <span className="bg-chart-2 size-2 animate-pulse rounded-full" />
                         )}
-                    </label>
+                    </div>
                     <Button
                         variant="outline"
                         size="sm"

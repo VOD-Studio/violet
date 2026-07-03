@@ -49,7 +49,12 @@ export function MetricCard({
         >
             {/* 环形进度环 */}
             <div className="relative h-16 w-16 shrink-0">
-                <svg className="h-16 w-16 -rotate-90" viewBox="0 0 64 64">
+                <svg
+                    className="h-16 w-16 -rotate-90"
+                    viewBox="0 0 64 64"
+                    role="img"
+                    aria-label={`${title} 使用率`}
+                >
                     <circle
                         cx="32"
                         cy="32"

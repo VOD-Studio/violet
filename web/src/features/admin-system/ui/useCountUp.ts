@@ -11,36 +11,36 @@ import { useEffect, useRef, useState } from "react";
  * @param decimals 保留小数位，默认 0
  */
 export function useCountUp(target: number, duration = 800, decimals = 0): number {
-	const [display, setDisplay] = useState(target);
-	const fromRef = useRef(target);
-	const rafRef = useRef<number>(0);
+    const [display, setDisplay] = useState(target);
+    const fromRef = useRef(target);
+    const rafRef = useRef<number>(0);
 
-	useEffect(() => {
-		const from = fromRef.current;
-		const diff = target - from;
-		if (diff === 0) return;
+    useEffect(() => {
+        const from = fromRef.current;
+        const diff = target - from;
+        if (diff === 0) return;
 
-		const start = performance.now();
-		cancelAnimationFrame(rafRef.current);
+        const start = performance.now();
+        cancelAnimationFrame(rafRef.current);
 
-		const tick = (now: number) => {
-			const elapsed = now - start;
-			const progress = Math.min(elapsed / duration, 1);
-			// ease-out cubic
-			const eased = 1 - (1 - progress) ** 3;
-			const current = from + diff * eased;
-			const factor = 10 ** decimals;
-			setDisplay(Math.round(current * factor) / factor);
-			if (progress < 1) {
-				rafRef.current = requestAnimationFrame(tick);
-			} else {
-				fromRef.current = target;
-			}
-		};
+        const tick = (now: number) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            // ease-out cubic
+            const eased = 1 - (1 - progress) ** 3;
+            const current = from + diff * eased;
+            const factor = 10 ** decimals;
+            setDisplay(Math.round(current * factor) / factor);
+            if (progress < 1) {
+                rafRef.current = requestAnimationFrame(tick);
+            } else {
+                fromRef.current = target;
+            }
+        };
 
-		rafRef.current = requestAnimationFrame(tick);
-		return () => cancelAnimationFrame(rafRef.current);
-	}, [target, duration, decimals]);
+        rafRef.current = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(rafRef.current);
+    }, [target, duration, decimals]);
 
-	return display;
+    return display;
 }
