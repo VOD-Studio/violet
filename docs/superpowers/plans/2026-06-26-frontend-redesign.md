@@ -90,7 +90,7 @@ git commit -m "style: define minimalist fluid design tokens in styles.css"
 // web/src/widgets/Header.tsx
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 export default function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [scrolled, setScrolled] = useState(false);
@@ -152,7 +152,7 @@ git commit -m "feat: redesign header with glassmorphism and scroll transitions"
 
 ```tsx
 // web/src/widgets/MusicPlayer.tsx
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useState } from "react";
 
 export default function MusicPlayer() {
@@ -208,7 +208,7 @@ git commit -m "feat: redesign music player to floating capsule"
 
 ```tsx
 // web/src/widgets/Hero.tsx
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 export default function Hero() {
   return (

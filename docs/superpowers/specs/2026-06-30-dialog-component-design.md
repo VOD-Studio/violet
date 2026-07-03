@@ -23,7 +23,7 @@
 1. **两层 API 并存**：简单场景用 prop-driven（title/description/footer 当 prop），复杂场景用逃生口（自定义 children + 无 footer）。成熟库（MUI/Primer/antd）均如此。
 2. **滚动封装在组件内部**——长内容时仅 content 区滚，header/footer 固定，是组件职责，不应让调用方写布局。
 3. **form 是业务边界，组件不替它写**——但组件必须让 form 当 children 原样传入而不承担布局职责。
-4. **Radix + Motion 组合**：`forceMount` + `AnimatePresence` 包裹，Motion 接管进出动画。项目已装 `framer-motion@12`，已在 tilted-card/MusicPlayer/Hero/Header 使用。
+4. **Radix + Motion 组合**：`forceMount` + `AnimatePresence` 包裹，Motion 接管进出动画。项目已装 `motion@12`，已在 tilted-card/MusicPlayer/Hero/Header 使用。
 
 ## 目标
 

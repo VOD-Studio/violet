@@ -6,7 +6,7 @@
 
 **Architecture:** 单组件 `Dialog`（prop-driven）吃掉 header/可滚 body/固定 footer 的三段式布局 + motion AnimatePresence 动画。表单场景用 HTML 原生 `form={id}` 把 footer 的 submit 按钮关联到 children 里的 form。复杂场景（lightbox/Tabs）用 `footer={null}` + `unstyled` 逃生。原 `shared/ui/dialog.tsx`（Radix 原语）作为底座保留并兼容导出。
 
-**Tech Stack:** React 19 + TypeScript + radix-ui@1.6（Dialog 原语）+ framer-motion@12（已装）+ Tailwind v4 + Biome。
+**Tech Stack:** React 19 + TypeScript + radix-ui@1.6（Dialog 原语）+ motion@12（已装）+ Tailwind v4 + Biome。
 
 **对应 spec:** `docs/superpowers/specs/2026-06-30-dialog-component-design.md`
 
@@ -129,7 +129,7 @@ Expected: 通过。
 Create `web/src/shared/ui/dialog/Dialog.tsx`:
 
 ```tsx
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { XIcon } from "lucide-react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { Dialog as DialogPrimitive } from "radix-ui";

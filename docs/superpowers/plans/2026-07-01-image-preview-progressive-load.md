@@ -6,7 +6,7 @@
 
 **Architecture:** `ImagePreview` 新增可选 `thumbnails` 参数，内部把飞入容器从单原图层拆为"缩略图层（带模糊覆盖）+ 原图层"双层结构。飞入动画作用于外层 motion.div，缩略图层用与原图相同的 contain 约束渲染（因后端缩略图等比缩放，宽高比与原图一致，盒自然重合）。动画稳定后（`onAnimationComplete`）才加载原图，原图 `onLoad` 后缩略图+模糊层淡出。调用方 `MediaLightbox` 通过扩展 `onImageClick` 回调签名携带 `thumbnailUrl` 传入。
 
-**Tech Stack:** React 19 + TypeScript + motion (framer-motion) + Tailwind v4 + Biome。
+**Tech Stack:** React 19 + TypeScript + motion + Tailwind v4 + Biome。
 
 **Spec:** `docs/superpowers/specs/2026-06-30-image-preview-progressive-load-design.md`
 
