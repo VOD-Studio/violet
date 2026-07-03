@@ -15,6 +15,7 @@
             "**/*.json",
             "**/*.css",
             "!src/shared/vendor",
+            "!src/shared/ui",
             "!**/*.gen.ts",
             "!**/*.gen.tsx",
             "!**/.omc"
