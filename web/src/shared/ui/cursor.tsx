@@ -43,7 +43,7 @@ const CustomCursor = () => {
         <div
             ref={dotRef}
             aria-hidden
-            className="pointer-events-none fixed left-0 top-0 z-[9998] -ml-2 -mt-2 transition-[width,height,background-color] duration-200"
+            className="pointer-events-none fixed left-0 top-0 z-9998 -ml-2 -mt-2 transition-[width,height,background-color] duration-200"
             style={{
                 width: hovering ? 32 : 12,
                 height: hovering ? 32 : 12,
