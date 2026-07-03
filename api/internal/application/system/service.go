@@ -53,6 +53,9 @@ func (s *Service) checkDependencies(ctx context.Context, snap *Snapshot) {
 }
 
 func (s *Service) checkPostgres(ctx context.Context) DependencyCheck {
+	if s.db == nil {
+		return DependencyCheck{Connected: false, Error: "postgres not configured"}
+	}
 	start := time.Now()
 	sqlDB, err := s.db.DB()
 	if err != nil {
@@ -75,6 +78,9 @@ func (s *Service) checkPostgres(ctx context.Context) DependencyCheck {
 }
 
 func (s *Service) checkRedis(ctx context.Context) DependencyCheck {
+	if s.rdb == nil {
+		return DependencyCheck{Connected: false, Error: "redis not configured"}
+	}
 	start := time.Now()
 	if err := s.rdb.Ping(ctx).Err(); err != nil {
 		return DependencyCheck{Connected: false, Error: err.Error()}
