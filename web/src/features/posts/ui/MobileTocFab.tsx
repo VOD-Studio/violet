@@ -43,6 +43,7 @@ const MobileTocFab = ({ items, contentRef }: MobileTocFabProps) => {
                         items={items}
                         contentRef={contentRef}
                         hideTitle
+                        forceFocus={open}
                         onNavigate={() => setOpen(false)}
                     />
                 </div>
