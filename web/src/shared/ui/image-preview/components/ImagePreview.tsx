@@ -134,7 +134,8 @@ export function ImagePreview({
     // 缩略图+模糊层是否可见（原图加载完成淡出后隐藏）
     const showThumbLayer = useThumb && !originalLoaded;
 
-    // SSR 安全：createPortal 依赖 document.body，只在客户端挂载后渲染
+    // SSR 安全：createPortal 依赖 document.body，只在客户端挂载后渲染。
+    // 同时检测 typeof document，防止 SSR 环境意外进入 portal 分支。
     const [mounted, setMounted] = useState(false);
     useEffect(() => {
         setMounted(true);
@@ -178,7 +179,7 @@ export function ImagePreview({
 
     // 通过 portal 渲染到 body，脱离父级（如 Radix Dialog Content 的 transform）
     // 创建的 containing block / stacking context，确保 fixed 全屏定位在任意嵌套下都生效。
-    if (!mounted) return null;
+    if (typeof document === "undefined" || !mounted) return null;
 
     return createPortal(
         <AnimatePresence onExitComplete={onExitComplete}>

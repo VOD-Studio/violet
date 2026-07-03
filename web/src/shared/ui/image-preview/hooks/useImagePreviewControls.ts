@@ -149,6 +149,7 @@ export function useImagePreviewControls({
 
     useEffect(() => {
         if (open) {
+            if (typeof document === "undefined") return;
             document.body.style.overflow = "hidden";
             return () => {
                 document.body.style.overflow = "";
