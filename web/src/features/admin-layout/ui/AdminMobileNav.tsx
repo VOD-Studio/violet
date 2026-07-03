@@ -7,7 +7,8 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@shared/ui/base/sheet";
-import { Menu } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft, Menu } from "lucide-react";
 import { useState } from "react";
 import { AdminSidebarBody } from "./AdminSidebarBody";
 
@@ -39,11 +40,22 @@ export function AdminMobileNav() {
                         Mimo Admin
                     </SheetTitle>
                 </SheetHeader>
-                <div className="p-3">
+                <div className="flex h-[calc(100%-3.5rem)] flex-col p-3">
+                    <div className="flex-1 overflow-y-auto">
+                        <SheetClose asChild>
+                            <div>
+                                <AdminSidebarBody onNavigate={() => setOpen(false)} />
+                            </div>
+                        </SheetClose>
+                    </div>
                     <SheetClose asChild>
-                        <div>
-                            <AdminSidebarBody onNavigate={() => setOpen(false)} />
-                        </div>
+                        <Link
+                            to="/"
+                            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                            <ArrowLeft className="size-4 shrink-0" />
+                            返回前台
+                        </Link>
                     </SheetClose>
                 </div>
             </SheetContent>

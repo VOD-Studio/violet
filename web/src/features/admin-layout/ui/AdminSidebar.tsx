@@ -1,4 +1,6 @@
 import { Separator } from "@shared/ui/base/separator";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { AdminSidebarBody } from "./AdminSidebarBody";
 
 /**
@@ -18,7 +20,14 @@ export function AdminSidebar() {
                 <AdminSidebarBody />
             </div>
             <Separator />
-            <div className="p-3">
+            <div className="flex flex-col gap-2 p-3">
+                <Link
+                    to="/"
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                    <ArrowLeft className="size-4 shrink-0" />
+                    返回前台
+                </Link>
                 <p className="text-muted-foreground px-3 text-xs">v2.0</p>
             </div>
         </aside>
