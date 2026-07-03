@@ -63,7 +63,7 @@ func postToDomain(po model.Post) (*post.Post, error) {
 
 func (r *PostRepository) FindByID(ctx context.Context, id domainshared.ID) (*post.Post, error) {
 	var po model.Post
-	if err := r.db.WithContext(ctx).Preload("Tags").First(&po, "id = ?", id.UUID()).Error; err != nil {
+	if err := r.db.WithContext(ctx).Unscoped().Preload("Tags").First(&po, "id = ?", id.UUID()).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, post.ErrNotFound
 		}
