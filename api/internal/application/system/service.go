@@ -165,7 +165,7 @@ func ToSamplePoint(snap *Snapshot) SamplePoint {
 			UsedPercent float64 `json:"up"`
 			ReadBytes   uint64  `json:"rb"`
 			WriteBytes  uint64  `json:"wb"`
-		}{Path: d.Path, UsedPercent: d.UsedPercent})
+		}{Path: d.Path, UsedPercent: d.UsedPercent, ReadBytes: d.ReadBytes, WriteBytes: d.WriteBytes})
 	}
 	return p
 }

@@ -63,3 +63,37 @@ func TestToSamplePoint_MapsFields(t *testing.T) {
 		t.Errorf("每核数 = %v, 期望 2", len(p.CPU.PerCore))
 	}
 }
+
+// TestToSamplePoint_DiskIO 验证磁盘 IO 累计读写被正确映射到历史采样点。
+func TestToSamplePoint_DiskIO(t *testing.T) {
+	snap := &Snapshot{
+		Disk: []DiskInfo{
+			{Path: "/", UsedPercent: 40, ReadBytes: 1024, WriteBytes: 2048},
+			{Path: "/home", UsedPercent: 70, ReadBytes: 100, WriteBytes: 200},
+		},
+	}
+	p := ToSamplePoint(snap)
+	if len(p.Disk) != 2 {
+		t.Fatalf("磁盘点数 = %v, 期望 2", len(p.Disk))
+	}
+	// 第一块盘
+	if p.Disk[0].Path != "/" || p.Disk[0].UsedPercent != 40 {
+		t.Errorf("盘0 = {Path:%v, UP:%v}, 期望 {/, 40}", p.Disk[0].Path, p.Disk[0].UsedPercent)
+	}
+	if p.Disk[0].ReadBytes != 1024 || p.Disk[0].WriteBytes != 2048 {
+		t.Errorf("盘0 IO = {R:%v, W:%v}, 期望 {1024, 2048}", p.Disk[0].ReadBytes, p.Disk[0].WriteBytes)
+	}
+	// 第二块盘
+	if p.Disk[1].ReadBytes != 100 || p.Disk[1].WriteBytes != 200 {
+		t.Errorf("盘1 IO = {R:%v, W:%v}, 期望 {100, 200}", p.Disk[1].ReadBytes, p.Disk[1].WriteBytes)
+	}
+}
+
+// TestToSamplePoint_NoDisk 验证无磁盘时不产生 disk 点（避免 nil/空切片混淆）。
+func TestToSamplePoint_NoDisk(t *testing.T) {
+	snap := &Snapshot{}
+	p := ToSamplePoint(snap)
+	if len(p.Disk) != 0 {
+		t.Errorf("无磁盘时 disk 点数 = %v, 期望 0", len(p.Disk))
+	}
+}
