@@ -184,7 +184,7 @@ function EmojisPage() {
                 <Card>
                     <CardContent className="py-4">
                         <div className="flex flex-wrap items-center gap-3">
-                            <div className="min-w-[200px] max-w-[400px] flex-1">
+                            <div className="min-w-50 max-w-100 flex-1">
                                 <SearchInput
                                     placeholder="搜索分组名称..."
                                     value={searchQuery}

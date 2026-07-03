@@ -415,7 +415,7 @@ function AdminUsers() {
                     emptyDescription="还没有任何用户，点击上方按钮创建第一个用户"
                     toolbar={
                         <>
-                            <div className="min-w-50 max-w-[320px] flex-1">
+                            <div className="min-w-50 max-w-80 flex-1">
                                 <SearchInput
                                     defaultValue=""
                                     placeholder="搜索用户名 / 邮箱..."
