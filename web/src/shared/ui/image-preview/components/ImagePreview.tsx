@@ -18,6 +18,8 @@ import { ImagePreviewThumbnails } from "./ImagePreviewThumbnails";
  * 用于实现从触发元素到全屏的平滑过渡动画
  */
 function getInitialPosition(triggerElement?: HTMLElement | null, triggerRect?: DOMRect | null) {
+    if (typeof window === "undefined") return { x: 0, y: 0, scale: 0.8 };
+
     // 优先用调用方快照的 rect（触发元素可能已被卸载，运行时读不到正确位置）
     const rect = triggerRect ?? triggerElement?.getBoundingClientRect();
     if (!rect) return { x: 0, y: 0, scale: 0.8 };
@@ -44,6 +46,10 @@ const VIEWPORT_H_RATIO = 0.9;
  * 不能用 max-w/max-h（只限上限不放大，配合 absolute 子元素会塌成 0）。
  */
 function computeContainBox(naturalW: number, naturalH: number): { width: number; height: number } {
+    if (typeof window === "undefined") {
+        return { width: naturalW, height: naturalH };
+    }
+
     const maxW = window.innerWidth * VIEWPORT_W_RATIO;
     const maxH = window.innerHeight * VIEWPORT_H_RATIO;
     const ratio = naturalW / naturalH;
@@ -128,6 +134,12 @@ export function ImagePreview({
     // 缩略图+模糊层是否可见（原图加载完成淡出后隐藏）
     const showThumbLayer = useThumb && !originalLoaded;
 
+    // SSR 安全：createPortal 依赖 document.body，只在客户端挂载后渲染
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     // 打开/切换图时，立刻探测原图 natural size（new Image() 即后台预载原图），
     // 据此算出原图目标显示盒。原图加载完（onload）即缓存命中，<img> 秒显替换缩略图。
     useEffect(() => {
@@ -166,6 +178,8 @@ export function ImagePreview({
 
     // 通过 portal 渲染到 body，脱离父级（如 Radix Dialog Content 的 transform）
     // 创建的 containing block / stacking context，确保 fixed 全屏定位在任意嵌套下都生效。
+    if (!mounted) return null;
+
     return createPortal(
         <AnimatePresence onExitComplete={onExitComplete}>
             {open ? (
