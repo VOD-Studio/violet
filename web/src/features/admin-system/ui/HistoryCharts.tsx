@@ -55,7 +55,7 @@ function ChartsWithSegmented({ points }: { points: HistoryResponse["points"] }) 
                     label: (
                         <>
                             <t.icon className="size-3.5" />
-                            {t.label}
+                            <span className="hidden sm:inline">{t.label}</span>
                         </>
                     ),
                 }))}

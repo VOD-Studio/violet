@@ -125,7 +125,7 @@ function SystemMonitorPage() {
                                 label: (
                                     <>
                                         <Terminal className="size-3.5" />
-                                        运行时
+                                        <span className="hidden sm:inline">运行时</span>
                                     </>
                                 ),
                             },
@@ -134,7 +134,7 @@ function SystemMonitorPage() {
                                 label: (
                                     <>
                                         <Database className="size-3.5" />
-                                        依赖状态
+                                        <span className="hidden sm:inline">依赖状态</span>
                                     </>
                                 ),
                             },
@@ -143,7 +143,7 @@ function SystemMonitorPage() {
                                 label: (
                                     <>
                                         <Wifi className="size-3.5" />
-                                        网络
+                                        <span className="hidden sm:inline">网络</span>
                                     </>
                                 ),
                             },
