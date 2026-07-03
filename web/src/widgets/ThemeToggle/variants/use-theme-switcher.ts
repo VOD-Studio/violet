@@ -36,9 +36,7 @@ export function useThemeSwitcher() {
     // 用判空收窄替代 as 断言：next-themes 的 theme 是 string | undefined，
     // 收窄到三态之一或 undefined。显式注解避免 TS 把字面量联合拓宽成 string。
     const resolved: ThemeOption | undefined =
-        theme === "light" || theme === "dark" || theme === "system"
-            ? theme
-            : undefined;
+        theme === "light" || theme === "dark" || theme === "system" ? theme : undefined;
 
     return { theme: resolved, switchTheme };
 }

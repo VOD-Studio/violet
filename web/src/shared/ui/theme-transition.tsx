@@ -60,10 +60,7 @@ const RIPPLE_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
  * apply 负责真正的 DOM 变更（手动切换走 setTheme，跟随系统走直接改 class）。
  * 不支持 VT 的浏览器（如 Firefox）或 VT 异常时降级为直接 apply，瞬时切换。
  */
-export function animateThemeRipple(
-    origin: RippleOrigin,
-    apply: () => void,
-): void {
+export function animateThemeRipple(origin: RippleOrigin, apply: () => void): void {
     if (!supportsViewTransitions()) {
         apply();
         return;
