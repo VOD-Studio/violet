@@ -54,6 +54,10 @@ type DiskInfo struct {
 	TotalBytes  uint64  `json:"totalBytes"`
 	UsedBytes   uint64  `json:"usedBytes"`
 	UsedPercent float64 `json:"usedPercent"`
+	// IO 累计读取字节（按设备名关联 disk.IOCounters；取不到时为 0）
+	ReadBytes uint64 `json:"readBytes"`
+	// IO 累计写入字节
+	WriteBytes uint64 `json:"writeBytes"`
 }
 
 // NetworkInfo 网络信息

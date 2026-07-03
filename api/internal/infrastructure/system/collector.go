@@ -2,8 +2,10 @@
 package system
 
 import (
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 
@@ -107,20 +109,56 @@ func (c *Collector) collectDisk(snap *appsystem.Snapshot) {
 	if err != nil {
 		return
 	}
+	// 采集设备级 IO 累计值（key 为裸设备名，如 sda1/disk0）。失败时 ioCounters 为 nil，
+	// 后续匹配按零值处理，不阻断容量采集。
+	ioCounters, _ := disk.IOCounters()
 	for _, p := range partitions {
 		usage, err := disk.Usage(p.Mountpoint)
 		if err != nil {
 			continue
 		}
-		snap.Disk = append(snap.Disk, appsystem.DiskInfo{
+		info := appsystem.DiskInfo{
 			Device:      p.Device,
 			Fstype:      p.Fstype,
 			Path:        p.Mountpoint,
 			TotalBytes:  usage.Total,
 			UsedBytes:   usage.Used,
 			UsedPercent: usage.UsedPercent,
-		})
+		}
+		// 把分区设备路径关联到 IOCounters：精确 base 匹配，再回退到去分区号前缀匹配
+		// （macOS 上分区 device 形如 disk1s1，IOCounters key 为 disk1）。
+		if rb, wb, ok := matchDiskIO(p.Device, ioCounters); ok {
+			info.ReadBytes = rb
+			info.WriteBytes = wb
+		}
+		snap.Disk = append(snap.Disk, info)
 	}
+}
+
+// matchDiskIO 在 IOCounters 表中匹配给定设备路径的累计读写字节。
+//
+// 匹配策略（按优先级，任一命中即返回）：
+//  1. 设备路径的 base name 精确匹配（如 /dev/sda1 → sda1）
+//  2. 双向前缀匹配：device 的 base 与 counter 的 key 互为前缀
+//     （macOS: 分区 disk1s1 ↔ IOCounters key disk1；Linux: 分区 sda1 ↔ key sda）
+//
+// 匹配不到返回 ok=false，调用方按零值处理。
+func matchDiskIO(device string, counters map[string]disk.IOCountersStat) (read, write uint64, ok bool) {
+	if device == "" || len(counters) == 0 {
+		return 0, 0, false
+	}
+	base := filepath.Base(device)
+	// 1. 精确匹配
+	if c, hit := counters[base]; hit {
+		return c.ReadBytes, c.WriteBytes, true
+	}
+	// 2. 双向前缀匹配：处理分区号造成的命名差异（disk1s1 vs disk1、sda1 vs sda）
+	for name, c := range counters {
+		if strings.HasPrefix(base, name) || strings.HasPrefix(name, base) {
+			return c.ReadBytes, c.WriteBytes, true
+		}
+	}
+	return 0, 0, false
 }
 
 func (c *Collector) collectNetwork(snap *appsystem.Snapshot) {
