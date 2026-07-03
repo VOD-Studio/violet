@@ -75,5 +75,5 @@ export function PermissionGuard({
     }
 
     // 有权限时渲染 children，无权限时渲染 fallback
-    return hasPermission ? <>{children}</> : <>{fallback}</>;
+    return hasPermission ? children : fallback;
 }

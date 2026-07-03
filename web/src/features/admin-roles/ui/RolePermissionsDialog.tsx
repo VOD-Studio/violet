@@ -159,8 +159,9 @@ export function RolePermissionsDialog({
                             {/* 权限列表 */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
                                 {actions.map((permission) => {
-                                    if (!permission.code) return null;
-                                    const isChecked = selectedCodes.has(permission.code);
+                                    const code = permission.code;
+                                    if (!code) return null;
+                                    const isChecked = selectedCodes.has(code);
 
                                     return (
                                         <div
@@ -170,9 +171,7 @@ export function RolePermissionsDialog({
                                             <Checkbox
                                                 id={`permission-${permission.id}`}
                                                 checked={isChecked}
-                                                onCheckedChange={() =>
-                                                    handleToggle(permission.code!)
-                                                }
+                                                onCheckedChange={() => handleToggle(code)}
                                             />
                                             <div className="flex-1">
                                                 <Label

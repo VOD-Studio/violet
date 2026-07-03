@@ -40,7 +40,7 @@ export function AvatarGroup({ users, size = "sm", max = 5, className }: AvatarGr
             <div className="flex -space-x-1 group-hover:space-x-1">
                 {visible.map((u, i) => (
                     <span
-                        key={u.username}
+                        key={i}
                         title={u.username}
                         style={{ zIndex: visible.length - i }}
                         className={cn(
