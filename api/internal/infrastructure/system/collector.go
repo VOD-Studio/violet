@@ -170,7 +170,7 @@ func (c *Collector) collectNetwork(snap *appsystem.Snapshot) {
 			}
 			snap.Network.Interfaces = append(snap.Network.Interfaces, appsystem.NetInterface{
 				Name:  iface.Name,
-				MTU:   int(iface.MTU),
+				MTU:   iface.MTU,
 				Flags: iface.Flags,
 				Addrs: addrs,
 			})
