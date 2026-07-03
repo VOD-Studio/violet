@@ -37,6 +37,12 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 }
 
 /*
@@ -72,6 +78,13 @@
   --edge-hairline: rgba(0, 0, 0, 0.05);
   --surface-glass: rgba(255, 255, 255, 0.5);
   --glow-soft: 220 90% 60%;
+
+  /* shadcn charts 调色板（5 色） */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
 }
 
 /*
@@ -105,6 +118,13 @@
   --edge-hairline: rgba(255, 255, 255, 0.1);
   --surface-glass: rgba(0, 0, 0, 0.5);
   --glow-soft: 210 100% 70%;
+
+  /* shadcn charts 调色板（暗色 5 色） */
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
 }
 
 @keyframes blob {
@@ -223,4 +243,30 @@ body {
 
 .code-block-scrollbar:hover::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* 监控面板动画 */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out both;
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
 }
