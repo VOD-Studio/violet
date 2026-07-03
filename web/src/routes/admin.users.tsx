@@ -21,6 +21,8 @@ import { Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMe } from "@/features/auth/api/queries";
+import { avatarUrl } from "@/features/upload/lib/imageUrl";
+import { AvatarGroup } from "@/shared/ui/avatar-group/AvatarGroup";
 import { Button } from "@/shared/ui/button";
 import { SearchInput } from "@/shared/ui/search-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -161,6 +163,20 @@ function AdminUsers() {
     };
 
     const columns: DataTableColumn<AdminUserDTO>[] = [
+        {
+            key: "avatar",
+            header: "头像",
+            width: "72px",
+            align: "center",
+            cell: (row) => (
+                <AvatarGroup
+                    users={[
+                        { username: row.username, avatar_url: avatarUrl(row.avatar, row.username) },
+                    ]}
+                    size="md"
+                />
+            ),
+        },
         {
             key: "username",
             header: "用户名",
