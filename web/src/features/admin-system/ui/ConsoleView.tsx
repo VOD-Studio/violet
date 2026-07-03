@@ -31,38 +31,55 @@ interface ConsoleViewProps {
 /** MetricKey - 可在右侧时序图展示的指标键 */
 type MetricKey = "cpu" | "mem" | "netSent" | "netRecv" | "goroutines" | "load";
 
+/** GaugeItem - 单个环形仪表的渲染数据（填充比例与显示文本解耦） */
+interface GaugeItem {
+    /** 对应右侧时序图的指标键 */
+    key: MetricKey;
+    /** 仪表标签 */
+    label: string;
+    /** 环色（CSS 变量） */
+    color: string;
+    /** 环填充比例，0-1 */
+    ratio: number;
+    /** 环中央显示文本 */
+    display: string;
+}
+
 /** ConsoleView - 控制台视图：左侧环形仪表组 + 右侧选中指标时序图 */
 export function ConsoleView({ snapshot, history }: ConsoleViewProps) {
     const [selected, setSelected] = useState<MetricKey>("cpu");
 
-    const gauges = [
+    const cores = snapshot.cpu.cores || 1;
+    const gauges: GaugeItem[] = [
         {
-            key: "cpu" as const,
+            key: "cpu",
             label: "CPU",
-            value: snapshot.cpu.usagePercent,
-            max: 100,
             color: "var(--chart-1)",
+            ratio: snapshot.cpu.usagePercent / 100,
+            display: formatPercent(snapshot.cpu.usagePercent, 0),
         },
         {
-            key: "mem" as const,
+            key: "mem",
             label: "内存",
-            value: snapshot.memory.usedPercent,
-            max: 100,
             color: "var(--chart-2)",
+            ratio: snapshot.memory.usedPercent / 100,
+            display: formatPercent(snapshot.memory.usedPercent, 0),
         },
         {
-            key: "load" as const,
+            key: "load",
             label: "负载",
-            value: snapshot.load.load1,
-            max: snapshot.cpu.cores || 1,
             color: "var(--chart-3)",
+            // 负载满量程 = 核心数；环按负载/核数填充，中央显示原始 load 值
+            ratio: Math.min(snapshot.load.load1 / cores, 1),
+            display: snapshot.load.load1.toFixed(2),
         },
         {
-            key: "goroutines" as const,
-            label: "GC",
-            value: snapshot.runtime.gc.numGC % 100,
-            max: 100,
+            key: "goroutines",
+            label: "goroutines",
             color: "var(--chart-4)",
+            // goroutines 满量程取 2000（经验值），环按比例填充，中央显示真实数量
+            ratio: Math.min(snapshot.runtime.goroutines / 2000, 1),
+            display: String(snapshot.runtime.goroutines),
         },
     ];
 
@@ -76,9 +93,9 @@ export function ConsoleView({ snapshot, history }: ConsoleViewProps) {
                             <Gauge
                                 key={g.key}
                                 label={g.label}
-                                value={g.value}
-                                max={g.max}
                                 color={g.color}
+                                ratio={g.ratio}
+                                display={g.display}
                                 onClick={() => setSelected(g.key)}
                                 active={selected === g.key}
                             />
@@ -164,12 +181,12 @@ const METRIC_META: Record<
 interface GaugeProps {
     /** 仪表标签 */
     label: string;
-    /** 当前值 */
-    value: number;
-    /** 满量程 */
-    max: number;
     /** 环色（CSS 变量） */
     color: string;
+    /** 环填充比例，0-1 */
+    ratio: number;
+    /** 环中央显示文本 */
+    display: string;
     /** 点击切换右侧时序图 */
     onClick: () => void;
     /** 是否选中（高亮） */
@@ -177,11 +194,9 @@ interface GaugeProps {
 }
 
 /** Gauge - 单个环形仪表（点击联动右侧时序图） */
-function Gauge({ label, value, max, color, onClick, active }: GaugeProps) {
+function Gauge({ label, color, ratio, display, onClick, active }: GaugeProps) {
     const config: ChartConfig = { value: { label, color } };
-    const clamped = max > 0 ? Math.min(value / max, 1) : 0;
-    const data = [{ name: label, value: clamped * 100 }];
-    const pct = max <= 100 ? value : clamped * 100;
+    const data = [{ name: label, value: Math.min(Math.max(ratio, 0), 1) * 100 }];
 
     return (
         <button
@@ -189,30 +204,31 @@ function Gauge({ label, value, max, color, onClick, active }: GaugeProps) {
             onClick={onClick}
             className={`flex flex-col items-center rounded-md p-1 transition-colors ${active ? "bg-accent" : "hover:bg-accent/50"}`}
         >
-            <ChartContainer config={config} className="size-20">
-                <RadialBarChart
-                    data={data}
-                    startAngle={90}
-                    endAngle={-270}
-                    innerRadius="70%"
-                    outerRadius="100%"
-                >
-                    <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                    <RadialBar
-                        dataKey="value"
-                        background
-                        cornerRadius={6}
-                        fill={color}
-                        isAnimationActive={false}
-                    />
-                </RadialBarChart>
-            </ChartContainer>
-            <div className="-mt-10 mb-1 text-center">
-                <div className="text-sm font-semibold tabular-nums">
-                    {max <= 100 ? formatPercent(pct as number, 0) : value.toFixed(2)}
+            {/* 环 + 中央数字：数字用绝对定位真正居中于环内 */}
+            <div className="relative size-20">
+                <ChartContainer config={config} className="size-20">
+                    <RadialBarChart
+                        data={data}
+                        startAngle={90}
+                        endAngle={-270}
+                        innerRadius="70%"
+                        outerRadius="100%"
+                    >
+                        <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                        <RadialBar
+                            dataKey="value"
+                            background
+                            cornerRadius={6}
+                            fill={color}
+                            isAnimationActive={false}
+                        />
+                    </RadialBarChart>
+                </ChartContainer>
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-semibold tabular-nums">{display}</span>
                 </div>
             </div>
-            <span className="text-muted-foreground text-xs">{label}</span>
+            <span className="text-muted-foreground mt-1 text-xs">{label}</span>
         </button>
     );
 }
