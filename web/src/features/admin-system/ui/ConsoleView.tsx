@@ -5,24 +5,17 @@ import {
     ChartTooltipContent,
 } from "@shared/ui/base/chart";
 import { format } from "date-fns";
+import { Activity, Cpu, Gauge as GaugeIcon, MemoryStick } from "lucide-react";
 import { useState } from "react";
-import {
-    Area,
-    AreaChart,
-    CartesianGrid,
-    PolarAngleAxis,
-    RadialBar,
-    RadialBarChart,
-    XAxis,
-    YAxis,
-} from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import type { SystemHistoryDTO, SystemSamplePointDTO, SystemSnapshotDTO } from "../model/types";
+import { DependencyPanel } from "./DependencyPanel";
 import { formatPercent, formatRate, formatUptime } from "./format";
-import { DependencyStatus } from "./sections/DependencyStatus";
+import { MetricCard } from "./MetricCard";
 
-/** ConsoleViewProps - 控制台环形仪表视图 props */
+/** ConsoleViewProps - 控制台指标卡视图 props */
 interface ConsoleViewProps {
-    /** 当前实时快照（驱动环形仪表与中央 uptime） */
+    /** 当前实时快照（驱动指标卡与 uptime） */
     snapshot: SystemSnapshotDTO;
     /** 历史采样点（驱动右侧选中指标时序图） */
     history: SystemHistoryDTO;
@@ -31,91 +24,70 @@ interface ConsoleViewProps {
 /** MetricKey - 可在右侧时序图展示的指标键 */
 type MetricKey = "cpu" | "mem" | "netSent" | "netRecv" | "goroutines" | "load";
 
-/** GaugeItem - 单个环形仪表的渲染数据（填充比例与显示文本解耦） */
-interface GaugeItem {
-    /** 对应右侧时序图的指标键 */
-    key: MetricKey;
-    /** 仪表标签 */
-    label: string;
-    /** 环色（CSS 变量） */
-    color: string;
-    /** 环填充比例，0-1 */
-    ratio: number;
-    /** 环中央显示文本 */
-    display: string;
-}
-
-/** ConsoleView - 控制台视图：左侧环形仪表组 + 右侧选中指标时序图 */
+/** ConsoleView - 控制台视图：左侧 MetricCard 指标卡组 + 右侧选中指标时序图 */
 export function ConsoleView({ snapshot, history }: ConsoleViewProps) {
     const [selected, setSelected] = useState<MetricKey>("cpu");
 
     const cores = snapshot.cpu.cores || 1;
-    const gauges: GaugeItem[] = [
-        {
-            key: "cpu",
-            label: "CPU",
-            color: "var(--chart-1)",
-            ratio: snapshot.cpu.usagePercent / 100,
-            display: formatPercent(snapshot.cpu.usagePercent, 0),
-        },
-        {
-            key: "mem",
-            label: "内存",
-            color: "var(--chart-2)",
-            ratio: snapshot.memory.usedPercent / 100,
-            display: formatPercent(snapshot.memory.usedPercent, 0),
-        },
-        {
-            key: "load",
-            label: "负载",
-            color: "var(--chart-3)",
-            // 负载满量程 = 核心数；环按负载/核数填充，中央显示原始 load 值
-            ratio: Math.min(snapshot.load.load1 / cores, 1),
-            display: snapshot.load.load1.toFixed(2),
-        },
-        {
-            key: "goroutines",
-            label: "goroutines",
-            color: "var(--chart-4)",
-            // goroutines 满量程取 2000（经验值），环按比例填充，中央显示真实数量
-            ratio: Math.min(snapshot.runtime.goroutines / 2000, 1),
-            display: String(snapshot.runtime.goroutines),
-        },
-    ];
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {/* 左侧：环形仪表组 + 中央 uptime */}
-                <div className="border-border bg-card relative rounded-lg border p-4">
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
-                        {gauges.map((g) => (
-                            <Gauge
-                                key={g.key}
-                                label={g.label}
-                                color={g.color}
-                                ratio={g.ratio}
-                                display={g.display}
-                                onClick={() => setSelected(g.key)}
-                                active={selected === g.key}
-                            />
-                        ))}
-                    </div>
-                    <div className="text-muted-foreground mt-4 text-center">
-                        <div className="text-xs">uptime</div>
-                        <div className="text-foreground text-lg font-semibold tabular-nums">
-                            {formatUptime(snapshot.runtime.uptimeSeconds)}
-                        </div>
-                    </div>
-                </div>
+            {/* 指标卡组：点击联动右侧时序图，选中态用 ring 高亮 */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <SelectableCard active={selected === "cpu"} onClick={() => setSelected("cpu")}>
+                    <MetricCard
+                        title="CPU"
+                        percent={snapshot.cpu.usagePercent}
+                        subtitle={`${cores} 核`}
+                        icon={<Cpu className="size-5" />}
+                        delay={0}
+                    />
+                </SelectableCard>
+                <SelectableCard active={selected === "mem"} onClick={() => setSelected("mem")}>
+                    <MetricCard
+                        title="内存"
+                        percent={snapshot.memory.usedPercent}
+                        icon={<MemoryStick className="size-5" />}
+                        delay={80}
+                    />
+                </SelectableCard>
+                <SelectableCard active={selected === "load"} onClick={() => setSelected("load")}>
+                    <MetricCard
+                        title="负载"
+                        ratio={Math.min(snapshot.load.load1 / cores, 1)}
+                        display={snapshot.load.load1.toFixed(2)}
+                        subtitle={`${cores} 核满载`}
+                        icon={<GaugeIcon className="size-5" />}
+                        delay={160}
+                    />
+                </SelectableCard>
+                <SelectableCard
+                    active={selected === "goroutines"}
+                    onClick={() => setSelected("goroutines")}
+                >
+                    <MetricCard
+                        title="goroutines"
+                        ratio={Math.min(snapshot.runtime.goroutines / 2000, 1)}
+                        display={String(snapshot.runtime.goroutines)}
+                        subtitle={`GC ${snapshot.runtime.gc.numGC} 次`}
+                        icon={<Activity className="size-5" />}
+                        delay={240}
+                    />
+                </SelectableCard>
+            </div>
 
-                {/* 右侧：选中指标的历史时序图 */}
-                <div className="border-border bg-card rounded-lg border p-4">
-                    <h4 className="mb-2 text-sm font-medium">
-                        {METRIC_META[selected].label} · 历史
-                    </h4>
-                    <DetailChart history={history} metric={selected} />
-                </div>
+            {/* uptime */}
+            <div className="text-muted-foreground text-center text-sm">
+                uptime{" "}
+                <span className="text-foreground font-semibold tabular-nums">
+                    {formatUptime(snapshot.runtime.uptimeSeconds)}
+                </span>
+            </div>
+
+            {/* 选中指标的历史时序图 */}
+            <div className="border-border bg-card rounded-lg border p-4">
+                <h4 className="mb-2 text-sm font-medium">{METRIC_META[selected].label} · 历史</h4>
+                <DetailChart history={history} metric={selected} />
             </div>
 
             {/* 依赖状态卡 */}
@@ -123,9 +95,32 @@ export function ConsoleView({ snapshot, history }: ConsoleViewProps) {
                 <h3 className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                     依赖服务
                 </h3>
-                <DependencyStatus dependencies={snapshot.dependencies} />
+                <DependencyPanel data={snapshot} />
             </div>
         </div>
+    );
+}
+
+/** SelectableCardProps - 可选中卡片容器 props */
+interface SelectableCardProps {
+    /** 点击选中 */
+    onClick: () => void;
+    /** 是否选中（ring 高亮） */
+    active: boolean;
+    /** 包裹的卡片内容 */
+    children: React.ReactNode;
+}
+
+/** SelectableCard - 包裹 MetricCard 使其可点击选中，选中态用 ring 高亮 */
+function SelectableCard({ onClick, active, children }: SelectableCardProps) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`rounded-xl text-left transition-shadow ${active ? "ring-2 ring-ring ring-offset-2 ring-offset-background" : "hover:ring-2 hover:ring-ring/40"}`}
+        >
+            {children}
+        </button>
     );
 }
 
@@ -176,62 +171,6 @@ const METRIC_META: Record<
         formatValue: (v) => v.toFixed(2),
     },
 };
-
-/** GaugeProps - 单个环形仪表 props */
-interface GaugeProps {
-    /** 仪表标签 */
-    label: string;
-    /** 环色（CSS 变量） */
-    color: string;
-    /** 环填充比例，0-1 */
-    ratio: number;
-    /** 环中央显示文本 */
-    display: string;
-    /** 点击切换右侧时序图 */
-    onClick: () => void;
-    /** 是否选中（高亮） */
-    active: boolean;
-}
-
-/** Gauge - 单个环形仪表（点击联动右侧时序图） */
-function Gauge({ label, color, ratio, display, onClick, active }: GaugeProps) {
-    const config: ChartConfig = { value: { label, color } };
-    const data = [{ name: label, value: Math.min(Math.max(ratio, 0), 1) * 100 }];
-
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className={`flex flex-col items-center rounded-md p-1 transition-colors ${active ? "bg-accent" : "hover:bg-accent/50"}`}
-        >
-            {/* 环 + 中央数字：数字用绝对定位真正居中于环内 */}
-            <div className="relative size-20">
-                <ChartContainer config={config} className="size-20">
-                    <RadialBarChart
-                        data={data}
-                        startAngle={90}
-                        endAngle={-270}
-                        innerRadius="70%"
-                        outerRadius="100%"
-                    >
-                        <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                        <RadialBar
-                            dataKey="value"
-                            background
-                            cornerRadius={6}
-                            fill={color}
-                            isAnimationActive={false}
-                        />
-                    </RadialBarChart>
-                </ChartContainer>
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-semibold tabular-nums">{display}</span>
-                </div>
-            </div>
-            <span className="text-muted-foreground mt-1 text-xs">{label}</span>
-        </button>
-    );
-}
 
 /** DetailChartProps - 右侧时序图 props */
 interface DetailChartProps {
