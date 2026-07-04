@@ -55,10 +55,10 @@ func TestSetAuthTokenCookies_AccessCookieIsHttpOnly(t *testing.T) {
 	assert.Equal(t, "/", c.Path)
 }
 
-// TestSetAuthTokenCookies_RefreshCookieScopedToAuth refresh cookie Path 限定 /api/v1/auth，
-// 匹配 refresh/logout 路由的实际挂载路径（chi 以 full path 匹配 cookie），
-// 缩小暴露面（仅 refresh 与 logout 端点会收到）
-func TestSetAuthTokenCookies_RefreshCookieScopedToAuth(t *testing.T) {
+// TestSetAuthTokenCookies_RefreshCookiePathIsRoot refresh cookie Path 必须为 "/"，
+// 否则 SSR 拿不到它（浏览器加载页面时请求路径不在 /api/v1/auth 下，不会附带
+// Path 限定的 cookie）。安全性靠 HttpOnly + SameSite，不靠 Path 限定。
+func TestSetAuthTokenCookies_RefreshCookiePathIsRoot(t *testing.T) {
 	w := httptest.NewRecorder()
 	cfg := testCookieCfg()
 
@@ -66,7 +66,7 @@ func TestSetAuthTokenCookies_RefreshCookieScopedToAuth(t *testing.T) {
 
 	c := findCookie(t, w.Result().Cookies(), "mimo_refresh")
 	assert.True(t, c.HttpOnly, "refresh cookie 必须 HttpOnly")
-	assert.Equal(t, RefreshCookiePath, c.Path, "refresh cookie Path 必须匹配 refresh/logout 路由前缀")
+	assert.Equal(t, "/", c.Path, "refresh cookie Path 必须为 /，否则 SSR 拿不到")
 	assert.Equal(t, "refresh-token", c.Value)
 }
 

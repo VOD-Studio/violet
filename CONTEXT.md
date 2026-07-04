@@ -9,7 +9,7 @@
 _Avoid_: session token, login token
 
 **Refresh Token**:
-长期 JWT（默认 7d），仅用于在 Access Token 过期后换取新的 Access Token。存于 Path 限定为 `/api/v1/auth` 的 HttpOnly Cookie，每个用户同一时刻只有**一个**有效（单槽白名单）。
+长期 JWT（默认 7d），仅用于在 Access Token 过期后换取新的 Access Token。存于 Path=`/` 的 HttpOnly Cookie（SameSite=lax），每个用户同一时刻只有**一个**有效（单槽白名单）。Path 必须为 `/`：若限定 `/api/v1/auth`，SSR 加载页面（路径如 `/posts`）时浏览器不会附带该 cookie，导致 SSR 续期失败。安全性靠 HttpOnly + SameSite，不靠 Path 限定。
 _Avoid_: session token, long-lived token
 
 **Token Envelope（信封）**:

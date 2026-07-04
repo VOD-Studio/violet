@@ -33,14 +33,15 @@ const CSRFCookieMaxAge = 7 * 24 * 3600
 
 // RefreshCookiePath refresh token Cookie 的 Path。
 //
-// 必须匹配 refresh/logout 路由的实际挂载路径（chi 以 full path 匹配 cookie）：
+// 用 "/" 而非 "/api/v1/auth"：refresh cookie 必须对所有路由可见，否则 SSR 拿不到它。
+// SSR server 收到的 cookie 来自浏览器加载页面时的请求（如 GET /posts），该请求路径
+// 不在 /api/v1/auth 下，浏览器按 Path 前缀规则不会附带 Path=/api/v1/auth 的 cookie，
+// 导致 SSR 转发给后端的请求缺少 refresh token → empty_refresh_token → 静默掉登录。
 //
-//	r.Route("/api/v1", ...) → v1.Route("/auth", ...) → /api/v1/auth/*
-//
-// Cookie Path 是 URL 路径前缀，浏览器仅当请求路径等于或位于该前缀下时才发送。
-// 历史上误写为 "/auth"，导致请求 /api/v1/auth/refresh 时浏览器不附带 refresh
-// cookie，后端读到"缺少 refresh_token"。Set 与 Clear 必须用同一值，否则无法清除。
-const RefreshCookiePath = "/api/v1/auth"
+// 安全性不依赖 Path 限定：HttpOnly 防 JS 读取（XSS 偷不走），SameSite=lax 防 CSRF，
+// Secure（生产）防明文传输。Path=/ 是业界（Supabase/Next-Auth/SuperTokens）的标准做法。
+// Set 与 Clear 必须用同一值，否则浏览器不会删除。
+const RefreshCookiePath = "/"
 
 // SetAuthTokenCookies 下发 access + refresh 两个 HttpOnly Cookie
 //
@@ -73,7 +74,7 @@ func SetAuthTokenCookies(w http.ResponseWriter, access, refresh, csrfToken strin
 	http.SetCookie(w, accessCookie)
 
 	// refresh token：HttpOnly（JS 不可读）+ MaxAge 与 refresh JWT exp 对齐
-	// Path 限定 /api/v1/auth：仅 refresh/logout 路由会收到，缩小暴露面。
+	// Path=/：必须对所有路由可见，否则 SSR 拿不到（见 RefreshCookiePath 注释）。
 	refreshCookie := &http.Cookie{
 		Name:     cfg.RefreshName,
 		Value:    refresh,
