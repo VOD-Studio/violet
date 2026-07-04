@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/rs/zerolog/log"
 
 	"blog-api/config"
 	authcmd "blog-api/internal/application/auth/command"
@@ -278,6 +279,17 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		// 没带 refresh token = 会话不存在/已过期，属鉴权失败而非服务端错误。
 		// 必须返回 401（ErrInvalidCredentials）以触发前端的降级链路（弹窗重登），
 		// 而非 500——裸 error 会被 RespondError 兜底成 INTERNAL_ERROR。
+		// 打印请求实际携带的 cookie 名，区分「cookie 没发」「发了但没 refresh」。
+		cookieNames := make([]string, 0, len(r.Cookies()))
+		for _, c := range r.Cookies() {
+			cookieNames = append(cookieNames, c.Name)
+		}
+		log.Warn().
+			Str("reason", "empty_refresh_token").
+			Strs("cookies", cookieNames).
+			Str("refresh_cookie_name", h.cookieCfg.RefreshName).
+			Str("request_path", r.URL.Path).
+			Msg("refresh 失败：请求未携带 refresh token")
 		response.RespondError(w, r, user.ErrInvalidCredentials)
 		return
 	}
