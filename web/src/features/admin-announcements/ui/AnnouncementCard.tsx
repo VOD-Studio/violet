@@ -1,27 +1,25 @@
 /**
- * AnnouncementCard - 公告事件票据（card 形态）
+ * AnnouncementCard - 公告卡片（card / article 两态共用）
  *
- * 渲染为「事件票据」而非文章卡片。核心区别于 PostCard：
- * 无封面图、无作者、无标签、无阅读时长——这些是「作品」属性，
- * 公告是「事件」没有。
+ * 两态在首页有明确视觉与交互差异：
+ * - card（事件票据）：自包含通知，无封面、不可点击、无详情页。
+ *   读完即止，content/excerpt 就是全部。
+ * - article（事件简报入口）：带封面图 + 「阅读全文 →」引导，
+ *   整卡可点击，跳转 /announcements/:id 看正文。
  *
- * 用项目已验证可用的 SpotlightCard 作外壳（不依赖硬编码尺寸的 react-bits），
- * severity 通过左侧色条 + 配色表达。标题用 DecryptedText 解码入场。
- * 点击整卡跳转 article 详情页 /announcements/:id。
+ * 用 SpotlightCard 外壳 + 左侧 severity 色条。标题用 DecryptedText 解码。
  */
 import type { Announcement } from "@features/settings/model/types";
 import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 /** severity → 视觉配置 */
 interface SevCfg {
     label: string;
     text: string;
-    /** 左侧色条颜色（Tailwind bg 类） */
     bar: string;
-    /** 标签徽章背景 + 文字 */
     badge: string;
 }
 
@@ -58,19 +56,27 @@ export interface AnnouncementCardProps {
 
 export default function AnnouncementCard({ announcement: a }: AnnouncementCardProps) {
     const cfg = SEVERITY[a.severity] ?? SEVERITY.info;
+    const isArticle = a.display === "article";
     const stamp = a.created_at
         ? new Date(a.created_at).toISOString().slice(0, 16).replace("T", " ")
         : "";
 
-    return (
-        <SpotlightCard className="group flex">
-            {/* severity 左侧色条 */}
-            <div className={`w-1 shrink-0 ${cfg.bar}`} aria-hidden />
-            <Link
-                to="/announcements/$id"
-                params={{ id: String(a.id) }}
-                className="flex flex-1 flex-col p-5 font-mono"
-            >
+    // 卡片正文（标题 + 摘要 + affects + 底部），card 与 article 共用
+    const body = (
+        <>
+            {/* article 形态：顶部封面图（card 形态无封面） */}
+            {isArticle && a.cover_image && (
+                <div className="aspect-2/1 w-full overflow-hidden border-b border-edge-hairline">
+                    <img
+                        src={a.cover_image}
+                        alt={a.title}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                </div>
+            )}
+
+            <div className="flex flex-1 flex-col p-5 font-mono">
                 {/* 顶部 metadata */}
                 <div className="mb-3 flex items-center justify-between">
                     <span
@@ -120,11 +126,39 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
                 {/* 底部票据区 */}
                 <div className="mt-auto flex items-center justify-between border-t border-edge-hairline pt-2 text-[10px] text-muted-foreground">
                     <span>{stamp}</span>
-                    <span className="flex items-center gap-0.5 transition-colors group-hover:text-foreground">
-                        open manifest <ArrowUpRight className="size-3" />
-                    </span>
+                    {isArticle ? (
+                        <span className="flex items-center gap-0.5 font-medium transition-colors group-hover:text-foreground">
+                            阅读全文 <ArrowRight className="size-3" />
+                        </span>
+                    ) : (
+                        <span className="opacity-60">standalone</span>
+                    )}
                 </div>
-            </Link>
+            </div>
+        </>
+    );
+
+    // article：整卡可点击，套 Link
+    if (isArticle) {
+        return (
+            <SpotlightCard className="group flex">
+                <div className={`w-1 shrink-0 ${cfg.bar}`} aria-hidden />
+                <Link
+                    to="/announcements/$id"
+                    params={{ id: String(a.id) }}
+                    className="flex flex-1 flex-col"
+                >
+                    {body}
+                </Link>
+            </SpotlightCard>
+        );
+    }
+
+    // card：自包含，不可点击
+    return (
+        <SpotlightCard className="group flex">
+            <div className={`w-1 shrink-0 ${cfg.bar}`} aria-hidden />
+            <div className="flex flex-1 flex-col">{body}</div>
         </SpotlightCard>
     );
 }
