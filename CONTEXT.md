@@ -31,6 +31,13 @@ _Avoid_: refresh token reuse（这是要检测的攻击，不是机制）
 使一个仍有效的 Refresh Token 失效。触发场景：登出、改密码、重置密码、检测到重用。通过删除 Redis 白名单单槽实现。
 _Avoid_: logout（吊销是机制，登出是触发场景之一）
 
+**SSR 会话探活**:
+SSR（TanStack Start）判断当前请求是否登录的方式。用 middleware 直接读 access cookie + 公钥验 ES256 JWT，从 claims 拿 user_id/email/role，注入 router context。**不调 HTTP `/auth/me`**——后者绕一圈 HTTP 会触发 SSR refresh，而 server function 的 Set-Cookie 不透传浏览器，导致持续掉登录（见 ADR-0002）。
+_Avoid_: SSR 鉴权（混淆了"探活"与"取完整用户信息"——完整 UserDTO 由客户端 useMe 按需拉）
+
+**SSR 不续期**:
+续期（refresh）只由客户端做。SSR 端 access 过期即判未登录，hydrate 后客户端 axios 拦截 401 → 调 `/auth/refresh`（真实 HTTP，Set-Cookie 正确写入浏览器）→ 重放。SSR 不参与 refresh，避免 server function 吞 Set-Cookie。
+
 ## 文章导航（Article Navigation）
 
 **TOC（Table of Contents）**:
