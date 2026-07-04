@@ -12,11 +12,12 @@ import {
 import { Switch } from "@shared/ui/base/switch";
 import { Textarea } from "@shared/ui/base/textarea";
 import { Modal } from "@shared/ui/modal";
-import { addDays, addHours, startOfHour } from "date-fns";
+import { addDays, addHours, endOfDay, format, startOfDay, startOfHour } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { DateTimePickerField, formatPickerValue } from "@/shared/ui/date-time-picker";
+import type { DateTimeRange, DateTimeRangePreset } from "@/shared/ui/date-time-picker";
+import { DateTimeRangePickerField } from "@/shared/ui/date-time-picker";
 import { useCreateAnnouncement, useUpdateAnnouncement } from "../api/queries";
 import { type AnnouncementForm, announcementSchema } from "../model/schema";
 import type { AnnouncementDTO, AnnouncementType } from "../model/types";
@@ -53,8 +54,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             content: "",
             type: "info",
             isActive: true,
-            startTime: "",
-            endTime: "",
+            timeRange: { start: "", end: "" },
         },
     });
 
@@ -66,9 +66,10 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             content: editing?.content || "",
             type: (editing?.type as AnnouncementType) || "info",
             isActive: editing?.is_active ?? true,
-            // RFC3339 → datetime-local（取前 16 位 "YYYY-MM-DDTHH:mm"）
-            startTime: editing?.start_time ? editing.start_time.slice(0, 16) : "",
-            endTime: editing?.end_time ? editing.end_time.slice(0, 16) : "",
+            timeRange: {
+                start: editing?.start_time ? editing.start_time.slice(0, 16) : "",
+                end: editing?.end_time ? editing.end_time.slice(0, 16) : "",
+            },
         });
     }, [open, editing, reset]);
 
@@ -85,8 +86,8 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             content: data.content,
             type: data.type,
             is_active: data.isActive,
-            start_time: toRFC3339(data.startTime ?? ""),
-            end_time: toRFC3339(data.endTime ?? ""),
+            start_time: toRFC3339(data.timeRange?.start ?? ""),
+            end_time: toRFC3339(data.timeRange?.end ?? ""),
         };
         if (isEdit && editing?.id) {
             updateAnn.mutate(
@@ -101,17 +102,15 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
     const pending = createAnn.isPending || updateAnn.isPending;
 
     const now = startOfHour(new Date());
-    const startPresets = [
-        { label: "现在", value: formatPickerValue(now, "datetime") },
-        { label: "1小时后", value: formatPickerValue(addHours(now, 1), "datetime") },
-        { label: "明天", value: formatPickerValue(addDays(now, 1), "datetime") },
-        { label: "3天后", value: formatPickerValue(addDays(now, 3), "datetime") },
-    ];
-    const endPresets = [
-        { label: "1小时后", value: formatPickerValue(addHours(now, 1), "datetime") },
-        { label: "1天后", value: formatPickerValue(addDays(now, 1), "datetime") },
-        { label: "3天后", value: formatPickerValue(addDays(now, 3), "datetime") },
-        { label: "7天后", value: formatPickerValue(addDays(now, 7), "datetime") },
+    const formatRange = (start: Date, end: Date): DateTimeRange => ({
+        start: format(start, "yyyy-MM-dd'T'HH:mm"),
+        end: format(end, "yyyy-MM-dd'T'HH:mm"),
+    });
+    const rangePresets: DateTimeRangePreset[] = [
+        { label: "最近1小时", value: formatRange(now, addHours(now, 1)) },
+        { label: "今天", value: formatRange(startOfDay(now), endOfDay(now)) },
+        { label: "最近7天", value: formatRange(addDays(now, -7), now) },
+        { label: "最近30天", value: formatRange(addDays(now, -30), now) },
     ];
 
     return (
@@ -209,37 +208,21 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                 </div>
 
                 {/* 生效区间 */}
-                <div className="grid grid-cols-2 gap-3">
-                    <Controller
-                        control={control}
-                        name="startTime"
-                        render={({ field }) => (
-                            <DateTimePickerField
-                                label="开始"
-                                value={field.value}
-                                onChange={field.onChange}
-                                disabled={pending}
-                                placeholder="开始时间"
-                                presets={startPresets}
-                            />
-                        )}
-                    />
-                    <Controller
-                        control={control}
-                        name="endTime"
-                        render={({ field }) => (
-                            <DateTimePickerField
-                                label="结束"
-                                value={field.value}
-                                onChange={field.onChange}
-                                disabled={pending}
-                                placeholder="结束时间"
-                                error={errors.endTime?.message}
-                                presets={endPresets}
-                            />
-                        )}
-                    />
-                </div>
+                <Controller
+                    control={control}
+                    name="timeRange"
+                    render={({ field }) => (
+                        <DateTimeRangePickerField
+                            label="生效区间"
+                            value={field.value}
+                            onChange={field.onChange}
+                            disabled={pending}
+                            placeholder="选择生效时间区间"
+                            presets={rangePresets}
+                            error={errors.timeRange?.end?.message}
+                        />
+                    )}
+                />
             </form>
         </Modal>
     );

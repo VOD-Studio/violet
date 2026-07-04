@@ -14,15 +14,19 @@ export const announcementSchema = z
         content: z.string().min(1, "内容不能为空"),
         type: z.enum(["info", "warning", "success", "error"]),
         isActive: z.boolean(),
-        startTime: z.string().optional().or(z.literal("")),
-        endTime: z.string().optional().or(z.literal("")),
+        timeRange: z
+            .object({
+                start: z.string().optional().or(z.literal("")),
+                end: z.string().optional().or(z.literal("")),
+            })
+            .optional(),
     })
     .superRefine((data, ctx) => {
-        if (data.startTime && data.endTime) {
-            if (new Date(data.startTime) > new Date(data.endTime)) {
+        if (data.timeRange?.start && data.timeRange?.end) {
+            if (new Date(data.timeRange.start) > new Date(data.timeRange.end)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    path: ["endTime"],
+                    path: ["timeRange", "end"],
                     message: "结束时间不得早于开始时间",
                 });
             }
