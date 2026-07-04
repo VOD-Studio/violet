@@ -53,3 +53,17 @@ Focus TOC 的隐喻：目录不是静态列表，而是随阅读滚动动态重�
 **已读指示（Read Indicator）**:
 Focus TOC 中当前项之前的节点所呈现的"已完成"视觉状态，帮助用户快速感知阅读进度。
 _Avoid_: 进度点、完成标记（未说明与 TOC 的关联）
+
+## 文章作者与编辑（Article Authorship & Editing）
+
+**Owner（所有者）**:
+文章的创建者与唯一所有者，由 `posts.author_id` 指向。创建时固定，**不可变**（无 setter，UpdateInput 不含该字段）。在前台头像组中始终排第一位。
+_Avoid_: 作者（在本文档域内歧义，可能指 Editor）
+
+**Editor（编辑者）**:
+对某篇文章执行过保存/更新/回滚操作的人，记录在 `post_versions.editor_id`。Owner 自己也可能成为 Editor（编辑了自己写的文章）。一个 Editor 可能编辑过同一篇文章的多个版本。
+_Avoid_: 版本作者（混淆了所有者与编辑者）
+
+**Collaborator（协同者）**:
+编辑过某篇文章、但**不是 Owner** 的 Editor 集合。从 `post_versions` 按 `editor_id` 去重衍生（排除 owner），按首次编辑时间升序排列。**无需独立关联表**——版本历史是唯一数据源。在头像组中跟在 Owner 之后。
+_Avoid_: 合作者（笼统，未说明与版本历史的关系）
