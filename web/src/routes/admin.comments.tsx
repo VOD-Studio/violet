@@ -21,6 +21,9 @@ import { useState } from "react";
 /** 评论分页大小 */
 const PAGE_SIZE = 20;
 
+// TODO: 评论列表当前无排序能力；后端 /admin/comments 需支持 sort_by + order 查询参数。
+// TODO: 评论管理缺少批量删除后端接口（当前仅有批量更新状态）。
+
 /** 筛选值："all" 表示全部，其余为具体状态 */
 type CommentFilter = "all" | CommentStatus;
 

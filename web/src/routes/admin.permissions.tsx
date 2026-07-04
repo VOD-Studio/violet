@@ -76,6 +76,8 @@ function AdminPermissionsPage() {
     };
 
     // 把树压平成两层行：menu 行 + 其下 action 行（action 仅在父展开时显示）
+    // TODO: 权限有 sort 字段用于菜单排序，但缺少拖拽排序批量更新接口；
+    // 如需拖拽调整菜单/操作顺序，需后端支持并保持树形结构。
     const flatRows = useMemo<FlatRow[]>(() => {
         const rows: FlatRow[] = [];
         tree.forEach((menu) => {

@@ -67,6 +67,9 @@ const STATUS_OPTIONS = [
 
 const PAGE_SIZE = 10;
 
+// TODO: 文章列表当前无排序能力；后端 /admin/posts 需支持 sort_by + order 查询参数。
+// TODO: 文章管理缺少批量操作后端接口（批量删除、批量发布、批量归档、批量加精）。
+
 function AdminPostsPage() {
     const navigate = useNavigate();
     const [status, setStatus] = useState("all");

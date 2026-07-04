@@ -53,6 +53,8 @@ function AdminAnnouncementsPage() {
         return copy;
     }, [announcements, sort]);
 
+    // TODO: 公告管理当前无批量操作后端接口；如需复选框批量启用/停用/删除，需后端支持。
+
     const handleEdit = (a: AnnouncementDTO) => {
         setEditing(a);
         setDialogOpen(true);

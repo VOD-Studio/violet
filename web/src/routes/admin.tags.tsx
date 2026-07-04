@@ -37,6 +37,8 @@ function AdminTagsPage() {
         return copy;
     }, [tags, sort]);
 
+    // TODO: 标签管理当前无批量操作后端接口；如需复选框批量删除/合并，需后端支持。
+
     const handleEdit = (t: Tag) => {
         setEditing(t);
         setDialogOpen(true);

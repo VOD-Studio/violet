@@ -13,6 +13,9 @@ import { useState } from "react";
 /** 操作日志分页大小 */
 const PAGE_SIZE = 20;
 
+// TODO: 操作日志当前仅支持按 created_at 默认倒序，无显式排序参数。
+// 后端 /admin/logs 需支持 sort_by + order 查询参数，以及按时间/动作/资源类型筛选。
+
 function AdminLogsPage() {
     const [page, setPage] = useState(1);
     const { data, isLoading, error, refetch } = useAdminAuditLogs({

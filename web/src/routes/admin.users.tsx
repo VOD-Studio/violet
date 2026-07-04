@@ -47,6 +47,9 @@ function AdminUsers() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
 
+    // TODO: 用户列表当前为客户端排序，分页场景下排序结果不准确。
+    // 需后端 /admin/users 支持 sort_by + order 查询参数后改为服务端排序。
+
     // 对话框状态
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);

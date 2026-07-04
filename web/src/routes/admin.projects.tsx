@@ -54,6 +54,9 @@ function AdminProjectsPage() {
         return copy;
     }, [projects, sort]);
 
+    // TODO: 项目管理当前无批量操作后端接口；如需复选框批量删除，需后端支持。
+    // TODO: 项目有 sort_order 字段，但缺少拖拽排序批量更新接口（如 POST /admin/projects/reorder）。
+
     const openCreate = () => {
         setEditingId(null);
         setDialogOpen(true);
