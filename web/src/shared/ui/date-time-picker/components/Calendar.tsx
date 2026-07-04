@@ -260,7 +260,7 @@ export function Calendar({
 
                     {/* 日期网格 */}
                     <div
-                        className="grid grid-cols-7 gap-1"
+                        className="grid grid-cols-7"
                         onMouseLeave={() => onHoverDateChange?.(null)}
                     >
                         {cells.map(({ day, current }, index) => {
@@ -282,43 +282,51 @@ export function Calendar({
                                 !isRangeStart &&
                                 !isRangeEnd &&
                                 isDateInRange(date, range?.start, range?.end);
+                            const isEndpoint =
+                                isSelected || isRangeStart || isRangeEnd || isRangeSingle;
 
                             return (
-                                <Button
+                                <div
                                     key={index}
-                                    type="button"
                                     data-current={current}
-                                    variant={
-                                        isSelected || isRangeStart || isRangeEnd
-                                            ? "default"
-                                            : "ghost"
-                                    }
-                                    size="icon-xs"
-                                    disabled={disabled || !current || isDisabled}
-                                    onClick={() => handleSelectDay(day, current)}
-                                    onMouseEnter={() =>
-                                        current && date && onHoverDateChange?.(date)
-                                    }
                                     className={cn(
-                                        "size-8 text-xs",
-                                        !current && "text-muted-foreground/50",
-                                        isToday &&
-                                            !isSelected &&
+                                        "flex h-8 items-center justify-center",
+                                        inRange && "bg-primary/20",
+                                        isRangeStart && !isRangeSingle && "rounded-l-md bg-primary",
+                                        isRangeEnd && !isRangeSingle && "rounded-r-md bg-primary",
+                                        isRangeSingle && "rounded-md bg-primary",
+                                        isSelected &&
                                             !isRangeStart &&
                                             !isRangeEnd &&
-                                            !inRange &&
-                                            "border border-primary text-primary",
-                                        isDisabled && "text-muted-foreground/40",
-                                        (isRangeStart || isRangeEnd) &&
-                                            "bg-primary text-primary-foreground",
-                                        isRangeStart && !isRangeSingle && "rounded-r-none",
-                                        isRangeEnd && !isRangeSingle && "rounded-l-none",
-                                        inRange &&
-                                            "rounded-none bg-primary/20 text-foreground hover:bg-primary/30",
+                                            "rounded-md bg-primary",
                                     )}
                                 >
-                                    {day}
-                                </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        disabled={disabled || !current || isDisabled}
+                                        onClick={() => handleSelectDay(day, current)}
+                                        onMouseEnter={() =>
+                                            current && date && onHoverDateChange?.(date)
+                                        }
+                                        className={cn(
+                                            "size-8 text-xs",
+                                            !current && "text-muted-foreground/50",
+                                            isToday &&
+                                                !isEndpoint &&
+                                                !inRange &&
+                                                "border border-primary text-primary",
+                                            isDisabled && "text-muted-foreground/40",
+                                            isEndpoint &&
+                                                "bg-transparent text-primary-foreground hover:bg-transparent hover:text-primary-foreground",
+                                            inRange &&
+                                                "bg-transparent text-foreground hover:bg-primary/10",
+                                        )}
+                                    >
+                                        {day}
+                                    </Button>
+                                </div>
                             );
                         })}
                     </div>

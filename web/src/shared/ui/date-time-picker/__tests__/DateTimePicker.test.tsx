@@ -153,16 +153,16 @@ describe("Calendar", () => {
             <Calendar selected={null} range={{ start, end }} month={new Date(2026, 6, 1)} />,
         );
 
-        const buttons = Array.from(
-            container.querySelectorAll('button[data-current="true"]'),
-        ) as HTMLButtonElement[];
+        const cells = Array.from(
+            container.querySelectorAll('div[data-current="true"]'),
+        ) as HTMLDivElement[];
 
-        const startBtn = buttons.find((b) => b.textContent === "1");
-        const endBtn = buttons.find((b) => b.textContent === "5");
-        const innerBtn = buttons.find((b) => b.textContent === "3");
+        const startCell = cells.find((b) => b.textContent === "1");
+        const endCell = cells.find((b) => b.textContent === "5");
+        const innerCell = cells.find((b) => b.textContent === "3");
 
-        expect(startBtn?.className).toContain("rounded-r-none");
-        expect(endBtn?.className).toContain("rounded-l-none");
-        expect(innerBtn?.className).toContain("bg-primary/20");
+        expect(startCell?.className).toContain("rounded-l-md");
+        expect(endCell?.className).toContain("rounded-r-md");
+        expect(innerCell?.className).toContain("bg-primary/20");
     });
 });

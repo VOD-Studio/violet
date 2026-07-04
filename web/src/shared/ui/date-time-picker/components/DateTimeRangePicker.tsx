@@ -1,10 +1,17 @@
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Clock } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/base/popover";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/shared/ui/base/select";
 import type { DateTimeRange, DateTimeRangePickerProps } from "../types/date-time-picker-types";
 import {
     combineDateTime,
@@ -13,7 +20,6 @@ import {
     splitDateTime,
 } from "../utils/date-time-utils";
 import { Calendar } from "./Calendar";
-import { TimePicker } from "./TimePicker";
 
 /**
  * DateTimeRangePicker - 日期时间区间选择器
@@ -143,14 +149,14 @@ export function DateTimeRangePicker({
                         weekStartsOn={1}
                     />
 
-                    <div className="border-t pt-3">
-                        <TimePicker
+                    <div className="border-t pt-3 grid grid-cols-2 gap-3">
+                        <RangeTimeInput
                             label="开始时间"
                             value={startTime}
                             onChange={(time) => handleTimeChange("start", time)}
                             disabled={disabled || !startDate}
                         />
-                        <TimePicker
+                        <RangeTimeInput
                             label="结束时间"
                             value={endTime}
                             onChange={(time) => handleTimeChange("end", time)}
@@ -190,5 +196,69 @@ export function DateTimeRangePicker({
                 </div>
             </PopoverContent>
         </Popover>
+    );
+}
+
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+
+interface RangeTimeInputProps {
+    label: string;
+    value?: string;
+    onChange?: (time: string) => void;
+    disabled?: boolean;
+}
+
+function RangeTimeInput({ label, value = "00:00", onChange, disabled }: RangeTimeInputProps) {
+    const [hour, minute] = value.split(":");
+
+    const handleChange = (part: "hour" | "minute", next: string) => {
+        const h = part === "hour" ? next : hour || "00";
+        const m = part === "minute" ? next : minute || "00";
+        onChange?.(`${h}:${m}`);
+    };
+
+    return (
+        <div className="space-y-1">
+            <div className="text-muted-foreground flex items-center gap-1 text-xs">
+                <Clock className="size-3" />
+                {label}
+            </div>
+            <div className="flex items-center gap-1">
+                <Select
+                    value={hour || "00"}
+                    onValueChange={(v) => handleChange("hour", v)}
+                    disabled={disabled}
+                >
+                    <SelectTrigger className="h-8 w-14 px-2 text-xs">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                        {HOURS.map((h) => (
+                            <SelectItem key={h} value={h} className="text-xs">
+                                {h}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <span className="text-muted-foreground text-sm">:</span>
+                <Select
+                    value={minute || "00"}
+                    onValueChange={(v) => handleChange("minute", v)}
+                    disabled={disabled}
+                >
+                    <SelectTrigger className="h-8 w-14 px-2 text-xs">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                        {MINUTES.map((m) => (
+                            <SelectItem key={m} value={m} className="text-xs">
+                                {m}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
     );
 }

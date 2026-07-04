@@ -56,18 +56,18 @@ describe("DateTimeRangePicker", () => {
         expect(trigger).not.toBeNull();
         if (trigger) fireEvent.click(trigger);
 
-        const day1 = Array.from(document.querySelectorAll('button[data-current="true"]')).find(
-            (b) => b.textContent === "1",
-        );
-        expect(day1).not.toBeUndefined();
+        const day1 = Array.from(document.querySelectorAll('div[data-current="true"]'))
+            .find((el) => el.textContent === "1")
+            ?.querySelector("button");
+        expect(day1).not.toBeNull();
         if (day1) fireEvent.click(day1);
 
         expect(onChange).toHaveBeenCalledWith({ start: "2026-07-01T00:00", end: undefined });
 
-        const day4 = Array.from(document.querySelectorAll('button[data-current="true"]')).find(
-            (b) => b.textContent === "4",
-        );
-        expect(day4).not.toBeUndefined();
+        const day4 = Array.from(document.querySelectorAll('div[data-current="true"]'))
+            .find((el) => el.textContent === "4")
+            ?.querySelector("button");
+        expect(day4).not.toBeNull();
         if (day4) fireEvent.click(day4);
 
         expect(onChange).toHaveBeenLastCalledWith({
@@ -88,10 +88,10 @@ describe("DateTimeRangePicker", () => {
         const trigger = container.querySelector("button");
         if (trigger) fireEvent.click(trigger);
 
-        const day5 = Array.from(document.querySelectorAll('button[data-current="true"]')).find(
-            (b) => b.textContent === "5",
-        );
-        expect(day5).not.toBeUndefined();
+        const day5 = Array.from(document.querySelectorAll('div[data-current="true"]'))
+            .find((el) => el.textContent === "5")
+            ?.querySelector("button");
+        expect(day5).not.toBeNull();
         if (day5) fireEvent.click(day5);
 
         expect(onChange).toHaveBeenCalledWith({
