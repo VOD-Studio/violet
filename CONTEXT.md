@@ -98,11 +98,11 @@ _Avoid_: 通知条、横幅（未体现创意候选与 severity→标签映射�
 仿照 `theme-lab` 的工作流：做一个 `/announcement-lab` 路由页，把多种 banner 创意原型（3D 翻转、MOTD 终端、Scramble 解码、Boot Sequence、CubeToggle 式翻立方等）做成**可独立交互的并排原型**，用**静态 mock 数据**（3-4 条不同 severity 的假公告），不接 API。目的：在写生产 `AnnouncementBar` 之前，先在实验室里把玩、对比、选定最终形态，避免在真实页面上反复试错。原型用 `motion/react`（Framer Motion）驱动动画，复用 `theme-lab` 已验证的卡片网格骨架。
 
 **事件票据（card 形态的渲染约定）**:
-`card` 形态渲染为**事件票据（Event Ticket）**，不是文章卡片。核心约束：**无封面图、无作者、无标签、无阅读时长**——这些是「作品」属性，公告是「事件」没有。视觉由四部分组成：(1) 外壳用 `Pixel Card`（像素故障感，区别于文章的 `SpotlightCard` 干净聚光）；(2) `severity=error/warning` 时启用 `Electric Border`（边框电流流动，表达警报激活）；(3) 顶部 metadata bar `EVENT #003 · severity:warn · ACTIVE`，`font-mono` 小字，severity 标签用 `Shiny Text` 金属光泽；标题用 `DecryptedText animateOn="view"` 解码入场，`▸` 终端提示符前缀；(4) 底部票据区 `stamp + status + open manifest`，`font-mono`，事件 id 用 `Count Up` 数字滚动。点击整张卡片跳转 article 详情页。
+`card` 形态渲染为**自包含的事件票据（Event Ticket）**，不是文章卡片。核心约束：**无封面图、无作者、无标签、无阅读时长、不可点击、无详情页**——卡片本身就是全部内容，`content`/`excerpt` 读完即止。视觉用 `SpotlightCard` 外壳 + 左侧 severity 色条 + `font-mono` metadata + 标题 `DecryptedText` 解码入场。底部显示 `standalone` 标记，明确暗示「这就是全部，没有更多」。
 _Avoid_: 文章卡片、PostCard（混淆了事件与作品）
 
 **事件简报（article 形态的渲染约定）**:
-`article` 形态渲染为**事件简报（Event Manifest）**，不是文章详情页。核心约束：**无封面大图、无 H1、无 TOC、无作者头像组、无浏览量统计**——这些是文章详情页专属耦合。视觉分层：(1) 整页底层 `Faulty Terminal` 背景（故障终端纹理，文章详情页绝不会用）；(2) manifest 容器外框 `Electric Border`；(3) 头部 `[WARN] #003` 用 `Shiny Text` + 标题用 `DecryptedText`；(4) timeline 元数据区用 `Animated List` 逐行滑入，只显示三项：`opened`（`created_at` + `created_by`）、`window`（`start_time` + `end_time`）、`status`（`is_active` + 当前时间计算）——全部复用现有字段；(5) 正文用 `ArticleContent`（纯渲染器，只接受 string 输出 DOM，无文章视觉）套在 mono 区块内，外层 `Scroll Reveal` 逐段渐显；(6) footer `acknowledge / copy event id / back`，acknowledge 按钮用 `Click Spark` 点击火花。
+`article` 形态渲染为**事件简报入口 + 详情页**两层。首页卡片是入口：顶部 `cover_image` 封面图（card 形态没有）+ excerpt 摘要 + 底部「阅读全文 →」引导，**整卡可点击**，跳转 `/announcements/:id` 详情页。详情页是事件简报（Event Manifest），不是文章详情页：无 H1、无 TOC、无作者头像组、无浏览量。详情页结构：severity 色边框容器 + `[SEVERITY] #id` 标签 + 标题 `DecryptedText` + timeline（opened/window/status 三行）+ affects 标签 + `ArticleContent` 渲染 `content_html ?? content_md` 正文 + footer（acknowledge 用 `ClickSpark` / copy event id / back）。
 _Avoid_: 文章详情页、blog/$slug（混淆了事件简报与文章阅读）
 
 **影响范围（Affects）**:
