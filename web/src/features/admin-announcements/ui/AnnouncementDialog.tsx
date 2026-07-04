@@ -240,7 +240,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                         type="number"
                         min={0}
                         disabled={pending}
-                        {...register("sortOrder")}
+                        {...register("sortOrder", { valueAsNumber: true })}
                     />
                 </div>
 
@@ -289,9 +289,11 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                                     return (
                                         <label
                                             key={opt}
-                                            className="flex items-center gap-1.5 text-sm"
+                                            htmlFor={`ann-affects-${opt}`}
+                                            className="flex cursor-pointer items-center gap-1.5 text-sm"
                                         >
                                             <Checkbox
+                                                id={`ann-affects-${opt}`}
                                                 checked={checked}
                                                 onCheckedChange={(c) => {
                                                     const next = c
