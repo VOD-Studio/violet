@@ -26,27 +26,27 @@ interface SevCfg {
 const SEVERITY: Record<string, SevCfg> = {
     info: {
         label: "info",
-        text: "text-blue-500 dark:text-neon-blue",
-        bar: "bg-blue-500 dark:bg-neon-blue",
-        badge: "bg-blue-500/10 text-blue-500 dark:bg-neon-blue/10 dark:text-neon-blue",
+        text: "text-neon-cyan",
+        bar: "bg-neon-cyan",
+        badge: "bg-neon-cyan/10 text-neon-cyan",
     },
     warning: {
         label: "warn",
-        text: "text-amber-500 dark:text-amber-400",
-        bar: "bg-amber-500 dark:bg-amber-400",
-        badge: "bg-amber-500/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-400",
+        text: "text-neon-purple",
+        bar: "bg-neon-purple",
+        badge: "bg-neon-purple/10 text-neon-purple",
     },
     success: {
         label: "ok",
-        text: "text-emerald-500 dark:text-emerald-400",
-        bar: "bg-emerald-500 dark:bg-emerald-400",
-        badge: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400",
+        text: "text-neon-green",
+        bar: "bg-neon-green",
+        badge: "bg-neon-green/10 text-neon-green",
     },
     error: {
         label: "error",
-        text: "text-red-500 dark:text-red-400",
-        bar: "bg-red-500 dark:bg-red-400",
-        badge: "bg-red-500/10 text-red-600 dark:bg-red-400/10 dark:text-red-400",
+        text: "text-neon-pink",
+        bar: "bg-neon-pink",
+        badge: "bg-neon-pink/10 text-neon-pink",
     },
 };
 
