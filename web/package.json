@@ -60,6 +60,7 @@
         "docx-preview": "^0.3.7",
         "fflate": "^0.8.3",
         "github-slugger": "^2.0.0",
+        "gsap": "^3.13.0",
         "hast-util-raw": "^9.1.0",
         "hast-util-sanitize": "^5.0.2",
         "hast-util-to-jsx-runtime": "^2.3.6",
