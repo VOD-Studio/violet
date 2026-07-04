@@ -12,7 +12,7 @@ import {
 import { Switch } from "@shared/ui/base/switch";
 import { Textarea } from "@shared/ui/base/textarea";
 import { Modal } from "@shared/ui/modal";
-import { Loader2 } from "lucide-react";
+import { Calendar, Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useCreateAnnouncement, useUpdateAnnouncement } from "../api/queries";
@@ -193,27 +193,38 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                 </div>
 
                 {/* 生效区间 */}
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                        <Label htmlFor="ann-start">生效开始（可选）</Label>
-                        <Input
-                            id="ann-start"
-                            type="datetime-local"
-                            disabled={pending}
-                            {...register("startTime")}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="ann-end">生效结束（可选）</Label>
-                        <Input
-                            id="ann-end"
-                            type="datetime-local"
-                            disabled={pending}
-                            {...register("endTime")}
-                        />
-                        {errors.endTime && (
-                            <p className="text-destructive text-sm">{errors.endTime.message}</p>
-                        )}
+                <div className="space-y-2">
+                    <Label>生效时间</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <span className="text-muted-foreground text-xs">开始</span>
+                            <div className="relative">
+                                <Calendar className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                                <Input
+                                    id="ann-start"
+                                    type="datetime-local"
+                                    className="pl-9"
+                                    disabled={pending}
+                                    {...register("startTime")}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <span className="text-muted-foreground text-xs">结束</span>
+                            <div className="relative">
+                                <Calendar className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                                <Input
+                                    id="ann-end"
+                                    type="datetime-local"
+                                    className="pl-9"
+                                    disabled={pending}
+                                    {...register("endTime")}
+                                />
+                            </div>
+                            {errors.endTime && (
+                                <p className="text-destructive text-sm">{errors.endTime.message}</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </form>
