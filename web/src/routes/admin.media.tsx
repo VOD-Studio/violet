@@ -9,14 +9,14 @@ import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { Button } from "@shared/ui/base/button";
-import { Checkbox } from "@shared/ui/base/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Images, Pencil, Trash2, Upload } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
     Select,
@@ -80,34 +80,6 @@ function AdminMediaPage() {
     const files = data?.data ?? [];
     const total = data?.pagination?.total ?? 0;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-    const selectedOnPage = useMemo(
-        () => files.filter((f) => selectedIds.has(f.id)).map((f) => f.id),
-        [files, selectedIds],
-    );
-    const allSelectedOnPage = files.length > 0 && selectedOnPage.length === files.length;
-    const someSelectedOnPage = selectedOnPage.length > 0 && !allSelectedOnPage;
-
-    const toggleSelectAllOnPage = () => {
-        setSelectedIds((prev) => {
-            const next = new Set(prev);
-            if (allSelectedOnPage || someSelectedOnPage) {
-                for (const f of files) next.delete(f.id);
-            } else {
-                for (const f of files) next.add(f.id);
-            }
-            return next;
-        });
-    };
-
-    const toggleRow = (id: string) => {
-        setSelectedIds((prev) => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
-    };
 
     const handleBatchDelete = () => {
         if (selectedIds.size === 0) return;
@@ -223,25 +195,6 @@ function AdminMediaPage() {
                 />
             </div>
 
-            {/* 批量操作栏（仅表格视图） */}
-            {view === "table" && selectedIds.size > 0 && (
-                <div className="flex items-center gap-2 rounded-lg border bg-muted/50 p-2 text-sm">
-                    <span>已选 {selectedIds.size} 个</span>
-                    <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setBatchDeleteOpen(true)}
-                        disabled={batchDeleteMutation.isPending}
-                    >
-                        <Trash2 className="size-3.5" />
-                        批量删除
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>
-                        取消选择
-                    </Button>
-                </div>
-            )}
-
             {/* 内容区 */}
             {isLoading ? (
                 <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
@@ -264,13 +217,12 @@ function AdminMediaPage() {
                 <MediaTable
                     files={files}
                     selectedIds={selectedIds}
-                    allSelected={allSelectedOnPage}
-                    someSelected={someSelectedOnPage}
-                    onToggleSelectAll={toggleSelectAllOnPage}
-                    onToggleRow={toggleRow}
+                    onSelectionChange={setSelectedIds}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onPreview={handlePreview}
+                    onBatchDelete={() => setBatchDeleteOpen(true)}
+                    batchDeleting={batchDeleteMutation.isPending}
                 />
             )}
 
@@ -351,133 +303,161 @@ function AdminMediaPage() {
 }
 
 /**
- * MediaTable - 简易表格视图
+ * MediaTable - 素材表格视图
  *
- * 复用 DataTable 需较多 columns 配置，这里先用轻量手写表格保证可用，
- * 后续可迁移到 admin-shared 的 DataTable 套件。
+ * 复用 admin-shared 的 DataTable，统一复选框、列宽持久化、空态等交互规范。
  */
 function MediaTable({
     files,
     selectedIds,
-    allSelected,
-    someSelected,
-    onToggleSelectAll,
-    onToggleRow,
+    onSelectionChange,
     onEdit,
     onDelete,
     onPreview,
+    onBatchDelete,
+    batchDeleting,
 }: {
     files: MediaFile[];
     selectedIds: Set<string>;
-    allSelected: boolean;
-    someSelected: boolean;
-    onToggleSelectAll: () => void;
-    onToggleRow: (id: string) => void;
+    onSelectionChange: (ids: Set<string>) => void;
     onEdit?: (file: MediaFile) => void;
     onDelete?: (file: MediaFile) => void;
     onPreview?: (file: MediaFile, trigger?: HTMLElement | null) => void;
+    onBatchDelete: () => void;
+    batchDeleting: boolean;
 }) {
+    const columns: DataTableColumn<MediaFile>[] = [
+        {
+            key: "preview",
+            header: "预览",
+            width: "72px",
+            cell: (file) => (
+                <button
+                    type="button"
+                    onClick={(e) => onPreview?.(file, e.currentTarget)}
+                    className="block size-10 overflow-hidden rounded bg-muted"
+                >
+                    {file.mime_type.startsWith("image/") ? (
+                        <img
+                            src={file.thumbnail || file.url}
+                            alt=""
+                            className="size-full object-cover"
+                        />
+                    ) : file.mime_type.startsWith("video/") && file.thumbnail ? (
+                        <img
+                            // 用 updated_at 破缓存，与 MediaGrid 一致
+                            src={`${file.thumbnail}?v=${encodeURIComponent(file.updated_at ?? file.created_at)}`}
+                            alt=""
+                            className="size-full object-cover"
+                        />
+                    ) : (
+                        <span className="flex size-full items-center justify-center text-[10px] text-muted-foreground">
+                            {file.mime_type.split("/")[0]?.slice(0, 4)}
+                        </span>
+                    )}
+                </button>
+            ),
+        },
+        {
+            key: "original_name",
+            header: "文件名",
+            accessorKey: "original_name",
+            ellipsis: true,
+        },
+        {
+            key: "mime_type",
+            header: "类型",
+            width: "120px",
+            accessorKey: "mime_type",
+        },
+        {
+            key: "size",
+            header: "大小",
+            width: "80px",
+            cell: (file) => (
+                <span className="text-xs text-muted-foreground">
+                    {(file.size / 1024).toFixed(1)} KB
+                </span>
+            ),
+        },
+        {
+            key: "purpose",
+            header: "用途",
+            width: "80px",
+            accessorKey: "purpose",
+        },
+        {
+            key: "category",
+            header: "分类",
+            width: "80px",
+            cell: (file) => file.category || "-",
+        },
+        {
+            key: "created_at",
+            header: "创建时间",
+            width: "120px",
+            cell: (file) => (
+                <span className="text-xs text-muted-foreground">
+                    {new Date(file.created_at).toLocaleDateString()}
+                </span>
+            ),
+        },
+        {
+            key: "actions_col",
+            header: "操作",
+            sticky: "right",
+            width: "96px",
+            align: "center",
+            cell: (file) => (
+                <div className="flex justify-center gap-1">
+                    {onEdit ? (
+                        <Button size="icon-sm" variant="ghost" onClick={() => onEdit(file)}>
+                            <Pencil className="size-3.5" />
+                        </Button>
+                    ) : null}
+                    {onDelete ? (
+                        <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            className="hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => onDelete(file)}
+                        >
+                            <Trash2 className="size-3.5" />
+                        </Button>
+                    ) : null}
+                </div>
+            ),
+        },
+    ];
+
     return (
-        <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs text-muted-foreground">
-                    <tr>
-                        <th className="w-10 px-3 py-2 text-center font-medium">
-                            <Checkbox
-                                checked={
-                                    allSelected ? true : someSelected ? "indeterminate" : false
-                                }
-                                onCheckedChange={onToggleSelectAll}
-                                aria-label="全选当前页"
-                            />
-                        </th>
-                        <th className="px-3 py-2 text-left font-medium">预览</th>
-                        <th className="px-3 py-2 text-left font-medium">文件名</th>
-                        <th className="px-3 py-2 text-left font-medium">类型</th>
-                        <th className="px-3 py-2 text-left font-medium">大小</th>
-                        <th className="px-3 py-2 text-left font-medium">用途</th>
-                        <th className="px-3 py-2 text-left font-medium">分类</th>
-                        <th className="px-3 py-2 text-left font-medium">创建时间</th>
-                        <th className="w-24 px-3 py-2 text-center font-medium">操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {files.map((file) => (
-                        <tr key={file.id} className="border-t hover:bg-muted/30">
-                            <td className="px-3 py-2 text-center">
-                                <Checkbox
-                                    checked={selectedIds.has(file.id)}
-                                    onCheckedChange={() => onToggleRow(file.id)}
-                                    aria-label={`选择 ${file.original_name}`}
-                                />
-                            </td>
-                            <td className="px-3 py-2">
-                                <button
-                                    type="button"
-                                    onClick={(e) => onPreview?.(file, e.currentTarget)}
-                                    className="block size-10 overflow-hidden rounded bg-muted"
-                                >
-                                    {file.mime_type.startsWith("image/") ? (
-                                        <img
-                                            src={file.thumbnail || file.url}
-                                            alt=""
-                                            className="size-full object-cover"
-                                        />
-                                    ) : file.mime_type.startsWith("video/") && file.thumbnail ? (
-                                        <img
-                                            // 用 updated_at 破缓存，与 MediaGrid 一致
-                                            src={`${file.thumbnail}?v=${encodeURIComponent(file.updated_at ?? file.created_at)}`}
-                                            alt=""
-                                            className="size-full object-cover"
-                                        />
-                                    ) : (
-                                        <span className="flex size-full items-center justify-center text-[10px] text-muted-foreground">
-                                            {file.mime_type.split("/")[0]?.slice(0, 4)}
-                                        </span>
-                                    )}
-                                </button>
-                            </td>
-                            <td className="max-w-45 truncate px-3 py-2" title={file.original_name}>
-                                {file.original_name}
-                            </td>
-                            <td className="px-3 py-2 text-xs text-muted-foreground">
-                                {file.mime_type}
-                            </td>
-                            <td className="px-3 py-2 text-xs text-muted-foreground">
-                                {(file.size / 1024).toFixed(1)} KB
-                            </td>
-                            <td className="px-3 py-2 text-xs">{file.purpose}</td>
-                            <td className="px-3 py-2 text-xs">{file.category || "-"}</td>
-                            <td className="px-3 py-2 text-xs text-muted-foreground">
-                                {new Date(file.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-3 py-2">
-                                <div className="flex justify-center gap-1">
-                                    {onEdit ? (
-                                        <Button
-                                            size="icon-sm"
-                                            variant="ghost"
-                                            onClick={() => onEdit(file)}
-                                        >
-                                            <Pencil className="size-3.5" />
-                                        </Button>
-                                    ) : null}
-                                    {onDelete ? (
-                                        <Button
-                                            size="icon-sm"
-                                            variant="ghost"
-                                            className="hover:bg-destructive/10 hover:text-destructive"
-                                            onClick={() => onDelete(file)}
-                                        >
-                                            <Trash2 className="size-3.5" />
-                                        </Button>
-                                    ) : null}
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+        <DataTable<MediaFile>
+            data={files}
+            columns={columns}
+            keyExtractor={(file) => file.id}
+            page={1}
+            pageSize={files.length}
+            total={files.length}
+            onPageChange={() => {}}
+            selectable
+            selectedIds={selectedIds}
+            onSelectionChange={onSelectionChange}
+            bulkActions={
+                <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={onBatchDelete}
+                    disabled={batchDeleting}
+                >
+                    <Trash2 className="size-3.5" />
+                    批量删除
+                </Button>
+            }
+            loading={false}
+            storageKey="admin-media-table-columns"
+            caption="素材列表"
+            emptyTitle="暂无素材"
+            emptyDescription="当前筛选条件下没有素材"
+        />
     );
 }
