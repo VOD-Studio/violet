@@ -607,32 +607,8 @@ func (s *Service) fillCollaborators(ctx context.Context, dto *PostDTO) {
 	if err != nil {
 		return // 协同者信息缺失不阻塞文章详情
 	}
-	// FindCollaboratorIDsByPostID 已按首次编辑时间排序，但 FindByIDs 不保证顺序，
-	// 这里按 ids 顺序重建以保持稳定排序。
-	order := make(map[string]int, len(ids))
-	for i, id := range ids {
-		order[id.String()] = i
-	}
-	sorted := make([]*AuthorDTO, len(ids))
-	for _, u := range users {
-		idx, ok := order[u.GetID().String()]
-		if !ok {
-			continue
-		}
-		sorted[idx] = &AuthorDTO{
-			Username:  u.Username().String(),
-			AvatarURL: u.AvatarURL(),
-		}
-	}
-	// 过滤掉未命中的空位（用户被删除等）
-	result := make([]*AuthorDTO, 0, len(sorted))
-	for _, c := range sorted {
-		if c != nil {
-			result = append(result, c)
-		}
-	}
-	if len(result) > 0 {
-		dto.Collaborators = result
+	if collaborators := buildCollaboratorsFromUserMap(ids, usersToAuthorMap(users)); len(collaborators) > 0 {
+		dto.Collaborators = collaborators
 	}
 }
 
@@ -752,8 +728,8 @@ func (s *Service) fillListItemAuthor(ctx context.Context, dtos []PostListItemDTO
 
 // fillListItemCollaborators 为列表项批量填充 Collaborators（编辑过但非 owner 的用户列表）。
 //
-// 从版本历史按 editor_id 去重衍生（排除 owner，按首次编辑时间升序），
-// 再用 userRepo.FindByIDs 批量取用户信息。协同者缺失时不报错，列表正常返回。
+// 先批量查询各文章的协同者 ID，再批量查询用户信息，最后按 ID 顺序回填。
+// 协同者缺失时不报错，列表正常返回。
 func (s *Service) fillListItemCollaborators(ctx context.Context, dtos []PostListItemDTO) {
 	if len(dtos) == 0 || s.userRepo == nil {
 		return
@@ -793,27 +769,39 @@ func (s *Service) fillListItemCollaborators(ctx context.Context, dtos []PostList
 	if err != nil {
 		return // 协同者信息缺失不阻塞文章列表
 	}
-	userMap := make(map[string]*AuthorDTO, len(users))
+	userMap := usersToAuthorMap(users)
+
+	for i := range dtos {
+		cids, ok := groups[dtos[i].ID]
+		if !ok || len(cids) == 0 {
+			continue
+		}
+		if collaborators := buildCollaboratorsFromUserMap(cids, userMap); len(collaborators) > 0 {
+			dtos[i].Collaborators = collaborators
+		}
+	}
+}
+
+// usersToAuthorMap 将 user 列表转为按 ID 索引的 AuthorDTO map。
+func usersToAuthorMap(users []*userdomain.User) map[string]*AuthorDTO {
+	authors := make(map[string]*AuthorDTO, len(users))
 	for _, u := range users {
-		userMap[u.GetID().String()] = &AuthorDTO{
+		authors[u.GetID().String()] = &AuthorDTO{
 			Username:  u.Username().String(),
 			AvatarURL: u.AvatarURL(),
 		}
 	}
+	return authors
+}
 
-	for i := range dtos {
-		cids, ok := groups[dtos[i].ID]
-		if !ok {
-			continue
-		}
-		collaborators := make([]*AuthorDTO, 0, len(cids))
-		for _, cid := range cids {
-			if u, ok := userMap[cid.String()]; ok {
-				collaborators = append(collaborators, u)
-			}
-		}
-		if len(collaborators) > 0 {
-			dtos[i].Collaborators = collaborators
+// buildCollaboratorsFromUserMap 按 ids 顺序从 userMap 中提取协同者 DTO。
+// 调用方已批量查询好用户信息；本 helper 只负责按 ID 顺序组装并过滤缺失用户。
+func buildCollaboratorsFromUserMap(ids []shared.ID, userMap map[string]*AuthorDTO) []*AuthorDTO {
+	collaborators := make([]*AuthorDTO, 0, len(ids))
+	for _, id := range ids {
+		if u, ok := userMap[id.String()]; ok {
+			collaborators = append(collaborators, u)
 		}
 	}
+	return collaborators
 }
