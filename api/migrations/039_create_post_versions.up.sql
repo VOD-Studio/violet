@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS post_versions (
     content_html TEXT,
     excerpt TEXT,
     cover_image TEXT,
-    tags_snapshot JSONB,
+    tags JSONB,
     author_id UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
     summary VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP

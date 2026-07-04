@@ -104,8 +104,8 @@ func preseedAuthor(t *testing.T, db *gorm.DB) domainshared.ID {
 	return authorID
 }
 
-// TestPostRepositoryIntegration_SaveVersion 锁住 issue：GORM 模型对 post_versions.tags_snapshot
-// 列的映射缺失，导致 SaveVersion 写入不存在的 tags 列（SQLSTATE 42703）。
+// TestPostRepositoryIntegration_SaveVersion 锁住 issue：GORM 模型与 post_versions
+// 的列名必须一致，否则 SaveVersion 会写入不存在的列（曾因 tags_snapshot/tags 不一致触发 SQLSTATE 42703）。
 func TestPostRepositoryIntegration_SaveVersion(t *testing.T) {
 	db := setupIntegrationDB(t)
 	repo := NewPostRepository(db)
@@ -120,11 +120,11 @@ func TestPostRepositoryIntegration_SaveVersion(t *testing.T) {
 	version := post.NewPostVersion(p, authorID, "首次快照")
 	require.NoError(t, repo.SaveVersion(context.Background(), version))
 
-	var snapColumn string
+	var tagsColumn string
 	require.NoError(t, db.Raw(
-		`SELECT column_name FROM information_schema.columns WHERE table_name = 'post_versions' AND column_name = 'tags_snapshot'`,
-	).Scan(&snapColumn).Error)
-	assert.Equal(t, "tags_snapshot", snapColumn, "post_versions 应有 tags_snapshot 列")
+		`SELECT column_name FROM information_schema.columns WHERE table_name = 'post_versions' AND column_name = 'tags'`,
+	).Scan(&tagsColumn).Error)
+	assert.Equal(t, "tags", tagsColumn, "post_versions 应有 tags 列")
 
 	loaded, err := repo.GetVersionByID(context.Background(), version.ID())
 	require.NoError(t, err)
