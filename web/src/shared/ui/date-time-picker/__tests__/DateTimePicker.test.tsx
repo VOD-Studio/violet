@@ -165,4 +165,22 @@ describe("Calendar", () => {
         expect(endCell?.className).toContain("rounded-r-md");
         expect(innerCell?.className).toContain("bg-primary/20");
     });
+
+    it("跨月区间也会高亮上下月的补齐日期", () => {
+        const start = new Date(2026, 5, 28); // 6月28日
+        const end = new Date(2026, 6, 5); // 7月5日
+        const { container } = render(
+            <Calendar selected={null} range={{ start, end }} month={new Date(2026, 6, 1)} />,
+        );
+
+        const cells = Array.from(
+            container.querySelectorAll(".grid-cols-7 > div"),
+        ) as HTMLDivElement[];
+
+        const endCell = cells.find((el) => el.textContent?.trim() === "5");
+        const prevMonthCell = cells.find((el) => el.textContent?.trim() === "30");
+
+        expect(endCell?.className).toContain("rounded-r-md");
+        expect(prevMonthCell?.className).toContain("bg-primary/20");
+    });
 });

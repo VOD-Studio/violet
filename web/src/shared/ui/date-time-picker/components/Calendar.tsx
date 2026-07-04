@@ -119,18 +119,30 @@ export function Calendar({
     }, [weekStartsOn]);
 
     // 生成 6 行 x 7 列 的日期网格（包含上下月补齐日期）
-    const cells: { day: number; current: boolean }[] = [];
+    const cells: Date[] = [];
     const totalCells = 42;
     const prevMonthDays = getDaysInMonth(subMonths(monthStart, 1));
 
     for (let i = 0; i < totalCells; i++) {
         const offset = i - startWeekday;
         if (offset < 0) {
-            cells.push({ day: prevMonthDays + offset + 1, current: false });
+            cells.push(
+                new Date(
+                    monthStart.getFullYear(),
+                    monthStart.getMonth() - 1,
+                    prevMonthDays + offset + 1,
+                ),
+            );
         } else if (offset < daysInMonth) {
-            cells.push({ day: offset + 1, current: true });
+            cells.push(new Date(monthStart.getFullYear(), monthStart.getMonth(), offset + 1));
         } else {
-            cells.push({ day: offset - daysInMonth + 1, current: false });
+            cells.push(
+                new Date(
+                    monthStart.getFullYear(),
+                    monthStart.getMonth() + 1,
+                    offset - daysInMonth + 1,
+                ),
+            );
         }
     }
 
@@ -263,22 +275,19 @@ export function Calendar({
                         className="grid grid-cols-7"
                         onMouseLeave={() => onHoverDateChange?.(null)}
                     >
-                        {cells.map(({ day, current }, index) => {
-                            const date = current
-                                ? new Date(monthStart.getFullYear(), monthStart.getMonth(), day)
-                                : null;
-                            const isSelected =
-                                date != null && selected != null && isSameDay(date, selected);
-                            const isToday = date != null && isSameDay(date, today);
-                            const isDisabled =
-                                date != null &&
-                                isDateDisabled(date, { minDate, maxDate, disabledDate });
-                            const isRangeStart =
-                                date != null && isRangeEndpoint(date, range?.start);
-                            const isRangeEnd = date != null && isRangeEndpoint(date, range?.end);
+                        {cells.map((date, index) => {
+                            const current = date.getMonth() === month.getMonth();
+                            const isSelected = selected != null && isSameDay(date, selected);
+                            const isToday = isSameDay(date, today);
+                            const isDisabled = isDateDisabled(date, {
+                                minDate,
+                                maxDate,
+                                disabledDate,
+                            });
+                            const isRangeStart = isRangeEndpoint(date, range?.start);
+                            const isRangeEnd = isRangeEndpoint(date, range?.end);
                             const isRangeSingle = isRangeStart && isRangeEnd;
                             const inRange =
-                                date != null &&
                                 !isRangeStart &&
                                 !isRangeEnd &&
                                 isDateInRange(date, range?.start, range?.end);
@@ -306,10 +315,8 @@ export function Calendar({
                                         variant="ghost"
                                         size="icon-xs"
                                         disabled={disabled || !current || isDisabled}
-                                        onClick={() => handleSelectDay(day, current)}
-                                        onMouseEnter={() =>
-                                            current && date && onHoverDateChange?.(date)
-                                        }
+                                        onClick={() => handleSelectDay(date.getDate(), current)}
+                                        onMouseEnter={() => current && onHoverDateChange?.(date)}
                                         className={cn(
                                             "size-8 text-xs",
                                             !current && "text-muted-foreground/50",
@@ -324,7 +331,7 @@ export function Calendar({
                                                 "bg-transparent text-foreground hover:bg-primary/10",
                                         )}
                                     >
-                                        {day}
+                                        {date.getDate()}
                                     </Button>
                                 </div>
                             );
