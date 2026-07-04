@@ -1,7 +1,7 @@
 import type { MediaFile } from "@entities/media/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { adminMediaKeys } from "@features/admin-media/api/keys";
-import { useAdminDeleteFile } from "@features/admin-media/api/mutations";
+import { useAdminDeleteFile, useBatchDeleteMedia } from "@features/admin-media/api/mutations";
 import { useAdminMedia } from "@features/admin-media/api/queries";
 import type { AdminMediaListQuery } from "@features/admin-media/model/types";
 import { EditMediaDialog } from "@features/admin-media/ui/EditMediaDialog";
@@ -12,10 +12,11 @@ import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { Button } from "@shared/ui/base/button";
+import { Checkbox } from "@shared/ui/base/checkbox";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Images, Pencil, Trash2, Upload } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
     Select,
@@ -57,6 +58,8 @@ function AdminMediaPage() {
     const [coverOpen, setCoverOpen] = useState(false);
     const [deleteFile, setDeleteFile] = useState<MediaFile | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [previewIndex, setPreviewIndex] = useState<number>(-1);
     // 图片预览的触发元素，用于从卡片位置展开动画
     const [previewTrigger, setPreviewTrigger] = useState<HTMLElement | null>(null);
@@ -71,11 +74,52 @@ function AdminMediaPage() {
     };
     const { data, isLoading } = useAdminMedia(query);
     const deleteMutation = useAdminDeleteFile();
+    const batchDeleteMutation = useBatchDeleteMedia();
     const queryClient = useQueryClient();
 
     const files = data?.data ?? [];
     const total = data?.pagination?.total ?? 0;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    const selectedOnPage = useMemo(
+        () => files.filter((f) => selectedIds.has(f.id)).map((f) => f.id),
+        [files, selectedIds],
+    );
+    const allSelectedOnPage = files.length > 0 && selectedOnPage.length === files.length;
+    const someSelectedOnPage = selectedOnPage.length > 0 && !allSelectedOnPage;
+
+    const toggleSelectAllOnPage = () => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (allSelectedOnPage || someSelectedOnPage) {
+                for (const f of files) next.delete(f.id);
+            } else {
+                for (const f of files) next.add(f.id);
+            }
+            return next;
+        });
+    };
+
+    const toggleRow = (id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const handleBatchDelete = () => {
+        if (selectedIds.size === 0) return;
+        batchDeleteMutation.mutate(Array.from(selectedIds), {
+            onSuccess: (res) => {
+                toast.success(`已删除 ${res.deleted} 个素材`);
+                setBatchDeleteOpen(false);
+                setSelectedIds(new Set());
+            },
+            onError: () => toast.error("批量删除失败"),
+        });
+    };
 
     const handleEdit = (file: MediaFile) => {
         setEditFile(file);
@@ -179,6 +223,25 @@ function AdminMediaPage() {
                 />
             </div>
 
+            {/* 批量操作栏（仅表格视图） */}
+            {view === "table" && selectedIds.size > 0 && (
+                <div className="flex items-center gap-2 rounded-lg border bg-muted/50 p-2 text-sm">
+                    <span>已选 {selectedIds.size} 个</span>
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setBatchDeleteOpen(true)}
+                        disabled={batchDeleteMutation.isPending}
+                    >
+                        <Trash2 className="size-3.5" />
+                        批量删除
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>
+                        取消选择
+                    </Button>
+                </div>
+            )}
+
             {/* 内容区 */}
             {isLoading ? (
                 <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
@@ -200,6 +263,11 @@ function AdminMediaPage() {
             ) : (
                 <MediaTable
                     files={files}
+                    selectedIds={selectedIds}
+                    allSelected={allSelectedOnPage}
+                    someSelected={someSelectedOnPage}
+                    onToggleSelectAll={toggleSelectAllOnPage}
+                    onToggleRow={toggleRow}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onPreview={handlePreview}
@@ -253,6 +321,17 @@ function AdminMediaPage() {
                 onConfirm={confirmDelete}
             />
 
+            {/* 批量删除确认 */}
+            <ConfirmDialog
+                open={batchDeleteOpen}
+                onOpenChange={setBatchDeleteOpen}
+                title="批量删除素材"
+                description={`确定删除选中的 ${selectedIds.size} 个素材吗？此操作不可恢复。`}
+                confirmLabel="删除"
+                loading={batchDeleteMutation.isPending}
+                onConfirm={handleBatchDelete}
+            />
+
             {/* 灯箱预览 */}
             <MediaLightbox
                 open={previewIndex >= 0}
@@ -279,11 +358,21 @@ function AdminMediaPage() {
  */
 function MediaTable({
     files,
+    selectedIds,
+    allSelected,
+    someSelected,
+    onToggleSelectAll,
+    onToggleRow,
     onEdit,
     onDelete,
     onPreview,
 }: {
     files: MediaFile[];
+    selectedIds: Set<string>;
+    allSelected: boolean;
+    someSelected: boolean;
+    onToggleSelectAll: () => void;
+    onToggleRow: (id: string) => void;
     onEdit?: (file: MediaFile) => void;
     onDelete?: (file: MediaFile) => void;
     onPreview?: (file: MediaFile, trigger?: HTMLElement | null) => void;
@@ -293,6 +382,15 @@ function MediaTable({
             <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs text-muted-foreground">
                     <tr>
+                        <th className="w-10 px-3 py-2 text-center font-medium">
+                            <Checkbox
+                                checked={
+                                    allSelected ? true : someSelected ? "indeterminate" : false
+                                }
+                                onCheckedChange={onToggleSelectAll}
+                                aria-label="全选当前页"
+                            />
+                        </th>
                         <th className="px-3 py-2 text-left font-medium">预览</th>
                         <th className="px-3 py-2 text-left font-medium">文件名</th>
                         <th className="px-3 py-2 text-left font-medium">类型</th>
@@ -306,6 +404,13 @@ function MediaTable({
                 <tbody>
                     {files.map((file) => (
                         <tr key={file.id} className="border-t hover:bg-muted/30">
+                            <td className="px-3 py-2 text-center">
+                                <Checkbox
+                                    checked={selectedIds.has(file.id)}
+                                    onCheckedChange={() => onToggleRow(file.id)}
+                                    aria-label={`选择 ${file.original_name}`}
+                                />
+                            </td>
                             <td className="px-3 py-2">
                                 <button
                                     type="button"
