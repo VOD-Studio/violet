@@ -66,12 +66,15 @@ function AdminTagsPage() {
             key: "name",
             header: "标签名",
             sortable: true,
+            ellipsis: true,
+            width: "200px",
             cell: (row) => <span className="font-medium">{row.name}</span>,
         },
         {
             key: "slug",
             header: "Slug",
             sortable: true,
+            ellipsis: true,
             cell: (row) => (
                 <code className="text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-xs">
                     {row.slug}
