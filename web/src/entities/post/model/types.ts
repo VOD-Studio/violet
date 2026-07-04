@@ -5,6 +5,8 @@
  * 放置惯例对齐 entities/user。
  */
 
+import type { AvatarUser } from "@shared/ui/avatar-group";
+
 /**
  * Post - 文章摘要，首页列表用
  *
@@ -30,12 +32,7 @@ export interface Post {
     /** 是否精选 */
     is_featured: boolean;
     /** 作者信息，后端按 author_id join 填充，缺失时省略 */
-    author?: {
-        /** 作者用户名 */
-        username: string;
-        /** 作者头像 URL */
-        avatar_url: string;
-    };
+    author?: AvatarUser;
 }
 
 /**
@@ -63,6 +60,10 @@ export interface PostDetail {
     status: string;
     /** 作者 ID */
     author_id: string;
+    /** 文章所有者（Owner），后端按 author_id join 填充，头像组第一位，缺失时省略 */
+    author?: AvatarUser;
+    /** 协同者列表（编辑过但非所有者），按首次编辑时间排序，后端从版本历史衍生，缺失时省略 */
+    collaborators?: AvatarUser[];
     /** 浏览量 */
     view_count: number;
     /** 是否精选 */

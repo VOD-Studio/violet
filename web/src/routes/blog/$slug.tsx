@@ -8,6 +8,7 @@ import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-prev
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
 import { extractToc } from "@shared/lib/hooks/use-toc";
 import { extractMarkdownToc } from "@shared/lib/markdown";
+import { AvatarGroup } from "@shared/ui/avatar-group";
 import { BackToTop } from "@shared/ui/back-to-top";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -128,6 +129,16 @@ function BlogDetailPage() {
 
                     {/* 元信息 */}
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                        {post.author ? (
+                            <span className="inline-flex items-center gap-1.5">
+                                <AvatarGroup
+                                    users={[post.author, ...(post.collaborators ?? [])]}
+                                    size="sm"
+                                    highlightFirst
+                                />
+                                <span>{post.author.username}</span>
+                            </span>
+                        ) : null}
                         {post.published_at ? (
                             <span className="inline-flex items-center gap-1.5">
                                 <Calendar className="size-3.5" />

@@ -14,6 +14,8 @@ interface AvatarGroupProps {
     size?: "xs" | "sm" | "md";
     /** 最多显示几个头像，超出显示 +N，默认 5 */
     max?: number;
+    /** 是否高亮第一个头像（owner），加 ring 强调主从关系 */
+    highlightFirst?: boolean;
     /** 外层 className */
     className?: string;
 }
@@ -29,8 +31,16 @@ const sizeClass = {
  *
  * 圆形头像横向重叠，ring 分隔；超出 max 显示 +N 占位；
  * avatar_url 缺失时渲染用户名首字母。支持单/多头像，预留共创场景。
+ *
+ * highlightFirst 用于 owner/collaborator 场景，给第一个头像加 ring 强调主从。
  */
-export function AvatarGroup({ users, size = "sm", max = 5, className }: AvatarGroupProps) {
+export function AvatarGroup({
+    users,
+    size = "sm",
+    max = 5,
+    highlightFirst = false,
+    className,
+}: AvatarGroupProps) {
     if (!users.length) return null;
     const visible = users.slice(0, max);
     const overflow = users.length - visible.length;
@@ -46,6 +56,9 @@ export function AvatarGroup({ users, size = "sm", max = 5, className }: AvatarGr
                         className={cn(
                             "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted font-medium text-foreground transition-all duration-300",
                             sizeClass[size],
+                            highlightFirst &&
+                                i === 0 &&
+                                "ring-2 ring-primary ring-offset-2 ring-offset-background",
                         )}
                     >
                         {u.avatar_url ? (
