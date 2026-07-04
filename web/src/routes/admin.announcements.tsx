@@ -6,14 +6,14 @@ import type { AnnouncementDTO, AnnouncementType } from "@features/admin-announce
 import { AnnouncementDialog } from "@features/admin-announcements/ui/AnnouncementDialog";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
+import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/admin/announcements")({
     component: AdminAnnouncementsPage,
@@ -39,6 +39,19 @@ function AdminAnnouncementsPage() {
     const [editing, setEditing] = useState<AnnouncementDTO | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState<AnnouncementDTO | null>(null);
+    const [sort, setSort] = useState<DataTableSort | null>(null);
+
+    const sortedAnnouncements = useMemo(() => {
+        if (!sort) return announcements;
+        const copy = [...announcements];
+        copy.sort((a, b) => {
+            const av = a[sort.key as keyof AnnouncementDTO];
+            const bv = b[sort.key as keyof AnnouncementDTO];
+            const cmp = String(av).localeCompare(String(bv), "zh");
+            return sort.order === "asc" ? cmp : -cmp;
+        });
+        return copy;
+    }, [announcements, sort]);
 
     const handleEdit = (a: AnnouncementDTO) => {
         setEditing(a);
@@ -73,6 +86,7 @@ function AdminAnnouncementsPage() {
         {
             key: "type",
             header: "类型",
+            sortable: true,
             width: "80px",
             cell: (row) => <Badge variant="outline">{TYPE_LABEL[row.type]}</Badge>,
         },
@@ -90,6 +104,7 @@ function AdminAnnouncementsPage() {
         {
             key: "is_active",
             header: "状态",
+            sortable: true,
             width: "80px",
             cell: (row) => (
                 <Badge variant={row.is_active ? "default" : "secondary"}>
@@ -143,17 +158,19 @@ function AdminAnnouncementsPage() {
             }
         >
             <DataTable<AnnouncementDTO>
-                data={announcements}
+                data={sortedAnnouncements}
                 columns={columns}
                 keyExtractor={(row) => String(row.id)}
                 page={1}
-                pageSize={announcements.length}
-                total={announcements.length}
+                pageSize={sortedAnnouncements.length}
+                total={sortedAnnouncements.length}
                 onPageChange={() => {}}
                 selectable={false}
                 loading={isLoading}
                 error={error ? new Error(error.message) : null}
                 onRetry={() => refetch()}
+                sort={sort}
+                onSortChange={setSort}
                 storageKey="admin-announcements-columns"
                 resizable
                 caption="公告列表"

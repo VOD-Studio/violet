@@ -5,14 +5,14 @@ import { CreateRoleDialog } from "@features/admin-roles/ui/CreateRoleDialog";
 import { EditRoleDialog } from "@features/admin-roles/ui/EditRoleDialog";
 import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsDialog";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
+import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Settings, Shield, Trash2, Users } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/admin/roles")({
     component: AdminRolesPage,
@@ -26,10 +26,23 @@ function AdminRolesPage() {
     const [configuringRole, setConfiguringRole] = useState<RoleDTO | null>(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deletingRole, setDeletingRole] = useState<RoleDTO | null>(null);
+    const [sort, setSort] = useState<DataTableSort | null>(null);
 
     // 查询角色列表
     const { data: roles = [], isLoading, error, refetch } = useAdminRoles();
     const deleteRole = useDeleteRole();
+
+    const sortedRoles = useMemo(() => {
+        if (!sort) return roles;
+        const copy = [...roles];
+        copy.sort((a, b) => {
+            const av = a[sort.key as keyof RoleDTO];
+            const bv = b[sort.key as keyof RoleDTO];
+            const cmp = String(av).localeCompare(String(bv), "zh");
+            return sort.order === "asc" ? cmp : -cmp;
+        });
+        return copy;
+    }, [roles, sort]);
 
     const handleEdit = (role: RoleDTO) => {
         setEditingRole(role);
@@ -165,17 +178,19 @@ function AdminRolesPage() {
             }
         >
             <DataTable<RoleDTO>
-                data={roles}
+                data={sortedRoles}
                 columns={columns}
                 keyExtractor={(row) => String(row.id)}
                 page={1}
-                pageSize={roles.length}
-                total={roles.length}
+                pageSize={sortedRoles.length}
+                total={sortedRoles.length}
                 onPageChange={() => {}}
                 selectable={false}
                 loading={isLoading}
                 error={error ? new Error(error.message) : null}
                 onRetry={() => refetch()}
+                sort={sort}
+                onSortChange={setSort}
                 storageKey="admin-roles-columns"
                 caption="角色列表"
                 emptyTitle="暂无角色"

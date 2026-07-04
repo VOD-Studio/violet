@@ -1,7 +1,7 @@
 import type { Tag } from "@entities/tag/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
-import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
+import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import { TagDialog } from "@features/admin-tags/ui/TagDialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
@@ -10,7 +10,7 @@ import { useTags } from "@features/tags/api/queries";
 import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/admin/tags")({
     component: AdminTagsPage,
@@ -23,6 +23,19 @@ function AdminTagsPage() {
     const [editing, setEditing] = useState<Tag | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState<Tag | null>(null);
+    const [sort, setSort] = useState<DataTableSort | null>(null);
+
+    const sortedTags = useMemo(() => {
+        if (!sort) return tags;
+        const copy = [...tags];
+        copy.sort((a, b) => {
+            const av = a[sort.key as keyof Tag];
+            const bv = b[sort.key as keyof Tag];
+            const cmp = String(av).localeCompare(String(bv), "zh");
+            return sort.order === "asc" ? cmp : -cmp;
+        });
+        return copy;
+    }, [tags, sort]);
 
     const handleEdit = (t: Tag) => {
         setEditing(t);
@@ -56,6 +69,7 @@ function AdminTagsPage() {
         {
             key: "slug",
             header: "Slug",
+            sortable: true,
             cell: (row) => (
                 <code className="text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-xs">
                     {row.slug}
@@ -108,17 +122,19 @@ function AdminTagsPage() {
             }
         >
             <DataTable<Tag>
-                data={tags}
+                data={sortedTags}
                 columns={columns}
                 keyExtractor={(row) => String(row.id)}
                 page={1}
-                pageSize={tags.length}
-                total={tags.length}
+                pageSize={sortedTags.length}
+                total={sortedTags.length}
                 onPageChange={() => {}}
                 selectable={false}
                 loading={isLoading}
                 error={error ? new Error(error.message) : null}
                 onRetry={() => refetch()}
+                sort={sort}
+                onSortChange={setSort}
                 storageKey="admin-tags-columns"
                 caption="标签列表"
                 emptyTitle="暂无标签"

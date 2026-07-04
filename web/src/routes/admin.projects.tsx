@@ -7,7 +7,11 @@ import {
 } from "@features/admin-projects/api/mutations";
 import type { CreateProject } from "@features/admin-projects/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
-import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import {
+    DataTable,
+    type DataTableColumn,
+    type DataTableSort,
+} from "@features/admin-shared/ui/data-table";
 import { useProjects } from "@features/projects/api/queries";
 import type { Project } from "@features/projects/model/types";
 import { Badge } from "@shared/ui/base/badge";
@@ -16,7 +20,7 @@ import { Input } from "@shared/ui/base/input";
 import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
 import { Code, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Textarea } from "@/shared/ui/base/textarea";
 
@@ -36,6 +40,19 @@ function AdminProjectsPage() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [sort, setSort] = useState<DataTableSort | null>(null);
+
+    const sortedProjects = useMemo(() => {
+        if (!sort) return projects;
+        const copy = [...projects];
+        copy.sort((a, b) => {
+            const av = a[sort.key as keyof Project];
+            const bv = b[sort.key as keyof Project];
+            const cmp = String(av).localeCompare(String(bv), "zh");
+            return sort.order === "asc" ? cmp : -cmp;
+        });
+        return copy;
+    }, [projects, sort]);
 
     const openCreate = () => {
         setEditingId(null);
@@ -51,6 +68,7 @@ function AdminProjectsPage() {
         {
             key: "title",
             header: "标题",
+            sortable: true,
             cell: (row) => <span className="font-medium">{row.title}</span>,
         },
         {
@@ -76,6 +94,7 @@ function AdminProjectsPage() {
         {
             key: "sort_order",
             header: "排序",
+            sortable: true,
             cell: (row) => row.sort_order,
         },
         {
@@ -135,17 +154,19 @@ function AdminProjectsPage() {
             }
         >
             <DataTable<Project>
-                data={projects}
+                data={sortedProjects}
                 columns={columns}
                 keyExtractor={(row) => row.id}
                 page={1}
-                pageSize={projects.length}
-                total={projects.length}
+                pageSize={sortedProjects.length}
+                total={sortedProjects.length}
                 onPageChange={() => {}}
                 selectable={false}
                 loading={isLoading}
                 error={error ? new Error(error.message) : null}
                 onRetry={() => refetch()}
+                sort={sort}
+                onSortChange={setSort}
                 storageKey="admin-projects-columns"
                 caption="项目列表"
                 emptyTitle="暂无项目"

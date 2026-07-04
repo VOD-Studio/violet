@@ -119,10 +119,11 @@ function AdminPermissionsPage() {
                 );
             },
         },
+        // TODO: 权限为树形结构，普通列排序会破坏层级展示。
+        // 如需排序，应实现「同级节点内排序」或后端返回有序树，当前暂不支持。
         {
             key: "code",
             header: "代码",
-            sortable: true,
             cell: (r) => (
                 <div className="flex items-center gap-2" style={{ paddingLeft: r.depth * 20 }}>
                     <code className="text-primary bg-primary/10 rounded px-2 py-0.5 text-sm">
