@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	appshared "blog-api/internal/application/shared"
+	"blog-api/internal/domain/announcement"
 	"blog-api/internal/domain/permission"
 	"blog-api/internal/domain/role"
 	"blog-api/internal/domain/shared"
@@ -245,10 +246,51 @@ func (m *MockUserRepository) Count(ctx context.Context) (int64, error) {
 	return args.Get(0).(int64), args.Error(1)
 }
 
+// ============================================================
+// Announcement Repository Mock
+// ============================================================
+
+// MockAnnouncementRepository announcement.AnnouncementRepository 的 mock 实现
+type MockAnnouncementRepository struct{ mock.Mock }
+
+func (m *MockAnnouncementRepository) FindByID(ctx context.Context, id int32) (*announcement.Announcement, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*announcement.Announcement), args.Error(1)
+}
+
+func (m *MockAnnouncementRepository) FindAll(ctx context.Context) ([]*announcement.Announcement, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*announcement.Announcement), args.Error(1)
+}
+
+func (m *MockAnnouncementRepository) FindActive(ctx context.Context) ([]*announcement.Announcement, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*announcement.Announcement), args.Error(1)
+}
+
+func (m *MockAnnouncementRepository) Save(ctx context.Context, a *announcement.Announcement) (int32, error) {
+	args := m.Called(ctx, a)
+	return int32(args.Int(0)), args.Error(1)
+}
+
+func (m *MockAnnouncementRepository) Delete(ctx context.Context, id int32) error {
+	return m.Called(ctx, id).Error(0)
+}
+
 // 编译期断言
 var (
-	_ appshared.EventBus   = (*MockEventBus)(nil)
-	_ appshared.TokenStore = (*MockTokenStore)(nil)
-	_ appshared.TokenService = (*MockTokenService)(nil)
-	_ domainuser.UserRepository = (*MockUserRepository)(nil)
+	_ appshared.EventBus         = (*MockEventBus)(nil)
+	_ appshared.TokenStore       = (*MockTokenStore)(nil)
+	_ appshared.TokenService     = (*MockTokenService)(nil)
+	_ domainuser.UserRepository  = (*MockUserRepository)(nil)
+	_ announcement.AnnouncementRepository = (*MockAnnouncementRepository)(nil)
 )
