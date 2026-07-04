@@ -1,3 +1,4 @@
+import AnnouncementGrid from "@features/admin-announcements/ui/AnnouncementGrid";
 import { githubKeys } from "@features/github/api/keys";
 import { fetchContributions, fetchRepos } from "@features/github/api/queries";
 import Contributions from "@features/github/ui/Contributions";
@@ -5,6 +6,8 @@ import RepoList from "@features/github/ui/RepoList";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
 import PostList from "@features/posts/ui/PostList";
+import { settingsKeys } from "@features/settings/api/keys";
+import { fetchAnnouncements } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 import Hero from "@widgets/Hero";
 
@@ -13,6 +16,11 @@ function HomePage() {
         <div className="flex flex-col min-h-screen">
             <Hero />
             <section className="container mx-auto px-6 py-32 bg-background flex flex-col gap-32">
+                {/* 公告（card + article 形态，无公告时网格自动隐藏） */}
+                <div>
+                    <h2 className="text-3xl font-bold mb-12 tracking-tight">公告</h2>
+                    <AnnouncementGrid />
+                </div>
                 <div>
                     <h2 className="text-3xl font-bold mb-12 tracking-tight">最新文章</h2>
                     <PostList />
@@ -44,6 +52,15 @@ function HomePage() {
  */
 export const Route = createFileRoute("/")({
     loader: async ({ context }) => {
+        // 公告 SSR 预取（失败降级，不阻塞首页）
+        await context.queryClient
+            .ensureQueryData({
+                queryKey: settingsKeys.announcements(),
+                queryFn: fetchAnnouncements,
+            })
+            .catch(() => {
+                /* 公告端点未就绪 → 网格隐藏，不影响首页 */
+            });
         // 文章列表 SSR 预取：HTML 直出文章内容，利于 SEO 与首屏
         await context.queryClient
             .ensureQueryData({
