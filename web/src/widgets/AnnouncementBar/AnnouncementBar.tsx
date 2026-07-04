@@ -12,7 +12,9 @@
  * - WCAG 2.2.2：hover 暂停、滚轮可手动翻、prefers-reduced-motion 降级为静态
  */
 import { useAnnouncements } from "@features/settings/api/queries";
+import { CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import { motion } from "motion/react";
+import type { ComponentType } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 const STORAGE_KEY = "announcement:read-ids";
@@ -21,12 +23,16 @@ const FLIP_DURATION = 0.6;
 const AUTO_INTERVAL = 5000;
 const FACE_HEIGHT = 28; // 每面高度 px（h-7）
 
-/** severity → neon 色板映射（信息=青/警告=粉/成功=绿/错误=粉红，区分明显） */
-const SEVERITY_STYLE: Record<string, { text: string; glyph: string; label: string }> = {
-    info: { text: "text-neon-cyan", glyph: "◆", label: "info" },
-    warning: { text: "text-neon-purple", glyph: "▲", label: "warn" },
-    success: { text: "text-neon-green", glyph: "●", label: "ok" },
-    error: { text: "text-neon-pink", glyph: "✕", label: "error" },
+/** severity → neon 色板 + lucide 图标映射 */
+interface SevCfg {
+    text: string;
+    Icon: ComponentType<{ className?: string }>;
+}
+const SEVERITY_STYLE: Record<string, SevCfg> = {
+    info: { text: "text-neon-cyan", Icon: Info },
+    warning: { text: "text-neon-purple", Icon: TriangleAlert },
+    success: { text: "text-neon-green", Icon: CircleCheck },
+    error: { text: "text-neon-pink", Icon: CircleX },
 };
 
 /** 读取已读 id 集合 */
@@ -112,8 +118,7 @@ export default function AnnouncementBar() {
         return (
             <div className="relative border-b border-edge-hairline bg-primary/95 font-mono text-xs dark:bg-zinc-900">
                 <div className={`flex h-7 items-center justify-center gap-2 px-12 ${cfg.text}`}>
-                    <span className="shrink-0">{cfg.glyph}</span>
-                    <span className="shrink-0 opacity-60">[{cfg.label}]</span>
+                    <cfg.Icon className="size-3.5 shrink-0" />
                     <span className="truncate text-primary-foreground dark:text-foreground">
                         {current.content}
                     </span>
@@ -159,8 +164,7 @@ export default function AnnouncementBar() {
                             className={`absolute inset-0 flex items-center justify-center gap-2 px-12 backface-hidden ${fcfg.text}`}
                             style={{ transform: faceTransform(i, n) }}
                         >
-                            <span className="shrink-0">{fcfg.glyph}</span>
-                            <span className="shrink-0 opacity-60">[{fcfg.label}]</span>
+                            <fcfg.Icon className="size-3.5 shrink-0" />
                             <span className="truncate text-primary-foreground dark:text-foreground">
                                 {a.content}
                             </span>

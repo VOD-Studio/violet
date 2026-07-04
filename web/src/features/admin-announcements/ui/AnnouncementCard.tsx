@@ -13,40 +13,41 @@ import type { Announcement } from "@features/settings/model/types";
 import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
+import type { ComponentType } from "react";
 
 /** severity → 视觉配置 */
 interface SevCfg {
-    label: string;
     text: string;
     bar: string;
     badge: string;
+    Icon: ComponentType<{ className?: string }>;
 }
 
 const SEVERITY: Record<string, SevCfg> = {
     info: {
-        label: "info",
         text: "text-neon-cyan",
         bar: "bg-neon-cyan",
         badge: "bg-neon-cyan/10 text-neon-cyan",
+        Icon: Info,
     },
     warning: {
-        label: "warn",
         text: "text-neon-purple",
         bar: "bg-neon-purple",
         badge: "bg-neon-purple/10 text-neon-purple",
+        Icon: TriangleAlert,
     },
     success: {
-        label: "ok",
         text: "text-neon-green",
         bar: "bg-neon-green",
         badge: "bg-neon-green/10 text-neon-green",
+        Icon: CircleCheck,
     },
     error: {
-        label: "error",
         text: "text-neon-pink",
         bar: "bg-neon-pink",
         badge: "bg-neon-pink/10 text-neon-pink",
+        Icon: CircleX,
     },
 };
 
@@ -79,10 +80,8 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
             <div className="flex flex-1 flex-col p-5 font-mono">
                 {/* 顶部 metadata */}
                 <div className="mb-3 flex items-center justify-between">
-                    <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] uppercase tracking-widest ${cfg.badge}`}
-                    >
-                        {cfg.label}
+                    <span className={`flex items-center gap-1 rounded px-1.5 py-0.5 ${cfg.badge}`}>
+                        <cfg.Icon className="size-3" />
                     </span>
                     <span className="text-[10px] text-muted-foreground">
                         EVENT #{String(a.id).padStart(3, "0")}
