@@ -112,12 +112,12 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
     client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
         const method = config.method?.toLowerCase();
         if (method && method !== "get") {
-            const existing = config.headers.get(CSRF_HEADER);
-            if (!existing) {
-                const token = getCSRFToken();
-                if (token) {
-                    config.headers.set(CSRF_HEADER, token);
-                }
+            // 总是从 cookie 读最新 CSRF token 并覆盖：refresh 成功后后端会下发新 CSRF
+            // cookie，重放原请求时 config 里残留的旧 header 必须更新，否则
+            // 新 cookie vs 旧 header 不匹配 → CSRF 403。
+            const token = getCSRFToken();
+            if (token) {
+                config.headers.set(CSRF_HEADER, token);
             }
         }
         return config;
