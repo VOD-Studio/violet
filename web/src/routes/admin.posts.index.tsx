@@ -20,7 +20,16 @@ import {
     DropdownMenuTrigger,
 } from "@shared/ui/base/dropdown-menu";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Archive, ChevronDown, MoreHorizontal, Pencil, Plus, Star, Trash2 } from "lucide-react";
+import {
+    Archive,
+    ChevronDown,
+    MoreHorizontal,
+    Pencil,
+    Plus,
+    Star,
+    Trash2,
+    Undo2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -311,19 +320,21 @@ function RowActions({
 
     if (viewStatus === "trashed") {
         return (
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-1">
                 <Button
-                    variant="outline"
-                    size="sm"
+                    variant="ghost"
+                    size="icon-sm"
+                    title="恢复"
                     onClick={handleRestore}
                     disabled={restorePost.isPending}
                 >
-                    恢复
+                    <Undo2 className="size-3.5" />
                 </Button>
                 <Button
-                    variant="destructive"
+                    variant="ghost"
                     size="icon-sm"
                     title="彻底删除"
+                    className="hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => onDelete(row)}
                 >
                     <Trash2 className="size-3.5" />
