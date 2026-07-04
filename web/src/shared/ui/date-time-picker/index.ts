@@ -5,6 +5,8 @@ export { Calendar } from "./components/Calendar";
 export { DateRangePicker } from "./components/DateRangePicker";
 export { DateTimePicker } from "./components/DateTimePicker";
 export { DateTimePickerField } from "./components/DateTimePickerField";
+export { DateTimeRangePicker } from "./components/DateTimeRangePicker";
+export { DateTimeRangePickerField } from "./components/DateTimeRangePickerField";
 export { TimePicker } from "./components/TimePicker";
 
 // 类型
@@ -16,6 +18,10 @@ export type {
     DateTimePickerMode,
     DateTimePickerProps,
     DateTimePreset,
+    DateTimeRange,
+    DateTimeRangePickerFieldProps,
+    DateTimeRangePickerProps,
+    DateTimeRangePreset,
     TimePickerProps,
 } from "./types/date-time-picker-types";
 

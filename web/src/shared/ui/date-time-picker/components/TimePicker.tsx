@@ -17,7 +17,12 @@ const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"))
  *
  * 提供小时和分钟两个下拉选择。
  */
-export function TimePicker({ value = "00:00", onChange, disabled }: TimePickerProps) {
+export function TimePicker({
+    value = "00:00",
+    onChange,
+    disabled,
+    label = "时间",
+}: TimePickerProps) {
     const [hour, minute] = value.split(":");
 
     const handleChange = (part: "hour" | "minute", next: string) => {
@@ -29,7 +34,7 @@ export function TimePicker({ value = "00:00", onChange, disabled }: TimePickerPr
     return (
         <div className="flex items-center gap-2">
             <Clock className="text-muted-foreground size-4" />
-            <span className="text-sm font-medium">时间</span>
+            <span className="text-sm font-medium">{label}</span>
             <div className="ml-auto flex items-center gap-2">
                 <Select
                     value={hour || "00"}

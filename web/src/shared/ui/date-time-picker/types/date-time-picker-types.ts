@@ -111,6 +111,64 @@ export interface DateRangePickerProps {
 }
 
 /**
+ * 日期时间区间
+ */
+export interface DateTimeRange {
+    /** 区间开始（YYYY-MM-DDTHH:mm） */
+    start?: string;
+    /** 区间结束（YYYY-MM-DDTHH:mm） */
+    end?: string;
+}
+
+/**
+ * 日期时间区间快捷预设项
+ */
+export interface DateTimeRangePreset {
+    /** 预设显示文本 */
+    label: string;
+    /** 预设值，完整的日期时间区间 */
+    value: DateTimeRange;
+}
+
+/**
+ * DateTimeRangePicker 日期时间区间选择器属性
+ */
+export interface DateTimeRangePickerProps {
+    /** 当前区间值 */
+    value?: DateTimeRange;
+    /** 区间变化回调 */
+    onChange?: (range: DateTimeRange) => void;
+    /** 输入框占位符 */
+    placeholder?: string;
+    /** 是否禁用 */
+    disabled?: boolean;
+    /** 容器附加类名 */
+    className?: string;
+    /** 最小可选日期时间（YYYY-MM-DDTHH:mm） */
+    min?: string;
+    /** 最大可选日期时间（YYYY-MM-DDTHH:mm） */
+    max?: string;
+    /** 自定义禁用日期判断 */
+    disabledDate?: (date: Date) => boolean;
+    /** 是否显示清除按钮，默认 true */
+    clearable?: boolean;
+    /** 快捷预设列表 */
+    presets?: DateTimeRangePreset[];
+}
+
+/**
+ * DateTimeRangePickerField 表单字段属性
+ */
+export interface DateTimeRangePickerFieldProps extends Omit<DateTimeRangePickerProps, "className"> {
+    /** 关联 label 的 id */
+    id?: string;
+    /** 标签文本 */
+    label: React.ReactNode;
+    /** 校验错误提示 */
+    error?: string;
+}
+
+/**
  * TimePicker 时间选择属性
  */
 export interface TimePickerProps {
@@ -120,6 +178,8 @@ export interface TimePickerProps {
     onChange?: (time: string) => void;
     /** 是否禁用 */
     disabled?: boolean;
+    /** 左侧标签文本，默认"时间" */
+    label?: string;
 }
 
 /**
