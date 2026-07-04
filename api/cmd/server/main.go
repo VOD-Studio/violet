@@ -358,7 +358,8 @@ func main() {
 		})
 
 		// 公告
-		v1.Get("/announcements", contentH.ListActiveAnnouncements) // 获取生效公告列表
+		v1.Get("/announcements", contentH.ListActiveAnnouncements)            // 获取生效公告列表
+		v1.Get("/announcements/{id}", contentH.GetActiveAnnouncement)         // 获取单个生效公告(article 详情页)
 
 		// =====================================================
 		// 管理员路由（认证 + 管理员权限）

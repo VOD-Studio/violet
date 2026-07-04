@@ -73,6 +73,18 @@ func (s *Service) Get(ctx context.Context, id int32) (AnnouncementDTO, error) {
 	return toDTO(a), nil
 }
 
+// GetActive 获取单个生效公告（公开端点用，非生效返回 NotFound）
+func (s *Service) GetActive(ctx context.Context, id int32) (AnnouncementDTO, error) {
+	a, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return AnnouncementDTO{}, err
+	}
+	if !a.IsCurrentlyActive(time.Now()) {
+		return AnnouncementDTO{}, domain.ErrNotFound
+	}
+	return toDTO(a), nil
+}
+
 // CreateInput 创建公告入参
 type CreateInput struct {
 	Title       string

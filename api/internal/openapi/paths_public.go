@@ -169,6 +169,20 @@ func registerPublicPaths(t *openapi3.T) {
 		},
 	})
 
+	// ---- GET /announcements/{id} ----
+	t.Paths.Set("/announcements/{id}", &openapi3.PathItem{
+		Get: &openapi3.Operation{
+			Tags:        []string{"公告"},
+			Summary:     "生效公告详情",
+			Description: "按 ID 获取单个生效公告（article 详情页用，非生效返回 404）。",
+			Parameters:  openapi3.Parameters{pathIntParam("id", "公告 ID")},
+			Responses: responses(
+				200, dataResponse("AnnouncementDTO", "公告详情", 200),
+				404, errorResponse("公告不存在或未生效"),
+			),
+		},
+	})
+
 	// ---- GET /emojis ----
 	t.Paths.Set("/emojis", &openapi3.PathItem{
 		Get: &openapi3.Operation{

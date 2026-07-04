@@ -62,6 +62,21 @@ func (h *Handler) GetAnnouncement(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
+// GetActiveAnnouncement 公开端点：获取单个生效公告（article 详情页用）
+func (h *Handler) GetActiveAnnouncement(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	dto, err := h.annSvc.GetActive(r.Context(), int32(id))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
 type announcementRequest struct {
 	Title       string   `json:"title" validate:"required"`
 	Content     string   `json:"content" validate:"required"`
