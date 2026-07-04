@@ -359,7 +359,7 @@ function AdminUsers() {
                                         selectedHasProtected
                                     }
                                 >
-                                    <SelectTrigger className="h-9 w-35">
+                                    <SelectTrigger className="h-9 w-40">
                                         <UserCog className="size-3.5 mr-1" />
                                         批量修改角色
                                     </SelectTrigger>
