@@ -62,13 +62,21 @@ export const useUpdatePostStatus = (id: string) => {
 /**
  * useSetFeatured - 调后端 PATCH /admin/posts/{id}/featured 切换精选标记
  *
+ * 服务端返回最新详情，直接写入 detail 缓存，避免进入编辑页时
+ * 因 staleTime 窗口先渲染旧精选状态、再被表单一次性守卫锁死。
+ * 列表项结构与详情不同，仍走 invalidate 触发 refetch。
+ *
  * @param id 文章 ID
  */
 export const useSetFeatured = (id: string) => {
+    const qc = useQueryClient();
     const invalidate = useInvalidateAdminPosts();
     return useMutation({
         mutationFn: (body: SetFeatured) => apiPatch<AdminPost>(`/admin/posts/${id}/featured`, body),
-        onSuccess: () => invalidate(),
+        onSuccess: (data) => {
+            qc.setQueryData(adminPostKeys.detail(id), data);
+            invalidate();
+        },
     });
 };
 
