@@ -76,6 +76,7 @@ function AdminRolesPage() {
             header: "角色名称",
             accessorKey: "name",
             sortable: true,
+            ellipsis: true,
             cell: (row) => (
                 <div className="flex items-center gap-2">
                     <Shield className="size-4 text-muted-foreground" />

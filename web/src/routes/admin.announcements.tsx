@@ -83,6 +83,7 @@ function AdminAnnouncementsPage() {
             header: "标题",
             sortable: true,
             width: "40%",
+            ellipsis: true,
             cell: (row) => <span className="font-medium">{row.title}</span>,
         },
         {

@@ -72,6 +72,7 @@ function AdminProjectsPage() {
             key: "title",
             header: "标题",
             sortable: true,
+            ellipsis: true,
             cell: (row) => <span className="font-medium">{row.title}</span>,
         },
         {

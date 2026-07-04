@@ -126,6 +126,7 @@ function AdminPermissionsPage() {
         {
             key: "code",
             header: "代码",
+            ellipsis: true,
             cell: (r) => (
                 <div className="flex items-center gap-2" style={{ paddingLeft: r.depth * 20 }}>
                     <code className="text-primary bg-primary/10 rounded px-2 py-0.5 text-sm">
@@ -137,6 +138,7 @@ function AdminPermissionsPage() {
         {
             key: "name",
             header: "名称",
+            ellipsis: true,
             cell: (r) => <span className="font-medium">{r.row.name}</span>,
         },
         {

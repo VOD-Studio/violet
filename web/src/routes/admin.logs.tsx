@@ -47,6 +47,7 @@ function AdminLogsPage() {
         {
             key: "resource",
             header: "资源",
+            ellipsis: true,
             cell: (row) => `${row.resource}${row.resource_name ? ` · ${row.resource_name}` : ""}`,
         },
         {
