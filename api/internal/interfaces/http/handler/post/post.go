@@ -110,6 +110,7 @@ type createPostRequest struct {
 	SEOTitle       string   `json:"seo_title"`
 	SEODescription string   `json:"seo_description"`
 	Tags           []string `json:"tags"`
+	IsFeatured     bool     `json:"is_featured"`
 }
 
 // Create 创建文章（后台）
@@ -129,7 +130,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		ContentMD: req.ContentMD, ContentHTML: req.ContentHTML,
 		Excerpt: req.Excerpt, CoverImage: req.CoverImage,
 		SEOTitle: req.SEOTitle, SEODescription: req.SEODescription,
-		Tags: req.Tags,
+		Tags: req.Tags, IsFeatured: req.IsFeatured,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -152,7 +153,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		ContentMD: req.ContentMD, ContentHTML: req.ContentHTML,
 		Excerpt: req.Excerpt, CoverImage: req.CoverImage,
 		SEOTitle: req.SEOTitle, SEODescription: req.SEODescription,
-		Tags: req.Tags,
+		Tags: req.Tags, IsFeatured: req.IsFeatured,
 	}, userID); err != nil {
 		response.RespondError(w, r, err)
 		return

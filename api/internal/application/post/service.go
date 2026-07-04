@@ -164,6 +164,7 @@ type CreateInput struct {
 	SEOTitle       string
 	SEODescription string
 	Tags           []string
+	IsFeatured     bool
 }
 
 // Create 创建文章
@@ -189,6 +190,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 	}
 	p.UpdateSEO(in.SEOTitle, in.SEODescription)
 	p.SetTags(in.Tags)
+	p.SetFeatured(in.IsFeatured)
 	if err := s.repo.Save(ctx, p); err != nil {
 		return PostDTO{}, err
 	}
@@ -210,6 +212,7 @@ type UpdateInput struct {
 	SEOTitle       string
 	SEODescription string
 	Tags           []string
+	IsFeatured     bool
 }
 
 // Update 更新文章
@@ -246,6 +249,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID string)
 	}
 	p.UpdateSEO(in.SEOTitle, in.SEODescription)
 	p.SetTags(in.Tags)
+	p.SetFeatured(in.IsFeatured)
 
 	if err := s.repo.Save(ctx, p); err != nil {
 		return err
