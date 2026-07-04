@@ -38,14 +38,15 @@ type PostDTO struct {
 
 // PostVersionDTO 文章版本 DTO
 type PostVersionDTO struct {
-	ID        string   `json:"id"`
-	PostID    string   `json:"post_id"`
-	Title     string   `json:"title"`
-	ContentMD string   `json:"content_md,omitempty"` // 列表时不返回长文本
-	Tags      []string `json:"tags"`
-	EditorID  string   `json:"editor_id"` // 编辑这一版的操作人 ID
-	Summary   string   `json:"summary"`
-	CreatedAt string   `json:"created_at"`
+	ID        string     `json:"id"`
+	PostID    string     `json:"post_id"`
+	Title     string     `json:"title"`
+	ContentMD string     `json:"content_md,omitempty"` // 列表时不返回长文本
+	Tags      []string   `json:"tags"`
+	EditorID  string     `json:"editor_id"`            // 编辑这一版的操作人 ID
+	Editor    *AuthorDTO `json:"editor,omitempty"`     // 编辑者信息（用户名+头像），按 editor_id 批量填充
+	Summary   string     `json:"summary"`
+	CreatedAt string     `json:"created_at"`
 }
 
 // AuthorDTO 文章作者信息，列表与详情按 author_id 批量/单个填充
@@ -375,6 +376,7 @@ func (s *Service) ListVersions(ctx context.Context, postID string) ([]PostVersio
 	for _, v := range versions {
 		dtos = append(dtos, toVersionDTO(v, false))
 	}
+	s.fillVersionEditor(ctx, dtos)
 	return dtos, nil
 }
 
@@ -388,7 +390,9 @@ func (s *Service) GetVersion(ctx context.Context, versionID string) (PostVersion
 	if err != nil {
 		return PostVersionDTO{}, err
 	}
-	return toVersionDTO(v, true), nil
+	dto := toVersionDTO(v, true)
+	s.fillVersionEditor(ctx, []PostVersionDTO{dto})
+	return dto, nil
 }
 
 // RestoreVersion 回滚文章到指定版本
@@ -530,6 +534,49 @@ func (s *Service) fillAuthor(ctx context.Context, dtos []PostDTO) {
 	for i := range dtos {
 		if a, ok := authors[dtos[i].AuthorID]; ok {
 			dtos[i].Author = a
+		}
+	}
+}
+
+// fillVersionEditor 为 PostVersionDTO 列表按 editor_id 批量填充 Editor。
+//
+// 逻辑与 fillAuthor 一致：收集去重后的 editor_id → userRepo.FindByIDs 批量查 → 回填；
+// 编辑者缺失时不报错，PostVersionDTO.Editor 保持 nil，列表正常返回。
+func (s *Service) fillVersionEditor(ctx context.Context, dtos []PostVersionDTO) {
+	if len(dtos) == 0 || s.userRepo == nil {
+		return
+	}
+	seen := make(map[string]struct{}, len(dtos))
+	ids := make([]shared.ID, 0, len(dtos))
+	for _, d := range dtos {
+		if d.EditorID == "" {
+			continue
+		}
+		if _, ok := seen[d.EditorID]; ok {
+			continue
+		}
+		seen[d.EditorID] = struct{}{}
+		if id, err := shared.ParseID(d.EditorID); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	users, err := s.userRepo.FindByIDs(ctx, ids)
+	if err != nil {
+		return // 编辑者信息缺失不阻塞版本列表
+	}
+	editors := make(map[string]*AuthorDTO, len(users))
+	for _, u := range users {
+		editors[u.GetID().String()] = &AuthorDTO{
+			Username:  u.Username().String(),
+			AvatarURL: u.AvatarURL(),
+		}
+	}
+	for i := range dtos {
+		if e, ok := editors[dtos[i].EditorID]; ok {
+			dtos[i].Editor = e
 		}
 	}
 }
