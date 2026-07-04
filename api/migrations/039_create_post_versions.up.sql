@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS post_versions (
     excerpt TEXT,
     cover_image TEXT,
     tags JSONB,
-    author_id UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+    -- editor_id 记录编辑这一版的操作人（保存/更新/回滚的执行者），与 posts.author_id（所有者）区分。
+    editor_id UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
     summary VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

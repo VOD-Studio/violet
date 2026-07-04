@@ -43,7 +43,7 @@ type PostVersionDTO struct {
 	Title     string   `json:"title"`
 	ContentMD string   `json:"content_md,omitempty"` // 列表时不返回长文本
 	Tags      []string `json:"tags"`
-	AuthorID  string   `json:"author_id"`
+	EditorID  string   `json:"editor_id"` // 编辑这一版的操作人 ID
 	Summary   string   `json:"summary"`
 	CreatedAt string   `json:"created_at"`
 }
@@ -575,7 +575,7 @@ func toVersionDTO(v *domain.PostVersion, includeContent bool) PostVersionDTO {
 		PostID:    v.PostID().String(),
 		Title:     v.Title(),
 		Tags:      v.Tags(),
-		AuthorID:  v.AuthorID().String(),
+		EditorID:  v.EditorID().String(),
 		Summary:   v.Summary(),
 		CreatedAt: v.CreatedAt().Format(time.RFC3339),
 	}

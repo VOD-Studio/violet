@@ -16,13 +16,15 @@ type PostVersion struct {
 	excerpt     string
 	coverImage  string
 	tags        []string
-	authorID    shared.ID
+	editorID    shared.ID // 编辑这一版的操作人（非文章所有者）
 	summary     string
 	createdAt   time.Time
 }
 
 // NewPostVersion 创建新快照（自动继承文章当前状态）
-func NewPostVersion(p *Post, authorID shared.ID, summary string) *PostVersion {
+//
+// editorID 为执行本次编辑操作的用户，与文章所有者（Post.AuthorID）区分。
+func NewPostVersion(p *Post, editorID shared.ID, summary string) *PostVersion {
 	tagsCopy := make([]string, len(p.Tags()))
 	copy(tagsCopy, p.Tags())
 
@@ -35,14 +37,14 @@ func NewPostVersion(p *Post, authorID shared.ID, summary string) *PostVersion {
 		excerpt:     p.Excerpt(),
 		coverImage:  p.CoverImage(),
 		tags:        tagsCopy,
-		authorID:    authorID,
+		editorID:    editorID,
 		summary:     summary,
 		createdAt:   time.Now(),
 	}
 }
 
 // ReconstructPostVersion 从持久化层重建
-func ReconstructPostVersion(id, postID shared.ID, title, contentMD, contentHTML, excerpt, coverImage string, tags []string, authorID shared.ID, summary string, createdAt time.Time) *PostVersion {
+func ReconstructPostVersion(id, postID shared.ID, title, contentMD, contentHTML, excerpt, coverImage string, tags []string, editorID shared.ID, summary string, createdAt time.Time) *PostVersion {
 	if tags == nil {
 		tags = []string{}
 	}
@@ -55,7 +57,7 @@ func ReconstructPostVersion(id, postID shared.ID, title, contentMD, contentHTML,
 		excerpt:     excerpt,
 		coverImage:  coverImage,
 		tags:        tags,
-		authorID:    authorID,
+		editorID:    editorID,
 		summary:     summary,
 		createdAt:   createdAt,
 	}
@@ -70,6 +72,6 @@ func (v *PostVersion) ContentHTML() string     { return v.contentHTML }
 func (v *PostVersion) Excerpt() string         { return v.excerpt }
 func (v *PostVersion) CoverImage() string      { return v.coverImage }
 func (v *PostVersion) Tags() []string          { return v.tags }
-func (v *PostVersion) AuthorID() shared.ID     { return v.authorID }
+func (v *PostVersion) EditorID() shared.ID     { return v.editorID }
 func (v *PostVersion) Summary() string         { return v.summary }
 func (v *PostVersion) CreatedAt() time.Time    { return v.createdAt }

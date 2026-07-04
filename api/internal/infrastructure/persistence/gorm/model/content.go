@@ -47,7 +47,7 @@ type PostVersion struct {
 	Excerpt     string    `gorm:"type:text" json:"excerpt"`
 	CoverImage  string    `gorm:"type:text;column:cover_image" json:"cover_image"`
 	Tags        string    `gorm:"type:jsonb" json:"tags"` // JSON array of tag names
-	AuthorID    uuid.UUID `gorm:"type:uuid;column:author_id;not null" json:"author_id"`
+	EditorID    uuid.UUID `gorm:"type:uuid;column:editor_id;not null" json:"editor_id"` // 编辑这一版的操作人，与 Post.AuthorID（所有者）区分
 	Summary     string    `gorm:"type:varchar(255)" json:"summary"`
 	CreatedAt   time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }

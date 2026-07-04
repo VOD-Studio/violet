@@ -310,7 +310,7 @@ func postVersionToPO(v *post.PostVersion) model.PostVersion {
 		Excerpt:     v.Excerpt(),
 		CoverImage:  v.CoverImage(),
 		Tags:        string(tagsBytes),
-		AuthorID:    v.AuthorID().UUID(),
+		EditorID:    v.EditorID().UUID(),
 		Summary:     v.Summary(),
 		CreatedAt:   v.CreatedAt(),
 	}
@@ -326,7 +326,7 @@ func postVersionToDomain(po model.PostVersion) (*post.PostVersion, error) {
 		domainshared.MustParseID(po.PostID.String()),
 		po.Title, po.ContentMD, po.ContentHTML,
 		po.Excerpt, po.CoverImage, tags,
-		domainshared.MustParseID(po.AuthorID.String()),
+		domainshared.MustParseID(po.EditorID.String()),
 		po.Summary, po.CreatedAt,
 	), nil
 }
