@@ -45,6 +45,16 @@ export interface DateTimePickerProps {
 }
 
 /**
+ * 日期区间
+ */
+export interface DateRange {
+    /** 区间开始 */
+    start?: string;
+    /** 区间结束 */
+    end?: string;
+}
+
+/**
  * Calendar 日期面板属性
  */
 export interface CalendarProps {
@@ -68,6 +78,36 @@ export interface CalendarProps {
     disabledDate?: (date: Date) => boolean;
     /** 每周起始日，0=周日，1=周一，默认 1 */
     weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+    /** 已选区间（用于 DateRangePicker） */
+    range?: { start?: Date | null; end?: Date | null };
+    /** 悬停日期（用于区间选择预览） */
+    hoverDate?: Date | null;
+    /** 悬停日期变化回调 */
+    onHoverDateChange?: (date: Date | null) => void;
+}
+
+/**
+ * DateRangePicker 日期区间选择器属性
+ */
+export interface DateRangePickerProps {
+    /** 当前区间值 */
+    value?: DateRange;
+    /** 区间变化回调 */
+    onChange?: (range: DateRange) => void;
+    /** 输入框占位符 */
+    placeholder?: string;
+    /** 是否禁用 */
+    disabled?: boolean;
+    /** 容器附加类名 */
+    className?: string;
+    /** 最小可选日期（YYYY-MM-DD） */
+    min?: string;
+    /** 最大可选日期（YYYY-MM-DD） */
+    max?: string;
+    /** 自定义禁用日期判断 */
+    disabledDate?: (date: Date) => boolean;
+    /** 是否显示清除按钮，默认 true */
+    clearable?: boolean;
 }
 
 /**

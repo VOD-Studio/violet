@@ -145,4 +145,24 @@ describe("Calendar", () => {
         expect(headers[0]?.textContent).toBe("日");
         expect(headers[1]?.textContent).toBe("一");
     });
+
+    it("区间选择时高亮起始、结束和区间内日期", () => {
+        const start = new Date(2026, 6, 1);
+        const end = new Date(2026, 6, 5);
+        const { container } = render(
+            <Calendar selected={null} range={{ start, end }} month={new Date(2026, 6, 1)} />,
+        );
+
+        const buttons = Array.from(
+            container.querySelectorAll('button[data-current="true"]'),
+        ) as HTMLButtonElement[];
+
+        const startBtn = buttons.find((b) => b.textContent === "1");
+        const endBtn = buttons.find((b) => b.textContent === "5");
+        const innerBtn = buttons.find((b) => b.textContent === "3");
+
+        expect(startBtn?.className).toContain("rounded-r-none");
+        expect(endBtn?.className).toContain("rounded-l-none");
+        expect(innerBtn?.className).toContain("bg-primary/20");
+    });
 });
