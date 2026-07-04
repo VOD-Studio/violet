@@ -63,12 +63,19 @@ func (h *Handler) GetAnnouncement(w http.ResponseWriter, r *http.Request) {
 }
 
 type announcementRequest struct {
-	Title     string `json:"title" validate:"required"`
-	Content   string `json:"content" validate:"required"`
-	Type      string `json:"type" validate:"required,oneof=info warning success error"`
-	IsActive  *bool  `json:"is_active"`
-	StartTime string `json:"start_time"`
-	EndTime   string `json:"end_time"`
+	Title       string   `json:"title" validate:"required"`
+	Content     string   `json:"content" validate:"required"`
+	Type        string   `json:"type" validate:"required,oneof=info warning success error"`
+	Display     string   `json:"display" validate:"omitempty,oneof=banner card article"`
+	IsActive    *bool    `json:"is_active"`
+	StartTime   string   `json:"start_time"`
+	EndTime     string   `json:"end_time"`
+	SortOrder   *int     `json:"sort_order"`
+	Affects     []string `json:"affects"`
+	ContentMD   string   `json:"content_md"`
+	ContentHTML string   `json:"content_html"`
+	CoverImage  string   `json:"cover_image"`
+	Excerpt     string   `json:"excerpt"`
 }
 
 func (h *Handler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +88,12 @@ func (h *Handler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	in := appann.CreateInput{Title: req.Title, Content: req.Content, Type: req.Type}
+	in := appann.CreateInput{
+		Title: req.Title, Content: req.Content, Type: req.Type,
+		Display: req.Display, SortOrder: derefInt(req.SortOrder),
+		Affects: req.Affects, ContentMD: req.ContentMD, ContentHTML: req.ContentHTML,
+		CoverImage: req.CoverImage, Excerpt: req.Excerpt,
+	}
 	if req.StartTime != "" {
 		if t, err := time.Parse(time.RFC3339, req.StartTime); err == nil {
 			in.StartTime = &t
@@ -111,7 +123,12 @@ func (h *Handler) UpdateAnnouncement(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	in := appann.UpdateInput{ID: int32(id), Title: req.Title, Content: req.Content, Type: req.Type, IsActive: req.IsActive}
+	in := appann.UpdateInput{
+		ID: int32(id), Title: req.Title, Content: req.Content, Type: req.Type,
+		Display: req.Display, IsActive: req.IsActive, SortOrder: req.SortOrder,
+		Affects: req.Affects, ContentMD: req.ContentMD, ContentHTML: req.ContentHTML,
+		CoverImage: req.CoverImage, Excerpt: req.Excerpt,
+	}
 	if req.StartTime != "" {
 		if t, err := time.Parse(time.RFC3339, req.StartTime); err == nil {
 			in.StartTime = &t
@@ -222,4 +239,12 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondMessage(w, http.StatusOK, "项目已删除")
+}
+
+// derefInt 解引用 *int,nil 返回 0
+func derefInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
 }

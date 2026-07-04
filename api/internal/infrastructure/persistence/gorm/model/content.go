@@ -111,16 +111,23 @@ func (CommentReaction) TableName() string { return "comment_reactions" }
 
 // Announcement 公告表
 type Announcement struct {
-	ID        int32      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Title     string     `gorm:"type:varchar(255);not null" json:"title"`
-	Content   string     `gorm:"type:text;not null" json:"content"`
-	Type      string     `gorm:"type:varchar(20);default:info" json:"type"`
-	IsActive  bool       `gorm:"default:true" json:"is_active"`
-	StartTime *time.Time `gorm:"column:start_time" json:"start_time,omitempty"`
-	EndTime   *time.Time `gorm:"column:end_time" json:"end_time,omitempty"`
-	CreatedBy *uuid.UUID `gorm:"type:uuid;column:created_by" json:"created_by,omitempty"`
-	CreatedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID          int32                 `gorm:"primaryKey;autoIncrement" json:"id"`
+	Title       string                `gorm:"type:varchar(255);not null" json:"title"`
+	Content     string                `gorm:"type:text;not null" json:"content"`
+	Type        string                `gorm:"type:varchar(20);default:info" json:"type"`
+	Display     string                `gorm:"type:varchar(20);default:banner" json:"display"`
+	IsActive    bool                  `gorm:"default:true" json:"is_active"`
+	StartTime   *time.Time            `gorm:"column:start_time" json:"start_time,omitempty"`
+	EndTime     *time.Time            `gorm:"column:end_time" json:"end_time,omitempty"`
+	SortOrder   int                   `gorm:"default:0" json:"sort_order"`
+	Affects     datatypes.JSONSlice[string] `gorm:"type:jsonb" json:"affects,omitempty"`
+	ContentMD   string                `gorm:"type:text;column:content_md" json:"content_md,omitempty"`
+	ContentHTML string                `gorm:"type:text;column:content_html" json:"content_html,omitempty"`
+	CoverImage  string                `gorm:"type:text;column:cover_image" json:"cover_image,omitempty"`
+	Excerpt     string                `gorm:"type:text" json:"excerpt,omitempty"`
+	CreatedBy   *uuid.UUID            `gorm:"type:uuid;column:created_by" json:"created_by,omitempty"`
+	CreatedAt   time.Time             `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt   time.Time             `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 func (Announcement) TableName() string { return "announcements" }

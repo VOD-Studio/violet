@@ -42,14 +42,22 @@ func registerPublicPaths(t *openapi3.T) {
 
 	// AnnouncementDTO
 	registerSchema(t, "AnnouncementDTO", openapi3.Schemas{
-		"id":         optInt32("公告 ID"),
-		"title":      reqStr("标题"),
-		"content":    reqStr("内容"),
-		"type":       strEnum("公告类型", "info", "warning", "success", "error"),
-		"is_active":  optBool("是否启用"),
-		"start_time": optStr("生效时间（RFC3339，可空）"),
-		"end_time":   optStr("失效时间（RFC3339，可空）"),
-		"created_at": optStr("创建时间（RFC3339）"),
+		"id":           optInt32("公告 ID"),
+		"title":        reqStr("标题"),
+		"content":      reqStr("内容"),
+		"type":         strEnum("公告类型（severity 同义冗余，前端读 severity）", "info", "warning", "success", "error"),
+		"severity":     strEnum("严重程度（视觉语义：配色/图标/标签）", "info", "warning", "success", "error"),
+		"display":      strEnum("展示形态（banner/card/article）", "banner", "card", "article"),
+		"is_active":    optBool("是否启用"),
+		"start_time":   optStr("生效时间（RFC3339，可空）"),
+		"end_time":     optStr("失效时间（RFC3339，可空）"),
+		"sort_order":   optInt("排序权重（越小越靠前）"),
+		"affects":      strArray("影响范围（功能模块枚举数组）"),
+		"content_md":   optStr("Markdown 源（article 形态）"),
+		"content_html": optStr("渲染后 HTML（article 形态）"),
+		"cover_image":  optStr("封面图 URL（article 形态）"),
+		"excerpt":      optStr("摘要（card/article 形态）"),
+		"created_at":   optStr("创建时间（RFC3339）"),
 	})
 
 	// EmojiDTO

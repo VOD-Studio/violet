@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
 	"blog-api/internal/domain/announcement"
@@ -30,13 +31,19 @@ func NewAnnouncementRepository(db *gorm.DB) *AnnouncementRepository {
 func announcementToPO(a *announcement.Announcement) model.Announcement {
 	po := model.Announcement{
 		ID: a.ID(), Title: a.Title(), Content: a.Content(),
-		Type: a.Type(), IsActive: a.IsActive(),
+		Type: a.Severity(), Display: a.Display(), IsActive: a.IsActive(),
+		SortOrder: a.SortOrder(),
+		ContentMD: a.ContentMD(), ContentHTML: a.ContentHTML(),
+		CoverImage: a.CoverImage(), Excerpt: a.Excerpt(),
 	}
 	if s := a.StartTime(); s != nil {
 		po.StartTime = s
 	}
 	if e := a.EndTime(); e != nil {
 		po.EndTime = e
+	}
+	if affects := a.Affects(); len(affects) > 0 {
+		po.Affects = datatypes.JSONSlice[string](affects)
 	}
 	if c := a.CreatedAt(); !c.IsZero() {
 		po.CreatedAt = c
@@ -51,8 +58,10 @@ func announcementToPO(a *announcement.Announcement) model.Announcement {
 func announcementToDomain(po model.Announcement) (*announcement.Announcement, error) {
 	var createdBy *domainshared.ID // simplified: not tracking created_by in domain
 	return announcement.ReconstructAnnouncement(
-		po.ID, po.Title, po.Content, po.Type, po.IsActive,
-		po.StartTime, po.EndTime, createdBy, po.CreatedAt, po.UpdatedAt,
+		po.ID, po.Title, po.Content, po.Type, po.Display, po.IsActive,
+		po.StartTime, po.EndTime, po.SortOrder, []string(po.Affects),
+		po.ContentMD, po.ContentHTML, po.CoverImage, po.Excerpt,
+		createdBy, po.CreatedAt, po.UpdatedAt,
 	), nil
 }
 
@@ -69,7 +78,7 @@ func (r *AnnouncementRepository) FindByID(ctx context.Context, id int32) (*annou
 
 func (r *AnnouncementRepository) FindAll(ctx context.Context) ([]*announcement.Announcement, error) {
 	var pos []model.Announcement
-	if err := r.db.WithContext(ctx).Order("id DESC").Find(&pos).Error; err != nil {
+	if err := r.db.WithContext(ctx).Order("sort_order ASC, created_at DESC").Find(&pos).Error; err != nil {
 		return nil, domainshared.Internal("查询公告列表失败", err)
 	}
 	result := make([]*announcement.Announcement, 0, len(pos))
@@ -86,7 +95,7 @@ func (r *AnnouncementRepository) FindActive(ctx context.Context) ([]*announcemen
 	query := r.db.WithContext(ctx).Where("is_active = ?", true).
 		Where("start_time IS NULL OR start_time <= ?", now).
 		Where("end_time IS NULL OR end_time >= ?", now).
-		Order("id DESC")
+		Order("sort_order ASC, created_at DESC")
 	if err := query.Find(&pos).Error; err != nil {
 		return nil, domainshared.Internal("查询活跃公告失败", err)
 	}

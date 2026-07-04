@@ -6,12 +6,19 @@ import "github.com/getkin/kin-openapi/openapi3"
 // AnnouncementDTO 已在 paths_public.go 注册，此处复用。
 func registerAdminAnnouncementPaths(t *openapi3.T) {
 	registerSchema(t, "AdminAnnouncementRequest", openapi3.Schemas{
-		"title":      reqStr("标题"),
-		"content":    reqStr("内容"),
-		"type":       strEnum("公告类型", "info", "warning", "success", "error"),
-		"is_active":  optBool("是否启用（仅更新生效）"),
-		"start_time": optStr("生效时间（RFC3339）"),
-		"end_time":   optStr("失效时间（RFC3339）"),
+		"title":        reqStr("标题"),
+		"content":      reqStr("内容"),
+		"type":         strEnum("公告类型（severity 同义，前端读 severity）", "info", "warning", "success", "error"),
+		"display":      strEnum("展示形态", "banner", "card", "article"),
+		"is_active":    optBool("是否启用（仅更新生效）"),
+		"start_time":   optStr("生效时间（RFC3339）"),
+		"end_time":     optStr("失效时间（RFC3339）"),
+		"sort_order":   optInt("排序权重"),
+		"affects":      strArray("影响范围（功能模块枚举数组）"),
+		"content_md":   optStr("Markdown 源（article 形态）"),
+		"content_html": optStr("渲染后 HTML（article 形态）"),
+		"cover_image":  optStr("封面图 URL（article 形态）"),
+		"excerpt":      optStr("摘要（card/article 形态）"),
 	}, "title", "content", "type")
 
 	idResp := func(desc string) *openapi3.ResponseRef {
