@@ -1,5 +1,20 @@
 import { z } from "zod";
 
+/** 展示形态枚举 */
+export const DISPLAY_OPTIONS = ["banner", "card", "article"] as const;
+
+/** 影响范围可选模块（对齐后端 affects 枚举） */
+export const AFFECTS_OPTIONS = [
+    "posts",
+    "comments",
+    "auth",
+    "media",
+    "search",
+    "projects",
+    "profile",
+    "site",
+] as const;
+
 /**
  * admin-announcements 表单 zod schema
  *
@@ -13,7 +28,13 @@ export const announcementSchema = z
         title: z.string().min(1, "标题不能为空").max(200, "标题最多 200 字符"),
         content: z.string().min(1, "内容不能为空"),
         type: z.enum(["info", "warning", "success", "error"]),
+        display: z.enum(DISPLAY_OPTIONS).default("banner"),
         isActive: z.boolean(),
+        sortOrder: z.coerce.number().int().min(0).default(0),
+        affects: z.array(z.string()).default([]),
+        excerpt: z.string().optional().or(z.literal("")),
+        coverImage: z.string().optional().or(z.literal("")),
+        contentMD: z.string().optional().or(z.literal("")),
         timeRange: z
             .object({
                 start: z.string().optional().or(z.literal("")),

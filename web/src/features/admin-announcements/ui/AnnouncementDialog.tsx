@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/base/button";
+import { Checkbox } from "@shared/ui/base/checkbox";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
 import {
@@ -19,8 +20,13 @@ import { Controller, useForm } from "react-hook-form";
 import type { DateTimeRange, DateTimeRangePreset } from "@/shared/ui/date-time-picker";
 import { DateTimeRangePickerField } from "@/shared/ui/date-time-picker";
 import { useCreateAnnouncement, useUpdateAnnouncement } from "../api/queries";
-import { type AnnouncementForm, announcementSchema } from "../model/schema";
-import type { AnnouncementDTO, AnnouncementType } from "../model/types";
+import {
+    AFFECTS_OPTIONS,
+    type AnnouncementForm,
+    announcementSchema,
+    DISPLAY_OPTIONS,
+} from "../model/schema";
+import type { AnnouncementDisplay, AnnouncementDTO, AnnouncementType } from "../model/types";
 
 interface AnnouncementDialogProps {
     open: boolean;
@@ -36,6 +42,12 @@ const TYPE_OPTIONS: { value: AnnouncementType; label: string }[] = [
     { value: "error", label: "错误" },
 ];
 
+const DISPLAY_LABELS: Record<AnnouncementDisplay, string> = {
+    banner: "横幅（顶部条）",
+    card: "卡片（事件票据）",
+    article: "文章（事件简报）",
+};
+
 export function AnnouncementDialog({ open, onOpenChange, editing }: AnnouncementDialogProps) {
     const isEdit = !!editing;
     const createAnn = useCreateAnnouncement();
@@ -46,6 +58,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
         handleSubmit,
         control,
         reset,
+        watch,
         formState: { errors },
     } = useForm<AnnouncementForm>({
         resolver: zodResolver(announcementSchema),
@@ -53,7 +66,13 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             title: "",
             content: "",
             type: "info",
+            display: "banner",
             isActive: true,
+            sortOrder: 0,
+            affects: [],
+            excerpt: "",
+            coverImage: "",
+            contentMD: "",
             timeRange: { start: "", end: "" },
         },
     });
@@ -65,7 +84,13 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             title: editing?.title || "",
             content: editing?.content || "",
             type: (editing?.type as AnnouncementType) || "info",
+            display: (editing?.display as AnnouncementDisplay) || "banner",
             isActive: editing?.is_active ?? true,
+            sortOrder: editing?.sort_order ?? 0,
+            affects: editing?.affects ?? [],
+            excerpt: editing?.excerpt ?? "",
+            coverImage: editing?.cover_image ?? "",
+            contentMD: editing?.content_md ?? "",
             timeRange: {
                 start: editing?.start_time ? editing.start_time.slice(0, 16) : "",
                 end: editing?.end_time ? editing.end_time.slice(0, 16) : "",
@@ -85,7 +110,13 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             title: data.title,
             content: data.content,
             type: data.type,
+            display: data.display,
             is_active: data.isActive,
+            sort_order: data.sortOrder,
+            affects: data.affects,
+            excerpt: data.excerpt || undefined,
+            cover_image: data.coverImage || undefined,
+            content_md: data.contentMD || undefined,
             start_time: toRFC3339(data.timeRange?.start ?? ""),
             end_time: toRFC3339(data.timeRange?.end ?? ""),
         };
@@ -151,7 +182,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
 
                 {/* 类型 */}
                 <div className="space-y-2">
-                    <Label>类型</Label>
+                    <Label>类型（严重程度）</Label>
                     <Controller
                         control={control}
                         name="type"
@@ -172,6 +203,44 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                                 </SelectContent>
                             </Select>
                         )}
+                    />
+                </div>
+
+                {/* 展示形态 */}
+                <div className="space-y-2">
+                    <Label>展示形态</Label>
+                    <Controller
+                        control={control}
+                        name="display"
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger
+                                    className="w-full"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {DISPLAY_OPTIONS.map((d) => (
+                                        <SelectItem key={d} value={d}>
+                                            {DISPLAY_LABELS[d]}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                </div>
+
+                {/* 排序 */}
+                <div className="space-y-2">
+                    <Label htmlFor="ann-sort">排序（越小越靠前）</Label>
+                    <Input
+                        id="ann-sort"
+                        type="number"
+                        min={0}
+                        disabled={pending}
+                        {...register("sortOrder")}
                     />
                 </div>
 
@@ -206,6 +275,74 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                     />
                     <Label htmlFor="ann-active">启用</Label>
                 </div>
+
+                {/* 影响范围（affects） */}
+                <div className="space-y-2">
+                    <Label>影响范围</Label>
+                    <Controller
+                        control={control}
+                        name="affects"
+                        render={({ field }) => (
+                            <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-md border border-edge-hairline p-3">
+                                {AFFECTS_OPTIONS.map((opt) => {
+                                    const checked = field.value?.includes(opt) ?? false;
+                                    return (
+                                        <label
+                                            key={opt}
+                                            className="flex items-center gap-1.5 text-sm"
+                                        >
+                                            <Checkbox
+                                                checked={checked}
+                                                onCheckedChange={(c) => {
+                                                    const next = c
+                                                        ? [...(field.value ?? []), opt]
+                                                        : (field.value ?? []).filter(
+                                                              (v) => v !== opt,
+                                                          );
+                                                    field.onChange(next);
+                                                }}
+                                            />
+                                            {opt}
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    />
+                </div>
+
+                {/* 摘要 + 封面 + 富文本（card/article 形态） */}
+                {watch("display") !== "banner" && (
+                    <>
+                        <div className="space-y-2">
+                            <Label htmlFor="ann-excerpt">摘要</Label>
+                            <Textarea
+                                id="ann-excerpt"
+                                rows={2}
+                                disabled={pending}
+                                {...register("excerpt")}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="ann-cover">封面图 URL</Label>
+                            <Input id="ann-cover" disabled={pending} {...register("coverImage")} />
+                        </div>
+                    </>
+                )}
+
+                {/* 富文本正文（article 形态） */}
+                {watch("display") === "article" && (
+                    <div className="space-y-2">
+                        <Label htmlFor="ann-md">正文（Markdown）</Label>
+                        <Textarea
+                            id="ann-md"
+                            rows={8}
+                            disabled={pending}
+                            placeholder="支持 Markdown，将渲染为事件简报正文"
+                            {...register("contentMD")}
+                        />
+                    </div>
+                )}
 
                 {/* 生效区间 */}
                 <Controller
