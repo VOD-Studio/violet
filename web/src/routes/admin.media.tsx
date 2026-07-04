@@ -369,6 +369,7 @@ function MediaTable({
             header: "类型",
             width: "120px",
             accessorKey: "mime_type",
+            ellipsis: true,
         },
         {
             key: "size",
