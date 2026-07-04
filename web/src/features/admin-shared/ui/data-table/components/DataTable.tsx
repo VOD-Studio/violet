@@ -334,7 +334,13 @@ export function DataTable<T>({
                 columns={columns}
                 hiddenKeys={hiddenKeys}
                 onToggleColumn={toggleColumn}
-                onResetColumns={() => setHiddenKeys(new Set())}
+                onResetColumns={() => {
+                    setHiddenKeys(new Set());
+                    setColumnWidths({});
+                    if (widthStorageKey) {
+                        localStorage.removeItem(widthStorageKey);
+                    }
+                }}
                 selectedCount={selectable ? selected.size : 0}
             />
 
