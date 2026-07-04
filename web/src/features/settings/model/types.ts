@@ -37,18 +37,33 @@ export interface SiteSettings {
     footer_text: string;
 }
 
+/** 公告严重程度(视觉维度:配色/图标/标签),对齐后端 severity 枚举 */
+export type AnnouncementSeverity = "info" | "warning" | "success" | "error";
+
+/** 公告展示形态(布局维度:banner/card/article),对齐后端 display 枚举 */
+export type AnnouncementDisplay = "banner" | "card" | "article";
+
 /**
  * Announcement - 公告
  *
  * 对接后端 GET /api/v1/announcements。
  */
 export interface Announcement {
-    /** 公告 ID */
-    id: string;
-    /** 公告内容，Markdown */
+    id: number;
+    title: string;
     content: string;
-    /** 是否置顶 */
-    pinned: boolean;
-    /** 创建时间 RFC3339 */
+    /** 严重程度(视觉语义),后端 type 字段的同义冗余 */
+    severity: AnnouncementSeverity;
+    /** 展示形态 */
+    display: AnnouncementDisplay;
+    is_active?: boolean;
+    start_time?: string;
+    end_time?: string;
+    sort_order?: number;
+    affects?: string[];
+    content_md?: string;
+    content_html?: string;
+    cover_image?: string;
+    excerpt?: string;
     created_at: string;
 }
