@@ -12,10 +12,11 @@ import {
 import { Switch } from "@shared/ui/base/switch";
 import { Textarea } from "@shared/ui/base/textarea";
 import { Modal } from "@shared/ui/modal";
+import { addDays, addHours, startOfHour } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { DateTimePickerField } from "@/shared/ui/date-time-picker";
+import { DateTimePickerField, formatPickerValue } from "@/shared/ui/date-time-picker";
 import { useCreateAnnouncement, useUpdateAnnouncement } from "../api/queries";
 import { type AnnouncementForm, announcementSchema } from "../model/schema";
 import type { AnnouncementDTO, AnnouncementType } from "../model/types";
@@ -98,6 +99,20 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
     };
 
     const pending = createAnn.isPending || updateAnn.isPending;
+
+    const now = startOfHour(new Date());
+    const startPresets = [
+        { label: "现在", value: formatPickerValue(now, "datetime") },
+        { label: "1小时后", value: formatPickerValue(addHours(now, 1), "datetime") },
+        { label: "明天", value: formatPickerValue(addDays(now, 1), "datetime") },
+        { label: "3天后", value: formatPickerValue(addDays(now, 3), "datetime") },
+    ];
+    const endPresets = [
+        { label: "1小时后", value: formatPickerValue(addHours(now, 1), "datetime") },
+        { label: "1天后", value: formatPickerValue(addDays(now, 1), "datetime") },
+        { label: "3天后", value: formatPickerValue(addDays(now, 3), "datetime") },
+        { label: "7天后", value: formatPickerValue(addDays(now, 7), "datetime") },
+    ];
 
     return (
         <Modal
@@ -205,6 +220,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                                 onChange={field.onChange}
                                 disabled={pending}
                                 placeholder="开始时间"
+                                presets={startPresets}
                             />
                         )}
                     />
@@ -219,6 +235,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                                 disabled={pending}
                                 placeholder="结束时间"
                                 error={errors.endTime?.message}
+                                presets={endPresets}
                             />
                         )}
                     />
