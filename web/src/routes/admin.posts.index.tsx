@@ -193,7 +193,7 @@ function AdminPostsPage() {
             key: "actions_col",
             header: "操作",
             sticky: "right",
-            width: "80px",
+            width: "120px",
             cell: (row) => (
                 <RowActions
                     row={row}

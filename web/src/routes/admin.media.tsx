@@ -300,7 +300,7 @@ function MediaTable({
                         <th className="px-3 py-2 text-left font-medium">用途</th>
                         <th className="px-3 py-2 text-left font-medium">分类</th>
                         <th className="px-3 py-2 text-left font-medium">创建时间</th>
-                        <th className="px-3 py-2 text-center font-medium">操作</th>
+                        <th className="w-24 px-3 py-2 text-center font-medium">操作</th>
                     </tr>
                 </thead>
                 <tbody>

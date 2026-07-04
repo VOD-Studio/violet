@@ -126,6 +126,7 @@ function AdminCommentsPage() {
             key: "_actions",
             header: null,
             sticky: "right",
+            width: "200px",
             cell: (row) => (
                 <div className="flex items-center gap-1">
                     <Button

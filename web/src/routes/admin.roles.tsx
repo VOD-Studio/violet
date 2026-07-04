@@ -106,6 +106,7 @@ function AdminRolesPage() {
             key: "actions",
             header: "操作",
             sticky: "right",
+            width: "120px",
             cell: (row) => {
                 // 内置角色（user/admin/superadmin）不可删/不可改名/不可改权限
                 const isBuiltin = row.is_builtin;

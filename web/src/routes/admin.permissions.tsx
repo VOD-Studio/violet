@@ -165,6 +165,7 @@ function AdminPermissionsPage() {
             key: "actions_col",
             header: "操作",
             sticky: "right",
+            width: "96px",
             cell: (r) => {
                 const isBuiltin = !!r.row.is_builtin;
                 return (

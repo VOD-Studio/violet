@@ -66,6 +66,7 @@ function AdminTagsPage() {
             key: "actions_col",
             header: "操作",
             sticky: "right",
+            width: "96px",
             cell: (row) => (
                 <div className="flex items-center gap-2">
                     <PermissionGuard permission="tag:update">

@@ -110,6 +110,7 @@ function AdminProjectsPage() {
             key: "_actions",
             header: null,
             sticky: "right",
+            width: "120px",
             cell: (row) => (
                 <div className="flex items-center gap-1">
                     <Button size="sm" variant="ghost" onClick={() => openEdit(row)}>

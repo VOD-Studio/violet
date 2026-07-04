@@ -55,6 +55,7 @@ function AdminLogsPage() {
             key: "_detail",
             header: null,
             sticky: "right",
+            width: "80px",
             cell: (row) => (
                 <Button
                     variant="ghost"
