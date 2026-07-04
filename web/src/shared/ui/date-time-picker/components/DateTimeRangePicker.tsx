@@ -219,18 +219,18 @@ function RangeTimeInput({ label, value = "00:00", onChange, disabled }: RangeTim
     };
 
     return (
-        <div className="space-y-1">
+        <div className="w-full space-y-1">
             <div className="text-muted-foreground flex items-center gap-1 text-xs">
                 <Clock className="size-3" />
                 {label}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex w-full items-center gap-1">
                 <Select
                     value={hour || "00"}
                     onValueChange={(v) => handleChange("hour", v)}
                     disabled={disabled}
                 >
-                    <SelectTrigger className="h-8 w-14 px-2 text-xs">
+                    <SelectTrigger className="h-8 flex-1 px-2 text-xs">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
@@ -247,7 +247,7 @@ function RangeTimeInput({ label, value = "00:00", onChange, disabled }: RangeTim
                     onValueChange={(v) => handleChange("minute", v)}
                     disabled={disabled}
                 >
-                    <SelectTrigger className="h-8 w-14 px-2 text-xs">
+                    <SelectTrigger className="h-8 flex-1 px-2 text-xs">
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
