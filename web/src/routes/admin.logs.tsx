@@ -53,7 +53,7 @@ function AdminLogsPage() {
         },
         {
             key: "_detail",
-            header: null,
+            header: "操作",
             sticky: "right",
             width: "80px",
             cell: (row) => (

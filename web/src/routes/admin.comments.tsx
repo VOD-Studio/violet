@@ -124,7 +124,7 @@ function AdminCommentsPage() {
         },
         {
             key: "_actions",
-            header: null,
+            header: "操作",
             sticky: "right",
             width: "200px",
             cell: (row) => (

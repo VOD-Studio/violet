@@ -108,7 +108,7 @@ function AdminProjectsPage() {
         },
         {
             key: "_actions",
-            header: null,
+            header: "操作",
             sticky: "right",
             width: "120px",
             cell: (row) => (
