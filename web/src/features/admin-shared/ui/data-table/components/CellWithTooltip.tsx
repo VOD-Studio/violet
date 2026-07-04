@@ -71,7 +71,11 @@ function TextMeasure({
     onOverflow: (overflowing: boolean) => void;
 }) {
     const ref = useOverflow<HTMLSpanElement>(onOverflow);
-    return <span ref={ref}>{children}</span>;
+    return (
+        <span ref={ref} className="block min-w-0 max-w-full truncate">
+            {children}
+        </span>
+    );
 }
 
 /**
@@ -102,6 +106,11 @@ function wrapMeasurableChild(
     child: ReactNode,
     onOverflow: (overflowing: boolean) => void,
 ): ReactNode {
+    // 文本/数字子节点：直接包装，Children.only 会把它当成非 React 元素抛出
+    if (typeof child === "string" || typeof child === "number") {
+        return <TextMeasure onOverflow={onOverflow}>{String(child)}</TextMeasure>;
+    }
+
     const onlyChild = Children.only(child);
     if (isValidElement(onlyChild)) {
         return (
@@ -109,9 +118,6 @@ function wrapMeasurableChild(
                 {onlyChild as ReactElement<{ className?: string }>}
             </ElementMeasure>
         );
-    }
-    if (typeof onlyChild === "string" || typeof onlyChild === "number") {
-        return <TextMeasure onOverflow={onOverflow}>{String(onlyChild)}</TextMeasure>;
     }
     return child;
 }
