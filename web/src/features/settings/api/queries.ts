@@ -4,6 +4,22 @@ import type { Announcement, SiteSettings } from "../model/types";
 import { settingsKeys } from "./keys";
 
 /**
+ * fetchAnnouncement - 调 GET /api/v1/announcements/:id 拉取单个生效公告
+ *
+ * 供 article 形态详情页消费。
+ */
+export const fetchAnnouncement = async (id: string): Promise<Announcement> =>
+    apiGet<Announcement>(`/announcements/${id}`);
+
+/** useAnnouncement - 单个公告 hook(article 详情页) */
+export const useAnnouncement = (id: string) =>
+    useQuery({
+        queryKey: [...settingsKeys.announcements(), id],
+        queryFn: () => fetchAnnouncement(id),
+        enabled: !!id,
+    });
+
+/**
  * fetchSettings - 调 GET /api/v1/settings 拉取公开站点配置
  *
  * @returns 站点配置，站名/描述/社交链接等
@@ -25,7 +41,7 @@ export const useSettings = () =>
 /**
  * fetchAnnouncements - 调 GET /api/v1/announcements 拉取生效公告
  *
- * @returns 生效公告列表，pinned 排序由前端 AnnouncementBar 处理
+ * @returns 生效公告列表，排序由后端 sort_order ASC, created_at DESC 决定
  */
 export const fetchAnnouncements = async (): Promise<Announcement[]> =>
     apiGet<Announcement[]>("/announcements");
