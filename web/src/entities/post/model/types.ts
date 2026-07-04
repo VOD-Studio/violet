@@ -33,6 +33,8 @@ export interface Post {
     is_featured: boolean;
     /** 作者信息，后端按 author_id join 填充，缺失时省略 */
     author?: AvatarUser;
+    /** 协同者列表（编辑过但非所有者），按首次编辑时间排序，后端从版本历史衍生，缺失时省略 */
+    collaborators?: AvatarUser[];
 }
 
 /**

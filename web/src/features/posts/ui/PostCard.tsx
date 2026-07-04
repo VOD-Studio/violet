@@ -100,7 +100,12 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 
                 <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
                     <div className="flex items-center gap-1.5">
-                        {post.author ? <AvatarGroup users={[post.author]} /> : null}
+                        {post.author ? (
+                            <AvatarGroup
+                                users={[post.author, ...(post.collaborators ?? [])]}
+                                highlightFirst
+                            />
+                        ) : null}
                         {post.author?.username}
                     </div>
                     <time>
