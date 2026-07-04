@@ -32,6 +32,10 @@ type PostRepository interface {
 	SaveVersion(ctx context.Context, version *PostVersion) error
 	FindVersionsByPostID(ctx context.Context, postID shared.ID) ([]*PostVersion, error)
 	GetVersionByID(ctx context.Context, versionID shared.ID) (*PostVersion, error)
+	// FindCollaboratorIDsByPostID 返回该文章的协同者 ID（按首次编辑时间升序、去重、排除 owner）。
+	// 协同者 = 在 post_versions.editor_id 出现过且不等于 posts.author_id 的用户。
+	// 从版本历史去重衍生，无独立关联表。
+	FindCollaboratorIDsByPostID(ctx context.Context, postID shared.ID) ([]shared.ID, error)
 }
 
 // 领域错误

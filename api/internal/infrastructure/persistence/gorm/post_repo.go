@@ -363,4 +363,27 @@ func (r *PostRepository) GetVersionByID(ctx context.Context, versionID domainsha
 	return postVersionToDomain(po)
 }
 
+// FindCollaboratorIDsByPostID 返回该文章的协同者 ID（按首次编辑时间升序、去重、排除 owner）。
+// 协同者 = 在 post_versions.editor_id 出现过且不等于 posts.author_id 的用户。
+// 用 GROUP BY editor_id + ORDER BY MIN(created_at) 保证去重且按首次参与时间排序。
+func (r *PostRepository) FindCollaboratorIDsByPostID(ctx context.Context, postID domainshared.ID) ([]domainshared.ID, error) {
+	var ids []string
+	err := r.db.WithContext(ctx).
+		Table("post_versions").
+		Select("post_versions.editor_id").
+		Joins("JOIN posts ON posts.id = post_versions.post_id").
+		Where("post_versions.post_id = ? AND post_versions.editor_id <> posts.author_id", postID.UUID()).
+		Group("post_versions.editor_id").
+		Order("MIN(post_versions.created_at) ASC").
+		Pluck("post_versions.editor_id", &ids).Error
+	if err != nil {
+		return nil, domainshared.Internal("查询协同者 ID 失败", err)
+	}
+	result := make([]domainshared.ID, 0, len(ids))
+	for _, id := range ids {
+		result = append(result, domainshared.MustParseID(id))
+	}
+	return result, nil
+}
+
 var _ post.PostRepository = (*PostRepository)(nil)

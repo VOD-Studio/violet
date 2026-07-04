@@ -16,24 +16,25 @@ import (
 
 // PostDTO 文章读模型
 type PostDTO struct {
-	ID             string     `json:"id"`
-	Title          string     `json:"title"`
-	Slug           string     `json:"slug"`
-	ContentMD      string     `json:"content_md"`
-	ContentHTML    string     `json:"content_html"`
-	Excerpt        string     `json:"excerpt"`
-	CoverImage     string     `json:"cover_image"`
-	Status         string     `json:"status"`
-	AuthorID       string     `json:"author_id"`
-	Author         *AuthorDTO `json:"author,omitempty"`
-	ViewCount      int        `json:"view_count"`
-	IsFeatured     bool       `json:"is_featured"`
-	SEOTitle       string     `json:"seo_title"`
-	SEODescription string     `json:"seo_description"`
-	PublishedAt    string     `json:"published_at,omitempty"`
-	Tags           []string   `json:"tags"`
-	CreatedAt      string     `json:"created_at"`
-	UpdatedAt      string     `json:"updated_at"`
+	ID             string       `json:"id"`
+	Title          string       `json:"title"`
+	Slug           string       `json:"slug"`
+	ContentMD      string       `json:"content_md"`
+	ContentHTML    string       `json:"content_html"`
+	Excerpt        string       `json:"excerpt"`
+	CoverImage     string       `json:"cover_image"`
+	Status         string       `json:"status"`
+	AuthorID       string       `json:"author_id"`
+	Author         *AuthorDTO   `json:"author,omitempty"`               // 文章所有者（Owner）
+	Collaborators  []*AuthorDTO `json:"collaborators,omitempty"`        // 协同者列表（编辑过但非所有者），按首次编辑时间排序
+	ViewCount      int          `json:"view_count"`
+	IsFeatured     bool         `json:"is_featured"`
+	SEOTitle       string       `json:"seo_title"`
+	SEODescription string       `json:"seo_description"`
+	PublishedAt    string       `json:"published_at,omitempty"`
+	Tags           []string     `json:"tags"`
+	CreatedAt      string       `json:"created_at"`
+	UpdatedAt      string       `json:"updated_at"`
 }
 
 // PostVersionDTO 文章版本 DTO
@@ -113,6 +114,7 @@ func (s *Service) GetBySlug(ctx context.Context, slug string) (PostDTO, error) {
 	}
 	dto := toDTO(p)
 	s.fillAuthor(ctx, []PostDTO{dto})
+	s.fillCollaborators(ctx, &dto)
 	return dto, nil
 }
 
@@ -128,6 +130,7 @@ func (s *Service) GetByID(ctx context.Context, id string) (PostDTO, error) {
 	}
 	dto := toDTO(p)
 	s.fillAuthor(ctx, []PostDTO{dto})
+	s.fillCollaborators(ctx, &dto)
 	return dto, nil
 }
 
@@ -578,6 +581,55 @@ func (s *Service) fillVersionEditor(ctx context.Context, dtos []PostVersionDTO) 
 		if e, ok := editors[dtos[i].EditorID]; ok {
 			dtos[i].Editor = e
 		}
+	}
+}
+
+// fillCollaborators 为单篇 PostDTO 填充 Collaborators（编辑过但非 owner 的用户列表）。
+//
+// 从版本历史按 editor_id 去重衍生（排除 owner，按首次编辑时间升序），
+// 再用 userRepo.FindByIDs 批量取用户信息。协同者缺失时不报错，列表正常返回。
+func (s *Service) fillCollaborators(ctx context.Context, dto *PostDTO) {
+	if dto == nil || s.userRepo == nil {
+		return
+	}
+	pid, err := shared.ParseID(dto.ID)
+	if err != nil {
+		return
+	}
+	ids, err := s.repo.FindCollaboratorIDsByPostID(ctx, pid)
+	if err != nil || len(ids) == 0 {
+		return
+	}
+	users, err := s.userRepo.FindByIDs(ctx, ids)
+	if err != nil {
+		return // 协同者信息缺失不阻塞文章详情
+	}
+	// FindCollaboratorIDsByPostID 已按首次编辑时间排序，但 FindByIDs 不保证顺序，
+	// 这里按 ids 顺序重建以保持稳定排序。
+	order := make(map[string]int, len(ids))
+	for i, id := range ids {
+		order[id.String()] = i
+	}
+	sorted := make([]*AuthorDTO, len(ids))
+	for _, u := range users {
+		idx, ok := order[u.GetID().String()]
+		if !ok {
+			continue
+		}
+		sorted[idx] = &AuthorDTO{
+			Username:  u.Username().String(),
+			AvatarURL: u.AvatarURL(),
+		}
+	}
+	// 过滤掉未命中的空位（用户被删除等）
+	result := make([]*AuthorDTO, 0, len(sorted))
+	for _, c := range sorted {
+		if c != nil {
+			result = append(result, c)
+		}
+	}
+	if len(result) > 0 {
+		dto.Collaborators = result
 	}
 }
 
