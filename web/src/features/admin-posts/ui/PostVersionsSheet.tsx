@@ -1,3 +1,4 @@
+import { AvatarGroup } from "@shared/ui/avatar-group";
 import { Button } from "@shared/ui/base/button";
 import {
     Dialog,
@@ -76,11 +77,17 @@ export function PostVersionsSheet({
                                                 预览
                                             </Button>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                             <div className="flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1">
                                                 <Clock className="size-3.5" />
                                                 {new Date(v.created_at).toLocaleString()}
                                             </div>
+                                            {v.editor ? (
+                                                <div className="flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1">
+                                                    <AvatarGroup users={[v.editor]} size="xs" />
+                                                    {v.editor.username}
+                                                </div>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </div>
