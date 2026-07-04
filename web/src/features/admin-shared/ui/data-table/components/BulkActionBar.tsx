@@ -1,3 +1,4 @@
+import { Button } from "@/shared/ui/base/button";
 import type { ReactNode } from "react";
 
 interface BulkActionBarProps {
@@ -28,13 +29,9 @@ export function BulkActionBar({ selectedCount, onClear, children }: BulkActionBa
             </span>
             <div className="ml-auto flex items-center gap-2">
                 {children}
-                <button
-                    type="button"
-                    onClick={onClear}
-                    className="text-muted-foreground hover:text-foreground text-sm"
-                >
+                <Button type="button" variant="ghost" size="sm" onClick={onClear}>
                     取消选择
-                </button>
+                </Button>
             </div>
         </div>
     );
