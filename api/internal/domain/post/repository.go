@@ -36,6 +36,9 @@ type PostRepository interface {
 	// 协同者 = 在 post_versions.editor_id 出现过且不等于 posts.author_id 的用户。
 	// 从版本历史去重衍生，无独立关联表。
 	FindCollaboratorIDsByPostID(ctx context.Context, postID shared.ID) ([]shared.ID, error)
+	// FindCollaboratorIDsByPostIDs 批量返回多篇文章的协同者 ID。
+	// 返回 map[postID][]collaboratorID，每个 post 内的 ID 按首次编辑时间升序、去重、排除 owner。
+	FindCollaboratorIDsByPostIDs(ctx context.Context, postIDs []shared.ID) (map[string][]shared.ID, error)
 }
 
 // 领域错误

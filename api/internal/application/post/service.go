@@ -59,18 +59,19 @@ type AuthorDTO struct {
 // PostListItemDTO 文章列表项，不含正文，避免响应过大。
 // ListPublished 与 ListAll 共用；详情接口仍返回完整 PostDTO。
 type PostListItemDTO struct {
-	ID          string     `json:"id"`
-	Slug        string     `json:"slug"`
-	Title       string     `json:"title"`
-	Excerpt     string     `json:"excerpt"`
-	CoverImage  string     `json:"cover_image"`
-	Status      string     `json:"status"`
-	IsFeatured  bool       `json:"is_featured"`
-	ViewCount   int        `json:"view_count"`
-	PublishedAt string     `json:"published_at,omitempty"`
-	Tags        []string   `json:"tags"`
-	AuthorID    string     `json:"-"` // 内部用于批量填充 Author，不暴露给前端
-	Author      *AuthorDTO `json:"author,omitempty"`
+	ID            string       `json:"id"`
+	Slug          string       `json:"slug"`
+	Title         string       `json:"title"`
+	Excerpt       string       `json:"excerpt"`
+	CoverImage    string       `json:"cover_image"`
+	Status        string       `json:"status"`
+	IsFeatured    bool         `json:"is_featured"`
+	ViewCount     int          `json:"view_count"`
+	PublishedAt   string       `json:"published_at,omitempty"`
+	Tags          []string     `json:"tags"`
+	AuthorID      string       `json:"-"` // 内部用于批量填充 Author，不暴露给前端
+	Author        *AuthorDTO   `json:"author,omitempty"`
+	Collaborators []*AuthorDTO `json:"collaborators,omitempty"` // 协同者列表（编辑过但非所有者），按首次编辑时间排序
 }
 
 // ArchiveItemDTO 归档文章项（精简字段，不含正文，避免响应过大）。
@@ -142,6 +143,7 @@ func (s *Service) ListPublished(ctx context.Context, page, limit int, tag string
 	}
 	dtos := toListItemDTOs(items)
 	s.fillListItemAuthor(ctx, dtos)
+	s.fillListItemCollaborators(ctx, dtos)
 	return dtos, total, nil
 }
 
@@ -153,6 +155,7 @@ func (s *Service) ListAll(ctx context.Context, page, limit int, status string) (
 	}
 	dtos := toListItemDTOs(items)
 	s.fillListItemAuthor(ctx, dtos)
+	s.fillListItemCollaborators(ctx, dtos)
 	return dtos, total, nil
 }
 
@@ -743,6 +746,74 @@ func (s *Service) fillListItemAuthor(ctx context.Context, dtos []PostListItemDTO
 	for i := range dtos {
 		if a, ok := authors[dtos[i].AuthorID]; ok {
 			dtos[i].Author = a
+		}
+	}
+}
+
+// fillListItemCollaborators 为列表项批量填充 Collaborators（编辑过但非 owner 的用户列表）。
+//
+// 从版本历史按 editor_id 去重衍生（排除 owner，按首次编辑时间升序），
+// 再用 userRepo.FindByIDs 批量取用户信息。协同者缺失时不报错，列表正常返回。
+func (s *Service) fillListItemCollaborators(ctx context.Context, dtos []PostListItemDTO) {
+	if len(dtos) == 0 || s.userRepo == nil {
+		return
+	}
+	ids := make([]shared.ID, 0, len(dtos))
+	for _, d := range dtos {
+		if id, err := shared.ParseID(d.ID); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	groups, err := s.repo.FindCollaboratorIDsByPostIDs(ctx, ids)
+	if err != nil {
+		return // 协同者 ID 查询失败不阻塞文章列表
+	}
+
+	// 收集所有协同者 ID 用于批量查用户信息
+	seen := make(map[string]struct{})
+	allIDs := make([]shared.ID, 0)
+	for _, cids := range groups {
+		for _, cid := range cids {
+			key := cid.String()
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			allIDs = append(allIDs, cid)
+		}
+	}
+	if len(allIDs) == 0 {
+		return
+	}
+
+	users, err := s.userRepo.FindByIDs(ctx, allIDs)
+	if err != nil {
+		return // 协同者信息缺失不阻塞文章列表
+	}
+	userMap := make(map[string]*AuthorDTO, len(users))
+	for _, u := range users {
+		userMap[u.GetID().String()] = &AuthorDTO{
+			Username:  u.Username().String(),
+			AvatarURL: u.AvatarURL(),
+		}
+	}
+
+	for i := range dtos {
+		cids, ok := groups[dtos[i].ID]
+		if !ok {
+			continue
+		}
+		collaborators := make([]*AuthorDTO, 0, len(cids))
+		for _, cid := range cids {
+			if u, ok := userMap[cid.String()]; ok {
+				collaborators = append(collaborators, u)
+			}
+		}
+		if len(collaborators) > 0 {
+			dtos[i].Collaborators = collaborators
 		}
 	}
 }

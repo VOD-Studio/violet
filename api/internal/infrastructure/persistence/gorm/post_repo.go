@@ -386,4 +386,39 @@ func (r *PostRepository) FindCollaboratorIDsByPostID(ctx context.Context, postID
 	return result, nil
 }
 
+// FindCollaboratorIDsByPostIDs 批量返回多篇文章的协同者 ID。
+// 返回 map[postID][]collaboratorID，每个 post 内的 ID 按首次编辑时间升序、去重、排除 owner。
+func (r *PostRepository) FindCollaboratorIDsByPostIDs(ctx context.Context, postIDs []domainshared.ID) (map[string][]domainshared.ID, error) {
+	if len(postIDs) == 0 {
+		return map[string][]domainshared.ID{}, nil
+	}
+	uuids := make([]string, 0, len(postIDs))
+	for _, id := range postIDs {
+		uuids = append(uuids, id.UUID().String())
+	}
+
+	type row struct {
+		PostID   string `gorm:"column:post_id"`
+		EditorID string `gorm:"column:editor_id"`
+	}
+	var rows []row
+	err := r.db.WithContext(ctx).
+		Table("post_versions").
+		Select("post_versions.post_id, post_versions.editor_id").
+		Joins("JOIN posts ON posts.id = post_versions.post_id").
+		Where("post_versions.post_id IN ? AND post_versions.editor_id <> posts.author_id", uuids).
+		Group("post_versions.post_id, post_versions.editor_id").
+		Order("post_versions.post_id, MIN(post_versions.created_at) ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, domainshared.Internal("批量查询协同者 ID 失败", err)
+	}
+
+	result := make(map[string][]domainshared.ID, len(postIDs))
+	for _, r := range rows {
+		result[r.PostID] = append(result[r.PostID], domainshared.MustParseID(r.EditorID))
+	}
+	return result, nil
+}
+
 var _ post.PostRepository = (*PostRepository)(nil)
