@@ -30,6 +30,7 @@ export function DateTimePicker({
     max,
     disabledDate,
     clearable = true,
+    presets,
 }: DateTimePickerProps) {
     const [open, setOpen] = React.useState(false);
 
@@ -115,6 +116,7 @@ export function DateTimePicker({
                             minDate={minDate ?? undefined}
                             maxDate={maxDate ?? undefined}
                             disabledDate={disabledDate}
+                            weekStartsOn={1}
                         />
                     )}
 
@@ -125,6 +127,27 @@ export function DateTimePicker({
                                 onChange={handleTimeChange}
                                 disabled={disabled}
                             />
+                        </div>
+                    )}
+
+                    {presets && presets.length > 0 && (
+                        <div className="border-t pt-3">
+                            <div className="text-muted-foreground mb-2 text-xs">快捷选择</div>
+                            <div className="flex flex-wrap gap-2">
+                                {presets.map((preset) => (
+                                    <Button
+                                        key={preset.value}
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            onChange?.(preset.value);
+                                        }}
+                                    >
+                                        {preset.label}
+                                    </Button>
+                                ))}
+                            </div>
                         </div>
                     )}
 

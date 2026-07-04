@@ -1,5 +1,6 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { Calendar } from "../components/Calendar";
 import { DateTimePicker } from "../components/DateTimePicker";
 import {
     combineDateTime,
@@ -104,5 +105,44 @@ describe("DateTimePicker", () => {
             <DateTimePicker value="14:30" mode="time" onChange={vi.fn()} />,
         );
         expect(container.textContent).toContain("14:30");
+    });
+
+    it("渲染并触发 presets", () => {
+        const onChange = vi.fn();
+        const { container } = render(
+            <DateTimePicker
+                value=""
+                mode="datetime"
+                onChange={onChange}
+                presets={[{ label: "测试预设", value: "2026-07-04T10:00" }]}
+            />,
+        );
+        const trigger = container.querySelector("button");
+        expect(trigger).not.toBeNull();
+        if (trigger) fireEvent.click(trigger);
+        expect(document.body.textContent).toContain("测试预设");
+
+        const presetButton = Array.from(document.querySelectorAll("button")).find((b) =>
+            b.textContent?.includes("测试预设"),
+        );
+        expect(presetButton).not.toBeUndefined();
+        if (presetButton) fireEvent.click(presetButton);
+        expect(onChange).toHaveBeenCalledWith("2026-07-04T10:00");
+    });
+});
+
+describe("Calendar", () => {
+    it("默认周一作为每周起始日", () => {
+        const { container } = render(<Calendar selected={null} />);
+        const headers = container.querySelectorAll(".grid-cols-7 > div");
+        expect(headers[0]?.textContent).toBe("一");
+        expect(headers[6]?.textContent).toBe("日");
+    });
+
+    it("weekStartsOn=0 时周日作为每周起始日", () => {
+        const { container } = render(<Calendar selected={null} weekStartsOn={0} />);
+        const headers = container.querySelectorAll(".grid-cols-7 > div");
+        expect(headers[0]?.textContent).toBe("日");
+        expect(headers[1]?.textContent).toBe("一");
     });
 });

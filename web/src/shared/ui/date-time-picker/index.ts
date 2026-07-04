@@ -12,6 +12,7 @@ export type {
     DateTimePickerFieldProps,
     DateTimePickerMode,
     DateTimePickerProps,
+    DateTimePreset,
     TimePickerProps,
 } from "./types/date-time-picker-types";
 

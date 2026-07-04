@@ -7,6 +7,16 @@
 export type DateTimePickerMode = "date" | "datetime" | "time";
 
 /**
+ * 日期时间快捷预设项
+ */
+export interface DateTimePreset {
+    /** 预设显示文本 */
+    label: string;
+    /** 预设值，格式与当前 mode 一致 */
+    value: string;
+}
+
+/**
  * DateTimePicker 组件属性
  */
 export interface DateTimePickerProps {
@@ -30,6 +40,8 @@ export interface DateTimePickerProps {
     disabledDate?: (date: Date) => boolean;
     /** 是否显示清除按钮，默认 true */
     clearable?: boolean;
+    /** 快捷预设列表，显示在面板底部 */
+    presets?: DateTimePreset[];
 }
 
 /**
@@ -54,6 +66,8 @@ export interface CalendarProps {
     maxDate?: Date;
     /** 自定义禁用日期判断 */
     disabledDate?: (date: Date) => boolean;
+    /** 每周起始日，0=周日，1=周一，默认 1 */
+    weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
 }
 
 /**

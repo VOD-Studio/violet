@@ -17,8 +17,6 @@ import { Button } from "@/shared/ui/base/button";
 import type { CalendarProps } from "../types/date-time-picker-types";
 import { isDateDisabled } from "../utils/date-time-utils";
 
-const WEEK_DAYS = ["日", "一", "二", "三", "四", "五", "六"];
-
 /**
  * Calendar - 月视图日期选择面板
  *
@@ -34,6 +32,7 @@ export function Calendar({
     minDate,
     maxDate,
     disabledDate,
+    weekStartsOn = 1,
 }: CalendarProps) {
     const today = startOfToday();
     const [internalMonth, setInternalMonth] = React.useState(controlledMonth ?? today);
@@ -49,7 +48,8 @@ export function Calendar({
 
     const monthStart = startOfMonth(month);
     const daysInMonth = getDaysInMonth(monthStart);
-    const startWeekday = getDay(monthStart); // 0 = Sunday
+    const rawStartWeekday = getDay(monthStart); // 0 = Sunday
+    const startWeekday = (rawStartWeekday - weekStartsOn + 7) % 7;
 
     const prevMonth = () => setMonth(subMonths(month, 1));
     const nextMonth = () => setMonth(addMonths(month, 1));
@@ -60,6 +60,12 @@ export function Calendar({
         if (isDateDisabled(date, { minDate, maxDate, disabledDate })) return;
         onSelect?.(date);
     };
+
+    // 根据 weekStartsOn 重新排列星期头
+    const weekDays = React.useMemo(() => {
+        const base = ["日", "一", "二", "三", "四", "五", "六"];
+        return [...base.slice(weekStartsOn), ...base.slice(0, weekStartsOn)];
+    }, [weekStartsOn]);
 
     // 生成 6 行 x 7 列 的日期网格（包含上下月补齐日期）
     const cells: { day: number; current: boolean }[] = [];
@@ -108,7 +114,7 @@ export function Calendar({
 
             {/* 星期头 */}
             <div className="grid grid-cols-7">
-                {WEEK_DAYS.map((d) => (
+                {weekDays.map((d) => (
                     <div
                         key={d}
                         className="text-muted-foreground flex h-8 items-center justify-center text-xs font-medium"
