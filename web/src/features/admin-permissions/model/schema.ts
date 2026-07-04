@@ -28,12 +28,12 @@ export const permissionSchema = z
                 });
             }
         } else {
-            // action：module:action，且必须选父 menu
-            if (!/^[a-z]+:[a-z][a-z-]*$/.test(data.code)) {
+            // action：用户只输入动作名，提交时会自动拼接为 module:action
+            if (!/^[a-z][a-z-]*$/.test(data.code)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ["code"],
-                    message: "action 代码必须为 module:action 格式，如 post:create",
+                    message: "action 代码只能包含小写字母和连字符，且不能以连字符开头，如 create、edit-list",
                 });
             }
             if (!data.parentId) {

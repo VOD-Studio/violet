@@ -13,7 +13,7 @@ import {
 import { Textarea } from "@shared/ui/base/textarea";
 import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useAdminPermissions, useCreatePermission, useUpdatePermission } from "../api/queries";
 import { type PermissionForm, permissionSchema } from "../model/schema";
@@ -59,14 +59,26 @@ export function CreatePermissionDialog({
         },
     });
 
+    const typeValue = watch("type");
+    const parentIdValue = watch("parentId");
+    const parentCode = useMemo(() => {
+        if (!parentIdValue) return "";
+        return menus.find((m) => String(m.id) === parentIdValue)?.code || "";
+    }, [parentIdValue, menus]);
+
     // 对话框开关 / 编辑对象变化时重置表单
     useEffect(() => {
         if (!open) return;
         if (editing) {
+            const editingCode = editing.code || "";
+            const isAction = editing.type === "action";
             reset({
                 type: (editing.type as PermissionType) || "action",
                 parentId: editing.parent_id != null ? String(editing.parent_id) : "",
-                code: editing.code || "",
+                // action 类型只保留冒号后的动作名；menu 类型原样保留
+                code: isAction && editingCode.includes(":")
+                    ? editingCode.slice(editingCode.indexOf(":") + 1)
+                    : editingCode,
                 name: editing.name || "",
                 description: editing.description || "",
                 sort: editing.sort || 0,
@@ -78,13 +90,17 @@ export function CreatePermissionDialog({
 
     const onSubmit = (data: PermissionForm) => {
         const parentId = data.type === "action" && data.parentId ? Number(data.parentId) : null;
+        let fullCode = data.code;
+        if (data.type === "action" && parentId != null && parentCode) {
+            fullCode = `${parentCode}:${data.code}`;
+        }
         if (isEdit && editing?.id) {
             updatePermission.mutate(
                 {
                     id: editing.id,
                     data: {
                         // 内置不改 code；非内置可改
-                        code: isBuiltin ? undefined : data.code,
+                        code: isBuiltin ? undefined : fullCode,
                         name: data.name,
                         description: data.description || undefined,
                         parent_id: parentId,
@@ -96,7 +112,7 @@ export function CreatePermissionDialog({
         } else {
             createPermission.mutate(
                 {
-                    code: data.code,
+                    code: fullCode,
                     name: data.name,
                     description: data.description || undefined,
                     type: data.type,
@@ -211,12 +227,33 @@ export function CreatePermissionDialog({
                     <Label htmlFor="code">
                         权限代码 <span className="text-destructive">*</span>
                     </Label>
-                    <Input id="code" disabled={isBuiltin || pending} {...register("code")} />
+                    {typeValue === "action" ? (
+                        <div className="flex">
+                            <span className="border-input bg-muted text-muted-foreground flex items-center rounded-l-md border border-r-0 px-3 text-sm">
+                                {parentCode ? `${parentCode}:` : "—"}
+                            </span>
+                            <Input
+                                id="code"
+                                className="rounded-l-none"
+                                disabled={isBuiltin || pending || !parentCode}
+                                placeholder={parentCode ? "如 create" : "请先选择所属分组"}
+                                {...register("code")}
+                            />
+                        </div>
+                    ) : (
+                        <Input
+                            id="code"
+                            disabled={isBuiltin || pending}
+                            placeholder="如 post"
+                            {...register("code")}
+                        />
+                    )}
                     {errors.code && (
                         <p className="text-destructive text-sm">{errors.code.message}</p>
                     )}
                     <p className="text-muted-foreground text-xs">
-                        menu 为纯小写字母（如 post）；action 为 module:action（如 post:create）
+                        menu 为纯小写字母（如 post）；action 选择分组后只需输入动作名（如 create，会自动拼接为
+                        post:create）
                     </p>
                 </div>
 
