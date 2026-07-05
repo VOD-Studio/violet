@@ -43,8 +43,8 @@
 
 拆分原则按优先级从高到低执行：
 
-1. **独立组件单独提交**
-   `shared/ui` 中的通用组件，或被多个 feature 引用的实体、接口、hooks、utils，新增、重构、修 bug 都要单独提交。
+1. **公共组件单独提交**
+   只有**公共组件**需要单独提交：`shared/ui` 下的通用组件，或被**多个 feature 引用**的实体、接口、hooks、utils，新增、重构、修 bug 都要单独提交。**feature 内部组件**（如 `features/posts/ui/*`、`features/comments/ui/*`）属于该 feature 私有，按职责分组提交即可，**不必每个组件单独拆 commit**。
 
    ✅ 正确：
    - `feat(web): 封装封面图选择器 Cover 组件`
@@ -54,6 +54,8 @@
    - `feat(web): 文章编辑页接入 Cover 并修复空值回显`
 
    原因：接入页面和修复组件是两件事。混在一起回滚时会把页面改动一起带走。
+
+   判断「是否公共」看**是否被多个 feature 引用**，而非位置。feature 内部组件一旦被第二个 feature 复用，应先 `refactor(web): 将 X 从 features/A 移动到 shared/ui` 单独提交，再在新 feature 接入。
 
 2. **前后端必须分离提交**
    同一需求如果同时改到 `api/` 和 `web/`，必须拆成多个 commit。API 接口变更、Web 接入、类型同步、测试补全都可以各自独立。
