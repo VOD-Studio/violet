@@ -6,30 +6,6 @@ import { Dialog as SheetPrimitive } from "radix-ui";
 
 import { cn } from "@/shared/lib/utils";
 
-/**
- * 判断 Sheet 的 interact-outside 事件是否应该被拦截。
- *
- * 两种情况都拦截：
- * 1. 事件目标本身落在 Radix 浮层内（点 Popover/Menu 内部）
- * 2. 此刻 document 中有任何 Radix 浮层（DropdownMenu/Popover/Tooltip）处于打开状态——
- *    即使用户点的是浮层旁边，也只是要关闭浮层，不应连带关闭整个 Sheet。
- *    判据：存在 [data-state="open"] 的 menu / popover content（它们都走 portal，
- *    不会与 SheetContent 自身混淆）。
- */
-function shouldBlockSheetClose(event: { target: EventTarget | null }): boolean {
-    const target = event.target as HTMLElement | null;
-    if (
-        target?.closest(
-            "[data-radix-popper-content-wrapper], [role=listbox], [data-radix-select-viewport], [data-radix-menu-content], [data-radix-popper-anchor], [data-radix-popper-content]",
-        )
-    ) {
-        return true;
-    }
-    return !!document.querySelector(
-        "[data-radix-menu-content][data-state='open'], [data-slot='popover-content'][data-state='open']",
-    );
-}
-
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
     return <SheetPrimitive.Root data-slot="sheet" {...props} />;
 }
@@ -77,16 +53,6 @@ function SheetContent({
             <SheetOverlay />
             <SheetPrimitive.Content
                 data-slot="sheet-content"
-                onInteractOutside={(e) => {
-                    if (shouldBlockSheetClose(e)) {
-                        e.preventDefault();
-                    }
-                }}
-                onPointerDownOutside={(e) => {
-                    if (shouldBlockSheetClose(e)) {
-                        e.preventDefault();
-                    }
-                }}
                 className={cn(
                     "fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500",
                     side === "right" &&
