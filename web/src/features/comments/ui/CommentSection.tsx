@@ -31,48 +31,44 @@ export function CommentSection({ postId }: CommentSectionProps) {
 
     const comments = data?.data ?? [];
 
-    // 容器与 $slug.tsx 的 <article className="container mx-auto px-6"> 同构，
-    // 保证评论区与正文水平对齐；内部 max-w-3xl 与正文 header 一致。
+    // 容器由父组件（$slug.tsx）控制：评论区作为正文+TOC flex 容器的子项，
+    // 用 min-w-0 max-w-3xl flex-1 与 <main> 同宽同位置（含大屏 TOC 偏移）。
     return (
-        <section className="container mx-auto mt-16 px-6" aria-label="评论区">
-            <div className="mx-auto max-w-3xl">
-                <header className="mb-6 flex items-center gap-2">
-                    <MessageSquare className="size-5 text-muted-foreground" />
-                    <h2 className="text-lg font-semibold text-foreground">
-                        {isLoggedIn ? `评论 (${comments.length})` : "评论"}
-                    </h2>
-                </header>
+        <section className="min-w-0 max-w-3xl flex-1" aria-label="评论区">
+            <header className="mb-6 flex items-center gap-2">
+                <MessageSquare className="size-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold text-foreground">
+                    {isLoggedIn ? `评论 (${comments.length})` : "评论"}
+                </h2>
+            </header>
 
-                {/* 匿名黑洞引导：未登录时显示登录 CTA，不展示评论列表 */}
-                {!isLoggedIn && (
-                    <div className="mb-6 flex items-center justify-between rounded-lg border border-edge-hairline bg-muted/30 px-4 py-3">
-                        <p className="text-sm text-muted-foreground">
-                            登录后查看评论并参与完整讨论
-                        </p>
-                        <Button variant="outline" size="sm" onClick={() => openLogin()}>
-                            <LogIn className="size-4" />
-                            登录
-                        </Button>
-                    </div>
-                )}
-
-                {/* 评论输入：双模式（登录直发 / 匿名两步流） */}
-                <div className="mb-8">
-                    <CommentForm postId={postId} isLoggedIn={isLoggedIn} />
+            {/* 匿名黑洞引导：未登录时显示登录 CTA，不展示评论列表 */}
+            {!isLoggedIn && (
+                <div className="mb-6 flex items-center justify-between rounded-lg border border-edge-hairline bg-muted/30 px-4 py-3">
+                    <p className="text-sm text-muted-foreground">登录后查看评论并参与完整讨论</p>
+                    <Button variant="outline" size="sm" onClick={() => openLogin()}>
+                        <LogIn className="size-4" />
+                        登录
+                    </Button>
                 </div>
+            )}
 
-                {/* 评论列表：仅登录态渲染（匿名黑洞看不到） */}
-                {isLoggedIn ? (
-                    isLoading ? (
-                        <div className="space-y-3">
-                            <ShimmerSkeleton className="h-24 w-full rounded-xl" />
-                            <ShimmerSkeleton className="h-24 w-full rounded-xl" />
-                        </div>
-                    ) : (
-                        <CommentList comments={comments} />
-                    )
-                ) : null}
+            {/* 评论输入：双模式（登录直发 / 匿名两步流） */}
+            <div className="mb-8">
+                <CommentForm postId={postId} isLoggedIn={isLoggedIn} />
             </div>
+
+            {/* 评论列表：仅登录态渲染（匿名黑洞看不到） */}
+            {isLoggedIn ? (
+                isLoading ? (
+                    <div className="space-y-3">
+                        <ShimmerSkeleton className="h-24 w-full rounded-xl" />
+                        <ShimmerSkeleton className="h-24 w-full rounded-xl" />
+                    </div>
+                ) : (
+                    <CommentList comments={comments} />
+                )
+            ) : null}
         </section>
     );
 }

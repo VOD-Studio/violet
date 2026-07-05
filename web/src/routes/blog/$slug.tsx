@@ -189,10 +189,20 @@ function BlogDetailPage() {
                         <ArticleContent content={body} />
                     </main>
                 </div>
+
+                {/* 底部自由评论区：放在 article 内、正文+TOC 容器之后，
+                    复用同样的 flex 结构保证与正文严格对齐（含大屏 TOC 偏移）。 */}
+                {post?.id && (
+                    <div className="relative mx-auto mt-16 flex max-w-6xl justify-center gap-8">
+                        {toc.length > 1 ? (
+                            <aside className="hidden w-56 shrink-0 2xl:block" />
+                        ) : null}
+                        <CommentSection postId={post.id} />
+                    </div>
+                )}
             </article>
 
-            {/* 底部自由评论区（双轨制：登录直发 + 匿名两步流；黑洞模式匿名看不到列表） */}
-            {post?.id && <CommentSection postId={post.id} />}
+            {/* 评论区已上移到 article 内部，与正文对齐 */}
 
             {articleImages.preview}
             {/*
