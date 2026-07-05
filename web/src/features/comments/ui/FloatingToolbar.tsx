@@ -15,6 +15,7 @@
 import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
 import { useCreateComment } from "@features/comments/api/mutations";
 import { toCreateCommentAnchor } from "@features/comments/lib/anchor-mapper";
+import { findBlockElement } from "@features/comments/lib/extract-blocks";
 import { clearSelection, selectionToAnchor } from "@features/comments/lib/selection-to-anchor";
 import type { Anchor } from "@features/comments/lib/types";
 import { ApiError } from "@shared/api/error";
@@ -23,6 +24,9 @@ import { Textarea } from "@shared/ui/base/textarea";
 import { Highlighter, Loader2, LogIn, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+/** 草稿批注临时高亮 class（展开输入区时标记选中块，区别于已提交批注的 .annotation-highlight）。 */
+const DRAFT_HIGHLIGHT_CLASS = "annotation-draft-highlight";
 
 export interface FloatingToolbarProps {
     /** 正文容器 ref（选区必须在此容器内才显示工具条） */
@@ -49,7 +53,32 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
     const openLogin = useLoginDialogStore((s) => s.open);
     const createComment = useCreateComment(postId);
 
-    // 监听选区变化（mouseup 后检查 selection）
+    // 缓存最近一次有效选区的 Range，用于滚动时重新定位（滚动不触发 selectionchange）。
+    const lastRangeRef = useRef<Range | null>(null);
+
+    /** 用缓存的 Range 重新算工具条视口位置（fixed 定位用视口坐标，滚动后需更新）。 */
+    const updatePosFromRange = (range: Range, mode: "above" | "below" = "above") => {
+        const rect = range.getBoundingClientRect();
+        // 选区已滚出视口（width/height 0 或在视口外）→ 隐藏工具条
+        if (rect.width === 0 && rect.height === 0) {
+            setPos(null);
+            return;
+        }
+        if (mode === "above") {
+            setPos({
+                top: rect.top - 48, // 选区上方 48px
+                left: rect.left + rect.width / 2,
+            });
+        } else {
+            setPos({
+                top: rect.bottom + 8,
+                left: rect.left + rect.width / 2,
+            });
+        }
+    };
+
+    // 监听选区变化（mouseup 后检查 selection）。
+    // biome-ignore lint/correctness/useExhaustiveDependencies: 故意只依赖 [contentRef, showInput]——updatePosFromRange 是无状态的工具函数（只读 pos state），不需要进 deps；scroll handler 通过 closure 捕获最新值。
     useEffect(() => {
         if (showInput) return; // 输入区展开时不响应新选区
 
@@ -62,6 +91,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 
                 const selection = window.getSelection();
                 if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+                    lastRangeRef.current = null;
                     setPos(null);
                     setAnchor(null);
                     setIsCrossBlock(false);
@@ -71,9 +101,13 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                 // 选区必须在正文容器内
                 const range = selection.getRangeAt(0);
                 if (!root.contains(range.commonAncestorContainer)) {
+                    lastRangeRef.current = null;
                     setPos(null);
                     return;
                 }
+
+                // 缓存 Range 供滚动重定位用
+                lastRangeRef.current = range.cloneRange();
 
                 // 算 anchor（含跨块判定）
                 const result = await selectionToAnchor({ root });
@@ -85,23 +119,44 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                     setIsCrossBlock(true);
                 }
 
-                // 定位工具条到选区上方。
-                // fixed 定位用视口坐标（rect.top/left 已是视口坐标，不能再加 scrollY/scrollX，
-                // 否则页面滚动后工具条会飘到错误位置）。
-                const rect = range.getBoundingClientRect();
-                setPos({
-                    top: rect.top - 48, // 选区上方 48px
-                    left: rect.left + rect.width / 2,
-                });
+                updatePosFromRange(range, "above");
+            });
+        };
+
+        // 滚动时用缓存的 Range 重新算视口位置（fixed 定位跟随）。
+        // capture: true 捕获阶段监听，避免被正文里的 stopPropagation 拦截。
+        const handleScroll = () => {
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(() => {
+                if (lastRangeRef.current) {
+                    updatePosFromRange(lastRangeRef.current, "above");
+                }
             });
         };
 
         document.addEventListener("selectionchange", handleSelectionChange);
+        window.addEventListener("scroll", handleScroll, { passive: true, capture: true });
         return () => {
             document.removeEventListener("selectionchange", handleSelectionChange);
+            window.removeEventListener("scroll", handleScroll, { capture: true });
             cancelAnimationFrame(rafId);
         };
     }, [contentRef, showInput]);
+
+    /** 给选中块加草稿高亮（让用户在写批注时看到「我选中了哪段」，不依赖浏览器选区视觉）。 */
+    const addDraftHighlight = async (blockId: string) => {
+        const root = contentRef.current;
+        if (!root) return;
+        const el = await findBlockElement(root, blockId);
+        el?.classList.add(DRAFT_HIGHLIGHT_CLASS);
+    };
+
+    /** 清除草稿高亮（提交/取消时调用）。 */
+    const clearDraftHighlight = () => {
+        contentRef.current?.querySelectorAll(`.${DRAFT_HIGHLIGHT_CLASS}`).forEach((el) => {
+            el.classList.remove(DRAFT_HIGHLIGHT_CLASS);
+        });
+    };
 
     /** 点「划线批注」：登录展开输入区；未登录弹登录窗 */
     const handleAnnotate = () => {
@@ -129,6 +184,9 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                 });
             }
         }
+        // 标记选中块：textarea 获得焦点后浏览器选区视觉会淡化，
+        // 用草稿高亮让用户持续看到「正在批注的位置」。
+        void addDraftHighlight(anchor.blockId);
         setShowInput(true);
         setBody("");
     };
@@ -142,6 +200,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
             {
                 onSuccess: () => {
                     toast.success("批注已提交，等待审核");
+                    clearDraftHighlight();
                     setShowInput(false);
                     setBody("");
                     setPos(null);
@@ -158,6 +217,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 
     /** 取消输入 */
     const handleCancel = () => {
+        clearDraftHighlight();
         setShowInput(false);
         setBody("");
         setPos(null);

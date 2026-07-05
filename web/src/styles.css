@@ -315,3 +315,14 @@ body {
   background-color: hsl(217 91% 60% / 0.12);
   border-left-color: hsl(217 91% 60%);
 }
+
+/* 草稿批注临时高亮：展开输入区时标记选中块，比已提交批注更醒目（amber 暖色区分） */
+.annotation-draft-highlight {
+  border-left: 3px solid hsl(38 92% 50% / 0.9);
+  background-color: hsl(38 92% 50% / 0.12);
+  border-radius: 0 4px 4px 0;
+  padding-left: 0.5em;
+  margin-left: -0.5em;
+  transition: background-color 0.2s;
+  scroll-margin-top: 80px;
+}
