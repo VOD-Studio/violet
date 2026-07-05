@@ -2,31 +2,61 @@
 package comment
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 
 	appcomment "blog-api/internal/application/comment"
+	"blog-api/internal/domain/shared"
+	domainuser "blog-api/internal/domain/user"
+	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
+	"blog-api/internal/middleware"
 )
+
+// commentService handler 层对 application service 的接口视图（便于测试 stub）。
+// *appcomment.Service 天然满足此接口。
+type commentService interface {
+	ListByPost(ctx context.Context, postID, viewerUserID string, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
+	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
+	ListPending(ctx context.Context, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	ListAll(ctx context.Context, status string, page, limit int) ([]appcomment.AdminCommentDTO, int64, error)
+	CountPending(ctx context.Context) (int64, error)
+	GetDetail(ctx context.Context, id string) (appcomment.AdminCommentDTO, error)
+	BatchUpdateStatus(ctx context.Context, ids []string, status string) (int64, error)
+	Approve(ctx context.Context, id string) error
+	MarkSpam(ctx context.Context, id string) error
+	Delete(ctx context.Context, id string) error
+}
 
 // Handler 评论 HTTP 处理器
 type Handler struct {
-	svc      *appcomment.Service
+	svc      commentService
+	users    domainuser.UserRepository // 取登录评论者的资料（username/avatar）填充 author_*；匿名为 nil 不查
 	validate *validator.Validate
 }
 
-// NewHandler 创建评论 handler
-func NewHandler(svc *appcomment.Service) *Handler {
-	return &Handler{svc: svc, validate: validator.New()}
+// NewHandler 创建评论 handler。
+//
+// users 可为 nil（仅当确信不需要登录评论资料时；正常流程应注入）。
+func NewHandler(svc *appcomment.Service, users domainuser.UserRepository) *Handler {
+	return &Handler{svc: svc, users: users, validate: validator.New()}
 }
 
-// ListByPost 按文章列出评论（前台公开）
+// ListByPost 按文章列出评论（前台公开）。
+//
+// 黑洞模式：匿名 viewer（无会话）→ service 返回空数组；
+// 登录 viewer → service 返回 approved ∪ 自己 pending。
 func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
+	viewerID := interfacesmw.GetUserIDFromContext(r)
 	page, limit := response.ParsePaging(r)
-	items, total, err := h.svc.ListByPost(r.Context(), postID, page, limit)
+	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -103,15 +133,24 @@ func (h *Handler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 type createCommentRequest struct {
-	Body        string `json:"body" validate:"required"`
-	ParentID    string `json:"parent_id"`
-	AuthorName  string `json:"author_name" validate:"required"`
-	AuthorEmail string `json:"author_email" validate:"required,email"`
-	AuthorURL   string `json:"author_url"`
-	AvatarURL   string `json:"avatar_url"`
+	Body        string                  `json:"body" validate:"required"`
+	ParentID    string                  `json:"parent_id"`
+	AuthorName  string                  `json:"author_name"`
+	AuthorEmail string                  `json:"author_email" validate:"omitempty,email"`
+	AuthorURL   string                  `json:"author_url"`
+	AvatarURL   string                  `json:"avatar_url"`
+	Code        string                  `json:"code"`
+	Anchor      *appcomment.AnchorInput `json:"anchor"`
 }
 
-// Create 创建评论（前台公开）
+// Create 创建评论（前台公开，双轨认证）。
+//
+// 双轨认证（PRD-0001）：
+//   - 登录（会话有 userID）：跳过验证码/配额，author_* 从 user 资料填充
+//   - 匿名：必须 author_name + author_email + 邮箱验证码 code；走一篇一次配额
+//   - 带 anchor（选区批注）：强制登录，否则 401
+//
+// ip_hash 一律由 handler 从 middleware.GetClientIP + SHA256 计算填充。
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
 	var req createCommentRequest
@@ -124,17 +163,96 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dto, err := h.svc.Create(r.Context(), appcomment.CreateInput{
+	userID := interfacesmw.GetUserIDFromContext(r)
+	ipHash := hashIP(middleware.GetClientIP(r))
+
+	in := appcomment.CreateInput{
 		PostID: postID, ParentID: req.ParentID,
-		AuthorName: req.AuthorName, AuthorEmail: req.AuthorEmail,
-		AuthorURL: req.AuthorURL, AvatarURL: req.AvatarURL,
-		Body: req.Body,
-	})
+		Body: req.Body, Code: req.Code,
+		Anchor: req.Anchor.ToDomain(),
+		IPHash: ipHash, UserAgent: r.UserAgent(),
+	}
+
+	if userID != "" {
+		// 登录路径：从 user 资料填 author_*，忽略请求体里的对应字段（防伪造）。
+		uid, err := shared.ParseID(userID)
+		if err != nil {
+			response.RespondError(w, r, err)
+			return
+		}
+		if h.users != nil {
+			u, err := h.users.FindByID(r.Context(), uid)
+			if err != nil {
+				response.RespondError(w, r, err)
+				return
+			}
+			in.AuthorName = u.Username().String()
+			in.AuthorEmail = u.Email().String()
+			in.AvatarURL = u.AvatarURL()
+		}
+		in.UserID = userID
+	} else {
+		// 匿名路径：必须手填 author_name + author_email。
+		if req.AuthorName == "" || req.AuthorEmail == "" {
+			response.RespondError(w, r, shared.BadRequest("昵称和邮箱不能为空"))
+			return
+		}
+		in.AuthorName = req.AuthorName
+		in.AuthorEmail = req.AuthorEmail
+		in.AuthorURL = req.AuthorURL
+		in.AvatarURL = req.AvatarURL
+	}
+
+	// 批注强制登录：anchor 非空 + 匿名 → 401。
+	// （domain.NewComment 也会做这层校验，但提前在 handler 返回更精确的 HTTP 语义。）
+	if in.Anchor != nil && userID == "" {
+		response.RespondError(w, r, shared.Unauthorized("划线批注需要登录"))
+		return
+	}
+
+	dto, err := h.svc.Create(r.Context(), in)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondCreated(w, dto)
+}
+
+type sendCodeRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+// SendCode 匿名评论第一步：发送邮箱验证码（前台公开）。
+//
+// 仅匿名评论需要；登录用户不调用此端点。挂独立限流 CommentCodeRateLimit 防邮件轰炸。
+func (h *Handler) SendCode(w http.ResponseWriter, r *http.Request) {
+	postID := r.PathValue("postId")
+	var req sendCodeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.svc.SendCode(r.Context(), appcomment.SendCodeInput{
+		PostID: postID, Email: req.Email,
+	}); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "验证码已发送")
+}
+
+// hashIP 把客户端 IP 转成 SHA256 hex（ip_hash）。
+// 不存明文 IP，兼顾反垃圾/配额识别与隐私。
+func hashIP(ip string) string {
+	if ip == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(ip))
+	return hex.EncodeToString(sum[:])
 }
 
 // Approve 审核通过

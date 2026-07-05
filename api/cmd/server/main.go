@@ -26,6 +26,7 @@ import (
 	infraemail "blog-api/internal/infrastructure/email"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
+	infraauth "blog-api/internal/infrastructure/auth"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
@@ -124,7 +125,8 @@ func main() {
 
 	contentContainer := app.NewContentContainer(gormDB)
 
-	commentContainer := app.NewCommentContainer(gormDB)
+	commentCodeStore := infraauth.NewRedisCodeStore(redisClient)
+	commentContainer := app.NewCommentContainer(gormDB, commentCodeStore, emailSender)
 
 	postContainer := app.NewPostContainer(gormDB)
 	tagContainer := app.NewTagContainer(gormDB)
@@ -280,8 +282,9 @@ func main() {
 		// 评论（DDD commentH；评论反应 DDD commentReactionContainer）
 		commentH := commentContainer.CommentHandler
 		v1.Route("/posts/{postId}/comments", func(r chi.Router) {
-			r.Get("/", commentH.ListByPost)                                             // 获取文章已审核评论
-			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentH.Create) // 提交评论（限流）
+			r.Get("/", commentH.ListByPost)                                                        // 获取文章评论（登录看 approved∪自己pending；匿名黑洞返回空）
+			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentH.Create)            // 提交评论（双轨认证，限流）
+			r.With(middleware.CommentCodeRateLimit(redisClient)).Post("/code", commentH.SendCode)  // 匿名评论发送邮箱验证码（独立限流防邮件轰炸）
 		})
 
 		// 评论反应（DDD commentReactionContainer）

@@ -69,6 +69,12 @@ func CommentRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler
 	return RateLimit("comment", redisClient, time.Minute, 3)
 }
 
+// CommentCodeRateLimit 评论验证码发送限流（每分钟 5 次，防邮件轰炸）。
+// 与 CommentRateLimit（提交评论）隔离，避免发码与提交共桶互相挤占。
+func CommentCodeRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimit("comment_code", redisClient, time.Minute, 5)
+}
+
 // AuthRateLimit 认证类接口限流（登录/注册/忘记密码/重置/验证：每分钟 5 次，防暴力与邮件轰炸）
 func AuthRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 	return RateLimit("auth", redisClient, time.Minute, 5)
