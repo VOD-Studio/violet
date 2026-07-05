@@ -175,7 +175,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="w-full gap-0 overflow-y-auto sm:max-w-2xl lg:max-w-3xl"
+                className="w-full gap-0 overflow-hidden sm:max-w-2xl lg:max-w-3xl"
             >
                 <SheetHeader className="border-b border-edge-hairline pr-12">
                     <SheetTitle>{isEdit ? "编辑公告" : "创建公告"}</SheetTitle>
@@ -187,11 +187,12 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                 <form
                     id="announcement-form"
                     onSubmit={handleSubmit(onSubmit)}
-                    // 两栏：桌面左右排，移动端上下堆叠；flex-1 撑满抽屉高度
-                    className="flex min-h-0 flex-1 flex-col gap-6 p-4 lg:grid lg:grid-cols-[1fr_18rem] lg:items-start"
+                    // 三段式：header/footer 固定，此区为中间可滚动区
+                    // 移动端单列整体滚；桌面端两栏各自独立滚，互不干扰
+                    className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:grid lg:grid-cols-[1fr_18rem] lg:items-start lg:gap-6 lg:overflow-hidden"
                 >
                 {/* ============ 左主区：内容编辑 ============ */}
-                <div className="space-y-4">
+                <div className="min-h-0 space-y-4 lg:overflow-y-auto lg:pr-1">
                     {/* 标题 */}
                     <div className="space-y-2">
                         <Label htmlFor="ann-title">
@@ -278,7 +279,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                 </div>
 
                 {/* ============ 右侧栏：配置面板 ============ */}
-                <aside className="space-y-4 rounded-lg border border-edge-hairline bg-muted/30 p-4">
+                <aside className="min-h-0 space-y-4 overflow-y-auto rounded-lg border border-edge-hairline bg-muted/30 p-4 lg:self-stretch">
                     {/* 展示形态（创建后不可改） */}
                     <div className="space-y-2">
                         <Label className="flex items-center gap-1.5">
