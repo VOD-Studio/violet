@@ -16,7 +16,7 @@ import { Switch } from "@shared/ui/base/switch";
 import { Textarea } from "@shared/ui/base/textarea";
 import { Modal } from "@shared/ui/modal";
 import { addDays, addHours, endOfDay, format, startOfDay, startOfHour } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import type { DateTimeRange, DateTimeRangePreset } from "@/shared/ui/date-time-picker";
@@ -46,8 +46,8 @@ const TYPE_OPTIONS: { value: AnnouncementType; label: string }[] = [
 
 const DISPLAY_LABELS: Record<AnnouncementDisplay, string> = {
     banner: "横幅（顶部条）",
-    card: "卡片（事件票据）",
-    article: "文章（事件简报）",
+    card: "卡片（通知）",
+    article: "文章（简报）",
 };
 
 export function AnnouncementDialog({ open, onOpenChange, editing }: AnnouncementDialogProps) {
@@ -112,7 +112,8 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
     const onSubmit = (data: AnnouncementForm) => {
         const payload = {
             title: data.title,
-            content: data.content,
+            // article 形态正文用 content_html，content 留空
+            content: data.display === "article" ? "" : (data.content ?? ""),
             type: data.type,
             display: data.display,
             is_active: data.isActive,
@@ -136,6 +137,9 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
     };
 
     const pending = createAnn.isPending || updateAnn.isPending;
+    const display = watch("display");
+    const isArticle = display === "article";
+    const isBanner = display === "banner";
 
     const now = startOfHour(new Date());
     const formatRange = (start: Date, end: Date): DateTimeRange => ({
@@ -155,7 +159,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             onOpenChange={onOpenChange}
             title={isEdit ? "编辑公告" : "创建公告"}
             description={isEdit ? "修改公告内容与生效设置" : "新建一条站点公告"}
-            size="md"
+            size="xl"
             footer={
                 <>
                     <Button
@@ -173,163 +177,167 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                 </>
             }
         >
-            <form id="announcement-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {/* 标题 */}
-                <div className="space-y-2">
-                    <Label htmlFor="ann-title">
-                        标题 <span className="text-destructive">*</span>
-                    </Label>
-                    <Input id="ann-title" disabled={pending} {...register("title")} />
-                    {errors.title && (
-                        <p className="text-destructive text-sm">{errors.title.message}</p>
-                    )}
-                </div>
-
-                {/* 类型 */}
-                <div className="space-y-2">
-                    <Label>类型（严重程度）</Label>
-                    <Controller
-                        control={control}
-                        name="type"
-                        render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger
-                                    className="w-full"
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {TYPE_OPTIONS.map((o) => (
-                                        <SelectItem key={o.value} value={o.value}>
-                                            {o.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+            <form
+                id="announcement-form"
+                onSubmit={handleSubmit(onSubmit)}
+                // 两栏：桌面左右排，移动端上下堆叠
+                className="flex flex-col gap-6 md:grid md:grid-cols-[1fr_20rem]"
+            >
+                {/* ============ 左主区：内容编辑 ============ */}
+                <div className="space-y-4">
+                    {/* 标题 */}
+                    <div className="space-y-2">
+                        <Label htmlFor="ann-title">
+                            标题 <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                            id="ann-title"
+                            placeholder="一句话说清这条公告"
+                            disabled={pending}
+                            {...register("title")}
+                        />
+                        {errors.title && (
+                            <p className="text-sm text-destructive">{errors.title.message}</p>
                         )}
-                    />
-                </div>
+                    </div>
 
-                {/* 展示形态 */}
-                <div className="space-y-2">
-                    <Label>展示形态</Label>
-                    <Controller
-                        control={control}
-                        name="display"
-                        render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger
-                                    className="w-full"
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {DISPLAY_OPTIONS.map((d) => (
-                                        <SelectItem key={d} value={d}>
-                                            {DISPLAY_LABELS[d]}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        )}
-                    />
-                </div>
+                    {/* 类型 */}
+                    <div className="space-y-2">
+                        <Label>类型（严重程度）</Label>
+                        <Controller
+                            control={control}
+                            name="type"
+                            render={({ field }) => (
+                                <Select value={field.value} onValueChange={field.onChange}>
+                                    <SelectTrigger
+                                        className="w-full"
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {TYPE_OPTIONS.map((o) => (
+                                            <SelectItem key={o.value} value={o.value}>
+                                                {o.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                    </div>
 
-                {/* 排序 */}
-                <div className="space-y-2">
-                    <Label htmlFor="ann-sort">排序（越小越靠前）</Label>
-                    <Input
-                        id="ann-sort"
-                        type="number"
-                        min={0}
-                        disabled={pending}
-                        {...register("sortOrder", { valueAsNumber: true })}
-                    />
-                </div>
-
-                {/* 内容 */}
-                <div className="space-y-2">
-                    <Label htmlFor="ann-content">
-                        内容 <span className="text-destructive">*</span>
-                    </Label>
-                    <Textarea
-                        id="ann-content"
-                        rows={4}
-                        disabled={pending}
-                        {...register("content")}
-                    />
-                    {errors.content && (
-                        <p className="text-destructive text-sm">{errors.content.message}</p>
-                    )}
-                </div>
-
-                {/* 启用 */}
-                <div className="flex items-center gap-2">
-                    <Controller
-                        control={control}
-                        name="isActive"
-                        render={({ field }) => (
-                            <Switch
-                                id="ann-active"
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                            />
-                        )}
-                    />
-                    <Label htmlFor="ann-active">启用</Label>
-                </div>
-
-                {/* 影响范围（affects） */}
-                <div className="space-y-2">
-                    <Label>影响范围</Label>
-                    <Controller
-                        control={control}
-                        name="affects"
-                        render={({ field }) => (
-                            <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-md border border-edge-hairline p-3">
-                                {AFFECTS_OPTIONS.map((opt) => {
-                                    const checked = field.value?.includes(opt) ?? false;
-                                    return (
-                                        <label
-                                            key={opt}
-                                            htmlFor={`ann-affects-${opt}`}
-                                            className="flex cursor-pointer items-center gap-1.5 text-sm"
-                                        >
-                                            <Checkbox
-                                                id={`ann-affects-${opt}`}
-                                                checked={checked}
-                                                onCheckedChange={(c) => {
-                                                    const next = c
-                                                        ? [...(field.value ?? []), opt]
-                                                        : (field.value ?? []).filter(
-                                                              (v) => v !== opt,
-                                                          );
-                                                    field.onChange(next);
-                                                }}
-                                            />
-                                            {opt}
-                                        </label>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    />
-                </div>
-
-                {/* 摘要 + 封面 + 富文本（card/article 形态） */}
-                {watch("display") !== "banner" && (
-                    <>
+                    {/* 内容（banner / card 形态）：纯文本通知主体 */}
+                    {!isArticle && (
                         <div className="space-y-2">
-                            <Label htmlFor="ann-excerpt">摘要</Label>
+                            <Label htmlFor="ann-content">
+                                内容 <span className="text-destructive">*</span>
+                            </Label>
                             <Textarea
-                                id="ann-excerpt"
-                                rows={2}
+                                id="ann-content"
+                                rows={5}
                                 disabled={pending}
-                                {...register("excerpt")}
+                                placeholder="纯文本内容，banner 显示在顶部条，card 显示在卡片"
+                                {...register("content")}
+                            />
+                            {errors.content && (
+                                <p className="text-sm text-destructive">
+                                    {errors.content.message}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 正文（article 形态）：富文本编辑器 */}
+                    {isArticle && (
+                        <div className="space-y-2">
+                            <Label>正文</Label>
+                            <Controller
+                                control={control}
+                                name="contentHTML"
+                                render={({ field }) => (
+                                    <RichTextEditor
+                                        value={field.value ?? ""}
+                                        onChange={field.onChange}
+                                        exportName={`announcement-${editing?.id ?? "new"}`}
+                                        minHeight={320}
+                                    />
+                                )}
                             />
                         </div>
+                    )}
+                </div>
+
+                {/* ============ 右侧栏：配置面板 ============ */}
+                <aside className="space-y-4 rounded-lg border border-edge-hairline bg-muted/30 p-4">
+                    {/* 展示形态（创建后不可改） */}
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-1.5">
+                            展示形态
+                            {isEdit && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-normal text-muted-foreground">
+                                    <Lock className="size-2.5" />
+                                    创建后不可改
+                                </span>
+                            )}
+                        </Label>
+                        <Controller
+                            control={control}
+                            name="display"
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    disabled={isEdit}
+                                >
+                                    <SelectTrigger
+                                        className="w-full disabled:opacity-60"
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {DISPLAY_OPTIONS.map((d) => (
+                                            <SelectItem key={d} value={d}>
+                                                {DISPLAY_LABELS[d]}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                    </div>
+
+                    {/* 排序 + 启用（一行两字段，紧凑） */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                            <Label htmlFor="ann-sort">排序</Label>
+                            <Input
+                                id="ann-sort"
+                                type="number"
+                                min={0}
+                                disabled={pending}
+                                {...register("sortOrder", { valueAsNumber: true })}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="ann-active">启用</Label>
+                            <Controller
+                                control={control}
+                                name="isActive"
+                                render={({ field }) => (
+                                    <Switch
+                                        id="ann-active"
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                )}
+                            />
+                        </div>
+                    </div>
+
+                    {/* 封面图（card / article） */}
+                    {!isBanner && (
                         <div className="space-y-2">
                             <Label>封面图</Label>
                             <Controller
@@ -345,44 +353,76 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                                 )}
                             />
                         </div>
-                    </>
-                )}
+                    )}
 
-                {/* 富文本正文（article 形态） */}
-                {watch("display") === "article" && (
+                    {/* 摘要（article 形态，card 不需要） */}
+                    {isArticle && (
+                        <div className="space-y-2">
+                            <Label htmlFor="ann-excerpt">摘要</Label>
+                            <Textarea
+                                id="ann-excerpt"
+                                rows={2}
+                                disabled={pending}
+                                placeholder="卡片上展示的简短描述"
+                                {...register("excerpt")}
+                            />
+                        </div>
+                    )}
+
+                    {/* 影响范围 */}
                     <div className="space-y-2">
-                        <Label>正文</Label>
+                        <Label>影响范围</Label>
                         <Controller
                             control={control}
-                            name="contentHTML"
+                            name="affects"
                             render={({ field }) => (
-                                <RichTextEditor
-                                    value={field.value ?? ""}
-                                    onChange={field.onChange}
-                                    exportName={`announcement-${editing?.id ?? "new"}`}
-                                    minHeight={320}
-                                />
+                                <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                                    {AFFECTS_OPTIONS.map((opt) => {
+                                        const checked = field.value?.includes(opt) ?? false;
+                                        return (
+                                            <label
+                                                key={opt}
+                                                htmlFor={`ann-affects-${opt}`}
+                                                className="flex cursor-pointer items-center gap-1 text-xs"
+                                            >
+                                                <Checkbox
+                                                    id={`ann-affects-${opt}`}
+                                                    checked={checked}
+                                                    onCheckedChange={(c) => {
+                                                        const next = c
+                                                            ? [...(field.value ?? []), opt]
+                                                            : (field.value ?? []).filter(
+                                                                  (v) => v !== opt,
+                                                              );
+                                                        field.onChange(next);
+                                                    }}
+                                                />
+                                                {opt}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
                             )}
                         />
                     </div>
-                )}
 
-                {/* 生效区间 */}
-                <Controller
-                    control={control}
-                    name="timeRange"
-                    render={({ field }) => (
-                        <DateTimeRangePickerField
-                            label="生效区间"
-                            value={field.value}
-                            onChange={field.onChange}
-                            disabled={pending}
-                            placeholder="选择生效时间区间"
-                            presets={rangePresets}
-                            error={errors.timeRange?.end?.message}
-                        />
-                    )}
-                />
+                    {/* 生效区间 */}
+                    <Controller
+                        control={control}
+                        name="timeRange"
+                        render={({ field }) => (
+                            <DateTimeRangePickerField
+                                label="生效区间"
+                                value={field.value}
+                                onChange={field.onChange}
+                                disabled={pending}
+                                placeholder="选择生效时间区间"
+                                presets={rangePresets}
+                                error={errors.timeRange?.end?.message}
+                            />
+                        )}
+                    />
+                </aside>
             </form>
         </Modal>
     );
