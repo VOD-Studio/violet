@@ -280,10 +280,17 @@ func main() {
 		})
 
 		// 评论（DDD commentH；评论反应 DDD commentReactionContainer）
+		// OptionalAuth：登录用户从 cookie 解析身份注入 ctx，匿名放行。
+		// GET 需要它做黑洞模式判定（登录 vs 匿名 viewer）；
+		// POST 需要它做双轨认证（登录直发 vs 匿名验证码两步流）。
 		commentH := commentContainer.CommentHandler
 		v1.Route("/posts/{postId}/comments", func(r chi.Router) {
-			r.Get("/", commentH.ListByPost)                                                        // 获取文章评论（登录看 approved∪自己pending；匿名黑洞返回空）
-			r.With(middleware.CommentRateLimit(redisClient)).Post("/", commentH.Create)            // 提交评论（双轨认证，限流）
+			r.With(middleware.OptionalAuth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName))).
+				Get("/", commentH.ListByPost)                                                        // 获取文章评论（登录看 approved∪自己pending；匿名黑洞返回空）
+			r.With(
+				middleware.OptionalAuth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)),
+				middleware.CommentRateLimit(redisClient),
+			).Post("/", commentH.Create)            // 提交评论（双轨认证，限流）
 			r.With(middleware.CommentCodeRateLimit(redisClient)).Post("/code", commentH.SendCode)  // 匿名评论发送邮箱验证码（独立限流防邮件轰炸）
 		})
 

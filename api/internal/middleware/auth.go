@@ -69,7 +69,9 @@ const (
 	UserIsBuiltinSuperAdminKey contextKey = "userIsBuiltinSuperAdmin"
 )
 
-// Auth JWT 认证中间件
+// Auth JWT 认证中间件（强制）。
+//
+// 无 token 或 token 无效 → 401 拒绝。用于必须登录的端点。
 //
 // token 读取顺序：
 //  1. Authorization: Bearer <token>（优先，兼容旧客户端与 SSR server 端调用）
@@ -77,60 +79,107 @@ const (
 //
 // 通过 WithAccessCookie(name) 启用 Cookie 回退；默认仅认 Authorization header。
 func Auth(validator TokenValidator, opts ...AuthOption) func(http.Handler) http.Handler {
+	cfg := newAuthConfig(opts)
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx, ok := authenticate(w, r, validator, cfg.accessCookieName)
+			if !ok {
+				return // 401 已写
+			}
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// OptionalAuth 软认证中间件（PRD-0001 评论双轨认证专用）。
+//
+// 与 Auth 的区别：无 token 时不 401，直接放行（context 里无 UserIDKey，handler 据此走匿名分支）。
+// 有 token 且有效 → 注入 UserIDKey 等，handler 据此走登录分支。
+// 有 token 但无效 → 与 Auth 一致 401（防止过期 token 被误当匿名）。
+//
+// 用途：评论 POST /comments 同时允许匿名与登录，登录用户从 cookie 识别身份。
+func OptionalAuth(validator TokenValidator, opts ...AuthOption) func(http.Handler) http.Handler {
+	cfg := newAuthConfig(opts)
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token, _ := extractToken(r, cfg.accessCookieName)
+			if token == "" {
+				// 匿名：无 token 直接放行，context 不注入 UserIDKey
+				next.ServeHTTP(w, r)
+				return
+			}
+			ctx, ok := authenticate(w, r, validator, cfg.accessCookieName)
+			if !ok {
+				return // 401 已写
+			}
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// newAuthConfig 应用 AuthOption 得到配置。
+func newAuthConfig(opts []AuthOption) *authConfig {
 	cfg := &authConfig{}
 	for _, opt := range opts {
 		opt(cfg)
 	}
+	return cfg
+}
 
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, source := extractToken(r, cfg.accessCookieName)
-			if token == "" {
-				log.Warn().
-					Str("method", r.Method).
-					Str("path", r.URL.Path).
-					Str("ip", getClientIP(r)).
-					Msg("认证失败：缺少 Authorization 请求头或 access Cookie")
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"error":"unauthorized","message":"缺少认证凭据"}`))
-				return
-			}
-
-			claims, err := validator.ParseToken(token)
-			if err != nil {
-				log.Warn().
-					Err(err).
-					Str("method", r.Method).
-					Str("path", r.URL.Path).
-					Str("ip", getClientIP(r)).
-					Str("source", source).
-					Str("token_prefix", getTokenPrefix(token)).
-					Msg("认证失败：令牌无效或已过期")
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"error":"unauthorized","message":"无效或已过期的令牌"}`))
-				return
-			}
-
-			log.Info().
-				Str("user_id", claims.UserID).
-				Str("role", claims.Role).
-				Str("email", claims.Email).
-				Str("source", source).
-				Str("method", r.Method).
-				Str("path", r.URL.Path).
-				Msg("认证成功")
-
-			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
-			ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
-			ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
-			ctx = context.WithValue(ctx, UserRoleIDKey, claims.RoleID)
-			ctx = context.WithValue(ctx, UserIsBuiltinSuperAdminKey, claims.IsBuiltinSuperAdmin)
-
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+// authenticate 提取并校验 token，成功则返回注入了 user claims 的 context。
+//
+// 失败时写 401 响应并记录日志，返回 (nil, false)，调用方应直接 return。
+// Auth 与 OptionalAuth 的共享逻辑：token 提取、claims 解析、context 注入一致。
+func authenticate(w http.ResponseWriter, r *http.Request, validator TokenValidator, accessCookieName string) (context.Context, bool) {
+	token, source := extractToken(r, accessCookieName)
+	if token == "" {
+		log.Warn().
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Str("ip", getClientIP(r)).
+			Msg("认证失败：缺少 Authorization 请求头或 access Cookie")
+		writeUnauthorized(w)
+		return nil, false
 	}
+
+	claims, err := validator.ParseToken(token)
+	if err != nil {
+		log.Warn().
+			Err(err).
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Str("ip", getClientIP(r)).
+			Str("source", source).
+			Str("token_prefix", getTokenPrefix(token)).
+			Msg("认证失败：令牌无效或已过期")
+		writeUnauthorized(w)
+		return nil, false
+	}
+
+	log.Info().
+		Str("user_id", claims.UserID).
+		Str("role", claims.Role).
+		Str("email", claims.Email).
+		Str("source", source).
+		Str("method", r.Method).
+		Str("path", r.URL.Path).
+		Msg("认证成功")
+
+	ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
+	ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
+	ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
+	ctx = context.WithValue(ctx, UserRoleIDKey, claims.RoleID)
+	ctx = context.WithValue(ctx, UserIsBuiltinSuperAdminKey, claims.IsBuiltinSuperAdmin)
+	return ctx, true
+}
+
+// writeUnauthorized 写 401 JSON 响应。
+func writeUnauthorized(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte(`{"error":"unauthorized","message":"缺少或无效的认证凭据"}`))
 }
 
 // extractToken 从请求中提取 access token
