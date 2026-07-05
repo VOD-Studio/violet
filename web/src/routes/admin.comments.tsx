@@ -5,7 +5,11 @@ import {
     useDeleteComment,
     useMarkCommentSpam,
 } from "@features/admin-comments/api/queries";
-import type { AdminComment, CommentStatus } from "@features/admin-comments/model/types";
+import type {
+    AdminComment,
+    CommentStatus,
+    CommentType,
+} from "@features/admin-comments/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
@@ -50,17 +54,44 @@ const STATUS_BADGE: Record<
     deleted: { label: "已删除", variant: "outline" },
 };
 
+/**
+ * 类型筛选值（与状态维度正交）：
+ *   - all：全部（默认，与后端 mapAdminCommentType 默认值一致）
+ *   - annotation：仅批注（带锚定原文摘录）
+ *   - free：仅自由评论（普通评论）
+ */
+type CommentTypeFilter = "all" | CommentType;
+
+/** 类型分段配置（"全部" + 批注 + 自由评论） */
+const TYPE_SEGMENTS: SegmentedItem<CommentTypeFilter>[] = [
+    { value: "all", label: "全部" },
+    { value: "annotation", label: "批注" },
+    { value: "free", label: "自由评论" },
+];
+
+/** anchor 摘录截断长度（与正文批注 severity 同构，引言区不喧宾夺主） */
+const ANCHOR_EXCERPT_MAX = 80;
+
+/** truncateAnchor 截断 anchor 锚定的原文摘录，超长加省略号。 */
+function truncateAnchor(text: string): string {
+    return text.length > ANCHOR_EXCERPT_MAX ? `${text.slice(0, ANCHOR_EXCERPT_MAX)}…` : text;
+}
+
 function AdminCommentsPage() {
     const [filter, setFilter] = useState<CommentFilter>("pending");
+    // 类型筛选与状态筛选正交：切换任一维度都重置分页与勾选。
+    const [typeFilter, setTypeFilter] = useState<CommentTypeFilter>("all");
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    // "all" -> 不传 status（查全部）；其余直接作为状态筛选
+    // "all" -> 不传 status/type（查全部）；其余直接作为筛选值透传后端。
     const status: CommentStatus | undefined = filter === "all" ? undefined : filter;
+    const type: CommentType | undefined = typeFilter === "all" ? undefined : typeFilter;
 
     const { data, isLoading, error, refetch } = useAllComments({
         status,
+        type,
         page,
         limit: PAGE_SIZE,
     });
@@ -75,12 +106,31 @@ function AdminCommentsPage() {
         setSelected(new Set());
     };
 
+    const switchTypeFilter = (t: CommentTypeFilter) => {
+        setTypeFilter(t);
+        setPage(1);
+        setSelected(new Set());
+    };
+
     const columns: DataTableColumn<AdminComment>[] = [
         {
             key: "body",
             header: "评论内容",
             ellipsis: true,
-            cell: (row) => <span className="line-clamp-2">{row.body}</span>,
+            cell: (row) => (
+                <div className="space-y-1">
+                    {/* 批注：先展示锚定的原文摘录（neon-cyan 左色条 + font-mono），
+                        让管理员一眼识别「这是批注」并判断上下文。自由评论无 anchor 跳过此区。 */}
+                    {row.anchor?.selected_text ? (
+                        <div className="flex gap-2 rounded border-l-2 border-cyan-400 bg-cyan-50/50 px-2 py-1 dark:bg-cyan-950/20">
+                            <span className="line-clamp-2 font-mono text-xs text-cyan-700 dark:text-cyan-300">
+                                “{truncateAnchor(row.anchor.selected_text)}”
+                            </span>
+                        </div>
+                    ) : null}
+                    <span className="line-clamp-2">{row.body}</span>
+                </div>
+            ),
         },
         {
             key: "author_name",
@@ -163,8 +213,14 @@ function AdminCommentsPage() {
 
     return (
         <PageShell title="评论审核" description="审核与管理文章评论">
-            <div className="mb-4">
+            {/* 筛选区：状态维度 + 类型维度（批注/自由评论）正交，两个 Segmented 同行排列 */}
+            <div className="mb-4 flex flex-wrap items-center gap-3">
                 <Segmented value={filter} onValueChange={switchFilter} segments={STATUS_SEGMENTS} />
+                <Segmented
+                    value={typeFilter}
+                    onValueChange={switchTypeFilter}
+                    segments={TYPE_SEGMENTS}
+                />
             </div>
 
             {selected.size > 0 && (
