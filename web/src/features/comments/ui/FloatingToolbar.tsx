@@ -110,6 +110,25 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
             return;
         }
         if (!anchor || isCrossBlock) return;
+        // 重新定位到选区下方（输入区高度大，放上方会被视口顶部裁剪）。
+        // 此时选区因 onMouseDown preventDefault 仍保留，可重新测量。
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const rect = selection.getRangeAt(0).getBoundingClientRect();
+            if (rect.width > 0 || rect.height > 0) {
+                // 水平 clamp：气泡宽 320（w-80），居中需 left 在 [160, vw-160] 范围，
+                // 否则 translate-x-1/2 会让气泡溢出视口左/右边界。
+                const halfWidth = 160;
+                const left = Math.max(
+                    halfWidth,
+                    Math.min(rect.left + rect.width / 2, window.innerWidth - halfWidth),
+                );
+                setPos({
+                    top: rect.bottom + 8, // 选区下方 8px
+                    left,
+                });
+            }
+        }
         setShowInput(true);
         setBody("");
     };
@@ -208,6 +227,10 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                     <button
                         type="button"
                         onClick={handleAnnotate}
+                        // preventDefault 防止 mousedown 破坏选区——
+                        // 否则点击瞬间选区被清，selectionchange 触发把 pos 清空，
+                        // 展开的输入气泡就丢失了「紧贴选区」的定位。
+                        onMouseDown={(e) => e.preventDefault()}
                         disabled={isCrossBlock}
                         title={isCrossBlock ? "请在同一段落内选择" : "划线批注"}
                         className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
