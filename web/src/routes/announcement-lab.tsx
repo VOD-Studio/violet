@@ -14,7 +14,6 @@ import {
 import AnimatedList from "@vendor/react-bits/AnimatedList";
 import BlurText from "@vendor/react-bits/BlurText";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
-import Counter from "@vendor/react-bits/Counter";
 import Magnet from "@vendor/react-bits/Magnet";
 
 /* ------------------------------------------------------------------ */
@@ -141,23 +140,9 @@ function GlowCard({ a }: { a: Announcement }) {
             className="min-h-[220px]"
         >
             <div className="flex flex-col gap-3 p-6">
-                <div className="flex items-center justify-between">
-                    <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.badge}`}
-                    >
-                        <cfg.Icon className="size-3" />
-                        {cfg.label}
-                    </span>
-                    <span className="font-mono text-xs text-muted-foreground">
-                        #
-                        <Counter
-                            value={a.id}
-                            fontSize={12}
-                            gap={1}
-                            horizontalPadding={0}
-                            textColor="hsl(var(--muted-foreground))"
-                        />
-                    </span>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{stamp(a.created_at)}</span>
+                    <span className="font-mono tabular-nums">#{String(a.id).padStart(3, "0")}</span>
                 </div>
 
                 <BlurText
@@ -183,8 +168,7 @@ function GlowCard({ a }: { a: Announcement }) {
                     </div>
                 ) : null}
 
-                <div className="mt-auto flex items-center justify-between border-t border-edge-hairline pt-3 text-xs text-muted-foreground">
-                    <span>{stamp(a.created_at)}</span>
+                <div className="mt-auto flex items-center justify-end border-t border-edge-hairline pt-3 text-xs">
                     <Link
                         to="/announcements/$id"
                         params={{ id: String(a.id) }}
@@ -278,16 +262,10 @@ function ArticlePreview({ a }: { a: Announcement }) {
             </Link>
 
             <header className="mb-6 border-b border-edge-hairline pb-4">
-                <div className="mb-3 flex items-center justify-between">
-                    <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.badge}`}
-                    >
-                        <cfg.Icon className="size-3" />
-                        {cfg.label}
-                    </span>
-                    <span className="flex items-center gap-1.5 text-xs">
+                <div className="mb-3 flex items-center justify-end">
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span className={`size-1.5 animate-pulse rounded-full ${cfg.dot}`} />
-                        {a.is_active === false ? "INACTIVE" : "ACTIVE"}
+                        {a.is_active === false ? "已失效" : "生效中"}
                     </span>
                 </div>
                 <BlurText
@@ -300,15 +278,13 @@ function ArticlePreview({ a }: { a: Announcement }) {
             </header>
 
             <div className="mb-6">
-                <div className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-                    事件时间轴
-                </div>
+                <div className="mb-2 text-xs text-muted-foreground">事件时间轴</div>
                 <AnimatedList
                     items={timeline}
                     initialSelectedIndex={0}
                     onItemSelect={(_, i) => setSelected(i)}
-                    className="!w-full"
-                    itemClassName="!bg-transparent !p-0"
+                    className="w-full!"
+                    itemClassName="bg-transparent! p-2! mb-1!"
                 />
                 <p className="mt-2 text-xs text-muted-foreground">
                     当前选中：第 {selected + 1} 条 / 共 {timeline.length} 条
@@ -375,7 +351,7 @@ function AnnouncementLab() {
             <section className="mb-24">
                 <h2 className="mb-2 text-2xl font-semibold">卡片方案</h2>
                 <p className="mb-8 text-sm text-muted-foreground">
-                    左：BorderGlow 柔光渐变边框 + BlurText 标题 + Counter 数字滚动 ID。
+                    左：BorderGlow 柔光渐变边框 + BlurText 标题，severity 仅由边框色相表达。
                     右：极简描边 + Magnet 磁吸按钮。
                 </p>
                 <div className="grid gap-6 lg:grid-cols-2">

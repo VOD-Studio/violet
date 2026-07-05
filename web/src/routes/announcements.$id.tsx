@@ -23,6 +23,22 @@ function AnnouncementDetailPage() {
     const { id } = Route.useParams();
     const { data: a, isLoading, error } = useAnnouncement(id);
     const [copied, setCopied] = useState(false);
+    const [acked, setAcked] = useState(false);
+
+    const handleAck = () => {
+        if (!a) return;
+        try {
+            const raw = localStorage.getItem("announcement:read-ids");
+            const ids: number[] = raw ? JSON.parse(raw) : [];
+            if (!ids.includes(a.id)) {
+                ids.push(a.id);
+                localStorage.setItem("announcement:read-ids", JSON.stringify(ids));
+            }
+        } catch {
+            /* localStorage 不可用时静默 */
+        }
+        setAcked(true);
+    };
 
     if (isLoading) {
         return (
@@ -81,14 +97,8 @@ function AnnouncementDetailPage() {
             <article className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8">
                 {/* 头部 */}
                 <header className="mb-6 border-b border-edge-hairline pb-4">
-                    <div className="mb-3 flex items-center justify-between">
-                        <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.badge}`}
-                        >
-                            <cfg.Icon className="size-3" />
-                            {cfg.label}
-                        </span>
-                        <span className="flex items-center gap-1.5 text-xs">
+                    <div className="mb-3 flex items-center justify-end">
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <span className={`size-1.5 animate-pulse rounded-full ${cfg.dot}`} />
                             {a.is_active === false ? "已失效" : "生效中"}
                         </span>
@@ -135,10 +145,12 @@ function AnnouncementDetailPage() {
                     <Magnet magnetStrength={4} padding={30}>
                         <button
                             type="button"
-                            className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
+                            onClick={handleAck}
+                            disabled={acked}
+                            className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted disabled:opacity-50 disabled:hover:bg-transparent"
                         >
                             <Check className="size-3" />
-                            确认已读
+                            {acked ? "已读" : "确认已读"}
                         </button>
                     </Magnet>
                     <button
@@ -190,8 +202,8 @@ function Timeline({
             <AnimatedList
                 items={items}
                 initialSelectedIndex={0}
-                className="!w-full"
-                itemClassName="!bg-transparent !p-2 !mb-1"
+                className="w-full!"
+                itemClassName="bg-transparent! p-2! mb-1!"
             />
         </div>
     );
