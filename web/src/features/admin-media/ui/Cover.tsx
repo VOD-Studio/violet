@@ -53,7 +53,7 @@ export function Cover({
             {value ? (
                 <div className="group relative overflow-hidden rounded-lg border border-edge-hairline">
                     <img src={value} alt="封面" className="aspect-video w-full object-cover" />
-                    <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/60 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-linear-to-t from-black/60 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                         <Button
                             type="button"
                             variant="secondary"

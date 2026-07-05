@@ -209,7 +209,7 @@ export function MediaPicker({
                                             <Check className="size-3" />
                                         </span>
                                     ) : null}
-                                    <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-2 py-1 text-left text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                    <span className="absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-black/70 to-transparent px-2 py-1 text-left text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100">
                                         {file.original_name}
                                     </span>
                                 </button>
