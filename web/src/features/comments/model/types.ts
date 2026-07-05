@@ -48,6 +48,16 @@ export interface BatchReactionResult {
 }
 
 /**
+ * CommentType - 评论按 anchor 维度过滤的字面量联合
+ *
+ * 对应后端 domain.AnchorFilter（api/internal/domain/comment/repository.go）：
+ *   - free：仅自由评论（anchor_block_id IS NULL）—— 底部评论区期望
+ *   - annotation：仅批注（anchor_block_id IS NOT NULL）—— 批注角标层期望
+ *   - all：全部（后台/调试）
+ */
+export type CommentType = "free" | "annotation" | "all";
+
+/**
  * CommentListQuery - 文章评论列表查询参数
  */
 export interface CommentListQuery {
@@ -55,6 +65,8 @@ export interface CommentListQuery {
     page?: number;
     /** 每页条数 */
     limit?: number;
+    /** 按 anchor 维度过滤（?type=）；缺省由后端降级为 free，显式传更清晰 */
+    type?: CommentType;
 }
 
 /**
