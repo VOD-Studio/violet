@@ -179,10 +179,12 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
                 <form
                     id="announcement-form"
                     onSubmit={handleSubmit(onSubmit)}
-                    className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 lg:grid lg:grid-cols-[1fr_18rem] lg:items-start lg:gap-6 lg:overflow-hidden"
+                    // 桌面端两栏：左侧编辑区 + 右侧配置面板，各自独立
+                    // 移动端单列堆叠，整体可滚
+                    className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4 lg:grid lg:grid-cols-[1fr_18rem] lg:items-stretch lg:gap-6 lg:overflow-hidden"
                 >
-                    {/* ============ 左主区：内容编辑 ============ */}
-                    <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pr-1">
+                    {/* ============ 左主区：内容编辑（不滚动，编辑器内部滚动） ============ */}
+                    <div className="flex min-h-0 min-w-0 flex-col gap-4">
                         {/* 标题 */}
                         <div className="space-y-2">
                             <Label htmlFor="ann-title">
@@ -246,25 +248,27 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
                             </div>
                         )}
 
-                        {/* 正文（article 形态）：富文本编辑器 */}
+                        {/* 正文（article 形态）：编辑器吃剩余高度，内部自滚动，状态栏始终可见 */}
                         {isArticle && (
                             <div className="flex min-h-0 flex-1 flex-col gap-2">
-                                <Label>正文</Label>
-                                <Controller
-                                    control={control}
-                                    name="contentHTML"
-                                    render={({ field }) => (
-                                        <RichTextEditor
-                                            ref={editorRef}
-                                            value={field.value ?? ""}
-                                            onChange={field.onChange}
-                                            exportName={`announcement-${editing?.id ?? "new"}`}
-                                            onPickImage={() => setImagePickerOpen(true)}
-                                            minHeight={320}
-                                            className="min-h-0 flex-1"
-                                        />
-                                    )}
-                                />
+                                <Label className="shrink-0">正文</Label>
+                                <div className="min-h-0 flex-1">
+                                    <Controller
+                                        control={control}
+                                        name="contentHTML"
+                                        render={({ field }) => (
+                                            <RichTextEditor
+                                                ref={editorRef}
+                                                value={field.value ?? ""}
+                                                onChange={field.onChange}
+                                                exportName={`announcement-${editing?.id ?? "new"}`}
+                                                onPickImage={() => setImagePickerOpen(true)}
+                                                minHeight={320}
+                                                className="h-full"
+                                            />
+                                        )}
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>
