@@ -222,11 +222,11 @@ function renderMarkerIcon(count: number, hasMine: boolean): string {
     // 对号徽章：实心 currentColor 圆（配色与气泡描边一致），
     // 背景色描边（stroke-width 1.6）形成切口断开气泡边框，白色对号 path。
     const checkBadge = hasMine
-        ? `<circle cx="13.5" cy="2" r="3" fill="${stroke}" stroke="var(--marker-bg, white)" stroke-width="1.6" />
-           <path d="M12.2 2 L13.1 2.9 L14.8 1.1" stroke="white" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round" fill="none" />`
+        ? `<circle cx="14" cy="1.5" r="3.8" fill="${stroke}" stroke="var(--marker-bg, white)" stroke-width="1.8" />
+           <path d="M12.3 1.5 L13.4 2.6 L15.7 0.3" stroke="white" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="none" />`
         : "";
 
-    return `<svg class="annotation-marker-svg" viewBox="-1 -2 18 18" aria-hidden="true">
+    return `<svg class="annotation-marker-svg" viewBox="-1 -3 18 19" aria-hidden="true">
         ${bubble}
         ${countText}
         ${checkBadge}
