@@ -115,20 +115,24 @@ function RegisterPage() {
         }
     };
 
-    // 重发验证码（重新调 register，后端会覆盖旧码）
-    const handleResend = () => {
+    // 重发验证码（重新调 register，后端会覆盖旧码）。
+    // 返回 false 表示未生效（ResendButton 不进入冷却），让用户能立即修正后重试。
+    const handleResend = async (): Promise<boolean> => {
         const values = getValues();
-        if (!values.email) return;
-        registerMutation.mutate(
-            { email: values.email, username: values.username, password: values.password },
-            {
-                onSuccess: () => toast.success("验证码已重新发送"),
-                onError: (err) => {
-                    const msg = err instanceof ApiError ? err.message : err.message || "重发失败";
-                    toast.error(msg);
-                },
-            },
-        );
+        if (!values.email) return false;
+        try {
+            await registerMutation.mutateAsync({
+                email: values.email,
+                username: values.username,
+                password: values.password,
+            });
+            toast.success("验证码已重新发送");
+            return true;
+        } catch (err) {
+            const msg = err instanceof ApiError ? err.message : "重发失败";
+            toast.error(msg);
+            return false;
+        }
     };
 
     return (

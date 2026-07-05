@@ -58,22 +58,21 @@ export function CommentForm({
     const sendCode = useSendCommentCode(postId);
     const createComment = useCreateComment(postId);
 
-    /** 匿名发码 */
-    const handleSendCode = () => {
+    /** 匿名发码。返回 false 表示未生效（ResendButton 不进入冷却）。 */
+    const handleSendCode = async (): Promise<boolean> => {
         if (!email.trim()) {
             toast.error("请先填写邮箱");
-            return;
+            return false;
         }
-        sendCode.mutate(
-            { email: email.trim() },
-            {
-                onSuccess: () => {
-                    setCodeSent(true);
-                    toast.success("验证码已发送至邮箱");
-                },
-                onError: (err) => toastError(err, "发送验证码失败"),
-            },
-        );
+        try {
+            await sendCode.mutateAsync({ email: email.trim() });
+            setCodeSent(true);
+            toast.success("验证码已发送至邮箱");
+            return true;
+        } catch (err) {
+            toastError(err, "发送验证码失败");
+            return false;
+        }
     };
 
     /** 提交评论 */

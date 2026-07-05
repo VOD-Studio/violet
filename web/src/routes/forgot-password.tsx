@@ -113,20 +113,20 @@ function ForgotPasswordPage() {
         );
     });
 
-    // 重发重置码
-    const handleResend = () => {
+    // 重发重置码。
+    // 返回 false 表示未生效（ResendButton 不进入冷却），让用户能立即修正后重试。
+    const handleResend = async (): Promise<boolean> => {
         const email = sentEmail || getEmailValues("email");
-        if (!email) return;
-        forgotMutation.mutate(
-            { email },
-            {
-                onSuccess: () => toast.success("重置码已重新发送"),
-                onError: (err) => {
-                    const msg = err instanceof ApiError ? err.message : err.message || "重发失败";
-                    toast.error(msg);
-                },
-            },
-        );
+        if (!email) return false;
+        try {
+            await forgotMutation.mutateAsync({ email });
+            toast.success("重置码已重新发送");
+            return true;
+        } catch (err) {
+            const msg = err instanceof ApiError ? err.message : "重发失败";
+            toast.error(msg);
+            return false;
+        }
     };
 
     // OTP 输入同步到 react-hook-form
