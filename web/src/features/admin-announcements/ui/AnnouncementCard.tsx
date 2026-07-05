@@ -10,14 +10,13 @@
  * 去赛博化后的视觉语言：
  * - 外壳用 BorderGlow 柔色发光描边（severity 决定色相），替代 SpotlightCard 聚光
  * - 标题用 BlurText 按词模糊渐显，替代 DecryptedText 解码乱码
+ * - severity 仅由 BorderGlow 边框色相表达，不显示文字标签与图标
  * - severity 配色走 shadcn 色阶（shared/ui/announcement-severity），无 neon
- * - ID 用 Counter 数字滚动
  */
 import type { Announcement } from "@features/settings/model/types";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import BlurText from "@vendor/react-bits/BlurText";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
-import Counter from "@vendor/react-bits/Counter";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 
@@ -48,24 +47,10 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
             )}
 
             <div className="flex flex-1 flex-col p-6">
-                {/* 顶部 metadata：severity 徽章 + ID 数字滚动 */}
-                <div className="mb-3 flex items-center justify-between">
-                    <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.badge}`}
-                    >
-                        <cfg.Icon className="size-3" />
-                        {cfg.label}
-                    </span>
-                    <span className="font-mono text-xs text-muted-foreground tabular-nums">
-                        #
-                        <Counter
-                            value={a.id}
-                            fontSize={12}
-                            gap={1}
-                            horizontalPadding={0}
-                            textColor="hsl(var(--muted-foreground))"
-                        />
-                    </span>
+                {/* 顶部 metadata：左侧时间戳，右侧公告 ID */}
+                <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{stamp}</span>
+                    <span className="font-mono tabular-nums">#{String(a.id).padStart(3, "0")}</span>
                 </div>
 
                 {/* 标题（按词模糊渐显） */}
@@ -97,14 +82,13 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
                 )}
 
                 {/* 底部票据区 */}
-                <div className="mt-auto flex items-center justify-between border-t border-edge-hairline pt-3 text-xs text-muted-foreground">
-                    <span>{stamp}</span>
+                <div className="mt-auto flex items-center justify-end border-t border-edge-hairline pt-3 text-xs">
                     {isArticle ? (
                         <span className="inline-flex items-center gap-1 font-medium text-foreground transition-opacity group-hover:opacity-70">
                             阅读 <ArrowRight className="size-3" />
                         </span>
                     ) : (
-                        <span className="opacity-60">通知</span>
+                        <span className="text-muted-foreground">通知</span>
                     )}
                 </div>
             </div>
