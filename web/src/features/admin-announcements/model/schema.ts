@@ -35,6 +35,7 @@ export const announcementSchema = z
         excerpt: z.string().optional().or(z.literal("")),
         coverImage: z.string().optional().or(z.literal("")),
         contentMD: z.string().optional().or(z.literal("")),
+        contentHTML: z.string().optional().or(z.literal("")),
         timeRange: z
             .object({
                 start: z.string().optional().or(z.literal("")),

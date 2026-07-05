@@ -1,4 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Cover } from "@features/admin-media/ui/Cover";
+import { RichTextEditor } from "@features/editor";
 import { Button } from "@shared/ui/base/button";
 import { Checkbox } from "@shared/ui/base/checkbox";
 import { Input } from "@shared/ui/base/input";
@@ -73,6 +75,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             excerpt: "",
             coverImage: "",
             contentMD: "",
+            contentHTML: "",
             timeRange: { start: "", end: "" },
         },
     });
@@ -91,6 +94,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             excerpt: editing?.excerpt ?? "",
             coverImage: editing?.cover_image ?? "",
             contentMD: editing?.content_md ?? "",
+            contentHTML: editing?.content_html ?? "",
             timeRange: {
                 start: editing?.start_time ? editing.start_time.slice(0, 16) : "",
                 end: editing?.end_time ? editing.end_time.slice(0, 16) : "",
@@ -117,6 +121,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             excerpt: data.excerpt || undefined,
             cover_image: data.coverImage || undefined,
             content_md: data.contentMD || undefined,
+            content_html: data.contentHTML || undefined,
             start_time: toRFC3339(data.timeRange?.start ?? ""),
             end_time: toRFC3339(data.timeRange?.end ?? ""),
         };
@@ -326,8 +331,19 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="ann-cover">封面图 URL</Label>
-                            <Input id="ann-cover" disabled={pending} {...register("coverImage")} />
+                            <Label>封面图</Label>
+                            <Controller
+                                control={control}
+                                name="coverImage"
+                                render={({ field }) => (
+                                    <Cover
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        onClear={() => field.onChange("")}
+                                        title="选择公告封面图"
+                                    />
+                                )}
+                            />
                         </div>
                     </>
                 )}
@@ -335,13 +351,18 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                 {/* 富文本正文（article 形态） */}
                 {watch("display") === "article" && (
                     <div className="space-y-2">
-                        <Label htmlFor="ann-md">正文（Markdown）</Label>
-                        <Textarea
-                            id="ann-md"
-                            rows={8}
-                            disabled={pending}
-                            placeholder="支持 Markdown，将渲染为事件简报正文"
-                            {...register("contentMD")}
+                        <Label>正文</Label>
+                        <Controller
+                            control={control}
+                            name="contentHTML"
+                            render={({ field }) => (
+                                <RichTextEditor
+                                    value={field.value ?? ""}
+                                    onChange={field.onChange}
+                                    exportName={`announcement-${editing?.id ?? "new"}`}
+                                    minHeight={320}
+                                />
+                            )}
                         />
                     </div>
                 )}
