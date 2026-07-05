@@ -327,14 +327,14 @@ body {
   scroll-margin-top: 80px;
 }
 
-/* 段评角标：段落末尾的 inline SVG（圆角胶囊 + 数字 + 已评论对号切口）。
-   设计目标（对齐番茄小说段评）：比文字略小、低对比、紧贴段末、不抢视觉。 */
+/* 段评角标：段落末尾的 inline SVG（chat-bubble 气泡 + 数字 + 已评论对号切口）。
+   设计目标：比文字略大、紧贴段末、配色低饱和统一。 */
 .annotation-marker-inline {
   display: inline-flex;
   align-items: center;
-  margin-left: 0.15em;
-  /* 略下沉与文字基线对齐，避免角标飘在文字中线上方 */
-  vertical-align: -0.15em;
+  margin-left: 0.2em;
+  /* 下沉让气泡尾巴与文字基线大致对齐（角标变大后需更下沉） */
+  vertical-align: -0.25em;
   cursor: pointer;
   border: none;
   background: transparent;
@@ -348,10 +348,10 @@ body {
 .annotation-marker-inline:hover {
   color: hsl(215 25% 35%);
 }
-/* SVG 角标：比文字略小（0.95em），宽度自适应；胶囊整体跟随字号缩放 */
+/* SVG 角标：比文字略大（1.15em），醒目可点；宽度自适应 */
 .annotation-marker-inline .annotation-marker-svg {
-  height: 0.95em;
+  height: 1.15em;
   width: auto;
   display: block;
-  overflow: visible; /* 允许右上角对号徽章溢出胶囊 viewBox */
+  overflow: visible; /* 允许右上角对号徽章溢出气泡 viewBox */
 }
