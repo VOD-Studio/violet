@@ -1,7 +1,7 @@
 import type { PostDetail } from "@entities/post/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { commentKeys } from "@features/comments/api/keys";
-import { fetchComments, useComments } from "@features/comments/api/queries";
+import { fetchComments, useAnnotationComments } from "@features/comments/api/queries";
 import { useAnnotations } from "@features/comments/lib/use-annotations";
 import { AnnotationLayer } from "@features/comments/ui/AnnotationLayer";
 import { CommentSection } from "@features/comments/ui/CommentSection";
@@ -39,10 +39,12 @@ function BlogDetailPage() {
     const contentRef = useRef<HTMLElement>(null);
     const progress = useScrollProgress();
     const articleImages = useArticleImagePreview();
-    // 批注数据流：评论列表 → useAnnotations relocate → located/page-level
-    const { data: commentsData } = useComments(post?.id ?? "");
-    const comments = commentsData?.data ?? [];
-    const { located, blocks } = useAnnotations(contentRef, comments);
+    // 批注数据流（独立于底部自由评论）：useAnnotationComments(type=annotation)
+    //   → useAnnotations relocate → located/page-level。
+    // 自由评论由 CommentSection 内部 useComments(type=free) 独立拉取，互不污染。
+    const { data: annotationsData } = useAnnotationComments(post?.id ?? "");
+    const annotations = annotationsData?.data ?? [];
+    const { located, blocks } = useAnnotations(contentRef, annotations);
     const me = useMe();
     const isLoggedIn = !!me.data;
 
@@ -261,12 +263,13 @@ export const Route = createFileRoute("/blog/$slug")({
             queryKey: postKeys.detail(params.slug),
             queryFn: () => fetchPostBySlug(params.slug),
         });
-        // 预取评论（含批注），首屏 SSR 友好无闪烁。
+        // 预取批注（type=annotation），首屏 SSR 友好无闪烁。
+        // 自由评论列表由 CommentSection 挂载时拉取（Suspense 兜底）。
         // fetchComments 黑洞模式由后端按 cookie 判定，匿名返回空数组。
         if (post?.id) {
             await context.queryClient.ensureQueryData({
-                queryKey: commentKeys.list(post.id, {}),
-                queryFn: () => fetchComments(post.id, {}),
+                queryKey: commentKeys.list(post.id, { type: "annotation" }),
+                queryFn: () => fetchComments(post.id, { type: "annotation" }),
             });
         }
         return post;

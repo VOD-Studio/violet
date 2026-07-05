@@ -57,7 +57,8 @@ function contentFingerprint(text: string): string {
  * useAnnotations 计算批注的 relocate 结果。
  *
  * @param contentRef 正文容器 ref
- * @param comments 评论列表（含 anchor 与自由评论；本 hook 只处理 anchor 非空的）
+ * @param comments 批注列表（约定由调用方保证 anchor 非空，已通过 useAnnotationComments
+ *   从接口层过滤）。本 hook 只做 relocate 定位，不再做 anchor 分流。
  */
 export function useAnnotations(
     contentRef: React.RefObject<HTMLElement | null>,
@@ -73,13 +74,14 @@ export function useAnnotations(
     // 竞态版本号：每次 effect 自增，async 完成时比对，过期丢弃。
     const requestIdRef = useRef(0);
 
-    // anchorKey：批注评论 id 列表的内容指纹。
+    // anchorKey：批注 id 列表的内容指纹（仅顶级批注，排除回复）。
     // 用作 effect 的 dep（字符串比较，引用稳定），避免 comments 数组引用变化（TanStack refetch）
     // 触发无谓重算。effect 内部按 key 重新 filter（filter 很便宜）。
+    // 入参 comments 约定全部为批注（接口层 type=annotation 已过滤），故只排除回复。
     const anchorKey = useMemo(
         () =>
             comments
-                .filter((c) => c.anchor && !c.parent_id)
+                .filter((c) => !c.parent_id)
                 .map((c) => c.id)
                 .join(","),
         [comments],
@@ -87,8 +89,8 @@ export function useAnnotations(
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: 故意只依赖 anchorKey（批注 id 列表的内容指纹）而非 comments 数组引用——避免 TanStack refetch 时 comments 引用变化触发无谓重算（extractCandidateBlocks 昂贵）。effect 内通过闭包读 comments，捕获的是 anchorKey 变化那次的渲染快照，对 relocate 足够。
     useEffect(() => {
-        // 按 key 重新 filter 出当前批注列表（key 变化才进 effect，filter 代价小）
-        const anchorComments = comments.filter((c) => c.anchor && !c.parent_id);
+        // 按 key 重新 filter 出顶级批注列表（key 变化才进 effect，filter 代价小）
+        const anchorComments = comments.filter((c) => !c.parent_id);
         const root = contentRef.current;
         if (!root || anchorComments.length === 0) {
             setLocated([]);
@@ -121,6 +123,8 @@ export function useAnnotations(
             const locatedList: LocatedAnnotation[] = [];
             const pageList: Comment[] = [];
             for (const comment of anchorComments) {
+                // 防御性兜底：约定入参全是批注，但 Comment.anchor 是可选字段，
+                // 万一上游误传自由评论，跳过而非崩溃。
                 if (!comment.anchor) continue;
                 const anchor = fromCommentAnchor(comment.anchor);
                 const result = await relocate(anchor, candidateBlocks);

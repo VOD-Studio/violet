@@ -26,7 +26,9 @@ export interface CommentSectionProps {
 export function CommentSection({ postId }: CommentSectionProps) {
     const me = useMe();
     const isLoggedIn = !!me.data;
-    const { data, isLoading } = useComments(postId);
+    // 仅拉自由评论（type=free）；批注（type=annotation）由文章详情页独立查询，
+    // 经 useAnnotations/AnnotationLayer 在正文里展示，不混进底部列表。
+    const { data, isLoading } = useComments(postId, { type: "free" });
     const openLogin = useLoginDialogStore((s) => s.open);
 
     const comments = data?.data ?? [];
