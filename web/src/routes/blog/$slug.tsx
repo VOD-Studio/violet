@@ -1,4 +1,5 @@
 import type { PostDetail } from "@entities/post/model/types";
+import { CommentSection } from "@features/comments/ui/CommentSection";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
@@ -189,6 +190,9 @@ function BlogDetailPage() {
                     </main>
                 </div>
             </article>
+
+            {/* 底部自由评论区（双轨制：登录直发 + 匿名两步流；黑洞模式匿名看不到列表） */}
+            {post?.id && <CommentSection postId={post.id} />}
 
             {articleImages.preview}
             {/*
