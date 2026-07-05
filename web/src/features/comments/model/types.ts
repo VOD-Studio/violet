@@ -60,21 +60,35 @@ export interface CommentListQuery {
 /**
  * CreateComment - 提交评论请求体
  *
- * 对应 handler comment.createCommentRequest。
+ * 对应 handler comment.createCommentRequest。双轨认证（PRD-0001）：
+ *   - 登录态：忽略 author_name/author_email/code（后端从 user 资料填充），仅 body 必填
+ *   - 匿名态：author_name/author_email/code 必填（邮箱验证码两步流）
  */
 export interface CreateComment {
-    /** 评论正文，必填 */
+    /** 评论正文，必填（纯文本 + emoji） */
     body: string;
-    /** 父评论 ID，顶级评论省略 */
+    /** 父评论 ID；非空表示嵌套回复 */
     parent_id?: string;
-    /** 作者昵称，必填 */
-    author_name: string;
-    /** 作者邮箱，必填且需合法格式 */
-    author_email: string;
-    /** 作者个人站点 URL */
+    /** 作者昵称。匿名必填；登录态由后端从 user 资料覆盖，前端可不传 */
+    author_name?: string;
+    /** 作者邮箱。匿名必填且需合法格式；登录态由后端覆盖 */
+    author_email?: string;
+    /** 作者个人站点 URL（匿名可选） */
     author_url?: string;
-    /** 作者头像 URL */
+    /** 作者头像 URL（匿名可选） */
     avatar_url?: string;
+    /** 匿名必填：邮箱验证码（来自 POST /posts/{postId}/comments/code）。登录态忽略 */
+    code?: string;
+}
+
+/**
+ * SendCodeBody - 匿名评论发送验证码请求体
+ *
+ * 对应 POST /posts/{postId}/comments/code 的 body（handler comment.sendCodeRequest）。
+ */
+export interface SendCodeBody {
+    /** 接收验证码的邮箱，必填且需合法格式 */
+    email: string;
 }
 
 /**

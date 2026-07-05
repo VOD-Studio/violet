@@ -1,20 +1,38 @@
+import type { Comment } from "@entities/comment/model/types";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { AddReaction, CreateComment } from "../model/types";
+import type { AddReaction, CreateComment, SendCodeBody } from "../model/types";
 import { commentKeys } from "./keys";
 
 /**
  * useCreateComment - 调后端 POST /posts/{postId}/comments 提交评论
  *
- * 新评论默认 pending 状态，需审核后才在前台展示。
+ * 双轨认证（PRD-0001）：
+ *   - 登录态：body 仅需 body 字段，author_name/author_email/code 由后端忽略
+ *   - 匿名态：body 需含 author_name/author_email/code（邮箱验证码两步流）
+ *
+ * 新评论默认 pending 状态，需审核后才在前台公开（登录提交者本人立即可见带「审批中」徽章）。
+ * 后端返回 CommentDTO，登录态用于乐观展示自己的 pending 评论。
  */
 export const useCreateComment = (postId: string) => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (body: CreateComment) => apiPost<null>(`/posts/${postId}/comments`, body),
+        mutationFn: (body: CreateComment) => apiPost<Comment>(`/posts/${postId}/comments`, body),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: commentKeys.lists() });
         },
+    });
+};
+
+/**
+ * useSendCommentCode - 匿名评论第一步：POST /posts/{postId}/comments/code 发送邮箱验证码
+ *
+ * 仅匿名评论需要；登录用户不调用。后端挂 CommentCodeRateLimit（5/min/IP 防邮件轰炸）。
+ * 验证码一次性、TTL 10min、5 次错误锁定。
+ */
+export const useSendCommentCode = (postId: string) => {
+    return useMutation({
+        mutationFn: (body: SendCodeBody) => apiPost<null>(`/posts/${postId}/comments/code`, body),
     });
 };
 

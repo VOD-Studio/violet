@@ -11,9 +11,12 @@ import type {
 import { commentKeys } from "./keys";
 
 /**
- * fetchComments - 调后端 GET /posts/{postId}/comments 拉取文章已审核评论
+ * fetchComments - 调后端 GET /posts/{postId}/comments 拉取文章评论
  *
- * 仅返回已审核通过评论，按时间排序，分页。
+ * 黑洞模式（PRD-0001）：后端按 cookie 里的 viewerUserID 判定——
+ *   - 匿名 viewer（无会话）：返回空数组（看不到任何评论，含自己刚提交的）
+ *   - 登录 viewer：返回 approved 联合自己的 pending（带「审批中」徽章）
+ * 前端无需额外过滤，按返回结果直接渲染即可。
  */
 export const fetchComments = async (
     postId: string,
