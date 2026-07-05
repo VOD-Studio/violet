@@ -341,7 +341,9 @@ body {
   padding: 0;
   /* muted slate 灰：低对比，不抢正文视觉（替代原先的鲜艳蓝） */
   color: hsl(215 16% 47%);
-  transition: color 0.15s, opacity 0.15s;
+  transition:
+    color 0.15s,
+    opacity 0.15s;
   /* 对号徽章描边颜色（切口色）：跟随页面背景，light 白 / dark 深 */
   --marker-bg: hsl(var(--background));
 }
