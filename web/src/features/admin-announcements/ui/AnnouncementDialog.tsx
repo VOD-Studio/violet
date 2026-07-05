@@ -160,6 +160,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
             title={isEdit ? "编辑公告" : "创建公告"}
             description={isEdit ? "修改公告内容与生效设置" : "新建一条站点公告"}
             size="xl"
+            scrollable={false}
             footer={
                 <>
                     <Button
@@ -181,10 +182,11 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                 id="announcement-form"
                 onSubmit={handleSubmit(onSubmit)}
                 // 两栏：桌面左右排，移动端上下堆叠
-                className="flex flex-col gap-6 md:grid md:grid-cols-[1fr_20rem]"
+                // scrollable={false} 后由两栏各自 overflow-y-auto 独立滚动
+                className="flex h-full flex-col gap-6 overflow-y-auto md:grid md:grid-cols-[1fr_20rem] md:gap-6 md:overflow-hidden"
             >
                 {/* ============ 左主区：内容编辑 ============ */}
-                <div className="space-y-4">
+                <div className="space-y-4 md:overflow-y-auto md:pr-2">
                     {/* 标题 */}
                     <div className="space-y-2">
                         <Label htmlFor="ann-title">
@@ -269,7 +271,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                 </div>
 
                 {/* ============ 右侧栏：配置面板 ============ */}
-                <aside className="space-y-4 rounded-lg border border-edge-hairline bg-muted/30 p-4">
+                <aside className="space-y-4 overflow-y-auto rounded-lg border border-edge-hairline bg-muted/30 p-4">
                     {/* 展示形态（创建后不可改） */}
                     <div className="space-y-2">
                         <Label className="flex items-center gap-1.5">
@@ -349,6 +351,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                                         onChange={field.onChange}
                                         onClear={() => field.onChange("")}
                                         title="选择公告封面图"
+                                        mediaPickerModal={false}
                                     />
                                 )}
                             />
