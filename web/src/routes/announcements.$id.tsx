@@ -1,29 +1,25 @@
 /**
- * /announcements/$id - 公告事件简报（article 形态）
+ * /announcements/$id - 公告详情页（article 形态）
  *
- * 渲染为「事件简报（Event Manifest）」而非文章详情页。核心区别：
- * 无封面大图、无 H1 衬线标题、无 TOC、无作者头像组、无浏览量。
- *
- * 视觉用纯 CSS + 轻量 react-bits（DecryptedText/AnimatedList/ClickSpark），
- * 不用 FaultyTerminal/ElectricBorder（canvas/WebGL 重型组件会破坏布局）。
+ * 去赛博化后的视觉语言：
+ * - 标题用 BlurText 按词模糊渐显，替代 DecryptedText 解码
+ * - 时间轴用 AnimatedList（可点击、键盘 ↑↓/Enter 选择），替代静态终端 timeline 块
+ * - 按钮用 Magnet 磁吸微交互，替代 ClickSpark 粒子火花
+ * - severity 配色走 shared/announcement-severity（shadcn 色阶），替代硬编码 hex
+ * - 去掉「事件简报 Event Manifest」终端定位文案与 font-mono 装饰
  */
 
 import { useAnnouncement } from "@features/settings/api/queries";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
-import ClickSpark from "@shared/vendor/react-bits/ClickSpark/ClickSpark";
-import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
+import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import AnimatedList from "@vendor/react-bits/AnimatedList";
+import BlurText from "@vendor/react-bits/BlurText";
+import Magnet from "@vendor/react-bits/Magnet";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Check, Copy } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-const SEVERITY_COLOR: Record<string, string> = {
-    info: "#3b82f6",
-    warning: "#f59e0b",
-    success: "#10b981",
-    error: "#ef4444",
-};
-
-function ManifestPage() {
+function AnnouncementDetailPage() {
     const { id } = Route.useParams();
     const { data: a, isLoading, error } = useAnnouncement(id);
     const [copied, setCopied] = useState(false);
@@ -39,7 +35,7 @@ function ManifestPage() {
     if (error || !a) {
         return (
             <div className="container mx-auto flex flex-col items-center px-6 py-32 text-center">
-                <h1 className="mb-3 font-mono text-2xl font-bold">公告不存在</h1>
+                <h1 className="mb-3 text-2xl font-bold">公告不存在</h1>
                 <p className="mb-6 text-muted-foreground">该公告可能不存在或已失效。</p>
                 <Link
                     to="/"
@@ -52,14 +48,14 @@ function ManifestPage() {
         );
     }
 
-    const color = SEVERITY_COLOR[a.severity] ?? SEVERITY_COLOR.info;
+    const cfg = getAnnouncementSev(a.severity);
     const stamp = a.created_at
         ? new Date(a.created_at).toISOString().replace("T", " ").slice(0, 16)
         : "—";
     const windowRange =
         a.start_time || a.end_time
             ? `${a.start_time ? new Date(a.start_time).toISOString().slice(0, 16) : "—"} → ${a.end_time ? new Date(a.end_time).toISOString().slice(0, 16) : "—"}`
-            : "no time window";
+            : "无生效窗口";
     const body = a.content_html?.trim() ? a.content_html : a.content_md || a.content;
 
     const handleCopyId = async () => {
@@ -72,77 +68,51 @@ function ManifestPage() {
         }
     };
 
-    const timelineItems = [
-        `opened   ${stamp}`,
-        `window   ${windowRange}`,
-        `status   ${a.is_active === false ? "INACTIVE" : "ACTIVE"}`,
-    ];
-
     return (
         <div className="container mx-auto px-6 py-16">
             <Link
                 to="/"
-                className="mb-8 inline-flex items-center gap-1.5 font-mono text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="mb-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
                 <ArrowLeft className="size-4" />
-                back
+                返回
             </Link>
 
-            <article
-                className="mx-auto max-w-2xl rounded-lg border bg-card p-8 font-mono"
-                style={{ borderColor: `${color}40` }}
-            >
+            <article className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8">
                 {/* 头部 */}
                 <header className="mb-6 border-b border-edge-hairline pb-4">
                     <div className="mb-3 flex items-center justify-between">
                         <span
-                            className="rounded px-2 py-0.5 text-xs uppercase tracking-widest"
-                            style={{ backgroundColor: `${color}1a`, color }}
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.badge}`}
                         >
-                            [{a.severity}] #{String(a.id).padStart(3, "0")}
+                            <cfg.Icon className="size-3" />
+                            {cfg.label}
                         </span>
                         <span className="flex items-center gap-1.5 text-xs">
-                            <span
-                                className="h-1.5 w-1.5 animate-pulse rounded-full"
-                                style={{ backgroundColor: color }}
-                            />
-                            {a.is_active === false ? "INACTIVE" : "ACTIVE"}
+                            <span className={`size-1.5 animate-pulse rounded-full ${cfg.dot}`} />
+                            {a.is_active === false ? "已失效" : "生效中"}
                         </span>
                     </div>
-                    <h1 className="text-2xl font-bold leading-tight" style={{ color }}>
-                        <DecryptedText
-                            text={a.title}
-                            speed={35}
-                            maxIterations={6}
-                            sequential={true}
-                            revealDirection="start"
-                            animateOn="view"
-                        />
-                    </h1>
+                    <BlurText
+                        text={a.title}
+                        animateBy="words"
+                        stepDuration={0.4}
+                        delay={60}
+                        className="text-2xl font-bold leading-tight text-foreground"
+                    />
                 </header>
 
-                {/* timeline */}
-                <div className="mb-6">
-                    <div className="mb-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-                        ── timeline ──
-                    </div>
-                    <div className="space-y-1 rounded border border-edge-hairline bg-muted/30 p-3 text-xs text-muted-foreground">
-                        {timelineItems.map((item) => (
-                            <div key={item}>{item}</div>
-                        ))}
-                    </div>
-                </div>
+                {/* 时间轴（可交互列表） */}
+                <Timeline a={a} stamp={stamp} windowRange={windowRange} />
 
                 {/* affects */}
                 {a.affects && a.affects.length > 0 && (
                     <div className="mb-6 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                            affects:
-                        </span>
+                        <span className="text-xs text-muted-foreground">影响范围：</span>
                         {a.affects.map((m) => (
                             <span
                                 key={m}
-                                className="rounded border border-edge-hairline bg-muted/40 px-1.5 py-0.5 text-[10px]"
+                                className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
                             >
                                 {m}
                             </span>
@@ -153,9 +123,7 @@ function ManifestPage() {
                 {/* 正文 */}
                 {body && (
                     <div className="mb-6">
-                        <div className="mb-3 text-[10px] uppercase tracking-widest text-muted-foreground">
-                            ── body ──
-                        </div>
+                        <div className="mb-3 text-xs text-muted-foreground">正文</div>
                         <div className="prose prose-sm prose-neutral max-w-none dark:prose-invert">
                             <ArticleContent content={body} />
                         </div>
@@ -164,27 +132,28 @@ function ManifestPage() {
 
                 {/* footer */}
                 <footer className="flex flex-wrap items-center gap-3 border-t border-edge-hairline pt-4 text-xs">
-                    <ClickSpark sparkColor={color} sparkCount={8}>
+                    <Magnet magnetStrength={4} padding={30}>
                         <button
                             type="button"
-                            className="rounded border border-edge-hairline px-3 py-1 transition-colors hover:bg-muted"
+                            className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
                         >
-                            ✓ acknowledge
+                            <Check className="size-3" />
+                            确认已读
                         </button>
-                    </ClickSpark>
+                    </Magnet>
                     <button
                         type="button"
                         onClick={handleCopyId}
-                        className="flex items-center gap-1 rounded border border-edge-hairline px-3 py-1 transition-colors hover:bg-muted"
+                        className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
                     >
                         {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-                        {copied ? "copied" : "copy event id"}
+                        {copied ? "已复制" : "复制 ID"}
                     </button>
                     <Link
                         to="/"
-                        className="ml-auto rounded border border-edge-hairline px-3 py-1 transition-colors hover:bg-muted"
+                        className="ml-auto rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
                     >
-                        ← back
+                        ← 返回
                     </Link>
                 </footer>
             </article>
@@ -192,6 +161,42 @@ function ManifestPage() {
     );
 }
 
+/**
+ * Timeline - 时间轴子组件
+ *
+ * 用 AnimatedList 渲染事件节点，覆盖其默认深色背景为透明以适配浅色主题。
+ */
+function Timeline({
+    a,
+    stamp,
+    windowRange,
+}: {
+    a: { is_active?: boolean };
+    stamp: string;
+    windowRange: string;
+}) {
+    const items = useMemo(
+        () => [
+            `开启时间　${stamp}`,
+            `生效窗口　${windowRange}`,
+            `当前状态　${a.is_active === false ? "已失效" : "生效中"}`,
+        ],
+        [stamp, windowRange, a.is_active],
+    );
+
+    return (
+        <div className="mb-6">
+            <div className="mb-2 text-xs text-muted-foreground">事件时间轴</div>
+            <AnimatedList
+                items={items}
+                initialSelectedIndex={0}
+                className="!w-full"
+                itemClassName="!bg-transparent !p-2 !mb-1"
+            />
+        </div>
+    );
+}
+
 export const Route = createFileRoute("/announcements/$id")({
-    component: ManifestPage,
+    component: AnnouncementDetailPage,
 });
