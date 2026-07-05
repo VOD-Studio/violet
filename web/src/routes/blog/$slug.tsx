@@ -1,4 +1,9 @@
 import type { PostDetail } from "@entities/post/model/types";
+import { commentKeys } from "@features/comments/api/keys";
+import { fetchComments, useComments } from "@features/comments/api/queries";
+import { useAnnotations } from "@features/comments/lib/use-annotations";
+import { AnnotationLayer } from "@features/comments/ui/AnnotationLayer";
+import { AnnotationSidebar } from "@features/comments/ui/AnnotationSidebar";
 import { CommentSection } from "@features/comments/ui/CommentSection";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
@@ -14,7 +19,7 @@ import { BackToTop } from "@shared/ui/back-to-top";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * /blog/$slug - 文章详情页
@@ -33,6 +38,11 @@ function BlogDetailPage() {
     const contentRef = useRef<HTMLElement>(null);
     const progress = useScrollProgress();
     const articleImages = useArticleImagePreview();
+    // 批注数据流：评论列表 → useAnnotations relocate → located/page-level
+    const { data: commentsData } = useComments(post?.id ?? "");
+    const comments = commentsData?.data ?? [];
+    const { located, blocks, isLoading: annotationsLoading } = useAnnotations(contentRef, comments);
+    const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
 
     // 进入页面增加浏览量（仅一次，失败静默不影响阅读）
     useEffect(() => {
@@ -188,7 +198,23 @@ function BlogDetailPage() {
                     >
                         <ArticleContent content={body} />
                     </main>
+
+                    {/* 右侧浮动批注栏（2xl+，sticky 不占文档流，与左侧 TOC 对称的「双侧信息层」） */}
+                    <AnnotationSidebar
+                        contentRef={contentRef}
+                        located={located}
+                        activeId={activeAnnotationId}
+                        isLoading={annotationsLoading}
+                    />
                 </div>
+
+                {/* 正文高亮渲染层（副作用操作 DOM，给批注块加高亮 class + 滚动联动） */}
+                <AnnotationLayer
+                    contentRef={contentRef}
+                    located={located}
+                    blocks={blocks}
+                    onActiveChange={setActiveAnnotationId}
+                />
 
                 {/* 底部自由评论区：放在 article 内、正文+TOC 容器之后，
                     复用同样的 flex 结构保证与正文严格对齐（含大屏 TOC 偏移）。 */}
@@ -237,6 +263,14 @@ export const Route = createFileRoute("/blog/$slug")({
             queryKey: postKeys.detail(params.slug),
             queryFn: () => fetchPostBySlug(params.slug),
         });
+        // 预取评论（含批注），首屏 SSR 友好无闪烁。
+        // fetchComments 黑洞模式由后端按 cookie 判定，匿名返回空数组。
+        if (post?.id) {
+            await context.queryClient.ensureQueryData({
+                queryKey: commentKeys.list(post.id, {}),
+                queryFn: () => fetchComments(post.id, {}),
+            });
+        }
         return post;
     },
     // 动态 SEO：映射文章的 seo_title / seo_description / 封面图
