@@ -4,7 +4,6 @@ import { commentKeys } from "@features/comments/api/keys";
 import { fetchComments, useComments } from "@features/comments/api/queries";
 import { useAnnotations } from "@features/comments/lib/use-annotations";
 import { AnnotationLayer } from "@features/comments/ui/AnnotationLayer";
-import { AnnotationSidebar } from "@features/comments/ui/AnnotationSidebar";
 import { CommentSection } from "@features/comments/ui/CommentSection";
 import { FloatingToolbar } from "@features/comments/ui/FloatingToolbar";
 import { postKeys } from "@features/posts/api/keys";
@@ -21,7 +20,7 @@ import { BackToTop } from "@shared/ui/back-to-top";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * /blog/$slug - 文章详情页
@@ -43,8 +42,7 @@ function BlogDetailPage() {
     // 批注数据流：评论列表 → useAnnotations relocate → located/page-level
     const { data: commentsData } = useComments(post?.id ?? "");
     const comments = commentsData?.data ?? [];
-    const { located, blocks, isLoading: annotationsLoading } = useAnnotations(contentRef, comments);
-    const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
+    const { located, blocks } = useAnnotations(contentRef, comments);
     const me = useMe();
     const isLoggedIn = !!me.data;
 
@@ -202,23 +200,10 @@ function BlogDetailPage() {
                     >
                         <ArticleContent content={body} />
                     </main>
-
-                    {/* 右侧浮动批注栏（2xl+，sticky 不占文档流，与左侧 TOC 对称的「双侧信息层」） */}
-                    <AnnotationSidebar
-                        contentRef={contentRef}
-                        located={located}
-                        activeId={activeAnnotationId}
-                        isLoading={annotationsLoading}
-                    />
                 </div>
 
-                {/* 正文高亮渲染层（副作用操作 DOM，给批注块加高亮 class + 滚动联动） */}
-                <AnnotationLayer
-                    contentRef={contentRef}
-                    located={located}
-                    blocks={blocks}
-                    onActiveChange={setActiveAnnotationId}
-                />
+                {/* 批注角标 + 气泡层（默认不显示面板，点击角标展开行内气泡，零挤压） */}
+                <AnnotationLayer contentRef={contentRef} located={located} blocks={blocks} />
 
                 {/* 划线批注浮动工具条（选区上方浮动，提交后高亮落定） */}
                 {post?.id && (
