@@ -151,8 +151,9 @@ type createCommentRequest struct {
 	AuthorURL   string `json:"author_url"`                                // 可选个人站点
 	AvatarURL   string `json:"avatar_url"`                                // 可选头像 URL
 
-	Code   string                  `json:"code"`   // 匿名必填：邮箱验证码（来自 /comments/code）
-	Anchor *appcomment.AnchorInput `json:"anchor"` // 选区批注锚点；非空强制登录
+	Code     string                      `json:"code"`     // 匿名必填：邮箱验证码（来自 /comments/code）
+	Anchor   *appcomment.AnchorInput     `json:"anchor"`   // 选区批注锚点；非空强制登录
+	Pictures []appcomment.PictureInput   `json:"pictures"` // 评论附图（可选，Bilibili 式）
 }
 
 // Create 创建评论（前台公开，双轨认证）。
@@ -181,8 +182,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	in := appcomment.CreateInput{
 		PostID: postID, ParentID: req.ParentID,
 		Body: req.Body, Code: req.Code,
-		Anchor: req.Anchor.ToDomain(),
-		IPHash: ipHash, UserAgent: r.UserAgent(),
+		Anchor:   req.Anchor.ToDomain(),
+		Pictures: appcomment.PicturesToDomain(req.Pictures),
+		IPHash:   ipHash, UserAgent: r.UserAgent(),
 	}
 
 	if userID != "" {

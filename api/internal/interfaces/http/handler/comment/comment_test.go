@@ -232,6 +232,29 @@ func TestSendCode_InvalidEmail_Returns400(t *testing.T) {
 	assert.False(t, svc.sendCodeCalled)
 }
 
+// TestCreate_LoggedIn_PassesAnchorAndPictures 登录态带 anchor+pictures 应透传给 service（Issue-0003）。
+func TestCreate_LoggedIn_PassesAnchorAndPictures(t *testing.T) {
+	svc := &stubCommentService{}
+	h := &Handler{svc: svc, users: nil, validate: validator.New()}
+
+	body := `{"body":"note","anchor":{"block_id":"abc12345","start_offset":0,"end_offset":5,"selected_text":"hello","block_text_hash":"deadbeef"},"pictures":[{"url":"https://x/a.png","width":100,"height":200,"size":1024}]}`
+	req := setPostID(newJSONRequest(t, "POST", "/posts/abc/comments", body), "post-1")
+	req = withViewer(req, domainshared.NewID().String())
+	rr := httptest.NewRecorder()
+	h.Create(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	assert.True(t, svc.createCalled)
+	// anchor 透传
+	require.NotNil(t, svc.createInput.Anchor)
+	assert.Equal(t, "abc12345", svc.createInput.Anchor.BlockID)
+	assert.Equal(t, "hello", svc.createInput.Anchor.SelectedText)
+	// pictures 透传
+	require.Len(t, svc.createInput.Pictures, 1)
+	assert.Equal(t, "https://x/a.png", svc.createInput.Pictures[0].URL)
+	assert.Equal(t, int64(1024), svc.createInput.Pictures[0].Size)
+}
+
 // 编译期断言：确保 stubCommentService 满足 commentService 接口。
 var _ commentService = (*stubCommentService)(nil)
 
