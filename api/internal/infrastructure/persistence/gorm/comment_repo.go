@@ -49,6 +49,19 @@ func commentToPO(c *comment.Comment) (model.Comment, error) {
 		uid := u.UUID()
 		po.CreatedBy = &uid
 	}
+	// anchor 5 列：批注才有值（自由评论 a 为 nil，PO 5 列全空，由 GORM 零值/nullable 处理）。
+	if a := c.Anchor(); a != nil {
+		blockID := a.BlockID
+		start := a.StartOffset
+		end := a.EndOffset
+		selected := a.SelectedText
+		hash := a.BlockHashSync
+		po.AnchorBlockID = &blockID
+		po.AnchorStartOffset = &start
+		po.AnchorEndOffset = &end
+		po.AnchorSelectedText = &selected
+		po.AnchorBlockTextHash = &hash
+	}
 	if t := c.CreatedAt(); !t.IsZero() {
 		po.CreatedAt = t
 		po.UpdatedAt = c.UpdatedAt()
@@ -74,16 +87,43 @@ func commentToDomain(po model.Comment) (*comment.Comment, error) {
 		uid := domainshared.MustParseID(po.CreatedBy.String())
 		userID = &uid
 	}
+	// anchor 5 列：block_id 非空表示批注，重建 *Anchor；自由评论 anchor_block_id 为 nil → Anchor=nil。
+	var anchor *comment.Anchor
+	if po.AnchorBlockID != nil {
+		anchor = &comment.Anchor{
+			BlockID:       *po.AnchorBlockID,
+			StartOffset:   derefInt(po.AnchorStartOffset),
+			EndOffset:     derefInt(po.AnchorEndOffset),
+			SelectedText:  derefStr(po.AnchorSelectedText),
+			BlockHashSync: derefStr(po.AnchorBlockTextHash),
+		}
+	}
 	return comment.ReconstructComment(
 		domainshared.MustParseID(po.ID.String()),
 		domainshared.MustParseID(po.PostID.String()),
 		userID,
 		parentID, po.Path, po.Depth,
-		nil, // anchor 字段未在 045 migration 落地（Issue-0003 处理），重建时暂为 nil
+		anchor,
 		po.AuthorName, po.AuthorEmail, po.AuthorURL, po.AvatarURL,
 		po.Body, pictures, po.Status, po.IPHash, po.UserAgent,
 		po.CreatedAt, po.UpdatedAt,
 	), nil
+}
+
+// derefStr 安全解引用 *string，nil 返回空串。
+func derefStr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+// derefInt 安全解引用 *int，nil 返回 0。
+func derefInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
 }
 
 func (r *CommentRepository) FindByID(ctx context.Context, id domainshared.ID) (*comment.Comment, error) {

@@ -91,6 +91,15 @@ type Comment struct {
 	AvatarURL   string     `gorm:"type:varchar(512);column:avatar_url" json:"avatar_url"`
 	Body        string     `gorm:"type:text" json:"body"`
 	Pictures    []byte     `gorm:"type:jsonb;default:'[]'" json:"pictures"`
+
+	// anchor 5 列：选区批注锚点（PRD-0001 Issue-0003）。
+	// 全部 nullable，自由评论全空，批注全有；DB CHECK 约束保证 anchor 非空时 created_by 非空。
+	AnchorBlockID       *string `gorm:"type:varchar(16);column:anchor_block_id" json:"anchor_block_id,omitempty"`
+	AnchorStartOffset   *int    `gorm:"column:anchor_start_offset" json:"anchor_start_offset,omitempty"`
+	AnchorEndOffset     *int    `gorm:"column:anchor_end_offset" json:"anchor_end_offset,omitempty"`
+	AnchorSelectedText  *string `gorm:"type:text;column:anchor_selected_text" json:"anchor_selected_text,omitempty"`
+	AnchorBlockTextHash *string `gorm:"type:varchar(16);column:anchor_block_text_hash" json:"anchor_block_text_hash,omitempty"`
+
 	Status      string     `gorm:"type:varchar(20);default:pending" json:"status"`
 	IPHash      string     `gorm:"type:varchar(64);column:ip_hash" json:"ip_hash"`
 	UserAgent   string     `gorm:"type:text;column:user_agent" json:"user_agent"`

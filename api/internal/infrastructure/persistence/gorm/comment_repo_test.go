@@ -151,3 +151,87 @@ func TestFindByPost_NilViewer_OnlyApproved(t *testing.T) {
 
 // fixedPostID 测试用固定 post id（SQLite 不强制外键，无需真实 post 记录）。
 var fixedPostID = domainshared.NewID()
+
+// TestSaveAndFind_RoundTripAnchor 验证 anchor 5 列 round-trip（domain → PO → DB → PO → domain）。
+// Issue-0003：批注的 anchor 写入后读出应保持一致。
+func TestSaveAndFind_RoundTripAnchor(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+
+	userID := domainshared.NewID()
+	postID := domainshared.NewID()
+	anchor := &domaincomment.Anchor{
+		BlockID:       "abc12345",
+		StartOffset:   3,
+		EndOffset:     9,
+		SelectedText:  "hello world",
+		BlockHashSync: "deadbeef",
+	}
+	c, err := domaincomment.NewComment(domaincomment.CreateParams{
+		ID: domainshared.NewID(), PostID: postID, UserID: &userID,
+		AuthorName: "annotator", AuthorEmail: "a@x.com",
+		Body: "note", Anchor: anchor,
+	})
+	require.NoError(t, err)
+	require.NoError(t, c.SetParent(nil))
+
+	require.NoError(t, repo.Save(ctx, c))
+
+	got, err := repo.FindByID(ctx, c.ID())
+	require.NoError(t, err)
+	gotAnchor := got.Anchor()
+	require.NotNil(t, gotAnchor, "批注的 anchor 重建后不应为 nil")
+	assert.Equal(t, "abc12345", gotAnchor.BlockID)
+	assert.Equal(t, 3, gotAnchor.StartOffset)
+	assert.Equal(t, 9, gotAnchor.EndOffset)
+	assert.Equal(t, "hello world", gotAnchor.SelectedText)
+	assert.Equal(t, "deadbeef", gotAnchor.BlockHashSync)
+	assert.Equal(t, userID.String(), got.UserID().String(), "批注的 created_by 也应 round-trip")
+}
+
+// TestSaveAndFind_FreeCommentHasNilAnchor 自由评论（无 anchor）round-trip 后 anchor 仍为 nil。
+func TestSaveAndFind_FreeCommentHasNilAnchor(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+
+	userID := domainshared.NewID()
+	c, err := domaincomment.NewComment(domaincomment.CreateParams{
+		ID: domainshared.NewID(), PostID: fixedPostID, UserID: &userID,
+		AuthorName: "bob", Body: "free comment",
+	})
+	require.NoError(t, err)
+	require.NoError(t, c.SetParent(nil))
+	require.NoError(t, repo.Save(ctx, c))
+
+	got, err := repo.FindByID(ctx, c.ID())
+	require.NoError(t, err)
+	assert.Nil(t, got.Anchor(), "自由评论的 anchor 应为 nil")
+}
+
+// TestSave_RoundTripPictures pictures 写入后读出一致（Issue-0003 pictures 接线）。
+func TestSave_RoundTripPictures(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+
+	userID := domainshared.NewID()
+	c, err := domaincomment.NewComment(domaincomment.CreateParams{
+		ID: domainshared.NewID(), PostID: fixedPostID, UserID: &userID,
+		AuthorName: "bob", Body: "with pics",
+	})
+	require.NoError(t, err)
+	c.SetPictures([]domaincomment.Picture{
+		{URL: "https://x/a.png", Width: 100, Height: 200, Size: 1024},
+	})
+	require.NoError(t, c.SetParent(nil))
+	require.NoError(t, repo.Save(ctx, c))
+
+	got, err := repo.FindByID(ctx, c.ID())
+	require.NoError(t, err)
+	require.Len(t, got.Pictures(), 1)
+	assert.Equal(t, "https://x/a.png", got.Pictures()[0].URL)
+	assert.Equal(t, 100, got.Pictures()[0].Width)
+	assert.Equal(t, int64(1024), got.Pictures()[0].Size)
+}
