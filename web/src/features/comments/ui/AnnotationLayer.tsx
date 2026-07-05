@@ -193,39 +193,41 @@ export function AnnotationLayer({
 }
 
 /**
- * renderMarkerIcon 生成段评角标 SVG（描边圆角胶囊 + 偏左直角三角尾巴）：
- *   - 圆角胶囊主体：纯描边（fill none, stroke currentColor），无填充
- *   - 气泡尾巴：胶囊下方偏左的左上角 90°直角三角形，纯描边，与胶囊同色
- *   - 数字居中：currentColor（与描边同色）
- *   - hasMine=true 时右上角对号徽章：实心 currentColor 圆（配色与胶囊描边统一），
- *     徽章外圈描页面背景色（mask 效果）把胶囊圆角「咬掉一块」→ 视觉断开
+ * renderMarkerIcon 生成段评角标 SVG（chat-bubble 风格，参考 Lucide chat-bubble-outline）：
+ *   - 对话气泡外形：圆角矩形 + 左下角直角三角尾巴（一体描边 path，颜色 currentColor）
+ *   - 评论数居中：超过 99 显示「99+」；数字字号随位数自适应（保证不溢出气泡）
+ *   - hasMine=true 时右上角对号徽章：实心 currentColor 圆（配色与气泡描边统一），
+ *     徽章外圈描页面背景色（mask 效果）把气泡右上角「咬掉一块」→ 视觉断开
  *
  * 整体设计原则：比文字略小（0.95em）、低对比、行内紧贴段末、配色统一。
  * 返回 HTML 字符串供 DOM 注入（角标不是 React 组件，是 innerHTML）。
  */
 function renderMarkerIcon(count: number, hasMine: boolean): string {
-    // viewBox：胶囊 0,2 ~ 16,12（宽 16 高 10 圆角 5）；尾巴下垂到 y=15；对号徽章右上角外侧
-    const stroke = "currentColor";
-    const sw = 1; // 描边粗细
-    // 胶囊：纯描边，无填充
-    const capsule = `<rect x="0.5" y="2" width="15" height="10" rx="5" ry="5" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
-    // 气泡尾巴：偏左、左上角 90°直角三角形，纯描边
-    //   A(5,12) 左上直角顶点（贴胶囊底边 y=12，落在底边直线段左侧），
-    //   B(7.5,12) 右上，C(5,15) 左下，斜边 B→C
-    const tail = `<path d="M5 12 L7.5 12 L5 15 Z" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" />`;
-    // 数字居中（与描边同色）
-    const countText = `<text x="8" y="7" text-anchor="middle" dominant-baseline="central" font-size="6.5" font-weight="600" fill="${stroke}">${count}</text>`;
+    // 评论数显示文本：超过 99 显示 99+
+    const label = count > 99 ? "99+" : String(count);
+    // 数字字号随位数自适应：1 位数最大，2 位数中，3 位（99+）最小，避免溢出气泡
+    const fontSize = label.length >= 3 ? 5 : label.length === 2 ? 6 : 7;
 
-    // 对号徽章：实心 currentColor 圆（配色与胶囊描边一致），
-    // 背景色描边（stroke-width 1.6）形成切口断开胶囊边框，白色对号 path。
+    const stroke = "currentColor";
+    const sw = 1.1; // 描边粗细
+    // 对话气泡外形 path（圆角矩形 + 左下直角三角尾巴，一体绘制）：
+    //   气泡主体：x 0.5→15.5，y 2→11.5，圆角 3.5
+    //   尾巴：从底边 (5,11.5) 经 (5.5,11.5) 下伸到 (4,14.5) 形成左下直角三角形
+    const bubblePath =
+        "M4 2 H12 A3.5 3.5 0 0 1 15.5 5.5 V8 A3.5 3.5 0 0 1 12 11.5 H7.5 L4 14.5 L4.5 11.5 H4 A3.5 3.5 0 0 1 0.5 8 V5.5 A3.5 3.5 0 0 1 4 2 Z";
+    const bubble = `<path d="${bubblePath}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" />`;
+    // 评论数居中（与描边同色）
+    const countText = `<text x="8" y="6.8" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}" font-weight="600" fill="${stroke}">${label}</text>`;
+
+    // 对号徽章：实心 currentColor 圆（配色与气泡描边一致），
+    // 背景色描边（stroke-width 1.6）形成切口断开气泡边框，白色对号 path。
     const checkBadge = hasMine
-        ? `<circle cx="14" cy="2" r="3" fill="${stroke}" stroke="var(--marker-bg, white)" stroke-width="1.6" />
-           <path d="M12.7 2 L13.6 2.9 L15.3 1.1" stroke="white" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round" fill="none" />`
+        ? `<circle cx="13.5" cy="2" r="3" fill="${stroke}" stroke="var(--marker-bg, white)" stroke-width="1.6" />
+           <path d="M12.2 2 L13.1 2.9 L14.8 1.1" stroke="white" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round" fill="none" />`
         : "";
 
     return `<svg class="annotation-marker-svg" viewBox="-1 -2 18 18" aria-hidden="true">
-        ${capsule}
-        ${tail}
+        ${bubble}
         ${countText}
         ${checkBadge}
     </svg>`;
