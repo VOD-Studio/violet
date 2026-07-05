@@ -2,61 +2,31 @@
  * AnnouncementCard - 公告卡片（card / article 两态共用）
  *
  * 两态在首页有明确视觉与交互差异：
- * - card（事件票据）：自包含通知，无封面、不可点击、无详情页。
+ * - card（通知票据）：自包含通知，无封面、不可点击、无详情页。
  *   读完即止，content/excerpt 就是全部。
- * - article（事件简报入口）：带封面图 + 「阅读全文 →」引导，
+ * - article（简报入口）：带封面图 + 「阅读 →」引导，
  *   整卡可点击，跳转 /announcements/:id 看正文。
  *
- * 用 SpotlightCard 外壳 + 左侧 severity 色条。标题用 DecryptedText 解码。
+ * 去赛博化后的视觉语言：
+ * - 外壳用 BorderGlow 柔色发光描边（severity 决定色相），替代 SpotlightCard 聚光
+ * - 标题用 BlurText 按词模糊渐显，替代 DecryptedText 解码乱码
+ * - severity 配色走 shadcn 色阶（shared/ui/announcement-severity），无 neon
+ * - ID 用 Counter 数字滚动
  */
 import type { Announcement } from "@features/settings/model/types";
-import DecryptedText from "@shared/vendor/react-bits/DecryptedText";
-import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
+import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import BlurText from "@vendor/react-bits/BlurText";
+import BorderGlow from "@vendor/react-bits/BorderGlow";
+import Counter from "@vendor/react-bits/Counter";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
-import type { ComponentType } from "react";
-
-/** severity → 视觉配置 */
-interface SevCfg {
-    text: string;
-    bar: string;
-    badge: string;
-    Icon: ComponentType<{ className?: string }>;
-}
-
-const SEVERITY: Record<string, SevCfg> = {
-    info: {
-        text: "text-neon-cyan",
-        bar: "bg-neon-cyan",
-        badge: "bg-neon-cyan/10 text-neon-cyan",
-        Icon: Info,
-    },
-    warning: {
-        text: "text-neon-purple",
-        bar: "bg-neon-purple",
-        badge: "bg-neon-purple/10 text-neon-purple",
-        Icon: TriangleAlert,
-    },
-    success: {
-        text: "text-neon-green",
-        bar: "bg-neon-green",
-        badge: "bg-neon-green/10 text-neon-green",
-        Icon: CircleCheck,
-    },
-    error: {
-        text: "text-neon-pink",
-        bar: "bg-neon-pink",
-        badge: "bg-neon-pink/10 text-neon-pink",
-        Icon: CircleX,
-    },
-};
+import { ArrowRight } from "lucide-react";
 
 export interface AnnouncementCardProps {
     announcement: Announcement;
 }
 
 export default function AnnouncementCard({ announcement: a }: AnnouncementCardProps) {
-    const cfg = SEVERITY[a.severity] ?? SEVERITY.info;
+    const cfg = getAnnouncementSev(a.severity);
     const isArticle = a.display === "article";
     const stamp = a.created_at
         ? new Date(a.created_at).toISOString().slice(0, 16).replace("T", " ")
@@ -77,31 +47,35 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
                 </div>
             )}
 
-            <div className="flex flex-1 flex-col p-5 font-mono">
-                {/* 顶部 metadata */}
+            <div className="flex flex-1 flex-col p-6">
+                {/* 顶部 metadata：severity 徽章 + ID 数字滚动 */}
                 <div className="mb-3 flex items-center justify-between">
-                    <span className={`flex items-center gap-1 rounded px-1.5 py-0.5 ${cfg.badge}`}>
+                    <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${cfg.badge}`}
+                    >
                         <cfg.Icon className="size-3" />
+                        {cfg.label}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">
-                        EVENT #{String(a.id).padStart(3, "0")}
+                    <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                        #
+                        <Counter
+                            value={a.id}
+                            fontSize={12}
+                            gap={1}
+                            horizontalPadding={0}
+                            textColor="hsl(var(--muted-foreground))"
+                        />
                     </span>
                 </div>
 
-                {/* 标题(解码) */}
-                <h3
-                    className={`mb-2 flex items-start gap-1 text-lg font-semibold leading-snug ${cfg.text}`}
-                >
-                    <span className="shrink-0">▸</span>
-                    <DecryptedText
-                        text={a.title}
-                        speed={35}
-                        maxIterations={6}
-                        sequential={true}
-                        revealDirection="start"
-                        animateOn="view"
-                    />
-                </h3>
+                {/* 标题（按词模糊渐显） */}
+                <BlurText
+                    text={a.title}
+                    animateBy="words"
+                    stepDuration={0.4}
+                    delay={80}
+                    className="mb-2 text-lg font-semibold leading-snug text-foreground"
+                />
 
                 {/* 摘要 */}
                 <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">
@@ -114,7 +88,7 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
                         {a.affects.slice(0, 4).map((m) => (
                             <span
                                 key={m}
-                                className="rounded border border-edge-hairline bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                                className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
                             >
                                 {m}
                             </span>
@@ -123,41 +97,53 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
                 )}
 
                 {/* 底部票据区 */}
-                <div className="mt-auto flex items-center justify-between border-t border-edge-hairline pt-2 text-[10px] text-muted-foreground">
+                <div className="mt-auto flex items-center justify-between border-t border-edge-hairline pt-3 text-xs text-muted-foreground">
                     <span>{stamp}</span>
                     {isArticle ? (
-                        <span className="flex items-center gap-0.5 font-medium transition-colors group-hover:text-foreground">
-                            阅读全文 <ArrowRight className="size-3" />
+                        <span className="inline-flex items-center gap-1 font-medium text-foreground transition-opacity group-hover:opacity-70">
+                            阅读 <ArrowRight className="size-3" />
                         </span>
                     ) : (
-                        <span className="opacity-60">standalone</span>
+                        <span className="opacity-60">通知</span>
                     )}
                 </div>
             </div>
         </>
     );
 
+    // BorderGlow 外壳：severity 决定色相，单色模式（三色相同）保持克制
+    const glowShell = (children: React.ReactNode) => (
+        <BorderGlow
+            backgroundColor="hsl(var(--card))"
+            borderRadius={16}
+            glowColor={cfg.glow[0]}
+            colors={[
+                `hsl(${cfg.glow[0]} / 0.9)`,
+                `hsl(${cfg.glow[1]} / 0.6)`,
+                `hsl(${cfg.glow[2]} / 0.9)`,
+            ]}
+            glowIntensity={0.6}
+            glowRadius={20}
+            animated={false}
+            className="group min-h-[220px]"
+        >
+            {children}
+        </BorderGlow>
+    );
+
     // article：整卡可点击，套 Link
     if (isArticle) {
-        return (
-            <SpotlightCard className="group flex">
-                <div className={`w-1 shrink-0 ${cfg.bar}`} aria-hidden />
-                <Link
-                    to="/announcements/$id"
-                    params={{ id: String(a.id) }}
-                    className="flex flex-1 flex-col"
-                >
-                    {body}
-                </Link>
-            </SpotlightCard>
+        return glowShell(
+            <Link
+                to="/announcements/$id"
+                params={{ id: String(a.id) }}
+                className="flex flex-1 flex-col"
+            >
+                {body}
+            </Link>,
         );
     }
 
     // card：自包含，不可点击
-    return (
-        <SpotlightCard className="group flex">
-            <div className={`w-1 shrink-0 ${cfg.bar}`} aria-hidden />
-            <div className="flex flex-1 flex-col">{body}</div>
-        </SpotlightCard>
-    );
+    return glowShell(<div className="flex flex-1 flex-col">{body}</div>);
 }
