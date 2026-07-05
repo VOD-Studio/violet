@@ -27,11 +27,17 @@ export const fetchComments = async (
 ): Promise<PagedResponse<Comment>> =>
     apiGetPaged<Comment>(`/posts/${postId}/comments`, { params: query });
 
-/** useComments - 文章评论列表 hook（支持 type 维度过滤） */
+/**
+ * useComments - 文章评论列表 hook（支持 type 维度过滤）
+ *
+ * postId 为空时禁用查询（避免发 /posts//comments 这种空 id 请求）。
+ * 文章详情页首帧 SSR/postId 尚未就绪时会被守卫拦下，postId 到位后自动启用。
+ */
 export const useComments = (postId: string, query: CommentListQuery = {}) =>
     useQuery({
         queryKey: commentKeys.list(postId, query),
         queryFn: () => fetchComments(postId, query),
+        enabled: !!postId,
     });
 
 /**
