@@ -1,6 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Cover } from "@features/admin-media/ui/Cover";
-import { RichTextEditor } from "@features/editor";
+import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
+import type { MediaFile } from "@entities/media/model/types";
 import { Button } from "@shared/ui/base/button";
 import { Checkbox } from "@shared/ui/base/checkbox";
 import { Input } from "@shared/ui/base/input";
@@ -14,10 +16,17 @@ import {
 } from "@shared/ui/base/select";
 import { Switch } from "@shared/ui/base/switch";
 import { Textarea } from "@shared/ui/base/textarea";
-import { Modal } from "@shared/ui/modal";
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from "@shared/ui/base/sheet";
 import { addDays, addHours, endOfDay, format, startOfDay, startOfHour } from "date-fns";
 import { Loader2, Lock } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import type { DateTimeRange, DateTimeRangePreset } from "@/shared/ui/date-time-picker";
 import { DateTimeRangePickerField } from "@/shared/ui/date-time-picker";
@@ -54,6 +63,15 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
     const isEdit = !!editing;
     const createAnn = useCreateAnnouncement();
     const updateAnn = useUpdateAnnouncement();
+    const editorRef = useRef<RichTextEditorHandle>(null);
+    const [imagePickerOpen, setImagePickerOpen] = useState(false);
+
+    /** 从素材库选图后，通过 ref 在光标处插入，避免字符串拼接导致光标重置 */
+    const handleInsertImages = (files: MediaFile[]) => {
+        editorRef.current?.insertImages(
+            files.map((f) => ({ src: f.url, alt: f.alt_text || f.original_name })),
+        );
+    };
 
     const {
         register,
@@ -154,39 +172,26 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
     ];
 
     return (
-        <Modal
-            open={open}
-            onOpenChange={onOpenChange}
-            title={isEdit ? "编辑公告" : "创建公告"}
-            description={isEdit ? "修改公告内容与生效设置" : "新建一条站点公告"}
-            size="xl"
-            scrollable={false}
-            footer={
-                <>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        disabled={pending}
-                    >
-                        取消
-                    </Button>
-                    <Button type="submit" form="announcement-form" disabled={pending}>
-                        {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
-                        {isEdit ? "保存" : "创建"}
-                    </Button>
-                </>
-            }
-        >
-            <form
-                id="announcement-form"
-                onSubmit={handleSubmit(onSubmit)}
-                // 两栏：桌面左右排，移动端上下堆叠
-                // scrollable={false} 后由两栏各自 overflow-y-auto 独立滚动
-                className="flex h-full flex-col gap-6 overflow-y-auto md:grid md:grid-cols-[1fr_20rem] md:gap-6 md:overflow-hidden"
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent
+                side="right"
+                className="w-full gap-0 overflow-y-auto sm:max-w-2xl lg:max-w-3xl"
             >
+                <SheetHeader className="border-b border-edge-hairline pr-12">
+                    <SheetTitle>{isEdit ? "编辑公告" : "创建公告"}</SheetTitle>
+                    <SheetDescription>
+                        {isEdit ? "修改公告内容与生效设置" : "新建一条站点公告"}
+                    </SheetDescription>
+                </SheetHeader>
+
+                <form
+                    id="announcement-form"
+                    onSubmit={handleSubmit(onSubmit)}
+                    // 两栏：桌面左右排，移动端上下堆叠；flex-1 撑满抽屉高度
+                    className="flex min-h-0 flex-1 flex-col gap-6 p-4 lg:grid lg:grid-cols-[1fr_18rem] lg:items-start"
+                >
                 {/* ============ 左主区：内容编辑 ============ */}
-                <div className="space-y-4 md:overflow-y-auto md:pr-2">
+                <div className="space-y-4">
                     {/* 标题 */}
                     <div className="space-y-2">
                         <Label htmlFor="ann-title">
@@ -259,9 +264,11 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                                 name="contentHTML"
                                 render={({ field }) => (
                                     <RichTextEditor
+                                        ref={editorRef}
                                         value={field.value ?? ""}
                                         onChange={field.onChange}
                                         exportName={`announcement-${editing?.id ?? "new"}`}
+                                        onPickImage={() => setImagePickerOpen(true)}
                                         minHeight={320}
                                     />
                                 )}
@@ -271,7 +278,7 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                 </div>
 
                 {/* ============ 右侧栏：配置面板 ============ */}
-                <aside className="space-y-4 overflow-y-auto rounded-lg border border-edge-hairline bg-muted/30 p-4">
+                <aside className="space-y-4 rounded-lg border border-edge-hairline bg-muted/30 p-4">
                     {/* 展示形态（创建后不可改） */}
                     <div className="space-y-2">
                         <Label className="flex items-center gap-1.5">
@@ -351,7 +358,6 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                                         onChange={field.onChange}
                                         onClear={() => field.onChange("")}
                                         title="选择公告封面图"
-                                        mediaPickerModal={false}
                                     />
                                 )}
                             />
@@ -427,6 +433,32 @@ export function AnnouncementDialog({ open, onOpenChange, editing }: Announcement
                     />
                 </aside>
             </form>
-        </Modal>
+
+            <SheetFooter className="flex-row items-center justify-end gap-2 border-t border-edge-hairline">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={pending}
+                >
+                    取消
+                </Button>
+                <Button type="submit" form="announcement-form" disabled={pending}>
+                    {pending && <Loader2 className="mr-1 size-4 animate-spin" />}
+                    {isEdit ? "保存" : "创建"}
+                </Button>
+            </SheetFooter>
+
+            {/* 正文插入图片的素材库选择器（Portal 渲染，与 Sheet 平级显示） */}
+            <MediaPicker
+                open={imagePickerOpen}
+                onOpenChange={setImagePickerOpen}
+                mediaType="image"
+                multiple
+                title="选择图片插入正文"
+                onConfirm={handleInsertImages}
+            />
+            </SheetContent>
+        </Sheet>
     );
 }

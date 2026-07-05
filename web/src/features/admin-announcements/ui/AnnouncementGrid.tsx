@@ -18,7 +18,7 @@ export default function AnnouncementGrid() {
     if (items.length === 0) return null;
 
     return (
-        <div className="gap-6 sm:columns-2 lg:columns-3 [&>*]:mb-6 [&>*]:break-inside-avoid">
+        <div className="gap-6 sm:columns-2 lg:columns-3 *:mb-6 *:break-inside-avoid">
             {items.map((a) => (
                 <AnnouncementCard key={a.id} announcement={a} />
             ))}

@@ -36,7 +36,7 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
         <>
             {/* article 形态：顶部封面图（card 形态无封面） */}
             {isArticle && a.cover_image && (
-                <div className="aspect-2/1 w-full overflow-hidden border-b border-edge-hairline">
+                <div className="aspect-2/1 w-full overflow-hidden border-b border-edge-hairline rounded-t-2xl rounded-b-xl">
                     <img
                         src={a.cover_image}
                         alt={a.title}
@@ -111,7 +111,7 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
                 glowIntensity={0.6}
                 glowRadius={20}
                 animated={false}
-                className="min-h-[220px]"
+                className="min-h-55"
             >
                 {children}
             </BorderGlow>
