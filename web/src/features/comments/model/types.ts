@@ -79,6 +79,14 @@ export interface CreateComment {
     avatar_url?: string;
     /** 匿名必填：邮箱验证码（来自 POST /posts/{postId}/comments/code）。登录态忽略 */
     code?: string;
+    /** 选区批注锚点（snake_case 外部契约）；非空时强制登录，自由评论省略 */
+    anchor?: {
+        block_id: string;
+        start_offset: number;
+        end_offset: number;
+        selected_text: string;
+        block_text_hash: string;
+    };
 }
 
 /**

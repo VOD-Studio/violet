@@ -10,6 +10,7 @@ const make = (overrides: Partial<Comment> & { id: string }): Comment => ({
     avatar_url: "",
     body: "body",
     pictures: [],
+    is_author: false,
     status: "approved",
     created_at: "2026-01-01T00:00:00Z",
     ...overrides,

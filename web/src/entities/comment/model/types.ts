@@ -26,6 +26,26 @@ export interface CommentPicture {
 }
 
 /**
+ * CommentAnchor - 选区批注锚点（snake_case 外部契约形态）。
+ *
+ * 对应后端 application/comment/service.go 的 AnchorDTO，与 features/comments/lib/types.ts
+ * 的 camelCase Anchor 一一对应（snake/camel 转换在消费侧按需做）。
+ * 自由评论的 anchor 为 undefined（JSON 省略）；批注非空。
+ */
+export interface CommentAnchor {
+    /** 块标识符（块纯文本 SHA-256 前 8 位） */
+    block_id: string;
+    /** 选区起始偏移（块内字符位，0-based） */
+    start_offset: number;
+    /** 选区结束偏移（块内字符位，exclusive） */
+    end_offset: number;
+    /** 选中原文（fuzzy 重定位的锚） */
+    selected_text: string;
+    /** 块内容快照（创建时的 SHA-256 前 8 位，漂移检测用） */
+    block_text_hash: string;
+}
+
+/**
  * Comment - 评论读模型
  *
  * 对应后端 application/comment/service.go 的 CommentDTO，
@@ -48,6 +68,10 @@ export interface Comment {
     body: string;
     /** 附件图片列表，无图为空数组 */
     pictures: CommentPicture[];
+    /** 是否由文章 Owner 本人发出（运行时 created_by==post.author_id，作者高亮用） */
+    is_author: boolean;
+    /** 选区批注锚点；自由评论为 undefined，批注非空 */
+    anchor?: CommentAnchor;
     /** 状态 */
     status: CommentStatus;
     /** 创建时间，RFC3339 字符串 */
