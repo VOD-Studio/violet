@@ -193,11 +193,11 @@ export function AnnotationLayer({
 }
 
 /**
- * renderMarkerIcon 生成段评角标 SVG（圆角胶囊 + 气泡尾巴）：
- *   - 圆角胶囊主体：浅色填充（currentColor opacity），无描边
- *   - 气泡尾巴：胶囊底部偏右的小三角形，与胶囊同色同透明度，视觉一体（对话气泡）
- *   - 数字居中：currentColor（hover 时变深）
- *   - hasMine=true 时右上角对号徽章：配色与胶囊统一（currentColor 实色），
+ * renderMarkerIcon 生成段评角标 SVG（描边圆角胶囊 + 偏左直角三角尾巴）：
+ *   - 圆角胶囊主体：纯描边（fill none, stroke currentColor），无填充
+ *   - 气泡尾巴：胶囊下方偏左的左上角 90°直角三角形，纯描边，与胶囊同色
+ *   - 数字居中：currentColor（与描边同色）
+ *   - hasMine=true 时右上角对号徽章：实心 currentColor 圆（配色与胶囊描边统一），
  *     徽章外圈描页面背景色（mask 效果）把胶囊圆角「咬掉一块」→ 视觉断开
  *
  * 整体设计原则：比文字略小（0.95em）、低对比、行内紧贴段末、配色统一。
@@ -205,25 +205,27 @@ export function AnnotationLayer({
  */
 function renderMarkerIcon(count: number, hasMine: boolean): string {
     // viewBox：胶囊 0,2 ~ 16,12（宽 16 高 10 圆角 5）；尾巴下垂到 y=15；对号徽章右上角外侧
-    // 胶囊 + 尾巴共用同一 fill + opacity，保证视觉一体、颜色完全一致
-    const fill = "currentColor";
-    const opacity = 0.14;
-    const capsule = `<rect x="0.5" y="2" width="15" height="10" rx="5" ry="5" fill="${fill}" opacity="${opacity}" />`;
-    // 气泡尾巴：从胶囊底部偏右（x≈9-11）向下伸的小三角，无缝衔接胶囊底边
-    const tail = `<path d="M9 11.2 L10.5 14.8 L12 11.2 Z" fill="${fill}" opacity="${opacity}" />`;
-    // 数字居中（与胶囊同色实色，清晰）
-    const countText = `<text x="8" y="7" text-anchor="middle" dominant-baseline="central" font-size="6.5" font-weight="600" fill="currentColor">${count}</text>`;
+    const stroke = "currentColor";
+    const sw = 1; // 描边粗细
+    // 胶囊：纯描边，无填充
+    const capsule = `<rect x="0.5" y="2" width="15" height="10" rx="5" ry="5" fill="none" stroke="${stroke}" stroke-width="${sw}" />`;
+    // 气泡尾巴：偏左、左上角 90°直角三角形，纯描边
+    //   A(5,12) 左上直角顶点（贴胶囊底边 y=12，落在底边直线段左侧），
+    //   B(7.5,12) 右上，C(5,15) 左下，斜边 B→C
+    const tail = `<path d="M5 12 L7.5 12 L5 15 Z" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" />`;
+    // 数字居中（与描边同色）
+    const countText = `<text x="8" y="7" text-anchor="middle" dominant-baseline="central" font-size="6.5" font-weight="600" fill="${stroke}">${count}</text>`;
 
-    // 对号徽章：圆心 (14,2)，半径 3。配色与胶囊统一（currentColor 实色），
+    // 对号徽章：实心 currentColor 圆（配色与胶囊描边一致），
     // 背景色描边（stroke-width 1.6）形成切口断开胶囊边框，白色对号 path。
     const checkBadge = hasMine
-        ? `<circle cx="14" cy="2" r="3" fill="currentColor" stroke="var(--marker-bg, white)" stroke-width="1.6" />
+        ? `<circle cx="14" cy="2" r="3" fill="${stroke}" stroke="var(--marker-bg, white)" stroke-width="1.6" />
            <path d="M12.7 2 L13.6 2.9 L15.3 1.1" stroke="white" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round" fill="none" />`
         : "";
 
-    return `<svg class="annotation-marker-svg" viewBox="-1 -1 18 16" aria-hidden="true">
-        ${tail}
+    return `<svg class="annotation-marker-svg" viewBox="-1 -2 18 18" aria-hidden="true">
         ${capsule}
+        ${tail}
         ${countText}
         ${checkBadge}
     </svg>`;

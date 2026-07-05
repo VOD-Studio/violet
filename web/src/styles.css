@@ -327,17 +327,31 @@ body {
   scroll-margin-top: 80px;
 }
 
-/* 批注角标：带小尾巴指向批注块（块在角标左侧，尾巴向左伸）。
-   角标 className 含 annotation-marker 时启用尾巴（::before 三角形）。 */
-.annotation-marker::before {
-  content: "";
-  position: absolute;
-  /* 尾巴贴在角标左侧中部，向左伸 5px 指向块 */
-  top: 50%;
-  right: 100%;
-  transform: translateY(-50%);
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  /* 尾巴颜色随角标背景（default 蓝；active 深蓝） */
-  border-right: 6px solid hsl(217 91% 60%);
+/* 段评角标：段落末尾的 inline SVG（圆角胶囊 + 数字 + 已评论对号切口）。
+   设计目标（对齐番茄小说段评）：比文字略小、低对比、紧贴段末、不抢视觉。 */
+.annotation-marker-inline {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.15em;
+  /* 略下沉与文字基线对齐，避免角标飘在文字中线上方 */
+  vertical-align: -0.15em;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  /* muted slate 灰：低对比，不抢正文视觉（替代原先的鲜艳蓝） */
+  color: hsl(215 16% 47%);
+  transition: color 0.15s, opacity 0.15s;
+  /* 对号徽章描边颜色（切口色）：跟随页面背景，light 白 / dark 深 */
+  --marker-bg: hsl(var(--background));
+}
+.annotation-marker-inline:hover {
+  color: hsl(215 25% 35%);
+}
+/* SVG 角标：比文字略小（0.95em），宽度自适应；胶囊整体跟随字号缩放 */
+.annotation-marker-inline .annotation-marker-svg {
+  height: 0.95em;
+  width: auto;
+  display: block;
+  overflow: visible; /* 允许右上角对号徽章溢出胶囊 viewBox */
 }
