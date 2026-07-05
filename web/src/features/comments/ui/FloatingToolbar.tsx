@@ -70,20 +70,26 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                 left: rect.left + rect.width / 2,
             });
         } else {
+            // below 模式（输入面板展开时）：水平 clamp 到 [160, vw-160] 防气泡溢出
+            const halfWidth = 160;
+            const left = Math.max(
+                halfWidth,
+                Math.min(rect.left + rect.width / 2, window.innerWidth - halfWidth),
+            );
             setPos({
                 top: rect.bottom + 8,
-                left: rect.left + rect.width / 2,
+                left,
             });
         }
     };
 
-    // 监听选区变化（mouseup 后检查 selection）。
-    // biome-ignore lint/correctness/useExhaustiveDependencies: 故意只依赖 [contentRef, showInput]——updatePosFromRange 是无状态的工具函数（只读 pos state），不需要进 deps；scroll handler 通过 closure 捕获最新值。
+    // 监听选区变化 + 滚动跟随。
+    // biome-ignore lint/correctness/useExhaustiveDependencies: 故意只依赖 [contentRef, showInput]——updatePosFromRange 是无状态的工具函数（只读 pos state），不需要进 deps；scroll handler 通过 closure 捕获最新 showInput。
     useEffect(() => {
-        if (showInput) return; // 输入区展开时不响应新选区
-
         let rafId = 0;
         const handleSelectionChange = () => {
+            // 输入面板展开时不响应新选区（避免用户在 textarea 里选词触发工具条）
+            if (showInput) return;
             cancelAnimationFrame(rafId);
             rafId = requestAnimationFrame(async () => {
                 const root = contentRef.current;
@@ -125,11 +131,13 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
 
         // 滚动时用缓存的 Range 重新算视口位置（fixed 定位跟随）。
         // capture: true 捕获阶段监听，避免被正文里的 stopPropagation 拦截。
+        // 注意：scroll handler 不受 showInput 影响——输入面板展开时也要跟随滚动。
         const handleScroll = () => {
             cancelAnimationFrame(rafId);
             rafId = requestAnimationFrame(() => {
                 if (lastRangeRef.current) {
-                    updatePosFromRange(lastRangeRef.current, "above");
+                    // 输入面板展开时定位到选区下方（与 handleAnnotate 一致），否则上方
+                    updatePosFromRange(lastRangeRef.current, showInput ? "below" : "above");
                 }
             });
         };
