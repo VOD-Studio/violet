@@ -82,6 +82,7 @@ type Comment struct {
 	ParentID    *uuid.UUID `gorm:"type:uuid;column:parent_id" json:"parent_id,omitempty"`
 	Path        string     `gorm:"type:text" json:"path"`
 	Depth       int16      `gorm:"type:smallint" json:"depth"`
+	CreatedBy   *uuid.UUID `gorm:"type:uuid;column:created_by" json:"created_by,omitempty"`
 	AuthorName  string     `gorm:"type:varchar(100);column:author_name" json:"author_name"`
 	AuthorEmail string     `gorm:"type:varchar(255);column:author_email" json:"author_email"`
 	AuthorURL   string     `gorm:"type:text;column:author_url" json:"author_url"`

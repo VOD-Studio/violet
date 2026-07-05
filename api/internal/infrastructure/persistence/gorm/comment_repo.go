@@ -44,6 +44,10 @@ func commentToPO(c *comment.Comment) (model.Comment, error) {
 		pid := p.UUID()
 		po.ParentID = &pid
 	}
+	if u := c.UserID(); u != nil {
+		uid := u.UUID()
+		po.CreatedBy = &uid
+	}
 	if t := c.CreatedAt(); !t.IsZero() {
 		po.CreatedAt = t
 		po.UpdatedAt = c.UpdatedAt()
@@ -64,10 +68,17 @@ func commentToDomain(po model.Comment) (*comment.Comment, error) {
 		pid := domainshared.MustParseID(po.ParentID.String())
 		parentID = &pid
 	}
+	var userID *domainshared.ID
+	if po.CreatedBy != nil {
+		uid := domainshared.MustParseID(po.CreatedBy.String())
+		userID = &uid
+	}
 	return comment.ReconstructComment(
 		domainshared.MustParseID(po.ID.String()),
 		domainshared.MustParseID(po.PostID.String()),
+		userID,
 		parentID, po.Path, po.Depth,
+		nil, // anchor 字段未在 045 migration 落地（Issue-0003 处理），重建时暂为 nil
 		po.AuthorName, po.AuthorEmail, po.AuthorURL, po.AvatarURL,
 		po.Body, pictures, po.Status, po.IPHash, po.UserAgent,
 		po.CreatedAt, po.UpdatedAt,
@@ -85,9 +96,17 @@ func (r *CommentRepository) FindByID(ctx context.Context, id domainshared.ID) (*
 	return commentToDomain(po)
 }
 
-func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.ID, status string, page, limit int) ([]*comment.Comment, int64, error) {
+func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.ID, status string, viewerUserID *domainshared.ID, page, limit int) ([]*comment.Comment, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Comment{}).Where("post_id = ?", postID.UUID())
-	if status != "" {
+	// viewer 过滤：approved 评论联合（若 viewer 登录）viewer 自己的 pending。
+	// viewerUserID 为 nil 时（匿名）仅 status 过滤——但 service.ListByPost 会在
+	// 匿名时直接返回空数组，不走到这里；保留 status 分支供后台管理等场景复用。
+	if viewerUserID != nil {
+		query = query.Where(
+			"status = ? OR (status = ? AND created_by = ?)",
+			status, comment.StatusPending, viewerUserID.UUID(),
+		)
+	} else if status != "" {
 		query = query.Where("status = ?", status)
 	}
 	var total int64
@@ -105,6 +124,19 @@ func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.
 		result = append(result, c)
 	}
 	return result, total, nil
+}
+
+// CountByPostAndAnon 统计某文章下某匿名身份（ip_hash + email）已留存的评论数，
+// 仅计 status IN ('pending','approved')。用于「一篇一次」配额校验（PRD-0001）。
+func (r *CommentRepository) CountByPostAndAnon(ctx context.Context, postID domainshared.ID, ipHash, email string) (int64, error) {
+	var n int64
+	err := r.db.WithContext(ctx).Model(&model.Comment{}).
+		Where("post_id = ? AND ip_hash = ? AND author_email = ? AND status IN ?", postID.UUID(), ipHash, email, []string{comment.StatusPending, comment.StatusApproved}).
+		Count(&n).Error
+	if err != nil {
+		return 0, domainshared.Internal("统计匿名配额失败", err)
+	}
+	return n, nil
 }
 
 func (r *CommentRepository) FindReplies(ctx context.Context, parentPath string) ([]*comment.Comment, error) {
