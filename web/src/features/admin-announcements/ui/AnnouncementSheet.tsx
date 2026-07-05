@@ -66,6 +66,42 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
     const editorRef = useRef<RichTextEditorHandle>(null);
     const [imagePickerOpen, setImagePickerOpen] = useState(false);
 
+    /**
+     * 守卫：编辑器内的 DropdownMenu/ColorSwatch 等浮层打开时，点旁边关闭浮层
+     * 不应连带关闭 Sheet。
+     *
+     * 难点：onInteractOutside 触发时 Radix 浮层已在同一事件循环里关闭，
+     * 此时 document.querySelector 已查不到打开的浮层。
+     * 解法：在 pointerdown 捕获阶段（浮层还未关）采样到 ref，onInteractOutside 读 ref。
+     */
+    const hadOpenFloating = useRef(false);
+    useEffect(() => {
+        if (!open) return;
+        const captureCheck = () => {
+            hadOpenFloating.current = !!document.querySelector(
+                "[data-radix-menu-content][data-state='open'], [data-slot='popover-content'][data-state='open']",
+            );
+        };
+        // capture 阶段先于 Radix 浮层自身的关闭逻辑
+        document.addEventListener("pointerdown", captureCheck, true);
+        return () => document.removeEventListener("pointerdown", captureCheck, true);
+    }, [open]);
+
+    const blockIfFloatingActive = (e: { preventDefault: () => void; target: EventTarget | null }) => {
+        const target = e.target as HTMLElement | null;
+        if (
+            target?.closest(
+                "[data-radix-popper-content-wrapper], [role=listbox], [data-radix-menu-content]",
+            )
+        ) {
+            e.preventDefault();
+            return;
+        }
+        if (hadOpenFloating.current) {
+            e.preventDefault();
+        }
+    };
+
     /** 从素材库选图后，通过 ref 在光标处插入，避免字符串拼接导致光标重置 */
     const handleInsertImages = (files: MediaFile[]) => {
         editorRef.current?.insertImages(
@@ -103,6 +139,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
         if (!open) return;
         reset({
             ...editing,
+						sortOrder: editing?.sort_order ?? 0,
             contentMD: editing?.content_md ?? "",
             contentHTML: editing?.content_html ?? "",
             timeRange: {
@@ -168,6 +205,8 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
             <SheetContent
                 side="right"
                 className="w-full gap-0 overflow-hidden sm:max-w-2xl lg:max-w-4xl h-full"
+                onInteractOutside={blockIfFloatingActive}
+                onPointerDownOutside={blockIfFloatingActive}
             >
                 <SheetHeader className="border-b border-edge-hairline pr-12">
                     <SheetTitle>{isEdit ? "编辑公告" : "创建公告"}</SheetTitle>
@@ -274,7 +313,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
                     </div>
 
                     {/* ============ 右侧栏：配置面板 ============ */}
-                    <aside className="min-h-0 space-y-4 overflow-y-auto rounded-lg border border-edge-hairline bg-muted/30 p-4">
+                    <aside className="space-y-4 overflow-y-auto rounded-lg border border-edge-hairline bg-muted/30 p-4">
                         {/* 展示形态（创建后不可改） */}
                         <div className="space-y-2">
                             <Label className="flex items-center gap-1.5">
