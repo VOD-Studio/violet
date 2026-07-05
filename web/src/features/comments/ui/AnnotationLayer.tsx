@@ -193,13 +193,14 @@ export function AnnotationLayer({
 }
 
 /**
- * renderMarkerIcon 生成段评角标 SVG（chat-bubble 风格，参考 Lucide chat-bubble-outline）：
+ * renderMarkerIcon 生成段评角标 SVG（chat-bubble 风格）：
  *   - 对话气泡外形：圆角矩形 + 左下角直角三角尾巴（一体描边 path，颜色 currentColor）
  *   - 评论数居中：超过 99 显示「99+」；数字字号随位数自适应（保证不溢出气泡）
- *   - hasMine=true 时右上角对号徽章：实心 currentColor 圆（配色与气泡描边统一），
- *     徽章外圈描页面背景色（mask 效果）把气泡右上角「咬掉一块」→ 视觉断开
+ *   - hasMine=true 时显示右上角对号（无圆圈）：
+ *       对号横跨气泡右上角内外，用 SVG mask 把「与气泡内部相交的部分」裁剪掉，
+ *       只保留气泡外部的对号笔触 → 视觉上像对号「跨过」气泡边框。
  *
- * 整体设计原则：比文字略小（0.95em）、低对比、行内紧贴段末、配色统一。
+ * 整体设计原则：比文字略大（1.15em）、低对比、行内紧贴段末、配色统一。
  * 返回 HTML 字符串供 DOM 注入（角标不是 React 组件，是 innerHTML）。
  */
 function renderMarkerIcon(count: number, hasMine: boolean): string {
@@ -219,17 +220,30 @@ function renderMarkerIcon(count: number, hasMine: boolean): string {
     // 评论数居中（与描边同色）
     const countText = `<text x="8" y="6.8" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}" font-weight="600" fill="${stroke}">${label}</text>`;
 
-    // 对号徽章：实心 currentColor 圆（配色与气泡描边一致），
-    // 背景色描边（stroke-width 1.6）形成切口断开气泡边框，白色对号 path。
-    const checkBadge = hasMine
-        ? `<circle cx="14" cy="1.5" r="3.8" fill="none" stroke="${stroke}" stroke-width="1.1" />
-           <path d="M12.3 1.5 L13.4 2.6 L15.7 0.3" stroke="${stroke}" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="none" />`
+    // 对号（hasMine）：无圆圈，跨气泡右上角内外。
+    //   对号笔触：从 (12.5,1.5) 经 (13.8,2.8) 到 (16.2,0.2)，stroke-width 2.2 实心。
+    //   mask：先填满整 viewBox（白=显示），再用气泡 path 作为黑名单（黑=隐藏）。
+    //   效果：对号与气泡内部相交的部分被气泡 path 遮挡掉，只留气泡外部的笔触。
+    //   mask id 加随机后缀，避免同页多个 SVG 的 mask id 冲突（id 重复会让 mask 引用串）。
+    const maskId = hasMine ? `checkMask-${Math.random().toString(36).slice(2, 8)}` : "";
+    const checkMark = hasMine
+        ? `<path d="M12.5 1.5 L13.8 2.8 L16.2 0.2" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" mask="url(#${maskId})" />`
+        : "";
+    // mask 定义：白底（显示）+ 气泡 path 黑色（隐藏），裁剪对号与气泡相交部分
+    const maskDef = hasMine
+        ? `<defs>
+            <mask id="${maskId}">
+                <rect x="-1" y="-3" width="18" height="19" fill="white" />
+                <path d="${bubblePath}" fill="black" stroke="black" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" />
+            </mask>
+        </defs>`
         : "";
 
     return `<svg class="annotation-marker-svg" viewBox="-1 -3 18 19" aria-hidden="true">
+        ${maskDef}
         ${bubble}
         ${countText}
-        ${checkBadge}
+        ${checkMark}
     </svg>`;
 }
 
