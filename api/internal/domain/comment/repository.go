@@ -6,6 +6,24 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
+// AnchorFilter 控制 FindByPost 按 anchor 列过滤的维度。
+//
+// 自由评论与批注共用 comments 表，靠 anchor_block_id 是否为 NULL 区分。
+// 此类型把字符串约定收敛到一处，避免 magic string 散落 service/repo/handler。
+type AnchorFilter string
+
+const (
+	// AnchorFilterAll 不过滤 anchor 列（自由评论 + 批注全返回）。
+	// 后台管理/调试场景使用。
+	AnchorFilterAll AnchorFilter = "all"
+	// AnchorFilterFree 仅自由评论（anchor_block_id IS NULL）。
+	// 默认值，前台底部评论区使用。
+	AnchorFilterFree AnchorFilter = "free"
+	// AnchorFilterAnnotation 仅批注（anchor_block_id IS NOT NULL）。
+	// 前台批注角标层使用。
+	AnchorFilterAnnotation AnchorFilter = "annotation"
+)
+
 // CommentRepository 评论仓储接口
 type CommentRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
@@ -18,9 +36,12 @@ type CommentRepository interface {
 	//     nil 分支保留给后台管理等复用场景。
 	//   - 非空（登录 viewer）：返回 status 匹配项 UNION created_by=viewer 的 pending 项。
 	//
+	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），
+	// 见 AnchorFilter 常量；空串视为 AnchorFilterAll（兼容旧调用方）。
+	//
 	// 这样登录提交者能在审核通过前看到自己刚提交的评论（带「审批中」徽章），
 	// 而他人永远只看到 approved（PRD-0001「审批与状态可见性」）。
-	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, page, limit int) ([]*Comment, int64, error)
+	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter AnchorFilter, page, limit int) ([]*Comment, int64, error)
 	FindReplies(ctx context.Context, parentPath string) ([]*Comment, error)
 	FindPending(ctx context.Context, page, limit int) ([]*Comment, int64, error)
 	// CountPending 统计待审核评论数量（后台仪表盘角标）

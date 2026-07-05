@@ -40,7 +40,10 @@ func setupCommentTestDB(t *testing.T) *gorm.DB {
 }
 
 // saveComment 直接用 GORM 写一条评论记录（绕过 domain），便于测试查询逻辑。
-func saveComment(t *testing.T, db *gorm.DB, status, ipHash, email string, createdBy *string) {
+//
+// withAnchor=true 时填 anchor 5 列，写成批注；否则全空，写自由评论。
+// 这样 anchor 维度过滤的测试无需独立 helper。
+func saveComment(t *testing.T, db *gorm.DB, status, ipHash, email string, createdBy *string, withAnchor bool) {
 	t.Helper()
 	c := model.Comment{
 		ID:          uuid.New(),
@@ -60,6 +63,19 @@ func saveComment(t *testing.T, db *gorm.DB, status, ipHash, email string, create
 		require.NoError(t, err)
 		c.CreatedBy = &u
 	}
+	if withAnchor {
+		// anchor 5 列：填非空值，标记为批注（具体值对查询过滤无意义，仅 IS [NOT] NULL 判断）。
+		blockID := "block-1"
+		start := 0
+		end := 5
+		sel := "选中"
+		hash := "hash-1"
+		c.AnchorBlockID = &blockID
+		c.AnchorStartOffset = &start
+		c.AnchorEndOffset = &end
+		c.AnchorSelectedText = &sel
+		c.AnchorBlockTextHash = &hash
+	}
 	require.NoError(t, db.Create(&c).Error)
 }
 
@@ -72,10 +88,10 @@ func TestCountByPostAndAnon(t *testing.T) {
 	ip := "iphash1"
 	email := "alice@x.com"
 
-	saveComment(t, db, domaincomment.StatusApproved, ip, email, nil) // 计
-	saveComment(t, db, domaincomment.StatusPending, ip, email, nil)  // 计
-	saveComment(t, db, domaincomment.StatusSpam, ip, email, nil)     // 不计
-	saveComment(t, db, domaincomment.StatusDeleted, ip, email, nil)  // 不计
+	saveComment(t, db, domaincomment.StatusApproved, ip, email, nil, false) // 计
+	saveComment(t, db, domaincomment.StatusPending, ip, email, nil, false)  // 计
+	saveComment(t, db, domaincomment.StatusSpam, ip, email, nil, false)     // 不计
+	saveComment(t, db, domaincomment.StatusDeleted, ip, email, nil, false)  // 不计
 
 	n, err := repo.CountByPostAndAnon(ctx, pid, ip, email)
 	require.NoError(t, err)
@@ -89,9 +105,9 @@ func TestCountByPostAndAnon_DifferentIdentityNotCounted(t *testing.T) {
 	ctx := context.Background()
 	pid := fixedPostID
 
-	saveComment(t, db, domaincomment.StatusApproved, "ip1", "alice@x.com", nil)
-	saveComment(t, db, domaincomment.StatusApproved, "ip1", "bob@x.com", nil) // 不同 email
-	saveComment(t, db, domaincomment.StatusApproved, "ip2", "alice@x.com", nil) // 不同 ip
+	saveComment(t, db, domaincomment.StatusApproved, "ip1", "alice@x.com", nil, false)
+	saveComment(t, db, domaincomment.StatusApproved, "ip1", "bob@x.com", nil, false) // 不同 email
+	saveComment(t, db, domaincomment.StatusApproved, "ip2", "alice@x.com", nil, false) // 不同 ip
 
 	// alice@x.com + ip1 应只见 1 条
 	n, err := repo.CountByPostAndAnon(ctx, pid, "ip1", "alice@x.com")
@@ -111,13 +127,13 @@ func TestFindByPost_LoggedInViewer_IncludesOwnPending(t *testing.T) {
 	otherStr := other.String()
 
 	// approved（无主，所有人可见）
-	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil)
+	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false)
 	// viewer 自己的 pending（应可见）
-	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", &viewerStr)
+	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", &viewerStr, false)
 	// 他人的 pending（不可见）
-	saveComment(t, db, domaincomment.StatusPending, "ip", "c@x.com", &otherStr)
+	saveComment(t, db, domaincomment.StatusPending, "ip", "c@x.com", &otherStr, false)
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, &viewer, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, &viewer, domaincomment.AnchorFilterAll, 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), total, "应见 approved(1) + 自己 pending(1) = 2")
 	statuses := map[string]bool{}
@@ -138,14 +154,52 @@ func TestFindByPost_NilViewer_OnlyApproved(t *testing.T) {
 	viewer := domainshared.NewID()
 	viewerStr := viewer.String()
 
-	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil)
-	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", &viewerStr) // 即使有 owner，nil viewer 也不可见
+	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false)
+	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", &viewerStr, false) // 即使有 owner，nil viewer 也不可见
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total, "nil viewer 只见 approved")
 	for _, c := range items {
 		assert.Equal(t, domaincomment.StatusApproved, c.Status(), "不应泄漏 pending")
+	}
+}
+
+// TestFindByPost_AnchorFilter_Free_OnlyReturnsFreeComments 自由评论过滤：
+// anchorFilter=free 时只返回 anchor_block_id IS NULL 的评论。
+func TestFindByPost_AnchorFilter_Free_OnlyReturnsFreeComments(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+	pid := fixedPostID
+
+	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false) // 自由
+	saveComment(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, true)  // 批注
+
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterFree, 1, 50)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total, "free 过滤只返回自由评论")
+	for _, c := range items {
+		assert.Nil(t, c.Anchor(), "free 过滤不应返回批注")
+	}
+}
+
+// TestFindByPost_AnchorFilter_Annotation_OnlyReturnsAnnotations 批注过滤：
+// anchorFilter=annotation 时只返回 anchor_block_id IS NOT NULL 的批注。
+func TestFindByPost_AnchorFilter_Annotation_OnlyReturnsAnnotations(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+	pid := fixedPostID
+
+	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false) // 自由
+	saveComment(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, true)  // 批注
+
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAnnotation, 1, 50)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total, "annotation 过滤只返回批注")
+	for _, c := range items {
+		require.NotNil(t, c.Anchor(), "annotation 过滤应返回批注")
 	}
 }
 

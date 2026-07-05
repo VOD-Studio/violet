@@ -137,7 +137,7 @@ func (r *CommentRepository) FindByID(ctx context.Context, id domainshared.ID) (*
 	return commentToDomain(po)
 }
 
-func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.ID, status string, viewerUserID *domainshared.ID, page, limit int) ([]*comment.Comment, int64, error) {
+func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.ID, status string, viewerUserID *domainshared.ID, anchorFilter comment.AnchorFilter, page, limit int) ([]*comment.Comment, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Comment{}).Where("post_id = ?", postID.UUID())
 	// viewer 过滤：approved 评论联合（若 viewer 登录）viewer 自己的 pending。
 	// viewerUserID 为 nil 时（匿名）仅 status 过滤——但 service.ListByPost 会在
@@ -150,6 +150,14 @@ func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.
 	} else if status != "" {
 		query = query.Where("status = ?", status)
 	}
+	// anchor 维度过滤：自由评论（anchor_block_id IS NULL）/ 批注（IS NOT NULL）/ 全部（不过滤）。
+	// 把自由评论与批注拆成两条独立查询，前端底部评论区与批注角标层各取所需，互不污染。
+	switch anchorFilter {
+	case comment.AnchorFilterFree:
+		query = query.Where("anchor_block_id IS NULL")
+	case comment.AnchorFilterAnnotation:
+		query = query.Where("anchor_block_id IS NOT NULL")
+	} // AnchorFilterAll / 空串：不过滤
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, domainshared.Internal("统计评论失败", err)
