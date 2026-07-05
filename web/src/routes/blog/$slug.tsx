@@ -1,10 +1,12 @@
 import type { PostDetail } from "@entities/post/model/types";
+import { useMe } from "@features/auth/api/queries";
 import { commentKeys } from "@features/comments/api/keys";
 import { fetchComments, useComments } from "@features/comments/api/queries";
 import { useAnnotations } from "@features/comments/lib/use-annotations";
 import { AnnotationLayer } from "@features/comments/ui/AnnotationLayer";
 import { AnnotationSidebar } from "@features/comments/ui/AnnotationSidebar";
 import { CommentSection } from "@features/comments/ui/CommentSection";
+import { FloatingToolbar } from "@features/comments/ui/FloatingToolbar";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
@@ -43,6 +45,8 @@ function BlogDetailPage() {
     const comments = commentsData?.data ?? [];
     const { located, blocks, isLoading: annotationsLoading } = useAnnotations(contentRef, comments);
     const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(null);
+    const me = useMe();
+    const isLoggedIn = !!me.data;
 
     // 进入页面增加浏览量（仅一次，失败静默不影响阅读）
     useEffect(() => {
@@ -215,6 +219,15 @@ function BlogDetailPage() {
                     blocks={blocks}
                     onActiveChange={setActiveAnnotationId}
                 />
+
+                {/* 划线批注浮动工具条（选区上方浮动，提交后高亮落定） */}
+                {post?.id && (
+                    <FloatingToolbar
+                        contentRef={contentRef}
+                        isLoggedIn={isLoggedIn}
+                        postId={post.id}
+                    />
+                )}
 
                 {/* 底部自由评论区：放在 article 内、正文+TOC 容器之后，
                     复用同样的 flex 结构保证与正文严格对齐（含大屏 TOC 偏移）。 */}
