@@ -11,6 +11,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	appcomment "blog-api/internal/application/comment"
+	domaincomment "blog-api/internal/domain/comment"
 	"blog-api/internal/domain/shared"
 	domainpost "blog-api/internal/domain/post"
 	domainuser "blog-api/internal/domain/user"
@@ -25,7 +26,7 @@ import (
 // stub 实现（见 comment_test.go 的 stubCommentService），避免在测试里启动完整 service +
 // 真实 repo/codeStore。*appcomment.Service 通过 Go 结构化接口天然满足此契约。
 type commentService interface {
-	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
 	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
 	ListPending(ctx context.Context, page, limit int) ([]appcomment.CommentDTO, int64, error)
@@ -57,10 +58,20 @@ func NewHandler(svc *appcomment.Service, users domainuser.UserRepository, posts 
 //
 // 黑洞模式：匿名 viewer（无会话）→ service 返回空数组；
 // 登录 viewer → service 返回 approved ∪ 自己 pending。
+//
+// type query param 控制按 anchor 维度过滤（默认 free）：
+//   - "" 或 "free"：仅自由评论（前端底部评论区期望）
+//   - "annotation"：仅批注（前端批注角标层期望）
+//   - "all"：全部（后台/调试）
+//
+// 把自由评论与批注拆成两条独立查询，避免批注混进底部评论列表。
 func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
 	viewerID := interfacesmw.GetUserIDFromContext(r)
 	page, limit := response.ParsePaging(r)
+
+	// 解析 type → AnchorFilter；空串/未知值降级为 free（保守默认，避免误返批注到评论区）。
+	anchorFilter := mapCommentType(r.URL.Query().Get("type"))
 
 	// 查 post 拿 author_id，用于 service 计算 CommentDTO.is_author（作者高亮）。
 	// 查询失败时留空，is_author 恒为 false（不阻塞评论列表）。
@@ -74,12 +85,28 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, page, limit)
+	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondPaged(w, items, page, limit, total)
+}
+
+// mapCommentType 把 ?type= query param 映射为 domain.AnchorFilter。
+//
+// 空串/未知值降级为 AnchorFilterFree（保守默认：避免老调用方误把批注带进评论区）。
+func mapCommentType(t string) domaincomment.AnchorFilter {
+	switch t {
+	case "annotation":
+		return domaincomment.AnchorFilterAnnotation
+	case "all":
+		return domaincomment.AnchorFilterAll
+	case "free":
+		return domaincomment.AnchorFilterFree
+	default:
+		return domaincomment.AnchorFilterFree
+	}
 }
 
 // ListPending 列出待审核评论（后台）

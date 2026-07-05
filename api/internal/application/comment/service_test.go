@@ -191,7 +191,7 @@ func TestListByPost_AnonViewer_ReturnsEmpty_BlackHole(t *testing.T) {
 	// 匿名 viewer 不应查 DB
 	repo.AssertNotCalled(t, "FindByPost")
 
-	items, total, err := svc.ListByPost(context.Background(), shared.NewID().String(), "", "", 1, 20)
+	items, total, err := svc.ListByPost(context.Background(), shared.NewID().String(), "", "", domain.AnchorFilterAll, 1, 20)
 	assert.NoError(t, err)
 	assert.Empty(t, items)
 	assert.Equal(t, int64(0), total)
@@ -205,13 +205,29 @@ func TestListByPost_LoggedInViewer_ReturnsApprovedAndOwnPending(t *testing.T) {
 	// 构造一条 approved + 一条 viewer 自己的 pending
 	approved, _ := newDomainComment(shared.NewID(), postID, "alice", "approved")
 	myPending, _ := newDomainComment(shared.NewID(), postID, "bob", "pending")
-	repo.On("FindByPost", mock.Anything, postID, domain.StatusApproved, &viewer, 1, 20).
+	repo.On("FindByPost", mock.Anything, postID, domain.StatusApproved, &viewer, domain.AnchorFilterAll, 1, 20).
 		Return([]*domain.Comment{approved, myPending}, int64(2), nil).Once()
 
-	items, total, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", 1, 20)
+	items, total, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAll, 1, 20)
 	assert.NoError(t, err)
 	assert.Len(t, items, 2)
 	assert.Equal(t, int64(2), total)
+	repo.AssertExpectations(t)
+}
+
+// TestListByPost_AnchorFilter_PassthroughToRepo 验证 service 把 anchorFilter 透传给 repo，
+// 不在 service 层做任何 anchor 维度的逻辑（仅作为透明管道）。
+func TestListByPost_AnchorFilter_PassthroughToRepo(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks()
+	viewer := shared.NewID()
+	postID := shared.NewID()
+
+	// 期望 repo 收到 AnchorFilterAnnotation（与 AnchorFilterAll 的用例区分）
+	repo.On("FindByPost", mock.Anything, postID, domain.StatusApproved, &viewer, domain.AnchorFilterAnnotation, 1, 20).
+		Return([]*domain.Comment{}, int64(0), nil).Once()
+
+	_, _, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", domain.AnchorFilterAnnotation, 1, 20)
+	assert.NoError(t, err)
 	repo.AssertExpectations(t)
 }
 

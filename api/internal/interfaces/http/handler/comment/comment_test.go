@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	appcomment "blog-api/internal/application/comment"
+	domaincomment "blog-api/internal/domain/comment"
 	domainshared "blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
@@ -25,23 +26,25 @@ import (
 
 // stubCommentService 手写 stub，记录调用入参供断言。
 type stubCommentService struct {
-	listByPostViewer string
-	listByPostCalled bool
-	listByPostResult []appcomment.CommentDTO
+	listByPostViewer       string
+	listByPostAnchorFilter domaincomment.AnchorFilter
+	listByPostCalled       bool
+	listByPostResult       []appcomment.CommentDTO
 
 	createInput      appcomment.CreateInput
 	createCalled     bool
 	createErr        error
 	createResult     appcomment.CommentDTO
 
-	sendCodeInput appcomment.SendCodeInput
-	sendCodeErr   error
+	sendCodeInput  appcomment.SendCodeInput
+	sendCodeErr    error
 	sendCodeCalled bool
 }
 
-func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, page, limit int) ([]appcomment.CommentDTO, int64, error) {
+func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.CommentDTO, int64, error) {
 	s.listByPostCalled = true
 	s.listByPostViewer = viewerUserID
+	s.listByPostAnchorFilter = anchorFilter
 	return s.listByPostResult, int64(len(s.listByPostResult)), nil
 }
 
@@ -130,6 +133,37 @@ func TestListByPost_LoggedInViewer_PassesUserID(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.Equal(t, viewerID.String(), svc.listByPostViewer)
+}
+
+// TestListByPost_TypeQueryParam_PassthroughAndDefault 验证 ?type= query param 映射：
+//   - 缺省 → AnchorFilterFree（保守默认，避免误返批注到评论区）
+//   - ?type=annotation → AnchorFilterAnnotation
+//   - ?type=all → AnchorFilterAll
+//   - ?type=unknown → AnchorFilterFree（降级）
+func TestListByPost_TypeQueryParam_PassthroughAndDefault(t *testing.T) {
+	cases := []struct {
+		query   string
+		expect  domaincomment.AnchorFilter
+		desc    string
+	}{
+		{"", domaincomment.AnchorFilterFree, "缺省 type 默认 free"},
+		{"?type=free", domaincomment.AnchorFilterFree, "显式 free"},
+		{"?type=annotation", domaincomment.AnchorFilterAnnotation, "annotation 透传"},
+		{"?type=all", domaincomment.AnchorFilterAll, "all 透传"},
+		{"?type=unknown", domaincomment.AnchorFilterFree, "未知值降级为 free"},
+	}
+	for _, c := range cases {
+		t.Run(c.desc, func(t *testing.T) {
+			svc := &stubCommentService{}
+			h := newHandlerWithStub(svc)
+			req := setPostID(newJSONRequest(t, "GET", "/posts/abc/comments"+c.query, ""), "post-1")
+			rr := httptest.NewRecorder()
+			h.ListByPost(rr, req)
+			require.Equal(t, http.StatusOK, rr.Code)
+			require.True(t, svc.listByPostCalled)
+			assert.Equal(t, c.expect, svc.listByPostAnchorFilter)
+		})
+	}
 }
 
 // =====================================================================

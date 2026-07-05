@@ -89,7 +89,11 @@ func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, em
 //
 // postAuthorID 用于运行时计算 CommentDTO.is_author（comment.created_by == post.author_id），
 // 由 handler 查 post 后传入。
-func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, page, limit int) ([]CommentDTO, int64, error) {
+//
+// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 domain.AnchorFilter；
+// 空串视为 AnchorFilterAll。前端底部评论区传 AnchorFilterFree，批注角标层传
+// AnchorFilterAnnotation，把两条数据流在接口层彻底分开。
+func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domain.AnchorFilter, page, limit int) ([]CommentDTO, int64, error) {
 	// 黑洞模式：匿名 viewer 不查 DB。
 	if viewerUserID == "" {
 		return []CommentDTO{}, 0, nil
@@ -102,7 +106,7 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 	if err != nil {
 		return nil, 0, err
 	}
-	items, total, err := s.commentRepo.FindByPost(ctx, pid, domain.StatusApproved, &viewerID, page, limit)
+	items, total, err := s.commentRepo.FindByPost(ctx, pid, domain.StatusApproved, &viewerID, anchorFilter, page, limit)
 	if err != nil {
 		return nil, 0, err
 	}
