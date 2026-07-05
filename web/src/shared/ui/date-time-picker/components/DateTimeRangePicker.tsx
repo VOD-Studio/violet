@@ -6,6 +6,12 @@ import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/base/popover";
 import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/shared/ui/base/tooltip";
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -121,21 +127,28 @@ export function DateTimeRangePicker({
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <Button
-                    type="button"
-                    variant="outline"
-                    disabled={disabled}
-                    className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !startDate && !endDate && "text-muted-foreground",
-                        className,
-                    )}
-                >
-                    <CalendarIcon className="mr-2 size-4" />
-                    {displayText}
-                </Button>
-            </PopoverTrigger>
+            <TooltipProvider>
+                <Tooltip>
+                    <PopoverTrigger asChild>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={disabled}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !startDate && !endDate && "text-muted-foreground",
+                                    className,
+                                )}
+                            >
+                                <CalendarIcon className="size-4 shrink-0" />
+                                <span className="truncate">{displayText}</span>
+                            </Button>
+                        </TooltipTrigger>
+                    </PopoverTrigger>
+                    <TooltipContent className="max-w-xs">{displayText}</TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
             <PopoverContent className="w-auto p-3" align="start">
                 <div className="space-y-3">
                     <Calendar
