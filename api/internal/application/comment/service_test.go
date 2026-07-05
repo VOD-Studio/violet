@@ -125,12 +125,36 @@ func TestCreate_LoggedIn_WithAnchor_Succeeds(t *testing.T) {
 	uid := shared.NewID()
 	anchor := &domain.Anchor{BlockID: "abc12345", StartOffset: 0, EndOffset: 5, SelectedText: "hello", BlockHashSync: "deadbeef"}
 
-	repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+	// 用 MatchedBy 断言传给 Save 的 Comment 携带正确的 anchor（Issue-0003）
+	repo.On("Save", mock.Anything, mock.MatchedBy(func(c *domain.Comment) bool {
+		a := c.Anchor()
+		return a != nil && a.BlockID == "abc12345" && a.SelectedText == "hello"
+	})).Return(nil).Once()
 
 	_, err := svc.Create(context.Background(), CreateInput{
 		PostID: shared.NewID().String(), UserID: uid.String(),
 		AuthorName: "bob", AuthorEmail: "bob@x.com",
 		Body: "note", Anchor: anchor,
+	})
+	assert.NoError(t, err)
+	repo.AssertExpectations(t)
+}
+
+// TestCreate_PicturesPassedToDomain 验证 pictures 接线：CreateInput.Pictures 流入 domain（Issue-0003）。
+func TestCreate_PicturesPassedToDomain(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks()
+	uid := shared.NewID()
+	pics := []domain.Picture{{URL: "https://x/a.png", Width: 100, Height: 200, Size: 1024}}
+
+	repo.On("Save", mock.Anything, mock.MatchedBy(func(c *domain.Comment) bool {
+		ps := c.Pictures()
+		return len(ps) == 1 && ps[0].URL == "https://x/a.png" && ps[0].Size == 1024
+	})).Return(nil).Once()
+
+	_, err := svc.Create(context.Background(), CreateInput{
+		PostID: shared.NewID().String(), UserID: uid.String(),
+		AuthorName: "bob", Body: "with pics",
+		Pictures: pics,
 	})
 	assert.NoError(t, err)
 	repo.AssertExpectations(t)

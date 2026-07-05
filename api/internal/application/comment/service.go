@@ -39,6 +39,17 @@ type EmailSender interface {
 }
 
 // CommentDTO 评论读模型
+// AnchorDTO 锚点响应 DTO（CommentDTO.Anchor 的形态，snake_case 外部契约）。
+// 自由评论的 Anchor 为 nil（JSON 省略）；批注非 nil。
+type AnchorDTO struct {
+	BlockID       string `json:"block_id"`
+	StartOffset   int    `json:"start_offset"`
+	EndOffset     int    `json:"end_offset"`
+	SelectedText  string `json:"selected_text"`
+	BlockHashSync string `json:"block_text_hash"`
+}
+
+// CommentDTO 评论读模型
 type CommentDTO struct {
 	ID         string           `json:"id"`
 	PostID     string           `json:"post_id"`
@@ -48,6 +59,8 @@ type CommentDTO struct {
 	AvatarURL  string           `json:"avatar_url"`
 	Body       string           `json:"body"`
 	Pictures   []domain.Picture `json:"pictures"`
+	// Anchor 选区批注锚点；自由评论为 nil（JSON 省略），批注非 nil。
+	Anchor     *AnchorDTO       `json:"anchor,omitempty"`
 	Status     string           `json:"status"`
 	CreatedAt  string           `json:"created_at"`
 }
@@ -195,6 +208,8 @@ type CreateInput struct {
 	Body   string         // 评论正文（纯文本）
 	Code   string         // 匿名必填：邮箱验证码。登录态忽略此字段。
 	Anchor *domain.Anchor // 选区批注锚点；nil 表示自由评论。Anchor 非空时 UserID 必须非空。
+	// Pictures 评论附图（Bilibili 式，可选）。handler 接线后流入 domain.SetPictures。
+	Pictures []domain.Picture
 
 	// IPHash 评论者 IP 的 SHA256（handler 用 middleware.GetClientIP + SHA256 算）。
 	// 匿名评论的 per-post 配额依赖此字段；登录评论也填（反垃圾元数据统一）。
@@ -251,6 +266,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 	}
 	c.SetIPHash(in.IPHash)
 	c.SetUserAgent(in.UserAgent)
+	// pictures 接线（Issue-0003）：handler 传入则覆盖 NewComment 的空默认值。
+	if len(in.Pictures) > 0 {
+		c.SetPictures(in.Pictures)
+	}
 
 	// 设置父评论（嵌套回复）
 	if in.ParentID != "" {
@@ -336,6 +355,26 @@ func (a *AnchorInput) ToDomain() *domain.Anchor {
 	}
 }
 
+// PictureInput 评论附图请求 DTO（handler 层接收的 JSON 形态，转成 domain.Picture）。
+type PictureInput struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Size   int64  `json:"size"`
+}
+
+// ToDomain 切片转换：[]PictureInput → []domain.Picture。
+func PicturesToDomain(in []PictureInput) []domain.Picture {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]domain.Picture, len(in))
+	for i, p := range in {
+		out[i] = domain.Picture{URL: p.URL, Width: p.Width, Height: p.Height, Size: p.Size}
+	}
+	return out
+}
+
 // SendCodeInput 匿名评论第一步（发送验证码）的入参。
 type SendCodeInput struct {
 	PostID string // 所属文章 id（顺带校验格式，避免对不存在的文章发码）
@@ -404,6 +443,16 @@ func toDTO(c *domain.Comment) CommentDTO {
 	}
 	if c.ParentID() != nil {
 		dto.ParentID = c.ParentID().String()
+	}
+	// anchor：批注才有，转成 DTO 形态（snake_case）
+	if a := c.Anchor(); a != nil {
+		dto.Anchor = &AnchorDTO{
+			BlockID:       a.BlockID,
+			StartOffset:   a.StartOffset,
+			EndOffset:     a.EndOffset,
+			SelectedText:  a.SelectedText,
+			BlockHashSync: a.BlockHashSync,
+		}
 	}
 	return dto
 }
