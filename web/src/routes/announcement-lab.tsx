@@ -283,6 +283,8 @@ function ArticlePreview({ a }: { a: Announcement }) {
                     items={timeline}
                     initialSelectedIndex={0}
                     onItemSelect={(_, i) => setSelected(i)}
+                    showGradients={false}
+                    displayScrollbar={false}
                     className="w-full!"
                     itemClassName="bg-transparent! p-2! mb-1!"
                 />

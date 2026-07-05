@@ -202,6 +202,8 @@ function Timeline({
             <AnimatedList
                 items={items}
                 initialSelectedIndex={0}
+                showGradients={false}
+                displayScrollbar={false}
                 className="w-full!"
                 itemClassName="bg-transparent! p-2! mb-1!"
             />
