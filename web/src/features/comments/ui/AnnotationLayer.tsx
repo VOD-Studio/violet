@@ -1,15 +1,12 @@
 /**
- * AnnotationLayer - 正文批注角标 + 气泡层。
+ * AnnotationLayer - 正文批注角标 + 气泡面板。
  *
- * 方案（修复「侧边栏挤压内容」bug）：不再用常驻侧边栏，改为
- *   - 给每个批注块在左外边距注入「角标」按钮（显示批注数，不遮挡文字）
- *   - 点击角标展开该块的「行内气泡」（AnnotationCard 列表），气泡跟随块定位
- *   - 默认不显示任何面板，零挤压
+ * 角标方案（番茄小说段评式）：角标作为段落最后一个字后面的 inline-block 元素，
+ * 直接 append 到块级元素 DOM 末尾（不脱离文档流，自然随段落流动）。
+ * 读者读到段末自然看到角标，视线无需跳到段外。
  *
- * 性能关键（修复「滚动延迟不跟手」bug）：
- *   角标位置更新走 **直接 DOM 操作**（scroll handler 内改 style.top/left），
- *   跳过 React setState + reconciliation 管线——这是高频位置更新的标准做法。
- *   React 只负责挂载/卸载角标元素，位置由 scroll handler 实时写 DOM。
+ * 面板方案：点击角标展开批注列表面板，fixed 钉视口右侧（2xl+）或居中（lg 以下），
+ * 不占文档流、不挤压正文。
  *
  * AnnotationLayer 也负责给批注块加高亮 class（视觉标记「这段有批注」）。
  */
@@ -21,13 +18,12 @@ import { AnnotationCard } from "./AnnotationCard";
 
 /** 高亮块的 class（背景 + 左色条） */
 const HIGHLIGHT_CLASS = "annotation-highlight";
+/** 注入到段落 DOM 末尾的角标元素 class */
+const MARKER_CLASS = "annotation-marker-inline";
+/** 角标 dataset key 存 blockId（用于点击时反查） */
+const MARKER_DATA_BLOCKID = "data-annotation-blockid";
 
-/** 角标水平偏移：放在块右外边距，距块右边 +8px（角标在块右侧外，不挡文字） */
-const MARKER_OFFSET_X = 8;
-/** 角标垂直偏移：距块顶部 4px */
-const MARKER_OFFSET_Y = 4;
-
-/** 单个批注块（仅记录 React 渲染所需的最小数据；位置不进 state，DOM 直接操作） */
+/** 单个批注块（仅记录 React 渲染所需的最小数据） */
 interface BlockMarker {
     id: string; // blockId
     annotations: LocatedAnnotation[];
@@ -41,43 +37,52 @@ export interface AnnotationLayerProps {
     located: LocatedAnnotation[];
     /** 候选块列表（保留 prop，暂未直接消费） */
     blocks: CandidateBlock[];
+    /** 当前登录用户 id（用于判断「我是否评论过该段」→ 角标右上角对号） */
+    currentUserId?: string;
     /** 滚动激活回调（保留兼容，气泡方案下可空） */
     onActiveChange?: (commentId: string | null) => void;
 }
 
-export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayerProps) {
-    const [markers, setMarkers] = useState<BlockMarker[]>([]);
+export function AnnotationLayer({
+    contentRef,
+    located,
+    blocks,
+    currentUserId,
+}: AnnotationLayerProps) {
+    const [, forceRender] = useState(0);
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
-    const [bubbleVisible, setBubbleVisible] = useState(false);
-
-    // 角标 DOM 引用（blockId → button element），scroll 时直接改 style 跳过 React 渲染。
-    const markerElsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
-    // 气泡 DOM 引用，scroll 时同样直接改 style。
-    const bubbleElRef = useRef<HTMLDivElement | null>(null);
-    // 当前激活块的 element 引用（气泡跟随它定位用）。
-    const activeBlockElRef = useRef<HTMLElement | null>(null);
+    const [panelVisible, setPanelVisible] = useState(false);
+    /** markers 仅存数据（用于面板渲染查找），角标本身是 DOM 注入的不进 React 树 */
+    const markersRef = useRef<BlockMarker[]>([]);
 
     void blocks; // 保留 prop 兼容，本期未直接消费
 
-    // 1. 按 blockId 分组批注 + 找对应 DOM 元素 + 加高亮 class
+    // 1. 按 blockId 分组批注 + 找对应 DOM 元素 + 注入角标 + 加高亮 class。
+    // biome-ignore lint/correctness/useExhaustiveDependencies: handleMarkerClickById 是 stable 的 ref 函数（useCallback 无 deps），effect 故意依赖 [contentRef, located, currentUserId]
     useEffect(() => {
         const root = contentRef.current;
-        if (!root || located.length === 0) {
-            setMarkers([]);
-            root?.querySelectorAll(`.${HIGHLIGHT_CLASS}`).forEach((el) => {
-                el.classList.remove(HIGHLIGHT_CLASS);
-            });
-            markerElsRef.current.clear();
+        if (!root) {
+            markersRef.current = [];
+            forceRender((n) => n + 1);
+            return;
+        }
+
+        // 清理旧角标 + 旧高亮
+        root.querySelectorAll(`.${MARKER_CLASS}`).forEach((el) => {
+            el.remove();
+        });
+        root.querySelectorAll(`.${HIGHLIGHT_CLASS}`).forEach((el) => {
+            el.classList.remove(HIGHLIGHT_CLASS);
+        });
+
+        if (located.length === 0) {
+            markersRef.current = [];
+            forceRender((n) => n + 1);
             return;
         }
 
         let cancelled = false;
         (async () => {
-            // 清理旧高亮
-            root.querySelectorAll(`.${HIGHLIGHT_CLASS}`).forEach((el) => {
-                el.classList.remove(HIGHLIGHT_CLASS);
-            });
-
             // 按 blockId 分组
             const groupByBlock = new Map<string, LocatedAnnotation[]>();
             for (const ann of located) {
@@ -92,114 +97,70 @@ export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayer
                 const el = await findBlockElement(root, blockId);
                 if (el && !cancelled) {
                     el.classList.add(HIGHLIGHT_CLASS);
+
+                    // 注入角标到段落末尾
+                    const marker = document.createElement("button");
+                    marker.className = MARKER_CLASS;
+                    marker.setAttribute(MARKER_DATA_BLOCKID, blockId);
+                    marker.setAttribute("aria-label", `${anns.length} 条批注`);
+                    marker.title = `${anns.length} 条批注`;
+                    marker.type = "button";
+                    // 「我是否评论过该段」：后端 CommentDTO 无 created_by/is_mine 字段，
+                    // 用「该块有 status=pending 的评论」近似（pending 一定是当前用户的，
+                    // 因为 ListByPost 只返回 approved ∪ 自己的 pending）。
+                    // 契约缺口：approved 后无法判断，待后端补 is_mine 字段后精确化。
+                    const hasMine = currentUserId
+                        ? anns.some((a) => a.comment.status === "pending")
+                        : false;
+                    marker.innerHTML = renderMarkerIcon(anns.length, hasMine);
+                    marker.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        handleMarkerClickById(blockId);
+                    });
+                    el.appendChild(marker);
+
                     next.push({ id: blockId, annotations: anns, element: el });
                 }
             }
             if (cancelled) return;
-            // markers 引用变化会触发 React 渲染挂载角标；挂载后 useEffect 同步位置（见下）
-            setMarkers(next);
+            markersRef.current = next;
+            forceRender((n) => n + 1);
         })();
 
         return () => {
             cancelled = true;
+            // 卸载时清理注入的角标
+            root.querySelectorAll(`.${MARKER_CLASS}`).forEach((el) => {
+                el.remove();
+            });
         };
-    }, [contentRef, located]);
+    }, [contentRef, located, currentUserId]);
 
-    // 2. 角标挂载后立即同步一次位置（避免首帧闪在 0,0）
-    useEffect(() => {
-        for (const marker of markers) {
-            const el = markerElsRef.current.get(marker.id);
-            if (el) positionMarker(el, marker.element);
-        }
-    }, [markers]);
-
-    // 3. 监听 scroll/resize，直接改 DOM style 更新角标 + 气泡位置（跳过 React 渲染管线）
-    useEffect(() => {
-        if (markers.length === 0) return;
-
-        let rafId = 0;
-        const update = () => {
-            // 直接改 DOM style，不触发 React 重渲染——这是滚动跟手的关键。
-            for (const marker of markers) {
-                const el = markerElsRef.current.get(marker.id);
-                if (el) positionMarker(el, marker.element);
-            }
-            // 气泡跟随激活块
-            if (activeBlockElRef.current && bubbleElRef.current) {
-                positionBubble(bubbleElRef.current, activeBlockElRef.current);
-            }
-        };
-        const schedule = () => {
-            cancelAnimationFrame(rafId);
-            rafId = requestAnimationFrame(update);
-        };
-        // capture: true 捕获阶段，避免被正文内 stopPropagation 拦截
-        window.addEventListener("scroll", schedule, { passive: true, capture: true });
-        window.addEventListener("resize", schedule, { passive: true });
-        return () => {
-            window.removeEventListener("scroll", schedule, { capture: true });
-            window.removeEventListener("resize", schedule);
-            cancelAnimationFrame(rafId);
-        };
-    }, [markers]);
-
-    /** 点击角标：展开/收起气泡 */
-    const handleMarkerClick = useCallback((marker: BlockMarker) => {
+    /** 点击角标：展开/收起面板 */
+    const handleMarkerClickById = useCallback((blockId: string) => {
         setActiveBlockId((cur) => {
-            const next = cur === marker.id ? null : marker.id;
-            activeBlockElRef.current = next ? marker.element : null;
-            setBubbleVisible(next !== null);
+            const next = cur === blockId ? null : blockId;
+            setPanelVisible(next !== null);
             return next;
         });
     }, []);
 
     // 当前展开的批注组
-    const activeMarker = activeBlockId ? markers.find((m) => m.id === activeBlockId) : null;
-
-    // 气泡挂载后立即定位 + 同步 ref
-    const setBubbleRef = (el: HTMLDivElement | null) => {
-        bubbleElRef.current = el;
-        if (el && activeBlockElRef.current) {
-            positionBubble(el, activeBlockElRef.current);
-        }
-    };
+    const activeMarker = activeBlockId
+        ? markersRef.current.find((m) => m.id === activeBlockId)
+        : null;
 
     return (
         <>
-            {/* 角标层：每个批注块左外边距的数字按钮，fixed 定位由 scroll handler 直接写 style */}
-            {markers.map((marker) => {
-                const isActive = marker.id === activeBlockId;
-                return (
-                    <button
-                        key={marker.id}
-                        type="button"
-                        ref={(el) => {
-                            if (el) markerElsRef.current.set(marker.id, el);
-                            else markerElsRef.current.delete(marker.id);
-                        }}
-                        onClick={() => handleMarkerClick(marker)}
-                        className={`annotation-marker fixed z-30 flex size-6 items-center justify-center rounded-full text-xs font-medium shadow-md transition-colors hover:scale-110 ${
-                            isActive ? "bg-blue-600 text-white" : "bg-blue-500/90 text-white"
-                        }`}
-                        aria-label={`${marker.annotations.length} 条批注`}
-                        title={`${marker.annotations.length} 条批注`}
-                    >
-                        {marker.annotations.length}
-                    </button>
-                );
-            })}
-
             {/* 批注列表面板：点角标后展开。
                 2xl+ 钉视口右侧（right-4 top-24），浮在正文右侧空白区，不占文档流、不挤压文本；
                 lg 以下居中弹窗（右侧无空白区）。fixed 相对视口，滚动不需重新定位。 */}
-            {activeMarker && bubbleVisible && (
+            {activeMarker && panelVisible && (
                 <div
-                    ref={setBubbleRef}
                     className={
                         "fixed z-50 w-80 max-w-[calc(100vw-2rem)] space-y-2 rounded-lg border border-edge-hairline bg-card p-3 shadow-xl " +
-                        /* 2xl+ 右侧钉住；lg 以下水平居中、垂直偏上 */
-                        "2xl:right-4 2xl:top-24 2xl:left-auto " +
-                        "left-1/2 top-24 -translate-x-1/2 2xl:translate-x-0"
+                        "2xl:right-4 2xl:top-24 2xl:left-auto 2xl:translate-x-0 " +
+                        "left-1/2 top-24 -translate-x-1/2"
                     }
                 >
                     <div className="flex items-center justify-between">
@@ -210,8 +171,7 @@ export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayer
                             type="button"
                             onClick={() => {
                                 setActiveBlockId(null);
-                                activeBlockElRef.current = null;
-                                setBubbleVisible(false);
+                                setPanelVisible(false);
                             }}
                             className="text-muted-foreground hover:text-foreground"
                             aria-label="关闭"
@@ -232,25 +192,41 @@ export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayer
     );
 }
 
-/** 直接写角标 DOM style 定位（块右外边距，不遮挡文字） */
-function positionMarker(markerEl: HTMLButtonElement, blockEl: HTMLElement) {
-    const r = blockEl.getBoundingClientRect();
-    markerEl.style.top = `${r.top + MARKER_OFFSET_Y}px`;
-    // 角标在块右侧外（rect.right + 偏移），尾巴从角标左侧伸向块
-    markerEl.style.left = `${r.right + MARKER_OFFSET_X}px`;
-}
-
 /**
- * 气泡（批注列表面板）定位。
+ * renderMarkerIcon 生成段评角标 SVG（圆角胶囊 + 气泡尾巴）：
+ *   - 圆角胶囊主体：浅色填充（currentColor opacity），无描边
+ *   - 气泡尾巴：胶囊底部偏右的小三角形，与胶囊同色同透明度，视觉一体（对话气泡）
+ *   - 数字居中：currentColor（hover 时变深）
+ *   - hasMine=true 时右上角对号徽章：配色与胶囊统一（currentColor 实色），
+ *     徽章外圈描页面背景色（mask 效果）把胶囊圆角「咬掉一块」→ 视觉断开
  *
- * 面板用 fixed 钉在视口右侧（right-4 top-24），浮在正文右侧空白区，不占文档流、不挤压文本。
- * 该函数仅在面板首次挂载时调一次（设置初始位置）；之后滚动不需要重新定位（fixed 相对视口固定）。
+ * 整体设计原则：比文字略小（0.95em）、低对比、行内紧贴段末、配色统一。
+ * 返回 HTML 字符串供 DOM 注入（角标不是 React 组件，是 innerHTML）。
  */
-function positionBubble(bubbleEl: HTMLDivElement, _blockEl: HTMLElement) {
-    // 面板 fixed 钉右侧，位置由 CSS class（right-4 top-24）控制，这里不做额外定位。
-    // 保留函数签名兼容旧调用点，但实际是 no-op。
-    void bubbleEl;
-    void _blockEl;
+function renderMarkerIcon(count: number, hasMine: boolean): string {
+    // viewBox：胶囊 0,2 ~ 16,12（宽 16 高 10 圆角 5）；尾巴下垂到 y=15；对号徽章右上角外侧
+    // 胶囊 + 尾巴共用同一 fill + opacity，保证视觉一体、颜色完全一致
+    const fill = "currentColor";
+    const opacity = 0.14;
+    const capsule = `<rect x="0.5" y="2" width="15" height="10" rx="5" ry="5" fill="${fill}" opacity="${opacity}" />`;
+    // 气泡尾巴：从胶囊底部偏右（x≈9-11）向下伸的小三角，无缝衔接胶囊底边
+    const tail = `<path d="M9 11.2 L10.5 14.8 L12 11.2 Z" fill="${fill}" opacity="${opacity}" />`;
+    // 数字居中（与胶囊同色实色，清晰）
+    const countText = `<text x="8" y="7" text-anchor="middle" dominant-baseline="central" font-size="6.5" font-weight="600" fill="currentColor">${count}</text>`;
+
+    // 对号徽章：圆心 (14,2)，半径 3。配色与胶囊统一（currentColor 实色），
+    // 背景色描边（stroke-width 1.6）形成切口断开胶囊边框，白色对号 path。
+    const checkBadge = hasMine
+        ? `<circle cx="14" cy="2" r="3" fill="currentColor" stroke="var(--marker-bg, white)" stroke-width="1.6" />
+           <path d="M12.7 2 L13.6 2.9 L15.3 1.1" stroke="white" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round" fill="none" />`
+        : "";
+
+    return `<svg class="annotation-marker-svg" viewBox="-1 -1 18 16" aria-hidden="true">
+        ${tail}
+        ${capsule}
+        ${countText}
+        ${checkBadge}
+    </svg>`;
 }
 
 export default AnnotationLayer;
