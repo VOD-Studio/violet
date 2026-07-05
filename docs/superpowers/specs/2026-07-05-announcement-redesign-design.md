@@ -25,7 +25,7 @@
 
 - 不动 banner 多面体公告条。
 - 不删 `web/src/styles.css` 里的 `--neon-*` token（仍被 PostCard / TOC / steps / cursor / Footer / empty / SpotlightCard 内部消费，删除会破坏其他模块）。
-- 不改后端 API、数据模型、admin 后台表单（`AnnouncementDialog`）。
+- 不改后端 API、数据模型、admin 后台表单（`AnnouncementSheet`）。
 - 不改 `Announcement` 类型定义。
 
 ## 4. 组件选型

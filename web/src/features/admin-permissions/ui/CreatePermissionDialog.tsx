@@ -76,9 +76,10 @@ export function CreatePermissionDialog({
                 type: (editing.type as PermissionType) || "action",
                 parentId: editing.parent_id != null ? String(editing.parent_id) : "",
                 // action 类型只保留冒号后的动作名；menu 类型原样保留
-                code: isAction && editingCode.includes(":")
-                    ? editingCode.slice(editingCode.indexOf(":") + 1)
-                    : editingCode,
+                code:
+                    isAction && editingCode.includes(":")
+                        ? editingCode.slice(editingCode.indexOf(":") + 1)
+                        : editingCode,
                 name: editing.name || "",
                 description: editing.description || "",
                 sort: editing.sort || 0,
@@ -252,8 +253,8 @@ export function CreatePermissionDialog({
                         <p className="text-destructive text-sm">{errors.code.message}</p>
                     )}
                     <p className="text-muted-foreground text-xs">
-                        menu 为纯小写字母（如 post）；action 选择分组后只需输入动作名（如 create，会自动拼接为
-                        post:create）
+                        menu 为纯小写字母（如 post）；action 选择分组后只需输入动作名（如
+                        create，会自动拼接为 post:create）
                     </p>
                 </div>
 

@@ -36,7 +36,7 @@
 - Modify: `web/src/features/admin-users/ui/EditUserDialog.tsx`
 - Modify: `web/src/features/admin-tags/ui/TagDialog.tsx`
 - Modify: `web/src/features/admin-permissions/ui/CreatePermissionDialog.tsx`
-- Modify: `web/src/features/admin-announcements/ui/AnnouncementDialog.tsx`
+- Modify: `web/src/features/admin-announcements/ui/AnnouncementSheet.tsx`
 - Modify: `web/src/features/media/ui/EditMediaDialog.tsx`
 - Modify: `web/src/features/admin-emojis/ui/EmojiGroupFormDialog.tsx`
 - Modify: `web/src/features/admin-emojis/ui/EmojiEditDialog.tsx`
@@ -753,10 +753,10 @@ Expected: 通过。
 
 ---
 
-## Task 2.8：AnnouncementDialog
+## Task 2.8：AnnouncementSheet
 
 **Files:**
-- Modify: `web/src/features/admin-announcements/ui/AnnouncementDialog.tsx`
+- Modify: `web/src/features/admin-announcements/ui/AnnouncementSheet.tsx`
 
 - [ ] **Step 1: 迁移**
 
@@ -771,7 +771,7 @@ Expected: 通过。
 
 - [ ] **Step 2: tsc + biome**
 
-Run: `cd web && npm run typecheck && npx --no-install biome check src/features/admin-announcements/ui/AnnouncementDialog.tsx`
+Run: `cd web && npm run typecheck && npx --no-install biome check src/features/admin-announcements/ui/AnnouncementSheet.tsx`
 Expected: 通过。
 
 > 不单独 commit。
@@ -876,7 +876,7 @@ Expected: 通过。
 
 ```bash
 cd /Users/sun/Developer/mimo-blog
-git add web/src/features/admin-shared/ui/confirm-dialog web/src/features/admin-roles/ui/CreateRoleDialog.tsx web/src/features/admin-roles/ui/EditRoleDialog.tsx web/src/features/admin-users/ui/CreateUserDialog.tsx web/src/features/admin-users/ui/EditUserDialog.tsx web/src/features/admin-tags/ui/TagDialog.tsx web/src/features/admin-permissions/ui/CreatePermissionDialog.tsx web/src/features/admin-announcements/ui/AnnouncementDialog.tsx web/src/features/media/ui/EditMediaDialog.tsx web/src/features/admin-emojis/ui/EmojiGroupFormDialog.tsx web/src/features/admin-emojis/ui/EmojiEditDialog.tsx web/src/features/auth/ui/LoginDialog.tsx
+git add web/src/features/admin-shared/ui/confirm-dialog web/src/features/admin-roles/ui/CreateRoleDialog.tsx web/src/features/admin-roles/ui/EditRoleDialog.tsx web/src/features/admin-users/ui/CreateUserDialog.tsx web/src/features/admin-users/ui/EditUserDialog.tsx web/src/features/admin-tags/ui/TagDialog.tsx web/src/features/admin-permissions/ui/CreatePermissionDialog.tsx web/src/features/admin-announcements/ui/AnnouncementSheet.tsx web/src/features/media/ui/EditMediaDialog.tsx web/src/features/admin-emojis/ui/EmojiGroupFormDialog.tsx web/src/features/admin-emojis/ui/EmojiEditDialog.tsx web/src/features/auth/ui/LoginDialog.tsx
 git commit -m "refactor: 迁移表单类 dialog 到新 Dialog（form={id} + 统一布局）"
 ```
 

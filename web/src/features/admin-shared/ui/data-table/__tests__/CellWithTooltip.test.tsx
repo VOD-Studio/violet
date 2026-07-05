@@ -28,12 +28,8 @@ describe("CellWithTooltip", () => {
     });
 
     it("未开启 ellipsis 时不附加截断类", () => {
-        const { container } = render(
-            <CellWithTooltip>Plain text</CellWithTooltip>,
-        );
+        const { container } = render(<CellWithTooltip>Plain text</CellWithTooltip>);
 
-        expect(
-            container.querySelector("span.min-w-0.max-w-full.truncate"),
-        ).toBeNull();
+        expect(container.querySelector("span.min-w-0.max-w-full.truncate")).toBeNull();
     });
 });

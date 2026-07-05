@@ -6,6 +6,21 @@ import { Dialog as SheetPrimitive } from "radix-ui";
 
 import { cn } from "@/shared/lib/utils";
 
+/**
+ * 判断事件目标是否落在 Radix 浮层（Popover/Tooltip/颜色面板等独立 Portal）内。
+ *
+ * 与 Modal 同源问题：Sheet 内嵌入 RichTextEditor 等（气泡菜单/颜色选择器走 Popover），
+ * Popover 打开时点其内部或周边会被 Sheet 误判为「外部点击」而关闭。
+ * 拦截此类事件即可修复。
+ */
+function isInsideRadixFloating(event: { target: EventTarget | null }): boolean {
+    const target = event.target as HTMLElement | null;
+    if (!target) return false;
+    return !!target.closest(
+        "[data-radix-popper-content-wrapper], [role=listbox], [data-radix-select-viewport], [data-radix-menu-content], [data-radix-popper-anchor], [data-radix-popper-content]",
+    );
+}
+
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
     return <SheetPrimitive.Root data-slot="sheet" {...props} />;
 }
@@ -53,6 +68,17 @@ function SheetContent({
             <SheetOverlay />
             <SheetPrimitive.Content
                 data-slot="sheet-content"
+                onInteractOutside={(e) => {
+                    if (isInsideRadixFloating(e)) {
+                        e.preventDefault();
+                        return;
+                    }
+                }}
+                onPointerDownOutside={(e) => {
+                    if (isInsideRadixFloating(e)) {
+                        e.preventDefault();
+                    }
+                }}
                 className={cn(
                     "fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500",
                     side === "right" &&

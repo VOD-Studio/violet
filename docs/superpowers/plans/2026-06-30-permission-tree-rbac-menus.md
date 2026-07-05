@@ -66,7 +66,7 @@
 - Create: `web/src/features/admin-announcements/api/keys.ts`
 - Create: `web/src/features/admin-announcements/api/client.ts`
 - Create: `web/src/features/admin-announcements/api/queries.ts`
-- Create: `web/src/features/admin-announcements/ui/AnnouncementDialog.tsx`
+- Create: `web/src/features/admin-announcements/ui/AnnouncementSheet.tsx`
 - Create: `web/src/routes/admin.announcements.tsx`
 - Modify: `web/src/features/admin-layout/ui/AdminNavConfig.ts` — 加公告菜单项
 
@@ -2488,13 +2488,13 @@ git commit -m "feat(admin/announcements): 公告管理 data layer（types/keys/c
 ## Task 3.2：公告对话框 + 页面 + 侧边栏
 
 **Files:**
-- Create: `web/src/features/admin-announcements/ui/AnnouncementDialog.tsx`
+- Create: `web/src/features/admin-announcements/ui/AnnouncementSheet.tsx`
 - Create: `web/src/routes/admin.announcements.tsx`
 - Modify: `web/src/features/admin-layout/ui/AdminNavConfig.ts`
 
-- [ ] **Step 1: 写 AnnouncementDialog**
+- [ ] **Step 1: 写 AnnouncementSheet**
 
-Create `web/src/features/admin-announcements/ui/AnnouncementDialog.tsx`:
+Create `web/src/features/admin-announcements/ui/AnnouncementSheet.tsx`:
 
 > 表单规范：全字段纳入 zod schema + react-hook-form，无 useState。`type` 用 `Controller` 包 `Select`；`isActive` 用 `Controller` 包 `Switch`；`startTime`/`endTime` 用 RHF 的 `register`（`<input type=datetime-local>` 是受控原生输入，可直接 register）。提交时把 datetime-local 字符串转 RFC3339。
 
@@ -2573,7 +2573,7 @@ const TYPE_OPTIONS: { value: AnnouncementType; label: string }[] = [
     { value: "error", label: "错误" },
 ];
 
-export function AnnouncementDialog({ open, onOpenChange, editing }: AnnouncementDialogProps) {
+export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementDialogProps) {
     const isEdit = !!editing;
     const createAnn = useCreateAnnouncement();
     const updateAnn = useUpdateAnnouncement();
@@ -2766,7 +2766,7 @@ import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { AnnouncementDialog } from "@features/admin-announcements/ui/AnnouncementDialog";
+import { AnnouncementSheet } from "@features/admin-announcements/ui/AnnouncementSheet";
 import {
     useAdminAnnouncements,
     useDeleteAnnouncement,
@@ -2918,7 +2918,7 @@ function AdminAnnouncementsPage() {
                 emptyTitle="暂无公告"
                 emptyDescription="还没有创建任何公告"
             />
-            <AnnouncementDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
+            <AnnouncementSheet open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
             <ConfirmDialog
                 open={deleteOpen}
                 onOpenChange={setDeleteOpen}

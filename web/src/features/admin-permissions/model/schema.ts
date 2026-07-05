@@ -33,7 +33,8 @@ export const permissionSchema = z
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ["code"],
-                    message: "action 代码只能包含小写字母和连字符，且不能以连字符开头，如 create、edit-list",
+                    message:
+                        "action 代码只能包含小写字母和连字符，且不能以连字符开头，如 create、edit-list",
                 });
             }
             if (!data.parentId) {

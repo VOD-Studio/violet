@@ -5,12 +5,7 @@ import * as React from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/base/popover";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/shared/ui/base/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/ui/base/tooltip";
 import {
     Select,
     SelectContent,

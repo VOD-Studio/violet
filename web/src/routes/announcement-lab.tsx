@@ -344,8 +344,8 @@ function AnnouncementLab() {
             <div className="mb-16 text-center">
                 <h1 className="mb-4 text-4xl font-bold tracking-tight">公告原型实验室</h1>
                 <p className="mx-auto max-w-xl text-muted-foreground">
-                    卡片 / 详情页原型对比（去赛博后的中性方向，基于 react-bits
-                    组件）。下方为历史 banner 原型，保留作参考。
+                    卡片 / 详情页原型对比（去赛博后的中性方向，基于 react-bits 组件）。下方为历史
+                    banner 原型，保留作参考。
                 </p>
             </div>
 
@@ -378,8 +378,8 @@ function AnnouncementLab() {
             <section className="mb-24">
                 <h2 className="mb-2 text-2xl font-semibold">详情页预览</h2>
                 <p className="mb-8 text-sm text-muted-foreground">
-                    时间轴用 AnimatedList（可点击/键盘上下选择），标题用 BlurText 渐显，
-                    按钮用 Magnet 磁吸。
+                    时间轴用 AnimatedList（可点击/键盘上下选择），标题用 BlurText 渐显， 按钮用
+                    Magnet 磁吸。
                 </p>
                 <ArticlePreview a={MOCK[0]} />
             </section>

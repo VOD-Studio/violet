@@ -7,7 +7,7 @@ import type {
     AnnouncementDTO,
     AnnouncementType,
 } from "@features/admin-announcements/model/types";
-import { AnnouncementDialog } from "@features/admin-announcements/ui/AnnouncementDialog";
+import { AnnouncementSheet } from "@/features/admin-announcements/ui/AnnouncementSheet";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
@@ -197,7 +197,7 @@ function AdminAnnouncementsPage() {
                 emptyTitle="暂无公告"
                 emptyDescription="还没有创建任何公告"
             />
-            <AnnouncementDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
+            <AnnouncementSheet open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
             <ConfirmDialog
                 open={deleteOpen}
                 onOpenChange={setDeleteOpen}

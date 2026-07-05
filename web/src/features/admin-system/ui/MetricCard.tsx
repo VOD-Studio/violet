@@ -51,8 +51,7 @@ export function MetricCard({
     const fillPercent = percent ?? (ratio ?? 0) * 100;
     const animated = useCountUp(fillPercent, 800, 1);
     const color = percent !== undefined ? thresholdColor(percent) : "var(--chart-2)";
-    const text =
-        display ?? formatPercent(animated);
+    const text = display ?? formatPercent(animated);
 
     // 环形进度参数
     const radius = 28;

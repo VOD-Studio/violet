@@ -169,7 +169,7 @@ interface DialogProps {
 | CreateUserDialog / EditUserDialog | 表单 | form={id}，size=md |
 | TagDialog | 表单 | form={id}，size=sm |
 | CreatePermissionDialog | 表单 | form={id}，size=sm |
-| AnnouncementDialog | 表单 | form={id}，size=md（长内容，验证滚动） |
+| AnnouncementSheet | 表单 | form={id}，size=md（长内容，验证滚动） |
 | EditMediaDialog | 表单 | form={id}，size=sm |
 | EmojiGroupFormDialog / EmojiEditDialog | 表单 | form={id}，size=md |
 | LoginDialog | 表单 | form={id}，size=sm |
