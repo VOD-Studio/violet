@@ -43,7 +43,11 @@ type CommentRepository interface {
 	// 而他人永远只看到 approved（PRD-0001「审批与状态可见性」）。
 	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter AnchorFilter, page, limit int) ([]*Comment, int64, error)
 	FindReplies(ctx context.Context, parentPath string) ([]*Comment, error)
-	FindPending(ctx context.Context, page, limit int) ([]*Comment, int64, error)
+	// FindPending 列出待审核评论（后台）。
+	//
+	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 AnchorFilter 常量；
+	// 后台审核列表用 anchorFilter 区分批注与自由评论（Issue-0008）。
+	FindPending(ctx context.Context, anchorFilter AnchorFilter, page, limit int) ([]*Comment, int64, error)
 	// CountPending 统计待审核评论数量（后台仪表盘角标）
 	CountPending(ctx context.Context) (int64, error)
 	// CountByPostAndAnon 统计某文章下某匿名身份已留存的评论数。
@@ -53,8 +57,10 @@ type CommentRepository interface {
 	// 这样被误判 spam 的留言不会浪费用户的「一篇一次」名额。
 	// 用于「一篇一次」配额校验（PRD-0001 匿名留言板模式）。
 	CountByPostAndAnon(ctx context.Context, postID shared.ID, ipHash, email string) (int64, error)
-	// FindAll 全局评论列表（后台管理，可选状态筛选），关联所属文章标题/slug
-	FindAll(ctx context.Context, status string, page, limit int) ([]*CommentWithPost, int64, error)
+	// FindAll 全局评论列表（后台管理，可选状态 + anchor 维度筛选），关联所属文章标题/slug。
+	//
+	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 AnchorFilter 常量。
+	FindAll(ctx context.Context, status string, anchorFilter AnchorFilter, page, limit int) ([]*CommentWithPost, int64, error)
 	// FindByIDWithPost 按ID查评论并关联所属文章（后台详情）
 	FindByIDWithPost(ctx context.Context, id shared.ID) (*CommentWithPost, error)
 	// BatchUpdateStatus 批量更新评论状态，返回受影响行数

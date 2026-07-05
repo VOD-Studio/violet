@@ -203,8 +203,15 @@ func (r *CommentRepository) FindReplies(ctx context.Context, parentPath string) 
 	return result, nil
 }
 
-func (r *CommentRepository) FindPending(ctx context.Context, page, limit int) ([]*comment.Comment, int64, error) {
+func (r *CommentRepository) FindPending(ctx context.Context, anchorFilter comment.AnchorFilter, page, limit int) ([]*comment.Comment, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Comment{}).Where("status = ?", comment.StatusPending)
+	// anchor 维度过滤（后台审核区分批注/自由评论，Issue-0008）
+	switch anchorFilter {
+	case comment.AnchorFilterFree:
+		query = query.Where("anchor_block_id IS NULL")
+	case comment.AnchorFilterAnnotation:
+		query = query.Where("anchor_block_id IS NOT NULL")
+	}
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, domainshared.Internal("统计待审核评论失败", err)
@@ -256,7 +263,13 @@ func rowToCommentWithPost(row commentWithPostRow) (*comment.CommentWithPost, err
 }
 
 // FindAll 全局评论列表（后台管理，关联文章标题/slug）
-func (r *CommentRepository) FindAll(ctx context.Context, status string, page, limit int) ([]*comment.CommentWithPost, int64, error) {
+//
+// status 控制状态筛选；anchorFilter 控制 anchor 维度筛选（自由评论/批注/全部，Issue-0008）。
+// 两个维度正交：例如 status=approved + anchorFilter=annotation 返回已通过的批注。
+//
+// 实现注意：本查询用独立的 query（含 Select/Order）和 countQuery（仅统计）两个 GORM 查询对象，
+// status 和 anchor 维度的 WHERE 都要同步追加到两个 query 上，否则总数与列表不一致。
+func (r *CommentRepository) FindAll(ctx context.Context, status string, anchorFilter comment.AnchorFilter, page, limit int) ([]*comment.CommentWithPost, int64, error) {
 	query := r.db.WithContext(ctx).
 		Table("comments c").
 		Select("c.*, p.title AS post_title, p.slug AS post_slug").
@@ -264,12 +277,27 @@ func (r *CommentRepository) FindAll(ctx context.Context, status string, page, li
 	if status != "" {
 		query = query.Where("c.status = ?", status)
 	}
+	// anchor 维度过滤（后台审核区分批注/自由评论，Issue-0008）
+	switch anchorFilter {
+	case comment.AnchorFilterFree:
+		query = query.Where("c.anchor_block_id IS NULL")
+	case comment.AnchorFilterAnnotation:
+		query = query.Where("c.anchor_block_id IS NOT NULL")
+	}
+
 	var total int64
 	countQuery := r.db.WithContext(ctx).
 		Table("comments c").
 		Joins("LEFT JOIN posts p ON p.id = c.post_id")
 	if status != "" {
 		countQuery = countQuery.Where("c.status = ?", status)
+	}
+	// countQuery 同步追加 anchor WHERE，避免总数与列表不一致
+	switch anchorFilter {
+	case comment.AnchorFilterFree:
+		countQuery = countQuery.Where("c.anchor_block_id IS NULL")
+	case comment.AnchorFilterAnnotation:
+		countQuery = countQuery.Where("c.anchor_block_id IS NOT NULL")
 	}
 	if err := countQuery.Distinct("c.id").Count(&total).Error; err != nil {
 		return nil, 0, domainshared.Internal("统计评论失败", err)

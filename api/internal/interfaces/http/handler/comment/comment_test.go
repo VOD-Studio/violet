@@ -31,6 +31,13 @@ type stubCommentService struct {
 	listByPostCalled       bool
 	listByPostResult       []appcomment.CommentDTO
 
+	// 后台 ListAll/ListPending 的 anchor 透传记录（Issue-0008）
+	listAllAnchorFilter     domaincomment.AnchorFilter
+	listAllCalled           bool
+	listAllResult           []appcomment.AdminCommentDTO
+	listPendingAnchorFilter domaincomment.AnchorFilter
+	listPendingCalled       bool
+
 	createInput      appcomment.CreateInput
 	createCalled     bool
 	createErr        error
@@ -60,12 +67,16 @@ func (s *stubCommentService) SendCode(ctx context.Context, in appcomment.SendCod
 	return s.sendCodeErr
 }
 
-// 以下方法本测试不关心，留空实现满足接口。
-func (s *stubCommentService) ListPending(context.Context, int, int) ([]appcomment.CommentDTO, int64, error) {
+// 以下方法本测试不关心入参细节，但记录调用情况供 ListAll/ListPending 透传断言（Issue-0008）。
+func (s *stubCommentService) ListPending(_ context.Context, anchorFilter domaincomment.AnchorFilter, _ int, _ int) ([]appcomment.CommentDTO, int64, error) {
+	s.listPendingCalled = true
+	s.listPendingAnchorFilter = anchorFilter
 	return nil, 0, nil
 }
-func (s *stubCommentService) ListAll(context.Context, string, int, int) ([]appcomment.AdminCommentDTO, int64, error) {
-	return nil, 0, nil
+func (s *stubCommentService) ListAll(_ context.Context, _ string, anchorFilter domaincomment.AnchorFilter, _ int, _ int) ([]appcomment.AdminCommentDTO, int64, error) {
+	s.listAllCalled = true
+	s.listAllAnchorFilter = anchorFilter
+	return s.listAllResult, int64(len(s.listAllResult)), nil
 }
 func (s *stubCommentService) CountPending(context.Context) (int64, error)               { return 0, nil }
 func (s *stubCommentService) GetDetail(context.Context, string) (appcomment.AdminCommentDTO, error) {
@@ -162,6 +173,41 @@ func TestListByPost_TypeQueryParam_PassthroughAndDefault(t *testing.T) {
 			require.Equal(t, http.StatusOK, rr.Code)
 			require.True(t, svc.listByPostCalled)
 			assert.Equal(t, c.expect, svc.listByPostAnchorFilter)
+		})
+	}
+}
+
+// =====================================================================
+// ListAll（后台）type query param 透传：缺省默认 All（与前台 ListByPost 默认 free 区分）
+// =====================================================================
+
+// TestListAll_TypeQueryParam_PassthroughAndDefault 验证后台 ListAll 的 ?type= 映射：
+//   - 缺省 → AnchorFilterAll（后台要看全部，与前台 ListByPost 默认 free 区分）
+//   - ?type=annotation → AnchorFilterAnnotation
+//   - ?type=free → AnchorFilterFree
+//   - ?type=unknown → AnchorFilterAll（降级，后台保守显示全部）
+func TestListAll_TypeQueryParam_PassthroughAndDefault(t *testing.T) {
+	cases := []struct {
+		query  string
+		expect domaincomment.AnchorFilter
+		desc   string
+	}{
+		{"", domaincomment.AnchorFilterAll, "缺省 type 默认 all"},
+		{"?type=free", domaincomment.AnchorFilterFree, "显式 free"},
+		{"?type=annotation", domaincomment.AnchorFilterAnnotation, "annotation 透传"},
+		{"?type=all", domaincomment.AnchorFilterAll, "all 透传"},
+		{"?type=unknown", domaincomment.AnchorFilterAll, "未知值降级为 all"},
+	}
+	for _, c := range cases {
+		t.Run(c.desc, func(t *testing.T) {
+			svc := &stubCommentService{}
+			h := newHandlerWithStub(svc)
+			req := httptest.NewRequest("GET", "/admin/comments"+c.query, nil)
+			rr := httptest.NewRecorder()
+			h.ListAll(rr, req)
+			require.Equal(t, http.StatusOK, rr.Code)
+			require.True(t, svc.listAllCalled)
+			assert.Equal(t, c.expect, svc.listAllAnchorFilter)
 		})
 	}
 }

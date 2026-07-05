@@ -132,9 +132,12 @@ type AdminCommentDTO struct {
 	PostSlug  string `json:"post_slug"`
 }
 
-// ListAll 全局评论列表（后台管理，可选状态筛选）
-func (s *Service) ListAll(ctx context.Context, status string, page, limit int) ([]AdminCommentDTO, int64, error) {
-	items, total, err := s.commentRepo.FindAll(ctx, status, page, limit)
+// ListAll 全局评论列表（后台管理，可选状态 + anchor 维度筛选）
+//
+// status 控制状态筛选；anchorFilter 控制 anchor 维度筛选（自由评论/批注/全部）。
+// 两个维度正交，后台审核列表用 anchorFilter 区分批注与自由评论（Issue-0008）。
+func (s *Service) ListAll(ctx context.Context, status string, anchorFilter domain.AnchorFilter, page, limit int) ([]AdminCommentDTO, int64, error) {
+	items, total, err := s.commentRepo.FindAll(ctx, status, anchorFilter, page, limit)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -193,9 +196,9 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, ids []string, status st
 	return s.commentRepo.BatchUpdateStatus(ctx, domainIDs, status)
 }
 
-// ListPending 列出待审核评论
-func (s *Service) ListPending(ctx context.Context, page, limit int) ([]CommentDTO, int64, error) {
-	items, total, err := s.commentRepo.FindPending(ctx, page, limit)
+// ListPending 列出待审核评论（后台，可选 anchor 维度筛选，Issue-0008）
+func (s *Service) ListPending(ctx context.Context, anchorFilter domain.AnchorFilter, page, limit int) ([]CommentDTO, int64, error) {
+	items, total, err := s.commentRepo.FindPending(ctx, anchorFilter, page, limit)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -203,6 +203,68 @@ func TestFindByPost_AnchorFilter_Annotation_OnlyReturnsAnnotations(t *testing.T)
 	}
 }
 
+// TestFindPending_AnchorFilterAnnotation_OnlyReturnsAnnotations FindPending 的 anchor 维度过滤：
+// anchorFilter=annotation 时只返回批注（FindAll 因需 join posts 在 SQLite 测试里成本高，
+// anchor WHERE 逻辑与 FindPending 同构，由 FindPending 用例覆盖）。
+func TestFindPending_AnchorFilterAnnotation_OnlyReturnsAnnotations(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+
+	saveComment(t, db, domaincomment.StatusPending, "ip", "a@x.com", nil, false) // 自由评论
+	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", nil, true)  // 批注
+
+	items, total, err := repo.FindPending(ctx, domaincomment.AnchorFilterAnnotation, 1, 50)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total, "annotation 过滤只返回批注")
+	for _, c := range items {
+		require.NotNil(t, c.Anchor(), "annotation 过滤应返回批注")
+	}
+}
+
+// TestFindPending_AnchorFilterFree_OnlyReturnsFreeComments FindPending 的 anchor 维度过滤：
+// anchorFilter=free 时只返回自由评论。
+func TestFindPending_AnchorFilterFree_OnlyReturnsFreeComments(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+
+	saveComment(t, db, domaincomment.StatusPending, "ip", "a@x.com", nil, false) // 自由评论
+	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", nil, true)  // 批注
+
+	items, total, err := repo.FindPending(ctx, domaincomment.AnchorFilterFree, 1, 50)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total, "free 过滤只返回自由评论")
+	for _, c := range items {
+		assert.Nil(t, c.Anchor(), "free 过滤不应返回批注")
+	}
+}
+
+// TestFindPending_AnchorFilterAll_ReturnsBoth FindPending 的 anchor 维度过滤：
+// anchorFilter=all（后台默认）时返回自由评论 + 批注全部。
+func TestFindPending_AnchorFilterAll_ReturnsBoth(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+
+	saveComment(t, db, domaincomment.StatusPending, "ip", "a@x.com", nil, false) // 自由评论
+	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", nil, true)  // 批注
+
+	items, total, err := repo.FindPending(ctx, domaincomment.AnchorFilterAll, 1, 50)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), total, "all 过滤返回自由评论 + 批注全部")
+	hasAnchor := false
+	hasFree := false
+	for _, c := range items {
+		if c.Anchor() != nil {
+			hasAnchor = true
+		} else {
+			hasFree = true
+		}
+	}
+	assert.True(t, hasAnchor && hasFree, "all 应同时包含批注与自由评论")
+}
+
 // fixedPostID 测试用固定 post id（SQLite 不强制外键，无需真实 post 记录）。
 var fixedPostID = domainshared.NewID()
 

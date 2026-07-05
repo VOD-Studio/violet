@@ -318,8 +318,8 @@ func (m *MockCommentRepository) FindReplies(ctx context.Context, parentPath stri
 	return args.Get(0).([]*domaincomment.Comment), args.Error(1)
 }
 
-func (m *MockCommentRepository) FindPending(ctx context.Context, page, limit int) ([]*domaincomment.Comment, int64, error) {
-	args := m.Called(ctx, page, limit)
+func (m *MockCommentRepository) FindPending(ctx context.Context, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]*domaincomment.Comment, int64, error) {
+	args := m.Called(ctx, anchorFilter, page, limit)
 	if args.Get(0) == nil {
 		return nil, args.Get(1).(int64), args.Error(2)
 	}
@@ -336,8 +336,8 @@ func (m *MockCommentRepository) CountByPostAndAnon(ctx context.Context, postID s
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *MockCommentRepository) FindAll(ctx context.Context, status string, page, limit int) ([]*domaincomment.CommentWithPost, int64, error) {
-	args := m.Called(ctx, status, page, limit)
+func (m *MockCommentRepository) FindAll(ctx context.Context, status string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]*domaincomment.CommentWithPost, int64, error) {
+	args := m.Called(ctx, status, anchorFilter, page, limit)
 	if args.Get(0) == nil {
 		return nil, args.Get(1).(int64), args.Error(2)
 	}

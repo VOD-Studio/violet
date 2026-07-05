@@ -29,8 +29,8 @@ type commentService interface {
 	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
 	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
-	ListPending(ctx context.Context, page, limit int) ([]appcomment.CommentDTO, int64, error)
-	ListAll(ctx context.Context, status string, page, limit int) ([]appcomment.AdminCommentDTO, int64, error)
+	ListPending(ctx context.Context, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	ListAll(ctx context.Context, status string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.AdminCommentDTO, int64, error)
 	CountPending(ctx context.Context) (int64, error)
 	GetDetail(ctx context.Context, id string) (appcomment.AdminCommentDTO, error)
 	BatchUpdateStatus(ctx context.Context, ids []string, status string) (int64, error)
@@ -109,10 +109,14 @@ func mapCommentType(t string) domaincomment.AnchorFilter {
 	}
 }
 
-// ListPending 列出待审核评论（后台）
+// ListPending 列出待审核评论（后台）。
+//
+// ?type= query param 控制按 anchor 维度过滤（默认 all，与前台 ListByPost 默认 free 区分——
+// 后台管理要看全部）：free/annotation/all。让管理员审核时区分批注与自由评论（Issue-0008）。
 func (h *Handler) ListPending(w http.ResponseWriter, r *http.Request) {
 	page, limit := response.ParsePaging(r)
-	items, total, err := h.svc.ListPending(r.Context(), page, limit)
+	anchorFilter := mapAdminCommentType(r.URL.Query().Get("type"))
+	items, total, err := h.svc.ListPending(r.Context(), anchorFilter, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -120,16 +124,37 @@ func (h *Handler) ListPending(w http.ResponseWriter, r *http.Request) {
 	response.RespondPaged(w, items, page, limit, total)
 }
 
-// ListAll 全局评论列表（后台管理，支持状态筛选）
+// ListAll 全局评论列表（后台管理，支持状态 + anchor 维度筛选）。
+//
+// status query param 控制状态筛选；type query param 控制 anchor 维度筛选（默认 all）。
+// 两个维度正交，让管理员审核时区分批注与自由评论（Issue-0008）。
 func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 	page, limit := response.ParsePaging(r)
 	status := r.URL.Query().Get("status")
-	items, total, err := h.svc.ListAll(r.Context(), status, page, limit)
+	anchorFilter := mapAdminCommentType(r.URL.Query().Get("type"))
+	items, total, err := h.svc.ListAll(r.Context(), status, anchorFilter, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondPaged(w, items, page, limit, total)
+}
+
+// mapAdminCommentType 把后台评论列表的 ?type= query param 映射为 domain.AnchorFilter。
+//
+// 与前台 mapCommentType 的关键差别：空串/未知值降级为 AnchorFilterAll（后台要看全部），
+// 而前台降级为 AnchorFilterFree（保守默认，避免误返批注到评论区）。
+func mapAdminCommentType(t string) domaincomment.AnchorFilter {
+	switch t {
+	case "annotation":
+		return domaincomment.AnchorFilterAnnotation
+	case "all":
+		return domaincomment.AnchorFilterAll
+	case "free":
+		return domaincomment.AnchorFilterFree
+	default:
+		return domaincomment.AnchorFilterAll
+	}
 }
 
 // CountPending 统计待审核评论数量（后台角标）
