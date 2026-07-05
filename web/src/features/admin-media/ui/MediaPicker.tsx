@@ -38,11 +38,6 @@ export interface MediaPickerProps {
     title?: string;
     /** 限定可选素材类型；如封面图传 "image" 则只显示图片且隐藏类型筛选 */
     mediaType?: MediaType;
-    /**
-     * 是否以模态形式打开。当 MediaPicker 嵌在另一个 Dialog 内时设为 false，
-     * 避免 Radix Dialog 嵌套导致外层被关闭。默认 true。
-     */
-    modal?: boolean;
 }
 
 const PAGE_SIZE = 40;
@@ -54,7 +49,6 @@ export function MediaPicker({
     multiple = false,
     title = "选择素材",
     mediaType,
-    modal = true,
 }: MediaPickerProps) {
     // 用 "all" 作为「全部」占位值（Radix Select 不支持空字符串 value）
     const [purpose, setPurpose] = useState("all");
@@ -113,7 +107,6 @@ export function MediaPicker({
             onOpenChange={onOpenChange}
             title={title}
             size="xl"
-            modal={modal}
             footer={
                 <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
