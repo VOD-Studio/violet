@@ -298,3 +298,20 @@ body {
 .animate-shake {
   animation: shake 0.4s ease-in-out;
 }
+
+/* AnnotationLayer 批注高亮块（块级背景标记 + 左色条，PRD-0001 Issue-0005） */
+.annotation-highlight {
+  border-left: 3px solid hsl(217 91% 60% / 0.6);
+  background-color: hsl(217 91% 60% / 0.06);
+  border-radius: 0 4px 4px 0;
+  padding-left: 0.5em;
+  margin-left: -0.5em;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+  scroll-margin-top: 80px;
+}
+.annotation-highlight:hover {
+  background-color: hsl(217 91% 60% / 0.12);
+  border-left-color: hsl(217 91% 60%);
+}
