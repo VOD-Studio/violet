@@ -5,12 +5,7 @@ package command
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
-	"fmt"
-	"math/big"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
@@ -500,18 +495,12 @@ func (BcryptHasher) Compare(hash user.PasswordHash, plain string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash.String()), []byte(plain))
 }
 
-// generateVerificationCode 生成 6 位数字验证码
+// generateVerificationCode 生成 6 位数字验证码（委托给 application/shared，保留包内薄包装）
 func generateVerificationCode() (string, error) {
-	max := big.NewInt(1000000)
-	n, err := rand.Int(rand.Reader, max)
-	if err != nil {
-		return "", fmt.Errorf("生成随机数失败: %w", err)
-	}
-	return fmt.Sprintf("%06d", n.Int64()), nil
+	return appshared.GenerateVerificationCode()
 }
 
-// sha256Hash SHA256 哈希
+// sha256Hash SHA256 哈希（委托给 application/shared）
 func sha256Hash(input string) string {
-	h := sha256.Sum256([]byte(input))
-	return hex.EncodeToString(h[:])
+	return appshared.SHA256Hash(input)
 }
