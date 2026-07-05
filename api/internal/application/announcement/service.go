@@ -140,6 +140,9 @@ type UpdateInput struct {
 }
 
 // Update 更新公告
+//
+// display 字段创建后不可变更：不同形态的语义与必填字段不同，
+// 中途切换会导致数据不完整（如从 card 切到 article 缺正文 html）。
 func (s *Service) Update(ctx context.Context, in UpdateInput) error {
 	a, err := s.repo.FindByID(ctx, in.ID)
 	if err != nil {
@@ -147,11 +150,6 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) error {
 	}
 	if err := a.Update(in.Title, in.Content, in.Type); err != nil {
 		return err
-	}
-	if in.Display != "" {
-		if err := a.SetDisplay(in.Display); err != nil {
-			return err
-		}
 	}
 	if in.IsActive != nil {
 		a.SetActive(*in.IsActive)

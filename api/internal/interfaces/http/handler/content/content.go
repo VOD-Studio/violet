@@ -79,7 +79,7 @@ func (h *Handler) GetActiveAnnouncement(w http.ResponseWriter, r *http.Request) 
 
 type announcementRequest struct {
 	Title       string   `json:"title" validate:"required"`
-	Content     string   `json:"content" validate:"required"`
+	Content     string   `json:"content"`
 	Type        string   `json:"type" validate:"required,oneof=info warning success error"`
 	Display     string   `json:"display" validate:"omitempty,oneof=banner card article"`
 	IsActive    *bool    `json:"is_active"`
@@ -135,6 +135,10 @@ func (h *Handler) UpdateAnnouncement(w http.ResponseWriter, r *http.Request) {
 	}
 	var req announcementRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}

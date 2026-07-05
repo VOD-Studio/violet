@@ -77,6 +77,8 @@ func TestService_Get_DTOFields(t *testing.T) {
 func TestService_Update(t *testing.T) {
 	svc, repo := newServiceWithMock()
 	existing, _ := domain.NewAnnouncement(1, "旧", "旧内容", "info")
+	// 模拟创建时已确定为 card 形态
+	_ = existing.SetDisplay("card")
 
 	repo.On("FindByID", mock.Anything, int32(1)).Return(existing, nil).Once()
 	repo.On("Save", mock.Anything, mock.AnythingOfType("*announcement.Announcement")).Return(1, nil).Once()
@@ -85,11 +87,13 @@ func TestService_Update(t *testing.T) {
 	order := 5
 	err := svc.Update(context.Background(), UpdateInput{
 		ID: 1, Title: "新", Content: "新内容", Type: "warning",
-		Display: "card", IsActive: &active, SortOrder: &order,
+		// Display 即便传入也会被忽略：创建后不可变更
+		Display: "article", IsActive: &active, SortOrder: &order,
 		Affects: []string{"posts"}, Excerpt: "摘要",
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "warning", existing.Severity())
+	// display 保持创建时的值，不被 UpdateInput 改动
 	assert.Equal(t, "card", existing.Display())
 	assert.Equal(t, 5, existing.SortOrder())
 	assert.Equal(t, []string{"posts"}, existing.Affects())
