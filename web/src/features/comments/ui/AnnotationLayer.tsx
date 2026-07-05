@@ -22,8 +22,8 @@ import { AnnotationCard } from "./AnnotationCard";
 /** 高亮块的 class（背景 + 左色条） */
 const HIGHLIGHT_CLASS = "annotation-highlight";
 
-/** 角标水平偏移：放在块左外边距，距块左边 -32px（角标宽 24px + 8px 间隙） */
-const MARKER_OFFSET_X = -32;
+/** 角标水平偏移：放在块右外边距，距块右边 +8px（角标在块右侧外，不挡文字） */
+const MARKER_OFFSET_X = 8;
 /** 角标垂直偏移：距块顶部 4px */
 const MARKER_OFFSET_Y = 4;
 
@@ -178,7 +178,7 @@ export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayer
                             else markerElsRef.current.delete(marker.id);
                         }}
                         onClick={() => handleMarkerClick(marker)}
-                        className={`fixed z-30 flex size-6 items-center justify-center rounded-full text-xs font-medium shadow-md transition-colors hover:scale-110 ${
+                        className={`annotation-marker fixed z-30 flex size-6 items-center justify-center rounded-full text-xs font-medium shadow-md transition-colors hover:scale-110 ${
                             isActive ? "bg-blue-600 text-white" : "bg-blue-500/90 text-white"
                         }`}
                         aria-label={`${marker.annotations.length} 条批注`}
@@ -189,12 +189,18 @@ export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayer
                 );
             })}
 
-            {/* 气泡：点击角标后展开，portal 到 body 避免被正文 overflow 裁剪；
-                位置由 scroll handler 跟随激活块直接写 style */}
+            {/* 批注列表面板：点角标后展开。
+                2xl+ 钉视口右侧（right-4 top-24），浮在正文右侧空白区，不占文档流、不挤压文本；
+                lg 以下居中弹窗（右侧无空白区）。fixed 相对视口，滚动不需重新定位。 */}
             {activeMarker && bubbleVisible && (
                 <div
                     ref={setBubbleRef}
-                    className="fixed z-50 w-80 max-w-[calc(100vw-2rem)] space-y-2 rounded-lg border border-edge-hairline bg-card p-3 shadow-xl"
+                    className={
+                        "fixed z-50 w-80 max-w-[calc(100vw-2rem)] space-y-2 rounded-lg border border-edge-hairline bg-card p-3 shadow-xl " +
+                        /* 2xl+ 右侧钉住；lg 以下水平居中、垂直偏上 */
+                        "2xl:right-4 2xl:top-24 2xl:left-auto " +
+                        "left-1/2 top-24 -translate-x-1/2 2xl:translate-x-0"
+                    }
                 >
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-muted-foreground">
@@ -226,19 +232,25 @@ export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayer
     );
 }
 
-/** 直接写角标 DOM style 定位（左外边距，不遮挡文字） */
+/** 直接写角标 DOM style 定位（块右外边距，不遮挡文字） */
 function positionMarker(markerEl: HTMLButtonElement, blockEl: HTMLElement) {
     const r = blockEl.getBoundingClientRect();
     markerEl.style.top = `${r.top + MARKER_OFFSET_Y}px`;
-    markerEl.style.left = `${r.left + MARKER_OFFSET_X}px`;
+    // 角标在块右侧外（rect.right + 偏移），尾巴从角标左侧伸向块
+    markerEl.style.left = `${r.right + MARKER_OFFSET_X}px`;
 }
 
-/** 直接写气泡 DOM style 定位（块下方 8px，水平 clamp 防溢出） */
-function positionBubble(bubbleEl: HTMLDivElement, blockEl: HTMLElement) {
-    const r = blockEl.getBoundingClientRect();
-    bubbleEl.style.top = `${r.bottom + 8}px`;
-    // 气泡宽 320（w-80），clamp 防止溢出视口
-    bubbleEl.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - 328))}px`;
+/**
+ * 气泡（批注列表面板）定位。
+ *
+ * 面板用 fixed 钉在视口右侧（right-4 top-24），浮在正文右侧空白区，不占文档流、不挤压文本。
+ * 该函数仅在面板首次挂载时调一次（设置初始位置）；之后滚动不需要重新定位（fixed 相对视口固定）。
+ */
+function positionBubble(bubbleEl: HTMLDivElement, _blockEl: HTMLElement) {
+    // 面板 fixed 钉右侧，位置由 CSS class（right-4 top-24）控制，这里不做额外定位。
+    // 保留函数签名兼容旧调用点，但实际是 no-op。
+    void bubbleEl;
+    void _blockEl;
 }
 
 export default AnnotationLayer;

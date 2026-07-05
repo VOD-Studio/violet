@@ -326,3 +326,18 @@ body {
   transition: background-color 0.2s;
   scroll-margin-top: 80px;
 }
+
+/* 批注角标：带小尾巴指向批注块（块在角标左侧，尾巴向左伸）。
+   角标 className 含 annotation-marker 时启用尾巴（::before 三角形）。 */
+.annotation-marker::before {
+  content: "";
+  position: absolute;
+  /* 尾巴贴在角标左侧中部，向左伸 5px 指向块 */
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  /* 尾巴颜色随角标背景（default 蓝；active 深蓝） */
+  border-right: 6px solid hsl(217 91% 60%);
+}
