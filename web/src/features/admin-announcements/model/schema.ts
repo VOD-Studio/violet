@@ -22,11 +22,20 @@ export const AFFECTS_OPTIONS = [
  * 若都填了，开始不得晚于结束。
  */
 
-/** 创建/编辑公告表单 */
+/**
+ * 创建/编辑公告表单
+ *
+ * content 必填性按形态区分：
+ * - banner / card：content 必填（纯文本通知主体）
+ * - article：content 可空，正文用 content_html（富文本）
+ *
+ * startTime/endTime 为 datetime-local 字符串，可空，用 superRefine 校验：
+ * 若都填了，开始不得晚于结束。
+ */
 export const announcementSchema = z
     .object({
         title: z.string().min(1, "标题不能为空").max(200, "标题最多 200 字符"),
-        content: z.string().min(1, "内容不能为空"),
+        content: z.string().optional().or(z.literal("")),
         type: z.enum(["info", "warning", "success", "error"]),
         display: z.enum(DISPLAY_OPTIONS),
         isActive: z.boolean(),
@@ -44,6 +53,14 @@ export const announcementSchema = z
             .optional(),
     })
     .superRefine((data, ctx) => {
+        // banner / card 形态必须有纯文本内容
+        if (data.display !== "article" && !data.content?.trim()) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["content"],
+                message: "内容不能为空",
+            });
+        }
         if (data.timeRange?.start && data.timeRange?.end) {
             if (new Date(data.timeRange.start) > new Date(data.timeRange.end)) {
                 ctx.addIssue({
