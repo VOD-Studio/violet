@@ -9,11 +9,22 @@ import (
 // CommentRepository 评论仓储接口
 type CommentRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
-	FindByPost(ctx context.Context, postID shared.ID, status string, page, limit int) ([]*Comment, int64, error)
+	// FindByPost 按文章列出评论。
+	//
+	// viewerUserID 为 nil 时（匿名 viewer，黑洞模式）：仅返回 status 匹配的评论，
+	// 实际调用方service.ListByPost 会直接返回空数组，不查 DB。
+	// viewerUserID 非空时（登录 viewer）：返回 status='approved' 的评论
+	// 联合 created_by=viewer 的 pending 评论。
+	//
+	// status 参数保留以兼容后台管理等场景（前台固定传 StatusApproved）。
+	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, page, limit int) ([]*Comment, int64, error)
 	FindReplies(ctx context.Context, parentPath string) ([]*Comment, error)
 	FindPending(ctx context.Context, page, limit int) ([]*Comment, int64, error)
 	// CountPending 统计待审核评论数量（后台仪表盘角标）
 	CountPending(ctx context.Context) (int64, error)
+	// CountByPostAndAnon 统计某文章下某匿名身份（ip_hash + email）已留存的评论数。
+	// 用于「一篇一次」配额校验（PRD-0001）。仅计 status IN ('pending','approved')。
+	CountByPostAndAnon(ctx context.Context, postID shared.ID, ipHash, email string) (int64, error)
 	// FindAll 全局评论列表（后台管理，可选状态筛选），关联所属文章标题/slug
 	FindAll(ctx context.Context, status string, page, limit int) ([]*CommentWithPost, int64, error)
 	// FindByIDWithPost 按ID查评论并关联所属文章（后台详情）
