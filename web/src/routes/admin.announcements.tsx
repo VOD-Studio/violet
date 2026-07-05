@@ -2,7 +2,11 @@ import {
     useAdminAnnouncements,
     useDeleteAnnouncement,
 } from "@features/admin-announcements/api/queries";
-import type { AnnouncementDTO, AnnouncementType } from "@features/admin-announcements/model/types";
+import type {
+    AnnouncementDisplay,
+    AnnouncementDTO,
+    AnnouncementType,
+} from "@features/admin-announcements/model/types";
 import { AnnouncementDialog } from "@features/admin-announcements/ui/AnnouncementDialog";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
@@ -24,6 +28,12 @@ const TYPE_LABEL: Record<AnnouncementType, string> = {
     warning: "警告",
     success: "成功",
     error: "错误",
+};
+
+const DISPLAY_LABEL: Record<AnnouncementDisplay, string> = {
+    banner: "横幅",
+    card: "卡片",
+    article: "文章",
 };
 
 function formatTime(s?: string): string {
@@ -82,9 +92,16 @@ function AdminAnnouncementsPage() {
             key: "title",
             header: "标题",
             sortable: true,
-            width: "40%",
+            width: "32%",
             ellipsis: true,
             cell: (row) => <span className="font-medium">{row.title}</span>,
+        },
+        {
+            key: "display",
+            header: "形态",
+            sortable: true,
+            width: "80px",
+            cell: (row) => <Badge variant="secondary">{DISPLAY_LABEL[row.display]}</Badge>,
         },
         {
             key: "type",
