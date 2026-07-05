@@ -82,6 +82,8 @@ type Comment struct {
 	ParentID    *uuid.UUID `gorm:"type:uuid;column:parent_id" json:"parent_id,omitempty"`
 	Path        string     `gorm:"type:text" json:"path"`
 	Depth       int16      `gorm:"type:smallint" json:"depth"`
+	// CreatedBy 登录评论者的 user id（双轨认证，PRD-0001）。
+	// 匿名为 nil；非空表示登录评论（批注强制非空）。对应 comments.created_by 列。
 	CreatedBy   *uuid.UUID `gorm:"type:uuid;column:created_by" json:"created_by,omitempty"`
 	AuthorName  string     `gorm:"type:varchar(100);column:author_name" json:"author_name"`
 	AuthorEmail string     `gorm:"type:varchar(255);column:author_email" json:"author_email"`

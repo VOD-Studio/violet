@@ -69,8 +69,13 @@ func CommentRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler
 	return RateLimit("comment", redisClient, time.Minute, 3)
 }
 
-// CommentCodeRateLimit 评论验证码发送限流（每分钟 5 次，防邮件轰炸）。
-// 与 CommentRateLimit（提交评论）隔离，避免发码与提交共桶互相挤占。
+// CommentCodeRateLimit 评论验证码发送限流（每分钟 5 次/IP）。
+//
+// 阈值理由：5 次/min 对正常用户（输错邮箱重发、切换文章发码）足够宽松，
+// 但能挡住邮件轰炸（攻击者用脚本对大量邮箱发垃圾验证码）。
+//
+// 与 CommentRateLimit（提交评论，3/min）走独立 key="comment_code"：
+// 避免发码与提交共桶互相挤占——发码限流不应影响用户提交评论的能力。
 func CommentCodeRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 	return RateLimit("comment_code", redisClient, time.Minute, 5)
 }

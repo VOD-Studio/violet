@@ -13,19 +13,27 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
-// 验证码场景前缀（与 auth 的 "verify"/"reset" 隔离）
+// codePrefix 匿名评论验证码在 CodeStore 中的场景前缀。
+// 与 auth 包的 "verify"（注册验证）/"reset"（密码重置）隔离，
+// 保证不同业务的验证码 key 空间不冲突（如 comment:alice@x.com ≠ verify:alice@x.com）。
 const codePrefix = "comment"
 
-// 领域错误
+// 领域错误（映射见 internal/interfaces/http/response/error.go 的 httpStatusForCode）
 var (
-	// ErrInvalidCode 验证码错误或已过期
+	// ErrInvalidCode 邮箱验证码错误、已过期、或尝试次数耗尽（5 次错误锁定）。
+	// BadRequest → HTTP 400。一次性校验，CodeStore.Verify 内部 Lua 原子删除。
 	ErrInvalidCode = shared.BadRequest("验证码错误或已过期")
-	// ErrAnonQuotaExceeded 该文章下匿名身份已留过言（一篇一次）
+
+	// ErrAnonQuotaExceeded 该文章下此匿名身份已留过言。
+	// 匿名留言板模式硬约束：每篇文章每个 (ip_hash, email) 仅能评论一次（PRD-0001）。
+	// Conflict → HTTP 409。
 	ErrAnonQuotaExceeded = shared.Conflict("该文章下你已留过言")
 )
 
-// EmailSender 邮件发送端口（在 comment 包重声明，复用 infrastructure/email 的 Resend 实现，
-// 避免 import auth 包；Go 隐式接口让二者天然适配）。
+// EmailSender 邮件发送端口（application 层端口，不依赖具体 provider）。
+//
+// 在 comment 包重声明而非 import auth 包的同名接口，避免跨模块耦合；
+// Go 结构化接口让 infrastructure/email 的 *Sender（Resend 实现）天然适配。
 type EmailSender interface {
 	SendVerificationCode(ctx context.Context, email, code string) error
 }
@@ -168,20 +176,30 @@ func (s *Service) ListPending(ctx context.Context, page, limit int) ([]CommentDT
 	return dtos, total, nil
 }
 
-// CreateInput 创建评论入参
+// CreateInput 创建评论入参（handler 层组装，application 层消费）。
 type CreateInput struct {
-	PostID      string
-	ParentID    string
-	UserID      string // 登录 user id；空字符串表示匿名
-	AuthorName  string // 登录态由 handler 从 user 资料填，匿名态从前端填
-	AuthorEmail string // 同上；匿名必填
+	PostID string // 所属文章 id
+	ParentID string // 父评论 id（顶级评论为空）；非空时为嵌套回复
+
+	// UserID 登录用户 id；空字符串表示匿名（双轨认证）。
+	// 决定走哪条校验路径：非空 → 跳过验证码/配额；空 → 走匿名两步流校验。
+	UserID string
+
+	// 以下 author_* 字段：登录态由 handler 从 user 资料填充（请求体里的同名字段会被忽略防伪造）；
+	// 匿名态由 handler 从请求体透传。匿名时 AuthorName/AuthorEmail 必填。
+	AuthorName  string
+	AuthorEmail string // 匿名必填；service 会再归一化一次保证与 CodeStore key 一致
 	AuthorURL   string
 	AvatarURL   string
-	Body        string
-	Code        string         // 匿名必填（邮箱验证码）
-	Anchor      *domain.Anchor // 选区批注锚点；nil 表示自由评论
-	IPHash      string         // handler 层从 middleware.GetClientIP + SHA256 填充
-	UserAgent   string
+
+	Body   string         // 评论正文（纯文本）
+	Code   string         // 匿名必填：邮箱验证码。登录态忽略此字段。
+	Anchor *domain.Anchor // 选区批注锚点；nil 表示自由评论。Anchor 非空时 UserID 必须非空。
+
+	// IPHash 评论者 IP 的 SHA256（handler 用 middleware.GetClientIP + SHA256 算）。
+	// 匿名评论的 per-post 配额依赖此字段；登录评论也填（反垃圾元数据统一）。
+	IPHash string
+	UserAgent string
 }
 
 // Create 创建评论。
@@ -293,15 +311,18 @@ func normalizeEmail(s string) string {
 }
 
 // AnchorInput 锚点请求 DTO（handler 层接收的 JSON 形态，转成 domain.Anchor）。
+//
+// 字段语义与 domain.Anchor 一一对应，仅 JSON tag 不同（snake_case 外部契约 vs 驼峰内部）。
+// 之所以独立一层 DTO：domain 层不感知 HTTP/JSON，转换逻辑集中在 application 层。
 type AnchorInput struct {
-	BlockID       string `json:"block_id"`
-	StartOffset   int    `json:"start_offset"`
-	EndOffset     int    `json:"end_offset"`
-	SelectedText  string `json:"selected_text"`
-	BlockHashSync string `json:"block_text_hash"`
+	BlockID       string `json:"block_id"`         // 块标识符（块纯文本 SHA1 前 8 位）
+	StartOffset   int    `json:"start_offset"`     // 选区起始偏移（块内字符位）
+	EndOffset     int    `json:"end_offset"`       // 选区结束偏移（exclusive）
+	SelectedText  string `json:"selected_text"`    // 选中原文（fuzzy 重定位锚）
+	BlockHashSync string `json:"block_text_hash"`  // 块内容快照（漂移检测）
 }
 
-// ToDomain 转成领域 Anchor。nil 接收者返回 nil。
+// ToDomain 转成领域 Anchor。nil 接收者返回 nil（表示这是一条自由评论，非批注）。
 func (a *AnchorInput) ToDomain() *domain.Anchor {
 	if a == nil {
 		return nil
@@ -315,10 +336,10 @@ func (a *AnchorInput) ToDomain() *domain.Anchor {
 	}
 }
 
-// SendCodeInput 发送匿名评论验证码入参
+// SendCodeInput 匿名评论第一步（发送验证码）的入参。
 type SendCodeInput struct {
-	PostID string
-	Email  string
+	PostID string // 所属文章 id（顺带校验格式，避免对不存在的文章发码）
+	Email  string // 接收验证码的邮箱；service 内会归一化
 }
 
 // SendCode 匿名评论第一步：生成验证码 → 存 Redis → 发邮件。

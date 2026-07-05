@@ -11,19 +11,26 @@ type CommentRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
 	// FindByPost 按文章列出评论。
 	//
-	// viewerUserID 为 nil 时（匿名 viewer，黑洞模式）：仅返回 status 匹配的评论，
-	// 实际调用方service.ListByPost 会直接返回空数组，不查 DB。
-	// viewerUserID 非空时（登录 viewer）：返回 status='approved' 的评论
-	// 联合 created_by=viewer 的 pending 评论。
+	// status 是「所有人可见的基准状态」，前台固定传 StatusApproved。
+	// viewerUserID 控制额外的「自己 pending」可见性：
+	//   - nil（匿名 viewer）：仅返回 status 匹配项。
+	//     注意 service.ListByPost 会在匿名时短路返回空数组、根本不走到这里；
+	//     nil 分支保留给后台管理等复用场景。
+	//   - 非空（登录 viewer）：返回 status 匹配项 UNION created_by=viewer 的 pending 项。
 	//
-	// status 参数保留以兼容后台管理等场景（前台固定传 StatusApproved）。
+	// 这样登录提交者能在审核通过前看到自己刚提交的评论（带「审批中」徽章），
+	// 而他人永远只看到 approved（PRD-0001「审批与状态可见性」）。
 	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, page, limit int) ([]*Comment, int64, error)
 	FindReplies(ctx context.Context, parentPath string) ([]*Comment, error)
 	FindPending(ctx context.Context, page, limit int) ([]*Comment, int64, error)
 	// CountPending 统计待审核评论数量（后台仪表盘角标）
 	CountPending(ctx context.Context) (int64, error)
-	// CountByPostAndAnon 统计某文章下某匿名身份（ip_hash + email）已留存的评论数。
-	// 用于「一篇一次」配额校验（PRD-0001）。仅计 status IN ('pending','approved')。
+	// CountByPostAndAnon 统计某文章下某匿名身份已留存的评论数。
+	//
+	// 匿名身份 = (ipHash, email) 双因子：同 IP 不同 email 算不同身份（解决 NAT 误伤），
+	// 同 email 不同 IP 也算不同身份（防漫游）。仅计 pending/approved（spam/deleted 不占配额），
+	// 这样被误判 spam 的留言不会浪费用户的「一篇一次」名额。
+	// 用于「一篇一次」配额校验（PRD-0001 匿名留言板模式）。
 	CountByPostAndAnon(ctx context.Context, postID shared.ID, ipHash, email string) (int64, error)
 	// FindAll 全局评论列表（后台管理，可选状态筛选），关联所属文章标题/slug
 	FindAll(ctx context.Context, status string, page, limit int) ([]*CommentWithPost, int64, error)

@@ -18,8 +18,11 @@ import (
 	"blog-api/internal/middleware"
 )
 
-// commentService handler 层对 application service 的接口视图（便于测试 stub）。
-// *appcomment.Service 天然满足此接口。
+// commentService handler 层依赖的 application service 接口视图。
+//
+// 之所以独立定义而非直接用 *appcomment.Service 具体类型：让 handler 测试可以注入
+// stub 实现（见 comment_test.go 的 stubCommentService），避免在测试里启动完整 service +
+// 真实 repo/codeStore。*appcomment.Service 通过 Go 结构化接口天然满足此契约。
 type commentService interface {
 	ListByPost(ctx context.Context, postID, viewerUserID string, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
@@ -34,11 +37,11 @@ type commentService interface {
 	Delete(ctx context.Context, id string) error
 }
 
-// Handler 评论 HTTP 处理器
+// Handler 评论 HTTP 处理器。
 type Handler struct {
-	svc      commentService
-	users    domainuser.UserRepository // 取登录评论者的资料（username/avatar）填充 author_*；匿名为 nil 不查
-	validate *validator.Validate
+	svc      commentService           // application 层用例服务
+	users    domainuser.UserRepository // 取登录评论者的资料（username/avatar）填充 author_*；匿名评论不查
+	validate *validator.Validate       // 请求体字段校验（go-playground/validator）
 }
 
 // NewHandler 创建评论 handler。
@@ -132,15 +135,24 @@ func (h *Handler) BatchUpdateStatus(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, map[string]any{"affected": affected})
 }
 
+// createCommentRequest 创建评论的请求体（双轨认证：登录/匿名字段混在同一结构）。
+//
+// 字段消费规则（见 Handler.Create）：
+//   - 登录态：忽略 AuthorName/AuthorEmail/AuthorURL/AvatarURL，从 user 资料填充；忽略 Code
+//   - 匿名态：AuthorName/AuthorEmail 必填，Code 必填（邮箱验证码）
+//   - Anchor 非空时强制登录（匿名带 anchor → 401）
 type createCommentRequest struct {
-	Body        string                  `json:"body" validate:"required"`
-	ParentID    string                  `json:"parent_id"`
-	AuthorName  string                  `json:"author_name"`
-	AuthorEmail string                  `json:"author_email" validate:"omitempty,email"`
-	AuthorURL   string                  `json:"author_url"`
-	AvatarURL   string                  `json:"avatar_url"`
-	Code        string                  `json:"code"`
-	Anchor      *appcomment.AnchorInput `json:"anchor"`
+	Body     string `json:"body" validate:"required"` // 评论正文（纯文本）
+	ParentID string `json:"parent_id"`                // 父评论 id；非空表示嵌套回复
+
+	// 以下四项仅匿名评论消费；登录态由 handler 从 user 资料覆盖（防伪造）。
+	AuthorName  string `json:"author_name"  validate:"omitempty"`           // 匿名必填（handler 层校验，非 validator）
+	AuthorEmail string `json:"author_email" validate:"omitempty,email"`     // 匿名必填；email 格式校验
+	AuthorURL   string `json:"author_url"`                                // 可选个人站点
+	AvatarURL   string `json:"avatar_url"`                                // 可选头像 URL
+
+	Code   string                  `json:"code"`   // 匿名必填：邮箱验证码（来自 /comments/code）
+	Anchor *appcomment.AnchorInput `json:"anchor"` // 选区批注锚点；非空强制登录
 }
 
 // Create 创建评论（前台公开，双轨认证）。
@@ -218,8 +230,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	response.RespondCreated(w, dto)
 }
 
+// sendCodeRequest 匿名评论发码请求体（仅 email 一项）。
 type sendCodeRequest struct {
-	Email string `json:"email" validate:"required,email"`
+	Email string `json:"email" validate:"required,email"` // 接收验证码的邮箱
 }
 
 // SendCode 匿名评论第一步：发送邮箱验证码（前台公开）。
@@ -245,8 +258,11 @@ func (h *Handler) SendCode(w http.ResponseWriter, r *http.Request) {
 	response.RespondMessage(w, http.StatusOK, "验证码已发送")
 }
 
-// hashIP 把客户端 IP 转成 SHA256 hex（ip_hash）。
-// 不存明文 IP，兼顾反垃圾/配额识别与隐私。
+// hashIP 把客户端 IP 转成 SHA256 hex（即 comments.ip_hash 列存的值）。
+//
+// 为什么不存明文 IP：兼顾反垃圾/配额识别与隐私（IP 属于个人信息）。
+// 为什么用 SHA256 而非可逆加密：配额只需要判断「同一身份」，不需要还原 IP；
+// 单向 hash 足够且泄露风险更低。
 func hashIP(ip string) string {
 	if ip == "" {
 		return ""

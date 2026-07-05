@@ -44,6 +44,7 @@ func commentToPO(c *comment.Comment) (model.Comment, error) {
 		pid := p.UUID()
 		po.ParentID = &pid
 	}
+	// created_by 仅登录评论者有值；匿名为 nil（DB 列允许 NULL）。
 	if u := c.UserID(); u != nil {
 		uid := u.UUID()
 		po.CreatedBy = &uid
