@@ -182,7 +182,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
                     className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 lg:grid lg:grid-cols-[1fr_18rem] lg:items-start lg:gap-6 lg:overflow-hidden"
                 >
                     {/* ============ 左主区：内容编辑 ============ */}
-                    <div className="h-full space-y-4 lg:overflow-y-auto lg:pr-1 flex flex-col">
+                    <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:pr-1">
                         {/* 标题 */}
                         <div className="space-y-2">
                             <Label htmlFor="ann-title">
@@ -248,7 +248,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
 
                         {/* 正文（article 形态）：富文本编辑器 */}
                         {isArticle && (
-                            <div className="space-y-2 overflow-hidden">
+                            <div className="flex min-h-0 flex-1 flex-col gap-2">
                                 <Label>正文</Label>
                                 <Controller
                                     control={control}
@@ -261,6 +261,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
                                             exportName={`announcement-${editing?.id ?? "new"}`}
                                             onPickImage={() => setImagePickerOpen(true)}
                                             minHeight={320}
+                                            className="min-h-0 flex-1"
                                         />
                                     )}
                                 />
