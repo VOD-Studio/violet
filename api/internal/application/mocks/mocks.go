@@ -12,6 +12,7 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/announcement"
+	domaincomment "blog-api/internal/domain/comment"
 	"blog-api/internal/domain/permission"
 	"blog-api/internal/domain/role"
 	"blog-api/internal/domain/shared"
@@ -286,11 +287,123 @@ func (m *MockAnnouncementRepository) Delete(ctx context.Context, id int32) error
 	return m.Called(ctx, id).Error(0)
 }
 
+// ============================================================
+// Comment Repository Mock
+// ============================================================
+
+// MockCommentRepository domaincomment.CommentRepository 的 mock 实现
+type MockCommentRepository struct{ mock.Mock }
+
+func (m *MockCommentRepository) FindByID(ctx context.Context, id shared.ID) (*domaincomment.Comment, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domaincomment.Comment), args.Error(1)
+}
+
+func (m *MockCommentRepository) FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, page, limit int) ([]*domaincomment.Comment, int64, error) {
+	args := m.Called(ctx, postID, status, viewerUserID, page, limit)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(int64), args.Error(2)
+	}
+	return args.Get(0).([]*domaincomment.Comment), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *MockCommentRepository) FindReplies(ctx context.Context, parentPath string) ([]*domaincomment.Comment, error) {
+	args := m.Called(ctx, parentPath)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domaincomment.Comment), args.Error(1)
+}
+
+func (m *MockCommentRepository) FindPending(ctx context.Context, page, limit int) ([]*domaincomment.Comment, int64, error) {
+	args := m.Called(ctx, page, limit)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(int64), args.Error(2)
+	}
+	return args.Get(0).([]*domaincomment.Comment), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *MockCommentRepository) CountPending(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockCommentRepository) CountByPostAndAnon(ctx context.Context, postID shared.ID, ipHash, email string) (int64, error) {
+	args := m.Called(ctx, postID, ipHash, email)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockCommentRepository) FindAll(ctx context.Context, status string, page, limit int) ([]*domaincomment.CommentWithPost, int64, error) {
+	args := m.Called(ctx, status, page, limit)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(int64), args.Error(2)
+	}
+	return args.Get(0).([]*domaincomment.CommentWithPost), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *MockCommentRepository) FindByIDWithPost(ctx context.Context, id shared.ID) (*domaincomment.CommentWithPost, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domaincomment.CommentWithPost), args.Error(1)
+}
+
+func (m *MockCommentRepository) BatchUpdateStatus(ctx context.Context, ids []shared.ID, status string) (int64, error) {
+	args := m.Called(ctx, ids, status)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockCommentRepository) Save(ctx context.Context, c *domaincomment.Comment) error {
+	return m.Called(ctx, c).Error(0)
+}
+
+func (m *MockCommentRepository) UpdateStatus(ctx context.Context, id shared.ID, status string) error {
+	return m.Called(ctx, id, status).Error(0)
+}
+
+func (m *MockCommentRepository) Delete(ctx context.Context, id shared.ID) error {
+	return m.Called(ctx, id).Error(0)
+}
+
+// ============================================================
+// CodeStore Mock（评论模块专用，与 auth 共用接口）
+// ============================================================
+
+// MockCommentCodeStore appshared.CodeStore 的 mock 实现（评论测试专用，避免与 auth mock 串扰）
+type MockCommentCodeStore struct{ mock.Mock }
+
+func (m *MockCommentCodeStore) Store(ctx context.Context, prefix, identifier, codeHash string) error {
+	return m.Called(ctx, prefix, identifier, codeHash).Error(0)
+}
+
+func (m *MockCommentCodeStore) Verify(ctx context.Context, prefix, identifier, codeHash string) (bool, error) {
+	args := m.Called(ctx, prefix, identifier, codeHash)
+	return args.Bool(0), args.Error(1)
+}
+
+// ============================================================
+// EmailSender Mock（评论模块专用）
+// ============================================================
+
+// MockCommentEmailSender 评论模块 EmailSender 的 mock 实现。
+// 实现 application/comment.EmailSender 接口（SendVerificationCode）。
+type MockCommentEmailSender struct{ mock.Mock }
+
+func (m *MockCommentEmailSender) SendVerificationCode(ctx context.Context, email, code string) error {
+	return m.Called(ctx, email, code).Error(0)
+}
+
 // 编译期断言
 var (
-	_ appshared.EventBus         = (*MockEventBus)(nil)
-	_ appshared.TokenStore       = (*MockTokenStore)(nil)
-	_ appshared.TokenService     = (*MockTokenService)(nil)
-	_ domainuser.UserRepository  = (*MockUserRepository)(nil)
-	_ announcement.AnnouncementRepository = (*MockAnnouncementRepository)(nil)
+	_ appshared.EventBus                    = (*MockEventBus)(nil)
+	_ appshared.TokenStore                  = (*MockTokenStore)(nil)
+	_ appshared.TokenService                = (*MockTokenService)(nil)
+	_ appshared.CodeStore                   = (*MockCommentCodeStore)(nil)
+	_ domainuser.UserRepository             = (*MockUserRepository)(nil)
+	_ announcement.AnnouncementRepository   = (*MockAnnouncementRepository)(nil)
+	_ domaincomment.CommentRepository       = (*MockCommentRepository)(nil)
 )
