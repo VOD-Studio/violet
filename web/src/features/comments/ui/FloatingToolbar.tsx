@@ -85,11 +85,13 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                     setIsCrossBlock(true);
                 }
 
-                // 定位工具条到选区上方
+                // 定位工具条到选区上方。
+                // fixed 定位用视口坐标（rect.top/left 已是视口坐标，不能再加 scrollY/scrollX，
+                // 否则页面滚动后工具条会飘到错误位置）。
                 const rect = range.getBoundingClientRect();
                 setPos({
-                    top: rect.top + window.scrollY - 48, // 选区上方 48px
-                    left: rect.left + window.scrollX + rect.width / 2,
+                    top: rect.top - 48, // 选区上方 48px
+                    left: rect.left + rect.width / 2,
                 });
             });
         };
