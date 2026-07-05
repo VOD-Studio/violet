@@ -37,18 +37,11 @@ export interface AnnotationLayerProps {
     located: LocatedAnnotation[];
     /** 候选块列表（保留 prop，暂未直接消费） */
     blocks: CandidateBlock[];
-    /** 当前登录用户 id（用于判断「我是否评论过该段」→ 角标右上角对号） */
-    currentUserId?: string;
     /** 滚动激活回调（保留兼容，气泡方案下可空） */
     onActiveChange?: (commentId: string | null) => void;
 }
 
-export function AnnotationLayer({
-    contentRef,
-    located,
-    blocks,
-    currentUserId,
-}: AnnotationLayerProps) {
+export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayerProps) {
     const [, forceRender] = useState(0);
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [panelVisible, setPanelVisible] = useState(false);
@@ -105,14 +98,7 @@ export function AnnotationLayer({
                     marker.setAttribute("aria-label", `${anns.length} 条批注`);
                     marker.title = `${anns.length} 条批注`;
                     marker.type = "button";
-                    // 「我是否评论过该段」：后端 CommentDTO 无 created_by/is_mine 字段，
-                    // 用「该块有 status=pending 的评论」近似（pending 一定是当前用户的，
-                    // 因为 ListByPost 只返回 approved ∪ 自己的 pending）。
-                    // 契约缺口：approved 后无法判断，待后端补 is_mine 字段后精确化。
-                    const hasMine = currentUserId
-                        ? anns.some((a) => a.comment.status === "pending")
-                        : false;
-                    marker.innerHTML = renderMarkerIcon(anns.length, hasMine);
+                    marker.innerHTML = renderMarkerIcon(anns.length);
                     marker.addEventListener("click", (e) => {
                         e.stopPropagation();
                         handleMarkerClickById(blockId);
@@ -134,7 +120,7 @@ export function AnnotationLayer({
                 el.remove();
             });
         };
-    }, [contentRef, located, currentUserId]);
+    }, [contentRef, located]);
 
     /** 点击角标：展开/收起面板 */
     const handleMarkerClickById = useCallback((blockId: string) => {
@@ -196,14 +182,11 @@ export function AnnotationLayer({
  * renderMarkerIcon 生成段评角标 SVG（chat-bubble 风格）：
  *   - 对话气泡外形：圆角矩形 + 左下角直角三角尾巴（一体描边 path，颜色 currentColor）
  *   - 评论数居中：超过 99 显示「99+」；数字字号随位数自适应（保证不溢出气泡）
- *   - hasMine=true 时显示右上角对号（无圆圈）：
- *       对号横跨气泡右上角内外，用 SVG mask 把「与气泡内部相交的部分」裁剪掉，
- *       只保留气泡外部的对号笔触 → 视觉上像对号「跨过」气泡边框。
  *
  * 整体设计原则：比文字略大（1.15em）、低对比、行内紧贴段末、配色统一。
  * 返回 HTML 字符串供 DOM 注入（角标不是 React 组件，是 innerHTML）。
  */
-function renderMarkerIcon(count: number, hasMine: boolean): string {
+function renderMarkerIcon(count: number): string {
     // 评论数显示文本：超过 99 显示 99+
     const label = count > 99 ? "99+" : String(count);
     // 数字字号随位数自适应：1 位数最大，2 位数中，3 位（99+）最小，避免溢出气泡
@@ -220,30 +203,9 @@ function renderMarkerIcon(count: number, hasMine: boolean): string {
     // 评论数居中（与描边同色）
     const countText = `<text x="8" y="6.8" text-anchor="middle" dominant-baseline="central" font-size="${fontSize}" font-weight="600" fill="${stroke}">${label}</text>`;
 
-    // 对号（hasMine）：无圆圈，跨气泡右上角内外。
-    //   对号笔触：从 (12.5,1.5) 经 (13.8,2.8) 到 (16.2,0.2)，stroke-width 2.2 实心。
-    //   mask：先填满整 viewBox（白=显示），再用气泡 path 作为黑名单（黑=隐藏）。
-    //   效果：对号与气泡内部相交的部分被气泡 path 遮挡掉，只留气泡外部的笔触。
-    //   mask id 加随机后缀，避免同页多个 SVG 的 mask id 冲突（id 重复会让 mask 引用串）。
-    const maskId = hasMine ? `checkMask-${Math.random().toString(36).slice(2, 8)}` : "";
-    const checkMark = hasMine
-        ? `<path d="M12.5 1.5 L13.8 2.8 L16.2 0.2" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" mask="url(#${maskId})" />`
-        : "";
-    // mask 定义：白底（显示）+ 气泡 path 黑色（隐藏），裁剪对号与气泡相交部分
-    const maskDef = hasMine
-        ? `<defs>
-            <mask id="${maskId}">
-                <rect x="-1" y="-3" width="18" height="19" fill="white" />
-                <path d="${bubblePath}" fill="black" stroke="black" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" />
-            </mask>
-        </defs>`
-        : "";
-
     return `<svg class="annotation-marker-svg" viewBox="-1 -3 18 19" aria-hidden="true">
-        ${maskDef}
         ${bubble}
         ${countText}
-        ${checkMark}
     </svg>`;
 }
 
