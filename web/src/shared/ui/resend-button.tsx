@@ -4,18 +4,28 @@ import { Button, type ButtonProps } from "@/shared/ui/base/button";
 /**
  * ResendButton - 验证码倒计时重发按钮
  *
- * 点击后触发 onResend 并进入 60 秒冷却（防止滥发邮件/刷接口）。
+ * 点击后触发 onResend；onResend 未返回 false（含 undefined）时进入 60 秒冷却
+ *（防止滥发邮件/刷接口）。返回 false 表示本次发送未生效（如邮箱为空、校验失败），
+ * 不启动冷却，让用户能立即修正后重试。
+ *
  * 冷却中 disabled 显示剩余秒数，结束后恢复可点击。
  *
  * 受控倒计时：若父组件需要在表单字段变化时重置倒计时（如换邮箱），
  * 传 resetKey，其值变化时立即结束冷却。
  *
  * @example
+ * // 同步校验失败返回 false，否则进入冷却
+ * <ResendButton onResend={() => { if (!email) return false; sendCode(email); }} />
+ * // 现有 void 返回兼容（undefined !== false，照常进入冷却）
  * <ResendButton onResend={() => register.mutate(email)} resetKey={email} />
  */
 interface ResendButtonProps {
-    /** 点击重发的回调（冷却结束后才触发） */
-    onResend: () => void;
+    /**
+     * 点击重发的回调。
+     * 返回 false 表示发送未生效（校验失败、邮箱空等），不进入冷却；
+     * 其他返回值（undefined/true/Promise<true>）进入冷却。
+     */
+    onResend: () => boolean | Promise<boolean> | undefined;
     /** 冷却秒数，默认 60 */
     cooldownSeconds?: number;
     /** 重置倒计时的触发值（变化时立即结束冷却） */
@@ -60,9 +70,12 @@ export function ResendButton({
         return () => clearInterval(timer);
     }, [remaining]);
 
-    const handleClick = () => {
+    const handleClick = async () => {
         if (remaining > 0 || disabled) return;
-        onResend();
+        // onResend 返回 false 表示本次发送未生效（校验失败、邮箱空等），不进入冷却。
+        // 注意：返回 Promise 时 await——异步失败也不进入冷却。
+        const ok = await onResend();
+        if (ok === false) return;
         setRemaining(cooldownSeconds);
     };
 
