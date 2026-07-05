@@ -87,7 +87,10 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
         return () => document.removeEventListener("pointerdown", captureCheck, true);
     }, [open]);
 
-    const blockIfFloatingActive = (e: { preventDefault: () => void; target: EventTarget | null }) => {
+    const blockIfFloatingActive = (e: {
+        preventDefault: () => void;
+        target: EventTarget | null;
+    }) => {
         const target = e.target as HTMLElement | null;
         if (
             target?.closest(
@@ -139,7 +142,7 @@ export function AnnouncementSheet({ open, onOpenChange, editing }: AnnouncementS
         if (!open) return;
         reset({
             ...editing,
-						sortOrder: editing?.sort_order ?? 0,
+            sortOrder: editing?.sort_order ?? 0,
             contentMD: editing?.content_md ?? "",
             contentHTML: editing?.content_html ?? "",
             timeRange: {

@@ -88,7 +88,7 @@ export function EditorToolbar({
             <span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
             {/* 文字颜色色板 */}
             <ColorSwatch
-                value={editor.getAttributes("textStyle").color as string | undefined}
+                value={editor.getAttributes("textStyle").color}
                 onChange={(c) => editor.chain().focus().setColor(c).run()}
                 onClear={() => editor.chain().focus().unsetColor().run()}
             />
