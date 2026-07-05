@@ -191,7 +191,7 @@ func TestListByPost_AnonViewer_ReturnsEmpty_BlackHole(t *testing.T) {
 	// 匿名 viewer 不应查 DB
 	repo.AssertNotCalled(t, "FindByPost")
 
-	items, total, err := svc.ListByPost(context.Background(), shared.NewID().String(), "", 1, 20)
+	items, total, err := svc.ListByPost(context.Background(), shared.NewID().String(), "", "", 1, 20)
 	assert.NoError(t, err)
 	assert.Empty(t, items)
 	assert.Equal(t, int64(0), total)
@@ -208,7 +208,7 @@ func TestListByPost_LoggedInViewer_ReturnsApprovedAndOwnPending(t *testing.T) {
 	repo.On("FindByPost", mock.Anything, postID, domain.StatusApproved, &viewer, 1, 20).
 		Return([]*domain.Comment{approved, myPending}, int64(2), nil).Once()
 
-	items, total, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), 1, 20)
+	items, total, err := svc.ListByPost(context.Background(), postID.String(), viewer.String(), "", 1, 20)
 	assert.NoError(t, err)
 	assert.Len(t, items, 2)
 	assert.Equal(t, int64(2), total)

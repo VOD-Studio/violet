@@ -39,7 +39,7 @@ type stubCommentService struct {
 	sendCodeCalled bool
 }
 
-func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserID string, page, limit int) ([]appcomment.CommentDTO, int64, error) {
+func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, page, limit int) ([]appcomment.CommentDTO, int64, error) {
 	s.listByPostCalled = true
 	s.listByPostViewer = viewerUserID
 	return s.listByPostResult, int64(len(s.listByPostResult)), nil
@@ -75,10 +75,10 @@ func (s *stubCommentService) Approve(context.Context, string) error { return nil
 func (s *stubCommentService) MarkSpam(context.Context, string) error { return nil }
 func (s *stubCommentService) Delete(context.Context, string) error   { return nil }
 
-// newHandlerWithStub 构造带 stub service 的 handler（users 为 nil，登录路径测试另加）。
+// newHandlerWithStub 构造带 stub service 的 handler（users/posts 为 nil，登录路径测试另加）。
 func newHandlerWithStub(svc *stubCommentService) *Handler {
 	// NewHandler 收 *appcomment.Service；测试用 stub，直接构造 Handler 结构体绕过。
-	return &Handler{svc: svc, users: nil, validate: validator.New()}
+	return &Handler{svc: svc, users: nil, posts: nil, validate: validator.New()}
 }
 
 // newJSONRequest 测试辅助：构造带 JSON body 的请求。
@@ -186,7 +186,7 @@ func TestCreate_LoggedIn_PassesUserIDAndIgnoresRequestAuthorFields(t *testing.T)
 	// 登录路径需要 users repo 填资料；这里用一个 nil users 的 handler，
 	// 验证「登录时请求体的 author_name 被忽略、UserID 被透传」。
 	// users 为 nil 时 handler 不查资料，AuthorName 留空——本测试只验透传与忽略。
-	h := &Handler{svc: svc, users: nil, validate: validator.New()}
+	h := &Handler{svc: svc, users: nil, posts: nil, validate: validator.New()}
 
 	body := `{"body":"hi","author_name":"FAKE"}`
 	req := setPostID(newJSONRequest(t, "POST", "/posts/abc/comments", body), "post-1")
@@ -235,7 +235,7 @@ func TestSendCode_InvalidEmail_Returns400(t *testing.T) {
 // TestCreate_LoggedIn_PassesAnchorAndPictures 登录态带 anchor+pictures 应透传给 service（Issue-0003）。
 func TestCreate_LoggedIn_PassesAnchorAndPictures(t *testing.T) {
 	svc := &stubCommentService{}
-	h := &Handler{svc: svc, users: nil, validate: validator.New()}
+	h := &Handler{svc: svc, users: nil, posts: nil, validate: validator.New()}
 
 	body := `{"body":"note","anchor":{"block_id":"abc12345","start_offset":0,"end_offset":5,"selected_text":"hello","block_text_hash":"deadbeef"},"pictures":[{"url":"https://x/a.png","width":100,"height":200,"size":1024}]}`
 	req := setPostID(newJSONRequest(t, "POST", "/posts/abc/comments", body), "post-1")

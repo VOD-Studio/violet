@@ -12,6 +12,7 @@ import (
 
 	appcomment "blog-api/internal/application/comment"
 	"blog-api/internal/domain/shared"
+	domainpost "blog-api/internal/domain/post"
 	domainuser "blog-api/internal/domain/user"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
@@ -24,7 +25,7 @@ import (
 // stub 实现（见 comment_test.go 的 stubCommentService），避免在测试里启动完整 service +
 // 真实 repo/codeStore。*appcomment.Service 通过 Go 结构化接口天然满足此契约。
 type commentService interface {
-	ListByPost(ctx context.Context, postID, viewerUserID string, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
 	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
 	ListPending(ctx context.Context, page, limit int) ([]appcomment.CommentDTO, int64, error)
@@ -39,16 +40,17 @@ type commentService interface {
 
 // Handler 评论 HTTP 处理器。
 type Handler struct {
-	svc      commentService           // application 层用例服务
+	svc      commentService            // application 层用例服务
 	users    domainuser.UserRepository // 取登录评论者的资料（username/avatar）填充 author_*；匿名评论不查
+	posts    domainpost.PostRepository // 取文章 author_id 用于计算 CommentDTO.is_author（作者高亮）
 	validate *validator.Validate       // 请求体字段校验（go-playground/validator）
 }
 
 // NewHandler 创建评论 handler。
 //
-// users 可为 nil（仅当确信不需要登录评论资料时；正常流程应注入）。
-func NewHandler(svc *appcomment.Service, users domainuser.UserRepository) *Handler {
-	return &Handler{svc: svc, users: users, validate: validator.New()}
+// users/posts 可为 nil（仅当确信不需要登录评论资料/作者高亮时；正常流程应注入）。
+func NewHandler(svc *appcomment.Service, users domainuser.UserRepository, posts domainpost.PostRepository) *Handler {
+	return &Handler{svc: svc, users: users, posts: posts, validate: validator.New()}
 }
 
 // ListByPost 按文章列出评论（前台公开）。
@@ -59,7 +61,20 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	postID := r.PathValue("postId")
 	viewerID := interfacesmw.GetUserIDFromContext(r)
 	page, limit := response.ParsePaging(r)
-	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, page, limit)
+
+	// 查 post 拿 author_id，用于 service 计算 CommentDTO.is_author（作者高亮）。
+	// 查询失败时留空，is_author 恒为 false（不阻塞评论列表）。
+	var authorID string
+	if h.posts != nil {
+		pid, err := shared.ParseID(postID)
+		if err == nil {
+			if p, err := h.posts.FindByID(r.Context(), pid); err == nil {
+				authorID = p.AuthorID().String()
+			}
+		}
+	}
+
+	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

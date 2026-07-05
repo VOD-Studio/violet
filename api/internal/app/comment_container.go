@@ -22,8 +22,9 @@ type CommentContainer struct {
 func NewCommentContainer(db *gorm.DB, codeStore appshared.CodeStore, emailSender *infraemail.Sender) *CommentContainer {
 	commentRepo := gormrepo.NewCommentRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
+	postRepo := gormrepo.NewPostRepository(db)
 	commentSvc := appcomment.NewService(commentRepo, codeStore, emailSender)
 	return &CommentContainer{
-		CommentHandler: commenthttp.NewHandler(commentSvc, userRepo),
+		CommentHandler: commenthttp.NewHandler(commentSvc, userRepo, postRepo),
 	}
 }

@@ -59,6 +59,9 @@ type CommentDTO struct {
 	AvatarURL  string           `json:"avatar_url"`
 	Body       string           `json:"body"`
 	Pictures   []domain.Picture `json:"pictures"`
+	// IsAuthor 该评论是否由文章 Owner 本人发出（运行时：created_by == post.author_id）。
+	// 用于前端作者高亮（neon-green/shadcn emerald）。匿名评论恒为 false。
+	IsAuthor   bool             `json:"is_author"`
 	// Anchor 选区批注锚点；自由评论为 nil（JSON 省略），批注非 nil。
 	Anchor     *AnchorDTO       `json:"anchor,omitempty"`
 	Status     string           `json:"status"`
@@ -83,7 +86,10 @@ func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, em
 //
 // 黑洞模式（PRD-0001）：匿名 viewer（viewerUserID 为空字符串）直接返回空数组，
 // 看不到任何评论（含自己刚提交的）；登录 viewer 返回 approved ∪ 自己的 pending。
-func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID string, page, limit int) ([]CommentDTO, int64, error) {
+//
+// postAuthorID 用于运行时计算 CommentDTO.is_author（comment.created_by == post.author_id），
+// 由 handler 查 post 后传入。
+func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, page, limit int) ([]CommentDTO, int64, error) {
 	// 黑洞模式：匿名 viewer 不查 DB。
 	if viewerUserID == "" {
 		return []CommentDTO{}, 0, nil
@@ -100,9 +106,16 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID string, p
 	if err != nil {
 		return nil, 0, err
 	}
+	// is_author 计算需要 post.author_id；解析失败时留空（所有评论都不算作者）。
+	var authorID *shared.ID
+	if postAuthorID != "" {
+		if aid, err := shared.ParseID(postAuthorID); err == nil {
+			authorID = &aid
+		}
+	}
 	dtos := make([]CommentDTO, 0, len(items))
 	for _, c := range items {
-		dtos = append(dtos, toDTO(c))
+		dtos = append(dtos, toDTO(c, authorID))
 	}
 	return dtos, total, nil
 }
@@ -124,7 +137,7 @@ func (s *Service) ListAll(ctx context.Context, status string, page, limit int) (
 	dtos := make([]AdminCommentDTO, 0, len(items))
 	for _, cwp := range items {
 		dto := AdminCommentDTO{
-			CommentDTO: toDTO(cwp.Comment),
+			CommentDTO: toDTO(cwp.Comment, nil),
 			PostID:     cwp.Post.ID.String(),
 			PostTitle:  cwp.Post.Title,
 			PostSlug:   cwp.Post.Slug,
@@ -150,7 +163,7 @@ func (s *Service) GetDetail(ctx context.Context, id string) (AdminCommentDTO, er
 		return AdminCommentDTO{}, err
 	}
 	return AdminCommentDTO{
-		CommentDTO: toDTO(cwp.Comment),
+		CommentDTO: toDTO(cwp.Comment, nil),
 		PostID:     cwp.Post.ID.String(),
 		PostTitle:  cwp.Post.Title,
 		PostSlug:   cwp.Post.Slug,
@@ -184,7 +197,7 @@ func (s *Service) ListPending(ctx context.Context, page, limit int) ([]CommentDT
 	}
 	dtos := make([]CommentDTO, 0, len(items))
 	for _, c := range items {
-		dtos = append(dtos, toDTO(c))
+		dtos = append(dtos, toDTO(c, nil))
 	}
 	return dtos, total, nil
 }
@@ -290,7 +303,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 	if err := s.commentRepo.Save(ctx, c); err != nil {
 		return CommentDTO{}, err
 	}
-	return toDTO(c), nil
+	return toDTO(c, nil), nil
 }
 
 // verifyAnonCode 校验匿名评论的邮箱验证码。
@@ -433,7 +446,10 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	return s.commentRepo.Delete(ctx, cid)
 }
 
-func toDTO(c *domain.Comment) CommentDTO {
+// toDTO 把 domain.Comment 转成 CommentDTO。
+// postAuthorID 非空时用于计算 IsAuthor（comment.created_by == post.author_id）；
+// nil 时 IsAuthor 恒为 false（适用于后台管理等不需要作者高亮的场景）。
+func toDTO(c *domain.Comment, postAuthorID *shared.ID) CommentDTO {
 	dto := CommentDTO{
 		ID: c.ID().String(), PostID: c.PostID().String(),
 		Depth: c.Depth(), AuthorName: c.AuthorName(),
@@ -443,6 +459,10 @@ func toDTO(c *domain.Comment) CommentDTO {
 	}
 	if c.ParentID() != nil {
 		dto.ParentID = c.ParentID().String()
+	}
+	// is_author：仅当提供了 postAuthorID 且评论者登录态（created_by 非空）且二者相等时为 true
+	if postAuthorID != nil && c.UserID() != nil && *c.UserID() == *postAuthorID {
+		dto.IsAuthor = true
 	}
 	// anchor：批注才有，转成 DTO 形态（snake_case）
 	if a := c.Anchor(); a != nil {
