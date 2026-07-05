@@ -96,23 +96,26 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
     );
 
     // BorderGlow 外壳：severity 决定色相，单色模式（三色相同）保持克制
+    // 外层套 shadow-sm + ring 提供静态边界感（悬停时 BorderGlow 接管发光）
     const glowShell = (children: React.ReactNode) => (
-        <BorderGlow
-            backgroundColor="hsl(var(--card))"
-            borderRadius={16}
-            glowColor={cfg.glow[0]}
-            colors={[
-                `hsl(${cfg.glow[0]} / 0.9)`,
-                `hsl(${cfg.glow[1]} / 0.6)`,
-                `hsl(${cfg.glow[2]} / 0.9)`,
-            ]}
-            glowIntensity={0.6}
-            glowRadius={20}
-            animated={false}
-            className="group min-h-[220px]"
-        >
-            {children}
-        </BorderGlow>
+        <div className="group rounded-2xl shadow-sm ring-1 ring-black/5 transition-shadow hover:shadow-md dark:ring-white/10">
+            <BorderGlow
+                backgroundColor="hsl(var(--card))"
+                borderRadius={16}
+                glowColor={cfg.glow[0]}
+                colors={[
+                    `hsl(${cfg.glow[0]} / 0.9)`,
+                    `hsl(${cfg.glow[1]} / 0.6)`,
+                    `hsl(${cfg.glow[2]} / 0.9)`,
+                ]}
+                glowIntensity={0.6}
+                glowRadius={20}
+                animated={false}
+                className="min-h-[220px]"
+            >
+                {children}
+            </BorderGlow>
+        </div>
     );
 
     // article：整卡可点击，套 Link
