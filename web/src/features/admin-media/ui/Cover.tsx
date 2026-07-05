@@ -24,6 +24,12 @@ export interface CoverProps {
     title?: string;
     /** 限定的素材类型，默认图片 */
     mediaType?: MediaType;
+    /**
+     * 素材选择弹窗是否以模态形式打开。
+     * 当 Cover 本身被放在另一个 Modal 内时，需设为 false 避免 Radix Dialog 嵌套阻断。
+     * 默认 true（独立场景）。
+     */
+    mediaPickerModal?: boolean;
 }
 
 /**
@@ -39,6 +45,7 @@ export function Cover({
     onClear,
     title = "选择封面图",
     mediaType = "image",
+    mediaPickerModal = true,
 }: CoverProps) {
     const [open, setOpen] = useState(false);
 
@@ -85,6 +92,7 @@ export function Cover({
                 mediaType={mediaType}
                 title={title}
                 onConfirm={handleConfirm}
+                modal={mediaPickerModal}
             />
         </div>
     );
