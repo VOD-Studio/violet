@@ -11,6 +11,7 @@
  * AnnotationLayer 也负责给批注块加高亮 class（视觉标记「这段有批注」）。
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { buildCommentTree } from "../lib/comment-tree";
 import { findBlockElement } from "../lib/extract-blocks";
 import type { CandidateBlock } from "../lib/relocate";
 import type { LocatedAnnotation } from "../lib/use-annotations";
@@ -42,11 +43,21 @@ export interface AnnotationLayerProps {
     located: LocatedAnnotation[];
     /** 候选块列表（保留 prop，暂未直接消费） */
     blocks: CandidateBlock[];
+    /** 文章 id（透传给 AnnotationCard 的回复表单） */
+    postId?: string;
+    /** 是否登录（透传给 AnnotationCard，决定是否显示回复按钮） */
+    isLoggedIn?: boolean;
     /** 滚动激活回调（保留兼容，气泡方案下可空） */
     onActiveChange?: (commentId: string | null) => void;
 }
 
-export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayerProps) {
+export function AnnotationLayer({
+    contentRef,
+    located,
+    blocks,
+    postId,
+    isLoggedIn = false,
+}: AnnotationLayerProps) {
     const [, forceRender] = useState(0);
     const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
     const [panelVisible, setPanelVisible] = useState(false);
@@ -217,13 +228,22 @@ export function AnnotationLayer({ contentRef, located, blocks }: AnnotationLayer
                             ×
                         </button>
                     </div>
-                    {activeMarker.annotations.map((ann) => (
-                        <AnnotationCard
-                            key={ann.comment.id}
-                            comment={ann.comment}
-                            selectedText={ann.result.selectedText}
-                        />
-                    ))}
+                    {/* 批注树：用 buildCommentTree 组装两层扁平结构。
+                        每个 block 的批注共享同一锚点（子批注继承父 anchor），
+                        selectedText 统一取 block 级的定位结果（annotations[0]）。 */}
+                    {buildCommentTree(activeMarker.annotations.map((a) => a.comment)).map(
+                        (node) => (
+                            <AnnotationCard
+                                key={node.comment.id}
+                                node={node}
+                                selectedText={
+                                    activeMarker.annotations[0]?.result.selectedText ?? ""
+                                }
+                                postId={postId}
+                                isLoggedIn={isLoggedIn}
+                            />
+                        ),
+                    )}
                 </div>
             )}
         </>

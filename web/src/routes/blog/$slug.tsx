@@ -205,7 +205,13 @@ function BlogDetailPage() {
                 </div>
 
                 {/* 批注角标 + 气泡层（默认不显示面板，点击角标展开行内气泡，零挤压） */}
-                <AnnotationLayer contentRef={contentRef} located={located} blocks={blocks} />
+                <AnnotationLayer
+                    contentRef={contentRef}
+                    located={located}
+                    blocks={blocks}
+                    postId={post?.id}
+                    isLoggedIn={isLoggedIn}
+                />
 
                 {/* 划线批注浮动工具条（选区上方浮动，提交后高亮落定） */}
                 {post?.id && (
