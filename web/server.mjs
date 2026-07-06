@@ -19,8 +19,9 @@ import { fileURLToPath } from "node:url";
 import { readFile, stat } from "node:fs/promises";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PORT = Number(process.env.PORT) || 3000;
-const HOST = process.env.HOST || "0.0.0.0";
+// 显式判断避免 PORT=0 被 falsy 短路为 3000（PORT=0 用于让系统分配随机端口）
+const PORT = process.env.PORT != null ? Number(process.env.PORT) : 3000;
+const HOST = process.env.HOST ?? "0.0.0.0";
 
 // vite build 产出的客户端静态资源目录
 const CLIENT_DIR = join(__dirname, "dist/client");
@@ -46,7 +47,6 @@ const MIME = {
     ".wasm": "application/wasm",
     ".txt": "text/plain; charset=utf-8",
     ".map": "application/json; charset=utf-8",
-    ".worker.js": "text/javascript; charset=utf-8",
 };
 
 /**
@@ -63,7 +63,10 @@ async function tryServeStatic(req, res, urlPath) {
     }
     const filePath = join(CLIENT_DIR, urlPath);
     // 防 path traversal
-    if (!filePath.startsWith(CLIENT_DIR)) return false;
+    if (!filePath.startsWith(CLIENT_DIR)) {
+        // 即将交还 SSR handler，请求体由它消费，这里无需 resume
+        return false;
+    }
     try {
         const s = await stat(filePath);
         if (!s.isFile()) return false;
@@ -79,6 +82,9 @@ async function tryServeStatic(req, res, urlPath) {
                 : "no-cache",
         });
         res.end(data);
+        // 即便命中静态资源，也要消费请求体（POST /assets/x.js 等），
+        // 否则在 keep-alive 下未读 body 会污染该连接后续请求的解析
+        req.resume();
         return true;
     } catch {
         return false;
@@ -130,13 +136,15 @@ const server = createServer(async (req, res) => {
         });
         res.writeHead(response.status, headers);
 
-        // 写响应体
+        // 写响应体（处理 backpressure：res.write 返回 false 时等待 'drain'）
         if (response.body) {
             const reader = response.body.getReader();
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                res.write(value);
+                if (!res.write(value)) {
+                    await new Promise((resolve) => res.once("drain", resolve));
+                }
             }
         }
         res.end();
@@ -144,8 +152,12 @@ const server = createServer(async (req, res) => {
         console.error("[server.mjs] 请求处理失败:", err);
         if (!res.headersSent) {
             res.writeHead(500, { "content-type": "application/json; charset=utf-8" });
+            res.end(JSON.stringify({ error: "SSR server error" }));
+        } else {
+            // 头已发出（可能 body 写了一半），追加 JSON 会拼到半截响应后面，
+            // 直接销毁连接让客户端识别为坏响应
+            res.destroy();
         }
-        res.end(JSON.stringify({ error: "SSR server error" }));
     }
 });
 
