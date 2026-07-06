@@ -58,6 +58,9 @@ export interface Comment {
     post_id: string;
     /** 父评论 ID，顶级评论省略 */
     parent_id?: string;
+    /** 被回复者的昵称。回复节点才有，前端显示「回复 @yyy」用。
+     *  后端 toDTO 时填好，前端直接读，不自己转换。顶层评论没这个字段。 */
+    reply_to_name?: string;
     /** 嵌套深度，0 为顶级 */
     depth: number;
     /** 作者昵称 */
