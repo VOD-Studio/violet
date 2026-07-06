@@ -90,9 +90,10 @@ export function CommentItem({
                             {comment.body}
                         </p>
 
-                        {/* 回复按钮（图标）：仅登录用户 + 顶层评论显示。
-                            回复层不嵌回复表单（两层扁平，避免 UI 失控） */}
-                        {isLoggedIn && postId && level === 0 && (
+                        {/* 回复按钮（图标）：仅登录用户显示。
+                            两层扁平：回复层的回复仍挂同一顶层下，parent_id 指被回复的那条，
+                            前端读 comment.reply_to_name 显示「回复 @yyy」。 */}
+                        {isLoggedIn && postId && (
                             <button
                                 type="button"
                                 onClick={() => setReplying((v) => !v)}
