@@ -1,6 +1,6 @@
 // Package app 提供 auth/user DDD 模块的手工 DI 装配。
 //
-// auth 模块依赖图复杂（JWTService 需密钥路径、RedisStore 需 Redis client、
+// auth 模块依赖图复杂（SessionStore 需 Redis client、
 // 各 command handler 需组合多个依赖），用 wire 表达成本高且易错，
 // 改用手工构造函数装配，由 main.go 调用。
 package app
@@ -24,7 +24,9 @@ import (
 type AuthContainer struct {
 	AuthHandler      *authhttp.Handler
 	EnsureSuperAdmin *authcmd.EnsureSuperAdminHandler
-	JWTService       *infraauth.JWTService
+	// SessionStore 同时实现 appshared.SessionStore 与 middleware.SessionLookup，
+	// 由 main.go 挂载 SessionAuth/OptionalSessionAuth/SessionAuthReadOnly 中间件时使用。
+	SessionStore *infraauth.RedisSessionStore
 }
 
 // NewAuthContainer 手工装配 auth DDD 模块
@@ -39,45 +41,33 @@ func NewAuthContainer(
 	userRepo := gormrepo.NewUserRepository(db)
 	roleRepo := gormrepo.NewRoleRepository(db)
 
-	jwtService, err := infraauth.NewJWTService(
-		cfg.JWTPrivateKeyPath, cfg.JWTPublicKeyPath,
-		cfg.JWTAccessTokenTTL, cfg.JWTRefreshTokenTTL,
-		cfg.JWTAllowEphemeralKey,
-	)
-	if err != nil {
-		return nil, err
-	}
-	tokenStore := infraauth.NewRedisTokenStore(redisClient, cfg.JWTRefreshTokenTTL)
+	sessionStore := infraauth.NewRedisSessionStore(redisClient)
 	codeStore := infraauth.NewRedisCodeStore(redisClient)
 
 	hasher := authcmd.NewBcryptHasher()
 
-	// 将 infra JWTService 适配为应用层 TokenService 端口
-	tokenService := NewTokenServiceAdapter(jwtService)
-
 	register := authcmd.NewRegisterUserHandler(userRepo, codeStore, emailSender, hasher, bus)
-	login := authcmd.NewLoginHandler(userRepo, hasher, tokenService, tokenStore)
-	google := authcmd.NewGoogleLoginHandler(userRepo, tokenService, tokenStore, cfg.GoogleClientID, hasher)
-	github := authcmd.NewGithubLoginHandler(userRepo, tokenService, tokenStore, cfg.GithubClientID, cfg.GithubClientSecret, hasher)
-	logout := authcmd.NewLogoutHandler(tokenStore)
-	refresh := authcmd.NewRefreshTokenHandler(userRepo, tokenService, tokenStore)
+	login := authcmd.NewLoginHandler(userRepo, hasher)
+	google := authcmd.NewGoogleLoginHandler(userRepo, cfg.GoogleClientID, hasher)
+	github := authcmd.NewGithubLoginHandler(userRepo, cfg.GithubClientID, cfg.GithubClientSecret, hasher)
+	logout := authcmd.NewLogoutHandler(sessionStore)
+	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore)
 	verify := authcmd.NewVerifyEmailHandler(userRepo, codeStore)
-	forgot := authcmd.NewForgotPasswordHandler(userRepo, codeStore, emailSender, hasher, tokenStore)
-	reset := authcmd.NewResetPasswordHandler(userRepo, codeStore, hasher, tokenStore)
+	forgot := authcmd.NewForgotPasswordHandler(userRepo, codeStore, emailSender, hasher)
+	reset := authcmd.NewResetPasswordHandler(userRepo, codeStore, hasher, sessionStore)
 	updatePf := authcmd.NewUpdateProfileHandler(userRepo)
-	changePwd := authcmd.NewChangePasswordHandler(userRepo, hasher, tokenStore)
+	changePwd := authcmd.NewChangePasswordHandler(userRepo, hasher, sessionStore)
 
 	getMe := authquery.NewGetMeHandler(userRepo, roleRepo)
 
 	ensureSuperAdmin := authcmd.NewEnsureSuperAdminHandler(userRepo, hasher)
 
 	authHandler := authhttp.NewHandler(
-		register, login, google, github, logout, refresh, verify, forgot, reset,
-		updatePf, changePwd, getMe, settingsSvc, cfg.Cookie,
-		config.TokenTTLs{Access: cfg.JWTAccessTokenTTL, Refresh: cfg.JWTRefreshTokenTTL},
+		register, login, google, github, logout, createSession, verify, forgot, reset,
+		updatePf, changePwd, getMe, settingsSvc, cfg.Cookie, cfg.Session,
 	)
 
-	return &AuthContainer{AuthHandler: authHandler, EnsureSuperAdmin: ensureSuperAdmin, JWTService: jwtService}, nil
+	return &AuthContainer{AuthHandler: authHandler, EnsureSuperAdmin: ensureSuperAdmin, SessionStore: sessionStore}, nil
 }
 
 var _ user.UserRepository = (*gormrepo.UserRepository)(nil)
