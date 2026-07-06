@@ -1,4 +1,5 @@
 import { CustomCursor } from "@shared/ui/cursor";
+import NotFound from "@shared/ui/not-found";
 import { SystemThemeTransition } from "@shared/ui/theme-transition";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
@@ -54,6 +55,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     }),
     component: RootComponent,
     shellComponent: RootDocument,
+    // 兜底：路由未匹配或子树抛出 notFound 错误时渲染统一 404 页面，
+    // 避免 TanStack Router 的默认 <p>Not Found</p>。
+    notFoundComponent: () => <NotFound className="py-24" />,
     // 兜底：任何 loader 抛错或子树未捕获错误时，渲染在应用外壳内，
     // 避免整页白屏（React 警告「consider setting errorComponent」）。
     errorComponent: ({ error }) => (
