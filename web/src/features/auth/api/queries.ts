@@ -43,16 +43,16 @@ export const useCsrfToken = (options: { enabled?: boolean } = {}): string => {
 /**
  * fetchMe - 调后端 GET /auth/me 获取当前登录用户信息
  *
- * 需携带 access token cookie，httpClient 自动 withCredentials。
+ * 需携带 session cookie，httpClient 自动 withCredentials。
  *
- * __skipAuthGate=true：这是「身份探活」请求，401 时不应触发 authGate 弹窗/挂起，
- * 否则登出后导航重跑 getCurrentUser/useMe 会撞 401 → 弹窗 + beforeLoad 永久挂起。
- * 401 直接 reject，由调用方（getCurrentUser 的 try/catch、useMe 的 error 态）处理。
+ * __skipAuthDialog=true：这是「身份探活」请求，401 时不应触发登录弹窗，
+ * 否则登出后导航重跑 getAuthSession/useMe 会撞 401 → 弹窗干扰用户。
+ * 401 直接 reject，由调用方（getAuthSession 的 try/catch、useMe 的 error 态）处理。
  *
  * @returns 当前登录用户完整信息
  */
 export const fetchMe = (): Promise<UserDTO> =>
-    apiGet<UserDTO>("/auth/me", { __skipAuthGate: true });
+    apiGet<UserDTO>("/auth/me", { __skipAuthDialog: true });
 
 /**
  * useMe - 当前登录用户 hook

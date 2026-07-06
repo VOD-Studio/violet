@@ -2,7 +2,7 @@
  * 浏览器 cookie 读取工具
  *
  * 仅用于读取非 HttpOnly cookie（如 mimo_csrf），
- * HttpOnly cookie（如 mimo_access/mimo_refresh）JS 无法读取，
+ * HttpOnly cookie（如 mimo_session）JS 无法读取，
  * 由浏览器自动随请求携带。
  */
 
