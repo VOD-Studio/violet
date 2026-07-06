@@ -1,6 +1,6 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { apiGet } from "@shared/api/request";
-import { useQuery } from "@tanstack/react-query";
+import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 import type { CsrfTokenResponse } from "../model/types";
 import { authKeys } from "./keys";
 
@@ -43,16 +43,16 @@ export const useCsrfToken = (options: { enabled?: boolean } = {}): string => {
 /**
  * fetchMe - 调后端 GET /auth/me 获取当前登录用户信息
  *
- * 需携带 access token cookie，httpClient 自动 withCredentials。
+ * 需携带 session cookie，httpClient 自动 withCredentials。
  *
- * __skipAuthGate=true：这是「身份探活」请求，401 时不应触发 authGate 弹窗/挂起，
- * 否则登出后导航重跑 getCurrentUser/useMe 会撞 401 → 弹窗 + beforeLoad 永久挂起。
- * 401 直接 reject，由调用方（getCurrentUser 的 try/catch、useMe 的 error 态）处理。
+ * __skipAuthDialog=true：这是「身份探活」请求，401 时不应触发登录弹窗，
+ * 否则登出后导航重跑 getAuthSession/useMe 会撞 401 → 弹窗干扰用户。
+ * 401 直接 reject，由调用方（getAuthSession 的 try/catch、useMe 的 error 态）处理。
  *
  * @returns 当前登录用户完整信息
  */
 export const fetchMe = (): Promise<UserDTO> =>
-    apiGet<UserDTO>("/auth/me", { __skipAuthGate: true });
+    apiGet<UserDTO>("/auth/me", { __skipAuthDialog: true });
 
 /**
  * useMe - 当前登录用户 hook
@@ -60,11 +60,15 @@ export const fetchMe = (): Promise<UserDTO> =>
  * 默认 enabled，未登录时会收到 401 业务错误，调用方按需控制 enabled。
  * 缓存 key 为 auth.me，写操作成功后通过 invalidate 触发刷新。
  *
+ * staleTime 设为 Infinity：用户资料只在显式 invalidate 时刷新，避免登出后
+ * 窗口聚焦或组件重挂时再次请求 /auth/me 导致 401。
+ *
  * @param options 透传 useQuery 选项，常用于禁用自动请求
  */
-export const useMe = (options: { enabled?: boolean } = {}) =>
-    useQuery({
+export const useMe = (options: { enabled?: boolean } = {}): UseQueryResult<UserDTO | null> =>
+    useQuery<UserDTO | null>({
         queryKey: authKeys.me(),
         queryFn: fetchMe,
         enabled: options.enabled,
+        staleTime: Infinity,
     });

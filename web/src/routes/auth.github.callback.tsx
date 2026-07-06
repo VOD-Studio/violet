@@ -1,6 +1,4 @@
-import { authKeys } from "@features/auth/api/keys";
 import { useGithubLoginMutation } from "@features/auth/api/mutations";
-import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
@@ -20,7 +18,6 @@ function GithubCallbackPage() {
     const { code } = useSearch({ from: "/auth/github/callback" });
     const githubLogin = useGithubLoginMutation();
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
 
     useEffect(() => {
         if (!code) {
@@ -30,13 +27,10 @@ function GithubCallbackPage() {
         }
 
         githubLogin.mutate(code, {
-            onSuccess: async () => {
+            onSuccess: () => {
                 toast.success("登录成功");
-                try {
-                    await queryClient.refetchQueries({ queryKey: authKeys.me() });
-                } catch {
-                    // ignore
-                }
+                // useGithubLoginMutation 的 onSuccess 已 invalidate authKeys.me() 并
+                // markSessionActive()，新页面加载时 Header 会自动拉取一次 me。
                 navigate({ to: "/", replace: true });
             },
             onError: () => {
@@ -44,7 +38,7 @@ function GithubCallbackPage() {
                 navigate({ to: "/login", replace: true });
             },
         });
-    }, [code, githubLogin.mutate, navigate, queryClient]);
+    }, [code, githubLogin.mutate, navigate]);
 
     return (
         <div className="flex h-screen w-screen items-center justify-center">

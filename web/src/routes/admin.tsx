@@ -9,6 +9,9 @@ export const Route = createFileRoute("/admin")({
         const { auth } = context;
 
         // 仅当「网络判定未登录」且「客户端确实没有活跃会话」时才踢人。
+        // 后者（isSessionActive）不受网络瞬态失败影响——登录成功置 true、登出才置 false。
+        // 这样 session 过期导致 getAuthSession 返回 null（auth.isAuthenticated 短暂为 false）
+        // 时，已登录用户不会被误踢，而是原地等弹窗重登。
         if ((!auth.isAuthenticated || !auth.claims) && !isSessionActive()) {
             throw redirect({
                 to: "/",

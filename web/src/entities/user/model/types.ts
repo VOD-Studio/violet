@@ -31,3 +31,20 @@ export interface UserDTO {
 
 /** 用户角色枚举（与后端 context 注入的 role 字符串对应） */
 export type UserRole = "user" | "admin" | "superadmin";
+
+/**
+ * SessionClaims - GET /auth/session 返回的只读鉴权声明
+ *
+ * 后端 /auth/session 只读不写：命中即返回 claims，不续期、不 Set-Cookie。
+ * 完整 UserDTO 由客户端 useMe（GET /auth/me）按需拉取。
+ */
+export interface SessionClaims {
+    /** 用户 ID */
+    user_id: string;
+    /** 用户角色 */
+    role: UserRole;
+    /** 用户邮箱 */
+    email: string;
+    /** 是否为内置超级管理员 */
+    is_builtin_super_admin: boolean;
+}

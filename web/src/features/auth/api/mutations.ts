@@ -25,8 +25,8 @@ import { authKeys } from "./keys";
 export const useRegister = () =>
     useMutation({
         mutationFn: (body: RegisterRequest) =>
-            // 主动认证请求，401/403 是业务结果，不触发 authGate 弹窗
-            apiPost<MessageResponse>("/auth/register", body, { __skipAuthGate: true }),
+            // 主动认证请求，401/403 是业务结果，不触发登录弹窗
+            apiPost<MessageResponse>("/auth/register", body, { __skipAuthDialog: true }),
     });
 
 /**
@@ -37,29 +37,28 @@ export const useRegister = () =>
 export const useVerifyEmail = () =>
     useMutation({
         mutationFn: (body: VerifyEmailRequest) =>
-            apiPost<MessageResponse>("/auth/verify-email", body, { __skipAuthGate: true }),
+            apiPost<MessageResponse>("/auth/verify-email", body, { __skipAuthDialog: true }),
     });
 
 /**
  * useLogin - 邮箱密码登录
  *
- * 成功后后端通过 HttpOnly cookie 下发 session/CSRF token，
- * 响应体仅返回 user_id。onSuccess 主动拉取最新用户信息。
+ * 成功后后端通过 HttpOnly cookie 下发 session，响应体仅返回 user_id。
+ * onSuccess 主动拉取最新用户信息。
  *
  * @param csrfToken 可选的 CSRF token；当浏览器 cookie 未成功写入时，可显式传入并写入请求头。
- * @returns POST /auth/login，返回登录响应（含 user_id）
+ * @returns POST /auth/login，返回登录响应
  */
 export const useLogin = (csrfToken?: string) => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (body: LoginRequest) => {
-            // 优先使用调用方传入的最新 token；若 state 尚未同步，回退到当前 cookie。
             const token = csrfToken || getCSRFToken();
             return apiPost<LoginResponse>("/auth/login", body, {
                 headers: token ? { [CSRF_HEADER]: token } : undefined,
                 // login 本身就是认证请求，401 是正常业务结果（密码错/账户禁用），
-                // 不应触发 authGate 的 refresh 重试 + 登录弹窗（否则登录失败还弹窗）。
-                __skipAuthGate: true,
+                // 不应触发登录弹窗。
+                __skipAuthDialog: true,
             });
         },
         onSuccess: () => {
@@ -80,7 +79,7 @@ export const googleLogin = (credential: string, csrfToken?: string) => {
         { credential },
         {
             headers: token ? { [CSRF_HEADER]: token } : undefined,
-            __skipAuthGate: true,
+            __skipAuthDialog: true,
         },
     );
 };
@@ -109,7 +108,7 @@ export const githubLogin = (credential: string, csrfToken?: string) => {
         { credential },
         {
             headers: token ? { [CSRF_HEADER]: token } : undefined,
-            __skipAuthGate: true,
+            __skipAuthDialog: true,
         },
     );
 };
@@ -138,8 +137,8 @@ export const useGithubLoginMutation = (csrfToken?: string) => {
 export const useForgotPassword = () =>
     useMutation({
         mutationFn: (body: ForgotPasswordRequest) =>
-            // 公开接口，无需登录；401/403 是业务结果，不触发 authGate 弹窗
-            apiPost<MessageResponse>("/auth/forgot-password", body, { __skipAuthGate: true }),
+            // 公开接口，无需登录；401/403 是业务结果，不触发登录弹窗
+            apiPost<MessageResponse>("/auth/forgot-password", body, { __skipAuthDialog: true }),
     });
 
 /**
@@ -150,14 +149,15 @@ export const useForgotPassword = () =>
 export const useResetPassword = () =>
     useMutation({
         mutationFn: (body: ResetPasswordRequest) =>
-            apiPost<MessageResponse>("/auth/reset-password", body, { __skipAuthGate: true }),
+            apiPost<MessageResponse>("/auth/reset-password", body, { __skipAuthDialog: true }),
     });
 
 /**
- * useLogout - 登出并清除客户端凭据
+ * useLogout - 登出并清除客户端状态
  *
- * 后端会 blacklist refresh token 并清除 cookie。onSuccess 失效 me 缓存
- * 并主动写入 undefined，让 useMe 立即回到未登录态。
+ * 后端会清除 session cookie。onSuccess 把 me 缓存置为 null（不移除），
+ * 让 useMe 订阅者立即翻回未登录态，同时避免 removeQueries 导致观察者重新创建
+ * 并发起 fetch → 401。
  *
  * @returns POST /auth/logout，成功 data 为 null
  */
@@ -165,19 +165,15 @@ export const useLogout = () => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: () =>
-            apiPost<MessageResponse>("/auth/logout", undefined, { __skipAuthGate: true }),
+            apiPost<MessageResponse>("/auth/logout", undefined, { __skipAuthDialog: true }),
         onSuccess: async () => {
             // 登出后清会话状态。注意：不能用 invalidateQueries——它会触发 refetch，
-            // 而 cookie 已被后端清除 → fetchMe 必然 401 → 进 401 拦截器 → 尝试 refresh →
-            // refresh 也 401 → authGate 弹出登录窗（bug：登出反而触发登录弹窗）。
-            // 正确做法：取消进行中的 me 查询 + 直接移除缓存（不发任何请求），
-            // useMe 订阅者立即翻回未登录态，Header 同步刷新成「登录」。
-            //
-            // 必须用 removeQueries 而非 setQueryData(..., undefined)：
-            // React Query v5 中 setQueryData 传 undefined 是 no-op（数据不会被清），
-            // 会导致登出后 me 缓存仍是旧用户，Header 继续显示「个人中心 + 登出」。
+            // 而 cookie 已被后端清除 → fetchMe 必然 401 → 弹登录窗（bug：登出反而触发登录弹窗）。
+            // 也不能用 removeQueries——它会让仍挂载的 useMe 观察者重新创建查询并立即 fetch，
+            // 同样导致 401。正确做法：取消进行中的 me 查询 + 把缓存写成 null（不发请求），
+            // 配合 useMe 的 staleTime: Infinity 即可阻止任何自动重试。
             await qc.cancelQueries({ queryKey: authKeys.me() });
-            qc.removeQueries({ queryKey: authKeys.me() });
+            qc.setQueryData<UserDTO | null>(authKeys.me(), null);
             // 登出清 CSRF token 缓存：后端已清 mimo_csrf cookie，
             // 缓存留旧 token 会让下次登录页命中陈旧值，与新 cookie 对不上。
             qc.removeQueries({ queryKey: authKeys.csrfToken() });

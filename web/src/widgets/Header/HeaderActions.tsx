@@ -30,8 +30,8 @@ interface HeaderActionsProps {
  *   + Cmd+L 快捷键直达登录页
  * - 已登录：用户名 Dropdown（个人中心 / 后台[仅 admin] / 登出）
  *
- * 注意：LoginDialog 是**被动**的——仅在 token 过期、refresh 失败时由 authGate 自动
- * 弹出（含挂起请求重放）。主动登录走 /login 页面（完整表单 + redirect 回跳）。
+ * 注意：LoginDialog 是**被动**的——仅在受保护请求收到 401 时由 http 拦截器自动
+ * 弹出。主动登录走 /login 页面（完整表单 + redirect 回跳）。
  */
 const HeaderActions = ({ user }: HeaderActionsProps) => {
     const openCommand = useCommandUIStore((s) => s.open);

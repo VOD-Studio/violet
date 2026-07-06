@@ -1,4 +1,3 @@
-import { authKeys } from "@features/auth/api/keys";
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
 import { useOAuthVisibility } from "@features/auth/lib/use-oauth-visibility";
@@ -9,13 +8,7 @@ import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
-import {
-    createFileRoute,
-    Link,
-    useNavigate,
-    useRouteContext,
-    useSearch,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -56,7 +49,6 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
     const { redirect, email: prefilledEmail } = useSearch({ from: "/login" });
     const navigate = useNavigate();
-    const { queryClient } = useRouteContext({ from: "/login" });
 
     const {
         register: registerField,
@@ -84,11 +76,8 @@ function LoginPage() {
                     } catch {
                         window.location.href = target;
                     }
-                    try {
-                        await queryClient.refetchQueries({ queryKey: authKeys.me() });
-                    } catch {
-                        // ignore
-                    }
+                    // useGoogleLoginMutation 已 invalidate authKeys.me() 并 markSessionActive()，
+                    // Header 等观察者只会自动拉取一次 me，这里不再显式 refetch。
                 },
                 onError: (err) => {
                     toast.error(err instanceof ApiError ? err.message : "登录失败");
@@ -113,11 +102,8 @@ function LoginPage() {
                 } catch {
                     window.location.href = target;
                 }
-                try {
-                    await queryClient.refetchQueries({ queryKey: authKeys.me() });
-                } catch {
-                    // 刷新用户信息失败不影响登录后跳转；页面加载时会再次获取。
-                }
+                // useLogin 的 onSuccess 已 invalidate authKeys.me() 并 markSessionActive()，
+                // Header 等观察者会自动拉取一次 me，这里不再显式 refetch。
             },
             onError: (err) => {
                 // 优先展示后端返回的具体原因（邮箱未验证 / 账户已被禁用 /

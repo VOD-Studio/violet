@@ -7,15 +7,15 @@ import { create } from "zustand";
  * 同时让 UI（Header）能在登录/登出瞬间响应式刷新，无需依赖静态的 context.auth。
  *
  * 与 context.auth / React Query me 缓存的区别：
- * - context.auth：SSR 时算一次，客户端导航时由 getCurrentUser 重算——会因网络
- *   瞬态失败翻成 false（这正是"回到首页"bug 的根源），且登录/登出后不会立即变。
- * - me 缓存：业务请求驱动，refresh 失败时被 authGate 挂起，不会立即翻 undefined。
+ * - context.auth：SSR 时通过 /auth/session 只读探活算一次，客户端导航时由
+ *   getAuthSession 重算；不因网络瞬态失败翻 false，且登录/登出后不会立即变。
+ * - me 缓存：业务请求驱动，401 时直接失败，不会立即翻 undefined。
  * - sessionActive（本模块）：**只在登录成功置 true、登出/取消重登置 false**，
  *   不受任何网络瞬态失败影响，且是响应式的（Zustand）——订阅者（Header、守卫
  *   在客户端）能立即感知。
  *
  * 守卫新逻辑：未登录踢人 = (网络判定未登录) && (!sessionActive)。
- * 即 token 过期（sessionActive 仍 true）时不踢——交给 refresh/弹窗机制原地恢复。
+ * 即 session 过期（sessionActive 仍 true）时不踢——交给 401 弹窗机制原地恢复。
  *
  * 仅客户端有意义；isSessionActive() 在 SSR 返回 false（守卫在 SSR 用 context.auth）。
  */
@@ -30,7 +30,7 @@ interface SessionState {
 
 export const useSessionStore = create<SessionState>((set) => ({
     // SSR 阶段默认 false；客户端 hydrate 后若已登录，__root.beforeLoad 会读到 SSR 的
-    // context.auth 并在客户端 mount 时通过 markSessionActive 校正（见 __root.tsx）。
+    // context.auth.isAuthenticated 并在客户端 mount 时通过 markSessionActive 校正（见 __root.tsx）。
     sessionActive: false,
     markSessionActive: () => set({ sessionActive: true }),
     clearSessionActive: () => set({ sessionActive: false }),

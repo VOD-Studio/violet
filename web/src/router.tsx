@@ -1,7 +1,6 @@
+import type { SessionClaims } from "@entities/user/model/types";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
-
-import type { SessionClaims } from "./features/auth/model/types";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient } from "./shared/api/query-client";
 
@@ -10,7 +9,7 @@ import { clientQueryClient } from "./shared/api/query-client";
  *
  * 在 __root 的 beforeLoad 中填充：
  * - queryClient：SSR 每请求独立实例（避免跨请求缓存串扰），客户端复用单例
- * - auth：SSR 期间确定的鉴权快照，client hydrate 时复用（避免二次请求）
+ * - auth：SSR 期间通过 /auth/session 确定的鉴权快照，client hydrate 时复用
  */
 export interface RouterContext {
     /** TanStack Query 实例 */
@@ -19,7 +18,7 @@ export interface RouterContext {
     auth: {
         /** 是否已登录 */
         isAuthenticated: boolean;
-        /** 会话 Claims 信息 */
+        /** /auth/session 返回的 claims（未登录为 null） */
         claims: SessionClaims | null;
     };
 }

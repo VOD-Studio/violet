@@ -1,3 +1,4 @@
+import type { UserDTO } from "@entities/user/model/types";
 import { authKeys } from "@features/auth/api/keys";
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
@@ -29,11 +30,11 @@ const FALLBACK_BY_STATUS: Record<number, string> = {
 /**
  * LoginDialog - 全局登录弹窗
  *
- * 两路触发：
- * 1. 主动：Header「登录」按钮调 store.open
- * 2. 被动：http 拦截器检测到 401 自动调用 open() 打开弹窗。
+ * 触发路径：
+ * 1. 用户主动点击 Header 的「登录」按钮
+ * 2. http 拦截器收到非主动认证请求的 401 时自动弹窗
  *
- * 取消（点关闭/遮罩/ESC）时：清除 me 用户缓存和会话标志，若当前在受保护页则退回首页。
+ * 取消时：清会话状态并移除 me 缓存；若当前在受保护页则回首页。
  */
 export function LoginDialog() {
     const isOpen = useLoginDialogStore((s) => s.isOpen);
@@ -42,13 +43,14 @@ export function LoginDialog() {
     const navigate = useNavigate();
     const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-    // qc 在 AppProvider 树内解析（LoginDialog 挂在 __root 的 AppProvider 子树）
     const qc = useQueryClient();
     const csrfToken = useCsrfToken({ enabled: isOpen });
     const login = useLogin();
     const googleLogin = useGoogleLoginMutation(csrfToken);
     const { showGoogle, showGithub, showOAuth } = useOAuthVisibility();
 
+    // 弹窗打开时如果用户已手动登录（Header 按钮触发时 sessionActive 可能为 true），
+    // 保持原有语义：登录成功后仅 close。
     const handleGoogleLogin = useGoogleLogin({
         flow: "implicit",
         onSuccess: (tokenResponse) => {
@@ -57,6 +59,9 @@ export function LoginDialog() {
                     toast.success("登录成功");
                     close();
                     setForm({ email: "", password: "" });
+                    // useGoogleLoginMutation 的 onSuccess 已 invalidate authKeys.me()
+                    // 并 markSessionActive()，Header 等观察者会自动拉取一次 me。
+                    // 这里不再显式 refetch，避免与 mutation 的 invalidate 产生双发。
                 },
                 onError: (err) => {
                     const msg =
@@ -101,6 +106,8 @@ export function LoginDialog() {
                 toast.success("登录成功");
                 close();
                 setForm({ email: "", password: "" });
+                // useLogin 的 onSuccess 已 invalidate authKeys.me() 并 markSessionActive()，
+                // Header 等观察者会自动拉取一次 me。这里不再显式 refetch，避免双发。
             },
             onError: (err) => {
                 const msg =
@@ -112,27 +119,23 @@ export function LoginDialog() {
         });
     };
 
-    /**
-     * onOpenChange - 处理关闭（点关闭按钮/遮罩/ESC）
-     *
-     * 仅「用户取消」或关闭走这里：清除会话活跃标志并导航。
-     */
-    const handleOpenChange = (next: boolean) => {
+    const handleOpenChange = async (next: boolean) => {
         if (next) {
             open();
             return;
         }
-        // 用户主动放弃重登：清缓存、清会话活跃标志、关闭弹窗、跳回首页（如果在保护页）
-        qc.removeQueries({ queryKey: authKeys.me() });
+        // 用户取消/关闭弹窗：清会话状态，让守卫允许跳转登录页。
+        // 同样不能把 me 缓存 removeQueries（会触发 401），改为 cancel + 置 null。
+        await qc.cancelQueries({ queryKey: authKeys.me() });
+        qc.setQueryData<UserDTO | null>(authKeys.me(), null);
         clearSessionActive();
         close();
         setForm((f) => ({ ...f, password: "" }));
 
+        // 在受保护页（profile/admin）取消重登 → 回首页
         const needsAuth = pathname.startsWith("/profile") || pathname.startsWith("/admin");
         if (needsAuth) {
-            navigate({ to: "/", replace: true }).catch(() => {
-                // 导航失败不影响已清空的登录态
-            });
+            navigate({ to: "/", replace: true }).catch(() => {});
         }
     };
 
@@ -141,7 +144,7 @@ export function LoginDialog() {
             open={isOpen}
             onOpenChange={handleOpenChange}
             title="重新登录"
-            description="登录状态已失效，请重新登录后继续。成功后将自动恢复你正在进行的操作。"
+            description="登录状态已失效，请重新登录后继续。"
             size="sm"
             footer={
                 <>

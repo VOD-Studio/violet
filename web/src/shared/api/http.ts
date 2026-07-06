@@ -6,21 +6,16 @@ import { ApiError } from "./error";
 import { clearSessionActive } from "./session";
 import type { Envelope, Pagination } from "./types";
 
-// 让 axios 配置对象携带标记。
-// augment AxiosRequestConfig（而非 InternalAxiosRequestConfig），
-// 因为 client.post 的第三参数是 AxiosRequestConfig，类型上不互通。
 declare module "axios" {
     interface AxiosRequestConfig {
         /**
-         * 跳过 authGate（弹窗）的 401 处理。
+         * 跳过 401 弹窗处理。
          *
-         * 用于「身份探活」类请求（getCurrentUser、useMe 的 fetchMe）：
-         * 它们只需要一个干净的通过/失败信号来决定 UI 状态，
-         * 不应触发登录弹窗——否则登出后导航重跑 getCurrentUser
-         * 会撞 401 → 弹窗 + beforeLoad 永久挂起。
-         * 设为 true 时，401 走普通错误归一化直接 reject，由调用方 try/catch 兜底。
+         * 用于「身份认证」类请求（login/register/verify-email/logout 等）：
+         * 它们的 401/403 是业务结果，不应触发登录弹窗。
+         * 设为 true 时，401 走普通错误流直接 reject，由调用方处理。
          */
-        __skipAuthGate?: boolean;
+        __skipAuthDialog?: boolean;
     }
 }
 
@@ -76,7 +71,7 @@ const getBaseUrl = (): string => {
  * 2. axiosRetry：仅 ERR_NETWORK/ETIMEDOUT/5xx 重试 2 次，业务 4xx 不重试
  * 3. request interceptor：写请求自动注入 X-CSRF-Token header
  * 4. response success interceptor：拆 envelope 成 UnpackedResponse
- * 5. response error interceptor：401 清除会话状态并触发登录弹窗
+ * 5. response error interceptor：401 清会话 + 弹登录窗（无 refresh/无挂起重放）
  *
  * @param opts SSR 时传 forwardedCookie；客户端默认不传
  * @returns 配好的 axios 实例
@@ -107,7 +102,6 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
     client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
         const method = config.method?.toLowerCase();
         if (method && method !== "get") {
-            // 总是从 cookie 读最新 CSRF token 并覆盖。
             const token = getCSRFToken();
             if (token) {
                 config.headers.set(CSRF_HEADER, token);
@@ -130,15 +124,16 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
         async (err: AxiosError) => {
             const status = err.response?.status ?? 0;
 
-            // 401 处理：清除会话活跃状态，如果非探活请求则在客户端弹出登录弹窗
-            if (status === 401 && err.config && !err.config.__skipAuthGate) {
+            // 401 处理：opaque session 下 token 不再续期，直接标记会话失效并提示重登。
+            // __skipAuthDialog 用于主动认证请求，避免登录失败还弹登录窗。
+            if (status === 401 && err.config && !err.config.__skipAuthDialog) {
                 clearSessionActive();
                 if (typeof window !== "undefined") {
                     useLoginDialogStore.getState().open();
                 }
             }
 
-            // 归一化错误：把后端错误结构（不在 data 下）转成 ApiError 抛出
+            // 归一化错误：把后端错误结构转成 ApiError 抛出
             const body = err.response?.data as
                 | (Envelope & {
                       error?: string;

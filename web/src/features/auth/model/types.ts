@@ -52,8 +52,11 @@ export interface LoginRequest {
 
 /**
  * LoginResponse - 登录成功返回的信息
+ *
+ * 后端通过 HttpOnly cookie 下发 session，响应体仅返回 user_id。
  */
 export interface LoginResponse {
+    /** 用户 ID */
     user_id: string;
 }
 
@@ -132,13 +135,3 @@ export interface ChangePasswordRequest {
 export type MessageResponse = null;
 
 export type { UserRole };
-
-/**
- * SessionClaims - GET /auth/session 返回的会话 Claims 信息
- */
-export interface SessionClaims {
-    user_id: string;
-    role: string;
-    email: string;
-    is_builtin_super_admin: boolean;
-}
