@@ -32,27 +32,24 @@ redis:
   db: 0
   password: "" # 通过 REDIS_PASSWORD 环境变量配置（可选）
 
-# ── JWT ─────────────────────────────────────
-jwt_private_key_path: ./jwt_private_key.pem
-jwt_public_key_path: ./jwt_public_key.pem
-jwt_access_token_ttl: 15m
-jwt_refresh_token_ttl: 168h
-# 允许未配置密钥文件时生成临时密钥（仅开发；生产必须 false，否则启动拒绝）
-jwt_allow_ephemeral_key: false
-
 # ── Google OAuth ─────────────────────────────
 google_client_id: "" # 通过 GOOGLE_CLIENT_ID 环境变量配置
 
 # ── 鉴权 Cookie ─────────────────────────────
-# access/refresh token 通过 HttpOnly Cookie 下发；CSRF 通过 double-submit cookie 防护
+# opaque session id 通过 HttpOnly Cookie 下发；CSRF 通过 double-submit cookie 防护
 # 生产部署建议通过环境变量覆盖：COOKIE_DOMAIN、COOKIE_SECURE=true、COOKIE_SAMESITE
 cookie:
   domain: ""
   secure: false
   samesite: lax
-  access_name: mimo_access
-  refresh_name: mimo_refresh
   csrf_name: mimo_csrf
+  session_name: mimo_session
+
+# ── Session 生命周期 ─────────────────────────────
+# idle_ttl 滑动续期窗口（活跃用户不过期）；max_ttl 绝对寿命上限（<=0 无上限）
+session:
+  idle_ttl: 168h
+  max_ttl: 0s
 
 # ── CORS 允许来源 ─────────────────────────────
 # 生产环境通过 CORS_ALLOWED_ORIGINS=a,b 配置（逗号分隔）

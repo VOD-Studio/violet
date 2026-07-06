@@ -77,15 +77,9 @@ services:
       REDIS_PORT: 6379
       REDIS_DB: 0
       REDIS_PASSWORD: ""
-      # JWT 密钥路径
-      JWT_PRIVATE_KEY_PATH: /secrets/jwt_private_key.pem
-      JWT_PUBLIC_KEY_PATH: /secrets/jwt_public_key.pem
     volumes:
       # 持久化上传文件
       - uploads_data:/app/uploads
-      # JWT 密钥（只读挂载）
-      - ./secrets/jwt_private_key.pem:/secrets/jwt_private_key.pem:ro
-      - ./secrets/jwt_public_key.pem:/secrets/jwt_public_key.pem:ro
     depends_on:
       postgres:
         condition: service_healthy
