@@ -5,14 +5,13 @@ import { useOAuthVisibility } from "@features/auth/lib/use-oauth-visibility";
 import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
 import type { LoginRequest } from "@features/auth/model/types";
 import { useGoogleLogin } from "@react-oauth/google";
-import { flush, rejectAll, setOpener } from "@shared/api/auth-gate";
 import { ApiError } from "@shared/api/error";
 import { clearSessionActive } from "@shared/api/session";
 import { Button } from "@shared/ui/base/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/shared/ui/base/input";
 import { Label } from "@/shared/ui/base/label";
@@ -56,14 +55,10 @@ export function LoginDialog() {
         flow: "implicit",
         onSuccess: (tokenResponse) => {
             googleLogin.mutate(tokenResponse.access_token, {
-                onSuccess: async () => {
-                    closingForSuccess.current = true;
+                onSuccess: () => {
                     toast.success("登录成功");
                     close();
                     setForm({ email: "", password: "" });
-                    try {
-                        await flush();
-                    } catch {}
                 },
                 onError: (err) => {
                     const msg =
@@ -86,17 +81,6 @@ export function LoginDialog() {
 
     const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
     const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
-    // 区分「程序化关闭」（登录成功后调 close()）与「用户取消」（点关闭/遮罩/ESC）。
-    // 两者都会让 isOpen 翻 false → 触发 onOpenChange(false)，但只有用户取消才该
-    // 拒绝挂起请求 + 清会话。登录成功时置 true，让 handleOpenChange 跳过取消逻辑。
-    const closingForSuccess = useRef(false);
-
-    // 注册 opener：authGate 挂起请求时通过它开门。组件卸载时解绑。
-    // open 来自 store，引用稳定；以闭包包装避免把 store action 直接交给底层。
-    useEffect(() => {
-        setOpener(() => open());
-        return () => setOpener(null);
-    }, [open]);
 
     const validate = (): boolean => {
         const next: typeof errors = {};
@@ -115,21 +99,10 @@ export function LoginDialog() {
         if (!validate()) return;
 
         login.mutate(form, {
-            onSuccess: async () => {
+            onSuccess: () => {
                 toast.success("登录成功");
-                // 标记本次关闭是登录成功，而非用户取消。
-                // close() 会让 isOpen 翻 false → Radix 触发 onOpenChange(false)，
-                // 不打标记的话会被当成取消：rejectAll + 清会话 + 跳 /login，登录白做。
-                closingForSuccess.current = true;
-                // 关闭弹窗并清空敏感字段，避免下次打开残留密码
                 close();
                 setForm({ email: "", password: "" });
-                // 用新 cookie 重放所有挂起请求（鉴权降级场景）。
-                try {
-                    await flush();
-                } catch {
-                    // 单个重放失败已各自 reject，整体不阻塞登录成功
-                }
             },
             onError: (err) => {
                 const msg =
@@ -144,32 +117,19 @@ export function LoginDialog() {
     /**
      * onOpenChange - 处理关闭（点关闭按钮/遮罩/ESC）
      *
-     * 仅「用户取消」走这里：拒绝挂起请求、清会话标志、回首页。
-     * 登录成功的 close() 也会触发本回调（isOpen false），但 onSuccess 已先置
-     * closingForSuccess=true，这里据此跳过取消逻辑，避免把刚登录的会话清掉。
+     * 仅「用户取消」或关闭走这里：清除会话活跃标志并导航。
      */
     const handleOpenChange = (next: boolean) => {
         if (next) {
             open();
             return;
         }
-        // 登录成功导致的关闭：放行，不做取消处理
-        if (closingForSuccess.current) {
-            closingForSuccess.current = false;
-            return;
-        }
-        // 用户主动放弃重登：拒绝挂起请求、清会话状态、回首页。
-        rejectAll();
-        // removeQueries 真正清除 me 缓存（v5 中 setQueryData(undefined) 是 no-op），
-        // 让 Header 等订阅者立即翻回未登录态。
+        // 用户主动放弃重登：清缓存、清会话活跃标志、关闭弹窗、跳回首页（如果在保护页）
         qc.removeQueries({ queryKey: authKeys.me() });
-        // 清除会话活跃标志：用户明确放弃重登 = 主动登出语义，
-        // 守卫此后可正常踢人；下次访问受保护页会重新走未登录流程。
         clearSessionActive();
         close();
         setForm((f) => ({ ...f, password: "" }));
 
-        // 在受保护页（profile/admin）取消重登 → 回首页（公开页无需跳）
         const needsAuth = pathname.startsWith("/profile") || pathname.startsWith("/admin");
         if (needsAuth) {
             navigate({ to: "/", replace: true }).catch(() => {

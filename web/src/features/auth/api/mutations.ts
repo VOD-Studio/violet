@@ -2,17 +2,15 @@ import type { UserDTO } from "@entities/user/model/types";
 import { CSRF_HEADER, getCSRFToken } from "@shared/api/csrf";
 import { apiPatch, apiPost } from "@shared/api/request";
 import { clearSessionActive, markSessionActive } from "@shared/api/session";
-import { clearRefresh, scheduleRefresh } from "@shared/api/token-scheduler";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
     ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
+    LoginResponse,
     MessageResponse,
-    RefreshRequest,
     RegisterRequest,
     ResetPasswordRequest,
-    TokenResponse,
     UpdatedProfile,
     UpdateProfileRequest,
     VerifyEmailRequest,
@@ -57,20 +55,17 @@ export const useLogin = (csrfToken?: string) => {
         mutationFn: (body: LoginRequest) => {
             // 优先使用调用方传入的最新 token；若 state 尚未同步，回退到当前 cookie。
             const token = csrfToken || getCSRFToken();
-            return apiPost<TokenResponse>("/auth/login", body, {
+            return apiPost<LoginResponse>("/auth/login", body, {
                 headers: token ? { [CSRF_HEADER]: token } : undefined,
                 // login 本身就是认证请求，401 是正常业务结果（密码错/账户禁用），
                 // 不应触发 authGate 的 refresh 重试 + 登录弹窗（否则登录失败还弹窗）。
                 __skipAuthGate: true,
             });
         },
-        onSuccess: (data) => {
+        onSuccess: () => {
             qc.invalidateQueries({ queryKey: authKeys.me() });
-            // 登录成功：标记会话活跃（守卫据此不再因瞬态失败踢人）+ arm 主动刷新定时器
+            // 登录成功：标记会话活跃（守卫据此不再因瞬态失败踢人）
             markSessionActive();
-            if (data?.expires_in) {
-                scheduleRefresh(data.expires_in);
-            }
         },
     });
 };
@@ -80,7 +75,7 @@ export const useLogin = (csrfToken?: string) => {
  */
 export const googleLogin = (credential: string, csrfToken?: string) => {
     const token = csrfToken || getCSRFToken();
-    return apiPost<TokenResponse>(
+    return apiPost<LoginResponse>(
         "/auth/google",
         { credential },
         {
@@ -97,12 +92,9 @@ export const useGoogleLoginMutation = (csrfToken?: string) => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (credential: string) => googleLogin(credential, csrfToken),
-        onSuccess: (data) => {
+        onSuccess: () => {
             qc.invalidateQueries({ queryKey: authKeys.me() });
             markSessionActive();
-            if (data?.expires_in) {
-                scheduleRefresh(data.expires_in);
-            }
         },
     });
 };
@@ -112,7 +104,7 @@ export const useGoogleLoginMutation = (csrfToken?: string) => {
  */
 export const githubLogin = (credential: string, csrfToken?: string) => {
     const token = csrfToken || getCSRFToken();
-    return apiPost<TokenResponse>(
+    return apiPost<LoginResponse>(
         "/auth/github",
         { credential },
         {
@@ -129,37 +121,12 @@ export const useGithubLoginMutation = (csrfToken?: string) => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (credential: string) => githubLogin(credential, csrfToken),
-        onSuccess: (data) => {
+        onSuccess: () => {
             qc.invalidateQueries({ queryKey: authKeys.me() });
             markSessionActive();
-            if (data?.expires_in) {
-                scheduleRefresh(data.expires_in);
-            }
         },
     });
 };
-
-/**
- * fetchRefresh - 显式刷新 access token
- *
- * httpClient 在 401 时已自动调用本接口，此处导出供手动刷新场景使用。
- * cookie 存在时 body 可为空对象。
- *
- * @param body 可选的 refresh_token，cookie 缺失时必须提供
- * @returns 新的 token 信息
- */
-export const fetchRefresh = (body: RefreshRequest = {}): Promise<TokenResponse> =>
-    apiPost<TokenResponse>("/auth/refresh", body);
-
-/**
- * useRefresh - 显式刷新 token 的 hook 形态
- *
- * @returns POST /auth/refresh
- */
-export const useRefresh = () =>
-    useMutation({
-        mutationFn: (body: RefreshRequest) => fetchRefresh(body),
-    });
 
 /**
  * useForgotPassword - 发起密码重置邮件
@@ -214,8 +181,7 @@ export const useLogout = () => {
             // 登出清 CSRF token 缓存：后端已清 mimo_csrf cookie，
             // 缓存留旧 token 会让下次登录页命中陈旧值，与新 cookie 对不上。
             qc.removeQueries({ queryKey: authKeys.csrfToken() });
-            // 登出：停止主动刷新 + 清除会话活跃标志（守卫据此允许踢人/跳登录）
-            clearRefresh();
+            // 登出：清除会话活跃标志（守卫据此允许踢人/跳登录）
             clearSessionActive();
         },
     });

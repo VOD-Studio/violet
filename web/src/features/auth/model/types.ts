@@ -51,31 +51,10 @@ export interface LoginRequest {
 }
 
 /**
- * TokenResponse - 登录/刷新成功返回的 token 信息
- *
- * 后端同时通过 HttpOnly cookie 下发 access/refresh token，响应体仅返回
- * access_token 供前端写入内存；refresh_token 不出现在响应体以防 XSS。
+ * LoginResponse - 登录成功返回的信息
  */
-export interface TokenResponse {
-    /** 访问令牌，需写入内存或状态管理，不持久化到 localStorage */
-    access_token: string;
-    /** access_token 有效期，单位秒 */
-    expires_in: number;
-    /** refresh_token 有效期，单位秒 */
-    refresh_expires_in: number;
-    /** 令牌类型，固定 Bearer */
-    token_type: "Bearer";
-}
-
-/**
- * RefreshRequest - POST /auth/refresh 请求体
- *
- * httpClient 内部 401 拦截已自动调用 refresh；此处 body 仅用于显式刷新场景。
- * 后端优先从 HttpOnly cookie 读取 refresh_token，cookie 缺失时回退到请求体。
- */
-export interface RefreshRequest {
-    /** refresh token，cookie 存在时可省略 */
-    refresh_token?: string;
+export interface LoginResponse {
+    user_id: string;
 }
 
 /**
