@@ -27,6 +27,9 @@ Thumbs.db
 .omc/
 **/.omc/
 
+# Qwen state
+.qwen/
+
 # Environment
 .env
 .env.local
