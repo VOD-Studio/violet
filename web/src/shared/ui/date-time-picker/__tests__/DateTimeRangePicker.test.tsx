@@ -29,6 +29,11 @@ describe("DateTimeRangePicker", () => {
     beforeEach(() => {
         cleanup();
         Element.prototype.scrollIntoView = vi.fn();
+        global.ResizeObserver = class ResizeObserver {
+            observe() {}
+            unobserve() {}
+            disconnect() {}
+        };
     });
 
     it("渲染占位符", () => {
