@@ -51,6 +51,16 @@ export interface LoginRequest {
 }
 
 /**
+ * LoginResponse - 登录成功返回的信息
+ *
+ * 后端通过 HttpOnly cookie 下发 session，响应体仅返回 user_id。
+ */
+export interface LoginResponse {
+    /** 用户 ID */
+    user_id: string;
+}
+
+/**
  * ForgotPasswordRequest - POST /auth/forgot-password 请求体
  */
 export interface ForgotPasswordRequest {

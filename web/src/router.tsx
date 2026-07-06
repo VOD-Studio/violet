@@ -1,9 +1,8 @@
+import type { SessionClaims } from "@entities/user/model/types";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
-
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient } from "./shared/api/query-client";
-import type { AuthSessionClaims } from "./shared/server/session";
 
 /**
  * RouterContext - 全路由共享的上下文
@@ -20,7 +19,7 @@ export interface RouterContext {
         /** 是否已登录 */
         isAuthenticated: boolean;
         /** /auth/session 返回的 claims（未登录为 null） */
-        claims: AuthSessionClaims | null;
+        claims: SessionClaims | null;
     };
 }
 

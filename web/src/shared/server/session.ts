@@ -1,22 +1,6 @@
+import type { SessionClaims } from "@entities/user/model/types";
 import { createServerFn } from "@tanstack/react-start";
 import { getServerHttpClient } from "./auth";
-
-/**
- * AuthSessionClaims - SSR 通过 GET /auth/session 拿到的只读鉴权声明
- *
- * 后端 /auth/session 只读不写：命中即返回 claims，不续期、不 Set-Cookie。
- * 完整 UserDTO 由客户端 useMe（GET /auth/me）按需拉取。
- */
-export interface AuthSessionClaims {
-    /** 用户 ID */
-    user_id: string;
-    /** 用户角色 */
-    role: string;
-    /** 用户邮箱 */
-    email: string;
-    /** 是否为内置超级管理员 */
-    is_builtin_super_admin: boolean;
-}
 
 /**
  * getAuthSession - SSR 鉴权探活（server function）
@@ -38,10 +22,10 @@ export interface AuthSessionClaims {
  * @returns 当前会话 claims，未登录或出错时返回 null
  */
 export const getAuthSession = createServerFn({ method: "GET" }).handler(
-    async (): Promise<AuthSessionClaims | null> => {
+    async (): Promise<SessionClaims | null> => {
         try {
             const client = getServerHttpClient();
-            const res = await client.get<{ data: AuthSessionClaims }>("/auth/session");
+            const res = await client.get<{ data: SessionClaims }>("/auth/session");
             return res.data.data;
         } catch {
             return null;

@@ -12,23 +12,25 @@ export const Route = createFileRoute("/admin")({
         // 后者（isSessionActive）不受网络瞬态失败影响——登录成功置 true、登出才置 false。
         // 这样 session 过期导致 getAuthSession 返回 null（auth.isAuthenticated 短暂为 false）
         // 时，已登录用户不会被误踢，而是原地等弹窗重登。
-        if (!auth.isAuthenticated && !isSessionActive()) {
+        if ((!auth.isAuthenticated || !auth.claims) && !isSessionActive()) {
             throw redirect({
                 to: "/",
                 replace: true,
             });
         }
 
-        // SSR claims 已确认用户角色，直接判定；claims 缺失但 sessionActive 为 true 时
-        // 属于客户端瞬态，放行到子路由 PermissionGuard 兜底。
-        const role = auth.claims?.role;
-        const isAdminRole = role === "admin" || role === "superadmin";
-
-        if (auth.claims && !isAdminRole) {
-            throw redirect({
-                to: "/",
-                replace: true,
-            });
+        // 检查用户是否是管理员角色（admin 或 superadmin）或者内置超级管理员
+        if (auth.claims) {
+            const isAdminRole =
+                auth.claims.role === "admin" ||
+                auth.claims.role === "superadmin" ||
+                auth.claims.is_builtin_super_admin;
+            if (!isAdminRole) {
+                throw redirect({
+                    to: "/",
+                    replace: true,
+                });
+            }
         }
     },
     component: AdminLayout,

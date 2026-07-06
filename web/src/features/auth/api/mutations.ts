@@ -7,6 +7,7 @@ import type {
     ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
+    LoginResponse,
     MessageResponse,
     RegisterRequest,
     ResetPasswordRequest,
@@ -46,14 +47,14 @@ export const useVerifyEmail = () =>
  * onSuccess 主动拉取最新用户信息。
  *
  * @param csrfToken 可选的 CSRF token；当浏览器 cookie 未成功写入时，可显式传入并写入请求头。
- * @returns POST /auth/login，返回 { user_id }
+ * @returns POST /auth/login，返回登录响应
  */
 export const useLogin = (csrfToken?: string) => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (body: LoginRequest) => {
             const token = csrfToken || getCSRFToken();
-            return apiPost<{ user_id: string }>("/auth/login", body, {
+            return apiPost<LoginResponse>("/auth/login", body, {
                 headers: token ? { [CSRF_HEADER]: token } : undefined,
                 // login 本身就是认证请求，401 是正常业务结果（密码错/账户禁用），
                 // 不应触发登录弹窗。
@@ -73,7 +74,7 @@ export const useLogin = (csrfToken?: string) => {
  */
 export const googleLogin = (credential: string, csrfToken?: string) => {
     const token = csrfToken || getCSRFToken();
-    return apiPost<{ user_id: string }>(
+    return apiPost<LoginResponse>(
         "/auth/google",
         { credential },
         {
@@ -102,7 +103,7 @@ export const useGoogleLoginMutation = (csrfToken?: string) => {
  */
 export const githubLogin = (credential: string, csrfToken?: string) => {
     const token = csrfToken || getCSRFToken();
-    return apiPost<{ user_id: string }>(
+    return apiPost<LoginResponse>(
         "/auth/github",
         { credential },
         {
