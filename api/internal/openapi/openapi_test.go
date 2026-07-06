@@ -54,21 +54,22 @@ func TestAuthPaths(t *testing.T) {
 	spec, _ := Spec()
 	for _, p := range []string{
 		"/auth/csrf-token", "/auth/register", "/auth/verify-email", "/auth/login",
-		"/auth/refresh", "/auth/forgot-password", "/auth/reset-password",
+		"/auth/session", "/auth/forgot-password", "/auth/reset-password",
 		"/auth/logout", "/auth/me", "/auth/profile", "/auth/password",
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing auth path %s", p)
 	}
-	for _, s := range []string{"UserDTO", "LoginToken", "ProfileResponse", "CSRFToken"} {
+	for _, s := range []string{"UserDTO", "LoginResponse", "SessionResponse", "ProfileResponse", "CSRFToken"} {
 		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
 	}
 	// 写操作需带 CSRF 头
 	login := spec.Paths.Find("/auth/login").Post
 	require.NotNil(t, login)
 	require.True(t, hasParam(login.Parameters, "X-CSRF-Token"))
-	// logout/me 需鉴权
+	// logout/me/session 需鉴权
 	require.NotEmpty(t, spec.Paths.Find("/auth/logout").Post.Security)
 	require.NotEmpty(t, spec.Paths.Find("/auth/me").Get.Security)
+	require.NotEmpty(t, spec.Paths.Find("/auth/session").Get.Security)
 }
 
 // hasParam 检查参数列表是否包含指定名称

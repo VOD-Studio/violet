@@ -4,13 +4,13 @@ import "github.com/getkin/kin-openapi/openapi3"
 
 const secCookieAuth = "cookieAuth"
 
-// registerSecuritySchemes 注册 cookieAuth scheme（access token 走 HttpOnly cookie）。
+// registerSecuritySchemes 注册 cookieAuth scheme（opaque session id 走 HttpOnly cookie）。
 func registerSecuritySchemes(t *openapi3.T) {
 	t.Components.SecuritySchemes[secCookieAuth] = &openapi3.SecuritySchemeRef{Value: &openapi3.SecurityScheme{
 		Type:        "apiKey",
 		In:          "cookie",
-		Name:        "access_token",
-		Description: "登录后服务端下发的 access token cookie（HttpOnly）。登录/刷新接口会自动设置。",
+		Name:        "mimo_session",
+		Description: "登录后服务端下发的 opaque session cookie（HttpOnly）。登录接口会自动设置。",
 	}}
 }
 

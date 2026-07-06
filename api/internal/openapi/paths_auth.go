@@ -21,10 +21,6 @@ func registerAuthPaths(t *openapi3.T) {
 		"password": reqStr("密码"),
 	}, "email", "password")
 
-	registerSchema(t, "RefreshRequest", openapi3.Schemas{
-		"refresh_token": optStr("刷新令牌（cookie 优先，缺失时回退读取 body）"),
-	})
-
 	registerSchema(t, "ForgotPasswordRequest", openapi3.Schemas{
 		"email": reqStr("邮箱"),
 	}, "email")
@@ -61,12 +57,17 @@ func registerAuthPaths(t *openapi3.T) {
 		"permissions":    strArray("权限代码列表"),
 	})
 
-	// LoginToken：login/refresh 响应的 data（refresh_token 只走 cookie，不在 body）
-	registerSchema(t, "LoginToken", openapi3.Schemas{
-		"access_token":       reqStr("访问令牌"),
-		"expires_in":         optInt("访问令牌过期秒数"),
-		"refresh_expires_in": optInt("刷新令牌过期秒数"),
-		"token_type":         reqStr("令牌类型（固定 Bearer）"),
+	// LoginResponse：login/google/github 响应的 data（session id 与 csrf 走 cookie，不在 body）
+	registerSchema(t, "LoginResponse", openapi3.Schemas{
+		"user_id": reqStr("用户 ID（UUID）"),
+	})
+
+	// SessionResponse：/auth/session 响应的 data（SSR 探活，只读不续期）
+	registerSchema(t, "SessionResponse", openapi3.Schemas{
+		"user_id":                reqStr("用户 ID（UUID）"),
+		"role":                   strEnum("角色", "user", "admin", "superadmin"),
+		"email":                  reqStr("邮箱"),
+		"is_builtin_super_admin": optBool("是否内置超管"),
 	})
 
 	// ProfileResponse：auth/profile 响应的 data
@@ -131,27 +132,26 @@ func registerAuthPaths(t *openapi3.T) {
 		Post: &openapi3.Operation{
 			Tags:        []string{"认证"},
 			Summary:     "登录",
-			Description: "登录并下发 access/refresh/CSRF cookie（HttpOnly）。受认证限流保护。",
+			Description: "校验凭证并下发 session/CSRF cookie（HttpOnly）。受认证限流保护。",
 			Parameters:  openapi3.Parameters{csrfHeaderParam()},
 			RequestBody: jsonBody("LoginRequest", true, "登录凭证"),
 			Responses: responses(
-				200, dataResponse("LoginToken", "登录令牌（refresh_token 走 cookie，不在 body）", 200),
+				200, dataResponse("LoginResponse", "登录用户 ID（session/csrf 走 cookie，不在 body）", 200),
 				401, errorResponse("凭证错误"),
 			),
 		},
 	})
 
-	// ---- POST /auth/refresh ----
-	t.Paths.Set("/auth/refresh", &openapi3.PathItem{
-		Post: &openapi3.Operation{
+	// ---- GET /auth/session（登录，只读）----
+	t.Paths.Set("/auth/session", &openapi3.PathItem{
+		Get: &openapi3.Operation{
 			Tags:        []string{"认证"},
-			Summary:     "刷新令牌",
-			Description: "用 refresh token 换取新的 access token（cookie 优先，body 回退）。受认证限流保护。",
-			Parameters:  openapi3.Parameters{csrfHeaderParam()},
-			RequestBody: jsonBody("RefreshRequest", false, "刷新令牌（cookie 优先时可省略 body）"),
+			Summary:     "SSR 登录态探活",
+			Description: "只读校验当前 session，返回用户身份。不续期、不写 cookie（命门不变量）。",
+			Security:    securityCookie(),
 			Responses: responses(
-				200, dataResponse("LoginToken", "新的登录令牌", 200),
-				401, errorResponse("refresh token 无效"),
+				200, dataResponse("SessionResponse", "当前登录用户身份", 200),
+				401, errorResponse("未登录"),
 			),
 		},
 	})
@@ -190,7 +190,7 @@ func registerAuthPaths(t *openapi3.T) {
 		Post: &openapi3.Operation{
 			Tags:        []string{"认证"},
 			Summary:     "登出",
-			Description: "登出并清除 access/refresh/CSRF cookie。",
+			Description: "登出当前设备并清除 session/CSRF cookie。",
 			Security:    securityCookie(),
 			Parameters:  openapi3.Parameters{csrfHeaderParam()},
 			Responses: responses(
@@ -233,7 +233,7 @@ func registerAuthPaths(t *openapi3.T) {
 		Patch: &openapi3.Operation{
 			Tags:        []string{"认证"},
 			Summary:     "修改密码",
-			Description: "修改密码并撤销 refresh token（需重新登录）。",
+			Description: "修改密码并吊销该用户全部 session（全部设备需重新登录）。",
 			Security:    securityCookie(),
 			Parameters:  openapi3.Parameters{csrfHeaderParam()},
 			RequestBody: jsonBody("ChangePasswordRequest", true, "原密码与新密码"),
