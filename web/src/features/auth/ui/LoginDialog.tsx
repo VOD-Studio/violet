@@ -1,3 +1,4 @@
+import type { UserDTO } from "@entities/user/model/types";
 import { authKeys } from "@features/auth/api/keys";
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
@@ -54,13 +55,13 @@ export function LoginDialog() {
         flow: "implicit",
         onSuccess: (tokenResponse) => {
             googleLogin.mutate(tokenResponse.access_token, {
-                onSuccess: async () => {
+                onSuccess: () => {
                     toast.success("登录成功");
                     close();
                     setForm({ email: "", password: "" });
-                    try {
-                        await qc.refetchQueries({ queryKey: authKeys.me() });
-                    } catch {}
+                    // useGoogleLoginMutation 的 onSuccess 已 invalidate authKeys.me()
+                    // 并 markSessionActive()，Header 等观察者会自动拉取一次 me。
+                    // 这里不再显式 refetch，避免与 mutation 的 invalidate 产生双发。
                 },
                 onError: (err) => {
                     const msg =
@@ -105,13 +106,12 @@ export function LoginDialog() {
         if (!validate()) return;
 
         login.mutate(form, {
-            onSuccess: async () => {
+            onSuccess: () => {
                 toast.success("登录成功");
                 close();
                 setForm({ email: "", password: "" });
-                try {
-                    await qc.refetchQueries({ queryKey: authKeys.me() });
-                } catch {}
+                // useLogin 的 onSuccess 已 invalidate authKeys.me() 并 markSessionActive()，
+                // Header 等观察者会自动拉取一次 me。这里不再显式 refetch，避免双发。
             },
             onError: (err) => {
                 const msg =
@@ -123,13 +123,15 @@ export function LoginDialog() {
         });
     };
 
-    const handleOpenChange = (next: boolean) => {
+    const handleOpenChange = async (next: boolean) => {
         if (next) {
             open();
             return;
         }
-        // 用户取消/关闭弹窗：清会话状态，让守卫允许跳转登录页
-        qc.removeQueries({ queryKey: authKeys.me() });
+        // 用户取消/关闭弹窗：清会话状态，让守卫允许跳转登录页。
+        // 同样不能把 me 缓存 removeQueries（会触发 401），改为 cancel + 置 null。
+        await qc.cancelQueries({ queryKey: authKeys.me() });
+        qc.setQueryData<UserDTO | null>(authKeys.me(), null);
         clearSessionActive();
         close();
         setForm((f) => ({ ...f, password: "" }));
