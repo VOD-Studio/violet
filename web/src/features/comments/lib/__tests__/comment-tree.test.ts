@@ -42,17 +42,34 @@ describe("buildCommentTree", () => {
         expect(tree[0].replies[0].comment.body).toBe("reply");
     });
 
-    it("多层嵌套按 path 挂载（孙评论挂在子评论下）", () => {
+    it("回复另一条回复时挂同一顶层下（两层扁平，不深嵌套）", () => {
+        // 后端两层扁平：id=3 回复 id=2（id=2 是回复），depth 都是 1。
+        // 前端组装时，id=3 应挂到顶层 id=1 下，不嵌套在 id=2 里。
+        // 对话关系靠 comment.reply_to_name 标，不靠嵌套结构。
         const items = [
             make({ id: "1", depth: 0 }),
             make({ id: "2", parent_id: "1", depth: 1 }),
-            make({ id: "3", parent_id: "2", depth: 2, body: "grandchild" }),
+            make({ id: "3", parent_id: "2", depth: 1, body: "reply-to-reply" }),
         ];
         const tree = buildCommentTree(items);
         expect(tree).toHaveLength(1);
-        expect(tree[0].replies).toHaveLength(1);
-        expect(tree[0].replies[0].replies).toHaveLength(1);
-        expect(tree[0].replies[0].replies[0].comment.body).toBe("grandchild");
+        expect(tree[0].comment.id).toBe("1");
+        // id=2 和 id=3 都扁平挂在顶层 id=1 下
+        expect(tree[0].replies).toHaveLength(2);
+        const replyIds = tree[0].replies.map((r) => r.comment.id).sort();
+        expect(replyIds).toEqual(["2", "3"]);
+    });
+
+    it("回复链上中间节点缺失时沿链向上找顶层", () => {
+        // id=3 回复 id=2，但 id=2 不在列表里（被分页切走）。
+        // id=3 的顶层祖先是 id=1，应挂到 id=1 下。
+        const items = [
+            make({ id: "1", depth: 0 }),
+            make({ id: "3", parent_id: "2", depth: 1, body: "orphan-reply" }),
+        ];
+        const tree = buildCommentTree(items);
+        // id=3 找不到完整链（id=2 缺失），降级为顶层节点
+        expect(tree).toHaveLength(2);
     });
 
     it("parent_id 指向不存在的评论时降级为顶级", () => {
