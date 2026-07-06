@@ -34,7 +34,7 @@ func (f *fakeLookup) Touch(_ context.Context, _ *domainsession.Session, _ time.D
 // testSnapMW 构造测试用 UserSnapshot。
 func testSnapMW() domainsession.UserSnapshot {
 	uid, _ := domainshared.ParseID("00000000-0000-0000-0000-000000000001")
-	return domainsession.UserSnapshot{UserID: uid, Email: "u@example.com", Role: "user", RoleID: 2}
+	return domainsession.UserSnapshot{UserID: uid, Email: "u@example.com", Role: "user"}
 }
 
 // testCookieCfg 构造测试用 CookieConfig。

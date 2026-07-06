@@ -19,8 +19,6 @@ import (
 //   - superadmin 通配放行（拥有所有权限，新增权限自动拥有，无需手动分配）
 //   - 其他角色按 role_permissions 表查询，结果缓存在内存（角色权限变更不频繁）
 //   - 缓存带 TTL（默认 5 分钟），过期后下次查询重新加载；变更角色权限后可调 Refresh 强制刷新
-//
-// 注意：roleID 参数目前恒为 nil（JWT 未写入 roleID），权限查询以 role 名为主键。
 type PermissionService struct {
 	roleRepo domainrole.RoleRepository
 	ttl      time.Duration
@@ -48,7 +46,7 @@ func NewPermissionService(roleRepo domainrole.RoleRepository, ttl time.Duration)
 // 内置超管（isBuiltinSuperAdmin=true）通配放行：拥有所有权限，新增权限自动拥有，无需手动分配。
 // 其他角色（含被委派超管）查缓存（过期则重新加载全部角色权限）。
 // 任一权限码缺失即返回 false。
-func (s *PermissionService) HasPermission(role string, isBuiltinSuperAdmin bool, roleID *int32, codes ...string) bool {
+func (s *PermissionService) HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool {
 	// 内置超级管理员通配：拥有所有权限
 	if isBuiltinSuperAdmin {
 		return true

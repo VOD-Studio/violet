@@ -27,7 +27,7 @@ func newTestStore(t *testing.T) (*RedisSessionStore, *miniredis.Miniredis) {
 // testSnap 构造测试用 UserSnapshot。
 func testSnap(uid string) domainsession.UserSnapshot {
 	id, _ := domainshared.ParseID(uid)
-	return domainsession.UserSnapshot{UserID: id, Email: "u@example.com", Role: "user", RoleID: 2}
+	return domainsession.UserSnapshot{UserID: id, Email: "u@example.com", Role: "user"}
 }
 
 // TestCreateAndGet_RoundTrip 验证 Create 写入后 Get 能读回等价的 session。

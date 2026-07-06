@@ -97,7 +97,6 @@ func authenticateSession(w http.ResponseWriter, r *http.Request, lookup SessionL
 	ctx = context.WithValue(ctx, UserIDKey, claims.UserID)
 	ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
 	ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
-	ctx = context.WithValue(ctx, UserRoleIDKey, claims.RoleID)
 	ctx = context.WithValue(ctx, UserIsBuiltinSuperAdminKey, claims.IsBuiltinSuperAdmin)
 	return ctx, true
 }

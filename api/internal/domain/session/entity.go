@@ -13,7 +13,7 @@ var ErrSessionNotFound = errors.New("session not found")
 
 // Claims 鉴权中间件与 /auth/session 端点返回的身份字段。
 //
-// 与 middleware.TokenClaims 字段对齐，便于鉴权中间件用同一套 context key 注入。
+// 鉴权中间件用 context key 注入这些字段，下游 handler 通过 getter 读取。
 // CSRFToken 随 claims 一起返回，供需要写操作的端点校验。
 type Claims struct {
 	// UserID 用户唯一标识
@@ -22,8 +22,6 @@ type Claims struct {
 	Email string
 	// Role 角色名
 	Role string
-	// RoleID 角色 id
-	RoleID int32
 	// IsBuiltinSuperAdmin 内置超管标志位
 	IsBuiltinSuperAdmin bool
 	// CSRFToken double-submit CSRF 凭证
@@ -50,8 +48,6 @@ type Session struct {
 	email string
 	// role 角色名
 	role string
-	// roleID 角色 id
-	roleID int32
 	// isBuiltinSuperAdmin 内置超管标志位
 	isBuiltinSuperAdmin bool
 	// csrf double-submit CSRF 凭证，与 mimo_csrf cookie 同值
@@ -83,7 +79,6 @@ func NewSession(snap UserSnapshot, now time.Time, absoluteTTL time.Duration) (*S
 		userID:              snap.UserID.String(),
 		email:               snap.Email,
 		role:                snap.Role,
-		roleID:              snap.RoleID,
 		isBuiltinSuperAdmin: snap.IsBuiltinSuperAdmin,
 		csrf:                csrf,
 		createdAt:           now,
@@ -100,7 +95,7 @@ func NewSession(snap UserSnapshot, now time.Time, absoluteTTL time.Duration) (*S
 // 与 NewUser 的 ReconstructUser 同理：不触发事件、不设默认值，完全按 Redis
 // 存储的数据恢复。供 SessionStore.Get 反序列化时使用。
 func Reconstruct(
-	id ID, userID, email, role string, roleID int32, isBuiltinSuperAdmin bool,
+	id ID, userID, email, role string, isBuiltinSuperAdmin bool,
 	csrf CSRFToken, createdAt, lastSeenAt, absoluteDeadline time.Time,
 ) *Session {
 	return &Session{
@@ -108,7 +103,6 @@ func Reconstruct(
 		userID:              userID,
 		email:               email,
 		role:                role,
-		roleID:              roleID,
 		isBuiltinSuperAdmin: isBuiltinSuperAdmin,
 		csrf:                csrf,
 		createdAt:           createdAt,
@@ -143,7 +137,6 @@ func (s *Session) Claims() Claims {
 		UserID:              s.userID,
 		Email:               s.email,
 		Role:                s.role,
-		RoleID:              s.roleID,
 		IsBuiltinSuperAdmin: s.isBuiltinSuperAdmin,
 		CSRFToken:           string(s.csrf),
 	}

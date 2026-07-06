@@ -61,8 +61,6 @@ type UserSnapshot struct {
 	Email string
 	// Role 角色名（user/admin/superadmin），路由守卫据此判断权限
 	Role string
-	// RoleID 角色 id，细粒度权限查询（permission 表）需要
-	RoleID int32
 	// IsBuiltinSuperAdmin 是否内置超管，true 时权限检查短路放行所有权限码
 	IsBuiltinSuperAdmin bool
 }

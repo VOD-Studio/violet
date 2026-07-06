@@ -52,11 +52,11 @@ func WithAccessCookie(name string) AuthOption {
 
 // PermissionChecker 权限点检查端口
 //
-// 任何能根据 (role, isBuiltinSuperAdmin, roleID, codes) 判断是否授权的实现都能作为 RequirePermission 中间件依赖。
+// 任何能根据 (role, isBuiltinSuperAdmin, codes) 判断是否授权的实现都能作为 RequirePermission 中间件依赖。
 // isBuiltinSuperAdmin 承载通配符语义：内置超管短路拥有所有权限，不查权限表。
 // 当前实现：*service.PermissionService。
 type PermissionChecker interface {
-	HasPermission(role string, isBuiltinSuperAdmin bool, roleID *int32, codes ...string) bool
+	HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool
 }
 
 type contextKey string
@@ -65,7 +65,6 @@ const (
 	UserIDKey                  contextKey = "userID"
 	UserRoleKey                contextKey = "userRole"
 	UserEmailKey               contextKey = "userEmail"
-	UserRoleIDKey              contextKey = "userRoleID"
 	UserIsBuiltinSuperAdminKey contextKey = "userIsBuiltinSuperAdmin"
 )
 
@@ -170,7 +169,6 @@ func authenticate(w http.ResponseWriter, r *http.Request, validator TokenValidat
 	ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
 	ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
 	ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
-	ctx = context.WithValue(ctx, UserRoleIDKey, claims.RoleID)
 	ctx = context.WithValue(ctx, UserIsBuiltinSuperAdminKey, claims.IsBuiltinSuperAdmin)
 	return ctx, true
 }
@@ -253,10 +251,9 @@ func RequirePermission(checker PermissionChecker, codes ...string) func(http.Han
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			role := GetUserRole(r.Context())
 			isBuiltin := GetUserIsBuiltinSuperAdmin(r.Context())
-			roleID := GetUserRoleID(r.Context())
 			userID := GetUserID(r.Context())
 
-			if !checker.HasPermission(role, isBuiltin, roleID, codes...) {
+			if !checker.HasPermission(role, isBuiltin, codes...) {
 				log.Warn().
 					Str("user_id", userID).
 					Str("role", role).
@@ -296,14 +293,6 @@ func GetUserEmail(ctx context.Context) string {
 		return email
 	}
 	return ""
-}
-
-// GetUserRoleID 从上下文中获取用户角色 ID
-func GetUserRoleID(ctx context.Context) *int32 {
-	if roleID, ok := ctx.Value(UserRoleIDKey).(int32); ok && roleID != 0 {
-		return &roleID
-	}
-	return nil
 }
 
 // GetUserIsBuiltinSuperAdmin 从上下文中获取是否为内置超级管理员
