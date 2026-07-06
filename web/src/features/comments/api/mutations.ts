@@ -14,9 +14,10 @@ import { commentKeys } from "./keys";
  * 新评论默认 pending 状态，需审核后才在前台公开（登录提交者本人立即可见带「审批中」徽章）。
  * 后端返回 CommentDTO，登录态用于乐观展示自己的 pending 评论。
  *
- * 失效策略（精确到 type 维度）：按提交的 body.anchor 判断只失效对应类型的列表，
- * 避免提交自由评论时连批注列表也重拉（反之亦然）。回复批注继承父 anchor，
- * 同样走 annotation 分支。
+ * 失效策略（精确到 type + replies 维度）：
+ *   - 按 body.anchor 判断 type（free/annotation），只失效对应类型列表，避免互相牵连
+ *   - 回复（parent_id 非空）：额外失效该顶层评论的 replies 缓存，让展开列表立即看到新回复
+ *   - 顶层评论：list 缓存失效后，replies_total + 预览会随之刷新
  */
 export const useCreateComment = (postId: string) => {
     const qc = useQueryClient();
@@ -25,8 +26,7 @@ export const useCreateComment = (postId: string) => {
         onSuccess: (_data, variables) => {
             // variables.anchor 非空 → 批注（含批注回复，后端继承父 anchor）；空 → 自由评论
             const type = variables.anchor ? "annotation" : "free";
-            // predicate 按 query.type 过滤：type=annotation 失效所有 annotation 分页，
-            // free 失效所有 free 分页；list key 形如 ["comments","list",postId,{type,...}]
+            // 失效对应 type 的列表（含 replies_total + 预览）
             qc.invalidateQueries({
                 predicate: (query) => {
                     const key = query.queryKey;
@@ -36,6 +36,12 @@ export const useCreateComment = (postId: string) => {
                     return q?.type === type;
                 },
             });
+            // 回复：额外失效该顶层评论的 replies 缓存（展开列表立即看到新回复）
+            if (variables.parent_id) {
+                qc.invalidateQueries({
+                    queryKey: commentKeys.replies(),
+                });
+            }
         },
     });
 };

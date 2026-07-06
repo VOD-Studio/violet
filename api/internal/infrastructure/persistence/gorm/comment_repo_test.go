@@ -352,6 +352,42 @@ func TestFindReplies_SortDesc(t *testing.T) {
 	assert.Equal(t, "old", items[1].Body())
 }
 
+// TestFindReplies_ViewerFilter_ExcludesOtherPending 验证回复计数与列表不泄漏他人的 pending：
+// viewer 是 alice，能看到 approved 回复 + 自己的 pending 回复，看不到 bob 的 pending 回复。
+// 这个用例钉死「未审核的回复不应被计入 replies_total」契约。
+func TestFindReplies_ViewerFilter_ExcludesOtherPending(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+	pid := fixedPostID
+	aliceID := uuid.New()
+	bobID := uuid.New()
+	aliceStr := aliceID.String()
+	bobStr := bobID.String()
+
+	topID := uuid.New()
+	topPath := topID.String() + "/"
+	require.NoError(t, db.Create(&model.Comment{
+		ID: topID, PostID: pid.UUID(), Path: topPath, Depth: 0,
+		AuthorName: "topauthor", Body: "top", Pictures: []byte("[]"),
+		Status: domaincomment.StatusApproved,
+	}).Error)
+
+	// approved 回复（无主，所有人可见）
+	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false, 1, topPath+uuid.New().String()+"/")
+	// alice 自己的 pending 回复（alice 可见）
+	saveCommentWithDepth(t, db, domaincomment.StatusPending, "ip", "alice@x.com", &aliceStr, false, 1, topPath+uuid.New().String()+"/")
+	// bob 的 pending 回复（alice 不可见）
+	saveCommentWithDepth(t, db, domaincomment.StatusPending, "ip", "bob@x.com", &bobStr, false, 1, topPath+uuid.New().String()+"/")
+
+	aliceViewer := domainshared.MustParseID(aliceStr)
+	items, total, err := repo.FindReplies(ctx, domainshared.MustParseID(topID.String()), domaincomment.StatusApproved, &aliceViewer, "asc", 1, 50)
+	require.NoError(t, err)
+	// alice 应见 approved(1) + 自己 pending(1) = 2，bob 的 pending 不计入
+	assert.Equal(t, int64(2), total, "viewer 不应看到他人的 pending 回复被计入 total")
+	assert.Len(t, items, 2, "viewer 不应看到他人的 pending 回复出现在列表")
+}
+
 // saveCommentWithDepth saveComment 的扩展版，支持指定 depth + path。
 // 用于测试 depth 维度过滤与 FindReplies（saveComment 默认造的都是 depth=0、随机 path）。
 func saveCommentWithDepth(t *testing.T, db *gorm.DB, status, ipHash, email string, createdBy *string, withAnchor bool, depth int16, path string) {
