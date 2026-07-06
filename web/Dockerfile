@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # 临时 Dockerfile（仅本次部署使用，不入库）
-# 2.0 SSR（TanStack Start + Vite 8）：vite build 产出 dist/server/server.js（Nitro 入口）
-# builder 阶段构建后 prune 出生产依赖，runtime 阶段 COPY dist + node_modules
+# 2.0 SSR（TanStack Start + Vite 8）：vite build 产出 dist/server/server.js（裸 { fetch } handler）
+# 由 server.mjs 用 srvx 桥接 node:http 监听；builder 阶段 prune 出生产依赖，runtime 阶段 COPY dist + node_modules
 
 # ─── 阶段 1：依赖安装 ───────────────────────────────────
 FROM node:22-alpine AS deps
@@ -49,12 +49,12 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Nitro server 监听 HOST/PORT；HOST=0.0.0.0 才能被容器外访问
+# srvx 桥接的 node:http 监听 HOST/PORT；HOST=0.0.0.0 才能被容器外访问
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000
 
-# 复制构建产物（dist/server/server.js 是 SSR handler）、生产依赖、node 启动器
+# 复制构建产物（dist/server/server.js 是裸 { fetch } handler）、生产依赖、srvx 启动器
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
@@ -63,5 +63,5 @@ COPY --from=builder /app/server.mjs ./server.mjs
 
 EXPOSE 3000
 
-# 用 node:http wrapper 启动 SSR（dist/server/server.js 只导出 { fetch }，不监听端口）
+# server.mjs 用 srvx 桥接 node:http 启动 SSR（dist/server/server.js 只导出 { fetch }，不监听端口）
 CMD ["node", "server.mjs"]
