@@ -1,6 +1,6 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { apiGet } from "@shared/api/request";
-import { useQuery } from "@tanstack/react-query";
+import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 import type { CsrfTokenResponse } from "../model/types";
 import { authKeys } from "./keys";
 
@@ -60,11 +60,15 @@ export const fetchMe = (): Promise<UserDTO> =>
  * 默认 enabled，未登录时会收到 401 业务错误，调用方按需控制 enabled。
  * 缓存 key 为 auth.me，写操作成功后通过 invalidate 触发刷新。
  *
+ * staleTime 设为 Infinity：用户资料只在显式 invalidate 时刷新，避免登出后
+ * 窗口聚焦或组件重挂时再次请求 /auth/me 导致 401。
+ *
  * @param options 透传 useQuery 选项，常用于禁用自动请求
  */
-export const useMe = (options: { enabled?: boolean } = {}) =>
-    useQuery({
+export const useMe = (options: { enabled?: boolean } = {}): UseQueryResult<UserDTO | null> =>
+    useQuery<UserDTO | null>({
         queryKey: authKeys.me(),
         queryFn: fetchMe,
         enabled: options.enabled,
+        staleTime: Infinity,
     });

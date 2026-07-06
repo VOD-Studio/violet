@@ -155,8 +155,9 @@ export const useResetPassword = () =>
 /**
  * useLogout - 登出并清除客户端状态
  *
- * 后端会清除 session cookie。onSuccess 失效 me 缓存
- * 并主动写入 undefined，让 useMe 立即回到未登录态。
+ * 后端会清除 session cookie。onSuccess 把 me 缓存置为 null（不移除），
+ * 让 useMe 订阅者立即翻回未登录态，同时避免 removeQueries 导致观察者重新创建
+ * 并发起 fetch → 401。
  *
  * @returns POST /auth/logout，成功 data 为 null
  */
@@ -168,10 +169,11 @@ export const useLogout = () => {
         onSuccess: async () => {
             // 登出后清会话状态。注意：不能用 invalidateQueries——它会触发 refetch，
             // 而 cookie 已被后端清除 → fetchMe 必然 401 → 弹登录窗（bug：登出反而触发登录弹窗）。
-            // 正确做法：取消进行中的 me 查询 + 直接移除缓存（不发任何请求），
-            // useMe 订阅者立即翻回未登录态，Header 同步刷新成「登录」。
+            // 也不能用 removeQueries——它会让仍挂载的 useMe 观察者重新创建查询并立即 fetch，
+            // 同样导致 401。正确做法：取消进行中的 me 查询 + 把缓存写成 null（不发请求），
+            // 配合 useMe 的 staleTime: Infinity 即可阻止任何自动重试。
             await qc.cancelQueries({ queryKey: authKeys.me() });
-            qc.removeQueries({ queryKey: authKeys.me() });
+            qc.setQueryData<UserDTO | null>(authKeys.me(), null);
             // 登出清 CSRF token 缓存：后端已清 mimo_csrf cookie，
             // 缓存留旧 token 会让下次登录页命中陈旧值，与新 cookie 对不上。
             qc.removeQueries({ queryKey: authKeys.csrfToken() });
