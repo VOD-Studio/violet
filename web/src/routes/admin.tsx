@@ -9,25 +9,22 @@ export const Route = createFileRoute("/admin")({
         const { auth } = context;
 
         // 仅当「网络判定未登录」且「客户端确实没有活跃会话」时才踢人。
-        // 后者（isSessionActive）不受网络瞬态失败影响——登录成功置 true、登出/取消
-        // 重登才置 false。这样 token 过期导致 getCurrentUser 返回 null（auth.isAuthenticated
-        // 短暂为 false）时，已登录用户不会被误踢回首页，而是原地等 refresh/弹窗恢复。
-        if ((!auth.isAuthenticated || !auth.user) && !isSessionActive()) {
+        // 后者（isSessionActive）不受网络瞬态失败影响——登录成功置 true、登出才置 false。
+        // 这样 session 过期导致 getAuthSession 返回 null（auth.isAuthenticated 短暂为 false）
+        // 时，已登录用户不会被误踢，而是原地等弹窗重登。
+        if (!auth.isAuthenticated && !isSessionActive()) {
             throw redirect({
                 to: "/",
                 replace: true,
             });
         }
 
-        // 检查用户是否有 admin:access 权限
-        const hasAdminPermission = auth.user?.permissions?.includes("admin:access");
+        // SSR claims 已确认用户角色，直接判定；claims 缺失但 sessionActive 为 true 时
+        // 属于客户端瞬态，放行到子路由 PermissionGuard 兜底。
+        const role = auth.claims?.role;
+        const isAdminRole = role === "admin" || role === "superadmin";
 
-        // 检查用户是否是管理员角色（admin 或 superadmin）
-        const isAdminRole = auth.user?.role === "admin" || auth.user?.role === "superadmin";
-
-        // 必须同时满足：有 admin:access 权限 或 是管理员角色
-        // sessionActive 但 auth.user 暂缺（瞬态）时放行，权限细化由子路由 PermissionGuard 兜
-        if (auth.user && !hasAdminPermission && !isAdminRole) {
+        if (auth.claims && !isAdminRole) {
             throw redirect({
                 to: "/",
                 replace: true,

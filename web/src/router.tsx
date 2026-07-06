@@ -1,16 +1,16 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 
-import type { UserDTO } from "./entities/user/model/types";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient } from "./shared/api/query-client";
+import type { AuthSessionClaims } from "./shared/server/session";
 
 /**
  * RouterContext - 全路由共享的上下文
  *
  * 在 __root 的 beforeLoad 中填充：
  * - queryClient：SSR 每请求独立实例（避免跨请求缓存串扰），客户端复用单例
- * - auth：SSR 期间确定的鉴权快照，client hydrate 时复用（避免二次请求）
+ * - auth：SSR 期间通过 /auth/session 确定的鉴权快照，client hydrate 时复用
  */
 export interface RouterContext {
     /** TanStack Query 实例 */
@@ -19,8 +19,8 @@ export interface RouterContext {
     auth: {
         /** 是否已登录 */
         isAuthenticated: boolean;
-        /** 当前用户（未登录为 null） */
-        user: UserDTO | null;
+        /** /auth/session 返回的 claims（未登录为 null） */
+        claims: AuthSessionClaims | null;
     };
 }
 
@@ -38,7 +38,7 @@ export const getRouter = () => {
         defaultPreloadStaleTime: 0,
         context: {
             queryClient: clientQueryClient,
-            auth: { isAuthenticated: false, user: null },
+            auth: { isAuthenticated: false, claims: null },
         },
     });
 

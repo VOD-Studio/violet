@@ -14,12 +14,11 @@ import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
-import { authKeys } from "@/features/auth/api/keys";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
 import type { RouterContext } from "../router";
 import AppProvider from "../shared/api/provider";
 import { markSessionActive } from "../shared/api/session";
-import { getCurrentUser } from "../shared/server/session";
+import { getAuthSession } from "../shared/server/session";
 
 import appCss from "../styles.css?url";
 
@@ -27,23 +26,21 @@ import appCss from "../styles.css?url";
  * __root - 根路由，所有路由共享
  *
  * queryClient 从 router context 复用（router.tsx 注入单例），
- * beforeLoad 仅返回 auth（serializable，可通过 dehydrate 传给客户端）。。
+ * beforeLoad 仅返回 auth（serializable，可通过 dehydrate 传给客户端）。
  */
 export const Route = createRootRouteWithContext<RouterContext>()({
-    beforeLoad: async ({ context }) => {
-        const user = await getCurrentUser();
-        // 预填 react-query me 缓存，组件层 useMe 在 SSR 首屏可命中
-        context.queryClient.setQueryData(authKeys.me(), user);
+    beforeLoad: async () => {
+        const claims = await getAuthSession();
         // 客户端同步 sessionActive：SSR 已确认登录的用户，hydrate 后立即把
         // 响应式 session 标志置 true，让 Header 等订阅者与守卫的客户端逻辑生效。
         // （markSessionActive 内部已有 SSR 守卫，这里直接调用安全）
-        if (user && typeof window !== "undefined") {
+        if (claims && typeof window !== "undefined") {
             markSessionActive();
         }
         return {
             auth: {
-                isAuthenticated: user !== null,
-                user,
+                isAuthenticated: claims !== null,
+                claims,
             },
         };
     },
@@ -94,7 +91,7 @@ function RootComponent() {
                 <div className="flex min-h-screen flex-col">
                     <AnnouncementBar />
                     <Header isAuthenticated={auth.isAuthenticated} />
-                    <main className="flex flex-1 flex-col">
+                    <main className="flex-1 flex-col">
                         <Outlet />
                     </main>
                     <Footer />
