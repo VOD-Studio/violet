@@ -53,6 +53,8 @@ type Config struct {
 	BilibiliAPIType string
 	// Cookie 鉴权 Cookie 配置（access/refresh token 通过 HttpOnly Cookie 下发）
 	Cookie CookieConfig
+	// Session opaque session 生命周期配置（IdleTTL 滑动续期 + MaxTTL 绝对寿命）
+	Session SessionConfig
 	// CORSAllowedOrigins 允许的前端来源列表（用于跨域 Cookie 与 CSRF 防护）
 	// 生产环境通过 CORS_ALLOWED_ORIGINS 环境变量覆盖
 	CORSAllowedOrigins []string
@@ -84,6 +86,8 @@ type CookieConfig struct {
 	RefreshName string
 	// CSRFName CSRF double-submit Cookie 名（非 HttpOnly，供前端读取回传）
 	CSRFName string
+	// SessionName opaque session id 的 Cookie 名（HttpOnly，浏览器自动携带）
+	SessionName string
 }
 
 // TokenTTLs access/refresh JWT 的过期时长，用于设置承载它们的 Cookie 的 MaxAge。
@@ -94,6 +98,18 @@ type CookieConfig struct {
 type TokenTTLs struct {
 	Access  time.Duration
 	Refresh time.Duration
+}
+
+// SessionConfig opaque session 生命周期配置。
+//
+// IdleTTL 为滑动续期窗口：每个真实请求重置 session 的剩余寿命，活跃用户不过期。
+// MaxTTL 为绝对寿命上限：MaxTTL<=0 表示无上限（默认），MaxTTL>0 时从登录起算到点强制重登。
+// 实际过期 = min(idle 到期, 绝对到期[若启用])。
+type SessionConfig struct {
+	// IdleTTL 滑动续期窗口，必须 > 0
+	IdleTTL time.Duration
+	// MaxTTL 绝对寿命上限，<=0 表示无上限
+	MaxTTL time.Duration
 }
 
 // SameSiteMode 返回 http.SameSite 枚举值
@@ -224,6 +240,10 @@ func Load() *Config {
 	v.SetDefault("cookie.access_name", "mimo_access")
 	v.SetDefault("cookie.refresh_name", "mimo_refresh")
 	v.SetDefault("cookie.csrf_name", "mimo_csrf")
+	v.SetDefault("cookie.session_name", "mimo_session")
+	// session 滑动续期默认 7 天，绝对寿命默认 0（无上限）
+	v.SetDefault("session.idle_ttl", "168h")
+	v.SetDefault("session.max_ttl", "0s")
 	// CORS 允许来源默认覆盖前端开发服务器
 	v.SetDefault("cors_allowed_origins", []string{
 		"http://localhost:3000",
@@ -247,6 +267,14 @@ func Load() *Config {
 	refreshTokenTTL, err := time.ParseDuration(v.GetString("jwt_refresh_token_ttl"))
 	if err != nil {
 		panic(fmt.Sprintf("解析 JWT_REFRESH_TOKEN_TTL 失败: %v", err))
+	}
+	sessionIdleTTL, err := time.ParseDuration(v.GetString("session.idle_ttl"))
+	if err != nil {
+		panic(fmt.Sprintf("解析 session.idle_ttl 失败: %v", err))
+	}
+	sessionMaxTTL, err := time.ParseDuration(v.GetString("session.max_ttl"))
+	if err != nil {
+		panic(fmt.Sprintf("解析 session.max_ttl 失败: %v", err))
 	}
 
 	bilibiliCookie := buildBilibiliCookie(
@@ -302,6 +330,11 @@ func Load() *Config {
 			AccessName:  v.GetString("cookie.access_name"),
 			RefreshName: v.GetString("cookie.refresh_name"),
 			CSRFName:    v.GetString("cookie.csrf_name"),
+			SessionName: v.GetString("cookie.session_name"),
+		},
+		Session: SessionConfig{
+			IdleTTL: sessionIdleTTL,
+			MaxTTL:  sessionMaxTTL,
 		},
 		CORSAllowedOrigins: v.GetStringSlice("cors_allowed_origins"),
 		SuperAdmin: SuperAdminConfig{
@@ -388,6 +421,14 @@ func (c *Config) Validate() error {
 	}
 	if c.JWTRefreshTokenTTL <= 0 {
 		return fmt.Errorf("JWT_REFRESH_TOKEN_TTL 必须大于 0")
+	}
+
+	// Session 配置：idle 必须 > 0；max<=0 表示无上限
+	if c.Session.IdleTTL <= 0 {
+		return fmt.Errorf("session.idle_ttl 必须大于 0")
+	}
+	if c.Cookie.SessionName == "" {
+		return fmt.Errorf("cookie.session_name 不能为空")
 	}
 
 	// Cookie 配置校验
