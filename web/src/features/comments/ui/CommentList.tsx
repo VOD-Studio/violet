@@ -12,9 +12,13 @@ import { CommentItem } from "./CommentItem";
 export interface CommentListProps {
     /** 扁平评论列表（来自 useComments） */
     comments: Comment[];
+    /** 文章 id（透传给 CommentItem 的回复表单） */
+    postId: string;
+    /** 是否登录（透传给 CommentItem，决定是否显示回复按钮） */
+    isLoggedIn: boolean;
 }
 
-export function CommentList({ comments }: CommentListProps) {
+export function CommentList({ comments, postId, isLoggedIn }: CommentListProps) {
     if (comments.length === 0) {
         return <Empty title="还没有评论" description="成为第一个评论的人" size="sm" />;
     }
@@ -23,7 +27,13 @@ export function CommentList({ comments }: CommentListProps) {
     return (
         <div className="space-y-3">
             {tree.map((node) => (
-                <CommentItem key={node.comment.id} node={node} isAuthor={node.comment.is_author} />
+                <CommentItem
+                    key={node.comment.id}
+                    node={node}
+                    isAuthor={node.comment.is_author}
+                    postId={postId}
+                    isLoggedIn={isLoggedIn}
+                />
             ))}
         </div>
     );

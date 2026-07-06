@@ -1,5 +1,5 @@
 /**
- * CommentItem - 单条评论卡片（递归渲染嵌套回复）
+ * CommentItem - 单条评论卡片（两层扁平回复）
  *
  * 视觉跟随项目当前设计语言（与 AnnouncementCard 同构）：
  *   - BorderGlow 外壳，severity 决定色相（shadcn 色阶，非 neon）
@@ -7,7 +7,10 @@
  *   - font-mono 仅用于时间戳
  *   - 「审批中」徽章（PendingBadge）仅在 pending 态显示
  *
- * 递归：replies 用缩进对话树展示，最大深度由后端 path+depth 强制（前端不重复校验）。
+ * 回复（两层扁平，B站式）：
+ *   - 顶层评论下挂扁平 replies，回复另一条回复时显示「回复 @yyy」（读 comment.reply_to_name）
+ *   - 默认只展开前 REPLIES_PREVIEW_COUNT 条，超出折叠（避免热门评论回复撑爆页面）
+ *   - 回复按钮用图标（lucide MessageCircle），hover 显示；仅登录用户可见
  *
  * PRD-0001 双轨制：本组件只负责展示，不区分登录/匿名（可见性由后端 + CommentSection 容器保证）。
  */
@@ -15,8 +18,11 @@ import type { Comment } from "@entities/comment/model/types";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { MessageCircle } from "lucide-react";
+import { useState } from "react";
 import { type CommentTreeNode, getCommentSeverity } from "../lib/comment-tree";
 import { getCommentSev } from "../lib/severity";
+import { CommentForm } from "./CommentForm";
 import { PendingBadge } from "./PendingBadge";
 
 export interface CommentItemProps {
@@ -26,23 +32,40 @@ export interface CommentItemProps {
     isAuthor?: boolean;
     /** 当前缩进深度（顶级为 0，用于视觉缩进与避免无限嵌套） */
     level?: number;
+    /** 文章 id（回复表单提交用）。仅 level=0 的顶层评论需要传，回复层不需要再嵌回复表单 */
+    postId?: string;
+    /** 是否登录（决定是否显示回复按钮；仅登录可回复） */
+    isLoggedIn?: boolean;
 }
 
-/** 最大渲染深度（与后端 MaxDepth=4 对齐，防止视觉过深） */
-const MAX_RENDER_DEPTH = 4;
+/**
+ * REPLIES_PREVIEW_COUNT 默认展开的回复条数。
+ * B站式：前 3 条默认展开，超出折叠为「展开剩余 N 条回复」。热门评论回复多了不撑爆页面。
+ */
+const REPLIES_PREVIEW_COUNT = 3;
 
-/** 缩进 class 映射（Tailwind 静态 class，避免动态拼接被 purge） */
-const INDENT_CLASS = ["", "ml-4", "ml-8", "ml-12", "ml-16"] as const;
-
-export function CommentItem({ node, isAuthor = false, level = 0 }: CommentItemProps) {
+export function CommentItem({
+    node,
+    isAuthor = false,
+    level = 0,
+    postId,
+    isLoggedIn = false,
+}: CommentItemProps) {
     const { comment, replies } = node;
     const sev = getCommentSev(getCommentSeverity(node, { isAuthor }));
     const isPending = comment.status === "pending";
 
+    // 回复框开关：点击回复图标后展开 compact CommentForm
+    const [replying, setReplying] = useState(false);
+    // 回复列表展开开关：默认折叠超出 REPLIES_PREVIEW_COUNT 的部分
+    const [repliesExpanded, setRepliesExpanded] = useState(false);
+
+    // 折叠状态下的可见回复：前 REPLIES_PREVIEW_COUNT 条
+    const visibleReplies = repliesExpanded ? replies : replies.slice(0, REPLIES_PREVIEW_COUNT);
+    const hiddenCount = replies.length - REPLIES_PREVIEW_COUNT;
+
     return (
-        <div
-            className={`group relative ${INDENT_CLASS[Math.min(level, INDENT_CLASS.length - 1)] ?? ""}`}
-        >
+        <div className="group relative">
             <div className="overflow-hidden rounded-xl ring-1 ring-black/5 dark:ring-white/10">
                 <BorderGlow
                     backgroundColor="hsl(var(--card))"
@@ -66,28 +89,67 @@ export function CommentItem({ node, isAuthor = false, level = 0 }: CommentItemPr
                         <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
                             {comment.body}
                         </p>
+
+                        {/* 回复按钮（图标）：仅登录用户 + 顶层评论显示。
+                            回复层不嵌回复表单（两层扁平，避免 UI 失控） */}
+                        {isLoggedIn && postId && level === 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setReplying((v) => !v)}
+                                className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                                aria-label={replying ? "取消回复" : "回复"}
+                            >
+                                <MessageCircle className="size-3.5" />
+                                <span>回复</span>
+                            </button>
+                        )}
                     </div>
                 </BorderGlow>
             </div>
 
-            {/* 递归渲染回复，超过最大深度不再渲染（避免视觉过深） */}
-            {replies.length > 0 && level < MAX_RENDER_DEPTH && (
+            {/* 内嵌回复表单：点回复图标后展开 */}
+            {replying && postId && (
+                <div className="mt-2 pl-3">
+                    <CommentForm
+                        postId={postId}
+                        parentId={comment.id}
+                        compact
+                        isLoggedIn={isLoggedIn}
+                        onSuccess={() => setReplying(false)}
+                    />
+                </div>
+            )}
+
+            {/* 回复列表（两层扁平）：统一缩进一层，不逐层加深 */}
+            {replies.length > 0 && (
                 <div className="mt-2 space-y-2 border-l border-edge-hairline pl-3">
-                    {replies.map((reply) => (
+                    {visibleReplies.map((reply) => (
                         <CommentItem
                             key={reply.comment.id}
                             node={reply}
                             isAuthor={isAuthor}
                             level={level + 1}
+                            postId={postId}
+                            isLoggedIn={isLoggedIn}
                         />
                     ))}
+                    {/* 折叠/展开切换 */}
+                    {hiddenCount > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setRepliesExpanded((v) => !v)}
+                            className="text-xs text-primary hover:underline"
+                        >
+                            {repliesExpanded ? "收起" : `展开剩余 ${hiddenCount} 条回复`}
+                        </button>
+                    )}
                 </div>
             )}
         </div>
     );
 }
 
-/** 评论顶部元信息：头像 + 昵称 + 作者徽章 + 审批中徽章 + 时间 */
+/** 评论顶部元信息：头像 + 昵称 + 「回复 @yyy」标注 + 作者徽章 + 审批中徽章 + 时间 */
 function CommentMeta({
     comment,
     isAuthor,
@@ -113,6 +175,12 @@ function CommentMeta({
                 </div>
             )}
             <span className="text-sm font-medium text-foreground">{comment.author_name}</span>
+            {/* 回复标注：reply_to_name 非空表示这是对某条回复的回复，显示「回复 @yyy」 */}
+            {comment.reply_to_name && (
+                <span className="text-xs text-muted-foreground">
+                    回复 <span className="text-primary">@{comment.reply_to_name}</span>
+                </span>
+            )}
             {isAuthor && (
                 <span className={`rounded px-1.5 py-0.5 text-[10px] ${sev.badge}`}>作者</span>
             )}

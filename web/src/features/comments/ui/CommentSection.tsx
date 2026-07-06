@@ -68,7 +68,7 @@ export function CommentSection({ postId }: CommentSectionProps) {
                         <ShimmerSkeleton className="h-24 w-full rounded-xl" />
                     </div>
                 ) : (
-                    <CommentList comments={comments} />
+                    <CommentList comments={comments} postId={postId} isLoggedIn={isLoggedIn} />
                 )
             ) : null}
         </section>
