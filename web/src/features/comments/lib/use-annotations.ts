@@ -74,23 +74,17 @@ export function useAnnotations(
     // 竞态版本号：每次 effect 自增，async 完成时比对，过期丢弃。
     const requestIdRef = useRef(0);
 
-    // anchorKey：批注 id 列表的内容指纹（仅顶级批注，排除回复）。
+    // anchorKey：批注 id 列表的内容指纹（含回复批注）。
     // 用作 effect 的 dep（字符串比较，引用稳定），避免 comments 数组引用变化（TanStack refetch）
-    // 触发无谓重算。effect 内部按 key 重新 filter（filter 很便宜）。
-    // 入参 comments 约定全部为批注（接口层 type=annotation 已过滤），故只排除回复。
-    const anchorKey = useMemo(
-        () =>
-            comments
-                .filter((c) => !c.parent_id)
-                .map((c) => c.id)
-                .join(","),
-        [comments],
-    );
+    // 触发无谓重算。effect 内部直接用 comments（入参已是批注列表）。
+    // 含回复批注：回复批注加入时 key 变化，effect 重跑，回复批注才进 located。
+    const anchorKey = useMemo(() => comments.map((c) => c.id).join(","), [comments]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: 故意只依赖 anchorKey（批注 id 列表的内容指纹）而非 comments 数组引用——避免 TanStack refetch 时 comments 引用变化触发无谓重算（extractCandidateBlocks 昂贵）。effect 内通过闭包读 comments，捕获的是 anchorKey 变化那次的渲染快照，对 relocate 足够。
     useEffect(() => {
-        // 按 key 重新 filter 出顶级批注列表（key 变化才进 effect，filter 代价小）
-        const anchorComments = comments.filter((c) => !c.parent_id);
+        // 入参 comments 已是批注列表（接口层 type=annotation 过滤过）。
+        // 含回复批注（继承父 anchor，block_id 与父相同，relocate 会成功定位到同一块）。
+        const anchorComments = comments;
         const root = contentRef.current;
         if (!root || anchorComments.length === 0) {
             setLocated([]);
