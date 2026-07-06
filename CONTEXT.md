@@ -4,39 +4,36 @@
 
 ## 认证（Authentication）
 
-**Access Token**:
-短期 JWT（默认 15m），承载用户身份，用于访问受保护资源。其 `exp` claim 是过期**权威判据**。
-_Avoid_: session token, login token
+> 登录态采用 **opaque session cookie** 模型（对标 bilibili SESSDATA），取代历史的 access/refresh JWT。决策与命门不变量见 `docs/adr/0003-login-opaque-session.md`（ADR-0001、ADR-0002 均 superseded）。
 
-**Refresh Token**:
-长期 JWT（默认 7d），仅用于在 Access Token 过期后换取新的 Access Token。存于 Path=`/` 的 HttpOnly Cookie（SameSite=lax），每个用户同一时刻只有**一个**有效（单槽白名单）。Path 必须为 `/`：若限定 `/api/v1/auth`，SSR 加载页面（路径如 `/posts`）时浏览器不会附带该 cookie，导致 SSR 续期失败。安全性靠 HttpOnly + SameSite，不靠 Path 限定。
-_Avoid_: session token, long-lived token
+**Session ID**:
+opaque（不透明）随机串（≥256-bit），作为登录态凭证存于 HttpOnly Cookie `mimo_session`。本身不含任何用户信息，后端必须查 Redis（`session:<id>`）才能换出用户身份。安全性靠 cookie 的 HttpOnly + SameSite + Secure，以及后端可即时删除。
+_Avoid_: access token、login token（这些是已废弃 JWT 时代的词）
 
-**Token Envelope（信封）**:
-承载 JWT 的 Cookie。Cookie 的 `MaxAge` 只是信封寿命，与 JWT 的 `exp` 是**两套独立**的过期机制——信封可先于或后于信件失效。信封先失效会导致"JWT 仍有效但取不到"，对 Refresh Token 致命（需重新登录）。
+**Session Envelope（信封）**:
+承载 Session ID 的 Cookie 与 Redis key。opaque 模型下过期权威统一在 Redis TTL + 滑动续期 + 可选绝对寿命，不再有「JWT exp vs cookie MaxAge」双过期混淆。
 _Avoid_: cookie lifetime（混淆了信封与信件）
 
+**滑动续期（Idle Timeout）**:
+后端中间件对每个带有效 session 的真实请求，用 Redis `EXPIRE` 重置 session 剩余寿命。**不轮换 session id、不产生 Set-Cookie**——这是 opaque 方案绕开 TanStack Start SSR 透传卡点的命门。活跃用户因此不会因空闲超时下线。
+
+**绝对寿命（Absolute Timeout / max）**:
+可选配置项，从登录起算的 session 最长存活上限。`max <= 0`（0 或 -1）表示无上限（默认）；`max > 0` 时，无论用户多活跃，到点强制重登。session 实际过期 = min(滑动到期, 绝对到期[若启用])。
+
 **CSRF Token**:
-随机不可预测串，采用 double-submit 模式：非 HttpOnly Cookie（前端可读）+ `X-CSRF-Token` header 回传比对。保护**除 `/auth/refresh` 外**的所有写操作；refresh 自身被显式豁免。
+随机不可预测串，double-submit 模式：非 HttpOnly Cookie `mimo_csrf`（前端可读）+ `X-CSRF-Token` header 回传比对。token 值同时存于后端 session 记录中，与 session 同生命周期。保护 session 探活端点之外的写操作。对标 bilibili `bili_jct`。
 _Avoid_: anti-forgery token（笼统）
 
-**Token Rotation（轮换）**:
-每次刷新都签发全新的 Refresh Token 并废弃旧的。用于限制单个 refresh token 的暴露窗口，并为"重用检测"提供基础。
-_Avoid_: refresh token reuse（这是要检测的攻击，不是机制）
-
-**Token Family（家族）**:
-由同一次登录派生、经多次轮换形成的一条 refresh token 链。家族中任何**已被轮换掉的旧 token 再次出现**，几乎必然意味着 token 被窃取——标准响应是吊销整个家族。
-
-**Refresh Token Revocation（吊销）**:
-使一个仍有效的 Refresh Token 失效。触发场景：登出、改密码、重置密码、检测到重用。通过删除 Redis 白名单单槽实现。
+**Session 吊销（Revocation）**:
+使一个仍有效的 session 失效。触发场景：登出、改密码、重置密码、检测到异常。通过删除 Redis `session:<id>` 实现，即时生效——opaque 模型的核心优势：可即时吊销，不像 JWT 需黑名单。
 _Avoid_: logout（吊销是机制，登出是触发场景之一）
 
 **SSR 会话探活**:
-SSR（TanStack Start）判断当前请求是否登录的方式。用 middleware 直接读 access cookie + 公钥验 ES256 JWT，从 claims 拿 user_id/email/role，注入 router context。**不调 HTTP `/auth/me`**——后者绕一圈 HTTP 会触发 SSR refresh，而 server function 的 Set-Cookie 不透传浏览器，导致持续掉登录（见 ADR-0002）。
-_Avoid_: SSR 鉴权（混淆了"探活"与"取完整用户信息"——完整 UserDTO 由客户端 useMe 按需拉）
+SSR（TanStack Start）判断当前请求是否登录的方式：调后端**只读**端点 `/auth/session`，由其读 `mimo_session` cookie 查 Redis 返回 user claims。完整 UserDTO 仍由客户端 useMe 按需拉。
+_Avoid_: SSR 鉴权（混淆「探活」与「取完整用户信息」）
 
-**SSR 不续期**:
-续期（refresh）只由客户端做。SSR 端 access 过期即判未登录，hydrate 后客户端 axios 拦截 401 → 调 `/auth/refresh`（真实 HTTP，Set-Cookie 正确写入浏览器）→ 重放。SSR 不参与 refresh，避免 server function 吞 Set-Cookie。
+**命门不变量（opaque session 成立前提）**:
+两条，缺一则重蹈 SSR 掉登录覆辙：(1) SSR 只读 session、不续期、不 Set-Cookie；(2) 续期只由后端中间件对真实请求做，写 Redis、不轮换 id、不 Set-Cookie。详见 ADR-0003。
 
 ## 文章导航（Article Navigation）
 
