@@ -17,17 +17,6 @@ type Config struct {
 	Database DatabaseConfig
 	// Redis Redis 配置
 	Redis RedisConfig
-	// JWTPrivateKeyPath JWT ES256 私钥文件路径（PEM 格式）
-	JWTPrivateKeyPath string
-	// JWTPublicKeyPath JWT ES256 公钥文件路径（PEM 格式）
-	JWTPublicKeyPath string
-	// JWTAccessTokenTTL JWT 访问令牌过期时间
-	JWTAccessTokenTTL time.Duration
-	// JWTRefreshTokenTTL JWT 刷新令牌过期时间
-	JWTRefreshTokenTTL time.Duration
-	// JWTAllowEphemeralKey 允许未配置密钥时生成临时密钥（仅开发环境）。
-	// 生产环境必须为 false（默认），否则启动时拒绝加载。
-	JWTAllowEphemeralKey bool
 	// GoogleClientID Google OAuth 客户端 ID
 	GoogleClientID string
 	// GithubClientID Github OAuth 客户端 ID
@@ -51,7 +40,7 @@ type Config struct {
 	BilibiliCookie string
 	// BilibiliAPIType B站表情 API 类型：user(用户收藏) 或 official(官方)
 	BilibiliAPIType string
-	// Cookie 鉴权 Cookie 配置（access/refresh token 通过 HttpOnly Cookie 下发）
+	// Cookie 鉴权 Cookie 配置（opaque session id 通过 HttpOnly Cookie 下发）
 	Cookie CookieConfig
 	// Session opaque session 生命周期配置（IdleTTL 滑动续期 + MaxTTL 绝对寿命）
 	Session SessionConfig
@@ -68,7 +57,7 @@ type Config struct {
 
 // CookieConfig 鉴权 Cookie 配置
 //
-// access 与 refresh token 均通过 HttpOnly Cookie 下发，避免 JS 读取（防 XSS 偷取）。
+// opaque session id 通过 HttpOnly Cookie 下发，避免 JS 读取（防 XSS 偷取）。
 // 由此带来的 CSRF 风险通过 double-submit cookie 中间件防护（见 middleware/csrf.go）。
 type CookieConfig struct {
 	// Domain Cookie 的 Domain 属性
@@ -80,24 +69,10 @@ type CookieConfig struct {
 	// SameSite Cookie 的 SameSite 属性：lax（默认，兼顾安全与可用）/ strict / none
 	// 注意：跨域开发（localhost:5173 → api:9090）必须为 none+secure，否则浏览器拒收
 	SameSite string
-	// AccessName access token Cookie 名
-	AccessName string
-	// RefreshName refresh token Cookie 名
-	RefreshName string
 	// CSRFName CSRF double-submit Cookie 名（非 HttpOnly，供前端读取回传）
 	CSRFName string
 	// SessionName opaque session id 的 Cookie 名（HttpOnly，浏览器自动携带）
 	SessionName string
-}
-
-// TokenTTLs access/refresh JWT 的过期时长，用于设置承载它们的 Cookie 的 MaxAge。
-//
-// 两个 TTL 总是一起出现（登录/刷新同时签发两种 token），收进一个类型避免参数列表
-// 肥胀。Cookie 的 MaxAge 应与其承载的 JWT 的 exp 对齐，否则会出现「JWT 仍有效但
-// 装它的 Cookie 已被浏览器删除」的错位（对 refresh token 尤其致命）。
-type TokenTTLs struct {
-	Access  time.Duration
-	Refresh time.Duration
 }
 
 // SessionConfig opaque session 生命周期配置。
@@ -213,12 +188,6 @@ func Load() *Config {
 	v.SetDefault("redis.port", 6379)
 	v.SetDefault("redis.db", 0)
 	v.SetDefault("redis.password", "")
-	v.SetDefault("jwt_private_key_path", "")
-	v.SetDefault("jwt_public_key_path", "")
-	// 默认禁止临时密钥；生产环境必须显式配置密钥文件
-	v.SetDefault("jwt_allow_ephemeral_key", false)
-	v.SetDefault("jwt_access_token_ttl", "15m")
-	v.SetDefault("jwt_refresh_token_ttl", "168h")
 	v.SetDefault("google_client_id", "")
 	v.SetDefault("github_client_id", "")
 	v.SetDefault("github_client_secret", "")
@@ -237,8 +206,6 @@ func Load() *Config {
 	v.SetDefault("cookie.domain", "")
 	v.SetDefault("cookie.secure", false)
 	v.SetDefault("cookie.samesite", "lax")
-	v.SetDefault("cookie.access_name", "mimo_access")
-	v.SetDefault("cookie.refresh_name", "mimo_refresh")
 	v.SetDefault("cookie.csrf_name", "mimo_csrf")
 	v.SetDefault("cookie.session_name", "mimo_session")
 	// session 滑动续期默认 7 天，绝对寿命默认 0（无上限）
@@ -260,14 +227,6 @@ func Load() *Config {
 	_ = v.ReadInConfig()
 
 	// 解析时间配置，如果格式错误则 panic
-	accessTokenTTL, err := time.ParseDuration(v.GetString("jwt_access_token_ttl"))
-	if err != nil {
-		panic(fmt.Sprintf("解析 JWT_ACCESS_TOKEN_TTL 失败: %v", err))
-	}
-	refreshTokenTTL, err := time.ParseDuration(v.GetString("jwt_refresh_token_ttl"))
-	if err != nil {
-		panic(fmt.Sprintf("解析 JWT_REFRESH_TOKEN_TTL 失败: %v", err))
-	}
 	sessionIdleTTL, err := time.ParseDuration(v.GetString("session.idle_ttl"))
 	if err != nil {
 		panic(fmt.Sprintf("解析 session.idle_ttl 失败: %v", err))
@@ -307,11 +266,6 @@ func Load() *Config {
 			DB:       v.GetInt("redis.db"),
 			Password: v.GetString("redis.password"),
 		},
-		JWTPrivateKeyPath:    v.GetString("jwt_private_key_path"),
-		JWTPublicKeyPath:     v.GetString("jwt_public_key_path"),
-		JWTAccessTokenTTL:    accessTokenTTL,
-		JWTRefreshTokenTTL:   refreshTokenTTL,
-		JWTAllowEphemeralKey: v.GetBool("jwt_allow_ephemeral_key"),
 		GoogleClientID:       v.GetString("google_client_id"),
 		GithubClientID:       v.GetString("github_client_id"),
 		GithubClientSecret:   v.GetString("github_client_secret"),
@@ -327,8 +281,6 @@ func Load() *Config {
 			Domain:      v.GetString("cookie.domain"),
 			Secure:      v.GetBool("cookie.secure"),
 			SameSite:    v.GetString("cookie.samesite"),
-			AccessName:  v.GetString("cookie.access_name"),
-			RefreshName: v.GetString("cookie.refresh_name"),
 			CSRFName:    v.GetString("cookie.csrf_name"),
 			SessionName: v.GetString("cookie.session_name"),
 		},
@@ -356,14 +308,6 @@ func Load() *Config {
 
 // Validate 验证配置的有效性
 func (c *Config) Validate() error {
-	// JWT 密钥路径必须配置
-	if c.JWTPrivateKeyPath == "" {
-		return fmt.Errorf("JWT_PRIVATE_KEY_PATH 未配置")
-	}
-	if c.JWTPublicKeyPath == "" {
-		return fmt.Errorf("JWT_PUBLIC_KEY_PATH 未配置")
-	}
-
 	// 数据库配置必须完整
 	if c.Database.Host == "" {
 		return fmt.Errorf("DB_HOST 未配置")
@@ -385,10 +329,6 @@ func (c *Config) Validate() error {
 		}
 		if c.Database.SSLMode != "disable" && c.Database.SSLMode != "require" && c.Database.SSLMode != "verify-ca" && c.Database.SSLMode != "verify-full" {
 			return fmt.Errorf("生产环境 DB_SSLMODE 必须为 disable、require、verify-ca 或 verify-full")
-		}
-		// 生产环境禁止临时 JWT 密钥（防静默密钥轮换导致全量令牌失效）
-		if c.JWTAllowEphemeralKey {
-			return fmt.Errorf("生产环境禁止使用临时 JWT 密钥（jwt_allow_ephemeral_key 必须为 false）")
 		}
 	}
 
@@ -415,14 +355,6 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("REDIS_PORT 未配置")
 	}
 
-	// Token TTL 必须大于 0
-	if c.JWTAccessTokenTTL <= 0 {
-		return fmt.Errorf("JWT_ACCESS_TOKEN_TTL 必须大于 0")
-	}
-	if c.JWTRefreshTokenTTL <= 0 {
-		return fmt.Errorf("JWT_REFRESH_TOKEN_TTL 必须大于 0")
-	}
-
 	// Session 配置：idle 必须 > 0；max<=0 表示无上限
 	if c.Session.IdleTTL <= 0 {
 		return fmt.Errorf("session.idle_ttl 必须大于 0")
@@ -432,8 +364,8 @@ func (c *Config) Validate() error {
 	}
 
 	// Cookie 配置校验
-	if c.Cookie.AccessName == "" || c.Cookie.RefreshName == "" || c.Cookie.CSRFName == "" {
-		return fmt.Errorf("cookie.access_name / refresh_name / csrf_name 均不能为空")
+	if c.Cookie.CSRFName == "" {
+		return fmt.Errorf("cookie.csrf_name 不能为空")
 	}
 	switch strings.ToLower(c.Cookie.SameSite) {
 	case "", "lax", "strict", "none":

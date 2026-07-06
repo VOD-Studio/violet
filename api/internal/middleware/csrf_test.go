@@ -13,11 +13,9 @@ import (
 // testCSRFCfg 构造测试用 Cookie 配置
 func testCSRFCfg() config.CookieConfig {
 	return config.CookieConfig{
-		AccessName:  "mimo_access",
-		RefreshName: "mimo_refresh",
-		CSRFName:    "mimo_csrf",
-		Secure:      false,
-		SameSite:    "lax",
+		CSRFName: "mimo_csrf",
+		Secure:   false,
+		SameSite: "lax",
 	}
 }
 
