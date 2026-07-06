@@ -291,12 +291,12 @@ func (m *MockCommentRepository) FindByPost(ctx context.Context, postID shared.ID
 	return args.Get(0).([]*domaincomment.Comment), args.Get(1).(int64), args.Error(2)
 }
 
-func (m *MockCommentRepository) FindReplies(ctx context.Context, parentPath string) ([]*domaincomment.Comment, error) {
-	args := m.Called(ctx, parentPath)
+func (m *MockCommentRepository) FindReplies(ctx context.Context, parentID shared.ID, status string, viewerUserID *shared.ID, sort string, page, limit int) ([]*domaincomment.Comment, int64, error) {
+	args := m.Called(ctx, parentID, status, viewerUserID, sort, page, limit)
 	if args.Get(0) == nil {
-		return nil, args.Error(1)
+		return nil, args.Get(1).(int64), args.Error(2)
 	}
-	return args.Get(0).([]*domaincomment.Comment), args.Error(1)
+	return args.Get(0).([]*domaincomment.Comment), args.Get(1).(int64), args.Error(2)
 }
 
 func (m *MockCommentRepository) FindPending(ctx context.Context, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]*domaincomment.Comment, int64, error) {

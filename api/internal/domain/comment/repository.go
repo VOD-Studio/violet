@@ -61,7 +61,16 @@ type CommentRepository interface {
 	// 这样登录提交者能在审核通过前看到自己刚提交的评论（带「审批中」徽章），
 	// 而他人永远只看到 approved（PRD-0001「审批与状态可见性」）。
 	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter AnchorFilter, depthFilter DepthFilter, page, limit int) ([]*Comment, int64, error)
-	FindReplies(ctx context.Context, parentPath string) ([]*Comment, error)
+	// FindReplies 列出某顶层评论下的扁平回复（两层结构，depth=1）。
+	//
+	// parentID 是顶层评论 id。按 parent_id 反查回复——两层扁平下回复的 parent_id
+	// 可能指顶层也可能指另一条回复，但都用 path 挂同一顶层，所以按 path 前缀查
+	// 能拿到该顶层下的全部回复（含「回复 @yyy」链）。
+	//
+	// status / viewerUserID 语义同 FindByPost：approved 联合（登录时）自己的 pending。
+	// sort："asc"（最早优先，默认）/ "desc"（最新优先）。
+	// 「热门」排序未实现，需 reaction_count 冗余（TODO）。
+	FindReplies(ctx context.Context, parentID shared.ID, status string, viewerUserID *shared.ID, sort string, page, limit int) ([]*Comment, int64, error)
 	// FindPending 列出待审核评论（后台）。
 	//
 	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 AnchorFilter 常量；

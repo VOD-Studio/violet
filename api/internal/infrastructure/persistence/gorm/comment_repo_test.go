@@ -8,6 +8,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -275,9 +276,9 @@ func TestFindByPost_DepthFilterTopLevel_OnlyReturnsTopLevel(t *testing.T) {
 	pid := fixedPostID
 
 	// 顶层评论（depth=0）
-	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false, 0)
+	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false, 0, domainshared.NewID().String()+"/")
 	// 回复（depth=1）
-	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, false, 1)
+	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, false, 1, domainshared.NewID().String()+"/")
 
 	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, domaincomment.DepthFilterTopLevel, 1, 50)
 	require.NoError(t, err)
@@ -287,13 +288,77 @@ func TestFindByPost_DepthFilterTopLevel_OnlyReturnsTopLevel(t *testing.T) {
 	}
 }
 
-// saveCommentWithDepth saveComment 的扩展版，支持指定 depth。
-// 用于测试 depth 维度过滤（saveComment 默认造的都是 depth=0）。
-func saveCommentWithDepth(t *testing.T, db *gorm.DB, status, ipHash, email string, createdBy *string, withAnchor bool, depth int16) {
+// TestFindReplies_ReturnsRepliesUnderTopLevel 按 path 前缀查回复，排除父自身。
+// 造一条顶层（path="<topID>/"）+ 两条回复（path="<topID>/<replyID>/"），查 FindReplies 应返回 2 条回复。
+func TestFindReplies_ReturnsRepliesUnderTopLevel(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+	pid := fixedPostID
+
+	topID := uuid.New()
+	topPath := topID.String() + "/"
+	// 顶层评论
+	require.NoError(t, db.Create(&model.Comment{
+		ID: topID, PostID: pid.UUID(), Path: topPath, Depth: 0,
+		AuthorName: "alice", Body: "top", Pictures: []byte("[]"),
+		Status: domaincomment.StatusApproved,
+	}).Error)
+	// 两条回复（path 挂顶层下）
+	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, false, 1, topPath+uuid.New().String()+"/")
+	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "c@x.com", nil, false, 1, topPath+uuid.New().String()+"/")
+
+	items, total, err := repo.FindReplies(ctx, domainshared.MustParseID(topID.String()), domaincomment.StatusApproved, nil, "asc", 1, 50)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), total, "应返回 2 条回复（排除父自身）")
+	for _, c := range items {
+		assert.Equal(t, int16(1), c.Depth(), "FindReplies 返回的都应是回复（depth=1）")
+	}
+}
+
+// TestFindReplies_SortDesc 验证 sort=desc 按最新优先返回。
+func TestFindReplies_SortDesc(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+	pid := fixedPostID
+
+	topID := uuid.New()
+	topPath := topID.String() + "/"
+	require.NoError(t, db.Create(&model.Comment{
+		ID: topID, PostID: pid.UUID(), Path: topPath, Depth: 0,
+		AuthorName: "alice", Body: "top", Pictures: []byte("[]"),
+		Status: domaincomment.StatusApproved, CreatedAt: time.Now().Add(-2 * time.Minute),
+	}).Error)
+
+	// 两条回复，时间差 1 分钟
+	oldReply := model.Comment{
+		ID: uuid.New(), PostID: pid.UUID(), Path: topPath + uuid.New().String() + "/",
+		Depth: 1, AuthorName: "bob", Body: "old", Pictures: []byte("[]"),
+		Status: domaincomment.StatusApproved, CreatedAt: time.Now().Add(-1 * time.Minute),
+	}
+	newReply := model.Comment{
+		ID: uuid.New(), PostID: pid.UUID(), Path: topPath + uuid.New().String() + "/",
+		Depth: 1, AuthorName: "carol", Body: "new", Pictures: []byte("[]"),
+		Status: domaincomment.StatusApproved, CreatedAt: time.Now(),
+	}
+	require.NoError(t, db.Create(&oldReply).Error)
+	require.NoError(t, db.Create(&newReply).Error)
+
+	items, _, err := repo.FindReplies(ctx, domainshared.MustParseID(topID.String()), domaincomment.StatusApproved, nil, "desc", 1, 50)
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	assert.Equal(t, "new", items[0].Body(), "desc 排序：最新的在前")
+	assert.Equal(t, "old", items[1].Body())
+}
+
+// saveCommentWithDepth saveComment 的扩展版，支持指定 depth + path。
+// 用于测试 depth 维度过滤与 FindReplies（saveComment 默认造的都是 depth=0、随机 path）。
+func saveCommentWithDepth(t *testing.T, db *gorm.DB, status, ipHash, email string, createdBy *string, withAnchor bool, depth int16, path string) {
 	t.Helper()
 	c := model.Comment{
 		ID: uuid.New(), PostID: fixedPostID.UUID(),
-		Path: domainshared.NewID().String() + "/",
+		Path: path,
 		Depth: depth, AuthorName: "tester", AuthorEmail: email,
 		Body: "hi", Pictures: []byte("[]"), Status: status, IPHash: ipHash,
 	}

@@ -191,19 +191,55 @@ func (r *CommentRepository) CountByPostAndAnon(ctx context.Context, postID domai
 	return n, nil
 }
 
-func (r *CommentRepository) FindReplies(ctx context.Context, parentPath string) ([]*comment.Comment, error) {
+// FindReplies 列出某顶层评论下的全部扁平回复。
+//
+// 实现策略：先查 parent 拿 path（顶层评论 path 形如 "<uuid>/"），
+// 再按 path 前缀查所有回复（path LIKE "<uuid>/%"），排除 parent 自身（id != parentID）。
+// 两层扁平下，回复的 parent_id 可能指另一条回复，但 path 都挂同一顶层，
+// 所以按 path 前缀能把「回复 @yyy」整条链都拉出来。
+//
+// status / viewerUserID 语义同 FindByPost；sort 控制时间正倒序。
+func (r *CommentRepository) FindReplies(ctx context.Context, parentID domainshared.ID, status string, viewerUserID *domainshared.ID, sort string, page, limit int) ([]*comment.Comment, int64, error) {
+	// 先查 parent 拿 path（顶层评论 path = "<uuid>/"）
+	var parent model.Comment
+	if err := r.db.WithContext(ctx).First(&parent, "id = ?", parentID.UUID()).Error; err != nil {
+		return nil, 0, domainshared.Internal("查询父评论失败", err)
+	}
+
+	// 按 path 前缀查回复（排除 parent 自身）
+	query := r.db.WithContext(ctx).Model(&model.Comment{}).
+		Where("path LIKE ?", parent.Path+"%").
+		Where("id != ?", parentID.UUID())
+	// viewer 过滤（语义同 FindByPost）
+	if viewerUserID != nil {
+		query = query.Where(
+			"status = ? OR (status = ? AND created_by = ?)",
+			status, comment.StatusPending, viewerUserID.UUID(),
+		)
+	} else if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, domainshared.Internal("统计回复失败", err)
+	}
+
+	order := "created_at ASC"
+	if sort == "desc" {
+		order = "created_at DESC"
+	}
 	var pos []model.Comment
-	// 查询 path 以 parentPath 开头的所有后代
-	if err := r.db.WithContext(ctx).Where("path LIKE ?", parentPath+"%").
-		Order("created_at ASC").Find(&pos).Error; err != nil {
-		return nil, domainshared.Internal("查询回复失败", err)
+	offset := (page - 1) * limit
+	if err := query.Order(order).Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
+		return nil, 0, domainshared.Internal("查询回复失败", err)
 	}
 	result := make([]*comment.Comment, 0, len(pos))
 	for _, po := range pos {
 		c, _ := commentToDomain(po)
 		result = append(result, c)
 	}
-	return result, nil
+	return result, total, nil
 }
 
 func (r *CommentRepository) FindPending(ctx context.Context, anchorFilter comment.AnchorFilter, page, limit int) ([]*comment.Comment, int64, error) {
