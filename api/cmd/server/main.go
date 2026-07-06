@@ -120,8 +120,9 @@ func main() {
 		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
 	}
 
-	// middleware.Auth 已重构为接收 TokenValidator 接口，
-	tokenValidator := newDDDAuthValidator(authContainer.JWTService)
+	// session 鉴权中间件依赖：RedisSessionStore 同时实现 SessionStore 与 SessionLookup。
+	// main.go 挂载 SessionAuth/OptionalSessionAuth/SessionAuthReadOnly 时复用同一实例。
+	sessionLookup := authContainer.SessionStore
 
 	contentContainer := app.NewContentContainer(gormDB)
 
@@ -237,8 +238,12 @@ func main() {
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/forgot-password", authH.ForgotPassword)
 			r.With(middleware.AuthRateLimit(redisClient)).Post("/reset-password", authH.ResetPassword)
 
+			// SSR 探活端点：只读校验当前 session，不续期、不写 cookie（命门不变量①）
+			r.With(middleware.SessionAuthReadOnly(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+				Get("/session", authH.Session)
+
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
+				r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
 				r.Post("/logout", authH.Logout)            // 用户登出
 				r.Get("/me", authH.GetMe)                  // 获取当前用户信息
 				r.Patch("/profile", authH.UpdateProfile)   // 更新个人资料
@@ -262,7 +267,7 @@ func main() {
 			r.Get("/", tagH.List) // 标签列表（公开）
 
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
+				r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
 				r.Use(middleware.AdminRequired)
 				r.With(middleware.RequirePermission(permissionChecker, "tag:create")).
 					Post("/", tagH.Create) // 创建标签
@@ -279,10 +284,10 @@ func main() {
 		// POST 需要它做双轨认证（登录直发 vs 匿名验证码两步流）。
 		commentH := commentContainer.CommentHandler
 		v1.Route("/posts/{postId}/comments", func(r chi.Router) {
-			r.With(middleware.OptionalAuth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName))).
+			r.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
 				Get("/", commentH.ListByPost)                                                        // 获取文章评论（登录看 approved∪自己pending；匿名黑洞返回空）
 			r.With(
-				middleware.OptionalAuth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)),
+				middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
 				middleware.CommentRateLimit(redisClient),
 			).Post("/", commentH.Create)            // 提交评论（双轨认证，限流）
 			r.With(middleware.CommentCodeRateLimit(redisClient)).Post("/code", commentH.SendCode)  // 匿名评论发送邮箱验证码（独立限流防邮件轰炸）
@@ -293,7 +298,7 @@ func main() {
 		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
 			r.Get("/", crH.GetCommentReactions)                                                          // 获取评论反应
 			r.With(middleware.CommentRateLimit(redisClient)).Post("/", crH.AddReaction)                  // 添加反应（限流）
-			r.With(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName))). // 删除反应需认证，防匿名删除他人反应
+			r.With(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)). // 删除反应需认证，防匿名删除他人反应
 															Delete("/{emoji_id}", crH.RemoveReaction)
 		})
 		v1.Post("/comments/reactions/batch", crH.GetReactionsBatch) // 批量获取评论反应
@@ -301,7 +306,7 @@ func main() {
 		// 评论审核/删除（DDD commentH，admin 权限）
 		v1.Route("/comments/{id}", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
+				r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
 				r.Use(middleware.AdminRequired)
 				r.Patch("/approve", commentH.Approve) // 审核通过
 				r.Patch("/spam", commentH.MarkSpam)   // 标记垃圾
@@ -314,7 +319,7 @@ func main() {
 			r.Get("/{id}", mediaH.GetMedia) // 获取媒体详情（公开）
 
 			r.Group(func(r chi.Router) {
-				r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
+				r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
 				r.Get("/", mediaH.ListFiles)                     // 媒体列表（分页、用途筛选）
 				r.Delete("/{id}", mediaH.DeleteFile)             // 删除媒体
 				r.Post("/batch-delete", mediaH.BatchDeleteMedia) // 批量删除媒体
@@ -325,7 +330,7 @@ func main() {
 		// 收敛原 /upload/*、/media/{id}/thumbnail、/admin/emojis/upload、/admin/files/instant
 		// 鉴权统一为登录即可（与上传语义一致），并叠加 UploadRateLimit。
 		v1.Route("/uploads", func(r chi.Router) {
-			r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
+			r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
 			r.Use(middleware.UploadRateLimit(redisClient))
 			r.Post("/", mediaH.InitUploadSession)                       // 初始化上传会话（秒传/续传/新建）
 			r.Put("/{uploadId}/chunks/{index}", mediaH.SaveUploadChunk) // 上传单个分片
@@ -369,7 +374,7 @@ func main() {
 		// 管理员路由（认证 + 管理员权限）
 		// =====================================================
 		v1.Route("/admin", func(r chi.Router) {
-			r.Use(middleware.Auth(tokenValidator, middleware.WithAccessCookie(cfg.Cookie.AccessName)))
+			r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
 			r.Use(middleware.AdminRequired)
 
 			roleH := roleContainer.RoleHandler
