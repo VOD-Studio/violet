@@ -16,6 +16,7 @@ import (
 	webp "github.com/HugoSmits86/nativewebp"
 	"github.com/disintegration/imaging"
 	_ "golang.org/x/image/webp"
+	"github.com/rs/zerolog/log"
 
 	domainupload "blog-api/internal/domain/upload"
 )
@@ -160,11 +161,12 @@ func (p *Processor) Thumbnail(srcPath, fileUUID, storageDir, mime string) string
 
 // videoThumbnail 用 ffmpeg 抽取视频第 1 秒帧生成缩略图
 //
-// ffmpeg 不可用时静默降级（返回空串），不影响上传主流程。
+// ffmpeg 未安装或抽帧失败时降级返回空串并打 warn 日志，不阻断上传主流程。
 // 命令：ffmpeg -i <src> -ss 1 -vframes 1 -vf scale=300:-1 -f image2 <thumb> -y
 func (p *Processor) videoThumbnail(srcPath, fileUUID, storageDir string) string {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		return "" // ffmpeg 不可用，静默降级
+		log.Warn().Msg("ffmpeg 未安装，跳过视频封面生成，上传不受影响")
+		return ""
 	}
 	thumbName := fileUUID + "_thumb.jpg"
 	thumbDir := filepath.Join(p.uploadDir, storageDir)
@@ -176,6 +178,7 @@ func (p *Processor) videoThumbnail(srcPath, fileUUID, storageDir string) string 
 	cmd := exec.Command("ffmpeg", "-i", srcPath, "-ss", "1", "-vframes", "1",
 		"-vf", "scale=300:-1", "-f", "image2", thumbPath, "-y")
 	if err := cmd.Run(); err != nil {
+		log.Warn().Err(err).Str("path", srcPath).Msg("ffmpeg 抽取视频封面失败，跳过封面生成")
 		return ""
 	}
 	return p.urlPrefix + storageDir + "/" + thumbName

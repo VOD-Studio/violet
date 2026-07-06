@@ -29,7 +29,8 @@ FROM alpine:3.20
 
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates wget
+# ffmpeg 用于视频上传后抽取第 1 秒帧生成封面，缺失会让视频素材封面为空
+RUN apk add --no-cache ca-certificates wget ffmpeg
 
 # 创建非 root 用户，UID/GID 与 distroless nonroot 保持一致
 RUN addgroup -g 65532 -S appgroup && adduser -u 65532 -S appuser -G appgroup

@@ -201,7 +201,7 @@ func (s *LocalStorage) generateImageThumb(srcPath, fileUUID, storageDir string) 
 // generateVideoThumb 视频缩略图（ffmpeg 提取第 1 秒帧）
 func (s *LocalStorage) generateVideoThumb(srcPath, fileUUID, storageDir string) string {
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		log.Debug().Msg("ffmpeg 不可用，跳过视频缩略图生成")
+		log.Warn().Msg("ffmpeg 未安装，跳过视频封面生成，上传不受影响")
 		return ""
 	}
 	thumbName := fileUUID + "_thumb.jpg"
