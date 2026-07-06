@@ -1,31 +1,21 @@
-import { authKeys } from "@features/auth/api/keys";
+import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
 import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
-import { notifySessionExpired, requestReplay, setReplayer } from "./auth-gate";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";
 import { ApiError } from "./error";
-import { clientQueryClient } from "./query-client";
-import { triggerRefresh } from "./refresh-queue";
-import { markSessionActive } from "./session";
-import { scheduleRefresh, setOnSessionExpired, setRefresher } from "./token-scheduler";
+import { clearSessionActive } from "./session";
 import type { Envelope, Pagination } from "./types";
 
-// 让 axios 配置对象携带 __retried 标记，防止 401 自动 refresh 死循环。
-// augment AxiosRequestConfig（而非 InternalAxiosRequestConfig），
-// 因为 client.post 的第三参数是 AxiosRequestConfig，类型上不互通。
 declare module "axios" {
     interface AxiosRequestConfig {
-        __retried?: boolean;
         /**
-         * 跳过 authGate（弹窗+挂起重放）的 401 处理。
+         * 跳过 401 弹窗处理。
          *
-         * 用于「身份探活」类请求（getCurrentUser、useMe 的 fetchMe）：
-         * 它们只需要一个干净的通过/失败信号来决定 UI 状态，
-         * 不应触发登录弹窗或把请求挂起——否则登出后导航重跑 getCurrentUser
-         * 会撞 401 → 弹窗 + beforeLoad 永久挂起。
-         * 设为 true 时，401 走普通错误归一化直接 reject，由调用方 try/catch 兜底。
+         * 用于「身份认证」类请求（login/register/verify-email/logout 等）：
+         * 它们的 401/403 是业务结果，不应触发登录弹窗。
+         * 设为 true 时，401 走普通错误流直接 reject，由调用方处理。
          */
-        __skipAuthGate?: boolean;
+        __skipAuthDialog?: boolean;
     }
 }
 
@@ -77,11 +67,11 @@ const getBaseUrl = (): string => {
  * createHttpClient - 创建配好 interceptors 的 axios 实例
  *
  * 装配职责（按执行顺序）：
- * 1. withCredentials: true（跨域携带 access/refresh/csrf cookie）
+ * 1. withCredentials: true（跨域携带 session/csrf cookie）
  * 2. axiosRetry：仅 ERR_NETWORK/ETIMEDOUT/5xx 重试 2 次，业务 4xx 不重试
  * 3. request interceptor：写请求自动注入 X-CSRF-Token header
  * 4. response success interceptor：拆 envelope 成 UnpackedResponse
- * 5. response error interceptor：401 自动 refresh（去重队列）→ 归一化为 ApiError
+ * 5. response error interceptor：401 清会话 + 弹登录窗（无 refresh/无挂起重放）
  *
  * @param opts SSR 时传 forwardedCookie；客户端默认不传
  * @returns 配好的 axios 实例
@@ -112,9 +102,6 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
     client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
         const method = config.method?.toLowerCase();
         if (method && method !== "get") {
-            // 总是从 cookie 读最新 CSRF token 并覆盖：refresh 成功后后端会下发新 CSRF
-            // cookie，重放原请求时 config 里残留的旧 header 必须更新，否则
-            // 新 cookie vs 旧 header 不匹配 → CSRF 403。
             const token = getCSRFToken();
             if (token) {
                 config.headers.set(CSRF_HEADER, token);
@@ -137,50 +124,16 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
         async (err: AxiosError) => {
             const status = err.response?.status ?? 0;
 
-            // 401 处理。两类请求需要跳过整个 refresh + authGate 流程：
-            //   1. 主动认证请求（login/register/verify-email/logout 等）：401 是确定性
-            //      业务结果，尝试 refresh 毫无意义（未登录必然 401），且会浪费一次请求。
-            //   2. 身份探活请求（getCurrentUser/fetchMe）：只需要干净的通过/失败信号。
-            // 这两类直接 fall through 到下方归一化抛 401，由调用方处理。
-            //
-            // 其余业务请求撞 401（token 过期）：触发 refresh（去重队列）后重放原请求一次。
-            // __retried 标记防止 refresh 返回 401 时无限循环。
-            if (
-                status === 401 &&
-                err.config &&
-                !err.config.__retried &&
-                !err.config.__skipAuthGate
-            ) {
-                const expiresIn = await triggerRefresh(async () => {
-                    try {
-                        const res = await client.post("/auth/refresh", {}, { __retried: true });
-                        // 解包 envelope 拿 expires_in：成功响应已被 success interceptor
-                        // 拆成 { data } 形态，data 即 TokenResponse
-                        const data = (res.data as UnpackedResponse).data as
-                            | { expires_in?: number }
-                            | undefined;
-                        return data?.expires_in ?? null;
-                    } catch {
-                        return null;
-                    }
-                });
-                if (expiresIn) {
-                    // 响应式 refresh 成功：用新 expires_in 重新 arm 主动刷新定时器
-                    scheduleRefresh(expiresIn);
-                    // 页面重新加载后若 access token 已过期，SSR 判定未登录导致
-                    // useMe 被禁用、Header 显示"登录"；刷新成功后应恢复会话活跃态，
-                    // 让 Header 等订阅者重新拉取当前用户。
-                    markSessionActive();
-                    err.config.__retried = true;
-                    return client.request(err.config);
+            // 401 处理：opaque session 下 token 不再续期，直接标记会话失效并提示重登。
+            // __skipAuthDialog 用于主动认证请求，避免登录失败还弹登录窗。
+            if (status === 401 && err.config && !err.config.__skipAuthDialog) {
+                clearSessionActive();
+                if (typeof window !== "undefined") {
+                    useLoginDialogStore.getState().open();
                 }
-                // refresh 失败：交给 authGate 挂起原请求 + 弹出登录弹窗，
-                // 用户重登成功后 flush() 用新 cookie 重放，取消则 rejectAll()。
-                // SSR 端未注册 replayer，requestReplay 内部会直接抛 401 兜底。
-                return requestReplay(err.config);
             }
 
-            // 归一化错误：把后端错误结构（不在 data 下）转成 ApiError 抛出
+            // 归一化错误：把后端错误结构转成 ApiError 抛出
             const body = err.response?.data as
                 | (Envelope & {
                       error?: string;
@@ -220,40 +173,5 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
  *
  * 客户端全局共享，浏览器自动管理 cookie，无跨请求串扰问题。
  * SSR 不使用此变量——每请求通过 createHttpClient({ forwardedCookie }) 独立创建。
- *
- * 仅客户端单例向 authGate 注册 replayer：
- * refresh 失败后弹窗登录，重放请求复用此实例（带新 cookie）。
- * SSR 实例不注册，requestReplay 会直接抛 401 兜底（让 SSR 调用方处理）。
  */
 export const httpClient = createHttpClient();
-// 仅客户端注册 replayer：SSR 期间不应弹窗/挂起重放。
-// 若在 SSR 也注册，getCurrentUser 的 /auth/me 401 → /auth/refresh 401 链路会
-// 把原请求推入 authGate 挂起队列等待 flush()，而 SSR 永远不会 flush → 渲染死锁。
-// SSR 不注册时，requestReplay 直接 reject(401)，由 getCurrentUser 的 try/catch 兜成 null。
-if (typeof window !== "undefined") {
-    setReplayer((config) => httpClient.request(config));
-    // 主动刷新实现：定时器到期时调用，单飞复用 triggerRefresh 防并发。
-    // 成功返回新 expires_in 供调度器重新 arm；失败返回 null（交由响应式兜底）。
-    setRefresher(() =>
-        triggerRefresh(async () => {
-            try {
-                const r = await httpClient.post("/auth/refresh", {}, { __retried: true });
-                const data = (r.data as UnpackedResponse).data as
-                    | { expires_in?: number }
-                    | undefined;
-                return data?.expires_in ?? null;
-            } catch {
-                return null;
-            }
-        }),
-    );
-    // 主动刷新失败降级：refresh token 也失效时，完整清理会话状态 + 弹登录窗。
-    // 必须清 me 缓存：否则 useMe 在 me stale 后会 refetch /auth/me → 401，
-    // 而 401 走 __skipAuthGate 不弹窗只 retry → 401 风暴。
-    // notifySessionExpired 内部已 clearSessionActive（让 useMe.enabled 翻 false），
-    // 此处再补 removeQueries 清掉陈旧 me 缓存，双重保险切断 401 链。
-    setOnSessionExpired(() => {
-        clientQueryClient.removeQueries({ queryKey: authKeys.me() });
-        notifySessionExpired();
-    });
-}
