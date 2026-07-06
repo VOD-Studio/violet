@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 
-	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 )
@@ -22,27 +21,22 @@ type GoogleLoginInput struct {
 
 // GoogleLoginHandler 谷歌登录用例
 type GoogleLoginHandler struct {
-	userRepo   user.UserRepository
-	jwt        appshared.TokenService
-	tokenStore appshared.TokenStore
-	clientID   string
-	hasher     PasswordHasher
+	userRepo user.UserRepository
+	clientID string
+	hasher   PasswordHasher
 }
 
-// NewGoogleLoginHandler 构造谷歌登录用例
+// NewGoogleLoginHandler 构造谷歌登录用例。
+// 仅校验 Google 凭证并找到/创建用户，返回 userID；session 创建交由 CreateSessionHandler。
 func NewGoogleLoginHandler(
 	repo user.UserRepository,
-	jwt appshared.TokenService,
-	tokenStore appshared.TokenStore,
 	clientID string,
 	hasher PasswordHasher,
 ) *GoogleLoginHandler {
 	return &GoogleLoginHandler{
-		userRepo:   repo,
-		jwt:        jwt,
-		tokenStore: tokenStore,
-		clientID:   clientID,
-		hasher:     hasher,
+		userRepo: repo,
+		clientID: clientID,
+		hasher:   hasher,
 	}
 }
 
@@ -142,23 +136,7 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 		}
 	}
 
-	// 生成 token pair
-	pair, err := h.jwt.GenerateTokenPair(appshared.TokenInput{
-		UserID:              u.GetID().String(),
-		Email:               u.Email().String(),
-		Role:                string(u.Role()),
-		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
-	})
-	if err != nil {
-		return LoginOutput{}, shared.Internal("生成令牌失败", err)
-	}
-
-	// 存储 refresh token
-	if err := h.tokenStore.Save(ctx, u.GetID().String(), pair.RefreshToken); err != nil {
-		return LoginOutput{}, shared.Internal("存储 refresh token 失败", err)
-	}
-
-	return LoginOutput{TokenPair: pair, UserID: u.GetID().String()}, nil
+	return LoginOutput{UserID: u.GetID().String()}, nil
 }
 
 func generateGoogleUsername(ctx context.Context, email user.Email, userRepo user.UserRepository) (user.Username, error) {

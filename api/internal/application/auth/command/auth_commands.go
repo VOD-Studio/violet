@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	appshared "blog-api/internal/application/shared"
+	"blog-api/internal/domain/session"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 )
@@ -191,10 +192,11 @@ type LoginInput struct {
 	Password string
 }
 
-// LoginOutput 登录出参
+// LoginOutput 登录出参。
+// 仅返回 userID：session 创建交由 CreateSessionHandler 统一编排
+// （HTTP 层先调 login 拿 userID，再调 CreateSession 创建 session 并下发 cookie）。
 type LoginOutput struct {
-	TokenPair *appshared.TokenPair
-	UserID    string
+	UserID string
 }
 
 // LoginHandler 登录用例
@@ -203,23 +205,19 @@ type LoginOutput struct {
 // 1. 按邮箱查找用户
 // 2. 校验密码
 // 3. 校验账户状态（已激活）
-// 4. 生成 token pair
-// 5. 存储 refresh token 到 Redis
+// 4. 返回 userID（session 创建交由 CreateSessionHandler）
 type LoginHandler struct {
-	userRepo   user.UserRepository
-	hasher     PasswordHasher
-	jwt        appshared.TokenService
-	tokenStore appshared.TokenStore
+	userRepo user.UserRepository
+	hasher   PasswordHasher
 }
 
-// NewLoginHandler 构造登录用例
+// NewLoginHandler 构造登录用例。
+// 仅校验凭证与账户状态，不在此处创建 session。
 func NewLoginHandler(
 	repo user.UserRepository,
 	hasher PasswordHasher,
-	jwt appshared.TokenService,
-	tokenStore appshared.TokenStore,
 ) *LoginHandler {
-	return &LoginHandler{userRepo: repo, hasher: hasher, jwt: jwt, tokenStore: tokenStore}
+	return &LoginHandler{userRepo: repo, hasher: hasher}
 }
 
 // Handle 执行登录
@@ -250,47 +248,34 @@ func (h *LoginHandler) Handle(ctx context.Context, in LoginInput) (LoginOutput, 
 		return LoginOutput{}, user.ErrAccountDisabled
 	}
 
-	// 4. 生成 token pair
-	pair, err := h.jwt.GenerateTokenPair(appshared.TokenInput{
-		UserID:              u.GetID().String(),
-		Email:               u.Email().String(),
-		Role:                string(u.Role()),
-		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
-	})
-	if err != nil {
-		return LoginOutput{}, shared.Internal("生成令牌失败", err)
-	}
-
-	// 5. 存储 refresh token
-	if err := h.tokenStore.Save(ctx, u.GetID().String(), pair.RefreshToken); err != nil {
-		return LoginOutput{}, shared.Internal("存储 refresh token 失败", err)
-	}
-
-	return LoginOutput{TokenPair: pair, UserID: u.GetID().String()}, nil
+	return LoginOutput{UserID: u.GetID().String()}, nil
 }
 
 // ============================================================
 // Logout 登出
 // ============================================================
 
-// LogoutInput 登出入参
+// LogoutInput 登出入参。
+// SessionID 由鉴权中间件从 cookie 读出注入 ctx，据此删除当前设备 session。
 type LogoutInput struct {
-	UserID string
+	UserID    string
+	SessionID string
 }
 
-// LogoutHandler 登出用例（删除 Redis 中的 refresh token，实现服务端撤销）
+// LogoutHandler 登出用例：删除当前 session（登出当前设备），不影响该用户其他设备。
 type LogoutHandler struct {
-	tokenStore appshared.TokenStore
+	store appshared.SessionStore
 }
 
-// NewLogoutHandler 构造登出用例
-func NewLogoutHandler(tokenStore appshared.TokenStore) *LogoutHandler {
-	return &LogoutHandler{tokenStore: tokenStore}
+// NewLogoutHandler 构造登出用例。
+func NewLogoutHandler(store appshared.SessionStore) *LogoutHandler {
+	return &LogoutHandler{store: store}
 }
 
-// Handle 执行登出
+// Handle 执行登出。
+// session 删除失败会让已登出设备的 session 继续有效，故返回错误交由上层记日志。
 func (h *LogoutHandler) Handle(ctx context.Context, in LogoutInput) error {
-	return h.tokenStore.Delete(ctx, in.UserID)
+	return h.store.DeleteForUser(ctx, in.UserID, session.ID(in.SessionID))
 }
 
 // ============================================================

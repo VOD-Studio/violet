@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 )
@@ -23,8 +22,6 @@ type GithubLoginInput struct {
 
 type GithubLoginHandler struct {
 	userRepo     user.UserRepository
-	jwt          appshared.TokenService
-	tokenStore   appshared.TokenStore
 	clientID     string
 	clientSecret string
 	hasher       PasswordHasher
@@ -32,16 +29,12 @@ type GithubLoginHandler struct {
 
 func NewGithubLoginHandler(
 	repo user.UserRepository,
-	jwt appshared.TokenService,
-	tokenStore appshared.TokenStore,
 	clientID string,
 	clientSecret string,
 	hasher PasswordHasher,
 ) *GithubLoginHandler {
 	return &GithubLoginHandler{
 		userRepo:     repo,
-		jwt:          jwt,
-		tokenStore:   tokenStore,
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		hasher:       hasher,
@@ -214,21 +207,7 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 		}
 	}
 
-	pair, err := h.jwt.GenerateTokenPair(appshared.TokenInput{
-		UserID:              u.GetID().String(),
-		Email:               u.Email().String(),
-		Role:                string(u.Role()),
-		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
-	})
-	if err != nil {
-		return LoginOutput{}, shared.Internal("生成令牌失败", err)
-	}
-
-	if err := h.tokenStore.Save(ctx, u.GetID().String(), pair.RefreshToken); err != nil {
-		return LoginOutput{}, shared.Internal("存储 refresh token 失败", err)
-	}
-
-	return LoginOutput{TokenPair: pair, UserID: u.GetID().String()}, nil
+	return LoginOutput{UserID: u.GetID().String()}, nil
 }
 
 func generateGithubUsername(ctx context.Context, login string, emailStr string, userRepo user.UserRepository) (user.Username, error) {

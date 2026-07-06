@@ -13,6 +13,7 @@ import (
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/announcement"
 	domaincomment "blog-api/internal/domain/comment"
+	domainsession "blog-api/internal/domain/session"
 	"blog-api/internal/domain/permission"
 	"blog-api/internal/domain/role"
 	"blog-api/internal/domain/shared"
@@ -183,6 +184,37 @@ func (m *MockTokenService) AccessTTL() time.Duration {
 
 func (m *MockTokenService) RefreshTTL() time.Duration {
 	return m.Called().Get(0).(time.Duration)
+}
+
+// ============================================================
+// SessionStore Mock
+// ============================================================
+
+// MockSessionStore application/shared.SessionStore 的 mock 实现
+type MockSessionStore struct{ mock.Mock }
+
+func (m *MockSessionStore) Create(ctx context.Context, sess *domainsession.Session, idleTTL time.Duration) error {
+	return m.Called(ctx, sess, idleTTL).Error(0)
+}
+
+func (m *MockSessionStore) Get(ctx context.Context, id domainsession.ID) (*domainsession.Session, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domainsession.Session), args.Error(1)
+}
+
+func (m *MockSessionStore) Touch(ctx context.Context, sess *domainsession.Session, idleTTL time.Duration) error {
+	return m.Called(ctx, sess, idleTTL).Error(0)
+}
+
+func (m *MockSessionStore) DeleteForUser(ctx context.Context, userID string, id domainsession.ID) error {
+	return m.Called(ctx, userID, id).Error(0)
+}
+
+func (m *MockSessionStore) DeleteByUser(ctx context.Context, userID string) error {
+	return m.Called(ctx, userID).Error(0)
 }
 
 // ============================================================
@@ -402,6 +434,7 @@ var (
 	_ appshared.EventBus                    = (*MockEventBus)(nil)
 	_ appshared.TokenStore                  = (*MockTokenStore)(nil)
 	_ appshared.TokenService                = (*MockTokenService)(nil)
+	_ appshared.SessionStore                = (*MockSessionStore)(nil)
 	_ appshared.CodeStore                   = (*MockCommentCodeStore)(nil)
 	_ domainuser.UserRepository             = (*MockUserRepository)(nil)
 	_ announcement.AnnouncementRepository   = (*MockAnnouncementRepository)(nil)
