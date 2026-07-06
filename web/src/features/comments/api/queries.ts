@@ -7,6 +7,7 @@ import type {
     Comment,
     CommentListQuery,
     Reaction,
+    ReplyListQuery,
 } from "../model/types";
 import { commentKeys } from "./keys";
 
@@ -48,6 +49,26 @@ export const useComments = (postId: string, query: CommentListQuery = {}) =>
  */
 export const useAnnotationComments = (postId: string) =>
     useComments(postId, { type: "annotation" });
+
+/**
+ * fetchReplies - 调 GET /comments/{commentId}/replies 拉某顶层评论的回复
+ *
+ * 配合顶层评论列表的「按需拉回复」分页策略：列表首屏拿预览，
+ * 点「查看全部 xx 条回复」走此接口翻页。黑洞模式同 useComments。
+ */
+export const fetchReplies = async (
+    commentId: string,
+    query: ReplyListQuery = {},
+): Promise<PagedResponse<Comment>> =>
+    apiGetPaged<Comment>(`/comments/${commentId}/replies`, { params: query });
+
+/** useReplies - 某顶层评论的回复列表 hook（支持 sort 切换） */
+export const useReplies = (commentId: string, query: ReplyListQuery = {}) =>
+    useQuery({
+        queryKey: commentKeys.replyList(commentId, query),
+        queryFn: () => fetchReplies(commentId, query),
+        enabled: !!commentId,
+    });
 
 /** fetchCommentReactions - GET /comments/{commentId}/reactions 评论反应列表 */
 export const fetchCommentReactions = async (commentId: string): Promise<Reaction[]> =>

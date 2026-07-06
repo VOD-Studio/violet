@@ -79,6 +79,12 @@ export interface Comment {
     status: CommentStatus;
     /** 创建时间，RFC3339 字符串 */
     created_at: string;
+    /** 回复预览（前几条）。只有顶层评论有，后端 ListByPost 时填好。
+     *  「查看全部」走 GET /comments/{id}/replies 独立分页，不靠这个字段。 */
+    replies?: Comment[];
+    /** 该顶层评论下的回复总数。前端据此显示「查看全部 xx 条回复」。
+     *  只有顶层评论有；replies 只是预览，总数独立返回。 */
+    replies_total?: number;
 }
 
 /**

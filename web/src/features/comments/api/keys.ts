@@ -1,4 +1,4 @@
-import type { CommentListQuery } from "../model/types";
+import type { CommentListQuery, ReplyListQuery } from "../model/types";
 
 /**
  * commentKeys - 评论模块 query key 工厂
@@ -13,6 +13,11 @@ export const commentKeys = {
     /** 具体文章的评论列表 */
     list: (postId: string, query: CommentListQuery) =>
         [...commentKeys.lists(), postId, query] as const,
+    /** 回复列表维度（按顶层评论 id 聚合） */
+    replies: () => [...commentKeys.all, "replies"] as const,
+    /** 具体顶层评论的回复列表（含 sort/page 维度） */
+    replyList: (commentId: string, query: ReplyListQuery) =>
+        [...commentKeys.replies(), commentId, query] as const,
     /** 评论反应维度 */
     reactions: () => [...commentKeys.all, "reactions"] as const,
     /** 具体评论的反应列表 */

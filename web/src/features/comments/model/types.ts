@@ -67,6 +67,24 @@ export interface CommentListQuery {
     limit?: number;
     /** 按 anchor 维度过滤（?type=）；缺省由后端降级为 free，显式传更清晰 */
     type?: CommentType;
+    /** 仅返回顶层评论（?top_level=true）；配合 GET /comments/{id}/replies 按需拉回复 */
+    top_level?: boolean;
+}
+
+/** 回复排序方式。asc=最早优先（默认），desc=最新优先。
+ *  「热门」需 reaction_count 冗余，本期未实现。 */
+export type ReplySort = "asc" | "desc";
+
+/**
+ * ReplyListQuery - 回复列表查询参数（GET /comments/{id}/replies）
+ */
+export interface ReplyListQuery {
+    /** 排序方式，默认 asc */
+    sort?: ReplySort;
+    /** 页码，从 1 开始 */
+    page?: number;
+    /** 每页条数 */
+    limit?: number;
 }
 
 /**
