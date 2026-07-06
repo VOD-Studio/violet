@@ -1,6 +1,6 @@
 // Package comment 定义评论聚合的领域模型。
 //
-// 评论支持嵌套（物化路径，最大深度 4），含状态机（pending/approved/spam/deleted）。
+// 评论支持回复（两层扁平，物化路径聚合），含状态机（pending/approved/spam/deleted）。
 // 反应（emoji 点赞）作为独立聚合通过 comment_id 关联。
 //
 // 认证模型（PRD-0001 双轨制）：
@@ -26,8 +26,10 @@ const (
 	StatusDeleted  = "deleted"
 )
 
-// MaxDepth 最大嵌套深度
-const MaxDepth = 4
+// MaxDepth 展示层级上限。
+// 0 是顶层评论，1 是回复。回复不再往下嵌套（B站式两层扁平）——
+// 回复另一条回复时，depth 还是 1，对话关系靠 parent_id 和 reply_to_name 标。
+const MaxDepth = 1
 
 // 状态合法性
 func IsValidStatus(s string) bool {
@@ -105,9 +107,15 @@ type Comment struct {
 	// 决策依据 PRD-0001：划线批注是身份可见的高亮动作，不允许匿名。
 	userID *shared.ID
 
-	parentID *shared.ID // 父评论 id（顶级评论为 nil）。嵌套回复用。
-	path     string     // 物化路径 <uuid>/<uuid>/...，便于高效查子树
-	depth    int16      // 嵌套深度（0=顶级，最大 MaxDepth=4）
+	// parentID 被回复的评论 id。顶层评论为 nil。
+	// 两层扁平下：回复顶层评论 → parent_id 指向那条顶层；
+	// 回复另一条回复 → parent_id 指向被回复者，但 depth 还是 1（不往下嵌套）。
+	parentID *shared.ID
+	// path 物化路径 <uuid>/<uuid>/...。同一顶层评论下的所有回复共享前缀，
+	// 方便按顶层聚合查整棵子树。
+	path string
+	// depth 展示层级。0 是顶层评论，1 是回复。见 MaxDepth。
+	depth int16
 
 	// anchor 选区批注锚点。非空表示这是一条批注（锚到正文文本）；
 	// 为 nil 表示自由评论（挂文章底部）。批注强制登录（见 userID）。
@@ -207,23 +215,37 @@ func ReconstructComment(id, postID shared.ID, userID *shared.ID, parentID *share
 	}
 }
 
-// SetParent 设置父评论（嵌套回复）
+// SetParent 设置被回复的评论。
 //
-// 业务规则：深度不超过 MaxDepth。
+// 两层扁平语义（B站式）：回复一律 depth=1，不往下嵌套。
+//   - parent 是顶层（depth=0）→ 新评论 depth=1
+//   - parent 是回复（depth=1）→ 新评论 depth 还是 1，parent_id 指被回复者
+//
+// path 始终挂到「顶层祖先」下面，保证同棵树前缀一致，便于按顶层聚合查子树。
 func (c *Comment) SetParent(parent *Comment) error {
 	if parent == nil {
 		c.depth = 0
 		c.path = c.id.String() + "/"
 		return nil
 	}
-	newDepth := parent.depth + 1
-	if newDepth > MaxDepth {
-		return shared.BadRequest("评论嵌套深度超过限制")
-	}
+	c.depth = 1
 	c.parentID = &parent.id
-	c.depth = newDepth
-	c.path = parent.path + c.id.String() + "/"
+	c.path = topAncestorPath(parent.path) + c.id.String() + "/"
 	return nil
+}
+
+// topAncestorPath 取物化路径的第一段（顶层祖先的 id）。
+// 例如 "aaa/bbb/ccc/" → "aaa/"。用于 SetParent 时把回复挂到顶层祖先下。
+// 入参 path 为空时返回空串（防御，正常不会走到）。
+func topAncestorPath(path string) string {
+	if path == "" {
+		return ""
+	}
+	idx := strings.Index(path, "/")
+	if idx < 0 {
+		return path + "/"
+	}
+	return path[:idx+1]
 }
 
 // Approve 审核通过

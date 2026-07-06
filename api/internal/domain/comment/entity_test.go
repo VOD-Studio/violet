@@ -160,5 +160,71 @@ func TestAnchor_Validation(t *testing.T) {
 	}
 }
 
+// TestSetParent_TwoLevelFlat 回复的两层扁平语义：
+//   - 回复顶层评论 → depth=1，path 挂顶层下
+//   - 回复回复 → depth 还是 1（不嵌套），path 仍挂同一顶层下
+//   - parent=nil → depth=0，path 是自己
+func TestSetParent_TwoLevelFlat(t *testing.T) {
+	top := newCommentForTest()
+	if err := top.SetParent(nil); err != nil {
+		t.Fatalf("顶层 SetParent(nil) 报错: %v", err)
+	}
+	if top.Depth() != 0 {
+		t.Errorf("顶层 depth 期望 0，实际 %d", top.Depth())
+	}
+	if top.Path() != top.ID().String()+"/" {
+		t.Errorf("顶层 path 期望 %s/，实际 %s", top.ID().String(), top.Path())
+	}
+
+	// 回复顶层
+	reply1 := newCommentForTest()
+	if err := reply1.SetParent(top); err != nil {
+		t.Fatalf("回复顶层 SetParent 报错: %v", err)
+	}
+	if reply1.Depth() != 1 {
+		t.Errorf("回复顶层 depth 期望 1，实际 %d", reply1.Depth())
+	}
+	if reply1.ParentID() == nil || *reply1.ParentID() != top.ID() {
+		t.Error("回复顶层 parent_id 应指向顶层")
+	}
+	// path 前缀应是顶层 id
+	if !strings.HasPrefix(reply1.Path(), top.ID().String()+"/") {
+		t.Errorf("回复 path 应以顶层 id 开头，实际 %s", reply1.Path())
+	}
+
+	// 回复 reply1（回复回复）→ depth 仍是 1，不嵌套
+	reply2 := newCommentForTest()
+	if err := reply2.SetParent(reply1); err != nil {
+		t.Fatalf("回复回复 SetParent 报错: %v", err)
+	}
+	if reply2.Depth() != 1 {
+		t.Errorf("回复回复 depth 仍期望 1（两层扁平），实际 %d", reply2.Depth())
+	}
+	if reply2.ParentID() == nil || *reply2.ParentID() != reply1.ID() {
+		t.Error("回复回复 parent_id 应指向被回复的那条（reply1），不是顶层")
+	}
+	// path 仍挂同一顶层下（前缀一致）
+	if !strings.HasPrefix(reply2.Path(), top.ID().String()+"/") {
+		t.Errorf("回复回复 path 仍应挂在同一顶层下，实际 %s", reply2.Path())
+	}
+	// 验证 path 第一段就是顶层 id（topAncestorPath 工作）
+	if !strings.HasPrefix(reply2.Path(), top.ID().String()+"/") {
+		t.Errorf("topAncestorPath 应取顶层，实际 %s", reply2.Path())
+	}
+}
+
+// newCommentForTest 测试辅助：构造一个最小可用 Comment（双轨认证合法：登录自由评论）。
+func newCommentForTest() *Comment {
+	uid := shared.NewID()
+	c, _ := NewComment(CreateParams{
+		ID:         shared.NewID(),
+		PostID:     shared.NewID(),
+		UserID:     &uid,
+		AuthorName: "tester",
+		Body:       "hi",
+	})
+	return c
+}
+
 // 编译期断言：确保 shared 包错误构造函数可用（防止重构 import 失效）。
 var _ = shared.BadRequest
