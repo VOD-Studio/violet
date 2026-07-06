@@ -10,16 +10,15 @@
  * 回复（按需加载分页）：
  *   - 默认显示后端预览（comment.replies，前 3 条）
  *   - 「查看全部 xx 条回复」走 GET /comments/{id}/replies 独立分页
- *   - 排序切换（时间正/倒序），「热门」预留未实现
+ *   - 纯追加（预览不动 + 去重新增），无视觉抖动
  *   - 回复按钮用图标（lucide MessageCircle），仅登录用户可见
  */
 import type { Comment } from "@entities/comment/model/types";
 import { useReplies } from "@features/comments/api/queries";
-import type { ReplySort } from "@features/comments/model/types";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { ChevronDown, MessageCircle } from "lucide-react";
+import { ChevronDown, Loader2, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { type CommentTreeNode, getCommentSeverity } from "../lib/comment-tree";
 import { getCommentSev } from "../lib/severity";
@@ -116,11 +115,16 @@ export function CommentItem({
 }
 
 /**
- * CommentRepliesBlock 顶层评论下的回复区（按需加载 + 排序切换 + 分页）。
+ * CommentRepliesBlock 顶层评论下的回复区（预览 + 按需追加 + 分页）。
  *
- * 默认显示后端预览（comment.replies，前 3 条）。
- * 点「查看全部 xx 条回复」→ useInfiniteQuery 拉分页，显示排序切换。
- * 「查看更多回复」按钮翻页。
+ * 渲染策略（纯追加，无替换，避免视觉抖动）：
+ *   1. 永远显示后端预览（comment.replies，前 3 条）——位置不动
+ *   2. 总数超预览数时，底部显示「查看全部 xx 条回复」按钮
+ *   3. 点击 → useInfiniteQuery 拉分页，渲染时去重（跳过预览里已有的 id），
+ *      新增回复追加在预览下方
+ *   4. 「查看更多」按钮在底部，fetchNextPage 继续追加
+ *
+ * 回复不排序（排序只给顶层评论用），默认按后端 created_at ASC。
  */
 function CommentRepliesBlock({
     comment,
@@ -133,14 +137,36 @@ function CommentRepliesBlock({
 }) {
     const repliesTotal = comment.replies_total ?? 0;
     const previewReplies = comment.replies ?? [];
-
-    // 是否展开为「分页模式」（调 useReplies）。未展开时只显示预览。
+    // 是否展开为「分页模式」（调 useReplies 追加）。未展开时只显示预览。
     const [expanded, setExpanded] = useState(false);
-    const [sort, setSort] = useState<ReplySort>("asc");
+
+    // 预览 id 集合：useReplies 返回的与预览重复的跳过（纯追加，避免视觉跳变）
+    const previewIds = new Set(previewReplies.map((r) => r.id));
 
     return (
         <div className="mt-2 space-y-2 border-l border-edge-hairline pl-3">
-            {/* 「查看全部 xx 条回复」按钮（仅预览态 + 总数超预览数时显示） */}
+            {/* 预览回复（永远显示，位置不动） */}
+            {previewReplies.map((reply) => (
+                <CommentItem
+                    key={reply.id}
+                    node={{ comment: reply, replies: [] }}
+                    level={1}
+                    postId={postId}
+                    isLoggedIn={isLoggedIn}
+                />
+            ))}
+
+            {/* 展开后的追加回复（useReplies 分页，去重预览） */}
+            {expanded && (
+                <ExpandedReplies
+                    commentId={comment.id}
+                    excludeIds={previewIds}
+                    isLoggedIn={isLoggedIn}
+                    postId={postId}
+                />
+            )}
+
+            {/* 底部「查看全部」/「查看更多」按钮：未展开 + 总数超预览数时显示 */}
             {!expanded && repliesTotal > previewReplies.length && (
                 <button
                     type="button"
@@ -151,85 +177,38 @@ function CommentRepliesBlock({
                     查看全部 {repliesTotal} 条回复
                 </button>
             )}
-
-            {/* 预览态：显示后端返回的前几条 */}
-            {!expanded &&
-                previewReplies.map((reply) => (
-                    <CommentItem
-                        key={reply.id}
-                        node={{ comment: reply, replies: [] }}
-                        level={1}
-                        postId={postId}
-                        isLoggedIn={isLoggedIn}
-                    />
-                ))}
-
-            {/* 展开态：useInfiniteQuery 拉分页 */}
-            {expanded && (
-                <ExpandedReplies
-                    commentId={comment.id}
-                    sort={sort}
-                    onSortChange={setSort}
-                    isLoggedIn={isLoggedIn}
-                    postId={postId}
-                />
-            )}
         </div>
     );
 }
 
 /**
- * ExpandedReplies 展开后的回复列表（useInfiniteQuery 分页 + 排序切换）。
+ * ExpandedReplies 展开后的追加回复（useInfiniteQuery 分页 + 去重 + 加载效果）。
  *
- * 排序切换：时间正序/倒序（「热门」预留未实现，需 reaction_count）。
- * 「查看更多回复」按钮 fetchNextPage，无更多时隐藏。
+ * - excludeIds：预览的 id 集合，useReplies 返回里与预览重复的跳过（纯追加）
+ * - 「查看更多回复」按钮在底部，fetchNextPage 继续追加
+ * - 加载中显示 Loader2 旋转图标
  */
 function ExpandedReplies({
     commentId,
-    sort,
-    onSortChange,
+    excludeIds,
     isLoggedIn,
     postId,
 }: {
     commentId: string;
-    sort: ReplySort;
-    onSortChange: (s: ReplySort) => void;
+    excludeIds: Set<string>;
     isLoggedIn: boolean;
     postId?: string;
 }) {
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useReplies(commentId, {
-        sort,
         limit: 10,
     });
-    const replies = data?.pages.flatMap((p) => p.data) ?? [];
+    // 去重：跳过与预览重复的 id（纯追加，预览已在上方独立显示）
+    const allReplies = data?.pages.flatMap((p) => p.data) ?? [];
+    const replies = allReplies.filter((r) => !excludeIds.has(r.id));
 
     return (
         <>
-            {/* 排序切换 */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>排序：</span>
-                <button
-                    type="button"
-                    onClick={() => onSortChange("asc")}
-                    className={
-                        sort === "asc" ? "text-foreground font-medium" : "hover:text-foreground"
-                    }
-                >
-                    正序
-                </button>
-                <span>·</span>
-                <button
-                    type="button"
-                    onClick={() => onSortChange("desc")}
-                    className={
-                        sort === "desc" ? "text-foreground font-medium" : "hover:text-foreground"
-                    }
-                >
-                    倒序
-                </button>
-            </div>
-
-            {/* 回复列表 */}
+            {/* 追加回复列表 */}
             {replies.map((reply) => (
                 <CommentItem
                     key={reply.id}
@@ -240,7 +219,7 @@ function ExpandedReplies({
                 />
             ))}
 
-            {/* 「查看更多回复」按钮（fetchNextPage） */}
+            {/* 底部「查看更多回复」按钮 + 加载效果 */}
             {hasNextPage && (
                 <button
                     type="button"
@@ -248,9 +227,25 @@ function ExpandedReplies({
                     disabled={isFetchingNextPage}
                     className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
                 >
-                    <ChevronDown className="size-3" />
-                    {isFetchingNextPage ? "加载中..." : "查看更多回复"}
+                    {isFetchingNextPage ? (
+                        <>
+                            <Loader2 className="size-3 animate-spin" />
+                            加载中...
+                        </>
+                    ) : (
+                        <>
+                            <ChevronDown className="size-3" />
+                            查看更多回复
+                        </>
+                    )}
                 </button>
+            )}
+            {/* 首次加载效果（fetchNextPage 没触发过，但 useReplies 还在加载第一页） */}
+            {isFetchingNextPage && replies.length === 0 && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Loader2 className="size-3 animate-spin" />
+                    加载中...
+                </div>
             )}
         </>
     );
