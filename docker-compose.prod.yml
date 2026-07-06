@@ -54,6 +54,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
+    image: localhost/mimo-blog-api:latest
     container_name: blog-api
     restart: always
     # API Dockerfile 创建 UID/GID 65532 的非 root 用户，
@@ -109,6 +110,7 @@ services:
         VITE_API_URL: ${VITE_API_URL:-https://xunrua.top/api/v1}
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
         VITE_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+    image: localhost/mimo-blog-web:latest
     container_name: blog-web
     restart: always
     # 宿主机 80 映射到容器内 Nitro server 的 3000

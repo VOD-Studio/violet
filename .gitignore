@@ -53,3 +53,6 @@ api/bin/
 .worktrees/
 
 **/*.rdb
+
+# Temporary images
+*.tar.gz
