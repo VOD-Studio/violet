@@ -72,11 +72,11 @@ const getBaseUrl = (): string => {
  * createHttpClient - 创建配好 interceptors 的 axios 实例
  *
  * 装配职责（按执行顺序）：
- * 1. withCredentials: true（跨域携带 access/refresh/csrf cookie）
+ * 1. withCredentials: true（跨域携带 session/csrf cookie）
  * 2. axiosRetry：仅 ERR_NETWORK/ETIMEDOUT/5xx 重试 2 次，业务 4xx 不重试
  * 3. request interceptor：写请求自动注入 X-CSRF-Token header
  * 4. response success interceptor：拆 envelope 成 UnpackedResponse
- * 5. response error interceptor：401 自动 refresh（去重队列）→ 归一化为 ApiError
+ * 5. response error interceptor：401 清除会话状态并触发登录弹窗
  *
  * @param opts SSR 时传 forwardedCookie；客户端默认不传
  * @returns 配好的 axios 实例
@@ -107,9 +107,7 @@ export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance =>
     client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
         const method = config.method?.toLowerCase();
         if (method && method !== "get") {
-            // 总是从 cookie 读最新 CSRF token 并覆盖：refresh 成功后后端会下发新 CSRF
-            // cookie，重放原请求时 config 里残留的旧 header 必须更新，否则
-            // 新 cookie vs 旧 header 不匹配 → CSRF 403。
+            // 总是从 cookie 读最新 CSRF token 并覆盖。
             const token = getCSRFToken();
             if (token) {
                 config.headers.set(CSRF_HEADER, token);

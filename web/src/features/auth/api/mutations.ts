@@ -43,11 +43,11 @@ export const useVerifyEmail = () =>
 /**
  * useLogin - 邮箱密码登录
  *
- * 成功后后端通过 HttpOnly cookie 下发 access/refresh/CSRF token，
- * 响应体仅返回 access_token 等非敏感字段。onSuccess 主动拉取最新用户信息。
+ * 成功后后端通过 HttpOnly cookie 下发 session/CSRF token，
+ * 响应体仅返回 user_id。onSuccess 主动拉取最新用户信息。
  *
  * @param csrfToken 可选的 CSRF token；当浏览器 cookie 未成功写入时，可显式传入并写入请求头。
- * @returns POST /auth/login，返回 token 信息
+ * @returns POST /auth/login，返回登录响应（含 user_id）
  */
 export const useLogin = (csrfToken?: string) => {
     const qc = useQueryClient();

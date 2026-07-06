@@ -31,11 +31,9 @@ const FALLBACK_BY_STATUS: Record<number, string> = {
  *
  * 两路触发：
  * 1. 主动：Header「登录」按钮调 store.open
- * 2. 被动：http 拦截器 refresh 失败 → authGate.requestReplay 挂起请求 →
- *    经此处注册的 opener 自动弹窗，用户重登成功后 flush() 重放原请求。
+ * 2. 被动：http 拦截器检测到 401 自动调用 open() 打开弹窗。
  *
- * 取消（点关闭/遮罩/ESC）时：rejectAll() 拒绝所有挂起请求，并把 me 缓存
- * 置 undefined（反映 token 已失效），若当前在受保护页则跳 /login 兜底。
+ * 取消（点关闭/遮罩/ESC）时：清除 me 用户缓存和会话标志，若当前在受保护页则退回首页。
  */
 export function LoginDialog() {
     const isOpen = useLoginDialogStore((s) => s.isOpen);
