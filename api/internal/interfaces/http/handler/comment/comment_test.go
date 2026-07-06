@@ -48,7 +48,7 @@ type stubCommentService struct {
 	sendCodeCalled bool
 }
 
-func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.CommentDTO, int64, error) {
+func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, page, limit int) ([]appcomment.CommentDTO, int64, error) {
 	s.listByPostCalled = true
 	s.listByPostViewer = viewerUserID
 	s.listByPostAnchorFilter = anchorFilter

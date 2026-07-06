@@ -133,7 +133,7 @@ func TestFindByPost_LoggedInViewer_IncludesOwnPending(t *testing.T) {
 	// 他人的 pending（不可见）
 	saveComment(t, db, domaincomment.StatusPending, "ip", "c@x.com", &otherStr, false)
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, &viewer, domaincomment.AnchorFilterAll, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, &viewer, domaincomment.AnchorFilterAll, domaincomment.DepthFilterAll, 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), total, "应见 approved(1) + 自己 pending(1) = 2")
 	statuses := map[string]bool{}
@@ -157,7 +157,7 @@ func TestFindByPost_NilViewer_OnlyApproved(t *testing.T) {
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false)
 	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", &viewerStr, false) // 即使有 owner，nil viewer 也不可见
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, domaincomment.DepthFilterAll, 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total, "nil viewer 只见 approved")
 	for _, c := range items {
@@ -176,7 +176,7 @@ func TestFindByPost_AnchorFilter_Free_OnlyReturnsFreeComments(t *testing.T) {
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false) // 自由
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, true)  // 批注
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterFree, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterFree, domaincomment.DepthFilterAll, 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total, "free 过滤只返回自由评论")
 	for _, c := range items {
@@ -195,7 +195,7 @@ func TestFindByPost_AnchorFilter_Annotation_OnlyReturnsAnnotations(t *testing.T)
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false) // 自由
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, true)  // 批注
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAnnotation, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAnnotation, domaincomment.DepthFilterAll, 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total, "annotation 过滤只返回批注")
 	for _, c := range items {
@@ -263,6 +263,50 @@ func TestFindPending_AnchorFilterAll_ReturnsBoth(t *testing.T) {
 		}
 	}
 	assert.True(t, hasAnchor && hasFree, "all 应同时包含批注与自由评论")
+}
+
+// TestFindByPost_DepthFilterTopLevel_OnlyReturnsTopLevel depth 过滤：
+// DepthFilterTopLevel 时只返回 depth=0 的顶层评论，回复（depth=1）被排除。
+// 避免顶层评论和回复混在一页被分页切走（按需拉回复分页策略的基础）。
+func TestFindByPost_DepthFilterTopLevel_OnlyReturnsTopLevel(t *testing.T) {
+	db := setupCommentTestDB(t)
+	repo := NewCommentRepository(db)
+	ctx := context.Background()
+	pid := fixedPostID
+
+	// 顶层评论（depth=0）
+	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false, 0)
+	// 回复（depth=1）
+	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, false, 1)
+
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, domaincomment.DepthFilterTopLevel, 1, 50)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total, "DepthFilterTopLevel 只返回顶层评论")
+	for _, c := range items {
+		assert.Equal(t, int16(0), c.Depth(), "DepthFilterTopLevel 应只返回 depth=0")
+	}
+}
+
+// saveCommentWithDepth saveComment 的扩展版，支持指定 depth。
+// 用于测试 depth 维度过滤（saveComment 默认造的都是 depth=0）。
+func saveCommentWithDepth(t *testing.T, db *gorm.DB, status, ipHash, email string, createdBy *string, withAnchor bool, depth int16) {
+	t.Helper()
+	c := model.Comment{
+		ID: uuid.New(), PostID: fixedPostID.UUID(),
+		Path: domainshared.NewID().String() + "/",
+		Depth: depth, AuthorName: "tester", AuthorEmail: email,
+		Body: "hi", Pictures: []byte("[]"), Status: status, IPHash: ipHash,
+	}
+	if createdBy != nil {
+		u, err := uuid.Parse(*createdBy)
+		require.NoError(t, err)
+		c.CreatedBy = &u
+	}
+	if withAnchor {
+		blockID := "block-1"
+		c.AnchorBlockID = &blockID
+	}
+	require.NoError(t, db.Create(&c).Error)
 }
 
 // fixedPostID 测试用固定 post id（SQLite 不强制外键，无需真实 post 记录）。

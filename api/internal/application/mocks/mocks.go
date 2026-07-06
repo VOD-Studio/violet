@@ -283,8 +283,8 @@ func (m *MockCommentRepository) FindByID(ctx context.Context, id shared.ID) (*do
 	return args.Get(0).(*domaincomment.Comment), args.Error(1)
 }
 
-func (m *MockCommentRepository) FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]*domaincomment.Comment, int64, error) {
-	args := m.Called(ctx, postID, status, viewerUserID, anchorFilter, page, limit)
+func (m *MockCommentRepository) FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, page, limit int) ([]*domaincomment.Comment, int64, error) {
+	args := m.Called(ctx, postID, status, viewerUserID, anchorFilter, depthFilter, page, limit)
 	if args.Get(0) == nil {
 		return nil, args.Get(1).(int64), args.Error(2)
 	}

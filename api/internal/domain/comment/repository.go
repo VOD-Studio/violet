@@ -24,6 +24,22 @@ const (
 	AnchorFilterAnnotation AnchorFilter = "annotation"
 )
 
+// DepthFilter 控制 FindByPost 按 depth 列过滤的维度。
+//
+// 两层扁平下 depth 只分 0/1。顶层评论列表只查 depth=0，
+// 回复走 FindReplies 单独查，避免子和父混在一页被分页切走。
+type DepthFilter int16
+
+const (
+	// DepthFilterAll 不过滤 depth（顶层 + 回复全返回）。
+	DepthFilterAll DepthFilter = -1
+	// DepthFilterTopLevel 仅顶层评论（depth=0）。
+	// 前台底部评论区列表用，配合「按需拉回复」分页策略。
+	DepthFilterTopLevel DepthFilter = 0
+	// DepthFilterReply 仅回复（depth=1）。
+	DepthFilterReply DepthFilter = 1
+)
+
 // CommentRepository 评论仓储接口
 type CommentRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
@@ -39,9 +55,12 @@ type CommentRepository interface {
 	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），
 	// 见 AnchorFilter 常量；空串视为 AnchorFilterAll（兼容旧调用方）。
 	//
+	// depthFilter 控制按 depth 列过滤（顶层 / 回复 / 全部），见 DepthFilter 常量；
+	// 前台顶层评论列表传 DepthFilterTopLevel，配合 FindReplies 按需拉回复。
+	//
 	// 这样登录提交者能在审核通过前看到自己刚提交的评论（带「审批中」徽章），
 	// 而他人永远只看到 approved（PRD-0001「审批与状态可见性」）。
-	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter AnchorFilter, page, limit int) ([]*Comment, int64, error)
+	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter AnchorFilter, depthFilter DepthFilter, page, limit int) ([]*Comment, int64, error)
 	FindReplies(ctx context.Context, parentPath string) ([]*Comment, error)
 	// FindPending 列出待审核评论（后台）。
 	//

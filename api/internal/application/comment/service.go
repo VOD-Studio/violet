@@ -96,7 +96,10 @@ func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, em
 // anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 domain.AnchorFilter；
 // 空串视为 AnchorFilterAll。前端底部评论区传 AnchorFilterFree，批注角标层传
 // AnchorFilterAnnotation，把两条数据流在接口层彻底分开。
-func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domain.AnchorFilter, page, limit int) ([]CommentDTO, int64, error) {
+//
+// depthFilter 控制按 depth 列过滤（顶层 / 回复 / 全部），见 domain.DepthFilter；
+// 前台顶层评论列表传 DepthFilterTopLevel，配合 FindReplies 按需拉回复。
+func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domain.AnchorFilter, depthFilter domain.DepthFilter, page, limit int) ([]CommentDTO, int64, error) {
 	// 黑洞模式：匿名 viewer 不查 DB。
 	if viewerUserID == "" {
 		return []CommentDTO{}, 0, nil
@@ -109,7 +112,7 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 	if err != nil {
 		return nil, 0, err
 	}
-	items, total, err := s.commentRepo.FindByPost(ctx, pid, domain.StatusApproved, &viewerID, anchorFilter, page, limit)
+	items, total, err := s.commentRepo.FindByPost(ctx, pid, domain.StatusApproved, &viewerID, anchorFilter, depthFilter, page, limit)
 	if err != nil {
 		return nil, 0, err
 	}

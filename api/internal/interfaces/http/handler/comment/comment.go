@@ -26,7 +26,7 @@ import (
 // stub 实现（见 comment_test.go 的 stubCommentService），避免在测试里启动完整 service +
 // 真实 repo/codeStore。*appcomment.Service 通过 Go 结构化接口天然满足此契约。
 type commentService interface {
-	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
 	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
 	ListPending(ctx context.Context, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
@@ -85,7 +85,14 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, page, limit)
+	// top_level query param：true 时只返回顶层评论（depth=0），配合「按需拉回复」分页策略。
+	// 默认 false（兼容老调用方，返回顶层+回复全部）。
+	depthFilter := domaincomment.DepthFilterAll
+	if r.URL.Query().Get("top_level") == "true" {
+		depthFilter = domaincomment.DepthFilterTopLevel
+	}
+
+	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, depthFilter, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
