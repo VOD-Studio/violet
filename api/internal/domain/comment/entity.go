@@ -290,6 +290,10 @@ func (c *Comment) Depth() int16         { return c.depth }
 
 // Anchor 返回选区批注锚点。nil 表示这是一条自由评论（非批注）。
 func (c *Comment) Anchor() *Anchor { return c.anchor }
+
+// SetInheritedAnchor 继承父评论的锚点。回复批注时调用，让回复挂在同一高亮区。
+// 仅 service.Create 在「parent 有 anchor 且当前评论没传 anchor」时调用。
+func (c *Comment) SetInheritedAnchor(a *Anchor) { c.anchor = a }
 func (c *Comment) AuthorName() string   { return c.authorName }
 func (c *Comment) AuthorEmail() string  { return c.authorEmail }
 func (c *Comment) AuthorURL() string    { return c.authorURL }

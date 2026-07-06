@@ -54,11 +54,14 @@ type CommentDTO struct {
 	ID         string           `json:"id"`
 	PostID     string           `json:"post_id"`
 	ParentID   string           `json:"parent_id,omitempty"`
-	Depth      int16            `json:"depth"`
-	AuthorName string           `json:"author_name"`
-	AvatarURL  string           `json:"avatar_url"`
-	Body       string           `json:"body"`
-	Pictures   []domain.Picture `json:"pictures"`
+	// ReplyToName 被回复者的昵称。只有回复节点有，前端显示「回复 @yyy」用。
+	// toDTO 时查 parent 的 author_name 填进来，前端直接读不自己转换。顶层评论省略。
+	ReplyToName string          `json:"reply_to_name,omitempty"`
+	Depth       int16           `json:"depth"`
+	AuthorName  string           `json:"author_name"`
+	AvatarURL   string           `json:"avatar_url"`
+	Body        string           `json:"body"`
+	Pictures    []domain.Picture `json:"pictures"`
 	// IsAuthor 该评论是否由文章 Owner 本人发出（运行时：created_by == post.author_id）。
 	// 用于前端作者高亮（neon-green/shadcn emerald）。匿名评论恒为 false。
 	IsAuthor   bool             `json:"is_author"`
@@ -117,9 +120,15 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 			authorID = &aid
 		}
 	}
+	// 建 parent_id → author_name 索引，批量填 reply_to_name（避免每条回复单独查 DB）
+	parentNames := buildParentNameMap(items)
 	dtos := make([]CommentDTO, 0, len(items))
 	for _, c := range items {
-		dtos = append(dtos, toDTO(c, authorID))
+		name := ""
+		if c.ParentID() != nil {
+			name = parentNames[c.ParentID().String()]
+		}
+		dtos = append(dtos, toDTO(c, authorID, name))
 	}
 	return dtos, total, nil
 }
@@ -141,10 +150,20 @@ func (s *Service) ListAll(ctx context.Context, status string, anchorFilter domai
 	if err != nil {
 		return nil, 0, err
 	}
+	// 建 parent_id → author_name 索引（从这批 comments 里取，跨页的 parent 取不到则留空）
+	comments := make([]*domain.Comment, 0, len(items))
+	for _, cwp := range items {
+		comments = append(comments, cwp.Comment)
+	}
+	parentNames := buildParentNameMap(comments)
 	dtos := make([]AdminCommentDTO, 0, len(items))
 	for _, cwp := range items {
+		name := ""
+		if cwp.Comment.ParentID() != nil {
+			name = parentNames[cwp.Comment.ParentID().String()]
+		}
 		dto := AdminCommentDTO{
-			CommentDTO: toDTO(cwp.Comment, nil),
+			CommentDTO: toDTO(cwp.Comment, nil, name),
 			PostID:     cwp.Post.ID.String(),
 			PostTitle:  cwp.Post.Title,
 			PostSlug:   cwp.Post.Slug,
@@ -169,8 +188,9 @@ func (s *Service) GetDetail(ctx context.Context, id string) (AdminCommentDTO, er
 	if err != nil {
 		return AdminCommentDTO{}, err
 	}
+	// 单条详情，parent 不在上下文里，reply_to_name 留空（后台详情不强依赖回复关系展示）
 	return AdminCommentDTO{
-		CommentDTO: toDTO(cwp.Comment, nil),
+		CommentDTO: toDTO(cwp.Comment, nil, ""),
 		PostID:     cwp.Post.ID.String(),
 		PostTitle:  cwp.Post.Title,
 		PostSlug:   cwp.Post.Slug,
@@ -202,9 +222,15 @@ func (s *Service) ListPending(ctx context.Context, anchorFilter domain.AnchorFil
 	if err != nil {
 		return nil, 0, err
 	}
+	// 建 parent_id → author_name 索引（同批里取，跨页 parent 取不到则留空）
+	parentNames := buildParentNameMap(items)
 	dtos := make([]CommentDTO, 0, len(items))
 	for _, c := range items {
-		dtos = append(dtos, toDTO(c, nil))
+		name := ""
+		if c.ParentID() != nil {
+			name = parentNames[c.ParentID().String()]
+		}
+		dtos = append(dtos, toDTO(c, nil, name))
 	}
 	return dtos, total, nil
 }
@@ -291,7 +317,8 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		c.SetPictures(in.Pictures)
 	}
 
-	// 设置父评论（嵌套回复）
+	// 设置父评论（回复）。同时记录被回复者昵称，给 toDTO 填 reply_to_name。
+	var replyToName string
 	if in.ParentID != "" {
 		parentID, err := shared.ParseID(in.ParentID)
 		if err != nil {
@@ -304,13 +331,19 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		if err := c.SetParent(parent); err != nil {
 			return CommentDTO{}, err
 		}
+		replyToName = parent.AuthorName()
+		// 回复批注时，子评论自动继承父的 anchor。这样回复还在同一高亮区里，
+		// 前端不用为回复单独锚定选区。仅当当前评论没传 anchor 时继承（避免覆盖显式传入）。
+		if c.Anchor() == nil && parent.Anchor() != nil {
+			c.SetInheritedAnchor(parent.Anchor())
+		}
 	} else {
 		_ = c.SetParent(nil)
 	}
 	if err := s.commentRepo.Save(ctx, c); err != nil {
 		return CommentDTO{}, err
 	}
-	return toDTO(c, nil), nil
+	return toDTO(c, nil, replyToName), nil
 }
 
 // verifyAnonCode 校验匿名评论的邮箱验证码。
@@ -454,11 +487,17 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 }
 
 // toDTO 把 domain.Comment 转成 CommentDTO。
+//
 // postAuthorID 非空时用于计算 IsAuthor（comment.created_by == post.author_id）；
 // nil 时 IsAuthor 恒为 false（适用于后台管理等不需要作者高亮的场景）。
-func toDTO(c *domain.Comment, postAuthorID *shared.ID) CommentDTO {
+//
+// replyToName 是被回复者的昵称。回复节点才传（顶层评论传空串）。
+// 调用方负责从 parent 评论解析名字——批量场景用 buildParentNameMap 一次性建索引，
+// 单条场景（如 Create 返回）直接从已查到的 parent 取。避免 toDTO 内部反查 parent 造成 N+1。
+func toDTO(c *domain.Comment, postAuthorID *shared.ID, replyToName string) CommentDTO {
 	dto := CommentDTO{
 		ID: c.ID().String(), PostID: c.PostID().String(),
+		ReplyToName: replyToName,
 		Depth: c.Depth(), AuthorName: c.AuthorName(),
 		AvatarURL: c.AvatarURL(), Body: c.Body(),
 		Pictures: c.Pictures(), Status: c.Status(),
@@ -482,4 +521,20 @@ func toDTO(c *domain.Comment, postAuthorID *shared.ID) CommentDTO {
 		}
 	}
 	return dto
+}
+
+// buildParentNameMap 从一批 comments 建「parent_id → author_name」索引。
+//
+// 回复节点的 reply_to_name 要查 parent 的 author_name。批量列表场景里，
+// parent 往往就在同一批返回结果中（ListByPost 返回 approved ∪ 自己 pending），
+// 先建索引再传给 toDTO，避免每条回复单独查 DB。
+//
+// 若 parent 不在这批里（被折叠到上一页、或状态不在查询范围），name 取不到，
+// reply_to_name 留空——前端容错（不显示「回复 @yyy」，只显示昵称）。
+func buildParentNameMap(items []*domain.Comment) map[string]string {
+	m := make(map[string]string, len(items))
+	for _, c := range items {
+		m[c.ID().String()] = c.AuthorName()
+	}
+	return m
 }

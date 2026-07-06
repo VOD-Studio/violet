@@ -261,6 +261,21 @@ func TestCreate_AnonWithAnchor_Returns401(t *testing.T) {
 	assert.False(t, svc.createCalled, "401 不应调 service")
 }
 
+// TestCreate_AnonWithParentID_Returns401 回复强制登录：匿名带 parent_id → 401。
+// 和批注强制登录同语义，避免匿名借回复绕过「一文一次」配额刷屏。
+func TestCreate_AnonWithParentID_Returns401(t *testing.T) {
+	svc := &stubCommentService{}
+	h := newHandlerWithStub(svc)
+
+	body := `{"body":"hi","author_name":"alice","author_email":"alice@x.com","code":"123456","parent_id":"some-parent-id"}`
+	req := setPostID(newJSONRequest(t, "POST", "/posts/abc/comments", body), "post-1")
+	rr := httptest.NewRecorder()
+	h.Create(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code, "匿名带 parent_id 必须 401（回复强制登录）")
+	assert.False(t, svc.createCalled, "401 不应调 service")
+}
+
 func TestCreate_LoggedIn_PassesUserIDAndIgnoresRequestAuthorFields(t *testing.T) {
 	svc := &stubCommentService{}
 	// 登录路径需要 users repo 填资料；这里用一个 nil users 的 handler，

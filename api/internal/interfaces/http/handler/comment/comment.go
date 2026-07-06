@@ -290,6 +290,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, shared.Unauthorized("划线批注需要登录"))
 		return
 	}
+	// 回复要登录。和批注强制登录一个道理，不然匿名能借回复绕过配额刷屏。
+	if in.ParentID != "" && userID == "" {
+		response.RespondError(w, r, shared.Unauthorized("回复评论需要登录"))
+		return
+	}
 
 	dto, err := h.svc.Create(r.Context(), in)
 	if err != nil {
