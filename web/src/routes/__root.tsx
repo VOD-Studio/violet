@@ -106,7 +106,7 @@ function RootComponent() {
             <LoginDialog />
             <CustomCursor />
             <TanStackDevtools
-                config={{ position: "bottom-right" }}
+                config={{ position: "bottom-left" }}
                 plugins={[
                     {
                         name: "Tanstack Router",
