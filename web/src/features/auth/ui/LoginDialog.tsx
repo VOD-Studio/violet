@@ -12,7 +12,7 @@ import { Button } from "@shared/ui/base/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/shared/ui/base/input";
 import { Label } from "@/shared/ui/base/label";
@@ -84,10 +84,6 @@ export function LoginDialog() {
 
     const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
     const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
-
-    // 弹窗关闭后恢复 open 动作，供 Header「登录」按钮继续使用。
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    useEffect(() => open, [open]);
 
     const validate = (): boolean => {
         const next: typeof errors = {};
