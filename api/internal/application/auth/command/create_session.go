@@ -14,14 +14,19 @@ import (
 //
 // MaxTTL<=0 表示无绝对寿命上限（仅受 IdleTTL 滑动窗口约束）。
 type CreateSessionInput struct {
-	UserID  string
+	// UserID 登录用户唯一标识
+	UserID string
+	// IdleTTL 滑动续期窗口，每个真实请求重置 session 剩余寿命
 	IdleTTL time.Duration
-	MaxTTL  time.Duration
+	// MaxTTL 绝对寿命上限，<=0 表示无上限
+	MaxTTL time.Duration
 }
 
 // CreateSessionOutput 新建的 session 凭证，由 HTTP 层写入 cookie。
 type CreateSessionOutput struct {
+	// SessionID opaque session id，写入 mimo_session cookie
 	SessionID string
+	// CSRFToken double-submit CSRF 凭证，写入 mimo_csrf cookie
 	CSRFToken string
 }
 

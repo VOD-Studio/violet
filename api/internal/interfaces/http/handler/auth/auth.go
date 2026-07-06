@@ -22,23 +22,23 @@ import (
 
 // Handler auth HTTP 处理器（DDD 版）
 type Handler struct {
-	register      *authcmd.RegisterUserHandler
-	login         *authcmd.LoginHandler
-	google        *authcmd.GoogleLoginHandler
-	github        *authcmd.GithubLoginHandler
-	logout        *authcmd.LogoutHandler
-	createSession *authcmd.CreateSessionHandler
-	verify        *authcmd.VerifyEmailHandler
-	forgot        *authcmd.ForgotPasswordHandler
-	reset         *authcmd.ResetPasswordHandler
-	updatePf      *authcmd.UpdateProfileHandler
-	changePwd     *authcmd.ChangePasswordHandler
-	getMe         *authquery.GetMeHandler
-	settings      *appsettings.Service
+	register      *authcmd.RegisterUserHandler  // 注册用例
+	login         *authcmd.LoginHandler         // 邮箱密码登录用例
+	google        *authcmd.GoogleLoginHandler   // Google OAuth 登录用例
+	github        *authcmd.GithubLoginHandler   // GitHub OAuth 登录用例
+	logout        *authcmd.LogoutHandler        // 登出用例
+	createSession *authcmd.CreateSessionHandler // session 创建用例，登录后下发 cookie
+	verify        *authcmd.VerifyEmailHandler   // 邮箱验证用例
+	forgot        *authcmd.ForgotPasswordHandler // 忘记密码用例，发送重置码
+	reset         *authcmd.ResetPasswordHandler  // 重置密码用例
+	updatePf      *authcmd.UpdateProfileHandler   // 更新个人资料用例
+	changePwd     *authcmd.ChangePasswordHandler  // 修改密码用例
+	getMe         *authquery.GetMeHandler          // 获取当前用户信息用例
+	settings      *appsettings.Service             // 站点设置服务，OAuth 启用判断
 
-	validate  *validator.Validate
-	cookieCfg config.CookieConfig
-	session   config.SessionConfig
+	validate  *validator.Validate  // 请求体校验器
+	cookieCfg config.CookieConfig  // session cookie 配置（名/域/Secure/SameSite）
+	session   config.SessionConfig // session 生命周期配置（IdleTTL/MaxTTL）
 }
 
 // NewHandler 创建 auth HTTP handler。

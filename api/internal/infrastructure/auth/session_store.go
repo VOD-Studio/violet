@@ -23,15 +23,24 @@ func userSessionsKey(userID string) string { return "user:" + userID + ":session
 // lastSeenAt 供聚合根 IsExpired 判断 idle；absoluteDeadline 判断绝对寿命（max
 // 配置）。两者都持久化，使 Get 无需外部状态即可判过期。
 type sessionPayload struct {
-	UserID              string    `json:"user_id"`
-	Email               string    `json:"email"`
-	Role                string    `json:"role"`
-	RoleID              int32     `json:"role_id"`
-	IsBuiltinSuperAdmin bool      `json:"is_builtin_super_admin"`
-	CSRFToken           string    `json:"csrf_token"`
-	CreatedAt           time.Time `json:"created_at"`
-	LastSeenAt          time.Time `json:"last_seen_at"`
-	AbsoluteDeadline    time.Time `json:"absolute_deadline"`
+	// UserID 用户唯一标识
+	UserID string `json:"user_id"`
+	// Email 用户邮箱
+	Email string `json:"email"`
+	// Role 角色名
+	Role string `json:"role"`
+	// RoleID 角色 id
+	RoleID int32 `json:"role_id"`
+	// IsBuiltinSuperAdmin 内置超管标志位
+	IsBuiltinSuperAdmin bool `json:"is_builtin_super_admin"`
+	// CSRFToken CSRF 凭证
+	CSRFToken string `json:"csrf_token"`
+	// CreatedAt session 创建时间
+	CreatedAt time.Time `json:"created_at"`
+	// LastSeenAt 最近活跃时间，idle 滑动续期判断基准
+	LastSeenAt time.Time `json:"last_seen_at"`
+	// AbsoluteDeadline 绝对寿命截止时间，零值表示无上限
+	AbsoluteDeadline time.Time `json:"absolute_deadline"`
 }
 
 // RedisSessionStore 基于 go-redis 的 SessionStore 实现。
@@ -40,6 +49,7 @@ type sessionPayload struct {
 //   - session:<id>：单个 session 的 payload，TTL=idleTTL，滑动续期时重置
 //   - user:<uid>:sessions：某用户全部 session id 的集合，支撑 DeleteByUser 批量吊销
 type RedisSessionStore struct {
+	// rdb Redis 客户端，存 session:<id> 与 user:<uid>:sessions 两类 key
 	rdb *redis.Client
 }
 
