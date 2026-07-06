@@ -153,3 +153,13 @@ export interface ChangePasswordRequest {
 export type MessageResponse = null;
 
 export type { UserRole };
+
+/**
+ * SessionClaims - GET /auth/session 返回的会话 Claims 信息
+ */
+export interface SessionClaims {
+    user_id: string;
+    role: string;
+    email: string;
+    is_builtin_super_admin: boolean;
+}

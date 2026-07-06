@@ -1,7 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 
-import type { UserDTO } from "./entities/user/model/types";
+import type { SessionClaims } from "./features/auth/model/types";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient } from "./shared/api/query-client";
 
@@ -19,8 +19,8 @@ export interface RouterContext {
     auth: {
         /** 是否已登录 */
         isAuthenticated: boolean;
-        /** 当前用户（未登录为 null） */
-        user: UserDTO | null;
+        /** 会话 Claims 信息 */
+        claims: SessionClaims | null;
     };
 }
 
@@ -38,7 +38,7 @@ export const getRouter = () => {
         defaultPreloadStaleTime: 0,
         context: {
             queryClient: clientQueryClient,
-            auth: { isAuthenticated: false, user: null },
+            auth: { isAuthenticated: false, claims: null },
         },
     });
 
