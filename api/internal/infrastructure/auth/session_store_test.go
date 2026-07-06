@@ -17,7 +17,9 @@ import (
 // newTestStore 启动 miniredis 并返回 store 与 miniredis 句柄，测试结束自动关闭。
 func newTestStore(t *testing.T) (*RedisSessionStore, *miniredis.Miniredis) {
 	t.Helper()
-	mr := miniredis.Run(t)
+	mr, err := miniredis.Run()
+	require.NoError(t, err)
+	t.Cleanup(mr.Close)
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	return NewRedisSessionStore(rdb), mr
 }
