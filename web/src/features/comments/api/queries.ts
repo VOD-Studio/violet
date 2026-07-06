@@ -1,6 +1,6 @@
 import { apiGet, apiGetPaged, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
     BatchReactionResult,
     BatchReactionsQuery,
@@ -62,11 +62,18 @@ export const fetchReplies = async (
 ): Promise<PagedResponse<Comment>> =>
     apiGetPaged<Comment>(`/comments/${commentId}/replies`, { params: query });
 
-/** useReplies - 某顶层评论的回复列表 hook（支持 sort 切换） */
+/** useReplies - 某顶层评论的回复列表 hook（滚动加载 + sort 切换）。
+ *  sort 变化时缓存键变化，自动重新查询。 */
 export const useReplies = (commentId: string, query: ReplyListQuery = {}) =>
-    useQuery({
+    useInfiniteQuery({
         queryKey: commentKeys.replyList(commentId, query),
-        queryFn: () => fetchReplies(commentId, query),
+        queryFn: ({ pageParam }) => fetchReplies(commentId, { ...query, page: pageParam }),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) => {
+            const totalPages = lastPage.pagination?.total_pages ?? 1;
+            const currentPage = lastPage.pagination?.page ?? 1;
+            return currentPage < totalPages ? currentPage + 1 : undefined;
+        },
         enabled: !!commentId,
     });
 

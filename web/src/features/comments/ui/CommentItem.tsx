@@ -7,18 +7,19 @@
  *   - font-mono 仅用于时间戳
  *   - 「审批中」徽章（PendingBadge）仅在 pending 态显示
  *
- * 回复（两层扁平，B站式）：
- *   - 顶层评论下挂扁平 replies，回复另一条回复时显示「回复 @yyy」（读 comment.reply_to_name）
- *   - 默认只展开前 REPLIES_PREVIEW_COUNT 条，超出折叠（避免热门评论回复撑爆页面）
- *   - 回复按钮用图标（lucide MessageCircle），hover 显示；仅登录用户可见
- *
- * PRD-0001 双轨制：本组件只负责展示，不区分登录/匿名（可见性由后端 + CommentSection 容器保证）。
+ * 回复（按需加载分页）：
+ *   - 默认显示后端预览（comment.replies，前 3 条）
+ *   - 「查看全部 xx 条回复」走 GET /comments/{id}/replies 独立分页
+ *   - 排序切换（时间正/倒序），「热门」预留未实现
+ *   - 回复按钮用图标（lucide MessageCircle），仅登录用户可见
  */
 import type { Comment } from "@entities/comment/model/types";
+import { useReplies } from "@features/comments/api/queries";
+import type { ReplySort } from "@features/comments/model/types";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { MessageCircle } from "lucide-react";
+import { ChevronDown, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { type CommentTreeNode, getCommentSeverity } from "../lib/comment-tree";
 import { getCommentSev } from "../lib/severity";
@@ -38,12 +39,6 @@ export interface CommentItemProps {
     isLoggedIn?: boolean;
 }
 
-/**
- * REPLIES_PREVIEW_COUNT 默认展开的回复条数。
- * B站式：前 3 条默认展开，超出折叠为「展开剩余 N 条回复」。热门评论回复多了不撑爆页面。
- */
-const REPLIES_PREVIEW_COUNT = 3;
-
 export function CommentItem({
     node,
     isAuthor = false,
@@ -51,18 +46,11 @@ export function CommentItem({
     postId,
     isLoggedIn = false,
 }: CommentItemProps) {
-    const { comment, replies } = node;
+    const comment = node.comment;
     const sev = getCommentSev(getCommentSeverity(node, { isAuthor }));
     const isPending = comment.status === "pending";
 
-    // 回复框开关：点击回复图标后展开 compact CommentForm
     const [replying, setReplying] = useState(false);
-    // 回复列表展开开关：默认折叠超出 REPLIES_PREVIEW_COUNT 的部分
-    const [repliesExpanded, setRepliesExpanded] = useState(false);
-
-    // 折叠状态下的可见回复：前 REPLIES_PREVIEW_COUNT 条
-    const visibleReplies = repliesExpanded ? replies : replies.slice(0, REPLIES_PREVIEW_COUNT);
-    const hiddenCount = replies.length - REPLIES_PREVIEW_COUNT;
 
     return (
         <div className="group relative">
@@ -90,9 +78,7 @@ export function CommentItem({
                             {comment.body}
                         </p>
 
-                        {/* 回复按钮（图标）：仅登录用户显示。
-                            两层扁平：回复层的回复仍挂同一顶层下，parent_id 指被回复的那条，
-                            前端读 comment.reply_to_name 显示「回复 @yyy」。 */}
+                        {/* 回复按钮（图标）：仅登录用户显示 */}
                         {isLoggedIn && postId && (
                             <button
                                 type="button"
@@ -121,32 +107,152 @@ export function CommentItem({
                 </div>
             )}
 
-            {/* 回复列表（两层扁平）：统一缩进一层，不逐层加深 */}
-            {replies.length > 0 && (
-                <div className="mt-2 space-y-2 border-l border-edge-hairline pl-3">
-                    {visibleReplies.map((reply) => (
-                        <CommentItem
-                            key={reply.comment.id}
-                            node={reply}
-                            isAuthor={isAuthor}
-                            level={level + 1}
-                            postId={postId}
-                            isLoggedIn={isLoggedIn}
-                        />
-                    ))}
-                    {/* 折叠/展开切换 */}
-                    {hiddenCount > 0 && (
-                        <button
-                            type="button"
-                            onClick={() => setRepliesExpanded((v) => !v)}
-                            className="text-xs text-primary hover:underline"
-                        >
-                            {repliesExpanded ? "收起" : `展开剩余 ${hiddenCount} 条回复`}
-                        </button>
-                    )}
-                </div>
+            {/* 回复区：顶层评论显示「按需加载回复」，回复层（level>=1）不再嵌套回复区 */}
+            {level === 0 && (comment.replies_total ?? 0) > 0 && (
+                <CommentRepliesBlock comment={comment} isLoggedIn={isLoggedIn} postId={postId} />
             )}
         </div>
+    );
+}
+
+/**
+ * CommentRepliesBlock 顶层评论下的回复区（按需加载 + 排序切换 + 分页）。
+ *
+ * 默认显示后端预览（comment.replies，前 3 条）。
+ * 点「查看全部 xx 条回复」→ useInfiniteQuery 拉分页，显示排序切换。
+ * 「查看更多回复」按钮翻页。
+ */
+function CommentRepliesBlock({
+    comment,
+    isLoggedIn,
+    postId,
+}: {
+    comment: Comment;
+    isLoggedIn: boolean;
+    postId?: string;
+}) {
+    const repliesTotal = comment.replies_total ?? 0;
+    const previewReplies = comment.replies ?? [];
+
+    // 是否展开为「分页模式」（调 useReplies）。未展开时只显示预览。
+    const [expanded, setExpanded] = useState(false);
+    const [sort, setSort] = useState<ReplySort>("asc");
+
+    return (
+        <div className="mt-2 space-y-2 border-l border-edge-hairline pl-3">
+            {/* 「查看全部 xx 条回复」按钮（仅预览态 + 总数超预览数时显示） */}
+            {!expanded && repliesTotal > previewReplies.length && (
+                <button
+                    type="button"
+                    onClick={() => setExpanded(true)}
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                    <ChevronDown className="size-3" />
+                    查看全部 {repliesTotal} 条回复
+                </button>
+            )}
+
+            {/* 预览态：显示后端返回的前几条 */}
+            {!expanded &&
+                previewReplies.map((reply) => (
+                    <CommentItem
+                        key={reply.id}
+                        node={{ comment: reply, replies: [] }}
+                        level={1}
+                        postId={postId}
+                        isLoggedIn={isLoggedIn}
+                    />
+                ))}
+
+            {/* 展开态：useInfiniteQuery 拉分页 */}
+            {expanded && (
+                <ExpandedReplies
+                    commentId={comment.id}
+                    sort={sort}
+                    onSortChange={setSort}
+                    isLoggedIn={isLoggedIn}
+                    postId={postId}
+                />
+            )}
+        </div>
+    );
+}
+
+/**
+ * ExpandedReplies 展开后的回复列表（useInfiniteQuery 分页 + 排序切换）。
+ *
+ * 排序切换：时间正序/倒序（「热门」预留未实现，需 reaction_count）。
+ * 「查看更多回复」按钮 fetchNextPage，无更多时隐藏。
+ */
+function ExpandedReplies({
+    commentId,
+    sort,
+    onSortChange,
+    isLoggedIn,
+    postId,
+}: {
+    commentId: string;
+    sort: ReplySort;
+    onSortChange: (s: ReplySort) => void;
+    isLoggedIn: boolean;
+    postId?: string;
+}) {
+    const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useReplies(commentId, {
+        sort,
+        limit: 10,
+    });
+    const replies = data?.pages.flatMap((p) => p.data) ?? [];
+
+    return (
+        <>
+            {/* 排序切换 */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>排序：</span>
+                <button
+                    type="button"
+                    onClick={() => onSortChange("asc")}
+                    className={
+                        sort === "asc" ? "text-foreground font-medium" : "hover:text-foreground"
+                    }
+                >
+                    正序
+                </button>
+                <span>·</span>
+                <button
+                    type="button"
+                    onClick={() => onSortChange("desc")}
+                    className={
+                        sort === "desc" ? "text-foreground font-medium" : "hover:text-foreground"
+                    }
+                >
+                    倒序
+                </button>
+            </div>
+
+            {/* 回复列表 */}
+            {replies.map((reply) => (
+                <CommentItem
+                    key={reply.id}
+                    node={{ comment: reply, replies: [] }}
+                    level={1}
+                    postId={postId}
+                    isLoggedIn={isLoggedIn}
+                />
+            ))}
+
+            {/* 「查看更多回复」按钮（fetchNextPage） */}
+            {hasNextPage && (
+                <button
+                    type="button"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="flex items-center gap-1 text-xs text-primary hover:underline disabled:opacity-50"
+                >
+                    <ChevronDown className="size-3" />
+                    {isFetchingNextPage ? "加载中..." : "查看更多回复"}
+                </button>
+            )}
+        </>
     );
 }
 
