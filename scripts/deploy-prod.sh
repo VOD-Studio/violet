@@ -127,10 +127,10 @@ else
 fi
 
 # 停止旧服务
-$COMPOSE_CMD down 2>/dev/null || true
+$COMPOSE_CMD --env-file api/.env down 2>/dev/null || true
 
 # 启动新服务（使用 .env 文件）
-$COMPOSE_CMD --env-file .env up -d
+$COMPOSE_CMD --env-file api/.env up -d
 
 echo "⏳ 等待服务健康..."
 for i in $(seq 1 30); do
