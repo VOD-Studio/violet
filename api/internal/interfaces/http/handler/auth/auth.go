@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/rs/zerolog/log"
 
 	"blog-api/config"
 	authcmd "blog-api/internal/application/auth/command"
@@ -23,37 +22,36 @@ import (
 
 // Handler auth HTTP 处理器（DDD 版）
 type Handler struct {
-	register  *authcmd.RegisterUserHandler
-	login     *authcmd.LoginHandler
-	google    *authcmd.GoogleLoginHandler
-	github    *authcmd.GithubLoginHandler
-	logout    *authcmd.LogoutHandler
-	refresh   *authcmd.RefreshTokenHandler
-	verify    *authcmd.VerifyEmailHandler
-	forgot    *authcmd.ForgotPasswordHandler
-	reset     *authcmd.ResetPasswordHandler
-	updatePf  *authcmd.UpdateProfileHandler
-	changePwd *authcmd.ChangePasswordHandler
-	getMe     *authquery.GetMeHandler
-	settings  *appsettings.Service
+	register      *authcmd.RegisterUserHandler
+	login         *authcmd.LoginHandler
+	google        *authcmd.GoogleLoginHandler
+	github        *authcmd.GithubLoginHandler
+	logout        *authcmd.LogoutHandler
+	createSession *authcmd.CreateSessionHandler
+	verify        *authcmd.VerifyEmailHandler
+	forgot        *authcmd.ForgotPasswordHandler
+	reset         *authcmd.ResetPasswordHandler
+	updatePf      *authcmd.UpdateProfileHandler
+	changePwd     *authcmd.ChangePasswordHandler
+	getMe         *authquery.GetMeHandler
+	settings      *appsettings.Service
 
 	validate  *validator.Validate
 	cookieCfg config.CookieConfig
-	ttls      config.TokenTTLs
+	session   config.SessionConfig
 }
 
-// NewHandler 创建 auth HTTP handler
+// NewHandler 创建 auth HTTP handler。
 //
-// cookieCfg 用于 login/refresh/logout 时下发/清除 HttpOnly Cookie；
-// ttls 提供 access/refresh JWT 过期时长，用于设置承载 refresh token 的 Cookie 的 MaxAge；
-// 详见 response.SetAuthTokenCookies / ClearAuthCookies。
+// cookieCfg 用于 login/logout 时下发/清除 session Cookie；
+// session 提供 idleTTL/maxTTL，用于设置 Cookie MaxAge 与 CreateSession 的绝对寿命。
 func NewHandler(
 	register *authcmd.RegisterUserHandler,
 	login *authcmd.LoginHandler,
 	google *authcmd.GoogleLoginHandler,
 	github *authcmd.GithubLoginHandler,
 	logout *authcmd.LogoutHandler,
-	refresh *authcmd.RefreshTokenHandler,
+	createSession *authcmd.CreateSessionHandler,
 	verify *authcmd.VerifyEmailHandler,
 	forgot *authcmd.ForgotPasswordHandler,
 	reset *authcmd.ResetPasswordHandler,
@@ -62,15 +60,16 @@ func NewHandler(
 	getMe *authquery.GetMeHandler,
 	settings *appsettings.Service,
 	cookieCfg config.CookieConfig,
-	ttls config.TokenTTLs,
+	session config.SessionConfig,
 ) *Handler {
 	return &Handler{
-		register: register, login: login, google: google, github: github, logout: logout, refresh: refresh,
+		register: register, login: login, google: google, github: github, logout: logout,
+		createSession: createSession,
 		verify: verify, forgot: forgot, reset: reset,
 		updatePf: updatePf, changePwd: changePwd, getMe: getMe, settings: settings,
 		validate:  validator.New(),
 		cookieCfg: cookieCfg,
-		ttls:      ttls,
+		session:   session,
 	}
 }
 
@@ -171,15 +170,18 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	// 下发 HttpOnly Cookie（access + refresh + CSRF double-submit）
-	// refresh_token 不再返回到响应体，仅通过 HttpOnly Cookie 传递（防 XSS 偷取）
-	csrf := generateCSRFToken()
-	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg, h.ttls)
+	// 创建 opaque session 并下发 mimo_session + mimo_csrf + mimo_uid Cookie。
+	// csrf 由 session 自带（CreateSession 生成），不再单独 generateCSRFToken。
+	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{
+		UserID: out.UserID, IdleTTL: h.session.IdleTTL, MaxTTL: h.session.MaxTTL,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.SetSessionCookie(w, sess.SessionID, sess.CSRFToken, out.UserID, h.cookieCfg, h.session.IdleTTL)
 	response.RespondOK(w, map[string]any{
-		"access_token":       out.TokenPair.AccessToken,
-		"expires_in":         out.TokenPair.ExpiresIn,
-		"refresh_expires_in": out.TokenPair.RefreshExpiresIn,
-		"token_type":         "Bearer",
+		"user_id": out.UserID,
 	})
 }
 
@@ -206,14 +208,16 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-
-	csrf := generateCSRFToken()
-	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg, h.ttls)
+	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{
+		UserID: out.UserID, IdleTTL: h.session.IdleTTL, MaxTTL: h.session.MaxTTL,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.SetSessionCookie(w, sess.SessionID, sess.CSRFToken, out.UserID, h.cookieCfg, h.session.IdleTTL)
 	response.RespondOK(w, map[string]any{
-		"access_token":       out.TokenPair.AccessToken,
-		"expires_in":         out.TokenPair.ExpiresIn,
-		"refresh_expires_in": out.TokenPair.RefreshExpiresIn,
-		"token_type":         "Bearer",
+		"user_id": out.UserID,
 	})
 }
 
@@ -240,88 +244,49 @@ func (h *Handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-
-	csrf := generateCSRFToken()
-	response.SetAuthTokenCookies(w, out.TokenPair.AccessToken, out.TokenPair.RefreshToken, csrf, h.cookieCfg, h.ttls)
-	response.RespondOK(w, map[string]any{
-		"access_token":       out.TokenPair.AccessToken,
-		"expires_in":         out.TokenPair.ExpiresIn,
-		"refresh_expires_in": out.TokenPair.RefreshExpiresIn,
-		"token_type":         "Bearer",
+	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{
+		UserID: out.UserID, IdleTTL: h.session.IdleTTL, MaxTTL: h.session.MaxTTL,
 	})
-}
-
-// Refresh POST /auth/refresh
-//
-// refresh_token 优先从 HttpOnly Cookie 读取；Cookie 缺失时回退到请求体（向后兼容旧客户端）。
-// 成功后下发新的 access + refresh + CSRF Cookie（token 轮转）。
-func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
-	refreshToken := ""
-
-	// 优先从 Cookie 读取（推荐路径）
-	if c, err := r.Cookie(h.cookieCfg.RefreshName); err == nil && c.Value != "" {
-		refreshToken = c.Value
-	}
-
-	// 回退：从请求体读取（兼容旧客户端 / 显式调用场景）
-	if refreshToken == "" {
-		var req struct {
-			RefreshToken string `json:"refresh_token"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil && refreshToken == "" {
-			response.RespondError(w, r, err)
-			return
-		}
-		refreshToken = req.RefreshToken
-	}
-
-	if refreshToken == "" {
-		// 没带 refresh token = 会话不存在/已过期，属鉴权失败而非服务端错误。
-		// 必须返回 401（ErrInvalidCredentials）以触发前端的降级链路（弹窗重登），
-		// 而非 500——裸 error 会被 RespondError 兜底成 INTERNAL_ERROR。
-		// 打印请求实际携带的 cookie 名，区分「cookie 没发」「发了但没 refresh」。
-		cookieNames := make([]string, 0, len(r.Cookies()))
-		for _, c := range r.Cookies() {
-			cookieNames = append(cookieNames, c.Name)
-		}
-		log.Warn().
-			Str("reason", "empty_refresh_token").
-			Strs("cookies", cookieNames).
-			Str("refresh_cookie_name", h.cookieCfg.RefreshName).
-			Str("request_path", r.URL.Path).
-			Msg("refresh 失败：请求未携带 refresh token")
-		response.RespondError(w, r, user.ErrInvalidCredentials)
-		return
-	}
-
-	pair, err := h.refresh.Handle(r.Context(), authcmd.RefreshTokenInput{RefreshToken: refreshToken})
 	if err != nil {
-		// refresh 失败通常意味着 refresh token 已失效，清除 Cookie 让客户端回到登录态
-		response.ClearAuthCookies(w, h.cookieCfg)
 		response.RespondError(w, r, err)
 		return
 	}
-	csrf := generateCSRFToken()
-	response.SetAuthTokenCookies(w, pair.AccessToken, pair.RefreshToken, csrf, h.cookieCfg, h.ttls)
+	response.SetSessionCookie(w, sess.SessionID, sess.CSRFToken, out.UserID, h.cookieCfg, h.session.IdleTTL)
 	response.RespondOK(w, map[string]any{
-		"access_token":       pair.AccessToken,
-		"expires_in":         pair.ExpiresIn,
-		"refresh_expires_in": pair.RefreshExpiresIn,
-		"token_type":         "Bearer",
+		"user_id": out.UserID,
+	})
+}
+
+// Session GET /auth/session（SSR 探活，只读）
+//
+// 命门不变量①：只返回 claims，绝不续期、绝不 Set-Cookie。续期由后续真实业务请求的
+// SessionAuth 中间件做（挂在本端点的是 SessionAuthReadOnly，touch=false）。SSR 拿到
+// claims 即可判断登录态与角色，完整 UserDTO 由客户端 useMe 按需拉。
+func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	if userID == "" {
+		response.RespondError(w, r, user.ErrInvalidCredentials)
+		return
+	}
+	response.RespondOK(w, map[string]any{
+		"user_id":                userID,
+		"role":                   interfacesmw.GetUserRoleFromContext(r),
+		"email":                  interfacesmw.GetUserEmailFromContext(r),
+		"is_builtin_super_admin": interfacesmw.GetUserIsBuiltinSuperAdminFromContext(r),
 	})
 }
 
 // Logout POST /auth/logout（需认证）
 //
-// 服务端：blacklist refresh token（Redis）。
-// 客户端：清除 access + refresh + CSRF Cookie，使浏览器丢弃 token。
+// 删除当前 session（登出当前设备，不影响该用户其他设备），清除 session 相关 Cookie。
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
-	if err := h.logout.Handle(r.Context(), authcmd.LogoutInput{UserID: userID}); err != nil {
+	sessionID := interfacesmw.GetSessionIDFromContext(r)
+	if err := h.logout.Handle(r.Context(), authcmd.LogoutInput{UserID: userID, SessionID: sessionID}); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.ClearAuthCookies(w, h.cookieCfg)
+	response.ClearSessionCookies(w, h.cookieCfg)
 	response.RespondMessage(w, http.StatusOK, "已登出")
 }
 

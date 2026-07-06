@@ -26,3 +26,14 @@ func GetUserRoleFromContext(r *http.Request) string {
 func GetUserIsBuiltinSuperAdminFromContext(r *http.Request) bool {
 	return middleware.GetUserIsBuiltinSuperAdmin(r.Context())
 }
+
+// GetSessionIDFromContext 从 request context 获取当前 session id。
+// 登出端点据此删除当前设备的 session。
+func GetSessionIDFromContext(r *http.Request) string {
+	return middleware.GetSessionID(r.Context())
+}
+
+// GetUserEmailFromContext 从 request context 获取认证后的用户邮箱。
+func GetUserEmailFromContext(r *http.Request) string {
+	return middleware.GetUserEmail(r.Context())
+}

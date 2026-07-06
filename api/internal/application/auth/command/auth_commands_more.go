@@ -27,20 +27,19 @@ type ForgotPasswordHandler struct {
 	codeStore   appshared.CodeStore
 	emailSender EmailSender
 	hasher      PasswordHasher
-	tokenStore  appshared.TokenStore
 }
 
-// NewForgotPasswordHandler 构造忘记密码用例
+// NewForgotPasswordHandler 构造忘记密码用例。
+// ForgotPassword 仅发送重置码，不吊销 session（session 在 ResetPassword 改密后吊销）。
 func NewForgotPasswordHandler(
 	repo user.UserRepository,
 	codeStore appshared.CodeStore,
 	emailSender EmailSender,
 	hasher PasswordHasher,
-	tokenStore appshared.TokenStore,
 ) *ForgotPasswordHandler {
 	return &ForgotPasswordHandler{
 		userRepo: repo, codeStore: codeStore,
-		emailSender: emailSender, hasher: hasher, tokenStore: tokenStore,
+		emailSender: emailSender, hasher: hasher,
 	}
 }
 
@@ -90,22 +89,23 @@ type ResetPasswordInput struct {
 
 // ResetPasswordHandler 重置密码用例
 type ResetPasswordHandler struct {
-	userRepo   user.UserRepository
-	codeStore  appshared.CodeStore
-	hasher     PasswordHasher
-	tokenStore appshared.TokenStore
+	userRepo     user.UserRepository
+	codeStore    appshared.CodeStore
+	hasher       PasswordHasher
+	sessionStore appshared.SessionStore
 }
 
-// NewResetPasswordHandler 构造重置密码用例
+// NewResetPasswordHandler 构造重置密码用例。
+// 改密成功后吊销该用户全部 session（DeleteByUser），强制所有设备重登。
 func NewResetPasswordHandler(
 	repo user.UserRepository,
 	codeStore appshared.CodeStore,
 	hasher PasswordHasher,
-	tokenStore appshared.TokenStore,
+	sessionStore appshared.SessionStore,
 ) *ResetPasswordHandler {
 	return &ResetPasswordHandler{
 		userRepo: repo, codeStore: codeStore,
-		hasher: hasher, tokenStore: tokenStore,
+		hasher: hasher, sessionStore: sessionStore,
 	}
 }
 
@@ -144,12 +144,11 @@ func (h *ResetPasswordHandler) Handle(ctx context.Context, in ResetPasswordInput
 		return err
 	}
 
-	// 撤销所有现有 refresh token（强制重新登录）。
-	// 不忽略 Redis 错误：见 ADR-0001 不变量 3，吊销失败会让旧 token 在 TTL 内仍可用。
-	// 但密码 DB 写入已成功，返回 500 会让用户误以为改密失败，故仅记日志 + 返回成功，
-	// 接受「Redis 故障下旧 token 可能短暂有效」的降级（运维据此排查 Redis）。
-	if err := h.tokenStore.Delete(ctx, u.GetID().String()); err != nil {
-		log.Error().Err(err).Stringer("userID", u.GetID()).Msg("改密码后吊销 refresh token 失败")
+	// 吊销该用户全部 session（强制所有设备重登）。
+	// 失败仅记日志：密码 DB 写入已成功，返回 500 会让用户误以为改密失败；
+	// 接受「Redis 故障下旧 session 可能短暂有效」的降级，运维据此排查 Redis。
+	if err := h.sessionStore.DeleteByUser(ctx, u.GetID().String()); err != nil {
+		log.Error().Err(err).Stringer("userID", u.GetID()).Msg("改密后吊销 session 失败")
 	}
 
 	return nil
@@ -227,18 +226,19 @@ type ChangePasswordInput struct {
 
 // ChangePasswordHandler 修改密码用例
 type ChangePasswordHandler struct {
-	userRepo   user.UserRepository
-	hasher     PasswordHasher
-	tokenStore appshared.TokenStore
+	userRepo     user.UserRepository
+	hasher       PasswordHasher
+	sessionStore appshared.SessionStore
 }
 
-// NewChangePasswordHandler 构造修改密码用例
+// NewChangePasswordHandler 构造修改密码用例。
+// 改密成功后吊销该用户全部 session（DeleteByUser），强制所有设备重登。
 func NewChangePasswordHandler(
 	repo user.UserRepository,
 	hasher PasswordHasher,
-	tokenStore appshared.TokenStore,
+	sessionStore appshared.SessionStore,
 ) *ChangePasswordHandler {
-	return &ChangePasswordHandler{userRepo: repo, hasher: hasher, tokenStore: tokenStore}
+	return &ChangePasswordHandler{userRepo: repo, hasher: hasher, sessionStore: sessionStore}
 }
 
 // Handle 执行修改密码
@@ -270,11 +270,10 @@ func (h *ChangePasswordHandler) Handle(ctx context.Context, in ChangePasswordInp
 		return err
 	}
 
-	// 撤销现有 refresh token。
-	// 不忽略 Redis 错误（见 ADR-0001 不变量 3）：吊销失败仅记日志，仍返回成功——
-	// 重置密码 DB 写入已完成，返回错误会让用户以为重置失败。
-	if err := h.tokenStore.Delete(ctx, u.GetID().String()); err != nil {
-		log.Error().Err(err).Stringer("userID", u.GetID()).Msg("重置密码后吊销 refresh token 失败")
+	// 吊销该用户全部 session（强制所有设备重登）。
+	// 失败仅记日志：密码 DB 写入已完成，返回错误会让用户以为改密失败。
+	if err := h.sessionStore.DeleteByUser(ctx, u.GetID().String()); err != nil {
+		log.Error().Err(err).Stringer("userID", u.GetID()).Msg("改密后吊销 session 失败")
 	}
 
 	return nil
