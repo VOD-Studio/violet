@@ -5,7 +5,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
@@ -276,126 +275,6 @@ func NewLogoutHandler(store appshared.SessionStore) *LogoutHandler {
 // session 删除失败会让已登出设备的 session 继续有效，故返回错误交由上层记日志。
 func (h *LogoutHandler) Handle(ctx context.Context, in LogoutInput) error {
 	return h.store.DeleteForUser(ctx, in.UserID, session.ID(in.SessionID))
-}
-
-// ============================================================
-// RefreshToken 刷新令牌
-// ============================================================
-
-// RefreshTokenInput 刷新令牌入参
-type RefreshTokenInput struct {
-	RefreshToken string
-}
-
-// RefreshTokenHandler 刷新令牌用例
-//
-// 编排：
-// 1. 解析 refresh token（验签 + exp + issuer）
-// 2. 重新查询用户（获取最新角色）
-// 3. 生成新 token pair
-// 4. 原子轮换：校验旧 token + 写入新 token + 重用检测（见 ADR-0001 不变量 1、2）
-//
-// 重用检测：若入参 token 与 Redis 当前值不匹配（重放已废弃 token），整个家族被吊销，
-// 返回 ErrInvalidCredentials 触发前端强制重登。
-type RefreshTokenHandler struct {
-	userRepo   user.UserRepository
-	jwt        appshared.TokenService
-	tokenStore appshared.TokenStore
-}
-
-// NewRefreshTokenHandler 构造刷新令牌用例
-func NewRefreshTokenHandler(
-	repo user.UserRepository,
-	jwt appshared.TokenService,
-	tokenStore appshared.TokenStore,
-) *RefreshTokenHandler {
-	return &RefreshTokenHandler{userRepo: repo, jwt: jwt, tokenStore: tokenStore}
-}
-
-// Handle 执行刷新令牌
-func (h *RefreshTokenHandler) Handle(ctx context.Context, in RefreshTokenInput) (*appshared.TokenPair, error) {
-	// 1. 解析 token（验签 + 过期 + 颁发者）
-	claims, err := h.jwt.ParseToken(in.RefreshToken)
-	if err != nil {
-		log.Warn().
-			Str("reason", "parse_failed").
-			Err(err).
-			Str("token_prefix", tokenPrefix(in.RefreshToken)).
-			Msg("refresh 失败：令牌解析失败（验签/过期/颁发者）")
-		return nil, user.ErrInvalidCredentials
-	}
-
-	// 2. 重新查询用户（获取最新角色）
-	//    token 已通过签名校验，若 subject 不是合法 ID，说明是失效/异常凭证，
-	//    应映射为 401（触发前端重登）而非 500。
-	id, err := shared.ParseID(claims.UserID)
-	if err != nil {
-		log.Warn().
-			Str("reason", "invalid_subject").
-			Str("subject", claims.UserID).
-			Msg("refresh 失败：subject 不是合法用户 ID")
-		return nil, user.ErrInvalidCredentials
-	}
-	u, err := h.userRepo.FindByID(ctx, id)
-	if err != nil {
-		// 用户已被删除（token 仍有效但用户不存在）→ 401 强制重登；
-		// 仅真实 DB 故障才视为 500。
-		if errors.Is(err, user.ErrNotFound) {
-			log.Warn().
-				Str("reason", "user_not_found").
-				Str("user_id", id.String()).
-				Msg("refresh 失败：用户不存在（可能已删除）")
-			return nil, user.ErrInvalidCredentials
-		}
-		return nil, shared.Internal("查询用户失败", err)
-	}
-
-	// 3. 生成新 token pair（JWT 签名必须在 Go 内完成）
-	pair, err := h.jwt.GenerateTokenPair(appshared.TokenInput{
-		UserID:              u.GetID().String(),
-		Email:               u.Email().String(),
-		Role:                string(u.Role()),
-		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
-	})
-	if err != nil {
-		return nil, shared.Internal("生成令牌失败", err)
-	}
-
-	// 4. 原子轮换：单次 Redis 操作内校验旧 token + 写入新 token + 重用检测。
-	//    见 ADR-0001：Verify+Save 非原子会导致并发刷新铸出多对 token；
-	//    重用旧 token 时吊销整个家族。
-	res, err := h.tokenStore.Rotate(ctx, u.GetID().String(), in.RefreshToken, pair.RefreshToken)
-	if err != nil {
-		return nil, shared.Internal("轮换 refresh token 失败", err)
-	}
-	switch res {
-	case appshared.RotateSuccess:
-		return pair, nil
-	case appshared.RotateReused:
-		// 重用已废弃 token → 整个家族已被吊销 → 401 强制重登
-		log.Warn().
-			Str("reason", "rotate_reused").
-			Str("user_id", u.GetID().String()).
-			Str("token_prefix", tokenPrefix(in.RefreshToken)).
-			Msg("refresh 失败：检测到 refresh token 重用，家族已被吊销")
-		return nil, user.ErrInvalidCredentials
-	default:
-		// RotateInvalid：无存储 token（已登出）→ 401
-		log.Warn().
-			Str("reason", "rotate_invalid").
-			Str("user_id", u.GetID().String()).
-			Str("token_prefix", tokenPrefix(in.RefreshToken)).
-			Msg("refresh 失败：白名单无此 token（已登出或被覆盖）")
-		return nil, user.ErrInvalidCredentials
-	}
-}
-
-// tokenPrefix 返回 refresh token 的脱敏前缀（前 16 字符），用于日志关联而不泄露完整凭证。
-func tokenPrefix(token string) string {
-	if len(token) > 16 {
-		return token[:16]
-	}
-	return token
 }
 
 // ============================================================

@@ -136,57 +136,6 @@ func (m *MockEventBus) Publish(ctx context.Context, events []shared.DomainEvent)
 }
 
 // ============================================================
-// TokenStore Mock
-// ============================================================
-
-// MockTokenStore application/shared.TokenStore 的 mock 实现
-type MockTokenStore struct{ mock.Mock }
-
-func (m *MockTokenStore) Save(ctx context.Context, userID, refreshToken string) error {
-	return m.Called(ctx, userID, refreshToken).Error(0)
-}
-
-func (m *MockTokenStore) Rotate(ctx context.Context, userID, oldToken, newToken string) (appshared.RotateResult, error) {
-	args := m.Called(ctx, userID, oldToken, newToken)
-	return args.Get(0).(appshared.RotateResult), args.Error(1)
-}
-
-func (m *MockTokenStore) Delete(ctx context.Context, userID string) error {
-	return m.Called(ctx, userID).Error(0)
-}
-
-// ============================================================
-// TokenService Mock
-// ============================================================
-
-// MockTokenService application/shared.TokenService 的 mock 实现
-type MockTokenService struct{ mock.Mock }
-
-func (m *MockTokenService) GenerateTokenPair(in appshared.TokenInput) (*appshared.TokenPair, error) {
-	args := m.Called(in)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*appshared.TokenPair), args.Error(1)
-}
-
-func (m *MockTokenService) ParseToken(token string) (*appshared.Claims, error) {
-	args := m.Called(token)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*appshared.Claims), args.Error(1)
-}
-
-func (m *MockTokenService) AccessTTL() time.Duration {
-	return m.Called().Get(0).(time.Duration)
-}
-
-func (m *MockTokenService) RefreshTTL() time.Duration {
-	return m.Called().Get(0).(time.Duration)
-}
-
-// ============================================================
 // SessionStore Mock
 // ============================================================
 
@@ -432,8 +381,6 @@ func (m *MockCommentEmailSender) SendVerificationCode(ctx context.Context, email
 // 编译期断言
 var (
 	_ appshared.EventBus                    = (*MockEventBus)(nil)
-	_ appshared.TokenStore                  = (*MockTokenStore)(nil)
-	_ appshared.TokenService                = (*MockTokenService)(nil)
 	_ appshared.SessionStore                = (*MockSessionStore)(nil)
 	_ appshared.CodeStore                   = (*MockCommentCodeStore)(nil)
 	_ domainuser.UserRepository             = (*MockUserRepository)(nil)
