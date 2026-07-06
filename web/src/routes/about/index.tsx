@@ -1,7 +1,7 @@
 import { useSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
-import { motion } from "motion/react";
 import { Code, ExternalLink } from "lucide-react";
+import { motion } from "motion/react";
 
 /**
  * /about - 关于页

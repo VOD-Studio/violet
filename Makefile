@@ -118,8 +118,8 @@ web-preview: ## 预览前端构建结果
 web-lint: ## 前端代码检查 (Biome)
 	cd web && npx biome check .
 
-web-format: ## 前端代码格式化
-	cd web && npx biome format --write .
+web-format: ## 前端格式化与 lint 自动修复（biome check --write，与 web-lint 配对）
+	cd web && npx biome check --write .
 
 web-typecheck: ## TypeScript 类型检查
 	cd web && pnpm typecheck

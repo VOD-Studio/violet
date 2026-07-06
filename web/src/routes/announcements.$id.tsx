@@ -9,11 +9,11 @@
  */
 
 import { useAnnouncement } from "@features/settings/api/queries";
-import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import BlurText from "@vendor/react-bits/BlurText";
 import Magnet from "@vendor/react-bits/Magnet";
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Check, Copy } from "lucide-react";
 import { useState } from "react";
 

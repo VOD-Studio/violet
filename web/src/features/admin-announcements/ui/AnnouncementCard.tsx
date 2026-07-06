@@ -15,9 +15,9 @@
  */
 import type { Announcement } from "@features/settings/model/types";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import { Link } from "@tanstack/react-router";
 import BlurText from "@vendor/react-bits/BlurText";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
-import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 
 export interface AnnouncementCardProps {

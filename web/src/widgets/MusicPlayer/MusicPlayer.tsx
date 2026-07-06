@@ -1,7 +1,7 @@
 import { useAudioStore } from "@features/music/model/audio-store";
 import { useMusicUIStore } from "@features/music/model/ui-store";
-import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 

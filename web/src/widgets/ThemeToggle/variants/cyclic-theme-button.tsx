@@ -1,5 +1,5 @@
-import { AnimatePresence, motion } from "motion/react";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useThemeSwitcher } from "./use-theme-switcher";
 
 const cycle = ["light", "dark", "system"] as const;

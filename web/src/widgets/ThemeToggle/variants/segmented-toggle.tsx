@@ -1,5 +1,5 @@
-import { motion } from "motion/react";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { motion } from "motion/react";
 import type { ThemeOption } from "./types";
 import { useThemeSwitcher } from "./use-theme-switcher";
 

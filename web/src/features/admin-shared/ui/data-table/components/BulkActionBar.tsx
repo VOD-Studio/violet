@@ -1,5 +1,5 @@
-import { Button } from "@/shared/ui/base/button";
 import type { ReactNode } from "react";
+import { Button } from "@/shared/ui/base/button";
 
 interface BulkActionBarProps {
     /** 当前选中行数 */

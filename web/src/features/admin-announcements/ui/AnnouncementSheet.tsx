@@ -1,8 +1,8 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import type { MediaFile } from "@entities/media/model/types";
 import { Cover } from "@features/admin-media/ui/Cover";
 import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
 import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
-import type { MediaFile } from "@entities/media/model/types";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/base/button";
 import { Checkbox } from "@shared/ui/base/checkbox";
 import { Input } from "@shared/ui/base/input";
@@ -14,8 +14,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@shared/ui/base/select";
-import { Switch } from "@shared/ui/base/switch";
-import { Textarea } from "@shared/ui/base/textarea";
 import {
     Sheet,
     SheetContent,
@@ -24,6 +22,8 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@shared/ui/base/sheet";
+import { Switch } from "@shared/ui/base/switch";
+import { Textarea } from "@shared/ui/base/textarea";
 import { addDays, addHours, endOfDay, format, startOfDay, startOfHour } from "date-fns";
 import { Loader2, Lock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

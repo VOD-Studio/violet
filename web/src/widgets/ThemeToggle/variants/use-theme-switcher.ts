@@ -1,6 +1,6 @@
+import { animateThemeRipple } from "@shared/ui/theme-transition";
 import { useTheme } from "next-themes";
 import { useCallback } from "react";
-import { animateThemeRipple } from "@shared/ui/theme-transition";
 import type { ThemeOption } from "./types";
 
 /**

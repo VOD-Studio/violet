@@ -1,9 +1,9 @@
 import type { Announcement } from "@features/settings/model/types";
-import { Link } from "@tanstack/react-router";
-import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, ArrowLeft, CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
-import { useState } from "react";
-import type { ComponentType } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import AnimatedList from "@vendor/react-bits/AnimatedList";
+import BlurText from "@vendor/react-bits/BlurText";
+import BorderGlow from "@vendor/react-bits/BorderGlow";
+import Magnet from "@vendor/react-bits/Magnet";
 import {
     BootSequence,
     CubeFlipY,
@@ -11,10 +11,9 @@ import {
     MotdTerminal,
     ScrambleDecode,
 } from "@widgets/AnnouncementLab";
-import AnimatedList from "@vendor/react-bits/AnimatedList";
-import BlurText from "@vendor/react-bits/BlurText";
-import BorderGlow from "@vendor/react-bits/BorderGlow";
-import Magnet from "@vendor/react-bits/Magnet";
+import { ArrowLeft, ArrowRight, CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
+import type { ComponentType } from "react";
+import { useState } from "react";
 
 /* ------------------------------------------------------------------ */
 /* mock 数据（去赛博后的真实运营文案，覆盖 4 种 severity）              */

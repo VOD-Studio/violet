@@ -7,7 +7,6 @@ import type {
     AnnouncementDTO,
     AnnouncementType,
 } from "@features/admin-announcements/model/types";
-import { AnnouncementSheet } from "@/features/admin-announcements/ui/AnnouncementSheet";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
@@ -18,6 +17,7 @@ import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { AnnouncementSheet } from "@/features/admin-announcements/ui/AnnouncementSheet";
 
 export const Route = createFileRoute("/admin/announcements")({
     component: AdminAnnouncementsPage,
