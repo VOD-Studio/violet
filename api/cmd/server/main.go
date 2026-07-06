@@ -293,6 +293,11 @@ func main() {
 			r.With(middleware.CommentCodeRateLimit(redisClient)).Post("/code", commentH.SendCode)  // 匿名评论发送邮箱验证码（独立限流防邮件轰炸）
 		})
 
+		// 评论回复列表（DDD commentH，公开 + OptionalSessionAuth）
+		// 配合顶层评论列表的「按需拉回复」分页策略：前端点「查看全部 xx 条回复」走此接口。
+		v1.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+			Get("/comments/{commentId}/replies", commentH.ListReplies)
+
 		// 评论反应（DDD commentReactionContainer）
 		crH := commentReactionContainer.CommentReactionHandler
 		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {

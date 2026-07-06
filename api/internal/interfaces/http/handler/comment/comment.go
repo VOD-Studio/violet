@@ -27,6 +27,7 @@ import (
 // 真实 repo/codeStore。*appcomment.Service 通过 Go 结构化接口天然满足此契约。
 type commentService interface {
 	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	ListReplies(ctx context.Context, parentID, viewerUserID, sort string, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
 	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
 	ListPending(ctx context.Context, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
@@ -93,6 +94,26 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, depthFilter, page, limit)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondPaged(w, items, page, limit, total)
+}
+
+// ListReplies 列出某顶层评论下的扁平回复（GET /comments/{commentId}/replies）。
+//
+// sort query param 控制排序："asc"（默认，最早优先）/ "desc"（最新优先）。
+// 黑洞模式：匿名 viewer → service 返回空数组。与 ListByPost 同语义。
+func (h *Handler) ListReplies(w http.ResponseWriter, r *http.Request) {
+	commentID := r.PathValue("commentId")
+	viewerID := interfacesmw.GetUserIDFromContext(r)
+	page, limit := response.ParsePaging(r)
+	sort := r.URL.Query().Get("sort")
+	if sort == "" {
+		sort = "asc"
+	}
+	items, total, err := h.svc.ListReplies(r.Context(), commentID, viewerID, sort, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

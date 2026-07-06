@@ -38,6 +38,11 @@ type stubCommentService struct {
 	listPendingAnchorFilter domaincomment.AnchorFilter
 	listPendingCalled       bool
 
+	// ListReplies 的 sort 透传记录
+	listRepliesCalled bool
+	listRepliesSort   string
+	listRepliesResult []appcomment.CommentDTO
+
 	createInput      appcomment.CreateInput
 	createCalled     bool
 	createErr        error
@@ -53,6 +58,13 @@ func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserI
 	s.listByPostViewer = viewerUserID
 	s.listByPostAnchorFilter = anchorFilter
 	return s.listByPostResult, int64(len(s.listByPostResult)), nil
+}
+
+// ListReplies stub：记录调用入参供 sort 透传断言。
+func (s *stubCommentService) ListReplies(_ context.Context, _ string, _ string, sort string, _ int, _ int) ([]appcomment.CommentDTO, int64, error) {
+	s.listRepliesCalled = true
+	s.listRepliesSort = sort
+	return s.listRepliesResult, int64(len(s.listRepliesResult)), nil
 }
 
 func (s *stubCommentService) Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error) {
@@ -208,6 +220,35 @@ func TestListAll_TypeQueryParam_PassthroughAndDefault(t *testing.T) {
 			require.Equal(t, http.StatusOK, rr.Code)
 			require.True(t, svc.listAllCalled)
 			assert.Equal(t, c.expect, svc.listAllAnchorFilter)
+		})
+	}
+}
+
+// =====================================================================
+// ListReplies 回复列表：sort query param 透传 + 默认 asc
+// =====================================================================
+
+func TestListReplies_SortQueryParam_PassthroughAndDefault(t *testing.T) {
+	cases := []struct {
+		query  string
+		expect string
+		desc   string
+	}{
+		{"", "asc", "缺省 sort 默认 asc"},
+		{"?sort=asc", "asc", "显式 asc"},
+		{"?sort=desc", "desc", "desc 透传"},
+	}
+	for _, c := range cases {
+		t.Run(c.desc, func(t *testing.T) {
+			svc := &stubCommentService{}
+			h := newHandlerWithStub(svc)
+			req := httptest.NewRequest("GET", "/comments/abc/replies"+c.query, nil)
+			req.SetPathValue("commentId", "abc")
+			rr := httptest.NewRecorder()
+			h.ListReplies(rr, req)
+			require.Equal(t, http.StatusOK, rr.Code)
+			require.True(t, svc.listRepliesCalled)
+			assert.Equal(t, c.expect, svc.listRepliesSort)
 		})
 	}
 }

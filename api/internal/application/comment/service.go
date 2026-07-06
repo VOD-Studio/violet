@@ -18,6 +18,10 @@ import (
 // 保证不同业务的验证码 key 空间不冲突（如 comment:alice@x.com ≠ verify:alice@x.com）。
 const codePrefix = "comment"
 
+// replyPreviewLimit 顶层评论列表每条带多少条回复预览。
+// 前端首屏无需为每条顶层发独立请求拉预览。「查看全部」走 GET /comments/{id}/replies。
+const replyPreviewLimit = 3
+
 // 领域错误（映射见 internal/interfaces/http/response/error.go 的 httpStatusForCode）
 var (
 	// ErrInvalidCode 邮箱验证码错误、已过期、或尝试次数耗尽（5 次错误锁定）。
@@ -69,6 +73,13 @@ type CommentDTO struct {
 	Anchor     *AnchorDTO       `json:"anchor,omitempty"`
 	Status     string           `json:"status"`
 	CreatedAt  string           `json:"created_at"`
+	// Replies 顶层评论下的回复预览（前 N 条）。仅顶层 DTO 带，回复节点省略。
+	// 配合「按需拉回复」分页策略：首屏列表每条顶层带前几条回复预览，
+	// 「查看全部」再走 GET /comments/{id}/replies 独立分页。
+	Replies []CommentDTO `json:"replies,omitempty"`
+	// RepliesTotal 该顶层评论下的回复总数。前端据此决定是否显示「查看全部 xx 条回复」。
+	// 仅顶层 DTO 带；Replies 只是预览，总数独立返回。
+	RepliesTotal int64 `json:"replies_total,omitempty"`
 }
 
 // Service 评论用例服务
@@ -131,7 +142,28 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 		if c.ParentID() != nil {
 			name = parentNames[c.ParentID().String()]
 		}
-		dtos = append(dtos, toDTO(c, authorID, name))
+		dto := toDTO(c, authorID, name)
+		// 顶层评论列表：补回复预览（前 3 条）+ 回复总数。
+		// 「查看全部」走独立接口 GET /comments/{id}/replies 分页。
+		// 仅 depthFilter=TopLevel 时补（避免 depthFilter=All 重复填充）。
+		if depthFilter == domain.DepthFilterTopLevel {
+			replies, replyTotal, err := s.commentRepo.FindReplies(ctx, c.ID(), domain.StatusApproved, &viewerID, "asc", 1, replyPreviewLimit)
+			if err != nil {
+				return nil, 0, err
+			}
+			dto.RepliesTotal = replyTotal
+			// 回复预览也走 toDTO，填 reply_to_name（parentNames 已含顶层 id）
+			dto.Replies = make([]CommentDTO, 0, len(replies))
+			replyNameMap := buildParentNameMap(append(items, replies...))
+			for _, r := range replies {
+				rName := ""
+				if r.ParentID() != nil {
+					rName = replyNameMap[r.ParentID().String()]
+				}
+				dto.Replies = append(dto.Replies, toDTO(r, authorID, rName))
+			}
+		}
+		dtos = append(dtos, dto)
 	}
 	return dtos, total, nil
 }
@@ -198,6 +230,42 @@ func (s *Service) GetDetail(ctx context.Context, id string) (AdminCommentDTO, er
 		PostTitle:  cwp.Post.Title,
 		PostSlug:   cwp.Post.Slug,
 	}, nil
+}
+
+// ListReplies 列出某顶层评论下的扁平回复（分页 + 排序）。
+//
+// 配合 ListByPost 的「顶层 + 回复预览」策略：前端列表首屏拿预览，
+// 「查看全部 xx 条回复」走本接口翻页。黑洞模式同 ListByPost：匿名 viewer 返回空。
+//
+// sort："asc"（最早优先，默认）/ "desc"（最新优先）。
+func (s *Service) ListReplies(ctx context.Context, parentID, viewerUserID, sort string, page, limit int) ([]CommentDTO, int64, error) {
+	// 黑洞模式：匿名 viewer 不查 DB（与 ListByPost 一致）
+	if viewerUserID == "" {
+		return []CommentDTO{}, 0, nil
+	}
+	pid, err := shared.ParseID(parentID)
+	if err != nil {
+		return nil, 0, err
+	}
+	viewerID, err := shared.ParseID(viewerUserID)
+	if err != nil {
+		return nil, 0, err
+	}
+	items, total, err := s.commentRepo.FindReplies(ctx, pid, domain.StatusApproved, &viewerID, sort, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	// 建 parent_id → author_name 索引：回复链上的中间节点可能也在这批里
+	parentNames := buildParentNameMap(items)
+	dtos := make([]CommentDTO, 0, len(items))
+	for _, c := range items {
+		name := ""
+		if c.ParentID() != nil {
+			name = parentNames[c.ParentID().String()]
+		}
+		dtos = append(dtos, toDTO(c, nil, name))
+	}
+	return dtos, total, nil
 }
 
 // BatchUpdateStatus 批量更新评论状态，返回受影响行数
