@@ -13,6 +13,7 @@ import { DataTableFooter } from "./DataTableFooter";
 import { DataTableHeader } from "./DataTableHeader";
 import { DataTableToolbar } from "./DataTableToolbar";
 import "../styles/sticky-shadow.css";
+import "../styles/scrollbar.css";
 
 const DEFAULT_COLUMN_MIN_WIDTH = 80;
 
@@ -246,6 +247,7 @@ export function DataTable<T>({
 
     // —— 首次渲染后，从 DOM 读取所有列的实际宽度 ——
     const tableRef = useRef<HTMLTableElement>(null);
+    const headerScrollRef = useRef<HTMLDivElement>(null);
     const hasInitializedWidths = useRef(false);
 
     useEffect(() => {
@@ -338,6 +340,35 @@ export function DataTable<T>({
         return map;
     }, [offsets, scrollState]);
 
+    // —— header / body 横向滚动同步 ——
+    // body 滚动时同步 header 的 scrollLeft（header 容器 overflow-hidden，靠 JS 驱动）
+    const [scrollbarWidth, setScrollbarWidth] = useState(0);
+
+    useEffect(() => {
+        const body = scrollContainerRef.current;
+        const header = headerScrollRef.current;
+        if (!body || !header) return;
+
+        const sync = () => {
+            header.scrollLeft = body.scrollLeft;
+        };
+
+        body.addEventListener("scroll", sync);
+        // 初始同步 + 测量滚动条宽度
+        sync();
+        const measureGutter = () => {
+            setScrollbarWidth(body.offsetWidth - body.clientWidth);
+        };
+        measureGutter();
+        const ro = new ResizeObserver(measureGutter);
+        ro.observe(body);
+
+        return () => {
+            body.removeEventListener("scroll", sync);
+            ro.disconnect();
+        };
+    }, []);
+
     return (
         <div className={cn("w-full space-y-0", className)}>
             <DataTableToolbar
@@ -355,70 +386,95 @@ export function DataTable<T>({
                 selectedCount={selectable ? selected.size : 0}
             />
 
-            <div
-                ref={scrollContainerRef}
-                className="border-border bg-card overflow-auto rounded-md border"
-                style={stickyHeader ? { maxHeight } : undefined}
-                aria-busy={loading ? true : undefined}
-            >
-                <table
-                    ref={tableRef}
-                    className="caption-bottom text-sm"
-                    style={{
-                        tableLayout: "fixed",
-                        width: "100%",
-                        minWidth: `${totalColumnWidth}px`,
-                    }}
+            <div className="border-border bg-card overflow-hidden rounded-md border">
+                {/* Header — 独立容器，无滚动条；paddingRight 补偿 body 滚动条宽度 */}
+                <div
+                    ref={headerScrollRef}
+                    className="overflow-hidden"
+                    style={scrollbarWidth ? { paddingRight: `${scrollbarWidth}px` } : undefined}
                 >
-                    {caption ? <caption className="sr-only">{caption}</caption> : null}
-                    <colgroup>
-                        {visibleColumns.map((col) => {
-                            const w = colgroupWidthMap.get(col.key);
-                            return <col key={col.key} style={w ? { width: w } : undefined} />;
-                        })}
-                    </colgroup>
-                    <DataTableHeader
-                        columns={visibleColumns}
-                        offsets={offsetsWithScroll}
-                        stickyHeader={stickyHeader}
-                        sort={sort}
-                        onSortChange={onSortChange}
-                        density={density}
-                        selectable={selectable}
-                        allSelected={allSelected}
-                        someSelected={someSelected}
-                        onToggleSelectAll={toggleSelectAll}
-                        resizable={resizable}
-                        columnMinWidth={columnMinWidth}
-                        columnWidthMap={columnWidthMap}
-                        onResizeColumn={resizeColumn}
-                    />
-                    <DataTableBody
-                        columns={visibleColumns}
-                        data={data}
-                        keyExtractor={keyExtractor}
-                        offsets={offsetsWithScroll}
-                        loading={loading}
-                        error={error}
-                        onRetry={onRetry}
-                        density={density}
-                        filtered={filtered}
-                        emptyTitle={emptyTitle}
-                        emptyDescription={emptyDescription}
-                        selectable={selectable}
-                        selectedIds={selected}
-                        onToggleRow={toggleRow}
-                        expandable={expandable}
-                        expandedRowFixed={expandedRowFixed}
-                        containerWidth={containerWidth}
-                        expandedRowKeys={expanded}
-                        onToggleExpand={toggleExpand}
-                        renderExpandedRow={renderExpandedRow}
-                        onRowClick={onRowClick}
-                        rowClassName={rowClassName}
-                        pageBaseIndex={(page - 1) * pageSize}
-                    />
-                </table>
+                    <table
+                        ref={tableRef}
+                        className="caption-bottom text-sm"
+                        style={{
+                            tableLayout: "fixed",
+                            width: "100%",
+                            minWidth: `${totalColumnWidth}px`,
+                        }}
+                    >
+                        {caption ? <caption className="sr-only">{caption}</caption> : null}
+                        <colgroup>
+                            {visibleColumns.map((col) => {
+                                const w = colgroupWidthMap.get(col.key);
+                                return <col key={col.key} style={w ? { width: w } : undefined} />;
+                            })}
+                        </colgroup>
+                        <DataTableHeader
+                            columns={visibleColumns}
+                            offsets={offsetsWithScroll}
+                            stickyHeader={false}
+                            sort={sort}
+                            onSortChange={onSortChange}
+                            density={density}
+                            selectable={selectable}
+                            allSelected={allSelected}
+                            someSelected={someSelected}
+                            onToggleSelectAll={toggleSelectAll}
+                            resizable={resizable}
+                            columnMinWidth={columnMinWidth}
+                            columnWidthMap={columnWidthMap}
+                            onResizeColumn={resizeColumn}
+                        />
+                    </table>
+                </div>
+                {/* Body — 自定义滚动条，仅出现在内容区 */}
+                <div
+                    ref={scrollContainerRef}
+                    className="dt-scroll overflow-auto"
+                    style={stickyHeader ? { maxHeight } : undefined}
+                    aria-busy={loading ? true : undefined}
+                >
+                    <table
+                        className="text-sm"
+                        style={{
+                            tableLayout: "fixed",
+                            width: "100%",
+                            minWidth: `${totalColumnWidth}px`,
+                        }}
+                    >
+                        <colgroup>
+                            {visibleColumns.map((col) => {
+                                const w = colgroupWidthMap.get(col.key);
+                                return <col key={col.key} style={w ? { width: w } : undefined} />;
+                            })}
+                        </colgroup>
+                        <DataTableBody
+                            columns={visibleColumns}
+                            data={data}
+                            keyExtractor={keyExtractor}
+                            offsets={offsetsWithScroll}
+                            loading={loading}
+                            error={error}
+                            onRetry={onRetry}
+                            density={density}
+                            filtered={filtered}
+                            emptyTitle={emptyTitle}
+                            emptyDescription={emptyDescription}
+                            selectable={selectable}
+                            selectedIds={selected}
+                            onToggleRow={toggleRow}
+                            expandable={expandable}
+                            expandedRowFixed={expandedRowFixed}
+                            containerWidth={containerWidth}
+                            expandedRowKeys={expanded}
+                            onToggleExpand={toggleExpand}
+                            renderExpandedRow={renderExpandedRow}
+                            onRowClick={onRowClick}
+                            rowClassName={rowClassName}
+                            pageBaseIndex={(page - 1) * pageSize}
+                        />
+                    </table>
+                </div>
             </div>
 
             {showFooter && (

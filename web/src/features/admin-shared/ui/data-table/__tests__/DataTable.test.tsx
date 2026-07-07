@@ -40,15 +40,19 @@ describe("DataTable", () => {
             />,
         );
 
-        const cols = container.querySelectorAll("colgroup col");
-        expect(cols).toHaveLength(2);
-        expect(cols[0]).toBeInstanceOf(HTMLTableColElement);
-        expect(cols[1]).toBeInstanceOf(HTMLTableColElement);
-        if (cols[0] instanceof HTMLTableColElement) {
-            expect(cols[0].style.width).toBe("120px");
+        // header 和 body 各有独立 table + colgroup，验证 header 表的 col
+        const headerCols = container
+            .querySelector("thead")
+            ?.closest("table")
+            ?.querySelectorAll("colgroup col");
+        expect(headerCols).toHaveLength(2);
+        expect(headerCols?.[0]).toBeInstanceOf(HTMLTableColElement);
+        expect(headerCols?.[1]).toBeInstanceOf(HTMLTableColElement);
+        if (headerCols?.[0] instanceof HTMLTableColElement) {
+            expect(headerCols[0].style.width).toBe("120px");
         }
-        if (cols[1] instanceof HTMLTableColElement) {
-            expect(cols[1].style.width).toBe("20%");
+        if (headerCols?.[1] instanceof HTMLTableColElement) {
+            expect(headerCols[1].style.width).toBe("20%");
         }
     });
 });
