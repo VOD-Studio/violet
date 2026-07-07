@@ -9,8 +9,12 @@ export interface CroppedImageProps {
     aspect?: number;
     /** 容器 className */
     className?: string;
+    /** 内部 img 的额外 className(如 hover 动画) */
+    imgClassName?: string;
     /** img alt */
     alt?: string;
+    /** img loading,默认不设 */
+    loading?: "lazy" | "eager";
 }
 
 /**
@@ -24,15 +28,18 @@ export interface CroppedImageProps {
  * 选区中心映射到 object-position 即可聚焦选区,无需 transform 缩放,
  * 避免双重放大。静态图/GIF 统一,原图无损。
  */
-export function CroppedImage({ src, aspect, className, alt = "" }: CroppedImageProps) {
+export function CroppedImage({
+    src,
+    aspect,
+    className,
+    imgClassName,
+    alt = "",
+    loading,
+}: CroppedImageProps) {
     const objectPosition = useMemo(() => {
         const rect = parseCrop(src);
         if (!rect) return undefined;
         // 选区中心(归一化)→ object-position 百分比。
-        // cover 下图片有一维铺满、另一维溢出;object-position 百分比映射:
-        // 选区中心在图片 c 处 → position = c/(1-overflow) 把该点对齐容器中心。
-        // overflow = 容器看不到的图片比例,近似为选区与容器宽高比差异。
-        // 简化:当选区宽高比与容器接近时,直接用选区中心归一化值。
         const cx = rect.w < 1 ? (rect.x + rect.w / 2) / (1 - rect.w) : 0.5;
         const cy = rect.h < 1 ? (rect.y + rect.h / 2) / (1 - rect.h) : 0.5;
         return `${(cx * 100).toFixed(2)}% ${(cy * 100).toFixed(2)}%`;
@@ -46,7 +53,8 @@ export function CroppedImage({ src, aspect, className, alt = "" }: CroppedImageP
             <img
                 src={src}
                 alt={alt}
-                className="h-full w-full object-cover"
+                loading={loading}
+                className={cn("h-full w-full object-cover", imgClassName)}
                 style={objectPosition ? { objectPosition } : undefined}
             />
         </div>
