@@ -20,9 +20,9 @@ describe("withCrop", () => {
     });
 
     it("四舍六入到 4 位小数", () => {
-        expect(
-            withCrop("/uploads/a.gif", { x: 0.123456, y: 0.00001, w: 0.999999, h: 0.5 }),
-        ).toBe("/uploads/a.gif?crop=0.1235,0,1,0.5");
+        expect(withCrop("/uploads/a.gif", { x: 0.123456, y: 0.00001, w: 0.999999, h: 0.5 })).toBe(
+            "/uploads/a.gif?crop=0.1235,0,1,0.5",
+        );
     });
 });
 
