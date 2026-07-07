@@ -15,6 +15,7 @@ import { useReplaceMediaFile } from "@features/upload/api/mutations";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import type { CropRect } from "@features/upload/lib/crop-image";
 import { cropImageToBlob } from "@features/upload/lib/crop-image";
+import { withCrop } from "@features/upload/lib/cropUrl";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { Button } from "@shared/ui/base/button";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
@@ -127,8 +128,15 @@ function AdminMediaPage() {
         const isGif = cropFile.mime_type.includes("gif");
         try {
             if (isGif) {
-                // GIF 裁剪在 Issue-0022 实现(复制 ?crop URL),此处占位
-                toast.info("GIF 裁剪即将支持");
+                // GIF:不重编码(保留动画),把 ?crop 坐标拼到 URL 复制给用户
+                const url = withCrop(cropFile.url, cropRect);
+                try {
+                    await navigator.clipboard.writeText(url);
+                    toast.success("已复制裁剪后 URL(GIF 保留动画)");
+                } catch {
+                    // clipboard 不可用时降级:toast 显示 URL 供手动复制
+                    toast(url, { description: "剪贴板不可用,请手动复制此 URL" });
+                }
                 setCropOpen(false);
                 return;
             }
