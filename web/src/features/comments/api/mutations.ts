@@ -30,10 +30,14 @@ export const useCreateComment = (postId: string) => {
                     bumpRepliesTotalInList(qc, postId, variables.parent_id);
                 } else {
                     invalidateListByType(qc, postId, variables.anchor ? "annotation" : "free");
+                    if (variables.anchor) {
+                        qc.invalidateQueries({ queryKey: commentKeys.annotationSummary(postId) });
+                    }
                 }
             } catch (e) {
                 console.error("乐观更新失败，降级 invalidate", e);
                 invalidateListsForPost(qc, postId);
+                qc.invalidateQueries({ queryKey: commentKeys.annotationSummary(postId) });
                 if (variables.parent_id) {
                     qc.invalidateQueries({ queryKey: commentKeys.replies() });
                 }
