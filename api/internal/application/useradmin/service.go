@@ -47,7 +47,7 @@ type UserDTO struct {
 	EmailVerified       bool   `json:"email_verified"`
 	IsActive            bool   `json:"is_active"`
 	Bio                 string `json:"bio"`
-	Avatar              string `json:"avatar_url"`
+	AvatarURL           string `json:"avatar_url"`
 	CreatedAt           string `json:"created_at"`
 }
 
@@ -135,7 +135,7 @@ type UpdateInput struct {
 	IsActive    *bool
 	DisplayName *string
 	Bio         *string
-	Avatar      *string
+	AvatarURL   *string
 	IPAddress   string
 	UserAgent   string
 }
@@ -413,7 +413,7 @@ func toDTO(u *domainuser.User) UserDTO {
 		ID: u.GetID().String(), Username: u.Username().String(), Email: u.Email().String(),
 		Role: string(u.Role()), IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
 		EmailVerified: u.EmailVerified(), IsActive: u.IsActive(),
-		Avatar: u.AvatarURL(), Bio: u.Bio(),
+		AvatarURL: u.AvatarURL(), Bio: u.Bio(),
 		CreatedAt: u.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
 	}
 	return dto
