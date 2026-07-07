@@ -204,11 +204,28 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 
         // —— 远程链接导入弹窗 ——
         const [urlDialogOpen, setUrlDialogOpen] = useState(false);
+        const [urlError, setUrlError] = useState<string | null>(null);
         const handleImportUrlConfirm = (url: string) => {
             if (!editor || !onImportUrl) return;
             const trimmed = url.trim();
-            if (!trimmed) return;
-            // PromptDialog 确认后立即关闭，解析异步进行；成功由 onImportUrl 调用方 toast
+            if (!trimmed) {
+                setUrlError("请输入 URL");
+                return false;
+            }
+            // 前端预校验：避免非法 URL / 非 http(s) 协议往返后端才报错
+            let parsed: URL;
+            try {
+                parsed = new URL(trimmed);
+            } catch {
+                setUrlError("请输入合法的 URL");
+                return false;
+            }
+            if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+                setUrlError("仅支持 http/https 链接");
+                return false;
+            }
+            setUrlError(null);
+            // 校验通过：PromptDialog 关闭，解析异步进行；成功由 onImportUrl 调用方 toast
             void onImportUrl(trimmed).then((result) => {
                 if (result?.html) {
                     editor.commands.setContent(result.html, { contentType: "html" });
@@ -317,6 +334,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                     placeholder="https://example.com/article"
                     confirmLabel="导入"
                     onConfirm={handleImportUrlConfirm}
+                    error={urlError ?? undefined}
+                    onValueChange={() => setUrlError(null)}
                 />
             </div>
         );
