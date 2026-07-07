@@ -9,6 +9,7 @@ import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import type { createLowlight } from "lowlight";
+import { useState } from "react";
 import {
     Select,
     SelectContent,
@@ -17,6 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/ui/base/select";
+import { ensureLanguageRegistered } from "../extensions";
 
 /**
  * 代码块语言下拉选项。
@@ -89,14 +91,27 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
 
 function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewProps) {
     const language = (node.attrs.language as string) || "text";
-    // 当前 lowlight 实例已注册的语言列表，供下拉过滤用（这里用预设列表即可）
+    // common 预设外的语言首次选中需动态注册语法，期间禁用下拉避免重复触发
+    const [registering, setRegistering] = useState(false);
     void extension;
+
+    const handleLanguageChange = async (v: string) => {
+        setRegistering(true);
+        await ensureLanguageRegistered(v);
+        setRegistering(false);
+        // updateAttributes 产生 docChanged 事务，LowlightPlugin 据此重算高亮装饰
+        updateAttributes({ language: v });
+    };
 
     return (
         <NodeViewWrapper className="my-4 overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]">
             {/* 顶部：语言下拉 */}
             <div className="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
-                <Select value={language} onValueChange={(v) => updateAttributes({ language: v })}>
+                <Select
+                    value={language}
+                    disabled={registering}
+                    onValueChange={handleLanguageChange}
+                >
                     <SelectTrigger className="h-6 w-36 border-none bg-white/5 px-1 font-mono text-xs text-white/70 transition-colors hover:bg-white/10 hover:text-white focus:ring-0">
                         <SelectValue />
                     </SelectTrigger>

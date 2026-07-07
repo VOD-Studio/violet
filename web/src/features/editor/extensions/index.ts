@@ -30,8 +30,48 @@ import { SlashCommand } from "../slash-menu/SlashCommand";
 import { buildSlashItems } from "../slash-menu/slash-items";
 import { createCodeBlockExtension } from "../ui/CodeBlockView";
 
-/** 低光高亮实例：注册常用语言，按需可扩展 */
+/** 低光高亮实例：common 预设已注册 37 种常用语言，其余按需动态注册 */
 const lowlight = createLowlight(common);
+
+/**
+ * 已注册语言缓存。初始用 lowlight.listLanguages() 灌入 common 预设，
+ * 后续动态注册的语言追加进来，避免重复 import/register。
+ */
+const registeredLanguages = new Set<string>(lowlight.listLanguages());
+
+/** 动态注册进行中的语言，避免并发重复 import */
+const registering = new Map<string, Promise<void>>();
+
+/**
+ * ensureLanguageRegistered - 确保指定语言已注册到 lowlight 实例。
+ *
+ * common 预设外的语言（dockerfile/nginx 等）首次选中时按需动态 import
+ * 对应 highlight.js 语法并 register，避免一次性打包全部语法。
+ * Vite 会为 `highlight.js/lib/languages/*` 生成独立 chunk 实现懒加载。
+ *
+ * @param id 语言 id（与 highlight.js/lib/languages/<id> 文件名一致）
+ */
+export async function ensureLanguageRegistered(id: string): Promise<void> {
+    if (!id || id === "text" || registeredLanguages.has(id)) return;
+    const pending = registering.get(id);
+    if (pending) return pending;
+    const p = (async () => {
+        try {
+            const mod = await import(/* @vite-ignore */ `highlight.js/lib/languages/${id}`);
+            const grammar = mod.default;
+            if (typeof grammar === "function") {
+                lowlight.register(id, grammar);
+                registeredLanguages.add(id);
+            }
+        } catch {
+            // 不支持的 id 静默失败，lowlight 会回退到 highlightAuto
+        } finally {
+            registering.delete(id);
+        }
+    })();
+    registering.set(id, p);
+    return p;
+}
 
 /**
  * buildEditorExtensions - 构建编辑器扩展数组
