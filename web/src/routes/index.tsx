@@ -52,42 +52,24 @@ function HomePage() {
  */
 export const Route = createFileRoute("/")({
     loader: async ({ context }) => {
-        // 公告 SSR 预取（失败降级，不阻塞首页）
-        await context.queryClient
-            .ensureQueryData({
-                queryKey: settingsKeys.announcements(),
-                queryFn: fetchAnnouncements,
-            })
-            .catch(() => {
-                /* 公告端点未就绪 → 网格隐藏，不影响首页 */
-            });
-        // 文章列表 SSR 预取：HTML 直出文章内容，利于 SEO 与首屏
+        // 关键数据：仅文章列表阻塞导航（首屏内容）
         await context.queryClient
             .ensureQueryData({
                 queryKey: postKeys.list({}),
                 queryFn: () => fetchPosts({}),
             })
-            .catch(() => {
-                /* 文章列表失败不阻塞，底座降级为加载态 */
-            });
-        // GitHub 贡献图（装饰性次要信息，失败降级）
-        await context.queryClient
-            .ensureQueryData({
-                queryKey: githubKeys.contributions(),
-                queryFn: fetchContributions,
-            })
-            .catch(() => {
-                /* GitHub 端点未就绪（404 等）→ 贡献区降级，不影响主页 */
-            });
-        // GitHub 仓库列表（装饰性次要信息，失败降级）
-        await context.queryClient
-            .ensureQueryData({
-                queryKey: githubKeys.repos(),
-                queryFn: fetchRepos,
-            })
-            .catch(() => {
-                /* GitHub 端点未就绪（404 等）→ 仓库区降级，不影响主页 */
-            });
+            .catch(() => {});
+
+        // 非关键数据：后台预取不阻塞导航，数据到了 UI 响应式更新
+        context.queryClient
+            .ensureQueryData({ queryKey: settingsKeys.announcements(), queryFn: fetchAnnouncements })
+            .catch(() => {});
+        context.queryClient
+            .ensureQueryData({ queryKey: githubKeys.contributions(), queryFn: fetchContributions })
+            .catch(() => {});
+        context.queryClient
+            .ensureQueryData({ queryKey: githubKeys.repos(), queryFn: fetchRepos })
+            .catch(() => {});
     },
     component: HomePage,
 });
