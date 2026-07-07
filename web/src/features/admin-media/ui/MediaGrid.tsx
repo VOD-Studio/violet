@@ -1,6 +1,6 @@
 import type { MediaFile } from "@entities/media/model/types";
 import type { LucideIcon } from "lucide-react";
-import { FileText, Film, Music, Pencil, Trash2 } from "lucide-react";
+import { Crop, FileText, Film, Music, Pencil, Trash2 } from "lucide-react";
 import { imageUrl } from "@/features/upload/lib/imageUrl";
 import { Button } from "@/shared/ui/base/button";
 
@@ -15,6 +15,8 @@ interface MediaGridProps {
     onDelete?: (file: MediaFile) => void;
     /** 选帧设封面（仅视频卡片显示此按钮） */
     onPickCover?: (file: MediaFile) => void;
+    /** 裁剪（仅图片卡片显示此按钮） */
+    onCrop?: (file: MediaFile) => void;
 }
 
 /**
@@ -24,7 +26,14 @@ interface MediaGridProps {
  * 图片用缩略图（imageUrl 带 thumb 参数），非图片显示对应图标。
  * 视频卡片有缩略图时显示缩略图，并额外提供「选帧设封面」按钮。
  */
-export function MediaGrid({ files, onPreview, onEdit, onDelete, onPickCover }: MediaGridProps) {
+export function MediaGrid({
+    files,
+    onPreview,
+    onEdit,
+    onDelete,
+    onPickCover,
+    onCrop,
+}: MediaGridProps) {
     return (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {files.map((file) => (
@@ -35,6 +44,7 @@ export function MediaGrid({ files, onPreview, onEdit, onDelete, onPickCover }: M
                     onEdit={onEdit}
                     onDelete={onDelete}
                     onPickCover={onPickCover}
+                    onCrop={onCrop}
                 />
             ))}
         </div>
@@ -47,12 +57,14 @@ function MediaCard({
     onEdit,
     onDelete,
     onPickCover,
+    onCrop,
 }: {
     file: MediaFile;
     onPreview?: (file: MediaFile, trigger?: HTMLElement | null) => void;
     onEdit?: (file: MediaFile) => void;
     onDelete?: (file: MediaFile) => void;
     onPickCover?: (file: MediaFile) => void;
+    onCrop?: (file: MediaFile) => void;
 }) {
     const isImage = file.mime_type.startsWith("image/");
     const isVideo = file.mime_type.startsWith("video/");
@@ -110,6 +122,17 @@ function MediaCard({
                         title="选帧设封面"
                     >
                         <Film className="size-3" />
+                    </Button>
+                ) : null}
+                {isImage && onCrop ? (
+                    <Button
+                        size="icon-sm"
+                        variant="secondary"
+                        className="size-7 shadow-sm"
+                        onClick={() => onCrop(file)}
+                        title="裁剪"
+                    >
+                        <Crop className="size-3" />
                     </Button>
                 ) : null}
                 {onEdit ? (
