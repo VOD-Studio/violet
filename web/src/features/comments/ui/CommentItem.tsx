@@ -328,13 +328,18 @@ function CommentMeta({
             )}
             <PendingBadge show={isPending} />
             <time className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
-                {formatDistanceToNow(new Date(comment.created_at), {
-                    addSuffix: true,
-                    locale: zhCN,
-                })}
+                {formatTimeAgo(comment.created_at)}
             </time>
         </div>
     );
 }
 
 export default CommentItem;
+
+function formatTimeAgo(createdAt: string): string {
+    const date = new Date(createdAt);
+    if (isNaN(date.getTime()) || date.getFullYear() < 2000) {
+        return "刚刚";
+    }
+    return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
+}
