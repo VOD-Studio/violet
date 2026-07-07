@@ -11,8 +11,12 @@ import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
+import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
+import type { CropRect } from "@features/upload/lib/crop-image";
+import { cropImageToBlob } from "@features/upload/lib/crop-image";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { Button } from "@shared/ui/base/button";
+import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Images, Pencil, Trash2, Upload } from "lucide-react";
@@ -56,6 +60,9 @@ function AdminMediaPage() {
     const [editOpen, setEditOpen] = useState(false);
     const [coverFile, setCoverFile] = useState<MediaFile | null>(null);
     const [coverOpen, setCoverOpen] = useState(false);
+    const [cropFile, setCropFile] = useState<MediaFile | null>(null);
+    const [cropOpen, setCropOpen] = useState(false);
+    const [cropRect, setCropRect] = useState<CropRect | undefined>(undefined);
     const [deleteFile, setDeleteFile] = useState<MediaFile | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
@@ -101,6 +108,36 @@ function AdminMediaPage() {
     const handlePickCover = (file: MediaFile) => {
         setCoverFile(file);
         setCoverOpen(true);
+    };
+
+    const { uploadFile } = useChunkedUpload({ purpose: "material" });
+
+    const handleCrop = (file: MediaFile) => {
+        setCropFile(file);
+        setCropRect(undefined);
+        setCropOpen(true);
+    };
+
+    const handleCropConfirm = async () => {
+        if (!cropFile || !cropRect) return;
+        const isGif = cropFile.mime_type.includes("gif");
+        try {
+            if (isGif) {
+                // GIF 裁剪在 Issue-0022 实现(复制 ?crop URL),此处占位
+                toast.info("GIF 裁剪即将支持");
+                setCropOpen(false);
+                return;
+            }
+            const blob = await cropImageToBlob(cropFile.url, cropRect);
+            const name = cropFile.original_name.replace(/\.[^.]+$/, "") || "cropped";
+            const file = new File([blob], `${name}.webp`, { type: "image/webp" });
+            await uploadFile(file);
+            queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
+            toast.success("已上传裁剪后的新素材");
+            setCropOpen(false);
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : "裁剪失败");
+        }
     };
 
     const handleDelete = (file: MediaFile) => {
@@ -212,6 +249,7 @@ function AdminMediaPage() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onPickCover={handlePickCover}
+                    onCrop={handleCrop}
                 />
             ) : (
                 <MediaTable
@@ -261,6 +299,28 @@ function AdminMediaPage() {
 
             {/* 视频选帧设封面弹窗 */}
             <MediaCoverDialog open={coverOpen} onOpenChange={setCoverOpen} file={coverFile} />
+
+            {/* 图片裁剪弹窗 */}
+            <Modal
+                open={cropOpen}
+                onOpenChange={setCropOpen}
+                title={cropFile ? `裁剪「${cropFile.original_name}」` : "裁剪"}
+                size="md"
+                footer={
+                    <div className="flex justify-end gap-2">
+                        <Button variant="ghost" onClick={() => setCropOpen(false)}>
+                            取消
+                        </Button>
+                        <Button onClick={handleCropConfirm} disabled={!cropRect}>
+                            确认上传
+                        </Button>
+                    </div>
+                }
+            >
+                {cropFile ? (
+                    <ImageCropper src={cropFile.url} aspect={undefined} onChange={setCropRect} />
+                ) : null}
+            </Modal>
 
             {/* 删除确认 */}
             <ConfirmDialog
