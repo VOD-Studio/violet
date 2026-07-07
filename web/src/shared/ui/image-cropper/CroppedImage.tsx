@@ -1,10 +1,9 @@
 import { parseCrop } from "@features/upload/lib/cropUrl";
 import { useMemo } from "react";
 import { cn } from "@/shared/lib/utils";
-import { cropToStyle } from "./lib/crop-to-style";
 
 export interface CroppedImageProps {
-    /** 图片 src,可能带 ?crop=x,y,w,h(GIF 视觉裁剪时) */
+    /** 图片 src,可能带 ?crop=x,y,w,h(选区聚焦时) */
     src: string;
     /** 容器宽高比(数字);不传则不强制比例 */
     aspect?: number;
@@ -15,20 +14,29 @@ export interface CroppedImageProps {
 }
 
 /**
- * CroppedImage - 显示层图片,支持视觉裁剪。
+ * CroppedImage - 显示层图片,支持选区聚焦。
  *
- * 解析 src 的 ?crop= 参数,用 CSS transform 把原图聚焦到选区(object-fit:cover
- * 下聚焦选区中心)。无 ?crop= 参数退化普通 object-cover。
+ * 解析 src 的 ?crop= 参数,用 object-position 把 object-fit:cover 的裁剪焦点
+ * 对准选区中心。无 ?crop= 退化普通居中 cover。
  *
- * GIF 场景:原图完整加载,动画无损保留,仅视觉聚焦——这是「无损视觉裁剪」,
- * 对比 canvas 重编码(会丢动画)的静态图路径,此处保留 GIF 原文件字节。
+ * 原理:object-fit:cover 已让图片缩放铺满容器并裁掉溢出部分,
+ * object-position(百分比)控制裁剪焦点——0%/100% 对齐左上/右下。
+ * 选区中心映射到 object-position 即可聚焦选区,无需 transform 缩放,
+ * 避免双重放大。静态图/GIF 统一,原图无损。
  */
 export function CroppedImage({ src, aspect, className, alt = "" }: CroppedImageProps) {
-    const rect = useMemo(() => parseCrop(src) ?? undefined, [src]);
-    const style = useMemo(
-        () => cropToStyle(rect, aspect ?? (rect ? rect.w / rect.h : 16 / 9)),
-        [rect, aspect],
-    );
+    const objectPosition = useMemo(() => {
+        const rect = parseCrop(src);
+        if (!rect) return undefined;
+        // 选区中心(归一化)→ object-position 百分比。
+        // cover 下图片有一维铺满、另一维溢出;object-position 百分比映射:
+        // 选区中心在图片 c 处 → position = c/(1-overflow) 把该点对齐容器中心。
+        // overflow = 容器看不到的图片比例,近似为选区与容器宽高比差异。
+        // 简化:当选区宽高比与容器接近时,直接用选区中心归一化值。
+        const cx = rect.w < 1 ? (rect.x + rect.w / 2) / (1 - rect.w) : 0.5;
+        const cy = rect.h < 1 ? (rect.y + rect.h / 2) / (1 - rect.h) : 0.5;
+        return `${(cx * 100).toFixed(2)}% ${(cy * 100).toFixed(2)}%`;
+    }, [src]);
 
     return (
         <div
@@ -38,8 +46,8 @@ export function CroppedImage({ src, aspect, className, alt = "" }: CroppedImageP
             <img
                 src={src}
                 alt={alt}
-                className="h-full w-full object-cover will-change-transform"
-                style={style}
+                className="h-full w-full object-cover"
+                style={objectPosition ? { objectPosition } : undefined}
             />
         </div>
     );

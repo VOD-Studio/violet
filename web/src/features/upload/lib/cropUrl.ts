@@ -4,7 +4,7 @@ import type { CropRect } from "@shared/ui/image-cropper/types";
  * 裁剪坐标的 URL 编码工具。
  *
  * GIF 选区不重编码文件,改为把归一化坐标(相对原图 0~1)编码进 URL 查询参数
- * `?crop=x,y,w,h`,显示层用 CSS 视觉裁剪聚焦选区(见 crop-to-style)。
+ * `?crop=x,y,w,h`,显示层用 object-position 聚焦选区(见 CroppedImage)。
  *
  * 与 imageUrl.ts 的动态处理参数(w/thumb/format 等)正交:后端 transformer
  * 只读已知参数,会忽略 crop,因此本参数纯前端约定。
