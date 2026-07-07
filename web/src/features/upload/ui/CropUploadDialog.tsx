@@ -5,8 +5,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useChunkedUpload } from "@/features/upload/hooks/use-chunked-upload";
 import { type CropRect, cropImageToBlob } from "@/features/upload/lib/crop-image";
+import { withCrop } from "@/features/upload/lib/cropUrl";
 
-export type CropUploadResult = { kind: "static"; url: string };
+export type CropUploadResult =
+    | { kind: "static"; url: string } // 静态图:重编码上传,URL 干净
+    | { kind: "gif"; url: string }; // GIF:原 URL + ?crop=,保留动画
 
 export interface CropUploadDialogProps {
     /** 本地新选文件(头像/素材库上传场景) */
@@ -15,7 +18,7 @@ export interface CropUploadDialogProps {
     aspect?: number;
     /** 上传用途,透传 useChunkedUpload */
     purpose: "avatar" | "cover" | "material";
-    /** 上传后文件名(扩展名按 webp 定) */
+    /** 上传后文件名(静态图扩展名按 webp 定) */
     fileNameBase?: string;
     open: boolean;
     onOpenChange: (v: boolean) => void;
@@ -25,8 +28,9 @@ export interface CropUploadDialogProps {
 /**
  * CropUploadDialog - 选区上传编排弹窗。
  *
- * 本切片(Issue-0016)只实现静态图分支:canvas 重编码 WebP → useChunkedUpload 上传。
- * GIF 分支(Issue-0017)暂以明确错误拦截——tracer bullet 不碰 GIF。
+ * 判定 GIF 分流:
+ * - 静态图:canvas 重编码 WebP → useChunkedUpload 上传,真裁剪
+ * - GIF:上传原图拿 url → 拼 ?crop= 坐标,保留动画(不重编码)
  *
  * 依赖方向:features/upload → shared/ui(image-cropper/modal),合法。
  */
@@ -58,23 +62,27 @@ export function CropUploadDialog({
             toast.error("缺少待裁剪文件");
             return;
         }
-        if (file.type === "image/gif") {
-            // Issue-0017 实现:GIF 上传原图 + 拼 ?crop=
-            toast.error("GIF 选区暂不支持(Issue-0017)");
-            return;
-        }
-        if (!rect || !previewSrc) {
+        if (!rect) {
             toast.error("请先选定裁剪区域");
             return;
         }
         setBusy(true);
         try {
-            const blob = await cropImageToBlob(previewSrc, rect);
-            const croppedFile = new File([blob], `${fileNameBase}.webp`, {
-                type: "image/webp",
-            });
-            const result = await uploadFile(croppedFile);
-            onConfirm({ kind: "static", url: result.url });
+            if (file.type === "image/gif") {
+                // GIF:上传原图(保留动画字节)→ 拼 ?crop= 坐标
+                const result = await uploadFile(file);
+                if (!result.url) throw new Error("GIF 上传未返回 URL");
+                onConfirm({ kind: "gif", url: withCrop(result.url, rect) });
+            } else {
+                // 静态图:canvas 重编码 WebP 上传
+                if (!previewSrc) throw new Error("无可用图片源");
+                const blob = await cropImageToBlob(previewSrc, rect);
+                const croppedFile = new File([blob], `${fileNameBase}.webp`, {
+                    type: "image/webp",
+                });
+                const result = await uploadFile(croppedFile);
+                onConfirm({ kind: "static", url: result.url });
+            }
             onOpenChange(false);
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "裁剪上传失败");
@@ -87,7 +95,7 @@ export function CropUploadDialog({
         <Modal
             open={open}
             onOpenChange={onOpenChange}
-            title="裁剪上传"
+            title={file?.type === "image/gif" ? "选区(GIF 保留动画)" : "裁剪上传"}
             size="md"
             footer={
                 <div className="flex justify-end gap-2">
