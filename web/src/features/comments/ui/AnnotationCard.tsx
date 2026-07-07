@@ -52,9 +52,16 @@ export function AnnotationCard({
 
     const [replying, setReplying] = useState(false);
     const [repliesExpanded, setRepliesExpanded] = useState(false);
+    const [pendingReplies, setPendingReplies] = useState<Comment[]>([]);
 
-    const visibleReplies = repliesExpanded ? replies : replies.slice(0, REPLIES_PREVIEW_COUNT);
-    const hiddenCount = replies.length - REPLIES_PREVIEW_COUNT;
+    // refetch 后新回复进了 node.replies，从 pendingReplies 去重移除
+    const replyIds = new Set(replies.map((r) => r.comment.id));
+    const visiblePending = pendingReplies.filter((r) => !replyIds.has(r.id));
+    const allReplies = [...replies, ...visiblePending.map((r) => ({ comment: r, replies: [] }))];
+    const visibleReplies = repliesExpanded
+        ? allReplies
+        : allReplies.slice(0, REPLIES_PREVIEW_COUNT);
+    const hiddenCount = allReplies.length - REPLIES_PREVIEW_COUNT;
 
     return (
         <div className="w-full">
@@ -129,13 +136,16 @@ export function AnnotationCard({
                         parentId={comment.id}
                         compact
                         isLoggedIn={isLoggedIn}
-                        onSuccess={() => setReplying(false)}
+                        onSuccess={(newReply) => {
+                            setPendingReplies((prev) => [...prev, newReply]);
+                            setReplying(false);
+                        }}
                     />
                 </div>
             )}
 
             {/* 回复列表（两层扁平，继承同一锚点） */}
-            {replies.length > 0 && (
+            {allReplies.length > 0 && (
                 <div className="mt-1 space-y-1 border-l border-edge-hairline pl-2">
                     {visibleReplies.map((reply) => (
                         <AnnotationReply key={reply.comment.id} comment={reply.comment} sev={sev} />
