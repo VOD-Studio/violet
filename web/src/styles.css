@@ -58,6 +58,15 @@
   scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
 }
 
+/* OverlayScroll 组件：隐藏原生滚动条，由自定义 thumb 替代 */
+.os-host {
+  scrollbar-width: none;
+}
+.os-host::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 /*
  * 浅色主题 —— shadcn neutral 调色板
  * next-themes 用 attribute="class"，默认（无 .dark）即浅色。
