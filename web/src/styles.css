@@ -357,3 +357,20 @@ body {
   display: block;
   overflow: visible; /* 允许右上角对号徽章溢出气泡 viewBox */
 }
+
+/* 批注面板自定义滚动条：细条半透明，出现时不挤压内容 */
+.annotation-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+  scrollbar-gutter: stable;
+}
+.annotation-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.annotation-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.annotation-scroll::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.25);
+  border-radius: 2px;
+}

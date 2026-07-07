@@ -259,7 +259,7 @@ function AnnotationPanel({
                 </button>
             </div>
             {/* 可滚动内容区 */}
-            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="annotation-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden">
                 {blockQuery.isLoading && <AnnotationSkeleton />}
                 {blockQuery.data &&
                     blockQuery.data.data.map((comment) => (
