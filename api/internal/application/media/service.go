@@ -5,6 +5,8 @@ package media
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1256,6 +1258,128 @@ func (s *UploadService) UploadThumbnail(ctx context.Context, in UploadThumbnailI
 		return "", err
 	}
 	return url, nil
+}
+
+// ReplaceMediaFileInput 覆盖素材原图入参(套用 UploadThumbnailInput 形状)
+type ReplaceMediaFileInput struct {
+	FileID   string
+	FileName string
+	MimeType string
+	Content  []byte
+}
+
+// ReplaceMediaFile 用裁剪后的新文件覆盖调用者自己上传的素材记录。
+//
+// 流程:owner 校验 → 写临时文件 → 校验图片 → 转码 WebP → BuildPath/Move
+// → 算 SHA-256 → ReplaceStoredFile 更新指针 → Save → 返回 DTO。
+//
+// 安全:fileHash 更新为新值,避免旧 hash 秒传误命中;旧物理文件保留。
+// 仅静态图支持(GIF 转码丢动画且文件不变,覆盖无意义);收到 GIF 返回 BadRequest。
+func (s *UploadService) ReplaceMediaFile(ctx context.Context, in ReplaceMediaFileInput, callerID string) (FileDTO, error) {
+	fid, err := shared.ParseID(in.FileID)
+	if err != nil {
+		return FileDTO{}, err
+	}
+	f, err := s.fileRepo.FindByID(ctx, fid)
+	if err != nil {
+		return FileDTO{}, err
+	}
+	cid, err := shared.ParseID(callerID)
+	if err != nil {
+		return FileDTO{}, shared.BadRequest("无效的调用者 ID")
+	}
+	if !f.OwnerID().Equal(cid) {
+		return FileDTO{}, shared.Forbidden("无权操作他人文件")
+	}
+
+	// GIF 不允许覆盖(转码丢动画,且文件字节不变覆盖无意义)
+	if in.MimeType == "image/gif" {
+		return FileDTO{}, shared.BadRequest("GIF 不支持覆盖原图")
+	}
+
+	// 写临时文件供 processor 校验/转码
+	tmpDir := filepath.Join(s.uploadDir, ".replace-tmp", fid.String())
+	if err := s.storage.EnsureDir(tmpDir); err != nil {
+		return FileDTO{}, shared.Internal("创建临时目录失败", err)
+	}
+	ext := strings.ToLower(filepath.Ext(in.FileName))
+	if ext == "" {
+		ext = ".jpg"
+	}
+	tmpPath := filepath.Join(tmpDir, "src"+ext)
+	if err := os.WriteFile(tmpPath, in.Content, 0o644); err != nil {
+		return FileDTO{}, shared.Internal("写入临时文件失败", err)
+	}
+	defer s.storage.CleanupDir(tmpDir)
+
+	// 校验真实图片 + 拒绝 GIF(sniff 后真 MIME 可能与声明不同)
+	srcMime := in.MimeType
+	if s.processor != nil {
+		validMime, err := s.processor.Validate(tmpPath)
+		if err != nil {
+			return FileDTO{}, shared.BadRequest("图片校验失败: " + err.Error())
+		}
+		if validMime == "image/gif" {
+			return FileDTO{}, shared.BadRequest("GIF 不支持覆盖原图")
+		}
+		srcMime = validMime
+		// 转码 WebP(GIF 已挡,JPEG/PNG 仅更小时采用)
+		result, err := s.processor.Transcode(tmpPath, tmpDir, "replaced", srcMime)
+		if err != nil {
+			return FileDTO{}, shared.Internal("图片转码失败", err)
+		}
+		tmpPath = result.Path
+		srcMime = result.MimeType
+		ext = result.Ext
+	}
+
+	// 最终路径(date 分段,新 fileUUID 避免与旧文件同名)
+	fileUUID := shared.NewID()
+	finalPath, fileURL, err := s.storage.BuildPath(f.Purpose(), time.Now(), fileUUID.String(), ext)
+	if err != nil {
+		return FileDTO{}, shared.BadRequest("非法的上传用途路径: " + err.Error())
+	}
+	if err := s.storage.EnsureDir(filepath.Dir(finalPath)); err != nil {
+		return FileDTO{}, shared.Internal("创建文件目录失败", err)
+	}
+	if err := s.storage.Move(tmpPath, finalPath); err != nil {
+		return FileDTO{}, shared.Internal("移动文件失败", err)
+	}
+	fileSize, err := s.storage.FileSize(finalPath)
+	if err != nil {
+		fileSize = int64(len(in.Content))
+	}
+
+	// 尺寸 + 缩略图
+	width, height := 0, 0
+	storageDir := f.Purpose()
+	if storageDir == "material" {
+		storageDir = filepath.Join(storageDir, mimeToCategory(srcMime))
+	}
+	var thumbnail string
+	if s.processor != nil {
+		width, height = s.processor.Dimensions(finalPath)
+		thumbnail = s.processor.Thumbnail(finalPath, fileUUID.String(), storageDir, srcMime)
+	} else {
+		width, height = s.storage.ImageDimensions(finalPath)
+		thumbnail = s.storage.GenerateThumbnail(finalPath, fileUUID.String(), storageDir, srcMime)
+	}
+
+	// SHA-256(无现成 helper,inline)
+	sum := sha256.Sum256(in.Content)
+	newHash := hex.EncodeToString(sum[:])
+
+	// 更新实体指针
+	var w, h *int
+	if width > 0 {
+		ww, hh := width, height
+		w, h = &ww, &hh
+	}
+	f.ReplaceStoredFile(finalPath, fileURL, fileSize, srcMime, newHash, w, h, thumbnail)
+	if err := s.fileRepo.Save(ctx, f); err != nil {
+		return FileDTO{}, err
+	}
+	return fileToDTO(f), nil
 }
 
 func fileToDTO(f *domainupload.File) FileDTO {
