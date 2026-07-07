@@ -25,13 +25,23 @@ export const useCreateComment = (postId: string) => {
     return useMutation({
         mutationFn: (body: CreateComment) => apiPost<Comment>(`/posts/${postId}/comments`, body),
         onSuccess: (newComment, variables) => {
-            // 回复：乐观插入到 replies 缓存 + 顶层 replies_total +1
-            if (variables.parent_id) {
-                optimisticAppendReply(qc, variables.parent_id, newComment);
-                bumpTopLevelRepliesTotal(qc, postId, variables.parent_id);
-            } else {
-                // 顶层评论：直接失效 list 重拉（条目少，重拉保证 replies_total 等字段新鲜）
+            try {
+                if (variables.parent_id) {
+                    // 回复：仅乐观追加到 useReplies 缓存（展开态可见时）。
+                    // 预览态（comment.replies）和 replies_total 不动——预览本来就只显示最早的几条，
+                    // 新回复不在预览范围；replies_total 等下次重拉自然更新，不脆弱地手动改 infinite 缓存。
+                    optimisticAppendReply(qc, variables.parent_id, newComment);
+                } else {
+                    // 顶层评论：直接失效 list 重拉（条目少，重拉保证 replies_total 等字段新鲜）
+                    invalidateListByType(qc, postId, variables.anchor ? "annotation" : "free");
+                }
+            } catch (e) {
+                // 乐观更新失败：降级到 invalidate，绝不让 onSuccess 抛异常触发「提交失败」toast
+                console.error("乐观更新失败，降级 invalidate", e);
                 invalidateListByType(qc, postId, variables.anchor ? "annotation" : "free");
+                if (variables.parent_id) {
+                    qc.invalidateQueries({ queryKey: commentKeys.replies() });
+                }
             }
         },
     });
@@ -51,59 +61,37 @@ function optimisticAppendReply(
 ) {
     // useReplies 的 key 形如 ["comments","replies",commentId,{sort,limit}]
     // 遍历所有匹配该 commentId 的缓存（不同 sort/page 变体），追加新回复
-    qc.setQueriesData<{ pages: PagedResponse<Comment>[]; pageParams: number[] }>(
+    qc.setQueriesData(
         {
             predicate: (query) => {
                 const key = query.queryKey;
                 return key[0] === "comments" && key[1] === "replies" && key[2] === parentCommentId;
             },
         },
-        (old) => {
-            if (!old || old.pages.length === 0) return old;
-            const newPages = [...old.pages];
+        (old: unknown) => {
+            // 防御性类型检查：infinite query 缓存结构是 { pages: [...], pageParams: [...] }
+            if (
+                !old ||
+                typeof old !== "object" ||
+                !Array.isArray((old as { pages?: unknown[] }).pages)
+            ) {
+                return old;
+            }
+            const typed = old as { pages: PagedResponse<Comment>[]; pageParams: number[] };
+            if (typed.pages.length === 0) return old;
+            const newPages = [...typed.pages];
+            const firstPage = newPages[0];
+            if (!firstPage || !Array.isArray(firstPage.data)) return old;
             // 第一页 data 末尾追加（ASC 时是最新的在末尾）
             newPages[0] = {
-                ...newPages[0],
-                data: [...newPages[0].data, newReply],
+                ...firstPage,
+                data: [...firstPage.data, newReply],
                 pagination: {
-                    ...newPages[0].pagination,
-                    total: (newPages[0].pagination?.total ?? 0) + 1,
+                    ...firstPage.pagination,
+                    total: (firstPage.pagination?.total ?? 0) + 1,
                 },
             };
-            return { ...old, pages: newPages };
-        },
-    );
-}
-
-/**
- * bumpTopLevelRepliesTotal 顶层列表缓存里，该顶层评论的 replies_total +1。
- *
- * 让「查看全部 xx 条回复」的数字立即更新，不用等重拉。
- * 遍历 list 缓存的所有页，找到该顶层评论，replies_total +1。
- */
-function bumpTopLevelRepliesTotal(
-    qc: ReturnType<typeof useQueryClient>,
-    postId: string,
-    topCommentId: string,
-) {
-    qc.setQueriesData<{ pages: PagedResponse<Comment>[]; pageParams: number[] }>(
-        {
-            predicate: (query) => {
-                const key = query.queryKey;
-                if (key[0] !== "comments" || key[1] !== "list") return false;
-                if (key[2] !== postId) return false;
-                return true;
-            },
-        },
-        (old) => {
-            if (!old || old.pages.length === 0) return old;
-            const newPages = old.pages.map((page) => ({
-                ...page,
-                data: page.data.map((c) =>
-                    c.id === topCommentId ? { ...c, replies_total: (c.replies_total ?? 0) + 1 } : c,
-                ),
-            }));
-            return { ...old, pages: newPages };
+            return { ...typed, pages: newPages };
         },
     );
 }
