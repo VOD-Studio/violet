@@ -1,24 +1,11 @@
-/* DataTable 自定义滚动条：细条半透明，仅出现在内容区 */
-
+/*
+ * DataTable 自定义滚动条
+ *
+ * 仅使用标准属性 scrollbar-width / scrollbar-color，不使用 ::-webkit-scrollbar。
+ * 原因：一旦定义 ::-webkit-scrollbar，Chrome/Safari 会切换到经典模式（占据空间），
+ * 即使 macOS 系统设置为 overlay。保留标准属性则尊重系统 overlay 行为。
+ */
 .dt-scroll {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 70%) transparent;
-}
-
-.dt-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.dt-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.dt-scroll::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklch, var(--muted-foreground), transparent 70%);
-  border-radius: 9999px;
-}
-
-.dt-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(in oklch, var(--muted-foreground), transparent 50%);
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
 }
