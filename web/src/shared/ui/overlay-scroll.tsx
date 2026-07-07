@@ -121,7 +121,7 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
                     {children}
                 </div>
                 {hasV && (
-                    <div className="pointer-events-none absolute right-0.5 top-0.5 bottom-0.5 w-1.5">
+                    <div className="pointer-events-none absolute right-0.5 top-0.5 bottom-0.5 z-50 w-1.5">
                         <div
                             ref={vThumbRef}
                             className="pointer-events-auto absolute left-0 w-full cursor-pointer touch-none rounded-full bg-foreground/20 transition-colors hover:bg-foreground/40"
@@ -131,7 +131,7 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
                     </div>
                 )}
                 {hasH && (
-                    <div className="pointer-events-none absolute bottom-0.5 left-0.5 right-0.5 h-1.5">
+                    <div className="pointer-events-none absolute bottom-0.5 left-0.5 right-0.5 z-50 h-1.5">
                         <div
                             ref={hThumbRef}
                             className="pointer-events-auto absolute top-0 h-full cursor-pointer touch-none rounded-full bg-foreground/20 transition-colors hover:bg-foreground/40"

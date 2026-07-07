@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
+import { OverlayScroll } from "@/shared/ui/overlay-scroll";
 import {
     type DataTableColumn,
     type DataTableProps,
@@ -341,20 +342,21 @@ export function DataTable<T>({
 
     // —— header / body 横向滚动同步 ——
     // body 滚动时同步 header 的 scrollLeft（header 容器 overflow-hidden，靠 JS 驱动）
+    // OverlayScroll 隐藏原生滚动条不占空间，header/body 天然等宽无需补偿
     useEffect(() => {
         const body = scrollContainerRef.current;
         const header = headerScrollRef.current;
         if (!body || !header) return;
 
-        const sync = () => {
+        const syncScroll = () => {
             header.scrollLeft = body.scrollLeft;
         };
 
-        body.addEventListener("scroll", sync);
-        sync();
+        body.addEventListener("scroll", syncScroll);
+        syncScroll();
 
         return () => {
-            body.removeEventListener("scroll", sync);
+            body.removeEventListener("scroll", syncScroll);
         };
     }, []);
 
@@ -376,8 +378,8 @@ export function DataTable<T>({
             />
 
             <div className="border-border bg-card overflow-hidden rounded-md border">
-                {/* Header — 独立容器，无滚动条；scrollbar-gutter:stable 与 body 预留等宽 gutter 保持列对齐 */}
-                <div ref={headerScrollRef} className="[scrollbar-gutter:stable] overflow-hidden">
+                {/* Header — 独立容器，无滚动条；table 宽度由 JS 同步为 body clientWidth */}
+                <div ref={headerScrollRef} className="overflow-hidden">
                     <table
                         ref={tableRef}
                         className="caption-bottom text-sm"
@@ -412,10 +414,9 @@ export function DataTable<T>({
                         />
                     </table>
                 </div>
-                {/* Body — scrollbar-gutter:stable 防止滚动条出现时列偏移 */}
-                <div
+                {/* Body — OverlayScroll 自定义滚动条，不占据布局空间 */}
+                <OverlayScroll
                     ref={scrollContainerRef}
-                    className="[scrollbar-gutter:stable] overflow-auto"
                     style={stickyHeader ? { maxHeight } : undefined}
                     aria-busy={loading ? true : undefined}
                 >
@@ -459,7 +460,7 @@ export function DataTable<T>({
                             pageBaseIndex={(page - 1) * pageSize}
                         />
                     </table>
-                </div>
+                </OverlayScroll>
             </div>
 
             {showFooter && (
