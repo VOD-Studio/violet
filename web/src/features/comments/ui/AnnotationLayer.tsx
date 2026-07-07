@@ -240,14 +240,14 @@ function AnnotationPanel({
         <div
             style={{ top: panelTop }}
             className={
-                "fixed z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-edge-hairline bg-card p-3 shadow-xl " +
+                "fixed z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-edge-hairline bg-card pt-3 shadow-xl " +
                 "2xl:right-4 2xl:left-auto 2xl:translate-x-0 " +
                 "left-1/2 -translate-x-1/2 " +
                 "max-h-[calc(100vh-7.5rem)]"
             }
         >
             {/* sticky header */}
-            <div className="flex shrink-0 items-center justify-between pb-2">
+            <div className="flex shrink-0 items-center justify-between px-3 pb-2">
                 <span className="text-xs font-medium text-muted-foreground">{count} 条批注</span>
                 <button
                     type="button"
@@ -258,8 +258,8 @@ function AnnotationPanel({
                     ×
                 </button>
             </div>
-            {/* 可滚动内容区 */}
-            <div className="annotation-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-0.5">
+            {/* 可滚动内容区：pl-3 左留白，pr-2 + scrollbar-gutter(4px) = 右留白 12px，左右对称 */}
+            <div className="annotation-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pb-3 pl-3 pr-2 pt-0.5">
                 {blockQuery.isLoading && <AnnotationSkeleton />}
                 {blockQuery.data &&
                     blockQuery.data.data.map((comment) => (

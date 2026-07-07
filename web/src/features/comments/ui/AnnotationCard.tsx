@@ -130,7 +130,7 @@ export function AnnotationCard({
 
             {/* 内嵌回复表单 */}
             {replying && postId && (
-                <div className="mt-1 pl-3">
+                <div className="mt-2 px-3">
                     <CommentForm
                         postId={postId}
                         parentId={comment.id}
