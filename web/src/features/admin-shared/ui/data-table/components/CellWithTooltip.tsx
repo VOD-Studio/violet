@@ -92,7 +92,7 @@ function ElementMeasure({
     const ref = useOverflow<HTMLElement>(onOverflow);
     return cloneElement(children, {
         ref,
-        className: cn(children.props.className, "min-w-0 max-w-full truncate"),
+        className: cn(children.props.className, "block min-w-0 max-w-full truncate"),
     } as Record<string, unknown>);
 }
 
