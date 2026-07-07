@@ -127,6 +127,7 @@ function AdminCommentsPage() {
         {
             key: "body",
             header: "评论内容",
+            className: "whitespace-normal",
             cell: (row) => <CommentCell row={row} />,
         },
         {
