@@ -16,9 +16,9 @@ import { commentKeys } from "./keys";
  *
  * 乐观更新（提交后立即显示，不等重拉）：
  *   - 顶层评论：直接 invalidate list 缓存重拉（顶层条目少，重拉开销小且数据新鲜）
- *   - 回复（parent_id 非空）：用 setQueryData 把新回复追加到对应 replies 缓存末尾，
- *     同时更新顶层 list 缓存里该评论的 replies_total +1。用户提交后立即看到自己的 pending 回复，
- *     不会出现「我的评论消失了」的疑惑
+ *   - 回复（parent_id 非空）：先乐观追加到 useReplies 缓存（展开态立即看到），
+ *     再失效顶层列表缓存重拉（刷新 replies_total 和回复预览）。
+ *     两步配合：展开态用户即时看到回复，未展开态用户看到 replies_total 更新和预览刷新
  */
 export const useCreateComment = (postId: string) => {
     const qc = useQueryClient();
@@ -27,18 +27,14 @@ export const useCreateComment = (postId: string) => {
         onSuccess: (newComment, variables) => {
             try {
                 if (variables.parent_id) {
-                    // 回复：仅乐观追加到 useReplies 缓存（展开态可见时）。
-                    // 预览态（comment.replies）和 replies_total 不动——预览本来就只显示最早的几条，
-                    // 新回复不在预览范围；replies_total 等下次重拉自然更新，不脆弱地手动改 infinite 缓存。
                     optimisticAppendReply(qc, variables.parent_id, newComment);
+                    invalidateListsForPost(qc, postId);
                 } else {
-                    // 顶层评论：直接失效 list 重拉（条目少，重拉保证 replies_total 等字段新鲜）
                     invalidateListByType(qc, postId, variables.anchor ? "annotation" : "free");
                 }
             } catch (e) {
-                // 乐观更新失败：降级到 invalidate，绝不让 onSuccess 抛异常触发「提交失败」toast
                 console.error("乐观更新失败，降级 invalidate", e);
-                invalidateListByType(qc, postId, variables.anchor ? "annotation" : "free");
+                invalidateListsForPost(qc, postId);
                 if (variables.parent_id) {
                     qc.invalidateQueries({ queryKey: commentKeys.replies() });
                 }
@@ -46,6 +42,17 @@ export const useCreateComment = (postId: string) => {
         },
     });
 };
+
+/** invalidateListsForPost 失效指定文章的所有顶层评论列表缓存（free + annotation）。
+ *  回复提交后调用——父评论可能在任一 type 的列表中，需统一刷新 replies_total 和预览。 */
+function invalidateListsForPost(qc: ReturnType<typeof useQueryClient>, postId: string) {
+    qc.invalidateQueries({
+        predicate: (query) => {
+            const key = query.queryKey;
+            return key[0] === "comments" && key[1] === "list" && key[2] === postId;
+        },
+    });
+}
 
 /**
  * optimisticAppendReply 把新回复追加到 useReplies 缓存末尾。
