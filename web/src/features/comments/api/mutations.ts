@@ -28,6 +28,16 @@ export const useCreateComment = (postId: string) => {
                 if (variables.parent_id) {
                     optimisticAppendReply(qc, variables.parent_id, newComment);
                     bumpRepliesTotalInList(qc, postId, variables.parent_id);
+                    // 失效按块懒加载的批注详情查询（面板内容刷新），不影响 summary（角标稳定）
+                    qc.invalidateQueries({
+                        predicate: (query) => {
+                            const key = query.queryKey;
+                            if (key[0] !== "comments" || key[1] !== "list" || key[2] !== postId)
+                                return false;
+                            const q = key[3] as { block_id?: string } | undefined;
+                            return !!q?.block_id;
+                        },
+                    });
                 } else {
                     invalidateListByType(qc, postId, variables.anchor ? "annotation" : "free");
                     if (variables.anchor) {
