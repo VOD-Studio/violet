@@ -1,0 +1,9 @@
+{
+  "name": "mimo-blog",
+  "version": "2.0.0-dev",
+  "private": true,
+  "description": "mimo-blog 全栈博客平台 monorepo 发版清单。此文件仅为 commit-and-tag-version 提供版本源,不发布到 npm。",
+  "devDependencies": {
+    "commit-and-tag-version": "^12.7.3"
+  }
+}
