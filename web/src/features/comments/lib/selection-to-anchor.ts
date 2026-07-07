@@ -12,6 +12,7 @@
 
 import { computeBlockId } from "./block-id";
 import { buildAnchorFromRange } from "./range-to-anchor";
+import { getBlockText } from "./extract-blocks";
 import type { Anchor } from "./types";
 
 /** 块级元素选择器（与 extractCandidateBlocks 保持一致）。 */
@@ -70,7 +71,7 @@ export async function selectionToAnchor(opts: SelectionToAnchorOptions): Promise
     // 跨块判定：起点和终点所在块不同 → null
     if (startBlock !== endBlock) return null;
 
-    const blockText = startBlock.textContent ?? "";
+    const blockText = getBlockText(startBlock);
     const blockId = await computeBlockId(blockText);
     if (blockId === null) return null;
 

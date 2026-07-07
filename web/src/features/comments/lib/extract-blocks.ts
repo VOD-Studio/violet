@@ -22,7 +22,7 @@ const MARKER_CLASS = "annotation-marker-inline";
  * 角标 SVG 内的 <text> 元素含计数字符（如 "1"、"99+"），
  * 会让 computeBlockId 在角标注入前后算出不同哈希，破坏 block_id 一致性。
  */
-function getBlockText(el: HTMLElement): string {
+export function getBlockText(el: HTMLElement): string {
     if (!el.querySelector(`.${MARKER_CLASS}`)) {
         return el.textContent ?? "";
     }
