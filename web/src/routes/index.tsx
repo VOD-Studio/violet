@@ -62,7 +62,10 @@ export const Route = createFileRoute("/")({
 
         // 非关键数据：后台预取不阻塞导航，数据到了 UI 响应式更新
         context.queryClient
-            .ensureQueryData({ queryKey: settingsKeys.announcements(), queryFn: fetchAnnouncements })
+            .ensureQueryData({
+                queryKey: settingsKeys.announcements(),
+                queryFn: fetchAnnouncements,
+            })
             .catch(() => {});
         context.queryClient
             .ensureQueryData({ queryKey: githubKeys.contributions(), queryFn: fetchContributions })
