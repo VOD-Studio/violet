@@ -30,8 +30,9 @@ import appCss from "../styles.css?url";
  * beforeLoad 仅返回 auth（serializable，可通过 dehydrate 传给客户端）。
  */
 /** 缓存首次 getAuthSession 结果，客户端 SPA 导航复用避免网络阻塞 */
-let cachedClaims: ReturnType<typeof getAuthSession> extends Promise<infer T> ? T | undefined : never =
-    undefined;
+let cachedClaims: ReturnType<typeof getAuthSession> extends Promise<infer T>
+    ? T | undefined
+    : never;
 
 export const Route = createRootRouteWithContext<RouterContext>()({
     beforeLoad: async () => {
