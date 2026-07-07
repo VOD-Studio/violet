@@ -338,7 +338,7 @@ export default CommentItem;
 
 function formatTimeAgo(createdAt: string): string {
     const date = new Date(createdAt);
-    if (isNaN(date.getTime()) || date.getFullYear() < 2000) {
+    if (Number.isNaN(date.getTime()) || date.getFullYear() < 2000) {
         return "刚刚";
     }
     return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
