@@ -7,8 +7,7 @@
 /**
  * AdminUserDTO - 后台用户列表返回的用户对象
  *
- * 注意：字段名与后端 useradmin service 的 DTO 对应
- * avatar（非 avatar_url）是后端 useradmin 的字段名
+ * 字段名与后端 useradmin service 的 DTO 对应
  */
 export interface AdminUserDTO {
     /** 用户 ID（UUID 字符串） */
@@ -27,8 +26,8 @@ export interface AdminUserDTO {
     is_active: boolean;
     /** 个人简介 */
     bio: string;
-    /** 头像 URL（注意：后端字段名是 avatar 而非 avatar_url） */
-    avatar: string;
+    /** 头像 URL */
+    avatar_url: string;
     /** 创建时间（RFC3339） */
     created_at: string;
 }
