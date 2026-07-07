@@ -24,7 +24,9 @@ export function ImageCropper({ src, aspect, onChange }: ImageCropperProps) {
 
     // aspect 变化时清空已有选区,避免比例对不上
     useEffect(() => {
-        setCrop(undefined);
+        if (aspect !== undefined) {
+            setCrop(undefined);
+        }
     }, [aspect]);
 
     const handleComplete = useCallback(

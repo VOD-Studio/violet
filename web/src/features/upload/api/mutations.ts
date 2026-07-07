@@ -11,6 +11,7 @@ import type {
     CompleteUploadResult,
     InitUploadRequest,
     InitUploadResult,
+    ReplaceMediaResult,
     ThumbnailUploadResult,
 } from "../model/types";
 
@@ -99,4 +100,30 @@ export const uploadThumbnail = async (id: string, file: File): Promise<Thumbnail
 export const useUploadThumbnail = () =>
     useMutation({
         mutationFn: ({ id, file }: { id: string; file: File }) => uploadThumbnail(id, file),
+    });
+
+/**
+ * replaceMediaFile - 覆盖素材原图底层请求函数
+ *
+ * 对接 POST /uploads/replace，multipart/form-data，
+ * 字段：file（裁剪后新文件）+ fileId（目标素材 ID）。
+ * 仅 owner 可覆盖自己上传的素材，GIF 拒绝。
+ */
+export const replaceMediaFile = async (fileId: string, file: File): Promise<ReplaceMediaResult> => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("fileId", fileId);
+    return apiPost<ReplaceMediaResult>("/uploads/replace", form);
+};
+
+/**
+ * useReplaceMediaFile - 覆盖素材原图 mutation
+ *
+ * 不内置 invalidate：素材列表 key 属 admin-media slice，
+ * 由调用方在 onSuccess 自行失效。
+ */
+export const useReplaceMediaFile = () =>
+    useMutation({
+        mutationFn: ({ fileId, file }: { fileId: string; file: File }) =>
+            replaceMediaFile(fileId, file),
     });

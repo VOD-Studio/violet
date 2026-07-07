@@ -104,6 +104,19 @@ export interface ThumbnailUploadResult {
     thumbnail: string;
 }
 
+/**
+ * ReplaceMediaResult - 覆盖素材原图结果
+ *
+ * 对接 POST /uploads/replace，后端返回更新后的素材记录(FileDTO 子集)。
+ */
+export interface ReplaceMediaResult {
+    id: string;
+    url: string;
+    thumbnail?: string;
+    mime_type: string;
+    updated_at: string;
+}
+
 /** 向后兼容别名：旧代码用 MergeResult / InitSessionResult */
 export type MergeResult = CompleteUploadResult;
 export type InitSessionResult = InitUploadResult;
