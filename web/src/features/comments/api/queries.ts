@@ -4,6 +4,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
     BatchReactionResult,
     BatchReactionsQuery,
+    BlockCount,
     Comment,
     CommentListQuery,
     Reaction,
@@ -49,6 +50,45 @@ export const useComments = (postId: string, query: CommentListQuery = {}) =>
  */
 export const useAnnotationComments = (postId: string) =>
     useComments(postId, { type: "annotation" });
+
+/**
+ * fetchAnnotationSummary - 调 GET /posts/{postId}/annotations/summary 拉批注按块聚合计数
+ *
+ * summary 端点返回 { data: [{ block_id, count }] }，apiGet 解包 envelope 后直接拿 BlockCount[]。
+ * 轻量数据（不含正文），用于角标渲染；点击角标后按 block_id 懒加载完整批注。
+ */
+export const fetchAnnotationSummary = async (postId: string): Promise<BlockCount[]> =>
+    apiGet<BlockCount[]>(`/posts/${postId}/annotations/summary`);
+
+/**
+ * useAnnotationSummary - 批注按块聚合计数 hook
+ *
+ * postId 为空时禁用查询。
+ */
+export const useAnnotationSummary = (postId: string) =>
+    useQuery({
+        queryKey: commentKeys.annotationSummary(postId),
+        queryFn: () => fetchAnnotationSummary(postId),
+        enabled: !!postId,
+    });
+
+/**
+ * useBlockAnnotations - 按 block_id 懒加载某块的完整批注
+ *
+ * 点击角标后调用，top_level + block_id 精确过滤（含 replies 预览 + replies_total）。
+ * postId 或 blockId 为空时禁用查询。
+ */
+export const useBlockAnnotations = (postId: string, blockId: string) =>
+    useQuery({
+        queryKey: commentKeys.list(postId, {
+            type: "annotation",
+            block_id: blockId,
+            top_level: true,
+        }),
+        queryFn: () =>
+            fetchComments(postId, { type: "annotation", block_id: blockId, top_level: true }),
+        enabled: !!postId && !!blockId,
+    });
 
 /**
  * fetchReplies - 调 GET /comments/{commentId}/replies 拉某顶层评论的回复

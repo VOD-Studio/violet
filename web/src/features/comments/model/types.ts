@@ -69,6 +69,19 @@ export interface CommentListQuery {
     type?: CommentType;
     /** 仅返回顶层评论（?top_level=true）；配合 GET /comments/{id}/replies 按需拉回复 */
     top_level?: boolean;
+    /** 按 anchor_block_id 精确过滤（批注按块懒加载） */
+    block_id?: string;
+}
+
+/**
+ * BlockCount - 批注按块聚合计数
+ *
+ * 对应 GET /posts/{postId}/annotations/summary 返回的单条结构。
+ * 轻量数据（不含正文），用于角标渲染；点击角标后按 block_id 懒加载完整批注。
+ */
+export interface BlockCount {
+    block_id: string;
+    count: number;
 }
 
 /** 回复排序方式。asc=最早优先（默认），desc=最新优先。

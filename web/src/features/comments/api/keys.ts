@@ -13,6 +13,9 @@ export const commentKeys = {
     /** 具体文章的评论列表 */
     list: (postId: string, query: CommentListQuery) =>
         [...commentKeys.lists(), postId, query] as const,
+    /** 批注按块聚合计数（轻量，不含正文） */
+    annotationSummary: (postId: string) =>
+        [...commentKeys.all, "annotation-summary", postId] as const,
     /** 回复列表维度（按顶层评论 id 聚合） */
     replies: () => [...commentKeys.all, "replies"] as const,
     /** 具体顶层评论的回复列表（含 sort/page 维度） */
