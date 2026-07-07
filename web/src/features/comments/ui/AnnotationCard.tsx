@@ -70,7 +70,7 @@ export function AnnotationCard({
                 onClick={onClick}
                 onKeyDown={onClick ? (e) => e.key === "Enter" && onClick() : undefined}
                 tabIndex={onClick ? 0 : undefined}
-                className={`block w-full cursor-pointer text-left transition-transform ${active ? "scale-[1.02]" : "hover:scale-[1.01]"}`}
+                className={`block w-full cursor-pointer text-left transition-transform ${active ? "scale-[1.02]" : ""}`}
                 {...(onClick ? { "aria-label": `批注：${comment.body.slice(0, 30)}` } : {})}
             >
                 <div
