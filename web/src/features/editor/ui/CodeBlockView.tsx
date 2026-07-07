@@ -77,7 +77,66 @@ const LANGUAGES = [
 ];
 
 /**
+ * 从 class 字符串中提取语言 id。
+ *
+ * 兼容远程文档/HTML 粘贴常见的多种前缀：
+ * - `language-go`（highlight.js / markdown 标准）
+ * - `lang-go`（部分站点简写）
+ * - `hljs-go`（highlight.js 旧版输出）
+ * - `brush: go` / `brush-go`（SyntaxHighlighter）
+ *
+ * @returns 语言 id，未匹配返回 null
+ */
+function extractLangFromClass(className: string | null | undefined): string | null {
+    if (!className) return null;
+    // brush: go（带冒号空格）
+    const brushColon = className.match(/\bbrush[\s:]+([\w-]+)/i);
+    if (brushColon) return brushColon[1].toLowerCase();
+    // language- / lang- / hljs- / brush- 前缀
+    const prefixed = className.match(/\b(?:language|lang|hljs|brush)-([\w-]+)/i);
+    if (prefixed) return prefixed[1].toLowerCase();
+    return null;
+}
+
+/**
+ * 归一化语言 id。
+ *
+ * 空值、plaintext、text 统一返回 null，让 lowlight 走 highlightAuto 自动识别；
+ * 其余原样返回（sh/bash、docker/dockerfile 等别名交由 lowlight 自身 alias 解析）。
+ */
+function normalizeLang(id: string | null): string | null {
+    if (!id) return null;
+    const trimmed = id.trim().toLowerCase();
+    if (!trimmed || trimmed === "plaintext" || trimmed === "text") return null;
+    return trimmed;
+}
+
+/**
+ * 从 DOM 元素（<pre> 或其 <code> 子元素）解析代码块语言。
+ *
+ * 依次检查 class（多前缀）与 data-language / data-lang 属性。
+ */
+function resolveLanguageFromElement(element: Element): string | null {
+    // 候选元素：<pre> 本身 + 第一个子元素（通常是 <code>）
+    const candidates: Element[] = [element];
+    if (element.firstElementChild) candidates.push(element.firstElementChild);
+    for (const el of candidates) {
+        const fromClass = normalizeLang(extractLangFromClass(el.getAttribute("class")));
+        if (fromClass) return fromClass;
+        const fromData = normalizeLang(
+            el.getAttribute("data-language") ?? el.getAttribute("data-lang"),
+        );
+        if (fromData) return fromData;
+    }
+    return null;
+}
+
+/**
  * CodeBlockView 扩展：继承 CodeBlockLowlight，加自定义 React nodeView（语言下拉）
+ *
+ * 同时覆盖 language 属性的 parseHTML，兼容远程导入/HTML 粘贴时多种代码块结构
+ * （class 在 <pre> 或 <code>、language-/lang-/hljs-/brush: 前缀、data-language 属性），
+ * 避免 readability 抓取的代码块因结构差异被解析为纯文本。
  *
  * @param lowlight 共享的 lowlight 实例
  */
@@ -85,6 +144,15 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
     return CodeBlockLowlight.extend({
         addNodeView() {
             return ReactNodeViewRenderer(CodeBlockViewComponent);
+        },
+        addAttributes() {
+            return {
+                ...this.parent?.(),
+                language: {
+                    default: null,
+                    parseHTML: (element: HTMLElement) => resolveLanguageFromElement(element),
+                },
+            };
         },
     }).configure({ lowlight, defaultLanguage: null });
 }
