@@ -12,7 +12,6 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { useBlockAnnotations } from "../api/queries";
-import { buildCommentTree } from "../lib/comment-tree";
 import { extractCandidateBlocks, findBlockElement } from "../lib/extract-blocks";
 import type { BlockCount } from "../model/types";
 import { AnnotationCard } from "./AnnotationCard";
@@ -263,11 +262,17 @@ function AnnotationPanel({
             <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
                 {blockQuery.isLoading && <AnnotationSkeleton />}
                 {blockQuery.data &&
-                    buildCommentTree(blockQuery.data.data).map((node) => (
+                    blockQuery.data.data.map((comment) => (
                         <AnnotationCard
-                            key={node.comment.id}
-                            node={node}
-                            selectedText={node.comment.anchor?.selected_text ?? ""}
+                            key={comment.id}
+                            node={{
+                                comment,
+                                replies: (comment.replies ?? []).map((r) => ({
+                                    comment: r,
+                                    replies: [],
+                                })),
+                            }}
+                            selectedText={comment.anchor?.selected_text ?? ""}
                             postId={postId}
                             isLoggedIn={isLoggedIn}
                         />
