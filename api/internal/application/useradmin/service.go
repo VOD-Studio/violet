@@ -47,7 +47,7 @@ type UserDTO struct {
 	EmailVerified       bool   `json:"email_verified"`
 	IsActive            bool   `json:"is_active"`
 	Bio                 string `json:"bio"`
-	Avatar              string `json:"avatar"`
+	Avatar              string `json:"avatar_url"`
 	CreatedAt           string `json:"created_at"`
 }
 
