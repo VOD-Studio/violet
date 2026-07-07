@@ -16,6 +16,7 @@ import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
+import { avatarUrl } from "@features/upload/lib/imageUrl";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -118,17 +119,15 @@ function AdminCommentsPage() {
             header: "评论内容",
             ellipsis: true,
             cell: (row) => (
-                <div className="space-y-1">
-                    {/* 批注：先展示锚定的原文摘录（neon-cyan 左色条 + font-mono），
-                        让管理员一眼识别「这是批注」并判断上下文。自由评论无 anchor 跳过此区。 */}
+                <div className="space-y-1.5">
                     {row.anchor?.selected_text ? (
-                        <div className="flex gap-2 rounded border-l-2 border-cyan-400 bg-cyan-50/50 px-2 py-1 dark:bg-cyan-950/20">
-                            <span className="line-clamp-2 font-mono text-xs text-cyan-700 dark:text-cyan-300">
-                                “{truncateAnchor(row.anchor.selected_text)}”
+                        <div className="rounded border-l-2 border-primary/40 bg-primary/5 px-2 py-1 dark:bg-primary/10">
+                            <span className="line-clamp-2 text-xs text-muted-foreground">
+                                "{truncateAnchor(row.anchor.selected_text)}"
                             </span>
                         </div>
                     ) : null}
-                    <span className="line-clamp-2">{row.body}</span>
+                    <span className="line-clamp-2 text-sm">{row.body}</span>
                 </div>
             ),
         },
@@ -137,9 +136,12 @@ function AdminCommentsPage() {
             header: "作者",
             cell: (row) => (
                 <div className="flex items-center gap-2">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs">
-                        {row.author_name?.[0] ?? "?"}
-                    </span>
+                    <img
+                        src={avatarUrl(row.avatar_url, row.author_name)}
+                        alt={row.author_name}
+                        className="size-6 shrink-0 rounded-full object-cover"
+                        loading="lazy"
+                    />
                     <span className="text-sm">{row.author_name}</span>
                 </div>
             ),
