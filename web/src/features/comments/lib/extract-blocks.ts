@@ -27,7 +27,9 @@ export function getBlockText(el: HTMLElement): string {
         return el.textContent ?? "";
     }
     const clone = el.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll(`.${MARKER_CLASS}`).forEach((m) => m.remove());
+    clone.querySelectorAll(`.${MARKER_CLASS}`).forEach((m) => {
+        m.remove();
+    });
     return clone.textContent ?? "";
 }
 
