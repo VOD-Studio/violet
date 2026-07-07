@@ -816,6 +816,50 @@ func (h *Handler) UploadThumbnail(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, map[string]any{"thumbnail": url})
 }
 
+// ReplaceMediaFile 覆盖素材原图
+//
+// multipart 字段:file(裁剪后新文件) + fileId(目标素材 ID)。
+// 仅 owner 可覆盖自己上传的素材;GIF 拒绝(由 service 兜底)。
+func (h *Handler) ReplaceMediaFile(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	id := r.FormValue("fileId")
+	if id == "" {
+		response.RespondError(w, r, errors.New("fileId 不能为空"))
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	defer file.Close()
+	content := make([]byte, header.Size)
+	n, err := io.ReadFull(file, content)
+	if err != nil && err != io.ErrUnexpectedEOF {
+		response.RespondError(w, r, err)
+		return
+	}
+	content = content[:n]
+	sniffedMIME, err := sniffImageContent(content)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	dto, err := h.uploadSvc.ReplaceMediaFile(r.Context(), appmedia.ReplaceMediaFileInput{
+		FileID: id, FileName: header.Filename,
+		MimeType: sniffedMIME, Content: content,
+	}, interfacesmw.GetUserIDFromContext(r))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}
+
 // ============================================================
 // 分片上传（Chunked Upload）
 // ============================================================

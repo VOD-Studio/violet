@@ -347,6 +347,7 @@ func main() {
 			r.Delete("/{uploadId}", mediaH.CancelUpload)                // 取消上传
 			r.Get("/{uploadId}", mediaH.GetUploadStatus)                // 查询上传状态（断点续传）
 			r.Post("/thumbnail", mediaH.UploadThumbnail)                // 上传缩略图（fileId 经 multipart 字段）
+			r.Post("/replace", mediaH.ReplaceMediaFile)                 // 覆盖素材原图（fileId 经 multipart 字段，仅 owner）
 			r.Post("/emoji", mediaH.UploadEmoji)                        // 上传表情图片（返回 URL，非创建 emoji 记录）
 			r.Get("/instant", mediaH.CheckInstantUpload)                // 秒传检查（?hash=）
 		})

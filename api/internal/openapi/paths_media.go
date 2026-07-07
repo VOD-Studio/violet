@@ -155,6 +155,21 @@ func registerMediaPaths(t *openapi3.T) {
 		),
 	})
 
+	// POST /uploads/replace（登录，multipart）—— 覆盖素材原图
+	post(t, "/uploads/replace", &openapi3.Operation{
+		Tags:        []string{"上传"},
+		Summary:     "覆盖素材原图",
+		Description: "用裁剪后的新文件覆盖调用者自己上传的素材记录（multipart/form-data，字段 file + fileId，≤10MB，仅图片，GIF 拒绝）。仅 owner 可覆盖，受上传限流保护。",
+		Security:    securityCookie(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: binaryBody("multipart/form-data", "裁剪后新文件（字段名 file）+ fileId（目标素材 ID）"),
+		Responses: responses(
+			200, dataResponse("FileDTO", "更新后的素材记录", 200),
+			400, errorResponse("文件类型不允许 / GIF 不支持覆盖"),
+			403, errorResponse("无权操作他人文件"),
+		),
+	})
+
 	// POST /uploads/emoji（登录，multipart）—— 上传表情图片（返回 URL，非创建 emoji 记录）
 	post(t, "/uploads/emoji", &openapi3.Operation{
 		Tags:        []string{"上传"},
