@@ -11,6 +11,7 @@ import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
+import { useReplaceMediaFile } from "@features/upload/api/mutations";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import type { CropRect } from "@features/upload/lib/crop-image";
 import { cropImageToBlob } from "@features/upload/lib/crop-image";
@@ -63,6 +64,8 @@ function AdminMediaPage() {
     const [cropFile, setCropFile] = useState<MediaFile | null>(null);
     const [cropOpen, setCropOpen] = useState(false);
     const [cropRect, setCropRect] = useState<CropRect | undefined>(undefined);
+    const [overwrite, setOverwrite] = useState(false);
+    const replaceMedia = useReplaceMediaFile();
     const [deleteFile, setDeleteFile] = useState<MediaFile | null>(null);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
@@ -115,6 +118,7 @@ function AdminMediaPage() {
     const handleCrop = (file: MediaFile) => {
         setCropFile(file);
         setCropRect(undefined);
+        setOverwrite(false);
         setCropOpen(true);
     };
 
@@ -131,9 +135,16 @@ function AdminMediaPage() {
             const blob = await cropImageToBlob(cropFile.url, cropRect);
             const name = cropFile.original_name.replace(/\.[^.]+$/, "") || "cropped";
             const file = new File([blob], `${name}.webp`, { type: "image/webp" });
-            await uploadFile(file);
+            if (overwrite) {
+                // 覆盖原图:走 replace 接口,file_id 不变,指针指向裁剪后文件
+                await replaceMedia.mutateAsync({ fileId: cropFile.id, file });
+                toast.success("已覆盖原图");
+            } else {
+                // 新建:走标准上传产生新素材记录
+                await uploadFile(file);
+                toast.success("已上传裁剪后的新素材");
+            }
             queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
-            toast.success("已上传裁剪后的新素材");
             setCropOpen(false);
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "裁剪失败");
@@ -307,13 +318,39 @@ function AdminMediaPage() {
                 title={cropFile ? `裁剪「${cropFile.original_name}」` : "裁剪"}
                 size="md"
                 footer={
-                    <div className="flex justify-end gap-2">
-                        <Button variant="ghost" onClick={() => setCropOpen(false)}>
-                            取消
-                        </Button>
-                        <Button onClick={handleCropConfirm} disabled={!cropRect}>
-                            确认上传
-                        </Button>
+                    <div className="flex items-center justify-between">
+                        {cropFile && !cropFile.mime_type.includes("gif") ? (
+                            <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={overwrite}
+                                    onChange={(e) => setOverwrite(e.target.checked)}
+                                    className="size-4"
+                                />
+                                覆盖原图
+                            </label>
+                        ) : (
+                            <span />
+                        )}
+                        <div className="flex gap-2">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setCropOpen(false)}
+                                disabled={replaceMedia.isPending}
+                            >
+                                取消
+                            </Button>
+                            <Button
+                                onClick={handleCropConfirm}
+                                disabled={!cropRect || replaceMedia.isPending}
+                            >
+                                {replaceMedia.isPending
+                                    ? "处理中..."
+                                    : overwrite
+                                      ? "确认覆盖"
+                                      : "确认上传"}
+                            </Button>
+                        </div>
                     </div>
                 }
             >
