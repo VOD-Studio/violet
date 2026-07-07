@@ -11,8 +11,8 @@
  */
 
 import { computeBlockId } from "./block-id";
-import { buildAnchorFromRange } from "./range-to-anchor";
 import { getBlockText } from "./extract-blocks";
+import { buildAnchorFromRange } from "./range-to-anchor";
 import type { Anchor } from "./types";
 
 /** 块级元素选择器（与 extractCandidateBlocks 保持一致）。 */
