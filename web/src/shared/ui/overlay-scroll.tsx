@@ -58,9 +58,12 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
                     setHasV(canV);
                     setHasH(canH);
 
+                    // track 用 top-0.5/bottom-0.5（左右各 2px inset），thumb 位移上限要扣除这 4px，
+                    // 否则滚到末端 thumb 会越过 track 边界、被外层 overflow-hidden 裁掉。
+                    const TRACK_INSET = 4;
                     if (canV && vThumbRef.current) {
                         const thumbH = Math.max((clientHeight / scrollHeight) * clientHeight, 24);
-                        const maxTop = clientHeight - thumbH;
+                        const maxTop = clientHeight - thumbH - TRACK_INSET;
                         const top =
                             maxTop > 0 ? (scrollTop / (scrollHeight - clientHeight)) * maxTop : 0;
                         vThumbRef.current.style.height = `${thumbH}px`;
@@ -68,7 +71,7 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
                     }
                     if (canH && hThumbRef.current) {
                         const thumbW = Math.max((clientWidth / scrollWidth) * clientWidth, 24);
-                        const maxLeft = clientWidth - thumbW;
+                        const maxLeft = clientWidth - thumbW - TRACK_INSET;
                         const left =
                             maxLeft > 0 ? (scrollLeft / (scrollWidth - clientWidth)) * maxLeft : 0;
                         hThumbRef.current.style.width = `${thumbW}px`;
