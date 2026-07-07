@@ -15,7 +15,7 @@
 
 import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
 import { useCreateComment, useSendCommentCode } from "@features/comments/api/mutations";
-import type { CreateComment } from "@features/comments/model/types";
+import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
@@ -35,8 +35,8 @@ export interface CommentFormProps {
     isLoggedIn: boolean;
     /** 紧凑模式（回复框）；默认 false（顶级评论） */
     compact?: boolean;
-    /** 提交成功回调（父组件可在此关闭回复框等） */
-    onSuccess?: () => void;
+    /** 提交成功回调，参数为后端返回的新评论对象 */
+    onSuccess?: (comment: Comment) => void;
 }
 
 export function CommentForm({
@@ -89,19 +89,16 @@ export function CommentForm({
             payload.code = code.trim();
         }
         createComment.mutate(payload, {
-            onSuccess: () => {
-                // 登录态：列表会 invalidate 并显示 pending 评论 + 徽章。
-                // 匿名态：黑洞模式看不到自己刚提交的，给一次性 toast 反馈。
+            onSuccess: (newComment) => {
                 if (!isLoggedIn) {
                     toast.success("已提交，管理员审核通过后登录可见");
                 }
-                // 清理表单
                 setBody("");
                 setAuthorName("");
                 setEmail("");
                 setCode("");
                 setCodeSent(false);
-                onSuccess?.();
+                onSuccess?.(newComment);
             },
             onError: (err) => toastError(err, "提交失败"),
         });

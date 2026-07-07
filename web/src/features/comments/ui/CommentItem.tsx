@@ -50,6 +50,7 @@ export function CommentItem({
     const isPending = comment.status === "pending";
 
     const [replying, setReplying] = useState(false);
+    const [pendingReplies, setPendingReplies] = useState<Comment[]>([]);
 
     return (
         <div className="group relative">
@@ -101,14 +102,22 @@ export function CommentItem({
                         parentId={comment.id}
                         compact
                         isLoggedIn={isLoggedIn}
-                        onSuccess={() => setReplying(false)}
+                        onSuccess={(newReply) => {
+                            setPendingReplies((prev) => [...prev, newReply]);
+                            setReplying(false);
+                        }}
                     />
                 </div>
             )}
 
             {/* 回复区：顶层评论显示「按需加载回复」，回复层（level>=1）不再嵌套回复区 */}
-            {level === 0 && (comment.replies_total ?? 0) > 0 && (
-                <CommentRepliesBlock comment={comment} isLoggedIn={isLoggedIn} postId={postId} />
+            {level === 0 && ((comment.replies_total ?? 0) > 0 || pendingReplies.length > 0) && (
+                <CommentRepliesBlock
+                    comment={comment}
+                    isLoggedIn={isLoggedIn}
+                    postId={postId}
+                    pendingReplies={pendingReplies}
+                />
             )}
         </div>
     );
@@ -130,22 +139,26 @@ function CommentRepliesBlock({
     comment,
     isLoggedIn,
     postId,
+    pendingReplies = [],
 }: {
     comment: Comment;
     isLoggedIn: boolean;
     postId?: string;
+    pendingReplies?: Comment[];
 }) {
     const repliesTotal = comment.replies_total ?? 0;
     const previewReplies = comment.replies ?? [];
-    // 是否展开为「分页模式」（调 useReplies 追加）。未展开时只显示预览。
     const [expanded, setExpanded] = useState(false);
 
-    // 预览 id 集合：useReplies 返回的与预览重复的跳过（纯追加，避免视觉跳变）
     const previewIds = new Set(previewReplies.map((r) => r.id));
+    // refetch 后新回复可能进了预览，此时不重复显示
+    const visiblePending = pendingReplies.filter((r) => !previewIds.has(r.id));
+    const visibleCount = previewReplies.length + visiblePending.length;
+    const allExcludedIds = new Set([...previewIds, ...visiblePending.map((r) => r.id)]);
 
     return (
         <div className="mt-2 space-y-2 border-l border-edge-hairline pl-3">
-            {/* 预览回复（永远显示，位置不动） */}
+            {/* 预览回复 */}
             {previewReplies.map((reply) => (
                 <CommentItem
                     key={reply.id}
@@ -156,18 +169,29 @@ function CommentRepliesBlock({
                 />
             ))}
 
-            {/* 展开后的追加回复（useReplies 分页，去重预览） */}
+            {/* 刚提交的回复（尾部追加） */}
+            {visiblePending.map((reply) => (
+                <CommentItem
+                    key={reply.id}
+                    node={{ comment: reply, replies: [] }}
+                    level={1}
+                    postId={postId}
+                    isLoggedIn={isLoggedIn}
+                />
+            ))}
+
+            {/* 展开后的追加回复（useReplies 分页，去重预览 + pending） */}
             {expanded && (
                 <ExpandedReplies
                     commentId={comment.id}
-                    excludeIds={previewIds}
+                    excludeIds={allExcludedIds}
                     isLoggedIn={isLoggedIn}
                     postId={postId}
                 />
             )}
 
-            {/* 底部「查看全部」/「查看更多」按钮：未展开 + 总数超预览数时显示 */}
-            {!expanded && repliesTotal > previewReplies.length && (
+            {/* 「查看全部」按钮：仅当实际有更多回复未显示时出现 */}
+            {!expanded && repliesTotal > visibleCount && (
                 <button
                     type="button"
                     onClick={() => setExpanded(true)}
