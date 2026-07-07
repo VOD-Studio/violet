@@ -1,8 +1,7 @@
 import type { PostDetail } from "@entities/post/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { commentKeys } from "@features/comments/api/keys";
-import { fetchComments, useAnnotationComments } from "@features/comments/api/queries";
-import { useAnnotations } from "@features/comments/lib/use-annotations";
+import { fetchAnnotationSummary, useAnnotationSummary } from "@features/comments/api/queries";
 import { AnnotationLayer } from "@features/comments/ui/AnnotationLayer";
 import { CommentSection } from "@features/comments/ui/CommentSection";
 import { FloatingToolbar } from "@features/comments/ui/FloatingToolbar";
@@ -39,12 +38,10 @@ function BlogDetailPage() {
     const contentRef = useRef<HTMLElement>(null);
     const progress = useScrollProgress();
     const articleImages = useArticleImagePreview();
-    // 批注数据流（独立于底部自由评论）：useAnnotationComments(type=annotation)
-    //   → useAnnotations relocate → located/page-level。
+    // 批注数据流：summary 轻量计数用于角标渲染，
+    // 点击角标后按 block_id 懒加载完整批注。
     // 自由评论由 CommentSection 内部 useComments(type=free) 独立拉取，互不污染。
-    const { data: annotationsData } = useAnnotationComments(post?.id ?? "");
-    const annotations = annotationsData?.data ?? [];
-    const { located, blocks } = useAnnotations(contentRef, annotations);
+    const { data: summary } = useAnnotationSummary(post?.id ?? "");
     const me = useMe();
     const isLoggedIn = !!me.data;
 
@@ -204,11 +201,10 @@ function BlogDetailPage() {
                     </main>
                 </div>
 
-                {/* 批注角标 + 气泡层（默认不显示面板，点击角标展开行内气泡，零挤压） */}
+                {/* 批注角标 + 气泡层（懒加载：summary 计数渲染角标，点击后按块拉批注） */}
                 <AnnotationLayer
                     contentRef={contentRef}
-                    located={located}
-                    blocks={blocks}
+                    summary={summary ?? []}
                     postId={post?.id}
                     isLoggedIn={isLoggedIn}
                 />
@@ -269,13 +265,13 @@ export const Route = createFileRoute("/blog/$slug")({
             queryKey: postKeys.detail(params.slug),
             queryFn: () => fetchPostBySlug(params.slug),
         });
-        // 预取批注（type=annotation），首屏 SSR 友好无闪烁。
+        // 预取批注聚合计数（轻量，不含正文），首屏 SSR 友好无闪烁。
+        // 完整批注按 block_id 在点击角标时懒加载。
         // 自由评论列表由 CommentSection 挂载时拉取（Suspense 兜底）。
-        // fetchComments 黑洞模式由后端按 cookie 判定，匿名返回空数组。
         if (post?.id) {
             await context.queryClient.ensureQueryData({
-                queryKey: commentKeys.list(post.id, { type: "annotation" }),
-                queryFn: () => fetchComments(post.id, { type: "annotation" }),
+                queryKey: commentKeys.annotationSummary(post.id),
+                queryFn: () => fetchAnnotationSummary(post.id),
             });
         }
         return post;

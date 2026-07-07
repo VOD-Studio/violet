@@ -93,15 +93,12 @@ export function AnnotationCard({
 
                             <CommentMeta comment={comment} sev={sev} isPending={isPending} />
 
-                            <p className="whitespace-pre-wrap break-words text-sm text-foreground line-clamp-3">
+                            <p className="whitespace-pre-wrap break-words text-sm text-foreground">
                                 {comment.body}
                             </p>
 
                             <time className="mt-1 block font-mono text-[10px] tabular-nums text-muted-foreground">
-                                {formatDistanceToNow(new Date(comment.created_at), {
-                                    addSuffix: true,
-                                    locale: zhCN,
-                                })}
+                                {formatTimeAgo(comment.created_at)}
                             </time>
 
                             {/* 回复按钮（图标）：仅登录显示 */}
@@ -213,7 +210,7 @@ function AnnotationReply({
     return (
         <div className="rounded-md bg-muted/30 p-2">
             <CommentMeta comment={comment} sev={sev} isPending={comment.status === "pending"} />
-            <p className="mt-0.5 whitespace-pre-wrap break-words text-xs text-foreground line-clamp-2">
+            <p className="mt-0.5 whitespace-pre-wrap break-words text-xs text-foreground">
                 {comment.body}
             </p>
         </div>
@@ -221,3 +218,12 @@ function AnnotationReply({
 }
 
 export default AnnotationCard;
+
+/** formatTimeAgo 与 CommentItem 同样的零值守卫：无效日期或 2000 年前显示「刚刚」 */
+function formatTimeAgo(createdAt: string): string {
+    const date = new Date(createdAt);
+    if (Number.isNaN(date.getTime()) || date.getFullYear() < 2000) {
+        return "刚刚";
+    }
+    return formatDistanceToNow(date, { addSuffix: true, locale: zhCN });
+}
