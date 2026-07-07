@@ -141,6 +141,23 @@ func (f *File) UpdateMetadata(altText, category, originalName string) {
 	}
 }
 
+// ReplaceStoredFile 替换文件存储指针（覆盖原图）。
+//
+// 仅在 owner 校验通过后由 service 调用。fileHash 用新文件 SHA-256，
+// 保证后续秒传按新 hash 查询准确，不会误命中被覆盖前的旧文件。
+// 旧物理文件由 service 决定保留（可能被其他记录引用）。
+// id/owner/purpose/refCount/originalName 等字段不触碰。
+func (f *File) ReplaceStoredFile(path, url string, size int64, mimeType, fileHash string, width, height *int, thumbnail string) {
+	f.path = path
+	f.url = url
+	f.size = size
+	f.mimeType = mimeType
+	f.fileHash = fileHash
+	f.width = width
+	f.height = height
+	f.thumbnail = thumbnail
+}
+
 // 访问器
 func (f *File) ID() shared.ID         { return f.id }
 func (f *File) OwnerID() shared.ID    { return f.ownerID }
