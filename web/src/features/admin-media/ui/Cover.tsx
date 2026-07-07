@@ -1,13 +1,16 @@
 /**
  * Cover - 封面图选择器
  *
- * 封装“从素材库选择封面”的完整交互：已选时显示预览与更换/移除操作，
- * 未选时显示占位按钮，点击后打开 MediaPicker。
+ * 封装「从素材库选择 + 选区裁剪」完整交互:选完素材后进裁剪弹窗,
+ * 静态图重编码上传为新素材(purpose=cover),GIF 存坐标回填。
+ * 已选时显示 CroppedImage 预览与更换/移除操作。
  */
 
 import type { MediaFile, MediaType } from "@entities/media/model/types";
 import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/CropUploadDialog";
 import { Button } from "@shared/ui/base/button";
+import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { ImagePlus } from "lucide-react";
 import { useState } from "react";
 
@@ -26,12 +29,6 @@ export interface CoverProps {
     mediaType?: MediaType;
 }
 
-/**
- * Cover - 封面图选择器
- *
- * 将素材库选择、预览展示、更换/移除操作封装为单一组件，
- * 调用方只需绑定 value 与 onChange。
- */
 export function Cover({
     id,
     value,
@@ -40,25 +37,31 @@ export function Cover({
     title = "选择封面图",
     mediaType = "image",
 }: CoverProps) {
-    const [open, setOpen] = useState(false);
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const [cropSrc, setCropSrc] = useState<string | undefined>(undefined);
 
-    const handleConfirm = (files: MediaFile[]) => {
+    const handlePick = (files: MediaFile[]) => {
         if (files[0]) {
-            onChange(files[0].url);
+            setCropSrc(files[0].url);
         }
+    };
+
+    const handleCropConfirm = (result: CropUploadResult) => {
+        onChange(result.url);
+        setCropSrc(undefined);
     };
 
     return (
         <div id={id} className="space-y-1.5">
             {value ? (
                 <div className="group relative overflow-hidden rounded-lg border border-edge-hairline">
-                    <img src={value} alt="封面" className="aspect-video w-full object-cover" />
+                    <CroppedImage src={value} aspect={16 / 9} className="w-full" alt="封面" />
                     <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-linear-to-t from-black/60 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                         <Button
                             type="button"
                             variant="secondary"
                             size="xs"
-                            onClick={() => setOpen(true)}
+                            onClick={() => setPickerOpen(true)}
                         >
                             更换
                         </Button>
@@ -72,7 +75,7 @@ export function Cover({
             ) : (
                 <button
                     type="button"
-                    onClick={() => setOpen(true)}
+                    onClick={() => setPickerOpen(true)}
                     className="flex aspect-video w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-edge-hairline text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
                 >
                     <ImagePlus className="size-5" />
@@ -80,11 +83,22 @@ export function Cover({
                 </button>
             )}
             <MediaPicker
-                open={open}
-                onOpenChange={setOpen}
+                open={pickerOpen}
+                onOpenChange={setPickerOpen}
                 mediaType={mediaType}
                 title={title}
-                onConfirm={handleConfirm}
+                onConfirm={handlePick}
+            />
+            <CropUploadDialog
+                srcUrl={cropSrc}
+                aspect={16 / 9}
+                purpose="cover"
+                fileNameBase="cover"
+                open={!!cropSrc}
+                onOpenChange={(v) => {
+                    if (!v) setCropSrc(undefined);
+                }}
+                onConfirm={handleCropConfirm}
             />
         </div>
     );
