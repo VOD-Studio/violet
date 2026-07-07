@@ -13,87 +13,90 @@ interface ColumnResizerProps {
 /**
  * ColumnResizer - 列宽拖拽手柄
  *
- * 渲染在表头单元格右侧，使用指针事件 + setPointerCapture
- * 保证拖出表头区域仍可连续调整。
+ * 渲染在表头单元格右侧，使用 document 级别的 pointermove/pointerup 监听
+ * 保证拖出表头区域仍可连续调整，且避免 React 合成事件丢失问题。
  *
- * 性能优化：拖拽过程中通过 CSS 变量实时更新视觉效果，
- * 只在拖拽结束时才调用 onResize 持久化状态。
+ * 拖拽过程中同时更新 header table 和 body table 的 colgroup col 宽度，
+ * 实现实时视觉同步。只在拖拽结束时才调用 onResize 持久化状态。
  */
 export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps) {
     const startX = useRef(0);
     const startWidth = useRef(width);
     const dragging = useRef(false);
-    const thElement = useRef<HTMLTableCellElement | null>(null);
+    const lastWidth = useRef(width);
     const [isDragging, setIsDragging] = useState(false);
 
+    /**
+     * 根据 th 元素找到其在 header table 和 body table 中对应的 colgroup col，
+     * 同时更新两者宽度，实现拖拽过程中 header/body 实时同步。
+     */
+    const updateColumnWidths = (th: HTMLTableCellElement, newWidth: number) => {
+        const colIndex = Array.from(th.parentElement?.children || []).indexOf(th);
+        // th → table → headerScrollDiv → wrapper（包含 header 和 body 两个 table 的根容器）
+        const headerTable = th.closest("table");
+        const wrapper = headerTable?.parentElement?.parentElement;
+        if (!wrapper) return;
+
+        const tables = wrapper.querySelectorAll("table");
+        for (const table of tables) {
+            const col = table.querySelector(`colgroup col:nth-child(${colIndex + 1})`);
+            if (col instanceof HTMLElement) {
+                col.style.width = `${newWidth}px`;
+            }
+        }
+
+        // 同时更新 th 本身，保证 header 单元格宽度与 col 一致
+        th.style.width = `${newWidth}px`;
+    };
+
     const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+        const th = e.currentTarget.closest("th");
+        if (!th) return;
+
         dragging.current = true;
         setIsDragging(true);
         startX.current = e.clientX;
         // 直接从 DOM 读真实渲染宽度，避免 prop 为 0 或与实际不符导致起始错位
-        const th = e.currentTarget.closest("th");
-        thElement.current = th;
-        startWidth.current = th ? th.offsetWidth : width;
-        e.currentTarget.setPointerCapture(e.pointerId);
+        startWidth.current = th.offsetWidth;
+        lastWidth.current = th.offsetWidth;
         e.stopPropagation();
         e.preventDefault();
 
         // 防止拖拽时选中文本
         document.body.style.userSelect = "none";
         document.body.style.cursor = "col-resize";
-    };
 
-    const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-        if (!dragging.current || !thElement.current) return;
-        const delta = e.clientX - startX.current;
-        const next = Math.max(minWidth, Math.round(startWidth.current + delta));
+        // 使用 document 级别的事件监听器，避免 React 合成事件的 pointer capture 丢失问题
+        const onDocumentPointerMove = (moveEvent: PointerEvent) => {
+            if (!dragging.current) return;
+            const delta = moveEvent.clientX - startX.current;
+            const next = Math.max(minWidth, Math.round(startWidth.current + delta));
+            lastWidth.current = next;
+            updateColumnWidths(th, next);
+        };
 
-        // 拖拽过程中只更新 th 元素的宽度，不触发 React 状态更新
-        thElement.current.style.width = `${next}px`;
+        const onDocumentPointerUp = () => {
+            if (!dragging.current) return;
 
-        // 同时更新 colgroup 中对应的 col 元素
-        const colIndex = Array.from(thElement.current.parentElement?.children || []).indexOf(
-            thElement.current,
-        );
-        const table = thElement.current.closest("table");
-        const col = table?.querySelector(`colgroup col:nth-child(${colIndex + 1})`);
-        if (col instanceof HTMLElement) {
-            col.style.width = `${next}px`;
-        }
-    };
-
-    const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-        if (!dragging.current) return;
-
-        dragging.current = false;
-        setIsDragging(false);
-
-        // 恢复 body 样式
-        document.body.style.userSelect = "";
-        document.body.style.cursor = "";
-
-        try {
-            e.currentTarget.releasePointerCapture(e.pointerId);
-        } catch {
-            /* 指针已释放 */
-        }
-
-        // 只在拖拽结束时调用 onResize 持久化
-        if (thElement.current) {
-            const finalWidth = thElement.current.offsetWidth;
-            onResize(finalWidth);
-        }
-
-        thElement.current = null;
-    };
-
-    // 处理指针离开按钮区域的情况
-    const onPointerLeave = () => {
-        // 如果正在拖拽，不重置状态（因为我们使用了 setPointerCapture）
-        // 如果没有拖拽，确保重置 isDragging 状态
-        if (!dragging.current && isDragging) {
+            dragging.current = false;
             setIsDragging(false);
-        }
+
+            // 恢复 body 样式
+            document.body.style.userSelect = "";
+            document.body.style.cursor = "";
+
+            // 移除 document 级别监听器
+            document.removeEventListener("pointermove", onDocumentPointerMove);
+            document.removeEventListener("pointerup", onDocumentPointerUp);
+            document.removeEventListener("pointercancel", onDocumentPointerUp);
+
+            // 只在拖拽结束时调用 onResize 持久化
+            onResize(lastWidth.current);
+        };
+
+        document.addEventListener("pointermove", onDocumentPointerMove);
+        document.addEventListener("pointerup", onDocumentPointerUp);
+        document.addEventListener("pointercancel", onDocumentPointerUp);
     };
 
     return (
@@ -101,10 +104,6 @@ export function ColumnResizer({ width, minWidth, onResize }: ColumnResizerProps)
             type="button"
             aria-label="调整列宽"
             onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            onPointerLeave={onPointerLeave}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
                 if (e.key === "ArrowLeft") onResize(Math.max(minWidth, width - 8));
