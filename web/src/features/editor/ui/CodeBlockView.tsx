@@ -114,19 +114,23 @@ function normalizeLang(id: string | null): string | null {
 /**
  * 从 DOM 元素（<pre> 或其 <code> 子元素）解析代码块语言。
  *
- * 依次检查 class（多前缀）与 data-language / data-lang 属性。
+ * 依次检查 class（多前缀）与 lang / data-language / data-lang 属性。
+ * readability（go-readability）抽取掘金等站点时输出 `<code lang="go">`，
+ * 故 lang 属性需显式检查，否则会被识别为纯文本。
  */
-function resolveLanguageFromElement(element: Element): string | null {
+export function resolveLanguageFromElement(element: Element): string | null {
     // 候选元素：<pre> 本身 + 第一个子元素（通常是 <code>）
     const candidates: Element[] = [element];
     if (element.firstElementChild) candidates.push(element.firstElementChild);
     for (const el of candidates) {
         const fromClass = normalizeLang(extractLangFromClass(el.getAttribute("class")));
         if (fromClass) return fromClass;
-        const fromData = normalizeLang(
-            el.getAttribute("data-language") ?? el.getAttribute("data-lang"),
+        const fromAttr = normalizeLang(
+            el.getAttribute("lang") ??
+                el.getAttribute("data-language") ??
+                el.getAttribute("data-lang"),
         );
-        if (fromData) return fromData;
+        if (fromAttr) return fromAttr;
     }
     return null;
 }
@@ -135,7 +139,7 @@ function resolveLanguageFromElement(element: Element): string | null {
  * CodeBlockView 扩展：继承 CodeBlockLowlight，加自定义 React nodeView（语言下拉）
  *
  * 同时覆盖 language 属性的 parseHTML，兼容远程导入/HTML 粘贴时多种代码块结构
- * （class 在 <pre> 或 <code>、language-/lang-/hljs-/brush: 前缀、data-language 属性），
+ * （class 在 <pre> 或 <code>、language-/lang-/hljs-/brush: 前缀、lang / data-language 属性），
  * 避免 readability 抓取的代码块因结构差异被解析为纯文本。
  *
  * @param lowlight 共享的 lowlight 实例
