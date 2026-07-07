@@ -1,7 +1,7 @@
 /**
  * useCreateComment mutation 缓存行为测试
  *
- * 验证提交回复后缓存是否正确更新——用户报「回复评论后没有显示，需刷新才出现」。
+ * 验证提交回复后缓存是否正确更新——不触发列表重拉（避免批注 relocate 重算）。
  */
 import type { Comment } from "@entities/comment/model/types";
 import type { PagedResponse } from "@shared/api/types";
@@ -62,8 +62,7 @@ describe("useCreateComment — 回复缓存更新", () => {
         qc.clear();
     });
 
-    it("未展开回复区时提交回复，顶层列表应失效重拉并刷新 replies_total", async () => {
-        // --- 种入顶层评论列表缓存（模拟页面已加载，replies_total=2） ---
+    it("提交回复后 replies_total 递增且不触发列表重拉", async () => {
         const topComment = makeComment({ id: "c1", replies_total: 2, replies: [] });
         const initialList: PagedResponse<Comment> = {
             data: [topComment],
@@ -71,13 +70,6 @@ describe("useCreateComment — 回复缓存更新", () => {
         };
         qc.setQueryData(commentKeys.list("p1", { type: "free" }), initialList);
 
-        // --- Mock apiGetPaged：重拉时返回 replies_total=3 ---
-        vi.mocked(apiGetPaged).mockResolvedValue({
-            data: [makeComment({ id: "c1", replies_total: 3, replies: [] })],
-            pagination: { page: 1, limit: 10, total: 1, total_pages: 1 },
-        });
-
-        // --- Mock apiPost 返回新回复 ---
         vi.mocked(apiPost).mockResolvedValue(
             makeComment({
                 id: "r-new",
@@ -90,7 +82,6 @@ describe("useCreateComment — 回复缓存更新", () => {
             }),
         );
 
-        // --- 同时渲染 useComments（激活 query）和 useCreateComment ---
         const { result } = renderHook(
             () => ({
                 comments: useComments("p1", { type: "free" }),
@@ -99,20 +90,19 @@ describe("useCreateComment — 回复缓存更新", () => {
             { wrapper: createWrapper(qc) },
         );
 
-        // 初始 replies_total=2
         expect(result.current.comments.data?.data[0].replies_total).toBe(2);
 
-        // 触发回复提交
         await result.current.create.mutateAsync({ body: "My new reply", parent_id: "c1" });
 
-        // 失效后重拉完成，replies_total 应刷新为 3
         await waitFor(() => {
             expect(result.current.comments.data?.data[0].replies_total).toBe(3);
         });
+
+        // 不应触发列表重拉
+        expect(vi.mocked(apiGetPaged)).not.toHaveBeenCalled();
     });
 
     it("已展开回复区时提交回复，useReplies 缓存应含新回复", async () => {
-        // --- 种入顶层评论列表缓存 ---
         const topComment = makeComment({ id: "c1", replies_total: 1, replies: [] });
         const listData: PagedResponse<Comment> = {
             data: [topComment],
@@ -120,7 +110,6 @@ describe("useCreateComment — 回复缓存更新", () => {
         };
         qc.setQueryData(commentKeys.list("p1", { type: "free" }), listData);
 
-        // --- 种入 useReplies 缓存（模拟回复区已展开） ---
         const existingReply = makeComment({
             id: "r1",
             parent_id: "c1",
@@ -140,13 +129,6 @@ describe("useCreateComment — 回复缓存更新", () => {
         };
         qc.setQueryData(commentKeys.replyList("c1", { limit: 10 }), repliesData);
 
-        // --- Mock apiGetPaged（列表重拉时不影响已展开的 useReplies 缓存） ---
-        vi.mocked(apiGetPaged).mockResolvedValue({
-            data: [makeComment({ id: "c1", replies_total: 2, replies: [] })],
-            pagination: { page: 1, limit: 10, total: 1, total_pages: 1 },
-        });
-
-        // --- Mock apiPost ---
         vi.mocked(apiPost).mockResolvedValue(
             makeComment({
                 id: "r-new",
@@ -159,14 +141,12 @@ describe("useCreateComment — 回复缓存更新", () => {
             }),
         );
 
-        // --- 渲染并触发 ---
         const { result } = renderHook(() => useCreateComment("p1"), {
             wrapper: createWrapper(qc),
         });
 
         await result.current.mutateAsync({ body: "Second reply", parent_id: "c1" });
 
-        // --- 断言：useReplies 缓存第一页应包含新回复 ---
         await waitFor(() => {
             const cache = qc.getQueryData<{
                 pages: PagedResponse<Comment>[];

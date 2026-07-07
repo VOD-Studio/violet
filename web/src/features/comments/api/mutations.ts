@@ -16,9 +16,8 @@ import { commentKeys } from "./keys";
  *
  * 乐观更新（提交后立即显示，不等重拉）：
  *   - 顶层评论：直接 invalidate list 缓存重拉（顶层条目少，重拉开销小且数据新鲜）
- *   - 回复（parent_id 非空）：先乐观追加到 useReplies 缓存（展开态立即看到），
- *     再失效顶层列表缓存重拉（刷新 replies_total 和回复预览）。
- *     两步配合：展开态用户即时看到回复，未展开态用户看到 replies_total 更新和预览刷新
+ *   - 回复（parent_id 非空）：乐观追加到 useReplies 缓存（展开态立即看到），
+ *     同时手动递增顶层列表里父评论的 replies_total（不触发重拉，避免批注 relocate 重算导致角标消失）
  */
 export const useCreateComment = (postId: string) => {
     const qc = useQueryClient();
@@ -28,7 +27,7 @@ export const useCreateComment = (postId: string) => {
             try {
                 if (variables.parent_id) {
                     optimisticAppendReply(qc, variables.parent_id, newComment);
-                    invalidateListsForPost(qc, postId);
+                    bumpRepliesTotalInList(qc, postId, variables.parent_id);
                 } else {
                     invalidateListByType(qc, postId, variables.anchor ? "annotation" : "free");
                 }
@@ -43,8 +42,39 @@ export const useCreateComment = (postId: string) => {
     });
 };
 
+/** bumpRepliesTotalInList 手动递增顶层列表缓存中父评论的 replies_total。
+ *  用 setQueriesData 直接改缓存，不触发重拉——避免批注列表 refetch 引起 relocate 重算和角标消失。
+ *  useComments 是 useQuery（非 infinite），缓存结构是 { data: Comment[], pagination }。 */
+function bumpRepliesTotalInList(
+    qc: ReturnType<typeof useQueryClient>,
+    postId: string,
+    parentCommentId: string,
+) {
+    qc.setQueriesData(
+        {
+            predicate: (query) => {
+                const key = query.queryKey;
+                return key[0] === "comments" && key[1] === "list" && key[2] === postId;
+            },
+        },
+        (old: unknown) => {
+            if (!old || typeof old !== "object") return old;
+            const typed = old as PagedResponse<Comment>;
+            if (!Array.isArray(typed.data)) return old;
+            return {
+                ...typed,
+                data: typed.data.map((c) =>
+                    c.id === parentCommentId
+                        ? { ...c, replies_total: (c.replies_total ?? 0) + 1 }
+                        : c,
+                ),
+            };
+        },
+    );
+}
+
 /** invalidateListsForPost 失效指定文章的所有顶层评论列表缓存（free + annotation）。
- *  回复提交后调用——父评论可能在任一 type 的列表中，需统一刷新 replies_total 和预览。 */
+ *  仅作 catch 降级使用——正常流程不再 invalidate 列表，避免批注 relocate 重算。 */
 function invalidateListsForPost(qc: ReturnType<typeof useQueryClient>, postId: string) {
     qc.invalidateQueries({
         predicate: (query) => {
