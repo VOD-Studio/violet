@@ -8,7 +8,8 @@
 services:
   # PostgreSQL 数据库
   postgres:
-    image: postgres:16-alpine
+    # 用全限定镜像名，避免 podman 误匹配到 localhost/ 下残留的错误架构镜像
+    image: docker.io/library/postgres:16-alpine
     container_name: blog-postgres
     restart: always
     # 端口不对外暴露，仅内部网络访问
@@ -31,7 +32,7 @@ services:
 
   # Redis 缓存
   redis:
-    image: redis:7-alpine
+    image: docker.io/library/redis:7-alpine
     container_name: blog-redis
     restart: always
     # 端口不对外暴露，仅内部网络访问
