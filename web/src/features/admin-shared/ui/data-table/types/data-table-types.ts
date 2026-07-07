@@ -83,6 +83,8 @@ export interface DataTableProps<T> {
 
     /** 开启行展开，注入展开切换列 */
     expandable?: boolean;
+    /** 展开行固定不随横向滚动（单 cell sticky），忽略固定列；默认 false */
+    expandedRowFixed?: boolean;
     /** 已展开行 id 集合（受控） */
     expandedRowKeys?: Set<string>;
     /** 展开态变更回调 */

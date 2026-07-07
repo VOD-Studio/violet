@@ -43,6 +43,8 @@ interface DataTableBodyProps<T> {
     selectedIds: Set<string>;
     onToggleRow: (id: string) => void;
     expandable: boolean;
+    expandedRowFixed: boolean;
+    containerWidth: number;
     expandedRowKeys: Set<string>;
     onToggleExpand: (id: string) => void;
     renderExpandedRow?: (row: T) => ReactNode;
@@ -76,6 +78,8 @@ export function DataTableBody<T>({
     selectedIds,
     onToggleRow,
     expandable,
+    expandedRowFixed,
+    containerWidth,
     expandedRowKeys,
     onToggleExpand,
     renderExpandedRow,
@@ -269,9 +273,30 @@ export function DataTableBody<T>({
                             </TableRow>
                             {isExpanded && renderExpandedRow && (
                                 <TableRow className="hover:bg-transparent">
-                                    <TableCell colSpan={colCount} className="bg-muted/30 p-4">
-                                        {renderExpandedRow(row)}
-                                    </TableCell>
+                                    {expandedRowFixed ? (
+                                        <TableCell colSpan={colCount} className="bg-muted/30 p-0">
+                                            <div
+                                                className="sticky left-0 z-30 whitespace-normal bg-muted/30 p-4"
+                                                style={
+                                                    containerWidth
+                                                        ? {
+                                                              width: `${containerWidth}px`,
+                                                              maxWidth: "100%",
+                                                          }
+                                                        : { maxWidth: "100%" }
+                                                }
+                                            >
+                                                {renderExpandedRow(row)}
+                                            </div>
+                                        </TableCell>
+                                    ) : (
+                                        <TableCell
+                                            colSpan={colCount}
+                                            className="whitespace-normal bg-muted/30 p-4"
+                                        >
+                                            {renderExpandedRow(row)}
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             )}
                         </Fragment>

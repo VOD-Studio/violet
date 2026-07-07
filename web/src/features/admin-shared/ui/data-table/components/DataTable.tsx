@@ -42,6 +42,7 @@ export function DataTable<T>({
     onSelectionChange,
     bulkActions,
     expandable = false,
+    expandedRowFixed = false,
     expandedRowKeys,
     onExpandedChange,
     renderExpandedRow,
@@ -281,6 +282,7 @@ export function DataTable<T>({
         isScrolledLeft: false, // 已向左滚动（显示左侧阴影）
         isScrolledRight: false, // 已向右滚动（显示右侧阴影）
     });
+    const [containerWidth, setContainerWidth] = useState(0);
 
     // 提取 checkScroll 函数，供拖拽后手动调用
     const checkScroll = useCallback(() => {
@@ -299,15 +301,24 @@ export function DataTable<T>({
 
         // 初始检测
         checkScroll();
+        setContainerWidth(container.clientWidth);
 
         // 监听滚动
         container.addEventListener("scroll", checkScroll);
         // 监听窗口大小变化（可能影响是否需要滚动）
         window.addEventListener("resize", checkScroll);
 
+        // 监听容器尺寸变化（侧边栏折叠、列宽拖拽等）
+        const ro = new ResizeObserver(() => {
+            setContainerWidth(container.clientWidth);
+            checkScroll();
+        });
+        ro.observe(container);
+
         return () => {
             container.removeEventListener("scroll", checkScroll);
             window.removeEventListener("resize", checkScroll);
+            ro.disconnect();
         };
     }, [checkScroll]);
 
@@ -398,6 +409,8 @@ export function DataTable<T>({
                         selectedIds={selected}
                         onToggleRow={toggleRow}
                         expandable={expandable}
+                        expandedRowFixed={expandedRowFixed}
+                        containerWidth={containerWidth}
                         expandedRowKeys={expanded}
                         onToggleExpand={toggleExpand}
                         renderExpandedRow={renderExpandedRow}
