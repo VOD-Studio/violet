@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 
 /**
@@ -6,6 +6,7 @@ import { cn } from "@/shared/lib/utils";
  *
  * 隐藏原生滚动条，渲染自定义 thumb 浮于内容上方，不占据布局空间。
  * 支持垂直/水平方向自动检测、拖拽 thumb 滚动。
+ * thumb 在鼠标移入内容区或滚动时显示，移出后自动隐藏。
  */
 const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
     ({ children, className, style, ...props }, ref) => {
@@ -14,8 +15,27 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
         const hThumbRef = useRef<HTMLDivElement>(null);
         const [hasV, setHasV] = useState(false);
         const [hasH, setHasH] = useState(false);
+        const [visible, setVisible] = useState(false);
+
+        const hoveringRef = useRef(false);
+        const draggingRef = useRef(false);
+        const hideTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
         useImperativeHandle(ref, () => scrollRef.current ?? document.createElement("div"), []);
+
+        const show = useCallback(() => {
+            setVisible(true);
+            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        }, []);
+
+        const scheduleHide = useCallback((delay: number) => {
+            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+            hideTimerRef.current = setTimeout(() => {
+                if (!hoveringRef.current && !draggingRef.current) {
+                    setVisible(false);
+                }
+            }, delay);
+        }, []);
 
         useEffect(() => {
             const el = scrollRef.current;
@@ -57,24 +77,33 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
                 });
             };
 
+            const onScroll = () => {
+                update();
+                show();
+                scheduleHide(800);
+            };
+
             update();
-            el.addEventListener("scroll", update, { passive: true });
+            el.addEventListener("scroll", onScroll, { passive: true });
             const ro = new ResizeObserver(update);
             ro.observe(el);
             if (el.firstElementChild) ro.observe(el.firstElementChild);
 
             return () => {
                 cancelAnimationFrame(raf);
-                el.removeEventListener("scroll", update);
+                el.removeEventListener("scroll", onScroll);
                 ro.disconnect();
+                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
             };
-        }, []);
+        }, [show, scheduleHide]);
 
         /** 垂直 thumb 拖拽 */
         const onVPointerDown = (e: React.PointerEvent) => {
             e.preventDefault();
             const el = scrollRef.current;
             if (!el) return;
+            draggingRef.current = true;
+            show();
             const startY = e.clientY;
             const startTop = el.scrollTop;
             const ratio = el.scrollHeight / el.clientHeight;
@@ -85,6 +114,8 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
             const up = () => {
                 document.removeEventListener("pointermove", move);
                 document.removeEventListener("pointerup", up);
+                draggingRef.current = false;
+                scheduleHide(800);
             };
             document.addEventListener("pointermove", move);
             document.addEventListener("pointerup", up);
@@ -95,6 +126,8 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
             e.preventDefault();
             const el = scrollRef.current;
             if (!el) return;
+            draggingRef.current = true;
+            show();
             const startX = e.clientX;
             const startLeft = el.scrollLeft;
             const ratio = el.scrollWidth / el.clientWidth;
@@ -105,13 +138,34 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
             const up = () => {
                 document.removeEventListener("pointermove", move);
                 document.removeEventListener("pointerup", up);
+                draggingRef.current = false;
+                scheduleHide(800);
             };
             document.addEventListener("pointermove", move);
             document.addEventListener("pointerup", up);
         };
 
+        const thumbClass = (extra: string) =>
+            cn(
+                "pointer-events-auto cursor-pointer touch-none rounded-full",
+                "bg-foreground/20 hover:bg-foreground/40",
+                "[transition:opacity_150ms,background-color_150ms]",
+                visible ? "opacity-100" : "opacity-0",
+                extra,
+            );
+
         return (
-            <div className="relative">
+            <div
+                className="relative"
+                onMouseEnter={() => {
+                    hoveringRef.current = true;
+                    show();
+                }}
+                onMouseLeave={() => {
+                    hoveringRef.current = false;
+                    scheduleHide(400);
+                }}
+            >
                 <div
                     ref={scrollRef}
                     className={cn("os-host overflow-auto", className)}
@@ -124,7 +178,7 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
                     <div className="pointer-events-none absolute right-0.5 top-0.5 bottom-0.5 z-50 w-1.5">
                         <div
                             ref={vThumbRef}
-                            className="pointer-events-auto absolute left-0 w-full cursor-pointer touch-none rounded-full bg-foreground/20 transition-colors hover:bg-foreground/40"
+                            className={thumbClass("absolute left-0 w-full")}
                             style={{ willChange: "height, transform" }}
                             onPointerDown={onVPointerDown}
                         />
@@ -134,7 +188,7 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
                     <div className="pointer-events-none absolute bottom-0.5 left-0.5 right-0.5 z-50 h-1.5">
                         <div
                             ref={hThumbRef}
-                            className="pointer-events-auto absolute top-0 h-full cursor-pointer touch-none rounded-full bg-foreground/20 transition-colors hover:bg-foreground/40"
+                            className={thumbClass("absolute top-0 h-full")}
                             style={{ willChange: "width, transform" }}
                             onPointerDown={onHPointerDown}
                         />
