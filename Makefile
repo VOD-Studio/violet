@@ -9,6 +9,7 @@
         deploy-prod-init deploy-prod deploy-prod-down \
         deploy-remote deploy-remote-skip-build deploy-remote-patch \
         deploy-ci rollback \
+        release release-patch release-minor release-major \
         clean install update \
         status log \
         env setup generate-jwt-keys generate-production-keys \
@@ -179,6 +180,21 @@ rollback: ## 回滚到历史版本，用法: make rollback v=v2.0.0
 	@command -v gh >/dev/null 2>&1 || { echo "✗ 需安装并登录 gh CLI"; exit 1; }
 	gh workflow run deploy.yml -f version=$(v) -f skip_build=true
 	@echo "✅ 已触发回滚到 $(v)，查看: gh run list --workflow=deploy.yml"
+
+# ==================== 发版 (tag → 触发部署) ====================
+
+release: ## 发版，显式指定版本: make release v=v2.0.1
+	@if [ -z "$(v)" ]; then echo "用法: make release v=v2.0.1 或 make release-patch/minor/major"; exit 1; fi
+	@./scripts/release.sh --version "$(v)"
+
+release-patch: ## 发补丁版，从最近 tag 自动 +1: make release-patch
+	@./scripts/release.sh --bump patch
+
+release-minor: ## 发次版本，从最近 tag 自动 +1: make release-minor
+	@./scripts/release.sh --bump minor
+
+release-major: ## 发主版本，从最近 tag 自动 +1: make release-major
+	@./scripts/release.sh --bump major
 
 # ==================== 工具 ====================
 
