@@ -1,5 +1,6 @@
 import type { Comment } from "@entities/comment/model/types";
 import { apiDelete, apiPatch, apiPost } from "@shared/api/request";
+import type { PagedResponse } from "@shared/api/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AddReaction, CreateComment, SendCodeBody } from "../model/types";
 import { commentKeys } from "./keys";
@@ -12,39 +13,117 @@ import { commentKeys } from "./keys";
  *   - 匿名态：body 需含 author_name/author_email/code（邮箱验证码两步流）
  *
  * 新评论默认 pending 状态，需审核后才在前台公开（登录提交者本人立即可见带「审批中」徽章）。
- * 后端返回 CommentDTO，登录态用于乐观展示自己的 pending 评论。
  *
- * 失效策略（精确到 type + replies 维度）：
- *   - 按 body.anchor 判断 type（free/annotation），只失效对应类型列表，避免互相牵连
- *   - 回复（parent_id 非空）：额外失效该顶层评论的 replies 缓存，让展开列表立即看到新回复
- *   - 顶层评论：list 缓存失效后，replies_total + 预览会随之刷新
+ * 乐观更新（提交后立即显示，不等重拉）：
+ *   - 顶层评论：直接 invalidate list 缓存重拉（顶层条目少，重拉开销小且数据新鲜）
+ *   - 回复（parent_id 非空）：用 setQueryData 把新回复追加到对应 replies 缓存末尾，
+ *     同时更新顶层 list 缓存里该评论的 replies_total +1。用户提交后立即看到自己的 pending 回复，
+ *     不会出现「我的评论消失了」的疑惑
  */
 export const useCreateComment = (postId: string) => {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (body: CreateComment) => apiPost<Comment>(`/posts/${postId}/comments`, body),
-        onSuccess: (_data, variables) => {
-            // variables.anchor 非空 → 批注（含批注回复，后端继承父 anchor）；空 → 自由评论
-            const type = variables.anchor ? "annotation" : "free";
-            // 失效对应 type 的列表（含 replies_total + 预览）
-            qc.invalidateQueries({
-                predicate: (query) => {
-                    const key = query.queryKey;
-                    if (key[0] !== "comments" || key[1] !== "list") return false;
-                    if (key[2] !== postId) return false;
-                    const q = key[3] as { type?: string } | undefined;
-                    return q?.type === type;
-                },
-            });
-            // 回复：额外失效该顶层评论的 replies 缓存（展开列表立即看到新回复）
+        onSuccess: (newComment, variables) => {
+            // 回复：乐观插入到 replies 缓存 + 顶层 replies_total +1
             if (variables.parent_id) {
-                qc.invalidateQueries({
-                    queryKey: commentKeys.replies(),
-                });
+                optimisticAppendReply(qc, variables.parent_id, newComment);
+                bumpTopLevelRepliesTotal(qc, postId, variables.parent_id);
+            } else {
+                // 顶层评论：直接失效 list 重拉（条目少，重拉保证 replies_total 等字段新鲜）
+                invalidateListByType(qc, postId, variables.anchor ? "annotation" : "free");
             }
         },
     });
 };
+
+/**
+ * optimisticAppendReply 把新回复追加到 useReplies 缓存末尾。
+ *
+ * useReplies 是 useInfiniteQuery，缓存形如 { pages: [{data, pagination}], pageParams }。
+ * 在第一页 data 末尾追加新回复——按时间正序是最新的在最末，符合 ASC 语义。
+ * 如果该 commentId 没有缓存（回复区未展开），不做任何操作，下次展开会从后端拉到。
+ */
+function optimisticAppendReply(
+    qc: ReturnType<typeof useQueryClient>,
+    parentCommentId: string,
+    newReply: Comment,
+) {
+    // useReplies 的 key 形如 ["comments","replies",commentId,{sort,limit}]
+    // 遍历所有匹配该 commentId 的缓存（不同 sort/page 变体），追加新回复
+    qc.setQueriesData<{ pages: PagedResponse<Comment>[]; pageParams: number[] }>(
+        {
+            predicate: (query) => {
+                const key = query.queryKey;
+                return key[0] === "comments" && key[1] === "replies" && key[2] === parentCommentId;
+            },
+        },
+        (old) => {
+            if (!old || old.pages.length === 0) return old;
+            const newPages = [...old.pages];
+            // 第一页 data 末尾追加（ASC 时是最新的在末尾）
+            newPages[0] = {
+                ...newPages[0],
+                data: [...newPages[0].data, newReply],
+                pagination: {
+                    ...newPages[0].pagination,
+                    total: (newPages[0].pagination?.total ?? 0) + 1,
+                },
+            };
+            return { ...old, pages: newPages };
+        },
+    );
+}
+
+/**
+ * bumpTopLevelRepliesTotal 顶层列表缓存里，该顶层评论的 replies_total +1。
+ *
+ * 让「查看全部 xx 条回复」的数字立即更新，不用等重拉。
+ * 遍历 list 缓存的所有页，找到该顶层评论，replies_total +1。
+ */
+function bumpTopLevelRepliesTotal(
+    qc: ReturnType<typeof useQueryClient>,
+    postId: string,
+    topCommentId: string,
+) {
+    qc.setQueriesData<{ pages: PagedResponse<Comment>[]; pageParams: number[] }>(
+        {
+            predicate: (query) => {
+                const key = query.queryKey;
+                if (key[0] !== "comments" || key[1] !== "list") return false;
+                if (key[2] !== postId) return false;
+                return true;
+            },
+        },
+        (old) => {
+            if (!old || old.pages.length === 0) return old;
+            const newPages = old.pages.map((page) => ({
+                ...page,
+                data: page.data.map((c) =>
+                    c.id === topCommentId ? { ...c, replies_total: (c.replies_total ?? 0) + 1 } : c,
+                ),
+            }));
+            return { ...old, pages: newPages };
+        },
+    );
+}
+
+/** invalidateListByType 失效指定 type 的顶层评论列表缓存 */
+function invalidateListByType(
+    qc: ReturnType<typeof useQueryClient>,
+    postId: string,
+    type: "free" | "annotation",
+) {
+    qc.invalidateQueries({
+        predicate: (query) => {
+            const key = query.queryKey;
+            if (key[0] !== "comments" || key[1] !== "list") return false;
+            if (key[2] !== postId) return false;
+            const q = key[3] as { type?: string } | undefined;
+            return q?.type === type;
+        },
+    });
+}
 
 /**
  * useSendCommentCode - 匿名评论第一步：POST /posts/{postId}/comments/code 发送邮箱验证码
