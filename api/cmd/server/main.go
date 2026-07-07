@@ -298,6 +298,10 @@ func main() {
 		v1.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
 			Get("/comments/{commentId}/replies", commentH.ListReplies)
 
+		// 批注按块聚合统计（轻量端点，不含正文/回复）
+		v1.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+			Get("/posts/{postId}/annotations/summary", commentH.AnnotationSummary)
+
 		// 评论反应（DDD commentReactionContainer）
 		crH := commentReactionContainer.CommentReactionHandler
 		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {

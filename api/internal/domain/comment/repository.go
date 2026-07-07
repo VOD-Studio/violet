@@ -40,6 +40,12 @@ const (
 	DepthFilterReply DepthFilter = 1
 )
 
+// BlockCount 批注按块聚合的计数结果
+type BlockCount struct {
+	BlockID string
+	Count   int64
+}
+
 // CommentRepository 评论仓储接口
 type CommentRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*Comment, error)
@@ -58,9 +64,11 @@ type CommentRepository interface {
 	// depthFilter 控制按 depth 列过滤（顶层 / 回复 / 全部），见 DepthFilter 常量；
 	// 前台顶层评论列表传 DepthFilterTopLevel，配合 FindReplies 按需拉回复。
 	//
+	// blockID 非空时追加 WHERE anchor_block_id = ? 精确过滤（批注按块懒加载用）。
+	//
 	// 这样登录提交者能在审核通过前看到自己刚提交的评论（带「审批中」徽章），
 	// 而他人永远只看到 approved（PRD-0001「审批与状态可见性」）。
-	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter AnchorFilter, depthFilter DepthFilter, page, limit int) ([]*Comment, int64, error)
+	FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter AnchorFilter, depthFilter DepthFilter, blockID string, page, limit int) ([]*Comment, int64, error)
 	// FindReplies 列出某顶层评论下的扁平回复（两层结构，depth=1）。
 	//
 	// parentID 是顶层评论 id。按 parent_id 反查回复——两层扁平下回复的 parent_id
@@ -85,6 +93,9 @@ type CommentRepository interface {
 	// 这样被误判 spam 的留言不会浪费用户的「一篇一次」名额。
 	// 用于「一篇一次」配额校验（PRD-0001 匿名留言板模式）。
 	CountByPostAndAnon(ctx context.Context, postID shared.ID, ipHash, email string) (int64, error)
+	// CountAnnotationsByBlock 按块聚合统计批注数量（仅 depth=0 顶层批注）。
+	// viewerUserID 语义同 FindByPost：nil=仅 approved；非空=approved ∪ 自己 pending。
+	CountAnnotationsByBlock(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID) ([]BlockCount, error)
 	// FindAll 全局评论列表（后台管理，可选状态 + anchor 维度筛选），关联所属文章标题/slug。
 	//
 	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 AnchorFilter 常量。

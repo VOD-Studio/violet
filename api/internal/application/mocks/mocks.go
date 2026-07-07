@@ -283,8 +283,8 @@ func (m *MockCommentRepository) FindByID(ctx context.Context, id shared.ID) (*do
 	return args.Get(0).(*domaincomment.Comment), args.Error(1)
 }
 
-func (m *MockCommentRepository) FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, page, limit int) ([]*domaincomment.Comment, int64, error) {
-	args := m.Called(ctx, postID, status, viewerUserID, anchorFilter, depthFilter, page, limit)
+func (m *MockCommentRepository) FindByPost(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, blockID string, page, limit int) ([]*domaincomment.Comment, int64, error) {
+	args := m.Called(ctx, postID, status, viewerUserID, anchorFilter, depthFilter, blockID, page, limit)
 	if args.Get(0) == nil {
 		return nil, args.Get(1).(int64), args.Error(2)
 	}
@@ -315,6 +315,14 @@ func (m *MockCommentRepository) CountPending(ctx context.Context) (int64, error)
 func (m *MockCommentRepository) CountByPostAndAnon(ctx context.Context, postID shared.ID, ipHash, email string) (int64, error) {
 	args := m.Called(ctx, postID, ipHash, email)
 	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockCommentRepository) CountAnnotationsByBlock(ctx context.Context, postID shared.ID, status string, viewerUserID *shared.ID) ([]domaincomment.BlockCount, error) {
+	args := m.Called(ctx, postID, status, viewerUserID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domaincomment.BlockCount), args.Error(1)
 }
 
 func (m *MockCommentRepository) FindAll(ctx context.Context, status string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]*domaincomment.CommentWithPost, int64, error) {

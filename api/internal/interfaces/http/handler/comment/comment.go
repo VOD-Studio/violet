@@ -26,7 +26,7 @@ import (
 // stub 实现（见 comment_test.go 的 stubCommentService），避免在测试里启动完整 service +
 // 真实 repo/codeStore。*appcomment.Service 通过 Go 结构化接口天然满足此契约。
 type commentService interface {
-	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, page, limit int) ([]appcomment.CommentDTO, int64, error)
+	ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, blockID string, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	ListReplies(ctx context.Context, parentID, viewerUserID, sort string, page, limit int) ([]appcomment.CommentDTO, int64, error)
 	Create(ctx context.Context, in appcomment.CreateInput) (appcomment.CommentDTO, error)
 	SendCode(ctx context.Context, in appcomment.SendCodeInput) error
@@ -38,6 +38,7 @@ type commentService interface {
 	Approve(ctx context.Context, id string) error
 	MarkSpam(ctx context.Context, id string) error
 	Delete(ctx context.Context, id string) error
+	AnnotationSummary(ctx context.Context, postID, viewerUserID string) ([]appcomment.BlockCountDTO, error)
 }
 
 // Handler 评论 HTTP 处理器。
@@ -93,12 +94,27 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 		depthFilter = domaincomment.DepthFilterTopLevel
 	}
 
-	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, depthFilter, page, limit)
+	blockID := r.URL.Query().Get("block_id")
+
+	items, total, err := h.svc.ListByPost(r.Context(), postID, viewerID, authorID, anchorFilter, depthFilter, blockID, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondPaged(w, items, page, limit, total)
+}
+
+// AnnotationSummary 按块聚合统计批注数量（轻量端点，不含正文/回复）。
+// 黑洞模式：匿名 viewer 返回空数组。
+func (h *Handler) AnnotationSummary(w http.ResponseWriter, r *http.Request) {
+	postID := r.PathValue("postId")
+	viewerID := interfacesmw.GetUserIDFromContext(r)
+	blocks, err := h.svc.AnnotationSummary(r.Context(), postID, viewerID)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, blocks)
 }
 
 // ListReplies 列出某顶层评论下的扁平回复（GET /comments/{commentId}/replies）。

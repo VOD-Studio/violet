@@ -53,11 +53,15 @@ type stubCommentService struct {
 	sendCodeCalled bool
 }
 
-func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, page, limit int) ([]appcomment.CommentDTO, int64, error) {
+func (s *stubCommentService) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domaincomment.AnchorFilter, depthFilter domaincomment.DepthFilter, blockID string, page, limit int) ([]appcomment.CommentDTO, int64, error) {
 	s.listByPostCalled = true
 	s.listByPostViewer = viewerUserID
 	s.listByPostAnchorFilter = anchorFilter
 	return s.listByPostResult, int64(len(s.listByPostResult)), nil
+}
+
+func (s *stubCommentService) AnnotationSummary(context.Context, string, string) ([]appcomment.BlockCountDTO, error) {
+	return nil, nil
 }
 
 // ListReplies stub：记录调用入参供 sort 透传断言。

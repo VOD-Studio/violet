@@ -137,7 +137,7 @@ func (r *CommentRepository) FindByID(ctx context.Context, id domainshared.ID) (*
 	return commentToDomain(po)
 }
 
-func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.ID, status string, viewerUserID *domainshared.ID, anchorFilter comment.AnchorFilter, depthFilter comment.DepthFilter, page, limit int) ([]*comment.Comment, int64, error) {
+func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.ID, status string, viewerUserID *domainshared.ID, anchorFilter comment.AnchorFilter, depthFilter comment.DepthFilter, blockID string, page, limit int) ([]*comment.Comment, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Comment{}).Where("post_id = ?", postID.UUID())
 	// viewer 过滤：approved 评论联合（若 viewer 登录）viewer 自己的 pending。
 	// viewerUserID 为 nil 时（匿名）仅 status 过滤——但 service.ListByPost 会在
@@ -160,6 +160,10 @@ func (r *CommentRepository) FindByPost(ctx context.Context, postID domainshared.
 	// depth 维度过滤：顶层列表只查 depth=0，避免子和父混在一页被分页切走。
 	if depthFilter != comment.DepthFilterAll {
 		query = query.Where("depth = ?", depthFilter)
+	}
+	// block_id 精确过滤（批注按块懒加载）
+	if blockID != "" {
+		query = query.Where("anchor_block_id = ?", blockID)
 	}
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -240,6 +244,30 @@ func (r *CommentRepository) FindReplies(ctx context.Context, parentID domainshar
 		result = append(result, c)
 	}
 	return result, total, nil
+}
+
+// CountAnnotationsByBlock 按块聚合统计批注数量（仅 depth=0 顶层批注）。
+// viewerUserID 非空时返回 approved ∪ 自己 pending；nil 时仅 approved。
+func (r *CommentRepository) CountAnnotationsByBlock(ctx context.Context, postID domainshared.ID, status string, viewerUserID *domainshared.ID) ([]comment.BlockCount, error) {
+	query := r.db.WithContext(ctx).Model(&model.Comment{}).
+		Where("post_id = ?", postID.UUID()).
+		Where("anchor_block_id IS NOT NULL").
+		Where("depth = 0")
+
+	if viewerUserID != nil {
+		query = query.Where("status = ? OR (status = ? AND created_by = ?)", status, comment.StatusPending, viewerUserID.UUID())
+	} else if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	var results []comment.BlockCount
+	err := query.Select("anchor_block_id AS block_id, COUNT(*) AS count").
+		Group("anchor_block_id").
+		Find(&results).Error
+	if err != nil {
+		return nil, domainshared.Internal("统计批注按块聚合失败", err)
+	}
+	return results, nil
 }
 
 func (r *CommentRepository) FindPending(ctx context.Context, anchorFilter comment.AnchorFilter, page, limit int) ([]*comment.Comment, int64, error) {

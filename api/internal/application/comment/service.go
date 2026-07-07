@@ -53,6 +53,12 @@ type AnchorDTO struct {
 	BlockHashSync string `json:"block_text_hash"`
 }
 
+// BlockCountDTO 批注按块聚合计数响应
+type BlockCountDTO struct {
+	BlockID string `json:"block_id"`
+	Count   int64  `json:"count"`
+}
+
 // CommentDTO 评论读模型
 type CommentDTO struct {
 	ID         string           `json:"id"`
@@ -110,7 +116,7 @@ func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, em
 //
 // depthFilter 控制按 depth 列过滤（顶层 / 回复 / 全部），见 domain.DepthFilter；
 // 前台顶层评论列表传 DepthFilterTopLevel，配合 FindReplies 按需拉回复。
-func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domain.AnchorFilter, depthFilter domain.DepthFilter, page, limit int) ([]CommentDTO, int64, error) {
+func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuthorID string, anchorFilter domain.AnchorFilter, depthFilter domain.DepthFilter, blockID string, page, limit int) ([]CommentDTO, int64, error) {
 	// 黑洞模式：匿名 viewer 不查 DB。
 	if viewerUserID == "" {
 		return []CommentDTO{}, 0, nil
@@ -123,7 +129,7 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 	if err != nil {
 		return nil, 0, err
 	}
-	items, total, err := s.commentRepo.FindByPost(ctx, pid, domain.StatusApproved, &viewerID, anchorFilter, depthFilter, page, limit)
+	items, total, err := s.commentRepo.FindByPost(ctx, pid, domain.StatusApproved, &viewerID, anchorFilter, depthFilter, blockID, page, limit)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -166,6 +172,31 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 		dtos = append(dtos, dto)
 	}
 	return dtos, total, nil
+}
+
+// AnnotationSummary 按块聚合统计批注数量（轻量，不含正文/回复）。
+// 黑洞模式同 ListByPost：匿名 viewer 返回空数组。
+func (s *Service) AnnotationSummary(ctx context.Context, postID, viewerUserID string) ([]BlockCountDTO, error) {
+	if viewerUserID == "" {
+		return []BlockCountDTO{}, nil
+	}
+	pid, err := shared.ParseID(postID)
+	if err != nil {
+		return nil, err
+	}
+	viewerID, err := shared.ParseID(viewerUserID)
+	if err != nil {
+		return nil, err
+	}
+	blocks, err := s.commentRepo.CountAnnotationsByBlock(ctx, pid, domain.StatusApproved, &viewerID)
+	if err != nil {
+		return nil, err
+	}
+	dtos := make([]BlockCountDTO, 0, len(blocks))
+	for _, b := range blocks {
+		dtos = append(dtos, BlockCountDTO{BlockID: b.BlockID, Count: b.Count})
+	}
+	return dtos, nil
 }
 
 // AdminCommentDTO 后台管理评论读模型（含所属文章信息）

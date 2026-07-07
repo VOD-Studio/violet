@@ -134,7 +134,7 @@ func TestFindByPost_LoggedInViewer_IncludesOwnPending(t *testing.T) {
 	// 他人的 pending（不可见）
 	saveComment(t, db, domaincomment.StatusPending, "ip", "c@x.com", &otherStr, false)
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, &viewer, domaincomment.AnchorFilterAll, domaincomment.DepthFilterAll, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, &viewer, domaincomment.AnchorFilterAll, domaincomment.DepthFilterAll, "", 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(2), total, "应见 approved(1) + 自己 pending(1) = 2")
 	statuses := map[string]bool{}
@@ -158,7 +158,7 @@ func TestFindByPost_NilViewer_OnlyApproved(t *testing.T) {
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false)
 	saveComment(t, db, domaincomment.StatusPending, "ip", "b@x.com", &viewerStr, false) // 即使有 owner，nil viewer 也不可见
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, domaincomment.DepthFilterAll, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, domaincomment.DepthFilterAll, "", 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total, "nil viewer 只见 approved")
 	for _, c := range items {
@@ -177,7 +177,7 @@ func TestFindByPost_AnchorFilter_Free_OnlyReturnsFreeComments(t *testing.T) {
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false) // 自由
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, true)  // 批注
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterFree, domaincomment.DepthFilterAll, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterFree, domaincomment.DepthFilterAll, "", 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total, "free 过滤只返回自由评论")
 	for _, c := range items {
@@ -196,7 +196,7 @@ func TestFindByPost_AnchorFilter_Annotation_OnlyReturnsAnnotations(t *testing.T)
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "a@x.com", nil, false) // 自由
 	saveComment(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, true)  // 批注
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAnnotation, domaincomment.DepthFilterAll, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAnnotation, domaincomment.DepthFilterAll, "", 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total, "annotation 过滤只返回批注")
 	for _, c := range items {
@@ -280,7 +280,7 @@ func TestFindByPost_DepthFilterTopLevel_OnlyReturnsTopLevel(t *testing.T) {
 	// 回复（depth=1）
 	saveCommentWithDepth(t, db, domaincomment.StatusApproved, "ip", "b@x.com", nil, false, 1, domainshared.NewID().String()+"/")
 
-	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, domaincomment.DepthFilterTopLevel, 1, 50)
+	items, total, err := repo.FindByPost(ctx, pid, domaincomment.StatusApproved, nil, domaincomment.AnchorFilterAll, domaincomment.DepthFilterTopLevel, "", 1, 50)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total, "DepthFilterTopLevel 只返回顶层评论")
 	for _, c := range items {
