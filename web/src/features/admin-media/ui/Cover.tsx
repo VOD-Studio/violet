@@ -1,13 +1,15 @@
 /**
  * Cover - 封面图选择器
  *
- * 封装「从素材库选择封面」的完整交互:选完素材直接用原图 URL 回填,
- * 不强制裁剪上传。需要裁剪的场景由用户在素材库预先裁剪好(见 MediaGrid 裁剪 icon)。
- * 已选时显示 CroppedImage 预览(支持带 ?crop= 的封面视觉聚焦)与更换/移除操作。
+ * 封装「从素材库选择 + 选区聚焦」交互:选完素材后进选区弹窗,
+ * 用户框选封面要展示的区域,确认后把 ?crop= 坐标拼到 URL 回填,
+ * 显示层用 CSS 视觉裁剪聚焦(静态图/GIF 统一,原图无损、不重新上传)。
+ * 可「直接使用原图」跳过选区。
  */
 
 import type { MediaFile, MediaType } from "@entities/media/model/types";
 import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { CropSelectDialog } from "@features/upload/ui/CropSelectDialog";
 import { Button } from "@shared/ui/base/button";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { ImagePlus } from "lucide-react";
@@ -37,11 +39,17 @@ export function Cover({
     mediaType = "image",
 }: CoverProps) {
     const [pickerOpen, setPickerOpen] = useState(false);
+    const [cropSrc, setCropSrc] = useState<string | undefined>(undefined);
 
-    const handleConfirm = (files: MediaFile[]) => {
+    const handlePick = (files: MediaFile[]) => {
         if (files[0]) {
-            onChange(files[0].url);
+            setCropSrc(files[0].url);
         }
+    };
+
+    const handleCropConfirm = (url: string) => {
+        onChange(url);
+        setCropSrc(undefined);
     };
 
     return (
@@ -80,7 +88,16 @@ export function Cover({
                 onOpenChange={setPickerOpen}
                 mediaType={mediaType}
                 title={title}
-                onConfirm={handleConfirm}
+                onConfirm={handlePick}
+            />
+            <CropSelectDialog
+                src={cropSrc ?? ""}
+                aspect={16 / 9}
+                open={!!cropSrc}
+                onOpenChange={(v) => {
+                    if (!v) setCropSrc(undefined);
+                }}
+                onConfirm={handleCropConfirm}
             />
         </div>
     );
