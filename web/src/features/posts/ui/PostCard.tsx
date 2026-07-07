@@ -1,5 +1,6 @@
 import { AvatarGroup } from "@shared/ui/avatar-group";
 import { Badge } from "@shared/ui/base/badge";
+import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
@@ -44,11 +45,12 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
                         params={{ slug: post.slug }}
                         className="block overflow-hidden"
                     >
-                        <img
+                        <CroppedImage
                             src={post.cover_image}
                             alt={post.title}
                             loading="lazy"
-                            className={`w-full ${coverH} object-cover transition-transform duration-500 group-hover:scale-105`}
+                            className={`w-full ${coverH}`}
+                            imgClassName="transition-transform duration-500 group-hover:scale-105"
                         />
                     </Link>
                 ) : (

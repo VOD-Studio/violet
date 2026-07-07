@@ -16,6 +16,7 @@ import { extractToc } from "@shared/lib/hooks/use-toc";
 import { extractMarkdownToc } from "@shared/lib/markdown";
 import { AvatarGroup } from "@shared/ui/avatar-group";
 import { BackToTop } from "@shared/ui/back-to-top";
+import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
@@ -167,10 +168,10 @@ function BlogDetailPage() {
                 {/* 封面图 */}
                 {post.cover_image ? (
                     <div className="mx-auto mb-12 max-w-4xl overflow-hidden rounded-2xl">
-                        <img
+                        <CroppedImage
                             src={post.cover_image}
                             alt={post.title}
-                            className="aspect-2/1 w-full object-cover"
+                            className="aspect-2/1 w-full"
                         />
                     </div>
                 ) : null}

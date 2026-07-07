@@ -15,6 +15,7 @@
  */
 import type { Announcement } from "@features/settings/model/types";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { Link } from "@tanstack/react-router";
 import BlurText from "@vendor/react-bits/BlurText";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
@@ -37,11 +38,12 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
             {/* article 形态：顶部封面图（card 形态无封面） */}
             {isArticle && a.cover_image && (
                 <div className="aspect-2/1 w-full overflow-hidden border-b border-edge-hairline rounded-t-2xl rounded-b-xl">
-                    <img
+                    <CroppedImage
                         src={a.cover_image}
                         alt={a.title}
                         loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="h-full w-full"
+                        imgClassName="transition-transform duration-500 group-hover:scale-105"
                     />
                 </div>
             )}
