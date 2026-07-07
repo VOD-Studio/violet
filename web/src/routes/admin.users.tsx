@@ -180,7 +180,10 @@ function AdminUsers() {
             cell: (row) => (
                 <AvatarGroup
                     users={[
-                        { username: row.username, avatar_url: avatarUrl(row.avatar_url, row.username) },
+                        {
+                            username: row.username,
+                            avatar_url: avatarUrl(row.avatar_url, row.username),
+                        },
                     ]}
                     size="md"
                 />
