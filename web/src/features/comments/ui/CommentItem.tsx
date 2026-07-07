@@ -36,6 +36,8 @@ export interface CommentItemProps {
     postId?: string;
     /** 是否登录（决定是否显示回复按钮；仅登录可回复） */
     isLoggedIn?: boolean;
+    /** 回复提交回调（level>=1 时由父级传入，将新回复冒泡到顶层 CommentItem 的 pendingReplies） */
+    onReplyAdded?: (reply: Comment) => void;
 }
 
 export function CommentItem({
@@ -44,6 +46,7 @@ export function CommentItem({
     level = 0,
     postId,
     isLoggedIn = false,
+    onReplyAdded,
 }: CommentItemProps) {
     const comment = node.comment;
     const sev = getCommentSev(getCommentSeverity(node, { isAuthor }));
@@ -103,7 +106,11 @@ export function CommentItem({
                         compact
                         isLoggedIn={isLoggedIn}
                         onSuccess={(newReply) => {
-                            setPendingReplies((prev) => [...prev, newReply]);
+                            if (onReplyAdded) {
+                                onReplyAdded(newReply);
+                            } else {
+                                setPendingReplies((prev) => [...prev, newReply]);
+                            }
                             setReplying(false);
                         }}
                     />
@@ -117,6 +124,7 @@ export function CommentItem({
                     isLoggedIn={isLoggedIn}
                     postId={postId}
                     pendingReplies={pendingReplies}
+                    onReplyAdded={(reply) => setPendingReplies((prev) => [...prev, reply])}
                 />
             )}
         </div>
@@ -140,11 +148,13 @@ function CommentRepliesBlock({
     isLoggedIn,
     postId,
     pendingReplies = [],
+    onReplyAdded,
 }: {
     comment: Comment;
     isLoggedIn: boolean;
     postId?: string;
     pendingReplies?: Comment[];
+    onReplyAdded?: (reply: Comment) => void;
 }) {
     const repliesTotal = comment.replies_total ?? 0;
     const previewReplies = comment.replies ?? [];
@@ -166,6 +176,7 @@ function CommentRepliesBlock({
                     level={1}
                     postId={postId}
                     isLoggedIn={isLoggedIn}
+                    onReplyAdded={onReplyAdded}
                 />
             ))}
 
@@ -177,6 +188,7 @@ function CommentRepliesBlock({
                     level={1}
                     postId={postId}
                     isLoggedIn={isLoggedIn}
+                    onReplyAdded={onReplyAdded}
                 />
             ))}
 
@@ -187,6 +199,7 @@ function CommentRepliesBlock({
                     excludeIds={allExcludedIds}
                     isLoggedIn={isLoggedIn}
                     postId={postId}
+                    onReplyAdded={onReplyAdded}
                 />
             )}
 
@@ -217,11 +230,13 @@ function ExpandedReplies({
     excludeIds,
     isLoggedIn,
     postId,
+    onReplyAdded,
 }: {
     commentId: string;
     excludeIds: Set<string>;
     isLoggedIn: boolean;
     postId?: string;
+    onReplyAdded?: (reply: Comment) => void;
 }) {
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useReplies(commentId, {
         limit: 10,
@@ -240,6 +255,7 @@ function ExpandedReplies({
                     level={1}
                     postId={postId}
                     isLoggedIn={isLoggedIn}
+                    onReplyAdded={onReplyAdded}
                 />
             ))}
 
