@@ -287,7 +287,8 @@ ssh xunrua.top 'cd /root/docker/nginx-proxy && cp docker-compose.yml docker-comp
 
 ```nginx
 # 静态资源由 nginx 直接服务，不走 SSR
-location ~* \.(css|js|mjs|svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|wasm|map)$ {
+# 扩展名列表必须覆盖 web 产物里所有根目录文件类型，否则会落回 SSR 返回 HTML 兜底（404）
+location ~* \.(css|js|mjs|svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|wasm|map|json|txt|xml|webmanifest)$ {
     root /var/www/blog-client;
     expires 1y;
     add_header Cache-Control "public, immutable";
@@ -299,14 +300,16 @@ reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-
 
 ### 每次部署 web 后同步产物
 
-web 容器内的 `dist/client/` 必须复制到宿主机共享目录（podman cp 跨容器边界复制）：
+**web 容器重建后必须执行**，否则 nginx 服务的还是旧版本（hash 不匹配 → 404）。
+
+已封装为脚本，在项目根执行：
 
 ```bash
-ssh xunrua.top 'rm -rf /root/docker/nginx-proxy/blog-client/* && \
-  podman cp blog-web:/app/dist/client/. /root/docker/nginx-proxy/blog-client/'
+./scripts/sync-client.sh                  # 默认远程 xunrua.top
+./scripts/sync-client.sh --host <其他host> # 指定其他 SSH host
 ```
 
-**必须在 blog-web 重建后执行**，否则静态资源是旧版本（hash 不匹配会 404）。建议把这一步加入部署流程第 5 步之后。
+脚本做的事：清空共享目录 → `podman cp blog-web:/app/dist/client/.` → 共享目录。
 
 ## 回滚
 
