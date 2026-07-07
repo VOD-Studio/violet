@@ -261,22 +261,21 @@ function AnnotationPanel({
             {/* 可滚动内容区：pl-3 左留白，pr-2 + scrollbar-gutter(4px) = 右留白 12px，左右对称 */}
             <div className="annotation-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden pb-3 pl-3 pr-2 pt-0.5">
                 {blockQuery.isLoading && <AnnotationSkeleton />}
-                {blockQuery.data &&
-                    blockQuery.data.data.map((comment) => (
-                        <AnnotationCard
-                            key={comment.id}
-                            node={{
-                                comment,
-                                replies: (comment.replies ?? []).map((r) => ({
-                                    comment: r,
-                                    replies: [],
-                                })),
-                            }}
-                            selectedText={comment.anchor?.selected_text ?? ""}
-                            postId={postId}
-                            isLoggedIn={isLoggedIn}
-                        />
-                    ))}
+                {blockQuery.data?.data.map((comment) => (
+                    <AnnotationCard
+                        key={comment.id}
+                        node={{
+                            comment,
+                            replies: (comment.replies ?? []).map((r) => ({
+                                comment: r,
+                                replies: [],
+                            })),
+                        }}
+                        selectedText={comment.anchor?.selected_text ?? ""}
+                        postId={postId}
+                        isLoggedIn={isLoggedIn}
+                    />
+                ))}
             </div>
         </div>
     );
