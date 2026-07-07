@@ -1,7 +1,10 @@
+import { parseCrop } from "@features/upload/lib/cropUrl";
+import { useMemo } from "react";
 import { cn } from "@/shared/lib/utils";
+import { cropToStyle } from "./lib/crop-to-style";
 
 export interface CroppedImageProps {
-    /** 图片 src(静态图路径;?crop= 视觉裁剪解析在 Issue-0017 扩展) */
+    /** 图片 src,可能带 ?crop=x,y,w,h(GIF 视觉裁剪时) */
     src: string;
     /** 容器宽高比(数字);不传则不强制比例 */
     aspect?: number;
@@ -12,19 +15,32 @@ export interface CroppedImageProps {
 }
 
 /**
- * CroppedImage - 显示层图片。
+ * CroppedImage - 显示层图片,支持视觉裁剪。
  *
- * 本切片(Issue-0016)只做静态显示:无 ?crop= 参数时退化普通 object-cover。
- * Issue-0017 会扩展:解析 src 的 ?crop= 参数,用 CSS transform 聚焦选区,
- * 实现 GIF 无损视觉裁剪。当前对外契约已稳定,后续扩展不破坏调用方。
+ * 解析 src 的 ?crop= 参数,用 CSS transform 把原图聚焦到选区(object-fit:cover
+ * 下聚焦选区中心)。无 ?crop= 参数退化普通 object-cover。
+ *
+ * GIF 场景:原图完整加载,动画无损保留,仅视觉聚焦——这是「无损视觉裁剪」,
+ * 对比 canvas 重编码(会丢动画)的静态图路径,此处保留 GIF 原文件字节。
  */
 export function CroppedImage({ src, aspect, className, alt = "" }: CroppedImageProps) {
+    const rect = useMemo(() => parseCrop(src) ?? undefined, [src]);
+    const style = useMemo(
+        () => cropToStyle(rect, aspect ?? (rect ? rect.w / rect.h : 16 / 9)),
+        [rect, aspect],
+    );
+
     return (
         <div
             className={cn("overflow-hidden", className)}
             style={aspect ? { aspectRatio: aspect } : undefined}
         >
-            <img src={src} alt={alt} className="h-full w-full object-cover" />
+            <img
+                src={src}
+                alt={alt}
+                className="h-full w-full object-cover will-change-transform"
+                style={style}
+            />
         </div>
     );
 }
