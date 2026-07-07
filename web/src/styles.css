@@ -333,12 +333,12 @@ body {
   display: inline-flex;
   align-items: center;
   margin-left: 0.2em;
-  /* 下沉让气泡尾巴与文字基线大致对齐（角标变大后需更下沉） */
-  vertical-align: -0.25em;
+  vertical-align: text-top;
   cursor: pointer;
   border: none;
   background: transparent;
   padding: 0;
+  user-select: none;
   /* muted slate 灰：低对比，不抢正文视觉（替代原先的鲜艳蓝） */
   color: hsl(215 16% 47%);
   transition:
