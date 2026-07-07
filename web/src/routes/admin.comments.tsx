@@ -10,17 +10,19 @@ import type {
     CommentStatus,
     CommentType,
 } from "@features/admin-comments/model/types";
+import { CommentCell } from "@features/admin-comments/ui/CommentCell";
+import { CommentDetail } from "@features/admin-comments/ui/CommentDetail";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import { avatarUrl } from "@features/upload/lib/imageUrl";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
-import { avatarUrl } from "@features/upload/lib/imageUrl";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 /** 评论分页大小 */
@@ -70,14 +72,6 @@ const TYPE_SEGMENTS: SegmentedItem<CommentTypeFilter>[] = [
     { value: "free", label: "自由评论" },
 ];
 
-/** anchor 摘录截断长度（与正文批注 severity 同构，引言区不喧宾夺主） */
-const ANCHOR_EXCERPT_MAX = 80;
-
-/** truncateAnchor 截断 anchor 锚定的原文摘录，超长加省略号。 */
-function truncateAnchor(text: string): string {
-    return text.length > ANCHOR_EXCERPT_MAX ? `${text.slice(0, ANCHOR_EXCERPT_MAX)}…` : text;
-}
-
 function AdminCommentsPage() {
     const [filter, setFilter] = useState<CommentFilter>("pending");
     // 类型筛选与状态筛选正交：切换任一维度都重置分页与勾选。
@@ -101,6 +95,22 @@ function AdminCommentsPage() {
     const deleteMut = useDeleteComment();
     const batchMut = useBatchUpdateComments();
 
+    const handleBatchApprove = () => {
+        if (selected.size === 0) return;
+        batchMut.mutate(
+            { ids: [...selected], status: "approved" },
+            { onSuccess: () => setSelected(new Set()) },
+        );
+    };
+
+    const handleBatchSpam = () => {
+        if (selected.size === 0) return;
+        batchMut.mutate(
+            { ids: [...selected], status: "spam" },
+            { onSuccess: () => setSelected(new Set()) },
+        );
+    };
+
     const switchFilter = (f: CommentFilter) => {
         setFilter(f);
         setPage(1);
@@ -117,19 +127,7 @@ function AdminCommentsPage() {
         {
             key: "body",
             header: "评论内容",
-            ellipsis: true,
-            cell: (row) => (
-                <div className="space-y-1.5">
-                    {row.anchor?.selected_text ? (
-                        <div className="rounded border-l-2 border-primary/40 bg-primary/5 px-2 py-1 dark:bg-primary/10">
-                            <span className="line-clamp-2 text-xs text-muted-foreground">
-                                "{truncateAnchor(row.anchor.selected_text)}"
-                            </span>
-                        </div>
-                    ) : null}
-                    <span className="line-clamp-2 text-sm">{row.body}</span>
-                </div>
-            ),
+            cell: (row) => <CommentCell row={row} />,
         },
         {
             key: "author_name",
@@ -225,38 +223,6 @@ function AdminCommentsPage() {
                 />
             </div>
 
-            {selected.size > 0 && (
-                <div className="mb-3 flex items-center gap-2 rounded-lg border bg-muted/50 p-2 text-sm">
-                    <span>已选 {selected.size} 条</span>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                            batchMut.mutate({
-                                ids: [...selected],
-                                status: "approved",
-                            })
-                        }
-                        disabled={batchMut.isPending}
-                    >
-                        批量通过
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                            batchMut.mutate({
-                                ids: [...selected],
-                                status: "spam",
-                            })
-                        }
-                        disabled={batchMut.isPending}
-                    >
-                        批量标垃圾
-                    </Button>
-                </div>
-            )}
-
             <DataTable<AdminComment>
                 data={data?.data ?? []}
                 columns={columns}
@@ -268,6 +234,29 @@ function AdminCommentsPage() {
                 selectable
                 selectedIds={selected}
                 onSelectionChange={setSelected}
+                expandable
+                renderExpandedRow={(row) => <CommentDetail row={row} />}
+                bulkActions={
+                    <>
+                        <Button
+                            variant="outline"
+                            className="h-9"
+                            onClick={handleBatchApprove}
+                            disabled={batchMut.isPending}
+                        >
+                            <Check className="size-3.5" />
+                            批量通过
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-9"
+                            onClick={handleBatchSpam}
+                            disabled={batchMut.isPending}
+                        >
+                            批量标垃圾
+                        </Button>
+                    </>
+                }
                 loading={isLoading}
                 error={error ? new Error(error.message) : null}
                 onRetry={() => refetch()}
