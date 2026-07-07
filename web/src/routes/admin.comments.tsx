@@ -236,6 +236,7 @@ function AdminCommentsPage() {
                 selectedIds={selected}
                 onSelectionChange={setSelected}
                 expandable
+                expandedRowFixed
                 renderExpandedRow={(row) => <CommentDetail row={row} />}
                 bulkActions={
                     <>
