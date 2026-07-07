@@ -52,6 +52,12 @@
   --color-chart-5: var(--chart-5);
 }
 
+/* 全局滚动条：细条半透明，不使用 ::-webkit-scrollbar（会强制经典模式占空间） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
+}
+
 /*
  * 浅色主题 —— shadcn neutral 调色板
  * next-themes 用 attribute="class"，默认（无 .dark）即浅色。
@@ -360,17 +366,5 @@ body {
 
 /* 批注面板自定义滚动条：细条半透明，出现时不挤压内容 */
 .annotation-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
   scrollbar-gutter: stable;
-}
-.annotation-scroll::-webkit-scrollbar {
-  width: 4px;
-}
-.annotation-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.annotation-scroll::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--muted-foreground) / 0.25);
-  border-radius: 2px;
 }
