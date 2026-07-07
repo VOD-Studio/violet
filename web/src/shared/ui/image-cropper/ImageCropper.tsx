@@ -46,19 +46,23 @@ export function ImageCropper({ src, aspect, onChange }: ImageCropperProps) {
     );
 
     return (
-        <ReactCrop
-            crop={crop}
-            onChange={(_, percentCrop) => setCrop(percentCrop)}
-            onComplete={handleComplete}
-            aspect={aspect}
-            keepSelection
-        >
-            <img
-                src={src}
-                alt="待裁剪"
-                crossOrigin="anonymous"
-                style={{ maxHeight: "60vh", maxWidth: "100%" }}
-            />
-        </ReactCrop>
+        // ReactCrop 是 display:inline-block 会收缩到图片宽度并左对齐,
+        // 外层用 flex 居中让裁剪区在容器里水平居中,避免窄图贴左留大片空白。
+        <div className="flex w-full justify-center">
+            <ReactCrop
+                crop={crop}
+                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onComplete={handleComplete}
+                aspect={aspect}
+                keepSelection
+            >
+                <img
+                    src={src}
+                    alt="待裁剪"
+                    crossOrigin="anonymous"
+                    style={{ maxHeight: "60vh", maxWidth: "100%" }}
+                />
+            </ReactCrop>
+        </div>
     );
 }
