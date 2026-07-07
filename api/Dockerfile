@@ -29,6 +29,10 @@ FROM alpine:3.20
 
 WORKDIR /app
 
+# 国内服务器从 alpine 官方源（dl-cdn）下载 ffmpeg 等 C 库很慢，
+# 换阿里云镜像源加速 apk
+RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories
+
 # ffmpeg 用于视频上传后抽取第 1 秒帧生成封面，缺失会让视频素材封面为空
 RUN apk add --no-cache ca-certificates wget ffmpeg
 
