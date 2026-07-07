@@ -260,7 +260,7 @@ function AnnotationPanel({
                 </button>
             </div>
             {/* 可滚动内容区 */}
-            <div className="min-h-0 overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
                 {blockQuery.isLoading && <AnnotationSkeleton />}
                 {blockQuery.data &&
                     buildCommentTree(blockQuery.data.data).map((node) => (
