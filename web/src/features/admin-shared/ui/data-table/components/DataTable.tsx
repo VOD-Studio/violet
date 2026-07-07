@@ -13,7 +13,6 @@ import { DataTableFooter } from "./DataTableFooter";
 import { DataTableHeader } from "./DataTableHeader";
 import { DataTableToolbar } from "./DataTableToolbar";
 import "../styles/sticky-shadow.css";
-import "../styles/scrollbar.css";
 
 const DEFAULT_COLUMN_MIN_WIDTH = 80;
 
@@ -342,8 +341,6 @@ export function DataTable<T>({
 
     // —— header / body 横向滚动同步 ——
     // body 滚动时同步 header 的 scrollLeft（header 容器 overflow-hidden，靠 JS 驱动）
-    const [scrollbarWidth, setScrollbarWidth] = useState(0);
-
     useEffect(() => {
         const body = scrollContainerRef.current;
         const header = headerScrollRef.current;
@@ -354,18 +351,10 @@ export function DataTable<T>({
         };
 
         body.addEventListener("scroll", sync);
-        // 初始同步 + 测量滚动条宽度
         sync();
-        const measureGutter = () => {
-            setScrollbarWidth(body.offsetWidth - body.clientWidth);
-        };
-        measureGutter();
-        const ro = new ResizeObserver(measureGutter);
-        ro.observe(body);
 
         return () => {
             body.removeEventListener("scroll", sync);
-            ro.disconnect();
         };
     }, []);
 
@@ -387,12 +376,8 @@ export function DataTable<T>({
             />
 
             <div className="border-border bg-card overflow-hidden rounded-md border">
-                {/* Header — 独立容器，无滚动条；paddingRight 补偿 body 滚动条宽度 */}
-                <div
-                    ref={headerScrollRef}
-                    className="overflow-hidden"
-                    style={scrollbarWidth ? { paddingRight: `${scrollbarWidth}px` } : undefined}
-                >
+                {/* Header — 独立容器，无滚动条；scrollbar-gutter:stable 与 body 预留等宽 gutter 保持列对齐 */}
+                <div ref={headerScrollRef} className="[scrollbar-gutter:stable] overflow-hidden">
                     <table
                         ref={tableRef}
                         className="caption-bottom text-sm"
@@ -427,10 +412,10 @@ export function DataTable<T>({
                         />
                     </table>
                 </div>
-                {/* Body — 自定义滚动条，仅出现在内容区 */}
+                {/* Body — scrollbar-gutter:stable 防止滚动条出现时列偏移 */}
                 <div
                     ref={scrollContainerRef}
-                    className="dt-scroll overflow-auto"
+                    className="[scrollbar-gutter:stable] overflow-auto"
                     style={stickyHeader ? { maxHeight } : undefined}
                     aria-busy={loading ? true : undefined}
                 >
