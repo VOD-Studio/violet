@@ -17,6 +17,7 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Download, FileText, FileUp, Globe } from "lucide-react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { urlErrorMessage, validateUrl } from "@/shared/lib/url";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import { PromptDialog } from "@/shared/ui/prompt-dialog";
@@ -208,20 +209,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         const handleImportUrlConfirm = (url: string) => {
             if (!editor || !onImportUrl) return;
             const trimmed = url.trim();
-            if (!trimmed) {
-                setUrlError("请输入 URL");
-                return false;
-            }
-            // 前端预校验：避免非法 URL / 非 http(s) 协议往返后端才报错
-            let parsed: URL;
-            try {
-                parsed = new URL(trimmed);
-            } catch {
-                setUrlError("请输入合法的 URL");
-                return false;
-            }
-            if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-                setUrlError("仅支持 http/https 链接");
+            // 前端预校验：协议 + hostname 合法性，拦截非法域名结构避免往返后端才报错
+            const reason = validateUrl(trimmed);
+            if (reason) {
+                setUrlError(urlErrorMessage(reason));
                 return false;
             }
             setUrlError(null);
