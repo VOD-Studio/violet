@@ -15,6 +15,7 @@ type AggregatedReaction struct {
 	EmojiID   int32  `json:"emoji_id"`
 	EmojiName string `json:"emoji_name"`
 	EmojiURL  string `json:"emoji_url"`
+	GifURL    string `json:"gif_url"`
 	Count     int64  `json:"count"`
 	Self      bool   `json:"self"`
 }

@@ -33,15 +33,16 @@ func (s *CommentReactionStore) ListByComment(ctx context.Context, commentID, vie
 		EmojiID   int32  `gorm:"column:emoji_id"`
 		EmojiName string `gorm:"column:emoji_name"`
 		EmojiURL  string `gorm:"column:emoji_url"`
+		GifURL    string `gorm:"column:gif_url"`
 		Count     int64  `gorm:"column:count"`
 		SelfInt   int    `gorm:"column:self_int"`
 	}
 	err := s.db.WithContext(ctx).
 		Table("comment_reactions cr").
-		Select("cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID)).
+		Select("cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, e.gif_url AS gif_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID)).
 		Joins("LEFT JOIN emojis e ON e.id = cr.emoji_id").
 		Where("cr.comment_id = ?", parseUUID(commentID)).
-		Group("cr.emoji_id, e.name, e.url").
+		Group("cr.emoji_id, e.name, e.url, e.gif_url").
 		Order("count DESC, cr.emoji_id ASC").
 		Scan(&rows).Error
 	if err != nil {
@@ -50,7 +51,7 @@ func (s *CommentReactionStore) ListByComment(ctx context.Context, commentID, vie
 	result := make([]domaincr.AggregatedReaction, 0, len(rows))
 	for _, r := range rows {
 		result = append(result, domaincr.AggregatedReaction{
-			EmojiID: r.EmojiID, EmojiName: r.EmojiName, EmojiURL: r.EmojiURL,
+			EmojiID: r.EmojiID, EmojiName: r.EmojiName, EmojiURL: r.EmojiURL, GifURL: r.GifURL,
 			Count: r.Count, Self: r.SelfInt > 0,
 		})
 	}
@@ -102,15 +103,16 @@ func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs [
 		EmojiID   int32     `gorm:"column:emoji_id"`
 		EmojiName string    `gorm:"column:emoji_name"`
 		EmojiURL  string    `gorm:"column:emoji_url"`
+		GifURL    string    `gorm:"column:gif_url"`
 		Count     int64     `gorm:"column:count"`
 		SelfInt   int       `gorm:"column:self_int"`
 	}
 	err := s.db.WithContext(ctx).
 		Table("comment_reactions cr").
-		Select("cr.comment_id, cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID)).
+		Select("cr.comment_id, cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, e.gif_url AS gif_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID)).
 		Joins("LEFT JOIN emojis e ON e.id = cr.emoji_id").
 		Where("cr.comment_id IN ?", ids).
-		Group("cr.comment_id, cr.emoji_id, e.name, e.url").
+		Group("cr.comment_id, cr.emoji_id, e.name, e.url, e.gif_url").
 		Order("cr.comment_id, count DESC, cr.emoji_id ASC").
 		Scan(&rows).Error
 	if err != nil {
@@ -120,7 +122,7 @@ func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs [
 	for _, r := range rows {
 		cid := r.CommentID.String()
 		grouped[cid] = append(grouped[cid], domaincr.AggregatedReaction{
-			EmojiID: r.EmojiID, EmojiName: r.EmojiName, EmojiURL: r.EmojiURL,
+			EmojiID: r.EmojiID, EmojiName: r.EmojiName, EmojiURL: r.EmojiURL, GifURL: r.GifURL,
 			Count: r.Count, Self: r.SelfInt > 0,
 		})
 	}

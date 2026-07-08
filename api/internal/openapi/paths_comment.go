@@ -64,6 +64,7 @@ func registerCommentPaths(t *openapi3.T) {
 		"emoji_id":   optInt32("表情 ID"),
 		"emoji_name": reqStr("表情名称"),
 		"emoji_url":  reqStr("表情图片 URL"),
+		"gif_url":    optStr("表情动图 URL"),
 		"count":      optInt64("反应总数"),
 		"self":       optBool("当前登录用户是否已反应"),
 	}, "emoji_id", "emoji_name", "emoji_url", "count")
