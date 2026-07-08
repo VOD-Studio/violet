@@ -1,11 +1,11 @@
 /**
  * /announcements/$id - 公告详情页（article 形态）
  *
- * 去赛博化后的视觉语言：
- * - 标题用 BlurText 按词模糊渐显，替代 DecryptedText 解码
- * - 按钮用 Magnet 磁吸微交互，替代 ClickSpark 粒子火花
- * - severity 配色走 shared/announcement-severity（shadcn 色阶），替代硬编码 hex
- * - 去掉「事件简报 Event Manifest」终端定位文案与 font-mono 装饰
+ * 视觉语言：
+ * - 标题用 BlurText 按词模糊渐显
+ * - 按钮用 Magnet 磁吸微交互
+ * - severity 配色走 shared/announcement-severity（shadcn 色阶）
+ * - 去掉硬编码 hex 与 font-mono 装饰
  */
 
 import { useAnnouncement } from "@features/settings/api/queries";

@@ -7,11 +7,11 @@
  * - article（简报入口）：带封面图 + 「阅读 →」引导，
  *   整卡可点击，跳转 /announcements/:id 看正文。
  *
- * 去赛博化后的视觉语言：
- * - 外壳用 BorderGlow 柔色发光描边（severity 决定色相），替代 SpotlightCard 聚光
- * - 标题用 BlurText 按词模糊渐显，替代 DecryptedText 解码乱码
+ * 视觉语言：
+ * - 外壳用 BorderGlow 柔色发光描边（severity 决定色相）
+ * - 标题用 BlurText 按词模糊渐显
  * - severity 仅由 BorderGlow 边框色相表达，不显示文字标签与图标
- * - severity 配色走 shadcn 色阶（shared/ui/announcement-severity），无 neon
+ * - severity 配色走 shadcn 色阶（shared/ui/announcement-severity）
  */
 import type { Announcement } from "@features/settings/model/types";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";

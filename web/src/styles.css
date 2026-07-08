@@ -34,7 +34,7 @@
   --color-edge-hairline: var(--edge-hairline);
   --color-surface-glass: var(--surface-glass);
 
-  /* Neon 赛博色板（bg-neon-purple / text-neon-blue 等工具类由此映射） */
+  /* Neon 强调色板（bg-neon-purple / text-neon-blue 等工具类由此映射） */
   --color-neon-purple: var(--neon-purple);
   --color-neon-blue: var(--neon-blue);
   --color-neon-green: var(--neon-green);
@@ -108,7 +108,7 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
 
-  /* Neon 赛博色板（浅色：饱和度适中，保证白底可读） */
+  /* Neon 强调色（浅色：饱和度适中，保证白底可读） */
   --neon-purple: oklch(0.55 0.28 300);
   --neon-blue: oklch(0.6 0.22 245);
   --neon-green: oklch(0.62 0.19 150);
@@ -155,7 +155,7 @@
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
 
-  /* Neon 赛博色板（暗色：高饱和高亮度，霓虹发光感） */
+  /* Neon 强调色（暗色：高饱和高亮度，发光感） */
   --neon-purple: oklch(0.72 0.32 300);
   --neon-blue: oklch(0.78 0.28 245);
   --neon-green: oklch(0.8 0.25 150);

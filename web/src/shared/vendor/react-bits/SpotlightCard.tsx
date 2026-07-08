@@ -15,9 +15,9 @@ export interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement>
  * spec：冷光跟随鼠标游走于卡片边缘，揭示材质边界。
  * - 鼠标移动 → useSpotlight 写 --spot-x/--spot-y
  * - 聚光层用 radial-gradient 在该点画冷光（hover 显现）
- * - 渐变边框层：dark 霓虹冷蓝 inset 发光 / light 由 1px 边框承担
+ * - 渐变边框层：dark 冷蓝 inset 发光 / light 由 1px 边框承担
  *
- * Dark：深色毛玻璃 + 边缘霓虹冷蓝发光
+ * Dark：深色毛玻璃 + 边缘冷蓝发光
  * Light：超柔多层物理阴影 + 1px rgba(0,0,0,0.05) 边框（无发光）
  */
 function SpotlightCard({
@@ -58,7 +58,7 @@ function SpotlightCard({
                         "radial-gradient(var(--spot-radius) circle at var(--spot-x, 50%) var(--spot-y, 50%), hsl(var(--glow-soft) / 0.18), transparent 60%)",
                 }}
             />
-            {/* 渐变边框层（dark 霓虹） */}
+            {/* 渐变边框层（dark 模式） */}
             <span
                 aria-hidden
                 className="pointer-events-none absolute inset-0 hidden rounded-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:block"

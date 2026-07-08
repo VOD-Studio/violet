@@ -7,7 +7,7 @@ import { motion } from "motion/react";
  * /about - 关于页
  *
  * 数据来自 useSettings（已全局预取，零后端改动）。
- * 设计对齐首页 Hero 的极简 + aurora 光斑 + motion 入场动画。
+ * 设计对齐首页 Hero 的极简 + 渐变光斑 + motion 入场动画。
  * 区块：Hero（站点名/描述）→ 个人简介 → 技术栈标签云 → 社交链接卡片。
  */
 function AboutPage() {
@@ -35,7 +35,7 @@ function AboutPage() {
         <div className="flex min-h-screen flex-col">
             {/* Hero 区 */}
             <section className="relative flex h-[60vh] items-center justify-center overflow-hidden bg-background">
-                {/* Aurora 光斑背景（复用首页风格） */}
+                {/* 渐变光斑背景（复用首页风格） */}
                 <div className="absolute inset-0 opacity-30">
                     <div className="absolute left-1/4 top-1/4 size-96 rounded-full bg-blue-400/30 mix-blend-multiply blur-3xl animate-blob" />
                     <div className="absolute right-1/4 top-1/3 size-96 rounded-full bg-purple-400/30 mix-blend-multiply blur-3xl animate-blob [animation-delay:2s]" />

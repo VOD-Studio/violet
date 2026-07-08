@@ -19,7 +19,7 @@ interface HeaderProps {
  * 首页有自己的 20% 底座（routes/index.tsx），
  * 其他页（blog/about/...）仍用此 sticky header。
  *
- * sticky + backdrop-blur + 1px 极细边框（dark 霓虹 / light 灰）。
+ * sticky + backdrop-blur + 1px 极细边框（dark 发光 / light 灰）。
  */
 const Header = ({ isAuthenticated }: HeaderProps) => {
     // 登录态来源合并：SSR 静态快照（首屏）OR 客户端响应式 sessionActive（登录/登出瞬间）。
