@@ -19,6 +19,7 @@
         "postinstall": "node -e \"require('fs').copyFileSync(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs',{paths:[require.resolve('react-pdf')]}),'public/pdf.worker.min.mjs')\""
     },
     "dependencies": {
+        "@fontsource/maple-mono": "^5.2.6",
         "@hookform/resolvers": "^5.4.0",
         "@radix-ui/react-slot": "^1.3.0",
         "@react-oauth/google": "^0.13.5",

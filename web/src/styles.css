@@ -1,5 +1,7 @@
 /* web/src/styles.css */
 @import "tailwindcss";
+@import "@fontsource/maple-mono/400.css";
+@import "@fontsource/maple-mono/700.css";
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
 
@@ -7,6 +9,7 @@
   --animate-blob: blob 7s infinite;
   --animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
   --animate-caret-blink: caret-blink 1s ease infinite;
+  --font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
   /* bg-background / text-foreground / bg-primary / border-border 等 */

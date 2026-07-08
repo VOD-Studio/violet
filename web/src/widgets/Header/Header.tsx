@@ -1,6 +1,5 @@
 import { useMusicUIStore } from "@features/music/model/ui-store";
 import { useSessionStore } from "@shared/api/session";
-import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useMe } from "@/features/auth/api/queries";
 
@@ -43,9 +42,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
     }, []);
 
     return (
-        <motion.header
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
+        <header
             style={{ viewTransitionName: "site-header" }}
             className={`sticky top-0 z-50 w-full transition-all duration-300 ${
                 scrolled
@@ -61,7 +58,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
                     <HeaderMobile onAction={handleAction} />
                 </div>
             </div>
-        </motion.header>
+        </header>
     );
 };
 
