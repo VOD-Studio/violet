@@ -35,8 +35,8 @@ export default function LandingHero() {
 
                 <div className="container relative z-10 mx-auto px-4 py-20 md:px-6 md:py-28">
                     <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[minmax(0,1fr)_auto]">
-                        {/* 左：品牌信息 — blur-in 聚焦入场 */}
-                        <div className="animate-blur-in max-w-[40rem]">
+                        {/* 左：品牌信息 */}
+                        <div className="max-w-[40rem]">
                             <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono">
                                 <span className="text-[2.5rem] font-bold leading-none tracking-tight md:text-[3.4rem]">
                                     MIMO
@@ -97,8 +97,8 @@ export default function LandingHero() {
                             </div>
                         </div>
 
-                        {/* 右：终端卡片 — clip-reveal 从上往下揭开 */}
-                        <div className="animate-clip-reveal w-full max-w-sm justify-self-start md:justify-self-end">
+                        {/* 右：终端卡片 */}
+                        <div className="w-full max-w-sm justify-self-start md:justify-self-end">
                             <TerminalCard quotes={TERMINAL_QUOTES} />
                         </div>
                     </div>
