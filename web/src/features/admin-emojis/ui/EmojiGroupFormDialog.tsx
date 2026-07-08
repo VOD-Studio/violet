@@ -1,7 +1,9 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
 import { useCreateEmojiGroup, useUpdateEmojiGroup } from "@features/admin-emojis/api/mutations";
+import { type EmojiGroupForm, emojiGroupSchema } from "@features/admin-emojis/model/schema";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
+import { Label } from "@shared/ui/base/label";
 import {
     Select,
     SelectContent,
@@ -11,8 +13,10 @@ import {
 } from "@shared/ui/base/select";
 import { Switch } from "@shared/ui/base/switch";
 import { Modal } from "@shared/ui/modal";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 interface EmojiGroupFormDialogProps {
@@ -22,19 +26,11 @@ interface EmojiGroupFormDialogProps {
     groupCount: number;
 }
 
-interface GroupFormState {
-    name: string;
-    source: string;
-    coverUrl: string;
-    sortOrder: number;
-    isEnabled: boolean;
-}
-
 /**
  * EmojiGroupFormDialog - 创建/编辑表情分组
  *
+ * 使用 React Hook Form + Zod 进行表单验证。
  * 打开时按 editingGroup 初始化表单，null 为创建态。
- * 创建走 useCreateEmojiGroup，编辑走 useUpdateEmojiGroup，成功后 toast 并关闭。
  */
 export function EmojiGroupFormDialog({
     open,
@@ -45,48 +41,55 @@ export function EmojiGroupFormDialog({
     const createGroup = useCreateEmojiGroup();
     const updateGroup = useUpdateEmojiGroup();
 
-    const [form, setForm] = useState<GroupFormState>({
-        name: "",
-        source: "custom",
-        coverUrl: "",
-        sortOrder: 0,
-        isEnabled: true,
+    const {
+        register,
+        handleSubmit,
+        control,
+        watch,
+        reset,
+        setValue,
+        formState: { errors },
+    } = useForm<EmojiGroupForm>({
+        resolver: zodResolver(emojiGroupSchema),
+        defaultValues: {
+            name: "",
+            source: "custom",
+            cover_url: "",
+            sort_order: 0,
+            is_enabled: true,
+        },
     });
+
+    const isEnabled = watch("is_enabled");
 
     useEffect(() => {
         if (!open) return;
         if (editingGroup) {
-            setForm({
+            reset({
                 name: editingGroup.name,
                 source: editingGroup.source,
-                coverUrl: editingGroup.cover_url ?? "",
-                sortOrder: editingGroup.sort_order,
-                isEnabled: editingGroup.is_enabled,
+                cover_url: editingGroup.cover_url ?? "",
+                sort_order: editingGroup.sort_order,
+                is_enabled: editingGroup.is_enabled,
             });
         } else {
-            setForm({
+            reset({
                 name: "",
                 source: "custom",
-                coverUrl: "",
-                sortOrder: groupCount,
-                isEnabled: true,
+                cover_url: "",
+                sort_order: groupCount,
+                is_enabled: true,
             });
         }
-    }, [open, editingGroup, groupCount]);
+    }, [open, editingGroup, groupCount, reset]);
 
-    const handleSubmit = () => {
-        const name = form.name.trim();
-        if (!name) {
-            toast.error("请输入分组名称");
-            return;
-        }
-
+    const onSubmit = (data: EmojiGroupForm) => {
         const body = {
-            name,
-            source: form.source,
-            cover_url: form.coverUrl.trim() || undefined,
-            sort_order: form.sortOrder,
-            is_enabled: form.isEnabled,
+            name: data.name.trim(),
+            source: data.source,
+            cover_url: data.cover_url?.trim() || undefined,
+            sort_order: data.sort_order,
+            is_enabled: data.is_enabled,
         };
 
         if (editingGroup) {
@@ -122,14 +125,17 @@ export function EmojiGroupFormDialog({
             footer={
                 <>
                     <Button
+                        type="button"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         className="w-full sm:w-auto"
+                        disabled={submitting}
                     >
                         取消
                     </Button>
                     <Button
-                        onClick={handleSubmit}
+                        type="submit"
+                        form="group-form"
                         disabled={submitting}
                         className="w-full sm:w-auto"
                     >
@@ -139,84 +145,84 @@ export function EmojiGroupFormDialog({
                 </>
             }
         >
-            <div className="space-y-4">
-                <div>
-                    <label htmlFor="group-name" className="text-sm font-medium">
-                        名称
-                    </label>
+            <form id="group-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="group-name">
+                        名称 <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                         id="group-name"
-                        value={form.name}
-                        onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                         placeholder="如：经典表情"
-                        className="mt-1.5"
+                        disabled={submitting}
+                        aria-invalid={!!errors.name}
+                        {...register("name")}
+                    />
+                    {errors.name && (
+                        <p className="text-sm text-destructive">{errors.name.message}</p>
+                    )}
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="group-source">来源</Label>
+                    <Controller
+                        control={control}
+                        name="source"
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger
+                                    id="group-source"
+                                    className="w-full"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                >
+                                    <SelectValue placeholder="选择来源" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="system">系统</SelectItem>
+                                    <SelectItem value="bilibili">B站</SelectItem>
+                                    <SelectItem value="custom">自定义</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
                     />
                 </div>
-                <div>
-                    <label htmlFor="group-source" className="text-sm font-medium">
-                        来源
-                    </label>
-                    <Select
-                        value={form.source}
-                        onValueChange={(value) => setForm((p) => ({ ...p, source: value }))}
-                    >
-                        <SelectTrigger
-                            id="group-source"
-                            className="mt-1.5 w-full"
-                            onPointerDown={(e) => e.stopPropagation()}
-                        >
-                            <SelectValue placeholder="选择来源" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="system">系统</SelectItem>
-                            <SelectItem value="bilibili">B站</SelectItem>
-                            <SelectItem value="custom">自定义</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div>
-                    <label htmlFor="group-cover" className="text-sm font-medium">
-                        封面图 URL
-                    </label>
+
+                <div className="space-y-2">
+                    <Label htmlFor="group-cover">封面图 URL</Label>
                     <Input
                         id="group-cover"
-                        value={form.coverUrl}
-                        onChange={(e) => setForm((p) => ({ ...p, coverUrl: e.target.value }))}
                         placeholder="如：https://example.com/cover.png"
-                        className="mt-1.5"
+                        disabled={submitting}
+                        {...register("cover_url")}
                     />
                 </div>
-                <div>
-                    <label htmlFor="group-sort" className="text-sm font-medium">
-                        排序权重
-                    </label>
+
+                <div className="space-y-2">
+                    <Label htmlFor="group-sort">排序权重</Label>
                     <Input
                         id="group-sort"
                         type="number"
-                        value={form.sortOrder}
-                        onChange={(e) =>
-                            setForm((p) => ({
-                                ...p,
-                                sortOrder: Number.parseInt(e.target.value, 10) || 0,
-                            }))
-                        }
+                        min={0}
                         placeholder="数字越小越靠前"
-                        className="mt-1.5"
+                        disabled={submitting}
+                        {...register("sort_order", { valueAsNumber: true })}
                     />
+                    {errors.sort_order && (
+                        <p className="text-sm text-destructive">{errors.sort_order.message}</p>
+                    )}
                 </div>
+
                 <div className="flex items-center justify-between">
-                    <label htmlFor="group-enabled" className="text-sm font-medium">
+                    <Label htmlFor="group-enabled" className="cursor-pointer">
                         启用状态
-                    </label>
+                    </Label>
                     <Switch
                         id="group-enabled"
-                        checked={form.isEnabled}
-                        onCheckedChange={(checked) =>
-                            setForm((p) => ({ ...p, isEnabled: checked }))
-                        }
+                        checked={isEnabled}
+                        disabled={submitting}
+                        onCheckedChange={(checked) => setValue("is_enabled", checked)}
                     />
                 </div>
-            </div>
+            </form>
         </Modal>
     );
 }
