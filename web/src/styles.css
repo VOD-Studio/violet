@@ -220,20 +220,32 @@ body {
  * ——————————————————————————————————————————
  */
 
+/* VT group 裁剪：防止滑动时内容溢出视口 */
+::view-transition-group(page-main) {
+  overflow: hidden;
+}
+
+/* old/new 使用 normal 混合模式，避免 cross-fade 时颜色叠加 */
+::view-transition-old(page-main),
+::view-transition-new(page-main) {
+  mix-blend-mode: normal;
+  contain: paint;
+}
+
 /* —— forward：旧页左移退出，新页右侧滑入 —— */
 :active-view-transition-type(forward)::view-transition-old(page-main) {
-  animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-left;
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-left;
 }
 :active-view-transition-type(forward)::view-transition-new(page-main) {
-  animation: 320ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-right;
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-right;
 }
 
 /* —— back：旧页右移退出，新页左侧滑入 —— */
 :active-view-transition-type(back)::view-transition-old(page-main) {
-  animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-right;
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-right;
 }
 :active-view-transition-type(back)::view-transition-new(page-main) {
-  animation: 320ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-left;
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-left;
 }
 
 /* —— fade：同段导航交叉淡入 —— */
@@ -247,7 +259,7 @@ body {
 @keyframes page-enter-right {
   from {
     opacity: 0;
-    transform: translateX(36px);
+    transform: translateX(20px);
   }
   to {
     opacity: 1;
@@ -257,7 +269,7 @@ body {
 @keyframes page-enter-left {
   from {
     opacity: 0;
-    transform: translateX(-36px);
+    transform: translateX(-20px);
   }
   to {
     opacity: 1;
@@ -271,7 +283,7 @@ body {
   }
   to {
     opacity: 0;
-    transform: translateX(-26px);
+    transform: translateX(-14px);
   }
 }
 @keyframes page-exit-right {
@@ -281,7 +293,7 @@ body {
   }
   to {
     opacity: 0;
-    transform: translateX(26px);
+    transform: translateX(14px);
   }
 }
 @keyframes page-fade-in {
