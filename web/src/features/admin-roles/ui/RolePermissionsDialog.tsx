@@ -183,7 +183,7 @@ export function RolePermissionsDialog({
                                                 <p className="text-muted-foreground text-xs mt-0.5">
                                                     {permission.description}
                                                 </p>
-                                                <code className="text-primary text-xs">
+                                                <code className="font-mono text-primary text-xs">
                                                     {permission.code}
                                                 </code>
                                             </div>

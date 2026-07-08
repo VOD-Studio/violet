@@ -82,7 +82,7 @@ function YearSection({
                             <ul className="space-y-2 border-l-2 border-border pl-4">
                                 {items.map((item) => (
                                     <li key={item.id} className="flex items-start gap-3">
-                                        <span className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                                        <span className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
                                             {format(new Date(item.published_at), "MM-dd")}
                                         </span>
                                         <div>

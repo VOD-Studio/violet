@@ -129,7 +129,7 @@ function AdminPermissionsPage() {
             ellipsis: true,
             cell: (r) => (
                 <div className="flex items-center gap-2" style={{ paddingLeft: r.depth * 20 }}>
-                    <code className="text-primary bg-primary/10 rounded px-2 py-0.5 text-sm">
+                    <code className="font-mono text-primary bg-primary/10 rounded px-2 py-0.5 text-sm">
                         {r.row.code}
                     </code>
                 </div>

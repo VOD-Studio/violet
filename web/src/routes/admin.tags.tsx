@@ -76,7 +76,7 @@ function AdminTagsPage() {
             sortable: true,
             ellipsis: true,
             cell: (row) => (
-                <code className="text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-xs">
+                <code className="font-mono text-muted-foreground bg-muted rounded px-1.5 py-0.5 text-xs">
                     {row.slug}
                 </code>
             ),

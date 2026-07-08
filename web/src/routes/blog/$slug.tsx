@@ -141,7 +141,7 @@ function BlogDetailPage() {
                     </h1>
 
                     {/* 元信息 */}
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
                         {post.author ? (
                             <span className="inline-flex items-center gap-1.5">
                                 <AvatarGroup

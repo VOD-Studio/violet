@@ -200,7 +200,9 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-family: "Inter", "Geist", sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC",
+    "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 /* 让整个页面参与 View Transition 的圆圈扩散动画 */

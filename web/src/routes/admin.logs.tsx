@@ -99,7 +99,7 @@ function AdminLogsPage() {
                 title="操作详情"
                 size="md"
             >
-                <pre className="max-h-96 overflow-auto rounded bg-muted p-3 text-xs">
+                <pre className="max-h-96 overflow-auto rounded bg-muted p-3 font-mono text-xs">
                     {JSON.stringify(detailLog?.detail ?? {}, null, 2)}
                 </pre>
             </Modal>
