@@ -82,7 +82,7 @@ export function EmojiPicker({
             <PopoverContent
                 align={align}
                 sideOffset={4}
-                className="w-[260px] p-0"
+                className="w-85 p-0"
                 onOpenAutoFocus={(e) => e.preventDefault()}
             >
                 <div className="flex flex-col">
@@ -174,7 +174,7 @@ function EmojiGrid({
     }
 
     return (
-        <div className="grid grid-cols-6 gap-1 pt-2">
+        <div className="grid grid-cols-8 gap-1 pt-2">
             {emojis.map((emoji) => {
                 const isSelected = selectedIds.has(emoji.id);
                 const text = emoji.text_content ?? emoji.name;
