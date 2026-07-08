@@ -34,19 +34,6 @@ export default function LandingHero() {
                     <div className="absolute top-1/3 right-1/4 size-96 rounded-full bg-purple-400/30 mix-blend-multiply blur-3xl animate-blob [animation-delay:2s] dark:mix-blend-screen" />
                 </div>
 
-                {/* 网格底纹 */}
-                <div
-                    className="absolute inset-0 text-foreground opacity-[0.03]"
-                    style={{
-                        backgroundImage:
-                            "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-                        backgroundSize: "64px 64px",
-                        maskImage: "radial-gradient(ellipse at center, black 30%, transparent 80%)",
-                        WebkitMaskImage:
-                            "radial-gradient(ellipse at center, black 30%, transparent 80%)",
-                    }}
-                />
-
                 <div className="container relative z-10 mx-auto px-4 py-20 md:px-6 md:py-28">
                     <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[minmax(0,1fr)_auto]">
                         {/* 左：品牌信息 */}
@@ -74,7 +61,7 @@ export default function LandingHero() {
                                 {["前端", "后端", "工程实践"].map((label) => (
                                     <span
                                         key={label}
-                                        className="rounded-full border border-edge-hairline px-3 py-1 backdrop-blur-sm"
+                                        className="rounded-full border border-edge-hairline px-3 py-1"
                                         style={{ background: "var(--surface-glass)" }}
                                     >
                                         {label}
@@ -92,7 +79,7 @@ export default function LandingHero() {
                                 </Link>
                                 <Link
                                     to="/about"
-                                    className="inline-flex items-center gap-2 rounded-xl border border-edge-hairline px-5 py-2.5 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-accent"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-edge-hairline px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
                                     style={{ background: "var(--surface-glass)" }}
                                 >
                                     关于
@@ -101,7 +88,7 @@ export default function LandingHero() {
                                     href="https://github.com"
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="inline-flex size-10 items-center justify-center rounded-xl border border-edge-hairline text-muted-foreground backdrop-blur-sm transition-colors hover:text-foreground"
+                                    className="inline-flex size-10 items-center justify-center rounded-xl border border-edge-hairline text-muted-foreground transition-colors hover:text-foreground"
                                     style={{ background: "var(--surface-glass)" }}
                                     aria-label="GitHub"
                                 >

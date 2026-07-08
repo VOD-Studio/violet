@@ -46,10 +46,20 @@ export function ParticleField({ density = 0.5, heightVh = 100 }: ParticleFieldPr
         const maxMeteors = Math.max(4, Math.round(10 * density));
         let width = 0;
         let height = 0;
+        let isDark = document.documentElement.classList.contains("dark");
         const meteors: Meteor[] = [];
 
+        // 主题变化时更新缓存，避免每帧 DOM 读取
+        const themeObserver = new MutationObserver(() => {
+            isDark = document.documentElement.classList.contains("dark");
+        });
+        themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ["class"],
+        });
+
         const resize = () => {
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const dpr = 1; // 粒子是模糊点阵，1x DPR 视觉无损但合成成本降 4x
             const rect = container.getBoundingClientRect();
             width = rect.width;
             height = rect.height;
@@ -98,7 +108,6 @@ export function ParticleField({ density = 0.5, heightVh = 100 }: ParticleFieldPr
                 if (meteors.length < maxMeteors) spawn();
             }
 
-            const isDark = document.documentElement.classList.contains("dark");
             const blueRgb = isDark ? "96, 165, 250" : "59, 130, 246";
             const purpleRgb = isDark ? "192, 132, 252" : "168, 85, 247";
 
@@ -172,6 +181,7 @@ export function ParticleField({ density = 0.5, heightVh = 100 }: ParticleFieldPr
         return () => {
             stop();
             if (resizeRaf) cancelAnimationFrame(resizeRaf);
+            themeObserver.disconnect();
             document.removeEventListener("visibilitychange", onVisibility);
             window.removeEventListener("resize", onResize);
         };
