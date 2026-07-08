@@ -205,6 +205,11 @@ body {
     "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
+/* Maple Mono 连字：所有 font-mono 元素启用标准连字 + 上下文替代 */
+.font-mono {
+  font-feature-settings: "liga", "calt";
+}
+
 /* 让整个页面参与 View Transition 的圆圈扩散动画 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
