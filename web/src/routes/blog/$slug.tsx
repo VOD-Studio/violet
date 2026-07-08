@@ -167,7 +167,10 @@ function BlogDetailPage() {
 
                 {/* 封面图 */}
                 {post.cover_image ? (
-                    <div className="post-cover mx-auto mb-12 max-w-4xl overflow-hidden rounded-2xl">
+                    <div
+                        className="mx-auto mb-12 max-w-4xl overflow-hidden rounded-2xl"
+                        style={{ viewTransitionName: "post-cover" }}
+                    >
                         <CroppedImage
                             src={post.cover_image}
                             alt={post.title}

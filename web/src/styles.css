@@ -352,11 +352,7 @@ body {
   }
 }
 
-/* —— 共享元素 morph：仅 cover-morph VT type 激活时生效 —— */
-/* VT name 在转场期间由 :active-view-transition-type() 自动赋予和移除，零状态管理 */
-:active-view-transition-type(cover-morph) .post-cover {
-  view-transition-name: post-cover;
-}
+/* —— 共享元素 morph：博客封面 —— */
 ::view-transition-group(post-cover) {
   animation-duration: 420ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);

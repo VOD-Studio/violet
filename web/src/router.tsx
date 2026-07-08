@@ -4,6 +4,7 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient } from "./shared/api/query-client";
 import { getNavDirection, isAdminRoute } from "./shared/lib/nav-direction";
+import { useViewTransitionStore } from "./shared/lib/view-transition-store";
 
 /**
  * RouterContext - 全路由共享的上下文
@@ -41,14 +42,15 @@ export const getRouter = () => {
                 if (!pathChanged) return false;
                 const to = toLocation.pathname;
                 const from = fromLocation?.pathname;
+
+                // 离开博客段时清零共享封面状态
+                const isBlog = (p?: string) => p === "/blog" || p?.startsWith("/blog/");
+                if (!isBlog(to) || !isBlog(from)) {
+                    useViewTransitionStore.getState().setSharedCoverSlug(null);
+                }
+
                 if (isAdminRoute(to) || (from && isAdminRoute(from))) {
                     return ["fade"];
-                }
-                // 博客列表 ↔ 详情：封面 morph + 淡入
-                const isListToDetail = from === "/blog" && to.startsWith("/blog/");
-                const isDetailToList = from?.startsWith("/blog/") && to === "/blog";
-                if (isListToDetail || isDetailToList) {
-                    return ["fade", "cover-morph"];
                 }
                 const dir = getNavDirection(from, to);
                 return dir ? [dir] : ["fade"];
