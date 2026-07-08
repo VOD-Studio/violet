@@ -10,52 +10,31 @@ import { settingsKeys } from "@features/settings/api/keys";
 import { fetchAnnouncements } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 import LandingHero from "@widgets/LandingHero";
-import { motion } from "motion/react";
 
 function HomePage() {
     return (
         <div className="flex flex-col">
             <LandingHero />
             <section className="container mx-auto flex flex-col gap-32 bg-background px-6 py-32">
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                >
+                <div>
                     <h2 className="mb-12 text-3xl font-bold tracking-tight">公告</h2>
                     <AnnouncementGrid />
-                </motion.div>
+                </div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                >
+                <div>
                     <h2 className="mb-12 text-3xl font-bold tracking-tight">最新文章</h2>
                     <PostList />
-                </motion.div>
+                </div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                >
+                <div>
                     <h2 className="mb-12 text-3xl font-bold tracking-tight">开源贡献</h2>
                     <Contributions />
-                </motion.div>
+                </div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                >
+                <div>
                     <h2 className="mb-12 text-3xl font-bold tracking-tight">开源项目</h2>
                     <RepoList />
-                </motion.div>
+                </div>
             </section>
         </div>
     );
