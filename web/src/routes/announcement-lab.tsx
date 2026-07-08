@@ -4,19 +4,13 @@ import AnimatedList from "@vendor/react-bits/AnimatedList";
 import BlurText from "@vendor/react-bits/BlurText";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
 import Magnet from "@vendor/react-bits/Magnet";
-import {
-    BootSequence,
-    CubeFlipY,
-    FlipX,
-    MotdTerminal,
-    ScrambleDecode,
-} from "@widgets/AnnouncementLab";
+import { CubeFlipY, FlipX } from "@widgets/AnnouncementLab";
 import { ArrowLeft, ArrowRight, CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import type { ComponentType } from "react";
 import { useState } from "react";
 
 /* ------------------------------------------------------------------ */
-/* mock 数据（去赛博后的真实运营文案，覆盖 4 种 severity）              */
+/* mock 数据（真实运营文案，覆盖 4 种 severity）                       */
 /* ------------------------------------------------------------------ */
 
 const MOCK: Announcement[] = [
@@ -332,10 +326,7 @@ function ArticlePreview({ a }: { a: Announcement }) {
 function AnnouncementLab() {
     const bannerCards = [
         { title: "1. 3D 翻转 (X 轴)", description: "FlipX", component: FlipX },
-        { title: "2. MOTD 终端", description: "MotdTerminal", component: MotdTerminal },
-        { title: "3. Scramble 解码", description: "ScrambleDecode", component: ScrambleDecode },
-        { title: "4. Boot Sequence", description: "BootSequence", component: BootSequence },
-        { title: "5. 立方翻转 (Y 轴)", description: "CubeFlipY", component: CubeFlipY },
+        { title: "2. 立方翻转 (Y 轴)", description: "CubeFlipY", component: CubeFlipY },
     ];
 
     return (
@@ -343,8 +334,8 @@ function AnnouncementLab() {
             <div className="mb-16 text-center">
                 <h1 className="mb-4 text-4xl font-bold tracking-tight">公告原型实验室</h1>
                 <p className="mx-auto max-w-xl text-muted-foreground">
-                    卡片 / 详情页原型对比（去赛博后的中性方向，基于 react-bits 组件）。下方为历史
-                    banner 原型，保留作参考。
+                    卡片 / 详情页原型对比（中性方向，基于 react-bits 组件）。下方为历史 banner
+                    原型，保留作参考。
                 </p>
             </div>
 

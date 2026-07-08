@@ -7,7 +7,7 @@
  * (3) 滚轮可手动翻上/下一条；
  * (4) prefers-reduced-motion 下禁用自动推进（原型自行决定动画降级）。
  *
- * 原型 ①③⑤ 共用此 hook；原型 ⑨（单条解码）⑩（一次性开机）不用。
+ * FlipX 与 CubeFlipY 原型共用此 hook。
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LabAnnouncement } from "./types";
