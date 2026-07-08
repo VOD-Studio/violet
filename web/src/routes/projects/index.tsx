@@ -2,6 +2,7 @@ import { projectKeys } from "@features/projects/api/keys";
 import { fetchProjects, useProjects } from "@features/projects/api/queries";
 import { ProjectCard } from "@features/projects/ui/ProjectCard";
 import ProjectsSkeleton from "@features/projects/ui/ProjectsSkeleton";
+import { PageShell } from "@shared/ui/page-shell";
 import { TiltedCard } from "@shared/ui/tilted-card";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -10,11 +11,11 @@ const ProjectsPage = () => {
     const { data: projects = [], isLoading, error } = useProjects();
 
     if (error) {
-        return <div className="container mx-auto px-4 py-12 text-muted-foreground">加载失败</div>;
+        return <PageShell className="text-muted-foreground">加载失败</PageShell>;
     }
 
     return (
-        <div className="container mx-auto px-4 py-12">
+        <PageShell>
             <header className="mb-10">
                 <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
                     All Projects
@@ -34,7 +35,7 @@ const ProjectsPage = () => {
                     ))}
                 </div>
             )}
-        </div>
+        </PageShell>
     );
 };
 

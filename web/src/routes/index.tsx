@@ -13,7 +13,7 @@ import Hero from "@widgets/Hero";
 
 function HomePage() {
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col">
             <Hero />
             <section className="container mx-auto px-6 py-32 bg-background flex flex-col gap-32">
                 {/* 公告（card + article 形态，无公告时网格自动隐藏） */}

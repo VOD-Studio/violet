@@ -5,6 +5,7 @@ import type { ArchiveItem } from "@features/archive/model/types";
 import ArchiveSkeleton from "@features/archive/ui/ArchiveSkeleton";
 import ArchiveYearSkeleton from "@features/archive/ui/ArchiveYearSkeleton";
 import { Badge } from "@shared/ui/base/badge";
+import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -130,7 +131,7 @@ function ArchivePage() {
     }, [years, activeYears.size]);
 
     return (
-        <div className="container mx-auto px-4 py-12">
+        <PageShell>
             <header className="mb-10">
                 <h1 className="text-3xl font-bold">归档</h1>
                 <p className="mt-2 text-muted-foreground">共 {years.length} 个年份</p>
@@ -167,7 +168,7 @@ function ArchivePage() {
                     ))}
                 </div>
             )}
-        </div>
+        </PageShell>
     );
 }
 

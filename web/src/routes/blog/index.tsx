@@ -1,6 +1,7 @@
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
 import PostList from "@features/posts/ui/PostList";
+import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
 
 /**
@@ -11,7 +12,7 @@ import { createFileRoute } from "@tanstack/react-router";
  */
 function BlogPage() {
     return (
-        <div className="container mx-auto px-4 py-12">
+        <PageShell>
             <header className="mb-10">
                 <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
                     All Posts
@@ -19,7 +20,7 @@ function BlogPage() {
                 <h1 className="font-mono text-4xl font-bold">博客</h1>
             </header>
             <PostList query={{ page: 1, limit: 12 }} />
-        </div>
+        </PageShell>
     );
 }
 

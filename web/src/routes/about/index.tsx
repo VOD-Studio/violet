@@ -32,7 +32,7 @@ function AboutPage() {
         : [];
 
     return (
-        <div className="flex min-h-screen flex-col">
+        <div className="flex flex-col">
             {/* Hero 区 */}
             <section className="relative flex h-[60vh] items-center justify-center overflow-hidden bg-background">
                 {/* 渐变光斑背景（复用首页风格） */}
