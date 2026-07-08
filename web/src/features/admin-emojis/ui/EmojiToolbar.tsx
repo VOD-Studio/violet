@@ -1,12 +1,12 @@
+import { emojiTextSchema, type EmojiTextForm } from "@features/admin-emojis/model/schema";
+import type { CreateEmojiRequest } from "@features/admin-emojis/model/types";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Check, CheckSquare, Plus, Square, Trash2, X } from "lucide-react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { SearchInput } from "@/shared/ui/search-input";
-
-export interface EmojiTextForm {
-    name: string;
-    textContent: string;
-}
 
 interface EmojiToolbarProps {
     searchQuery: string;
@@ -17,16 +17,15 @@ interface EmojiToolbarProps {
     onBatchDelete: () => void;
     showAddText: boolean;
     onToggleAddText: () => void;
-    textForm: EmojiTextForm;
-    onTextFormChange: (form: EmojiTextForm) => void;
-    onAddTextEmoji: () => void;
+    onAddTextEmoji: (body: CreateEmojiRequest) => void;
+    isAddingText?: boolean;
 }
 
 /**
  * EmojiToolbar - 表情管理工具栏
  *
  * 搜索框、批量选择切换、批量删除、添加文本表情表单。
- * 纯展示组件，所有状态与回调由父组件持有。
+ * 文本表情表单由本组件通过 react-hook-form 管理，提交后清空。
  */
 export function EmojiToolbar({
     searchQuery,
@@ -37,10 +36,32 @@ export function EmojiToolbar({
     onBatchDelete,
     showAddText,
     onToggleAddText,
-    textForm,
-    onTextFormChange,
     onAddTextEmoji,
+    isAddingText = false,
 }: EmojiToolbarProps) {
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors },
+    } = useForm<EmojiTextForm>({
+        resolver: zodResolver(emojiTextSchema),
+        defaultValues: { name: "", textContent: "" },
+    });
+
+    useEffect(() => {
+        if (!showAddText) {
+            reset({ name: "", textContent: "" });
+        }
+    }, [showAddText, reset]);
+
+    const onSubmit = (data: EmojiTextForm) => {
+        onAddTextEmoji({
+            name: data.name.trim(),
+            text_content: data.textContent.trim(),
+        });
+    };
+
     return (
         <>
             <div className="mb-4 flex shrink-0 items-center gap-2 px-1 pt-1">
@@ -84,29 +105,37 @@ export function EmojiToolbar({
             </div>
 
             {showAddText && (
-                <div className="mb-4 flex shrink-0 items-center gap-2 rounded-lg border bg-muted/50 p-3">
+                <form
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="mb-4 flex shrink-0 items-center gap-2 rounded-lg border bg-muted/50 p-3"
+                >
                     <Input
                         placeholder="名称"
-                        value={textForm.name}
-                        onChange={(e) => onTextFormChange({ ...textForm, name: e.target.value })}
+                        disabled={isAddingText}
+                        aria-invalid={!!errors.name}
                         className="h-9 w-32"
+                        {...register("name")}
                     />
                     <Input
                         placeholder="文本内容，如 (・∀・)"
-                        value={textForm.textContent}
-                        onChange={(e) =>
-                            onTextFormChange({ ...textForm, textContent: e.target.value })
-                        }
+                        disabled={isAddingText}
+                        aria-invalid={!!errors.textContent}
                         className="h-9 flex-1"
+                        {...register("textContent")}
                     />
-                    <Button className="h-9 shrink-0" onClick={onAddTextEmoji}>
+                    <Button className="h-9 shrink-0" type="submit" disabled={isAddingText}>
                         <Check className="mr-1 size-4" />
                         添加
                     </Button>
-                    <Button variant="ghost" className="h-9 shrink-0" onClick={onToggleAddText}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-9 shrink-0"
+                        onClick={onToggleAddText}
+                    >
                         <X className="size-4" />
                     </Button>
-                </div>
+                </form>
             )}
         </>
     );
