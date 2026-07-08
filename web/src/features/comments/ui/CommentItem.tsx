@@ -24,6 +24,7 @@ import { type CommentTreeNode, getCommentSeverity } from "../lib/comment-tree";
 import { getCommentSev } from "../lib/severity";
 import { CommentForm } from "./CommentForm";
 import { PendingBadge } from "./PendingBadge";
+import { ReactionBar } from "./ReactionBar";
 
 export interface CommentItemProps {
     /** 当前评论节点（含回复） */
@@ -81,18 +82,23 @@ export function CommentItem({
                             {comment.body}
                         </p>
 
-                        {/* 回复按钮（图标）：仅登录用户显示 */}
-                        {isLoggedIn && postId && (
-                            <button
-                                type="button"
-                                onClick={() => setReplying((v) => !v)}
-                                className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                                aria-label={replying ? "取消回复" : "回复"}
-                            >
-                                <MessageCircle className="size-3.5" />
-                                <span>回复</span>
-                            </button>
-                        )}
+                        {/* 互动区：回复 + 表情 */}
+                        <div className="mt-2 flex flex-wrap items-start gap-3">
+                            {/* 回复按钮（图标）：仅登录用户显示 */}
+                            {isLoggedIn && postId && (
+                                <button
+                                    type="button"
+                                    onClick={() => setReplying((v) => !v)}
+                                    className="inline-flex h-6 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                                    aria-label={replying ? "取消回复" : "回复"}
+                                >
+                                    <MessageCircle className="size-3.5" />
+                                    <span>回复</span>
+                                </button>
+                            )}
+
+                            <ReactionBar commentId={comment.id} isLoggedIn={isLoggedIn} />
+                        </div>
                     </div>
                 </BorderGlow>
             </div>

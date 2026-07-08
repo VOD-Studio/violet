@@ -3,12 +3,17 @@
  *
  * 消费 buildCommentTree 把扁平 Comment[] 转成嵌套树，
  * 遍历顶级节点用 CommentItem 递归渲染。
+ *
+ * 性能：用 ReactionProvider 批量拉取首屏所有评论反应（POST /comments/reactions/batch），
+ * 避免每个 CommentItem 独立请求；动态加载的展开回复不在批量范围内，由 ReactionBar 自行降级请求。
  */
 import type { Comment } from "@entities/comment/model/types";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
+import { useMemo } from "react";
 import { buildCommentTree } from "../lib/comment-tree";
 import { CommentItem } from "./CommentItem";
+import { ReactionProvider } from "./ReactionProvider";
 
 export interface CommentListProps {
     /** 扁平评论列表（来自 useInfiniteQuery 的 pages 拼接） */
@@ -30,31 +35,40 @@ export function CommentList({
     onLoadMore,
     isLoadingMore = false,
 }: CommentListProps) {
+    const commentIds = useMemo(() => comments.map((c) => c.id), [comments]);
+    const tree = buildCommentTree(comments);
+
     if (comments.length === 0) {
         return <Empty title="还没有评论" description="成为第一个评论的人" size="sm" />;
     }
 
-    const tree = buildCommentTree(comments);
     return (
-        <div className="space-y-3">
-            {tree.map((node) => (
-                <CommentItem
-                    key={node.comment.id}
-                    node={node}
-                    isAuthor={node.comment.is_author}
-                    postId={postId}
-                    isLoggedIn={isLoggedIn}
-                />
-            ))}
-            {/* 滚动加载更多：手动按钮（IntersectionObserver 自动加载留后续优化） */}
-            {onLoadMore && (
-                <div className="flex justify-center py-2">
-                    <Button variant="ghost" size="sm" onClick={onLoadMore} disabled={isLoadingMore}>
-                        {isLoadingMore ? "加载中..." : "加载更多"}
-                    </Button>
-                </div>
-            )}
-        </div>
+        <ReactionProvider commentIds={commentIds}>
+            <div className="space-y-3">
+                {tree.map((node) => (
+                    <CommentItem
+                        key={node.comment.id}
+                        node={node}
+                        isAuthor={node.comment.is_author}
+                        postId={postId}
+                        isLoggedIn={isLoggedIn}
+                    />
+                ))}
+                {/* 滚动加载更多：手动按钮（IntersectionObserver 自动加载留后续优化） */}
+                {onLoadMore && (
+                    <div className="flex justify-center py-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onLoadMore}
+                            disabled={isLoadingMore}
+                        >
+                            {isLoadingMore ? "加载中..." : "加载更多"}
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </ReactionProvider>
     );
 }
 
