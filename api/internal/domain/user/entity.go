@@ -247,8 +247,21 @@ func (u *User) Activate() { u.isActive = true }
 func (u *User) Deactivate() { u.isActive = false }
 
 // UpdateProfile 更新个人资料（头像、简介）
+//
+// 无条件覆盖两个字段。OAuth 登录等需要同时设置 avatar+bio 的场景使用此方法。
+// 部分更新场景请使用 UpdateAvatarURL / UpdateBio。
 func (u *User) UpdateProfile(avatarURL, bio string) {
 	u.avatarURL = avatarURL
+	u.bio = bio
+}
+
+// UpdateAvatarURL 仅更新头像地址
+func (u *User) UpdateAvatarURL(url string) {
+	u.avatarURL = url
+}
+
+// UpdateBio 仅更新个人简介
+func (u *User) UpdateBio(bio string) {
 	u.bio = bio
 }
 

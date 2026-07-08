@@ -159,11 +159,13 @@ func (h *ResetPasswordHandler) Handle(ctx context.Context, in ResetPasswordInput
 // ============================================================
 
 // UpdateProfileInput 更新资料入参
+//
+// 所有字段为指针，nil 表示不更新该字段，空字符串表示清空。
 type UpdateProfileInput struct {
 	UserID    string
-	Username  string
-	Bio       string
-	AvatarURL string
+	Username  *string
+	Bio       *string
+	AvatarURL *string
 }
 
 // UpdateProfileHandler 更新个人资料用例
@@ -189,8 +191,8 @@ func (h *UpdateProfileHandler) Handle(ctx context.Context, in UpdateProfileInput
 	}
 
 	// 用户名变更需查重
-	if in.Username != "" && in.Username != u.Username().String() {
-		username, err := user.ParseUsername(in.Username)
+	if in.Username != nil && *in.Username != u.Username().String() {
+		username, err := user.ParseUsername(*in.Username)
 		if err != nil {
 			return nil, err
 		}
@@ -201,11 +203,16 @@ func (h *UpdateProfileHandler) Handle(ctx context.Context, in UpdateProfileInput
 		if exists {
 			return nil, user.ErrUsernameExists
 		}
-		// 注意：Username 是值对象，User 聚合目前没有 Rename 方法
-		// 通过 UpdateProfile 更新 bio/avatar 即可（用户名变更走专门流程）
+		u.ChangeUsername(username)
 	}
 
-	u.UpdateProfile(in.AvatarURL, in.Bio)
+	if in.AvatarURL != nil {
+		u.UpdateAvatarURL(*in.AvatarURL)
+	}
+
+	if in.Bio != nil {
+		u.UpdateBio(*in.Bio)
+	}
 
 	if err := h.userRepo.Save(ctx, u); err != nil {
 		return nil, err
