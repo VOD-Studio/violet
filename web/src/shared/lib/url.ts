@@ -64,6 +64,16 @@ export function validateUrl(input: string): UrlInvalidReason | null {
     return null;
 }
 
+/**
+ * isImageURL - 判断字符串是否为图片资源 URL。
+ *
+ * 放行 http/https 远程地址以及以 / 开头的本地绝对路径；
+ * 颜文字等文本表情的 url 字段可能直接存储文字内容，应返回 false。
+ */
+export function isImageURL(url: string): boolean {
+    return /^https?:\/\//.test(url) || url.startsWith("/");
+}
+
 /** 将失败原因映射为中文错误文案，供表单校验直接展示 */
 export function urlErrorMessage(reason: UrlInvalidReason | null): string | null {
     switch (reason) {

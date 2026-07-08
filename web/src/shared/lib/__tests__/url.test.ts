@@ -5,7 +5,7 @@
  * validateUrl 需通过 hostname 合法性校验拦截。
  */
 import { describe, expect, it } from "vitest";
-import { urlErrorMessage, validateUrl } from "../url";
+import { isImageURL, urlErrorMessage, validateUrl } from "../url";
 
 describe("validateUrl", () => {
     it("合法 http/https URL 通过", () => {
@@ -64,6 +64,24 @@ describe("validateUrl", () => {
         // WHATWG URL 解析器对点分十进制 IPv4 host 做严格校验，越界直接抛错
         expect(validateUrl("http://256.1.1.1")).toBe("malformed");
         expect(validateUrl("http://1.2.3.999")).toBe("malformed");
+    });
+});
+
+describe("isImageURL", () => {
+    it("http/https 远程地址识别为图片", () => {
+        expect(isImageURL("https://example.com/a.png")).toBe(true);
+        expect(isImageURL("http://localhost:3000/a.jpg")).toBe(true);
+    });
+
+    it("以 / 开头的本地绝对路径识别为图片", () => {
+        expect(isImageURL("/uploads/emojis/a.png")).toBe(true);
+        expect(isImageURL("/files/emojis/a.png")).toBe(true);
+    });
+
+    it("颜文字等文本内容不识别为图片", () => {
+        expect(isImageURL("(=・ω・=)")).toBe(false);
+        expect(isImageURL("hello")).toBe(false);
+        expect(isImageURL("")).toBe(false);
     });
 });
 
