@@ -21,7 +21,6 @@ import { Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMe } from "@/features/auth/api/queries";
-import { avatarUrl } from "@/features/upload/lib/imageUrl";
 import { AvatarGroup } from "@/shared/ui/avatar-group/AvatarGroup";
 import { Button } from "@/shared/ui/base/button";
 import {
@@ -182,7 +181,7 @@ function AdminUsers() {
                     users={[
                         {
                             username: row.username,
-                            avatar_url: avatarUrl(row.avatar_url, row.username),
+                            avatar_url: row.avatar_url,
                         },
                     ]}
                     size="md"
