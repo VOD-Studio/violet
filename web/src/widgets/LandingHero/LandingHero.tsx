@@ -2,7 +2,6 @@ import { ParticleField } from "@shared/ui/particle-field";
 import { TerminalCard, type TerminalQuote } from "@shared/ui/terminal-card";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { motion } from "motion/react";
 
 const TERMINAL_QUOTES: TerminalQuote[] = [
     { text: "Talk is cheap. Show me the code.", author: "Linus Torvalds" },
@@ -18,7 +17,7 @@ const TERMINAL_QUOTES: TerminalQuote[] = [
 /**
  * LandingHero — 首页着陆区 widget
  *
- * 组合 ParticleField（粒子背景）+ TerminalCard（终端引言）
+ * 入场动画纯 CSS（blur-in + clip-reveal），不用 Framer Motion，零 JS 开销。
  * 左栏：品牌名两色调 + 描述 + 分类 pill + CTA + 社交
  * 右栏：终端卡片（打字机循环引言）
  */
@@ -36,14 +35,8 @@ export default function LandingHero() {
 
                 <div className="container relative z-10 mx-auto px-4 py-20 md:px-6 md:py-28">
                     <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[minmax(0,1fr)_auto]">
-                        {/* 左：品牌信息 */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, ease: "easeOut" }}
-                            className="max-w-[40rem]"
-                            style={{ fontVariantLigatures: "contextual" }}
-                        >
+                        {/* 左：品牌信息 — blur-in 聚焦入场 */}
+                        <div className="animate-blur-in max-w-[40rem]">
                             <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono">
                                 <span className="text-[2.5rem] font-bold leading-none tracking-tight md:text-[3.4rem]">
                                     MIMO
@@ -102,17 +95,12 @@ export default function LandingHero() {
                                     <span className="sr-only">GitHub</span>
                                 </a>
                             </div>
-                        </motion.div>
+                        </div>
 
-                        {/* 右：终端卡片 */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                            className="w-full max-w-sm justify-self-start md:justify-self-end"
-                        >
+                        {/* 右：终端卡片 — clip-reveal 从上往下揭开 */}
+                        <div className="animate-clip-reveal w-full max-w-sm justify-self-start md:justify-self-end">
                             <TerminalCard quotes={TERMINAL_QUOTES} />
-                        </motion.div>
+                        </div>
                     </div>
                 </div>
             </section>
