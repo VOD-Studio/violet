@@ -6,7 +6,6 @@ import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { ImageOff, Star } from "lucide-react";
-import { useViewTransitionStore } from "@/shared/lib/view-transition-store";
 
 import type { Post } from "../model/types";
 
@@ -36,8 +35,6 @@ export interface PostCardProps {
  */
 const PostCard = ({ post, size = "md" }: PostCardProps) => {
     const coverH = size === "lg" ? "h-56" : size === "sm" ? "h-32" : "h-44";
-    const sharedCoverSlug = useViewTransitionStore((s) => s.sharedCoverSlug);
-    const isSharedCover = sharedCoverSlug === post.slug;
 
     return (
         <SpotlightCard className="group flex flex-col">
@@ -46,22 +43,15 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
                     <Link
                         to="/blog/$slug"
                         params={{ slug: post.slug }}
-                        onClick={() =>
-                            useViewTransitionStore.getState().setSharedCoverSlug(post.slug)
-                        }
-                        className="block overflow-hidden"
+                        className="post-cover block overflow-hidden"
                     >
-                        <div
-                            style={isSharedCover ? { viewTransitionName: "post-cover" } : undefined}
-                        >
-                            <CroppedImage
-                                src={post.cover_image}
-                                alt={post.title}
-                                loading="lazy"
-                                className={`w-full ${coverH}`}
-                                imgClassName="transition-transform duration-500 group-hover:scale-105 rounded-t-xl"
-                            />
-                        </div>
+                        <CroppedImage
+                            src={post.cover_image}
+                            alt={post.title}
+                            loading="lazy"
+                            className={`w-full ${coverH}`}
+                            imgClassName="transition-transform duration-500 group-hover:scale-105 rounded-t-xl"
+                        />
                     </Link>
                 ) : (
                     <Link

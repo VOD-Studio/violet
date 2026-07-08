@@ -44,6 +44,12 @@ export const getRouter = () => {
                 if (isAdminRoute(to) || (from && isAdminRoute(from))) {
                     return ["fade"];
                 }
+                // 博客列表 ↔ 详情：封面 morph + 淡入
+                const isListToDetail = from === "/blog" && to.startsWith("/blog/");
+                const isDetailToList = from?.startsWith("/blog/") && to === "/blog";
+                if (isListToDetail || isDetailToList) {
+                    return ["fade", "cover-morph"];
+                }
                 const dir = getNavDirection(from, to);
                 return dir ? [dir] : ["fade"];
             },
