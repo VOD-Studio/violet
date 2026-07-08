@@ -84,6 +84,9 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
             // 关闭 StarterKit 内置项，改用下方独立扩展以获得更高定制性
             codeBlock: false,
             link: false,
+            // Tiptap v3 的 StarterKit 默认已包含 underline，
+            // 需显式关闭，避免与下方独立 Underline 扩展重复注册。
+            underline: false,
             // 保留：文档/段落/文本/标题/粗斜/删除线/行内代码/引用/分割线/
             //       有序无序列表/列表项/历史/拖放/粘贴等
         }),
