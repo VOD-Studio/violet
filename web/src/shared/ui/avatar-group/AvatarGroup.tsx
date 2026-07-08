@@ -1,3 +1,4 @@
+import { avatarUrl } from "@features/upload/lib/imageUrl";
 import { cn } from "@shared/lib/utils";
 
 export interface AvatarUser {
@@ -30,7 +31,11 @@ const sizeClass = {
  * AvatarGroup - GitHub 风格的头像堆叠组件
  *
  * 圆形头像横向重叠，ring 分隔；超出 max 显示 +N 占位；
- * avatar_url 缺失时渲染用户名首字母。支持单/多头像，预留共创场景。
+ * 支持单/多头像，预留共创场景。
+ *
+ * avatar_url 有值时经 avatarUrl() 处理：普通图拼 ?w=200&thumb=200x200&format=webp
+ * 走后端动态缩放（避免前端拉原图解码巨图卡顿），GIF 特判保留动画。
+ * 空值保留空串，由渲染层走首字母兜底（无外部依赖，优于 ui-avatars 远程图）。
  *
  * highlightFirst 用于 owner/collaborator 场景，给第一个头像加 ring 强调主从。
  */
@@ -42,7 +47,12 @@ export function AvatarGroup({
     className,
 }: AvatarGroupProps) {
     if (!users.length) return null;
-    const visible = users.slice(0, max);
+    const visible = users.slice(0, max).map((u) => ({
+        ...u,
+        // 有头像才走缩略图参数；空值保留空串，由渲染层走首字母兜底
+        // （比 avatarUrl 的 ui-avatars 远程图更优：无外部依赖）
+        avatar_url: u.avatar_url ? avatarUrl(u.avatar_url, u.username) : "",
+    }));
     const overflow = users.length - visible.length;
 
     return (
