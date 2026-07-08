@@ -6,44 +6,38 @@
  *
  * 字段来源：
  * - Comment / AdminComment 见 application/comment/service.go。
- * - Reaction / BatchResult 见 domain/commentreaction/entity.go。
+ * - Reaction / ReactionList 见 domain/commentreaction/entity.go。
  */
 import type { AdminComment, Comment, CommentPicture } from "@entities/comment/model/types";
 
 /**
- * Reaction - 评论反应读模型
+ * Reaction - 评论反应读模型（聚合后）
  *
- * 对应 domain/commentreaction/entity.go 的 Reaction，
- * 按 emoji 聚合计数后的展示视图。
+ * 对应后端 domain/commentreaction/entity.go 的 AggregatedReaction，
+ * 按 emoji 分组计数并携带当前用户是否已反应的标记。
  */
 export interface Reaction {
-    /** 反应记录 ID */
-    id: number;
-    /** 所属评论 ID */
-    comment_id: string;
-    /** 用户 ID，匿名反应省略 */
-    user_id?: string;
     /** 表情 ID */
     emoji_id: number;
     /** 表情名称 */
     emoji_name: string;
     /** 表情图片 URL */
     emoji_url: string;
-    /** IP 地址，匿名反应可能携带 */
-    ip_address?: string;
-    /** 创建时间，RFC3339 字符串 */
-    created_at: string;
+    /** 反应总数 */
+    count: number;
+    /** 当前登录用户是否已反应 */
+    self: boolean;
 }
 
 /**
  * BatchReactionResult - 批量反应查询的单条结果
  *
- * 对应 domain/commentreaction/entity.go 的 BatchResult。
+ * 对应后端 domain/commentreaction/entity.go 的 ReactionList。
  */
 export interface BatchReactionResult {
     /** 评论 ID */
     comment_id: string;
-    /** 该评论的反应列表 */
+    /** 该评论的聚合反应列表 */
     reactions: Reaction[];
 }
 
@@ -77,7 +71,7 @@ export interface CommentListQuery {
  * BlockCount - 批注按块聚合计数
  *
  * 对应 GET /posts/{postId}/annotations/summary 返回的单条结构。
- * 轻量数据（不含正文），用于角标渲染；点击角标后按 block_id 懒加载完整批注。
+ * 轻量数据（不含正文），用于批注角标渲染；点击角标后按 block_id 懒加载完整批注。
  */
 export interface BlockCount {
     block_id: string;
@@ -138,7 +132,7 @@ export interface CreateComment {
  * 对应 POST /posts/{postId}/comments/code 的 body（handler comment.sendCodeRequest）。
  */
 export interface SendCodeBody {
-    /** 接收验证码的邮箱，必填且需合法格式 */
+    /** 接收验证码的邮箱，必填 */
     email: string;
 }
 
