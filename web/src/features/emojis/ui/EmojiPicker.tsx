@@ -178,7 +178,8 @@ function EmojiGrid({
             {emojis.map((emoji) => {
                 const isSelected = selectedIds.has(emoji.id);
                 const text = emoji.text_content ?? emoji.name;
-                const isText = !emoji.url || !isImageURL(emoji.url);
+                const imageUrl = emoji.gif_url || emoji.url;
+                const isText = !imageUrl || !isImageURL(imageUrl);
                 const textSpan = isText ? getTextEmojiSpan(text) : undefined;
                 return (
                     <button
@@ -193,9 +194,9 @@ function EmojiGrid({
                                 : "size-9"
                         } ${isSelected ? "cursor-not-allowed opacity-40" : "hover:bg-accent"}`}
                     >
-                        {emoji.url && isImageURL(emoji.url) ? (
+                        {imageUrl && isImageURL(imageUrl) ? (
                             <img
-                                src={emoji.url}
+                                src={imageUrl}
                                 alt={emoji.name}
                                 className="h-full w-full object-contain"
                                 loading="lazy"
