@@ -1,4 +1,5 @@
 import type { Emoji, EmojiUploadResult } from "@entities/emoji/model/types";
+import type { CreateEmojiRequest, UpdateEmojiRequest } from "@features/admin-emojis/model/types";
 import {
     useCreateEmoji,
     useDeleteEmoji,
@@ -11,9 +12,9 @@ import { Modal } from "@shared/ui/modal";
 import { Images, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { EmojiEditDialog, type EmojiEditForm } from "./EmojiEditDialog";
+import { EmojiEditDialog } from "./EmojiEditDialog";
 import { EmojiList } from "./EmojiList";
-import { type EmojiTextForm, EmojiToolbar } from "./EmojiToolbar";
+import { EmojiToolbar } from "./EmojiToolbar";
 import { EmojiUploader } from "./EmojiUploader";
 
 /** 内层弹窗类型：edit/delete 同一时刻仅一个 open */
@@ -43,7 +44,6 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [showAddText, setShowAddText] = useState(false);
-    const [textForm, setTextForm] = useState<EmojiTextForm>({ name: "", textContent: "" });
     const [deleting, setDeleting] = useState(false);
 
     const [deleteConfirm, setDeleteConfirm] = useState<number[]>([]);
@@ -52,11 +52,6 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
     // ManageDialog 的关闭（取消编辑不关管理弹窗）
     const [innerDialog, setInnerDialog] = useState<InnerDialog>(null);
     const closeInner = () => setInnerDialog(null);
-    const [editForm, setEditForm] = useState<EmojiEditForm>({
-        name: "",
-        url: "",
-        textContent: "",
-    });
 
     // 内层弹窗（编辑/删除确认）打开时，阻止外层被 Radix 嵌套关闭事件连关。
     const handleOpenChange = (o: boolean) => {
@@ -80,23 +75,15 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
         );
     };
 
-    const handleAddTextEmoji = () => {
-        if (!textForm.name.trim() || !textForm.textContent.trim()) {
-            toast.error("请填写名称和文本内容");
-            return;
-        }
+    const handleAddTextEmoji = (body: CreateEmojiRequest) => {
         createEmoji.mutate(
             {
                 groupId,
-                body: {
-                    name: textForm.name.trim(),
-                    text_content: textForm.textContent.trim(),
-                },
+                body,
             },
             {
                 onSuccess: () => {
                     toast.success("文本表情已添加");
-                    setTextForm({ name: "", textContent: "" });
                     setShowAddText(false);
                 },
                 onError: (err) => toast.error(err.message),
@@ -106,29 +93,16 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
 
     const startEdit = (emoji: Emoji) => {
         setEditEmoji(emoji);
-        setEditForm({
-            name: emoji.name,
-            url: emoji.url,
-            textContent: emoji.text_content ?? "",
-        });
         setInnerDialog("edit");
     };
 
-    const handleSaveEdit = () => {
+    const handleSaveEdit = (body: UpdateEmojiRequest) => {
         if (!editEmoji) return;
-        if (!editForm.name.trim()) {
-            toast.error("请填写名称");
-            return;
-        }
         updateEmoji.mutate(
             {
                 id: editEmoji.id,
                 groupId,
-                body: {
-                    name: editForm.name.trim(),
-                    url: editForm.url || undefined,
-                    text_content: editForm.textContent || undefined,
-                },
+                body,
             },
             {
                 onSuccess: () => {
@@ -263,13 +237,9 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
                                 selectedCount={selectedIds.size}
                                 onBatchDelete={handleBatchDelete}
                                 showAddText={showAddText}
-                                onToggleAddText={() => {
-                                    setShowAddText(!showAddText);
-                                    if (showAddText) setTextForm({ name: "", textContent: "" });
-                                }}
-                                textForm={textForm}
-                                onTextFormChange={setTextForm}
+                                onToggleAddText={() => setShowAddText(!showAddText)}
                                 onAddTextEmoji={handleAddTextEmoji}
+                                isAddingText={createEmoji.isPending}
                             />
 
                             <div className="-mr-1 flex-1 overflow-y-auto pr-1">
@@ -301,8 +271,6 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
                     if (!o) closeInner();
                 }}
                 emoji={editEmoji}
-                form={editForm}
-                onFormChange={setEditForm}
                 onSave={handleSaveEdit}
                 isSaving={updateEmoji.isPending}
             />
