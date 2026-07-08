@@ -55,13 +55,18 @@ export function CropSelectDialog({
                     <Button variant="ghost" onClick={handleSkip}>
                         直接使用原图
                     </Button>
+                    {rect && (
+                        <Button variant="ghost" onClick={() => setRect(undefined)}>
+                            清除选区
+                        </Button>
+                    )}
                     <Button onClick={handleConfirm} disabled={!rect}>
                         确认选区
                     </Button>
                 </div>
             }
         >
-            <ImageCropper src={src} aspect={aspect} onChange={setRect} />
+            <ImageCropper src={src} aspect={aspect} rect={rect} onChange={setRect} />
         </Modal>
     );
 }

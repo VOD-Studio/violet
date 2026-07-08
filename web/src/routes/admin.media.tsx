@@ -348,6 +348,15 @@ function AdminMediaPage() {
                             >
                                 取消
                             </Button>
+                            {cropRect && (
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setCropRect(undefined)}
+                                    disabled={replaceMedia.isPending}
+                                >
+                                    清除选区
+                                </Button>
+                            )}
                             <Button
                                 onClick={handleCropConfirm}
                                 disabled={!cropRect || replaceMedia.isPending}
@@ -363,7 +372,12 @@ function AdminMediaPage() {
                 }
             >
                 {cropFile ? (
-                    <ImageCropper src={cropFile.url} aspect={undefined} onChange={setCropRect} />
+                    <ImageCropper
+                        src={cropFile.url}
+                        aspect={undefined}
+                        rect={cropRect}
+                        onChange={setCropRect}
+                    />
                 ) : null}
             </Modal>
 

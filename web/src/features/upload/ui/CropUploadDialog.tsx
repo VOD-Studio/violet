@@ -121,6 +121,11 @@ export function CropUploadDialog({
                     <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
                         取消
                     </Button>
+                    {rect && (
+                        <Button variant="ghost" onClick={() => setRect(undefined)} disabled={busy}>
+                            清除选区
+                        </Button>
+                    )}
                     <Button onClick={handleConfirm} disabled={busy}>
                         {busy ? "处理中..." : "确认"}
                     </Button>
@@ -128,7 +133,7 @@ export function CropUploadDialog({
             }
         >
             {previewSrc ? (
-                <ImageCropper src={previewSrc} aspect={aspect} onChange={setRect} />
+                <ImageCropper src={previewSrc} aspect={aspect} rect={rect} onChange={setRect} />
             ) : (
                 <p className="text-sm text-muted-foreground">无可用图片源</p>
             )}
