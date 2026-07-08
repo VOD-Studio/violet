@@ -23,10 +23,10 @@ import (
 	"blog-api/internal/app"
 	authcmd "blog-api/internal/application/auth/command"
 	appshared "blog-api/internal/application/shared"
+	infraauth "blog-api/internal/infrastructure/auth"
 	infraemail "blog-api/internal/infrastructure/email"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
-	infraauth "blog-api/internal/infrastructure/auth"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
 	"blog-api/internal/migrate"
@@ -285,12 +285,12 @@ func main() {
 		commentH := commentContainer.CommentHandler
 		v1.Route("/posts/{postId}/comments", func(r chi.Router) {
 			r.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
-				Get("/", commentH.ListByPost)                                                        // 获取文章评论（登录看 approved∪自己pending；匿名黑洞返回空）
+				Get("/", commentH.ListByPost) // 获取文章评论（登录看 approved∪自己pending；匿名黑洞返回空）
 			r.With(
 				middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
 				middleware.CommentRateLimit(redisClient),
-			).Post("/", commentH.Create)            // 提交评论（双轨认证，限流）
-			r.With(middleware.CommentCodeRateLimit(redisClient)).Post("/code", commentH.SendCode)  // 匿名评论发送邮箱验证码（独立限流防邮件轰炸）
+			).Post("/", commentH.Create) // 提交评论（双轨认证，限流）
+			r.With(middleware.CommentCodeRateLimit(redisClient)).Post("/code", commentH.SendCode) // 匿名评论发送邮箱验证码（独立限流防邮件轰炸）
 		})
 
 		// 评论回复列表（DDD commentH，公开 + OptionalSessionAuth）
@@ -305,13 +305,16 @@ func main() {
 		// 评论反应（DDD commentReactionContainer）
 		crH := commentReactionContainer.CommentReactionHandler
 		v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
-			r.Get("/", crH.GetCommentReactions)                                                          // 获取评论反应
-			r.With(middleware.CommentRateLimit(redisClient)).Post("/", crH.AddReaction)                  // 添加反应（限流）
+			r.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+				Get("/", crH.GetCommentReactions) // 获取评论反应（需软鉴权以识别 self）
+			r.With(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+				With(middleware.CommentRateLimit(redisClient)).
+				Post("/", crH.AddReaction) // 添加反应需登录（限流）
 			r.With(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)). // 删除反应需认证，防匿名删除他人反应
-															Delete("/{emoji_id}", crH.RemoveReaction)
+													Delete("/{emoji_id}", crH.RemoveReaction)
 		})
-		v1.Post("/comments/reactions/batch", crH.GetReactionsBatch) // 批量获取评论反应
-
+		v1.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+			Post("/comments/reactions/batch", crH.GetReactionsBatch) // 批量获取评论反应（需软鉴权以识别 self）
 		// 评论审核/删除（DDD commentH，admin 权限）
 		v1.Route("/comments/{id}", func(r chi.Router) {
 			r.Group(func(r chi.Router) {

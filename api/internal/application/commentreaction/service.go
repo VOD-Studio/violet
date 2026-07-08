@@ -20,8 +20,8 @@ func NewService(store domaincr.CommentReactionStore) *Service {
 }
 
 // List 查询评论的反应列表
-func (s *Service) List(ctx context.Context, commentID string) ([]domaincr.Reaction, error) {
-	return s.store.ListByComment(ctx, commentID)
+func (s *Service) List(ctx context.Context, commentID, viewerUserID string) ([]domaincr.AggregatedReaction, error) {
+	return s.store.ListByComment(ctx, commentID, viewerUserID)
 }
 
 // AddInput 添加反应入参
@@ -44,8 +44,8 @@ func (s *Service) Remove(ctx context.Context, commentID, userID, ipAddress strin
 }
 
 // Batch 批量查询
-func (s *Service) Batch(ctx context.Context, commentIDs []string) ([]domaincr.BatchResult, error) {
-	return s.store.BatchByComments(ctx, commentIDs)
+func (s *Service) Batch(ctx context.Context, commentIDs []string, viewerUserID string) ([]domaincr.ReactionList, error) {
+	return s.store.BatchByComments(ctx, commentIDs, viewerUserID)
 }
 
 func hashIP(ip string) string {

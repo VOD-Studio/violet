@@ -59,17 +59,14 @@ func registerCommentPaths(t *openapi3.T) {
 		"status": strEnum("目标状态", "pending", "approved", "spam", "deleted"),
 	}, "ids", "status")
 
-	// Reaction：评论反应
-	registerSchema(t, "Reaction", openapi3.Schemas{
-		"id":         optInt64("反应 ID"),
-		"comment_id": reqStr("评论 ID（UUID）"),
-		"user_id":    optStr("用户 ID（UUID，匿名反应为空）"),
+	// AggregatedReaction：聚合后的评论反应
+	registerSchema(t, "AggregatedReaction", openapi3.Schemas{
 		"emoji_id":   optInt32("表情 ID"),
 		"emoji_name": reqStr("表情名称"),
 		"emoji_url":  reqStr("表情图片 URL"),
-		"ip_address": optStr("IP 哈希（可空）"),
-		"created_at": optStr("创建时间（RFC3339）"),
-	})
+		"count":      optInt64("反应总数"),
+		"self":       optBool("当前登录用户是否已反应"),
+	}, "emoji_id", "emoji_name", "emoji_url", "count")
 
 	// AddReactionRequest
 	registerSchema(t, "AddReactionRequest", openapi3.Schemas{
@@ -83,7 +80,7 @@ func registerCommentPaths(t *openapi3.T) {
 
 	registerSchema(t, "CommentReactionBatchResult", openapi3.Schemas{
 		"comment_id": reqStr("评论 ID（UUID）"),
-		"reactions":  refArray("该评论的反应列表", "Reaction"),
+		"reactions":  refArray("该评论的聚合反应列表", "AggregatedReaction"),
 	})
 
 	// ============ 前台评论 ============
@@ -121,7 +118,7 @@ func registerCommentPaths(t *openapi3.T) {
 		Summary:    "获取评论反应",
 		Parameters: openapi3.Parameters{pathStrParam("comment_id", "评论 ID（UUID）")},
 		Responses: responses(
-			200, dataArrayResponse("Reaction", "评论反应列表", 200, false),
+			200, dataArrayResponse("AggregatedReaction", "评论反应聚合列表", 200, false),
 		),
 	})
 

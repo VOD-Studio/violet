@@ -25,7 +25,8 @@ func NewHandler(svc *appcr.Service) *Handler {
 // GetCommentReactions 获取评论反应列表
 func (h *Handler) GetCommentReactions(w http.ResponseWriter, r *http.Request) {
 	commentID := r.PathValue("comment_id")
-	reactions, err := h.svc.List(r.Context(), commentID)
+	userID := interfacesmw.GetUserIDFromContext(r)
+	reactions, err := h.svc.List(r.Context(), commentID, userID)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -80,7 +81,8 @@ func (h *Handler) GetReactionsBatch(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	results, err := h.svc.Batch(r.Context(), req.CommentIDs)
+	userID := interfacesmw.GetUserIDFromContext(r)
+	results, err := h.svc.Batch(r.Context(), req.CommentIDs, userID)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

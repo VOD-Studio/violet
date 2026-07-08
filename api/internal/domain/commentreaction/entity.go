@@ -10,34 +10,31 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
-// Reaction 评论反应读模型（面向展示的 DTO）
-type Reaction struct {
-	ID        int64  `json:"id"`
-	CommentID string `json:"comment_id"`
-	UserID    string `json:"user_id,omitempty"`
+// AggregatedReaction 聚合后的评论反应读模型（面向展示）
+type AggregatedReaction struct {
 	EmojiID   int32  `json:"emoji_id"`
 	EmojiName string `json:"emoji_name"`
 	EmojiURL  string `json:"emoji_url"`
-	IPAddress string `json:"ip_address,omitempty"`
-	CreatedAt string `json:"created_at"`
+	Count     int64  `json:"count"`
+	Self      bool   `json:"self"`
 }
 
-// BatchResult 批量反应结果
-type BatchResult struct {
-	CommentID string     `json:"comment_id"`
-	Reactions []Reaction `json:"reactions"`
+// ReactionList 单条评论的聚合反应列表
+type ReactionList struct {
+	CommentID string              `json:"comment_id"`
+	Reactions []AggregatedReaction `json:"reactions"`
 }
 
 // CommentReactionStore 评论反应存储端口
 type CommentReactionStore interface {
-	// ListByComment 查询评论的反应列表（按 emoji 分组计数）
-	ListByComment(ctx context.Context, commentID string) ([]Reaction, error)
+	// ListByComment 查询评论的反应列表（按 emoji 分组计数，携带当前用户是否已反应）
+	ListByComment(ctx context.Context, commentID, viewerUserID string) ([]AggregatedReaction, error)
 	// Add 添加反应（幂等：已存在则忽略）
 	Add(ctx context.Context, commentID, userID, ipHash string, emojiID int32) error
 	// Remove 移除反应
 	Remove(ctx context.Context, commentID, userID, ipHash string, emojiID int32) error
-	// BatchByComments 批量查询多评论的反应
-	BatchByComments(ctx context.Context, commentIDs []string) ([]BatchResult, error)
+	// BatchByComments 批量查询多评论的反应（按 emoji 分组计数）
+	BatchByComments(ctx context.Context, commentIDs []string, viewerUserID string) ([]ReactionList, error)
 }
 
 var ErrEmojiNotFound = shared.NotFound("表情")

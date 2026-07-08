@@ -112,9 +112,9 @@ func (Comment) TableName() string { return "comments" }
 // CommentReaction 评论反应表
 type CommentReaction struct {
 	ID        uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
-	CommentID uuid.UUID  `gorm:"type:uuid;column:comment_id" json:"comment_id"`
-	EmojiID   int32      `gorm:"column:emoji_id" json:"emoji_id"`
-	UserID    *uuid.UUID `gorm:"type:uuid;column:user_id" json:"user_id,omitempty"`
+	CommentID uuid.UUID  `gorm:"type:uuid;column:comment_id;uniqueIndex:unique_user_reaction" json:"comment_id"`
+	EmojiID   int32      `gorm:"column:emoji_id;uniqueIndex:unique_user_reaction" json:"emoji_id"`
+	UserID    *uuid.UUID `gorm:"type:uuid;column:user_id;uniqueIndex:unique_user_reaction" json:"user_id,omitempty"`
 	IPHash    string     `gorm:"type:varchar(64);column:ip_hash" json:"ip_hash"`
 	CreatedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 }

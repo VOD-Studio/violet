@@ -100,7 +100,7 @@ func TestCommentPaths(t *testing.T) {
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing comment path %s", p)
 	}
-	for _, s := range []string{"CommentDTO", "AdminCommentDTO", "Reaction"} {
+	for _, s := range []string{"CommentDTO", "AdminCommentDTO", "AggregatedReaction"} {
 		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
 	}
 	// 删除反应需登录（非管理员）

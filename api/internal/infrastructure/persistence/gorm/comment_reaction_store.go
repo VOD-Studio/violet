@@ -3,10 +3,10 @@ package gorm
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	domaincr "blog-api/internal/domain/commentreaction"
 	domainshared "blog-api/internal/domain/shared"
@@ -27,74 +27,71 @@ func parseUUID(s string) uuid.UUID {
 	return id
 }
 
-// ListByComment 查询评论反应（join emojis 取 name/url）
-func (s *CommentReactionStore) ListByComment(ctx context.Context, commentID string) ([]domaincr.Reaction, error) {
+// ListByComment 查询评论反应（按 emoji 分组计数，并标识当前用户是否已反应）
+func (s *CommentReactionStore) ListByComment(ctx context.Context, commentID, viewerUserID string) ([]domaincr.AggregatedReaction, error) {
 	var rows []struct {
-		ID        uuid.UUID  `gorm:"column:id"`
-		CommentID uuid.UUID  `gorm:"column:comment_id"`
-		UserID    *uuid.UUID `gorm:"column:user_id"`
-		EmojiID   int32      `gorm:"column:emoji_id"`
-		EmojiName string     `gorm:"column:emoji_name"`
-		EmojiURL  string     `gorm:"column:emoji_url"`
-		IPHash    string     `gorm:"column:ip_hash"`
-		CreatedAt time.Time  `gorm:"column:created_at"`
+		EmojiID   int32  `gorm:"column:emoji_id"`
+		EmojiName string `gorm:"column:emoji_name"`
+		EmojiURL  string `gorm:"column:emoji_url"`
+		Count     int64  `gorm:"column:count"`
+		SelfInt   int    `gorm:"column:self_int"`
 	}
 	err := s.db.WithContext(ctx).
 		Table("comment_reactions cr").
-		Select("cr.id, cr.comment_id, cr.user_id, cr.emoji_id, cr.ip_hash, cr.created_at, e.name AS emoji_name, e.url AS emoji_url").
+		Select("cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID)).
 		Joins("LEFT JOIN emojis e ON e.id = cr.emoji_id").
 		Where("cr.comment_id = ?", parseUUID(commentID)).
-		Order("cr.created_at DESC").
+		Group("cr.emoji_id, e.name, e.url").
+		Order("count DESC, cr.emoji_id ASC").
 		Scan(&rows).Error
 	if err != nil {
 		return nil, domainshared.Internal("查询评论反应失败", err)
 	}
-	result := make([]domaincr.Reaction, 0, len(rows))
+	result := make([]domaincr.AggregatedReaction, 0, len(rows))
 	for _, r := range rows {
-		dto := domaincr.Reaction{
-			ID: 0, CommentID: r.CommentID.String(), EmojiID: r.EmojiID,
-			EmojiName: r.EmojiName, EmojiURL: r.EmojiURL,
-			IPAddress: r.IPHash, CreatedAt: r.CreatedAt.Format(time.RFC3339),
-		}
-		if r.UserID != nil {
-			dto.UserID = r.UserID.String()
-		}
-		result = append(result, dto)
+		result = append(result, domaincr.AggregatedReaction{
+			EmojiID: r.EmojiID, EmojiName: r.EmojiName, EmojiURL: r.EmojiURL,
+			Count: r.Count, Self: r.SelfInt > 0,
+		})
 	}
 	return result, nil
 }
 
 // Add 添加反应（幂等）
+// 登录用户按 (comment_id, emoji_id, user_id) 去重；匿名按 (comment_id, emoji_id, ip_hash, user_id IS NULL) 去重。
 func (s *CommentReactionStore) Add(ctx context.Context, commentID, userID, ipHash string, emojiID int32) error {
 	po := newmodel.CommentReaction{
-		ID: uuid.New(), CommentID: parseUUID(commentID), EmojiID: emojiID, IPHash: ipHash,
+		ID: uuid.New(), CommentID: parseUUID(commentID), EmojiID: emojiID,
 	}
 	if userID != "" {
 		uid := parseUUID(userID)
 		po.UserID = &uid
+		po.IPHash = "" // 登录态以 user_id 为唯一维度，无需记录 IP
+	} else {
+		po.IPHash = ipHash
 	}
-	// 幂等：重复添加忽略
+	// 幂等：唯一键冲突时静默忽略，避免并发/重复提交报错
 	return s.db.WithContext(ctx).
-		Where("comment_id = ? AND emoji_id = ? AND ip_hash = ?", po.CommentID, emojiID, ipHash).
-		FirstOrCreate(&po).Error
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(&po).Error
 }
 
 // Remove 移除反应
 func (s *CommentReactionStore) Remove(ctx context.Context, commentID, userID, ipHash string, emojiID int32) error {
 	cid := parseUUID(commentID)
-	query := s.db.WithContext(ctx).Where("comment_id = ? AND emoji_id = ? AND ip_hash = ?", cid, emojiID, ipHash)
+	query := s.db.WithContext(ctx).Where("comment_id = ? AND emoji_id = ?", cid, emojiID)
 	if userID != "" {
 		query = query.Where("user_id = ?", parseUUID(userID))
 	} else {
-		query = query.Where("user_id IS NULL")
+		query = query.Where("user_id IS NULL AND ip_hash = ?", ipHash)
 	}
 	return query.Delete(&newmodel.CommentReaction{}).Error
 }
 
-// BatchByComments 批量查询多评论反应
-func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs []string) ([]domaincr.BatchResult, error) {
+// BatchByComments 批量查询多评论反应（按 emoji 分组计数，并标识当前用户是否已反应）
+func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs []string, viewerUserID string) ([]domaincr.ReactionList, error) {
 	if len(commentIDs) == 0 {
-		return []domaincr.BatchResult{}, nil
+		return []domaincr.ReactionList{}, nil
 	}
 	ids := make([]uuid.UUID, 0, len(commentIDs))
 	for _, cid := range commentIDs {
@@ -105,27 +102,31 @@ func (s *CommentReactionStore) BatchByComments(ctx context.Context, commentIDs [
 		EmojiID   int32     `gorm:"column:emoji_id"`
 		EmojiName string    `gorm:"column:emoji_name"`
 		EmojiURL  string    `gorm:"column:emoji_url"`
+		Count     int64     `gorm:"column:count"`
+		SelfInt   int       `gorm:"column:self_int"`
 	}
 	err := s.db.WithContext(ctx).
 		Table("comment_reactions cr").
-		Select("cr.comment_id, cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url").
+		Select("cr.comment_id, cr.emoji_id, e.name AS emoji_name, e.url AS emoji_url, COUNT(*) AS count, MAX(CASE WHEN cr.user_id = ? THEN 1 ELSE 0 END) AS self_int", parseUUID(viewerUserID)).
 		Joins("LEFT JOIN emojis e ON e.id = cr.emoji_id").
 		Where("cr.comment_id IN ?", ids).
+		Group("cr.comment_id, cr.emoji_id, e.name, e.url").
+		Order("cr.comment_id, count DESC, cr.emoji_id ASC").
 		Scan(&rows).Error
 	if err != nil {
 		return nil, domainshared.Internal("批量查询评论反应失败", err)
 	}
-	grouped := make(map[string][]domaincr.Reaction)
+	grouped := make(map[string][]domaincr.AggregatedReaction)
 	for _, r := range rows {
 		cid := r.CommentID.String()
-		grouped[cid] = append(grouped[cid], domaincr.Reaction{
-			CommentID: cid, EmojiID: r.EmojiID,
-			EmojiName: r.EmojiName, EmojiURL: r.EmojiURL,
+		grouped[cid] = append(grouped[cid], domaincr.AggregatedReaction{
+			EmojiID: r.EmojiID, EmojiName: r.EmojiName, EmojiURL: r.EmojiURL,
+			Count: r.Count, Self: r.SelfInt > 0,
 		})
 	}
-	result := make([]domaincr.BatchResult, 0, len(commentIDs))
+	result := make([]domaincr.ReactionList, 0, len(commentIDs))
 	for _, cid := range commentIDs {
-		result = append(result, domaincr.BatchResult{CommentID: cid, Reactions: grouped[cid]})
+		result = append(result, domaincr.ReactionList{CommentID: cid, Reactions: grouped[cid]})
 	}
 	return result, nil
 }
