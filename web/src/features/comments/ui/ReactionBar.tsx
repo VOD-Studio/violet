@@ -83,6 +83,7 @@ export function ReactionBar({ commentId, isLoggedIn = false }: ReactionBarProps)
 
                 {reactions.map((reaction) => {
                     const isSelf = !!reaction.self;
+                    const emojiUrl = reaction.gif_url || reaction.emoji_url;
                     return (
                         <Tooltip key={reaction.emoji_id}>
                             <TooltipTrigger asChild>
@@ -93,9 +94,9 @@ export function ReactionBar({ commentId, isLoggedIn = false }: ReactionBarProps)
                                     aria-pressed={isSelf}
                                     className={reactionChipClass(isSelf)}
                                 >
-                                    {isImageURL(reaction.emoji_url) ? (
+                                    {isImageURL(emojiUrl) ? (
                                         <img
-                                            src={reaction.emoji_url}
+                                            src={emojiUrl}
                                             alt={reaction.emoji_name}
                                             className="size-4 object-contain"
                                             loading="lazy"

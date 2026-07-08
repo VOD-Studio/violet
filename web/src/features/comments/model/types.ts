@@ -23,6 +23,8 @@ export interface Reaction {
     emoji_name: string;
     /** 表情图片 URL */
     emoji_url: string;
+    /** 表情动图 URL */
+    gif_url?: string;
     /** 反应总数 */
     count: number;
     /** 当前登录用户是否已反应 */
