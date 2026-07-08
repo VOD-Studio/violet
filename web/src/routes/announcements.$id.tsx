@@ -49,7 +49,7 @@ function AnnouncementDetailPage() {
     if (error || !a) {
         return (
             <div className="container mx-auto flex flex-col items-center px-6 py-32 text-center">
-                <h1 className="mb-3 text-2xl font-bold">公告不存在</h1>
+                <h1 className="mb-3 font-mono text-2xl font-bold">公告不存在</h1>
                 <p className="mb-6 text-muted-foreground">该公告可能不存在或已失效。</p>
                 <Link
                     to="/"

@@ -136,7 +136,7 @@ function BlogDetailPage() {
                         </div>
                     ) : null}
 
-                    <h1 className="mb-5 text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+                    <h1 className="mb-5 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
                         {post.title}
                     </h1>
 

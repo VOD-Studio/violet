@@ -133,7 +133,7 @@ function ArchivePage() {
     return (
         <PageShell>
             <header className="mb-10">
-                <h1 className="text-3xl font-bold">归档</h1>
+                <h1 className="font-mono text-3xl font-bold">归档</h1>
                 <p className="mt-2 text-muted-foreground">共 {years.length} 个年份</p>
             </header>
 
