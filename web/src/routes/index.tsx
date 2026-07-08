@@ -8,31 +8,56 @@ import { fetchPosts } from "@features/posts/api/queries";
 import PostList from "@features/posts/ui/PostList";
 import { settingsKeys } from "@features/settings/api/keys";
 import { fetchAnnouncements } from "@features/settings/api/queries";
+import { ParticleField } from "@shared/ui/particle-field";
 import { createFileRoute } from "@tanstack/react-router";
 import Hero from "@widgets/Hero";
+import { motion } from "motion/react";
 
 function HomePage() {
     return (
         <div className="flex flex-col">
+            <ParticleField density={0.45} heightVh={100} />
             <Hero />
-            <section className="container mx-auto px-6 py-32 bg-background flex flex-col gap-32">
-                {/* 公告（card + article 形态，无公告时网格自动隐藏） */}
-                <div>
-                    <h2 className="text-3xl font-bold mb-12 tracking-tight">公告</h2>
+            <section className="container mx-auto flex flex-col gap-32 bg-background px-6 py-32">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                    <h2 className="mb-12 text-3xl font-bold tracking-tight">公告</h2>
                     <AnnouncementGrid />
-                </div>
-                <div>
-                    <h2 className="text-3xl font-bold mb-12 tracking-tight">最新文章</h2>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                    <h2 className="mb-12 text-3xl font-bold tracking-tight">最新文章</h2>
                     <PostList />
-                </div>
-                <div>
-                    <h2 className="text-3xl font-bold mb-12 tracking-tight">开源贡献</h2>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                    <h2 className="mb-12 text-3xl font-bold tracking-tight">开源贡献</h2>
                     <Contributions />
-                </div>
-                <div>
-                    <h2 className="text-3xl font-bold mb-12 tracking-tight">开源项目</h2>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                    <h2 className="mb-12 text-3xl font-bold tracking-tight">开源项目</h2>
                     <RepoList />
-                </div>
+                </motion.div>
             </section>
         </div>
     );
