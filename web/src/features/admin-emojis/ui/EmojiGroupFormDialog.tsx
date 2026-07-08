@@ -1,6 +1,7 @@
 import type { EmojiGroup } from "@entities/emoji/model/types";
 import { useCreateEmojiGroup, useUpdateEmojiGroup } from "@features/admin-emojis/api/mutations";
 import { type EmojiGroupForm, emojiGroupSchema } from "@features/admin-emojis/model/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
@@ -13,7 +14,6 @@ import {
 } from "@shared/ui/base/select";
 import { Switch } from "@shared/ui/base/switch";
 import { Modal } from "@shared/ui/modal";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";

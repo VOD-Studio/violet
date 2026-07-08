@@ -1,11 +1,11 @@
 import type { Emoji, EmojiUploadResult } from "@entities/emoji/model/types";
-import type { CreateEmojiRequest, UpdateEmojiRequest } from "@features/admin-emojis/model/types";
 import {
     useCreateEmoji,
     useDeleteEmoji,
     useUpdateEmoji,
 } from "@features/admin-emojis/api/mutations";
 import { useGroupEmojisAdmin } from "@features/admin-emojis/api/queries";
+import type { CreateEmojiRequest, UpdateEmojiRequest } from "@features/admin-emojis/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
 import { Modal } from "@shared/ui/modal";

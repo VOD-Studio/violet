@@ -10,10 +10,10 @@ import { z } from "zod";
 /** 表情分组创建/编辑表单 */
 export const emojiGroupSchema = z.object({
     name: z.string().min(1, "分组名称不能为空").max(50, "分组名称最多 50 字符"),
-    source: z.string().default("custom"),
+    source: z.string(),
     cover_url: z.string().optional(),
-    sort_order: z.number().int().min(0, "排序权重不能为负数").default(0),
-    is_enabled: z.boolean().default(true),
+    sort_order: z.number().int().min(0, "排序权重不能为负数"),
+    is_enabled: z.boolean(),
 });
 
 /** 表情分组表单类型 */

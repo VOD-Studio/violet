@@ -1,11 +1,11 @@
-import { emojiTextSchema, type EmojiTextForm } from "@features/admin-emojis/model/schema";
+import { type EmojiTextForm, emojiTextSchema } from "@features/admin-emojis/model/schema";
 import type { CreateEmojiRequest } from "@features/admin-emojis/model/types";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Check, CheckSquare, Plus, Square, Trash2, X } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { SearchInput } from "@/shared/ui/search-input";
 
 interface EmojiToolbarProps {
