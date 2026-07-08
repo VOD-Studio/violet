@@ -14,6 +14,8 @@ export interface CreateEmojiGroupRequest {
     name: string;
     /** 分组来源，省略时后端回填 system */
     source?: string;
+    /** 分组封面图 URL */
+    cover_url?: string;
     /** 排序值，默认 0 */
     sort_order?: number;
     /** 是否启用，省略时默认 true，显式传 false 可创建为禁用 */
@@ -31,6 +33,8 @@ export interface UpdateEmojiGroupRequest {
     name?: string;
     /** 分组来源，空串表示不更新 */
     source?: string;
+    /** 分组封面图 URL，空串表示不更新 */
+    cover_url?: string;
     /** 排序值，传值才更新 */
     sort_order?: number;
     /** 是否启用，传值才更新 */

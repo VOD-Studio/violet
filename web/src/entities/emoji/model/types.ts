@@ -43,6 +43,8 @@ export interface EmojiGroup {
     name: string;
     /** 分组来源标识，如 system/custom */
     source: string;
+    /** 分组封面图 URL，优先显示封面而非名称 */
+    cover_url?: string;
     /** 排序值，越小越靠前 */
     sort_order: number;
     /** 是否启用，公开接口恒为 true */
