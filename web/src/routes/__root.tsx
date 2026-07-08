@@ -118,7 +118,7 @@ function RootComponent() {
                 <div className="flex min-h-screen flex-col">
                     <AnnouncementBar />
                     <Header isAuthenticated={auth.isAuthenticated} />
-                    <main className="flex-1 flex-col" style={{ viewTransitionName: "page-main" }}>
+                    <main className="flex-1 flex-col">
                         <Outlet />
                     </main>
                     <Footer />

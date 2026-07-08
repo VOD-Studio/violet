@@ -46,6 +46,7 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
         <motion.header
             initial={{ y: -100 }}
             animate={{ y: 0 }}
+            style={{ viewTransitionName: "site-header" }}
             className={`sticky top-0 z-50 w-full transition-all duration-300 ${
                 scrolled
                     ? "border-b border-edge-hairline bg-background/70 backdrop-blur-md"

@@ -211,48 +211,47 @@ body {
  * ——————————————————————————————————————————
  * 页面转场 View Transitions
  *
+ * 动画作用于 root（视口尺寸快照），而非命名元素。
+ * 这保证了无论页面内容多长，快照始终是视口大小，不会因长文章卡顿。
+ * Header 单独命名（site-header）保持静止，不参与滑动。
+ *
  * 三种 VT type（由 router.tsx 的 defaultViewTransition.types 回调设置）：
  * - forward  导航序号增大：旧页左移退出、新页从右侧滑入
  * - back     导航序号减小：旧页右移退出、新页从左侧滑入
  * - fade     同段导航（如 /blog → /blog/$slug）：交叉淡入淡出
  *
- * CSS 用 :active-view-transition-type(xxx) 精确匹配，无需 data- 属性。
+ * 注意：基础规则 ::view-transition-old(root) { animation: none } 服务于
+ * 主题切换 VT（无 type）。下方 :active-view-transition-type() 选择器
+ * 特异性更高，在页面导航时覆盖为基础规则。
  * ——————————————————————————————————————————
  */
 
-/* VT group 裁剪：防止滑动时内容溢出视口 */
-::view-transition-group(page-main) {
-  overflow: hidden;
-}
-
-/* old/new 使用 normal 混合模式，避免 cross-fade 时颜色叠加 */
-::view-transition-old(page-main),
-::view-transition-new(page-main) {
-  mix-blend-mode: normal;
-  contain: paint;
+/* Header 保持静止，不跟随内容滑动 */
+::view-transition-group(site-header) {
+  animation: none;
 }
 
 /* —— forward：旧页左移退出，新页右侧滑入 —— */
-:active-view-transition-type(forward)::view-transition-old(page-main) {
+:active-view-transition-type(forward)::view-transition-old(root) {
   animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-left;
 }
-:active-view-transition-type(forward)::view-transition-new(page-main) {
+:active-view-transition-type(forward)::view-transition-new(root) {
   animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-right;
 }
 
 /* —— back：旧页右移退出，新页左侧滑入 —— */
-:active-view-transition-type(back)::view-transition-old(page-main) {
+:active-view-transition-type(back)::view-transition-old(root) {
   animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-right;
 }
-:active-view-transition-type(back)::view-transition-new(page-main) {
+:active-view-transition-type(back)::view-transition-new(root) {
   animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-left;
 }
 
 /* —— fade：同段导航交叉淡入 —— */
-:active-view-transition-type(fade)::view-transition-old(page-main) {
+:active-view-transition-type(fade)::view-transition-old(root) {
   animation: 220ms ease-out both page-fade-out;
 }
-:active-view-transition-type(fade)::view-transition-new(page-main) {
+:active-view-transition-type(fade)::view-transition-new(root) {
   animation: 220ms ease-out both page-fade-in;
 }
 
@@ -499,12 +498,12 @@ html.theme-vt * {
 
 /* ———— prefers-reduced-motion：禁用方向性页面过渡 ———— */
 @media (prefers-reduced-motion: reduce) {
-  :active-view-transition-type(forward)::view-transition-old(page-main),
-  :active-view-transition-type(forward)::view-transition-new(page-main),
-  :active-view-transition-type(back)::view-transition-old(page-main),
-  :active-view-transition-type(back)::view-transition-new(page-main),
-  :active-view-transition-type(fade)::view-transition-old(page-main),
-  :active-view-transition-type(fade)::view-transition-new(page-main) {
+  :active-view-transition-type(forward)::view-transition-old(root),
+  :active-view-transition-type(forward)::view-transition-new(root),
+  :active-view-transition-type(back)::view-transition-old(root),
+  :active-view-transition-type(back)::view-transition-new(root),
+  :active-view-transition-type(fade)::view-transition-old(root),
+  :active-view-transition-type(fade)::view-transition-new(root) {
     /* biome-ignore lint/complexity/noImportantStyles: 无障碍要求强制禁用所有动画 */
     animation: none !important;
   }
