@@ -59,7 +59,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
                                 alt={post.title}
                                 loading="lazy"
                                 className={`w-full ${coverH}`}
-                                imgClassName="transition-transform duration-500 group-hover:scale-105"
+                                imgClassName="transition-transform duration-500 group-hover:scale-105 rounded-t-xl"
                             />
                         </div>
                     </Link>
