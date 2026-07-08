@@ -147,16 +147,20 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 
         // 外部 value 变更时同步进编辑器（仅在差异时，避免光标跳动）
         // emitUpdate 必须为 true：setContent 后触发 update 事件，useWordCount 才能刷新字数；
-        // 回吐的 HTML 与父级 value 收敛后即停止，不会循环
+        // 回吐的 HTML 与父级 value 收敛后即停止，不会循环。
+        // setTimeout 推迟到 React 提交完成后执行，避免 Tiptap 的 ReactNodeView
+        // 在生命周期内 mount 时调用 flushSync 触发 React 警告。
         useEffect(() => {
             if (!editor) return;
             const current = editor.getHTML();
-            if (value !== current) {
+            if (value === current) return;
+            const timer = setTimeout(() => {
                 editor.commands.setContent(value || "", {
                     contentType: "html",
                     emitUpdate: true,
                 });
-            }
+            }, 0);
+            return () => clearTimeout(timer);
         }, [value, editor]);
 
         const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
