@@ -25,6 +25,7 @@ interface EmojiGroupFormDialogProps {
 interface GroupFormState {
     name: string;
     source: string;
+    coverUrl: string;
     sortOrder: number;
     isEnabled: boolean;
 }
@@ -47,6 +48,7 @@ export function EmojiGroupFormDialog({
     const [form, setForm] = useState<GroupFormState>({
         name: "",
         source: "custom",
+        coverUrl: "",
         sortOrder: 0,
         isEnabled: true,
     });
@@ -57,11 +59,18 @@ export function EmojiGroupFormDialog({
             setForm({
                 name: editingGroup.name,
                 source: editingGroup.source,
+                coverUrl: editingGroup.cover_url ?? "",
                 sortOrder: editingGroup.sort_order,
                 isEnabled: editingGroup.is_enabled,
             });
         } else {
-            setForm({ name: "", source: "custom", sortOrder: groupCount, isEnabled: true });
+            setForm({
+                name: "",
+                source: "custom",
+                coverUrl: "",
+                sortOrder: groupCount,
+                isEnabled: true,
+            });
         }
     }, [open, editingGroup, groupCount]);
 
@@ -75,6 +84,7 @@ export function EmojiGroupFormDialog({
         const body = {
             name,
             source: form.source,
+            cover_url: form.coverUrl.trim() || undefined,
             sort_order: form.sortOrder,
             is_enabled: form.isEnabled,
         };
@@ -163,6 +173,18 @@ export function EmojiGroupFormDialog({
                             <SelectItem value="custom">自定义</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+                <div>
+                    <label htmlFor="group-cover" className="text-sm font-medium">
+                        封面图 URL
+                    </label>
+                    <Input
+                        id="group-cover"
+                        value={form.coverUrl}
+                        onChange={(e) => setForm((p) => ({ ...p, coverUrl: e.target.value }))}
+                        placeholder="如：https://example.com/cover.png"
+                        className="mt-1.5"
+                    />
                 </div>
                 <div>
                     <label htmlFor="group-sort" className="text-sm font-medium">

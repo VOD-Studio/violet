@@ -73,14 +73,24 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
             <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 flex-col gap-2">
-                        <CardTitle
-                            className={cn(
-                                "truncate text-lg font-semibold",
-                                isDisabled && "text-muted-foreground/70",
-                            )}
-                        >
-                            {group.name}
-                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                            {group.cover_url ? (
+                                <img
+                                    src={group.cover_url}
+                                    alt={group.name}
+                                    className="h-6 w-6 rounded object-contain"
+                                    loading="lazy"
+                                />
+                            ) : null}
+                            <CardTitle
+                                className={cn(
+                                    "truncate text-lg font-semibold",
+                                    isDisabled && "text-muted-foreground/70",
+                                )}
+                            >
+                                {group.name}
+                            </CardTitle>
+                        </div>
                         <Badge
                             variant="outline"
                             className={cn(
