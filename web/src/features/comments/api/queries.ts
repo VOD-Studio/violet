@@ -122,10 +122,11 @@ export const fetchCommentReactions = async (commentId: string): Promise<Reaction
     apiGet<Reaction[]>(`/comments/${commentId}/reactions`);
 
 /** useCommentReactions - 单条评论反应列表 hook */
-export const useCommentReactions = (commentId: string) =>
+export const useCommentReactions = (commentId: string, options: { enabled?: boolean } = {}) =>
     useQuery({
         queryKey: commentKeys.reactionList(commentId),
         queryFn: () => fetchCommentReactions(commentId),
+        enabled: !!commentId && (options.enabled ?? true),
     });
 
 /** fetchBatchReactions - POST /comments/reactions/batch 批量获取反应，避免 N+1 */
@@ -133,3 +134,17 @@ export const fetchBatchReactions = async (
     body: BatchReactionsQuery,
 ): Promise<BatchReactionResult[]> =>
     apiPost<BatchReactionResult[]>("/comments/reactions/batch", body);
+
+/**
+ * useBatchReactions - 批量获取多条评论的反应
+ *
+ * 列表场景下用 batch 端点一次拉取，避免每个 CommentItem 独立请求。
+ * commentIds 为空时禁用查询。
+ */
+export const useBatchReactions = (commentIds: string[]) =>
+    useQuery({
+        queryKey: [...commentKeys.reactions(), "batch", commentIds],
+        queryFn: () => fetchBatchReactions({ comment_ids: commentIds }),
+        enabled: commentIds.length > 0,
+        staleTime: 30 * 1000,
+    });

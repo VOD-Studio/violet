@@ -182,7 +182,8 @@ export const useAddReaction = (commentId: string) => {
     return useMutation({
         mutationFn: (body: AddReaction) => apiPost<null>(`/comments/${commentId}/reactions`, body),
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: commentKeys.reactionList(commentId) });
+            // 同时失效单条与批量反应查询，保证 CommentList 的 batch map 和 ReactionBar 的单条查询都能刷新
+            qc.invalidateQueries({ queryKey: commentKeys.reactions() });
         },
     });
 };
@@ -194,7 +195,7 @@ export const useRemoveReaction = (commentId: string) => {
         mutationFn: (emojiId: number) =>
             apiDelete<null>(`/comments/${commentId}/reactions/${emojiId}`),
         onSuccess: () => {
-            qc.invalidateQueries({ queryKey: commentKeys.reactionList(commentId) });
+            qc.invalidateQueries({ queryKey: commentKeys.reactions() });
         },
     });
 };
