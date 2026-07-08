@@ -96,7 +96,9 @@ describe("ReactionBar", () => {
 
     it("点击未反应表情调用 add", () => {
         reactionsFromContext.mockReturnValue({
-            reactions: [{ emoji_id: 1, emoji_name: "赞", emoji_url: "/1.png", count: 3, self: false }],
+            reactions: [
+                { emoji_id: 1, emoji_name: "赞", emoji_url: "/1.png", count: 3, self: false },
+            ],
             isLoading: false,
         });
         render(<ReactionBar commentId="c1" isLoggedIn />);

@@ -105,7 +105,9 @@ export function ReactionBar({ commentId, isLoggedIn = false }: ReactionBarProps)
                                             {reaction.emoji_name}
                                         </span>
                                     )}
-                                    <span className="min-w-[1ch] tabular-nums">{formatReactionCount(reaction.count)}</span>
+                                    <span className="min-w-[1ch] tabular-nums">
+                                        {formatReactionCount(reaction.count)}
+                                    </span>
                                 </button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" sideOffset={4}>
