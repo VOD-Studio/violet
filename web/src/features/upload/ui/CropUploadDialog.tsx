@@ -75,10 +75,6 @@ export function CropUploadDialog({
             toast.error("缺少待裁剪图片");
             return;
         }
-        if (!rect) {
-            toast.error("请先选定裁剪区域");
-            return;
-        }
         setBusy(true);
         try {
             if (isGif) {
@@ -89,19 +85,26 @@ export function CropUploadDialog({
                     url = result.url;
                 }
                 if (!url) throw new Error("GIF 上传未返回 URL");
-                onConfirm({ kind: "gif", url: withCrop(url, rect) });
-            } else {
-                // 静态图:canvas 重编码 WebP 上传
+                onConfirm(rect ? { kind: "gif", url: withCrop(url, rect) } : { kind: "gif", url });
+            } else if (rect) {
+                // 静态图有选区:canvas 重编码 WebP 上传
                 const blob = await cropImageToBlob(previewSrc, rect);
                 const croppedFile = new File([blob], `${fileNameBase}.webp`, {
                     type: "image/webp",
                 });
                 const result = await uploadFile(croppedFile);
                 onConfirm({ kind: "static", url: result.url });
+            } else if (file) {
+                // 无选区:直接上传原文件
+                const result = await uploadFile(file);
+                onConfirm({ kind: "static", url: result.url });
+            } else if (srcUrl) {
+                // 已有素材无选区:直接用原 URL
+                onConfirm({ kind: "static", url: srcUrl });
             }
             onOpenChange(false);
         } catch (e) {
-            toast.error(e instanceof Error ? e.message : "裁剪上传失败");
+            toast.error(e instanceof Error ? e.message : "上传失败");
         } finally {
             setBusy(false);
         }
@@ -118,7 +121,7 @@ export function CropUploadDialog({
                     <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>
                         取消
                     </Button>
-                    <Button onClick={handleConfirm} disabled={busy || !rect}>
+                    <Button onClick={handleConfirm} disabled={busy}>
                         {busy ? "处理中..." : "确认"}
                     </Button>
                 </div>
