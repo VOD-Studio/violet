@@ -150,17 +150,10 @@ func main() {
 	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix)
 	emojiSeedService := service.NewEmojiSeedService(gormDB, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
 
-	// 表情种子数据初始化（幂等）
-	var emojiGroupCount int64
-	if err := gormDB.Model(&newmodel.EmojiGroup{}).Count(&emojiGroupCount).Error; err != nil {
-		log.Error().Err(err).Msg("检查表情分组数量失败")
-	} else if emojiGroupCount == 0 {
-		log.Info().Msg("表情分组为空，开始初始化 B站表情种子数据...")
-		if err := emojiSeedService.SeedBilibiliEmojis(ctx); err != nil {
-			log.Error().Err(err).Msg("表情种子数据初始化失败（不影响服务启动）")
-		}
-	} else {
-		log.Info().Int64("count", emojiGroupCount).Msg("表情分组已有数据，跳过种子初始化")
+	// 表情种子数据初始化（幂等）：首次启动执行完整导入，后续启动仅回填 bilibili 分组缺失的封面 URL。
+	log.Info().Msg("开始执行 B站表情种子数据初始化（幂等）...")
+	if err := emojiSeedService.SeedBilibiliEmojis(ctx); err != nil {
+		log.Error().Err(err).Msg("表情种子数据初始化失败（不影响服务启动）")
 	}
 
 	cleanupJob := job.NewCleanupJob(gormDB, chunkDir, uploadRoot)
@@ -380,8 +373,8 @@ func main() {
 		})
 
 		// 公告
-		v1.Get("/announcements", contentH.ListActiveAnnouncements)            // 获取生效公告列表
-		v1.Get("/announcements/{id}", contentH.GetActiveAnnouncement)         // 获取单个生效公告(article 详情页)
+		v1.Get("/announcements", contentH.ListActiveAnnouncements)    // 获取生效公告列表
+		v1.Get("/announcements/{id}", contentH.GetActiveAnnouncement) // 获取单个生效公告(article 详情页)
 
 		// =====================================================
 		// 管理员路由（认证 + 管理员权限）
@@ -540,7 +533,7 @@ func main() {
 	// ============================================================
 
 	// 图片服务（替换裸 FileServer）：支持动态 resize/转码 + 二级缓存 + ETag/304
-	imageContainer := app.NewImageContainer(uploadRoot)
+	imageContainer := app.NewImageContainer(uploadRoot, urlPrefix)
 	r.Get(urlPrefix+"*", imageContainer.ImageHandler.ServeImage)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

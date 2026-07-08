@@ -27,7 +27,7 @@ func NewEmojiGroupRepository(db *gorm.DB) *EmojiGroupRepository {
 
 func emojiGroupToPO(g *emoji.EmojiGroup) model.EmojiGroup {
 	po := model.EmojiGroup{
-		ID: g.ID(), Name: g.Name(), Source: g.Source(),
+		ID: g.ID(), Name: g.Name(), Source: g.Source(), CoverURL: g.CoverURL(),
 		SortOrder: g.SortOrder(), IsEnabled: g.IsEnabled(),
 	}
 	emojis := make([]model.Emoji, 0, len(g.Emojis()))
@@ -50,7 +50,7 @@ func emojiGroupToDomain(po model.EmojiGroup) (*emoji.EmojiGroup, error) {
 			e.SourceURL, e.GifURL, e.TextContent, e.SortOrder,
 		))
 	}
-	return emoji.ReconstructEmojiGroup(po.ID, po.Name, po.Source, po.SortOrder, po.IsEnabled, emojis), nil
+	return emoji.ReconstructEmojiGroup(po.ID, po.Name, po.Source, po.CoverURL, po.SortOrder, po.IsEnabled, emojis), nil
 }
 
 func (r *EmojiGroupRepository) FindByID(ctx context.Context, id int32) (*emoji.EmojiGroup, error) {

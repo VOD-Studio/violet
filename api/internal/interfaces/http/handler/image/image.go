@@ -20,11 +20,16 @@ import (
 type Handler struct {
 	svc       *appimage.Service
 	uploadDir string
+	urlPrefix string
 }
 
 // NewHandler 创建图片服务 handler
-func NewHandler(svc *appimage.Service, uploadDir string) *Handler {
-	return &Handler{svc: svc, uploadDir: uploadDir}
+func NewHandler(svc *appimage.Service, uploadDir, urlPrefix string) *Handler {
+	return &Handler{
+		svc:       svc,
+		uploadDir: uploadDir,
+		urlPrefix: strings.TrimSuffix(urlPrefix, "/"),
+	}
 }
 
 // ServeImage GET /uploads/{path}
@@ -76,7 +81,7 @@ func (h *Handler) ServeImage(w http.ResponseWriter, r *http.Request) {
 
 // serveOriginal 直传原文件(无参数路径)
 func (h *Handler) serveOriginal(w http.ResponseWriter, r *http.Request, relPath string) {
-	abs := filepath.Join(h.uploadDir, strings.TrimPrefix(relPath, "/uploads"))
+	abs := filepath.Join(h.uploadDir, strings.TrimPrefix(relPath, h.urlPrefix))
 	clean, err := filepath.Abs(filepath.Clean(abs))
 	if err != nil {
 		response.WriteJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})

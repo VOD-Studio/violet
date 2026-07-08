@@ -44,7 +44,7 @@ func (f *fakeCache) Set(key string, result domainimage.TransformResult) error {
 func TestServe_MissThenHit(t *testing.T) {
 	tr := &fakeTransformer{}
 	cache := &fakeCache{store: map[string]domainimage.TransformResult{}}
-	svc := NewService(tr, cache, "uploads")
+	svc := NewService(tr, cache, "uploads", "/uploads/")
 	params := domainimage.TransformParams{Width: 50, Format: "jpeg"}
 
 	// 第一次:miss → 调用 transform → 回填缓存
@@ -66,5 +66,27 @@ func TestServe_MissThenHit(t *testing.T) {
 	}
 	if string(res2.Bytes) != "fresh" {
 		t.Fatal("应返回缓存内容")
+	}
+}
+
+// TestServe_CustomURLPrefix 验证使用非默认 upload_path_prefix 时路径映射正确
+func TestServe_CustomURLPrefix(t *testing.T) {
+	tr := &fakeTransformer{}
+	cache := &fakeCache{store: map[string]domainimage.TransformResult{}}
+	svc := NewService(tr, cache, "uploads", "/media/")
+	params := domainimage.TransformParams{Width: 50, Format: "jpeg"}
+
+	_, err := svc.Serve("/media/sample.jpg", params)
+	if err != nil {
+		t.Fatalf("Serve 失败: %v", err)
+	}
+	if tr.calls != 1 {
+		t.Fatalf("自定义前缀应调用 1 次 transform,实际 %d", tr.calls)
+	}
+
+	// 旧前缀不应命中物理文件（这里仅验证不会 panic,transform 会尝试不存在的路径）
+	_, _ = svc.Serve("/uploads/sample.jpg", params)
+	if tr.calls != 2 {
+		t.Fatalf("旧前缀不应命中缓存,应再次调用 transform,实际 %d", tr.calls)
 	}
 }

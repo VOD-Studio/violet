@@ -77,6 +77,7 @@ func registerPublicPaths(t *openapi3.T) {
 		"id":         optInt32("分组 ID"),
 		"name":       reqStr("分组名称"),
 		"source":     optStr("来源"),
+		"cover_url":  optStr("分组封面图 URL"),
 		"sort_order": optInt("排序权重"),
 		"is_enabled": optBool("是否启用"),
 		"emojis":     refArray("分组内表情", "EmojiDTO"),

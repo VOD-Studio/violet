@@ -29,6 +29,7 @@ type EmojiGroupDTO struct {
 	ID        int32      `json:"id"`
 	Name      string     `json:"name"`
 	Source    string     `json:"source"`
+	CoverURL  string     `json:"cover_url"`
 	SortOrder int        `json:"sort_order"`
 	IsEnabled bool       `json:"is_enabled"`
 	Emojis    []EmojiDTO `json:"emojis"`
@@ -110,6 +111,7 @@ func (s *EmojiService) GetGroupByName(ctx context.Context, name string) (EmojiGr
 type CreateGroupInput struct {
 	Name      string
 	Source    string
+	CoverURL  string
 	SortOrder int
 	IsEnabled bool
 }
@@ -127,6 +129,7 @@ func (s *EmojiService) CreateGroup(ctx context.Context, in CreateGroupInput) (in
 	if err != nil {
 		return 0, err
 	}
+	g.SetCoverURL(in.CoverURL)
 	g.SetSortOrder(in.SortOrder)
 	if !in.IsEnabled {
 		g.SetEnabled(false)
@@ -139,6 +142,7 @@ type UpdateGroupInput struct {
 	ID        int32
 	Name      string
 	Source    string
+	CoverURL  *string
 	SortOrder *int
 	IsEnabled *bool
 }
@@ -161,6 +165,9 @@ func (s *EmojiService) UpdateGroup(ctx context.Context, in UpdateGroupInput) err
 	}
 	if in.Source != "" {
 		g.SetSource(in.Source)
+	}
+	if in.CoverURL != nil {
+		g.SetCoverURL(*in.CoverURL)
 	}
 	if in.SortOrder != nil {
 		g.SetSortOrder(*in.SortOrder)
@@ -302,7 +309,7 @@ func emojiGroupToDTO(g *domainemoji.EmojiGroup) EmojiGroupDTO {
 		emojis = append(emojis, emojiToDTO(e))
 	}
 	return EmojiGroupDTO{
-		ID: g.ID(), Name: g.Name(), Source: g.Source(),
+		ID: g.ID(), Name: g.Name(), Source: g.Source(), CoverURL: g.CoverURL(),
 		SortOrder: g.SortOrder(), IsEnabled: g.IsEnabled(), Emojis: emojis,
 	}
 }

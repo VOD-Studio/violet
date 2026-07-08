@@ -15,12 +15,12 @@ type ImageContainer struct {
 }
 
 // NewImageContainer 装配图片服务模块
-// uploadDir 为静态文件根目录(如 "uploads")
-func NewImageContainer(uploadDir string) *ImageContainer {
+// uploadDir 为静态文件根目录(如 "uploads")，urlPrefix 为 URL 前缀(如 "/uploads")。
+func NewImageContainer(uploadDir, urlPrefix string) *ImageContainer {
 	transformer := infrapimage.NewTransformer()
 	memCache := infrapimage.NewMemoryCache(100, 300*time.Second) // 100 条,TTI 300s
 	diskCache := infrapimage.NewDiskCache(filepath.Join(uploadDir, ".cache"))
 	composite := infrapimage.NewCompositeCache(memCache, diskCache)
-	svc := appimage.NewService(transformer, composite, uploadDir)
-	return &ImageContainer{ImageHandler: imagehttp.NewHandler(svc, uploadDir)}
+	svc := appimage.NewService(transformer, composite, uploadDir, urlPrefix)
+	return &ImageContainer{ImageHandler: imagehttp.NewHandler(svc, uploadDir, urlPrefix)}
 }

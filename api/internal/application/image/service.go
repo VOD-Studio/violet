@@ -17,20 +17,27 @@ type Service struct {
 	transformer domainimage.ImageTransformer
 	cache       domainimage.ImageCache
 	uploadDir   string
+	urlPrefix   string
 	group       singleflight.Group
 }
 
-// NewService 创建图片服务用例。uploadDir 为静态文件根目录(如 "uploads")。
-func NewService(transformer domainimage.ImageTransformer, cache domainimage.ImageCache, uploadDir string) *Service {
-	return &Service{transformer: transformer, cache: cache, uploadDir: uploadDir}
+// NewService 创建图片服务用例。uploadDir 为静态文件根目录(如 "uploads")，
+// urlPrefix 为 URL 前缀(如 "/uploads")，用于把请求路径映射为物理路径。
+func NewService(transformer domainimage.ImageTransformer, cache domainimage.ImageCache, uploadDir, urlPrefix string) *Service {
+	return &Service{
+		transformer: transformer,
+		cache:       cache,
+		uploadDir:   uploadDir,
+		urlPrefix:   strings.TrimSuffix(urlPrefix, "/"),
+	}
 }
 
 // Serve 处理一次带参数的图片请求。
 // relPath 形如 "/uploads/avatar/x.webp";params 为处理参数。
 // 返回处理结果(Bytes 非空表示命中或处理成功)。
 func (s *Service) Serve(relPath string, params domainimage.TransformParams) (domainimage.TransformResult, error) {
-	// 物理路径:剥掉 /uploads 前缀,接到 uploadDir
-	srcPath := filepath.Join(s.uploadDir, strings.TrimPrefix(relPath, "/uploads"))
+	// 物理路径:剥掉 urlPrefix 前缀,接到 uploadDir
+	srcPath := filepath.Join(s.uploadDir, strings.TrimPrefix(relPath, s.urlPrefix))
 	cacheKey := cacheKey(srcPath, params)
 
 	// 一级缓存查找

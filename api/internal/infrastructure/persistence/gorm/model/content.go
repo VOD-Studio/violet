@@ -165,6 +165,7 @@ type EmojiGroup struct {
 	ID        int32     `gorm:"primaryKey;autoIncrement" json:"id"`
 	Name      string    `gorm:"type:varchar(50);unique" json:"name"`
 	Source    string    `gorm:"type:varchar(30);default:system" json:"source"`
+	CoverURL  string    `gorm:"type:varchar(500);column:cover_url" json:"cover_url"`
 	SortOrder int       `gorm:"default:0" json:"sort_order"`
 	IsEnabled bool      `gorm:"default:true" json:"is_enabled"`
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`

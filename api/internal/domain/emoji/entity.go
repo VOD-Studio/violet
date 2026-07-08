@@ -15,6 +15,7 @@ type EmojiGroup struct {
 	id        int32
 	name      string
 	source    string
+	coverURL  string
 	sortOrder int
 	isEnabled bool
 	emojis    []Emoji
@@ -43,11 +44,11 @@ func NewEmojiGroup(id int32, name, source string) (*EmojiGroup, error) {
 	return &EmojiGroup{id: id, name: name, source: source, isEnabled: true, emojis: []Emoji{}}, nil
 }
 
-func ReconstructEmojiGroup(id int32, name, source string, sortOrder int, isEnabled bool, emojis []Emoji) *EmojiGroup {
+func ReconstructEmojiGroup(id int32, name, source, coverURL string, sortOrder int, isEnabled bool, emojis []Emoji) *EmojiGroup {
 	if emojis == nil {
 		emojis = []Emoji{}
 	}
-	return &EmojiGroup{id: id, name: name, source: source, sortOrder: sortOrder, isEnabled: isEnabled, emojis: emojis}
+	return &EmojiGroup{id: id, name: name, source: source, coverURL: coverURL, sortOrder: sortOrder, isEnabled: isEnabled, emojis: emojis}
 }
 
 // 表情来源类型完整枚举
@@ -75,6 +76,11 @@ func (g *EmojiGroup) SetSource(source string) {
 	}
 }
 
+// SetCoverURL 设置封面图 URL
+func (g *EmojiGroup) SetCoverURL(coverURL string) {
+	g.coverURL = coverURL
+}
+
 // SetEmojis 设置分组内表情列表
 func (g *EmojiGroup) SetEmojis(emojis []Emoji) {
 	if emojis == nil {
@@ -82,12 +88,13 @@ func (g *EmojiGroup) SetEmojis(emojis []Emoji) {
 	}
 	g.emojis = emojis
 }
-func (g *EmojiGroup) ID() int32       { return g.id }
-func (g *EmojiGroup) Name() string    { return g.name }
-func (g *EmojiGroup) Source() string  { return g.source }
-func (g *EmojiGroup) SortOrder() int  { return g.sortOrder }
-func (g *EmojiGroup) IsEnabled() bool { return g.isEnabled }
-func (g *EmojiGroup) Emojis() []Emoji { return g.emojis }
+func (g *EmojiGroup) ID() int32        { return g.id }
+func (g *EmojiGroup) Name() string     { return g.name }
+func (g *EmojiGroup) Source() string   { return g.source }
+func (g *EmojiGroup) CoverURL() string { return g.coverURL }
+func (g *EmojiGroup) SortOrder() int   { return g.sortOrder }
+func (g *EmojiGroup) IsEnabled() bool  { return g.isEnabled }
+func (g *EmojiGroup) Emojis() []Emoji  { return g.emojis }
 
 // NewEmoji 创建表情（基础字段）
 func NewEmoji(id, groupID int32, name, url string) Emoji {
