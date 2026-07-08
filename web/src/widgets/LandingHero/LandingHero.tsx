@@ -55,21 +55,22 @@ export default function LandingHero() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, ease: "easeOut" }}
                             className="max-w-[40rem]"
+                            style={{ fontVariantLigatures: "contextual" }}
                         >
-                            <h1 className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                                <span className="text-[2.5rem] font-black leading-none tracking-tighter md:text-[3.4rem]">
+                            <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono">
+                                <span className="text-[2.5rem] font-bold leading-none tracking-tight md:text-[3.4rem]">
                                     MIMO
                                 </span>
-                                <span className="text-[2.5rem] font-black italic leading-none tracking-tighter text-muted-foreground md:text-[3.4rem]">
+                                <span className="text-[2.5rem] font-bold italic leading-none tracking-tight text-muted-foreground md:text-[3.4rem]">
                                     Blog
                                 </span>
                             </h1>
 
-                            <p className="mt-3 max-w-xl text-[15px] leading-7 text-muted-foreground">
+                            <p className="mt-3 max-w-xl font-mono text-[14px] leading-7 text-muted-foreground">
                                 全栈博客平台 · React · Go · PostgreSQL
                             </p>
 
-                            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                            <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
                                 {["前端", "后端", "工程实践"].map((label) => (
                                     <span
                                         key={label}
