@@ -3,6 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { clientQueryClient } from "./shared/api/query-client";
+import { getNavDirection, isAdminRoute } from "./shared/lib/nav-direction";
 
 /**
  * RouterContext - 全路由共享的上下文
@@ -35,6 +36,18 @@ export const getRouter = () => {
         scrollRestoration: true,
         defaultPreload: "intent",
         defaultPreloadStaleTime: 0,
+        defaultViewTransition: {
+            types: ({ fromLocation, toLocation, pathChanged }) => {
+                if (!pathChanged) return false;
+                const to = toLocation.pathname;
+                const from = fromLocation?.pathname;
+                if (isAdminRoute(to) || (from && isAdminRoute(from))) {
+                    return ["fade"];
+                }
+                const dir = getNavDirection(from, to);
+                return dir ? [dir] : ["fade"];
+            },
+        },
         context: {
             queryClient: clientQueryClient,
             auth: { isAuthenticated: false, claims: null },

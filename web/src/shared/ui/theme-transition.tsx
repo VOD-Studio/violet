@@ -73,6 +73,10 @@ export function animateThemeRipple(origin: RippleOrigin, apply: () => void): voi
         Math.max(py, window.innerHeight - py),
     );
 
+    // 抑制所有命名 VT 组（page-main、post-cover 等），让圆形扩散只作用于 root
+    const root = document.documentElement;
+    root.classList.add("theme-vt");
+
     const transition = document.startViewTransition(() => apply());
 
     // ready 后用 WAAPI 驱动 ::view-transition-new(root) 的 clip-path 扩散
@@ -93,10 +97,13 @@ export function animateThemeRipple(origin: RippleOrigin, apply: () => void): voi
                 },
             );
         })
-        .catch(() => apply());
+        .catch(() => {
+            root.classList.remove("theme-vt");
+            apply();
+        });
 
     // 兜底：VT 异常 finished reject 时确保仍切完
-    transition.finished.catch(() => apply());
+    transition.finished.catch(() => apply()).finally(() => root.classList.remove("theme-vt"));
 }
 
 /**

@@ -207,6 +207,113 @@ body {
   mix-blend-mode: normal;
 }
 
+/*
+ * ——————————————————————————————————————————
+ * 页面转场 View Transitions
+ *
+ * 三种 VT type（由 router.tsx 的 defaultViewTransition.types 回调设置）：
+ * - forward  导航序号增大：旧页左移退出、新页从右侧滑入
+ * - back     导航序号减小：旧页右移退出、新页从左侧滑入
+ * - fade     同段导航（如 /blog → /blog/$slug）：交叉淡入淡出
+ *
+ * CSS 用 :active-view-transition-type(xxx) 精确匹配，无需 data- 属性。
+ * ——————————————————————————————————————————
+ */
+
+/* —— forward：旧页左移退出，新页右侧滑入 —— */
+:active-view-transition-type(forward)::view-transition-old(page-main) {
+  animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-left;
+}
+:active-view-transition-type(forward)::view-transition-new(page-main) {
+  animation: 320ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-right;
+}
+
+/* —— back：旧页右移退出，新页左侧滑入 —— */
+:active-view-transition-type(back)::view-transition-old(page-main) {
+  animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-right;
+}
+:active-view-transition-type(back)::view-transition-new(page-main) {
+  animation: 320ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-left;
+}
+
+/* —— fade：同段导航交叉淡入 —— */
+:active-view-transition-type(fade)::view-transition-old(page-main) {
+  animation: 220ms ease-out both page-fade-out;
+}
+:active-view-transition-type(fade)::view-transition-new(page-main) {
+  animation: 220ms ease-out both page-fade-in;
+}
+
+@keyframes page-enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(36px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes page-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-36px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes page-exit-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-26px);
+  }
+}
+@keyframes page-exit-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(26px);
+  }
+}
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes page-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* —— 共享元素过渡：博客封面 morph —— */
+/* 浏览器自动匹配同名元素并插值位置/尺寸，这里仅微调节奏 */
+::view-transition-group(post-cover) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* —— 主题切换 VT：抑制所有命名组，让圆形扩散只作用于 root —— */
+html.theme-vt * {
+  /* biome-ignore lint/complexity/noImportantStyles: 必须覆盖内联 view-transition-name */
+  view-transition-name: none !important;
+}
+
 .prose {
   line-height: 1.75;
   /*
@@ -376,4 +483,17 @@ body {
 /* 批注面板自定义滚动条：细条半透明，出现时不挤压内容 */
 .annotation-scroll {
   scrollbar-gutter: stable;
+}
+
+/* ———— prefers-reduced-motion：禁用方向性页面过渡 ———— */
+@media (prefers-reduced-motion: reduce) {
+  :active-view-transition-type(forward)::view-transition-old(page-main),
+  :active-view-transition-type(forward)::view-transition-new(page-main),
+  :active-view-transition-type(back)::view-transition-old(page-main),
+  :active-view-transition-type(back)::view-transition-new(page-main),
+  :active-view-transition-type(fade)::view-transition-old(page-main),
+  :active-view-transition-type(fade)::view-transition-new(page-main) {
+    /* biome-ignore lint/complexity/noImportantStyles: 无障碍要求强制禁用所有动画 */
+    animation: none !important;
+  }
 }
