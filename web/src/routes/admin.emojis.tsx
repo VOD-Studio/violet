@@ -8,6 +8,7 @@ import { EmojiGroupCard } from "@features/admin-emojis/ui/EmojiGroupCard";
 import { EmojiGroupFormDialog } from "@features/admin-emojis/ui/EmojiGroupFormDialog";
 import { EmojiManageDialog } from "@features/admin-emojis/ui/EmojiManageDialog";
 import { GroupCardSkeleton } from "@features/admin-emojis/ui/GroupCardSkeleton";
+import { RefetchBilibiliButton } from "@features/admin-emojis/ui/RefetchBilibiliButton";
 import { StatsCard } from "@features/admin-emojis/ui/StatsCard";
 import { StatsCardSkeleton } from "@features/admin-emojis/ui/StatsCardSkeleton";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
@@ -143,10 +144,13 @@ function EmojisPage() {
             title="表情管理"
             description="管理表情分组和表情"
             action={
-                <Button size="sm" onClick={handleCreateGroup}>
-                    <Plus className="size-3.5" />
-                    创建分组
-                </Button>
+                <div className="flex items-center gap-2">
+                    <RefetchBilibiliButton />
+                    <Button size="sm" onClick={handleCreateGroup}>
+                        <Plus className="size-3.5" />
+                        创建分组
+                    </Button>
+                </div>
             }
         >
             {/* 统计卡片 */}
