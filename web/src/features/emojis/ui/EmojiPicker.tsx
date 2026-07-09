@@ -89,6 +89,11 @@ export function EmojiPicker({
                 sideOffset={4}
                 className="w-85 p-0"
                 onOpenAutoFocus={(e) => e.preventDefault()}
+                onFocusOutside={(e) => {
+                    if (!closeOnSelect) {
+                        e.preventDefault();
+                    }
+                }}
             >
                 <div className="flex flex-col">
                     {isLoading ? (
