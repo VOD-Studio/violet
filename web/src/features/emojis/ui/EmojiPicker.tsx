@@ -22,6 +22,8 @@ export interface EmojiPickerProps {
     align?: "start" | "center" | "end";
     /** 已选中的表情 ID 集合，用于禁用/标识已选项 */
     selectedIds?: Set<number>;
+    /** 选中表情后是否关闭面板，默认 true */
+    closeOnSelect?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ export function EmojiPicker({
     onSelect,
     align = "start",
     selectedIds = new Set(),
+    closeOnSelect = true,
 }: EmojiPickerProps) {
     const [open, setOpen] = useState(false);
     const { data: groups = [], isLoading } = useAllEmojis();
@@ -58,7 +61,9 @@ export function EmojiPicker({
 
     const handleSelect = (emoji: Emoji) => {
         onSelect(emoji);
-        setOpen(false);
+        if (closeOnSelect) {
+            setOpen(false);
+        }
     };
 
     const activeIndex = groups.findIndex((g) => g.name === activeGroup);
