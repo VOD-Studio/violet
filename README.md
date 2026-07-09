@@ -11,12 +11,12 @@
 |------|------|
 | 语言 | Go 1.25 |
 | 路由 | chi v5 |
-| 数据库 | PostgreSQL 16 + sqlc（P2 迁移至 GORM）+ golang-migrate |
+| 数据库 | PostgreSQL 16 + GORM + golang-migrate |
 | 缓存 | Redis 7 |
-| 认证 | JWT (ES256 非对称签名) |
+| 认证 | Opaque session cookie（Redis 后端）+ CSRF double-submit |
 | 日志 | zerolog (结构化) |
 | 依赖注入 | google/wire |
-| 架构 | DDD 四层 (domain/application/infrastructure/interfaces)，P1 重构进行中 |
+| 架构 | DDD 四层 (domain/application/infrastructure/interfaces) |
 
 ### 前端 (`web/`)
 | 类别 | 选型 |
@@ -41,31 +41,37 @@ blog-project/
 ├── api/                    Go 后端服务
 │   ├── cmd/
 │   │   ├── server/         API 服务入口
-│   │   └── migrate/        数据库迁移 CLI
+│   │   ├── migrate/        数据库迁移 CLI
+│   │   └── export-openapi/ OpenAPI 导出 CLI
 │   ├── internal/
-│   │   ├── domain/         领域层 (DDD 聚合、值对象、事件) ← P1 新增
-│   │   ├── application/    应用层 (用例编排、CQRS) ← P1 新增
-│   │   ├── infrastructure/ 基础设施层 (GORM/事件总线实现) ← P1 新增
-│   │   ├── interfaces/     接口层 (HTTP handler/中间件) ← P1 新增
-│   │   ├── app/            依赖注入 (wire) ← P1 新增
-│   │   ├── handler/        旧分层 HTTP handler (P2 迁移中)
-│   │   ├── service/        旧分层业务服务 (P2 迁移中)
-│   │   ├── repository/     旧数据层 (P2 迁移中)
-│   │   └── middleware/     HTTP 中间件
+│   │   ├── domain/         领域层 (聚合根、值对象、仓储端口、领域事件)
+│   │   ├── application/    应用层 (用例编排、CQRS command/query)
+│   │   ├── infrastructure/ 基础设施层 (GORM 实现、Redis、外部 API 适配)
+│   │   ├── interfaces/     接口层 (HTTP handler、路由、中间件)
+│   │   ├── app/            依赖注入容器 (wire / 手工装配)
+│   │   ├── middleware/     HTTP 中间件 (session/CSRF/限流/审计)
+│   │   ├── job/            定时任务 (文件清理)
+│   │   ├── migrate/        迁移执行器
+│   │   ├── openapi/        OpenAPI 文档生成
+│   │   └── service/        启动期服务 (B站表情种子)
 │   ├── migrations/         数据库迁移 (golang-migrate)
 │   └── config/             配置管理 (Viper)
-├── web/                    React 前端应用
-├── docs/                   项目文档
+├── web/                    React 前端应用 (TanStack Start)
+│   ├── src/
+│   │   ├── routes/         文件路由
+│   │   ├── features/       业务模块 (feature-sliced)
+│   │   ├── entities/       实体定义
+│   │   ├── widgets/        页面级组合组件
+│   │   ├── shared/         通用组件 / API / 工具
+│   │   └── test/           测试配置
+│   ├── public/             静态资源
+│   └── server.mjs          SSR 生产服务器
+├── docs/                   项目文档 (PRD / ADR / 指南 / issues)
 ├── nginx/                  Nginx 配置
-├── scripts/                工具脚本 (Git 钩子等)
+├── scripts/                工具脚本 (Git 钩子、部署、发版)
 ├── docker-compose.yml      开发环境编排
 └── docker-compose.prod.yml 生产环境编排
 ```
-
-> **重构说明**：项目正在进行 DDD 架构重构（P0-P3 分阶段）。当前新旧代码并存：
-> - 新 DDD 结构在 `internal/{domain,application,infrastructure,interfaces}`
-> - 旧分层在 `internal/{handler,service,repository}`
-> - P2 阶段逐模块迁移，最终旧代码全部删除
 
 ## 快速开始
 
@@ -165,7 +171,6 @@ make web-typecheck  # TypeScript 类型检查
 
 # 代码生成
 make wire           # 生成 wire 依赖注入代码
-make sqlc           # 生成 sqlc 查询代码
 
 # 构建
 make build          # 构建前后端生产版本
@@ -183,9 +188,11 @@ make build          # 构建前后端生产版本
 
 ## 文档
 
-- [后端文档](api/AGENTS.md)
-- [前端文档](web/README.md)
+- [项目级代理规范与开发须知](AGENTS.md)
+- [后端说明](api/README.md)
+- [前端说明](web/README.md)
 - [贡献指南](CONTRIBUTING.md)
+- [架构决策记录](docs/adr/)
 
 ## License
 
