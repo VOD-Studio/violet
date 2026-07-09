@@ -14,8 +14,8 @@ import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { isImageURL } from "@shared/lib/url";
 import { Image as ImageIcon, X } from "lucide-react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRichTextInput } from "../hooks/use-rich-text-input";
 
 export interface PictureInput {
@@ -76,8 +76,10 @@ export function RichCommentInput({
     const [imageItems, setImageItems] = useState<ImageItem[]>([]);
 
     useEffect(() => {
-        const completed = imageItems.filter((i) => i.status === "done" && i.data);
-        onImagesChange?.(completed.map((i) => i.data!));
+        const completed = imageItems.filter(
+            (i): i is ImageItem & { data: PictureInput } => i.status === "done" && !!i.data,
+        );
+        onImagesChange?.(completed.map((i) => i.data));
     }, [imageItems, onImagesChange]);
 
     useEffect(() => {
@@ -90,7 +92,9 @@ export function RichCommentInput({
         if (resetNonce !== prevNonceRef.current) {
             prevNonceRef.current = resetNonce;
             setImageItems((prev) => {
-                prev.forEach((i) => URL.revokeObjectURL(i.previewUrl));
+                prev.forEach((i) => {
+                    URL.revokeObjectURL(i.previewUrl);
+                });
                 return [];
             });
         }
@@ -205,6 +209,7 @@ export function RichCommentInput({
                 role="textbox"
                 aria-multiline="true"
                 aria-label="评论内容"
+                tabIndex={0}
                 suppressContentEditableWarning
                 className={cn(
                     "max-h-60 overflow-y-auto bg-transparent focus:outline-none",
@@ -221,11 +226,7 @@ export function RichCommentInput({
                             key={item.id}
                             className="group relative size-20 overflow-hidden rounded border border-edge-hairline"
                         >
-                            <img
-                                src={item.previewUrl}
-                                alt=""
-                                className="size-full object-cover"
-                            />
+                            <img src={item.previewUrl} alt="" className="size-full object-cover" />
                             {item.status === "uploading" && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                                     <span className="text-xs font-medium text-white">
@@ -256,9 +257,7 @@ export function RichCommentInput({
             {/* Toolbar */}
             <div className="flex items-center justify-between border-t border-edge-hairline px-2 py-1">
                 <div className="flex items-center gap-1">
-                    {enableEmoji && (
-                        <EmojiPicker onSelect={handleEmojiSelect} align="start" />
-                    )}
+                    {enableEmoji && <EmojiPicker onSelect={handleEmojiSelect} align="start" />}
                     {enableImage && (
                         <button
                             type="button"

@@ -14,7 +14,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@features/emojis/api/queries", () => ({
-    useAllEmojis: () =>({ data: [], isLoading: false }),
+    useAllEmojis: () => ({ data: [], isLoading: false }),
 }));
 vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
     useChunkedUpload: () => ({ uploadFile: vi.fn() }),
@@ -31,9 +31,7 @@ describe("RichCommentInput", () => {
     });
 
     it("渲染 contentEditable 输入区 + 工具栏", () => {
-        render(
-            <RichCommentInput value="" onChange={() => {}} />,
-        );
+        render(<RichCommentInput value="" onChange={() => {}} />);
         const editor = screen.getByRole("textbox", { name: "评论内容" });
         expect(editor).toBeTruthy();
         expect(editor.getAttribute("contentEditable")).toBe("true");
@@ -41,9 +39,7 @@ describe("RichCommentInput", () => {
 
     it("输入触发 onChange 回调", () => {
         const onChange = vi.fn();
-        const { container } = render(
-            <RichCommentInput value="" onChange={onChange} />,
-        );
+        const { container } = render(<RichCommentInput value="" onChange={onChange} />);
         const editor = container.querySelector('[contenteditable="true"]') as HTMLElement;
         expect(editor).toBeTruthy();
         editor.textContent = "你好世界";
@@ -72,17 +68,13 @@ describe("RichCommentInput", () => {
     });
 
     it("compact 模式应用更小的 padding", () => {
-        const { container } = render(
-            <RichCommentInput value="" onChange={() => {}} compact />,
-        );
+        const { container } = render(<RichCommentInput value="" onChange={() => {}} compact />);
         const editor = container.querySelector('[contenteditable="true"]') as HTMLElement;
         expect(editor.className).toContain("min-h-10");
     });
 
     it("disabled 时 contentEditable 不可编辑", () => {
-        const { container } = render(
-            <RichCommentInput value="" onChange={() => {}} disabled />,
-        );
+        const { container } = render(<RichCommentInput value="" onChange={() => {}} disabled />);
         const editor = container.querySelector('[contenteditable="false"]') as HTMLElement;
         expect(editor).toBeTruthy();
     });
