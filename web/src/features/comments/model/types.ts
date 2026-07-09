@@ -108,6 +108,8 @@ export interface CreateComment {
     body: string;
     /** 父评论 ID；非空表示嵌套回复 */
     parent_id?: string;
+    /** 评论附图。上传后的图片信息数组，后端存入 pictures JSONB 列 */
+    pictures?: Array<{ url: string; width: number; height: number; size: number }>;
     /** 作者昵称。匿名必填；登录态由后端从 user 资料覆盖，前端可不传 */
     author_name?: string;
     /** 作者邮箱。匿名必填且需合法格式；登录态由后端覆盖 */

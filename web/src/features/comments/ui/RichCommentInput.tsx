@@ -1,54 +1,67 @@
 /**
  * RichCommentInput - 自包含富文本评论输入组件
  *
- * contentEditable 输入区 + 底部工具栏（emoji 按钮）。图片上传在 Issue 003 中添加。
+ * contentEditable 输入区 + 底部工具栏（emoji 按钮 + 图片上传按钮）。
  *
  * 受控 API：value/onChange 管理纯文本内容（emoji 为 [name] 占位符）。
- * 工具栏 emoji 按钮复用 EmojiPicker 组件，选择后在光标处插入内联表情图片。
- *
- * compact 模式减小 padding/字号，用于回复框和批注。
- * enableEmoji 控制是否显示 emoji 按钮（默认 true）。
+ * 图片上传：点击按钮 → 系统文件选择器 → useChunkedUpload 后台上传 → 缩略图进度条。
+ * onImagesChange 回调通知父组件已上传图片列表（供提交时读取）。
+ * onUploadingChange 回调通知父组件上传状态（供禁用提交按钮）。
+ * resetNonce 变化时清空内部图片状态（供提交成功后重置）。
  */
 import type { Emoji } from "@entities/emoji/model/types";
 import { EmojiPicker } from "@features/emojis/ui/EmojiPicker";
+import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { isImageURL } from "@shared/lib/url";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, X } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRichTextInput } from "../hooks/use-rich-text-input";
 
+export interface PictureInput {
+    url: string;
+    width: number;
+    height: number;
+    size: number;
+}
+
 export interface RichCommentInputProps {
-    /** 当前值（纯文本，emoji 为 [name] 占位符） */
     value: string;
-    /** 值变化回调 */
     onChange: (value: string) => void;
-    /** Cmd/Ctrl+Enter 提交回调 */
     onSubmit?: () => void;
-    /** 最大图片数（Issue 003 实现，本期忽略） */
     maxImages?: number;
-    /** 是否显示 emoji 按钮，默认 true */
     enableEmoji?: boolean;
-    /** 是否显示图片按钮（Issue 003 实现，本期渲染但禁用） */
     enableImage?: boolean;
-    /** 紧凑模式（回复框/批注） */
     compact?: boolean;
-    /** 禁用 */
     disabled?: boolean;
-    /** 占位符文本 */
     placeholder?: string;
-    /** 自定义底部工具栏内容（右侧） */
+    resetNonce?: number;
+    onImagesChange?: (images: PictureInput[]) => void;
+    onUploadingChange?: (uploading: boolean) => void;
     toolbarEnd?: ReactNode;
+}
+
+interface ImageItem {
+    id: string;
+    previewUrl: string;
+    progress: number;
+    status: "uploading" | "done" | "error";
+    data?: PictureInput;
 }
 
 export function RichCommentInput({
     value,
     onChange,
     onSubmit,
+    maxImages = 10,
     enableEmoji = true,
     enableImage = false,
     compact = false,
     disabled = false,
     placeholder = "写下你的评论…",
+    resetNonce = 0,
+    onImagesChange,
+    onUploadingChange,
     toolbarEnd,
 }: RichCommentInputProps) {
     const { contentRef, insertEmoji, handleInput, handlePaste, handleKeyDown } = useRichTextInput({
@@ -57,6 +70,31 @@ export function RichCommentInput({
         onSubmit,
         disabled,
     });
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { uploadFile } = useChunkedUpload({ purpose: "comment" });
+    const [imageItems, setImageItems] = useState<ImageItem[]>([]);
+
+    useEffect(() => {
+        const completed = imageItems.filter((i) => i.status === "done" && i.data);
+        onImagesChange?.(completed.map((i) => i.data!));
+    }, [imageItems, onImagesChange]);
+
+    useEffect(() => {
+        onUploadingChange?.(imageItems.some((i) => i.status === "uploading"));
+    }, [imageItems, onUploadingChange]);
+
+    // Reset images when resetNonce changes (e.g., after form submit)
+    const prevNonceRef = useRef(resetNonce);
+    useEffect(() => {
+        if (resetNonce !== prevNonceRef.current) {
+            prevNonceRef.current = resetNonce;
+            setImageItems((prev) => {
+                prev.forEach((i) => URL.revokeObjectURL(i.previewUrl));
+                return [];
+            });
+        }
+    }, [resetNonce]);
 
     const handleEmojiSelect = (emoji: Emoji) => {
         const imageUrl = emoji.gif_url || emoji.url;
@@ -67,6 +105,76 @@ export function RichCommentInput({
         }
     };
 
+    const handleFileSelect = useCallback(
+        async (e: React.ChangeEvent<HTMLInputElement>) => {
+            const files = Array.from(e.target.files ?? []);
+            if (files.length === 0) return;
+
+            const remaining = maxImages - imageItems.length;
+            const toUpload = files.slice(0, remaining);
+
+            const newItems: ImageItem[] = toUpload.map((file) => ({
+                id: crypto.randomUUID(),
+                previewUrl: URL.createObjectURL(file),
+                progress: 0,
+                status: "uploading" as const,
+            }));
+
+            setImageItems((prev) => [...prev, ...newItems]);
+            e.target.value = "";
+
+            for (let i = 0; i < toUpload.length; i++) {
+                const file = toUpload[i];
+                const itemId = newItems[i].id;
+
+                try {
+                    const result = await uploadFile(file, (progress) => {
+                        setImageItems((prev) =>
+                            prev.map((item) =>
+                                item.id === itemId ? { ...item, progress: progress.percent } : item,
+                            ),
+                        );
+                    });
+
+                    setImageItems((prev) =>
+                        prev.map((item) =>
+                            item.id === itemId
+                                ? {
+                                      ...item,
+                                      status: "done" as const,
+                                      progress: 100,
+                                      data: {
+                                          url: result.url,
+                                          width: result.width ?? 0,
+                                          height: result.height ?? 0,
+                                          size: file.size,
+                                      },
+                                  }
+                                : item,
+                        ),
+                    );
+                } catch {
+                    setImageItems((prev) =>
+                        prev.map((item) =>
+                            item.id === itemId ? { ...item, status: "error" as const } : item,
+                        ),
+                    );
+                }
+            }
+        },
+        [maxImages, imageItems.length, uploadFile],
+    );
+
+    const handleRemoveImage = (id: string) => {
+        setImageItems((prev) => {
+            const item = prev.find((i) => i.id === id);
+            if (item) URL.revokeObjectURL(item.previewUrl);
+            return prev.filter((i) => i.id !== id);
+        });
+    };
+
+    const canAddMore = imageItems.length < maxImages && !disabled;
+
     return (
         <div
             className={cn(
@@ -76,6 +184,17 @@ export function RichCommentInput({
                 disabled && "opacity-50",
             )}
         >
+            {/* Hidden file input */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+            />
+
+            {/* ContentEditable input */}
             <div
                 ref={contentRef}
                 contentEditable={!disabled}
@@ -94,20 +213,59 @@ export function RichCommentInput({
                 )}
             />
 
+            {/* Image thumbnails */}
+            {imageItems.length > 0 && (
+                <div className="flex flex-wrap gap-2 border-t border-edge-hairline px-3 py-2">
+                    {imageItems.map((item) => (
+                        <div
+                            key={item.id}
+                            className="group relative size-20 overflow-hidden rounded border border-edge-hairline"
+                        >
+                            <img
+                                src={item.previewUrl}
+                                alt=""
+                                className="size-full object-cover"
+                            />
+                            {item.status === "uploading" && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                    <span className="text-xs font-medium text-white">
+                                        {item.progress}%
+                                    </span>
+                                </div>
+                            )}
+                            {item.status === "error" && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                                    <span className="text-xs text-white">失败</span>
+                                </div>
+                            )}
+                            {!disabled && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleRemoveImage(item.id)}
+                                    className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                    aria-label="删除图片"
+                                >
+                                    <X className="size-3" />
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Toolbar */}
             <div className="flex items-center justify-between border-t border-edge-hairline px-2 py-1">
                 <div className="flex items-center gap-1">
                     {enableEmoji && (
-                        <EmojiPicker
-                            onSelect={handleEmojiSelect}
-                            align="start"
-                        />
+                        <EmojiPicker onSelect={handleEmojiSelect} align="start" />
                     )}
                     {enableImage && (
                         <button
                             type="button"
-                            disabled
-                            title="图片上传即将支持"
-                            className="inline-flex size-7 items-center justify-center rounded text-muted-foreground opacity-40"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={!canAddMore}
+                            title={canAddMore ? "上传图片" : `最多 ${maxImages} 张图片`}
+                            className="inline-flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
                         >
                             <ImageIcon className="size-3.5" />
                         </button>

@@ -16,6 +16,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@features/emojis/api/queries", () => ({
     useAllEmojis: () =>({ data: [], isLoading: false }),
 }));
+vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
+    useChunkedUpload: () => ({ uploadFile: vi.fn() }),
+}));
 
 import { RichCommentInput } from "../RichCommentInput";
 
