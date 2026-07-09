@@ -15,7 +15,7 @@
  * 默认行为是打开本地上传文件选择器。
  */
 import { EditorContent, useEditor } from "@tiptap/react";
-import { Download, FileText, FileUp, Globe } from "lucide-react";
+import { Code2, Download, FileUp, Globe } from "lucide-react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { urlErrorMessage, validateUrl } from "@/shared/lib/url";
 import { cn } from "@/shared/lib/utils";
@@ -193,17 +193,22 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
         };
 
-        // —— Markdown 源码查看/编辑弹窗 ——
-        const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
-        const [sourceDefault, setSourceDefault] = useState("");
-        const openSourceDialog = () => {
+        // —— Markdown 源码/编辑器内联切换 ——
+        const [sourceMode, setSourceMode] = useState(false);
+        const [sourceText, setSourceText] = useState("");
+        const toggleSourceMode = () => {
             if (!editor) return;
-            setSourceDefault(editor.getMarkdown());
-            setSourceDialogOpen(true);
-        };
-        const handleSourceConfirm = (md: string) => {
-            if (editor && md !== sourceDefault) {
-                editor.commands.setContent(md, { contentType: "markdown" });
+            if (!sourceMode) {
+                // 进入源码模式：抓取当前 Markdown
+                setSourceText(editor.getMarkdown());
+                setSourceMode(true);
+            } else {
+                // 退出源码模式：内容有变化则写回编辑器
+                const current = editor.getMarkdown();
+                if (sourceText !== current) {
+                    editor.commands.setContent(sourceText, { contentType: "markdown" });
+                }
+                setSourceMode(false);
             }
         };
 
@@ -242,27 +247,40 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                     onInsertLink={openLinkDialog}
                 />
                 {editor ? <TableToolbar editor={editor} /> : null}
-                <div ref={setScrollContainer} className="relative flex-1 overflow-y-auto px-4 py-3">
-                    {editor ? (
-                        <EditorBubbleMenu
-                            editor={editor}
-                            scrollTarget={scrollContainer ?? undefined}
-                            onInsertLink={openLinkDialog}
-                        />
-                    ) : null}
-                    <EditorContent editor={editor} />
-                </div>
+                {sourceMode ? (
+                    <textarea
+                        value={sourceText}
+                        onChange={(e) => setSourceText(e.target.value)}
+                        spellCheck={false}
+                        className="flex-1 resize-none bg-transparent p-4 font-mono text-sm leading-relaxed focus:outline-none"
+                        style={{ minHeight }}
+                    />
+                ) : (
+                    <div
+                        ref={setScrollContainer}
+                        className="relative flex-1 overflow-y-auto px-4 py-3"
+                    >
+                        {editor ? (
+                            <EditorBubbleMenu
+                                editor={editor}
+                                scrollTarget={scrollContainer ?? undefined}
+                                onInsertLink={openLinkDialog}
+                            />
+                        ) : null}
+                        <EditorContent editor={editor} />
+                    </div>
+                )}
                 <div className="flex items-center justify-between gap-2 border-t border-edge-hairline bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
                     <span>{wordCount} 字</span>
                     <div className="flex items-center gap-1">
                         <Button
                             type="button"
-                            variant="ghost"
+                            variant={sourceMode ? "secondary" : "ghost"}
                             size="xs"
-                            title="查看/编辑 Markdown 源码"
-                            onClick={openSourceDialog}
+                            title="切换 Markdown 源码 / 富文本"
+                            onClick={toggleSourceMode}
                         >
-                            <FileText /> 源码
+                            <Code2 /> 源码
                         </Button>
                         <Button asChild size="xs" variant="ghost" title="导入 .md 文件">
                             <label className="cursor-pointer">
@@ -306,17 +324,6 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                     defaultValue={linkDefault}
                     placeholder="https://"
                     onConfirm={handleLinkConfirm}
-                />
-                {/* Markdown 源码查看/编辑弹窗 */}
-                <PromptDialog
-                    open={sourceDialogOpen}
-                    onOpenChange={setSourceDialogOpen}
-                    title="Markdown 源码"
-                    description="查看或直接编辑 Markdown 源码"
-                    multiline
-                    defaultValue={sourceDefault}
-                    confirmLabel="应用"
-                    onConfirm={handleSourceConfirm}
                 />
                 {/* 远程链接导入弹窗 */}
                 <PromptDialog
