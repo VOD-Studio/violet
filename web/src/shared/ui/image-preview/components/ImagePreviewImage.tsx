@@ -74,8 +74,15 @@ export function ImagePreviewImage({
     // biome-ignore lint/correctness/useExhaustiveDependencies: src 是重置触发器，函数体内未直接使用
     useEffect(() => {
         setPosition({ x: 0, y: 0 });
+        if (!shouldLoad) return;
         setIsLoading(true);
-    }, [src]);
+        // 兜底：图片命中缓存时会在事件绑定前完成加载，导致 onLoad 丢失、永久 loading。
+        // 若新 <img> 已解码完成，同步置为完成态。
+        const img = imgRef.current;
+        if (img?.complete && img.naturalWidth !== 0) {
+            handleLoad();
+        }
+    }, [src, shouldLoad]);
 
     // 外部触发重置（缩放/旋转/翻转恢复初始）时，同步清空拖拽偏移，让图片回到中心。
     // biome-ignore lint/correctness/useExhaustiveDependencies: resetKey 是父组件传入的重置信号，必须作为依赖
