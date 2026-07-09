@@ -201,15 +201,15 @@ export function CommentForm({
                         )}
                         <Button
                             type="submit"
-                            size={compact ? "sm" : "default"}
+                            size="sm"
                             disabled={
                                 createComment.isPending || isUploading || (!isLoggedIn && (!codeSent || code.length !== 6))
                             }
                         >
                             {createComment.isPending ? (
-                                <Loader2 className="size-4 animate-spin" />
+                                <Loader2 className="size-3.5 animate-spin" />
                             ) : (
-                                <Send className="size-4" />
+                                <Send className="size-3.5" />
                             )}
                             发送
                         </Button>
