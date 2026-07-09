@@ -104,3 +104,13 @@ export interface BatchUpdateResult {
     /** 受影响的记录条数 */
     affected: number;
 }
+
+/** B站表情重新拉取任务状态 */
+export interface RefetchStatus {
+    state: "idle" | "running" | "done" | "failed";
+    started_at?: string;
+    finished_at?: string;
+    groups_done: number;
+    groups_total: number;
+    error?: string;
+}

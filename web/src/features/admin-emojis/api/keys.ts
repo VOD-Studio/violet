@@ -13,4 +13,6 @@ export const adminEmojiKeys = {
     /** 后台分组内表情列表 */
     adminGroupEmojis: (groupId: number) =>
         [...adminEmojiKeys.adminGroups(), "emojis", groupId] as const,
+    /** B站表情重新拉取任务状态 */
+    refetchStatus: () => [...adminEmojiKeys.all, "refetch-status"] as const,
 };

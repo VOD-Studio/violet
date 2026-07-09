@@ -113,3 +113,14 @@ export const useDeleteEmoji = () => {
         },
     });
 };
+
+/** useRefetchBilibiliEmojis - 触发 B站表情重新拉取，POST /admin/emojis/bilibili/refetch */
+export const useRefetchBilibiliEmojis = () => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: () => apiPost<null>("/admin/emojis/bilibili/refetch"),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: adminEmojiKeys.refetchStatus() });
+        },
+    });
+};

@@ -1,6 +1,7 @@
 import type { Emoji, EmojiGroup } from "@entities/emoji/model/types";
 import { apiGet } from "@shared/api/request";
 import { useQuery } from "@tanstack/react-query";
+import type { RefetchStatus } from "../model/types";
 import { adminEmojiKeys } from "./keys";
 
 /**
@@ -32,4 +33,16 @@ export const useGroupEmojisAdmin = (groupId: number) =>
         queryKey: adminEmojiKeys.adminGroupEmojis(groupId),
         queryFn: () => fetchGroupEmojisAdmin(groupId),
         enabled: !!groupId,
+    });
+
+/** useRefetchStatus - 轮询重新拉取任务状态，仅 running 时每 2s 轮询 */
+export const useRefetchStatus = () =>
+    useQuery({
+        queryKey: adminEmojiKeys.refetchStatus(),
+        queryFn: () => apiGet<RefetchStatus>("/admin/emojis/bilibili/refetch/status"),
+        refetchInterval: (query) => {
+            const data = query.state.data;
+            if (!data) return false;
+            return data.state === "running" ? 2000 : false;
+        },
     });
