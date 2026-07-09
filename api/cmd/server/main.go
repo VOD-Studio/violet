@@ -148,7 +148,8 @@ func main() {
 	urlPrefix := cfg.UploadPathPrefix               // "/uploads/"
 
 	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix)
-	emojiSeedService := service.NewEmojiSeedService(gormDB, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
+	emojiRepo := gormrepo.NewEmojiGroupRepository(gormDB)
+	emojiSeedService := service.NewEmojiSeedService(emojiRepo, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
 
 	// 表情种子数据初始化（幂等，后台执行）：首次启动执行完整导入，
 	// 后续启动仅回填 bilibili 分组缺失的封面 URL。不阻塞 HTTP 服务启动。

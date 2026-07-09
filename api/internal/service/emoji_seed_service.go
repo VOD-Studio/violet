@@ -4,16 +4,14 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"sync"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
-	"gorm.io/gorm"
 
+	domainemoji "blog-api/internal/domain/emoji"
 	"blog-api/internal/infrastructure/bilibili"
-	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 )
 
 // SeedResult 种子数据导入结果
@@ -25,9 +23,8 @@ type SeedResult struct {
 
 // EmojiSeedService 表情种子数据服务
 type EmojiSeedService struct {
-	db         *gorm.DB             // GORM 直接操作（替代 sqlc queries）
+	repo       domainemoji.EmojiGroupRepository
 	emojiDir   string               // 表情独立存储目录
-	urlPrefix  string               // 上传 URL 前缀，如 "/uploads/"
 	client     *bilibili.Client     // B站表情 API 客户端
 	downloader *bilibili.Downloader // 表情图片下载器
 	apiType    string               // API 类型：user 或 official
@@ -35,11 +32,10 @@ type EmojiSeedService struct {
 
 // NewEmojiSeedService 创建表情种子数据服务实例。
 // emojiDir 为物理存储目录，urlPrefix 为 URL 前缀，二者解耦（不互推）。
-func NewEmojiSeedService(db *gorm.DB, emojiDir, urlPrefix, cookie, apiType string) *EmojiSeedService {
+func NewEmojiSeedService(repo domainemoji.EmojiGroupRepository, emojiDir, urlPrefix, cookie, apiType string) *EmojiSeedService {
 	return &EmojiSeedService{
-		db:         db,
+		repo:       repo,
 		emojiDir:   emojiDir,
-		urlPrefix:  urlPrefix,
 		client:     bilibili.NewClient(cookie),
 		downloader: bilibili.NewDownloader(emojiDir, urlPrefix),
 		apiType:    apiType,
@@ -61,8 +57,8 @@ func (s *EmojiSeedService) SeedBilibiliEmojis(ctx context.Context) error {
 
 	log.Info().Int("packages", len(packages)).Msg("获取到表情包组")
 
-	var totalCount int64
-	if err := s.db.WithContext(ctx).Model(&newmodel.EmojiGroup{}).Count(&totalCount).Error; err != nil {
+	totalCount, err := s.repo.Count(ctx)
+	if err != nil {
 		return fmt.Errorf("检查表情分组数量失败: %w", err)
 	}
 
@@ -89,11 +85,6 @@ func (s *EmojiSeedService) SeedBilibiliEmojis(ctx context.Context) error {
 func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []bilibili.Package) (*SeedResult, error) {
 	result := &SeedResult{}
 
-	// 确保表情目录存在
-	if err := os.MkdirAll(s.emojiDir, 0755); err != nil {
-		return nil, fmt.Errorf("创建表情目录失败: %w", err)
-	}
-
 	for i, pkg := range packages {
 		if pkg.Text == "" || len(pkg.Emote) == 0 {
 			continue
@@ -107,15 +98,16 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 		}
 
 		// 创建分组
-		group := newmodel.EmojiGroup{
-			Name:      pkg.Text,
-			Source:    "bilibili",
-			CoverURL:  coverURL,
-			SortOrder: i + 1,
-			IsEnabled: true,
+		g, err := domainemoji.NewEmojiGroup(0, pkg.Text, domainemoji.SourceBilibili)
+		if err != nil {
+			log.Printf("警告: 创建表情分组对象 %s 失败: %v", pkg.Text, err)
+			continue
 		}
-
-		if err := s.db.WithContext(ctx).Create(&group).Error; err != nil {
+		g.SetCoverURL(coverURL)
+		g.SetSortOrder(i + 1)
+		g.SetEnabled(true)
+		groupID, err := s.repo.Save(ctx, g)
+		if err != nil {
 			log.Printf("警告: 创建表情分组 %s 失败: %v", pkg.Text, err)
 			continue
 		}
@@ -133,8 +125,8 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 
 		// errgroup.WithContext 返回的 ctx 仅用于下载链路取消；此处下载不接收 ctx，
 		// 故丢弃，只用 group 做并发度限制与错误聚合。
-		g, _ := errgroup.WithContext(ctx)
-		g.SetLimit(8)
+		eg, _ := errgroup.WithContext(ctx)
+		eg.SetLimit(8)
 		var mu sync.Mutex
 		results := make([]downloadedEmoji, 0, len(pkg.Emote))
 
@@ -142,7 +134,7 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 			if emote.Text == "" {
 				continue
 			}
-			g.Go(func() error {
+			eg.Go(func() error {
 				// 判断是否为颜文字（纯文本表情）
 				isTextEmoji := emote.URL == "" || emote.URL == emote.Text
 
@@ -185,7 +177,7 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 				return nil
 			})
 		}
-		if err := g.Wait(); err != nil {
+		if err := eg.Wait(); err != nil {
 			log.Printf("警告: 分组 %s 并发下载出错: %v", pkg.Text, err)
 		}
 
@@ -196,16 +188,9 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 
 		// 第二阶段：按序串行写库
 		for j, de := range results {
-			emoji := newmodel.Emoji{
-				GroupID:   group.ID,
-				Name:      de.emote.Text,
-				URL:       de.url,
-				GifURL:    de.gifURL,
-				SourceURL: de.sourceURL,
-				SortOrder: j + 1,
-			}
-
-			if err := s.db.WithContext(ctx).Create(&emoji).Error; err != nil {
+			domainEmoji := domainemoji.NewEmoji(0, groupID, de.emote.Text, de.url)
+			domainEmoji.Update(de.emote.Text, de.url, "", de.gifURL, de.sourceURL, j+1)
+			if _, err := s.repo.SaveEmoji(ctx, domainEmoji); err != nil {
 				log.Printf("警告: 创建表情 %s 失败: %v", de.emote.Text, err)
 				continue
 			}
@@ -234,38 +219,33 @@ func (s *EmojiSeedService) backfillBilibiliCovers(ctx context.Context, packages 
 		coverByName[pkg.Text] = coverURL
 	}
 
-	var groups []newmodel.EmojiGroup
-	if err := s.db.WithContext(ctx).
-		Where("source = ? AND (cover_url IS NULL OR cover_url = '' OR cover_url LIKE 'http%')", "bilibili").
-		Find(&groups).Error; err != nil {
-		return nil, fmt.Errorf("查询待回填/替换远程封面分组失败: %w", err)
+	groups, err := s.repo.FindGroupsNeedingCover(ctx, domainemoji.SourceBilibili)
+	if err != nil {
+		return nil, fmt.Errorf("查询待回填封面分组失败: %w", err)
 	}
 
 	for _, g := range groups {
-		coverURL, ok := coverByName[g.Name]
+		coverURL, ok := coverByName[g.Name()]
 		if !ok {
-			log.Warn().Str("group", g.Name).Msg("本地 bilibili 分组未在 B站 API 中匹配到封面")
+			log.Warn().Str("group", g.Name()).Msg("本地 bilibili 分组未在 B站 API 中匹配到封面")
 			continue
 		}
 
-		log.Info().Str("group", g.Name).Str("remote_url", coverURL).Msg("开始下载分组封面")
+		log.Info().Str("group", g.Name()).Str("remote_url", coverURL).Msg("开始下载分组封面")
 		localCoverURL, err := s.downloader.Download(coverURL)
 		if err != nil {
-			log.Warn().Err(err).Str("group", g.Name).Str("remote_url", coverURL).Msg("下载封面失败，使用远程 URL")
+			log.Warn().Err(err).Str("group", g.Name()).Str("remote_url", coverURL).Msg("下载封面失败，使用远程 URL")
 			localCoverURL = coverURL
 		} else {
-			log.Info().Str("group", g.Name).Str("local_url", localCoverURL).Msg("分组封面下载完成")
+			log.Info().Str("group", g.Name()).Str("local_url", localCoverURL).Msg("分组封面下载完成")
 		}
 
-		if err := s.db.WithContext(ctx).
-			Model(&newmodel.EmojiGroup{}).
-			Where("id = ?", g.ID).
-			Update("cover_url", localCoverURL).Error; err != nil {
-			log.Printf("更新分组 %s 封面失败: %v", g.Name, err)
+		if err := s.repo.UpdateCoverURL(ctx, g.ID(), localCoverURL); err != nil {
+			log.Printf("更新分组 %s 封面失败: %v", g.Name(), err)
 			continue
 		}
 		result.CoversBackfilled++
-		log.Printf("已回填封面: %s", g.Name)
+		log.Printf("已回填封面: %s", g.Name())
 	}
 
 	return result, nil
