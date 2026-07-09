@@ -25,6 +25,7 @@ import (
 	appshared "blog-api/internal/application/shared"
 	infraauth "blog-api/internal/infrastructure/auth"
 	infraemail "blog-api/internal/infrastructure/email"
+	infraemoji "blog-api/internal/infrastructure/emoji"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/job"
@@ -147,9 +148,10 @@ func main() {
 	chunkDir := filepath.Join(uploadRoot, "tmp")    // uploads/tmp
 	urlPrefix := cfg.UploadPathPrefix               // "/uploads/"
 
-	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix)
 	emojiRepo := gormrepo.NewEmojiGroupRepository(gormDB)
 	emojiSeedService := service.NewEmojiSeedService(emojiRepo, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
+	refetchStatusStore := infraemoji.NewRefetchStatusStore(redisClient)
+	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix, emojiSeedService, refetchStatusStore)
 
 	// 表情种子数据初始化（幂等，后台执行）：首次启动执行完整导入，
 	// 后续启动仅回填 bilibili 分组缺失的封面 URL。不阻塞 HTTP 服务启动。
@@ -505,6 +507,11 @@ func main() {
 				// 单个表情（注意 {id} 必须在 groups 之后，避免与 groups/{id} 冲突）
 				r.Patch("/{id}", mediaH.UpdateEmoji)  // 更新表情
 				r.Delete("/{id}", mediaH.DeleteEmoji) // 删除表情
+				// B站表情重新拉取（需 emoji:refetch 权限）
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:refetch")).
+					Post("/bilibili/refetch", mediaH.RefetchBilibiliEmojis)
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:refetch")).
+					Get("/bilibili/refetch/status", mediaH.GetRefetchStatus)
 				// 表情图片上传已收敛到前台 POST /uploads/emoji
 			})
 

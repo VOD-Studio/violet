@@ -954,3 +954,24 @@ func (h *Handler) GetUploadStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondOK(w, result)
 }
+
+// RefetchBilibiliEmojis POST /admin/emojis/bilibili/refetch
+// 异步触发 B站表情重新拉取，返回 202 + 当前状态。已在运行返回 409。
+func (h *Handler) RefetchBilibiliEmojis(w http.ResponseWriter, r *http.Request) {
+	status, err := h.emojiSvc.Refetch(r.Context())
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.WriteJSON(w, http.StatusAccepted, status)
+}
+
+// GetRefetchStatus GET /admin/emojis/bilibili/refetch/status
+func (h *Handler) GetRefetchStatus(w http.ResponseWriter, r *http.Request) {
+	status, err := h.emojiSvc.GetRefetchStatus(r.Context())
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, status)
+}
