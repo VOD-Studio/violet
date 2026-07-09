@@ -3,6 +3,7 @@ package comment
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"time"
 
@@ -59,6 +60,20 @@ type BlockCountDTO struct {
 	Count   int64  `json:"count"`
 }
 
+// EmojiRef 表情映射值（emote map 的 value）。
+// 前端渲染 body 中的 [name] 占位符时查此表，优先使用 GifURL。
+type EmojiRef struct {
+	URL    string `json:"url"`
+	GifURL string `json:"gif_url,omitempty"`
+}
+
+// EmojiLookup 表情批量查找端口（application 层端口）。
+// 评论 toDTO 后解析 body 中的 [name] 占位符，批量查表构建 emote 映射。
+// 实现方在 infrastructure 层（adapter 包装 emoji repository）。
+type EmojiLookup interface {
+	FindByNames(ctx context.Context, names []string) (map[string]EmojiRef, error)
+}
+
 // CommentDTO 评论读模型
 type CommentDTO struct {
 	ID         string           `json:"id"`
@@ -72,6 +87,9 @@ type CommentDTO struct {
 	AvatarURL   string           `json:"avatar_url"`
 	Body        string           `json:"body"`
 	Pictures    []domain.Picture `json:"pictures"`
+	// Emote 表情映射表。key 为 [name]（含方括号），value 为表情图片 URL。
+	// toDTO 后由 enrichEmotes 批量填充。body 中没有 [name] 时为 nil（JSON 省略）。
+	Emote       map[string]EmojiRef `json:"emote,omitempty"`
 	// IsAuthor 该评论是否由文章 Owner 本人发出（运行时：created_by == post.author_id）。
 	// 用于前端作者高亮（neon-green/shadcn emerald）。匿名评论恒为 false。
 	IsAuthor   bool             `json:"is_author"`
@@ -93,13 +111,15 @@ type Service struct {
 	commentRepo domain.CommentRepository
 	codeStore   appshared.CodeStore
 	emailSender EmailSender
+	emojiLookup EmojiLookup
 }
 
 // NewService 构造评论用例服务。
 //
 // codeStore 和 emailSender 用于匿名评论的邮箱验证码两步流（PRD-0001）。
-func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, emailSender EmailSender) *Service {
-	return &Service{commentRepo: repo, codeStore: codeStore, emailSender: emailSender}
+// emojiLookup 用于 toDTO 后解析 body 中的 [name] 构建 emote 映射，nil 时跳过。
+func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup) *Service {
+	return &Service{commentRepo: repo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup}
 }
 
 // ListByPost 按文章列出评论。
@@ -171,6 +191,9 @@ func (s *Service) ListByPost(ctx context.Context, postID, viewerUserID, postAuth
 		}
 		dtos = append(dtos, dto)
 	}
+	if err := s.enrichEmotes(ctx, dtos); err != nil {
+		return nil, 0, err
+	}
 	return dtos, total, nil
 }
 
@@ -236,6 +259,9 @@ func (s *Service) ListAll(ctx context.Context, status string, anchorFilter domai
 		}
 		dtos = append(dtos, dto)
 	}
+	if err := s.enrichAdminEmotes(ctx, dtos); err != nil {
+		return nil, 0, err
+	}
 	return dtos, total, nil
 }
 
@@ -255,12 +281,17 @@ func (s *Service) GetDetail(ctx context.Context, id string) (AdminCommentDTO, er
 		return AdminCommentDTO{}, err
 	}
 	// 单条详情，parent 不在上下文里，reply_to_name 留空（后台详情不强依赖回复关系展示）
-	return AdminCommentDTO{
+	dto := AdminCommentDTO{
 		CommentDTO: toDTO(cwp.Comment, nil, ""),
 		PostID:     cwp.Post.ID.String(),
 		PostTitle:  cwp.Post.Title,
 		PostSlug:   cwp.Post.Slug,
-	}, nil
+	}
+	adminDTOs := []AdminCommentDTO{dto}
+	if err := s.enrichAdminEmotes(ctx, adminDTOs); err != nil {
+		return AdminCommentDTO{}, err
+	}
+	return adminDTOs[0], nil
 }
 
 // ListReplies 列出某顶层评论下的扁平回复（分页 + 排序）。
@@ -295,6 +326,9 @@ func (s *Service) ListReplies(ctx context.Context, parentID, viewerUserID, sort 
 			name = parentNames[c.ParentID().String()]
 		}
 		dtos = append(dtos, toDTO(c, nil, name))
+	}
+	if err := s.enrichEmotes(ctx, dtos); err != nil {
+		return nil, 0, err
 	}
 	return dtos, total, nil
 }
@@ -333,6 +367,9 @@ func (s *Service) ListPending(ctx context.Context, anchorFilter domain.AnchorFil
 			name = parentNames[c.ParentID().String()]
 		}
 		dtos = append(dtos, toDTO(c, nil, name))
+	}
+	if err := s.enrichEmotes(ctx, dtos); err != nil {
+		return nil, 0, err
 	}
 	return dtos, total, nil
 }
@@ -445,7 +482,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 	if err := s.commentRepo.Save(ctx, c); err != nil {
 		return CommentDTO{}, err
 	}
-	return toDTO(c, nil, replyToName), nil
+	dto := toDTO(c, nil, replyToName)
+	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
+		return CommentDTO{}, err
+	}
+	return dto, nil
 }
 
 // verifyAnonCode 校验匿名评论的邮箱验证码。
@@ -639,4 +680,112 @@ func buildParentNameMap(items []*domain.Comment) map[string]string {
 		m[c.ID().String()] = c.AuthorName()
 	}
 	return m
+}
+
+// emojiBodyPattern 匹配 body 中的 [name] 表情占位符（含方括号）。
+var emojiBodyPattern = regexp.MustCompile(`\[([^\]]+)\]`)
+
+// collectEmojiNames 将 body 中所有 [name] 占位符加入 set（key 含方括号，如 "[doge]"）。
+func collectEmojiNames(body string, set map[string]bool) {
+	for _, m := range emojiBodyPattern.FindAllString(body, -1) {
+		set[m] = true
+	}
+}
+
+// filterEmoteForBody 从全量 emote 表中筛出 body 实际用到的表情。
+func filterEmoteForBody(body string, all map[string]EmojiRef) map[string]EmojiRef {
+	result := make(map[string]EmojiRef)
+	for _, m := range emojiBodyPattern.FindAllString(body, -1) {
+		if ref, ok := all[m]; ok {
+			result[m] = ref
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+// enrichEmotes 批量填充 DTO 切片的 Emote 字段。
+// 从所有 body（含嵌套 Replies）中提取唯一 [name]，一次批量查表，逐个填充。
+func (s *Service) enrichEmotes(ctx context.Context, dtos []CommentDTO) error {
+	if s.emojiLookup == nil || len(dtos) == 0 {
+		return nil
+	}
+	nameSet := make(map[string]bool)
+	for i := range dtos {
+		collectEmojiNames(dtos[i].Body, nameSet)
+		for j := range dtos[i].Replies {
+			collectEmojiNames(dtos[i].Replies[j].Body, nameSet)
+		}
+	}
+	if len(nameSet) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(nameSet))
+	for n := range nameSet {
+		names = append(names, n)
+	}
+	emoteMap, err := s.emojiLookup.FindByNames(ctx, names)
+	if err != nil {
+		return err
+	}
+	for i := range dtos {
+		dtos[i].Emote = filterEmoteForBody(dtos[i].Body, emoteMap)
+		for j := range dtos[i].Replies {
+			dtos[i].Replies[j].Emote = filterEmoteForBody(dtos[i].Replies[j].Body, emoteMap)
+		}
+	}
+	return nil
+}
+
+// enrichSingleEmote 填充单条 DTO 的 Emote 字段。
+func (s *Service) enrichSingleEmote(ctx context.Context, dto *CommentDTO) error {
+	if s.emojiLookup == nil {
+		return nil
+	}
+	nameSet := make(map[string]bool)
+	collectEmojiNames(dto.Body, nameSet)
+	for _, reply := range dto.Replies {
+		collectEmojiNames(reply.Body, nameSet)
+	}
+	if len(nameSet) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(nameSet))
+	for n := range nameSet {
+		names = append(names, n)
+	}
+	emoteMap, err := s.emojiLookup.FindByNames(ctx, names)
+	if err != nil {
+		return err
+	}
+	dto.Emote = filterEmoteForBody(dto.Body, emoteMap)
+	return nil
+}
+
+// enrichAdminEmotes 批量填充后台管理 DTO 的 Emote 字段。
+func (s *Service) enrichAdminEmotes(ctx context.Context, dtos []AdminCommentDTO) error {
+	if s.emojiLookup == nil || len(dtos) == 0 {
+		return nil
+	}
+	nameSet := make(map[string]bool)
+	for i := range dtos {
+		collectEmojiNames(dtos[i].Body, nameSet)
+	}
+	if len(nameSet) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(nameSet))
+	for n := range nameSet {
+		names = append(names, n)
+	}
+	emoteMap, err := s.emojiLookup.FindByNames(ctx, names)
+	if err != nil {
+		return err
+	}
+	for i := range dtos {
+		dtos[i].Emote = filterEmoteForBody(dtos[i].Body, emoteMap)
+	}
+	return nil
 }
