@@ -185,38 +185,37 @@ export function CommentForm({
                 onImagesChange={setPictures}
                 onUploadingChange={setIsUploading}
                 placeholder={isLoggedIn ? "写下你的评论…" : "写下你的留言（登录后可见他人评论）…"}
+                toolbarEnd={
+                    <>
+                        {!isLoggedIn && (
+                            <Button
+                                type="button"
+                                variant="link"
+                                size="sm"
+                                className="px-0 text-muted-foreground"
+                                onClick={() => openLogin()}
+                            >
+                                <LogIn className="size-3" />
+                                登录参与完整讨论
+                            </Button>
+                        )}
+                        <Button
+                            type="submit"
+                            size={compact ? "sm" : "default"}
+                            disabled={
+                                createComment.isPending || isUploading || (!isLoggedIn && (!codeSent || code.length !== 6))
+                            }
+                        >
+                            {createComment.isPending ? (
+                                <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                                <Send className="size-4" />
+                            )}
+                            发送
+                        </Button>
+                    </>
+                }
             />
-
-            {/* 提交 + 登录引导 */}
-            <div className="flex items-center justify-between gap-2">
-                {!isLoggedIn && (
-                    <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        className="px-0 text-muted-foreground"
-                        onClick={() => openLogin()}
-                    >
-                        <LogIn className="size-3" />
-                        登录参与完整讨论
-                    </Button>
-                )}
-                <Button
-                    type="submit"
-                    size={compact ? "sm" : "default"}
-                    disabled={
-                        createComment.isPending || isUploading || (!isLoggedIn && (!codeSent || code.length !== 6))
-                    }
-                    className="ml-auto"
-                >
-                    {createComment.isPending ? (
-                        <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                        <Send className="size-4" />
-                    )}
-                    提交
-                </Button>
-            </div>
         </form>
     );
 }

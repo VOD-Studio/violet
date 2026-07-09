@@ -170,10 +170,7 @@ export function useRichTextInput({ value, onChange, onSubmit, disabled }: UseRic
                 const range = selection.getRangeAt(0);
                 range.deleteContents();
                 range.insertNode(element);
-                const after = document.createTextNode("\u00a0");
                 range.setStartAfter(element);
-                range.insertNode(after);
-                range.setStartAfter(after);
                 range.collapse(true);
                 selection.removeAllRanges();
                 selection.addRange(range);
