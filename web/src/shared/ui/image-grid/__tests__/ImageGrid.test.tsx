@@ -18,18 +18,14 @@ describe("ImageGrid", () => {
     });
 
     it("1 张图：单列布局", () => {
-        const { container } = render(
-            <ImageGrid images={[{ url: "/a.jpg" }]} />,
-        );
+        const { container } = render(<ImageGrid images={[{ url: "/a.jpg" }]} />);
         const grid = container.querySelector(".grid");
         expect(grid?.className).toContain("grid-cols-1");
         expect(grid?.className).toContain("max-w-60");
     });
 
     it("2 张图：双列布局", () => {
-        const { container } = render(
-            <ImageGrid images={[{ url: "/a.jpg" }, { url: "/b.jpg" }]} />,
-        );
+        const { container } = render(<ImageGrid images={[{ url: "/a.jpg" }, { url: "/b.jpg" }]} />);
         const grid = container.querySelector(".grid");
         expect(grid?.className).toContain("grid-cols-2");
     });
@@ -44,8 +40,8 @@ describe("ImageGrid", () => {
     it("9 张图：全显示无遮罩", () => {
         const images = Array.from({ length: 9 }, (_, i) => ({ url: `/${i}.jpg` }));
         const { container } = render(<ImageGrid images={images} />);
-        const imgs = container.querySelectorAll("img");
-        expect(imgs.length).toBe(9);
+        const cells = container.querySelectorAll('[role="button"]');
+        expect(cells.length).toBe(9);
         const overlay = container.querySelector(".bg-black\\/50");
         expect(overlay).toBeNull();
     });
@@ -53,8 +49,8 @@ describe("ImageGrid", () => {
     it("10 张图：显示前 9 张 + +N 遮罩", () => {
         const images = Array.from({ length: 10 }, (_, i) => ({ url: `/${i}.jpg` }));
         const { container } = render(<ImageGrid images={images} />);
-        const imgs = container.querySelectorAll("img");
-        expect(imgs.length).toBe(9);
+        const cells = container.querySelectorAll('[role="button"]');
+        expect(cells.length).toBe(10);
         const overlay = container.querySelector(".bg-black\\/50");
         expect(overlay).toBeTruthy();
         expect(overlay?.textContent).toContain("+1");
@@ -64,7 +60,7 @@ describe("ImageGrid", () => {
         const { container } = render(
             <ImageGrid images={[{ url: "/full.jpg", thumbnail: "/thumb.jpg" }]} />,
         );
-        const img = container.querySelector("img");
-        expect(img?.getAttribute("src")).toBe("/thumb.jpg");
+        const cell = container.querySelector('[role="button"]');
+        expect(cell?.getAttribute("style")).toContain("/thumb.jpg");
     });
 });

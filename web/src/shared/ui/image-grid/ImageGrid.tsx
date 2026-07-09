@@ -9,8 +9,7 @@
  *
  * 点击任意图片打开 ImagePreview 全屏预览（复用 useImagePreview hook）。
  */
-import { ImagePreview } from "@shared/ui/image-preview";
-import { useImagePreview } from "@shared/ui/image-preview";
+import { ImagePreview, useImagePreview } from "@shared/ui/image-preview";
 import { cn } from "@/shared/lib/utils";
 
 export interface ImageGridImage {
@@ -51,9 +50,9 @@ export function ImageGrid({ images, className }: ImageGridProps) {
         return "grid-cols-3 max-w-90";
     };
 
-    const handleClick = (index: number, e: React.MouseEvent<HTMLDivElement>) => {
+    const handleClick = (index: number, target: HTMLElement) => {
         const urls = images.map((img) => img.url);
-        preview.openPreview(urls, index, e.currentTarget);
+        preview.openPreview(urls, index, target);
     };
 
     return (
@@ -61,17 +60,31 @@ export function ImageGrid({ images, className }: ImageGridProps) {
             <div className={cn("grid gap-1", getGridClass(), className)}>
                 {displayImages.map((image, index) => (
                     <div key={index} className="relative aspect-square">
-                        <img
-                            src={image.thumbnail || image.url}
-                            alt=""
-                            loading="lazy"
-                            className="size-full cursor-pointer rounded border border-edge-hairline object-cover transition-opacity hover:opacity-90"
-                            onClick={(e) => handleClick(index, e as unknown as React.MouseEvent<HTMLDivElement>)}
+                        <div
+                            role="button"
+                            tabIndex={0}
+                            className="size-full cursor-pointer rounded border border-edge-hairline bg-cover bg-center transition-opacity hover:opacity-90"
+                            style={{ backgroundImage: `url(${image.thumbnail || image.url})` }}
+                            onClick={(e) => handleClick(index, e.currentTarget)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    handleClick(index, e.currentTarget);
+                                }
+                            }}
                         />
                         {showMoreOverlay && index === MAX_DISPLAY - 1 && (
                             <div
+                                role="button"
+                                tabIndex={0}
                                 className="absolute inset-0 flex cursor-pointer items-center justify-center rounded bg-black/50"
-                                onClick={(e) => handleClick(MAX_DISPLAY - 1, e)}
+                                onClick={(e) => handleClick(MAX_DISPLAY - 1, e.currentTarget)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        handleClick(MAX_DISPLAY - 1, e.currentTarget);
+                                    }
+                                }}
                             >
                                 <span className="text-xl font-medium text-white">+{moreCount}</span>
                             </div>
