@@ -32,9 +32,14 @@ const schema = {
         "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "class", "style", "id"],
         // Highlight 多色高亮把颜色存在 data-color
         mark: [...(defaultSchema.attributes?.mark ?? []), "data-color"],
+        // 任务列表 checkbox：保留 input 的 type/checked/disabled
+        input: ["type", "checked", "disabled"],
+        // ul/li 的 data-type/data-checked 用于识别任务列表结构
+        ul: [...(defaultSchema.attributes?.ul ?? []), "data-type"],
+        li: [...(defaultSchema.attributes?.li ?? []), "data-type", "data-checked"],
     },
     // 允许 article 正文中常见的额外标签
-    // span：承载文本颜色；u：下划线；其余为编辑器/富文本常用元素
+    // span：承载文本颜色；u：下划线；input/label：任务列表 checkbox；其余为编辑器/富文本常用元素
     tagNames: [
         ...(defaultSchema.tagNames ?? []),
         "img",
@@ -47,6 +52,8 @@ const schema = {
         "abbr",
         "span",
         "u",
+        "input",
+        "label",
     ],
     // 不给 id 加 user-content- 前缀：文章正文来自后台编辑器（非任意用户输入），
     // heading 的 id 需与目录（extractToc 生成的 slug）一致，点击目录才能滚动到位。

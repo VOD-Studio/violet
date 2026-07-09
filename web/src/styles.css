@@ -414,6 +414,19 @@ html.theme-vt * {
   }
 }
 
+/* 文章详情页任务列表对齐（HtmlContent 路径）
+ * Tiptap 输出 <li><label><input/checkbox></label><div><p>text</p></div></li>
+ * label 高度 = leading-8(2rem)，checkbox 垂直居中与首行文字中线对齐 */
+.prose ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 2rem;
+}
+.prose ul[data-type="taskList"] li > div > p:first-child {
+  margin-top: 0;
+}
+
 /* 代码块滚动条：细窄圆角暗色 */
 .code-block-scrollbar {
   scrollbar-width: thin;

@@ -29,12 +29,19 @@
 }
 .ProseMirror ul[data-type="taskList"] li > label {
   flex-shrink: 0;
-  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  /* 高度 = prose 行高(1.75em)，checkbox 在此高度内垂直居中，
+     与首行文字中线对齐 */
+  height: 1.75em;
   user-select: none;
 }
 .ProseMirror ul[data-type="taskList"] li > div {
   flex: 1;
   min-width: 0;
+}
+.ProseMirror ul[data-type="taskList"] li > div > p:first-child {
+  margin-top: 0;
 }
 
 /* 表格：选中单元格高亮 */

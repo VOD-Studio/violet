@@ -8,6 +8,7 @@
 
 import type { Components } from "react-markdown";
 import { cn } from "@/shared/lib/utils";
+import { Checkbox } from "@/shared/ui/base/checkbox";
 import { CodeBlock } from "./CodeBlock";
 
 export const markdownComponents: Components = {
@@ -55,13 +56,53 @@ export const markdownComponents: Components = {
             {children}
         </p>
     ),
-    ul: ({ children }) => (
-        <ul className="my-5 list-disc space-y-2 pl-6 text-foreground/90">{children}</ul>
-    ),
+    ul: ({ children, ...props }) => {
+        // hast-util-to-jsx-runtime 传 data-type 属性（HTML 路径的 task list 标识）
+        if ((props as Record<string, unknown>)["data-type"] === "taskList") {
+            return (
+                <ul data-type="taskList" className="my-5 space-y-2 pl-0 [list-style:none]">
+                    {children}
+                </ul>
+            );
+        }
+        return <ul className="my-5 list-disc space-y-2 pl-6 text-foreground/90">{children}</ul>;
+    },
     ol: ({ children }) => (
         <ol className="my-5 list-decimal space-y-2 pl-6 text-foreground/90">{children}</ol>
     ),
-    li: ({ children }) => <li className="leading-8">{children}</li>,
+    li: ({ children, ...props }) => {
+        const p = props as Record<string, unknown>;
+        // HTML 路径：Tiptap task item 带 data-type="taskItem"，
+        // children 结构为 [label(checkbox), div(content)]
+        if (p["data-type"] === "taskItem") {
+            return (
+                <li
+                    data-checked={p["data-checked"] as string | undefined}
+                    className="flex items-start gap-2"
+                >
+                    {children}
+                </li>
+            );
+        }
+        // Markdown 路径：remark-gfm 的 checked 属性
+        const checked = p.checked as boolean | undefined;
+        if (checked !== undefined) {
+            return (
+                <li className="flex items-start gap-2">
+                    <Checkbox checked={checked} disabled className="mt-1.5 shrink-0 opacity-100" />
+                    <div className="flex-1 min-w-0 [&>p:first-child]:mt-0">{children}</div>
+                </li>
+            );
+        }
+        return <li className="leading-8">{children}</li>;
+    },
+    // HTML 路径的 input[type=checkbox] → 用项目 Checkbox 组件
+    input: ({ type, checked, ...rest }) => {
+        if (type === "checkbox") {
+            return <Checkbox checked={!!checked} disabled className="opacity-100" />;
+        }
+        return <input type={type} {...rest} />;
+    },
     blockquote: ({ children }) => (
         <blockquote className="my-6 border-l-4 border-primary/50 bg-muted/40 py-2 pl-5 italic text-foreground/80">
             {children}
