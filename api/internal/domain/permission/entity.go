@@ -91,6 +91,7 @@ var (
 	EmojiCreate          = MustParse("emoji:create")
 	EmojiDelete          = MustParse("emoji:delete")
 	EmojiManageGroup     = MustParse("emoji:manage-group")
+	EmojiRefetch         = MustParse("emoji:refetch") // 重新拉取 B站表情
 	UserList             = MustParse("user:list")
 	UserUpdateRole       = MustParse("user:update-role")
 	UserBan              = MustParse("user:ban")

@@ -273,6 +273,12 @@ func (s *EmojiSeedService) ReseedBilibiliEmojis(ctx context.Context, progress fu
 	return nil
 }
 
+// Reseed 是 ReseedRunner 接口的适配方法，委托给 ReseedBilibiliEmojis。
+// 仅为满足 application/media.ReseedRunner 接口的方法名要求，不改变业务逻辑。
+func (s *EmojiSeedService) Reseed(ctx context.Context, progress func(domainemoji.RefetchProgress)) error {
+	return s.ReseedBilibiliEmojis(ctx, progress)
+}
+
 // backfillBilibiliCovers 对已有 bilibili 分组回填缺失的封面 URL。
 // 适用于服务重启时迁移历史数据，不会创建新分组或修改表情。
 func (s *EmojiSeedService) backfillBilibiliCovers(ctx context.Context, packages []bilibili.Package) (*SeedResult, error) {
