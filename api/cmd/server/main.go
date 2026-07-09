@@ -150,11 +150,14 @@ func main() {
 	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix)
 	emojiSeedService := service.NewEmojiSeedService(gormDB, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
 
-	// 表情种子数据初始化（幂等）：首次启动执行完整导入，后续启动仅回填 bilibili 分组缺失的封面 URL。
-	log.Info().Msg("开始执行 B站表情种子数据初始化（幂等）...")
-	if err := emojiSeedService.SeedBilibiliEmojis(ctx); err != nil {
-		log.Error().Err(err).Msg("表情种子数据初始化失败（不影响服务启动）")
-	}
+	// 表情种子数据初始化（幂等，后台执行）：首次启动执行完整导入，
+	// 后续启动仅回填 bilibili 分组缺失的封面 URL。不阻塞 HTTP 服务启动。
+	go func() {
+		log.Info().Msg("开始执行 B站表情种子数据初始化（幂等，后台）...")
+		if err := emojiSeedService.SeedBilibiliEmojis(ctx); err != nil {
+			log.Error().Err(err).Msg("表情种子数据初始化失败（不影响服务运行）")
+		}
+	}()
 
 	cleanupJob := job.NewCleanupJob(gormDB, chunkDir, uploadRoot)
 	go cleanupJob.Start(ctx)
