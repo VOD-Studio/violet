@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	domainemoji "blog-api/internal/domain/emoji"
 	domainmusic "blog-api/internal/domain/music"
@@ -66,18 +67,34 @@ var extToMIME = map[string]string{
 	".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
 }
 
+// ReseedRunner 执行 B站表情重新拉取（由 EmojiSeedService 实现，打破对 service 包的依赖）。
+type ReseedRunner interface {
+	Reseed(ctx context.Context, progress func(domainemoji.RefetchProgress)) error
+}
+
 // EmojiService 表情用例服务
 type EmojiService struct {
-	repo      domainemoji.EmojiGroupRepository
-	emojiDir  string
-	urlPrefix string
+	repo        domainemoji.EmojiGroupRepository
+	emojiDir    string
+	urlPrefix   string
+	reseeder    ReseedRunner                   // 重新拉取执行器
+	statusStore domainemoji.RefetchStatusStore // 重新拉取任务状态
 }
 
 // NewEmojiService 构造表情服务。
 //
 // emojiDir 为表情文件物理存储目录，urlPrefix 为上传 URL 前缀，二者解耦。
-func NewEmojiService(repo domainemoji.EmojiGroupRepository, emojiDir, urlPrefix string) *EmojiService {
-	return &EmojiService{repo: repo, emojiDir: emojiDir, urlPrefix: urlPrefix}
+// reseeder/statusStore 用于「重新拉取」功能，可为 nil（禁用该功能）。
+func NewEmojiService(
+	repo domainemoji.EmojiGroupRepository,
+	emojiDir, urlPrefix string,
+	reseeder ReseedRunner,
+	statusStore domainemoji.RefetchStatusStore,
+) *EmojiService {
+	return &EmojiService{
+		repo: repo, emojiDir: emojiDir, urlPrefix: urlPrefix,
+		reseeder: reseeder, statusStore: statusStore,
+	}
 }
 
 // GetAll 获取所有启用的表情分组（前台）
@@ -260,6 +277,40 @@ func (s *EmojiService) UpdateEmoji(ctx context.Context, in UpdateEmojiInput) err
 // DeleteEmoji 删除表情
 func (s *EmojiService) DeleteEmoji(ctx context.Context, id int32) error {
 	return s.repo.DeleteEmoji(ctx, id)
+}
+
+// Refetch 异步触发 B站表情重新拉取。立即返回当前状态(running)。
+// 已有任务运行返回 shared.Conflict（→ 409）。
+func (s *EmojiService) Refetch(ctx context.Context) (*domainemoji.RefetchStatus, error) {
+	if s.reseeder == nil || s.statusStore == nil {
+		return nil, shared.BadRequest("重新拉取功能未配置")
+	}
+	if err := s.statusStore.Acquire(ctx); err != nil {
+		return nil, err
+	}
+	// 异步执行，不继承请求 ctx（请求结束后任务继续）
+	go func() {
+		progress := func(p domainemoji.RefetchProgress) {
+			if err := s.statusStore.SetProgress(context.Background(), p); err != nil {
+				log.Warn().Err(err).Msg("上报重新拉取进度失败")
+			}
+		}
+		if err := s.reseeder.Reseed(context.Background(), progress); err != nil {
+			log.Error().Err(err).Msg("重新拉取失败")
+			_ = s.statusStore.SetFailed(context.Background(), err.Error())
+			return
+		}
+		_ = s.statusStore.SetDone(context.Background())
+	}()
+	return s.statusStore.Get(ctx)
+}
+
+// GetRefetchStatus 读取重新拉取任务状态（供前端轮询）。
+func (s *EmojiService) GetRefetchStatus(ctx context.Context) (*domainemoji.RefetchStatus, error) {
+	if s.statusStore == nil {
+		return &domainemoji.RefetchStatus{State: domainemoji.RefetchStateIdle}, nil
+	}
+	return s.statusStore.Get(ctx)
 }
 
 // EmojiUploadResult 表情上传结果
