@@ -22,6 +22,9 @@ vi.mock("@features/auth/model/login-dialog-store", () => ({
 vi.mock("@features/emojis/api/queries", () => ({
     useAllEmojis: () => ({ data: [], isLoading: false }),
 }));
+vi.mock("@features/upload/hooks/use-chunked-upload", () => ({
+    useChunkedUpload: () => ({ uploadFile: vi.fn() }),
+}));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import { CommentForm } from "../CommentForm";

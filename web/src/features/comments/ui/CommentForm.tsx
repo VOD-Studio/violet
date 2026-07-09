@@ -24,7 +24,7 @@ import { ResendButton } from "@shared/ui/resend-button";
 import { Loader2, LogIn, MailCheck, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { RichCommentInput } from "./RichCommentInput";
+import { RichCommentInput, type PictureInput } from "./RichCommentInput";
 
 export interface CommentFormProps {
     /** 文章 id */
@@ -48,6 +48,9 @@ export function CommentForm({
 }: CommentFormProps) {
     // 共享字段
     const [body, setBody] = useState("");
+    const [pictures, setPictures] = useState<PictureInput[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [resetNonce, setResetNonce] = useState(0);
     // 匿名字段
     const [authorName, setAuthorName] = useState("");
     const [email, setEmail] = useState("");
@@ -83,6 +86,9 @@ export function CommentForm({
             return;
         }
         const payload: CreateComment = { body: body.trim(), parent_id: parentId };
+        if (pictures.length > 0) {
+            payload.pictures = pictures;
+        }
         if (!isLoggedIn) {
             payload.author_name = authorName.trim();
             payload.author_email = email.trim();
@@ -94,6 +100,8 @@ export function CommentForm({
                     toast.success("已提交，管理员审核通过后登录可见");
                 }
                 setBody("");
+                setPictures([]);
+                setResetNonce((n) => n + 1);
                 setAuthorName("");
                 setEmail("");
                 setCode("");
@@ -171,6 +179,11 @@ export function CommentForm({
                 onChange={setBody}
                 compact={compact}
                 disabled={createComment.isPending}
+                enableImage={isLoggedIn}
+                maxImages={10}
+                resetNonce={resetNonce}
+                onImagesChange={setPictures}
+                onUploadingChange={setIsUploading}
                 placeholder={isLoggedIn ? "写下你的评论…" : "写下你的留言（登录后可见他人评论）…"}
             />
 
@@ -192,7 +205,7 @@ export function CommentForm({
                     type="submit"
                     size={compact ? "sm" : "default"}
                     disabled={
-                        createComment.isPending || (!isLoggedIn && (!codeSent || code.length !== 6))
+                        createComment.isPending || isUploading || (!isLoggedIn && (!codeSent || code.length !== 6))
                     }
                     className="ml-auto"
                 >

@@ -16,6 +16,7 @@
 import type { Comment } from "@entities/comment/model/types";
 import { useReplies } from "@features/comments/api/queries";
 import { EmojiText } from "@shared/ui/emoji-text";
+import { ImageGrid } from "@shared/ui/image-grid";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -82,6 +83,12 @@ export function CommentItem({
                         <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
                             <EmojiText text={comment.body} emote={comment.emote} />
                         </p>
+
+                        {comment.pictures && comment.pictures.length > 0 && (
+                            <div className="mt-2">
+                                <ImageGrid images={comment.pictures} />
+                            </div>
+                        )}
 
                         {/* 互动区：回复 + 表情 */}
                         <div className="mt-2 flex flex-wrap items-start gap-3">
