@@ -24,7 +24,7 @@ import { ResendButton } from "@shared/ui/resend-button";
 import { Loader2, LogIn, MailCheck, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { RichCommentInput, type PictureInput } from "./RichCommentInput";
+import { type PictureInput, RichCommentInput } from "./RichCommentInput";
 
 export interface CommentFormProps {
     /** 文章 id */
@@ -203,7 +203,9 @@ export function CommentForm({
                             type="submit"
                             size="sm"
                             disabled={
-                                createComment.isPending || isUploading || (!isLoggedIn && (!codeSent || code.length !== 6))
+                                createComment.isPending ||
+                                isUploading ||
+                                (!isLoggedIn && (!codeSent || code.length !== 6))
                             }
                         >
                             {createComment.isPending ? (
