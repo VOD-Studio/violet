@@ -60,7 +60,7 @@ export function ImageGrid({ images, className }: ImageGridProps) {
         <>
             <div className={cn("grid gap-1", getGridClass(), className)}>
                 {displayImages.map((image, index) => (
-                    <div key={image.url + index} className="relative aspect-square">
+                    <div key={index} className="relative aspect-square">
                         <img
                             src={image.thumbnail || image.url}
                             alt=""

@@ -141,10 +141,10 @@ export function ImagePreview({
         setMounted(true);
     }, []);
 
-    // 打开/切换图时，立刻探测原图 natural size（new Image() 即后台预载原图），
-    // 据此算出原图目标显示盒。原图加载完（onload）即缓存命中，<img> 秒显替换缩略图。
+    // 打开/切换图时，探测当前图 natural size（new Image() 即后台预载），
+    // 据此算出原图目标显示盒。无论是否有缩略图都需要探测，否则无缩略图时 box 为 null 不渲染。
     useEffect(() => {
-        if (!open || !useThumb || !thumb) {
+        if (!open) {
             setNaturalSize(null);
             setBox(null);
             return;
@@ -160,7 +160,7 @@ export function ImagePreview({
         return () => {
             probe.onload = null;
         };
-    }, [open, useThumb, thumb, index, images]);
+    }, [open, index, images]);
 
     // 原图尺寸已知后响应窗口 resize 重算盒
     useEffect(() => {

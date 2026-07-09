@@ -39,7 +39,7 @@ export function ImagePreviewThumbnails({
                 {images.map((img, i) => (
                     <button
                         type="button"
-                        key={img}
+                        key={i}
                         onClick={(e) => {
                             e.stopPropagation();
                             onSelect(i);
