@@ -137,6 +137,7 @@ export function AnnotationCard({
                         parentId={comment.id}
                         compact
                         isLoggedIn={isLoggedIn}
+                        enableImage={false}
                         onSuccess={(newReply) => {
                             setPendingReplies((prev) => [...prev, newReply]);
                             setReplying(false);
@@ -180,7 +181,7 @@ function CommentMeta({
     isPending: boolean;
 }) {
     return (
-        <div className="mb-1 flex items-center gap-1.5">
+        <div className="mb-1 flex flex-wrap items-center gap-1.5">
             {comment.avatar_url ? (
                 <img
                     src={comment.avatar_url}
@@ -193,7 +194,9 @@ function CommentMeta({
                     {comment.author_name.slice(0, 1).toUpperCase()}
                 </span>
             )}
-            <span className="text-xs font-medium text-foreground">{comment.author_name}</span>
+            <span className="max-w-[8rem] truncate text-xs font-medium text-foreground sm:max-w-[10rem]">
+                {comment.author_name}
+            </span>
             {comment.reply_to_name && (
                 <span className="text-[10px] text-muted-foreground">
                     回复 <span className="text-primary">@{comment.reply_to_name}</span>

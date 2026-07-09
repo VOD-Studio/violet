@@ -35,6 +35,8 @@ export interface CommentFormProps {
     isLoggedIn: boolean;
     /** 紧凑模式（回复框）；默认 false（顶级评论） */
     compact?: boolean;
+    /** 是否允许上传图片；默认 true */
+    enableImage?: boolean;
     /** 提交成功回调，参数为后端返回的新评论对象 */
     onSuccess?: (comment: Comment) => void;
 }
@@ -44,6 +46,7 @@ export function CommentForm({
     parentId,
     isLoggedIn,
     compact = false,
+    enableImage = true,
     onSuccess,
 }: CommentFormProps) {
     // 共享字段
@@ -179,7 +182,7 @@ export function CommentForm({
                 onChange={setBody}
                 compact={compact}
                 disabled={createComment.isPending}
-                enableImage={isLoggedIn}
+                enableImage={isLoggedIn && enableImage}
                 maxImages={10}
                 resetNonce={resetNonce}
                 onImagesChange={setPictures}

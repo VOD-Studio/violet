@@ -240,9 +240,7 @@ function AnnotationPanel({
         <div
             style={{ top: panelTop }}
             className={
-                "fixed z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-edge-hairline bg-card pt-3 shadow-xl " +
-                "2xl:right-4 2xl:left-auto 2xl:translate-x-0 " +
-                "left-1/2 -translate-x-1/2 " +
+                "fixed right-4 left-auto z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-edge-hairline bg-card pt-3 shadow-xl " +
                 "max-h-[calc(100vh-7.5rem)]"
             }
         >
