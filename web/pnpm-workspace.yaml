@@ -8,6 +8,27 @@ minimumReleaseAgeExclude:
   - exsolve
   - isbot
   - systeminformation
+  - '@typescript/typescript-aix-ppc64@7.0.2'
+  - '@typescript/typescript-darwin-arm64@7.0.2'
+  - '@typescript/typescript-darwin-x64@7.0.2'
+  - '@typescript/typescript-freebsd-arm64@7.0.2'
+  - '@typescript/typescript-freebsd-x64@7.0.2'
+  - '@typescript/typescript-linux-arm64@7.0.2'
+  - '@typescript/typescript-linux-arm@7.0.2'
+  - '@typescript/typescript-linux-loong64@7.0.2'
+  - '@typescript/typescript-linux-mips64el@7.0.2'
+  - '@typescript/typescript-linux-ppc64@7.0.2'
+  - '@typescript/typescript-linux-riscv64@7.0.2'
+  - '@typescript/typescript-linux-s390x@7.0.2'
+  - '@typescript/typescript-linux-x64@7.0.2'
+  - '@typescript/typescript-netbsd-arm64@7.0.2'
+  - '@typescript/typescript-netbsd-x64@7.0.2'
+  - '@typescript/typescript-openbsd-arm64@7.0.2'
+  - '@typescript/typescript-openbsd-x64@7.0.2'
+  - '@typescript/typescript-sunos-x64@7.0.2'
+  - '@typescript/typescript-win32-arm64@7.0.2'
+  - '@typescript/typescript-win32-x64@7.0.2'
+  - typescript@7.0.2
 
 # 允许执行 postinstall 构建脚本的依赖（pnpm 11 默认禁止，需显式批准）。
 # - esbuild：下载平台原生二进制（vite/rolldown 转译依赖）
