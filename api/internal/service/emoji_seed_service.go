@@ -113,78 +113,8 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 		}
 		result.GroupsCreated++
 
-		// 第一阶段：并发下载当前包内所有表情图片（并发度 8）
-		// 下载与写库分离：下载可并发提速，写库保持串行避免 DB 竞争
-		type downloadedEmoji struct {
-			origIndex int // 原始 emote 在 pkg.Emote 中的序号，用于写库时保持排序
-			emote     bilibili.Emote
-			url       string // 本地路径，颜文字为文本本身
-			gifURL    string
-			sourceURL string
-		}
-
-		// errgroup.WithContext 返回的 ctx 仅用于下载链路取消；此处下载不接收 ctx，
-		// 故丢弃，只用 group 做并发度限制与错误聚合。
-		eg, _ := errgroup.WithContext(ctx)
-		eg.SetLimit(8)
-		var mu sync.Mutex
-		results := make([]downloadedEmoji, 0, len(pkg.Emote))
-
-		for j, emote := range pkg.Emote {
-			if emote.Text == "" {
-				continue
-			}
-			eg.Go(func() error {
-				// 判断是否为颜文字（纯文本表情）
-				isTextEmoji := emote.URL == "" || emote.URL == emote.Text
-
-				var urlValue, gifUrlValue, sourceUrlValue string
-
-				if isTextEmoji {
-					urlValue = emote.Text
-					gifUrlValue = ""
-					sourceUrlValue = ""
-					log.Printf("检测到颜文字: %s，直接存储到 url 字段", emote.Text)
-				} else {
-					localStaticPath, err := s.downloader.Download(emote.URL)
-					if err != nil {
-						log.Printf("警告: 下载表情 %s 静态图失败: %v", emote.Text, err)
-						return nil // 单张失败跳过，不阻断整组
-					}
-					urlValue = localStaticPath
-					sourceUrlValue = emote.URL
-
-					if emote.GifURL != "" {
-						localGifPath, err := s.downloader.Download(emote.GifURL)
-						if err != nil {
-							log.Printf("警告: 下载表情 %s 动图失败（已有静态图）: %v", emote.Text, err)
-						} else {
-							gifUrlValue = localGifPath
-							log.Printf("表情 %s 下载动图: %s", emote.Text, localGifPath)
-						}
-					}
-				}
-
-				mu.Lock()
-				results = append(results, downloadedEmoji{
-					origIndex: j,
-					emote:     emote,
-					url:       urlValue,
-					gifURL:    gifUrlValue,
-					sourceURL: sourceUrlValue,
-				})
-				mu.Unlock()
-				return nil
-			})
-		}
-		if err := eg.Wait(); err != nil {
-			log.Printf("警告: 分组 %s 并发下载出错: %v", pkg.Text, err)
-		}
-
-		// 按 origIndex 排序，保持与 B站原始顺序一致（SortOrder 用）
-		sort.Slice(results, func(i, j int) bool {
-			return results[i].origIndex < results[j].origIndex
-		})
+		// 并发下载当前包内所有表情图（复用公共方法）
+		results := s.downloadPackageEmojis(ctx, pkg)
 
 		// 第二阶段：按序串行写库
 		for j, de := range results {
@@ -199,6 +129,148 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 	}
 
 	return result, nil
+}
+
+// downloadedEmoji 单个表情的下载结果（importBilibiliEmojis 和 ReseedBilibiliEmojis 共用）
+type downloadedEmoji struct {
+	emote     bilibili.Emote
+	url       string // 本地路径，颜文字为文本本身
+	gifURL    string
+	sourceURL string
+	sortOrder int // 原始 emote 在 pkg.Emote 中的序号（1-based），用于保持排序
+}
+
+// downloadPackageEmojis 并发下载一个包内所有表情图（并发度 8），返回按原序排序的结果。
+// 纯下载不写库，供 importBilibiliEmojis 和 ReseedBilibiliEmojis 复用。
+func (s *EmojiSeedService) downloadPackageEmojis(ctx context.Context, pkg bilibili.Package) []downloadedEmoji {
+	eg, _ := errgroup.WithContext(ctx)
+	eg.SetLimit(8)
+	var mu sync.Mutex
+	results := make([]downloadedEmoji, 0, len(pkg.Emote))
+
+	for j, emote := range pkg.Emote {
+		if emote.Text == "" {
+			continue
+		}
+		eg.Go(func() error {
+			// 判断是否为颜文字（纯文本表情）
+			isTextEmoji := emote.URL == "" || emote.URL == emote.Text
+
+			var urlValue, gifUrlValue, sourceUrlValue string
+
+			if isTextEmoji {
+				urlValue = emote.Text
+				log.Printf("检测到颜文字: %s，直接存储到 url 字段", emote.Text)
+			} else {
+				localStaticPath, err := s.downloader.Download(emote.URL)
+				if err != nil {
+					log.Printf("警告: 下载表情 %s 静态图失败: %v", emote.Text, err)
+					return nil // 单张失败跳过，不阻断整组
+				}
+				urlValue = localStaticPath
+				sourceUrlValue = emote.URL
+
+				if emote.GifURL != "" {
+					localGifPath, err := s.downloader.Download(emote.GifURL)
+					if err != nil {
+						log.Printf("警告: 下载表情 %s 动图失败（已有静态图）: %v", emote.Text, err)
+					} else {
+						gifUrlValue = localGifPath
+						log.Printf("表情 %s 下载动图: %s", emote.Text, localGifPath)
+					}
+				}
+			}
+
+			mu.Lock()
+			results = append(results, downloadedEmoji{
+				emote:     emote,
+				url:       urlValue,
+				gifURL:    gifUrlValue,
+				sourceURL: sourceUrlValue,
+				sortOrder: j + 1,
+			})
+			mu.Unlock()
+			return nil
+		})
+	}
+	_ = eg.Wait()
+
+	// 按 sortOrder 排序，保持与 B站原始顺序一致（SortOrder 用）
+	sort.Slice(results, func(i, k int) bool {
+		return results[i].sortOrder < results[k].sortOrder
+	})
+	return results
+}
+
+// ReseedBilibiliEmojis 全量重新拉取 B站表情并按 name 增量合并（upsert）。
+// 与 SeedBilibiliEmojis 的区别：永远走全量 upsert，不看分组计数；
+// 不删除任何分组（B站不再返回的历史分组保留）。
+// progress 回调每完成一个分组上报进度，可为 nil。
+func (s *EmojiSeedService) ReseedBilibiliEmojis(ctx context.Context, progress func(domainemoji.RefetchProgress)) error {
+	log.Info().Str("operation", "ReseedBilibiliEmojis").Msg("开始重新拉取 B站表情（upsert）")
+
+	packages, err := s.client.FetchEmojis(ctx, s.apiType)
+	if err != nil {
+		return fmt.Errorf("获取 B站表情失败: %w", err)
+	}
+	log.Info().Int("packages", len(packages)).Msg("获取到表情包组")
+
+	if progress != nil {
+		progress(domainemoji.RefetchProgress{GroupsTotal: len(packages)})
+	}
+
+	done := 0
+	for i, pkg := range packages {
+		if pkg.Text == "" || len(pkg.Emote) == 0 {
+			done++
+			if progress != nil {
+				progress(domainemoji.RefetchProgress{GroupsDone: done, GroupsTotal: len(packages)})
+			}
+			continue
+		}
+
+		// 封面下载
+		coverURL, err := s.downloadCoverImage(ctx, pkg)
+		if err != nil {
+			log.Warn().Err(err).Str("group", pkg.Text).Msg("下载分组封面失败，使用远程 URL 兜底")
+			coverURL = bilibili.PackageCoverURL(pkg)
+		}
+
+		// upsert 分组（按 name 合并，source 标记为 bilibili）
+		g, err := domainemoji.NewEmojiGroup(0, pkg.Text, domainemoji.SourceBilibili)
+		if err != nil {
+			log.Printf("警告: 构造分组 %s 失败: %v", pkg.Text, err)
+			done++
+			continue
+		}
+		g.SetCoverURL(coverURL)
+		g.SetSortOrder(i + 1)
+		g.SetEnabled(true)
+		groupID, err := s.repo.UpsertByName(ctx, g)
+		if err != nil {
+			log.Printf("警告: upsert 分组 %s 失败: %v", pkg.Text, err)
+			done++
+			continue
+		}
+
+		// 并发下载表情图 + upsert
+		emojis := s.downloadPackageEmojis(ctx, pkg)
+		for _, de := range emojis {
+			domainEmoji := domainemoji.NewEmoji(0, groupID, de.emote.Text, de.url)
+			domainEmoji.Update(de.emote.Text, de.url, "", de.gifURL, de.sourceURL, de.sortOrder)
+			if _, err := s.repo.UpsertEmojiByName(ctx, domainEmoji); err != nil {
+				log.Printf("警告: upsert 表情 %s 失败: %v", de.emote.Text, err)
+			}
+		}
+
+		done++
+		if progress != nil {
+			progress(domainemoji.RefetchProgress{GroupsDone: done, GroupsTotal: len(packages)})
+		}
+	}
+
+	log.Info().Int("packages", done).Msg("重新拉取完成")
+	return nil
 }
 
 // backfillBilibiliCovers 对已有 bilibili 分组回填缺失的封面 URL。
