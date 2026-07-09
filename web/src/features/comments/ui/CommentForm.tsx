@@ -199,22 +199,23 @@ export function CommentForm({
                                 登录参与完整讨论
                             </Button>
                         )}
-                        <Button
+                        <button
                             type="submit"
-                            size="sm"
                             disabled={
                                 createComment.isPending ||
                                 isUploading ||
                                 (!isLoggedIn && (!codeSent || code.length !== 6))
                             }
+                            title="发送"
+                            aria-label="发送"
+                            className="inline-flex size-7 items-center justify-center rounded bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {createComment.isPending ? (
                                 <Loader2 className="size-3.5 animate-spin" />
                             ) : (
                                 <Send className="size-3.5" />
                             )}
-                            发送
-                        </Button>
+                        </button>
                     </>
                 }
             />

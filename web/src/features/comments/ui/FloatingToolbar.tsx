@@ -276,7 +276,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                                 disabled={createComment.isPending || !body.trim()}
                                 title="提交批注"
                                 aria-label="提交批注"
-                                className="inline-flex size-7 items-center justify-center rounded text-primary transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                                className="inline-flex size-7 items-center justify-center rounded bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {createComment.isPending ? (
                                     <Loader2 className="size-3.5 animate-spin" />
