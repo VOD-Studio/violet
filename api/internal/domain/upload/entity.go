@@ -36,7 +36,7 @@ const (
 	SessionExpired   = "expired"
 )
 
-var purposePattern = regexp.MustCompile(`^(avatar|post|emoji|material)$`)
+var purposePattern = regexp.MustCompile(`^(avatar|post|emoji|material|comment)$`)
 
 // IsValidPurpose 校验用途合法性
 func IsValidPurpose(p string) bool { return purposePattern.MatchString(p) }
