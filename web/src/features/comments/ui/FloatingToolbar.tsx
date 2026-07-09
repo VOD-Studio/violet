@@ -19,8 +19,7 @@ import { findBlockElement } from "@features/comments/lib/extract-blocks";
 import { clearSelection, selectionToAnchor } from "@features/comments/lib/selection-to-anchor";
 import type { Anchor } from "@features/comments/lib/types";
 import { ApiError } from "@shared/api/error";
-import { Button } from "@shared/ui/base/button";
-import { Highlighter, Loader2, LogIn, X } from "lucide-react";
+import { Highlighter, Loader2, LogIn, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { RichCommentInput } from "./RichCommentInput";
@@ -200,8 +199,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
     };
 
     /** 提交批注 */
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = () => {
         if (!anchor || !body.trim()) return;
         createComment.mutate(
             { body: body.trim(), anchor: toCreateCommentAnchor(anchor) },
@@ -246,10 +244,7 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
         >
             {showInput && anchor ? (
                 /* 展开的输入区（选中原文为引言 + textarea + 提交/取消） */
-                <form
-                    onSubmit={handleSubmit}
-                    className="w-80 rounded-lg border border-edge-hairline bg-surface-glass p-3 shadow-lg backdrop-blur"
-                >
+                <div className="w-80 rounded-lg border border-edge-hairline bg-surface-glass p-3 shadow-lg backdrop-blur">
                     <div className="mb-2 flex items-center justify-between">
                         <span className="text-xs font-medium text-muted-foreground">划线批注</span>
                         <button
@@ -268,27 +263,30 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                     <RichCommentInput
                         value={body}
                         onChange={setBody}
+                        onSubmit={handleSubmit}
                         compact
                         enableEmoji
                         enableImage={false}
                         disabled={createComment.isPending}
                         placeholder="写下你的批注…"
+                        toolbarEnd={
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={createComment.isPending || !body.trim()}
+                                title="提交批注"
+                                aria-label="提交批注"
+                                className="inline-flex size-7 items-center justify-center rounded text-primary transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                {createComment.isPending ? (
+                                    <Loader2 className="size-3.5 animate-spin" />
+                                ) : (
+                                    <Send className="size-3.5" />
+                                )}
+                            </button>
+                        }
                     />
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            type="submit"
-                            size="sm"
-                            disabled={createComment.isPending || !body.trim()}
-                        >
-                            {createComment.isPending ? (
-                                <Loader2 className="size-3.5 animate-spin" />
-                            ) : (
-                                <Highlighter className="size-3.5" />
-                            )}
-                            提交
-                        </Button>
-                    </div>
-                </form>
+                </div>
             ) : (
                 /* 浮动工具条（划线批注按钮） */
                 <div className="flex items-center rounded-full border border-edge-hairline bg-surface-glass px-2 py-1 shadow-md backdrop-blur">
