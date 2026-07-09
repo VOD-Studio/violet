@@ -37,8 +37,8 @@ function parseEmojiText(text: string, emote?: Record<string, CommentEmoteRef>): 
 
     EMOJI_PATTERN.lastIndex = 0;
 
-    let match: RegExpExecArray | null;
-    while ((match = EMOJI_PATTERN.exec(text)) !== null) {
+    let match: RegExpExecArray | null = EMOJI_PATTERN.exec(text);
+    while (match !== null) {
         const [fullMatch] = match;
         const startIndex = match.index;
 
@@ -67,6 +67,7 @@ function parseEmojiText(text: string, emote?: Record<string, CommentEmoteRef>): 
         }
 
         lastIndex = startIndex + fullMatch.length;
+        match = EMOJI_PATTERN.exec(text);
     }
 
     if (lastIndex < text.length) {
