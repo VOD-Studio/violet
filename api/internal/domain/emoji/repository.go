@@ -24,6 +24,15 @@ type EmojiGroupRepository interface {
 	FindEmojiByID(ctx context.Context, id int32) (Emoji, error)
 	SaveEmoji(ctx context.Context, e Emoji) (int32, error)
 	DeleteEmoji(ctx context.Context, id int32) error
+
+	// Count 分组总数（seed 判断是否首次启动用）
+	Count(ctx context.Context) (int64, error)
+
+	// FindGroupsNeedingCover 查询指定来源下封面为空或仍是远程 http URL 的分组（seed 回填用）
+	FindGroupsNeedingCover(ctx context.Context, source string) ([]*EmojiGroup, error)
+
+	// UpdateCoverURL 局部更新分组封面 URL（seed 回填用，避免整体 Save 覆盖）
+	UpdateCoverURL(ctx context.Context, id int32, coverURL string) error
 }
 
 var (

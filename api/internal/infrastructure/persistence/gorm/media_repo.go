@@ -156,6 +156,44 @@ func (r *EmojiGroupRepository) ExistsByName(ctx context.Context, name string, ex
 	return count > 0, nil
 }
 
+// Count 统计分组总数
+func (r *EmojiGroupRepository) Count(ctx context.Context) (int64, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&model.EmojiGroup{}).Count(&count).Error; err != nil {
+		return 0, domainshared.Internal("统计表情分组数量失败", err)
+	}
+	return count, nil
+}
+
+// FindGroupsNeedingCover 查询指定来源下封面为空或仍为远程 URL 的分组
+func (r *EmojiGroupRepository) FindGroupsNeedingCover(ctx context.Context, source string) ([]*emoji.EmojiGroup, error) {
+	var pos []model.EmojiGroup
+	if err := r.db.WithContext(ctx).
+		Where("source = ? AND (cover_url IS NULL OR cover_url = '' OR cover_url LIKE 'http%')", source).
+		Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询待回填封面分组失败", err)
+	}
+	result := make([]*emoji.EmojiGroup, 0, len(pos))
+	for _, po := range pos {
+		g, _ := emojiGroupToDomain(po)
+		result = append(result, g)
+	}
+	return result, nil
+}
+
+// UpdateCoverURL 更新分组封面 URL
+func (r *EmojiGroupRepository) UpdateCoverURL(ctx context.Context, id int32, coverURL string) error {
+	result := r.db.WithContext(ctx).Model(&model.EmojiGroup{}).
+		Where("id = ?", id).Update("cover_url", coverURL)
+	if result.Error != nil {
+		return domainshared.Internal("更新分组封面失败", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return emoji.ErrNotFound
+	}
+	return nil
+}
+
 // FindEmojisByGroup 查询分组内所有表情
 func (r *EmojiGroupRepository) FindEmojisByGroup(ctx context.Context, groupID int32) ([]emoji.Emoji, error) {
 	var pos []model.Emoji
