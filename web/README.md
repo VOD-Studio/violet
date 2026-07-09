@@ -1,204 +1,183 @@
-Welcome to your new TanStack Start app! 
+# mimo-blog / web
 
-# Getting Started
+博客平台前端应用，基于 **TanStack Start** 构建，支持 SSR/SSG、文件路由与 Server Function。
 
-To run this application:
+## 技术栈
+
+| 类别 | 选型 |
+|------|------|
+| 框架 | React 19 + TypeScript (strict) |
+| 全栈框架 | TanStack Start |
+| 构建工具 | Vite 8 |
+| 路由 | TanStack Router（文件路由） |
+| 状态管理 | Zustand + TanStack Query v5 |
+| 样式 | Tailwind CSS v4 |
+| UI 组件 | Radix UI + shadcn/ui 风格 |
+| 表单 | React Hook Form + Zod |
+| 富文本 | TipTap v3 |
+| 代码高亮 | Shiki / lowlight |
+| 图标 | Lucide React |
+| 动效 | GSAP + Motion |
+| 检查/格式化 | Biome |
+| 测试 | Vitest + React Testing Library |
+
+## 目录结构
+
+前端采用 **Feature-Sliced Design** 组织代码：
+
+```
+web/src/
+├── routes/           # TanStack Start 文件路由
+├── features/         # 业务模块（每个模块包含 api / ui / hooks / types 等）
+├── entities/         # 跨模块复用的领域实体（类型、查询、UI）
+├── widgets/          # 页面级组合组件
+├── shared/           # 通用基础能力
+│   ├── api/          # axios 实例、请求/响应拦截、CSRF、auth 探活
+│   ├── ui/           # 通用 UI 组件
+│   ├── lib/          # 工具函数
+│   ├── config/       # 环境配置与常量
+│   └── server/       # SSR server 端辅助函数
+├── test/             # 测试配置与 setup
+├── router.tsx        # 路由器入口
+└── styles.css        # 全局样式与 Tailwind 入口
+```
+
+## 开发环境
+
+项目使用 **pnpm** 作为包管理器，请勿使用 npm 或 yarn。
 
 ```bash
+# 安装依赖
 pnpm install
+
+# 启动开发服务器（默认 http://localhost:5173）
 pnpm dev
 ```
 
-# Building For Production
-
-To build this application for production:
+更推荐从项目根目录使用 `make` 一键管理：
 
 ```bash
-pnpm build
+make install      # 安装前后端依赖
+make setup        # 初始化 .env、JWT 密钥、数据库迁移
+make dev          # 同时启动 API + Web + Postgres + Redis
 ```
 
-## Testing
+## 常用命令
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+```bash
+# 开发
+pnpm dev                 # 启动 Vite 开发服务器
+pnpm generate-routes     # 重新生成文件路由 (tsr generate)
+
+# 构建
+pnpm build               # 生产构建
+pnpm preview             # 预览生产构建
+
+# 代码质量
+pnpm lint                # Biome lint
+pnpm format              # Biome format
+pnpm check               # Biome lint + format 检查
+pnpm typecheck           # TypeScript 类型检查（tsc --noEmit）
+
+# 测试
+pnpm test                # 运行 Vitest 单元测试
+
+# 静态资源
+pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自动执行）
+```
+
+## 路由
+
+本项目使用 **TanStack Router 文件路由**。在 `src/routes/` 下新增 `.tsx` 文件即可自动生成路由。
+
+主要路由：
+
+| 路由 | 说明 |
+|------|------|
+| `/` | 首页/文章列表 |
+| `/blog/:slug` | 文章详情 |
+| `/projects` | 项目展示 |
+| `/profile` | 个人资料 |
+| `/login`, `/register`, `/forgot-password` | 认证 |
+| `/admin/*` | 后台管理 |
+| `/announcement-lab`, `/theme-lab` | 实验/演示页面 |
+
+路由配置入口：`src/router.tsx`。根布局：`src/routes/__root.tsx`。
+
+## 状态管理
+
+- **TanStack Query**：服务端状态（文章、评论、媒体等）缓存、失效、重试。
+- **Zustand**：客户端全局状态（播放器、主题、编辑器临时状态等）。
+
+## API 与认证
+
+- 开发环境通过 Vite 反向代理将 `/api/*` 与 `/uploads/*` 转发到后端 `http://localhost:9090`，避免跨域与 CSRF 边界问题。
+- 后端认证采用 **opaque session cookie**：
+  - `mimo_session`：HttpOnly session id
+  - `mimo_csrf`：CSRF token，写请求需回传 `X-CSRF-Token`
+  - `mimo_uid`：前端可读 user id
+- SSR 场景只读 `/auth/session` 探活，不续期、不写 cookie。
+
+API 基础配置见 `src/shared/api/`。
+
+## 样式
+
+- Tailwind CSS v4，入口 `src/styles.css`。
+- 支持 v4 任意值简写（如 `max-w-50`）。
+- 暗色/亮色主题通过 `next-themes` 管理。
+
+## 测试
 
 ```bash
 pnpm test
 ```
 
-## Styling
+- 测试文件：`src/**/*.test.{ts,tsx}`
+- 环境：jsdom
+- setup：`src/test/setup.ts`
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+## 环境变量
 
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `pnpm add @tailwindcss/vite tailwindcss --dev`
-
-## Linting & Formatting
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting. The following scripts are available:
-
+开发环境复制 `.env.example` 为 `.env`：
 
 ```bash
-pnpm lint
-pnpm format
-pnpm check
+cp .env.example .env
 ```
 
+| 变量 | 说明 |
+|------|------|
+| `VITE_API_BASE_URL` | 浏览器端 API 基础路径（默认 `/api/v1`） |
+| `VITE_API_PROXY_TARGET` | dev 反向代理目标（默认 `http://localhost:9090`） |
+| `VITE_SSR_API_BASE_URL` | SSR 服务端直连后端地址 |
+| `VITE_SITE_URL` | 前端对外地址（用于 SEO/OpenGraph） |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID |
+| `VITE_GITHUB_CLIENT_ID` | GitHub OAuth Client ID |
 
+## 构建与部署
 
-## Routing
+```bash
+# 生产构建
+pnpm build
 
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
+# 或从根目录
+make web-build
+make build          # 前后端一起构建
 ```
 
-Then anywhere in your JSX you can use it like so:
+生产环境使用 `server.mjs` 作为 Node.js SSR 入口，配合 `nginx/` 反代。详见根目录 README「生产部署」章节。
 
-```tsx
-<Link to="/about">About</Link>
-```
+## 代码规范
 
-This will create a link that will navigate to the `/about` route.
+- 缩进：2 空格
+- 换行符：LF
+- 格式化 + Lint：Biome（`pnpm check`）
+- 类型检查：`pnpm typecheck`（strict 模式）
 
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
+Git 钩子会在提交前检查前端 biome 规则，可通过根目录 `scripts/install-hooks.sh` 安装。
 
-### Using A Layout
+## 相关文档
 
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+- [项目总览](../README.md)
+- [项目级代理规范与开发须知](../AGENTS.md)
+- [后端说明](../api/README.md)
+- [贡献指南](../CONTRIBUTING.md)
