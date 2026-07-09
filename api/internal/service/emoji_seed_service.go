@@ -5,8 +5,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
+	"sync"
 
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
 	"blog-api/internal/infrastructure/bilibili"
@@ -118,53 +121,92 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 		}
 		result.GroupsCreated++
 
-		// 创建表情（并发下载图片）
+		// 第一阶段：并发下载当前包内所有表情图片（并发度 8）
+		// 下载与写库分离：下载可并发提速，写库保持串行避免 DB 竞争
+		type downloadedEmoji struct {
+			origIndex int // 原始 emote 在 pkg.Emote 中的序号，用于写库时保持排序
+			emote     bilibili.Emote
+			url       string // 本地路径，颜文字为文本本身
+			gifURL    string
+			sourceURL string
+		}
+
+		// errgroup.WithContext 返回的 ctx 仅用于下载链路取消；此处下载不接收 ctx，
+		// 故丢弃，只用 group 做并发度限制与错误聚合。
+		g, _ := errgroup.WithContext(ctx)
+		g.SetLimit(8)
+		var mu sync.Mutex
+		results := make([]downloadedEmoji, 0, len(pkg.Emote))
+
 		for j, emote := range pkg.Emote {
 			if emote.Text == "" {
 				continue
 			}
+			g.Go(func() error {
+				// 判断是否为颜文字（纯文本表情）
+				isTextEmoji := emote.URL == "" || emote.URL == emote.Text
 
-			// 判断是否为颜文字（纯文本表情）
-			isTextEmoji := emote.URL == "" || emote.URL == emote.Text
+				var urlValue, gifUrlValue, sourceUrlValue string
 
-			var urlValue, gifUrlValue, sourceUrlValue string
-
-			if isTextEmoji {
-				urlValue = emote.Text
-				gifUrlValue = ""
-				sourceUrlValue = ""
-				log.Printf("检测到颜文字: %s，直接存储到 url 字段", emote.Text)
-			} else {
-				localStaticPath, err := s.downloader.Download(emote.URL)
-				if err != nil {
-					log.Printf("警告: 下载表情 %s 静态图失败: %v", emote.Text, err)
-					continue
-				}
-				urlValue = localStaticPath
-				sourceUrlValue = emote.URL
-
-				if emote.GifURL != "" {
-					localGifPath, err := s.downloader.Download(emote.GifURL)
+				if isTextEmoji {
+					urlValue = emote.Text
+					gifUrlValue = ""
+					sourceUrlValue = ""
+					log.Printf("检测到颜文字: %s，直接存储到 url 字段", emote.Text)
+				} else {
+					localStaticPath, err := s.downloader.Download(emote.URL)
 					if err != nil {
-						log.Printf("警告: 下载表情 %s 动图失败（已有静态图）: %v", emote.Text, err)
-					} else {
-						gifUrlValue = localGifPath
-						log.Printf("表情 %s 下载动图: %s", emote.Text, localGifPath)
+						log.Printf("警告: 下载表情 %s 静态图失败: %v", emote.Text, err)
+						return nil // 单张失败跳过，不阻断整组
+					}
+					urlValue = localStaticPath
+					sourceUrlValue = emote.URL
+
+					if emote.GifURL != "" {
+						localGifPath, err := s.downloader.Download(emote.GifURL)
+						if err != nil {
+							log.Printf("警告: 下载表情 %s 动图失败（已有静态图）: %v", emote.Text, err)
+						} else {
+							gifUrlValue = localGifPath
+							log.Printf("表情 %s 下载动图: %s", emote.Text, localGifPath)
+						}
 					}
 				}
-			}
 
+				mu.Lock()
+				results = append(results, downloadedEmoji{
+					origIndex: j,
+					emote:     emote,
+					url:       urlValue,
+					gifURL:    gifUrlValue,
+					sourceURL: sourceUrlValue,
+				})
+				mu.Unlock()
+				return nil
+			})
+		}
+		if err := g.Wait(); err != nil {
+			log.Printf("警告: 分组 %s 并发下载出错: %v", pkg.Text, err)
+		}
+
+		// 按 origIndex 排序，保持与 B站原始顺序一致（SortOrder 用）
+		sort.Slice(results, func(i, j int) bool {
+			return results[i].origIndex < results[j].origIndex
+		})
+
+		// 第二阶段：按序串行写库
+		for j, de := range results {
 			emoji := newmodel.Emoji{
 				GroupID:   group.ID,
-				Name:      emote.Text,
-				URL:       urlValue,
-				GifURL:    gifUrlValue,
-				SourceURL: sourceUrlValue,
+				Name:      de.emote.Text,
+				URL:       de.url,
+				GifURL:    de.gifURL,
+				SourceURL: de.sourceURL,
 				SortOrder: j + 1,
 			}
 
 			if err := s.db.WithContext(ctx).Create(&emoji).Error; err != nil {
-				log.Printf("警告: 创建表情 %s 失败: %v", emote.Text, err)
+				log.Printf("警告: 创建表情 %s 失败: %v", de.emote.Text, err)
 				continue
 			}
 			result.EmojisCreated++
