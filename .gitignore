@@ -48,6 +48,9 @@ tmp/
 api/tmp/
 api/server
 api/bin/
+# scripts 编译产出的二进制（源码在 api/scripts/，编译产物落在 api/ 根）
+api/fetch_bilibili_emojis
+api/migrate-bilibili-covers
 
 # Ignore all claude local
 .claude/**/*.local.*
