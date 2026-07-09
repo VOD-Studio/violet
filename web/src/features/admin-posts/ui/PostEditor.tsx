@@ -250,7 +250,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
         });
     };
 
-    if (isEdit && isLoading) {
+    // 编辑模式：数据未到达或表单尚未初始化时显示骨架屏。
+    // 仅看 isLoading 不够：isLoading→false 后 reset() 在 useEffect 中才执行，
+    // 会有 2-3 帧编辑器空白闪现。等 initialized.current=true 后再渲染编辑器。
+    if (isEdit && (isLoading || !initialized.current)) {
         return (
             <div className="flex h-full flex-col gap-4">
                 <PostEditorToolbar
