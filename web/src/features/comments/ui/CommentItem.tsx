@@ -15,6 +15,7 @@
  */
 import type { Comment } from "@entities/comment/model/types";
 import { useReplies } from "@features/comments/api/queries";
+import { EmojiText } from "@shared/ui/emoji-text";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -79,7 +80,7 @@ export function CommentItem({
                     <div className="flex-1 min-w-0">
                         <CommentMeta comment={comment} isAuthor={isAuthor} isPending={isPending} />
                         <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
-                            {comment.body}
+                            <EmojiText text={comment.body} emote={comment.emote} />
                         </p>
 
                         {/* 互动区：回复 + 表情 */}
