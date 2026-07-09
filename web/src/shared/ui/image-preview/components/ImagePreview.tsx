@@ -191,7 +191,7 @@ export function ImagePreview({
                     // 与图片的 transform 动画时长一致（0.3s），避免遮罩先于图片完成
                     // 造成"先黑后飞"的割裂闪烁感
                     transition={{ duration: 0.3 }}
-                    className="fixed inset-0 z-9999 flex items-center justify-center bg-black/95"
+                    className="fixed inset-0 z-9999 flex items-center justify-center bg-black/70"
                     onClick={onClose}
                 >
                     {/* 控制按钮 */}
