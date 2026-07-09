@@ -10,6 +10,7 @@
  * 复用：BorderGlow 外壳 + severity 配色（lib/severity.ts）+ PendingBadge。
  */
 import type { Comment } from "@entities/comment/model/types";
+import { EmojiText } from "@shared/ui/emoji-text";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -101,7 +102,7 @@ export function AnnotationCard({
                             <CommentMeta comment={comment} sev={sev} isPending={isPending} />
 
                             <p className="whitespace-pre-wrap break-words text-sm text-foreground">
-                                {comment.body}
+                                <EmojiText text={comment.body} emote={comment.emote} />
                             </p>
 
                             <time className="mt-1 block font-mono text-[10px] tabular-nums text-muted-foreground">

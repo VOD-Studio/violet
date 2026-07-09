@@ -20,10 +20,10 @@ import { clearSelection, selectionToAnchor } from "@features/comments/lib/select
 import type { Anchor } from "@features/comments/lib/types";
 import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
-import { Textarea } from "@shared/ui/base/textarea";
 import { Highlighter, Loader2, LogIn, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { RichCommentInput } from "./RichCommentInput";
 
 /** 草稿批注临时高亮 class（展开输入区时标记选中块，区别于已提交批注的 .annotation-highlight）。 */
 const DRAFT_HIGHLIGHT_CLASS = "annotation-draft-highlight";
@@ -265,14 +265,14 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                     <blockquote className="mb-2 border-l-2 border-primary/40 pl-2 text-xs italic text-muted-foreground line-clamp-2">
                         {anchor.selectedText}
                     </blockquote>
-                    <Textarea
-                        autoFocus
+                    <RichCommentInput
                         value={body}
-                        onChange={(e) => setBody(e.target.value)}
-                        placeholder="写下你的批注…"
-                        rows={2}
+                        onChange={setBody}
+                        compact
+                        enableEmoji
+                        enableImage={false}
                         disabled={createComment.isPending}
-                        className="mb-2 text-sm"
+                        placeholder="写下你的批注…"
                     />
                     <div className="flex justify-end gap-2">
                         <Button
