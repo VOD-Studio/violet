@@ -3,7 +3,7 @@
 > 状态：ready-for-agent
 > 北极星：把登录态从 access/refresh JWT 切换为 opaque session（对标 bilibili SESSDATA），根治 SSR 持续掉登录、消除前端补丁堆叠，登录入口与账号流程一律保留。
 > 范围：前后端认证架构重写（保留 TanStack Start + Go 技术栈，无兼容层）。
-> 适用项目领域词汇：见 `CONTEXT.md` 认证章节（Session ID、滑动续期、绝对寿命、命门不变量）；决策依据见 `docs/adr/0003-login-opaque-session.md` 与 `docs/auth-architecture-selection.md`。
+> 适用项目领域词汇：见 `CONTEXT.md` 认证章节（Session ID、滑动续期、绝对寿命、命门不变量）；决策依据见 `../adr/0003-login-opaque-session.md` 与 `../adr/auth-architecture-selection.md`。
 
 ## Problem Statement
 
@@ -47,7 +47,7 @@
 - 不做旧 JWT → 新 session 的双轨迁移（强制重登）
 
 ## Architecture 决策摘要
-详见 `docs/adr/0003-login-opaque-session.md`。被否决方案：保留 JWT 修透传（治标）、opaque + JWT 混合（请回复杂度）、引入 better-auth（黑盒）。ADR-0001、ADR-0002 标记 superseded。
+详见 `../adr/0003-login-opaque-session.md`。被否决方案：保留 JWT 修透传（治标）、opaque + JWT 混合（请回复杂度）、引入 better-auth（黑盒）。ADR-0001、ADR-0002 标记 superseded。
 
 ## 验收标准（高层）
 - [ ] 登录（任一方式）后浏览器只收到 mimo_session + mimo_csrf cookie，属性正确
@@ -62,14 +62,14 @@
 ## Issue 拆分
 
 后端：
-- Issue-0009 后端 session 基础设施（聚合根 + Store + 中间件）
-- Issue-0010 后端登录链路改 session（CreateSession + Login/Google/Github + Logout）
-- Issue-0011 后端账号安全改 session + cookie 层 + /auth/session 只读端点
-- Issue-0012 后端清理 JWT 遗产 + 装配 + 集成测试
+- Issue-0001 后端 session 基础设施（聚合根 + Store + 中间件）
+- Issue-0002 后端登录链路改 session（CreateSession + Login/Google/Github + Logout）
+- Issue-0003 后端账号安全改 session + cookie 层 + /auth/session 只读端点
+- Issue-0004 后端清理 JWT 遗产 + 装配 + 集成测试
 
 前端：
-- Issue-0013 前端删补丁层 + http 拦截器改 401 直接踢
-- Issue-0014 前端 SSR 改 /auth/session 只读探活
-- Issue-0015 前端登录 / 登出消费 session cookie
+- Issue-0005 前端删补丁层 + http 拦截器改 401 直接踢
+- Issue-0006 前端 SSR 改 /auth/session 只读探活
+- Issue-0007 前端登录 / 登出消费 session cookie
 
-详细执行蓝图（TDD bite-sized task）见 `docs/superpowers/plans/2026-07-06-auth-opaque-session-backend.md`（后端，已就绪）；前端 plan 待 Issue-0013-0015 契约稳定后补。
+详细执行蓝图（TDD bite-sized task）见 `../superpowers/plans/2026-07-06-auth-opaque-session-backend.md`（后端，已就绪）；前端 plan 待 Issue-0005-0015 契约稳定后补。

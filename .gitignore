@@ -62,3 +62,6 @@ api/migrate-bilibili-covers
 
 # Temporary images
 *.tar.gz
+
+# Superpowers generated docs (planning/specs) not tracked in repo
+docs/superpowers/

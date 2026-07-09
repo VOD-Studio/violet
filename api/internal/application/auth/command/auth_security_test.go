@@ -13,7 +13,7 @@ import (
 )
 
 // TestChangePassword_RevokesAllSessions 验证改密成功后吊销该用户全部 session。
-// 对应 Issue-0011：ChangePassword 持有 sessionStore，密码更新成功调 DeleteByUser。
+// 对应 Issue-0003：ChangePassword 持有 sessionStore，密码更新成功调 DeleteByUser。
 func TestChangePassword_RevokesAllSessions(t *testing.T) {
 	repo := new(mocks.MockUserRepository)
 	store := new(mocks.MockSessionStore)
@@ -69,7 +69,7 @@ func TestChangePassword_WrongOldPasswordSkipsRevoke(t *testing.T) {
 }
 
 // TestResetPassword_RevokesAllSessions 验证重置密码成功后吊销该用户全部 session。
-// 对应 Issue-0011：ResetPassword 持有 sessionStore，密码更新成功调 DeleteByUser。
+// 对应 Issue-0003：ResetPassword 持有 sessionStore，密码更新成功调 DeleteByUser。
 func TestResetPassword_RevokesAllSessions(t *testing.T) {
 	repo := new(mocks.MockUserRepository)
 	codeStore := new(mocks.MockCommentCodeStore)

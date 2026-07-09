@@ -49,7 +49,7 @@ func hashedTestUser(t *testing.T, plainPassword string) *domainuser.User {
 }
 
 // TestLogin_SetsSessionAndCSRFCookies 验证登录成功后下发 mimo_session + mimo_csrf cookie，body 含 user_id。
-// 对应 Issue-0011：Login handler 调 createSession → SetSessionCookie，响应体 {user_id}。
+// 对应 Issue-0003：Login handler 调 createSession → SetSessionCookie，响应体 {user_id}。
 func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 	const plainPwd = "pass-word-123"
 	u := hashedTestUser(t, plainPwd)
@@ -110,7 +110,7 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 }
 
 // TestSession_ReturnsClaimsWhenAuthenticated 验证 /auth/session 已登录时返回 claims。
-// 对应 Issue-0011：Handler.Session 读 ctx claims 返回 user_id/role/email。
+// 对应 Issue-0003：Handler.Session 读 ctx claims 返回 user_id/role/email。
 func TestSession_ReturnsClaimsWhenAuthenticated(t *testing.T) {
 	h := NewHandler(
 		nil, nil, nil, nil, nil, nil,
@@ -158,7 +158,7 @@ func TestSession_Returns401WhenUnauthenticated(t *testing.T) {
 }
 
 // TestLogout_DeletesCurrentSessionAndClearsCookies 验证登出从 ctx 取 sessionID 调 DeleteForUser 并清 cookie。
-// 对应 Issue-0011：Logout handler 从 ctx 取 sessionID 调 logout → ClearSessionCookies。
+// 对应 Issue-0003：Logout handler 从 ctx 取 sessionID 调 logout → ClearSessionCookies。
 func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 	sessionStore := new(mocks.MockSessionStore)
 	logout := authcmd.NewLogoutHandler(sessionStore)

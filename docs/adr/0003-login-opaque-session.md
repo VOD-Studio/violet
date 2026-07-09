@@ -5,7 +5,7 @@ Status: accepted（架构决策已定，待实施）
 
 当前登录态基于 access/refresh JWT + HttpOnly cookie（见 ADR-0001、ADR-0002）。该模型在实践中暴露出根因性问题与复杂度爆炸：
 
-1. **SSR 掉登录根因未根治**：TanStack Start 的 server function 以 JSON-over-fetch 返回，`Set-Cookie` 响应头不透传浏览器。SSR 调 `/auth/me` 触发 refresh → refresh 在服务端进程内成功但浏览器收不到新 cookie → 持续掉登录（详见 `docs/ssr-auth-refactor-handoff.md`）。ADR-0002 提出的「SSR 直验 access JWT + 不做 refresh」方案从未实施（`src/start.ts` 不存在、`jose` 未引入、无 middleware），且即使实施仍是治标——只要 access 短命就必然要 refresh，refresh 必然涉及 Set-Cookie，在 SSR 场景就撞透传卡点。
+1. **SSR 掉登录根因未根治**：TanStack Start 的 server function 以 JSON-over-fetch 返回，`Set-Cookie` 响应头不透传浏览器。SSR 调 `/auth/me` 触发 refresh → refresh 在服务端进程内成功但浏览器收不到新 cookie → 持续掉登录（详见 `../archive/ssr-auth-refactor-handoff.md`）。ADR-0002 提出的「SSR 直验 access JWT + 不做 refresh」方案从未实施（`src/start.ts` 不存在、`jose` 未引入、无 middleware），且即使实施仍是治标——只要 access 短命就必然要 refresh，refresh 必然涉及 Set-Cookie，在 SSR 场景就撞透传卡点。
 
 2. **补丁堆叠**：为缓解掉登录与 401 风暴，前端叠加了 `authGate`（401 挂起重放）、`refresh-queue`（跨 tab 互斥）、`AuthDebugPanel`（调试）、主动刷新定时器、双链重放等多层机制（`src/shared/api/auth-gate.ts` 等）。这些是症状层补丁，复杂且脆弱。
 
