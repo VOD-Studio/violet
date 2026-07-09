@@ -19,12 +19,12 @@ import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
-import { Textarea } from "@shared/ui/base/textarea";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@shared/ui/otp";
 import { ResendButton } from "@shared/ui/resend-button";
 import { Loader2, LogIn, MailCheck, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { RichCommentInput } from "./RichCommentInput";
 
 export interface CommentFormProps {
     /** 文章 id */
@@ -165,14 +165,13 @@ export function CommentForm({
                 </div>
             )}
 
-            {/* 共享：评论内容 textarea */}
-            <Textarea
-                placeholder={isLoggedIn ? "写下你的评论…" : "写下你的留言（登录后可见他人评论）…"}
+            {/* 共享：评论内容输入 */}
+            <RichCommentInput
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={compact ? 2 : 3}
+                onChange={setBody}
+                compact={compact}
                 disabled={createComment.isPending}
-                required
+                placeholder={isLoggedIn ? "写下你的评论…" : "写下你的留言（登录后可见他人评论）…"}
             />
 
             {/* 提交 + 登录引导 */}
