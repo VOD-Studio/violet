@@ -99,3 +99,13 @@ func (m *MockEmojiGroupRepository) FindGroupsNeedingCover(ctx context.Context, s
 func (m *MockEmojiGroupRepository) UpdateCoverURL(ctx context.Context, id int32, coverURL string) error {
 	return m.Called(ctx, id, coverURL).Error(0)
 }
+
+func (m *MockEmojiGroupRepository) UpsertByName(ctx context.Context, g *domainemoji.EmojiGroup) (int32, error) {
+	args := m.Called(ctx, g)
+	return int32(args.Int(0)), args.Error(1)
+}
+
+func (m *MockEmojiGroupRepository) UpsertEmojiByName(ctx context.Context, e domainemoji.Emoji) (int32, error) {
+	args := m.Called(ctx, e)
+	return int32(args.Int(0)), args.Error(1)
+}

@@ -194,6 +194,72 @@ func (r *EmojiGroupRepository) UpdateCoverURL(ctx context.Context, id int32, cov
 	return nil
 }
 
+// UpsertByName 按名称合并分组：存在则更新，不存在则新建。
+// emoji_groups.name 有全局唯一约束，故按 name 单字段匹配（与 ExistsByName 语义一致）。
+func (r *EmojiGroupRepository) UpsertByName(ctx context.Context, g *emoji.EmojiGroup) (int32, error) {
+	var existing model.EmojiGroup
+	err := r.db.WithContext(ctx).
+		Where("name = ?", g.Name()).
+		First(&existing).Error
+	if err == nil {
+		// 存在则更新 cover/sort/enabled
+		updates := r.db.WithContext(ctx).Model(&model.EmojiGroup{}).
+			Where("id = ?", existing.ID).
+			Updates(map[string]any{
+				"cover_url":  g.CoverURL(),
+				"sort_order": g.SortOrder(),
+				"is_enabled": g.IsEnabled(),
+			})
+		if updates.Error != nil {
+			return 0, domainshared.Internal("upsert 更新表情分组失败", updates.Error)
+		}
+		return existing.ID, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return 0, domainshared.Internal("upsert 查询表情分组失败", err)
+	}
+	// 不存在则新建
+	po := emojiGroupToPO(g)
+	if err := r.db.WithContext(ctx).Create(&po).Error; err != nil {
+		return 0, domainshared.Internal("upsert 创建表情分组失败", err)
+	}
+	return po.ID, nil
+}
+
+// UpsertEmojiByName 按 groupID+name 合并表情：存在则更新，不存在则新建。
+func (r *EmojiGroupRepository) UpsertEmojiByName(ctx context.Context, e emoji.Emoji) (int32, error) {
+	var existing model.Emoji
+	err := r.db.WithContext(ctx).
+		Where("group_id = ? AND name = ?", e.GroupID(), e.Name()).
+		First(&existing).Error
+	if err == nil {
+		updates := r.db.WithContext(ctx).Model(&model.Emoji{}).
+			Where("id = ?", existing.ID).
+			Updates(map[string]any{
+				"url":        e.URL(),
+				"source_url": e.SourceURL(),
+				"gif_url":    e.GifURL(),
+				"sort_order": e.SortOrder(),
+			})
+		if updates.Error != nil {
+			return 0, domainshared.Internal("upsert 更新表情失败", updates.Error)
+		}
+		return existing.ID, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return 0, domainshared.Internal("upsert 查询表情失败", err)
+	}
+	po := model.Emoji{
+		GroupID: e.GroupID(), Name: e.Name(), URL: e.URL(),
+		SourceURL: e.SourceURL(), GifURL: e.GifURL(),
+		TextContent: e.TextContent(), SortOrder: e.SortOrder(),
+	}
+	if err := r.db.WithContext(ctx).Create(&po).Error; err != nil {
+		return 0, domainshared.Internal("upsert 创建表情失败", err)
+	}
+	return po.ID, nil
+}
+
 // FindEmojisByGroup 查询分组内所有表情
 func (r *EmojiGroupRepository) FindEmojisByGroup(ctx context.Context, groupID int32) ([]emoji.Emoji, error) {
 	var pos []model.Emoji

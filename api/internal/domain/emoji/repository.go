@@ -33,6 +33,12 @@ type EmojiGroupRepository interface {
 
 	// UpdateCoverURL 局部更新分组封面 URL（seed 回填用，避免整体 Save 覆盖）
 	UpdateCoverURL(ctx context.Context, id int32, coverURL string) error
+
+	// UpsertByName 按名称合并分组：存在则更新（cover/sort/enabled），不存在则新建。
+	// name 有全局唯一约束，按 name 单字段匹配。用于 B站表情重新拉取增量合并，不删除历史分组。
+	UpsertByName(ctx context.Context, g *EmojiGroup) (int32, error)
+	// UpsertEmojiByName 按 groupID+name 合并表情：存在则更新，不存在则新建。返回表情 ID。
+	UpsertEmojiByName(ctx context.Context, e Emoji) (int32, error)
 }
 
 var (

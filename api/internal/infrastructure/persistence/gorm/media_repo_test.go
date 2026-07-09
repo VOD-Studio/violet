@@ -84,4 +84,69 @@ func TestUpdateCoverURL_NotFound(t *testing.T) {
 	assert.ErrorIs(t, err, emoji.ErrNotFound)
 }
 
+func TestUpsertByName_CreateNew(t *testing.T) {
+	repo := setupEmojiTestDB(t)
+	g, _ := emoji.NewEmojiGroup(0, "new-pkg", emoji.SourceBilibili)
+	g.SetCoverURL("https://example.com/c.png")
+	g.SetSortOrder(3)
+	g.SetEnabled(true)
+
+	id, err := repo.UpsertByName(context.Background(), g)
+	require.NoError(t, err)
+	assert.Greater(t, id, int32(0))
+
+	loaded, _ := repo.FindByID(context.Background(), id)
+	assert.Equal(t, "new-pkg", loaded.Name())
+	assert.Equal(t, "bilibili", loaded.Source())
+	assert.Equal(t, "https://example.com/c.png", loaded.CoverURL())
+	assert.Equal(t, 3, loaded.SortOrder())
+	assert.True(t, loaded.IsEnabled())
+}
+
+func TestUpsertByName_UpdateExisting(t *testing.T) {
+	repo := setupEmojiTestDB(t)
+	g1, _ := emoji.NewEmojiGroup(0, "pkg", emoji.SourceBilibili)
+	g1.SetCoverURL("https://old.com/c.png")
+	id, _ := repo.UpsertByName(context.Background(), g1)
+
+	g2, _ := emoji.NewEmojiGroup(0, "pkg", emoji.SourceBilibili)
+	g2.SetCoverURL("/uploads/emojis/new.png")
+	g2.SetSortOrder(9)
+	g2.SetEnabled(false)
+	id2, err := repo.UpsertByName(context.Background(), g2)
+	require.NoError(t, err)
+	assert.Equal(t, id, id2, "同 name 应返回同一 ID")
+
+	loaded, _ := repo.FindByID(context.Background(), id)
+	assert.Equal(t, "/uploads/emojis/new.png", loaded.CoverURL())
+	assert.Equal(t, 9, loaded.SortOrder())
+	assert.False(t, loaded.IsEnabled())
+
+	n, _ := repo.Count(context.Background())
+	assert.Equal(t, int64(1), n)
+}
+
+func TestUpsertEmojiByName_Upsert(t *testing.T) {
+	repo := setupEmojiTestDB(t)
+	g, _ := emoji.NewEmojiGroup(0, "pkg", emoji.SourceBilibili)
+	groupID, _ := repo.Save(context.Background(), g)
+
+	// 新建
+	e1 := emoji.NewEmoji(0, groupID, "[e]", "/uploads/e1.png")
+	id1, err := repo.UpsertEmojiByName(context.Background(), e1)
+	require.NoError(t, err)
+	assert.Greater(t, id1, int32(0))
+
+	// 更新（同 groupID+name）
+	e2 := emoji.NewEmoji(0, groupID, "[e]", "/uploads/e2.png")
+	e2.Update("[e]", "/uploads/e2.png", "", "/uploads/e2.gif", "https://bili/e.png", 5)
+	id2, err := repo.UpsertEmojiByName(context.Background(), e2)
+	require.NoError(t, err)
+	assert.Equal(t, id1, id2)
+
+	loaded, _ := repo.FindEmojiByID(context.Background(), id1)
+	assert.Equal(t, "/uploads/e2.png", loaded.URL())
+	assert.Equal(t, "/uploads/e2.gif", loaded.GifURL())
+}
+
 
