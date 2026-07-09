@@ -12,8 +12,9 @@
  * emoji 查表使用 useAllEmojis 构建 name→Emoji 映射。
  * 图片表情用 <img data-emoji>，颜文字用 <span data-emoji>。
  */
-import { useAllEmojis } from "@features/emojis/api/queries";
+
 import type { Emoji } from "@entities/emoji/model/types";
+import { useAllEmojis } from "@features/emojis/api/queries";
 import { isImageURL } from "@shared/lib/url";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
@@ -37,12 +38,21 @@ export interface UseRichTextInputReturn {
 const EMOJI_PATTERN = /\[([^\]]+)\]/g;
 
 function escapeHtml(text: string): string {
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
 }
 
-export function useRichTextInput({ value, onChange, onSubmit, disabled }: UseRichTextInputOptions): UseRichTextInputReturn {
+export function useRichTextInput({
+    value,
+    onChange,
+    onSubmit,
+    disabled,
+}: UseRichTextInputOptions): UseRichTextInputReturn {
     const contentRef = useRef<HTMLDivElement>(null);
-    const lastSyncedRef = useRef(value);
+    const lastSyncedRef = useRef("");
     const onChangeRef = useRef(onChange);
     const onSubmitRef = useRef(onSubmit);
     onChangeRef.current = onChange;
@@ -76,11 +86,14 @@ export function useRichTextInput({ value, onChange, onSubmit, disabled }: UseRic
             let html = "";
             let lastIndex = 0;
             EMOJI_PATTERN.lastIndex = 0;
-            let match: RegExpExecArray | null;
-            while ((match = EMOJI_PATTERN.exec(markdown)) !== null) {
+            let match: RegExpExecArray | null = EMOJI_PATTERN.exec(markdown);
+            while (match !== null) {
                 const [fullMatch] = match;
                 if (match.index > lastIndex) {
-                    html += escapeHtml(markdown.slice(lastIndex, match.index)).replace(/\n/g, "<br>");
+                    html += escapeHtml(markdown.slice(lastIndex, match.index)).replace(
+                        /\n/g,
+                        "<br>",
+                    );
                 }
                 const url = getDisplayUrl(fullMatch);
                 if (url) {
@@ -91,6 +104,7 @@ export function useRichTextInput({ value, onChange, onSubmit, disabled }: UseRic
                     html += `<span data-emoji="${escapeHtml(fullMatch)}">${escapeHtml(text)}</span>`;
                 }
                 lastIndex = match.index + fullMatch.length;
+                match = EMOJI_PATTERN.exec(markdown);
             }
             if (lastIndex < markdown.length) {
                 html += escapeHtml(markdown.slice(lastIndex)).replace(/\n/g, "<br>");
@@ -147,14 +161,6 @@ export function useRichTextInput({ value, onChange, onSubmit, disabled }: UseRic
         }
     }, [value, syncToDom]);
 
-    // 初始化
-    useEffect(() => {
-        if (contentRef.current && value && !contentRef.current.innerHTML) {
-            syncToDom(value);
-        }
-        // biome-ignore lint/correctness/useExhaustiveDependencies: 仅初始化时执行
-    }, [syncToDom]);
-
     const insertEmoji = useCallback(
         (name: string, display: string) => {
             const div = contentRef.current;
@@ -188,21 +194,24 @@ export function useRichTextInput({ value, onChange, onSubmit, disabled }: UseRic
         onChangeRef.current?.(markdown);
     }, [htmlToMarkdown]);
 
-    const handlePaste = useCallback((e: React.ClipboardEvent) => {
-        e.preventDefault();
-        const text = e.clipboardData.getData("text/plain");
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return;
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        const textNode = document.createTextNode(text);
-        range.insertNode(textNode);
-        range.setStartAfter(textNode);
-        range.setEndAfter(textNode);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        handleInput();
-    }, [handleInput]);
+    const handlePaste = useCallback(
+        (e: React.ClipboardEvent) => {
+            e.preventDefault();
+            const text = e.clipboardData.getData("text/plain");
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            const textNode = document.createTextNode(text);
+            range.insertNode(textNode);
+            range.setStartAfter(textNode);
+            range.setEndAfter(textNode);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            handleInput();
+        },
+        [handleInput],
+    );
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
