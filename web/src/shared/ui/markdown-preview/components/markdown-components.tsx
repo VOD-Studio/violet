@@ -57,8 +57,9 @@ export const markdownComponents: Components = {
         </p>
     ),
     ul: ({ children, ...props }) => {
-        // hast-util-to-jsx-runtime 传 data-type 属性（HTML 路径的 task list 标识）
-        if ((props as Record<string, unknown>)["data-type"] === "taskList") {
+        const p = props as Record<string, unknown>;
+        // hast-util-to-jsx-runtime 传 hast 属性名(camelCase)：dataType 而非 data-type
+        if (p.dataType === "taskList") {
             return (
                 <ul data-type="taskList" className="my-5 space-y-2 pl-0 [list-style:none]">
                     {children}
@@ -72,12 +73,12 @@ export const markdownComponents: Components = {
     ),
     li: ({ children, ...props }) => {
         const p = props as Record<string, unknown>;
-        // HTML 路径：Tiptap task item 带 data-type="taskItem"，
+        // HTML 路径：Tiptap task item 带 dataType="taskItem"，
         // children 结构为 [label(checkbox), div(content)]
-        if (p["data-type"] === "taskItem") {
+        if (p.dataType === "taskItem") {
             return (
                 <li
-                    data-checked={p["data-checked"] as string | undefined}
+                    data-checked={p.dataChecked as string | undefined}
                     className="flex items-start gap-2"
                 >
                     {children}

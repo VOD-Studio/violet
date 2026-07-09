@@ -31,12 +31,13 @@ const schema = {
         // 允许 class/style，承载编辑器产出的颜色、对齐等 inline 样式
         "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "class", "style", "id"],
         // Highlight 多色高亮把颜色存在 data-color
-        mark: [...(defaultSchema.attributes?.mark ?? []), "data-color"],
+        mark: [...(defaultSchema.attributes?.mark ?? []), "dataColor"],
         // 任务列表 checkbox：保留 input 的 type/checked/disabled
         input: ["type", "checked", "disabled"],
-        // ul/li 的 data-type/data-checked 用于识别任务列表结构
-        ul: [...(defaultSchema.attributes?.ul ?? []), "data-type"],
-        li: [...(defaultSchema.attributes?.li ?? []), "data-type", "data-checked"],
+        // ul/li 的 dataType/dataChecked 用于识别任务列表结构
+        // hast-util-sanitize 用 property-information 属性名(camelCase)，不是 HTML 属性名
+        ul: [...(defaultSchema.attributes?.ul ?? []), "dataType"],
+        li: [...(defaultSchema.attributes?.li ?? []), "dataType", "dataChecked"],
     },
     // 允许 article 正文中常见的额外标签
     // span：承载文本颜色；u：下划线；input/label：任务列表 checkbox；其余为编辑器/富文本常用元素
