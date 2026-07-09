@@ -46,6 +46,18 @@ export interface CommentAnchor {
 }
 
 /**
+ * CommentEmoteRef - 表情映射值（emote map 的 value）
+ *
+ * 对应后端 application/comment/service.go 的 EmojiRef。
+ */
+export interface CommentEmoteRef {
+    /** 静态图片 URL */
+    url: string;
+    /** 动图 URL，可选 */
+    gif_url?: string;
+}
+
+/**
  * Comment - 评论读模型
  *
  * 对应后端 application/comment/service.go 的 CommentDTO，
@@ -71,6 +83,9 @@ export interface Comment {
     body: string;
     /** 附件图片列表，无图为空数组 */
     pictures: CommentPicture[];
+    /** 表情映射表。key 为 [name]（含方括号），渲染时查表替换为 img。
+     *  body 中没有 [name] 时省略。对应后端 CommentDTO.emote。 */
+    emote?: Record<string, CommentEmoteRef>;
     /** 是否由文章 Owner 本人发出（运行时 created_by==post.author_id，作者高亮用） */
     is_author: boolean;
     /** 选区批注锚点；自由评论为 undefined，批注非空 */
