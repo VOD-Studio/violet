@@ -33,11 +33,14 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 
     return (
         <div className="space-y-6">
-            {/* 标题区 + sticky 内容：sticky top-0 固定在滚动容器顶部 */}
-            <div className="sticky top-0 z-10 bg-background/95 pb-2 backdrop-blur">
+            {/* 标题区 + sticky 内容
+             * z-[60] 高于 DataTable 固定列(z-50)，防止穿透
+             * -mx 负边距 + px 内边距抵消 <main> 的 p-4/p-6，背景铺满滚动容器宽度
+             * bg-background 100% 不透明，避免内容穿透镂空 */}
+            <div className="sticky top-0 z-[60] -mx-4 bg-background px-4 pb-2 md:-mx-6 md:px-6">
                 {/* 副标题和操作区：固定高度避免有无按钮时抖动 */}
                 {(description || action) && (
-                    <div className="flex min-h-8 flex-col gap-3 py-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-h-8 flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
                         {description && (
                             <p className="text-muted-foreground text-sm">{description}</p>
                         )}
