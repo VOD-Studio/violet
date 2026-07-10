@@ -18,7 +18,6 @@ import { Table } from "@tiptap/extension-table";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import TableRow from "@tiptap/extension-table-row";
-import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -29,6 +28,7 @@ import { common, createLowlight } from "lowlight";
 import { SlashCommand } from "../slash-menu/SlashCommand";
 import { buildSlashItems } from "../slash-menu/slash-items";
 import { createCodeBlockExtension } from "../ui/CodeBlockView";
+import { CustomTaskItem } from "../ui/TaskItemView";
 
 /** 低光高亮实例：common 预设已注册 37 种常用语言，其余按需动态注册 */
 const lowlight = createLowlight(common);
@@ -114,7 +114,7 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
         }),
         // —— 列表 ——
         TaskList,
-        TaskItem.configure({ nested: true }),
+        CustomTaskItem,
         // —— 表格 ——
         Table.configure({ resizable: false }),
         TableRow,
