@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { OverlayScroll } from "@/shared/ui/overlay-scroll";
 import {
+    COLUMNS_CONTROL_KEY,
     type DataTableColumn,
     type DataTableProps,
     EXPAND_COLUMN_KEY,
@@ -195,8 +196,24 @@ export function DataTable<T>({
                 align: "center",
             });
         }
-        return [...injected, ...baseVisible];
-    }, [baseVisible, selectable, expandable]);
+        // 列控制按钮列：有可隐藏列且启用了 storageKey 时才注入
+        const hasHideable = columns.some((c) => c.hideable !== false);
+        const tail: DataTableColumn<T>[] =
+            storageKey && hasHideable
+                ? [
+                      {
+                          key: COLUMNS_CONTROL_KEY,
+                          header: null,
+                          sticky: "right",
+                          width: "40px",
+                          hideable: false,
+                          sortable: false,
+                          align: "center",
+                      },
+                  ]
+                : [];
+        return [...injected, ...baseVisible, ...tail];
+    }, [baseVisible, selectable, expandable, columns, storageKey]);
 
     // 每列实际宽度（含拖拽结果），供 colgroup 使用
     const columnWidthMap = useMemo(() => {
@@ -362,20 +379,7 @@ export function DataTable<T>({
 
     return (
         <div className={cn("w-full space-y-0", className)}>
-            <DataTableToolbar
-                toolbar={toolbar}
-                columns={columns}
-                hiddenKeys={hiddenKeys}
-                onToggleColumn={toggleColumn}
-                onResetColumns={() => {
-                    setHiddenKeys(new Set());
-                    setColumnWidths({});
-                    if (widthStorageKey) {
-                        localStorage.removeItem(widthStorageKey);
-                    }
-                }}
-                selectedCount={selectable ? selected.size : 0}
-            />
+            <DataTableToolbar toolbar={toolbar} selectedCount={selectable ? selected.size : 0} />
 
             <div className="border-border bg-card overflow-hidden rounded-md border">
                 {/* Header — 独立容器，无滚动条；table 宽度由 JS 同步为 body clientWidth */}
@@ -411,6 +415,17 @@ export function DataTable<T>({
                             columnMinWidth={columnMinWidth}
                             columnWidthMap={columnWidthMap}
                             onResizeColumn={resizeColumn}
+                            // 列控制
+                            allColumns={columns}
+                            hiddenKeys={hiddenKeys}
+                            onToggleColumn={toggleColumn}
+                            onResetColumns={() => {
+                                setHiddenKeys(new Set());
+                                setColumnWidths({});
+                                if (widthStorageKey) {
+                                    localStorage.removeItem(widthStorageKey);
+                                }
+                            }}
                         />
                     </table>
                 </div>

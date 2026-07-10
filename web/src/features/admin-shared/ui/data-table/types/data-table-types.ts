@@ -130,3 +130,5 @@ export interface DataTableProps<T> {
 export const SELECT_COLUMN_KEY = "__select";
 /** 展开列保留 key */
 export const EXPAND_COLUMN_KEY = "__expand";
+/** 列控制按钮列保留 key（表头末尾，sticky right） */
+export const COLUMNS_CONTROL_KEY = "__columns_control";
