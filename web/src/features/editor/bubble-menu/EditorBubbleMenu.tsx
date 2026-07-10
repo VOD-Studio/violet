@@ -42,11 +42,8 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
             options={{
                 placement: "top",
                 offset: 8,
-                // strategy: fixed 让菜单脱离滚动容器 overflow-y-auto 的裁剪，
-                // 全选时选区顶部贴着容器上边界不会被截断
-                strategy: "fixed",
                 // flip：顶部空间不足时翻转到下方
-                // padding = 工具栏高度(~40px) + 间距，确保翻转阈值覆盖工具栏遮挡区域
+                // padding 让翻转阈值提前触发，避免菜单顶部贴着容器上边缘被工具栏遮挡
                 flip: { padding: 48 },
                 // shift：贴边时水平偏移，避免浮窗溢出视口
                 shift: true,
