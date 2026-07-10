@@ -33,26 +33,27 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 
     return (
         <div className="space-y-6">
-            {/* 标题区 + sticky 内容
-             * z-[60] 高于 DataTable 固定列(z-50)，防止穿透
-             * -mx 负边距 + px 内边距抵消 <main> 的 p-4/p-6，背景铺满滚动容器宽度
-             * bg-background 100% 不透明，避免内容穿透镂空 */}
-            <div className="sticky top-0 z-[60] -mx-4 bg-background px-4 pb-2 md:-mx-6 md:px-6">
+            {/*
+             * sticky top-0：粘性定位，滚动到顶部后自动固定。
+             * z-10 + children 用 isolate 建独立层叠上下文，DataTable 内部 z-30~z-50 被困在其中，
+             * 不会穿透到 sticky header 之上；弹窗（z-50 body 级）也不受影响。
+             * bg-background 100% 不透明。
+             */}
+            <div className="sticky top-0 z-10 bg-background pb-2">
                 {/* 副标题和操作区：固定高度避免有无按钮时抖动 */}
                 {(description || action) && (
                     <div className="flex min-h-8 flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
                         {description && (
                             <p className="text-muted-foreground text-sm">{description}</p>
                         )}
-                        {/* action 容器始终渲染并占满按钮高度，无内容时保持占位防抖动 */}
                         <div className="flex h-8 items-center gap-2 empty:hidden">{action}</div>
                     </div>
                 )}
                 {/* sticky 额外内容：表格工具栏、筛选器等 */}
                 {sticky}
             </div>
-            {/* 页面内容 */}
-            {children}
+            {/* isolate 包裹内容区：困住 DataTable 固定列的 z-index，防止穿透 sticky header */}
+            <div className="relative isolate space-y-6">{children}</div>
         </div>
     );
 }
