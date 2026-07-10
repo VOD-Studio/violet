@@ -141,15 +141,28 @@ export function DataTableHeader<T>({
                         );
                     }
 
-                    // 展开列表头：占位
+                    // 展开列表头：有列控制时渲染按钮，否则空占位
                     if (col.key === EXPAND_COLUMN_KEY) {
+                        const hideableCols = (allColumns ?? []).filter((c) => c.hideable !== false);
+                        const showControl = hideableCols.length > 0 && onToggleColumn;
+                        const anyHidden = (hiddenKeys?.size ?? 0) > 0;
                         return (
                             <TableHead
                                 key={col.key}
                                 scope="col"
                                 style={mergeStickyStyle(offset, col.width)}
-                                className={cn(headHeight, "pr-3", sticky.className, col.className)}
-                            />
+                                className={cn(headHeight, "px-0", sticky.className, col.className)}
+                            >
+                                {showControl && (
+                                    <ColumnControlButton
+                                        hideableColumns={hideableCols}
+                                        hiddenKeys={hiddenKeys ?? new Set()}
+                                        onToggleColumn={onToggleColumn}
+                                        onResetColumns={onResetColumns}
+                                        anyHidden={anyHidden}
+                                    />
+                                )}
+                            </TableHead>
                         );
                     }
 

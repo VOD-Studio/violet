@@ -174,12 +174,26 @@ export function DataTable<T>({
     );
     const visibleColumns = useMemo<DataTableColumn<T>[]>(() => {
         const injected: DataTableColumn<T>[] = [];
+        const hasHideable = columns.some((c) => c.hideable !== false);
+        const needsControl = !!(storageKey && hasHideable);
+
         if (expandable) {
             injected.push({
                 key: EXPAND_COLUMN_KEY,
                 header: null,
                 sticky: "left",
                 width: "48px",
+                hideable: false,
+                sortable: false,
+                align: "center",
+            });
+        } else if (needsControl) {
+            // 无展开列时，列控制作为独立首列
+            injected.push({
+                key: COLUMNS_CONTROL_KEY,
+                header: null,
+                sticky: "left",
+                width: "40px",
                 hideable: false,
                 sortable: false,
                 align: "center",
@@ -196,23 +210,7 @@ export function DataTable<T>({
                 align: "center",
             });
         }
-        // 列控制按钮列：有可隐藏列且启用了 storageKey 时才注入
-        const hasHideable = columns.some((c) => c.hideable !== false);
-        const tail: DataTableColumn<T>[] =
-            storageKey && hasHideable
-                ? [
-                      {
-                          key: COLUMNS_CONTROL_KEY,
-                          header: null,
-                          sticky: "right",
-                          width: "40px",
-                          hideable: false,
-                          sortable: false,
-                          align: "center",
-                      },
-                  ]
-                : [];
-        return [...injected, ...baseVisible, ...tail];
+        return [...injected, ...baseVisible];
     }, [baseVisible, selectable, expandable, columns, storageKey]);
 
     // 每列实际宽度（含拖拽结果），供 colgroup 使用
