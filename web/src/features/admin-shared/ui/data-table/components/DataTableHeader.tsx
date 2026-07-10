@@ -126,7 +126,11 @@ export function DataTableHeader<T>({
                                 key={col.key}
                                 scope="col"
                                 style={mergeStickyStyle(offset, col.width)}
-                                className={cn(headHeight, "px-0", sticky.className)}
+                                className={cn(
+                                    headHeight,
+                                    "flex items-center justify-center",
+                                    sticky.className,
+                                )}
                             >
                                 {hideableCols.length > 0 && onToggleColumn && (
                                     <ColumnControlButton
@@ -151,7 +155,12 @@ export function DataTableHeader<T>({
                                 key={col.key}
                                 scope="col"
                                 style={mergeStickyStyle(offset, col.width)}
-                                className={cn(headHeight, "px-0", sticky.className, col.className)}
+                                className={cn(
+                                    headHeight,
+                                    "flex items-center justify-center",
+                                    sticky.className,
+                                    col.className,
+                                )}
                             >
                                 {showControl && (
                                     <ColumnControlButton
