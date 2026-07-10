@@ -152,6 +152,54 @@ function EmojisPage() {
                     </Button>
                 </div>
             }
+            sticky={
+                !isEmpty && (
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <div className="min-w-50 max-w-100 flex-1">
+                            <SearchInput
+                                placeholder="搜索分组名称..."
+                                value={searchQuery}
+                                onValueChange={setSearchQuery}
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleBatchEnable}
+                                disabled={batchPending || isLoading || stats.disabled === 0}
+                            >
+                                {batchPending ? (
+                                    <Loader2 className="mr-1 size-3.5 animate-spin" />
+                                ) : (
+                                    <Power className="mr-1 size-3.5" />
+                                )}
+                                批量启用
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleBatchDisable}
+                                disabled={batchPending || isLoading || stats.enabled === 0}
+                            >
+                                {batchPending ? (
+                                    <Loader2 className="mr-1 size-3.5 animate-spin" />
+                                ) : (
+                                    <PowerOff className="mr-1 size-3.5" />
+                                )}
+                                批量禁用
+                            </Button>
+                        </div>
+
+                        {searchQuery && (
+                            <Badge variant="secondary" className="ml-auto">
+                                显示 {filteredGroups.length} / {groups?.length ?? 0} 个分组
+                            </Badge>
+                        )}
+                    </div>
+                )
+            }
         >
             {/* 统计卡片 */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -182,58 +230,6 @@ function EmojisPage() {
                     </>
                 )}
             </div>
-
-            {/* 搜索与批量操作工具栏 */}
-            {!isEmpty && (
-                <Card>
-                    <CardContent className="py-4">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <div className="min-w-50 max-w-100 flex-1">
-                                <SearchInput
-                                    placeholder="搜索分组名称..."
-                                    value={searchQuery}
-                                    onValueChange={setSearchQuery}
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleBatchEnable}
-                                    disabled={batchPending || isLoading || stats.disabled === 0}
-                                >
-                                    {batchPending ? (
-                                        <Loader2 className="mr-1 size-3.5 animate-spin" />
-                                    ) : (
-                                        <Power className="mr-1 size-3.5" />
-                                    )}
-                                    批量启用
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleBatchDisable}
-                                    disabled={batchPending || isLoading || stats.enabled === 0}
-                                >
-                                    {batchPending ? (
-                                        <Loader2 className="mr-1 size-3.5 animate-spin" />
-                                    ) : (
-                                        <PowerOff className="mr-1 size-3.5" />
-                                    )}
-                                    批量禁用
-                                </Button>
-                            </div>
-
-                            {searchQuery && (
-                                <Badge variant="secondary" className="ml-auto">
-                                    显示 {filteredGroups.length} / {groups?.length ?? 0} 个分组
-                                </Badge>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
 
             {/* 加载态 */}
             {isLoading && (

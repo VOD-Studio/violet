@@ -192,65 +192,65 @@ function AdminMediaPage() {
                     上传素材
                 </Button>
             }
-        >
-            {/* 工具栏：筛选 + 搜索 + 视图切换 */}
-            <div className="flex flex-wrap items-center gap-2">
-                <Select
-                    value={purpose || "all"}
-                    onValueChange={(v) => {
-                        setPurpose(v === "all" ? "" : v);
-                        setPage(1);
-                    }}
-                >
-                    <SelectTrigger className="h-8 w-30 text-xs">
-                        <SelectValue placeholder="用途" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">全部用途</SelectItem>
-                        <SelectItem value="material">素材</SelectItem>
-                        <SelectItem value="avatar">头像</SelectItem>
-                        <SelectItem value="post">文章配图</SelectItem>
-                        <SelectItem value="emoji">表情</SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <Select
-                    value={fileType || "all"}
-                    onValueChange={(v) => {
-                        setFileType(v === "all" ? "" : v);
-                        setPage(1);
-                    }}
-                >
-                    <SelectTrigger className="h-8 w-30 text-xs">
-                        <SelectValue placeholder="类型" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">全部类型</SelectItem>
-                        <SelectItem value="image">图片</SelectItem>
-                        <SelectItem value="video">视频</SelectItem>
-                        <SelectItem value="audio">音频</SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <div className="flex-1">
-                    <SearchInput
-                        size="sm"
-                        defaultValue=""
-                        placeholder="搜索文件名…"
-                        onSearch={(v) => {
-                            setKeyword(v);
+            sticky={
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <Select
+                        value={purpose || "all"}
+                        onValueChange={(v) => {
+                            setPurpose(v === "all" ? "" : v);
                             setPage(1);
                         }}
+                    >
+                        <SelectTrigger className="h-8 w-30 text-xs">
+                            <SelectValue placeholder="用途" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">全部用途</SelectItem>
+                            <SelectItem value="material">素材</SelectItem>
+                            <SelectItem value="avatar">头像</SelectItem>
+                            <SelectItem value="post">文章配图</SelectItem>
+                            <SelectItem value="emoji">表情</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <Select
+                        value={fileType || "all"}
+                        onValueChange={(v) => {
+                            setFileType(v === "all" ? "" : v);
+                            setPage(1);
+                        }}
+                    >
+                        <SelectTrigger className="h-8 w-30 text-xs">
+                            <SelectValue placeholder="类型" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">全部类型</SelectItem>
+                            <SelectItem value="image">图片</SelectItem>
+                            <SelectItem value="video">视频</SelectItem>
+                            <SelectItem value="audio">音频</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    <div className="flex-1">
+                        <SearchInput
+                            size="sm"
+                            defaultValue=""
+                            placeholder="搜索文件名…"
+                            onSearch={(v) => {
+                                setKeyword(v);
+                                setPage(1);
+                            }}
+                        />
+                    </div>
+
+                    <Segmented
+                        value={view}
+                        onValueChange={(v) => setView(v as ViewMode)}
+                        segments={viewTypeSegments()}
                     />
                 </div>
-
-                <Segmented
-                    value={view}
-                    onValueChange={(v) => setView(v as ViewMode)}
-                    segments={viewTypeSegments()}
-                />
-            </div>
-
+            }
+        >
             {/* 内容区 */}
             {isLoading ? (
                 <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
