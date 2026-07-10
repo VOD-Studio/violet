@@ -64,8 +64,8 @@ export function DataTableToolbar<T>({
             {hasHideable && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
-                            <Columns3 className="size-4" />列
+                        <Button variant="ghost" size="icon-sm" title="显示列">
+                            <Columns3 className="size-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44">
