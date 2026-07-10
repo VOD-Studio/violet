@@ -65,6 +65,7 @@ function AdminTagsPage() {
         {
             key: "name",
             header: "标签名",
+            hideable: false,
             sortable: true,
             ellipsis: true,
             width: "200px",

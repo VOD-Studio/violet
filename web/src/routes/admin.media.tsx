@@ -480,6 +480,7 @@ function MediaTable({
         {
             key: "original_name",
             header: "文件名",
+            hideable: false,
             accessorKey: "original_name",
             ellipsis: true,
         },

@@ -111,6 +111,7 @@ function AdminPostsPage() {
         {
             key: "title",
             header: "标题",
+            hideable: false,
             sortable: false,
             ellipsis: true,
             cell: (row) => (

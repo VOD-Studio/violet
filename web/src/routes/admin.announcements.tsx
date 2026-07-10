@@ -91,6 +91,7 @@ function AdminAnnouncementsPage() {
         {
             key: "title",
             header: "标题",
+            hideable: false,
             sortable: true,
             width: "32%",
             ellipsis: true,

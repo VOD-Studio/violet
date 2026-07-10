@@ -126,6 +126,7 @@ function AdminPermissionsPage() {
         {
             key: "code",
             header: "代码",
+            hideable: false,
             ellipsis: true,
             cell: (r) => (
                 <div className="flex items-center gap-2" style={{ paddingLeft: r.depth * 20 }}>

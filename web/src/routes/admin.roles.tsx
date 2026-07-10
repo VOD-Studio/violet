@@ -74,6 +74,7 @@ function AdminRolesPage() {
         {
             key: "name",
             header: "角色名称",
+            hideable: false,
             accessorKey: "name",
             sortable: true,
             ellipsis: true,
