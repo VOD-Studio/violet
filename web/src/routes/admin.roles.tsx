@@ -13,12 +13,15 @@ import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Settings, Shield, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useMe } from "@/features/auth/api/queries";
 
 export const Route = createFileRoute("/admin/roles")({
     component: AdminRolesPage,
 });
 
 function AdminRolesPage() {
+    const { data: me } = useMe();
+    const isBuiltinSuperAdmin = me?.is_builtin_super_admin === true;
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [editingRole, setEditingRole] = useState<RoleDTO | null>(null);
@@ -123,8 +126,8 @@ function AdminRolesPage() {
             sticky: "right",
             width: "120px",
             cell: (row) => {
-                // 内置角色（user/admin/superadmin）不可删/不可改名/不可改权限
-                const isBuiltin = row.is_builtin;
+                // 内置角色仅内置超管可操作（编辑/删除/配置权限）
+                const isLocked = row.is_builtin && !isBuiltinSuperAdmin;
                 return (
                     <div className="flex items-center gap-2">
                         <PermissionGuard permission="role:manage">
@@ -132,8 +135,8 @@ function AdminRolesPage() {
                                 size="icon-sm"
                                 variant="ghost"
                                 onClick={() => handleConfigurePermissions(row)}
-                                disabled={isBuiltin}
-                                title={isBuiltin ? "内置角色不可修改权限" : "配置权限"}
+                                disabled={isLocked}
+                                title={isLocked ? "内置角色不可修改权限" : "配置权限"}
                             >
                                 <Settings className="size-3.5" />
                             </Button>
@@ -143,8 +146,8 @@ function AdminRolesPage() {
                                 size="icon-sm"
                                 variant="ghost"
                                 onClick={() => handleEdit(row)}
-                                disabled={isBuiltin}
-                                title={isBuiltin ? "内置角色不可编辑" : "编辑角色"}
+                                disabled={isLocked}
+                                title={isLocked ? "内置角色不可编辑" : "编辑角色"}
                             >
                                 <Pencil className="size-3.5" />
                             </Button>
@@ -154,8 +157,8 @@ function AdminRolesPage() {
                                 size="icon-sm"
                                 variant="ghost"
                                 onClick={() => handleDelete(row)}
-                                disabled={isBuiltin || deleteRole.isPending}
-                                title={isBuiltin ? "内置角色不可删除" : "删除角色"}
+                                disabled={isLocked || deleteRole.isPending}
+                                title={isLocked ? "内置角色不可删除" : "删除角色"}
                             >
                                 <Trash2 className="size-3.5" />
                             </Button>
