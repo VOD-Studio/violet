@@ -18,7 +18,7 @@ function TaskItemComponent({ node, updateAttributes, editor }: NodeViewProps) {
     const checked = node.attrs.checked as boolean;
 
     return (
-        <NodeViewWrapper as="li" className="flex items-start gap-2" data-checked={checked}>
+        <NodeViewWrapper className="flex items-start gap-2" data-checked={checked}>
             <Checkbox
                 checked={checked}
                 disabled={!editor.isEditable}
@@ -33,6 +33,8 @@ function TaskItemComponent({ node, updateAttributes, editor }: NodeViewProps) {
 /** 自定义 TaskItem：继承原扩展，仅覆盖 NodeView */
 export const CustomTaskItem = TaskItem.extend({
     addNodeView() {
-        return ReactNodeViewRenderer(TaskItemComponent);
+        // as: "li" 让 ReactRenderer 宿主元素（= NodeView dom）为 <li>，
+        // 否则默认 <div> 会破坏 <ul> > <li> 结构导致 flex 布局失效
+        return ReactNodeViewRenderer(TaskItemComponent, { as: "li" });
     },
 }).configure({ nested: true });

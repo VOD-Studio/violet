@@ -23,7 +23,7 @@
   list-style: none;
   padding: 0;
 }
-.ProseMirror ul[data-type="taskList"] li > div > p:first-child {
+.ProseMirror ul[data-type="taskList"] p:first-child {
   margin-top: 0;
 }
 
