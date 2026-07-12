@@ -103,6 +103,8 @@ var (
 	SettingsUpdate       = MustParse("settings:update")
 	RoleManage           = MustParse("role:manage")
 	AnnouncementManage   = MustParse("announcement:manage")
+	SystemView           = MustParse("system:view") // 系统监控（主机/磁盘/运行时指标）
+	LogView              = MustParse("log:view")    // 操作日志（含 IP/操作明细）
 	AdminAccess          = MustParse("admin:access")
 )
 
