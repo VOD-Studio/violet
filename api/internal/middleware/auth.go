@@ -26,26 +26,14 @@ const (
 	UserIsBuiltinSuperAdminKey contextKey = "userIsBuiltinSuperAdmin"
 )
 
-// AdminRequired 管理员权限中间件
-func AdminRequired(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		role := GetUserRole(r.Context())
-		userID := GetUserID(r.Context())
-		if role != "admin" && role != "superadmin" {
-			log.Warn().
-				Str("user_id", userID).
-				Str("role", role).
-				Str("required", "admin/superadmin").
-				Str("method", r.Method).
-				Str("path", r.URL.Path).
-				Msg("权限不足：需要管理员权限")
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(`{"error":"forbidden","message":"需要管理员权限"}`))
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+// AdminRequired 管理后台入口权限中间件
+//
+// 判定规则：拥有 admin:access 权限点即放行（admin/superadmin 角色默认拥有）。
+// 这让权限矩阵可配置——例如 author 角色被授予 admin:access 后即可进入后台，
+// 但具体操作仍由各路由上的 RequirePermission 逐项卡控。
+// 内置超管（isBuiltinSuperAdmin）由 PermissionChecker 短路放行。
+func AdminRequired(checker PermissionChecker) func(http.Handler) http.Handler {
+	return RequirePermission(checker, "admin:access")
 }
 
 // SuperAdminRequired 超级管理员权限中间件

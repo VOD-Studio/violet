@@ -267,7 +267,7 @@ func main() {
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
-				r.Use(middleware.AdminRequired)
+				r.Use(middleware.AdminRequired(permissionChecker))
 				r.With(middleware.RequirePermission(permissionChecker, "tag:create")).
 					Post("/", tagH.Create) // 创建标签
 				r.With(middleware.RequirePermission(permissionChecker, "tag:update")).
@@ -318,7 +318,7 @@ func main() {
 		v1.Route("/comments/{id}", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
-				r.Use(middleware.AdminRequired)
+				r.Use(middleware.AdminRequired(permissionChecker))
 				r.Patch("/approve", commentH.Approve) // 审核通过
 				r.Patch("/spam", commentH.MarkSpam)   // 标记垃圾
 				r.Delete("/", commentH.Delete)        // 删除评论
@@ -387,7 +387,7 @@ func main() {
 		// =====================================================
 		v1.Route("/admin", func(r chi.Router) {
 			r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
-			r.Use(middleware.AdminRequired)
+			r.Use(middleware.AdminRequired(permissionChecker))
 
 			roleH := roleContainer.RoleHandler
 
