@@ -523,12 +523,13 @@ func main() {
 						Patch("/{id}/active", mediaH.SetPlaylistActive) // 启用/禁用歌单
 					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
 						Post("/{id}/refresh", mediaH.RefreshPlaylist) // 刷新歌单歌曲
-					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
-						Post("/{id}/songs", mediaH.AddSongToPlaylist) // 添加歌曲到歌单
-					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
-						Delete("/{id}/songs/{index}", mediaH.RemoveSongFromPlaylist) // 移除歌曲
-					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
-						Patch("/{id}/songs/{index}", mediaH.UpdateSongInPlaylist) // 更新歌曲
+					// 歌曲增删改仅超管（普通管理员只管歌单本身，不管歌曲）
+					r.Group(func(r chi.Router) {
+						r.Use(middleware.SuperAdminRequired)
+						r.Post("/{id}/songs", mediaH.AddSongToPlaylist)                // 添加歌曲到歌单
+						r.Delete("/{id}/songs/{index}", mediaH.RemoveSongFromPlaylist) // 移除歌曲
+						r.Patch("/{id}/songs/{index}", mediaH.UpdateSongInPlaylist)    // 更新歌曲
+					})
 				})
 				r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
 					Patch("/settings", mediaH.UpdatePlayerVersion) // 更新播放器设置
