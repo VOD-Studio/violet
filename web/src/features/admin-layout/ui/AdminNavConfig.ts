@@ -31,26 +31,78 @@ export interface AdminNavItem {
     icon: LucideIcon;
     /** 是否精确匹配激活（首页用 exact） */
     exact?: boolean;
+    /**
+     * 可见所需权限码（满足任一即显示）。
+     * 省略表示仅需 admin:access（由后台路由守卫统一保证）。
+     * 内置超管通配短路，永远可见。
+     */
+    permissions?: string[];
 }
 
 /**
  * ADMIN_NAV_ITEMS - 后台导航单一来源
  *
  * AdminSidebar 与 AdminMobileNav 共用此配置。
+ * permissions 控制菜单项可见性（满足任一权限即显示）。
  */
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     { label: "概览", to: "/admin", icon: LayoutDashboard, exact: true },
-    { label: "文章管理", to: "/admin/posts", icon: FileText },
-    { label: "用户管理", to: "/admin/users", icon: Users },
-    { label: "角色管理", to: "/admin/roles", icon: UserCog },
-    { label: "权限管理", to: "/admin/permissions", icon: Shield },
-    { label: "标签管理", to: "/admin/tags", icon: Tag },
-    { label: "公告管理", to: "/admin/announcements", icon: Megaphone },
-    { label: "评论审核", to: "/admin/comments", icon: MessageSquare },
-    { label: "项目管理", to: "/admin/projects", icon: FolderKanban },
-    { label: "素材管理", to: "/admin/media", icon: Images },
-    { label: "表情管理", to: "/admin/emojis", icon: Smile },
-    { label: "站点设置", to: "/admin/settings", icon: Settings },
-    { label: "系统监控", to: "/admin/system", icon: Activity },
-    { label: "操作日志", to: "/admin/logs", icon: ScrollText },
+    {
+        label: "文章管理",
+        to: "/admin/posts",
+        icon: FileText,
+        permissions: ["post:create", "post:update", "post:delete", "post:publish"],
+    },
+    {
+        label: "用户管理",
+        to: "/admin/users",
+        icon: Users,
+        permissions: ["user:list", "user:update-role", "user:ban"],
+    },
+    { label: "角色管理", to: "/admin/roles", icon: UserCog, permissions: ["role:manage"] },
+    { label: "权限管理", to: "/admin/permissions", icon: Shield, permissions: ["role:manage"] },
+    {
+        label: "标签管理",
+        to: "/admin/tags",
+        icon: Tag,
+        permissions: ["tag:create", "tag:update", "tag:delete"],
+    },
+    {
+        label: "公告管理",
+        to: "/admin/announcements",
+        icon: Megaphone,
+        permissions: ["announcement:manage"],
+    },
+    {
+        label: "评论审核",
+        to: "/admin/comments",
+        icon: MessageSquare,
+        permissions: ["comment:approve", "comment:delete"],
+    },
+    {
+        label: "项目管理",
+        to: "/admin/projects",
+        icon: FolderKanban,
+        permissions: ["project:create", "project:update", "project:delete"],
+    },
+    {
+        label: "素材管理",
+        to: "/admin/media",
+        icon: Images,
+        permissions: ["media:upload", "media:delete"],
+    },
+    {
+        label: "表情管理",
+        to: "/admin/emojis",
+        icon: Smile,
+        permissions: ["emoji:create", "emoji:delete", "emoji:manage-group", "emoji:refetch"],
+    },
+    {
+        label: "站点设置",
+        to: "/admin/settings",
+        icon: Settings,
+        permissions: ["settings:view", "settings:update"],
+    },
+    { label: "系统监控", to: "/admin/system", icon: Activity, permissions: ["system:view"] },
+    { label: "操作日志", to: "/admin/logs", icon: ScrollText, permissions: ["log:view"] },
 ];
