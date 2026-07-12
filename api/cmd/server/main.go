@@ -430,9 +430,11 @@ func main() {
 				r.Delete("/permissions/{id}", roleH.DeletePermission) // 删除权限
 			})
 
-			// 角色管理（均需 role:manage 权限）
-			r.Get("/roles", roleH.ListRoles)    // 角色列表（查看不限）
-			r.Get("/roles/{id}", roleH.GetRole) // 角色详情（查看不限）
+			// 角色管理（读 role:view；写 role:manage）
+			r.With(middleware.RequirePermission(permissionChecker, "role:view")).
+				Get("/roles", roleH.ListRoles)    // 角色列表
+			r.With(middleware.RequirePermission(permissionChecker, "role:view")).
+				Get("/roles/{id}", roleH.GetRole) // 角色详情
 			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
 				Post("/roles", roleH.CreateRole) // 创建角色
 			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
@@ -448,10 +450,10 @@ func main() {
 			r.With(middleware.RequirePermission(permissionChecker, "log:view")).
 				Get("/logs/user/{id}", auditContainer.AuditHandler.ListLogsByUser) // 用户操作日志
 
-			// 公告管理
-			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
+			// 公告管理（读 announcement:view；写 announcement:manage）
+			r.With(middleware.RequirePermission(permissionChecker, "announcement:view")).
 				Get("/announcements", contentH.ListAnnouncements) // 公告列表
-			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
+			r.With(middleware.RequirePermission(permissionChecker, "announcement:view")).
 				Get("/announcements/{id}", contentH.GetAnnouncement) // 公告详情
 			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
 				Post("/announcements", contentH.CreateAnnouncement) // 创建公告
@@ -460,60 +462,53 @@ func main() {
 			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
 				Delete("/announcements/{id}", contentH.DeleteAnnouncement) // 删除公告
 
-			// 评论审核（comment:approve 或 comment:delete 任一可读；批量状态需 comment:approve）
-			r.With(middleware.RequirePermission(permissionChecker, "comment:approve", "comment:delete")).
+			// 评论审核（读 comment:view；批量状态 comment:approve）
+			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
 				Get("/comments/pending", commentH.ListPending) // 待审核评论列表
-			r.With(middleware.RequirePermission(permissionChecker, "comment:approve", "comment:delete")).
+			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
 				Get("/comments/pending/count", commentH.CountPending) // 待审核评论数量
-			r.With(middleware.RequirePermission(permissionChecker, "comment:approve", "comment:delete")).
+			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
 				Get("/comments", commentH.ListAll) // 所有评论列表（支持状态筛选）
-			r.With(middleware.RequirePermission(permissionChecker, "comment:approve", "comment:delete")).
+			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
 				Get("/comments/{id}", commentH.GetDetail) // 评论详情
 			r.With(middleware.RequirePermission(permissionChecker, "comment:approve")).
 				Patch("/comments/batch-status", commentH.BatchUpdateStatus) // 批量更新评论状态
 
 			// 文章管理（DDD postH）
-			// 读：post:* 任一权限；写：按动作细分
-			r.With(middleware.RequirePermission(permissionChecker, "post:create", "post:update", "post:delete", "post:publish")).
+			// 读：post:view；写：权限下放应用层（所有权 + 权限码判定）
+			r.With(middleware.RequirePermission(permissionChecker, "post:view")).
 				Get("/posts", postH.ListAll) // 所有文章列表
-			r.With(middleware.RequirePermission(permissionChecker, "post:create", "post:update", "post:delete", "post:publish")).
+			r.With(middleware.RequirePermission(permissionChecker, "post:view")).
 				Get("/posts/{id}", postH.GetByID) // 文章详情
 			r.With(middleware.RequirePermission(permissionChecker, "post:create")).
 				Post("/posts", postH.Create) // 创建文章
 			r.With(middleware.RequirePermission(permissionChecker, "post:create")).
 				Post("/posts/import-url", postH.ImportURL) // 导入远程链接文档
-			r.With(middleware.RequirePermission(permissionChecker, "post:update")).
-				Put("/posts/{id}", postH.Update) // 更新文章
-			r.With(middleware.RequirePermission(permissionChecker, "post:publish")).
-				Patch("/posts/{id}/status", postH.UpdateStatus) // 更新文章状态
-			r.With(middleware.RequirePermission(permissionChecker, "post:publish")).
-				Patch("/posts/{id}/featured", postH.SetFeatured) // 切换精选标记
-			r.With(middleware.RequirePermission(permissionChecker, "post:delete")).
-				Delete("/posts/{id}", postH.Delete) // 软删除文章
-			r.With(middleware.RequirePermission(permissionChecker, "post:delete")).
-				Post("/posts/{id}/restore", postH.Restore) // 恢复文章
-			r.With(middleware.RequirePermission(permissionChecker, "post:delete")).
-				Delete("/posts/{id}/hard", postH.HardDelete) // 彻底删除文章
+			r.Put("/posts/{id}", postH.Update)                  // 更新文章（应用层鉴权）
+			r.Patch("/posts/{id}/status", postH.UpdateStatus)   // 更新文章状态（应用层鉴权）
+			r.Patch("/posts/{id}/featured", postH.SetFeatured)  // 切换精选标记（应用层鉴权）
+			r.Delete("/posts/{id}", postH.Delete)               // 软删除文章（应用层鉴权）
+			r.Post("/posts/{id}/restore", postH.Restore)        // 恢复文章（应用层鉴权）
+			r.Delete("/posts/{id}/hard", postH.HardDelete)      // 彻底删除文章（应用层鉴权）
 
 			// 文章版本管理
-			r.With(middleware.RequirePermission(permissionChecker, "post:create", "post:update", "post:delete", "post:publish")).
+			r.With(middleware.RequirePermission(permissionChecker, "post:view")).
 				Get("/posts/{id}/versions", postH.ListVersions)
-			r.With(middleware.RequirePermission(permissionChecker, "post:create", "post:update", "post:delete", "post:publish")).
+			r.With(middleware.RequirePermission(permissionChecker, "post:view")).
 				Get("/posts/versions/{versionId}", postH.GetVersion)
-			r.With(middleware.RequirePermission(permissionChecker, "post:update")).
-				Post("/posts/{id}/versions/{versionId}/restore", postH.RestoreVersion)
+			r.Post("/posts/{id}/versions/{versionId}/restore", postH.RestoreVersion) // 应用层鉴权
 
 			// 音乐管理（DDD mediaH）
-			// 读：playlist:* 任一权限；写：按动作细分
+			// 读：playlist:view；写：按动作细分
 			r.Route("/music", func(r chi.Router) {
 				r.Route("/playlists", func(r chi.Router) {
-					r.With(middleware.RequirePermission(permissionChecker, "playlist:create", "playlist:update", "playlist:delete", "playlist:toggle")).
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:view")).
 						Get("/", mediaH.ListAllPlaylists) // 歌单列表
 					r.With(middleware.RequirePermission(permissionChecker, "playlist:create")).
 						Post("/", mediaH.CreatePlaylist) // 导入歌单
 					r.With(middleware.RequirePermission(permissionChecker, "playlist:create")).
 						Post("/custom", mediaH.CreateCustomPlaylist) // 创建自定义歌单
-					r.With(middleware.RequirePermission(permissionChecker, "playlist:create", "playlist:update", "playlist:delete", "playlist:toggle")).
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:view")).
 						Get("/{id}", mediaH.GetPlaylistDetail) // 歌单详情
 					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
 						Patch("/{id}", mediaH.UpdatePlaylist) // 更新歌单
@@ -536,10 +531,10 @@ func main() {
 			})
 
 			// 表情管理（DDD mediaH）
-			// 读：emoji:* 任一权限；分组管理 emoji:manage-group；建/改表情 emoji:create；删表情 emoji:delete
+			// 读：emoji:view；分组管理 emoji:manage-group；建/改表情 emoji:create；删表情 emoji:delete
 			r.Route("/emojis", func(r chi.Router) {
 				// 分组管理
-				r.With(middleware.RequirePermission(permissionChecker, "emoji:create", "emoji:delete", "emoji:manage-group", "emoji:refetch")).
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:view")).
 					Get("/groups", mediaH.ListAllEmojiGroups) // 所有分组（含未启用）
 				r.With(middleware.RequirePermission(permissionChecker, "emoji:manage-group")).
 					Post("/groups", mediaH.CreateEmojiGroup) // 创建分组
@@ -550,7 +545,7 @@ func main() {
 				r.With(middleware.RequirePermission(permissionChecker, "emoji:manage-group")).
 					Delete("/groups/{id}", mediaH.DeleteEmojiGroup) // 删除分组
 				// 分组内表情
-				r.With(middleware.RequirePermission(permissionChecker, "emoji:create", "emoji:delete", "emoji:manage-group", "emoji:refetch")).
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:view")).
 					Get("/groups/{id}/emojis", mediaH.ListGroupEmojis) // 分组内表情列表
 				r.With(middleware.RequirePermission(permissionChecker, "emoji:create")).
 					Post("/groups/{id}/emojis", mediaH.CreateEmoji) // 在分组内创建表情
@@ -577,8 +572,8 @@ func main() {
 			})
 
 			// 媒体素材管理（DDD mediaH，细粒度权限）
-			// 全局素材列表：media:upload 或 media:delete 任一即可查看
-			r.With(middleware.RequirePermission(permissionChecker, "media:upload", "media:delete")).
+			// 全局素材列表：media:view
+			r.With(middleware.RequirePermission(permissionChecker, "media:view")).
 				Get("/media", mediaH.ListAllFiles) // 全局素材列表（不限 owner）
 			// 更新素材元数据：media:upload（可编辑描述/分类/重命名）
 			r.With(middleware.RequirePermission(permissionChecker, "media:upload")).
