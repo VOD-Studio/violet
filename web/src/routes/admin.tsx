@@ -1,12 +1,21 @@
+import type { UserDTO } from "@entities/user/model/types";
 import { AdminSidebar } from "@features/admin-layout/ui/AdminSidebar";
 import { AdminTopBar } from "@features/admin-layout/ui/AdminTopBar";
+import { authKeys } from "@features/auth/api/keys";
+import { fetchMe } from "@features/auth/api/queries";
 import { isSessionActive } from "@shared/api/session";
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import {
+    createFileRoute,
+    isRedirect,
+    Outlet,
+    redirect,
+    useRouterState,
+} from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin")({
     ssr: false,
     beforeLoad: async ({ context }) => {
-        const { auth } = context;
+        const { auth, queryClient } = context;
 
         // 仅当「网络判定未登录」且「客户端确实没有活跃会话」时才踢人。
         // 后者（isSessionActive）不受网络瞬态失败影响——登录成功置 true、登出才置 false。
@@ -19,17 +28,25 @@ export const Route = createFileRoute("/admin")({
             });
         }
 
-        // 检查用户是否是管理员角色（admin 或 superadmin）或者内置超级管理员
-        if (auth.claims) {
-            const isAdminRole =
-                auth.claims.role === "admin" ||
-                auth.claims.role === "superadmin" ||
-                auth.claims.is_builtin_super_admin;
-            if (!isAdminRole) {
-                throw redirect({
-                    to: "/",
-                    replace: true,
+        // 检查用户是否有后台访问权限（admin:access）
+        // claims 不含权限数组，经 queryClient 取 /auth/me（与 useMe 同缓存键，自动复用）。
+        // 内置超管（is_builtin_super_admin）通配短路放行，不必查权限。
+        if (auth.claims && !auth.claims.is_builtin_super_admin) {
+            let me: UserDTO | undefined;
+            try {
+                me = await queryClient.ensureQueryData({
+                    queryKey: authKeys.me(),
+                    queryFn: fetchMe,
+                    staleTime: Infinity,
                 });
+            } catch (e) {
+                // ensureQueryData 失败（网络/401）→ 无后台权限
+                if (isRedirect(e)) throw e;
+                throw redirect({ to: "/", replace: true });
+            }
+            const hasAccess = me?.permissions?.includes("admin:access") ?? false;
+            if (!hasAccess) {
+                throw redirect({ to: "/", replace: true });
             }
         }
     },

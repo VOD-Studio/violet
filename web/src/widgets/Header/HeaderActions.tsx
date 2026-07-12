@@ -1,5 +1,6 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
 import {
@@ -72,7 +73,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
         });
     };
 
-    const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+    const isAdmin = useHasPermission("admin:access");
 
     return (
         <div className="flex items-center gap-2">
