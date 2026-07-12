@@ -131,6 +131,7 @@ function AdminCommentsPage() {
         {
             key: "body",
             header: "评论内容",
+            hideable: false,
             className: "whitespace-normal",
             cell: (row) => <CommentCell row={row} />,
         },
@@ -223,17 +224,24 @@ function AdminCommentsPage() {
     ];
 
     return (
-        <PageShell title="评论审核" description="审核与管理文章评论">
-            {/* 筛选区：状态维度 + 类型维度（批注/自由评论）正交，两个 Segmented 同行排列 */}
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-                <Segmented value={filter} onValueChange={switchFilter} segments={STATUS_SEGMENTS} />
-                <Segmented
-                    value={typeFilter}
-                    onValueChange={switchTypeFilter}
-                    segments={TYPE_SEGMENTS}
-                />
-            </div>
-
+        <PageShell
+            title="评论审核"
+            description="审核与管理文章评论"
+            sticky={
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <Segmented
+                        value={filter}
+                        onValueChange={switchFilter}
+                        segments={STATUS_SEGMENTS}
+                    />
+                    <Segmented
+                        value={typeFilter}
+                        onValueChange={switchTypeFilter}
+                        segments={TYPE_SEGMENTS}
+                    />
+                </div>
+            }
+        >
             <DataTable<AdminComment>
                 data={data?.data ?? []}
                 columns={columns}

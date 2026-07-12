@@ -28,6 +28,7 @@ function AdminLogsPage() {
         {
             key: "created_at",
             header: "时间",
+            hideable: false,
             sortable: true,
             cell: (row) =>
                 format(new Date(row.created_at), "MM-dd HH:mm", {

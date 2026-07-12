@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface PageShellProps {
     /** 页面主标题（h1，唯一来源，由 shell 渲染） - 注意：TopBar 已显示标题，此处不再渲染 */
@@ -7,6 +7,8 @@ interface PageShellProps {
     description?: string;
     /** 标题区右侧操作（如「创建分组」按钮） */
     action?: ReactNode;
+    /** 固定在标题区下方的额外内容（如表格工具栏、筛选器），随标题区一起 sticky */
+    sticky?: ReactNode;
     /** 页面主体内容 */
     children: ReactNode;
 }
@@ -19,23 +21,51 @@ interface PageShellProps {
  *
  * 标题区始终保持固定高度（min-h-8 = 按钮 size-sm 的高度），
  * 即使某页面没有 action 按钮（如只读页），切换页面时也不会因高度变化而抖动。
+ *
+ * 标题区（含 description + action + sticky）默认 sticky 固定在顶部，
+ * 内容过长滚动时标题区和 sticky 内容不会随页面滚走。
  */
-export function PageShell({ description, action, children }: PageShellProps) {
-    // 既无描述也无操作时，直接渲染内容（无标题区，不占额外空间）
-    if (!description && !action) {
+export function PageShell({ description, action, sticky, children }: PageShellProps) {
+    const elRef = useRef<HTMLDivElement>(null)
+    // 既无描述也无操作且无 sticky 内容时，直接渲染内容（无标题区，不占额外空间）
+    if (!description && !action && !sticky) {
         return <div>{children}</div>;
     }
 
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        const pEl = elRef.current?.parentElement
+        if(!pEl) return
+        const handleScroll = () => setScrolled(pEl.scrollTop > 8);
+        handleScroll();
+        pEl.addEventListener("scroll", handleScroll);
+        return () => pEl.removeEventListener("scroll", handleScroll);
+    }, []);
+
     return (
-        <div className="space-y-6">
-            {/* 副标题和操作区：固定高度避免有无按钮时抖动 */}
-            <div className="flex min-h-8 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                {description && <p className="text-muted-foreground text-sm">{description}</p>}
-                {/* action 容器始终渲染并占满按钮高度，无内容时保持占位防抖动 */}
-                <div className="flex h-8 items-center gap-2 empty:hidden">{action}</div>
+        <div className="space-y-2 pb-6" ref={elRef}>
+            {/*
+             * sticky top-0：粘性定位，滚动到顶部后自动固定。
+             * z-10 + children 用 isolate 建独立层叠上下文，DataTable 内部 z-30~z-50 被困在其中，
+             * 不会穿透到 sticky header 之上；弹窗（z-50 body 级）也不受影响。
+             * bg-background 100% 不透明。
+             */}
+            <div className={`sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-4 ${scrolled ?  "border-b border-edge-hairline bg-background shadow-lg" : ""}`}>
+                {/* 副标题和操作区：固定高度避免有无按钮时抖动 */}
+                {(description || action) && (
+                    <div className="flex min-h-8 flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+                        {description && (
+                            <p className="text-muted-foreground text-sm">{description}</p>
+                        )}
+                        <div className="flex h-8 items-center gap-2 empty:hidden">{action}</div>
+                    </div>
+                )}
+                {/* sticky 额外内容：表格工具栏、筛选器等 */}
+                {sticky}
             </div>
-            {/* 页面内容 */}
-            {children}
+            {/* isolate 包裹内容区：困住 DataTable 固定列的 z-index，防止穿透 sticky header */}
+            <div className="relative isolate space-y-6 px-4 md:px-6">{children}</div>
         </div>
     );
 }

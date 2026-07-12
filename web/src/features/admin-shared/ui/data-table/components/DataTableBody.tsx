@@ -6,7 +6,11 @@ import { TableBody, TableCell, TableRow } from "@/shared/ui/base/table";
 import { TooltipProvider } from "@/shared/ui/base/tooltip";
 import Empty from "@/shared/ui/empty";
 import type { DataTableColumn } from "../types/data-table-types";
-import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "../types/data-table-types";
+import {
+    COLUMNS_CONTROL_KEY,
+    EXPAND_COLUMN_KEY,
+    SELECT_COLUMN_KEY,
+} from "../types/data-table-types";
 import { cellStickyStyle, mergeStickyStyle, type StickyOffset } from "../utils/sticky-utils";
 import { CellWithTooltip } from "./CellWithTooltip";
 import { RowCheckbox } from "./RowCheckbox";
@@ -232,6 +236,17 @@ export function DataTableBody<T>({
                                                     />
                                                 )}
                                             </TableCell>
+                                        );
+                                    }
+
+                                    // 列控制列：body 渲染空占位单元格
+                                    if (col.key === COLUMNS_CONTROL_KEY) {
+                                        return (
+                                            <TableCell
+                                                key={col.key}
+                                                style={mergeStickyStyle(offset, col.width)}
+                                                className={cn(sticky.className, col.className)}
+                                            />
                                         );
                                     }
 

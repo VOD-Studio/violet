@@ -159,49 +159,16 @@ function EmojisPage() {
                     ) : null}
                 </div>
             }
-        >
-            {/* 统计卡片 */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {isLoading ? (
-                    <>
-                        <StatsCardSkeleton />
-                        <StatsCardSkeleton />
-                        <StatsCardSkeleton />
-                    </>
-                ) : (
-                    <>
-                        <StatsCard
-                            title="总分组数"
-                            value={stats.total}
-                            icon={<Layers className="size-5 text-muted-foreground" />}
-                        />
-                        <StatsCard
-                            title="已启用"
-                            value={stats.enabled}
-                            icon={<CheckCircle className="size-5 text-green-500" />}
-                        />
-                        <StatsCard
-                            title="已禁用"
-                            value={stats.disabled}
-                            icon={<Layers className="size-5 text-muted-foreground" />}
-                            className={stats.disabled > 0 ? "border-orange-200" : undefined}
-                        />
-                    </>
-                )}
-            </div>
-
-            {/* 搜索与批量操作工具栏 */}
-            {!isEmpty && (
-                <Card>
-                    <CardContent className="py-4">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <div className="min-w-50 max-w-100 flex-1">
-                                <SearchInput
-                                    placeholder="搜索分组名称..."
-                                    value={searchQuery}
-                                    onValueChange={setSearchQuery}
-                                />
-                            </div>
+            sticky={
+                !isEmpty && (
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                        <div className="min-w-50 max-w-100 flex-1">
+                            <SearchInput
+                                placeholder="搜索分组名称..."
+                                value={searchQuery}
+                                onValueChange={setSearchQuery}
+                            />
+                        </div>
 
                             <div className="flex items-center gap-2">
                                 {canManageGroup ? (
@@ -240,15 +207,44 @@ function EmojisPage() {
                                 ) : null}
                             </div>
 
-                            {searchQuery && (
-                                <Badge variant="secondary" className="ml-auto">
-                                    显示 {filteredGroups.length} / {groups?.length ?? 0} 个分组
-                                </Badge>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                        {searchQuery && (
+                            <Badge variant="secondary" className="ml-auto">
+                                显示 {filteredGroups.length} / {groups?.length ?? 0} 个分组
+                            </Badge>
+                        )}
+                    </div>
+                )
+            }
+        >
+            {/* 统计卡片 */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {isLoading ? (
+                    <>
+                        <StatsCardSkeleton />
+                        <StatsCardSkeleton />
+                        <StatsCardSkeleton />
+                    </>
+                ) : (
+                    <>
+                        <StatsCard
+                            title="总分组数"
+                            value={stats.total}
+                            icon={<Layers className="size-5 text-muted-foreground" />}
+                        />
+                        <StatsCard
+                            title="已启用"
+                            value={stats.enabled}
+                            icon={<CheckCircle className="size-5 text-green-500" />}
+                        />
+                        <StatsCard
+                            title="已禁用"
+                            value={stats.disabled}
+                            icon={<Layers className="size-5 text-muted-foreground" />}
+                            className={stats.disabled > 0 ? "border-orange-200" : undefined}
+                        />
+                    </>
+                )}
+            </div>
 
             {/* 加载态 */}
             {isLoading && (

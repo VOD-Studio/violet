@@ -191,6 +191,7 @@ function AdminUsers() {
         {
             key: "username",
             header: "用户名",
+            hideable: false,
             accessorKey: "username",
             sortable: true,
             ellipsis: true,

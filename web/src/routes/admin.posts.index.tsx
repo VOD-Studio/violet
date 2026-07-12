@@ -116,6 +116,7 @@ function AdminPostsPage() {
         {
             key: "title",
             header: "标题",
+            hideable: false,
             sortable: false,
             ellipsis: true,
             cell: (row) => (
@@ -237,6 +238,22 @@ function AdminPostsPage() {
                     </Button>
                 ) : null
             }
+            sticky={
+                <div className="pt-1">
+                    <Select value={status} onValueChange={handleStatusChange}>
+                        <SelectTrigger className="w-36">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {STATUS_OPTIONS.map((o) => (
+                                <SelectItem key={o.value} value={o.value}>
+                                    {o.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            }
         >
             <DataTable<AdminPostListItem>
                 data={posts}
@@ -255,20 +272,6 @@ function AdminPostsPage() {
                 caption="文章列表"
                 emptyTitle="暂无文章"
                 emptyDescription="点击右上角「新建文章」开始创作"
-                toolbar={
-                    <Select value={status} onValueChange={handleStatusChange}>
-                        <SelectTrigger className="w-36">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {STATUS_OPTIONS.map((o) => (
-                                <SelectItem key={o.value} value={o.value}>
-                                    {o.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                }
             />
             <ConfirmDialog
                 open={deleteOpen}

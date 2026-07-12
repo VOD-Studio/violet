@@ -1,7 +1,23 @@
+import { Columns3, RotateCcw } from "lucide-react";
+import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/base/button";
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/shared/ui/base/dropdown-menu";
 import { TableHead, TableHeader, TableRow } from "@/shared/ui/base/table";
 import type { DataTableColumn, DataTableSort } from "../types/data-table-types";
-import { EXPAND_COLUMN_KEY, SELECT_COLUMN_KEY } from "../types/data-table-types";
+import {
+    COLUMNS_CONTROL_KEY,
+    EXPAND_COLUMN_KEY,
+    SELECT_COLUMN_KEY,
+} from "../types/data-table-types";
 import { headStickyStyle, mergeStickyStyle, type StickyOffset } from "../utils/sticky-utils";
 import { ColumnResizer } from "./ColumnResizer";
 import { SelectAllCheckbox } from "./SelectAllCheckbox";
@@ -28,6 +44,11 @@ interface DataTableHeaderProps<T> {
     columnMinWidth: number;
     columnWidthMap: Map<string, number>;
     onResizeColumn: (key: string, width: number) => void;
+    // 列控制
+    allColumns?: DataTableColumn<T>[];
+    hiddenKeys?: Set<string>;
+    onToggleColumn?: (key: string) => void;
+    onResetColumns?: () => void;
 }
 
 /**
@@ -51,6 +72,10 @@ export function DataTableHeader<T>({
     columnMinWidth,
     columnWidthMap,
     onResizeColumn,
+    allColumns,
+    hiddenKeys,
+    onToggleColumn,
+    onResetColumns,
 }: DataTableHeaderProps<T>) {
     const headHeight = density === "compact" ? "h-8" : "h-10";
 
@@ -92,15 +117,61 @@ export function DataTableHeader<T>({
                         );
                     }
 
-                    // 展开列表头：占位
-                    if (col.key === EXPAND_COLUMN_KEY) {
+                    // 列控制按钮列：表头末尾的 icon 按钮
+                    if (col.key === COLUMNS_CONTROL_KEY) {
+                        const hideableCols = (allColumns ?? []).filter((c) => c.hideable !== false);
+                        const anyHidden = (hiddenKeys?.size ?? 0) > 0;
                         return (
                             <TableHead
                                 key={col.key}
                                 scope="col"
                                 style={mergeStickyStyle(offset, col.width)}
-                                className={cn(headHeight, "pr-3", sticky.className, col.className)}
-                            />
+                                className={cn(
+                                    headHeight,
+                                    "flex items-center justify-center",
+                                    sticky.className,
+                                )}
+                            >
+                                {hideableCols.length > 0 && onToggleColumn && (
+                                    <ColumnControlButton
+                                        hideableColumns={hideableCols}
+                                        hiddenKeys={hiddenKeys ?? new Set()}
+                                        onToggleColumn={onToggleColumn}
+                                        onResetColumns={onResetColumns}
+                                        anyHidden={anyHidden}
+                                    />
+                                )}
+                            </TableHead>
+                        );
+                    }
+
+                    // 展开列表头：有列控制时渲染按钮，否则空占位
+                    if (col.key === EXPAND_COLUMN_KEY) {
+                        const hideableCols = (allColumns ?? []).filter((c) => c.hideable !== false);
+                        const showControl = hideableCols.length > 0 && onToggleColumn;
+                        const anyHidden = (hiddenKeys?.size ?? 0) > 0;
+                        return (
+                            <TableHead
+                                key={col.key}
+                                scope="col"
+                                style={mergeStickyStyle(offset, col.width)}
+                                className={cn(
+                                    headHeight,
+                                    "flex items-center justify-center",
+                                    sticky.className,
+                                    col.className,
+                                )}
+                            >
+                                {showControl && (
+                                    <ColumnControlButton
+                                        hideableColumns={hideableCols}
+                                        hiddenKeys={hiddenKeys ?? new Set()}
+                                        onToggleColumn={onToggleColumn}
+                                        onResetColumns={onResetColumns}
+                                        anyHidden={anyHidden}
+                                    />
+                                )}
+                            </TableHead>
                         );
                     }
 
@@ -173,4 +244,67 @@ export function DataTableHeader<T>({
             </TableRow>
         </TableHeader>
     );
+}
+
+/** 列控制按钮：icon-only，dropdown 显示/隐藏列 */
+function ColumnControlButton<T>({
+    hideableColumns,
+    hiddenKeys,
+    onToggleColumn,
+    onResetColumns,
+    anyHidden,
+}: {
+    hideableColumns: DataTableColumn<T>[];
+    hiddenKeys: Set<string>;
+    onToggleColumn: (key: string) => void;
+    onResetColumns?: () => void;
+    anyHidden: boolean;
+}) {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" title="显示列" className="size-7">
+                    <Columns3 className="size-3.5" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel className="flex items-center justify-between">
+                    <span>显示列</span>
+                    {anyHidden && onResetColumns && (
+                        <button
+                            type="button"
+                            onClick={onResetColumns}
+                            className="text-muted-foreground hover:text-foreground"
+                            title="重置"
+                        >
+                            <RotateCcw className="size-3.5" />
+                        </button>
+                    )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {hideableColumns.map((col) => (
+                    <DropdownMenuCheckboxItem
+                        key={col.key}
+                        checked={!hiddenKeys.has(col.key)}
+                        onSelect={(e) => e.preventDefault()}
+                        onCheckedChange={() => onToggleColumn(col.key)}
+                    >
+                        {labelOf(col.header)}
+                    </DropdownMenuCheckboxItem>
+                ))}
+                {anyHidden && onResetColumns && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={onResetColumns}>重置列</DropdownMenuItem>
+                    </>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+/** 从列 header 提取菜单显示文案：优先字符串，否则回退 key */
+function labelOf(header: ReactNode): string {
+    if (typeof header === "string") return header;
+    return "列";
 }

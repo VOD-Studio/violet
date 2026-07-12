@@ -35,15 +35,20 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
             // resizeDelay：滚动/resize 时立即更新位置，避免菜单跟随延迟
             resizeDelay={0}
             // 仅在有实际文本选区时显示，避免光标态误触发
-            shouldShow={({ state }) => {
+            shouldShow={({ state, from, to }) => {
                 const { selection } = state;
-                return !selection.empty && !editor.isActive("codeBlock");
+                if (selection.empty || editor.isActive("codeBlock")) return false;
+                // 全选时不显示浮动菜单
+                if (from === 0 && to === state.doc.content.size) return false;
+                return true;
             }}
             options={{
                 placement: "top",
                 offset: 8,
-                // flip：顶部空间不足时自动翻转到下方
+                // 顶部空间不足时翻转到下方
                 flip: true,
+                // padding 让翻转阈值提前触发，避免菜单顶部贴着容器上边缘被工具栏遮挡
+                // flip: { padding: 48 },
                 // shift：贴边时水平偏移，避免浮窗溢出视口
                 shift: true,
                 // scrollTarget：监听编辑器内部滚动容器，否则默认只监听 window，
