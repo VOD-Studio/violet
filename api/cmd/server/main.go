@@ -394,7 +394,8 @@ func main() {
 			r.Get("/stats", statsContainer.StatsHandler.GetDashboardStats)   // 仪表盘总览统计
 			r.Get("/stats/views", statsContainer.StatsHandler.GetViewTrends) // 浏览量趋势
 
-			r.Get("/settings", settingsContainer.SettingsHandler.GetSettings) // 获取站点设置
+			r.With(middleware.RequirePermission(permissionChecker, "settings:view")).
+				Get("/settings", settingsContainer.SettingsHandler.GetSettings) // 获取站点设置
 			r.With(middleware.RequirePermission(permissionChecker, "settings:update")).
 				Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
 
@@ -441,9 +442,11 @@ func main() {
 			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
 				Patch("/roles/{id}/permissions", roleH.UpdateRolePermissions) // 设置角色权限
 
-			// 操作日志
-			r.Get("/logs", auditContainer.AuditHandler.ListLogs)                 // 操作日志列表
-			r.Get("/logs/user/{id}", auditContainer.AuditHandler.ListLogsByUser) // 用户操作日志
+			// 操作日志（含 IP/操作明细，需 log:view）
+			r.With(middleware.RequirePermission(permissionChecker, "log:view")).
+				Get("/logs", auditContainer.AuditHandler.ListLogs) // 操作日志列表
+			r.With(middleware.RequirePermission(permissionChecker, "log:view")).
+				Get("/logs/user/{id}", auditContainer.AuditHandler.ListLogsByUser) // 用户操作日志
 
 			// 公告管理
 			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
@@ -501,37 +504,60 @@ func main() {
 				Post("/posts/{id}/versions/{versionId}/restore", postH.RestoreVersion)
 
 			// 音乐管理（DDD mediaH）
+			// 读：playlist:* 任一权限；写：按动作细分
 			r.Route("/music", func(r chi.Router) {
 				r.Route("/playlists", func(r chi.Router) {
-					r.Get("/", mediaH.ListAllPlaylists)                            // 歌单列表
-					r.Post("/", mediaH.CreatePlaylist)                             // 导入歌单
-					r.Post("/custom", mediaH.CreateCustomPlaylist)                 // 创建自定义歌单
-					r.Get("/{id}", mediaH.GetPlaylistDetail)                       // 歌单详情
-					r.Patch("/{id}", mediaH.UpdatePlaylist)                        // 更新歌单
-					r.Delete("/{id}", mediaH.DeletePlaylist)                       // 删除歌单
-					r.Patch("/{id}/active", mediaH.SetPlaylistActive)              // 启用/禁用歌单
-					r.Post("/{id}/refresh", mediaH.RefreshPlaylist)                // 刷新歌单歌曲
-					r.Post("/{id}/songs", mediaH.AddSongToPlaylist)                // 添加歌曲到歌单
-					r.Delete("/{id}/songs/{index}", mediaH.RemoveSongFromPlaylist) // 移除歌曲
-					r.Patch("/{id}/songs/{index}", mediaH.UpdateSongInPlaylist)    // 更新歌曲
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:create", "playlist:update", "playlist:delete", "playlist:toggle")).
+						Get("/", mediaH.ListAllPlaylists) // 歌单列表
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:create")).
+						Post("/", mediaH.CreatePlaylist) // 导入歌单
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:create")).
+						Post("/custom", mediaH.CreateCustomPlaylist) // 创建自定义歌单
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:create", "playlist:update", "playlist:delete", "playlist:toggle")).
+						Get("/{id}", mediaH.GetPlaylistDetail) // 歌单详情
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
+						Patch("/{id}", mediaH.UpdatePlaylist) // 更新歌单
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:delete")).
+						Delete("/{id}", mediaH.DeletePlaylist) // 删除歌单
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:toggle")).
+						Patch("/{id}/active", mediaH.SetPlaylistActive) // 启用/禁用歌单
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
+						Post("/{id}/refresh", mediaH.RefreshPlaylist) // 刷新歌单歌曲
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
+						Post("/{id}/songs", mediaH.AddSongToPlaylist) // 添加歌曲到歌单
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
+						Delete("/{id}/songs/{index}", mediaH.RemoveSongFromPlaylist) // 移除歌曲
+					r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
+						Patch("/{id}/songs/{index}", mediaH.UpdateSongInPlaylist) // 更新歌曲
 				})
-				r.Patch("/settings", mediaH.UpdatePlayerVersion) // 更新播放器设置
+				r.With(middleware.RequirePermission(permissionChecker, "playlist:update")).
+					Patch("/settings", mediaH.UpdatePlayerVersion) // 更新播放器设置
 			})
 
 			// 表情管理（DDD mediaH）
+			// 读：emoji:* 任一权限；分组管理 emoji:manage-group；建/改表情 emoji:create；删表情 emoji:delete
 			r.Route("/emojis", func(r chi.Router) {
 				// 分组管理
-				r.Get("/groups", mediaH.ListAllEmojiGroups)                         // 所有分组（含未启用）
-				r.Post("/groups", mediaH.CreateEmojiGroup)                          // 创建分组
-				r.Patch("/groups/batch-status", mediaH.BatchUpdateEmojiGroupStatus) // 批量启用/禁用分组
-				r.Patch("/groups/{id}", mediaH.UpdateEmojiGroup)                    // 更新分组
-				r.Delete("/groups/{id}", mediaH.DeleteEmojiGroup)                   // 删除分组
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:create", "emoji:delete", "emoji:manage-group", "emoji:refetch")).
+					Get("/groups", mediaH.ListAllEmojiGroups) // 所有分组（含未启用）
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:manage-group")).
+					Post("/groups", mediaH.CreateEmojiGroup) // 创建分组
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:manage-group")).
+					Patch("/groups/batch-status", mediaH.BatchUpdateEmojiGroupStatus) // 批量启用/禁用分组
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:manage-group")).
+					Patch("/groups/{id}", mediaH.UpdateEmojiGroup) // 更新分组
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:manage-group")).
+					Delete("/groups/{id}", mediaH.DeleteEmojiGroup) // 删除分组
 				// 分组内表情
-				r.Get("/groups/{id}/emojis", mediaH.ListGroupEmojis) // 分组内表情列表
-				r.Post("/groups/{id}/emojis", mediaH.CreateEmoji)    // 在分组内创建表情
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:create", "emoji:delete", "emoji:manage-group", "emoji:refetch")).
+					Get("/groups/{id}/emojis", mediaH.ListGroupEmojis) // 分组内表情列表
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:create")).
+					Post("/groups/{id}/emojis", mediaH.CreateEmoji) // 在分组内创建表情
 				// 单个表情（注意 {id} 必须在 groups 之后，避免与 groups/{id} 冲突）
-				r.Patch("/{id}", mediaH.UpdateEmoji)  // 更新表情
-				r.Delete("/{id}", mediaH.DeleteEmoji) // 删除表情
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:create")).
+					Patch("/{id}", mediaH.UpdateEmoji) // 更新表情
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:delete")).
+					Delete("/{id}", mediaH.DeleteEmoji) // 删除表情
 				// B站表情重新拉取（需 emoji:refetch 权限）
 				r.With(middleware.RequirePermission(permissionChecker, "emoji:refetch")).
 					Post("/bilibili/refetch", mediaH.RefetchBilibiliEmojis)
@@ -560,10 +586,12 @@ func main() {
 			r.With(middleware.RequirePermission(permissionChecker, "media:delete")).
 				Delete("/media/{id}", mediaH.DeleteFile) // 删除素材
 
-			// 服务器监控（admin-only）
+			// 服务器监控（admin-only，需 system:view 查看主机/磁盘/运行时指标）
 			r.Route("/system", func(r chi.Router) {
-				r.Get("/snapshot", systemContainer.SystemHandler.GetSnapshot) // 实时快照
-				r.Get("/history", systemContainer.SystemHandler.GetHistory)   // 历史趋势
+				r.With(middleware.RequirePermission(permissionChecker, "system:view")).
+					Get("/snapshot", systemContainer.SystemHandler.GetSnapshot) // 实时快照
+				r.With(middleware.RequirePermission(permissionChecker, "system:view")).
+					Get("/history", systemContainer.SystemHandler.GetHistory) // 历史趋势
 			})
 		})
 	})
