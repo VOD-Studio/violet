@@ -11,6 +11,7 @@ import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useReplaceMediaFile } from "@features/upload/api/mutations";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import type { CropRect } from "@features/upload/lib/crop-image";
@@ -72,6 +73,9 @@ function AdminMediaPage() {
     const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [previewIndex, setPreviewIndex] = useState<number>(-1);
+
+    const canUpload = useHasPermission("media:upload");
+    const canDeleteMedia = useHasPermission("media:delete");
     // 图片预览的触发元素，用于从卡片位置展开动画
     const [previewTrigger, setPreviewTrigger] = useState<HTMLElement | null>(null);
 
@@ -187,10 +191,12 @@ function AdminMediaPage() {
             title="素材管理"
             description="管理系统媒体文件"
             action={
-                <Button size="sm" onClick={() => setUploadOpen(true)}>
-                    <Upload className="size-3.5" />
-                    上传素材
-                </Button>
+                canUpload ? (
+                    <Button size="sm" onClick={() => setUploadOpen(true)}>
+                        <Upload className="size-3.5" />
+                        上传素材
+                    </Button>
+                ) : null
             }
         >
             {/* 工具栏：筛选 + 搜索 + 视图切换 */}
@@ -265,20 +271,20 @@ function AdminMediaPage() {
                 <MediaGrid
                     files={files}
                     onPreview={handlePreview}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onPickCover={handlePickCover}
-                    onCrop={handleCrop}
+                    onEdit={canUpload ? handleEdit : undefined}
+                    onDelete={canDeleteMedia ? handleDelete : undefined}
+                    onPickCover={canUpload ? handlePickCover : undefined}
+                    onCrop={canUpload ? handleCrop : undefined}
                 />
             ) : (
                 <MediaTable
                     files={files}
                     selectedIds={selectedIds}
                     onSelectionChange={setSelectedIds}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onEdit={canUpload ? handleEdit : undefined}
+                    onDelete={canDeleteMedia ? handleDelete : undefined}
                     onPreview={handlePreview}
-                    onBatchDelete={() => setBatchDeleteOpen(true)}
+                    onBatchDelete={canDeleteMedia ? () => setBatchDeleteOpen(true) : undefined}
                     batchDeleting={batchDeleteMutation.isPending}
                 />
             )}
@@ -442,7 +448,7 @@ function MediaTable({
     onEdit?: (file: MediaFile) => void;
     onDelete?: (file: MediaFile) => void;
     onPreview?: (file: MediaFile, trigger?: HTMLElement | null) => void;
-    onBatchDelete: () => void;
+    onBatchDelete?: () => void;
     batchDeleting: boolean;
 }) {
     const columns: DataTableColumn<MediaFile>[] = [
@@ -563,15 +569,17 @@ function MediaTable({
             selectedIds={selectedIds}
             onSelectionChange={onSelectionChange}
             bulkActions={
-                <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={onBatchDelete}
-                    disabled={batchDeleting}
-                >
-                    <Trash2 className="size-3.5" />
-                    批量删除
-                </Button>
+                onBatchDelete ? (
+                    <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={onBatchDelete}
+                        disabled={batchDeleting}
+                    >
+                        <Trash2 className="size-3.5" />
+                        批量删除
+                    </Button>
+                ) : null
             }
             loading={false}
             storageKey="admin-media-table-columns"

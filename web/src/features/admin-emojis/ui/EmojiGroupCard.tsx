@@ -25,9 +25,9 @@ const SOURCE_LABELS: Record<string, string> = {
 
 interface EmojiGroupCardProps {
     group: EmojiGroup;
-    onEdit: (group: EmojiGroup) => void;
-    onDelete: (group: EmojiGroup) => void;
-    onManageEmojis: (groupId: number) => void;
+    onEdit?: (group: EmojiGroup) => void;
+    onDelete?: (group: EmojiGroup) => void;
+    onManageEmojis?: (groupId: number) => void;
 }
 
 /**
@@ -148,39 +148,45 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
             </CardContent>
 
             <CardFooter className="gap-2 border-t/50 bg-muted/20 pt-3">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onManageEmojis(group.id)}
-                    className="flex-1 gap-1.5"
-                    disabled={isDisabled}
-                >
-                    <Smile className="size-3.5" />
-                    管理表情
-                </Button>
+                {onManageEmojis ? (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onManageEmojis(group.id)}
+                        className="flex-1 gap-1.5"
+                        disabled={isDisabled}
+                    >
+                        <Smile className="size-3.5" />
+                        管理表情
+                    </Button>
+                ) : null}
                 <div className="flex gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => onEdit(group)}
-                        title="编辑"
-                        disabled={isDisabled}
-                    >
-                        <Pencil className="size-3.5" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => onDelete(group)}
-                        title="删除"
-                        className={cn(
-                            "hover:bg-destructive/10 hover:text-destructive",
-                            isDisabled && "hover:bg-transparent",
-                        )}
-                        disabled={isDisabled}
-                    >
-                        <Trash2 className="size-3.5" />
-                    </Button>
+                    {onEdit ? (
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => onEdit(group)}
+                            title="编辑"
+                            disabled={isDisabled}
+                        >
+                            <Pencil className="size-3.5" />
+                        </Button>
+                    ) : null}
+                    {onDelete ? (
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => onDelete(group)}
+                            title="删除"
+                            className={cn(
+                                "hover:bg-destructive/10 hover:text-destructive",
+                                isDisabled && "hover:bg-transparent",
+                            )}
+                            disabled={isDisabled}
+                        >
+                            <Trash2 className="size-3.5" />
+                        </Button>
+                    ) : null}
                 </div>
             </CardFooter>
         </Card>

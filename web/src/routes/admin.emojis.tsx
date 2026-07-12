@@ -13,6 +13,7 @@ import { StatsCard } from "@features/admin-emojis/ui/StatsCard";
 import { StatsCardSkeleton } from "@features/admin-emojis/ui/StatsCardSkeleton";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Card, CardContent } from "@shared/ui/base/card";
@@ -48,6 +49,10 @@ function EmojisPage() {
     const [activeGroupId, setActiveGroupId] = useState(0);
 
     const deleteGroup = useDeleteEmojiGroup();
+
+    const canManageGroup = useHasPermission("emoji:manage-group");
+    const canCreateEmoji = useHasPermission("emoji:create");
+    const canRefetch = useHasPermission("emoji:refetch");
 
     const stats = useMemo(() => {
         if (!groups) return { total: 0, enabled: 0, disabled: 0 };
@@ -145,11 +150,13 @@ function EmojisPage() {
             description="管理表情分组和表情"
             action={
                 <div className="flex items-center gap-2">
-                    <RefetchBilibiliButton />
-                    <Button size="sm" onClick={handleCreateGroup}>
-                        <Plus className="size-3.5" />
-                        创建分组
-                    </Button>
+                    {canRefetch ? <RefetchBilibiliButton /> : null}
+                    {canManageGroup ? (
+                        <Button size="sm" onClick={handleCreateGroup}>
+                            <Plus className="size-3.5" />
+                            创建分组
+                        </Button>
+                    ) : null}
                 </div>
             }
         >
@@ -197,32 +204,40 @@ function EmojisPage() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleBatchEnable}
-                                    disabled={batchPending || isLoading || stats.disabled === 0}
-                                >
-                                    {batchPending ? (
-                                        <Loader2 className="mr-1 size-3.5 animate-spin" />
-                                    ) : (
-                                        <Power className="mr-1 size-3.5" />
-                                    )}
-                                    批量启用
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleBatchDisable}
-                                    disabled={batchPending || isLoading || stats.enabled === 0}
-                                >
-                                    {batchPending ? (
-                                        <Loader2 className="mr-1 size-3.5 animate-spin" />
-                                    ) : (
-                                        <PowerOff className="mr-1 size-3.5" />
-                                    )}
-                                    批量禁用
-                                </Button>
+                                {canManageGroup ? (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleBatchEnable}
+                                            disabled={
+                                                batchPending || isLoading || stats.disabled === 0
+                                            }
+                                        >
+                                            {batchPending ? (
+                                                <Loader2 className="mr-1 size-3.5 animate-spin" />
+                                            ) : (
+                                                <Power className="mr-1 size-3.5" />
+                                            )}
+                                            批量启用
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleBatchDisable}
+                                            disabled={
+                                                batchPending || isLoading || stats.enabled === 0
+                                            }
+                                        >
+                                            {batchPending ? (
+                                                <Loader2 className="mr-1 size-3.5 animate-spin" />
+                                            ) : (
+                                                <PowerOff className="mr-1 size-3.5" />
+                                            )}
+                                            批量禁用
+                                        </Button>
+                                    </>
+                                ) : null}
                             </div>
 
                             {searchQuery && (
@@ -266,10 +281,12 @@ function EmojisPage() {
                     title="NO GROUPS"
                     description="创建第一个表情分组开始管理"
                     action={
-                        <Button onClick={handleCreateGroup}>
-                            <Plus className="mr-1 size-4" />
-                            创建分组
-                        </Button>
+                        canManageGroup ? (
+                            <Button onClick={handleCreateGroup}>
+                                <Plus className="mr-1 size-4" />
+                                创建分组
+                            </Button>
+                        ) : null
                     }
                 />
             )}
@@ -286,9 +303,9 @@ function EmojisPage() {
                         <EmojiGroupCard
                             key={group.id}
                             group={group}
-                            onEdit={handleEditGroup}
-                            onDelete={handleDeleteGroup}
-                            onManageEmojis={handleManageEmojis}
+                            onEdit={canManageGroup ? handleEditGroup : undefined}
+                            onDelete={canManageGroup ? handleDeleteGroup : undefined}
+                            onManageEmojis={canCreateEmoji ? handleManageEmojis : undefined}
                         />
                     ))}
                 </div>
