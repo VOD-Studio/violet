@@ -174,13 +174,10 @@ func (r *Role) Rename(newName RoleName) error {
 }
 
 // UpdateDescription 更新角色描述
-// UpdateDescription 更新角色描述
 //
-// 内置角色（user/admin/superadmin）禁止修改描述，保证系统角色定义稳定。
+// 允许修改任意角色（含内置角色）的描述：角色管理接口已由 SuperAdminRequired
+// 中间件保护，只有内置超管能调用，无需在领域层再设硬限制。
 func (r *Role) UpdateDescription(desc string) error {
-	if r.name.IsBuiltin() {
-		return ErrCannotModifyBuiltin
-	}
 	r.description = desc
 	return nil
 }
@@ -204,13 +201,12 @@ func (r *Role) Revoke(permissionCode string) {
 
 // ReplacePermissions 用新的权限集合完全替换当前权限
 //
-// 内置角色（user/admin/superadmin）禁止替换权限：superadmin 通配放行由中间件保证，
-// admin/user 的权限应通过受控方式调整，避免被普通管理员篡改导致权限体系崩塌。
+// 允许替换任意角色（含内置角色）的权限：角色管理接口已由 SuperAdminRequired
+// 中间件保护，只有内置超管能调用。superadmin 的通配放行由中间件基于
+// isBuiltinSuperAdmin 标志位短路，与 role_permissions 表内容无关，因此
+// 调整 superadmin 角色的权限行只影响被委派超管的兜底权限，不会影响内置超管。
 // 记录 RolePermissionsChanged 事件。
 func (r *Role) ReplacePermissions(codes []string) error {
-	if r.name.IsBuiltin() {
-		return ErrCannotModifyBuiltin
-	}
 	r.permissions = make(map[string]struct{}, len(codes))
 	for _, code := range codes {
 		r.permissions[code] = struct{}{}

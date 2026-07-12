@@ -86,6 +86,19 @@ func TestRole_BuiltinCannotRename(t *testing.T) {
 	}
 }
 
+func TestRole_BuiltinCanUpdateDescription(t *testing.T) {
+	// 内置超管可改内置角色描述（角色管理接口已由 SuperAdminRequired 中间件保护）
+	name, _ := ParseRoleName("admin")
+	role := NewRole(1, name, "管理员")
+
+	if err := role.UpdateDescription("新描述"); err != nil {
+		t.Errorf("内置角色改描述不应报错: %v", err)
+	}
+	if role.Description() != "新描述" {
+		t.Errorf("改描述后 Description = %q, want %q", role.Description(), "新描述")
+	}
+}
+
 func TestRole_Rename(t *testing.T) {
 	name, _ := ParseRoleName("editor")
 	role := NewRole(1, name, "编辑")
@@ -166,6 +179,24 @@ func TestRole_BuiltinCannotDelete(t *testing.T) {
 	role2 := NewRole(2, name2, "编辑")
 	if !role2.CanDelete() {
 		t.Error("非内置角色 CanDelete 应为 true")
+	}
+}
+
+func TestRole_BuiltinCanReplacePermissions(t *testing.T) {
+	// 内置超管可改内置角色权限（角色管理接口已由 SuperAdminRequired 中间件保护）
+	name, _ := ParseRoleName("admin")
+	role := NewRole(1, name, "管理员")
+	role.Grant("old:perm")
+	role.PullEvents() // 清空初始事件
+
+	if err := role.ReplacePermissions([]string{"post:create"}); err != nil {
+		t.Errorf("内置角色替换权限不应报错: %v", err)
+	}
+	if role.HasPermission("old:perm") {
+		t.Error("替换后旧权限应被清除")
+	}
+	if !role.HasPermission("post:create") {
+		t.Error("替换后应拥有新权限")
 	}
 }
 
