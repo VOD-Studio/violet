@@ -19,9 +19,13 @@ interface EditRoleDialogProps {
 
 /**
  * EditRoleDialog - 编辑角色对话框
+ *
+ * 内置角色：名称字段禁用（后端仍守卫不可重命名，重命名会破坏 users.role 硬编码），
+ * 描述字段可改。
  */
 export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps) {
     const updateRole = useUpdateRole();
+    const isBuiltin = role.is_builtin;
 
     const {
         register,
@@ -98,13 +102,13 @@ export function EditRoleDialog({ open, onOpenChange, role }: EditRoleDialogProps
                         id="name"
                         placeholder="如：editor"
                         {...register("name")}
-                        disabled={updateRole.isPending}
+                        disabled={isBuiltin || updateRole.isPending}
                     />
                     {errors.name && (
                         <p className="text-destructive text-sm">{errors.name.message}</p>
                     )}
                     <p className="text-muted-foreground text-xs">
-                        只能包含字母、数字、下划线和连字符
+                        {isBuiltin ? "内置角色不可重命名" : "只能包含字母、数字、下划线和连字符"}
                     </p>
                 </div>
 

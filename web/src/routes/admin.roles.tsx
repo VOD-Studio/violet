@@ -122,7 +122,8 @@ function AdminRolesPage() {
             sticky: "right",
             width: "120px",
             cell: (row) => {
-                // 内置角色（user/admin/superadmin）不可删/不可改名/不可改权限
+                // 内置角色：可改描述、可改权限分配；不可重命名、不可删除
+                // （重命名破坏 users.role 硬编码、删除会让依赖角色失权，后端仍守卫）
                 const isBuiltin = row.is_builtin;
                 return (
                     <div className="flex items-center gap-2">
@@ -131,8 +132,7 @@ function AdminRolesPage() {
                                 size="icon-sm"
                                 variant="ghost"
                                 onClick={() => handleConfigurePermissions(row)}
-                                disabled={isBuiltin}
-                                title={isBuiltin ? "内置角色不可修改权限" : "配置权限"}
+                                title="配置权限"
                             >
                                 <Settings className="size-3.5" />
                             </Button>
@@ -142,8 +142,7 @@ function AdminRolesPage() {
                                 size="icon-sm"
                                 variant="ghost"
                                 onClick={() => handleEdit(row)}
-                                disabled={isBuiltin}
-                                title={isBuiltin ? "内置角色不可编辑" : "编辑角色"}
+                                title="编辑角色"
                             >
                                 <Pencil className="size-3.5" />
                             </Button>

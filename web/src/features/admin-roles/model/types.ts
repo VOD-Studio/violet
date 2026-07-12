@@ -14,7 +14,7 @@ export interface RoleDTO {
     name?: string;
     /** 角色描述（如 "管理员"、"编辑"） */
     description?: string;
-    /** 是否内置角色（user/admin/superadmin，不可删/不可改名/不可改权限） */
+    /** 是否内置角色（user/author/admin/superadmin，不可重命名、不可删除，可改描述与权限分配） */
     is_builtin?: boolean;
     /** 权限代码列表 */
     permission_codes?: string[];
