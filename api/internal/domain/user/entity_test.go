@@ -58,7 +58,7 @@ func TestParseUsername(t *testing.T) {
 }
 
 func TestRole(t *testing.T) {
-	if !RoleUser.IsValid() || !RoleAdmin.IsValid() || !RoleSuperAdmin.IsValid() {
+	if !RoleUser.IsValid() || !RoleAuthor.IsValid() || !RoleAdmin.IsValid() || !RoleSuperAdmin.IsValid() {
 		t.Error("预设角色应全部合法")
 	}
 	if Role("unknown").IsValid() {
@@ -69,6 +69,9 @@ func TestRole(t *testing.T) {
 	}
 	if RoleUser.IsAdmin() {
 		t.Error("user 不应是管理类角色")
+	}
+	if RoleAuthor.IsAdmin() {
+		t.Error("author 不应是管理类角色")
 	}
 	if !RoleSuperAdmin.IsSuperAdmin() {
 		t.Error("superadmin 应是超级管理员")

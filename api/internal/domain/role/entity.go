@@ -16,8 +16,12 @@ import (
 // ============================================================
 
 // BuiltinRoles 内置角色集合，这些角色禁止删除或改名
+//
+// 内置角色：user / author / admin / superadmin。
+// editor 已在迁移 050 重命名为 author。
 var BuiltinRoles = map[string]bool{
 	"user":       true,
+	"author":     true,
 	"admin":      true,
 	"superadmin": true,
 }
@@ -102,7 +106,7 @@ func NewRoleCreated(roleID int32, name RoleName) RoleCreated {
 //
 // 角色聚合的不变量：
 //   - 名称全局唯一（由 repository 保证）
-//   - 内置角色（user/admin/superadmin）禁止改名和删除
+//   - 内置角色（user/author/admin/superadmin）禁止改名和删除
 //   - 正在被用户使用的角色禁止删除
 //   - 权限点通过 Grant/Revoke 方法增减，保证 role_permissions 一致性
 type Role struct {

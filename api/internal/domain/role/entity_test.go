@@ -31,8 +31,8 @@ func TestParseRoleName(t *testing.T) {
 }
 
 func TestIsBuiltin(t *testing.T) {
-	if !IsBuiltin("user") || !IsBuiltin("admin") || !IsBuiltin("superadmin") {
-		t.Error("user/admin/superadmin 应是内置角色")
+	if !IsBuiltin("user") || !IsBuiltin("author") || !IsBuiltin("admin") || !IsBuiltin("superadmin") {
+		t.Error("user/author/admin/superadmin 应是内置角色")
 	}
 	if IsBuiltin("editor") {
 		t.Error("editor 不应是内置角色")
@@ -46,6 +46,10 @@ func TestIsBuiltin(t *testing.T) {
 	name2, _ := ParseRoleName("editor")
 	if name2.IsBuiltin() {
 		t.Error("RoleName.IsBuiltin(editor) 应为 false")
+	}
+	name3, _ := ParseRoleName("author")
+	if !name3.IsBuiltin() {
+		t.Error("RoleName.IsBuiltin(author) 应为 true")
 	}
 }
 

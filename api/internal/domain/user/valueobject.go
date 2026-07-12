@@ -94,6 +94,8 @@ type Role string
 const (
 	// RoleUser 普通用户
 	RoleUser Role = "user"
+	// RoleAuthor 作者（内容创作者，权限介于 user 与 admin 之间）
+	RoleAuthor Role = "author"
 	// RoleAdmin 管理员
 	RoleAdmin Role = "admin"
 	// RoleSuperAdmin 超级管理员
@@ -103,13 +105,15 @@ const (
 // IsValid 是否为合法角色
 func (r Role) IsValid() bool {
 	switch r {
-	case RoleUser, RoleAdmin, RoleSuperAdmin:
+	case RoleUser, RoleAuthor, RoleAdmin, RoleSuperAdmin:
 		return true
 	}
 	return false
 }
 
 // IsAdmin 是否为管理类角色（admin 或 superadmin）
+//
+// author 不属于管理类角色，无用户/角色/设置等管理权限。
 func (r Role) IsAdmin() bool {
 	return r == RoleAdmin || r == RoleSuperAdmin
 }
