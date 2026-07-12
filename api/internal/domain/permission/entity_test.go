@@ -70,17 +70,18 @@ func TestCode_Equal(t *testing.T) {
 func TestPredefinedCodes(t *testing.T) {
 	// 验证预定义常量格式合法
 	codes := []Code{
-		PostCreate, PostUpdate, PostDelete, PostPublish,
-		CommentDelete, CommentApprove,
-		TagCreate, TagUpdate, TagDelete,
-		MediaUpload, MediaDelete,
-		PlaylistCreate, PlaylistUpdate, PlaylistDelete, PlaylistToggle,
-		SongUpload, SongUpdate, SongDelete, SongFetchMeta,
-		EmojiCreate, EmojiDelete, EmojiManageGroup,
-		UserList, UserUpdateRole, UserBan,
-		ProjectCreate, ProjectUpdate, ProjectDelete,
+		PostView, PostCreate, PostUpdate, PostDelete, PostPublish,
+		CommentView, CommentDelete, CommentApprove,
+		TagView, TagCreate, TagUpdate, TagDelete,
+		MediaView, MediaUpload, MediaDelete,
+		PlaylistView, PlaylistCreate, PlaylistUpdate, PlaylistDelete, PlaylistToggle,
+		EmojiView, EmojiCreate, EmojiDelete, EmojiManageGroup, EmojiRefetch,
+		UserView, UserUpdateRole, UserBan,
+		ProjectView, ProjectCreate, ProjectUpdate, ProjectDelete,
 		SettingsView, SettingsUpdate,
-		RoleManage, AnnouncementManage, AdminAccess,
+		RoleView, RoleManage,
+		AnnouncementView, AnnouncementManage,
+		SystemView, LogView, AdminAccess,
 	}
 	for _, c := range codes {
 		if c.String() == "" {

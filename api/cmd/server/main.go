@@ -400,9 +400,9 @@ func main() {
 				Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
 
 			// 用户管理（DDD userAdminContainer）
-			r.With(middleware.RequirePermission(permissionChecker, "user:list")).
+			r.With(middleware.RequirePermission(permissionChecker, "user:view")).
 				Get("/users", userAdminContainer.UserAdminHandler.ListUsers) // 用户列表
-			r.With(middleware.RequirePermission(permissionChecker, "user:list")).
+			r.With(middleware.RequirePermission(permissionChecker, "user:view")).
 				Get("/users/{id}", userAdminContainer.UserAdminHandler.GetUserDetail) // 用户详情
 			r.With(middleware.RequirePermission(permissionChecker, "user:update-role")).
 				Post("/users", userAdminContainer.UserAdminHandler.CreateUser) // 创建用户

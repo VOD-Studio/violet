@@ -69,40 +69,56 @@ func (c Code) IsMenu() bool { return !strings.Contains(c.value, ":") }
 // 这些常量供中间件 RequirePermission、应用层校验等场景使用，
 // 避免散落的字符串字面量。
 var (
+	// post
+	PostView             = MustParse("post:view") // 文章管理页可见
 	PostCreate           = MustParse("post:create")
 	PostUpdate           = MustParse("post:update")
 	PostDelete           = MustParse("post:delete")
 	PostPublish          = MustParse("post:publish")
+	// comment
+	CommentView          = MustParse("comment:view") // 评论审核页可见
 	CommentDelete        = MustParse("comment:delete")
 	CommentApprove       = MustParse("comment:approve")
+	// tag
+	TagView              = MustParse("tag:view") // 标签管理页可见
 	TagCreate            = MustParse("tag:create")
 	TagUpdate            = MustParse("tag:update")
 	TagDelete            = MustParse("tag:delete")
+	// media
+	MediaView            = MustParse("media:view") // 素材管理页可见
 	MediaUpload          = MustParse("media:upload")
 	MediaDelete          = MustParse("media:delete")
+	// playlist
+	PlaylistView         = MustParse("playlist:view") // 歌单管理页可见
 	PlaylistCreate       = MustParse("playlist:create")
 	PlaylistUpdate       = MustParse("playlist:update")
 	PlaylistDelete       = MustParse("playlist:delete")
 	PlaylistToggle       = MustParse("playlist:toggle")
-	SongUpload           = MustParse("song:upload")
-	SongUpdate           = MustParse("song:update")
-	SongDelete           = MustParse("song:delete")
-	SongFetchMeta        = MustParse("song:fetch-meta")
+	// emoji
+	EmojiView            = MustParse("emoji:view") // 表情管理页可见
 	EmojiCreate          = MustParse("emoji:create")
 	EmojiDelete          = MustParse("emoji:delete")
 	EmojiManageGroup     = MustParse("emoji:manage-group")
 	EmojiRefetch         = MustParse("emoji:refetch") // 重新拉取 B站表情
-	UserList             = MustParse("user:list")
+	// user
+	UserView             = MustParse("user:view") // 用户管理页可见（原 user:list）
 	UserUpdateRole       = MustParse("user:update-role")
 	UserBan              = MustParse("user:ban")
-	UserAssignSuperAdmin = MustParse("user:assign-superadmin")
+	// project
+	ProjectView          = MustParse("project:view") // 项目管理页可见
 	ProjectCreate        = MustParse("project:create")
 	ProjectUpdate        = MustParse("project:update")
 	ProjectDelete        = MustParse("project:delete")
+	// settings
 	SettingsView         = MustParse("settings:view")
 	SettingsUpdate       = MustParse("settings:update")
+	// role
+	RoleView             = MustParse("role:view") // 角色管理页可见
 	RoleManage           = MustParse("role:manage")
+	// announcement
+	AnnouncementView     = MustParse("announcement:view") // 公告管理页可见
 	AnnouncementManage   = MustParse("announcement:manage")
+	// system
 	SystemView           = MustParse("system:view") // 系统监控（主机/磁盘/运行时指标）
 	LogView              = MustParse("log:view")    // 操作日志（含 IP/操作明细）
 	AdminAccess          = MustParse("admin:access")
