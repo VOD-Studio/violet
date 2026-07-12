@@ -10,6 +10,7 @@ import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem } from "@features/admin-posts/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import {
@@ -77,6 +78,8 @@ function AdminPostsPage() {
 
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [deleting, setDeleting] = useState<AdminPostListItem | null>(null);
+
+    const canCreate = useHasPermission("post:create");
 
     const { data, isLoading, error, refetch } = useAdminPosts({
         page,
@@ -224,10 +227,12 @@ function AdminPostsPage() {
             title="文章管理"
             description="撰写、发布与管理博客文章"
             action={
-                <Button size="sm" onClick={() => navigate({ to: "/admin/posts/new" })}>
-                    <Plus className="size-3.5" />
-                    新建文章
-                </Button>
+                canCreate ? (
+                    <Button size="sm" onClick={() => navigate({ to: "/admin/posts/new" })}>
+                        <Plus className="size-3.5" />
+                        新建文章
+                    </Button>
+                ) : null
             }
         >
             <DataTable<AdminPostListItem>
@@ -294,6 +299,10 @@ function RowActions({
     const setFeatured = useSetFeatured(row.id);
     const restorePost = useRestorePost(row.id);
 
+    const canUpdate = useHasPermission("post:update");
+    const canPublish = useHasPermission("post:publish");
+    const canDelete = useHasPermission("post:delete");
+
     const changeStatus = (status: "draft" | "published" | "archived") => {
         updateStatus.mutate(
             { status },
@@ -324,27 +333,34 @@ function RowActions({
     if (viewStatus === "trashed") {
         return (
             <div className="flex items-center justify-end gap-1">
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    title="恢复"
-                    onClick={handleRestore}
-                    disabled={restorePost.isPending}
-                >
-                    <Undo2 className="size-3.5" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    title="彻底删除"
-                    className="hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => onDelete(row)}
-                >
-                    <Trash2 className="size-3.5" />
-                </Button>
+                {canDelete ? (
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="恢复"
+                        onClick={handleRestore}
+                        disabled={restorePost.isPending}
+                    >
+                        <Undo2 className="size-3.5" />
+                    </Button>
+                ) : null}
+                {canDelete ? (
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="彻底删除"
+                        className="hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => onDelete(row)}
+                    >
+                        <Trash2 className="size-3.5" />
+                    </Button>
+                ) : null}
             </div>
         );
     }
+
+    // 无任何写权限时不渲染下拉触发器
+    if (!canUpdate && !canPublish && !canDelete) return null;
 
     return (
         <div className="flex items-center justify-end">
@@ -361,45 +377,55 @@ function RowActions({
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                        onClick={() =>
-                            navigate({
-                                to: "/admin/posts/$id",
-                                params: { id: row.id },
-                                state: { post: row } as Record<string, unknown>,
-                            })
-                        }
-                    >
-                        <Pencil className="size-3.5" />
-                        编辑
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {row.status !== "published" ? (
-                        <DropdownMenuItem onClick={() => changeStatus("published")}>
-                            发布
+                    {canUpdate ? (
+                        <DropdownMenuItem
+                            onClick={() =>
+                                navigate({
+                                    to: "/admin/posts/$id",
+                                    params: { id: row.id },
+                                    state: { post: row } as Record<string, unknown>,
+                                })
+                            }
+                        >
+                            <Pencil className="size-3.5" />
+                            编辑
                         </DropdownMenuItem>
                     ) : null}
-                    {row.status !== "draft" ? (
-                        <DropdownMenuItem onClick={() => changeStatus("draft")}>
-                            移至草稿
-                        </DropdownMenuItem>
+                    {canPublish ? (
+                        <>
+                            <DropdownMenuSeparator />
+                            {row.status !== "published" ? (
+                                <DropdownMenuItem onClick={() => changeStatus("published")}>
+                                    发布
+                                </DropdownMenuItem>
+                            ) : null}
+                            {row.status !== "draft" ? (
+                                <DropdownMenuItem onClick={() => changeStatus("draft")}>
+                                    移至草稿
+                                </DropdownMenuItem>
+                            ) : null}
+                            {row.status !== "archived" ? (
+                                <DropdownMenuItem onClick={() => changeStatus("archived")}>
+                                    <Archive className="size-3.5" />
+                                    归档
+                                </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={toggleFeatured}>
+                                <Star className="size-3.5" />
+                                {row.is_featured ? "取消加精" : "加精"}
+                            </DropdownMenuItem>
+                        </>
                     ) : null}
-                    {row.status !== "archived" ? (
-                        <DropdownMenuItem onClick={() => changeStatus("archived")}>
-                            <Archive className="size-3.5" />
-                            归档
-                        </DropdownMenuItem>
+                    {canDelete ? (
+                        <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive" onClick={() => onDelete(row)}>
+                                <Trash2 className="size-3.5" />
+                                删除
+                            </DropdownMenuItem>
+                        </>
                     ) : null}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={toggleFeatured}>
-                        <Star className="size-3.5" />
-                        {row.is_featured ? "取消加精" : "加精"}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive" onClick={() => onDelete(row)}>
-                        <Trash2 className="size-3.5" />
-                        删除
-                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>

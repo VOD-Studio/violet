@@ -12,6 +12,7 @@ import {
     type DataTableColumn,
     type DataTableSort,
 } from "@features/admin-shared/ui/data-table";
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { useProjects } from "@features/projects/api/queries";
 import type { Project } from "@features/projects/model/types";
 import { Badge } from "@shared/ui/base/badge";
@@ -41,6 +42,10 @@ function AdminProjectsPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [sort, setSort] = useState<DataTableSort | null>(null);
+
+    const canCreate = useHasPermission("project:create");
+    const canUpdate = useHasPermission("project:update");
+    const canDelete = useHasPermission("project:delete");
 
     const sortedProjects = useMemo(() => {
         if (!sort) return projects;
@@ -136,12 +141,16 @@ function AdminProjectsPage() {
             width: "120px",
             cell: (row) => (
                 <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => openEdit(row)}>
-                        <Pencil className="size-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setDeleteId(row.id)}>
-                        <Trash2 className="size-4" />
-                    </Button>
+                    {canUpdate ? (
+                        <Button size="sm" variant="ghost" onClick={() => openEdit(row)}>
+                            <Pencil className="size-4" />
+                        </Button>
+                    ) : null}
+                    {canDelete ? (
+                        <Button size="sm" variant="ghost" onClick={() => setDeleteId(row.id)}>
+                            <Trash2 className="size-4" />
+                        </Button>
+                    ) : null}
                 </div>
             ),
         },
@@ -152,9 +161,11 @@ function AdminProjectsPage() {
             title="项目管理"
             description="管理展示在「项目」页的项目"
             action={
-                <Button onClick={openCreate}>
-                    <Plus className="size-4" /> 创建项目
-                </Button>
+                canCreate ? (
+                    <Button onClick={openCreate}>
+                        <Plus className="size-4" /> 创建项目
+                    </Button>
+                ) : null
             }
         >
             <DataTable<Project>

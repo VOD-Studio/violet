@@ -15,6 +15,7 @@ import { CommentDetail } from "@features/admin-comments/ui/CommentDetail";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { avatarUrl } from "@features/upload/lib/imageUrl";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -94,6 +95,9 @@ function AdminCommentsPage() {
     const spamMut = useMarkCommentSpam();
     const deleteMut = useDeleteComment();
     const batchMut = useBatchUpdateComments();
+
+    const canApprove = useHasPermission("comment:approve");
+    const canDelete = useHasPermission("comment:delete");
 
     const handleBatchApprove = () => {
         if (selected.size === 0) return;
@@ -183,30 +187,36 @@ function AdminCommentsPage() {
             width: "200px",
             cell: (row) => (
                 <div className="flex items-center gap-1">
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => approveMut.mutate(row.id)}
-                        disabled={approveMut.isPending}
-                    >
-                        通过
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => spamMut.mutate(row.id)}
-                        disabled={spamMut.isPending}
-                    >
-                        垃圾
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDeletingId(row.id)}
-                        disabled={deleteMut.isPending}
-                    >
-                        <Trash2 className="size-4" />
-                    </Button>
+                    {canApprove ? (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => approveMut.mutate(row.id)}
+                            disabled={approveMut.isPending}
+                        >
+                            通过
+                        </Button>
+                    ) : null}
+                    {canApprove ? (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => spamMut.mutate(row.id)}
+                            disabled={spamMut.isPending}
+                        >
+                            垃圾
+                        </Button>
+                    ) : null}
+                    {canDelete ? (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setDeletingId(row.id)}
+                            disabled={deleteMut.isPending}
+                        >
+                            <Trash2 className="size-4" />
+                        </Button>
+                    ) : null}
                 </div>
             ),
         },
@@ -239,25 +249,27 @@ function AdminCommentsPage() {
                 expandedRowFixed
                 renderExpandedRow={(row) => <CommentDetail row={row} />}
                 bulkActions={
-                    <>
-                        <Button
-                            variant="outline"
-                            className="h-9"
-                            onClick={handleBatchApprove}
-                            disabled={batchMut.isPending}
-                        >
-                            <Check className="size-3.5" />
-                            批量通过
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="h-9"
-                            onClick={handleBatchSpam}
-                            disabled={batchMut.isPending}
-                        >
-                            批量标垃圾
-                        </Button>
-                    </>
+                    canApprove ? (
+                        <>
+                            <Button
+                                variant="outline"
+                                className="h-9"
+                                onClick={handleBatchApprove}
+                                disabled={batchMut.isPending}
+                            >
+                                <Check className="size-3.5" />
+                                批量通过
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="h-9"
+                                onClick={handleBatchSpam}
+                                disabled={batchMut.isPending}
+                            >
+                                批量标垃圾
+                            </Button>
+                        </>
+                    ) : null
                 }
                 loading={isLoading}
                 error={error ? new Error(error.message) : null}
