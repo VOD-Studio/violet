@@ -446,34 +446,59 @@ func main() {
 			r.Get("/logs/user/{id}", auditContainer.AuditHandler.ListLogsByUser) // 用户操作日志
 
 			// 公告管理
-			r.Get("/announcements", contentH.ListAnnouncements)          // 公告列表
-			r.Get("/announcements/{id}", contentH.GetAnnouncement)       // 公告详情
-			r.Post("/announcements", contentH.CreateAnnouncement)        // 创建公告
-			r.Patch("/announcements/{id}", contentH.UpdateAnnouncement)  // 更新公告
-			r.Delete("/announcements/{id}", contentH.DeleteAnnouncement) // 删除公告
+			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
+				Get("/announcements", contentH.ListAnnouncements) // 公告列表
+			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
+				Get("/announcements/{id}", contentH.GetAnnouncement) // 公告详情
+			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
+				Post("/announcements", contentH.CreateAnnouncement) // 创建公告
+			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
+				Patch("/announcements/{id}", contentH.UpdateAnnouncement) // 更新公告
+			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
+				Delete("/announcements/{id}", contentH.DeleteAnnouncement) // 删除公告
 
-			r.Get("/comments/pending", commentH.ListPending)              // 待审核评论列表
-			r.Get("/comments/pending/count", commentH.CountPending)       // 待审核评论数量
-			r.Get("/comments", commentH.ListAll)                          // 所有评论列表（支持状态筛选）
-			r.Get("/comments/{id}", commentH.GetDetail)                   // 评论详情
-			r.Patch("/comments/batch-status", commentH.BatchUpdateStatus) // 批量更新评论状态
+			// 评论审核（comment:approve 或 comment:delete 任一可读；批量状态需 comment:approve）
+			r.With(middleware.RequirePermission(permissionChecker, "comment:approve", "comment:delete")).
+				Get("/comments/pending", commentH.ListPending) // 待审核评论列表
+			r.With(middleware.RequirePermission(permissionChecker, "comment:approve", "comment:delete")).
+				Get("/comments/pending/count", commentH.CountPending) // 待审核评论数量
+			r.With(middleware.RequirePermission(permissionChecker, "comment:approve", "comment:delete")).
+				Get("/comments", commentH.ListAll) // 所有评论列表（支持状态筛选）
+			r.With(middleware.RequirePermission(permissionChecker, "comment:approve", "comment:delete")).
+				Get("/comments/{id}", commentH.GetDetail) // 评论详情
+			r.With(middleware.RequirePermission(permissionChecker, "comment:approve")).
+				Patch("/comments/batch-status", commentH.BatchUpdateStatus) // 批量更新评论状态
 
 			// 文章管理（DDD postH）
-			r.Get("/posts", postH.ListAll)                     // 所有文章列表
-			r.Get("/posts/{id}", postH.GetByID)                // 文章详情
-			r.Post("/posts", postH.Create)                     // 创建文章
-			r.Post("/posts/import-url", postH.ImportURL)       // 导入远程链接文档
-			r.Put("/posts/{id}", postH.Update)                 // 更新文章
-			r.Patch("/posts/{id}/status", postH.UpdateStatus)  // 更新文章状态
-			r.Patch("/posts/{id}/featured", postH.SetFeatured) // 切换精选标记
-			r.Delete("/posts/{id}", postH.Delete)              // 软删除文章
-			r.Post("/posts/{id}/restore", postH.Restore)       // 恢复文章
-			r.Delete("/posts/{id}/hard", postH.HardDelete)     // 彻底删除文章
+			// 读：post:* 任一权限；写：按动作细分
+			r.With(middleware.RequirePermission(permissionChecker, "post:create", "post:update", "post:delete", "post:publish")).
+				Get("/posts", postH.ListAll) // 所有文章列表
+			r.With(middleware.RequirePermission(permissionChecker, "post:create", "post:update", "post:delete", "post:publish")).
+				Get("/posts/{id}", postH.GetByID) // 文章详情
+			r.With(middleware.RequirePermission(permissionChecker, "post:create")).
+				Post("/posts", postH.Create) // 创建文章
+			r.With(middleware.RequirePermission(permissionChecker, "post:create")).
+				Post("/posts/import-url", postH.ImportURL) // 导入远程链接文档
+			r.With(middleware.RequirePermission(permissionChecker, "post:update")).
+				Put("/posts/{id}", postH.Update) // 更新文章
+			r.With(middleware.RequirePermission(permissionChecker, "post:publish")).
+				Patch("/posts/{id}/status", postH.UpdateStatus) // 更新文章状态
+			r.With(middleware.RequirePermission(permissionChecker, "post:publish")).
+				Patch("/posts/{id}/featured", postH.SetFeatured) // 切换精选标记
+			r.With(middleware.RequirePermission(permissionChecker, "post:delete")).
+				Delete("/posts/{id}", postH.Delete) // 软删除文章
+			r.With(middleware.RequirePermission(permissionChecker, "post:delete")).
+				Post("/posts/{id}/restore", postH.Restore) // 恢复文章
+			r.With(middleware.RequirePermission(permissionChecker, "post:delete")).
+				Delete("/posts/{id}/hard", postH.HardDelete) // 彻底删除文章
 
 			// 文章版本管理
-			r.Get("/posts/{id}/versions", postH.ListVersions)
-			r.Get("/posts/versions/{versionId}", postH.GetVersion)
-			r.Post("/posts/{id}/versions/{versionId}/restore", postH.RestoreVersion)
+			r.With(middleware.RequirePermission(permissionChecker, "post:create", "post:update", "post:delete", "post:publish")).
+				Get("/posts/{id}/versions", postH.ListVersions)
+			r.With(middleware.RequirePermission(permissionChecker, "post:create", "post:update", "post:delete", "post:publish")).
+				Get("/posts/versions/{versionId}", postH.GetVersion)
+			r.With(middleware.RequirePermission(permissionChecker, "post:update")).
+				Post("/posts/{id}/versions/{versionId}/restore", postH.RestoreVersion)
 
 			// 音乐管理（DDD mediaH）
 			r.Route("/music", func(r chi.Router) {
@@ -516,9 +541,12 @@ func main() {
 			})
 
 			r.Route("/projects", func(r chi.Router) {
-				r.Post("/", contentH.CreateProject)       // 创建项目
-				r.Put("/{id}", contentH.UpdateProject)    // 更新项目
-				r.Delete("/{id}", contentH.DeleteProject) // 删除项目
+				r.With(middleware.RequirePermission(permissionChecker, "project:create")).
+					Post("/", contentH.CreateProject) // 创建项目
+				r.With(middleware.RequirePermission(permissionChecker, "project:update")).
+					Put("/{id}", contentH.UpdateProject) // 更新项目
+				r.With(middleware.RequirePermission(permissionChecker, "project:delete")).
+					Delete("/{id}", contentH.DeleteProject) // 删除项目
 			})
 
 			// 媒体素材管理（DDD mediaH，细粒度权限）
