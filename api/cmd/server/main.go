@@ -130,7 +130,7 @@ func main() {
 	commentCodeStore := infraauth.NewRedisCodeStore(redisClient)
 	commentContainer := app.NewCommentContainer(gormDB, commentCodeStore, emailSender)
 
-	postContainer := app.NewPostContainer(gormDB)
+	postContainer := app.NewPostContainer(gormDB, permissionChecker)
 	tagContainer := app.NewTagContainer(gormDB)
 	githubContainer := app.NewGitHubContainer(settingsContainer.Store)
 	auditContainer := app.NewAuditContainer(gormDB)

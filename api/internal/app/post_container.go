@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 
 	apppost "blog-api/internal/application/post"
+	"blog-api/internal/middleware"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	posthttp "blog-api/internal/interfaces/http/handler/post"
 )
@@ -13,9 +14,9 @@ type PostContainer struct {
 	PostHandler *posthttp.Handler
 }
 
-func NewPostContainer(db *gorm.DB) *PostContainer {
+func NewPostContainer(db *gorm.DB, perm middleware.PermissionChecker) *PostContainer {
 	repo := gormrepo.NewPostRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
-	svc := apppost.NewService(repo, userRepo)
+	svc := apppost.NewService(repo, userRepo, perm)
 	return &PostContainer{PostHandler: posthttp.NewHandler(svc)}
 }

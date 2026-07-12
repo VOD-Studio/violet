@@ -12,7 +12,13 @@ import (
 	domain "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
 	userdomain "blog-api/internal/domain/user"
+	"blog-api/internal/middleware"
 )
+
+// PostPermissionChecker 权限检查端口（避免直接依赖 service 包）
+type PostPermissionChecker interface {
+	HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool
+}
 
 // PostDTO 文章读模型
 type PostDTO struct {
@@ -69,7 +75,7 @@ type PostListItemDTO struct {
 	ViewCount     int          `json:"view_count"`
 	PublishedAt   string       `json:"published_at,omitempty"`
 	Tags          []string     `json:"tags"`
-	AuthorID      string       `json:"-"` // 内部用于批量填充 Author，不暴露给前端
+	AuthorID      string       `json:"author_id"` // 文章作者 ID（前端判断所有权，控制操作按钮）
 	Author        *AuthorDTO   `json:"author,omitempty"`
 	Collaborators []*AuthorDTO `json:"collaborators,omitempty"` // 协同者列表（编辑过但非所有者），按首次编辑时间排序
 }
@@ -98,13 +104,37 @@ type ArchiveYearDTO struct {
 type Service struct {
 	repo     domain.PostRepository
 	userRepo userdomain.UserRepository
+	perm     PostPermissionChecker
 }
 
 // NewService 构造文章用例服务
 //
 // userRepo 用于按 author_id 填充 PostDTO.Author，nil 时跳过填充。
-func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository) *Service {
-	return &Service{repo: repo, userRepo: userRepo}
+// perm 用于所有权鉴权：操作他人文章需对应权限码，操作自己的靠所有权放行。
+func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository, perm PostPermissionChecker) *Service {
+	return &Service{repo: repo, userRepo: userRepo, perm: perm}
+}
+
+// canModify 判断操作者是否有权修改指定文章
+//
+// 放行规则（任一满足）：
+//   - 内置超管（通配短路）
+//   - 操作者是文章作者（所有权放行）
+//   - 操作者拥有指定权限码
+func (s *Service) canModify(ctx context.Context, p *domain.Post, code string) bool {
+	opID := middleware.GetUserID(ctx)
+	role := middleware.GetUserRole(ctx)
+	isBuiltin := middleware.GetUserIsBuiltinSuperAdmin(ctx)
+	if isBuiltin {
+		return true
+	}
+	if opID != "" && opID == p.AuthorID().String() {
+		return true
+	}
+	if s.perm == nil {
+		return false
+	}
+	return s.perm.HasPermission(role, isBuiltin, code)
 }
 
 // GetBySlug 按 slug 获取已发布文章
@@ -236,6 +266,10 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID string)
 	if err != nil {
 		return err
 	}
+	// 所有权鉴权：自己的文章放行，他人的需 post:update
+	if !s.canModify(ctx, p, "post:update") {
+		return shared.Forbidden("无权编辑他人文章")
+	}
 	if in.Slug != "" && in.Slug != p.Slug() {
 		exists, err := s.repo.ExistsBySlug(ctx, in.Slug)
 		if err != nil {
@@ -280,6 +314,12 @@ func (s *Service) SetFeatured(ctx context.Context, id string, featured bool) (Po
 	if err != nil {
 		return PostDTO{}, err
 	}
+	// 加精是运营动作，仅权限码控制，不放行所有权
+	role := middleware.GetUserRole(ctx)
+	isBuiltin := middleware.GetUserIsBuiltinSuperAdmin(ctx)
+	if !isBuiltin && (s.perm == nil || !s.perm.HasPermission(role, isBuiltin, "post:publish")) {
+		return PostDTO{}, shared.Forbidden("无权设置精选")
+	}
 	p.SetFeatured(featured)
 	if err := s.repo.Save(ctx, p); err != nil {
 		return PostDTO{}, err
@@ -296,6 +336,10 @@ func (s *Service) Publish(ctx context.Context, id string) error {
 	p, err := s.repo.FindByID(ctx, pid)
 	if err != nil {
 		return err
+	}
+	// 所有权鉴权：自己的文章放行，他人的需 post:publish
+	if !s.canModify(ctx, p, "post:publish") {
+		return shared.Forbidden("无权发布他人文章")
 	}
 	p.Publish()
 	return s.repo.Save(ctx, p)
@@ -315,6 +359,10 @@ func (s *Service) UpdateStatus(ctx context.Context, id, status string) (PostDTO,
 	p, err := s.repo.FindByID(ctx, pid)
 	if err != nil {
 		return PostDTO{}, err
+	}
+	// 所有权鉴权：自己的文章放行，他人的需 post:publish
+	if !s.canModify(ctx, p, "post:publish") {
+		return PostDTO{}, shared.Forbidden("无权修改他人文章状态")
 	}
 	switch status {
 	case domain.StatusPublished:
@@ -346,6 +394,14 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return err
+	}
+	// 所有权鉴权：自己的文章放行，他人的需 post:delete
+	if !s.canModify(ctx, p, "post:delete") {
+		return shared.Forbidden("无权删除他人文章")
+	}
 	return s.repo.Delete(ctx, pid)
 }
 
@@ -355,6 +411,14 @@ func (s *Service) Restore(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return err
+	}
+	// 所有权鉴权：自己的文章放行，他人的需 post:delete
+	if !s.canModify(ctx, p, "post:delete") {
+		return shared.Forbidden("无权恢复他人文章")
+	}
 	return s.repo.Restore(ctx, pid)
 }
 
@@ -363,6 +427,16 @@ func (s *Service) HardDelete(ctx context.Context, id string) error {
 	pid, err := shared.ParseID(id)
 	if err != nil {
 		return err
+	}
+	p, err := s.repo.FindByID(ctx, pid)
+	if err != nil {
+		return err
+	}
+	_ = p // 仅验证文章存在；彻底删除不可恢复，仅权限码控制，不放行所有权
+	role := middleware.GetUserRole(ctx)
+	isBuiltin := middleware.GetUserIsBuiltinSuperAdmin(ctx)
+	if !isBuiltin && (s.perm == nil || !s.perm.HasPermission(role, isBuiltin, "post:delete")) {
+		return shared.Forbidden("无权彻底删除文章")
 	}
 	return s.repo.HardDelete(ctx, pid)
 }
@@ -420,6 +494,10 @@ func (s *Service) RestoreVersion(ctx context.Context, postID, versionID, operato
 	p, err := s.repo.FindByID(ctx, pid)
 	if err != nil {
 		return err
+	}
+	// 所有权鉴权：自己的文章放行，他人的需 post:update
+	if !s.canModify(ctx, p, "post:update") {
+		return shared.Forbidden("无权恢复他人文章版本")
 	}
 	// 2. 查找历史版本
 	v, err := s.repo.GetVersionByID(ctx, vid)
