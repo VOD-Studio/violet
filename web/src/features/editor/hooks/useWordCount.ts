@@ -21,7 +21,12 @@ export function useWordCount(editor: Editor | null): number {
 
     useEffect(() => {
         if (!editor) return;
-        const update = () => setCount(countChars(editor.getText()));
+        const update = () => {
+            // editor 在重连/重挂载竞态下 schema 可能为 null（见 reconnectPassiveEffects 栈），
+            // isDestroyed 兜底已销毁实例，schema 兜底未完成初始化的实例。
+            if (editor.isDestroyed || !editor.schema) return;
+            setCount(countChars(editor.getText()));
+        };
         update();
         editor.on("update", update);
         return () => {

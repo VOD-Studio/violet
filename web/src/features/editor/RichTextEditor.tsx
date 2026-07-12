@@ -114,6 +114,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                 },
             },
             onUpdate: ({ editor }) => {
+                // 重连/重挂载竞态下 schema 可能为 null，isDestroyed 兜底已销毁实例
+                if (editor.isDestroyed || !editor.schema) return;
                 // 用 HTML 序列化（保留颜色/对齐等 inline 样式，Markdown 会丢失这些）
                 onChangeRef.current(editor.getHTML());
             },
@@ -152,9 +154,11 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         // 在生命周期内 mount 时调用 flushSync 触发 React 警告。
         useEffect(() => {
             if (!editor) return;
+            if (editor.isDestroyed || !editor.schema) return;
             const current = editor.getHTML();
             if (value === current) return;
             const timer = setTimeout(() => {
+                if (editor.isDestroyed || !editor.schema) return;
                 editor.commands.setContent(value || "", {
                     contentType: "html",
                     emitUpdate: true,
