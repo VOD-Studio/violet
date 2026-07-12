@@ -10,6 +10,7 @@ import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem } from "@features/admin-posts/model/types";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
+import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
@@ -80,6 +81,7 @@ function AdminPostsPage() {
     const [deleting, setDeleting] = useState<AdminPostListItem | null>(null);
 
     const canCreate = useHasPermission("post:create");
+    const { data: me } = useMe({ enabled: true });
 
     const { data, isLoading, error, refetch } = useAdminPosts({
         page,
@@ -213,6 +215,7 @@ function AdminPostsPage() {
                 <RowActions
                     row={row}
                     viewStatus={status}
+                    currentUserId={me?.id}
                     onDelete={(p) => {
                         setDeleting(p);
                         setDeleteOpen(true);
@@ -288,10 +291,12 @@ function AdminPostsPage() {
 function RowActions({
     row,
     viewStatus,
+    currentUserId,
     onDelete,
 }: {
     row: AdminPostListItem;
     viewStatus: string;
+    currentUserId?: string;
     onDelete: (p: AdminPostListItem) => void;
 }) {
     const navigate = useNavigate();
@@ -299,9 +304,21 @@ function RowActions({
     const setFeatured = useSetFeatured(row.id);
     const restorePost = useRestorePost(row.id);
 
-    const canUpdate = useHasPermission("post:update");
-    const canPublish = useHasPermission("post:publish");
-    const canDelete = useHasPermission("post:delete");
+    // 所有权：自己的文章可以编辑/删除/发布（后端应用层放行）
+    const isOwner = !!row.author_id && row.author_id === currentUserId;
+    // 权限码：操作他人的文章需要对应权限
+    const hasUpdate = useHasPermission("post:update");
+    const hasPublish = useHasPermission("post:publish");
+    const hasDelete = useHasPermission("post:delete");
+
+    // 实际可用 = 所有权放行 OR 权限码放行（加精/硬删仅权限码，不含所有权）
+    const canEdit = isOwner || hasUpdate;
+    const canPublish = isOwner || hasPublish;
+    const canDelete = isOwner || hasDelete;
+    // 加精是运营动作，仅权限码
+    const canFeature = hasPublish;
+    // 硬删不可恢复，仅权限码
+    const canHardDelete = hasDelete;
 
     const changeStatus = (status: "draft" | "published" | "archived") => {
         updateStatus.mutate(
@@ -344,7 +361,7 @@ function RowActions({
                         <Undo2 className="size-3.5" />
                     </Button>
                 ) : null}
-                {canDelete ? (
+                {canHardDelete ? (
                     <Button
                         variant="ghost"
                         size="icon-sm"
@@ -360,7 +377,7 @@ function RowActions({
     }
 
     // 无任何写权限时不渲染下拉触发器
-    if (!canUpdate && !canPublish && !canDelete) return null;
+    if (!canEdit && !canPublish && !canDelete && !canFeature) return null;
 
     return (
         <div className="flex items-center justify-end">
@@ -377,7 +394,7 @@ function RowActions({
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    {canUpdate ? (
+                    {canEdit ? (
                         <DropdownMenuItem
                             onClick={() =>
                                 navigate({
@@ -410,6 +427,10 @@ function RowActions({
                                     归档
                                 </DropdownMenuItem>
                             ) : null}
+                        </>
+                    ) : null}
+                    {canFeature ? (
+                        <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={toggleFeatured}>
                                 <Star className="size-3.5" />

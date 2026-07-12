@@ -94,6 +94,8 @@ export interface AdminPostListItem {
     published_at?: string;
     /** 标签名列表 */
     tags: string[];
+    /** 作者 ID（判断所有权，控制操作按钮） */
+    author_id?: string;
     /** 作者信息，缺失时省略 */
     author?: { username: string; avatar_url: string };
 }
