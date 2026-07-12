@@ -15,12 +15,19 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
+// noopEmojiLookup 是 EmojiLookup 的空实现，测试中评论 body 不含表情占位符时使用。
+type noopEmojiLookup struct{}
+
+func (noopEmojiLookup) FindByNames(_ context.Context, _ []string) (map[string]EmojiRef, error) {
+	return nil, nil
+}
+
 // newServiceWithMocks 构造带 mock 的 service，返回 service + 各 mock 便于断言。
 func newServiceWithMocks() (*Service, *mocks.MockCommentRepository, *mocks.MockCommentCodeStore, *mocks.MockCommentEmailSender) {
 	repo := new(mocks.MockCommentRepository)
 	codeStore := new(mocks.MockCommentCodeStore)
 	emailSender := new(mocks.MockCommentEmailSender)
-	return NewService(repo, codeStore, emailSender), repo, codeStore, emailSender
+	return NewService(repo, codeStore, emailSender, noopEmojiLookup{}), repo, codeStore, emailSender
 }
 
 func TestCreate_LoggedIn_SkipsCodeAndQuota(t *testing.T) {
