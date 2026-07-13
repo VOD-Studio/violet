@@ -13,15 +13,12 @@ import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Settings, Shield, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useMe } from "@/features/auth/api/queries";
 
 export const Route = createFileRoute("/admin/roles")({
     component: AdminRolesPage,
 });
 
 function AdminRolesPage() {
-    const { data: me } = useMe();
-    const isBuiltinSuperAdmin = me?.is_builtin_super_admin === true;
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [editingRole, setEditingRole] = useState<RoleDTO | null>(null);
@@ -156,8 +153,8 @@ function AdminRolesPage() {
                                 size="icon-sm"
                                 variant="ghost"
                                 onClick={() => handleDelete(row)}
-                                disabled={isLocked || deleteRole.isPending}
-                                title={isLocked ? "内置角色不可删除" : "删除角色"}
+                                disabled={isBuiltin || deleteRole.isPending}
+                                title={isBuiltin ? "内置角色不可删除" : "删除角色"}
                             >
                                 <Trash2 className="size-3.5" />
                             </Button>
