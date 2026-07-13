@@ -46,3 +46,10 @@ export const useRefetchStatus = () =>
             return data.state === "running" ? 2000 : false;
         },
     });
+
+/** useBilibiliCookieDefault - 读取 env 配置的 B站 Cookie 默认值，用于重新拉取弹窗预填 */
+export const useBilibiliCookieDefault = () =>
+    useQuery({
+        queryKey: adminEmojiKeys.bilibiliCookie(),
+        queryFn: () => apiGet<{ cookie: string }>("/admin/emojis/bilibili/cookie"),
+    });

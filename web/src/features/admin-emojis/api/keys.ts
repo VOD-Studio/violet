@@ -15,4 +15,6 @@ export const adminEmojiKeys = {
         [...adminEmojiKeys.adminGroups(), "emojis", groupId] as const,
     /** B站表情重新拉取任务状态 */
     refetchStatus: () => [...adminEmojiKeys.all, "refetch-status"] as const,
+    /** B站 Cookie 默认值（env 配置，用于重新拉取弹窗预填） */
+    bilibiliCookie: () => [...adminEmojiKeys.all, "bilibili-cookie"] as const,
 };

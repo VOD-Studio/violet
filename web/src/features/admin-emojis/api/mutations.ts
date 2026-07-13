@@ -118,7 +118,7 @@ export const useDeleteEmoji = () => {
 export const useRefetchBilibiliEmojis = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: () => apiPost<null>("/admin/emojis/bilibili/refetch"),
+        mutationFn: (cookie: string) => apiPost<null>("/admin/emojis/bilibili/refetch", { cookie }),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: adminEmojiKeys.refetchStatus() });
         },
