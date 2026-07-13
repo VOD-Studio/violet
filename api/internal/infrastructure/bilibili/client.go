@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -31,11 +32,25 @@ func WithHTTPClient(h *http.Client) Option {
 	return func(c *Client) { c.httpClient = h }
 }
 
+// sanitizeCookie 清洗 cookie 字符串：去除首尾空白与所有控制字符（换行、制表符等）。
+// 从浏览器复制的 cookie 常夹带 \n / \r，会导致 http.Header.Set 拒绝（invalid header field value）。
+func sanitizeCookie(cookie string) string {
+	var b strings.Builder
+	b.Grow(len(cookie))
+	for _, r := range cookie {
+		if r >= 0x20 && r != 0x7f {
+			b.WriteRune(r)
+		}
+	}
+	return strings.TrimSpace(b.String())
+}
+
 // NewClient 创建 B站表情 API 客户端。cookie 为空时 FetchEmojis 返回错误。
+// cookie 会先经 sanitizeCookie 清洗控制字符，避免非法 header value。
 func NewClient(cookie string, opts ...Option) *Client {
 	c := &Client{
 		httpClient: &http.Client{Timeout: 30 * time.Second},
-		cookie:     cookie,
+		cookie:     sanitizeCookie(cookie),
 		userAgent:  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
 	}
 	for _, opt := range opts {
