@@ -104,9 +104,7 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-noreply@yourdomain.com}
 
       # B站表情种子数据
-      BILIBILI_SESSDATA: ${BILIBILI_SESSDATA:-}
-      BILIBILI_BILI_JCT: ${BILIBILI_BILI_JCT:-}
-      BILIBILI_DEDEUSERID: ${BILIBILI_DEDEUSERID:-}
+      BILIBILI_COOKIES: ${BILIBILI_COOKIES:-}
 
       # 超级管理员
       SUPERADMIN_ENABLED: ${SUPERADMIN_ENABLED:-false}

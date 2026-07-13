@@ -68,11 +68,9 @@ resend_api_key: "" # 通过 RESEND_API_KEY 环境变量配置
 email_from: noreply@yourdomain.com
 
 # ── B站表情种子数据 ──────────────────────────
-# 通过环境变量配置：BILIBILI_SESSDATA, BILIBILI_BILI_JCT, BILIBILI_DEDEUSERID
+# 通过环境变量配置：BILIBILI_COOKIES（完整 cookie 字符串）
 bilibili_api_type: "user" # user(用户收藏) 或 official(官方)
-bilibili_sessdata: ""
-bilibili_bili_jct: ""
-bilibili_dedeuserid: ""
+bilibili_cookies: ""
 
 # ── 超级管理员 ────────────────────────────────
 superadmin:

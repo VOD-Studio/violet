@@ -53,23 +53,13 @@ func main() {
 		databaseURL = "postgres://blog:blog123@localhost:5432/blog?sslmode=disable"
 	}
 
+	// 获取 Cookie（优先命令行参数，其次环境变量 BILIBILI_COOKIE，最后配置文件 bilibili_cookies）
 	bilibiliCookie := *cookie
 	if bilibiliCookie == "" {
 		bilibiliCookie = os.Getenv("BILIBILI_COOKIE")
 	}
 	if bilibiliCookie == "" {
-		sessdata := v.GetString("bilibili_sessdata")
-		biliJct := v.GetString("bilibili_bili_jct")
-		dedeUserID := v.GetString("bilibili_dedeuserid")
-		if sessdata != "" {
-			bilibiliCookie = "SESSDATA=" + sessdata
-			if biliJct != "" {
-				bilibiliCookie += "; bili_jct=" + biliJct
-			}
-			if dedeUserID != "" {
-				bilibiliCookie += "; DedeUserID=" + dedeUserID
-			}
-		}
+		bilibiliCookie = v.GetString("bilibili_cookies")
 	}
 
 	apiTypeValue := *apiType

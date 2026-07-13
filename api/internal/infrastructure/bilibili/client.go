@@ -53,7 +53,7 @@ func (c *Client) Cookie() string {
 // 返回过滤掉 type==13 收藏包和空 emote 包的有效列表。
 func (c *Client) FetchEmojis(ctx context.Context, apiType string) ([]Package, error) {
 	if c.cookie == "" {
-		return nil, fmt.Errorf("未设置 B站 Cookie，请在环境变量中配置 BILIBILI_SESSDATA、BILIBILI_BILI_JCT、BILIBILI_DEDEUSERID")
+		return nil, fmt.Errorf("未设置 B站 Cookie，请在环境变量中配置 BILIBILI_COOKIES")
 	}
 
 	var apiURL string

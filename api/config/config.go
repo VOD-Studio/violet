@@ -197,9 +197,7 @@ func Load() *Config {
 	v.SetDefault("port", "9090")
 	v.SetDefault("upload_path_prefix", "/uploads/")
 	v.SetDefault("upload_dir", "uploads")
-	v.SetDefault("bilibili_sessdata", "")
-	v.SetDefault("bilibili_bili_jct", "")
-	v.SetDefault("bilibili_dedeuserid", "")
+	v.SetDefault("bilibili_cookies", "")
 	v.SetDefault("bilibili_api_type", "user")
 	// Cookie 默认值：开发环境友好（HTTP、lax、空 domain）
 	// 生产环境必须通过 COOKIE_SECURE=true、COOKIE_DOMAIN、CORS_ALLOWED_ORIGINS 覆盖
@@ -236,11 +234,7 @@ func Load() *Config {
 		panic(fmt.Sprintf("解析 session.max_ttl 失败: %v", err))
 	}
 
-	bilibiliCookie := buildBilibiliCookie(
-		v.GetString("bilibili_sessdata"),
-		v.GetString("bilibili_bili_jct"),
-		v.GetString("bilibili_dedeuserid"),
-	)
+	bilibiliCookie := v.GetString("bilibili_cookies")
 
 	connMaxLifetime, err := time.ParseDuration(v.GetString("database.conn_max_lifetime"))
 	if err != nil {
@@ -389,19 +383,4 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
-}
-
-// buildBilibiliCookie 从三个独立字段拼接 B站 Cookie
-func buildBilibiliCookie(sessdata, biliJct, dedeUserID string) string {
-	if sessdata == "" {
-		return ""
-	}
-	cookie := "SESSDATA=" + sessdata
-	if biliJct != "" {
-		cookie += "; bili_jct=" + biliJct
-	}
-	if dedeUserID != "" {
-		cookie += "; DedeUserID=" + dedeUserID
-	}
-	return cookie
 }
