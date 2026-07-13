@@ -124,7 +124,7 @@ func TestReseedBilibiliEmojis_UpsertNotSave(t *testing.T) {
 	}
 
 	var lastProgress domainemoji.RefetchProgress
-	err := svc.ReseedBilibiliEmojis(context.Background(), func(p domainemoji.RefetchProgress) {
+	err := svc.ReseedBilibiliEmojis(context.Background(), svc.client, func(p domainemoji.RefetchProgress) {
 		lastProgress = p
 	})
 	require.NoError(t, err)

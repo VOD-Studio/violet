@@ -559,6 +559,8 @@ func main() {
 					Post("/bilibili/refetch", mediaH.RefetchBilibiliEmojis)
 				r.With(middleware.RequirePermission(permissionChecker, "emoji:refetch")).
 					Get("/bilibili/refetch/status", mediaH.GetRefetchStatus)
+				r.With(middleware.RequirePermission(permissionChecker, "emoji:refetch")).
+					Get("/bilibili/cookie", mediaH.GetBilibiliCookie)
 				// 表情图片上传已收敛到前台 POST /uploads/emoji
 			})
 

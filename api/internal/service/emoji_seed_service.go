@@ -206,10 +206,11 @@ func (s *EmojiSeedService) downloadPackageEmojis(ctx context.Context, pkg bilibi
 // 与 SeedBilibiliEmojis 的区别：永远走全量 upsert，不看分组计数；
 // 不删除任何分组（B站不再返回的历史分组保留）。
 // progress 回调每完成一个分组上报进度，可为 nil。
-func (s *EmojiSeedService) ReseedBilibiliEmojis(ctx context.Context, progress func(domainemoji.RefetchProgress)) error {
+// client 由调用方提供（启动期用 s.client，重新拉取用请求级 cookie 构造的临时 client）。
+func (s *EmojiSeedService) ReseedBilibiliEmojis(ctx context.Context, client *bilibili.Client, progress func(domainemoji.RefetchProgress)) error {
 	log.Info().Str("operation", "ReseedBilibiliEmojis").Msg("开始重新拉取 B站表情（upsert）")
 
-	packages, err := s.client.FetchEmojis(ctx, s.apiType)
+	packages, err := client.FetchEmojis(ctx, s.apiType)
 	if err != nil {
 		return fmt.Errorf("获取 B站表情失败: %w", err)
 	}
@@ -273,10 +274,15 @@ func (s *EmojiSeedService) ReseedBilibiliEmojis(ctx context.Context, progress fu
 	return nil
 }
 
-// Reseed 是 ReseedRunner 接口的适配方法，委托给 ReseedBilibiliEmojis。
-// 仅为满足 application/media.ReseedRunner 接口的方法名要求，不改变业务逻辑。
-func (s *EmojiSeedService) Reseed(ctx context.Context, progress func(domainemoji.RefetchProgress)) error {
-	return s.ReseedBilibiliEmojis(ctx, progress)
+// Reseed 是 ReseedRunner 接口的适配方法。
+// 用请求级 cookie 构造临时 client，委托给 ReseedBilibiliEmojis，不影响启动期注入的 s.client。
+func (s *EmojiSeedService) Reseed(ctx context.Context, cookie string, progress func(domainemoji.RefetchProgress)) error {
+	return s.ReseedBilibiliEmojis(ctx, bilibili.NewClient(cookie), progress)
+}
+
+// BilibiliCookieDefault 返回启动期注入的 B站 Cookie，供后台弹窗预填。
+func (s *EmojiSeedService) BilibiliCookieDefault() string {
+	return s.client.Cookie()
 }
 
 // backfillBilibiliCovers 对已有 bilibili 分组回填缺失的封面 URL。

@@ -69,7 +69,9 @@ var extToMIME = map[string]string{
 
 // ReseedRunner 执行 B站表情重新拉取（由 EmojiSeedService 实现，打破对 service 包的依赖）。
 type ReseedRunner interface {
-	Reseed(ctx context.Context, progress func(domainemoji.RefetchProgress)) error
+	Reseed(ctx context.Context, cookie string, progress func(domainemoji.RefetchProgress)) error
+	// BilibiliCookieDefault 返回启动期注入的 B站 Cookie（来自 env），供后台弹窗预填。
+	BilibiliCookieDefault() string
 }
 
 // EmojiService 表情用例服务
@@ -281,9 +283,13 @@ func (s *EmojiService) DeleteEmoji(ctx context.Context, id int32) error {
 
 // Refetch 异步触发 B站表情重新拉取。立即返回当前状态(running)。
 // 已有任务运行返回 shared.Conflict（→ 409）。
-func (s *EmojiService) Refetch(ctx context.Context) (*domainemoji.RefetchStatus, error) {
+// cookie 由调用方传入（来自后台弹窗），覆盖启动期 env 配置。
+func (s *EmojiService) Refetch(ctx context.Context, cookie string) (*domainemoji.RefetchStatus, error) {
 	if s.reseeder == nil || s.statusStore == nil {
 		return nil, shared.BadRequest("重新拉取功能未配置")
+	}
+	if strings.TrimSpace(cookie) == "" {
+		return nil, shared.BadRequest("请提供 B站 Cookie")
 	}
 	if err := s.statusStore.Acquire(ctx); err != nil {
 		return nil, err
@@ -295,7 +301,7 @@ func (s *EmojiService) Refetch(ctx context.Context) (*domainemoji.RefetchStatus,
 				log.Warn().Err(err).Msg("上报重新拉取进度失败")
 			}
 		}
-		if err := s.reseeder.Reseed(context.Background(), progress); err != nil {
+		if err := s.reseeder.Reseed(context.Background(), cookie, progress); err != nil {
 			log.Error().Err(err).Msg("重新拉取失败")
 			_ = s.statusStore.SetFailed(context.Background(), err.Error())
 			return
@@ -303,6 +309,14 @@ func (s *EmojiService) Refetch(ctx context.Context) (*domainemoji.RefetchStatus,
 		_ = s.statusStore.SetDone(context.Background())
 	}()
 	return s.statusStore.Get(ctx)
+}
+
+// GetBilibiliCookieDefault 返回启动期注入的 B站 Cookie（env 配置），供后台弹窗预填。
+func (s *EmojiService) GetBilibiliCookieDefault() string {
+	if s.reseeder == nil {
+		return ""
+	}
+	return s.reseeder.BilibiliCookieDefault()
 }
 
 // GetRefetchStatus 读取重新拉取任务状态（供前端轮询）。

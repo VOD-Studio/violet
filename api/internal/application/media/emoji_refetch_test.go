@@ -19,10 +19,12 @@ type fakeReseeder struct {
 	called atomic.Bool
 }
 
-func (f *fakeReseeder) Reseed(ctx context.Context, progress func(domainemoji.RefetchProgress)) error {
+func (f *fakeReseeder) Reseed(ctx context.Context, cookie string, progress func(domainemoji.RefetchProgress)) error {
 	f.called.Store(true)
 	return nil
 }
+
+func (f *fakeReseeder) BilibiliCookieDefault() string { return "" }
 
 // mockRefetchStore RefetchStatusStore 的 mock
 type mockRefetchStore struct{ mock.Mock }
@@ -62,7 +64,7 @@ func TestRefetch_RunsAsyncAndSetsDone(t *testing.T) {
 	runner := &fakeReseeder{}
 	svc := &EmojiService{reseeder: runner, statusStore: store}
 
-	status, err := svc.Refetch(context.Background())
+	status, err := svc.Refetch(context.Background(), "SESSDATA=fake")
 	require.NoError(t, err)
 	assert.Equal(t, domainemoji.RefetchStateRunning, status.State)
 
@@ -81,7 +83,7 @@ func TestRefetch_AlreadyRunningReturnsConflict(t *testing.T) {
 	store.On("Acquire", mock.Anything).Return(domainshared.Conflict("已有重新拉取任务在运行"))
 
 	svc := &EmojiService{reseeder: &fakeReseeder{}, statusStore: store}
-	_, err := svc.Refetch(context.Background())
+	_, err := svc.Refetch(context.Background(), "SESSDATA=fake")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "已有重新拉取任务在运行")
 	store.AssertNotCalled(t, "SetDone")

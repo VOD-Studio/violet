@@ -957,13 +957,27 @@ func (h *Handler) GetUploadStatus(w http.ResponseWriter, r *http.Request) {
 
 // RefetchBilibiliEmojis POST /admin/emojis/bilibili/refetch
 // 异步触发 B站表情重新拉取，返回 202 + 当前状态。已在运行返回 409。
+// 请求体 { cookie: string }：使用管理员在弹窗中输入的完整 cookie，覆盖启动期 env 配置。
 func (h *Handler) RefetchBilibiliEmojis(w http.ResponseWriter, r *http.Request) {
-	status, err := h.emojiSvc.Refetch(r.Context())
+	var req struct {
+		Cookie string `json:"cookie"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	status, err := h.emojiSvc.Refetch(r.Context(), req.Cookie)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.WriteJSON(w, http.StatusAccepted, status)
+}
+
+// GetBilibiliCookie GET /admin/emojis/bilibili/cookie
+// 返回启动期注入的 B站 Cookie（env 配置），供后台重新拉取弹窗预填。
+func (h *Handler) GetBilibiliCookie(w http.ResponseWriter, r *http.Request) {
+	response.RespondOK(w, map[string]string{"cookie": h.emojiSvc.GetBilibiliCookieDefault()})
 }
 
 // GetRefetchStatus GET /admin/emojis/bilibili/refetch/status

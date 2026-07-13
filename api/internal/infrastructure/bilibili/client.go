@@ -44,6 +44,11 @@ func NewClient(cookie string, opts ...Option) *Client {
 	return c
 }
 
+// Cookie 返回当前持有的完整 cookie 字符串（启动期注入值）。
+func (c *Client) Cookie() string {
+	return c.cookie
+}
+
 // FetchEmojis 获取表情包列表。apiType 为 "user" 或 "official"（其他值默认 user）。
 // 返回过滤掉 type==13 收藏包和空 emote 包的有效列表。
 func (c *Client) FetchEmojis(ctx context.Context, apiType string) ([]Package, error) {
