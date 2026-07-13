@@ -77,6 +77,9 @@ $CONTAINER_CMD exec "$NGINX_CONTAINER" cp "$CONF_PATH" "${CONF_PATH}.bak" 2>/dev
 awk '
 BEGIN { in_xun = 0; has_ssl = 0; patched = 0 }
 
+# 重置 server 块状态
+/^[[:space:]]*server[[:space:]]*\{/ { in_xun = 0; has_ssl = 0 }
+
 # 进入 xun.rua.plus / xunrua.top server block
 /server_name (xun\.rua\.plus|xunrua\.top);/ { in_xun = 1; has_ssl = 0 }
 

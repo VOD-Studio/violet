@@ -72,6 +72,7 @@ ok "环境检查通过"
 # ==================== 构建镜像 ====================
 if [ "$SKIP_BUILD" = false ]; then
     info "构建 Docker 镜像..."
+    export DOCKER_DEFAULT_PLATFORM=linux/amd64
 
     # 构建 API 镜像
     info "  构建 blog-api..."
