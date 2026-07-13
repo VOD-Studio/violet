@@ -41,7 +41,7 @@ blog-api ──► blog-postgres:5432, blog-redis:6379 (via blog_network)
 
 1. 本地能 `ssh xunrua.top echo ok`（免密）。
 2. 本地装了 `rsync`。
-3. 服务器 `/root/docker/mimo-blog` 已就绪：含 `api/.env`、`secrets/jwt_private_key.pem`、`secrets/jwt_public_key.pem`。这些是敏感凭据，**部署过程绝不覆盖**。
+3. 服务器 `/root/docker/mimo-blog` 已就绪：含 `api/.env`（敏感凭据，**部署过程绝不覆盖**）。
 4. `nginx-proxy` + `letsencrypt-companion` 容器在跑（负责 TLS 证书与反代）。
 
 ## 完整部署流程
@@ -114,8 +114,6 @@ services:
       # ...其余同本地
     volumes:
       - uploads_data:/app/uploads
-      - ./secrets/jwt_private_key.pem:/secrets/jwt_private_key.pem:ro
-      - ./secrets/jwt_public_key.pem:/secrets/jwt_public_key.pem:ro
     healthcheck:
       # ← 必须用 GET，/api/health 不接受 HEAD（旧版用 HEAD 返回 405 导致一直 unhealthy）
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:9090/api/health"]

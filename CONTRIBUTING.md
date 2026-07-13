@@ -14,7 +14,7 @@ make install          # 后端 go mod download + 前端 pnpm install
 
 # 3. 初始化环境
 make env          # 复制 .env.example 到 .env，修改敏感配置
-make setup        # 生成 JWT 密钥 + 启动数据库 + 迁移
+make setup        # 启动数据库 + 迁移
 
 # 4. 启用 Git 钩子 (代码格式检查)
 ./scripts/install-hooks.sh
@@ -36,7 +36,7 @@ commit message 无强制格式，请清晰描述本次变更的动机与内容�
 ```
 添加 OAuth 登录
 
-集成 Google OAuth，登录后写入 user 表并签发 JWT。
+集成 Google OAuth，登录后写入 user 表并创建会话。
 ```
 
 > `pre-commit` 钩子会检查代码格式（Go gofmt、前端 biome），不影响 commit message 内容。

@@ -223,7 +223,7 @@ func (u *User) ChangeRole(role Role) error {
 // MarkAsBuiltinSuperAdmin 标记为内置超级管理员
 //
 // 仅由 EnsureSuperAdmin（启动期幂等校正内置超管）调用。
-// 内置超管拥有通配符权限（靠 JWT 标志位短路）、可授权他人、不可被任何人降级/删除。
+// 内置超管拥有通配符权限（靠内置超管标志位短路）、可授权他人、不可被任何人降级/删除。
 func (u *User) MarkAsBuiltinSuperAdmin() {
 	u.isBuiltinSuperAdmin = true
 	// 内置超管必然是 superadmin 角色

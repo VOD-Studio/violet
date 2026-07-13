@@ -58,7 +58,7 @@ pnpm dev
 
 ```bash
 make install      # 安装前后端依赖
-make setup        # 初始化 .env、JWT 密钥、数据库迁移
+make setup        # 初始化 .env、数据库迁移
 make dev          # 同时启动 API + Web + Postgres + Redis
 ```
 

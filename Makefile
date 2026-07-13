@@ -12,7 +12,7 @@
         release release-patch release-minor release-major \
         clean install update \
         status log \
-        env setup generate-jwt-keys generate-production-keys \
+        env setup \
         check
 
 # 默认目标
@@ -139,7 +139,7 @@ docker-build: ## 构建 Docker 镜像
 docker-up: ## Docker 生产模式启动
 	docker compose -f docker-compose.yml up -d --build
 
-deploy-prod-init: ## 生产环境首次初始化（生成密钥、检查 .env）
+deploy-prod-init: ## 生产环境首次初始化（从模板生成 .env）
 	@./scripts/init-production.sh
 
 deploy-prod: deploy-prod-init ## 构建并启动生产环境容器
@@ -239,9 +239,6 @@ env: ## 复制配置文件模板
 
 setup: env ## 一键初始化项目（首次使用）
 	@echo "🚀 初始化项目..."
-	@if [ ! -f api/jwt_private_key.pem ]; then \
-		$(MAKE) generate-jwt-keys; \
-	fi
 	@docker compose up -d postgres redis
 	@echo "⏳ 等待数据库启动..."
 	@until docker compose exec -T postgres pg_isready -U "$$(grep '^DATABASE_USER=' .env | cut -d= -f2)" -d "$$(grep '^DATABASE_NAME=' .env | cut -d= -f2)" >/dev/null 2>&1; do \
@@ -253,18 +250,6 @@ setup: env ## 一键初始化项目（首次使用）
 	@echo "下一步："
 	@echo "  1. 运行 'make dev' 启动开发服务器"
 	@echo "  2. 访问 http://localhost:5173"
-
-generate-jwt-keys: ## 生成 JWT 密钥对 (ES256)
-	@echo "🔑 生成 JWT 密钥对..."
-	@openssl ecparam -genkey -name prime256v1 -noout -out api/jwt_private_key.pem
-	@openssl ec -in api/jwt_private_key.pem -pubout -out api/jwt_public_key.pem
-	@chmod 600 api/jwt_private_key.pem
-	@chmod 644 api/jwt_public_key.pem
-	@echo "✅ JWT 密钥已生成: api/jwt_private_key.pem, api/jwt_public_key.pem"
-
-# 保留 generate-production-keys 仅为了向后兼容；实际生产环境初始化与密钥生成由 deploy-prod-init 统一处理
-generate-production-keys: deploy-prod-init ## 生成生产环境 JWT 密钥对（兼容入口，实际调用 deploy-prod-init）
-	@echo "✅ 生产环境初始化与 JWT 密钥生成已由 deploy-prod-init 完成"
 
 check: ## 检查环境依赖
 	@echo "检查环境依赖..."
