@@ -108,12 +108,12 @@ services:
     image: localhost/mimo-blog-web:latest
     container_name: blog-web
     restart: always
-    # 宿主机 80 映射到容器内 Nitro server 的 3000
-    ports:
-      - "80:3000"
+    expose:
+      - "3000"
     environment:
       # nginx-proxy 虚拟主机配置
       VIRTUAL_HOST: ${VIRTUAL_HOST:-xunrua.top}
+      VIRTUAL_PORT: "3000"
       LETSENCRYPT_HOST: ${LETSENCRYPT_HOST:-xunrua.top}
       LETSENCRYPT_EMAIL: defect.y@qq.com
     depends_on:
