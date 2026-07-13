@@ -103,6 +103,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-https://xunrua.top/api/v1}
+        VITE_SITE_URL: ${VITE_SITE_URL:-https://xunrua.top}
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
         VITE_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
     image: localhost/mimo-blog-web:latest
