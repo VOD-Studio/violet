@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/VOD-Studio/mimo-music/provider"
@@ -229,12 +230,20 @@ func (s *SongService) Lyric(ctx context.Context, songID string) (provider.LyricR
 // --- SearchService 实现 ---
 
 // Search 按关键词搜索歌曲。
+//
+// 用非加密 GET API /api/search/get，匿名可用。
+// weapi 的 /weapi/cloudsearch/get/web 在 2026 年要求登录态。
 func (s *SearchService) Search(ctx context.Context, keyword string, limit int) (provider.SearchResult, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	payload := fmt.Sprintf(`{"s":"%s","type":1,"limit":%d,"offset":0}`, keyword, limit)
-	body, err := s.client.weapiPost(ctx, "/weapi/cloudsearch/get/web", payload, s.client.getCookie(""))
+	params := url.Values{}
+	params.Set("s", keyword)
+	params.Set("type", "1")
+	params.Set("limit", fmt.Sprintf("%d", limit))
+	params.Set("offset", "0")
+
+	body, err := s.client.apiGet(ctx, "/api/search/get", params, s.client.getCookie(""))
 	if err != nil {
 		return provider.SearchResult{}, err
 	}
@@ -242,7 +251,18 @@ func (s *SearchService) Search(ctx context.Context, keyword string, limit int) (
 	var resp struct {
 		Result struct {
 			SongCount int `json:"songCount"`
-			Songs     []neteaseSongDetailSongs `json:"songs"`
+			Songs     []struct {
+				ID      int64  `json:"id"`
+				Name    string `json:"name"`
+				Artists []struct {
+					Name string `json:"name"`
+				} `json:"artists"`
+				Album struct {
+					Name    string `json:"name"`
+					PicUrl  string `json:"img1v1Url"`
+				} `json:"album"`
+				Duration int64 `json:"duration"`
+			} `json:"songs"`
 		} `json:"result"`
 	}
 	if err := json.Unmarshal(body, &resp); err != nil {
@@ -251,7 +271,14 @@ func (s *SearchService) Search(ctx context.Context, keyword string, limit int) (
 
 	songs := make([]provider.SongResult, 0, len(resp.Result.Songs))
 	for _, song := range resp.Result.Songs {
-		songs = append(songs, toSongResult(song))
+		songs = append(songs, provider.SongResult{
+			ID:       fmt.Sprintf("%d", song.ID),
+			Name:     song.Name,
+			Artist:   joinArtists(song.Artists),
+			Album:    song.Album.Name,
+			Cover:    song.Album.PicUrl,
+			Duration: song.Duration,
+		})
 	}
 
 	return provider.SearchResult{

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -62,7 +63,11 @@ func (c *Client) weapiPost(ctx context.Context, urlPath, payload, cookie string)
 		return nil, fmt.Errorf("加密失败: %w", err)
 	}
 
-	form := strings.NewReader(fmt.Sprintf("params=%s&encSecKey=%s", encrypted.Params, encrypted.EncSecKey))
+	// params 和 encSecKey 含 base64/十六进制特殊字符（+ = /），必须 URL 编码
+	formData := url.Values{}
+	formData.Set("params", encrypted.Params)
+	formData.Set("encSecKey", encrypted.EncSecKey)
+	form := strings.NewReader(formData.Encode())
 
 	url := "https://music.163.com" + urlPath
 	req, err := http.NewRequestWithContext(ctx, "POST", url, form)
@@ -133,6 +138,46 @@ func (c *Client) getCookie(override string) string {
 		return override
 	}
 	return c.opts.Cookie
+}
+
+// apiGet 发送非加密 GET 请求到网易云端点。
+//
+// 网易云在 2026 年对匿名 weapi 请求做了限制，部分接口用非加密 GET API
+// 仍可匿名访问（如 /api/search/get）。对这类接口用 apiGet 更可靠。
+// urlPath 是端点路径（如 /api/search/get），params 是 query 参数。
+func (c *Client) apiGet(ctx context.Context, urlPath string, params url.Values, cookie string) ([]byte, error) {
+	target := "https://music.163.com" + urlPath
+	if len(params) > 0 {
+		target += "?" + params.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", target, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+
+	req.Header.Set("Referer", "https://music.163.com")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+	if cookie != "" {
+		req.Header.Set("Cookie", cookie)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", merrors.ErrUpstreamUnavailable, err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	if err := mapHTTPError(resp.StatusCode, body); err != nil {
+		return nil, err
+	}
+
+	return body, nil
 }
 
 // 编译期断言：Client 实现 Provider 接口。
