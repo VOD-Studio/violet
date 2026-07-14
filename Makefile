@@ -143,6 +143,10 @@ music-test: ## 运行 mimo-music 测试
 music-lint: ## mimo-music 代码检查
 	cd mimo-music && golangci-lint run ./... 2>/dev/null || go vet ./...
 
+music-openapi: ## 生成 mimo-music OpenAPI 文档
+	cd mimo-music && go run ./cmd/export-openapi/
+	@echo "OpenAPI spec 已导出到 mimo-music/openapi.json"
+
 # ==================== 构建 ====================
 
 build: api-build web-build ## 构建前后端生产版本

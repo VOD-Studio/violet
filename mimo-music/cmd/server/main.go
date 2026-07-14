@@ -15,7 +15,11 @@ import (
 
 	"github.com/VOD-Studio/mimo-music/config"
 	"github.com/VOD-Studio/mimo-music/internal/server"
+	"github.com/VOD-Studio/mimo-music/internal/server/handler"
 	"github.com/VOD-Studio/mimo-music/observability"
+	"github.com/VOD-Studio/mimo-music/provider"
+	"github.com/VOD-Studio/mimo-music/provider/netease"
+	"github.com/VOD-Studio/mimo-music/service"
 )
 
 func main() {
@@ -34,7 +38,20 @@ func main() {
 	observability.InitLogger(cfg.Server.Env)
 	observability.HandleSIGHUP()
 
-	router := server.NewRouter()
+	// 装配：provider → service → handler → router
+	// Phase 1 暂用内存装配，后续 Issue-0008 接入 wire
+	neteaseClient := netease.New(
+		provider.WithLogger(observability.NewSlogLogger(slog.Default())),
+		provider.WithTimeout(cfg.Provider.UpstreamTimeout),
+	)
+	authSvc := service.NewAuthService(
+		neteaseClient.Auth(),
+		nil, // store 暂用 nil，Issue-0008 接入 Redis 后填充
+		observability.NewSlogLogger(slog.Default()),
+	)
+	h := handler.New(authSvc)
+
+	router := server.NewRouter(h)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      router,

@@ -13,9 +13,10 @@ import (
 
 // NewRouter 创建并配置 chi 路由器。
 //
-// 注册了 recovery / request_id / logger 中间件（后续 issue 补充），
-// 以及 GET /health 端点。后续 issue 会在此添加 auth / playlist / song / search 路由组。
-func NewRouter() http.Handler {
+// 中间件：recovery / request_id / 访问日志。
+// 路由：health / auth。
+// 后续 issue 会在此添加 playlist / song / search 路由组。
+func NewRouter(h *handler.Handler) http.Handler {
 	r := chi.NewRouter()
 
 	// 中间件
@@ -23,8 +24,18 @@ func NewRouter() http.Handler {
 	r.Use(chimiddleware.RequestID)
 	r.Use(servermiddleware.Logging)
 
-	// 路由
+	// health
 	r.Get("/health", handler.Health)
+
+	// auth 路由组
+	r.Route("/api/v1/auth", func(r chi.Router) {
+		r.Post("/captcha", h.SendCaptcha)
+		r.Post("/login/cellphone", h.LoginCellphone)
+		r.Get("/login/qrcode", h.LoginQrcode)
+		r.Get("/login/qrcode/check", h.LoginQrcodeCheck)
+		r.Get("/status", h.LoginStatus)
+		r.Post("/logout", h.Logout)
+	})
 
 	return r
 }

@@ -1,0 +1,66 @@
+// Package handler 提供 mimo-music HTTP 服务的请求处理器。
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/VOD-Studio/mimo-music/errors"
+	merrors "github.com/VOD-Studio/mimo-music/errors"
+	"github.com/VOD-Studio/mimo-music/internal/server/response"
+	"github.com/VOD-Studio/mimo-music/service"
+)
+
+// Handler 是所有 HTTP handler 的容器，持有各 service。
+//
+// 后续 issue 会在这里追加 playlist / song / search service。
+type Handler struct {
+	// authSvc 是登录业务 service。
+	authSvc *service.AuthService
+}
+
+// New 创建 Handler。
+func New(authSvc *service.AuthService) *Handler {
+	return &Handler{authSvc: authSvc}
+}
+
+// mapError 把统一错误映射到 HTTP 状态码 + 业务 code。
+func mapError(err error) (int, response.Code, string) {
+	switch {
+	case isErr(err, merrors.ErrUnauthorized):
+		return http.StatusUnauthorized, 10401, "登录态失效"
+	case isErr(err, merrors.ErrRateLimited):
+		return http.StatusTooManyRequests, 10429, "被限流"
+	case isErr(err, merrors.ErrNotFound):
+		return http.StatusNotFound, 10404, "资源不存在"
+	case isErr(err, merrors.ErrUpstreamUnavailable):
+		return http.StatusBadGateway, 10502, "上游不可用"
+	case isErr(err, merrors.ErrInvalidResponse):
+		return http.StatusBadGateway, 10502, "上游响应无效"
+	default:
+		return http.StatusInternalServerError, 10500, err.Error()
+	}
+}
+
+// isErr 检查 err 是否匹配目标（errors.Is 封装）。
+func isErr(err, target error) bool {
+	return err != nil && target != nil && (err == target || err.Error() == target.Error())
+}
+
+// writeError 写入错误响应。
+func writeError(w http.ResponseWriter, err error) {
+	status, code, msg := mapError(err)
+	response.Error(w, status, code, msg)
+}
+
+// decodeJSON 解码请求体 JSON，失败时写入 400 错误。
+func decodeJSON(w http.ResponseWriter, r *http.Request, v any) bool {
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+		response.Error(w, http.StatusBadRequest, 10400, "请求体格式错误")
+		return false
+	}
+	return true
+}
+
+// 确保 errors 包被使用（mapError 的哨兵来源）。
+var _ = errors.ErrUnauthorized
