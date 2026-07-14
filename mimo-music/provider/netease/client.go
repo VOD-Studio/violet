@@ -56,11 +56,11 @@ func (c *Client) Search() provider.Search { return &SearchService{client: c} }
 //
 // urlPath 是网易云端点路径（如 /weapi/song/enhance/player/url/v1），
 // payload 是 JSON 字符串，cookie 可选。
-// 返回原始 JSON 响应体。
-func (c *Client) weapiPost(ctx context.Context, urlPath, payload, cookie string) ([]byte, error) {
+// 返回原始 JSON 响应体和从 Set-Cookie 响应头提取的 Cookie 字符串。
+func (c *Client) weapiPost(ctx context.Context, urlPath, payload, cookie string) ([]byte, string, error) {
 	encrypted, err := WeAPIEncrypt(payload, "")
 	if err != nil {
-		return nil, fmt.Errorf("加密失败: %w", err)
+		return nil, "", fmt.Errorf("加密失败: %w", err)
 	}
 
 	// params 和 encSecKey 含 base64/十六进制特殊字符（+ = /），必须 URL 编码
@@ -72,7 +72,7 @@ func (c *Client) weapiPost(ctx context.Context, urlPath, payload, cookie string)
 	url := "https://music.163.com" + urlPath
 	req, err := http.NewRequestWithContext(ctx, "POST", url, form)
 	if err != nil {
-		return nil, fmt.Errorf("创建请求失败: %w", err)
+		return nil, "", fmt.Errorf("创建请求失败: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -84,27 +84,27 @@ func (c *Client) weapiPost(ctx context.Context, urlPath, payload, cookie string)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", merrors.ErrUpstreamUnavailable, err)
+		return nil, "", fmt.Errorf("%w: %v", merrors.ErrUpstreamUnavailable, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("读取响应失败: %w", err)
+		return nil, "", fmt.Errorf("读取响应失败: %w", err)
 	}
 
 	if err := mapHTTPError(resp.StatusCode, body); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return body, nil
+	return body, extractCookies(resp), nil
 }
 
 // postJSON 是发送 JSON 请求的通用方法（非加密端点用）。
-func (c *Client) postJSON(ctx context.Context, url, payload, cookie string) ([]byte, error) {
+func (c *Client) postJSON(ctx context.Context, url, payload, cookie string) ([]byte, string, error) {
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBufferString(payload))
 	if err != nil {
-		return nil, fmt.Errorf("创建请求失败: %w", err)
+		return nil, "", fmt.Errorf("创建请求失败: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -116,20 +116,20 @@ func (c *Client) postJSON(ctx context.Context, url, payload, cookie string) ([]b
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", merrors.ErrUpstreamUnavailable, err)
+		return nil, "", fmt.Errorf("%w: %v", merrors.ErrUpstreamUnavailable, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("读取响应失败: %w", err)
+		return nil, "", fmt.Errorf("读取响应失败: %w", err)
 	}
 
 	if err := mapHTTPError(resp.StatusCode, body); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return body, nil
+	return body, extractCookies(resp), nil
 }
 
 // getCookie 返回当前请求应用的 Cookie（优先用传入的，其次用默认）。
@@ -178,6 +178,30 @@ func (c *Client) apiGet(ctx context.Context, urlPath string, params url.Values, 
 	}
 
 	return body, nil
+}
+
+// extractCookies 从 HTTP 响应的 Set-Cookie 头提取并合并 Cookie 字符串。
+//
+// 网易云登录接口通过 Set-Cookie 返回 MUSIC_U / __csrf 等关键 Cookie。
+// 多个 Set-Cookie 头合并去重，取每个 cookie 的 name=value 部分（去掉 Path / Domain 等属性），
+// 拼成 "k=v; k=v" 格式。同名的 cookie 后者覆盖前者。
+func extractCookies(resp *http.Response) string {
+	cookies := resp.Cookies()
+	if len(cookies) == 0 {
+		return ""
+	}
+
+	// 用 map 去重，同名的后者覆盖前者
+	merged := make(map[string]string, len(cookies))
+	for _, c := range cookies {
+		merged[c.Name] = c.Value
+	}
+
+	parts := make([]string, 0, len(merged))
+	for name, value := range merged {
+		parts = append(parts, name+"="+value)
+	}
+	return strings.Join(parts, "; ")
 }
 
 // 编译期断言：Client 实现 Provider 接口。

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/VOD-Studio/mimo-music/provider"
 )
@@ -28,14 +27,14 @@ type SearchService struct{ client *Client }
 // SendCaptcha 向手机发送验证码。
 func (a *AuthService) SendCaptcha(ctx context.Context, phone string) error {
 	payload := fmt.Sprintf(`{"cellphone":"%s","ctcode":"86"}`, phone)
-	_, err := a.client.weapiPost(ctx, "/weapi/sms/captcha/sent", payload, "")
+	_, _, err := a.client.weapiPost(ctx, "/weapi/sms/captcha/sent", payload, "")
 	return err
 }
 
 // LoginByCellphone 用手机号和验证码登录。
 func (a *AuthService) LoginByCellphone(ctx context.Context, phone, captcha string) (provider.SessionResult, error) {
 	payload := fmt.Sprintf(`{"phone":"%s","captcha":"%s","countrycode":"86","rememberLogin":"true"}`, phone, captcha)
-	body, err := a.client.weapiPost(ctx, "/weapi/login/cellphone", payload, "")
+	body, respCookie, err := a.client.weapiPost(ctx, "/weapi/login/cellphone", payload, "")
 	if err != nil {
 		return provider.SessionResult{}, err
 	}
@@ -47,7 +46,7 @@ func (a *AuthService) LoginByCellphone(ctx context.Context, phone, captcha strin
 
 	return provider.SessionResult{
 		UserID:   fmt.Sprintf("%d", resp.Account.ID),
-		Cookie:   extractCookieFromLogin(body),
+		Cookie:   respCookie,
 		Nickname: resp.Profile.Nickname,
 		Avatar:   resp.Profile.AvatarURL,
 	}, nil
@@ -55,7 +54,7 @@ func (a *AuthService) LoginByCellphone(ctx context.Context, phone, captcha strin
 
 // LoginByQrcode 获取登录二维码。
 func (a *AuthService) LoginByQrcode(ctx context.Context) (provider.QrcodeResult, error) {
-	keyBody, err := a.client.postJSON(ctx, "https://music.163.com/api/login/qrcode/uniCreate", `{"type":1}`, "")
+	keyBody, _, err := a.client.postJSON(ctx, "https://music.163.com/api/login/qrcode/uniCreate", `{"type":1}`, "")
 	if err != nil {
 		return provider.QrcodeResult{}, err
 	}
@@ -80,7 +79,7 @@ func (a *AuthService) LoginByQrcode(ctx context.Context) (provider.QrcodeResult,
 // CheckQrcode 轮询二维码登录状态。
 func (a *AuthService) CheckQrcode(ctx context.Context, key string) (provider.QrcodeStatus, error) {
 	payload := fmt.Sprintf(`{"key":"%s","type":1}`, key)
-	body, err := a.client.postJSON(ctx, "https://music.163.com/api/login/qrcode/client/login", payload, "")
+	body, respCookie, err := a.client.postJSON(ctx, "https://music.163.com/api/login/qrcode/client/login", payload, "")
 	if err != nil {
 		return provider.QrcodeStatus{}, err
 	}
@@ -95,14 +94,14 @@ func (a *AuthService) CheckQrcode(ctx context.Context, key string) (provider.Qrc
 
 	cookie := ""
 	if resp.Code == 803 {
-		cookie = extractCookieFromLogin(body)
+		cookie = respCookie
 	}
 	return provider.QrcodeStatus{Code: resp.Code, Message: resp.Message, Cookie: cookie}, nil
 }
 
 // LoginStatus 查询当前登录态。
 func (a *AuthService) LoginStatus(ctx context.Context, cookie string) (provider.SessionResult, error) {
-	body, err := a.client.weapiPost(ctx, "/weapi/w/nuser/account/get", "{}", cookie)
+	body, _, err := a.client.weapiPost(ctx, "/weapi/w/nuser/account/get", "{}", cookie)
 	if err != nil {
 		return provider.SessionResult{}, err
 	}
@@ -125,7 +124,7 @@ func (a *AuthService) LoginStatus(ctx context.Context, cookie string) (provider.
 
 // Logout 登出。
 func (a *AuthService) Logout(ctx context.Context, cookie string) error {
-	_, err := a.client.weapiPost(ctx, "/weapi/logout", "{}", cookie)
+	_, _, err := a.client.weapiPost(ctx, "/weapi/logout", "{}", cookie)
 	return err
 }
 
@@ -137,7 +136,7 @@ func (a *AuthService) Logout(ctx context.Context, cookie string) error {
 // 超过 10 首时需要用 /weapi/v3/song/detail 按歌曲 ID 批量拉取。
 func (p *PlaylistService) Detail(ctx context.Context, playlistID string) (provider.PlaylistResult, error) {
 	payload := fmt.Sprintf(`{"id":"%s","n":1000,"s":8}`, playlistID)
-	body, err := p.client.weapiPost(ctx, "/weapi/v6/playlist/detail", payload, p.client.getCookie(""))
+	body, _, err := p.client.weapiPost(ctx, "/weapi/v6/playlist/detail", payload, p.client.getCookie(""))
 	if err != nil {
 		return provider.PlaylistResult{}, err
 	}
@@ -167,7 +166,7 @@ func (p *PlaylistService) Detail(ctx context.Context, playlistID string) (provid
 // Detail 获取歌曲详情。
 func (s *SongService) Detail(ctx context.Context, songID string) (provider.SongResult, error) {
 	payload := fmt.Sprintf(`{"c":"[{\"id\":%s}]","ids":"[%s]"}`, songID, songID)
-	body, err := s.client.weapiPost(ctx, "/weapi/v3/song/detail", payload, s.client.getCookie(""))
+	body, _, err := s.client.weapiPost(ctx, "/weapi/v3/song/detail", payload, s.client.getCookie(""))
 	if err != nil {
 		return provider.SongResult{}, err
 	}
@@ -191,7 +190,7 @@ func (s *SongService) URL(ctx context.Context, songID, level string) (string, er
 		level = "standard"
 	}
 	payload := fmt.Sprintf(`{"ids":"[%s]","level":"%s","encodeType":"flac"}`, songID, level)
-	body, err := s.client.weapiPost(ctx, "/weapi/song/enhance/player/url/v1", payload, s.client.getCookie(""))
+	body, _, err := s.client.weapiPost(ctx, "/weapi/song/enhance/player/url/v1", payload, s.client.getCookie(""))
 	if err != nil {
 		return "", err
 	}
@@ -210,7 +209,7 @@ func (s *SongService) URL(ctx context.Context, songID, level string) (string, er
 // Lyric 获取歌词。
 func (s *SongService) Lyric(ctx context.Context, songID string) (provider.LyricResult, error) {
 	payload := fmt.Sprintf(`{"id":"%s","lv":-1,"kv":-1,"tv":-1}`, songID)
-	body, err := s.client.weapiPost(ctx, "/weapi/song/lyric", payload, s.client.getCookie(""))
+	body, _, err := s.client.weapiPost(ctx, "/weapi/song/lyric", payload, s.client.getCookie(""))
 	if err != nil {
 		return provider.LyricResult{}, err
 	}
@@ -300,7 +299,3 @@ type neteaseLoginResponse struct {
 	} `json:"profile"`
 }
 
-// extractCookieFromLogin 从登录响应体提取 Cookie 字符串。
-func extractCookieFromLogin(body []byte) string {
-	return strings.TrimSpace(string(body))
-}
