@@ -20,3 +20,20 @@ type SessionStore interface {
 	// ListAll 列出所有 session 的 userID（worker 健康检查用）。
 	ListAll(ctx context.Context) ([]string, error)
 }
+
+// NoopSessionStore 是 SessionStore 的空实现，不做任何存储。
+//
+// 服务启动初期未接入 Redis 时用，ListAll 返回空切片。
+type NoopSessionStore struct{}
+
+// Get 返回空。
+func (NoopSessionStore) Get(context.Context, string) (string, error) { return "", nil }
+
+// Save 不做任何事。
+func (NoopSessionStore) Save(context.Context, string, string) error { return nil }
+
+// Delete 不做任何事。
+func (NoopSessionStore) Delete(context.Context, string) error { return nil }
+
+// ListAll 返回空切片。
+func (NoopSessionStore) ListAll(context.Context) ([]string, error) { return nil, nil }

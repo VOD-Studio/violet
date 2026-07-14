@@ -46,7 +46,7 @@ func main() {
 	)
 	authSvc := service.NewAuthService(
 		neteaseClient.Auth(),
-		nil, // store 暂用 nil，Issue-0008 接入 Redis 后填充
+		provider.NoopSessionStore{}, // Phase 1 用 noop，接入 Redis 后替换
 		observability.NewSlogLogger(slog.Default()),
 	)
 	h := handler.New(authSvc)
