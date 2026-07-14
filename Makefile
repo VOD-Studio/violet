@@ -133,6 +133,9 @@ web-test: ## 运行前端单元测试 (Vitest)
 music: ## 启动 mimo-music 音乐服务
 	cd mimo-music && go run ./cmd/server
 
+music-worker: ## 启动 mimo-music worker（Cookie 健康检查等异步任务）
+	cd mimo-music && go run ./cmd/worker
+
 music-build: ## 编译 mimo-music
 	cd mimo-music && go build -o ./bin/server ./cmd/server
 	@echo "编译完成: mimo-music/bin/server"

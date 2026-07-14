@@ -54,15 +54,23 @@ pnpm dev &
 WEB_PID=$!
 cd ..
 
+# 启动 mimo-music 音乐服务
+echo "启动 mimo-music 音乐服务..."
+cd mimo-music
+go run ./cmd/server &
+MUSIC_PID=$!
+cd ..
+
 echo ""
 echo "开发环境已启动:"
 echo "  前端: http://localhost:5173"
 echo "  API:  http://localhost:9090"
+echo "  音乐服务: http://localhost:3721"
 echo "  数据库: localhost:5432"
 echo "  Redis: localhost:6379"
 echo ""
 echo "按 Ctrl+C 停止所有服务"
 
 # 等待子进程，退出时清理
-trap "kill $API_PID $WEB_PID 2>/dev/null; echo '已停止服务'" EXIT
+trap "kill $API_PID $WEB_PID $MUSIC_PID 2>/dev/null; echo '已停止服务'" EXIT
 wait
