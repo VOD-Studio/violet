@@ -30,6 +30,9 @@ Thumbs.db
 # Qwen state
 .qwen/
 
+# ZCode
+.zcode/
+
 # Environment
 .env
 .env.local
