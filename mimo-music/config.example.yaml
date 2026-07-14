@@ -1,11 +1,32 @@
 # mimo-music 配置示例
 #
-# 复制为 config.yaml 后按需修改。
-# 环境变量可覆盖字段值：MIMO_MUSIC_SERVER_PORT / MIMO_MUSIC_SERVER_ENV
+# 环境变量可覆盖字段值，格式 MIMO_MUSIC_{MODULE}_{FIELD}。
+# 例如：MIMO_MUSIC_SERVER_PORT=9091
 
 server:
   # HTTP 服务监听端口
   port: 8080
-
   # 运行环境：dev（彩色文本日志）/ prod（JSON 日志）
   env: dev
+
+provider:
+  # 调用网易云上游的超时时间（秒）
+  upstream_timeout: 10
+  # 调用上游失败后的最大重试次数
+  max_retries: 3
+
+redis:
+  # Redis 主机地址
+  host: localhost
+  # Redis 端口
+  port: 6379
+  # Redis 密码，无密码时为空
+  password: ""
+  # Redis 数据库编号（用 DB 1 避免和 mimo-blog DB 0 冲突）
+  db: 1
+
+worker:
+  # worker 并发处理的任务数
+  concurrency: 5
+  # Cookie 健康检查轮询间隔（小时）
+  cookie_check_interval: 6

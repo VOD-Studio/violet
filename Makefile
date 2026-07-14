@@ -128,6 +128,21 @@ web-typecheck: ## TypeScript 类型检查
 web-test: ## 运行前端单元测试 (Vitest)
 	cd web && pnpm test
 
+# ==================== mimo-music（音乐解析服务） ====================
+
+music: ## 启动 mimo-music 音乐服务
+	cd mimo-music && go run ./cmd/server
+
+music-build: ## 编译 mimo-music
+	cd mimo-music && go build -o ./bin/server ./cmd/server
+	@echo "编译完成: mimo-music/bin/server"
+
+music-test: ## 运行 mimo-music 测试
+	cd mimo-music && go test ./...
+
+music-lint: ## mimo-music 代码检查
+	cd mimo-music && golangci-lint run ./... 2>/dev/null || go vet ./...
+
 # ==================== 构建 ====================
 
 build: api-build web-build ## 构建前后端生产版本
