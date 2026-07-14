@@ -77,14 +77,17 @@ $CONTAINER_CMD exec "$NGINX_CONTAINER" cp "$CONF_PATH" "${CONF_PATH}.bak" 2>/dev
 awk '
 BEGIN { in_xun = 0; has_ssl = 0; patched = 0 }
 
-# 进入 xun.rua.plus server block
-/server_name xun\.rua\.plus;/ { in_xun = 1; has_ssl = 0 }
+# 重置 server 块状态
+/^[[:space:]]*server[[:space:]]*\{/ { in_xun = 0; has_ssl = 0 }
+
+# 进入 xun.rua.plus / xunrua.top server block
+/^[[:space:]]*server_name[[:space:]]/ && /(xun\.rua\.plus|xunrua\.top)/ { in_xun = 1; has_ssl = 0 }
 
 # 在 xun block 中检测 SSL
 in_xun && /listen 443 ssl/ { has_ssl = 1 }
 
 # 在 xun HTTPS block 中找到 location / { 并在其前面插入
-in_xun && has_ssl && !patched && /^[[:space:]]*location \/ \{/ {
+in_xun && has_ssl && !patched && /^[[:space:]]*location[[:space:]]+\/[[:space:]]*\{/ {
     print "    location ^~ /api/v1/ {"
     print "        proxy_pass http://blog-api:9090/api/v1/;"
     print "        proxy_set_header Host $host;"
@@ -127,4 +130,4 @@ fi
 
 echo ""
 echo "✅ nginx patch 完成"
-echo "验证: curl -sk https://xun.rua.plus/api/v1/announcements"
+echo "验证: curl -sk https://xunrua.top/api/v1/announcements"

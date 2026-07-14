@@ -72,6 +72,7 @@ ok "环境检查通过"
 # ==================== 构建镜像 ====================
 if [ "$SKIP_BUILD" = false ]; then
     info "构建 Docker 镜像..."
+    export DOCKER_DEFAULT_PLATFORM=linux/amd64
 
     # 构建 API 镜像
     info "  构建 blog-api..."
@@ -80,6 +81,11 @@ if [ "$SKIP_BUILD" = false ]; then
     # 构建 Web 镜像
     info "  构建 blog-web..."
     docker compose --env-file api/.env -f "$COMPOSE_FILE" build web
+
+    # 拉取 amd64 版本的外部镜像以防在 ARM 本地打包时误打入 arm64 版本
+    info "  拉取 amd64 版本的外部基础镜像..."
+    docker pull --platform linux/amd64 docker.io/library/postgres:16-alpine
+    docker pull --platform linux/amd64 docker.io/library/redis:7-alpine
 
     # 保存镜像
     info "  保存镜像到 $IMAGE_FILE..."
