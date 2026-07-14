@@ -32,6 +32,8 @@ func Spec() (*openapi3.T, error) {
 	registerSearchPaths(t.Paths)
 	registerAlbumPaths(t.Paths)
 	registerArtistPaths(t.Paths)
+	registerRecommendPaths(t.Paths)
+	registerFMPaths(t.Paths)
 
 	return t, nil
 }

@@ -58,5 +58,11 @@ func NewRouter(h *handler.Handler, m *observability.Metrics) http.Handler {
 	// 歌手
 	r.Get("/api/v1/artists/{id}", h.GetArtist)
 
+	// 每日推荐（需登录）
+	r.Get("/api/v1/recommend/daily", h.GetDailyRecommend)
+
+	// 私人 FM（需登录）
+	r.Get("/api/v1/fm", h.GetPersonalFM)
+
 	return r
 }

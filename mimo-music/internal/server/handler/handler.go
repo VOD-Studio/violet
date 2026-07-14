@@ -3,9 +3,9 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
-	"github.com/VOD-Studio/mimo-music/errors"
 	merrors "github.com/VOD-Studio/mimo-music/errors"
 	"github.com/VOD-Studio/mimo-music/internal/server/response"
 	"github.com/VOD-Studio/mimo-music/service"
@@ -13,12 +13,14 @@ import (
 
 // Handler 是所有 HTTP handler 的容器，持有各 service。
 type Handler struct {
-	authSvc     *service.AuthService
-	playlistSvc *service.PlaylistService
-	songSvc     *service.SongService
-	searchSvc   *service.SearchService
-	albumSvc    *service.AlbumService
-	artistSvc   *service.ArtistService
+	authSvc      *service.AuthService
+	playlistSvc  *service.PlaylistService
+	songSvc      *service.SongService
+	searchSvc    *service.SearchService
+	albumSvc     *service.AlbumService
+	artistSvc    *service.ArtistService
+	recommendSvc *service.RecommendService
+	fmSvc        *service.FMService
 }
 
 // New 创建 Handler。
@@ -29,20 +31,26 @@ func New(
 	searchSvc *service.SearchService,
 	albumSvc *service.AlbumService,
 	artistSvc *service.ArtistService,
+	recommendSvc *service.RecommendService,
+	fmSvc *service.FMService,
 ) *Handler {
 	return &Handler{
-		authSvc:     authSvc,
-		playlistSvc: playlistSvc,
-		songSvc:     songSvc,
-		searchSvc:   searchSvc,
-		albumSvc:    albumSvc,
-		artistSvc:   artistSvc,
+		authSvc:      authSvc,
+		playlistSvc:  playlistSvc,
+		songSvc:      songSvc,
+		searchSvc:    searchSvc,
+		albumSvc:     albumSvc,
+		artistSvc:    artistSvc,
+		recommendSvc: recommendSvc,
+		fmSvc:        fmSvc,
 	}
 }
 
 // mapError 把统一错误映射到 HTTP 状态码 + 业务 code。
 func mapError(err error) (int, response.Code, string) {
 	switch {
+	case isErr(err, service.ErrNoAvailableSession):
+		return http.StatusServiceUnavailable, 10503, "所有登录态均不可用"
 	case isErr(err, merrors.ErrUnauthorized):
 		return http.StatusUnauthorized, 10401, "登录态失效"
 	case isErr(err, merrors.ErrRateLimited):
@@ -60,7 +68,7 @@ func mapError(err error) (int, response.Code, string) {
 
 // isErr 检查 err 是否匹配目标（errors.Is 封装）。
 func isErr(err, target error) bool {
-	return err != nil && target != nil && (err == target || err.Error() == target.Error())
+	return err != nil && target != nil && errors.Is(err, target)
 }
 
 // writeError 写入错误响应。
@@ -78,5 +86,5 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, v any) bool {
 	return true
 }
 
-// 确保 errors 包被使用（mapError 的哨兵来源）。
-var _ = errors.ErrUnauthorized
+// 确保 isErr 用 errors.Is 正确匹配（替代字符串比较）。
+var _ = errors.Is

@@ -100,3 +100,23 @@ func registerArtistPaths(paths *openapi3.Paths) {
 		},
 	})
 }
+
+// registerRecommendPaths 注册每日推荐端点。
+func registerRecommendPaths(paths *openapi3.Paths) {
+	paths.Set("/api/v1/recommend/daily", &openapi3.PathItem{
+		Get: &openapi3.Operation{
+			Tags:    []string{"recommend"},
+			Summary: "获取每日推荐歌曲（需登录）",
+		},
+	})
+}
+
+// registerFMPaths 注册私人 FM 端点。
+func registerFMPaths(paths *openapi3.Paths) {
+	paths.Set("/api/v1/fm", &openapi3.PathItem{
+		Get: &openapi3.Operation{
+			Tags:    []string{"fm"},
+			Summary: "获取私人 FM 歌曲（需登录）",
+		},
+	})
+}

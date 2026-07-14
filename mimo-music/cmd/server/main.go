@@ -56,6 +56,8 @@ func main() {
 	// 装配：provider → service → handler → router
 	redisCache := redis.New(rdb)
 	sessionStore := storeredis.NewSessionStore(rdb)
+	availStore := storeredis.NewAvailabilityStore(rdb)
+	rotator := service.NewSessionRotator(sessionStore, availStore)
 
 	neteaseClient := netease.New(
 		provider.WithLogger(observability.NewSlogLogger(slog.Default())),
@@ -91,7 +93,17 @@ func main() {
 		observability.NewSlogLogger(slog.Default()),
 		metrics,
 	)
-	h := handler.New(authSvc, playlistSvc, songSvc, searchSvc, albumSvc, artistSvc)
+	recommendSvc := service.NewRecommendService(
+		neteaseClient.Recommend(), rotator, redisCache,
+		observability.NewSlogLogger(slog.Default()),
+		metrics,
+	)
+	fmSvc := service.NewFMService(
+		neteaseClient.FM(), rotator, redisCache,
+		observability.NewSlogLogger(slog.Default()),
+		metrics,
+	)
+	h := handler.New(authSvc, playlistSvc, songSvc, searchSvc, albumSvc, artistSvc, recommendSvc, fmSvc)
 
 	router := server.NewRouter(h, metrics)
 	srv := &http.Server{
