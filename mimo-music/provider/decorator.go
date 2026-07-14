@@ -77,6 +77,16 @@ func (r *RetryProvider) Search() Search {
 	return &retrySearch{inner: r.inner.Search(), maxRetries: r.maxRetries, baseDelay: r.baseDelay}
 }
 
+// Album 返回带重试的专辑能力。
+func (r *RetryProvider) Album() Album {
+	return &retryAlbum{inner: r.inner.Album(), maxRetries: r.maxRetries, baseDelay: r.baseDelay}
+}
+
+// Artist 返回带重试的歌手能力。
+func (r *RetryProvider) Artist() Artist {
+	return &retryArtist{inner: r.inner.Artist(), maxRetries: r.maxRetries, baseDelay: r.baseDelay}
+}
+
 // withRetry 执行 fn，失败时按指数退避重试。
 func withRetry(ctx context.Context, maxRetries int, baseDelay time.Duration, fn func() error) error {
 	var err error
@@ -231,6 +241,42 @@ func (s *retrySearch) Search(ctx context.Context, keyword string, limit int) (Se
 	return result, err
 }
 
+// --- retryAlbum ---
+
+type retryAlbum struct {
+	inner      Album
+	maxRetries int
+	baseDelay  time.Duration
+}
+
+func (a *retryAlbum) Detail(ctx context.Context, albumID string) (AlbumResult, error) {
+	var result AlbumResult
+	err := withRetry(ctx, a.maxRetries, a.baseDelay, func() error {
+		var e error
+		result, e = a.inner.Detail(ctx, albumID)
+		return e
+	})
+	return result, err
+}
+
+// --- retryArtist ---
+
+type retryArtist struct {
+	inner      Artist
+	maxRetries int
+	baseDelay  time.Duration
+}
+
+func (a *retryArtist) Info(ctx context.Context, artistID string) (ArtistResult, error) {
+	var result ArtistResult
+	err := withRetry(ctx, a.maxRetries, a.baseDelay, func() error {
+		var e error
+		result, e = a.inner.Info(ctx, artistID)
+		return e
+	})
+	return result, err
+}
+
 // --- 熔断器 ---
 
 // CircuitState 是熔断器状态。
@@ -356,6 +402,16 @@ func (b *BreakerProvider) Song() Song {
 // Search 返回带熔断的搜索能力。
 func (b *BreakerProvider) Search() Search {
 	return &breakerSearch{inner: b.inner.Search(), breaker: b.breaker}
+}
+
+// Album 返回带熔断的专辑能力。
+func (b *BreakerProvider) Album() Album {
+	return &breakerAlbum{inner: b.inner.Album(), breaker: b.breaker}
+}
+
+// Artist 返回带熔断的歌手能力。
+func (b *BreakerProvider) Artist() Artist {
+	return &breakerArtist{inner: b.inner.Artist(), breaker: b.breaker}
 }
 
 // withBreaker 执行 fn，受熔断器保护。
@@ -495,6 +551,40 @@ func (s *breakerSearch) Search(ctx context.Context, keyword string, limit int) (
 	err := withBreaker(s.breaker, func() error {
 		var e error
 		result, e = s.inner.Search(ctx, keyword, limit)
+		return e
+	})
+	return result, err
+}
+
+// --- breakerAlbum ---
+
+type breakerAlbum struct {
+	inner   Album
+	breaker *CircuitBreaker
+}
+
+func (a *breakerAlbum) Detail(ctx context.Context, albumID string) (AlbumResult, error) {
+	var result AlbumResult
+	err := withBreaker(a.breaker, func() error {
+		var e error
+		result, e = a.inner.Detail(ctx, albumID)
+		return e
+	})
+	return result, err
+}
+
+// --- breakerArtist ---
+
+type breakerArtist struct {
+	inner   Artist
+	breaker *CircuitBreaker
+}
+
+func (a *breakerArtist) Info(ctx context.Context, artistID string) (ArtistResult, error) {
+	var result ArtistResult
+	err := withBreaker(a.breaker, func() error {
+		var e error
+		result, e = a.inner.Info(ctx, artistID)
 		return e
 	})
 	return result, err

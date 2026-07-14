@@ -153,6 +153,57 @@ type SearchResult struct {
 	Total int
 }
 
+// Album 是平台专辑能力接口。
+type Album interface {
+	// Detail 获取专辑详情（含歌曲列表）。
+	Detail(ctx context.Context, albumID string) (AlbumResult, error)
+}
+
+// AlbumResult 是专辑查询结果。
+type AlbumResult struct {
+	// ID 是专辑 ID。
+	ID string
+
+	// Name 是专辑名。
+	Name string
+
+	// Cover 是专辑封面 URL。
+	Cover string
+
+	// Artist 是专辑歌手名。
+	Artist string
+
+	// PublishTime 是发行时间。
+	PublishTime string
+
+	// Songs 是专辑内的歌曲列表。
+	Songs []SongResult
+}
+
+// Artist 是平台歌手能力接口。
+type Artist interface {
+	// Info 获取歌手信息及热门歌曲。
+	Info(ctx context.Context, artistID string) (ArtistResult, error)
+}
+
+// ArtistResult 是歌手查询结果。
+type ArtistResult struct {
+	// ID 是歌手 ID。
+	ID string
+
+	// Name 是歌手名。
+	Name string
+
+	// Cover 是歌手封面 URL。
+	Cover string
+
+	// Description 是歌手简介。
+	Description string
+
+	// Songs 是热门歌曲列表。
+	Songs []SongResult
+}
+
 // Provider 是所有音乐平台实现的统一接口。
 type Provider interface {
 	// Platform 返回平台标识（netease / huawei）。
@@ -169,4 +220,10 @@ type Provider interface {
 
 	// Search 返回搜索能力。
 	Search() Search
+
+	// Album 返回专辑能力。
+	Album() Album
+
+	// Artist 返回歌手能力。
+	Artist() Artist
 }

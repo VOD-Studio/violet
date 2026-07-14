@@ -52,6 +52,12 @@ func (c *Client) Song() provider.Song { return &SongService{client: c} }
 // Search 返回搜索能力。
 func (c *Client) Search() provider.Search { return &SearchService{client: c} }
 
+// Album 返回专辑能力。
+func (c *Client) Album() provider.Album { return &AlbumService{client: c} }
+
+// Artist 返回歌手能力。
+func (c *Client) Artist() provider.Artist { return &ArtistService{client: c} }
+
 // weapiPost 发送 weapi 加密 POST 请求。
 //
 // urlPath 是网易云端点路径（如 /weapi/song/enhance/player/url/v1），

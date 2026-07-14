@@ -38,6 +38,8 @@ func (m *mockProvider) Auth() provider.Auth               { return nil }
 func (m *mockProvider) Playlist() provider.Playlist       { return m.pl }
 func (m *mockProvider) Song() provider.Song               { return nil }
 func (m *mockProvider) Search() provider.Search           { return nil }
+func (m *mockProvider) Album() provider.Album             { return nil }
+func (m *mockProvider) Artist() provider.Artist           { return nil }
 
 // --- 重试装饰器测试 ---
 
