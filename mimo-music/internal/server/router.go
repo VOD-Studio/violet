@@ -9,23 +9,27 @@ import (
 
 	"github.com/VOD-Studio/mimo-music/internal/server/handler"
 	servermiddleware "github.com/VOD-Studio/mimo-music/internal/server/middleware"
+	"github.com/VOD-Studio/mimo-music/observability"
 )
 
 // NewRouter 创建并配置 chi 路由器。
 //
-// 中间件：recovery / request_id / 访问日志。
-// 路由：health / auth。
-// 后续 issue 会在此添加 playlist / song / search 路由组。
-func NewRouter(h *handler.Handler) http.Handler {
+// 中间件：recovery / request_id / 访问日志 / Prometheus 指标。
+// 路由：health / metrics / auth / playlist / song / search。
+func NewRouter(h *handler.Handler, m *observability.Metrics) http.Handler {
 	r := chi.NewRouter()
 
 	// 中间件
 	r.Use(chimiddleware.Recoverer)
 	r.Use(chimiddleware.RequestID)
 	r.Use(servermiddleware.Logging)
+	r.Use(servermiddleware.Metrics(m))
 
 	// health
 	r.Get("/health", handler.Health)
+
+	// Prometheus 指标端点（不走 metrics 中间件，避免自身递归）
+	r.Method("GET", "/metrics", handler.Metrics())
 
 	// auth 路由组
 	r.Route("/api/v1/auth", func(r chi.Router) {

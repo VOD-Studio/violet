@@ -35,6 +35,9 @@ func main() {
 	defer func() { _ = tracerShutdown(context.Background()) }()
 	observability.InitLogger(cfg.Server.Env)
 
+	// Prometheus 指标
+	metrics := observability.NewMetrics()
+
 	// 装配 provider（复用 server 的模式）
 	neteaseClient := netease.New(
 		provider.WithLogger(observability.NewSlogLogger(slog.Default())),
@@ -60,7 +63,7 @@ func main() {
 
 	// 注册任务 handler
 	mux := asynq.NewServeMux()
-	mux.Handle(tasks.TypeCookieHealth, tasks.HandleCookieHealth(sessionStore, neteaseClient.Auth()))
+	mux.Handle(tasks.TypeCookieHealth, tasks.HandleCookieHealth(sessionStore, neteaseClient.Auth(), metrics))
 
 	// 定时调度器
 	scheduler := worker.NewScheduler(cfg.Redis.Addr(), cfg.Worker.CookieCheckInterval)

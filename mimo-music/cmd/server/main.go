@@ -41,6 +41,9 @@ func main() {
 	observability.InitLogger(cfg.Server.Env)
 	observability.HandleSIGHUP()
 
+	// Prometheus 指标
+	metrics := observability.NewMetrics()
+
 	// Redis 连接（cache / store 共用同一连接池）
 	rdb, err := infraredis.New(cfg.Redis)
 	if err != nil {
@@ -66,18 +69,21 @@ func main() {
 	playlistSvc := service.NewPlaylistService(
 		neteaseClient.Playlist(), redisCache,
 		observability.NewSlogLogger(slog.Default()),
+		metrics,
 	)
 	songSvc := service.NewSongService(
 		neteaseClient.Song(), redisCache,
 		observability.NewSlogLogger(slog.Default()),
+		metrics,
 	)
 	searchSvc := service.NewSearchService(
 		neteaseClient.Search(), redisCache,
 		observability.NewSlogLogger(slog.Default()),
+		metrics,
 	)
 	h := handler.New(authSvc, playlistSvc, songSvc, searchSvc)
 
-	router := server.NewRouter(h)
+	router := server.NewRouter(h, metrics)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:      router,

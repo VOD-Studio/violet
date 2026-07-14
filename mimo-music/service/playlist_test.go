@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/VOD-Studio/mimo-music/observability"
 	"github.com/VOD-Studio/mimo-music/provider"
 )
 
@@ -45,7 +46,7 @@ func TestPlaylistDetail_CacheMissCallsProvider(t *testing.T) {
 	pl := &playlistMock{result: provider.PlaylistResult{ID: "1", Title: "test"}}
 	cache := &ttlCaptureCache{}
 
-	svc := NewPlaylistService(pl, cache, provider.NoopLogger{})
+	svc := NewPlaylistService(pl, cache, provider.NoopLogger{}, observability.NewTestMetrics())
 	result, err := svc.Detail(context.Background(), "1")
 	if err != nil {
 		t.Fatalf("失败: %v", err)
@@ -66,7 +67,7 @@ func TestPlaylistDetail_CacheHitSkipsProvider(t *testing.T) {
 	cache := &ttlCaptureCache{}
 
 	// 手动设置缓存值
-	svc := NewPlaylistService(pl, cache, provider.NoopLogger{})
+	svc := NewPlaylistService(pl, cache, provider.NoopLogger{}, observability.NewTestMetrics())
 	// 由于 cache 接口限制，直接验证空 cache 时不调用
 	_, err := svc.Detail(context.Background(), "1")
 	if err != nil {

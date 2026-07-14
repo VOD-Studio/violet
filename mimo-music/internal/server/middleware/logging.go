@@ -42,7 +42,7 @@ func Logging(next http.Handler) http.Handler {
 		ctx := observability.WithLogger(r.Context(), reqLogger)
 		ctx = context.WithValue(ctx, ctxKeyRequestID{}, reqID)
 
-		ww := &statusRecorder{ResponseWriter: w, status: 200}
+		ww := ensureRecorder(w)
 		next.ServeHTTP(ww, r.WithContext(ctx))
 
 		reqLogger.Info("http_request",

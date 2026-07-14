@@ -16,14 +16,15 @@ import (
 //
 // 缓存策略：搜索结果缓存 10 分钟。
 type SearchService struct {
-	search provider.Search
-	cache  provider.Cache
-	logger provider.Logger
+	search  provider.Search
+	cache   provider.Cache
+	logger  provider.Logger
+	metrics *observability.Metrics
 }
 
 // NewSearchService 创建搜索 service。
-func NewSearchService(search provider.Search, cache provider.Cache, logger provider.Logger) *SearchService {
-	return &SearchService{search: search, cache: cache, logger: logger}
+func NewSearchService(search provider.Search, cache provider.Cache, logger provider.Logger, m *observability.Metrics) *SearchService {
+	return &SearchService{search: search, cache: cache, logger: logger, metrics: m}
 }
 
 // Search 按关键词搜索（缓存 10min）。
@@ -33,15 +34,19 @@ func (s *SearchService) Search(ctx context.Context, keyword string, limit int) (
 	if cached, ok, _ := s.cache.Get(ctx, cacheKey); ok {
 		var result provider.SearchResult
 		if err := json.Unmarshal([]byte(cached), &result); err == nil {
+			s.metrics.RecordCacheHit()
 			return result, nil
 		}
 	}
+	s.metrics.RecordCacheMiss()
 
 	start := time.Now()
 	result, err := s.search.Search(ctx, keyword, limit)
+	s.metrics.ObserveUpstreamLatency("search", time.Since(start).Seconds())
 	s.logger.Debug("upstream call done",
 		slog.Int64(observability.FieldUpstreamLatencyMS, time.Since(start).Milliseconds()))
 	if err != nil {
+		s.metrics.RecordUpstreamError()
 		return provider.SearchResult{}, err
 	}
 

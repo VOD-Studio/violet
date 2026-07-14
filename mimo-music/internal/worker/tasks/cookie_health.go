@@ -26,8 +26,8 @@ func NewCookieHealthTask() (*asynq.Task, error) {
 // HandleCookieHealth 处理 Cookie 健康检查任务。
 //
 // 遍历 SessionStore 中所有 session，逐个验证 Cookie 有效性。
-// 失效的记 Warn 日志。
-func HandleCookieHealth(store provider.SessionStore, auth provider.Auth) asynq.Handler {
+// 失效的记 Warn 日志并更新 cookie_health_status gauge。
+func HandleCookieHealth(store provider.SessionStore, auth provider.Auth, m *observability.Metrics) asynq.Handler {
 	return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
 		userIDs, err := store.ListAll(ctx)
 		if err != nil {
@@ -42,6 +42,7 @@ func HandleCookieHealth(store provider.SessionStore, auth provider.Auth) asynq.H
 			cookie, err := store.Get(ctx, uid)
 			if err != nil || cookie == "" {
 				expired++
+				m.SetCookieHealth(uid, false)
 				slog.WarnContext(ctx, "cookie missing or invalid",
 					slog.String(observability.FieldUserID, uid))
 				continue
@@ -51,11 +52,13 @@ func HandleCookieHealth(store provider.SessionStore, auth provider.Auth) asynq.H
 			_, err = auth.LoginStatus(ctx, cookie)
 			if err != nil {
 				expired++
+				m.SetCookieHealth(uid, false)
 				slog.WarnContext(ctx, "cookie expired",
 					slog.String(observability.FieldUserID, uid),
 					slog.String(observability.FieldErrorCode, err.Error()))
 				continue
 			}
+			m.SetCookieHealth(uid, true)
 			checked++
 		}
 
