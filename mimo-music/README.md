@@ -17,12 +17,12 @@ air
 docker compose up mimo-music
 ```
 
-默认监听 `:8080`，环境变量 `MIMO_MUSIC_SERVER_PORT` 可覆盖。
+默认监听 `:3721`（避开 8080/8000 等常用端口），环境变量 `MIMO_MUSIC_SERVER_PORT` 可覆盖。
 
 ## 验证
 
 ```bash
-curl localhost:8080/health
+curl localhost:3721/health
 # {"code":0,"data":{"status":"ok"},"message":""}
 ```
 

@@ -5,7 +5,7 @@
 
 server:
   # HTTP 服务监听端口
-  port: 8080
+  port: 3721
   # 运行环境：dev（彩色文本日志）/ prod（JSON 日志）
   env: dev
 

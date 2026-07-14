@@ -76,7 +76,7 @@ type WorkerConfig struct {
 func Default() Config {
 	return Config{
 		Server: ServerConfig{
-			Port: 8080,
+			Port: 3721,
 			Env:  "dev",
 		},
 		Provider: ProviderConfig{

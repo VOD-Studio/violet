@@ -147,6 +147,11 @@ music-openapi: ## 生成 mimo-music OpenAPI 文档
 	cd mimo-music && go run ./cmd/export-openapi/
 	@echo "OpenAPI spec 已导出到 mimo-music/openapi.json"
 
+music-apifox: ## 生成 mimo-music OpenAPI 文档并导入到 Apifox
+	@echo "生成并导入 mimo-music OpenAPI 文档到 Apifox..."
+	cd mimo-music && go run ./cmd/export-openapi/ && apifox import --project __PROJECT_ID__ --format openapi --file ./openapi.json
+	@echo "mimo-music Apifox 更新完成"
+
 # ==================== 构建 ====================
 
 build: api-build web-build ## 构建前后端生产版本
