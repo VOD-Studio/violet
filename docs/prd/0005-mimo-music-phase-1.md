@@ -90,10 +90,12 @@ mimo-blog 目前的音乐功能依赖三个公开第三方解析实例（vkeys /
 - Phase 1 只实现 provider/netease，但接口设计成平台无关。
 - 加新平台（华为音乐等）只需新增 provider/xxx/，不动 server / service。
 
-### 网易云能力（封装 chaunsin）
+### 网易云能力（自实现加密，零第三方依赖）
 
-- provider/netease 封装 chaunsin/netease-cloud-music v0.5.0 的 weapi 能力。
-- converter.go 把 chaunsin 的原始响应结构转成 model 统一类型，不泄漏到上层。
+- provider/netease 用 Go 标准库（crypto/aes + crypto/rsa）自实现网易云 weapi/eapi 加密，不依赖任何第三方音乐库。
+- crypto.go 实现 weapi 加密流程：生成 16 位随机 secretKey → 两轮 AES-CBC-128 加密得 params → RSA 加密 secretKey 得 encSecKey。
+- client.go 用 crypto.go 加密请求，发送到网易云端点，解析响应。
+- converter.go 把网易云原始响应结构转成 model 统一类型，不泄漏到上层。
 - errors.go 把网易云原始错误（限流、Cookie 失效）映射成统一错误（ErrUpstreamUnavailable / ErrRateLimited / ErrNotFound）。
 - provider 用 Option 模式构造：WithCookie / WithCache / WithLogger / WithTimeout。
 

@@ -43,7 +43,7 @@ cmd → bootstrap → service → provider(接口) ← provider/netease(实现)
 
 ### 2.2 核心层零框架依赖
 
-`provider/` 不 import HTTP 框架、Redis、Asynq、配置库。它只依赖标准库 + chaunsin + 自定义接口（Cache / SessionStore / Logger）。SDK 用户自带实现，服务端注入 Redis / slog 实现。
+`provider/` 不 import HTTP 框架、Redis、Asynq、配置库。它只依赖标准库（含 crypto/aes、crypto/rsa）+ 自定义接口（Cache / SessionStore / Logger）。网易云 weapi/eapi 加密用 Go 标准库自实现，不依赖任何第三方音乐库。SDK 用户自带实现，服务端注入 Redis / slog 实现。
 
 ### 2.3 接口倒置
 
@@ -70,8 +70,9 @@ mimo-music/
 │   ├── logger.go                   Logger 接口（核心层不绑 slog）
 │   ├── options.go                  Option 模式（WithCache/WithLogger/WithTimeout）
 │   ├── decorator.go                容错装饰器（重试 / 熔断）
-│   └── netease/                    网易云实现
-│       ├── client.go               封装 chaunsin
+│   └── netease/                    网易云实现（自实现加密，零第三方音乐库依赖）
+│       ├── crypto.go               weapi/eapi 加密（Go 标准库 crypto/aes + crypto/rsa）
+│       ├── client.go               HTTP 客户端，用 crypto.go 加密请求
 │       ├── auth.go                 登录 / 验证码 / 二维码
 │       ├── playlist.go             歌单解析（全量歌曲）
 │       ├── song.go                 详情 / URL / 歌词
@@ -189,7 +190,7 @@ mimo-music 区别于通用 CRUD 服务的特有复杂度，架构重点应对。
 
 | 项 | 依据 |
 |---|---|
-| chaunsin/netease-cloud-music v0.5.0 | 网易云 weapi 加密，MIT，2026-07 仍维护 |
+| Go 标准库 crypto/aes + crypto/rsa | 自实现网易云 weapi/eapi 加密，零第三方音乐库依赖 |
 | chi | 与 mimo-blog 一致 |
 | go-redis | cache / store / Asynq 共用，经 infra/redis 统一连接管理 |
 | Asynq | worker 异步（Cookie 健康检查、URL 刷新是音乐服务刚需） |
@@ -290,7 +291,7 @@ type Registry interface {
 
 把 `provider/` + `model/` + `errors/` 拎出来：
 
-- 依赖：标准库 + chaunsin + 自定义接口。
+- 依赖：标准库（含 crypto）+ 自定义接口。
 - 用户自带 Cache / SessionStore / Logger 实现（或 noop）。
 - 零改动可独立成库。
 
