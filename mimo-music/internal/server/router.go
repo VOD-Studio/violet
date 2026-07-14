@@ -37,5 +37,16 @@ func NewRouter(h *handler.Handler) http.Handler {
 		r.Post("/logout", h.Logout)
 	})
 
+	// 歌单
+	r.Get("/api/v1/playlists/{id}", h.GetPlaylist)
+
+	// 歌曲
+	r.Get("/api/v1/songs/{id}", h.GetSongDetail)
+	r.Get("/api/v1/songs/{id}/url", h.GetSongURL)
+	r.Get("/api/v1/songs/{id}/lyric", h.GetLyric)
+
+	// 搜索
+	r.Get("/api/v1/search", h.Search)
+
 	return r
 }

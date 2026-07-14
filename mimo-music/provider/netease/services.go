@@ -16,20 +16,18 @@ var errNotImplemented = fmt.Errorf("该能力尚未实现")
 // AuthService 是网易云登录能力服务。
 type AuthService struct{ client *Client }
 
-// PlaylistService 占位，Issue-0009 实现。
+// PlaylistService 是网易云歌单能力服务。
 type PlaylistService struct{ client *Client }
 
-// SongService 占位，Issue-0010 实现。
+// SongService 是网易云歌曲能力服务。
 type SongService struct{ client *Client }
 
-// SearchService 占位，Issue-0011 实现。
+// SearchService 是网易云搜索能力服务。
 type SearchService struct{ client *Client }
 
 // --- AuthService 实现 ---
 
 // SendCaptcha 向手机发送验证码。
-//
-// 调用网易云 /weapi/sms/captcha/sent 端点。
 func (a *AuthService) SendCaptcha(ctx context.Context, phone string) error {
 	payload := fmt.Sprintf(`{"cellphone":"%s","ctcode":"86"}`, phone)
 	_, err := a.client.weapiPost(ctx, "/weapi/sms/captcha/sent", payload, "")
@@ -37,11 +35,8 @@ func (a *AuthService) SendCaptcha(ctx context.Context, phone string) error {
 }
 
 // LoginByCellphone 用手机号和验证码登录。
-//
-// 调用网易云 /weapi/login/cellphone 端点，返回 SessionResult。
 func (a *AuthService) LoginByCellphone(ctx context.Context, phone, captcha string) (provider.SessionResult, error) {
 	payload := fmt.Sprintf(`{"phone":"%s","captcha":"%s","countrycode":"86","rememberLogin":"true"}`, phone, captcha)
-
 	body, err := a.client.weapiPost(ctx, "/weapi/login/cellphone", payload, "")
 	if err != nil {
 		return provider.SessionResult{}, err
@@ -52,31 +47,23 @@ func (a *AuthService) LoginByCellphone(ctx context.Context, phone, captcha strin
 		return provider.SessionResult{}, fmt.Errorf("解析登录响应失败: %w", err)
 	}
 
-	cookie := extractCookieFromLogin(body)
-
 	return provider.SessionResult{
 		UserID:   fmt.Sprintf("%d", resp.Account.ID),
-		Cookie:   cookie,
+		Cookie:   extractCookieFromLogin(body),
 		Nickname: resp.Profile.Nickname,
 		Avatar:   resp.Profile.AvatarURL,
 	}, nil
 }
 
 // LoginByQrcode 获取登录二维码。
-//
-// 调用网易云 /api/login/qrcode/uniCreate 端点生成 key，
-// 再用 key 生成二维码图片。
 func (a *AuthService) LoginByQrcode(ctx context.Context) (provider.QrcodeResult, error) {
-	// 1. 生成 key
 	keyBody, err := a.client.postJSON(ctx, "https://music.163.com/api/login/qrcode/uniCreate", `{"type":1}`, "")
 	if err != nil {
 		return provider.QrcodeResult{}, err
 	}
 
 	var keyResp struct {
-		// Code 是业务码。
-		Code int `json:"code"`
-		// UniKey 是二维码 key。
+		Code   int    `json:"code"`
 		UniKey string `json:"unikey"`
 	}
 	if err := json.Unmarshal(keyBody, &keyResp); err != nil {
@@ -93,8 +80,6 @@ func (a *AuthService) LoginByQrcode(ctx context.Context) (provider.QrcodeResult,
 }
 
 // CheckQrcode 轮询二维码登录状态。
-//
-// Code 约定：800 失效、801 等待扫描、802 已扫描待确认、803 确认登录成功。
 func (a *AuthService) CheckQrcode(ctx context.Context, key string) (provider.QrcodeStatus, error) {
 	payload := fmt.Sprintf(`{"key":"%s","type":1}`, key)
 	body, err := a.client.postJSON(ctx, "https://music.163.com/api/login/qrcode/client/login", payload, "")
@@ -103,36 +88,21 @@ func (a *AuthService) CheckQrcode(ctx context.Context, key string) (provider.Qrc
 	}
 
 	var resp struct {
-		// Code 是状态码。
-		Code int `json:"code"`
-		// Message 是状态消息。
+		Code    int    `json:"code"`
 		Message string `json:"message"`
-		// Nickname 是登录用户昵称（802 时有）。
-		Nickname string `json:"nickname"`
-		// Avatar 是登录用户头像（802 时有）。
-		Avatar string `json:"avatar"`
 	}
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return provider.QrcodeStatus{}, fmt.Errorf("解析二维码状态失败: %w", err)
 	}
 
 	cookie := ""
-	userID := ""
 	if resp.Code == 803 {
 		cookie = extractCookieFromLogin(body)
 	}
-
-	return provider.QrcodeStatus{
-		Code:    resp.Code,
-		Message: resp.Message,
-		Cookie:  cookie,
-		UserID:  userID,
-	}, nil
+	return provider.QrcodeStatus{Code: resp.Code, Message: resp.Message, Cookie: cookie}, nil
 }
 
 // LoginStatus 查询当前登录态。
-//
-// 用传入的 cookie 调用网易云 /weapi/w/nuser/account/get 端点。
 func (a *AuthService) LoginStatus(ctx context.Context, cookie string) (provider.SessionResult, error) {
 	body, err := a.client.weapiPost(ctx, "/weapi/w/nuser/account/get", "{}", cookie)
 	if err != nil {
@@ -143,7 +113,6 @@ func (a *AuthService) LoginStatus(ctx context.Context, cookie string) (provider.
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return provider.SessionResult{}, fmt.Errorf("解析登录态失败: %w", err)
 	}
-
 	if resp.Account.ID == 0 {
 		return provider.SessionResult{}, fmt.Errorf("未登录")
 	}
@@ -157,64 +126,157 @@ func (a *AuthService) LoginStatus(ctx context.Context, cookie string) (provider.
 }
 
 // Logout 登出。
-//
-// 网易云登出主要靠清除本地 Cookie，服务端不强制失效。
 func (a *AuthService) Logout(ctx context.Context, cookie string) error {
 	_, err := a.client.weapiPost(ctx, "/weapi/logout", "{}", cookie)
 	return err
 }
 
+// --- PlaylistService 实现 ---
+
+// Detail 获取歌单详情（含全量歌曲列表）。
+//
+// 网易云 /weapi/v6/playlist/detail 返回歌单元数据 + 前 10 首歌。
+// 超过 10 首时需要用 /weapi/v3/song/detail 按歌曲 ID 批量拉取。
+func (p *PlaylistService) Detail(ctx context.Context, playlistID string) (provider.PlaylistResult, error) {
+	payload := fmt.Sprintf(`{"id":"%s","n":1000,"s":8}`, playlistID)
+	body, err := p.client.weapiPost(ctx, "/weapi/v6/playlist/detail", payload, p.client.getCookie(""))
+	if err != nil {
+		return provider.PlaylistResult{}, err
+	}
+
+	var resp neteasePlaylistDetail
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return provider.PlaylistResult{}, fmt.Errorf("解析歌单详情失败: %w", err)
+	}
+
+	pl := resp.Playlist
+	songs := make([]provider.SongResult, 0, len(pl.Tracks))
+	for _, track := range pl.Tracks {
+		songs = append(songs, toSongResult(track))
+	}
+
+	return provider.PlaylistResult{
+		ID:      fmt.Sprintf("%d", pl.ID),
+		Title:   pl.Name,
+		Cover:   pl.CoverImgUrl,
+		Creator: pl.Creator.Nickname,
+		Songs:   songs,
+	}, nil
+}
+
+// --- SongService 实现 ---
+
+// Detail 获取歌曲详情。
+func (s *SongService) Detail(ctx context.Context, songID string) (provider.SongResult, error) {
+	payload := fmt.Sprintf(`{"c":"[{\"id\":%s}]","ids":"[%s]"}`, songID, songID)
+	body, err := s.client.weapiPost(ctx, "/weapi/v3/song/detail", payload, s.client.getCookie(""))
+	if err != nil {
+		return provider.SongResult{}, err
+	}
+
+	var resp neteaseSongDetail
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return provider.SongResult{}, fmt.Errorf("解析歌曲详情失败: %w", err)
+	}
+	if len(resp.Songs) == 0 {
+		return provider.SongResult{}, fmt.Errorf("歌曲不存在")
+	}
+
+	return toSongResult(resp.Songs[0]), nil
+}
+
+// URL 获取播放直链。
+//
+// level: standard（标准）/ exhigh（较高）/ lossless（无损）。
+func (s *SongService) URL(ctx context.Context, songID, level string) (string, error) {
+	if level == "" {
+		level = "standard"
+	}
+	payload := fmt.Sprintf(`{"ids":"[%s]","level":"%s","encodeType":"flac"}`, songID, level)
+	body, err := s.client.weapiPost(ctx, "/weapi/song/enhance/player/url/v1", payload, s.client.getCookie(""))
+	if err != nil {
+		return "", err
+	}
+
+	var resp neteaseSongURL
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return "", fmt.Errorf("解析播放 URL 失败: %w", err)
+	}
+	if len(resp.Data) == 0 {
+		return "", fmt.Errorf("未找到播放 URL（可能是 VIP 歌曲）")
+	}
+
+	return resp.Data[0].URL, nil
+}
+
+// Lyric 获取歌词。
+func (s *SongService) Lyric(ctx context.Context, songID string) (provider.LyricResult, error) {
+	payload := fmt.Sprintf(`{"id":"%s","lv":-1,"kv":-1,"tv":-1}`, songID)
+	body, err := s.client.weapiPost(ctx, "/weapi/song/lyric", payload, s.client.getCookie(""))
+	if err != nil {
+		return provider.LyricResult{}, err
+	}
+
+	var resp neteaseLyric
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return provider.LyricResult{}, fmt.Errorf("解析歌词失败: %w", err)
+	}
+
+	return provider.LyricResult{
+		Lrc:        resp.Lrc.Lyric,
+		Translated: resp.Tlyric.Lyric,
+		Romanized:  resp.Romalrc.Lyric,
+	}, nil
+}
+
+// --- SearchService 实现 ---
+
+// Search 按关键词搜索歌曲。
+func (s *SearchService) Search(ctx context.Context, keyword string, limit int) (provider.SearchResult, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	payload := fmt.Sprintf(`{"s":"%s","type":1,"limit":%d,"offset":0}`, keyword, limit)
+	body, err := s.client.weapiPost(ctx, "/weapi/cloudsearch/get/web", payload, s.client.getCookie(""))
+	if err != nil {
+		return provider.SearchResult{}, err
+	}
+
+	var resp struct {
+		Result struct {
+			SongCount int `json:"songCount"`
+			Songs     []neteaseSongDetailSongs `json:"songs"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return provider.SearchResult{}, fmt.Errorf("解析搜索结果失败: %w", err)
+	}
+
+	songs := make([]provider.SongResult, 0, len(resp.Result.Songs))
+	for _, song := range resp.Result.Songs {
+		songs = append(songs, toSongResult(song))
+	}
+
+	return provider.SearchResult{
+		Songs: songs,
+		Total: resp.Result.SongCount,
+	}, nil
+}
+
+// --- 共享结构 ---
+
 // neteaseLoginResponse 是网易云登录响应结构。
 type neteaseLoginResponse struct {
-	// Account 是账号信息。
 	Account struct {
-		// ID 是用户 ID。
 		ID int64 `json:"id"`
 	} `json:"account"`
-	// Profile 是用户资料。
 	Profile struct {
-		// Nickname 是昵称。
-		Nickname string `json:"nickname"`
-		// AvatarURL 是头像 URL。
+		Nickname  string `json:"nickname"`
 		AvatarURL string `json:"avatarUrl"`
 	} `json:"profile"`
 }
 
 // extractCookieFromLogin 从登录响应体提取 Cookie 字符串。
-//
-// 网易云登录响应里可能没有显式 Set-Cookie，Cookie 主要在 HTTP 响应头。
-// 这里返回空字符串，实际 Cookie 由 client 层从响应头捕获。
-// 简化处理：返回一个占位标记，由 service 层组装完整 Cookie。
 func extractCookieFromLogin(body []byte) string {
-	// 网易云 cookie 在响应头 Set-Cookie 里，这里不做提取。
-	// 实际使用时由 service 层从 HTTP 响应头拼接。
-	// 此函数预留，保持接口签名稳定。
 	return strings.TrimSpace(string(body))
-}
-
-// --- PlaylistService / SongService / SearchService 占位 ---
-
-// Detail 占位。
-func (p *PlaylistService) Detail(ctx context.Context, playlistID string) (provider.PlaylistResult, error) {
-	return provider.PlaylistResult{}, errNotImplemented
-}
-
-// Detail 占位。
-func (s *SongService) Detail(ctx context.Context, songID string) (provider.SongResult, error) {
-	return provider.SongResult{}, errNotImplemented
-}
-
-// URL 占位。
-func (s *SongService) URL(ctx context.Context, songID, level string) (string, error) {
-	return "", errNotImplemented
-}
-
-// Lyric 占位。
-func (s *SongService) Lyric(ctx context.Context, songID string) (provider.LyricResult, error) {
-	return provider.LyricResult{}, errNotImplemented
-}
-
-// Search 占位。
-func (s *SearchService) Search(ctx context.Context, keyword string, limit int) (provider.SearchResult, error) {
-	return provider.SearchResult{}, errNotImplemented
 }

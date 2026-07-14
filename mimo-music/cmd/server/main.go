@@ -46,10 +46,22 @@ func main() {
 	)
 	authSvc := service.NewAuthService(
 		neteaseClient.Auth(),
-		provider.NoopSessionStore{}, // Phase 1 用 noop，接入 Redis 后替换
+		provider.NoopSessionStore{},
 		observability.NewSlogLogger(slog.Default()),
 	)
-	h := handler.New(authSvc)
+	playlistSvc := service.NewPlaylistService(
+		neteaseClient.Playlist(), provider.NoopCache{},
+		observability.NewSlogLogger(slog.Default()),
+	)
+	songSvc := service.NewSongService(
+		neteaseClient.Song(), provider.NoopCache{},
+		observability.NewSlogLogger(slog.Default()),
+	)
+	searchSvc := service.NewSearchService(
+		neteaseClient.Search(), provider.NoopCache{},
+		observability.NewSlogLogger(slog.Default()),
+	)
+	h := handler.New(authSvc, playlistSvc, songSvc, searchSvc)
 
 	router := server.NewRouter(h)
 	srv := &http.Server{

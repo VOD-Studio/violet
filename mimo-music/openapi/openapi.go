@@ -27,6 +27,9 @@ func Spec() (*openapi3.T, error) {
 
 	// 注册各模块 paths
 	registerAuthPaths(t.Paths)
+	registerPlaylistPaths(t.Paths)
+	registerSongPaths(t.Paths)
+	registerSearchPaths(t.Paths)
 
 	return t, nil
 }

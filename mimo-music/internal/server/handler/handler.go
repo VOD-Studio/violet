@@ -12,16 +12,26 @@ import (
 )
 
 // Handler 是所有 HTTP handler 的容器，持有各 service。
-//
-// 后续 issue 会在这里追加 playlist / song / search service。
 type Handler struct {
-	// authSvc 是登录业务 service。
-	authSvc *service.AuthService
+	authSvc     *service.AuthService
+	playlistSvc *service.PlaylistService
+	songSvc     *service.SongService
+	searchSvc   *service.SearchService
 }
 
 // New 创建 Handler。
-func New(authSvc *service.AuthService) *Handler {
-	return &Handler{authSvc: authSvc}
+func New(
+	authSvc *service.AuthService,
+	playlistSvc *service.PlaylistService,
+	songSvc *service.SongService,
+	searchSvc *service.SearchService,
+) *Handler {
+	return &Handler{
+		authSvc:     authSvc,
+		playlistSvc: playlistSvc,
+		songSvc:     songSvc,
+		searchSvc:   searchSvc,
+	}
 }
 
 // mapError 把统一错误映射到 HTTP 状态码 + 业务 code。
