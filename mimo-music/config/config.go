@@ -61,6 +61,9 @@ type RedisConfig struct {
 
 	// DB 是 Redis 数据库编号。
 	DB int
+
+	// PoolSize 是 Redis 连接池大小（cache / store / asynq 共用）。
+	PoolSize int
 }
 
 // WorkerConfig 是 Asynq worker 相关配置。
@@ -84,9 +87,10 @@ func Default() Config {
 			MaxRetries:      3,
 		},
 		Redis: RedisConfig{
-			Host: "localhost",
-			Port: 6379,
-			DB:   1, // 用 DB 1 避免和 mimo-blog（DB 0）冲突
+			Host:     "localhost",
+			Port:     6379,
+			DB:       1, // 用 DB 1 避免和 mimo-blog（DB 0）冲突
+			PoolSize: 10,
 		},
 		Worker: WorkerConfig{
 			Concurrency:         5,
@@ -115,6 +119,7 @@ func Load() Config {
 	cfg.Redis.Port = envInt("MIMO_MUSIC_REDIS_PORT", cfg.Redis.Port)
 	cfg.Redis.Password = envStr("MIMO_MUSIC_REDIS_PASSWORD", cfg.Redis.Password)
 	cfg.Redis.DB = envInt("MIMO_MUSIC_REDIS_DB", cfg.Redis.DB)
+	cfg.Redis.PoolSize = envInt("MIMO_MUSIC_REDIS_POOL_SIZE", cfg.Redis.PoolSize)
 	cfg.Worker.Concurrency = envInt("MIMO_MUSIC_WORKER_CONCURRENCY", cfg.Worker.Concurrency)
 	cfg.Worker.CookieCheckInterval = envInt("MIMO_MUSIC_WORKER_COOKIE_CHECK_INTERVAL", cfg.Worker.CookieCheckInterval)
 

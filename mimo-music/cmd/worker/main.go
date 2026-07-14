@@ -14,11 +14,13 @@ import (
 	"github.com/hibiken/asynq"
 
 	"github.com/VOD-Studio/mimo-music/config"
+	infraredis "github.com/VOD-Studio/mimo-music/internal/infra/redis"
 	"github.com/VOD-Studio/mimo-music/internal/worker"
 	"github.com/VOD-Studio/mimo-music/internal/worker/tasks"
 	"github.com/VOD-Studio/mimo-music/observability"
 	"github.com/VOD-Studio/mimo-music/provider"
 	"github.com/VOD-Studio/mimo-music/provider/netease"
+	storeredis "github.com/VOD-Studio/mimo-music/store/redis"
 )
 
 func main() {
@@ -39,9 +41,16 @@ func main() {
 		provider.WithTimeout(cfg.Provider.UpstreamTimeout),
 	)
 
-	// Phase 1: store 用 nil（Redis 连接由后续接入）
-	// worker 的 Cookie 健康检查需要 store，这里先注册 handler 但 ListAll 返回空
-	// Issue-0008 后续接入 Redis store 后自动生效
+	// Redis 连接（store 健康检查用）
+	rdb, err := infraredis.New(cfg.Redis)
+	if err != nil {
+		slog.Error("init redis failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer func() { _ = rdb.Close() }()
+	slog.Info("redis connected", slog.String("addr", cfg.Redis.Addr()))
+
+	sessionStore := storeredis.NewSessionStore(rdb)
 
 	// Asynq server（处理任务）
 	srv := asynq.NewServer(
@@ -51,8 +60,7 @@ func main() {
 
 	// 注册任务 handler
 	mux := asynq.NewServeMux()
-	// store 暂用空实现，后续接入 Redis 后替换
-	mux.Handle(tasks.TypeCookieHealth, tasks.HandleCookieHealth(provider.NoopSessionStore{}, neteaseClient.Auth()))
+	mux.Handle(tasks.TypeCookieHealth, tasks.HandleCookieHealth(sessionStore, neteaseClient.Auth()))
 
 	// 定时调度器
 	scheduler := worker.NewScheduler(cfg.Redis.Addr(), cfg.Worker.CookieCheckInterval)

@@ -13,13 +13,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/VOD-Studio/mimo-music/cache/redis"
 	"github.com/VOD-Studio/mimo-music/config"
+	infraredis "github.com/VOD-Studio/mimo-music/internal/infra/redis"
 	"github.com/VOD-Studio/mimo-music/internal/server"
 	"github.com/VOD-Studio/mimo-music/internal/server/handler"
 	"github.com/VOD-Studio/mimo-music/observability"
 	"github.com/VOD-Studio/mimo-music/provider"
 	"github.com/VOD-Studio/mimo-music/provider/netease"
 	"github.com/VOD-Studio/mimo-music/service"
+	storeredis "github.com/VOD-Studio/mimo-music/store/redis"
 )
 
 func main() {
@@ -38,26 +41,38 @@ func main() {
 	observability.InitLogger(cfg.Server.Env)
 	observability.HandleSIGHUP()
 
+	// Redis 连接（cache / store 共用同一连接池）
+	rdb, err := infraredis.New(cfg.Redis)
+	if err != nil {
+		slog.Error("init redis failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer func() { _ = rdb.Close() }()
+	slog.Info("redis connected", slog.String("addr", cfg.Redis.Addr()))
+
 	// 装配：provider → service → handler → router
+	redisCache := redis.New(rdb)
+	sessionStore := storeredis.NewSessionStore(rdb)
+
 	neteaseClient := netease.New(
 		provider.WithLogger(observability.NewSlogLogger(slog.Default())),
 		provider.WithTimeout(cfg.Provider.UpstreamTimeout),
 	)
 	authSvc := service.NewAuthService(
 		neteaseClient.Auth(),
-		provider.NoopSessionStore{},
+		sessionStore,
 		observability.NewSlogLogger(slog.Default()),
 	)
 	playlistSvc := service.NewPlaylistService(
-		neteaseClient.Playlist(), provider.NoopCache{},
+		neteaseClient.Playlist(), redisCache,
 		observability.NewSlogLogger(slog.Default()),
 	)
 	songSvc := service.NewSongService(
-		neteaseClient.Song(), provider.NoopCache{},
+		neteaseClient.Song(), redisCache,
 		observability.NewSlogLogger(slog.Default()),
 	)
 	searchSvc := service.NewSearchService(
-		neteaseClient.Search(), provider.NoopCache{},
+		neteaseClient.Search(), redisCache,
 		observability.NewSlogLogger(slog.Default()),
 	)
 	h := handler.New(authSvc, playlistSvc, songSvc, searchSvc)
