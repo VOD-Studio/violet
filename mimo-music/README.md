@@ -2,7 +2,7 @@
 
 多平台音乐能力服务，用 Go 实现。
 
-当前状态：Phase 1 开发中（项目骨架阶段）。
+当前状态：Phase 1 已完成（骨架 + 登录 + 核心解析 + worker + observability），Phase 2 待实现（Redis 接入 + 指标 + 扩展接口）。
 
 ## 运行
 

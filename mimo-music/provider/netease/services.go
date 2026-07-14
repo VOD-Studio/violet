@@ -10,9 +10,6 @@ import (
 	"github.com/VOD-Studio/mimo-music/provider"
 )
 
-// errNotImplemented 表示该能力尚未实现。
-var errNotImplemented = fmt.Errorf("该能力尚未实现")
-
 // AuthService 是网易云登录能力服务。
 type AuthService struct{ client *Client }
 

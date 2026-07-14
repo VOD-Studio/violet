@@ -39,16 +39,16 @@ func New(opts ...provider.Option) *Client {
 // Platform 返回平台标识。
 func (c *Client) Platform() string { return "netease" }
 
-// Auth 返回 Auth 能力（后续 Issue-0006 实现）。
+// Auth 返回登录能力。
 func (c *Client) Auth() provider.Auth { return &AuthService{client: c} }
 
-// Playlist 返回歌单能力（后续 Issue-0009 实现）。
+// Playlist 返回歌单能力。
 func (c *Client) Playlist() provider.Playlist { return &PlaylistService{client: c} }
 
-// Song 返回歌曲能力（后续 Issue-0010 实现）。
+// Song 返回歌曲能力。
 func (c *Client) Song() provider.Song { return &SongService{client: c} }
 
-// Search 返回搜索能力（后续 Issue-0011 实现）。
+// Search 返回搜索能力。
 func (c *Client) Search() provider.Search { return &SearchService{client: c} }
 
 // weapiPost 发送 weapi 加密 POST 请求。

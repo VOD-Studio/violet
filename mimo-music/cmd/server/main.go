@@ -39,7 +39,6 @@ func main() {
 	observability.HandleSIGHUP()
 
 	// 装配：provider → service → handler → router
-	// Phase 1 暂用内存装配，后续 Issue-0008 接入 wire
 	neteaseClient := netease.New(
 		provider.WithLogger(observability.NewSlogLogger(slog.Default())),
 		provider.WithTimeout(cfg.Provider.UpstreamTimeout),
