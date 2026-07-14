@@ -1,0 +1,28 @@
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/main ./cmd/server"
+bin = "tmp/main"
+full_bin = ""
+include_ext = ["go", "yaml"]
+exclude_dir = ["tmp", "vendor", "testdata"]
+include_dir = []
+exclude_file = []
+delay = 1000
+stop_on_error = true
+send_interrupt = true
+kill_delay = 500
+
+[log]
+time = false
+
+[color]
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
+
+[misc]
+clean_on_exit = true

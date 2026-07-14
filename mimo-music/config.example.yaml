@@ -1,0 +1,11 @@
+# mimo-music 配置示例
+#
+# 复制为 config.yaml 后按需修改。
+# 环境变量可覆盖字段值：MIMO_MUSIC_SERVER_PORT / MIMO_MUSIC_SERVER_ENV
+
+server:
+  # HTTP 服务监听端口
+  port: 8080
+
+  # 运行环境：dev（彩色文本日志）/ prod（JSON 日志）
+  env: dev
