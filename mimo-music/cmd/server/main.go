@@ -1,6 +1,7 @@
 // Package main 是 mimo-music HTTP 服务的入口。
 //
 // 启动 chi HTTP 服务，监听配置端口，收到 SIGINT/SIGTERM 时优雅关闭。
+// 依赖注入通过 wire 装配（internal/bootstrap）。
 package main
 
 import (
@@ -13,16 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/VOD-Studio/mimo-music/cache/redis"
+	"github.com/VOD-Studio/mimo-music/internal/bootstrap"
 	"github.com/VOD-Studio/mimo-music/config"
-	infraredis "github.com/VOD-Studio/mimo-music/internal/infra/redis"
-	"github.com/VOD-Studio/mimo-music/internal/server"
-	"github.com/VOD-Studio/mimo-music/internal/server/handler"
 	"github.com/VOD-Studio/mimo-music/observability"
-	"github.com/VOD-Studio/mimo-music/provider"
-	"github.com/VOD-Studio/mimo-music/provider/netease"
-	"github.com/VOD-Studio/mimo-music/service"
-	storeredis "github.com/VOD-Studio/mimo-music/store/redis"
 )
 
 func main() {
@@ -41,74 +35,18 @@ func main() {
 	observability.InitLogger(cfg.Server.Env)
 	observability.HandleSIGHUP()
 
-	// Prometheus 指标
-	metrics := observability.NewMetrics()
-
-	// Redis 连接（cache / store 共用同一连接池）
-	rdb, err := infraredis.New(cfg.Redis)
+	// wire 装配：provider → service → handler → router（编译期保证依赖完整）
+	app, err := bootstrap.InitializeServer(cfg)
 	if err != nil {
-		slog.Error("init redis failed", slog.String("error", err.Error()))
+		slog.Error("init server failed", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-	defer func() { _ = rdb.Close() }()
+	defer func() { _ = app.RDB.Close() }()
 	slog.Info("redis connected", slog.String("addr", cfg.Redis.Addr()))
 
-	// 装配：provider → service → handler → router
-	redisCache := redis.New(rdb)
-	sessionStore := storeredis.NewSessionStore(rdb)
-	availStore := storeredis.NewAvailabilityStore(rdb)
-	rotator := service.NewSessionRotator(sessionStore, availStore)
-
-	neteaseClient := netease.New(
-		provider.WithLogger(observability.NewSlogLogger(slog.Default())),
-		provider.WithTimeout(cfg.Provider.UpstreamTimeout),
-	)
-	authSvc := service.NewAuthService(
-		neteaseClient.Auth(),
-		sessionStore,
-		observability.NewSlogLogger(slog.Default()),
-	)
-	playlistSvc := service.NewPlaylistService(
-		neteaseClient.Playlist(), redisCache,
-		observability.NewSlogLogger(slog.Default()),
-		metrics,
-	)
-	songSvc := service.NewSongService(
-		neteaseClient.Song(), redisCache,
-		observability.NewSlogLogger(slog.Default()),
-		metrics,
-	)
-	searchSvc := service.NewSearchService(
-		neteaseClient.Search(), redisCache,
-		observability.NewSlogLogger(slog.Default()),
-		metrics,
-	)
-	albumSvc := service.NewAlbumService(
-		neteaseClient.Album(), redisCache,
-		observability.NewSlogLogger(slog.Default()),
-		metrics,
-	)
-	artistSvc := service.NewArtistService(
-		neteaseClient.Artist(), redisCache,
-		observability.NewSlogLogger(slog.Default()),
-		metrics,
-	)
-	recommendSvc := service.NewRecommendService(
-		neteaseClient.Recommend(), rotator, redisCache,
-		observability.NewSlogLogger(slog.Default()),
-		metrics,
-	)
-	fmSvc := service.NewFMService(
-		neteaseClient.FM(), rotator, redisCache,
-		observability.NewSlogLogger(slog.Default()),
-		metrics,
-	)
-	h := handler.New(authSvc, playlistSvc, songSvc, searchSvc, albumSvc, artistSvc, recommendSvc, fmSvc)
-
-	router := server.NewRouter(h, metrics)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler:      router,
+		Handler:      app.Router,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
