@@ -81,7 +81,17 @@ func main() {
 		observability.NewSlogLogger(slog.Default()),
 		metrics,
 	)
-	h := handler.New(authSvc, playlistSvc, songSvc, searchSvc)
+	albumSvc := service.NewAlbumService(
+		neteaseClient.Album(), redisCache,
+		observability.NewSlogLogger(slog.Default()),
+		metrics,
+	)
+	artistSvc := service.NewArtistService(
+		neteaseClient.Artist(), redisCache,
+		observability.NewSlogLogger(slog.Default()),
+		metrics,
+	)
+	h := handler.New(authSvc, playlistSvc, songSvc, searchSvc, albumSvc, artistSvc)
 
 	router := server.NewRouter(h, metrics)
 	srv := &http.Server{

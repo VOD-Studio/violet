@@ -52,5 +52,11 @@ func NewRouter(h *handler.Handler, m *observability.Metrics) http.Handler {
 	// 搜索
 	r.Get("/api/v1/search", h.Search)
 
+	// 专辑
+	r.Get("/api/v1/albums/{id}", h.GetAlbum)
+
+	// 歌手
+	r.Get("/api/v1/artists/{id}", h.GetArtist)
+
 	return r
 }

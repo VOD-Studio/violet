@@ -17,6 +17,8 @@ type Handler struct {
 	playlistSvc *service.PlaylistService
 	songSvc     *service.SongService
 	searchSvc   *service.SearchService
+	albumSvc    *service.AlbumService
+	artistSvc   *service.ArtistService
 }
 
 // New 创建 Handler。
@@ -25,12 +27,16 @@ func New(
 	playlistSvc *service.PlaylistService,
 	songSvc *service.SongService,
 	searchSvc *service.SearchService,
+	albumSvc *service.AlbumService,
+	artistSvc *service.ArtistService,
 ) *Handler {
 	return &Handler{
 		authSvc:     authSvc,
 		playlistSvc: playlistSvc,
 		songSvc:     songSvc,
 		searchSvc:   searchSvc,
+		albumSvc:    albumSvc,
+		artistSvc:   artistSvc,
 	}
 }
 

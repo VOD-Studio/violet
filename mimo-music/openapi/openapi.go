@@ -30,6 +30,8 @@ func Spec() (*openapi3.T, error) {
 	registerPlaylistPaths(t.Paths)
 	registerSongPaths(t.Paths)
 	registerSearchPaths(t.Paths)
+	registerAlbumPaths(t.Paths)
+	registerArtistPaths(t.Paths)
 
 	return t, nil
 }
