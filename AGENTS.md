@@ -35,6 +35,12 @@
 
 - 每次完成一个任务或一个功能点都要进行 Git 提交。
 - 提交信息必须使用**中文**，并严格符合历史的 Conventional Commits 格式，例如 `feat(api): 添加新功能`、`fix(web): 修复页面 bug`。
+- **scope 指向最小改动单元**，不要叠加冗余前缀。scope 的作用是区分同一仓库里不同模块的改动，当改动集中在一个子模块时，scope 只写最内层模块名。
+  - ✅ 正确：`fix(netease): 搜索接口 URL 编码修复`
+  - ✅ 正确：`feat(observability): 接入 OTel trace_id 注入`
+  - ❌ 错误：`fix(mimo-music/netease): 搜索接口 URL 编码修复`（mimo-music 是冗余前缀）
+  - ❌ 错误：`feat(mimo-music): 登录能力`（改动在多个子模块时，用最贴近的模块名而非项目名）
+  - 判断方法：如果去掉 scope 里的某一段，剩下的仍然能准确定位改动位置，那被去掉的那段就是冗余的。
 - **body 用 bullet points 列出改动事实**，不写散文、不夹带主观评判。详细的决策过程应写在 PR 描述或 ADR。
 - **请勿推送**，仅在本地进行 commit。
 
