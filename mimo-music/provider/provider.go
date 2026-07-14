@@ -204,6 +204,18 @@ type ArtistResult struct {
 	Songs []SongResult
 }
 
+// Recommend 是平台推荐能力接口（需登录态）。
+type Recommend interface {
+	// Daily 获取每日推荐歌曲（需登录）。
+	Daily(ctx context.Context, cookie string) ([]SongResult, error)
+}
+
+// FM 是平台私人电台能力接口（需登录态）。
+type FM interface {
+	// Personal 获取私人 FM 歌曲（需登录）。
+	Personal(ctx context.Context, cookie string) ([]SongResult, error)
+}
+
 // Provider 是所有音乐平台实现的统一接口。
 type Provider interface {
 	// Platform 返回平台标识（netease / huawei）。
@@ -226,4 +238,10 @@ type Provider interface {
 
 	// Artist 返回歌手能力。
 	Artist() Artist
+
+	// Recommend 返回推荐能力。
+	Recommend() Recommend
+
+	// FM 返回私人电台能力。
+	FM() FM
 }

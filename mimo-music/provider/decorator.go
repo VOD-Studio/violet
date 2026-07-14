@@ -87,6 +87,16 @@ func (r *RetryProvider) Artist() Artist {
 	return &retryArtist{inner: r.inner.Artist(), maxRetries: r.maxRetries, baseDelay: r.baseDelay}
 }
 
+// Recommend 返回带重试的推荐能力。
+func (r *RetryProvider) Recommend() Recommend {
+	return &retryRecommend{inner: r.inner.Recommend(), maxRetries: r.maxRetries, baseDelay: r.baseDelay}
+}
+
+// FM 返回带重试的私人电台能力。
+func (r *RetryProvider) FM() FM {
+	return &retryFM{inner: r.inner.FM(), maxRetries: r.maxRetries, baseDelay: r.baseDelay}
+}
+
 // withRetry 执行 fn，失败时按指数退避重试。
 func withRetry(ctx context.Context, maxRetries int, baseDelay time.Duration, fn func() error) error {
 	var err error
@@ -277,6 +287,42 @@ func (a *retryArtist) Info(ctx context.Context, artistID string) (ArtistResult, 
 	return result, err
 }
 
+// --- retryRecommend ---
+
+type retryRecommend struct {
+	inner      Recommend
+	maxRetries int
+	baseDelay  time.Duration
+}
+
+func (r *retryRecommend) Daily(ctx context.Context, cookie string) ([]SongResult, error) {
+	var result []SongResult
+	err := withRetry(ctx, r.maxRetries, r.baseDelay, func() error {
+		var e error
+		result, e = r.inner.Daily(ctx, cookie)
+		return e
+	})
+	return result, err
+}
+
+// --- retryFM ---
+
+type retryFM struct {
+	inner      FM
+	maxRetries int
+	baseDelay  time.Duration
+}
+
+func (f *retryFM) Personal(ctx context.Context, cookie string) ([]SongResult, error) {
+	var result []SongResult
+	err := withRetry(ctx, f.maxRetries, f.baseDelay, func() error {
+		var e error
+		result, e = f.inner.Personal(ctx, cookie)
+		return e
+	})
+	return result, err
+}
+
 // --- 熔断器 ---
 
 // CircuitState 是熔断器状态。
@@ -412,6 +458,16 @@ func (b *BreakerProvider) Album() Album {
 // Artist 返回带熔断的歌手能力。
 func (b *BreakerProvider) Artist() Artist {
 	return &breakerArtist{inner: b.inner.Artist(), breaker: b.breaker}
+}
+
+// Recommend 返回带熔断的推荐能力。
+func (b *BreakerProvider) Recommend() Recommend {
+	return &breakerRecommend{inner: b.inner.Recommend(), breaker: b.breaker}
+}
+
+// FM 返回带熔断的私人电台能力。
+func (b *BreakerProvider) FM() FM {
+	return &breakerFM{inner: b.inner.FM(), breaker: b.breaker}
 }
 
 // withBreaker 执行 fn，受熔断器保护。
@@ -585,6 +641,40 @@ func (a *breakerArtist) Info(ctx context.Context, artistID string) (ArtistResult
 	err := withBreaker(a.breaker, func() error {
 		var e error
 		result, e = a.inner.Info(ctx, artistID)
+		return e
+	})
+	return result, err
+}
+
+// --- breakerRecommend ---
+
+type breakerRecommend struct {
+	inner   Recommend
+	breaker *CircuitBreaker
+}
+
+func (r *breakerRecommend) Daily(ctx context.Context, cookie string) ([]SongResult, error) {
+	var result []SongResult
+	err := withBreaker(r.breaker, func() error {
+		var e error
+		result, e = r.inner.Daily(ctx, cookie)
+		return e
+	})
+	return result, err
+}
+
+// --- breakerFM ---
+
+type breakerFM struct {
+	inner   FM
+	breaker *CircuitBreaker
+}
+
+func (f *breakerFM) Personal(ctx context.Context, cookie string) ([]SongResult, error) {
+	var result []SongResult
+	err := withBreaker(f.breaker, func() error {
+		var e error
+		result, e = f.inner.Personal(ctx, cookie)
 		return e
 	})
 	return result, err
