@@ -23,11 +23,26 @@ func NewCookieHealthTask() (*asynq.Task, error) {
 	return asynq.NewTask(TypeCookieHealth, nil), nil
 }
 
+// CookieHealthResult 是单个 session 健康检查的结果。
+type CookieHealthResult struct {
+	// UserID 是被检查的用户 ID。
+	UserID string
+
+	// Healthy 是 Cookie 是否有效。
+	Healthy bool
+}
+
 // HandleCookieHealth 处理 Cookie 健康检查任务。
 //
 // 遍历 SessionStore 中所有 session，逐个验证 Cookie 有效性。
-// 失效的记 Warn 日志并更新 cookie_health_status gauge。
-func HandleCookieHealth(store provider.SessionStore, auth provider.Auth, m *observability.Metrics) asynq.Handler {
+// 失效的记 Warn 日志、更新 cookie_health_status gauge、通知回调标记不可用。
+// 有效的恢复可用状态。
+func HandleCookieHealth(
+	store provider.SessionStore,
+	auth provider.Auth,
+	m *observability.Metrics,
+	onResult func(ctx context.Context, r CookieHealthResult),
+) asynq.Handler {
 	return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
 		userIDs, err := store.ListAll(ctx)
 		if err != nil {
@@ -39,27 +54,15 @@ func HandleCookieHealth(store provider.SessionStore, auth provider.Auth, m *obse
 		checked := 0
 		expired := 0
 		for _, uid := range userIDs {
-			cookie, err := store.Get(ctx, uid)
-			if err != nil || cookie == "" {
+			healthy := checkOneCookie(ctx, store, auth, uid, m)
+			if healthy {
+				checked++
+			} else {
 				expired++
-				m.SetCookieHealth(uid, false)
-				slog.WarnContext(ctx, "cookie missing or invalid",
-					slog.String(observability.FieldUserID, uid))
-				continue
 			}
-
-			// 调用 LoginStatus 验证 Cookie
-			_, err = auth.LoginStatus(ctx, cookie)
-			if err != nil {
-				expired++
-				m.SetCookieHealth(uid, false)
-				slog.WarnContext(ctx, "cookie expired",
-					slog.String(observability.FieldUserID, uid),
-					slog.String(observability.FieldErrorCode, err.Error()))
-				continue
+			if onResult != nil {
+				onResult(ctx, CookieHealthResult{UserID: uid, Healthy: healthy})
 			}
-			m.SetCookieHealth(uid, true)
-			checked++
 		}
 
 		slog.InfoContext(ctx, "cookie health check done",
@@ -68,4 +71,27 @@ func HandleCookieHealth(store provider.SessionStore, auth provider.Auth, m *obse
 			slog.Int("expired", expired))
 		return nil
 	})
+}
+
+// checkOneCookie 检查单个 session 的 Cookie 有效性，返回是否健康。
+func checkOneCookie(ctx context.Context, store provider.SessionStore, auth provider.Auth, uid string, m *observability.Metrics) bool {
+	cookie, err := store.Get(ctx, uid)
+	if err != nil || cookie == "" {
+		m.SetCookieHealth(uid, false)
+		slog.WarnContext(ctx, "cookie missing or invalid",
+			slog.String(observability.FieldUserID, uid))
+		return false
+	}
+
+	_, err = auth.LoginStatus(ctx, cookie)
+	if err != nil {
+		m.SetCookieHealth(uid, false)
+		slog.WarnContext(ctx, "cookie expired",
+			slog.String(observability.FieldUserID, uid),
+			slog.String(observability.FieldErrorCode, err.Error()))
+		return false
+	}
+
+	m.SetCookieHealth(uid, true)
+	return true
 }

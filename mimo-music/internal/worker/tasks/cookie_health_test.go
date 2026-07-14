@@ -70,7 +70,7 @@ func TestCookieHealth_AllValid(t *testing.T) {
 	}}
 	auth := &cookieHealthMockAuth{}
 
-	handler := HandleCookieHealth(store, auth, observability.NewTestMetrics())
+	handler := HandleCookieHealth(store, auth, observability.NewTestMetrics(), nil)
 	err := handler.ProcessTask(context.Background(), &asynq.Task{})
 	if err != nil {
 		t.Fatalf("健康检查失败: %v", err)
@@ -85,7 +85,7 @@ func TestCookieHealth_SomeExpired(t *testing.T) {
 	}}
 	auth := &cookieHealthMockAuth{}
 
-	handler := HandleCookieHealth(store, auth, observability.NewTestMetrics())
+	handler := HandleCookieHealth(store, auth, observability.NewTestMetrics(), nil)
 	err := handler.ProcessTask(context.Background(), &asynq.Task{})
 	if err != nil {
 		t.Fatalf("部分失效不应导致任务失败: %v", err)
@@ -97,7 +97,7 @@ func TestCookieHealth_EmptyStore(t *testing.T) {
 	store := &cookieHealthMockStore{sessions: map[string]string{}}
 	auth := &cookieHealthMockAuth{}
 
-	handler := HandleCookieHealth(store, auth, observability.NewTestMetrics())
+	handler := HandleCookieHealth(store, auth, observability.NewTestMetrics(), nil)
 	err := handler.ProcessTask(context.Background(), &asynq.Task{})
 	if err != nil {
 		t.Fatalf("空 store 不应失败: %v", err)
@@ -111,7 +111,7 @@ func TestCookieHealth_MissingCookie(t *testing.T) {
 	}}
 	auth := &cookieHealthMockAuth{}
 
-	handler := HandleCookieHealth(store, auth, observability.NewTestMetrics())
+	handler := HandleCookieHealth(store, auth, observability.NewTestMetrics(), nil)
 	err := handler.ProcessTask(context.Background(), &asynq.Task{})
 	if err != nil {
 		t.Fatalf("空 cookie 不应导致任务失败: %v", err)

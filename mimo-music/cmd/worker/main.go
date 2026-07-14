@@ -54,6 +54,7 @@ func main() {
 	slog.Info("redis connected", slog.String("addr", cfg.Redis.Addr()))
 
 	sessionStore := storeredis.NewSessionStore(rdb)
+	availStore := storeredis.NewAvailabilityStore(rdb)
 
 	// Asynq server（处理任务）
 	srv := asynq.NewServer(
@@ -63,7 +64,16 @@ func main() {
 
 	// 注册任务 handler
 	mux := asynq.NewServeMux()
-	mux.Handle(tasks.TypeCookieHealth, tasks.HandleCookieHealth(sessionStore, neteaseClient.Auth(), metrics))
+	mux.Handle(tasks.TypeCookieHealth, tasks.HandleCookieHealth(
+		sessionStore, neteaseClient.Auth(), metrics,
+		func(ctx context.Context, r tasks.CookieHealthResult) {
+			if r.Healthy {
+				_ = availStore.SetAvailable(ctx, r.UserID)
+			} else {
+				_ = availStore.SetUnavailable(ctx, r.UserID)
+			}
+		},
+	))
 
 	// 定时调度器
 	scheduler := worker.NewScheduler(cfg.Redis.Addr(), cfg.Worker.CookieCheckInterval)
