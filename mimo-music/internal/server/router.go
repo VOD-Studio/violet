@@ -5,9 +5,10 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 
 	"github.com/VOD-Studio/mimo-music/internal/server/handler"
+	servermiddleware "github.com/VOD-Studio/mimo-music/internal/server/middleware"
 )
 
 // NewRouter 创建并配置 chi 路由器。
@@ -18,8 +19,9 @@ func NewRouter() http.Handler {
 	r := chi.NewRouter()
 
 	// 中间件
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.RequestID)
+	r.Use(chimiddleware.Recoverer)
+	r.Use(chimiddleware.RequestID)
+	r.Use(servermiddleware.Logging)
 
 	// 路由
 	r.Get("/health", handler.Health)

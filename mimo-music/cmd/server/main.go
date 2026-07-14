@@ -15,13 +15,24 @@ import (
 
 	"github.com/VOD-Studio/mimo-music/config"
 	"github.com/VOD-Studio/mimo-music/internal/server"
+	"github.com/VOD-Studio/mimo-music/observability"
 )
 
 func main() {
 	cfg := config.Load()
 
-	logger := slog.Default()
-	slog.SetDefault(logger)
+	// 可观测性初始化：OTel tracer（生成 trace_id）→ logger（slog + handler 链）
+	tracerShutdown, err := observability.InitTracer()
+	if err != nil {
+		slog.Error("init tracer failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	defer func() {
+		_ = tracerShutdown(context.Background())
+	}()
+
+	observability.InitLogger(cfg.Server.Env)
+	observability.HandleSIGHUP()
 
 	router := server.NewRouter()
 	srv := &http.Server{
@@ -37,23 +48,23 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logger.Info("mimo-music server starting", slog.String("config", cfg.String()))
+		slog.Info("mimo-music server starting", slog.String("config", cfg.String()))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Error("server failed", slog.String("error", err.Error()))
+			slog.Error("server failed", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
 	}()
 
 	<-quit
-	logger.Info("shutting down server...")
+	slog.Info("shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logger.Error("server forced to shutdown", slog.String("error", err.Error()))
+		slog.Error("server forced to shutdown", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
-	logger.Info("server stopped")
+	slog.Info("server stopped")
 }
