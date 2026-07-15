@@ -229,7 +229,7 @@ func TestDo_ContextCancel(t *testing.T) {
 	}
 }
 
-// TestDo_ContextTimeout 验证 context 超时终止请求。
+// TestDo_ContextTimeout 验证 context 超时终止请求，返回 ErrNetwork。
 func TestDo_ContextTimeout(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(200 * time.Millisecond)
@@ -242,10 +242,12 @@ func TestDo_ContextTimeout(t *testing.T) {
 
 	c := NewClient(srv.URL, WithRetry(0, 0))
 	err := c.doGET(ctx, "/x", nil, nil)
-	// 超时归到 ErrUpstreamUnavailable（网络层），但 context 超时应优先暴露
-	_ = err // 只要不卡死即说明 context 生效
+	// 超时归到 ErrNetwork（网络层），与业务层 ErrUpstreamUnavailable 区分。
 	if err == nil {
 		t.Fatal("超时应返回错误")
+	}
+	if !errors.Is(err, ErrNetwork) {
+		t.Fatalf("超时应归到 ErrNetwork，得到 %v", err)
 	}
 }
 

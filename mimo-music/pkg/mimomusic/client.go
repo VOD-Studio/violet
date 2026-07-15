@@ -80,7 +80,7 @@ func isRetryableHTTP(statusCode int) bool {
 
 // isRetryableErr 判断 Go 层 error 是否可重试。
 func isRetryableErr(err error) bool {
-	return errors.Is(err, ErrUpstreamUnavailable) || errors.Is(err, ErrRateLimited)
+	return errors.Is(err, ErrUpstreamUnavailable) || errors.Is(err, ErrRateLimited) || errors.Is(err, ErrNetwork)
 }
 
 // requestOptions 是单次请求的配置。
@@ -156,9 +156,10 @@ func (c *Client) doOnce(ctx context.Context, method, targetURL string, opts requ
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		// 网络层错误（含超时、连接拒绝、DNS 失败）统一归到上游不可用，可重试。
-		// 确定性错误由信封业务 code 表达，不会走到这里。
-		return fmt.Errorf("%w: %v", ErrUpstreamUnavailable, err)
+		// 网络层错误（含超时、连接拒绝、DNS 失败）归到 ErrNetwork，可重试。
+		// 与业务层 ErrUpstreamUnavailable（服务端返回 10502）区分，便于上层
+		// 用 errors.Is(err, ErrNetwork) 单独判定网络故障。
+		return fmt.Errorf("%w: %v", ErrNetwork, err)
 	}
 	defer resp.Body.Close()
 

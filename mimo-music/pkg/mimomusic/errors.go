@@ -36,6 +36,11 @@ var (
 
 	// ErrInvalidRequest 表示请求参数错误（HTTP 400，code 10400）。
 	ErrInvalidRequest = errors.New("请求参数错误")
+
+	// ErrNetwork 表示网络层错误（连接超时、连接拒绝、DNS 失败等），
+	// 与业务层 ErrUpstreamUnavailable（服务端返回 10502）区分。
+	// 调用方用 errors.Is(err, ErrNetwork) 单独判定网络故障。
+	ErrNetwork = errors.New("网络错误")
 )
 
 // businessError 映射 HTTP 信封业务 code 到哨兵 error。

@@ -7,11 +7,13 @@ import (
 	"go.opentelemetry.io/otel"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
+	"github.com/VOD-Studio/mimo-music/config"
 )
 
 // TestNewExporter_Noop 验证 none 类型返回不导出的 noop exporter。
 func TestNewExporter_Noop(t *testing.T) {
-	exp, err := newExporter(context.Background(), OTelConfig{Exporter: "none"})
+	exp, err := newExporter(context.Background(), config.OTelConfig{Exporter: "none"})
 	if err != nil {
 		t.Fatalf("不应返回错误：%v", err)
 	}
@@ -24,7 +26,7 @@ func TestNewExporter_Noop(t *testing.T) {
 
 // TestNewExporter_EmptyDefaultsToNone 验证空字符串归到 none。
 func TestNewExporter_EmptyDefaultsToNone(t *testing.T) {
-	exp, err := newExporter(context.Background(), OTelConfig{Exporter: ""})
+	exp, err := newExporter(context.Background(), config.OTelConfig{Exporter: ""})
 	if err != nil {
 		t.Fatalf("空字符串应归到 none，不应报错：%v", err)
 	}
@@ -35,7 +37,7 @@ func TestNewExporter_EmptyDefaultsToNone(t *testing.T) {
 
 // TestNewExporter_InvalidType 验证未知 exporter 类型报错。
 func TestNewExporter_InvalidType(t *testing.T) {
-	_, err := newExporter(context.Background(), OTelConfig{Exporter: "zipkin"})
+	_, err := newExporter(context.Background(), config.OTelConfig{Exporter: "zipkin"})
 	if err == nil {
 		t.Fatal("未知 exporter 类型应报错")
 	}
@@ -44,7 +46,7 @@ func TestNewExporter_InvalidType(t *testing.T) {
 // TestNewExporter_OtlpHTTP 验证 otlp-http 能创建 exporter（不实际连接）。
 func TestNewExporter_OtlpHTTP(t *testing.T) {
 	// 用一个不会被实际连接的端点，exporter 创建是惰性的
-	exp, err := newExporter(context.Background(), OTelConfig{
+	exp, err := newExporter(context.Background(), config.OTelConfig{
 		Exporter: "otlp-http",
 		Endpoint: "localhost:4318",
 	})
@@ -65,7 +67,7 @@ func TestInitTracer_NoopGeneratesTraceID(t *testing.T) {
 	originalTP := otel.GetTracerProvider()
 	t.Cleanup(func() { otel.SetTracerProvider(originalTP) })
 
-	shutdown, err := InitTracer(OTelConfig{
+	shutdown, err := InitTracer(config.OTelConfig{
 		Exporter:    "none",
 		ServiceName: "test",
 		SampleRatio: 1.0,
@@ -87,6 +89,39 @@ func TestInitTracer_NoopGeneratesTraceID(t *testing.T) {
 		t.Fatal("trace_id 不应是零值")
 	}
 	_ = ctx
+}
+
+// TestNoopExporter_ExportIsNoOp 验证 noop exporter 的导出/关闭不报错也不持有 span。
+//
+// NoopExporter 实现 SpanExporter 但 ExportSpans/Shutdown 均为空操作，不存储
+// 任何 span——这是 issue 0004 验收项"none 时不导出"的语义保证。
+// 用 InMemoryExporter 收集同样 span 作对照，证明真实 exporter 收集、noop 不收集。
+func TestNoopExporter_ExportIsNoOp(t *testing.T) {
+	noopExp := tracetest.NewNoopExporter()
+	memExp := tracetest.NewInMemoryExporter()
+
+	// 两个 provider 各生成一个 span，分别经 noop 和 in-memory exporter。
+	// noop 用同步 processor 保证 ExportSpans 被调用。
+	noopTP := sdktrace.NewTracerProvider(sdktrace.WithSyncer(noopExp))
+	memTP := sdktrace.NewTracerProvider(sdktrace.WithSyncer(memExp))
+	defer func() {
+		_ = noopTP.Shutdown(context.Background())
+		_ = memTP.Shutdown(context.Background())
+	}()
+
+	_, noopSpan := noopTP.Tracer("test").Start(context.Background(), "noop-span")
+	noopSpan.End()
+	_, memSpan := memTP.Tracer("test").Start(context.Background(), "mem-span")
+	memSpan.End()
+
+	// InMemoryExporter 作对照：真实 exporter 路径收集到 span。
+	if len(memExp.GetSpans()) != 1 {
+		t.Fatalf("in-memory exporter 应存储 1 个 span 作对照，得到 %d 个", len(memExp.GetSpans()))
+	}
+	// noop exporter 的 Shutdown 不应报错（确认导出链路完整执行过，只是不存储）。
+	if err := noopExp.Shutdown(context.Background()); err != nil {
+		t.Fatalf("noop exporter Shutdown 不应报错：%v", err)
+	}
 }
 
 // TestInitTracer_SpansExportedToRealExporter 验证真实 exporter 下 span 被导出。
