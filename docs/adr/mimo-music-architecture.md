@@ -522,12 +522,14 @@ resp, _ := c.Song().GetSongDetail(ctx, &gen.GetSongDetailRequest{Ids: []int64{34
 ## 11. 代码规范
 
 - **godoc 注释全覆盖**：每个导出符号（含结构体字段）都要有注释。沿用 mimo-blog 既有规范。
+- **model 层 raw struct 字段必须注释**：`internal/netease/model/` 的 raw struct 是网易云原始 JSON 镜像，字段名保留网易云缩写（如 `ar`=歌手、`al`=专辑、`dt`=时长、`fee`=付费类型），不注释则不可读。每个字段必须有行尾注释说明含义。即便字段是私有（小写），也要注释——这是可读性要求，不是 godoc 导出要求。
 - **proto 注释是契约注释**：写在 proto 里，生成时带过去；Go 实现层注释不重复契约字段含义，只注释实现逻辑。避免双份注释漂移。
 - **文风遵循 humanizer-zh**：去 AI 腔。
 - **强制 `slog.*Context` 调用**（带 ctx），contextcheck linter 强制。
-- **提交遵循 AGENTS.md**：Conventional Commits + 中文 + 原子性。
+- **提交遵循 AGENTS.md**：Conventional Commits + 中文 + 原子性，scope 指向最内层模块（如 `feat(search):`，不用 `feat(mimo-music):` 冗余前缀）。
 - **文档不出现「参考 xxxx」**：设计自包含，决策过程留 ADR。
 - **lint**：golangci-lint + buf lint，与 mimo-blog 一致。
+- **测试规范**：见 `docs/guides/go-testing-guide.md`（table-driven + `t.Run` 子测试 + `t.Parallel` + testify）。endpoint 的 `MapRequest`/`MapResponse` 必须有纯函数测试，用网易云 JSON fixture 覆盖各分支。
 
 ## 12. 被取代的旧产物
 
