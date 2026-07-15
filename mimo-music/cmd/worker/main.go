@@ -64,6 +64,7 @@ func main() {
 
 	// 注册任务 handler
 	mux := asynq.NewServeMux()
+	mux.Use(worker.TraceMiddleware) // 每个任务起 trace span
 	mux.Handle(tasks.TypeCookieHealth, tasks.HandleCookieHealth(
 		sessionStore, neteaseClient.Auth(), metrics,
 		func(ctx context.Context, r tasks.CookieHealthResult) {
