@@ -51,7 +51,9 @@ go.mod 提为 direct：`google.golang.org/grpc`、`google.golang.org/protobuf`�
 - [ ] 8 个领域 proto 文件定义 15 个 rpc + 全部 message
 - [ ] 领域实体（Song/Artist/Album/Playlist/User）各定义一次，被引用处 import
 - [ ] 每个 rpc 有 google.api.http annotation（gateway REST 路由）
-- [ ] `make proto` 成功产出 `gen/go/` + `gen/openapi/` + `gen/rust/`
+- [ ] `make proto` 成功产出 `gen/go/` + `gen/openapi/`
+- [ ] `gen/rust/` 推迟：buf prost 插件配置较重，地基阶段先产出 Go + OpenAPI。Rust client 通过 OpenAPI codegen 接入，或后续 issue 补 buf prost 插件。Rust 生成不阻塞 Go 侧地基推进。
+- [ ] common/ 分页 message（PageRequest/PageResponse）推迟到 Phase 4：buf STANDARD 要求子包带 version 后缀，单独建 common 子包不值得，分页 message 在 Phase 4 首个分页接口时直接定义在对应领域 proto 内。
 - [ ] `gen/go/` 含全部 service 的 gRPC server interface（可被 service 层 implement）
 - [ ] `cmd/server/main.go` 能起 gRPC + gateway 双 server（grpcurl 能连上）
 - [ ] go.mod 的 grpc/protobuf/grpc-gateway 提为 direct
