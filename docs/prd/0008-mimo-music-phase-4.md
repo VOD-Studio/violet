@@ -1,28 +1,50 @@
 # PRD: mimo-music Phase 4
 
-> 状态：待实现
-> 关联：[全功能蓝图](./mimo-music-netease-full-api-roadmap.md)、[Phase 1 PRD](./0005-mimo-music-phase-1.md)、[架构 spec](../adr/mimo-music-architecture.md)
+> 状态：待实现（前置：地基阶段完成）
+> 关联：[全功能蓝图](./mimo-music-netease-full-api-roadmap.md)、[架构 ADR](../adr/mimo-music-architecture.md)
 > 范围：网易云能力扩展 P0 四模块——搜索 type 多类型 + 歌单管理 + 用户模块 + 歌手扩展
 
 ## Problem Statement
 
-Phase 1-3 实现了网易云 15 个核心接口（登录、歌曲详情/URL/歌词、歌单详情、搜索单曲、专辑、歌手信息、每日推荐、私人 FM），让 mimo-music 成了一个能跑的解析代理。但这只是网易云 357 个接口的 4.2%——作为对标 NeteaseCloudMusicApi 全功能的独立服务，现有能力远远不够。
+Phase 1-3 实现了网易云 15 个核心接口（登录、歌曲详情/URL/歌词、歌单详情、搜索单曲、专辑、歌手信息、每日推荐、私人 FM），让 mimo-music 成了一个能跑的服务。但这只是网易云 357 个接口的 4.2%——作为对标 NeteaseCloudMusicApi 全功能的独立服务，现有能力远远不够。
 
 最痛的几个缺口：
 
-- **搜索只能搜单曲**：Phase 1 PRD 就规划了 search 的 type 参数（搜专辑/歌手/歌单/MV/用户/歌词），但实现时硬编码了 type=1，只能搜单曲。这是已规划却漏做的能力。
-- **歌单只能按 ID 拉详情**：无法拉用户歌单列表、无法按分类/热门浏览歌单、无法收藏/新建/管理歌单。博主要管理自己的网易云歌单，只能去网易云客户端操作。
+- **搜索只能搜单曲**：地基阶段迁移的搜索端点仍只支持 type=1 单曲。网易云支持 9 种搜索类型（专辑/歌手/歌单/用户/MV/歌词/主播/视频/综合），这是已规划却未做的能力。
+- **歌单只能按 ID 拉详情**：无法拉用户歌单列表、无法按分类/热门浏览歌单、无法收藏/新建/管理歌单。
 - **没有用户能力**：拿不到用户详情、用户歌单、关注/粉丝、动态、播放记录。用户是网易云的中心实体，大量接口依赖用户 UID，缺了这块后续模块难以展开。
-- **歌手信息不全**：只有热门 50 首，拿不到全部歌曲、MV、专辑、描述、相似歌手、粉丝数。
+- **歌手信息不全**：只有基础信息，拿不到全部歌曲、MV、专辑、描述、相似歌手、粉丝数。
+
+## 前置依赖
+
+**Phase 4 假设地基阶段已完成：**
+
+- proto 基础设施（buf + grpc-gateway 脚手架）可用
+- `internal/netease/engine/`（RawDo + Execute）可用
+- `internal/netease/session/`（SessionStore）可用
+- `internal/netease/crypto.go`（weapi/eapi）已迁移
+- 领域模型层首批 5 实体已建：Song / Artist / Album / Playlist / User
+- 已实现 15 接口已迁移到新架构（proto 契约 + endpoint 声明 + engine.Execute）
+- proto 已有 `SongService` / `PlaylistService` / `AuthService` / `SearchService` / `AlbumService` / `ArtistService` / `RecommendService` / `FMService` 八个领域 service
+
+Phase 4 在这个地基上扩展四个模块，每个接口走 ADR 第 3-4 节的「引擎 + 声明 + 领域模型层」架构。
 
 ## Solution
 
-Phase 4 补齐 P0 四模块，约 69 个接口。每个接口严格走四层架构（provider 接口 → netease 实现 → service 编排 → handler 端点 → SDK 镜像），对齐 Phase 1-3 既定模式。
+Phase 4 补齐 P0 四模块，约 69 个接口。每个接口严格遵循新架构：
+
+```
+proto/netease/music/v1/<域>.proto       proto 契约：领域 service + message（唯一真相）
+internal/netease/endpoint/<域>/*.go     每接口声明：Meta + CachePolicy + MapRequest + MapResponse
+internal/netease/model/*.go             领域实体映射：复用首批 5 实体的 map 函数 + 本期新建实体
+internal/netease/engine/                共享执行引擎（RawDo + Execute，不改动）
+internal/service/<域>.go                grpc impl：恒一行 return engine.Execute(...)
+```
 
 四模块按依赖顺序推进：
 
-1. **搜索 type 扩展**：透传 type 参数到上游，9 种搜索类型共用同一端点，实现成本低，作为 Phase 4 入口。
-2. **用户模块**（新能力域）：用户是网易云中心实体，歌单管理、收藏、动态都依赖用户 UID，必须先做。
+1. **搜索 type 扩展**：proto 给 Search 加 type 枚举，endpoint 透传，9 种类型共用一个 endpoint 声明结构（按 type 返回不同 Result message）。实现成本低，作为 Phase 4 入口。
+2. **用户模块**（扩展 UserService）：用户是网易云中心实体，歌单管理依赖用户歌单列表，必须先做。
 3. **歌单管理**：用户歌单列表、分类、热门、收藏、新建/删除/更新。
 4. **歌手扩展**：全部歌曲、专辑、MV、描述、相似歌手、粉丝、分类列表、收藏。
 
@@ -35,7 +57,7 @@ Phase 4 补齐 P0 四模块，约 69 个接口。每个接口严格走四层架�
 3. 作为调用方，我想按关键词搜索歌单，这样能发现相关主题歌单。
 4. 作为调用方，我想按关键词搜索用户，这样能找到特定用户。
 5. 作为调用方，我想按关键词搜索 MV，这样能找到音乐视频。
-6. 作为调用方，我想按关键词搜索歌词，这样能通过歌词片段找歌。
+6. 作为调用方，我想按歌词片段搜索，这样通过歌词找歌。
 7. 作为调用方，我想做综合搜索（多类型混合），这样一次请求拿到各类型结果。
 8. 作为调用方，我想获取搜索建议，这样输入时自动补全关键词。
 9. 作为调用方，我想获取热搜词列表（简略），这样知道大家在搜什么。
@@ -91,128 +113,82 @@ Phase 4 补齐 P0 四模块，约 69 个接口。每个接口严格走四层架�
 
 ## Implementation Decisions
 
+### 每个 interface 的改动形态（新架构）
+
+每个接口的完整改动是：
+
+- **proto**：领域 service 加 rpc + 对应 message（请求 + 响应）。message 复用已有领域实体（Song/Artist/Album/Playlist/User），新实体（如 MV/Video）在本期 proto 里新建。
+- **endpoint 声明**：`internal/netease/endpoint/<域>/<接口>.go` 一个包级 `var`，含 `Meta`（path/method/crypto/auth）+ `CachePolicy`（nil 或带 key/TTL）+ `MapRequest` + `MapResponse`。
+- **model 复用**：`MapResponse` 内调 `model.MapSong` / `model.MapPlaylist` 等已有函数组装，不为每个接口重写映射。
+- **service**：`internal/service/<域>.go` 加一个方法，恒一行 `return engine.Execute(...)`。
+- **测试**：endpoint 的 `MapRequest` / `MapResponse` 是纯函数测试（mock 网易云 JSON）；engine 集成测试复用地基脚手架，不重写。
+
+无 handler、无 router、无 openapi 手写——gRPC service 由 proto 生成，REST 由 gateway 派生。
+
 ### 搜索 type 扩展
 
-- `provider.Search` 接口的 `Search` 方法签名扩展：增加 `searchType` 参数（int 或枚举常量），透传到网易云上游的 `type` query 参数。
-- type 常量定义在 provider 包：`SearchTypeSong=1` / `SearchTypeAlbum=10` / `SearchTypeArtist=100` / `SearchTypePlaylist=1000` / `SearchTypeUser=1002` / `SearchTypeMV=1004` / `SearchTypeLyric=1006` / `SearchTypeDJ=1009` / `SearchTypeVideo=1014` / `SearchTypeAll=1018`。
-- 不同 type 的返回结构不同（搜专辑返回专辑列表、搜歌手返回歌手列表），`SearchResult` 扩展为可容纳多类型的联合结构，或按 type 返回不同 Result 类型。优先用联合结构（避免接口方法膨胀），各类型字段用独立 slice。
-- 搜索建议、热搜列表、默认搜索词作为 Search 能力域的额外方法（Suggest / Hot / HotDetail / DefaultKeyword）。
-- 搜索端点仍用非加密 GET `/api/search/get`（type 透传），建议/热搜用 weapi。
+- proto `SearchService.Search` 的请求 message 加 `SearchType type` 字段，`SearchType` 是 enum（`SEARCH_TYPE_SONG=1` / `ALBUM=10` / `ARTIST=100` / `PLAYLIST=1000` / `USER=1002` / `MV=1004` / `LYRIC=1006` / `DJ=1009` / `VIDEO=1014` / `ALL=1018`）。
+- 响应 `SearchResponse` 扩展为联合 message，各类型字段独立（`repeated Album albums = N` / `repeated Artist artists = N` / ...），按 type 填充对应字段。
+- endpoint 的 `MapRequest` 透传 type 到上游；`MapResponse` 按 type 分支调对应 model map 函数（搜歌手调 `model.MapArtists`，搜专辑调 `model.MapAlbums`）。
+- cache key 加 type 维度（`search:{type}:{keyword}:{limit}`），避免不同 type 串缓存。
+- 网易云端点 `/api/search/get`（type 透传，非加密 GET）。
 
-### 用户模块（新能力域）
+### 用户模块（扩展 UserService）
 
-- `provider/provider.go` 新增 `User` 子接口，`Client` 新增 `User() User` accessor。
-- User 子接口方法：Account（账号信息）/ Detail（用户详情）/ SubCount（数量统计）/ Playlist（用户歌单）/ Follows（关注）/ Followeds（粉丝）/ Events（动态）/ Record（播放记录）/ Level（等级）/ DetailByName（按昵称查）/ FollowEachOther（互相关注判断）。
-- 用户接口大多不需要登录态（查别人用匿名 cookie 即可），但 Account（查自己）需要登录。需登录的走 cookie 轮换（对齐 Recommend/FM 模式）。
-- 用户歌单列表内部区分创建/收藏：网易云 `/user/playlist` 一次返回全部，按歌单的 `userId == creator.userId` 判断是否创建的歌单，service 层可提供过滤参数。
+- proto `UserService` 加 rpc：Account（账号信息，需登录）/ Detail / SubCount（数量统计）/ Playlist（用户歌单列表）/ Follows / Followeds / Events / Record / Level / DetailByName / FollowEachOther。
+- 用户歌单列表（Playlist）一次返回全部，按 `userId == creator.userId` 区分创建/收藏。proto 响应带完整列表 + service 层可选过滤参数（proto 请求加 `playlist_filter` enum：`ALL` / `CREATED` / `SUBSCRIBED`）。
+- Account 需登录态（`Meta.Auth = AuthLoggedIn`），其余查他人用匿名（`AuthAnonymous`）。
+- 新建 model 实体：本期不需要新实体，User 实体已在首批 5 实体中。若网易云返回的用户子结构（如 Event 动态）字段足够多，提炼为 Event 实体放 model 层——否则直接在 endpoint 的 raw struct 里声明。
 
 ### 歌单管理
 
-- `provider.Playlist` 接口扩展，新增方法：HighQuality（精品）/ CatList（分类）/ Hot（网友精选碟）/ Subscribers（收藏者）/ Tracks（分页全曲）/ Subscribe（收藏/取消）/ Create（新建）/ Delete（删除）/ UpdateName / UpdateDesc / UpdateTags / AddOrDeleteSongs / OrderUpdate（歌单排序）/ SongOrderUpdate（歌曲排序）。
-- 精品歌单标签列表单独一个方法（HighQualityTags）。
-- 歌单管理类接口（创建/删除/更新/收藏/排序）是写操作，不做缓存，需登录态。
-- 歌单浏览类（精品/分类/热门）做缓存（24h，对齐歌单详情）。
+- proto `PlaylistService` 加 rpc：HighQuality / HighQualityTags / CatList / Hot / Subscribers / AllTracks（分页）/ Subscribe / Create / Delete / UpdateName / UpdateDesc / UpdateTags / UpdateTracks / UpdateOrder / UpdateSongOrder。
+- 读类（HighQuality/CatList/Hot/Subscribers/AllTracks）做缓存（CachePolicy TTL 24h）；写类（Subscribe/Create/Delete/Update*）`CachePolicy = nil`，`Meta.Auth = AuthLoggedIn`。
+- 写成功后不主动失效缓存（cache 在 Execute 内，endpoint 声明无法回填失效逻辑）——读类接口自然过期即可，TTL 24h 足够短。
 
 ### 歌手扩展
 
-- `provider.Artist` 接口扩展，新增方法：AllSongs（分页全曲）/ TopSongs（热门 50）/ MVs（MV 列表）/ Albums（专辑列表）/ Desc（描述）/ Similar（相似歌手）/ Fans（粉丝数）/ Dynamic（动态信息）/ Videos（视频）/ Sub（收藏/取消）。
-- 热门歌手列表（/top/artists）和歌手分类列表（/artist/list）是全局浏览接口，考虑放在 Artist 能力域或单独的 Browse 能力域。优先放 Artist（避免新增能力域），作为 Artist.TopArtists / Artist.Categories。
-- 歌手全部歌曲、专辑列表需分页（offset/limit），Result 带分页信息。
+- proto `ArtistService` 加 rpc：AllSongs（分页）/ TopSongs / MVs / Albums / Desc / Similar / Dynamic / Videos / Fans / TopArtists / Categories / Subscribe。
+- 新建 model 实体：MV（被歌手 MV 列表和未来 MV 模块复用）、Video（歌手视频）。若 MVP 字段少，先在 endpoint raw struct 里声明，提炼到 model 层留到该实体被第二个领域复用时。
+- TopArtists / Categories 是全局浏览（非按 artistID），仍放 ArtistService。
+- 分页接口（AllSongs/MVs/Albums/Videos）的 proto 响应带 `int32 total` + `int32 offset` + `int32 limit`。
 
-### 四层改动范围
+### 分页约定
 
-每个接口涉及：
-- `provider/provider.go`：子接口方法 + Result 类型
-- `provider/netease/*.go`：weapiPost/apiGet + 解析结构 + 转 Result
-- `service/*.go`：缓存（读类）或直接透传（写类）
-- `internal/server/handler/*.go`：HTTP 端点
-- `internal/server/router.go`：路由注册
-- `internal/bootstrap/wire*.go`：service 装配（User 是新 service，需新 wire provider）
-- `pkg/mimomusic/*.go` + `types.go`：SDK 方法 + DTO
-- `openapi/`：接口文档
-- 各层 `_test.go`
-
-### HTTP 端点契约
-
-沿用统一信封 `{code, data, message}`。
-
-Phase 4 新增端点（按模块）：
-
-**搜索扩展**：
-- GET /api/v1/search?type={type}（扩展现有端点）
-- GET /api/v1/search/suggest
-- GET /api/v1/search/hot
-- GET /api/v1/search/hot/detail
-- GET /api/v1/search/default
-
-**用户模块**：
-- GET /api/v1/user/account（需登录）
-- GET /api/v1/users/{id}
-- GET /api/v1/users/{id}/subcount
-- GET /api/v1/users/{id}/playlists
-- GET /api/v1/users/{id}/follows
-- GET /api/v1/users/{id}/followeds
-- GET /api/v1/users/{id}/events
-- GET /api/v1/users/{id}/record
-- GET /api/v1/users/{id}/level
-
-**歌单管理**：
-- GET /api/v1/playlists/highquality
-- GET /api/v1/playlists/highquality/tags
-- GET /api/v1/playlists/categories
-- GET /api/v1/playlists/hot
-- GET /api/v1/playlists/{id}/subscribers
-- GET /api/v1/playlists/{id}/tracks（分页）
-- POST /api/v1/playlists/{id}/subscribe（需登录）
-- POST /api/v1/playlists（新建，需登录）
-- DELETE /api/v1/playlists/{id}（需登录）
-- PATCH /api/v1/playlists/{id}（更新名/描述/标签，需登录）
-- POST /api/v1/playlists/{id}/tracks（添加/删除歌曲，需登录）
-
-**歌手扩展**：
-- GET /api/v1/artists/{id}/songs（分页全曲）
-- GET /api/v1/artists/{id}/top
-- GET /api/v1/artists/{id}/mvs
-- GET /api/v1/artists/{id}/albums
-- GET /api/v1/artists/{id}/desc
-- GET /api/v1/artists/{id}/similar
-- GET /api/v1/artists/{id}/fans
-- GET /api/v1/artists/{id}/dynamic
-- GET /api/v1/artists/{id}/videos
-- POST /api/v1/artists/{id}/subscribe（需登录）
-- GET /api/v1/artists/top（热门歌手）
-- GET /api/v1/artists/categories
+网易云分页用 offset + limit。proto 请求统一 `int32 offset` + `int32 limit`（非页码），响应统一带 `int32 total`。gateway 暴露的 REST 沿用 offset/limit query 参数。
 
 ## Testing Decisions
 
-测试原则与 Phase 1-3 一致：只测外部行为，不测实现细节。
+测试原则与地基阶段一致：只测外部行为，不测实现细节。
 
-### 主 seam：service 层
+### 主 seam：endpoint 的 MapRequest / MapResponse
 
-mock provider + mock cache，验证：
-- 缓存命中时直接返回，不打 provider
-- 缓存未命中时调 provider，结果写入缓存
-- 需登录态的接口走 cookie 轮换，cookie 失效时 MarkUnavailable
-- 写操作（创建/删除/更新/收藏）不做缓存，直接透传
+这两个函数是纯函数（proto req → params map / raw JSON → proto resp），单元测试覆盖：
 
-### provider/netease 层
+- 各接口的网易云原始 JSON 样本（fixture）→ proto 响应的字段映射正确
+- MapRequest 的入参构造（网易云入参格式古怪，如 `ids:[123]`、`c:"[...]"`）
+- type 分支（搜索各 type 的返回结构解析）
+- 错误码映射（网易云 code != 200 → 统一错误）
 
-converter 和 errors 是纯函数，单元测试覆盖各分支（网易云原始结构 → provider Result 的字段映射）。不测真实网络调用。
+### engine 集成测试
 
-### SDK 层
+复用地基阶段的 engine 测试脚手架，mock 网易云 HTTP 响应，验证：
 
-httptest.Server mock mimo-music 响应，覆盖成功 / 各错误码 / type 参数透传。
+- 缓存命中时跳过 RawDo（Execute 内部）
+- 缓存未命中时调 RawDo，结果回填缓存
+- 写操作（CachePolicy=nil）不查不写缓存
+- 登录态接口走 SessionStore.GetAvailable，cookie 失效 ReportFailure
 
-### 新能力域的测试先例
+### service 层
 
-参考 Phase 2 的 album_test.go / artist_test.go（service 层 mock 测试）和 netease/converter_test.go（纯函数测试）。
+service 每个方法恒一行 `return engine.Execute(...)`，无独立测试价值（lint 机械校验方法体形态）。行为测试在 endpoint + engine 层覆盖。
 
 ## Out of Scope
 
 - 专辑扩展（数字专辑、语种风格馆、新碟上架）— Phase 5
 - 推荐扩展（推荐歌单/新音乐/MV/电台/节目）— Phase 5
 - 排行榜 — Phase 5
-- MV/视频模块 — Phase 5
+- MV/视频独立模块（MV 详情、播放地址、视频分类）— Phase 5（本期只做歌手关联的 MV/Video 列表）
 - 相似/相关（相似歌单、相似音乐）— Phase 5
 - 歌曲扩展（喜欢音乐、逐字歌词、音质详情）— Phase 5
 - 评论模块 — Phase 6
@@ -221,22 +197,17 @@ httptest.Server mock mimo-music 响应，覆盖成功 / 各错误码 / type 参�
 - 播客、助眠、DIFM 等小众功能 — Phase 8
 - 用户状态/徽章/绑定信息等边缘用户接口 — 视需求
 - 歌单封面上传（涉及文件上传，跨模块）— 独立需求
-- mimo-blog 前端接入 — 独立需求
 
 ## Further Notes
 
 ### 依赖顺序
 
-四模块有依赖关系：搜索扩展独立可做；用户模块是歌单管理的前置（用户歌单列表依赖用户 UID）；歌单管理和歌手扩展互相独立。建议实现顺序：搜索扩展 → 用户模块 → 歌单管理 → 歌手扩展。
-
-### 分页约定
-
-网易云的分页用 offset + limit（非页码）。分页接口的 Result 统一带 `Total int` 字段，query 参数统一用 `offset` 和 `limit`（对齐搜索现有模式）。handler 层接收 `page`/`page_size`（前端友好），service 层转换为 offset/limit。
+四模块有依赖关系：搜索扩展独立可做；用户模块是歌单管理的前置（用户歌单列表依赖用户 UID）；歌单管理和歌手扩展互相独立。实现顺序：搜索扩展 → 用户模块 → 歌单管理 → 歌手扩展。
 
 ### 写操作的登录态
 
-创建/删除/更新/收藏类接口需登录态。这些接口的 service 层走 cookie 轮换（SessionRotator.NextCookie），对齐 Recommend/FM 的模式。失败时标记 session 不可用。
+创建/删除/更新/收藏类接口 `Meta.Auth = AuthLoggedIn`，engine 内部走 `SessionStore.GetAvailable(ctx, AuthLoggedIn)` 选取已登录 cookie。失败时 `ReportFailure`，对齐地基阶段模式。
 
-### 拆分预估
+### 拆分
 
-Phase 4 拆成约 10-12 个垂直切片 issue（搜索扩展 2 个、用户模块 4 个、歌单管理 4 个、歌手扩展 3 个）。
+Phase 4 拆成 8 个垂直切片 issue（搜索 2、用户 2、歌单 2、歌手 2），见 `docs/issues/0008-mimo-music-phase-4/`。
