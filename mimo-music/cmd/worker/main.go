@@ -27,7 +27,7 @@ func main() {
 	cfg := config.Load()
 
 	// 可观测性
-	tracerShutdown, err := observability.InitTracer()
+	tracerShutdown, err := observability.InitTracer(cfg.OTel)
 	if err != nil {
 		slog.Error("init tracer failed", slog.String("error", err.Error()))
 		os.Exit(1)

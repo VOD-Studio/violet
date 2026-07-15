@@ -24,6 +24,9 @@ type Config struct {
 
 	// Worker 是 Asynq worker 相关配置。
 	Worker WorkerConfig
+
+	// OTel 是 OpenTelemetry 追踪配置。
+	OTel OTelConfig
 }
 
 // ServerConfig 是 HTTP 服务相关配置。
@@ -75,6 +78,22 @@ type WorkerConfig struct {
 	CookieCheckInterval int
 }
 
+// OTelConfig 是 OpenTelemetry 追踪配置。
+type OTelConfig struct {
+	// Exporter 是 exporter 类型：none（noop，本地开发默认）/ otlp-grpc / otlp-http。
+	Exporter string
+
+	// Endpoint 是 OTLP collector 地址（如 localhost:4317）。
+	// 仅 Exporter 非 none 时生效。
+	Endpoint string
+
+	// ServiceName 是上报到后端的服务名（如 mimo-music）。
+	ServiceName string
+
+	// SampleRatio 是根 span 采样率，0.0-1.0，1.0 表示全采样。
+	SampleRatio float64
+}
+
 // Default 返回默认配置。
 func Default() Config {
 	return Config{
@@ -95,6 +114,11 @@ func Default() Config {
 		Worker: WorkerConfig{
 			Concurrency:         5,
 			CookieCheckInterval: 6,
+		},
+		OTel: OTelConfig{
+			Exporter:    "none",
+			ServiceName: "mimo-music",
+			SampleRatio: 1.0,
 		},
 	}
 }
@@ -122,6 +146,10 @@ func Load() Config {
 	cfg.Redis.PoolSize = envInt("MIMO_MUSIC_REDIS_POOL_SIZE", cfg.Redis.PoolSize)
 	cfg.Worker.Concurrency = envInt("MIMO_MUSIC_WORKER_CONCURRENCY", cfg.Worker.Concurrency)
 	cfg.Worker.CookieCheckInterval = envInt("MIMO_MUSIC_WORKER_COOKIE_CHECK_INTERVAL", cfg.Worker.CookieCheckInterval)
+	cfg.OTel.Exporter = envStr("MIMO_MUSIC_OTEL_EXPORTER", cfg.OTel.Exporter)
+	cfg.OTel.Endpoint = envStr("MIMO_MUSIC_OTEL_ENDPOINT", cfg.OTel.Endpoint)
+	cfg.OTel.ServiceName = envStr("MIMO_MUSIC_OTEL_SERVICE_NAME", cfg.OTel.ServiceName)
+	cfg.OTel.SampleRatio = envFloat("MIMO_MUSIC_OTEL_SAMPLE_RATIO", cfg.OTel.SampleRatio)
 
 	cfg.Server.Env = strings.ToLower(cfg.Server.Env)
 	return cfg
@@ -129,7 +157,7 @@ func Load() Config {
 
 // String 返回配置摘要，用于启动日志。
 func (c Config) String() string {
-	return fmt.Sprintf("env=%s port=%d redis=%s db=%d", c.Server.Env, c.Server.Port, c.Redis.Addr(), c.Redis.DB)
+	return fmt.Sprintf("env=%s port=%d redis=%s db=%d otel=%s", c.Server.Env, c.Server.Port, c.Redis.Addr(), c.Redis.DB, c.OTel.Exporter)
 }
 
 func envStr(key, fallback string) string {
@@ -143,6 +171,15 @@ func envInt(key string, fallback int) int {
 	if v := os.Getenv(key); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			return n
+		}
+	}
+	return fallback
+}
+
+func envFloat(key string, fallback float64) float64 {
+	if v := os.Getenv(key); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			return f
 		}
 	}
 	return fallback

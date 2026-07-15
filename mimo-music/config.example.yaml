@@ -30,3 +30,14 @@ worker:
   concurrency: 5
   # Cookie 健康检查轮询间隔（小时）
   cookie_check_interval: 6
+
+otel:
+  # exporter 类型：none（noop，本地开发默认）/ otlp-grpc / otlp-http
+  exporter: none
+  # OTLP collector 地址（仅 exporter 非 none 时生效）
+  # otlp-grpc 默认端口 4317，otlp-http 默认端口 4318
+  endpoint: "localhost:4317"
+  # 上报到后端的服务名
+  service_name: mimo-music
+  # 根 span 采样率，0.0-1.0，1.0 表示全采样
+  sample_ratio: 1.0

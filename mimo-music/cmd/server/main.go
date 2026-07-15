@@ -23,7 +23,7 @@ func main() {
 	cfg := config.Load()
 
 	// 可观测性初始化：OTel tracer（生成 trace_id）→ logger（slog + handler 链）
-	tracerShutdown, err := observability.InitTracer()
+	tracerShutdown, err := observability.InitTracer(cfg.OTel)
 	if err != nil {
 		slog.Error("init tracer failed", slog.String("error", err.Error()))
 		os.Exit(1)
