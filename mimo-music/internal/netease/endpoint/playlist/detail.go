@@ -13,7 +13,7 @@ import (
 )
 
 // GetPlaylist 是获取歌单详情的接口声明。
-var GetPlaylist = &engine.Endpoint[*mmpb.GetPlaylistRequest, mmpb.GetPlaylistResponse]{
+var GetPlaylist = &engine.Endpoint[*mmpb.GetPlaylistRequest, *mmpb.GetPlaylistResponse]{
 	Meta: engine.Meta{
 		Path:   "/weapi/v6/playlist/detail",
 		Method: "POST",
@@ -33,11 +33,11 @@ var GetPlaylist = &engine.Endpoint[*mmpb.GetPlaylistRequest, mmpb.GetPlaylistRes
 			"s":  8,
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (mmpb.GetPlaylistResponse, error) {
+	MapResponse: func(raw json.RawMessage) (*mmpb.GetPlaylistResponse, error) {
 		pl, err := model.MapPlaylist(raw)
 		if err != nil {
-			return mmpb.GetPlaylistResponse{}, err
+			return &mmpb.GetPlaylistResponse{}, err
 		}
-		return mmpb.GetPlaylistResponse{Playlist: pl}, nil
+		return &mmpb.GetPlaylistResponse{Playlist: pl}, nil
 	},
 }

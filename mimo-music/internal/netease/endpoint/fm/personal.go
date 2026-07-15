@@ -12,7 +12,7 @@ import (
 )
 
 // GetPersonalFM 是获取私人 FM 歌曲的接口声明（需登录态）。
-var GetPersonalFM = &engine.Endpoint[*mmpb.GetPersonalFMRequest, mmpb.GetPersonalFMResponse]{
+var GetPersonalFM = &engine.Endpoint[*mmpb.GetPersonalFMRequest, *mmpb.GetPersonalFMResponse]{
 	Meta: engine.Meta{
 		Path:   "/weapi/v1/radio/get",
 		Method: "POST",
@@ -28,11 +28,11 @@ var GetPersonalFM = &engine.Endpoint[*mmpb.GetPersonalFMRequest, mmpb.GetPersona
 	MapRequest: func(*mmpb.GetPersonalFMRequest) (map[string]any, error) {
 		return map[string]any{}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (mmpb.GetPersonalFMResponse, error) {
+	MapResponse: func(raw json.RawMessage) (*mmpb.GetPersonalFMResponse, error) {
 		songs, err := model.DecodePersonalFM(raw)
 		if err != nil {
-			return mmpb.GetPersonalFMResponse{}, err
+			return &mmpb.GetPersonalFMResponse{}, err
 		}
-		return mmpb.GetPersonalFMResponse{Songs: songs}, nil
+		return &mmpb.GetPersonalFMResponse{Songs: songs}, nil
 	},
 }

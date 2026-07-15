@@ -23,5 +23,5 @@ func NewRecommendServer(eng *engine.Engine) *RecommendServer {
 // GetDailyRecommend 获取每日推荐。恒一行。
 func (s *RecommendServer) GetDailyRecommend(ctx context.Context, req *mmpb.GetDailyRecommendRequest) (*mmpb.GetDailyRecommendResponse, error) {
 	resp, err := engine.Execute(s.eng, ctx, recommendendpoint.GetDailyRecommend, req)
-	return &resp, err
+	return resp, err
 }

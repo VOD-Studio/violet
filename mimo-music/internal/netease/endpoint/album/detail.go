@@ -13,7 +13,7 @@ import (
 )
 
 // GetAlbum 是获取专辑详情的接口声明。
-var GetAlbum = &engine.Endpoint[*mmpb.GetAlbumRequest, mmpb.GetAlbumResponse]{
+var GetAlbum = &engine.Endpoint[*mmpb.GetAlbumRequest, *mmpb.GetAlbumResponse]{
 	Meta: engine.Meta{
 		Path:   "/weapi/v1/album/detail",
 		Method: "POST",
@@ -29,11 +29,11 @@ var GetAlbum = &engine.Endpoint[*mmpb.GetAlbumRequest, mmpb.GetAlbumResponse]{
 	MapRequest: func(req *mmpb.GetAlbumRequest) (map[string]any, error) {
 		return map[string]any{"id": fmt.Sprintf("%d", req.GetAlbumId())}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (mmpb.GetAlbumResponse, error) {
+	MapResponse: func(raw json.RawMessage) (*mmpb.GetAlbumResponse, error) {
 		a, songs, err := model.DecodeAlbumDetail(raw)
 		if err != nil {
-			return mmpb.GetAlbumResponse{}, err
+			return &mmpb.GetAlbumResponse{}, err
 		}
-		return mmpb.GetAlbumResponse{Album: a, Songs: songs}, nil
+		return &mmpb.GetAlbumResponse{Album: a, Songs: songs}, nil
 	},
 }

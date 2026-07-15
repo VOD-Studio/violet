@@ -23,5 +23,5 @@ func NewPlaylistServer(eng *engine.Engine) *PlaylistServer {
 // GetPlaylist 获取歌单详情。恒一行。
 func (s *PlaylistServer) GetPlaylist(ctx context.Context, req *mmpb.GetPlaylistRequest) (*mmpb.GetPlaylistResponse, error) {
 	resp, err := engine.Execute(s.eng, ctx, playlistendpoint.GetPlaylist, req)
-	return &resp, err
+	return resp, err
 }

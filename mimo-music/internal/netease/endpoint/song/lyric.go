@@ -12,7 +12,7 @@ import (
 )
 
 // Lyric 是获取歌词的接口声明。
-var Lyric = &engine.Endpoint[*mmpb.GetLyricRequest, mmpb.GetLyricResponse]{
+var Lyric = &engine.Endpoint[*mmpb.GetLyricRequest, *mmpb.GetLyricResponse]{
 	Meta: engine.Meta{
 		Path:   "/weapi/song/lyric",
 		Method: "POST",
@@ -33,16 +33,16 @@ var Lyric = &engine.Endpoint[*mmpb.GetLyricRequest, mmpb.GetLyricResponse]{
 			"tv": -1,
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (mmpb.GetLyricResponse, error) {
+	MapResponse: func(raw json.RawMessage) (*mmpb.GetLyricResponse, error) {
 		var resp struct {
 			Lrc    struct{ Lyric string `json:"lyric"` }    `json:"lrc"`
 			Tlyric struct{ Lyric string `json:"lyric"` }    `json:"tlyric"`
 			Romalrc struct{ Lyric string `json:"lyric"` }   `json:"romalrc"`
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
-			return mmpb.GetLyricResponse{}, fmt.Errorf("解析歌词失败: %w", err)
+			return &mmpb.GetLyricResponse{}, fmt.Errorf("解析歌词失败: %w", err)
 		}
-		return mmpb.GetLyricResponse{
+		return &mmpb.GetLyricResponse{
 			Lyric: &mmpb.Lyric{
 				Lrc:        resp.Lrc.Lyric,
 				Translated: resp.Tlyric.Lyric,

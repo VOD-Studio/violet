@@ -17,7 +17,7 @@ import (
 
 // Detail 是获取歌曲详情的接口声明。
 // Req 用指针（gRPC 天然传指针），Resp 用值（Execute 序列化用 new(Resp) 构造）。
-var Detail = &engine.Endpoint[*mmpb.GetSongDetailRequest, mmpb.GetSongDetailResponse]{
+var Detail = &engine.Endpoint[*mmpb.GetSongDetailRequest, *mmpb.GetSongDetailResponse]{
 	Meta: engine.Meta{
 		Path:   "/weapi/v3/song/detail",
 		Method: "POST",
@@ -37,14 +37,14 @@ var Detail = &engine.Endpoint[*mmpb.GetSongDetailRequest, mmpb.GetSongDetailResp
 			"ids": fmt.Sprintf("[%s]", idStr),
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (mmpb.GetSongDetailResponse, error) {
+	MapResponse: func(raw json.RawMessage) (*mmpb.GetSongDetailResponse, error) {
 		songs, err := model.DecodeSongDetail(raw)
 		if err != nil {
-			return mmpb.GetSongDetailResponse{}, err
+			return &mmpb.GetSongDetailResponse{}, err
 		}
 		if len(songs) == 0 {
-			return mmpb.GetSongDetailResponse{}, fmt.Errorf("歌曲不存在")
+			return &mmpb.GetSongDetailResponse{}, fmt.Errorf("歌曲不存在")
 		}
-		return mmpb.GetSongDetailResponse{Song: songs[0]}, nil
+		return &mmpb.GetSongDetailResponse{Song: songs[0]}, nil
 	},
 }

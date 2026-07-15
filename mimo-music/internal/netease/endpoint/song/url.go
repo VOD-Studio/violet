@@ -12,7 +12,7 @@ import (
 )
 
 // URL 是获取播放直链的接口声明。
-var URL = &engine.Endpoint[*mmpb.GetSongURLRequest, mmpb.GetSongURLResponse]{
+var URL = &engine.Endpoint[*mmpb.GetSongURLRequest, *mmpb.GetSongURLResponse]{
 	Meta: engine.Meta{
 		Path:   "/weapi/song/enhance/player/url/v1",
 		Method: "POST",
@@ -33,7 +33,7 @@ var URL = &engine.Endpoint[*mmpb.GetSongURLRequest, mmpb.GetSongURLResponse]{
 			"encodeType":  "flac",
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (mmpb.GetSongURLResponse, error) {
+	MapResponse: func(raw json.RawMessage) (*mmpb.GetSongURLResponse, error) {
 		var resp struct {
 			Code int `json:"code"`
 			Data []struct {
@@ -45,13 +45,13 @@ var URL = &engine.Endpoint[*mmpb.GetSongURLRequest, mmpb.GetSongURLResponse]{
 			} `json:"data"`
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
-			return mmpb.GetSongURLResponse{}, fmt.Errorf("解析播放 URL 失败: %w", err)
+			return &mmpb.GetSongURLResponse{}, fmt.Errorf("解析播放 URL 失败: %w", err)
 		}
 		if len(resp.Data) == 0 {
-			return mmpb.GetSongURLResponse{}, fmt.Errorf("未找到播放 URL（可能是 VIP 歌曲）")
+			return &mmpb.GetSongURLResponse{}, fmt.Errorf("未找到播放 URL（可能是 VIP 歌曲）")
 		}
 		d := resp.Data[0]
-		return mmpb.GetSongURLResponse{
+		return &mmpb.GetSongURLResponse{
 			Url: &mmpb.SongURL{Id: d.ID, Url: d.URL, Bitrate: d.Br, Size: d.Size, Format: d.Type},
 		}, nil
 	},

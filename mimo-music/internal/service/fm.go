@@ -23,5 +23,5 @@ func NewFMServer(eng *engine.Engine) *FMServer {
 // GetPersonalFM 获取私人 FM。恒一行。
 func (s *FMServer) GetPersonalFM(ctx context.Context, req *mmpb.GetPersonalFMRequest) (*mmpb.GetPersonalFMResponse, error) {
 	resp, err := engine.Execute(s.eng, ctx, fmendpoint.GetPersonalFM, req)
-	return &resp, err
+	return resp, err
 }

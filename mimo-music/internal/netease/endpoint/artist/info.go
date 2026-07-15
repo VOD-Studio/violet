@@ -13,7 +13,7 @@ import (
 )
 
 // GetArtist 是获取歌手信息及热门歌曲的接口声明。
-var GetArtist = &engine.Endpoint[*mmpb.GetArtistRequest, mmpb.GetArtistResponse]{
+var GetArtist = &engine.Endpoint[*mmpb.GetArtistRequest, *mmpb.GetArtistResponse]{
 	Meta: engine.Meta{
 		Path:   "/weapi/artist/get",
 		Method: "POST",
@@ -33,11 +33,11 @@ var GetArtist = &engine.Endpoint[*mmpb.GetArtistRequest, mmpb.GetArtistResponse]
 			"offset": 0,
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (mmpb.GetArtistResponse, error) {
+	MapResponse: func(raw json.RawMessage) (*mmpb.GetArtistResponse, error) {
 		a, songs, err := model.DecodeArtistInfo(raw)
 		if err != nil {
-			return mmpb.GetArtistResponse{}, err
+			return &mmpb.GetArtistResponse{}, err
 		}
-		return mmpb.GetArtistResponse{Artist: a, HotSongs: songs}, nil
+		return &mmpb.GetArtistResponse{Artist: a, HotSongs: songs}, nil
 	},
 }

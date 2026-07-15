@@ -23,5 +23,5 @@ func NewAlbumServer(eng *engine.Engine) *AlbumServer {
 // GetAlbum 获取专辑详情。恒一行。
 func (s *AlbumServer) GetAlbum(ctx context.Context, req *mmpb.GetAlbumRequest) (*mmpb.GetAlbumResponse, error) {
 	resp, err := engine.Execute(s.eng, ctx, albumendpoint.GetAlbum, req)
-	return &resp, err
+	return resp, err
 }

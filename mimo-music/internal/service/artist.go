@@ -23,5 +23,5 @@ func NewArtistServer(eng *engine.Engine) *ArtistServer {
 // GetArtist 获取歌手信息。恒一行。
 func (s *ArtistServer) GetArtist(ctx context.Context, req *mmpb.GetArtistRequest) (*mmpb.GetArtistResponse, error) {
 	resp, err := engine.Execute(s.eng, ctx, artistendpoint.GetArtist, req)
-	return &resp, err
+	return resp, err
 }

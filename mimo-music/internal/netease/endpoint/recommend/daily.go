@@ -12,7 +12,7 @@ import (
 )
 
 // GetDailyRecommend 是获取每日推荐歌曲的接口声明（需登录态）。
-var GetDailyRecommend = &engine.Endpoint[*mmpb.GetDailyRecommendRequest, mmpb.GetDailyRecommendResponse]{
+var GetDailyRecommend = &engine.Endpoint[*mmpb.GetDailyRecommendRequest, *mmpb.GetDailyRecommendResponse]{
 	Meta: engine.Meta{
 		Path:   "/weapi/v3/discovery/recommend/songs",
 		Method: "POST",
@@ -33,11 +33,11 @@ var GetDailyRecommend = &engine.Endpoint[*mmpb.GetDailyRecommendRequest, mmpb.Ge
 			"n":      1000,
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (mmpb.GetDailyRecommendResponse, error) {
+	MapResponse: func(raw json.RawMessage) (*mmpb.GetDailyRecommendResponse, error) {
 		songs, err := model.DecodeDailyRecommend(raw)
 		if err != nil {
-			return mmpb.GetDailyRecommendResponse{}, err
+			return &mmpb.GetDailyRecommendResponse{}, err
 		}
-		return mmpb.GetDailyRecommendResponse{Songs: songs}, nil
+		return &mmpb.GetDailyRecommendResponse{Songs: songs}, nil
 	},
 }

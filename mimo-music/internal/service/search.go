@@ -23,5 +23,5 @@ func NewSearchServer(eng *engine.Engine) *SearchServer {
 // Search 按关键词搜索。恒一行。
 func (s *SearchServer) Search(ctx context.Context, req *mmpb.SearchRequest) (*mmpb.SearchResponse, error) {
 	resp, err := engine.Execute(s.eng, ctx, searchendpoint.Search, req)
-	return &resp, err
+	return resp, err
 }
