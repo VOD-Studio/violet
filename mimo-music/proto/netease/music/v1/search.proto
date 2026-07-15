@@ -55,10 +55,58 @@ message SearchRequest {
   int32 offset = 4;
 }
 
-// Search 响应。地基阶段只填充 songs，Phase 4 按 type 填充对应字段。
+// Search 响应。按请求 type 填充对应字段，其余为空。
 message SearchResponse {
-  // 匹配的单曲列表。
+  // 匹配的单曲列表（type=SONG）。
   repeated Song songs = 1;
   // 结果总数。
   int32 total = 2;
+  // 匹配的专辑列表（type=ALBUM）。
+  repeated Album albums = 3;
+  // 匹配的歌手列表（type=ARTIST）。
+  repeated Artist artists = 4;
+  // 匹配的歌单列表（type=PLAYLIST）。
+  repeated SearchPlaylist playlists = 5;
+  // 匹配的用户列表（type=USER）。
+  repeated SearchUser users = 6;
+  // 匹配的 MV 列表（type=MV）。
+  repeated SearchMV mvs = 7;
+}
+
+// SearchPlaylist 是搜索结果里的歌单（字段比详情精简）。
+message SearchPlaylist {
+  // 歌单 ID。
+  int64 id = 1;
+  // 歌单名。
+  string name = 2;
+  // 封面 URL。
+  string cover_url = 3;
+  // 播放数。
+  int64 play_count = 4;
+  // 曲目数。
+  int32 track_count = 5;
+  // 创建者昵称。
+  string creator = 6;
+}
+
+// SearchUser 是搜索结果里的用户。
+message SearchUser {
+  // 用户 ID。
+  int64 id = 1;
+  // 昵称。
+  string nickname = 2;
+  // 头像 URL。
+  string avatar_url = 3;
+}
+
+// SearchMV 是搜索结果里的 MV（最小字段，歌手扩展 issue 0007 充实完整 MV 实体）。
+message SearchMV {
+  // MV ID。
+  int64 id = 1;
+  // MV 名。
+  string name = 2;
+  // 封面 URL。
+  string cover_url = 3;
+  // 歌手名。
+  string artist = 4;
 }
