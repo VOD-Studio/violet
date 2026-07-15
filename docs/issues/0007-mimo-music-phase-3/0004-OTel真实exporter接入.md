@@ -14,16 +14,16 @@ bootstrap 侧把 `InitTracer` 改成接收 config 参数（或新增 OTel provid
 
 ## Acceptance criteria
 
-- [ ] config 增加 `OTel` 段：`Exporter`（none / otlp-grpc / otlp-http）、`Endpoint`、`ServiceName`、`SampleRatio`
-- [ ] `config.Default()` 给 OTel 段默认值（Exporter=none、ServiceName=mimo-music、SampleRatio=1.0）
-- [ ] `config.Load()` 读 `MIMO_MUSIC_OTEL_*` 环境变量覆盖默认值
-- [ ] `observability/tracer.go` 的 `InitTracer` 按 exporter 类型构造：none 走 noop，otlp-grpc/otlp-http 走真实 exporter + BatchSpanProcessor
-- [ ] sampler 改为 `ParentBased(TraceIDRatioBased(SampleRatio))`，默认全采样
-- [ ] shutdown 函数保证 exporter flush（`tp.Shutdown` 前导出缓冲 span）
-- [ ] server 和 worker 的 main.go 用新签名初始化 tracer，defer shutdown
-- [ ] config.example.yaml 增加 OTel 配置示例
-- [ ] tracetest in-memory exporter 单测：非 none 类型时 span 被导出，none 时不导出
-- [ ] 所有导出符号有 godoc 注释
+- [x] config 增加 `OTel` 段：`Exporter`（none / otlp-grpc / otlp-http）、`Endpoint`、`ServiceName`、`SampleRatio`
+- [x] `config.Default()` 给 OTel 段默认值（Exporter=none、ServiceName=mimo-music、SampleRatio=1.0）
+- [x] `config.Load()` 读 `MIMO_MUSIC_OTEL_*` 环境变量覆盖默认值
+- [x] `observability/tracer.go` 的 `InitTracer` 按 exporter 类型构造：none 走 noop，otlp-grpc/otlp-http 走真实 exporter + BatchSpanProcessor
+- [x] sampler 改为 `ParentBased(TraceIDRatioBased(SampleRatio))`，默认全采样
+- [x] shutdown 函数保证 exporter flush（`tp.Shutdown` 前导出缓冲 span）
+- [x] server 和 worker 的 main.go 用新签名初始化 tracer，defer shutdown
+- [x] config.example.yaml 增加 OTel 配置示例
+- [x] tracetest in-memory exporter 单测：非 none 类型时 span 被导出，none 时不导出
+- [x] 所有导出符号有 godoc 注释
 
 ## Blocked by
 
