@@ -122,3 +122,60 @@ type Artist struct {
 	// Songs 是热门歌曲列表。
 	Songs []Song `json:"songs"`
 }
+
+// LoginResult 是登录成功响应（手机登录）。
+//
+// 注意：mimo-music 采用服务端 session 管理，登录成功后 cookie 由 mimo-music
+// 自己持有并存入 SessionStore，HTTP 响应不返回 cookie。调用方无需关心 cookie。
+type LoginResult struct {
+	// UserID 是平台用户 ID。
+	UserID string `json:"user_id"`
+
+	// Nickname 是用户昵称。
+	Nickname string `json:"nickname"`
+
+	// Avatar 是用户头像 URL。
+	Avatar string `json:"avatar"`
+}
+
+// QrcodeResult 是获取二维码的响应。
+type QrcodeResult struct {
+	// Key 是轮询用的 key。
+	Key string `json:"key"`
+
+	// URL 是二维码扫描 URL。
+	URL string `json:"url"`
+}
+
+// QrcodeCheckResult 是二维码轮询的响应。
+type QrcodeCheckResult struct {
+	// Code 是状态码（800 失效、801 等待、802 扫描、803 确认登录）。
+	Code int `json:"code"`
+
+	// Message 是状态描述。
+	Message string `json:"message"`
+}
+
+// LoginStatusResult 是登录态查询响应。
+type LoginStatusResult struct {
+	// LoggedIn 表示是否已登录。
+	LoggedIn bool `json:"logged_in"`
+
+	// UserID 是用户 ID。
+	UserID string `json:"user_id"`
+
+	// Nickname 是用户昵称。
+	Nickname string `json:"nickname"`
+}
+
+// 二维码轮询状态码。
+const (
+	// QrcodeStatusExpired 是二维码已失效（需重新获取）。
+	QrcodeStatusExpired = 800
+	// QrcodeStatusWaiting 是等待扫码。
+	QrcodeStatusWaiting = 801
+	// QrcodeStatusScanned 是已扫码待确认。
+	QrcodeStatusScanned = 802
+	// QrcodeStatusConfirmed 是已确认登录。
+	QrcodeStatusConfirmed = 803
+)

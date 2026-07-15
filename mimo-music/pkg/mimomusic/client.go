@@ -83,11 +83,18 @@ func isRetryableErr(err error) bool {
 	return errors.Is(err, ErrUpstreamUnavailable) || errors.Is(err, ErrRateLimited)
 }
 
-// do 发起带重试的 GET 请求，把信封 data 反序列化到 out。
+// requestOptions 是单次请求的配置。
+type requestOptions struct {
+	cookie    string
+	body      any // 非 nil 时 JSON 序列化作为请求体（仅 POST 用）
+	xCookie   bool // true 时把 cookie 放进 X-Cookie header（mimo-music 登录态端点约定）
+}
+
+// do 发起带重试的请求，把信封 data 反序列化到 out。
 //
 // 业务错误（信封 code != 0）映射到哨兵 error 后返回，不重试确定性错误。
 // 网络错误和可重试 HTTP 状态码按指数退避重试。
-func (c *Client) do(ctx context.Context, method, path string, query url.Values, cookie string, out any) error {
+func (c *Client) do(ctx context.Context, method, path string, query url.Values, opts requestOptions, out any) error {
 	targetURL := c.baseURL + path
 	if len(query) > 0 {
 		targetURL += "?" + query.Encode()
@@ -95,7 +102,7 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 
 	var lastErr error
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
-		err := c.doOnce(ctx, method, targetURL, cookie, out)
+		err := c.doOnce(ctx, method, targetURL, opts, out)
 		if err == nil {
 			return nil
 		}
@@ -116,17 +123,35 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 }
 
 // doOnce 发起单次请求并解析信封。
-func (c *Client) doOnce(ctx context.Context, method, targetURL, cookie string, out any) error {
+func (c *Client) doOnce(ctx context.Context, method, targetURL string, opts requestOptions, out any) error {
 	var body io.Reader
+	var contentType string
 	if method == http.MethodPost {
-		body = bytes.NewReader(nil)
+		if opts.body != nil {
+			raw, err := json.Marshal(opts.body)
+			if err != nil {
+				return fmt.Errorf("%w: 请求体序列化失败: %v", ErrInvalidResponse, err)
+			}
+			body = bytes.NewReader(raw)
+			contentType = "application/json"
+		} else {
+			body = bytes.NewReader(nil)
+		}
 	}
 	req, err := http.NewRequestWithContext(ctx, method, targetURL, body)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalidResponse, err)
 	}
-	if cookie != "" {
-		req.Header.Set("Cookie", cookie)
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	if opts.cookie != "" {
+		if opts.xCookie {
+			// mimo-music 登录态端点（status/logout）约定从 X-Cookie header 取 cookie。
+			req.Header.Set("X-Cookie", opts.cookie)
+		} else {
+			req.Header.Set("Cookie", opts.cookie)
+		}
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -172,12 +197,22 @@ func (c *Client) doOnce(ctx context.Context, method, targetURL, cookie string, o
 	return nil
 }
 
-// doGET 是 do 的 GET 简写。
+// doGET 发起 GET 请求。
 func (c *Client) doGET(ctx context.Context, path string, query url.Values, out any) error {
-	return c.do(ctx, http.MethodGet, path, query, "", out)
+	return c.do(ctx, http.MethodGet, path, query, requestOptions{}, out)
 }
 
-// doGETWithCookie 发起带 Cookie 的 GET 请求（需登录态的端点用）。
-func (c *Client) doGETWithCookie(ctx context.Context, path string, query url.Values, cookie string, out any) error {
-	return c.do(ctx, http.MethodGet, path, query, cookie, out)
+// doPOST 发起 POST 请求，body 序列化为 JSON。
+func (c *Client) doPOST(ctx context.Context, path string, body any, out any) error {
+	return c.do(ctx, http.MethodPost, path, nil, requestOptions{body: body}, out)
+}
+
+// doGETWithXCookie 发起带 X-Cookie header 的 GET 请求（mimo-music 登录态查询用）。
+func (c *Client) doGETWithXCookie(ctx context.Context, path string, query url.Values, cookie string, out any) error {
+	return c.do(ctx, http.MethodGet, path, query, requestOptions{cookie: cookie, xCookie: true}, out)
+}
+
+// doPOSTWithXCookie 发起带 X-Cookie header 的 POST 请求（mimo-music 登出用）。
+func (c *Client) doPOSTWithXCookie(ctx context.Context, path string, query url.Values, cookie string, out any) error {
+	return c.do(ctx, http.MethodPost, path, query, requestOptions{cookie: cookie, xCookie: true}, out)
 }
