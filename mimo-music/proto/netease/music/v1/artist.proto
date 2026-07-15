@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package netease.music.v1;
+
+import "google/api/annotations.proto";
+import "netease/music/v1/song.proto";
+
+option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
+
+// ArtistService 提供歌手查询能力。
+service ArtistService {
+  // GetArtist 获取歌手基础信息及热门歌曲。
+  rpc GetArtist(GetArtistRequest) returns (GetArtistResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/artists/{artist_id}"
+    };
+  }
+}
+
+// GetArtist 请求。
+message GetArtistRequest {
+  // 歌手 ID。
+  int64 artist_id = 1;
+}
+
+// GetArtist 响应。
+message GetArtistResponse {
+  // 歌手信息。
+  Artist artist = 1;
+  // 热门歌曲列表（网易云返回热门 50 首）。
+  repeated Song hot_songs = 2;
+}

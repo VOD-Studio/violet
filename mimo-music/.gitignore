@@ -3,6 +3,9 @@ tmp/
 bin/
 *.exe
 
+# proto 生成产物（buf generate 产出，不进版本控制）
+gen/
+
 # OpenAPI 生成文件
 openapi.json
 

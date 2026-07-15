@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package netease.music.v1;
+
+import "google/api/annotations.proto";
+import "netease/music/v1/song.proto";
+
+option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
+
+// AlbumService 提供专辑查询能力。
+service AlbumService {
+  // GetAlbum 获取专辑详情（含歌曲列表）。
+  rpc GetAlbum(GetAlbumRequest) returns (GetAlbumResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/albums/{album_id}"
+    };
+  }
+}
+
+// GetAlbum 请求。
+message GetAlbumRequest {
+  // 专辑 ID。
+  int64 album_id = 1;
+}
+
+// GetAlbum 响应。
+message GetAlbumResponse {
+  // 专辑详情。
+  Album album = 1;
+  // 专辑内歌曲列表。
+  repeated Song songs = 2;
+}

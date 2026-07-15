@@ -1,0 +1,160 @@
+syntax = "proto3";
+
+package netease.music.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
+
+// AuthService 提供登录认证能力。
+service AuthService {
+  // SendCaptcha 发送验证码到手机号。
+  rpc SendCaptcha(SendCaptchaRequest) returns (SendCaptchaResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/captcha"
+      body: "*"
+    };
+  }
+
+  // LoginByCellphone 用手机号 + 验证码登录，返回会话凭证。
+  rpc LoginByCellphone(LoginByCellphoneRequest) returns (LoginByCellphoneResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login/cellphone"
+      body: "*"
+    };
+  }
+
+  // LoginQrcode 获取登录二维码。
+  rpc LoginQrcode(LoginQrcodeRequest) returns (LoginQrcodeResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/login/qrcode"
+    };
+  }
+
+  // CheckQrcode 轮询二维码登录状态。
+  rpc CheckQrcode(CheckQrcodeRequest) returns (CheckQrcodeResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/login/qrcode/check"
+    };
+  }
+
+  // LoginStatus 查询当前登录态。
+  rpc LoginStatus(LoginStatusRequest) returns (LoginStatusResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/status"
+    };
+  }
+
+  // Logout 登出当前会话。
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/logout"
+      body: "*"
+    };
+  }
+}
+
+// 登录会话凭证。
+message Session {
+  // 用户 ID。
+  int64 user_id = 1;
+  // Cookie 字符串（后续请求的登录态凭证）。
+  string cookie = 2;
+  // 昵称。
+  string nickname = 3;
+  // 头像 URL。
+  string avatar_url = 4;
+}
+
+// SendCaptcha 请求。
+message SendCaptchaRequest {
+  // 手机号（带区号，如 8613800138000）。
+  string phone = 1;
+}
+
+// SendCaptcha 响应。
+message SendCaptchaResponse {}
+
+// LoginByCellphone 请求。
+message LoginByCellphoneRequest {
+  // 手机号（带区号）。
+  string phone = 1;
+  // 验证码。
+  string captcha = 2;
+}
+
+// LoginByCellphone 响应。
+message LoginByCellphoneResponse {
+  // 登录会话凭证。
+  Session session = 1;
+}
+
+// LoginQrcode 请求。
+message LoginQrcodeRequest {}
+
+// 二维码信息。
+message Qrcode {
+  // 轮询 key。
+  string key = 1;
+  // base64 编码的二维码图片。
+  string qr_image = 2;
+  // 二维码扫描 URL。
+  string url = 3;
+}
+
+// LoginQrcode 响应。
+message LoginQrcodeResponse {
+  // 二维码信息。
+  Qrcode qrcode = 1;
+}
+
+// CheckQrcode 请求。
+message CheckQrcodeRequest {
+  // 轮询 key（LoginQrcode 返回）。
+  string key = 1;
+}
+
+// 二维码轮询状态码。
+enum QrcodeCode {
+  // 未指定。
+  QRCODE_CODE_UNSPECIFIED = 0;
+  // 二维码失效。
+  QRCODE_CODE_EXPIRED = 800;
+  // 等待扫描。
+  QRCODE_CODE_WAITING = 801;
+  // 已扫描，等待确认。
+  QRCODE_CODE_SCANNED = 802;
+  // 确认登录成功。
+  QRCODE_CODE_CONFIRMED = 803;
+}
+
+// CheckQrcode 响应。
+message CheckQrcodeResponse {
+  // 状态码。
+  QrcodeCode code = 1;
+  // 状态描述。
+  string message = 2;
+  // 登录成功时（code=CONFIRMED）的会话凭证。
+  Session session = 3;
+}
+
+// LoginStatus 请求。
+message LoginStatusRequest {
+  // Cookie 字符串（查询此 cookie 对应的登录态）。
+  string cookie = 1;
+}
+
+// LoginStatus 响应。
+message LoginStatusResponse {
+  // 登录态信息（未登录时 session 为空）。
+  Session session = 1;
+}
+
+// Logout 请求。
+message LogoutRequest {
+  // 要登出的 Cookie。
+  string cookie = 1;
+}
+
+// Logout 响应。
+message LogoutResponse {}

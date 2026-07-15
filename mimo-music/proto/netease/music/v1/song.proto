@@ -1,0 +1,150 @@
+syntax = "proto3";
+
+// Package netease.music.v1 定义网易云音乐能力的 gRPC 契约。
+package netease.music.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
+
+// SongService 提供歌曲相关查询能力。
+service SongService {
+  // GetSongDetail 获取歌曲详情。
+  rpc GetSongDetail(GetSongDetailRequest) returns (GetSongDetailResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}"
+    };
+  }
+
+  // GetSongURL 获取歌曲播放直链。level 控制音质。
+  rpc GetSongURL(GetSongURLRequest) returns (GetSongURLResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/url"
+    };
+  }
+
+  // GetLyric 获取歌词（含原文、翻译、音译）。
+  rpc GetLyric(GetLyricRequest) returns (GetLyricResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/lyric"
+    };
+  }
+}
+
+// Artist 是歌手实体。被歌曲、专辑、搜索、歌手扩展等接口复用。
+message Artist {
+  // 歌手 ID。
+  int64 id = 1;
+  // 歌手名。
+  string name = 2;
+  // 别名列表。
+  repeated string alias = 3;
+  // 歌手头像 URL。
+  string pic_url = 4;
+}
+
+// Album 是专辑实体。被歌曲、专辑详情、搜索等接口复用。
+message Album {
+  // 专辑 ID。
+  int64 id = 1;
+  // 专辑名。
+  string name = 2;
+  // 专辑封面 URL。
+  string pic_url = 3;
+  // 发行时间（网易云原始格式字符串）。
+  string publish_time = 4;
+  // 专辑歌手。
+  Artist artist = 5;
+}
+
+// Song 是歌曲实体。被歌曲详情、歌单、专辑、搜索、推荐、FM 等接口复用。
+message Song {
+  // 歌曲 ID。
+  int64 id = 1;
+  // 歌曲名。
+  string name = 2;
+  // 歌手列表。
+  repeated Artist artists = 3;
+  // 所属专辑。
+  Album album = 4;
+  // 时长（毫秒）。
+  int64 duration_ms = 5;
+  // 付费类型：0 免费、1 VIP、4 数字专辑、8 试听片段。
+  int32 fee = 6;
+}
+
+// 播放 URL 信息。
+message SongURL {
+  // 歌曲 ID。
+  int64 id = 1;
+  // 播放直链（VIP 歌曲可能为空）。
+  string url = 2;
+  // 比特率。
+  int64 bitrate = 3;
+  // 文件大小（字节）。
+  int64 size = 4;
+  // 文件格式（mp3 / flac 等）。
+  string format = 5;
+}
+
+// 歌词信息。
+message Lyric {
+  // 原始 LRC 歌词。
+  string lrc = 1;
+  // 翻译歌词。
+  string translated = 2;
+  // 音译歌词。
+  string romanized = 3;
+}
+
+// GetSongDetail 请求。
+message GetSongDetailRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// GetSongDetail 响应。
+message GetSongDetailResponse {
+  // 歌曲详情。
+  Song song = 1;
+}
+
+// 音质级别。
+enum SongLevel {
+  // 未指定，默认标准。
+  SONG_LEVEL_UNSPECIFIED = 0;
+  // 标准。
+  SONG_LEVEL_STANDARD = 1;
+  // 极高。
+  SONG_LEVEL_EXHIGH = 2;
+  // 无损。
+  SONG_LEVEL_LOSSLESS = 3;
+  // Hi-Res。
+  SONG_LEVEL_HRES = 4;
+}
+
+// GetSongURL 请求。
+message GetSongURLRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+  // 音质级别，默认 standard。
+  SongLevel level = 2;
+}
+
+// GetSongURL 响应。
+message GetSongURLResponse {
+  // 播放 URL 信息。
+  SongURL url = 1;
+}
+
+// GetLyric 请求。
+message GetLyricRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// GetLyric 响应。
+message GetLyricResponse {
+  // 歌词信息。
+  Lyric lyric = 1;
+}

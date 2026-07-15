@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package netease.music.v1;
+
+import "google/api/annotations.proto";
+import "netease/music/v1/song.proto";
+
+option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
+
+// SearchService 提供搜索能力。地基阶段只支持单曲搜索（type=1），type 扩展在 Phase 4。
+service SearchService {
+  // Search 按关键词搜索单曲。
+  rpc Search(SearchRequest) returns (SearchResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/search"
+    };
+  }
+}
+
+// 搜索类型。地基阶段只用 SONG，Phase 4 扩展全部。
+enum SearchType {
+  // 未指定，默认单曲。
+  SEARCH_TYPE_UNSPECIFIED = 0;
+  // 单曲。
+  SEARCH_TYPE_SONG = 1;
+  // 专辑。
+  SEARCH_TYPE_ALBUM = 10;
+  // 歌手。
+  SEARCH_TYPE_ARTIST = 100;
+  // 歌单。
+  SEARCH_TYPE_PLAYLIST = 1000;
+  // 用户。
+  SEARCH_TYPE_USER = 1002;
+  // MV。
+  SEARCH_TYPE_MV = 1004;
+  // 歌词。
+  SEARCH_TYPE_LYRIC = 1006;
+  // 主播电台。
+  SEARCH_TYPE_DJ = 1009;
+  // 视频。
+  SEARCH_TYPE_VIDEO = 1014;
+  // 综合。
+  SEARCH_TYPE_ALL = 1018;
+}
+
+// Search 请求。
+message SearchRequest {
+  // 搜索关键词。
+  string keyword = 1;
+  // 搜索类型，地基阶段固定 SONG。
+  SearchType type = 2;
+  // 每页数量。
+  int32 limit = 3;
+  // 偏移量。
+  int32 offset = 4;
+}
+
+// Search 响应。地基阶段只填充 songs，Phase 4 按 type 填充对应字段。
+message SearchResponse {
+  // 匹配的单曲列表。
+  repeated Song songs = 1;
+  // 结果总数。
+  int32 total = 2;
+}

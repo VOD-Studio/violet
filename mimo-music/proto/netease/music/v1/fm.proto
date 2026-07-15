@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package netease.music.v1;
+
+import "google/api/annotations.proto";
+import "netease/music/v1/song.proto";
+
+option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
+
+// FMService 提供私人电台能力（需登录态）。
+service FMService {
+  // GetPersonalFM 获取私人 FM 歌曲（需登录）。
+  rpc GetPersonalFM(GetPersonalFMRequest) returns (GetPersonalFMResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fm"
+    };
+  }
+}
+
+// GetPersonalFM 请求。
+message GetPersonalFMRequest {
+  // 登录态 Cookie。
+  string cookie = 1;
+}
+
+// GetPersonalFM 响应。
+message GetPersonalFMResponse {
+  // FM 推荐歌曲列表。
+  repeated Song songs = 1;
+}

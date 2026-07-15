@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package netease.music.v1;
+
+import "google/api/annotations.proto";
+import "netease/music/v1/song.proto";
+
+option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
+
+// PlaylistService 提供歌单查询能力。
+service PlaylistService {
+  // GetPlaylist 获取歌单详情（含歌曲列表）。
+  rpc GetPlaylist(GetPlaylistRequest) returns (GetPlaylistResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/playlists/{playlist_id}"
+    };
+  }
+}
+
+// Playlist 是歌单实体。
+message Playlist {
+  // 歌单 ID。
+  int64 id = 1;
+  // 歌单名。
+  string name = 2;
+  // 歌单封面 URL。
+  string cover_url = 3;
+  // 歌曲总数。
+  int32 track_count = 4;
+  // 创建者信息。
+  User creator = 5;
+  // 歌单内歌曲列表。
+  repeated Song songs = 6;
+}
+
+// User 是用户实体（简要）。被歌单创建者、用户模块等复用。
+message User {
+  // 用户 ID。
+  int64 id = 1;
+  // 昵称。
+  string nickname = 2;
+  // 头像 URL。
+  string avatar_url = 3;
+}
+
+// GetPlaylist 请求。
+message GetPlaylistRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+}
+
+// GetPlaylist 响应。
+message GetPlaylistResponse {
+  // 歌单详情。
+  Playlist playlist = 1;
+}

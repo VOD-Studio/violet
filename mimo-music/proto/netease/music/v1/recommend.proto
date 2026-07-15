@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package netease.music.v1;
+
+import "google/api/annotations.proto";
+import "netease/music/v1/song.proto";
+
+option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
+
+// RecommendService 提供推荐能力（需登录态）。
+service RecommendService {
+  // GetDailyRecommend 获取每日推荐歌曲（需登录）。
+  rpc GetDailyRecommend(GetDailyRecommendRequest) returns (GetDailyRecommendResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/recommend/daily"
+    };
+  }
+}
+
+// GetDailyRecommend 请求。
+message GetDailyRecommendRequest {
+  // 登录态 Cookie。
+  string cookie = 1;
+}
+
+// GetDailyRecommend 响应。
+message GetDailyRecommendResponse {
+  // 推荐歌曲列表。
+  repeated Song songs = 1;
+}
