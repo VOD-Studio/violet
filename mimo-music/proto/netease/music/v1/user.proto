@@ -1,0 +1,184 @@
+syntax = "proto3";
+
+package netease.music.v1;
+
+import "google/api/annotations.proto";
+import "netease/music/v1/search.proto";
+
+option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
+
+// UserService 提供用户查询能力。
+//
+// 用户是网易云中心实体，歌单管理、收藏、动态都依赖用户 UID。
+// 大部分查他人接口用匿名可用，Account 查自己需登录态。
+service UserService {
+  // Account 获取当前登录账号信息（需登录态）。
+  rpc Account(AccountRequest) returns (AccountResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/user/account"
+    };
+  }
+
+  // Detail 获取用户详情。
+  rpc Detail(DetailRequest) returns (DetailResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}"
+    };
+  }
+
+  // SubCount 获取用户信息/歌单/收藏/mv/dj 数量统计。
+  rpc SubCount(SubCountRequest) returns (SubCountResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/subcount"
+    };
+  }
+
+  // Playlist 获取用户歌单列表。
+  rpc UserPlaylist(UserPlaylistRequest) returns (UserPlaylistResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/playlists"
+    };
+  }
+
+  // DetailByName 根据 nickname 获取 userid。
+  rpc DetailByName(DetailByNameRequest) returns (DetailByNameResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/lookup"
+    };
+  }
+
+  // FollowEachOther 判断两个用户是否互相关注。
+  rpc FollowEachOther(FollowEachOtherRequest) returns (FollowEachOtherResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/follow-each-other"
+    };
+  }
+}
+
+// 用户详情信息（比 User 精简实体更完整）。
+message UserDetail {
+  // 用户 ID。
+  int64 user_id = 1;
+  // 昵称。
+  string nickname = 2;
+  // 头像 URL。
+  string avatar_url = 3;
+  // 性别（0 未知 1 男 2 女）。
+  int32 gender = 4;
+  // 个人签名。
+  string signature = 5;
+  // 等级。
+  int32 level = 6;
+  // 关注数。
+  int64 followeds = 7;
+  // 粉丝数。
+  int64 follows = 8;
+}
+
+// 用户数量统计。
+message UserSubCount {
+  // 创建的歌单数。
+  int32 playlist_count = 1;
+  // 创建的 DJ 电台数。
+  int32 dj_radio_count = 2;
+  // 收藏的 MV 数。
+  int32 mv_count = 3;
+  // 收藏的歌手数。
+  int32 artist_count = 4;
+  // 收藏的专辑数。
+  int32 new_album_count = 5;
+}
+
+// 歌单过滤类型。
+enum PlaylistFilter {
+  // 未指定，返回全部。
+  PLAYLIST_FILTER_UNSPECIFIED = 0;
+  // 全部歌单。
+  PLAYLIST_FILTER_ALL = 1;
+  // 用户创建的歌单。
+  PLAYLIST_FILTER_CREATED = 2;
+  // 用户收藏的歌单。
+  PLAYLIST_FILTER_SUBSCRIBED = 3;
+}
+
+// Account 请求。
+message AccountRequest {
+  // 登录态 Cookie。
+  string cookie = 1;
+}
+
+// Account 响应。
+message AccountResponse {
+  // 账号信息。
+  UserDetail user = 1;
+}
+
+// Detail 请求。
+message DetailRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+}
+
+// Detail 响应。
+message DetailResponse {
+  // 用户详情。
+  UserDetail user = 1;
+}
+
+// SubCount 请求。
+message SubCountRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+}
+
+// SubCount 响应。
+message SubCountResponse {
+  // 数量统计。
+  UserSubCount count = 1;
+}
+
+// UserPlaylist 请求。
+message UserPlaylistRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+  // 歌单过滤（ALL/CREATED/SUBSCRIBED）。
+  PlaylistFilter filter = 2;
+  // 每页数量。
+  int32 limit = 3;
+  // 偏移量。
+  int32 offset = 4;
+}
+
+// UserPlaylist 响应（复用 playlist.proto 的 User + 精简歌单）。
+message UserPlaylistResponse {
+  // 歌单列表。
+  repeated SearchPlaylist playlists = 1;
+  // 总数。
+  int32 total = 2;
+}
+
+// DetailByName 请求。
+message DetailByNameRequest {
+  // 昵称。
+  string nickname = 1;
+}
+
+// DetailByName 响应。
+message DetailByNameResponse {
+  // 用户 ID。
+  int64 user_id = 1;
+}
+
+// FollowEachOther 请求。
+message FollowEachOtherRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+  // 对方用户 ID。
+  int64 target_user_id = 2;
+}
+
+// FollowEachOther 响应。
+message FollowEachOtherResponse {
+  // 是否互相关注。
+  bool follow_each_other = 1;
+}

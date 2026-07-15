@@ -40,6 +40,7 @@ var gatewayHandlers = []func(context.Context, *runtime.ServeMux, string, []grpc.
 	mmpb.RegisterArtistServiceHandlerFromEndpoint,
 	mmpb.RegisterRecommendServiceHandlerFromEndpoint,
 	mmpb.RegisterFMServiceHandlerFromEndpoint,
+	mmpb.RegisterUserServiceHandlerFromEndpoint,
 }
 
 // App 持有 gRPC server 与 gateway HTTP server，统一管理生命周期。
@@ -61,6 +62,7 @@ func NewApp(grpcAddr, httpAddr string, eng *engine.Engine, sessions session.Sess
 	mmpb.RegisterArtistServiceServer(grpcServer, service.NewArtistServer(eng))
 	mmpb.RegisterRecommendServiceServer(grpcServer, service.NewRecommendServer(eng))
 	mmpb.RegisterFMServiceServer(grpcServer, service.NewFMServer(eng))
+	mmpb.RegisterUserServiceServer(grpcServer, service.NewUserServer(eng))
 
 	// 开启 gRPC reflection，grpcurl 可列出并调用全部 RPC（地基阶段验收依赖）。
 	reflection.Register(grpcServer)
