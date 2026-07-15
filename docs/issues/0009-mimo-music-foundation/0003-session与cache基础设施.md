@@ -1,5 +1,7 @@
 # Issue-0003：session 与 cache 基础设施
 
+## Status: ✅ 已完成（commit `9734dde7`）
+
 ## Parent
 
 PRD：`../../prd/0009-mimo-music-foundation.md`（Solution 第 3 步）
@@ -59,16 +61,16 @@ type SessionStore interface {
 
 ## Acceptance criteria
 
-- [ ] `internal/netease/session/session.go` 定义 AuthRequirement enum + SessionStore 接口（GetAvailable/ReportSuccess/ReportFailure）
-- [ ] SessionStore 实现迁移 round-robin + 可用性过滤，保留现有 key 约定
-- [ ] ReportSuccess/ReportFailure 替代 MarkAvailable/MarkUnavailable
-- [ ] 登录类接口的 session 创建路径（不走 GetAvailable）保留
-- [ ] `internal/cache/cache.go` 定义 Cache 接口（[]byte value + Duration TTL）
-- [ ] NoopCache 唯一定义（消除重复）
-- [ ] Redis 实现迁移，value 改 []byte
-- [ ] session 层单测：round-robin 选取稳定、不可用过滤、全部不可用返回错误
-- [ ] cache 层单测：Get/Set/Delete + noop
-- [ ] 所有导出符号有 godoc 注释
+- [x] `internal/netease/session/session.go` 定义 AuthRequirement enum + SessionStore 接口（GetAvailable/ReportSuccess/ReportFailure）
+- [x] SessionStore 实现迁移 round-robin + 可用性过滤，保留现有 key 约定
+- [x] ReportSuccess/ReportFailure 替代 MarkAvailable/MarkUnavailable
+- [x] 登录类接口的 session 创建路径（不走 GetAvailable）保留
+- [x] `internal/cache/cache.go` 定义 Cache 接口（[]byte value + Duration TTL）
+- [x] NoopCache 唯一定义（消除重复）
+- [x] Redis 实现迁移，value 改 []byte
+- [x] session 层单测：round-robin 选取稳定、不可用过滤、全部不可用返回错误
+- [x] cache 层单测：Get/Set/Delete + noop
+- [x] 所有导出符号有 godoc 注释
 
 ## Blocked by
 
