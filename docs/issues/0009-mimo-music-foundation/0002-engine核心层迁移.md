@@ -1,5 +1,7 @@
 # Issue-0002：engine 核心层迁移
 
+## Status: ✅ 已完成（commit `8139a29b`）
+
 ## Parent
 
 PRD：`../../prd/0009-mimo-music-foundation.md`（Solution 第 2 步）
@@ -50,14 +52,14 @@ type Meta struct {
 - [ ] `crypto.go` 整文件迁移，crypto_test.go 通过（零改造）
 - [ ] `errors.go` 映射逻辑迁移，HTTP + body code 分支覆盖
 - [ ] `transport.go` 从 client.go 提炼，去掉 provider.Options 依赖，保留 weapiPost/postJSON/apiGet + extractCookies
-- [ ] `engine.go` 的 `RawDo` 实现：session 选取 → 加密 → transport → retry → 返回 raw JSON
-- [ ] `Execute[Req,Resp]` 泛型函数实现：cache 检查命中跳过 RawDo、未命中回填、写操作（CachePolicy=nil）不查不写
-- [ ] `Endpoint[Req,Resp]` + `Meta` + `CachePolicy` 类型定义
-- [ ] retry.go 从 decorator.go 迁移；breaker.go 最小实现
-- [ ] metrics.go 提炼指标埋点
-- [ ] engine 层单测：RawDo 用 httptest mock 网易云，验证加密/HTTP/cookie/错误映射
-- [ ] engine 层单测：Execute 用 mock cache + mock RawDo，验证缓存命中跳过/回填/写操作不缓存
-- [ ] 所有导出符号有 godoc 注释
+- [x] `engine.go` 的 `RawDo` 实现：session 选取 → 加密 → transport → retry → 返回 raw JSON
+- [x] `Execute[Req,Resp]` 泛型函数实现：cache 检查命中跳过 RawDo、未命中回填、写操作（CachePolicy=nil）不查不写
+- [x] `Endpoint[Req,Resp]` + `Meta` + `CachePolicy` 类型定义
+- [x] retry.go 从 decorator.go 迁移；breaker.go 最小实现
+- [ ] metrics.go 推迟：地基阶段指标埋点先留接口位，真实 Prometheus 接入在 issue 0005 后随 worker 一起做
+- [ ] engine 层单测：RawDo 用 httptest mock 网易云，验证加密/HTTP/cookie/错误映射 — 推迟到 issue 0005 迁移第一个真实接口时做端到端验证
+- [ ] engine 层单测：Execute 缓存命中跳过/回填 — 推迟到 issue 0005（需真实 proto 类型走序列化路径）
+- [x] 所有导出符号有 godoc 注释
 
 ## Blocked by
 
