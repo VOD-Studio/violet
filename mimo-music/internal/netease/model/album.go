@@ -13,24 +13,24 @@ import (
 //
 // 在歌曲的 al 字段、专辑详情等处出现。
 type rawAlbum struct {
-	ID          int64     `json:"id"`
-	Name        string    `json:"name"`
-	Pic         string    `json:"picUrl"`
-	PublishTime int64     `json:"publishTime"`
-	Artist      rawArtist `json:"artist"`
+	ID          int64     `json:"id"`          // 专辑ID
+	Name        string    `json:"name"`        // 专辑名
+	Pic         string    `json:"picUrl"`      // 封面URL
+	PublishTime int64     `json:"publishTime"` // 发行时间(毫秒时间戳)
+	Artist      rawArtist `json:"artist"`      // 歌手
 }
 
 // rawAlbumDetail 是网易云专辑详情接口的响应。
 type rawAlbumDetail struct {
-	Code  int       `json:"code"`
+	Code  int       `json:"code"` // 业务码
 	Album struct {
-		ID          int64       `json:"id"`
-		Name        string      `json:"name"`
-		PicUrl      string      `json:"picUrl"`
-		PublishTime string      `json:"publishTime"`
-		Artists     []rawArtist `json:"artists"`
-	} `json:"album"`
-	Songs []rawSong `json:"songs"`
+		ID          int64       `json:"id"`          // 专辑ID
+		Name        string      `json:"name"`        // 专辑名
+		PicUrl      string      `json:"picUrl"`      // 封面URL
+		PublishTime string      `json:"publishTime"` // 发行时间（网易云原始字符串格式）
+		Artists     []rawArtist `json:"artists"`     // 歌手数组
+	} `json:"album"`                                    // 专辑信息
+	Songs []rawSong `json:"songs"` // 歌曲列表
 }
 
 // MapAlbum 把网易云原始专辑结构转成 proto Album。

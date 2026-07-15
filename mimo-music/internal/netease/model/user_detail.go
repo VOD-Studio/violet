@@ -10,17 +10,17 @@ import (
 
 // rawUserDetail 是网易云用户详情接口的响应。
 type rawUserDetail struct {
-	Code   int `json:"code"`
-	Level  int `json:"level"`
+	Code   int `json:"code"`  // 业务码
+	Level  int `json:"level"` // 用户等级
 	Profile struct {
-		UserID      int64  `json:"userId"`
-		Nickname    string `json:"nickname"`
-		AvatarURL   string `json:"avatarUrl"`
-		Gender      int    `json:"gender"`
-		Signature   string `json:"signature"`
-		Followeds   int64  `json:"followeds"`
-		Follows     int64  `json:"follows"`
-	} `json:"profile"`
+		UserID      int64  `json:"userId"`   // 用户ID
+		Nickname    string `json:"nickname"` // 昵称
+		AvatarURL   string `json:"avatarUrl"` // 头像URL
+		Gender      int    `json:"gender"`    // 性别（0未知 1男 2女）
+		Signature   string `json:"signature"` // 个人签名
+		Followeds   int64  `json:"followeds"` // 粉丝数
+		Follows     int64  `json:"follows"`   // 关注数
+	} `json:"profile"` // 用户资料
 }
 
 // DecodeUserDetail 解析用户详情响应。
@@ -47,12 +47,12 @@ func DecodeUserDetail(raw json.RawMessage) (*mmpb.UserDetail, error) {
 
 // rawUserSubCount 是用户数量统计响应。
 type rawUserSubCount struct {
-	Code          int `json:"code"`
-	PlaylistCount int `json:"playlistCount"`
-	DjRadioCount  int `json:"djRadiosCount"`
-	MvCount       int `json:"mvCount"`
-	ArtistCount   int `json:"artistCount"`
-	NewAlbumCount int `json:"newAlbumsCount"`
+	Code          int `json:"code"`           // 业务码
+	PlaylistCount int `json:"playlistCount"` // 创建的歌单数
+	DjRadioCount  int `json:"djRadiosCount"` // DJ电台数
+	MvCount       int `json:"mvCount"`       // 收藏MV数
+	ArtistCount   int `json:"artistCount"`   // 收藏歌手数
+	NewAlbumCount int `json:"newAlbumsCount"` // 收藏专辑数
 }
 
 // DecodeUserSubCount 解析用户数量统计响应。
@@ -72,18 +72,18 @@ func DecodeUserSubCount(raw json.RawMessage) (*mmpb.UserSubCount, error) {
 
 // rawUserPlaylists 是用户歌单列表响应。
 type rawUserPlaylists struct {
-	Code int `json:"code"`
-	More bool `json:"more"`
+	Code int `json:"code"` // 业务码
+	More bool `json:"more"` // 是否还有更多
 	Playlist []struct {
-		ID          int64  `json:"id"`
-		Name        string `json:"name"`
-		CoverImgUrl string `json:"coverImgUrl"`
-		PlayCount   int64  `json:"playCount"`
-		TrackCount  int    `json:"trackCount"`
+		ID          int64  `json:"id"`          // 歌单ID
+		Name        string `json:"name"`        // 歌单名
+		CoverImgUrl string `json:"coverImgUrl"` // 封面URL
+		PlayCount   int64  `json:"playCount"`   // 播放数
+		TrackCount  int    `json:"trackCount"`  // 曲目数
 		Creator     struct {
-			UserID int64 `json:"userId"`
-		} `json:"creator"`
-	} `json:"playlist"`
+			UserID int64 `json:"userId"` // 创建者用户ID（判断创建/收藏用）
+		} `json:"creator"` // 创建者
+	} `json:"playlist"` // 歌单列表
 }
 
 // DecodeUserPlaylists 解析用户歌单列表响应。

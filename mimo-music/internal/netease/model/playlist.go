@@ -9,18 +9,18 @@ import (
 
 // rawPlaylistDetail 是网易云歌单详情接口的响应。
 type rawPlaylistDetail struct {
-	Code     int `json:"code"`
+	Code     int `json:"code"` // 业务码
 	Playlist struct {
-		ID          int64     `json:"id"`
-		Name        string    `json:"name"`
-		CoverImgUrl string    `json:"coverImgUrl"`
-		TrackCount  int       `json:"trackCount"`
-		Creator     rawUser   `json:"creator"`
-		Tracks      []rawSong `json:"tracks"`
+		ID          int64     `json:"id"`          // 歌单ID
+		Name        string    `json:"name"`        // 歌单名
+		CoverImgUrl string    `json:"coverImgUrl"` // 封面URL
+		TrackCount  int       `json:"trackCount"`  // 歌曲总数
+		Creator     rawUser   `json:"creator"`     // 创建者
+		Tracks      []rawSong `json:"tracks"`      // 歌曲列表（详情返回前若干首）
 		TrackIds    []struct {
-			ID int64 `json:"id"`
-		} `json:"trackIds"`
-	} `json:"playlist"`
+			ID int64 `json:"id"` // 歌曲ID
+		} `json:"trackIds"` // 全部歌曲ID（大歌单分页拉取用）
+	} `json:"playlist"` // 歌单信息
 }
 
 // MapPlaylist 把网易云原始歌单结构转成 proto Playlist。

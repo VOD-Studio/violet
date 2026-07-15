@@ -10,15 +10,15 @@ import (
 
 // rawLoginResponse 是网易云登录/登录态接口的响应。
 type rawLoginResponse struct {
-	Code    int `json:"code"`
+	Code    int `json:"code"` // 业务码
 	Account struct {
-		ID int64 `json:"id"`
-	} `json:"account"`
+		ID int64 `json:"id"` // 账号ID
+	} `json:"account"` // 账号信息
 	Profile struct {
-		UserID    int64  `json:"userId"`
-		Nickname  string `json:"nickname"`
-		AvatarURL string `json:"avatarUrl"`
-	} `json:"profile"`
+		UserID    int64  `json:"userId"`   // 用户ID
+		Nickname  string `json:"nickname"` // 昵称
+		AvatarURL string `json:"avatarUrl"` // 头像URL
+	} `json:"profile"` // 用户资料
 }
 
 // DecodeLoginResponse 解析登录响应，提取用户信息（不含 cookie，cookie 由 service 层从 Set-Cookie 取）。
@@ -39,8 +39,8 @@ func DecodeLoginResponse(raw json.RawMessage) (*mmpb.Session, error) {
 
 // rawQrcodeKey 是二维码 key 获取响应。
 type rawQrcodeKey struct {
-	Code   int    `json:"code"`
-	UniKey string `json:"unikey"`
+	Code   int    `json:"code"`  // 业务码
+	UniKey string `json:"unikey"` // 二维码轮询key
 }
 
 // DecodeQrcodeKey 解析二维码 key 获取响应。
@@ -57,8 +57,8 @@ func DecodeQrcodeKey(raw json.RawMessage) (string, error) {
 
 // rawQrcodeStatus 是二维码轮询响应。
 type rawQrcodeStatus struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code    int    `json:"code"`    // 状态码：800失效 801等待 802扫描 803确认
+	Message string `json:"message"` // 状态描述
 }
 
 // DecodeQrcodeStatus 解析二维码轮询响应。

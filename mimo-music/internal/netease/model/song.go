@@ -15,20 +15,20 @@ import (
 
 // --- raw struct 镜像（网易云原始 JSON，字段名保留缩写） ---
 
-// rawSong 是网易云歌曲的原始 JSON 结构。
+// rawSong 是网易云歌曲的原始 JSON 结构（字段名保留网易云缩写）。
 type rawSong struct {
-	ID   int64       `json:"id"`
-	Name string      `json:"name"`
-	Ar   []rawArtist `json:"ar"`
-	Al   rawAlbum    `json:"al"`
-	Dt   int64       `json:"dt"`
-	Fee  int         `json:"fee"`
+	ID   int64       `json:"id"`   // 歌曲ID
+	Name string      `json:"name"` // 歌曲名
+	Ar   []rawArtist `json:"ar"`   // 歌手数组（artists 缩写）
+	Al   rawAlbum    `json:"al"`   // 专辑信息（album 缩写）
+	Dt   int64       `json:"dt"`   // 时长毫秒（duration 缩写）
+	Fee  int         `json:"fee"`  // 付费类型：0免费 1VIP 4数字专辑 8试听
 }
 
 // rawSongDetail 是歌曲详情接口的响应。
 type rawSongDetail struct {
-	Code  int       `json:"code"`
-	Songs []rawSong `json:"songs"`
+	Code  int       `json:"code"`  // 业务码，200 成功
+	Songs []rawSong `json:"songs"` // 歌曲数组
 }
 
 // --- map 函数（返回 proto 类型，全局复用） ---
