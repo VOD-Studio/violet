@@ -445,7 +445,7 @@ internal/service/*.go              grpc impl：恒一行 return engine.Execute(.
 
 | 阶段 | 模块 | 接口数 | 说明 |
 |------|------|--------|------|
-| **地基** | proto 基础设施 + engine + session + crypto + 领域模型层首批 5 实体（Song/Artist/Album/Playlist/User） | — | 前置工程，迁移已实现 15 接口到新架构 |
+| **地基** ✅ | proto 基础设施 + engine + session + crypto + 领域模型层首批 5 实体（Song/Artist/Album/Playlist/User） | — | 已完成，15 接口迁移到新架构 |
 | **Phase 4** | 搜索扩展 + 歌单管理 + 用户模块 + 歌手扩展 | ~69 | 复用已建实体 + 补歌单写操作 |
 | **Phase 5** | 专辑扩展 + 推荐扩展 + 排行榜 + MV/视频 + 相似/相关 + 歌曲扩展 | ~73 | 新建 MV/Video/Toplist 实体 |
 | **Phase 6** | 评论 + 收藏/关注/点赞 + FM/电台扩展 | ~58 | 新建 Comment/DJ 实体 |
@@ -456,7 +456,7 @@ internal/service/*.go              grpc impl：恒一行 return engine.Execute(.
 
 ## 统计
 
-- **已实现**：15 个（Phase 1-3 完成，待迁移到新架构）
+- **已实现**：15 个（地基阶段迁移到新架构完成，proto 契约 + engine.Execute + grpc-gateway）
 - **未实现**：342 个
 - 当前完成率：4.2%
 
