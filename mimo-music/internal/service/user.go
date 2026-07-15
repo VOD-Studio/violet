@@ -130,3 +130,28 @@ func filterPlaylists(playlists []*mmpb.SearchPlaylist, ownerUserID int64, filter
 	// TODO: 将 filter 逻辑下沉到 model 层（DecodeUserPlaylists 接收 ownerUserID）。
 	return playlists
 }
+
+// Follows 获取用户关注列表。
+func (s *UserServer) Follows(ctx context.Context, req *mmpb.FollowsRequest) (*mmpb.FollowsResponse, error) {
+	return engine.Execute(s.eng, ctx, userendpoint.Follows, req)
+}
+
+// Followeds 获取用户粉丝列表。
+func (s *UserServer) Followeds(ctx context.Context, req *mmpb.FollowedsRequest) (*mmpb.FollowedsResponse, error) {
+	return engine.Execute(s.eng, ctx, userendpoint.Followeds, req)
+}
+
+// Events 获取用户动态。
+func (s *UserServer) Events(ctx context.Context, req *mmpb.EventsRequest) (*mmpb.EventsResponse, error) {
+	return engine.Execute(s.eng, ctx, userendpoint.Events, req)
+}
+
+// Record 获取用户播放记录。
+func (s *UserServer) Record(ctx context.Context, req *mmpb.RecordRequest) (*mmpb.RecordResponse, error) {
+	return engine.Execute(s.eng, ctx, userendpoint.Record, req)
+}
+
+// Level 获取用户等级信息。
+func (s *UserServer) Level(ctx context.Context, req *mmpb.LevelRequest) (*mmpb.LevelResponse, error) {
+	return engine.Execute(s.eng, ctx, userendpoint.Level, req)
+}

@@ -3,6 +3,7 @@ syntax = "proto3";
 package netease.music.v1;
 
 import "google/api/annotations.proto";
+import "netease/music/v1/song.proto";
 import "netease/music/v1/search.proto";
 
 option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
@@ -51,6 +52,41 @@ service UserService {
   rpc FollowEachOther(FollowEachOtherRequest) returns (FollowEachOtherResponse) {
     option (google.api.http) = {
       get: "/api/v1/users/{user_id}/follow-each-other"
+    };
+  }
+
+  // Follows 获取用户关注列表。
+  rpc Follows(FollowsRequest) returns (FollowsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/follows"
+    };
+  }
+
+  // Followeds 获取用户粉丝列表。
+  rpc Followeds(FollowedsRequest) returns (FollowedsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/followeds"
+    };
+  }
+
+  // Events 获取用户动态。
+  rpc Events(EventsRequest) returns (EventsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/events"
+    };
+  }
+
+  // Record 获取用户播放记录。
+  rpc Record(RecordRequest) returns (RecordResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/record"
+    };
+  }
+
+  // Level 获取用户等级信息。
+  rpc Level(LevelRequest) returns (LevelResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/level"
     };
   }
 }
@@ -181,4 +217,122 @@ message FollowEachOtherRequest {
 message FollowEachOtherResponse {
   // 是否互相关注。
   bool follow_each_other = 1;
+}
+
+// --- 用户社交与动态 message ---
+
+// Follows 请求。
+message FollowsRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+  // 每页数量。
+  int32 limit = 2;
+  // 偏移量。
+  int32 offset = 3;
+}
+
+// Follows 响应。
+message FollowsResponse {
+  // 关注用户列表。
+  repeated UserDetail follows = 1;
+  // 总数。
+  int32 total = 2;
+}
+
+// Followeds 请求。
+message FollowedsRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+  // 每页数量。
+  int32 limit = 2;
+  // 偏移量。
+  int32 offset = 3;
+  // 最后一个粉丝的时间（翻页用）。
+  int64 last_time = 4;
+}
+
+// Followeds 响应。
+message FollowedsResponse {
+  // 粉丝用户列表。
+  repeated UserDetail followeds = 1;
+  // 总数。
+  int32 total = 2;
+}
+
+// Events 请求。
+message EventsRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+  // 每页数量。
+  int32 limit = 2;
+  // 偏移量（最后一条动态的 ID）。
+  int64 last_event_id = 3;
+}
+
+// 用户动态。
+message UserEvent {
+  // 动态 ID。
+  int64 event_id = 1;
+  // 发布者用户 ID。
+  int64 user_id = 2;
+  // 动态类型。
+  int32 type = 3;
+  // 动态 JSON 内容（网易云原始结构，字段因类型而异）。
+  string json_content = 4;
+  // 发布时间（毫秒时间戳）。
+  int64 event_time = 5;
+}
+
+// Events 响应。
+message EventsResponse {
+  // 动态列表。
+  repeated UserEvent events = 1;
+  // 是否还有更多。
+  bool more = 2;
+  // 最后一条动态 ID（翻页用）。
+  int64 last_event_id = 3;
+}
+
+// Record 请求。
+message RecordRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+  // 类型：0 本周，1 全部。
+  int32 type = 2;
+}
+
+// 播放记录条目。
+message PlayRecord {
+  // 播放次数。
+  int32 play_count = 1;
+  // 歌曲信息。
+  Song song = 2;
+}
+
+// Record 响应。
+message RecordResponse {
+  // 播放记录列表。
+  repeated PlayRecord records = 1;
+}
+
+// Level 请求。
+message LevelRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+}
+
+// 用户等级信息。
+message UserLevel {
+  // 当前等级。
+  int32 level = 1;
+  // 当前经验。
+  int64 now = 2;
+  // 升级所需经验。
+  int64 next = 3;
+}
+
+// Level 响应。
+message LevelResponse {
+  // 等级信息。
+  UserLevel level = 1;
 }
