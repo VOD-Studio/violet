@@ -7,12 +7,40 @@ import "netease/music/v1/song.proto";
 
 option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
 
-// SearchService 提供搜索能力。地基阶段只支持单曲搜索（type=1），type 扩展在 Phase 4。
+// SearchService 提供搜索能力。支持多类型搜索 + 搜索辅助（建议/热搜/默认词）。
 service SearchService {
-  // Search 按关键词搜索单曲。
+  // Search 按关键词搜索，type 控制搜索类型。
   rpc Search(SearchRequest) returns (SearchResponse) {
     option (google.api.http) = {
       get: "/api/v1/search"
+    };
+  }
+
+  // Suggest 获取搜索建议（输入补全）。
+  rpc Suggest(SuggestRequest) returns (SuggestResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/search/suggest"
+    };
+  }
+
+  // Hot 获取热搜词列表（简略）。
+  rpc Hot(HotRequest) returns (HotResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/search/hot"
+    };
+  }
+
+  // HotDetail 获取热搜词列表（详细，含封面/排名）。
+  rpc HotDetail(HotDetailRequest) returns (HotDetailResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/search/hot/detail"
+    };
+  }
+
+  // DefaultKeyword 获取默认搜索关键词。
+  rpc DefaultKeyword(DefaultKeywordRequest) returns (DefaultKeywordResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/search/default"
     };
   }
 }
@@ -109,4 +137,75 @@ message SearchMV {
   string cover_url = 3;
   // 歌手名。
   string artist = 4;
+}
+
+// --- 搜索辅助接口 message ---
+
+// Suggest 请求。
+message SuggestRequest {
+  // 输入关键词。
+  string keyword = 1;
+}
+
+// Suggest 响应。
+message SuggestResponse {
+  // 匹配的单曲建议。
+  repeated string songs = 1;
+  // 匹配的专辑建议。
+  repeated string albums = 2;
+  // 匹配的歌手建议。
+  repeated string artists = 3;
+  // 匹配的歌单建议。
+  repeated string playlists = 4;
+}
+
+// Hot 请求（无参数）。
+message HotRequest {}
+
+// 热搜词条目（简略）。
+message HotKeyword {
+  // 热搜词。
+  string search_word = 1;
+  // 排名。
+  int32 score = 2;
+  // 图标 URL。
+  string icon_url = 3;
+}
+
+// Hot 响应。
+message HotResponse {
+  // 热搜词列表。
+  repeated HotKeyword keywords = 1;
+}
+
+// HotDetail 请求（无参数）。
+message HotDetailRequest {}
+
+// 热搜词条目（详细，含封面）。
+message HotDetail {
+  // 热搜词。
+  string search_word = 1;
+  // 排名。
+  int32 score = 2;
+  // 排名位置。
+  int32 position = 3;
+  // 封面 URL。
+  string cover_url = 4;
+  // 图标 URL。
+  string icon_url = 5;
+}
+
+// HotDetail 响应。
+message HotDetailResponse {
+  // 热搜详细列表。
+  repeated HotDetail details = 1;
+}
+
+// DefaultKeyword 请求（无参数）。
+message DefaultKeywordRequest {}
+
+// DefaultKeyword 响应。
+message DefaultKeywordResponse {
+  // 默认搜索关键词。
+  string keyword = 1;
 }
