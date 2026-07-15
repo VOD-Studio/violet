@@ -4,15 +4,58 @@ package netease.music.v1;
 
 import "google/api/annotations.proto";
 import "netease/music/v1/song.proto";
+import "netease/music/v1/search.proto";
 
 option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
 
-// PlaylistService 提供歌单查询能力。
+// PlaylistService 提供歌单查询与浏览能力。
 service PlaylistService {
   // GetPlaylist 获取歌单详情（含歌曲列表）。
   rpc GetPlaylist(GetPlaylistRequest) returns (GetPlaylistResponse) {
     option (google.api.http) = {
       get: "/api/v1/playlists/{playlist_id}"
+    };
+  }
+
+  // HighQuality 获取精品歌单列表。
+  rpc HighQuality(HighQualityRequest) returns (HighQualityResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/playlists/highquality"
+    };
+  }
+
+  // HighQualityTags 获取精品歌单标签列表。
+  rpc HighQualityTags(HighQualityTagsRequest) returns (HighQualityTagsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/playlists/highquality/tags"
+    };
+  }
+
+  // CatList 获取歌单分类列表。
+  rpc CatList(CatListRequest) returns (CatListResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/playlists/categories"
+    };
+  }
+
+  // BrowseHot 获取网友精选碟（热门歌单）。
+  rpc BrowseHot(BrowseHotRequest) returns (BrowseHotResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/playlists/hot"
+    };
+  }
+
+  // Subscribers 获取歌单收藏者列表。
+  rpc Subscribers(SubscribersRequest) returns (SubscribersResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/playlists/{playlist_id}/subscribers"
+    };
+  }
+
+  // AllTracks 获取歌单全量歌曲（分页）。
+  rpc AllTracks(AllTracksRequest) returns (AllTracksResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/playlists/{playlist_id}/tracks"
     };
   }
 }
@@ -53,4 +96,116 @@ message GetPlaylistRequest {
 message GetPlaylistResponse {
   // 歌单详情。
   Playlist playlist = 1;
+}
+
+// --- 歌单浏览与发现 message ---
+
+// HighQuality 请求。
+message HighQualityRequest {
+  // 分类标签（空=全部）。
+  string cat = 1;
+  // 每页数量。
+  int32 limit = 2;
+  // 偏移量。
+  int32 offset = 3;
+}
+
+// HighQuality 响应。
+message HighQualityResponse {
+  // 精品歌单列表。
+  repeated SearchPlaylist playlists = 1;
+  // 总数。
+  int32 total = 2;
+}
+
+// HighQualityTags 请求（无参数）。
+message HighQualityTagsRequest {}
+
+// 精品歌单标签。
+message HighQualityTag {
+  // 标签名。
+  string name = 1;
+  // 分类。
+  string category = 2;
+}
+
+// HighQualityTags 响应。
+message HighQualityTagsResponse {
+  // 标签列表。
+  repeated HighQualityTag tags = 1;
+}
+
+// CatList 请求（无参数）。
+message CatListRequest {}
+
+// 歌单分类子项。
+message PlaylistCategory {
+  // 分类名。
+  string name = 1;
+  // 资源数。
+  int64 resource_count = 2;
+  // 类型 ID。
+  int64 type_id = 3;
+}
+
+// CatList 响应。
+message CatListResponse {
+  // 分类列表。
+  repeated PlaylistCategory categories = 1;
+}
+
+// BrowseHot 请求（网友精选碟/热门歌单）。
+message BrowseHotRequest {
+  // 分类标签。
+  string cat = 1;
+  // 排序方式（new/hot）。
+  string order = 2;
+  // 每页数量。
+  int32 limit = 3;
+  // 偏移量。
+  int32 offset = 4;
+}
+
+// BrowseHot 响应。
+message BrowseHotResponse {
+  // 热门歌单列表。
+  repeated SearchPlaylist playlists = 1;
+  // 总数。
+  int32 total = 2;
+}
+
+// Subscribers 请求。
+message SubscribersRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+  // 每页数量。
+  int32 limit = 2;
+  // 偏移量。
+  int32 offset = 3;
+}
+
+// Subscribers 响应。
+message SubscribersResponse {
+  // 收藏者列表。
+  repeated User subscribers = 1;
+  // 总数。
+  int32 total = 2;
+}
+
+// AllTracks 请求。
+message AllTracksRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+  // 每页数量。
+  int32 limit = 2;
+  // 偏移量。
+  int32 offset = 3;
+}
+
+// AllTracks 响应。
+message AllTracksResponse {
+  // 全量歌曲列表（分页）。
+  repeated Song songs = 1;
+  // 总数。
+  int32 total = 2;
 }
