@@ -115,3 +115,31 @@ _Avoid_: 自由字符串数组（伪结构化，术语会腐烂）、单字符�
 
 **react-bits 组件依赖**:
 公告 card/article 视觉依赖 react-bits（`https://reactbits.dev/`）的以下组件，项目已配置 `@react-bits` registry（shadcn），用 `pnpm dlx shadcn@latest add @react-bits/<Name>-TS-TW` 安装到 `web/src/shared/vendor/react-bits/`。**已安装**：`BorderGlow`（card 外壳，柔色发光描边）、`BlurText`（标题按词渐显）、`Counter`（ID 数字滚动）、`Magnet`（按钮磁吸）、`AnimatedList`（详情页时间轴）。仍在使用：`DecryptedText`（empty / 404 状态）、`SpotlightCard`（PostCard）。注意：`FluidGlass`（依赖 three.js）与 `SplitText`（依赖 GSAP 商用插件）曾试用后已移除；`ClickSpark`、`Aurora`、`GradientText`、`ParticleField`、`ShinyText`、`CountUp` 等历史原型组件也已移除，不要再装。banner 原型（FlipX / CubeFlipY）在 `announcement-lab` 实验页保留作参考。
+
+## 网易云协议服务（mimo-music）
+
+> mimo-music 是独立 Go module（`github.com/VOD-Studio/mimo-music`），全量实现网易云 357 接口。架构决策见 `docs/adr/mimo-music-architecture.md`。
+
+**契约（Contract）**:
+proto 文件是 mimo-music 对外契约的唯一真相。gRPC server 与 REST 端点都从同一份 proto 生成（grpc-gateway），不存在两套并行文档。Rust/Go/Python 等语言用 protoc 生成的强类型 client 接入。
+_Avoid_: 接口定义（混淆了契约与其 gRPC/REST 两种暴露形态）、API 文档（手写的、与 proto 并行的旧概念）
+
+**领域实体（Domain Entity）**:
+网易云 357 种响应由收敛的实体组合而成——Song、Artist、Album、Playlist、User、Comment、MV、Video、DJRadio、Toplist、Event 等。每个实体定义一组「网易云原始 JSON 的 struct 镜像 + map 到 proto 的函数」，写一次后全局复用。例如 MapSong 被歌曲详情、每日推荐、歌单曲目、专辑曲目、搜索(单曲)等几十个接口复用。这是「该复用的复用」的落点，把看似 357 次的映射塌缩为约 30 次领域映射加接口级组装。
+_Avoid_: DTO（旧统一 model 概念，已被 proto message 取代）、数据模型（混淆了实体与数据库表）
+
+**共享执行引擎（Engine）**:
+处理所有接口共享的脏活——加密（weapi/eapi）、HTTP transport、cookie 池选取、重试、熔断、指标、trace。写一次，357 接口复用。拆成 transport/crypto/retry/breaker/selector/metrics 等子包，不做成单文件。
+_Avoid_: provider（旧多平台抽象层，已砍）
+
+**接口声明（Endpoint Declaration）**:
+每个网易云接口作为一等公民拥有的完整处理集合：强类型 proto 契约、登录态判定、网易云 endpoint 元数据、入参映射、响应组装、缓存策略、错误映射。元数据由 protoc-gen-netease 从 proto custom option 生成，消除样板；入参映射与响应组装是每个接口不可省的专属工作（响应组装调领域实体的 map 函数）。
+_Avoid_: handler（旧手写 HTTP 概念，已被 gateway 生成取代）、endpoint（在不指明「声明」时易混淆）
+
+**薄便利层（Convenience Layer）**:
+`pkg/mimomusic/` 的定位。只做 gRPC 连接管理加配置 sugar，绝不镜像接口签名。契约全在 gen/go，调用方拿到的是生成的原生 client。边界立死，防止长回独立契约。
+_Avoid_: SDK 库（旧概念，曾镜像全部接口签名，已被 proto 生成取代）
+
+**Session 池（Session Pool）**:
+网易云 cookie 的并发安全管理。SessionStore 是一等公民，接口含 GetAvailable（按 api 选取可用 session）、ReportSuccess、ReportFailure。后期支持权重、健康度、限流、风控。
+_Avoid_: cookie 轮换（只描述了动作，未体现池化与上报机制）
