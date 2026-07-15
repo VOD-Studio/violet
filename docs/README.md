@@ -9,7 +9,7 @@
 | `adr/` | 架构决策记录（Architecture Decision Records），包含已被采纳或 superseded 的决策。 |
 | `archive/` | 已过时或过渡性的文档，保留历史上下文但不再作为当前依据。 |
 | `deploy/` | 部署、运维、发布手册。 |
-| `guides/` | 开发规范、风格指南、最佳实践。 |
+| `guides/` | 开发规范、风格指南、最佳实践。含 [前端代码规范](./guides/frontend-style-guide.md)、[Go 测试规范](./guides/go-testing-guide.md)。 |
 | `issues/` | 按 PRD 或功能主题分组的历史任务/issue 记录。 |
 | `prd/` | 产品需求文档（Product Requirements Documents）。 |
 | `superpowers/` | 被 `.gitignore` 忽略，不纳入版本控制。 |
