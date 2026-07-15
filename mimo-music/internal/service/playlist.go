@@ -54,3 +54,68 @@ func (s *PlaylistServer) Subscribers(ctx context.Context, req *mmpb.SubscribersR
 func (s *PlaylistServer) AllTracks(ctx context.Context, req *mmpb.AllTracksRequest) (*mmpb.AllTracksResponse, error) {
 	return engine.Execute(s.eng, ctx, playlistendpoint.AllTracks, req)
 }
+
+// --- 写操作（cookie override，不走 Execute） ---
+
+// Subscribe 收藏/取消收藏歌单。
+func (s *PlaylistServer) Subscribe(ctx context.Context, req *mmpb.SubscribeRequest) (*mmpb.SubscribeResponse, error) {
+	raw, _, err := s.eng.RawDoWithCookieAndInput(ctx, playlistendpoint.SubscribeMeta, playlistendpoint.SubscribeRequest(req), req.GetCookie())
+	if err != nil {
+		return nil, err
+	}
+	return playlistendpoint.ParseSubscribed(raw), nil
+}
+
+// Create 新建歌单。
+func (s *PlaylistServer) Create(ctx context.Context, req *mmpb.CreateRequest) (*mmpb.CreateResponse, error) {
+	raw, _, err := s.eng.RawDoWithCookieAndInput(ctx, playlistendpoint.CreateMeta, playlistendpoint.CreateRequest(req), req.GetCookie())
+	if err != nil {
+		return nil, err
+	}
+	return playlistendpoint.ParseCreateResponse(raw), nil
+}
+
+// Delete 删除歌单。
+func (s *PlaylistServer) Delete(ctx context.Context, req *mmpb.DeleteRequest) (*mmpb.DeleteResponse, error) {
+	_, _, err := s.eng.RawDoWithCookieAndInput(ctx, playlistendpoint.DeleteMeta, playlistendpoint.DeleteRequest(req), req.GetCookie())
+	if err != nil {
+		return nil, err
+	}
+	return &mmpb.DeleteResponse{}, nil
+}
+
+// UpdateName 更新歌单名。
+func (s *PlaylistServer) UpdateName(ctx context.Context, req *mmpb.UpdateNameRequest) (*mmpb.UpdateNameResponse, error) {
+	_, _, err := s.eng.RawDoWithCookieAndInput(ctx, playlistendpoint.UpdateNameMeta, playlistendpoint.UpdateNameRequest(req), req.GetCookie())
+	if err != nil {
+		return nil, err
+	}
+	return &mmpb.UpdateNameResponse{}, nil
+}
+
+// UpdateDesc 更新歌单描述。
+func (s *PlaylistServer) UpdateDesc(ctx context.Context, req *mmpb.UpdateDescRequest) (*mmpb.UpdateDescResponse, error) {
+	_, _, err := s.eng.RawDoWithCookieAndInput(ctx, playlistendpoint.UpdateDescMeta, playlistendpoint.UpdateDescRequest(req), req.GetCookie())
+	if err != nil {
+		return nil, err
+	}
+	return &mmpb.UpdateDescResponse{}, nil
+}
+
+// UpdateTags 更新歌单标签。
+func (s *PlaylistServer) UpdateTags(ctx context.Context, req *mmpb.UpdateTagsRequest) (*mmpb.UpdateTagsResponse, error) {
+	_, _, err := s.eng.RawDoWithCookieAndInput(ctx, playlistendpoint.UpdateTagsMeta, playlistendpoint.UpdateTagsRequest(req), req.GetCookie())
+	if err != nil {
+		return nil, err
+	}
+	return &mmpb.UpdateTagsResponse{}, nil
+}
+
+// UpdateTracks 添加或删除歌曲。
+func (s *PlaylistServer) UpdateTracks(ctx context.Context, req *mmpb.UpdateTracksRequest) (*mmpb.UpdateTracksResponse, error) {
+	raw, _, err := s.eng.RawDoWithCookieAndInput(ctx, playlistendpoint.UpdateTracksMeta, playlistendpoint.UpdateTracksRequest(req), req.GetCookie())
+	if err != nil {
+		return nil, err
+	}
+	return playlistendpoint.ParseUpdateTracksResponse(raw), nil
+}

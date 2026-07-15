@@ -58,6 +58,61 @@ service PlaylistService {
       get: "/api/v1/playlists/{playlist_id}/tracks"
     };
   }
+
+  // Subscribe 收藏/取消收藏歌单（toggle）。
+  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/playlists/{playlist_id}/subscribe"
+      body: "*"
+    };
+  }
+
+  // Create 新建歌单。
+  rpc Create(CreateRequest) returns (CreateResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/playlists"
+      body: "*"
+    };
+  }
+
+  // Delete 删除歌单。
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/playlists/{playlist_id}"
+    };
+  }
+
+  // UpdateName 更新歌单名。
+  rpc UpdateName(UpdateNameRequest) returns (UpdateNameResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/playlists/{playlist_id}/name"
+      body: "*"
+    };
+  }
+
+  // UpdateDesc 更新歌单描述。
+  rpc UpdateDesc(UpdateDescRequest) returns (UpdateDescResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/playlists/{playlist_id}/desc"
+      body: "*"
+    };
+  }
+
+  // UpdateTags 更新歌单标签。
+  rpc UpdateTags(UpdateTagsRequest) returns (UpdateTagsResponse) {
+    option (google.api.http) = {
+      patch: "/api/v1/playlists/{playlist_id}/tags"
+      body: "*"
+    };
+  }
+
+  // UpdateTracks 添加或删除歌曲（op=add/del）。
+  rpc UpdateTracks(UpdateTracksRequest) returns (UpdateTracksResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/playlists/{playlist_id}/tracks"
+      body: "*"
+    };
+  }
 }
 
 // Playlist 是歌单实体。
@@ -208,4 +263,114 @@ message AllTracksResponse {
   repeated Song songs = 1;
   // 总数。
   int32 total = 2;
+}
+
+// --- 歌单写操作 message ---
+
+// Subscribe 请求。
+message SubscribeRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+  // 登录态 Cookie。
+  string cookie = 2;
+}
+
+// Subscribe 响应。
+message SubscribeResponse {
+  // 操作后是否已收藏。
+  bool subscribed = 1;
+}
+
+// Create 请求。
+message CreateRequest {
+  // 歌单名。
+  string name = 1;
+  // 是否隐私（默认 false）。
+  bool privacy = 2;
+  // 登录态 Cookie。
+  string cookie = 3;
+}
+
+// Create 响应。
+message CreateResponse {
+  // 新建歌单 ID。
+  int64 playlist_id = 1;
+}
+
+// Delete 请求。
+message DeleteRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+  // 登录态 Cookie。
+  string cookie = 2;
+}
+
+// Delete 响应（无数据，成功即可）。
+message DeleteResponse {}
+
+// UpdateName 请求。
+message UpdateNameRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+  // 新名称。
+  string name = 2;
+  // 登录态 Cookie。
+  string cookie = 3;
+}
+
+// UpdateName 响应。
+message UpdateNameResponse {}
+
+// UpdateDesc 请求。
+message UpdateDescRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+  // 新描述。
+  string desc = 2;
+  // 登录态 Cookie。
+  string cookie = 3;
+}
+
+// UpdateDesc 响应。
+message UpdateDescResponse {}
+
+// UpdateTags 请求。
+message UpdateTagsRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+  // 标签列表（分号分隔）。
+  string tags = 2;
+  // 登录态 Cookie。
+  string cookie = 3;
+}
+
+// UpdateTags 响应。
+message UpdateTagsResponse {}
+
+// 歌曲操作类型。
+enum TracksOp {
+  // 未指定。
+  TRACKS_OP_UNSPECIFIED = 0;
+  // 添加歌曲。
+  TRACKS_OP_ADD = 1;
+  // 删除歌曲。
+  TRACKS_OP_DEL = 2;
+}
+
+// UpdateTracks 请求。
+message UpdateTracksRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+  // 操作类型。
+  TracksOp op = 2;
+  // 歌曲 ID 列表。
+  repeated int64 track_ids = 3;
+  // 登录态 Cookie。
+  string cookie = 4;
+}
+
+// UpdateTracks 响应。
+message UpdateTracksResponse {
+  // 成功添加的歌曲 ID。
+  repeated int64 body_track_ids = 1;
 }
