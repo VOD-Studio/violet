@@ -6,25 +6,25 @@
 
 ## 定位
 
-mimo-music 的第一个身份是「网易云解析代理」（架构 ADR 第 1 节）：对标已归档的 NeteaseCloudMusicApi（Node 版），在其之上补齐多平台抽象、HTTP 服务、SDK 库模式。
+mimo-music 是通用、独立的网易云音乐能力服务（架构 ADR 第 1 节）：全量实现网易云 357 接口，以 Protobuf 为唯一契约，gRPC 与 REST 双暴露，Rust/Go/Python 等语言用生成 client 接入。
 
-本蓝图是这个身份的完整实现路线图：把网易云官方 357 个接口逐条罗列，标注当前实现状态，按模块编排推进顺序。它不是单个 PRD，而是 Phase 4 起所有网易云能力扩展 PRD 的总纲。
+本蓝图是完整实现路线图：把网易云 357 个接口逐条罗列，标注当前实现状态，按模块编排推进顺序。它不是单个 PRD，而是 Phase 4 起所有网易云能力扩展 PRD 的总纲。
 
 ## 实现规范
 
-每个接口都遵循现有四层架构，不因数量多而走捷径：
+每个接口都遵循 ADR 第 3-4 节定义的「引擎 + 声明 + 领域模型层」架构，不因数量多而走捷径：
 
 ```
-provider/provider.go     能力域子接口 + Result 类型（平台无关）
-provider/netease/*.go    网易云实现：weapiPost/apiGet → 解析 → 转 Result
-service/*.go             缓存编排 + cookie 轮换 + 指标
-internal/server/handler  HTTP 端点
-pkg/mimomusic/*.go       SDK 镜像 HTTP 端点
+proto/netease/music/v1/*.proto     proto 契约：领域 service + message（唯一真相）
+internal/netease/endpoint/<域>/    每接口声明：Meta + CachePolicy + MapRequest + MapResponse
+internal/netease/model/*.go        领域实体映射：raw struct + Map 函数（全局复用）
+internal/netease/engine/           共享执行引擎：RawDo + Execute（加密/HTTP/cookie/重试/缓存）
+internal/service/*.go              grpc impl：恒一行 return engine.Execute(...)
 ```
 
-外加 model DTO、openapi 文档、router 注册、wire 装配、各层测试。
+外加 gen/go 生成 stub、gateway 派生 REST、wire 装配、各层测试。
 
-接口组织沿用能力域子接口模式（Auth/Playlist/Song/Search/Album/Artist/Recommend/FM），新增模块新增子接口（User/Comment/Toplist/MV/CloudDisk 等）。
+接口按领域组织：proto 每领域一个 service + 对应的 endpoint 目录。已有领域：Song/Playlist/Auth/User/Search/Album/Artist/Recommend/FM，新增模块新增领域（Comment/Toplist/MV/Video/CloudDisk/Event 等）。
 
 ## 完整接口清单（357 项）
 
@@ -441,19 +441,22 @@ pkg/mimomusic/*.go       SDK 镜像 HTTP 端点
 
 ## 推进顺序
 
-按「网易云功能价值 × 依赖关系」排序，分 5 个优先级层。每个层对应一个 Phase（PRD）。
+地基先行，再按领域铺开（架构 ADR 第 8 节）。每个领域第一步是建领域实体（model 层 map 函数），再批量接接口。
 
-| 优先级 | 模块 | 接口数 | 对应 Phase |
-|--------|------|--------|-----------|
-| **P0** | 搜索扩展 + 歌单管理 + 用户模块 + 歌手扩展 | ~69 | Phase 4 |
-| **P1** | 专辑扩展 + 推荐扩展 + 排行榜 + MV/视频 + 相似/相关 + 歌曲扩展 | ~73 | Phase 5 |
-| **P2** | 评论 + 收藏/关注/点赞 + FM/电台扩展 | ~58 | Phase 6 |
-| **P3** | 签到/云贝 + 云盘 + 动态/通知/私信 + 音乐人/VIP | ~60 | Phase 7 |
-| **P4** | 播客/助眠/DIFM/其他小众 | ~70 | Phase 8 |
+| 阶段 | 模块 | 接口数 | 说明 |
+|------|------|--------|------|
+| **地基** | proto 基础设施 + engine + session + crypto + 领域模型层首批 5 实体（Song/Artist/Album/Playlist/User） | — | 前置工程，迁移已实现 15 接口到新架构 |
+| **Phase 4** | 搜索扩展 + 歌单管理 + 用户模块 + 歌手扩展 | ~69 | 复用已建实体 + 补歌单写操作 |
+| **Phase 5** | 专辑扩展 + 推荐扩展 + 排行榜 + MV/视频 + 相似/相关 + 歌曲扩展 | ~73 | 新建 MV/Video/Toplist 实体 |
+| **Phase 6** | 评论 + 收藏/关注/点赞 + FM/电台扩展 | ~58 | 新建 Comment/DJ 实体 |
+| **Phase 7** | 签到/云贝 + 云盘 + 动态/通知/私信 + 音乐人/VIP | ~60 | 新建 Event/CloudDisk 实体 |
+| **Phase 8** | 播客/助眠/DIFM/其他小众 | ~70 | |
+
+> protoc-gen-netease 自研插件后置：地基阶段手写 `Endpoint` 声明，手写到 50-80 接口、样板痛了再上 codegen（ADR 第 3.4 节）。
 
 ## 统计
 
-- **已实现**：15 个（Phase 1-3 完成）
+- **已实现**：15 个（Phase 1-3 完成，待迁移到新架构）
 - **未实现**：342 个
 - 当前完成率：4.2%
 

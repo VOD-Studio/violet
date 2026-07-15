@@ -80,8 +80,62 @@ proto 是契约的唯一真相。一次定义，protoc 同时产出：
 - cookie 池选取（SessionStore）
 - 重试 / 熔断
 - 指标埋点 / trace 传播
+- 缓存（命中跳过真实调用）
 
 引擎拆成子包，每个职责一个文件，可独立测试。**不做单文件巨型 engine.go**（不可测、不可维护）。
+
+engine 对外只暴露一个深方法 `RawDo`——不碰 proto 类型，只收元数据 + 网易云参数，返回原始 JSON。一个方法背后藏全部脏活。deletion test：删掉它，这些复杂度散落到 357 个调用点。
+
+```go
+// internal/netease/engine/engine.go
+
+// RawDo 是 engine 唯一对外方法：一个深接口，背后藏加密/HTTP/cookie选取/重试/熔断/指标。
+// 不碰 proto 类型，只接收元数据 + 网易云参数，返回原始 JSON。
+func (e *Engine) RawDo(ctx context.Context, meta Meta, params map[string]any) (json.RawMessage, error)
+
+// Meta 是网易云 endpoint 的执行元数据。
+type Meta struct {
+    Path   string        // 网易云 path
+    Method string
+    Crypto CryptoMethod  // weapi / eapi / linuxapi / none
+    Auth   AuthRequirement
+}
+```
+
+由于 Go「方法不能带类型参数」，engine 另提供一个顶层泛型函数 `Execute`，串起 `MapRequest → RawDo → MapResponse`，并把 cache 集中在这一处（policy 在 endpoint 上、Resp 是具体类型参数，全程类型安全、零 reflection、零注册表）：
+
+```go
+// internal/netease/engine/execute.go
+
+// Execute 串起缓存检查 → MapRequest → RawDo → MapResponse → 缓存回填。
+// 缓存命中时跳过 RawDo，但 gRPC 链上的 auth/rate/trace/recovery 照常执行
+// （它们在 interceptor，Execute 在 service 方法里被调用，时序在拦截器之后）。
+func Execute[Req, Resp any](e *Engine, ctx context.Context, ep *Endpoint[Req, Resp], req Req) (Resp, error) {
+    // 1. 缓存命中直接返回（policy 在 ep 上，Resp 是具体类型，零 reflection）
+    if ep.Cache != nil {
+        if hit, ok := e.cache.Get(ctx, ep.Cache.Key(req)); ok {
+            var resp Resp
+            if err := proto.Unmarshal(hit, &resp); err == nil { return resp, nil }
+        }
+    }
+    // 2. 真实调用：MapRequest → RawDo → MapResponse
+    params, err := ep.MapRequest(req)
+    if err != nil { var z Resp; return z, err }
+    raw, err := e.RawDo(ctx, ep.Meta, params)
+    if err != nil { var z Resp; return z, err }
+    resp, err := ep.MapResponse(raw)
+    if err != nil { return resp, err }
+    // 3. 回填缓存
+    if ep.Cache != nil {
+        if data, err := proto.Marshal(&resp); err == nil {
+            e.cache.Set(ctx, ep.Cache.Key(req), data, ep.Cache.TTL)
+        }
+    }
+    return resp, nil
+}
+```
+
+cache 放在 `Execute` 而非 interceptor 的理由：cache 是唯一的「per-endpoint policy 驱动 + 类型相关序列化」横切关注点，和均匀的 auth/rate/log/trace/recovery 本质不同。policy 和具体 Resp 类型都在 `Execute` 手边，无需注册表查 `FullMethod → CachePolicy`、无需 reflection 反序列化，也消灭了「缓存命中漏鉴权」的拦截器顺序 footgun（auth/rate/trace 在更外层 interceptor，先于 service 执行）。
 
 ### 3.2 领域模型层（~25-30 个实体，每个写一次，全局复用）
 
@@ -93,25 +147,60 @@ proto 是契约的唯一真相。一次定义，protoc 同时产出：
 
 ### 3.3 每接口声明（每接口一份，不重复样板）
 
-每个接口拥有一等公民的完整处理：
+每个接口拥有一等公民的完整处理，集中在一个 `Endpoint` 声明里：
 
-1. 强类型 proto 契约（请求 message + 响应 message）
-2. 登录态判定（匿名 / 需登录 / 需特定 cookie 池）
-3. 网易云 endpoint 元数据（path / method / 加密方式）
-4. 入参映射（proto 请求 → 网易云加密前的 query/body）
-5. 响应组装（网易云 JSON → proto 响应，**调领域模型层的 map 函数组装**）
-6. 缓存策略（是否缓存 / key 模板 / TTL）
-7. 错误映射（网易云错误码 → 统一错误）
+```go
+// internal/netease/endpoint/song/detail.go
 
-其中 1/4/5 是每个接口不可省的专属工作（强类型契约的兑现）；2/3/6/7 由 protoc-gen-netease 从 proto custom option 生成元数据声明，消除样板。
+// Endpoint 是声明：数据 + 两个映射函数，不是活跃服务。
+type Endpoint[Req, Resp any] struct {
+    Meta        Meta                    // 网易云 path/method/crypto/auth
+    Cache       *CachePolicy            // nil = 不缓存
+    MapRequest  func(Req) (map[string]any, error)
+    MapResponse func(json.RawMessage) (Resp, error)
+}
 
-### 3.4 protoc-gen-netease 的能力边界
+// CachePolicy 声明缓存策略。endpoint 只声明，不执行（执行在 Execute）。
+type CachePolicy struct {
+    Key func(req any) string  // 从请求算 cache key
+    TTL time.Duration
+}
 
-**能生成**（元数据 + 骨架）：endpoint path、HTTP method、加密方式、登录态要求、缓存策略、映射函数空壳签名（带 TODO）、批量校验（防止漏接口/漏签名）。
+// 每接口一个包级 var，是它的完整声明。
+var Detail = engine.Endpoint[pb.GetSongDetailRequest, pb.GetSongDetailResponse]{
+    Meta: engine.Meta{
+        Path:   "/api/v3/song/detail",
+        Method: "POST",
+        Crypto: engine.CryptoWeAPI,
+        Auth:   engine.AuthOptional,
+    },
+    Cache: nil, // 歌曲详情缓存收益低
+    MapRequest: func(req *pb.GetSongDetailRequest) (map[string]any, error) {
+        // proto 请求 → 网易云加密前 query/body
+    },
+    MapResponse: func(raw json.RawMessage) (*pb.GetSongDetailResponse, error) {
+        // 网易云 JSON → proto 响应，调 model.MapSongs 组装
+    },
+}
+```
 
-**不能生成**（每接口专属的人脑工作）：proto message 建模、入参映射逻辑、响应映射逻辑。
+每个接口拥有的完整处理集合：强类型 proto 契约、登录态判定（`Meta.Auth`）、网易云 endpoint 元数据、入参映射、响应组装（调领域模型层 map 函数）、缓存策略、错误映射（在 `MapResponse` 内调 `errors.go`）。
 
-它让你不漏接口、不忘签名、能批量校验，但不替你写映射。响应映射走领域模型层复用，不是从零写。
+其中 proto 契约建模、入参映射、响应组装是每个接口不可省的专属工作（强类型契约的兑现）；元数据是结构字段，无样板。
+
+### 3.4 protoc-gen-netease：后置，不进地基阶段
+
+自研 protoc 插件（生成元数据声明 + 映射空壳 + 批量校验）**不进地基阶段**。
+
+理由：
+
+- 元数据用 Go 声明（`Endpoint` struct + 包级 `var`）就能表达，自研插件要吃下 proto custom option 学习成本、插件调试成本、buf 集成成本，前期投入大。
+- 真正省时间的是批量校验（防漏接口/漏签名）和元数据一致性，这部分可用一个 `go test` 或 lint 脚本做到，不必上插件。
+- 现在自研是投机——proto custom option 设计错了，357 接口元数据全得返工。
+
+策略：地基阶段手写 `Endpoint` 声明，把 engine/领域模型层/15 接口迁移做扎实。手写到 50-80 个接口、样板真的痛了，且已知哪些样板值得生成，再上 codegen。届时把 `cmd/protoc-gen-netease/` 加入目录树。
+
+它能生成的（未来）：元数据声明骨架、映射函数空壳签名（带 TODO）、批量校验。不能生成的（永远）：proto message 建模、入参映射逻辑、响应映射逻辑。
 
 ## 4. 完整目录结构
 
@@ -147,14 +236,15 @@ mimo-music/
 │
 ├── cmd/
 │   ├── server/                          gRPC server + gateway mux 双 server 入口
-│   ├── worker/                          cookie 健康检查 / URL 刷新 / 缓存预热
-│   └── protoc-gen-netease/              自研 protoc 插件：生成元数据声明 + 映射空壳
+│   └── worker/                          cookie 健康检查 / URL 刷新 / 缓存预热
+│   （cmd/protoc-gen-netease/ 后置：手写到 50-80 接口样板痛了再加，见 3.4）
 │
 ├── internal/                            服务专用（便利层与外部不触碰）
 │   │
 │   ├── netease/                         网易云引擎 + 全量接口声明（核心层）
 │   │   ├── engine/                      共享执行引擎（拆子包，不单文件）
-│   │   │   ├── engine.go                Engine 聚合体（持有 client/crypto/session/retry）
+│   │   │   ├── engine.go                Engine 聚合体：RawDo 深方法（持有 client/crypto/session/retry/cache）
+│   │   │   ├── execute.go               Execute 泛型函数：缓存检查 → MapRequest → RawDo → MapResponse → 回填
 │   │   │   ├── transport.go             HTTP transport（连接、超时、keepalive）
 │   │   │   ├── crypto.go                weapi/eapi 加密（从旧 provider/netease/crypto.go 迁入）
 │   │   │   ├── retry.go                 重试策略
@@ -194,13 +284,13 @@ mimo-music/
 │   ├── server/                          gRPC + gateway 接入层
 │   │   ├── grpc.go                      gRPC server 装配
 │   │   ├── gateway.go                   grpc-gateway mux 装配（自动派生 REST）
-│   │   └── interceptor/                 gRPC 横切关注点（切面，不进 netease 层）
-│   │       ├── cache.go                 缓存拦截器（cache 策略在此，不散落到各接口）
+│   │   └── interceptor/                 gRPC 横切关注点（均匀切面）
 │   │       ├── auth.go                  登录态校验
 │   │       ├── rate.go                  限流
 │   │       ├── log.go                   访问日志
 │   │       ├── trace.go                 OTel trace 注入
 │   │       └── recovery.go              panic 恢复
+│   │                                    （cache 不在 interceptor，集中在 engine.Execute，见 3.1）
 │   │
 │   ├── cache/                           Cache 接口 + 实现
 │   │   ├── cache.go                     Cache 接口（依赖倒置）
@@ -243,8 +333,58 @@ mimo-music/
 - **`internal/` 依赖 `gen/go`，不依赖 `proto/`**：proto 是源码资产，生成 stub 才是运行时依赖。
 - **proto service 按领域拆，不做 357-method 巨型 service**：约 20 个领域 service（`SongService`/`PlaylistService`/...），每个含该领域的几个到几十个 RPC。
 - **endpoint 按领域拆目录**：`endpoint/song/detail.go`，非 `api/song.go`，防止单文件膨胀到几千行。
-- **cache 走 interceptor，不进 netease 层**：缓存策略集中在 `server/interceptor/cache.go`，不散落到各 endpoint。
+- **cache 集中在 `engine.Execute`，endpoint 只声明 `CachePolicy`**：cache 是唯一的 per-endpoint policy 驱动 + 类型相关序列化横切关注点，和均匀的 auth/rate/log/trace/recovery 本质不同，不进 interceptor。声明在 endpoint（`ep.Cache`），执行在 `Execute`，全程类型安全零 reflection。
+- **service 每个方法体恒为一行 `return engine.Execute(...)`**：无分支、无 error 包装、无日志。编排全在 engine + endpoint。service 是 gRPC server interface 的 adapter 边界（删掉它，endpoint 声明包会被 server interface 绑架，映射逻辑无法脱离 gRPC 形状单独测）。此约束可 lint/review 机械校验，是防止 service 滑回厚编排层的护栏。
 - **领域实体 message 放 proto，全局复用**：`Song`/`Artist` 等定义一次，所有引用它的接口共用。
+
+## 4.5 接缝签名：engine ↔ endpoint ↔ service 数据流
+
+四个核心接缝的具体签名和调用时序，实现时不得偏离。
+
+### service 层签名（恒一行）
+
+service 的每个方法实现生成的 gRPC `XxxServiceServer` interface，方法体恒为一行：
+
+```go
+// internal/service/song.go
+
+func (s *songServer) GetSongDetail(ctx context.Context, req *pb.GetSongDetailRequest) (*pb.GetSongDetailResponse, error) {
+    return engine.Execute(s.engine, ctx, songendpoint.Detail, req)
+}
+```
+
+service 持有 `*engine.Engine`，不持有 cache/endpoint/任何编排状态。它存在的唯一理由：实现 gRPC server interface。删掉它把 server impl 塞进 endpoint 包，endpoint 声明包会被 `SongServiceServer` interface 绑架，映射逻辑无法脱离 gRPC 形状单独测。所以 service 是 gRPC server interface 这个 seam 上的 adapter，不是 pass-through。
+
+### 完整调用时序（含 cache）
+
+```
+gRPC call（携带 ctx、cookie 元数据）
+  ↓
+interceptor: recovery → trace → log → rate → auth   ← 均匀横切，每个接口都过
+  ↓
+service.GetSongDetail(ctx, req)                       ← 恒一行
+  ↓
+engine.Execute(engine, ctx, songendpoint.Detail, req) ← 顶层泛型函数
+  ├─ 1. ep.Cache != nil？查 cache.Get(key)
+  │     命中 → proto.Unmarshal(hit, &resp) → 返回（RawDo 跳过，endpoint 不执行）
+  │     未命中 ↓
+  ├─ 2. ep.MapRequest(req) → params
+  ├─ 3. engine.RawDo(ctx, ep.Meta, params)
+  │     ├─ session.GetAvailable(ctx, ep.Meta.Auth) → cookie
+  │     ├─ crypto(ep.Meta.Crypto, params) → 加密请求体
+  │     ├─ transport.HTTP(ep.Meta.Path, encrypted) → 网易云原始 JSON
+  │     └─ retry / breaker / metrics（命中/失败按 policy）
+  ├─ 4. ep.MapResponse(raw) → resp（调 model.MapSong 等组装）
+  └─ 5. ep.Cache != nil？proto.Marshal(resp) → cache.Set(key, data, TTL)
+  ↓
+return resp
+```
+
+**interceptor 顺序的硬约束**：auth 必须在「能触达 `Execute`（含 cache 检查）的任何代码」之前。因为 cache 命中会跳过后续，若 auth 排在 cache 之后，缓存命中会漏掉登录态校验。当前 cache 在 `Execute` 内（service 方法体里），而 auth 在 interceptor（外层），时序天然正确。若将来把任何检查放进 `Execute`，必须同步保证它在 auth 之后。
+
+### cache 命中的类型安全
+
+cache 在 `Execute` 而非 interceptor：`ep.Cache`（policy）和 `Resp`（具体类型参数）都在手边。命中时 `proto.Unmarshal(hit, &resp)` 的 `resp` 是具体 proto 类型，零 reflection。若改放 interceptor，需额外造 `FullMethod → CachePolicy` 注册表 + reflection 反序列化，并引入拦截器顺序 footgun。cache 是唯一的 per-endpoint policy 驱动 + 类型相关序列化横切关注点，和均匀的 auth/rate/log/trace/recovery 本质不同。
 
 ## 5. 四个特有复杂度及应对
 
@@ -263,7 +403,7 @@ mimo-music/
 播放 URL 会过期，Cookie 会失效，歌单会更新。
 
 应对：
-- `server/interceptor/cache.go` 按数据类型设 TTL（URL 短 TTL、歌单长 TTL），声明在各 endpoint 元数据。
+- `engine.Execute` 按 endpoint 声明的 `CachePolicy` 设 TTL（URL 短 TTL、歌单长 TTL），命中跳过真实调用。
 - worker 定时刷新热门 URL、Cookie 健康检查。
 
 ### 5.3 登录态共享
@@ -271,7 +411,7 @@ mimo-music/
 多请求共用一套 Cookie，并发访问，Cookie 会过期。
 
 应对：
-- `internal/netease/session/` 是一等公民，SessionStore 接口含 `GetAvailable(ctx, api)` / `ReportSuccess(sessionID)` / `ReportFailure(sessionID, err)`。
+- `internal/netease/session/` 是一等公民。`AuthRequirement` enum 取代字符串参数，避免 leaky interface。登录类接口（captcha/login/qrcode）是创建新 session 的源头，不走 `GetAvailable`。
 - 后期支持权重、健康度、限流、风控。
 - worker 定时健康检查 Cookie。
 
@@ -286,13 +426,22 @@ mimo-music/
 
 ## 6. SessionStore 契约
 
+网易云风控按账号/Cookie 维度，不按接口维度——所以 `GetAvailable` 的参数是 `AuthRequirement` enum 而非字符串，避免 leaky interface。登录类接口（captcha/login/qrcode）是创建新 session 的源头，不走 `GetAvailable`，单独路径。
+
 ```go
 // internal/netease/session/session.go
 
+// AuthRequirement 表达这次调用需要哪种登录态，驱动 cookie 池选取。
+type AuthRequirement int
+const (
+    AuthAnonymous  AuthRequirement = iota  // 共享匿名 cookie 池
+    AuthLoggedIn                           // 已登录 cookie 池（含健康度/权重选取）
+)
+
 // SessionStore 管理 cookie 池，是一等公民。
 type SessionStore interface {
-    // GetAvailable 按 api 选取一个可用 session。
-    GetAvailable(ctx context.Context, api string) (*Session, error)
+    // GetAvailable 按登录态需求选取一个可用 session。
+    GetAvailable(ctx context.Context, req AuthRequirement) (*Session, error)
 
     // ReportSuccess 上报某 session 调用成功（用于健康度统计）。
     ReportSuccess(sessionID string)
@@ -302,7 +451,7 @@ type SessionStore interface {
 }
 ```
 
-不止 `GetCookie`：后期一定需要权重、健康度、限流、风控，接口现在就留好。
+`Meta.Auth` 用同一个 `AuthRequirement` 类型，engine 内部 `session.GetAvailable(ctx, meta.Auth)`，类型链自洽。不止 `GetCookie`：后期一定需要权重、健康度、限流、风控，接口现在就留好。
 
 ## 7. 薄便利层 pkg/mimomusic
 
