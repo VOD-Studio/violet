@@ -21,6 +21,9 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
+	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
+	"github.com/VOD-Studio/mimo-music/internal/netease/session"
+	"github.com/VOD-Studio/mimo-music/internal/service"
 
 	runtime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 )
@@ -45,20 +48,19 @@ type App struct {
 	httpServer *http.Server
 }
 
-// NewApp 创建双 server 应用。
-func NewApp(grpcAddr, httpAddr string) (*App, error) {
+// NewApp 创建双 server 应用，注入 engine 和 session 池装配真实 service impl。
+func NewApp(grpcAddr, httpAddr string, eng *engine.Engine, sessions session.SessionStore) (*App, error) {
 	grpcServer := grpc.NewServer()
 
-	// 注册全部领域 service（显式调用，因各 Server 类型不同）。
-	// 地基阶段全部 unimplemented 占位；issue 0005 后换成注入真实 impl。
-	mmpb.RegisterSongServiceServer(grpcServer, mmpb.UnimplementedSongServiceServer{})
-	mmpb.RegisterPlaylistServiceServer(grpcServer, mmpb.UnimplementedPlaylistServiceServer{})
-	mmpb.RegisterAuthServiceServer(grpcServer, mmpb.UnimplementedAuthServiceServer{})
-	mmpb.RegisterSearchServiceServer(grpcServer, mmpb.UnimplementedSearchServiceServer{})
-	mmpb.RegisterAlbumServiceServer(grpcServer, mmpb.UnimplementedAlbumServiceServer{})
-	mmpb.RegisterArtistServiceServer(grpcServer, mmpb.UnimplementedArtistServiceServer{})
-	mmpb.RegisterRecommendServiceServer(grpcServer, mmpb.UnimplementedRecommendServiceServer{})
-	mmpb.RegisterFMServiceServer(grpcServer, mmpb.UnimplementedFMServiceServer{})
+	// 注册全部领域 service（真实 impl，持有 *engine.Engine）。
+	mmpb.RegisterSongServiceServer(grpcServer, service.NewSongServer(eng))
+	mmpb.RegisterPlaylistServiceServer(grpcServer, service.NewPlaylistServer(eng))
+	mmpb.RegisterAuthServiceServer(grpcServer, service.NewAuthServer(eng, sessions))
+	mmpb.RegisterSearchServiceServer(grpcServer, service.NewSearchServer(eng))
+	mmpb.RegisterAlbumServiceServer(grpcServer, service.NewAlbumServer(eng))
+	mmpb.RegisterArtistServiceServer(grpcServer, service.NewArtistServer(eng))
+	mmpb.RegisterRecommendServiceServer(grpcServer, service.NewRecommendServer(eng))
+	mmpb.RegisterFMServiceServer(grpcServer, service.NewFMServer(eng))
 
 	// 开启 gRPC reflection，grpcurl 可列出并调用全部 RPC（地基阶段验收依赖）。
 	reflection.Register(grpcServer)

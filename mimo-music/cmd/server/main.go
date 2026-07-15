@@ -3,8 +3,8 @@
 // 启动 gRPC server（对外强类型 RPC）+ grpc-gateway（REST 暴露）双 server，
 // 收到 SIGINT/SIGTERM 时优雅关闭。
 //
-// 地基阶段（issue 0001）：service 全部 unimplemented 占位，只验证 proto 契约生成
-// 与双 server 能启动、grpcurl reflection 能连。真实接口实现在 issue 0005 迁移。
+// 地基阶段：engine + session 池用 noop/cache 初始化（不接 Redis），
+// 真实 Redis 接入在后续。gRPC 端口 :3722，gateway HTTP 端口 :3721。
 package main
 
 import (
@@ -15,17 +15,24 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/VOD-Studio/mimo-music/internal/cache"
+	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
+	"github.com/VOD-Studio/mimo-music/internal/netease/session"
 	"github.com/VOD-Studio/mimo-music/internal/server"
 )
 
 // startupCtx 是启动阶段没有请求 ctx 时用的兜底 context。
-// ADR §11 强制 slog.*Context，启动阶段用 background 满足 linter。
 var startupCtx = context.Background()
 
 func main() {
-	// 地基阶段：最小配置，gRPC 与 gateway 端口硬编码。
-	// issue 0005 接入 config + wire 装配后，端口走配置。
-	app, err := server.NewApp(":3722", ":3721")
+	// 地基阶段：engine + session 池用 noop 初始化（不接 Redis）。
+	// 真实接入在后续：WithCache(redis.New(rdb)) + WithSessions(store.NewSessionStore(rdb))。
+	eng := engine.New(
+		engine.WithCache(cache.Noop{}),
+	)
+	sessions := session.NoopStore{}
+
+	app, err := server.NewApp(":3722", ":3721", eng, sessions)
 	if err != nil {
 		slog.ErrorContext(startupCtx, "init server failed", slog.String("error", err.Error()))
 		os.Exit(1)
@@ -47,4 +54,3 @@ func main() {
 
 	slog.InfoContext(startupCtx, "server stopped")
 }
-

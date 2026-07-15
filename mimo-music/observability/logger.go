@@ -2,15 +2,12 @@
 package observability
 
 import (
-	"context"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/lmittmann/tint"
-
-	"github.com/VOD-Studio/mimo-music/provider"
 )
 
 // LevelVar 是全局动态日志等级变量。
@@ -84,56 +81,3 @@ func HandleSIGHUP() {
 	}()
 }
 
-// SlogLogger 是 provider.Logger 的 slog 适配器。
-//
-// 把 provider.Logger 接口桥接到 slog，让核心层不直接依赖 slog。
-type SlogLogger struct {
-	logger *slog.Logger
-}
-
-// NewSlogLogger 用 slog.Logger 创建一个 provider.Logger 实现。
-func NewSlogLogger(l *slog.Logger) provider.Logger {
-	return SlogLogger{logger: l}
-}
-
-// Info 记录信息级日志。
-func (s SlogLogger) Info(msg string, args ...any) {
-	s.logger.Info(msg, args...)
-}
-
-// Debug 记录调试级日志。
-func (s SlogLogger) Debug(msg string, args ...any) {
-	s.logger.Debug(msg, args...)
-}
-
-// Warn 记录警告级日志。
-func (s SlogLogger) Warn(msg string, args ...any) {
-	s.logger.Warn(msg, args...)
-}
-
-// Error 记录错误级日志。
-func (s SlogLogger) Error(msg string, args ...any) {
-	s.logger.Error(msg, args...)
-}
-
-// With 返回带额外属性的子 Logger。
-func (s SlogLogger) With(args ...any) provider.Logger {
-	return SlogLogger{logger: s.logger.With(args...)}
-}
-
-// ContextLogger 从 context 提取带 request_id 的 logger。
-//
-// 中间件在请求开始时用 context 存入 logger，handler/service 通过此函数取出。
-func ContextLogger(ctx context.Context) *slog.Logger {
-	if l, ok := ctx.Value(loggerKey{}).(*slog.Logger); ok {
-		return l
-	}
-	return slog.Default()
-}
-
-// WithLogger 把 logger 存入 context，供下游通过 ContextLogger 取出。
-func WithLogger(ctx context.Context, l *slog.Logger) context.Context {
-	return context.WithValue(ctx, loggerKey{}, l)
-}
-
-type loggerKey struct{}

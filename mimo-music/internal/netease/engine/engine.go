@@ -97,41 +97,126 @@ func New(opts ...Option) *Engine {
 // 不碰 proto 类型，只接收元数据 + 网易云参数，返回原始 JSON。
 // 流程：熔断检查 → withRetry(session选取 → 加密 → transport请求 → 错误映射)。
 func (e *Engine) RawDo(ctx context.Context, meta Meta, params map[string]any) (json.RawMessage, error) {
+	raw, _, err := e.rawDoWithResult(ctx, meta, params)
+	return raw, err
+}
+
+// RawDoWithCookieAndInput 同 RawDoWithCookie，但允许传入 override cookie（auth 接口用）。
+// auth 接口（LoginStatus/Logout）从 proto 请求的 Cookie 字段取 cookie，不走 session 池。
+func (e *Engine) RawDoWithCookieAndInput(ctx context.Context, meta Meta, params map[string]any, cookieOverride string) (json.RawMessage, string, error) {
 	// 熔断检查。
 	if !e.breaker.allow() {
-		return nil, ErrCircuitOpen
+		return nil, "", ErrCircuitOpen
 	}
 
-	// 用闭包局部变量把 doOnce 的结果传出来（withRetry 回调签名是 func() error）。
-	var raw json.RawMessage
+	var (
+		raw       json.RawMessage
+		setCookie string
+	)
 	err := withRetry(ctx, e.retry, func() error {
-		r, callErr := e.doOnce(ctx, meta, params)
+		r, sc, callErr := e.doOnceWithCookie(ctx, meta, params, cookieOverride)
 		if callErr != nil {
 			e.breaker.recordFailure()
 			return callErr
 		}
 		e.breaker.recordSuccess()
 		raw = r
+		setCookie = sc
 		return nil
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return raw, nil
+	return raw, setCookie, nil
+}
+
+// doOnceWithCookie 同 doOnce，但用传入的 cookie 而非从 session 池选取。
+func (e *Engine) doOnceWithCookie(ctx context.Context, meta Meta, params map[string]any, cookie string) (json.RawMessage, string, error) {
+	payload, err := json.Marshal(params)
+	if err != nil {
+		return nil, "", fmt.Errorf("序列化参数失败: %w", err)
+	}
+
+	var (
+		body      []byte
+		setCookie string
+		callErr   error
+	)
+
+	switch meta.Crypto {
+	case CryptoWeAPI:
+		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
+	case CryptoEAPI:
+		encrypted, encErr := EAPIEncrypt(meta.Path, string(payload))
+		if encErr != nil {
+			return nil, "", fmt.Errorf("eapi 加密失败: %w", encErr)
+		}
+		body, _, callErr = e.transport.weapiPost(ctx, meta.Path, encrypted.Params, cookie)
+	case CryptoNone:
+		if meta.Method == "GET" {
+			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie)
+		} else {
+			body, _, callErr = e.transport.postJSON(ctx, "https://music.163.com"+meta.Path, string(payload), cookie)
+		}
+	default:
+		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
+	}
+
+	if callErr != nil {
+		return nil, "", callErr
+	}
+	return json.RawMessage(body), setCookie, nil
+}
+
+// RawDoWithCookie 同 RawDo，但额外返回响应的 Set-Cookie（登录类接口用）。
+// 登录成功后 service 层拿这个 cookie 存入 session 池。
+func (e *Engine) RawDoWithCookie(ctx context.Context, meta Meta, params map[string]any) (json.RawMessage, string, error) {
+	return e.rawDoWithResult(ctx, meta, params)
+}
+
+// rawDoWithResult 是 RawDo / RawDoWithCookie 的共享实现。
+func (e *Engine) rawDoWithResult(ctx context.Context, meta Meta, params map[string]any) (json.RawMessage, string, error) {
+	// 熔断检查。
+	if !e.breaker.allow() {
+		return nil, "", ErrCircuitOpen
+	}
+
+	// 用闭包局部变量把 doOnce 的结果传出来（withRetry 回调签名是 func() error）。
+	var (
+		raw       json.RawMessage
+		setCookie string
+	)
+	err := withRetry(ctx, e.retry, func() error {
+		r, sc, callErr := e.doOnce(ctx, meta, params)
+		if callErr != nil {
+			e.breaker.recordFailure()
+			return callErr
+		}
+		e.breaker.recordSuccess()
+		raw = r
+		setCookie = sc
+		return nil
+	})
+
+	if err != nil {
+		return nil, "", err
+	}
+	return raw, setCookie, nil
 }
 
 // doOnce 执行一次完整调用（不含重试/熔断）：session 选取 → 加密 → transport → 错误映射。
-func (e *Engine) doOnce(ctx context.Context, meta Meta, params map[string]any) (json.RawMessage, error) {
+// 返回 raw JSON + Set-Cookie。
+func (e *Engine) doOnce(ctx context.Context, meta Meta, params map[string]any) (json.RawMessage, string, error) {
 	// session 选取（登录类接口创建 session 时不走这里，直接传 cookie）。
 	cookie := ""
 	if meta.Auth == session.AuthLoggedIn {
 		if e.sessions == nil {
-			return nil, merrors.ErrUnauthorized
+			return nil, "", merrors.ErrUnauthorized
 		}
 		sess, err := e.sessions.GetAvailable(ctx, meta.Auth)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		cookie = sess.Cookie
 	}
@@ -139,35 +224,32 @@ func (e *Engine) doOnce(ctx context.Context, meta Meta, params map[string]any) (
 	// 参数序列化为 JSON。
 	payload, err := json.Marshal(params)
 	if err != nil {
-		return nil, fmt.Errorf("序列化参数失败: %w", err)
+		return nil, "", fmt.Errorf("序列化参数失败: %w", err)
 	}
 
-	var body []byte
-	var callErr error
+	var (
+		body      []byte
+		setCookie string
+		callErr   error
+	)
 
 	switch meta.Crypto {
 	case CryptoWeAPI:
-		// weapi 走 transport.weapiPost。
-		var setCookie string
 		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
-		// 登录类接口返回新 cookie，需保存到 session 池（由 endpoint 层处理，engine 不越界）。
-		_ = setCookie
 	case CryptoEAPI:
 		encrypted, encErr := EAPIEncrypt(meta.Path, string(payload))
 		if encErr != nil {
-			return nil, fmt.Errorf("eapi 加密失败: %w", encErr)
+			return nil, "", fmt.Errorf("eapi 加密失败: %w", encErr)
 		}
 		body, _, callErr = e.transport.weapiPost(ctx, meta.Path, encrypted.Params, cookie)
 	case CryptoNone:
-		// 非加密请求。Method 决定用 GET 还是 POST。
 		if meta.Method == "GET" {
-			query := toQueryValues(params)
-			body, callErr = e.transport.apiGet(ctx, meta.Path, query, cookie)
+			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie)
 		} else {
 			body, _, callErr = e.transport.postJSON(ctx, "https://music.163.com"+meta.Path, string(payload), cookie)
 		}
 	default:
-		body, _, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
+		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
 	}
 
 	if callErr != nil {
@@ -178,10 +260,10 @@ func (e *Engine) doOnce(ctx context.Context, meta Meta, params map[string]any) (
 				e.sessions.ReportFailure(sess.UserID, callErr)
 			}
 		}
-		return nil, callErr
+		return nil, "", callErr
 	}
 
-	return json.RawMessage(body), nil
+	return json.RawMessage(body), setCookie, nil
 }
 
 // isUnauthorized 判断错误是否为登录态失效。
