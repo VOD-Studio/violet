@@ -60,9 +60,9 @@ type rawRecommendPlaylist struct {
 //
 // 每日推荐歌单用 recommend[] 字段，推荐歌单用 result[]，两者结构一致故共用。
 type rawRecommendPlaylistsResponse struct {
-	Code     int                  `json:"code"`     // 业务码
+	Code      int                    `json:"code"`      // 业务码
 	Recommend []rawRecommendPlaylist `json:"recommend"` // 每日推荐歌单（recommend/resource）
-	Result   []rawRecommendPlaylist `json:"result"`   // 推荐歌单（personalized/playlist）
+	Result    []rawRecommendPlaylist `json:"result"`    // 推荐歌单（personalized/playlist）
 }
 
 // DecodeRecommendPlaylists 解析推荐歌单列表响应（兼容 recommend/result 两种字段名）。
@@ -92,13 +92,13 @@ func DecodeRecommendPlaylists(raw json.RawMessage) ([]*mmpb.Playlist, error) {
 
 // rawRecommendNewSong 是推荐新音乐列表项（歌曲嵌在 song 字段下）。
 type rawRecommendNewSong struct {
-	ID    int64   `json:"id"`    // 列表项ID（非歌曲ID）
-	Song  rawSong `json:"song"`  // 实际歌曲信息（网易云嵌套结构）
+	ID   int64   `json:"id"`   // 列表项ID（非歌曲ID）
+	Song rawSong `json:"song"` // 实际歌曲信息（网易云嵌套结构）
 }
 
 // rawRecommendNewSongsResponse 是推荐新音乐的列表响应。
 type rawRecommendNewSongsResponse struct {
-	Code   int                  `json:"code"`   // 业务码
+	Code   int                   `json:"code"`   // 业务码
 	Result []rawRecommendNewSong `json:"result"` // 推荐新音乐列表
 }
 

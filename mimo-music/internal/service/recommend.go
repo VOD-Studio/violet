@@ -5,8 +5,8 @@ import (
 	"context"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
-	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 	recommendendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/recommend"
+	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 )
 
 // RecommendServer 实现 RecommendServiceServer。
