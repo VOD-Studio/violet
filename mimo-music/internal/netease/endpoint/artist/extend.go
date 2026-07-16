@@ -26,6 +26,7 @@ var AllSongs = &engine.Endpoint[*mmpb.AllSongsRequest, *mmpb.AllSongsResponse]{
 		Key: func(r *mmpb.AllSongsRequest) string { return fmt.Sprintf("artist:songs:%d:%d:%d", r.GetArtistId(), r.GetLimit(), r.GetOffset()) },
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.AllSongsResponse { return &mmpb.AllSongsResponse{} },
 	MapRequest: func(req *mmpb.AllSongsRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -33,7 +34,7 @@ var AllSongs = &engine.Endpoint[*mmpb.AllSongsRequest, *mmpb.AllSongsResponse]{
 		}
 		return map[string]any{"id": fmt.Sprintf("%d", req.GetArtistId()), "limit": limit, "offset": req.GetOffset()}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.AllSongsResponse, error) {
+	MapResponse: func(req *mmpb.AllSongsRequest, raw json.RawMessage) (*mmpb.AllSongsResponse, error) {
 		return parseArtistSongs(raw)
 	},
 }
@@ -45,10 +46,11 @@ var TopSongs = &engine.Endpoint[*mmpb.TopSongsRequest, *mmpb.TopSongsResponse]{
 		Key: func(r *mmpb.TopSongsRequest) string { return fmt.Sprintf("artist:top:%d", r.GetArtistId()) },
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.TopSongsResponse { return &mmpb.TopSongsResponse{} },
 	MapRequest: func(req *mmpb.TopSongsRequest) (map[string]any, error) {
 		return map[string]any{"id": fmt.Sprintf("%d", req.GetArtistId())}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.TopSongsResponse, error) {
+	MapResponse: func(req *mmpb.TopSongsRequest, raw json.RawMessage) (*mmpb.TopSongsResponse, error) {
 		resp, err := parseArtistSongs(raw)
 		if err != nil {
 			return nil, err
@@ -64,6 +66,7 @@ var Albums = &engine.Endpoint[*mmpb.AlbumsRequest, *mmpb.AlbumsResponse]{
 		Key: func(r *mmpb.AlbumsRequest) string { return fmt.Sprintf("artist:albums:%d:%d:%d", r.GetArtistId(), r.GetLimit(), r.GetOffset()) },
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.AlbumsResponse { return &mmpb.AlbumsResponse{} },
 	MapRequest: func(req *mmpb.AlbumsRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -71,7 +74,7 @@ var Albums = &engine.Endpoint[*mmpb.AlbumsRequest, *mmpb.AlbumsResponse]{
 		}
 		return map[string]any{"id": fmt.Sprintf("%d", req.GetArtistId()), "limit": limit, "offset": req.GetOffset()}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.AlbumsResponse, error) {
+	MapResponse: func(req *mmpb.AlbumsRequest, raw json.RawMessage) (*mmpb.AlbumsResponse, error) {
 		var resp struct {
 			HotAlbums []struct {
 				ID     int64  `json:"id"`     // 专辑ID
@@ -105,10 +108,11 @@ var Desc = &engine.Endpoint[*mmpb.DescRequest, *mmpb.DescResponse]{
 		Key: func(r *mmpb.DescRequest) string { return fmt.Sprintf("artist:desc:%d", r.GetArtistId()) },
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.DescResponse { return &mmpb.DescResponse{} },
 	MapRequest: func(req *mmpb.DescRequest) (map[string]any, error) {
 		return map[string]any{"id": fmt.Sprintf("%d", req.GetArtistId())}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.DescResponse, error) {
+	MapResponse: func(req *mmpb.DescRequest, raw json.RawMessage) (*mmpb.DescResponse, error) {
 		var resp struct {
 			BriefDesc string `json:"briefDesc"` // 详细描述
 		}
@@ -126,10 +130,11 @@ var Similar = &engine.Endpoint[*mmpb.SimilarRequest, *mmpb.SimilarResponse]{
 		Key: func(r *mmpb.SimilarRequest) string { return fmt.Sprintf("artist:similar:%d", r.GetArtistId()) },
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.SimilarResponse { return &mmpb.SimilarResponse{} },
 	MapRequest: func(req *mmpb.SimilarRequest) (map[string]any, error) {
 		return map[string]any{"artistid": fmt.Sprintf("%d", req.GetArtistId())}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.SimilarResponse, error) {
+	MapResponse: func(req *mmpb.SimilarRequest, raw json.RawMessage) (*mmpb.SimilarResponse, error) {
 		var resp struct {
 			Artists []struct {
 				ID     int64  `json:"id"`        // 歌手ID
@@ -155,10 +160,11 @@ var Fans = &engine.Endpoint[*mmpb.FansRequest, *mmpb.FansResponse]{
 		Key: func(r *mmpb.FansRequest) string { return fmt.Sprintf("artist:fans:%d", r.GetArtistId()) },
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.FansResponse { return &mmpb.FansResponse{} },
 	MapRequest: func(req *mmpb.FansRequest) (map[string]any, error) {
 		return map[string]any{"id": fmt.Sprintf("%d", req.GetArtistId())}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.FansResponse, error) {
+	MapResponse: func(req *mmpb.FansRequest, raw json.RawMessage) (*mmpb.FansResponse, error) {
 		var resp struct {
 			Data struct {
 				FansCount int64 `json:"fansCount"` // 粉丝数
@@ -178,6 +184,7 @@ var TopArtists = &engine.Endpoint[*mmpb.TopArtistsRequest, *mmpb.TopArtistsRespo
 		Key: func(r *mmpb.TopArtistsRequest) string { return fmt.Sprintf("artist:toplist:%d:%d", r.GetLimit(), r.GetOffset()) },
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.TopArtistsResponse { return &mmpb.TopArtistsResponse{} },
 	MapRequest: func(req *mmpb.TopArtistsRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -185,7 +192,7 @@ var TopArtists = &engine.Endpoint[*mmpb.TopArtistsRequest, *mmpb.TopArtistsRespo
 		}
 		return map[string]any{"limit": limit, "offset": req.GetOffset()}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.TopArtistsResponse, error) {
+	MapResponse: func(req *mmpb.TopArtistsRequest, raw json.RawMessage) (*mmpb.TopArtistsResponse, error) {
 		var resp struct {
 			Artists []struct {
 				ID     int64  `json:"id"`        // 歌手ID

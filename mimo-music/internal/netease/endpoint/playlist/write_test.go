@@ -82,3 +82,30 @@ func TestParseCreateResponse_PlaylistField(t *testing.T) {
 	resp := ParseCreateResponse(json.RawMessage(`{"playlist":{"id":888}}`))
 	require.Equal(t, int64(888), resp.PlaylistId)
 }
+
+// TestUpdateNameRequest 更新歌单名入参构造。
+func TestUpdateNameRequest(t *testing.T) {
+	t.Parallel()
+
+	params := UpdateNameRequest(&mmpb.UpdateNameRequest{PlaylistId: 100, Name: "新名字"})
+	require.Equal(t, "100", params["id"])
+	require.Equal(t, "新名字", params["name"])
+}
+
+// TestUpdateDescRequest 更新歌单描述入参构造。
+func TestUpdateDescRequest(t *testing.T) {
+	t.Parallel()
+
+	params := UpdateDescRequest(&mmpb.UpdateDescRequest{PlaylistId: 100, Desc: "新描述"})
+	require.Equal(t, "100", params["id"])
+	require.Equal(t, "新描述", params["desc"])
+}
+
+// TestUpdateTagsRequest 更新歌单标签入参构造。
+func TestUpdateTagsRequest(t *testing.T) {
+	t.Parallel()
+
+	params := UpdateTagsRequest(&mmpb.UpdateTagsRequest{PlaylistId: 100, Tags: "流行;华语"})
+	require.Equal(t, "100", params["id"])
+	require.Equal(t, "流行;华语", params["tags"])
+}

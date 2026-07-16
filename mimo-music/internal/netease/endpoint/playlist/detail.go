@@ -26,6 +26,7 @@ var GetPlaylist = &engine.Endpoint[*mmpb.GetPlaylistRequest, *mmpb.GetPlaylistRe
 		},
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.GetPlaylistResponse { return &mmpb.GetPlaylistResponse{} },
 	MapRequest: func(req *mmpb.GetPlaylistRequest) (map[string]any, error) {
 		return map[string]any{
 			"id": fmt.Sprintf("%d", req.GetPlaylistId()),
@@ -33,7 +34,7 @@ var GetPlaylist = &engine.Endpoint[*mmpb.GetPlaylistRequest, *mmpb.GetPlaylistRe
 			"s":  8,
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.GetPlaylistResponse, error) {
+	MapResponse: func(_ *mmpb.GetPlaylistRequest, raw json.RawMessage) (*mmpb.GetPlaylistResponse, error) {
 		pl, err := model.MapPlaylist(raw)
 		if err != nil {
 			return &mmpb.GetPlaylistResponse{}, err

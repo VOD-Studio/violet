@@ -1,6 +1,6 @@
 // Package engine 的 Execute 端到端缓存测试。
 //
-// 用真实 proto 类型（song detail endpoint）验证 ADR §4.5 接缝 3：
+// 用 httptest mock 网易云 + 真实 proto 类型（song detail endpoint）验证 ADR §4.5 接缝 3：
 // 缓存命中跳过 RawDo、未命中回填、CachePolicy=nil 不缓存。
 package engine_test
 
@@ -9,21 +9,22 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
-	"github.com/VOD-Studio/mimo-music/internal/cache"
 	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 	"github.com/stretchr/testify/require"
 )
 
 // mockNeteaseServer 启动 httptest 模拟网易云，记录被调用次数。
-func mockNeteaseServer(t *testing.T, response string) (*httptest.Server, *int) {
+func mockNeteaseServer(t *testing.T, response string) (*httptest.Server, *atomic.Int32) {
 	t.Helper()
-	calls := 0
+	var calls atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
+		calls.Add(1)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(response))
 	}))
@@ -31,7 +32,7 @@ func mockNeteaseServer(t *testing.T, response string) (*httptest.Server, *int) {
 	return srv, &calls
 }
 
-// makeEndpoint 构造一个最小 endpoint 供测试 Execute 缓存逻辑。
+// makeSongDetailEndpoint 构造一个最小 endpoint 供测试 Execute 缓存逻辑。
 func makeSongDetailEndpoint() *engine.Endpoint[*mmpb.GetSongDetailRequest, *mmpb.GetSongDetailResponse] {
 	return &engine.Endpoint[*mmpb.GetSongDetailRequest, *mmpb.GetSongDetailResponse]{
 		Meta: engine.Meta{
@@ -45,10 +46,11 @@ func makeSongDetailEndpoint() *engine.Endpoint[*mmpb.GetSongDetailRequest, *mmpb
 			},
 			TTL: time.Hour,
 		},
+		NewResp: func() *mmpb.GetSongDetailResponse { return &mmpb.GetSongDetailResponse{} },
 		MapRequest: func(req *mmpb.GetSongDetailRequest) (map[string]any, error) {
 			return map[string]any{"c": `[{"id":` + jsonNumber(req.GetSongId()) + `}]`}, nil
 		},
-		MapResponse: func(raw json.RawMessage) (*mmpb.GetSongDetailResponse, error) {
+		MapResponse: func(_ *mmpb.GetSongDetailRequest, raw json.RawMessage) (*mmpb.GetSongDetailResponse, error) {
 			var resp struct {
 				Code  int `json:"code"`
 				Songs []struct {
@@ -86,53 +88,82 @@ func jsonIntToString(n int64) string {
 	return string(buf)
 }
 
-// TestExecute_CacheMissThenFill 未命中时调用上游并回填缓存。
+// TestExecute_CacheMissThenFill 未命中时调用上游、回填缓存；第二次命中缓存跳过上游。
 func TestExecute_CacheMissThenFill(t *testing.T) {
 	t.Parallel()
 
-	c := &countingCache{inner: cache.Noop{}}
-	eng := engine.New(engine.WithCache(c))
+	// mock 网易云返回固定歌曲详情（注意 code 必须 200，否则被 errors.go 判失败）。
+	srv, upstreamCalls := mockNeteaseServer(t, `{"code":200,"songs":[{"id":123,"name":"海阔天空"}]}`)
+	c := &countingCache{}
+	eng := engine.New(engine.WithCache(c), engine.WithBaseURL(srv.URL))
 	ep := makeSongDetailEndpoint()
+	req := &mmpb.GetSongDetailRequest{SongId: 123}
 
-	resp, err := engine.Execute(eng, context.Background(), ep, &mmpb.GetSongDetailRequest{SongId: 123})
-	// 上游不可达（没 mock），但这验证了缓存逻辑路径——Get 被调用。
-	_ = resp
-	_ = err
-	// 未命中时 cache.Get 被调一次。
-	require.Equal(t, 1, c.gets, "未命中时应调一次 Get")
+	// 第一次：未命中 → 调上游 → 回填。
+	resp, err := engine.Execute(eng, context.Background(), ep, req)
+	require.NoError(t, err)
+	require.NotNil(t, resp.Song, "首次请求应返回歌曲")
+	require.Equal(t, "海阔天空", resp.Song.Name)
+	require.Equal(t, int32(1), c.gets, "首次应查一次缓存")
+	require.Equal(t, int32(1), c.sets, "首次应回填一次缓存")
+	require.Equal(t, int32(1), upstreamCalls.Load(), "首次应调一次上游")
+
+	// 第二次：命中缓存 → 跳过上游（calls 不增加）。
+	resp2, err := engine.Execute(eng, context.Background(), ep, req)
+	require.NoError(t, err)
+	require.NotNil(t, resp2.Song, "缓存命中应返回歌曲")
+	require.Equal(t, "海阔天空", resp2.Song.Name, "缓存命中应返回相同结果")
+	require.Equal(t, int32(1), upstreamCalls.Load(), "缓存命中应跳过上游，calls 不增加")
 }
 
-// countingCache 包装 Cache 计数 Get/Set 调用次数。
+// countingCache 是带计数的内存 Cache，验证 Execute 的缓存命中/回填行为。
+// 用 map 存数据（不是 Noop——Noop 永远 miss，无法验证命中路径）。
 type countingCache struct {
-	inner cache.Noop
-	gets  int
-	sets  int
+	mu    sync.Mutex
+	store map[string][]byte
+	gets  int32
+	sets  int32
 }
 
-func (c *countingCache) Get(ctx context.Context, key string) ([]byte, bool, error) {
+func (c *countingCache) Get(_ context.Context, key string) ([]byte, bool, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.gets++
-	return c.inner.Get(ctx, key)
+	v, ok := c.store[key]
+	return v, ok, nil
 }
 
-func (c *countingCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+func (c *countingCache) Set(_ context.Context, key string, value []byte, _ time.Duration) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.sets++
-	return c.inner.Set(ctx, key, value, ttl)
+	if c.store == nil {
+		c.store = make(map[string][]byte)
+	}
+	c.store[key] = value
+	return nil
 }
 
-func (c *countingCache) Delete(ctx context.Context, key string) error {
-	return c.inner.Delete(ctx, key)
+func (c *countingCache) Delete(_ context.Context, key string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.store, key)
+	return nil
 }
 
 // TestExecute_NilCachePolicy CachePolicy=nil 时不查不写缓存。
 func TestExecute_NilCachePolicy(t *testing.T) {
 	t.Parallel()
 
-	c := &countingCache{inner: cache.Noop{}}
-	eng := engine.New(engine.WithCache(c))
+	srv, upstreamCalls := mockNeteaseServer(t, `{"code":200,"songs":[{"id":1,"name":"歌"}]}`)
+	c := &countingCache{}
+	eng := engine.New(engine.WithCache(c), engine.WithBaseURL(srv.URL))
 	ep := makeSongDetailEndpoint()
 	ep.Cache = nil // 不缓存
 
-	_, _ = engine.Execute(eng, context.Background(), ep, &mmpb.GetSongDetailRequest{SongId: 1})
-	require.Equal(t, 0, c.gets, "CachePolicy=nil 不应查缓存")
-	require.Equal(t, 0, c.sets, "CachePolicy=nil 不应写缓存")
+	_, err := engine.Execute(eng, context.Background(), ep, &mmpb.GetSongDetailRequest{SongId: 1})
+	require.NoError(t, err)
+	require.Equal(t, int32(0), c.gets, "CachePolicy=nil 不应查缓存")
+	require.Equal(t, int32(0), c.sets, "CachePolicy=nil 不应写缓存")
+	require.Equal(t, int32(1), upstreamCalls.Load(), "CachePolicy=nil 仍应调上游")
 }

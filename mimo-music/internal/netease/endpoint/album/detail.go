@@ -26,10 +26,11 @@ var GetAlbum = &engine.Endpoint[*mmpb.GetAlbumRequest, *mmpb.GetAlbumResponse]{
 		},
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.GetAlbumResponse { return &mmpb.GetAlbumResponse{} },
 	MapRequest: func(req *mmpb.GetAlbumRequest) (map[string]any, error) {
 		return map[string]any{"id": fmt.Sprintf("%d", req.GetAlbumId())}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.GetAlbumResponse, error) {
+	MapResponse: func(req *mmpb.GetAlbumRequest, raw json.RawMessage) (*mmpb.GetAlbumResponse, error) {
 		a, songs, err := model.DecodeAlbumDetail(raw)
 		if err != nil {
 			return &mmpb.GetAlbumResponse{}, err

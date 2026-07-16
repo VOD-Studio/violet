@@ -127,8 +127,10 @@ message Playlist {
   int32 track_count = 4;
   // 创建者信息。
   User creator = 5;
-  // 歌单内歌曲列表。
+  // 歌单内歌曲列表（列表/浏览场景留空）。
   repeated Song songs = 6;
+  // 播放数。
+  int64 play_count = 7;
 }
 
 // User 是用户实体（简要）。被歌单创建者、用户模块等复用。
@@ -168,7 +170,7 @@ message HighQualityRequest {
 // HighQuality 响应。
 message HighQualityResponse {
   // 精品歌单列表。
-  repeated SearchPlaylist playlists = 1;
+  repeated Playlist playlists = 1;
   // 总数。
   int32 total = 2;
 }
@@ -224,7 +226,7 @@ message BrowseHotRequest {
 // BrowseHot 响应。
 message BrowseHotResponse {
   // 热门歌单列表。
-  repeated SearchPlaylist playlists = 1;
+  repeated Playlist playlists = 1;
   // 总数。
   int32 total = 2;
 }

@@ -16,7 +16,7 @@ import (
 )
 
 // Detail 是获取歌曲详情的接口声明。
-// Req 用指针（gRPC 天然传指针），Resp 用值（Execute 序列化用 new(Resp) 构造）。
+// Req/Resp 都用 proto 生成的指针类型（gRPC 天然传指针）。
 var Detail = &engine.Endpoint[*mmpb.GetSongDetailRequest, *mmpb.GetSongDetailResponse]{
 	Meta: engine.Meta{
 		Path:   "/weapi/v3/song/detail",
@@ -30,6 +30,7 @@ var Detail = &engine.Endpoint[*mmpb.GetSongDetailRequest, *mmpb.GetSongDetailRes
 		},
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.GetSongDetailResponse { return &mmpb.GetSongDetailResponse{} },
 	MapRequest: func(req *mmpb.GetSongDetailRequest) (map[string]any, error) {
 		idStr := fmt.Sprintf("%d", req.GetSongId())
 		return map[string]any{
@@ -37,7 +38,7 @@ var Detail = &engine.Endpoint[*mmpb.GetSongDetailRequest, *mmpb.GetSongDetailRes
 			"ids": fmt.Sprintf("[%s]", idStr),
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.GetSongDetailResponse, error) {
+	MapResponse: func(req *mmpb.GetSongDetailRequest, raw json.RawMessage) (*mmpb.GetSongDetailResponse, error) {
 		songs, err := model.DecodeSongDetail(raw)
 		if err != nil {
 			return &mmpb.GetSongDetailResponse{}, err

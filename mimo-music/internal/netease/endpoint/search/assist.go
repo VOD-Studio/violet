@@ -25,10 +25,11 @@ var Suggest = &engine.Endpoint[*mmpb.SuggestRequest, *mmpb.SuggestResponse]{
 		},
 		TTL: 10 * time.Minute,
 	},
+	NewResp: func() *mmpb.SuggestResponse { return &mmpb.SuggestResponse{} },
 	MapRequest: func(req *mmpb.SuggestRequest) (map[string]any, error) {
 		return map[string]any{"s": req.GetKeyword()}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.SuggestResponse, error) {
+	MapResponse: func(req *mmpb.SuggestRequest, raw json.RawMessage) (*mmpb.SuggestResponse, error) {
 		var resp struct {
 			Result struct {
 				Songs     []struct{ Name string `json:"name"` } `json:"songs"`
@@ -69,10 +70,11 @@ var Hot = &engine.Endpoint[*mmpb.HotRequest, *mmpb.HotResponse]{
 		Key: func(*mmpb.HotRequest) string { return "search:hot" },
 		TTL: 10 * time.Minute,
 	},
+	NewResp: func() *mmpb.HotResponse { return &mmpb.HotResponse{} },
 	MapRequest: func(*mmpb.HotRequest) (map[string]any, error) {
 		return map[string]any{"type": 1111}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.HotResponse, error) {
+	MapResponse: func(req *mmpb.HotRequest, raw json.RawMessage) (*mmpb.HotResponse, error) {
 		var resp struct {
 			Result []struct {
 				SearchWord string `json:"searchWord"`
@@ -105,10 +107,11 @@ var HotDetail = &engine.Endpoint[*mmpb.HotDetailRequest, *mmpb.HotDetailResponse
 		Key: func(*mmpb.HotDetailRequest) string { return "search:hot:detail" },
 		TTL: 10 * time.Minute,
 	},
+	NewResp: func() *mmpb.HotDetailResponse { return &mmpb.HotDetailResponse{} },
 	MapRequest: func(*mmpb.HotDetailRequest) (map[string]any, error) {
 		return map[string]any{}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.HotDetailResponse, error) {
+	MapResponse: func(req *mmpb.HotDetailRequest, raw json.RawMessage) (*mmpb.HotDetailResponse, error) {
 		var resp struct {
 			Data []struct {
 				SearchWord string `json:"searchWord"`
@@ -144,10 +147,11 @@ var DefaultKeyword = &engine.Endpoint[*mmpb.DefaultKeywordRequest, *mmpb.Default
 		Key: func(*mmpb.DefaultKeywordRequest) string { return "search:default" },
 		TTL: time.Hour,
 	},
+	NewResp: func() *mmpb.DefaultKeywordResponse { return &mmpb.DefaultKeywordResponse{} },
 	MapRequest: func(*mmpb.DefaultKeywordRequest) (map[string]any, error) {
 		return map[string]any{}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.DefaultKeywordResponse, error) {
+	MapResponse: func(req *mmpb.DefaultKeywordRequest, raw json.RawMessage) (*mmpb.DefaultKeywordResponse, error) {
 		var resp struct {
 			Data struct {
 				Keyword string `json:"realkeyword"`

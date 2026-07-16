@@ -20,6 +20,7 @@ var HighQuality = &engine.Endpoint[*mmpb.HighQualityRequest, *mmpb.HighQualityRe
 	Cache:  browseCache("playlist:highquality", func(r *mmpb.HighQualityRequest) string {
 		return fmt.Sprintf("%s:%s:%d:%d", "playlist:highquality", r.GetCat(), r.GetLimit(), r.GetOffset())
 	}),
+	NewResp:    func() *mmpb.HighQualityResponse { return &mmpb.HighQualityResponse{} },
 	MapRequest: func(req *mmpb.HighQualityRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -34,8 +35,9 @@ var HighQuality = &engine.Endpoint[*mmpb.HighQualityRequest, *mmpb.HighQualityRe
 var HighQualityTags = &engine.Endpoint[*mmpb.HighQualityTagsRequest, *mmpb.HighQualityTagsResponse]{
 	Meta:  weapiMeta("/weapi/playlist/highquality/tags"),
 	Cache: browseCacheConst[*mmpb.HighQualityTagsRequest]("playlist:hq:tags"),
+	NewResp:    func() *mmpb.HighQualityTagsResponse { return &mmpb.HighQualityTagsResponse{} },
 	MapRequest: func(*mmpb.HighQualityTagsRequest) (map[string]any, error) { return map[string]any{}, nil },
-	MapResponse: func(raw json.RawMessage) (*mmpb.HighQualityTagsResponse, error) {
+	MapResponse: func(_ *mmpb.HighQualityTagsRequest, raw json.RawMessage) (*mmpb.HighQualityTagsResponse, error) {
 		var resp struct {
 			Tags []struct {
 				Name     string `json:"name"`     // 标签名
@@ -57,8 +59,9 @@ var HighQualityTags = &engine.Endpoint[*mmpb.HighQualityTagsRequest, *mmpb.HighQ
 var CatList = &engine.Endpoint[*mmpb.CatListRequest, *mmpb.CatListResponse]{
 	Meta:  weapiMeta("/weapi/playlist/catalogue"),
 	Cache: browseCacheConst[*mmpb.CatListRequest]("playlist:catlist"),
+	NewResp:    func() *mmpb.CatListResponse { return &mmpb.CatListResponse{} },
 	MapRequest: func(*mmpb.CatListRequest) (map[string]any, error) { return map[string]any{}, nil },
-	MapResponse: func(raw json.RawMessage) (*mmpb.CatListResponse, error) {
+	MapResponse: func(_ *mmpb.CatListRequest, raw json.RawMessage) (*mmpb.CatListResponse, error) {
 		var resp struct {
 			Sub []struct {
 				Name          string `json:"name"`          // 分类名
@@ -85,6 +88,7 @@ var BrowseHot = &engine.Endpoint[*mmpb.BrowseHotRequest, *mmpb.BrowseHotResponse
 	Cache: browseCache("playlist:hot", func(r *mmpb.BrowseHotRequest) string {
 		return fmt.Sprintf("%s:%s:%s:%d:%d", "playlist:hot", r.GetCat(), r.GetOrder(), r.GetLimit(), r.GetOffset())
 	}),
+	NewResp:    func() *mmpb.BrowseHotResponse { return &mmpb.BrowseHotResponse{} },
 	MapRequest: func(req *mmpb.BrowseHotRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -108,6 +112,7 @@ var Subscribers = &engine.Endpoint[*mmpb.SubscribersRequest, *mmpb.SubscribersRe
 		},
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.SubscribersResponse { return &mmpb.SubscribersResponse{} },
 	MapRequest: func(req *mmpb.SubscribersRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -115,7 +120,7 @@ var Subscribers = &engine.Endpoint[*mmpb.SubscribersRequest, *mmpb.SubscribersRe
 		}
 		return map[string]any{"id": fmt.Sprintf("%d", req.GetPlaylistId()), "limit": limit, "offset": req.GetOffset()}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.SubscribersResponse, error) {
+	MapResponse: func(_ *mmpb.SubscribersRequest, raw json.RawMessage) (*mmpb.SubscribersResponse, error) {
 		var resp struct {
 			Subscribers []struct {
 				UserID    int64  `json:"userId"`   // 用户ID
@@ -145,6 +150,7 @@ var AllTracks = &engine.Endpoint[*mmpb.AllTracksRequest, *mmpb.AllTracksResponse
 		},
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.AllTracksResponse { return &mmpb.AllTracksResponse{} },
 	MapRequest: func(req *mmpb.AllTracksRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -154,7 +160,7 @@ var AllTracks = &engine.Endpoint[*mmpb.AllTracksRequest, *mmpb.AllTracksResponse
 			"id": fmt.Sprintf("%d", req.GetPlaylistId()), "n": limit, "s": 8,
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.AllTracksResponse, error) {
+	MapResponse: func(_ *mmpb.AllTracksRequest, raw json.RawMessage) (*mmpb.AllTracksResponse, error) {
 		// 复用 model.MapPlaylist 的解析（歌单详情里含 tracks）。
 		pl, err := model.MapPlaylist(raw)
 		if err != nil {

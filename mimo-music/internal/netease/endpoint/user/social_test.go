@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +15,7 @@ func TestFollows_MapResponse(t *testing.T) {
 
 	fixture := `{"follow":[{"userId":1,"nickname":"alice","avatarUrl":"http://a.jpg","followeds":50,"follows":10}]}`
 
-	resp, err := Follows.MapResponse(json.RawMessage(fixture))
+	resp, err := Follows.MapResponse(&mmpb.FollowsRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Follows, 1)
 	require.Equal(t, "alice", resp.Follows[0].Nickname)
@@ -27,7 +28,7 @@ func TestFolloweds_MapResponse(t *testing.T) {
 
 	fixture := `{"followeds":[{"userId":2,"nickname":"bob","avatarUrl":"http://b.jpg","followeds":5,"follows":20}],"more":false}`
 
-	resp, err := Followeds.MapResponse(json.RawMessage(fixture))
+	resp, err := Followeds.MapResponse(&mmpb.FollowedsRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Followeds, 1)
 	require.Equal(t, "bob", resp.Followeds[0].Nickname)
@@ -39,7 +40,7 @@ func TestEvents_MapResponse(t *testing.T) {
 
 	fixture := `{"events":[{"id":100,"userId":1,"type":5,"json":"{\"song\":\"test\"}","showTime":1700000000000}],"more":true,"lasttime":100}`
 
-	resp, err := Events.MapResponse(json.RawMessage(fixture))
+	resp, err := Events.MapResponse(&mmpb.EventsRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Events, 1)
 	require.Equal(t, int64(100), resp.Events[0].EventId)
@@ -53,7 +54,7 @@ func TestRecord_MapResponse(t *testing.T) {
 
 	fixture := `{"weekData":[{"playCount":10,"song":{"id":1,"name":"歌A"}}],"allData":[]}`
 
-	resp, err := Record.MapResponse(json.RawMessage(fixture))
+	resp, err := Record.MapResponse(&mmpb.RecordRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Records, 1)
 	require.Equal(t, int32(10), resp.Records[0].PlayCount)
@@ -66,7 +67,7 @@ func TestLevel_MapResponse(t *testing.T) {
 
 	fixture := `{"data":{"level":8,"now":5000,"next":8000}}`
 
-	resp, err := Level.MapResponse(json.RawMessage(fixture))
+	resp, err := Level.MapResponse(&mmpb.LevelRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Equal(t, int32(8), resp.Level.Level)
 	require.Equal(t, int64(5000), resp.Level.Now)

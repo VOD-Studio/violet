@@ -4,6 +4,7 @@ package netease.music.v1;
 
 import "google/api/annotations.proto";
 import "netease/music/v1/song.proto";
+import "netease/music/v1/playlist.proto";
 import "netease/music/v1/search.proto";
 
 option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
@@ -185,10 +186,10 @@ message UserPlaylistRequest {
   int32 offset = 4;
 }
 
-// UserPlaylist 响应（复用 playlist.proto 的 User + 精简歌单）。
+// UserPlaylist 响应（复用 playlist.proto 的完整 Playlist，含 creator 供 filter 判断）。
 message UserPlaylistResponse {
   // 歌单列表。
-  repeated SearchPlaylist playlists = 1;
+  repeated Playlist playlists = 1;
   // 总数。
   int32 total = 2;
 }

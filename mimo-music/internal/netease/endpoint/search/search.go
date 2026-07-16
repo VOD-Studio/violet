@@ -16,7 +16,7 @@ import (
 
 // Search 是搜索接口的声明。
 //
-// MapRequest 透传 type 到上游，MapResponse 按 type 分支调对应解析逻辑。
+// MapRequest 透传 type 到上游，MapResponse 按请求 type 分支调对应解析逻辑。
 // cache key 含 type 维度，不同 type 不串缓存。
 var Search = &engine.Endpoint[*mmpb.SearchRequest, *mmpb.SearchResponse]{
 	Meta: engine.Meta{
@@ -31,6 +31,7 @@ var Search = &engine.Endpoint[*mmpb.SearchRequest, *mmpb.SearchResponse]{
 		},
 		TTL: 10 * time.Minute,
 	},
+	NewResp: func() *mmpb.SearchResponse { return &mmpb.SearchResponse{} },
 	MapRequest: func(req *mmpb.SearchRequest) (map[string]any, error) {
 		limit := int(req.GetLimit())
 		if limit <= 0 {
@@ -51,65 +52,88 @@ var Search = &engine.Endpoint[*mmpb.SearchRequest, *mmpb.SearchResponse]{
 	MapResponse: mapSearchResponse,
 }
 
-// mapSearchResponse 按 SearchType 分支解析网易云搜索响应。
-func mapSearchResponse(raw json.RawMessage) (*mmpb.SearchResponse, error) {
-	// 网易云搜索响应外层是 {result: {...}, code: 200}。
-	// 不同 type 的 result 内部字段不同，需要先解析出 type 再分支。
-	// 但 result 里有 type 字段吗？没有——type 只在请求里。所以我们从 raw 里无法得知 type。
-	// 解决：endpoint 的 MapResponse 签名不带 type，但我们可以从 result 的字段存在性推断。
-	// 网易云单曲搜返回 result.songs，专辑搜返回 result.albums，以此类推。
-	resp := &mmpb.SearchResponse{}
-
+// mapSearchResponse 按请求的 SearchType 分发到对应类型的解析。
+//
+// 网易云搜索响应外层是 {result: {...}, code: 200}，不同 type 的 result 内部字段不同。
+// type 只存在于请求里（响应不回传），因此按请求 type 确定地分发，不做字段嗅探。
+func mapSearchResponse(req *mmpb.SearchRequest, raw json.RawMessage) (*mmpb.SearchResponse, error) {
 	var r struct {
 		Result json.RawMessage `json:"result"`
 	}
 	if err := json.Unmarshal(raw, &r); err != nil {
-		return resp, fmt.Errorf("解析搜索结果失败: %w", err)
+		return &mmpb.SearchResponse{}, fmt.Errorf("解析搜索结果失败: %w", err)
 	}
 	if len(r.Result) == 0 {
-		return resp, nil
+		return &mmpb.SearchResponse{}, nil
 	}
 
-	// 把 result 解析成 map 判断哪些字段存在。
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(r.Result, &fields); err != nil {
-		return resp, fmt.Errorf("解析搜索结果字段失败: %w", err)
-	}
+	resp := &mmpb.SearchResponse{Total: countFromType(req.GetType(), r.Result)}
 
-	resp.Total = countFromFields(fields)
-
-	// 按存在的字段填充对应类型。
-	if songs, ok := fields["songs"]; ok {
-		resp.Songs = parseSearchSongs(songs)
+	// 按请求 type 确定地解析对应字段。
+	switch req.GetType() {
+	case mmpb.SearchType_SEARCH_TYPE_SONG:
+		resp.Songs = parseSearchSongs(jsonPath(r.Result, "songs"))
+	case mmpb.SearchType_SEARCH_TYPE_ALBUM:
+		resp.Albums = parseSearchAlbums(jsonPath(r.Result, "albums"))
+	case mmpb.SearchType_SEARCH_TYPE_ARTIST:
+		resp.Artists = parseSearchArtists(jsonPath(r.Result, "artists"))
+	case mmpb.SearchType_SEARCH_TYPE_PLAYLIST:
+		resp.Playlists = parseSearchPlaylists(jsonPath(r.Result, "playlists"))
+	case mmpb.SearchType_SEARCH_TYPE_USER:
+		resp.Users = parseSearchUsers(jsonPath(r.Result, "userprofiles"))
+	case mmpb.SearchType_SEARCH_TYPE_MV:
+		resp.Mvs = parseSearchMVs(jsonPath(r.Result, "mvs"))
+	case mmpb.SearchType_SEARCH_TYPE_ALL:
+		// 综合搜索：各类型字段都填充。
+		resp.Songs = parseSearchSongs(jsonPath(r.Result, "songs"))
+		resp.Albums = parseSearchAlbums(jsonPath(r.Result, "albums"))
+		resp.Artists = parseSearchArtists(jsonPath(r.Result, "artists"))
+		resp.Playlists = parseSearchPlaylists(jsonPath(r.Result, "playlists"))
+		resp.Users = parseSearchUsers(jsonPath(r.Result, "userprofiles"))
+		resp.Mvs = parseSearchMVs(jsonPath(r.Result, "mvs"))
 	}
-	if albums, ok := fields["albums"]; ok {
-		resp.Albums = parseSearchAlbums(albums)
-	}
-	if artists, ok := fields["artists"]; ok {
-		resp.Artists = parseSearchArtists(artists)
-	}
-	if playlists, ok := fields["playlists"]; ok {
-		resp.Playlists = parseSearchPlaylists(playlists)
-	}
-	if users, ok := fields["userprofiles"]; ok {
-		resp.Users = parseSearchUsers(users)
-	}
-	if mvs, ok := fields["mvs"]; ok {
-		resp.Mvs = parseSearchMVs(mvs)
-	}
-
 	return resp, nil
 }
 
-// countFromFields 从 result 提取总数（不同 type 字段名不同：songCount/albumCount/artistCount）。
-func countFromFields(fields map[string]json.RawMessage) int32 {
-	for _, key := range []string{"songCount", "albumCount", "artistCount", "playlistCount", "userprofileCount", "mvCount"} {
-		if raw, ok := fields[key]; ok {
-			var n int32
-			if json.Unmarshal(raw, &n) == nil {
-				return n
-			}
-		}
+// jsonPath 从对象里取出指定字段的 raw JSON，字段缺失返回 nil。
+func jsonPath(obj json.RawMessage, key string) json.RawMessage {
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(obj, &fields) != nil {
+		return nil
+	}
+	return fields[key]
+}
+
+// countFromType 按搜索 type 从 result 提取总数。
+// 网易云各 type 的计数字段名不同：songCount/albumCount/artistCount/playlistCount/userprofileCount/mvCount。
+func countFromType(t mmpb.SearchType, result json.RawMessage) int32 {
+	var key string
+	switch t {
+	case mmpb.SearchType_SEARCH_TYPE_SONG:
+		key = "songCount"
+	case mmpb.SearchType_SEARCH_TYPE_ALBUM:
+		key = "albumCount"
+	case mmpb.SearchType_SEARCH_TYPE_ARTIST:
+		key = "artistCount"
+	case mmpb.SearchType_SEARCH_TYPE_PLAYLIST:
+		key = "playlistCount"
+	case mmpb.SearchType_SEARCH_TYPE_USER:
+		key = "userprofileCount"
+	case mmpb.SearchType_SEARCH_TYPE_MV:
+		key = "mvCount"
+	case mmpb.SearchType_SEARCH_TYPE_ALL:
+		// 综合搜索用单曲计数（网易云综合结果 songCount 总存在）。
+		key = "songCount"
+	default:
+		return 0
+	}
+	raw := jsonPath(result, key)
+	if raw == nil {
+		return 0
+	}
+	var n int32
+	if json.Unmarshal(raw, &n) == nil {
+		return n
 	}
 	return 0
 }

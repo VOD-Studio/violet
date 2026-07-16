@@ -25,6 +25,7 @@ var Lyric = &engine.Endpoint[*mmpb.GetLyricRequest, *mmpb.GetLyricResponse]{
 		},
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.GetLyricResponse { return &mmpb.GetLyricResponse{} },
 	MapRequest: func(req *mmpb.GetLyricRequest) (map[string]any, error) {
 		return map[string]any{
 			"id": fmt.Sprintf("%d", req.GetSongId()),
@@ -33,7 +34,7 @@ var Lyric = &engine.Endpoint[*mmpb.GetLyricRequest, *mmpb.GetLyricResponse]{
 			"tv": -1,
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.GetLyricResponse, error) {
+	MapResponse: func(req *mmpb.GetLyricRequest, raw json.RawMessage) (*mmpb.GetLyricResponse, error) {
 		var resp struct {
 			Lrc    struct{ Lyric string `json:"lyric"` }    `json:"lrc"`
 			Tlyric struct{ Lyric string `json:"lyric"` }    `json:"tlyric"`

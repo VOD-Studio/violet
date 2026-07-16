@@ -25,6 +25,7 @@ var Follows = &engine.Endpoint[*mmpb.FollowsRequest, *mmpb.FollowsResponse]{
 		},
 		TTL: 24 * time.Hour,
 	},
+	NewResp:    func() *mmpb.FollowsResponse { return &mmpb.FollowsResponse{} },
 	MapRequest: func(req *mmpb.FollowsRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -47,6 +48,7 @@ var Followeds = &engine.Endpoint[*mmpb.FollowedsRequest, *mmpb.FollowedsResponse
 		},
 		TTL: 24 * time.Hour,
 	},
+	NewResp:    func() *mmpb.FollowedsResponse { return &mmpb.FollowedsResponse{} },
 	MapRequest: func(req *mmpb.FollowedsRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -72,6 +74,7 @@ var Events = &engine.Endpoint[*mmpb.EventsRequest, *mmpb.EventsResponse]{
 		},
 		TTL: 10 * time.Minute,
 	},
+	NewResp: func() *mmpb.EventsResponse { return &mmpb.EventsResponse{} },
 	MapRequest: func(req *mmpb.EventsRequest) (map[string]any, error) {
 		limit := req.GetLimit()
 		if limit <= 0 {
@@ -82,7 +85,7 @@ var Events = &engine.Endpoint[*mmpb.EventsRequest, *mmpb.EventsResponse]{
 			"lasttime": req.GetLastEventId(),
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.EventsResponse, error) {
+	MapResponse: func(_ *mmpb.EventsRequest, raw json.RawMessage) (*mmpb.EventsResponse, error) {
 		var resp struct {
 			Events []struct {
 				ID        int64  `json:"id"`        // 动态ID
@@ -120,6 +123,7 @@ var Record = &engine.Endpoint[*mmpb.RecordRequest, *mmpb.RecordResponse]{
 		},
 		TTL: 10 * time.Minute,
 	},
+	NewResp: func() *mmpb.RecordResponse { return &mmpb.RecordResponse{} },
 	MapRequest: func(req *mmpb.RecordRequest) (map[string]any, error) {
 		return map[string]any{
 			"uid": fmt.Sprintf("%d", req.GetUserId()),
@@ -139,10 +143,11 @@ var Level = &engine.Endpoint[*mmpb.LevelRequest, *mmpb.LevelResponse]{
 		Key: func(req *mmpb.LevelRequest) string { return fmt.Sprintf("user:level:%d", req.GetUserId()) },
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.LevelResponse { return &mmpb.LevelResponse{} },
 	MapRequest: func(req *mmpb.LevelRequest) (map[string]any, error) {
 		return map[string]any{"userId": fmt.Sprintf("%d", req.GetUserId())}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.LevelResponse, error) {
+	MapResponse: func(_ *mmpb.LevelRequest, raw json.RawMessage) (*mmpb.LevelResponse, error) {
 		var resp struct {
 			Data struct {
 				Level int   `json:"level"` // 当前等级

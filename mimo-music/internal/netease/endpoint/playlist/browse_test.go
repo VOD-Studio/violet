@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +15,7 @@ func TestHighQuality_MapResponse(t *testing.T) {
 
 	fixture := `{"total":1,"playlists":[{"id":1,"name":"精品A","coverImgUrl":"http://c.jpg","playCount":999,"trackCount":30,"creator":{"nickname":"dj"}}]}`
 
-	resp, err := HighQuality.MapResponse(json.RawMessage(fixture))
+	resp, err := HighQuality.MapResponse(&mmpb.HighQualityRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Playlists, 1)
 	require.Equal(t, "精品A", resp.Playlists[0].Name)
@@ -27,7 +28,7 @@ func TestHighQualityTags_MapResponse(t *testing.T) {
 
 	fixture := `{"tags":[{"name":"华语","category":"语种"},{"name":"流行","category":"风格"}]}`
 
-	resp, err := HighQualityTags.MapResponse(json.RawMessage(fixture))
+	resp, err := HighQualityTags.MapResponse(&mmpb.HighQualityTagsRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Tags, 2)
 	require.Equal(t, "华语", resp.Tags[0].Name)
@@ -39,7 +40,7 @@ func TestCatList_MapResponse(t *testing.T) {
 
 	fixture := `{"sub":[{"name":"华语","resourceCount":1000,"type":1},{"name":"流行","resourceCount":2000,"type":2}]}`
 
-	resp, err := CatList.MapResponse(json.RawMessage(fixture))
+	resp, err := CatList.MapResponse(&mmpb.CatListRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Categories, 2)
 	require.Equal(t, int64(1000), resp.Categories[0].ResourceCount)
@@ -51,7 +52,7 @@ func TestBrowseHot_MapResponse(t *testing.T) {
 
 	fixture := `{"total":1,"playlists":[{"id":5,"name":"热门B","coverImgUrl":"http://h.jpg","playCount":500,"trackCount":20,"creator":{"nickname":"u"}}]}`
 
-	resp, err := BrowseHot.MapResponse(json.RawMessage(fixture))
+	resp, err := BrowseHot.MapResponse(&mmpb.BrowseHotRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Playlists, 1)
 	require.Equal(t, "热门B", resp.Playlists[0].Name)
@@ -63,7 +64,7 @@ func TestSubscribers_MapResponse(t *testing.T) {
 
 	fixture := `{"subscribers":[{"userId":1,"nickname":"alice","avatarUrl":"http://a.jpg"},{"userId":2,"nickname":"bob","avatarUrl":"http://b.jpg"}]}`
 
-	resp, err := Subscribers.MapResponse(json.RawMessage(fixture))
+	resp, err := Subscribers.MapResponse(&mmpb.SubscribersRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Subscribers, 2)
 	require.Equal(t, "alice", resp.Subscribers[0].Nickname)

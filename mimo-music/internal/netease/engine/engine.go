@@ -69,6 +69,11 @@ func WithTimeout(d time.Duration) Option {
 	return func(e *Engine) { e.transport = newTransport(d) }
 }
 
+// WithBaseURL 覆盖网易云 API 基础地址（测试用，指向 httptest server）。
+func WithBaseURL(base string) Option {
+	return func(e *Engine) { e.transport = e.transport.withBaseURL(base) }
+}
+
 // WithSessions 注入 SessionStore。
 func WithSessions(s session.SessionStore) Option {
 	return func(e *Engine) { e.sessions = s }
@@ -157,7 +162,7 @@ func (e *Engine) doOnceWithCookie(ctx context.Context, meta Meta, params map[str
 		if meta.Method == "GET" {
 			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie)
 		} else {
-			body, _, callErr = e.transport.postJSON(ctx, "https://music.163.com"+meta.Path, string(payload), cookie)
+			body, _, callErr = e.transport.postJSON(ctx, e.transport.baseURL+meta.Path, string(payload), cookie)
 		}
 	default:
 		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
@@ -246,7 +251,7 @@ func (e *Engine) doOnce(ctx context.Context, meta Meta, params map[string]any) (
 		if meta.Method == "GET" {
 			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie)
 		} else {
-			body, _, callErr = e.transport.postJSON(ctx, "https://music.163.com"+meta.Path, string(payload), cookie)
+			body, _, callErr = e.transport.postJSON(ctx, e.transport.baseURL+meta.Path, string(payload), cookie)
 		}
 	default:
 		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)

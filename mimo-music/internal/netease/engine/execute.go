@@ -6,14 +6,13 @@
 //
 // 类型参数设计：Req/Resp 都用 proto 生成的指针类型（如 *mmpb.GetSongDetailRequest）。
 // 这是 gRPC 的天然签名，也避免 proto message 值拷贝 mutex 的问题（protoimpl.MessageState 含锁）。
-// 缓存序列化用 proto.Message 接口（指针天然实现），反序列化用 reflect 构造实例。
+// 缓存序列化/反序列化用 proto.Message 接口（指针天然实现），零 reflection。
 package engine
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -21,7 +20,7 @@ import (
 
 // Endpoint 是一个网易云接口的完整声明。
 //
-// 数据（Meta + Cache）+ 两个映射函数（MapRequest + MapResponse）。
+// 数据（Meta + Cache + NewResp）+ 两个映射函数（MapRequest + MapResponse）。
 // 不是活跃服务，是声明。每接口一个包级 var。
 //
 // Req/Resp 用 proto 生成的指针类型（如 *mmpb.GetSongDetailRequest）。
@@ -30,10 +29,14 @@ type Endpoint[Req, Resp any] struct {
 	Meta Meta
 	// Cache 是缓存策略。nil 表示不缓存。
 	Cache *CachePolicy[Req]
+	// NewResp 构造响应实例，用于缓存命中时反序列化。
+	// 避免用 reflect 构造（ADR §4.5 零 reflection）。声明形如 func() *mmpb.X { return &mmpb.X{} }。
+	NewResp func() Resp
 	// MapRequest 把 proto 请求转成网易云加密前的 params map。
 	MapRequest func(req Req) (map[string]any, error)
 	// MapResponse 把网易云原始 JSON 转成 proto 响应（指针类型）。
-	MapResponse func(raw json.RawMessage) (Resp, error)
+	// 接收原始请求，使映射可按请求字段分支（如搜索按 type 分发、歌单按 filter 过滤）。
+	MapResponse func(req Req, raw json.RawMessage) (Resp, error)
 }
 
 // CachePolicy 声明缓存策略。endpoint 只声明，不执行（执行在 Execute）。
@@ -57,7 +60,7 @@ func Execute[Req, Resp any](e *Engine, ctx context.Context, ep *Endpoint[Req, Re
 	if ep.Cache != nil && e.cache != nil {
 		key := ep.Cache.Key(req)
 		if hit, ok, err := e.cache.Get(ctx, key); err == nil && ok {
-			if r, ok := unmarshalCached[Resp](hit); ok {
+			if r, ok := unmarshalCached(ep.NewResp, hit); ok {
 				return r, nil
 			}
 		}
@@ -74,7 +77,7 @@ func Execute[Req, Resp any](e *Engine, ctx context.Context, ep *Endpoint[Req, Re
 		return zero, err
 	}
 
-	resp, err := ep.MapResponse(raw)
+	resp, err := ep.MapResponse(req, raw)
 	if err != nil {
 		return zero, fmt.Errorf("map response: %w", err)
 	}
@@ -92,27 +95,22 @@ func Execute[Req, Resp any](e *Engine, ctx context.Context, ep *Endpoint[Req, Re
 	return resp, nil
 }
 
-// unmarshalCached 把缓存字节反序列化成 Resp（proto 指针类型）。
+// unmarshalCached 用 NewResp 工厂构造实例，把缓存字节反序列化成 Resp。
 //
-// Resp 是 *pb.X 形式。zero 是 nil 指针，reflect.TypeOf(zero) 可能返回 nil（typed nil）。
-// 用 reflect 构造新实例：rt.Elem() 得到 pb.X，reflect.New 返回 *pb.X。
-func unmarshalCached[Resp any](data []byte) (Resp, bool) {
+// 零 reflection：NewResp 是 endpoint 声明的构造函数（如 func() *mmpb.X { return &mmpb.X{} }），
+// 返回值天然实现 proto.Message，直接 proto.Unmarshal 填充。
+func unmarshalCached[Resp any](newResp func() Resp, data []byte) (Resp, bool) {
 	var zero Resp
-	// 尝试类型断言确认 Resp 是 proto.Message 的指针类型。
-	// zero 可能是 nil，any(nil指针) 的断言会失败，所以用 reflect。
-	rt := reflect.TypeOf(zero)
-	if rt == nil || rt.Kind() != reflect.Pointer {
+	if newResp == nil {
 		return zero, false
 	}
-	// 构造 *pb.X 的新实例。
-	newVal := reflect.New(rt.Elem())
-	pm, ok := newVal.Interface().(proto.Message)
+	r := newResp()
+	pm, ok := any(r).(proto.Message)
 	if !ok {
 		return zero, false
 	}
 	if err := proto.Unmarshal(data, pm); err != nil {
 		return zero, false
 	}
-	r, ok := newVal.Interface().(Resp)
-	return r, ok
+	return r, true
 }

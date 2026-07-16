@@ -15,7 +15,7 @@ func TestDetail_MapResponse(t *testing.T) {
 
 	fixture := `{"code":200,"songs":[{"id":347230,"name":"海阔天空","ar":[{"id":111,"name":"Beyond"}],"al":{"id":222,"name":"乐与怒","picUrl":"http://c.jpg"},"dt":326000,"fee":0}]}`
 
-	resp, err := Detail.MapResponse(json.RawMessage(fixture))
+	resp, err := Detail.MapResponse(&mmpb.GetSongDetailRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Equal(t, int64(347230), resp.Song.Id)
 	require.Equal(t, "海阔天空", resp.Song.Name)
@@ -29,7 +29,7 @@ func TestDetail_MapResponse(t *testing.T) {
 func TestDetail_MapResponse_Empty(t *testing.T) {
 	t.Parallel()
 
-	_, err := Detail.MapResponse(json.RawMessage(`{"code":200,"songs":[]}`))
+	_, err := Detail.MapResponse(&mmpb.GetSongDetailRequest{}, json.RawMessage(`{"code":200,"songs":[]}`))
 	require.Error(t, err)
 }
 
@@ -39,7 +39,7 @@ func TestURL_MapResponse(t *testing.T) {
 
 	fixture := `{"code":200,"data":[{"id":347230,"url":"http://m.mp3","br":320000,"size":5000000,"type":"mp3"}]}`
 
-	resp, err := URL.MapResponse(json.RawMessage(fixture))
+	resp, err := URL.MapResponse(&mmpb.GetSongURLRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Equal(t, "http://m.mp3", resp.Url.Url)
 	require.Equal(t, int64(320000), resp.Url.Bitrate)
@@ -50,7 +50,7 @@ func TestURL_MapResponse(t *testing.T) {
 func TestURL_MapResponse_VIP(t *testing.T) {
 	t.Parallel()
 
-	_, err := URL.MapResponse(json.RawMessage(`{"code":200,"data":[]}`))
+	_, err := URL.MapResponse(&mmpb.GetSongURLRequest{}, json.RawMessage(`{"code":200,"data":[]}`))
 	require.Error(t, err)
 }
 
@@ -60,7 +60,7 @@ func TestLyric_MapResponse(t *testing.T) {
 
 	fixture := `{"code":200,"lrc":{"version":1,"lyric":"[00:01]词"},"tlyric":{"version":1,"lyric":"[00:01]Translation"},"romalrc":{"version":1,"lyric":"[00:01]ci"}}`
 
-	resp, err := Lyric.MapResponse(json.RawMessage(fixture))
+	resp, err := Lyric.MapResponse(&mmpb.GetLyricRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Contains(t, resp.Lyric.Lrc, "词")
 	require.Contains(t, resp.Lyric.Translated, "Translation")

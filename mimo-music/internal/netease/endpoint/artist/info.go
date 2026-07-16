@@ -26,6 +26,7 @@ var GetArtist = &engine.Endpoint[*mmpb.GetArtistRequest, *mmpb.GetArtistResponse
 		},
 		TTL: 24 * time.Hour,
 	},
+	NewResp: func() *mmpb.GetArtistResponse { return &mmpb.GetArtistResponse{} },
 	MapRequest: func(req *mmpb.GetArtistRequest) (map[string]any, error) {
 		return map[string]any{
 			"id":     fmt.Sprintf("%d", req.GetArtistId()),
@@ -33,7 +34,7 @@ var GetArtist = &engine.Endpoint[*mmpb.GetArtistRequest, *mmpb.GetArtistResponse
 			"offset": 0,
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.GetArtistResponse, error) {
+	MapResponse: func(req *mmpb.GetArtistRequest, raw json.RawMessage) (*mmpb.GetArtistResponse, error) {
 		a, songs, err := model.DecodeArtistInfo(raw)
 		if err != nil {
 			return &mmpb.GetArtistResponse{}, err

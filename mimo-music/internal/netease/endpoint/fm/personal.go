@@ -25,10 +25,11 @@ var GetPersonalFM = &engine.Endpoint[*mmpb.GetPersonalFMRequest, *mmpb.GetPerson
 		},
 		TTL: 30 * time.Minute,
 	},
+	NewResp: func() *mmpb.GetPersonalFMResponse { return &mmpb.GetPersonalFMResponse{} },
 	MapRequest: func(*mmpb.GetPersonalFMRequest) (map[string]any, error) {
 		return map[string]any{}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.GetPersonalFMResponse, error) {
+	MapResponse: func(req *mmpb.GetPersonalFMRequest, raw json.RawMessage) (*mmpb.GetPersonalFMResponse, error) {
 		songs, err := model.DecodePersonalFM(raw)
 		if err != nil {
 			return &mmpb.GetPersonalFMResponse{}, err

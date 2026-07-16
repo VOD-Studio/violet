@@ -25,6 +25,7 @@ var URL = &engine.Endpoint[*mmpb.GetSongURLRequest, *mmpb.GetSongURLResponse]{
 		},
 		TTL: 30 * time.Minute,
 	},
+	NewResp: func() *mmpb.GetSongURLResponse { return &mmpb.GetSongURLResponse{} },
 	MapRequest: func(req *mmpb.GetSongURLRequest) (map[string]any, error) {
 		level := levelToString(req.GetLevel())
 		return map[string]any{
@@ -33,7 +34,7 @@ var URL = &engine.Endpoint[*mmpb.GetSongURLRequest, *mmpb.GetSongURLResponse]{
 			"encodeType":  "flac",
 		}, nil
 	},
-	MapResponse: func(raw json.RawMessage) (*mmpb.GetSongURLResponse, error) {
+	MapResponse: func(req *mmpb.GetSongURLRequest, raw json.RawMessage) (*mmpb.GetSongURLResponse, error) {
 		var resp struct {
 			Code int `json:"code"`
 			Data []struct {

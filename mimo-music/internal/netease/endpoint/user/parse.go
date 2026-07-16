@@ -18,7 +18,7 @@ type rawFollowItem struct {
 }
 
 // parseFollowList 解析关注列表。
-func parseFollowList(raw json.RawMessage) (*mmpb.FollowsResponse, error) {
+func parseFollowList(_ *mmpb.FollowsRequest, raw json.RawMessage) (*mmpb.FollowsResponse, error) {
 	var resp struct {
 		Follow []rawFollowItem `json:"follow"`
 	}
@@ -33,7 +33,7 @@ func parseFollowList(raw json.RawMessage) (*mmpb.FollowsResponse, error) {
 }
 
 // parseFollowedList 解析粉丝列表。
-func parseFollowedList(raw json.RawMessage) (*mmpb.FollowedsResponse, error) {
+func parseFollowedList(_ *mmpb.FollowedsRequest, raw json.RawMessage) (*mmpb.FollowedsResponse, error) {
 	var resp struct {
 		Followeds []rawFollowItem `json:"followeds"`
 		More      bool            `json:"more"`
@@ -60,7 +60,7 @@ func followItemToDetail(f rawFollowItem) *mmpb.UserDetail {
 }
 
 // parsePlayRecord 解析播放记录。
-func parsePlayRecord(raw json.RawMessage) (*mmpb.RecordResponse, error) {
+func parsePlayRecord(_ *mmpb.RecordRequest, raw json.RawMessage) (*mmpb.RecordResponse, error) {
 	// 网易云播放记录可能返回 weekData / allData 两个数组，按请求 type 决定。
 	var resp struct {
 		WeekData []struct {

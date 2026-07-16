@@ -31,15 +31,21 @@ const (
 
 // transport 封装网易云 HTTP 请求的三种发送方式。
 type transport struct {
-	client *http.Client
+	client  *http.Client
+	baseURL string // API 基础地址，默认 neteaseBaseURL，测试可注入 httptest 地址
 }
 
-// newTransport 创建 transport，默认 10 秒超时。
+// newTransport 创建 transport，默认 10 秒超时、baseURL 指向网易云。
 func newTransport(timeout time.Duration) *transport {
 	if timeout == 0 {
 		timeout = 10 * time.Second
 	}
-	return &transport{client: &http.Client{Timeout: timeout}}
+	return &transport{client: &http.Client{Timeout: timeout}, baseURL: neteaseBaseURL}
+}
+
+// withBaseURL 返回 baseURL 被覆盖的 transport 副本（测试用）。
+func (t *transport) withBaseURL(base string) *transport {
+	return &transport{client: t.client, baseURL: base}
 }
 
 // weapiPost 发送 weapi 加密 POST 请求。
@@ -59,7 +65,7 @@ func (t *transport) weapiPost(ctx context.Context, urlPath, payload, cookie stri
 	formData.Set("encSecKey", encrypted.EncSecKey)
 	form := strings.NewReader(formData.Encode())
 
-	req, err := http.NewRequestWithContext(ctx, "POST", neteaseBaseURL+urlPath, form)
+	req, err := http.NewRequestWithContext(ctx, "POST", t.baseURL+urlPath, form)
 	if err != nil {
 		return nil, "", fmt.Errorf("创建请求失败: %w", err)
 	}
@@ -118,7 +124,7 @@ func (t *transport) postJSON(ctx context.Context, fullURL, payload, cookie strin
 // 网易云在 2026 年对匿名 weapi 请求做了限制，部分接口用非加密 GET API
 // 仍可匿名访问（如 /api/search/get）。
 func (t *transport) apiGet(ctx context.Context, urlPath string, params url.Values, cookie string) ([]byte, error) {
-	target := neteaseBaseURL + urlPath
+	target := t.baseURL + urlPath
 	if len(params) > 0 {
 		target += "?" + params.Encode()
 	}
