@@ -14,6 +14,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strings"
 )
 
 // 网易云 weapi 加密的公开预设常量。
@@ -93,16 +94,25 @@ type EAPIEncrypted struct {
 // EAPIEncrypt 用 eapi 协议加密请求数据。
 //
 // 流程：
-//  1. 对 url + nonce + data 做 MD5 摘要得到 digest
-//  2. 用固定 key (eapiKey) 对 "digest-36cd479b6b5-" + data 做AES-CBC-128 加密
+//  1. 把传入的 wire path（/eapi/...）转换成 digest path（/api/...）：eapi 接口的
+//     HTTP 请求发往 /eapi/...，但 digest 与加密明文里嵌的是 /api/... 形式（网易云
+//     服务端按 /api/... 校验摘要）。两者分离是 eapi 协议约定，与 weapi 不同。
+//  2. 对 digest path + data 做 MD5 摘要得到 digest
+//  3. 用固定 key (eapiKey) 对 "digestpath-36cd479b6b5-data-36cd479b6b5-digest"
+//     做 AES-ECB-128 加密，输出大写十六进制
+//
+// url 传入的是 wire path（engine 的 meta.Path，形如 /eapi/song/red/count）。
 func EAPIEncrypt(url, data string) (EAPIEncrypted, error) {
-	digest := md5Hex(fmt.Sprintf("nobody%suse%smd5forencrypt", url, data))
-	plaintext := fmt.Sprintf("%s-36cd479b6b5-%s-36cd479b6b5-%s", digest, url, data)
+	// digest path：/eapi/... → /api/...（只替换首次出现的 eapi，覆盖 /eapi/ 前缀）。
+	digestURL := strings.Replace(url, "eapi", "api", 1)
+
+	digest := md5Hex(fmt.Sprintf("nobody%suse%smd5forencrypt", digestURL, data))
+	plaintext := fmt.Sprintf("%s-36cd479b6b5-%s-36cd479b6b5-%s", digestURL, data, digest)
 
 	// eapiKey 是 16 字节明文字符串，直接用作 AES key
 	key := []byte(eapiKey)
 
-	encrypted, err := aesCBCEncryptHex(plaintext, key)
+	encrypted, err := aesECBEncryptHex(plaintext, key)
 	if err != nil {
 		return EAPIEncrypted{}, fmt.Errorf("eapi AES 加密失败: %w", err)
 	}
@@ -129,19 +139,22 @@ func aesCBCEncrypt(plaintext string, key []byte) (string, error) {
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
-// aesCBCEncryptHex 用 AES-CBC-128 加密，返回十六进制大写编码的密文（eapi 用）。
-func aesCBCEncryptHex(plaintext string, key []byte) (string, error) {
+// aesECBEncryptHex 用 AES-ECB-128 加密，返回十六进制大写编码的密文（eapi 用）。
+//
+// eapi 协议用 ECB 模式（无 IV），与 weapi 的 CBC 不同。PKCS7 填充。
+func aesECBEncryptHex(plaintext string, key []byte) (string, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
 
-	iv := []byte("0102030405060708")
 	padded := pkcs7Pad([]byte(plaintext), block.BlockSize())
-
 	ciphertext := make([]byte, len(padded))
-	mode := cipher.NewCBCEncrypter(block, iv)
-	mode.CryptBlocks(ciphertext, padded)
+	// ECB 逐块加密（Go 标准库未提供 ECB 的便利封装，手动逐块）。
+	bs := block.BlockSize()
+	for start := 0; start < len(padded); start += bs {
+		block.Encrypt(ciphertext[start:start+bs], padded[start:start+bs])
+	}
 
 	return fmt.Sprintf("%0X", ciphertext), nil
 }

@@ -89,9 +89,31 @@ func TestWeAPIEncrypt_RandomKeyVaries(t *testing.T) {
 	}
 }
 
+// TestEAPIEncrypt_GoldenVector 用 chaunsin/netease-cloud-music 的已知向量锚定
+// eapi 加密（AES-ECB-128 + digest path 转换）正确性。
+//
+// 输入 path "/test/url" 不含 "eapi"，故 digest path 不变。data 传 JSON 编码后的
+// 带引号字符串 "\"test value\""：我的 EAPIEncrypt 接收「已序列化的 JSON」，对应
+// chaunsin EApiEncrypt 内部 json.Marshal("test value") 产生的带引号串。
+func TestEAPIEncrypt_GoldenVector(t *testing.T) {
+	t.Parallel()
+
+	result, err := EAPIEncrypt("/test/url", `"test value"`)
+	if err != nil {
+		t.Fatalf("eapi 加密失败: %v", err)
+	}
+
+	const want = "E556EA4892989E4A1B98043B56CD3C77C6DBE3D0261A0FA8ACF45E2882DBABFD13F52E05D9EF39C101A7A46DD0E0CD0979A2DD9CE30975861F6F4E86855FE00AD841C36BA90177218D0D8D32A54A0DC4"
+	if result.Params != want {
+		t.Errorf("eapi params 不匹配外部 Go 实现（chaunsin）\n got: %s\nwant: %s", result.Params, want)
+	}
+}
+
 // TestEAPIEncrypt_ProducesHex 验证 eapi 加密输出是大写十六进制。
 func TestEAPIEncrypt_ProducesHex(t *testing.T) {
-	result, err := EAPIEncrypt("/api/song/enhance/player/url", `{"ids":"[123]","br":320000}`)
+	t.Parallel()
+
+	result, err := EAPIEncrypt("/eapi/song/enhance/player/url", `{"ids":"[123]","br":320000}`)
 	if err != nil {
 		t.Fatalf("eapi 加密失败: %v", err)
 	}
@@ -108,9 +130,31 @@ func TestEAPIEncrypt_ProducesHex(t *testing.T) {
 	}
 }
 
+// TestEAPIEncrypt_DigestPathConversion 验证 eapi 把 wire path /eapi/... 转成
+// digest path /api/... 后再算摘要：同一 data 下 /eapi/x 与 /api/x 摘要应一致。
+func TestEAPIEncrypt_DigestPathConversion(t *testing.T) {
+	t.Parallel()
+
+	const data = `{"songId":1}`
+	fromWire, err := EAPIEncrypt("/eapi/song/red/count", data)
+	if err != nil {
+		t.Fatalf("wire path 加密失败: %v", err)
+	}
+	fromDigest, err := EAPIEncrypt("/api/song/red/count", data)
+	if err != nil {
+		t.Fatalf("digest path 加密失败: %v", err)
+	}
+
+	if fromWire.Params != fromDigest.Params {
+		t.Error("eapi 未把 /eapi/ wire path 转成 /api/ digest path：两者摘要应一致")
+	}
+}
+
 // TestEAPIEncrypt_Deterministic 验证 eapi 同输入同输出。
 func TestEAPIEncrypt_Deterministic(t *testing.T) {
-	url := "/api/test"
+	t.Parallel()
+
+	url := "/eapi/test"
 	data := `{"id":1}`
 
 	first, err := EAPIEncrypt(url, data)
