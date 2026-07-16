@@ -7,12 +7,69 @@ import "netease/music/v1/song.proto";
 
 option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
 
-// ArtistService 提供歌手查询能力。
+// ArtistService 提供歌手查询、列表浏览与收藏管理能力。
 service ArtistService {
   // GetArtist 获取歌手基础信息及热门歌曲。
   rpc GetArtist(GetArtistRequest) returns (GetArtistResponse) {
     option (google.api.http) = {
       get: "/api/v1/artists/{artist_id}"
+    };
+  }
+
+  // AllSongs 获取歌手全部歌曲（分页）。
+  rpc AllSongs(AllSongsRequest) returns (AllSongsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/artists/{artist_id}/songs"
+    };
+  }
+
+  // TopSongs 获取歌手热门 50 首。
+  rpc TopSongs(TopSongsRequest) returns (TopSongsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/artists/{artist_id}/top"
+    };
+  }
+
+  // Albums 获取歌手专辑列表。
+  rpc Albums(AlbumsRequest) returns (AlbumsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/artists/{artist_id}/albums"
+    };
+  }
+
+  // Desc 获取歌手详细描述。
+  rpc Desc(DescRequest) returns (DescResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/artists/{artist_id}/desc"
+    };
+  }
+
+  // Similar 获取相似歌手。
+  rpc Similar(SimilarRequest) returns (SimilarResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/artists/{artist_id}/similar"
+    };
+  }
+
+  // Fans 获取歌手粉丝数。
+  rpc Fans(FansRequest) returns (FansResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/artists/{artist_id}/fans"
+    };
+  }
+
+  // TopArtists 获取热门歌手列表。
+  rpc TopArtists(TopArtistsRequest) returns (TopArtistsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/artists/top"
+    };
+  }
+
+  // Subscribe 收藏/取消收藏歌手。
+  rpc ArtistSubscribe(ArtistSubscribeRequest) returns (ArtistSubscribeResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/artists/{artist_id}/subscribe"
+      body: "*"
     };
   }
 }
@@ -29,4 +86,118 @@ message GetArtistResponse {
   Artist artist = 1;
   // 热门歌曲列表（网易云返回热门 50 首）。
   repeated Song hot_songs = 2;
+}
+
+// --- 歌手扩展 message ---
+
+// AllSongs 请求。
+message AllSongsRequest {
+  // 歌手 ID。
+  int64 artist_id = 1;
+  // 每页数量。
+  int32 limit = 2;
+  // 偏移量。
+  int32 offset = 3;
+}
+
+// AllSongs 响应。
+message AllSongsResponse {
+  // 歌曲列表。
+  repeated Song songs = 1;
+  // 总数。
+  int32 total = 2;
+}
+
+// TopSongs 请求。
+message TopSongsRequest {
+  // 歌手 ID。
+  int64 artist_id = 1;
+}
+
+// TopSongs 响应。
+message TopSongsResponse {
+  // 热门 50 首。
+  repeated Song songs = 1;
+}
+
+// Albums 请求。
+message AlbumsRequest {
+  // 歌手 ID。
+  int64 artist_id = 1;
+  // 每页数量。
+  int32 limit = 2;
+  // 偏移量。
+  int32 offset = 3;
+}
+
+// Albums 响应。
+message AlbumsResponse {
+  // 专辑列表。
+  repeated Album albums = 1;
+  // 是否还有更多。
+  bool more = 2;
+}
+
+// Desc 请求。
+message DescRequest {
+  // 歌手 ID。
+  int64 artist_id = 1;
+}
+
+// Desc 响应。
+message DescResponse {
+  // 详细描述。
+  string desc = 1;
+}
+
+// Similar 请求。
+message SimilarRequest {
+  // 歌手 ID。
+  int64 artist_id = 1;
+}
+
+// Similar 响应。
+message SimilarResponse {
+  // 相似歌手列表。
+  repeated Artist artists = 1;
+}
+
+// Fans 请求。
+message FansRequest {
+  // 歌手 ID。
+  int64 artist_id = 1;
+}
+
+// Fans 响应。
+message FansResponse {
+  // 粉丝数。
+  int64 fans = 1;
+}
+
+// TopArtists 请求。
+message TopArtistsRequest {
+  // 每页数量。
+  int32 limit = 1;
+  // 偏移量。
+  int32 offset = 2;
+}
+
+// TopArtists 响应。
+message TopArtistsResponse {
+  // 热门歌手列表。
+  repeated Artist artists = 1;
+}
+
+// ArtistSubscribe 请求。
+message ArtistSubscribeRequest {
+  // 歌手 ID。
+  int64 artist_id = 1;
+  // 登录态 Cookie。
+  string cookie = 2;
+}
+
+// ArtistSubscribe 响应。
+message ArtistSubscribeResponse {
+  // 操作后是否已收藏。
+  bool subscribed = 1;
 }
