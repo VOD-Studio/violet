@@ -51,7 +51,9 @@ type App struct {
 
 // NewApp 创建双 server 应用，注入 engine 和 session 池装配真实 service impl。
 func NewApp(grpcAddr, httpAddr string, eng *engine.Engine, sessions session.SessionStore) (*App, error) {
-	grpcServer := grpc.NewServer()
+	// interceptor 链：cookie（凭证出域，从 metadata 提取上游网易云 cookie 注入 context）。
+	// 链式为未来 recovery/trace/log/rate/auth interceptor 留位。
+	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(CookieInterceptor))
 
 	// 注册全部领域 service（真实 impl，持有 *engine.Engine）。
 	mmpb.RegisterSongServiceServer(grpcServer, service.NewSongServer(eng))

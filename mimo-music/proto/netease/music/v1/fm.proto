@@ -17,11 +17,8 @@ service FMService {
   }
 }
 
-// GetPersonalFM 请求。
-message GetPersonalFMRequest {
-  // 登录态 Cookie。
-  string cookie = 1;
-}
+// GetPersonalFM 请求（需登录态，cookie 经 metadata "x-netease-cookie" 传入）。
+message GetPersonalFMRequest {}
 
 // GetPersonalFM 响应。
 message GetPersonalFMResponse {

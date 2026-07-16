@@ -32,7 +32,7 @@ func NewAuthServer(eng *engine.Engine, sessions session.SessionStore) *AuthServe
 
 // SendCaptcha 发送验证码。
 func (s *AuthServer) SendCaptcha(ctx context.Context, req *mmpb.SendCaptchaRequest) (*mmpb.SendCaptchaResponse, error) {
-	_, _, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.SendCaptcha, authendpoint.SendCaptchaRequest(req), "")
+	_, _, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.SendCaptcha, authendpoint.SendCaptchaRequest(req))
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (s *AuthServer) SendCaptcha(ctx context.Context, req *mmpb.SendCaptchaReque
 
 // LoginByCellphone 手机号登录，返回 Session 并存入 cookie 池。
 func (s *AuthServer) LoginByCellphone(ctx context.Context, req *mmpb.LoginByCellphoneRequest) (*mmpb.LoginByCellphoneResponse, error) {
-	raw, setCookie, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.LoginCellphone, authendpoint.LoginCellphoneRequest(req), "")
+	raw, setCookie, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.LoginCellphone, authendpoint.LoginCellphoneRequest(req))
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *AuthServer) LoginByCellphone(ctx context.Context, req *mmpb.LoginByCell
 
 // LoginQrcode 获取登录二维码。
 func (s *AuthServer) LoginQrcode(ctx context.Context, req *mmpb.LoginQrcodeRequest) (*mmpb.LoginQrcodeResponse, error) {
-	raw, _, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.LoginQrcode, authendpoint.LoginQrcodeRequest(req), "")
+	raw, _, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.LoginQrcode, authendpoint.LoginQrcodeRequest(req))
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (s *AuthServer) LoginQrcode(ctx context.Context, req *mmpb.LoginQrcodeReque
 
 // CheckQrcode 轮询二维码登录状态。
 func (s *AuthServer) CheckQrcode(ctx context.Context, req *mmpb.CheckQrcodeRequest) (*mmpb.CheckQrcodeResponse, error) {
-	raw, setCookie, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.CheckQrcode, authendpoint.CheckQrcodeRequest(req), "")
+	raw, setCookie, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.CheckQrcode, authendpoint.CheckQrcodeRequest(req))
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (s *AuthServer) CheckQrcode(ctx context.Context, req *mmpb.CheckQrcodeReque
 
 // LoginStatus 查询当前登录态。
 func (s *AuthServer) LoginStatus(ctx context.Context, req *mmpb.LoginStatusRequest) (*mmpb.LoginStatusResponse, error) {
-	raw, _, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.LoginStatus, authendpoint.LoginStatusRequest(req), req.GetCookie())
+	raw, _, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.LoginStatus, authendpoint.LoginStatusRequest(req))
 	if err != nil {
 		return nil, err
 	}
@@ -113,14 +113,14 @@ func (s *AuthServer) LoginStatus(ctx context.Context, req *mmpb.LoginStatusReque
 	if err != nil {
 		return &mmpb.LoginStatusResponse{}, nil // 未登录不算错误
 	}
-	sess.Cookie = req.GetCookie()
+	sess.Cookie = engine.CookieFromContext(ctx)
 
 	return &mmpb.LoginStatusResponse{Session: sess}, nil
 }
 
 // Logout 登出。
 func (s *AuthServer) Logout(ctx context.Context, req *mmpb.LogoutRequest) (*mmpb.LogoutResponse, error) {
-	_, _, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.Logout, authendpoint.LogoutRequest(req), req.GetCookie())
+	_, _, err := s.eng.RawDoWithCookieAndInput(ctx, authendpoint.Logout, authendpoint.LogoutRequest(req))
 	if err != nil {
 		return nil, err
 	}

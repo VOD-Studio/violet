@@ -6,7 +6,7 @@
 
 ## Problem Statement
 
-地基阶段把「调用方持有的网易云登录态 cookie」作为 `string cookie` 字段塞进了 14 处 proto request message（auth/artist/fm/playlist/recommend/user 六个域）。这违反 gRPC 凭证传递的业界规范：
+地基阶段把「调用方持有的网易云登录态 cookie」作为 `string cookie` 字段塞进了 13 处 proto request message（auth/artist/fm/playlist/recommend/user 六个域）。这违反 gRPC 凭证传递的业界规范：
 
 - **凭证污染业务模型**：cookie 是传输层凭证，不是领域实体属性。它出现在 proto message 里让每个写操作/auth 接口的请求体都带一个非业务字段，gateway 暴露 REST 时 cookie 变成请求体字段——更是反模式（REST 认证走 header）。
 - **职责混淆**：cookie 是「转发给上游网易云的凭证」，不是「对 mimo-music 自身的认证」。混在同一字段会让未来 mimo-music 自身鉴权（ADR §4.5 规划的 auth interceptor）和上游凭证传递打架。
@@ -72,7 +72,7 @@ grpc-gateway 默认转发 `Grpc-Metadata-` 前缀的 HTTP header 到 gRPC metada
 
 ## Implementation Decisions
 
-### proto 层：删除 14 处 cookie 字段
+### proto 层：删除 13 处 request cookie 字段
 
 六个域的 proto message 删除 `string cookie = N` 字段：
 - `auth.proto`：`LoginStatusRequest.cookie`、`LogoutRequest.cookie`（`Session.cookie` 是响应字段，保留——它是 session 实体的凭证属性）

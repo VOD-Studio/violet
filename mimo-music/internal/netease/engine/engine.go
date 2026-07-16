@@ -106,20 +106,23 @@ func (e *Engine) RawDo(ctx context.Context, meta Meta, params map[string]any) (j
 	return raw, err
 }
 
-// RawDoWithCookieAndInput 同 RawDoWithCookie，但允许传入 override cookie（auth 接口用）。
-// auth 接口（LoginStatus/Logout）从 proto 请求的 Cookie 字段取 cookie，不走 session 池。
-func (e *Engine) RawDoWithCookieAndInput(ctx context.Context, meta Meta, params map[string]any, cookieOverride string) (json.RawMessage, string, error) {
+// RawDoWithCookieAndInput 走 cookie override 路径：从 context 取网易云 cookie（interceptor 注入），
+// 不走 session 池选取。写操作/auth 接口用。
+// cookie 由调用方经 metadata "x-netease-cookie" 传入，interceptor 注入 context。
+func (e *Engine) RawDoWithCookieAndInput(ctx context.Context, meta Meta, params map[string]any) (json.RawMessage, string, error) {
 	// 熔断检查。
 	if !e.breaker.allow() {
 		return nil, "", ErrCircuitOpen
 	}
+
+	cookie := CookieFromContext(ctx)
 
 	var (
 		raw       json.RawMessage
 		setCookie string
 	)
 	err := withRetry(ctx, e.retry, func() error {
-		r, sc, callErr := e.doOnceWithCookie(ctx, meta, params, cookieOverride)
+		r, sc, callErr := e.doOnceWithCookie(ctx, meta, params, cookie)
 		if callErr != nil {
 			e.breaker.recordFailure()
 			return callErr
@@ -136,7 +139,7 @@ func (e *Engine) RawDoWithCookieAndInput(ctx context.Context, meta Meta, params 
 	return raw, setCookie, nil
 }
 
-// doOnceWithCookie 同 doOnce，但用传入的 cookie 而非从 session 池选取。
+// doOnceWithCookie 同 doOnce，但用 context 里的 cookie 而非从 session 池选取。
 func (e *Engine) doOnceWithCookie(ctx context.Context, meta Meta, params map[string]any, cookie string) (json.RawMessage, string, error) {
 	payload, err := json.Marshal(params)
 	if err != nil {

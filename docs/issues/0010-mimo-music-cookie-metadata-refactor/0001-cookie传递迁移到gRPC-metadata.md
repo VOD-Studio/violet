@@ -17,7 +17,7 @@ PRD：`../../prd/0010-mimo-music-cookie-metadata-refactor.md`
 1. **interceptor 基础设施**：新建 cookie interceptor（`UnaryServerInterceptor`），从 `metadata.FromIncomingContext(ctx)` 读 `x-netease-cookie`，用自定义 context key 注入；提供 `CookieFromContext(ctx) string` 辅助。无 cookie 时注入空字符串。
 2. **engine 改 cookie 来源**：`RawDoWithCookieAndInput` / `doOnceWithCookie` 去掉 `cookieOverride string` 参数，改从 ctx 取（`CookieFromContext`）。`executeWithCookie`（service 包辅助）去掉 cookie 参数。transport 层不变。
 3. **service 统一去 cookie 参数**：所有写操作 service 方法不再 `req.GetCookie()`，改 `executeWithCookie(eng, ctx, ep, req)`。auth service（LoginStatus/Logout）的 cookie 来源从 `req.GetCookie()` 改为 context。
-4. **proto 删 14 处 cookie 字段**：六个域（auth/artist/fm/playlist/recommend/user）的 request message 删 `string cookie = N`。`Session.cookie`（响应字段）保留。`make proto` 重新生成。
+4. **proto 删 13 处 request cookie 字段**：六个域（auth/artist/fm/playlist/recommend/user）的 request message 删 `string cookie = N`。`Session.cookie`（响应字段）保留。`make proto` 重新生成。
 5. **server 装配**：`server.NewApp` 的 `grpc.NewServer()` 加 `grpc.ChainUnaryInterceptor(cookieInterceptor)`（链式，为未来 recovery/trace/rate/auth interceptor 留位）。
 6. **ADR 更新**：架构 ADR §4.5 补 cookie 传递机制，修正「第三条执行路径」小节 cookie 来源描述。
 
@@ -29,7 +29,7 @@ PRD：`../../prd/0010-mimo-music-cookie-metadata-refactor.md`
 - [ ] engine e2e 测试：context 注入 cookie → mock server（WithBaseURL + httptest）断言收到的 HTTP 请求带正确 Cookie header
 - [ ] `executeWithCookie` 辅助去掉 cookie 参数：`executeWithCookie(eng, ctx, ep, req)`
 - [ ] 所有写操作 service 方法恒一行（cookie 在 ctx，对 service 透明）
-- [ ] proto 删除 14 处 `string cookie` 字段，`Session.cookie` 响应字段保留
+- [ ] proto 删除 13 处 request `string cookie` 字段，`Session.cookie` 响应字段保留
 - [ ] `make proto` 生成成功
 - [ ] server 用 `grpc.ChainUnaryInterceptor` 装配 cookie interceptor
 - [ ] 全量测试通过（`go test ./internal/...`）

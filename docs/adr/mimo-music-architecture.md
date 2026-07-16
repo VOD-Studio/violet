@@ -394,9 +394,25 @@ cache 在 `Execute` 而非 interceptor：`ep.Cache`（policy）和 `Resp`（具�
 除 `Execute`（走 session 池选取 cookie + 缓存）外，还有两类接口走 cookie override 路径，service 调 `engine.RawDoWithCookieAndInput` 或 service 包的 `executeWithCookie` 辅助：
 
 - **登录类**（auth）：创建新 session 的源头，不查 session 池，捕获 `Set-Cookie` 上报给 SessionStore。
-- **写操作 / 特定登录态查询**（playlist 写操作、artist Subscribe、user Account）：cookie 是调用方持有的特定登录态（如某 admin 操作某歌单），不是 session 池轮换的匿名/登录池 cookie。从请求的 `cookie` 字段取，不走缓存（写操作即时生效、Account 查特定账号）。
+- **写操作 / 特定登录态查询**（playlist 写操作、artist Subscribe、user Account）：cookie 是调用方持有的特定登录态（如某 admin 操作某歌单），不是 session 池轮换的匿名/登录池 cookie。不走缓存（写操作即时生效、Account 查特定账号）。
 
-cookie override 路径的 endpoint 仍声明 Meta + MapRequest + MapResponse（与 Execute 路径同构），只是 `Cache=nil`、service 走 `executeWithCookie(eng, ctx, ep, req, req.GetCookie())`。`executeWithCookie` 是 service 包的泛型辅助，串起 MapRequest → RawDoWithCookieAndInput → MapResponse，让 service 方法仍恒一行。
+### cookie 传递机制：凭证出域
+
+cookie 是「转发给上游网易云的凭证」，不是 mimo-music 自身的认证。凭证走 gRPC metadata，不进 proto 字段：
+
+```
+gRPC metadata "x-netease-cookie"（REST 经 gateway 传 "Grpc-Metadata-X-Netease-Cookie" header）
+  ↓ cookie interceptor（grpc.ChainUnaryInterceptor 第一环）
+engine.WithCookie(ctx, cookie)  ← 注入 context
+  ↓
+engine.RawDoWithCookieAndInput 从 context 取 cookie（CookieFromContext）
+  ↓
+transport.setCommonHeaders → HTTP Cookie header → 网易云上游
+```
+
+cookie context key 归 engine 包（`WithCookie`/`CookieFromContext`），interceptor 是注入方，engine 是消费方，两者解耦——engine 不依赖 server 包。proto request message 不含 cookie 字段，凭证出域保持业务模型干净。`Authorization` metadata key 留给未来 mimo-music 自身鉴权。
+
+cookie override 路径的 endpoint 仍声明 Meta + MapRequest + MapResponse（与 Execute 路径同构），只是 `Cache=nil`、service 走 `executeWithCookie(eng, ctx, ep, req)`（cookie 在 ctx，对 service 透明）。
 
 ## 5. 四个特有复杂度及应对
 

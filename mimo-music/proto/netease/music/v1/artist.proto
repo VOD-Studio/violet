@@ -192,8 +192,6 @@ message TopArtistsResponse {
 message ArtistSubscribeRequest {
   // 歌手 ID。
   int64 artist_id = 1;
-  // 登录态 Cookie。
-  string cookie = 2;
 }
 
 // ArtistSubscribe 响应。

@@ -140,8 +140,6 @@ enum PlaylistFilter {
 
 // Account 请求。
 message AccountRequest {
-  // 登录态 Cookie。
-  string cookie = 1;
 }
 
 // Account 响应。

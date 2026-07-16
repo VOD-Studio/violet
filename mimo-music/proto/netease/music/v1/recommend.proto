@@ -17,11 +17,8 @@ service RecommendService {
   }
 }
 
-// GetDailyRecommend 请求。
-message GetDailyRecommendRequest {
-  // 登录态 Cookie。
-  string cookie = 1;
-}
+// GetDailyRecommend 请求（需登录态，cookie 经 metadata "x-netease-cookie" 传入）。
+message GetDailyRecommendRequest {}
 
 // GetDailyRecommend 响应。
 message GetDailyRecommendResponse {

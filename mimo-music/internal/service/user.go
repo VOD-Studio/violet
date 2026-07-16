@@ -22,7 +22,7 @@ func NewUserServer(eng *engine.Engine) *UserServer {
 
 // Account 获取当前登录账号信息（需登录态，cookie 由调用方传入）。
 func (s *UserServer) Account(ctx context.Context, req *mmpb.AccountRequest) (*mmpb.AccountResponse, error) {
-	return executeWithCookie(s.eng, ctx, userendpoint.Account, req, req.GetCookie())
+	return executeOverride(s.eng, ctx, userendpoint.Account, req)
 }
 
 // Detail 获取用户详情。
@@ -42,12 +42,12 @@ func (s *UserServer) UserPlaylist(ctx context.Context, req *mmpb.UserPlaylistReq
 
 // DetailByName 根据 nickname 获取 userid（匿名 cookie 直接调用）。
 func (s *UserServer) DetailByName(ctx context.Context, req *mmpb.DetailByNameRequest) (*mmpb.DetailByNameResponse, error) {
-	return executeWithCookie(s.eng, ctx, userendpoint.DetailByName, req, "")
+	return executeOverride(s.eng, ctx, userendpoint.DetailByName, req)
 }
 
 // FollowEachOther 判断两个用户是否互相关注（查 target 的关注列表，匿名 cookie）。
 func (s *UserServer) FollowEachOther(ctx context.Context, req *mmpb.FollowEachOtherRequest) (*mmpb.FollowEachOtherResponse, error) {
-	return executeWithCookie(s.eng, ctx, userendpoint.FollowEachOther, req, "")
+	return executeOverride(s.eng, ctx, userendpoint.FollowEachOther, req)
 }
 
 // Follows 获取用户关注列表。

@@ -273,8 +273,6 @@ message AllTracksResponse {
 message SubscribeRequest {
   // 歌单 ID。
   int64 playlist_id = 1;
-  // 登录态 Cookie。
-  string cookie = 2;
 }
 
 // Subscribe 响应。
@@ -289,8 +287,6 @@ message CreateRequest {
   string name = 1;
   // 是否隐私（默认 false）。
   bool privacy = 2;
-  // 登录态 Cookie。
-  string cookie = 3;
 }
 
 // Create 响应。
@@ -303,8 +299,6 @@ message CreateResponse {
 message DeleteRequest {
   // 歌单 ID。
   int64 playlist_id = 1;
-  // 登录态 Cookie。
-  string cookie = 2;
 }
 
 // Delete 响应（无数据，成功即可）。
@@ -316,8 +310,6 @@ message UpdateNameRequest {
   int64 playlist_id = 1;
   // 新名称。
   string name = 2;
-  // 登录态 Cookie。
-  string cookie = 3;
 }
 
 // UpdateName 响应。
@@ -329,8 +321,6 @@ message UpdateDescRequest {
   int64 playlist_id = 1;
   // 新描述。
   string desc = 2;
-  // 登录态 Cookie。
-  string cookie = 3;
 }
 
 // UpdateDesc 响应。
@@ -342,8 +332,6 @@ message UpdateTagsRequest {
   int64 playlist_id = 1;
   // 标签列表（分号分隔）。
   string tags = 2;
-  // 登录态 Cookie。
-  string cookie = 3;
 }
 
 // UpdateTags 响应。
@@ -367,8 +355,6 @@ message UpdateTracksRequest {
   TracksOp op = 2;
   // 歌曲 ID 列表。
   repeated int64 track_ids = 3;
-  // 登录态 Cookie。
-  string cookie = 4;
 }
 
 // UpdateTracks 响应。

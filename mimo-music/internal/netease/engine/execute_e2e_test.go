@@ -167,3 +167,51 @@ func TestExecute_NilCachePolicy(t *testing.T) {
 	require.Equal(t, int32(0), c.sets, "CachePolicy=nil 不应写缓存")
 	require.Equal(t, int32(1), upstreamCalls.Load(), "CachePolicy=nil 仍应调上游")
 }
+
+// TestRawDoWithCookieAndInput_ContextCookieToUpstream 验证 cookie 从 context 流到上游 HTTP 请求。
+//
+// interceptor 把 metadata cookie 注入 context（engine.WithCookie），
+// engine 从 context 取 cookie 经 transport 注入 HTTP Cookie header。
+// table-driven 覆盖「有 cookie」「无 cookie」两例。
+func TestRawDoWithCookieAndInput_ContextCookieToUpstream(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		injectCtx context.Context // 模拟 interceptor 注入（或裸 context）
+		want      string
+	}{
+		{
+			name:      "context 有 cookie 到达上游请求",
+			injectCtx: engine.WithCookie(context.Background(), "MUSIC_API_UUT=abc;__csrf=def"),
+			want:      "MUSIC_API_UUT=abc;__csrf=def",
+		},
+		{
+			name:      "context 无 cookie 上游不带 Cookie header",
+			injectCtx: context.Background(),
+			want:      "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var gotCookie atomic.Value
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotCookie.Store(r.Header.Get("Cookie"))
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"code":200,"songs":[]}`))
+			}))
+			t.Cleanup(srv.Close)
+
+			eng := engine.New(engine.WithBaseURL(srv.URL))
+
+			_, _, err := eng.RawDoWithCookieAndInput(tt.injectCtx, engine.Meta{
+				Path: "/weapi/v3/song/detail", Method: "POST", Crypto: engine.CryptoWeAPI,
+			}, map[string]any{"c": "[]"})
+			require.NoError(t, err)
+			require.Equal(t, tt.want, gotCookie.Load().(string))
+		})
+	}
+}

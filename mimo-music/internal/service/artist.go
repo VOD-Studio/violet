@@ -62,7 +62,7 @@ func (s *ArtistServer) TopArtists(ctx context.Context, req *mmpb.TopArtistsReque
 
 // ArtistSubscribe 收藏/取消收藏歌手（写操作，cookie override）。
 func (s *ArtistServer) ArtistSubscribe(ctx context.Context, req *mmpb.ArtistSubscribeRequest) (*mmpb.ArtistSubscribeResponse, error) {
-	raw, _, err := s.eng.RawDoWithCookieAndInput(ctx, artistendpoint.SubscribeMeta, artistendpoint.SubscribeRequest(req), req.GetCookie())
+	raw, _, err := s.eng.RawDoWithCookieAndInput(ctx, artistendpoint.SubscribeMeta, artistendpoint.SubscribeRequest(req))
 	if err != nil {
 		return nil, err
 	}

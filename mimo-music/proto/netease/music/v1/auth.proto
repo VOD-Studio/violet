@@ -138,11 +138,8 @@ message CheckQrcodeResponse {
   Session session = 3;
 }
 
-// LoginStatus 请求。
-message LoginStatusRequest {
-  // Cookie 字符串（查询此 cookie 对应的登录态）。
-  string cookie = 1;
-}
+// LoginStatus 请求（cookie 经 metadata "x-netease-cookie" 传入，不在此 message）。
+message LoginStatusRequest {}
 
 // LoginStatus 响应。
 message LoginStatusResponse {
@@ -150,11 +147,8 @@ message LoginStatusResponse {
   Session session = 1;
 }
 
-// Logout 请求。
-message LogoutRequest {
-  // 要登出的 Cookie。
-  string cookie = 1;
-}
+// Logout 请求（cookie 经 metadata "x-netease-cookie" 传入，不在此 message）。
+message LogoutRequest {}
 
 // Logout 响应。
 message LogoutResponse {}
