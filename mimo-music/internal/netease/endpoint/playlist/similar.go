@@ -30,7 +30,7 @@ var SimilarPlaylists = &engine.Endpoint[*mmpb.SimilarPlaylistsRequest, *mmpb.Sim
 	MapResponse: func(req *mmpb.SimilarPlaylistsRequest, raw json.RawMessage) (*mmpb.SimilarPlaylistsResponse, error) {
 		playlists, err := parseSimilarPlaylists(raw)
 		if err != nil {
-			return &mmpb.SimilarPlaylistsResponse{}, fmt.Errorf("解析相似歌单失败: %w", err)
+			return nil, fmt.Errorf("解析相似歌单失败: %w", err)
 		}
 		return &mmpb.SimilarPlaylistsResponse{Playlists: playlists}, nil
 	},
@@ -58,7 +58,7 @@ var RelatedPlaylistRecommend = &engine.Endpoint[*mmpb.RelatedPlaylistRecommendRe
 	MapResponse: func(req *mmpb.RelatedPlaylistRecommendRequest, raw json.RawMessage) (*mmpb.RelatedPlaylistRecommendResponse, error) {
 		playlists, err := parseSimilarPlaylists(raw)
 		if err != nil {
-			return &mmpb.RelatedPlaylistRecommendResponse{}, fmt.Errorf("解析相关歌单推荐失败: %w", err)
+			return nil, fmt.Errorf("解析相关歌单推荐失败: %w", err)
 		}
 		return &mmpb.RelatedPlaylistRecommendResponse{Playlists: playlists}, nil
 	},
@@ -71,30 +71,30 @@ var RelatedPlaylistRecommend = &engine.Endpoint[*mmpb.RelatedPlaylistRecommendRe
 func parseSimilarPlaylists(raw json.RawMessage) ([]*mmpb.Playlist, error) {
 	var resp struct {
 		Playlists []struct {
-			ID          int64  `json:"id"`
-			Name        string `json:"name"`
-			CoverImgUrl string `json:"coverImgUrl"`
-			PicUrl      string `json:"picUrl"` // rcmd 接口可能用 picUrl
-			PlayCount   int64  `json:"playCount"`
-			TrackCount  int    `json:"trackCount"`
+			ID          int64  `json:"id"`          // 歌单ID
+			Name        string `json:"name"`        // 歌单名
+			CoverImgUrl string `json:"coverImgUrl"` // 封面URL
+			PicUrl      string `json:"picUrl"`      // 封面URL（rcmd 接口可能用 picUrl）
+			PlayCount   int64  `json:"playCount"`   // 播放数
+			TrackCount  int    `json:"trackCount"`  // 曲目数
 			Creator     struct {
-				UserID   int64  `json:"userId"`
-				Nickname string `json:"nickname"`
-			} `json:"creator"`
+				UserID   int64  `json:"userId"`   // 创建者用户ID
+				Nickname string `json:"nickname"` // 创建者昵称
+			} `json:"creator"` // 创建者
 		} `json:"playlists"`
 		// eapi rcmd 接口可能把列表嵌在 data 里。
 		Data struct {
 			Playlists []struct {
-				ID          int64  `json:"id"`
-				Name        string `json:"name"`
-				CoverImgUrl string `json:"coverImgUrl"`
-				PicUrl      string `json:"picUrl"`
-				PlayCount   int64  `json:"playCount"`
-				TrackCount  int    `json:"trackCount"`
+				ID          int64  `json:"id"`          // 歌单ID
+				Name        string `json:"name"`        // 歌单名
+				CoverImgUrl string `json:"coverImgUrl"` // 封面URL
+				PicUrl      string `json:"picUrl"`      // 封面URL
+				PlayCount   int64  `json:"playCount"`   // 播放数
+				TrackCount  int    `json:"trackCount"`  // 曲目数
 				Creator     struct {
-					UserID   int64  `json:"userId"`
-					Nickname string `json:"nickname"`
-				} `json:"creator"`
+					UserID   int64  `json:"userId"`   // 创建者用户ID
+					Nickname string `json:"nickname"` // 创建者昵称
+				} `json:"creator"` // 创建者
 			} `json:"playlists"`
 		} `json:"data"`
 	}

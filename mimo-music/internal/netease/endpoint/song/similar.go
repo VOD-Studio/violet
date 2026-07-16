@@ -36,7 +36,7 @@ var SimilarSongs = &engine.Endpoint[*mmpb.SimilarSongsRequest, *mmpb.SimilarSong
 			Songs []rawSimilarSong `json:"songs"`
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
-			return &mmpb.SimilarSongsResponse{}, fmt.Errorf("解析相似音乐失败: %w", err)
+			return nil, fmt.Errorf("解析相似音乐失败: %w", err)
 		}
 		out := make([]*mmpb.Song, 0, len(resp.Songs))
 		for _, s := range resp.Songs {
@@ -48,19 +48,19 @@ var SimilarSongs = &engine.Endpoint[*mmpb.SimilarSongsRequest, *mmpb.SimilarSong
 
 // rawSimilarSong 是相似音乐接口的歌曲项（字段名与 rawSong 略有不同，网易云历史包袱）。
 type rawSimilarSong struct {
-	ID      int64  `json:"id"`
-	Name    string `json:"name"`
+	ID      int64  `json:"id"`   // 歌曲ID
+	Name    string `json:"name"` // 歌曲名
 	Artists []struct {
-		ID   int64  `json:"id"`
-		Name string `json:"name"`
-	} `json:"artists"` // 注意是 artists 不是 ar
+		ID   int64  `json:"id"`   // 歌手ID
+		Name string `json:"name"` // 歌手名
+	} `json:"artists"` // 歌手数组（注意是 artists 不是 ar）
 	Album struct {
-		ID     int64  `json:"id"`
-		Name   string `json:"name"`
-		PicUrl string `json:"picUrl"`
-	} `json:"album"` // 注意是 album 不是 al
-	Duration int64 `json:"duration"` // 注意是 duration 不是 dt
-	Fee      int   `json:"fee"`
+		ID     int64  `json:"id"`     // 专辑ID
+		Name   string `json:"name"`   // 专辑名
+		PicUrl string `json:"picUrl"` // 封面URL
+	} `json:"album"` // 专辑（注意是 album 不是 al）
+	Duration int64 `json:"duration"` // 时长毫秒（注意是 duration 不是 dt）
+	Fee      int   `json:"fee"`      // 付费类型
 }
 
 // toProto 把相似音乐原始结构转成 proto Song。

@@ -34,13 +34,13 @@ var SimilarUsers = &engine.Endpoint[*mmpb.SimilarUsersRequest, *mmpb.SimilarUser
 	MapResponse: func(req *mmpb.SimilarUsersRequest, raw json.RawMessage) (*mmpb.SimilarUsersResponse, error) {
 		var resp struct {
 			Userprofiles []struct {
-				UserID    int64  `json:"userId"`
-				Nickname  string `json:"nickname"`
-				AvatarUrl string `json:"avatarUrl"`
+				UserID    int64  `json:"userId"`   // 用户ID
+				Nickname  string `json:"nickname"` // 昵称
+				AvatarUrl string `json:"avatarUrl"` // 头像URL
 			} `json:"userprofiles"`
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
-			return &mmpb.SimilarUsersResponse{}, fmt.Errorf("解析相似用户失败: %w", err)
+			return nil, fmt.Errorf("解析相似用户失败: %w", err)
 		}
 		out := make([]*mmpb.User, 0, len(resp.Userprofiles))
 		for _, u := range resp.Userprofiles {
