@@ -275,26 +275,29 @@ func TestChorusTime_MapRequest(t *testing.T) {
 }
 
 // TestChorusTime_MapResponse 副歌时间段解析。
+// 真实结构：data[].{startTime, endTime}（字段名是 startTime/endTime）。
 func TestChorusTime_MapResponse(t *testing.T) {
 	t.Parallel()
 
-	resp, err := ChorusTime.MapResponse(&mmpb.ChorusTimeRequest{}, json.RawMessage(`{"code":200,"data":[{"start":30000,"end":45000}]}`))
+	resp, err := ChorusTime.MapResponse(&mmpb.ChorusTimeRequest{}, json.RawMessage(`{"code":200,"data":[{"id":347230,"startTime":68324,"endTime":93611}]}`))
 	require.NoError(t, err)
 	require.Len(t, resp.Segments, 1)
-	require.Equal(t, int64(30000), resp.Segments[0].StartMs)
-	require.Equal(t, int64(45000), resp.Segments[0].EndMs)
+	require.Equal(t, int64(68324), resp.Segments[0].StartMs)
+	require.Equal(t, int64(93611), resp.Segments[0].EndMs)
 }
 
 // TestCreatorInfo_MapResponse 创作者信息解析。
+// 真实结构：data.songCreatorsRoleVos[].{roleName, creatorMetaVOS[].{artistId, artistName}}。
 func TestCreatorInfo_MapResponse(t *testing.T) {
 	t.Parallel()
 
-	fixture := `{"code":200,"data":{"creators":[{"id":1,"name":"黄家驹","role":"作词"},{"id":2,"name":"黄家强","role":"作曲"}]}}`
+	fixture := `{"code":200,"data":{"songCreatorsRoleVos":[{"roleName":"作词","creatorMetaVOS":[{"artistId":189688,"artistName":"黄家驹"}]},{"roleName":"作曲","creatorMetaVOS":[{"artistId":189688,"artistName":"黄家驹"}]}]}}`
 	resp, err := CreatorInfo.MapResponse(&mmpb.CreatorInfoRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Creators, 2)
 	require.Equal(t, "黄家驹", resp.Creators[0].Name)
 	require.Equal(t, "作词", resp.Creators[0].Role)
+	require.Equal(t, int64(189688), resp.Creators[0].Id)
 }
 
 // TestWordLyric_MapRequest 逐字歌词入参（含 yv/ytv/yrv 等 0 标记）。

@@ -194,10 +194,11 @@ var ChorusTime = &engine.Endpoint[*mmpb.ChorusTimeRequest, *mmpb.ChorusTimeRespo
 		return map[string]any{"ids": fmt.Sprintf("[%d]", req.GetSongId())}, nil
 	},
 	MapResponse: func(req *mmpb.ChorusTimeRequest, raw json.RawMessage) (*mmpb.ChorusTimeResponse, error) {
+		// 真实结构：data[].{startTime, endTime}（毫秒），字段名是 startTime/endTime 非 start/end。
 		var resp struct {
 			Data []struct {
-				Start int64 `json:"start"`
-				End   int64 `json:"end"`
+				StartTime int64 `json:"startTime"` // 副歌开始（毫秒）
+				EndTime   int64 `json:"endTime"`   // 副歌结束（毫秒）
 			} `json:"data"`
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
@@ -206,7 +207,7 @@ var ChorusTime = &engine.Endpoint[*mmpb.ChorusTimeRequest, *mmpb.ChorusTimeRespo
 		out := &mmpb.ChorusTimeResponse{}
 		for _, seg := range resp.Data {
 			out.Segments = append(out.Segments, &mmpb.ChorusSegment{
-				StartMs: seg.Start, EndMs: seg.End,
+				StartMs: seg.StartTime, EndMs: seg.EndTime,
 			})
 		}
 		return out, nil
@@ -227,23 +228,28 @@ var CreatorInfo = &engine.Endpoint[*mmpb.CreatorInfoRequest, *mmpb.CreatorInfoRe
 		return map[string]any{"songId": req.GetSongId()}, nil
 	},
 	MapResponse: func(req *mmpb.CreatorInfoRequest, raw json.RawMessage) (*mmpb.CreatorInfoResponse, error) {
+		// 真实结构：data.songCreatorsRoleVos[].{roleName, creatorMetaVOS[].{artistId, artistName}}
 		var resp struct {
 			Data struct {
-				Creators []struct {
-					ID   int64  `json:"id"`
-					Name string `json:"name"`
-					Role string `json:"role"`
-				} `json:"creators"`
+				Roles []struct {
+					RoleName string `json:"roleName"` // 角色（作词/作曲/编曲）
+					Creators []struct {
+						ArtistID   int64  `json:"artistId"`   // 创作者 ID
+						ArtistName string `json:"artistName"` // 创作者名
+					} `json:"creatorMetaVOS"`
+				} `json:"songCreatorsRoleVos"`
 			} `json:"data"`
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
 			return &mmpb.CreatorInfoResponse{}, fmt.Errorf("解析创作者信息失败: %w", err)
 		}
 		out := &mmpb.CreatorInfoResponse{}
-		for _, c := range resp.Data.Creators {
-			out.Creators = append(out.Creators, &mmpb.SongCreator{
-				Id: c.ID, Name: c.Name, Role: c.Role,
-			})
+		for _, role := range resp.Data.Roles {
+			for _, c := range role.Creators {
+				out.Creators = append(out.Creators, &mmpb.SongCreator{
+					Id: c.ArtistID, Name: c.ArtistName, Role: role.RoleName,
+				})
+			}
 		}
 		return out, nil
 	},
