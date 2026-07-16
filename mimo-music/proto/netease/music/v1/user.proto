@@ -90,6 +90,15 @@ service UserService {
       get: "/api/v1/users/{user_id}/level"
     };
   }
+
+  // --- 相似/相关（按返回实体归属 UserService） ---
+
+  // SimilarUsers 基于歌曲获取听歌的人（最近听过该歌曲的用户）。
+  rpc SimilarUsers(SimilarUsersRequest) returns (SimilarUsersResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/similar-users"
+    };
+  }
 }
 
 // 用户详情信息（比 User 精简实体更完整）。
@@ -334,4 +343,22 @@ message UserLevel {
 message LevelResponse {
   // 等级信息。
   UserLevel level = 1;
+}
+
+// --- 相似用户 message ---
+
+// SimilarUsers 请求。
+message SimilarUsersRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+  // 返回数量，默认 50。
+  int32 limit = 2;
+  // 偏移量，默认 0。
+  int32 offset = 3;
+}
+
+// SimilarUsers 响应。
+message SimilarUsersResponse {
+  // 听过该歌曲的用户列表（完整 User 实体）。
+  repeated User users = 1;
 }

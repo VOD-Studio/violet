@@ -121,6 +121,15 @@ service SongService {
       get: "/api/v1/songs/{song_id}/word-lyric"
     };
   }
+
+  // --- 相似/相关（按返回实体归属 SongService） ---
+
+  // SimilarSongs 基于歌曲获取相似音乐。
+  rpc SimilarSongs(SimilarSongsRequest) returns (SimilarSongsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/similar-songs"
+    };
+  }
 }
 
 // Artist 是歌手实体。被歌曲、专辑、搜索、歌手扩展等接口复用。
@@ -446,4 +455,22 @@ message GetWordLyricRequest {
 message GetWordLyricResponse {
   // 逐字歌词。
   WordLyric word_lyric = 1;
+}
+
+// --- 相似音乐 message ---
+
+// SimilarSongs 请求。
+message SimilarSongsRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+  // 返回数量，默认 50。
+  int32 limit = 2;
+  // 偏移量，默认 0。
+  int32 offset = 3;
+}
+
+// SimilarSongs 响应。
+message SimilarSongsResponse {
+  // 相似歌曲列表（完整 Song 实体）。
+  repeated Song songs = 1;
 }

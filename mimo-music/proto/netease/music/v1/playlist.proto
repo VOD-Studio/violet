@@ -113,6 +113,22 @@ service PlaylistService {
       body: "*"
     };
   }
+
+  // --- 相似/相关（按返回实体归属 PlaylistService） ---
+
+  // SimilarPlaylists 基于歌曲获取相似歌单。
+  rpc SimilarPlaylists(SimilarPlaylistsRequest) returns (SimilarPlaylistsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/similar-playlists"
+    };
+  }
+
+  // RelatedPlaylistRecommend 基于歌单获取相关歌单推荐（替代已废弃的 HTML 抓取相关歌单接口）。
+  rpc RelatedPlaylistRecommend(RelatedPlaylistRecommendRequest) returns (RelatedPlaylistRecommendResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/playlists/{playlist_id}/related-recommend"
+    };
+  }
 }
 
 // Playlist 是歌单实体。
@@ -361,4 +377,34 @@ message UpdateTracksRequest {
 message UpdateTracksResponse {
   // 成功添加的歌曲 ID。
   repeated int64 body_track_ids = 1;
+}
+
+// --- 相似/相关 message ---
+
+// SimilarPlaylists 请求。
+message SimilarPlaylistsRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+  // 返回数量，默认 50。
+  int32 limit = 2;
+  // 偏移量，默认 0。
+  int32 offset = 3;
+}
+
+// SimilarPlaylists 响应。
+message SimilarPlaylistsResponse {
+  // 相似歌单列表（完整 Playlist 实体）。
+  repeated Playlist playlists = 1;
+}
+
+// RelatedPlaylistRecommend 请求。
+message RelatedPlaylistRecommendRequest {
+  // 歌单 ID。
+  int64 playlist_id = 1;
+}
+
+// RelatedPlaylistRecommend 响应。
+message RelatedPlaylistRecommendResponse {
+  // 相关歌单推荐列表（完整 Playlist 实体）。
+  repeated Playlist playlists = 1;
 }
