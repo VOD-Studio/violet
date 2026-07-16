@@ -145,6 +145,8 @@ cache 放在 `Execute` 而非 interceptor 的理由：cache 是唯一的「per-e
 
 这是「该复用的复用」在架构上的落点，把看似 357 次的映射塌缩为 ~30 次领域映射 + 接口级组装。
 
+**列表/浏览接口统一用完整实体，禁用列表专用精简 DTO**：一个领域实体 = 一个 proto message，列表/详情/所有 rpc 共用同一类型，不为列表场景建 `XxxSummary`/`XxxListItem`。列表接口里上游没返回的字段留 proto3 零值，调用方要详情明确调详情接口。详见 [ADR: 列表响应统一实体](./mimo-music-list-response-single-entity.md)。
+
 ### 3.3 每接口声明（每接口一份，不重复样板）
 
 每个接口拥有一等公民的完整处理，集中在一个 `Endpoint` 声明里：
@@ -156,8 +158,9 @@ cache 放在 `Execute` 而非 interceptor 的理由：cache 是唯一的「per-e
 type Endpoint[Req, Resp any] struct {
     Meta        Meta                    // 网易云 path/method/crypto/auth
     Cache       *CachePolicy            // nil = 不缓存
+    NewResp     func() Resp             // 构造响应实例（缓存反序列化用，零 reflection）
     MapRequest  func(Req) (map[string]any, error)
-    MapResponse func(json.RawMessage) (Resp, error)
+    MapResponse func(Req, json.RawMessage) (Resp, error) // 接收请求，可按 req 字段分支
 }
 
 // CachePolicy 声明缓存策略。endpoint 只声明，不执行（执行在 Execute）。
