@@ -461,10 +461,12 @@ func runLogin() {
 		case <-ticker.C:
 			raw, setCookie, err := eng.RawDoWithCookieAndInput(ctx, authendpoint.CheckQrcode, authendpoint.CheckQrcodeRequest(&mmpb.CheckQrcodeRequest{Key: key}))
 			if err != nil {
-				continue // 网络抖动,继续轮询
+				fmt.Printf("轮询出错(将重试): %v\n", err)
+				continue
 			}
 			code, message, err := model.DecodeQrcodeStatus(raw)
 			if err != nil {
+				fmt.Printf("解析轮询响应失败(将重试): %v\n", err)
 				continue
 			}
 

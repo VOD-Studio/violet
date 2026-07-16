@@ -62,6 +62,8 @@ func mapBodyCode(body []byte) error {
 		return fmt.Errorf("%w: code=%d", merrors.ErrRateLimited, resp.Code)
 	case 501, 502, 503, 506, 509, -200: // 服务不可用
 		return fmt.Errorf("%w: code=%d", merrors.ErrUpstreamUnavailable, resp.Code)
+	case 800, 801, 802, 803: // 二维码登录流程状态码（过期/等待/已扫描/成功），不是错误，由调用方解析
+		return nil
 	default:
 		if resp.Code < 0 || resp.Code >= 500 {
 			return fmt.Errorf("%w: code=%d %s", merrors.ErrUpstreamUnavailable, resp.Code, resp.Msg)
