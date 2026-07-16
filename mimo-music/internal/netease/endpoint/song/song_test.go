@@ -243,6 +243,12 @@ func TestIsLike_MapResponse(t *testing.T) {
 	})
 }
 
+// TestIsLike_CacheNil 结果按调用方而异，不缓存（避免跨用户缓存污染）。
+func TestIsLike_CacheNil(t *testing.T) {
+	t.Parallel()
+	require.Nil(t, IsLike.Cache)
+}
+
 // TestDynamicCover_MapResponse 动态封面解析。
 func TestDynamicCover_MapResponse(t *testing.T) {
 	t.Parallel()

@@ -80,9 +80,9 @@ func (s *SongServer) LikeCount(ctx context.Context, req *mmpb.LikeCountRequest) 
 	return engine.Execute(s.eng, ctx, songendpoint.LikeCount, req)
 }
 
-// IsLike 判断是否已喜爱歌曲。
+// IsLike 判断是否已喜爱歌曲（结果按调用方而异，走 cookie override 不缓存）。
 func (s *SongServer) IsLike(ctx context.Context, req *mmpb.IsLikeRequest) (*mmpb.IsLikeResponse, error) {
-	return engine.Execute(s.eng, ctx, songendpoint.IsLike, req)
+	return executeOverride(s.eng, ctx, songendpoint.IsLike, req)
 }
 
 // DynamicCover 获取歌曲动态封面。

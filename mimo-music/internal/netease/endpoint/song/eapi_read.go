@@ -117,14 +117,12 @@ var LikeCount = &engine.Endpoint[*mmpb.LikeCountRequest, *mmpb.LikeCountResponse
 }
 
 // IsLike 是判断当前用户是否喜爱指定歌曲的接口声明（需登录态）。
+//
+// 结果按调用方（当前登录用户）而异，不缓存：与 user.Account 同属「特定登录态查询」，
+// cookie 经 context 注入走 executeOverride（ADR §第三条执行路径）。
 var IsLike = &engine.Endpoint[*mmpb.IsLikeRequest, *mmpb.IsLikeResponse]{
-	Meta: loggedInEapiMeta("/eapi/song/like/check"),
-	Cache: &engine.CachePolicy[*mmpb.IsLikeRequest]{
-		Key: func(req *mmpb.IsLikeRequest) string {
-			return fmt.Sprintf("song:isLike:%d", req.GetSongId())
-		},
-		TTL: 10 * time.Minute,
-	},
+	Meta:    loggedInEapiMeta("/eapi/song/like/check"),
+	Cache:   nil,
 	NewResp: func() *mmpb.IsLikeResponse { return &mmpb.IsLikeResponse{} },
 	MapRequest: func(req *mmpb.IsLikeRequest) (map[string]any, error) {
 		// trackIds 用 stringified JSON 数组形式（网易云 check 类接口约定）。

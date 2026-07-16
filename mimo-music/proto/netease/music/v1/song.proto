@@ -358,6 +358,9 @@ message LikedListRequest {
 // LikedList 响应。
 message LikedListResponse {
   // 已喜欢的歌曲 ID 集合（无序）。
+  //
+  // 网易云 /song/like/get 只返回 ID 数组（无分页、无歌曲详情），这里忠实回传。
+  // 与「列表响应统一实体」ADR 不冲突：该端点本身不返回完整 Song，调用方按 ID 另行取详情。
   repeated int64 song_ids = 1;
 }
 
