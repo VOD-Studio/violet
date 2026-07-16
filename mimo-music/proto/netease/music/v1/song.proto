@@ -29,6 +29,98 @@ service SongService {
       get: "/api/v1/songs/{song_id}/lyric"
     };
   }
+
+  // --- 歌曲扩展（写操作，cookie override 路径） ---
+
+  // Like 喜欢或取消喜欢歌曲（toggle）。
+  rpc Like(LikeRequest) returns (LikeResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/songs/{song_id}/like"
+      body: "*"
+    };
+  }
+
+  // Trash 把歌曲丢进垃圾桶，降低其推荐权重。
+  rpc Trash(TrashRequest) returns (TrashResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/songs/{song_id}/trash"
+      body: "*"
+    };
+  }
+
+  // DisallowRecommend 标记每日推荐歌曲不感兴趣。
+  rpc DisallowRecommend(DisallowRecommendRequest) returns (DisallowRecommendResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/songs/{song_id}/disallow-recommend"
+      body: "*"
+    };
+  }
+
+  // --- 歌曲扩展（读操作，走缓存） ---
+
+  // CheckAvailable 检查音乐是否可用（能否播放）。
+  rpc CheckAvailable(CheckAvailableRequest) returns (CheckAvailableResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/availability"
+    };
+  }
+
+  // LikedList 获取喜欢音乐列表（歌曲 ID 集合）。
+  rpc LikedList(LikedListRequest) returns (LikedListResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}/liked-songs"
+    };
+  }
+
+  // QualityDetail 获取歌曲音质详情（可选音质等级）。
+  rpc QualityDetail(QualityDetailRequest) returns (QualityDetailResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/quality"
+    };
+  }
+
+  // LikeCount 获取歌曲红心数量。
+  rpc LikeCount(LikeCountRequest) returns (LikeCountResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/like-count"
+    };
+  }
+
+  // IsLike 判断当前用户是否已喜爱指定歌曲。
+  rpc IsLike(IsLikeRequest) returns (IsLikeResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/liked"
+    };
+  }
+
+  // DynamicCover 获取歌曲动态封面。
+  rpc DynamicCover(DynamicCoverRequest) returns (DynamicCoverResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/dynamic-cover"
+    };
+  }
+
+  // ChorusTime 获取歌曲副歌时间段。
+  rpc ChorusTime(ChorusTimeRequest) returns (ChorusTimeResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/chorus"
+    };
+  }
+
+  // CreatorInfo 获取歌曲创作者信息（作词/作曲/编曲）。
+  rpc CreatorInfo(CreatorInfoRequest) returns (CreatorInfoResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/creators"
+    };
+  }
+
+  // GetWordLyric 获取逐字歌词（结构化时间戳，卡拉 OK 式逐字高亮）。
+  // 与 GetLyric 分离：逐字歌词体积大，调用方按需取。
+  rpc GetWordLyric(GetWordLyricRequest) returns (GetWordLyricResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/songs/{song_id}/word-lyric"
+    };
+  }
 }
 
 // Artist 是歌手实体。被歌曲、专辑、搜索、歌手扩展等接口复用。
@@ -147,4 +239,208 @@ message GetLyricRequest {
 message GetLyricResponse {
   // 歌词信息。
   Lyric lyric = 1;
+}
+
+// --- 歌曲扩展 message ---
+
+// 歌曲音质详情。
+message SongQuality {
+  // 音质等级标识（standard / higher / exhigh / lossless / hires）。
+  string level = 1;
+  // 比特率。
+  int64 bitrate = 2;
+  // 该音质下的播放直链（部分等级可能为空）。
+  string url = 3;
+}
+
+// 逐字歌词单字。
+message WordLyricWord {
+  // 该字开始时间（毫秒）。
+  int64 start_ms = 1;
+  // 该字持续时长（毫秒）。
+  int64 duration_ms = 2;
+  // 字内容。
+  string content = 3;
+}
+
+// 逐字歌词单行。
+message WordLyricLine {
+  // 该行开始时间（毫秒）。
+  int64 start_ms = 1;
+  // 该行持续时长（毫秒）。
+  int64 duration_ms = 2;
+  // 该行的逐字内容。
+  repeated WordLyricWord words = 3;
+  // 该行原文（翻译/音译在独立字段，逐字主体用原文）。
+  string content = 4;
+}
+
+// 逐字歌词。
+message WordLyric {
+  // 逐行逐字歌词。
+  repeated WordLyricLine lines = 1;
+  // 逐字翻译歌词（与 lines 一一对应，可空）。
+  repeated WordLyricLine translated_lines = 2;
+  // 逐字音译歌词（与 lines 一一对应，可空）。
+  repeated WordLyricLine romanized_lines = 3;
+}
+
+// 歌曲创作者（作词/作曲/编曲等角色）。
+message SongCreator {
+  // 创作者 ID。
+  int64 id = 1;
+  // 创作者名。
+  string name = 2;
+  // 角色（如 作词/作曲/编曲/制作人）。
+  string role = 3;
+}
+
+// 副歌时间段。
+message ChorusSegment {
+  // 开始时间（毫秒）。
+  int64 start_ms = 1;
+  // 结束时间（毫秒）。
+  int64 end_ms = 2;
+}
+
+// Like 请求。
+message LikeRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+  // true 喜欢，false 取消喜欢。
+  bool like = 2;
+}
+
+// Like 响应。
+message LikeResponse {
+  // 操作后是否已喜欢。
+  bool liked = 1;
+}
+
+// Trash 请求。
+message TrashRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// Trash 响应（仅表示操作受理，无额外字段）。
+message TrashResponse {}
+
+// DisallowRecommend 请求。
+message DisallowRecommendRequest {
+  // 每日推荐歌曲 ID。
+  int64 song_id = 1;
+}
+
+// DisallowRecommend 响应（仅表示操作受理，无额外字段）。
+message DisallowRecommendResponse {}
+
+// CheckAvailable 请求。
+message CheckAvailableRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// CheckAvailable 响应。
+message CheckAvailableResponse {
+  // 是否可播放。
+  bool available = 1;
+  // 不可播放时的提示信息。
+  string message = 2;
+}
+
+// LikedList 请求。
+message LikedListRequest {
+  // 用户 ID。
+  int64 user_id = 1;
+}
+
+// LikedList 响应。
+message LikedListResponse {
+  // 已喜欢的歌曲 ID 集合（无序）。
+  repeated int64 song_ids = 1;
+}
+
+// QualityDetail 请求。
+message QualityDetailRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// QualityDetail 响应。
+message QualityDetailResponse {
+  // 可选音质列表。
+  repeated SongQuality qualities = 1;
+}
+
+// LikeCount 请求。
+message LikeCountRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// LikeCount 响应。
+message LikeCountResponse {
+  // 红心数量。
+  int64 count = 1;
+}
+
+// IsLike 请求。
+message IsLikeRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// IsLike 响应。
+message IsLikeResponse {
+  // 当前用户是否已喜爱。
+  bool liked = 1;
+}
+
+// DynamicCover 请求。
+message DynamicCoverRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// DynamicCover 响应。
+message DynamicCoverResponse {
+  // 动态封面 URL。
+  string url = 1;
+}
+
+// ChorusTime 请求。
+message ChorusTimeRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// ChorusTime 响应。
+message ChorusTimeResponse {
+  // 副歌时间段列表。
+  repeated ChorusSegment segments = 1;
+}
+
+// CreatorInfo 请求。
+message CreatorInfoRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// CreatorInfo 响应。
+message CreatorInfoResponse {
+  // 创作者列表。
+  repeated SongCreator creators = 1;
+}
+
+// GetWordLyric 请求。
+message GetWordLyricRequest {
+  // 歌曲 ID。
+  int64 song_id = 1;
+}
+
+// GetWordLyric 响应。
+message GetWordLyricResponse {
+  // 逐字歌词。
+  WordLyric word_lyric = 1;
 }
