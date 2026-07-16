@@ -366,7 +366,7 @@ service.GetSongDetail(ctx, req)                       ← 恒一行
   ↓
 engine.Execute(engine, ctx, songendpoint.Detail, req) ← 顶层泛型函数
   ├─ 1. ep.Cache != nil？查 cache.Get(key)
-  │     命中 → proto.Unmarshal(hit, &resp) → 返回（RawDo 跳过，endpoint 不执行）
+  │     命中 → proto.Unmarshal(hit, ep.NewResp()) → 返回（RawDo 跳过，endpoint 不执行）
   │     未命中 ↓
   ├─ 2. ep.MapRequest(req) → params
   ├─ 3. engine.RawDo(ctx, ep.Meta, params)
@@ -374,7 +374,7 @@ engine.Execute(engine, ctx, songendpoint.Detail, req) ← 顶层泛型函数
   │     ├─ crypto(ep.Meta.Crypto, params) → 加密请求体
   │     ├─ transport.HTTP(ep.Meta.Path, encrypted) → 网易云原始 JSON
   │     └─ retry / breaker / metrics（命中/失败按 policy）
-  ├─ 4. ep.MapResponse(raw) → resp（调 model.MapSong 等组装）
+  ├─ 4. ep.MapResponse(req, raw) → resp（调 model.MapSong 等组装，可按 req 分支）
   └─ 5. ep.Cache != nil？proto.Marshal(resp) → cache.Set(key, data, TTL)
   ↓
 return resp
@@ -384,7 +384,16 @@ return resp
 
 ### cache 命中的类型安全
 
-cache 在 `Execute` 而非 interceptor：`ep.Cache`（policy）和 `Resp`（具体类型参数）都在手边。命中时 `proto.Unmarshal(hit, &resp)` 的 `resp` 是具体 proto 类型，零 reflection。若改放 interceptor，需额外造 `FullMethod → CachePolicy` 注册表 + reflection 反序列化，并引入拦截器顺序 footgun。cache 是唯一的 per-endpoint policy 驱动 + 类型相关序列化横切关注点，和均匀的 auth/rate/log/trace/recovery 本质不同。
+cache 在 `Execute` 而非 interceptor：`ep.Cache`（policy）和 `Resp`（具体类型参数）都在手边。命中时用 endpoint 声明的 `ep.NewResp` 工厂构造实例，再 `proto.Unmarshal(hit, resp)`，零 reflection（`NewResp` 形如 `func() *pb.X { return &pb.X{} }`）。若改放 interceptor，需额外造 `FullMethod → CachePolicy` 注册表 + reflection 反序列化，并引入拦截器顺序 footgun。cache 是唯一的 per-endpoint policy 驱动 + 类型相关序列化横切关注点，和均匀的 auth/rate/log/trace/recovery 本质不同。
+
+### 第三条执行路径：cookie override
+
+除 `Execute`（走 session 池选取 cookie + 缓存）外，还有两类接口走 cookie override 路径，service 调 `engine.RawDoWithCookieAndInput` 或 service 包的 `executeWithCookie` 辅助：
+
+- **登录类**（auth）：创建新 session 的源头，不查 session 池，捕获 `Set-Cookie` 上报给 SessionStore。
+- **写操作 / 特定登录态查询**（playlist 写操作、artist Subscribe、user Account）：cookie 是调用方持有的特定登录态（如某 admin 操作某歌单），不是 session 池轮换的匿名/登录池 cookie。从请求的 `cookie` 字段取，不走缓存（写操作即时生效、Account 查特定账号）。
+
+cookie override 路径的 endpoint 仍声明 Meta + MapRequest + MapResponse（与 Execute 路径同构），只是 `Cache=nil`、service 走 `executeWithCookie(eng, ctx, ep, req, req.GetCookie())`。`executeWithCookie` 是 service 包的泛型辅助，串起 MapRequest → RawDoWithCookieAndInput → MapResponse，让 service 方法仍恒一行。
 
 ## 5. 四个特有复杂度及应对
 
