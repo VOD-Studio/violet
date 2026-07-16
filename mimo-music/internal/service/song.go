@@ -40,3 +40,67 @@ func (s *SongServer) GetLyric(ctx context.Context, req *mmpb.GetLyricRequest) (*
 	resp, err := engine.Execute(s.eng, ctx, songendpoint.Lyric, req)
 	return resp, err
 }
+
+// --- 歌曲扩展（写操作，cookie override 路径） ---
+
+// Like 喜欢或取消喜欢歌曲（toggle）。
+func (s *SongServer) Like(ctx context.Context, req *mmpb.LikeRequest) (*mmpb.LikeResponse, error) {
+	return executeOverride(s.eng, ctx, songendpoint.Like, req)
+}
+
+// Trash 把歌曲丢进垃圾桶。
+func (s *SongServer) Trash(ctx context.Context, req *mmpb.TrashRequest) (*mmpb.TrashResponse, error) {
+	return executeOverride(s.eng, ctx, songendpoint.Trash, req)
+}
+
+// DisallowRecommend 标记每日推荐歌曲不感兴趣。
+func (s *SongServer) DisallowRecommend(ctx context.Context, req *mmpb.DisallowRecommendRequest) (*mmpb.DisallowRecommendResponse, error) {
+	return executeOverride(s.eng, ctx, songendpoint.DisallowRecommend, req)
+}
+
+// --- 歌曲扩展（读操作，走缓存） ---
+
+// CheckAvailable 检查音乐是否可用。
+func (s *SongServer) CheckAvailable(ctx context.Context, req *mmpb.CheckAvailableRequest) (*mmpb.CheckAvailableResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.CheckAvailable, req)
+}
+
+// LikedList 获取喜欢音乐列表。
+func (s *SongServer) LikedList(ctx context.Context, req *mmpb.LikedListRequest) (*mmpb.LikedListResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.LikedList, req)
+}
+
+// QualityDetail 获取歌曲音质详情。
+func (s *SongServer) QualityDetail(ctx context.Context, req *mmpb.QualityDetailRequest) (*mmpb.QualityDetailResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.QualityDetail, req)
+}
+
+// LikeCount 获取歌曲红心数量。
+func (s *SongServer) LikeCount(ctx context.Context, req *mmpb.LikeCountRequest) (*mmpb.LikeCountResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.LikeCount, req)
+}
+
+// IsLike 判断是否已喜爱歌曲。
+func (s *SongServer) IsLike(ctx context.Context, req *mmpb.IsLikeRequest) (*mmpb.IsLikeResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.IsLike, req)
+}
+
+// DynamicCover 获取歌曲动态封面。
+func (s *SongServer) DynamicCover(ctx context.Context, req *mmpb.DynamicCoverRequest) (*mmpb.DynamicCoverResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.DynamicCover, req)
+}
+
+// ChorusTime 获取歌曲副歌时间。
+func (s *SongServer) ChorusTime(ctx context.Context, req *mmpb.ChorusTimeRequest) (*mmpb.ChorusTimeResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.ChorusTime, req)
+}
+
+// CreatorInfo 获取歌曲创作者信息。
+func (s *SongServer) CreatorInfo(ctx context.Context, req *mmpb.CreatorInfoRequest) (*mmpb.CreatorInfoResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.CreatorInfo, req)
+}
+
+// GetWordLyric 获取逐字歌词。
+func (s *SongServer) GetWordLyric(ctx context.Context, req *mmpb.GetWordLyricRequest) (*mmpb.GetWordLyricResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.WordLyricEP, req)
+}

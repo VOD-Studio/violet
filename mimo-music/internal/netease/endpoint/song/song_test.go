@@ -92,3 +92,241 @@ func TestURL_MapRequest(t *testing.T) {
 		})
 	}
 }
+
+// --- 写类接口（cookie override 路径） ---
+
+// TestLike_MapRequest 喜欢音乐入参构造。
+func TestLike_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	t.Run("喜欢", func(t *testing.T) {
+		t.Parallel()
+		params, err := Like.MapRequest(&mmpb.LikeRequest{SongId: 347230, Like: true})
+		require.NoError(t, err)
+		require.Equal(t, "itembased", params["alg"])
+		require.Equal(t, int64(347230), params["trackId"])
+		require.Equal(t, true, params["like"])
+		require.Equal(t, "3", params["time"])
+	})
+	t.Run("取消", func(t *testing.T) {
+		t.Parallel()
+		params, _ := Like.MapRequest(&mmpb.LikeRequest{SongId: 1, Like: false})
+		require.Equal(t, false, params["like"])
+	})
+}
+
+// TestLike_MapResponse 回填操作后状态。
+func TestLike_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	resp, err := Like.MapResponse(&mmpb.LikeRequest{Like: true}, json.RawMessage(`{"code":200}`))
+	require.NoError(t, err)
+	require.True(t, resp.Liked)
+}
+
+// TestLike_CacheNil 写操作不缓存。
+func TestLike_CacheNil(t *testing.T) {
+	t.Parallel()
+	require.Nil(t, Like.Cache)
+}
+
+// TestTrash_MapRequest 垃圾桶入参。
+func TestTrash_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := Trash.MapRequest(&mmpb.TrashRequest{SongId: 347230})
+	require.NoError(t, err)
+	require.Equal(t, int64(347230), params["songId"])
+	require.Equal(t, "RT", params["alg"])
+	require.Equal(t, 25, params["time"])
+	require.Nil(t, Trash.Cache)
+}
+
+// TestDisallowRecommend_MapRequest 不感兴趣入参含固定常量。
+func TestDisallowRecommend_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := DisallowRecommend.MapRequest(&mmpb.DisallowRecommendRequest{SongId: 347230})
+	require.NoError(t, err)
+	require.Equal(t, int64(347230), params["resId"])
+	require.Equal(t, 4, params["resType"])
+	require.Equal(t, 1, params["sceneType"])
+	require.Nil(t, DisallowRecommend.Cache)
+}
+
+// --- 读类接口（走缓存） ---
+
+// TestCheckAvailable_MapRequest 可用检查入参（ids 是 stringified JSON 数组）。
+func TestCheckAvailable_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := CheckAvailable.MapRequest(&mmpb.CheckAvailableRequest{SongId: 347230})
+	require.NoError(t, err)
+	require.Equal(t, "[347230]", params["ids"])
+	require.Equal(t, 999000, params["br"])
+}
+
+// TestCheckAvailable_MapResponse 可用性判定（code==200 且 data[0].code==200）。
+func TestCheckAvailable_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	t.Run("可用", func(t *testing.T) {
+		t.Parallel()
+		resp, err := CheckAvailable.MapResponse(&mmpb.CheckAvailableRequest{}, json.RawMessage(`{"code":200,"data":[{"code":200}]}`))
+		require.NoError(t, err)
+		require.True(t, resp.Available)
+		require.Equal(t, "ok", resp.Message)
+	})
+	t.Run("无版权", func(t *testing.T) {
+		t.Parallel()
+		resp, err := CheckAvailable.MapResponse(&mmpb.CheckAvailableRequest{}, json.RawMessage(`{"code":200,"data":[{"code":-110}]}`))
+		require.NoError(t, err)
+		require.False(t, resp.Available)
+	})
+}
+
+// TestLikedList_MapResponse 喜欢列表解析。
+func TestLikedList_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	resp, err := LikedList.MapResponse(&mmpb.LikedListRequest{}, json.RawMessage(`{"code":200,"ids":[347230,347231,347232]}`))
+	require.NoError(t, err)
+	require.Equal(t, []int64{347230, 347231, 347232}, resp.SongIds)
+}
+
+// TestQualityDetail_MapResponse 音质详情解析。
+func TestQualityDetail_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	fixture := `{"code":200,"data":{"qualities":[{"level":"standard","bitrate":320000,"url":""},{"level":"lossless","bitrate":999000,"url":"http://flac"}]}}`
+	resp, err := QualityDetail.MapResponse(&mmpb.QualityDetailRequest{}, json.RawMessage(fixture))
+	require.NoError(t, err)
+	require.Len(t, resp.Qualities, 2)
+	require.Equal(t, "standard", resp.Qualities[0].Level)
+	require.Equal(t, int64(320000), resp.Qualities[0].Bitrate)
+	require.Equal(t, "lossless", resp.Qualities[1].Level)
+}
+
+// TestLikeCount_MapResponse 红心数量解析。
+func TestLikeCount_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	resp, err := LikeCount.MapResponse(&mmpb.LikeCountRequest{}, json.RawMessage(`{"code":200,"data":{"count":12345}}`))
+	require.NoError(t, err)
+	require.Equal(t, int64(12345), resp.Count)
+}
+
+// TestIsLike_MapRequest trackIds 是 stringified JSON 数组。
+func TestIsLike_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := IsLike.MapRequest(&mmpb.IsLikeRequest{SongId: 347230})
+	require.NoError(t, err)
+	require.Equal(t, "[347230]", params["trackIds"])
+}
+
+// TestIsLike_MapResponse 按请求 songId 匹配 like 状态。
+func TestIsLike_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	t.Run("已喜爱", func(t *testing.T) {
+		t.Parallel()
+		resp, err := IsLike.MapResponse(&mmpb.IsLikeRequest{SongId: 347230}, json.RawMessage(`{"code":200,"songs":[{"songId":347230,"like":true}]}`))
+		require.NoError(t, err)
+		require.True(t, resp.Liked)
+	})
+	t.Run("未命中回退false", func(t *testing.T) {
+		t.Parallel()
+		resp, err := IsLike.MapResponse(&mmpb.IsLikeRequest{SongId: 999}, json.RawMessage(`{"code":200,"songs":[{"songId":347230,"like":true}]}`))
+		require.NoError(t, err)
+		require.False(t, resp.Liked)
+	})
+}
+
+// TestDynamicCover_MapResponse 动态封面解析。
+func TestDynamicCover_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	resp, err := DynamicCover.MapResponse(&mmpb.DynamicCoverRequest{}, json.RawMessage(`{"code":200,"data":{"url":"http://cover.gif"}}`))
+	require.NoError(t, err)
+	require.Equal(t, "http://cover.gif", resp.Url)
+}
+
+// TestChorusTime_MapRequest ids 是 stringified JSON 数组。
+func TestChorusTime_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := ChorusTime.MapRequest(&mmpb.ChorusTimeRequest{SongId: 347230})
+	require.NoError(t, err)
+	require.Equal(t, "[347230]", params["ids"])
+}
+
+// TestChorusTime_MapResponse 副歌时间段解析。
+func TestChorusTime_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	resp, err := ChorusTime.MapResponse(&mmpb.ChorusTimeRequest{}, json.RawMessage(`{"code":200,"data":[{"start":30000,"end":45000}]}`))
+	require.NoError(t, err)
+	require.Len(t, resp.Segments, 1)
+	require.Equal(t, int64(30000), resp.Segments[0].StartMs)
+	require.Equal(t, int64(45000), resp.Segments[0].EndMs)
+}
+
+// TestCreatorInfo_MapResponse 创作者信息解析。
+func TestCreatorInfo_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	fixture := `{"code":200,"data":{"creators":[{"id":1,"name":"黄家驹","role":"作词"},{"id":2,"name":"黄家强","role":"作曲"}]}}`
+	resp, err := CreatorInfo.MapResponse(&mmpb.CreatorInfoRequest{}, json.RawMessage(fixture))
+	require.NoError(t, err)
+	require.Len(t, resp.Creators, 2)
+	require.Equal(t, "黄家驹", resp.Creators[0].Name)
+	require.Equal(t, "作词", resp.Creators[0].Role)
+}
+
+// TestWordLyric_MapRequest 逐字歌词入参（含 yv/ytv/yrv 等 0 标记）。
+func TestWordLyric_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := WordLyricEP.MapRequest(&mmpb.GetWordLyricRequest{SongId: 347230})
+	require.NoError(t, err)
+	require.Equal(t, int64(347230), params["id"])
+	require.Equal(t, false, params["cp"])
+	require.Equal(t, 0, params["yv"])
+	require.Equal(t, 0, params["ytv"])
+}
+
+// TestWordLyric_MapResponse 逐字歌词 yrc blob 解析成结构化 WordLyric。
+func TestWordLyric_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	// yrc 是逐字文本 blob（字段顺序 startMs,durMs,0）。
+	yrc := `[420,4440](420,1320,0)Lately(1740,570,0)I've`
+	ytlrc := `[420,4440](420,1320,0)最近(1740,570,0)我`
+	fixture := `{"code":200,"yrc":{"lyric":"` + escapeYrc(yrc) + `"},"ytlrc":{"lyric":"` + escapeYrc(ytlrc) + `"}}`
+
+	resp, err := WordLyricEP.MapResponse(&mmpb.GetWordLyricRequest{}, json.RawMessage(fixture))
+	require.NoError(t, err)
+	require.NotNil(t, resp.WordLyric)
+	require.Len(t, resp.WordLyric.Lines, 1)
+	require.Equal(t, "Lately", resp.WordLyric.Lines[0].Words[0].Content)
+	// 逐字翻译也应被解析。
+	require.Len(t, resp.WordLyric.TranslatedLines, 1)
+	require.Equal(t, "最近", resp.WordLyric.TranslatedLines[0].Words[0].Content)
+}
+
+// escapeYrc 把 yrc blob 里的字符转义成可嵌入 JSON 字符串的形式（仅处理双引号/反斜杠）。
+func escapeYrc(s string) string {
+	out := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '"':
+			out = append(out, '\\', '"')
+		case '\\':
+			out = append(out, '\\', '\\')
+		default:
+			out = append(out, s[i])
+		}
+	}
+	return string(out)
+}

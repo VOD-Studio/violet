@@ -122,3 +122,92 @@ func TestMapAlbum(t *testing.T) {
 		t.Errorf("PublishTime = %s, 期望 1993-01-01", got.PublishTime)
 	}
 }
+
+// TestDecodeWordLyric_CountingStars 用真实的 netease yrc（OneRepublic - Counting Stars）
+// fixture 验证逐字解析：行时间戳、逐字 token、dur=0 的字内间隙/标点。
+// 注意 yrc 字段顺序是 (startMs,durMs,0)，0 是网易云固定标记。
+func TestDecodeWordLyric_CountingStars(t *testing.T) {
+	t.Parallel()
+
+	// 真实 netease yrc blob（来源：Lyricify-Lyrics-Helper demo fixtures）。
+	const blob = "[420,4440](420,1320,0)Lately(1740,0,0), (1740,570,0)I've (2310,600,0)been(2910,0,0), (2910,210,0)I've (3120,180,0)been (3300,420,0)losing (3720,1140,0)sleep\n" +
+		"[5280,3900](5280,690,0)Dreaming (5970,540,0)about (6510,120,0)the (6630,510,0)things (7140,150,0)that (7290,570,0)we (7860,540,0)could (8400,780,0)be"
+
+	got, err := DecodeWordLyric(blob)
+	if err != nil {
+		t.Fatalf("解析失败: %v", err)
+	}
+	if len(got.Lines) != 2 {
+		t.Fatalf("行数 = %d, 期望 2", len(got.Lines))
+	}
+
+	// 第一行：[420,4440]
+	first := got.Lines[0]
+	if first.StartMs != 420 || first.DurationMs != 4440 {
+		t.Errorf("第一行时间戳 = (%d,%d), 期望 (420,4440)", first.StartMs, first.DurationMs)
+	}
+	// 第一个字：Lately，start=420 dur=1320
+	if len(first.Words) < 1 || first.Words[0].Content != "Lately" {
+		t.Errorf("第一个字错误: %+v", first.Words)
+	}
+	if first.Words[0].StartMs != 420 || first.Words[0].DurationMs != 1320 {
+		t.Errorf("第一个字时间 = (%d,%d), 期望 (420,1320)", first.Words[0].StartMs, first.Words[0].DurationMs)
+	}
+	// dur=0 的间隙 token（", "）也应被解析进来。
+	foundGap := false
+	for _, w := range first.Words {
+		if w.DurationMs == 0 {
+			foundGap = true
+			break
+		}
+	}
+	if !foundGap {
+		t.Error("未解析到 dur=0 的字内间隙 token")
+	}
+	// 行内容拼接应包含完整文本。
+	if first.Content != "Lately, I've been, I've been losing sleep" {
+		t.Errorf("第一行拼接内容 = %q", first.Content)
+	}
+}
+
+// TestDecodeWordLyric_Chinese 验证多字节中文逐字解析。
+// 用一条格式合法的合成 yrc 行（解析器对字内容多字节透明）。
+func TestDecodeWordLyric_Chinese(t *testing.T) {
+	t.Parallel()
+
+	const blob = "[14720,4860](14720,360,0)我(15080,360,0)说(15440,360,0)了"
+
+	got, err := DecodeWordLyric(blob)
+	if err != nil {
+		t.Fatalf("解析失败: %v", err)
+	}
+	if len(got.Lines) != 1 {
+		t.Fatalf("行数 = %d, 期望 1", len(got.Lines))
+	}
+	line := got.Lines[0]
+	if len(line.Words) != 3 {
+		t.Fatalf("字数 = %d, 期望 3", len(line.Words))
+	}
+	want := []string{"我", "说", "了"}
+	for i, w := range line.Words {
+		if w.Content != want[i] {
+			t.Errorf("第 %d 字 = %q, 期望 %q", i, w.Content, want[i])
+		}
+	}
+	if line.Content != "我说了" {
+		t.Errorf("拼接内容 = %q, 期望 %q", line.Content, "我说了")
+	}
+}
+
+// TestDecodeWordLyric_Empty 空 blob 返回空 WordLyric，不报错。
+func TestDecodeWordLyric_Empty(t *testing.T) {
+	t.Parallel()
+
+	got, err := DecodeWordLyric("")
+	if err != nil {
+		t.Fatalf("空 blob 不应报错: %v", err)
+	}
+	if len(got.Lines) != 0 {
+		t.Errorf("空 blob 行数 = %d, 期望 0", len(got.Lines))
+	}
+}
