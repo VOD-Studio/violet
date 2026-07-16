@@ -3,8 +3,8 @@
 // 7 个写操作（Subscribe/Create/Delete/UpdateName/UpdateDesc/UpdateTags/UpdateTracks）。
 // 歌单排序（UpdateOrder）和歌曲排序（UpdateSongOrder）的网易云端点不稳定，推迟验证。
 // 全部 CachePolicy=nil（写操作不缓存）、AuthLoggedIn（需登录态）。
-// cookie 从请求的 cookie 字段传入（不走 session 池选取），
-// 所以 service 直接调 engine.RawDoWithCookieAndInput 而非 Execute。
+// cookie 经 metadata "x-netease-cookie" 传入（interceptor 注入 context），
+// service 调 engine.RawDoWithCookieAndInput 从 context 取，不走 session 池。
 //
 // endpoint 只含 Meta + MapRequest，不含 MapResponse（service 内联解析简单响应）。
 package playlist

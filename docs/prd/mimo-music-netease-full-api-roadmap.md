@@ -447,7 +447,10 @@ internal/service/*.go              grpc impl：恒一行 return engine.Execute(.
 |------|------|--------|------|
 | **地基** ✅ | proto 基础设施 + engine + session + crypto + 领域模型层首批 5 实体（Song/Artist/Album/Playlist/User） | — | 已完成，15 接口迁移到新架构 |
 | **Phase 4** ✅ | 搜索扩展 + 歌单管理 + 用户模块 + 歌手扩展 | ~69 | 已完成，搜索9type+辅助4+用户11+歌单浏览6+写操作7+歌手8 |
-| **Phase 5** | 专辑扩展 + 推荐扩展 + 排行榜 + MV/视频 + 相似/相关 + 歌曲扩展 | ~73 | 新建 MV/Video/Toplist 实体 |
+| **cookie 重构** ✅ | cookie 传递从 proto 字段迁移到 gRPC metadata（凭证出域） | — | 已完成（PRD 0010），Phase 5 前置 |
+| **Phase 5a** | 普通专辑扩展 + 相似/相关 + 歌曲扩展 + 推荐扩展 | ~28 | 无新实体，PRD 0011 |
+| **Phase 5b** | 数字专辑体系（购买/销量/榜单/语种馆） | ~9 | 复用 Album，PRD 0012 |
+| **Phase 5c** | MV/视频 + 推荐MV + 相似MV + 排行榜 | ~35 | 新建 MV/Video/Toplist 实体，PRD 0013 |
 | **Phase 6** | 评论 + 收藏/关注/点赞 + FM/电台扩展 | ~58 | 新建 Comment/DJ 实体 |
 | **Phase 7** | 签到/云贝 + 云盘 + 动态/通知/私信 + 音乐人/VIP | ~60 | 新建 Event/CloudDisk 实体 |
 | **Phase 8** | 播客/助眠/DIFM/其他小众 | ~70 | |

@@ -1,5 +1,7 @@
 # Issue-0001：cookie 传递迁移到 gRPC metadata
 
+## Status: ✅ 已完成（commit `7d08601f`）
+
 ## Parent
 
 PRD：`../../prd/0010-mimo-music-cookie-metadata-refactor.md`
@@ -23,18 +25,18 @@ PRD：`../../prd/0010-mimo-music-cookie-metadata-refactor.md`
 
 ## Acceptance criteria
 
-- [ ] cookie interceptor 从 metadata 提取 `x-netease-cookie` 注入 context，`CookieFromContext(ctx)` 可读出
-- [ ] interceptor 单元测试：metadata 有/无 cookie、多值边界（table-driven + testify，对齐 go-testing-guide.md）
-- [ ] engine 的 `RawDoWithCookieAndInput` 签名去掉 cookie 参数，从 context 取
-- [ ] engine e2e 测试：context 注入 cookie → mock server（WithBaseURL + httptest）断言收到的 HTTP 请求带正确 Cookie header
-- [ ] `executeWithCookie` 辅助去掉 cookie 参数：`executeWithCookie(eng, ctx, ep, req)`
-- [ ] 所有写操作 service 方法恒一行（cookie 在 ctx，对 service 透明）
-- [ ] proto 删除 13 处 request `string cookie` 字段，`Session.cookie` 响应字段保留
-- [ ] `make proto` 生成成功
-- [ ] server 用 `grpc.ChainUnaryInterceptor` 装配 cookie interceptor
-- [ ] 全量测试通过（`go test ./internal/...`）
-- [ ] `go vet` 通过、`make proto-lint`（buf lint）通过
-- [ ] 架构 ADR §4.5 cookie 传递机制说明更新
+- [x] cookie interceptor 从 metadata 提取 `x-netease-cookie` 注入 context，`CookieFromContext(ctx)` 可读出
+- [x] interceptor 单元测试：metadata 有/无 cookie、多值边界（table-driven + testify，对齐 go-testing-guide.md）
+- [x] engine 的 `RawDoWithCookieAndInput` 签名去掉 cookie 参数，从 context 取
+- [x] engine e2e 测试：context 注入 cookie → mock server（WithBaseURL + httptest）断言收到的 HTTP 请求带正确 Cookie header
+- [x] `executeWithCookie` 辅助去掉 cookie 参数：`executeWithCookie(eng, ctx, ep, req)`
+- [x] 所有写操作 service 方法恒一行（cookie 在 ctx，对 service 透明）
+- [x] proto 删除 13 处 request `string cookie` 字段，`Session.cookie` 响应字段保留
+- [x] `make proto` 生成成功
+- [x] server 用 `grpc.ChainUnaryInterceptor` 装配 cookie interceptor
+- [x] 全量测试通过（`go test ./internal/...`）
+- [x] `go vet` 通过、`make proto-lint`（buf lint）通过
+- [x] 架构 ADR §4.5 cookie 传递机制说明更新
 
 ## Blocked by
 

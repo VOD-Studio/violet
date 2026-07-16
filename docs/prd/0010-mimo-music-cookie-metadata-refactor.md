@@ -1,8 +1,8 @@
 # PRD: mimo-music cookie 传递从 proto 字段迁移到 gRPC metadata
 
-> 状态：待实现
+> 状态：✅ 已完成（commit `7d08601f`）
 > 关联：[架构 ADR](../adr/mimo-music-architecture.md) §4.5 接缝签名、[列表响应统一实体 ADR](../adr/mimo-music-list-response-single-entity.md)
-> 范围：把网易云 cookie 从 proto request 字段迁移到 gRPC metadata，凭证出域，业务模型干净。优先于 Phase 5 功能扩展。
+> 范围：把网易云 cookie 从 proto request 字段迁移到 gRPC metadata，凭证出域，业务模型干净。Phase 5 功能扩展的前置，已完成。
 
 ## Problem Statement
 
