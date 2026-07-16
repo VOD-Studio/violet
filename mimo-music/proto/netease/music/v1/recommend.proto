@@ -4,6 +4,7 @@ package netease.music.v1;
 
 import "google/api/annotations.proto";
 import "netease/music/v1/song.proto";
+import "netease/music/v1/playlist.proto";
 
 option go_package = "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1;mmpb";
 
@@ -15,6 +16,29 @@ service RecommendService {
       get: "/api/v1/recommend/daily"
     };
   }
+
+  // --- 推荐扩展 ---
+
+  // DailyRecommendPlaylists 获取每日推荐歌单（需登录，个性化）。
+  rpc DailyRecommendPlaylists(DailyRecommendPlaylistsRequest) returns (DailyRecommendPlaylistsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/recommend/daily-playlists"
+    };
+  }
+
+  // RecommendPlaylists 获取推荐歌单（匿名，热门）。
+  rpc RecommendPlaylists(RecommendPlaylistsRequest) returns (RecommendPlaylistsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/recommend/playlists"
+    };
+  }
+
+  // RecommendNewSongs 获取推荐新音乐（匿名）。
+  rpc RecommendNewSongs(RecommendNewSongsRequest) returns (RecommendNewSongsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/recommend/new-songs"
+    };
+  }
 }
 
 // GetDailyRecommend 请求（需登录态，cookie 经 metadata "x-netease-cookie" 传入）。
@@ -23,5 +47,40 @@ message GetDailyRecommendRequest {}
 // GetDailyRecommend 响应。
 message GetDailyRecommendResponse {
   // 推荐歌曲列表。
+  repeated Song songs = 1;
+}
+
+// --- 推荐扩展 message ---
+
+// DailyRecommendPlaylists 请求（需登录态，无入参）。
+message DailyRecommendPlaylistsRequest {}
+
+// DailyRecommendPlaylists 响应。
+message DailyRecommendPlaylistsResponse {
+  // 每日推荐歌单列表（完整 Playlist 实体）。
+  repeated Playlist playlists = 1;
+}
+
+// RecommendPlaylists 请求。
+message RecommendPlaylistsRequest {
+  // 返回数量，默认 30（网易云不支持 offset）。
+  int32 limit = 1;
+}
+
+// RecommendPlaylists 响应。
+message RecommendPlaylistsResponse {
+  // 推荐歌单列表（完整 Playlist 实体）。
+  repeated Playlist playlists = 1;
+}
+
+// RecommendNewSongs 请求。
+message RecommendNewSongsRequest {
+  // 返回数量，默认 10（网易云不支持 offset）。
+  int32 limit = 1;
+}
+
+// RecommendNewSongs 响应。
+message RecommendNewSongsResponse {
+  // 推荐新音乐列表（完整 Song 实体）。
   repeated Song songs = 1;
 }
