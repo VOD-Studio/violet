@@ -44,12 +44,12 @@ func DecodePersonalFM(raw json.RawMessage) ([]*mmpb.Song, error) {
 
 // rawRecommendPlaylist 是推荐歌单列表项（每日推荐歌单 / 推荐歌单共用结构）。
 type rawRecommendPlaylist struct {
-	ID          int64  `json:"id"`          // 歌单ID
-	Name        string `json:"name"`        // 歌单名
-	PicUrl      string `json:"picUrl"`      // 封面URL
-	CoverImgUrl string `json:"coverImgUrl"` // 封面URL（部分接口用此字段名）
-	PlayCount   int64  `json:"playCount"`   // 播放数
-	TrackCount  int    `json:"trackCount"`  // 曲目数
+	ID          int64   `json:"id"`          // 歌单ID
+	Name        string  `json:"name"`        // 歌单名
+	PicUrl      string  `json:"picUrl"`      // 封面URL
+	CoverImgUrl string  `json:"coverImgUrl"` // 封面URL（部分接口用此字段名）
+	PlayCount   float64 `json:"playCount"`   // 播放数（网易云大数字用科学计数法，float64 容纳）
+	TrackCount  int     `json:"trackCount"`  // 曲目数
 	Creator     struct {
 		UserID   int64  `json:"userId"`   // 创建者用户ID
 		Nickname string `json:"nickname"` // 创建者昵称
@@ -83,7 +83,7 @@ func DecodeRecommendPlaylists(raw json.RawMessage) ([]*mmpb.Playlist, error) {
 		}
 		out = append(out, &mmpb.Playlist{
 			Id: p.ID, Name: p.Name, CoverUrl: cover,
-			PlayCount: p.PlayCount, TrackCount: int32(p.TrackCount),
+			PlayCount: int64(p.PlayCount), TrackCount: int32(p.TrackCount),
 			Creator: &mmpb.User{Id: p.Creator.UserID, Nickname: p.Creator.Nickname},
 		})
 	}
@@ -92,8 +92,25 @@ func DecodeRecommendPlaylists(raw json.RawMessage) ([]*mmpb.Playlist, error) {
 
 // rawRecommendNewSong 是推荐新音乐列表项（歌曲嵌在 song 字段下）。
 type rawRecommendNewSong struct {
-	ID   int64   `json:"id"`   // 列表项ID（非歌曲ID）
-	Song rawSong `json:"song"` // 实际歌曲信息（网易云嵌套结构）
+	ID   int64             `json:"id"`   // 列表项ID（非歌曲ID）
+	Song rawRecommendSong  `json:"song"` // 实际歌曲信息（全名字段 artists/album/duration）
+}
+
+// rawRecommendSong 是推荐/新歌接口的歌曲项（字段名用全名，与 rawSong 的缩写不同）。
+type rawRecommendSong struct {
+	ID       int64  `json:"id"`       // 歌曲ID
+	Name     string `json:"name"`     // 歌曲名
+	Artists []struct {
+		ID   int64  `json:"id"`   // 歌手ID
+		Name string `json:"name"` // 歌手名
+	} `json:"artists"` // 歌手数组（全名，非 ar）
+	Album struct {
+		ID     int64  `json:"id"`     // 专辑ID
+		Name   string `json:"name"`   // 专辑名
+		PicUrl string `json:"picUrl"` // 封面URL
+	} `json:"album"` // 专辑（全名，非 al）
+	Duration int64 `json:"duration"` // 时长毫秒（全名，非 dt）
+	Fee      int   `json:"fee"`      // 付费类型
 }
 
 // rawRecommendNewSongsResponse 是推荐新音乐的列表响应。
@@ -102,7 +119,7 @@ type rawRecommendNewSongsResponse struct {
 	Result []rawRecommendNewSong `json:"result"` // 推荐新音乐列表
 }
 
-// DecodeRecommendNewSongs 解析推荐新音乐响应（歌曲嵌在 result[i].song 下）。
+// DecodeRecommendNewSongs 解析推荐新音乐响应（歌曲嵌在 result[i].song 下，字段用全名）。
 func DecodeRecommendNewSongs(raw json.RawMessage) ([]*mmpb.Song, error) {
 	var r rawRecommendNewSongsResponse
 	if err := json.Unmarshal(raw, &r); err != nil {
@@ -110,7 +127,16 @@ func DecodeRecommendNewSongs(raw json.RawMessage) ([]*mmpb.Song, error) {
 	}
 	out := make([]*mmpb.Song, 0, len(r.Result))
 	for _, item := range r.Result {
-		out = append(out, MapSong(item.Song))
+		s := item.Song
+		artists := make([]*mmpb.Artist, 0, len(s.Artists))
+		for _, a := range s.Artists {
+			artists = append(artists, &mmpb.Artist{Id: a.ID, Name: a.Name})
+		}
+		out = append(out, &mmpb.Song{
+			Id: s.ID, Name: s.Name, Artists: artists,
+			Album:      &mmpb.Album{Id: s.Album.ID, Name: s.Album.Name, PicUrl: s.Album.PicUrl},
+			DurationMs: s.Duration, Fee: int32(s.Fee),
+		})
 	}
 	return out, nil
 }

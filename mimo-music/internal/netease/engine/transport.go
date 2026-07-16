@@ -59,7 +59,7 @@ func (t *transport) weapiPost(ctx context.Context, urlPath, payload, cookie stri
 		return nil, "", fmt.Errorf("加密失败: %w", err)
 	}
 
-	return t.postForm(ctx, urlPath, encrypted.Params, "", cookie)
+	return t.postForm(ctx, urlPath, encrypted.Params, encrypted.EncSecKey, cookie)
 }
 
 // eapiPost 发送 eapi 加密 POST 请求。
@@ -210,3 +210,4 @@ func extractCookies(resp *http.Response) string {
 	}
 	return strings.Join(parts, "; ")
 }
+

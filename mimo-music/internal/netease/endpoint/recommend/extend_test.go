@@ -86,7 +86,7 @@ func TestRecommendNewSongs_MapRequest(t *testing.T) {
 func TestRecommendNewSongs_MapResponse(t *testing.T) {
 	t.Parallel()
 
-	fixture := `{"code":200,"result":[{"id":100,"song":{"id":1,"name":"新歌","ar":[{"id":10,"name":"新人"}],"al":{"id":20,"name":"新专","picUrl":"http://c.jpg"},"dt":200000,"fee":0}}]}`
+	fixture := `{"code":200,"result":[{"id":100,"song":{"id":1,"name":"新歌","artists":[{"id":10,"name":"新人"}],"album":{"id":20,"name":"新专","picUrl":"http://c.jpg"},"duration":200000,"fee":0}}]}`
 	resp, err := RecommendNewSongs.MapResponse(&mmpb.RecommendNewSongsRequest{}, json.RawMessage(fixture))
 	if err != nil {
 		t.Fatalf("解析失败: %v", err)
