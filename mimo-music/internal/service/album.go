@@ -64,12 +64,14 @@ func (s *AlbumServer) AlbumSongQuality(ctx context.Context, req *mmpb.AlbumSongQ
 	return resp, err
 }
 
-// SubscribeAlbum 收藏或取消收藏专辑（按 subscribe 标志分派到 sub/unsub 端点）。
+// SubscribeAlbum 收藏专辑。
 func (s *AlbumServer) SubscribeAlbum(ctx context.Context, req *mmpb.SubscribeAlbumRequest) (*mmpb.SubscribeAlbumResponse, error) {
-	if req.GetSubscribe() {
-		resp, err := executeOverride(s.eng, ctx, albumendpoint.Subscribe, req)
-		return resp, err
-	}
+	resp, err := executeOverride(s.eng, ctx, albumendpoint.Subscribe, req)
+	return resp, err
+}
+
+// UnsubscribeAlbum 取消收藏专辑。
+func (s *AlbumServer) UnsubscribeAlbum(ctx context.Context, req *mmpb.UnsubscribeAlbumRequest) (*mmpb.UnsubscribeAlbumResponse, error) {
 	resp, err := executeOverride(s.eng, ctx, albumendpoint.Unsubscribe, req)
 	return resp, err
 }

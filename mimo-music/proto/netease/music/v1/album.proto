@@ -60,10 +60,18 @@ service AlbumService {
     };
   }
 
-  // SubscribeAlbum 收藏或取消收藏专辑（toggle）。
+  // SubscribeAlbum 收藏专辑。
   rpc SubscribeAlbum(SubscribeAlbumRequest) returns (SubscribeAlbumResponse) {
     option (google.api.http) = {
       post: "/api/v1/albums/{album_id}/subscribe"
+      body: "*"
+    };
+  }
+
+  // UnsubscribeAlbum 取消收藏专辑。
+  rpc UnsubscribeAlbum(UnsubscribeAlbumRequest) returns (UnsubscribeAlbumResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/albums/{album_id}/unsubscribe"
       body: "*"
     };
   }
@@ -216,12 +224,22 @@ message AlbumSongQualityResponse {
 message SubscribeAlbumRequest {
   // 专辑 ID。
   int64 album_id = 1;
-  // true 收藏，false 取消收藏。
-  bool subscribe = 2;
 }
 
 // SubscribeAlbum 响应。
 message SubscribeAlbumResponse {
+  // 操作后是否已收藏。
+  bool subscribed = 1;
+}
+
+// UnsubscribeAlbum 请求。
+message UnsubscribeAlbumRequest {
+  // 专辑 ID。
+  int64 album_id = 1;
+}
+
+// UnsubscribeAlbum 响应。
+message UnsubscribeAlbumResponse {
   // 操作后是否已收藏。
   bool subscribed = 1;
 }

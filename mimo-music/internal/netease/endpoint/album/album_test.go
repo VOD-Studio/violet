@@ -171,11 +171,20 @@ func TestSubscribe_MapRequest(t *testing.T) {
 	require.Nil(t, Subscribe.Cache)
 }
 
+// TestSubscribe_MapResponse 收藏回填状态为已收藏。
+func TestSubscribe_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	resp, err := Subscribe.MapResponse(&mmpb.SubscribeAlbumRequest{}, json.RawMessage(`{"code":200}`))
+	require.NoError(t, err)
+	require.True(t, resp.Subscribed)
+}
+
 // TestUnsubscribe_MapResponse 取消收藏回填状态。
 func TestUnsubscribe_MapResponse(t *testing.T) {
 	t.Parallel()
 
-	resp, err := Unsubscribe.MapResponse(&mmpb.SubscribeAlbumRequest{}, json.RawMessage(`{"code":200}`))
+	resp, err := Unsubscribe.MapResponse(&mmpb.UnsubscribeAlbumRequest{}, json.RawMessage(`{"code":200}`))
 	require.NoError(t, err)
 	require.False(t, resp.Subscribed)
 	require.Nil(t, Unsubscribe.Cache)

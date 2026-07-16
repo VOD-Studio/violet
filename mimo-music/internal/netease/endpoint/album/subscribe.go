@@ -2,7 +2,7 @@
 //
 // 网易云用 path 区分收藏/取消：/album/sub 收藏、/album/unsub 取消。
 // 拆成 Subscribe / Unsubscribe 两份端点（path 是 Meta 的固定字段，不能按请求动态派生），
-// service 的 SubscribeAlbum 方法按请求的 subscribe 标志分派到对应端点。
+// 对应 proto 的 SubscribeAlbum / UnsubscribeAlbum 两个 rpc，service 各自恒一行。
 package album
 
 import (
@@ -32,17 +32,17 @@ var Subscribe = &engine.Endpoint[*mmpb.SubscribeAlbumRequest, *mmpb.SubscribeAlb
 }
 
 // Unsubscribe 是取消收藏专辑的接口声明（cookie override）。
-var Unsubscribe = &engine.Endpoint[*mmpb.SubscribeAlbumRequest, *mmpb.SubscribeAlbumResponse]{
+var Unsubscribe = &engine.Endpoint[*mmpb.UnsubscribeAlbumRequest, *mmpb.UnsubscribeAlbumResponse]{
 	Meta: engine.Meta{
 		Path: "/weapi/album/unsub", Method: "POST",
 		Crypto: engine.CryptoWeAPI, Auth: session.AuthLoggedIn,
 	},
 	Cache:   nil,
-	NewResp: func() *mmpb.SubscribeAlbumResponse { return &mmpb.SubscribeAlbumResponse{} },
-	MapRequest: func(req *mmpb.SubscribeAlbumRequest) (map[string]any, error) {
+	NewResp: func() *mmpb.UnsubscribeAlbumResponse { return &mmpb.UnsubscribeAlbumResponse{} },
+	MapRequest: func(req *mmpb.UnsubscribeAlbumRequest) (map[string]any, error) {
 		return map[string]any{"id": fmt.Sprintf("%d", req.GetAlbumId())}, nil
 	},
-	MapResponse: func(req *mmpb.SubscribeAlbumRequest, raw json.RawMessage) (*mmpb.SubscribeAlbumResponse, error) {
-		return &mmpb.SubscribeAlbumResponse{Subscribed: false}, nil
+	MapResponse: func(req *mmpb.UnsubscribeAlbumRequest, raw json.RawMessage) (*mmpb.UnsubscribeAlbumResponse, error) {
+		return &mmpb.UnsubscribeAlbumResponse{Subscribed: false}, nil
 	},
 }
