@@ -8,8 +8,8 @@ import (
 	"context"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
-	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 	songendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/song"
+	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 )
 
 // SongServer 实现 SongServiceServer，持有 *engine.Engine。

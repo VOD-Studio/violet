@@ -22,14 +22,14 @@ type rawAlbum struct {
 
 // rawAlbumDetail 是网易云专辑详情接口的响应。
 type rawAlbumDetail struct {
-	Code  int       `json:"code"` // 业务码
+	Code  int `json:"code"` // 业务码
 	Album struct {
 		ID          int64       `json:"id"`          // 专辑ID
 		Name        string      `json:"name"`        // 专辑名
 		PicUrl      string      `json:"picUrl"`      // 封面URL
 		PublishTime string      `json:"publishTime"` // 发行时间（网易云原始字符串格式）
 		Artists     []rawArtist `json:"artists"`     // 歌手数组
-	} `json:"album"`                                    // 专辑信息
+	} `json:"album"` // 专辑信息
 	Songs []rawSong `json:"songs"` // 歌曲列表
 }
 

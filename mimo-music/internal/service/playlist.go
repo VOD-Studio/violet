@@ -5,8 +5,8 @@ import (
 	"context"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
-	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 	playlistendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/playlist"
+	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 )
 
 // PlaylistServer 实现 PlaylistServiceServer。

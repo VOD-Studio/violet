@@ -5,8 +5,8 @@ import (
 	"context"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
-	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 	userendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/user"
+	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 )
 
 // UserServer 实现 UserServiceServer。

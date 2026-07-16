@@ -15,8 +15,8 @@ import (
 
 // SimilarPlaylists 基于歌曲获取相似歌单（weapi，匿名，24h 缓存）。
 var SimilarPlaylists = &engine.Endpoint[*mmpb.SimilarPlaylistsRequest, *mmpb.SimilarPlaylistsResponse]{
-	Meta:   weapiMeta("/weapi/discovery/simiPlaylist"),
-	Cache:  browseCache("playlist:simi", func(r *mmpb.SimilarPlaylistsRequest) string {
+	Meta: weapiMeta("/weapi/discovery/simiPlaylist"),
+	Cache: browseCache("playlist:simi", func(r *mmpb.SimilarPlaylistsRequest) string {
 		return fmt.Sprintf("playlist:simiPlaylist:%d:%d:%d", r.GetSongId(), r.GetLimit(), r.GetOffset())
 	}),
 	NewResp: func() *mmpb.SimilarPlaylistsResponse { return &mmpb.SimilarPlaylistsResponse{} },

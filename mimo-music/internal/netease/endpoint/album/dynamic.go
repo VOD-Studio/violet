@@ -29,20 +29,20 @@ var AlbumDynamic = &engine.Endpoint[*mmpb.AlbumDynamicRequest, *mmpb.AlbumDynami
 	},
 	MapResponse: func(req *mmpb.AlbumDynamicRequest, raw json.RawMessage) (*mmpb.AlbumDynamicResponse, error) {
 		var resp struct {
-			SubCount   int64 `json:"subCount"`   // 收藏数
+			SubCount     int64 `json:"subCount"`     // 收藏数
 			CommentCount int64 `json:"commentCount"` // 评论数
-			ShareCount int64 `json:"shareCount"` // 分享数
-			IsSub      bool  `json:"isSub"`      // 当前用户是否已收藏
+			ShareCount   int64 `json:"shareCount"`   // 分享数
+			IsSub        bool  `json:"isSub"`        // 当前用户是否已收藏
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
 			return &mmpb.AlbumDynamicResponse{}, fmt.Errorf("解析专辑动态信息失败: %w", err)
 		}
 		return &mmpb.AlbumDynamicResponse{
 			Info: &mmpb.AlbumDynamicInfo{
-				Subscribed:       resp.IsSub,
-				SubscribedCount:  resp.SubCount,
-				CommentCount:     resp.CommentCount,
-				ShareCount:       resp.ShareCount,
+				Subscribed:      resp.IsSub,
+				SubscribedCount: resp.SubCount,
+				CommentCount:    resp.CommentCount,
+				ShareCount:      resp.ShareCount,
 			},
 		}, nil
 	},

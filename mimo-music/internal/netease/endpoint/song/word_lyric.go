@@ -46,9 +46,15 @@ var WordLyricEP = &engine.Endpoint[*mmpb.GetWordLyricRequest, *mmpb.GetWordLyric
 	},
 	MapResponse: func(req *mmpb.GetWordLyricRequest, raw json.RawMessage) (*mmpb.GetWordLyricResponse, error) {
 		var resp struct {
-			Yrc     struct{ Lyric string `json:"lyric"` } `json:"yrc"`      // 逐字原文
-			Ytlrc   struct{ Lyric string `json:"lyric"` } `json:"ytlrc"`    // 逐字翻译
-			Yromalrc struct{ Lyric string `json:"lyric"` } `json:"yromalrc"` // 逐字音译
+			Yrc struct {
+				Lyric string `json:"lyric"`
+			} `json:"yrc"` // 逐字原文
+			Ytlrc struct {
+				Lyric string `json:"lyric"`
+			} `json:"ytlrc"` // 逐字翻译
+			Yromalrc struct {
+				Lyric string `json:"lyric"`
+			} `json:"yromalrc"` // 逐字音译
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
 			return &mmpb.GetWordLyricResponse{}, fmt.Errorf("解析逐字歌词响应失败: %w", err)
