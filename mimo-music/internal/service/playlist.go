@@ -119,3 +119,13 @@ func (s *PlaylistServer) UpdateTracks(ctx context.Context, req *mmpb.UpdateTrack
 	}
 	return playlistendpoint.ParseUpdateTracksResponse(raw), nil
 }
+
+// SimilarPlaylists 基于歌曲获取相似歌单。
+func (s *PlaylistServer) SimilarPlaylists(ctx context.Context, req *mmpb.SimilarPlaylistsRequest) (*mmpb.SimilarPlaylistsResponse, error) {
+	return engine.Execute(s.eng, ctx, playlistendpoint.SimilarPlaylists, req)
+}
+
+// RelatedPlaylistRecommend 基于歌单获取相关歌单推荐。
+func (s *PlaylistServer) RelatedPlaylistRecommend(ctx context.Context, req *mmpb.RelatedPlaylistRecommendRequest) (*mmpb.RelatedPlaylistRecommendResponse, error) {
+	return engine.Execute(s.eng, ctx, playlistendpoint.RelatedPlaylistRecommend, req)
+}

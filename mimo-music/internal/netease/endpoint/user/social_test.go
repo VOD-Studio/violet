@@ -73,3 +73,25 @@ func TestLevel_MapResponse(t *testing.T) {
 	require.Equal(t, int64(5000), resp.Level.Now)
 	require.Equal(t, int64(8000), resp.Level.Next)
 }
+
+// TestSimilarUsers_MapResponse 听歌的人解析。
+func TestSimilarUsers_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	fixture := `{"code":200,"userprofiles":[{"userId":1,"nickname":"听者A","avatarUrl":"http://a.jpg"}]}`
+	resp, err := SimilarUsers.MapResponse(&mmpb.SimilarUsersRequest{}, json.RawMessage(fixture))
+	require.NoError(t, err)
+	require.Len(t, resp.Users, 1)
+	require.Equal(t, "听者A", resp.Users[0].Nickname)
+	require.Equal(t, "http://a.jpg", resp.Users[0].AvatarUrl)
+}
+
+// TestSimilarUsers_MapRequest limit 默认值。
+func TestSimilarUsers_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := SimilarUsers.MapRequest(&mmpb.SimilarUsersRequest{SongId: 347230})
+	require.NoError(t, err)
+	require.Equal(t, int32(50), params["limit"])
+	require.Equal(t, int64(347230), params["songid"])
+}

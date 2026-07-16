@@ -74,3 +74,8 @@ func (s *UserServer) Record(ctx context.Context, req *mmpb.RecordRequest) (*mmpb
 func (s *UserServer) Level(ctx context.Context, req *mmpb.LevelRequest) (*mmpb.LevelResponse, error) {
 	return engine.Execute(s.eng, ctx, userendpoint.Level, req)
 }
+
+// SimilarUsers 基于歌曲获取听歌的人。
+func (s *UserServer) SimilarUsers(ctx context.Context, req *mmpb.SimilarUsersRequest) (*mmpb.SimilarUsersResponse, error) {
+	return engine.Execute(s.eng, ctx, userendpoint.SimilarUsers, req)
+}

@@ -70,3 +70,48 @@ func TestSubscribers_MapResponse(t *testing.T) {
 	require.Equal(t, "alice", resp.Subscribers[0].Nickname)
 	require.Equal(t, int32(2), resp.Total)
 }
+
+// TestSimilarPlaylists_MapResponse 相似歌单解析。
+func TestSimilarPlaylists_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	fixture := `{"code":200,"playlists":[{"id":1,"name":"相似歌单A","coverImgUrl":"http://a.jpg","playCount":100,"trackCount":30,"creator":{"userId":10,"nickname":"张三"}}]}`
+	resp, err := SimilarPlaylists.MapResponse(&mmpb.SimilarPlaylistsRequest{}, json.RawMessage(fixture))
+	require.NoError(t, err)
+	require.Len(t, resp.Playlists, 1)
+	require.Equal(t, "相似歌单A", resp.Playlists[0].Name)
+	require.Equal(t, "张三", resp.Playlists[0].Creator.Nickname)
+}
+
+// TestSimilarPlaylists_MapRequest limit 默认值。
+func TestSimilarPlaylists_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := SimilarPlaylists.MapRequest(&mmpb.SimilarPlaylistsRequest{SongId: 347230})
+	require.NoError(t, err)
+	require.Equal(t, int32(50), params["limit"])
+	require.Equal(t, int64(347230), params["songid"])
+}
+
+// TestRelatedPlaylistRecommend_MapRequest 入参含 scene/playlistId/newStyle。
+func TestRelatedPlaylistRecommend_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := RelatedPlaylistRecommend.MapRequest(&mmpb.RelatedPlaylistRecommendRequest{PlaylistId: 8039587836})
+	require.NoError(t, err)
+	require.Equal(t, "playlist_head", params["scene"])
+	require.Equal(t, int64(8039587836), params["playlistId"])
+	require.Equal(t, "true", params["newStyle"])
+}
+
+// TestRelatedPlaylistRecommend_MapResponse 相关歌单推荐解析（data.playlists 嵌套）。
+func TestRelatedPlaylistRecommend_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	fixture := `{"code":200,"data":{"playlists":[{"id":2,"name":"相关歌单B","picUrl":"http://b.jpg","creator":{"userId":20,"nickname":"李四"}}]}}`
+	resp, err := RelatedPlaylistRecommend.MapResponse(&mmpb.RelatedPlaylistRecommendRequest{}, json.RawMessage(fixture))
+	require.NoError(t, err)
+	require.Len(t, resp.Playlists, 1)
+	require.Equal(t, "相关歌单B", resp.Playlists[0].Name)
+	require.Equal(t, "http://b.jpg", resp.Playlists[0].CoverUrl)
+}

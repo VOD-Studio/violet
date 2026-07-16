@@ -104,3 +104,8 @@ func (s *SongServer) CreatorInfo(ctx context.Context, req *mmpb.CreatorInfoReque
 func (s *SongServer) GetWordLyric(ctx context.Context, req *mmpb.GetWordLyricRequest) (*mmpb.GetWordLyricResponse, error) {
 	return engine.Execute(s.eng, ctx, songendpoint.WordLyricEP, req)
 }
+
+// SimilarSongs 基于歌曲获取相似音乐。
+func (s *SongServer) SimilarSongs(ctx context.Context, req *mmpb.SimilarSongsRequest) (*mmpb.SimilarSongsResponse, error) {
+	return engine.Execute(s.eng, ctx, songendpoint.SimilarSongs, req)
+}

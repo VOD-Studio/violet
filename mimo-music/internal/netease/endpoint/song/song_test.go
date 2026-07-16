@@ -336,3 +336,27 @@ func escapeYrc(s string) string {
 	}
 	return string(out)
 }
+
+// TestSimilarSongs_MapResponse 相似音乐解析（artists/album 全名而非缩写）。
+func TestSimilarSongs_MapResponse(t *testing.T) {
+	t.Parallel()
+
+	fixture := `{"code":200,"songs":[{"id":1,"name":"相似歌","artists":[{"id":10,"name":"歌手"}],"album":{"id":20,"name":"专辑","picUrl":"http://a.jpg"},"duration":180000,"fee":0}]}`
+	resp, err := SimilarSongs.MapResponse(&mmpb.SimilarSongsRequest{}, json.RawMessage(fixture))
+	require.NoError(t, err)
+	require.Len(t, resp.Songs, 1)
+	require.Equal(t, "相似歌", resp.Songs[0].Name)
+	require.Equal(t, "歌手", resp.Songs[0].Artists[0].Name)
+	require.Equal(t, "专辑", resp.Songs[0].Album.Name)
+	require.Equal(t, int64(180000), resp.Songs[0].DurationMs)
+}
+
+// TestSimilarSongs_MapRequest limit 默认值。
+func TestSimilarSongs_MapRequest(t *testing.T) {
+	t.Parallel()
+
+	params, err := SimilarSongs.MapRequest(&mmpb.SimilarSongsRequest{SongId: 347230})
+	require.NoError(t, err)
+	require.Equal(t, int32(50), params["limit"])
+	require.Equal(t, int64(347230), params["songid"])
+}
