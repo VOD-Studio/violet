@@ -195,16 +195,23 @@ func TestLikedList_MapResponse(t *testing.T) {
 }
 
 // TestQualityDetail_MapResponse 音质详情解析。
+// 真实结构：data 下按音质等级动态 key（h/m/l/sq 等），每个含 br。
 func TestQualityDetail_MapResponse(t *testing.T) {
 	t.Parallel()
 
-	fixture := `{"code":200,"data":{"qualities":[{"level":"standard","bitrate":320000,"url":""},{"level":"lossless","bitrate":999000,"url":"http://flac"}]}}`
+	fixture := `{"code":200,"data":{"songId":347230,"h":{"br":320001,"size":100},"m":{"br":192001},"l":{"br":128001},"sq":{"br":797831},"hr":null}}`
 	resp, err := QualityDetail.MapResponse(&mmpb.QualityDetailRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
-	require.Len(t, resp.Qualities, 2)
-	require.Equal(t, "standard", resp.Qualities[0].Level)
-	require.Equal(t, int64(320000), resp.Qualities[0].Bitrate)
-	require.Equal(t, "lossless", resp.Qualities[1].Level)
+	// 应解析出 h/m/l/sq 4 个音质（songId 和 hr=null 跳过）。
+	require.Len(t, resp.Qualities, 4)
+	// 找到 h 音质验证比特率。
+	var hBitrate int64
+	for _, q := range resp.Qualities {
+		if q.Level == "h" {
+			hBitrate = q.Bitrate
+		}
+	}
+	require.Equal(t, int64(320001), hBitrate)
 }
 
 // TestLikeCount_MapResponse 红心数量解析。

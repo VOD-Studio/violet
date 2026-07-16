@@ -68,22 +68,28 @@ var QualityDetail = &engine.Endpoint[*mmpb.QualityDetailRequest, *mmpb.QualityDe
 		return map[string]any{"songId": req.GetSongId()}, nil
 	},
 	MapResponse: func(req *mmpb.QualityDetailRequest, raw json.RawMessage) (*mmpb.QualityDetailResponse, error) {
+		// 真实结构：data 下按音质等级动态 key（h/m/l/sq/hr/db/jm/sk/vi 等），
+		// 每个含 br(比特率)/size/sr(采样率)。songId(裸数字) 和 sks(数组) 不是音质项。
+		// data 的 value 类型不统一（对象/数字/数组），用 RawMessage 逐个尝试解析。
 		var resp struct {
-			Data struct {
-				Qualities []struct {
-					Level   string `json:"level"`
-					Bitrate int64  `json:"bitrate"`
-					URL     string `json:"url"`
-				} `json:"qualities"`
-			} `json:"data"`
+			Data map[string]json.RawMessage `json:"data"`
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
 			return &mmpb.QualityDetailResponse{}, fmt.Errorf("解析音质详情失败: %w", err)
 		}
 		out := &mmpb.QualityDetailResponse{}
-		for _, q := range resp.Data.Qualities {
+		for level, raw := range resp.Data {
+			if level == "songId" {
+				continue
+			}
+			var q struct {
+				Br int64 `json:"br"` // 比特率
+			}
+			if err := json.Unmarshal(raw, &q); err != nil || q.Br == 0 {
+				continue // 非音质对象（数组/数字/null）或 br=0 跳过
+			}
 			out.Qualities = append(out.Qualities, &mmpb.SongQuality{
-				Level: q.Level, Bitrate: q.Bitrate, Url: q.URL,
+				Level: level, Bitrate: q.Br,
 			})
 		}
 		return out, nil
