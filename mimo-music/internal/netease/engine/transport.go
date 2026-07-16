@@ -59,10 +59,27 @@ func (t *transport) weapiPost(ctx context.Context, urlPath, payload, cookie stri
 		return nil, "", fmt.Errorf("加密失败: %w", err)
 	}
 
-	// params 和 encSecKey 含 base64/十六进制特殊字符（+ = /），必须 URL 编码
+	return t.postForm(ctx, urlPath, encrypted.Params, "", cookie)
+}
+
+// eapiPost 发送 eapi 加密 POST 请求。
+//
+// encryptedParams 是 EAPIEncrypt 已加密的十六进制密文（不再二次加密，与 weapi 不同）。
+// eapi 的请求体只有 params 一个字段（无 encSecKey）。
+func (t *transport) eapiPost(ctx context.Context, urlPath, encryptedParams, cookie string) ([]byte, string, error) {
+	return t.postForm(ctx, urlPath, encryptedParams, "", cookie)
+}
+
+// postForm 发送 form-urlencoded POST 请求的共享实现。
+//
+// weapi 带 params+encSecKey，eapi 只带 params。encSecKey 为空时只发 params。
+// params 值含 base64/十六进制特殊字符（+ = /），必须 URL 编码。
+func (t *transport) postForm(ctx context.Context, urlPath, params, encSecKey, cookie string) ([]byte, string, error) {
 	formData := url.Values{}
-	formData.Set("params", encrypted.Params)
-	formData.Set("encSecKey", encrypted.EncSecKey)
+	formData.Set("params", params)
+	if encSecKey != "" {
+		formData.Set("encSecKey", encSecKey)
+	}
 	form := strings.NewReader(formData.Encode())
 
 	req, err := http.NewRequestWithContext(ctx, "POST", t.baseURL+urlPath, form)

@@ -160,7 +160,7 @@ func (e *Engine) doOnceWithCookie(ctx context.Context, meta Meta, params map[str
 		if encErr != nil {
 			return nil, "", fmt.Errorf("eapi 加密失败: %w", encErr)
 		}
-		body, _, callErr = e.transport.weapiPost(ctx, meta.Path, encrypted.Params, cookie)
+		body, _, callErr = e.transport.eapiPost(ctx, meta.Path, encrypted.Params, cookie)
 	case CryptoNone:
 		if meta.Method == "GET" {
 			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie)
@@ -249,7 +249,7 @@ func (e *Engine) doOnce(ctx context.Context, meta Meta, params map[string]any) (
 		if encErr != nil {
 			return nil, "", fmt.Errorf("eapi 加密失败: %w", encErr)
 		}
-		body, _, callErr = e.transport.weapiPost(ctx, meta.Path, encrypted.Params, cookie)
+		body, _, callErr = e.transport.eapiPost(ctx, meta.Path, encrypted.Params, cookie)
 	case CryptoNone:
 		if meta.Method == "GET" {
 			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie)
