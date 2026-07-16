@@ -15,6 +15,74 @@ service AlbumService {
       get: "/api/v1/albums/{album_id}"
     };
   }
+
+  // --- 专辑扩展（普通专辑，不含数字专辑） ---
+
+  // NewAlbumShelf 获取新碟上架（按地区/年/月过滤的榜单式新碟）。
+  rpc NewAlbumShelf(NewAlbumShelfRequest) returns (NewAlbumShelfResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/albums/new/shelf"
+    };
+  }
+
+  // NewestAlbums 获取云音乐首页最新专辑。
+  rpc NewestAlbums(NewestAlbumsRequest) returns (NewestAlbumsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/albums/newest"
+    };
+  }
+
+  // AllNewAlbums 获取全部新碟（分页，按地区过滤）。
+  rpc AllNewAlbums(AllNewAlbumsRequest) returns (AllNewAlbumsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/albums/new"
+    };
+  }
+
+  // SubscribedAlbums 获取已收藏专辑列表（需登录态，分页）。
+  rpc SubscribedAlbums(SubscribedAlbumsRequest) returns (SubscribedAlbumsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/albums/subscribed"
+    };
+  }
+
+  // AlbumDynamic 获取专辑动态信息（是否收藏、收藏数、评论数、分享数）。
+  rpc AlbumDynamic(AlbumDynamicRequest) returns (AlbumDynamicResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/albums/{album_id}/dynamic"
+    };
+  }
+
+  // AlbumSongQuality 获取专辑内歌曲可选音质。
+  rpc AlbumSongQuality(AlbumSongQualityRequest) returns (AlbumSongQualityResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/albums/{album_id}/quality"
+    };
+  }
+
+  // SubscribeAlbum 收藏或取消收藏专辑（toggle）。
+  rpc SubscribeAlbum(SubscribeAlbumRequest) returns (SubscribeAlbumResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/albums/{album_id}/subscribe"
+      body: "*"
+    };
+  }
+}
+
+// 专辑地区过滤（新碟上架/全部新碟用）。
+enum AlbumArea {
+  // 未指定，默认全部。
+  ALBUM_AREA_UNSPECIFIED = 0;
+  // 全部。
+  ALBUM_AREA_ALL = 1;
+  // 华语。
+  ALBUM_AREA_ZH = 2;
+  // 欧美。
+  ALBUM_AREA_EA = 3;
+  // 韩国。
+  ALBUM_AREA_KR = 4;
+  // 日本。
+  ALBUM_AREA_JP = 5;
 }
 
 // GetAlbum 请求。
@@ -29,4 +97,131 @@ message GetAlbumResponse {
   Album album = 1;
   // 专辑内歌曲列表。
   repeated Song songs = 2;
+}
+
+// --- 专辑扩展 message ---
+
+// 专辑动态信息（收藏数/评论数/分享数等）。
+message AlbumDynamicInfo {
+  // 当前调用方是否已收藏该专辑。
+  bool subscribed = 1;
+  // 收藏数。
+  int64 subscribed_count = 2;
+  // 评论数。
+  int64 comment_count = 3;
+  // 分享数。
+  int64 share_count = 4;
+}
+
+// NewAlbumShelf 请求。
+message NewAlbumShelfRequest {
+  // 地区过滤，默认全部。
+  AlbumArea area = 1;
+  // 类型：new 全部 / hot 热门，默认 new。
+  string type = 2;
+  // 年，默认本年。
+  int32 year = 3;
+  // 月（1-12），默认本月。
+  int32 month = 4;
+  // 返回数量，默认 50。
+  int32 limit = 5;
+  // 偏移量，默认 0。
+  int32 offset = 6;
+}
+
+// NewAlbumShelf 响应。
+message NewAlbumShelfResponse {
+  // 新碟列表（完整 Album 实体，遵循列表响应统一实体 ADR）。
+  repeated Album albums = 1;
+  // 是否还有更多。
+  bool has_more = 2;
+}
+
+// NewestAlbums 请求（无入参）。
+message NewestAlbumsRequest {}
+
+// NewestAlbums 响应。
+message NewestAlbumsResponse {
+  // 最新专辑列表。
+  repeated Album albums = 1;
+}
+
+// AllNewAlbums 请求。
+message AllNewAlbumsRequest {
+  // 地区过滤，默认全部。
+  AlbumArea area = 1;
+  // 返回数量，默认 30。
+  int32 limit = 2;
+  // 偏移量，默认 0。
+  int32 offset = 3;
+}
+
+// AllNewAlbums 响应。
+message AllNewAlbumsResponse {
+  // 全部新碟列表（完整 Album 实体）。
+  repeated Album albums = 1;
+  // 总数。
+  int32 total = 2;
+}
+
+// SubscribedAlbums 请求。
+message SubscribedAlbumsRequest {
+  // 返回数量，默认 25。
+  int32 limit = 1;
+  // 偏移量，默认 0。
+  int32 offset = 2;
+}
+
+// SubscribedAlbums 响应。
+message SubscribedAlbumsResponse {
+  // 已收藏专辑列表（完整 Album 实体）。
+  repeated Album albums = 1;
+  // 总数。
+  int32 total = 2;
+}
+
+// AlbumDynamic 请求。
+message AlbumDynamicRequest {
+  // 专辑 ID。
+  int64 album_id = 1;
+}
+
+// AlbumDynamic 响应。
+message AlbumDynamicResponse {
+  // 专辑动态信息。
+  AlbumDynamicInfo info = 1;
+}
+
+// AlbumSongQuality 请求。
+message AlbumSongQualityRequest {
+  // 专辑 ID。
+  int64 album_id = 1;
+}
+
+// 专辑内单首歌曲的音质信息。
+message AlbumSongQuality {
+  // 歌曲 ID。
+  int64 song_id = 1;
+  // 可选音质列表。
+  repeated SongQuality qualities = 2;
+}
+
+// AlbumSongQuality 响应。
+message AlbumSongQualityResponse {
+  // 专辑内各歌曲的音质信息。
+  repeated AlbumSongQuality songs = 1;
+}
+
+// SubscribeAlbum 请求。
+message SubscribeAlbumRequest {
+  // 专辑 ID。
+  int64 album_id = 1;
+  // true 收藏，false 取消收藏。
+  bool subscribe = 2;
+}
+
+// SubscribeAlbum 响应。
+message SubscribeAlbumResponse {
+  // 操作后是否已收藏。
+  bool subscribed = 1;
 }
