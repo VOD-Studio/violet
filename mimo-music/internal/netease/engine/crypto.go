@@ -23,7 +23,8 @@ import (
 // 不是密钥泄漏。weapi 协议靠 RSA 保护每次随机的 secretKey，预设值本身无保密价值。
 const (
 	// weapiNonce 是第一轮 AES 加密的预设 key（明文字符串，16 字节）。
-	weapiNonce = "0CoVUmhQ0d8IhkAL"
+	// 值来自网易云网页端公开 JS（与 npm NeteaseCloudMusicApi / chaunsin Go 版一致）。
+	weapiNonce = "0CoJUm6Qyw8W8jud"
 
 	// weapiPubKey 是 RSA 加密的公钥 modulus（十六进制字符串）。
 	weapiPubKey = "010001"

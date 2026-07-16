@@ -23,13 +23,13 @@ var (
 	LoginCellphone = engine.Meta{
 		Path: "/weapi/login/cellphone", Method: "POST", Crypto: engine.CryptoWeAPI, Auth: session.AuthAnonymous,
 	}
-	// LoginQrcode 获取二维码 key（非加密 POST）。
+	// LoginQrcode 获取二维码 key（weapi,参考 chaunsin/netease-cloud-music CLI 验证过）。
 	LoginQrcode = engine.Meta{
-		Path: "/api/login/qrcode/uniCreate", Method: "POST", Crypto: engine.CryptoNone, Auth: session.AuthAnonymous,
+		Path: "/weapi/login/qrcode/unikey", Method: "POST", Crypto: engine.CryptoWeAPI, Auth: session.AuthAnonymous,
 	}
-	// CheckQrcode 轮询二维码状态（非加密 POST）。
+	// CheckQrcode 轮询二维码状态（weapi）。
 	CheckQrcode = engine.Meta{
-		Path: "/api/login/qrcode/client/login", Method: "POST", Crypto: engine.CryptoNone, Auth: session.AuthAnonymous,
+		Path: "/weapi/login/qrcode/client/login", Method: "POST", Crypto: engine.CryptoWeAPI, Auth: session.AuthAnonymous,
 	}
 	// LoginStatus 查询登录态。
 	LoginStatus = engine.Meta{
@@ -59,6 +59,7 @@ func LoginCellphoneRequest(req *mmpb.LoginByCellphoneRequest) map[string]any {
 }
 
 // LoginQrcodeRequest 构造获取二维码 key 入参。
+// type=1 是 weapi 二维码登录的值(参考 chaunsin Go 版 CLI 验证)。
 func LoginQrcodeRequest(_ *mmpb.LoginQrcodeRequest) map[string]any {
 	return map[string]any{"type": 1}
 }

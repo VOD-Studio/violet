@@ -177,19 +177,19 @@ func TestRawDoWithCookieAndInput_ContextCookieToUpstream(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		injectCtx context.Context // 模拟 interceptor 注入（或裸 context）
-		want      string
+		name        string
+		injectCtx   context.Context // 模拟 interceptor 注入（或裸 context）
+		wantContain string          // 上游 Cookie header 应包含的子串
 	}{
 		{
-			name:      "context 有 cookie 到达上游请求",
-			injectCtx: engine.WithCookie(context.Background(), "MUSIC_API_UUT=abc;__csrf=def"),
-			want:      "MUSIC_API_UUT=abc;__csrf=def",
+			name:        "context 有 cookie 到达上游请求",
+			injectCtx:   engine.WithCookie(context.Background(), "MUSIC_API_UUT=abc;__csrf=def"),
+			wantContain: "MUSIC_API_UUT=abc;__csrf=def",
 		},
 		{
-			name:      "context 无 cookie 上游不带 Cookie header",
-			injectCtx: context.Background(),
-			want:      "",
+			name:        "context 无 cookie 上游仍带 __remember_me（网易云要求）",
+			injectCtx:   context.Background(),
+			wantContain: "__remember_me=true",
 		},
 	}
 
@@ -211,7 +211,10 @@ func TestRawDoWithCookieAndInput_ContextCookieToUpstream(t *testing.T) {
 				Path: "/weapi/v3/song/detail", Method: "POST", Crypto: engine.CryptoWeAPI,
 			}, map[string]any{"c": "[]"})
 			require.NoError(t, err)
-			require.Equal(t, tt.want, gotCookie.Load().(string))
+			// transport 默认补 __remember_me=true（无 cookie 时单独带，有 cookie 时追加）。
+			got, _ := gotCookie.Load().(string)
+			require.Contains(t, got, tt.wantContain)
+			require.Contains(t, got, "__remember_me=true")
 		})
 	}
 }

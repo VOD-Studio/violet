@@ -25,8 +25,8 @@ import (
 const (
 	// neteaseBaseURL 是网易云 API 的基础地址。
 	neteaseBaseURL = "https://music.163.com"
-	// neteaseUserAgent 是模拟浏览器请求的 User-Agent。
-	neteaseUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+	// neteaseUserAgent 是模拟网易云音乐桌面客户端的 User-Agent(参考 chaunsin 验证过的值)。
+	neteaseUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) NeteaseMusicDesktop/2.3.17.1034"
 )
 
 // transport 封装网易云 HTTP 请求的三种发送方式。
@@ -158,7 +158,15 @@ func (t *transport) apiGet(ctx context.Context, urlPath string, params url.Value
 func setCommonHeaders(req *http.Request, cookie string) {
 	req.Header.Set("Referer", neteaseBaseURL)
 	req.Header.Set("User-Agent", neteaseUserAgent)
-	if cookie != "" {
+
+	// __remember_me=true 是网易云判断"非恶意请求"的标志 cookie(缺失则返回空 body)。
+	// 参考 chaunsin/netease-cloud-music:所有请求默认带此 cookie。
+	// 调用方传入的 cookie 若已含则不重复;否则补上。
+	if cookie == "" {
+		req.Header.Set("Cookie", "__remember_me=true")
+	} else if !strings.Contains(cookie, "__remember_me") {
+		req.Header.Set("Cookie", cookie+"; __remember_me=true")
+	} else {
 		req.Header.Set("Cookie", cookie)
 	}
 }
