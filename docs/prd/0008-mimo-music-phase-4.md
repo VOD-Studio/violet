@@ -1,6 +1,6 @@
 # PRD: mimo-music Phase 4
 
-> 状态：待实现（前置：地基阶段完成）
+> 状态：✅ 已完成（地基阶段完成 + Phase 4 全部 8 个 issue 实现）
 > 关联：[全功能蓝图](./mimo-music-netease-full-api-roadmap.md)、[架构 ADR](../adr/mimo-music-architecture.md)
 > 范围：网易云能力扩展 P0 四模块——搜索 type 多类型 + 歌单管理 + 用户模块 + 歌手扩展
 

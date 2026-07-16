@@ -446,18 +446,18 @@ internal/service/*.go              grpc impl：恒一行 return engine.Execute(.
 | 阶段 | 模块 | 接口数 | 说明 |
 |------|------|--------|------|
 | **地基** ✅ | proto 基础设施 + engine + session + crypto + 领域模型层首批 5 实体（Song/Artist/Album/Playlist/User） | — | 已完成，15 接口迁移到新架构 |
-| **Phase 4** | 搜索扩展 + 歌单管理 + 用户模块 + 歌手扩展 | ~69 | 复用已建实体 + 补歌单写操作 |
+| **Phase 4** ✅ | 搜索扩展 + 歌单管理 + 用户模块 + 歌手扩展 | ~69 | 已完成，搜索9type+辅助4+用户11+歌单浏览6+写操作7+歌手8 |
 | **Phase 5** | 专辑扩展 + 推荐扩展 + 排行榜 + MV/视频 + 相似/相关 + 歌曲扩展 | ~73 | 新建 MV/Video/Toplist 实体 |
 | **Phase 6** | 评论 + 收藏/关注/点赞 + FM/电台扩展 | ~58 | 新建 Comment/DJ 实体 |
 | **Phase 7** | 签到/云贝 + 云盘 + 动态/通知/私信 + 音乐人/VIP | ~60 | 新建 Event/CloudDisk 实体 |
 | **Phase 8** | 播客/助眠/DIFM/其他小众 | ~70 | |
 
-> protoc-gen-netease 自研插件后置：地基阶段手写 `Endpoint` 声明，手写到 50-80 接口、样板痛了再上 codegen（ADR 第 3.4 节）。
+> protoc-gen-netease 自研插件：已实现约 84 个接口，手写 Endpoint 声明的样板痛感开始显现，可在 Phase 5 起评估上 codegen。
 
 ## 统计
 
-- **已实现**：15 个（地基阶段迁移到新架构完成，proto 契约 + engine.Execute + grpc-gateway）
-- **未实现**：342 个
-- 当前完成率：4.2%
+- **已实现**：约 84 个（地基 15 + Phase 4 约 69，含搜索/用户/歌单/歌手扩展）
+- **未实现**：约 273 个
+- 当前完成率：约 23.5%
 
 每个 Phase 完成后更新本蓝图的 ✅ 标记。
