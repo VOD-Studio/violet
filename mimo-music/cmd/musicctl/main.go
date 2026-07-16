@@ -60,7 +60,7 @@ func main() {
 	case "song-detail":
 		id := songIDFlag(args)
 		exec("song-detail", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, songendpoint.Detail, &mmpb.GetSongDetailRequest{SongId: id})
+			resp, err := executeOverride(eng, ctx, songendpoint.Detail, &mmpb.GetSongDetailRequest{SongId: id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -70,28 +70,28 @@ func main() {
 		level := fs.Int("level", 1, "音质: 1=standard 2=exhigh 3=lossless 4=hires")
 		fs.Parse()
 		exec("song-url", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, songendpoint.URL, &mmpb.GetSongURLRequest{SongId: *id, Level: mmpb.SongLevel(*level)})
+			resp, err := executeOverride(eng, ctx, songendpoint.URL, &mmpb.GetSongURLRequest{SongId: *id, Level: mmpb.SongLevel(*level)})
 			exitOnErr(err)
 			printJSON(resp)
 		})
 	case "lyric":
 		id := songIDFlag(args)
 		exec("lyric", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, songendpoint.Lyric, &mmpb.GetLyricRequest{SongId: id})
+			resp, err := executeOverride(eng, ctx, songendpoint.Lyric, &mmpb.GetLyricRequest{SongId: id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
 	case "word-lyric":
 		id := songIDFlag(args)
 		exec("word-lyric", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, songendpoint.WordLyricEP, &mmpb.GetWordLyricRequest{SongId: id})
+			resp, err := executeOverride(eng, ctx, songendpoint.WordLyricEP, &mmpb.GetWordLyricRequest{SongId: id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
 	case "check-available":
 		id := songIDFlag(args)
 		exec("check-available", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, songendpoint.CheckAvailable, &mmpb.CheckAvailableRequest{SongId: id})
+			resp, err := executeOverride(eng, ctx, songendpoint.CheckAvailable, &mmpb.CheckAvailableRequest{SongId: id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -123,7 +123,7 @@ func main() {
 	case "similar-songs":
 		id := songIDFlag(args)
 		exec("similar-songs", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, songendpoint.SimilarSongs, &mmpb.SimilarSongsRequest{SongId: id})
+			resp, err := executeOverride(eng, ctx, songendpoint.SimilarSongs, &mmpb.SimilarSongsRequest{SongId: id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -165,7 +165,7 @@ func main() {
 		fs.Parse()
 		requireCookie()
 		exec("liked-list", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, songendpoint.LikedList, &mmpb.LikedListRequest{UserId: *uid})
+			resp, err := executeOverride(eng, ctx, songendpoint.LikedList, &mmpb.LikedListRequest{UserId: *uid})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -186,13 +186,13 @@ func main() {
 		fs.Parse()
 		area := strToArea(*areaStr)
 		exec("new-album-shelf", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, albumendpoint.NewAlbumShelf, &mmpb.NewAlbumShelfRequest{Area: area, Limit: int32(*limit)})
+			resp, err := executeOverride(eng, ctx, albumendpoint.NewAlbumShelf, &mmpb.NewAlbumShelfRequest{Area: area, Limit: int32(*limit)})
 			exitOnErr(err)
 			printJSON(resp)
 		})
 	case "newest-albums":
 		exec("newest-albums", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, albumendpoint.NewestAlbums, &mmpb.NewestAlbumsRequest{})
+			resp, err := executeOverride(eng, ctx, albumendpoint.NewestAlbums, &mmpb.NewestAlbumsRequest{})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -204,7 +204,7 @@ func main() {
 		fs.Parse()
 		area := strToArea(*areaStr)
 		exec("all-new-albums", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, albumendpoint.AllNewAlbums, &mmpb.AllNewAlbumsRequest{Area: area, Limit: int32(*limit), Offset: int32(*offset)})
+			resp, err := executeOverride(eng, ctx, albumendpoint.AllNewAlbums, &mmpb.AllNewAlbumsRequest{Area: area, Limit: int32(*limit), Offset: int32(*offset)})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -213,7 +213,7 @@ func main() {
 		id := fs.Int64("id", 0, "专辑 ID")
 		fs.Parse()
 		exec("album-dynamic", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, albumendpoint.AlbumDynamic, &mmpb.AlbumDynamicRequest{AlbumId: *id})
+			resp, err := executeOverride(eng, ctx, albumendpoint.AlbumDynamic, &mmpb.AlbumDynamicRequest{AlbumId: *id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -222,7 +222,7 @@ func main() {
 		id := fs.Int64("id", 0, "专辑 ID")
 		fs.Parse()
 		exec("album-song-quality", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, albumendpoint.AlbumSongQuality, &mmpb.AlbumSongQualityRequest{AlbumId: *id})
+			resp, err := executeOverride(eng, ctx, albumendpoint.AlbumSongQuality, &mmpb.AlbumSongQualityRequest{AlbumId: *id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -263,7 +263,7 @@ func main() {
 	case "similar-playlists":
 		id := songIDFlag(args)
 		exec("similar-playlists", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, playlistendpoint.SimilarPlaylists, &mmpb.SimilarPlaylistsRequest{SongId: id})
+			resp, err := executeOverride(eng, ctx, playlistendpoint.SimilarPlaylists, &mmpb.SimilarPlaylistsRequest{SongId: id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -272,7 +272,7 @@ func main() {
 		id := fs.Int64("id", 0, "歌单 ID")
 		fs.Parse()
 		exec("related-playlist-recommend", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, playlistendpoint.RelatedPlaylistRecommend, &mmpb.RelatedPlaylistRecommendRequest{PlaylistId: *id})
+			resp, err := executeOverride(eng, ctx, playlistendpoint.RelatedPlaylistRecommend, &mmpb.RelatedPlaylistRecommendRequest{PlaylistId: *id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -281,7 +281,7 @@ func main() {
 	case "similar-users":
 		id := songIDFlag(args)
 		exec("similar-users", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, userendpoint.SimilarUsers, &mmpb.SimilarUsersRequest{SongId: id})
+			resp, err := executeOverride(eng, ctx, userendpoint.SimilarUsers, &mmpb.SimilarUsersRequest{SongId: id})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -299,7 +299,7 @@ func main() {
 		limit := fs.Int("limit", 10, "返回数量")
 		fs.Parse()
 		exec("recommend-playlists", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, recommendendpoint.RecommendPlaylists, &mmpb.RecommendPlaylistsRequest{Limit: int32(*limit)})
+			resp, err := executeOverride(eng, ctx, recommendendpoint.RecommendPlaylists, &mmpb.RecommendPlaylistsRequest{Limit: int32(*limit)})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -308,7 +308,7 @@ func main() {
 		limit := fs.Int("limit", 10, "返回数量")
 		fs.Parse()
 		exec("recommend-new-songs", func(ctx context.Context) {
-			resp, err := engine.Execute(eng, ctx, recommendendpoint.RecommendNewSongs, &mmpb.RecommendNewSongsRequest{Limit: int32(*limit)})
+			resp, err := executeOverride(eng, ctx, recommendendpoint.RecommendNewSongs, &mmpb.RecommendNewSongsRequest{Limit: int32(*limit)})
 			exitOnErr(err)
 			printJSON(resp)
 		})
@@ -337,7 +337,7 @@ func exec(_ string, fn func(ctx context.Context)) {
 // execEapi 执行一个 eapi 读类接口并打印响应。eapi 接口走 engine.Execute(匿名)。
 func execEapi[Req any, Resp proto.Message](name string, ep *engine.Endpoint[Req, Resp], makeReq func() Req) {
 	ctx := cookieCtx()
-	resp, err := engine.Execute(eng, ctx, ep, makeReq())
+	resp, err := executeOverride(eng, ctx, ep, makeReq())
 	exitOnErr(err)
 	printJSON(resp)
 }
