@@ -1,8 +1,13 @@
 # PRD: mimo-music 读类扩展（Bounded Context）
 
-> 状态：待实现
+> 状态：✅ 已实现（4 个 issue 全部完成，~26 接口）
 > 关联：[全功能蓝图 roadmap](./mimo-music-netease-full-api-roadmap.md)、[架构 ADR](../adr/mimo-music-architecture.md)、[列表响应统一实体 ADR](../adr/mimo-music-list-response-single-entity.md)、[cookie 重构 PRD](./0010-mimo-music-cookie-metadata-refactor.md)（已完成）
 > 范围：深化现有实体的查询能力——普通专辑扩展 + 相似/相关 + 歌曲扩展 + 推荐扩展。无新领域实体。
+>
+> 实现备注：
+> - 范围从原 ~28 接口调整为 ~26：剔除歌曲本地匹配 #273（网易云私有音频指纹算法无源）；#74 相关歌单（HTML 抓取）网易云已废弃失效，改实现其替代 #305 相关歌单推荐。
+> - 前置 engine eapi 修复（AES-ECB + digest path 转换，commit `ff05cd63`），8 个 eapi 接口依赖。
+> - 每个 issue 各跑 code-review（Standards + Spec 双轴），修了 IsLike 缓存污染、收藏专辑拆 2 rpc、字段注释与 error 返回一致性等问题。
 
 ## Problem Statement
 
