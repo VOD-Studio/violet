@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -553,6 +554,66 @@ func main() {
 			exitOnErr(err)
 			fmt.Println("已删除")
 		})
+	case "playlist-update-name":
+		fs := newFlagSet(args)
+		id := fs.Int64("id", 0, "歌单 ID")
+		name := fs.String("name", "", "新名称")
+		fs.Parse()
+		requireCookie()
+		confirmWrite(fmt.Sprintf("把歌单 %d 改名为 %q", *id, *name))
+		execRaw("playlist-update-name", func(ctx context.Context) {
+			_, _, err := eng.RawDoWithCookieAndInput(ctx, playlistendpoint.UpdateNameMeta, playlistendpoint.UpdateNameRequest(&mmpb.UpdateNameRequest{PlaylistId: *id, Name: *name}))
+			exitOnErr(err)
+			fmt.Println("已更新")
+		})
+	case "playlist-update-desc":
+		fs := newFlagSet(args)
+		id := fs.Int64("id", 0, "歌单 ID")
+		desc := fs.String("desc", "", "新描述")
+		fs.Parse()
+		requireCookie()
+		confirmWrite(fmt.Sprintf("修改歌单 %d 的描述", *id))
+		execRaw("playlist-update-desc", func(ctx context.Context) {
+			_, _, err := eng.RawDoWithCookieAndInput(ctx, playlistendpoint.UpdateDescMeta, playlistendpoint.UpdateDescRequest(&mmpb.UpdateDescRequest{PlaylistId: *id, Desc: *desc}))
+			exitOnErr(err)
+			fmt.Println("已更新")
+		})
+	case "playlist-update-tags":
+		fs := newFlagSet(args)
+		id := fs.Int64("id", 0, "歌单 ID")
+		tags := fs.String("tags", "", "标签,分号分隔")
+		fs.Parse()
+		requireCookie()
+		confirmWrite(fmt.Sprintf("把歌单 %d 的标签改为 %q", *id, *tags))
+		execRaw("playlist-update-tags", func(ctx context.Context) {
+			_, _, err := eng.RawDoWithCookieAndInput(ctx, playlistendpoint.UpdateTagsMeta, playlistendpoint.UpdateTagsRequest(&mmpb.UpdateTagsRequest{PlaylistId: *id, Tags: *tags}))
+			exitOnErr(err)
+			fmt.Println("已更新")
+		})
+	case "playlist-update-tracks":
+		fs := newFlagSet(args)
+		id := fs.Int64("id", 0, "歌单 ID")
+		opStr := fs.String("op", "add", "操作: add=添加 del=删除")
+		tracks := fs.String("tracks", "", "歌曲 ID,逗号分隔")
+		fs.Parse()
+		ids, err := parseIDs(*tracks)
+		exitOnErr(err)
+		op := mmpb.TracksOp_TRACKS_OP_ADD
+		opText := "添加"
+		if *opStr == "del" {
+			op = mmpb.TracksOp_TRACKS_OP_DEL
+			opText = "删除"
+		} else if *opStr != "add" {
+			fmt.Fprintf(os.Stderr, "无效的 --op %q: 只支持 add/del\n", *opStr)
+			os.Exit(1)
+		}
+		requireCookie()
+		confirmWrite(fmt.Sprintf("对歌单 %d %s歌曲 %v", *id, opText, ids))
+		execRaw("playlist-update-tracks", func(ctx context.Context) {
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, playlistendpoint.UpdateTracksMeta, playlistendpoint.UpdateTracksRequest(&mmpb.UpdateTracksRequest{PlaylistId: *id, Op: op, TrackIds: ids}))
+			exitOnErr(err)
+			printJSON(playlistendpoint.ParseUpdateTracksResponse(raw))
+		})
 
 	// --- 用户 ---
 	case "user-account":
@@ -1038,11 +1099,29 @@ func usage() {
 
 // --- 小工具 ---
 
+// ternary 三元表达式辅助。
 func ternary(b bool, t, f string) string {
 	if b {
 		return t
 	}
 	return f
+}
+
+// parseIDs 把 "1,2,3" 解析成 int64 切片,空串或含非数字时报错。
+func parseIDs(s string) ([]int64, error) {
+	if strings.TrimSpace(s) == "" {
+		return nil, fmt.Errorf("--tracks 不能为空")
+	}
+	parts := strings.Split(s, ",")
+	ids := make([]int64, 0, len(parts))
+	for _, p := range parts {
+		id, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("无效的歌曲 ID %q", strings.TrimSpace(p))
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }
 
 // renderQR 把内容渲染成终端二维码字符串。
