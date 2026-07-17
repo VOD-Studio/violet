@@ -16,7 +16,7 @@ import { useReplaceMediaFile } from "@features/upload/api/mutations";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import type { CropRect } from "@features/upload/lib/crop-image";
 import { cropImageToBlob } from "@features/upload/lib/crop-image";
-import { withCrop } from "@features/upload/lib/cropUrl";
+import { withCrop } from "@shared/lib/crop-url";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { Button } from "@shared/ui/base/button";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";

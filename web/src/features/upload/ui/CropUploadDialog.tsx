@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useChunkedUpload } from "@/features/upload/hooks/use-chunked-upload";
 import { type CropRect, cropImageToBlob } from "@/features/upload/lib/crop-image";
-import { withCrop } from "@/features/upload/lib/cropUrl";
+import { withCrop } from "@shared/lib/crop-url";
 
 export type CropUploadResult =
     | { kind: "static"; url: string } // 静态图:重编码上传,URL 干净

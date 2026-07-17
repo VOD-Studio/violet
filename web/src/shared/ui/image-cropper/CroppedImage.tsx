@@ -1,4 +1,4 @@
-import { parseCrop } from "@features/upload/lib/cropUrl";
+import { parseCrop } from "@shared/lib/crop-url";
 import { useMemo } from "react";
 import { cn } from "@/shared/lib/utils";
 

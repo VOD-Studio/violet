@@ -1,4 +1,4 @@
-import { withCrop } from "@features/upload/lib/cropUrl";
+import { withCrop } from "@shared/lib/crop-url";
 import { Button } from "@shared/ui/base/button";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import type { CropRect } from "@shared/ui/image-cropper/types";

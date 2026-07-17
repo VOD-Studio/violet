@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCrop, withCrop } from "../cropUrl";
+import { parseCrop, withCrop } from "../crop-url";
 
 describe("withCrop", () => {
     it("给裸 path 附加 crop 参数", () => {
