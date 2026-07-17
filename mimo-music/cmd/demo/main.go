@@ -83,27 +83,35 @@ flags:
 // 防闪烁(multi 场景,字节流证据 + indicatif 思路):
 //   - antiflicker=true:输出包 antiflickerWriter,把 mpb 的 \x1b[J(清屏到屏幕底)
 //     替换成 \x1b[K(清当前行到行尾)。光标上移后逐行覆盖写,不清整块,消除空白帧。
-//     因 antiflickerWriter 非 *os.File,mpb cwriter TTY 检测失败 → 补 WithAutoRefresh
-//     强制刷新 + WithWidth 显式宽度。
-//   - antiflicker=false:走原生 os.Stderr,single 场景用 \r 不闪,保持原生 TTY 行为。
+//     因 antiflickerWriter 非 *os.File,mpb cwriter 无法探测终端宽度 → 自己用
+//     term.GetSize 探测真实宽度传给 WithWidth(否则进度条只占硬编码宽度,显得短)。
+//     同理 cwriter TTY 检测失败 → 补 WithAutoRefresh 强制刷新。
+//   - antiflicker=false:走原生 os.Stderr,cwriter 自己探测宽度 + TTY,single 用 \r 不闪。
 //   - 隐藏光标 \x1b[?25l:消除重绘时光标物理跳动(感知闪烁次因)。
 //
-// 返回 restore func(),调用方 defer restore() 保证 panic 也能恢复光标。
-func newProgress(width int, antiflicker bool) (*mpb.Progress, func()) {
-	opts := []mpb.ContainerOption{
-		mpb.WithRefreshRate(120 * time.Millisecond),
-		mpb.WithWidth(width),
-	}
+// 返回 restore func(),调用方 defer restore() 保证即使 panic 也能恢复光标。
+func newProgress(fallbackWidth int, antiflicker bool) (*mpb.Progress, func()) {
+	opts := []mpb.ContainerOption{mpb.WithRefreshRate(120 * time.Millisecond)}
+	tty := term.IsTerminal(int(os.Stderr.Fd()))
+
 	if antiflicker {
+		// 自己探测终端真实宽度(antiflickerWriter 让 cwriter 探测失败)。
+		width := fallbackWidth
+		if tty {
+			if w, _, err := term.GetSize(int(os.Stderr.Fd())); err == nil && w > 0 {
+				width = w
+			}
+		}
 		opts = append(opts,
+			mpb.WithWidth(width),
 			mpb.WithOutput(newAntiflickerWriter(os.Stderr)),
 			mpb.WithAutoRefresh(),
 		)
 	} else {
+		// 原生模式不传 WithWidth,让 cwriter 自己探测(更准)。
 		opts = append(opts, mpb.WithOutput(os.Stderr))
 	}
 	p := mpb.New(opts...)
-	tty := term.IsTerminal(int(os.Stderr.Fd()))
 	if tty {
 		fmt.Fprint(os.Stderr, "\x1b[?25l") // 隐藏光标
 	}
