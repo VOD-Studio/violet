@@ -79,16 +79,9 @@ func WithProgressClock(now func() time.Time) ProgressOption {
 // 在写满最后一列时立刻折行,行宽顶满会导致帧块每帧多占一行 → 逐帧抖动(闪烁);
 // xterm 系 deferred-wrap 终端虽不受影响,预留一列对两类终端都安全。
 func NewProgress(out io.Writer, width int, tty bool, opts ...ProgressOption) *Progress {
-	if width <= 0 {
-		width = 80
-	}
-	width-- // 预留最后一列(immediate-wrap 终端防折行)
-	if width < 10 {
-		width = 10
-	}
 	p := &Progress{
 		out:   out,
-		width: width,
+		width: effectiveRenderWidth(width),
 		tty:   tty,
 		now:   time.Now,
 	}
@@ -96,6 +89,31 @@ func NewProgress(out io.Writer, width int, tty bool, opts ...ProgressOption) *Pr
 		o(p)
 	}
 	return p
+}
+
+// effectiveRenderWidth 终端宽度 → 渲染宽度:预留最后一列(见 NewProgress 文档)。
+func effectiveRenderWidth(width int) int {
+	if width <= 0 {
+		width = 80
+	}
+	width--
+	if width < 10 {
+		width = 10
+	}
+	return width
+}
+
+// SetWidth 运行期更新渲染宽度(终端拉伸响应),已 Start 时立即重绘一帧。
+// 调用方负责监听 SIGWINCH 并传入新的 term.GetSize 结果;
+// kit 不依赖 signal/fd,保持 io.Writer 层面的纯粹。
+func (p *Progress) SetWidth(width int) {
+	p.mu.Lock()
+	p.width = effectiveRenderWidth(width)
+	started := p.started
+	p.mu.Unlock()
+	if started {
+		p.renderOnce()
+	}
 }
 
 // AddBar 添加一个进度条,返回引用供调用方 Incr/Complete。

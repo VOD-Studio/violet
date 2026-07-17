@@ -161,3 +161,37 @@ func TestProgress_NoScrollEagerWrap(t *testing.T) {
 		}
 	}
 }
+
+// TestProgress_ResizeNoScroll 运行期拉伸:SetWidth 适配后,新宽度下 0 滚屏。
+// 场景:100 列启动 → 第 5 帧缩到 70 列(同时 SetWidth)→ 第 10 帧拉回 100 列。
+// 缩窄是堆叠/滚屏高危路径(行比终端宽会折行);拉宽只损失空间,顺带覆盖。
+// 注:70 列是 barWidth floor=4 下的最小可用宽度(meta 固定 36 + 开销 27 + bar 4 = 67);
+// 更窄终端的自适应布局(降 meta)是另一个独立问题,不在此测试范围。
+func TestProgress_ResizeNoScroll(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	clock := newFakeClock(time.Date(2026, 7, 18, 12, 0, 0, 0, time.UTC))
+	p := NewProgress(&buf, 100, true, WithProgressClock(clock.now))
+	b := p.AddBar(3_400_000, "Beyond - 海阔天空")
+
+	vt := &vtSim{cols: 100, rows: 24, row: 23, eagerWrap: true}
+	for frame := 0; frame < 15; frame++ {
+		if frame == 5 {
+			vt.cols = 70
+			p.SetWidth(70)
+		}
+		if frame == 10 {
+			vt.cols = 100
+			p.SetWidth(100)
+		}
+		buf.Reset()
+		clock.advance(100 * time.Millisecond)
+		b.Incr(170_000, clock.now())
+		p.RenderForTest()
+		before := vt.scrolls
+		vt.feed(buf.String())
+		if scrolled := vt.scrolls - before; frame > 0 && scrolled > 0 {
+			t.Errorf("frame %d(cols=%d): 滚屏 %d 行", frame, vt.cols, scrolled)
+		}
+	}
+}
