@@ -148,9 +148,6 @@ musicctl-uninstall: ## 卸载全局 musicctl
 	rm -f $$(go env GOPATH)/bin/musicctl
 	@echo "已卸载"
 
-musicctl-dev: ## 以最新代码运行 musicctl(用法: make musicctl-dev ARGS="song detail --id 347230")
-	cd mimo-music && go run ./cmd/musicctl/ $(ARGS)
-
 music-test: ## 运行 mimo-music 测试
 	cd mimo-music && go test ./...
 
