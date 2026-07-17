@@ -68,3 +68,5 @@ api/migrate-bilibili-covers
 
 # Superpowers generated docs (planning/specs) not tracked in repo
 docs/superpowers/
+.superpowers
+.qoder
