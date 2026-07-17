@@ -1,42 +1,36 @@
 // Package music 提供音乐解析的基础设施适配器。
 //
-// MimoMusicProvider 实现 domain/music.MusicProvider 端口，内部通过
-// pkg/mimomusic SDK 调用自托管的 mimo-music 服务解析网易云歌曲/歌单/歌词，
-// 不再依赖 vkeys/meting 等第三方公开解析实例。
+// MimoMusicProvider 实现 domain/music.MusicProvider 端口。当前为 stub 实现：
+// mimo-music 服务依赖已从 api 模块移除，需要联网的解析能力（搜索/歌词/详情/歌单导入）
+// 一律返回「服务未启用」错误；仅保留不依赖服务的纯逻辑（单曲嵌入链接生成、网易云
+// URL 解析）。重新接入自托管 mimo-music 服务时，把本文件换回真实 SDK 适配器即可。
 package music
 
 import (
-	"context"
-	"errors"
 	"regexp"
-	"strings"
-
-	"github.com/VOD-Studio/mimo-music/pkg/mimomusic"
 
 	domainmusic "blog-api/internal/domain/music"
 	"blog-api/internal/domain/shared"
 )
 
-// MimoMusicProvider 基于 mimo-music SDK 的音乐解析适配器。
+// MimoMusicProvider 音乐解析适配器的 stub 实现。
 //
-// 通过 NewMimoMusicProvider 构造，连接自托管 mimo-music 服务。
-// mimo-music 是受信内部服务，连接地址由配置注入，不走 SSRF 校验。
+// stub 模式下不持有任何客户端，构造函数签名保留是为了不破坏装配层调用方。
 type MimoMusicProvider struct {
-	client *mimomusic.Client
 }
 
-// NewMimoMusicProvider 创建 mimo-music 适配器。
+// NewMimoMusicProvider 创建音乐解析适配器。
 //
-// baseURL 是 mimo-music 服务地址（如 http://localhost:3721）。
+// baseURL 在 stub 模式下被忽略；保留参数仅为维持调用方签名不变，
+// 重新接入 mimo-music 后在此构造真实客户端。
 func NewMimoMusicProvider(baseURL string) *MimoMusicProvider {
-	client := mimomusic.NewClient(baseURL)
-	return &MimoMusicProvider{client: client}
+	return &MimoMusicProvider{}
 }
 
 // ParseEmbedURL 解析音乐链接返回嵌入信息。
 //
-// 仅支持网易云单曲链接；QQ 音乐（tencent）链接返回 ErrUnsupportedMusicURL，
-// 因 mimo-music 不支持 tencent 平台。
+// 仅支持网易云单曲链接；QQ 音乐（tencent）链接返回 ErrUnsupportedMusicURL。
+// 纯逻辑，不依赖 mimo-music 服务。
 func (p *MimoMusicProvider) ParseEmbedURL(rawURL string) (domainmusic.EmbedInfo, error) {
 	if songID := parseNeteaseSongID(rawURL); songID != "" {
 		return domainmusic.EmbedInfo{
@@ -49,102 +43,51 @@ func (p *MimoMusicProvider) ParseEmbedURL(rawURL string) (domainmusic.EmbedInfo,
 }
 
 // Search 搜索歌曲。
+//
+// stub：音乐解析服务未启用。
 func (p *MimoMusicProvider) Search(keyword string, limit int) ([]domainmusic.Song, error) {
-	result, err := p.client.Search(context.Background(), keyword, mimomusic.WithLimit(limit))
-	if err != nil {
-		return nil, mapSDKErr(err, "音乐搜索失败")
-	}
-	return sdkSongsToDomain(result.Songs), nil
+	return nil, errMusicServiceDisabled
 }
 
 // FetchLyrics 获取歌词。
+//
+// stub：音乐解析服务未启用。
 func (p *MimoMusicProvider) FetchLyrics(platform, songID string) (string, error) {
-	lyric, err := p.client.GetLyric(context.Background(), songID)
-	if err != nil {
-		return "", mapSDKErr(err, "获取歌词失败")
-	}
-	return strings.TrimSpace(lyric.Lrc), nil
+	return "", errMusicServiceDisabled
 }
 
 // FetchSongDetail 获取歌曲详情。
+//
+// stub：音乐解析服务未启用。
 func (p *MimoMusicProvider) FetchSongDetail(platform, songID string) (*domainmusic.Song, error) {
-	detail, err := p.client.GetSongDetail(context.Background(), songID)
-	if err != nil {
-		return nil, mapSDKErr(err, "获取歌曲详情失败")
-	}
-	return &domainmusic.Song{
-		Name: detail.Name, Artist: detail.Artist, Cover: detail.Cover,
-	}, nil
+	return nil, errMusicServiceDisabled
 }
 
 // FetchSongMeta 获取歌曲元数据（封面+歌词）。
 //
-// 合并歌曲详情（取封面）和歌词两个调用。
+// stub：音乐解析服务未启用。
 func (p *MimoMusicProvider) FetchSongMeta(platform, songID string) (*domainmusic.SongMeta, error) {
-	detail, err := p.client.GetSongDetail(context.Background(), songID)
-	if err != nil {
-		return nil, mapSDKErr(err, "获取歌曲元数据失败")
-	}
-	lyric, err := p.client.GetLyric(context.Background(), songID)
-	if err != nil {
-		return nil, mapSDKErr(err, "获取歌词失败")
-	}
-	return &domainmusic.SongMeta{
-		Cover: detail.Cover, Lyrics: strings.TrimSpace(lyric.Lrc),
-	}, nil
+	return nil, errMusicServiceDisabled
 }
 
 // FetchPlaylist 解析歌单链接返回歌曲列表。
 //
-// 从网易云歌单链接提取歌单 ID，调用 mimo-music 拉取完整歌曲列表。
-// 仅支持网易云歌单；其他链接返回 ErrUnsupportedMusicURL。
+// 仍校验 URL 是否为合法网易云歌单链接（非法格式返回 ErrUnsupportedMusicURL），
+// 合法链接在 stub 模式下返回「服务未启用」。
 func (p *MimoMusicProvider) FetchPlaylist(rawURL string) (*domainmusic.PlaylistMeta, error) {
-	playlistID := parseNeteasePlaylistID(rawURL)
-	if playlistID == "" {
+	if parseNeteasePlaylistID(rawURL) == "" {
 		return nil, domainmusic.ErrUnsupportedMusicURL
 	}
-	playlist, err := p.client.GetPlaylist(context.Background(), playlistID)
-	if err != nil {
-		return nil, mapSDKErr(err, "解析歌单失败")
-	}
-	return &domainmusic.PlaylistMeta{
-		Title:      playlist.Title,
-		Cover:      playlist.Cover,
-		Creator:    playlist.Creator,
-		Platform:   "netease",
-		PlaylistID: playlist.ID,
-		Songs:      sdkSongsToDomain(playlist.Songs),
-	}, nil
+	return nil, errMusicServiceDisabled
 }
 
 // 编译期断言
 var _ domainmusic.MusicProvider = (*MimoMusicProvider)(nil)
 
-// mapSDKErr 把 mimo-music SDK 哨兵错误映射到 domain shared 错误。
+// errMusicServiceDisabled stub 模式下所有联网解析方法的统一错误。
 //
-// 资源不存在 → NotFound；参数/不支持 → BadRequest；其余 → Internal。
-// 所有分支都用 WithErr 包装底层错误，保留 errors.Is 穿透能力。
-func mapSDKErr(err error, msg string) error {
-	switch {
-	case errors.Is(err, mimomusic.ErrNotFound):
-		return shared.NotFound("歌曲").WithErr(err)
-	case errors.Is(err, mimomusic.ErrInvalidRequest), errors.Is(err, mimomusic.ErrUnsupportedPlatform):
-		return shared.BadRequest(msg).WithErr(err)
-	default:
-		return shared.Internal(msg, err)
-	}
-}
-
-// sdkSongsToDomain 把 SDK Song 列表转成 domain Song 列表。
-func sdkSongsToDomain(songs []mimomusic.Song) []domainmusic.Song {
-	result := make([]domainmusic.Song, 0, len(songs))
-	for _, s := range songs {
-		result = append(result, domainmusic.Song{
-			Name: s.Name, Artist: s.Artist, Cover: s.Cover,
-		})
-	}
-	return result
-}
+// 用 Internal 错误码：服务能力缺失属于系统侧问题，而非请求参数错误。
+var errMusicServiceDisabled = shared.Internal("音乐解析服务暂未启用", nil)
 
 // ============================================================
 // URL 解析（网易云歌曲/歌单 ID 提取）
