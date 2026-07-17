@@ -4,7 +4,6 @@ go 1.25.8
 
 require (
 	github.com/HugoSmits86/nativewebp v1.3.0
-	github.com/VOD-Studio/mimo-music v0.0.0-00010101000000-000000000000
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/getkin/kin-openapi v0.142.0
@@ -90,6 +89,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
 )
-
-// mimo-music 为同仓独立 module，本地 replace 引用，拆成独立仓库时删此行即可。
-replace github.com/VOD-Studio/mimo-music => ../mimo-music
