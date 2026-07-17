@@ -16,7 +16,7 @@ vi.mock("@features/comments/api/mutations", () => ({
     useCreateComment: () => ({ mutate: vi.fn(), isPending: false }),
     useSendCommentCode: () => ({ mutate: vi.fn(), isPending: false }),
 }));
-vi.mock("@features/auth/model/login-dialog-store", () => ({
+vi.mock("@shared/api/login-dialog-store", () => ({
     useLoginDialogStore: () => ({ open: vi.fn() }),
 }));
 vi.mock("@features/emojis/api/queries", () => ({

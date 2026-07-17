@@ -12,7 +12,7 @@
  * 视觉：bg-surface-glass 毛玻璃 + 描边 + neon 强调。
  */
 
-import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
+import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { useCreateComment } from "@features/comments/api/mutations";
 import { toCreateCommentAnchor } from "@features/comments/lib/anchor-mapper";
 import { findBlockElement } from "@features/comments/lib/extract-blocks";

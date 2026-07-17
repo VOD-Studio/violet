@@ -11,7 +11,7 @@
  */
 
 import { useMe } from "@features/auth/api/queries";
-import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
+import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { fetchComments } from "@features/comments/api/queries";
 import { Button } from "@shared/ui/base/button";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";

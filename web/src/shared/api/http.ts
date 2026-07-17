@@ -1,4 +1,4 @@
-import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
+import { useLoginDialogStore } from "./login-dialog-store";
 import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";

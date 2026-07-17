@@ -3,7 +3,7 @@ import { authKeys } from "@features/auth/api/keys";
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
 import { useCsrfToken } from "@features/auth/api/queries";
 import { useOAuthVisibility } from "@features/auth/lib/use-oauth-visibility";
-import { useLoginDialogStore } from "@features/auth/model/login-dialog-store";
+import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import type { LoginRequest } from "@features/auth/model/types";
 import { useGoogleLogin } from "@react-oauth/google";
 import { ApiError } from "@shared/api/error";
