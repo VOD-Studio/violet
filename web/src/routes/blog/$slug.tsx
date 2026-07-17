@@ -10,14 +10,14 @@ import { apiPost } from "@shared/api/request";
 import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
 import { extractToc } from "@shared/lib/hooks/use-toc";
-import { extractMarkdownToc } from "@shared/lib/markdown";
+import { extractMarkdownToc } from "@shared/lib/markdown/toc";
 import { AvatarGroup } from "@shared/ui/avatar-group";
 import { BackToTop } from "@shared/ui/back-to-top";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
-import { Suspense, lazy, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 
 /**
  * 评论相关组件懒加载：批注层 / 浮动工具条 / 评论区都在首屏可视区下方，
