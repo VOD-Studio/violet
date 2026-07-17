@@ -13,7 +13,7 @@
 //	│7 │8 │     ⣿ = 全 8 点亮(0xFF),⠀ = 全灭(0x00)
 //	└──┴──┘
 //
-// 布局原则(单行 filler):
+// 布局原则(单行):
 //   - 已完成段:全亮 ⣿,渐变色填充
 //   - 边界字符:按亚进度点亮 0..8 个点,平滑锯齿
 //   - 未完成段:稀疏锚点(每隔几列底部一个点),形成「轨道」指引而非空白
@@ -21,11 +21,8 @@ package kit
 
 import (
 	"fmt"
-	"io"
 	"math"
 	"strings"
-
-	"github.com/vbauerster/mpb/v8/decor"
 )
 
 // ANSI 重置序列。true color 用 38;2;R;G;B 形态。
@@ -54,35 +51,22 @@ func lerpColor(c1, c2 [3]int, t float64) [3]int {
 	}
 }
 
-// percent 从 Statistics 算进度百分比 [0,1]。Total ≤ 0 时返回 0。
-func percent(stat decor.Statistics) float64 {
-	if stat.Total <= 0 {
-		return 0
-	}
-	return float64(stat.Current) / float64(stat.Total)
-}
-
 // brailleRune 按 8 位点阵构造盲文字符。
 func brailleRune(dots byte) rune { return rune(0x2800 | int(dots)) }
 
-// BrailleFiller 盲文点阵进度条。
+// RenderBar 渲染单条盲文进度条为字符串(纯函数,无副作用,无 I/O 依赖)。
 //
-// Color 控制 true color 输出(truecolor 终端设 true;管道/不支持时 false)。
-// 渲染规则见包注释。填充色随进度位置从青绿渐变到暖橙,完成态变绿。
-type BrailleFiller struct {
-	Color bool
-}
-
-// Fill 实现 mpb.BarFiller。
-//
-// 严格保证可见宽度 == stat.AvailableWidth:每个位置恰好输出 1 个盲文 cell,
-// ANSI 转义不计入显示宽度(mpb 用 stripansi 剥离后对齐)。
-func (b BrailleFiller) Fill(w io.Writer, stat decor.Statistics) error {
-	width := stat.AvailableWidth
+// current/total 决定进度;width 是盲文条占的字符数;color 控制是否输出 true color。
+// total ≤ 0 时按 0% 处理。视觉:已完成段全亮+渐变(青绿→天青→暖橙),
+// 边界水位上涨(8 级亚像素),未完成段轨道锚点。
+func RenderBar(current, total int64, width int, color bool) string {
 	if width < 4 {
 		width = 4
 	}
-	pct := percent(stat)
+	pct := 0.0
+	if total > 0 {
+		pct = float64(current) / float64(total)
+	}
 
 	// 字符级位置 + 亚像素余数(决定边界字符点亮几个点)。
 	totalSub := float64(width) * pct
@@ -92,56 +76,47 @@ func (b BrailleFiller) Fill(w io.Writer, stat decor.Statistics) error {
 		filled = width
 		subProgress = 0
 	}
-	// 进度推进到末位但未完成时,边界就是最后一格的亚进度。
 	borderIdx := filled
 	if borderIdx >= width {
 		borderIdx = width - 1
 	}
 
 	// 配色:青绿 → 天青 → 暖橙(冷暖跨度大,渐变可辨且不刺眼)。
-	// 完成态走同一渐变(100% 时全是暖橙尾色),不强行变绿。
-	cStart := [3]int{64, 220, 200} // 青绿
-	cMid := [3]int{120, 200, 255}  // 天青
-	cEnd := [3]int{255, 150, 80}   // 暖橙
+	cStart := [3]int{64, 220, 200}
+	cMid := [3]int{120, 200, 255}
+	cEnd := [3]int{255, 150, 80}
 
 	var buf strings.Builder
-	// 优化:已完成段逐格颜色相邻,用单一 ANSI 设置可减少转义密度(降低闪烁概率)。
-	// 但相邻颜色差异很小,逐格输出更平滑;权衡后仍逐格输出。
 	for i := 0; i < width; i++ {
 		var dots byte
-		var color [3]int
+		var c [3]int
 		switch {
 		case i < filled:
-			// 已完成:全亮 + 渐变(完成态也走这条,保持颜色一致,不变绿)。
 			dots = 0xFF
-			color = gradientAt(float64(i)+0.5, width, cStart, cMid, cEnd)
+			c = gradientAt(float64(i)+0.5, width, cStart, cMid, cEnd)
 		case i == borderIdx && (subProgress > 0 || filled == width-1):
-			// 边界:亚像素逐点亮。
-			if subProgress <= 0 {
-				subProgress = 1 // 末位推进
+			sp := subProgress
+			if sp <= 0 {
+				sp = 1
 			}
-			dots = subChar(subProgress)
-			color = gradientAt(float64(i)+0.5, width, cStart, cMid, cEnd)
+			dots = subChar(sp)
+			c = gradientAt(float64(i)+0.5, width, cStart, cMid, cEnd)
 		default:
-			// 未完成:轨道锚点(每隔 2 格点亮左下角一个点)。
-			dots, color = ghostDots(i)
+			dots, c = ghostDots(i)
 		}
-		buf.WriteString(rgb(color[0], color[1], color[2], b.Color))
+		buf.WriteString(rgb(c[0], c[1], c[2], color))
 		buf.WriteRune(brailleRune(dots))
-		if b.Color {
+		if color {
 			buf.WriteString(ansiReset)
 		}
 	}
-	_, err := fmt.Fprint(w, buf.String())
-	return err
+	return buf.String()
 }
 
 // subChar 边界字符:按亚进度 subProgress∈(0,1] 点亮 0..8 个点。
 // 点亮顺序模仿「水位上涨」——左列从底向上升满,再右列从底向上升满:
 //
 //	7→3→2→1(左列底→顶)  然后  8→6→5→4(右列底→顶)
-//
-// 视觉上像液体从底部填满一个 cell,符合「下载流进」的直觉。
 func subChar(subProgress float64) byte {
 	count := int(math.Ceil(subProgress*8 - 1e-9))
 	if count < 0 {
@@ -150,7 +125,6 @@ func subChar(subProgress float64) byte {
 	if count > 8 {
 		count = 8
 	}
-	// 水位上涨顺序:左列 7,3,2,1;右列 8,6,5,4。
 	order := [8]byte{0x40, 0x04, 0x02, 0x01, 0x80, 0x20, 0x10, 0x08}
 	var dots byte
 	for j := 0; j < count; j++ {
@@ -159,13 +133,12 @@ func subChar(subProgress float64) byte {
 	return dots
 }
 
-// ghostDots 未完成段轨道锚点:每 3 格点亮左下角一个点(位 7),其余全灭。
-// 形成等距的稀疏引导点,既不抢视觉焦点,又让进度条有「延伸轨道」感。
+// ghostDots 未完成段轨道锚点:每 3 格点亮左下角一个点,其余全灭。
 func ghostDots(i int) (byte, [3]int) {
 	if i%3 == 1 {
 		return 0x40, [3]int{70, 82, 102}
 	}
-	return 0, [3]int{40, 48, 60} // 全灭,颜色对空字符无影响但保持一致
+	return 0, [3]int{40, 48, 60}
 }
 
 // gradientAt 三段渐变(start→mid→end)在位置 pos/width 处的插值色。
