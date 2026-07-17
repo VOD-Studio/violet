@@ -212,6 +212,18 @@ func main() {
 			exitOnErr(err)
 			printJSON(resp)
 		})
+	// --- 专辑 ---
+	case "album":
+		id := albumIDFlag(args)
+		// album 需要 id 拼进 path（/weapi/v1/album/{id}）。
+		execRaw("album", func(ctx context.Context) {
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, engine.Meta{
+				Path: fmt.Sprintf("/weapi/v1/album/%d", id), Method: "POST",
+				Crypto: engine.CryptoWeAPI, Auth: 0,
+			}, map[string]any{})
+			exitOnErr(err)
+			printRaw(raw)
+		})
 	case "album-dynamic":
 		fs := newFlagSet(args)
 		id := fs.Int64("id", 0, "专辑 ID")
@@ -346,9 +358,14 @@ func main() {
 		limit := fs.Int("limit", 10, "返回数量")
 		offset := fs.Int("offset", 0, "偏移量")
 		fs.Parse()
-		exec("artist-albums", func(ctx context.Context) {
-			resp, err := executeOverride(eng, ctx, artistendpoint.Albums, &mmpb.AlbumsRequest{ArtistId: *id, Limit: int32(*limit), Offset: int32(*offset)})
-			exitOnErr(err); printJSON(resp)
+		// artist-albums 需要 id 拼进 path（/weapi/artist/albums/{id}）。
+		execRaw("artist-albums", func(ctx context.Context) {
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, engine.Meta{
+				Path: fmt.Sprintf("/weapi/artist/albums/%d", *id), Method: "POST",
+				Crypto: engine.CryptoWeAPI, Auth: 0,
+			}, map[string]any{"limit": int32(*limit), "offset": int32(*offset), "total": true})
+			exitOnErr(err)
+			printRaw(raw)
 		})
 	case "artist-desc":
 		id := artistIDFlag(args)
@@ -632,6 +649,14 @@ func artistIDFlag(args []string) int64 {
 func playlistIDFlag(args []string) int64 {
 	fs := flag.NewFlagSet("", flag.ExitOnError)
 	id := fs.Int64("id", 0, "歌单 ID")
+	_ = fs.Parse(args)
+	return *id
+}
+
+// albumIDFlag 解析 --id 专辑ID。
+func albumIDFlag(args []string) int64 {
+	fs := flag.NewFlagSet("", flag.ExitOnError)
+	id := fs.Int64("id", 0, "专辑 ID")
 	_ = fs.Parse(args)
 	return *id
 }
