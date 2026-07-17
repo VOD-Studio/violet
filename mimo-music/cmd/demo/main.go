@@ -23,6 +23,7 @@ import (
 
 	"github.com/vbauerster/mpb/v8"
 	"github.com/vbauerster/mpb/v8/decor"
+	"golang.org/x/term"
 
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
 )
@@ -77,22 +78,34 @@ flags:
   go run ./cmd/demo multi`)
 }
 
-// newProgress 构造 mpb.Progress。
+// newProgress 构造 mpb.Progress,返回 progress 和恢复函数。
 //
-// 直接用 os.Stderr,让 mpb 的 cwriter 正确识别 TTY(它只认 *os.File 类型断言)。
-// TTY 下 mpb 原生多 bar 会原地刷新(ANSI 光标上移重绘),非 TTY 自动只输出终态。
-// 不再用 syncWriter 包裹——它与 mpb 的"画帧→移动光标准备下次覆盖"模型冲突,
-// 会破坏原地刷新(实测每帧堆叠成新行)。防闪烁留待后续用更高刷新率 + 终端原生能力处理。
-func newProgress(width int) *mpb.Progress {
-	return mpb.New(
+// 防闪烁:TTY 下隐藏光标(DEC mode 25)——mpb 多 bar 重绘时光标会物理跳动
+// (上移到顶部逐行重写),这是「感知闪烁」的主因(Zellij #1903 等案例)。
+// 隐藏光标后重绘过程不可见,只剩最终帧;restore 在 p.Wait() 后恢复光标。
+// 非 TTY 不隐藏(没有重绘,无需处理)。
+//
+// 返回 restore func(),调用方用 defer restore() 保证即使 panic 也能恢复光标。
+func newProgress(width int) (*mpb.Progress, func()) {
+	p := mpb.New(
 		mpb.WithOutput(os.Stderr),
 		mpb.WithRefreshRate(120*time.Millisecond),
 		mpb.WithWidth(width),
 	)
+	tty := term.IsTerminal(int(os.Stderr.Fd()))
+	if tty {
+		fmt.Fprint(os.Stderr, "\x1b[?25l") // 隐藏光标
+	}
+	return p, func() {
+		if tty {
+			fmt.Fprint(os.Stderr, "\x1b[?25h") // 恢复光标
+		}
+	}
 }
 
 func runSingle(color bool, speed float64) {
-	p := newProgress(48)
+	p, restore := newProgress(48)
+	defer restore()
 
 	total := int64(3_400_000) // 3.4 MB
 	bar := p.MustAdd(total,
@@ -124,7 +137,8 @@ func runSingle(color bool, speed float64) {
 }
 
 func runMulti(speed float64) {
-	p := newProgress(56)
+	p, restore := newProgress(56)
+	defer restore()
 
 	songs := []struct {
 		name string
