@@ -7,6 +7,7 @@
  *
  * PRD-0001 锚点定位：单块内选区成功，跨块返回 null（不产生无法稳定锚定的批注）。
  */
+import { computeBlockId } from "./block-id";
 import type { Anchor } from "./types";
 
 /** 判断两个块是否同一块（blockId 相同且都非空）。 */
@@ -45,8 +46,6 @@ export async function buildAnchorFromRange(input: BuildAnchorInput): Promise<Anc
     // 无效选区
     if (startOffset >= endOffset) return null;
 
-    // 动态 import 避免循环依赖（computeBlockId 已是 leaf，但保持模块边界清晰）
-    const { computeBlockId } = await import("./block-id");
     const blockTextHash = await computeBlockId(blockText);
     if (blockTextHash === null) return null; // 空块无法锚定
 
