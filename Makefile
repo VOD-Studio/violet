@@ -130,6 +130,9 @@ web-test: ## 运行前端单元测试 (Vitest)
 
 # ==================== mimo-music（音乐解析服务） ====================
 
+# 仓库根目录的绝对路径(按 Makefile 自身位置识别,与开发者 clone 位置无关)。
+MIMO_ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+
 music: ## 启动 mimo-music 音乐服务
 	cd mimo-music && go run ./cmd/server
 
@@ -147,6 +150,14 @@ musicctl-install: ## 安装/更新 musicctl 到 ~/go/bin(代码变更后重跑�
 musicctl-uninstall: ## 卸载全局 musicctl
 	rm -f $$(go env GOPATH)/bin/musicctl
 	@echo "已卸载"
+
+musicctl-alias: ## 写入 musicctl-dev alias 到 ~/.zshrc(仓库路径自动识别,已存在则跳过)
+	@if grep -q "alias musicctl-dev=" ~/.zshrc 2>/dev/null; then \
+		echo "alias musicctl-dev 已存在,跳过"; \
+	else \
+		echo "alias musicctl-dev='go run -C $(MIMO_ROOT)/mimo-music ./cmd/musicctl'" >> ~/.zshrc; \
+		echo "已写入 ~/.zshrc,执行 source ~/.zshrc 生效"; \
+	fi
 
 music-test: ## 运行 mimo-music 测试
 	cd mimo-music && go test ./...
