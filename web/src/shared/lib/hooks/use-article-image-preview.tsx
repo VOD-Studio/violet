@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import { imageUrl } from "@/features/upload/lib/imageUrl";
+import { imageUrl } from "@shared/lib/image-url";
 import { ImagePreview } from "@/shared/ui/image-preview";
 
 export function useArticleImagePreview() {

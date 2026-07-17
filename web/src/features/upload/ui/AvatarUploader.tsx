@@ -2,7 +2,7 @@ import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { useState } from "react";
 import type { UserDTO } from "@/entities/user/model/types";
 import { useUpdateProfile } from "@/features/auth/api/mutations";
-import { avatarUrl } from "../lib/imageUrl";
+import { avatarUrl } from "@shared/lib/image-url";
 import { CropUploadDialog, type CropUploadResult } from "./CropUploadDialog";
 
 interface AvatarUploaderProps {

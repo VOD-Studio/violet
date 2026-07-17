@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avatarUrl } from "../imageUrl";
+import { avatarUrl } from "../image-url";
 
 describe("avatarUrl", () => {
     it("空 path 返回默认头像", () => {

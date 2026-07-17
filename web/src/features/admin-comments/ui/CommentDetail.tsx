@@ -1,5 +1,5 @@
 import type { AdminComment } from "@features/admin-comments/model/types";
-import { avatarUrl, imageUrl } from "@features/upload/lib/imageUrl";
+import { avatarUrl, imageUrl } from "@shared/lib/image-url";
 import { Quote } from "lucide-react";
 import { ImagePreview, useImagePreview } from "@/shared/ui/image-preview";
 

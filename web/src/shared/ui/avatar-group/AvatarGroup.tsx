@@ -1,4 +1,4 @@
-import { avatarUrl } from "@features/upload/lib/imageUrl";
+import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
 
 export interface AvatarUser {

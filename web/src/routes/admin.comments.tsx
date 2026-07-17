@@ -16,7 +16,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { avatarUrl } from "@features/upload/lib/imageUrl";
+import { avatarUrl } from "@shared/lib/image-url";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
