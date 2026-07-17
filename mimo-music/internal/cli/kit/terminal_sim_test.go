@@ -1,10 +1,10 @@
-// 终端网格仿真测试:滚屏是终端侧行为,字节流断言抓不住,
+// 终端网格仿真测试:滚屏/折行/残留重复是终端侧行为,字节流断言抓不住,
 // 必须用虚拟终端重放输出才能观测。
 //
-// 回归:行宽曾恰好顶满终端宽度,在 immediate-wrap 终端(Terminal.app 等)
-// 写满最后一列立刻折行,帧块每帧多占一行 → 光标上移行数不够 →
-// 逐帧滚屏/抖动(用户肉眼「闪烁」)。修复:渲染宽度预留最后一列(width-1)。
-// 两种 wrap 语义下仿真都必须 0 滚屏(首帧落定除外)。
+// vtSim 是带内容网格的最小终端模型:
+//   - 两种 wrap 语义:deferred(xterm 系)/ immediate(Terminal.app 系)
+//   - resizeReflow:模拟 iTerm2/VTE/kitty/WezTerm 等终端缩窄时的
+//     重新折行(reflow)——已绘制的宽行变成多行,行数改变
 package kit
 
 import (
@@ -20,25 +20,64 @@ import (
 // vtSim 最小终端网格仿真。
 // eagerWrap=false:xterm 系 deferred wrap(最后一列写满后置 pending,下个可打印字符才折行)。
 // eagerWrap=true:Terminal.app 系 immediate wrap(写进最后一列立刻折行)。
-// 两种语义对「恰好 == 终端宽度」的行处理不同——这是条件性闪烁的关键变量。
 type vtSim struct {
 	cols, rows  int
 	row, col    int
 	wrapPending bool
 	eagerWrap   bool
 	scrolls     int
+
+	grid [][]rune // 屏幕内容,每行 cols 个 cell;宽字符第二 cell 置 0(占位)
+	cont []bool   // cont[i]:第 i 行是上一逻辑行的折行延续
+}
+
+func (v *vtSim) ensureGrid() {
+	if v.grid != nil {
+		return
+	}
+	v.grid = make([][]rune, v.rows)
+	v.cont = make([]bool, v.rows)
+	for i := range v.grid {
+		v.grid[i] = blankRow(v.cols)
+	}
+}
+
+func blankRow(cols int) []rune {
+	r := make([]rune, cols)
+	for i := range r {
+		r[i] = ' '
+	}
+	return r
+}
+
+// rowText 取一行可见文本(占位 0 跳过,尾部空格裁掉)。
+func (v *vtSim) rowText(r int) string {
+	v.ensureGrid()
+	var b strings.Builder
+	for _, cell := range v.grid[r] {
+		if cell != 0 {
+			b.WriteRune(cell)
+		}
+	}
+	return strings.TrimRight(b.String(), " ")
 }
 
 func (v *vtSim) lineDown() {
 	if v.row == v.rows-1 {
 		v.scrolls++ // 底行下移 = 滚屏(闪烁源)
+		v.grid = append(v.grid[1:], blankRow(v.cols))
+		v.cont = append(v.cont[1:], false)
+		if v.cont[0] {
+			v.cont[0] = false // 头行滚出屏幕,延续行自立
+		}
 	} else {
 		v.row++
 	}
 }
 
-// feed 逐字节消费一段输出,统计滚屏次数。
+// feed 逐字节消费一段输出,驱动网格与滚屏计数。
 func (v *vtSim) feed(s string) {
+	v.ensureGrid()
 	i := 0
 	for i < len(s) {
 		c := s[i]
@@ -50,6 +89,7 @@ func (v *vtSim) feed(s string) {
 		case c == '\n':
 			v.wrapPending = false
 			v.lineDown()
+			v.cont[v.row] = false // \n 落下的是新逻辑行
 			i++
 		case c == 0x1b && i+1 < len(s) && s[i+1] == '[':
 			// CSI:参数直到终结字母
@@ -71,8 +111,20 @@ func (v *vtSim) feed(s string) {
 				if v.row < 0 {
 					v.row = 0
 				}
-			case 'K', 'J', 'm', 'l', 'h':
-				// 清行/清屏/颜色/模式:不影响光标与滚屏
+			case 'K': // 清当前行光标到行尾
+				for x := v.col; x < v.cols; x++ {
+					v.grid[v.row][x] = ' '
+				}
+			case 'J': // 清光标到屏幕尾
+				for x := v.col; x < v.cols; x++ {
+					v.grid[v.row][x] = ' '
+				}
+				for r := v.row + 1; r < v.rows; r++ {
+					v.grid[r] = blankRow(v.cols)
+					v.cont[r] = false
+				}
+			case 'm', 'l', 'h':
+				// 颜色/模式:不影响网格
 			}
 			i = j + 1
 		case c == 0x1b:
@@ -83,14 +135,23 @@ func (v *vtSim) feed(s string) {
 			if v.wrapPending {
 				v.col = 0
 				v.wrapPending = false
-				v.lineDown() // 折行到底行也会滚屏
+				v.lineDown()
+				v.cont[v.row] = true // 折行延续行
 			}
-			v.col += runewidth.RuneWidth(r)
+			w := runewidth.RuneWidth(r)
+			if v.col < v.cols {
+				v.grid[v.row][v.col] = r
+				if w == 2 && v.col+1 < v.cols {
+					v.grid[v.row][v.col+1] = 0 // 宽字符占位
+				}
+			}
+			v.col += w
 			if v.col >= v.cols {
 				if v.eagerWrap {
 					// immediate wrap:写进最后一列立刻折到下一行
 					v.col = 0
 					v.lineDown()
+					v.cont[v.row] = true
 				} else {
 					v.col = v.cols - 1
 					v.wrapPending = true
@@ -99,6 +160,124 @@ func (v *vtSim) feed(s string) {
 			i += size
 		}
 	}
+}
+
+// resizeReflow 模拟支持 reflow 的终端缩窄/拉宽:
+// 逻辑行(头行 + 折行延续行)按新宽度重新折行,物理行数随之变化。
+// 真实终端(iTerm2/VTE/kitty/WezTerm/Windows Terminal)缩窄时即此行为;
+// xterm/Alacritty 不 reflow(截断,行数不变)——本方法不模拟后者。
+func (v *vtSim) resizeReflow(newCols int) {
+	v.ensureGrid()
+
+	// 1. 按 cont 标志分组出逻辑行(占位 0 跳过,尾部空白裁掉——
+	//    真实终端 reflow 时会丢弃行尾空白)。
+	type logicalLine struct {
+		text      []rune
+		hasCursor bool
+		cursorSub int // 光标在该逻辑行内的物理子行号
+	}
+	var logicals []logicalLine
+	for r := 0; r < v.rows; r++ {
+		if r == 0 || !v.cont[r] {
+			logicals = append(logicals, logicalLine{})
+		}
+		li := len(logicals) - 1
+		if r == v.row {
+			logicals[li].hasCursor = true
+		}
+		for _, cell := range v.grid[r] {
+			if cell != 0 {
+				logicals[li].text = append(logicals[li].text, cell)
+			}
+		}
+	}
+	// 尾部空白裁剪 + 光标子行号(光标前有几个延续行)。
+	for li := range logicals {
+		t := logicals[li].text
+		for len(t) > 0 && t[len(t)-1] == ' ' {
+			t = t[:len(t)-1]
+		}
+		logicals[li].text = t
+	}
+	// 重算光标子行号:光标物理行是该逻辑行的第几个物理行。
+	{
+		sub := 0
+		for r := v.row - 1; r >= 0 && v.cont[r+1]; r-- {
+			sub++
+		}
+		for li := range logicals {
+			if logicals[li].hasCursor {
+				logicals[li].cursorSub = sub
+			}
+		}
+	}
+
+	// 2. 按新宽度重新折行。
+	newGrid := make([][]rune, 0, v.rows)
+	newCont := make([]bool, 0, v.rows)
+	newCursorRow := 0
+	for _, lg := range logicals {
+		chunks := wrapRunes(lg.text, newCols)
+		if lg.hasCursor {
+			sub := lg.cursorSub
+			if sub >= len(chunks) {
+				sub = len(chunks) - 1
+			}
+			newCursorRow = len(newGrid) + sub
+		}
+		for i, ch := range chunks {
+			row := blankRow(newCols)
+			copy(row, ch)
+			newGrid = append(newGrid, row)
+			newCont = append(newCont, i > 0)
+		}
+	}
+
+	// 3. 超出屏幕的行从顶部滚出。
+	for len(newGrid) > v.rows {
+		newGrid = newGrid[1:]
+		newCont = newCont[1:]
+		v.scrolls++
+		newCursorRow--
+		if newCont[0] {
+			newCont[0] = false
+		}
+	}
+	for len(newGrid) < v.rows {
+		newGrid = append(newGrid, blankRow(newCols))
+		newCont = append(newCont, false)
+	}
+
+	v.cols = newCols
+	v.grid = newGrid
+	v.cont = newCont
+	v.row = newCursorRow
+	if v.row < 0 {
+		v.row = 0
+	}
+	if v.col >= newCols {
+		v.col = newCols - 1
+	}
+	v.wrapPending = false
+}
+
+// wrapRunes 按显示宽度把一串 rune 折成 ≤cols 的若干物理行(至少 1 行)。
+func wrapRunes(text []rune, cols int) [][]rune {
+	if cols < 1 {
+		cols = 1
+	}
+	rows := [][]rune{{}}
+	w := 0
+	for _, r := range text {
+		rw := runewidth.RuneWidth(r)
+		if w+rw > cols {
+			rows = append(rows, []rune{})
+			w = 0
+		}
+		rows[len(rows)-1] = append(rows[len(rows)-1], r)
+		w += rw
+	}
+	return rows
 }
 
 func atoiOr1(s string) int {
@@ -192,6 +371,53 @@ func TestProgress_ResizeNoScroll(t *testing.T) {
 		vt.feed(buf.String())
 		if scrolled := vt.scrolls - before; frame > 0 && scrolled > 0 {
 			t.Errorf("frame %d(cols=%d): 滚屏 %d 行", frame, vt.cols, scrolled)
+		}
+	}
+}
+
+// TestProgress_ResizeReflowNoDuplicate 折行(reflow)终端缩窄:重绘后屏幕上每个
+// bar 恰好一份,无残留重复。
+// 回归:缩窄时旧帧的宽行被终端 reflow 成多行,帧块行数翻倍,但渲染仍按
+// len(prev) 上移 → 落在新块中间 → 上半旧行残留(用户见「数据重复」)。
+// 修复:SetWidth 后首帧按 reflow 估算旧帧实际占用行数,上移 + \e[J 整块清。
+func TestProgress_ResizeReflowNoDuplicate(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	clock := newFakeClock(time.Date(2026, 7, 18, 12, 0, 0, 0, time.UTC))
+	p := NewProgress(&buf, 100, true, WithProgressClock(clock.now))
+	total := p.AddBar(35_800_000, "我喜欢的音乐")
+	total.IsTotal = true
+	s1 := p.AddBar(3_400_000, "Beyond - 海阔天空")
+	s2 := p.AddBar(4_100_000, "周杰伦 - 晴天")
+
+	vt := &vtSim{cols: 100, rows: 40, row: 30} // deferred wrap(iTerm2 系)
+	drive := func(frames int) {
+		for range frames {
+			buf.Reset()
+			clock.advance(100 * time.Millisecond)
+			total.Incr(300_000, clock.now())
+			s1.Incr(170_000, clock.now())
+			s2.Incr(200_000, clock.now())
+			p.RenderForTest()
+			vt.feed(buf.String())
+		}
+	}
+
+	drive(5)
+	vt.resizeReflow(70) // 终端缩窄:99 列宽旧行折成 2 行,帧块 3→6 行
+	p.SetWidth(70)
+	drive(5)
+
+	// 屏幕上每个 bar 的 label 必须恰好出现一次。
+	for _, label := range []string{"我喜欢的音乐", "海阔天空", "晴天"} {
+		count := 0
+		for r := 0; r < vt.rows; r++ {
+			if strings.Contains(vt.rowText(r), label) {
+				count++
+			}
+		}
+		if count != 1 {
+			t.Errorf("label %q 在屏幕上出现 %d 次(应 1 次,>1 = 缩窄残留重复)", label, count)
 		}
 	}
 }

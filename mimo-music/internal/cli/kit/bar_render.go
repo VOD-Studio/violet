@@ -147,6 +147,26 @@ func colorWrap(s, ansi string, color bool) string {
 	return ansi + s + ansiReset
 }
 
+// displayWidth 可见显示宽度:剥离 ANSI CSI 序列(颜色)后按 runewidth 计宽。
+// 用于 SetWidth 后估算上一帧在新终端宽度下的折行占用行数(reflow 清残影)。
+func displayWidth(s string) int {
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); {
+		if s[i] == 0x1b && i+1 < len(s) && s[i+1] == '[' {
+			j := i + 2
+			for j < len(s) && !((s[j] >= 'A' && s[j] <= 'Z') || (s[j] >= 'a' && s[j] <= 'z')) {
+				j++
+			}
+			i = j + 1
+			continue
+		}
+		b.WriteByte(s[i])
+		i++
+	}
+	return runewidth.StringWidth(b.String())
+}
+
 // padLabel 把 label 填充到固定显示宽度(右侧补空格),按 CJK 全宽计算。
 // 中文占2列、ASCII占1列,用 runewidth 精确计算,避免终端自动折行。
 func padLabel(s string, width int) string {

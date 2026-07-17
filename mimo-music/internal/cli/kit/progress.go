@@ -11,6 +11,7 @@ package kit
 
 import (
 	"io"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -45,19 +46,21 @@ type Bar struct {
 
 // Progress 多 bar 渲染器。
 type Progress struct {
-	out    io.Writer
-	width  int  // 终端宽度(渲染时计算进度条宽度)
-	color  bool // true color 开关
-	tty    bool // 是否 TTY(非 TTY 抑制刷新,只输出终态)
+	out   io.Writer
+	width int  // 渲染宽度(= rawWidth-1,预留最后一列)
+	color bool // true color 开关
+	tty   bool // 是否 TTY(非 TTY 抑制刷新,只输出终态)
 
-	mu       sync.Mutex
-	bars     []*Bar
-	prev     []string // 上一帧各行(diff 用)
-	spinner  int      // spinner 帧索引(tick 推进)
-	ticker   *time.Ticker
-	done     chan struct{}
-	now      func() time.Time // 假时钟注入(测试确定性)
-	started  bool
+	mu         sync.Mutex
+	rawWidth   int      // 终端实际宽度(reflow 行数估算用)
+	widthDirty bool     // SetWidth 刚改过宽度:下一帧先清 reflow 残影
+	bars       []*Bar
+	prev       []string // 上一帧各行(diff 用)
+	spinner    int      // spinner 帧索引(tick 推进)
+	ticker     *time.Ticker
+	done       chan struct{}
+	now        func() time.Time // 假时钟注入(测试确定性)
+	started    bool
 }
 
 // ProgressOption 配置 NewProgress。
@@ -79,11 +82,16 @@ func WithProgressClock(now func() time.Time) ProgressOption {
 // 在写满最后一列时立刻折行,行宽顶满会导致帧块每帧多占一行 → 逐帧抖动(闪烁);
 // xterm 系 deferred-wrap 终端虽不受影响,预留一列对两类终端都安全。
 func NewProgress(out io.Writer, width int, tty bool, opts ...ProgressOption) *Progress {
+	raw := width
+	if raw <= 0 {
+		raw = 80
+	}
 	p := &Progress{
-		out:   out,
-		width: effectiveRenderWidth(width),
-		tty:   tty,
-		now:   time.Now,
+		out:      out,
+		width:    effectiveRenderWidth(width),
+		rawWidth: raw,
+		tty:      tty,
+		now:      time.Now,
 	}
 	for _, o := range opts {
 		o(p)
@@ -106,9 +114,21 @@ func effectiveRenderWidth(width int) int {
 // SetWidth 运行期更新渲染宽度(终端拉伸响应),已 Start 时立即重绘一帧。
 // 调用方负责监听 SIGWINCH 并传入新的 term.GetSize 结果;
 // kit 不依赖 signal/fd,保持 io.Writer 层面的纯粹。
+//
+// 缩窄时支持 reflow 的终端(iTerm2/VTE/kitty/WezTerm 等)会把已绘制的
+// 宽行重新折行,旧帧块行数变多,若仍按 len(prev) 上移会留残影(重复)。
+// 因此置 widthDirty:下一帧按新宽度估算旧帧实际占用行数,上移 + \e[J 整块清。
+// 已知取舍:不 reflow 的终端(xterm/Alacritty)缩窄时该估算会多清
+// 块上方几行历史输出——重复残留与误清历史之间,选择适配多数现代终端。
 func (p *Progress) SetWidth(width int) {
+	raw := width
+	if raw <= 0 {
+		raw = 80
+	}
 	p.mu.Lock()
 	p.width = effectiveRenderWidth(width)
+	p.rawWidth = raw
+	p.widthDirty = true
 	started := p.started
 	p.mu.Unlock()
 	if started {
@@ -252,6 +272,25 @@ func (p *Progress) renderOnceInternal() {
 	now := p.now()
 	// 推进 spinner。
 	p.spinner++
+
+	// 宽度刚变更(SetWidth):旧帧各行在新宽度下可能已被终端 reflow 成
+	// 多行,行数 ≠ len(prev)。按 reflow 估算实际占用行数,上移 + \e[J
+	// 整块清掉,再按 nil prev 全新渲染——否则上半旧行残留(重复)。
+	if p.widthDirty {
+		p.widthDirty = false
+		rows := 0
+		for _, line := range p.prev {
+			w := displayWidth(line)
+			if w < 1 {
+				w = 1
+			}
+			rows += (w + p.rawWidth - 1) / p.rawWidth
+		}
+		if rows > 0 {
+			io.WriteString(p.out, "\x1b["+strconv.Itoa(rows)+"A\x1b[J")
+		}
+		p.prev = nil
+	}
 
 	// 快照所有 bar(每 bar 自有锁,与并发 Incr/Complete 无竞态),
 	// 之后渲染只读快照——渲染期间 worker 继续推进也不撕裂。
