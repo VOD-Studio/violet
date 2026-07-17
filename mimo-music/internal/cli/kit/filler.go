@@ -99,10 +99,10 @@ func (b BrailleFiller) Fill(w io.Writer, stat decor.Statistics) error {
 	}
 
 	// 配色:青绿 → 天青 → 暖橙(冷暖跨度大,渐变可辨且不刺眼)。
+	// 完成态走同一渐变(100% 时全是暖橙尾色),不强行变绿。
 	cStart := [3]int{64, 220, 200} // 青绿
 	cMid := [3]int{120, 200, 255}  // 天青
 	cEnd := [3]int{255, 150, 80}   // 暖橙
-	cDone := [3]int{80, 220, 130}  // 完成(绿)
 
 	var buf strings.Builder
 	// 优化:已完成段逐格颜色相邻,用单一 ANSI 设置可减少转义密度(降低闪烁概率)。
@@ -111,10 +111,8 @@ func (b BrailleFiller) Fill(w io.Writer, stat decor.Statistics) error {
 		var dots byte
 		var color [3]int
 		switch {
-		case stat.Completed:
-			dots, color = 0xFF, cDone
 		case i < filled:
-			// 已完成:全亮。
+			// 已完成:全亮 + 渐变(完成态也走这条,保持颜色一致,不变绿)。
 			dots = 0xFF
 			color = gradientAt(float64(i)+0.5, width, cStart, cMid, cEnd)
 		case i == borderIdx && (subProgress > 0 || filled == width-1):
