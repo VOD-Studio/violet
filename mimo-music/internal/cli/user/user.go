@@ -42,7 +42,7 @@ func newAccount(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			return kit.PrintExec(k, userendpoint.Account, &mmpb.AccountRequest{})
+			return kit.RenderExec(k, userendpoint.Account, &mmpb.AccountRequest{})
 		},
 	}
 }
@@ -77,7 +77,7 @@ func newDetailByName(k *kit.Kit) *cobra.Command {
 		Short: "按昵称查用户 ID",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, userendpoint.DetailByName, &mmpb.DetailByNameRequest{Nickname: nickname})
+			return kit.RenderExec(k, userendpoint.DetailByName, &mmpb.DetailByNameRequest{Nickname: nickname})
 		},
 	}
 	c.Flags().StringVar(&nickname, "nickname", "", "用户昵称")
@@ -94,7 +94,7 @@ func newSubCount(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			return kit.PrintExec(k, userendpoint.SubCount, &mmpb.SubCountRequest{})
+			return kit.RenderExec(k, userendpoint.SubCount, &mmpb.SubCountRequest{})
 		},
 	}
 }
@@ -106,7 +106,7 @@ func newPlaylists(k *kit.Kit) *cobra.Command {
 		Short: "用户歌单",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, userendpoint.UserPlaylist, &mmpb.UserPlaylistRequest{UserId: uid})
+			return kit.RenderExec(k, userendpoint.UserPlaylist, &mmpb.UserPlaylistRequest{UserId: uid})
 		},
 	}
 	withUID(c, &uid)
@@ -147,7 +147,7 @@ func newFolloweds(k *kit.Kit) *cobra.Command {
 		Short: "用户粉丝列表",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, userendpoint.Followeds, &mmpb.FollowedsRequest{UserId: uid, Limit: int32(limit), Offset: int32(offset)})
+			return kit.RenderExec(k, userendpoint.Followeds, &mmpb.FollowedsRequest{UserId: uid, Limit: int32(limit), Offset: int32(offset)})
 		},
 	}
 	withUID(c, &uid)
@@ -173,7 +173,7 @@ func newFollowEachOther(k *kit.Kit) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return kit.PrintJSON(resp)
+			return k.Render(resp)
 		},
 	}
 	withUID(c, &uid)
@@ -190,7 +190,7 @@ func newRecord(k *kit.Kit) *cobra.Command {
 		Short: "听歌排行",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, userendpoint.Record, &mmpb.RecordRequest{UserId: uid, Type: int32(typ)})
+			return kit.RenderExec(k, userendpoint.Record, &mmpb.RecordRequest{UserId: uid, Type: int32(typ)})
 		},
 	}
 	withUID(c, &uid)
@@ -206,7 +206,7 @@ func newEvents(k *kit.Kit) *cobra.Command {
 		Short: "用户动态",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, userendpoint.Events, &mmpb.EventsRequest{UserId: uid, Limit: int32(limit), LastEventId: lastID})
+			return kit.RenderExec(k, userendpoint.Events, &mmpb.EventsRequest{UserId: uid, Limit: int32(limit), LastEventId: lastID})
 		},
 	}
 	withUID(c, &uid)
@@ -222,7 +222,7 @@ func newLevel(k *kit.Kit) *cobra.Command {
 		Short: "用户等级",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, userendpoint.Level, &mmpb.LevelRequest{UserId: uid})
+			return kit.RenderExec(k, userendpoint.Level, &mmpb.LevelRequest{UserId: uid})
 		},
 	}
 	withUID(c, &uid)
@@ -236,7 +236,7 @@ func newSimilar(k *kit.Kit) *cobra.Command {
 		Short: "相似用户(按歌曲)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, userendpoint.SimilarUsers, &mmpb.SimilarUsersRequest{SongId: id})
+			return kit.RenderExec(k, userendpoint.SimilarUsers, &mmpb.SimilarUsersRequest{SongId: id})
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")

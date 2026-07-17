@@ -58,7 +58,7 @@ func newShelf(k *kit.Kit) *cobra.Command {
 		Short: "新碟上架",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, albumendpoint.NewAlbumShelf, &mmpb.NewAlbumShelfRequest{Area: strToArea(area), Limit: int32(limit)})
+			return kit.RenderExec(k, albumendpoint.NewAlbumShelf, &mmpb.NewAlbumShelfRequest{Area: strToArea(area), Limit: int32(limit)})
 		},
 	}
 	c.Flags().StringVar(&area, "area", "ALL", "地区: ALL/ZH/EA/KR/JP")
@@ -72,7 +72,7 @@ func newNewest(k *kit.Kit) *cobra.Command {
 		Short: "最新专辑",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, albumendpoint.NewestAlbums, &mmpb.NewestAlbumsRequest{})
+			return kit.RenderExec(k, albumendpoint.NewestAlbums, &mmpb.NewestAlbumsRequest{})
 		},
 	}
 }
@@ -85,7 +85,7 @@ func newAll(k *kit.Kit) *cobra.Command {
 		Short: "全部新碟",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, albumendpoint.AllNewAlbums, &mmpb.AllNewAlbumsRequest{Area: strToArea(area), Limit: int32(limit), Offset: int32(offset)})
+			return kit.RenderExec(k, albumendpoint.AllNewAlbums, &mmpb.AllNewAlbumsRequest{Area: strToArea(area), Limit: int32(limit), Offset: int32(offset)})
 		},
 	}
 	c.Flags().StringVar(&area, "area", "ALL", "地区: ALL/ZH/EA/KR/JP")
@@ -124,7 +124,7 @@ func newDynamic(k *kit.Kit) *cobra.Command {
 		Short: "专辑动态信息(收藏数等)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, albumendpoint.AlbumDynamic, &mmpb.AlbumDynamicRequest{AlbumId: id})
+			return kit.RenderExec(k, albumendpoint.AlbumDynamic, &mmpb.AlbumDynamicRequest{AlbumId: id})
 		},
 	}
 	withID(c, &id)
@@ -138,7 +138,7 @@ func newSongQuality(k *kit.Kit) *cobra.Command {
 		Short: "专辑歌曲音质",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, albumendpoint.AlbumSongQuality, &mmpb.AlbumSongQualityRequest{AlbumId: id})
+			return kit.RenderExec(k, albumendpoint.AlbumSongQuality, &mmpb.AlbumSongQualityRequest{AlbumId: id})
 		},
 	}
 	withID(c, &id)
@@ -162,7 +162,7 @@ func newSubscribe(k *kit.Kit) *cobra.Command {
 			if !ok {
 				return nil
 			}
-			return kit.PrintExec(k, albumendpoint.Subscribe, &mmpb.SubscribeAlbumRequest{AlbumId: id})
+			return kit.RenderExec(k, albumendpoint.Subscribe, &mmpb.SubscribeAlbumRequest{AlbumId: id})
 		},
 	}
 	withID(c, &id)
@@ -186,7 +186,7 @@ func newUnsubscribe(k *kit.Kit) *cobra.Command {
 			if !ok {
 				return nil
 			}
-			return kit.PrintExec(k, albumendpoint.Unsubscribe, &mmpb.UnsubscribeAlbumRequest{AlbumId: id})
+			return kit.RenderExec(k, albumendpoint.Unsubscribe, &mmpb.UnsubscribeAlbumRequest{AlbumId: id})
 		},
 	}
 	withID(c, &id)
@@ -203,7 +203,7 @@ func newSubscribed(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			return kit.PrintExec(k, albumendpoint.SubscribedAlbums, &mmpb.SubscribedAlbumsRequest{Limit: int32(limit)})
+			return kit.RenderExec(k, albumendpoint.SubscribedAlbums, &mmpb.SubscribedAlbumsRequest{Limit: int32(limit)})
 		},
 	}
 	c.Flags().IntVar(&limit, "limit", 25, "返回数量")

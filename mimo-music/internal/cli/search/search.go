@@ -18,7 +18,7 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		Short: "搜索(默认单曲)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, searchendpoint.Search, &mmpb.SearchRequest{Keyword: keyword, Limit: int32(limit), Offset: int32(offset)})
+			return kit.RenderExec(k, searchendpoint.Search, &mmpb.SearchRequest{Keyword: keyword, Limit: int32(limit), Offset: int32(offset)})
 		},
 	}
 	c.Flags().StringVar(&keyword, "keyword", "", "搜索关键词")
@@ -36,7 +36,7 @@ func newSuggest(k *kit.Kit) *cobra.Command {
 		Short: "搜索建议",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, searchendpoint.Suggest, &mmpb.SuggestRequest{Keyword: keyword})
+			return kit.RenderExec(k, searchendpoint.Suggest, &mmpb.SuggestRequest{Keyword: keyword})
 		},
 	}
 	c.Flags().StringVar(&keyword, "keyword", "", "搜索关键词")
@@ -50,7 +50,7 @@ func newHot(k *kit.Kit) *cobra.Command {
 		Short: "热搜列表",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, searchendpoint.Hot, &mmpb.HotRequest{})
+			return kit.RenderExec(k, searchendpoint.Hot, &mmpb.HotRequest{})
 		},
 	}
 }
@@ -61,7 +61,7 @@ func newHotDetail(k *kit.Kit) *cobra.Command {
 		Short: "热搜详情",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, searchendpoint.HotDetail, &mmpb.HotDetailRequest{})
+			return kit.RenderExec(k, searchendpoint.HotDetail, &mmpb.HotDetailRequest{})
 		},
 	}
 }
@@ -72,7 +72,7 @@ func newDefaultKeyword(k *kit.Kit) *cobra.Command {
 		Short: "默认搜索关键词",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, searchendpoint.DefaultKeyword, &mmpb.DefaultKeywordRequest{})
+			return kit.RenderExec(k, searchendpoint.DefaultKeyword, &mmpb.DefaultKeywordRequest{})
 		},
 	}
 }

@@ -40,7 +40,7 @@ func newDetail(k *kit.Kit) *cobra.Command {
 		Short: "歌手详情",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, artistendpoint.GetArtist, &mmpb.GetArtistRequest{ArtistId: id})
+			return kit.RenderExec(k, artistendpoint.GetArtist, &mmpb.GetArtistRequest{ArtistId: id})
 		},
 	}
 	withID(c, &id)
@@ -55,7 +55,7 @@ func newSongs(k *kit.Kit) *cobra.Command {
 		Short: "歌手全部歌曲",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, artistendpoint.AllSongs, &mmpb.AllSongsRequest{ArtistId: id, Limit: int32(limit), Offset: int32(offset)})
+			return kit.RenderExec(k, artistendpoint.AllSongs, &mmpb.AllSongsRequest{ArtistId: id, Limit: int32(limit), Offset: int32(offset)})
 		},
 	}
 	withID(c, &id)
@@ -71,7 +71,7 @@ func newTopSongs(k *kit.Kit) *cobra.Command {
 		Short: "歌手热门歌曲",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, artistendpoint.TopSongs, &mmpb.TopSongsRequest{ArtistId: id})
+			return kit.RenderExec(k, artistendpoint.TopSongs, &mmpb.TopSongsRequest{ArtistId: id})
 		},
 	}
 	withID(c, &id)
@@ -111,7 +111,7 @@ func newDesc(k *kit.Kit) *cobra.Command {
 		Short: "歌手简介",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, artistendpoint.Desc, &mmpb.DescRequest{ArtistId: id})
+			return kit.RenderExec(k, artistendpoint.Desc, &mmpb.DescRequest{ArtistId: id})
 		},
 	}
 	withID(c, &id)
@@ -125,7 +125,7 @@ func newSimilar(k *kit.Kit) *cobra.Command {
 		Short: "相似歌手",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, artistendpoint.Similar, &mmpb.SimilarRequest{ArtistId: id})
+			return kit.RenderExec(k, artistendpoint.Similar, &mmpb.SimilarRequest{ArtistId: id})
 		},
 	}
 	withID(c, &id)
@@ -139,7 +139,7 @@ func newFans(k *kit.Kit) *cobra.Command {
 		Short: "歌手粉丝",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, artistendpoint.Fans, &mmpb.FansRequest{ArtistId: id})
+			return kit.RenderExec(k, artistendpoint.Fans, &mmpb.FansRequest{ArtistId: id})
 		},
 	}
 	withID(c, &id)
@@ -153,7 +153,7 @@ func newToplist(k *kit.Kit) *cobra.Command {
 		Short: "歌手榜",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, artistendpoint.TopArtists, &mmpb.TopArtistsRequest{Limit: int32(limit), Offset: int32(offset)})
+			return kit.RenderExec(k, artistendpoint.TopArtists, &mmpb.TopArtistsRequest{Limit: int32(limit), Offset: int32(offset)})
 		},
 	}
 	c.Flags().IntVar(&limit, "limit", 10, "返回数量")
@@ -182,7 +182,7 @@ func newSubscribe(k *kit.Kit) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return kit.PrintJSON(artistendpoint.ParseSubscribeResponse(raw))
+			return k.Render(artistendpoint.ParseSubscribeResponse(raw))
 		},
 	}
 	withID(c, &id)

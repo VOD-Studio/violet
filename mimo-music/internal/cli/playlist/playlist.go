@@ -60,7 +60,7 @@ func newDetail(k *kit.Kit) *cobra.Command {
 		Short: "歌单详情",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, playlistendpoint.GetPlaylist, &mmpb.GetPlaylistRequest{PlaylistId: id})
+			return kit.RenderExec(k, playlistendpoint.GetPlaylist, &mmpb.GetPlaylistRequest{PlaylistId: id})
 		},
 	}
 	withID(c, &id)
@@ -74,7 +74,7 @@ func newTracks(k *kit.Kit) *cobra.Command {
 		Short: "歌单全部歌曲",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, playlistendpoint.AllTracks, &mmpb.AllTracksRequest{PlaylistId: id})
+			return kit.RenderExec(k, playlistendpoint.AllTracks, &mmpb.AllTracksRequest{PlaylistId: id})
 		},
 	}
 	withID(c, &id)
@@ -88,7 +88,7 @@ func newSubscribers(k *kit.Kit) *cobra.Command {
 		Short: "歌单收藏者",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, playlistendpoint.Subscribers, &mmpb.SubscribersRequest{PlaylistId: id})
+			return kit.RenderExec(k, playlistendpoint.Subscribers, &mmpb.SubscribersRequest{PlaylistId: id})
 		},
 	}
 	withID(c, &id)
@@ -103,7 +103,7 @@ func newHighQuality(k *kit.Kit) *cobra.Command {
 		Short: "精品歌单",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, playlistendpoint.HighQuality, &mmpb.HighQualityRequest{Cat: cat, Limit: int32(limit)})
+			return kit.RenderExec(k, playlistendpoint.HighQuality, &mmpb.HighQualityRequest{Cat: cat, Limit: int32(limit)})
 		},
 	}
 	c.Flags().StringVar(&cat, "cat", "全部", "分类")
@@ -117,7 +117,7 @@ func newHighQualityTags(k *kit.Kit) *cobra.Command {
 		Short: "精品歌单标签",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, playlistendpoint.HighQualityTags, &mmpb.HighQualityTagsRequest{})
+			return kit.RenderExec(k, playlistendpoint.HighQualityTags, &mmpb.HighQualityTagsRequest{})
 		},
 	}
 }
@@ -128,7 +128,7 @@ func newCatList(k *kit.Kit) *cobra.Command {
 		Short: "歌单分类列表",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, playlistendpoint.CatList, &mmpb.CatListRequest{})
+			return kit.RenderExec(k, playlistendpoint.CatList, &mmpb.CatListRequest{})
 		},
 	}
 }
@@ -139,7 +139,7 @@ func newHot(k *kit.Kit) *cobra.Command {
 		Short: "热门歌单",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, playlistendpoint.BrowseHot, &mmpb.BrowseHotRequest{})
+			return kit.RenderExec(k, playlistendpoint.BrowseHot, &mmpb.BrowseHotRequest{})
 		},
 	}
 }
@@ -151,7 +151,7 @@ func newSimilar(k *kit.Kit) *cobra.Command {
 		Short: "相似歌单(按歌曲)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, playlistendpoint.SimilarPlaylists, &mmpb.SimilarPlaylistsRequest{SongId: id})
+			return kit.RenderExec(k, playlistendpoint.SimilarPlaylists, &mmpb.SimilarPlaylistsRequest{SongId: id})
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
@@ -166,7 +166,7 @@ func newRelated(k *kit.Kit) *cobra.Command {
 		Short: "相关歌单推荐",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, playlistendpoint.RelatedPlaylistRecommend, &mmpb.RelatedPlaylistRecommendRequest{PlaylistId: id})
+			return kit.RenderExec(k, playlistendpoint.RelatedPlaylistRecommend, &mmpb.RelatedPlaylistRecommendRequest{PlaylistId: id})
 		},
 	}
 	withID(c, &id)
@@ -194,7 +194,7 @@ func newSubscribe(k *kit.Kit) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return kit.PrintJSON(playlistendpoint.ParseSubscribed(raw))
+			return k.Render(playlistendpoint.ParseSubscribed(raw))
 		},
 	}
 	withID(c, &id)
@@ -223,7 +223,7 @@ func newCreate(k *kit.Kit) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return kit.PrintJSON(playlistendpoint.ParseCreateResponse(raw))
+			return k.Render(playlistendpoint.ParseCreateResponse(raw))
 		},
 	}
 	c.Flags().StringVar(&name, "name", "", "歌单名")
@@ -393,7 +393,7 @@ func newUpdateTracks(k *kit.Kit) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return kit.PrintJSON(playlistendpoint.ParseUpdateTracksResponse(raw))
+			return k.Render(playlistendpoint.ParseUpdateTracksResponse(raw))
 		},
 	}
 	withID(c, &id)

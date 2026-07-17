@@ -27,7 +27,7 @@ func newPlaylists(k *kit.Kit) *cobra.Command {
 		Short: "推荐歌单",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, recommendendpoint.RecommendPlaylists, &mmpb.RecommendPlaylistsRequest{Limit: int32(limit)})
+			return kit.RenderExec(k, recommendendpoint.RecommendPlaylists, &mmpb.RecommendPlaylistsRequest{Limit: int32(limit)})
 		},
 	}
 	c.Flags().IntVar(&limit, "limit", 10, "返回数量")
@@ -41,7 +41,7 @@ func newNewSongs(k *kit.Kit) *cobra.Command {
 		Short: "推荐新歌",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, recommendendpoint.RecommendNewSongs, &mmpb.RecommendNewSongsRequest{Limit: int32(limit)})
+			return kit.RenderExec(k, recommendendpoint.RecommendNewSongs, &mmpb.RecommendNewSongsRequest{Limit: int32(limit)})
 		},
 	}
 	c.Flags().IntVar(&limit, "limit", 10, "返回数量")
@@ -57,7 +57,7 @@ func newDailyPlaylists(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			return kit.PrintExec(k, recommendendpoint.DailyRecommendPlaylists, &mmpb.DailyRecommendPlaylistsRequest{})
+			return kit.RenderExec(k, recommendendpoint.DailyRecommendPlaylists, &mmpb.DailyRecommendPlaylistsRequest{})
 		},
 	}
 }
@@ -68,7 +68,7 @@ func newDailySongs(k *kit.Kit) *cobra.Command {
 		Short: "每日推荐歌曲",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, recommendendpoint.GetDailyRecommend, &mmpb.GetDailyRecommendRequest{})
+			return kit.RenderExec(k, recommendendpoint.GetDailyRecommend, &mmpb.GetDailyRecommendRequest{})
 		},
 	}
 }

@@ -16,7 +16,7 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		Short: "私人 FM",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.PrintExec(k, fmendpoint.GetPersonalFM, &mmpb.GetPersonalFMRequest{})
+			return kit.RenderExec(k, fmendpoint.GetPersonalFM, &mmpb.GetPersonalFMRequest{})
 		},
 	}
 }
