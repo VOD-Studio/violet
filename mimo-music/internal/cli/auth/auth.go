@@ -74,6 +74,7 @@ func NewLoginCellphoneCommand(k *kit.Kit) *cobra.Command {
 }
 
 // NewLoginStatusCommand 查看当前登录态。
+// 人类模式 cookie 分段脱敏;--json/管道输出完整值(脚本取凭证是合法用途)。
 func NewLoginStatusCommand(k *kit.Kit) *cobra.Command {
 	return &cobra.Command{
 		Use:   "login-status",
@@ -90,7 +91,11 @@ func NewLoginStatusCommand(k *kit.Kit) *cobra.Command {
 				return err
 			}
 			sess.Cookie = engine.CookieFromContext(ctx)
-			return kit.PrintJSON(sess)
+			if k.HumanOutput() {
+				sess.Cookie = kit.MaskCookie(sess.Cookie)
+				fmt.Fprintln(os.Stderr, "(cookie 已脱敏,完整值用 --json 查看)")
+			}
+			return k.Render(sess)
 		},
 	}
 }

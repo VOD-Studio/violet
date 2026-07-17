@@ -107,6 +107,18 @@ func TestRenderHuman_Empty(t *testing.T) {
 	require.NotContains(t, out, "== songs ==")
 }
 
+// TestMaskCookie cookie 分段脱敏:长值保留首尾 8 位,短值整体打码,键名保留。
+func TestMaskCookie(t *testing.T) {
+	t.Parallel()
+
+	in := "MUSIC_U=00C4F6AB3ACDE59567E13EEAFEEF32EC73D0761BF8031C52; __csrf=58cebdfc3b4325ba754c; NMTID=abc"
+	out := MaskCookie(in)
+	require.Contains(t, out, "MUSIC_U=00C4F6AB...F8031C52")
+	require.Contains(t, out, "__csrf=***")
+	require.Contains(t, out, "NMTID=***")
+	require.NotContains(t, out, "3ACDE59567E13EEAFEEF32")
+}
+
 // TestRender_Dispatch 三态分派:JSON 模式恒 protojson;TTY 人类可读;非 TTY 自动 JSON。
 func TestRender_Dispatch(t *testing.T) {
 	defer func(orig func(int) bool) { isTerminal = orig }(isTerminal)

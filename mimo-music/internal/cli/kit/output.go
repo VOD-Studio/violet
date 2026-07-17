@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"golang.org/x/term"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -27,6 +28,30 @@ func (k *Kit) Render(msg proto.Message) error {
 	}
 	fmt.Fprint(k.out(), RenderHuman(msg))
 	return nil
+}
+
+// HumanOutput 当前是否走人类可读渲染(TTY 且未强制 --json)。
+// 命令需要按输出形态调整内容时用(如 login-status 脱敏)。
+func (k *Kit) HumanOutput() bool {
+	return !k.JSON && stdoutIsTTY()
+}
+
+// MaskCookie 把 cookie 各段的值脱敏:保留首尾各 8 字符,中间省略;
+// 短值(≤20 字符)整体打码。用于 login-status 人类模式防止凭证泄露。
+func MaskCookie(cookie string) string {
+	segs := strings.Split(cookie, "; ")
+	for i, seg := range segs {
+		k, v, ok := strings.Cut(seg, "=")
+		if !ok || v == "" {
+			continue
+		}
+		if len(v) <= 20 {
+			segs[i] = k + "=***"
+		} else {
+			segs[i] = k + "=" + v[:8] + "..." + v[len(v)-8:]
+		}
+	}
+	return strings.Join(segs, "; ")
 }
 
 // PrintJSON 用 protojson 输出 pretty JSON(无条件,raw 路径与过渡期用)。
