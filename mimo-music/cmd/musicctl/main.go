@@ -7,11 +7,13 @@
 //
 //	go run cmd/musicctl/main.go <command> [flags]
 //
-// 登录态接口需先扫码:
+// 登录态接口需先登录(扫码或手机号验证码):
 //
-//	go run cmd/musicctl/main.go login   # 扫码登录,cookie 持久化到 ~/.musicctl/session.json
+//	go run cmd/musicctl/main.go login            # 扫码登录,cookie 持久化到 ~/.musicctl/session.json
+//	go run cmd/musicctl/main.go send-captcha --phone 8613800138000
+//	go run cmd/musicctl/main.go login-cellphone --phone 8613800138000 --captcha 1234
 //	go run cmd/musicctl/main.go like --id 347230 --on
-//	go run cmd/musicctl/main.go logout  # 登出并删除本地会话
+//	go run cmd/musicctl/main.go logout           # 登出并删除本地会话
 //
 // 环境变量 NETEASE_COOKIE 优先级高于本地会话文件,可用于临时换号调试。
 package main
@@ -1084,6 +1086,9 @@ func usage() {
 
 登录:
   login                                 扫码登录,cookie 持久化到 ~/.musicctl/session.json
+  send-captcha --phone <手机号>          发送短信验证码(手机号带区号,如 8613800138000)
+  login-cellphone --phone <手机号> --captcha <验证码>
+                                        手机号验证码登录,成功后同样落盘会话
   login-status                          查看当前登录态
   logout                                登出并删除本地会话文件
 
@@ -1111,23 +1116,77 @@ func usage() {
   new-album-shelf [--area ZH] [--limit 10]
   newest-albums
   all-new-albums [--area ZH] [--limit 10] [--offset 0]
+  album --id <id>                       专辑详情
   album-dynamic --id <id>
   album-song-quality --id <id>
   subscribe-album --id <id>             写操作(登录态)
   unsubscribe-album --id <id>           写操作(登录态)
   subscribed-albums [--limit 25]        登录态
 
-歌单/用户/推荐:
+歌手:
+  artist --id <id>
+  artist-songs --id <id> [--limit 20] [--offset 0]
+  artist-top --id <id>                  热门歌曲
+  artist-albums --id <id> [--limit 10] [--offset 0]
+  artist-desc --id <id>
+  artist-similar --id <id>
+  artist-fans --id <id>
+  top-artists [--limit 10] [--offset 0]
+  artist-subscribe --id <id>            写操作(登录态)
+
+歌单:
+  playlist --id <id>                    歌单详情
+  playlist-tracks --id <id>             全部歌曲
+  playlist-subscribers --id <id>
+  playlist-highquality [--cat 全部] [--limit 10]
+  playlist-highquality-tags             精品歌单标签
+  playlist-catlist
+  playlist-hot
   similar-playlists --id <id>
   related-playlist-recommend --id <id>
+  playlist-subscribe --id <id>          写操作(登录态)
+  playlist-create --name <名> [--privacy] 写操作(登录态)
+  playlist-delete --id <id>             写操作(登录态)
+  playlist-update-name --id <id> --name <名>
+                                        写操作(登录态)
+  playlist-update-desc --id <id> --desc <描述>
+                                        写操作(登录态)
+  playlist-update-tags --id <id> --tags <a;b>
+                                        写操作(登录态)
+  playlist-update-tracks --id <id> --op add|del --tracks <id,id,...>
+                                        写操作(登录态)
+
+用户:
+  user-account                          当前账号信息(登录态)
+  user-detail --uid <uid>
+  user-detail-by-name --nickname <昵称>  按昵称查用户 ID
+  user-sub-count                        当前用户计数(登录态)
+  user-playlists --uid <uid>
+  user-follows --uid <uid> [--limit 20] [--offset 0]
+  user-followeds --uid <uid> [--limit 20] [--offset 0]
+  user-follow-each-other --uid <uid> --target <uid>
+  user-record --uid <uid> [--type 0]
+  user-events --uid <uid> [--limit 30] [--last-event-id 0]
+  user-level --uid <uid>
   similar-users --id <id>
+
+推荐/FM:
   daily-recommend-playlists             登录态
+  daily-recommend-songs                 登录态
   recommend-playlists [--limit 10]
   recommend-new-songs [--limit 10]
+  personal-fm                           登录态
+
+搜索:
+  search --keyword <词> [--limit 10] [--offset 0]
+  search-suggest --keyword <词>
+  search-hot
+  search-hot-detail
+  search-default-keyword
 
 登录态来源:
   1. 环境变量 NETEASE_COOKIE(优先,用于临时换号调试)
-  2. 本地会话文件 ~/.musicctl/session.json(login 命令写入,logout 删除)`)
+  2. 本地会话文件 ~/.musicctl/session.json(login/login-cellphone 写入,logout 删除)`)
 }
 
 // --- 小工具 ---
