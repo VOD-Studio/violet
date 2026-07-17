@@ -61,11 +61,26 @@
 - 会话文件从 `~/.musicctl/session.json` 迁至配置目录,**读时兼容旧位置**(旧位置存在则继续使用并提示可 `musicctl config migrate`)
 - 新增 `config` 命令组:`config path` / `config get` / `config set key value`
 
-## Phase E — 工程化
+## Phase E — 工程化与可发现性
+
+> 可发现性(补全/onboarding/别名/召回池)属[双轨道 ADR](../../docs/adr/mimo-music-dual-track-orchestration.md)第三类——纯 CLI 工程化,不消费 rpc,与 goreleaser/测试/文档同类。不单列 Phase F,并入此节。
+
+### 工程化(原有)
 
 - **goreleaser**:tag 触发 GitHub Actions,产 macOS(arm64/amd64)/Linux/Windows 二进制 + checksums;`brew tap` 后置
 - **CLI 层测试**:命令构造单测(flag 解析、required 校验、命令树完整性——78 RPC 与命令一一对应的守护测试);kit 的 session/output 单测
 - 文档:`musicctl <cmd> --help` 已自足,补 `docs/musicctl.md` 用户手册(安装/登录/常用流)
+
+### 可发现性与补全(新增,详见 CONTEXT.md「musicctl CLI」段术语)
+
+- **命令补全**:启用 cobra `completion` 子命令(bash/zsh/fish/powershell);help 分 5 组(快速上手/账号/音乐/发现/工具),`--help-verbose` 列全部
+- **参数补全**:**只走缓存**(召回池),绝不实时查网易云——见 CONTEXT.md「补全只走缓存」。`--id <TAB>` 列召回池候选(最近搜索/红心/歌单成员),`--level`/`--area`/`--op` 固定枚举
+- **召回池(Recall Pool)**:三类来源汇一池——主动(search/detail)+ 隐式(任何 `--id` 成功消费后透明埋点,**基础设施级,A 类 Context 接入新 rpc 时无需关心**)+ 远端(红心/歌单快照,24h TTL)。持久化 `~/.musicctl/history.jsonl`(append-only JSONL,1000 行上限,三类用 `src` 字段区分)。预热用「磁盘秒级 + 后台异步拉」,goroutine **fire-and-forget**(不等待、tmp+rename 原子写),绝不阻塞主命令/onboarding
+- **裸跑 onboarding**:工具型定位(不进 TUI)。未登录→登录引导;已登录→四分时段场景化(晨 06-11 daily-songs / 午 11-18 playlists / 晚 18-23 fm / 夜 23-06 复听召回池),**周末优先级高于时段**,时区取本地。可补全命令用 `<TAB>` 标注
+- **双字符别名**:`pp`=song play、`dl`=song download、`pll`=playlist download、`se`=search、`rd`=recommend daily-songs、`whoami`=login-status(不用 `ls`,避 unix 心智冲突)。别名不进 tab 补全,必须在 onboarding/--help 显式列出
+- **位置参数**:所有单值 `--id` 命令 + `search --keyword` 支持 `<value>` 等价 `--flag <value>`;同时给报歧义错;`--uid`/`--tracks` 不纳入
+- **`musicctl doctor`**:环境自检(版本/会话/网络/补全/音频后端),bug report 第一手信息
+- **`musicctl recent`**:列召回池内容(最近搜索/播放/下载),既是查看命令也是补全离线源
 
 ## Phase D — TUI(远期,先小验证)
 

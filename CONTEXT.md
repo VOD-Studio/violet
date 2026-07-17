@@ -143,3 +143,39 @@ _Avoid_: SDK 库（旧概念，曾镜像全部接口签名，已被 proto 生成
 **Session 池（Session Pool）**:
 网易云 cookie 的并发安全管理。SessionStore 是一等公民，接口含 GetAvailable（按 api 选取可用 session）、ReportSuccess、ReportFailure。后期支持权重、健康度、限流、风控。
 _Avoid_: cookie 轮换（只描述了动作，未体现池化与上报机制）
+
+## musicctl CLI（可发现性与补全）
+
+> musicctl 是 mimo-music 的命令行入口，直连 engine + endpoint 声明，不经 gRPC/gateway。定位是「网易云接口调试与实用工具」（工具型），不是娱乐客户端。输出层（Phase A）已完成；播放/下载/歌词（Phase C）见 PRD-0013；可发现性与补全属双轨道 ADR 的第三类（纯 CLI 工程化，不消费 rpc），并入 [roadmap Phase E](../../mimo-music/docs/musicctl-roadmap.md)。
+
+**工具型定位（Tool-first）**:
+musicctl 的裸跑行为是「智能 onboarding」——检测登录态，未登录给登录引导，已登录推荐今日该跑的命令，输出走 stderr 不污染 stdout。**不**像 go-musicfox 那样裸跑直接进 TUI 主菜单。Phase D 的 TUI 作为独立增强，用 `musicctl tui` 显式进入，**不抢占裸跑默认行为**——即使 TUI 落地后，musicctl 仍是工具型 CLI，TUI 是可选形态而非默认形态。
+_Avoid_: 客户端（混淆了工具型 CLI 与娱乐型客户端的定位）
+
+**召回池（Recall Pool）**:
+所有可被 Tab 补全召回的候选集合。三类来源汇入同一池子，各带来源标签与 TTL：(1) **主动**——用户显式跑过的 search 关键词与 detail 查询；(2) **隐式**——任何命令的 `--id` 被成功消费后自动埋点（play/download/like 等，**只记成功操作**，失败不进池）；(3) **远端**——红心列表、我的歌单、每日推荐的快照（24h TTL，超期强制重拉）。召回池是「补全只走缓存」路线的数据基础：补全绝不实时查网易云，候选全部来自召回池。隐式埋点是**透明基础设施**——由 kit 层在命令执行成功后统一记录，A 类 Context 接入新 rpc 时无需关心埋点（符合[双轨道 ADR](docs/adr/mimo-music-dual-track-orchestration.md)的「A 类只做 rpc→CLI 1:1 接入」原子性）。
+_Avoid_: 历史（过于宽泛，未区分主动/隐式/远端三类信号）、收藏列表（只覆盖远端一类）
+
+**召回池持久化（Recall Pool Persistence）**:
+召回池的磁盘落地是 `~/.musicctl/history.jsonl`——**append-only JSONL**，不用 JSON。理由：追加一行不需重写整个文件；单行损坏只丢该行历史全留；可被 `grep`/`head`/`tail`/`wc -l` 直接处理；容量裁剪按行 drop oldest。三类来源用 `src` 字段（`search`/`play`/`remote` 等）区分，不拆三个文件。容量上限 1000 行（约 80KB），超限 drop oldest。与 session.json 同目录，权限 0600。
+_Avoid_: history.json（单文件 JSON，追加要重写、损坏全丢、不可用 Unix 工具直读）、三文件分离（破坏 JSONL 单流追加与 grep 能力）
+
+**补全只走缓存（Cache-only Completion）**:
+musicctl 的参数补全（`--id <TAB>` 等）**绝不触发实时网络查询**，候选全部来自召回池（内存优先，磁盘兜底）。理由三条：网易云 ID 是纯数字无语义，用户不会「记得」ID 来输入，实时搜索的输入成本不低于直接跑 search；Tab 是同步阻塞，网络慢即卡顿；短时高频查询触发网易云风控。「发现」交给用户主动跑 search 命令，「复用」交给补全——这是 musicctl 的可发现性边界。
+_Avoid_: 实时补全（gh CLI 的 PR 号实时查询路线，musicctl 明确不走）
+
+**位置参数（Positional Argument）**:
+所有单值 `--id` 命令与 `search --keyword` 支持 `<value>` 等价 `--flag <value>`，对齐 git/kubectl 约定（`git checkout branch` 不写 `--branch`）。规则：同时指定 `--id` 与位置参数报歧义错；位置参数不进补全（补全只在显式 `--flag <TAB>` 时触发）；别名命令（如 `pp`/`dl`）同样支持位置参数。`--uid`/`--tracks` 等多值/低频 flag 不纳入位置参数化。
+_Avoid_: 简写（未说明等价语义与歧义规则）
+
+**双字符别名（Two-letter Alias）**:
+musicctl 的命令别名规范为**双字符**，不使用单字母。理由三条：(1) 音乐领域天然多 P/S 开头单词（song/search、playlist/play），单字母结构性撞前缀；(2) cobra 子命令前缀匹配 + 别名不进 tab 补全（issue #1852），单字母撞前缀时补全行为诡异；(3) Microsoft System.CommandLine 官方指引明确建议「尽量减少单字符别名」，git/kubectl 生态清一色双字符（gs/gp/kd/kg）。首发清单：`pp`=song play、`dl`=song download、`pll`=playlist download、`se`=search、`rd`=recommend daily-songs、`whoami`=login-status（不用 `ls`——会与 unix `ls` 列文件命令心智撞车，违反 clig.dev 最小惊讶原则）。别名**不进 tab 补全**，必须在 onboarding 与 `--help` 里显式列出，否则用户发现不了。
+_Avoid_: 单字母别名（结构性撞前缀 + 误触风险）、短别名（未说明双字符的工程理由）、`ls` 别名（与 unix `ls` 列文件命令心智冲突）
+
+**场景化 onboarding（Contextual Onboarding）**:
+裸跑 `musicctl` 已登录时的推荐命令按**粗粒度时段切换**，不写死同一组：晨间(06-11)推 `recommend daily-songs`、午间(11-18)推 `recommend playlists`、晚间(18-23)推 `fm`、夜间(23-06)推 `song play --id <TAB>`（从召回池复听，不推新）；**周末优先级高于时段**（周六 10 点推周末推荐，不推日推），周末推 `recommend playlists` + `album shelf`。时段→命令映射硬编码，零新依赖（不读召回池），时区取系统本地（`time.Now().Local()`，不引入时区配置）。推荐中若出现可补全的命令，用 `<TAB>` 符号标注（如 `musicctl song play --id <TAB>`）——这是 Unix 文化约定，比自然语言「(按 Tab 选歌)」紧凑，且 onboarding 的核心目的就是教育可发现性。未登录场景固定给登录引导，不参与场景化。
+_Avoid_: 个性化推荐（依赖召回池，过度工程）、静态推荐（所有人同一组，第三次就腻）、精确小时切换（10:59 与 11:01 推不同内容会造成边界抖动）
+
+**预热与兜底（Warm-up & Fallback）**:
+召回池的加载策略：启动时读磁盘（上次缓存，秒级，离线可用）→ 同时起后台 goroutine 异步拉红端快照（红心/歌单）→ 拉完更新内存并写回磁盘。Tab 时优先读内存，内存缺失（后台未拉完）则用磁盘兜底。**绝不阻塞主命令、绝不阻塞裸跑 onboarding**。goroutine 用 **fire-and-forget** 模式——musicctl 是一次性 run-and-exit CLI，命令返回时直接退出，不等待后台拉完；进程退出时未完成的写入直接丢弃，由 tmp+rename 原子写保证主文件不被半拉子数据污染（写 `history.jsonl.tmp` 再 rename）。主动/隐式部分即时写盘；远端快照 24h TTL，超期强制重拉。
+_Avoid_: 启动拉取（暗示同步阻塞，与「后台异步」相悖）、signal.NotifyContext 长驻式优雅关闭（一次性 CLI 不适用，留给 Phase D TUI）
