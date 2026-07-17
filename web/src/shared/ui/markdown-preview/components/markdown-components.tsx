@@ -7,9 +7,29 @@
  */
 
 import type { Components } from "react-markdown";
+import { Suspense, lazy } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/base/checkbox";
-import { CodeBlock } from "./CodeBlock";
+
+/**
+ * FencedCodeBlock 懒加载：避免 shiki 高亮链（CodeBlock → useShikiHighlight →
+ * shiki core 单例）进入文章正文主 chunk。只有文章真有围栏代码块时才拉取。
+ */
+const LazyFencedCodeBlock = lazy(() =>
+    import("./CodeBlock").then((m) => ({ default: m.FencedCodeBlock })),
+);
+
+/** 把 react-markdown 传入的 React 节点递归提取为纯文本 */
+function nodeToText(node: React.ReactNode): string {
+    if (node == null || typeof node === "boolean") return "";
+    if (typeof node === "string" || typeof node === "number") return String(node);
+    if (Array.isArray(node)) return node.map(nodeToText).join("");
+    if (typeof node === "object" && "props" in node) {
+        const props = (node as React.ReactElement<{ children?: React.ReactNode }>).props;
+        return nodeToText(props.children);
+    }
+    return "";
+}
 
 export const markdownComponents: Components = {
     h1: ({ children, style, className, id }) => (
@@ -135,9 +155,33 @@ export const markdownComponents: Components = {
         </th>
     ),
     td: ({ children }) => <td className="border border-edge-hairline px-3 py-2">{children}</td>,
-    // 代码：围栏块走 CodeBlock（shiki 高亮 + 语言标签 + 复制），行内走纯样式
-    code: ({ className, children }) => <CodeBlock className={className}>{children}</CodeBlock>,
-    // pre 由 CodeBlock 内部接管，此处直接透传避免双重包裹
+    // 代码：围栏块走 FencedCodeBlock（shiki 高亮 + 语言标签 + 复制），行内走纯样式。
+    // 围栏块懒加载，loading 时 Suspense fallback 显示纯文本占位。
+    code: ({ className, children }) => {
+        const match = /language-(\S+)/.exec(className || "");
+        const language = match?.[1] ?? "";
+        const code = nodeToText(children).replace(/\n$/, "");
+        const isFenced = !!match || code.includes("\n");
+        if (!isFenced) {
+            return (
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-primary">
+                    {children}
+                </code>
+            );
+        }
+        return (
+            <Suspense
+                fallback={
+                    <pre className="code-block-scrollbar my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90">
+                        <code>{code}</code>
+                    </pre>
+                }
+            >
+                <LazyFencedCodeBlock code={code} language={language} />
+            </Suspense>
+        );
+    },
+    // pre 由 FencedCodeBlock 内部接管，此处直接透传避免双重包裹
     pre: ({ children }) => <>{children}</>,
     img: ({ src, alt }) => (
         <img
