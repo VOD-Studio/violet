@@ -56,14 +56,14 @@ func renderTable(b *strings.Builder, fd protoreflect.FieldDescriptor, list proto
 	rows := make([][]string, 0, list.Len()+1)
 	header := make([]string, len(cols))
 	for i, c := range cols {
-		header[i] = c.fd.JSONName()
+		header[i] = c.JSONName()
 	}
 	rows = append(rows, header)
 	for i := 0; i < list.Len(); i++ {
 		item := list.Get(i).Message()
 		row := make([]string, len(cols))
 		for j, c := range cols {
-			row[j] = truncate(cellText(item, c.fd), maxCellLen)
+			row[j] = runewidth.Truncate(cellText(item, c), maxCellLen, "…")
 		}
 		rows = append(rows, row)
 	}
@@ -87,16 +87,11 @@ func renderTable(b *strings.Builder, fd protoreflect.FieldDescriptor, list proto
 	}
 }
 
-// column 是一列表格:字段描述符 + 是否需塌缩取值。
-type column struct {
-	fd protoreflect.FieldDescriptor
-}
-
 // collectColumns 收集条目类型的表格列:
 // 标量字段直接成列;含 name 字段的 message(及其 repeated)塌缩为名字列;
 // bytes 与 repeated 标量不成列(噪音大)。
-func collectColumns(md protoreflect.MessageDescriptor) []column {
-	var cols []column
+func collectColumns(md protoreflect.MessageDescriptor) []protoreflect.FieldDescriptor {
+	var cols []protoreflect.FieldDescriptor
 	fields := md.Fields()
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
@@ -110,9 +105,14 @@ func collectColumns(md protoreflect.MessageDescriptor) []column {
 				continue
 			}
 		}
-		cols = append(cols, column{fd: fd})
+		cols = append(cols, fd)
 	}
 	return cols
+}
+
+// enumName 取枚举值的显示名。
+func enumName(fd protoreflect.FieldDescriptor, v protoreflect.Value) string {
+	return string(fd.Enum().Values().ByNumber(v.Enum()).Name())
 }
 
 // cellText 取一个单元格的文本。
@@ -135,7 +135,7 @@ func cellText(item protoreflect.Message, fd protoreflect.FieldDescriptor) string
 		}
 		return ""
 	case fd.Kind() == protoreflect.EnumKind:
-		return string(fd.Enum().Values().ByNumber(v.Enum()).Name())
+		return enumName(fd, v)
 	default:
 		return fmt.Sprintf("%v", v.Interface())
 	}
@@ -149,13 +149,14 @@ func nameField(md protoreflect.MessageDescriptor) protoreflect.FieldDescriptor {
 	return md.Fields().ByName("name")
 }
 
-// truncate 按显示宽度截断(CJK 宽 2),超长补省略号。
-func truncate(s string, max int) string {
-	return runewidth.Truncate(s, max, "…")
+// renderKeyValues 按键值对逐行渲染标量字段;单层嵌套 message 缩进展开,
+// 更深的子结构退化紧凑 JSON;标量列表 join。
+func renderKeyValues(b *strings.Builder, m protoreflect.Message) {
+	renderFields(b, m, "")
 }
 
-// renderKeyValues 按键值对逐行渲染标量字段;嵌套 message 退化紧凑 JSON,标量列表 join。
-func renderKeyValues(b *strings.Builder, m protoreflect.Message) {
+// renderFields 按缩进渲染一个 message 的字段(键值对模式递归一层用)。
+func renderFields(b *strings.Builder, m protoreflect.Message, indent string) {
 	fields := m.Descriptor().Fields()
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
@@ -170,14 +171,20 @@ func renderKeyValues(b *strings.Builder, m protoreflect.Message) {
 			for j := 0; j < list.Len(); j++ {
 				items = append(items, fmt.Sprintf("%v", list.Get(j).Interface()))
 			}
-			fmt.Fprintf(b, "%s: %s\n", fd.JSONName(), strings.Join(items, ", "))
+			fmt.Fprintf(b, "%s%s: %s\n", indent, fd.JSONName(), strings.Join(items, ", "))
 		case fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind:
-			j, _ := protojson.Marshal(v.Message().Interface())
-			fmt.Fprintf(b, "%s: %s\n", fd.JSONName(), j)
+			if indent != "" {
+				// 只展开一层,更深的嵌套退化紧凑 JSON。
+				j, _ := protojson.Marshal(v.Message().Interface())
+				fmt.Fprintf(b, "%s%s: %s\n", indent, fd.JSONName(), j)
+				continue
+			}
+			fmt.Fprintf(b, "%s:\n", fd.JSONName())
+			renderFields(b, v.Message(), "  ")
 		case fd.Kind() == protoreflect.EnumKind:
-			fmt.Fprintf(b, "%s: %s\n", fd.JSONName(), fd.Enum().Values().ByNumber(v.Enum()).Name())
+			fmt.Fprintf(b, "%s%s: %s\n", indent, fd.JSONName(), enumName(fd, v))
 		default:
-			fmt.Fprintf(b, "%s: %v\n", fd.JSONName(), v.Interface())
+			fmt.Fprintf(b, "%s%s: %v\n", indent, fd.JSONName(), v.Interface())
 		}
 	}
 }

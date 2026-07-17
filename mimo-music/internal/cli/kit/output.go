@@ -3,6 +3,7 @@ package kit
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"golang.org/x/term"
@@ -34,7 +35,7 @@ func PrintJSON(msg proto.Message) error {
 }
 
 // printJSONTo 向指定 writer 输出 protojson。
-func printJSONTo(w interface{ Write([]byte) (int, error) }, msg proto.Message) error {
+func printJSONTo(w io.Writer, msg proto.Message) error {
 	b, err := protojson.MarshalOptions{Multiline: true, EmitUnpopulated: true}.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("序列化响应失败: %w", err)

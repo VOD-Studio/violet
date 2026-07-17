@@ -62,6 +62,21 @@ func TestRenderHuman_KeyValues(t *testing.T) {
 	require.Contains(t, out, "userId: 32014612")
 }
 
+// TestRenderHuman_KeyValuesNested 键值对模式单层嵌套 message 缩进展开,更深退化紧凑 JSON。
+func TestRenderHuman_KeyValuesNested(t *testing.T) {
+	t.Parallel()
+
+	resp := &mmpb.GetSongDetailResponse{
+		Song: &mmpb.Song{Id: 347230, Name: "海阔天空", Album: &mmpb.Album{Id: 222, Name: "乐与怒"}},
+	}
+
+	out := RenderHuman(resp)
+	require.Contains(t, out, "song:\n", "单层嵌套应展开为小节")
+	require.Contains(t, out, "  id: 347230")
+	require.Contains(t, out, "  name: 海阔天空")
+	require.Contains(t, out, `  album: {"id":"222"`, "更深的嵌套退化紧凑 JSON")
+}
+
 // TestRenderHuman_Enum 枚举显示枚举名而非数字。
 func TestRenderHuman_Enum(t *testing.T) {
 	t.Parallel()
