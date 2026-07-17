@@ -5,27 +5,6 @@ import (
 	"testing"
 )
 
-// visibleCellCount 统计字符串的可见 cell 数:剥离 ANSI 转义后的 rune 数。
-// 用于验证 RenderBar/渲染函数的输出宽度稳定(宽度不稳是终端光标跳的根因)。
-func visibleCellCount(s string) int {
-	visible := 0
-	inEsc := false
-	for _, r := range s {
-		if r == 0x1b {
-			inEsc = true
-			continue
-		}
-		if inEsc {
-			if r == 'm' {
-				inEsc = false
-			}
-			continue
-		}
-		visible++
-	}
-	return visible
-}
-
 // TestRenderBar_WidthStable 验证 RenderBar 每次输出的可见 cell 数严格 == width。
 // 宽度不稳定是终端光标跳/闪烁的常见根因(diff 渲染依赖每行等宽)。
 func TestRenderBar_WidthStable(t *testing.T) {

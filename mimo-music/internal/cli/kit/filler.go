@@ -54,6 +54,27 @@ func lerpColor(c1, c2 [3]int, t float64) [3]int {
 // brailleRune 按 8 位点阵构造盲文字符。
 func brailleRune(dots byte) rune { return rune(0x2800 | int(dots)) }
 
+// visibleCellCount 统计字符串的可见 cell 数:剥离 ANSI 转义后的 rune 数。
+// 用于验证渲染宽度稳定(宽度不稳是终端光标跳的根因),以及 label 填充计算。
+func visibleCellCount(s string) int {
+	visible := 0
+	inEsc := false
+	for _, r := range s {
+		if r == 0x1b {
+			inEsc = true
+			continue
+		}
+		if inEsc {
+			if r == 'm' {
+				inEsc = false
+			}
+			continue
+		}
+		visible++
+	}
+	return visible
+}
+
 // RenderBar 渲染单条盲文进度条为字符串(纯函数,无副作用,无 I/O 依赖)。
 //
 // current/total 决定进度;width 是盲文条占的字符数;color 控制是否输出 true color。
