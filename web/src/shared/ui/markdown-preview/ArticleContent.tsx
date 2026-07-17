@@ -6,14 +6,20 @@
  * - 旧文章（Markdown 序列化）：content_md 含原始 Markdown 文本
  *
  * 自动检测：内容含 HTML 标签（<p>、<h2>、<div> 等）→ HtmlContent 安全渲染；
- * 否则 → react-markdown + shiki 代码块渲染。两条路径共用 markdownComponents。
+ * 否则 → 懒加载 MarkdownContent（react-markdown + shiki 代码块渲染）。
+ * 两条路径共用 markdownComponents。
+ *
+ * react-markdown 管线刻意懒加载：绝大多数文章走 content_html（HtmlContent，hast 管线），
+ * react-markdown + remark-gfm + rehype-slug 仅旧 Markdown 文章降级时才需要，
+ * 不应静态进入正文主包。
  */
-import { memo } from "react";
-import ReactMarkdown from "react-markdown";
-import rehypeSlug from "rehype-slug";
-import remarkGfm from "remark-gfm";
-import { markdownComponents } from "./components/markdown-components";
+import { Suspense, lazy, memo } from "react";
 import { HtmlContent } from "./HtmlContent";
+
+/** react-markdown 管线懒加载，避免其依赖进入正文主 chunk */
+const MarkdownContent = lazy(() =>
+    import("./MarkdownContent").then((m) => ({ default: m.MarkdownContent })),
+);
 
 export interface ArticleContentProps {
     /** 文章内容（Markdown 或 HTML 字符串） */
@@ -34,15 +40,9 @@ function ArticleContent({ content, className }: ArticleContentProps) {
         return <HtmlContent html={content} className={className} />;
     }
     return (
-        <div className={className}>
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeSlug]}
-                components={markdownComponents}
-            >
-                {content}
-            </ReactMarkdown>
-        </div>
+        <Suspense fallback={<div className={className} />}>
+            <MarkdownContent content={content} className={className} />
+        </Suspense>
     );
 }
 
