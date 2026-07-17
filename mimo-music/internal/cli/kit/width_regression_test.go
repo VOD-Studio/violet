@@ -107,3 +107,24 @@ func TestRenderLine_SweepBarWidthStable(t *testing.T) {
 		}
 	}
 }
+
+// TestRenderLine_LongMetaFits 速度/ETA 超宽值不溢出整行(折行堆叠守护)。
+// 回归:metaW 曾按常量 10 算,"ETA 2:00:00"(11 列)溢出 1 列折行。
+// 修复:ETA≥1h 降级 ">1h";metaW 按 extra 实际宽度兜底。
+func TestRenderLine_LongMetaFits(t *testing.T) {
+	t.Parallel()
+	for _, cols := range []int{80, 100, 120} {
+		// ETA ≥ 1h:降级为 "ETA >1h"
+		totalBar := &Bar{Label: "我喜欢的音乐", Total: 35_800_000, Current: 100_000, State: StateActive, IsTotal: true, eta: 2 * time.Hour, startedAt: time.Now()}
+		line := renderLine(totalBar, cols, 0, false)
+		if w := runewidth.StringWidth(line); w > cols {
+			t.Errorf("ETA≥1h cols=%d: 整行宽 %d > %d(折行堆叠)\n  %q", cols, w, cols, line)
+		}
+		// 速度上限:"1023.9 KB/s" = 11 列
+		subBar := &Bar{Label: "Beyond - 海阔天空", Total: 3_400_000, Current: 1_700_000, State: StateActive, ewma: 1023.9 * 1024, startedAt: time.Now()}
+		line = renderLine(subBar, cols, 0, false)
+		if w := runewidth.StringWidth(line); w > cols {
+			t.Errorf("高速 cols=%d: 整行宽 %d > %d(折行堆叠)\n  %q", cols, w, cols, line)
+		}
+	}
+}

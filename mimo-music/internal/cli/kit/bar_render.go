@@ -11,6 +11,7 @@ package kit
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mattn/go-runewidth"
 )
@@ -105,12 +106,17 @@ func renderProgressBar(b *Bar, totalWidth int, color bool) string {
 	}
 
 	// 3. 速度/ETA:固定列宽,完成态或无值时补空格占位。
-	//    速度 "1.8 MB/s" 宽 8,ETA "ETA 0:05" 宽 8。统一占 10 列(留余量)。
-	const metaExtraW = 10
+	//    速度上限 "1023.9 KB/s" = 11 列;ETA ≥1h 的 h:mm:ss 会超宽,
+	//    降级为 ">1h"(此时精确 ETA 无意义,恒宽防溢出更重要)。
+	const metaExtraW = 11
 	var extra string
 	if b.State == StateActive {
 		if b.IsTotal {
-			extra = "ETA " + formatDuration(b.eta)
+			if b.eta >= time.Hour {
+				extra = "ETA >1h"
+			} else {
+				extra = "ETA " + formatDuration(b.eta)
+			}
 		} else if b.ewma > 0 {
 			extra = formatSpeed(b.ewma)
 		}
@@ -119,8 +125,9 @@ func renderProgressBar(b *Bar, totalWidth int, color bool) string {
 		extra = extra + strings.Repeat(" ", metaExtraW-ew)
 	}
 
-	// 4. meta 总宽 = 计数 + 1 + 百分比 + 1 + 速度/ETA(固定)。
-	metaW := countersW + 1 + pctW + 1 + metaExtraW
+	// 4. meta 总宽 = 计数 + 1 + 百分比 + 1 + 速度/ETA。
+	//    extra 取实际宽度兜底:即使异常值超宽,也只是 bar 变窄而非整行溢出折行。
+	metaW := countersW + 1 + pctW + 1 + runewidth.StringWidth(extra)
 
 	// 5. barWidth = 总宽 - 固定开销(27) - meta - 分隔。
 	const fixedOverhead = 27
