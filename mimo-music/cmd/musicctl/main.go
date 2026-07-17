@@ -63,6 +63,33 @@ func main() {
 	// --- 登录 ---
 	case "login":
 		runLogin()
+	case "send-captcha":
+		fs := newFlagSet(args)
+		phone := fs.String("phone", "", "手机号(带区号,如 8613800138000)")
+		fs.Parse()
+		if *phone == "" {
+			fmt.Fprintln(os.Stderr, "缺少 --phone")
+			os.Exit(1)
+		}
+		execRaw("send-captcha", func(ctx context.Context) {
+			_, _, err := eng.RawDoWithCookieAndInput(ctx, authendpoint.SendCaptcha, authendpoint.SendCaptchaRequest(&mmpb.SendCaptchaRequest{Phone: *phone}))
+			exitOnErr(err)
+			fmt.Println("验证码已发送")
+		})
+	case "login-cellphone":
+		fs := newFlagSet(args)
+		phone := fs.String("phone", "", "手机号(带区号,如 8613800138000)")
+		captcha := fs.String("captcha", "", "短信验证码")
+		fs.Parse()
+		if *phone == "" || *captcha == "" {
+			fmt.Fprintln(os.Stderr, "缺少 --phone 或 --captcha(先运行 send-captcha 获取验证码)")
+			os.Exit(1)
+		}
+		execRaw("login-cellphone", func(ctx context.Context) {
+			raw, setCookie, err := eng.RawDoWithCookieAndInput(ctx, authendpoint.LoginCellphone, authendpoint.LoginCellphoneRequest(&mmpb.LoginByCellphoneRequest{Phone: *phone, Captcha: *captcha}))
+			exitOnErr(err)
+			persistLogin(raw, setCookie)
+		})
 
 	// --- 歌曲(匿名) ---
 	case "song-detail":
