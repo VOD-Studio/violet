@@ -12,18 +12,18 @@
 
 ---
 
-## Phase A — 输出层(脚本与 AI agent 友好)
+## Phase A — 输出层(脚本与 AI agent 友好)✅ 已完成(2026-07-17,PRD-0012)
 
 目标:结果走 stdout、提示走 stderr;TTY 给人类看,管道给机器看。
 
 | 项 | 说明 |
 |---|---|
-| 全局 `--json` | 机器可读输出(即现在的 protojson,改为此 flag 触发) |
-| 默认人类可读 | 列表型响应(songs/playlists/albums/artists/users/search 结果)渲染为对齐表格;单对象响应渲染为键值对 |
-| TTY 检测 | stdout 非 TTY(管道/重定向)时自动回退 JSON,禁止交互提示 |
-| 全局 `--yes` | 写操作跳过 y/N 确认(脚本场景);非 TTY 且无 `--yes` 时写操作直接报错 |
-| 退出码规范 | 0 成功;1 通用错误;2 用法错误(cobra 默认);3 未登录 |
-| login-status 脱敏 | cookie 只显示前后各 8 位,`--json` 全量输出时仍完整(脚本需要) |
+| 全局 `--json` ✅ | 机器可读输出(即现在的 protojson,改为此 flag 触发) |
+| 默认人类可读 ✅ | 列表型响应渲染为对齐表格(runewidth CJK 对齐);单对象渲染为嵌套键值对 |
+| TTY 检测 ✅ | stdout 非 TTY(管道/重定向)时自动回退 JSON,禁止交互提示 |
+| 全局 `--yes` ✅ | 写操作跳过 y/N 确认(脚本场景);非 TTY 且无 `--yes` 时写操作直接报错 |
+| 退出码规范 ✅ | 0 成功;1 通用错误;2 用法错误;3 未登录 |
+| login-status 脱敏 ✅ | cookie 分段保留首尾 8 位,`--json` 全量输出 |
 
 落点:`internal/cli/kit/output.go` 扩为渲染层(`Render(w, msg)`,按 proto 类型分发表格渲染器);
 各领域包把 `kit.PrintExec` 换成 `kit.RenderExec`,行为由全局 flag 驱动。
