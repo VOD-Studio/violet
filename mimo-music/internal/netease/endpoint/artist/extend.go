@@ -103,7 +103,7 @@ var Albums = &engine.Endpoint[*mmpb.AlbumsRequest, *mmpb.AlbumsResponse]{
 
 // Desc 获取歌手详细描述。
 var Desc = &engine.Endpoint[*mmpb.DescRequest, *mmpb.DescResponse]{
-	Meta: weapiMeta("/weapi/artist/introduction/desc"),
+	Meta: weapiMeta("/weapi/artist/introduction"),
 	Cache: &engine.CachePolicy[*mmpb.DescRequest]{
 		Key: func(r *mmpb.DescRequest) string { return fmt.Sprintf("artist:desc:%d", r.GetArtistId()) },
 		TTL: 24 * time.Hour,
@@ -155,7 +155,7 @@ var Similar = &engine.Endpoint[*mmpb.SimilarRequest, *mmpb.SimilarResponse]{
 
 // Fans 获取歌手粉丝数。
 var Fans = &engine.Endpoint[*mmpb.FansRequest, *mmpb.FansResponse]{
-	Meta: weapiMeta("/weapi/artist/fans/count"),
+	Meta: weapiMeta("/weapi/artist/follow/count/get"),
 	Cache: &engine.CachePolicy[*mmpb.FansRequest]{
 		Key: func(r *mmpb.FansRequest) string { return fmt.Sprintf("artist:fans:%d", r.GetArtistId()) },
 		TTL: 24 * time.Hour,

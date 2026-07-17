@@ -15,7 +15,7 @@ import (
 // GetArtist 是获取歌手信息及热门歌曲的接口声明。
 var GetArtist = &engine.Endpoint[*mmpb.GetArtistRequest, *mmpb.GetArtistResponse]{
 	Meta: engine.Meta{
-		Path:   "/weapi/artist/get",
+		Path:   "/weapi/artist/head/info/get",
 		Method: "POST",
 		Crypto: engine.CryptoWeAPI,
 		Auth:   session.AuthAnonymous,

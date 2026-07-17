@@ -98,7 +98,7 @@ var Hot = &engine.Endpoint[*mmpb.HotRequest, *mmpb.HotResponse]{
 // HotDetail 是热搜词列表（详细）接口声明。
 var HotDetail = &engine.Endpoint[*mmpb.HotDetailRequest, *mmpb.HotDetailResponse]{
 	Meta: engine.Meta{
-		Path:   "/api/search/hot/detail",
+		Path:   "/api/hotsearchlist/get",
 		Method: "GET",
 		Crypto: engine.CryptoNone,
 		Auth:   session.AuthAnonymous,
@@ -138,7 +138,7 @@ var HotDetail = &engine.Endpoint[*mmpb.HotDetailRequest, *mmpb.HotDetailResponse
 // DefaultKeyword 是默认搜索词接口声明。
 var DefaultKeyword = &engine.Endpoint[*mmpb.DefaultKeywordRequest, *mmpb.DefaultKeywordResponse]{
 	Meta: engine.Meta{
-		Path:   "/api/search/defaultword",
+		Path:   "/api/search/defaultkeyword/get",
 		Method: "GET",
 		Crypto: engine.CryptoNone,
 		Auth:   session.AuthAnonymous,

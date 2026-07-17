@@ -55,7 +55,7 @@ var Detail = &engine.Endpoint[*mmpb.DetailRequest, *mmpb.DetailResponse]{
 // SubCount 是获取用户数量统计的接口声明。
 var SubCount = &engine.Endpoint[*mmpb.SubCountRequest, *mmpb.SubCountResponse]{
 	Meta: engine.Meta{
-		Path: "/weapi/user/subcount", Method: "POST",
+		Path: "/weapi/subcount", Method: "POST",
 		Crypto: engine.CryptoWeAPI, Auth: session.AuthAnonymous,
 	},
 	Cache: &engine.CachePolicy[*mmpb.SubCountRequest]{
