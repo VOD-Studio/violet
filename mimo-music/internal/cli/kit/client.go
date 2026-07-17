@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/VOD-Studio/mimo-music/internal/cache"
 	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 )
@@ -48,6 +50,15 @@ func Exec[Req, Resp any](k *Kit, ctx context.Context, ep *engine.Endpoint[Req, R
 		return zero, err
 	}
 	return ep.MapResponse(req, raw)
+}
+
+// PrintExec 执行声明式 endpoint 并打印响应(读命令通用)。
+func PrintExec[Req any, Resp proto.Message](k *Kit, ep *engine.Endpoint[Req, Resp], req Req) error {
+	resp, err := Exec(k, k.CookieCtx(), ep, req)
+	if err != nil {
+		return err
+	}
+	return PrintJSON(resp)
 }
 
 // RequireLogin 检查当前有可用的登录态(环境变量或本地会话文件)。
