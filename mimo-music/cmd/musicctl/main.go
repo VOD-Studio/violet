@@ -17,6 +17,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -531,14 +532,19 @@ func main() {
 		})
 	case "user-detail":
 		uid := userIDFlag(args)
-		exec("user-detail", func(ctx context.Context) {
-			resp, err := executeOverride(eng, ctx, userendpoint.Detail, &mmpb.DetailRequest{UserId: uid})
-			exitOnErr(err); printJSON(resp)
+		// user-detail 需要 uid 拼进 path（/weapi/v1/user/detail/{uid}），endpoint 架构暂不支持动态 path，这里直接 RawDo。
+		execRaw("user-detail", func(ctx context.Context) {
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, engine.Meta{
+				Path: fmt.Sprintf("/weapi/v1/user/detail/%d", uid), Method: "POST",
+				Crypto: engine.CryptoWeAPI, Auth: 0,
+			}, map[string]any{})
+			exitOnErr(err)
+			printRaw(raw)
 		})
 	case "user-sub-count":
-		uid := userIDFlag(args)
+		// subcount 查当前登录用户的计数（无 uid 参数）。
 		exec("user-sub-count", func(ctx context.Context) {
-			resp, err := executeOverride(eng, ctx, userendpoint.SubCount, &mmpb.SubCountRequest{UserId: uid})
+			resp, err := executeOverride(eng, ctx, userendpoint.SubCount, &mmpb.SubCountRequest{})
 			exitOnErr(err); printJSON(resp)
 		})
 	case "user-playlists":
@@ -553,9 +559,14 @@ func main() {
 		limit := fs.Int("limit", 20, "返回数量")
 		offset := fs.Int("offset", 0, "偏移量")
 		fs.Parse()
-		exec("user-follows", func(ctx context.Context) {
-			resp, err := executeOverride(eng, ctx, userendpoint.Follows, &mmpb.FollowsRequest{UserId: *uid, Limit: int32(*limit), Offset: int32(*offset)})
-			exitOnErr(err); printJSON(resp)
+		// user-follows 需要 uid 拼进 path（/weapi/user/getfollows/{uid}）。
+		execRaw("user-follows", func(ctx context.Context) {
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, engine.Meta{
+				Path: fmt.Sprintf("/weapi/user/getfollows/%d", *uid), Method: "POST",
+				Crypto: engine.CryptoWeAPI, Auth: 0,
+			}, map[string]any{"offset": int32(*offset), "limit": int32(*limit), "order": true})
+			exitOnErr(err)
+			printRaw(raw)
 		})
 	case "user-followeds":
 		fs := newFlagSet(args)
@@ -664,6 +675,17 @@ func printJSON(msg proto.Message) {
 		fmt.Fprintf(os.Stderr, "序列化响应失败: %v\n", err)
 		os.Exit(1)
 	}
+	fmt.Println(string(b))
+}
+
+// printRaw 直接 pretty 打印原始 JSON（动态 path 接口未经 proto 映射时用）。
+func printRaw(raw json.RawMessage) {
+	var v any
+	if err := json.Unmarshal(raw, &v); err != nil {
+		fmt.Println(string(raw))
+		return
+	}
+	b, _ := json.MarshalIndent(v, "", "  ")
 	fmt.Println(string(b))
 }
 
