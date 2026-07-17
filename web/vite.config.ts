@@ -5,14 +5,31 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
+import { visualizer } from "rollup-plugin-visualizer";
 
 // 读取 .env / .env.local，使 dev 反向代理目标可配置，不污染已提交文件
 const env = loadEnv("development", process.cwd(), "");
 const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:9090";
+// ANALYZE=true 时生成 chunk 体积可视化报告（.reports/stats.html），便于排查体积回退。
+// 不随常规 build 触发，避免拖慢 CI。
+const enableAnalyze = process.env.ANALYZE === "true";
 
 const config = defineConfig({
     resolve: { tsconfigPaths: true },
-    plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+    plugins: [
+        devtools(),
+        tailwindcss(),
+        tanstackStart(),
+        viteReact(),
+        // 体积分析报告（仅 ANALYZE=true 时启用）
+        enableAnalyze &&
+            visualizer({
+                filename: ".reports/stats.html",
+                template: "treemap",
+                gzipSize: true,
+                brotliSize: true,
+            }),
+    ].filter(Boolean),
     // 生产分包：只拆全站静态必需、且不会与懒加载库冲突的稳定 vendor。
     // 不设 node_modules 兜底组——兜底组的 test 会把 wasm/editor/shiki 等动态
     // import 的库强制并入静态 chunk，摧毁项目的懒加载体系。

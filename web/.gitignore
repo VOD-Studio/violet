@@ -11,3 +11,6 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+
+# 体积分析报告（ANALYZE=true 生成）
+.reports/
