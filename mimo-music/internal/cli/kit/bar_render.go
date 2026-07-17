@@ -11,6 +11,8 @@ package kit
 import (
 	"strconv"
 	"strings"
+
+	"github.com/mattn/go-runewidth"
 )
 
 // 标准盲文 spinner 帧序列(转一圈)。
@@ -33,8 +35,11 @@ const (
 //
 // spinnerIdx 由 Progress 的 steady tick 推进,让进行中的 spinner 转动。
 func renderLine(b *Bar, width, spinnerIdx int, color bool) string {
+	// label 显示宽度:固定列数(中文按2列算),右侧补齐。
+	// 超长的 label 截断,避免占用过多宽度导致进度条被挤没。
 	const labelWidth = 22
-	label := padRunes(b.Label, labelWidth)
+	label := truncateLabel(b.Label, labelWidth-1) // 留1列给可能的截断省略号
+	label = padLabel(label, labelWidth)
 
 	var prefix, body string
 	switch b.State {
@@ -67,9 +72,13 @@ func renderLine(b *Bar, width, spinnerIdx int, color bool) string {
 }
 
 // renderActiveBody 渲染进行中状态的内容:进度条 + 计数 + 百分比 + (总bar)ETA/速度。
+//
+// barWidth 按「总宽 - 固定开销」动态计算,保证整行 ≤ 终端宽度,避免自动折行
+// 破坏光标上移重绘(折行是 multi 堆叠的根因)。
+// 固定开销:前缀2 + label22 + 分隔符3 + 计数~18 + 百分比~4 + 速度~14 ≈ 63 列。
 func renderActiveBody(b *Bar, totalWidth int, color bool) string {
-	// 进度条宽度:总宽度减去前缀+label+计数+百分比等约 40 字符。
-	barWidth := totalWidth - 44
+	const fixedOverhead = 63
+	barWidth := totalWidth - fixedOverhead
 	if barWidth < 8 {
 		barWidth = 8
 	}
@@ -97,14 +106,23 @@ func colorWrap(s, ansi string, color bool) string {
 	return ansi + s + ansiReset
 }
 
-// padRunes 把字符串按 rune 数填充到 width(右侧补空格),超长不截断。
-// 注:近似计算,不区分 CJK 全宽(进度条场景够用,label 一般是中文歌名)。
-func padRunes(s string, width int) string {
-	vis := visibleCellCount(s)
-	if vis >= width {
+// padLabel 把 label 填充到固定显示宽度(右侧补空格),按 CJK 全宽计算。
+// 中文占2列、ASCII占1列,用 runewidth 精确计算,避免终端自动折行。
+func padLabel(s string, width int) string {
+	w := runewidth.StringWidth(s)
+	if w >= width {
 		return s
 	}
-	return s + strings.Repeat(" ", width-vis)
+	return s + strings.Repeat(" ", width-w)
+}
+
+// truncateLabel 把 label 按显示宽度截断,超长尾部加 …(占1列)。
+// 防止超长歌名撑爆整行宽度导致终端自动折行。
+func truncateLabel(s string, maxDisplayWidth int) string {
+	if runewidth.StringWidth(s) <= maxDisplayWidth {
+		return s
+	}
+	return runewidth.Truncate(s, maxDisplayWidth, "…")
 }
 
 // diffWrite 输出新帧,与 prev diff。

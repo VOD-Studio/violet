@@ -184,6 +184,14 @@ func (p *Progress) Wait() {
 
 // renderOnce 渲染当前状态为一帧并 diff 输出。
 func (p *Progress) renderOnce() {
+	p.renderOnceInternal()
+}
+
+// RenderForTest 测试钩子:同步渲染一帧(绕过 ticker,确定性)。
+// 仅供测试用,生产代码用 Start/Wait 驱动异步渲染。
+func (p *Progress) RenderForTest() { p.renderOnceInternal() }
+
+func (p *Progress) renderOnceInternal() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	now := p.now()
