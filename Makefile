@@ -140,6 +140,10 @@ music-build: ## 编译 mimo-music
 	cd mimo-music && go build -o ./bin/server ./cmd/server
 	@echo "编译完成: mimo-music/bin/server"
 
+musicctl-install: ## 安装/更新 musicctl 到 ~/go/bin(代码变更后重跑一次即可)
+	cd mimo-music && go install ./cmd/musicctl/
+	@echo "已安装: $$(go env GOPATH)/bin/musicctl"
+
 music-test: ## 运行 mimo-music 测试
 	cd mimo-music && go test ./...
 
