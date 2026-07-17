@@ -1,7 +1,7 @@
 # mimo-music 网易云全功能实现蓝图
 
 > 状态：长期规划（living document）
-> 关联：[架构 ADR](../adr/mimo-music-architecture.md)、[Phase 1 PRD](./0005-mimo-music-phase-1.md)
+> 关联：[架构 ADR](../adr/mimo-music-architecture.md)、[双轨道编排 ADR](../adr/mimo-music-dual-track-orchestration.md)、[Phase 1 PRD](./0005-mimo-music-phase-1.md)
 > 范围：对标 NeteaseCloudMusicApi 全功能，分模块逐步实现网易云全部 357 个接口
 
 ## 定位

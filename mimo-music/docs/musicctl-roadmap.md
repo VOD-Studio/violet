@@ -1,6 +1,7 @@
 # musicctl 功能路线图(2026-07)
 
 承接 `musicctl-cli-design.md` 的架构决策,本文档规划 cobra 迁移后的剩余功能。
+任务编排(本轨道与 API 蓝图如何穿插、CLI 任务分 A 类/B 类)见 [双轨道编排 ADR](../../docs/adr/mimo-music-dual-track-orchestration.md)。
 决策已于 2026-07-17 与仓库 owner 确认:
 
 - **第一阶段做 A 输出层**,后续新命令直接长在新输出层上,不返工
