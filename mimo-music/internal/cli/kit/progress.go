@@ -74,9 +74,17 @@ func WithProgressClock(now func() time.Time) ProgressOption {
 }
 
 // NewProgress 创建渲染器。width 为 0 时按 80 兜底(调用方应传 term.GetSize 结果)。
+//
+// 渲染宽度预留最后一列(width-1):immediate-wrap 终端(Terminal.app 等)
+// 在写满最后一列时立刻折行,行宽顶满会导致帧块每帧多占一行 → 逐帧抖动(闪烁);
+// xterm 系 deferred-wrap 终端虽不受影响,预留一列对两类终端都安全。
 func NewProgress(out io.Writer, width int, tty bool, opts ...ProgressOption) *Progress {
 	if width <= 0 {
 		width = 80
+	}
+	width-- // 预留最后一列(immediate-wrap 终端防折行)
+	if width < 10 {
+		width = 10
 	}
 	p := &Progress{
 		out:   out,
