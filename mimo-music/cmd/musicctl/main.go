@@ -712,9 +712,14 @@ func main() {
 		uid := fs.Int64("uid", 0, "用户 ID")
 		target := fs.Int64("target", 0, "对方用户 ID")
 		fs.Parse()
-		exec("user-follow-each-other", func(ctx context.Context) {
-			resp, err := executeOverride(eng, ctx, userendpoint.FollowEachOther, &mmpb.FollowEachOtherRequest{UserId: *uid, TargetUserId: *target})
-			exitOnErr(err); printJSON(resp)
+		// 需要 target uid 拼进 path(/weapi/user/getfollows/{uid}),走 RawDo。
+		execRaw("user-follow-each-other", func(ctx context.Context) {
+			req := &mmpb.FollowEachOtherRequest{UserId: *uid, TargetUserId: *target}
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, userendpoint.FollowEachOtherMeta(*target), userendpoint.FollowEachOtherRequest(req))
+			exitOnErr(err)
+			resp, err := userendpoint.ParseFollowEachOther(req, raw)
+			exitOnErr(err)
+			printJSON(resp)
 		})
 	case "user-record":
 		fs := newFlagSet(args)
