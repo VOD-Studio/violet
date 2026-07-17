@@ -25,7 +25,8 @@ const (
 	StateFailed                  // 失败(✗)
 )
 
-// Bar 单个进度条的状态。并发安全(Progress 持有 mutex,渲染时加锁)。
+// Bar 单个进度条的状态。并发安全:字段由自有 mu 保护,
+// 写走 Incr/Complete/Fail,渲染读走 snapshot()。
 type Bar struct {
 	Total   int64     // 总量(字节数)
 	Current int64     // 已完成量
@@ -33,6 +34,7 @@ type Bar struct {
 	State   BarState  // 当前状态
 	IsTotal bool      // 是否总 bar(显示 ETA 而非速度)
 
+	mu         sync.Mutex
 	startedAt  time.Time // 进入 Active 的时间(算 elapsed)
 	finishedAt time.Time // 进入 Done/Failed 的时间
 	ewma       float64   // 平滑后的速度(bytes/sec),α=0.4
@@ -100,6 +102,8 @@ func (p *Progress) AddBar(total int64, label string) *Bar {
 
 // Incr 累加进度并更新 EWMA 速度。首次 Incr 切到 Active。
 func (b *Bar) Incr(n int64, now time.Time) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	b.Current += n
 	if b.State == StateWaiting {
 		b.State = StateActive
@@ -123,6 +127,8 @@ func (b *Bar) Incr(n int64, now time.Time) {
 
 // Complete 标记完成。
 func (b *Bar) Complete(now time.Time) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	b.State = StateDone
 	b.Current = b.Total
 	b.finishedAt = now
@@ -130,9 +136,32 @@ func (b *Bar) Complete(now time.Time) {
 
 // Fail 标记失败。
 func (b *Bar) Fail(msg string, now time.Time) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	b.State = StateFailed
 	b.errMsg = msg
 	b.finishedAt = now
+}
+
+// setEta 持锁回写 ETA(渲染时算出,供调用方/测试读取)。
+func (b *Bar) setEta(d time.Duration) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.eta = d
+}
+
+// snapshot 持锁拷贝全部字段(逐字段构造,新零值锁,非复制锁)。
+// 渲染只读快照,与并发的 Incr/Complete 无共享内存。
+func (b *Bar) snapshot() Bar {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return Bar{
+		Total: b.Total, Current: b.Current, Label: b.Label,
+		State: b.State, IsTotal: b.IsTotal,
+		startedAt: b.startedAt, finishedAt: b.finishedAt,
+		ewma: b.ewma, lastSample: b.lastSample,
+		errMsg: b.errMsg, eta: b.eta,
+	}
 }
 
 // Start 启动 steady tick。TTY 下隐藏光标 + 启动 100ms ticker;
@@ -198,27 +227,30 @@ func (p *Progress) renderOnceInternal() {
 	// 推进 spinner。
 	p.spinner++
 
-	// 计算总 bar 的 ETA(若有):基于总进度 + 整体平均速度。
-	totalBars := 0
+	// 快照所有 bar(每 bar 自有锁,与并发 Incr/Complete 无竞态),
+	// 之后渲染只读快照——渲染期间 worker 继续推进也不撕裂。
+	snaps := make([]Bar, 0, len(p.bars))
 	for _, b := range p.bars {
-		if b.IsTotal {
-			if b.Current > 0 {
-				elapsed := now.Sub(b.startedAt)
-				if elapsed > 0 && b.Current < b.Total {
-					avgSpeed := float64(b.Current) / elapsed.Seconds()
-					if avgSpeed > 0 {
-						b.eta = time.Duration(float64(b.Total-b.Current)/avgSpeed) * time.Second
-					}
+		snaps = append(snaps, b.snapshot())
+	}
+
+	// 计算总 bar 的 ETA(若有):基于总进度 + 整体平均速度,写在快照上;
+	// 同时回写原 bar(持锁),供调用方/测试读取。
+	for i := range snaps {
+		b := &snaps[i]
+		if b.IsTotal && b.Current > 0 && b.Current < b.Total {
+			if elapsed := now.Sub(b.startedAt); elapsed > 0 {
+				if avgSpeed := float64(b.Current) / elapsed.Seconds(); avgSpeed > 0 {
+					b.eta = time.Duration(float64(b.Total-b.Current)/avgSpeed) * time.Second
+					p.bars[i].setEta(b.eta)
 				}
 			}
-			totalBars++
 		}
 	}
-	_ = totalBars
 
-	next := make([]string, 0, len(p.bars))
-	for _, b := range p.bars {
-		next = append(next, renderLine(b, p.width, p.spinner, p.color))
+	next := make([]string, 0, len(snaps))
+	for i := range snaps {
+		next = append(next, renderLine(&snaps[i], p.width, p.spinner, p.color))
 	}
 
 	// 非 TTY:不 diff 重绘(会刷屏),只在状态变化时输出。
