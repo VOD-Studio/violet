@@ -25,7 +25,19 @@ func TestRenderLine_States(t *testing.T) {
 			name: "完成态",
 			bar:  &Bar{Label: "海阔天空", Total: 3_400_000, Current: 3_400_000, State: StateDone},
 			want: []string{"♪", "3.2 MB", "100%"}, // 音符(非✓) + 满进度条 + 大小 + 百分比
-			bad:  []string{"⠋", "⠹", "等待中", "✓"}, // 不应有 spinner,也不应有对号
+			bad:  []string{"⠋", "⠹", "等待中", "✓", "♫"}, // 不应有 spinner,也不应有对号/双音符
+		},
+		{
+			name: "总bar完成态",
+			bar:  &Bar{Label: "我喜欢的音乐", Total: 35_800_000, Current: 35_800_000, State: StateDone, IsTotal: true},
+			want: []string{"♫", "100%"}, // 歌单聚合用双音符,与子 bar 区分层级
+			bad:  []string{"♪", "✓"},
+		},
+		{
+			name: "总bar进行态",
+			bar:  &Bar{Label: "我喜欢的音乐", Total: 35_800_000, Current: 17_900_000, State: StateActive, IsTotal: true, startedAt: now},
+			want: []string{"♫", "50%"}, // 进行态也是 ♫(不转 spinner)
+			bad:  []string{"♪", "⠋", "⠹"},
 		},
 		{
 			name: "失败态",

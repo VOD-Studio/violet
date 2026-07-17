@@ -29,9 +29,9 @@ const (
 // renderLine 渲染单个 bar 为一行字符串。
 //
 // 按状态分派:
-//   - 完成:  ✓ label    size       (绿色,静态,不再动画)
-//   - 失败:  ✗ label    err        (红色)
-//   - 进行:  ⠼ label    进度条 计数 pct 速度(总 bar 显 ETA)
+//   - 完成:  ♪/♫ label  size     (绿色,静态;♫=总bar歌单聚合,♪=子bar单曲)
+//   - 失败:  ✗ label    err      (红色)
+//   - 进行:  ⠼ label    进度条 计数 pct 速度(总bar ♫ 前缀 + 显 ETA)
 //   - 等待:  · label    等待中
 //
 // spinnerIdx 由 Progress 的 steady tick 推进,让进行中的 spinner 转动。
@@ -45,8 +45,12 @@ func renderLine(b *Bar, width, spinnerIdx int, color bool) string {
 	var prefix, body string
 	switch b.State {
 	case StateDone:
-		// 完成态用音符 ♪(绿色),不用对号 ✓。保留满进度条。
-		prefix = colorWrap("♪", ansiGreen, color)
+		// 完成态:总 bar 用 ♫(歌单聚合),子 bar 用 ♪(单曲),保留满进度条。
+		if b.IsTotal {
+			prefix = colorWrap("♫", ansiGreen, color)
+		} else {
+			prefix = colorWrap("♪", ansiGreen, color)
+		}
 		body = renderProgressBar(b, width, color)
 	case StateFailed:
 		prefix = colorWrap("✗", ansiRed, color)
@@ -64,7 +68,7 @@ func renderLine(b *Bar, width, spinnerIdx int, color bool) string {
 		}
 	case StateActive:
 		if b.IsTotal {
-			prefix = "♪"
+			prefix = "♫"
 		} else {
 			prefix = spinnerFrames[spinnerIdx%len(spinnerFrames)]
 		}
