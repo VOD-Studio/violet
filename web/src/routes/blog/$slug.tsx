@@ -2,9 +2,6 @@ import type { PostDetail } from "@entities/post/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { commentKeys } from "@features/comments/api/keys";
 import { fetchAnnotationSummary, useAnnotationSummary } from "@features/comments/api/queries";
-import { AnnotationLayer } from "@features/comments/ui/AnnotationLayer";
-import { CommentSection } from "@features/comments/ui/CommentSection";
-import { FloatingToolbar } from "@features/comments/ui/FloatingToolbar";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
@@ -20,7 +17,27 @@ import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Eye } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
+
+/**
+ * 评论相关组件懒加载：批注层 / 浮动工具条 / 评论区都在首屏可视区下方，
+ * 且依赖较重（评论 API、表单、树结构等），拆出独立 chunk 不阻塞首屏正文渲染。
+ */
+const AnnotationLayer = lazy(() =>
+    import("@features/comments/ui/AnnotationLayer").then((m) => ({
+        default: m.AnnotationLayer,
+    })),
+);
+const FloatingToolbar = lazy(() =>
+    import("@features/comments/ui/FloatingToolbar").then((m) => ({
+        default: m.FloatingToolbar,
+    })),
+);
+const CommentSection = lazy(() =>
+    import("@features/comments/ui/CommentSection").then((m) => ({
+        default: m.CommentSection,
+    })),
+);
 
 /**
  * /blog/$slug - 文章详情页
@@ -206,20 +223,24 @@ function BlogDetailPage() {
                 </div>
 
                 {/* 批注角标 + 气泡层（懒加载：summary 计数渲染角标，点击后按块拉批注） */}
-                <AnnotationLayer
-                    contentRef={contentRef}
-                    summary={summary ?? []}
-                    postId={post?.id}
-                    isLoggedIn={isLoggedIn}
-                />
+                <Suspense fallback={null}>
+                    <AnnotationLayer
+                        contentRef={contentRef}
+                        summary={summary ?? []}
+                        postId={post?.id}
+                        isLoggedIn={isLoggedIn}
+                    />
+                </Suspense>
 
                 {/* 划线批注浮动工具条（选区上方浮动，提交后高亮落定） */}
                 {post?.id && (
-                    <FloatingToolbar
-                        contentRef={contentRef}
-                        isLoggedIn={isLoggedIn}
-                        postId={post.id}
-                    />
+                    <Suspense fallback={null}>
+                        <FloatingToolbar
+                            contentRef={contentRef}
+                            isLoggedIn={isLoggedIn}
+                            postId={post.id}
+                        />
+                    </Suspense>
                 )}
 
                 {/* 底部自由评论区：放在 article 内、正文+TOC 容器之后，
@@ -229,7 +250,13 @@ function BlogDetailPage() {
                         {toc.length > 1 ? (
                             <aside className="hidden w-56 shrink-0 2xl:block" />
                         ) : null}
-                        <CommentSection postId={post.id} />
+                        <Suspense
+                            fallback={
+                                <div className="min-h-32 w-full max-w-3xl animate-pulse rounded-lg bg-muted/40" />
+                            }
+                        >
+                            <CommentSection postId={post.id} />
+                        </Suspense>
                     </div>
                 )}
             </article>
