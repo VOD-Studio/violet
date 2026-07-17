@@ -142,7 +142,7 @@ func runMulti(speed float64) {
 		totalSize += s.size
 	}
 
-	// 总 bar(顶部,显示 ETA)。prefix ♪ 由 renderLine 对 IsTotal 自动添加,label 不再带。
+	// 总 bar(顶部,显示 ETA)。prefix ♫ 由 renderLine 对 IsTotal 自动添加,label 不再带。
 	totalBar := p.AddBar(totalSize, "我喜欢的音乐")
 	totalBar.IsTotal = true
 
