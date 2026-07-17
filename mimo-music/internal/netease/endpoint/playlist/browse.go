@@ -38,10 +38,11 @@ var HighQualityTags = &engine.Endpoint[*mmpb.HighQualityTagsRequest, *mmpb.HighQ
 	NewResp:    func() *mmpb.HighQualityTagsResponse { return &mmpb.HighQualityTagsResponse{} },
 	MapRequest: func(*mmpb.HighQualityTagsRequest) (map[string]any, error) { return map[string]any{}, nil },
 	MapResponse: func(_ *mmpb.HighQualityTagsRequest, raw json.RawMessage) (*mmpb.HighQualityTagsResponse, error) {
+		// 真机返回的 category 是数字(如 0),旧 fixture 按字符串假设,两种形态都兼容。
 		var resp struct {
 			Tags []struct {
-				Name     string `json:"name"`     // 标签名
-				Category string `json:"category"` // 分类
+				Name     string          `json:"name"`     // 标签名
+				Category json.RawMessage `json:"category"` // 分类(数字或字符串)
 			} `json:"tags"`
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
@@ -49,10 +50,19 @@ var HighQualityTags = &engine.Endpoint[*mmpb.HighQualityTagsRequest, *mmpb.HighQ
 		}
 		out := &mmpb.HighQualityTagsResponse{}
 		for _, t := range resp.Tags {
-			out.Tags = append(out.Tags, &mmpb.HighQualityTag{Name: t.Name, Category: t.Category})
+			out.Tags = append(out.Tags, &mmpb.HighQualityTag{Name: t.Name, Category: rawToString(t.Category)})
 		}
 		return out, nil
 	},
+}
+
+// rawToString 把 JSON 原始值转字符串:字符串去引号,数字等其他类型直接用原始字面量。
+func rawToString(raw json.RawMessage) string {
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		return s
+	}
+	return string(raw)
 }
 
 // CatList 获取歌单分类列表。

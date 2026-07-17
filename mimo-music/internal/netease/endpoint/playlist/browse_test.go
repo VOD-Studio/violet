@@ -23,15 +23,18 @@ func TestHighQuality_MapResponse(t *testing.T) {
 }
 
 // TestHighQualityTags_MapResponse 精品标签解析。
+// category 真机返回数字(如 0),兼容字符串形态。
 func TestHighQualityTags_MapResponse(t *testing.T) {
 	t.Parallel()
 
-	fixture := `{"tags":[{"name":"华语","category":"语种"},{"name":"流行","category":"风格"}]}`
+	fixture := `{"tags":[{"name":"华语","category":0},{"name":"流行","category":"风格"}]}`
 
 	resp, err := HighQualityTags.MapResponse(&mmpb.HighQualityTagsRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Tags, 2)
 	require.Equal(t, "华语", resp.Tags[0].Name)
+	require.Equal(t, "0", resp.Tags[0].Category)
+	require.Equal(t, "风格", resp.Tags[1].Category)
 }
 
 // TestCatList_MapResponse 歌单分类解析。
