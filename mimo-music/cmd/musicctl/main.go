@@ -9,9 +9,11 @@
 //
 // 登录态接口需先扫码:
 //
-//	go run cmd/musicctl/main.go login   # 扫码后复制输出的 export 命令执行
-//	export NETEASE_COOKIE='...'         # cookie 不落盘,只经环境变量传
+//	go run cmd/musicctl/main.go login   # 扫码登录,cookie 持久化到 ~/.musicctl/session.json
 //	go run cmd/musicctl/main.go like --id 347230 --on
+//	go run cmd/musicctl/main.go logout  # 登出并删除本地会话
+//
+// 环境变量 NETEASE_COOKIE 优先级高于本地会话文件,可用于临时换号调试。
 package main
 
 import (
@@ -21,6 +23,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -622,9 +625,21 @@ func main() {
 
 // --- 共享辅助 ---
 
-// cookieCtx 从环境变量 NETEASE_COOKIE 读 cookie 注入 context(无则注入空)。
+// currentCookie 返回当前生效的 cookie: 环境变量 NETEASE_COOKIE 优先,其次本地会话文件。
+func currentCookie() string {
+	if c := os.Getenv("NETEASE_COOKIE"); c != "" {
+		return c
+	}
+	sess, err := loadSession()
+	if err != nil {
+		return ""
+	}
+	return sess.Cookie
+}
+
+// cookieCtx 把当前生效的 cookie 注入 context(无则注入空)。
 func cookieCtx() context.Context {
-	return engine.WithCookie(context.Background(), os.Getenv("NETEASE_COOKIE"))
+	return engine.WithCookie(context.Background(), currentCookie())
 }
 
 // exec 包裹一次 engine 调用:注入 cookie ctx,失败时统一报错退出。
@@ -722,10 +737,10 @@ func exitOnErr(err error) {
 	}
 }
 
-// requireCookie 检查 NETEASE_COOKIE 非空,否则提示先登录。
+// requireCookie 检查当前有可用的登录态(环境变量或本地会话文件),否则提示先登录。
 func requireCookie() {
-	if os.Getenv("NETEASE_COOKIE") == "" {
-		fmt.Fprintln(os.Stderr, "未设置 NETEASE_COOKIE:先运行 `musicctl login` 扫码登录,再执行输出的 export 命令")
+	if currentCookie() == "" {
+		fmt.Fprintln(os.Stderr, "未登录:先运行 `musicctl login` 扫码登录(也可用 NETEASE_COOKIE 环境变量临时指定 cookie)")
 		os.Exit(1)
 	}
 }
@@ -774,9 +789,81 @@ func albumAreaFlag(h *flagHolder) *string {
 	return h.String("area", "ALL", "地区: ALL/ZH/EA/KR/JP")
 }
 
+// --- 登录态持久化 ---
+
+// session 是落盘的登录会话。cookie 属于敏感信息:
+// 目录 0700、文件 0600,且不再把完整 cookie 打印到终端。
+type session struct {
+	Cookie  string `json:"cookie"`
+	UserID  int64  `json:"user_id,omitempty"`
+	SavedAt string `json:"saved_at"`
+}
+
+// sessionPath 返回会话文件路径 ~/.musicctl/session.json。
+func sessionPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".musicctl", "session.json"), nil
+}
+
+// saveSession 把会话写盘(目录 0700 / 文件 0600)。
+func saveSession(sess session) error {
+	p, err := sessionPath()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	b, err := json.Marshal(sess)
+	if err != nil {
+		return err
+	}
+	// 先写临时文件再 rename,避免中断留下半个 JSON。
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, p)
+}
+
+// loadSession 读本地会话。文件不存在或损坏时返回 error。
+func loadSession() (session, error) {
+	var sess session
+	p, err := sessionPath()
+	if err != nil {
+		return sess, err
+	}
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return sess, err
+	}
+	if err := json.Unmarshal(b, &sess); err != nil {
+		return sess, err
+	}
+	if sess.Cookie == "" {
+		return sess, fmt.Errorf("会话文件 %s 中没有 cookie", p)
+	}
+	return sess, nil
+}
+
+// clearSession 删除本地会话文件,不存在时不算错误。
+func clearSession() error {
+	p, err := sessionPath()
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
 // --- 登录流程 ---
 
-// runLogin 扫码登录:取二维码 → 轮询 → 打印 cookie。
+// runLogin 扫码登录:取二维码 → 轮询 → cookie 持久化到本地会话文件。
 func runLogin() {
 	ctx := context.Background()
 
@@ -826,14 +913,25 @@ func runLogin() {
 					fmt.Fprintln(os.Stderr, "登录成功但未拿到 cookie")
 					os.Exit(1)
 				}
-				fmt.Println("✅ 登录成功!")
-				// 尝试提取用户信息(可选)。
-				if sess, err := model.DecodeLoginResponse(raw); err == nil && sess.UserId != 0 {
-					fmt.Printf("用户 ID: %d\n", sess.UserId)
+				sess := session{
+					Cookie:  setCookie,
+					SavedAt: time.Now().Format(time.RFC3339),
 				}
-				fmt.Println()
-				fmt.Println("复制下面这行执行,设置环境变量后再调登录态接口:")
-				fmt.Printf("export NETEASE_COOKIE='%s'\n", setCookie)
+				// 尝试提取用户信息(可选)。
+				if s, err := model.DecodeLoginResponse(raw); err == nil && s.UserId != 0 {
+					sess.UserID = s.UserId
+				}
+				if err := saveSession(sess); err != nil {
+					fmt.Fprintf(os.Stderr, "登录成功但保存会话失败: %v\n", err)
+					os.Exit(1)
+				}
+				p, _ := sessionPath()
+				fmt.Println("✅ 登录成功!")
+				if sess.UserID != 0 {
+					fmt.Printf("用户 ID: %d\n", sess.UserID)
+				}
+				fmt.Printf("会话已保存到 %s,后续命令自动携带登录态。\n", p)
+				fmt.Println("(如需临时换号,可设 NETEASE_COOKIE 环境变量,优先级高于会话文件)")
 				return
 			case mmpb.QrcodeCode_QRCODE_CODE_EXPIRED:
 				fmt.Fprintln(os.Stderr, "二维码已过期,请重新运行 login")
@@ -853,7 +951,8 @@ func usage() {
 用法: go run cmd/musicctl/main.go <command> [flags]
 
 登录:
-  login                                 扫码登录,获取 cookie
+  login                                 扫码登录,cookie 持久化到 ~/.musicctl/session.json
+  login-status                          查看当前登录态
 
 歌曲(匿名):
   song-detail --id <id>
@@ -868,7 +967,7 @@ func usage() {
   creator-info --id <id>                创作者(eapi)
   similar-songs --id <id>
 
-歌曲(登录态,需 NETEASE_COOKIE):
+歌曲(登录态,需先 login):
   like --id <id> --on|--off             写操作
   trash --id <id>                       写操作
   disallow-recommend --id <id>          写操作
@@ -893,8 +992,9 @@ func usage() {
   recommend-playlists [--limit 10]
   recommend-new-songs [--limit 10]
 
-环境变量:
-  NETEASE_COOKIE    登录态接口的网易云 cookie(由 login 命令生成)`)
+登录态来源:
+  1. 环境变量 NETEASE_COOKIE(优先,用于临时换号调试)
+  2. 本地会话文件 ~/.musicctl/session.json(login 命令写入,logout 删除)`)
 }
 
 // --- 小工具 ---
