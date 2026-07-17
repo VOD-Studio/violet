@@ -19,14 +19,30 @@ PRD:`../../prd/0012-musicctl-输出层.md`(user stories 1,3,4,5,8,11;Implementat
 
 ## Acceptance criteria
 
-- [ ] 渲染器 golden 测试:单段表格/多段表格/键值对/嵌套取 name/枚举显示/截断/空 repeated 跳过
-- [ ] TTY 替身注入,三态分派有单测
-- [ ] `--json` 时输出与旧 PrintExec 完全一致(protojson)
-- [ ] `song detail --id` TTY 出键值对,管道自动 JSON
-- [ ] 未登录命令退出码 3,flag 错误退出码 2,接口错误退出码 1
-- [ ] song 组全部命令真机 smoke 通过
-- [ ] 其余命令组未接入,行为不变(仍 protojson)
+- [x] 渲染器 golden 测试:单段表格/多段表格/键值对/嵌套取 name/枚举显示/截断/空 repeated 跳过
+- [x] TTY 替身注入,三态分派有单测
+- [x] `--json` 时输出与旧 PrintExec 完全一致(protojson)
+- [x] `song detail --id` TTY 出键值对,管道自动 JSON
+- [x] 未登录命令退出码 3,flag 错误退出码 2,接口错误退出码 1
+- [x] song 组全部命令真机 smoke 通过
+- [x] 其余命令组未接入,行为不变(仍 protojson)
 
 ## Blocked by
 
 None - can start immediately
+
+## Comments
+
+**2026-07-17 完成**(commits efdbab2f / 8b94475f / e0f520bc / e6d141a4)
+
+实现偏差记录:
+
+- **tabwriter → runewidth**:真机验证发现 tabwriter 按 rune 计数,CJK 双宽字符列错位;
+  改 runewidth 手写列宽对齐 + 宽度截断(新增依赖 mattn/go-runewidth)。
+- **键值对模式增强**:评审(Spec 轴)指出 `song detail` 单层紧凑 JSON 与验收意图有落差,
+  改为单层嵌套 message 缩进展开,更深退化紧凑 JSON。
+- **repeated 标量**渲染为 ", " join 而非紧凑 JSON(人类可读优先)。
+- **--yes / stdinIsTTY 暂无消费者**:Issue-0002 预埋,非死代码。
+
+code-review 双轴结论:Standards 无硬违规(异味 4 条判断题已修);Spec 3 条偏差均按上表处置。
+真机验证:表格 CJK 对齐、管道自动 JSON、退出码矩阵 0/1/2/3 全过。
