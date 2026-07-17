@@ -496,6 +496,11 @@ func main() {
 			resp, err := executeOverride(eng, ctx, playlistendpoint.HighQuality, &mmpb.HighQualityRequest{Cat: *cat, Limit: int32(*limit)})
 			exitOnErr(err); printJSON(resp)
 		})
+	case "playlist-highquality-tags":
+		exec("playlist-highquality-tags", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, playlistendpoint.HighQualityTags, &mmpb.HighQualityTagsRequest{})
+			exitOnErr(err); printJSON(resp)
+		})
 	case "playlist-catlist":
 		exec("playlist-catlist", func(ctx context.Context) {
 			resp, err := executeOverride(eng, ctx, playlistendpoint.CatList, &mmpb.CatListRequest{})
@@ -573,6 +578,14 @@ func main() {
 			resp, err := executeOverride(eng, ctx, userendpoint.SubCount, &mmpb.SubCountRequest{})
 			exitOnErr(err); printJSON(resp)
 		})
+	case "user-detail-by-name":
+		fs := newFlagSet(args)
+		nickname := fs.String("nickname", "", "用户昵称")
+		fs.Parse()
+		exec("user-detail-by-name", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.DetailByName, &mmpb.DetailByNameRequest{Nickname: *nickname})
+			exitOnErr(err); printJSON(resp)
+		})
 	case "user-playlists":
 		uid := userIDFlag(args)
 		exec("user-playlists", func(ctx context.Context) {
@@ -604,6 +617,15 @@ func main() {
 			resp, err := executeOverride(eng, ctx, userendpoint.Followeds, &mmpb.FollowedsRequest{UserId: *uid, Limit: int32(*limit), Offset: int32(*offset)})
 			exitOnErr(err); printJSON(resp)
 		})
+	case "user-follow-each-other":
+		fs := newFlagSet(args)
+		uid := fs.Int64("uid", 0, "用户 ID")
+		target := fs.Int64("target", 0, "对方用户 ID")
+		fs.Parse()
+		exec("user-follow-each-other", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.FollowEachOther, &mmpb.FollowEachOtherRequest{UserId: *uid, TargetUserId: *target})
+			exitOnErr(err); printJSON(resp)
+		})
 	case "user-record":
 		fs := newFlagSet(args)
 		uid := fs.Int64("uid", 0, "用户 ID")
@@ -611,6 +633,16 @@ func main() {
 		fs.Parse()
 		exec("user-record", func(ctx context.Context) {
 			resp, err := executeOverride(eng, ctx, userendpoint.Record, &mmpb.RecordRequest{UserId: *uid, Type: int32(*typ)})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "user-events":
+		fs := newFlagSet(args)
+		uid := fs.Int64("uid", 0, "用户 ID")
+		limit := fs.Int("limit", 30, "返回数量")
+		lastID := fs.Int64("last-event-id", 0, "偏移量(上一页最后一条动态 ID)")
+		fs.Parse()
+		exec("user-events", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.Events, &mmpb.EventsRequest{UserId: *uid, Limit: int32(*limit), LastEventId: *lastID})
 			exitOnErr(err); printJSON(resp)
 		})
 	case "user-level":
