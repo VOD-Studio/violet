@@ -13,6 +13,11 @@
 | `0005-mimo-music-phase-1/` | PRD-0005 的拆分任务，编号 `0001-0011`。 |
 | `0006-mimo-music-phase-2/` | PRD-0006 的拆分任务，编号 `0001-0008`。 |
 | `0007-mimo-music-phase-3/` | PRD-0007 的拆分任务，编号 `0001-0005`（SDK + OTel，不含 mimo-blog 迁移）。 |
+| `0008-mimo-music-phase-4/` | PRD-0008 的拆分任务。 |
+| `0009-mimo-music-foundation/` | PRD-0009 的拆分任务。 |
+| `0010-mimo-music-cookie-metadata-refactor/` | PRD-0010 的拆分任务。 |
+| `0011-mimo-music-read-expansion/` | PRD-0011 的拆分任务，编号 `0001-0004`。 |
+| `0012-musicctl-输出层/` | PRD-0012 的拆分任务，编号 `0001-0004`。 |
 
 ## 编号规则
 
