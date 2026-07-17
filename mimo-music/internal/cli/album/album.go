@@ -155,7 +155,11 @@ func newSubscribe(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("收藏专辑 %d", id)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("收藏专辑 %d", id))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 			return kit.PrintExec(k, albumendpoint.Subscribe, &mmpb.SubscribeAlbumRequest{AlbumId: id})
@@ -175,7 +179,11 @@ func newUnsubscribe(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("取消收藏专辑 %d", id)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("取消收藏专辑 %d", id))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 			return kit.PrintExec(k, albumendpoint.Unsubscribe, &mmpb.UnsubscribeAlbumRequest{AlbumId: id})

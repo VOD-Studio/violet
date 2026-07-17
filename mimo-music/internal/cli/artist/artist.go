@@ -171,7 +171,11 @@ func newSubscribe(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("收藏/取消收藏歌手 %d", id)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("收藏/取消收藏歌手 %d", id))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 			raw, _, err := k.RawDo(k.CookieCtx(), artistendpoint.SubscribeMeta, artistendpoint.SubscribeRequest(&mmpb.ArtistSubscribeRequest{ArtistId: id}))

@@ -183,7 +183,11 @@ func newSubscribe(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("收藏/取消收藏歌单 %d", id)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("收藏/取消收藏歌单 %d", id))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 			raw, _, err := k.RawDo(k.CookieCtx(), playlistendpoint.SubscribeMeta, playlistendpoint.SubscribeRequest(&mmpb.SubscribeRequest{PlaylistId: id}))
@@ -208,7 +212,11 @@ func newCreate(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("创建歌单 %s", name)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("创建歌单 %s", name))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 			raw, _, err := k.RawDo(k.CookieCtx(), playlistendpoint.CreateMeta, playlistendpoint.CreateRequest(&mmpb.CreateRequest{Name: name, Privacy: privacy}))
@@ -234,10 +242,14 @@ func newDelete(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("删除歌单 %d", id)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("删除歌单 %d", id))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
-			_, _, err := k.RawDo(k.CookieCtx(), playlistendpoint.DeleteMeta, playlistendpoint.DeleteRequest(&mmpb.DeleteRequest{PlaylistId: id}))
+			_, _, err = k.RawDo(k.CookieCtx(), playlistendpoint.DeleteMeta, playlistendpoint.DeleteRequest(&mmpb.DeleteRequest{PlaylistId: id}))
 			if err != nil {
 				return err
 			}
@@ -260,10 +272,14 @@ func newUpdateName(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("把歌单 %d 改名为 %q", id, name)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("把歌单 %d 改名为 %q", id, name))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
-			_, _, err := k.RawDo(k.CookieCtx(), playlistendpoint.UpdateNameMeta, playlistendpoint.UpdateNameRequest(&mmpb.UpdateNameRequest{PlaylistId: id, Name: name}))
+			_, _, err = k.RawDo(k.CookieCtx(), playlistendpoint.UpdateNameMeta, playlistendpoint.UpdateNameRequest(&mmpb.UpdateNameRequest{PlaylistId: id, Name: name}))
 			if err != nil {
 				return err
 			}
@@ -288,10 +304,14 @@ func newUpdateDesc(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("修改歌单 %d 的描述", id)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("修改歌单 %d 的描述", id))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
-			_, _, err := k.RawDo(k.CookieCtx(), playlistendpoint.UpdateDescMeta, playlistendpoint.UpdateDescRequest(&mmpb.UpdateDescRequest{PlaylistId: id, Desc: desc}))
+			_, _, err = k.RawDo(k.CookieCtx(), playlistendpoint.UpdateDescMeta, playlistendpoint.UpdateDescRequest(&mmpb.UpdateDescRequest{PlaylistId: id, Desc: desc}))
 			if err != nil {
 				return err
 			}
@@ -316,10 +336,14 @@ func newUpdateTags(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("把歌单 %d 的标签改为 %q", id, tags)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("把歌单 %d 的标签改为 %q", id, tags))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
-			_, _, err := k.RawDo(k.CookieCtx(), playlistendpoint.UpdateTagsMeta, playlistendpoint.UpdateTagsRequest(&mmpb.UpdateTagsRequest{PlaylistId: id, Tags: tags}))
+			_, _, err = k.RawDo(k.CookieCtx(), playlistendpoint.UpdateTagsMeta, playlistendpoint.UpdateTagsRequest(&mmpb.UpdateTagsRequest{PlaylistId: id, Tags: tags}))
 			if err != nil {
 				return err
 			}
@@ -358,7 +382,11 @@ func newUpdateTracks(k *kit.Kit) *cobra.Command {
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
-			if !kit.ConfirmWrite(fmt.Sprintf("对歌单 %d %s歌曲 %v", id, opText, ids)) {
+			ok, err := k.ConfirmWrite(fmt.Sprintf("对歌单 %d %s歌曲 %v", id, opText, ids))
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 			raw, _, err := k.RawDo(k.CookieCtx(), playlistendpoint.UpdateTracksMeta, playlistendpoint.UpdateTracksRequest(&mmpb.UpdateTracksRequest{PlaylistId: id, Op: op, TrackIds: ids}))
