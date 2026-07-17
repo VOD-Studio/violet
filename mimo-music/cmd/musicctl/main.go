@@ -962,6 +962,34 @@ func clearSession() error {
 
 // --- 登录流程 ---
 
+// persistLogin 登录成功后落盘会话并打印结果。raw 为登录接口响应(尽力提取用户 ID)。
+// 扫码登录和手机号登录共用。
+func persistLogin(raw json.RawMessage, setCookie string) {
+	if setCookie == "" {
+		fmt.Fprintln(os.Stderr, "登录成功但未拿到 cookie")
+		os.Exit(1)
+	}
+	sess := session{
+		Cookie:  setCookie,
+		SavedAt: time.Now().Format(time.RFC3339),
+	}
+	// 尝试提取用户信息(可选)。
+	if s, err := model.DecodeLoginResponse(raw); err == nil && s.UserId != 0 {
+		sess.UserID = s.UserId
+	}
+	if err := saveSession(sess); err != nil {
+		fmt.Fprintf(os.Stderr, "登录成功但保存会话失败: %v\n", err)
+		os.Exit(1)
+	}
+	p, _ := sessionPath()
+	fmt.Println("✅ 登录成功!")
+	if sess.UserID != 0 {
+		fmt.Printf("用户 ID: %d\n", sess.UserID)
+	}
+	fmt.Printf("会话已保存到 %s,后续命令自动携带登录态。\n", p)
+	fmt.Println("(如需临时换号,可设 NETEASE_COOKIE 环境变量,优先级高于会话文件)")
+}
+
 // runLogin 扫码登录:取二维码 → 轮询 → cookie 持久化到本地会话文件。
 func runLogin() {
 	ctx := context.Background()
@@ -1008,29 +1036,7 @@ func runLogin() {
 			case mmpb.QrcodeCode_QRCODE_CODE_SCANNED:
 				fmt.Printf("已扫描,请在 App 确认登录...\n")
 			case mmpb.QrcodeCode_QRCODE_CODE_CONFIRMED:
-				if setCookie == "" {
-					fmt.Fprintln(os.Stderr, "登录成功但未拿到 cookie")
-					os.Exit(1)
-				}
-				sess := session{
-					Cookie:  setCookie,
-					SavedAt: time.Now().Format(time.RFC3339),
-				}
-				// 尝试提取用户信息(可选)。
-				if s, err := model.DecodeLoginResponse(raw); err == nil && s.UserId != 0 {
-					sess.UserID = s.UserId
-				}
-				if err := saveSession(sess); err != nil {
-					fmt.Fprintf(os.Stderr, "登录成功但保存会话失败: %v\n", err)
-					os.Exit(1)
-				}
-				p, _ := sessionPath()
-				fmt.Println("✅ 登录成功!")
-				if sess.UserID != 0 {
-					fmt.Printf("用户 ID: %d\n", sess.UserID)
-				}
-				fmt.Printf("会话已保存到 %s,后续命令自动携带登录态。\n", p)
-				fmt.Println("(如需临时换号,可设 NETEASE_COOKIE 环境变量,优先级高于会话文件)")
+				persistLogin(raw, setCookie)
 				return
 			case mmpb.QrcodeCode_QRCODE_CODE_EXPIRED:
 				fmt.Fprintln(os.Stderr, "二维码已过期,请重新运行 login")
