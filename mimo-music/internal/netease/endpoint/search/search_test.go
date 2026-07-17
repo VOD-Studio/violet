@@ -27,6 +27,20 @@ func TestMapSearchResponse_Song(t *testing.T) {
 	require.Empty(t, resp.Albums, "单曲搜索不应返回专辑")
 }
 
+// TestMapSearchResponse_Unspecified 缺省 type 与 MapRequest 默认(单曲)对齐。
+// 上游按单曲返回数据,缺省 type 也必须解析出 songs,不能整条 switch 落空。
+func TestMapSearchResponse_Unspecified(t *testing.T) {
+	t.Parallel()
+
+	fixture := `{"code":200,"result":{"songCount":1,"songs":[{"id":347230,"name":"海阔天空","artists":[{"id":111,"name":"Beyond"}],"album":{"id":222,"name":"乐与怒","img1v1Url":"http://a.jpg"},"duration":326000}]}}`
+
+	resp, err := Search.MapResponse(&mmpb.SearchRequest{Keyword: "海阔天空"}, json.RawMessage(fixture))
+	require.NoError(t, err)
+	require.Len(t, resp.Songs, 1)
+	require.Equal(t, "海阔天空", resp.Songs[0].Name)
+	require.Equal(t, int32(1), resp.Total)
+}
+
 // TestMapSearchResponse_Album 专辑搜索结果解析（type=ALBUM）。
 func TestMapSearchResponse_Album(t *testing.T) {
 	t.Parallel()
@@ -102,16 +116,17 @@ func TestSuggest_MapResponse(t *testing.T) {
 }
 
 // TestHot_MapResponse 热搜简略解析。
+// 真机响应形状: {"code":200,"result":{"hots":[{"first":"薛之谦","second":1,"iconType":1}]}}
 func TestHot_MapResponse(t *testing.T) {
 	t.Parallel()
 
-	fixture := `{"code":200,"hotts":[{"searchWord":"热词A","score":999,"iconUrl":"http://i.jpg"}]}`
+	fixture := `{"code":200,"result":{"hots":[{"first":"热词A","second":1,"third":null,"iconType":1}]}}`
 
 	resp, err := Hot.MapResponse(&mmpb.HotRequest{}, json.RawMessage(fixture))
 	require.NoError(t, err)
 	require.Len(t, resp.Keywords, 1)
 	require.Equal(t, "热词A", resp.Keywords[0].SearchWord)
-	require.Equal(t, int32(999), resp.Keywords[0].Score)
+	require.Equal(t, int32(1), resp.Keywords[0].Score)
 }
 
 // TestDefaultKeyword_MapResponse 默认搜索词解析。

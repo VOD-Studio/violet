@@ -67,10 +67,17 @@ func mapSearchResponse(req *mmpb.SearchRequest, raw json.RawMessage) (*mmpb.Sear
 		return &mmpb.SearchResponse{}, nil
 	}
 
-	resp := &mmpb.SearchResponse{Total: countFromType(req.GetType(), r.Result)}
+	// type 缺省时与 MapRequest 的默认(单曲)保持一致,否则 switch 不匹配任何分支,
+	// 上游按单曲返回了数据这里却全部丢弃。
+	t := req.GetType()
+	if t == mmpb.SearchType_SEARCH_TYPE_UNSPECIFIED {
+		t = mmpb.SearchType_SEARCH_TYPE_SONG
+	}
+
+	resp := &mmpb.SearchResponse{Total: countFromType(t, r.Result)}
 
 	// 按请求 type 确定地解析对应字段。
-	switch req.GetType() {
+	switch t {
 	case mmpb.SearchType_SEARCH_TYPE_SONG:
 		resp.Songs = parseSearchSongs(jsonPath(r.Result, "songs"))
 	case mmpb.SearchType_SEARCH_TYPE_ALBUM:

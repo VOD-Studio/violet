@@ -12,9 +12,10 @@ import (
 )
 
 // Suggest 是搜索建议接口声明。
+// path 必须是 /api/search/suggest/web:/api/search/suggest 真机返回空 result。
 var Suggest = &engine.Endpoint[*mmpb.SuggestRequest, *mmpb.SuggestResponse]{
 	Meta: engine.Meta{
-		Path:   "/api/search/suggest",
+		Path:   "/api/search/suggest/web",
 		Method: "GET",
 		Crypto: engine.CryptoNone,
 		Auth:   session.AuthAnonymous,
@@ -75,20 +76,23 @@ var Hot = &engine.Endpoint[*mmpb.HotRequest, *mmpb.HotResponse]{
 		return map[string]any{"type": 1111}, nil
 	},
 	MapResponse: func(req *mmpb.HotRequest, raw json.RawMessage) (*mmpb.HotResponse, error) {
+		// 真机响应: {"code":200,"result":{"hots":[{"first":"薛之谦","second":1,"iconType":1}]}}
+		// first=热搜词 second=排名;无 iconUrl 字段。
 		var resp struct {
-			Result []struct {
-				SearchWord string `json:"searchWord"`
-				Score      int32  `json:"score"`
-				IconUrl    string `json:"iconUrl"`
-			} `json:"hotts"`
+			Result struct {
+				Hots []struct {
+					First  string `json:"first"`
+					Second int32  `json:"second"`
+				} `json:"hots"`
+			} `json:"result"`
 		}
 		if err := json.Unmarshal(raw, &resp); err != nil {
 			return nil, fmt.Errorf("解析热搜失败: %w", err)
 		}
 		out := &mmpb.HotResponse{}
-		for _, h := range resp.Result {
+		for _, h := range resp.Result.Hots {
 			out.Keywords = append(out.Keywords, &mmpb.HotKeyword{
-				SearchWord: h.SearchWord, Score: h.Score, IconUrl: h.IconUrl,
+				SearchWord: h.First, Score: h.Second,
 			})
 		}
 		return out, nil
