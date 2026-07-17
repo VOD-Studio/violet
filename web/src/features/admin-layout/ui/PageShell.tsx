@@ -27,11 +27,6 @@ interface PageShellProps {
  */
 export function PageShell({ description, action, sticky, children }: PageShellProps) {
     const elRef = useRef<HTMLDivElement>(null)
-    // 既无描述也无操作且无 sticky 内容时，直接渲染内容（无标题区，不占额外空间）
-    if (!description && !action && !sticky) {
-        return <div>{children}</div>;
-    }
-
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
@@ -42,6 +37,12 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
         pEl.addEventListener("scroll", handleScroll);
         return () => pEl.removeEventListener("scroll", handleScroll);
     }, []);
+
+    // 既无描述也无操作且无 sticky 内容时，直接渲染内容（无标题区，不占额外空间）
+    // 注意：early return 必须在所有 hooks 之后，否则违反 React Hooks 规则。
+    if (!description && !action && !sticky) {
+        return <div>{children}</div>;
+    }
 
     return (
         <div className="space-y-2 pb-6" ref={elRef}>
