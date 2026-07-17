@@ -2,7 +2,9 @@
 package cli
 
 import (
+	"errors"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -40,6 +42,15 @@ func NewRootCommand() *cobra.Command {
 		SilenceUsage: true,
 	}
 
+	// 全局 flag:输出形态与写操作确认,绑定到 kit 实例,所有子命令生效。
+	root.PersistentFlags().BoolVar(&k.JSON, "json", false, "以 JSON 输出(管道/重定向时自动启用)")
+	root.PersistentFlags().BoolVar(&k.Yes, "yes", false, "写操作跳过 y/N 确认(脚本场景)")
+
+	// flag 解析失败统一包 ErrUsage,Execute 映射退出码 2。
+	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
+		return errors.Join(kit.ErrUsage, err)
+	})
+
 	root.AddGroup(
 		&cobra.Group{ID: "auth", Title: "登录:"},
 		&cobra.Group{ID: "domain", Title: "接口分组:"},
@@ -73,9 +84,24 @@ func NewRootCommand() *cobra.Command {
 	return root
 }
 
-// Execute 运行根命令,出错退出码 1(错误信息由 cobra 打印)。
+// Execute 运行根命令,按错误类别映射退出码(错误信息由 cobra 打印)。
 func Execute() {
 	if err := NewRootCommand().Execute(); err != nil {
-		os.Exit(1)
+		os.Exit(ExitCode(err))
+	}
+}
+
+// ExitCode 把错误映射为退出码: 3=未登录,2=用法错误,1=其余通用错误。
+func ExitCode(err error) int {
+	switch {
+	case errors.Is(err, kit.ErrNotLogin):
+		return 3
+	case errors.Is(err, kit.ErrUsage):
+		return 2
+	case strings.HasPrefix(err.Error(), "required flag(s)"):
+		// cobra 必填 flag 缺失(不经 FlagErrorFunc,按消息前缀归类)
+		return 2
+	default:
+		return 1
 	}
 }
