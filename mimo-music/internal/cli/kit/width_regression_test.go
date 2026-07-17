@@ -128,3 +128,25 @@ func TestRenderLine_LongMetaFits(t *testing.T) {
 		}
 	}
 }
+
+// TestRenderLine_MultiBarAligned 多 bar 之间右缘对齐(总 bar 与子 bar 的 bar 段等长)。
+// 回归:total 不补齐时,总 bar("34.1 MB")与子 bar("3.2 MB")计数宽度不同,
+// bar 段长度差 1~2 列,多行进度条右缘不对齐。修复:计数整组左补齐到固定 19 列。
+// 断言:整行等宽 + "100%" 位置一致(右缘数字对齐 = bar 段等长)。
+func TestRenderLine_MultiBarAligned(t *testing.T) {
+	t.Parallel()
+	for _, cols := range []int{80, 100, 120} {
+		totalBar := &Bar{Label: "我喜欢的音乐", Total: 35_800_000, Current: 35_800_000, State: StateDone, IsTotal: true}
+		subBar := &Bar{Label: "Beyond - 海阔天空", Total: 3_400_000, Current: 3_400_000, State: StateDone}
+		lt := renderLine(totalBar, cols, 0, false)
+		ls := renderLine(subBar, cols, 0, false)
+		if wt, ws := runewidth.StringWidth(lt), runewidth.StringWidth(ls); wt != ws {
+			t.Errorf("cols=%d: 整行宽度不齐(%d ≠ %d):\n  total=%q\n  sub  =%q", cols, wt, ws, lt, ls)
+		}
+		posT := runewidth.StringWidth(lt[:strings.LastIndex(lt, "100%")])
+		posS := runewidth.StringWidth(ls[:strings.LastIndex(ls, "100%")])
+		if posT != posS {
+			t.Errorf("cols=%d: 百分比显示列不齐(%d ≠ %d),bar 段不等长:\n  total=%q\n  sub  =%q", cols, posT, posS, lt, ls)
+		}
+	}
+}

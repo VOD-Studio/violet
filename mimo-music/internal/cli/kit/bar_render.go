@@ -82,19 +82,16 @@ func renderLine(b *Bar, width, spinnerIdx int, color bool) string {
 //
 // barWidth = 总宽 - 固定开销(27) - meta固定宽 - 分隔。
 func renderProgressBar(b *Bar, totalWidth int, color bool) string {
-	// 1. 计数:cur 右对齐到固定 9 列,total 原样(恒定,不会跳变)。
-	//    formatBytes 的 %.1f 值恒 < 1024,上限 "1023.9 KB" = 9 列;
-	//    若只补齐到 total 的宽度,cur 跨单位边界("9.5 KB"→"10.7 KB"→"1.0 MB")
-	//    会超出假设宽度,把 bar 挤短 1~2 列、数字漂移(推进跳变 bug)。
-	//    total 不补齐:恒定的 total 补齐只会在 "/" 后留下难看空隙。
-	totalBytesStr := formatBytes(b.Total)
-	curBytesStr := formatBytes(b.Current)
-	const byteW = 9
-	if cw := runewidth.StringWidth(curBytesStr); cw < byteW {
-		curBytesStr = strings.Repeat(" ", byteW-cw) + curBytesStr
+	// 1. 计数:cur/total 原样拼接后整体左补齐到固定 19 列(9+1+9)。
+	//    formatBytes 的 %.1f 值恒 < 1024,上限 "1023.9 KB" = 9 列。
+	//    - 组内不补齐:"3.2 MB/3.2 MB" 无空隙(美观)
+	//    - 整组固定宽:cur 跨单位边界("9.5 KB"→"10.7 KB")不跳变(推进稳定)
+	//    - 所有 bar 同宽:总 bar 与子 bar 的 bar 段长度一致(多行对齐)
+	counters := formatBytes(b.Current) + "/" + formatBytes(b.Total)
+	const countersW = 19
+	if cw := runewidth.StringWidth(counters); cw < countersW {
+		counters = strings.Repeat(" ", countersW-cw) + counters
 	}
-	counters := curBytesStr + "/" + totalBytesStr
-	countersW := runewidth.StringWidth(counters)
 
 	// 2. 百分比:右对齐到 4 列("100%"/"  9%")。
 	pct := formatPercent(b.Current, b.Total)
