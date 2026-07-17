@@ -91,11 +91,11 @@ func runSingle(speed float64) {
 		scale = 0.1
 	}
 	now := time.Now()
-	deadline := now.Add(time.Duration(float64(4 * time.Second) / scale))
+	deadline := now.Add(time.Duration(float64(4*time.Second) / scale))
 	for time.Now().Before(deadline) && bar.Current < bar.Total {
 		chunk := int64(rand.IntN(160_000) + 40_000)
 		bar.Incr(chunk, time.Now())
-		time.Sleep(time.Duration(float64(80 * time.Millisecond) / scale))
+		time.Sleep(time.Duration(float64(80*time.Millisecond) / scale))
 	}
 	bar.Complete(time.Now())
 	time.Sleep(200 * time.Millisecond) // 让完成帧渲染
@@ -125,8 +125,8 @@ func runMulti(speed float64) {
 		totalSize += s.size
 	}
 
-	// 总 bar(顶部,显示 ETA)。
-	totalBar := p.AddBar(totalSize, "♪ 我喜欢的音乐")
+	// 总 bar(顶部,显示 ETA)。prefix ♪ 由 renderLine 对 IsTotal 自动添加,label 不再带。
+	totalBar := p.AddBar(totalSize, "我喜欢的音乐")
 	totalBar.IsTotal = true
 
 	// 子 bar(每首一个,初始 waiting)。
@@ -158,7 +158,7 @@ func runMulti(speed float64) {
 					sub.b.Incr(chunk, time.Now())
 					totalBar.Incr(chunk, time.Now())
 					localSpeed := speed * (0.6 + rand.Float64()*0.8)
-					time.Sleep(time.Duration(float64(70 * time.Millisecond) / max(localSpeed, 0.1)))
+					time.Sleep(time.Duration(float64(70*time.Millisecond) / max(localSpeed, 0.1)))
 				}
 				sub.b.Complete(time.Now())
 			}
