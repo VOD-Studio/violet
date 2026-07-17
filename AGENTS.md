@@ -29,6 +29,20 @@
 - **测试**: `make web-test`
 - **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-canonical-classes` skill。
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues 为主(`gh issue create`),`gh` 不可用时降级到本地 markdown(`docs/issues/<prd-id>/`)。外部 PR 不进 triage 队列。详见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+五个 canonical triage 角色(needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix),label 字符串与角色名一致,wontfix 复用 GitHub 自带。详见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告/mimo-music/musicctl CLI),`docs/adr/` 混放 auth 系列 + mimo-music 系列 ADR。详见 `docs/agents/domain.md`。
+
 <!-- MANUAL: Any manually added notes below this line are preserved on regeneration -->
 
 ## 提交流程规范
