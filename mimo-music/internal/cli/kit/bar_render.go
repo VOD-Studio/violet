@@ -44,9 +44,9 @@ func renderLine(b *Bar, width, spinnerIdx int, color bool) string {
 	var prefix, body string
 	switch b.State {
 	case StateDone:
-		prefix = colorWrap("✓", ansiGreen, color)
-		// 完成态保留满进度条(不切换成纯文字),只是 prefix 变 ✓、不再显示速度/ETA。
-		body = renderProgressBar(b, width, color, false)
+		// 完成态用音符 ♪(绿色),不用对号 ✓。保留满进度条。
+		prefix = colorWrap("♪", ansiGreen, color)
+		body = renderProgressBar(b, width, color)
 	case StateFailed:
 		prefix = colorWrap("✗", ansiRed, color)
 		if b.errMsg != "" {
@@ -67,50 +67,70 @@ func renderLine(b *Bar, width, spinnerIdx int, color bool) string {
 		} else {
 			prefix = spinnerFrames[spinnerIdx%len(spinnerFrames)]
 		}
-		body = renderProgressBar(b, width, color, true)
+		body = renderProgressBar(b, width, color)
 	}
 	return "  " + prefix + " " + label + " " + body
 }
 
-// renderProgressBar 渲染进度条 + 计数 + 百分比 + 可选(ETA/速度)。
+// renderProgressBar 渲染进度条 + 计数 + 百分比 + (速度/ETA)。
 //
-// showMeta=true(进行中)时,总 bar 追加 ETA、子 bar 追加 EWMA 速度。
-// showMeta=false(完成态)只显示进度条 + 计数 + 百分比,不带速度/ETA(已完成无需)。
+// 字段宽度固定对齐(关键):计数/百分比/速度/ETA 都补齐到固定显示宽度,
+// 这样进度推进(cur 跨 formatBytes 单位边界)、状态切换(进行→完成)时
+// meta 总宽恒定 → barWidth 恒定 → 进度条不抖、数字位置不漂移。
+// 完成态速度/ETA 位置补空格占位(宽度不变)。
 //
-// barWidth 按「总宽 - 固定开销」动态计算,保证整行 ≤ 终端宽度,避免自动折行
-// 破坏光标上移重绘(折行是 multi 堆叠的根因)。
-func renderProgressBar(b *Bar, totalWidth int, color, showMeta bool) string {
-	// 固定开销:前缀2 + label22 + 分隔符3 + 进度条后字段。
-	// 字段宽度:计数 "12.3 MB/34.1 MB" ~16 + 百分比 "100%" ~4 + 速度 "1.8 MB/s" ~10 + 间距。
-	metaWidth := 0
-	if showMeta {
-		if b.IsTotal {
-			metaWidth = 24 // "ETA 0:05" + 计数 + 百分比
-		} else {
-			metaWidth = 30 // 速度 + 计数 + 百分比
-		}
-	} else {
-		metaWidth = 22 // 完成态:计数 + 百分比
+// barWidth = 总宽 - 固定开销(27) - meta固定宽 - 分隔。
+func renderProgressBar(b *Bar, totalWidth int, color bool) string {
+	// 1. 计数:cur/total 各自右对齐到固定 9 列。
+	//    formatBytes 的 %.1f 值恒 < 1024,上限 "1023.9 KB" = 9 列;
+	//    若只补齐到 total 的宽度,cur 跨单位边界("9.5 KB"→"10.7 KB"→"1.0 MB")
+	//    会超出假设宽度,把 bar 挤短 1~2 列、数字漂移(推进跳变 bug)。
+	totalBytesStr := formatBytes(b.Total)
+	curBytesStr := formatBytes(b.Current)
+	const byteW = 9
+	if cw := runewidth.StringWidth(curBytesStr); cw < byteW {
+		curBytesStr = strings.Repeat(" ", byteW-cw) + curBytesStr
 	}
-	const fixedOverhead = 27 // 前缀 + label + 分隔
-	barWidth := totalWidth - fixedOverhead - metaWidth
-	if barWidth < 8 {
-		barWidth = 8
+	if tw := runewidth.StringWidth(totalBytesStr); tw < byteW {
+		totalBytesStr = strings.Repeat(" ", byteW-tw) + totalBytesStr
+	}
+	counters := curBytesStr + "/" + totalBytesStr
+	countersW := runewidth.StringWidth(counters)
+
+	// 2. 百分比:右对齐到 4 列("100%"/"  9%")。
+	pct := formatPercent(b.Current, b.Total)
+	pctW := 4
+	if pw := runewidth.StringWidth(pct); pw < pctW {
+		pct = strings.Repeat(" ", pctW-pw) + pct
+	}
+
+	// 3. 速度/ETA:固定列宽,完成态或无值时补空格占位。
+	//    速度 "1.8 MB/s" 宽 8,ETA "ETA 0:05" 宽 8。统一占 10 列(留余量)。
+	const metaExtraW = 10
+	var extra string
+	if b.State == StateActive {
+		if b.IsTotal {
+			extra = "ETA " + formatDuration(b.eta)
+		} else if b.ewma > 0 {
+			extra = formatSpeed(b.ewma)
+		}
+	}
+	if ew := runewidth.StringWidth(extra); ew < metaExtraW {
+		extra = extra + strings.Repeat(" ", metaExtraW-ew)
+	}
+
+	// 4. meta 总宽 = 计数 + 1 + 百分比 + 1 + 速度/ETA(固定)。
+	metaW := countersW + 1 + pctW + 1 + metaExtraW
+
+	// 5. barWidth = 总宽 - 固定开销(27) - meta - 分隔。
+	const fixedOverhead = 27
+	barWidth := totalWidth - fixedOverhead - metaW - 1
+	if barWidth < 4 {
+		barWidth = 4
 	}
 	bar := RenderBar(b.Current, b.Total, barWidth, color)
 
-	var parts []string
-	parts = append(parts, bar)
-	parts = append(parts, formatBytes(b.Current)+"/"+formatBytes(b.Total))
-	parts = append(parts, formatPercent(b.Current, b.Total))
-	if showMeta {
-		if b.IsTotal {
-			parts = append(parts, "ETA "+formatDuration(b.eta))
-		} else if b.ewma > 0 {
-			parts = append(parts, formatSpeed(b.ewma))
-		}
-	}
-	return strings.Join(parts, " ")
+	return bar + " " + counters + " " + pct + " " + extra
 }
 
 // colorWrap 用 ANSI 颜色包裹字符串(color=false 时原样返回)。
