@@ -4,6 +4,11 @@ go 1.25.6
 
 require (
 	github.com/alicebob/miniredis/v2 v2.38.0
+	github.com/bogem/id3v2 v1.2.0
+	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
+	github.com/go-flac/flacpicture v0.3.0
+	github.com/go-flac/flacvorbis v0.2.0
+	github.com/go-flac/go-flac v1.0.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
 	github.com/lmittmann/tint v1.2.0
 	github.com/mattn/go-runewidth v0.0.24
