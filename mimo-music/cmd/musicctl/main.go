@@ -418,11 +418,17 @@ func main() {
 			printJSON(sess)
 		})
 	case "logout":
-		requireCookie()
 		execRaw("logout", func(ctx context.Context) {
-			_, _, err := eng.RawDoWithCookieAndInput(ctx, authendpoint.Logout, authendpoint.LogoutRequest(nil))
-			exitOnErr(err)
-			fmt.Println("已登出")
+			if cookie := currentCookie(); cookie != "" {
+				// 远端登出失败(如 cookie 已过期)不阻断本地清理。
+				if _, _, err := eng.RawDoWithCookieAndInput(ctx, authendpoint.Logout, authendpoint.LogoutRequest(nil)); err != nil {
+					fmt.Fprintf(os.Stderr, "警告: 远端登出失败(继续清除本地会话): %v\n", err)
+				}
+			}
+			if err := clearSession(); err != nil {
+				fmt.Fprintf(os.Stderr, "警告: 删除本地会话失败: %v\n", err)
+			}
+			fmt.Println("已登出,本地会话已清除")
 		})
 
 	// --- 私人 FM ---
@@ -953,6 +959,7 @@ func usage() {
 登录:
   login                                 扫码登录,cookie 持久化到 ~/.musicctl/session.json
   login-status                          查看当前登录态
+  logout                                登出并删除本地会话文件
 
 歌曲(匿名):
   song-detail --id <id>
