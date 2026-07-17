@@ -38,10 +38,12 @@ export interface SiteSettings {
 }
 
 /** 公告严重程度(视觉维度:配色/图标/标签),对齐后端 severity 枚举 */
-export type AnnouncementSeverity = "info" | "warning" | "success" | "error";
-
+export type { AnnouncementSeverity } from "@shared/ui/announcement-severity";
 /** 公告展示形态(布局维度:banner/card/article),对齐后端 display 枚举 */
 export type AnnouncementDisplay = "banner" | "card" | "article";
+
+// re-import 仅供本模块内部使用（Announcement 接口引用），对外 API 已通过上方 re-export 保持不变
+import type { AnnouncementSeverity } from "@shared/ui/announcement-severity";
 
 /**
  * Announcement - 公告

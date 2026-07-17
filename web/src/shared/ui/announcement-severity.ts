@@ -8,9 +8,11 @@
  * - BorderGlow 的 glow 三色刻意相同（同 severity 单色），不使用多色 mesh，保持克制
  * - 图标用 lucide，与项目其他 severity/badge 体系一致
  */
-import type { AnnouncementSeverity } from "@features/settings/model/types";
 import { CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import type { ComponentType } from "react";
+
+/** 公告严重程度(视觉维度:配色/图标/标签),对齐后端 severity 枚举 */
+export type AnnouncementSeverity = "info" | "warning" | "success" | "error";
 
 export interface AnnouncementSevCfg {
     /** 药丸徽章 class（背景 + 前景，含 dark 变体） */
