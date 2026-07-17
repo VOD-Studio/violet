@@ -13,6 +13,31 @@ const apiProxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:9090";
 const config = defineConfig({
     resolve: { tsconfigPaths: true },
     plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+    // 生产分包：只拆全站静态必需、且不会与懒加载库冲突的稳定 vendor。
+    // 不设 node_modules 兜底组——兜底组的 test 会把 wasm/editor/shiki 等动态
+    // import 的库强制并入静态 chunk，摧毁项目的懒加载体系。
+    build: {
+        rolldownOptions: {
+            output: {
+                codeSplitting: {
+                    groups: [
+                        // React 运行时：全站必需，单独缓存
+                        {
+                            name: "react-vendor",
+                            test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+                            priority: 30,
+                        },
+                        // TanStack 全家桶：路由 + query，全站必需
+                        {
+                            name: "tanstack-vendor",
+                            test: /node_modules[\\/]@tanstack[\\/]/,
+                            priority: 25,
+                        },
+                    ],
+                },
+            },
+        },
+    },
     // dev 反向代理：浏览器同源请求 /api/* 和 /uploads/* 由 Vite 转发到 Go 后端，
     // 目标地址可通过 VITE_API_PROXY_TARGET 配置，默认 localhost:9090。
     // 与生产 nginx 反代行为一致（避免 dev 时跨域 Cookie/CSRF 边界问题）。
