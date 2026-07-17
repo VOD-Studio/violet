@@ -28,9 +28,12 @@ import (
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 	"github.com/VOD-Studio/mimo-music/internal/cache"
 	albumendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/album"
+	artistendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/artist"
 	authendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/auth"
+	fmendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/fm"
 	playlistendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/playlist"
 	recommendendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/recommend"
+	searchendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/search"
 	songendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/song"
 	userendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/user"
 	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
@@ -313,6 +316,273 @@ func main() {
 			printJSON(resp)
 		})
 
+	// --- 歌手 ---
+	case "artist":
+		id := artistIDFlag(args)
+		exec("artist", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, artistendpoint.GetArtist, &mmpb.GetArtistRequest{ArtistId: id})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "artist-songs":
+		fs := newFlagSet(args)
+		id := fs.Int64("id", 0, "歌手 ID")
+		limit := fs.Int("limit", 20, "返回数量")
+		offset := fs.Int("offset", 0, "偏移量")
+		fs.Parse()
+		exec("artist-songs", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, artistendpoint.AllSongs, &mmpb.AllSongsRequest{ArtistId: *id, Limit: int32(*limit), Offset: int32(*offset)})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "artist-top":
+		id := artistIDFlag(args)
+		exec("artist-top", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, artistendpoint.TopSongs, &mmpb.TopSongsRequest{ArtistId: id})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "artist-albums":
+		fs := newFlagSet(args)
+		id := fs.Int64("id", 0, "歌手 ID")
+		limit := fs.Int("limit", 10, "返回数量")
+		offset := fs.Int("offset", 0, "偏移量")
+		fs.Parse()
+		exec("artist-albums", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, artistendpoint.Albums, &mmpb.AlbumsRequest{ArtistId: *id, Limit: int32(*limit), Offset: int32(*offset)})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "artist-desc":
+		id := artistIDFlag(args)
+		exec("artist-desc", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, artistendpoint.Desc, &mmpb.DescRequest{ArtistId: id})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "artist-similar":
+		id := artistIDFlag(args)
+		exec("artist-similar", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, artistendpoint.Similar, &mmpb.SimilarRequest{ArtistId: id})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "artist-fans":
+		id := artistIDFlag(args)
+		exec("artist-fans", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, artistendpoint.Fans, &mmpb.FansRequest{ArtistId: id})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "top-artists":
+		fs := newFlagSet(args)
+		limit := fs.Int("limit", 10, "返回数量")
+		offset := fs.Int("offset", 0, "偏移量")
+		fs.Parse()
+		exec("top-artists", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, artistendpoint.TopArtists, &mmpb.TopArtistsRequest{Limit: int32(*limit), Offset: int32(*offset)})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "artist-subscribe":
+		id := artistIDFlag(args)
+		requireCookie()
+		confirmWrite(fmt.Sprintf("收藏/取消收藏歌手 %d", id))
+		execRaw("artist-subscribe", func(ctx context.Context) {
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, artistendpoint.SubscribeMeta, artistendpoint.SubscribeRequest(&mmpb.ArtistSubscribeRequest{ArtistId: id}))
+			exitOnErr(err)
+			printJSON(artistendpoint.ParseSubscribeResponse(raw))
+		})
+
+	// --- 认证（除 login 外）---
+	case "login-status":
+		execRaw("login-status", func(ctx context.Context) {
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, authendpoint.LoginStatus, authendpoint.LoginStatusRequest(nil))
+			exitOnErr(err)
+			sess, e := model.DecodeLoginResponse(raw)
+			if e != nil { exitOnErr(e) }
+			sess.Cookie = engine.CookieFromContext(ctx)
+			printJSON(sess)
+		})
+	case "logout":
+		requireCookie()
+		execRaw("logout", func(ctx context.Context) {
+			_, _, err := eng.RawDoWithCookieAndInput(ctx, authendpoint.Logout, authendpoint.LogoutRequest(nil))
+			exitOnErr(err)
+			fmt.Println("已登出")
+		})
+
+	// --- 私人 FM ---
+	case "personal-fm":
+		exec("personal-fm", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, fmendpoint.GetPersonalFM, &mmpb.GetPersonalFMRequest{})
+			exitOnErr(err); printJSON(resp)
+		})
+
+	// --- 每日推荐歌曲 ---
+	case "daily-recommend-songs":
+		exec("daily-recommend-songs", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, recommendendpoint.GetDailyRecommend, &mmpb.GetDailyRecommendRequest{})
+			exitOnErr(err); printJSON(resp)
+		})
+
+	// --- 搜索 ---
+	case "search":
+		fs := newFlagSet(args)
+		keyword := fs.String("keyword", "", "搜索关键词")
+		limit := fs.Int("limit", 10, "返回数量")
+		offset := fs.Int("offset", 0, "偏移量")
+		fs.Parse()
+		exec("search", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, searchendpoint.Search, &mmpb.SearchRequest{Keyword: *keyword, Limit: int32(*limit), Offset: int32(*offset)})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "search-suggest":
+		fs := newFlagSet(args)
+		keyword := fs.String("keyword", "", "搜索关键词")
+		fs.Parse()
+		exec("search-suggest", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, searchendpoint.Suggest, &mmpb.SuggestRequest{Keyword: *keyword})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "search-hot":
+		exec("search-hot", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, searchendpoint.Hot, &mmpb.HotRequest{})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "search-hot-detail":
+		exec("search-hot-detail", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, searchendpoint.HotDetail, &mmpb.HotDetailRequest{})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "search-default-keyword":
+		exec("search-default-keyword", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, searchendpoint.DefaultKeyword, &mmpb.DefaultKeywordRequest{})
+			exitOnErr(err); printJSON(resp)
+		})
+
+	// --- 歌单 ---
+	case "playlist":
+		id := playlistIDFlag(args)
+		exec("playlist", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, playlistendpoint.GetPlaylist, &mmpb.GetPlaylistRequest{PlaylistId: id})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "playlist-highquality":
+		fs := newFlagSet(args)
+		cat := fs.String("cat", "全部", "分类")
+		limit := fs.Int("limit", 10, "返回数量")
+		fs.Parse()
+		exec("playlist-highquality", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, playlistendpoint.HighQuality, &mmpb.HighQualityRequest{Cat: *cat, Limit: int32(*limit)})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "playlist-catlist":
+		exec("playlist-catlist", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, playlistendpoint.CatList, &mmpb.CatListRequest{})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "playlist-hot":
+		exec("playlist-hot", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, playlistendpoint.BrowseHot, &mmpb.BrowseHotRequest{})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "playlist-subscribers":
+		id := playlistIDFlag(args)
+		exec("playlist-subscribers", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, playlistendpoint.Subscribers, &mmpb.SubscribersRequest{PlaylistId: id})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "playlist-tracks":
+		id := playlistIDFlag(args)
+		exec("playlist-tracks", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, playlistendpoint.AllTracks, &mmpb.AllTracksRequest{PlaylistId: id})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "playlist-subscribe":
+		id := playlistIDFlag(args)
+		requireCookie()
+		confirmWrite(fmt.Sprintf("收藏/取消收藏歌单 %d", id))
+		execRaw("playlist-subscribe", func(ctx context.Context) {
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, playlistendpoint.SubscribeMeta, playlistendpoint.SubscribeRequest(&mmpb.SubscribeRequest{PlaylistId: id}))
+			exitOnErr(err)
+			printJSON(playlistendpoint.ParseSubscribed(raw))
+		})
+	case "playlist-create":
+		fs := newFlagSet(args)
+		name := fs.String("name", "", "歌单名")
+		privacy := fs.Bool("privacy", false, "是否隐私")
+		fs.Parse()
+		requireCookie()
+		confirmWrite(fmt.Sprintf("创建歌单 %s", *name))
+		execRaw("playlist-create", func(ctx context.Context) {
+			raw, _, err := eng.RawDoWithCookieAndInput(ctx, playlistendpoint.CreateMeta, playlistendpoint.CreateRequest(&mmpb.CreateRequest{Name: *name, Privacy: *privacy}))
+			exitOnErr(err)
+			printJSON(playlistendpoint.ParseCreateResponse(raw))
+		})
+	case "playlist-delete":
+		id := playlistIDFlag(args)
+		requireCookie()
+		confirmWrite(fmt.Sprintf("删除歌单 %d", id))
+		execRaw("playlist-delete", func(ctx context.Context) {
+			_, _, err := eng.RawDoWithCookieAndInput(ctx, playlistendpoint.DeleteMeta, playlistendpoint.DeleteRequest(&mmpb.DeleteRequest{PlaylistId: id}))
+			exitOnErr(err)
+			fmt.Println("已删除")
+		})
+
+	// --- 用户 ---
+	case "user-account":
+		requireCookie()
+		exec("user-account", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.Account, &mmpb.AccountRequest{})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "user-detail":
+		uid := userIDFlag(args)
+		exec("user-detail", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.Detail, &mmpb.DetailRequest{UserId: uid})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "user-sub-count":
+		uid := userIDFlag(args)
+		exec("user-sub-count", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.SubCount, &mmpb.SubCountRequest{UserId: uid})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "user-playlists":
+		uid := userIDFlag(args)
+		exec("user-playlists", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.UserPlaylist, &mmpb.UserPlaylistRequest{UserId: uid})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "user-follows":
+		fs := newFlagSet(args)
+		uid := fs.Int64("uid", 0, "用户 ID")
+		limit := fs.Int("limit", 20, "返回数量")
+		offset := fs.Int("offset", 0, "偏移量")
+		fs.Parse()
+		exec("user-follows", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.Follows, &mmpb.FollowsRequest{UserId: *uid, Limit: int32(*limit), Offset: int32(*offset)})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "user-followeds":
+		fs := newFlagSet(args)
+		uid := fs.Int64("uid", 0, "用户 ID")
+		limit := fs.Int("limit", 20, "返回数量")
+		offset := fs.Int("offset", 0, "偏移量")
+		fs.Parse()
+		exec("user-followeds", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.Followeds, &mmpb.FollowedsRequest{UserId: *uid, Limit: int32(*limit), Offset: int32(*offset)})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "user-record":
+		fs := newFlagSet(args)
+		uid := fs.Int64("uid", 0, "用户 ID")
+		typ := fs.Int("type", 0, "0=本周 1=全部")
+		fs.Parse()
+		exec("user-record", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.Record, &mmpb.RecordRequest{UserId: *uid, Type: int32(*typ)})
+			exitOnErr(err); printJSON(resp)
+		})
+	case "user-level":
+		uid := userIDFlag(args)
+		exec("user-level", func(ctx context.Context) {
+			resp, err := executeOverride(eng, ctx, userendpoint.Level, &mmpb.LevelRequest{UserId: uid})
+			exitOnErr(err); printJSON(resp)
+		})
+
 	case "-h", "--help", "help":
 		usage()
 	default:
@@ -332,6 +602,35 @@ func cookieCtx() context.Context {
 // exec 包裹一次 engine 调用:注入 cookie ctx,失败时统一报错退出。
 func exec(_ string, fn func(ctx context.Context)) {
 	fn(cookieCtx())
+}
+
+// execRaw 包裹一次 RawDoWithCookieAndInput 调用（旧式 endpoint 用）。
+func execRaw(_ string, fn func(ctx context.Context)) {
+	fn(cookieCtx())
+}
+
+// artistIDFlag 解析 --id 歌手ID。
+func artistIDFlag(args []string) int64 {
+	fs := flag.NewFlagSet("", flag.ExitOnError)
+	id := fs.Int64("id", 0, "歌手 ID")
+	_ = fs.Parse(args)
+	return *id
+}
+
+// playlistIDFlag 解析 --id 歌单ID。
+func playlistIDFlag(args []string) int64 {
+	fs := flag.NewFlagSet("", flag.ExitOnError)
+	id := fs.Int64("id", 0, "歌单 ID")
+	_ = fs.Parse(args)
+	return *id
+}
+
+// userIDFlag 解析 --uid 用户ID。
+func userIDFlag(args []string) int64 {
+	fs := flag.NewFlagSet("", flag.ExitOnError)
+	id := fs.Int64("uid", 0, "用户 ID")
+	_ = fs.Parse(args)
+	return *id
 }
 
 // execEapi 执行一个 eapi 读类接口并打印响应。eapi 接口走 engine.Execute(匿名)。
