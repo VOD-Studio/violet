@@ -3,6 +3,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -39,7 +40,8 @@ func NewRootCommand() *cobra.Command {
 登录态来源:
   1. 环境变量 NETEASE_COOKIE(优先,用于临时换号调试)
   2. 本地会话文件 ~/.musicctl/session.json(login 写入,logout 删除)`,
-		SilenceUsage: true,
+		SilenceUsage:  true,
+		SilenceErrors: true, // 错误由 Execute 统一以「错误: 」格式打印(与旧 CLI 一致)
 	}
 
 	// 全局 flag:输出形态与写操作确认,绑定到 kit 实例,所有子命令生效。
@@ -84,9 +86,14 @@ func NewRootCommand() *cobra.Command {
 	return root
 }
 
-// Execute 运行根命令,按错误类别映射退出码(错误信息由 cobra 打印)。
+// Execute 运行根命令:取消静默退出 0;其余错误统一打印后按类别映射退出码。
 func Execute() {
-	if err := NewRootCommand().Execute(); err != nil {
+	err := NewRootCommand().Execute()
+	switch {
+	case err == nil, errors.Is(err, kit.ErrCancelled):
+		return
+	default:
+		fmt.Fprintln(os.Stderr, "错误:", err)
 		os.Exit(ExitCode(err))
 	}
 }

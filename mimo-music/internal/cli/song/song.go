@@ -137,12 +137,8 @@ func newLike(k *kit.Kit) *cobra.Command {
 			if on {
 				action = "点红心"
 			}
-			ok, err := k.ConfirmWrite(fmt.Sprintf("对歌曲 %d %s", id, action))
-			if err != nil {
+			if err := k.ConfirmFatal(fmt.Sprintf("对歌曲 %d %s", id, action)); err != nil {
 				return err
-			}
-			if !ok {
-				return nil
 			}
 			return kit.RenderExec(k, songendpoint.Like, &mmpb.LikeRequest{SongId: id, Like: on})
 		},
@@ -158,12 +154,8 @@ func newTrash(k *kit.Kit) *cobra.Command {
 		if err := k.RequireLogin(); err != nil {
 			return err
 		}
-		ok, err := k.ConfirmWrite(fmt.Sprintf("把歌曲 %d 丢进垃圾桶(降推荐权重)", id))
-		if err != nil {
+		if err := k.ConfirmFatal(fmt.Sprintf("把歌曲 %d 丢进垃圾桶(降推荐权重)", id)); err != nil {
 			return err
-		}
-		if !ok {
-			return nil
 		}
 		return kit.RenderExec(k, songendpoint.Trash, &mmpb.TrashRequest{SongId: id})
 	})
@@ -174,12 +166,8 @@ func newDisallowRecommend(k *kit.Kit) *cobra.Command {
 		if err := k.RequireLogin(); err != nil {
 			return err
 		}
-		ok, err := k.ConfirmWrite(fmt.Sprintf("标记歌曲 %d 不感兴趣(影响日推)", id))
-		if err != nil {
+		if err := k.ConfirmFatal(fmt.Sprintf("标记歌曲 %d 不感兴趣(影响日推)", id)); err != nil {
 			return err
-		}
-		if !ok {
-			return nil
 		}
 		return kit.RenderExec(k, songendpoint.DisallowRecommend, &mmpb.DisallowRecommendRequest{SongId: id})
 	})
