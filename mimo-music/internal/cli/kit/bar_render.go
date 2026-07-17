@@ -45,7 +45,8 @@ func renderLine(b *Bar, width, spinnerIdx int, color bool) string {
 	switch b.State {
 	case StateDone:
 		prefix = colorWrap("✓", ansiGreen, color)
-		body = formatBytes(b.Total)
+		// 完成态保留满进度条(不切换成纯文字),只是 prefix 变 ✓、不再显示速度/ETA。
+		body = renderProgressBar(b, width, color, false)
 	case StateFailed:
 		prefix = colorWrap("✗", ansiRed, color)
 		if b.errMsg != "" {
@@ -66,19 +67,33 @@ func renderLine(b *Bar, width, spinnerIdx int, color bool) string {
 		} else {
 			prefix = spinnerFrames[spinnerIdx%len(spinnerFrames)]
 		}
-		body = renderActiveBody(b, width, color)
+		body = renderProgressBar(b, width, color, true)
 	}
 	return "  " + prefix + " " + label + " " + body
 }
 
-// renderActiveBody 渲染进行中状态的内容:进度条 + 计数 + 百分比 + (总bar)ETA/速度。
+// renderProgressBar 渲染进度条 + 计数 + 百分比 + 可选(ETA/速度)。
+//
+// showMeta=true(进行中)时,总 bar 追加 ETA、子 bar 追加 EWMA 速度。
+// showMeta=false(完成态)只显示进度条 + 计数 + 百分比,不带速度/ETA(已完成无需)。
 //
 // barWidth 按「总宽 - 固定开销」动态计算,保证整行 ≤ 终端宽度,避免自动折行
 // 破坏光标上移重绘(折行是 multi 堆叠的根因)。
-// 固定开销:前缀2 + label22 + 分隔符3 + 计数~18 + 百分比~4 + 速度~14 ≈ 63 列。
-func renderActiveBody(b *Bar, totalWidth int, color bool) string {
-	const fixedOverhead = 63
-	barWidth := totalWidth - fixedOverhead
+func renderProgressBar(b *Bar, totalWidth int, color, showMeta bool) string {
+	// 固定开销:前缀2 + label22 + 分隔符3 + 进度条后字段。
+	// 字段宽度:计数 "12.3 MB/34.1 MB" ~16 + 百分比 "100%" ~4 + 速度 "1.8 MB/s" ~10 + 间距。
+	metaWidth := 0
+	if showMeta {
+		if b.IsTotal {
+			metaWidth = 24 // "ETA 0:05" + 计数 + 百分比
+		} else {
+			metaWidth = 30 // 速度 + 计数 + 百分比
+		}
+	} else {
+		metaWidth = 22 // 完成态:计数 + 百分比
+	}
+	const fixedOverhead = 27 // 前缀 + label + 分隔
+	barWidth := totalWidth - fixedOverhead - metaWidth
 	if barWidth < 8 {
 		barWidth = 8
 	}
@@ -88,12 +103,12 @@ func renderActiveBody(b *Bar, totalWidth int, color bool) string {
 	parts = append(parts, bar)
 	parts = append(parts, formatBytes(b.Current)+"/"+formatBytes(b.Total))
 	parts = append(parts, formatPercent(b.Current, b.Total))
-
-	// 总 bar 显示 ETA,子 bar 显示速度。
-	if b.IsTotal {
-		parts = append(parts, "ETA "+formatDuration(b.eta))
-	} else if b.ewma > 0 {
-		parts = append(parts, formatSpeed(b.ewma))
+	if showMeta {
+		if b.IsTotal {
+			parts = append(parts, "ETA "+formatDuration(b.eta))
+		} else if b.ewma > 0 {
+			parts = append(parts, formatSpeed(b.ewma))
+		}
 	}
 	return strings.Join(parts, " ")
 }
