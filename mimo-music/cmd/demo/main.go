@@ -80,18 +80,29 @@ flags:
 
 // newProgress 构造 mpb.Progress,返回 progress 和恢复函数。
 //
-// 防闪烁:TTY 下隐藏光标(DEC mode 25)——mpb 多 bar 重绘时光标会物理跳动
-// (上移到顶部逐行重写),这是「感知闪烁」的主因(Zellij #1903 等案例)。
-// 隐藏光标后重绘过程不可见,只剩最终帧;restore 在 p.Wait() 后恢复光标。
-// 非 TTY 不隐藏(没有重绘,无需处理)。
+// 防闪烁(multi 场景,字节流证据 + indicatif 思路):
+//   - antiflicker=true:输出包 antiflickerWriter,把 mpb 的 \x1b[J(清屏到屏幕底)
+//     替换成 \x1b[K(清当前行到行尾)。光标上移后逐行覆盖写,不清整块,消除空白帧。
+//     因 antiflickerWriter 非 *os.File,mpb cwriter TTY 检测失败 → 补 WithAutoRefresh
+//     强制刷新 + WithWidth 显式宽度。
+//   - antiflicker=false:走原生 os.Stderr,single 场景用 \r 不闪,保持原生 TTY 行为。
+//   - 隐藏光标 \x1b[?25l:消除重绘时光标物理跳动(感知闪烁次因)。
 //
-// 返回 restore func(),调用方用 defer restore() 保证即使 panic 也能恢复光标。
-func newProgress(width int) (*mpb.Progress, func()) {
-	p := mpb.New(
-		mpb.WithOutput(os.Stderr),
-		mpb.WithRefreshRate(120*time.Millisecond),
+// 返回 restore func(),调用方 defer restore() 保证 panic 也能恢复光标。
+func newProgress(width int, antiflicker bool) (*mpb.Progress, func()) {
+	opts := []mpb.ContainerOption{
+		mpb.WithRefreshRate(120 * time.Millisecond),
 		mpb.WithWidth(width),
-	)
+	}
+	if antiflicker {
+		opts = append(opts,
+			mpb.WithOutput(newAntiflickerWriter(os.Stderr)),
+			mpb.WithAutoRefresh(),
+		)
+	} else {
+		opts = append(opts, mpb.WithOutput(os.Stderr))
+	}
+	p := mpb.New(opts...)
 	tty := term.IsTerminal(int(os.Stderr.Fd()))
 	if tty {
 		fmt.Fprint(os.Stderr, "\x1b[?25l") // 隐藏光标
@@ -104,7 +115,7 @@ func newProgress(width int) (*mpb.Progress, func()) {
 }
 
 func runSingle(color bool, speed float64) {
-	p, restore := newProgress(48)
+	p, restore := newProgress(48, false) // single 用 \r 不闪,保持原生
 	defer restore()
 
 	total := int64(3_400_000) // 3.4 MB
@@ -137,7 +148,7 @@ func runSingle(color bool, speed float64) {
 }
 
 func runMulti(speed float64) {
-	p, restore := newProgress(56)
+	p, restore := newProgress(56, true) // multi 用 \x1b[J 会闪,启用 antiflicker
 	defer restore()
 
 	songs := []struct {
