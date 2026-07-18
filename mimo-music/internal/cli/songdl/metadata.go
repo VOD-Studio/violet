@@ -1,58 +1,17 @@
-// 下载相关 helper:文件名构造 + 元数据写入。
-// 这两个 helper 供 song download / playlist download 命令消费(PRD-0013)。
-package song
+// 元数据写入:mp3 用 bogem/id3v2,flac 用 go-flac 三件套。
+// 从 internal/cli/song 包迁入(原 metadata.go),逻辑不变,仅包名 + 导出。
+package songdl
 
 import (
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/bogem/id3v2"
 	"github.com/go-flac/flacpicture"
 	"github.com/go-flac/flacvorbis"
 	flac "github.com/go-flac/go-flac"
-
-	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 )
-
-// unsafeFilenameChars 是 Windows/macOS/Linux 文件系统都禁用的路径字符。
-// 出现在艺人/歌名里会破坏落盘,必须过滤。
-const unsafeFilenameChars = `/\:*?"<>|`
-
-// sanitizeFilename 把路径不安全字符替换为下划线(保留可读,不删除避免名字粘连)。
-func sanitizeFilename(s string) string {
-	return strings.Map(func(r rune) rune {
-		if strings.ContainsRune(unsafeFilenameChars, r) {
-			return '_'
-		}
-		return r
-	}, s)
-}
-
-// songFilename 构造单曲下载的默认文件名:{首艺人} - {歌名}.{ext}。
-// 多艺人取首个(Artists[0]);过滤路径不安全字符。
-// 艺人/歌名为空时用 id 替代缺失部分;两者都空用 id 兜底(避免 " - .ext")。
-// 不处理冲突回退(那是命令层策略,见 PRD-0013 文件名冲突处理)。
-func songFilename(s *mmpb.Song, ext string) string {
-	artist := ""
-	if len(s.Artists) > 0 {
-		artist = s.Artists[0].Name
-	}
-	title := s.Name
-	idStr := strconv.FormatInt(s.Id, 10)
-
-	// 缺失部分用 id 替代;两者都缺用 id 兜底。
-	switch {
-	case artist == "" && title == "":
-		return idStr + "." + ext
-	case artist == "":
-		artist = idStr
-	case title == "":
-		title = idStr
-	}
-	return sanitizeFilename(artist) + " - " + sanitizeFilename(title) + "." + ext
-}
 
 // Metadata 是要写入音频文件的元数据。
 // Cover 为 nil 表示无封面(其他字段照写)。
@@ -63,11 +22,11 @@ type Metadata struct {
 	Cover  []byte // 可为 nil
 }
 
-// writeMetadata 把 Metadata 写入 path 指向的音频文件。
+// WriteMetadata 把 Metadata 写入 path 指向的音频文件。
 // 按扩展名分派:mp3 用 bogem/id3v2,flac 用 go-flac 三件套。
 // 调用方必须保证文件已落盘(本函数只读写元数据,不动音频流)。
 // 写入失败返回 error,但调用方应按 PRD-0013 约定当作非阻塞警告处理。
-func writeMetadata(path string, info Metadata) error {
+func WriteMetadata(path string, info Metadata) error {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".mp3":
@@ -75,7 +34,7 @@ func writeMetadata(path string, info Metadata) error {
 	case ".flac":
 		return writeFLACMetadata(path, info)
 	default:
-		return fmt.Errorf("writeMetadata: 不支持的扩展名 %q(仅支持 .mp3/.flac)", ext)
+		return fmt.Errorf("WriteMetadata: 不支持的扩展名 %q(仅支持 .mp3/.flac)", ext)
 	}
 }
 
