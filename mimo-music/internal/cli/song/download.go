@@ -9,6 +9,7 @@ package song
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -95,13 +96,17 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force bool) error 
 
 	// 7. 结果输出(stdout):人类 key-value / --json 对象。
 	// download 结果不是 proto(文件信息),不走 Render;自己处理双态。
+	// JSON schema 按 PRD-0013 行 269: path/size/duration/format/level/metadata_written。
 	result := downloadResult{
-		Filename:    filename,
-		Dir:         absOrSame(out),
-		Size:        written,
-		Format:      songURL.Format,
-		Bitrate:     songURL.Bitrate,
-		MetaWritten: metaWritten,
+		Path:         filepath.Join(absOrSame(out), filename),
+		Size:         written,
+		Format:       songURL.Format,
+		Level:        level,
+		MetaWritten:  metaWritten,
+		// 人类显示用的辅助字段(不进 JSON):
+		filename:     filename,
+		dir:          absOrSame(out),
+		bitrate:      songURL.Bitrate,
 	}
 	return result.write(k)
 }
@@ -229,17 +234,24 @@ func (p *proxyReader) Read(buf []byte) (int, error) {
 }
 
 // downloadResult 下载完成结果(人类 key-value / --json 对象,双态输出)。
+//
+// JSON schema 按 PRD-0013 行 269: snake_case 字段 + 多行缩进(对齐 protojson 视觉风格)。
+// 人类显示额外用 filename/dir/bitrate(不进 JSON,json:"-")。
 type downloadResult struct {
-	Filename    string
-	Dir         string
-	Size        int64
-	Format      string
-	Bitrate     int64
-	MetaWritten bool
+	Path        string `json:"path"`
+	Size        int64  `json:"size"`
+	Duration    string `json:"duration,omitempty"` // TODO(#24): 解析音频时长,目前无
+	Format      string `json:"format"`
+	Level       int    `json:"level"`
+	MetaWritten bool   `json:"metadata_written"`
+
+	// 人类显示辅助(不进 JSON)。
+	filename string `json:"-"`
+	dir      string `json:"-"`
+	bitrate  int64  `json:"-"`
 }
 
-// write 按 --json 决定输出形态:人类 key-value 表格 / JSON 对象。
-// 写到 stdout(k.OutWriter)。
+// write 按 --json 决定输出形态:人类 key-value / JSON 对象。
 func (r downloadResult) write(k *kit.Kit) error {
 	if k.JSON {
 		return r.writeJSON(k.OutWriter())
@@ -254,25 +266,25 @@ func (r downloadResult) writeHuman(w io.Writer) {
 	if r.MetaWritten {
 		meta = "✓ 标题/艺人/专辑/封面"
 	}
-	fmt.Fprintf(w, "文件     %s\n", r.Filename)
-	fmt.Fprintf(w, "目录     %s\n", r.Dir)
-	fmt.Fprintf(w, "大小     %s\n", formatSizeLabel(r.Size, r.Format))
-	fmt.Fprintf(w, "格式     %s (%d kbps)\n", r.Format, r.Bitrate/1000)
+	fmt.Fprintf(w, "文件     %s\n", r.filename)
+	fmt.Fprintf(w, "目录     %s\n", r.dir)
+	fmt.Fprintf(w, "大小     %s\n", formatSizeLabel(r.Size))
+	fmt.Fprintf(w, "格式     %s (%d kbps)\n", r.Format, r.bitrate/1000)
 	fmt.Fprintf(w, "元数据   %s\n", meta)
 }
 
-// writeJSON 输出 JSON 对象(PRD-0013 --json 字段)。
+// writeJSON 输出多行缩进 JSON(对齐 protojson 的 Multiline 风格)。
 func (r downloadResult) writeJSON(w io.Writer) error {
-	// 手动构造(避免引入 encoding/json 到 download.go 顶部);
-	// 字段固定、无特殊字符,简单拼接够用。
-	_, err := fmt.Fprintf(w, `{"path":%q,"size":%d,"format":%q,"bitrate":%d,"metadata_written":%t}`+"\n",
-		filepath.Join(r.Dir, r.Filename), r.Size, r.Format, r.Bitrate, r.MetaWritten)
+	b, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return fmt.Errorf("序列化下载结果: %w", err)
+	}
+	_, err = w.Write(append(b, '\n'))
 	return err
 }
 
-// formatSizeLabel 大小 + 格式后缀(PRD 显示 "3.4 MB")。
-// 复用 kit.formatBytes 但避免导出,这里本地简化(字节→MB)。
-func formatSizeLabel(bytes int64, format string) string {
+// formatSizeLabel 字节 → 人类可读大小(PRD 显示 "3.4 MB")。
+func formatSizeLabel(bytes int64) string {
 	const mb = 1024 * 1024
 	if bytes >= mb {
 		return fmt.Sprintf("%.1f MB", float64(bytes)/float64(mb))
