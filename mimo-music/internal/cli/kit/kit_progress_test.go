@@ -72,3 +72,37 @@ func TestKit_NewProgress_NonTTY(t *testing.T) {
 
 // 暂时占位避免 import 未用(下面 Kit.NewProgress 实现后会用到)。
 var _ = strings.Contains
+
+// TestKit_NewSpinner_JSON JSON 模式 Spinner 完全静默。
+func TestKit_NewSpinner_JSON(t *testing.T) {
+	t.Parallel()
+	defer func(orig func(int) bool) { isTerminal = orig }(isTerminal)
+	isTerminal = func(int) bool { return true }
+
+	var buf bytes.Buffer
+	k := &Kit{Err: &buf, JSON: true}
+	s := k.NewSpinner("缓冲中")
+	s.Start()
+	s.renderForTest()
+	s.Stop("完成")
+	if got := buf.String(); got != "" {
+		t.Errorf("JSON 模式 Spinner 应完全静默,got %q", got)
+	}
+}
+
+// TestKit_NewSpinner_TTY TTY 模式 Spinner 渲染转圈。
+func TestKit_NewSpinner_TTY(t *testing.T) {
+	t.Parallel()
+	defer func(orig func(int) bool) { isTerminal = orig }(isTerminal)
+	isTerminal = func(int) bool { return true }
+
+	var buf bytes.Buffer
+	k := &Kit{Err: &buf}
+	s := k.NewSpinner("缓冲中")
+	s.Start()
+	s.renderForTest()
+	s.Stop("完成")
+	if !strings.Contains(buf.String(), "缓冲中") {
+		t.Errorf("TTY 模式应渲染 label,got %q", buf.String())
+	}
+}

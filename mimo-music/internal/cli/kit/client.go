@@ -104,6 +104,18 @@ func (k *Kit) NewProgress() *Progress {
 	return NewProgress(k.err(), width, tty, opts...)
 }
 
+// NewSpinner 创建转圈指示器,内部封装三态规矩(同 NewProgress)。
+//
+//   - --json:返回的 Spinner 输出走 io.Discard,完全静默。
+//   - 非 TTY:tty=false,Start 无操作,Stop 终态仍输出(有用信息)。
+//   - TTY:正常转圈,输出走 err(stderr)。
+func (k *Kit) NewSpinner(label string) *Spinner {
+	if k.JSON {
+		return NewSpinner(io.Discard, label, false)
+	}
+	return NewSpinner(k.err(), label, stderrIsTTY())
+}
+
 // CookieCtx 把当前生效的 cookie 注入 context(无则注入空)。
 func (k *Kit) CookieCtx() context.Context {
 	return engine.WithCookie(context.Background(), k.CurrentCookie())
