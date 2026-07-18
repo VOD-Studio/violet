@@ -34,15 +34,16 @@ type CommentPictures = NonNullable<Comment["pictures"]>;
 /**
  * 评论图片 → ImageGrid 入参:格子用缩略图(点开预览才加载原图)。
  * 单图 w=800 保比例(GIF 由 contentImageUrl 剥参数保动画);
- * 多图 thumb=400x400 居中裁方,与 aspect-square 格子一致。
+ * 多图 w=400 保比例——格子 bg-cover 裁方显示,且预览占位/比例探测
+ * 要求缩略图与原图同比例(旧 thumb=400x400 裁方会导致占位拉伸)。
  */
-function toGridImages(pictures: CommentPictures) {
+export function toGridImages(pictures: CommentPictures) {
     return pictures.map((p) => ({
         url: p.url,
         thumbnail:
             pictures.length === 1
                 ? contentImageUrl(p.url, { width: 800 })
-                : imageUrl(p.url, { thumb: "400x400", format: "webp" }),
+                : imageUrl(p.url, { w: 400, format: "webp" }),
     }));
 }
 
