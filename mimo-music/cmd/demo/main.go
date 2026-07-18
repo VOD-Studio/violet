@@ -109,7 +109,7 @@ func runSingle(jsonMode bool, speed float64) {
 	for time.Now().Before(deadline) && bar.Current < bar.Total {
 		chunk := int64(rand.IntN(160_000) + 40_000)
 		bar.Incr(chunk, time.Now())
-		time.Sleep(time.Duration(float64(80 * time.Millisecond) / scale))
+		time.Sleep(time.Duration(float64(80*time.Millisecond) / scale))
 	}
 	bar.Complete(time.Now())
 	time.Sleep(200 * time.Millisecond) // 让完成帧渲染

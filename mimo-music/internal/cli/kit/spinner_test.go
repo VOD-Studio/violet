@@ -91,5 +91,5 @@ func TestSpinner_StopClearsLine(t *testing.T) {
 
 type spinnerFakeClock struct{ t time.Time }
 
-func (c *spinnerFakeClock) now() time.Time                  { return c.t }
+func (c *spinnerFakeClock) now() time.Time                    { return c.t }
 func (c *spinnerFakeClock) advance(d time.Duration) time.Time { c.t = c.t.Add(d); return c.t }

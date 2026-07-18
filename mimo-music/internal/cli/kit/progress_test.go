@@ -24,7 +24,7 @@ func TestRenderLine_States(t *testing.T) {
 		{
 			name: "完成态",
 			bar:  &Bar{Label: "海阔天空", Total: 3_400_000, Current: 3_400_000, State: StateDone},
-			want: []string{"♪", "3.2 MB", "100%"}, // 音符(非✓) + 满进度条 + 大小 + 百分比
+			want: []string{"♪", "3.2 MB", "100%"},     // 音符(非✓) + 满进度条 + 大小 + 百分比
 			bad:  []string{"⠋", "⠹", "等待中", "✓", "♫"}, // 不应有 spinner,也不应有对号/双音符
 		},
 		{

@@ -20,15 +20,15 @@ import (
 
 // Spinner 单行转圈指示器。
 type Spinner struct {
-	out      io.Writer
-	label    string
-	tty      bool
-	now      func() time.Time
-	mu       sync.Mutex
-	frame    int
-	started  bool
-	ticker   *time.Ticker
-	done     chan struct{}
+	out       io.Writer
+	label     string
+	tty       bool
+	now       func() time.Time
+	mu        sync.Mutex
+	frame     int
+	started   bool
+	ticker    *time.Ticker
+	done      chan struct{}
 	startedAt time.Time
 }
 

@@ -29,18 +29,18 @@ const (
 // Bar 单个进度条的状态。并发安全:字段由自有 mu 保护,
 // 写走 Incr/Complete/Fail,渲染读走 snapshot()。
 type Bar struct {
-	Total   int64     // 总量(字节数)
-	Current int64     // 已完成量
-	Label   string    // 显示名(如 "Beyond - 海阔天空")
-	State   BarState  // 当前状态
-	IsTotal bool      // 是否总 bar(显示 ETA 而非速度)
+	Total   int64    // 总量(字节数)
+	Current int64    // 已完成量
+	Label   string   // 显示名(如 "Beyond - 海阔天空")
+	State   BarState // 当前状态
+	IsTotal bool     // 是否总 bar(显示 ETA 而非速度)
 
 	mu         sync.Mutex
-	startedAt  time.Time // 进入 Active 的时间(算 elapsed)
-	finishedAt time.Time // 进入 Done/Failed 的时间
-	ewma       float64   // 平滑后的速度(bytes/sec),α=0.4
-	lastSample time.Time // 上次采样时间(EWMA 用)
-	errMsg     string    // 失败时的简短信息
+	startedAt  time.Time     // 进入 Active 的时间(算 elapsed)
+	finishedAt time.Time     // 进入 Done/Failed 的时间
+	ewma       float64       // 平滑后的速度(bytes/sec),α=0.4
+	lastSample time.Time     // 上次采样时间(EWMA 用)
+	errMsg     string        // 失败时的简短信息
 	eta        time.Duration // 总 bar 的预估剩余时长(由 Progress 渲染时算)
 }
 
@@ -52,11 +52,11 @@ type Progress struct {
 	tty   bool // 是否 TTY(非 TTY 抑制刷新,只输出终态)
 
 	mu          sync.Mutex
-	rawWidth    int      // 终端实际宽度(reflow 行数估算用)
-	widthDirty  bool     // 宽度刚变更:下一帧先清 reflow 残影
+	rawWidth    int        // 终端实际宽度(reflow 行数估算用)
+	widthDirty  bool       // 宽度刚变更:下一帧先清 reflow 残影
 	widthSource func() int // 轮询式宽度源(见 WithProgressWidthSource)
-	pendingRaw  int      // 去抖:候选宽度(连续稳定 N 帧才应用)
-	pendingTick int      // 去抖:候选宽度已连续稳定的帧数
+	pendingRaw  int        // 去抖:候选宽度(连续稳定 N 帧才应用)
+	pendingTick int        // 去抖:候选宽度已连续稳定的帧数
 	bars        []*Bar
 	prev        []string // 上一帧各行(diff 用)
 	spinner     int      // spinner 帧索引(tick 推进)

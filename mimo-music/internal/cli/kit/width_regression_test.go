@@ -52,7 +52,7 @@ func TestRenderLine_FitsAllCombinations(t *testing.T) {
 	t.Parallel()
 	progresses := []struct{ cur, total int64 }{
 		{0, 3_400_000},
-		{1, 3_400_000},     // 极小:计数 "1 B/3.2 MB"
+		{1, 3_400_000}, // 极小:计数 "1 B/3.2 MB"
 		{500, 3_400_000},
 		{1_700_000, 3_400_000},
 		{3_399_999, 3_400_000}, // 99%
