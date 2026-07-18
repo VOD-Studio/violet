@@ -56,6 +56,40 @@ func TestClampWorkers(t *testing.T) {
 	}
 }
 
+// TestNewPlaylistDownload_PositionalArgs 位置参数与 --id 的 ResolveID 行为(issue #24)。
+// 命令层测:冲突 → ErrUsage;缺 id → ErrUsage;2+ 位置参数 → cobra 拒绝。
+func TestNewPlaylistDownload_PositionalArgs(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		args    []string
+		wantErr string // 错误消息子串(空 = 不验证消息,只验证报错)
+	}{
+		{"冲突_id_和位置参数", []string{"--id", "12345", "999"}, "不能同时指定"},
+		{"缺_id_无位置参数", nil, "缺少 id"},
+		{"两个位置参数被拒", []string{"1", "2"}, "at most 1 arg"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			k := kit.New()
+			cmd := newDownload(k)
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+			if tc.args != nil {
+				cmd.SetArgs(tc.args)
+			}
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatalf("应报错")
+			}
+			if tc.wantErr != "" && !strings.Contains(err.Error(), tc.wantErr) {
+				t.Errorf("错误应含 %q, got %q", tc.wantErr, err.Error())
+			}
+		})
+	}
+}
+
 func TestSummarize(t *testing.T) {
 	t.Parallel()
 	outcomes := []songdl.Outcome{

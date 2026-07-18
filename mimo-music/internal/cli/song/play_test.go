@@ -615,7 +615,7 @@ func TestRawKeyReader_ShiftArrow(t *testing.T) {
 	}
 }
 
-// TestNewPlay_Flags flag 规格:--id 必填,--level/--volume/--start 默认值。
+// TestNewPlay_Flags flag 规格:--level/--volume/--start 默认值;缺 id(无 --id 无位置参数)报错。
 func TestNewPlay_Flags(t *testing.T) {
 	t.Parallel()
 	k := kit.New()
@@ -629,11 +629,26 @@ func TestNewPlay_Flags(t *testing.T) {
 	if s, err := cmd.Flags().GetString("start"); err != nil || s != "0" {
 		t.Errorf("--start 默认应为 \"0\",got %q (err %v)", s, err)
 	}
-	// 缺 --id 执行应报必填错误。
+	// 缺 id(无 --id 无位置参数)→ ResolveID 报 ErrUsage。
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
 	if err := cmd.Execute(); err == nil {
-		t.Error("缺 --id 应报错")
+		t.Error("缺 id 应报错")
+	}
+}
+
+// TestNewPlay_PositionalArgsConflict 位置参数与 --id 冲突 → ResolveID 报 ErrUsage。
+// play 位置参数解析在 runPlay 之前(RunE 闭包先调 ResolveID),所以优先于非 TTY 检查。
+func TestNewPlay_PositionalArgsConflict(t *testing.T) {
+	t.Parallel()
+	k := kit.New()
+	cmd := newPlay(k)
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	// 同时给 --id 和位置参数 → 冲突 ErrUsage(优先于非 TTY 的「需要交互式终端」)。
+	cmd.SetArgs([]string{"--id", "347230", "999"})
+	if err := cmd.Execute(); err == nil || !errors.Is(err, kit.ErrUsage) {
+		t.Errorf("--id + 位置参数冲突应 ErrUsage, got %v", err)
 	}
 }
 

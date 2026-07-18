@@ -40,9 +40,13 @@ func newPlay(k *kit.Kit) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "play",
 		Short: "播放歌曲(交互式,键盘控制)",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runPlay(k, id, level, volume, start, lyric, defaultPlayDeps(k))
+		Args:  cobra.MaximumNArgs(1), // 位置参数:song play 347230 ≡ --id 347230
+		RunE: func(cmd *cobra.Command, args []string) error {
+			rid, err := kit.ResolveID(id, args)
+			if err != nil {
+				return err
+			}
+			return runPlay(k, rid, level, volume, start, lyric, defaultPlayDeps(k))
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
@@ -50,7 +54,6 @@ func newPlay(k *kit.Kit) *cobra.Command {
 	c.Flags().IntVar(&volume, "volume", 75, "启动音量 0-100")
 	c.Flags().StringVar(&start, "start", "0", "起始位置(秒数或 mm:ss)")
 	c.Flags().BoolVar(&lyric, "lyric", false, "播放时歌词同步滚动")
-	_ = c.MarkFlagRequired("id")
 	return c
 }
 

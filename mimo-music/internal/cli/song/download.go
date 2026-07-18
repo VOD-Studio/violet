@@ -33,16 +33,19 @@ func newDownload(k *kit.Kit) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "download",
 		Short: "下载歌曲到本地(带元数据)",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runDownload(k, id, level, out, force, defaultDownloadDeps(k))
+		Args:  cobra.MaximumNArgs(1), // 位置参数:song download 347230 ≡ --id 347230
+		RunE: func(cmd *cobra.Command, args []string) error {
+			rid, err := kit.ResolveID(id, args)
+			if err != nil {
+				return err
+			}
+			return runDownload(k, rid, level, out, force, defaultDownloadDeps(k))
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
 	c.Flags().IntVar(&level, "level", 1, "音质: 1=standard 2=exhigh 3=lossless 4=hires")
 	c.Flags().StringVar(&out, "out", ".", "下载目录(自动 mkdir -p)")
 	c.Flags().BoolVar(&force, "force", false, "覆盖已存在文件")
-	_ = c.MarkFlagRequired("id")
 	return c
 }
 

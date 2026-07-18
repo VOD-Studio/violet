@@ -3,6 +3,7 @@ package song
 import (
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
@@ -13,7 +14,7 @@ import (
 // shouldSkip / proxyReader 测试随实现迁至 internal/cli/songdl/download_test.go。
 // 本文件只测命令层:flag 必填校验 + 默认值。
 
-// TestNewDownload_FlagRequired --id 缺失时命令执行报用法错误(对应 exit 2)。
+// TestNewDownload_FlagRequired --id 缺失(且无位置参数)时 ResolveID 报用法错误(exit 2)。
 func TestNewDownload_FlagRequired(t *testing.T) {
 	t.Parallel()
 	k := kit.New()
@@ -24,10 +25,24 @@ func TestNewDownload_FlagRequired(t *testing.T) {
 	if err == nil {
 		t.Fatal("缺 --id 应报错")
 	}
-	// cobra 必填缺失:root.go FlagErrorFunc 包成 ErrUsage,或直接 required flag 错误。
-	// 独立 cmd 没 FlagErrorFunc,会是 "required flag(s) \"id\" not set" 消息。
-	if !errors.Is(err, kit.ErrUsage) && err.Error() == "" {
-		t.Errorf("缺 --id 应是有意义的错误,got %v", err)
+	// ResolveID「缺少 id」→ kit.ErrUsage(exit 2)。
+	if !errors.Is(err, kit.ErrUsage) {
+		t.Errorf("缺 id 应 ErrUsage, got %v", err)
+	}
+}
+
+// TestNewDownload_PositionalArgs 位置参数 Args 校验(issue #24):
+// 2+ 个位置参数 → cobra MaximumNArgs(1) 拒绝。单个位置参数的解析逻辑在 kit.ResolveID
+// 已充分测试(不在此重复,避免触发真实网络下载)。
+func TestNewDownload_PositionalArgs(t *testing.T) {
+	t.Parallel()
+	k := kit.New()
+	cmd := newDownload(k)
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"1", "2"})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "at most 1 arg") {
+		t.Errorf("2 个位置参数应被拒绝, got %v", err)
 	}
 }
 
