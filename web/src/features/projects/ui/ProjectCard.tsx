@@ -1,6 +1,7 @@
 import type { Project } from "@features/projects/model/types";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { contentImageUrl } from "@shared/lib/image-url";
 import { Code, ExternalLink } from "lucide-react";
 
 interface ProjectCardProps {
@@ -19,7 +20,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <div className="relative aspect-video overflow-hidden">
                 {project.image_url ? (
                     <img
-                        src={project.image_url}
+                        src={contentImageUrl(project.image_url, { width: 600 })}
                         alt={project.title}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"

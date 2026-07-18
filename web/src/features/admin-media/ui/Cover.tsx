@@ -56,7 +56,7 @@ export function Cover({
         <div id={id} className="space-y-1.5">
             {value ? (
                 <div className="group relative overflow-hidden rounded-lg border border-edge-hairline">
-                    <CroppedImage src={value} aspect={16 / 9} className="w-full" alt="封面" />
+                    <CroppedImage src={value} width={800} aspect={16 / 9} className="w-full" alt="封面" />
                     <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-linear-to-t from-black/60 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                         <Button
                             type="button"

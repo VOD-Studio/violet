@@ -190,6 +190,7 @@ function BlogDetailPage() {
                     >
                         <CroppedImage
                             src={post.cover_image}
+                            width={1400}
                             alt={post.title}
                             className="aspect-2/1 w-full"
                         />

@@ -1,10 +1,14 @@
 import { parseCrop } from "@shared/lib/crop-url";
+import { contentImageUrl } from "@shared/lib/image-url";
 import { useMemo } from "react";
 import { cn } from "@/shared/lib/utils";
 
 export interface CroppedImageProps {
     /** 图片 src,可能带 ?crop=x,y,w,h(选区聚焦时) */
     src: string;
+    /** 显示宽度档:传则走 contentImageUrl 缩略(webp,GIF 剥参数保动画),
+     * crop 参数经合并保留;不传则原图直出(兼容旧行为) */
+    width?: number;
     /** 容器宽高比(数字);不传则不强制比例 */
     aspect?: number;
     /** 容器 className */
@@ -30,6 +34,7 @@ export interface CroppedImageProps {
  */
 export function CroppedImage({
     src,
+    width,
     aspect,
     className,
     imgClassName,
@@ -45,13 +50,16 @@ export function CroppedImage({
         return `${(cx * 100).toFixed(2)}% ${(cy * 100).toFixed(2)}%`;
     }, [src]);
 
+    // 显示层缩略:crop 参数经 imageUrl 合并保留,聚焦逻辑不受影响
+    const displaySrc = width ? contentImageUrl(src, { width }) : src;
+
     return (
         <div
             className={cn("overflow-hidden", className)}
             style={aspect ? { aspectRatio: aspect } : undefined}
         >
             <img
-                src={src}
+                src={displaySrc}
                 alt={alt}
                 loading={loading}
                 className={cn("h-full w-full object-cover", imgClassName)}

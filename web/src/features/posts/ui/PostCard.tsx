@@ -59,6 +59,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
                         >
                             <CroppedImage
                                 src={post.cover_image}
+                                width={800}
                                 alt={post.title}
                                 loading="lazy"
                                 className={`w-full ${coverH}`}

@@ -40,6 +40,7 @@ export default function AnnouncementCard({ announcement: a }: AnnouncementCardPr
                 <div className="aspect-2/1 w-full overflow-hidden border-b border-edge-hairline rounded-t-2xl rounded-b-xl">
                     <CroppedImage
                         src={a.cover_image}
+                        width={800}
                         alt={a.title}
                         loading="lazy"
                         className="h-full w-full"
