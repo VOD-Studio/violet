@@ -36,18 +36,20 @@ func newPlay(k *kit.Kit) *cobra.Command {
 	var level int
 	var volume int
 	var start string
+	var lyric bool
 	c := &cobra.Command{
 		Use:   "play",
 		Short: "播放歌曲(交互式,键盘控制)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runPlay(k, id, level, volume, start, defaultPlayDeps(k))
+			return runPlay(k, id, level, volume, start, lyric, defaultPlayDeps(k))
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
 	c.Flags().IntVar(&level, "level", 1, "音质: 1=standard 2=exhigh 3=lossless 4=hires")
 	c.Flags().IntVar(&volume, "volume", 75, "启动音量 0-100")
 	c.Flags().StringVar(&start, "start", "0", "起始位置(秒数或 mm:ss)")
+	c.Flags().BoolVar(&lyric, "lyric", false, "播放时歌词同步滚动")
 	_ = c.MarkFlagRequired("id")
 	return c
 }
@@ -59,6 +61,8 @@ func newPlay(k *kit.Kit) *cobra.Command {
 type playDeps struct {
 	fetchURL    func(ctx context.Context, id int64, level int) (*mmpb.SongURL, error)
 	fetchDetail func(ctx context.Context, id int64) (*mmpb.Song, error)
+	// fetchLyric 拉 LRC 文本(--lyric 用)。返回空串 = 无歌词(静默降级)。
+	fetchLyric func(ctx context.Context, id int64) (string, error)
 	// newPlayer 按启动音量构造 Player(生产:beep 后端)。
 	newPlayer func(volume int) player.Player
 	// stdinIsTTY 探测 stdin 是否终端(非 TTY → exit 2)。
@@ -96,6 +100,16 @@ func defaultPlayDeps(k *kit.Kit) playDeps {
 			}
 			return resp.Song, nil
 		},
+		fetchLyric: func(ctx context.Context, id int64) (string, error) {
+			resp, err := kit.Exec(k, ctx, songendpoint.Lyric, &mmpb.GetLyricRequest{SongId: id})
+			if err != nil {
+				return "", err
+			}
+			if resp.Lyric == nil {
+				return "", nil
+			}
+			return resp.Lyric.Lrc, nil
+		},
 		newPlayer: func(volume int) player.Player {
 			newReq := func(ctx context.Context, method, url string) (*http.Request, error) {
 				return engine.NewNeteaseRequest(ctx, method, url, k.CurrentCookie())
@@ -114,7 +128,10 @@ func defaultPlayDeps(k *kit.Kit) playDeps {
 // exit 2(ErrUsage):非 TTY / --json / flag 越界;
 // exit 1:无音源 / 音频设备初始化失败 / 加载失败;
 // exit 0:q/Esc 正常退出。
-func runPlay(k *kit.Kit, id int64, level, volume int, start string, deps playDeps) error {
+//
+// lyric=true 时(--lyric):起播后额外拉歌词,在状态栏渲染歌词面板(issue #22)。
+// 无歌词静默降级(stderr 警告),播放继续。
+func runPlay(k *kit.Kit, id int64, level, volume int, start string, lyric bool, deps playDeps) error {
 	// 1. 先做非 TTY 检查,再 --json(issue #21 既定顺序)。
 	if !deps.stdinIsTTY() {
 		return fmt.Errorf("%w:播放命令需要交互式终端,请直接运行而非管道", kit.ErrUsage)
@@ -174,6 +191,13 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, deps playDep
 		}
 	}
 
+	// 7.5. 歌词(--lyric):拉 LRC 文本 → SortedLRC(按时间轴排序,供二分查找)。
+	// 失败或空歌词静默降级:stderr 警告,播放继续无歌词面板(PRD:无歌词不留空白行)。
+	var lyricLines []player.TimedLine
+	if lyric {
+		lyricLines = loadLyric(ctx, k, id, deps)
+	}
+
 	// 8. raw 模式 + 事件循环。q/Esc 退出 → 恢复终端,exit 0。
 	restore, err := deps.makeRaw()
 	if err != nil {
@@ -181,9 +205,26 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, deps playDep
 	}
 	defer func() { _ = restore() }()
 
-	u := &playUI{p: p, song: song, songURL: songURL, level: level, vol: volume}
+	u := &playUI{p: p, song: song, songURL: songURL, level: level, vol: volume, lyric: lyricLines}
 	u.loop(deps)
 	return nil
+}
+
+// loadLyric 拉歌词并解析为按时间轴排序的 TimedLine。失败/空歌词静默降级
+// (stderr 警告),返回 nil——调用方据 nil 不渲染歌词面板。
+func loadLyric(ctx context.Context, k *kit.Kit, id int64, deps playDeps) []player.TimedLine {
+	text, err := deps.fetchLyric(ctx, id)
+	if err != nil {
+		// 歌词接口失败不致命:.Warnf 警告,播放继续。
+		k.Warnf("⚠ 歌词获取失败: %v", err)
+		return nil
+	}
+	lines := player.SortedLRC(text)
+	if len(lines) == 0 {
+		k.Warnf("⚠ 该歌曲暂无歌词")
+		return nil
+	}
+	return lines
 }
 
 // waitBuffer 起播前缓冲等待:spinner 渲染「缓冲中 ⠼ 4.2s / 5s」到 stderr,
@@ -343,6 +384,10 @@ type playUI struct {
 	vol     int // 用户设定音量(muted 时保留,取消静音恢复)
 	muted   bool
 
+	// lyric 按时间轴排序的歌词行(nil = 无歌词,不渲染面板)。
+	// 来自 --lyric 模式下的 SortedLRC;由 currentLyricIndex 二分查找当前行。
+	lyric []player.TimedLine
+
 	showHelp bool
 	showInfo bool
 	notice   string // 一次性提示(如 seek 失败),下次按键清除
@@ -489,6 +534,9 @@ func (u *playUI) toggleMute() {
 //
 // StateBuffering 时 Progress 返回 (已缓冲, 水位),状态栏直接展示水位填充
 // (PRD「⏳缓冲中(水位可见)」)。
+//
+// --lyric 且 u.lyric 非空时,在状态栏与键位提示之间插入歌词面板(PRD mockup 行 134-140):
+// 空行 + 上一行 + > 当前行 + 下一行 + 空行。无歌词不插(不留空白行)。
 func (u *playUI) statusLines(curMs, totalMs int64, state player.State) []string {
 	volIcon := "🔊"
 	if u.muted {
@@ -499,7 +547,13 @@ func (u *playUI) statusLines(curMs, totalMs int64, state player.State) []string 
 		stateIcon(state), u.title(),
 		fmtClock(curMs), bar(curMs, totalMs, 10), fmtClock(totalMs),
 		volIcon, bar(int64(vol), 100, 5), vol)
-	lines := []string{line1, " 空格 暂停 · ← → ∓10s · ↑ ↓ 音量 · q 退出 · ? 帮助"}
+	lines := []string{line1}
+	// 歌词面板(--lyric 模式且有歌词)。当前行 `> ` 前缀高亮,上下文各一行。
+	// 无歌词(nil 或空)→ 不渲染,状态栏与键位提示紧邻。
+	if len(u.lyric) > 0 {
+		lines = append(lines, u.lyricPanel(curMs)...)
+	}
+	lines = append(lines, " 空格 暂停 · ← → ∓10s · ↑ ↓ 音量 · q 退出 · ? 帮助")
 	if u.notice != "" {
 		lines = append(lines, " "+u.notice)
 	}
@@ -510,6 +564,58 @@ func (u *playUI) statusLines(curMs, totalMs int64, state player.State) []string 
 		lines = append(lines, u.infoLines()...)
 	}
 	return lines
+}
+
+// lyricPanel 渲染歌词面板:空行 + 上一行 + > 当前行 + 下一行 + 空行。
+// 当前行用 currentLyricIndex 二分查找;首/末行时缺省的上下文行留空(保持面板 5 行稳定,
+// 避免 重绘 行数 跳动)。
+func (u *playUI) lyricPanel(curMs int64) []string {
+	idx := currentLyricIndex(u.lyric, curMs)
+	prev, cur, next := "", "", ""
+	if idx > 0 {
+		prev = u.lyric[idx-1].Text
+	}
+	cur = u.lyric[idx].Text
+	if idx+1 < len(u.lyric) {
+		next = u.lyric[idx+1].Text
+	}
+	return []string{
+		"",
+		"   " + prev,
+		" > " + cur,
+		"   " + next,
+		"",
+	}
+}
+
+// currentLyricIndex 二分查找 curMs 对应的当前歌词行索引。
+//
+// 语义:返回最大的 i,使 lyric[i].TimeMs <= curMs(即「已经唱到/正在唱的最后一行」)。
+// curMs 早于首行 → 返回 0(首行高亮,等待起唱)。
+// 空 lyric → 返回 0(调用方应先判空,这里防御性返回 0 避免越界)。
+//
+// 二分:slices.BinarySearchFunc 找到第一个 TimeMs > curMs 的位置,减 1 即当前行。
+// 等价于 sort.Search 但用标准库原语,语义更清晰。
+func currentLyricIndex(lyric []player.TimedLine, curMs int64) int {
+	if len(lyric) == 0 {
+		return 0
+	}
+	// 找首个 TimeMs > curMs 的索引(upper bound)。
+	lo, hi := 0, len(lyric)
+	for lo < hi {
+		mid := (lo + hi) / 2
+		if lyric[mid].TimeMs <= curMs {
+			lo = mid + 1
+		} else {
+			hi = mid
+		}
+	}
+	// lo 是首个 > curMs 的位置;当前行 = lo - 1。
+	// lo == 0(curMs 早于所有行)→ 当前行 = 0(首行,等起唱)。
+	if lo == 0 {
+		return 0
+	}
+	return lo - 1
 }
 
 // title 状态栏标题:「艺人 - 歌名 · 专辑(年份)」。

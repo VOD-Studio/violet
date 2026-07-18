@@ -356,7 +356,7 @@ func TestRunPlay_NonTTY(t *testing.T) {
 	p := &fakePlayer{}
 	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
 	deps.stdinIsTTY = func() bool { return false }
-	err := runPlay(k, 347230, 1, 75, "0", deps)
+	err := runPlay(k, 347230, 1, 75, "0", false, deps)
 	if !errors.Is(err, kit.ErrUsage) {
 		t.Fatalf("非 TTY 应返回 ErrUsage(exit 2),got %v", err)
 	}
@@ -375,7 +375,7 @@ func TestRunPlay_JSON(t *testing.T) {
 	k.JSON = true
 	p := &fakePlayer{}
 	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
-	err := runPlay(k, 347230, 1, 75, "0", deps)
+	err := runPlay(k, 347230, 1, 75, "0", false, deps)
 	if !errors.Is(err, kit.ErrUsage) {
 		t.Fatalf("--json 应返回 ErrUsage(exit 2),got %v", err)
 	}
@@ -393,7 +393,7 @@ func TestRunPlay_NoSource(t *testing.T) {
 	deps.fetchURL = func(_ context.Context, _ int64, _ int) (*mmpb.SongURL, error) {
 		return &mmpb.SongURL{}, nil
 	}
-	err := runPlay(k, 347230, 1, 75, "0", deps)
+	err := runPlay(k, 347230, 1, 75, "0", false, deps)
 	if err == nil || !strings.Contains(err.Error(), "无可用音源") {
 		t.Fatalf("空音源应报「无可用音源」,got %v", err)
 	}
@@ -405,7 +405,7 @@ func TestRunPlay_LoadURLAndQuit(t *testing.T) {
 	k, _, _ := newTestKit()
 	p := &fakePlayer{totalMs: 323000}
 	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
-	if err := runPlay(k, 347230, 1, 75, "0", deps); err != nil {
+	if err := runPlay(k, 347230, 1, 75, "0", false, deps); err != nil {
 		t.Fatalf("q 退出应 exit 0,got %v", err)
 	}
 	if p.loadedURL != "http://cdn.example.com/test.mp3" {
@@ -447,7 +447,7 @@ func TestRunPlay_KeyMapping(t *testing.T) {
 		keyEvent{kind: keyQuit},
 	)
 	deps := testPlayDeps(p, keys)
-	if err := runPlay(k, 347230, 1, 75, "0", deps); err != nil {
+	if err := runPlay(k, 347230, 1, 75, "0", false, deps); err != nil {
 		t.Fatalf("运行失败: %v", err)
 	}
 	want := []string{
@@ -490,7 +490,7 @@ func TestRunPlay_HeadlessPlayError(t *testing.T) {
 		playErr: errors.New("无法初始化音频输出(beep): oto: no available device; headless 环境请用 song download"),
 	}
 	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
-	err := runPlay(k, 347230, 1, 75, "0", deps)
+	err := runPlay(k, 347230, 1, 75, "0", false, deps)
 	if err == nil {
 		t.Fatal("headless 应返回错误")
 	}
@@ -511,7 +511,7 @@ func TestRunPlay_VolumeRange(t *testing.T) {
 	k, _, _ := newTestKit()
 	p := &fakePlayer{}
 	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
-	if err := runPlay(k, 347230, 1, 101, "0", deps); !errors.Is(err, kit.ErrUsage) {
+	if err := runPlay(k, 347230, 1, 101, "0", false, deps); !errors.Is(err, kit.ErrUsage) {
 		t.Fatalf("--volume 101 应返回 ErrUsage,got %v", err)
 	}
 }
@@ -522,7 +522,7 @@ func TestRunPlay_StartSeek(t *testing.T) {
 	k, _, _ := newTestKit()
 	p := &fakePlayer{totalMs: 323000}
 	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
-	if err := runPlay(k, 347230, 1, 75, "1:00", deps); err != nil {
+	if err := runPlay(k, 347230, 1, 75, "1:00", false, deps); err != nil {
 		t.Fatalf("运行失败: %v", err)
 	}
 	calls := p.callsSnapshot()
@@ -543,7 +543,7 @@ func TestRunPlay_BadStart(t *testing.T) {
 	k, _, _ := newTestKit()
 	p := &fakePlayer{}
 	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
-	if err := runPlay(k, 347230, 1, 75, "abc", deps); !errors.Is(err, kit.ErrUsage) {
+	if err := runPlay(k, 347230, 1, 75, "abc", false, deps); !errors.Is(err, kit.ErrUsage) {
 		t.Fatalf("--start abc 应返回 ErrUsage,got %v", err)
 	}
 }
@@ -634,5 +634,173 @@ func TestNewPlay_Flags(t *testing.T) {
 	cmd.SetErr(io.Discard)
 	if err := cmd.Execute(); err == nil {
 		t.Error("缺 --id 应报错")
+	}
+}
+
+// ==================== --lyric 模式(issue #22)====================
+
+// TestCurrentLyricIndex 二分查找当前歌词行(纯函数)。
+// 语义:返回最大的 i,使 lyric[i].TimeMs <= curMs(已唱到的最后一行)。
+func TestCurrentLyricIndex(t *testing.T) {
+	t.Parallel()
+	lines := []player.TimedLine{
+		{TimeMs: 0, Text: "第一句"},
+		{TimeMs: 3000, Text: "第二句"},
+		{TimeMs: 6000, Text: "第三句"},
+		{TimeMs: 9000, Text: "第四句"},
+	}
+	cases := []struct {
+		name  string
+		curMs int64
+		want  int
+	}{
+		{"早于首行_返回0等起唱", -100, 0},
+		{"恰好首行", 0, 0},
+		{"首行中_未到第二句", 1500, 0},
+		{"恰好第二句", 3000, 1},
+		{"第二句中", 4500, 1},
+		{"恰好末行", 9000, 3},
+		{"晚于末行_末行高亮", 99999, 3},
+		{"恰好边界_第三句起", 6000, 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := currentLyricIndex(lines, tc.curMs); got != tc.want {
+				t.Errorf("currentLyricIndex(curMs=%d) = %d, want %d", tc.curMs, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestCurrentLyricIndex_Empty 空歌词防御性返回 0(不越界)。
+func TestCurrentLyricIndex_Empty(t *testing.T) {
+	t.Parallel()
+	if got := currentLyricIndex(nil, 1000); got != 0 {
+		t.Errorf("空歌词应返回 0, got %d", got)
+	}
+}
+
+// TestStatusLines_LyricPanel 有歌词时渲染面板(空行+上下文+当前行>前缀+空行)。
+func TestStatusLines_LyricPanel(t *testing.T) {
+	t.Parallel()
+	p := &fakePlayer{state: player.StatePlaying, curMs: 4500, totalMs: 10000}
+	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
+	song, _ := deps.fetchDetail(context.Background(), 1)
+	u := &playUI{
+		p:    p,
+		song: song,
+		lyric: []player.TimedLine{
+			{TimeMs: 0, Text: "原谅我这一生不羁放纵爱自由"},
+			{TimeMs: 3000, Text: "也会怕有一天会跌倒"},
+			{TimeMs: 6000, Text: "背弃了理想 谁人都可以"},
+		},
+	}
+	lines := u.statusLines(4500, 10000, player.StatePlaying)
+	joined := strings.Join(lines, "\n")
+	// 当前行(curMs=4500 → idx=1「也会怕有一天会跌倒」)带 > 前缀。
+	if !strings.Contains(joined, "> 也会怕有一天会跌倒") {
+		t.Errorf("当前行应 > 高亮, got:\n%s", joined)
+	}
+	// 上一行无 > 前缀。
+	if !strings.Contains(joined, "原谅我这一生不羁放纵爱自由") {
+		t.Errorf("上一行应出现(无前缀), got:\n%s", joined)
+	}
+	// 下一行无 > 前缀。
+	if !strings.Contains(joined, "背弃了理想 谁人都可以") {
+		t.Errorf("下一行应出现(无前缀), got:\n%s", joined)
+	}
+}
+
+// TestStatusLines_NoLyricNoPanel 无歌词时状态栏与键位提示紧邻(不留空白行)。
+func TestStatusLines_NoLyricNoPanel(t *testing.T) {
+	t.Parallel()
+	p := &fakePlayer{state: player.StatePlaying, curMs: 1000, totalMs: 10000}
+	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
+	song, _ := deps.fetchDetail(context.Background(), 1)
+	u := &playUI{p: p, song: song} // lyric = nil
+	lines := u.statusLines(1000, 10000, player.StatePlaying)
+	// 第 1 行状态栏,第 2 行键位提示(无歌词面板插入)。
+	if len(lines) < 2 {
+		t.Fatalf("至少应有状态栏+键位提示, got %d 行", len(lines))
+	}
+	if strings.Contains(lines[1], "> ") {
+		t.Errorf("无歌词时第 2 行不应是歌词面板, got %q", lines[1])
+	}
+}
+
+// TestRunPlay_LyricFlag --lyric=true 触发 fetchLyric 调用。
+func TestRunPlay_LyricFlag(t *testing.T) {
+	t.Parallel()
+	k, _, _ := newTestKit()
+	p := &fakePlayer{totalMs: 323000}
+	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
+	lyricCalled := false
+	deps.fetchLyric = func(_ context.Context, _ int64) (string, error) {
+		lyricCalled = true
+		return "[00:01.00]第一句\n[00:03.00]第二句\n", nil
+	}
+	if err := runPlay(k, 347230, 1, 75, "0", true, deps); err != nil {
+		t.Fatalf("lyric 模式应正常退出, got %v", err)
+	}
+	if !lyricCalled {
+		t.Error("--lyric=true 应调 fetchLyric")
+	}
+}
+
+// TestRunPlay_LyricOff_NoFetch --lyric=false 不调 fetchLyric。
+func TestRunPlay_LyricOff_NoFetch(t *testing.T) {
+	t.Parallel()
+	k, _, _ := newTestKit()
+	p := &fakePlayer{totalMs: 323000}
+	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
+	deps.fetchLyric = func(context.Context, int64) (string, error) {
+		t.Fatal("--lyric=false 不应调 fetchLyric")
+		return "", nil
+	}
+	if err := runPlay(k, 347230, 1, 75, "0", false, deps); err != nil {
+		t.Fatalf("应正常退出, got %v", err)
+	}
+}
+
+// TestRunPlay_LyricEmptyDegrades 空歌词 → 静默降级(Warnf 警告),播放继续 exit 0。
+func TestRunPlay_LyricEmptyDegrades(t *testing.T) {
+	t.Parallel()
+	k, _, errb := newTestKit()
+	p := &fakePlayer{totalMs: 323000}
+	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
+	deps.fetchLyric = func(context.Context, int64) (string, error) { return "", nil }
+	if err := runPlay(k, 347230, 1, 75, "0", true, deps); err != nil {
+		t.Fatalf("空歌词应降级 exit 0, got %v", err)
+	}
+	if !strings.Contains(errb.String(), "暂无歌词") {
+		t.Errorf("空歌词应 Warnf 提示, got stderr %q", errb.String())
+	}
+}
+
+// TestRunPlay_LyricFetchErrorDegrades 歌词接口失败 → Warnf 警告,播放继续。
+func TestRunPlay_LyricFetchErrorDegrades(t *testing.T) {
+	t.Parallel()
+	k, _, errb := newTestKit()
+	p := &fakePlayer{totalMs: 323000}
+	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
+	deps.fetchLyric = func(context.Context, int64) (string, error) {
+		return "", errors.New("network timeout")
+	}
+	if err := runPlay(k, 347230, 1, 75, "0", true, deps); err != nil {
+		t.Fatalf("歌词失败应降级 exit 0, got %v", err)
+	}
+	if !strings.Contains(errb.String(), "歌词获取失败") {
+		t.Errorf("应 Warnf 歌词获取失败, got stderr %q", errb.String())
+	}
+}
+
+// TestNewPlay_LyricFlag --lyric flag 注册:默认 false。
+func TestNewPlay_LyricFlag(t *testing.T) {
+	t.Parallel()
+	k := kit.New()
+	cmd := newPlay(k)
+	if l, err := cmd.Flags().GetBool("lyric"); err != nil || l {
+		t.Errorf("--lyric 默认应为 false, got %v (err %v)", l, err)
 	}
 }
