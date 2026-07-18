@@ -36,7 +36,7 @@ func newDownload(k *kit.Kit) *cobra.Command {
 		Short: "下载歌曲到本地(带元数据)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runDownload(k, id, level, out, force)
+			return runDownload(k, id, level, out, force, defaultDownloadDeps(k))
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
@@ -47,27 +47,67 @@ func newDownload(k *kit.Kit) *cobra.Command {
 	return c
 }
 
-// runDownload 执行下载主流程(抽出来便于未来测试 + 逻辑清晰)。
-func runDownload(k *kit.Kit, id int64, level int, out string, force bool) error {
+// downloadDeps 是 runDownload 的外部依赖(网络 + 文件 + 元数据)。
+//
+// 抽成可注入结构是为了错误路径单测(Go 社区共识:抽业务逻辑成可测函数,
+// mock 网络做确定性单测,真实网络行为留集成测试)。默认实现走真实网络,
+// 测试注入 mock 覆盖:VIP 无音源(fetchURL 返回空)、元数据失败(writeMeta 返 error)、
+// 下载失败(download 返 error)等。
+type downloadDeps struct {
+	fetchURL    func(ctx context.Context, id int64, level int) (*mmpb.SongURL, error)
+	fetchDetail func(ctx context.Context, id int64) (*mmpb.Song, error)
+	// download 流式下载到 path,返回写入字节数。label 用于进度条显示。
+	download func(ctx context.Context, url string, total int64, path, label string) (int64, error)
+	// writeMeta 写元数据,失败返回 error(调用方按非阻塞处理)。
+	writeMeta func(path string, song *mmpb.Song) error
+}
+
+// defaultDownloadDeps 生产环境依赖:真实网络(engine + endpoint)+ 真实文件下载 + 真实元数据。
+func defaultDownloadDeps(k *kit.Kit) downloadDeps {
+	return downloadDeps{
+		fetchURL: func(ctx context.Context, id int64, level int) (*mmpb.SongURL, error) {
+			resp, err := kit.Exec(k, ctx, songendpoint.URL, &mmpb.GetSongURLRequest{
+				SongId: id, Level: mmpb.SongLevel(level),
+			})
+			if err != nil {
+				return nil, err
+			}
+			return resp.Url, nil
+		},
+		fetchDetail: func(ctx context.Context, id int64) (*mmpb.Song, error) {
+			resp, err := kit.Exec(k, ctx, songendpoint.Detail, &mmpb.GetSongDetailRequest{SongId: id})
+			if err != nil {
+				return nil, err
+			}
+			return resp.Song, nil
+		},
+		download: func(ctx context.Context, url string, total int64, path, label string) (int64, error) {
+			return downloadToFile(ctx, k, url, total, path, label)
+		},
+		writeMeta: func(path string, song *mmpb.Song) error {
+			return writeSongMetadata(path, song)
+		},
+	}
+}
+
+// runDownload 执行下载主流程。
+//
+// deps 注入外部依赖(测试用);生产用 defaultDownloadDeps。
+// 流程:fetchURL → fetchDetail → 文件名 → mkdir → 冲突检查 → download → writeMeta → 输出。
+func runDownload(k *kit.Kit, id int64, level int, out string, force bool, deps downloadDeps) error {
 	ctx := k.CookieCtx()
 
 	// 1. 拿播放直链。
-	urlResp, err := kit.Exec(k, ctx, songendpoint.URL, &mmpb.GetSongURLRequest{
-		SongId: id, Level: mmpb.SongLevel(level),
-	})
+	songURL, err := deps.fetchURL(ctx, id, level)
 	if err != nil {
 		return fmt.Errorf("获取播放地址: %w", err)
 	}
-	if urlResp.Url == nil || urlResp.Url.Url == "" {
+	if songURL == nil || songURL.Url == "" {
 		return fmt.Errorf("✗ 歌曲 %d 无可用音源(level=%d)。尝试 --level 1 或登录 VIP 账号", id, level)
 	}
-	songURL := urlResp.Url
 
 	// 2. 拿歌曲详情(文件名 + 元数据用)。失败不致命:用 id 兜底空 Song。
-	var song *mmpb.Song
-	if detailResp, derr := kit.Exec(k, ctx, songendpoint.Detail, &mmpb.GetSongDetailRequest{SongId: id}); derr == nil && detailResp.Song != nil {
-		song = detailResp.Song
-	}
+	song, _ := deps.fetchDetail(ctx, id)
 	if song == nil {
 		song = &mmpb.Song{Id: id}
 	}
@@ -86,27 +126,29 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force bool) error 
 	}
 
 	// 5. 流式下载(进度条)。
-	written, err := downloadToFile(ctx, k, songURL.Url, songURL.Size, path, filename)
+	written, err := deps.download(ctx, songURL.Url, songURL.Size, path, filename)
 	if err != nil {
 		return err
 	}
 
 	// 6. 元数据(失败不阻塞:Warnf 警告,继续)。
-	metaWritten := writeSongMetadata(k, path, song)
+	metaWritten := true
+	if merr := deps.writeMeta(path, song); merr != nil {
+		k.Warnf("⚠ 元数据写入失败,文件已保存")
+		metaWritten = false
+	}
 
 	// 7. 结果输出(stdout):人类 key-value / --json 对象。
-	// download 结果不是 proto(文件信息),不走 Render;自己处理双态。
-	// JSON schema 按 PRD-0013 行 269: path/size/duration/format/level/metadata_written。
+	// JSON schema 按 PRD-0013 行 269: path/size/format/level/metadata_written。
 	result := downloadResult{
-		Path:         filepath.Join(absOrSame(out), filename),
-		Size:         written,
-		Format:       songURL.Format,
-		Level:        level,
-		MetaWritten:  metaWritten,
-		// 人类显示用的辅助字段(不进 JSON):
-		filename:     filename,
-		dir:          absOrSame(out),
-		bitrate:      songURL.Bitrate,
+		Path:        filepath.Join(absOrSame(out), filename),
+		Size:        written,
+		Format:      songURL.Format,
+		Level:       level,
+		MetaWritten: metaWritten,
+		filename:    filename,
+		dir:         absOrSame(out),
+		bitrate:     songURL.Bitrate,
 	}
 	return result.write(k)
 }
@@ -147,8 +189,8 @@ func downloadToFile(ctx context.Context, k *kit.Kit, url string, total int64, pa
 	return written, nil
 }
 
-// writeSongMetadata 构造 Metadata 并写入,失败 Warnf 警告(非阻塞)。返回是否成功。
-func writeSongMetadata(k *kit.Kit, path string, song *mmpb.Song) bool {
+// writeSongMetadata 构造 Metadata 并写入。失败返回 error(调用方按非阻塞 Warnf 处理)。
+func writeSongMetadata(path string, song *mmpb.Song) error {
 	cover := fetchCover(picURLOf(song))
 	artist := ""
 	if len(song.Artists) > 0 {
@@ -158,16 +200,12 @@ func writeSongMetadata(k *kit.Kit, path string, song *mmpb.Song) bool {
 	if song.Album != nil {
 		album = song.Album.Name
 	}
-	if err := writeMetadata(path, Metadata{
+	return writeMetadata(path, Metadata{
 		Title:  song.Name,
 		Artist: artist,
 		Album:  album,
 		Cover:  cover,
-	}); err != nil {
-		k.Warnf("⚠ 元数据写入失败,文件已保存")
-		return false
-	}
-	return true
+	})
 }
 
 // fetchCover HTTP GET 取封面字节,失败返回 nil(不阻塞主流程)。
