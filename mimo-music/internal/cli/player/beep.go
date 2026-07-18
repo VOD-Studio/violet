@@ -84,6 +84,7 @@ type beepPlayer struct {
 	format         string // "mp3" | "flac"
 	cancel         context.CancelFunc
 	buffer         *prefetchBuffer
+	fullSnapshot   []byte // 全量已下载快照(首次 buffer.Done 时落盘,跨 seek 复用;Bytes() 切片会丢前缀)
 	streamer       beep.StreamSeekCloser
 	ctrl           *beep.Ctrl
 	volume         *effects.Volume
@@ -241,6 +242,7 @@ func openFromBytes(data []byte, format string, exposeSeeker bool) (*streamParts,
 func (p *beepPlayer) Load(url string) error {
 	p.mu.Lock()
 	p.teardownLocked()
+	p.fullSnapshot = nil // 新音源:丢弃上一首的全量快照
 	p.mu.Unlock()
 
 	st, err := p.open(url, 0)
@@ -325,8 +327,14 @@ func (p *beepPlayer) Seek(offsetSec int64) error {
 	}
 	url, format := p.url, p.format
 	var memSnapshot []byte
-	if p.buffer.Done() {
+	// fullSnapshot 缓存首次全量快照:p.buffer 在 mem-seek 后被替换为切片(sealed),
+	// 其 Bytes() 只返回切片而非原始全量;若直接用它,连续 seek 会累积丢失前缀,
+	// 最终切片耗尽 → openFromBytes 报 mp3: EOF。首次 Done 时落盘,跨 seek 复用。
+	if len(p.fullSnapshot) > 0 {
+		memSnapshot = p.fullSnapshot
+	} else if p.buffer != nil && p.buffer.Done() {
 		memSnapshot = p.buffer.Bytes()
+		p.fullSnapshot = memSnapshot
 	}
 	rangeFrom := p.id3Size + int64(float64(target)*p.bytesPerMs)
 	wasRequested := p.playRequested
