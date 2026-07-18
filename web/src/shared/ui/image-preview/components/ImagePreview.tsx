@@ -311,9 +311,10 @@ export function ImagePreview({
                         </motion.div>
                     ) : null}
 
-                    {/* 缩略图导航 */}
+                    {/* 缩略图导航:优先用缩略图数组(与原图一一对应),
+                        避免多图时底部条拉取全部原图 */}
                     <ImagePreviewThumbnails
-                        images={images}
+                        images={thumbnails ?? images}
                         currentIndex={index}
                         onSelect={(i) => {
                             setIndex(i);

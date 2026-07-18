@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { type ImgHTMLAttributes, type ReactNode, useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ImagePreview } from "../components/ImagePreview";
@@ -73,6 +73,7 @@ describe("ImagePreview 图片组切换", () => {
     });
 
     afterEach(() => {
+        cleanup(); // 无全局自动 cleanup,portal 残留会串扰后续用例
         vi.stubGlobal("Image", originalImage);
     });
 
@@ -107,6 +108,31 @@ describe("ImagePreview 图片组切换", () => {
                 (el): el is HTMLImageElement => el instanceof HTMLImageElement,
             );
             expect(mainImages.some((img) => img.src.includes("/img2.jpg"))).toBe(true);
+        });
+    });
+
+    it("底部导航条应使用缩略图 URL,而非原图", async () => {
+        const images = ["/img1.jpg", "/img2.jpg", "/img3.jpg"];
+        const thumbnails = ["/thumb1.jpg", "/thumb2.jpg", "/thumb3.jpg"];
+
+        render(
+            <ImagePreview
+                open
+                onClose={() => {}}
+                images={images}
+                thumbnails={thumbnails}
+                currentIndex={0}
+            />,
+        );
+
+        await waitFor(() => {
+            const navImgs = Array.from(document.querySelectorAll("img.object-cover")).filter(
+                (el): el is HTMLImageElement => el instanceof HTMLImageElement,
+            );
+            // 本文件的测试共享 document.body(无自动 cleanup),按 URL 过滤本用例的图:
+            // 导航条小图全部走缩略图 URL,不得拉取原图
+            expect(navImgs.filter((img) => img.src.includes("/thumb")).length).toBe(3);
+            expect(navImgs.filter((img) => /\/img\d/.test(img.src)).length).toBe(0);
         });
     });
 });
