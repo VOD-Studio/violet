@@ -22,6 +22,7 @@ import (
 type Spinner struct {
 	out       io.Writer
 	label     string
+	labelFn   func() string // 动态 label(每帧调用);非 nil 时替代静态 label + elapsed
 	tty       bool
 	now       func() time.Time
 	mu        sync.Mutex
@@ -38,6 +39,13 @@ type SpinnerOption func(*Spinner)
 // WithSpinnerClock 注入假时钟(测试确定性)。
 func WithSpinnerClock(now func() time.Time) SpinnerOption {
 	return func(s *Spinner) { s.now = now }
+}
+
+// WithSpinnerLabelFunc 动态 label:每帧调用 fn 取最新文本(如缓冲秒数/水位),
+// 替代静态 label 与 elapsed 后缀。用于内容随外部状态变化的等待(PRD-0013 行 164
+// 「缓冲中 ⠼ 4.2s / 5s」中的 4.2s 是 Player.Progress 的已缓冲量,不是耗时)。
+func WithSpinnerLabelFunc(fn func() string) SpinnerOption {
+	return func(s *Spinner) { s.labelFn = fn }
 }
 
 // NewSpinner 创建转圈指示器。tty=false 时所有渲染静默(非 TTY 抑制)。
@@ -93,6 +101,11 @@ func (s *Spinner) renderFrameLocked() {
 	}
 	s.frame++
 	frame := spinnerFrames[s.frame%len(spinnerFrames)]
+	if s.labelFn != nil {
+		// 动态 label:帧字符 + fn 当前值,无 elapsed。
+		fmt.Fprintf(s.out, "\r\x1b[K%s %s", frame, s.labelFn())
+		return
+	}
 	elapsed := s.now().Sub(s.startedAt)
 	// \r 回到行首,\x1b[K 清行,写新帧。
 	fmt.Fprintf(s.out, "\r\x1b[K%s %s  %s", frame, s.label, formatDuration(elapsed))

@@ -114,11 +114,13 @@ func (k *Kit) NewProgress() *Progress {
 //   - --json:返回的 Spinner 输出走 io.Discard,完全静默。
 //   - 非 TTY:tty=false,Start 无操作,Stop 终态仍输出(有用信息)。
 //   - TTY:正常转圈,输出走 err(stderr)。
-func (k *Kit) NewSpinner(label string) *Spinner {
+//
+// opts 透传给底层 NewSpinner(如 WithSpinnerLabelFunc 动态 label)。
+func (k *Kit) NewSpinner(label string, opts ...SpinnerOption) *Spinner {
 	if k.JSON {
-		return NewSpinner(io.Discard, label, false)
+		return NewSpinner(io.Discard, label, false, opts...)
 	}
-	return NewSpinner(k.err(), label, stderrIsTTY())
+	return NewSpinner(k.err(), label, stderrIsTTY(), opts...)
 }
 
 // CookieCtx 把当前生效的 cookie 注入 context(无则注入空)。

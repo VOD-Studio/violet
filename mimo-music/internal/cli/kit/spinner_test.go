@@ -2,6 +2,7 @@ package kit
 
 import (
 	"bytes"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -93,3 +94,31 @@ type spinnerFakeClock struct{ t time.Time }
 
 func (c *spinnerFakeClock) now() time.Time                    { return c.t }
 func (c *spinnerFakeClock) advance(d time.Duration) time.Time { c.t = c.t.Add(d); return c.t }
+
+// TestSpinner_LabelFunc 动态 label:每帧调用 fn 取最新文本(缓冲秒数/水位),
+// 替代静态 label + elapsed(song play 缓冲阶段显示「缓冲中 4.2s / 5s」,issue #21)。
+func TestSpinner_LabelFunc(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	clock := &spinnerFakeClock{t: time.Date(2026, 7, 18, 12, 0, 0, 0, time.UTC)}
+	buffered := 1.0
+	s := NewSpinner(&buf, "缓冲中", true,
+		WithSpinnerClock(clock.now),
+		WithSpinnerLabelFunc(func() string {
+			return "缓冲中 " + strconv.FormatFloat(buffered, 'f', 1, 64) + "s / 5.0s"
+		}),
+	)
+	s.Start()
+	buffered = 4.2
+	s.renderForTest()
+	s.Stop("")
+	got := buf.String()
+	// 应渲染 fn 的最新值(4.2s),不是启动时的 1.0s。
+	if !strings.Contains(got, "4.2s / 5.0s") {
+		t.Errorf("动态 label 应渲染最新值,got %q", got)
+	}
+	// 不应再渲染 elapsed(静态模式的时间后缀)。
+	if strings.Contains(got, "0:00") {
+		t.Errorf("动态 label 模式不应渲染 elapsed,got %q", got)
+	}
+}
