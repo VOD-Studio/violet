@@ -175,6 +175,17 @@ export function ImagePreview({
         return () => window.removeEventListener("resize", onResize);
     }, [naturalSize]);
 
+    // 重新打开时重置飞入门控与加载态——上次会话的残留会让 shouldLoad
+    // 门控失效(原图与动画并发争抢解码)且占位层不再显示。
+    // useLayoutEffect 在 paint 前同步执行,无闪烁;open 保持 true 期间
+    // 切换 index 不重置 flyInSettled(飞入只需一次,切图立即加载)。
+    useLayoutEffect(() => {
+        if (open) {
+            setFlyInSettled(false);
+            setOriginalLoaded(false);
+        }
+    }, [open]);
+
     // 切换图片时同步重置原图加载状态，让缩略图层立即重新显示并覆盖旧图，
     // 避免 paint 前旧图在大图盒左上角闪现。
     // biome-ignore lint/correctness/useExhaustiveDependencies: index 是重置触发器

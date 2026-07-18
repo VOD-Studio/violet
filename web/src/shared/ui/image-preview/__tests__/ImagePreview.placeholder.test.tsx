@@ -124,4 +124,48 @@ describe("ImagePreview 预览占位层", () => {
         );
         expectContainBox(box, 2238, 3268);
     });
+
+    it("重新打开:加载门控重置,占位层重新显示且原图不立即挂载", async () => {
+        stubProbeImage({ slowOriginal: false });
+        const props = {
+            onClose: () => {},
+            images: ["/uploads/b.jpg"],
+            thumbnails: ["/uploads/b.jpg?w=400&format=webp"],
+            currentIndex: 0,
+        };
+        const { rerender } = render(<ImagePreview open {...props} />);
+
+        // 第一次打开:飞入稳定后原图挂载,模拟加载完成 → 占位层淡出
+        const orig = await waitFor(
+            () => {
+                const el = document.querySelector("img.object-contain");
+                expect(el).not.toBeNull();
+                return el as HTMLImageElement;
+            },
+            { timeout: 3000 },
+        );
+        fireEvent.load(orig);
+        await waitFor(() => expect(document.querySelector("img[aria-hidden='true']")).toBeNull(), {
+            timeout: 3000,
+        });
+
+        // 关闭再开
+        rerender(<ImagePreview open={false} {...props} />);
+        await waitFor(() => expect(document.querySelector("img.object-contain")).toBeNull(), {
+            timeout: 3000,
+        });
+        rerender(<ImagePreview open {...props} />);
+
+        // 门控必须重置:占位层重新出现,原图在飞入稳定前不挂载
+        const ph = await waitFor(
+            () => {
+                const el = document.querySelector("img[aria-hidden='true']");
+                expect(el).not.toBeNull();
+                return el;
+            },
+            { timeout: 3000 },
+        );
+        expect(ph).not.toBeNull();
+        expect(document.querySelector("img.object-contain")).toBeNull();
+    });
 });
