@@ -15,6 +15,7 @@
  */
 import type { Comment } from "@entities/comment/model/types";
 import { useReplies } from "@features/comments/api/queries";
+import { avatarUrl, contentImageUrl, imageUrl } from "@shared/lib/image-url";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
@@ -27,6 +28,23 @@ import { getCommentSev } from "../lib/severity";
 import { CommentForm } from "./CommentForm";
 import { PendingBadge } from "./PendingBadge";
 import { ReactionBar } from "./ReactionBar";
+
+type CommentPictures = NonNullable<Comment["pictures"]>;
+
+/**
+ * 评论图片 → ImageGrid 入参:格子用缩略图(点开预览才加载原图)。
+ * 单图 w=800 保比例(GIF 由 contentImageUrl 剥参数保动画);
+ * 多图 thumb=400x400 居中裁方,与 aspect-square 格子一致。
+ */
+function toGridImages(pictures: CommentPictures) {
+    return pictures.map((p) => ({
+        url: p.url,
+        thumbnail:
+            pictures.length === 1
+                ? contentImageUrl(p.url, { width: 800 })
+                : imageUrl(p.url, { thumb: "400x400", format: "webp" }),
+    }));
+}
 
 export interface CommentItemProps {
     /** 当前评论节点（含回复） */
@@ -86,7 +104,12 @@ export function CommentItem({
 
                         {comment.pictures && comment.pictures.length > 0 && (
                             <div className="mt-2">
-                                <ImageGrid images={comment.pictures} />
+                                {/*
+                                 * 格子用缩略图(点开预览才加载原图):
+                                 * 单图 w=800 保比例(GIF 剥参数保动画);
+                                 * 多图 thumb=400x400 居中裁方,与 aspect-square 格子一致。
+                                 */}
+                                <ImageGrid images={toGridImages(comment.pictures)} />
                             </div>
                         )}
 
@@ -320,7 +343,7 @@ function CommentMeta({
         <div className="flex items-center gap-2">
             {comment.avatar_url ? (
                 <img
-                    src={comment.avatar_url}
+                    src={avatarUrl(comment.avatar_url)}
                     alt={comment.author_name}
                     className="size-6 rounded-full object-cover"
                     loading="lazy"

@@ -52,7 +52,10 @@ export function ImageGrid({ images, className }: ImageGridProps) {
 
     const handleClick = (index: number, target: HTMLElement) => {
         const urls = images.map((img) => img.url);
-        preview.openPreview(urls, index, target);
+        // 缩略图齐全才传给预览(与原图一一对应):飞入占位 + 底部导航条不拉原图
+        const thumbs = images.map((img) => img.thumbnail);
+        const thumbnails = thumbs.every((t): t is string => !!t) ? thumbs : undefined;
+        preview.openPreview(urls, index, target, thumbnails);
     };
 
     return (
@@ -95,6 +98,7 @@ export function ImageGrid({ images, className }: ImageGridProps) {
             <ImagePreview
                 open={preview.open}
                 images={preview.images}
+                thumbnails={preview.thumbnails}
                 currentIndex={preview.currentIndex}
                 triggerElement={preview.triggerElement}
                 onClose={preview.closePreview}

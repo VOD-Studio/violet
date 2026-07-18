@@ -10,6 +10,7 @@
  * 复用：BorderGlow 外壳 + severity 配色（lib/severity.ts）+ PendingBadge。
  */
 import type { Comment } from "@entities/comment/model/types";
+import { avatarUrl } from "@shared/lib/image-url";
 import { EmojiText } from "@shared/ui/emoji-text";
 import BorderGlow from "@vendor/react-bits/BorderGlow";
 import { formatDistanceToNow } from "date-fns";
@@ -184,7 +185,7 @@ function CommentMeta({
         <div className="mb-1 flex flex-wrap items-center gap-1.5">
             {comment.avatar_url ? (
                 <img
-                    src={comment.avatar_url}
+                    src={avatarUrl(comment.avatar_url)}
                     alt={comment.author_name}
                     className="size-5 rounded-full object-cover"
                     loading="lazy"
@@ -194,7 +195,7 @@ function CommentMeta({
                     {comment.author_name.slice(0, 1).toUpperCase()}
                 </span>
             )}
-            <span className="max-w-[8rem] truncate text-xs font-medium text-foreground sm:max-w-[10rem]">
+            <span className="max-w-32 truncate text-xs font-medium text-foreground sm:max-w-[10rem]">
                 {comment.author_name}
             </span>
             {comment.reply_to_name && (
