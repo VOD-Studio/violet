@@ -12,7 +12,6 @@ import (
 
 // TestKit_NewProgress_TTY TTY 模式返回会渲染的 Progress。
 func TestKit_NewProgress_TTY(t *testing.T) {
-	t.Parallel()
 	defer func(orig func(int) bool) { isTerminal = orig }(isTerminal)
 	isTerminal = func(int) bool { return true } // stderr 是 TTY
 
@@ -34,7 +33,6 @@ func TestKit_NewProgress_TTY(t *testing.T) {
 // TestKit_NewProgress_JSON JSON 模式返回的 Progress 完全静默(连终态都不输出)。
 // --json 时结果走 protojson,任何进度文本都是污染。
 func TestKit_NewProgress_JSON(t *testing.T) {
-	t.Parallel()
 	defer func(orig func(int) bool) { isTerminal = orig }(isTerminal)
 	isTerminal = func(int) bool { return true } // 即使 TTY
 
@@ -53,7 +51,6 @@ func TestKit_NewProgress_JSON(t *testing.T) {
 
 // TestKit_NewProgress_NonTTY 非 TTY 模式:渲染抑制,但终态可输出。
 func TestKit_NewProgress_NonTTY(t *testing.T) {
-	t.Parallel()
 	defer func(orig func(int) bool) { isTerminal = orig }(isTerminal)
 	isTerminal = func(int) bool { return false } // stderr 非 TTY
 
@@ -75,7 +72,6 @@ var _ = strings.Contains
 
 // TestKit_NewSpinner_JSON JSON 模式 Spinner 完全静默。
 func TestKit_NewSpinner_JSON(t *testing.T) {
-	t.Parallel()
 	defer func(orig func(int) bool) { isTerminal = orig }(isTerminal)
 	isTerminal = func(int) bool { return true }
 
@@ -92,7 +88,6 @@ func TestKit_NewSpinner_JSON(t *testing.T) {
 
 // TestKit_NewSpinner_TTY TTY 模式 Spinner 渲染转圈。
 func TestKit_NewSpinner_TTY(t *testing.T) {
-	t.Parallel()
 	defer func(orig func(int) bool) { isTerminal = orig }(isTerminal)
 	isTerminal = func(int) bool { return true }
 
