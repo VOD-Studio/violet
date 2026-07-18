@@ -11,7 +11,6 @@
 
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
-import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Table } from "@tiptap/extension-table";
@@ -28,6 +27,7 @@ import { common, createLowlight } from "lowlight";
 import { SlashCommand } from "../slash-menu/SlashCommand";
 import { buildSlashItems } from "../slash-menu/slash-items";
 import { createCodeBlockExtension } from "../ui/CodeBlockView";
+import { createImageExtension } from "../ui/ImageView";
 import { CustomTaskItem } from "../ui/TaskItemView";
 
 /** 低光高亮实例：common 预设已注册 37 种常用语言，其余按需动态注册 */
@@ -107,7 +107,8 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
                 class: "text-primary underline underline-offset-2",
             },
         }),
-        Image.configure({
+        // 图片:自定义 NodeView,编辑时显示 w=1200 缩略,序列化仍输出原图
+        createImageExtension().configure({
             inline: false,
             allowBase64: false,
             HTMLAttributes: { class: "rounded-lg" },
