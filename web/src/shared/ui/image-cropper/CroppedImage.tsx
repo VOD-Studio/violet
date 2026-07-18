@@ -1,7 +1,8 @@
 import { parseCrop } from "@shared/lib/crop-url";
 import { contentImageUrl } from "@shared/lib/image-url";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
+import { coverCropTransform, type Size } from "./lib/crop-display";
 
 export interface CroppedImageProps {
     /** 图片 src,可能带 ?crop=x,y,w,h(选区聚焦时) */
@@ -22,15 +23,15 @@ export interface CroppedImageProps {
 }
 
 /**
- * CroppedImage - 显示层图片,支持选区聚焦。
+ * CroppedImage - 显示层图片,支持选区精确复现。
  *
- * 解析 src 的 ?crop= 参数,用 object-position 把 object-fit:cover 的裁剪焦点
- * 对准选区中心。无 ?crop= 退化普通居中 cover。
+ * 解析 src 的 ?crop= 参数,把选区当作图片本身 cover 进容器:
+ * 实测容器与原图尺寸,显式设置 img 的 width/height/left/top(不叠加
+ * object-fit/transform scale,避免历史的「双重放大」)。选区宽高比与容器
+ * 一致时四边精确贴合;不一致时选区铺满容器、溢出维度居中裁切。
+ * 无 ?crop= 退化普通居中 cover。静态图/GIF 统一,原图无损。
  *
- * 原理:object-fit:cover 已让图片缩放铺满容器并裁掉溢出部分,
- * object-position(百分比)控制裁剪焦点——0%/100% 对齐左上/右下。
- * 选区中心映射到 object-position 即可聚焦选区,无需 transform 缩放,
- * 避免双重放大。静态图/GIF 统一,原图无损。
+ * 测量就绪前 img 隐藏,避免闪现未裁剪的全图。
  */
 export function CroppedImage({
     src,
@@ -41,29 +42,92 @@ export function CroppedImage({
     alt = "",
     loading,
 }: CroppedImageProps) {
-    const objectPosition = useMemo(() => {
-        const rect = parseCrop(src);
-        if (!rect) return undefined;
-        // 选区中心(归一化)→ object-position 百分比。
-        const cx = rect.w < 1 ? (rect.x + rect.w / 2) / (1 - rect.w) : 0.5;
-        const cy = rect.h < 1 ? (rect.y + rect.h / 2) / (1 - rect.h) : 0.5;
-        return `${(cx * 100).toFixed(2)}% ${(cy * 100).toFixed(2)}%`;
-    }, [src]);
+    const rect = useMemo(() => parseCrop(src), [src]);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const imgRef = useRef<HTMLImageElement>(null);
+    const [natural, setNatural] = useState<Size | null>(null);
+    const [box, setBox] = useState<Size | null>(null);
 
     // 显示层缩略:crop 参数经 imageUrl 合并保留,聚焦逻辑不受影响
     const displaySrc = width ? contentImageUrl(src, { width }) : src;
 
+    // 容器尺寸:首次测量 + ResizeObserver 跟踪(容器随视口响应式变化)
+    useEffect(() => {
+        if (!rect) return;
+        const el = containerRef.current;
+        if (!el) return;
+        const measure = () => {
+            const r = el.getBoundingClientRect();
+            setBox((prev) =>
+                prev && prev.w === r.width && prev.h === r.height
+                    ? prev
+                    : { w: r.width, h: r.height },
+            );
+        };
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [rect]);
+
+    // 换图后旧自然尺寸作废,等新图 load;缓存命中的图不再触发 load,直接读
+    // biome-ignore lint/correctness/useExhaustiveDependencies: displaySrc 是重置触发器,函数体内经 imgRef 间接消费
+    useEffect(() => {
+        if (!rect) return;
+        setNatural(null);
+        const img = imgRef.current;
+        if (img?.complete && img.naturalWidth > 0) {
+            setNatural({ w: img.naturalWidth, h: img.naturalHeight });
+        }
+    }, [rect, displaySrc]);
+
+    const transform = rect && natural && box ? coverCropTransform(rect, natural, box) : null;
+
+    // 无 ?crop=:普通居中 cover(旧行为)
+    if (!rect) {
+        return (
+            <div
+                className={cn("overflow-hidden", className)}
+                style={aspect ? { aspectRatio: aspect } : undefined}
+            >
+                <img
+                    src={displaySrc}
+                    alt={alt}
+                    loading={loading}
+                    className={cn("h-full w-full object-cover", imgClassName)}
+                />
+            </div>
+        );
+    }
+
     return (
         <div
-            className={cn("overflow-hidden", className)}
+            ref={containerRef}
+            className={cn("relative overflow-hidden", className)}
             style={aspect ? { aspectRatio: aspect } : undefined}
         >
             <img
+                ref={imgRef}
                 src={displaySrc}
                 alt={alt}
                 loading={loading}
-                className={cn("h-full w-full object-cover", imgClassName)}
-                style={objectPosition ? { objectPosition } : undefined}
+                onLoad={(e) =>
+                    setNatural({
+                        w: e.currentTarget.naturalWidth,
+                        h: e.currentTarget.naturalHeight,
+                    })
+                }
+                className={cn("absolute max-w-none", imgClassName)}
+                style={
+                    transform
+                        ? {
+                              width: transform.width,
+                              height: transform.height,
+                              left: transform.left,
+                              top: transform.top,
+                          }
+                        : { visibility: "hidden" }
+                }
             />
         </div>
     );
