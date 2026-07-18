@@ -193,7 +193,7 @@ func TestProgress_FakeClockETA(t *testing.T) {
 	// t0+10s:再 Incr 5_000_000(半量),平均速度 5e6/10s=500KB/s
 	clock.advance(10 * time.Second)
 	total.Incr(5_000_000, clock.now())
-	p.renderOnce()
+	p.renderOnce(false)
 
 	// ETA = 剩余 5e6 / 平均速度 500KB/s = 10s
 	_ = t0
@@ -216,7 +216,7 @@ func (c *fakeClock) advance(d time.Duration)  { c.t = c.t.Add(d) }
 func TestProgress_ConcurrentIncrRender(t *testing.T) {
 	t.Parallel()
 	var buf bytes.Buffer
-	p := NewProgress(&buf, 120, false)
+	p := NewProgress(&buf, 120, true) // TTY:要验证渲染输出
 	total := p.AddBar(35_800_000, "总")
 	total.IsTotal = true
 	subs := []*Bar{

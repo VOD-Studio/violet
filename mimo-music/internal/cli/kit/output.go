@@ -21,6 +21,9 @@ func stdoutIsTTY() bool { return isTerminal(int(os.Stdout.Fd())) }
 // stdinIsTTY 输入是否是终端(决定能否交互确认)。
 func stdinIsTTY() bool { return isTerminal(int(os.Stdin.Fd())) }
 
+// stderrIsTTY 错误/进度输出是否是终端(决定进度条是否渲染)。
+func stderrIsTTY() bool { return isTerminal(int(os.Stderr.Fd())) }
+
 // Render 按三态规则输出响应:--json 或管道 → protojson;TTY → 人类可读(表格/键值对)。
 func (k *Kit) Render(msg proto.Message) error {
 	if k.JSON || !stdoutIsTTY() {

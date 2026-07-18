@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 
+	"golang.org/x/term"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/VOD-Studio/mimo-music/internal/cache"
@@ -68,6 +69,39 @@ func (k *Kit) err() io.Writer {
 // (脚本作者需要看到警告判断是否可信)。
 func (k *Kit) Warnf(format string, args ...any) {
 	fmt.Fprintf(k.err(), format+"\n", args...)
+}
+
+// NewProgress 创建进度条渲染器,内部封装三态规矩(PRD-0012 输出层)。
+//
+// 命令层调 k.NewProgress() 即可,不用自己判断 TTY/--json:
+//   - --json:输出走 io.Discard,完全静默(结果走 protojson,进度文本是污染)。
+//   - 非 TTY(管道):tty=false,Start 不启动 tick,Wait 输出终态(脚本看最终结果)。
+//   - TTY:正常渲染,输出走 err(stderr),探测终端宽度 + true color。
+//
+// 进度类走 stderr 不污染 stdout(结果数据流),与 Warnf 一致。
+func (k *Kit) NewProgress() *Progress {
+	// --json:完全静默。
+	if k.JSON {
+		return NewProgress(io.Discard, 80, false)
+	}
+	tty := stderrIsTTY()
+	width := 80
+	if tty {
+		if w, _, err := term.GetSize(int(os.Stderr.Fd())); err == nil && w > 0 {
+			width = w
+		}
+	}
+	opts := []ProgressOption{WithProgressColor(tty)}
+	if tty {
+		opts = append(opts, WithProgressWidthSource(func() int {
+			w, _, err := term.GetSize(int(os.Stderr.Fd()))
+			if err != nil || w <= 0 {
+				return width
+			}
+			return w
+		}))
+	}
+	return NewProgress(k.err(), width, tty, opts...)
 }
 
 // CookieCtx 把当前生效的 cookie 注入 context(无则注入空)。

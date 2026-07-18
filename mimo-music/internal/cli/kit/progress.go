@@ -148,7 +148,7 @@ func (p *Progress) SetWidth(width int) {
 	started := p.started
 	p.mu.Unlock()
 	if started {
-		p.renderOnce()
+		p.renderOnce(false)
 	}
 }
 
@@ -248,7 +248,7 @@ func (p *Progress) tickLoop() {
 	for {
 		select {
 		case <-p.ticker.C:
-			p.renderOnce()
+			p.renderOnce(false)
 		case <-p.done:
 			return
 		}
@@ -266,21 +266,30 @@ func (p *Progress) Wait() {
 		p.started = false
 	}
 	p.mu.Unlock()
-	// 最终渲染(无论 TTY 与否,都输出终态)。
-	p.renderOnce()
+	// 最终渲染(final=true):无论 TTY 与否都输出终态(脚本看最终结果)。
+	p.renderOnce(true)
 	if p.tty {
 		io.WriteString(p.out, "\x1b[?25h") // 恢复光标
 	}
 }
 
-// renderOnce 渲染当前状态为一帧并 diff 输出。
-func (p *Progress) renderOnce() {
+// renderOnce 渲染一帧。final=true 表示终态帧(非 TTY 也输出);
+// final=false 是中间帧(非 TTY 抑制,不刷屏)。
+func (p *Progress) renderOnce(final bool) {
+	// 中间帧且非 TTY:抑制(管道里每帧刷屏是垃圾)。
+	if !final && !p.tty {
+		return
+	}
 	p.renderOnceInternal()
 }
 
 // RenderForTest 测试钩子:同步渲染一帧(绕过 ticker,确定性)。
 // 仅供测试用,生产代码用 Start/Wait 驱动异步渲染。
-func (p *Progress) RenderForTest() { p.renderOnceInternal() }
+// 默认按中间帧处理(final=false),测试非 TTY 抑制行为。
+func (p *Progress) RenderForTest() { p.renderOnce(false) }
+
+// Now 返回当前时钟(暴露 now 给调用方取时间戳,测试时是假时钟)。
+func (p *Progress) Now() time.Time { return p.now() }
 
 func (p *Progress) renderOnceInternal() {
 	p.mu.Lock()
