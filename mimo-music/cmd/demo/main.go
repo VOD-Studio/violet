@@ -1,4 +1,4 @@
-// cmd/demo 盲文点阵进度条演示(自实现 Progress 渲染器)。
+// cmd/demo 盲文点阵进度条演示(展示 kit 正式 API 用法)。
 //
 // 用法:
 //
@@ -7,10 +7,16 @@
 // command:
 //
 //	snapshot   静态快照(多档进度),无动画,看 RenderBar 长相
-//	single     单曲下载动画(diff 渲染,无闪烁)
-//	multi      批量下载(1 总 bar + 3 worker,✓ 完成态)
+//	single     单曲下载:Spinner(缓冲) + Progress(下载) + Warnf(元数据警告)
+//	multi      批量下载(1 总 bar + 3 worker,♪ 完成态)
 //
-// 输出走 os.Stderr;TTY 下启动 steady tick + 隐藏光标,非 TTY 只输出终态。
+// flags:
+//
+//	-json     模拟全局 --json(三态抑制:进度完全静默,结果走 stdout)
+//	-speed    速度倍率,默认 1.0;0.3 为慢动作
+//
+// 通过 Kit 工厂(k.NewProgress/k.NewSpinner)展示正式 API:
+// 命令层不用自己判断 TTY/--json,工厂内部封装三态规矩。
 package main
 
 import (
@@ -21,7 +27,6 @@ import (
 	"time"
 
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
-	"golang.org/x/term"
 )
 
 func main() {
@@ -35,14 +40,16 @@ func main() {
 		runSnapshot()
 	case "single":
 		fs := flag.NewFlagSet("demo single", flag.ExitOnError)
+		jsonMode := fs.Bool("json", false, "模拟全局 --json(进度静默)")
 		speed := fs.Float64("speed", 1.0, "下载速度倍率(<1 慢动作)")
 		fs.Parse(os.Args[2:])
-		runSingle(*speed)
+		runSingle(*jsonMode, *speed)
 	case "multi":
 		fs := flag.NewFlagSet("demo multi", flag.ExitOnError)
+		jsonMode := fs.Bool("json", false, "模拟全局 --json(进度静默)")
 		speed := fs.Float64("speed", 1.0, "下载速度倍率")
 		fs.Parse(os.Args[2:])
-		runMulti(*speed)
+		runMulti(*jsonMode, *speed)
 	default:
 		fmt.Fprintf(os.Stderr, "未知命令 %q\n", cmd)
 		usage()
@@ -51,38 +58,46 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `盲文点阵进度条演示(自实现渲染器)
+	fmt.Fprintln(os.Stderr, `盲文点阵进度条演示(展示 kit 正式 API)
 
 用法:
   go run ./cmd/demo <command> [flags]
 
 command:
   snapshot   静态快照(多档进度),无动画
-  single     单曲下载动画
-  multi      批量下载(1 总 bar + 3 worker,✓ 完成态)
+  single     单曲下载:Spinner(缓冲)+Progress(下载)+Warnf(警告)
+  multi      批量下载(1 总 bar + 3 worker,♪ 完成态)
 
 flags:
-  -speed   速度倍率,默认 1.0;0.3 为慢动作
+  -json     模拟全局 --json(进度静默,结果走 stdout)
+  -speed    速度倍率,默认 1.0;0.3 为慢动作
 
 示例:
   go run ./cmd/demo snapshot
   go run ./cmd/demo single
+  go run ./cmd/demo single -json      # 展示 --json 三态抑制
   go run ./cmd/demo multi -speed 0.5`)
 }
 
-// termWidth 探测终端宽度,失败回退 80。
-func termWidth() int {
-	if w, _, err := term.GetSize(int(os.Stderr.Fd())); err == nil && w > 0 {
-		return w
-	}
-	return 80
+// newKit 构造 Kit 实例(展示命令层用法)。
+// jsonMode 模拟全局 --json:Kit.JSON=true 时 NewProgress/NewSpinner 完全静默。
+func newKit(jsonMode bool) *kit.Kit {
+	return &kit.Kit{JSON: jsonMode}
 }
 
-func isTTY() bool { return term.IsTerminal(int(os.Stderr.Fd())) }
+// runSingle 单曲下载:展示 Spinner(缓冲) + Progress(下载) + Warnf(元数据警告)。
+// 模拟真实 song download 流程:缓冲音源 → 流式下载 → 元数据写入(可能失败警告)。
+func runSingle(jsonMode bool, speed float64) {
+	k := newKit(jsonMode)
 
-func runSingle(speed float64) {
-	p := kit.NewProgress(os.Stderr, termWidth(), isTTY(), kit.WithProgressColor(true),
-		kit.WithProgressWidthSource(termWidth)) // 轮询宽度:拉伸即时适配,无信号竞态
+	// 1. 缓冲阶段:Spinner(不可量化等待,如解析音源)。
+	sp := k.NewSpinner("解析音源")
+	sp.Start()
+	time.Sleep(800 * time.Millisecond) // 模拟解析
+	sp.Stop("✓ level=1 mp3 320kbps")
+
+	// 2. 下载阶段:Progress(可量化进度)。
+	p := k.NewProgress()
 	bar := p.AddBar(3_400_000, "Beyond - 海阔天空.mp3")
 	p.Start()
 
@@ -90,21 +105,31 @@ func runSingle(speed float64) {
 	if scale < 0.1 {
 		scale = 0.1
 	}
-	now := time.Now()
-	deadline := now.Add(time.Duration(float64(4*time.Second) / scale))
+	deadline := time.Now().Add(time.Duration(float64(4*time.Second) / scale))
 	for time.Now().Before(deadline) && bar.Current < bar.Total {
 		chunk := int64(rand.IntN(160_000) + 40_000)
 		bar.Incr(chunk, time.Now())
-		time.Sleep(time.Duration(float64(80*time.Millisecond) / scale))
+		time.Sleep(time.Duration(float64(80 * time.Millisecond) / scale))
 	}
 	bar.Complete(time.Now())
 	time.Sleep(200 * time.Millisecond) // 让完成帧渲染
 	p.Wait()
+
+	// 3. 元数据写入(可能失败):Warnf 非阻塞警告。
+	// 模拟 30% 概率元数据失败(PRD-0013 行 114 场景)。
+	if rand.Float64() < 0.3 {
+		k.Warnf("⚠ 元数据写入失败,文件已保存")
+	}
+
+	// 4. 结果输出(stdout,走渲染层)。--json 模式这里应 protojson,demo 简化用文本。
+	fmt.Println("文件     Beyond - 海阔天空.mp3")
+	fmt.Println("大小     3.2 MB")
 }
 
-func runMulti(speed float64) {
-	p := kit.NewProgress(os.Stderr, termWidth(), isTTY(), kit.WithProgressColor(true),
-		kit.WithProgressWidthSource(termWidth)) // 轮询宽度:拉伸即时适配,无信号竞态
+// runMulti 批量下载:1 总 bar + 3 worker 并发,♪ 完成态。
+func runMulti(jsonMode bool, speed float64) {
+	k := newKit(jsonMode)
+	p := k.NewProgress()
 
 	songs := []struct {
 		name string
