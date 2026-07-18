@@ -62,6 +62,25 @@ describe("HtmlContent", () => {
         expect(container.querySelector("pre")).toBeTruthy();
         expect(container.querySelector(".bg-muted")).toBeNull();
     });
+
+    it("正文图片走 w=1200 缩略(webp),原图只在预览时加载", () => {
+        const html = '<p><img src="/uploads/2026/07/a.jpg" alt="示例"></p>';
+        const { container } = render(<HtmlContent html={html} />);
+
+        const img = container.querySelector("img");
+        expect(img?.getAttribute("src")).toBe("/uploads/2026/07/a.jpg?w=1200&format=webp");
+    });
+
+    it("正文 GIF 图片剥除处理参数(保动画),crop 参数保留", () => {
+        const html = '<p><img src="/uploads/2026/07/a.gif?crop=0.1,0.2,0.5,0.5" alt="动图"></p>';
+        const { container } = render(<HtmlContent html={html} />);
+
+        const img = container.querySelector("img");
+        const src = img?.getAttribute("src") ?? "";
+        expect(src).not.toContain("w=1200");
+        expect(src).not.toContain("format=webp");
+        expect(decodeURIComponent(src)).toContain("crop=0.1,0.2,0.5,0.5");
+    });
 });
 
 describe("HtmlContent 标题锚点 id", () => {

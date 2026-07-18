@@ -8,6 +8,7 @@
 
 import type { Components } from "react-markdown";
 import { Suspense, lazy } from "react";
+import { contentImageUrl } from "@/shared/lib/image-url";
 import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/base/checkbox";
 
@@ -184,8 +185,9 @@ export const markdownComponents: Components = {
     // pre 由 FencedCodeBlock 内部接管，此处直接透传避免双重包裹
     pre: ({ children }) => <>{children}</>,
     img: ({ src, alt }) => (
+        // 内容图统一走 w=1200 缩略(GIF 剥参数保动画),原图只在点开预览时加载
         <img
-            src={typeof src === "string" ? src : undefined}
+            src={typeof src === "string" ? contentImageUrl(src, { width: 1200 }) : undefined}
             alt={alt ?? ""}
             className="my-6 max-w-full rounded-lg"
             loading="lazy"

@@ -3,7 +3,10 @@
  *
  * 挂在正文容器 ref 上：拦截容器内 <img> 的点击，收集所有图片 src，
  * 用 ImagePreview 打开全屏预览（缩放/旋转）。
- * 传入缩略图列表（imageUrl 生成 600px 缩略），防止原图过大导致预览卡顿。
+ *
+ * 正文显示层已是 w=1200 缩略（markdown-components img 映射），此处：
+ * - images（预览原图）：originalImageUrl 剥离处理参数还原，预览必须加载原图
+ * - thumbnails（飞入占位）：与正文同档 w=1200，已缓存零额外请求，防原图卡顿
  *
  * 用法：const { bind, preview } = useArticleImagePreview();
  *       <div ref={bind}>...正文...</div>
@@ -11,7 +14,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import { imageUrl } from "@shared/lib/image-url";
+import { contentImageUrl, originalImageUrl } from "@shared/lib/image-url";
 import { ImagePreview } from "@/shared/ui/image-preview";
 
 export function useArticleImagePreview() {
@@ -33,9 +36,10 @@ export function useArticleImagePreview() {
         if (srcs.length === 0) return;
         setState({
             open: true,
-            images: srcs,
-            // 缩略图：原图 600px 宽 webp，用于预览飞入动画 + 翻页占位，防原图卡顿
-            thumbnails: srcs.map((s) => imageUrl(s, { w: 600, format: "webp" })),
+            // DOM src 已是 w=1200 缩略，还原原图供预览加载
+            images: srcs.map(originalImageUrl),
+            // 飞入占位：与正文同档 w=1200（已缓存），防原图过大预览卡顿
+            thumbnails: srcs.map((s) => contentImageUrl(originalImageUrl(s), { width: 1200 })),
             index: Math.max(0, idx),
             trigger: target as HTMLImageElement,
         });
