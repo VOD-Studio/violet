@@ -51,16 +51,17 @@ type Progress struct {
 	color bool // true color 开关
 	tty   bool // 是否 TTY(非 TTY 抑制刷新,只输出终态)
 
-	mu         sync.Mutex
-	rawWidth   int      // 终端实际宽度(reflow 行数估算用)
-	widthDirty bool     // SetWidth 刚改过宽度:下一帧先清 reflow 残影
-	bars       []*Bar
-	prev       []string // 上一帧各行(diff 用)
-	spinner    int      // spinner 帧索引(tick 推进)
-	ticker     *time.Ticker
-	done       chan struct{}
-	now        func() time.Time // 假时钟注入(测试确定性)
-	started    bool
+	mu          sync.Mutex
+	rawWidth    int      // 终端实际宽度(reflow 行数估算用)
+	widthDirty  bool     // 宽度刚变更:下一帧先清 reflow 残影
+	widthSource func() int // 轮询式宽度源(见 WithProgressWidthSource)
+	bars        []*Bar
+	prev        []string // 上一帧各行(diff 用)
+	spinner     int      // spinner 帧索引(tick 推进)
+	ticker      *time.Ticker
+	done        chan struct{}
+	now         func() time.Time // 假时钟注入(测试确定性)
+	started     bool
 }
 
 // ProgressOption 配置 NewProgress。
@@ -74,6 +75,15 @@ func WithProgressColor(c bool) ProgressOption {
 // WithProgressClock 注入假时钟(测试用,保证 ETA 确定性)。
 func WithProgressClock(now func() time.Time) ProgressOption {
 	return func(p *Progress) { p.now = now }
+}
+
+// WithProgressWidthSource 轮询式宽度源:每帧渲染前查询终端宽度,
+// 变化时按 reflow 清残影后适配新宽度。比 SIGWINCH + SetWidth 更稳:
+// 缩窄瞬间终端立刻 reflow,信号 handler 与 tick 无序,tick 可能先用
+// 旧宽度渲染一帧留下残影(重复);轮询让每帧渲染前都先对齐当前宽度,
+// 竞态窗口归零。传 term.GetSize 的薄封装即可,非 TTY 无需设置。
+func WithProgressWidthSource(f func() int) ProgressOption {
+	return func(p *Progress) { p.widthSource = f }
 }
 
 // NewProgress 创建渲染器。width 为 0 时按 80 兜底(调用方应传 term.GetSize 结果)。
@@ -269,6 +279,19 @@ func (p *Progress) RenderForTest() { p.renderOnceInternal() }
 func (p *Progress) renderOnceInternal() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	// 轮询宽度源:拉伸后第一帧即发现新宽度,竞态窗口归零
+	// (若靠信号 SetWidth,tick 可能先用旧宽度渲染留下 reflow 残影)。
+	if p.widthSource != nil {
+		if raw := p.widthSource(); raw > 0 {
+			if eff := effectiveRenderWidth(raw); eff != p.width {
+				p.width = eff
+				p.rawWidth = raw
+				p.widthDirty = true
+			}
+		}
+	}
+
 	now := p.now()
 	// 推进 spinner。
 	p.spinner++

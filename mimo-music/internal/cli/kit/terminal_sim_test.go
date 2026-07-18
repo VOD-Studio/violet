@@ -421,3 +421,57 @@ func TestProgress_ResizeReflowNoDuplicate(t *testing.T) {
 		}
 	}
 }
+
+// TestProgress_ReflowShrinkRaceNoDuplicate 连续拖动拉伸(widthSource 轮询,不调 SetWidth):
+// 每次拉伸后第一个 tick 帧即发现新宽度并清 reflow 残影——屏幕上每个 bar 恰好一份。
+// 回归(用户实测):SIGWINCH handler 与 tick 无序,缩窄后 tick 先用旧宽度渲染一帧,
+// 落进 reflow 后的块中间,残影随拖动层层堆积(多个不同宽度的块叠罗汉)。
+// 轮询让每帧渲染前先对齐当前宽度,竞态窗口归零。
+func TestProgress_ReflowShrinkRaceNoDuplicate(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	clock := newFakeClock(time.Date(2026, 7, 18, 12, 0, 0, 0, time.UTC))
+	width := 100
+	p := NewProgress(&buf, width, true, WithProgressClock(clock.now),
+		WithProgressWidthSource(func() int { return width }))
+	total := p.AddBar(35_800_000, "我喜欢的音乐")
+	total.IsTotal = true
+	s1 := p.AddBar(3_400_000, "Beyond - 海阔天空")
+	s2 := p.AddBar(4_100_000, "周杰伦 - 晴天")
+
+	vt := &vtSim{cols: 100, rows: 40, row: 30}
+	drive := func(frames int) {
+		for range frames {
+			buf.Reset()
+			clock.advance(100 * time.Millisecond)
+			total.Incr(300_000, clock.now())
+			s1.Incr(170_000, clock.now())
+			s2.Incr(200_000, clock.now())
+			p.RenderForTest()
+			vt.feed(buf.String())
+		}
+	}
+
+	drive(5)
+	vt.resizeReflow(80) // 拖窄:不调 SetWidth,靠轮询在下一帧发现
+	width = 80
+	drive(2)
+	vt.resizeReflow(70) // 继续拖窄
+	width = 70
+	drive(2)
+	vt.resizeReflow(90) // 再往回拉宽
+	width = 90
+	drive(3)
+
+	for _, label := range []string{"我喜欢的音乐", "海阔天空", "晴天"} {
+		count := 0
+		for r := 0; r < vt.rows; r++ {
+			if strings.Contains(vt.rowText(r), label) {
+				count++
+			}
+		}
+		if count != 1 {
+			t.Errorf("label %q 屏幕上出现 %d 次(应 1 次,>1 = 拖动残影)", label, count)
+		}
+	}
+}
