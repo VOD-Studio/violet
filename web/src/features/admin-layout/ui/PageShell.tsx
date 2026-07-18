@@ -38,10 +38,12 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
         return () => pEl.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // 既无描述也无操作且无 sticky 内容时，直接渲染内容（无标题区，不占额外空间）
-    // 注意：early return 必须在所有 hooks 之后，否则违反 React Hooks 规则。
+    // 既无描述也无操作且无 sticky 内容时,直接渲染内容(无标题区,不占额外空间)
+    // 内边距与正常路径内容区一致(px-4 md:px-6):自内边距职责从 <main> 移入
+    // PageShell 后,此分支是页面唯一的内边距来源,缺失会导致内容紧贴边缘。
+    // 注意:early return 必须在所有 hooks 之后,否则违反 React Hooks 规则。
     if (!description && !action && !sticky) {
-        return <div>{children}</div>;
+        return <div className="px-4 pt-4 pb-6 md:px-6">{children}</div>;
     }
 
     return (
