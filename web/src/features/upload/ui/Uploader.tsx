@@ -1,12 +1,15 @@
 import { Button } from "@shared/ui/base/button";
+import { imageUrl } from "@shared/lib/image-url";
 import { AlertCircle, FileText, Film, Loader2, Music, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useChunkedUpload } from "../hooks/use-chunked-upload";
 
-/** 上传结果至少含可访问 url，列表缩略图据此预览 */
+/** 上传结果至少含可访问 url,列表缩略图据此预览;可选 thumbnail 为后端生成的缩略图 */
 export interface UploadResult {
     url: string;
+    /** 后端生成的缩略图(300px),可选;缺失时列表回退动态裁剪参数 */
+    thumbnail?: string;
 }
 
 type ItemStatus = "uploading" | "done" | "error";
@@ -204,8 +207,16 @@ export function Uploader<T extends UploadResult>({
                             >
                                 <div className="shrink-0">
                                     {item.status === "done" && item.result ? (
+                                        // 40px 缩略图:优先上传时后端生成的 300px thumb,
+                                        // 缺失回退动态裁剪,不拉原图
                                         <FileThumb
-                                            url={item.result.url}
+                                            url={
+                                                item.result.thumbnail ||
+                                                imageUrl(item.result.url, {
+                                                    thumb: "300x300",
+                                                    format: "webp",
+                                                })
+                                            }
                                             name={item.file.name}
                                             mime={item.file.type}
                                             className="size-10"
