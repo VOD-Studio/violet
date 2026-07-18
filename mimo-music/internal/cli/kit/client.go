@@ -54,6 +54,11 @@ func (k *Kit) out() io.Writer {
 	return k.Out
 }
 
+// OutWriter 返回结果输出 writer(导出版本,供命令层直接写 stdout)。
+// 大多数命令走 Render(自动三态);少数非 proto 结果(如 download 文件信息)
+// 用这个直接写,配合 --json 自行处理双态。
+func (k *Kit) OutWriter() io.Writer { return k.out() }
+
 // err 返回警告/进度 writer(未设置时回退 os.Stderr)。
 func (k *Kit) err() io.Writer {
 	if k.Err == nil {
