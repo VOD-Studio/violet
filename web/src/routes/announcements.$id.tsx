@@ -10,6 +10,7 @@
 
 import { useAnnouncement } from "@features/settings/api/queries";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
+import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import BlurText from "@vendor/react-bits/BlurText";
@@ -22,6 +23,8 @@ function AnnouncementDetailPage() {
     const { data: a, isLoading, error } = useAnnouncement(id);
     const [copied, setCopied] = useState(false);
     const [acked, setAcked] = useState(false);
+    // 正文图片点击预览(与文章详情同一套:缩略占位 → 原图替换)
+    const articleImages = useArticleImagePreview();
 
     const handleAck = () => {
         if (!a) return;
@@ -132,7 +135,12 @@ function AnnouncementDetailPage() {
                 {body && (
                     <div className="mb-6">
                         <div className="mb-3 text-xs text-muted-foreground">正文</div>
-                        <div className="prose prose-sm prose-neutral max-w-none dark:prose-invert">
+                        <div
+                            className="prose prose-sm prose-neutral max-w-none dark:prose-invert"
+                            data-article-content
+                            onClick={articleImages.bind.onClick}
+                            onKeyDown={articleImages.bind.onKeyDown}
+                        >
                             <ArticleContent content={body} />
                         </div>
                     </div>
@@ -167,6 +175,7 @@ function AnnouncementDetailPage() {
                     </Link>
                 </footer>
             </article>
+            {articleImages.preview}
         </div>
     );
 }
