@@ -24,9 +24,11 @@ import (
 //     fill goroutine 以网络速度搬运,与消费速度解耦。
 //   - 水位抗弱网:起播/续播前缓冲到 watermark;播放中低于 lowWater
 //     自动暂停续缓冲,水位回升自动恢复。
-//   - seek:纯流不可原地 seek——全量已在内存则直接 ReadSeeker 精确 seek;
-//     否则 mp3 走「HTTP Range 重建 + 帧同步重解码」,flac 走
-//     「重新拉全量 + 丢弃解码到目标」(flac 帧流无自同步头,Range 不可行)。
+//   - seek:纯流不可原地 seek——flac 全量在内存则 ReadSeeker 精确 seek;
+//     mp3 全量在内存按码率估算字节落点切片重解码(对解码器隐藏 Seeker,
+//     避开 go-mp3 的全文件扫帧建索引);否则 mp3 走「HTTP Range 重建 + 帧同步
+//     重解码」,flac 走「重新拉全量 + 丢弃解码到目标」(flac 帧流无自同步头,
+//     Range 不可行)。
 //   - speaker.Init 全进程只能一次(beep 限制),输出采样率固定 44.1k,
 //     异采样率音源经 beep.Resample 对齐。
 
@@ -204,16 +206,24 @@ func (p *beepPlayer) open(url string, rangeFrom int64) (*streamParts, error) {
 }
 
 // openFromBytes 从全量内存快照重解码(seek 内存路径)。
-// ReadSeeker 让 mp3/flac 都获得精确 seek 能力。
-func openFromBytes(data []byte, format string) (*streamParts, error) {
-	rs := readSeekCloser{bytes.NewReader(data)}
+// exposeSeeker=true 时保留 Seek 能力(flac 精确 seek);false 时对解码器隐藏——
+// go-mp3 对 Seeker 源会全文件扫帧建索引(NewDecoder → ensureFrameStartsAndLength),
+// 5MB 快照扫描数秒、冻结调用方 goroutine;mp3 帧同步容忍估算落点,
+// 用「切片起点 ≈ 目标字节偏移」代替解码器精确 seek(与 HTTP Range 重建同精度)。
+func openFromBytes(data []byte, format string, exposeSeeker bool) (*streamParts, error) {
+	var rc io.ReadCloser
+	if exposeSeeker {
+		rc = readSeekCloser{bytes.NewReader(data)}
+	} else {
+		rc = io.NopCloser(bytes.NewReader(data))
+	}
 	var stream beep.StreamSeekCloser
 	var bf beep.Format
 	var err error
 	if format == "flac" {
-		stream, bf, err = flac.Decode(rs)
+		stream, bf, err = flac.Decode(rc)
 	} else {
-		stream, bf, err = mp3.Decode(rs)
+		stream, bf, err = mp3.Decode(rc)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("内存重解码: %w", err)
@@ -327,9 +337,21 @@ func (p *beepPlayer) Seek(offsetSec int64) error {
 	var err error
 	var baseMs, discard int64
 	switch {
+	case memSnapshot != nil && format == "mp3":
+		// 全量已在内存:按估算字节落点切片重解码,零网络零全文件扫描。
+		// 落点先经 findFrameSync 对齐帧边界(go-mp3 的扫描不校验 Layer,
+		// 伪同步会报「only layer3」),精度与 Range 重建一致(码率估算)。
+		from := int(min(max(rangeFrom, p.id3Size), int64(len(memSnapshot))))
+		if sync := findFrameSync(memSnapshot, from); sync >= 0 {
+			from = sync
+		}
+		st, err = openFromBytes(memSnapshot[from:], format, false)
+		if err == nil {
+			baseMs = target
+		}
 	case memSnapshot != nil:
-		// 全量已在内存:精确 seek,零网络。
-		st, err = openFromBytes(memSnapshot, format)
+		// flac 全量已在内存:ReadSeeker 精确 seek,零网络。
+		st, err = openFromBytes(memSnapshot, format, true)
 		if err == nil {
 			baseMs = target
 			pos := int(target * int64(st.sampleRate) / 1000)
