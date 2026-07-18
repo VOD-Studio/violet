@@ -170,6 +170,16 @@ func (p *beepPlayer) open(url string, rangeFrom int64) (*streamParts, error) {
 		parts.id3Size = int64(parseID3v2Size(head))
 		parts.bitrateKbps = parseMP3Bitrate(head)
 	}
+	if format == "mp3" && rangeFrom > 0 && !parts.rangeIgnored {
+		// Range 重建的落点是估算字节偏移,几乎不在帧边界;
+		// go-mp3 的帧头扫描不校验 Layer,伪同步会报「only layer3」。
+		// 先 peek 头部、自行找到帧同步、丢弃前面的杂字节再解码。
+		if head, perr := buf.PeekAtLeast(mp3PeekFloor, mp3PeekSize); perr == nil {
+			if sync := findFrameSync(head, 0); sync > 0 {
+				_, _ = io.CopyN(io.Discard, buf, int64(sync))
+			}
+		}
+	}
 
 	var stream beep.StreamSeekCloser
 	var bf beep.Format
