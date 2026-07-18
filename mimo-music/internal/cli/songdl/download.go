@@ -108,17 +108,31 @@ func WithWriteMeta(fn func(path string, song *mmpb.Song) error) DepsOption {
 	return func(d *Deps) { d.writeMeta = fn }
 }
 
+// Options 是 DownloadOne 的落盘选项(位置参数过多时改 struct,便于扩展且调用点可读)。
+//
+// 字段语义:
+//   - Out:下载目录(自动 mkdir -p)
+//   - Force:true 覆盖已存在文件;false 走 ResolveConflictPath 冲突策略
+//   - FilenameTmpl:自定义文件名模板(空 = 默认 {artist} - {title});见 FormatFilename
+//   - SkipMeta:true 跳过元数据写入(--no-metadata,纯流式落盘更快)
+type Options struct {
+	Out          string
+	Force        bool
+	FilenameTmpl string
+	SkipMeta     bool
+}
+
 // DownloadOne 完成单曲落盘的核心链路,返回结构化 Outcome(不渲染)。
 //
 // 调用方负责:① 拿到 songURL(含 Url/Format/Size/Bitrate);② 拿到 song(歌名/艺人/封面)。
 // 空音源(songURL==nil 或 Url=="")→ 调用方应在调本函数前拦截(单曲/批量各自的处理不同,
 // 不在此强加)。本函数只处理「拿到合法 songURL/song 之后」的落盘流程。
 //
-// 流程:ResolveConflictPath → mkdir → download → writeMeta(失败非阻塞)。
+// 流程:ResolveConflictPath → mkdir → download → writeMeta(失败非阻塞,SkipMeta 时跳过)。
 // Outcome.Status 三态:Success / Skipped(冲突且非 force)/ Failed(下载或 IO 错误)。
-func DownloadOne(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, out string, force bool, deps Deps) Outcome {
-	absOut := absOrSame(out)
-	filename, path, skipped := resolvePath(song, songURL.Format, out, force)
+func DownloadOne(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, opts Options, deps Deps) Outcome {
+	absOut := absOrSame(opts.Out)
+	filename, path, skipped := resolvePath(song, songURL.Format, opts.Out, opts.FilenameTmpl, opts.Force)
 	if skipped {
 		return Outcome{
 			Status:  StatusSkipped,
@@ -130,11 +144,11 @@ func DownloadOne(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, ou
 		}
 	}
 
-	if err := os.MkdirAll(out, 0o755); err != nil {
+	if err := os.MkdirAll(opts.Out, 0o755); err != nil {
 		return Outcome{
 			Status: StatusFailed,
 			SongID: song.Id,
-			Reason: fmt.Sprintf("目录 %s 不可写: %v", out, err),
+			Reason: fmt.Sprintf("目录 %s 不可写: %v", opts.Out, err),
 		}
 	}
 
@@ -149,7 +163,7 @@ func DownloadOne(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, ou
 	}
 
 	metaWritten := true
-	if deps.writeMeta != nil {
+	if !opts.SkipMeta && deps.writeMeta != nil {
 		if merr := deps.writeMeta(path, song); merr != nil {
 			metaWritten = false
 			// 元数据失败不阻塞:Outcome 仍是 Success(文件已落盘),
@@ -173,8 +187,8 @@ func DownloadOne(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, ou
 
 // resolvePath 是 ResolveConflictPath 的薄包装,同时返回 filename + path + skipped,
 // 供 DownloadOne 内部用(避免重复 filepath.Join)。
-func resolvePath(song *mmpb.Song, ext, dir string, force bool) (filename, path string, skipped bool) {
-	path, skipped = ResolveConflictPath(song, ext, dir, force)
+func resolvePath(song *mmpb.Song, ext, dir, filenameTmpl string, force bool) (filename, path string, skipped bool) {
+	path, skipped = ResolveConflictPath(song, ext, dir, filenameTmpl, force)
 	filename = filepath.Base(path)
 	return filename, path, skipped
 }

@@ -85,7 +85,7 @@ func TestDownloadOne_Success(t *testing.T) {
 		},
 	}
 
-	outcome := DownloadOne(context.Background(), song, url, dir, false, deps)
+	outcome := DownloadOne(context.Background(), song, url, Options{Out: dir}, deps)
 	require.Equal(t, StatusSuccess, outcome.Status)
 	require.True(t, downloadCalled, "download 应被调用")
 	require.Equal(t, int64(8), outcome.Bytes)
@@ -116,7 +116,7 @@ func TestDownloadOne_SkippedConflict(t *testing.T) {
 		},
 	}
 
-	outcome := DownloadOne(context.Background(), song, url, dir, false, deps)
+	outcome := DownloadOne(context.Background(), song, url, Options{Out: dir}, deps)
 	require.Equal(t, StatusSkipped, outcome.Status)
 	require.Contains(t, outcome.Reason, "已存在")
 }
@@ -138,7 +138,7 @@ func TestDownloadOne_ConflictFallback(t *testing.T) {
 		writeMeta: func(string, *mmpb.Song) error { return nil },
 	}
 
-	outcome := DownloadOne(context.Background(), song, url, dir, false, deps)
+	outcome := DownloadOne(context.Background(), song, url, Options{Out: dir}, deps)
 	require.Equal(t, StatusSuccess, outcome.Status)
 	require.Contains(t, outcome.Filename, "(347230)")
 }
@@ -160,7 +160,7 @@ func TestDownloadOne_MetaFailureNonBlocking(t *testing.T) {
 		},
 	}
 
-	outcome := DownloadOne(context.Background(), song, url, dir, false, deps)
+	outcome := DownloadOne(context.Background(), song, url, Options{Out: dir}, deps)
 	require.Equal(t, StatusSuccess, outcome.Status, "元数据失败不阻塞,仍 Success")
 	require.False(t, outcome.MetaWritten, "MetaWritten 应为 false")
 }
@@ -178,7 +178,7 @@ func TestDownloadOne_DownloadError(t *testing.T) {
 		},
 	}
 
-	outcome := DownloadOne(context.Background(), song, url, dir, false, deps)
+	outcome := DownloadOne(context.Background(), song, url, Options{Out: dir}, deps)
 	require.Equal(t, StatusFailed, outcome.Status)
 	require.Contains(t, outcome.Reason, "网络中断")
 }
@@ -201,7 +201,7 @@ func TestDownloadOne_MkdirFailure(t *testing.T) {
 		},
 	}
 
-	outcome := DownloadOne(context.Background(), song, url, target, false, deps)
+	outcome := DownloadOne(context.Background(), song, url, Options{Out: target}, deps)
 	require.Equal(t, StatusFailed, outcome.Status)
 	require.Contains(t, outcome.Reason, "不可写")
 }
@@ -222,7 +222,7 @@ func TestDownloadOne_Force(t *testing.T) {
 		writeMeta: func(string, *mmpb.Song) error { return nil },
 	}
 
-	outcome := DownloadOne(context.Background(), song, url, dir, true, deps)
+	outcome := DownloadOne(context.Background(), song, url, Options{Out: dir, Force: true}, deps)
 	require.Equal(t, StatusSuccess, outcome.Status)
 	require.Equal(t, "周杰伦 - 晴天.mp3", outcome.Filename)
 }

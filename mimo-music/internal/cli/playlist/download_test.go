@@ -152,7 +152,7 @@ func TestRenderPlaylistSummary_HumanFailedListToStderr(t *testing.T) {
 
 // makeDeps 构造可控的 playlistDeps:fetchTracks 返回固定 songs,
 // fetchURL/downloadOne 由调用方决定。sleepJitter/now noop 加速。
-func makeDeps(songs []*mmpb.Song, fetchURL func(context.Context, int64, int) (*mmpb.SongURL, error), downloadOne func(context.Context, *mmpb.Song, *mmpb.SongURL, string, bool) songdl.Outcome) playlistDeps {
+func makeDeps(songs []*mmpb.Song, fetchURL func(context.Context, int64, int) (*mmpb.SongURL, error), downloadOne func(context.Context, *mmpb.Song, *mmpb.SongURL, songdl.Options) songdl.Outcome) playlistDeps {
 	return playlistDeps{
 		fetchTracks: func(context.Context, int64) (*mmpb.AllTracksResponse, error) {
 			return &mmpb.AllTracksResponse{Songs: songs, Total: int32(len(songs))}, nil
@@ -185,7 +185,7 @@ func TestRunPlaylistDownload_AllSuccess(t *testing.T) {
 		func(context.Context, int64, int) (*mmpb.SongURL, error) {
 			return &mmpb.SongURL{Url: "http://x", Format: "mp3"}, nil
 		},
-		func(context.Context, *mmpb.Song, *mmpb.SongURL, string, bool) songdl.Outcome {
+		func(context.Context, *mmpb.Song, *mmpb.SongURL, songdl.Options) songdl.Outcome {
 			return songdl.Outcome{Status: songdl.StatusSuccess}
 		},
 	)
@@ -209,7 +209,7 @@ func TestRunPlaylistDownload_PartialFailureContinues(t *testing.T) {
 			}
 			return &mmpb.SongURL{Url: "http://x"}, nil
 		},
-		func(_ context.Context, song *mmpb.Song, _ *mmpb.SongURL, _ string, _ bool) songdl.Outcome {
+		func(_ context.Context, song *mmpb.Song, _ *mmpb.SongURL, _ songdl.Options) songdl.Outcome {
 			return songdl.Outcome{Status: songdl.StatusSuccess, SongID: song.Id}
 		},
 	)
@@ -239,7 +239,7 @@ func TestRunPlaylistDownload_WorkerConcurrency(t *testing.T) {
 				func(context.Context, int64, int) (*mmpb.SongURL, error) {
 					return &mmpb.SongURL{Url: "http://x"}, nil
 				},
-				func(context.Context, *mmpb.Song, *mmpb.SongURL, string, bool) songdl.Outcome {
+				func(context.Context, *mmpb.Song, *mmpb.SongURL, songdl.Options) songdl.Outcome {
 					cur := inFlight.Add(1)
 					for {
 						p := peak.Load()
@@ -290,7 +290,7 @@ func TestRunPlaylistDownload_ThrottleDegrades(t *testing.T) {
 		func(context.Context, int64, int) (*mmpb.SongURL, error) {
 			return nil, errors.New("connection reset") // 网络失败
 		},
-		func(_ context.Context, song *mmpb.Song, _ *mmpb.SongURL, _ string, _ bool) songdl.Outcome {
+		func(_ context.Context, song *mmpb.Song, _ *mmpb.SongURL, _ songdl.Options) songdl.Outcome {
 			return songdl.Outcome{Status: songdl.StatusSuccess, SongID: song.Id} // 不会被调到
 		},
 	)
@@ -314,7 +314,7 @@ func TestRunPlaylistDownload_VIPNoSourceDoesNotThrottle(t *testing.T) {
 		func(context.Context, int64, int) (*mmpb.SongURL, error) {
 			return &mmpb.SongURL{Url: ""}, nil // VIP 无音源(非网络失败)
 		},
-		func(_ context.Context, song *mmpb.Song, _ *mmpb.SongURL, _ string, _ bool) songdl.Outcome {
+		func(_ context.Context, song *mmpb.Song, _ *mmpb.SongURL, _ songdl.Options) songdl.Outcome {
 			return songdl.Outcome{Status: songdl.StatusSuccess}
 		},
 	)
@@ -369,7 +369,7 @@ func TestRunPlaylistDownload_SizeMatchSkips(t *testing.T) {
 		func(context.Context, int64, int) (*mmpb.SongURL, error) {
 			return &mmpb.SongURL{Url: "http://x", Format: "mp3", Size: size}, nil
 		},
-		func(context.Context, *mmpb.Song, *mmpb.SongURL, string, bool) songdl.Outcome {
+		func(context.Context, *mmpb.Song, *mmpb.SongURL, songdl.Options) songdl.Outcome {
 			downloadCalled = true
 			return songdl.Outcome{Status: songdl.StatusSuccess}
 		},
@@ -399,7 +399,7 @@ func TestRunPlaylistDownload_SizeMismatchSkipsWithWarn(t *testing.T) {
 		func(context.Context, int64, int) (*mmpb.SongURL, error) {
 			return &mmpb.SongURL{Url: "http://x", Format: "mp3", Size: remoteSize}, nil
 		},
-		func(context.Context, *mmpb.Song, *mmpb.SongURL, string, bool) songdl.Outcome {
+		func(context.Context, *mmpb.Song, *mmpb.SongURL, songdl.Options) songdl.Outcome {
 			t.Fatal("size 不符时应跳过,不应调 downloadOne")
 			return songdl.Outcome{}
 		},
@@ -426,7 +426,7 @@ func TestRunPlaylistDownload_ForceOverridesSize(t *testing.T) {
 		func(context.Context, int64, int) (*mmpb.SongURL, error) {
 			return &mmpb.SongURL{Url: "http://x", Format: "mp3", Size: size}, nil
 		},
-		func(context.Context, *mmpb.Song, *mmpb.SongURL, string, bool) songdl.Outcome {
+		func(context.Context, *mmpb.Song, *mmpb.SongURL, songdl.Options) songdl.Outcome {
 			downloadCalled = true
 			return songdl.Outcome{Status: songdl.StatusSuccess}
 		},

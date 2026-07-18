@@ -121,7 +121,7 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force bool, deps d
 		songdl.WithDownload(deps.download),
 		songdl.WithWriteMeta(deps.writeMeta),
 	)
-	outcome := songdl.DownloadOne(ctx, song, songURL, out, force, dlDeps)
+	outcome := songdl.DownloadOne(ctx, song, songURL, songdl.Options{Out: out, Force: force}, dlDeps)
 
 	switch outcome.Status {
 	case songdl.StatusSkipped:

@@ -72,7 +72,7 @@ type playlistDeps struct {
 	fetchTracks        func(ctx context.Context, id int64) (*mmpb.AllTracksResponse, error)
 	fetchPlaylistDetail func(ctx context.Context, id int64) (*mmpb.Playlist, error) // 拿歌单名(显示用)
 	fetchURL           func(ctx context.Context, id int64, level int) (*mmpb.SongURL, error)
-	downloadOne        func(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, out string, force bool) songdl.Outcome
+	downloadOne        func(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, opts songdl.Options) songdl.Outcome
 	newProgress        func() *kit.Progress
 	sleepJitter        func() // 风控:歌间随机 sleep 200-500ms(测试 noop)
 	now                func() time.Time
@@ -105,8 +105,8 @@ func defaultPlaylistDeps(k *kit.Kit) playlistDeps {
 			}
 			return resp.Url, nil
 		},
-		downloadOne: func(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, out string, force bool) songdl.Outcome {
-			return songdl.DownloadOne(ctx, song, songURL, out, force, dlDeps)
+		downloadOne: func(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, opts songdl.Options) songdl.Outcome {
+			return songdl.DownloadOne(ctx, song, songURL, opts, dlDeps)
 		},
 		newProgress: func() *kit.Progress { return k.NewProgress() },
 		sleepJitter: func() {
@@ -268,7 +268,7 @@ func runWorkerPool(k *kit.Kit, songs []*mmpb.Song, level int, out string, force 
 			return o
 		}
 		sub := p.AddBar(songURL.Size, shortLabel(song)) // size 未知(0)走无百分比模式
-		o := deps.downloadOne(ctx, song, songURL, out, force)
+		o := deps.downloadOne(ctx, song, songURL, songdl.Options{Out: out, Force: force})
 		switch o.Status {
 		case songdl.StatusSuccess, songdl.StatusSkipped:
 			sub.Complete(deps.now())
