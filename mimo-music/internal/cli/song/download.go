@@ -33,6 +33,7 @@ func newDownload(k *kit.Kit) *cobra.Command {
 	var force bool
 	var dryRun bool
 	var noMetadata bool
+	var filenameTmpl string
 	c := &cobra.Command{
 		Use:   "download",
 		Short: "下载歌曲到本地(带元数据)",
@@ -42,7 +43,7 @@ func newDownload(k *kit.Kit) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return runDownload(k, rid, level, out, force, dryRun, noMetadata, defaultDownloadDeps(k))
+			return runDownload(k, rid, level, out, force, dryRun, noMetadata, filenameTmpl, defaultDownloadDeps(k))
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
@@ -51,6 +52,7 @@ func newDownload(k *kit.Kit) *cobra.Command {
 	c.Flags().BoolVar(&force, "force", false, "覆盖已存在文件")
 	c.Flags().BoolVar(&dryRun, "dry-run", false, "只打印将下载到哪、文件名、预估大小,不落盘")
 	c.Flags().BoolVar(&noMetadata, "no-metadata", false, "跳过元数据写入(纯流式落盘,更快)")
+	c.Flags().StringVar(&filenameTmpl, "filename", "", "文件名模板,支持 {artist}/{title}/{album}/{id}(默认 {artist} - {title})")
 	return c
 }
 
@@ -106,7 +108,8 @@ func defaultDownloadDeps(k *kit.Kit) downloadDeps {
 // 流程:fetchURL → fetchDetail → (dry-run 拦截) → songdl.DownloadOne → 渲染结果。
 // dryRun=true:fetchURL/fetchDetail 后打印目标路径/文件名/预估大小,不落盘 exit 0。
 // noMetadata=true:传 SkipMeta 给 DownloadOne(跳过元数据写入)。
-func runDownload(k *kit.Kit, id int64, level int, out string, force, dryRun, noMetadata bool, deps downloadDeps) error {
+// filenameTmpl 非空:用自定义模板构造文件名(支持 {artist}/{title}/{album}/{id})。
+func runDownload(k *kit.Kit, id int64, level int, out string, force, dryRun, noMetadata bool, filenameTmpl string, deps downloadDeps) error {
 	ctx := k.CookieCtx()
 
 	// 1. 拿播放直链。
@@ -126,7 +129,7 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force, dryRun, noM
 
 	// 2.5. dry-run:打印目标 + 预估,不落盘(PRD 便捷性)。exit 0。
 	if dryRun {
-		filename := songdl.SongFilename(song, songURL.Format)
+		filename := resolveFilename(song, songURL.Format, filenameTmpl)
 		absOut, _ := filepath.Abs(out)
 		fmt.Fprintf(k.OutWriter(), "将下载到 %s\n", filepath.Join(absOut, filename))
 		fmt.Fprintf(k.OutWriter(), "格式     %s %dkbps\n", songURL.Format, songURL.Bitrate/1000)
@@ -145,7 +148,7 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force, dryRun, noM
 		songdl.WithDownload(deps.download),
 		songdl.WithWriteMeta(deps.writeMeta),
 	)
-	outcome := songdl.DownloadOne(ctx, song, songURL, songdl.Options{Out: out, Force: force, SkipMeta: noMetadata}, dlDeps)
+	outcome := songdl.DownloadOne(ctx, song, songURL, songdl.Options{Out: out, Force: force, SkipMeta: noMetadata, FilenameTmpl: filenameTmpl}, dlDeps)
 
 	switch outcome.Status {
 	case songdl.StatusSkipped:
@@ -215,6 +218,14 @@ func (r downloadResult) writeHuman(w io.Writer) {
 	fmt.Fprintf(w, "大小     %s\n", songdl.FormatSizeLabel(r.Size))
 	fmt.Fprintf(w, "格式     %s (%d kbps)\n", r.Format, r.bitrate/1000)
 	fmt.Fprintf(w, "元数据   %s\n", meta)
+}
+
+// resolveFilename 按 --filename 模板(空 = 默认)解析文件名。dry-run 提示用。
+func resolveFilename(song *mmpb.Song, ext, tmpl string) string {
+	if tmpl == "" {
+		return songdl.SongFilename(song, ext)
+	}
+	return songdl.FormatFilename(tmpl, song, ext)
 }
 
 // writeJSON 输出多行缩进 JSON(对齐 protojson 的 Multiline 风格)。

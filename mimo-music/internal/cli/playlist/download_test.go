@@ -525,29 +525,27 @@ func TestRunPlaylistDownload_DryRun(t *testing.T) {
 }
 
 // TestRunPlaylistDownload_NoMetadata --no-metadata:downloadOne 收到 SkipMeta=true。
+// 用 atomic 计数(而非 slice append)避免 worker 并发写竞态。
 func TestRunPlaylistDownload_NoMetadata(t *testing.T) {
 	t.Parallel()
 	k, _, _ := newTestKit()
 	songs := fakeSongs(2)
-	var gotOpts []songdl.Options
+	var skipMetaCount atomic.Int32
 	deps := makeDeps(songs,
 		func(context.Context, int64, int) (*mmpb.SongURL, error) {
 			return &mmpb.SongURL{Url: "http://x"}, nil
 		},
 		func(_ context.Context, _ *mmpb.Song, _ *mmpb.SongURL, opts songdl.Options) songdl.Outcome {
-			gotOpts = append(gotOpts, opts)
+			if opts.SkipMeta {
+				skipMetaCount.Add(1)
+			}
 			return songdl.Outcome{Status: songdl.StatusSuccess}
 		},
 	)
 	if err := runPlaylistDownload(k, 1, 1, t.TempDir(), 2, false, false, true, deps); err != nil {
 		t.Fatalf("no-metadata 应 exit 0, got %v", err)
 	}
-	if len(gotOpts) != 2 {
-		t.Fatalf("应下载 2 首, got %d", len(gotOpts))
-	}
-	for i, o := range gotOpts {
-		if !o.SkipMeta {
-			t.Errorf("第 %d 首应 SkipMeta=true", i)
-		}
+	if got := skipMetaCount.Load(); got != 2 {
+		t.Errorf("应 2 首 SkipMeta=true, got %d", got)
 	}
 }

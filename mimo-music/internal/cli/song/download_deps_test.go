@@ -32,7 +32,7 @@ func TestRunDownload_VIPNoSource(t *testing.T) {
 			return &mmpb.SongURL{Url: ""}, nil // 空 Url = VIP/无音源
 		},
 	}
-	err := runDownload(k, 99999, 1, t.TempDir(), false, false, false, deps)
+	err := runDownload(k, 99999, 1, t.TempDir(), false, false, false, "", deps)
 	if err == nil {
 		t.Fatal("VIP 无音源应返回错误")
 	}
@@ -51,7 +51,7 @@ func TestRunDownload_NilURL(t *testing.T) {
 	deps := downloadDeps{
 		fetchURL: func(context.Context, int64, int) (*mmpb.SongURL, error) { return nil, nil },
 	}
-	if err := runDownload(k, 1, 1, t.TempDir(), false, false, false, deps); err == nil {
+	if err := runDownload(k, 1, 1, t.TempDir(), false, false, false, "", deps); err == nil {
 		t.Fatal("nil Url 应报错")
 	}
 }
@@ -79,7 +79,7 @@ func TestRunDownload_MetadataFailureWarnf(t *testing.T) {
 			return errors.New("tag write failed") // 模拟元数据失败
 		},
 	}
-	err := runDownload(k, 1, 1, dir, false, false, false, deps)
+	err := runDownload(k, 1, 1, dir, false, false, false, "", deps)
 	if err != nil {
 		t.Fatalf("元数据失败不应阻塞(exit 0),got err %v", err)
 	}
@@ -118,7 +118,7 @@ func TestRunDownload_UnwritableOut(t *testing.T) {
 		},
 	}
 	target := filepath.Join(readonlyDir, "subdir")
-	err := runDownload(k, 1, 1, target, false, false, false, deps)
+	err := runDownload(k, 1, 1, target, false, false, false, "", deps)
 	if err == nil {
 		t.Fatal("不可写目录应报错")
 	}
@@ -150,7 +150,7 @@ func TestRunDownload_OutMkdir(t *testing.T) {
 		},
 		writeMeta: func(string, *mmpb.Song) error { return nil },
 	}
-	if err := runDownload(k, 1, 1, nested, false, false, false, deps); err != nil {
+	if err := runDownload(k, 1, 1, nested, false, false, false, "", deps); err != nil {
 		t.Fatalf("自动 mkdir 应成功,got %v", err)
 	}
 	// 嵌套目录应已创建。
@@ -179,7 +179,7 @@ func TestRunDownload_FLACFormat(t *testing.T) {
 		},
 		writeMeta: func(string, *mmpb.Song) error { return nil },
 	}
-	if err := runDownload(k, 1, 3, dir, false, false, false, deps); err != nil {
+	if err := runDownload(k, 1, 3, dir, false, false, false, "", deps); err != nil {
 		t.Fatalf("flac 下载应成功,got %v", err)
 	}
 	// 人类输出应显示 flac 格式。
@@ -209,7 +209,7 @@ func TestRunDownload_DryRun(t *testing.T) {
 		},
 		writeMeta: func(string, *mmpb.Song) error { return nil },
 	}
-	if err := runDownload(k, 1, 1, dir, false, true, false, deps); err != nil {
+	if err := runDownload(k, 1, 1, dir, false, true, false, "", deps); err != nil {
 		t.Fatalf("dry-run 应 exit 0, got %v", err)
 	}
 	if downloadCalled {
@@ -249,7 +249,7 @@ func TestRunDownload_NoMetadata(t *testing.T) {
 			return nil
 		},
 	}
-	if err := runDownload(k, 1, 1, dir, false, false, true, deps); err != nil {
+	if err := runDownload(k, 1, 1, dir, false, false, true, "", deps); err != nil {
 		t.Fatalf("no-metadata 应 exit 0, got %v", err)
 	}
 	if metaCalled {
@@ -262,5 +262,34 @@ func TestRunDownload_NoMetadata(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "✗") {
 		t.Errorf("人类输出应显示元数据未写(✗), got %q", stdout.String())
+	}
+}
+
+// TestRunDownload_FilenameTemplate --filename 模板端到端:自定义文件名传到 download。
+func TestRunDownload_FilenameTemplate(t *testing.T) {
+	t.Parallel()
+	k, _, _ := newTestKit()
+	dir := t.TempDir()
+	var gotPath string
+	deps := downloadDeps{
+		fetchURL: func(context.Context, int64, int) (*mmpb.SongURL, error) {
+			return &mmpb.SongURL{Url: "http://x", Format: "mp3", Size: 100}, nil
+		},
+		fetchDetail: func(context.Context, int64) (*mmpb.Song, error) {
+			return &mmpb.Song{Id: 347230, Name: "晴天", Artists: []*mmpb.Artist{{Name: "周杰伦"}}}, nil
+		},
+		download: func(ctx context.Context, url string, total int64, path, label string) (int64, error) {
+			gotPath = path
+			return 4, os.WriteFile(path, []byte("data"), 0o644)
+		},
+		writeMeta: func(string, *mmpb.Song) error { return nil },
+	}
+	// 自定义模板 {title} - {id}。
+	if err := runDownload(k, 347230, 1, dir, false, false, false, "{title} - {id}", deps); err != nil {
+		t.Fatalf("filename 模板应 exit 0, got %v", err)
+	}
+	want := filepath.Join(dir, "晴天 - 347230.mp3")
+	if gotPath != want {
+		t.Errorf("文件名应按模板, got %q, want %q", gotPath, want)
 	}
 }
