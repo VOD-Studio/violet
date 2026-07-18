@@ -39,10 +39,11 @@ const VIEWPORT_W_RATIO = 0.9;
 const VIEWPORT_H_RATIO = 0.9;
 
 /**
- * 按原图 natural 尺寸 + 视口约束(90vw×90vh) 计算 contain 显示盒（确定像素）。
+ * 按探测到的比例 + 视口约束(90vw×90vh) 计算 contain 显示盒（确定像素）。
  *
- * contain 真实语义：保持比例、不超过视口、**也不超过原图 natural**（小图不放大）。
- * 探测原图 natural 后算出原图将占据的显示盒，把该 width/height 显式设给容器——
+ * 探测源通常是缩略图（与原图同比例、绝对尺寸不同），故盒只由比例与视口
+ * 决定，不做 natural 上限（小图放大到视口盒显示）。
+ * 探测到比例后把该 width/height 显式设给容器——
  * 不能用 max-w/max-h（只限上限不放大，配合 absolute 子元素会塌成 0）。
  */
 function computeContainBox(naturalW: number, naturalH: number): { width: number; height: number } {
@@ -55,12 +56,7 @@ function computeContainBox(naturalW: number, naturalH: number): { width: number;
     const ratio = naturalW / naturalH;
     // 视口内按比例的最大盒
     const w1 = maxH * ratio;
-    const fit = w1 <= maxW ? { width: w1, height: maxH } : { width: maxW, height: maxW / ratio };
-    // contain：不超过原图 natural（小图不放大）
-    return {
-        width: Math.min(fit.width, naturalW),
-        height: Math.min(fit.height, naturalH),
-    };
+    return w1 <= maxW ? { width: w1, height: maxH } : { width: maxW, height: maxW / ratio };
 }
 
 /**
@@ -149,8 +145,9 @@ export function ImagePreview({
         return () => clearTimeout(timer);
     }, [open, flyInSettled]);
 
-    // 打开/切换图时，探测当前图 natural size（new Image() 即后台预载），
-    // 据此算出原图目标显示盒。无论是否有缩略图都需要探测，否则无缩略图时 box 为 null 不渲染。
+    // 打开/切换图时，探测当前图比例（new Image() 即后台预载），据此算显示盒。
+    // 优先探测缩略图：格子已缓存几乎即时返回，且与原图同比例，盒立即就绪——
+    // 原图（可达十几 MB）的下载解码不再阻塞飞入动画。无缩略图回退探测原图。
     useEffect(() => {
         if (!open) {
             setNaturalSize(null);
@@ -164,11 +161,11 @@ export function ImagePreview({
                 setBox(computeContainBox(probe.naturalWidth, probe.naturalHeight));
             }
         };
-        probe.src = images[index];
+        probe.src = thumbnails?.[index] ?? images[index];
         return () => {
             probe.onload = null;
         };
-    }, [open, index, images]);
+    }, [open, index, images, thumbnails]);
 
     // 原图尺寸已知后响应窗口 resize 重算盒
     useEffect(() => {
