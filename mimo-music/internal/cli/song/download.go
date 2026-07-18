@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -30,6 +31,8 @@ func newDownload(k *kit.Kit) *cobra.Command {
 	var level int
 	var out string
 	var force bool
+	var dryRun bool
+	var noMetadata bool
 	c := &cobra.Command{
 		Use:   "download",
 		Short: "下载歌曲到本地(带元数据)",
@@ -39,13 +42,15 @@ func newDownload(k *kit.Kit) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return runDownload(k, rid, level, out, force, defaultDownloadDeps(k))
+			return runDownload(k, rid, level, out, force, dryRun, noMetadata, defaultDownloadDeps(k))
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
 	c.Flags().IntVar(&level, "level", 1, "音质: 1=standard 2=exhigh 3=lossless 4=hires")
 	c.Flags().StringVar(&out, "out", ".", "下载目录(自动 mkdir -p)")
 	c.Flags().BoolVar(&force, "force", false, "覆盖已存在文件")
+	c.Flags().BoolVar(&dryRun, "dry-run", false, "只打印将下载到哪、文件名、预估大小,不落盘")
+	c.Flags().BoolVar(&noMetadata, "no-metadata", false, "跳过元数据写入(纯流式落盘,更快)")
 	return c
 }
 
@@ -98,8 +103,10 @@ func defaultDownloadDeps(k *kit.Kit) downloadDeps {
 // runDownload 执行下载主流程。
 //
 // deps 注入外部依赖(测试用);生产用 defaultDownloadDeps。
-// 流程:fetchURL → fetchDetail → songdl.DownloadOne → 渲染结果。
-func runDownload(k *kit.Kit, id int64, level int, out string, force bool, deps downloadDeps) error {
+// 流程:fetchURL → fetchDetail → (dry-run 拦截) → songdl.DownloadOne → 渲染结果。
+// dryRun=true:fetchURL/fetchDetail 后打印目标路径/文件名/预估大小,不落盘 exit 0。
+// noMetadata=true:传 SkipMeta 给 DownloadOne(跳过元数据写入)。
+func runDownload(k *kit.Kit, id int64, level int, out string, force, dryRun, noMetadata bool, deps downloadDeps) error {
 	ctx := k.CookieCtx()
 
 	// 1. 拿播放直链。
@@ -117,6 +124,20 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force bool, deps d
 		song = &mmpb.Song{Id: id}
 	}
 
+	// 2.5. dry-run:打印目标 + 预估,不落盘(PRD 便捷性)。exit 0。
+	if dryRun {
+		filename := songdl.SongFilename(song, songURL.Format)
+		absOut, _ := filepath.Abs(out)
+		fmt.Fprintf(k.OutWriter(), "将下载到 %s\n", filepath.Join(absOut, filename))
+		fmt.Fprintf(k.OutWriter(), "格式     %s %dkbps\n", songURL.Format, songURL.Bitrate/1000)
+		if songURL.Size > 0 {
+			fmt.Fprintf(k.OutWriter(), "预估大小 %s\n", songdl.FormatSizeLabel(songURL.Size))
+		} else {
+			fmt.Fprintf(k.OutWriter(), "预估大小 未知\n")
+		}
+		return nil
+	}
+
 	// 3. 单曲落盘(songdl.DownloadOne):文件名→mkdir→冲突→下载→元数据。
 	//    download/writeMeta 注入到 songdl.Deps,保持测试 mock 路径不变
 	//    (deps.download/writeMeta 字段是测试 mock 点,默认实现走真实网络)。
@@ -124,7 +145,7 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force bool, deps d
 		songdl.WithDownload(deps.download),
 		songdl.WithWriteMeta(deps.writeMeta),
 	)
-	outcome := songdl.DownloadOne(ctx, song, songURL, songdl.Options{Out: out, Force: force}, dlDeps)
+	outcome := songdl.DownloadOne(ctx, song, songURL, songdl.Options{Out: out, Force: force, SkipMeta: noMetadata}, dlDeps)
 
 	switch outcome.Status {
 	case songdl.StatusSkipped:
@@ -136,7 +157,8 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force bool, deps d
 	}
 
 	// 元数据失败不阻塞:Warnf 警告到 stderr,结果照常渲染。
-	if !outcome.MetaWritten {
+	// --no-metadata 是用户主动跳过,不算失败,不 Warnf。
+	if !outcome.MetaWritten && !noMetadata {
 		k.Warnf("⚠ 元数据写入失败,文件已保存")
 	}
 

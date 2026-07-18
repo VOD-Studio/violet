@@ -203,7 +203,7 @@ func TestRunPlaylistDownload_EmptyPlaylist(t *testing.T) {
 	t.Parallel()
 	k, out, _ := newTestKit()
 	deps := makeDeps(nil, nil, nil)
-	if err := runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, deps); err != nil {
+	if err := runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, false, false, deps); err != nil {
 		t.Fatalf("空歌单应 exit 0, got %v", err)
 	}
 	if !strings.Contains(out.String(), "无可下载曲目") {
@@ -223,7 +223,7 @@ func TestRunPlaylistDownload_AllSuccess(t *testing.T) {
 			return songdl.Outcome{Status: songdl.StatusSuccess}
 		},
 	)
-	if err := runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, deps); err != nil {
+	if err := runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, false, false, deps); err != nil {
 		t.Fatalf("全成功应 exit 0, got %v", err)
 	}
 	if !strings.Contains(out.String(), "成功     5") {
@@ -247,7 +247,7 @@ func TestRunPlaylistDownload_PartialFailureContinues(t *testing.T) {
 			return songdl.Outcome{Status: songdl.StatusSuccess, SongID: song.Id}
 		},
 	)
-	if err := runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, deps); err != nil {
+	if err := runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, false, false, deps); err != nil {
 		t.Fatalf("部分失败应仍 exit 0, got %v", err)
 	}
 	if !strings.Contains(out.String(), "成功     4") {
@@ -286,7 +286,7 @@ func TestRunPlaylistDownload_WorkerConcurrency(t *testing.T) {
 					return songdl.Outcome{Status: songdl.StatusSuccess}
 				},
 			)
-			if err := runPlaylistDownload(k, 1, 1, t.TempDir(), w, false, deps); err != nil {
+			if err := runPlaylistDownload(k, 1, 1, t.TempDir(), w, false, false, false, deps); err != nil {
 				t.Fatalf("err: %v", err)
 			}
 			// 允许等于 workers(临界),但绝不超过。
@@ -307,7 +307,7 @@ func TestRunPlaylistDownload_ConfirmGateRejected(t *testing.T) {
 	k.Yes = false // 模拟非 TTY 无 --yes(ConfirmWrite 检查 stdinIsTTY,测试环境 stdin 非 TTY)
 	songs := fakeSongs(3)
 	deps := makeDeps(songs, nil, nil)
-	err := runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, deps)
+	err := runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, false, false, deps)
 	if !errors.Is(err, kit.ErrUsage) {
 		t.Fatalf("非 TTY 无 --yes 应 ErrUsage, got %v", err)
 	}
@@ -328,7 +328,7 @@ func TestRunPlaylistDownload_ThrottleDegrades(t *testing.T) {
 			return songdl.Outcome{Status: songdl.StatusSuccess, SongID: song.Id} // 不会被调到
 		},
 	)
-	_ = runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, deps)
+	_ = runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, false, false, deps)
 	// 连续 3 网络失败 → 降并发提示;再 2 失败 → 停止 + 限流提示。
 	if !strings.Contains(errb.String(), "降并发到 1") {
 		t.Errorf("应触发降并发提示, got %q", errb.String())
@@ -352,7 +352,7 @@ func TestRunPlaylistDownload_VIPNoSourceDoesNotThrottle(t *testing.T) {
 			return songdl.Outcome{Status: songdl.StatusSuccess}
 		},
 	)
-	_ = runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, deps)
+	_ = runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, false, false, deps)
 	if strings.Contains(errb.String(), "降并发") {
 		t.Errorf("VIP 无音源不应触发风控, got %q", errb.String())
 	}
@@ -408,7 +408,7 @@ func TestRunPlaylistDownload_SizeMatchSkips(t *testing.T) {
 			return songdl.Outcome{Status: songdl.StatusSuccess}
 		},
 	)
-	_ = runPlaylistDownload(k, 1, 1, dir, 1, false, deps)
+	_ = runPlaylistDownload(k, 1, 1, dir, 1, false, false, false, deps)
 	if downloadCalled {
 		t.Error("size 匹配时应跳过,不应调 downloadOne")
 	}
@@ -438,7 +438,7 @@ func TestRunPlaylistDownload_SizeMismatchSkipsWithWarn(t *testing.T) {
 			return songdl.Outcome{}
 		},
 	)
-	_ = runPlaylistDownload(k, 1, 1, dir, 1, false, deps)
+	_ = runPlaylistDownload(k, 1, 1, dir, 1, false, false, false, deps)
 	if !strings.Contains(errb.String(), "大小不符") {
 		t.Errorf("应警告大小不符, got %q", errb.String())
 	}
@@ -465,7 +465,7 @@ func TestRunPlaylistDownload_ForceOverridesSize(t *testing.T) {
 			return songdl.Outcome{Status: songdl.StatusSuccess}
 		},
 	)
-	_ = runPlaylistDownload(k, 1, 1, dir, 1, true, deps) // force=true
+	_ = runPlaylistDownload(k, 1, 1, dir, 1, true, false, false, deps) // force=true
 	if !downloadCalled {
 		t.Error("force=true 应跳过 size 预检正常下载")
 	}
@@ -485,5 +485,69 @@ func TestEstimateTotalBytes(t *testing.T) {
 	}
 	if got := estimateTotalBytes(songs, 1); got != 4_800_000 {
 		t.Errorf("level 1 预估 = %d, want 4800000", got)
+	}
+}
+
+// ==================== --dry-run / --no-metadata(issue #24)====================
+
+// TestRunPlaylistDownload_DryRun --dry-run:打印歌单名+曲目数+预估总量,不落盘,不调 worker。
+func TestRunPlaylistDownload_DryRun(t *testing.T) {
+	t.Parallel()
+	k, out, _ := newTestKit()
+	songs := fakeSongs(5)
+	// 给每首设时长,让预估非 0。
+	for _, s := range songs {
+		s.DurationMs = 240000
+	}
+	workerCalled := false
+	deps := makeDeps(songs,
+		func(context.Context, int64, int) (*mmpb.SongURL, error) {
+			workerCalled = true
+			return &mmpb.SongURL{Url: "http://x"}, nil
+		},
+		func(context.Context, *mmpb.Song, *mmpb.SongURL, songdl.Options) songdl.Outcome {
+			workerCalled = true
+			return songdl.Outcome{Status: songdl.StatusSuccess}
+		},
+	)
+	if err := runPlaylistDownload(k, 1, 1, t.TempDir(), 3, false, true, false, deps); err != nil {
+		t.Fatalf("dry-run 应 exit 0, got %v", err)
+	}
+	if workerCalled {
+		t.Error("dry-run 不应调 worker(fetchURL/downloadOne)")
+	}
+	text := out.String()
+	for _, want := range []string{"共 5 首", "预估总量"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("dry-run 输出应含 %q, got %q", want, text)
+		}
+	}
+}
+
+// TestRunPlaylistDownload_NoMetadata --no-metadata:downloadOne 收到 SkipMeta=true。
+func TestRunPlaylistDownload_NoMetadata(t *testing.T) {
+	t.Parallel()
+	k, _, _ := newTestKit()
+	songs := fakeSongs(2)
+	var gotOpts []songdl.Options
+	deps := makeDeps(songs,
+		func(context.Context, int64, int) (*mmpb.SongURL, error) {
+			return &mmpb.SongURL{Url: "http://x"}, nil
+		},
+		func(_ context.Context, _ *mmpb.Song, _ *mmpb.SongURL, opts songdl.Options) songdl.Outcome {
+			gotOpts = append(gotOpts, opts)
+			return songdl.Outcome{Status: songdl.StatusSuccess}
+		},
+	)
+	if err := runPlaylistDownload(k, 1, 1, t.TempDir(), 2, false, false, true, deps); err != nil {
+		t.Fatalf("no-metadata 应 exit 0, got %v", err)
+	}
+	if len(gotOpts) != 2 {
+		t.Fatalf("应下载 2 首, got %d", len(gotOpts))
+	}
+	for i, o := range gotOpts {
+		if !o.SkipMeta {
+			t.Errorf("第 %d 首应 SkipMeta=true", i)
+		}
 	}
 }

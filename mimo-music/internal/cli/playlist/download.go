@@ -43,6 +43,8 @@ func newDownload(k *kit.Kit) *cobra.Command {
 	var out string
 	var workers int
 	var force bool
+	var dryRun bool
+	var noMetadata bool
 	c := &cobra.Command{
 		Use:   "download",
 		Short: "下载整个歌单(批量,带元数据)",
@@ -52,7 +54,7 @@ func newDownload(k *kit.Kit) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return runPlaylistDownload(k, rid, level, out, workers, force, defaultPlaylistDeps(k))
+			return runPlaylistDownload(k, rid, level, out, workers, force, dryRun, noMetadata, defaultPlaylistDeps(k))
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌单 ID")
@@ -60,6 +62,8 @@ func newDownload(k *kit.Kit) *cobra.Command {
 	c.Flags().StringVar(&out, "out", ".", "下载目录(自动 mkdir -p)")
 	c.Flags().IntVar(&workers, "workers", 3, "并发数 1-5")
 	c.Flags().BoolVar(&force, "force", false, "覆盖已存在文件")
+	c.Flags().BoolVar(&dryRun, "dry-run", false, "只打印曲目清单 + 预估总量,不落盘")
+	c.Flags().BoolVar(&noMetadata, "no-metadata", false, "跳过元数据写入(批量生效)")
 	return c
 }
 
@@ -125,7 +129,7 @@ func defaultPlaylistDeps(k *kit.Kit) playlistDeps {
 // worker 池 → 汇总渲染。
 // 退出码:确认取消 → ErrCancelled(exit 0);非 TTY 无 --yes → ErrUsage(exit 2);
 // mkdir 失败 → exit 1;否则 exit 0。
-func runPlaylistDownload(k *kit.Kit, id int64, level int, out string, workers int, force bool, deps playlistDeps) error {
+func runPlaylistDownload(k *kit.Kit, id int64, level int, out string, workers int, force, dryRun, noMetadata bool, deps playlistDeps) error {
 	ctx := k.CookieCtx()
 
 	// 1. 拿全量曲目 + 歌单名(并行)。歌单名失败不致命(用 ID 兜底)。
@@ -149,6 +153,15 @@ func runPlaylistDownload(k *kit.Kit, id int64, level int, out string, workers in
 	// level 1≈320kbps, 2≈320, 3(flac)≈996, 4≈1411;字节/秒 = kbps×1000/8。
 	estBytes := estimateTotalBytes(songs, level)
 	estLabel := songdl.FormatSizeLabel(estBytes)
+
+	// 2.5. dry-run:打印曲目清单 + 预估总量,不落盘,exit 0(跳过确认闸门)。
+	if dryRun {
+		fmt.Fprintf(k.OutWriter(), "歌单「%s」共 %d 首\n", playlistName, len(songs))
+		fmt.Fprintf(k.OutWriter(), "目标目录 %s\n", absOrSamePlaylist(out))
+		fmt.Fprintf(k.OutWriter(), "预估总量 %s\n", estLabel)
+		return nil
+	}
+
 	action := fmt.Sprintf("下载歌单「%s」(%d 首, 预估 %s)到 %s",
 		playlistName, len(songs), estLabel, absOrSamePlaylist(out))
 	if err := k.ConfirmFatal(action); err != nil {
@@ -161,7 +174,7 @@ func runPlaylistDownload(k *kit.Kit, id int64, level int, out string, workers in
 	}
 
 	// 4. worker 池。
-	outcomes := runWorkerPool(k, songs, level, out, force, workers, deps)
+	outcomes := runWorkerPool(k, songs, level, out, force, noMetadata, workers, deps)
 
 	// 5. 汇总渲染。
 	return renderPlaylistSummary(k, playlistName, len(songs), outcomes)
@@ -172,7 +185,7 @@ func runPlaylistDownload(k *kit.Kit, id int64, level int, out string, workers in
 // 并发控制:初始 N 个 worker goroutine;连续失败达 failThreshold → degraded=true,
 // 之后所有 worker 抢 serialMu 进入串行(并发=1);降并发后再连续 stopThreshold 次失败
 // → cancel 全部 + 限流提示。单曲失败不中断批量(outcome 记账继续)。
-func runWorkerPool(k *kit.Kit, songs []*mmpb.Song, level int, out string, force bool, workers int, deps playlistDeps) []songdl.Outcome {
+func runWorkerPool(k *kit.Kit, songs []*mmpb.Song, level int, out string, force, noMetadata bool, workers int, deps playlistDeps) []songdl.Outcome {
 	n := clampWorkers(workers)
 
 	p := deps.newProgress()
@@ -271,7 +284,7 @@ func runWorkerPool(k *kit.Kit, songs []*mmpb.Song, level int, out string, force 
 			return o
 		}
 		sub := p.AddBar(songURL.Size, shortLabel(song)) // size 未知(0)走无百分比模式
-		o := deps.downloadOne(ctx, song, songURL, songdl.Options{Out: out, Force: force})
+		o := deps.downloadOne(ctx, song, songURL, songdl.Options{Out: out, Force: force, SkipMeta: noMetadata})
 		switch o.Status {
 		case songdl.StatusSuccess, songdl.StatusSkipped:
 			sub.Complete(deps.now())

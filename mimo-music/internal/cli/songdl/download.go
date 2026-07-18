@@ -162,14 +162,13 @@ func DownloadOne(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, op
 		}
 	}
 
-	metaWritten := true
+	// 元数据写入:SkipMeta(--no-metadata)时跳过,MetaWritten=false(没写,非失败);
+	// writeMeta 缺失(测试 mock 不设)也不写;失败不阻塞,MetaWritten=false。
+	metaWritten := false
 	if !opts.SkipMeta && deps.writeMeta != nil {
-		if merr := deps.writeMeta(path, song); merr != nil {
-			metaWritten = false
-			// 元数据失败不阻塞:Outcome 仍是 Success(文件已落盘),
-			// 命令层据 MetaWritten=false 提示。Reason 记元数据失败原因备查。
-			// 不覆盖可能的 download 失败原因——这里只在 download 成功后跑。
-		}
+		metaWritten = deps.writeMeta(path, song) == nil
+		// 失败不阻塞:Outcome 仍是 Success(文件已落盘),
+		// 命令层据 MetaWritten=false 提示(用户主动跳过或写入失败统一为 false)。
 	}
 
 	return Outcome{
