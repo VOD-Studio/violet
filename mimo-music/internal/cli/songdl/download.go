@@ -194,39 +194,88 @@ func resolvePath(song *mmpb.Song, ext, dir, filenameTmpl string, force bool) (fi
 }
 
 // DownloadToFile 流式下载 URL 到 path,带进度条(TTY 时渲染 stderr)。
-// 返回写入字节数。
+// 返回写入字节数(本次下载量;不含续传的已存在部分)。
+//
+// .part 续传(PRD-0013 issue #24):
+//   - 下载中写到 path+".part";成功后 rename 到 path(原子完成)
+//   - 重跑时若 .part 已存在:发 HTTP Range 头从当前字节续传(206 Partial Content)
+//   - 服务端忽略 Range(返 200):truncate .part 从头重下
+//   - 网络中断:保留 .part,返回带续传提示的错误(调用方 Warnf)
 func DownloadToFile(ctx context.Context, k *kit.Kit, url string, total int64, path, label string) (int64, error) {
+	partPath := path + ".part"
+
+	// 续传预检:.part 存在则从其当前大小续。
+	offset, err := fileSize(partPath)
+	if err != nil {
+		return 0, fmt.Errorf("✗ 检查续传文件 %s 失败: %v", partPath, err)
+	}
+
 	req, err := engine.NewNeteaseRequest(ctx, "GET", url, k.CurrentCookie())
 	if err != nil {
 		return 0, fmt.Errorf("构造下载请求: %w", err)
+	}
+	rangeRequested := false
+	if offset > 0 {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
+		rangeRequested = true
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0, fmt.Errorf("✗ 下载失败(网络): %v", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode/100 != 2 {
 		return 0, fmt.Errorf("✗ 下载失败: HTTP %d", resp.StatusCode)
 	}
 
-	f, err := os.Create(path)
+	// 206 = 服务端尊重 Range,从 offset 续;200 = 忽略 Range,从头重下(truncate .part)。
+	resume := rangeRequested && resp.StatusCode == http.StatusPartialContent
+	openMode := os.O_WRONLY | os.O_CREATE
+	if resume {
+		openMode |= os.O_APPEND // 续传:追加到现有 .part 末尾
+	} else {
+		openMode |= os.O_TRUNC // 新下或 Range 被忽略:覆盖 .part
+		offset = 0              // 重置 offset(进度条从 0 算)
+	}
+	f, err := os.OpenFile(partPath, openMode, 0o644)
 	if err != nil {
-		return 0, fmt.Errorf("✗ 创建文件 %s 失败: %v", path, err)
+		return 0, fmt.Errorf("✗ 创建文件 %s 失败: %v", partPath, err)
 	}
 	defer f.Close()
 
-	// 进度条:total 未知(<=0)时传 0(进度条无百分比模式,仅显示已下载量)。
+	// 进度条:total 未知(<=0)时传 0(无百分比模式)。续传时预填 offset 让 X-of-Y 连续。
 	p := k.NewProgress()
 	bar := p.AddBar(total, label)
+	if resume && offset > 0 {
+		bar.Incr(offset, time.Now()) // 预填已续传部分,进度条从续点起算
+	}
 	p.Start()
 	pr := &proxyReader{r: resp.Body, bar: bar, now: time.Now}
 	written, err := io.Copy(f, pr)
 	bar.Complete(time.Now())
 	p.Wait()
 	if err != nil {
-		return written, fmt.Errorf("✗ 下载中断: %v", err)
+		// 中断:保留 .part 供重跑续传。返回带续传提示的错误。
+		return written, fmt.Errorf("✗ 下载中断,部分文件已保存为 %s,重跑可续传: %v", partPath, err)
+	}
+
+	// 成功:rename .part → 最终名(原子完成)。
+	if err := os.Rename(partPath, path); err != nil {
+		return written, fmt.Errorf("✗ 重命名 %s → %s 失败: %v", partPath, path, err)
 	}
 	return written, nil
+}
+
+// fileSize 返回文件大小;文件不存在返回 0,nil(续传预检用)。
+func fileSize(path string) (int64, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return info.Size(), nil
 }
 
 // WriteSongMetadata 构造 Metadata 并写入。失败返回 error(调用方按非阻塞 Warnf 处理)。
