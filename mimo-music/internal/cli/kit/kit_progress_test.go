@@ -67,9 +67,6 @@ func TestKit_NewProgress_NonTTY(t *testing.T) {
 	}
 }
 
-// 暂时占位避免 import 未用(下面 Kit.NewProgress 实现后会用到)。
-var _ = strings.Contains
-
 // TestKit_NewSpinner_JSON JSON 模式 Spinner 完全静默。
 func TestKit_NewSpinner_JSON(t *testing.T) {
 	defer func(orig func(int) bool) { isTerminal = orig }(isTerminal)
