@@ -255,8 +255,9 @@ export function ImagePreview({
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* 缩略图层（绝对覆盖容器；原图加载完成后淡出）。
-                                h-full/w-full + object-fill 撑满容器（=原图盒），
-                                从而缩略图被拉伸显示成原图大小。
+                                h-full/w-full + object-cover 撑满容器（=原图比例盒）：
+                                缩略图与原图同比例时等效填满；异比例（如旧裁方图缓存）
+                                居中放大裁切，不拉伸变形。
                                 AnimatePresence + motion.div：原图 onLoad 后整体淡出，
                                 与原图淡入交叉过渡，而非硬切消失。 */}
                             <AnimatePresence>
@@ -272,7 +273,7 @@ export function ImagePreview({
                                             src={thumb}
                                             alt=""
                                             aria-hidden
-                                            className="h-full w-full select-none object-fill"
+                                            className="h-full w-full select-none object-cover"
                                             draggable={false}
                                         />
                                         {/* 模糊层：覆盖拉伸后的缩略图盒 */}
