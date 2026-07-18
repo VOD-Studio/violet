@@ -30,7 +30,8 @@ var (
 // 帧头布局:11 位同步 0xFFE + 2 位 version + 2 位 layer + ... + 4 位 bitrate 索引。
 func parseMP3Bitrate(b []byte) int {
 	off := parseID3v2Size(b)
-	for i := off; i+3 < len(b); i++ {
+	// 读到 b[i+2] 为止,故边界是 i+2 < len。
+	for i := off; i+2 < len(b); i++ {
 		if b[i] != 0xFF || b[i+1]&0xE0 != 0xE0 {
 			continue
 		}

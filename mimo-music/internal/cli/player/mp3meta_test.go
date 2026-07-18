@@ -47,6 +47,7 @@ func TestParseMP3Bitrate(t *testing.T) {
 		{"MPEG1 320k", mp3Frame(3, 14), 320},
 		{"MPEG1 192k", mp3Frame(3, 11), 192},
 		{"MPEG2 80k", mp3Frame(2, 9), 80},
+		{"MPEG2.5 复用 MPEG2 表", mp3Frame(0, 9), 80},
 		{"无帧同步", []byte("plain garbage, no frame here"), 0},
 		{"空输入", nil, 0},
 		{
