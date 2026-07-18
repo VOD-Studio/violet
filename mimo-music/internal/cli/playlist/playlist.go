@@ -26,6 +26,7 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		newSimilar(k), newRelated(k),
 		newSubscribe(k), newCreate(k), newDelete(k),
 		newUpdateName(k), newUpdateDesc(k), newUpdateTags(k), newUpdateTracks(k),
+		newDownload(k),
 	)
 	return c
 }

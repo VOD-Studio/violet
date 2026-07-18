@@ -46,6 +46,9 @@ type Outcome struct {
 	SongID int64
 	// Reason skipped/failed 时的原因(success 时为空)。
 	Reason string
+	// Network 标记 failed 是否源于网络/HTTP 错误(而非 VIP 无音源、size 不符等
+	// 逻辑跳过)。批量风控只对 Network=true 计连续失败,避免 VIP 歌曲误触发限流。
+	Network bool
 
 	// 以下字段仅 Status == StatusSuccess 时有意义。
 	Path        string // 绝对路径
@@ -138,9 +141,10 @@ func DownloadOne(ctx context.Context, song *mmpb.Song, songURL *mmpb.SongURL, ou
 	written, err := deps.download(ctx, songURL.Url, songURL.Size, path, filename)
 	if err != nil {
 		return Outcome{
-			Status: StatusFailed,
-			SongID: song.Id,
-			Reason: err.Error(),
+			Status:  StatusFailed,
+			SongID:  song.Id,
+			Reason:  err.Error(),
+			Network: true, // 下载 IO/HTTP 错误属网络失败
 		}
 	}
 

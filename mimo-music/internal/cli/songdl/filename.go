@@ -55,9 +55,10 @@ func SongFilename(s *mmpb.Song, ext string) string {
 	return sanitizeFilename(artist) + " - " + sanitizeFilename(title) + "." + ext
 }
 
-// fallbackFilename 构造冲突回退文件名:{首艺人} - {歌名} ({id}).{ext}。
+// FallbackFilename 构造冲突回退文件名:{首艺人} - {歌名} ({id}).{ext}。
 // 用稳定的 id 做后缀,可重跑幂等(不自动加 (2)/(3),避免破坏断点续传语义)。
-func fallbackFilename(s *mmpb.Song, ext string) string {
+// 导出供批量下载做 size 预检时遍历两个候选名(默认名 + 回退名)。
+func FallbackFilename(s *mmpb.Song, ext string) string {
 	artist := ""
 	if len(s.Artists) > 0 {
 		artist = s.Artists[0].Name
@@ -89,7 +90,7 @@ func ResolveConflictPath(s *mmpb.Song, ext, dir string, force bool) (path string
 		return defaultPath, false
 	}
 	// 默认名冲突且非 force:尝试 id 回退。
-	fallbackPath := filepath.Join(dir, fallbackFilename(s, ext))
+	fallbackPath := filepath.Join(dir, FallbackFilename(s, ext))
 	if !fileExists(fallbackPath) {
 		return fallbackPath, false
 	}
