@@ -25,7 +25,7 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		newSimilarSongs(k),
 		newLike(k), newTrash(k), newDisallowRecommend(k),
 		newLikedList(k), newIsLike(k),
-		newDownload(k),
+		newDownload(k), newPlay(k),
 	)
 	return c
 }
