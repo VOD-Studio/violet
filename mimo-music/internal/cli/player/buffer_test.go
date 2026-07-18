@@ -9,21 +9,13 @@ import (
 
 // slowReader 按小块吐出数据,模拟弱网。
 type slowReader struct {
-	data   []byte
-	off    int
-	chunk  int
-	delay  time.Duration
-	closed chan struct{} // 非 nil 时 Close 后 Read 立即返回错误
+	data  []byte
+	off   int
+	chunk int
+	delay time.Duration
 }
 
 func (r *slowReader) Read(p []byte) (int, error) {
-	if r.closed != nil {
-		select {
-		case <-r.closed:
-			return 0, io.ErrClosedPipe
-		default:
-		}
-	}
 	if r.off >= len(r.data) {
 		return 0, io.EOF
 	}
@@ -170,6 +162,58 @@ func TestPrefetchBufferUpstreamError(t *testing.T) {
 	p := make([]byte, 4)
 	if _, err := b.Read(p); err != io.ErrUnexpectedEOF {
 		t.Fatalf("上游错误应透传,got %v", err)
+	}
+}
+
+// 回归:边下边消费(压缩曾丢已消费前缀),Done 后 Bytes 必须仍是全量。
+// 内存 seek 快照缺头会喂给解码器无头碎片。
+func TestPrefetchBufferBytesFullAfterPartialConsume(t *testing.T) {
+	want := bytes.Repeat([]byte("abcdefgh"), 1024) // 8KB
+	src := &slowReader{data: want, chunk: 1024, delay: 5 * time.Millisecond}
+	b := newPrefetchBuffer(src)
+	defer b.Close()
+
+	// 边下边消费:分多次读走 6KB。
+	consumed := make([]byte, 0, 6144)
+	p := make([]byte, 1536)
+	for range 4 {
+		if _, err := io.ReadFull(b, p); err != nil {
+			t.Fatal(err)
+		}
+		consumed = append(consumed, p...)
+	}
+	if !bytes.Equal(consumed, want[:6144]) {
+		t.Fatal("消费内容与前缀不符")
+	}
+
+	deadline := time.Now().Add(2 * time.Second)
+	for !b.Done() && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+	if !b.Done() {
+		t.Fatal("fill 未完成")
+	}
+	got := b.Bytes()
+	if !bytes.Equal(got, want) {
+		t.Fatalf("Done 后 Bytes 应为全量 %d 字节,got %d(缺头 %d)", len(want), len(got), len(want)-len(got))
+	}
+}
+
+func TestPrefetchBufferPeekFromReadPosition(t *testing.T) {
+	b := newPrefetchBuffer(bytes.NewReader([]byte("0123456789")))
+	defer b.Close()
+
+	p := make([]byte, 4)
+	if _, err := io.ReadFull(b, p); err != nil {
+		t.Fatal(err)
+	}
+	// 消费 4 字节后,Peek 应从读位置(而非流起始)取。
+	peek, err := b.PeekAtLeast(2, 4)
+	if err != nil {
+		t.Fatalf("Peek err = %v", err)
+	}
+	if string(peek) != "4567" {
+		t.Fatalf("消费后 Peek = %q, want 4567", peek)
 	}
 }
 

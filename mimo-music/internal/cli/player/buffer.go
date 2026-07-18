@@ -51,11 +51,8 @@ func (b *prefetchBuffer) fill(src io.Reader) {
 				b.mu.Unlock()
 				return
 			}
-			// 读指针走远后压缩已消费前缀,内存占用收敛到水位量级。
-			if b.off >= fillChunk && b.off > len(b.buf)/2 {
-				b.buf = append([]byte(nil), b.buf[b.off:]...)
-				b.off = 0
-			}
+			// 不压缩已消费前缀:全量驻留是 seek 内存路径(Bytes 快照)的前提,
+			// 单曲 MB 级体积,无需为省内存引入快照缺头风险。
 			b.buf = append(b.buf, chunk[:n]...)
 			b.mu.Unlock()
 			b.cond.Broadcast()
@@ -95,17 +92,17 @@ func (b *prefetchBuffer) Read(p []byte) (int, error) {
 	return 0, io.EOF
 }
 
-// PeekAtLeast 阻塞直到缓冲 ≥atLeast 字节(或 EOF/错误/Close),
-// 返回开头最多 upTo 字节的快照,不推进读指针。
+// PeekAtLeast 阻塞直到未消费部分 ≥atLeast 字节(或 EOF/错误/Close),
+// 返回从当前读位置起最多 upTo 字节的快照,不推进读指针。
 func (b *prefetchBuffer) PeekAtLeast(atLeast, upTo int) ([]byte, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	for len(b.buf) < atLeast && !b.eof && b.err == nil && !b.closed {
+	for len(b.buf)-b.off < atLeast && !b.eof && b.err == nil && !b.closed {
 		b.cond.Wait()
 	}
-	n := min(len(b.buf), upTo)
+	n := min(len(b.buf)-b.off, upTo)
 	out := make([]byte, n)
-	copy(out, b.buf[:n])
+	copy(out, b.buf[b.off:b.off+n])
 	if n > 0 {
 		return out, nil
 	}
