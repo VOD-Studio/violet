@@ -122,8 +122,7 @@ export function ImagePreview({
     const useThumb = !!thumb;
 
     // 飞入动画是否已稳定（稳定后才开始加载原图，避免与飞入争抢解码资源掉帧）
-    const [flyInSettled, setFlyInSettled] = useState(false);
-    // 原图是否加载完成（完成后缩略图+模糊层淡出）
+    const [flyInSettled, setFlyInSettled] = useState(false);    // 原图是否加载完成（完成后缩略图+模糊层淡出）
     const [originalLoaded, setOriginalLoaded] = useState(false);
     // 原图 natural 尺寸（探测原图得到）。据此算原图 contain 盒撑开容器。
     const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
@@ -140,6 +139,15 @@ export function ImagePreview({
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // flyInSettled 兜底:主触发是飞入动画的 onAnimationComplete,但动画回调并非
+    // 可靠事件源——后台标签页 rAF 冻结、动画被中断/跳过时回调不触发,原图会永不
+    // 加载,预览永久停在缩略图。超时兜底与回调先到先触发(动画 0.3s + 余量)。
+    useEffect(() => {
+        if (!open || flyInSettled) return;
+        const timer = setTimeout(() => setFlyInSettled(true), 400);
+        return () => clearTimeout(timer);
+    }, [open, flyInSettled]);
 
     // 打开/切换图时，探测当前图 natural size（new Image() 即后台预载），
     // 据此算出原图目标显示盒。无论是否有缩略图都需要探测，否则无缩略图时 box 为 null 不渲染。
