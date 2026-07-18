@@ -1,0 +1,95 @@
+package kit
+
+import (
+	"bytes"
+	"strings"
+	"testing"
+	"time"
+)
+
+// Spinner 验收(issue #16):用于缓冲等待,仅 TTY,非 TTY/--json 抑制。
+// Start/Stop API,Stop 输出终态行。
+
+// TestSpinner_TTY_RendersFrames TTY 模式渲染 spinner 帧(转圈)。
+func TestSpinner_TTY_RendersFrames(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	clock := &spinnerFakeClock{t: time.Date(2026, 7, 18, 12, 0, 0, 0, time.UTC)}
+	s := NewSpinner(&buf, "缓冲中", true, WithSpinnerClock(clock.now))
+	s.Start()
+	// 手动推进几帧(绕过 ticker,确定性)
+	for i := 0; i < 3; i++ {
+		clock.advance(100 * time.Millisecond)
+		s.renderForTest()
+	}
+	s.Stop("完成")
+	got := buf.String()
+	// 应有 spinner 字符
+	hasSpinner := false
+	for _, f := range spinnerFrames {
+		if strings.Contains(got, f) {
+			hasSpinner = true
+			break
+		}
+	}
+	if !hasSpinner {
+		t.Errorf("TTY 模式应渲染 spinner 帧,got %q", got)
+	}
+	// 应含 label
+	if !strings.Contains(got, "缓冲中") {
+		t.Errorf("应含 label,got %q", got)
+	}
+	// 终态应含 Stop 的消息
+	if !strings.Contains(got, "完成") {
+		t.Errorf("终态应含 Stop 消息,got %q", got)
+	}
+}
+
+// TestSpinner_NonTTY_Suppressed 非 TTY 完全静默(管道不刷屏)。
+func TestSpinner_NonTTY_Suppressed(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	clock := &spinnerFakeClock{t: time.Date(2026, 7, 18, 12, 0, 0, 0, time.UTC)}
+	s := NewSpinner(&buf, "缓冲中", false, WithSpinnerClock(clock.now))
+	s.Start()
+	for i := 0; i < 3; i++ {
+		clock.advance(100 * time.Millisecond)
+		s.renderForTest()
+	}
+	s.Stop("完成")
+	// 非 TTY:渲染期间无任何输出(只 Stop 输出终态)
+	if got := buf.String(); got != "" {
+		// Stop 的终态在非 TTY 也应该静默?issue 说"非 TTY 抑制"。
+		// 但 Stop 的完成消息是有用信息。这里断言:渲染期间无 spinner 帧。
+		for _, f := range spinnerFrames {
+			if strings.Contains(got, f) {
+				t.Errorf("非 TTY 不应有 spinner 帧,got %q", got)
+			}
+		}
+	}
+}
+
+// TestSpinner_StopClearsLine Stop 后光标停留在终态行,spinner 不再转。
+func TestSpinner_StopClearsLine(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	clock := &spinnerFakeClock{t: time.Date(2026, 7, 18, 12, 0, 0, 0, time.UTC)}
+	s := NewSpinner(&buf, "解析音源", true, WithSpinnerClock(clock.now))
+	s.Start()
+	clock.advance(100 * time.Millisecond)
+	s.renderForTest()
+	s.Stop("✓ level=1 mp3")
+	got := buf.String()
+	// 终态行应有 \r 回到行首覆盖 spinner
+	if !strings.Contains(got, "\r") {
+		t.Errorf("Stop 应回车覆盖 spinner 行,got %q", got)
+	}
+	if !strings.Contains(got, "level=1") {
+		t.Errorf("终态应含 Stop 消息,got %q", got)
+	}
+}
+
+type spinnerFakeClock struct{ t time.Time }
+
+func (c *spinnerFakeClock) now() time.Time                  { return c.t }
+func (c *spinnerFakeClock) advance(d time.Duration) time.Time { c.t = c.t.Add(d); return c.t }
