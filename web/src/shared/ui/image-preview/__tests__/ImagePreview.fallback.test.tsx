@@ -8,7 +8,7 @@
  * 本测试 mock motion 使其【永不】调用 onAnimationComplete,验证兜底生效。
  */
 import { act, render } from "@testing-library/react";
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ImagePreview } from "../components/ImagePreview";
 
