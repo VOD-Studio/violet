@@ -34,6 +34,10 @@ type Kit struct {
 	Yes bool
 	// Out 结果输出 writer,默认 os.Stdout(测试可替换)。
 	Out io.Writer
+	// Err 警告/进度输出 writer,默认 os.Stderr(测试可替换)。
+	// 进度类(ProgressBar/Spinner)和一次性警告(Warnf)都走这里,
+	// 不污染 stdout(结果数据流),脚本管道友好。
+	Err io.Writer
 }
 
 // New 创建 Kit。engine 无缓存、无 session 池,纯转发到网易云。
@@ -47,6 +51,23 @@ func (k *Kit) out() io.Writer {
 		return os.Stdout
 	}
 	return k.Out
+}
+
+// err 返回警告/进度 writer(未设置时回退 os.Stderr)。
+func (k *Kit) err() io.Writer {
+	if k.Err == nil {
+		return os.Stderr
+	}
+	return k.Err
+}
+
+// Warnf 格式化打印一次性警告到 stderr。
+//
+// 用于非阻塞提示(如「⚠ 元数据写入失败,文件已保存」,exit 0)。
+// 所有模式都输出:警告不是结果数据,--json/非 TTY 也不抑制
+// (脚本作者需要看到警告判断是否可信)。
+func (k *Kit) Warnf(format string, args ...any) {
+	fmt.Fprintf(k.err(), format+"\n", args...)
 }
 
 // CookieCtx 把当前生效的 cookie 注入 context(无则注入空)。
