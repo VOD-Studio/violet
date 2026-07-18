@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
@@ -82,26 +80,11 @@ func termWidth() int {
 
 func isTTY() bool { return term.IsTerminal(int(os.Stderr.Fd())) }
 
-// watchResize 监听 SIGWINCH:终端拉伸时把新宽度推给 Progress。
-// kit 不依赖 signal/fd,监听责任在调用方(这里)。
-func watchResize(p *kit.Progress) {
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGWINCH)
-	go func() {
-		for range ch {
-			if w, _, err := term.GetSize(int(os.Stderr.Fd())); err == nil && w > 0 {
-				p.SetWidth(w)
-			}
-		}
-	}()
-}
-
 func runSingle(speed float64) {
-	width := termWidth()
-	p := kit.NewProgress(os.Stderr, width, isTTY(), kit.WithProgressColor(true))
+	p := kit.NewProgress(os.Stderr, termWidth(), isTTY(), kit.WithProgressColor(true),
+		kit.WithProgressWidthSource(termWidth)) // 轮询宽度:拉伸即时适配,无信号竞态
 	bar := p.AddBar(3_400_000, "Beyond - 海阔天空.mp3")
 	p.Start()
-	watchResize(p)
 
 	scale := speed
 	if scale < 0.1 {
@@ -120,8 +103,8 @@ func runSingle(speed float64) {
 }
 
 func runMulti(speed float64) {
-	width := termWidth()
-	p := kit.NewProgress(os.Stderr, width, isTTY(), kit.WithProgressColor(true))
+	p := kit.NewProgress(os.Stderr, termWidth(), isTTY(), kit.WithProgressColor(true),
+		kit.WithProgressWidthSource(termWidth)) // 轮询宽度:拉伸即时适配,无信号竞态
 
 	songs := []struct {
 		name string
@@ -156,7 +139,6 @@ func runMulti(speed float64) {
 		subs[i] = subBar{b: p.AddBar(s.size, s.name), size: s.size}
 	}
 	p.Start()
-	watchResize(p)
 
 	// worker 池:3 并发。
 	const workers = 3
