@@ -40,6 +40,10 @@ func (s State) String() string {
 //     「暂停 → HTTP Range 重建 → 重新解码 → 恢复」。
 //   - Volume 是 ±百分比步进,内部收敛到 0-100。
 //   - Close 幂等;Close 后可重新 Load。
+//   - Load 会先停止并释放当前流;打开失败时播放器回到空停状态
+//     (StateStopped,Progress 归零),需重新 Load 才能再用。
+//   - 实现不要求 goroutine 安全:命令层须串行调用(键盘循环单 goroutine
+//     天然满足);Progress/State 内部有锁,可从显示 goroutine 并发读。
 type Player interface {
 	Load(url string) error
 	Play() error

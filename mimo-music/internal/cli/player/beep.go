@@ -103,8 +103,9 @@ func NewBeep(newReq RequestBuilder, opts ...BeepOption) Player {
 		}
 	}
 	p := &beepPlayer{
-		newReq:      newReq,
-		client:      &http.Client{},
+		newReq: newReq,
+		// 响应头超时防半开悬挂;body 流速不设限时(弱网缓冲是设计场景)。
+		client:      &http.Client{Transport: &http.Transport{ResponseHeaderTimeout: 15 * time.Second}},
 		watermarkMs: defaultWatermarkMs,
 		lowWaterMs:  defaultLowWaterMs,
 		vol:         75,
@@ -260,6 +261,7 @@ func (p *beepPlayer) Play() error {
 			// 水位未达标前暂停过:恢复后仍等水位。
 			p.state = StateBuffering
 		}
+		p.playRequested = true
 		p.mu.Unlock()
 		return nil
 	}
@@ -284,6 +286,8 @@ func (p *beepPlayer) Pause() error {
 		p.ctrl.Paused = true
 		speaker.Unlock()
 	}
+	// 清起播意图:水位前暂停后,monitor 不得在水位达标时自行起播。
+	p.playRequested = false
 	p.state = StatePaused
 	return nil
 }
@@ -442,9 +446,14 @@ func (p *beepPlayer) applyStreamLocked(st *streamParts, baseMs, discardSamples i
 	p.state = StateBuffering
 }
 
-// teardownLocked 停掉当前流:摘出 mixer、停 monitor、断 HTTP、释放解码器。
-// 顺序保证 mixer 不会再拉到已关闭的流。
+// teardownLocked 停掉当前流:断网络、摘 mixer、停 monitor、释放解码器。
+// 顺序关键:必须先 cancel——网络 stall 时 mixer 拉取线程阻塞在 buffer.Read,
+// 若先 speaker.Clear 会等不到拉取退出,而 cancel 恰好是解堵的那一步。
 func (p *beepPlayer) teardownLocked() {
+	if p.cancel != nil {
+		p.cancel()
+		p.cancel = nil
+	}
 	if p.started {
 		speaker.Clear()
 	}
@@ -455,10 +464,6 @@ func (p *beepPlayer) teardownLocked() {
 		close(p.genDone)
 		p.genDone = nil
 	}
-	if p.cancel != nil {
-		p.cancel()
-		p.cancel = nil
-	}
 	if p.streamer != nil {
 		_ = p.streamer.Close()
 		p.streamer = nil
@@ -467,6 +472,9 @@ func (p *beepPlayer) teardownLocked() {
 	p.tracker = nil
 	p.volume = nil
 	p.buffer = nil
+	p.totalMs = 0
+	p.baseMs = 0
+	p.discardSamples = 0
 	p.state = StateStopped
 }
 
@@ -590,8 +598,10 @@ func (p *beepPlayer) actStart(gen int) {
 		return
 	}
 	speaker.Clear() // CLI 单播放器假设:清掉上一代的残留
-	speaker.Play(p.ctrl)
+	// Paused 写入须在 Play 之前:mixer 尚看不到 ctrl,写被 Play 内部锁发布;
+	// Play 之后再写就是与拉取线程的数据竞争。
 	p.ctrl.Paused = false
+	speaker.Play(p.ctrl)
 	p.started = true
 	p.state = StatePlaying
 }
