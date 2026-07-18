@@ -55,6 +55,8 @@ type Progress struct {
 	rawWidth    int      // 终端实际宽度(reflow 行数估算用)
 	widthDirty  bool     // 宽度刚变更:下一帧先清 reflow 残影
 	widthSource func() int // 轮询式宽度源(见 WithProgressWidthSource)
+	pendingRaw  int      // 去抖:候选宽度(连续稳定 N 帧才应用)
+	pendingTick int      // 去抖:候选宽度已连续稳定的帧数
 	bars        []*Bar
 	prev        []string // 上一帧各行(diff 用)
 	spinner     int      // spinner 帧索引(tick 推进)
@@ -77,11 +79,15 @@ func WithProgressClock(now func() time.Time) ProgressOption {
 	return func(p *Progress) { p.now = now }
 }
 
-// WithProgressWidthSource 轮询式宽度源:每帧渲染前查询终端宽度,
-// 变化时按 reflow 清残影后适配新宽度。比 SIGWINCH + SetWidth 更稳:
-// 缩窄瞬间终端立刻 reflow,信号 handler 与 tick 无序,tick 可能先用
-// 旧宽度渲染一帧留下残影(重复);轮询让每帧渲染前都先对齐当前宽度,
-// 竞态窗口归零。传 term.GetSize 的薄封装即可,非 TTY 无需设置。
+// WithProgressWidthSource 轮询式宽度源:每帧渲染前查询终端宽度。
+//
+// 变化时按「去抖」处理:候选宽度连续稳定 3 帧(~300ms)才应用——
+// 拖动拉伸期间冻结渲染(旧块原地不动),松手后一次性清 reflow 残影
+// 并重绘。为什么不去抖不行:部分终端(如 Wave)的 winsize 更新与
+// 显示层 reflow 不同步,滞后窗口内任何基于行数估算的清除都会估错,
+// 留下残影(重复),且拖动时每帧整块清绘在 Electron 管线下会闪烁。
+// 冻结期间 Incr/EWMA 照常累积,只是画面暂停,拖拽本就短暂。
+// 传 term.GetSize 的薄封装即可,非 TTY 无需设置。
 func WithProgressWidthSource(f func() int) ProgressOption {
 	return func(p *Progress) { p.widthSource = f }
 }
@@ -280,15 +286,29 @@ func (p *Progress) renderOnceInternal() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	// 轮询宽度源:拉伸后第一帧即发现新宽度,竞态窗口归零
-	// (若靠信号 SetWidth,tick 可能先用旧宽度渲染留下 reflow 残影)。
+	// 轮询宽度源(去抖):候选宽度连续稳定 3 帧才应用。
+	// 拖动期间冻结渲染——不在 winsize/reflow 不同步的滞后窗口内渲染,
+	// 就没有竞态残影;也避免拖动中每帧整块清绘的闪烁。
 	if p.widthSource != nil {
-		if raw := p.widthSource(); raw > 0 {
-			if eff := effectiveRenderWidth(raw); eff != p.width {
-				p.width = eff
-				p.rawWidth = raw
-				p.widthDirty = true
+		if raw := p.widthSource(); raw > 0 && raw != p.rawWidth {
+			if raw == p.pendingRaw {
+				p.pendingTick++
+			} else {
+				p.pendingRaw = raw
+				p.pendingTick = 1
 			}
+			if p.pendingTick >= 3 {
+				p.rawWidth = raw
+				p.width = effectiveRenderWidth(raw)
+				p.widthDirty = true
+				p.pendingRaw = 0
+				p.pendingTick = 0
+			} else {
+				return // 宽度未稳定:冻结本帧,旧块原地不动
+			}
+		} else {
+			p.pendingRaw = 0
+			p.pendingTick = 0
 		}
 	}
 

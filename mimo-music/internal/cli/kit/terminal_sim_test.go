@@ -422,11 +422,11 @@ func TestProgress_ResizeReflowNoDuplicate(t *testing.T) {
 	}
 }
 
-// TestProgress_ReflowShrinkRaceNoDuplicate 连续拖动拉伸(widthSource 轮询,不调 SetWidth):
-// 每次拉伸后第一个 tick 帧即发现新宽度并清 reflow 残影——屏幕上每个 bar 恰好一份。
-// 回归(用户实测):SIGWINCH handler 与 tick 无序,缩窄后 tick 先用旧宽度渲染一帧,
-// 落进 reflow 后的块中间,残影随拖动层层堆积(多个不同宽度的块叠罗汉)。
-// 轮询让每帧渲染前先对齐当前宽度,竞态窗口归零。
+// TestProgress_ReflowShrinkRaceNoDuplicate 连续拖动拉伸(widthSource 轮询去抖):
+// 拖动期间帧冻结(零输出零重绘),宽度稳定 3 帧后一次性清残影适配——
+// 屏幕上每个 bar 恰好一份,且拖动过程无闪烁源。
+// 回归(用户实测 Wave 终端):winsize 与显示层 reflow 不同步,滞后窗口内
+// 任何基于行数估算的清除都会估错,残影随拖动层层堆积 + 清绘闪烁。
 func TestProgress_ReflowShrinkRaceNoDuplicate(t *testing.T) {
 	t.Parallel()
 	var buf bytes.Buffer
@@ -453,15 +453,15 @@ func TestProgress_ReflowShrinkRaceNoDuplicate(t *testing.T) {
 	}
 
 	drive(5)
-	vt.resizeReflow(80) // 拖窄:不调 SetWidth,靠轮询在下一帧发现
+	vt.resizeReflow(80) // 拖窄:前 2 帧冻结,第 3 帧应用
 	width = 80
-	drive(2)
+	drive(4)
 	vt.resizeReflow(70) // 继续拖窄
 	width = 70
-	drive(2)
+	drive(4)
 	vt.resizeReflow(90) // 再往回拉宽
 	width = 90
-	drive(3)
+	drive(4)
 
 	for _, label := range []string{"我喜欢的音乐", "海阔天空", "晴天"} {
 		count := 0
@@ -473,5 +473,40 @@ func TestProgress_ReflowShrinkRaceNoDuplicate(t *testing.T) {
 		if count != 1 {
 			t.Errorf("label %q 屏幕上出现 %d 次(应 1 次,>1 = 拖动残影)", label, count)
 		}
+	}
+}
+
+// TestProgress_ResizeDebounceFreezesFrames 去抖行为:宽度变化后的前 2 帧
+// 冻结(零输出),第 3 帧才输出(应用新宽度)。守护「拖动期间不重绘」——
+// 这是消除拖动闪烁与滞后窗口竞态的核心机制。
+func TestProgress_ResizeDebounceFreezesFrames(t *testing.T) {
+	t.Parallel()
+	var buf bytes.Buffer
+	clock := newFakeClock(time.Date(2026, 7, 18, 12, 0, 0, 0, time.UTC))
+	width := 100
+	p := NewProgress(&buf, width, true, WithProgressClock(clock.now),
+		WithProgressWidthSource(func() int { return width }))
+	b := p.AddBar(3_400_000, "Beyond - 海阔天空")
+
+	clock.advance(100 * time.Millisecond)
+	b.Incr(170_000, clock.now())
+	p.RenderForTest() // 首帧(有输出)
+	buf.Reset()
+
+	width = 80 // 宽度变化
+	for i := 1; i <= 2; i++ {
+		clock.advance(100 * time.Millisecond)
+		b.Incr(170_000, clock.now())
+		p.RenderForTest()
+		if buf.Len() != 0 {
+			t.Errorf("去抖第 %d 帧应冻结(零输出),got %d bytes", i, buf.Len())
+		}
+		buf.Reset()
+	}
+	clock.advance(100 * time.Millisecond)
+	b.Incr(170_000, clock.now())
+	p.RenderForTest() // 第 3 帧:应用新宽度,清残影+重绘
+	if buf.Len() == 0 {
+		t.Errorf("去抖第 3 帧应应用新宽度并输出")
 	}
 }
