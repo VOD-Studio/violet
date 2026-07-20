@@ -32,7 +32,7 @@
 验收:`musicctl search --keyword 周杰伦` 出表格;`... | jq` 管道直接拿到 JSON;
 `musicctl song like --id 1 --yes` 无交互完成;非 TTY 写操作无 `--yes` 报退出码 2。
 
-## Phase C — 实用功能(核心用户价值)
+## Phase C — 实用功能(核心用户价值)✅ 已完成(2026-07-20,PRD-0013)
 
 | 功能 | 命令 | 说明 |
 |---|---|---|

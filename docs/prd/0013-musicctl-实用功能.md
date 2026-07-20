@@ -1,6 +1,6 @@
 # PRD: musicctl 实用功能(下载/播放/歌词/批量)
 
-> 状态:📋 待实现
+> 状态:✅ 已完成(2026-07-20)
 > 关联:[CLI 路线图](../../mimo-music/docs/musicctl-roadmap.md)(Phase C)、[输出层 PRD](./0012-musicctl-输出层.md)(已完成)
 > 范围:musicctl 新增 4 个实用命令。不改 endpoint/service 层;播放与下载只消费现有 song url/lyric 接口。
 
