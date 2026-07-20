@@ -121,6 +121,7 @@ export function ImagePreview({
     triggerElement,
     triggerRect,
     onExitComplete,
+    initialNaturalSize,
 }: ImagePreviewProps) {
     const {
         index,
@@ -164,13 +165,17 @@ export function ImagePreview({
     const [originalLoaded, setOriginalLoaded] = useState(false);
     // 当前图的尺寸来源：缩略图探测（仅比例可信，original=false）或原图
     // （加载完成后回报 natural 尺寸，比例+绝对尺寸都可信，original=true）。
+    // 调用方已知首图 natural 尺寸时（initialNaturalSize）直接以此为初始值——
+    // 飞入盒即按原图大小显示，不经历缩略图比例视口盒的过渡。
     // index 标记所属图片，切图后旧图尺寸不阻塞新图探测。
     const [dims, setDims] = useState<{
         w: number;
         h: number;
         original: boolean;
         index: number;
-    } | null>(null);
+    } | null>(() =>
+        initialNaturalSize ? { ...initialNaturalSize, original: true, index: currentIndex } : null,
+    );
     // resize 重算触发器：setState 驱动重渲染，显示盒随 dims 一并重算
     const [, setViewportTick] = useState(0);
     // 原图目标显示盒（确定像素值）：缩略图阶段按"比例+90vw/90vh"算（飞入立即有目标盒），

@@ -43,14 +43,23 @@ export function MediaLightbox({
         url: string;
         thumbnail: string | null;
         triggerRect: DOMRect | null;
+        naturalSize: { w: number; h: number } | null;
     } | null>(null);
     const [fullscreenOpen, setFullscreenOpen] = useState(false);
     const openFullscreen = useCallback(
         (url: string, trigger?: HTMLElement | null, thumbnail?: string) => {
+            // trigger 是 ContentImage 中显示已解码原图的 <img>，其 natural 尺寸
+            // 即原图尺寸——快照给全屏预览作初始显示盒，避免小图先按缩略图比例
+            // 放大到视口盒、原图加载后再缩回（先大后小）。
+            const naturalSize =
+                trigger instanceof HTMLImageElement && trigger.naturalWidth > 0
+                    ? { w: trigger.naturalWidth, h: trigger.naturalHeight }
+                    : null;
             setFullscreen({
                 url,
                 thumbnail: thumbnail ?? null,
                 triggerRect: trigger ? trigger.getBoundingClientRect() : null,
+                naturalSize,
             });
             setFullscreenOpen(true);
         },
@@ -164,6 +173,7 @@ export function MediaLightbox({
                     images={[fullscreen.url]}
                     thumbnails={fullscreen.thumbnail ? [fullscreen.thumbnail] : undefined}
                     triggerRect={fullscreen.triggerRect}
+                    initialNaturalSize={fullscreen.naturalSize}
                 />
             ) : null}
         </>

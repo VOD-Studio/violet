@@ -25,4 +25,10 @@ export interface ImagePreviewProps {
     triggerRect?: DOMRect | null;
     /** 退出动画播放完成回调（关闭动画结束后触发，调用方可据此清理数据） */
     onExitComplete?: () => void;
+    /**
+     * 首图的原始尺寸（调用方已知原图 natural 尺寸时传入，如触发元素本身就是
+     * 已解码的原图 <img>）。传入后飞入盒直接按 natural 尺寸计算，跳过
+     * 「缩略图比例视口盒 → 原图加载后修正」的过渡，小图不会先放大再缩小。
+     */
+    initialNaturalSize?: { w: number; h: number } | null;
 }
