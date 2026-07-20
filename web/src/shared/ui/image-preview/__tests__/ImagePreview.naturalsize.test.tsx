@@ -64,7 +64,14 @@ class ProbeImage {
 
     set src(value: string) {
         this.#src = value;
-        if (value.includes("w=1200")) {
+        if (value.includes("tiny")) {
+            // 模拟后端只缩不放:?w=1200 作用于 400x300 原图,返回 400x300
+            this.naturalWidth = 400;
+            this.naturalHeight = 300;
+        } else if (value.includes("anim")) {
+            this.naturalWidth = 550;
+            this.naturalHeight = 413;
+        } else if (value.includes("w=1200")) {
             this.naturalWidth = 1200;
             this.naturalHeight = 675;
         } else if (value.includes("small")) {
@@ -175,5 +182,48 @@ describe("ImagePreview 原图尺寸显示盒", () => {
         );
         const box = await findBox();
         expectViewportContainBox(box, 4000, 3000);
+    });
+
+    it("缩略图返回宽度小于请求档时(后端只缩不放),飞入盒直接按原图尺寸,加载后不再变化", async () => {
+        render(
+            <ImagePreview
+                open
+                onClose={() => {}}
+                images={["/uploads/tiny.jpg"]}
+                thumbnails={["/uploads/tiny.jpg?w=1200&format=webp"]}
+                currentIndex={0}
+            />,
+        );
+
+        // ?w=1200 作用于 400x300 原图,后端只缩不放返回 400x300——
+        // 探测值即原图 natural 尺寸,飞入盒直接按原图大小,不等原图加载
+        const box = await findBox();
+        expectBoxSize(box, 400, 300);
+
+        // 原图加载完成后显示盒保持原图大小,不先大后小
+        const original = (await waitFor(() => {
+            const el = document.querySelector("img.object-contain");
+            expect(el).not.toBeNull();
+            return el;
+        })) as HTMLImageElement;
+        Object.defineProperty(original, "naturalWidth", { value: 400 });
+        Object.defineProperty(original, "naturalHeight", { value: 300 });
+        fireEvent.load(original);
+
+        await waitFor(() => expectBoxSize(box, 400, 300));
+    });
+
+    it("缩略图 URL 无 w 参数时(GIF 直通,缩略图即原图),飞入盒直接按原图尺寸", async () => {
+        render(
+            <ImagePreview
+                open
+                onClose={() => {}}
+                images={["/uploads/anim.gif"]}
+                thumbnails={["/uploads/anim.gif"]}
+                currentIndex={0}
+            />,
+        );
+        const box = await findBox();
+        expectBoxSize(box, 550, 413);
     });
 });

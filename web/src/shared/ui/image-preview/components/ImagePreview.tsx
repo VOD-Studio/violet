@@ -61,6 +61,21 @@ function computeContainBox(naturalW: number, naturalH: number): { width: number;
 }
 
 /**
+ * 判断缩略图探测值是否就是原图 natural 尺寸。
+ * 后端 resize 只缩不放（api/internal/infrastructure/image/transformer.go）：
+ * - 无缩略图（直接探测原图）→ 是
+ * - 缩略图 URL 无 w 参数（未走后端缩放，如 GIF 直通）→ 是
+ * - 返回宽度 < 请求 w（原图比请求档还小，返回的即原图）→ 是
+ * 其余（返回宽度 == 请求 w）仅知原图 ≥ 请求档，只取比例，等原图加载再修正。
+ */
+function probeYieldsOriginalDims(thumb: string | undefined, probeWidth: number): boolean {
+    if (!thumb) return true;
+    const w = Number(new URLSearchParams(thumb.split("?")[1] ?? "").get("w"));
+    if (!(w > 0)) return true;
+    return probeWidth < w;
+}
+
+/**
  * 按原图 natural 尺寸 + 视口约束(90vw×90vh) 计算显示盒：
  * 原图小于视口盒时按原图大小显示（不放大、不失真），大于时按比例 contain 缩小。
  */
@@ -182,8 +197,9 @@ export function ImagePreview({
 
     // 打开/切换图时，探测当前图比例（new Image() 即后台预载），据此推导显示盒。
     // 优先探测缩略图：格子已缓存几乎即时返回，且与原图同比例，盒立即就绪——
-    // 原图（可达十几 MB）的下载解码不再阻塞飞入动画。无缩略图回退探测原图
-    // （此时探测值即原图 natural 尺寸，直接按 natural 上限出盒）。
+    // 原图（可达十几 MB）的下载解码不再阻塞飞入动画。无缩略图回退探测原图。
+    // 探测值可直接当原图尺寸用时（probeYieldsOriginalDims）跳过加载后修正，
+    // 小图不会先放大到视口盒再缩回原图大小。
     useEffect(() => {
         if (!open) {
             setDims(null);
@@ -192,7 +208,10 @@ export function ImagePreview({
         const probe = new Image();
         probe.onload = () => {
             if (probe.naturalWidth && probe.naturalHeight) {
-                const fromOriginal = !thumbnails?.[index];
+                const fromOriginal = probeYieldsOriginalDims(
+                    thumbnails?.[index],
+                    probe.naturalWidth,
+                );
                 // 同一张图的原图尺寸一旦由加载回调写入，不再被探测值覆盖
                 setDims((prev) =>
                     prev && prev.index === index && prev.original
