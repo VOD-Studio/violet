@@ -64,7 +64,11 @@ class ProbeImage {
 
     set src(value: string) {
         this.#src = value;
-        if (value.includes("tiny")) {
+        if (value.includes("_thumb")) {
+            // 素材管理后端生成的独立静态缩略文件(300px 宽,与原图 4000x3000 同比例)
+            this.naturalWidth = 300;
+            this.naturalHeight = 225;
+        } else if (value.includes("tiny")) {
             // 模拟后端只缩不放:?w=1200 作用于 400x300 原图,返回 400x300
             this.naturalWidth = 400;
             this.naturalHeight = 300;
@@ -225,5 +229,36 @@ describe("ImagePreview 原图尺寸显示盒", () => {
         );
         const box = await findBox();
         expectBoxSize(box, 550, 413);
+    });
+
+    it("缩略图为独立静态文件时(与原图不同 URL、无处理参数)只取比例,加载后显示盒不跳变", async () => {
+        // 素材管理场景:file.thumbnail 是后端生成的 300px 静态文件,
+        // 尺寸与原图无关,探测值只能取比例——否则飞入盒按 300px 出盒,
+        // 原图加载后再长大到视口盒,看起来弹窗重新播放一次动画
+        render(
+            <ImagePreview
+                open
+                onClose={() => {}}
+                images={["/uploads/huge.jpg"]}
+                thumbnails={["/uploads/huge_thumb.jpg"]}
+                currentIndex={0}
+            />,
+        );
+
+        // 飞入阶段:按缩略图(300x225)比例的视口 contain 盒就绪
+        const box = await findBox();
+        expectViewportContainBox(box, 300, 225);
+
+        // 原图加载完成(natural 4000x3000,同比例)→ 显示盒保持不跳变
+        const original = (await waitFor(() => {
+            const el = document.querySelector("img.object-contain");
+            expect(el).not.toBeNull();
+            return el;
+        })) as HTMLImageElement;
+        Object.defineProperty(original, "naturalWidth", { value: 4000 });
+        Object.defineProperty(original, "naturalHeight", { value: 3000 });
+        fireEvent.load(original);
+
+        await waitFor(() => expectViewportContainBox(box, 300, 225));
     });
 });

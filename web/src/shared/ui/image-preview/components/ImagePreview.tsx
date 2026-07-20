@@ -64,15 +64,21 @@ function computeContainBox(naturalW: number, naturalH: number): { width: number;
  * 判断缩略图探测值是否就是原图 natural 尺寸。
  * 后端 resize 只缩不放（api/internal/infrastructure/image/transformer.go）：
  * - 无缩略图（直接探测原图）→ 是
- * - 缩略图 URL 无 w 参数（未走后端缩放，如 GIF 直通）→ 是
- * - 返回宽度 < 请求 w（原图比请求档还小，返回的即原图）→ 是
- * 其余（返回宽度 == 请求 w）仅知原图 ≥ 请求档，只取比例，等原图加载再修正。
+ * - 缩略图与原图同 URL（GIF 直通，contentImageUrl 原样返回）→ 是
+ * - 带 w 参数且返回宽度 < 请求 w（原图比请求档还小，返回的即原图）→ 是
+ * 其余只取比例：返回宽度 == 请求 w（仅知原图 ≥ 请求档）、无处理参数的独立
+ * 静态缩略文件（如素材管理 xxx_thumb.jpg，尺寸与原图无关），等原图加载完成
+ * 再以其 natural 尺寸修正。
  */
-function probeYieldsOriginalDims(thumb: string | undefined, probeWidth: number): boolean {
+function probeYieldsOriginalDims(
+    thumb: string | undefined,
+    original: string,
+    probeWidth: number,
+): boolean {
     if (!thumb) return true;
+    if (thumb === original) return true;
     const w = Number(new URLSearchParams(thumb.split("?")[1] ?? "").get("w"));
-    if (!(w > 0)) return true;
-    return probeWidth < w;
+    return w > 0 && probeWidth < w;
 }
 
 /**
@@ -210,6 +216,7 @@ export function ImagePreview({
             if (probe.naturalWidth && probe.naturalHeight) {
                 const fromOriginal = probeYieldsOriginalDims(
                     thumbnails?.[index],
+                    images[index],
                     probe.naturalWidth,
                 );
                 // 同一张图的原图尺寸一旦由加载回调写入，不再被探测值覆盖
