@@ -91,8 +91,19 @@ export function ImagePreviewImage({
     }, [resetKey]);
 
     const handleLoad = () => {
-        setIsLoading(false);
-        onLoad();
+        // load 只代表下载完成,图片可能尚未解码上屏;此刻上报会让外层淡出
+        // 缩略图占位,原图区域透明,透出遮罩与后方页面排版。等 decode 确保
+        // 像素就绪再上报;decode 不可用/失败也要上报,避免永久卡在占位层。
+        const report = () => {
+            setIsLoading(false);
+            onLoad();
+        };
+        const img = imgRef.current;
+        if (img?.decode) {
+            img.decode().then(report, report);
+        } else {
+            report();
+        }
     };
 
     // 鼠标按下开始拖拽
@@ -234,10 +245,12 @@ export function ImagePreviewImage({
                         key={src}
                         src={shouldLoad ? src : undefined}
                         alt={alt}
-                        initial={{ opacity: 0 }}
-                        // 图片始终参与外层飞入动画的透明度过渡，不等待 isLoading。
-                        // 否则打开时图片先透明、onLoad 后才显现，与飞入动画错位造成"闪一下"。
+                        // 无占位层时(showSpinner)图片带 opacity 0→1 淡入，避免硬切。
+                        // 有缩略图占位覆盖时必须直接不透明挂载：视觉连续由占位层负责，
+                        // 原图淡入没有意义——缓存命中时 onLoad 同步触发，占位层淡出
+                        // 会与此淡入重叠，两层叠加透明度 <1，透出遮罩与后方排版。
                         // 加载态由下方的 spinner 覆盖层指示，不靠图片透明度。
+                        initial={{ opacity: showSpinner ? 0 : 1 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
