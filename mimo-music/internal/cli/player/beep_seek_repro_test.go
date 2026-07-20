@@ -152,3 +152,30 @@ func TestSeekSequence_ManyForward(t *testing.T) {
 		}
 	}
 }
+
+// ==================== 回归:seek 不丢总时长 ====================
+
+// TestSeek_TotalPreserved 回归:seek 重建后 Progress 总时长保持不变。
+// 修复前:Seek 的 teardownLocked 把 p.totalMs 清零,applyStreamLocked 不恢复
+// (computeMetaLocked 仅 Load 时跑),seek 后 Progress 总时长归零——
+// 状态栏总时长显示 00:00、进度条全空、0-9 数字跳百分比失效。
+func TestSeek_TotalPreserved(t *testing.T) {
+	p, cleanup := setupSeekPlayer(t)
+	defer cleanup()
+
+	waitForPlaying(t, p, 2*time.Second, "起播")
+	_, total0, _ := p.Progress()
+	if total0 <= 0 {
+		t.Fatalf("起播后总时长应为正, got %d", total0)
+	}
+
+	if err := p.Seek(5); err != nil {
+		t.Fatalf("seek: %v", err)
+	}
+	waitForPlaying(t, p, 2*time.Second, "seek +5s")
+
+	_, total1, _ := p.Progress()
+	if total1 != total0 {
+		t.Errorf("seek 后总时长丢失: 起播 %d ms, seek 后 %d ms", total0, total1)
+	}
+}

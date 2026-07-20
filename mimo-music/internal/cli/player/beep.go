@@ -338,6 +338,9 @@ func (p *beepPlayer) Seek(offsetSec int64) error {
 	}
 	rangeFrom := p.id3Size + int64(float64(target)*p.bytesPerMs)
 	wasRequested := p.playRequested
+	// teardown 会清零 totalMs(语义面向 Load/Close);seek 重建复用旧值,
+	// 跨 teardown 保存,applyStream 后恢复(否则 seek 后总时长归零)。
+	totalMs := p.totalMs
 	p.teardownLocked()
 	p.mu.Unlock()
 
@@ -391,6 +394,7 @@ func (p *beepPlayer) Seek(offsetSec int64) error {
 
 	p.mu.Lock()
 	p.applyStreamLocked(st, baseMs, discard)
+	p.totalMs = totalMs
 	if wasRequested {
 		p.playRequested = true
 		p.startMonitorLocked()
