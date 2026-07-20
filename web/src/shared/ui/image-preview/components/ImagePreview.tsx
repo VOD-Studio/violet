@@ -41,8 +41,9 @@ const VIEWPORT_H_RATIO = 0.9;
 /**
  * 按探测到的比例 + 视口约束(90vw×90vh) 计算 contain 显示盒（确定像素）。
  *
- * 探测源通常是缩略图（与原图同比例、绝对尺寸不同），故盒只由比例与视口
- * 决定，不做 natural 上限（小图放大到视口盒显示）。
+ * 只用于缩略图探测阶段：缩略图与原图同比例、绝对尺寸不同，盒只由比例与
+ * 视口决定，保证飞入动画立即有目标盒。原图 natural 尺寸就绪后改用
+ * computeNaturalContainBox 修正。
  * 探测到比例后把该 width/height 显式设给容器——
  * 不能用 max-w/max-h（只限上限不放大，配合 absolute 子元素会塌成 0）。
  */
@@ -57,6 +58,26 @@ function computeContainBox(naturalW: number, naturalH: number): { width: number;
     // 视口内按比例的最大盒
     const w1 = maxH * ratio;
     return w1 <= maxW ? { width: w1, height: maxH } : { width: maxW, height: maxW / ratio };
+}
+
+/**
+ * 按原图 natural 尺寸 + 视口约束(90vw×90vh) 计算显示盒：
+ * 原图小于视口盒时按原图大小显示（不放大、不失真），大于时按比例 contain 缩小。
+ */
+function computeNaturalContainBox(
+    naturalW: number,
+    naturalH: number,
+): { width: number; height: number } {
+    if (typeof window === "undefined") {
+        return { width: naturalW, height: naturalH };
+    }
+
+    const maxW = window.innerWidth * VIEWPORT_W_RATIO;
+    const maxH = window.innerHeight * VIEWPORT_H_RATIO;
+    if (naturalW <= maxW && naturalH <= maxH) {
+        return { width: naturalW, height: naturalH };
+    }
+    return computeContainBox(naturalW, naturalH);
 }
 
 /**
@@ -118,14 +139,28 @@ export function ImagePreview({
     const useThumb = !!thumb;
 
     // 飞入动画是否已稳定（稳定后才开始加载原图，避免与飞入争抢解码资源掉帧）
-    const [flyInSettled, setFlyInSettled] = useState(false);    // 原图是否加载完成（完成后缩略图+模糊层淡出）
+    const [flyInSettled, setFlyInSettled] = useState(false); // 原图是否加载完成（完成后缩略图+模糊层淡出）
     const [originalLoaded, setOriginalLoaded] = useState(false);
-    // 原图 natural 尺寸（探测原图得到）。据此算原图 contain 盒撑开容器。
-    const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
-    // 原图目标显示盒（确定像素值）。用原图 natural + 视口约束(90vw/90vh) 按 contain 算出，
+    // 当前图的尺寸来源：缩略图探测（仅比例可信，original=false）或原图
+    // （加载完成后回报 natural 尺寸，比例+绝对尺寸都可信，original=true）。
+    // index 标记所属图片，切图后旧图尺寸不阻塞新图探测。
+    const [dims, setDims] = useState<{
+        w: number;
+        h: number;
+        original: boolean;
+        index: number;
+    } | null>(null);
+    // resize 重算触发器：setState 驱动重渲染，显示盒随 dims 一并重算
+    const [, setViewportTick] = useState(0);
+    // 原图目标显示盒（确定像素值）：缩略图阶段按"比例+90vw/90vh"算（飞入立即有目标盒），
+    // 原图就绪后按"natural 尺寸+视口上限"修正（小图不被放大拉伸）。
     // 显式设给容器——不能用 max-w/max-h：那只是上限不放大，且配合 absolute 子元素会塌成 0。
-    // 缩略图层 h-full/w-full 撑满此盒，从而"缩略图显示成原图大小"。
-    const [box, setBox] = useState<{ width: number; height: number } | null>(null);
+    // 缩略图层 h-full/w-full 撑满此盒。
+    const box = dims
+        ? dims.original
+            ? computeNaturalContainBox(dims.w, dims.h)
+            : computeContainBox(dims.w, dims.h)
+        : null;
     // 缩略图+模糊层是否可见（原图加载完成淡出后隐藏）
     const showThumbLayer = useThumb && !originalLoaded;
 
@@ -145,20 +180,30 @@ export function ImagePreview({
         return () => clearTimeout(timer);
     }, [open, flyInSettled]);
 
-    // 打开/切换图时，探测当前图比例（new Image() 即后台预载），据此算显示盒。
+    // 打开/切换图时，探测当前图比例（new Image() 即后台预载），据此推导显示盒。
     // 优先探测缩略图：格子已缓存几乎即时返回，且与原图同比例，盒立即就绪——
-    // 原图（可达十几 MB）的下载解码不再阻塞飞入动画。无缩略图回退探测原图。
+    // 原图（可达十几 MB）的下载解码不再阻塞飞入动画。无缩略图回退探测原图
+    // （此时探测值即原图 natural 尺寸，直接按 natural 上限出盒）。
     useEffect(() => {
         if (!open) {
-            setNaturalSize(null);
-            setBox(null);
+            setDims(null);
             return;
         }
         const probe = new Image();
         probe.onload = () => {
             if (probe.naturalWidth && probe.naturalHeight) {
-                setNaturalSize({ w: probe.naturalWidth, h: probe.naturalHeight });
-                setBox(computeContainBox(probe.naturalWidth, probe.naturalHeight));
+                const fromOriginal = !thumbnails?.[index];
+                // 同一张图的原图尺寸一旦由加载回调写入，不再被探测值覆盖
+                setDims((prev) =>
+                    prev && prev.index === index && prev.original
+                        ? prev
+                        : {
+                              w: probe.naturalWidth,
+                              h: probe.naturalHeight,
+                              original: fromOriginal,
+                              index,
+                          },
+                );
             }
         };
         probe.src = thumbnails?.[index] ?? images[index];
@@ -167,13 +212,12 @@ export function ImagePreview({
         };
     }, [open, index, images, thumbnails]);
 
-    // 原图尺寸已知后响应窗口 resize 重算盒
+    // 窗口 resize 时重算显示盒（盒由 dims 推导，这里只需驱动重渲染）
     useEffect(() => {
-        if (naturalSize == null) return;
-        const onResize = () => setBox(computeContainBox(naturalSize.w, naturalSize.h));
+        const onResize = () => setViewportTick((t) => t + 1);
         window.addEventListener("resize", onResize);
         return () => window.removeEventListener("resize", onResize);
-    }, [naturalSize]);
+    }, []);
 
     // 重新打开时重置飞入门控与加载态——上次会话的残留会让 shouldLoad
     // 门控失效(原图与动画并发争抢解码)且占位层不再显示。
@@ -228,9 +272,10 @@ export function ImagePreview({
                     />
 
                     {/* 图片容器（飞入动画作用于此外层；内部缩略图层 + 原图层）。
-                        定尺寸关键：用 box 的确定 width/height 显式撑开容器（JS 按原图比例
-                        + 90vw/90vh 算出，不靠 max-w/max-h——那只是上限不放大，且配合 absolute
-                        子元素会塌成 0）。缩略图层 h-full/w-full 撑满此盒，故缩略图显示成原图大小。
+                        定尺寸关键：用 box 的确定 width/height 显式撑开容器（缩略图阶段按
+                        比例+90vw/90vh 算出；原图就绪后按 natural 尺寸+视口上限修正，
+                        不靠 max-w/max-h——那只是上限不放大，且配合 absolute 子元素会塌成 0）。
+                        缩略图层 h-full/w-full 撑满此盒。
                         box 未就绪（缩略图比例未探测到）时不渲染容器，避免 0×0 闪现。
                         进入/退出动画仅作用于 transform（GPU 合成层属性，不触发 reflow）。 */}
                     {box ? (
@@ -255,6 +300,9 @@ export function ImagePreview({
                                 width: box.width,
                                 height: box.height,
                                 willChange: "transform, opacity",
+                                // 原图 natural 尺寸就绪 / 窗口 resize 时盒会修正，
+                                // 加宽高过渡避免跳变（transform 由 motion 驱动，不受影响）
+                                transition: "width 0.2s ease, height 0.2s ease",
                                 // 飞入未稳定 + 有缩略图层期间，容器不拦截事件，
                                 // 避免其几何尺寸覆盖到顶部工具栏导致工具栏点不动。
                                 // 原图加载完成后才允许图片拖拽交互。
@@ -308,8 +356,18 @@ export function ImagePreview({
                                     rotate={rotate}
                                     flipX={flipX}
                                     flipY={flipY}
-                                    onLoad={() => {
+                                    onLoad={(size) => {
                                         if (useThumb) setOriginalLoaded(true);
+                                        // 原图 natural 尺寸可信后以其修正显示盒
+                                        // （缩略图探测只提供比例，小图会被放大）
+                                        if (size.w > 0 && size.h > 0) {
+                                            setDims({
+                                                w: size.w,
+                                                h: size.h,
+                                                original: true,
+                                                index,
+                                            });
+                                        }
                                     }}
                                     onReset={handleResetAll}
                                     onSwipeLeft={handleNext}

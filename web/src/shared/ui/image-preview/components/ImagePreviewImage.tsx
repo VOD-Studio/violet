@@ -22,8 +22,8 @@ interface ImagePreviewImageProps {
     flipX?: boolean;
     /** 垂直翻转 */
     flipY?: boolean;
-    /** 加载完成回调 */
-    onLoad: () => void;
+    /** 加载完成回调（decode 就绪后触发，携带原图 natural 尺寸；读不到时为 0） */
+    onLoad: (size: { w: number; h: number }) => void;
     /** 是否显示加载指示器（默认 true；当外层已有缩略图占位时传 false，避免双重加载指示） */
     showSpinner?: boolean;
     /** 双击图片重置（缩放/旋转/翻转恢复初始）回调 */
@@ -94,11 +94,12 @@ export function ImagePreviewImage({
         // load 只代表下载完成,图片可能尚未解码上屏;此刻上报会让外层淡出
         // 缩略图占位,原图区域透明,透出遮罩与后方页面排版。等 decode 确保
         // 像素就绪再上报;decode 不可用/失败也要上报,避免永久卡在占位层。
+        const img = imgRef.current;
         const report = () => {
             setIsLoading(false);
-            onLoad();
+            // 回报原图 natural 尺寸,外层据此把显示盒修正为原图大小
+            onLoad({ w: img?.naturalWidth ?? 0, h: img?.naturalHeight ?? 0 });
         };
-        const img = imgRef.current;
         if (img?.decode) {
             img.decode().then(report, report);
         } else {
