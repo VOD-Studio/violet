@@ -58,8 +58,11 @@ export function MediaLightbox({
     );
     const closeFullscreen = useCallback(() => setFullscreenOpen(false), []);
     const handleFullscreenExitComplete = useCallback(() => setFullscreen(null), []);
-    // 全屏期间把 Dialog 切为 modal={false}（避免 Radix modal 锁定全屏层），但 modal={false}
-    // 默认会响应外部点击/ESC 关闭——这里阻止之，防止全屏期间 Dialog 被误关。
+    // 全屏期间阻止外部点击/ESC 关闭 Dialog（全屏层在 Dialog 之外，交互会被视为"外部"）。
+    // 注意 modal 必须保持恒定 true：Radix 按 modal 分别渲染 DialogContentModal/
+    // DialogContentNonModal 两个不同组件，切换即整棵 Dialog 子树卸载重挂载——
+    // 进场动画重播、ContentImage decoded 丢失重新预载。modal 态下 body 被置
+    // pointer-events:none，全屏层可交互由 ImagePreview 根节点显式 pointer-events:auto 保证。
     const blockDialogDismiss = useCallback((e: Event) => e.preventDefault(), []);
 
     // 视频/音频有自己的播放器快捷键（←→ 快进退），灯箱不拦截其键盘事件
@@ -91,7 +94,7 @@ export function MediaLightbox({
     // 所有类型统一走 Dialog 内嵌 FilePreview（各套件自带完整 UI）；
     // 图片的 FilePreview 分支（ContentImage）点击后触发全屏 ImagePreview。
     // 视频贴边占满宽度（控制栏进度条需占满），其余类型留 padding。
-    // 全屏期间 Dialog 切为 modal={false}（详见上面 blockDialogDismiss 注释），
+    // 全屏期间 Dialog 保持 modal 恒定（详见 blockDialogDismiss 注释），
     // 与全屏 ImagePreview 同时渲染，关闭时重叠过渡而非串行。
     const isVideo = file.mime_type.startsWith("video/");
 
@@ -100,7 +103,6 @@ export function MediaLightbox({
             <Modal
                 open={open}
                 onOpenChange={onOpenChange}
-                modal={!fullscreenOpen}
                 size="xl"
                 footer={null}
                 unstyled

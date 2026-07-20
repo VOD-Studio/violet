@@ -278,6 +278,10 @@ export function ImagePreview({
                     // 造成"先黑后飞"的割裂闪烁感
                     transition={{ duration: 0.3 }}
                     className="fixed inset-0 z-9999 flex items-center justify-center bg-black/70"
+                    // Radix modal Dialog 打开时会把 body 置为 pointer-events:none
+                    // （disableOutsidePointerEvents），本组件 portal 在 body 下会被连带
+                    // 禁点；显式恢复 auto 保证全屏层可交互（无 Dialog 时等于默认值，无副作用）。
+                    style={{ pointerEvents: "auto" }}
                     onClick={onClose}
                 >
                     {/* 控制按钮 */}
