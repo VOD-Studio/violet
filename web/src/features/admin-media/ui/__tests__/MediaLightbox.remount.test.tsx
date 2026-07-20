@@ -79,6 +79,16 @@ async function openFullscreen() {
     );
 }
 
+/** 等全屏层退出动画结束、完全卸载 */
+async function waitFullscreenGone() {
+    await waitFor(
+        () => {
+            expect(document.querySelector("[class*='z-9999']")).toBeNull();
+        },
+        { timeout: 3000 },
+    );
+}
+
 describe("MediaLightbox 全屏预览期间 Dialog 稳定性", () => {
     const originalImage = global.Image;
 
@@ -134,5 +144,29 @@ describe("MediaLightbox 全屏预览期间 Dialog 稳定性", () => {
         });
         expect(Number.parseFloat(box.style.width)).toBeCloseTo(400, 1);
         expect(Number.parseFloat(box.style.height)).toBeCloseTo(300, 1);
+    });
+
+    it("点击全屏遮罩关闭预览后,查看 Dialog 不应被连带关闭", async () => {
+        const { onOpenChange } = renderLightbox();
+        const fullscreenRoot = await openFullscreen();
+
+        // 模拟真实点击序列:pointerdown(DismissableLayer 记录外部按下)+ click(触发 onClose)
+        fireEvent.pointerDown(fullscreenRoot);
+        fireEvent.click(fullscreenRoot);
+
+        await waitFullscreenGone();
+        expect(document.querySelector("[role=dialog]")).not.toBeNull();
+        expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+
+    it("ESC 关闭全屏预览后,查看 Dialog 不应被连带关闭", async () => {
+        const { onOpenChange } = renderLightbox();
+        await openFullscreen();
+
+        fireEvent.keyDown(document, { key: "Escape" });
+
+        await waitFullscreenGone();
+        expect(document.querySelector("[role=dialog]")).not.toBeNull();
+        expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
 });

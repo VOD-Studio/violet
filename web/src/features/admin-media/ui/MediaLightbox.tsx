@@ -1,6 +1,6 @@
 import type { MediaFile } from "@entities/media/model/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FilePreview } from "@/shared/ui/file-preview";
 import { ImagePreview } from "@/shared/ui/image-preview";
 import { Modal } from "@/shared/ui/modal";
@@ -72,7 +72,17 @@ export function MediaLightbox({
     // DialogContentNonModal 两个不同组件，切换即整棵 Dialog 子树卸载重挂载——
     // 进场动画重播、ContentImage decoded 丢失重新预载。modal 态下 body 被置
     // pointer-events:none，全屏层可交互由 ImagePreview 根节点显式 pointer-events:auto 保证。
-    const blockDialogDismiss = useCallback((e: Event) => e.preventDefault(), []);
+    //
+    // 阻断条件必须读 ref 而非闭包 state：Radix DismissableLayer 的 ESC 处理走
+    // React useEffectEvent，实测（React 19.2）会调到首渲染的旧闭包——闭包内
+    // state 是过期值，首渲染时全屏尚未打开，按 state 传 undefined 则阻断永远
+    // 不生效。稳定身份回调 + ref 实时值不受闭包过期影响。覆盖退出动画期
+    // （fullscreen 数据直到 onExitComplete 才清空），动画中途交互同样不关 Dialog。
+    const fullscreenActiveRef = useRef(false);
+    fullscreenActiveRef.current = fullscreenOpen || fullscreen !== null;
+    const blockDialogDismiss = useCallback((e: Event) => {
+        if (fullscreenActiveRef.current) e.preventDefault();
+    }, []);
 
     // 视频/音频有自己的播放器快捷键（←→ 快进退），灯箱不拦截其键盘事件
     const isCurrentMediaWithShortcuts =
@@ -118,8 +128,8 @@ export function MediaLightbox({
                 showCloseButton
                 titleSrOnly
                 title={file.original_name}
-                onInteractOutside={fullscreenOpen ? blockDialogDismiss : undefined}
-                onEscapeKeyDown={fullscreenOpen ? blockDialogDismiss : undefined}
+                onInteractOutside={blockDialogDismiss}
+                onEscapeKeyDown={blockDialogDismiss}
                 className="max-w-[95vw] gap-0 border-none bg-background/95 sm:rounded-lg"
             >
                 {/* 顶部切换条：上一个/计数/下一个（文件名由各预览套件自行展示，避免重复） */}
