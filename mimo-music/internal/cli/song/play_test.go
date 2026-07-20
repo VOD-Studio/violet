@@ -819,3 +819,39 @@ func TestNewPlay_LyricFlag(t *testing.T) {
 		t.Errorf("--lyric 默认应为 false, got %v (err %v)", l, err)
 	}
 }
+
+// TestRunPlay_LyricEmptyNotice 空歌词的降级原因在播放 UI 内可见(状态栏 notice)。
+// 回归:此前只 Warnf 到 stderr,而警告打印在 UI 清屏序列(\x1b[2J)之前,
+// 起播瞬间被抹掉——用户只看到「没有歌词面板」,看不到原因。
+func TestRunPlay_LyricEmptyNotice(t *testing.T) {
+	t.Parallel()
+	k, _, _ := newTestKit()
+	p := &fakePlayer{totalMs: 323000}
+	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
+	deps.fetchLyric = func(context.Context, int64) (string, error) { return "", nil }
+	if err := runPlay(k, 347230, 1, 75, "0", true, deps); err != nil {
+		t.Fatalf("空歌词应降级 exit 0, got %v", err)
+	}
+	ui := deps.ui.(*bytes.Buffer).String()
+	if !strings.Contains(ui, "暂无歌词") {
+		t.Errorf("降级原因应渲染进状态栏 notice, got UI %q", ui)
+	}
+}
+
+// TestRunPlay_LyricFetchErrorNotice 歌词接口失败的降级原因同样进状态栏 notice。
+func TestRunPlay_LyricFetchErrorNotice(t *testing.T) {
+	t.Parallel()
+	k, _, _ := newTestKit()
+	p := &fakePlayer{totalMs: 323000}
+	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
+	deps.fetchLyric = func(context.Context, int64) (string, error) {
+		return "", errors.New("network timeout")
+	}
+	if err := runPlay(k, 347230, 1, 75, "0", true, deps); err != nil {
+		t.Fatalf("歌词失败应降级 exit 0, got %v", err)
+	}
+	ui := deps.ui.(*bytes.Buffer).String()
+	if !strings.Contains(ui, "歌词获取失败") {
+		t.Errorf("失败原因应渲染进状态栏 notice, got UI %q", ui)
+	}
+}

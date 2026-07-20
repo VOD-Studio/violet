@@ -195,10 +195,12 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, lyric bool, 
 	}
 
 	// 7.5. 歌词(--lyric):拉 LRC 文本 → SortedLRC(按时间轴排序,供二分查找)。
-	// 失败或空歌词静默降级:stderr 警告,播放继续无歌词面板(PRD:无歌词不留空白行)。
+	// 失败或空歌词静默降级:stderr 警告 + 状态栏 notice(警告先于 UI 清屏打印,
+	// 不进 notice 用户看不到原因),播放继续无歌词面板(PRD:无歌词不留空白行)。
 	var lyricLines []player.TimedLine
+	var lyricNotice string
 	if lyric {
-		lyricLines = loadLyric(ctx, k, id, deps)
+		lyricLines, lyricNotice = loadLyric(ctx, k, id, deps)
 	}
 
 	// 8. raw 模式 + 事件循环。q/Esc 退出 → 恢复终端,exit 0。
@@ -208,26 +210,27 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, lyric bool, 
 	}
 	defer func() { _ = restore() }()
 
-	u := &playUI{p: p, song: song, songURL: songURL, level: level, vol: volume, lyric: lyricLines}
+	u := &playUI{p: p, song: song, songURL: songURL, level: level, vol: volume, lyric: lyricLines, notice: lyricNotice}
 	u.loop(deps)
 	return nil
 }
 
-// loadLyric 拉歌词并解析为按时间轴排序的 TimedLine。失败/空歌词静默降级
-// (stderr 警告),返回 nil——调用方据 nil 不渲染歌词面板。
-func loadLyric(ctx context.Context, k *kit.Kit, id int64, deps playDeps) []player.TimedLine {
+// loadLyric 拉歌词并解析为按时间轴排序的 TimedLine。失败/空歌词静默降级:
+// 返回 (nil, 降级原因)——调用方把原因放进状态栏 notice(stderr 的 Warnf 会被
+// UI 清屏盖掉,notice 才是用户实际能看到的通道)。有歌词返回 (lines, "")。
+func loadLyric(ctx context.Context, k *kit.Kit, id int64, deps playDeps) ([]player.TimedLine, string) {
 	text, err := deps.fetchLyric(ctx, id)
 	if err != nil {
 		// 歌词接口失败不致命:.Warnf 警告,播放继续。
 		k.Warnf("⚠ 歌词获取失败: %v", err)
-		return nil
+		return nil, fmt.Sprintf("⚠ 歌词获取失败: %v", err)
 	}
 	lines := player.SortedLRC(text)
 	if len(lines) == 0 {
 		k.Warnf("⚠ 该歌曲暂无歌词")
-		return nil
+		return nil, "⚠ 该歌曲暂无歌词"
 	}
-	return lines
+	return lines, ""
 }
 
 // waitBuffer 起播前缓冲等待:spinner 渲染「缓冲中 ⠼ 4.2s / 5s」到 stderr,
@@ -393,7 +396,7 @@ type playUI struct {
 
 	showHelp bool
 	showInfo bool
-	notice   string // 一次性提示(如 seek 失败),下次按键清除
+	notice   string // 一次性提示(seek 失败、歌词降级原因等),下次按键清除
 	quit     bool
 }
 
