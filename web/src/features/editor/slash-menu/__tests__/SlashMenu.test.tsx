@@ -8,8 +8,8 @@
 import { fireEvent, render } from "@testing-library/react";
 import type { Editor } from "@tiptap/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { buildSlashItems } from "../slash-items";
 import { SlashMenuView } from "../SlashMenu";
+import { buildSlashItems } from "../slash-items";
 
 beforeAll(() => {
     // jsdom 未实现 scrollIntoView，打桩避免选中变化时报错
