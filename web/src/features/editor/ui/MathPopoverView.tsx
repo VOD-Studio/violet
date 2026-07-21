@@ -15,6 +15,7 @@ import { useMemo } from "react";
 import { Popover, PopoverContent } from "@/shared/ui/base/popover";
 import { renderKatexElement } from "@/shared/ui/katex";
 import { useMathAnchor } from "../hooks/useMathAnchor";
+import { updateMathLatex } from "../lib/update-math-latex";
 import { MathEditPanel } from "./MathEditPanel";
 import "katex/dist/katex.min.css";
 
@@ -25,7 +26,6 @@ export interface MathPopoverViewProps extends NodeViewProps {
 
 export function MathPopoverView({
     node,
-    updateAttributes,
     selected,
     editor,
     getPos,
@@ -39,6 +39,19 @@ export function MathPopoverView({
     /** Esc / 行内 Enter：关闭弹层，光标移到公式之后（NodeSelection 解除即回渲染态） */
     const close = () => {
         if (typeof pos === "number") editor.commands.focus(pos + node.nodeSize);
+    };
+
+    /**
+     * 源码变更：走 updateMathLatex 而非 updateAttributes——
+     * 裸 setNodeMarkup 会让行内节点的 NodeSelection 降级，弹层一输入就关闭
+     */
+    const changeLatex = (v: string) => {
+        editor.commands.command(({ tr }) => {
+            const p = typeof getPos === "function" ? getPos() : null;
+            if (typeof p !== "number") return false;
+            updateMathLatex(tr, p, v);
+            return true;
+        });
     };
 
     return (
@@ -83,7 +96,7 @@ export function MathPopoverView({
                 <MathEditPanel
                     latex={latex}
                     displayMode={displayMode}
-                    onChange={(v) => updateAttributes({ latex: v })}
+                    onChange={changeLatex}
                     onClose={close}
                 />
             </PopoverContent>
