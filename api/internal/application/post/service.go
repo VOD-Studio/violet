@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	readability "codeberg.org/readeck/go-readability/v2"
+	"golang.org/x/net/html"
 
 	domain "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
@@ -557,6 +559,10 @@ type ImportResult struct {
 
 // ImportURL 抓取远程网页并提取正文 HTML，供编辑器「导入链接」使用。
 // 限定 http/https、15s 超时；接口仅管理员可调，SSRF 风险可控。
+//
+// 自行 fetch 而非用 readability.FromURL：后者内部用默认 Parser 会剥离所有 class，
+// 导致代码块 language-*、公式 katex 等语义 class 全丢，前端无法识别语言与公式。
+// 开启 KeepClasses 保留全部 class（多余装饰 class 不进 prosemirror schema，不影响存储）。
 func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, error) {
 	parsed, err := url.ParseRequestURI(rawURL)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
@@ -565,10 +571,25 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
 		return ImportResult{}, shared.BadRequest("仅支持 http/https 链接")
 	}
-	article, err := readability.FromURL(rawURL, 15*time.Second)
+
+	resp, err := fetchHTML(rawURL, 15*time.Second)
+	if err != nil {
+		return ImportResult{}, shared.BadRequest("抓取远程文档失败：" + err.Error())
+	}
+	defer resp.Body.Close()
+
+	doc, err := html.Parse(resp.Body)
+	if err != nil {
+		return ImportResult{}, shared.BadRequest("解析远程文档 HTML 失败：" + err.Error())
+	}
+
+	parser := readability.NewParser()
+	parser.KeepClasses = true
+	article, err := parser.ParseDocument(doc, parsed)
 	if err != nil {
 		return ImportResult{}, shared.BadRequest("解析远程文档失败：" + err.Error())
 	}
+
 	var buf bytes.Buffer
 	if err := article.RenderHTML(&buf); err != nil {
 		return ImportResult{}, shared.BadRequest("未能从该链接提取到正文")
@@ -577,6 +598,26 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 		return ImportResult{}, shared.BadRequest("未能从该链接提取到正文")
 	}
 	return ImportResult{Title: article.Title(), HTML: buf.String()}, nil
+}
+
+// fetchHTML 抓取远程 HTML 文档，校验 Content-Type 必须为 text/html。
+// UA 伪装为桌面浏览器避免被某些站点拦截。
+func fetchHTML(rawURL string, timeout time.Duration) (*http.Response, error) {
+	client := &http.Client{Timeout: timeout}
+	req, err := http.NewRequest("GET", rawURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; mimo-blog-importer/1.0)")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if ct := resp.Header.Get("Content-Type"); !strings.Contains(ct, "text/html") {
+		resp.Body.Close()
+		return nil, fmt.Errorf("目标链接不是 HTML 文档（Content-Type: %s）", ct)
+	}
+	return resp, nil
 }
 
 // SlugResult slug 生成结果
