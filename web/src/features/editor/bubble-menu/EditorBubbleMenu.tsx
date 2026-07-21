@@ -11,6 +11,7 @@ import { Bold, Code, Italic, Link as LinkIcon } from "lucide-react";
 import type { MouseEvent } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
+import { shouldShowBubbleMenu } from "./should-show";
 
 interface EditorBubbleMenuProps {
     editor: Editor;
@@ -34,14 +35,11 @@ export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorB
             updateDelay={60}
             // resizeDelay：滚动/resize 时立即更新位置，避免菜单跟随延迟
             resizeDelay={0}
-            // 仅在有实际文本选区时显示，避免光标态误触发
-            shouldShow={({ state, from, to }) => {
-                const { selection } = state;
-                if (selection.empty || editor.isActive("codeBlock")) return false;
-                // 全选时不显示浮动菜单
-                if (from === 0 && to === state.doc.content.size) return false;
-                return true;
-            }}
+            // 显示条件抽为 should-show.ts（可测）：仅文本选区显示，
+            // 空选区/代码块/全选/节点选中（公式、图片）均不显示
+            shouldShow={({ editor: e, state, from, to }) =>
+                shouldShowBubbleMenu({ editor: e, state, from, to })
+            }
             options={{
                 placement: "top",
                 offset: 8,
