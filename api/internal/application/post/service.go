@@ -2,13 +2,14 @@
 package post
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/go-shiori/go-readability"
+	readability "codeberg.org/readeck/go-readability/v2"
 
 	domain "blog-api/internal/domain/post"
 	"blog-api/internal/domain/shared"
@@ -568,10 +569,14 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 	if err != nil {
 		return ImportResult{}, shared.BadRequest("解析远程文档失败：" + err.Error())
 	}
-	if strings.TrimSpace(article.Content) == "" {
+	var buf bytes.Buffer
+	if err := article.RenderHTML(&buf); err != nil {
 		return ImportResult{}, shared.BadRequest("未能从该链接提取到正文")
 	}
-	return ImportResult{Title: article.Title, HTML: article.Content}, nil
+	if strings.TrimSpace(buf.String()) == "" {
+		return ImportResult{}, shared.BadRequest("未能从该链接提取到正文")
+	}
+	return ImportResult{Title: article.Title(), HTML: buf.String()}, nil
 }
 
 // SlugResult slug 生成结果

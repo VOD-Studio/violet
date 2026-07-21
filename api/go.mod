@@ -3,6 +3,7 @@ module blog-api
 go 1.25.8
 
 require (
+	codeberg.org/readeck/go-readability/v2 v2.1.1
 	github.com/HugoSmits86/nativewebp v1.3.0
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/disintegration/imaging v1.6.2
@@ -10,7 +11,6 @@ require (
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
 	github.com/go-playground/validator/v10 v10.30.2
-	github.com/go-shiori/go-readability v0.0.0-20251205110129-5db1dc9836f0
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.7.0
@@ -18,6 +18,7 @@ require (
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.12.3
+	github.com/mozillazg/go-pinyin v0.21.0
 	github.com/redis/go-redis/v9 v9.21.0
 	github.com/resend/resend-go/v2 v2.28.0
 	github.com/rs/zerolog v1.35.1
@@ -62,7 +63,6 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
-	github.com/mozillazg/go-pinyin v0.21.0 // indirect
 	github.com/oasdiff/yaml v0.1.1 // indirect
 	github.com/oasdiff/yaml3 v0.0.14 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
