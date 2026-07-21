@@ -5,7 +5,7 @@
  * 历史上用 react-markdown 渲染 HTML 时，remark-parse 会按 CommonMark 的 HTML 块规则
  * 在代码块内空行处截断，导致一个代码块被拆成多个片段并混入段落。
  */
-import { render } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { HtmlContent } from "../HtmlContent";
 
@@ -115,5 +115,21 @@ describe("HtmlContent 标题锚点 id", () => {
         const { container } = render(<HtmlContent html={html} />);
         const domIds = Array.from(container.querySelectorAll("h2,h3,h4")).map((h) => h.id);
         expect(domIds).toEqual(toc.map((it) => it.id));
+    });
+});
+
+describe("HtmlContent 数学公式（浏览时渲染）", () => {
+    it("inline-math span 经 sanitize 保留并渲染 KaTeX", async () => {
+        render(
+            <HtmlContent html='<p>质能方程 <span data-type="inline-math" data-latex="E=mc^2"></span></p>' />,
+        );
+        await waitFor(() => expect(document.querySelector(".katex")).toBeTruthy());
+    });
+
+    it("block-math div 渲染为 display 模式", async () => {
+        render(
+            <HtmlContent html='<div data-type="block-math" data-latex="\sum_{i=1}^{n} i"></div>' />,
+        );
+        await waitFor(() => expect(document.querySelector(".katex-display")).toBeTruthy());
     });
 });

@@ -20,6 +20,14 @@ const LazyFencedCodeBlock = lazy(() =>
     import("./CodeBlock").then((m) => ({ default: m.FencedCodeBlock })),
 );
 
+/** 公式组件懒加载：KaTeX + 字体只在含公式的文章页拉取 */
+const LazyInlineMathFormula = lazy(() =>
+    import("../../katex/MathFormula").then((m) => ({ default: m.InlineMathFormula })),
+);
+const LazyBlockMathFormula = lazy(() =>
+    import("../../katex/MathFormula").then((m) => ({ default: m.BlockMathFormula })),
+);
+
 /** 把 react-markdown 传入的 React 节点递归提取为纯文本 */
 function nodeToText(node: React.ReactNode): string {
     if (node == null || typeof node === "boolean") return "";
@@ -156,12 +164,54 @@ export const markdownComponents: Components = {
         </th>
     ),
     td: ({ children }) => <td className="border border-edge-hairline px-3 py-2">{children}</td>,
+    // HTML 路径：行内公式（编辑器产出的语义化标记，浏览时渲染）
+    span: ({ children, ...props }) => {
+        const p = props as Record<string, unknown>;
+        if (p["data-type"] === "inline-math") {
+            const latex = String(p["data-latex"] ?? "");
+            return (
+                <Suspense fallback={<span>{latex}</span>}>
+                    <LazyInlineMathFormula latex={latex} />
+                </Suspense>
+            );
+        }
+        return <span>{children}</span>;
+    },
+    // HTML 路径：公式块
+    div: ({ children, ...props }) => {
+        const p = props as Record<string, unknown>;
+        if (p["data-type"] === "block-math") {
+            const latex = String(p["data-latex"] ?? "");
+            return (
+                <Suspense fallback={<div>{latex}</div>}>
+                    <LazyBlockMathFormula latex={latex} />
+                </Suspense>
+            );
+        }
+        return <div>{children}</div>;
+    },
     // 代码：围栏块走 FencedCodeBlock（shiki 高亮 + 语言标签 + 复制），行内走纯样式。
     // 围栏块懒加载，loading 时 Suspense fallback 显示纯文本占位。
     code: ({ className, children }) => {
-        const match = /language-(\S+)/.exec(className || "");
-        const language = match?.[1] ?? "";
+        const cls = className || "";
         const code = nodeToText(children).replace(/\n$/, "");
+        // Markdown 降级路径：remark-math 产出的 math-inline / math-display
+        if (/\bmath-inline\b/.test(cls)) {
+            return (
+                <Suspense fallback={<span>{code}</span>}>
+                    <LazyInlineMathFormula latex={code} />
+                </Suspense>
+            );
+        }
+        if (/\bmath-display\b/.test(cls)) {
+            return (
+                <Suspense fallback={<div>{code}</div>}>
+                    <LazyBlockMathFormula latex={code} />
+                </Suspense>
+            );
+        }
+        const match = /language-(\S+)/.exec(cls);
+        const language = match?.[1] ?? "";
         const isFenced = !!match || code.includes("\n");
         if (!isFenced) {
             return (
