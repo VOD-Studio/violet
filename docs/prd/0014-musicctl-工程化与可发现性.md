@@ -1,14 +1,14 @@
-# PRD: musicctl 工程化与可发现性(发布/守护/文档/补全/召回池/别名/onboarding/doctor)
+# PRD: musicctl 工程化与可发现性(守护/文档/补全/召回池/别名/onboarding/doctor)
 
 > 状态:📋 待实现
 > 关联:[CLI 路线图](../../mimo-music/docs/musicctl-roadmap.md)(Phase E)、[CONTEXT.md musicctl CLI 段](../../CONTEXT.md)、[作用域 tag ADR](../adr/mimo-music-musicctl-scoped-release-tags.md)、[输出层 PRD](./0012-musicctl-输出层.md)(已完成)、[实用功能 PRD](./0013-musicctl-实用功能.md)(已完成)
-> 范围:musicctl 发布渠道、命令树守护、文档、补全与召回池、别名、裸跑 onboarding、doctor、recent、位置参数铺开。不改 endpoint/service 层,不新增 rpc 消费。
+> 范围:musicctl 命令树守护、文档、补全与召回池、别名、裸跑 onboarding、doctor、recent、位置参数铺开。发布渠道整块延期(见 Out of Scope)。不改 endpoint/service 层,不新增 rpc 消费。
 
 ## Problem Statement
 
 musicctl 已经「能用」(输出层 + 播放/下载/歌词全部落地),但日常使用的摩擦力集中在五处:
 
-1. **没有发布渠道**:安装靠 `go install` 源码,没有版本号、没有预编译二进制,换机器/重装成本高;bug report 时连「你跑的哪个版本」都答不上来。
+1. **没有发布渠道与版本号**:安装靠 `go install` 源码,没有预编译二进制,换机器/重装成本高;bug report 时连「你跑的哪个版本」都答不上来。发布渠道延期到整体架构定型后再做(命令树与接口面仍在按 357 蓝图扩张,现在固化的发布形态注定反复返工);本 PRD 先解决 `--version` 可读。
 2. **发现性差**:全量命令平铺在 help 里;网易云 ID 是纯数字无语义,播过的歌想再播要重新 search 一遍;高频命令(`song play --id`)打字链长。
 3. **裸跑无引导**:直接敲 `musicctl` 只出静态命令列表,新用户(以及一周没用的自己)不知道下一步该跑什么。
 4. **无环境自检**:出问题时(没登录/网络断/headless 无音频)靠逐个命令试,bug report 缺第一手信息。
@@ -16,9 +16,9 @@ musicctl 已经「能用」(输出层 + 播放/下载/歌词全部落地),但日
 
 ## Solution
 
-按 roadmap Phase E 全量落地十件事,全部围绕「不碰接口层、只加 CLI 工程化」:
+按 roadmap Phase E 落地(发布渠道延期,仅保留 `--version` 轻量交付,见 Out of Scope),全部围绕「不碰接口层、只加 CLI 工程化」:
 
-- **发布**:goreleaser + GitHub Actions,作用域 tag `musicctl/vX.Y.Z` 触发,产三平台二进制 + checksums。
+- **版本号**:`--version` 经 `debug.ReadBuildInfo()` 读 module version + vcs revision(`go install` 自动嵌入,零构建依赖);ldflags 注入 semver 随发布渠道一并延期。
 - **守护测试**:proto 全量 method ↔ cobra 命令树双向 diff,已知缺口显式 allowlist。
 - **文档双轨**:手写流程手册 + cobra 生成全命令参考(入库,freshness 守护)。
 - **help 分组与补全**:help 按 5 组展示 + `--help-verbose` 列全部;`--id <TAB>` 走召回池补全,kit 层统一挂载。
@@ -31,45 +31,51 @@ musicctl 已经「能用」(输出层 + 播放/下载/歌词全部落地),但日
 
 ## User Stories
 
-1. 作为用户,我希望从 GitHub Release 下载页拿到 musicctl 预编译二进制,以便不用装 Go 工具链。
-2. 作为用户,我希望 `musicctl --version` 报告明确版本号,以便 bug report 时说清环境。
-3. 作为维护者,我希望打 `musicctl/v0.1.0` 这样的 tag 就自动产出 macOS(arm64/amd64)/Linux/Windows 二进制 + checksums,以便发布零手工。
-4. 作为维护者,我希望 musicctl 的 tag 绝不触发博客生产部署,以便两条发布轨互不惊扰。
-5. 作为维护者,我希望新增 rpc 接入 CLI 时,忘记挂命令会立刻红(CI 守护),以便命令与接口一一对应不失守。
-6. 作为维护者,我希望守护清单里的已知缺口(rpc 数与命令数之差)必须显式登记理由,以便例外是刻意的而非遗漏。
-7. 作为新用户,我希望读一篇手册就能完成安装→登录→搜歌→播放的完整上手,以便不用逐个翻 `--help`。
-8. 作为用户/agent,我希望在 web(GitHub)上搜索、链接 musicctl 任意命令的参考文档,以便分享与引用。
-9. 作为维护者,我希望命令参考文档由命令树生成且有 freshness 测试,以便文档永不与实现脱节。
-10. 作为用户,我希望 `musicctl --help` 按「快速上手/账号/音乐/发现/工具」分组展示,以便不被全量命令淹没。
-11. 作为用户,我希望 `--help-verbose` 列出全部命令,以便需要时仍能穷举。
-12. 作为用户,我希望敲 `musicctl song play --id <TAB>` 能列出我最近搜索/播放/下载过的歌(带歌名艺人),以便不用背纯数字 ID。
-13. 作为用户,我希望 `--level`/`--area` 这类枚举 flag 按 TAB 直接列出取值,以便不查文档。
-14. 作为用户,我希望补全候选项绝不触发实时网络请求(只走本地缓存),以便 Tab 不卡、不触发风控。
-15. 作为用户,我希望播放/下载成功的歌自动进入召回池(无需任何显式操作),以便越用越好用。
-16. 作为用户,我希望召回池候选把「常听的」排在「碰巧最近一次的」前面(frecency),以便夜间复听直达爱听的歌。
-17. 作为用户,我希望召回池历史是 append-only JSONL(可用 grep/tail 直读),以便我自己也能检查和处理。
-18. 作为用户,我希望补全在离线/弱网时仍然可用(磁盘兜底,后台异步更新),以便不被网络状态绑架。
-19. 作为用户,我希望 `pp 347230` 等价 `song play --id 347230`、`dl` 等价 `song download`,以便高频操作两键完成。
-20. 作为用户,我希望别名不出现在 TAB 补全里(保持候选干净),但在 `--help` 和裸跑引导里能看到别名表,以便发现它们。
-21. 作为用户,我希望透过别名也能补全(`pp --id <TAB>` 照常出候选),以便别名不是二等公民。
-22. 作为未登录用户,我希望裸跑 `musicctl` 给我登录引导,以便第一步不迷路。
-23. 作为已登录用户,我希望裸跑按时段推荐该跑的命令(晨推日推/夜推复听),以便养成使用节奏;周末推荐与工作日不同。
-24. 作为用户,我希望裸跑输出走 stderr 且秒出(本地读 + 后台异步,绝不阻塞),以便不污染管道、不卡在启动。
-25. 作为用户,我希望 `musicctl doctor` 逐项告诉我版本/会话与网络/补全/音频后端的状态和修复指引,以便出问题一眼定位。
-26. 作为脚本作者,我希望 doctor 存在 fail 项时 exit 1(headless 无音频这类 warn 不算),以便 CI 能拿它做环境守卫。
-27. 作为用户,我希望 `musicctl recent` 列出最近的搜索/播放/下载,以便找回「刚才那首叫什么」。
-28. 作为用户,我希望所有单值 `--id` 命令和 `search` 都接受位置参数(`musicctl song detail 347230`),以便少打字;同时给 `--id` 和位置参数时报歧义错,以便不猜。
+1. 作为用户,我希望 `musicctl --version` 报告明确的构建信息(module version + commit),以便 bug report 时说清环境。
+2. 作为维护者,我希望新增 rpc 接入 CLI 时,忘记挂命令会立刻红(CI 守护),以便命令与接口一一对应不失守。
+3. 作为维护者,我希望守护清单里的已知缺口(rpc 数与命令数之差)必须显式登记理由,以便例外是刻意的而非遗漏。
+4. 作为新用户,我希望读一篇手册就能完成安装→登录→搜歌→播放的完整上手,以便不用逐个翻 `--help`。
+5. 作为用户/agent,我希望在 web(GitHub)上搜索、链接 musicctl 任意命令的参考文档,以便分享与引用。
+6. 作为维护者,我希望命令参考文档由命令树生成且有 freshness 测试,以便文档永不与实现脱节。
+7. 作为用户,我希望 `musicctl --help` 按「快速上手/账号/音乐/发现/工具」分组展示,以便不被全量命令淹没。
+8. 作为用户,我希望 `--help-verbose` 列出全部命令,以便需要时仍能穷举。
+9. 作为用户,我希望敲 `musicctl song play --id <TAB>` 能列出我最近搜索/播放/下载过的歌(带歌名艺人),以便不用背纯数字 ID。
+10. 作为用户,我希望 `--level`/`--area` 这类枚举 flag 按 TAB 直接列出取值,以便不查文档。
+11. 作为用户,我希望补全候选项绝不触发实时网络请求(只走本地缓存),以便 Tab 不卡、不触发风控。
+12. 作为用户,我希望播放/下载成功的歌自动进入召回池(无需任何显式操作),以便越用越好用。
+13. 作为用户,我希望召回池候选把「常听的」排在「碰巧最近一次的」前面(frecency),以便夜间复听直达爱听的歌。
+14. 作为用户,我希望召回池历史是 append-only JSONL(可用 grep/tail 直读),以便我自己也能检查和处理。
+15. 作为用户,我希望补全在离线/弱网时仍然可用(磁盘兜底,后台异步更新),以便不被网络状态绑架。
+16. 作为用户,我希望 `pp 347230` 等价 `song play --id 347230`、`dl` 等价 `song download`,以便高频操作两键完成。
+17. 作为用户,我希望别名不出现在 TAB 补全里(保持候选干净),但在 `--help` 和裸跑引导里能看到别名表,以便发现它们。
+18. 作为用户,我希望透过别名也能补全(`pp --id <TAB>` 照常出候选),以便别名不是二等公民。
+19. 作为未登录用户,我希望裸跑 `musicctl` 给我登录引导,以便第一步不迷路。
+20. 作为已登录用户,我希望裸跑按时段推荐该跑的命令(晨推日推/夜推复听),以便养成使用节奏;周末推荐与工作日不同。
+21. 作为用户,我希望裸跑输出走 stderr 且秒出(本地读 + 后台异步,绝不阻塞),以便不污染管道、不卡在启动。
+22. 作为用户,我希望 `musicctl doctor` 逐项告诉我版本/会话与网络/补全/音频后端的状态和修复指引,以便出问题一眼定位。
+23. 作为脚本作者,我希望 doctor 存在 fail 项时 exit 1(headless 无音频这类 warn 不算),以便 CI 能拿它做环境守卫。
+24. 作为用户,我希望 `musicctl recent` 列出最近的搜索/播放/下载,以便找回「刚才那首叫什么」。
+25. 作为用户,我希望所有单值 `--id` 命令和 `search` 都接受位置参数(`musicctl song detail 347230`),以便少打字;同时给 `--id` 和位置参数时报歧义错,以便不猜。
+
+> ⏸ 以下三条随发布渠道延期(见 Out of Scope),不进本期 ticket:
+> - 作为用户,我希望从 GitHub Release 下载页拿到 musicctl 预编译二进制,以便不用装 Go 工具链。
+> - 作为维护者,我希望打 `musicctl/v0.1.0` 这样的 tag 就自动产出 macOS(arm64/amd64)/Linux/Windows 二进制 + checksums,以便发布零手工。
+> - 作为维护者,我希望 musicctl 的 tag 绝不触发博客生产部署,以便两条发布轨互不惊扰。
 
 ## Implementation Decisions
 
-### 发布(goreleaser + Actions)
+### ⏸ 发布(goreleaser + Actions)——延期到整体架构定型后
+
+**延期决策**:发布渠道整块推迟到 musicctl 架构定型(命令树规模与接口面基本稳定)后再做。理由:接口按 357 蓝图持续扩张,命令树、help 分组、别名都在演化,现在固化发布形态只会反复返工;`go install` 对个人项目现阶段够用。本节内容保留作为延期预案,届时直接启用。
 
 - 新增 goreleaser 配置与发布 workflow;触发面 `tags: ['musicctl/v*']`,与博客 `deploy.yml` 的 `v*` 完全隔离(决策见[作用域 tag ADR](../adr/mimo-music-musicctl-scoped-release-tags.md))。
-- 产物:macOS arm64/amd64、Linux、Windows 二进制 + checksums;版本号经 ldflags 注入,`--version` 可读;首版 0.1.0。
-- **配置禁项**:不写 `brews:` 段——brew tap 后置是既定决策(见 Out of Scope),防止 release workflow 尝试推 tap。
-- **macOS quarantine 对策**:首版二进制不做 Apple 签名/公证(Apple Developer $99/年,个人项目不划算),Gatekeeper 会拦首次运行;安装文档显式给出两种解法——浏览器下载后 `xattr -d com.apple.musicctl <binary>`,或 `curl -L ... | tar xz` 管道下载(不经浏览器、不带 quarantine 属性)。签名/公证列 Further Notes 可选后续。
-- **供应链加固(可选,不阻塞 0.1.0)**:2026 年 goreleaser 社区默认推荐 cosign keyless 签名(GitHub Actions OIDC,免密钥管理)+ syft SBOM;单维护者个人项目风险面小,列 Further Notes,首版只做 checksums。
+- 产物:macOS arm64/amd64、Linux、Windows 二进制 + checksums;版本号经 ldflags 注入;首版 0.1.0。
+- **配置禁项**:不写 `brews:` 段——brew tap 后置是既定决策,防止 release workflow 尝试推 tap。
+- **macOS quarantine 对策**:首版二进制不做 Apple 签名/公证(Apple Developer $99/年,个人项目不划算),Gatekeeper 会拦首次运行;安装文档显式给出两种解法——浏览器下载后 `xattr -d com.apple.musicctl <binary>`,或 `curl -L ... | tar xz` 管道下载(不经浏览器、不带 quarantine 属性)。
+- **供应链加固(可选)**:cosign keyless 签名(GitHub Actions OIDC,免密钥管理)+ syft SBOM;单维护者个人项目风险面小,首版只做 checksums。
 - CI 每次 push 跑 `goreleaser check` + `release --snapshot` 冒烟(不发布),防止配置腐烂。
+
+**本 PRD 内只交付**:`--version` 经 `debug.ReadBuildInfo()` 报告 module version + vcs revision(`go install` 安装时自动嵌入,无需 goreleaser);doctor 的「版本(build info)」检查项同源,不受影响。
 
 ### 命令树守护测试
 
@@ -143,14 +149,12 @@ musicctl 已经「能用」(输出层 + 播放/下载/歌词全部落地),但日
 
 零散纯函数:onboarding 场景映射(注入时钟)、doctor 检查项(fake 网络/session/audio + 渲染层断言 + exit code)。
 
-**不进单测**:goreleaser——CI 上 `check` + `--snapshot` 冒烟。
-
 先例:`beep_seek_repro_test.go`(httptest fake)、`play_test.go`(fakePlayer/testPlayDeps)、`kit/positional_test.go`、`endpoint/song/song_test.go`(fixture 映射)。
 
 ## Out of Scope
 
-- brew tap(roadmap 既定后置;未来落地时用 **Cask** 而非 Formula——预编译二进制走 Cask 是 2026 生态共识,goreleaser 生成的 Formula 为历史遗留形态)、man pages(clig.dev consider 项,投入产出低)。
-- cosign 签名 / SBOM / Apple 签名公证(可选增强,见 Further Notes;首版 checksums + quarantine 指引足够覆盖个人项目风险面)。
+- **发布渠道整块**(goreleaser/预编译二进制/cosign 签名/SBOM/Apple 签名公证/brew tap)——延期到 musicctl 整体架构定型后;触发条件:命令树规模与接口面基本稳定(357 蓝图大部接入或明确裁剪)。本 PRD 仅交付 `--version`(build info)。brew 未来落地时用 **Cask** 而非 Formula(预编译二进制走 Cask 是 2026 生态共识)。
+- man pages(clig.dev consider 项,投入产出低)。
 - TUI(Phase D,独立立项;onboarding 不抢占裸跑)。
 - 用户自定义别名(cargo #6221 遮蔽教训;首发六枚内置固定)。
 - 实时网络补全(CONTEXT.md 明确 Avoid)。
@@ -160,9 +164,8 @@ musicctl 已经「能用」(输出层 + 播放/下载/歌词全部落地),但日
 
 ## Further Notes
 
-- **Phase B 先行**:召回池 JSONL 直接写 Phase B 迁移后的配置目录(`os.UserConfigDir()/musicctl/`),不写 `~/.musicctl/` 旧路径,零迁移逻辑。ticket 排序上召回池依赖 B 完成;工程化各项(goreleaser/守护/文档/doctor)与 B 无依赖,可并行先行。
+- **Phase B 先行**:召回池 JSONL 直接写 Phase B 迁移后的配置目录(`os.UserConfigDir()/musicctl/`),不写 `~/.musicctl/` 旧路径,零迁移逻辑。ticket 排序上召回池依赖 B 完成;其余各项(守护/文档/doctor 等)与 B 无依赖,可并行先行。
 - **别名与补全的交互细节**:argv 重写必须同时覆盖执行路径与 `__complete` 路径,否则 `pp --id <TAB>` 静默无候选,用户会当 bug 报。
 - **agent-friendly 口径**:`--help` 是命令语法的唯一真相(生成文档与安装版本同步),agent skill 或外部文档一律指向 `--help`/生成参考,不复制命令手册——复制即第二份真相,必然腐烂(2026 agent-skill 设计共识)。机器可读输出已由输出层(PRD-0012)`--json` 全覆盖,doctor `--json` 白拿,musicctl 天然可被 agent 消费,本 PRD 零新增工作量。
 - **隐式埋点只记成功**:写操作(like/trash)经确认且执行成功才进池;失败/取消不进。
-- **可选增强(均不阻塞 0.1.0)**:cosign keyless 签名(GitHub Actions OIDC 免密钥)+ syft SBOM;Apple 签名+公证(需 Apple Developer 账号,消除 quarantine 指引步骤);brew tap(届时用 Cask)。三者相互独立,各自单独立项。
 - 决策过程:本 PRD 经 grill 九问收敛,关键外部依据——clig.dev(文档双轨/100ms 响应)、cobra 官方 doc-gen 与 Group 机制、Mozilla/atuin-z frecency、git/gh/cargo argv 展开、gh fire-and-forget 更新检查。
