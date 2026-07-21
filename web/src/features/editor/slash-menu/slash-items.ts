@@ -43,6 +43,21 @@ export interface SlashMenuItem {
 /** 图片插入项的 command 由父组件注入（需触发上传/素材选择），此处用占位 id 标记 */
 export const IMAGE_ITEM_ID = "image";
 
+/**
+ * insertContentAt 后在 from 附近定位刚插入的公式节点并选中。
+ * 不用官方 insertInlineMath/insertBlockMath：它们对空 latex 直接返回 false，
+ * 后续 setNodeSelection 会在无节点位置抛 TypeError（slash 插入无反应的根源）。
+ * 块节点落点随上下文偏移（空段落被替换时落在 from-1），故就近搜索。
+ */
+function selectInsertedMath(editor: Editor, type: "inlineMath" | "blockMath", from: number) {
+    for (const pos of [from, from - 1, from + 1]) {
+        if (pos >= 0 && editor.state.doc.nodeAt(pos)?.type.name === type) {
+            editor.chain().setNodeSelection(pos).run();
+            return;
+        }
+    }
+}
+
 export function buildSlashItems(onPickImage: () => void): SlashMenuItem[] {
     return [
         {
@@ -154,7 +169,12 @@ export function buildSlashItems(onPickImage: () => void): SlashMenuItem[] {
             group: "媒体",
             command: (e) => {
                 const { from } = e.state.selection;
-                e.chain().focus().insertInlineMath({ latex: "" }).setNodeSelection(from).run();
+                const inserted = e
+                    .chain()
+                    .focus()
+                    .insertContentAt(from, { type: "inlineMath", attrs: { latex: "" } })
+                    .run();
+                if (inserted) selectInsertedMath(e, "inlineMath", from);
             },
         },
         {
@@ -166,7 +186,12 @@ export function buildSlashItems(onPickImage: () => void): SlashMenuItem[] {
             group: "媒体",
             command: (e) => {
                 const { from } = e.state.selection;
-                e.chain().focus().insertBlockMath({ latex: "" }).setNodeSelection(from).run();
+                const inserted = e
+                    .chain()
+                    .focus()
+                    .insertContentAt(from, { type: "blockMath", attrs: { latex: "" } })
+                    .run();
+                if (inserted) selectInsertedMath(e, "blockMath", from);
             },
         },
         {
