@@ -9,6 +9,7 @@ import (
 )
 
 // renderWithPipeline 模拟 service.go 的 readability 处理流程，返回 article HTML。
+// 完整复用 ImportURL 的预处理链：preserveMathJaxScripts + markBlockKaTeX + restoreMathNodes。
 func renderWithPipeline(t *testing.T, rawHTML string) string {
 	t.Helper()
 	doc, err := html.Parse(strings.NewReader(rawHTML))
@@ -16,6 +17,7 @@ func renderWithPipeline(t *testing.T, rawHTML string) string {
 		t.Fatalf("html.Parse 失败: %v", err)
 	}
 	preserveMathJaxScripts(doc)
+	markBlockKaTeX(doc)
 
 	p := readability.NewParser()
 	p.KeepClasses = true
@@ -34,6 +36,12 @@ func renderWithPipeline(t *testing.T, rawHTML string) string {
 	return buf.String()
 }
 
+// renderWithPipelineMarkBlock 与 renderWithPipeline 等价（markBlockKaTeX 已合并进 renderWithPipeline）。
+// 保留这个别名让块级公式测试的语义更明确。
+func renderWithPipelineMarkBlock(t *testing.T, rawHTML string) string {
+	return renderWithPipeline(t, rawHTML)
+}
+
 // TestMathRestore_StandardKaTeXInline 验证标准 KaTeX 行内公式能从 annotation 还原为 $...$。
 func TestMathRestore_StandardKaTeXInline(t *testing.T) {
 	htmlDoc := wrapArticle(`<p>公式 <span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>E</mi></mrow><annotation encoding="application/x-tex">E=mc^2</annotation></semantics></math></span><span class="katex-html">RENDERED</span></span> end</p>`)
@@ -46,12 +54,16 @@ func TestMathRestore_StandardKaTeXInline(t *testing.T) {
 	}
 }
 
-// TestMathRestore_StandardKaTeXBlock 验证标准 KaTeX 块级公式（带 katex-display 类）还原为 $$...$$。
+// TestMathRestore_StandardKaTeXBlock 验证标准 KaTeX 块级公式还原为 $$...$$。
+// 真实结构是 <span class="katex-display"><span class="katex">…</span></span>（外层 wrapper）。
 func TestMathRestore_StandardKaTeXBlock(t *testing.T) {
-	htmlDoc := wrapArticle(`<p><span class="katex katex-display"><span class="katex-mathml"><math><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">\int_0^1 x\,dx</annotation></semantics></math></span><span class="katex-html">RENDERED</span></span></p>`)
+	htmlDoc := wrapArticle(`<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">\int_0^1 x\,dx</annotation></semantics></math></span><span class="katex-html">RENDERED</span></span></span></p>`)
 	out := renderWithPipeline(t, htmlDoc)
 	if !strings.Contains(out, "$$\\int_0^1 x\\,dx$$") {
 		t.Errorf("期望块级公式还原为 $$..$$，实际:\n%s", out)
+	}
+	if strings.Contains(out, "katex-display") {
+		t.Errorf("外层 katex-display wrapper 应被整体替换，实际:\n%s", out)
 	}
 }
 

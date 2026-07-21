@@ -595,6 +595,9 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 	// MathJax 源码藏在 <script type="math/tex"> 里，readability 的 removeScripts 会删。
 	// 必须在 ParseDocument 之前替换成占位 span，否则源码和位置一起丢失。
 	preserveMathJaxScripts(doc)
+	// KaTeX 块级公式外层 .katex-display wrapper 会被 readability 压平，块级标识丢失。
+	// 在 ParseDocument 之前给内层 .katex 节点打 data-katex-display 标记保留块级信息。
+	markBlockKaTeX(doc)
 
 	parser := readability.NewParser()
 	parser.KeepClasses = true

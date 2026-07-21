@@ -52,6 +52,57 @@ func preserveMathJaxScripts(doc *html.Node) {
 	}
 }
 
+// markBlockKaTeX 在原始 doc 上把 .katex-display wrapper 整体替换成 MathJax 占位 span。
+//
+// 必要性：块级公式外层 .katex-display wrapper 内部是纯装饰 span（katex-html 的 strut/base 等），
+// 无文本内容，readability 的 grabArticle 会判定为「空节点」整个删除。结果块级公式在处理后 doc 上
+// 完全消失，位置和块级标识都丢了（用户看到「求和：」后接残缺的 $）。
+//
+// 方案：在 readability 处理前，把 .katex-display 整体替换成 mathjax-legacy 占位 span
+// （复用 MathJax 占位机制），占位 span 自带文本内容 readability 会保留。源码优先从子树
+// annotation 提取（标准 KaTeX），提取不到则留空（rua.plus 等无源码站点）。
+func markBlockKaTeX(doc *html.Node) {
+	for _, wrapper := range findAllByClass(doc, "span", "katex-display") {
+		latex := findKatexAnnotation(wrapper)
+		placeholder := &html.Node{
+			Type: html.ElementNode,
+			Data: "span",
+		}
+		// 占位文本：有源码用 LaTeX 源码作占位（既保留信息又给 readability 文本钩子）；
+		// 无源码用 FORMULA 占位（readability 不会删有文本的 span）。
+		placeholderText := latex
+		if placeholderText == "" {
+			placeholderText = "FORMULA"
+		}
+		placeholderText = strings.TrimSpace(placeholderText)
+		placeholderTextNode := &html.Node{Type: html.TextNode, Data: placeholderText}
+		placeholder.AppendChild(placeholderTextNode)
+		placeholder.Attr = []html.Attribute{
+			{Key: "class", Val: "mathjax-legacy"},
+			{Key: mathJaxLatexAttr, Val: latex},
+			{Key: mathJaxBlockAttr, Val: "1"},
+		}
+		wrapper.Parent.InsertBefore(placeholder, wrapper)
+		wrapper.Parent.RemoveChild(wrapper)
+	}
+}
+
+// findAllByClass 在 node 子树里查找所有带指定 class 的指定标签元素。
+func findAllByClass(root *html.Node, tag, class string) []*html.Node {
+	var result []*html.Node
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == tag && hasClass(getAttr(n, "class"), class) {
+			result = append(result, n)
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(root)
+	return result
+}
+
 // findMathJaxScripts 递归查找所有 <script type="math/tex"> 和 <script type="math/tex; mode=display">。
 func findMathJaxScripts(n *html.Node) []*html.Node {
 	var result []*html.Node
@@ -78,9 +129,11 @@ func isMathJaxScript(typ string) bool {
 // restoreMathNodes 遍历 readability 处理后的 article.Node，把公式 DOM 还原成 LaTeX：
 //   - 标准 KaTeX：取 annotation 文本 → $...$ / $$...$$
 //   - MathJax 占位 span（preserveMathJaxScripts 注入）：读 data-mj-latex → $...$ / $$...$$
-//   - 无源码 KaTeX（如 rua.plus）：替换成空 $ $ 占位
+//   - 无源码 KaTeX（如 rua.plus）：替换成空 $ $ / $$ $$ 占位
 //
-// KaTeX 的 display 模式由 .katex-display 类标识；MathJax 由 data-mj-block 标识。
+// 块级公式结构：标准 KaTeX 和 rua.plus 都把 .katex-display 作为外层 wrapper 包裹 .katex，
+// 故优先匹配外层 .katex-display 整体替换；裸 .katex（无外层 wrapper）按行内处理。
+// MathJax 块级由 data-mj-block 属性标识。
 func restoreMathNodes(root *html.Node) {
 	// 收集所有需要替换的节点（遍历过程中不能边找边删）
 	var replacements []nodeReplacement
@@ -88,10 +141,18 @@ func restoreMathNodes(root *html.Node) {
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "span" {
 			class := getAttr(n, "class")
+			// mathjax-legacy 占位：MathJax script 与块级 KaTeX（markBlockKaTeX 替换）共用此标记。
+			// 块级由 data-mj-block 属性标识，行内无此属性。
 			if hasClass(class, "mathjax-legacy") {
 				replacements = append(replacements, mathReplacementFromMathJax(n))
+			} else if hasClass(class, "katex-display") {
+				// 防御性分支：markBlockKaTeX 已替换 .katex-display，正常不应命中。
+				// 万一漏网（如 KaTeX 节点不含 .katex-display wrapper），整体替换。
+				replacements = append(replacements, mathReplacementFromKaTeX(n, true))
+				return
 			} else if hasClass(class, "katex") {
-				replacements = append(replacements, mathReplacementFromKaTeX(n))
+				// 行内 KaTeX
+				replacements = append(replacements, mathReplacementFromKaTeX(n, false))
 			}
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -117,11 +178,12 @@ func mathReplacementFromMathJax(span *html.Node) nodeReplacement {
 	return nodeReplacement{target: span, text: text}
 }
 
-func mathReplacementFromKaTeX(katexSpan *html.Node) nodeReplacement {
+// mathReplacementFromKaTeX 把 KaTeX 节点（.katex 或外层 .katex-display wrapper）还原成 LaTeX。
+// display 参数显式标识块级/行内：块级时 target 是外层 wrapper，子树里仍含 .katex。
+func mathReplacementFromKaTeX(katexSpan *html.Node, display bool) nodeReplacement {
 	latex := findKatexAnnotation(katexSpan)
-	isBlock := hasClass(getAttr(katexSpan, "class"), "katex-display")
-	// 无源码（如 rua.plus 关闭 mathml 层）→ 空 $ $ 占位，位置不丢
-	text := wrapLatex(latex, isBlock)
+	// 无源码（如 rua.plus 关闭 mathml 层）→ 空 $ $ / $$ $$ 占位，位置不丢
+	text := wrapLatex(latex, display)
 	return nodeReplacement{target: katexSpan, text: text}
 }
 
