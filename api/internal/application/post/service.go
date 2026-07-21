@@ -583,11 +583,21 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 		return ImportResult{}, shared.BadRequest("解析远程文档 HTML 失败：" + err.Error())
 	}
 
+	// MathJax 源码藏在 <script type="math/tex"> 里，readability 的 removeScripts 会删。
+	// 必须在 ParseDocument 之前替换成占位 span，否则源码和位置一起丢失。
+	preserveMathJaxScripts(doc)
+
 	parser := readability.NewParser()
 	parser.KeepClasses = true
 	article, err := parser.ParseDocument(doc, parsed)
 	if err != nil {
 		return ImportResult{}, shared.BadRequest("解析远程文档失败：" + err.Error())
+	}
+
+	// readability 处理后，把 KaTeX 渲染 DOM 与 MathJax 占位 span 还原成 LaTeX 源码。
+	// 有源码（标准 KaTeX / MathJax）→ $...$，无源码（如 rua.plus 关了 mathml）→ 空 $ $ 占位。
+	if article.Node != nil {
+		restoreMathNodes(article.Node)
 	}
 
 	var buf bytes.Buffer
