@@ -133,16 +133,23 @@ export async function publishPost(id: string): Promise<void> {
 
 /** ImportPostUrlResult - 远程链接文档解析结果 */
 export interface ImportPostUrlResult {
-    /** 网页标题，可为空 */
+    /** 文章正文标题（og:title → JSON-LD → H1 → <title> 兜底），可为空 */
     title?: string;
     /** 提取出的正文 HTML */
     html: string;
+    /** 摘要（SEO description → 正文首段回退） */
+    excerpt?: string;
+    /** SEO 标题，社交分享用，可与正文不同 */
+    seo_title?: string;
+    /** SEO 描述 */
+    seo_description?: string;
 }
 
 /**
  * importPostUrl - 调后端 POST /admin/posts/import-url 解析远程链接正文
  *
- * 后端 readability 代理解析，返回标题与正文 HTML，供编辑器 setContent 插入。
+ * 后端 readability 代理解析，返回标题、正文 HTML、摘要与 SEO 元信息，
+ * 供编辑器 setContent 插入并自动填入表单空字段。
  */
 export async function importPostUrl(url: string): Promise<ImportPostUrlResult> {
     return apiPost<ImportPostUrlResult>("/admin/posts/import-url", { url });

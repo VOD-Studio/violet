@@ -22,7 +22,12 @@ import type { AdminPostListItem, CreatePost } from "@features/admin-posts/model/
 import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
-import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
+import {
+    type ImportUrlMeta,
+    type ImportUrlResult,
+    RichTextEditor,
+    type RichTextEditorHandle,
+} from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDebouncedCallback } from "@shared/lib/hooks/use-debounced-callback";
 import { Input } from "@shared/ui/base/input";
@@ -98,6 +103,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
         reset,
         control,
         setValue,
+        getValues,
         formState: { errors },
     } = form;
 
@@ -237,16 +243,47 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
         );
     };
 
-    // 导入远程链接：调后端代理解析，成功回填编辑器；失败 toast 并返回 null
-    const handleImportUrl = async (url: string) => {
+    // 导入远程链接：调后端代理解析，成功回填编辑器并透传元信息；失败 toast 并返回 null
+    const handleImportUrl = async (url: string): Promise<ImportUrlResult | null> => {
         const toastId = toast.loading("正在解析远程文档…");
         try {
             const result = await importPostUrl(url);
             toast.success("已导入远程文档", { id: toastId });
-            return result;
+            return {
+                html: result.html,
+                meta: {
+                    title: result.title,
+                    excerpt: result.excerpt,
+                    seo_title: result.seo_title,
+                    seo_description: result.seo_description,
+                },
+            };
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "导入失败", { id: toastId });
             return null;
+        }
+    };
+
+    // 导入成功后回填表单空字段：title/excerpt/seo_title/seo_description 仅当当前为空时填入，
+    // 已填字段不覆盖。title 回填后顺带触发 slugify 预填 slug（复用标题输入的 debounce 链路）。
+    const handleImportUrlMeta = (meta: ImportUrlMeta) => {
+        const fillIfEmpty = (
+            field: "title" | "excerpt" | "seo_title" | "seo_description",
+            value?: string,
+        ) => {
+            if (!value || !value.trim()) return;
+            if ((getValues(field) || "").trim()) return;
+            setValue(field, value, { shouldDirty: true });
+        };
+        fillIfEmpty("excerpt", meta.excerpt);
+        fillIfEmpty("seo_title", meta.seo_title);
+        fillIfEmpty("seo_description", meta.seo_description);
+        // title 单独处理：回填后触发 slugify
+        if (meta.title?.trim() && !(getValues("title") || "").trim()) {
+            setValue("title", meta.title, { shouldDirty: true });
+            if (!isEdit && !slugTouched.current) {
+                debouncedSlugify.run(meta.title);
+            }
         }
     };
 
@@ -393,6 +430,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                                     exportName={slugValue || "article"}
                                     onPickImage={() => setImagePickerOpen(true)}
                                     onImportUrl={handleImportUrl}
+                                    onImportUrlMeta={handleImportUrlMeta}
                                     className="h-full"
                                     minHeight={400}
                                 />

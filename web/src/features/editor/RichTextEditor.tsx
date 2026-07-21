@@ -63,11 +63,29 @@ export interface RichTextEditorProps {
     /** 自定义图片插入（工具栏+斜杠菜单点击图片时）；不传则用本地上传 */
     onPickImage?: () => void;
     /** 自定义远程链接导入；不传则不显示「链接」按钮。返回 null 表示取消或失败 */
-    onImportUrl?: (url: string) => Promise<{ html: string; title?: string } | null>;
+    onImportUrl?: (url: string) => Promise<ImportUrlResult | null>;
+    /** 远程链接导入成功后，把元信息（标题/摘要/SEO）透传给父级回填表单 */
+    onImportUrlMeta?: (meta: ImportUrlMeta) => void;
     /** 外部 className */
     className?: string;
     /** 最小高度，默认 420 */
     minHeight?: number;
+}
+
+/** ImportUrlResult - 远程链接导入返回结构（编辑器只关心 html） */
+export interface ImportUrlResult {
+    /** 提取出的正文 HTML */
+    html: string;
+    /** 元信息（标题/摘要/SEO），透传给 onImportUrlMeta */
+    meta?: ImportUrlMeta;
+}
+
+/** ImportUrlMeta - 远程文档的元信息，供父级回填表单空字段 */
+export interface ImportUrlMeta {
+    title?: string;
+    excerpt?: string;
+    seo_title?: string;
+    seo_description?: string;
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
@@ -79,6 +97,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             exportName = "article",
             onPickImage,
             onImportUrl,
+            onImportUrlMeta,
             className,
             minHeight = 420,
         },
@@ -328,8 +347,13 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             setUrlError(null);
             // 校验通过：PromptDialog 关闭，解析异步进行；成功由 onImportUrl 调用方 toast
             void onImportUrl(trimmed).then((result) => {
-                if (result?.html) {
+                if (!result) return;
+                if (result.html) {
                     editor.commands.setContent(result.html, { contentType: "html" });
+                }
+                // 元信息透传给父级回填表单（标题/摘要/SEO）
+                if (result.meta && onImportUrlMeta) {
+                    onImportUrlMeta(result.meta);
                 }
             });
         };
