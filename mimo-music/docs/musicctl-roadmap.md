@@ -61,7 +61,7 @@
 - 会话文件从 `~/.musicctl/session.json` 迁至配置目录,**读时兼容旧位置**(旧位置存在则继续使用并提示可 `musicctl config migrate`)
 - 新增 `config` 命令组:`config path` / `config get` / `config set key value`
 
-## Phase E — 工程化与可发现性
+## Phase E — 工程化与可发现性 📋 待实现(PRD-0014)
 
 > 可发现性(补全/onboarding/别名/召回池)属[双轨道 ADR](../../docs/adr/mimo-music-dual-track-orchestration.md)第三类——纯 CLI 工程化,不消费 rpc,与 goreleaser/测试/文档同类。不单列 Phase F,并入此节。
 
