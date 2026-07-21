@@ -148,6 +148,17 @@ export async function importPostUrl(url: string): Promise<ImportPostUrlResult> {
     return apiPost<ImportPostUrlResult>("/admin/posts/import-url", { url });
 }
 
+/**
+ * slugifyPost - 调后端 POST /admin/posts/slugify 把标题转 ASCII slug
+ *
+ * 后端中文走无声调全拼（go-pinyin），保证产出符合 [a-z0-9-] 契约。
+ * 供 PostEditor 标题输入后 debounce 调用，预填 slug 输入框；
+ * 替代前端本地 slugify（保留 Unicode 中文，与后端契约冲突）。
+ */
+export async function slugifyPost(title: string): Promise<{ slug: string }> {
+    return apiPost<{ slug: string }>("/admin/posts/slugify", { title });
+}
+
 export function useRestoreVersion(postId: string, versionId: string) {
     const queryClient = useQueryClient();
     return useMutation({

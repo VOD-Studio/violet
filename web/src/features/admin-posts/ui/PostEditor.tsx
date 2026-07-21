@@ -12,6 +12,7 @@ import { adminPostKeys } from "@features/admin-posts/api/keys";
 import {
     importPostUrl,
     publishPost,
+    slugifyPost,
     useCreatePost,
     useUpdatePost,
 } from "@features/admin-posts/api/mutations";
@@ -23,7 +24,7 @@ import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
 import { RichTextEditor, type RichTextEditorHandle } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { slugify } from "@shared/lib/slug";
+import { useDebouncedCallback } from "@shared/lib/hooks/use-debounced-callback";
 import { Input } from "@shared/ui/base/input";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -53,6 +54,26 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
     const initialized = useRef(false);
     const slugTouched = useRef(false);
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // 标题输入后 debounce 调后端 slugify 接口预填 slug（中文走无声调全拼，
+    // 保证产出符合 [a-z0-9-] 契约）。替代前端本地 slugify（保留 Unicode
+    // 中文，与后端契约冲突）。用户手改 slug 后（slugTouched=true）不再跟随。
+    const debouncedSlugify = useDebouncedCallback(
+        (title: string) => {
+            if (!title.trim()) return;
+            void slugifyPost(title)
+                .then((res) => {
+                    // 二次校验 slugTouched：防抖窗口内用户可能已手动改过 slug
+                    if (!slugTouched.current) {
+                        setValue("slug", res.slug);
+                    }
+                })
+                .catch(() => {
+                    // slugify 失败不打断输入，用户可手动填
+                });
+        },
+        { delay: 400 },
+    );
 
     const [imagePickerOpen, setImagePickerOpen] = useState(false);
     const [versionsOpen, setVersionsOpen] = useState(false);
@@ -329,7 +350,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                         {...register("title", {
                             onChange: (e) => {
                                 if (!isEdit && !slugTouched.current) {
-                                    setValue("slug", slugify(e.target.value));
+                                    debouncedSlugify.run(e.target.value);
                                 }
                             },
                         })}
@@ -349,7 +370,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                                     value={field.value}
                                     onChange={(e) => {
                                         slugTouched.current = true;
-                                        field.onChange(slugify(e.target.value));
+                                        field.onChange(e.target.value);
                                     }}
                                     placeholder="url-slug"
                                     className="h-8 flex-1 border-none bg-transparent px-0 font-mono text-sm shadow-none focus-visible:ring-0"
