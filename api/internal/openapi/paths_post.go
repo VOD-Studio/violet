@@ -71,6 +71,14 @@ func registerPostPaths(t *openapi3.T) {
 		"html":  optStr("提取出的正文 HTML"),
 	})
 
+	registerSchema(t, "SlugifyPostRequest", openapi3.Schemas{
+		"title": reqStr("文章标题（中文走无声调全拼转 ASCII）"),
+	}, "title")
+
+	registerSchema(t, "SlugResultDTO", openapi3.Schemas{
+		"slug": reqStr("生成的 URL slug（[a-z0-9-]，冲突时 Create/Update 再追加序号）"),
+	})
+
 	// 归档文章项（精简字段，不含正文）
 	registerSchema(t, "ArchiveItemDTO", openapi3.Schemas{
 		"id":           reqStr("文章 ID（UUID）"),
@@ -309,6 +317,19 @@ func registerPostPaths(t *openapi3.T) {
 		Responses: responses(
 			200, dataResponse("ImportResultDTO", "解析结果", 200),
 			400, errorResponse("URL 无效或解析失败"),
+		),
+	})
+
+	post(t, "/admin/posts/slugify", &openapi3.Operation{
+		Tags:        []string{"文章管理"},
+		Summary:     "根据标题生成 URL slug",
+		Description: "把标题转成 ASCII slug（中文走无声调全拼）。供前端标题输入后预填 slug 输入框。需管理员权限。",
+		Security:    securityAdmin(),
+		Parameters:  openapi3.Parameters{csrfHeaderParam()},
+		RequestBody: jsonBody("SlugifyPostRequest", true, "文章标题"),
+		Responses: responses(
+			200, dataResponse("SlugResultDTO", "生成的 slug", 200),
+			400, errorResponse("标题为空或无效"),
 		),
 	})
 

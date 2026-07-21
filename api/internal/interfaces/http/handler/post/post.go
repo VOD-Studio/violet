@@ -283,6 +283,27 @@ func (h *Handler) ImportURL(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, res)
 }
 
+// Slugify 根据标题生成 slug(中文转拼音),供前端标题输入后预填 slug 输入框。
+func (h *Handler) Slugify(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Title string `json:"title" validate:"required"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	res, err := h.svc.Slugify(r.Context(), req.Title)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, res)
+}
+
 // ListVersions 获取文章的历史版本列表
 func (h *Handler) ListVersions(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")

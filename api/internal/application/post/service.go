@@ -574,6 +574,18 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 	return ImportResult{Title: article.Title, HTML: article.Content}, nil
 }
 
+// SlugResult slug 生成结果
+type SlugResult struct {
+	Slug string `json:"slug"`
+}
+
+// Slugify 根据标题生成 ASCII slug(中文走无声调全拼)。
+// 纯计算,不查 DB,不解析冲突——前端写完标题调此接口预填 slug 输入框;
+// 冲突解析在 Create/Update 时由 resolveSlugConflict 处理。
+func (s *Service) Slugify(_ context.Context, title string) (SlugResult, error) {
+	return SlugResult{Slug: domain.GenerateSlug(title)}, nil
+}
+
 // ListArchiveYears 返回归档年份索引（倒序）。
 // 供公开归档页渲染年份导航，单独成接口以便前端懒加载各年文章。
 func (s *Service) ListArchiveYears(ctx context.Context) ([]int, error) {

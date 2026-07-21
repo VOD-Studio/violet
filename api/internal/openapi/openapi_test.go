@@ -268,6 +268,7 @@ func TestPostPaths(t *testing.T) {
 	for _, p := range []string{
 		"/posts", "/posts/{slug}", "/posts/{id}/view",
 		"/admin/posts", "/admin/posts/{id}", "/admin/posts/{id}/status",
+		"/admin/posts/import-url", "/admin/posts/slugify",
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing post path %s", p)
 	}

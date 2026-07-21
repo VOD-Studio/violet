@@ -484,6 +484,8 @@ func main() {
 				Post("/posts", postH.Create) // 创建文章
 			r.With(middleware.RequirePermission(permissionChecker, "post:create")).
 				Post("/posts/import-url", postH.ImportURL) // 导入远程链接文档
+			r.With(middleware.RequirePermission(permissionChecker, "post:create")).
+				Post("/posts/slugify", postH.Slugify) // 根据标题生成 slug(中文转拼音)
 			r.Put("/posts/{id}", postH.Update)                  // 更新文章（应用层鉴权）
 			r.Patch("/posts/{id}/status", postH.UpdateStatus)   // 更新文章状态（应用层鉴权）
 			r.Patch("/posts/{id}/featured", postH.SetFeatured)  // 切换精选标记（应用层鉴权）
