@@ -22,6 +22,12 @@ export interface SlashMenuProps {
 export function SlashMenuView({ items, command }: SlashMenuProps) {
     const [selected, setSelected] = useState(0);
     const listRef = useRef<HTMLDivElement>(null);
+    /**
+     * hover 选中许可：键盘导航时置否，鼠标真实移动（mousemove）时恢复。
+     * 防止 scrollIntoView 让列表在静止鼠标下滚动，mouseEnter 把键盘选中劫走
+     * （方向键回绕后选中跳到鼠标悬停项，如分割线）。
+     */
+    const allowHover = useRef(true);
 
     // items 变化（输入过滤）时重置选中项为首项
     // biome-ignore lint/correctness/useExhaustiveDependencies: items 仅作触发器
@@ -34,9 +40,11 @@ export function SlashMenuView({ items, command }: SlashMenuProps) {
         const handler = (e: KeyboardEvent) => {
             if (e.key === "ArrowDown") {
                 e.preventDefault();
+                allowHover.current = false;
                 setSelected((s) => (s + 1) % Math.max(items.length, 1));
             } else if (e.key === "ArrowUp") {
                 e.preventDefault();
+                allowHover.current = false;
                 setSelected((s) => (s - 1 + items.length) % Math.max(items.length, 1));
             } else if (e.key === "Enter") {
                 e.preventDefault();
@@ -78,6 +86,9 @@ export function SlashMenuView({ items, command }: SlashMenuProps) {
     return (
         <div
             ref={listRef}
+            onMouseMove={() => {
+                allowHover.current = true;
+            }}
             className="max-h-72 w-72 overflow-y-auto rounded-lg border border-edge-hairline bg-popover p-1.5 shadow-xl"
         >
             {groups.map(([group, list]) => (
@@ -94,7 +105,9 @@ export function SlashMenuView({ items, command }: SlashMenuProps) {
                                 type="button"
                                 key={item.id}
                                 data-idx={idx}
-                                onMouseEnter={() => setSelected(idx)}
+                                onMouseEnter={() => {
+                                    if (allowHover.current) setSelected(idx);
+                                }}
                                 onClick={() => command(item)}
                                 className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors ${
                                     idx === selected ? "bg-accent" : "hover:bg-accent/50"
