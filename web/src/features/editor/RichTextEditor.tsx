@@ -14,6 +14,8 @@
  * 图片插入（工具栏 + 斜杠菜单）通过 onPickImage 回调交由调用方决定如何选图，
  * 默认行为是打开本地上传文件选择器。
  */
+
+import type { Editor } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Code2, Download, FileUp, Globe } from "lucide-react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
@@ -25,7 +27,14 @@ import { EditorBubbleMenu } from "./bubble-menu/EditorBubbleMenu";
 import "./styles.css";
 import { buildEditorExtensions } from "./extensions";
 import { useEditorUpload } from "./hooks/useEditorUpload";
+import { useTextareaScrollMirror } from "./hooks/useTextareaScrollMirror";
 import { useWordCount } from "./hooks/useWordCount";
+import {
+    type BlockLineEntry,
+    buildBlockLineMap,
+    findBlockByLine,
+    findVisibleBlockPos,
+} from "./lib/markdown-position";
 import { exportMarkdown, importMarkdownFile } from "./lib/markdown-utils";
 import { SlashCommand } from "./slash-menu/SlashCommand";
 import { buildSlashItems } from "./slash-menu/slash-items";
@@ -198,23 +207,111 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         };
 
         // —— Markdown 源码/编辑器内联切换 ——
+        // 切换按「内容块」对齐滚动位置：富文本里一张大图 600px、源码里只有一行
+        // `![](url)`,像素/比例对齐会错位。建立「顶层块 ↔ Markdown 起始行号」
+        // 映射,切换时对齐到块起点(业界 Joplin/VS Code split-pane 同款)。
         const [sourceMode, setSourceMode] = useState(false);
         const [sourceText, setSourceText] = useState("");
+        const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+        const { scrollToLine, getLineAtScrollTop } = useTextareaScrollMirror(textareaRef);
+        // 进入源码时构建的块映射,退出源码时复用做行号→块 pos 反查
+        const blockMapRef = useRef<ReadonlyArray<BlockLineEntry> | null>(null);
+        // 进入源码后 textarea 要滚动到的目标行号
+        const pendingSourceLineRef = useRef<number | null>(null);
+        // 退出源码后要滚动到的目标块 pos,等富文本容器 mount 后消费
+        const pendingBlockPosRef = useRef<number | null>(null);
+
+        const buildBlockMap = (ed: Editor): ReadonlyArray<BlockLineEntry> => {
+            // editor.markdown 由 @tiptap/markdown 注入;缺失时回退空映射(降级到顶部)
+            if (!ed.markdown) return [];
+            const json = ed.getJSON();
+            const topBlocks = json.content ?? [];
+            const blocks: Array<readonly [number, string]> = [];
+            let pos = 0;
+            // PM doc 的顶层 forEach 给出 (node, offset, index)
+            ed.state.doc.forEach((node, _offset, index) => {
+                const md = ed.markdown?.renderNodeToMarkdown(topBlocks[index], json, index, 0);
+                blocks.push([pos, md ?? ""]);
+                pos += node.nodeSize;
+            });
+            return buildBlockLineMap(blocks);
+        };
+
+        const findVisibleLine = (
+            map: ReadonlyArray<BlockLineEntry>,
+            ed: Editor,
+            container: HTMLElement,
+        ): number => {
+            if (map.length === 0) return 0;
+            const containerTop = container.getBoundingClientRect().top;
+            const blockTops: Array<[number, number]> = [];
+            for (const entry of map) {
+                const dom = ed.view.nodeDOM(entry.pmPos) as HTMLElement | null;
+                if (!dom) continue;
+                blockTops.push([entry.pmPos, dom.getBoundingClientRect().bottom - containerTop]);
+            }
+            const visiblePos = findVisibleBlockPos(blockTops);
+            if (visiblePos == null) return 0;
+            const entry = map.find((e) => e.pmPos === visiblePos);
+            return entry?.mdStartLine ?? 0;
+        };
+
         const toggleSourceMode = () => {
             if (!editor) return;
             if (!sourceMode) {
-                // 进入源码模式：抓取当前 Markdown
+                // 进入源码模式:构建块映射 + 找当前可见块 → 抓 Markdown → 切换
+                const map = buildBlockMap(editor);
+                blockMapRef.current = map;
+                const visibleLine = scrollContainer
+                    ? findVisibleLine(map, editor, scrollContainer)
+                    : 0;
                 setSourceText(editor.getMarkdown());
+                pendingSourceLineRef.current = visibleLine;
                 setSourceMode(true);
             } else {
-                // 退出源码模式：内容有变化则写回编辑器
+                // 退出源码模式:拿当前行号 → 二分找块 pos → 写回 → 切换
+                const currentLine = getLineAtScrollTop();
+                const targetPos = blockMapRef.current
+                    ? findBlockByLine(blockMapRef.current, currentLine)
+                    : null;
                 const current = editor.getMarkdown();
                 if (sourceText !== current) {
                     editor.commands.setContent(sourceText, { contentType: "markdown" });
                 }
+                pendingBlockPosRef.current = targetPos;
                 setSourceMode(false);
             }
         };
+        // 进入源码后 textarea mount → 滚到目标行
+        useEffect(() => {
+            if (sourceMode && pendingSourceLineRef.current != null) {
+                const line = pendingSourceLineRef.current;
+                pendingSourceLineRef.current = null;
+                // textarea 刚 mount,镜像 div 还没建;下一帧再滚
+                requestAnimationFrame(() => scrollToLine(line));
+            }
+        }, [sourceMode, scrollToLine]);
+        // 退出源码后富文本容器 + 新内容渲染完 → 滚到目标块。
+        // 不用 scrollIntoView:它会把块顶贴到窗口顶部,目标接近文档末尾时
+        // 编辑器被强行上推,下方留一大片空白。手动设 scrollContainer.scrollTop
+        // 并 clamp 到 [0, maxScroll],容器只在自己可滚动范围内移动。
+        useEffect(() => {
+            if (sourceMode || pendingBlockPosRef.current == null) return;
+            const pos = pendingBlockPosRef.current;
+            if (!editor || !scrollContainer) return;
+            requestAnimationFrame(() => {
+                const dom = editor.view.nodeDOM(pos) as HTMLElement | null;
+                if (dom) {
+                    const containerTop = scrollContainer.getBoundingClientRect().top;
+                    const targetTop = dom.getBoundingClientRect().top;
+                    const delta = targetTop - containerTop;
+                    const max = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+                    const clamped = Math.max(0, Math.min(max, scrollContainer.scrollTop + delta));
+                    scrollContainer.scrollTop = clamped;
+                }
+                pendingBlockPosRef.current = null;
+            });
+        }, [sourceMode, scrollContainer, editor]);
 
         // —— 远程链接导入弹窗 ——
         const [urlDialogOpen, setUrlDialogOpen] = useState(false);
@@ -253,6 +350,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                 {editor ? <TableToolbar editor={editor} /> : null}
                 {sourceMode ? (
                     <textarea
+                        ref={textareaRef}
                         value={sourceText}
                         onChange={(e) => setSourceText(e.target.value)}
                         spellCheck={false}
