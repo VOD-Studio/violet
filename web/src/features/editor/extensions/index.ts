@@ -28,6 +28,7 @@ import { SlashCommand } from "../slash-menu/SlashCommand";
 import { buildSlashItems } from "../slash-menu/slash-items";
 import { createCodeBlockExtension } from "../ui/CodeBlockView";
 import { createImageExtension } from "../ui/ImageView";
+import { createMathExtensions } from "../ui/MathView";
 import { CustomTaskItem } from "../ui/TaskItemView";
 
 /** 低光高亮实例：common 预设已注册 37 种常用语言，其余按需动态注册 */
@@ -123,6 +124,8 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
         TableCell,
         // —— 代码块（高亮 + 语言下拉 nodeView）——
         createCodeBlockExtension(lowlight),
+        // —— 数学公式（KaTeX 双态编辑，宏表与阅读端同源）——
+        ...createMathExtensions(),
         // —— 占位符 ——
         Placeholder.configure({ placeholder }),
         // —— Markdown 双向序列化 ——

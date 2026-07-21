@@ -17,6 +17,8 @@ import {
     ListTodo,
     Minus,
     Quote,
+    Sigma,
+    SquareFunction,
     Table as TableIcon,
     Text,
 } from "lucide-react";
@@ -142,6 +144,30 @@ export function buildSlashItems(onPickImage: () => void): SlashMenuItem[] {
             group: "块",
             command: (e) =>
                 e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+        },
+        {
+            id: "inlineMath",
+            title: "行内公式",
+            description: "LaTeX 行内数学公式（$...$）",
+            keywords: ["math", "inline", "公式", "latex", "katex"],
+            icon: Sigma,
+            group: "媒体",
+            command: (e) => {
+                const { from } = e.state.selection;
+                e.chain().focus().insertInlineMath({ latex: "" }).setNodeSelection(from).run();
+            },
+        },
+        {
+            id: "blockMath",
+            title: "公式块",
+            description: "LaTeX 独立行数学公式（$$...$$）",
+            keywords: ["math", "block", "公式", "latex", "katex"],
+            icon: SquareFunction,
+            group: "媒体",
+            command: (e) => {
+                const { from } = e.state.selection;
+                e.chain().focus().insertBlockMath({ latex: "" }).setNodeSelection(from).run();
+            },
         },
         {
             id: IMAGE_ITEM_ID,

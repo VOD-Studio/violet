@@ -65,6 +65,9 @@ importers:
       '@tiptap/extension-link':
         specifier: ^3.27.4
         version: 3.27.4(@tiptap/core@3.27.4(@tiptap/pm@3.27.4))(@tiptap/pm@3.27.4)
+      '@tiptap/extension-mathematics':
+        specifier: 3.27.4
+        version: 3.27.4(@tiptap/core@3.27.4(@tiptap/pm@3.27.4))(@tiptap/pm@3.27.4)(katex@0.17.0)
       '@tiptap/extension-placeholder':
         specifier: ^3.27.4
         version: 3.27.4(@tiptap/extensions@3.27.4(@tiptap/core@3.27.4(@tiptap/pm@3.27.4))(@tiptap/pm@3.27.4))
@@ -2400,6 +2403,13 @@ packages:
     peerDependencies:
       '@tiptap/core': 3.28.0
       '@tiptap/pm': 3.28.0
+
+  '@tiptap/extension-mathematics@3.27.4':
+    resolution: {integrity: sha512-tL+VnjpkWdz+j942ZaQ3J0JTNIF9ligodrA/Dc6II7SRpFeRxfLb9k+/sYxZDRTysr3ssRHI8+Hqo1I20qhQDg==}
+    peerDependencies:
+      '@tiptap/core': 3.27.4
+      '@tiptap/pm': 3.27.4
+      katex: ^0.16.4 || ^0.17.0
 
   '@tiptap/extension-ordered-list@3.28.0':
     resolution: {integrity: sha512-OZNYrKKL9D01ySOujlNbKlLS9/3wGgKNYeoHZUg0e+Ta8WPVvL3W1zH6TgiU5sF2ZSGUBoq3w7mdaO/iROlUkw==}
@@ -7428,6 +7438,12 @@ snapshots:
     dependencies:
       '@tiptap/core': 3.27.4(@tiptap/pm@3.27.4)
       '@tiptap/pm': 3.27.4
+
+  '@tiptap/extension-mathematics@3.27.4(@tiptap/core@3.27.4(@tiptap/pm@3.27.4))(@tiptap/pm@3.27.4)(katex@0.17.0)':
+    dependencies:
+      '@tiptap/core': 3.27.4(@tiptap/pm@3.27.4)
+      '@tiptap/pm': 3.27.4
+      katex: 0.17.0
 
   '@tiptap/extension-ordered-list@3.28.0(@tiptap/extension-list@3.28.0(@tiptap/core@3.27.4(@tiptap/pm@3.27.4))(@tiptap/pm@3.27.4))':
     dependencies:
