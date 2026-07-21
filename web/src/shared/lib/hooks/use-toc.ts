@@ -1,4 +1,4 @@
-import { slugify } from "@shared/lib/slug";
+import { Slugger } from "@shared/lib/slug";
 import { useEffect, useState } from "react";
 
 export interface TocItem {
@@ -13,25 +13,21 @@ export interface TocItem {
 /**
  * extractToc - 从 HTML 字符串提取 H2/H3/H4 与 id，纯函数
  *
- * 仅识别带 id 的标题，如 <h2 id="...">。id 缺失时按文本 slug 生成。
+ * id 缺失时用项目统一 Slugger 生成（与 markdown 路径 extractMarkdownToc /
+ * markdownToHtml / rehypeSlugHeadings 同规则），保证 HTML 渲染补的
+ * id（HtmlContent.ensureHeadingIds 用同一 Slugger）与 TOC 提取的 id 一致，
+ * 点击目录才能滚动到位。
  */
 export function extractToc(html: string): TocItem[] {
     const re = /<h([234])[^>]*?(?:\sid=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/h\1>/gi;
     const out: TocItem[] = [];
-    const seen = new Map<string, number>();
+    const slugger = new Slugger();
     let m = re.exec(html);
     while (m !== null) {
         const level = Number(m[1]) as 2 | 3 | 4;
         const text = stripTags(m[3]).trim();
         if (text) {
-            let id = m[2] || slugify(text);
-            // 去重：重复 id 追加递增序号，与 github-slugger 行为一致
-            const count = seen.get(id) ?? 0;
-            seen.set(id, count + 1);
-            if (count > 0) {
-                id = `${id}-${count}`;
-                seen.set(id, 1);
-            }
+            const id = m[2] || slugger.slug(text);
             out.push({ level, id, text });
         }
         m = re.exec(html);

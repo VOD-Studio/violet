@@ -14,7 +14,7 @@ import { raw } from "hast-util-raw";
 import { defaultSchema, sanitize } from "hast-util-sanitize";
 import { toJsxRuntime } from "hast-util-to-jsx-runtime";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
-import { slugify } from "@/shared/lib/slug";
+import { Slugger } from "@/shared/lib/slug";
 import { markdownComponents } from "./components/markdown-components";
 
 // raw 节点（{ type: "raw"; value: html }）由 mdast-util-to-hast 全局扩展进 hast 的
@@ -81,11 +81,11 @@ function hastText(node: Nodes): string {
 
 /**
  * 为 sanitize 后无 id 的 h2/h3/h4 补上 slug id，使 DOM 锚点与目录
- * （extractToc 用同一 slugify 规则生成）一致，点击目录才能滚动到位。
- * 去重规则与 extractToc 完全一致（相同文本追加 -1/-2…）。
+ * （extractToc 用同一 Slugger 规则生成）一致，点击目录才能滚动到位。
+ * 去重由 Slugger 内置（相同文本追加 -1/-2…），与 extractToc 行为一致。
  */
 function ensureHeadingIds(tree: Nodes): Nodes {
-    const seen = new Map<string, number>();
+    const slugger = new Slugger();
     const visit = (node: Nodes) => {
         // root 与 element 都需遍历 children（root 本身不是 element）
         if (node.type === "element") {
@@ -96,13 +96,7 @@ function ensureHeadingIds(tree: Nodes): Nodes {
             ) {
                 const text = hastText(el).trim();
                 if (text) {
-                    let id = slugify(text);
-                    const count = seen.get(id) ?? 0;
-                    seen.set(id, count + 1);
-                    if (count > 0) {
-                        id = `${id}-${count}`;
-                        seen.set(id, 1);
-                    }
+                    const id = slugger.slug(text);
                     el.properties = { ...(el.properties ?? {}), id };
                 }
             }
