@@ -146,7 +146,7 @@ _Avoid_: cookie 轮换（只描述了动作，未体现池化与上报机制）
 
 ## musicctl CLI（可发现性与补全）
 
-> musicctl 是 mimo-music 的命令行入口，直连 engine + endpoint 声明，不经 gRPC/gateway。定位是「网易云接口调试与实用工具」（工具型），不是娱乐客户端。输出层（Phase A）已完成；播放/下载/歌词（Phase C）见 PRD-0013；可发现性与补全属双轨道 ADR 的第三类（纯 CLI 工程化，不消费 rpc），并入 [roadmap Phase E](../../mimo-music/docs/musicctl-roadmap.md)。
+> musicctl 是 mimo-music 的命令行入口，直连 engine + endpoint 声明，不经 gRPC/gateway。定位是「网易云接口调试与实用工具」（工具型），不是娱乐客户端。输出层（Phase A）已完成；播放/下载/歌词（Phase C）见 PRD-0013；可发现性与补全属双轨道 ADR 的第三类（纯 CLI 工程化，不消费 rpc），并入 [roadmap Phase E](../../mimo-music/docs/musicctl-roadmap.md)（工程化与可发现性见 PRD-0014）。
 
 **工具型定位（Tool-first）**:
 musicctl 的裸跑行为是「智能 onboarding」——检测登录态，未登录给登录引导，已登录推荐今日该跑的命令，输出走 stderr 不污染 stdout。**不**像 go-musicfox 那样裸跑直接进 TUI 主菜单。Phase D 的 TUI 作为独立增强，用 `musicctl tui` 显式进入，**不抢占裸跑默认行为**——即使 TUI 落地后，musicctl 仍是工具型 CLI，TUI 是可选形态而非默认形态。
@@ -179,3 +179,23 @@ _Avoid_: 个性化推荐（依赖召回池，过度工程）、静态推荐（�
 **预热与兜底（Warm-up & Fallback）**:
 召回池的加载策略：启动时读磁盘（上次缓存，秒级，离线可用）→ 同时起后台 goroutine 异步拉红端快照（红心/歌单）→ 拉完更新内存并写回磁盘。Tab 时优先读内存，内存缺失（后台未拉完）则用磁盘兜底。**绝不阻塞主命令、绝不阻塞裸跑 onboarding**。goroutine 用 **fire-and-forget** 模式——musicctl 是一次性 run-and-exit CLI，命令返回时直接退出，不等待后台拉完；进程退出时未完成的写入直接丢弃，由 tmp+rename 原子写保证主文件不被半拉子数据污染（写 `history.jsonl.tmp` 再 rename）。主动/隐式部分即时写盘；远端快照 24h TTL，超期强制重拉。
 _Avoid_: 启动拉取（暗示同步阻塞，与「后台异步」相悖）、signal.NotifyContext 长驻式优雅关闭（一次性 CLI 不适用，留给 Phase D TUI）
+
+**召回池排序（Frecency 排序）**:
+召回池候选的排序规则是 **frecency**（frequency + recency）：score = Σ（每次事件 × 时段桶权重 × src 类型权重），装载时对 JSONL 事件流聚合得出，**存储不变、无新字段**。时段桶沿 atuin-z 工程化分法：1 小时内 ×4、当天 ×2、本周 ×0.5、更早 ×0.25；src 类型权重沿 Mozilla frecency 的「访问类型加权」：`play`/`download`（主动消费，强意图）> `search`/`detail`（显式查询）> `remote`（被动快照）。直接服务夜间「复听」场景：常听的歌不被「最近碰巧听一次」顶掉。
+_Avoid_: 纯时间倒序（shell history 式，高频老歌沉底）、SQLite 上下文排序（atuin/McFly 式，对单用户工具过度工程）
+
+**别名展开（Alias Expansion）**:
+跨级别名（`pp`=`song play` 等）用 **argv 重写**实现：执行路径把 `args[0]` 的别名替换为展开式，`__complete`/`__completeNoDesc` 补全请求路径同样重写 `args[1]`（透过别名补全可用）。别名不进命令树——tab 补全天然不含别名；`--help` 以静态别名节显式列出。机制与 git `run_argv()` 预分派展开、gh `expandedArgs` 预处理、cargo `[alias]` 展开同款。cobra 原生 `Aliases` 字段只对同级生效，不适用跨级。
+_Avoid_: root 桩命令（命令树重复，「help 可见但补全不可见」需额外定制，hidden 会两者全藏）
+
+**统一补全注册（Centralized Completion Mounting）**:
+参数补全由 kit 层在 root 构造后**一次树遍历统一挂载**，表驱动（flag 名 → 数据源）：`--id` → 召回池候选，`--level`/`--area`/`--op` 等 → 固定枚举。个别命令的异构补全需求可就地 `RegisterFlagCompletionFunc` 覆盖。新命令（A 类 rpc 1:1 接入）零登记、零遗忘——与隐式埋点同属 kit 层透明基础设施。表驱动保证未来新 flag 类型只加一行表项。
+_Avoid_: 每命令显式注册（同构规则 78 份复制，必然漂移，还需另立守护规则防忘）
+
+**doctor（环境自检）**:
+`musicctl doctor` 输出 ✓/✗/! 逐项清单 + 每项可操作的修复指引，走渲染层（`--json` 白拿，bug report 可直接粘贴）。检查项：版本/会话与网络（一次轻量 RPC 自检合一）/补全安装指引/音频后端。退出码：任一 **fail** 项 → exit 1（落入 PRD-0012 退出码体系，可脚本化）；**warn**（如 headless 环境无音频设备——合法场景，用 `song download`）不影响退出码。
+_Avoid_: 纯咨询式恒 0（不可脚本化，与仓库退出码体系不咬合）
+
+**文档双轨（Dual-track Docs）**:
+musicctl 文档分两层：手写流程手册（`mimo-music/docs/musicctl.md`，只写安装/登录/常用流，命令细节一律指向 `--help`）+ cobra `GenMarkdownTree` **生成**的全命令参考（入库），freshness 守护测试重新生成并 diff 强制同步。依据 clig.dev 文档双轨：web 可搜索可链接 + 与安装版本同步；生成物非手写真相，天然不腐烂。
+_Avoid_: 手写命令参考（两份真相必然腐烂）、只做生成参考（缺上手路径）
