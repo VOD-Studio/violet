@@ -3,6 +3,7 @@ package post
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -210,17 +211,15 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 	if err != nil {
 		return PostDTO{}, err
 	}
-	p, err := domain.NewPost(shared.NewID(), authorID, in.Title, in.Slug)
+	// slug 冲突时自动追加 -2/-3/… 直到不冲突(上限 99),不再直接报错
+	// 让用户手改。多篇文章同标题(如多篇「随笔」)能各自拿到可用 slug。
+	slug, err := s.resolveSlugConflict(ctx, in.Slug)
 	if err != nil {
 		return PostDTO{}, err
 	}
-	// slug 查重
-	exists, err := s.repo.ExistsBySlug(ctx, in.Slug)
+	p, err := domain.NewPost(shared.NewID(), authorID, in.Title, slug)
 	if err != nil {
 		return PostDTO{}, err
-	}
-	if exists {
-		return PostDTO{}, domain.ErrSlugConflict
 	}
 	if err := p.UpdateContent(in.Title, in.ContentMD, in.ContentHTML, in.Excerpt, in.CoverImage); err != nil {
 		return PostDTO{}, err
@@ -235,6 +234,32 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 	v := domain.NewPostVersion(p, authorID, "初始版本")
 	_ = s.repo.SaveVersion(ctx, v) // 快照失败不阻塞创建
 	return toDTO(p), nil
+}
+
+// resolveSlugConflict 当 slug 已被占用时,循环追加 -2/-3/-4… 直到不冲突。
+// 上限 99(避免极端情况死循环);超过仍冲突则返回 ErrSlugConflict。
+//
+// 注意:ExistsBySlug 不排除当前编辑文章自身,调用方需在 slug 未变时
+// 短路(Update 的 in.Slug != p.Slug() 判断),避免误判自身冲突。
+func (s *Service) resolveSlugConflict(ctx context.Context, slug string) (string, error) {
+	exists, err := s.repo.ExistsBySlug(ctx, slug)
+	if err != nil {
+		return "", err
+	}
+	if !exists {
+		return slug, nil
+	}
+	for i := 2; i <= 99; i++ {
+		candidate := fmt.Sprintf("%s-%d", slug, i)
+		exists, err := s.repo.ExistsBySlug(ctx, candidate)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			return candidate, nil
+		}
+	}
+	return "", domain.ErrSlugConflict
 }
 
 // UpdateInput 更新文章入参
@@ -271,14 +296,12 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID string)
 		return shared.Forbidden("无权编辑他人文章")
 	}
 	if in.Slug != "" && in.Slug != p.Slug() {
-		exists, err := s.repo.ExistsBySlug(ctx, in.Slug)
+		// slug 冲突时自动追加 -2/-3…,与 Create 行为一致
+		slug, err := s.resolveSlugConflict(ctx, in.Slug)
 		if err != nil {
 			return err
 		}
-		if exists {
-			return domain.ErrSlugConflict
-		}
-		if err := p.UpdateSlug(in.Slug); err != nil {
+		if err := p.UpdateSlug(slug); err != nil {
 			return err
 		}
 	}
