@@ -553,8 +553,11 @@ func (s *Service) RestoreVersion(ctx context.Context, postID, versionID, operato
 
 // ImportResult 远程文档解析结果
 type ImportResult struct {
-	Title string `json:"title"`
-	HTML  string `json:"html"`
+	Title          string `json:"title"`           // 文章正文标题
+	HTML           string `json:"html"`            // 正文 HTML
+	Excerpt        string `json:"excerpt"`         // 摘要
+	SeoTitle       string `json:"seo_title"`       // SEO 标题（社交分享用，可与正文不同）
+	SeoDescription string `json:"seo_description"` // SEO 描述
 }
 
 // ImportURL 抓取远程网页并提取正文 HTML，供编辑器「导入链接」使用。
@@ -583,6 +586,12 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 		return ImportResult{}, shared.BadRequest("解析远程文档 HTML 失败：" + err.Error())
 	}
 
+	// 元信息提取必须在 readability 处理前：article.Title() 经常返回站点名，
+	// readability 还会把 H1 降级删除，故自行从原始 doc 提取真实标题。
+	title := extractArticleTitle(doc)
+	seoTitle := extractSeoTitle(doc)
+	seoDescription := extractSeoDescription(doc)
+
 	// MathJax 源码藏在 <script type="math/tex"> 里，readability 的 removeScripts 会删。
 	// 必须在 ParseDocument 之前替换成占位 span，否则源码和位置一起丢失。
 	preserveMathJaxScripts(doc)
@@ -600,6 +609,13 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 		restoreMathNodes(article.Node)
 	}
 
+	// 摘要优先用 SEO description（用户视角更准确），其次回退 readability 的 Excerpt
+	// （它已走了 meta description → og:description → 正文首段的回退链）。
+	excerpt := seoDescription
+	if excerpt == "" {
+		excerpt = article.Excerpt()
+	}
+
 	var buf bytes.Buffer
 	if err := article.RenderHTML(&buf); err != nil {
 		return ImportResult{}, shared.BadRequest("未能从该链接提取到正文")
@@ -607,7 +623,13 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 	if strings.TrimSpace(buf.String()) == "" {
 		return ImportResult{}, shared.BadRequest("未能从该链接提取到正文")
 	}
-	return ImportResult{Title: article.Title(), HTML: buf.String()}, nil
+	return ImportResult{
+		Title:          title,
+		HTML:           buf.String(),
+		Excerpt:        excerpt,
+		SeoTitle:       seoTitle,
+		SeoDescription: seoDescription,
+	}, nil
 }
 
 // fetchHTML 抓取远程 HTML 文档，校验 Content-Type 必须为 text/html。

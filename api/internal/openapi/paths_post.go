@@ -67,8 +67,11 @@ func registerPostPaths(t *openapi3.T) {
 	}, "url")
 
 	registerSchema(t, "ImportResultDTO", openapi3.Schemas{
-		"title": optStr("网页标题"),
-		"html":  optStr("提取出的正文 HTML"),
+		"title":           optStr("文章正文标题（og:title → JSON-LD → 首个 H1 → <title> 兜底）"),
+		"html":            optStr("提取出的正文 HTML"),
+		"excerpt":         optStr("摘要（SEO description → readability 自动提取的正文首段）"),
+		"seo_title":       optStr("SEO 标题，社交分享用（twitter:title → og:title）"),
+		"seo_description": optStr("SEO 描述（meta description → og:description → twitter:description）"),
 	})
 
 	registerSchema(t, "SlugifyPostRequest", openapi3.Schemas{
