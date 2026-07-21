@@ -199,33 +199,7 @@
   padding: 0.5rem;
   text-align: center;
 }
-.math-node-view--editing {
-  cursor: text;
+.math-node-view--selected {
   background-color: hsl(var(--muted));
-}
-.math-source-input {
-  min-width: 8rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.375rem;
-  background: transparent;
-  padding: 0.125rem 0.375rem;
-  font-family: var(--font-mono, monospace);
-  font-size: 0.875em;
-  outline: none;
-}
-.math-source-textarea {
-  width: 100%;
-  resize: vertical;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.375rem;
-  background: transparent;
-  padding: 0.375rem 0.5rem;
-  font-family: var(--font-mono, monospace);
-  font-size: 0.875rem;
-  text-align: left;
-  outline: none;
-}
-.math-live-preview {
-  margin-top: 0.25rem;
-  opacity: 0.9;
+  box-shadow: 0 0 0 1px hsl(var(--border));
 }
