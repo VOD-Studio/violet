@@ -72,6 +72,28 @@ _Avoid_: 版本作者（混淆了所有者与编辑者）
 编辑过某篇文章、但**不是 Owner** 的 Editor 集合。从 `post_versions` 按 `editor_id` 去重衍生（排除 owner），按首次编辑时间升序排列。**无需独立关联表**——版本历史是唯一数据源。在头像组中跟在 Owner 之后。
 _Avoid_: 合作者（笼统，未说明与版本历史的关系）
 
+## 文章内容元素（Article Content Elements）
+
+**数学公式（Math Formula）**:
+正文中的 LaTeX 公式，两种形态：**行内公式（Inline Math）** 嵌在段落文字流中，Markdown 源 `$...$`，HTML 载体 `<span data-type="inline-math" data-latex="...">`；**公式块（Block Math）** 独立成段，Markdown 源 `$$...$$`，HTML 载体 `<div data-type="block-math" data-latex="...">`。化学式与物理单位经 mhchem（`\ce{}` / `\pu{}`），物理宏包命令（`\dv` `\ket` 等）经共享宏表支持。
+_Avoid_: 算式（口语，未区分两种形态）
+
+**浏览时渲染（View-time Rendering）**:
+content_html 对公式（及未来图块）只存**语义化标记**（data-type + data-latex），最终形态（KaTeX HTML / SVG）在读者浏览器渲染，保存时不烘焙。收益：content_html 体积、主题跟随、源文本可搜索可复制、升级渲染器不动存量数据。编辑端与阅读端共用同一渲染核心。
+_Avoid_: 烘焙渲染（已否决的保存时渲染路线，见 ADR-0004）
+
+**物理宏表（Physics Macros）**:
+共享 KaTeX 宏定义集合，编辑器与阅读端同源，模拟 LaTeX physics 宏包常用命令（`\dv` `\pdv` `\bra` `\ket` `\abs` `\norm` 等）。注意 `\div` 刻意不覆写（与除号冲突），散度用 `\divg`。
+_Avoid_: 自定义命令（未说明与 physics 宏包的对应关系）
+
+**双态编辑（Dual-state Editing）**:
+公式节点的编辑交互：未选中显示渲染结果，点击选中切换为源码编辑态（源码输入 + 实时预览），Esc/失焦回渲染态。图块未来沿用同一交互模型。
+_Avoid_: 弹窗编辑（已否决）
+
+**图块（Diagram Block）—— 候选，下期实现**:
+预留领域概念：带 `format` 属性的通用图块节点（mermaid 等「文本→图」格式），Markdown 载体为对应语言围栏块（```mermaid），渲染走浏览时渲染 + 渲染器注册表（format → 渲染器），编辑交互沿用双态编辑。本期仅记录决策，未实现。
+_Avoid_: MermaidNode（写死单一格式的命名，丧失多格式扩展性）
+
 ## 公告展示（Announcement Presentation）
 
 **公告（Announcement）**:
