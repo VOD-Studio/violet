@@ -56,6 +56,10 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		TechStack          *string `json:"tech_stack"`
 		Bio                *string `json:"bio"`
 		FooterText         *string `json:"footer_text"`
+		LLMAPIKey          *string `json:"llm_api_key"`
+		LLMAPIURL          *string `json:"llm_api_url"`
+		LLMModel           *string `json:"llm_model"`
+		LLMProtocol        *string `json:"llm_protocol"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -69,6 +73,8 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		GoogleLoginEnabled: req.GoogleLoginEnabled, GithubLoginEnabled: req.GithubLoginEnabled,
 		GitHubUsername: req.GitHubUsername, GitHubToken: req.GitHubToken,
 		TechStack: req.TechStack, Bio: req.Bio, FooterText: req.FooterText,
+		LLMAPIKey: req.LLMAPIKey, LLMAPIURL: req.LLMAPIURL,
+		LLMModel: req.LLMModel, LLMProtocol: req.LLMProtocol,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

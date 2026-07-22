@@ -20,6 +20,10 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		"tech_stack":           optStr("技术栈"),
 		"bio":                  optStr("个人简介"),
 		"footer_text":          optStr("页脚文案"),
+		"llm_api_key":          optStr("LLM API Key（敏感，OpenAI 协议兼容端点）"),
+		"llm_api_url":          optStr("LLM API Base URL（如 https://api.openai.com/v1）"),
+		"llm_model":            optStr("LLM 模型名（如 gpt-4o-mini）"),
+		"llm_protocol":         optStr("LLM 协议（目前仅支持 openai）"),
 	})
 
 	// UpdateSettingsRequest：全指针部分更新
@@ -38,6 +42,10 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		"tech_stack":           optStr("技术栈"),
 		"bio":                  optStr("个人简介"),
 		"footer_text":          optStr("页脚文案"),
+		"llm_api_key":          optStr("LLM API Key"),
+		"llm_api_url":          optStr("LLM API Base URL"),
+		"llm_model":            optStr("LLM 模型名"),
+		"llm_protocol":         optStr("LLM 协议（openai）"),
 	})
 
 	// AuditLog：操作日志（domain 无 json tag，字段名为 PascalCase）

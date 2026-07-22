@@ -100,6 +100,18 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	if in.FooterText != nil {
 		updates["footer_text"] = *in.FooterText
 	}
+	if in.LLMAPIKey != nil {
+		updates["llm_api_key"] = *in.LLMAPIKey
+	}
+	if in.LLMAPIURL != nil {
+		updates["llm_api_url"] = *in.LLMAPIURL
+	}
+	if in.LLMModel != nil {
+		updates["llm_model"] = *in.LLMModel
+	}
+	if in.LLMProtocol != nil {
+		updates["llm_protocol"] = *in.LLMProtocol
+	}
 	if len(updates) > 0 {
 		// 批量原子更新，避免逐键 Upsert 中途失败导致部分更新
 		if err := s.store.UpsertMany(ctx, updates); err != nil {

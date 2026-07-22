@@ -26,6 +26,11 @@ type SiteSettings struct {
 	TechStack          string `json:"tech_stack"`
 	Bio                string `json:"bio"`
 	FooterText         string `json:"footer_text"`
+	// LLM 配置（OpenAI 协议兼容端点，覆盖 OpenAI/DeepSeek/Moonshot/通义/智谱/Ollama/vLLM）
+	LLMAPIKey   string `json:"llm_api_key"`
+	LLMAPIURL   string `json:"llm_api_url"`
+	LLMModel    string `json:"llm_model"`
+	LLMProtocol string `json:"llm_protocol"`
 }
 
 // UpdateInput 更新入参（指针字段表部分更新，nil 不更新）
@@ -44,6 +49,10 @@ type UpdateInput struct {
 	TechStack          *string
 	Bio                *string
 	FooterText         *string
+	LLMAPIKey          *string
+	LLMAPIURL          *string
+	LLMModel           *string
+	LLMProtocol        *string
 }
 
 // SettingsStore 站点配置存储端口（infrastructure 层实现）
@@ -80,6 +89,10 @@ func fromMap(m map[string]string) SiteSettings {
 	s.TechStack = m["tech_stack"]
 	s.Bio = m["bio"]
 	s.FooterText = m["footer_text"]
+	s.LLMAPIKey = m["llm_api_key"]
+	s.LLMAPIURL = m["llm_api_url"]
+	s.LLMModel = m["llm_model"]
+	s.LLMProtocol = m["llm_protocol"]
 	return s
 }
 
