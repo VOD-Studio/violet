@@ -22,6 +22,9 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import { urlErrorMessage, validateUrl } from "@/shared/lib/url";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
+import { Checkbox } from "@/shared/ui/base/checkbox";
+import { Input } from "@/shared/ui/base/input";
+import { Modal } from "@/shared/ui/modal/components/Modal";
 import { PromptDialog } from "@/shared/ui/prompt-dialog";
 import { EditorBubbleMenu } from "./bubble-menu/EditorBubbleMenu";
 import "./styles.css";
@@ -63,13 +66,21 @@ export interface RichTextEditorProps {
     /** 自定义图片插入（工具栏+斜杠菜单点击图片时）；不传则用本地上传 */
     onPickImage?: () => void;
     /** 自定义远程链接导入；不传则不显示「链接」按钮。返回 null 表示取消或失败 */
-    onImportUrl?: (url: string) => Promise<ImportUrlResult | null>;
+    onImportUrl?: (url: string, opts: ImportUrlOpts) => Promise<ImportUrlResult | null>;
     /** 远程链接导入成功后，把元信息（标题/摘要/SEO）透传给父级回填表单 */
     onImportUrlMeta?: (meta: ImportUrlMeta) => void;
+    /** 远程链接导入成功后，把 warnings（如 AI 还原失败的公式数）透传给父级 toast */
+    onImportUrlWarnings?: (warnings: string[]) => void;
     /** 外部 className */
     className?: string;
     /** 最小高度，默认 420 */
     minHeight?: number;
+}
+
+/** ImportUrlOpts - 远程链接导入的可选行为开关 */
+export interface ImportUrlOpts {
+    /** 为 true 时调 LLM 反推无源码公式的 LaTeX（需管理员配置 llm_*） */
+    aiRestoreFormula: boolean;
 }
 
 /** ImportUrlResult - 远程链接导入返回结构（编辑器只关心 html） */
@@ -78,6 +89,8 @@ export interface ImportUrlResult {
     html: string;
     /** 元信息（标题/摘要/SEO），透传给 onImportUrlMeta */
     meta?: ImportUrlMeta;
+    /** 非致命提示（如 AI 还原失败的公式数），透传给 onImportUrlWarnings */
+    warnings?: string[];
 }
 
 /** ImportUrlMeta - 远程文档的元信息，供父级回填表单空字段 */
@@ -98,6 +111,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
             onPickImage,
             onImportUrl,
             onImportUrlMeta,
+            onImportUrlWarnings,
             className,
             minHeight = 420,
         },
@@ -335,18 +349,22 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         // —— 远程链接导入弹窗 ——
         const [urlDialogOpen, setUrlDialogOpen] = useState(false);
         const [urlError, setUrlError] = useState<string | null>(null);
-        const handleImportUrlConfirm = (url: string) => {
+        const [aiRestoreFormula, setAiRestoreFormula] = useState(false);
+        const [urlInput, setUrlInput] = useState("https://");
+        const handleImportUrlSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
             if (!editor || !onImportUrl) return;
-            const trimmed = url.trim();
+            const trimmed = urlInput.trim();
             // 前端预校验：协议 + hostname 合法性，拦截非法域名结构避免往返后端才报错
             const reason = validateUrl(trimmed);
             if (reason) {
                 setUrlError(urlErrorMessage(reason));
-                return false;
+                return;
             }
             setUrlError(null);
-            // 校验通过：PromptDialog 关闭，解析异步进行；成功由 onImportUrl 调用方 toast
-            void onImportUrl(trimmed).then((result) => {
+            setUrlDialogOpen(false);
+            // 校验通过：解析异步进行；成功由 onImportUrl 调用方 toast
+            void onImportUrl(trimmed, { aiRestoreFormula }).then((result) => {
                 if (!result) return;
                 if (result.html) {
                     editor.commands.setContent(result.html, { contentType: "html" });
@@ -354,6 +372,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                 // 元信息透传给父级回填表单（标题/摘要/SEO）
                 if (result.meta && onImportUrlMeta) {
                     onImportUrlMeta(result.meta);
+                }
+                // warnings（如 AI 还原失败的公式数）透传给父级 toast
+                if (result.warnings?.length && onImportUrlWarnings) {
+                    onImportUrlWarnings(result.warnings);
                 }
             });
         };
@@ -425,7 +447,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                                 variant="ghost"
                                 size="xs"
                                 title="导入远程链接文档"
-                                onClick={() => setUrlDialogOpen(true)}
+                                onClick={() => {
+                                    setUrlInput("https://");
+                                    setAiRestoreFormula(false);
+                                    setUrlError(null);
+                                    setUrlDialogOpen(true);
+                                }}
                             >
                                 <Globe /> 链接
                             </Button>
@@ -451,20 +478,71 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                     placeholder="https://"
                     onConfirm={handleLinkConfirm}
                 />
-                {/* 远程链接导入弹窗 */}
-                <PromptDialog
+                {/* 远程链接导入弹窗（自建 Modal：URL 输入 + AI 还原公式 checkbox） */}
+                <Modal
                     open={urlDialogOpen}
                     onOpenChange={setUrlDialogOpen}
                     title="导入远程链接"
                     description="粘贴网页地址，解析正文并替换当前内容"
-                    label="网页 URL"
-                    defaultValue="https://"
-                    placeholder="https://example.com/article"
-                    confirmLabel="导入"
-                    onConfirm={handleImportUrlConfirm}
-                    error={urlError ?? undefined}
-                    onValueChange={() => setUrlError(null)}
-                />
+                    size="sm"
+                    footer={
+                        <>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setUrlDialogOpen(false)}
+                            >
+                                取消
+                            </Button>
+                            <Button type="submit" form="import-url-form">
+                                导入
+                            </Button>
+                        </>
+                    }
+                >
+                    <form
+                        id="import-url-form"
+                        onSubmit={handleImportUrlSubmit}
+                        className="space-y-4"
+                    >
+                        <div className="space-y-1.5">
+                            <label htmlFor="import-url-input" className="text-sm font-medium">
+                                网页 URL
+                            </label>
+                            <Input
+                                id="import-url-input"
+                                value={urlInput}
+                                onChange={(e) => {
+                                    setUrlInput(e.target.value);
+                                    setUrlError(null);
+                                }}
+                                placeholder="https://example.com/article"
+                                autoFocus
+                            />
+                            {urlError ? (
+                                <p className="text-sm text-destructive">{urlError}</p>
+                            ) : null}
+                        </div>
+                        <label
+                            htmlFor="ai-restore-formula"
+                            className="flex cursor-pointer items-start gap-2 text-sm"
+                        >
+                            <Checkbox
+                                id="ai-restore-formula"
+                                checked={aiRestoreFormula}
+                                onCheckedChange={(c) => setAiRestoreFormula(c === true)}
+                                className="mt-0.5"
+                            />
+                            <span>
+                                <span className="font-medium">用 AI 还原公式</span>
+                                <span className="block text-xs text-muted-foreground">
+                                    对无法直接提取源码的公式（如 KaTeX 服务端渲染），调用 LLM 反推
+                                    LaTeX。需管理员在站点设置配置 LLM。
+                                </span>
+                            </span>
+                        </label>
+                    </form>
+                </Modal>
             </div>
         );
     },

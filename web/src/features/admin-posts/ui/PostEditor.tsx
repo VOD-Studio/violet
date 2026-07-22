@@ -24,6 +24,7 @@ import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
 import {
     type ImportUrlMeta,
+    type ImportUrlOpts,
     type ImportUrlResult,
     RichTextEditor,
     type RichTextEditorHandle,
@@ -244,10 +245,15 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
     };
 
     // 导入远程链接：调后端代理解析，成功回填编辑器并透传元信息；失败 toast 并返回 null
-    const handleImportUrl = async (url: string): Promise<ImportUrlResult | null> => {
+    const handleImportUrl = async (
+        url: string,
+        opts: ImportUrlOpts,
+    ): Promise<ImportUrlResult | null> => {
         const toastId = toast.loading("正在解析远程文档…");
         try {
-            const result = await importPostUrl(url);
+            const result = await importPostUrl(url, {
+                ai_restore_formula: opts.aiRestoreFormula,
+            });
             toast.success("已导入远程文档", { id: toastId });
             return {
                 html: result.html,
@@ -257,10 +263,18 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                     seo_title: result.seo_title,
                     seo_description: result.seo_description,
                 },
+                warnings: result.warnings,
             };
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "导入失败", { id: toastId });
             return null;
+        }
+    };
+
+    // 导入的 warnings（如 AI 还原失败的公式数）走 info toast 提示用户
+    const handleImportUrlWarnings = (warnings: string[]) => {
+        for (const msg of warnings) {
+            toast(msg, { icon: "⚠️" });
         }
     };
 
@@ -431,6 +445,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                                     onPickImage={() => setImagePickerOpen(true)}
                                     onImportUrl={handleImportUrl}
                                     onImportUrlMeta={handleImportUrlMeta}
+                                    onImportUrlWarnings={handleImportUrlWarnings}
                                     className="h-full"
                                     minHeight={400}
                                 />

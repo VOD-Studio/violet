@@ -143,6 +143,14 @@ export interface ImportPostUrlResult {
     seo_title?: string;
     /** SEO 描述 */
     seo_description?: string;
+    /** 非致命提示（如 AI 还原失败的公式数） */
+    warnings?: string[];
+}
+
+/** ImportPostUrlOpts - 远程链接导入的可选行为开关 */
+export interface ImportPostUrlOpts {
+    /** 为 true 时调 LLM 反推无源码公式的 LaTeX（需管理员配置 llm_*） */
+    ai_restore_formula?: boolean;
 }
 
 /**
@@ -151,8 +159,14 @@ export interface ImportPostUrlResult {
  * 后端 readability 代理解析，返回标题、正文 HTML、摘要与 SEO 元信息，
  * 供编辑器 setContent 插入并自动填入表单空字段。
  */
-export async function importPostUrl(url: string): Promise<ImportPostUrlResult> {
-    return apiPost<ImportPostUrlResult>("/admin/posts/import-url", { url });
+export async function importPostUrl(
+    url: string,
+    opts?: ImportPostUrlOpts,
+): Promise<ImportPostUrlResult> {
+    return apiPost<ImportPostUrlResult>("/admin/posts/import-url", {
+        url,
+        ai_restore_formula: opts?.ai_restore_formula ?? false,
+    });
 }
 
 /**

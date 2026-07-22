@@ -7,6 +7,7 @@
 export { exportMarkdown, importMarkdownFile } from "./lib/markdown-utils";
 export {
     type ImportUrlMeta,
+    type ImportUrlOpts,
     type ImportUrlResult,
     RichTextEditor,
     type RichTextEditorHandle,
