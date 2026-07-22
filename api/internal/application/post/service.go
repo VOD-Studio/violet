@@ -14,6 +14,7 @@ import (
 	"golang.org/x/net/html"
 
 	domain "blog-api/internal/domain/post"
+	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	userdomain "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
@@ -106,17 +107,19 @@ type ArchiveYearDTO struct {
 
 // Service 文章用例服务
 type Service struct {
-	repo     domain.PostRepository
-	userRepo userdomain.UserRepository
-	perm     PostPermissionChecker
+	repo          domain.PostRepository
+	userRepo      userdomain.UserRepository
+	perm          PostPermissionChecker
+	settingsStore domainsettings.SettingsStore
 }
 
 // NewService 构造文章用例服务
 //
 // userRepo 用于按 author_id 填充 PostDTO.Author，nil 时跳过填充。
 // perm 用于所有权鉴权：操作他人文章需对应权限码，操作自己的靠所有权放行。
-func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository, perm PostPermissionChecker) *Service {
-	return &Service{repo: repo, userRepo: userRepo, perm: perm}
+// settingsStore 用于 import-url 的「AI 还原公式」读取 llm_* 配置，nil 时禁用 AI 还原。
+func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository, perm PostPermissionChecker, settingsStore domainsettings.SettingsStore) *Service {
+	return &Service{repo: repo, userRepo: userRepo, perm: perm, settingsStore: settingsStore}
 }
 
 // canModify 判断操作者是否有权修改指定文章
@@ -553,11 +556,19 @@ func (s *Service) RestoreVersion(ctx context.Context, postID, versionID, operato
 
 // ImportResult 远程文档解析结果
 type ImportResult struct {
-	Title          string `json:"title"`           // 文章正文标题
-	HTML           string `json:"html"`            // 正文 HTML
-	Excerpt        string `json:"excerpt"`         // 摘要
-	SeoTitle       string `json:"seo_title"`       // SEO 标题（社交分享用，可与正文不同）
-	SeoDescription string `json:"seo_description"` // SEO 描述
+	Title          string   `json:"title"`           // 文章正文标题
+	HTML           string   `json:"html"`            // 正文 HTML
+	Excerpt        string   `json:"excerpt"`         // 摘要
+	SeoTitle       string   `json:"seo_title"`       // SEO 标题（社交分享用，可与正文不同）
+	SeoDescription string   `json:"seo_description"` // SEO 描述
+	Warnings       []string `json:"warnings"`        // 非致命提示（如 AI 还原失败的公式数）
+}
+
+// ImportURLOpts import-url 的可选行为开关。
+type ImportURLOpts struct {
+	// AIRestoreFormula 为 true 时，对识别出的空占位公式调用 LLM 反推 LaTeX 源码。
+	// 需要管理员在站点设置里配置 llm_*；未配置或调用失败时降级为空占位（不阻塞导入）。
+	AIRestoreFormula bool
 }
 
 // ImportURL 抓取远程网页并提取正文 HTML，供编辑器「导入链接」使用。
@@ -566,7 +577,7 @@ type ImportResult struct {
 // 自行 fetch 而非用 readability.FromURL：后者内部用默认 Parser 会剥离所有 class，
 // 导致代码块 language-*、公式 katex 等语义 class 全丢，前端无法识别语言与公式。
 // 开启 KeepClasses 保留全部 class（多余装饰 class 不进 prosemirror schema，不影响存储）。
-func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, error) {
+func (s *Service) ImportURL(ctx context.Context, rawURL string, opts ImportURLOpts) (ImportResult, error) {
 	parsed, err := url.ParseRequestURI(rawURL)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
 		return ImportResult{}, shared.BadRequest("无效的 URL")
@@ -608,10 +619,16 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 		return ImportResult{}, shared.BadRequest("解析远程文档失败：" + err.Error())
 	}
 
-	// readability 处理后，把 KaTeX 渲染 DOM 与 MathJax 占位 span 还原成 LaTeX 源码。
-	// 有源码（标准 KaTeX / MathJax）→ $...$，无源码（如 rua.plus 关了 mathml）→ 空 $ $ 占位。
+	// readability 处理后，把公式占位还原成 LaTeX。两条路径：
+	//   - 启用 AI 还原：收集占位 → 调 LLM 反推无源码占位 → 注入结果 → 统一 finalize
+	//   - 未启用：直接 restoreMathNodes（有源码还原真实 LaTeX，无源码留空占位）
+	var warnings []string
 	if article.Node != nil {
-		restoreMathNodes(article.Node)
+		if opts.AIRestoreFormula {
+			warnings = s.restoreFormulasWithAI(ctx, article.Node)
+		} else {
+			restoreMathNodes(article.Node)
+		}
 	}
 
 	// 摘要优先用 SEO description（用户视角更准确），其次回退 readability 的 Excerpt
@@ -634,6 +651,7 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string) (ImportResult, e
 		Excerpt:        excerpt,
 		SeoTitle:       seoTitle,
 		SeoDescription: seoDescription,
+		Warnings:       warnings,
 	}, nil
 }
 

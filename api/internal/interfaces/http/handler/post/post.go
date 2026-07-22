@@ -265,7 +265,8 @@ func (h *Handler) HardDelete(w http.ResponseWriter, r *http.Request) {
 // ImportURL 导入远程链接文档：解析网页正文为 HTML，供编辑器插入
 func (h *Handler) ImportURL(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		URL string `json:"url" validate:"required,url"`
+		URL              string `json:"url" validate:"required,url"`
+		AIRestoreFormula bool   `json:"ai_restore_formula"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -275,7 +276,7 @@ func (h *Handler) ImportURL(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	res, err := h.svc.ImportURL(r.Context(), req.URL)
+	res, err := h.svc.ImportURL(r.Context(), req.URL, apppost.ImportURLOpts{AIRestoreFormula: req.AIRestoreFormula})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

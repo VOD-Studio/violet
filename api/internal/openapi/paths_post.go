@@ -63,8 +63,9 @@ func registerPostPaths(t *openapi3.T) {
 	}, "is_featured")
 
 	registerSchema(t, "ImportURLRequest", openapi3.Schemas{
-		"url": reqStr("远程网页 URL，仅限 http/https"),
-	}, "url")
+		"url":                 reqStr("远程网页 URL，仅限 http/https"),
+		"ai_restore_formula":  optBool("是否用 LLM 反推无源码公式的 LaTeX（需管理员配置 llm_*）"),
+	}, "url", "ai_restore_formula")
 
 	registerSchema(t, "ImportResultDTO", openapi3.Schemas{
 		"title":           optStr("文章正文标题（og:title → JSON-LD → 首个 H1 → <title> 兜底）"),
@@ -73,6 +74,14 @@ func registerPostPaths(t *openapi3.T) {
 		"seo_title":       optStr("SEO 标题，社交分享用（twitter:title → og:title）"),
 		"seo_description": optStr("SEO 描述（meta description → og:description → twitter:description）"),
 	})
+	// warnings 字段单独注册（字符串数组）
+	t.Components.Schemas["ImportResultDTO"].Value.Properties["warnings"] = &openapi3.SchemaRef{
+		Value: &openapi3.Schema{
+			Type:        &openapi3.Types{openapi3.TypeArray},
+			Items:       &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}}},
+			Description: "非致命提示（如 AI 还原失败的公式数）",
+		},
+	}
 
 	registerSchema(t, "SlugifyPostRequest", openapi3.Schemas{
 		"title": reqStr("文章标题（中文走无声调全拼转 ASCII）"),
