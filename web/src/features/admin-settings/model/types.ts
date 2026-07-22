@@ -34,6 +34,14 @@ export interface SiteSettingsDTO {
     bio: string;
     /** 页脚文案 */
     footer_text: string;
+    /** LLM API Key（OpenAI 协议兼容端点，敏感） */
+    llm_api_key: string;
+    /** LLM API Base URL（如 https://api.openai.com/v1） */
+    llm_api_url: string;
+    /** LLM 模型名（如 gpt-4o-mini） */
+    llm_model: string;
+    /** LLM 协议（目前仅 openai） */
+    llm_protocol: string;
 }
 
 /** UpdateSettingsRequest - 更新站点配置请求体（全字段） */
@@ -66,4 +74,12 @@ export interface UpdateSettingsRequest {
     bio: string;
     /** 页脚文案 */
     footer_text: string;
+    /** LLM API Key */
+    llm_api_key: string;
+    /** LLM API Base URL */
+    llm_api_url: string;
+    /** LLM 模型名 */
+    llm_model: string;
+    /** LLM 协议 */
+    llm_protocol: string;
 }

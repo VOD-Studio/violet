@@ -35,6 +35,10 @@ function AdminSettingsPage() {
                 tech_stack: data.tech_stack,
                 bio: data.bio,
                 footer_text: data.footer_text,
+                llm_api_key: data.llm_api_key ?? "",
+                llm_api_url: data.llm_api_url ?? "",
+                llm_model: data.llm_model ?? "",
+                llm_protocol: data.llm_protocol ?? "openai",
             });
         }
     }, [data, reset]);
@@ -152,6 +156,30 @@ function AdminSettingsPage() {
                     </Field>
                     <Field label="页脚文案">
                         <Input {...register("footer_text")} />
+                    </Field>
+                </section>
+
+                <section className="space-y-4">
+                    <h3 className="text-sm font-semibold">LLM 配置</h3>
+                    <p className="text-xs text-muted-foreground">
+                        配置 OpenAI 协议兼容端点（OpenAI / DeepSeek / Moonshot / 通义 / 智谱 /
+                        Ollama / vLLM），用于「导入链接」时的 AI 公式还原等功能。留空则禁用 AI
+                        能力。
+                    </p>
+                    <Field label="API Key">
+                        <Input type="password" {...register("llm_api_key")} placeholder="sk-..." />
+                    </Field>
+                    <Field label="API Base URL">
+                        <Input
+                            {...register("llm_api_url")}
+                            placeholder="https://api.openai.com/v1"
+                        />
+                    </Field>
+                    <Field label="模型名">
+                        <Input {...register("llm_model")} placeholder="gpt-4o-mini" />
+                    </Field>
+                    <Field label="协议">
+                        <Input {...register("llm_protocol")} placeholder="openai" />
                     </Field>
                 </section>
 
