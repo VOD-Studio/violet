@@ -111,9 +111,28 @@ services:
       SUPERADMIN_USERNAME: ${SUPERADMIN_USERNAME:-admin}
       SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-admin@example.com}
       SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
+
+      # 代码运行器（可运行代码块沙箱执行）
+      # 启用前需挂载 docker.sock 并 load yggdrasil-runner-* 镜像（见 docs/deploy/manual-deploy.md）
+      CODE_RUNNER_ENABLED: ${CODE_RUNNER_ENABLED:-false}
+      CODE_RUNNER_MAX_CPU_CORES: ${CODE_RUNNER_MAX_CPU_CORES:-2.0}
+      CODE_RUNNER_MAX_MEMORY_MB: ${CODE_RUNNER_MAX_MEMORY_MB:-1024}
+      CODE_RUNNER_MAX_TIMEOUT_SECS: ${CODE_RUNNER_MAX_TIMEOUT_SECS:-30}
+      CODE_RUNNER_MAX_OUTPUT_BYTES: ${CODE_RUNNER_MAX_OUTPUT_BYTES:-1048576}
+      CODE_RUNNER_MAX_SOURCE_BYTES: ${CODE_RUNNER_MAX_SOURCE_BYTES:-65536}
+      CODE_RUNNER_ALLOW_NETWORK: ${CODE_RUNNER_ALLOW_NETWORK:-false}
+      CODE_RUNNER_MAX_CONCURRENT: ${CODE_RUNNER_MAX_CONCURRENT:-4}
+      CODE_RUNNER_QUEUE_TIMEOUT_SECS: ${CODE_RUNNER_QUEUE_TIMEOUT_SECS:-30}
+      CODE_RUNNER_TASK_TTL_SECS: ${CODE_RUNNER_TASK_TTL_SECS:-300}
+      DOCKER_SOCKET_PATH: ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
+      CODE_RUNNER_LANGUAGES: ${CODE_RUNNER_LANGUAGES:-}
     volumes:
       # 挂载上传目录
       - uploads_data:/uploads
+      # 代码运行器需调宿主 docker/podman daemon 起隔离容器执行用户代码。
+      # 挂载 sock = 把宿主 root 权限交给 api 容器，靠沙箱隔离配置兜底（见 ADR-0006）。
+      # podman 改挂 /run/podman/podman.sock 并设 DOCKER_SOCKET_PATH。
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:9090/api/health"]
       interval: 30s

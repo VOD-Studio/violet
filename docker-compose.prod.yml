@@ -81,6 +81,10 @@ services:
     volumes:
       # 持久化上传文件
       - uploads_data:/app/uploads
+      # 代码运行器：挂载宿主 docker/podman sock 起隔离容器执行用户代码。
+      # 生产 podman：设 DOCKER_SOCKET_PATH=/run/podman/podman.sock（见 manual-deploy.md）。
+      # 安全权衡见 ADR-0006。
+      - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock
     depends_on:
       postgres:
         condition: service_healthy
