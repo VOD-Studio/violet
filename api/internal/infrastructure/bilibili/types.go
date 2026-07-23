@@ -37,4 +37,12 @@ type Emote struct {
 	Text   string `json:"text"`
 	URL    string `json:"url"`
 	GifURL string `json:"gif_url"`
+	Type   int    `json:"type"` // 表情门槛：1=普通 2=会员专属 3=购买所得 4=颜文字（区别于 Package.Type）
+	Meta   EmoteMeta `json:"meta"`
+}
+
+// EmoteMeta B站表情 meta 子对象（只读展示属性）。
+type EmoteMeta struct {
+	Size  int    `json:"size"`  // 尺寸：1=小 2=大
+	Alias string `json:"alias"` // 简写名/别名，无则 B站不返回此项
 }

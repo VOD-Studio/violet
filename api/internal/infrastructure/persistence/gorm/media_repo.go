@@ -32,10 +32,12 @@ func emojiGroupToPO(g *emoji.EmojiGroup) model.EmojiGroup {
 	}
 	emojis := make([]model.Emoji, 0, len(g.Emojis()))
 	for _, e := range g.Emojis() {
+		metaBytes, _ := emojiMetaToBytes(e.Meta())
 		emojis = append(emojis, model.Emoji{
 			ID: e.ID(), GroupID: g.ID(), Name: e.Name(),
 			URL: e.URL(), SourceURL: e.SourceURL(), GifURL: e.GifURL(),
 			TextContent: e.TextContent(), SortOrder: e.SortOrder(),
+			Meta: metaBytes,
 		})
 	}
 	po.Emojis = emojis
@@ -45,9 +47,10 @@ func emojiGroupToPO(g *emoji.EmojiGroup) model.EmojiGroup {
 func emojiGroupToDomain(po model.EmojiGroup) (*emoji.EmojiGroup, error) {
 	emojis := make([]emoji.Emoji, 0, len(po.Emojis))
 	for _, e := range po.Emojis {
+		meta, _ := bytesToEmojiMeta(e.Meta)
 		emojis = append(emojis, emoji.ReconstructEmoji(
 			e.ID, e.GroupID, e.Name, e.URL,
-			e.SourceURL, e.GifURL, e.TextContent, e.SortOrder,
+			e.SourceURL, e.GifURL, e.TextContent, e.SortOrder, meta,
 		))
 	}
 	return emoji.ReconstructEmojiGroup(po.ID, po.Name, po.Source, po.CoverURL, po.SortOrder, po.IsEnabled, emojis), nil
@@ -233,6 +236,7 @@ func (r *EmojiGroupRepository) UpsertEmojiByName(ctx context.Context, e emoji.Em
 		Where("group_id = ? AND name = ?", e.GroupID(), e.Name()).
 		First(&existing).Error
 	if err == nil {
+		metaBytes, _ := emojiMetaToBytes(e.Meta())
 		updates := r.db.WithContext(ctx).Model(&model.Emoji{}).
 			Where("id = ?", existing.ID).
 			Updates(map[string]any{
@@ -240,6 +244,7 @@ func (r *EmojiGroupRepository) UpsertEmojiByName(ctx context.Context, e emoji.Em
 				"source_url": e.SourceURL(),
 				"gif_url":    e.GifURL(),
 				"sort_order": e.SortOrder(),
+				"meta":       metaBytes,
 			})
 		if updates.Error != nil {
 			return 0, domainshared.Internal("upsert 更新表情失败", updates.Error)
@@ -249,10 +254,12 @@ func (r *EmojiGroupRepository) UpsertEmojiByName(ctx context.Context, e emoji.Em
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return 0, domainshared.Internal("upsert 查询表情失败", err)
 	}
+	metaBytes, _ := emojiMetaToBytes(e.Meta())
 	po := model.Emoji{
 		GroupID: e.GroupID(), Name: e.Name(), URL: e.URL(),
 		SourceURL: e.SourceURL(), GifURL: e.GifURL(),
 		TextContent: e.TextContent(), SortOrder: e.SortOrder(),
+		Meta: metaBytes,
 	}
 	if err := r.db.WithContext(ctx).Create(&po).Error; err != nil {
 		return 0, domainshared.Internal("upsert 创建表情失败", err)
@@ -269,9 +276,10 @@ func (r *EmojiGroupRepository) FindEmojisByGroup(ctx context.Context, groupID in
 	}
 	result := make([]emoji.Emoji, 0, len(pos))
 	for _, e := range pos {
+		meta, _ := bytesToEmojiMeta(e.Meta)
 		result = append(result, emoji.ReconstructEmoji(
 			e.ID, e.GroupID, e.Name, e.URL,
-			e.SourceURL, e.GifURL, e.TextContent, e.SortOrder,
+			e.SourceURL, e.GifURL, e.TextContent, e.SortOrder, meta,
 		))
 	}
 	return result, nil
@@ -286,18 +294,21 @@ func (r *EmojiGroupRepository) FindEmojiByID(ctx context.Context, id int32) (emo
 		}
 		return emoji.Emoji{}, domainshared.Internal("查询表情失败", err)
 	}
+	meta, _ := bytesToEmojiMeta(po.Meta)
 	return emoji.ReconstructEmoji(
 		po.ID, po.GroupID, po.Name, po.URL,
-		po.SourceURL, po.GifURL, po.TextContent, po.SortOrder,
+		po.SourceURL, po.GifURL, po.TextContent, po.SortOrder, meta,
 	), nil
 }
 
 // SaveEmoji 保存表情（新增或更新），返回 ID
 func (r *EmojiGroupRepository) SaveEmoji(ctx context.Context, e emoji.Emoji) (int32, error) {
+	metaBytes, _ := emojiMetaToBytes(e.Meta())
 	po := model.Emoji{
 		ID: e.ID(), GroupID: e.GroupID(), Name: e.Name(), URL: e.URL(),
 		SourceURL: e.SourceURL(), GifURL: e.GifURL(),
 		TextContent: e.TextContent(), SortOrder: e.SortOrder(),
+		Meta: metaBytes,
 	}
 	if po.ID == 0 {
 		if err := r.db.WithContext(ctx).Create(&po).Error; err != nil {
@@ -308,6 +319,7 @@ func (r *EmojiGroupRepository) SaveEmoji(ctx context.Context, e emoji.Emoji) (in
 	result := r.db.WithContext(ctx).Model(&model.Emoji{}).Where("id = ?", po.ID).Updates(map[string]any{
 		"name": po.Name, "url": po.URL, "source_url": po.SourceURL,
 		"gif_url": po.GifURL, "text_content": po.TextContent, "sort_order": po.SortOrder,
+		"meta": metaBytes,
 	})
 	if result.Error != nil {
 		return 0, domainshared.Internal("更新表情失败", result.Error)
