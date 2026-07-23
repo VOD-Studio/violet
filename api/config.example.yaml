@@ -78,3 +78,20 @@ superadmin:
   username: admin
   email: admin@example.com
   password: "" # 通过 SUPERADMIN_PASSWORD 环境变量配置
+
+# ── 代码运行器（可运行代码块沙箱执行）──────────────
+# 需 api 容器挂载 docker.sock（生产 podman 见 docs/deploy/manual-deploy.md）
+# 架构决策见 docs/adr/0006-code-runner-architecture.md
+code_runner:
+  enabled: false # 启用前确认 docker.sock 已挂载
+  max_cpu_cores: 2.0        # 单次执行 CPU 上限（核数）
+  max_memory_mb: 1024       # 单次执行内存上限（MB）
+  max_timeout_secs: 30      # 单次执行墙上时间上限（秒）
+  max_output_bytes: 1048576 # stdout+stderr 输出上限（字节，默认 1MB）
+  max_source_bytes: 65536   # 提交源码大小上限（字节，默认 64KB）
+  allow_network: false      # 全局网络开关（需作者声明+语言允许+此开关三者为真）
+  max_concurrent: 4         # 同时在跑的容器数上限
+  queue_timeout_secs: 30    # 排队等容器槽超时（秒）
+  task_ttl_secs: 300        # 完成任务 Redis 保留时长（秒）
+  docker_socket_path: /var/run/docker.sock # podman 改 /run/podman/podman.sock
+  languages: []             # 语言白名单，空=全部；收窄填 canonical key（python/node/go/rust/bun）

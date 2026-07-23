@@ -56,6 +56,44 @@ type Config struct {
 	// 非空时，仅当 RemoteAddr 命中此列表才信任 X-Forwarded-For/X-Real-IP；
 	// 为空时一律使用 RemoteAddr，拒绝任何客户端自报的转发头（防 IP 欺骗绕过限流）。
 	TrustedProxies []string
+	// CodeRunner 代码运行器配置（可运行代码块的沙箱执行）。
+	// 见 docs/adr/0006-code-runner-architecture.md。为空（Enabled=false）时功能关闭。
+	CodeRunner CodeRunnerConfig
+}
+
+// CodeRunnerConfig 代码运行器配置。
+//
+// 控制沙箱执行的全局上限与并发。作者在围栏 info string 声明的 overrides 经
+// ClampLimits 钳制到这些 Max* 上限内（见 infrastructure/coderunner/config.go）。
+// 默认值对齐 yggdrasil：2 核 / 1024MB / 30s 超时 / 1MB 输出 / 64KB 源码 / 4 并发。
+type CodeRunnerConfig struct {
+	// Enabled 是否启用代码运行功能。关闭时 exec 端点返回功能不可用。
+	// 关闭原因：生产未挂 docker.sock、或临时禁用。
+	Enabled bool
+	// MaxCPUCores 单次执行 CPU 上限（核数）。
+	MaxCPUCores float64
+	// MaxMemoryMB 单次执行内存上限（MB）。
+	MaxMemoryMB uint64
+	// MaxTimeoutSecs 单次执行墙上时间上限（秒）。
+	MaxTimeoutSecs uint64
+	// MaxOutputBytes 单次执行 stdout+stderr 输出上限（字节）。
+	MaxOutputBytes uint64
+	// MaxSourceBytes 提交源码大小上限（字节）。
+	MaxSourceBytes uint64
+	// AllowNetwork 全局是否允许网络。需作者声明、语言允许、此开关三者同时为真。
+	AllowNetwork bool
+	// MaxConcurrent 同时在跑的容器数量上限。
+	MaxConcurrent int
+	// QueueTimeoutSecs 排队等待容器槽的超时（秒），超时返回「系统繁忙」。
+	QueueTimeoutSecs uint64
+	// TaskTTLSecs 完成任务在 Redis 的保留时长（秒），供轮询兜底。
+	TaskTTLSecs uint64
+	// DockerSocketPath Docker daemon unix socket 路径。兼容 docker 与 podman
+	// （podman 用其 docker-compat sock 或原生 sock）。默认 /var/run/docker.sock。
+	DockerSocketPath string
+	// Languages 语言白名单。空表示注册表里全部语言可用；非空则收窄到列表内
+	// （用 canonical key：python/node/go/rust/bun）。
+	Languages []string
 }
 
 // CookieConfig 鉴权 Cookie 配置
@@ -224,6 +262,20 @@ func Load() *Config {
 	v.SetDefault("superadmin.password", "")
 	// 受信代理默认为空：未配置时一律使用 RemoteAddr，拒绝客户端自报转发头
 	v.SetDefault("trusted_proxies", []string{})
+	// 代码运行器默认值（对齐 yggdrasil runner_config.rs）
+	// Enabled 默认 false：需显式开启并确认 docker.sock 已挂载
+	v.SetDefault("code_runner.enabled", false)
+	v.SetDefault("code_runner.max_cpu_cores", 2.0)
+	v.SetDefault("code_runner.max_memory_mb", 1024)
+	v.SetDefault("code_runner.max_timeout_secs", 30)
+	v.SetDefault("code_runner.max_output_bytes", 1048576)
+	v.SetDefault("code_runner.max_source_bytes", 65536)
+	v.SetDefault("code_runner.allow_network", false)
+	v.SetDefault("code_runner.max_concurrent", 4)
+	v.SetDefault("code_runner.queue_timeout_secs", 30)
+	v.SetDefault("code_runner.task_ttl_secs", 300)
+	v.SetDefault("code_runner.docker_socket_path", "/var/run/docker.sock")
+	v.SetDefault("code_runner.languages", []string{})
 
 	// 读取配置文件（不存在也不报错）
 	_ = v.ReadInConfig()
@@ -295,6 +347,20 @@ func Load() *Config {
 			Password: v.GetString("superadmin.password"),
 		},
 		TrustedProxies: v.GetStringSlice("trusted_proxies"),
+		CodeRunner: CodeRunnerConfig{
+			Enabled:          v.GetBool("code_runner.enabled"),
+			MaxCPUCores:      v.GetFloat64("code_runner.max_cpu_cores"),
+			MaxMemoryMB:      v.GetUint64("code_runner.max_memory_mb"),
+			MaxTimeoutSecs:   v.GetUint64("code_runner.max_timeout_secs"),
+			MaxOutputBytes:   v.GetUint64("code_runner.max_output_bytes"),
+			MaxSourceBytes:   v.GetUint64("code_runner.max_source_bytes"),
+			AllowNetwork:     v.GetBool("code_runner.allow_network"),
+			MaxConcurrent:    v.GetInt("code_runner.max_concurrent"),
+			QueueTimeoutSecs: v.GetUint64("code_runner.queue_timeout_secs"),
+			TaskTTLSecs:      v.GetUint64("code_runner.task_ttl_secs"),
+			DockerSocketPath: v.GetString("code_runner.docker_socket_path"),
+			Languages:        v.GetStringSlice("code_runner.languages"),
+		},
 	}
 
 	// 验证必需配置
@@ -384,6 +450,25 @@ func (c *Config) Validate() error {
 		}
 		if len(c.CORSAllowedOrigins) == 0 {
 			return fmt.Errorf("生产环境必须配置 CORS_ALLOWED_ORIGINS（且禁止使用通配符）")
+		}
+	}
+
+	// 代码运行器配置校验（仅启用时检查上限合理性）
+	if c.CodeRunner.Enabled {
+		if c.CodeRunner.MaxCPUCores <= 0 {
+			return fmt.Errorf("code_runner.max_cpu_cores 必须大于 0")
+		}
+		if c.CodeRunner.MaxMemoryMB == 0 {
+			return fmt.Errorf("code_runner.max_memory_mb 必须大于 0")
+		}
+		if c.CodeRunner.MaxTimeoutSecs == 0 {
+			return fmt.Errorf("code_runner.max_timeout_secs 必须大于 0")
+		}
+		if c.CodeRunner.MaxConcurrent <= 0 {
+			return fmt.Errorf("code_runner.max_concurrent 必须大于 0")
+		}
+		if c.CodeRunner.DockerSocketPath == "" {
+			return fmt.Errorf("code_runner.docker_socket_path 不能为空")
 		}
 	}
 
