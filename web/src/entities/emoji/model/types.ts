@@ -65,6 +65,8 @@ export interface EmojiGroup {
     sort_order: number;
     /** 是否启用，公开接口恒为 true */
     is_enabled: boolean;
+    /** 分组元数据，可选，size 用于 picker 渲染尺寸（1=小 2=大） */
+    meta?: EmojiMeta;
     /** 分组内表情列表，按名查询与全量查询均填充 */
     emojis: Emoji[];
 }
