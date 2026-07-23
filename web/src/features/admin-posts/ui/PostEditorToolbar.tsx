@@ -1,5 +1,5 @@
 import { Button } from "@shared/ui/base/button";
-import { History, X } from "lucide-react";
+import { History, RotateCcw, X } from "lucide-react";
 
 interface PostEditorToolbarProps {
     /** 编辑模式用于显示标题 */
@@ -12,9 +12,11 @@ interface PostEditorToolbarProps {
     onSaveDraft: () => void;
     onPublish: () => void;
     onOpenVersions?: () => void;
+    /** 清空（新建模式）/ 重置（编辑模式）当前编辑内容 */
+    onReset?: () => void;
 }
 
-/** PostEditorToolbar - 编辑器顶栏，返回按钮 + 标题 + 保存/发布 */
+/** PostEditorToolbar - 编辑器顶栏，返回按钮 + 标题 + 重置/保存/发布 */
 export function PostEditorToolbar({
     isEdit,
     saving,
@@ -23,6 +25,7 @@ export function PostEditorToolbar({
     onSaveDraft,
     onPublish,
     onOpenVersions,
+    onReset,
 }: PostEditorToolbarProps) {
     const isDisabled = saving || disabled;
 
@@ -35,6 +38,17 @@ export function PostEditorToolbar({
                 <h1 className="text-lg font-semibold">{isEdit ? "编辑文章" : "新建文章"}</h1>
             </div>
             <div className="flex items-center gap-2">
+                {onReset && (
+                    <Button
+                        variant="ghost"
+                        onClick={onReset}
+                        disabled={isDisabled}
+                        title={isEdit ? "放弃改动，恢复到原始数据" : "清空所有内容并删除草稿"}
+                    >
+                        <RotateCcw className="size-4" />
+                        {isEdit ? "重置" : "清空"}
+                    </Button>
+                )}
                 {isEdit && (
                     <Button variant="outline" onClick={onOpenVersions} disabled={isDisabled}>
                         <History className="size-4" /> 历史版本

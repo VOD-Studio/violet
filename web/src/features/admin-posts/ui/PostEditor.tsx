@@ -22,6 +22,7 @@ import type { AdminPostListItem, CreatePost } from "@features/admin-posts/model/
 import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
+import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import {
     type ImportUrlMeta,
     type ImportUrlOpts,
@@ -83,6 +84,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 
     const [imagePickerOpen, setImagePickerOpen] = useState(false);
     const [versionsOpen, setVersionsOpen] = useState(false);
+    const [resetOpen, setResetOpen] = useState(false);
 
     const form = useForm<PostForm>({
         resolver: zodResolver(postSchema),
@@ -322,6 +324,39 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
         });
     };
 
+    // 清空（新建模式）/ 重置（编辑模式）：丢弃当前编辑内容。
+    // 新建清空全部字段并删除本地草稿；编辑恢复到服务器原始数据。
+    const handleResetConfirm = () => {
+        setResetOpen(false);
+        slugTouched.current = false;
+        if (isEdit) {
+            reset({
+                title: existing?.title ?? "",
+                slug: existing?.slug ?? "",
+                content_html: existing?.content_html ?? "",
+                excerpt: existing?.excerpt ?? "",
+                cover_image: existing?.cover_image ?? "",
+                seo_title: existing?.seo_title ?? "",
+                seo_description: existing?.seo_description ?? "",
+                tags: existing?.tags ?? [],
+                is_featured: existing?.is_featured ?? false,
+            });
+        } else {
+            reset({
+                title: "",
+                slug: "",
+                content_html: "",
+                excerpt: "",
+                cover_image: "",
+                seo_title: "",
+                seo_description: "",
+                tags: [],
+                is_featured: false,
+            });
+            localStorage.removeItem(draftKey);
+        }
+    };
+
     // 编辑模式：数据未到达或表单尚未初始化时显示骨架屏。
     // 仅看 isLoading 不够：isLoading→false 后 reset() 在 useEffect 中才执行，
     // 会有 2-3 帧编辑器空白闪现。等 initialized.current=true 后再渲染编辑器。
@@ -391,6 +426,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                 onSaveDraft={onSaveDraft}
                 onPublish={onPublish}
                 onOpenVersions={() => setVersionsOpen(true)}
+                onReset={() => setResetOpen(true)}
             />
 
             {/* 主体：编辑器 + 侧边栏 */}
@@ -472,6 +508,18 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                 open={versionsOpen}
                 onOpenChange={setVersionsOpen}
                 onRestored={handleRestored}
+            />
+            <ConfirmDialog
+                open={resetOpen}
+                onOpenChange={setResetOpen}
+                title={isEdit ? "放弃当前改动？" : "清空所有内容？"}
+                description={
+                    isEdit
+                        ? "将丢弃所有未保存的修改，恢复到服务器上的原始数据。"
+                        : "将清除标题、正文及所有字段，并删除本地草稿，此操作不可撤销。"
+                }
+                confirmLabel={isEdit ? "重置" : "清空"}
+                onConfirm={handleResetConfirm}
             />
         </div>
     );
