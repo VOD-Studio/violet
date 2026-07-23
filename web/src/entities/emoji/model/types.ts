@@ -28,6 +28,22 @@ export interface Emoji {
     text_content?: string;
     /** 分组内排序值，默认 0 */
     sort_order?: number;
+    /** 表情元数据，可选，源自 B站 meta 子对象与顶层 type */
+    meta?: EmojiMeta;
+}
+
+/**
+ * EmojiMeta - 表情元数据读模型
+ *
+ * 对应后端 EmojiMetaDTO，三字段均带 omitempty，为空时后端省略整个 meta。
+ */
+export interface EmojiMeta {
+    /** 别名，用于搜索/补全 */
+    alias?: string;
+    /** 尺寸：1=小 2=大 */
+    size?: number;
+    /** 门槛类型：1=普通 2=会员专属 3=购买所得 4=颜文字 */
+    type?: number;
 }
 
 /**
