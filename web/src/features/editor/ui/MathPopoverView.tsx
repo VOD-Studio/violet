@@ -42,6 +42,15 @@ export function MathPopoverView({
     };
 
     /**
+     * 删除当前公式节点。atom 节点选中态被弹层输入框抢占焦点，键盘无法删除，
+     * 故由弹层显式触发：选中节点 → deleteSelection → 聚焦编辑器（弹层因节点卸载自动关闭）。
+     */
+    const handleDelete = () => {
+        if (typeof pos !== "number") return;
+        editor.chain().setNodeSelection(pos).deleteSelection().focus().run();
+    };
+
+    /**
      * 源码变更：走 updateMathLatex 而非 updateAttributes——
      * 裸 setNodeMarkup 会让行内节点的 NodeSelection 降级，弹层一输入就关闭
      */
@@ -96,6 +105,7 @@ export function MathPopoverView({
                 <MathEditPanel
                     latex={latex}
                     displayMode={displayMode}
+                    onDelete={handleDelete}
                     onChange={changeLatex}
                     onClose={close}
                 />

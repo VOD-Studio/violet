@@ -110,4 +110,34 @@ describe("MathEditPanel", () => {
         );
         expect(container.querySelector(".katex-error")).toBeTruthy();
     });
+
+    it("传入 onDelete 时渲染删除按钮，点击触发回调", () => {
+        const onDelete = vi.fn();
+        const { container } = render(
+            <MathEditPanel
+                latex="x"
+                displayMode={true}
+                onChange={() => {}}
+                onClose={() => {}}
+                onDelete={onDelete}
+            />,
+        );
+        const delBtn = [...container.querySelectorAll("button")].find((b) =>
+            b.textContent?.includes("删除"),
+        );
+        expect(delBtn).toBeTruthy();
+        if (!delBtn) throw new Error("无删除按钮");
+        fireEvent.click(delBtn);
+        expect(onDelete).toHaveBeenCalledTimes(1);
+    });
+
+    it("不传 onDelete 时不渲染删除按钮", () => {
+        const { container } = render(
+            <MathEditPanel latex="x" displayMode={true} onChange={() => {}} onClose={() => {}} />,
+        );
+        const delBtn = [...container.querySelectorAll("button")].find((b) =>
+            b.textContent?.includes("删除"),
+        );
+        expect(delBtn).toBeFalsy();
+    });
 });
