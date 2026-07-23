@@ -11,7 +11,7 @@ export type {
     ExecResult,
     ExecStatus,
     ExecTask,
-    isTerminalStatus,
     ResourceLimits,
     StreamChunk,
 } from "./api/types";
+export { isTerminalStatus } from "./api/types";

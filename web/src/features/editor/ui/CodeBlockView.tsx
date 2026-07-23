@@ -9,7 +9,11 @@ import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import type { createLowlight } from "lowlight";
+import { Play } from "lucide-react";
 import { useState } from "react";
+import { getExecResult, isTerminalStatus, submitExec } from "#/features/code-run";
+import { Button } from "@/shared/ui/base/button";
+// isTerminalStatus 是值（函数），与上面同属值导入
 import {
     Select,
     SelectContent,
@@ -142,6 +146,9 @@ export function resolveLanguageFromElement(element: Element): string | null {
  * （class 在 <pre> 或 <code>、language-/lang-/hljs-/brush: 前缀、lang / data-language 属性），
  * 避免 readability 抓取的代码块因结构差异被解析为纯文本。
  *
+ * 可运行代码块：node.attrs.runnable=true 时，renderHTML 输出 data-runnable/data-lang/
+ * data-overrides/data-source 属性，供阅读页 CodeRunner 识别挂载（见 shared/ui/code-runner）。
+ *
  * @param lowlight 共享的 lowlight 实例
  */
 export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowlight>) {
@@ -156,15 +163,73 @@ export function createCodeBlockExtension(lowlight: ReturnType<typeof createLowli
                     default: null,
                     parseHTML: (element: HTMLElement) => resolveLanguageFromElement(element),
                 },
+                // 可运行标记：true 时该代码块在阅读页渲染为 CodeRunner
+                runnable: {
+                    default: false,
+                    parseHTML: (element: HTMLElement) =>
+                        element.getAttribute("data-runnable") === "true",
+                    renderHTML: (attributes: { runnable?: boolean }) =>
+                        attributes.runnable ? { "data-runnable": "true" } : {},
+                },
+                // 资源覆盖 JSON（作者声明的 timeout/memory/network 等）
+                overrides: {
+                    default: null,
+                    parseHTML: (element: HTMLElement) =>
+                        element.getAttribute("data-overrides") || null,
+                    renderHTML: (attributes: { overrides?: string | null }) =>
+                        attributes.overrides ? { "data-overrides": attributes.overrides } : {},
+                },
             };
+        },
+        // renderHTML：runnable 块输出 data-* 属性 + data-source（HTML 转义源码）供阅读页无损提取
+        renderHTML({
+            node,
+            HTMLAttributes,
+        }: {
+            node: {
+                attrs: { language?: string | null; runnable?: boolean; overrides?: string | null };
+                textOf?: () => string;
+            };
+            HTMLAttributes: Record<string, unknown>;
+        }) {
+            const isRunnable = node.attrs.runnable === true;
+            if (!isRunnable) {
+                // 普通代码块走父类默认渲染（<pre><code class="language-xxx">）
+                return [
+                    "pre",
+                    HTMLAttributes,
+                    [
+                        "code",
+                        { class: node.attrs.language ? `language-${node.attrs.language}` : null },
+                        0,
+                    ],
+                ] as const;
+            }
+            // 可运行块：输出 data-* 属性，data-source 由阅读页从 code 子节点取（避免双重存储）
+            const lang = node.attrs.language || "";
+            const extraAttrs: Record<string, string> = {
+                "data-runnable": "true",
+                "data-lang": lang,
+            };
+            if (node.attrs.overrides) extraAttrs["data-overrides"] = node.attrs.overrides;
+            return [
+                "pre",
+                { ...HTMLAttributes, ...extraAttrs },
+                ["code", { class: lang ? `language-${lang}` : null }, 0],
+            ] as const;
         },
     }).configure({ lowlight, defaultLanguage: null });
 }
 
 function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewProps) {
     const language = (node.attrs.language as string) || "text";
+    const isRunnable = node.attrs.runnable === true;
+    const overridesJson = (node.attrs.overrides as string | null) || undefined;
     // common 预设外的语言首次选中需动态注册语法，期间禁用下拉避免重复触发
     const [registering, setRegistering] = useState(false);
+    // 运行状态：idle / running / 结果文本
+    const [runState, setRunState] = useState<"idle" | "running">("idle");
+    const [resultText, setResultText] = useState<string | null>(null);
     void extension;
 
     const handleLanguageChange = async (v: string) => {
@@ -175,9 +240,51 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
         updateAttributes({ language: v });
     };
 
+    // 编辑器内运行：轮询路径（submitExec 拿 task_id → 轮询 getExecResult）
+    // 对应 yggdrasil make_run_code_closure 的轮询逻辑。
+    const handleRun = async () => {
+        // 从 node 取纯文本源码（contentEditable 内容）
+        const source = node.textContent || "";
+        setRunState("running");
+        setResultText(null);
+        try {
+            const overrides = overridesJson ? JSON.parse(overridesJson) : undefined;
+            const taskId = await submitExec({ language, source, overrides });
+            // 轮询直到终态
+            const maxAttempts = 120; // 最长 ~60s
+            for (let i = 0; i < maxAttempts; i++) {
+                await new Promise((r) => setTimeout(r, 500));
+                const task = await getExecResult(taskId);
+                if (isTerminalStatus(task.status)) {
+                    const parts = [
+                        task.exit_code != null ? `退出码 ${task.exit_code}` : "",
+                        task.duration_ms > 0 ? `${task.duration_ms}ms` : "",
+                    ]
+                        .filter(Boolean)
+                        .join(" · ");
+                    const out = [
+                        task.stdout ? `stdout:\n${task.stdout}` : "",
+                        task.stderr ? `stderr:\n${task.stderr}` : "",
+                        parts ? `[${task.status} · ${parts}]` : `[${task.status}]`,
+                    ]
+                        .filter(Boolean)
+                        .join("\n\n");
+                    setResultText(out || `[${task.status}]`);
+                    setRunState("idle");
+                    return;
+                }
+            }
+            setResultText("[轮询超时]");
+            setRunState("idle");
+        } catch (err) {
+            setResultText(`运行失败：${err instanceof Error ? err.message : String(err)}`);
+            setRunState("idle");
+        }
+    };
+
     return (
         <NodeViewWrapper className="my-4 overflow-hidden rounded-lg border border-edge-hairline bg-[#24292e]">
-            {/* 顶部：语言下拉 */}
+            {/* 顶部：语言下拉 + （runnable 时）运行按钮 */}
             <div className="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
                 <Select
                     value={language}
@@ -201,6 +308,19 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
                         </SelectGroup>
                     </SelectContent>
                 </Select>
+                {isRunnable && (
+                    <Button
+                        type="button"
+                        size="xs"
+                        variant={runState === "running" ? "secondary" : "default"}
+                        onClick={handleRun}
+                        disabled={runState === "running"}
+                        className="gap-1"
+                    >
+                        <Play className="size-3" />
+                        {runState === "running" ? "运行中…" : "运行"}
+                    </Button>
+                )}
             </div>
             {/*
              * 可编辑代码区：NodeViewContent 透传 contentEditable。
@@ -211,6 +331,12 @@ function CodeBlockViewComponent({ node, updateAttributes, extension }: NodeViewP
                 as="pre"
                 className={`m-0! bg-transparent! overflow-x-auto p-4 text-[0.85rem] leading-6 text-[#e6edf3] ${language ? `language-${language}` : ""}`}
             />
+            {/* 运行结果区（仅 runnable 且有结果时显示） */}
+            {isRunnable && resultText && (
+                <pre className="code-block-scrollbar max-h-48 overflow-auto border-t border-white/10 bg-black/30 p-3 text-xs leading-relaxed text-white/90">
+                    <code>{resultText}</code>
+                </pre>
+            )}
         </NodeViewWrapper>
     );
 }

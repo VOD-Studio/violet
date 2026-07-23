@@ -16,6 +16,7 @@ import {
     ListOrdered,
     ListTodo,
     Minus,
+    Play,
     Quote,
     Sigma,
     SquareFunction,
@@ -140,6 +141,23 @@ export function buildSlashItems(onPickImage: () => void): SlashMenuItem[] {
             icon: Code2,
             group: "块",
             command: (e) => e.chain().focus().toggleCodeBlock().run(),
+        },
+        {
+            id: "runnableCodeBlock",
+            title: "可运行代码块",
+            description: "读者可点击运行的代码（python/node/go/rust/bun）",
+            keywords: ["run", "runnable", "execute", "运行", "可运行", "playground"],
+            icon: Play,
+            group: "块",
+            command: (e) =>
+                e
+                    .chain()
+                    .focus()
+                    .insertContent({
+                        type: "codeBlock",
+                        attrs: { language: "python", runnable: true },
+                    })
+                    .run(),
         },
         {
             id: "hr",
