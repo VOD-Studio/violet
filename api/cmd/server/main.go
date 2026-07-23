@@ -153,6 +153,10 @@ func main() {
 	refetchStatusStore := infraemoji.NewRefetchStatusStore(redisClient)
 	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix, cfg.MimoMusicURL, emojiSeedService, refetchStatusStore)
 
+	// 代码运行器（可运行代码块沙箱执行）：启用时连 docker.sock 起隔离容器执行用户代码。
+	// 禁用时（Enabled=false）Docker client 为 nil，执行请求降级返回「系统暂时不可用」。
+	codeRunnerContainer := app.NewCodeRunnerContainer(redisClient, cfg.CodeRunner)
+
 	// 表情种子数据初始化（幂等，后台执行）：首次启动执行完整导入，
 	// 后续启动仅回填 bilibili 分组缺失的封面 URL。不阻塞 HTTP 服务启动。
 	go func() {
@@ -376,6 +380,19 @@ func main() {
 		v1.Route("/emojis", func(r chi.Router) {
 			r.Get("/", mediaH.GetAllEmojis)                     // 获取所有启用表情分组和表情
 			r.Get("/groups/{name}", mediaH.GetEmojiGroupByName) // 按名称获取指定表情分组
+		})
+
+		// 代码运行器（可运行代码块）：登录用户可执行，按 IP 限流防容器资源耗尽。
+		// SSE 消费端点用 GET（EventSource 限制 + 绕过 CSRF）；提交执行用 POST。
+		codeRunnerH := codeRunnerContainer.CodeRunnerHandler
+		v1.Route("/code-runner", func(r chi.Router) {
+			r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
+			// 轮询路径：提交拿 task_id，轮询查结果
+			r.With(middleware.CodeRunnerRateLimit(redisClient)).Post("/run", codeRunnerH.Run)
+			r.Get("/tasks/{id}", codeRunnerH.GetTask)
+			// 流式路径：POST 提交拿 task_id，GET SSE 消费（GET 路径不在 CSRF 校验范围）
+			r.With(middleware.CodeRunnerRateLimit(redisClient)).Post("/run/stream", codeRunnerH.RunStream)
+			r.Get("/stream", codeRunnerH.Stream)
 		})
 
 		// 公告
