@@ -6,23 +6,22 @@
  * - 选中后弹出跟随定位的浮层（MathEditPanel：源码输入 + 实时预览），
  *   Esc/点击外部关闭，关闭后光标移到公式之后。
  *
- * Popover 开闭用独立 popoverOpen state，不直接绑定 Tiptap 的 selected prop：
- * selected 由 PM NodeSelection 驱动，但 Tiptap 的 handleSelectionUpdate 在 rAF 中
- * 重新检查 isNodeViewSelected 时，删除节点后紧接着点击下一个公式会触发竞态——
- * rAF 回调中 isNodeViewSelected 短暂返回 false，deselectNode 使 selected 抖动为
- * false（PM selection 实际仍正确选中此节点），若直接绑定 open 会导致秒开秒关。
- * selected 上升沿打开弹层；下降沿时延迟一帧确认 PM selection 确实不再选中此节点
- * 才关闭。
+ * 浮层定位走 @floating-ui/dom absolute 策略（同浮动工具条）。浮层用 React Portal
+ * 渲染到编辑器滚动容器内（非 body），offsetParent 清晰、受 overflow 裁剪——
+ * 跟随公式滚动，滚出可视区即被裁剪，不覆盖页面/工具栏；下方空间不足时 flip 翻转。
+ *
+ * 开闭用独立 popoverOpen state，不直接绑定 Tiptap 的 selected prop：
+ * selected 下降沿时 rAF 延迟确认 PM selection 确实不再选中此节点，跳过
+ * handleSelectionUpdate rAF 竞态导致的短暂 deselectNode。
  *
  * 由 MathView 以 displayMode 适配出行内/块级两个 NodeView。
  */
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewWrapper } from "@tiptap/react";
-import { Popover as PopoverPrimitive } from "radix-ui";
-import { useEffect, useMemo, useState } from "react";
-import { Popover, PopoverContent } from "@/shared/ui/base/popover";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { renderKatexElement } from "@/shared/ui/katex";
-import { useMathAnchor } from "../hooks/useMathAnchor";
+import { useFloatingMathPanel } from "../hooks/useFloatingMathPanel";
 import { updateMathLatex } from "../lib/update-math-latex";
 import { MathEditPanel } from "./MathEditPanel";
 import "katex/dist/katex.min.css";
@@ -30,6 +29,19 @@ import "katex/dist/katex.min.css";
 export interface MathPopoverViewProps extends NodeViewProps {
     /** true=公式块（div + 多行输入），false=行内公式（span + 单行输入） */
     displayMode: boolean;
+}
+
+/** 从编辑器 DOM 向上找滚动容器（BubbleMenu 同款） */
+function findScrollContainer(el: HTMLElement | null): HTMLElement | null {
+    let node = el?.parentElement;
+    while (node) {
+        const cs = getComputedStyle(node);
+        if (/(auto|scroll)/.test(cs.overflowY) && node.scrollHeight > node.clientHeight) {
+            return node;
+        }
+        node = node.parentElement;
+    }
+    return null;
 }
 
 export function MathPopoverView({
@@ -41,14 +53,8 @@ export function MathPopoverView({
 }: MathPopoverViewProps) {
     const latex = node.attrs.latex as string;
     const rendered = useMemo(() => renderKatexElement(latex, displayMode), [latex, displayMode]);
-    const anchorRef = useMathAnchor(getPos, editor);
     const pos = typeof getPos === "function" ? getPos() : null;
 
-    /**
-     * 独立开闭 state，selected 上升沿打开；下降沿时 rAF 延迟检查 PM selection
-     * 是否真的不再选中此节点——跳过 handleSelectionUpdate rAF 竞态导致的短暂
-     * deselectNode（PM selection 实际仍指向此节点）。
-     */
     const [popoverOpen, setPopoverOpen] = useState(false);
 
     useEffect(() => {
@@ -57,9 +63,6 @@ export function MathPopoverView({
             return;
         }
         const id = requestAnimationFrame(() => {
-            // rAF 后再确认 PM selection 是否真的不再选中此节点。
-            // handleSelectionUpdate 的 rAF 竞态中可能短暂 deselectNode，
-            // 但此时 PM selection 实际仍覆盖此节点范围（from<=pos && to>=pos+size）。
             const sel = editor.state.selection;
             const stillSelected =
                 typeof pos === "number" && sel.from <= pos && sel.to >= pos + node.nodeSize;
@@ -70,25 +73,16 @@ export function MathPopoverView({
         return () => cancelAnimationFrame(id);
     }, [selected, editor, node, pos]);
 
-    /** Esc / 行内 Enter：关闭弹层，光标移到公式之后（NodeSelection 解除即回渲染态） */
     const close = () => {
         setPopoverOpen(false);
         if (typeof pos === "number") editor.commands.focus(pos + node.nodeSize);
     };
 
-    /**
-     * 删除当前公式节点。atom 节点选中态被弹层输入框抢占焦点，键盘无法删除，
-     * 故由弹层显式触发：选中节点 → deleteSelection → 聚焦编辑器（弹层因节点卸载自动关闭）。
-     */
     const handleDelete = () => {
         if (typeof pos !== "number") return;
         editor.chain().setNodeSelection(pos).deleteSelection().focus().run();
     };
 
-    /**
-     * 源码变更：走 updateMathLatex 而非 updateAttributes——
-     * 裸 setNodeMarkup 会让行内节点的 NodeSelection 降级，弹层一输入就关闭
-     */
     const changeLatex = (v: string) => {
         editor.commands.command(({ tr }) => {
             const p = typeof getPos === "function" ? getPos() : null;
@@ -98,55 +92,72 @@ export function MathPopoverView({
         });
     };
 
+    const anchorRef = useRef<HTMLDivElement | HTMLSpanElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+    // 滚动容器：浮层 Portal 目标，也是 floating-ui 的定位边界
+    const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
+    useEffect(() => {
+        setScrollContainer(findScrollContainer(editor.view.dom));
+    }, [editor]);
+
+    const position = useFloatingMathPanel(popoverOpen, anchorRef, panelRef, editor);
+
+    // 点击外部 / Esc 关闭
+    // biome-ignore lint/correctness/useExhaustiveDependencies: close 闭包捕获 pos，依赖 [popoverOpen] 足够
+    useEffect(() => {
+        if (!popoverOpen) return;
+        const onPointerDown = (e: PointerEvent) => {
+            const target = e.target as Node;
+            if (panelRef.current?.contains(target)) return;
+            if (anchorRef.current?.contains(target)) return;
+            setPopoverOpen(false);
+        };
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") close();
+        };
+        document.addEventListener("pointerdown", onPointerDown);
+        document.addEventListener("keydown", onKey);
+        return () => {
+            document.removeEventListener("pointerdown", onPointerDown);
+            document.removeEventListener("keydown", onKey);
+        };
+    }, [popoverOpen]);
+    const panel =
+        popoverOpen && scrollContainer
+            ? createPortal(
+                  <div
+                      ref={panelRef}
+                      style={position ? { top: position.top, left: position.left } : undefined}
+                      className="absolute z-50 w-auto rounded-md border border-edge-hairline bg-popover p-3 text-popover-foreground shadow-lg outline-none animate-in fade-in-0 zoom-in-95"
+                  >
+                      <MathEditPanel
+                          latex={latex}
+                          displayMode={displayMode}
+                          onDelete={handleDelete}
+                          onChange={changeLatex}
+                          onClose={close}
+                      />
+                  </div>,
+                  scrollContainer,
+              )
+            : null;
+
     return (
-        <Popover
-            open={popoverOpen && editor.isEditable}
-            onOpenChange={(next) => {
-                // 点击外部关闭：只更新 state，不主动改 PM selection。
-                // PM 点击事件已自行落下最终选区；若在此 setTextSelection 会覆盖
-                // 正转移到新节点的 NodeSelection（A→B 切换时导致 B 弹层秒关）。
-                if (!next) {
-                    setPopoverOpen(false);
-                }
+        <NodeViewWrapper
+            ref={anchorRef}
+            as={displayMode ? "div" : "span"}
+            data-type={displayMode ? "block-math" : "inline-math"}
+            className={
+                displayMode
+                    ? `math-node-view math-node-view--block${selected ? " math-node-view--selected" : ""}`
+                    : `math-node-view${selected ? " math-node-view--selected" : ""}`
+            }
+            onClick={() => {
+                if (typeof pos === "number") editor.chain().setNodeSelection(pos).run();
             }}
         >
-            <PopoverPrimitive.Anchor virtualRef={anchorRef} />
-            <NodeViewWrapper
-                as={displayMode ? "div" : "span"}
-                data-type={displayMode ? "block-math" : "inline-math"}
-                className={
-                    displayMode
-                        ? `math-node-view math-node-view--block${selected ? " math-node-view--selected" : ""}`
-                        : `math-node-view${selected ? " math-node-view--selected" : ""}`
-                }
-                onClick={() => {
-                    if (typeof pos === "number") editor.chain().setNodeSelection(pos).run();
-                }}
-            >
-                {rendered}
-            </NodeViewWrapper>
-            <PopoverContent
-                side="bottom"
-                sideOffset={6}
-                collisionPadding={12}
-                collisionBoundary={editor.view.dom}
-                updatePositionStrategy="always"
-                className="border-edge-hairline w-auto p-3 shadow-lg"
-                onOpenAutoFocus={(e) => {
-                    // 聚焦源码输入区而非弹层容器
-                    e.preventDefault();
-                    const content = e.currentTarget as HTMLElement | null;
-                    content?.querySelector<HTMLElement>("input,textarea")?.focus();
-                }}
-            >
-                <MathEditPanel
-                    latex={latex}
-                    displayMode={displayMode}
-                    onDelete={handleDelete}
-                    onChange={changeLatex}
-                    onClose={close}
-                />
-            </PopoverContent>
-        </Popover>
+            {rendered}
+            {panel}
+        </NodeViewWrapper>
     );
 }
