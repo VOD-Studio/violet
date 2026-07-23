@@ -131,8 +131,9 @@ export function MathPopoverView({
                 side="bottom"
                 sideOffset={6}
                 collisionPadding={12}
+                collisionBoundary={editor.view.dom}
                 updatePositionStrategy="always"
-                className="w-auto p-3"
+                className="border-edge-hairline w-auto p-3 shadow-lg"
                 onOpenAutoFocus={(e) => {
                     // 聚焦源码输入区而非弹层容器
                     e.preventDefault();
