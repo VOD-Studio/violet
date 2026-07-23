@@ -26,9 +26,11 @@ func NewEmojiGroupRepository(db *gorm.DB) *EmojiGroupRepository {
 }
 
 func emojiGroupToPO(g *emoji.EmojiGroup) model.EmojiGroup {
+	groupMetaBytes, _ := emojiMetaToBytes(g.Meta())
 	po := model.EmojiGroup{
 		ID: g.ID(), Name: g.Name(), Source: g.Source(), CoverURL: g.CoverURL(),
 		SortOrder: g.SortOrder(), IsEnabled: g.IsEnabled(),
+		Meta: groupMetaBytes,
 	}
 	emojis := make([]model.Emoji, 0, len(g.Emojis()))
 	for _, e := range g.Emojis() {
@@ -45,6 +47,7 @@ func emojiGroupToPO(g *emoji.EmojiGroup) model.EmojiGroup {
 }
 
 func emojiGroupToDomain(po model.EmojiGroup) (*emoji.EmojiGroup, error) {
+	groupMeta, _ := bytesToEmojiMeta(po.Meta)
 	emojis := make([]emoji.Emoji, 0, len(po.Emojis))
 	for _, e := range po.Emojis {
 		meta, _ := bytesToEmojiMeta(e.Meta)
@@ -53,7 +56,7 @@ func emojiGroupToDomain(po model.EmojiGroup) (*emoji.EmojiGroup, error) {
 			e.SourceURL, e.GifURL, e.TextContent, e.SortOrder, meta,
 		))
 	}
-	return emoji.ReconstructEmojiGroup(po.ID, po.Name, po.Source, po.CoverURL, po.SortOrder, po.IsEnabled, emojis), nil
+	return emoji.ReconstructEmojiGroup(po.ID, po.Name, po.Source, po.CoverURL, po.SortOrder, po.IsEnabled, emojis, groupMeta), nil
 }
 
 func (r *EmojiGroupRepository) FindByID(ctx context.Context, id int32) (*emoji.EmojiGroup, error) {
@@ -205,13 +208,15 @@ func (r *EmojiGroupRepository) UpsertByName(ctx context.Context, g *emoji.EmojiG
 		Where("name = ?", g.Name()).
 		First(&existing).Error
 	if err == nil {
-		// 存在则更新 cover/sort/enabled
+		// 存在则更新 cover/sort/enabled/meta
+		groupMetaBytes, _ := emojiMetaToBytes(g.Meta())
 		updates := r.db.WithContext(ctx).Model(&model.EmojiGroup{}).
 			Where("id = ?", existing.ID).
 			Updates(map[string]any{
 				"cover_url":  g.CoverURL(),
 				"sort_order": g.SortOrder(),
 				"is_enabled": g.IsEnabled(),
+				"meta":       groupMetaBytes,
 			})
 		if updates.Error != nil {
 			return 0, domainshared.Internal("upsert 更新表情分组失败", updates.Error)

@@ -106,6 +106,7 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 		g.SetCoverURL(coverURL)
 		g.SetSortOrder(i + 1)
 		g.SetEnabled(true)
+		g.SetMeta(packageMetaToDomain(pkg))
 		groupID, err := s.repo.Save(ctx, g)
 		if err != nil {
 			log.Printf("警告: 创建表情分组 %s 失败: %v", pkg.Text, err)
@@ -149,6 +150,12 @@ func emoteMetaToDomain(e bilibili.Emote) domainemoji.EmojiMeta {
 		domainemoji.EmojiSize(e.Meta.Size),
 		domainemoji.EmojiType(e.Type),
 	)
+}
+
+// packageMetaToDomain 将 B站 package 的 meta.size 转为 domain EmojiMeta。
+// 分组级 meta 仅 size 有意义（picker 渲染尺寸），alias/type 为零值。
+func packageMetaToDomain(pkg bilibili.Package) domainemoji.EmojiMeta {
+	return domainemoji.ReconstructEmojiMeta("", domainemoji.EmojiSize(pkg.Meta.Size), 0)
 }
 
 // downloadPackageEmojis 并发下载一个包内所有表情图（并发度 8），返回按原序排序的结果。
@@ -258,6 +265,7 @@ func (s *EmojiSeedService) ReseedBilibiliEmojis(ctx context.Context, client *bil
 		g.SetCoverURL(coverURL)
 		g.SetSortOrder(i + 1)
 		g.SetEnabled(true)
+		g.SetMeta(packageMetaToDomain(pkg))
 		groupID, err := s.repo.UpsertByName(ctx, g)
 		if err != nil {
 			log.Printf("警告: upsert 分组 %s 失败: %v", pkg.Text, err)

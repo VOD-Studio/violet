@@ -27,13 +27,14 @@ import (
 
 // EmojiGroupDTO 表情分组读模型
 type EmojiGroupDTO struct {
-	ID        int32      `json:"id"`
-	Name      string     `json:"name"`
-	Source    string     `json:"source"`
-	CoverURL  string     `json:"cover_url"`
-	SortOrder int        `json:"sort_order"`
-	IsEnabled bool       `json:"is_enabled"`
-	Emojis    []EmojiDTO `json:"emojis"`
+	ID        int32         `json:"id"`
+	Name      string        `json:"name"`
+	Source    string        `json:"source"`
+	CoverURL  string        `json:"cover_url"`
+	SortOrder int           `json:"sort_order"`
+	IsEnabled bool          `json:"is_enabled"`
+	Meta      *EmojiMetaDTO `json:"meta,omitempty"`
+	Emojis    []EmojiDTO    `json:"emojis"`
 }
 
 // EmojiDTO 表情读模型
@@ -398,6 +399,7 @@ func emojiGroupToDTO(g *domainemoji.EmojiGroup) EmojiGroupDTO {
 	return EmojiGroupDTO{
 		ID: g.ID(), Name: g.Name(), Source: g.Source(), CoverURL: g.CoverURL(),
 		SortOrder: g.SortOrder(), IsEnabled: g.IsEnabled(), Emojis: emojis,
+		Meta: metaToDTO(g.Meta()),
 	}
 }
 
@@ -414,14 +416,19 @@ func emojiToDTO(e domainemoji.Emoji) EmojiDTO {
 		ID: e.ID(), GroupID: e.GroupID(), Name: e.Name(), URL: e.URL(),
 		SourceURL: e.SourceURL(), GifURL: e.GifURL(),
 		TextContent: e.TextContent(), SortOrder: e.SortOrder(),
-	}
-	m := e.Meta()
-	if m.Alias() != "" || m.Size() != 0 || m.Type() != 0 {
-		dto.Meta = &EmojiMetaDTO{
-			Alias: m.Alias(), Size: int(m.Size()), Type: int(m.Type()),
-		}
+		Meta: metaToDTO(e.Meta()),
 	}
 	return dto
+}
+
+// metaToDTO 将 domain EmojiMeta 转为 DTO 指针。三字段全空时返回 nil（omitempty 省略）。
+func metaToDTO(m domainemoji.EmojiMeta) *EmojiMetaDTO {
+	if m.Alias() == "" && m.Size() == 0 && m.Type() == 0 {
+		return nil
+	}
+	return &EmojiMetaDTO{
+		Alias: m.Alias(), Size: int(m.Size()), Type: int(m.Type()),
+	}
 }
 
 // ============================================================
