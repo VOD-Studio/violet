@@ -22,6 +22,7 @@ import type { AdminPostListItem, CreatePost } from "@features/admin-posts/model/
 import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
+import { usePostEditorStore } from "@features/admin-posts/ui/post-editor-store";
 import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import {
     type ImportUrlMeta,
@@ -81,10 +82,12 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
         },
         { delay: 400 },
     );
-
     const [imagePickerOpen, setImagePickerOpen] = useState(false);
     const [versionsOpen, setVersionsOpen] = useState(false);
     const [resetOpen, setResetOpen] = useState(false);
+    const zenMode = usePostEditorStore((s) => s.zenMode);
+    const setZen = usePostEditorStore((s) => s.setZen);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     const form = useForm<PostForm>({
         resolver: zodResolver(postSchema),
@@ -113,6 +116,24 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
     const slugValue = useWatch({ control, name: "slug" });
     // 新建模式固定用一个 key，避免随 slug 变化留下旧草稿；编辑模式按 postId 隔离
     const draftKey = isEdit ? `${DRAFT_PREFIX}edit:${postId}` : `${DRAFT_PREFIX}new`;
+
+    const toggleZen = () => {
+        const next = !zenMode;
+        if (next) setSidebarCollapsed(true);
+        setZen(next);
+    };
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: toggleZen 依赖 zenMode，[zenMode] 足够
+    useEffect(() => {
+        if (!zenMode) return;
+        const onKey = (e: KeyboardEvent) => {
+            const tag = (e.target as HTMLElement)?.tagName;
+            if (tag === "INPUT" || tag === "TEXTAREA") return;
+            if (e.key === "Escape") toggleZen();
+        };
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+    }, [zenMode]);
 
     // 编辑模式：数据到达后预填，仅初始化一次
     useEffect(() => {
@@ -418,7 +439,13 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
     }
 
     return (
-        <div className="flex h-full flex-col gap-4">
+        <div
+            className={
+                zenMode
+                    ? "fixed inset-0 z-[100] flex flex-col gap-4 bg-background p-4 md:p-6"
+                    : "flex h-full flex-col gap-4"
+            }
+        >
             <PostEditorToolbar
                 isEdit={isEdit}
                 saving={saving}
@@ -427,10 +454,19 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                 onPublish={onPublish}
                 onOpenVersions={() => setVersionsOpen(true)}
                 onReset={() => setResetOpen(true)}
+                onToggleZen={toggleZen}
+                zenMode={zenMode}
+                sidebarCollapsed={sidebarCollapsed}
+                onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
             />
 
-            {/* 主体：编辑器 + 侧边栏 */}
-            <div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_320px]">
+            <div
+                className={
+                    zenMode && sidebarCollapsed
+                        ? "grid flex-1 grid-cols-1 gap-4 overflow-hidden"
+                        : "grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_320px]"
+                }
+            >
                 {/* 左：编辑器 */}
                 <div data-testid="editor-workspace" className="flex min-h-0 min-w-0 flex-col gap-2">
                     <Input
@@ -490,8 +526,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
                     </div>
                 </div>
 
-                {/* 右：侧边栏 */}
-                <PostEditorSidebar control={control} register={register} />
+                {/* 右侧栏 */}
+                {!(zenMode && sidebarCollapsed) && (
+                    <PostEditorSidebar control={control} register={register} />
+                )}
             </div>
 
             {/* 插入正文图片选择器 */}
