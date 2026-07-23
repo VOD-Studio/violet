@@ -73,12 +73,13 @@ func (h *Handler) ListAllEmojiGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 type createEmojiGroupRequest struct {
-	Name      string `json:"name" validate:"required"`
-	Source    string `json:"source"`
-	CoverURL  string `json:"cover_url"`
-	SortOrder int    `json:"sort_order"`
-	IsEnabled *bool  `json:"is_enabled"`
-	Type      int    `json:"type"`
+	Name      string                 `json:"name" validate:"required"`
+	Source    string                 `json:"source"`
+	CoverURL  string                 `json:"cover_url"`
+	SortOrder int                    `json:"sort_order"`
+	IsEnabled *bool                  `json:"is_enabled"`
+	Type      int                    `json:"type"`
+	Meta      *appmedia.EmojiMetaDTO `json:"meta"`
 }
 
 // CreateEmojiGroup 创建表情分组（后台）
@@ -101,7 +102,7 @@ func (h *Handler) CreateEmojiGroup(w http.ResponseWriter, r *http.Request) {
 		enabled = *req.IsEnabled
 	}
 	id, err := h.emojiSvc.CreateGroup(r.Context(), appmedia.CreateGroupInput{
-		Name: req.Name, Source: source, CoverURL: req.CoverURL, SortOrder: req.SortOrder, IsEnabled: enabled, Type: req.Type,
+		Name: req.Name, Source: source, CoverURL: req.CoverURL, SortOrder: req.SortOrder, IsEnabled: enabled, Type: req.Type, Meta: req.Meta,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -129,12 +130,13 @@ func (h *Handler) UpdateEmojiGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Name      string  `json:"name"`
-		Source    string  `json:"source"`
-		CoverURL  *string `json:"cover_url"`
-		SortOrder *int    `json:"sort_order"`
-		IsEnabled *bool   `json:"is_enabled"`
-		Type      *int    `json:"type"`
+		Name      string                 `json:"name"`
+		Source    string                 `json:"source"`
+		CoverURL  *string                `json:"cover_url"`
+		SortOrder *int                   `json:"sort_order"`
+		IsEnabled *bool                  `json:"is_enabled"`
+		Type      *int                   `json:"type"`
+		Meta      *appmedia.EmojiMetaDTO `json:"meta"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -142,7 +144,7 @@ func (h *Handler) UpdateEmojiGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := h.emojiSvc.UpdateGroup(r.Context(), appmedia.UpdateGroupInput{
 		ID: int32(id), Name: req.Name, Source: req.Source, CoverURL: req.CoverURL,
-		SortOrder: req.SortOrder, IsEnabled: req.IsEnabled, Type: req.Type,
+		SortOrder: req.SortOrder, IsEnabled: req.IsEnabled, Type: req.Type, Meta: req.Meta,
 	}); err != nil {
 		response.RespondError(w, r, err)
 		return

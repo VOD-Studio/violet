@@ -144,6 +144,7 @@ type CreateGroupInput struct {
 	SortOrder int
 	IsEnabled bool
 	Type      int
+	Meta      *EmojiMetaDTO
 }
 
 // CreateGroup 创建表情分组
@@ -162,6 +163,9 @@ func (s *EmojiService) CreateGroup(ctx context.Context, in CreateGroupInput) (in
 	g.SetCoverURL(in.CoverURL)
 	g.SetSortOrder(in.SortOrder)
 	g.SetGroupType(domainemoji.GroupType(in.Type))
+	if in.Meta != nil {
+		g.SetMeta(metaDTOToDomain(in.Meta))
+	}
 	if !in.IsEnabled {
 		g.SetEnabled(false)
 	}
@@ -177,6 +181,7 @@ type UpdateGroupInput struct {
 	SortOrder *int
 	IsEnabled *bool
 	Type      *int
+	Meta      *EmojiMetaDTO
 }
 
 // UpdateGroup 更新分组
@@ -209,6 +214,9 @@ func (s *EmojiService) UpdateGroup(ctx context.Context, in UpdateGroupInput) err
 	}
 	if in.Type != nil {
 		g.SetGroupType(domainemoji.GroupType(*in.Type))
+	}
+	if in.Meta != nil {
+		g.SetMeta(metaDTOToDomain(in.Meta))
 	}
 	_, err = s.repo.Save(ctx, g)
 	return err
