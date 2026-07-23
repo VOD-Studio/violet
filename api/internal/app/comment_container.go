@@ -53,10 +53,11 @@ func (a *emojiLookupAdapter) FindByNames(ctx context.Context, names []string) (m
 	for _, g := range groups {
 		for _, e := range g.Emojis() {
 			if nameSet[e.Name()] {
-				result[e.Name()] = appcomment.EmojiRef{
-					URL:    e.URL(),
-					GifURL: e.GifURL(),
-				}
+			result[e.Name()] = appcomment.EmojiRef{
+				URL:    e.URL(),
+				GifURL: e.GifURL(),
+				Size:   int(e.Meta().Size()),
+			}
 			}
 		}
 	}

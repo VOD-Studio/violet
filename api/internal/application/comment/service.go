@@ -62,9 +62,11 @@ type BlockCountDTO struct {
 
 // EmojiRef 表情映射值（emote map 的 value）。
 // 前端渲染 body 中的 [name] 占位符时查此表，优先使用 GifURL。
+// Size 携带表情尺寸（1=小 2=大），供前端按尺寸渲染内联表情。
 type EmojiRef struct {
 	URL    string `json:"url"`
 	GifURL string `json:"gif_url,omitempty"`
+	Size   int    `json:"size,omitempty"`
 }
 
 // EmojiLookup 表情批量查找端口（application 层端口）。
