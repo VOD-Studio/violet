@@ -7,6 +7,7 @@
 import type { Emoji } from "@entities/emoji/model/types";
 import { useAllEmojis } from "@features/emojis/api/queries";
 import { isImageURL } from "@shared/lib/url";
+import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
 import { ScrollArea } from "@shared/ui/scroll-area";
@@ -152,6 +153,7 @@ export function EmojiPicker({
                                     <EmojiGrid
                                         emojis={activeGroupData.emojis}
                                         groupType={activeGroupData.type}
+                                        metaSize={activeGroupData.meta?.size}
                                         selectedIds={selectedIds}
                                         onSelect={handleSelect}
                                     />
@@ -172,11 +174,13 @@ const GROUP_TYPE_TEXT = 1;
 function EmojiGrid({
     emojis,
     groupType,
+    metaSize,
     selectedIds,
     onSelect,
 }: {
     emojis: Emoji[];
     groupType: number;
+    metaSize?: number;
     selectedIds: Set<number>;
     onSelect: (emoji: Emoji) => void;
 }) {
@@ -184,12 +188,12 @@ function EmojiGrid({
         return <div className="py-6 text-center text-sm text-muted-foreground">该分组暂无表情</div>;
     }
 
-    // 文字组（颜文字组）4 列，图片组 10 列。
+    // 文字组固定 4 列；图片组按 size 决定列数（10/size，size=1→10 列，size=2→5 列）。
     const isTextGroup = groupType === GROUP_TYPE_TEXT;
-    const gridCols = isTextGroup ? "grid-cols-4" : "grid-cols-10";
+    const gridCols = isTextGroup ? "grid-cols-4" : metaSize === 2 ? "grid-cols-5" : "grid-cols-10";
 
     return (
-        <div className={`grid ${gridCols} gap-1 pt-2`}>
+        <div className={cn("grid gap-1 pt-2", gridCols)}>
             {emojis.map((emoji) => {
                 const isSelected = selectedIds.has(emoji.id);
                 const text = emoji.text_content ?? emoji.name;
@@ -202,13 +206,11 @@ function EmojiGrid({
                         onClick={() => onSelect(emoji)}
                         title={isSelected ? `${emoji.name}（已选择）` : emoji.name}
                         disabled={isSelected}
-                        className={`flex items-center justify-center overflow-hidden rounded-md transition-colors ${
-                            isText
-                                ? // 文字组：按长度占 1-2 列，超长直接截断（不显示省略号）
-                                  `${Array.from(text).length > 4 ? "col-span-2" : ""} h-9 w-full px-1`
-                                : // 图片组：单格，宽度自适应
-                                  "aspect-square w-full p-0.5"
-                        } ${isSelected ? "cursor-not-allowed opacity-40" : "hover:bg-accent"}`}
+                        className={cn(
+                            "flex items-center justify-center overflow-hidden rounded-md transition-colors",
+                            isText ? "h-9 w-full px-1" : "aspect-square w-full p-0.5",
+                            isSelected ? "cursor-not-allowed opacity-40" : "hover:bg-accent",
+                        )}
                     >
                         {imageUrl && isImageURL(imageUrl) ? (
                             <img
