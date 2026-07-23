@@ -70,6 +70,14 @@ func registerPublicPaths(t *openapi3.T) {
 		"gif_url":      optStr("GIF 动图 URL"),
 		"text_content": optStr("文字内容（文字表情）"),
 		"sort_order":   optInt("排序权重"),
+		"meta":         optRef("表情元数据（alias/size/type）", "EmojiMetaDTO"),
+	})
+
+	// EmojiMetaDTO 表情元数据（源自 B站 meta 子对象与顶层 type）
+	registerSchema(t, "EmojiMetaDTO", openapi3.Schemas{
+		"alias": optStr("别名，用于搜索/补全"),
+		"size":  optInt("尺寸：1=小 2=大"),
+		"type":  optInt("门槛类型：1=普通 2=会员专属 3=购买所得 4=颜文字"),
 	})
 
 	// EmojiGroupDTO

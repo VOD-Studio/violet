@@ -33,6 +33,7 @@ func registerAdminEmojiPaths(t *openapi3.T) {
 		"gif_url":      optStr("GIF 动图 URL"),
 		"source_url":   optStr("来源 URL"),
 		"sort_order":   optInt("排序权重"),
+		"meta":         optRef("表情元数据（alias/size/type）", "EmojiMetaDTO"),
 	}, "name")
 
 	registerSchema(t, "UpdateEmojiRequest", openapi3.Schemas{
@@ -42,6 +43,7 @@ func registerAdminEmojiPaths(t *openapi3.T) {
 		"gif_url":      optStr("GIF 动图 URL"),
 		"source_url":   optStr("来源 URL"),
 		"sort_order":   optInt("排序权重"),
+		"meta":         optRef("表情元数据（alias/size/type）", "EmojiMetaDTO"),
 	})
 
 	// EmojiUploadResult schema 已随 POST /uploads/emoji 端点迁移至 paths_media.go

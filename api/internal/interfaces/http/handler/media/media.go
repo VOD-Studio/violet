@@ -189,12 +189,13 @@ func (h *Handler) CreateEmoji(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Name        string `json:"name" validate:"required"`
-		URL         string `json:"url"`
-		TextContent string `json:"text_content"`
-		GifURL      string `json:"gif_url"`
-		SourceURL   string `json:"source_url"`
-		SortOrder   int    `json:"sort_order"`
+		Name        string             `json:"name" validate:"required"`
+		URL         string             `json:"url"`
+		TextContent string             `json:"text_content"`
+		GifURL      string             `json:"gif_url"`
+		SourceURL   string             `json:"source_url"`
+		SortOrder   int                `json:"sort_order"`
+		Meta        *appmedia.EmojiMetaDTO `json:"meta"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -207,7 +208,7 @@ func (h *Handler) CreateEmoji(w http.ResponseWriter, r *http.Request) {
 	id, err := h.emojiSvc.CreateEmoji(r.Context(), appmedia.CreateEmojiInput{
 		GroupID: int32(groupID), Name: req.Name, URL: req.URL,
 		TextContent: req.TextContent, GifURL: req.GifURL,
-		SourceURL: req.SourceURL, SortOrder: req.SortOrder,
+		SourceURL: req.SourceURL, SortOrder: req.SortOrder, Meta: req.Meta,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -224,12 +225,13 @@ func (h *Handler) UpdateEmoji(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Name        string `json:"name"`
-		URL         string `json:"url"`
-		TextContent string `json:"text_content"`
-		GifURL      string `json:"gif_url"`
-		SourceURL   string `json:"source_url"`
-		SortOrder   int    `json:"sort_order"`
+		Name        string             `json:"name"`
+		URL         string             `json:"url"`
+		TextContent string             `json:"text_content"`
+		GifURL      string             `json:"gif_url"`
+		SourceURL   string             `json:"source_url"`
+		SortOrder   int                `json:"sort_order"`
+		Meta        *appmedia.EmojiMetaDTO `json:"meta"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -238,7 +240,7 @@ func (h *Handler) UpdateEmoji(w http.ResponseWriter, r *http.Request) {
 	if err := h.emojiSvc.UpdateEmoji(r.Context(), appmedia.UpdateEmojiInput{
 		ID: int32(id), Name: req.Name, URL: req.URL,
 		TextContent: req.TextContent, GifURL: req.GifURL,
-		SourceURL: req.SourceURL, SortOrder: req.SortOrder,
+		SourceURL: req.SourceURL, SortOrder: req.SortOrder, Meta: req.Meta,
 	}); err != nil {
 		response.RespondError(w, r, err)
 		return
