@@ -12,7 +12,7 @@
 import type { Comment } from "@entities/comment/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
 import { EmojiText } from "@shared/ui/emoji-text";
-import BorderGlow from "@vendor/react-bits/BorderGlow";
+import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { MessageCircle } from "lucide-react";
@@ -67,68 +67,47 @@ export function AnnotationCard({
 
     return (
         <div className="w-full">
-            <div
-                role={onClick ? "button" : undefined}
+            <SpotlightCard
+                className={`flex gap-2 p-3 ${active ? "ring-2 ring-primary/40" : ""}`}
                 onClick={onClick}
-                onKeyDown={onClick ? (e) => e.key === "Enter" && onClick() : undefined}
+                role={onClick ? "button" : undefined}
                 tabIndex={onClick ? 0 : undefined}
-                className={`block w-full cursor-pointer text-left transition-transform ${active ? "scale-[1.02]" : ""}`}
+                onKeyDown={onClick ? (e) => e.key === "Enter" && onClick() : undefined}
                 {...(onClick ? { "aria-label": `批注：${comment.body.slice(0, 30)}` } : {})}
             >
-                <div
-                    className={`overflow-hidden rounded-xl ring-1 ${active ? "ring-2" : "ring-black/5 dark:ring-white/10"}`}
-                >
-                    <BorderGlow
-                        backgroundColor="hsl(var(--card))"
-                        borderRadius={12}
-                        glowColor={sev.glow[0]}
-                        colors={[
-                            `hsl(${sev.glow[0]} / ${active ? 0.95 : 0.6})`,
-                            `hsl(${sev.glow[1]} / 0.5)`,
-                            `hsl(${sev.glow[2]} / 0.9)`,
-                        ]}
-                        glowIntensity={active ? 0.8 : 0.4}
-                        glowRadius={active ? 18 : 12}
-                        animated={false}
-                        className="flex gap-2 p-3"
-                    >
-                        <div className={`w-1 shrink-0 rounded-full ${sev.bar}`} aria-hidden />
+                <div className={`w-1 shrink-0 rounded-full ${sev.bar}`} aria-hidden />
 
-                        <div className="min-w-0 flex-1">
-                            {/* 引言区：选中原文，斜体 + severity 色条 + 截断 */}
-                            <div className="mb-2 border-l-2 border-edge-hairline pl-2 text-xs italic text-muted-foreground line-clamp-2">
-                                {selectedText}
-                            </div>
+                <div className="min-w-0 flex-1">
+                    <div className="mb-2 border-l-2 border-edge-hairline pl-2 text-xs italic text-muted-foreground line-clamp-2">
+                        {selectedText}
+                    </div>
 
-                            <CommentMeta comment={comment} sev={sev} isPending={isPending} />
+                    <CommentMeta comment={comment} sev={sev} isPending={isPending} />
 
-                            <p className="whitespace-pre-wrap break-words text-sm text-foreground">
-                                <EmojiText text={comment.body} emote={comment.emote} />
-                            </p>
+                    <p className="whitespace-pre-wrap break-words text-sm text-foreground">
+                        <EmojiText text={comment.body} emote={comment.emote} />
+                    </p>
 
-                            <time className="mt-1 block font-mono text-[10px] tabular-nums text-muted-foreground">
-                                {formatTimeAgo(comment.created_at)}
-                            </time>
+                    <time className="mt-1 block font-mono text-[10px] tabular-nums text-muted-foreground">
+                        {formatTimeAgo(comment.created_at)}
+                    </time>
 
-                            {/* 回复按钮（图标）：仅登录显示 */}
-                            {isLoggedIn && postId && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setReplying((v) => !v);
-                                    }}
-                                    className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-                                    aria-label={replying ? "取消回复" : "回复批注"}
-                                >
-                                    <MessageCircle className="size-3" />
-                                    <span>回复</span>
-                                </button>
-                            )}
-                        </div>
-                    </BorderGlow>
+                    {isLoggedIn && postId && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setReplying((v) => !v);
+                            }}
+                            className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+                            aria-label={replying ? "取消回复" : "回复批注"}
+                        >
+                            <MessageCircle className="size-3" />
+                            <span>回复</span>
+                        </button>
+                    )}
                 </div>
-            </div>
+            </SpotlightCard>
 
             {/* 内嵌回复表单 */}
             {replying && postId && (
@@ -226,7 +205,7 @@ function AnnotationReply({
         <div className="rounded-md bg-muted/30 p-2">
             <CommentMeta comment={comment} sev={sev} isPending={comment.status === "pending"} />
             <p className="mt-0.5 whitespace-pre-wrap break-words text-xs text-foreground">
-                {comment.body}
+                <EmojiText text={comment.body} emote={comment.emote} />
             </p>
         </div>
     );
