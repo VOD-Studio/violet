@@ -283,16 +283,16 @@ func (s *EmojiService) UpdateEmoji(ctx context.Context, in UpdateEmojiInput) err
 		return err
 	}
 	e.Update(in.Name, in.URL, in.TextContent, in.GifURL, in.SourceURL, in.SortOrder)
-	e.SetMeta(metaDTOToDomain(in.Meta))
+	// meta 区分省略与清空：nil（请求体省略 meta 键）保持原值，非 nil（含空对象）按值设置
+	if in.Meta != nil {
+		e.SetMeta(metaDTOToDomain(in.Meta))
+	}
 	_, err = s.repo.SaveEmoji(ctx, e)
 	return err
 }
 
-// metaDTOToDomain 将输入 DTO 转为 domain EmojiMeta。nil 时返回零值（清空 meta）。
+// metaDTOToDomain 将输入 DTO 转为 domain EmojiMeta。空对象对应清空为零值 meta。
 func metaDTOToDomain(m *EmojiMetaDTO) domainemoji.EmojiMeta {
-	if m == nil {
-		return domainemoji.EmojiMeta{}
-	}
 	return domainemoji.ReconstructEmojiMeta(
 		m.Alias, domainemoji.EmojiSize(m.Size), domainemoji.EmojiType(m.Type),
 	)
