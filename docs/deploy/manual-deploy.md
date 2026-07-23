@@ -309,6 +309,65 @@ reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-
 
 脚本做的事：清空共享目录 → `podman cp blog-web:/app/dist/client/.` → 共享目录。
 
+## 代码运行器（可运行代码块沙箱执行）
+
+文章中的可运行代码块（python/node/go/rust/bun）在后端 Docker 沙箱容器执行，stdout/stderr 经 SSE 回传。架构决策见 `docs/adr/0006-code-runner-architecture.md`。
+
+### 前置条件
+
+1. **暴露 podman sock**：api 容器需调宿主 podman daemon 起隔离容器。
+   ```bash
+   # 启用 podman system service（暴露 sock，持久化需 enable --now）
+   ssh xunrua.top "sudo systemctl enable --now podman.socket"
+   # 验证 sock 可连
+   ssh xunrua.top "sudo curl -sf --unix-socket /run/podman/podman.sock http://localhost/v4.0.0/libpod/info >/dev/null && echo OK"
+   ```
+   podman 的 docker-compat sock 通常在 `/run/podman/podman.sock`。
+
+2. **准备 runner 镜像**：字面复用 ygggrasil 项目的 5 个镜像（python/node/go/rust/bun）。
+   - 方式 A（跨项目同步）：在 yggdrasil 项目跑 `docker/build-runners.sh` 构建 → `docker save | gzip` → scp → 服务器 `podman load`。
+   - 方式 B（服务器原生构建）：把 yggdrasil 的 `docker/` 目录传到服务器，跑 `podman build` 逐个构建。
+   ```bash
+   # 方式 A 示例
+   cd ~/Developer/xfy/yggdrasil
+   docker/build-runners.sh
+   docker save yggdrasil-runner-python yggdrasil-runner-node yggdrasil-runner-go yggdrasil-runner-rust yggdrasil-runner-bun | gzip > /tmp/runners.tar.gz
+   scp /tmp/runners.tar.gz xunrua.top:/tmp/
+   ssh xunrua.top "gunzip -c /tmp/runners.tar.gz | podman load"
+   # 验证
+   ssh xunrua.top "podman images | grep yggdrasil-runner"
+   ```
+
+3. **配置环境变量**：在 `api/.env` 加 `CODE_RUNNER_ENABLED=true` + `DOCKER_SOCKET_PATH=/run/podman/podman.sock`（覆盖默认 `/var/run/docker.sock`）。全套配置项见 `.env.example` 的「代码运行器」段。
+
+4. **挂载 sock**：`docker-compose.prod.yml` 已配 `${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock`，通过 `DOCKER_SOCKET_PATH` 环境变量控制宿主端路径。
+
+### 启用验证
+
+```bash
+# 重启 api 容器加载新配置
+ssh xunrua.top "cd /root/docker/mimo-blog && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate api"
+
+# api 容器内验证能调 podman daemon
+ssh xunrua.top "podman exec blog-api ls /var/run/docker.sock"
+
+# 验证 runner 镜像可见（api 通过 podman sock 调宿主 daemon，镜像在宿主层）
+ssh xunrua.top "podman images | grep yggdrasil-runner"
+```
+
+### SSE 长连接注意
+
+代码运行的输出通过 SSE（`GET /api/v1/code-runner/stream`）实时回传。nginx-proxy 默认缓冲响应，需确认：
+- handler 已设 `X-Accel-Buffering: no`（关闭 nginx 缓冲）。
+- 若 nginx-proxy 仍缓冲，检查 `proxy_buffering off` 或 `proxy_cache off` 配置。
+
+### 安全权衡
+
+挂载 docker.sock = 把宿主 root 权限交给 api 容器。靠以下隔离配置兜底（见 ADR-0006）：
+- 执行容器 cap_drop ALL / no-new-privileges / readonly rootfs / network=none
+- 内存/CPU/pids 限制（pids_limit=128，防 fork 炸弹）
+- 非 root 用户（1000:1000）运行用户代码
+
 ## 回滚
 
 ### 镜像级回滚（podman 保留了旧镜像层）

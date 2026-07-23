@@ -169,10 +169,23 @@ music-openapi: ## 生成 mimo-music OpenAPI 文档
 	cd mimo-music && go run ./cmd/export-openapi/
 	@echo "OpenAPI spec 已导出到 mimo-music/openapi.json"
 
-music-apifox: ## 生成 mimo-music OpenAPI 文档并导入到 Apifox
+	music-apifox: ## 生成 mimo-music OpenAPI 文档并导入到 Apifox
 	@echo "生成并导入 mimo-music OpenAPI 文档到 Apifox..."
 	cd mimo-music && go run ./cmd/export-openapi/ && apifox import --project __PROJECT_ID__ --format openapi --file ./openapi.json
 	@echo "mimo-music Apifox 更新完成"
+
+# ==================== 代码运行器（可运行代码块沙箱执行） ====================
+# runner 镜像字面复用 yggdrasil 项目（yggdrasil-runner-{python,node,go,rust,bun}），
+# mimo-blog 本身不构建这些镜像。启用 code runner 前需先在 yggdrasil 项目构建并 load。
+# 完整步骤见 docs/deploy/manual-deploy.md「代码运行器」段。
+
+runner-images-help: ## 显示 runner 镜像准备说明
+	@echo "代码运行器镜像字面复用 yggdrasil 项目："
+	@echo "  1. cd ~/Developer/xfy/yggdrasil && docker/build-runners.sh"
+	@echo "  2. docker save yggdrasil-runner-{python,node,go,rust,bun} | gzip > /tmp/runners.tar.gz"
+	@echo "  3. scp + podman load 到生产服务器"
+	@echo "  4. api/.env 设 CODE_RUNNER_ENABLED=true + DOCKER_SOCKET_PATH"
+	@echo "详见 docs/deploy/manual-deploy.md"
 
 # ==================== 构建 ====================
 
