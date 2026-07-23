@@ -22,6 +22,8 @@ export interface CreateEmojiGroupRequest {
     sort_order?: number;
     /** 是否启用，省略时默认 true，显式传 false 可创建为禁用 */
     is_enabled?: boolean;
+    /** 分组类型：1=文字（颜文字组）2=图片（缺省 2） */
+    type?: number;
 }
 
 /**
@@ -41,6 +43,8 @@ export interface UpdateEmojiGroupRequest {
     sort_order?: number;
     /** 是否启用，传值才更新 */
     is_enabled?: boolean;
+    /** 分组类型：1=文字（颜文字组）2=图片，省略不更新 */
+    type?: number;
 }
 
 /**

@@ -14,6 +14,7 @@ export const emojiGroupSchema = z.object({
     cover_url: z.string().optional(),
     sort_order: z.number().int().min(0, "排序权重不能为负数"),
     is_enabled: z.boolean(),
+    type: z.number().int(),
 });
 
 /** 表情分组表单类型 */
