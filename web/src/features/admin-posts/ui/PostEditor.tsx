@@ -442,7 +442,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
         <div
             className={
                 zenMode
-                    ? "fixed inset-0 z-[100] flex flex-col gap-4 bg-background p-4 md:p-6"
+                    ? "fixed inset-0 z-40 flex flex-col gap-4 bg-background p-4 md:p-6"
                     : "flex h-full flex-col gap-4"
             }
         >

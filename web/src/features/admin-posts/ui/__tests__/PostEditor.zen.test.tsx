@@ -94,4 +94,12 @@ describe("PostEditor Zen 专注模式", () => {
         });
         expect(JSON.parse(localStorage.getItem("post-editor") ?? "{}").state.zenMode).toBe(false);
     });
+
+    it("专注根容器 z-index 低于弹窗（z-50）", () => {
+        usePostEditorStore.setState({ zenMode: true });
+        const { container } = render(<PostEditor />);
+        const zenRoot = container.firstElementChild as HTMLElement;
+        expect(zenRoot.className).not.toContain("z-[100]");
+        expect(zenRoot.className).toContain("z-40");
+    });
 });
