@@ -28,6 +28,14 @@ const LazyBlockMathFormula = lazy(() =>
     import("../../katex/MathFormula").then((m) => ({ default: m.BlockMathFormula })),
 );
 
+/**
+ * CodeRunner 懒加载：可运行代码块才加载（CodeMirror + xterm 重依赖）。
+ * 避免进入文章正文主 chunk。
+ */
+const LazyCodeRunner = lazy(() =>
+    import("../../code-runner").then((m) => ({ default: m.CodeRunner })),
+);
+
 /** 把 react-markdown 传入的 React 节点递归提取为纯文本 */
 function nodeToText(node: React.ReactNode): string {
     if (node == null || typeof node === "boolean") return "";
@@ -232,8 +240,42 @@ export const markdownComponents: Components = {
             </Suspense>
         );
     },
-    // pre 由 FencedCodeBlock 内部接管，此处直接透传避免双重包裹
-    pre: ({ children }) => <>{children}</>,
+    // pre：可运行代码块（data-runnable="true"）渲染 CodeRunner，其余透传给 code 分支。
+    // 可运行块的 data-source 携带 HTML 转义后的原始源码（避免反解高亮 HTML）。
+    pre: ({ children, ...props }) => {
+        const p = props as Record<string, unknown>;
+        if (p["data-runnable"] === "true" || p["data-runnable"] === true) {
+            const lang = String(p["data-lang"] ?? "");
+            const overrides = (() => {
+                const raw = p["data-overrides"];
+                if (!raw || raw === "") return undefined;
+                try {
+                    return JSON.parse(String(raw));
+                } catch {
+                    return undefined;
+                }
+            })();
+            // data-source 是权威源码（HTML 转义后的原始文本），无则降级用 children 文本
+            const rawSource = p["data-source"];
+            const source = typeof rawSource === "string" ? rawSource : nodeToText(children);
+            return (
+                <Suspense
+                    fallback={
+                        <pre className="code-block-scrollbar my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90">
+                            <code>{source}</code>
+                        </pre>
+                    }
+                >
+                    <LazyCodeRunner
+                        language={lang}
+                        source={source}
+                        overridesJson={overrides ? JSON.stringify(overrides) : undefined}
+                    />
+                </Suspense>
+            );
+        }
+        return <>{children}</>;
+    },
     img: ({ src, alt }) => (
         // 内容图统一走 w=1200 缩略(GIF 剥参数保动画),原图只在点开预览时加载
         <img

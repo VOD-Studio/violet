@@ -41,6 +41,14 @@ const schema = {
         // 数学公式语义化标记（浏览时渲染载体）：span=行内、div=块级
         span: [...(defaultSchema.attributes?.span ?? []), "dataType", "dataLatex"],
         div: [...(defaultSchema.attributes?.div ?? []), "dataType", "dataLatex"],
+        // 可运行代码块（浏览时渲染载体）：pre 携带 runnable/lang/overrides/source
+        pre: [
+            ...(defaultSchema.attributes?.pre ?? []),
+            "dataRunnable",
+            "dataLang",
+            "dataOverrides",
+            "dataSource",
+        ],
     },
     // 允许 article 正文中常见的额外标签
     // span：承载文本颜色；u：下划线；input/label：任务列表 checkbox；其余为编辑器/富文本常用元素
