@@ -18,7 +18,7 @@ import { useReplies } from "@features/comments/api/queries";
 import { avatarUrl, contentImageUrl, imageUrl } from "@shared/lib/image-url";
 import { EmojiText } from "@shared/ui/emoji-text";
 import { ImageGrid } from "@shared/ui/image-grid";
-import BorderGlow from "@vendor/react-bits/BorderGlow";
+import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { ChevronDown, Loader2, MessageCircle } from "lucide-react";
@@ -79,61 +79,38 @@ export function CommentItem({
 
     return (
         <div className="group relative">
-            <div className="overflow-hidden rounded-xl ring-1 ring-black/5 dark:ring-white/10">
-                <BorderGlow
-                    backgroundColor="hsl(var(--card))"
-                    borderRadius={12}
-                    glowColor={sev.glow[0]}
-                    colors={[
-                        `hsl(${sev.glow[0]} / 0.9)`,
-                        `hsl(${sev.glow[1]} / 0.5)`,
-                        `hsl(${sev.glow[2]} / 0.9)`,
-                    ]}
-                    glowIntensity={isPending ? 0.3 : 0.5}
-                    glowRadius={14}
-                    animated={false}
-                    className="flex gap-3 p-4"
-                >
-                    {/* 左侧 severity 色条 */}
-                    <div className={`w-1 shrink-0 rounded-full ${sev.bar}`} aria-hidden />
+            <SpotlightCard className="flex gap-3 p-4">
+                <div className={`w-1 shrink-0 rounded-full ${sev.bar}`} aria-hidden />
 
-                    <div className="flex-1 min-w-0">
-                        <CommentMeta comment={comment} isAuthor={isAuthor} isPending={isPending} />
-                        <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
-                            <EmojiText text={comment.body} emote={comment.emote} />
-                        </p>
+                <div className="flex-1 min-w-0">
+                    <CommentMeta comment={comment} isAuthor={isAuthor} isPending={isPending} />
+                    <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
+                        <EmojiText text={comment.body} emote={comment.emote} />
+                    </p>
 
-                        {comment.pictures && comment.pictures.length > 0 && (
-                            <div className="mt-2">
-                                {/*
-                                 * 格子用缩略图(点开预览才加载原图):
-                                 * 单图 w=800 保比例(GIF 剥参数保动画);
-                                 * 多图 thumb=400x400 居中裁方,与 aspect-square 格子一致。
-                                 */}
-                                <ImageGrid images={toGridImages(comment.pictures)} />
-                            </div>
+                    {comment.pictures && comment.pictures.length > 0 && (
+                        <div className="mt-2">
+                            <ImageGrid images={toGridImages(comment.pictures)} />
+                        </div>
+                    )}
+
+                    <div className="mt-2 flex flex-wrap items-start gap-3">
+                        {isLoggedIn && postId && (
+                            <button
+                                type="button"
+                                onClick={() => setReplying((v) => !v)}
+                                className="inline-flex h-6 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                                aria-label={replying ? "取消回复" : "回复"}
+                            >
+                                <MessageCircle className="size-3.5" />
+                                <span>回复</span>
+                            </button>
                         )}
 
-                        {/* 互动区：回复 + 表情 */}
-                        <div className="mt-2 flex flex-wrap items-start gap-3">
-                            {/* 回复按钮（图标）：仅登录用户显示 */}
-                            {isLoggedIn && postId && (
-                                <button
-                                    type="button"
-                                    onClick={() => setReplying((v) => !v)}
-                                    className="inline-flex h-6 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                                    aria-label={replying ? "取消回复" : "回复"}
-                                >
-                                    <MessageCircle className="size-3.5" />
-                                    <span>回复</span>
-                                </button>
-                            )}
-
-                            <ReactionBar commentId={comment.id} isLoggedIn={isLoggedIn} />
-                        </div>
+                        <ReactionBar commentId={comment.id} isLoggedIn={isLoggedIn} />
                     </div>
-                </BorderGlow>
-            </div>
+                </div>
+            </SpotlightCard>
 
             {/* 内嵌回复表单：点回复图标后展开 */}
             {replying && postId && (
