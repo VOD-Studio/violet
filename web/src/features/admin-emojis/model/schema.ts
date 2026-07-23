@@ -24,6 +24,10 @@ export const emojiEditSchema = z.object({
     name: z.string().min(1, "表情名称不能为空").max(50, "表情名称最多 50 字符"),
     url: z.string().optional(),
     textContent: z.string().optional(),
+    // meta 子字段（可选）：alias 为别名，size 为尺寸，type 为门槛类型
+    metaAlias: z.string().optional(),
+    metaSize: z.number().int().optional(),
+    metaType: z.number().int().optional(),
 });
 
 /** 表情编辑表单类型 */

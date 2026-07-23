@@ -5,10 +5,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@shared/ui/base/select";
 import { Modal } from "@shared/ui/modal";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 interface EmojiEditDialogProps {
     open: boolean;
@@ -35,10 +42,18 @@ export function EmojiEditDialog({
         register,
         handleSubmit,
         reset,
+        control,
         formState: { errors },
     } = useForm<EmojiEditForm>({
         resolver: zodResolver(emojiEditSchema),
-        defaultValues: { name: "", url: "", textContent: "" },
+        defaultValues: {
+            name: "",
+            url: "",
+            textContent: "",
+            metaAlias: "",
+            metaSize: 0,
+            metaType: 0,
+        },
     });
 
     useEffect(() => {
@@ -48,17 +63,30 @@ export function EmojiEditDialog({
                 name: emoji.name,
                 url: emoji.url ?? "",
                 textContent: emoji.text_content ?? "",
+                metaAlias: emoji.meta?.alias ?? "",
+                metaSize: emoji.meta?.size ?? 0,
+                metaType: emoji.meta?.type ?? 0,
             });
         } else {
-            reset({ name: "", url: "", textContent: "" });
+            reset({ name: "", url: "", textContent: "", metaAlias: "", metaSize: 0, metaType: 0 });
         }
     }, [open, emoji, reset]);
 
     const onSubmit = (data: EmojiEditForm) => {
+        const alias = data.metaAlias?.trim();
+        // meta 三字段全空时不传 meta（保持后端原值）；任一有值则整体下发
+        const hasMeta = alias || data.metaSize || data.metaType;
         const body: UpdateEmojiRequest = {
             name: data.name.trim(),
             url: emoji?.url ? data.url?.trim() || undefined : undefined,
             text_content: !emoji?.url ? data.textContent?.trim() || undefined : undefined,
+            meta: hasMeta
+                ? {
+                      alias: alias || undefined,
+                      size: data.metaSize || undefined,
+                      type: data.metaType || undefined,
+                  }
+                : {},
         };
         onSave(body);
     };
@@ -142,6 +170,75 @@ export function EmojiEditDialog({
                         />
                     </div>
                 )}
+
+                <div className="space-y-3 rounded-md border p-3">
+                    <p className="text-sm font-medium">元数据</p>
+                    <p className="text-xs text-muted-foreground">
+                        源自 B站的别名/尺寸/门槛，留空则清空 meta。
+                    </p>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="emoji-edit-alias">别名</Label>
+                        <Input
+                            id="emoji-edit-alias"
+                            placeholder="如：保佑"
+                            disabled={isSaving}
+                            {...register("metaAlias")}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                            <Label>尺寸</Label>
+                            <Controller
+                                control={control}
+                                name="metaSize"
+                                render={({ field }) => (
+                                    <Select
+                                        value={String(field.value)}
+                                        onValueChange={(v) => field.onChange(Number(v))}
+                                        disabled={isSaving}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="未设置" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="0">未设置</SelectItem>
+                                            <SelectItem value="1">小（1）</SelectItem>
+                                            <SelectItem value="2">大（2）</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>类型</Label>
+                            <Controller
+                                control={control}
+                                name="metaType"
+                                render={({ field }) => (
+                                    <Select
+                                        value={String(field.value)}
+                                        onValueChange={(v) => field.onChange(Number(v))}
+                                        disabled={isSaving}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="未设置" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="0">未设置</SelectItem>
+                                            <SelectItem value="1">普通（1）</SelectItem>
+                                            <SelectItem value="2">会员专属（2）</SelectItem>
+                                            <SelectItem value="3">购买所得（3）</SelectItem>
+                                            <SelectItem value="4">颜文字（4）</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                        </div>
+                    </div>
+                </div>
             </form>
         </Modal>
     );
