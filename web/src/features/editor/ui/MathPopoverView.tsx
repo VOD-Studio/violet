@@ -6,12 +6,20 @@
  * - 选中后弹出跟随定位的浮层（MathEditPanel：源码输入 + 实时预览），
  *   Esc/点击外部关闭，关闭后光标移到公式之后。
  *
+ * Popover 开闭用独立 popoverOpen state，不直接绑定 Tiptap 的 selected prop：
+ * selected 由 PM NodeSelection 驱动，但 Tiptap 的 handleSelectionUpdate 在 rAF 中
+ * 重新检查 isNodeViewSelected 时，删除节点后紧接着点击下一个公式会触发竞态——
+ * rAF 回调中 isNodeViewSelected 短暂返回 false，deselectNode 使 selected 抖动为
+ * false（PM selection 实际仍正确选中此节点），若直接绑定 open 会导致秒开秒关。
+ * selected 上升沿打开弹层；下降沿时延迟一帧确认 PM selection 确实不再选中此节点
+ * 才关闭。
+ *
  * 由 MathView 以 displayMode 适配出行内/块级两个 NodeView。
  */
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewWrapper } from "@tiptap/react";
 import { Popover as PopoverPrimitive } from "radix-ui";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Popover, PopoverContent } from "@/shared/ui/base/popover";
 import { renderKatexElement } from "@/shared/ui/katex";
 import { useMathAnchor } from "../hooks/useMathAnchor";
@@ -36,8 +44,35 @@ export function MathPopoverView({
     const anchorRef = useMathAnchor(getPos, editor);
     const pos = typeof getPos === "function" ? getPos() : null;
 
+    /**
+     * 独立开闭 state，selected 上升沿打开；下降沿时 rAF 延迟检查 PM selection
+     * 是否真的不再选中此节点——跳过 handleSelectionUpdate rAF 竞态导致的短暂
+     * deselectNode（PM selection 实际仍指向此节点）。
+     */
+    const [popoverOpen, setPopoverOpen] = useState(false);
+
+    useEffect(() => {
+        if (selected) {
+            setPopoverOpen(true);
+            return;
+        }
+        const id = requestAnimationFrame(() => {
+            // rAF 后再确认 PM selection 是否真的不再选中此节点。
+            // handleSelectionUpdate 的 rAF 竞态中可能短暂 deselectNode，
+            // 但此时 PM selection 实际仍覆盖此节点范围（from<=pos && to>=pos+size）。
+            const sel = editor.state.selection;
+            const stillSelected =
+                typeof pos === "number" && sel.from <= pos && sel.to >= pos + node.nodeSize;
+            if (!stillSelected) {
+                setPopoverOpen(false);
+            }
+        });
+        return () => cancelAnimationFrame(id);
+    }, [selected, editor, node, pos]);
+
     /** Esc / 行内 Enter：关闭弹层，光标移到公式之后（NodeSelection 解除即回渲染态） */
     const close = () => {
+        setPopoverOpen(false);
         if (typeof pos === "number") editor.commands.focus(pos + node.nodeSize);
     };
 
@@ -65,12 +100,15 @@ export function MathPopoverView({
 
     return (
         <Popover
-            open={selected && editor.isEditable}
+            open={popoverOpen && editor.isEditable}
             onOpenChange={(next) => {
-                // 点击外部关闭：解除 NodeSelection 即可（不抢焦点；
-                // 点在编辑器内时 PM 自己会落最终选区）
-                if (!next && selected && typeof pos === "number") {
-                    editor.commands.setTextSelection(pos + node.nodeSize);
+                if (!next) {
+                    setPopoverOpen(false);
+                    // 点击外部关闭：解除 NodeSelection 即可（不抢焦点；
+                    // 点在编辑器内时 PM 自己会落最终选区）
+                    if (typeof pos === "number") {
+                        editor.commands.setTextSelection(pos + node.nodeSize);
+                    }
                 }
             }}
         >
