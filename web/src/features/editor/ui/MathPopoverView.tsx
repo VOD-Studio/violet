@@ -102,13 +102,11 @@ export function MathPopoverView({
         <Popover
             open={popoverOpen && editor.isEditable}
             onOpenChange={(next) => {
+                // 点击外部关闭：只更新 state，不主动改 PM selection。
+                // PM 点击事件已自行落下最终选区；若在此 setTextSelection 会覆盖
+                // 正转移到新节点的 NodeSelection（A→B 切换时导致 B 弹层秒关）。
                 if (!next) {
                     setPopoverOpen(false);
-                    // 点击外部关闭：解除 NodeSelection 即可（不抢焦点；
-                    // 点在编辑器内时 PM 自己会落最终选区）
-                    if (typeof pos === "number") {
-                        editor.commands.setTextSelection(pos + node.nodeSize);
-                    }
                 }
             }}
         >
