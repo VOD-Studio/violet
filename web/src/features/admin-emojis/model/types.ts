@@ -24,6 +24,8 @@ export interface CreateEmojiGroupRequest {
     is_enabled?: boolean;
     /** 分组类型：1=文字（颜文字组）2=图片（缺省 2） */
     type?: number;
+    /** 分组元数据，size 为组内表情默认尺寸（1=小 2=大） */
+    meta?: EmojiMeta;
 }
 
 /**
@@ -45,6 +47,8 @@ export interface UpdateEmojiGroupRequest {
     is_enabled?: boolean;
     /** 分组类型：1=文字（颜文字组）2=图片，省略不更新 */
     type?: number;
+    /** 分组元数据，省略不更新；size 为组内表情默认尺寸（1=小 2=大） */
+    meta?: EmojiMeta;
 }
 
 /**

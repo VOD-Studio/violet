@@ -1,4 +1,4 @@
-import type { Emoji, EmojiUploadResult } from "@entities/emoji/model/types";
+import type { Emoji, EmojiGroup, EmojiUploadResult } from "@entities/emoji/model/types";
 import {
     useCreateEmoji,
     useDeleteEmoji,
@@ -23,7 +23,7 @@ type InnerDialog = "edit" | "delete" | null;
 interface EmojiManageDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    groupId: number;
+    group: EmojiGroup | null;
 }
 
 /**
@@ -32,7 +32,10 @@ interface EmojiManageDialogProps {
  * Tabs 切换管理与上传。管理侧含搜索、批量选择删除、添加文本表情、
  * 单条编辑删除；上传侧批量上传图片并立即落库。
  */
-export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDialogProps) {
+export function EmojiManageDialog({ open, onOpenChange, group }: EmojiManageDialogProps) {
+    const groupId = group?.id ?? 0;
+    // 组内新建表情默认继承分组的 size（1=小 2=大）
+    const groupSize = group?.meta?.size;
     const { data: emojis = [] } = useGroupEmojisAdmin(groupId);
     const createEmoji = useCreateEmoji();
     const updateEmoji = useUpdateEmoji();
@@ -67,7 +70,10 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
     const handleUpload = (result: EmojiUploadResult) => {
         const name = result.url.split("/").pop() ?? "emoji";
         createEmoji.mutate(
-            { groupId, body: { name, url: result.url } },
+            {
+                groupId,
+                body: { name, url: result.url, meta: groupSize ? { size: groupSize } : undefined },
+            },
             {
                 onSuccess: () => toast.success("表情已添加"),
                 onError: (err) => toast.error(err.message),
@@ -79,7 +85,7 @@ export function EmojiManageDialog({ open, onOpenChange, groupId }: EmojiManageDi
         createEmoji.mutate(
             {
                 groupId,
-                body,
+                body: { ...body, meta: groupSize ? { size: groupSize } : undefined },
             },
             {
                 onSuccess: () => {

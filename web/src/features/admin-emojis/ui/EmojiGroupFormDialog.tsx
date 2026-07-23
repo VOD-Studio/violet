@@ -58,6 +58,7 @@ export function EmojiGroupFormDialog({
             sort_order: 0,
             is_enabled: true,
             type: 2,
+            metaSize: 1,
         },
     });
 
@@ -73,6 +74,7 @@ export function EmojiGroupFormDialog({
                 sort_order: editingGroup.sort_order,
                 is_enabled: editingGroup.is_enabled,
                 type: editingGroup.type,
+                metaSize: editingGroup.meta?.size ?? 1,
             });
         } else {
             reset({
@@ -82,6 +84,7 @@ export function EmojiGroupFormDialog({
                 sort_order: groupCount,
                 is_enabled: true,
                 type: 2,
+                metaSize: 1,
             });
         }
     }, [open, editingGroup, groupCount, reset]);
@@ -94,6 +97,7 @@ export function EmojiGroupFormDialog({
             sort_order: data.sort_order,
             is_enabled: data.is_enabled,
             type: data.type,
+            meta: { size: data.metaSize },
         };
 
         if (editingGroup) {
@@ -190,30 +194,58 @@ export function EmojiGroupFormDialog({
                     />
                 </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="group-type">分组类型</Label>
-                    <Controller
-                        control={control}
-                        name="type"
-                        render={({ field }) => (
-                            <Select
-                                value={String(field.value)}
-                                onValueChange={(v) => field.onChange(Number(v))}
-                            >
-                                <SelectTrigger
-                                    id="group-type"
-                                    className="w-full"
-                                    onPointerDown={(e) => e.stopPropagation()}
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                        <Label htmlFor="group-type">分组类型</Label>
+                        <Controller
+                            control={control}
+                            name="type"
+                            render={({ field }) => (
+                                <Select
+                                    value={String(field.value)}
+                                    onValueChange={(v) => field.onChange(Number(v))}
                                 >
-                                    <SelectValue placeholder="选择类型" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="2">图片（2）</SelectItem>
-                                    <SelectItem value="1">文字（1）</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        )}
-                    />
+                                    <SelectTrigger
+                                        id="group-type"
+                                        className="w-full"
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                    >
+                                        <SelectValue placeholder="选择类型" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="2">图片（2）</SelectItem>
+                                        <SelectItem value="1">文字（1）</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="group-size">表情大小</Label>
+                        <Controller
+                            control={control}
+                            name="metaSize"
+                            render={({ field }) => (
+                                <Select
+                                    value={String(field.value)}
+                                    onValueChange={(v) => field.onChange(Number(v))}
+                                >
+                                    <SelectTrigger
+                                        id="group-size"
+                                        className="w-full"
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                    >
+                                        <SelectValue placeholder="选择大小" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">小（1）</SelectItem>
+                                        <SelectItem value="2">大（2）</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                    </div>
                 </div>
 
                 <div className="space-y-2">
