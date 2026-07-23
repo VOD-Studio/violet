@@ -94,6 +94,32 @@ _Avoid_: 双态编辑（已否决的内联源码切换，见 ADR-0005）、弹�
 预留领域概念：带 `format` 属性的通用图块节点（mermaid 等「文本→图」格式），Markdown 载体为对应语言围栏块（```mermaid），渲染走浏览时渲染 + 渲染器注册表（format → 渲染器），编辑交互沿用弹层编辑。本期仅记录决策，未实现。
 _Avoid_: MermaidNode（写死单一格式的命名，丧失多格式扩展性）
 
+## 代码执行（Code Execution）
+
+**可运行代码块（Runnable Code Block）**:
+文章中可在读者浏览器就地执行的源码块。Markdown 载体为带 `runnable` 标记的围栏块，info string 格式 `<lang> runnable {<ResourceLimits JSON>}`（如 `python runnable {"timeout_secs":10}`）。HTML 载体为带属性的 `<pre data-runnable="true" data-lang="python" data-overrides="{...}" data-source="原始源码">`，data-source 携带 HTML 转义后的原始源码供阅读器无损提取（避免反解高亮 HTML）。
+_Avoid_: 可执行代码块（口语未区分「可运行」标记与执行能力）
+
+**代码执行（Code Execution）**:
+把可运行代码块的源码提交到后端沙箱容器执行、回流结果的核心能力。后端用 Docker Go SDK 调 unix socket（兼容 docker 与 podman），在隔离容器内执行，stdout/stderr 经 SSE 流式回传到阅读页 xterm.js 终端。支持 python/node/go/rust/bun 五种语言。见 ADR-0006。
+_Avoid_: 代码运行（未体现沙箱隔离语义）
+
+**沙箱（Sandbox）**:
+执行用户代码的隔离容器。安全约束：cap_drop ALL、no-new-privileges、readonly rootfs、tmpfs（/code 1777、/tmp exec、/run）、network=none（除非显式 allow_network）、memory=swap、pids_limit=64、nofile=64。不设 nproc（non-root 下按 UID 计数会导致初始 exec EAGAIN）。
+_Avoid_: 运行环境（未强调隔离）
+
+**资源钳制（Resource Clamping）**:
+作者在围栏 info string 里声明的 ResourceLimits 覆盖（timeout/memory/cpu/network/output），在执行前被 `clampLimits` 钳制到全局 `CODE_RUNNER_MAX_*` 上限内，防止滥用。allow_network 需作者声明、语言允许、全局开关三者同时为真。
+_Avoid_: 资源限制（未区分作者声明与全局钳制两层）
+
+**Runner 镜像（Runner Image）**:
+每种语言对应的执行容器镜像，命名 `yggdrasil-runner-<lang>:latest`（跨项目字面复用 ygggrasil 已构建产物）。镜像内置语言运行时 + 必要的编译缓存重定向（go/rust 把 GOCACHE/CARGO_HOME 指向可写 tmpfs）。
+_Avoid_: 语言镜像（未体现 runner 语义）
+
+**两条执行路径（Two Execution Paths）**:
+编辑器内点击运行走轮询（提交拿 task_id，轮询 `GetExecResult`）；阅读页运行走 SSE 流式（`StartExecStream` 创建 channel，前端 EventSource 连 `/api/v1/code-runner/run/stream` 实时收 stdout/stderr）。两条路径共用同一套校验链与沙箱。
+_Avoid_: 同步/异步执行（未体现回流方式差异）
+
 ## 公告展示（Announcement Presentation）
 
 **公告（Announcement）**:
