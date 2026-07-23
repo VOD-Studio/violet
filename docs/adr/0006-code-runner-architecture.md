@@ -24,12 +24,12 @@ Status: accepted（2026-07-23）
 - 5 语言 + 别名归一（js→node、ts→bun、rs→rust）。
 - 围栏 info string 格式 `<lang> runnable {<ResourceLimits JSON>}`。
 - 资源钳制 `clampLimits`：作者 overrides 钳到全局 `CODE_RUNNER_MAX_*` 上限内。
-- 沙箱隔离：cap_drop ALL / no-new-privileges / readonly rootfs / tmpfs（/code `mode=1777`、/tmp `mode=1777,exec`、/run）/ network=none / memory=swap / pids_limit=64 / nofile=64。不设 nproc（non-root 下 setrlimit 按 UID 计数会导致初始 exec EAGAIN）。
+- 沙箱隔离：cap_drop ALL / no-new-privileges / readonly rootfs / tmpfs（/code `mode=1777`、/tmp `mode=1777,exec`、/run）/ network=none / memory=swap / pids_limit=128 / nofile=64。不设 nproc（non-root 下 setrlimit 按 UID 计数会导致初始 exec EAGAIN）。pids_limit 从 ygggrasil 的 64 提到 128：go 编译 fork 大量 compile/asm 子进程，64 会被 cgroup 拒绝（fork/exec EAGAIN）。
 - 两条执行路径：编辑器内走轮询 `GetExecResult`；阅读页走 SSE 流式 `StartExecStream` + `/api/v1/code-runner/run/stream`。
 - 并发信号量 + 排队超时 `queue_timeout_secs`。
 - 错误脱敏：匿名可见「不支持的语言/超限/限流」；系统内部异常一律「系统暂时不可用」。
 - admin 跳过速率限制（便于作者沙箱调试），仍受并发槽、资源钳制、源码大小约束。
-- 默认 ResourceLimits：python/node/bun 256MB/5s；go 256MB/10s；rust 512MB/15s；均 cpu 1.0、output 1MB、无网络。
+- 默认 ResourceLimits：python/node/bun 256MB/5s；go 384MB/10s；rust 512MB/15s；均 cpu 1.0、output 1MB、无网络。go 内存从 ygggrasil 的 256MB 提到 384MB：编译 fork 大量子进程，256MB 会 OOM。
 - 容器清理：Go 用 `defer` + 重试 + 兜底日志（对应 yggdrasil 的 `ContainerGuard`），防泄漏。
 
 ## 理由
