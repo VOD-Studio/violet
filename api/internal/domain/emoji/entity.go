@@ -31,6 +31,7 @@ type Emoji struct {
 	gifURL      string
 	textContent string
 	sortOrder   int
+	meta        EmojiMeta
 }
 
 // NewEmojiGroup 创建表情分组
@@ -102,11 +103,12 @@ func NewEmoji(id, groupID int32, name, url string) Emoji {
 }
 
 // ReconstructEmoji 从持久化数据重建表情（完整字段）
-func ReconstructEmoji(id, groupID int32, name, url, sourceURL, gifURL, textContent string, sortOrder int) Emoji {
+func ReconstructEmoji(id, groupID int32, name, url, sourceURL, gifURL, textContent string, sortOrder int, meta EmojiMeta) Emoji {
 	return Emoji{
 		id: id, groupID: groupID, name: name, url: url,
 		sourceURL: sourceURL, gifURL: gifURL,
 		textContent: textContent, sortOrder: sortOrder,
+		meta: meta,
 	}
 }
 
@@ -130,6 +132,11 @@ func (e *Emoji) Update(name, url, textContent, gifURL, sourceURL string, sortOrd
 	e.sortOrder = sortOrder
 }
 
+// SetMeta 设置表情元数据。独立于 Update：meta 是结构化值对象，不适合走「空值不覆盖」。
+func (e *Emoji) SetMeta(meta EmojiMeta) {
+	e.meta = meta
+}
+
 func (e Emoji) ID() int32           { return e.id }
 func (e Emoji) GroupID() int32      { return e.groupID }
 func (e Emoji) Name() string        { return e.name }
@@ -138,3 +145,4 @@ func (e Emoji) SourceURL() string   { return e.sourceURL }
 func (e Emoji) GifURL() string      { return e.gifURL }
 func (e Emoji) TextContent() string { return e.textContent }
 func (e Emoji) SortOrder() int      { return e.sortOrder }
+func (e Emoji) Meta() EmojiMeta     { return e.meta }
