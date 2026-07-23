@@ -18,6 +18,7 @@ type EmojiGroup struct {
 	coverURL  string
 	sortOrder int
 	isEnabled bool
+	groupType GroupType
 	emojis    []Emoji
 	meta      EmojiMeta
 }
@@ -46,11 +47,11 @@ func NewEmojiGroup(id int32, name, source string) (*EmojiGroup, error) {
 	return &EmojiGroup{id: id, name: name, source: source, isEnabled: true, emojis: []Emoji{}}, nil
 }
 
-func ReconstructEmojiGroup(id int32, name, source, coverURL string, sortOrder int, isEnabled bool, emojis []Emoji, meta EmojiMeta) *EmojiGroup {
+func ReconstructEmojiGroup(id int32, name, source, coverURL string, sortOrder int, isEnabled bool, groupType GroupType, emojis []Emoji, meta EmojiMeta) *EmojiGroup {
 	if emojis == nil {
 		emojis = []Emoji{}
 	}
-	return &EmojiGroup{id: id, name: name, source: source, coverURL: coverURL, sortOrder: sortOrder, isEnabled: isEnabled, emojis: emojis, meta: meta}
+	return &EmojiGroup{id: id, name: name, source: source, coverURL: coverURL, sortOrder: sortOrder, isEnabled: isEnabled, groupType: groupType, emojis: emojis, meta: meta}
 }
 
 // 表情来源类型完整枚举
@@ -60,6 +61,9 @@ const (
 
 // SetEnabled 启用/禁用分组
 func (g *EmojiGroup) SetEnabled(enabled bool) { g.isEnabled = enabled }
+
+// SetGroupType 设置分组类型（文字/图片）。
+func (g *EmojiGroup) SetGroupType(gt GroupType) { g.groupType = gt }
 
 // SetSortOrder 设置排序
 func (g *EmojiGroup) SetSortOrder(order int) { g.sortOrder = order }
@@ -96,12 +100,13 @@ func (g *EmojiGroup) SetMeta(meta EmojiMeta) {
 	g.meta = meta
 }
 
-func (g *EmojiGroup) ID() int32        { return g.id }
-func (g *EmojiGroup) Name() string     { return g.name }
-func (g *EmojiGroup) Source() string   { return g.source }
-func (g *EmojiGroup) CoverURL() string { return g.coverURL }
-func (g *EmojiGroup) SortOrder() int   { return g.sortOrder }
-func (g *EmojiGroup) IsEnabled() bool  { return g.isEnabled }
+func (g *EmojiGroup) ID() int32           { return g.id }
+func (g *EmojiGroup) Name() string        { return g.name }
+func (g *EmojiGroup) Source() string      { return g.source }
+func (g *EmojiGroup) CoverURL() string    { return g.coverURL }
+func (g *EmojiGroup) SortOrder() int      { return g.sortOrder }
+func (g *EmojiGroup) IsEnabled() bool     { return g.isEnabled }
+func (g *EmojiGroup) GroupType() GroupType { return g.groupType }
 func (g *EmojiGroup) Emojis() []Emoji  { return g.emojis }
 func (g *EmojiGroup) Meta() EmojiMeta  { return g.meta }
 

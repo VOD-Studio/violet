@@ -78,6 +78,7 @@ type createEmojiGroupRequest struct {
 	CoverURL  string `json:"cover_url"`
 	SortOrder int    `json:"sort_order"`
 	IsEnabled *bool  `json:"is_enabled"`
+	Type      int    `json:"type"`
 }
 
 // CreateEmojiGroup 创建表情分组（后台）
@@ -100,7 +101,7 @@ func (h *Handler) CreateEmojiGroup(w http.ResponseWriter, r *http.Request) {
 		enabled = *req.IsEnabled
 	}
 	id, err := h.emojiSvc.CreateGroup(r.Context(), appmedia.CreateGroupInput{
-		Name: req.Name, Source: source, CoverURL: req.CoverURL, SortOrder: req.SortOrder, IsEnabled: enabled,
+		Name: req.Name, Source: source, CoverURL: req.CoverURL, SortOrder: req.SortOrder, IsEnabled: enabled, Type: req.Type,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -133,6 +134,7 @@ func (h *Handler) UpdateEmojiGroup(w http.ResponseWriter, r *http.Request) {
 		CoverURL  *string `json:"cover_url"`
 		SortOrder *int    `json:"sort_order"`
 		IsEnabled *bool   `json:"is_enabled"`
+		Type      *int    `json:"type"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -140,7 +142,7 @@ func (h *Handler) UpdateEmojiGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := h.emojiSvc.UpdateGroup(r.Context(), appmedia.UpdateGroupInput{
 		ID: int32(id), Name: req.Name, Source: req.Source, CoverURL: req.CoverURL,
-		SortOrder: req.SortOrder, IsEnabled: req.IsEnabled,
+		SortOrder: req.SortOrder, IsEnabled: req.IsEnabled, Type: req.Type,
 	}); err != nil {
 		response.RespondError(w, r, err)
 		return

@@ -106,6 +106,7 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 		g.SetCoverURL(coverURL)
 		g.SetSortOrder(i + 1)
 		g.SetEnabled(true)
+		g.SetGroupType(inferGroupType(pkg))
 		g.SetMeta(packageMetaToDomain(pkg))
 		groupID, err := s.repo.Save(ctx, g)
 		if err != nil {
@@ -152,10 +153,20 @@ func emoteMetaToDomain(e bilibili.Emote) domainemoji.EmojiMeta {
 	)
 }
 
-// packageMetaToDomain 将 B站 package 的 meta.size 转为 domain EmojiMeta。
-// 分组级 meta 仅 size 有意义（picker 渲染尺寸），alias/type 为零值。
+// packageMetaToDomain 将 B站 package 的 meta.size 与顶层 type 转为 domain EmojiMeta。
+// meta.type 保留 B站 Package.Type 原值（1普通/2会员/3购买/4颜文字）用于溯源。
+// alias 对分组无意义，恒为零值。
 func packageMetaToDomain(pkg bilibili.Package) domainemoji.EmojiMeta {
-	return domainemoji.ReconstructEmojiMeta("", domainemoji.EmojiSize(pkg.Meta.Size), 0)
+	return domainemoji.ReconstructEmojiMeta("", domainemoji.EmojiSize(pkg.Meta.Size), domainemoji.EmojiType(pkg.Type))
+}
+
+// inferGroupType 根据 B站 Package.Type 推断分组类型（顶层 type）。
+// 颜文字组（type==4）→ 文字(1)，其余 → 图片(2)。
+func inferGroupType(pkg bilibili.Package) domainemoji.GroupType {
+	if pkg.Type == int(domainemoji.TypeText) {
+		return domainemoji.GroupTypeText
+	}
+	return domainemoji.GroupTypeImage
 }
 
 // downloadPackageEmojis 并发下载一个包内所有表情图（并发度 8），返回按原序排序的结果。
@@ -265,6 +276,7 @@ func (s *EmojiSeedService) ReseedBilibiliEmojis(ctx context.Context, client *bil
 		g.SetCoverURL(coverURL)
 		g.SetSortOrder(i + 1)
 		g.SetEnabled(true)
+		g.SetGroupType(inferGroupType(pkg))
 		g.SetMeta(packageMetaToDomain(pkg))
 		groupID, err := s.repo.UpsertByName(ctx, g)
 		if err != nil {

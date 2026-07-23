@@ -88,6 +88,7 @@ func registerPublicPaths(t *openapi3.T) {
 		"cover_url":  optStr("分组封面图 URL"),
 		"sort_order": optInt("排序权重"),
 		"is_enabled": optBool("是否启用"),
+		"type":       optInt("分组类型：1=文字（颜文字组）2=图片"),
 		"meta":       optRef("分组元数据（size，picker 渲染尺寸）", "EmojiMetaDTO"),
 		"emojis":     refArray("分组内表情", "EmojiDTO"),
 	})

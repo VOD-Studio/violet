@@ -47,3 +47,24 @@ func TestEmojiType_Valid(t *testing.T) {
 		}
 	}
 }
+
+// TestGroupType_Valid 覆盖 GroupType 枚举合法性校验。
+// 分组级类型语义：1=文字（颜文字组），2=图片。
+func TestGroupType_Valid(t *testing.T) {
+	cases := []struct {
+		gt   GroupType
+		want bool
+	}{
+		{GroupTypeText, true},
+		{GroupTypeImage, true},
+		{0, false},
+		{3, false},
+		{99, false},
+	}
+	for _, tc := range cases {
+		got := tc.gt.IsValid()
+		if got != tc.want {
+			t.Errorf("GroupType(%d).IsValid() = %v, want %v", tc.gt, got, tc.want)
+		}
+	}
+}

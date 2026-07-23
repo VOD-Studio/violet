@@ -33,6 +33,7 @@ type EmojiGroupDTO struct {
 	CoverURL  string        `json:"cover_url"`
 	SortOrder int           `json:"sort_order"`
 	IsEnabled bool          `json:"is_enabled"`
+	Type      int           `json:"type"`
 	Meta      *EmojiMetaDTO `json:"meta,omitempty"`
 	Emojis    []EmojiDTO    `json:"emojis"`
 }
@@ -142,6 +143,7 @@ type CreateGroupInput struct {
 	CoverURL  string
 	SortOrder int
 	IsEnabled bool
+	Type      int
 }
 
 // CreateGroup 创建表情分组
@@ -159,6 +161,7 @@ func (s *EmojiService) CreateGroup(ctx context.Context, in CreateGroupInput) (in
 	}
 	g.SetCoverURL(in.CoverURL)
 	g.SetSortOrder(in.SortOrder)
+	g.SetGroupType(domainemoji.GroupType(in.Type))
 	if !in.IsEnabled {
 		g.SetEnabled(false)
 	}
@@ -173,6 +176,7 @@ type UpdateGroupInput struct {
 	CoverURL  *string
 	SortOrder *int
 	IsEnabled *bool
+	Type      *int
 }
 
 // UpdateGroup 更新分组
@@ -202,6 +206,9 @@ func (s *EmojiService) UpdateGroup(ctx context.Context, in UpdateGroupInput) err
 	}
 	if in.IsEnabled != nil {
 		g.SetEnabled(*in.IsEnabled)
+	}
+	if in.Type != nil {
+		g.SetGroupType(domainemoji.GroupType(*in.Type))
 	}
 	_, err = s.repo.Save(ctx, g)
 	return err
@@ -399,6 +406,7 @@ func emojiGroupToDTO(g *domainemoji.EmojiGroup) EmojiGroupDTO {
 	return EmojiGroupDTO{
 		ID: g.ID(), Name: g.Name(), Source: g.Source(), CoverURL: g.CoverURL(),
 		SortOrder: g.SortOrder(), IsEnabled: g.IsEnabled(), Emojis: emojis,
+		Type: int(g.GroupType()),
 		Meta: metaToDTO(g.Meta()),
 	}
 }

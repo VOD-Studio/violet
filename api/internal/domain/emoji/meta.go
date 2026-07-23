@@ -40,6 +40,25 @@ func (t EmojiType) IsValid() bool {
 	return false
 }
 
+// GroupType 表情分组类型（分组级，区别于单表情的 EmojiType）。
+// 1=文字（颜文字组），2=图片。决定 EmojiPicker 的列数与渲染策略。
+type GroupType int
+
+// 分组类型已知取值。
+const (
+	GroupTypeText  GroupType = 1 // 文字组（颜文字）
+	GroupTypeImage GroupType = 2 // 图片组
+)
+
+// IsValid 判断分组类型是否为已知取值。
+func (g GroupType) IsValid() bool {
+	switch g {
+	case GroupTypeText, GroupTypeImage:
+		return true
+	}
+	return false
+}
+
 // EmojiMeta 表情元数据值对象（不可变）。
 // 源自 B站 emote 的 meta 子对象与顶层 type 字段，承载只读展示属性。
 // 别名用于搜索/补全，尺寸/类型用于渲染与门槛展示；当前不参与过滤。

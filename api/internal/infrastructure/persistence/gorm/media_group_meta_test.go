@@ -14,6 +14,7 @@ import (
 func TestEmojiGroupMetaRoundtrip(t *testing.T) {
 	original := domainemoji.ReconstructEmojiGroup(
 		1, "拜年纪2022", domainemoji.SourceBilibili, "/cover.png", 1, true,
+		domainemoji.GroupTypeImage,
 		[]domainemoji.Emoji{},
 		domainemoji.ReconstructEmojiMeta("", domainemoji.SizeLarge, 0),
 	)
@@ -31,6 +32,7 @@ func TestEmojiGroupMetaRoundtrip(t *testing.T) {
 func TestEmojiGroupMetaNil(t *testing.T) {
 	original := domainemoji.ReconstructEmojiGroup(
 		2, "自定义", domainemoji.SourceCustom, "", 1, true,
+		domainemoji.GroupTypeImage,
 		nil, domainemoji.EmojiMeta{},
 	)
 

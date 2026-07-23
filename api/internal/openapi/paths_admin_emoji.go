@@ -11,6 +11,7 @@ func registerAdminEmojiPaths(t *openapi3.T) {
 		"cover_url":  optStr("分组封面图 URL"),
 		"sort_order": optInt("排序权重"),
 		"is_enabled": optBool("是否启用（缺省 true）"),
+		"type":       optInt("分组类型：1=文字（颜文字组）2=图片（缺省 2）"),
 	}, "name")
 
 	registerSchema(t, "UpdateEmojiGroupRequest", openapi3.Schemas{
@@ -19,6 +20,7 @@ func registerAdminEmojiPaths(t *openapi3.T) {
 		"cover_url":  optStr("分组封面图 URL"),
 		"sort_order": optInt("排序权重"),
 		"is_enabled": optBool("是否启用"),
+		"type":       optInt("分组类型：1=文字（颜文字组）2=图片"),
 	})
 
 	registerSchema(t, "BatchEmojiGroupStatusRequest", openapi3.Schemas{

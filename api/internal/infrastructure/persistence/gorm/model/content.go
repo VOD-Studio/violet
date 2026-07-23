@@ -168,6 +168,7 @@ type EmojiGroup struct {
 	CoverURL  string    `gorm:"type:varchar(500);column:cover_url" json:"cover_url"`
 	SortOrder int       `gorm:"default:0" json:"sort_order"`
 	IsEnabled bool      `gorm:"default:true" json:"is_enabled"`
+	Type      int       `gorm:"type:smallint;default:2" json:"type"`
 	Meta      []byte    `gorm:"type:jsonb" json:"meta"`
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
