@@ -6,8 +6,8 @@
  * 不依赖 @tailwindcss/typography 插件（项目未全局启用 prose）。
  */
 
+import { lazy, Suspense } from "react";
 import type { Components } from "react-markdown";
-import { Suspense, lazy } from "react";
 import { contentImageUrl } from "@/shared/lib/image-url";
 import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/base/checkbox";

@@ -1,7 +1,7 @@
 import type { Project } from "@features/projects/model/types";
+import { contentImageUrl } from "@shared/lib/image-url";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
-import { contentImageUrl } from "@shared/lib/image-url";
 import { Code, ExternalLink } from "lucide-react";
 
 interface ProjectCardProps {

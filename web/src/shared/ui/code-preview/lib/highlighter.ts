@@ -9,7 +9,7 @@
  * 与编辑器（features/editor，走 lowlight + highlight.js）的区别：
  * 前台展示统一用 shiki，主题 github-dark，与编辑时实时高亮视觉一致即可。
  */
-import { type HighlighterCore, getSingletonHighlighterCore } from "shiki/core";
+import { getSingletonHighlighterCore, type HighlighterCore } from "shiki/core";
 import { createOnigurumaEngine } from "shiki/engine/oniguruma";
 
 /**

@@ -5,10 +5,11 @@
  * 不改 node.attrs.src,也不改 renderHTML——序列化(getHTML/getMarkdown)
  * 仍输出原图 URL,只影响编辑时显示,不影响存库内容。
  */
+
+import { contentImageUrl } from "@shared/lib/image-url";
 import Image from "@tiptap/extension-image";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
-import { contentImageUrl } from "@shared/lib/image-url";
 
 /**
  * createImageExtension:继承官方 Image,仅替换 NodeView 渲染。

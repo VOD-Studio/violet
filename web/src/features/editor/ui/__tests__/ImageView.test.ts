@@ -39,11 +39,7 @@ describe("ImageView 序列化保障", () => {
 
     it("插入图片命令存 node.attrs.src 原图(显示层缩略不污染)", () => {
         const editor = createEditor("<p></p>");
-        editor
-            .chain()
-            .focus()
-            .setImage({ src: "/uploads/2026/07/b.png", alt: "新图" })
-            .run();
+        editor.chain().focus().setImage({ src: "/uploads/2026/07/b.png", alt: "新图" }).run();
 
         expect(editor.getHTML()).toContain('src="/uploads/2026/07/b.png"');
 

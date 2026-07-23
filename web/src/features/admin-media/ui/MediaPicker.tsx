@@ -10,9 +10,9 @@
 
 import type { MediaFile, MediaType } from "@entities/media/model/types";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
+import { imageUrl } from "@shared/lib/image-url";
 import { Check, FileText, Film, Music } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { imageUrl } from "@shared/lib/image-url";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import {

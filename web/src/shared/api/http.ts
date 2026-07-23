@@ -1,8 +1,8 @@
-import { useLoginDialogStore } from "./login-dialog-store";
 import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
 import axiosRetry from "axios-retry";
 import { CSRF_HEADER, getCSRFToken } from "./csrf";
 import { ApiError } from "./error";
+import { useLoginDialogStore } from "./login-dialog-store";
 import { clearSessionActive } from "./session";
 import type { Envelope, Pagination } from "./types";
 

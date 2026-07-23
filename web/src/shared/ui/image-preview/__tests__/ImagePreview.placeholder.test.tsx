@@ -44,7 +44,10 @@ function expectContainBox(el: HTMLElement, ratioW: number, ratioH: number) {
     const maxW = window.innerWidth * 0.9;
     const maxH = window.innerHeight * 0.9;
     const w1 = maxH * (ratioW / ratioH);
-    const fit = w1 <= maxW ? { width: w1, height: maxH } : { width: maxW, height: maxW / (ratioW / ratioH) };
+    const fit =
+        w1 <= maxW
+            ? { width: w1, height: maxH }
+            : { width: maxW, height: maxW / (ratioW / ratioH) };
     expect(Number.parseFloat(el.style.width)).toBeCloseTo(fit.width, 1);
     expect(Number.parseFloat(el.style.height)).toBeCloseTo(fit.height, 1);
 }

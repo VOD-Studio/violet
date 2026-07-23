@@ -170,42 +170,38 @@ function EmojisPage() {
                             />
                         </div>
 
-                            <div className="flex items-center gap-2">
-                                {canManageGroup ? (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleBatchEnable}
-                                            disabled={
-                                                batchPending || isLoading || stats.disabled === 0
-                                            }
-                                        >
-                                            {batchPending ? (
-                                                <Loader2 className="mr-1 size-3.5 animate-spin" />
-                                            ) : (
-                                                <Power className="mr-1 size-3.5" />
-                                            )}
-                                            批量启用
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleBatchDisable}
-                                            disabled={
-                                                batchPending || isLoading || stats.enabled === 0
-                                            }
-                                        >
-                                            {batchPending ? (
-                                                <Loader2 className="mr-1 size-3.5 animate-spin" />
-                                            ) : (
-                                                <PowerOff className="mr-1 size-3.5" />
-                                            )}
-                                            批量禁用
-                                        </Button>
-                                    </>
-                                ) : null}
-                            </div>
+                        <div className="flex items-center gap-2">
+                            {canManageGroup ? (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleBatchEnable}
+                                        disabled={batchPending || isLoading || stats.disabled === 0}
+                                    >
+                                        {batchPending ? (
+                                            <Loader2 className="mr-1 size-3.5 animate-spin" />
+                                        ) : (
+                                            <Power className="mr-1 size-3.5" />
+                                        )}
+                                        批量启用
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleBatchDisable}
+                                        disabled={batchPending || isLoading || stats.enabled === 0}
+                                    >
+                                        {batchPending ? (
+                                            <Loader2 className="mr-1 size-3.5 animate-spin" />
+                                        ) : (
+                                            <PowerOff className="mr-1 size-3.5" />
+                                        )}
+                                        批量禁用
+                                    </Button>
+                                </>
+                            ) : null}
+                        </div>
 
                         {searchQuery && (
                             <Badge variant="secondary" className="ml-auto">

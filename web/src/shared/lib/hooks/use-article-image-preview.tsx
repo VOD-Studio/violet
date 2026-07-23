@@ -13,8 +13,8 @@
  *       {preview}
  */
 
-import { useCallback, useRef, useState } from "react";
 import { contentImageUrl, originalImageUrl } from "@shared/lib/image-url";
+import { useCallback, useRef, useState } from "react";
 import { ImagePreview } from "@/shared/ui/image-preview";
 
 export function useArticleImagePreview() {

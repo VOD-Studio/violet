@@ -4,8 +4,8 @@ import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
 import viteReact from "@vitejs/plugin-react";
-import { defineConfig, loadEnv } from "vite";
 import { visualizer } from "rollup-plugin-visualizer";
+import { defineConfig, loadEnv } from "vite";
 
 // 读取 .env / .env.local，使 dev 反向代理目标可配置，不污染已提交文件
 const env = loadEnv("development", process.cwd(), "");

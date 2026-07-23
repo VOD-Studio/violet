@@ -13,7 +13,7 @@
  * react-markdown + remark-gfm + rehype-slug 仅旧 Markdown 文章降级时才需要，
  * 不应静态进入正文主包。
  */
-import { Suspense, lazy, memo } from "react";
+import { lazy, memo, Suspense } from "react";
 import { HtmlContent } from "./HtmlContent";
 
 /** react-markdown 管线懒加载，避免其依赖进入正文主 chunk */

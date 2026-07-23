@@ -17,7 +17,11 @@ function visibleMathText(container: HTMLElement): string {
 describe("公式渲染出真符号", () => {
     it("inline-math: \\pi 渲染为 π 字形", async () => {
         const { container } = render(
-            <HtmlContent html={'<p>欧拉 <span data-type="inline-math" data-latex="e^{i\\pi}+1=0"></span></p>'} />,
+            <HtmlContent
+                html={
+                    '<p>欧拉 <span data-type="inline-math" data-latex="e^{i\\pi}+1=0"></span></p>'
+                }
+            />,
         );
         await waitFor(() => expect(container.querySelector(".katex")).toBeTruthy());
         const text = visibleMathText(container);
@@ -28,7 +32,9 @@ describe("公式渲染出真符号", () => {
     it("block-math: \\varphi \\frac \\approx 渲染为 φ 分数 ≈", async () => {
         const { container } = render(
             <HtmlContent
-                html={'<div data-type="block-math" data-latex="\\varphi = \\frac{1+\\sqrt{5}}{2} \\approx 1.618"></div>'}
+                html={
+                    '<div data-type="block-math" data-latex="\\varphi = \\frac{1+\\sqrt{5}}{2} \\approx 1.618"></div>'
+                }
             />,
         );
         await waitFor(() => expect(container.querySelector(".katex-display")).toBeTruthy());

@@ -1,3 +1,4 @@
+import { withCrop } from "@shared/lib/crop-url";
 import { Button } from "@shared/ui/base/button";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import { Modal } from "@shared/ui/modal";
@@ -5,7 +6,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useChunkedUpload } from "@/features/upload/hooks/use-chunked-upload";
 import { type CropRect, cropImageToBlob } from "@/features/upload/lib/crop-image";
-import { withCrop } from "@shared/lib/crop-url";
 
 export type CropUploadResult =
     | { kind: "static"; url: string } // 静态图:重编码上传,URL 干净

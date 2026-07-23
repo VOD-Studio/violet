@@ -257,7 +257,13 @@ export function RichCommentInput({
             {/* Toolbar */}
             <div className="flex items-center justify-between border-t border-edge-hairline px-2 py-1">
                 <div className="flex items-center gap-1">
-                    {enableEmoji && <EmojiPicker onSelect={handleEmojiSelect} align="start" closeOnSelect={false} />}
+                    {enableEmoji && (
+                        <EmojiPicker
+                            onSelect={handleEmojiSelect}
+                            align="start"
+                            closeOnSelect={false}
+                        />
+                    )}
                     {enableImage && (
                         <button
                             type="button"

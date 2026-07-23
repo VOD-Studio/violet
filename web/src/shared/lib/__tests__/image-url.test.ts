@@ -83,9 +83,11 @@ describe("contentImageUrl", () => {
 describe("originalImageUrl", () => {
     it("剥离全部处理参数还原原图", () => {
         expect(originalImageUrl("/uploads/a.jpg?w=1200&format=webp")).toBe("/uploads/a.jpg");
-        expect(originalImageUrl("/uploads/a.jpg?w=600&thumb=300x300&format=webp&quality=70&rotate=90&h=300")).toBe(
-            "/uploads/a.jpg",
-        );
+        expect(
+            originalImageUrl(
+                "/uploads/a.jpg?w=600&thumb=300x300&format=webp&quality=70&rotate=90&h=300",
+            ),
+        ).toBe("/uploads/a.jpg");
     });
 
     it("保留 crop 等前端参数", () => {

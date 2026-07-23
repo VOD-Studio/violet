@@ -13,10 +13,10 @@
  * 复用：InputOTP + ResendButton（匿名验证码两步流核心 UI 已就位）。
  */
 
-import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { useCreateComment, useSendCommentCode } from "@features/comments/api/mutations";
 import type { Comment, CreateComment } from "@features/comments/model/types";
 import { ApiError } from "@shared/api/error";
+import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@shared/ui/otp";

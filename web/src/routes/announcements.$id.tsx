@@ -9,8 +9,8 @@
  */
 
 import { useAnnouncement } from "@features/settings/api/queries";
-import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
+import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import BlurText from "@vendor/react-bits/BlurText";

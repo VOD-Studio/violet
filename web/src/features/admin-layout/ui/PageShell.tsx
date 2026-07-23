@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 interface PageShellProps {
     /** 页面主标题（h1，唯一来源，由 shell 渲染） - 注意：TopBar 已显示标题，此处不再渲染 */
@@ -26,12 +26,12 @@ interface PageShellProps {
  * 内容过长滚动时标题区和 sticky 内容不会随页面滚走。
  */
 export function PageShell({ description, action, sticky, children }: PageShellProps) {
-    const elRef = useRef<HTMLDivElement>(null)
+    const elRef = useRef<HTMLDivElement>(null);
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
-        const pEl = elRef.current?.parentElement
-        if(!pEl) return
+        const pEl = elRef.current?.parentElement;
+        if (!pEl) return;
         const handleScroll = () => setScrolled(pEl.scrollTop > 8);
         handleScroll();
         pEl.addEventListener("scroll", handleScroll);
@@ -54,7 +54,9 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
              * 不会穿透到 sticky header 之上；弹窗（z-50 body 级）也不受影响。
              * bg-background 100% 不透明。
              */}
-            <div className={`sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-4 ${scrolled ?  "border-b border-edge-hairline bg-background shadow-lg" : ""}`}>
+            <div
+                className={`sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-4 ${scrolled ? "border-b border-edge-hairline bg-background shadow-lg" : ""}`}
+            >
                 {/* 副标题和操作区：固定高度避免有无按钮时抖动 */}
                 {(description || action) && (
                     <div className="flex min-h-8 flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
