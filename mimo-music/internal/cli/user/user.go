@@ -24,7 +24,34 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		newPlaylists(k), newFollows(k), newFolloweds(k), newFollowEachOther(k),
 		newRecord(k), newEvents(k), newLevel(k), newSimilar(k),
 	)
+	annotateUserRpcs(c)
 	return c
+}
+
+// annotateUserRpcs 给 user 组各子命令打 rpc 注解(PRD-0014 #B 命令树守护)。
+// detail/follows 走裸 RawDo(/weapi/v1/user/detail/{uid}、/weapi/user/getfollows/{uid}),
+// 不经 endpoint,但对应 grpc rpc Detail/Follows,必须显式标注。
+// 命名偏移:playlists↔UserPlaylist、follow-each-other↔FollowEachOther、similar↔SimilarUsers。
+func annotateUserRpcs(c *cobra.Command) {
+	rpcs := map[string][]string{
+		"account":            {"UserService/Account"},
+		"detail":             {"UserService/Detail"},
+		"detail-by-name":     {"UserService/DetailByName"},
+		"sub-count":          {"UserService/SubCount"},
+		"playlists":          {"UserService/UserPlaylist"},
+		"follows":            {"UserService/Follows"},
+		"followeds":          {"UserService/Followeds"},
+		"follow-each-other":  {"UserService/FollowEachOther"},
+		"record":             {"UserService/Record"},
+		"events":             {"UserService/Events"},
+		"level":              {"UserService/Level"},
+		"similar":            {"UserService/SimilarUsers"},
+	}
+	for _, sub := range c.Commands() {
+		if v, ok := rpcs[sub.Name()]; ok {
+			kit.AnnotateRpcs(sub, v...)
+		}
+	}
 }
 
 // withUID 注册 --uid 用户 ID 必填 flag。

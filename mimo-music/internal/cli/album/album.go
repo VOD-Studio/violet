@@ -25,7 +25,31 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		newDetail(k), newDynamic(k), newSongQuality(k),
 		newSubscribe(k), newUnsubscribe(k), newSubscribed(k),
 	)
+	annotateAlbumRpcs(c)
 	return c
+}
+
+// annotateAlbumRpcs 给 album 组各子命令打 rpc 注解(PRD-0014 #B 命令树守护)。
+// detail 走裸 RawDo(/weapi/v1/album/{id}),不经 endpoint,但对应 grpc rpc GetAlbum,
+// 必须显式标注,否则反向 diff 会把 GetAlbum 误判为「无 CLI」。
+// endpoint 变量名 ≠ rpc method 名(Subscribe↔SubscribeAlbum、Unsubscribe↔UnsubscribeAlbum)。
+func annotateAlbumRpcs(c *cobra.Command) {
+	rpcs := map[string][]string{
+		"shelf":         {"AlbumService/NewAlbumShelf"},
+		"newest":        {"AlbumService/NewestAlbums"},
+		"all":           {"AlbumService/AllNewAlbums"},
+		"detail":        {"AlbumService/GetAlbum"},
+		"dynamic":       {"AlbumService/AlbumDynamic"},
+		"song-quality":  {"AlbumService/AlbumSongQuality"},
+		"subscribe":     {"AlbumService/SubscribeAlbum"},
+		"unsubscribe":   {"AlbumService/UnsubscribeAlbum"},
+		"subscribed":    {"AlbumService/SubscribedAlbums"},
+	}
+	for _, sub := range c.Commands() {
+		if v, ok := rpcs[sub.Name()]; ok {
+			kit.AnnotateRpcs(sub, v...)
+		}
+	}
 }
 
 // strToArea 地区字符串转 enum。

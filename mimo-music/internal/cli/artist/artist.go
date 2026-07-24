@@ -24,7 +24,30 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		newDesc(k), newSimilar(k), newFans(k), newToplist(k),
 		newSubscribe(k),
 	)
+	annotateArtistRpcs(c)
 	return c
+}
+
+// annotateArtistRpcs 给 artist 组各子命令打 rpc 注解(PRD-0014 #B 命令树守护)。
+// albums 走裸 RawDo(/weapi/artist/albums/{id}),不经 endpoint,但对应 grpc rpc Albums,
+// 必须显式标注。toplist↔TopArtists、subscribe↔ArtistSubscribe 为命名偏移。
+func annotateArtistRpcs(c *cobra.Command) {
+	rpcs := map[string][]string{
+		"detail":   {"ArtistService/GetArtist"},
+		"songs":    {"ArtistService/AllSongs"},
+		"top-songs": {"ArtistService/TopSongs"},
+		"albums":   {"ArtistService/Albums"},
+		"desc":     {"ArtistService/Desc"},
+		"similar":  {"ArtistService/Similar"},
+		"fans":     {"ArtistService/Fans"},
+		"toplist":  {"ArtistService/TopArtists"},
+		"subscribe": {"ArtistService/ArtistSubscribe"},
+	}
+	for _, sub := range c.Commands() {
+		if v, ok := rpcs[sub.Name()]; ok {
+			kit.AnnotateRpcs(sub, v...)
+		}
+	}
 }
 
 // withID 注册 --id 歌手 ID 必填 flag。

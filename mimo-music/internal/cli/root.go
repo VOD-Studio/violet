@@ -144,6 +144,30 @@ func NewRootCommand() *cobra.Command {
 		}
 	}
 
+	// 顶层命令打 rpc 注解(PRD-0014 #B 命令树守护)。
+	// auth 5 命令 + 本地命令(doctor/install-completion)在此集中打标;
+	// login 消费 LoginQrcode(取 key)+ CheckQrcode(轮询);recent/version/completion/
+	// help 由各自包或 cobra 生成,这里只处理未打标的顶层命令。
+	for _, c := range root.Commands() {
+		switch c.Name() {
+		case "login":
+			kit.AnnotateRpcs(c, "AuthService/LoginQrcode", "AuthService/CheckQrcode")
+		case "login-cellphone":
+			kit.AnnotateRpcs(c, "AuthService/LoginByCellphone")
+		case "login-status":
+			kit.AnnotateRpcs(c, "AuthService/LoginStatus")
+		case "logout":
+			kit.AnnotateRpcs(c, "AuthService/Logout")
+		case "send-captcha":
+			kit.AnnotateRpcs(c, "AuthService/SendCaptcha")
+		case "doctor":
+			// doctor 探活会发一次 LoginStatus,但非业务 rpc;按本地命令标空。
+			kit.AnnotateRpcs(c)
+		case "install-completion":
+			kit.AnnotateRpcs(c) // 本地命令,无 rpc
+		}
+	}
+
 	// --help-verbose:列全部命令平铺(不分组),供需要穷举时用(PRD #40)。
 	var helpVerbose bool
 	root.Flags().BoolVar(&helpVerbose, "help-verbose", false, "列出全部命令(不分组)")

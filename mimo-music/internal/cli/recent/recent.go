@@ -35,6 +35,7 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		},
 	}
 	c.Flags().IntVar(&limit, "limit", defaultLimit, "显示条目数")
+	kit.AnnotateRpcs(c) // 本地命令,无 rpc(读本地召回池)
 	return c
 }
 

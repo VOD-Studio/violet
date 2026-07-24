@@ -27,7 +27,40 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		newLikedList(k), newIsLike(k),
 		newDownload(k), newPlay(k),
 	)
+	annotateSongRpcs(c)
 	return c
+}
+
+// annotateSongRpcs 给 song 组各子命令打 rpc 注解(PRD-0014 #B 命令树守护)。
+// 值为 grpc rpc 短形式 Service/Method;play/download 多 rpc 逗号分隔。
+// endpoint 变量名 ≠ rpc method 名(URL↔GetSongURL、WordLyricEP↔GetWordLyric)。
+func annotateSongRpcs(c *cobra.Command) {
+	rpcs := map[string][]string{
+		"detail":             {"SongService/GetSongDetail"},
+		"url":                {"SongService/GetSongURL"},
+		"lyric":              {"SongService/GetLyric"},
+		"word-lyric":         {"SongService/GetWordLyric"},
+		"check-available":    {"SongService/CheckAvailable"},
+		"quality-detail":     {"SongService/QualityDetail"},
+		"like-count":         {"SongService/LikeCount"},
+		"dynamic-cover":      {"SongService/DynamicCover"},
+		"chorus-time":        {"SongService/ChorusTime"},
+		"creator-info":       {"SongService/CreatorInfo"},
+		"similar-songs":      {"SongService/SimilarSongs"},
+		"like":               {"SongService/Like"},
+		"trash":              {"SongService/Trash"},
+		"disallow-recommend": {"SongService/DisallowRecommend"},
+		"liked-list":         {"SongService/LikedList"},
+		"is-like":            {"SongService/IsLike"},
+		// play/download 消费多个读 rpc(fetchURL + fetchDetail [+ fetchLyric])。
+		"play":     {"SongService/GetSongURL", "SongService/GetSongDetail", "SongService/GetLyric"},
+		"download": {"SongService/GetSongURL", "SongService/GetSongDetail"},
+	}
+	for _, sub := range c.Commands() {
+		if v, ok := rpcs[sub.Name()]; ok {
+			kit.AnnotateRpcs(sub, v...)
+		}
+	}
 }
 
 // simple 构造一个单 --id 参数的读命令(--id 或位置参数二选一,#38)。
