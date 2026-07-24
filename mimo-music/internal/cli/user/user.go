@@ -234,12 +234,15 @@ func newSimilar(k *kit.Kit) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "similar",
 		Short: "相似用户(按歌曲)",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.RenderExec(k, userendpoint.SimilarUsers, &mmpb.SimilarUsersRequest{SongId: id})
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			rid, err := kit.ResolveID(id, args)
+			if err != nil {
+				return err
+			}
+			return kit.RenderExec(k, userendpoint.SimilarUsers, &mmpb.SimilarUsersRequest{SongId: rid})
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
-	_ = c.MarkFlagRequired("id")
 	return c
 }

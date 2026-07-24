@@ -51,3 +51,41 @@ func TestResolveID(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveKeyword(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name        string
+		flagKeyword string
+		args        []string
+		want        string
+		wantErr     bool
+	}{
+		{"仅 flag", "周杰伦", nil, "周杰伦", false},
+		{"仅位置参数", "", []string{"周杰伦"}, "周杰伦", false},
+		{"位置参数带空格", "", []string{"Jay Chou"}, "Jay Chou", false},
+		{"两者都给-歧义", "周杰伦", []string{"林俊杰"}, "", true},
+		{"两者都缺", "", nil, "", true},
+		{"空字符串位置参数视为无", "周杰伦", []string{""}, "周杰伦", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ResolveKeyword(tc.flagKeyword, tc.args)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("应报错, got nil")
+				}
+				if !errors.Is(err, ErrUsage) {
+					t.Errorf("错误应包装 ErrUsage, got %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("不应报错, got %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("ResolveKeyword = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

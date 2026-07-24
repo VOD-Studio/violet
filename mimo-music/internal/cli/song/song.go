@@ -30,19 +30,22 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 	return c
 }
 
-// simple 构造一个单 --id 参数的读命令。
+// simple 构造一个单 --id 参数的读命令(--id 或位置参数二选一,#38)。
 func simple(k *kit.Kit, use, short string, run func(id int64) error) *cobra.Command {
 	var id int64
 	c := &cobra.Command{
 		Use:   use,
 		Short: short,
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return run(id)
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			rid, err := kit.ResolveID(id, args)
+			if err != nil {
+				return err
+			}
+			return run(rid)
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
-	_ = c.MarkFlagRequired("id")
 	return c
 }
 
@@ -58,14 +61,17 @@ func newURL(k *kit.Kit) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "url",
 		Short: "歌曲播放地址",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return kit.RenderExec(k, songendpoint.URL, &mmpb.GetSongURLRequest{SongId: id, Level: mmpb.SongLevel(level)})
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			rid, err := kit.ResolveID(id, args)
+			if err != nil {
+				return err
+			}
+			return kit.RenderExec(k, songendpoint.URL, &mmpb.GetSongURLRequest{SongId: rid, Level: mmpb.SongLevel(level)})
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
 	c.Flags().IntVar(&level, "level", 1, "音质: 1=standard 2=exhigh 3=lossless 4=hires")
-	_ = c.MarkFlagRequired("id")
 	return c
 }
 
@@ -129,8 +135,12 @@ func newLike(k *kit.Kit) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "like",
 		Short: "红心/取消红心(写操作,登录态)",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			rid, err := kit.ResolveID(id, args)
+			if err != nil {
+				return err
+			}
 			if err := k.RequireLogin(); err != nil {
 				return err
 			}
@@ -138,15 +148,14 @@ func newLike(k *kit.Kit) *cobra.Command {
 			if on {
 				action = "点红心"
 			}
-			if err := k.ConfirmFatal(fmt.Sprintf("对歌曲 %d %s", id, action)); err != nil {
+			if err := k.ConfirmFatal(fmt.Sprintf("对歌曲 %d %s", rid, action)); err != nil {
 				return err
 			}
-			return kit.RenderExec(k, songendpoint.Like, &mmpb.LikeRequest{SongId: id, Like: on})
+			return kit.RenderExec(k, songendpoint.Like, &mmpb.LikeRequest{SongId: rid, Like: on})
 		},
 	}
 	c.Flags().Int64Var(&id, "id", 0, "歌曲 ID")
 	c.Flags().BoolVar(&on, "on", false, "红心(true)/取消(false)")
-	_ = c.MarkFlagRequired("id")
 	return c
 }
 
