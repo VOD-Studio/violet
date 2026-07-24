@@ -1,6 +1,6 @@
 .PHONY: proto proto-lint proto-deps docs clean
 
-BUF := $(shell go env GOPATH)/bin/buf
+BUF ?= $(shell command -v buf 2>/dev/null || echo $$(go env GOPATH)/bin/buf)
 
 ## proto: 从 proto/ 生成 Go stub、gRPC service、gateway、OpenAPI 到 gen/
 proto:
