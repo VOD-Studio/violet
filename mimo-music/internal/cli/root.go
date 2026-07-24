@@ -88,6 +88,10 @@ func NewRootCommand() *cobra.Command {
 		root.AddCommand(c)
 	}
 
+	// 命令树构造完毕:统一挂载参数补全(--id→召回池候选,--level/--area/--op→枚举)。
+	// 新命令带同名 flag 自动获得补全,零登记(PRD-0014 #48)。
+	kit.MountCompletion(root, k)
+
 	return root
 }
 
