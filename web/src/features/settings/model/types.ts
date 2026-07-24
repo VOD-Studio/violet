@@ -35,6 +35,8 @@ export interface SiteSettings {
     bio: string;
     /** 页脚文案 */
     footer_text: string;
+    /** 是否启用代码运行器（阅读页据此决定渲染 CodeRunner 还是普通 pre） */
+    code_runner_enabled: boolean;
 }
 
 /** 公告严重程度(视觉维度:配色/图标/标签),对齐后端 severity 枚举 */
