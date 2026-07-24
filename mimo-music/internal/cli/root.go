@@ -15,6 +15,7 @@ import (
 	"github.com/VOD-Studio/mimo-music/internal/cli/fm"
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
 	"github.com/VOD-Studio/mimo-music/internal/cli/playlist"
+	"github.com/VOD-Studio/mimo-music/internal/cli/recent"
 	"github.com/VOD-Studio/mimo-music/internal/cli/recommend"
 	"github.com/VOD-Studio/mimo-music/internal/cli/search"
 	"github.com/VOD-Studio/mimo-music/internal/cli/song"
@@ -81,6 +82,7 @@ func NewRootCommand() *cobra.Command {
 		search.NewCommand(k),
 		recommend.NewCommand(k),
 		fm.NewCommand(k),
+		recent.NewCommand(k),
 	} {
 		c.GroupID = "domain"
 		root.AddCommand(c)

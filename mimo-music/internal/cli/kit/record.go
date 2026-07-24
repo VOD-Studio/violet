@@ -39,3 +39,9 @@ func (k *Kit) Record(id int64, name, artist string, src recall.Src) {
 func (k *Kit) RecallPool() *recall.Pool {
 	return k.pool
 }
+
+// SetRecallPool 注入召回池(测试用:替换为指向临时目录的 Pool)。
+// 生产代码用 New() 默认初始化的池,不调本方法。
+func (k *Kit) SetRecallPool(p *recall.Pool) {
+	k.pool = p
+}
