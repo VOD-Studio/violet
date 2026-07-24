@@ -17,7 +17,24 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		Args:  cobra.NoArgs,
 	}
 	c.AddCommand(newPlaylists(k), newNewSongs(k), newDailyPlaylists(k), newDailySongs(k))
+	annotateRecommendRpcs(c)
 	return c
+}
+
+// annotateRecommendRpcs 给 recommend 组各子命令打 rpc 注解(PRD-0014 #B 命令树守护)。
+// 命名偏移:daily-songs↔GetDailyRecommend、daily-playlists↔DailyRecommendPlaylists。
+func annotateRecommendRpcs(c *cobra.Command) {
+	rpcs := map[string][]string{
+		"playlists":       {"RecommendService/RecommendPlaylists"},
+		"new-songs":       {"RecommendService/RecommendNewSongs"},
+		"daily-playlists": {"RecommendService/DailyRecommendPlaylists"},
+		"daily-songs":     {"RecommendService/GetDailyRecommend"},
+	}
+	for _, sub := range c.Commands() {
+		if v, ok := rpcs[sub.Name()]; ok {
+			kit.AnnotateRpcs(sub, v...)
+		}
+	}
 }
 
 func newPlaylists(k *kit.Kit) *cobra.Command {

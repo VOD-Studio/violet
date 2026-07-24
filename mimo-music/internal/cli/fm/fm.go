@@ -11,7 +11,7 @@ import (
 
 // NewCommand 创建 fm 命令(私人 FM 只有一个接口,直接作为可执行命令)。
 func NewCommand(k *kit.Kit) *cobra.Command {
-	return &cobra.Command{
+	c := &cobra.Command{
 		Use:   "fm",
 		Short: "私人 FM",
 		Args:  cobra.NoArgs,
@@ -19,4 +19,6 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 			return kit.RenderExec(k, fmendpoint.GetPersonalFM, &mmpb.GetPersonalFMRequest{})
 		},
 	}
+	kit.AnnotateRpcs(c, "FMService/GetPersonalFM")
+	return c
 }

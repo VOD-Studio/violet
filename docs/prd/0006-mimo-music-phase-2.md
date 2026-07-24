@@ -1,8 +1,10 @@
 # PRD: mimo-music Phase 2
 
-> 状态：待实现
+> 状态：🟡 部分完成（库能力已具备，生产装配未做，见下）
 > 关联：[Phase 1 PRD](./0005-mimo-music-phase-1.md)、[架构 spec](../adr/mimo-music-architecture.md)
 > 范围：生产可用性补全 + 能力扩展
+>
+> **进度备注（2026-07-24 核对）**：**库能力已完成**——Redis session/cache 实现、限流熔断装饰器（engine 默认装配）、Cookie 轮换多账号、专辑/歌手/推荐/FM 扩展端点均已存在。**生产装配未做**：① Prometheus 指标在 `observability/metrics.go` 定义了 7 个但零埋点（死代码），无 `/metrics` 端点；② Redis 实现存在但 `cmd/server/main.go` 仍用 noop，未真正接入；③ 无 wire 依赖注入装配（手工构造）；④ Cookie 健康 worker 缺失（同 PRD-0005）。即能跑但不可观测、不持久。
 
 ## Problem Statement
 

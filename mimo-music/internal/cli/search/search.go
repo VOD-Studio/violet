@@ -29,7 +29,26 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 	c.Flags().IntVar(&limit, "limit", 10, "返回数量")
 	c.Flags().IntVar(&offset, "offset", 0, "偏移量")
 	c.AddCommand(newSuggest(k), newHot(k), newHotDetail(k), newDefaultKeyword(k))
+	annotateSearchRpcs(c)
 	return c
+}
+
+// annotateSearchRpcs 给 search 命令组打 rpc 注解(PRD-0014 #B 命令树守护)。
+// search 根命令本身可执行(带 keyword 时直搜),与 4 个子命令一并标注。
+func annotateSearchRpcs(c *cobra.Command) {
+	// 根命令 search 自己消费 Search。
+	kit.AnnotateRpcs(c, "SearchService/Search")
+	rpcs := map[string][]string{
+		"suggest":         {"SearchService/Suggest"},
+		"hot":             {"SearchService/Hot"},
+		"hot-detail":      {"SearchService/HotDetail"},
+		"default-keyword": {"SearchService/DefaultKeyword"},
+	}
+	for _, sub := range c.Commands() {
+		if v, ok := rpcs[sub.Name()]; ok {
+			kit.AnnotateRpcs(sub, v...)
+		}
+	}
 }
 
 func newSuggest(k *kit.Kit) *cobra.Command {

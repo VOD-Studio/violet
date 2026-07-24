@@ -1,8 +1,10 @@
 # PRD: mimo-music Phase 1
 
-> 状态：待实现
+> 状态：🟡 部分完成（解析内核与 11 端点已在新架构具备，见下）
 > 关联：[architecture.md](./architecture.md)
 > 范围：项目骨架 + 登录 + 核心解析 + 缓存 + Cookie 健康 worker + observability + OpenAPI
+>
+> **进度备注（2026-07-24 核对）**：本 PRD 在旧四层架构上的实现已被 PRD-0009 大爆炸迁移覆盖——11 个核心端点、weapi/eapi 加密、cookie 提取、grpc-gateway 自动生成 OpenAPI 均已在新架构下具备。**但以下能力在新架构下未重建，仍属本 PRD 范围内的缺口**：① Cookie 健康检查 worker（无 `cmd/worker`、go.mod 无 asynq，`WorkerConfig` 形同虚设）；② `cmd/server/main.go` 生产入口仍全用 noop（cache/session/tracer/metrics），未接 Redis 与真实可观测性。这两项与 PRD-0006 的生产装配缺口同源。
 
 ## Problem Statement
 

@@ -28,7 +28,38 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 		newUpdateName(k), newUpdateDesc(k), newUpdateTags(k), newUpdateTracks(k),
 		newDownload(k),
 	)
+	annotatePlaylistRpcs(c)
 	return c
+}
+
+// annotatePlaylistRpcs 给 playlist 组各子命令打 rpc 注解(PRD-0014 #B 命令树守护)。
+// 命名偏移:hot↔BrowseHot、related↔RelatedPlaylistRecommend。
+// download 跨 service 消费 3 rpc(AllTracks 取曲目 + GetPlaylist 取歌单名 + per-song GetSongURL)。
+func annotatePlaylistRpcs(c *cobra.Command) {
+	rpcs := map[string][]string{
+		"detail":        {"PlaylistService/GetPlaylist"},
+		"tracks":        {"PlaylistService/AllTracks"},
+		"subscribers":   {"PlaylistService/Subscribers"},
+		"highquality":   {"PlaylistService/HighQuality"},
+		"highquality-tags": {"PlaylistService/HighQualityTags"},
+		"catlist":       {"PlaylistService/CatList"},
+		"hot":           {"PlaylistService/BrowseHot"},
+		"similar":       {"PlaylistService/SimilarPlaylists"},
+		"related":       {"PlaylistService/RelatedPlaylistRecommend"},
+		"subscribe":     {"PlaylistService/Subscribe"},
+		"create":        {"PlaylistService/Create"},
+		"delete":        {"PlaylistService/Delete"},
+		"update-name":   {"PlaylistService/UpdateName"},
+		"update-desc":   {"PlaylistService/UpdateDesc"},
+		"update-tags":   {"PlaylistService/UpdateTags"},
+		"update-tracks": {"PlaylistService/UpdateTracks"},
+		"download":      {"PlaylistService/AllTracks", "PlaylistService/GetPlaylist", "SongService/GetSongURL"},
+	}
+	for _, sub := range c.Commands() {
+		if v, ok := rpcs[sub.Name()]; ok {
+			kit.AnnotateRpcs(sub, v...)
+		}
+	}
 }
 
 // withID 注册 --id 歌单 ID flag(非必填,由位置参数补,#38)。
