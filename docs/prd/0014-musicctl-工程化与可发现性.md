@@ -1,8 +1,10 @@
 # PRD: musicctl 工程化与可发现性(守护/文档/补全/召回池/别名/onboarding/doctor)
 
-> 状态:📋 待实现
+> 状态:✅ 已完成(11 个片段全部落地,2026-07-24 核对)
 > 关联:[CLI 路线图](../../mimo-music/docs/musicctl-roadmap.md)(Phase E)、[CONTEXT.md musicctl CLI 段](../../CONTEXT.md)、[作用域 tag ADR](../adr/mimo-music-musicctl-scoped-release-tags.md)、[输出层 PRD](./0012-musicctl-输出层.md)(已完成)、[实用功能 PRD](./0013-musicctl-实用功能.md)(已完成)
 > 范围:musicctl 命令树守护、文档、补全与召回池、别名、裸跑 onboarding、doctor、recent、位置参数铺开。发布渠道整块延期(见 Out of Scope)。不改 endpoint/service 层,不新增 rpc 消费。
+>
+> **进度备注(2026-07-24 核对)**:11 个片段(`--version`、命令树守护、help 分组守护、文档双轨、help 分组与补全、召回池、别名、onboarding、doctor、recent、位置参数铺开、install-completion)全部实现并带测试。命令树守护(本 PRD 核心)落地于 commit `29ca6978`+`232f2c2d`:命令打 `musicctl/rpcs` 注解 + `rpc_guard_test.go` 三轴守护(正向 diff 注解 rpc 必须存在 / 反向 diff 未消费 rpc 须登记 allowlist / 叶子命令漏标必红),rpc 真值集用 protoreflect 反射动态发现,不硬编码总数。发布渠道(goreleaser + Actions)按 Out of Scope 延期,仅交付 `--version`。
 
 ## Problem Statement
 
