@@ -21,6 +21,17 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
+// Flush 转发到底层 ResponseWriter，使包装后的 writer 满足 http.Flusher 接口。
+//
+// 必要性：SSE 端点（如 code-runner/stream）会对 ResponseWriter 做
+// w.(http.Flusher) 类型断言。若不经此转发，logger 中间件包装后下游拿到的是
+// *responseWriter，未实现 Flusher，断言失败导致 SSE 端点返回 500。
+func (rw *responseWriter) Flush() {
+	if f, ok := rw.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
 // Logger 请求日志中间件
 // 记录每个请求的 HTTP 方法、路径、状态码和处理耗时
 func Logger(next http.Handler) http.Handler {
