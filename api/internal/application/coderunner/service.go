@@ -154,6 +154,7 @@ func (s *Service) validate(req ExecRequest) error {
 	// 前置探测执行器可用性：功能未启用 / daemon 连接失败时直接拒绝，
 	// 把可操作的错误信息直达前端（而非后台执行后才报含糊的「系统暂时不可用」）。
 	if err := s.runner.Available(); err != nil {
+		log.Warn().Err(err).Str("language", req.Language).Msg("代码运行器不可用，拒绝执行")
 		return domainshared.Internal(err.Error(), err)
 	}
 	return nil

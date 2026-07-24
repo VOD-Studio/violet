@@ -114,7 +114,7 @@ services:
 
       # 代码运行器（可运行代码块沙箱执行）
       # 启用前需挂载 docker.sock 并 load yggdrasil-runner-* 镜像（见 docs/deploy/manual-deploy.md）
-      CODE_RUNNER_ENABLED: ${CODE_RUNNER_ENABLED:-false}
+      CODE_RUNNER_ENABLED: ${CODE_RUNNER_ENABLED:-true}
       CODE_RUNNER_MAX_CPU_CORES: ${CODE_RUNNER_MAX_CPU_CORES:-2.0}
       CODE_RUNNER_MAX_MEMORY_MB: ${CODE_RUNNER_MAX_MEMORY_MB:-1024}
       CODE_RUNNER_MAX_TIMEOUT_SECS: ${CODE_RUNNER_MAX_TIMEOUT_SECS:-30}

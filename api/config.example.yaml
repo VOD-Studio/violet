@@ -83,7 +83,7 @@ superadmin:
 # 需 api 容器挂载 docker.sock（生产 podman 见 docs/deploy/manual-deploy.md）
 # 架构决策见 docs/adr/0006-code-runner-architecture.md
 code_runner:
-  enabled: false # 启用前确认 docker.sock 已挂载
+  enabled: true # 默认启用（本地开发友好）；生产未挂 docker.sock 时自动降级
   max_cpu_cores: 2.0        # 单次执行 CPU 上限（核数）
   max_memory_mb: 1024       # 单次执行内存上限（MB）
   max_timeout_secs: 30      # 单次执行墙上时间上限（秒）

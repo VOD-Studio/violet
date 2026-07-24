@@ -264,7 +264,10 @@ func Load() *Config {
 	v.SetDefault("trusted_proxies", []string{})
 	// 代码运行器默认值（对齐 yggdrasil runner_config.rs）
 	// Enabled 默认 false：需显式开启并确认 docker.sock 已挂载
-	v.SetDefault("code_runner.enabled", false)
+	// 代码运行器默认启用：本地开发友好（装了 docker 即可用）。
+	// 生产环境若未挂 docker.sock，InitDockerClient 探活失败会降级（记日志，不 panic），
+	// 执行请求返回「daemon 不可连接」提示，不影响博客其他功能。
+	v.SetDefault("code_runner.enabled", true)
 	v.SetDefault("code_runner.max_cpu_cores", 2.0)
 	v.SetDefault("code_runner.max_memory_mb", 1024)
 	v.SetDefault("code_runner.max_timeout_secs", 30)
