@@ -15,6 +15,7 @@ import (
 	"github.com/VOD-Studio/mimo-music/internal/cli/fm"
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
 	"github.com/VOD-Studio/mimo-music/internal/cli/playlist"
+	"github.com/VOD-Studio/mimo-music/internal/cli/recent"
 	"github.com/VOD-Studio/mimo-music/internal/cli/recommend"
 	"github.com/VOD-Studio/mimo-music/internal/cli/search"
 	"github.com/VOD-Studio/mimo-music/internal/cli/song"
@@ -25,7 +26,9 @@ import (
 //
 // 登录类命令挂顶层(高频入口),接口按领域分组(song/album/...)。
 // 登录态来源: 1. NETEASE_COOKIE 环境变量(优先,临时换号调试)
-// 2. 本地会话文件 ~/.musicctl/session.json(login/login-cellphone 写入,logout 删除)。
+// 2. 本地配置目录下的 session.json(login/login-cellphone 写入,logout 删除);
+//    路径见 musicctl doctor(macOS ~/Library/Application Support/musicctl/、
+//    Linux ~/.config/musicctl/、Windows %AppData%\musicctl\)。
 func NewRootCommand() *cobra.Command {
 	k := kit.New()
 
@@ -39,7 +42,8 @@ func NewRootCommand() *cobra.Command {
 
 登录态来源:
   1. 环境变量 NETEASE_COOKIE(优先,用于临时换号调试)
-  2. 本地会话文件 ~/.musicctl/session.json(login 写入,logout 删除)`,
+  2. 本地配置目录的 session.json(login 写入,logout 删除);
+     路径见 musicctl doctor(macOS: ~/Library/Application Support/musicctl/ 等)`,
 		SilenceUsage:  true,
 		SilenceErrors: true, // 错误由 Execute 统一以「错误: 」格式打印(与旧 CLI 一致)
 	}
@@ -78,10 +82,15 @@ func NewRootCommand() *cobra.Command {
 		search.NewCommand(k),
 		recommend.NewCommand(k),
 		fm.NewCommand(k),
+		recent.NewCommand(k),
 	} {
 		c.GroupID = "domain"
 		root.AddCommand(c)
 	}
+
+	// 命令树构造完毕:统一挂载参数补全(--id→召回池候选,--level/--area/--op→枚举)。
+	// 新命令带同名 flag 自动获得补全,零登记(PRD-0014 #48)。
+	kit.MountCompletion(root, k)
 
 	return root
 }

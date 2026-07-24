@@ -27,14 +27,8 @@ func (k *Kit) CurrentCookie() string {
 	return sess.Cookie
 }
 
-// SessionPath 返回会话文件路径 ~/.musicctl/session.json。
-func SessionPath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".musicctl", "session.json"), nil
-}
+// SessionPath 在 paths.go 定义(<ConfigDir>/session.json),为避免分散,所有
+// 状态文件路径(SessionPath/ConfigDir/HistoryPath)统一由 paths.go 提供。
 
 // SaveSession 把会话写盘(目录 0700 / 文件 0600)。
 func (k *Kit) SaveSession(sess Session) error {
@@ -57,8 +51,18 @@ func (k *Kit) SaveSession(sess Session) error {
 	return os.Rename(tmp, p)
 }
 
+// SessionPath/ConfigDir/HistoryPath 见 paths.go(同包,唯一路径 seam)。
+//
 // LoadSession 读本地会话。文件不存在或损坏时返回 error。
+//
+// 读前惰性触发旧路径迁移:首次发现新路径无文件时,把 ~/.musicctl/session.json
+// 搬到新路径(若旧路径存在),见 migrateLegacySession。迁移失败不阻塞——按新路径
+// 无文件处理(未登录)。
 func (k *Kit) LoadSession() (Session, error) {
+	// 惰性迁移:把旧路径会话搬到新路径(errOut 走 k.err()=stderr)。
+	// 即便新路径已有文件,migrateLegacySession 也只 Stat 一次新路径即返回,代价极低。
+	_ = migrateLegacySession(k.err())
+
 	var sess Session
 	p, err := SessionPath()
 	if err != nil {

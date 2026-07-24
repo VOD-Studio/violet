@@ -20,7 +20,7 @@ import (
 func NewLoginCommand(k *kit.Kit) *cobra.Command {
 	return &cobra.Command{
 		Use:   "login",
-		Short: "扫码登录,cookie 持久化到 ~/.musicctl/session.json",
+		Short: "扫码登录,cookie 持久化到本地配置目录",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runLogin(k)
