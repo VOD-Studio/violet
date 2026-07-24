@@ -23,7 +23,9 @@ func weapiMeta(path string) engine.Meta {
 var AllSongs = &engine.Endpoint[*mmpb.AllSongsRequest, *mmpb.AllSongsResponse]{
 	Meta: weapiMeta("/weapi/v1/artist/songs"),
 	Cache: &engine.CachePolicy[*mmpb.AllSongsRequest]{
-		Key: func(r *mmpb.AllSongsRequest) string { return fmt.Sprintf("artist:songs:%d:%d:%d", r.GetArtistId(), r.GetLimit(), r.GetOffset()) },
+		Key: func(r *mmpb.AllSongsRequest) string {
+			return fmt.Sprintf("artist:songs:%d:%d:%d", r.GetArtistId(), r.GetLimit(), r.GetOffset())
+		},
 		TTL: 24 * time.Hour,
 	},
 	NewResp: func() *mmpb.AllSongsResponse { return &mmpb.AllSongsResponse{} },
@@ -32,7 +34,11 @@ var AllSongs = &engine.Endpoint[*mmpb.AllSongsRequest, *mmpb.AllSongsResponse]{
 		if limit <= 0 {
 			limit = 50
 		}
-		return map[string]any{"id": fmt.Sprintf("%d", req.GetArtistId()), "limit": limit, "offset": req.GetOffset()}, nil
+		return map[string]any{
+			"id": fmt.Sprintf("%d", req.GetArtistId()), "limit": limit, "offset": req.GetOffset(),
+			// 完整参数上游才返回 ar/al/fee 完整结构(实测:仅 id/limit/offset 时 ar 空、al 缺 id)。
+			"private_cloud": "true", "work_type": 1, "order": "hot",
+		}, nil
 	},
 	MapResponse: func(req *mmpb.AllSongsRequest, raw json.RawMessage) (*mmpb.AllSongsResponse, error) {
 		return parseArtistSongs(raw)
@@ -60,10 +66,17 @@ var TopSongs = &engine.Endpoint[*mmpb.TopSongsRequest, *mmpb.TopSongsResponse]{
 }
 
 // Albums 获取歌手专辑列表。
+// id 必须拼在 path 里(/weapi/artist/albums/{id}):body 传 id 上游返回
+// 400 且响应是双 JSON 拼接的脏数据(2026-07 实测)——故声明 PathFunc。
 var Albums = &engine.Endpoint[*mmpb.AlbumsRequest, *mmpb.AlbumsResponse]{
-	Meta: weapiMeta("/weapi/artist/albums"),
+	Meta: weapiMeta("/weapi/artist/albums"), // 占位,实际 path 由 PathFunc 生成
+	PathFunc: func(r *mmpb.AlbumsRequest) string {
+		return fmt.Sprintf("/weapi/artist/albums/%d", r.GetArtistId())
+	},
 	Cache: &engine.CachePolicy[*mmpb.AlbumsRequest]{
-		Key: func(r *mmpb.AlbumsRequest) string { return fmt.Sprintf("artist:albums:%d:%d:%d", r.GetArtistId(), r.GetLimit(), r.GetOffset()) },
+		Key: func(r *mmpb.AlbumsRequest) string {
+			return fmt.Sprintf("artist:albums:%d:%d:%d", r.GetArtistId(), r.GetLimit(), r.GetOffset())
+		},
 		TTL: 24 * time.Hour,
 	},
 	NewResp: func() *mmpb.AlbumsResponse { return &mmpb.AlbumsResponse{} },
@@ -72,15 +85,16 @@ var Albums = &engine.Endpoint[*mmpb.AlbumsRequest, *mmpb.AlbumsResponse]{
 		if limit <= 0 {
 			limit = 30
 		}
-		return map[string]any{"id": fmt.Sprintf("%d", req.GetArtistId()), "limit": limit, "offset": req.GetOffset()}, nil
+		return map[string]any{"limit": limit, "offset": req.GetOffset(), "total": true}, nil
 	},
 	MapResponse: func(req *mmpb.AlbumsRequest, raw json.RawMessage) (*mmpb.AlbumsResponse, error) {
 		var resp struct {
 			HotAlbums []struct {
-				ID     int64  `json:"id"`     // 专辑ID
-				Name   string `json:"name"`   // 专辑名
-				PicUrl string `json:"picUrl"` // 封面URL
-				Artist struct {
+				ID          int64  `json:"id"`          // 专辑ID
+				Name        string `json:"name"`        // 专辑名
+				PicUrl      string `json:"picUrl"`      // 封面URL
+				PublishTime int64  `json:"publishTime"` // 发行时间(毫秒时间戳)
+				Artist      struct {
 					ID   int64  `json:"id"`   // 歌手ID
 					Name string `json:"name"` // 歌手名
 				} `json:"artist"` // 歌手
@@ -92,8 +106,13 @@ var Albums = &engine.Endpoint[*mmpb.AlbumsRequest, *mmpb.AlbumsResponse]{
 		}
 		out := &mmpb.AlbumsResponse{More: resp.More}
 		for _, a := range resp.HotAlbums {
+			publishTime := ""
+			if a.PublishTime > 0 {
+				// 与 model.MapAlbum 一致:毫秒时间戳 → 日期串。
+				publishTime = time.UnixMilli(a.PublishTime).Format("2006-01-02")
+			}
 			out.Albums = append(out.Albums, &mmpb.Album{
-				Id: a.ID, Name: a.Name, PicUrl: a.PicUrl,
+				Id: a.ID, Name: a.Name, PicUrl: a.PicUrl, PublishTime: publishTime,
 				Artist: &mmpb.Artist{Id: a.Artist.ID, Name: a.Artist.Name},
 			})
 		}
@@ -181,7 +200,9 @@ var Fans = &engine.Endpoint[*mmpb.FansRequest, *mmpb.FansResponse]{
 var TopArtists = &engine.Endpoint[*mmpb.TopArtistsRequest, *mmpb.TopArtistsResponse]{
 	Meta: weapiMeta("/weapi/artist/top"),
 	Cache: &engine.CachePolicy[*mmpb.TopArtistsRequest]{
-		Key: func(r *mmpb.TopArtistsRequest) string { return fmt.Sprintf("artist:toplist:%d:%d", r.GetLimit(), r.GetOffset()) },
+		Key: func(r *mmpb.TopArtistsRequest) string {
+			return fmt.Sprintf("artist:toplist:%d:%d", r.GetLimit(), r.GetOffset())
+		},
 		TTL: 24 * time.Hour,
 	},
 	NewResp: func() *mmpb.TopArtistsResponse { return &mmpb.TopArtistsResponse{} },
@@ -226,7 +247,8 @@ func parseArtistSongs(raw json.RawMessage) (*mmpb.AllSongsResponse, error) {
 				Name   string `json:"name"`   // 专辑名
 				PicUrl string `json:"picUrl"` // 封面URL
 			} `json:"al"` // 专辑
-			Dt int64 `json:"dt"` // 时长毫秒
+			Dt  int64 `json:"dt"`  // 时长毫秒
+			Fee int   `json:"fee"` // 付费类型(0免费 1VIP 4付费专辑 8低音质免费)
 		} `json:"songs"`
 		Total int `json:"total"` // 总数
 	}
@@ -241,8 +263,9 @@ func parseArtistSongs(raw json.RawMessage) (*mmpb.AllSongsResponse, error) {
 		}
 		out.Songs = append(out.Songs, &mmpb.Song{
 			Id: s.ID, Name: s.Name, Artists: artists,
-			Album: &mmpb.Album{Id: s.Al.ID, Name: s.Al.Name, PicUrl: s.Al.PicUrl},
+			Album:      &mmpb.Album{Id: s.Al.ID, Name: s.Al.Name, PicUrl: s.Al.PicUrl},
 			DurationMs: s.Dt,
+			Fee:        int32(s.Fee),
 		})
 	}
 	return out, nil
