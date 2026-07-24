@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -48,6 +49,18 @@ func NewRootCommand() *cobra.Command {
      路径见 musicctl doctor(macOS: ~/Library/Application Support/musicctl/ 等)`,
 		SilenceUsage:  true,
 		SilenceErrors: true, // 错误由 Execute 统一以「错误: 」格式打印(与旧 CLI 一致)
+		// 裸跑(无子命令)→ onboarding 引导:未登录给登录引导,已登录按时段/周末推荐
+		// 下一步命令。输出走 stderr(不污染 stdout),本地读登录态无网络,秒出(PRD #39)。
+		// --help-verbose 是普通 flag(非 cobra --help),需在此显式转发到 help func。
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if flagBool(cmd, "help-verbose") {
+				cmd.Help()
+				return nil
+			}
+			// 走 cmd 的 stderr writer(支持 2> 重定向;测试可 SetErr 静音)。
+			renderOnboarding(cmd.ErrOrStderr(), k.CurrentCookie() != "", time.Now())
+			return nil
+		},
 	}
 
 	// --version:经 debug.ReadBuildInfo() 读 module version + vcs revision(#36)。
