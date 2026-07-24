@@ -65,6 +65,9 @@ func newPlay(k *kit.Kit) *cobra.Command {
 type playDeps struct {
 	fetchURL    func(ctx context.Context, id int64, level int) (*mmpb.SongURL, error)
 	fetchDetail func(ctx context.Context, id int64) (*mmpb.Song, error)
+	// checkAvailable 查无音源时的不可用原因(check-available);
+	// 仅空 URL 失败路径调用,为 nil 时跳过查因直接给通用文案。
+	checkAvailable func(ctx context.Context, id int64) (string, error)
 	// fetchLyric 拉 LRC 文本(--lyric 用)。返回空串 = 无歌词(静默降级)。
 	fetchLyric func(ctx context.Context, id int64) (string, error)
 	// newPlayer 按启动音量构造 Player(生产:beep 后端)。
@@ -103,6 +106,16 @@ func defaultPlayDeps(k *kit.Kit) playDeps {
 				return nil, err
 			}
 			return resp.Song, nil
+		},
+		checkAvailable: func(ctx context.Context, id int64) (string, error) {
+			resp, err := kit.Exec(k, ctx, songendpoint.CheckAvailable, &mmpb.CheckAvailableRequest{SongId: id})
+			if err != nil {
+				return "", err
+			}
+			if resp.Available {
+				return "", nil // 可用却拿不到 URL(非版权问题)→ 不给伪原因
+			}
+			return resp.Message, nil
 		},
 		fetchLyric: func(ctx context.Context, id int64) (string, error) {
 			resp, err := kit.Exec(k, ctx, songendpoint.Lyric, &mmpb.GetLyricRequest{SongId: id})
@@ -159,7 +172,10 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, lyric bool, 
 		return fmt.Errorf("获取播放地址: %w", err)
 	}
 	if songURL == nil || songURL.Url == "" {
-		return fmt.Errorf("✗ 无可用音源。--level 1 试试或检查登录状态")
+		if reason := unavailableReason(ctx, deps.checkAvailable, id); reason != "" {
+			return fmt.Errorf("✗ 无可用音源: %s", reason)
+		}
+		return fmt.Errorf("✗ 无可用音源(level=%d)。检查登录状态或换个音质(--level)试试", level)
 	}
 
 	// 3. 歌曲详情(状态栏元数据)。失败不致命:空 Song 兜底。
@@ -216,6 +232,19 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, lyric bool, 
 	// 播放成功消费后埋点召回池(方案 c:命令显式调 kit.Record;失败不阻塞)。
 	k.Record(id, songName(song), songArtist(song), recall.SrcPlay)
 	return nil
+}
+
+// unavailableReason 查歌曲不可用原因(check-available):回调缺失/查询失败/
+// 歌曲标记可用(非版权问题)→ 空串,调用方走通用文案。仅无音源失败路径调用。
+func unavailableReason(ctx context.Context, check func(context.Context, int64) (string, error), id int64) string {
+	if check == nil {
+		return ""
+	}
+	reason, err := check(ctx, id)
+	if err != nil {
+		return ""
+	}
+	return reason
 }
 
 // songName 提取歌曲名(无则空),供召回池埋点。

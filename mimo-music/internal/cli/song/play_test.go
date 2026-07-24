@@ -399,6 +399,55 @@ func TestRunPlay_NoSource(t *testing.T) {
 	}
 }
 
+// TestRunPlay_NoSource_WithReason 空 URL + check-available 给出原因(如无版权)
+// → 错误带出真实原因,而非误导性的 level/登录建议。
+func TestRunPlay_NoSource_WithReason(t *testing.T) {
+	t.Parallel()
+	k, _, _ := newTestKit()
+	p := &fakePlayer{}
+	deps := testPlayDeps(p, scriptKeys(keyEvent{kind: keyQuit}))
+	deps.fetchURL = func(_ context.Context, _ int64, _ int) (*mmpb.SongURL, error) {
+		return &mmpb.SongURL{}, nil
+	}
+	deps.checkAvailable = func(_ context.Context, id int64) (string, error) {
+		if id != 174963 {
+			t.Errorf("checkAvailable 应用失败歌曲 id 调用,got %d", id)
+		}
+		return "亲爱的,暂无版权", nil
+	}
+	err := runPlay(k, 174963, 1, 75, "0", false, deps)
+	if err == nil || !strings.Contains(err.Error(), "亲爱的,暂无版权") {
+		t.Fatalf("应带出 check-available 的真实原因,got %v", err)
+	}
+	if strings.Contains(err.Error(), "检查登录状态") {
+		t.Errorf("有真实原因时不应再给登录建议,got %q", err.Error())
+	}
+}
+
+// TestUnavailableReason helper 四态:nil 回调/查询出错/空原因/有原因。
+func TestUnavailableReason(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	if got := unavailableReason(ctx, nil, 1); got != "" {
+		t.Errorf("nil 回调应返回空串,got %q", got)
+	}
+	if got := unavailableReason(ctx, func(context.Context, int64) (string, error) {
+		return "", errors.New("网络超时")
+	}, 1); got != "" {
+		t.Errorf("查询出错应返回空串,got %q", got)
+	}
+	if got := unavailableReason(ctx, func(context.Context, int64) (string, error) {
+		return "", nil
+	}, 1); got != "" {
+		t.Errorf("可用(非版权问题)应返回空串,got %q", got)
+	}
+	if got := unavailableReason(ctx, func(context.Context, int64) (string, error) {
+		return "亲爱的,暂无版权", nil
+	}, 1); got != "亲爱的,暂无版权" {
+		t.Errorf("有原因应透传,got %q", got)
+	}
+}
+
 // TestRunPlay_LoadURLAndQuit Load 用拿到的 URL 调用;q 退出 → Close + exit 0。
 func TestRunPlay_LoadURLAndQuit(t *testing.T) {
 	t.Parallel()

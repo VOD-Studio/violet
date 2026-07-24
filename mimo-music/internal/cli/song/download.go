@@ -69,6 +69,9 @@ func newDownload(k *kit.Kit) *cobra.Command {
 type downloadDeps struct {
 	fetchURL    func(ctx context.Context, id int64, level int) (*mmpb.SongURL, error)
 	fetchDetail func(ctx context.Context, id int64) (*mmpb.Song, error)
+	// checkAvailable 查无音源时的不可用原因(check-available);
+	// 仅空 URL 失败路径调用,为 nil 时跳过查因直接给通用文案。
+	checkAvailable func(ctx context.Context, id int64) (string, error)
 	// download 流式下载到 path,返回写入字节数。label 用于进度条显示。
 	download func(ctx context.Context, url string, total int64, path, label string) (int64, error)
 	// writeMeta 写元数据,失败返回 error(调用方按非阻塞处理)。
@@ -93,6 +96,16 @@ func defaultDownloadDeps(k *kit.Kit) downloadDeps {
 				return nil, err
 			}
 			return resp.Song, nil
+		},
+		checkAvailable: func(ctx context.Context, id int64) (string, error) {
+			resp, err := kit.Exec(k, ctx, songendpoint.CheckAvailable, &mmpb.CheckAvailableRequest{SongId: id})
+			if err != nil {
+				return "", err
+			}
+			if resp.Available {
+				return "", nil // 可用却拿不到 URL(非版权问题)→ 不给伪原因
+			}
+			return resp.Message, nil
 		},
 		download: func(ctx context.Context, url string, total int64, path, label string) (int64, error) {
 			return songdl.DownloadToFile(ctx, k, url, total, path, label)
@@ -119,7 +132,10 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force, dryRun, noM
 		return fmt.Errorf("获取播放地址: %w", err)
 	}
 	if songURL == nil || songURL.Url == "" {
-		return fmt.Errorf("✗ 歌曲 %d 无可用音源(level=%d)。尝试 --level 1 或登录 VIP 账号", id, level)
+		if reason := unavailableReason(ctx, deps.checkAvailable, id); reason != "" {
+			return fmt.Errorf("✗ 歌曲 %d 无可用音源: %s", id, reason)
+		}
+		return fmt.Errorf("✗ 歌曲 %d 无可用音源(level=%d)。检查登录状态或换个音质(--level)试试", id, level)
 	}
 
 	// 2. 拿歌曲详情(文件名 + 元数据用)。失败不致命:用 id 兜底空 Song。

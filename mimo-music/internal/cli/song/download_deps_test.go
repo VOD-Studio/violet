@@ -56,6 +56,28 @@ func TestRunDownload_NilURL(t *testing.T) {
 	}
 }
 
+// TestRunDownload_NoSource_WithReason 空 URL + check-available 给出原因
+// → 错误带出真实原因(如无版权),而非误导性的音质建议。
+func TestRunDownload_NoSource_WithReason(t *testing.T) {
+	t.Parallel()
+	k, _, _ := newTestKit()
+	deps := downloadDeps{
+		fetchURL: func(context.Context, int64, int) (*mmpb.SongURL, error) {
+			return &mmpb.SongURL{Url: ""}, nil
+		},
+		checkAvailable: func(context.Context, int64) (string, error) {
+			return "亲爱的,暂无版权", nil
+		},
+	}
+	err := runDownload(k, 174963, 1, t.TempDir(), false, false, false, "", deps)
+	if err == nil || !strings.Contains(err.Error(), "亲爱的,暂无版权") {
+		t.Fatalf("应带出 check-available 的真实原因,got %v", err)
+	}
+	if strings.Contains(err.Error(), "换个音质") {
+		t.Errorf("有真实原因时不应再给音质建议,got %q", err.Error())
+	}
+}
+
 // TestRunDownload_MetadataFailureWarnf 元数据写入失败 → Warnf 警告到 stderr,文件仍保存,exit 0。
 func TestRunDownload_MetadataFailureWarnf(t *testing.T) {
 	t.Parallel()
