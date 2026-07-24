@@ -110,7 +110,6 @@ export function Terminal({ onReady, onUnmount }: TerminalProps) {
         const safeFit = () => {
             try {
                 fit.fit();
-                term.refresh(0, Math.max(0, term.rows - 1));
             } catch {
                 /* 容器未挂载/尺寸为零，忽略 */
             }
