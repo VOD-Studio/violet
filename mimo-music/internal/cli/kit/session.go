@@ -27,14 +27,8 @@ func (k *Kit) CurrentCookie() string {
 	return sess.Cookie
 }
 
-// SessionPath 返回会话文件路径 ~/.musicctl/session.json。
-func SessionPath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".musicctl", "session.json"), nil
-}
+// SessionPath 在 paths.go 定义(<ConfigDir>/session.json),为避免分散,所有
+// 状态文件路径(SessionPath/ConfigDir/HistoryPath)统一由 paths.go 提供。
 
 // SaveSession 把会话写盘(目录 0700 / 文件 0600)。
 func (k *Kit) SaveSession(sess Session) error {
@@ -57,6 +51,8 @@ func (k *Kit) SaveSession(sess Session) error {
 	return os.Rename(tmp, p)
 }
 
+// SessionPath/ConfigDir/HistoryPath 见 paths.go(同包,唯一路径 seam)。
+//
 // LoadSession 读本地会话。文件不存在或损坏时返回 error。
 func (k *Kit) LoadSession() (Session, error) {
 	var sess Session
