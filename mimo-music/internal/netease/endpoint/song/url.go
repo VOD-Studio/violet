@@ -12,12 +12,19 @@ import (
 )
 
 // URL 是获取播放直链的接口声明。
+//
+// 走 eapi(客户端接口)而非 weapi:2026 年网易云对 weapi 返回的 URL 做了 CDN 限制
+// (m704 等节点 jdymusic 路径链接回源鉴权 403,X-AUTH-MSG: auth failed - origin failed),
+// 网页播放器已不可用;同参数 eapi(/api/song/enhance/player/url/v1)返回的链接正常。
 var URL = &engine.Endpoint[*mmpb.GetSongURLRequest, *mmpb.GetSongURLResponse]{
 	Meta: engine.Meta{
-		Path:   "/weapi/song/enhance/player/url/v1",
+		Path:   "/eapi/song/enhance/player/url/v1",
 		Method: "POST",
-		Crypto: engine.CryptoWeAPI,
+		Crypto: engine.CryptoEAPI,
 		Auth:   session.AuthAnonymous,
+		// 移动端 UA:网易云按 UA 分配 CDN 节点,桌面 UA 拿到的 x04 节点链接
+		// 回源鉴权 403(m704/m804),移动端 UA 的 x01 节点(m701/m801)正常。
+		UserAgent: engine.MobileUserAgent,
 	},
 	Cache: &engine.CachePolicy[*mmpb.GetSongURLRequest]{
 		Key: func(req *mmpb.GetSongURLRequest) string {
@@ -29,9 +36,9 @@ var URL = &engine.Endpoint[*mmpb.GetSongURLRequest, *mmpb.GetSongURLResponse]{
 	MapRequest: func(req *mmpb.GetSongURLRequest) (map[string]any, error) {
 		level := levelToString(req.GetLevel())
 		return map[string]any{
-			"ids":         fmt.Sprintf("[%d]", req.GetSongId()),
-			"level":       level,
-			"encodeType":  "flac",
+			"ids":        fmt.Sprintf("[%d]", req.GetSongId()),
+			"level":      level,
+			"encodeType": "flac",
 		}, nil
 	},
 	MapResponse: func(req *mmpb.GetSongURLRequest, raw json.RawMessage) (*mmpb.GetSongURLResponse, error) {
