@@ -82,12 +82,13 @@
 - **`musicctl doctor`**:环境自检(版本/会话/网络/补全/音频后端),bug report 第一手信息
 - **`musicctl recent`**:列召回池内容(最近搜索/播放/下载),既是查看命令也是补全离线源
 
-## Phase D — TUI(远期,先小验证)
+## Phase D — TUI(第一步已由 PRD-0016 接管)
 
-- 第一步(小验证):`musicctl tui`(或 `search --tui`)bubbletea 列表选择器:
-  搜歌 → ↑/↓ 选择 → Enter 调 Phase C 的 `player.Player` 播放。验证手感与技术栈
+- ~~第一步(小验证):`musicctl tui`(或 `search --tui`)bubbletea 列表选择器~~
+  **已由 PRD-0016 取代**:直接重写 `song play` 播放屏为 bubbletea 全屏形态,
+  技术栈验证在重写中完成(ADR: mimo-music-play-screen-bubbletea)
 - 第二步(全屏播放器):队列、歌词面板、快捷键体系,单独立项,参考 go-musicfox
-  的 menu/player 接口划分,不照搬其代码
+  的 menu/player 接口划分,不照搬其代码。复用 PRD-0016 建立的 `internal/tui` 包
 
 ---
 

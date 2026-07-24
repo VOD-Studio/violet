@@ -200,6 +200,10 @@ _Avoid_: cookie 轮换（只描述了动作，未体现池化与上报机制）
 musicctl 的裸跑行为是「智能 onboarding」——检测登录态，未登录给登录引导，已登录推荐今日该跑的命令，输出走 stderr 不污染 stdout。**不**像 go-musicfox 那样裸跑直接进 TUI 主菜单。Phase D 的 TUI 作为独立增强，用 `musicctl tui` 显式进入，**不抢占裸跑默认行为**——即使 TUI 落地后，musicctl 仍是工具型 CLI，TUI 是可选形态而非默认形态。
 _Avoid_: 客户端（混淆了工具型 CLI 与娱乐型客户端的定位）
 
+**播放屏（Play Screen）**:
+`song play` 的全屏 TUI 播放界面（PRD-0016，bubbletea v2 + lipgloss + harmonica）。视觉中心是歌词舞台（当前行居中、上下渐暗、弹簧滑入），封面图按协议矩阵渲染（kitty → iterm2 → 半块字符画，transmit-once place-many）并供给取色主题（进度渐变/高亮/边框随封面主色变化）。歌词默认展示，`--no-lyric` 关闭。键位集与原手写 ANSI 状态栏一致。只承载单曲播放，不含浏览/队列——后者属 Phase D 第二步的全屏播放器（`musicctl tui` 入口，未实现）。
+_Avoid_: 状态栏（旧手写 ANSI 形态，已删除）、TUI 主菜单（go-musicfox 式全屏播放器，未实现）
+
 **召回池（Recall Pool）**:
 所有可被 Tab 补全召回的候选集合。三类来源汇入同一池子，各带来源标签与 TTL：(1) **主动**——用户显式跑过的 search 关键词与 detail 查询；(2) **隐式**——歌曲 `--id` 被成功消费后埋点（play/download 等，**只记成功操作**，失败不进池）；(3) **远端**——红心列表、我的歌单、每日推荐的快照（24h TTL，超期强制重拉）。召回池是「补全只走缓存」路线的数据基础：补全绝不实时查网易云，候选全部来自召回池。**埋点机制（方案 c，PRD-0014 G）**：kit 层提供统一 `Record(id, name, artist, src)` helper，命令在 `--id` 成功消费后显式调用一行——kit.Exec 是 generic 拿不到具体 id 字段（SongId 在各 proto req struct 里），无法在 generic 层自动埋点，故选显式 helper 而非 interface+wrapper（要为每个 song req 写 wrapper）或 endpoint 层埋点（改 engine 抽象被 service 包共用、高风险）。机制统一在 kit 层，但调用是命令层显式一行——区别于「自动埋点」，权衡是歌曲类命令接入时加一行 Record 调用（play/download 已接入）。Record 失败不阻塞主命令（仅 Warnf 告警）。
 _Avoid_: 历史（过于宽泛，未区分主动/隐式/远端三类信号）、收藏列表（只覆盖远端一类）
