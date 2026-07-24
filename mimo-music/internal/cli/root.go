@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -58,18 +59,31 @@ func NewRootCommand() *cobra.Command {
 	})
 
 	root.AddGroup(
-		&cobra.Group{ID: "auth", Title: "登录:"},
-		&cobra.Group{ID: "domain", Title: "接口分组:"},
+		&cobra.Group{ID: "quickstart", Title: "快速上手:"},
+		&cobra.Group{ID: "account", Title: "账号:"},
+		&cobra.Group{ID: "music", Title: "音乐:"},
+		&cobra.Group{ID: "discover", Title: "发现:"},
+		&cobra.Group{ID: "tools", Title: "工具:"},
 	)
 
+	// 命令按 5 组归属(PRD-0014 #E help 分组)。父命令分组,子命令继承。
+	// 新 Bounded Context 接入时默认归既有 5 组之一;单组超 ~30 命令再评估拆组。
 	for _, c := range []*cobra.Command{
 		auth.NewLoginCommand(k),
 		auth.NewLoginCellphoneCommand(k),
-		auth.NewSendCaptchaCommand(k),
 		auth.NewLoginStatusCommand(k),
 		auth.NewLogoutCommand(k),
+		search.NewCommand(k), // 高频入口,归快速上手(PRD 既定)
 	} {
-		c.GroupID = "auth"
+		c.GroupID = "quickstart"
+		root.AddCommand(c)
+	}
+
+	for _, c := range []*cobra.Command{
+		auth.NewSendCaptchaCommand(k), // 登录辅助(验证码),归账号
+		user.NewCommand(k),
+	} {
+		c.GroupID = "account"
 		root.AddCommand(c)
 	}
 
@@ -78,21 +92,117 @@ func NewRootCommand() *cobra.Command {
 		album.NewCommand(k),
 		artist.NewCommand(k),
 		playlist.NewCommand(k),
-		user.NewCommand(k),
-		search.NewCommand(k),
-		recommend.NewCommand(k),
-		fm.NewCommand(k),
-		recent.NewCommand(k),
 	} {
-		c.GroupID = "domain"
+		c.GroupID = "music"
 		root.AddCommand(c)
 	}
+
+	for _, c := range []*cobra.Command{
+		recommend.NewCommand(k),
+		fm.NewCommand(k),
+		recent.NewCommand(k), // #47 recent 归发现(读召回池,复听场景)
+	} {
+		c.GroupID = "discover"
+		root.AddCommand(c)
+	}
+
+	// cobra 自动生成的 completion / help 命令归「工具」组(否则落 Additional Commands,
+	// #F 守护会拦无 GroupID 命令)。InitDefaultCompletionCmd/InitDefaultHelpCmd 在
+	// 首次 Execute/Help 时懒生成,这里显式触发后赋组。
+	root.InitDefaultCompletionCmd()
+	root.InitDefaultHelpCmd()
+	for _, c := range root.Commands() {
+		if c.Name() == "completion" || c.Name() == "help" {
+			c.GroupID = "tools"
+		}
+	}
+
+	// --help-verbose:列全部命令平铺(不分组),供需要穷举时用(PRD #40)。
+	var helpVerbose bool
+	root.Flags().BoolVar(&helpVerbose, "help-verbose", false, "列出全部命令(不分组)")
+
+	// 保存原始 help func,verbose 时用平铺模板,否则原样 + 追加别名节。
+	defaultHelp := root.HelpFunc()
+	root.SetHelpFunc(func(c *cobra.Command, args []string) {
+		// verbose 只对 root 生效(子命令 --help-verbose 无意义,走默认)。
+		if c.Name() == root.Name() && flagBool(c, "help-verbose") {
+			renderHelpVerbose(c)
+			renderAliasSection(c)
+			return
+		}
+		defaultHelp(c, args)
+		// root 的默认 help 末尾追加别名节(子命令 help 不加)。
+		if c.Name() == root.Name() {
+			renderAliasSection(c)
+		}
+	})
 
 	// 命令树构造完毕:统一挂载参数补全(--id→召回池候选,--level/--area/--op→枚举)。
 	// 新命令带同名 flag 自动获得补全,零登记(PRD-0014 #48)。
 	kit.MountCompletion(root, k)
 
 	return root
+}
+
+// flagBool 读命令的 bool flag 值(未解析或不存在返回 false)。
+func flagBool(c *cobra.Command, name string) bool {
+	f := c.Flag(name)
+	if f == nil {
+		return false
+	}
+	v, err := strconv.ParseBool(f.Value.String())
+	if err != nil {
+		return false
+	}
+	return v
+}
+
+// renderHelpVerbose 渲染平铺的全部命令(不分组)。直接自绘命令列表,
+// 不走 cobra 的 usage 模板——模板会列出已注册的组标题(即便组空),破坏平铺效果。
+func renderHelpVerbose(root *cobra.Command) {
+	w := root.OutOrStdout()
+	fmt.Fprintf(w, "%s\n\n", root.Short)
+	fmt.Fprintln(w, "命令(全部):")
+	// 按命令名排序,平铺展示。
+	cmds := root.Commands()
+	// cobra 的 Commands() 已按 Name 排序(除 help/completion 顺序),手动稳定排序。
+	sortedCmds := make([]*cobra.Command, len(cmds))
+	copy(sortedCmds, cmds)
+	// 简单冒泡(命令数少,无必要引 sort)。
+	for i := 0; i < len(sortedCmds); i++ {
+		for j := i + 1; j < len(sortedCmds); j++ {
+			if sortedCmds[j].Name() < sortedCmds[i].Name() {
+				sortedCmds[i], sortedCmds[j] = sortedCmds[j], sortedCmds[i]
+			}
+		}
+	}
+	// 对齐宽度:取最长命令名。
+	maxLen := 0
+	for _, c := range sortedCmds {
+		if l := len(c.Name()); l > maxLen {
+			maxLen = l
+		}
+	}
+	for _, c := range sortedCmds {
+		pad := strings.Repeat(" ", maxLen-len(c.Name()))
+		fmt.Fprintf(w, "  %s%s   %s\n", c.Name(), pad, c.Short)
+	}
+	fmt.Fprintln(w, "\nFlags:")
+	fmt.Fprint(w, root.Flags().FlagUsages())
+	fmt.Fprintf(w, "\nUse \"%s [command] --help\" for more information about a command.\n", root.Name())
+}
+
+// renderAliasSection 在 help 输出末尾追加静态别名节(PRD #40)。
+// 读 aliases.aliasList()(单一真相,非复制),别名不进命令树故需此处显式列。
+func renderAliasSection(root *cobra.Command) {
+	entries := aliasList()
+	if len(entries) == 0 {
+		return
+	}
+	fmt.Fprintln(root.OutOrStdout(), "\n别名(跨级简写):")
+	for _, e := range entries {
+		fmt.Fprintf(root.OutOrStdout(), "  %s\t%s\n", e.Alias, strings.Join(e.Expands, " "))
+	}
 }
 
 // Execute 运行根命令:取消静默退出 0;其余错误统一打印后按类别映射退出码。
