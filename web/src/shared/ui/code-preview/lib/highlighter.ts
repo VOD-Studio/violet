@@ -141,7 +141,9 @@ export function ensureLanguage(lang: string): Promise<void> {
     const p = (async () => {
         const highlighter = await (hl ?? getHighlighter());
         if (highlighter.getLoadedLanguages().includes(lang)) return;
-        await highlighter.loadLanguage(() => import(`shiki/dist/langs/${lang}.mjs`));
+        await highlighter.loadLanguage(
+            () => import(/* @vite-ignore */ `shiki/dist/langs/${lang}.mjs`),
+        );
     })();
     loadingLanguages.set(lang, p);
     return p;
