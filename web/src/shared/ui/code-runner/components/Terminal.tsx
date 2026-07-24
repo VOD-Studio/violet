@@ -106,10 +106,24 @@ export function Terminal({ onReady, onUnmount }: TerminalProps) {
         const fit = new FitAddon();
         term.loadAddon(fit);
         term.open(containerRef.current);
+        // 初始赋予保底尺寸（防止 0 尺寸容器导致 xterm 内部 _renderService.dimensions 为 undefined 抛错）
+        try {
+            term.resize(80, 24);
+        } catch {
+            /* 忽略 */
+        }
 
         const safeFit = () => {
             try {
-                fit.fit();
+                if (
+                    containerRef.current &&
+                    containerRef.current.clientWidth > 0 &&
+                    containerRef.current.clientHeight > 0
+                ) {
+                    fit.fit();
+                } else {
+                    term.resize(80, 24);
+                }
             } catch {
                 /* 容器未挂载/尺寸为零，忽略 */
             }
