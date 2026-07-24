@@ -60,6 +60,14 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		LLMAPIURL          *string `json:"llm_api_url"`
 		LLMModel           *string `json:"llm_model"`
 		LLMProtocol        *string `json:"llm_protocol"`
+		CodeRunnerEnabled        *bool    `json:"code_runner_enabled"`
+		CodeRunnerMaxCPUCores    *float64 `json:"code_runner_max_cpu_cores"`
+		CodeRunnerMaxMemoryMB    *uint64  `json:"code_runner_max_memory_mb"`
+		CodeRunnerMaxTimeoutSecs *uint64  `json:"code_runner_max_timeout_secs"`
+		CodeRunnerMaxOutputBytes *uint64  `json:"code_runner_max_output_bytes"`
+		CodeRunnerMaxSourceBytes *uint64  `json:"code_runner_max_source_bytes"`
+		CodeRunnerAllowNetwork   *bool    `json:"code_runner_allow_network"`
+		CodeRunnerLanguages      *string  `json:"code_runner_languages"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -75,6 +83,14 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		TechStack: req.TechStack, Bio: req.Bio, FooterText: req.FooterText,
 		LLMAPIKey: req.LLMAPIKey, LLMAPIURL: req.LLMAPIURL,
 		LLMModel: req.LLMModel, LLMProtocol: req.LLMProtocol,
+		CodeRunnerEnabled:        req.CodeRunnerEnabled,
+		CodeRunnerMaxCPUCores:    req.CodeRunnerMaxCPUCores,
+		CodeRunnerMaxMemoryMB:    req.CodeRunnerMaxMemoryMB,
+		CodeRunnerMaxTimeoutSecs: req.CodeRunnerMaxTimeoutSecs,
+		CodeRunnerMaxOutputBytes: req.CodeRunnerMaxOutputBytes,
+		CodeRunnerMaxSourceBytes: req.CodeRunnerMaxSourceBytes,
+		CodeRunnerAllowNetwork:   req.CodeRunnerAllowNetwork,
+		CodeRunnerLanguages:      req.CodeRunnerLanguages,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

@@ -6,6 +6,7 @@ package settings
 
 import (
 	"context"
+	"strconv"
 
 	"blog-api/internal/domain/shared"
 )
@@ -31,6 +32,15 @@ type SiteSettings struct {
 	LLMAPIURL   string `json:"llm_api_url"`
 	LLMModel    string `json:"llm_model"`
 	LLMProtocol string `json:"llm_protocol"`
+	// 代码运行器配置（运行时可改，见 ADR-0006）
+	CodeRunnerEnabled       bool    `json:"code_runner_enabled"`
+	CodeRunnerMaxCPUCores   float64 `json:"code_runner_max_cpu_cores"`
+	CodeRunnerMaxMemoryMB   uint64  `json:"code_runner_max_memory_mb"`
+	CodeRunnerMaxTimeoutSecs uint64  `json:"code_runner_max_timeout_secs"`
+	CodeRunnerMaxOutputBytes uint64  `json:"code_runner_max_output_bytes"`
+	CodeRunnerMaxSourceBytes uint64  `json:"code_runner_max_source_bytes"`
+	CodeRunnerAllowNetwork  bool    `json:"code_runner_allow_network"`
+	CodeRunnerLanguages     string  `json:"code_runner_languages"`
 }
 
 // UpdateInput 更新入参（指针字段表部分更新，nil 不更新）
@@ -53,6 +63,14 @@ type UpdateInput struct {
 	LLMAPIURL          *string
 	LLMModel           *string
 	LLMProtocol        *string
+	CodeRunnerEnabled        *bool
+	CodeRunnerMaxCPUCores    *float64
+	CodeRunnerMaxMemoryMB    *uint64
+	CodeRunnerMaxTimeoutSecs *uint64
+	CodeRunnerMaxOutputBytes *uint64
+	CodeRunnerMaxSourceBytes *uint64
+	CodeRunnerAllowNetwork   *bool
+	CodeRunnerLanguages      *string
 }
 
 // SettingsStore 站点配置存储端口（infrastructure 层实现）
@@ -93,6 +111,16 @@ func fromMap(m map[string]string) SiteSettings {
 	s.LLMAPIURL = m["llm_api_url"]
 	s.LLMModel = m["llm_model"]
 	s.LLMProtocol = m["llm_protocol"]
+	// 代码运行器：enabled 默认 true（parseBoolDefaultTrue，老站点升级无感）；
+	// 资源阈值为 0 表示未配置，消费方 fallback 到 env config（见 application/coderunner/service.go）。
+	s.CodeRunnerEnabled = parseBoolDefaultTrue(m["code_runner_enabled"])
+	s.CodeRunnerMaxCPUCores = parseFloat(m["code_runner_max_cpu_cores"])
+	s.CodeRunnerMaxMemoryMB = parseUint64(m["code_runner_max_memory_mb"])
+	s.CodeRunnerMaxTimeoutSecs = parseUint64(m["code_runner_max_timeout_secs"])
+	s.CodeRunnerMaxOutputBytes = parseUint64(m["code_runner_max_output_bytes"])
+	s.CodeRunnerMaxSourceBytes = parseUint64(m["code_runner_max_source_bytes"])
+	s.CodeRunnerAllowNetwork = m["code_runner_allow_network"] == "true"
+	s.CodeRunnerLanguages = m["code_runner_languages"]
 	return s
 }
 
@@ -114,6 +142,34 @@ func parseInt(s string) (int, bool) {
 		n = n*10 + int(c-'0')
 	}
 	return n, true
+}
+
+// parseUint64 解析无符号整数，空串/非法返回 0（消费方据此 fallback 默认值）。
+func parseUint64(s string) uint64 {
+	if s == "" {
+		return 0
+	}
+	var n uint64
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return 0
+		}
+		n = n*10 + uint64(c-'0')
+	}
+	return n
+}
+
+// parseFloat 解析浮点数，空串/非法返回 0（消费方据此 fallback 默认值）。
+// 支持小数（如 "2.5"），用 strconv 保证精度。
+func parseFloat(s string) float64 {
+	if s == "" {
+		return 0
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return v
 }
 
 // ErrInvalidSetting 无效配置

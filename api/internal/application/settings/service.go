@@ -49,6 +49,7 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		"tech_stack":           settings.TechStack,
 		"bio":                  settings.Bio,
 		"footer_text":          settings.FooterText,
+		"code_runner_enabled":  settings.CodeRunnerEnabled,
 	}, nil
 }
 
@@ -111,6 +112,31 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	}
 	if in.LLMProtocol != nil {
 		updates["llm_protocol"] = *in.LLMProtocol
+	}
+	// 代码运行器配置（运行时可改）
+	if in.CodeRunnerEnabled != nil {
+		updates["code_runner_enabled"] = boolStr(*in.CodeRunnerEnabled)
+	}
+	if in.CodeRunnerMaxCPUCores != nil {
+		updates["code_runner_max_cpu_cores"] = strconv.FormatFloat(*in.CodeRunnerMaxCPUCores, 'f', -1, 64)
+	}
+	if in.CodeRunnerMaxMemoryMB != nil {
+		updates["code_runner_max_memory_mb"] = strconv.FormatUint(*in.CodeRunnerMaxMemoryMB, 10)
+	}
+	if in.CodeRunnerMaxTimeoutSecs != nil {
+		updates["code_runner_max_timeout_secs"] = strconv.FormatUint(*in.CodeRunnerMaxTimeoutSecs, 10)
+	}
+	if in.CodeRunnerMaxOutputBytes != nil {
+		updates["code_runner_max_output_bytes"] = strconv.FormatUint(*in.CodeRunnerMaxOutputBytes, 10)
+	}
+	if in.CodeRunnerMaxSourceBytes != nil {
+		updates["code_runner_max_source_bytes"] = strconv.FormatUint(*in.CodeRunnerMaxSourceBytes, 10)
+	}
+	if in.CodeRunnerAllowNetwork != nil {
+		updates["code_runner_allow_network"] = boolStr(*in.CodeRunnerAllowNetwork)
+	}
+	if in.CodeRunnerLanguages != nil {
+		updates["code_runner_languages"] = *in.CodeRunnerLanguages
 	}
 	if len(updates) > 0 {
 		// 批量原子更新，避免逐键 Upsert 中途失败导致部分更新

@@ -24,6 +24,14 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		"llm_api_url":          optStr("LLM API Base URL（如 https://api.openai.com/v1）"),
 		"llm_model":            optStr("LLM 模型名（如 gpt-4o-mini）"),
 		"llm_protocol":         optStr("LLM 协议（目前仅支持 openai）"),
+		"code_runner_enabled":         optBool("是否启用代码运行器"),
+		"code_runner_max_cpu_cores":   optFloat("单次执行 CPU 上限（核数）"),
+		"code_runner_max_memory_mb":   optInt64("单次执行内存上限（MB）"),
+		"code_runner_max_timeout_secs": optInt64("单次执行超时上限（秒）"),
+		"code_runner_max_output_bytes": optInt64("输出大小上限（字节）"),
+		"code_runner_max_source_bytes": optInt64("源码大小上限（字节）"),
+		"code_runner_allow_network":   optBool("是否允许网络（需作者+语言+全局三者取与）"),
+		"code_runner_languages":       optStr("语言白名单（逗号分隔 canonical key，空=全部）"),
 	})
 
 	// UpdateSettingsRequest：全指针部分更新
@@ -46,6 +54,14 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		"llm_api_url":          optStr("LLM API Base URL"),
 		"llm_model":            optStr("LLM 模型名"),
 		"llm_protocol":         optStr("LLM 协议（openai）"),
+		"code_runner_enabled":         optBool("是否启用代码运行器"),
+		"code_runner_max_cpu_cores":   optFloat("单次执行 CPU 上限（核数）"),
+		"code_runner_max_memory_mb":   optInt64("单次执行内存上限（MB）"),
+		"code_runner_max_timeout_secs": optInt64("单次执行超时上限（秒）"),
+		"code_runner_max_output_bytes": optInt64("输出大小上限（字节）"),
+		"code_runner_max_source_bytes": optInt64("源码大小上限（字节）"),
+		"code_runner_allow_network":   optBool("是否允许网络"),
+		"code_runner_languages":       optStr("语言白名单（逗号分隔）"),
 	})
 
 	// AuditLog：操作日志（domain 无 json tag，字段名为 PascalCase）

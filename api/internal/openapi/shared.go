@@ -63,6 +63,13 @@ func optBool(desc string) *openapi3.SchemaRef {
 	}}
 }
 
+// optFloat 浮点数字段
+func optFloat(desc string) *openapi3.SchemaRef {
+	return &openapi3.SchemaRef{Value: &openapi3.Schema{
+		Type: &openapi3.Types{openapi3.TypeNumber}, Format: "double", Description: desc,
+	}}
+}
+
 // strArray 字符串数组字段
 func strArray(desc string) *openapi3.SchemaRef {
 	return &openapi3.SchemaRef{Value: &openapi3.Schema{
