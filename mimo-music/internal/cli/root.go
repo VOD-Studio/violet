@@ -21,6 +21,7 @@ import (
 	"github.com/VOD-Studio/mimo-music/internal/cli/search"
 	"github.com/VOD-Studio/mimo-music/internal/cli/song"
 	"github.com/VOD-Studio/mimo-music/internal/cli/user"
+	"github.com/VOD-Studio/mimo-music/internal/cli/version"
 )
 
 // NewRootCommand 创建根命令并装配所有命令组。
@@ -53,7 +54,7 @@ func NewRootCommand() *cobra.Command {
 	// 设 Version 字段后 cobra 自动注册 --version flag;模板定制为人类可读单行。
 	// --json 与 --version 同给时 --json 优先(输出层规矩:--json 永远结构化),
 	// 在 Execute 入口拦截(见 executeVersionOrJSON)。
-	root.Version = LoadVersion().Version
+	root.Version = version.LoadVersion().Version
 	root.SetVersionTemplate("{{.Version}}\n") // 占位;实际输出由 Execute 拦截后渲染
 
 	// 全局 flag:输出形态与写操作确认,绑定到 kit 实例,所有子命令生效。
@@ -115,9 +116,12 @@ func NewRootCommand() *cobra.Command {
 
 	// cobra 自动生成的 completion / help 命令归「工具」组(否则落 Additional Commands,
 	// #F 守护会拦无 GroupID 命令)。InitDefaultCompletionCmd/InitDefaultHelpCmd 在
-	// 首次 Execute/Help 时懒生成,这里显式触发后赋组。
+	// 首次 Execute/Help 时懒生成,这里显式触发后赋组。doctor(#41)同归工具组。
 	root.InitDefaultCompletionCmd()
 	root.InitDefaultHelpCmd()
+	doctorCmd := newDoctorCommand(k)
+	doctorCmd.GroupID = "tools"
+	root.AddCommand(doctorCmd)
 	for _, c := range root.Commands() {
 		if c.Name() == "completion" || c.Name() == "help" {
 			c.GroupID = "tools"
@@ -286,7 +290,7 @@ func handleVersion() bool {
 	if !wantVersion {
 		return false
 	}
-	v := LoadVersion()
+	v := version.LoadVersion()
 	if wantJSON {
 		out, err := v.JSONString()
 		if err != nil {
