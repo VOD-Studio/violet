@@ -57,6 +57,12 @@ func getDocker() (*client.Client, error) {
 	return sharedDockerClient, nil
 }
 
+// SharedDockerClient 暴露初始化后的共享客户端（供 container 注入 runner）。
+// 未初始化（InitDockerClient 未调或 socket 缺失）时返回 nil，runner 会降级。
+func SharedDockerClient() *client.Client {
+	return sharedDockerClient
+}
+
 // BuildHostConfig 构造容器的隔离 HostConfig。
 //
 // 照搬 yggdrasil docker.rs::build_host_config，关键约束：
