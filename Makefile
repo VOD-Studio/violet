@@ -143,7 +143,15 @@ music-build: ## 编译 mimo-music
 	cd mimo-music && go build -o ./bin/server ./cmd/server
 	@echo "编译完成: mimo-music/bin/server"
 
+proto: ## 生成 mimo-music proto 代码(buf generate → gen/,需安装 buf)
+	cd mimo-music && $(MAKE) proto
+
 musicctl-install: ## 安装/更新 musicctl 到 ~/go/bin(代码变更后重跑一次即可)
+	@if [ ! -d mimo-music/gen/go ]; then \
+		echo "错误: mimo-music/gen/ 未生成(proto 产物,被 gitignore)。" >&2; \
+		echo "      先跑: make proto  (需 buf)" >&2; \
+		exit 1; \
+	fi
 	cd mimo-music && go install ./cmd/musicctl/
 	@echo "已安装: $$(go env GOPATH)/bin/musicctl"
 
