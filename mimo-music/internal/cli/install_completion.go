@@ -36,7 +36,9 @@ zsh 需在 ~/.zshrc 的 compinit 之前手动加一行:
 然后重开终端。重复运行是幂等的(脚本内容一致则不重写)。`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runInstallCompletion(cmd, cmd.OutOrStdout())
+			// 必须传 root:cobra 生成脚本时用命令的 Name() 注册,
+			// 传子命令会生成 install-completion 的补全而非 musicctl 的。
+			return runInstallCompletion(cmd.Root(), cmd.OutOrStdout())
 		},
 	}
 }

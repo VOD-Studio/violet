@@ -127,6 +127,25 @@ func TestRunInstallCompletion_Idempotent(t *testing.T) {
 	require.Contains(t, out2.String(), "已是最新", "幂等再跑应提示已是最新")
 }
 
+// RunE 真实接线回归:经 Execute 跑 install-completion,生成的脚本必须注册为
+// musicctl 而非子命令名(RunE 若传 cmd 而非 cmd.Root(),脚本会注册错命令名)。
+func TestInstallCompletion_RunE_GeneratesRootScript(t *testing.T) {
+	dir := withTestHome(t)
+	t.Setenv("SHELL", "/usr/local/bin/fish")
+	root := &cobra.Command{Use: "musicctl"}
+	var out strings.Builder
+	root.SetOut(&out)
+	root.AddCommand(newInstallCompletionCommand())
+	root.SetArgs([]string{"install-completion"})
+	require.NoError(t, root.Execute())
+
+	data, err := os.ReadFile(filepath.Join(dir, ".config", "fish", "completions", "musicctl.fish"))
+	require.NoError(t, err)
+	require.Contains(t, string(data), "fish completion for musicctl")
+	require.Contains(t, string(data), "complete -c musicctl")
+	require.NotContains(t, string(data), "install-completion")
+}
+
 // ShellName 复用 doctor 包(消除重复);Windows 路径 + .exe 后缀场景在 doctor 包测试,
 // 这里验证 cli 调 doctor.ShellName 正确接线。
 func TestRunInstallCompletion_WindowsPwshExe(t *testing.T) {
