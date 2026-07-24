@@ -224,6 +224,11 @@ refactor(api): 删除 TokenStore.Verify 死代码
 
 连续任务序列(如 code-runner T1–Tn)带 `Tn` 编号;独立 feature 不带编号。scope 用最内层模块名(同提交 scope 规则)。
 
+### Issue labels
+
+- **默认不加 label**。仅当改动性质明确匹配 GitHub 内置语义 label 时才加(如 `bug`、`documentation`)。
+- **禁止加 `ready-for-agent`** 等流程性 triage label——本仓库不跑 AFK agent 拣选流程,此类 label 无信息量(triage 五角色仅用于外部来件的 triage 流转)。
+
 ### PR 创建
 
 开 PR 时(`gh pr create`)固定配齐:
