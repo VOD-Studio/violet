@@ -52,7 +52,8 @@ const CommentSection = lazy(() =>
  */
 function BlogDetailPage() {
     const { slug } = Route.useParams();
-    const { data: post, isLoading, error } = usePost(slug);
+    const initialPost = Route.useLoaderData() as PostDetail | undefined;
+    const { data: post = initialPost, isLoading, error } = usePost(slug);
     const contentRef = useRef<HTMLElement>(null);
     const progress = useScrollProgress();
     const articleImages = useArticleImagePreview();
@@ -71,7 +72,7 @@ function BlogDetailPage() {
         });
     }, [post?.id]);
 
-    if (isLoading) {
+    if (isLoading && !post) {
         return (
             <div className="container mx-auto px-6 py-32">
                 <div className="mx-auto max-w-3xl animate-pulse">
