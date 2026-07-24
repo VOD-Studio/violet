@@ -67,7 +67,7 @@ func getDocker() (*client.Client, error) {
 	if !dockerInitAttempted {
 		return nil, fmt.Errorf("代码运行器未启用（设置 CODE_RUNNER_ENABLED=true 开启）")
 	}
-	return nil, fmt.Errorf("Docker daemon 不可连接（确认 docker/podman 已运行且 socket 路径正确）")
+	return nil, fmt.Errorf("docker daemon 不可连接（确认 docker/podman 已运行且 socket 路径正确）")
 }
 
 // SharedDockerClient 暴露初始化后的共享客户端（供 container 注入 runner）。

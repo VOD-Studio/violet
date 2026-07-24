@@ -49,9 +49,9 @@ func TestStreamRegistry_GC_RemovesExpired(t *testing.T) {
 	reg := NewStreamRegistry(50 * time.Millisecond) // 短 TTL
 	reg.Insert("old-task")
 
-	// 未过期前存在
+	// 未过期前存在:Take 应返回 non-nil(消费掉该 entry)
 	if reg.Take("old-task") == nil {
-		// Take 会消费掉，换个方式验证：直接查内部不暴露，用 GC 行为间接验证
+		t.Error("未过期 entry 的 Take 应返回 non-nil")
 	}
 	// 重新插一个（Take 刚消费了）
 	reg.Insert("old-task")
