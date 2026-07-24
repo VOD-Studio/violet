@@ -211,3 +211,31 @@ refactor(api): 删除 TokenStore.Verify 死代码
 - 移除 crypto/subtle 中失效的 import
 - CodeStore.Verify 保持不变
 ```
+
+## PR 与 issue 规范
+
+### Issue 标题格式
+
+用 **`[scope] 描述`**,不要 `vertical: ...`(vertical slice 是拆分方法论,不该暴露在标题)。对齐仓库已有的 `[code-runner] Tn` 系列惯例。
+
+- ✅ 正确：`[musicctl] 别名 argv 重写 + 首发六枚内置`
+- ✅ 正确：`[code-runner] T9 部署配置 + 文档同步`
+- ❌ 错误：`vertical: 补全挂载(kit 表驱动...)`(暴露实现方法论,且冗长)
+
+连续任务序列(如 code-runner T1–Tn)带 `Tn` 编号;独立 feature 不带编号。scope 用最内层模块名(同提交 scope 规则)。
+
+### PR 创建
+
+开 PR 时(`gh pr create`)固定配齐:
+
+- **assignees**:`@me`(当前 gh 账号,即 `--assignee @me`)。
+- **reviewers**:仓库全部 collaborator(艾特全部人)——`DefectingCat`、`xunrua`、`JingpengZhang`。用 `--reviewer DefectingCat,xunrua,JingpengZhang`。
+- **labels**:**默认不加 label**。仅当改动性质明确匹配 GitHub 内置语义 label 时才加(如纯文档加 `documentation`、修 bug 加 `bug`)。**禁止加 `ready-for-agent`** 等流程性 label(对人工 review 无信息量)。
+- **base**:指向 `release/2.0`(仓库主开发分支,非 `main`)。
+
+### 合并
+
+- **手动合并**,不勾 auto-merge。由人工 review approve 后在 UI 点合并。
+- 合并方式:**squash merge**(单 commit 历史,与已有 PR 惯例一致)。
+- 合并后:**自动删除分支**(`gh pr merge --squash --delete-branch`,合并即删远程+本地 feature 分支)。
+
