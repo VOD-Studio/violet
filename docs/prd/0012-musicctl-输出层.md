@@ -1,6 +1,6 @@
 # PRD: musicctl 输出层(人类可读 + 脚本友好)
 
-> 状态:📋 待实现
+> 状态:✅ 已完成(Phase A 收尾,见 commit `dfd8a4ea`)
 > 关联:[CLI 架构设计](../../mimo-music/docs/musicctl-cli-design.md)、[CLI 路线图](../../mimo-music/docs/musicctl-roadmap.md)(Phase A)
 > 范围:musicctl 全部 77 个命令的输出形态。不涉及 endpoint/service 层,不改任何接口行为。
 

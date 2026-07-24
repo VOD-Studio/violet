@@ -1,6 +1,6 @@
 # PRD: musicctl 配置目录迁移(Phase B)
 
-> 状态:📋 待实现
+> 状态:✅ 已完成(PR #50 合入,见 commit `6903d641`)
 > 关联:[CONTEXT.md musicctl CLI 段](../../CONTEXT.md)、[roadmap Phase B](../../mimo-music/docs/musicctl-roadmap.md)、[PRD-0014 工程化与可发现性](./0014-musicctl-工程化与可发现性.md)(召回池/补全/recent 依赖本 PRD 落地)
 > 范围:musicctl CLI 的本地状态目录从硬编码 `~/.musicctl/` 迁移到 `os.UserConfigDir()/musicctl/`,旧路径自动迁移,**单点可注入路径解析**为召回池(PRD-0014 G 片段)/补全/doctor 提供测试 seam。`config` 命令组延期——CONTEXT.md 未定义任何 CLI 配置字段,在出现真实可配置项前不立命令组(避免 speculative generality)。
 

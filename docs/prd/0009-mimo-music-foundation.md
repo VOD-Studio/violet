@@ -1,6 +1,6 @@
 # PRD: mimo-music 地基阶段（Foundation）
 
-> 状态：待实现
+> 状态：✅ 已完成（5 个 issue 全部落地，见下方进度表）
 > 关联：[架构 ADR](../adr/mimo-music-architecture.md)、[全功能蓝图](./mimo-music-netease-full-api-roadmap.md)、[Phase 4 PRD](./0008-mimo-music-phase-4.md)
 > 范围：把 mimo-music 从旧四层架构（provider/handler/手写 HTTP）迁移到新架构（proto 契约 + engine + endpoint 声明 + grpc-gateway），并迁移已实现的 15 个核心接口
 
