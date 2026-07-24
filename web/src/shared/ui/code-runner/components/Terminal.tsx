@@ -106,14 +106,26 @@ export function Terminal({ onReady, onUnmount }: TerminalProps) {
         const fit = new FitAddon();
         term.loadAddon(fit);
         term.open(containerRef.current);
-        // 延迟一帧 fit，确保容器尺寸已计算
-        requestAnimationFrame(() => {
+
+        const safeFit = () => {
             try {
                 fit.fit();
+                term.refresh(0, Math.max(0, term.rows - 1));
             } catch {
-                /* 容器未挂载，忽略 */
+                /* 容器未挂载/尺寸为零，忽略 */
             }
-        });
+        };
+
+        // 1. 立即 fit
+        safeFit();
+
+        // 2. 延迟一帧 fit（等待容器布局稳定）
+        requestAnimationFrame(safeFit);
+
+        // 3. 字体加载完成后重新 fit 与刷新（解决首次访问 WebFont 尚未加载导致的 xterm 字符尺寸测量错乱）
+        if (typeof document !== "undefined" && document.fonts) {
+            document.fonts.ready.then(safeFit).catch(() => {});
+        }
 
         termRef.current = term;
         fitRef.current = fit;
@@ -146,5 +158,5 @@ export function Terminal({ onReady, onUnmount }: TerminalProps) {
         };
     }, []);
 
-    return <div ref={containerRef} className="h-full w-full" />;
+    return <div ref={containerRef} className="relative h-full w-full overflow-hidden" />;
 }
