@@ -4,11 +4,42 @@
  * 懒加载 @xterm/xterm + @xterm/addon-fit（不进主 chunk）。
  * 暴露写入方法供 CodeRunner 调用，组件卸载时销毁实例。
  */
-import { FitAddon } from "@xterm/addon-fit";
-import { Terminal as XTerm } from "@xterm/xterm";
+
+import type { FitAddon as FitAddonType } from "@xterm/addon-fit";
+import * as fitAddonModule from "@xterm/addon-fit";
+import type { Terminal as XTermType } from "@xterm/xterm";
+import * as xtermModule from "@xterm/xterm";
 import { useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
 
+/**
+ * 兼顾 CJS 与 ESM interop 的类导出解析函数（防止 Vite ModuleRunner/SSR/Vitest/Dev 差异报错）
+ */
+function resolveClassExport<T>(mod: Record<string, unknown>, exportName: string): T {
+    if (exportName in mod && typeof mod[exportName] === "function") {
+        return mod[exportName] as T;
+    }
+    const defaultExp = mod.default;
+    if (defaultExp && typeof defaultExp === "object" && exportName in defaultExp) {
+        const target = (defaultExp as Record<string, unknown>)[exportName];
+        if (typeof target === "function") {
+            return target as T;
+        }
+    }
+    if (typeof defaultExp === "function") {
+        return defaultExp as T;
+    }
+    return mod[exportName] as T;
+}
+
+const XTerm = resolveClassExport<typeof XTermType>(
+    xtermModule as unknown as Record<string, unknown>,
+    "Terminal",
+);
+const FitAddon = resolveClassExport<typeof FitAddonType>(
+    fitAddonModule as unknown as Record<string, unknown>,
+    "FitAddon",
+);
 export interface TerminalHandle {
     /** 写 stdout 内容 */
     writeStdout: (data: string) => void;
@@ -37,9 +68,8 @@ export interface TerminalProps {
  */
 export function Terminal({ onReady, onUnmount }: TerminalProps) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const termRef = useRef<XTerm | null>(null);
-    const fitRef = useRef<FitAddon | null>(null);
-
+    const termRef = useRef<XTermType | null>(null);
+    const fitRef = useRef<FitAddonType | null>(null);
     // mount 时创建 xterm 实例。依赖空数组——onReady 只在 mount 调一次
     // biome-ignore lint/correctness/useExhaustiveDependencies: 刻意只 mount 一次
     useEffect(() => {
