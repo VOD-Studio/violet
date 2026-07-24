@@ -1,3 +1,5 @@
+import type { EmojiMeta } from "@entities/emoji/model/types";
+
 /**
  * admin-emojis 模块类型定义
  *
@@ -20,6 +22,10 @@ export interface CreateEmojiGroupRequest {
     sort_order?: number;
     /** 是否启用，省略时默认 true，显式传 false 可创建为禁用 */
     is_enabled?: boolean;
+    /** 分组类型：1=文字（颜文字组）2=图片（缺省 2） */
+    type?: number;
+    /** 分组元数据，size 为组内表情默认尺寸（1=小 2=大） */
+    meta?: EmojiMeta;
 }
 
 /**
@@ -39,6 +45,10 @@ export interface UpdateEmojiGroupRequest {
     sort_order?: number;
     /** 是否启用，传值才更新 */
     is_enabled?: boolean;
+    /** 分组类型：1=文字（颜文字组）2=图片，省略不更新 */
+    type?: number;
+    /** 分组元数据，省略不更新；size 为组内表情默认尺寸（1=小 2=大） */
+    meta?: EmojiMeta;
 }
 
 /**
@@ -71,6 +81,8 @@ export interface CreateEmojiRequest {
     source_url?: string;
     /** 分组内排序值，默认 0 */
     sort_order?: number;
+    /** 表情元数据（alias/size/type），可选 */
+    meta?: EmojiMeta;
 }
 
 /**
@@ -91,6 +103,8 @@ export interface UpdateEmojiRequest {
     source_url?: string;
     /** 分组内排序值 */
     sort_order?: number;
+    /** 表情元数据（alias/size/type），省略时不更新，显式传空对象清空 meta */
+    meta?: EmojiMeta;
 }
 
 /** CreateResourceResult - 创建资源返回的新 ID */

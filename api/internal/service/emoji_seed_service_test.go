@@ -155,3 +155,23 @@ func (t *singleHostTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	newReq.RequestURI = ""
 	return http.DefaultTransport.RoundTrip(newReq)
 }
+
+// TestInferGroupType 覆盖按 B站 Package.Type 推断分组类型。
+// type==4（颜文字）→ 文字组(1)，其余 → 图片组(2)。
+func TestInferGroupType(t *testing.T) {
+	cases := []struct {
+		name string
+		pkg  bilibili.Package
+		want domainemoji.GroupType
+	}{
+		{"颜文字组", bilibili.Package{Type: 4}, domainemoji.GroupTypeText},
+		{"普通图片组", bilibili.Package{Type: 1}, domainemoji.GroupTypeImage},
+		{"未知type兜底为图片", bilibili.Package{Type: 99}, domainemoji.GroupTypeImage},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := inferGroupType(tc.pkg)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}

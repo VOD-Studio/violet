@@ -18,7 +18,9 @@ type EmojiGroup struct {
 	coverURL  string
 	sortOrder int
 	isEnabled bool
+	groupType GroupType
 	emojis    []Emoji
+	meta      EmojiMeta
 }
 
 // Emoji 表情实体（属于分组）
@@ -31,6 +33,7 @@ type Emoji struct {
 	gifURL      string
 	textContent string
 	sortOrder   int
+	meta        EmojiMeta
 }
 
 // NewEmojiGroup 创建表情分组
@@ -44,11 +47,11 @@ func NewEmojiGroup(id int32, name, source string) (*EmojiGroup, error) {
 	return &EmojiGroup{id: id, name: name, source: source, isEnabled: true, emojis: []Emoji{}}, nil
 }
 
-func ReconstructEmojiGroup(id int32, name, source, coverURL string, sortOrder int, isEnabled bool, emojis []Emoji) *EmojiGroup {
+func ReconstructEmojiGroup(id int32, name, source, coverURL string, sortOrder int, isEnabled bool, groupType GroupType, emojis []Emoji, meta EmojiMeta) *EmojiGroup {
 	if emojis == nil {
 		emojis = []Emoji{}
 	}
-	return &EmojiGroup{id: id, name: name, source: source, coverURL: coverURL, sortOrder: sortOrder, isEnabled: isEnabled, emojis: emojis}
+	return &EmojiGroup{id: id, name: name, source: source, coverURL: coverURL, sortOrder: sortOrder, isEnabled: isEnabled, groupType: groupType, emojis: emojis, meta: meta}
 }
 
 // 表情来源类型完整枚举
@@ -58,6 +61,9 @@ const (
 
 // SetEnabled 启用/禁用分组
 func (g *EmojiGroup) SetEnabled(enabled bool) { g.isEnabled = enabled }
+
+// SetGroupType 设置分组类型（文字/图片）。
+func (g *EmojiGroup) SetGroupType(gt GroupType) { g.groupType = gt }
 
 // SetSortOrder 设置排序
 func (g *EmojiGroup) SetSortOrder(order int) { g.sortOrder = order }
@@ -88,13 +94,21 @@ func (g *EmojiGroup) SetEmojis(emojis []Emoji) {
 	}
 	g.emojis = emojis
 }
-func (g *EmojiGroup) ID() int32        { return g.id }
-func (g *EmojiGroup) Name() string     { return g.name }
-func (g *EmojiGroup) Source() string   { return g.source }
-func (g *EmojiGroup) CoverURL() string { return g.coverURL }
-func (g *EmojiGroup) SortOrder() int   { return g.sortOrder }
-func (g *EmojiGroup) IsEnabled() bool  { return g.isEnabled }
+
+// SetMeta 设置分组元数据。仅 size 有意义（picker 渲染用），alias/type 为零值。
+func (g *EmojiGroup) SetMeta(meta EmojiMeta) {
+	g.meta = meta
+}
+
+func (g *EmojiGroup) ID() int32           { return g.id }
+func (g *EmojiGroup) Name() string        { return g.name }
+func (g *EmojiGroup) Source() string      { return g.source }
+func (g *EmojiGroup) CoverURL() string    { return g.coverURL }
+func (g *EmojiGroup) SortOrder() int      { return g.sortOrder }
+func (g *EmojiGroup) IsEnabled() bool     { return g.isEnabled }
+func (g *EmojiGroup) GroupType() GroupType { return g.groupType }
 func (g *EmojiGroup) Emojis() []Emoji  { return g.emojis }
+func (g *EmojiGroup) Meta() EmojiMeta  { return g.meta }
 
 // NewEmoji 创建表情（基础字段）
 func NewEmoji(id, groupID int32, name, url string) Emoji {
@@ -102,11 +116,12 @@ func NewEmoji(id, groupID int32, name, url string) Emoji {
 }
 
 // ReconstructEmoji 从持久化数据重建表情（完整字段）
-func ReconstructEmoji(id, groupID int32, name, url, sourceURL, gifURL, textContent string, sortOrder int) Emoji {
+func ReconstructEmoji(id, groupID int32, name, url, sourceURL, gifURL, textContent string, sortOrder int, meta EmojiMeta) Emoji {
 	return Emoji{
 		id: id, groupID: groupID, name: name, url: url,
 		sourceURL: sourceURL, gifURL: gifURL,
 		textContent: textContent, sortOrder: sortOrder,
+		meta: meta,
 	}
 }
 
@@ -130,6 +145,11 @@ func (e *Emoji) Update(name, url, textContent, gifURL, sourceURL string, sortOrd
 	e.sortOrder = sortOrder
 }
 
+// SetMeta 设置表情元数据。独立于 Update：meta 是结构化值对象，不适合走「空值不覆盖」。
+func (e *Emoji) SetMeta(meta EmojiMeta) {
+	e.meta = meta
+}
+
 func (e Emoji) ID() int32           { return e.id }
 func (e Emoji) GroupID() int32      { return e.groupID }
 func (e Emoji) Name() string        { return e.name }
@@ -138,3 +158,4 @@ func (e Emoji) SourceURL() string   { return e.sourceURL }
 func (e Emoji) GifURL() string      { return e.gifURL }
 func (e Emoji) TextContent() string { return e.textContent }
 func (e Emoji) SortOrder() int      { return e.sortOrder }
+func (e Emoji) Meta() EmojiMeta     { return e.meta }

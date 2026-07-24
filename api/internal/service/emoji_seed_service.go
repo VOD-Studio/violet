@@ -106,6 +106,8 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 		g.SetCoverURL(coverURL)
 		g.SetSortOrder(i + 1)
 		g.SetEnabled(true)
+		g.SetGroupType(inferGroupType(pkg))
+		g.SetMeta(packageMetaToDomain(pkg))
 		groupID, err := s.repo.Save(ctx, g)
 		if err != nil {
 			log.Printf("警告: 创建表情分组 %s 失败: %v", pkg.Text, err)
@@ -120,6 +122,7 @@ func (s *EmojiSeedService) importBilibiliEmojis(ctx context.Context, packages []
 		for j, de := range results {
 			domainEmoji := domainemoji.NewEmoji(0, groupID, de.emote.Text, de.url)
 			domainEmoji.Update(de.emote.Text, de.url, "", de.gifURL, de.sourceURL, j+1)
+			domainEmoji.SetMeta(emoteMetaToDomain(de.emote))
 			if _, err := s.repo.SaveEmoji(ctx, domainEmoji); err != nil {
 				log.Printf("警告: 创建表情 %s 失败: %v", de.emote.Text, err)
 				continue
@@ -138,6 +141,32 @@ type downloadedEmoji struct {
 	gifURL    string
 	sourceURL string
 	sortOrder int // 原始 emote 在 pkg.Emote 中的序号（1-based），用于保持排序
+}
+
+// emoteMetaToDomain 将 B站 emote 的 meta 子对象与顶层 type 转为 domain EmojiMeta。
+// B站字段映射：meta.alias→alias、meta.size→size、type→type。
+func emoteMetaToDomain(e bilibili.Emote) domainemoji.EmojiMeta {
+	return domainemoji.ReconstructEmojiMeta(
+		e.Meta.Alias,
+		domainemoji.EmojiSize(e.Meta.Size),
+		domainemoji.EmojiType(e.Type),
+	)
+}
+
+// packageMetaToDomain 将 B站 package 的 meta.size 与顶层 type 转为 domain EmojiMeta。
+// meta.type 保留 B站 Package.Type 原值（1普通/2会员/3购买/4颜文字）用于溯源。
+// alias 对分组无意义，恒为零值。
+func packageMetaToDomain(pkg bilibili.Package) domainemoji.EmojiMeta {
+	return domainemoji.ReconstructEmojiMeta("", domainemoji.EmojiSize(pkg.Meta.Size), domainemoji.EmojiType(pkg.Type))
+}
+
+// inferGroupType 根据 B站 Package.Type 推断分组类型（顶层 type）。
+// 颜文字组（type==4）→ 文字(1)，其余 → 图片(2)。
+func inferGroupType(pkg bilibili.Package) domainemoji.GroupType {
+	if pkg.Type == int(domainemoji.TypeText) {
+		return domainemoji.GroupTypeText
+	}
+	return domainemoji.GroupTypeImage
 }
 
 // downloadPackageEmojis 并发下载一个包内所有表情图（并发度 8），返回按原序排序的结果。
@@ -247,6 +276,8 @@ func (s *EmojiSeedService) ReseedBilibiliEmojis(ctx context.Context, client *bil
 		g.SetCoverURL(coverURL)
 		g.SetSortOrder(i + 1)
 		g.SetEnabled(true)
+		g.SetGroupType(inferGroupType(pkg))
+		g.SetMeta(packageMetaToDomain(pkg))
 		groupID, err := s.repo.UpsertByName(ctx, g)
 		if err != nil {
 			log.Printf("警告: upsert 分组 %s 失败: %v", pkg.Text, err)
@@ -259,6 +290,7 @@ func (s *EmojiSeedService) ReseedBilibiliEmojis(ctx context.Context, client *bil
 		for _, de := range emojis {
 			domainEmoji := domainemoji.NewEmoji(0, groupID, de.emote.Text, de.url)
 			domainEmoji.Update(de.emote.Text, de.url, "", de.gifURL, de.sourceURL, de.sortOrder)
+			domainEmoji.SetMeta(emoteMetaToDomain(de.emote))
 			if _, err := s.repo.UpsertEmojiByName(ctx, domainEmoji); err != nil {
 				log.Printf("警告: upsert 表情 %s 失败: %v", de.emote.Text, err)
 			}

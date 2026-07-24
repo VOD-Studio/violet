@@ -90,6 +90,14 @@ func refArray(desc, schemaName string) *openapi3.SchemaRef {
 	}}
 }
 
+// optRef 引用命名 schema 的可选对象字段（指向 #/components/schemas/<name>）。
+func optRef(desc, schemaName string) *openapi3.SchemaRef {
+	return &openapi3.SchemaRef{
+		Ref:         "#/components/schemas/" + schemaName,
+		Value:       &openapi3.Schema{Description: desc},
+	}
+}
+
 // ============================================================
 // 组件注册 helper
 // ============================================================

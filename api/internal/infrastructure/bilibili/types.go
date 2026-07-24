@@ -25,11 +25,19 @@ type Data struct {
 
 // Package B站表情包
 type Package struct {
-	ID    int     `json:"id"`
-	Text  string  `json:"text"`
-	URL   string  `json:"url"` // 表情包封面图
-	Emote []Emote `json:"emote"`
-	Type  int     `json:"type"` // 13=收藏特殊包，1=普通表情包
+	ID    int        `json:"id"`
+	Text  string     `json:"text"`
+	URL   string     `json:"url"` // 表情包封面图
+	Emote []Emote    `json:"emote"`
+	Type  int        `json:"type"` // 13=收藏特殊包，1=普通表情包
+	Meta  PackageMeta `json:"meta"`
+}
+
+// PackageMeta B站表情包的 meta 子对象（分组级）。
+// size 决定 picker 中该分组的渲染尺寸（与单个 emote 的 meta.size 区分）。
+type PackageMeta struct {
+	Size   int `json:"size"`
+	ItemID int `json:"item_id"` // 付费/会员包的商店资源 ID，博客场景不使用
 }
 
 // Emote B站单个表情
@@ -37,4 +45,12 @@ type Emote struct {
 	Text   string `json:"text"`
 	URL    string `json:"url"`
 	GifURL string `json:"gif_url"`
+	Type   int    `json:"type"` // 表情门槛：1=普通 2=会员专属 3=购买所得 4=颜文字（区别于 Package.Type）
+	Meta   EmoteMeta `json:"meta"`
+}
+
+// EmoteMeta B站表情 meta 子对象（只读展示属性）。
+type EmoteMeta struct {
+	Size  int    `json:"size"`  // 尺寸：1=小 2=大
+	Alias string `json:"alias"` // 简写名/别名，无则 B站不返回此项
 }

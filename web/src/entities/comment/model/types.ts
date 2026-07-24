@@ -55,6 +55,8 @@ export interface CommentEmoteRef {
     url: string;
     /** 动图 URL，可选 */
     gif_url?: string;
+    /** 表情尺寸：1=小 2=大，缺省按小渲染 */
+    size?: number;
 }
 
 /**

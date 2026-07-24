@@ -55,7 +55,8 @@ function parseEmojiText(text: string, emote?: Record<string, CommentEmoteRef>): 
                         key={key++}
                         src={src}
                         alt={fullMatch}
-                        className="inline-block size-5 align-text-bottom"
+                        // size=2（大）渲染为 40px，其余按 20px（size-5）
+                        className={`inline-block align-text-bottom ${ref.size === 2 ? "size-10" : "size-5"}`}
                         loading="lazy"
                     />,
                 );

@@ -14,6 +14,8 @@ export const emojiGroupSchema = z.object({
     cover_url: z.string().optional(),
     sort_order: z.number().int().min(0, "排序权重不能为负数"),
     is_enabled: z.boolean(),
+    type: z.number().int(),
+    metaSize: z.number().int(),
 });
 
 /** 表情分组表单类型 */
@@ -24,6 +26,10 @@ export const emojiEditSchema = z.object({
     name: z.string().min(1, "表情名称不能为空").max(50, "表情名称最多 50 字符"),
     url: z.string().optional(),
     textContent: z.string().optional(),
+    // meta 子字段（可选）：alias 为别名，size 为尺寸，type 为门槛类型
+    metaAlias: z.string().optional(),
+    metaSize: z.number().int().optional(),
+    metaType: z.number().int().optional(),
 });
 
 /** 表情编辑表单类型 */

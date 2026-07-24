@@ -102,10 +102,11 @@ export function RichCommentInput({
 
     const handleEmojiSelect = (emoji: Emoji) => {
         const imageUrl = emoji.gif_url || emoji.url;
+        const size = emoji.meta?.size;
         if (imageUrl && isImageURL(imageUrl)) {
-            insertEmoji(emoji.name, imageUrl);
+            insertEmoji(emoji.name, imageUrl, size);
         } else {
-            insertEmoji(emoji.name, emoji.text_content || emoji.name);
+            insertEmoji(emoji.name, emoji.text_content || emoji.name, size);
         }
     };
 

@@ -27,7 +27,7 @@ export interface UseRichTextInputOptions {
 
 export interface UseRichTextInputReturn {
     contentRef: React.RefObject<HTMLDivElement | null>;
-    insertEmoji: (name: string, display: string) => void;
+    insertEmoji: (name: string, display: string, size?: number) => void;
     handleInput: () => void;
     handlePaste: (e: React.ClipboardEvent) => void;
     handleKeyDown: (e: React.KeyboardEvent) => void;
@@ -70,16 +70,6 @@ export function useRichTextInput({
         return map;
     }, [groups]);
 
-    const getDisplayUrl = useCallback(
-        (name: string): string => {
-            const emoji = emojiMap.get(name);
-            if (!emoji) return "";
-            const url = emoji.gif_url || emoji.url;
-            return url && isImageURL(url) ? url : "";
-        },
-        [emojiMap],
-    );
-
     const markdownToHtml = useCallback(
         (markdown: string): string => {
             if (!markdown) return "";
@@ -95,11 +85,12 @@ export function useRichTextInput({
                         "<br>",
                     );
                 }
-                const url = getDisplayUrl(fullMatch);
-                if (url) {
-                    html += `<img src="${url}" alt="${escapeHtml(fullMatch)}" data-emoji="${escapeHtml(fullMatch)}" class="inline-block size-5 align-text-bottom" draggable="false" />`;
+                const emoji = emojiMap.get(fullMatch);
+                const url = emoji ? emoji.gif_url || emoji.url : "";
+                if (url && isImageURL(url)) {
+                    const sizeClass = emoji?.meta?.size === 2 ? "size-10" : "size-5";
+                    html += `<img src="${url}" alt="${escapeHtml(fullMatch)}" data-emoji="${escapeHtml(fullMatch)}" class="inline-block align-text-bottom ${sizeClass}" draggable="false" />`;
                 } else {
-                    const emoji = emojiMap.get(fullMatch);
                     const text = emoji?.text_content || fullMatch;
                     html += `<span data-emoji="${escapeHtml(fullMatch)}">${escapeHtml(text)}</span>`;
                 }
@@ -111,7 +102,7 @@ export function useRichTextInput({
             }
             return html;
         },
-        [getDisplayUrl, emojiMap],
+        [emojiMap],
     );
 
     const htmlToMarkdown = useCallback((): string => {
@@ -162,12 +153,12 @@ export function useRichTextInput({
     }, [value, syncToDom]);
 
     const insertEmoji = useCallback(
-        (name: string, display: string) => {
+        (name: string, display: string, size?: number) => {
             const div = contentRef.current;
             if (!div || disabled) return;
             div.focus();
 
-            const element = createEmojiElement(name, display);
+            const element = createEmojiElement(name, display, size);
 
             const selection = window.getSelection();
             if (!selection || selection.rangeCount === 0 || !div.contains(selection.anchorNode)) {
@@ -235,13 +226,13 @@ export function useRichTextInput({
     return { contentRef, insertEmoji, handleInput, handlePaste, handleKeyDown, clear, focus };
 }
 
-function createEmojiElement(name: string, display: string): HTMLElement {
+function createEmojiElement(name: string, display: string, size?: number): HTMLElement {
     if (display && isImageURL(display)) {
         const img = document.createElement("img");
         img.src = display;
         img.alt = name;
         img.dataset.emoji = name;
-        img.className = "inline-block size-5 align-text-bottom";
+        img.className = `inline-block align-text-bottom ${size === 2 ? "size-10" : "size-5"}`;
         img.draggable = false;
         return img;
     }

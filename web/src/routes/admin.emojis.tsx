@@ -47,6 +47,7 @@ function EmojisPage() {
     }>({ open: false, group: null });
     const [emojisOpen, setEmojisOpen] = useState(false);
     const [activeGroupId, setActiveGroupId] = useState(0);
+    const activeGroup = groups?.find((g) => g.id === activeGroupId) ?? null;
 
     const deleteGroup = useDeleteEmojiGroup();
 
@@ -325,11 +326,7 @@ function EmojisPage() {
             />
 
             {/* 表情管理弹窗 */}
-            <EmojiManageDialog
-                open={emojisOpen}
-                onOpenChange={setEmojisOpen}
-                groupId={activeGroupId}
-            />
+            <EmojiManageDialog open={emojisOpen} onOpenChange={setEmojisOpen} group={activeGroup} />
         </PageShell>
     );
 }

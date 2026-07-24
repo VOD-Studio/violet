@@ -27,25 +27,35 @@ import (
 
 // EmojiGroupDTO 表情分组读模型
 type EmojiGroupDTO struct {
-	ID        int32      `json:"id"`
-	Name      string     `json:"name"`
-	Source    string     `json:"source"`
-	CoverURL  string     `json:"cover_url"`
-	SortOrder int        `json:"sort_order"`
-	IsEnabled bool       `json:"is_enabled"`
-	Emojis    []EmojiDTO `json:"emojis"`
+	ID        int32         `json:"id"`
+	Name      string        `json:"name"`
+	Source    string        `json:"source"`
+	CoverURL  string        `json:"cover_url"`
+	SortOrder int           `json:"sort_order"`
+	IsEnabled bool          `json:"is_enabled"`
+	Type      int           `json:"type"`
+	Meta      *EmojiMetaDTO `json:"meta,omitempty"`
+	Emojis    []EmojiDTO    `json:"emojis"`
 }
 
 // EmojiDTO 表情读模型
 type EmojiDTO struct {
-	ID          int32  `json:"id"`
-	GroupID     int32  `json:"group_id,omitempty"`
-	Name        string `json:"name"`
-	URL         string `json:"url"`
-	SourceURL   string `json:"source_url,omitempty"`
-	GifURL      string `json:"gif_url,omitempty"`
-	TextContent string `json:"text_content,omitempty"`
-	SortOrder   int    `json:"sort_order,omitempty"`
+	ID          int32        `json:"id"`
+	GroupID     int32        `json:"group_id,omitempty"`
+	Name        string       `json:"name"`
+	URL         string       `json:"url"`
+	SourceURL   string       `json:"source_url,omitempty"`
+	GifURL      string       `json:"gif_url,omitempty"`
+	TextContent string       `json:"text_content,omitempty"`
+	SortOrder   int          `json:"sort_order,omitempty"`
+	Meta        *EmojiMetaDTO `json:"meta,omitempty"`
+}
+
+// EmojiMetaDTO 表情元数据读模型（alias/size/type，源自 B站 meta 子对象与顶层 type）
+type EmojiMetaDTO struct {
+	Alias string `json:"alias,omitempty"`
+	Size  int    `json:"size,omitempty"`
+	Type  int    `json:"type,omitempty"`
 }
 
 // 表情图片上传限制
@@ -133,6 +143,8 @@ type CreateGroupInput struct {
 	CoverURL  string
 	SortOrder int
 	IsEnabled bool
+	Type      int
+	Meta      *EmojiMetaDTO
 }
 
 // CreateGroup 创建表情分组
@@ -150,6 +162,10 @@ func (s *EmojiService) CreateGroup(ctx context.Context, in CreateGroupInput) (in
 	}
 	g.SetCoverURL(in.CoverURL)
 	g.SetSortOrder(in.SortOrder)
+	g.SetGroupType(domainemoji.GroupType(in.Type))
+	if in.Meta != nil {
+		g.SetMeta(metaDTOToDomain(in.Meta))
+	}
 	if !in.IsEnabled {
 		g.SetEnabled(false)
 	}
@@ -164,6 +180,8 @@ type UpdateGroupInput struct {
 	CoverURL  *string
 	SortOrder *int
 	IsEnabled *bool
+	Type      *int
+	Meta      *EmojiMetaDTO
 }
 
 // UpdateGroup 更新分组
@@ -193,6 +211,12 @@ func (s *EmojiService) UpdateGroup(ctx context.Context, in UpdateGroupInput) err
 	}
 	if in.IsEnabled != nil {
 		g.SetEnabled(*in.IsEnabled)
+	}
+	if in.Type != nil {
+		g.SetGroupType(domainemoji.GroupType(*in.Type))
+	}
+	if in.Meta != nil {
+		g.SetMeta(metaDTOToDomain(in.Meta))
 	}
 	_, err = s.repo.Save(ctx, g)
 	return err
@@ -238,6 +262,7 @@ type CreateEmojiInput struct {
 	GifURL      string
 	SourceURL   string
 	SortOrder   int
+	Meta        *EmojiMetaDTO
 }
 
 // CreateEmoji 在分组内创建表情
@@ -251,6 +276,7 @@ func (s *EmojiService) CreateEmoji(ctx context.Context, in CreateEmojiInput) (in
 	}
 	e := domainemoji.NewEmoji(0, in.GroupID, in.Name, in.URL)
 	e.Update(in.Name, in.URL, in.TextContent, in.GifURL, in.SourceURL, in.SortOrder)
+	e.SetMeta(metaDTOToDomain(in.Meta))
 	return s.repo.SaveEmoji(ctx, e)
 }
 
@@ -263,6 +289,7 @@ type UpdateEmojiInput struct {
 	GifURL      string
 	SourceURL   string
 	SortOrder   int
+	Meta        *EmojiMetaDTO
 }
 
 // UpdateEmoji 更新表情
@@ -272,8 +299,19 @@ func (s *EmojiService) UpdateEmoji(ctx context.Context, in UpdateEmojiInput) err
 		return err
 	}
 	e.Update(in.Name, in.URL, in.TextContent, in.GifURL, in.SourceURL, in.SortOrder)
+	// meta 区分省略与清空：nil（请求体省略 meta 键）保持原值，非 nil（含空对象）按值设置
+	if in.Meta != nil {
+		e.SetMeta(metaDTOToDomain(in.Meta))
+	}
 	_, err = s.repo.SaveEmoji(ctx, e)
 	return err
+}
+
+// metaDTOToDomain 将输入 DTO 转为 domain EmojiMeta。空对象对应清空为零值 meta。
+func metaDTOToDomain(m *EmojiMetaDTO) domainemoji.EmojiMeta {
+	return domainemoji.ReconstructEmojiMeta(
+		m.Alias, domainemoji.EmojiSize(m.Size), domainemoji.EmojiType(m.Type),
+	)
 }
 
 // DeleteEmoji 删除表情
@@ -376,6 +414,8 @@ func emojiGroupToDTO(g *domainemoji.EmojiGroup) EmojiGroupDTO {
 	return EmojiGroupDTO{
 		ID: g.ID(), Name: g.Name(), Source: g.Source(), CoverURL: g.CoverURL(),
 		SortOrder: g.SortOrder(), IsEnabled: g.IsEnabled(), Emojis: emojis,
+		Type: int(g.GroupType()),
+		Meta: metaToDTO(g.Meta()),
 	}
 }
 
@@ -388,10 +428,22 @@ func emojiGroupsToDTOs(groups []*domainemoji.EmojiGroup) []EmojiGroupDTO {
 }
 
 func emojiToDTO(e domainemoji.Emoji) EmojiDTO {
-	return EmojiDTO{
+	dto := EmojiDTO{
 		ID: e.ID(), GroupID: e.GroupID(), Name: e.Name(), URL: e.URL(),
 		SourceURL: e.SourceURL(), GifURL: e.GifURL(),
 		TextContent: e.TextContent(), SortOrder: e.SortOrder(),
+		Meta: metaToDTO(e.Meta()),
+	}
+	return dto
+}
+
+// metaToDTO 将 domain EmojiMeta 转为 DTO 指针。三字段全空时返回 nil（omitempty 省略）。
+func metaToDTO(m domainemoji.EmojiMeta) *EmojiMetaDTO {
+	if m.Alias() == "" && m.Size() == 0 && m.Type() == 0 {
+		return nil
+	}
+	return &EmojiMetaDTO{
+		Alias: m.Alias(), Size: int(m.Size()), Type: int(m.Type()),
 	}
 }
 
