@@ -143,7 +143,8 @@ func newTestService(t *testing.T, runner RunnerAlias) (*Service, *fakeRepo, *fak
 	repo := newFakeRepo()
 	sink := newFakeSink()
 	cfg := Config{MaxSourceBytes: 1024, MaxConcurrent: 2, QueueTimeoutSecs: 5, TaskTTLSecs: 300}
-	svc := NewService(repo, runner, sink, testResolver{}, cfg)
+	// settingsStore 传 nil：测试只用 env cfg，不读 site_settings
+	svc := NewService(repo, runner, sink, testResolver{}, nil, cfg)
 	return svc, repo, sink
 }
 

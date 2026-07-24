@@ -153,9 +153,9 @@ func main() {
 	refetchStatusStore := infraemoji.NewRefetchStatusStore(redisClient)
 	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix, cfg.MimoMusicURL, emojiSeedService, refetchStatusStore)
 
-	// 代码运行器（可运行代码块沙箱执行）：启用时连 docker.sock 起隔离容器执行用户代码。
-	// 禁用时（Enabled=false）Docker client 为 nil，执行请求降级返回「系统暂时不可用」。
-	codeRunnerContainer := app.NewCodeRunnerContainer(redisClient, cfg.CodeRunner)
+	// 代码运行器（可运行代码块沙箱执行）：始终连 docker.sock 起隔离容器执行用户代码。
+	// enabled 开关与资源阈值走 site_settings（运行时可改），settingsStore 注入 service 实时读取。
+	codeRunnerContainer := app.NewCodeRunnerContainer(redisClient, settingsContainer.Store, cfg.CodeRunner)
 
 	// 表情种子数据初始化（幂等，后台执行）：首次启动执行完整导入，
 	// 后续启动仅回填 bilibili 分组缺失的封面 URL。不阻塞 HTTP 服务启动。

@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	domaincoderunner "blog-api/internal/domain/coderunner"
+	domainsettings "blog-api/internal/domain/settings"
 	domainshared "blog-api/internal/domain/shared"
 )
 
@@ -53,29 +54,34 @@ type RunnerAlias = SandboxRunner
 // ClampLimits 资源钳制 → Runner 起隔离容器。错误脱敏：匿名可见
 // 「不支持的语言/超限」；系统内部异常一律「系统暂时不可用」（见 ADR-0006）。
 type Service struct {
-	repo     domaincoderunner.TaskRepository
-	runner   RunnerAlias
-	sink     StreamSink
-	resolver LangResolver
-	cfg      Config
-	sem      chan struct{} // 并发槽（MaxConcurrent）
-	ttl      time.Duration
+	repo          domaincoderunner.TaskRepository
+	runner        RunnerAlias
+	sink          StreamSink
+	resolver      LangResolver
+	settingsStore domainsettings.SettingsStore // 运行时可配的站点设置（enabled + 资源阈值）
+	cfg           Config
+	sem           chan struct{} // 并发槽（MaxConcurrent）
+	ttl           time.Duration
 }
 
 // NewService 构造执行服务。sem 大小 = cfg.MaxConcurrent。
-func NewService(repo domaincoderunner.TaskRepository, runner RunnerAlias, sink StreamSink, resolver LangResolver, cfg Config) *Service {
+//
+// settingsStore 用于运行时读取 code_runner_enabled + 资源阈值（admin 后台可改，
+// 无需重启）。nil 时降级为只用 cfg（env 配置）。
+func NewService(repo domaincoderunner.TaskRepository, runner RunnerAlias, sink StreamSink, resolver LangResolver, settingsStore domainsettings.SettingsStore, cfg Config) *Service {
 	conc := cfg.MaxConcurrent
 	if conc <= 0 {
 		conc = 4
 	}
 	return &Service{
-		repo:     repo,
-		runner:   runner,
-		sink:     sink,
-		resolver: resolver,
-		cfg:      cfg,
-		sem:      make(chan struct{}, conc),
-		ttl:      time.Duration(cfg.TaskTTLSecs) * time.Second,
+		repo:          repo,
+		runner:        runner,
+		sink:          sink,
+		resolver:      resolver,
+		settingsStore: settingsStore,
+		cfg:           cfg,
+		sem:           make(chan struct{}, conc),
+		ttl:           time.Duration(cfg.TaskTTLSecs) * time.Second,
 	}
 }
 
@@ -84,7 +90,7 @@ func NewService(repo domaincoderunner.TaskRepository, runner RunnerAlias, sink S
 // 校验通过后生成 task_id 入队，后台执行 Run，结果写 repo 供 GetExecResult 轮询。
 // 返回 task_id。语言不支持 / 源码过大时返回领域错误（前端可见具体原因）。
 func (s *Service) StartExec(ctx context.Context, req ExecRequest, userID domainshared.ID) (string, error) {
-	if err := s.validate(req); err != nil {
+	if err := s.validate(ctx, req); err != nil {
 		return "", err
 	}
 
@@ -103,7 +109,7 @@ func (s *Service) StartExec(ctx context.Context, req ExecRequest, userID domains
 // 校验同 StartExec，额外创建 SSE channel 注册到 sink。后台执行 RunStream，
 // stdout/stderr chunk 实时推 channel；结束时推 done chunk 并更新 repo。
 func (s *Service) StartExecStream(ctx context.Context, req ExecRequest, userID domainshared.ID) (string, error) {
-	if err := s.validate(req); err != nil {
+	if err := s.validate(ctx, req); err != nil {
 		return "", err
 	}
 
@@ -140,24 +146,73 @@ func (s *Service) ConsumeStream(taskID string) chan OutputChunk {
 	return nil
 }
 
-// validate 校验语言白名单与源码大小。
+// validate 校验语言白名单、功能开关、源码大小，并刷新资源上限。
 //
-// 非终态错误（语言不支持/源码过大）返回领域错误，前端可见具体原因。
-// 速率限制由中间件层处理（CodeRunnerRateLimit），admin 放行也由中间件判断。
-func (s *Service) validate(req ExecRequest) error {
+// 每次执行前从 site_settings 读最新配置（运行时可改）：
+//   - code_runner_enabled false → 拒绝
+//   - 资源阈值 → reload 到全局（ClampLimits 据此生效）
+//   - source bytes 上限 → 用 site_settings 配置，未配则 fallback 到 env
+//
+// 非终态错误（语言不支持/功能禁用/源码过大）返回领域错误，前端可见具体原因。
+func (s *Service) validate(ctx context.Context, req ExecRequest) error {
 	if !domaincoderunner.IsValidLanguage(req.Language) {
 		return domainshared.BadRequest("不支持该执行语言")
 	}
-	if uint64(len(req.Source)) > s.cfg.MaxSourceBytes {
+
+	// 读 site_settings（运行时可配）；store 为 nil 时只用 env cfg
+	maxSourceBytes := s.cfg.MaxSourceBytes
+	if s.settingsStore != nil {
+		m, err := s.settingsStore.GetAll(ctx)
+		if err == nil {
+			// 功能开关：默认 true（parseBoolDefaultTrue 语义，老站点/未配视为开）
+			if m["code_runner_enabled"] == "false" {
+				return domainshared.BadRequest("代码运行器已被禁用")
+			}
+			// 刷新资源上限（admin 改完下次执行即生效）
+			if reloadLimitsFromSettings != nil {
+				reloadLimitsFromSettings(m)
+			}
+			// source bytes 从 site_settings 读，未配（空）则用 env
+			if sb := parseSourceBytes(m["code_runner_max_source_bytes"]); sb > 0 {
+				maxSourceBytes = sb
+			}
+		}
+	}
+
+	if uint64(len(req.Source)) > maxSourceBytes {
 		return domainshared.BadRequest("源代码过大")
 	}
-	// 前置探测执行器可用性：功能未启用 / daemon 连接失败时直接拒绝，
-	// 把可操作的错误信息直达前端（而非后台执行后才报含糊的「系统暂时不可用」）。
+	// 前置探测执行器可用性：daemon 连接失败时直接拒绝
 	if err := s.runner.Available(); err != nil {
 		log.Warn().Err(err).Str("language", req.Language).Msg("代码运行器不可用，拒绝执行")
 		return domainshared.Internal(err.Error(), err)
 	}
 	return nil
+}
+
+// parseSourceBytes 解析 source bytes 字符串，空/非法返回 0（调用方 fallback env）。
+func parseSourceBytes(s string) uint64 {
+	if s == "" {
+		return 0
+	}
+	var n uint64
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return 0
+		}
+		n = n*10 + uint64(c-'0')
+	}
+	return n
+}
+
+// reloadLimitsFromSettings 由 infrastructure 注入（调 ReloadMaxLimitsFromMap）。
+// 接受 site_settings 的 map，infrastructure 内部用 env config 做 fallback。
+// 避免 application 层直接 import infrastructure。
+var reloadLimitsFromSettings func(m map[string]string)
+
+// SetReloadLimitsFn 由 infrastructure 在初始化时调用，注入资源上限刷新函数。
+func SetReloadLimitsFn(fn func(m map[string]string)) {
+	reloadLimitsFromSettings = fn
 }
 
 // runBackground 后台执行：排队等信号量 → ClampLimits → Run/RunStream → 更新 task。
