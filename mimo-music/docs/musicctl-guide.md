@@ -106,12 +106,18 @@ flag 不支持位置参数。
 
 ## 补全
 
-Tab 补全(`--id <TAB>` 列召回池候选、`--level <TAB>` 列枚举)只走本地缓存,
-**绝不触发网络查询**。安装 shell 补全:
+Tab 补全(`--id <TAB>` 列召回池候选、`--level <TAB>` 列枚举、子命令名)只走本地缓存,
+**绝不触发网络查询**。
+
+装了 shell 补全脚本后,`musicctl <TAB>` 才会列命令(否则 Tab 列文件)。**查看当前 shell
+的补全状态 + 一键安装命令**:
 
 ```sh
-musicctl completion zsh > ~/.zsh/completions/_musicctl   # 或 bash/fish/powershell
+musicctl doctor    # 补全项告诉你装没装、怎么装(自动识别 zsh/bash/fish)
 ```
+
+doctor 会按你的 shell 给对应命令(如 zsh 写到 `~/.zsh/completions/_musicctl` + 提示加 fpath,
+fish 写到 `~/.config/fish/completions/`)。装后重开终端或 source 生效。
 
 ## help 分组
 

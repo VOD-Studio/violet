@@ -135,6 +135,9 @@ func NewRootCommand() *cobra.Command {
 	doctorCmd := newDoctorCommand(k)
 	doctorCmd.GroupID = "tools"
 	root.AddCommand(doctorCmd)
+	installCompCmd := newInstallCompletionCommand()
+	installCompCmd.GroupID = "tools"
+	root.AddCommand(installCompCmd)
 	for _, c := range root.Commands() {
 		if c.Name() == "completion" || c.Name() == "help" {
 			c.GroupID = "tools"

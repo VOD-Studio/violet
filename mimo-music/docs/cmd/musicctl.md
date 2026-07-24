@@ -34,6 +34,7 @@ musicctl [flags]
 * [musicctl completion](musicctl_completion.md)	 - Generate the autocompletion script for the specified shell
 * [musicctl doctor](musicctl_doctor.md)	 - 环境自检(版本/会话/补全/音频),出问题一眼定位
 * [musicctl fm](musicctl_fm.md)	 - 私人 FM
+* [musicctl install-completion](musicctl_install-completion.md)	 - 生成当前 shell 的 Tab 补全脚本到标准目录(bash/fish 自动加载;zsh 需手动加 fpath)
 * [musicctl login](musicctl_login.md)	 - 扫码登录,cookie 持久化到本地配置目录
 * [musicctl login-cellphone](musicctl_login-cellphone.md)	 - 手机号验证码登录
 * [musicctl login-status](musicctl_login-status.md)	 - 查看当前登录态

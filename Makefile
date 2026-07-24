@@ -154,6 +154,9 @@ musicctl-install: ## 安装/更新 musicctl 到 ~/go/bin(代码变更后重跑�
 	fi
 	cd mimo-music && go install ./cmd/musicctl/
 	@echo "已安装: $$(go env GOPATH)/bin/musicctl"
+	@echo ""
+	@echo "启用 Tab 补全(装一次即可,让 musicctl <TAB> 列命令而非文件):"
+	@echo "  musicctl doctor   # 查看当前 shell 的补全状态 + 一键安装命令"
 
 musicctl-uninstall: ## 卸载全局 musicctl
 	rm -f $$(go env GOPATH)/bin/musicctl
