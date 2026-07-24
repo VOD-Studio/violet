@@ -143,13 +143,34 @@ export function Terminal({ onReady, onUnmount }: TerminalProps) {
         termRef.current = term;
         fitRef.current = fit;
 
-        // 暴露句柄
-        onReady?.({
-            writeStdout: (data) => term.write(data),
-            writeStderr: (data) => term.write(`\x1b[31m${data}\x1b[0m`), // ANSI 红色
-            writeInfo: (data) => term.write(`\x1b[90m${data}\x1b[0m`), // ANSI 灰色
-            clear: () => term.clear(),
-            reset: () => term.reset(),
+        let disposed = false;
+
+        // 暴露句柄。延迟到下一帧再调 onReady：
+        // React StrictMode dev 下 useEffect 双调用（mount→cleanup→remount），
+        // 若同步调用 onReady，第一次 mount 的回调会把已 dispose 的 xterm 句柄
+        // 泄露给调用方（CodeRunner.handleRun），写入已销毁实例时触发
+        // RenderService.dimensions → _renderer.value 为 undefined 抛 TypeError。
+        // 延迟一帧 + cleanup 中 cancelAnimationFrame 可确保只有存活 mount 的
+        // 句柄才到达调用方。
+        const readyRafId = requestAnimationFrame(() => {
+            if (disposed) return;
+            onReady?.({
+                writeStdout: (data) => {
+                    if (!disposed) term.write(data);
+                },
+                writeStderr: (data) => {
+                    if (!disposed) term.write(`\x1b[31m${data}\x1b[0m`);
+                },
+                writeInfo: (data) => {
+                    if (!disposed) term.write(`\x1b[90m${data}\x1b[0m`);
+                },
+                clear: () => {
+                    if (!disposed) term.clear();
+                },
+                reset: () => {
+                    if (!disposed) term.reset();
+                },
+            });
         });
 
         // 容器尺寸变化时重新 fit
@@ -163,6 +184,8 @@ export function Terminal({ onReady, onUnmount }: TerminalProps) {
         resizeObserver.observe(containerRef.current);
 
         return () => {
+            disposed = true;
+            cancelAnimationFrame(readyRafId);
             resizeObserver.disconnect();
             term.dispose();
             termRef.current = null;
