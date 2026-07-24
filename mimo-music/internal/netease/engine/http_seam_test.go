@@ -30,7 +30,7 @@ func TestNewNeteaseRequest_HeadersMatchInternal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("构造对照请求失败: %v", err)
 	}
-	setCommonHeaders(internalReq, cookie)
+	setCommonHeaders(internalReq, cookie, "")
 
 	cases := []struct {
 		name, got, want string

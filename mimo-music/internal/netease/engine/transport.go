@@ -29,6 +29,12 @@ const (
 	neteaseUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) NeteaseMusicDesktop/2.3.17.1034"
 )
 
+// MobileUserAgent 是模拟网易云 iOS 客户端的 User-Agent。
+// 网易云按 UA 分配 CDN 节点:song url 接口桌面 UA 拿到的 x04 节点链接回源 403,
+// 移动端 UA 的 x01 节点正常(2026-07 实测)。需要可播直链的 endpoint 声明
+// Meta.UserAgent = engine.MobileUserAgent。
+const MobileUserAgent = "NeteaseMusic/9.0.60 (iPhone; iOS 17.0; zh_CN)"
+
 // transport 封装网易云 HTTP 请求的三种发送方式。
 type transport struct {
 	client  *http.Client
@@ -51,30 +57,30 @@ func (t *transport) withBaseURL(base string) *transport {
 // weapiPost 发送 weapi 加密 POST 请求。
 //
 // urlPath 是网易云端点路径（如 /weapi/song/enhance/player/url/v1），
-// payload 是 JSON 字符串，cookie 可选。
+// payload 是 JSON 字符串，cookie 可选，ua 为空时用默认桌面 UA。
 // 返回原始 JSON 响应体和从 Set-Cookie 响应头提取的 Cookie 字符串。
-func (t *transport) weapiPost(ctx context.Context, urlPath, payload, cookie string) ([]byte, string, error) {
+func (t *transport) weapiPost(ctx context.Context, urlPath, payload, cookie, ua string) ([]byte, string, error) {
 	encrypted, err := WeAPIEncrypt(payload, "")
 	if err != nil {
 		return nil, "", fmt.Errorf("加密失败: %w", err)
 	}
 
-	return t.postForm(ctx, urlPath, encrypted.Params, encrypted.EncSecKey, cookie)
+	return t.postForm(ctx, urlPath, encrypted.Params, encrypted.EncSecKey, cookie, ua)
 }
 
 // eapiPost 发送 eapi 加密 POST 请求。
 //
 // encryptedParams 是 EAPIEncrypt 已加密的十六进制密文（不再二次加密，与 weapi 不同）。
 // eapi 的请求体只有 params 一个字段（无 encSecKey）。
-func (t *transport) eapiPost(ctx context.Context, urlPath, encryptedParams, cookie string) ([]byte, string, error) {
-	return t.postForm(ctx, urlPath, encryptedParams, "", cookie)
+func (t *transport) eapiPost(ctx context.Context, urlPath, encryptedParams, cookie, ua string) ([]byte, string, error) {
+	return t.postForm(ctx, urlPath, encryptedParams, "", cookie, ua)
 }
 
 // postForm 发送 form-urlencoded POST 请求的共享实现。
 //
 // weapi 带 params+encSecKey，eapi 只带 params。encSecKey 为空时只发 params。
 // params 值含 base64/十六进制特殊字符（+ = /），必须 URL 编码。
-func (t *transport) postForm(ctx context.Context, urlPath, params, encSecKey, cookie string) ([]byte, string, error) {
+func (t *transport) postForm(ctx context.Context, urlPath, params, encSecKey, cookie, ua string) ([]byte, string, error) {
 	formData := url.Values{}
 	formData.Set("params", params)
 	if encSecKey != "" {
@@ -87,7 +93,7 @@ func (t *transport) postForm(ctx context.Context, urlPath, params, encSecKey, co
 		return nil, "", fmt.Errorf("创建请求失败: %w", err)
 	}
 
-	setCommonHeaders(req, cookie)
+	setCommonHeaders(req, cookie, ua)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := t.client.Do(req)
@@ -109,13 +115,13 @@ func (t *transport) postForm(ctx context.Context, urlPath, params, encSecKey, co
 }
 
 // postJSON 发送非加密 JSON POST 请求（二维码登录用）。
-func (t *transport) postJSON(ctx context.Context, fullURL, payload, cookie string) ([]byte, string, error) {
+func (t *transport) postJSON(ctx context.Context, fullURL, payload, cookie, ua string) ([]byte, string, error) {
 	req, err := http.NewRequestWithContext(ctx, "POST", fullURL, bytes.NewBufferString(payload))
 	if err != nil {
 		return nil, "", fmt.Errorf("创建请求失败: %w", err)
 	}
 
-	setCommonHeaders(req, cookie)
+	setCommonHeaders(req, cookie, ua)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := t.client.Do(req)
@@ -140,7 +146,7 @@ func (t *transport) postJSON(ctx context.Context, fullURL, payload, cookie strin
 //
 // 网易云在 2026 年对匿名 weapi 请求做了限制，部分接口用非加密 GET API
 // 仍可匿名访问（如 /api/search/get）。
-func (t *transport) apiGet(ctx context.Context, urlPath string, params url.Values, cookie string) ([]byte, error) {
+func (t *transport) apiGet(ctx context.Context, urlPath string, params url.Values, cookie, ua string) ([]byte, error) {
 	target := t.baseURL + urlPath
 	if len(params) > 0 {
 		target += "?" + params.Encode()
@@ -151,7 +157,7 @@ func (t *transport) apiGet(ctx context.Context, urlPath string, params url.Value
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
 
-	setCommonHeaders(req, cookie)
+	setCommonHeaders(req, cookie, ua)
 
 	resp, err := t.client.Do(req)
 	if err != nil {
@@ -172,9 +178,13 @@ func (t *transport) apiGet(ctx context.Context, urlPath string, params url.Value
 }
 
 // setCommonHeaders 设置网易云请求的公共 header（Referer / User-Agent / Cookie）。
-func setCommonHeaders(req *http.Request, cookie string) {
+// ua 为空时回落默认桌面客户端 UA（neteaseUserAgent）。
+func setCommonHeaders(req *http.Request, cookie, ua string) {
 	req.Header.Set("Referer", neteaseBaseURL)
-	req.Header.Set("User-Agent", neteaseUserAgent)
+	if ua == "" {
+		ua = neteaseUserAgent
+	}
+	req.Header.Set("User-Agent", ua)
 
 	// __remember_me=true 是网易云判断"非恶意请求"的标志 cookie(缺失则返回空 body)。
 	// 参考 chaunsin/netease-cloud-music:所有请求默认带此 cookie。
@@ -210,4 +220,3 @@ func extractCookies(resp *http.Response) string {
 	}
 	return strings.Join(parts, "; ")
 }
-

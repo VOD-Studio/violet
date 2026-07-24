@@ -22,6 +22,6 @@ func NewNeteaseRequest(ctx context.Context, method, url, cookie string) (*http.R
 	if err != nil {
 		return nil, fmt.Errorf("构造 netease 请求: %w", err)
 	}
-	setCommonHeaders(req, cookie)
+	setCommonHeaders(req, cookie, "")
 	return req, nil
 }

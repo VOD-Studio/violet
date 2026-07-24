@@ -43,6 +43,11 @@ type Meta struct {
 	Crypto CryptoMethod
 	// Auth 是登录态需求，驱动 cookie 池选取。
 	Auth session.AuthRequirement
+	// UserAgent 覆盖请求 UA（空 = 默认桌面客户端 UA）。
+	// 网易云按 UA 分配 CDN 节点：song url 接口桌面 UA 拿到的 x04 节点链接
+	// 回源鉴权 403，移动端 UA 的 x01 节点正常——需移动 UA 的 endpoint 用
+	// engine.MobileUserAgent。
+	UserAgent string
 }
 
 // Engine 是网易云共享执行引擎。
@@ -154,21 +159,21 @@ func (e *Engine) doOnceWithCookie(ctx context.Context, meta Meta, params map[str
 
 	switch meta.Crypto {
 	case CryptoWeAPI:
-		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
+		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie, meta.UserAgent)
 	case CryptoEAPI:
 		encrypted, encErr := EAPIEncrypt(meta.Path, string(payload))
 		if encErr != nil {
 			return nil, "", fmt.Errorf("eapi 加密失败: %w", encErr)
 		}
-		body, _, callErr = e.transport.eapiPost(ctx, meta.Path, encrypted.Params, cookie)
+		body, _, callErr = e.transport.eapiPost(ctx, meta.Path, encrypted.Params, cookie, meta.UserAgent)
 	case CryptoNone:
 		if meta.Method == "GET" {
-			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie)
+			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie, meta.UserAgent)
 		} else {
-			body, _, callErr = e.transport.postJSON(ctx, e.transport.baseURL+meta.Path, string(payload), cookie)
+			body, _, callErr = e.transport.postJSON(ctx, e.transport.baseURL+meta.Path, string(payload), cookie, meta.UserAgent)
 		}
 	default:
-		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
+		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie, meta.UserAgent)
 	}
 
 	if callErr != nil {
@@ -243,21 +248,21 @@ func (e *Engine) doOnce(ctx context.Context, meta Meta, params map[string]any) (
 
 	switch meta.Crypto {
 	case CryptoWeAPI:
-		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
+		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie, meta.UserAgent)
 	case CryptoEAPI:
 		encrypted, encErr := EAPIEncrypt(meta.Path, string(payload))
 		if encErr != nil {
 			return nil, "", fmt.Errorf("eapi 加密失败: %w", encErr)
 		}
-		body, _, callErr = e.transport.eapiPost(ctx, meta.Path, encrypted.Params, cookie)
+		body, _, callErr = e.transport.eapiPost(ctx, meta.Path, encrypted.Params, cookie, meta.UserAgent)
 	case CryptoNone:
 		if meta.Method == "GET" {
-			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie)
+			body, callErr = e.transport.apiGet(ctx, meta.Path, toQueryValues(params), cookie, meta.UserAgent)
 		} else {
-			body, _, callErr = e.transport.postJSON(ctx, e.transport.baseURL+meta.Path, string(payload), cookie)
+			body, _, callErr = e.transport.postJSON(ctx, e.transport.baseURL+meta.Path, string(payload), cookie, meta.UserAgent)
 		}
 	default:
-		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie)
+		body, setCookie, callErr = e.transport.weapiPost(ctx, meta.Path, string(payload), cookie, meta.UserAgent)
 	}
 
 	if callErr != nil {
