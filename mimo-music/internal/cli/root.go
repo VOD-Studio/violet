@@ -49,6 +49,13 @@ func NewRootCommand() *cobra.Command {
 		SilenceErrors: true, // 错误由 Execute 统一以「错误: 」格式打印(与旧 CLI 一致)
 	}
 
+	// --version:经 debug.ReadBuildInfo() 读 module version + vcs revision(#36)。
+	// 设 Version 字段后 cobra 自动注册 --version flag;模板定制为人类可读单行。
+	// --json 与 --version 同给时 --json 优先(输出层规矩:--json 永远结构化),
+	// 在 Execute 入口拦截(见 executeVersionOrJSON)。
+	root.Version = LoadVersion().Version
+	root.SetVersionTemplate("{{.Version}}\n") // 占位;实际输出由 Execute 拦截后渲染
+
 	// 全局 flag:输出形态与写操作确认,绑定到 kit 实例,所有子命令生效。
 	root.PersistentFlags().BoolVar(&k.JSON, "json", false, "以 JSON 输出(管道/重定向时自动启用)")
 	root.PersistentFlags().BoolVar(&k.Yes, "yes", false, "写操作跳过 y/N 确认(脚本场景)")
@@ -213,6 +220,12 @@ func renderAliasSection(root *cobra.Command) {
 // 使别名与补全对命令层透明。
 func Execute() {
 	rewriteAliases()
+	// --version 拦截:cobra 内置的 --version 处理走固定模板,无法与 --json 联动。
+	// 在此提前拦截:--version 时按 --json 决定人类/结构化输出后直接退出(输出层规矩:
+	// --json 永远结构化)。--json 与 --version 同给时 --json 优先。
+	if handleVersion() {
+		return
+	}
 	err := NewRootCommand().Execute()
 	switch {
 	case err == nil, errors.Is(err, kit.ErrCancelled):
@@ -241,6 +254,50 @@ func rewriteAliases() {
 	if rewritten, ok := expand(args[1:]); ok {
 		os.Args = append([]string{args[0]}, rewritten...)
 	}
+}
+
+// handleVersion 检测 --version flag 并自行渲染后退出,返回 true 表示已处理。
+//
+// 必须在 cobra Execute 前拦截:cobra 的内置 --version 走 VersionTemplate,
+// 无法按 --json 切结构化输出。这里手动扫 os.Args(--version 形态:
+// --version、--version=true、-v 若注册了简写;musicctl 只用 --version)。
+// --json 与 --version 同给时 --json 优先(结构化),否则人类可读单行。
+//
+// 不用 cobra 的 flag 解析(那需要构造 root),手扫足够 robust:
+// 只看 os.Args[1:] 是否含 --version / --version=true(忽略其他 flag 与值)。
+func handleVersion() bool {
+	wantVersion := false
+	wantJSON := false
+	for _, a := range os.Args[1:] {
+		// 遇到子命令或 -- 后停止(子命令的 --version 不是 root 的)。
+		if a == "--" {
+			break
+		}
+		if !strings.HasPrefix(a, "-") {
+			break // 第一个非 flag 参数 = 子命令,停止(version 是 root flag)
+		}
+		switch {
+		case a == "--version" || a == "--version=true":
+			wantVersion = true
+		case a == "--json" || a == "--json=true":
+			wantJSON = true
+		}
+	}
+	if !wantVersion {
+		return false
+	}
+	v := LoadVersion()
+	if wantJSON {
+		out, err := v.JSONString()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "错误:", err)
+			os.Exit(1)
+		}
+		fmt.Println(out)
+		return true
+	}
+	fmt.Println(v.String())
+	return true
 }
 
 // ExitCode 把错误映射为退出码: 3=未登录,2=用法错误,1=其余通用错误。
