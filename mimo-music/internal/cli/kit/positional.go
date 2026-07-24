@@ -37,3 +37,20 @@ func ResolveID(flagID int64, args []string) (int64, error) {
 	}
 	return flagID, nil
 }
+
+// ResolveKeyword 从 --keyword flag 或位置参数 args[0] 解析关键词(search 用)。
+// 规则同 ResolveID:flag 与位置参数互斥(同时指定 → ErrUsage);两者都缺 → ErrUsage。
+func ResolveKeyword(flagKeyword string, args []string) (string, error) {
+	hasFlag := flagKeyword != ""
+	hasPos := len(args) > 0 && args[0] != ""
+	if hasFlag && hasPos {
+		return "", fmt.Errorf("%w:不能同时指定 --keyword 和位置参数", ErrUsage)
+	}
+	if !hasFlag && !hasPos {
+		return "", fmt.Errorf("%w:缺少搜索关键词(用 --keyword 或位置参数)", ErrUsage)
+	}
+	if hasPos {
+		return args[0], nil
+	}
+	return flagKeyword, nil
+}
