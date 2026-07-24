@@ -205,7 +205,7 @@ _Avoid_: 客户端（混淆了工具型 CLI 与娱乐型客户端的定位）
 _Avoid_: 历史（过于宽泛，未区分主动/隐式/远端三类信号）、收藏列表（只覆盖远端一类）
 
 **召回池持久化（Recall Pool Persistence）**:
-召回池的磁盘落地是 `~/.musicctl/history.jsonl`——**append-only JSONL**，不用 JSON。理由：追加一行不需重写整个文件；单行损坏只丢该行历史全留；可被 `grep`/`head`/`tail`/`wc -l` 直接处理；容量裁剪按行 drop oldest。三类来源用 `src` 字段（`search`/`play`/`remote` 等）区分，不拆三个文件。容量上限 1000 行（约 80KB），超限 drop oldest。与 session.json 同目录，权限 0600。
+召回池的磁盘落地是本地配置目录下的 `history.jsonl`——**append-only JSONL**，不用 JSON。理由：追加一行不需重写整个文件；单行损坏只丢该行历史全留；可被 `grep`/`head`/`tail`/`wc -l` 直接处理；容量裁剪按行 drop oldest。三类来源用 `src` 字段（`search`/`play`/`remote` 等）区分，不拆三个文件。容量上限 1000 行（约 80KB），超限 drop oldest。与 session.json 同目录，权限 0600。配置目录由 `os.UserConfigDir()` 解析（macOS `~/Library/Application Support/musicctl/`、Linux `~/.config/musicctl/`、Windows `%AppData%\musicctl\`），与 session.json 同源——见 PRD-0015；旧路径 `~/.musicctl/` 启动时自动迁移。
 _Avoid_: history.json（单文件 JSON，追加要重写、损坏全丢、不可用 Unix 工具直读）、三文件分离（破坏 JSONL 单流追加与 grep 能力）
 
 **补全只走缓存（Cache-only Completion）**:
