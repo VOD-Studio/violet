@@ -98,7 +98,8 @@ export function streamExec(taskId: string, handlers: StreamHandlers): AbortContr
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                buffer += decoder.decode(value, { stream: true });
+                const decoded = decoder.decode(value, { stream: true });
+                buffer += decoded;
 
                 // 按事件分隔符（空行）切帧
                 let frameEnd = buffer.indexOf("\n\n");

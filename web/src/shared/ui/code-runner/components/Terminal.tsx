@@ -7,6 +7,7 @@
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { useEffect, useRef } from "react";
+import "@xterm/xterm/css/xterm.css";
 
 export interface TerminalHandle {
     /** 写 stdout 内容 */
@@ -24,6 +25,8 @@ export interface TerminalHandle {
 export interface TerminalProps {
     /** 暴露终端句柄供父组件调用 */
     onReady?: (handle: TerminalHandle) => void;
+    /** 终端销毁时的回调 */
+    onUnmount?: () => void;
 }
 
 /**
@@ -32,7 +35,7 @@ export interface TerminalProps {
  * mount 时创建 xterm 实例并 fit，unmount 时 dispose。
  * 配色固定 github-dark（与代码区一致）。
  */
-export function Terminal({ onReady }: TerminalProps) {
+export function Terminal({ onReady, onUnmount }: TerminalProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const termRef = useRef<XTerm | null>(null);
     const fitRef = useRef<FitAddon | null>(null);
@@ -109,6 +112,7 @@ export function Terminal({ onReady }: TerminalProps) {
             term.dispose();
             termRef.current = null;
             fitRef.current = null;
+            onUnmount?.();
         };
     }, []);
 

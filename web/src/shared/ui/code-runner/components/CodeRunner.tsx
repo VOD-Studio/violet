@@ -11,7 +11,7 @@
  * Tailwind v4 canonical 类（4px 倍数裸数字）。
  */
 import { ChevronDown, ChevronUp, Play, Terminal as TerminalIcon } from "lucide-react";
-import { lazy, Suspense, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import { Button } from "@/shared/ui/base/button";
 import { useCodeRun } from "../hooks/useCodeRun";
 import { useVimPreference } from "../hooks/useVimPreference";
@@ -39,8 +39,28 @@ export function CodeRunner({ language, source, overridesJson }: CodeRunnerProps)
     const [code, setCode] = useState(source);
     const [terminalOpen, setTerminalOpen] = useState(false);
     const { vimEnabled, toggleVim } = useVimPreference();
-    const { state, result, error, run } = useCodeRun();
+    const { state, error, run } = useCodeRun();
     const termRef = useRef<TerminalHandle | null>(null);
+    const readyResolversRef = useRef<Array<(handle: TerminalHandle) => void>>([]);
+
+    const handleTerminalReady = useCallback((handle: TerminalHandle) => {
+        termRef.current = handle;
+        const resolvers = readyResolversRef.current;
+        readyResolversRef.current = [];
+        for (const resolve of resolvers) {
+            resolve(handle);
+        }
+    }, []);
+
+    const ensureTerminal = useCallback(async (): Promise<TerminalHandle> => {
+        setTerminalOpen(true);
+        if (termRef.current) {
+            return termRef.current;
+        }
+        return new Promise<TerminalHandle>((resolve) => {
+            readyResolversRef.current.push(resolve);
+        });
+    }, []);
 
     // 解析 overrides（作者声明的资源覆盖），失败降级为 undefined
     const overrides = (() => {
@@ -61,40 +81,44 @@ export function CodeRunner({ language, source, overridesJson }: CodeRunnerProps)
     const isRunning = state === "running";
 
     const handleRun = async () => {
-        setTerminalOpen(true);
-        termRef.current?.reset();
-        termRef.current?.writeInfo("$ 运行中…\n");
+        const term = await ensureTerminal();
+        term.reset();
+        term.writeInfo("$ 运行中…\n");
 
-        await run(
+        const execResult = await run(
             language,
             code,
             {
-                onStdout: (data) => termRef.current?.writeStdout(data),
-                onStderr: (data) => termRef.current?.writeStderr(data),
+                onStdout: (data) => {
+                    term.writeStdout(data);
+                },
+                onStderr: (data) => {
+                    term.writeStderr(data);
+                },
             },
             overrides,
         );
 
         // 收尾信息
-        if (result) {
-            const status = result.status;
-            const exitInfo = result.exit_code != null ? `退出码 ${result.exit_code}` : "";
-            const time = result.duration_ms > 0 ? `${result.duration_ms}ms` : "";
+        if (execResult) {
+            const status = execResult.status;
+            const exitInfo = execResult.exit_code != null ? `退出码 ${execResult.exit_code}` : "";
+            const time = execResult.duration_ms > 0 ? `${execResult.duration_ms}ms` : "";
             const parts = [exitInfo, time].filter(Boolean).join(" · ");
             if (status === "success") {
-                termRef.current?.writeInfo(`\n✓ 完成${parts ? ` · ${parts}` : ""}\n`);
+                term.writeInfo(`\n✓ 完成${parts ? ` · ${parts}` : ""}\n`);
             } else if (status === "timeout") {
-                termRef.current?.writeStderr("\n✗ 执行超时\n");
+                term.writeStderr("\n✗ 执行超时\n");
             } else if (status === "oom_killed") {
-                termRef.current?.writeStderr("\n✗ 内存超限 (OOM)\n");
+                term.writeStderr("\n✗ 内存超限 (OOM)\n");
             } else if (status === "failed") {
-                termRef.current?.writeStderr(`\n✗ ${result.stderr || "系统暂时不可用"}\n`);
+                term.writeStderr(`\n✗ ${execResult.stderr || "系统暂时不可用"}\n`);
             } else if (status === "error") {
-                termRef.current?.writeInfo(`\n✗ 非零退出${parts ? ` · ${parts}` : ""}\n`);
+                term.writeInfo(`\n✗ 非零退出${parts ? ` · ${parts}` : ""}\n`);
             }
         }
         if (error) {
-            termRef.current?.writeStderr(`\n✗ ${error}\n`);
+            term.writeStderr(`\n✗ ${error}\n`);
         }
     };
 
@@ -160,8 +184,9 @@ export function CodeRunner({ language, source, overridesJson }: CodeRunnerProps)
                     <div className="h-48 border-t border-white/10 px-3 py-2">
                         <Suspense fallback={<div className="text-xs text-white/40">加载终端…</div>}>
                             <Terminal
-                                onReady={(h) => {
-                                    termRef.current = h;
+                                onReady={handleTerminalReady}
+                                onUnmount={() => {
+                                    termRef.current = null;
                                 }}
                             />
                         </Suspense>
