@@ -116,6 +116,32 @@ func TestExecute_CacheMissThenFill(t *testing.T) {
 	require.Equal(t, int32(1), upstreamCalls.Load(), "缓存命中应跳过上游，calls 不增加")
 }
 
+// TestExecute_PathFunc 声明 PathFunc 时按请求动态生成 path(覆盖 Meta.Path)。
+// /weapi/artist/albums/{id} 类接口的依赖机制。
+func TestExecute_PathFunc(t *testing.T) {
+	t.Parallel()
+
+	var gotPath atomic.Value
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath.Store(r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"code":200,"songs":[]}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	eng := engine.New(engine.WithBaseURL(srv.URL))
+	ep := makeSongDetailEndpoint()
+	ep.Cache = nil
+	ep.PathFunc = func(req *mmpb.GetSongDetailRequest) string {
+		return "/weapi/v3/song/detail/" + jsonNumber(req.GetSongId())
+	}
+
+	_, err := engine.Execute(eng, context.Background(), ep, &mmpb.GetSongDetailRequest{SongId: 5929})
+	require.NoError(t, err)
+	got, _ := gotPath.Load().(string)
+	require.Equal(t, "/weapi/v3/song/detail/5929", got, "PathFunc 应覆盖 Meta.Path")
+}
+
 // countingCache 是带计数的内存 Cache，验证 Execute 的缓存命中/回填行为。
 // 用 map 存数据（不是 Noop——Noop 永远 miss，无法验证命中路径）。
 type countingCache struct {

@@ -27,6 +27,10 @@ import (
 type Endpoint[Req, Resp any] struct {
 	// Meta 是网易云 endpoint 的执行元数据。
 	Meta Meta
+	// PathFunc 可选:按请求动态生成 path(覆盖 Meta.Path)。
+	// 部分网易云接口把 id 拼在 path 里(/weapi/artist/albums/{id}),
+	// body 传 id 的形式上游 400——此类接口声明 PathFunc。
+	PathFunc func(Req) string
 	// Cache 是缓存策略。nil 表示不缓存。
 	Cache *CachePolicy[Req]
 	// NewResp 构造响应实例，用于缓存命中时反序列化。
@@ -72,7 +76,12 @@ func Execute[Req, Resp any](e *Engine, ctx context.Context, ep *Endpoint[Req, Re
 		return zero, fmt.Errorf("map request: %w", err)
 	}
 
-	raw, err := e.RawDo(ctx, ep.Meta, params)
+	meta := ep.Meta
+	if ep.PathFunc != nil {
+		meta.Path = ep.PathFunc(req)
+	}
+
+	raw, err := e.RawDo(ctx, meta, params)
 	if err != nil {
 		return zero, err
 	}

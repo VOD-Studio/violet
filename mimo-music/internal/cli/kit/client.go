@@ -152,7 +152,11 @@ func Exec[Req, Resp any](k *Kit, ctx context.Context, ep *engine.Endpoint[Req, R
 		var zero Resp
 		return zero, err
 	}
-	raw, _, err := k.RawDo(ctx, ep.Meta, params)
+	meta := ep.Meta
+	if ep.PathFunc != nil {
+		meta.Path = ep.PathFunc(req)
+	}
+	raw, _, err := k.RawDo(ctx, meta, params)
 	if err != nil {
 		var zero Resp
 		return zero, err
