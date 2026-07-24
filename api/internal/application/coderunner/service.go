@@ -151,6 +151,11 @@ func (s *Service) validate(req ExecRequest) error {
 	if uint64(len(req.Source)) > s.cfg.MaxSourceBytes {
 		return domainshared.BadRequest("源代码过大")
 	}
+	// 前置探测执行器可用性：功能未启用 / daemon 连接失败时直接拒绝，
+	// 把可操作的错误信息直达前端（而非后台执行后才报含糊的「系统暂时不可用」）。
+	if err := s.runner.Available(); err != nil {
+		return domainshared.Internal(err.Error(), err)
+	}
 	return nil
 }
 

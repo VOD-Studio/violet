@@ -2,6 +2,7 @@ package coderunner
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -21,6 +22,14 @@ type fakeRunner struct {
 	timedOut  bool
 	err       error
 	streams   []OutputChunk // RunStream 收到的 emit
+	available bool          // Available() 返回值；默认 false，测试按需置 true
+}
+
+func (f *fakeRunner) Available() error {
+	if !f.available {
+		return errFake("执行器不可用")
+	}
+	return nil
 }
 
 func (f *fakeRunner) Run(ctx context.Context, image, cmd, source, ext string, limits domaincoderunner.ResourceLimits) (RunOutcome, error) {
@@ -152,7 +161,7 @@ func TestService_StartExec_InvalidLanguage(t *testing.T) {
 
 func TestService_StartExec_SourceTooLarge(t *testing.T) {
 	t.Parallel()
-	svc, _, _ := newTestService(t, &fakeRunner{})
+	svc, _, _ := newTestService(t, &fakeRunner{available: true})
 	big := string(make([]byte, 2048))
 	_, err := svc.StartExec(context.Background(), ExecRequest{Language: "python", Source: big}, domainshared.NewID())
 	if err == nil {
@@ -160,10 +169,29 @@ func TestService_StartExec_SourceTooLarge(t *testing.T) {
 	}
 }
 
+func TestService_StartExec_RunnerUnavailable(t *testing.T) {
+	// 执行器不可用（available=false）→ validate 前置拒绝，错误信息直达前端。
+	// 模拟「功能未启用」或「daemon 连接失败」场景，不应等到后台执行才报。
+	t.Parallel()
+	svc, repo, _ := newTestService(t, &fakeRunner{available: false})
+	_, err := svc.StartExec(context.Background(), ExecRequest{Language: "python", Source: "print(1)"}, domainshared.NewID())
+	if err == nil {
+		t.Fatal("执行器不可用时应返回错误")
+	}
+	// 错误信息应含「执行器不可用」（来自 fakeRunner.Available），而非脱敏的「系统暂时不可用」
+	if !strings.Contains(err.Error(), "执行器不可用") {
+		t.Errorf("错误应含「执行器不可用」, got %q", err.Error())
+	}
+	// 不应创建任务（前置拦截）
+	if repo.calls != 0 {
+		t.Errorf("前置拦截不应保存任务, calls=%d", repo.calls)
+	}
+}
+
 func TestService_StartExec_Success(t *testing.T) {
 	t.Parallel()
 	exitZero := 0
-	runner := &fakeRunner{stdout: "hello", exitCode: &exitZero}
+	runner := &fakeRunner{available: true, stdout: "hello", exitCode: &exitZero}
 	svc, repo, _ := newTestService(t, runner)
 
 	taskID, err := svc.StartExec(context.Background(), ExecRequest{Language: "python", Source: "print('hello')"}, domainshared.NewID())
@@ -186,7 +214,7 @@ func TestService_StartExec_Success(t *testing.T) {
 func TestService_StartExec_Error(t *testing.T) {
 	t.Parallel()
 	exitOne := 1
-	runner := &fakeRunner{stderr: "traceback", exitCode: &exitOne}
+	runner := &fakeRunner{available: true, stderr: "traceback", exitCode: &exitOne}
 	svc, repo, _ := newTestService(t, runner)
 
 	taskID, _ := svc.StartExec(context.Background(), ExecRequest{Language: "node", Source: "throw 1"}, domainshared.NewID())
@@ -203,7 +231,7 @@ func TestService_StartExec_Error(t *testing.T) {
 
 func TestService_StartExec_Failed(t *testing.T) {
 	t.Parallel()
-	runner := &fakeRunner{err: errFake("daemon down")}
+	runner := &fakeRunner{available: true, err: errFake("daemon down")}
 	svc, repo, _ := newTestService(t, runner)
 
 	taskID, _ := svc.StartExec(context.Background(), ExecRequest{Language: "python", Source: "x"}, domainshared.NewID())
@@ -220,7 +248,7 @@ func TestService_StartExec_Failed(t *testing.T) {
 
 func TestService_StartExec_Timeout(t *testing.T) {
 	t.Parallel()
-	runner := &fakeRunner{timedOut: true}
+	runner := &fakeRunner{available: true, timedOut: true}
 	svc, repo, _ := newTestService(t, runner)
 
 	taskID, _ := svc.StartExec(context.Background(), ExecRequest{Language: "python", Source: "while True: pass"}, domainshared.NewID())
@@ -235,7 +263,7 @@ func TestService_StartExec_Timeout(t *testing.T) {
 func TestService_StartExecStream_DoneChunkPushed(t *testing.T) {
 	t.Parallel()
 	exitZero := 0
-	runner := &fakeRunner{stdout: "stream-out", exitCode: &exitZero}
+	runner := &fakeRunner{available: true, stdout: "stream-out", exitCode: &exitZero}
 	svc, repo, _ := newTestService(t, runner)
 
 	taskID, _ := svc.StartExecStream(context.Background(), ExecRequest{Language: "python", Source: "print(1)"}, domainshared.NewID())

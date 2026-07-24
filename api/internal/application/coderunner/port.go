@@ -33,6 +33,13 @@ type RunOutcome struct {
 // 两条方法对应两条执行路径：Run 一次性返回（轮询），RunStream 边执行边推
 // chunk 到回调（SSE 流式）。两者共用同一套容器隔离配置（见 ADR-0006）。
 type SandboxRunner interface {
+	// Available 探测执行器是否可用（daemon 已连接）。
+	//
+	// 不可用时返回明确错误（功能未启用 / daemon 连接失败），供 service 在
+	// 提交时（validate 阶段）前置拦截，把可操作的错误信息直达前端，
+	// 而非等到后台执行才报含糊的「系统暂时不可用」。
+	Available() error
+
 	// Run 起隔离容器执行，阻塞至完成，返回一次性结果。
 	//
 	// image 为镜像名（如 yggdrasil-runner-python:latest），cmd 为容器内执行命令，

@@ -25,12 +25,18 @@ import (
 var (
 	sharedDockerClient *client.Client
 	onceDockerClient   sync.Once
+	// dockerInitAttempted 标记是否曾调用过 InitDockerClient。
+	// 区分两种 nil 场景，给准确的错误信息：
+	//   - false（从未初始化）→ 功能未启用（CODE_RUNNER_ENABLED=false）
+	//   - true（初始化过但失败）→ daemon 连接失败
+	dockerInitAttempted bool
 )
 
 // InitDockerClient 初始化共享 Docker 客户端。在应用启动时调用一次（T5 container）。
 // socketPath 为 unix socket 路径（兼容 docker 与 podman）。
 func InitDockerClient(socketPath string) {
 	onceDockerClient.Do(func() {
+		dockerInitAttempted = true
 		host := "unix://" + strings.TrimPrefix(socketPath, "unix://")
 		cli, err := client.NewClientWithOpts(client.WithHost(host), client.WithAPIVersionNegotiation())
 		if err != nil {
@@ -49,12 +55,19 @@ func InitDockerClient(socketPath string) {
 	})
 }
 
-// getDocker 取共享客户端；不可用时返回错误（对应 yggdrasil get_docker）。
+// getDocker 取共享客户端；不可用时返回明确错误（对应 yggdrasil get_docker）。
+//
+// 区分两种失败，给出可操作的错误信息：
+//   - 从未初始化（InitDockerClient 未调）→ 功能未启用
+//   - 初始化过但 daemon 连不上 → 连接失败（含 socket 路径供排查）
 func getDocker() (*client.Client, error) {
-	if sharedDockerClient == nil {
-		return nil, fmt.Errorf("Docker daemon 不可用（未安装或未运行）")
+	if sharedDockerClient != nil {
+		return sharedDockerClient, nil
 	}
-	return sharedDockerClient, nil
+	if !dockerInitAttempted {
+		return nil, fmt.Errorf("代码运行器未启用（设置 CODE_RUNNER_ENABLED=true 开启）")
+	}
+	return nil, fmt.Errorf("Docker daemon 不可连接（确认 docker/podman 已运行且 socket 路径正确）")
 }
 
 // SharedDockerClient 暴露初始化后的共享客户端（供 container 注入 runner）。
@@ -128,6 +141,17 @@ type DockerRunner struct {
 // NewDockerRunner 构造执行器。cli 为 nil 时方法调用返回 daemon 不可用错误。
 func NewDockerRunner(cli *client.Client) *DockerRunner {
 	return &DockerRunner{cli: cli}
+}
+
+// Available 探测 Docker daemon 是否可连。
+//
+// cli 非 nil 时直接可用；为 nil 时查共享 client（区分「未启用」与「连接失败」）。
+func (r *DockerRunner) Available() error {
+	if r.cli != nil {
+		return nil
+	}
+	_, err := getDocker()
+	return err
 }
 
 // Run 起隔离容器执行，阻塞至完成，返回一次性结果（轮询路径）。
