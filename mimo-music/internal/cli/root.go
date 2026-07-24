@@ -87,7 +87,13 @@ func NewRootCommand() *cobra.Command {
 }
 
 // Execute 运行根命令:取消静默退出 0;其余错误统一打印后按类别映射退出码。
+//
+// 入口先做 argv 重写(跨级别名):执行路径重写 os.Args[1],__complete/__completeNoDesc
+// 补全路径重写 os.Args[2](cobra Execute 从 os.Args[1:] 读,故别名在 [1] 而非 [0];
+// 补全协议下 [1] 是 __complete,真实命令从 [2] 起)。cobra 解析前完成重写,
+// 使别名与补全对命令层透明。
 func Execute() {
+	rewriteAliases()
 	err := NewRootCommand().Execute()
 	switch {
 	case err == nil, errors.Is(err, kit.ErrCancelled):
@@ -95,6 +101,26 @@ func Execute() {
 	default:
 		fmt.Fprintln(os.Stderr, "错误:", err)
 		os.Exit(ExitCode(err))
+	}
+}
+
+// rewriteAliases 就地重写 os.Args 以展开跨级别名。
+//
+// cobra.Command.Execute() 从 os.Args[1:] 取参数,故:
+//   - 执行路径:别名在 os.Args[1](musicctl pp --id X → 重写 [1])。
+//   - __complete/__completeNoDesc 路径:os.Args[1]=__complete,别名在 os.Args[2]。
+//
+// 未命中别名时 os.Args 不变。
+func rewriteAliases() {
+	args := os.Args
+	// 补全协议路径优先判(args[1] 是 __complete/__completeNoDesc)。
+	if rewritten, ok := expandForCompletion(args[1:]); ok {
+		os.Args = append([]string{args[0]}, rewritten...)
+		return
+	}
+	// 执行路径。
+	if rewritten, ok := expand(args[1:]); ok {
+		os.Args = append([]string{args[0]}, rewritten...)
 	}
 }
 
