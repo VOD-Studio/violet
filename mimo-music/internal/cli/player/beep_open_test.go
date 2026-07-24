@@ -7,6 +7,7 @@
 package player
 
 import (
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -75,5 +76,19 @@ func TestOpenFromBytes_SealedBufferWaterReached(t *testing.T) {
 	}
 	if !st.buffer.Done() {
 		t.Error("sealed buffer 应 Done 恒真")
+	}
+}
+func TestNewBeep_ConfiguresProxyFromEnvironment(t *testing.T) {
+	t.Parallel()
+	p, ok := NewBeep(nil).(*beepPlayer)
+	if !ok {
+		t.Fatal("NewBeep 应返回 *beepPlayer")
+	}
+	tr, ok := p.client.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("p.client.Transport 应为 *http.Transport")
+	}
+	if tr.Proxy == nil {
+		t.Error("tr.Proxy 不应为 nil，应配置 ProxyFromEnvironment")
 	}
 }

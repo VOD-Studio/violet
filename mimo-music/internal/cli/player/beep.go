@@ -108,7 +108,13 @@ func NewBeep(newReq RequestBuilder, opts ...BeepOption) Player {
 	p := &beepPlayer{
 		newReq: newReq,
 		// 响应头超时防半开悬挂;body 流速不设限时(弱网缓冲是设计场景)。
-		client:      &http.Client{Transport: &http.Transport{ResponseHeaderTimeout: 15 * time.Second}},
+		// 继承环境变量代理 (HTTP_PROXY / HTTPS_PROXY)，避免网络代理下音频流请求跳过代理导致 EOF。
+		client: &http.Client{
+			Transport: &http.Transport{
+				Proxy:                 http.ProxyFromEnvironment,
+				ResponseHeaderTimeout: 15 * time.Second,
+			},
+		},
 		watermarkMs: defaultWatermarkMs,
 		lowWaterMs:  defaultLowWaterMs,
 		vol:         75,
