@@ -21,6 +21,7 @@ import (
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
+	"github.com/VOD-Studio/mimo-music/internal/cli/recall"
 	"github.com/VOD-Studio/mimo-music/internal/cli/songdl"
 	songendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/song"
 )
@@ -164,6 +165,9 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force, dryRun, noM
 	if !outcome.MetaWritten && !noMetadata {
 		k.Warnf("⚠ 元数据写入失败,文件已保存")
 	}
+
+	// 下载成功消费后埋点召回池(方案 c:命令显式调 kit.Record;dry-run/skip 不埋)。
+	k.Record(id, song.Name, songArtist(song), recall.SrcDownload)
 
 	// 4. 结果输出(stdout):人类 key-value / --json 对象。
 	//    JSON schema 按 PRD-0013 行 269: path/size/format/level/metadata_written。

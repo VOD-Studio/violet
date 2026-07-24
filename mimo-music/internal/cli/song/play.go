@@ -26,6 +26,7 @@ import (
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
 	"github.com/VOD-Studio/mimo-music/internal/cli/player"
+	"github.com/VOD-Studio/mimo-music/internal/cli/recall"
 	songendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/song"
 	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 )
@@ -212,7 +213,25 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, lyric bool, 
 
 	u := &playUI{p: p, song: song, songURL: songURL, level: level, vol: volume, lyric: lyricLines, notice: lyricNotice}
 	u.loop(deps)
+	// 播放成功消费后埋点召回池(方案 c:命令显式调 kit.Record;失败不阻塞)。
+	k.Record(id, songName(song), songArtist(song), recall.SrcPlay)
 	return nil
+}
+
+// songName 提取歌曲名(无则空),供召回池埋点。
+func songName(s *mmpb.Song) string {
+	if s == nil {
+		return ""
+	}
+	return s.Name
+}
+
+// songArtist 提取主歌手名(取第一个艺人),供召回池埋点。
+func songArtist(s *mmpb.Song) string {
+	if s == nil || len(s.Artists) == 0 {
+		return ""
+	}
+	return s.Artists[0].Name
 }
 
 // loadLyric 拉歌词并解析为按时间轴排序的 TimedLine。失败/空歌词静默降级:

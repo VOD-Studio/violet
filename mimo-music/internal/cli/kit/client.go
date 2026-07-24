@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/VOD-Studio/mimo-music/internal/cache"
+	"github.com/VOD-Studio/mimo-music/internal/cli/recall"
 	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 )
 
@@ -39,11 +40,20 @@ type Kit struct {
 	// 进度类(ProgressBar/Spinner)和一次性警告(Warnf)都走这里,
 	// 不污染 stdout(结果数据流),脚本管道友好。
 	Err io.Writer
+
+	// pool 是召回池,补全与 recent 共用。New() 默认初始化(指向 HistoryPath);
+	// 测试可替换为 t.TempDir() 路径的 Pool。nil 时 Record 静默跳过。
+	pool *recall.Pool
 }
 
 // New 创建 Kit。engine 无缓存、无 session 池,纯转发到网易云。
+// 召回池默认指向 kit.HistoryPath()(PRD-0015 #44 可注入路径)。
 func New() *Kit {
-	return &Kit{eng: engine.New(engine.WithCache(cache.Noop{})), Out: os.Stdout}
+	return &Kit{
+		eng:  engine.New(engine.WithCache(cache.Noop{})),
+		Out:  os.Stdout,
+		pool: recall.NewPool(HistoryPath),
+	}
 }
 
 // out 返回输出 writer(未设置时回退 os.Stdout)。

@@ -201,7 +201,7 @@ musicctl 的裸跑行为是「智能 onboarding」——检测登录态，未登
 _Avoid_: 客户端（混淆了工具型 CLI 与娱乐型客户端的定位）
 
 **召回池（Recall Pool）**:
-所有可被 Tab 补全召回的候选集合。三类来源汇入同一池子，各带来源标签与 TTL：(1) **主动**——用户显式跑过的 search 关键词与 detail 查询；(2) **隐式**——任何命令的 `--id` 被成功消费后自动埋点（play/download/like 等，**只记成功操作**，失败不进池）；(3) **远端**——红心列表、我的歌单、每日推荐的快照（24h TTL，超期强制重拉）。召回池是「补全只走缓存」路线的数据基础：补全绝不实时查网易云，候选全部来自召回池。隐式埋点是**透明基础设施**——由 kit 层在命令执行成功后统一记录，A 类 Context 接入新 rpc 时无需关心埋点（符合[双轨道 ADR](docs/adr/mimo-music-dual-track-orchestration.md)的「A 类只做 rpc→CLI 1:1 接入」原子性）。
+所有可被 Tab 补全召回的候选集合。三类来源汇入同一池子，各带来源标签与 TTL：(1) **主动**——用户显式跑过的 search 关键词与 detail 查询；(2) **隐式**——歌曲 `--id` 被成功消费后埋点（play/download 等，**只记成功操作**，失败不进池）；(3) **远端**——红心列表、我的歌单、每日推荐的快照（24h TTL，超期强制重拉）。召回池是「补全只走缓存」路线的数据基础：补全绝不实时查网易云，候选全部来自召回池。**埋点机制（方案 c，PRD-0014 G）**：kit 层提供统一 `Record(id, name, artist, src)` helper，命令在 `--id` 成功消费后显式调用一行——kit.Exec 是 generic 拿不到具体 id 字段（SongId 在各 proto req struct 里），无法在 generic 层自动埋点，故选显式 helper 而非 interface+wrapper（要为每个 song req 写 wrapper）或 endpoint 层埋点（改 engine 抽象被 service 包共用、高风险）。机制统一在 kit 层，但调用是命令层显式一行——区别于「自动埋点」，权衡是歌曲类命令接入时加一行 Record 调用（play/download 已接入）。Record 失败不阻塞主命令（仅 Warnf 告警）。
 _Avoid_: 历史（过于宽泛，未区分主动/隐式/远端三类信号）、收藏列表（只覆盖远端一类）
 
 **召回池持久化（Recall Pool Persistence）**:
