@@ -148,9 +148,9 @@ func countFromType(t mmpb.SearchType, result json.RawMessage) int32 {
 // parseSearchSongs 解析单曲搜索结果。
 func parseSearchSongs(raw json.RawMessage) []*mmpb.Song {
 	var songs []struct {
-		ID       int64  `json:"id"`
-		Name     string `json:"name"`
-		Artists  []struct {
+		ID      int64  `json:"id"`
+		Name    string `json:"name"`
+		Artists []struct {
 			ID   int64  `json:"id"`
 			Name string `json:"name"`
 		} `json:"artists"`
@@ -160,6 +160,7 @@ func parseSearchSongs(raw json.RawMessage) []*mmpb.Song {
 			PicUrl string `json:"img1v1Url"`
 		} `json:"album"`
 		Duration int64 `json:"duration"`
+		Fee      int   `json:"fee"` // 0免费 1VIP 4付费专辑 8低音质免费(客户端 VIP/付费标识的数据源)
 	}
 	if json.Unmarshal(raw, &songs) != nil {
 		return nil
@@ -172,8 +173,9 @@ func parseSearchSongs(raw json.RawMessage) []*mmpb.Song {
 		}
 		out = append(out, &mmpb.Song{
 			Id: s.ID, Name: s.Name, Artists: artists,
-			Album: &mmpb.Album{Id: s.Album.ID, Name: s.Album.Name, PicUrl: s.Album.PicUrl},
+			Album:      &mmpb.Album{Id: s.Album.ID, Name: s.Album.Name, PicUrl: s.Album.PicUrl},
 			DurationMs: s.Duration,
+			Fee:        int32(s.Fee),
 		})
 	}
 	return out
@@ -185,6 +187,7 @@ func parseSearchAlbums(raw json.RawMessage) []*mmpb.Album {
 		ID          int64  `json:"id"`
 		Name        string `json:"name"`
 		PicUrl      string `json:"img1v1Url"`
+		PublishTime int64  `json:"publishTime"` // 发行时间(毫秒时间戳)
 		Artist      struct {
 			ID   int64  `json:"id"`
 			Name string `json:"name"`
@@ -195,8 +198,13 @@ func parseSearchAlbums(raw json.RawMessage) []*mmpb.Album {
 	}
 	out := make([]*mmpb.Album, 0, len(albums))
 	for _, a := range albums {
+		publishTime := ""
+		if a.PublishTime > 0 {
+			// 与 model.MapAlbum 一致:毫秒时间戳 → 日期串。
+			publishTime = time.UnixMilli(a.PublishTime).Format("2006-01-02")
+		}
 		out = append(out, &mmpb.Album{
-			Id: a.ID, Name: a.Name, PicUrl: a.PicUrl,
+			Id: a.ID, Name: a.Name, PicUrl: a.PicUrl, PublishTime: publishTime,
 			Artist: &mmpb.Artist{Id: a.Artist.ID, Name: a.Artist.Name},
 		})
 	}
@@ -206,10 +214,10 @@ func parseSearchAlbums(raw json.RawMessage) []*mmpb.Album {
 // parseSearchArtists 解析歌手搜索结果。
 func parseSearchArtists(raw json.RawMessage) []*mmpb.Artist {
 	var artists []struct {
-		ID       int64  `json:"id"`
-		Name     string `json:"name"`
-		PicUrl   string `json:"img1v1Url"`
-		Alias    []string `json:"alias"`
+		ID     int64    `json:"id"`
+		Name   string   `json:"name"`
+		PicUrl string   `json:"img1v1Url"`
+		Alias  []string `json:"alias"`
 	}
 	if json.Unmarshal(raw, &artists) != nil {
 		return nil
@@ -224,12 +232,12 @@ func parseSearchArtists(raw json.RawMessage) []*mmpb.Artist {
 // parseSearchPlaylists 解析歌单搜索结果。
 func parseSearchPlaylists(raw json.RawMessage) []*mmpb.SearchPlaylist {
 	var pls []struct {
-		ID         int64  `json:"id"`
-		Name       string `json:"name"`
+		ID          int64  `json:"id"`
+		Name        string `json:"name"`
 		CoverImgUrl string `json:"coverImgUrl"`
-		PlayCount  int64  `json:"playCount"`
-		TrackCount int    `json:"trackCount"`
-		Creator    struct {
+		PlayCount   int64  `json:"playCount"`
+		TrackCount  int    `json:"trackCount"`
+		Creator     struct {
 			Nickname string `json:"nickname"`
 		} `json:"creator"`
 	}
@@ -267,9 +275,9 @@ func parseSearchUsers(raw json.RawMessage) []*mmpb.SearchUser {
 // parseSearchMVs 解析 MV 搜索结果。
 func parseSearchMVs(raw json.RawMessage) []*mmpb.SearchMV {
 	var mvs []struct {
-		ID      int64  `json:"id"`
-		Name    string `json:"name"`
-		Cover   string `json:"cover"`
+		ID         int64  `json:"id"`
+		Name       string `json:"name"`
+		Cover      string `json:"cover"`
 		ArtistName string `json:"artistName"`
 	}
 	if json.Unmarshal(raw, &mvs) != nil {
