@@ -9,7 +9,6 @@ import (
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
 	artistendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/artist"
-	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
 )
 
 // NewCommand 创建 artist 命令组。
@@ -33,14 +32,14 @@ func NewCommand(k *kit.Kit) *cobra.Command {
 // 必须显式标注。toplist↔TopArtists、subscribe↔ArtistSubscribe 为命名偏移。
 func annotateArtistRpcs(c *cobra.Command) {
 	rpcs := map[string][]string{
-		"detail":   {"ArtistService/GetArtist"},
-		"songs":    {"ArtistService/AllSongs"},
+		"detail":    {"ArtistService/GetArtist"},
+		"songs":     {"ArtistService/AllSongs"},
 		"top-songs": {"ArtistService/TopSongs"},
-		"albums":   {"ArtistService/Albums"},
-		"desc":     {"ArtistService/Desc"},
-		"similar":  {"ArtistService/Similar"},
-		"fans":     {"ArtistService/Fans"},
-		"toplist":  {"ArtistService/TopArtists"},
+		"albums":    {"ArtistService/Albums"},
+		"desc":      {"ArtistService/Desc"},
+		"similar":   {"ArtistService/Similar"},
+		"fans":      {"ArtistService/Fans"},
+		"toplist":   {"ArtistService/TopArtists"},
 		"subscribe": {"ArtistService/ArtistSubscribe"},
 	}
 	for _, sub := range c.Commands() {
@@ -119,21 +118,12 @@ func newAlbums(k *kit.Kit) *cobra.Command {
 		Use:   "albums",
 		Short: "歌手专辑列表",
 		Args:  cobra.MaximumNArgs(1),
-		// albums 需要 id 拼进 path(/weapi/artist/albums/{id}),走 RawDo。
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rid, err := kit.ResolveID(id, args)
 			if err != nil {
 				return err
 			}
-			raw, _, err := k.RawDo(k.CookieCtx(), engine.Meta{
-				Path: fmt.Sprintf("/weapi/artist/albums/%d", rid), Method: "POST",
-				Crypto: engine.CryptoWeAPI, Auth: 0,
-			}, map[string]any{"limit": int32(limit), "offset": int32(offset), "total": true})
-			if err != nil {
-				return err
-			}
-			kit.PrintRaw(raw)
-			return nil
+			return kit.RenderExec(k, artistendpoint.Albums, &mmpb.AlbumsRequest{ArtistId: rid, Limit: int32(limit), Offset: int32(offset)})
 		},
 	}
 	withID(c, &id)
