@@ -31,7 +31,7 @@ func (k *Kit) Record(id int64, name, artist string, src recall.Src) {
 		Src:    src,
 		TS:     time.Now(),
 	}); err != nil {
-		k.Warnf("⚠ 记录召回池失败(不影响当前命令): %v", err)
+		k.Warnf("记录召回池失败(不影响当前命令): %v", err)
 	}
 }
 
