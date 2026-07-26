@@ -185,7 +185,7 @@ func TestView_ContainsTitleAndQR(t *testing.T) {
 	m.width = 100
 	m.height = 40
 	s := m.render()
-	require.Contains(t, s, "请用网易云 App 扫描下方二维码登录")
+	require.Contains(t, s, "用网易云 App 扫描下方二维码登录")
 	require.Contains(t, s, "▀▀▀", "QR 块应出现在视图中")
 }
 

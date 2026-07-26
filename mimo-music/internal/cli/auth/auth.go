@@ -114,11 +114,11 @@ func NewLogoutCommand(k *kit.Kit) *cobra.Command {
 			if cookie := k.CurrentCookie(); cookie != "" {
 				ctx := k.CookieCtx()
 				if _, _, err := k.RawDo(ctx, authendpoint.Logout, authendpoint.LogoutRequest(nil)); err != nil {
-					fmt.Fprintf(os.Stderr, "警告: 远端登出失败(继续清除本地会话): %v\n", err)
+					fmt.Fprintf(os.Stderr, "远端登出失败(继续清除本地会话): %v\n", err)
 				}
 			}
 			if err := k.ClearSession(); err != nil {
-				fmt.Fprintf(os.Stderr, "警告: 删除本地会话失败: %v\n", err)
+				fmt.Fprintf(os.Stderr, "删除本地会话失败: %v\n", err)
 			}
 			fmt.Println("已登出,本地会话已清除")
 			return nil
@@ -144,12 +144,12 @@ func persistLogin(k *kit.Kit, raw json.RawMessage, setCookie string) error {
 		return fmt.Errorf("登录成功但保存会话失败: %w", err)
 	}
 	p, _ := kit.SessionPath()
-	fmt.Println("✅ 登录成功!")
+	fmt.Println("已登录")
 	if sess.UserID != 0 {
 		fmt.Printf("用户 ID: %d\n", sess.UserID)
 	}
-	fmt.Printf("会话已保存到 %s,后续命令自动携带登录态。\n", p)
-	fmt.Println("(如需临时换号,可设 NETEASE_COOKIE 环境变量,优先级高于会话文件)")
+	fmt.Printf("会话已保存到 %s\n", p)
+	fmt.Println("如需临时换号,设置 NETEASE_COOKIE 环境变量(优先级高于会话文件)")
 	return nil
 }
 

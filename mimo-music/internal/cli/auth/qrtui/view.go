@@ -48,20 +48,20 @@ func (m model) render() string {
 	}
 	if m.width < minWidth || m.height < minHeight {
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
-			dimStyle.Render("终端窗口过小(需 ≥ "+fmt.Sprintf("%d×%d)", minWidth, minHeight))+"\n\n"+
-				dimStyle.Render("请调大窗口后重新运行 login"))
+			dimStyle.Render("终端窗口过小,需 ≥ "+fmt.Sprintf("%d×%d", minWidth, minHeight))+"\n\n"+
+				dimStyle.Render("调大窗口后重新运行 login"))
 	}
 
 	var b strings.Builder
-	b.WriteString(titleStyle.Render("请用网易云 App 扫描下方二维码登录"))
+	b.WriteString(titleStyle.Render("用网易云 App 扫描下方二维码登录"))
 	b.WriteString("\n\n")
 	b.WriteString(qrStyle.Render(m.deps.QR))
 	b.WriteString("\n\n")
 	b.WriteString(m.statusLine())
 	b.WriteString("\n\n")
-	b.WriteString(urlStyle.Render("二维码内容: " + m.deps.QRURL))
+	b.WriteString(urlStyle.Render(m.deps.QRURL))
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("(如二维码无法识别,把上面 URL 在浏览器打开,用 App 扫浏览器里的码)"))
+	b.WriteString(helpStyle.Render("二维码无法识别时,可在浏览器打开上面的 URL 再扫"))
 	b.WriteString("\n")
 	b.WriteString(helpStyle.Render("q 退出"))
 
@@ -76,25 +76,26 @@ func (m model) render() string {
 func (m model) statusLine() string {
 	switch m.state {
 	case stateConfirmed:
-		return successStyle.Render("✅ 登录成功,正在保存会话...")
+		return successStyle.Render("登录成功,正在保存会话")
 	case stateExpired:
-		return expiredStyle.Render("✗ 二维码已过期,请重新运行 login")
+		return expiredStyle.Render("二维码已过期,请重新运行 login")
 	case stateTimeout:
-		return expiredStyle.Render("⏱ 登录超时(" + fmtDuration(pollTimeout) + "),请重新运行 login")
+		return expiredStyle.Render("登录超时(" + fmtDuration(pollTimeout) + "),请重新运行 login")
 	}
 	// 非终态:正弦波颜色扫过。
 	return m.waveText(m.statusText())
 }
 
 // statusText 各非终态的文案(不含颜色,颜色由 waveText 施加)。
+// 不加省略号——wave 颜色动画本身已表达「进行中」。
 func (m model) statusText() string {
 	switch m.state {
 	case stateInit:
-		return "正在获取二维码状态..."
+		return "正在获取二维码状态"
 	case stateWaiting:
-		return "等待扫码..."
+		return "等待扫码"
 	case stateScanned:
-		return "已扫描,请在 App 确认登录..."
+		return "已扫描,请在 App 确认登录"
 	case stateError:
 		return "轮询出错,重试中:" + m.errMsg
 	}
