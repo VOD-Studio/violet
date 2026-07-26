@@ -2,14 +2,17 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
+	"github.com/VOD-Studio/mimo-music/internal/cli/auth/qrtui"
 	"github.com/VOD-Studio/mimo-music/internal/cli/kit"
 	authendpoint "github.com/VOD-Studio/mimo-music/internal/netease/endpoint/auth"
 	"github.com/VOD-Studio/mimo-music/internal/netease/engine"
@@ -150,11 +153,31 @@ func persistLogin(k *kit.Kit, raw json.RawMessage, setCookie string) error {
 	return nil
 }
 
-// runLogin 扫码登录:取二维码 → 轮询 → cookie 持久化到本地会话文件。
+// runLogin 扫码登录:取二维码 → bubbletea 轮询界面 → cookie 持久化。
+//
+// 旧实现 fmt.Println 每次轮询堆一行,长时间等待或屏幕小时把二维码顶出视野。
+// 新实现用 bubbletea:二维码块固定,spinner + 状态行原地刷新(qrtui 包)。
+// CONFIRMED 的会话持久化在 bubbletea Program 退出后执行,避免 stdout 打印
+// clobber 视图。详见 qrtui 包文档与 PRD-0016 后续。
 func runLogin(k *kit.Kit) error {
+	return runLoginWith(k, loginDeps{stdinIsTTY: func() bool { return term.IsTerminal(int(os.Stdin.Fd())) }})
+}
+
+// loginDeps 注入依赖(测试 seam,沿 play.go playDeps 惯例)。
+type loginDeps struct {
+	stdinIsTTY func() bool
+}
+
+// runLoginWith 可测试入口:TTY 守卫 + 取 key + bubbletea 接管 + 持久化。
+func runLoginWith(k *kit.Kit, deps loginDeps) error {
+	// 0. TTY 守卫:扫码登录需要交互式终端(bubbletea 接管 stdin)。沿 play.go 模式。
+	if !deps.stdinIsTTY() {
+		return fmt.Errorf("%w:登录命令需要交互式终端,请直接运行而非管道", kit.ErrUsage)
+	}
+
 	ctx := k.CookieCtx()
 
-	// 1. 取二维码 key。
+	// 1. 取二维码 key(同步,失败直接返回)。
 	raw, _, err := k.RawDo(ctx, authendpoint.LoginQrcode, authendpoint.LoginQrcodeRequest(&mmpb.LoginQrcodeRequest{}))
 	if err != nil {
 		return err
@@ -163,48 +186,33 @@ func runLogin(k *kit.Kit) error {
 	if err != nil {
 		return err
 	}
+	qrURL := authendpoint.QrcodeURL(key)
 
-	fmt.Println("请用网易云 App 扫描下方二维码登录:")
-	fmt.Println()
-	fmt.Print(renderQR(authendpoint.QrcodeURL(key)))
-	fmt.Println()
-	fmt.Printf("二维码内容: %s\n", authendpoint.QrcodeURL(key))
-	fmt.Println("(如二维码无法识别,把上面 URL 在浏览器打开,用 App 扫浏览器里的码)")
-	fmt.Println("轮询登录状态中...")
-
-	// 2. 轮询状态。
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-	timeout := time.After(3 * time.Minute)
-
-	for {
-		select {
-		case <-timeout:
-			return fmt.Errorf("登录超时(3 分钟)")
-		case <-ticker.C:
+	// 2. bubbletea 接管终端:QR 固定 + spinner 状态行原地刷新。
+	result, err := qrtui.Run(qrtui.Deps{
+		QR:    renderQR(qrURL),
+		QRURL: qrURL,
+		PollCtx: ctx,
+		Check: func(ctx context.Context) (mmpb.QrcodeCode, json.RawMessage, string, error) {
 			raw, setCookie, err := k.RawDo(ctx, authendpoint.CheckQrcode, authendpoint.CheckQrcodeRequest(&mmpb.CheckQrcodeRequest{Key: key}))
 			if err != nil {
-				fmt.Printf("轮询出错(将重试): %v\n", err)
-				continue
+				return 0, nil, "", err
 			}
-			code, message, err := model.DecodeQrcodeStatus(raw)
+			code, _, err := model.DecodeQrcodeStatus(raw)
 			if err != nil {
-				fmt.Printf("解析轮询响应失败(将重试): %v\n", err)
-				continue
+				return 0, nil, "", err
 			}
-
-			switch code {
-			case mmpb.QrcodeCode_QRCODE_CODE_WAITING:
-				fmt.Printf("等待扫码...\n")
-			case mmpb.QrcodeCode_QRCODE_CODE_SCANNED:
-				fmt.Printf("已扫描,请在 App 确认登录...\n")
-			case mmpb.QrcodeCode_QRCODE_CODE_CONFIRMED:
-				return persistLogin(k, raw, setCookie)
-			case mmpb.QrcodeCode_QRCODE_CODE_EXPIRED:
-				return fmt.Errorf("二维码已过期,请重新运行 login")
-			default:
-				fmt.Printf("未知状态: code=%d message=%s\n", code, message)
-			}
-		}
+			return code, raw, setCookie, nil
+		},
+	}, os.Stdout)
+	if err != nil {
+		return err
 	}
+
+	// 3. CONFIRMED 持久化(Program 退出后,终端已恢复,persistLogin 的 stdout 打印正常)。
+	if result.Confirmed {
+		return persistLogin(k, result.Raw, result.SetCookie)
+	}
+	// 过期/超时:qrtui 已展示终态文案,这里不重复报错。
+	return nil
 }
