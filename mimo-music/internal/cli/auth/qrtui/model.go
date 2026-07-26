@@ -17,8 +17,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/bubbles/v2/spinner"
-	"charm.land/lipgloss/v2"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 )
@@ -74,40 +72,44 @@ const (
 	stateTimeout                // ⏱ 轮询超时(终态)
 )
 
+// 动画帧率:正弦波颜色扫过的刷新间隔。80ms 平衡流畅度与 cpu 开销。
+const animInterval = 80 * time.Millisecond
+
 // model bubbletea Model。所有 IO 经 Deps 注入,Update/View 是纯函数(可测)。
+//
+// 加载态用「正弦波颜色扫过」(oh-my-pi wave 样式):文字按字符位置算颜色相位,
+// animFrame 推进相位 → 颜色流动。不是 spinner 转圈。
 type model struct {
-	spinner spinner.Model
-	deps    Deps
-	state   state
-	errMsg  string    // stateError 时展示
-	pollAt  time.Time // 上次轮询完成时刻(展示「Xs 前检查」)
-	width   int
-	height  int
+	deps     Deps
+	state    state
+	errMsg   string // stateError 时展示
+	width    int
+	height   int
+	animFrame int // 正弦波颜色动画的当前帧(每帧 +1,驱动相位推进)
 
 	// CONFIRMED 时填充,Run 退出后回传调用方。
 	confirmedRaw  json.RawMessage
 	confirmedCookie string
 }
 
-// newModel 构造初始 Model。spinner 用默认 Line(与原 kit.Spinner 的 braille 帧一致)。
+// newModel 构造初始 Model。
 func newModel(deps Deps) model {
-	s := spinner.New(
-		spinner.WithSpinner(spinner.Line),
-		spinner.WithStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("213"))),
-	)
 	if deps.Now == nil {
 		deps.Now = time.Now
 	}
 	if deps.PollCtx == nil {
 		deps.PollCtx = context.Background()
 	}
-	return model{spinner: s, deps: deps, state: stateInit, pollAt: deps.Now()}
+	return model{deps: deps, state: stateInit}
 }
 
-// Init 启动 spinner tick + 首次轮询 + 超时定时器。
+// Init 启动动画 tick + 首次轮询 + 超时定时器。
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, poll(m.deps), scheduleTimeout())
+	return tea.Batch(animTick(), poll(m.deps), scheduleTimeout())
 }
+
+// animTickMsg 推进正弦波颜色动画一帧。
+type animTickMsg struct{}
 
 // Run 接管终端,返回登录结果。caller 在返回后按 Confirmed 决定是否持久化。
 //

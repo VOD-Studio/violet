@@ -3,7 +3,6 @@ module github.com/VOD-Studio/mimo-music
 go 1.25.6
 
 require (
-	charm.land/bubbles/v2 v2.1.1
 	charm.land/bubbletea/v2 v2.0.8
 	charm.land/lipgloss/v2 v2.0.5
 	github.com/alicebob/miniredis/v2 v2.38.0

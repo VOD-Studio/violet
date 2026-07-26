@@ -8,17 +8,26 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/bubbles/v2/spinner"
 
 	"github.com/stretchr/testify/require"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 )
+
+// ansiRe 匹配 ANSI 转义序列(颜色/光标控制)。waveText 给每个字符裹颜色码,
+// 断言文案前需剥离——只验语义,不验配色(lipgloss 输出格式属实现细节)。
+var ansiRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// stripANSI 剥离 ANSI 颜色码,返回纯文本。
+func stripANSI(s string) string {
+	return ansiRe.ReplaceAllString(s, "")
+}
 
 // fakeDeps 构造可控的 Deps:Check 按 codes 队列依次返回;Now 返回固定时钟序列。
 type fakeDeps struct {
@@ -136,12 +145,23 @@ func TestUpdate_TimeoutMsgSetsState(t *testing.T) {
 	require.Equal(t, stateTimeout, out.state)
 }
 
-func TestUpdate_SpinnerTickForwardsToSpinner(t *testing.T) {
+func TestUpdate_AnimTickAdvancesFrame(t *testing.T) {
 	m := newTestModel(&fakeDeps{})
-	// spinner.TickMsg 不应改变 qrtui 自身状态,只转发给 spinner.Model。
-	out := applyMsg(t, m, spinner.TickMsg{})
-	// 状态仍是 stateInit(未收到 pollMsg)。
+	require.Zero(t, m.animFrame)
+	out := applyMsg(t, m, animTickMsg{})
+	require.Equal(t, 1, out.animFrame, "animTickMsg 应推进 animFrame")
+	// 状态不变(只驱动颜色动画)。
 	require.Equal(t, stateInit, out.state)
+}
+
+func TestUpdate_AnimTickStopsAtTerminalStates(t *testing.T) {
+	for _, final := range []state{stateConfirmed, stateExpired, stateTimeout} {
+		m := newTestModel(&fakeDeps{})
+		m.state = final
+		m.animFrame = 5
+		out := applyMsg(t, m, animTickMsg{})
+		require.Equal(t, 5, out.animFrame, "终态 %v 不应推进动画帧", final)
+	}
 }
 
 // ==================== View 金线 ====================
@@ -179,39 +199,26 @@ func TestView_ContainsURLAndHelp(t *testing.T) {
 }
 
 func TestView_StatusLineWaiting(t *testing.T) {
-	fd := &fakeDeps{nowTimes: []time.Time{time.Unix(0, 0)}}
-	m := newTestModel(fd)
-	m.width = 100
-	m.height = 40
+	m := newTestModel(&fakeDeps{})
 	m = applyMsg(t, m, pollMsg{code: mmpb.QrcodeCode_QRCODE_CODE_WAITING})
-	// 推进时钟以计算 ago。
-	fd.nowTimes = []time.Time{time.Unix(5, 0)}
-	fd.nowIdx = 0
-	require.Contains(t, m.statusLine(), "等待扫码")
+	// waveText 给每个字符裹颜色码,断言前剥离 ANSI。
+	require.Contains(t, stripANSI(m.statusLine()), "等待扫码")
 }
 
 func TestView_StatusLineScanned(t *testing.T) {
-	fd := &fakeDeps{nowTimes: []time.Time{time.Unix(0, 0)}}
-	m := newTestModel(fd)
-	m.width = 100
-	m.height = 40
+	m := newTestModel(&fakeDeps{})
 	m = applyMsg(t, m, pollMsg{code: mmpb.QrcodeCode_QRCODE_CODE_SCANNED})
-	fd.nowTimes = []time.Time{time.Unix(2, 0)}
-	fd.nowIdx = 0
-	require.Contains(t, m.statusLine(), "已扫描")
-	require.Contains(t, m.statusLine(), "请在 App 确认")
+	s := stripANSI(m.statusLine())
+	require.Contains(t, s, "已扫描")
+	require.Contains(t, s, "请在 App 确认")
 }
 
 func TestView_StatusLineError(t *testing.T) {
-	fd := &fakeDeps{nowTimes: []time.Time{time.Unix(0, 0)}}
-	m := newTestModel(fd)
-	m.width = 100
-	m.height = 40
+	m := newTestModel(&fakeDeps{})
 	m = applyMsg(t, m, pollMsg{err: errors.New("conn reset")})
-	fd.nowTimes = []time.Time{time.Unix(1, 0)}
-	fd.nowIdx = 0
-	require.Contains(t, m.statusLine(), "轮询出错")
-	require.Contains(t, m.statusLine(), "conn reset")
+	s := stripANSI(m.statusLine())
+	require.Contains(t, s, "轮询出错")
+	require.Contains(t, s, "conn reset")
 }
 
 func TestView_StatusLineConfirmed(t *testing.T) {
@@ -255,7 +262,38 @@ func TestCodeString(t *testing.T) {
 func TestInitReturnsBatch(t *testing.T) {
 	m := newTestModel(&fakeDeps{})
 	cmd := m.Init()
-	require.NotNil(t, cmd, "Init 应返回启动 Cmd(spinner + poll + timeout)")
+	require.NotNil(t, cmd, "Init 应返回启动 Cmd(animTick + poll + timeout)")
+}
+
+// ==================== waveText(正弦波颜色扫过,核心加载态) ====================
+
+func TestWaveText_PreservesContent(t *testing.T) {
+	m := newTestModel(&fakeDeps{})
+	m.animFrame = 0
+	require.Equal(t, "等待扫码", stripANSI(m.waveText("等待扫码")))
+}
+
+func TestWaveText_AnimFrameShiftsColor(t *testing.T) {
+	// 同一字符在不同 animFrame 下应有不同颜色(亮带流动的核心)。
+	// 这里不验具体颜色值(实现细节),只验「帧推进 → 输出变化」。
+	m := newTestModel(&fakeDeps{})
+	s0 := m.waveText("等待扫码...")
+	m.animFrame = 7 // 推进相位
+	s7 := m.waveText("等待扫码...")
+	require.Equal(t, stripANSI(s0), stripANSI(s7), "纯文本应一致")
+	require.NotEqual(t, s0, s7, "颜色码应随 animFrame 变化(亮带流动)")
+}
+
+func TestWaveText_EmptyString(t *testing.T) {
+	m := newTestModel(&fakeDeps{})
+	require.Empty(t, m.waveText(""))
+}
+
+func TestWaveText_ContainsTruecolorEscape(t *testing.T) {
+	// 验证用了 truecolor(24-bit)而非 256 色:输出应含 \x1b[38;2;R;G;Bm。
+	m := newTestModel(&fakeDeps{})
+	s := m.waveText("AB")
+	require.Contains(t, s, "\x1b[38;2;", "waveText 应用 truecolor 转义")
 }
 
 // ==================== Run 结果回传(集成 seam,不启动真实 Program) ====================

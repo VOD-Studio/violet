@@ -4,7 +4,6 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/bubbles/v2/spinner"
 
 	mmpb "github.com/VOD-Studio/mimo-music/gen/go/netease/music/v1"
 )
@@ -12,6 +11,13 @@ import (
 // quitCmd bubbletea v2 的 tea.Quit() 返回 Msg 而非 Cmd;包一层成 Cmd。
 func quitCmd() tea.Cmd {
 	return func() tea.Msg { return tea.Quit() }
+}
+
+// animTick 排下一帧动画(animInterval 后)。驱动正弦波颜色扫过。
+func animTick() tea.Cmd {
+	return tea.Tick(animInterval, func(time.Time) tea.Msg {
+		return animTickMsg{}
+	})
 }
 
 // pollMsg 一次轮询的结果。Check 的四个返回值原样透传。
@@ -34,18 +40,17 @@ func poll(deps Deps) tea.Cmd {
 	}
 }
 
-// schedulePoll 排下一次轮询(pollInterval 后)。配合 spinner.Tick 保持帧率。
+// schedulePoll 排下一次轮询(pollInterval 后)。终态(确认/过期/超时)不排。
 func schedulePoll(deps Deps) tea.Cmd {
 	return tea.Tick(pollInterval, func(time.Time) tea.Msg {
-		// Tick 触发后立即发起实际网络轮询(poll 本身是 tea.Cmd,需 batch)。
-		// 这里返回一个 sentinel,Update 收到后再发 poll——但更简单的是直接
-		// 在 Tick 回调里同步调 Check。bubbletea v2 的 tea.Tick 回调可执行任意
-		// 逻辑,但为保持 Check 的 ctx 注入与错误透传一致,这里走 poll() 同款。
 		return poll(deps)()
 	})
 }
 
 // Update 处理消息。状态机见 model.go 的 state 枚举注释。
+//
+// 动画驱动:非终态每收到 animTickMsg 推进 animFrame 并排下一帧(正弦波颜色流动);
+// 终态(确认/过期/超时)停止动画(不再排 animTick)。
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -53,31 +58,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		return m, nil
 
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
-		return m, cmd
+	case animTickMsg:
+		// 终态不动画(状态文案是静态终态信息)。
+		if m.state == stateConfirmed || m.state == stateExpired || m.state == stateTimeout {
+			return m, nil
+		}
+		m.animFrame++
+		return m, animTick()
 
 	case timeoutMsg:
 		m.state = stateTimeout
 		return m, quitCmd()
 
 	case pollMsg:
-		m.pollAt = m.deps.Now()
 		if msg.err != nil {
 			m.state = stateError
 			m.errMsg = msg.err.Error()
-			// 出错自动重试,不退出。
-			return m, tea.Batch(m.spinner.Tick, schedulePoll(m.deps))
+			// 出错自动重试,不退出。动画继续。
+			return m, schedulePoll(m.deps)
 		}
 		m.errMsg = ""
 		switch msg.code {
 		case mmpb.QrcodeCode_QRCODE_CODE_WAITING:
 			m.state = stateWaiting
-			return m, tea.Batch(m.spinner.Tick, schedulePoll(m.deps))
+			return m, schedulePoll(m.deps)
 		case mmpb.QrcodeCode_QRCODE_CODE_SCANNED:
 			m.state = stateScanned
-			return m, tea.Batch(m.spinner.Tick, schedulePoll(m.deps))
+			return m, schedulePoll(m.deps)
 		case mmpb.QrcodeCode_QRCODE_CODE_CONFIRMED:
 			m.state = stateConfirmed
 			m.confirmedRaw = msg.raw
@@ -90,7 +97,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// 未知 code:当作出错,自动重试(不卡死)。
 			m.state = stateError
 			m.errMsg = "未知状态码 " + codeString(msg.code)
-			return m, tea.Batch(m.spinner.Tick, schedulePoll(m.deps))
+			return m, schedulePoll(m.deps)
 		}
 
 	case tea.KeyMsg:
