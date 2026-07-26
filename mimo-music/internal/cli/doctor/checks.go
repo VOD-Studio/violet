@@ -41,7 +41,7 @@ func SessionChecker(cookieProbe func() string, netProbe func(ctx context.Context
 		if err := netProbe(context.Background(), cookie); err != nil {
 			return Result{Name: "会话", Status: StatusFail,
 				Detail: "cookie 失效或网络不可达",
-				FixHint: fmt.Sprintf("重新 login;或检查网络。详情: %v", err)}
+				FixHint: fmt.Sprintf("重新运行 login,或检查网络。详情: %v", err)}
 		}
 		return Result{Name: "会话", Status: StatusPass, Detail: "已登录,cookie 有效"}
 	})
