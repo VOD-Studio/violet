@@ -133,9 +133,9 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force, dryRun, noM
 	}
 	if songURL == nil || songURL.Url == "" {
 		if reason := unavailableReason(ctx, deps.checkAvailable, id); reason != "" {
-			return fmt.Errorf("✗ 歌曲 %d 无可用音源: %s", id, reason)
+			return fmt.Errorf("歌曲 %d 无可用音源: %s", id, reason)
 		}
-		return fmt.Errorf("✗ 歌曲 %d 无可用音源(level=%d)。检查登录状态或换个音质(--level)试试", id, level)
+		return fmt.Errorf("歌曲 %d 无可用音源(level=%d),检查登录状态或换个音质(--level)", id, level)
 	}
 
 	// 2. 拿歌曲详情(文件名 + 元数据用)。失败不致命:用 id 兜底空 Song。
@@ -173,13 +173,13 @@ func runDownload(k *kit.Kit, id int64, level int, out string, force, dryRun, noM
 		return nil
 	case songdl.StatusFailed:
 		// 目录不可写等失败:带原因 exit 1。
-		return fmt.Errorf("✗ %s", outcome.Reason)
+		return fmt.Errorf("%s", outcome.Reason)
 	}
 
 	// 元数据失败不阻塞:Warnf 警告到 stderr,结果照常渲染。
 	// --no-metadata 是用户主动跳过,不算失败,不 Warnf。
 	if !outcome.MetaWritten && !noMetadata {
-		k.Warnf("⚠ 元数据写入失败,文件已保存")
+		k.Warnf("元数据写入失败,文件已保存")
 	}
 
 	// 下载成功消费后埋点召回池(方案 c:命令显式调 kit.Record;dry-run/skip 不埋)。
@@ -229,9 +229,9 @@ func (r downloadResult) write(k *kit.Kit) error {
 
 // writeHuman 渲染人类可读 key-value(PRD-0013 行 85-91 格式)。
 func (r downloadResult) writeHuman(w io.Writer) {
-	meta := "✗"
+	meta := "未写入"
 	if r.MetaWritten {
-		meta = "✓ 标题/艺人/专辑/封面"
+		meta = "已写入(标题/艺人/专辑/封面)"
 	}
 	fmt.Fprintf(w, "文件     %s\n", r.filename)
 	fmt.Fprintf(w, "目录     %s\n", r.dir)

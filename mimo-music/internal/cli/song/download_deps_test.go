@@ -110,8 +110,8 @@ func TestRunDownload_MetadataFailureWarnf(t *testing.T) {
 		t.Errorf("应 Warnf 元数据失败警告到 stderr,got %q", got)
 	}
 	// stdout 结果应显示元数据未写入。
-	if got := stdout.String(); !strings.Contains(got, "✗") {
-		t.Errorf("人类输出应显示元数据未写入(✗),got %q", got)
+	if got := stdout.String(); !strings.Contains(got, "元数据   未写入") {
+		t.Errorf("人类输出应显示元数据未写入,got %q", got)
 	}
 	// 文件仍保存。
 	entries, _ := os.ReadDir(dir)
@@ -282,8 +282,8 @@ func TestRunDownload_NoMetadata(t *testing.T) {
 	if len(entries) == 0 {
 		t.Error("文件应已落盘")
 	}
-	if !strings.Contains(stdout.String(), "✗") {
-		t.Errorf("人类输出应显示元数据未写(✗), got %q", stdout.String())
+	if !strings.Contains(stdout.String(), "元数据   未写入") {
+		t.Errorf("人类输出应显示元数据未写, got %q", stdout.String())
 	}
 }
 

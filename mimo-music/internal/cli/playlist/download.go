@@ -170,7 +170,7 @@ func runPlaylistDownload(k *kit.Kit, id int64, level int, out string, workers in
 
 	// 3. mkdir。
 	if err := os.MkdirAll(out, 0o755); err != nil {
-		return fmt.Errorf("✗ 目录 %s 不可写: %v", out, err)
+		return fmt.Errorf("目录 %s 不可写: %v", out, err)
 	}
 
 	// 4. worker 池。
@@ -251,7 +251,7 @@ func runWorkerPool(k *kit.Kit, songs []*mmpb.Song, level int, out string, force,
 				}
 				if diff >= 1024 {
 					// 大小不符:跳过但警告。
-					warn("⚠ %s 大小不符(本地 %d, 远端 %d),疑似上次中断。--force 覆盖。", name, info.Size(), songURL.Size)
+					warn("%s 大小不符(本地 %d, 远端 %d),疑似上次中断,--force 覆盖", name, info.Size(), songURL.Size)
 					return songdl.Outcome{Status: songdl.StatusSkipped, SongID: song.Id, Reason: "大小不符", Filename: name, Path: path}, true
 				}
 			}
@@ -308,10 +308,10 @@ func runWorkerPool(k *kit.Kit, songs []*mmpb.Song, level int, out string, force,
 		switch {
 		case !degraded.Load() && fails >= int32(failThreshold):
 			degraded.Store(true)
-			warn("⚠ 连续 %d 次失败,已降并发到 1", fails)
+			warn("连续 %d 次失败,已降并发到 1", fails)
 		case degraded.Load() && fails >= int32(failThreshold+stopThreshold):
 			if stopped.CompareAndSwap(false, true) {
-				warn("✗ 疑似被限流,请稍后重试或减少 --workers")
+				warn("疑似被限流,请稍后重试或减少 --workers")
 				cancel()
 			}
 		}

@@ -173,9 +173,9 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, lyric bool, 
 	}
 	if songURL == nil || songURL.Url == "" {
 		if reason := unavailableReason(ctx, deps.checkAvailable, id); reason != "" {
-			return fmt.Errorf("✗ 无可用音源: %s", reason)
+			return fmt.Errorf("无可用音源: %s", reason)
 		}
-		return fmt.Errorf("✗ 无可用音源(level=%d)。检查登录状态或换个音质(--level)试试", level)
+		return fmt.Errorf("无可用音源(level=%d),检查登录状态或换个音质(--level)", level)
 	}
 
 	// 3. 歌曲详情(状态栏元数据)。失败不致命:空 Song 兜底。
@@ -183,31 +183,31 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, lyric bool, 
 	if song == nil {
 		song = &mmpb.Song{Id: id}
 	}
-	fmt.Fprintf(deps.ui, "解析音源 ✓ level=%d %s %dkbps\n", level, songURL.Format, songURL.Bitrate/1000)
+	fmt.Fprintf(deps.ui, "音源已解析 level=%d %s %dkbps\n", level, songURL.Format, songURL.Bitrate/1000)
 
 	// 4. 构造播放器并加载(后台开始预缓冲)。
 	p := deps.newPlayer(volume)
 	defer func() { _ = p.Close() }()
 	if err := p.Load(songURL.Url); err != nil {
-		return fmt.Errorf("✗ 加载音源失败: %w", err)
+		return fmt.Errorf("加载音源失败: %w", err)
 	}
 
 	// 5. 起播意图。音频设备初始化失败(headless/容器)→ exit 1 带可操作消息
 	// (beep 的错误文本已含「headless 环境请用 song download」)。
 	if err := p.Play(); err != nil {
-		return fmt.Errorf("✗ %w", err)
+		return err
 	}
 
 	// 6. 缓冲可视化:spinner 显示已缓冲/水位,水位达标(离开 Buffering)后停。
 	waitBuffer(k, p)
 	if p.State() == player.StateStopped {
-		return errors.New("✗ 缓冲失败,音源不可用或网络中断")
+		return errors.New("缓冲失败,音源不可用或网络中断")
 	}
 
 	// 7. 起始定位(失败不致命,Warnf 继续从头播)。
 	if startSec > 0 {
 		if err := p.Seek(startSec); err != nil {
-			k.Warnf("⚠ 起始定位失败: %v", err)
+			k.Warnf("起始定位失败: %v", err)
 		}
 	}
 
@@ -223,7 +223,7 @@ func runPlay(k *kit.Kit, id int64, level, volume int, start string, lyric bool, 
 	// 8. raw 模式 + 事件循环。q/Esc 退出 → 恢复终端,exit 0。
 	restore, err := deps.makeRaw()
 	if err != nil {
-		return fmt.Errorf("✗ 终端进入原始模式失败: %w", err)
+		return fmt.Errorf("终端进入原始模式失败: %w", err)
 	}
 	defer func() { _ = restore() }()
 
@@ -270,13 +270,13 @@ func loadLyric(ctx context.Context, k *kit.Kit, id int64, deps playDeps) ([]play
 	text, err := deps.fetchLyric(ctx, id)
 	if err != nil {
 		// 歌词接口失败不致命:.Warnf 警告,播放继续。
-		k.Warnf("⚠ 歌词获取失败: %v", err)
-		return nil, fmt.Sprintf("⚠ 歌词获取失败: %v", err)
+		k.Warnf("歌词获取失败: %v", err)
+		return nil, fmt.Sprintf("歌词获取失败: %v", err)
 	}
 	lines := player.SortedLRC(text)
 	if len(lines) == 0 {
-		k.Warnf("⚠ 该歌曲暂无歌词")
-		return nil, "⚠ 该歌曲暂无歌词"
+		k.Warnf("该歌曲暂无歌词")
+		return nil, "该歌曲暂无歌词"
 	}
 	return lines, ""
 }
@@ -538,7 +538,7 @@ func (u *playUI) handleKey(ev keyEvent) {
 // do 执行 Player 操作,失败写一次性提示(状态栏展示,不打断播放)。
 func (u *playUI) do(what string, fn func() error) {
 	if err := fn(); err != nil {
-		u.notice = fmt.Sprintf("✗ %s失败: %v", what, err)
+		u.notice = fmt.Sprintf("%s失败: %v", what, err)
 	}
 }
 
