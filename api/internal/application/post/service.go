@@ -564,6 +564,7 @@ func (s *Service) RestoreVersion(ctx context.Context, postID, versionID, operato
 type ImportResult struct {
 	Title          string   `json:"title"`           // 文章正文标题
 	HTML           string   `json:"html"`            // 正文 HTML
+	Markdown       string   `json:"markdown"`        // 正文 Markdown（由 HTML 转换，公式还原为 $..$ / $$..$$，供 MCP scrape_url 使用）
 	Excerpt        string   `json:"excerpt"`         // 摘要
 	SeoTitle       string   `json:"seo_title"`       // SEO 标题（社交分享用，可与正文不同）
 	SeoDescription string   `json:"seo_description"` // SEO 描述
@@ -651,9 +652,18 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string, opts ImportURLOp
 	if strings.TrimSpace(buf.String()) == "" {
 		return ImportResult{}, shared.BadRequest("未能从该链接提取到正文")
 	}
+	// HTML→Markdown：失败非致命，记 warning 不阻塞 HTML 路径（admin ImportURL 仍主要返回 HTML）
+	markdownText, mdErr := htmlToMarkdown(buf.String())
+	if mdErr != nil {
+		if warnings == nil {
+			warnings = []string{}
+		}
+		warnings = append(warnings, "Markdown 转换失败："+mdErr.Error())
+	}
 	return ImportResult{
 		Title:          title,
 		HTML:           buf.String(),
+		Markdown:       markdownText,
 		Excerpt:        excerpt,
 		SeoTitle:       seoTitle,
 		SeoDescription: seoDescription,

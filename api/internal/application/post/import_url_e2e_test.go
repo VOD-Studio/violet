@@ -79,3 +79,31 @@ func truncateForLog(s string, n int) string {
 	}
 	return s
 }
+
+// TestImportURL_GeneratesMarkdownFromHTML 端到端走 ImportURL 入口，验证
+// issue #78：返回的 ImportResult.Markdown 由 HTML 正确转换而来，含公式还原。
+//
+// 网络依赖测试，离线/CI 自动跳过。
+func TestImportURL_GeneratesMarkdownFromHTML(t *testing.T) {
+	if testing.Short() {
+		t.Skip("跳过网络依赖测试")
+	}
+	rawURL := "https://rua.plus/post/markdown-quan-te-xing-ce-shi-wen-zhang"
+	svc := &Service{}
+	result, err := svc.ImportURL(t.Context(), rawURL, ImportURLOpts{})
+	if err != nil {
+		t.Skipf("ImportURL 失败（可能无法访问源站）: %v", err)
+	}
+
+	if result.Markdown == "" {
+		t.Errorf("ImportResult.Markdown 应非空（HTML 转 MD 应成功）。HTML 片段:\n%s",
+			truncateForLog(result.HTML, 500))
+	}
+	// 公式应还原为 LaTeX 占位（$ 或 $$），而非残留 data-type 节点
+	if strings.Contains(result.Markdown, "data-type=") {
+		t.Errorf("Markdown 不应残留公式 data-type 节点。片段:\n%s",
+			truncateForLog(result.Markdown, 500))
+	}
+	t.Logf("Markdown 长度: %d", len(result.Markdown))
+	t.Logf("公式 $ 出现次数: %d", strings.Count(result.Markdown, "$"))
+}
