@@ -29,6 +29,30 @@
 - **测试**: `make web-test`
 - **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-canonical-classes` skill。
 
+## 分支命名
+
+每个新任务 / feature 先从 `release/2.0` 新建分支完成，不在 `release/2.0` 上直接开发。
+
+格式:**`<type>/<scope>-<简述>`**
+
+- **type** 对齐 Conventional Commits:`feat` / `fix` / `chore` / `docs` / `refactor` / `style` / `test` / `perf` / `hotfix`。
+- **scope** 指向最内层模块(同提交 scope 规则):前端 (`posts`/`editor`/`auth`/`comments`)、后端 (`handler`/`service`/`domain`/`repository`)、或文件 / 区域名 (`readme`/`ci`/`deps`/`deploy`)。改动难以定位到单模块时可省略 scope。
+- 全小写,`/` 分段,`-` 连词。无空格、无大写、无特殊字符。
+- 简述用英文或拼音,短而清晰。
+
+✅ 正确:
+- `feat/post-slug-pinyin`
+- `feat/front-end-redesign`
+- `fix/handler-search-encoding`
+- `docs/deploy`
+- `chore/deps-bump`
+
+❌ 错误:
+- `feature/这是一个很长的中文分支名`(冗长 + 中文)
+- `update`(无 type 无 scope)
+- `Fix/Login`(大写)
+- `new-feature`(能定位到模块时该写 scope,而非泛称)
+
 ## Agent skills
 
 ### Issue tracker
