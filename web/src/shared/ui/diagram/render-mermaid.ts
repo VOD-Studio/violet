@@ -64,6 +64,13 @@ export async function renderMermaid(
             securityLevel: "strict",
             theme: "base",
             themeVariables,
+            // suppressErrorRendering: true — mermaid v11 默认 false，解析失败时不抛错，
+            // 而是路由到内置 errorDiagram 把含 "Syntax error in text" + "mermaid version"
+            // 的错误图画进挂在 document.body 的临时 div，事后虽会 throw，但 throw 前不
+            // 清理该临时 div → 残留在页面底部（mermaid.esm.mjs:1670-1679 / 1718-1719）。
+            // 我们有自己的 DiagramError 占位降级，要 mermaid 在画错误图之前就抛错，
+            // 由下方 try/catch 捕获返回 { error }。
+            suppressErrorRendering: true,
         });
         const id = `diagram-render-${++renderSeq}`;
         const { svg } = await mermaid.render(id, source);

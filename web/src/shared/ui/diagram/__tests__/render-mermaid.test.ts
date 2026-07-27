@@ -57,6 +57,19 @@ describe("renderMermaid", () => {
         );
     });
 
+    it("initialize 含 suppressErrorRendering: true（防 mermaid 画错误图残留在 body）", async () => {
+        // mermaid v11 默认 suppressErrorRendering:false，解析失败时不抛错，而是把含
+        // "Syntax error in text" 的错误图画进 document.body 的临时 div，throw 前不清理 →
+        // 残留显示在界面底部。我们必须显式 true 让它在画错误图前就抛错。
+        mermaidRender.mockResolvedValue({ svg: CLEAN_SVG });
+
+        await renderMermaid("graph TD; A-->B", "light");
+
+        expect(mermaidInitialize).toHaveBeenCalledWith(
+            expect.objectContaining({ suppressErrorRendering: true }),
+        );
+    });
+
     it("默认主题为 light（不传 theme）", async () => {
         mermaidRender.mockResolvedValue({ svg: CLEAN_SVG });
         await renderMermaid("graph TD; A-->B");
