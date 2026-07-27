@@ -5,16 +5,18 @@ import (
 
 	apppost "blog-api/internal/application/post"
 	appsub "blog-api/internal/application/subscription"
+	domainsubscription "blog-api/internal/domain/subscription"
 	infrafeed "blog-api/internal/infrastructure/feed"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 )
 
 // SubscriptionContainer 订阅模块容器。
 //
-// SubscriptionService 供 MCP 模块的订阅 tool 复用；FetchOne 依赖（PostImporter + FeedParser）
-// 在 NewSubscriptionContainer 里通过 SetFetchDeps 注入，依赖 post 模块的 Service。
+// SubscriptionService 供 MCP 模块的订阅 tool 复用；
+// SubscriptionRepository 供 T8 调度器（FindDue + Save 状态回写）复用。
 type SubscriptionContainer struct {
-	SubscriptionService *appsub.Service
+	SubscriptionService  *appsub.Service
+	SubscriptionRepository domainsubscription.SubscriptionRepository
 }
 
 // NewSubscriptionContainer 装配订阅模块（领域 + 应用 + 抓取依赖）。
@@ -27,5 +29,8 @@ func NewSubscriptionContainer(db *gorm.DB, postSvc *apppost.Service) *Subscripti
 	if postSvc != nil {
 		svc.SetFetchDeps(entryRepo, postSvc, infrafeed.NewGoFeedParser())
 	}
-	return &SubscriptionContainer{SubscriptionService: svc}
+	return &SubscriptionContainer{
+		SubscriptionService:   svc,
+		SubscriptionRepository: subRepo,
+	}
 }

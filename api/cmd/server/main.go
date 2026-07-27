@@ -178,6 +178,15 @@ func main() {
 	cleanupJob := job.NewCleanupJob(gormDB, chunkDir, uploadRoot)
 	go cleanupJob.Start(ctx)
 
+	// 订阅定时抓取调度器（T8）：与 cleanupJob 并列，30 分钟轮询 due 订阅，
+	// 有界并行 worker pool 抓取，失败按 Miniflux 共识分类处理
+	subscriptionJob := job.NewSubscriptionJob(
+		subscriptionContainer.SubscriptionService,
+		subscriptionContainer.SubscriptionRepository,
+		nil, 0, 0, // now/worker/tick 用默认（time.Now / 5 / 30min）
+	)
+	go subscriptionJob.Start(ctx)
+
 	// --- 超级管理员初始化---
 	if cfg.SuperAdmin.Enabled {
 		if err := authContainer.EnsureSuperAdmin.Handle(ctx, authcmd.EnsureSuperAdminInput{
