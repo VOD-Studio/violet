@@ -68,7 +68,7 @@ func (r *RobotsChecker) Allowed(ctx context.Context, target string) (bool, strin
 		// 4xx 视为 allow-all
 		return true, "", nil
 	}
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(ssrf.LimitBody(resp.Body, ssrf.MaxBodyBytes))
 	if err != nil {
 		return true, "", nil
 	}

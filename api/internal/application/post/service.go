@@ -680,8 +680,8 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string, opts ImportURLOp
 // fetchHTML 抓取远程 HTML 文档，校验 Content-Type 必须为 text/html。
 // UA 伪装为桌面浏览器避免被某些站点拦截。
 //
-// SSRF 防护：发起前调 ssrf.ValidateURL（协议/host 文本预检），
-// 出站连接经 ssrf.NewSafeTransport 在 DNS 解析后校验 IP（防 DNS 重绑定）。
+// SSRF 防护三件套：发起前 ValidateURL（协议/host 预检）+ 出站走 SafeTransport
+// （DNS 解析后拨号前校验 IP，防 DNS 重绑定）+ resp.Body 包 LimitBody（防超大响应 OOM）。
 func fetchHTML(rawURL string, timeout time.Duration) (*http.Response, error) {
 	if _, err := ssrf.ValidateURL(rawURL); err != nil {
 		return nil, err
@@ -703,6 +703,8 @@ func fetchHTML(rawURL string, timeout time.Duration) (*http.Response, error) {
 		resp.Body.Close()
 		return nil, fmt.Errorf("目标链接不是 HTML 文档（Content-Type: %s）", ct)
 	}
+	// 包装有界 reader 防止恶意/巨型响应打爆内存；调用方读 resp.Body 超限会收到错误
+	resp.Body = ssrf.LimitBody(resp.Body, ssrf.MaxBodyBytes)
 	return resp, nil
 }
 

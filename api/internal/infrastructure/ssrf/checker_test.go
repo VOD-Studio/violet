@@ -9,7 +9,9 @@ package ssrf
 
 import (
 	"context"
+	"io"
 	"net"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -113,4 +115,33 @@ func TestCheckHost_PropagatesDNSError(t *testing.T) {
 		return nil, &net.DNSError{Err: "no such host", Name: host}
 	})
 	assert.Error(t, err, "DNS 解析失败应传播错误")
+}
+
+// ---- LimitBody：响应体大小限制 ----
+
+func TestLimitBody_AllowsUnderLimit(t *testing.T) {
+	body := io.NopCloser(strings.NewReader("hello"))
+	limited := LimitBody(body, 100)
+	got, err := io.ReadAll(limited)
+	require.NoError(t, err)
+	assert.Equal(t, "hello", string(got))
+}
+
+func TestLimitBody_RejectsOverLimit(t *testing.T) {
+	// 5MB body，上限 1MB，应读到上限后返回错误
+	big := strings.NewReader(strings.Repeat("x", 5*1024*1024))
+	body := io.NopCloser(big)
+	limited := LimitBody(body, 1024*1024)
+	_, err := io.ReadAll(limited)
+	assert.Error(t, err, "超过上限应返回错误而非静默截断")
+}
+
+func TestLimitBody_BoundaryExactlyAtLimit(t *testing.T) {
+	// 正好等于上限：应成功读完
+	payload := strings.Repeat("x", 100)
+	body := io.NopCloser(strings.NewReader(payload))
+	limited := LimitBody(body, 100)
+	got, err := io.ReadAll(limited)
+	require.NoError(t, err, "正好等于上限应成功")
+	assert.Equal(t, payload, string(got))
 }

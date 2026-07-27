@@ -10,11 +10,27 @@ package ssrf
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
 )
+
+// MaxBodyBytes 抓取响应体的默认上限（10 MB）。
+// 防止恶意/巨型响应打爆内存。HTML 文章正文极少超过 1MB，10MB 留足余量。
+const MaxBodyBytes int64 = 10 * 1024 * 1024
+
+// LimitBody 包装响应体为有界 reader，超过 max 字节返回错误（而非 io.LimitReader 的静默截断）。
+//
+// 用于所有抓取外部 URL 的场景（scrape_url、订阅抓取、admin ImportURL、robots.txt），
+// 防止恶意源站返回超大响应导致 OOM。基于 http.MaxBytesReader 实现（到上限返回
+// *http.MaxBytesError，调用方按错误处理）。
+func LimitBody(body io.ReadCloser, max int64) io.ReadCloser {
+	// http.MaxBytesReader 第一个参数 ResponseWriter 可为 nil（仅在不触发 WriteHeader
+	// 的纯读取场景，正是我们的用法）
+	return http.MaxBytesReader(nil, body, max)
+}
 
 // ValidateURL 做 URL 文本层预检：协议白名单（仅 http/https）+ host 非空。
 // 返回解析后的 *url.URL 供调用方继续构造请求。
