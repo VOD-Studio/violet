@@ -92,6 +92,7 @@ func main() {
 		&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
 		&newmodel.MusicSetting{},
 		&newmodel.File{}, &newmodel.UploadSession{},
+		&newmodel.APIToken{},
 	); err != nil {
 		log.Warn().Err(err).Msg("AutoMigrate error")
 	}
@@ -137,6 +138,7 @@ func main() {
 	statsContainer := app.NewStatsContainer(gormDB)
 	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
 	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
+	apiTokenContainer := app.NewAPITokenContainer(gormDB)
 
 	// 服务器监控模块（DDD）：启动 30s 采样 goroutine，随 appCtx 退出
 	systemContainer := app.NewSystemContainer(gormDB, redisClient, ctx)
@@ -478,6 +480,14 @@ func main() {
 				Patch("/announcements/{id}", contentH.UpdateAnnouncement) // 更新公告
 			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
 				Delete("/announcements/{id}", contentH.DeleteAnnouncement) // 删除公告
+
+			// MCP 访问令牌管理（PAT；读/写需 mcp:manage-tokens）
+			r.With(middleware.RequirePermission(permissionChecker, "mcp:manage-tokens")).
+				Get("/api-tokens", apiTokenContainer.APITokenHandler.List)   // 列出当前用户 PAT
+			r.With(middleware.RequirePermission(permissionChecker, "mcp:manage-tokens")).
+				Post("/api-tokens", apiTokenContainer.APITokenHandler.Create) // 创建 PAT（返回明文一次性）
+			r.With(middleware.RequirePermission(permissionChecker, "mcp:manage-tokens")).
+				Delete("/api-tokens/{id}", apiTokenContainer.APITokenHandler.Delete) // 吊销 PAT
 
 			// 评论审核（读 comment:view；批量状态 comment:approve）
 			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).

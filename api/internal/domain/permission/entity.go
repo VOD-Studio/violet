@@ -121,6 +121,8 @@ var (
 	// system
 	SystemView           = MustParse("system:view") // 系统监控（主机/磁盘/运行时指标）
 	LogView              = MustParse("log:view")    // 操作日志（含 IP/操作明细）
+	// mcp
+	MCPManageTokens      = MustParse("mcp:manage-tokens") // 管理 MCP 访问令牌（PAT）
 	AdminAccess          = MustParse("admin:access")
 )
 
