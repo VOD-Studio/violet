@@ -151,7 +151,7 @@ func main() {
 	emojiRepo := gormrepo.NewEmojiGroupRepository(gormDB)
 	emojiSeedService := service.NewEmojiSeedService(emojiRepo, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
 	refetchStatusStore := infraemoji.NewRefetchStatusStore(redisClient)
-	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix, cfg.MimoMusicURL, emojiSeedService, refetchStatusStore)
+	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix, cfg.KiteURL, emojiSeedService, refetchStatusStore)
 
 	// 代码运行器（可运行代码块沙箱执行）：始终连 docker.sock 起隔离容器执行用户代码。
 	// enabled 开关与资源阈值走 site_settings（运行时可改），settingsStore 注入 service 实时读取。

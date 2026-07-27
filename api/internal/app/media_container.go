@@ -19,10 +19,10 @@ type MediaContainer struct {
 
 // NewMediaContainer 装配 emoji/music/upload DDD 模块。
 // reseeder/statusStore 用于「重新拉取」功能。
-// mimoMusicURL 是自托管 mimo-music 服务地址。
+// kiteURL 是自托管 kite 服务地址。
 func NewMediaContainer(
 	db *gorm.DB,
-	emojiDir, chunkDir, uploadDir, urlPrefix, mimoMusicURL string,
+	emojiDir, chunkDir, uploadDir, urlPrefix, kiteURL string,
 	reseeder appmedia.ReseedRunner,
 	statusStore domainemoji.RefetchStatusStore,
 ) *MediaContainer {
@@ -31,7 +31,7 @@ func NewMediaContainer(
 	fileRepo := gormrepo.NewFileRepository(db)
 	sessionRepo := gormrepo.NewUploadSessionRepository(db)
 	localStorage := storage.NewLocalStorage(uploadDir, urlPrefix)
-	musicProvider := inframusic.NewMimoMusicProvider(mimoMusicURL)
+	musicProvider := inframusic.NewKiteProvider(kiteURL)
 	musicSettingStore := gormrepo.NewMusicSettingStore(db)
 
 	emojiSvc := appmedia.NewEmojiService(emojiRepo, emojiDir, urlPrefix, reseeder, statusStore)
