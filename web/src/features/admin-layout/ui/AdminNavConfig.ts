@@ -4,6 +4,7 @@ import {
     FileText,
     FolderKanban,
     Images,
+    KeyRound,
     LayoutDashboard,
     Megaphone,
     MessageSquare,
@@ -73,6 +74,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
         permissions: ["emoji:view"],
     },
     { label: "站点设置", to: "/admin/settings", icon: Settings, permissions: ["settings:view"] },
+    {
+        label: "MCP 接入",
+        to: "/admin/mcp",
+        icon: KeyRound,
+        permissions: ["mcp:manage-tokens"],
+    },
     { label: "系统监控", to: "/admin/system", icon: Activity, permissions: ["system:view"] },
     { label: "操作日志", to: "/admin/logs", icon: ScrollText, permissions: ["log:view"] },
 ];
