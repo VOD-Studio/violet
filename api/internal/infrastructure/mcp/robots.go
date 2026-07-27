@@ -2,6 +2,11 @@
 //
 // scrape_url tool 调目标 URL 前先拉目标站点 /robots.txt，遵守 Disallow 规则。
 // 这是抓取礼仪（避免被源站封 IP），与 SSRF 防护一起作为抓取前的预检。
+//
+// 策略选择（硬拒绝 vs warning）：本博客作为"转载别人文章"的工具，应站在源站立场——
+// 源站 robots.txt 标 Disallow 即明确表达"不希望你抓"。即便 RFC 9309 把 robots 定位为
+// 自愿遵守的礼仪（协议层面不强制），本博客选择**硬拒绝**作为对源站意愿的尊重，
+// 这符合博客转载的合规立场。agent 看到 robots 拒绝错误后，可改抓其它允许的源。
 package mcp
 
 import (
