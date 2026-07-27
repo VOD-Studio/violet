@@ -8,6 +8,9 @@
  * 即 startOffset（DOM 节点级 offset 转块文本级 offset 的标准技巧）。
  *
  * 跨块判定：选区起点和终点所在块不同 → buildAnchorFromRange 返回 null。
+ *
+ * 不可批注容器：代码块（shiki pre）、图块、块级公式等语义上不可批注的块，
+ * 命中时 selectionToAnchor 返回 null，FloatingToolbar 据此隐藏（区别于跨块置灰）。
  */
 
 import { computeBlockId } from "./block-id";
@@ -17,6 +20,34 @@ import type { Anchor } from "./types";
 
 /** 块级元素选择器（与 extractCandidateBlocks 保持一致）。 */
 const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote";
+
+/**
+ * 不可批注容器选择器：命中即拒绝批注。
+ *
+ * 这些块的渲染产物是矢量图/排版结构/可编辑代码，无稳定可寻址文本流：
+ * - `pre`：围栏代码块（shiki 输出 pre.shiki、降级 pre、图块错误态的源码 pre）。
+ * - `.katex-display`：块级公式 KaTeX display 产物（外层 div 已无 data-type，认渲染产物更鲁棒）
+ * - `.cm-editor`：可运行代码块 CodeMirror 6（防御；当前其外层 div 已不命中 BLOCK_SELECTOR）
+ * - `[data-type="diagram-block"]`、`[data-type="block-math"]`：防御性，防组件实现把
+ *   data-type 保留到 DOM 时漏网
+ */
+const UNANNOTATABLE_SELECTOR =
+    "pre, .katex-display, .cm-editor, [data-type='diagram-block'], [data-type='block-math']";
+
+/**
+ * 判断选区是否落在不可批注容器内。
+ *
+ * 取选区起点（startContainer）向上 closest 查找 UNANNOTATABLE_SELECTOR。
+ * 只查起点即可——这些容器都是块级隔离的，选区不可能"半在代码块半在段落"，
+ * 起点在内则整段选区都在内。
+ */
+export function isSelectionInUnannotatableContainer(range: Range): boolean {
+    let node: Node | null = range.startContainer;
+    while (node && node.nodeType !== Node.ELEMENT_NODE) {
+        node = node.parentNode;
+    }
+    return (node as HTMLElement | null)?.closest(UNANNOTATABLE_SELECTOR) != null;
+}
 
 /**
  * 找到节点所在的最近块级元素（向上遍历父链）。
@@ -61,6 +92,10 @@ export async function selectionToAnchor(opts: SelectionToAnchorOptions): Promise
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
 
     const range = selection.getRangeAt(0);
+
+    // 不可批注容器（代码块/图块/块级公式）→ 拒绝，返回 null 让 FloatingToolbar 隐藏
+    if (isSelectionInUnannotatableContainer(range)) return null;
+
     const startBlock = findClosestBlock(range.startContainer);
     const endBlock = findClosestBlock(range.endContainer);
     if (!startBlock || !endBlock) return null;
