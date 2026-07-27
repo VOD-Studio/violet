@@ -41,7 +41,7 @@ GitHub Issues 为主(`gh issue create`),`gh` 不可用时降级到本地 markdow
 
 ### Domain docs
 
-Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告/mimo-music/musicctl CLI),`docs/adr/` 混放 auth 系列 + mimo-music 系列 ADR。详见 `docs/agents/domain.md`。
+Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`docs/adr/` 放 auth 系列 ADR。详见 `docs/agents/domain.md`。
 
 <!-- MANUAL: Any manually added notes below this line are preserved on regeneration -->
 
@@ -50,10 +50,10 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告/mi
 - 每次完成一个任务或一个功能点都要进行 Git 提交。
 - 提交信息必须使用**中文**，并严格符合历史的 Conventional Commits 格式，例如 `feat(api): 添加新功能`、`fix(web): 修复页面 bug`。
 - **scope 指向最小改动单元**，不要叠加冗余前缀。scope 的作用是区分同一仓库里不同模块的改动，当改动集中在一个子模块时，scope 只写最内层模块名。
-  - ✅ 正确：`fix(netease): 搜索接口 URL 编码修复`
+  - ✅ 正确：`fix(handler): 搜索接口 URL 编码修复`
   - ✅ 正确：`feat(observability): 接入 OTel trace_id 注入`
-  - ❌ 错误：`fix(mimo-music/netease): 搜索接口 URL 编码修复`（mimo-music 是冗余前缀）
-  - ❌ 错误：`feat(mimo-music): 登录能力`（改动在多个子模块时，用最贴近的模块名而非项目名）
+  - ❌ 错误：`fix(api/handler): 搜索接口 URL 编码修复`（api 是冗余前缀）
+  - ❌ 错误：`feat(api): 登录能力`（改动在多个子模块时，用最贴近的模块名而非项目名）
   - 判断方法：如果去掉 scope 里的某一段，剩下的仍然能准确定位改动位置，那被去掉的那段就是冗余的。
 - **body 用 bullet points 列出改动事实**，不写散文、不夹带主观评判。详细的决策过程应写在 PR 描述或 ADR。
 - **请勿推送**，仅在本地进行 commit。
@@ -218,7 +218,7 @@ refactor(api): 删除 TokenStore.Verify 死代码
 
 用 **`[scope] 描述`**,不要 `vertical: ...`(vertical slice 是拆分方法论,不该暴露在标题)。对齐仓库已有的 `[code-runner] Tn` 系列惯例。
 
-- ✅ 正确：`[musicctl] 别名 argv 重写 + 首发六枚内置`
+- ✅ 正确：`[auth] opaque session 退出码归一`
 - ✅ 正确：`[code-runner] T9 部署配置 + 文档同步`
 - ❌ 错误：`vertical: 补全挂载(kit 表驱动...)`(暴露实现方法论,且冗长)
 

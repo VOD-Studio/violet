@@ -17,11 +17,11 @@ Infer the repo from `git remote -v` — `gh` does this automatically when run in
 
 ## Fallback: local markdown (when `gh` is unavailable)
 
-Layout follows the existing `docs/issues/` convention (used by historical PRD-0005 / PRD-0009 issue breakdowns):
+Layout follows the existing `docs/issues/` convention (used by historical PRD-0001 / PRD-0002 issue breakdowns):
 
 ```
 docs/issues/
-└── <prd-id-or-slug>/          # e.g. 0013-musicctl-实用功能/
+└── <prd-id-or-slug>/          # e.g. 0002-登录态opaque-session重构/
     ├── 0001-<slug>.md          # one file per issue, zero-padded
     ├── 0002-<slug>.md
     └── ...

@@ -194,7 +194,7 @@ func TestRetry_Backoff(t *testing.T) {
 - `synctest.Wait()`：等所有 goroutine 到 idle 点
 - `time.Sleep` / `time.After` 被 fake clock **瞬时推进**——5 秒退避瞬间完成
 
-**消灭 flaky 测试**：不再需要 `time.Sleep(100ms)` 等真实时间、不再有 race condition。mimo-music 的 `engine/retry.go`、`engine/breaker.go`、`session/` 并发选取都该用它。
+**消灭 flaky 测试**：不再需要 `time.Sleep(100ms)` 等真实时间、不再有 race condition。涉及退避重试、熔断器、并发轮换选取的场景都该用它。
 
 ---
 
