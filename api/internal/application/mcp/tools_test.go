@@ -460,10 +460,11 @@ func TestCreateSubscription_DelegatesWithWriteScope(t *testing.T) {
 		AutoPublish: true, Tags: []string{"转载"},
 	}
 
+	// AutoPublish=true 需 subscriptions:write + posts:publish 两个 scope（PRD-0005 安全语义）
 	res, _, err := tools.CreateSubscription(context.Background(),
-		reqWithToken([]string{domainapitoken.ScopeSubscriptionsWrite}, "u-1"), args)
+		reqWithToken([]string{domainapitoken.ScopeSubscriptionsWrite, domainapitoken.ScopePostsPublish}, "u-1"), args)
 	require.NoError(t, err)
-	assert.False(t, res.IsError, "有 write scope 应成功")
+	assert.False(t, res.IsError, "有 write + publish scope 应成功")
 	require.NotNil(t, fs.createInput)
 	assert.Equal(t, "https://example.com/feed.xml", fs.createInput.FeedURL)
 	assert.Equal(t, "u-1", fs.createInput.UserID, "UserID 取自 PAT")
@@ -576,3 +577,96 @@ func TestDeleteSubscription_DelegatesWithWriteScope(t *testing.T) {
 // domainsubIntervalHourly 等小 helper 避免在测试里 import subscription 包。
 func domainsubIntervalHourly() string { return "hourly" }
 func domainsubIntervalWeekly() string { return "weekly" }
+
+// ---- auto_publish scope gate（review 意见 2）----
+
+func TestCreateSubscription_AutoPublishRequiresPostsPublishScope(t *testing.T) {
+	fs := &fakeSubService{}
+	tools := NewTools(nil, nil, fs)
+	args := createSubscriptionArgs{
+		FeedURL:     "https://example.com/feed",
+		AutoPublish: true,
+	}
+
+	res, _, err := tools.CreateSubscription(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeSubscriptionsWrite}, "u-1"), args)
+	require.NoError(t, err)
+	assert.True(t, res.IsError, "auto_publish=true 缺 posts:publish 应拒绝（防 scope 绕过）")
+	assert.Nil(t, fs.createInput, "不应调 Create")
+}
+
+func TestCreateSubscription_AutoPublishPassesWithPostsPublishScope(t *testing.T) {
+	fs := &fakeSubService{createResult: appsub.SubscriptionDTO{ID: "sub-1"}}
+	tools := NewTools(nil, nil, fs)
+	args := createSubscriptionArgs{
+		FeedURL:     "https://example.com/feed",
+		AutoPublish: true,
+	}
+
+	res, _, err := tools.CreateSubscription(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeSubscriptionsWrite, domainapitoken.ScopePostsPublish}, "u-1"), args)
+	require.NoError(t, err)
+	assert.False(t, res.IsError, "两个 scope 齐全应放行")
+	require.NotNil(t, fs.createInput)
+	assert.True(t, fs.createInput.AutoPublish)
+}
+
+func TestUpdateSubscription_AutoPublishRequiresPostsPublishScope(t *testing.T) {
+	fs := &fakeSubService{}
+	tools := NewTools(nil, nil, fs)
+	args := updateSubscriptionArgs{ID: "s1", AutoPublish: true}
+
+	res, _, err := tools.UpdateSubscription(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeSubscriptionsWrite}, "u-1"), args)
+	require.NoError(t, err)
+	assert.True(t, res.IsError, "Update auto_publish=true 同样需 posts:publish")
+	assert.Nil(t, fs.updateInput)
+}
+
+// ---- 5 个 tool 的 scope 拒绝负分支（review 意见 5）----
+
+func TestGetSubscription_RejectedWithoutReadScope(t *testing.T) {
+	fs := &fakeSubService{getErr: errors.New("不应被调")}
+	tools := NewTools(nil, nil, fs)
+	res, _, _ := tools.GetSubscription(context.Background(),
+		reqWithToken(nil, "u-1"), getSubscriptionArgs{ID: "s1"})
+	assert.True(t, res.IsError)
+	assert.Empty(t, fs.getID)
+}
+
+func TestUpdateSubscription_RejectedWithoutWriteScope(t *testing.T) {
+	fs := &fakeSubService{updateErr: errors.New("不应被调")}
+	tools := NewTools(nil, nil, fs)
+	res, _, _ := tools.UpdateSubscription(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopeSubscriptionsRead}, "u-1"),
+		updateSubscriptionArgs{ID: "s1"})
+	assert.True(t, res.IsError, "read 不含 write 应拒绝")
+	assert.Nil(t, fs.updateInput)
+}
+
+func TestPauseSubscription_RejectedWithoutWriteScope(t *testing.T) {
+	fs := &fakeSubService{pauseErr: errors.New("不应被调")}
+	tools := NewTools(nil, nil, fs)
+	res, _, _ := tools.PauseSubscription(context.Background(),
+		reqWithToken(nil, "u-1"), subscriptionIDArgs{ID: "s1"})
+	assert.True(t, res.IsError)
+	assert.Empty(t, fs.pauseID)
+}
+
+func TestResumeSubscription_RejectedWithoutWriteScope(t *testing.T) {
+	fs := &fakeSubService{resumeErr: errors.New("不应被调")}
+	tools := NewTools(nil, nil, fs)
+	res, _, _ := tools.ResumeSubscription(context.Background(),
+		reqWithToken(nil, "u-1"), subscriptionIDArgs{ID: "s1"})
+	assert.True(t, res.IsError)
+	assert.Empty(t, fs.resumeID)
+}
+
+func TestDeleteSubscription_RejectedWithoutWriteScope(t *testing.T) {
+	fs := &fakeSubService{deleteErr: errors.New("不应被调")}
+	tools := NewTools(nil, nil, fs)
+	res, _, _ := tools.DeleteSubscription(context.Background(),
+		reqWithToken(nil, "u-1"), subscriptionIDArgs{ID: "s1"})
+	assert.True(t, res.IsError)
+	assert.Empty(t, fs.deleteID)
+}

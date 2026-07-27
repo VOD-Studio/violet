@@ -169,10 +169,13 @@ func (t *Tools) ScrapeURL(ctx context.Context, req *mcp.CallToolRequest, args sc
 // --- 订阅 tool（T6） ---
 
 // CreateSubscription 创建 RSS 订阅源（需 subscriptions:write）。
-// 用户身份取自 PAT 持有人。
+// auto_publish=true 时额外需 posts:publish scope（PRD-0005 安全语义，防 scope 绕过）。
 func (t *Tools) CreateSubscription(ctx context.Context, req *mcp.CallToolRequest, args createSubscriptionArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsWrite); err != nil {
 		return errResult(err), nil, nil
+	}
+	if err := requireScopeIf(req, args.AutoPublish, domainapitoken.ScopePostsPublish); err != nil {
+		return errResult(fmt.Errorf("开启 auto_publish 需额外权限：%w", err)), nil, nil
 	}
 	dto, err := t.subs.Create(ctx, appsub.CreateInput{
 		UserID:            operatorUserID(req),
@@ -226,9 +229,13 @@ func (t *Tools) GetSubscription(ctx context.Context, req *mcp.CallToolRequest, a
 }
 
 // UpdateSubscription 更新订阅配置（需 subscriptions:write）。
+// auto_publish=true 时额外需 posts:publish scope（同 CreateSubscription）。
 func (t *Tools) UpdateSubscription(ctx context.Context, req *mcp.CallToolRequest, args updateSubscriptionArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsWrite); err != nil {
 		return errResult(err), nil, nil
+	}
+	if err := requireScopeIf(req, args.AutoPublish, domainapitoken.ScopePostsPublish); err != nil {
+		return errResult(fmt.Errorf("开启 auto_publish 需额外权限：%w", err)), nil, nil
 	}
 	err := t.subs.Update(ctx, appsub.UpdateInput{
 		ID:                args.ID,

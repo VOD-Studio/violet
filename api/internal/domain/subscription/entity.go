@@ -197,12 +197,20 @@ func Reconstruct(
 // --- 配置变更方法（Update 调用） ---
 
 // UpdateConfig 更新可配置字段（不改 feedURL/status/失败计数等运行态字段）。
+//
+// interval 语义遵循 PATCH 业界共识（RFC 7396 JSON Merge Patch 精神）：
+//   - 非空：校验合法性并更新
+//   - 空串：保留原值（agent 走 MCP 只改 title 时不会被 interval 卡住）
+//
+// 其它字段（title/autoPublish/canonicalOverride/tags）仍全量覆盖。
 func (s *Subscription) UpdateConfig(title, interval string, autoPublish bool, canonicalOverride string, tags []string) error {
-	if !IsValidInterval(interval) {
-		return shared.BadRequest("无效的抓取频率：" + interval)
+	if interval != "" {
+		if !IsValidInterval(interval) {
+			return shared.BadRequest("无效的抓取频率：" + interval)
+		}
+		s.interval = interval
 	}
 	s.title = title
-	s.interval = interval
 	s.autoPublish = autoPublish
 	s.canonicalOverride = canonicalOverride
 	if tags == nil {

@@ -79,6 +79,16 @@ func requireScope(req *mcp.CallToolRequest, scope string) error {
 	return fmt.Errorf("权限不足：需要 %s scope", scope)
 }
 
+// requireScopeIf 校验 PAT 是否拥有指定 scope，仅当 cond 为真时检查。
+// 用于订阅 auto_publish=true 时强制 posts:publish scope（PRD-0005 安全语义）：
+// 持 subscriptions:write 但无 posts:publish 的 PAT 不能配自动发布，避免 scope 分离被绕过。
+func requireScopeIf(req *mcp.CallToolRequest, cond bool, scope string) error {
+	if !cond {
+		return nil
+	}
+	return requireScope(req, scope)
+}
+
 // operatorUserID 取 PAT 持有人 user_id；未认证返回空串。
 func operatorUserID(req *mcp.CallToolRequest) string {
 	if ti := tokenInfo(req); ti != nil {

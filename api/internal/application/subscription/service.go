@@ -90,8 +90,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (SubscriptionDTO, 
 	if err != nil {
 		return SubscriptionDTO{}, err
 	}
-	// 配置字段（NewSubscription 不含，单独设）
-	if err := sub.UpdateConfig(in.Title, interval, in.AutoPublish, in.CanonicalOverride, in.Tags); err != nil {
+	// NewSubscription 只设了 title/interval，补齐 autoPublish/canonicalOverride/tags。
+	// interval 已被 NewSubscription 校验过，UpdateConfig 见空会跳过校验保留原值。
+	if err := sub.UpdateConfig(in.Title, "", in.AutoPublish, in.CanonicalOverride, in.Tags); err != nil {
 		return SubscriptionDTO{}, err
 	}
 	if err := s.repo.Save(ctx, sub); err != nil {

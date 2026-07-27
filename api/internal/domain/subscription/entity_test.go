@@ -150,4 +150,12 @@ func TestSubscription_UpdateConfig(t *testing.T) {
 		err := s.UpdateConfig("t", "bad", false, "", nil)
 		assert.Error(t, err)
 	})
+
+	t.Run("空 interval 保留原值（PATCH 语义，agent 只改 title 不被卡）", func(t *testing.T) {
+		// 原是 weekly，传空 interval + 改 title，应保留 weekly
+		err := s.UpdateConfig("只改标题", "", false, "", nil)
+		require.NoError(t, err)
+		assert.Equal(t, "只改标题", s.Title())
+		assert.Equal(t, IntervalWeekly, s.Interval(), "空 interval 应保留原值")
+	})
 }
