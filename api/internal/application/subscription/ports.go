@@ -6,6 +6,8 @@ package subscription
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	apppost "blog-api/internal/application/post"
 )
@@ -28,8 +30,36 @@ type FeedItem struct {
 	PublishedAt *string // RFC3339，可能为空
 }
 
+// FeedErrorKind feed 拉取错误的分类（T8 失败状态机据此决定动作）。
+type FeedErrorKind int
+
+const (
+	// FeedErrTransient 瞬时错误（网络/超时/5xx）。计入 consecutive_failures，达阈值 paused。
+	FeedErrTransient FeedErrorKind = iota
+	// FeedErrPermanent 永久错误（4xx/malformed XML）。立即 paused。
+	FeedErrPermanent
+	// FeedErrRateLimited 429 + Retry-After。推迟下次抓取，不增失败计数。
+	FeedErrRateLimited
+)
+
+// FeedError 结构化 feed 错误。Kind 决定 T8 调度器动作；
+// StatusCode 便于日志（0 表示非 HTTP 错误，如 malformed XML）；RetryAfter 仅 Kind=RateLimited 时非 nil。
+type FeedError struct {
+	Kind       FeedErrorKind
+	StatusCode int
+	RetryAfter *time.Time
+	Cause      error
+}
+
+func (e *FeedError) Error() string {
+	return fmt.Sprintf("feed 错误（kind=%d, status=%d）: %v", e.Kind, e.StatusCode, e.Cause)
+}
+
+func (e *FeedError) Unwrap() error { return e.Cause }
+
 // FeedParser feed 解析端口。生产用 gofeed，测试用假实现。
 type FeedParser interface {
 	// Parse 抓取并解析 feed URL，返回条目列表（按 feed 原始顺序）。
+	// 失败时返回 *FeedError（结构化，便于 T8 分类处理）。
 	Parse(ctx context.Context, feedURL string) ([]FeedItem, error)
 }

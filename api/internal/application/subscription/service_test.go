@@ -66,6 +66,18 @@ func (r *fakeRepo) FindByIDForSchedule(ctx context.Context, id shared.ID) (*doma
 	return &cp, nil
 }
 
+// FindDue 镜像领域 IsDue 逻辑（fake 版供 service 测试用，job 测试用真 GORM）。
+func (r *fakeRepo) FindDue(ctx context.Context, now time.Time, limit int) ([]*domainsubscription.Subscription, error) {
+	var result []*domainsubscription.Subscription
+	for _, s := range r.subs {
+		if s.IsDue(now) && len(result) < limit {
+			cp := *s
+			result = append(result, &cp)
+		}
+	}
+	return result, nil
+}
+
 func (r *fakeRepo) FindByUser(ctx context.Context, userID shared.ID, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
 	r.listCalls++
 	if r.listErr != nil {

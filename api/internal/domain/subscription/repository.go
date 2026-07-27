@@ -2,6 +2,7 @@ package subscription
 
 import (
 	"context"
+	"time"
 
 	"blog-api/internal/domain/shared"
 )
@@ -20,6 +21,9 @@ type SubscriptionRepository interface {
 	FindByID(ctx context.Context, id, userID shared.ID) (*Subscription, error)
 	// FindByIDForSchedule 按 ID 查订阅，不做所有权校验。仅供调度器（系统行为）使用。
 	FindByIDForSchedule(ctx context.Context, id shared.ID) (*Subscription, error)
+	// FindDue 查所有 due 订阅（status=active 且 next_fetch_at<=now 且 retry_after_until 已过）。
+	// 仅供调度器使用。limit 上限由调用方钳制（worker pool 大小）。
+	FindDue(ctx context.Context, now time.Time, limit int) ([]*Subscription, error)
 	// FindByUser 列出某用户的所有订阅（可选按 status 过滤，空串=不过滤）。
 	// 分页：page 从 1 起，limit 上限由调用方钳制。
 	FindByUser(ctx context.Context, userID shared.ID, status string, page, limit int) ([]*Subscription, int64, error)

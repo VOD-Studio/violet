@@ -2,12 +2,16 @@
 //
 // 实现 application/subscription.FeedParser 端口。生产用，测试用 fake（避免真实网络）。
 // gofeed 通吃 RSS 2.0 / Atom / JSON Feed，是 Go 生态 feed 解析业界事实标准。
+//
+// 自己 GET feed 而非用 gofeed.ParseURLWithContext：这样能拿到 HTTP 状态码与
+// Retry-After 头，便于 T8 失败状态机做错误分类（429/4xx/瞬时）。
 package feed
 
 import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/mmcdole/gofeed"
@@ -17,28 +21,79 @@ import (
 )
 
 // GoFeedParser 用 mmcdole/gofeed 实现 FeedParser 端口。
-// 复用 SSRF 防护（NewSafeTransport）——feed URL 也是外部抓取，同样防 SSRF。
+// 自己 GET + ssrf 防护，再喂 gofeed.Parse(reader)。
 type GoFeedParser struct {
+	client *http.Client
 	parser *gofeed.Parser
 }
 
-// NewGoFeedParser 构造解析器，内置 SSRF 防护 Transport + 15s 超时。
+// NewGoFeedParser 构造解析器，内置 SSRF 防护 Transport + 15s 超时 + 10MB 体上限。
 func NewGoFeedParser() *GoFeedParser {
-	fp := gofeed.NewParser()
-	fp.Client = &http.Client{
-		Timeout:   15 * time.Second,
-		Transport: ssrf.NewSafeTransport(),
+	return &GoFeedParser{
+		client: &http.Client{
+			Timeout:   15 * time.Second,
+			Transport: ssrf.NewSafeTransport(),
+		},
+		parser: gofeed.NewParser(),
 	}
-	return &GoFeedParser{parser: fp}
 }
 
 // Parse 抓取并解析 feed URL，返回条目列表（按 feed 原始顺序）。
-// publishedAt 优先用 PublishedParsed，回退 UpdatedParsed。
+// 失败返回 *appsub.FeedError（结构化，T8 据此分类处理）。
+// publishedAt 优先 PublishedParsed，回退 UpdatedParsed。
 func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) ([]appsub.FeedItem, error) {
-	feed, err := g.parser.ParseURLWithContext(feedURL, ctx)
-	if err != nil {
-		return nil, fmt.Errorf("解析 feed 失败: %w", err)
+	if _, err := ssrf.ValidateURL(feedURL); err != nil {
+		return nil, &appsub.FeedError{Kind: appsub.FeedErrPermanent, Cause: err}
 	}
+	req, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
+	if err != nil {
+		return nil, &appsub.FeedError{Kind: appsub.FeedErrTransient, Cause: err}
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; mimo-blog-feed-fetcher/1.0)")
+	resp, err := g.client.Do(req)
+	if err != nil {
+		// 网络/超时/DNS 错误 → 瞬时
+		return nil, &appsub.FeedError{Kind: appsub.FeedErrTransient, Cause: err}
+	}
+	defer resp.Body.Close()
+
+	// 429 + Retry-After → RateLimited（推迟，不增计数）
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return nil, &appsub.FeedError{
+			Kind:       appsub.FeedErrRateLimited,
+			StatusCode: resp.StatusCode,
+			RetryAfter: parseRetryAfter(resp, time.Now()),
+			Cause:      fmt.Errorf("feed 源返回 429 Too Many Requests"),
+		}
+	}
+	// 4xx → 永久（404 源没了/403 禁止）
+	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+		return nil, &appsub.FeedError{
+			Kind:       appsub.FeedErrPermanent,
+			StatusCode: resp.StatusCode,
+			Cause:      fmt.Errorf("feed 源返回 %d", resp.StatusCode),
+		}
+	}
+	// 5xx → 瞬时
+	if resp.StatusCode >= 500 {
+		return nil, &appsub.FeedError{
+			Kind:       appsub.FeedErrTransient,
+			StatusCode: resp.StatusCode,
+			Cause:      fmt.Errorf("feed 源返回 %d", resp.StatusCode),
+		}
+	}
+
+	// 2xx：限体读取防 OOM，喂 gofeed.Parse
+	body := ssrf.LimitBody(resp.Body, ssrf.MaxBodyBytes)
+	feed, err := g.parser.Parse(body)
+	if err != nil {
+		// malformed XML → 永久（feed 格式坏了不会自愈）
+		return nil, &appsub.FeedError{
+			Kind:  appsub.FeedErrPermanent,
+			Cause: fmt.Errorf("feed 解析失败: %w", err),
+		}
+	}
+
 	items := make([]appsub.FeedItem, 0, len(feed.Items))
 	for _, item := range feed.Items {
 		var publishedStr *string
@@ -58,3 +113,25 @@ func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) ([]appsub.Feed
 	}
 	return items, nil
 }
+
+// parseRetryAfter 解析 Retry-After 头（支持 delta-seconds 与 HTTP-date）。
+// 解析失败或无此头时返回 nil（调用方按默认退避）。
+func parseRetryAfter(resp *http.Response, now time.Time) *time.Time {
+	v := resp.Header.Get("Retry-After")
+	if v == "" {
+		return nil
+	}
+	// 先尝试 delta-seconds
+	if secs, err := strconv.Atoi(v); err == nil && secs >= 0 {
+		t := now.Add(time.Duration(secs) * time.Second)
+		return &t
+	}
+	// 再尝试 HTTP-date (RFC1123)
+	if t, err := time.Parse(time.RFC1123, v); err == nil {
+		return &t
+	}
+	return nil
+}
+
+// 编译期断言：实现 FeedParser 端口。
+var _ appsub.FeedParser = (*GoFeedParser)(nil)

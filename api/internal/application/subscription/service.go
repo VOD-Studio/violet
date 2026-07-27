@@ -225,7 +225,8 @@ type FetchReport struct {
 	Failed            int // 抓正文失败（含重试中的 failed）
 	Dead              int // 本次新触发 dead（达 fail_count 上限）
 	Skipped           int // 已处理（imported/dead），跳过
-	SubscriptionError string // feed 拉取层面的错误（非空表示整轮失败）
+	SubscriptionError string // feed 拉取层面的错误描述（非空表示整轮失败）
+	FeedErr           error // 原始 feed 错误（*FeedError 类型便于 T8 分类，非 feed 错误为 nil）
 }
 
 // FetchOne 单订阅单次抓取编排（T7 核心）。
@@ -264,6 +265,7 @@ func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchRepo
 
 	items, err := s.parser.Parse(ctx, sub.FeedURL())
 	if err != nil {
+		report.FeedErr = err // 透传原始 error，T8 调度器据此分类（*FeedError）
 		report.SubscriptionError = "feed 拉取失败：" + err.Error()
 		return report
 	}

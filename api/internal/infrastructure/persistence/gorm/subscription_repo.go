@@ -61,6 +61,31 @@ func (r *SubscriptionRepository) FindByIDForSchedule(ctx context.Context, id dom
 	return subscriptionToDomain(po)
 }
 
+// FindDue 查所有 due 订阅（active + next_fetch_at<=now + retry_after_until 已过或为空）。
+// 注：当前未用 FOR UPDATE SKIP LOCKED——单进程调度器无竞争。
+// 未来水平扩展（多 pod）时需加 SKIP LOCKED 防重复抓取（业界 Postgres job queue 共识）。
+// 走 migration 061 的 idx_subscriptions_due 部分索引（WHERE status='active'）。
+func (r *SubscriptionRepository) FindDue(ctx context.Context, now time.Time, limit int) ([]*domainsubscription.Subscription, error) {
+	query := r.db.WithContext(ctx).
+		Where("status = ? AND next_fetch_at <= ?", domainsubscription.StatusActive, now).
+		Where("retry_after_until IS NULL OR retry_after_until <= ?", now).
+		Order("next_fetch_at ASC").
+		Limit(limit)
+	var pos []model.Subscription
+	if err := query.Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询 due 订阅失败", err)
+	}
+	result := make([]*domainsubscription.Subscription, 0, len(pos))
+	for _, po := range pos {
+		s, err := subscriptionToDomain(po)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, s)
+	}
+	return result, nil
+}
+
 // FindByUser 列出某用户的订阅（可选 status 过滤，分页）。
 func (r *SubscriptionRepository) FindByUser(ctx context.Context, userID domainshared.ID, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Subscription{}).Where("user_id = ?", userID.UUID())
