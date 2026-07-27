@@ -128,63 +128,6 @@ web-typecheck: ## TypeScript 类型检查
 web-test: ## 运行前端单元测试 (Vitest)
 	cd web && pnpm test
 
-# ==================== mimo-music（音乐解析服务） ====================
-
-# 仓库根目录的绝对路径(按 Makefile 自身位置识别,与开发者 clone 位置无关)。
-MIMO_ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
-
-music: ## 启动 mimo-music 音乐服务
-	cd mimo-music && go run ./cmd/server
-
-music-worker: ## 启动 mimo-music worker（Cookie 健康检查等异步任务）
-	cd mimo-music && go run ./cmd/worker
-
-music-build: ## 编译 mimo-music
-	cd mimo-music && go build -o ./bin/server ./cmd/server
-	@echo "编译完成: mimo-music/bin/server"
-
-proto: ## 生成 mimo-music proto 代码(buf generate → gen/,需安装 buf)
-	cd mimo-music && $(MAKE) proto
-
-musicctl-install: ## 安装/更新 musicctl 到 ~/go/bin(代码变更后重跑一次即可)
-	@if [ ! -d mimo-music/gen/go ]; then \
-		echo "错误: mimo-music/gen/ 未生成(proto 产物,被 gitignore)。" >&2; \
-		echo "      先跑: make proto  (需 buf)" >&2; \
-		exit 1; \
-	fi
-	cd mimo-music && go install ./cmd/musicctl/
-	@echo "已安装: $$(go env GOPATH)/bin/musicctl"
-	@echo ""
-	@echo "启用 Tab 补全(装一次即可,让 musicctl <TAB> 列命令而非文件):"
-	@echo "  musicctl doctor   # 查看当前 shell 的补全状态 + 一键安装命令"
-
-musicctl-uninstall: ## 卸载全局 musicctl
-	rm -f $$(go env GOPATH)/bin/musicctl
-	@echo "已卸载"
-
-musicctl-alias: ## 写入 musicctl-dev alias 到 ~/.zshrc(仓库路径自动识别,已存在则跳过)
-	@if grep -q "alias musicctl-dev=" ~/.zshrc 2>/dev/null; then \
-		echo "alias musicctl-dev 已存在,跳过"; \
-	else \
-		echo "alias musicctl-dev='go run -C $(MIMO_ROOT)/mimo-music ./cmd/musicctl'" >> ~/.zshrc; \
-		echo "已写入 ~/.zshrc,执行 source ~/.zshrc 生效"; \
-	fi
-
-music-test: ## 运行 mimo-music 测试
-	cd mimo-music && go test ./...
-
-music-lint: ## mimo-music 代码检查
-	cd mimo-music && golangci-lint run ./... 2>/dev/null || go vet ./...
-
-music-openapi: ## 生成 mimo-music OpenAPI 文档
-	cd mimo-music && go run ./cmd/export-openapi/
-	@echo "OpenAPI spec 已导出到 mimo-music/openapi.json"
-
-	music-apifox: ## 生成 mimo-music OpenAPI 文档并导入到 Apifox
-	@echo "生成并导入 mimo-music OpenAPI 文档到 Apifox..."
-	cd mimo-music && go run ./cmd/export-openapi/ && apifox import --project __PROJECT_ID__ --format openapi --file ./openapi.json
-	@echo "mimo-music Apifox 更新完成"
-
 # ==================== 代码运行器（可运行代码块沙箱执行） ====================
 # runner 镜像字面复用 yggdrasil 项目（yggdrasil-runner-{python,node,go,rust,bun}），
 # mimo-blog 本身不构建这些镜像。启用 code runner 前需先在 yggdrasil 项目构建并 load。

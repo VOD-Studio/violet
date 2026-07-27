@@ -18,7 +18,7 @@ type PlaylistRepository interface {
 // MusicProvider 音乐解析端口（infrastructure 层实现，封装网易云 API）
 //
 // 提供音乐链接解析、歌曲搜索、歌词获取、详情查询能力。
-// 当前实现走自托管 mimo-music 服务，由 infrastructure/music 包提供。
+// 当前实现走自托管 kite 服务，由 infrastructure/music 包提供。
 type MusicProvider interface {
 	// ParseEmbedURL 解析音乐链接返回嵌入信息（平台/歌曲ID/嵌入URL）
 	ParseEmbedURL(url string) (EmbedInfo, error)
