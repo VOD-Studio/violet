@@ -38,9 +38,15 @@ const schema = {
         // hast-util-sanitize 用 property-information 属性名(camelCase)，不是 HTML 属性名
         ul: [...(defaultSchema.attributes?.ul ?? []), "dataType"],
         li: [...(defaultSchema.attributes?.li ?? []), "dataType", "dataChecked"],
-        // 数学公式语义化标记（浏览时渲染载体）：span=行内、div=块级
+        // 浏览时渲染载体：span=行内公式、div=块级公式 + 图块（dataFormat/dataSource）
         span: [...(defaultSchema.attributes?.span ?? []), "dataType", "dataLatex"],
-        div: [...(defaultSchema.attributes?.div ?? []), "dataType", "dataLatex"],
+        div: [
+            ...(defaultSchema.attributes?.div ?? []),
+            "dataType",
+            "dataLatex",
+            "dataFormat",
+            "dataSource",
+        ],
         // 可运行代码块（浏览时渲染载体）：pre 携带 runnable/lang/overrides/source
         pre: [
             ...(defaultSchema.attributes?.pre ?? []),
