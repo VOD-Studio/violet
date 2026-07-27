@@ -20,7 +20,7 @@ import (
 
 // PostService MCP tool 依赖的文章服务端口。
 //
-// 仅声明 MCP 用到的 5 个方法；application/post.Service 实现之。
+// 仅声明 MCP 用到的方法；application/post.Service 实现之。
 // 抽成接口便于单元测试用 fake 替换（seam #2）。
 type PostService interface {
 	Create(ctx context.Context, in apppost.CreateInput) (apppost.PostDTO, error)
@@ -28,16 +28,26 @@ type PostService interface {
 	UpdateStatus(ctx context.Context, id, status string) (apppost.PostDTO, error)
 	GetByID(ctx context.Context, id string) (apppost.PostDTO, error)
 	ListAll(ctx context.Context, page, limit int, status string) ([]apppost.PostListItemDTO, int64, error)
+	ImportURL(ctx context.Context, rawURL string, opts apppost.ImportURLOpts) (apppost.ImportResult, error)
+}
+
+// RobotsChecker robots.txt 预检端口。
+// 抽成接口便于注入假实现（避免单测真实网络拉取 robots.txt）。
+type RobotsChecker interface {
+	// Allowed 返回给定 URL 是否被目标站点 robots.txt 允许抓取。
+	// 第二返回值是拒绝原因（用于 warnings / 错误信息）。
+	Allowed(ctx context.Context, target string) (bool, string, error)
 }
 
 // Tools 文章读写 tool 集合，挂在 mcp.Server 上。
 type Tools struct {
-	posts PostService
+	posts  PostService
+	robots RobotsChecker
 }
 
-// NewTools 构造 tool 集合。
-func NewTools(posts PostService) *Tools {
-	return &Tools{posts: posts}
+// NewTools 构造 tool 集合。robots 传 nil 时禁用 robots.txt 预检（仅测试用）。
+func NewTools(posts PostService, robots RobotsChecker) *Tools {
+	return &Tools{posts: posts, robots: robots}
 }
 
 // requireScope 校验 PAT 是否拥有指定 scope；缺失返回 error（调用方包成 tool error 结果）。
@@ -117,9 +127,14 @@ type listDraftsArgs struct {
 	Limit int `json:"limit,omitempty" jsonschema:"每页条数（默认 20，上限 100）"`
 }
 
+type scrapeURLArgs struct {
+	URL string `json:"url" jsonschema:"待抓取的外站文章 URL（仅 http/https）"`
+}
+
 // 编译期断言：作用域常量与 domain 对齐（防拼写漂移）
 var (
 	_ = domainapitoken.ScopePostsRead
 	_ = domainapitoken.ScopePostsWrite
 	_ = domainapitoken.ScopePostsPublish
+	_ = domainapitoken.ScopePostsScrape
 )

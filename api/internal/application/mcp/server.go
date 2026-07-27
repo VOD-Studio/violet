@@ -43,6 +43,11 @@ func NewServer(tools *Tools) *mcp.Server {
 		Description: "列出草稿状态的文章（分页）。需 posts:read 权限。",
 	}, tools.ListDrafts)
 
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "scrape_url",
+		Description: "抓取外站文章并返回结构化数据（标题/正文 Markdown+HTML/excerpt/canonical_url/cover/SEO）。需 posts:scrape 权限。返回数据供审阅后再调 create_post 建草稿。",
+	}, tools.ScrapeURL)
+
 	return s
 }
 

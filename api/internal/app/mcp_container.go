@@ -25,7 +25,8 @@ type MCPContainer struct {
 // postSvc 来自文章模块（postContainer.PostService）。
 func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Service) *MCPContainer {
 	verifier := inframcp.NewPATVerifier(tokenLookup)
-	tools := appmcp.NewTools(postSvc)
+	robots := inframcp.NewRobotsChecker()
+	tools := appmcp.NewTools(postSvc, robots)
 	server := appmcp.NewServer(tools)
 	handler := mcpauth.RequireBearerToken(verifier.Verify, nil)(appmcp.StreamableHandler(server))
 	return &MCPContainer{Handler: handler}

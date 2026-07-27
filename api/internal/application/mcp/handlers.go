@@ -110,3 +110,57 @@ func (t *Tools) ListDrafts(ctx context.Context, req *mcp.CallToolRequest, args l
 		"items": items, "total": total, "page": page, "limit": limit,
 	}), nil, nil
 }
+
+// ScrapeResult scrape_url tool 的返回结构（9 字段，对齐 Firecrawl formats 思路，
+// 同时给 markdown 与 html，让 agent 二选一传给 create_post）。
+type ScrapeResult struct {
+	Title          string   `json:"title"`
+	ContentMD      string   `json:"content_md"`
+	ContentHTML    string   `json:"content_html"`
+	Excerpt        string   `json:"excerpt"`
+	CanonicalURL   string   `json:"canonical_url"`
+	CoverImage     string   `json:"cover_image"`
+	SeoTitle       string   `json:"seo_title"`
+	SeoDescription string   `json:"seo_description"`
+	Warnings       []string `json:"warnings,omitempty"`
+}
+
+// ScrapeURL 抓取外站文章并返回结构化数据（需 posts:scrape）。
+// agent 拿到后审阅标题/正文/canonical，再调 create_post 建草稿（两步模式）。
+//
+// 预检链：scope 门禁 → robots.txt 尊重 → ImportURL（含 SSRF 防护）。
+// canonical_url 回退：og:url > <link rel=canonical> > 输入 url。
+func (t *Tools) ScrapeURL(ctx context.Context, req *mcp.CallToolRequest, args scrapeURLArgs) (*mcp.CallToolResult, any, error) {
+	if err := requireScope(req, domainapitoken.ScopePostsScrape); err != nil {
+		return errResult(err), nil, nil
+	}
+	// robots.txt 预检（生产配置了 checker 才生效，测试/未配时跳过）
+	if t.robots != nil {
+		allowed, reason, err := t.robots.Allowed(ctx, args.URL)
+		if err != nil {
+			return errResult(fmt.Errorf("robots.txt 预检失败: %w", err)), nil, nil
+		}
+		if !allowed {
+			return errResult(fmt.Errorf("目标站点不允许抓取: %s", reason)), nil, nil
+		}
+	}
+	result, err := t.posts.ImportURL(ctx, args.URL, apppost.ImportURLOpts{})
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	canonical := result.CanonicalURL
+	if canonical == "" {
+		canonical = args.URL
+	}
+	return okResult(ScrapeResult{
+		Title:          result.Title,
+		ContentMD:      result.Markdown,
+		ContentHTML:    result.HTML,
+		Excerpt:        result.Excerpt,
+		CanonicalURL:   canonical,
+		CoverImage:     result.CoverImage,
+		SeoTitle:       result.SeoTitle,
+		SeoDescription: result.SeoDescription,
+		Warnings:       result.Warnings,
+	}), nil, nil
+}

@@ -568,6 +568,8 @@ type ImportResult struct {
 	Excerpt        string   `json:"excerpt"`         // 摘要
 	SeoTitle       string   `json:"seo_title"`       // SEO 标题（社交分享用，可与正文不同）
 	SeoDescription string   `json:"seo_description"` // SEO 描述
+	CanonicalURL   string   `json:"canonical_url"`   // 文章源 canonical URL（og:url > <link rel=canonical> > 输入 url），转载归属
+	CoverImage     string   `json:"cover_image"`     // 封面图 URL（og:image > twitter:image）
 	Warnings       []string `json:"warnings"`        // 非致命提示（如 AI 还原失败的公式数）
 }
 
@@ -609,6 +611,8 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string, opts ImportURLOp
 	title := extractArticleTitle(doc)
 	seoTitle := extractSeoTitle(doc)
 	seoDescription := extractSeoDescription(doc)
+	canonicalURL := extractCanonicalURL(doc)
+	coverImage := extractCoverImage(doc)
 
 	// MathJax 源码藏在 <script type="math/tex"> 里，readability 的 removeScripts 会删。
 	// 必须在 ParseDocument 之前替换成占位 span，否则源码和位置一起丢失。
@@ -667,6 +671,8 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string, opts ImportURLOp
 		Excerpt:        excerpt,
 		SeoTitle:       seoTitle,
 		SeoDescription: seoDescription,
+		CanonicalURL:   canonicalURL,
+		CoverImage:     coverImage,
 		Warnings:       warnings,
 	}, nil
 }

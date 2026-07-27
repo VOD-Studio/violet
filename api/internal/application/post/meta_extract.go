@@ -163,3 +163,40 @@ func firstTagText(doc *html.Node, tag string) string {
 	walk(doc)
 	return found
 }
+
+// extractCanonicalURL 取文章的 canonical URL：
+// 优先 og:url → 次 <link rel="canonical">。都缺时返回空串（调用方回退到输入 url）。
+func extractCanonicalURL(doc *html.Node) string {
+	if v := metaContent(doc, "property", "og:url"); v != "" {
+		return v
+	}
+	var found string
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if found != "" {
+			return
+		}
+		if n.Type == html.ElementNode && n.Data == "link" {
+			if strings.EqualFold(getAttr(n, "rel"), "canonical") {
+				found = strings.TrimSpace(getAttr(n, "href"))
+				return
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(doc)
+	return found
+}
+
+// extractCoverImage 取封面图 URL：优先 og:image → 次 twitter:image。
+func extractCoverImage(doc *html.Node) string {
+	if v := metaContent(doc, "property", "og:image"); v != "" {
+		return v
+	}
+	if v := metaContent(doc, "name", "twitter:image"); v != "" {
+		return v
+	}
+	return ""
+}
