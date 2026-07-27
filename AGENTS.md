@@ -11,6 +11,14 @@
   - **关键**: 使用 **`pnpm`** 作为包管理器，**切勿使用 `npm` 或 `yarn`**。
   - 状态管理: Zustand + TanStack Query。
 
+### 架构耦合约束
+
+> 这是**代码组织原则**,不是 commit 拆分规则。规则 1(公共组件单独提交)管「commit 怎么拆」,本节管「代码该放哪一层」。两者分开理解。
+
+- **前端公共层不夹带 feature 业务逻辑**。`web/src/shared/`(`ui`/`lib`/`api`/`config`/`server`/`vendor`)只放跨 feature 通用件,不写 `posts` / `comments` / `editor` 等特定 feature 的业务逻辑。FSD 分层(`shared` → `entities` → `features` → `widgets`)约束依赖方向,`shared` 不反向依赖 `features`。
+- **后端各层各司其职**。DDD 结构(`domain`/`application`/`infrastructure`/`interfaces`)与旧分层(`service`/`middleware`)在迁移期并存,但同样遵守分层约束:领域逻辑进 `domain`,用例编排进 `application`,基础设施细节进 `infrastructure`。通用基础设施(错误码、observability、通用中间件)不夹带具体业务实体逻辑。
+- **判断「是否公共」看是否被多个 feature/domain 引用**,而非位置。某 feature 私有逻辑一旦被第二个 feature 复用,应先 `refactor: 将 X 从 features/A 提到 shared/` 落定代码归属(提交规则见规则 1),再在新 feature 接入。
+
 ## 开发流与命令 (Makefile)
 所有核心操作都通过根目录的 `Makefile` 统管：
 - **启动本地开发**: `make dev` (一键启动 Postgres、Redis、API 和 Web)
@@ -28,6 +36,30 @@
 - **类型检查**: `make web-typecheck`
 - **测试**: `make web-test`
 - **Tailwind CSS v4**: 支持任意数字值简写 (例如 `max-w-50` = 200px 替代 `max-w-[200px]`)。详见 `tailwind-canonical-classes` skill。
+
+## 分支命名
+
+每个新任务 / feature 先从 `release/2.0` 新建分支完成，不在 `release/2.0` 上直接开发。
+
+格式:**`<type>/<scope>-<简述>`**
+
+- **type** 对齐 Conventional Commits:`feat` / `fix` / `chore` / `docs` / `refactor` / `style` / `test` / `perf` / `hotfix`。
+- **scope** 指向最内层模块(同提交 scope 规则):前端 (`posts`/`editor`/`auth`/`comments`)、后端 (`handler`/`service`/`domain`/`repository`)、或文件 / 区域名 (`readme`/`ci`/`deps`/`deploy`)。改动难以定位到单模块时可省略 scope。
+- 全小写,`/` 分段,`-` 连词。无空格、无大写、无特殊字符。
+- 简述用英文或拼音,短而清晰。
+
+✅ 正确:
+- `feat/post-slug-pinyin`
+- `feat/front-end-redesign`
+- `fix/handler-search-encoding`
+- `docs/deploy`
+- `chore/deps-bump`
+
+❌ 错误:
+- `feature/这是一个很长的中文分支名`(冗长 + 中文)
+- `update`(无 type 无 scope)
+- `Fix/Login`(大写)
+- `new-feature`(能定位到模块时该写 scope,而非泛称)
 
 ## Agent skills
 
@@ -132,6 +164,27 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
    ✅ 正确：
    - `feat(api): 添加文章发布校验` + body 里说明同时补了单测
    - `test(api): 补全文章仓库的边界场景测试`
+
+### 反对过度拆分
+
+上面 6 条规则管的是「**跨职责必须拆**」(公共组件 ≠ 业务接入 ≠ 样式 ≠ 重构)。本节管的是另一头:**同一职责内部,不要按文件机械切碎**。
+
+一个完整任务可以跨多个文件、跨多层,只要服务同一目标,就该是一个 commit。强行按文件拆成"加定义""加实现""接调用"三个 commit,每个单独看都不完整,反而破坏可读性。
+
+✅ 正确(同一职责,跨文件合一个 commit):
+- `feat(api): 添加文章发布校验` —— 校验规则定义 + handler 接入 + 单测同属"发布校验"这一职责,可一个 commit(规则 6 已认定)
+- `feat(web): PostEditor 支持代码块高亮` —— 高亮组件实现 + toolbar 入口 + 渲染逻辑同属"编辑器高亮"这一职责,组件本身的实现部分可一个 commit(组件接入页面是另一职责,见规则 3)
+
+❌ 错误(同一职责被切碎):
+- 把"添加文章发布校验"拆成 `feat(api): 定义校验规则` + `feat(api): handler 接入校验` + `test(api): 发布校验单测` 三个 commit。单独 revert 任一个都会让发布校验功能残缺。
+
+判断依据:这个 commit 单独 revert 后,该功能是否还能完整工作?能 → 拆对了;不能(留下半成品)→ 拆太碎了。
+
+### Draft 阶段宽松
+
+开发过程中可以先随便提交(WIP、调试片段、临时方案都行),**不要求边写边原子**。要求的是**最终进入 PR 的历史是原子的**——开发完成后用 `git rebase -i` 整理成符合上面规则的原子 commit 再推送。
+
+这条与「反对过度拆分」配合:允许 draft 阶段粗糙,但整理时不要为了凑原子性而把同一职责拆碎。
 
 ### 提交前自检
 
