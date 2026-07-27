@@ -158,7 +158,8 @@ function BlogDetailPage() {
                         {post.title}
                     </h1>
 
-                    {/* 转载来源（canonical_url 非空时显示，零设计成本的最小可见标记） */}
+                    {/* 转载来源（canonical_url 非空时显示，零设计成本的最小可见标记）。
+                        显示域名保持视觉简洁，链接 href 仍指完整 canonical_url（两全其美） */}
                     {post.canonical_url ? (
                         <a
                             href={post.canonical_url}
@@ -167,7 +168,7 @@ function BlogDetailPage() {
                             className="mb-5 inline-flex items-center gap-1.5 font-mono text-sm text-muted-foreground transition-colors hover:text-foreground"
                         >
                             <ExternalLink className="size-3.5" />
-                            转载自 · {post.canonical_url}
+                            转载自 · {sourceHostname(post.canonical_url)}
                         </a>
                     ) : null}
 
@@ -303,6 +304,17 @@ function formatDate(s: string): string {
     const d = new Date(s);
     if (Number.isNaN(d.getTime())) return s;
     return d.toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" });
+}
+
+// sourceHostname 从 canonical URL 提取 hostname 用于转载来源显示。
+// URL 非法或无 hostname 时回退到原始字符串（保证总是有可读内容）。
+function sourceHostname(canonicalUrl: string): string {
+    try {
+        const u = new URL(canonicalUrl);
+        return u.hostname || canonicalUrl;
+    } catch {
+        return canonicalUrl;
+    }
 }
 
 export const Route = createFileRoute("/blog/$slug")({
