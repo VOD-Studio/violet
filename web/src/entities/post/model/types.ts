@@ -74,6 +74,11 @@ export interface PostDetail {
     seo_title: string;
     /** SEO 描述 */
     seo_description: string;
+    /**
+     * 转载源 canonical URL（对齐 Google rel=canonical 术语）。
+     * 空 = 原创；非空 = 转载/分发（指向源文章）。后端 posts.canonical_url。
+     */
+    canonical_url?: string;
     /** 发布时间，RFC3339，草稿可能为空 */
     published_at?: string;
     /** 标签名列表 */
