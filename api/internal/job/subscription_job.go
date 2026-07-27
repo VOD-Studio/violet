@@ -1,19 +1,12 @@
 // Package job - subscription_job.go 订阅定时抓取调度器（T8）。
 //
-// 复用 cleanup_job 的 ticker + select 模式（零新依赖，不引 cron 库）。
-// 每 30 分钟轮询 due 订阅，有界并行 worker pool（默认 5）跨源并行抓取，
-// 据 FetchReport.FeedErr 走失败状态机（429/4xx/瞬时分类，Miniflux 共识）。
-//
-// 依赖方向：job（基础设施层）→ application/subscription（用例层）+ domain/subscription（聚合根）。
-// 这是允许的（job 类似 mcp_container，是装配/调度层，可依赖 application 端口）。
-//
-// 不引入任务队列（asynq/river）——个人博客订阅量级（<50）不需要。
-// 注：当前未用 FOR UPDATE SKIP LOCKED，单进程调度器无竞争；未来水平扩展时再加。
+// ticker 30 分钟轮询 due 订阅，有界并行 worker pool（默认 5）跨源并行抓取，
+// 据 FetchReport.FeedErr 走失败状态机（429/4xx/瞬时分类）。
+// 依赖方向：job（装配/调度层）→ application/subscription + domain/subscription。
 package job
 
 import (
 	"context"
-	"errors"
 	"log"
 	"sync"
 	"time"
@@ -21,6 +14,10 @@ import (
 	appsub "blog-api/internal/application/subscription"
 	domainsubscription "blog-api/internal/domain/subscription"
 )
+
+// dueOversubscribeFactor FindDue 取 worker 数的多少倍候选，让 worker pool 吃满。
+// 订阅量小时一轮全取；量大时多取些避免 worker 空闲。
+const dueOversubscribeFactor = 4
 
 // SubscriptionFetcher FetchOne 抓取编排端口（*appsub.Service 实现之）。
 // 抽接口便于单测注入 fake（避免 runOnce 测试依赖真 Service + DB）。
@@ -69,10 +66,10 @@ func (j *SubscriptionJob) Start(ctx context.Context) {
 }
 
 // runOnce 执行一轮抓取。单订阅 panic 不影响其它（每 worker recover）。
-// 用 sync.WaitGroup 排空 in-flight worker，保证优雅关闭（业界共识）。
+// 用 sync.WaitGroup 排空 in-flight worker，保证优雅关闭。
 func (j *SubscriptionJob) runOnce(ctx context.Context) {
 	now := j.now()
-	subs, err := j.repo.FindDue(ctx, now, j.worker*4) // 多取候选让 worker 吃满
+	subs, err := j.repo.FindDue(ctx, now, j.worker*dueOversubscribeFactor)
 	if err != nil {
 		log.Printf("[subscription_job] 查 due 订阅失败: %v", err)
 		return
@@ -122,20 +119,23 @@ func (j *SubscriptionJob) fetchAndUpdate(ctx context.Context, sub *domainsubscri
 	}
 }
 
-// applyFeedError 据 FeedError 分类更新订阅状态（Miniflux 共识）：
+// applyFeedError 据 FeedError 分类更新订阅状态（PRD Q5 Miniflux 共识）：
 //   - RateLimited (429+Retry-After)：推迟 retry_after_until，不增计数
 //   - Permanent (4xx/malformed)：立即 Pause
 //   - Transient (5xx/网络)：RecordFailure 计数，达阈值自动 paused
-func (j *SubscriptionJob) applyFeedError(sub *domainsubscription.Subscription, feedErr error, now time.Time, desc string) {
-	var fe *appsub.FeedError
-	if errors.As(feedErr, &fe) {
-		switch fe.Kind {
+//
+// feedErr 为 nil（非 *FeedError，如 FindByID 失败）时按瞬时错误处理。
+// 注：当前 GoFeedParser 只在能解析 Retry-After 头时才 emit RateLimited，
+// 故 fe.Kind==RateLimited && fe.RetryAfter==nil 实际不可达——保留 nil 检查作防御。
+func (j *SubscriptionJob) applyFeedError(sub *domainsubscription.Subscription, feedErr *appsub.FeedError, now time.Time, desc string) {
+	if feedErr != nil {
+		switch feedErr.Kind {
 		case appsub.FeedErrRateLimited:
-			if fe.RetryAfter != nil {
-				sub.SetRetryAfter(*fe.RetryAfter)
+			if feedErr.RetryAfter != nil {
+				sub.SetRetryAfter(*feedErr.RetryAfter)
 			}
 			log.Printf("[subscription_job] 订阅 %s 被 429 限流，推迟到 %v（不增计数）",
-				sub.ID(), fe.RetryAfter)
+				sub.ID(), feedErr.RetryAfter)
 			return
 		case appsub.FeedErrPermanent:
 			sub.Pause()
@@ -157,7 +157,7 @@ func (j *SubscriptionJob) applyFeedError(sub *domainsubscription.Subscription, f
 	}
 }
 
-// recoverAndLog recover 单 worker panic，记日志不传播（隔离故障，业界共识）。
+// recoverAndLog recover 单 worker panic，记日志不传播（隔离故障）。
 func recoverAndLog(subID string) {
 	if r := recover(); r != nil {
 		log.Printf("[subscription_job] 订阅 %s 抓取 panic（已隔离）: %v", subID, r)

@@ -145,10 +145,11 @@ func TestApplyFeedError_Transient_AutoPausesAtThreshold(t *testing.T) {
 	assert.Equal(t, domainsubscription.MaxConsecutiveFailures, sub.ConsecutiveFailures())
 }
 
-func TestApplyFeedError_NonFeedError_TreatedAsTransient(t *testing.T) {
+func TestApplyFeedError_NilFeedError_TreatedAsTransient(t *testing.T) {
 	j := &SubscriptionJob{now: time.Now}
 	sub := mustDueSub(t)
-	j.applyFeedError(sub, errors.New("网络断开"), time.Now(), "网络断开")
+	// feedErr=nil（非 *FeedError，如 FindByID 失败）应按瞬时处理
+	j.applyFeedError(sub, nil, time.Now(), "网络断开")
 
 	assert.Equal(t, 1, sub.ConsecutiveFailures())
 	assert.Equal(t, domainsubscription.StatusActive, sub.Status())
