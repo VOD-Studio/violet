@@ -32,6 +32,7 @@ func postToPO(p *post.Post) model.Post {
 		Status: p.Status(), AuthorID: p.AuthorID().UUID(),
 		ViewCount: p.ViewCount(), IsFeatured: p.IsFeatured(),
 		SEOTitle: p.SEOTitle(), SEODescription: p.SEODescription(),
+		CanonicalURL: p.CanonicalURL(),
 	}
 	if t := p.PublishedAt(); t != nil {
 		po.PublishedAt = t
@@ -57,7 +58,7 @@ func postToDomain(po model.Post) (*post.Post, error) {
 		po.Title, po.Slug, po.ContentMD, po.ContentHTML,
 		po.Excerpt, po.CoverImage, po.Status, po.ViewCount,
 		po.IsFeatured, po.SEOTitle, po.SEODescription,
-		po.PublishedAt, tags, po.CreatedAt, po.UpdatedAt,
+		po.PublishedAt, po.CanonicalURL, tags, po.CreatedAt, po.UpdatedAt,
 	), nil
 }
 

@@ -39,7 +39,7 @@ func (t *Tools) CreatePost(ctx context.Context, req *mcp.CallToolRequest, args c
 		AuthorID: operatorUserID(req),
 		Title:    args.Title, Slug: args.Slug,
 		ContentMD: args.ContentMD, Excerpt: args.Excerpt,
-		CoverImage: args.CoverImage, Tags: args.Tags,
+		CoverImage: args.CoverImage, CanonicalURL: args.CanonicalURL, Tags: args.Tags,
 	})
 	if err != nil {
 		return errResult(err), nil, nil
@@ -55,7 +55,7 @@ func (t *Tools) UpdatePost(ctx context.Context, req *mcp.CallToolRequest, args u
 	err := t.posts.Update(ctxWithOperator(ctx, operatorUserID(req)), apppost.UpdateInput{
 		ID: args.ID, Title: args.Title, Slug: args.Slug,
 		ContentMD: args.ContentMD, Excerpt: args.Excerpt,
-		CoverImage: args.CoverImage, Tags: args.Tags,
+		CoverImage: args.CoverImage, CanonicalURL: args.CanonicalURL, Tags: args.Tags,
 	}, operatorUserID(req))
 	if err != nil {
 		return errResult(err), nil, nil

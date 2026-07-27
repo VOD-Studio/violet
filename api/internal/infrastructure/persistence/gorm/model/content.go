@@ -25,6 +25,7 @@ type Post struct {
 	SEOTitle       string     `gorm:"type:varchar(255);column:seo_title" json:"seo_title"`
 	SEODescription string     `gorm:"type:text;column:seo_description" json:"seo_description"`
 	PublishedAt    *time.Time `gorm:"column:published_at" json:"published_at,omitempty"`
+	CanonicalURL   *string    `gorm:"type:text;column:canonical_url" json:"canonical_url,omitempty"`
 	CreatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 	// 软删除：GORM 识别 gorm.DeletedAt 后 Delete 自动改 UPDATE，查询自动过滤 deleted_at IS NULL。

@@ -84,22 +84,24 @@ func ctxWithOperator(ctx context.Context, userID string) context.Context {
 // 故可选字段须在 json tag 加 omitempty。
 
 type createPostArgs struct {
-	Title      string   `json:"title" jsonschema:"文章标题"`
-	Slug       string   `json:"slug" jsonschema:"URL slug（小写字母数字连字符）"`
-	ContentMD  string   `json:"content_md,omitempty" jsonschema:"Markdown 原文"`
-	Excerpt    string   `json:"excerpt,omitempty" jsonschema:"摘要"`
-	CoverImage string   `json:"cover_image,omitempty" jsonschema:"封面图 URL"`
-	Tags       []string `json:"tags,omitempty" jsonschema:"标签列表"`
+	Title        string   `json:"title" jsonschema:"文章标题"`
+	Slug         string   `json:"slug" jsonschema:"URL slug（小写字母数字连字符）"`
+	ContentMD    string   `json:"content_md,omitempty" jsonschema:"Markdown 原文"`
+	Excerpt      string   `json:"excerpt,omitempty" jsonschema:"摘要"`
+	CoverImage   string   `json:"cover_image,omitempty" jsonschema:"封面图 URL"`
+	CanonicalURL *string  `json:"canonical_url,omitempty" jsonschema:"转载源 URL；不传=原创，传值=转载（指向源文章）"`
+	Tags         []string `json:"tags,omitempty" jsonschema:"标签列表"`
 }
 
 type updatePostArgs struct {
-	ID         string   `json:"id" jsonschema:"文章 ID"`
-	Title      string   `json:"title,omitempty" jsonschema:"文章标题"`
-	Slug       string   `json:"slug,omitempty" jsonschema:"URL slug"`
-	ContentMD  string   `json:"content_md,omitempty" jsonschema:"Markdown 原文"`
-	Excerpt    string   `json:"excerpt,omitempty" jsonschema:"摘要"`
-	CoverImage string   `json:"cover_image,omitempty" jsonschema:"封面图 URL"`
-	Tags       []string `json:"tags,omitempty" jsonschema:"标签列表"`
+	ID           string   `json:"id" jsonschema:"文章 ID"`
+	Title        string   `json:"title,omitempty" jsonschema:"文章标题"`
+	Slug         string   `json:"slug,omitempty" jsonschema:"URL slug"`
+	ContentMD    string   `json:"content_md,omitempty" jsonschema:"Markdown 原文"`
+	Excerpt      string   `json:"excerpt,omitempty" jsonschema:"摘要"`
+	CoverImage   string   `json:"cover_image,omitempty" jsonschema:"封面图 URL"`
+	CanonicalURL *string  `json:"canonical_url,omitempty" jsonschema:"转载源 URL；不传=保持不变/原创，传值=转载（指向源文章）"`
+	Tags         []string `json:"tags,omitempty" jsonschema:"标签列表"`
 }
 
 type publishPostArgs struct {

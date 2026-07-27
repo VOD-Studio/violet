@@ -53,6 +53,7 @@ type Post struct {
 	seoTitle       string
 	seoDescription string
 	publishedAt    *time.Time
+	canonicalURL   *string // 转载/分发源 URL；nil = 原创，非 nil = 转载（指向源）
 	tags           []string // tag names
 	timestamps     shared.Timestamps
 }
@@ -72,7 +73,7 @@ func NewPost(id, authorID shared.ID, title, slug string) (*Post, error) {
 }
 
 // ReconstructPost 从持久化数据重建
-func ReconstructPost(id, authorID shared.ID, title, slug, contentMD, contentHTML, excerpt, coverImage, status string, viewCount int, isFeatured bool, seoTitle, seoDescription string, publishedAt *time.Time, tags []string, createdAt, updatedAt time.Time) *Post {
+func ReconstructPost(id, authorID shared.ID, title, slug, contentMD, contentHTML, excerpt, coverImage, status string, viewCount int, isFeatured bool, seoTitle, seoDescription string, publishedAt *time.Time, canonicalURL *string, tags []string, createdAt, updatedAt time.Time) *Post {
 	if tags == nil {
 		tags = []string{}
 	}
@@ -81,7 +82,7 @@ func ReconstructPost(id, authorID shared.ID, title, slug, contentMD, contentHTML
 		contentMD: contentMD, contentHTML: contentHTML, excerpt: excerpt,
 		coverImage: coverImage, status: status, viewCount: viewCount,
 		isFeatured: isFeatured, seoTitle: seoTitle, seoDescription: seoDescription,
-		publishedAt: publishedAt, tags: tags,
+		publishedAt: publishedAt, canonicalURL: canonicalURL, tags: tags,
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }
@@ -138,6 +139,11 @@ func (p *Post) UpdateSEO(title, description string) {
 	p.seoDescription = description
 }
 
+// SetCanonicalURL 设置转载源 URL。传 nil 表示原创，非 nil 表示转载/分发。
+func (p *Post) SetCanonicalURL(url *string) {
+	p.canonicalURL = url
+}
+
 // SetTags 设置标签
 func (p *Post) SetTags(tags []string) {
 	if tags == nil {
@@ -164,6 +170,7 @@ func (p *Post) IsFeatured() bool        { return p.isFeatured }
 func (p *Post) SEOTitle() string        { return p.seoTitle }
 func (p *Post) SEODescription() string  { return p.seoDescription }
 func (p *Post) PublishedAt() *time.Time { return p.publishedAt }
+func (p *Post) CanonicalURL() *string   { return p.canonicalURL }
 func (p *Post) Tags() []string          { return p.tags }
 func (p *Post) CreatedAt() time.Time    { return p.timestamps.CreatedAt }
 func (p *Post) UpdatedAt() time.Time    { return p.timestamps.UpdatedAt }

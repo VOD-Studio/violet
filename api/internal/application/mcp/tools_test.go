@@ -212,3 +212,69 @@ func TestCreatePost_ServiceErrorBecomesToolError(t *testing.T) {
 	require.NoError(t, err, "service error 不应作为 protocol error 返回")
 	assert.True(t, res.IsError, "service error 应映射为 tool error（IsError=true）")
 }
+
+// ---- canonical_url 透传（转载语义，T1）----
+
+func TestCreatePost_PassesCanonicalURL(t *testing.T) {
+	fake := &fakePostService{}
+	tools := NewTools(fake)
+	args := createPostArgs{
+		Title:        "转载文",
+		Slug:         "repost",
+		CanonicalURL: stringPtr("https://example.com/origin"),
+	}
+
+	res, _, err := tools.CreatePost(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), args)
+	require.NoError(t, err)
+	assert.False(t, res.IsError)
+	require.NotNil(t, fake.createInput)
+	require.NotNil(t, fake.createInput.CanonicalURL, "传入 canonical_url 时 service 应收到非 nil")
+	assert.Equal(t, "https://example.com/origin", *fake.createInput.CanonicalURL)
+}
+
+func TestCreatePost_OmitsCanonicalURLWhenAbsent(t *testing.T) {
+	fake := &fakePostService{}
+	tools := NewTools(fake)
+	args := createPostArgs{Title: "原创文", Slug: "original"}
+
+	res, _, err := tools.CreatePost(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), args)
+	require.NoError(t, err)
+	assert.False(t, res.IsError)
+	require.NotNil(t, fake.createInput)
+	assert.Nil(t, fake.createInput.CanonicalURL, "未传 canonical_url 时 service 应收到 nil（= 原创）")
+}
+
+func TestUpdatePost_PassesCanonicalURL(t *testing.T) {
+	fake := &fakePostService{}
+	tools := NewTools(fake)
+	args := updatePostArgs{
+		ID:           "post-9",
+		CanonicalURL: stringPtr("https://example.com/origin"),
+	}
+
+	res, _, err := tools.UpdatePost(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), args)
+	require.NoError(t, err)
+	assert.False(t, res.IsError)
+	require.NotNil(t, fake.updateInput)
+	require.NotNil(t, fake.updateInput.CanonicalURL)
+	assert.Equal(t, "https://example.com/origin", *fake.updateInput.CanonicalURL)
+}
+
+func TestUpdatePost_OmitsCanonicalURLWhenAbsent(t *testing.T) {
+	fake := &fakePostService{}
+	tools := NewTools(fake)
+	args := updatePostArgs{ID: "post-9", Title: "改回原创"}
+
+	res, _, err := tools.UpdatePost(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), args)
+	require.NoError(t, err)
+	assert.False(t, res.IsError)
+	require.NotNil(t, fake.updateInput)
+	assert.Nil(t, fake.updateInput.CanonicalURL, "update 不传 canonical_url 时为 nil")
+}
+
+// stringPtr 测试辅助：返回字符串指针。
+func stringPtr(s string) *string { return &s }

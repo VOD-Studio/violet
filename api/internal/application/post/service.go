@@ -43,6 +43,7 @@ type PostDTO struct {
 	SEOTitle       string       `json:"seo_title"`
 	SEODescription string       `json:"seo_description"`
 	PublishedAt    string       `json:"published_at,omitempty"`
+	CanonicalURL   *string      `json:"canonical_url,omitempty"` // 转载源 URL；nil/缺省 = 原创，非空 = 转载
 	Tags           []string     `json:"tags"`
 	CreatedAt      string       `json:"created_at"`
 	UpdatedAt      string       `json:"updated_at"`
@@ -207,6 +208,7 @@ type CreateInput struct {
 	CoverImage     string
 	SEOTitle       string
 	SEODescription string
+	CanonicalURL   *string // 转载源 URL；nil = 原创，非 nil = 转载
 	Tags           []string
 	IsFeatured     bool
 }
@@ -231,6 +233,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 		return PostDTO{}, err
 	}
 	p.UpdateSEO(in.SEOTitle, in.SEODescription)
+	p.SetCanonicalURL(in.CanonicalURL)
 	p.SetTags(in.Tags)
 	p.SetFeatured(in.IsFeatured)
 	if err := s.repo.Save(ctx, p); err != nil {
@@ -279,6 +282,7 @@ type UpdateInput struct {
 	CoverImage     string
 	SEOTitle       string
 	SEODescription string
+	CanonicalURL   *string // 转载源 URL；nil = 原创，非 nil = 转载
 	Tags           []string
 	IsFeatured     bool
 }
@@ -318,6 +322,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID string)
 		return err
 	}
 	p.UpdateSEO(in.SEOTitle, in.SEODescription)
+	p.SetCanonicalURL(in.CanonicalURL)
 	p.SetTags(in.Tags)
 	p.SetFeatured(in.IsFeatured)
 
@@ -834,9 +839,10 @@ func toDTO(p *domain.Post) PostDTO {
 		Status: p.Status(), AuthorID: p.AuthorID().String(),
 		ViewCount: p.ViewCount(), IsFeatured: p.IsFeatured(),
 		SEOTitle: p.SEOTitle(), SEODescription: p.SEODescription(),
-		Tags:      p.Tags(),
-		CreatedAt: p.CreatedAt().Format(time.RFC3339),
-		UpdatedAt: p.UpdatedAt().Format(time.RFC3339),
+		CanonicalURL: p.CanonicalURL(),
+		Tags:         p.Tags(),
+		CreatedAt:    p.CreatedAt().Format(time.RFC3339),
+		UpdatedAt:    p.UpdatedAt().Format(time.RFC3339),
 	}
 	if p.PublishedAt() != nil {
 		dto.PublishedAt = p.PublishedAt().Format(time.RFC3339)
