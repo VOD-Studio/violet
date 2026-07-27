@@ -22,6 +22,7 @@ import {
     SquareFunction,
     Table as TableIcon,
     Text,
+    Workflow,
 } from "lucide-react";
 
 export interface SlashMenuItem {
@@ -211,6 +212,23 @@ export function buildSlashItems(onPickImage: () => void): SlashMenuItem[] {
                     .run();
                 if (inserted) selectInsertedMath(e, "blockMath", from);
             },
+        },
+        {
+            id: "diagramBlock",
+            title: "流程图",
+            description: "Mermaid 流程图 / 时序图（```mermaid 围栏块）",
+            keywords: ["diagram", "mermaid", "flowchart", "流程图", "时序图", "图", "sequence"],
+            icon: Workflow,
+            group: "媒体",
+            command: (e) =>
+                e
+                    .chain()
+                    .focus()
+                    .insertContent({
+                        type: "diagramBlock",
+                        attrs: { format: "mermaid", source: "" },
+                    })
+                    .run(),
         },
         {
             id: IMAGE_ITEM_ID,
