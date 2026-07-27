@@ -17,6 +17,7 @@ import (
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	userdomain "blog-api/internal/domain/user"
+	"blog-api/internal/infrastructure/ssrf"
 	"blog-api/internal/middleware"
 )
 
@@ -662,8 +663,17 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string, opts ImportURLOp
 
 // fetchHTML 抓取远程 HTML 文档，校验 Content-Type 必须为 text/html。
 // UA 伪装为桌面浏览器避免被某些站点拦截。
+//
+// SSRF 防护：发起前调 ssrf.ValidateURL（协议/host 文本预检），
+// 出站连接经 ssrf.NewSafeTransport 在 DNS 解析后校验 IP（防 DNS 重绑定）。
 func fetchHTML(rawURL string, timeout time.Duration) (*http.Response, error) {
-	client := &http.Client{Timeout: timeout}
+	if _, err := ssrf.ValidateURL(rawURL); err != nil {
+		return nil, err
+	}
+	client := &http.Client{
+		Timeout:   timeout,
+		Transport: ssrf.NewSafeTransport(),
+	}
 	req, err := http.NewRequest("GET", rawURL, nil)
 	if err != nil {
 		return nil, err
