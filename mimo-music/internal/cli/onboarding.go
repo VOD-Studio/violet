@@ -62,19 +62,19 @@ func recommendForTime(now time.Time) []recommendation {
 	t := now.Local()
 	if isWeekend(t.Weekday()) {
 		return []recommendation{
-			{cmd: "musicctl recommend playlists", desc: "挑个歌单"},
-			{cmd: "musicctl album shelf", desc: "翻翻新碟上架"},
+			{cmd: "musicctl recommend playlists", desc: "周末了,挑个歌单慢慢听"},
+			{cmd: "musicctl album shelf", desc: "或翻翻新碟上架"},
 		}
 	}
 	switch bucketOf(t.Hour()) {
 	case bucketMorning:
-		return []recommendation{{cmd: "musicctl recommend daily-songs", desc: "今日日推"}}
+		return []recommendation{{cmd: "musicctl recommend daily-songs", desc: "早安,今日日推已更新"}}
 	case bucketNoon:
-		return []recommendation{{cmd: "musicctl recommend playlists", desc: "挑个歌单"}}
+		return []recommendation{{cmd: "musicctl recommend playlists", desc: "午休,挑个歌单"}}
 	case bucketEvening:
-		return []recommendation{{cmd: "musicctl fm", desc: "私人 FM"}}
+		return []recommendation{{cmd: "musicctl fm", desc: "晚间,开个私人 FM"}}
 	default: // 夜
-		return []recommendation{{cmd: "musicctl song play --id <TAB>", desc: "复听最近听过的歌"}}
+		return []recommendation{{cmd: "musicctl song play --id <TAB>", desc: "夜了,从最近听过的歌复听"}}
 	}
 }
 
@@ -84,21 +84,21 @@ func recommendForTime(now time.Time) []recommendation {
 // 可补全命令在文案里带 <TAB> 标注(Unix 文化约定,教育可发现性)。
 func renderOnboarding(w io.Writer, loggedIn bool, now time.Time) {
 	if !loggedIn {
-		fmt.Fprintln(w, "musicctl - 网易云接口调试与实用工具")
+		fmt.Fprintln(w, "欢迎使用 musicctl——网易云接口调试与实用工具。")
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "下一步:")
-		fmt.Fprintln(w, "  musicctl login           扫码登录")
+		fmt.Fprintln(w, "  musicctl login           扫码登录(推荐)")
 		fmt.Fprintln(w, "  musicctl login-cellphone 手机号验证码登录")
 		fmt.Fprintln(w)
-		fmt.Fprintln(w, "登录后可播放/下载/红心等,或先用 musicctl search <关键词> 搜索")
-		fmt.Fprintln(w, "环境变量 NETEASE_COOKIE 可临时指定 cookie,优先级高于会话文件")
+		fmt.Fprintln(w, "登录后可播放/下载/红心等;先试试 musicctl search <关键词>。")
+		fmt.Fprintln(w, "(环境变量 NETEASE_COOKIE 可临时指定 cookie,优先级高于会话文件)")
 		return
 	}
-	fmt.Fprintln(w, "musicctl 已就绪,可以:")
+	fmt.Fprintln(w, "musicctl 已就绪。现在可以:")
 	for _, r := range recommendForTime(now) {
 		fmt.Fprintf(w, "  %s   %s\n", r.cmd, r.desc)
 	}
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, "<TAB> 表示该位置可按 Tab 从最近搜索/播放补全候选")
-	fmt.Fprintln(w, "带 --id 的命令也接受位置参数,如 musicctl song play 347230")
+	fmt.Fprintln(w, "<TAB> 表示该位置可按 Tab 从最近搜索/播放补全候选。")
+	fmt.Fprintln(w, "音乐命令带 --id 也接受位置参数(如 musicctl song play 347230)。")
 }
