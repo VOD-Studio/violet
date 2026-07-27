@@ -203,3 +203,23 @@
   background-color: hsl(var(--muted));
   box-shadow: 0 0 0 1px hsl(var(--border));
 }
+
+/* —— 图块弹层编辑（Mermaid）—— */
+.diagram-node-view {
+  cursor: pointer;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  transition: background-color 0.15s ease;
+}
+.diagram-node-view:hover {
+  background-color: hsl(var(--muted));
+}
+.diagram-node-view--selected {
+  background-color: hsl(var(--muted));
+  box-shadow: 0 0 0 1px hsl(var(--border));
+}
+/* 文档内渲染：流程图常宽屏，居中 + 横向滚动而非缩放变形（PRD 容器决策） */
+.diagram-node-view__render {
+  text-align: center;
+  overflow-x: auto;
+}

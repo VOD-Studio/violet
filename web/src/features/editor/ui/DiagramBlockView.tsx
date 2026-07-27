@@ -10,14 +10,17 @@
  * @tiptap/extension-code-block 读 token.lang 的机制。
  *
  * diagramBlock 是独立 atom（不复用 codeBlock 分流）：source 不进 contentEditable，
- * 避免 mermaid 源被自由编辑破坏语法；编辑交互走弹层（ADR-0005），由后续 slice 在此
- * 节点定义上 .extend({ addNodeView() {...} }) 接入 DiagramPopoverView，复用数学公式
- * 弹层基础设施（届时再按 createMathExtensions / createCodeBlockExtension 形态收敛为
- * 工厂入口——工厂要在其体内有真实行为时才引入，避免空包装）。
+ * 避免 mermaid 源被自由编辑破坏语法；编辑交互走弹层（ADR-0005）。
  *
- * 本期不挂 NodeView（文档内仅默认占位渲染）；渲染核心与阅读端共用 shared/ui/diagram。
+ * createDiagramBlockExtension 是装配入口（参照 createMathExtensions / createCodeBlockExtension）：
+ * 在本节点定义上 .extend({ addNodeView() {...} }) 接入 DiagramPopoverView，复用数学公式
+ * 已验证的浮层基础设施（@floating-ui/dom absolute + portal 进滚动容器 + Esc/外部点击关闭）。
+ * 渲染核心与阅读端共用 shared/ui/diagram（renderMermaid + DOMPurify 双重防线）。
  */
 import { mergeAttributes, Node } from "@tiptap/core";
+import type { NodeViewProps } from "@tiptap/react";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { DiagramPopoverView } from "./DiagramPopoverView";
 
 /**
  * mermaid 围栏块匹配正则。
@@ -98,3 +101,21 @@ export const DiagramBlock = Node.create({
         },
     },
 });
+
+/** 图块 NodeView 渲染适配器（diagramBlock 永远是块级，单一适配器即可） */
+const renderDiagramView = (props: NodeViewProps) => <DiagramPopoverView {...props} />;
+
+/**
+ * createDiagramBlockExtension - 图块扩展装配工厂
+ *
+ * 在 DiagramBlock 节点定义上挂 React NodeView（DiagramPopoverView：文档内渲染 +
+ * 弹层编辑）。schema / parseHTML / renderHTML / markdown 四件套继承自 DiagramBlock，
+ * 仅追加 NodeView。参照 createMathExtensions / createCodeBlockExtension 的工厂形态。
+ */
+export function createDiagramBlockExtension() {
+    return DiagramBlock.extend({
+        addNodeView() {
+            return ReactNodeViewRenderer(renderDiagramView);
+        },
+    });
+}
