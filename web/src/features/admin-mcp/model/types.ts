@@ -2,11 +2,11 @@
  * admin-mcp 模块类型定义
  *
  * 对齐后端 application/api_token.PATDTO（GET/POST /admin/api-tokens 返回）。
- * scope 取值与后端 domain/api_token 常量一致（read/write/publish）。
+ * scope 取值与后端 domain/api_token 常量一致（read/write/publish/scrape）。
  */
 
 /** PAT 可选 scope（与后端 domain/api_token.ScopePosts* 对齐） */
-export const PAT_SCOPES = ["posts:read", "posts:write", "posts:publish"] as const;
+export const PAT_SCOPES = ["posts:read", "posts:write", "posts:publish", "posts:scrape"] as const;
 export type PATScope = (typeof PAT_SCOPES)[number];
 
 /** PAT 过期选项 */
