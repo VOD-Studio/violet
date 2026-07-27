@@ -158,7 +158,7 @@ type createSubscriptionArgs struct {
 }
 
 type listSubscriptionsArgs struct {
-	Status string `json:"status,omitempty" jsonschema:"按状态过滤：active/paused（空=不过滤）"`
+	Status string `json:"status,omitempty" jsonschema:"按状态过滤：active/paused（留空表示不过滤）"`
 	Page   int    `json:"page,omitempty" jsonschema:"页码（从 1 开始，默认 1）"`
 	Limit  int    `json:"limit,omitempty" jsonschema:"每页条数（默认 20，上限 100）"`
 }
