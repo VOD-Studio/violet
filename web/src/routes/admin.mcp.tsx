@@ -294,23 +294,41 @@ function CreatePATDialog({
     );
 }
 
+/** MCP server 选项（对齐后端 ADR-0007 拆分） */
+type MCPServerChoice = "post" | "scraper" | "both";
+
+const MCP_SERVER_CHOICES: { value: MCPServerChoice; label: string; desc: string }[] = [
+    { value: "post", label: "仅文章", desc: "5 个文章 CRUD tool（posts:read/write/publish）" },
+    {
+        value: "scraper",
+        label: "仅抓取",
+        desc: "scrape_url + 7 个订阅 tool（posts:scrape + subscriptions:*）",
+    },
+    { value: "both", label: "两者", desc: "文章 + 抓取（两个 server 都配）" },
+];
+
 /** MCPConfigCard - 展示 + 复制 mcpServers 配置 JSON */
 function MCPConfigCard({ token }: { token: string | null }) {
     const [copied, setCopied] = React.useState(false);
+    const [serverChoice, setServerChoice] = React.useState<MCPServerChoice>("both");
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
     const config = React.useMemo(() => {
         if (!token) {
             return null;
         }
-        return {
-            mcpServers: {
-                "mimo-blog": {
-                    url: `${baseUrl}/api/v1/mcp`,
-                    headers: { Authorization: `Bearer ${token}` },
-                },
-            },
-        };
-    }, [token, baseUrl]);
+        const auth = { Authorization: `Bearer ${token}` };
+        const mcpServers: Record<string, { url: string; headers: typeof auth }> = {};
+        if (serverChoice === "post" || serverChoice === "both") {
+            mcpServers["mimo-blog"] = { url: `${baseUrl}/api/v1/mcp`, headers: auth };
+        }
+        if (serverChoice === "scraper" || serverChoice === "both") {
+            mcpServers["mimo-blog-scraper"] = {
+                url: `${baseUrl}/api/v1/mcp/scraper`,
+                headers: auth,
+            };
+        }
+        return { mcpServers };
+    }, [token, baseUrl, serverChoice]);
 
     const json = config ? JSON.stringify(config, null, 2) : "";
     const onCopy = async () => {
@@ -338,6 +356,20 @@ function MCPConfigCard({ token }: { token: string | null }) {
                     {copied ? <Check className="mr-1 size-4" /> : <Copy className="mr-1 size-4" />}
                     复制
                 </Button>
+            </div>
+            {/* server 选择（ADR-0007：文章 + 抓取两个独立 server） */}
+            <div className="flex flex-wrap gap-2">
+                {MCP_SERVER_CHOICES.map((c) => (
+                    <Button
+                        key={c.value}
+                        size="sm"
+                        variant={serverChoice === c.value ? "default" : "outline"}
+                        onClick={() => setServerChoice(c.value)}
+                        title={c.desc}
+                    >
+                        {c.label}
+                    </Button>
+                ))}
             </div>
             {json ? (
                 <pre className="bg-muted overflow-x-auto rounded-md p-3 font-mono text-xs">
