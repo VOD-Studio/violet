@@ -32,7 +32,7 @@ func okResult(v any) *mcp.CallToolResult {
 }
 
 // CreatePost 创建草稿文章（需 posts:write）。AuthorID 取自 PAT 持有人。
-func (t *Tools) CreatePost(ctx context.Context, req *mcp.CallToolRequest, args createPostArgs) (*mcp.CallToolResult, any, error) {
+func (t *PostTools) CreatePost(ctx context.Context, req *mcp.CallToolRequest, args createPostArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopePostsWrite); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -49,7 +49,7 @@ func (t *Tools) CreatePost(ctx context.Context, req *mcp.CallToolRequest, args c
 }
 
 // UpdatePost 更新文章内容（需 posts:write）。操作者取自 PAT 持有人。
-func (t *Tools) UpdatePost(ctx context.Context, req *mcp.CallToolRequest, args updatePostArgs) (*mcp.CallToolResult, any, error) {
+func (t *PostTools) UpdatePost(ctx context.Context, req *mcp.CallToolRequest, args updatePostArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopePostsWrite); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -65,7 +65,7 @@ func (t *Tools) UpdatePost(ctx context.Context, req *mcp.CallToolRequest, args u
 }
 
 // PublishPost 发布草稿文章（需 posts:publish，与 write 独立）。
-func (t *Tools) PublishPost(ctx context.Context, req *mcp.CallToolRequest, args publishPostArgs) (*mcp.CallToolResult, any, error) {
+func (t *PostTools) PublishPost(ctx context.Context, req *mcp.CallToolRequest, args publishPostArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopePostsPublish); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -77,7 +77,7 @@ func (t *Tools) PublishPost(ctx context.Context, req *mcp.CallToolRequest, args 
 }
 
 // GetPost 按 ID 读取文章（需 posts:read）。
-func (t *Tools) GetPost(ctx context.Context, req *mcp.CallToolRequest, args getPostArgs) (*mcp.CallToolResult, any, error) {
+func (t *PostTools) GetPost(ctx context.Context, req *mcp.CallToolRequest, args getPostArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopePostsRead); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -89,7 +89,7 @@ func (t *Tools) GetPost(ctx context.Context, req *mcp.CallToolRequest, args getP
 }
 
 // ListDrafts 列出草稿文章（需 posts:read）。
-func (t *Tools) ListDrafts(ctx context.Context, req *mcp.CallToolRequest, args listDraftsArgs) (*mcp.CallToolResult, any, error) {
+func (t *PostTools) ListDrafts(ctx context.Context, req *mcp.CallToolRequest, args listDraftsArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopePostsRead); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -131,7 +131,7 @@ type ScrapeResult struct {
 //
 // 预检链：scope 门禁 → robots.txt 尊重 → ImportURL（含 SSRF 防护）。
 // canonical_url 回退：og:url > <link rel=canonical> > 输入 url。
-func (t *Tools) ScrapeURL(ctx context.Context, req *mcp.CallToolRequest, args scrapeURLArgs) (*mcp.CallToolResult, any, error) {
+func (t *ScraperTools) ScrapeURL(ctx context.Context, req *mcp.CallToolRequest, args scrapeURLArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopePostsScrape); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -170,7 +170,7 @@ func (t *Tools) ScrapeURL(ctx context.Context, req *mcp.CallToolRequest, args sc
 
 // CreateSubscription 创建 RSS 订阅源（需 subscriptions:write）。
 // auto_publish=true 时额外需 posts:publish scope（PRD-0005 安全语义，防 scope 绕过）。
-func (t *Tools) CreateSubscription(ctx context.Context, req *mcp.CallToolRequest, args createSubscriptionArgs) (*mcp.CallToolResult, any, error) {
+func (t *ScraperTools) CreateSubscription(ctx context.Context, req *mcp.CallToolRequest, args createSubscriptionArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsWrite); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -193,7 +193,7 @@ func (t *Tools) CreateSubscription(ctx context.Context, req *mcp.CallToolRequest
 }
 
 // ListSubscriptions 列出当前用户的订阅（需 subscriptions:read）。
-func (t *Tools) ListSubscriptions(ctx context.Context, req *mcp.CallToolRequest, args listSubscriptionsArgs) (*mcp.CallToolResult, any, error) {
+func (t *ScraperTools) ListSubscriptions(ctx context.Context, req *mcp.CallToolRequest, args listSubscriptionsArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsRead); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -217,7 +217,7 @@ func (t *Tools) ListSubscriptions(ctx context.Context, req *mcp.CallToolRequest,
 }
 
 // GetSubscription 查单个订阅详情（需 subscriptions:read）。
-func (t *Tools) GetSubscription(ctx context.Context, req *mcp.CallToolRequest, args getSubscriptionArgs) (*mcp.CallToolResult, any, error) {
+func (t *ScraperTools) GetSubscription(ctx context.Context, req *mcp.CallToolRequest, args getSubscriptionArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsRead); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -230,7 +230,7 @@ func (t *Tools) GetSubscription(ctx context.Context, req *mcp.CallToolRequest, a
 
 // UpdateSubscription 更新订阅配置（需 subscriptions:write）。
 // auto_publish=true 时额外需 posts:publish scope（同 CreateSubscription）。
-func (t *Tools) UpdateSubscription(ctx context.Context, req *mcp.CallToolRequest, args updateSubscriptionArgs) (*mcp.CallToolResult, any, error) {
+func (t *ScraperTools) UpdateSubscription(ctx context.Context, req *mcp.CallToolRequest, args updateSubscriptionArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsWrite); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -253,7 +253,7 @@ func (t *Tools) UpdateSubscription(ctx context.Context, req *mcp.CallToolRequest
 }
 
 // PauseSubscription 手动暂停订阅（需 subscriptions:write）。
-func (t *Tools) PauseSubscription(ctx context.Context, req *mcp.CallToolRequest, args subscriptionIDArgs) (*mcp.CallToolResult, any, error) {
+func (t *ScraperTools) PauseSubscription(ctx context.Context, req *mcp.CallToolRequest, args subscriptionIDArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsWrite); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -264,7 +264,7 @@ func (t *Tools) PauseSubscription(ctx context.Context, req *mcp.CallToolRequest,
 }
 
 // ResumeSubscription 手动恢复订阅，清零失败计数（需 subscriptions:write）。
-func (t *Tools) ResumeSubscription(ctx context.Context, req *mcp.CallToolRequest, args subscriptionIDArgs) (*mcp.CallToolResult, any, error) {
+func (t *ScraperTools) ResumeSubscription(ctx context.Context, req *mcp.CallToolRequest, args subscriptionIDArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsWrite); err != nil {
 		return errResult(err), nil, nil
 	}
@@ -276,7 +276,7 @@ func (t *Tools) ResumeSubscription(ctx context.Context, req *mcp.CallToolRequest
 
 // DeleteSubscription 删除订阅（需 subscriptions:write）。
 // 连带 entries 在 T7 加表后由 ON DELETE CASCADE 处理。
-func (t *Tools) DeleteSubscription(ctx context.Context, req *mcp.CallToolRequest, args subscriptionIDArgs) (*mcp.CallToolResult, any, error) {
+func (t *ScraperTools) DeleteSubscription(ctx context.Context, req *mcp.CallToolRequest, args subscriptionIDArgs) (*mcp.CallToolResult, any, error) {
 	if err := requireScope(req, domainapitoken.ScopeSubscriptionsWrite); err != nil {
 		return errResult(err), nil, nil
 	}

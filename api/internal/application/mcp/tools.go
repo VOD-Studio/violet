@@ -52,17 +52,31 @@ type RobotsChecker interface {
 	Allowed(ctx context.Context, target string) (bool, string, error)
 }
 
-// Tools 文章读写 tool 集合，挂在 mcp.Server 上。
-type Tools struct {
+// PostTools 文章 CRUD tool 集合，挂在文章 MCP server（/api/v1/mcp）上。
+// 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。
+type PostTools struct {
+	posts PostService
+}
+
+// NewPostTools 构造文章 tool 集合。
+func NewPostTools(posts PostService) *PostTools {
+	return &PostTools{posts: posts}
+}
+
+// ScraperTools 抓取 tool 集合，挂在抓取 MCP server（/api/v1/mcp/scraper）上。
+// 高风险域：scrape_url 任意 URL 抓取（SSRF）+ 订阅抓取外部 feed。
+// posts 仍需复用（scrape_url 调 ImportURL；订阅 FetchOne 经 SubscriptionService 间接调）。
+type ScraperTools struct {
 	posts  PostService
 	robots RobotsChecker
 	subs   SubscriptionService
 }
 
-// NewTools 构造 tool 集合。robots 传 nil 时禁用 robots.txt 预检（仅测试用）。
+// NewScraperTools 构造抓取 tool 集合。
+// robots 传 nil 时禁用 robots.txt 预检（仅测试用）。
 // subs 传 nil 时订阅 tool 不可用（仅未接入订阅模块的过渡期/测试用）。
-func NewTools(posts PostService, robots RobotsChecker, subs SubscriptionService) *Tools {
-	return &Tools{posts: posts, robots: robots, subs: subs}
+func NewScraperTools(posts PostService, robots RobotsChecker, subs SubscriptionService) *ScraperTools {
+	return &ScraperTools{posts: posts, robots: robots, subs: subs}
 }
 
 // requireScope 校验 PAT 是否拥有指定 scope；缺失返回 error（调用方包成 tool error 结果）。

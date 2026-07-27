@@ -167,7 +167,7 @@ func resultText(t *testing.T, res *mcp.CallToolResult) string {
 
 func TestCreatePost_DelegatesWithWriteScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 	args := createPostArgs{Title: "你好", Slug: "hello", ContentMD: "# hi"}
 
 	res, _, err := tools.CreatePost(context.Background(),
@@ -182,7 +182,7 @@ func TestCreatePost_DelegatesWithWriteScope(t *testing.T) {
 
 func TestCreatePost_RejectedWithoutWriteScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 
 	res, _, err := tools.CreatePost(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsRead}, "u-1"), createPostArgs{Title: "x", Slug: "x"})
@@ -195,7 +195,7 @@ func TestCreatePost_RejectedWithoutWriteScope(t *testing.T) {
 
 func TestUpdatePost_DelegatesWithWriteScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 	args := updatePostArgs{ID: "post-9", Title: "新标题"}
 
 	res, _, err := tools.UpdatePost(context.Background(),
@@ -209,7 +209,7 @@ func TestUpdatePost_DelegatesWithWriteScope(t *testing.T) {
 
 func TestUpdatePost_RejectedWithoutWriteScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 
 	res, _, _ := tools.UpdatePost(context.Background(),
 		reqWithToken(nil, "u-1"), updatePostArgs{ID: "x"})
@@ -221,7 +221,7 @@ func TestUpdatePost_RejectedWithoutWriteScope(t *testing.T) {
 
 func TestPublishPost_DelegatesWithPublishScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 
 	res, _, err := tools.PublishPost(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsPublish}, "u-1"), publishPostArgs{ID: "post-7"})
@@ -233,7 +233,7 @@ func TestPublishPost_DelegatesWithPublishScope(t *testing.T) {
 
 func TestPublishPost_RejectedWithOnlyWriteScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 
 	res, _, _ := tools.PublishPost(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), publishPostArgs{ID: "x"})
@@ -245,7 +245,7 @@ func TestPublishPost_RejectedWithOnlyWriteScope(t *testing.T) {
 
 func TestGetPost_DelegatesWithReadScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 
 	res, _, err := tools.GetPost(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsRead}, "u-1"), getPostArgs{ID: "post-3"})
@@ -256,7 +256,7 @@ func TestGetPost_DelegatesWithReadScope(t *testing.T) {
 
 func TestGetPost_RejectedWithoutReadScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 
 	res, _, _ := tools.GetPost(context.Background(),
 		reqWithToken(nil, "u-1"), getPostArgs{ID: "x"})
@@ -268,7 +268,7 @@ func TestGetPost_RejectedWithoutReadScope(t *testing.T) {
 
 func TestListDrafts_DelegatesWithReadScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 
 	res, _, err := tools.ListDrafts(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsRead}, "u-1"), listDraftsArgs{Page: 1, Limit: 10})
@@ -281,7 +281,7 @@ func TestListDrafts_DelegatesWithReadScope(t *testing.T) {
 
 func TestListDrafts_RejectedWithoutReadScope(t *testing.T) {
 	fake := &fakePostService{listErr: errors.New("不应被调")}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 
 	res, _, _ := tools.ListDrafts(context.Background(),
 		reqWithToken(nil, "u-1"), listDraftsArgs{})
@@ -293,7 +293,7 @@ func TestListDrafts_RejectedWithoutReadScope(t *testing.T) {
 
 func TestCreatePost_ServiceErrorBecomesToolError(t *testing.T) {
 	fake := &fakePostService{createErr: errors.New("DB down")}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 
 	res, _, err := tools.CreatePost(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), createPostArgs{Title: "x", Slug: "x"})
@@ -305,7 +305,7 @@ func TestCreatePost_ServiceErrorBecomesToolError(t *testing.T) {
 
 func TestCreatePost_PassesCanonicalURL(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 	args := createPostArgs{
 		Title:        "转载文",
 		Slug:         "repost",
@@ -323,7 +323,7 @@ func TestCreatePost_PassesCanonicalURL(t *testing.T) {
 
 func TestCreatePost_OmitsCanonicalURLWhenAbsent(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 	args := createPostArgs{Title: "原创文", Slug: "original"}
 
 	res, _, err := tools.CreatePost(context.Background(),
@@ -336,7 +336,7 @@ func TestCreatePost_OmitsCanonicalURLWhenAbsent(t *testing.T) {
 
 func TestUpdatePost_PassesCanonicalURL(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 	args := updatePostArgs{
 		ID:           "post-9",
 		CanonicalURL: stringPtr("https://example.com/origin"),
@@ -353,7 +353,7 @@ func TestUpdatePost_PassesCanonicalURL(t *testing.T) {
 
 func TestUpdatePost_OmitsCanonicalURLWhenAbsent(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewPostTools(fake)
 	args := updatePostArgs{ID: "post-9", Title: "改回原创"}
 
 	res, _, err := tools.UpdatePost(context.Background(),
@@ -392,7 +392,7 @@ func TestScrapeURL_DelegatesWithScrapeScope(t *testing.T) {
 		},
 	}
 	robots := &fakeRobotsChecker{allowed: true}
-	tools := NewTools(fake, robots, nil)
+	tools := NewScraperTools(fake, robots, nil)
 
 	res, _, err := tools.ScrapeURL(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsScrape}, "u-1"),
@@ -416,7 +416,7 @@ func TestScrapeURL_DelegatesWithScrapeScope(t *testing.T) {
 
 func TestScrapeURL_RejectedWithoutScrapeScope(t *testing.T) {
 	fake := &fakePostService{}
-	tools := NewTools(fake, nil, nil)
+	tools := NewScraperTools(fake, nil, nil)
 
 	res, _, _ := tools.ScrapeURL(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"),
@@ -428,7 +428,7 @@ func TestScrapeURL_RejectedWithoutScrapeScope(t *testing.T) {
 func TestScrapeURL_RejectedByRobotsDisallow(t *testing.T) {
 	fake := &fakePostService{}
 	robots := &fakeRobotsChecker{allowed: false, reason: "robots.txt 禁止抓取 /private"}
-	tools := NewTools(fake, robots, nil)
+	tools := NewScraperTools(fake, robots, nil)
 
 	res, _, err := tools.ScrapeURL(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsScrape}, "u-1"),
@@ -441,7 +441,7 @@ func TestScrapeURL_RejectedByRobotsDisallow(t *testing.T) {
 func TestScrapeURL_ServiceErrorBecomesToolError(t *testing.T) {
 	fake := &fakePostService{importErr: errors.New("抓取失败")}
 	robots := &fakeRobotsChecker{allowed: true}
-	tools := NewTools(fake, robots, nil)
+	tools := NewScraperTools(fake, robots, nil)
 
 	res, _, err := tools.ScrapeURL(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopePostsScrape}, "u-1"),
@@ -454,7 +454,7 @@ func TestScrapeURL_ServiceErrorBecomesToolError(t *testing.T) {
 
 func TestCreateSubscription_DelegatesWithWriteScope(t *testing.T) {
 	fs := &fakeSubService{createResult: appsub.SubscriptionDTO{ID: "sub-1", FeedURL: "https://x/feed"}}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	args := createSubscriptionArgs{
 		FeedURL: "https://example.com/feed.xml", Interval: domainsubIntervalHourly(),
 		AutoPublish: true, Tags: []string{"转载"},
@@ -473,7 +473,7 @@ func TestCreateSubscription_DelegatesWithWriteScope(t *testing.T) {
 
 func TestCreateSubscription_RejectedWithoutWriteScope(t *testing.T) {
 	fs := &fakeSubService{}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 
 	res, _, _ := tools.CreateSubscription(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeSubscriptionsRead}, "u-1"),
@@ -487,7 +487,7 @@ func TestListSubscriptions_DelegatesWithReadScope(t *testing.T) {
 		listResult: []appsub.SubscriptionDTO{{ID: "s1", Status: "active"}},
 		listTotal:  1,
 	}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 
 	res, _, err := tools.ListSubscriptions(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeSubscriptionsRead}, "u-9"),
@@ -502,7 +502,7 @@ func TestListSubscriptions_DelegatesWithReadScope(t *testing.T) {
 
 func TestListSubscriptions_RejectedWithoutReadScope(t *testing.T) {
 	fs := &fakeSubService{listErr: errors.New("不应被调")}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 
 	res, _, _ := tools.ListSubscriptions(context.Background(),
 		reqWithToken(nil, "u-1"), listSubscriptionsArgs{})
@@ -512,7 +512,7 @@ func TestListSubscriptions_RejectedWithoutReadScope(t *testing.T) {
 
 func TestGetSubscription_DelegatesWithReadScope(t *testing.T) {
 	fs := &fakeSubService{getResult: appsub.SubscriptionDTO{ID: "s1", FeedURL: "https://x/feed"}}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 
 	res, _, err := tools.GetSubscription(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeSubscriptionsRead}, "u-1"),
@@ -525,7 +525,7 @@ func TestGetSubscription_DelegatesWithReadScope(t *testing.T) {
 
 func TestUpdateSubscription_DelegatesWithWriteScope(t *testing.T) {
 	fs := &fakeSubService{}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	args := updateSubscriptionArgs{ID: "s1", Title: "新标题", Interval: domainsubIntervalWeekly()}
 
 	res, _, err := tools.UpdateSubscription(context.Background(),
@@ -540,7 +540,7 @@ func TestUpdateSubscription_DelegatesWithWriteScope(t *testing.T) {
 
 func TestPauseSubscription_DelegatesWithWriteScope(t *testing.T) {
 	fs := &fakeSubService{}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 
 	res, _, err := tools.PauseSubscription(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeSubscriptionsWrite}, "u-1"),
@@ -552,7 +552,7 @@ func TestPauseSubscription_DelegatesWithWriteScope(t *testing.T) {
 
 func TestResumeSubscription_DelegatesWithWriteScope(t *testing.T) {
 	fs := &fakeSubService{}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 
 	res, _, err := tools.ResumeSubscription(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeSubscriptionsWrite}, "u-1"),
@@ -564,7 +564,7 @@ func TestResumeSubscription_DelegatesWithWriteScope(t *testing.T) {
 
 func TestDeleteSubscription_DelegatesWithWriteScope(t *testing.T) {
 	fs := &fakeSubService{}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 
 	res, _, err := tools.DeleteSubscription(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeSubscriptionsWrite}, "u-1"),
@@ -582,7 +582,7 @@ func domainsubIntervalWeekly() string { return "weekly" }
 
 func TestCreateSubscription_AutoPublishRequiresPostsPublishScope(t *testing.T) {
 	fs := &fakeSubService{}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	args := createSubscriptionArgs{
 		FeedURL:     "https://example.com/feed",
 		AutoPublish: true,
@@ -597,7 +597,7 @@ func TestCreateSubscription_AutoPublishRequiresPostsPublishScope(t *testing.T) {
 
 func TestCreateSubscription_AutoPublishPassesWithPostsPublishScope(t *testing.T) {
 	fs := &fakeSubService{createResult: appsub.SubscriptionDTO{ID: "sub-1"}}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	args := createSubscriptionArgs{
 		FeedURL:     "https://example.com/feed",
 		AutoPublish: true,
@@ -613,7 +613,7 @@ func TestCreateSubscription_AutoPublishPassesWithPostsPublishScope(t *testing.T)
 
 func TestUpdateSubscription_AutoPublishRequiresPostsPublishScope(t *testing.T) {
 	fs := &fakeSubService{}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	args := updateSubscriptionArgs{ID: "s1", AutoPublish: true}
 
 	res, _, err := tools.UpdateSubscription(context.Background(),
@@ -627,7 +627,7 @@ func TestUpdateSubscription_AutoPublishRequiresPostsPublishScope(t *testing.T) {
 
 func TestGetSubscription_RejectedWithoutReadScope(t *testing.T) {
 	fs := &fakeSubService{getErr: errors.New("不应被调")}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	res, _, _ := tools.GetSubscription(context.Background(),
 		reqWithToken(nil, "u-1"), getSubscriptionArgs{ID: "s1"})
 	assert.True(t, res.IsError)
@@ -636,7 +636,7 @@ func TestGetSubscription_RejectedWithoutReadScope(t *testing.T) {
 
 func TestUpdateSubscription_RejectedWithoutWriteScope(t *testing.T) {
 	fs := &fakeSubService{updateErr: errors.New("不应被调")}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	res, _, _ := tools.UpdateSubscription(context.Background(),
 		reqWithToken([]string{domainapitoken.ScopeSubscriptionsRead}, "u-1"),
 		updateSubscriptionArgs{ID: "s1"})
@@ -646,7 +646,7 @@ func TestUpdateSubscription_RejectedWithoutWriteScope(t *testing.T) {
 
 func TestPauseSubscription_RejectedWithoutWriteScope(t *testing.T) {
 	fs := &fakeSubService{pauseErr: errors.New("不应被调")}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	res, _, _ := tools.PauseSubscription(context.Background(),
 		reqWithToken(nil, "u-1"), subscriptionIDArgs{ID: "s1"})
 	assert.True(t, res.IsError)
@@ -655,7 +655,7 @@ func TestPauseSubscription_RejectedWithoutWriteScope(t *testing.T) {
 
 func TestResumeSubscription_RejectedWithoutWriteScope(t *testing.T) {
 	fs := &fakeSubService{resumeErr: errors.New("不应被调")}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	res, _, _ := tools.ResumeSubscription(context.Background(),
 		reqWithToken(nil, "u-1"), subscriptionIDArgs{ID: "s1"})
 	assert.True(t, res.IsError)
@@ -664,7 +664,7 @@ func TestResumeSubscription_RejectedWithoutWriteScope(t *testing.T) {
 
 func TestDeleteSubscription_RejectedWithoutWriteScope(t *testing.T) {
 	fs := &fakeSubService{deleteErr: errors.New("不应被调")}
-	tools := NewTools(nil, nil, fs)
+	tools := NewScraperTools(nil, nil, fs)
 	res, _, _ := tools.DeleteSubscription(context.Background(),
 		reqWithToken(nil, "u-1"), subscriptionIDArgs{ID: "s1"})
 	assert.True(t, res.IsError)

@@ -12,10 +12,16 @@ var ServerMeta = &mcp.Implementation{
 	Version: "1.0.0",
 }
 
-// NewServer 构造 MCP 服务器并注册全部文章读写 tool。
-//
+// ScraperServerMeta 抓取 server 元信息（与文章 server 区分，便于客户端识别）。
+var ScraperServerMeta = &mcp.Implementation{
+	Name:    "mimo-blog-scraper",
+	Version: "1.0.0",
+}
+
+// NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool。
+// 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。
-func NewServer(tools *Tools) *mcp.Server {
+func NewPostServer(tools *PostTools) *mcp.Server {
 	s := mcp.NewServer(ServerMeta, nil)
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -42,6 +48,15 @@ func NewServer(tools *Tools) *mcp.Server {
 		Name:        "list_drafts",
 		Description: "列出草稿状态的文章（分页）。需 posts:read 权限。",
 	}, tools.ListDrafts)
+
+	return s
+}
+
+// NewScraperServer 构造抓取 MCP 服务器（/api/v1/mcp/scraper），注册 8 个抓取 tool。
+// 高风险域：scrape_url 任意 URL 抓取（SSRF）+ 订阅抓取外部 feed。
+// 与文章 server 分离以便独立限流/监控/回收（ADR-0007）。
+func NewScraperServer(tools *ScraperTools) *mcp.Server {
+	s := mcp.NewServer(ScraperServerMeta, nil)
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "scrape_url",
