@@ -2,8 +2,6 @@ package qrtui
 
 import (
 	"fmt"
-	"image/color"
-	"math"
 	"strings"
 	"time"
 
@@ -22,15 +20,6 @@ var (
 	qrStyle      = lipgloss.NewStyle().Padding(1, 2) // QR 周围留白
 )
 
-// 正弦波颜色扫过的调色板:从暗到亮的灰阶(truecolor)。
-// 暗端用 #3a3a3a(深灰),亮端用 #f0f0f0(近白),扫过时形成「亮带流动」的观感。
-var wavePalette = []color.Color{
-	lipgloss.Color("#3a3a3a"), // 0.0 相位:最暗
-	lipgloss.Color("#6a6a6a"),
-	lipgloss.Color("#9a9a9a"),
-	lipgloss.Color("#c8c8c8"),
-	lipgloss.Color("#f0f0f0"), // 1.0 相位:最亮
-}
 
 // waveCharsLen 正弦波跨多少个字符一个完整周期。值越小波越密。
 const waveCycle = 14.0
@@ -68,10 +57,10 @@ func (m model) render() string {
 	return lipgloss.JoinVertical(lipgloss.Left, b.String())
 }
 
-// statusLine 加载态:文字颜色按正弦波扫过(oh-my-pi wave 样式)。
+// statusLine 加载态(oh-my-pi Loader 同款):spinner 帧(accent 色)+ 空格 +
+// shimmer 文字(亮带从左向右扫过,带外 dim 可读)。
 //
-// 非终态(WAITING/SCANNED/ERROR/INIT):整段文案逐字符按 (charIndex+animFrame)
-// 算正弦相位 → 映射 wavePalette 灰阶。animFrame 推进 → 亮带从左向右流动。
+// 非终态(WAITING/SCANNED/ERROR/INIT):spinner + shimmer 叠加,两个独立动画。
 // 终态(CONFIRMED/EXPIRED/TIMEOUT):静态颜色(成功绿/过期红),不动画。
 func (m model) statusLine() string {
 	switch m.state {
@@ -82,49 +71,34 @@ func (m model) statusLine() string {
 	case stateTimeout:
 		return expiredStyle.Render("登录超时(" + fmtDuration(pollTimeout) + "),请重新运行 login")
 	}
-	// 非终态:正弦波颜色扫过。
-	return m.waveText(m.statusText())
+	// spinner 帧:用 (now-animStart)/80ms 取索引(精确 80ms 节奏)。
+	elapsed := m.now.Sub(m.animStart)
+	frameIdx := int(elapsed/(80*time.Millisecond)) % len(spinnerFrames)
+	if frameIdx < 0 {
+		frameIdx = 0
+	}
+	frame := spinnerFrames[frameIdx]
+	// spinner 染 accent 色;message 走 shimmer(亮带扫过)。
+	spinnerColored := "\x1b[38;2;" + hexToRGB(spinnerAccent) + "m" + frame + "\x1b[39m"
+	timeMs := elapsed.Milliseconds()
+	message := shimmerText(m.statusText(), timeMs, m.compiled)
+	return spinnerColored + " " + message
 }
 
-// statusText 各非终态的文案(不含颜色,颜色由 waveText 施加)。
-// 不加省略号——wave 颜色动画本身已表达「进行中」。
+// statusText 各非终态的文案(不含颜色,颜色由 shimmer 施加)。
+// 用 … 单字符省略号(对齐 oh-my-pi Working… 风格),不用 ...
 func (m model) statusText() string {
 	switch m.state {
 	case stateInit:
-		return "正在获取二维码状态"
+		return "正在获取二维码状态…"
 	case stateWaiting:
-		return "等待扫码"
+		return "等待扫码…"
 	case stateScanned:
-		return "已扫描,请在 App 确认登录"
+		return "已扫描,请在 App 确认登录…"
 	case stateError:
 		return "轮询出错,重试中:" + m.errMsg
 	}
 	return ""
-}
-
-// waveText 把 s 的每个字符按正弦相位染成 wavePalette 的灰阶。
-// phase = sin((charIndex + animFrame) / waveCycle * 2π) → [-1,1] → [0, n-1]。
-// animFrame 随时间 +1 → 相位推进 → 亮带流动。
-func (m model) waveText(s string) string {
-	if s == "" {
-		return ""
-	}
-	runes := []rune(s)
-	n := len(wavePalette)
-	var b strings.Builder
-	for i, r := range runes {
-		// 正弦相位:字符位置 + 动画帧 共同决定。
-		phase := math.Sin(float64(i+m.animFrame) / waveCycle * 2 * math.Pi)
-		// [-1,1] → [0, n-1]:亮带在相位=1 处。
-		idx := int((phase + 1) / 2 * float64(n-1))
-		if idx < 0 {
-			idx = 0
-		} else if idx >= n {
-			idx = n - 1
-		}
-		b.WriteString(lipgloss.NewStyle().Foreground(wavePalette[idx]).Render(string(r)))
-	}
-	return b.String()
 }
 
 // fmtDuration 秒级人类可读(≥1min 显示 mm:ss,否则 Ns)。

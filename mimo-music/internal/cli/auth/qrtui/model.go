@@ -72,20 +72,38 @@ const (
 	stateTimeout                // ⏱ 轮询超时(终态)
 )
 
-// 动画帧率:正弦波颜色扫过的刷新间隔。80ms 平衡流畅度与 cpu 开销。
-const animInterval = 80 * time.Millisecond
+// 动画参数(对齐 oh-my-pi Loader 源码):
+//   - spinner 每 80ms 推进一帧(SPINNER_ADVANCE_MS)
+//   - shimmer 30fps 重绘(RENDER_INTERVAL_MS = 1000/30)
+// 两个独立驱动:spinner 换帧 + shimmer 亮带推进。取较短的 33ms tick 同时驱动两者。
+const animInterval = 33 * time.Millisecond
+
+// spinnerFrames unicode preset 的 status 帧(oh-my-pi 默认符号集)。
+var spinnerFrames = []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
+
+// spinnerAccent spinner 帧的染色(紫粉调色板的 high 色)。
+const spinnerAccent = "#ee6ff8"
 
 // model bubbletea Model。所有 IO 经 Deps 注入,Update/View 是纯函数(可测)。
 //
-// 加载态用「正弦波颜色扫过」(oh-my-pi wave 样式):文字按字符位置算颜色相位,
-// animFrame 推进相位 → 颜色流动。不是 spinner 转圈。
+// 加载态(oh-my-pi Loader 源码同款):spinner 帧(accent 色)+ 空格 +
+// shimmer 文字(亮带从左向右扫过,带外 dim 可读)。spinner 每 80ms 换帧,
+// shimmer 亮带按 30cells/s 推进——两个独立动画。
 type model struct {
-	deps     Deps
-	state    state
-	errMsg   string // stateError 时展示
-	width    int
-	height   int
-	animFrame int // 正弦波颜色动画的当前帧(每帧 +1,驱动相位推进)
+	deps   Deps
+	state  state
+	errMsg string // stateError 时展示
+	width  int
+	height int
+
+	// 动画驱动:animStart 是动画起始时刻,now 是最近一次 tick 时刻。
+	// spinner 帧 = (now-animStart)/80ms % len;shimmer 亮带位置 = (now-animStart)。
+	// 用时间而非帧计数,保证 spinner 80ms 节奏与 shimmer 30cells/s 都精确。
+	animStart time.Time
+	now       time.Time
+
+	// compiledPalette shimmer 调色板的预编译 ANSI 串(避免逐帧重复解析)。
+	compiled compiledPalette
 
 	// CONFIRMED 时填充,Run 退出后回传调用方。
 	confirmedRaw  json.RawMessage
@@ -100,7 +118,14 @@ func newModel(deps Deps) model {
 	if deps.PollCtx == nil {
 		deps.PollCtx = context.Background()
 	}
-	return model{deps: deps, state: stateInit}
+	t := deps.Now()
+	return model{
+		deps:      deps,
+		state:     stateInit,
+		animStart: t,
+		now:       t,
+		compiled:  compile(purplePalette),
+	}
 }
 
 // Init 启动动画 tick + 首次轮询 + 超时定时器。
@@ -108,7 +133,7 @@ func (m model) Init() tea.Cmd {
 	return tea.Batch(animTick(), poll(m.deps), scheduleTimeout())
 }
 
-// animTickMsg 推进正弦波颜色动画一帧。
+// animTickMsg 推进动画一帧(spinner 换帧 + shimmer 亮带推进)。
 type animTickMsg struct{}
 
 // Run 接管终端,返回登录结果。caller 在返回后按 Confirmed 决定是否持久化。

@@ -145,22 +145,25 @@ func TestUpdate_TimeoutMsgSetsState(t *testing.T) {
 	require.Equal(t, stateTimeout, out.state)
 }
 
-func TestUpdate_AnimTickAdvancesFrame(t *testing.T) {
-	m := newTestModel(&fakeDeps{})
-	require.Zero(t, m.animFrame)
+func TestUpdate_AnimTickAdvancesNow(t *testing.T) {
+	// 注入可控时钟:初始 t0,animTick 后 Now 返回 t0+100ms。
+	t0 := time.Unix(1000, 0)
+	fd := &fakeDeps{nowTimes: []time.Time{t0, t0.Add(100 * time.Millisecond)}}
+	m := newTestModel(fd)
+	require.Equal(t, t0, m.now)
 	out := applyMsg(t, m, animTickMsg{})
-	require.Equal(t, 1, out.animFrame, "animTickMsg 应推进 animFrame")
-	// 状态不变(只驱动颜色动画)。
+	require.Equal(t, t0.Add(100*time.Millisecond), out.now, "animTickMsg 应推进 now")
 	require.Equal(t, stateInit, out.state)
 }
 
 func TestUpdate_AnimTickStopsAtTerminalStates(t *testing.T) {
 	for _, final := range []state{stateConfirmed, stateExpired, stateTimeout} {
-		m := newTestModel(&fakeDeps{})
+		t0 := time.Unix(1000, 0)
+		fd := &fakeDeps{nowTimes: []time.Time{t0, t0.Add(100 * time.Millisecond)}}
+		m := newTestModel(fd)
 		m.state = final
-		m.animFrame = 5
 		out := applyMsg(t, m, animTickMsg{})
-		require.Equal(t, 5, out.animFrame, "终态 %v 不应推进动画帧", final)
+		require.Equal(t, t0, out.now, "终态 %v 不应推进 now", final)
 	}
 }
 
@@ -265,35 +268,63 @@ func TestInitReturnsBatch(t *testing.T) {
 	require.NotNil(t, cmd, "Init 应返回启动 Cmd(animTick + poll + timeout)")
 }
 
-// ==================== waveText(正弦波颜色扫过,核心加载态) ====================
+// ==================== shimmerText(亮带扫过,核心加载态) ====================
 
-func TestWaveText_PreservesContent(t *testing.T) {
-	m := newTestModel(&fakeDeps{})
-	m.animFrame = 0
-	require.Equal(t, "等待扫码", stripANSI(m.waveText("等待扫码")))
+// shimmer 算法核心断言(对齐 oh-my-pi classic shimmer):
+//   - 内容保留(stripANSI 后原文)
+//   - 带外字符走 tierLow(暗紫,主体可读)
+//   - 时间推进 → 亮带位置变化 → 输出变化
+//   - 用 truecolor(24-bit)转义
+
+func TestShimmerText_PreservesContent(t *testing.T) {
+	cp := compile(purplePalette)
+	require.Equal(t, "等待扫码", stripANSI(shimmerText("等待扫码", 0, cp)))
 }
 
-func TestWaveText_AnimFrameShiftsColor(t *testing.T) {
-	// 同一字符在不同 animFrame 下应有不同颜色(亮带流动的核心)。
-	// 这里不验具体颜色值(实现细节),只验「帧推进 → 输出变化」。
-	m := newTestModel(&fakeDeps{})
-	s0 := m.waveText("等待扫码...")
-	m.animFrame = 7 // 推进相位
-	s7 := m.waveText("等待扫码...")
-	require.Equal(t, stripANSI(s0), stripANSI(s7), "纯文本应一致")
-	require.NotEqual(t, s0, s7, "颜色码应随 animFrame 变化(亮带流动)")
+func TestShimmerText_BandMovesOverTime(t *testing.T) {
+	// 同一文字在不同时刻,亮带位置不同 → ANSI 输出变化(亮带流动核心)。
+	// 长文字让亮带明显位移(短文字亮带可能一直覆盖全段)。
+	cp := compile(purplePalette)
+	text := "等待扫码,请在 App 确认登录"
+	s0 := shimmerText(text, 0, cp)
+	s500 := shimmerText(text, 500, cp) // 500ms 后亮带推进 ~15 cells
+	require.Equal(t, stripANSI(s0), stripANSI(s500), "纯文本应一致")
+	require.NotEqual(t, s0, s500, "亮带位置应随时间变化")
 }
 
-func TestWaveText_EmptyString(t *testing.T) {
-	m := newTestModel(&fakeDeps{})
-	require.Empty(t, m.waveText(""))
+func TestShimmerText_EmptyString(t *testing.T) {
+	cp := compile(purplePalette)
+	require.Empty(t, shimmerText("", 0, cp))
 }
 
-func TestWaveText_ContainsTruecolorEscape(t *testing.T) {
-	// 验证用了 truecolor(24-bit)而非 256 色:输出应含 \x1b[38;2;R;G;Bm。
-	m := newTestModel(&fakeDeps{})
-	s := m.waveText("AB")
-	require.Contains(t, s, "\x1b[38;2;", "waveText 应用 truecolor 转义")
+func TestShimmerText_ContainsTruecolorEscape(t *testing.T) {
+	// truecolor(24-bit):输出应含 \x1b[38;2;R;G;Bm(不是 256 色的 \x1b[38;5;Nm)。
+	cp := compile(purplePalette)
+	s := shimmerText("AB", 0, cp)
+	require.Contains(t, s, "\x1b[38;2;", "shimmerText 应用 truecolor 转义")
+}
+
+func TestShimmerText_OutsideBandIsLowTier(t *testing.T) {
+	// 长文字:亮带只覆盖中间约 12 cell,两端必为 tierLow。
+	// timeMs=0 时亮带在文字左外侧(padding=10),整段应是 tierLow(暗紫 #5a3a8a)。
+	cp := compile(purplePalette)
+	text := "等待扫码,请在 App 确认登录"
+	s := shimmerText(text, 0, cp)
+	// tierLow 的 open 是暗紫的 truecolor 码。
+	require.Contains(t, s, "\x1b[38;2;90;58;138m", "带外应走 tierLow(暗紫)")
+}
+
+func TestClassicIntensity_BandShape(t *testing.T) {
+	// 亮带形状:中心强度 1.0,边缘 0,余弦凸起。
+	// length=20,timeMs=0 时,pos=0,中心在 index=-padding=-10(文字左外),
+	// 所以 index=0 时 dist=10 >= bandHalfWidth=6 → 强度 0。
+	require.InDelta(t, 0, classicIntensity(0, 0, 20), 0.001)
+	// 让亮带中心落在文字内:pos 推进到 padding(亮带中心=index 0)需要
+	// timeMs 使 pos=10 → time/1000*30=10 → time≈333ms。
+	require.InDelta(t, 1.0, classicIntensity(333, 0, 20), 0.05)
+	// 亮带边缘(dist=bandHalfWidth=6)强度应接近 0。
+	// pos=10 时 index=6 → dist=4 <6,在带内;index=16 → dist=6 → 强度 0。
+	require.InDelta(t, 0, classicIntensity(333, 16, 20), 0.001)
 }
 
 // ==================== Run 结果回传(集成 seam,不启动真实 Program) ====================

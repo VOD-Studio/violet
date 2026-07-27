@@ -63,7 +63,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateConfirmed || m.state == stateExpired || m.state == stateTimeout {
 			return m, nil
 		}
-		m.animFrame++
+		// 更新当前时刻,View 据此算 spinner 帧与 shimmer 亮带位置。
+		// spinner 80ms 换帧、shimmer 30cells/s 都用 (now-animStart) 推导,
+		// 不在此累加帧计数——节奏由时间保证。
+		m.now = m.deps.Now()
 		return m, animTick()
 
 	case timeoutMsg:
