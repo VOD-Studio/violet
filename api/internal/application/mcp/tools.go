@@ -110,7 +110,7 @@ type updatePostArgs struct {
 	ContentMD    string   `json:"content_md,omitempty" jsonschema:"Markdown 原文"`
 	Excerpt      string   `json:"excerpt,omitempty" jsonschema:"摘要"`
 	CoverImage   string   `json:"cover_image,omitempty" jsonschema:"封面图 URL"`
-	CanonicalURL *string  `json:"canonical_url,omitempty" jsonschema:"转载源 URL；不传=保持不变/原创，传值=转载（指向源文章）"`
+	CanonicalURL *string  `json:"canonical_url,omitempty" jsonschema:"转载源 URL。全量覆盖语义（同其它字段）：传值=转载，传 null/省略=清空回原创。若文章已是转载且本次不改，须显式传原值"`
 	Tags         []string `json:"tags,omitempty" jsonschema:"标签列表"`
 }
 

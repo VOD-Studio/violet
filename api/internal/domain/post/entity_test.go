@@ -28,9 +28,9 @@ func TestReconstructPost_PreservesCanonicalURL(t *testing.T) {
 		p := ReconstructPost(id, authorID, "转载", "repost",
 			"", "", "", "", StatusDraft, 0, false, "", "",
 			nil, &origin, tags, now, now)
-		require := p.CanonicalURL()
-		assert.NotNil(t, require, "转载文章 canonical_url 应非 nil")
-		assert.Equal(t, origin, *require)
+		got := p.CanonicalURL()
+		assert.NotNil(t, got, "转载文章 canonical_url 应非 nil")
+		assert.Equal(t, origin, *got)
 	})
 }
 
