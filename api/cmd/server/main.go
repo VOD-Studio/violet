@@ -94,6 +94,7 @@ func main() {
 		&newmodel.MusicSetting{},
 		&newmodel.File{}, &newmodel.UploadSession{},
 		&newmodel.APIToken{},
+		&newmodel.Subscription{},
 	); err != nil {
 		log.Warn().Err(err).Msg("AutoMigrate error")
 	}
@@ -140,9 +141,10 @@ func main() {
 	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
 	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
 	apiTokenContainer := app.NewAPITokenContainer(gormDB)
+	subscriptionContainer := app.NewSubscriptionContainer(gormDB)
 	// MCP 服务器：PAT 鉴权已在内层 handler 经由 auth.RequireBearerToken 完成；
-	// postSvc 复用文章模块，tokenLookup 复用 PAT 模块仓储。
-	mcpContainer := app.NewMCPContainer(apiTokenContainer.TokenLookup, postContainer.PostService)
+	// postSvc 复用文章模块，tokenLookup 复用 PAT 模块仓储，subSvc 复用订阅模块。
+	mcpContainer := app.NewMCPContainer(apiTokenContainer.TokenLookup, postContainer.PostService, subscriptionContainer.SubscriptionService)
 
 	// 服务器监控模块（DDD）：启动 30s 采样 goroutine，随 appCtx 退出
 	systemContainer := app.NewSystemContainer(gormDB, redisClient, ctx)

@@ -8,6 +8,7 @@ import (
 	appmcp "blog-api/internal/application/mcp"
 	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
+	appsub "blog-api/internal/application/subscription"
 	inframcp "blog-api/internal/infrastructure/mcp"
 )
 
@@ -22,11 +23,12 @@ type MCPContainer struct {
 // NewMCPContainer 装配 MCP 服务器。
 //
 // tokenLookup 来自 PAT 模块（apiTokenContainer.TokenLookup），
-// postSvc 来自文章模块（postContainer.PostService）。
-func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Service) *MCPContainer {
+// postSvc 来自文章模块（postContainer.PostService），
+// subSvc 来自订阅模块（subscriptionContainer.SubscriptionService）。
+func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Service, subSvc *appsub.Service) *MCPContainer {
 	verifier := inframcp.NewPATVerifier(tokenLookup)
 	robots := inframcp.NewRobotsChecker()
-	tools := appmcp.NewTools(postSvc, robots)
+	tools := appmcp.NewTools(postSvc, robots, subSvc)
 	server := appmcp.NewServer(tools)
 	handler := mcpauth.RequireBearerToken(verifier.Verify, nil)(appmcp.StreamableHandler(server))
 	return &MCPContainer{Handler: handler}

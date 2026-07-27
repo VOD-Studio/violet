@@ -15,6 +15,7 @@ import (
 
 	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
+	appsub "blog-api/internal/application/subscription"
 	"blog-api/internal/middleware"
 )
 
@@ -31,6 +32,18 @@ type PostService interface {
 	ImportURL(ctx context.Context, rawURL string, opts apppost.ImportURLOpts) (apppost.ImportResult, error)
 }
 
+// SubscriptionService MCP tool 依赖的订阅服务端口。
+// application/subscription.Service 实现之；抽接口便于单测 fake 替换。
+type SubscriptionService interface {
+	Create(ctx context.Context, in appsub.CreateInput) (appsub.SubscriptionDTO, error)
+	GetByID(ctx context.Context, id, userID string) (appsub.SubscriptionDTO, error)
+	ListByUser(ctx context.Context, userID, status string, page, limit int) ([]appsub.SubscriptionDTO, int64, error)
+	Update(ctx context.Context, in appsub.UpdateInput) error
+	Pause(ctx context.Context, id, userID string) error
+	Resume(ctx context.Context, id, userID string) error
+	Delete(ctx context.Context, id, userID string) error
+}
+
 // RobotsChecker robots.txt 预检端口。
 // 抽成接口便于注入假实现（避免单测真实网络拉取 robots.txt）。
 type RobotsChecker interface {
@@ -43,11 +56,13 @@ type RobotsChecker interface {
 type Tools struct {
 	posts  PostService
 	robots RobotsChecker
+	subs   SubscriptionService
 }
 
 // NewTools 构造 tool 集合。robots 传 nil 时禁用 robots.txt 预检（仅测试用）。
-func NewTools(posts PostService, robots RobotsChecker) *Tools {
-	return &Tools{posts: posts, robots: robots}
+// subs 传 nil 时订阅 tool 不可用（仅未接入订阅模块的过渡期/测试用）。
+func NewTools(posts PostService, robots RobotsChecker, subs SubscriptionService) *Tools {
+	return &Tools{posts: posts, robots: robots, subs: subs}
 }
 
 // requireScope 校验 PAT 是否拥有指定 scope；缺失返回 error（调用方包成 tool error 结果）。
@@ -131,10 +146,46 @@ type scrapeURLArgs struct {
 	URL string `json:"url" jsonschema:"待抓取的外站文章 URL（仅 http/https）"`
 }
 
+// --- 订阅 tool 参数结构（T6） ---
+
+type createSubscriptionArgs struct {
+	FeedURL           string   `json:"feed_url" jsonschema:"RSS feed URL（仅 http/https）"`
+	Title             string   `json:"title,omitempty" jsonschema:"订阅源标题（缺省时由 feed 解析填充）"`
+	Interval          string   `json:"interval,omitempty" jsonschema:"抓取频率：hourly/every-6h/daily/weekly（默认 daily）"`
+	AutoPublish       bool     `json:"auto_publish,omitempty" jsonschema:"抓来是否自动发布（默认 false 建草稿）"`
+	CanonicalOverride string   `json:"canonical_override,omitempty" jsonschema:"覆盖 entry.link 作为 canonical；空=用 entry.link"`
+	Tags              []string `json:"tags,omitempty" jsonschema:"订阅级默认标签，抓来的文章自动打上"`
+}
+
+type listSubscriptionsArgs struct {
+	Status string `json:"status,omitempty" jsonschema:"按状态过滤：active/paused（空=不过滤）"`
+	Page   int    `json:"page,omitempty" jsonschema:"页码（从 1 开始，默认 1）"`
+	Limit  int    `json:"limit,omitempty" jsonschema:"每页条数（默认 20，上限 100）"`
+}
+
+type getSubscriptionArgs struct {
+	ID string `json:"id" jsonschema:"订阅 ID"`
+}
+
+type updateSubscriptionArgs struct {
+	ID                string   `json:"id" jsonschema:"订阅 ID"`
+	Title             string   `json:"title,omitempty" jsonschema:"订阅源标题"`
+	Interval          string   `json:"interval,omitempty" jsonschema:"抓取频率：hourly/every-6h/daily/weekly"`
+	AutoPublish       bool     `json:"auto_publish,omitempty" jsonschema:"抓来是否自动发布"`
+	CanonicalOverride string   `json:"canonical_override,omitempty" jsonschema:"覆盖 entry.link 作为 canonical"`
+	Tags              []string `json:"tags,omitempty" jsonschema:"订阅级默认标签"`
+}
+
+type subscriptionIDArgs struct {
+	ID string `json:"id" jsonschema:"订阅 ID"`
+}
+
 // 编译期断言：作用域常量与 domain 对齐（防拼写漂移）
 var (
 	_ = domainapitoken.ScopePostsRead
 	_ = domainapitoken.ScopePostsWrite
 	_ = domainapitoken.ScopePostsPublish
 	_ = domainapitoken.ScopePostsScrape
+	_ = domainapitoken.ScopeSubscriptionsRead
+	_ = domainapitoken.ScopeSubscriptionsWrite
 )
