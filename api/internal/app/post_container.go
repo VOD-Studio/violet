@@ -12,7 +12,8 @@ import (
 
 // PostContainer 文章模块容器
 type PostContainer struct {
-	PostHandler *posthttp.Handler
+	PostHandler  *posthttp.Handler
+	PostService  *apppost.Service // 供 MCP 模块复用（tool handler 委托文章写操作）
 }
 
 // NewPostContainer 装配文章模块。
@@ -21,5 +22,5 @@ func NewPostContainer(db *gorm.DB, perm middleware.PermissionChecker, settingsSt
 	repo := gormrepo.NewPostRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
 	svc := apppost.NewService(repo, userRepo, perm, settingsStore)
-	return &PostContainer{PostHandler: posthttp.NewHandler(svc)}
+	return &PostContainer{PostHandler: posthttp.NewHandler(svc), PostService: svc}
 }

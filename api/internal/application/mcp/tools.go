@@ -1,0 +1,123 @@
+// Package mcp 提供 MCP（Model Context Protocol）服务器应用层：
+// 注册文章读写 tool，PAT scope 门禁，并把参数委托给现有 application/post 服务。
+//
+// 鉴权身份由 SDK 的 auth.RequireBearerToken 中间件注入 req.Extra.TokenInfo
+// （UserID + Scopes）。tool handler 据此做 scope 门禁，并适配 ctx 形态供
+// post.Service 的所有权判定（middleware.UserIDKey）复用——不复制写逻辑。
+package mcp
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/modelcontextprotocol/go-sdk/auth"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	domainapitoken "blog-api/internal/domain/api_token"
+	apppost "blog-api/internal/application/post"
+	"blog-api/internal/middleware"
+)
+
+// PostService MCP tool 依赖的文章服务端口。
+//
+// 仅声明 MCP 用到的 5 个方法；application/post.Service 实现之。
+// 抽成接口便于单元测试用 fake 替换（seam #2）。
+type PostService interface {
+	Create(ctx context.Context, in apppost.CreateInput) (apppost.PostDTO, error)
+	Update(ctx context.Context, in apppost.UpdateInput, operatorID string) error
+	UpdateStatus(ctx context.Context, id, status string) (apppost.PostDTO, error)
+	GetByID(ctx context.Context, id string) (apppost.PostDTO, error)
+	ListAll(ctx context.Context, page, limit int, status string) ([]apppost.PostListItemDTO, int64, error)
+}
+
+// Tools 文章读写 tool 集合，挂在 mcp.Server 上。
+type Tools struct {
+	posts PostService
+}
+
+// NewTools 构造 tool 集合。
+func NewTools(posts PostService) *Tools {
+	return &Tools{posts: posts}
+}
+
+// requireScope 校验 PAT 是否拥有指定 scope；缺失返回 error（调用方包成 tool error 结果）。
+func requireScope(req *mcp.CallToolRequest, scope string) error {
+	ti := tokenInfo(req)
+	if ti == nil {
+		return fmt.Errorf("未认证：缺少访问令牌")
+	}
+	for _, s := range ti.Scopes {
+		if s == scope {
+			return nil
+		}
+	}
+	return fmt.Errorf("权限不足：需要 %s scope", scope)
+}
+
+// operatorUserID 取 PAT 持有人 user_id；未认证返回空串。
+func operatorUserID(req *mcp.CallToolRequest) string {
+	if ti := tokenInfo(req); ti != nil {
+		return ti.UserID
+	}
+	return ""
+}
+
+func tokenInfo(req *mcp.CallToolRequest) *auth.TokenInfo {
+	if req == nil || req.Extra == nil {
+		return nil
+	}
+	return req.Extra.TokenInfo
+}
+
+// ctxWithOperator 把 PAT 持有人身份适配进 post.Service 读取的 ctx 形态。
+//
+// post.Service.canModify 仅凭「操作者 == 文章作者」即可放行（所有权），
+// 故只注入 middleware.UserIDKey——agent 等同 PAT 持有人，仅能动其自己的文章。
+// 不设 isBuiltinSuperAdmin：不让 PAT 越权改他人文章。
+func ctxWithOperator(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, middleware.UserIDKey, userID)
+}
+
+// --- tool 参数结构（jsonschema 由结构体 tag 推导） ---
+//
+// jsonschema-go 约定：tag 裸字符串 = 字段描述；必填由「非指针 + 无 omitempty」推导，
+// 故可选字段须在 json tag 加 omitempty。
+
+type createPostArgs struct {
+	Title      string   `json:"title" jsonschema:"文章标题"`
+	Slug       string   `json:"slug" jsonschema:"URL slug（小写字母数字连字符）"`
+	ContentMD  string   `json:"content_md,omitempty" jsonschema:"Markdown 原文"`
+	Excerpt    string   `json:"excerpt,omitempty" jsonschema:"摘要"`
+	CoverImage string   `json:"cover_image,omitempty" jsonschema:"封面图 URL"`
+	Tags       []string `json:"tags,omitempty" jsonschema:"标签列表"`
+}
+
+type updatePostArgs struct {
+	ID         string   `json:"id" jsonschema:"文章 ID"`
+	Title      string   `json:"title,omitempty" jsonschema:"文章标题"`
+	Slug       string   `json:"slug,omitempty" jsonschema:"URL slug"`
+	ContentMD  string   `json:"content_md,omitempty" jsonschema:"Markdown 原文"`
+	Excerpt    string   `json:"excerpt,omitempty" jsonschema:"摘要"`
+	CoverImage string   `json:"cover_image,omitempty" jsonschema:"封面图 URL"`
+	Tags       []string `json:"tags,omitempty" jsonschema:"标签列表"`
+}
+
+type publishPostArgs struct {
+	ID string `json:"id" jsonschema:"待发布文章 ID"`
+}
+
+type getPostArgs struct {
+	ID string `json:"id" jsonschema:"文章 ID"`
+}
+
+type listDraftsArgs struct {
+	Page  int `json:"page,omitempty" jsonschema:"页码（从 1 开始，默认 1）"`
+	Limit int `json:"limit,omitempty" jsonschema:"每页条数（默认 20，上限 100）"`
+}
+
+// 编译期断言：作用域常量与 domain 对齐（防拼写漂移）
+var (
+	_ = domainapitoken.ScopePostsRead
+	_ = domainapitoken.ScopePostsWrite
+	_ = domainapitoken.ScopePostsPublish
+)

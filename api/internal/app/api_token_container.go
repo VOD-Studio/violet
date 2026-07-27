@@ -11,7 +11,7 @@ import (
 
 // APITokenContainer PAT 模块容器。
 //
-// TokenLookup 供 main.go 挂载 TokenAuth 中间件（MCP 路由用）。
+// TokenLookup 供 MCP 模块的 TokenVerifier 复用（FindByHash + TouchLastUsed）。
 type APITokenContainer struct {
 	APITokenHandler *apitokenhttp.Handler
 	TokenLookup     domainapitoken.TokenLookup

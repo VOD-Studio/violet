@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -139,6 +140,9 @@ func main() {
 	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
 	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
 	apiTokenContainer := app.NewAPITokenContainer(gormDB)
+	// MCP 服务器：PAT 鉴权已在内层 handler 经由 auth.RequireBearerToken 完成；
+	// postSvc 复用文章模块，tokenLookup 复用 PAT 模块仓储。
+	mcpContainer := app.NewMCPContainer(apiTokenContainer.TokenLookup, postContainer.PostService)
 
 	// 服务器监控模块（DDD）：启动 30s 采样 goroutine，随 appCtx 退出
 	systemContainer := app.NewSystemContainer(gormDB, redisClient, ctx)
@@ -622,6 +626,13 @@ func main() {
 			})
 		})
 	})
+
+	// MCP 端点（挂在顶层 r，不在 v1 组内）：
+	// 继承 r 的 Recoverer/RequestID/Logger/CORS/SecurityHeaders，
+	// 绕过 v1 组的 CSRF（MCP 是 JSON-RPC、无 X-CSRF-Token）与 SessionAuth（用 PAT）。
+	// PAT 鉴权已在 handler 内（auth.RequireBearerToken），此处仅叠加独立限流。
+	r.With(middleware.RateLimit("mcp", redisClient, time.Minute, 60)).
+		Handle("/api/v1/mcp", mcpContainer.Handler)
 
 	// ============================================================
 	// ============================================================
