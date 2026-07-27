@@ -11,6 +11,14 @@
   - **关键**: 使用 **`pnpm`** 作为包管理器，**切勿使用 `npm` 或 `yarn`**。
   - 状态管理: Zustand + TanStack Query。
 
+### 架构耦合约束
+
+> 这是**代码组织原则**,不是 commit 拆分规则。规则 1(公共组件单独提交)管「commit 怎么拆」,本节管「代码该放哪一层」。两者分开理解。
+
+- **前端公共层不夹带 feature 业务逻辑**。`web/src/shared/`(`ui`/`lib`/`api`/`config`/`server`/`vendor`)只放跨 feature 通用件,不写 `posts` / `comments` / `editor` 等特定 feature 的业务逻辑。FSD 分层(`shared` → `entities` → `features` → `widgets`)约束依赖方向,`shared` 不反向依赖 `features`。
+- **后端各层各司其职**。DDD 结构(`domain`/`application`/`infrastructure`/`interfaces`)与旧分层(`service`/`middleware`)在迁移期并存,但同样遵守分层约束:领域逻辑进 `domain`,用例编排进 `application`,基础设施细节进 `infrastructure`。通用基础设施(错误码、observability、通用中间件)不夹带具体业务实体逻辑。
+- **判断「是否公共」看是否被多个 feature/domain 引用**,而非位置。某 feature 私有逻辑一旦被第二个 feature 复用,应先 `refactor: 将 X 从 features/A 提到 shared/` 落定代码归属(提交规则见规则 1),再在新 feature 接入。
+
 ## 开发流与命令 (Makefile)
 所有核心操作都通过根目录的 `Makefile` 统管：
 - **启动本地开发**: `make dev` (一键启动 Postgres、Redis、API 和 Web)
