@@ -9,6 +9,7 @@ package subscription
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -226,7 +227,7 @@ type FetchReport struct {
 	Dead              int // 本次新触发 dead（达 fail_count 上限）
 	Skipped           int // 已处理（imported/dead），跳过
 	SubscriptionError string // feed 拉取层面的错误描述（非空表示整轮失败）
-	FeedErr           error // 原始 feed 错误（*FeedError 类型便于 T8 分类，非 feed 错误为 nil）
+	FeedErr           *FeedError // 结构化 feed 错误，T8 据此分类；非 feed 错误为 nil
 }
 
 // FetchOne 单订阅单次抓取编排（T7 核心）。
@@ -265,7 +266,11 @@ func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchRepo
 
 	items, err := s.parser.Parse(ctx, sub.FeedURL())
 	if err != nil {
-		report.FeedErr = err // 透传原始 error，T8 调度器据此分类（*FeedError）
+		// 提取 *FeedError 给 T8 分类；非 FeedError 时 FeedErr=nil（T8 当瞬时错误处理）
+		var fe *FeedError
+		if errors.As(err, &fe) {
+			report.FeedErr = fe
+		}
 		report.SubscriptionError = "feed 拉取失败：" + err.Error()
 		return report
 	}
@@ -296,17 +301,36 @@ func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchRepo
 			entry = domainentry.NewEntry(sid, guid, item.Link, item.Title, parsePublishedAt(item.PublishedAt), s.now())
 		}
 
+		var imported, dead bool
 		if err := s.fetchAndImport(ctx, sub, item, entry); err != nil {
-			entry.RecordFailure(err.Error())
+			dead = entry.RecordFailure(err.Error())
 			report.Failed++
-			if entry.Status() == domainentry.StatusDead {
+			if dead {
 				report.Dead++
 			}
 		} else {
 			// 成功：fetchAndImport 内部已 MarkImported 回填 postID
+			imported = true
+		}
+		// 持久化 entry 状态；失败时回退本轮计数（未真落地，下轮重试按旧状态）
+		if err := s.entryRepo.Save(ctx, entry); err != nil {
+			if imported {
+				report.Imported-- // 回退：实际没落地
+			} else {
+				report.Failed--
+				if dead {
+					report.Dead--
+				}
+			}
+			// Save 失败记到整轮错误（非致命，其它 entry 继续）
+			if report.SubscriptionError == "" {
+				report.SubscriptionError = "部分条目持久化失败：" + err.Error()
+			}
+			continue
+		}
+		if imported {
 			report.Imported++
 		}
-		_ = s.entryRepo.Save(ctx, entry)
 		if existing == nil {
 			report.NewEntries++
 		}
@@ -343,6 +367,12 @@ func (s *Service) fetchAndImport(ctx context.Context, sub *domainsubscription.Su
 	})
 	if err != nil {
 		return fmt.Errorf("建草稿失败: %w", err)
+	}
+	// auto_publish=true：发布草稿（订阅创建时已校验 PAT 持 posts:publish scope，见 T6 review 意见 2）
+	if sub.AutoPublish() {
+		if err := s.importer.Publish(ctx, dto.ID); err != nil {
+			return fmt.Errorf("自动发布失败: %w", err)
+		}
 	}
 	// 回填 postID（dto.ID 是字符串）
 	if pid, err := shared.ParseID(dto.ID); err == nil {

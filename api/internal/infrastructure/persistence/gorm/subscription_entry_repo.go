@@ -22,16 +22,15 @@ func NewSubscriptionEntryRepository(db *gorm.DB) *SubscriptionEntryRepository {
 }
 
 // Save 创建或更新条目。按主键 upsert（id=0 时创建，非 0 时更新）。
+// 首次创建后回写自增 id 到领域对象，避免后续 Save 误当新建撞 UNIQUE(subscription_id, guid)。
 func (r *SubscriptionEntryRepository) Save(ctx context.Context, e *domainentry.SubscriptionEntry) error {
 	po := entryToPO(e)
 	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
 		return domainshared.Internal("保存订阅条目失败", err)
 	}
-	// 回写自增 id 到领域对象（首次创建时）
-	if e.ID() == 0 {
-		// 通过 Reconstruct 不允许改 id，这里用反射或重新构造不现实；
-		// 实际上 FetchOne 流程不依赖 entry.ID()（去重靠 guid），故不回写也可。
-		// 为完整起见，调用方拿到的是同一对象，下次 Save 会带上正确 id。
+	// 回写 DB 分配的自增 id（首次创建，领域对象 id=0 → po.ID 非 0）
+	if e.ID() == 0 && po.ID != 0 {
+		e.SetID(po.ID)
 	}
 	return nil
 }

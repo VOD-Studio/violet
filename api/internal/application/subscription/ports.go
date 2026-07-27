@@ -12,13 +12,15 @@ import (
 	apppost "blog-api/internal/application/post"
 )
 
-// PostImporter 文章导入端口：抓正文 + 建草稿。
-// application/post.Service 实现之（ImportURL + Create 两个方法）。
+// PostImporter 文章导入端口：抓正文 + 建草稿 + 发布。
+// application/post.Service 实现之（ImportURL + Create + Publish 三个方法）。
 type PostImporter interface {
 	// ImportURL 抓取外站文章正文（复用 T3 SSRF 防护 + T4 HTML→MD）。
 	ImportURL(ctx context.Context, rawURL string, opts apppost.ImportURLOpts) (apppost.ImportResult, error)
-	// Create 建草稿/发布文章。AuthorID 由调用方指定（订阅归属用户）。
+	// Create 建草稿文章。AuthorID 由调用方指定（订阅归属用户）。
 	Create(ctx context.Context, in apppost.CreateInput) (apppost.PostDTO, error)
+	// Publish 发布草稿文章（auto_publish=true 时订阅抓取后调）。
+	Publish(ctx context.Context, id string) error
 }
 
 // FeedItem 单条 feed entry 的抽象（屏蔽 gofeed.Feed.Items 细节）。
@@ -52,7 +54,21 @@ type FeedError struct {
 }
 
 func (e *FeedError) Error() string {
-	return fmt.Sprintf("feed 错误（kind=%d, status=%d）: %v", e.Kind, e.StatusCode, e.Cause)
+	kind := "transient"
+	switch e.Kind {
+	case FeedErrPermanent:
+		kind = "permanent"
+	case FeedErrRateLimited:
+		kind = "rate-limited"
+	}
+	msg := fmt.Sprintf("feed %s 错误 (status=%d)", kind, e.StatusCode)
+	if e.RetryAfter != nil {
+		msg += fmt.Sprintf(" retry-after=%s", e.RetryAfter.Format(time.RFC3339))
+	}
+	if e.Cause != nil {
+		msg += ": " + e.Cause.Error()
+	}
+	return msg
 }
 
 func (e *FeedError) Unwrap() error { return e.Cause }

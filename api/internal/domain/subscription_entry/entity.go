@@ -108,6 +108,12 @@ func (e *SubscriptionEntry) IsProcessed() bool {
 	return e.status == StatusImported || e.status == StatusDead
 }
 
+// SetID 回写持久化层自增主键（仅 repo.Save 在首次创建后调用）。
+// 领域对象创建时 id=0，DB 分配自增 id 后由此回填，避免后续 Save 误当新建撞 UNIQUE。
+func (e *SubscriptionEntry) SetID(id int64) {
+	e.id = id
+}
+
 // --- 访问器 ---
 
 func (e *SubscriptionEntry) ID() int64               { return e.id }

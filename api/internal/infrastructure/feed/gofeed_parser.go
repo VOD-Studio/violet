@@ -63,7 +63,7 @@ func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) ([]appsub.Feed
 			Kind:       appsub.FeedErrRateLimited,
 			StatusCode: resp.StatusCode,
 			RetryAfter: parseRetryAfter(resp, time.Now()),
-			Cause:      fmt.Errorf("feed 源返回 429 Too Many Requests"),
+			Cause:      fmt.Errorf("feed 源返回 %d Too Many Requests", resp.StatusCode),
 		}
 	}
 	// 4xx → 永久（404 源没了/403 禁止）

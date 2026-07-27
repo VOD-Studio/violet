@@ -58,6 +58,9 @@ type fakeImporter struct {
 	createInputs []*apppost.CreateInput
 	createRes    apppost.PostDTO
 	createErr    error
+
+	publishIDs []string // 记录所有 Publish 调用
+	publishErr error
 }
 
 func (f *fakeImporter) ImportURL(ctx context.Context, rawURL string, opts apppost.ImportURLOpts) (apppost.ImportResult, error) {
@@ -69,6 +72,11 @@ func (f *fakeImporter) Create(ctx context.Context, in apppost.CreateInput) (appp
 	cp := in
 	f.createInputs = append(f.createInputs, &cp)
 	return f.createRes, f.createErr
+}
+
+func (f *fakeImporter) Publish(ctx context.Context, id string) error {
+	f.publishIDs = append(f.publishIDs, id)
+	return f.publishErr
 }
 
 type fakeParser struct {
@@ -226,18 +234,42 @@ func TestFetchOne_CanonicalDefaultsToEntryLink(t *testing.T) {
 		"无 override 时 canonical = entry.link")
 }
 
-func TestFetchOne_AutoPublishPassesThrough(t *testing.T) {
+func TestFetchOne_AutoPublishTrueCallsPublish(t *testing.T) {
 	svc, _, _, importer, parser, sub := setupFetchSvc(t)
-	// 开启 auto_publish（注意：真实场景需 posts:publish scope，这里测 service 层不校验 scope）
+	// 开启 auto_publish：应建草稿后调 Publish（真实现 published 路径，T7 review 阻断项 0）
 	require.NoError(t, sub.UpdateConfig("t", "", true, "", nil))
 
 	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1", Title: "x"}}
+	report := svc.FetchOne(context.Background(), sub.ID().String())
+
+	assert.Equal(t, 1, report.Imported)
+	require.Len(t, importer.createInputs, 1, "应建草稿")
+	require.Len(t, importer.publishIDs, 1, "auto_publish=true 应调 Publish")
+	assert.Equal(t, importer.createRes.ID, importer.publishIDs[0], "应发布刚建的草稿")
+}
+
+func TestFetchOne_AutoPublishFalseDoesNotCallPublish(t *testing.T) {
+	svc, _, _, importer, parser, sub := setupFetchSvc(t)
+	// auto_publish=false（默认）：只建草稿，不调 Publish
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1", Title: "x"}}
 	svc.FetchOne(context.Background(), sub.ID().String())
 
-	require.NotNil(t, importer.createInputs[0])
-	// auto_publish 在 service 层只是建草稿/发布的开关，post.Service.Create 内部处理
-	// 这里只验证 tags 透传（订阅级标签应带到文章）
-	assert.Equal(t, sub.Tags(), importer.createInputs[0].Tags)
+	require.Len(t, importer.createInputs, 1, "应建草稿")
+	assert.Empty(t, importer.publishIDs, "auto_publish=false 不应调 Publish")
+}
+
+func TestFetchOne_AutoPublishPublishFailureFailsEntry(t *testing.T) {
+	svc, _, entryRepo, importer, parser, sub := setupFetchSvc(t)
+	require.NoError(t, sub.UpdateConfig("t", "", true, "", nil))
+	importer.publishErr = errors.New("无权发布") // Publish 失败
+
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1", Title: "x"}}
+	report := svc.FetchOne(context.Background(), sub.ID().String())
+
+	assert.Equal(t, 1, report.Failed, "Publish 失败应计入 Failed")
+	require.Len(t, entryRepo.saved, 1)
+	assert.Equal(t, domainentry.StatusFailed, entryRepo.saved[0].Status(), "entry 应记失败")
+	assert.Contains(t, entryRepo.saved[0].LastError(), "自动发布失败")
 }
 
 func TestFetchOne_FeedErrorSurfacesToReport(t *testing.T) {
