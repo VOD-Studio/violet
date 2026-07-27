@@ -51,9 +51,16 @@ func (v *PATVerifier) Verify(ctx context.Context, token string, _ *http.Request)
 		}
 	}(p.ID())
 
+	// 永不过期的 PAT（expiresAt 零值）不能原样透传给 SDK：
+	// auth.RequireBearerToken 要求 Expiration 非零，否则 401 "token missing expiration"。
+	// 投影为当前时间 +100 年，远超任何合理 token 寿命，语义上等价于永不过期。
+	exp := p.ExpiresAt()
+	if exp.IsZero() {
+		exp = time.Now().AddDate(100, 0, 0)
+	}
 	return &auth.TokenInfo{
 		UserID:     p.UserID(),
 		Scopes:     p.Scopes(),
-		Expiration: p.ExpiresAt(), // 零值 = 永不过期
+		Expiration: exp,
 	}, nil
 }
