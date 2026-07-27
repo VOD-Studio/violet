@@ -113,7 +113,7 @@ api/
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
 | **upload** | upload | media | 分片上传（秒传/断点续传/合并）、文件管理 |
 | **media** | upload, music | media | 文件详情/批量删除/缩略图、音乐解析 |
-| **music** | music | media | 歌单管理、歌曲 CRUD、网易云解析（mimo-music） |
+| **music** | music | media | 歌单管理、歌曲 CRUD、网易云解析（kite） |
 | **settings** | settings | settings | 站点配置（key-value） |
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
@@ -133,7 +133,7 @@ api/
 | `email/` | `EmailSender` | Sender (Resend) | 验证码/密码重置邮件 |
 | `eventbus/` | `EventBus` | Noop / InMemory | 领域事件总线（当前以 Noop 占位） |
 | `github/` | `GitHubProvider` | Adapter | GitHub GraphQL + REST API |
-| `music/` | `MusicProvider` | Provider | 网易云解析（mimo-music SDK） |
+| `music/` | `MusicProvider` | Provider | 网易云解析（kite SDK） |
 | `storage/` | `ChunkStorage` | LocalStorage | 分片文件存储、缩略图生成（imaging + ffmpeg） |
 | `persistence/gorm/` | 各 `*Repository` | GORM 实现 | 所有数据库访问 |
 
