@@ -88,7 +88,7 @@
 
 - 新增 `posts:scrape`：scrape_url 专属，SSRF 风险可独立回收。
 - 新增 `subscriptions:read` / `subscriptions:write`：订阅管理。
-- scope 同步三处（domain validScopes + DB seed + 前端 PAT_SCOPES），由编译期断言保持对齐（沿用现有 `tools.go` 编译期断言模式）。
+- scope 同步两处（domain validScopes + 前端 PAT_SCOPES），由编译期断言保持对齐（沿用现有 `tools.go` 编译期断言模式）。注：PAT scope 不入 DB seed，校验在创建/查询时即时做（对齐 api_token 现状）。
 
 ### 抓取管线复用与扩展
 
