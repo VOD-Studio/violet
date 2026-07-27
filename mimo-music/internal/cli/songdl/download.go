@@ -206,7 +206,7 @@ func DownloadToFile(ctx context.Context, k *kit.Kit, url string, total int64, pa
 	// 续传预检:.part 存在则从其当前大小续。
 	offset, err := fileSize(partPath)
 	if err != nil {
-		return 0, fmt.Errorf("✗ 检查续传文件 %s 失败: %v", partPath, err)
+		return 0, fmt.Errorf("检查续传文件 %s 失败: %v", partPath, err)
 	}
 
 	req, err := engine.NewNeteaseRequest(ctx, "GET", url, k.CurrentCookie())
@@ -220,11 +220,11 @@ func DownloadToFile(ctx context.Context, k *kit.Kit, url string, total int64, pa
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return 0, fmt.Errorf("✗ 下载失败(网络): %v", err)
+		return 0, fmt.Errorf("下载失败(网络): %v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
-		return 0, fmt.Errorf("✗ 下载失败: HTTP %d", resp.StatusCode)
+		return 0, fmt.Errorf("下载失败: HTTP %d", resp.StatusCode)
 	}
 
 	// 206 = 服务端尊重 Range,从 offset 续;200 = 忽略 Range,从头重下(truncate .part)。
@@ -238,7 +238,7 @@ func DownloadToFile(ctx context.Context, k *kit.Kit, url string, total int64, pa
 	}
 	f, err := os.OpenFile(partPath, openMode, 0o644)
 	if err != nil {
-		return 0, fmt.Errorf("✗ 创建文件 %s 失败: %v", partPath, err)
+		return 0, fmt.Errorf("创建文件 %s 失败: %v", partPath, err)
 	}
 	defer f.Close()
 
@@ -255,12 +255,12 @@ func DownloadToFile(ctx context.Context, k *kit.Kit, url string, total int64, pa
 	p.Wait()
 	if err != nil {
 		// 中断:保留 .part 供重跑续传。返回带续传提示的错误。
-		return written, fmt.Errorf("✗ 下载中断,部分文件已保存为 %s,重跑可续传: %v", partPath, err)
+		return written, fmt.Errorf("下载中断,部分文件已保存为 %s,重跑可续传: %v", partPath, err)
 	}
 
 	// 成功:rename .part → 最终名(原子完成)。
 	if err := os.Rename(partPath, path); err != nil {
-		return written, fmt.Errorf("✗ 重命名 %s → %s 失败: %v", partPath, path, err)
+		return written, fmt.Errorf("重命名 %s → %s 失败: %v", partPath, path, err)
 	}
 	return written, nil
 }

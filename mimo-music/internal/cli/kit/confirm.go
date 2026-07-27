@@ -41,7 +41,7 @@ func (k *Kit) ConfirmWrite(action string) (bool, error) {
 	if !stdinIsTTY() {
 		return false, fmt.Errorf("%w:非交互环境的写操作需要 --yes 确认:%s", ErrUsage, action)
 	}
-	fmt.Fprintf(os.Stderr, "⚠ 即将真实操作你的网易云账号:%s\n输入 y 确认,其他取消: ", action)
+	fmt.Fprintf(os.Stderr, "即将执行写操作:%s\n输入 y 确认,其他取消: ", action)
 	reader := bufio.NewReader(readStdin())
 	line, _ := reader.ReadString('\n')
 	if strings.TrimSpace(line) != "y" {

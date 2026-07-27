@@ -66,7 +66,7 @@ func renderEmpty(k *kit.Kit) error {
 		fmt.Fprintln(k.OutWriter(), "[]")
 		return nil
 	}
-	fmt.Fprintln(k.OutWriter(), "(召回池为空,播放/下载/搜索歌曲后会自动累积)")
+	fmt.Fprintln(k.OutWriter(), "召回池为空,播放/下载/搜索歌曲后会自动累积")
 	return nil
 }
 
