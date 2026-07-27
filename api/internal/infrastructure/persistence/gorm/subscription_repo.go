@@ -48,6 +48,19 @@ func (r *SubscriptionRepository) FindByID(ctx context.Context, id, userID domain
 	return subscriptionToDomain(po)
 }
 
+// FindByIDForSchedule 按 ID 查订阅，不做所有权校验。仅供调度器（系统行为）使用。
+func (r *SubscriptionRepository) FindByIDForSchedule(ctx context.Context, id domainshared.ID) (*domainsubscription.Subscription, error) {
+	var po model.Subscription
+	err := r.db.WithContext(ctx).First(&po, "id = ?", id.UUID()).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domainsubscription.ErrNotFound
+		}
+		return nil, domainshared.Internal("查询订阅失败", err)
+	}
+	return subscriptionToDomain(po)
+}
+
 // FindByUser 列出某用户的订阅（可选 status 过滤，分页）。
 func (r *SubscriptionRepository) FindByUser(ctx context.Context, userID domainshared.ID, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Subscription{}).Where("user_id = ?", userID.UUID())

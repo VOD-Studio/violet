@@ -38,3 +38,24 @@ type Subscription struct {
 
 // TableName 显式指定表名
 func (Subscription) TableName() string { return "subscriptions" }
+
+// SubscriptionEntry 订阅源条目持久化模型（对应 subscription_entries 表，migration 062）。
+//
+// 去重锚点：(subscription_id, guid) UNIQUE。guid 缺失时回退到 link（由应用层决定）。
+// 删除订阅时 ON DELETE CASCADE 连带清理。
+type SubscriptionEntry struct {
+	ID             int64      `gorm:"primaryKey;autoIncrement" json:"id"`
+	SubscriptionID uuid.UUID  `gorm:"type:uuid;column:subscription_id;not null;index:idx_subscription_entries_sub" json:"subscription_id"`
+	GUID           string     `gorm:"type:text;column:guid;not null;uniqueIndex:uniq_sub_guid" json:"guid"`
+	EntryURL       string     `gorm:"type:text;column:entry_url" json:"entry_url"`
+	Title          string     `gorm:"type:varchar(255)" json:"title"`
+	PostID         *uuid.UUID `gorm:"type:uuid;column:post_id" json:"post_id,omitempty"`
+	Status         string     `gorm:"type:varchar(20);not null;default:pending;index:idx_subscription_entries_status" json:"status"`
+	FailCount      int        `gorm:"column:fail_count;not null;default:0" json:"fail_count"`
+	LastError      string     `gorm:"type:text;column:last_error" json:"last_error,omitempty"`
+	PublishedAt    *time.Time `gorm:"column:published_at" json:"published_at,omitempty"`
+	CreatedAt      time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+}
+
+// TableName 显式指定表名
+func (SubscriptionEntry) TableName() string { return "subscription_entries" }

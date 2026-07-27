@@ -53,6 +53,19 @@ func (r *fakeRepo) FindByID(ctx context.Context, id, userID shared.ID) (*domains
 	return &cp, nil
 }
 
+// FindByIDForSchedule 镜像 FindByID 但不校验 userID（调度器用）。
+func (r *fakeRepo) FindByIDForSchedule(ctx context.Context, id shared.ID) (*domainsubscription.Subscription, error) {
+	if r.findErr != nil {
+		return nil, r.findErr
+	}
+	s, ok := r.subs[id.String()]
+	if !ok {
+		return nil, domainsubscription.ErrNotFound
+	}
+	cp := *s
+	return &cp, nil
+}
+
 func (r *fakeRepo) FindByUser(ctx context.Context, userID shared.ID, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
 	r.listCalls++
 	if r.listErr != nil {

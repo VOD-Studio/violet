@@ -1,24 +1,35 @@
 // Package subscription 提供订阅源用例服务（application 层）。
 //
-// 承载订阅源的手动 CRUD（本期 T6）：建/列/查/改/暂停/恢复/删。
-// 定时抓取能力在 T7（去重编排）/T8（调度 job）接入，本期 Service 不含抓取方法。
+// 承载订阅源的手动 CRUD（T6）+ 单次抓取编排 FetchOne（T7）。
+// 定时调度在 T8 接入（job/subscription_job.go 调 FetchOne）。
 //
-// 依赖方向：Service → domain/subscription.SubscriptionRepository（端口），
-// 不直接依赖 GORM 实现，便于单测用 fake 替换（seam #2）。
+// 依赖方向：Service → domain 端口（SubscriptionRepository / EntryRepository），
+// 抓取通过 PostImporter / FeedParser 端口反转依赖 application/post，便于单测 fake。
 package subscription
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	domainsubscription "blog-api/internal/domain/subscription"
+	domainentry "blog-api/internal/domain/subscription_entry"
 	"blog-api/internal/domain/shared"
+
+	apppost "blog-api/internal/application/post"
 )
 
 // Service 订阅源用例服务。
+//
+// 基础依赖（CRUD 用）：repo（订阅仓储）+ now（时钟）。
+// FetchOne 依赖（抓取用）：entryRepo + importer + parser。后三者通过 SetFetchDeps 注入，
+// 不在 NewService 强制要求——CRUD-only 场景（如 MCP tool 测试）可不注入。
 type Service struct {
-	repo domainsubscription.SubscriptionRepository
-	now  func() time.Time // 注入时钟，便于单测控制时间
+	repo      domainsubscription.SubscriptionRepository
+	now       func() time.Time // 注入时钟，便于单测控制时间
+	entryRepo domainentry.EntryRepository
+	importer  PostImporter
+	parser    FeedParser
 }
 
 // NewService 构造服务。now 为 nil 时用 time.Now。
@@ -27,6 +38,14 @@ func NewService(repo domainsubscription.SubscriptionRepository, now func() time.
 		now = time.Now
 	}
 	return &Service{repo: repo, now: now}
+}
+
+// SetFetchDeps 注入 FetchOne 抓取所需依赖（条目仓储 + 文章导入器 + feed 解析器）。
+// 在 container 装配时调用；不调则 FetchOne 返回错误（CRUD 场景不需要）。
+func (s *Service) SetFetchDeps(entryRepo domainentry.EntryRepository, importer PostImporter, parser FeedParser) {
+	s.entryRepo = entryRepo
+	s.importer = importer
+	s.parser = parser
 }
 
 // --- 输入/输出 DTO ---
@@ -195,6 +214,161 @@ func (s *Service) findByID(ctx context.Context, id, userID string) (*domainsubsc
 		return nil, err
 	}
 	return s.repo.FindByID(ctx, sid, uid)
+}
+
+// FetchReport 单次 FetchOne 的抓取报告（T8 调度器记日志用）。
+type FetchReport struct {
+	SubscriptionID    string
+	FeedEntryCount    int // feed 里总条目数
+	NewEntries        int // 首次见到（去重后实际处理）
+	Imported          int // 成功建草稿
+	Failed            int // 抓正文失败（含重试中的 failed）
+	Dead              int // 本次新触发 dead（达 fail_count 上限）
+	Skipped           int // 已处理（imported/dead），跳过
+	SubscriptionError string // feed 拉取层面的错误（非空表示整轮失败）
+}
+
+// FetchOne 单订阅单次抓取编排（T7 核心）。
+//
+// 流程（PRD-0005）：
+//  1. 解析订阅（按 id，无 userID 校验——调度器是系统行为，非用户操作）
+//  2. SetFetchDeps 未注入 → 返回配置错误
+//  3. parser.Parse 拉 feed（feed 层错误由调用方 T8 据 SubscriptionError 记失败计数）
+//  4. 对每条 entry：去重（FindBySubAndGUID）→ 已处理则跳过
+//  5. 新 entry：importer.ImportURL 抓正文 → importer.Create 建草稿
+//     - canonical = 订阅 canonical_override 非空则用它，否则 entry.link
+//     - auto_publish 决定 draft/published
+//  6. 成功：entry.MarkImported(postID) + Save；失败：entry.RecordFailure + Save
+//  7. 返回 FetchReport
+//
+// 不做跨源去重（PRD 已声明）。单条 entry 失败不阻塞其它 entry。
+func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchReport {
+	report := FetchReport{SubscriptionID: subscriptionID}
+
+	if s.entryRepo == nil || s.importer == nil || s.parser == nil {
+		report.SubscriptionError = "FetchOne 依赖未注入（entryRepo/importer/parser）"
+		return report
+	}
+
+	sid, err := shared.ParseID(subscriptionID)
+	if err != nil {
+		report.SubscriptionError = "无效的订阅 ID：" + err.Error()
+		return report
+	}
+	// 调度器场景：直接按 id 取，不做所有权校验（系统行为，非用户操作）
+	sub, err := s.repo.FindByIDForSchedule(ctx, sid)
+	if err != nil {
+		report.SubscriptionError = "查订阅失败：" + err.Error()
+		return report
+	}
+
+	items, err := s.parser.Parse(ctx, sub.FeedURL())
+	if err != nil {
+		report.SubscriptionError = "feed 拉取失败：" + err.Error()
+		return report
+	}
+	report.FeedEntryCount = len(items)
+
+	for _, item := range items {
+		guid := item.GUID
+		if guid == "" {
+			guid = item.Link // guid 缺失回退 link（去重锚点）
+		}
+		if guid == "" {
+			continue // 无 guid 无 link，无法去重，跳过
+		}
+
+		existing, err := s.entryRepo.FindBySubAndGUID(ctx, sid, guid)
+		if err != nil {
+			report.Failed++
+			continue
+		}
+		if existing != nil && existing.IsProcessed() {
+			report.Skipped++
+			continue
+		}
+
+		// 新 entry 或失败重试中
+		entry := existing
+		if entry == nil {
+			entry = domainentry.NewEntry(sid, guid, item.Link, item.Title, parsePublishedAt(item.PublishedAt), s.now())
+		}
+
+		if err := s.fetchAndImport(ctx, sub, item, entry); err != nil {
+			entry.RecordFailure(err.Error())
+			report.Failed++
+			if entry.Status() == domainentry.StatusDead {
+				report.Dead++
+			}
+		} else {
+			// 成功：fetchAndImport 内部已 MarkImported 回填 postID
+			report.Imported++
+		}
+		_ = s.entryRepo.Save(ctx, entry)
+		if existing == nil {
+			report.NewEntries++
+		}
+	}
+	return report
+}
+
+// fetchAndImport 抓单条 entry 正文 + 建草稿，回填 entry.postID。
+// 成功返回 nil；失败返回 error（调用方 RecordFailure）。
+func (s *Service) fetchAndImport(ctx context.Context, sub *domainsubscription.Subscription, item FeedItem, entry *domainentry.SubscriptionEntry) error {
+	result, err := s.importer.ImportURL(ctx, item.Link, apppost.ImportURLOpts{})
+	if err != nil {
+		return fmt.Errorf("抓正文失败: %w", err)
+	}
+	// canonical：订阅 override 非空则用它，否则 entry.link
+	canonical := sub.CanonicalOverride()
+	if canonical == "" {
+		canonical = item.Link
+	}
+	canonicalPtr := &canonical
+
+	dto, err := s.importer.Create(ctx, apppost.CreateInput{
+		AuthorID:       sub.UserID().String(),
+		Title:          firstNonEmpty(result.Title, item.Title, "无标题"),
+		Slug:           "", // 让 post.Service 自动生成 slug（按标题）
+		ContentMD:      result.Markdown,
+		ContentHTML:    result.HTML,
+		Excerpt:        result.Excerpt,
+		CoverImage:     result.CoverImage,
+		SEOTitle:       result.SeoTitle,
+		SEODescription: result.SeoDescription,
+		CanonicalURL:   canonicalPtr,
+		Tags:           sub.Tags(),
+	})
+	if err != nil {
+		return fmt.Errorf("建草稿失败: %w", err)
+	}
+	// 回填 postID（dto.ID 是字符串）
+	if pid, err := shared.ParseID(dto.ID); err == nil {
+		entry.MarkImported(pid)
+	}
+	return nil
+}
+
+// parsePublishedAt 解析 RFC3339 发布时间，失败返回 nil。
+func parsePublishedAt(s *string) *time.Time {
+	if s == nil || *s == "" {
+		return nil
+	}
+	t, err := time.Parse(time.RFC3339, *s)
+	if err != nil {
+		return nil
+	}
+	return &t
+}
+
+// firstNonEmpty 返回第一个非空字符串。
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // toDTO 领域实体 → DTO（时间格式化 RFC3339，零值省略）。
