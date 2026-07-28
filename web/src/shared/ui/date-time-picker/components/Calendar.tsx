@@ -266,7 +266,7 @@ export function Calendar({
                         {weekDays.map((d) => (
                             <div
                                 key={d}
-                                className="text-muted-foreground flex h-8 items-center justify-center text-xs font-medium"
+                                className="text-muted-foreground flex h-9 items-center justify-center text-xs font-medium"
                             >
                                 {d}
                             </div>
@@ -302,15 +302,14 @@ export function Calendar({
                                     key={index}
                                     data-current={current}
                                     className={cn(
-                                        "flex h-8 items-center justify-center",
-                                        inRange && "bg-primary/20",
-                                        isRangeStart && !isRangeSingle && "rounded-l-md bg-primary",
-                                        isRangeEnd && !isRangeSingle && "rounded-r-md bg-primary",
-                                        isRangeSingle && "rounded-md bg-primary",
-                                        isSelected &&
-                                            !isRangeStart &&
-                                            !isRangeEnd &&
-                                            "rounded-md bg-primary",
+                                        "flex h-9 items-center justify-center",
+                                        // 区间中间：连续背景条
+                                        inRange && "bg-primary/15",
+                                        // 区间端点：圆角 + 实色（与中间条衔接）
+                                        isRangeStart &&
+                                            !isRangeSingle &&
+                                            "rounded-l-full bg-primary",
+                                        isRangeEnd && !isRangeSingle && "rounded-r-full bg-primary",
                                     )}
                                 >
                                     <Button
@@ -321,17 +320,23 @@ export function Calendar({
                                         onClick={() => handleSelectDay(date)}
                                         onMouseEnter={() => onHoverDateChange?.(date)}
                                         className={cn(
-                                            "size-8 text-xs",
-                                            // 非当月补齐日期：淡灰但仍可点（点击自动翻月）
-                                            !current && "text-muted-foreground/60",
+                                            "size-9 rounded-full text-xs",
+                                            // 非当月补齐日期
+                                            !current && "text-muted-foreground/50",
+                                            // 今天：环形高亮
                                             isToday &&
                                                 !isEndpoint &&
                                                 !inRange &&
-                                                "border border-primary text-primary",
-                                            // 禁用日期：删除线 + 更淡 + 禁止指针，与补齐日期明确区分
+                                                "ring-1 ring-primary text-primary",
+                                            // 禁用日期
                                             isDisabled &&
-                                                "text-muted-foreground/30 line-through cursor-not-allowed hover:bg-transparent",
-                                            isEndpoint &&
+                                                "text-muted-foreground/30 cursor-not-allowed hover:bg-transparent",
+                                            // 单日期选中 / 区间单点：正圆背景在 Button 上
+                                            (isSelected || isRangeSingle) &&
+                                                "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                                            // 区间端点（非单点）：透明背景叠在外层实色上
+                                            (isRangeStart || isRangeEnd) &&
+                                                !isRangeSingle &&
                                                 "bg-transparent text-primary-foreground hover:bg-transparent hover:text-primary-foreground",
                                             inRange &&
                                                 "bg-transparent text-foreground hover:bg-primary/10",

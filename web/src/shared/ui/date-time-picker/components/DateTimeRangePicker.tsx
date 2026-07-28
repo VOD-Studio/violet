@@ -144,8 +144,8 @@ export function DateTimeRangePicker({
                     <TooltipContent className="max-w-xs">{displayText}</TooltipContent>
                 </Tooltip>
             </TooltipProvider>
-            <PopoverContent className="w-auto p-3" align="start">
-                <div className="space-y-3">
+            <PopoverContent className="w-auto min-w-[320px] p-4" align="start">
+                <div className="space-y-4">
                     <Calendar
                         range={{ start: startDate, end: endDate }}
                         hoverDate={hoverDate}
@@ -157,7 +157,7 @@ export function DateTimeRangePicker({
                         weekStartsOn={1}
                     />
 
-                    <div className="border-t pt-3 grid grid-cols-2 gap-3">
+                    <div className="border-t pt-4 grid grid-cols-2 gap-3">
                         <RangeTimeInput
                             label="开始时间"
                             value={startTime}

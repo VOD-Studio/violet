@@ -99,8 +99,8 @@ export function DateRangePicker({
                     {displayText}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-3" align="start">
-                <div className="space-y-3">
+            <PopoverContent className="w-auto min-w-[320px] p-4" align="start">
+                <div className="space-y-4">
                     <Calendar
                         range={{ start: startDate, end: endDate }}
                         hoverDate={hoverDate}
