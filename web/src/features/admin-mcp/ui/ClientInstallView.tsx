@@ -1,9 +1,16 @@
 import type { InstallView } from "@features/admin-mcp/model/clients";
-import { copyText } from "@shared/lib/clipboard";
 import { Button } from "@shared/ui/base/button";
-import { Check, Copy } from "lucide-react";
-import * as React from "react";
-import { toast } from "sonner";
+import { lazy, Suspense } from "react";
+
+/**
+ * FencedCodeBlock 懒加载：与 markdown-components 同理，避免 shiki 高亮链
+ * 进入 admin 主 chunk，仅接入面板真正渲染代码块时拉取。
+ */
+const LazyFencedCodeBlock = lazy(() =>
+    import("@shared/ui/markdown-preview/components/CodeBlock").then((m) => ({
+        default: m.FencedCodeBlock,
+    })),
+);
 
 /** ClientInstallView - 渲染一种客户端安装方式（CLI 命令 / deeplink / 配置片段 / 图文步骤） */
 export function ClientInstallView({ view }: { view: InstallView }) {
@@ -19,6 +26,14 @@ export function ClientInstallView({ view }: { view: InstallView }) {
     }
 }
 
+function CodeBlock({ code, language }: { code: string; language: string }) {
+    return (
+        <Suspense fallback={<div className="my-6 h-24 animate-pulse rounded-lg bg-muted" />}>
+            <LazyFencedCodeBlock code={code} language={language} />
+        </Suspense>
+    );
+}
+
 function ViewTitle({ title, note }: { title: string; note?: string }) {
     return (
         <div className="space-y-0.5">
@@ -28,55 +43,11 @@ function ViewTitle({ title, note }: { title: string; note?: string }) {
     );
 }
 
-function CopyButton({
-    text,
-    label,
-    className,
-}: {
-    text: string;
-    label?: string;
-    className?: string;
-}) {
-    const [copied, setCopied] = React.useState(false);
-    return (
-        <Button
-            type="button"
-            variant={label ? "outline" : "ghost"}
-            size={label ? "sm" : "icon-sm"}
-            title="复制"
-            className={className}
-            onClick={async () => {
-                const ok = await copyText(text);
-                if (ok) {
-                    setCopied(true);
-                    toast.success("已复制");
-                    setTimeout(() => setCopied(false), 2000);
-                } else {
-                    toast.error("复制失败");
-                }
-            }}
-        >
-            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-            {label}
-        </Button>
-    );
-}
-
 function CommandsView({ view }: { view: Extract<InstallView, { kind: "commands" }> }) {
     return (
         <div className="space-y-2">
             <ViewTitle title={view.title} note={view.note} />
-            {view.commands.map((cmd) => (
-                <div key={cmd} className="relative">
-                    <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 pr-9 font-mono text-xs">
-                        {cmd}
-                    </pre>
-                    <CopyButton text={cmd} className="absolute right-1.5 top-1.5" />
-                </div>
-            ))}
-            {view.commands.length > 2 ? (
-                <CopyButton text={view.commands.join("\n")} label="复制全部命令" />
-            ) : null}
+            <CodeBlock code={view.commands.join("\n")} language="bash" />
         </div>
     );
 }
@@ -104,12 +75,7 @@ function SnippetView({ view }: { view: Extract<InstallView, { kind: "snippet" }>
                 合并入 <code className="rounded bg-muted px-1 py-0.5 font-mono">{view.path}</code>
                 （勿整体覆盖现有内容）：
             </p>
-            <div className="relative">
-                <pre className="overflow-x-auto rounded-md bg-muted p-3 pr-9 font-mono text-xs">
-                    {view.code}
-                </pre>
-                <CopyButton text={view.code} className="absolute right-1.5 top-1.5" />
-            </div>
+            <CodeBlock code={view.code} language={view.lang} />
         </div>
     );
 }
