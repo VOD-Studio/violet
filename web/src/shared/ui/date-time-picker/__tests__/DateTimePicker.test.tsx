@@ -161,9 +161,9 @@ describe("Calendar", () => {
         const endCell = cells.find((b) => b.textContent === "5");
         const innerCell = cells.find((b) => b.textContent === "3");
 
-        expect(startCell?.className).toContain("rounded-l-md");
-        expect(endCell?.className).toContain("rounded-r-md");
-        expect(innerCell?.className).toContain("bg-primary/20");
+        expect(startCell?.className).toContain("rounded-l-full");
+        expect(endCell?.className).toContain("rounded-r-full");
+        expect(innerCell?.className).toContain("bg-primary/15");
     });
 
     it("跨月区间也会高亮上下月的补齐日期", () => {
@@ -180,7 +180,7 @@ describe("Calendar", () => {
         const endCell = cells.find((el) => el.textContent?.trim() === "5");
         const prevMonthCell = cells.find((el) => el.textContent?.trim() === "30");
 
-        expect(endCell?.className).toContain("rounded-r-md");
-        expect(prevMonthCell?.className).toContain("bg-primary/20");
+        expect(endCell?.className).toContain("rounded-r-full");
+        expect(prevMonthCell?.className).toContain("bg-primary/15");
     });
 });

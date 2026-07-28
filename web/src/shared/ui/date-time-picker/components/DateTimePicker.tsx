@@ -107,8 +107,8 @@ export function DateTimePicker({
                     {displayText}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-3" align="start">
-                <div className="space-y-3">
+            <PopoverContent className="w-auto min-w-[320px] p-4" align="start">
+                <div className="space-y-4">
                     {mode !== "time" && (
                         <Calendar
                             selected={date}
@@ -121,7 +121,7 @@ export function DateTimePicker({
                     )}
 
                     {mode !== "date" && (
-                        <div className={mode !== "time" ? "border-t pt-3" : undefined}>
+                        <div className={mode !== "time" ? "border-t pt-4" : undefined}>
                             <TimePicker
                                 value={currentTime}
                                 onChange={handleTimeChange}
@@ -131,8 +131,10 @@ export function DateTimePicker({
                     )}
 
                     {presets && presets.length > 0 && (
-                        <div className="border-t pt-3">
-                            <div className="text-muted-foreground mb-2 text-xs">快捷选择</div>
+                        <div className="border-t pt-4">
+                            <div className="text-muted-foreground mb-2 text-xs font-medium">
+                                快捷选择
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 {presets.map((preset) => (
                                     <Button
@@ -140,6 +142,7 @@ export function DateTimePicker({
                                         type="button"
                                         variant="outline"
                                         size="sm"
+                                        className="h-7 px-2.5 text-xs"
                                         onClick={() => {
                                             onChange?.(preset.value);
                                         }}
