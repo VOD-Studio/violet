@@ -13,6 +13,7 @@ import (
 	readability "codeberg.org/readeck/go-readability/v2"
 	"golang.org/x/net/html"
 
+	"blog-api/internal/brand"
 	domain "blog-api/internal/domain/post"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
@@ -694,7 +695,7 @@ func fetchHTML(rawURL string, timeout time.Duration) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; mimo-blog-importer/1.0)")
+	req.Header.Set("User-Agent", brand.ImporterUA)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
