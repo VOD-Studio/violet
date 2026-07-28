@@ -174,7 +174,7 @@ export const useLogout = () => {
             // 配合 useMe 的 staleTime: Infinity 即可阻止任何自动重试。
             await qc.cancelQueries({ queryKey: authKeys.me() });
             qc.setQueryData<UserDTO | null>(authKeys.me(), null);
-            // 登出清 CSRF token 缓存：后端已清 mimo_csrf cookie，
+            // 登出清 CSRF token 缓存：后端已清 violet_csrf cookie，
             // 缓存留旧 token 会让下次登录页命中陈旧值，与新 cookie 对不上。
             qc.removeQueries({ queryKey: authKeys.csrfToken() });
             // 登出：清除会话活跃标志（守卫据此允许踢人/跳登录）

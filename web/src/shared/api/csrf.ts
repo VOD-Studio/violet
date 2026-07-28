@@ -4,10 +4,10 @@ import { getCookie } from "../lib/cookies";
 export const CSRF_HEADER = "X-CSRF-Token";
 
 /** CSRF cookie 名（与后端 config CookieConfig.CSRFName 一致） */
-export const CSRF_COOKIE = "mimo_csrf";
+export const CSRF_COOKIE = "violet_csrf";
 
 /**
- * getCSRFToken - 读取当前 CSRF token（从非 HttpOnly 的 mimo_csrf cookie）
+ * getCSRFToken - 读取当前 CSRF token（从非 HttpOnly 的 violet_csrf cookie）
  *
  * httpClient 的 request interceptor 调用此函数，
  * 把 token 注入到 X-CSRF-Token header，配合后端 double-submit 校验：

@@ -19,12 +19,12 @@ const client = (key: string) => {
 
 describe("serversForScopes", () => {
     it("命中文章类 scope 只含文章 server", () => {
-        expect(serversForScopes(["posts:read"]).map((s) => s.key)).toEqual(["mimo-blog"]);
+        expect(serversForScopes(["posts:read"]).map((s) => s.key)).toEqual(["violet"]);
     });
 
     it("抓取与订阅 scope 归入抓取 server", () => {
         expect(serversForScopes(["posts:scrape", "subscriptions:read"]).map((s) => s.key)).toEqual([
-            "mimo-blog-scraper",
+            "violet-scraper",
         ]);
     });
 
@@ -41,7 +41,7 @@ describe("MCP_CLIENTS 配置生成", () => {
         }
         expect(view.commands).toHaveLength(2);
         expect(view.commands[0]).toContain(
-            "claude mcp add --transport http mimo-blog https://blog.example.com/api/v1/mcp",
+            "claude mcp add --transport http violet https://blog.example.com/api/v1/mcp",
         );
         expect(view.commands[0]).toContain("Authorization: Bearer tok_test_123");
     });
@@ -71,9 +71,9 @@ describe("MCP_CLIENTS 配置生成", () => {
             throw new Error("expect snippet");
         }
         const parsed = JSON.parse(view.code);
-        expect(parsed.mcp["mimo-blog"].type).toBe("remote");
-        expect(parsed.mcp["mimo-blog"].enabled).toBe(true);
-        expect(parsed.mcp["mimo-blog"].headers.Authorization).toBe("Bearer tok_test_123");
+        expect(parsed.mcp["violet"].type).toBe("remote");
+        expect(parsed.mcp["violet"].enabled).toBe(true);
+        expect(parsed.mcp["violet"].headers.Authorization).toBe("Bearer tok_test_123");
     });
 
     it("oh-my-pi 片段显式带 type http（省略会被当作 stdio）", () => {
@@ -81,7 +81,7 @@ describe("MCP_CLIENTS 配置生成", () => {
         if (view.kind !== "snippet") {
             throw new Error("expect snippet");
         }
-        expect(JSON.parse(view.code).mcpServers["mimo-blog"].type).toBe("http");
+        expect(JSON.parse(view.code).mcpServers["violet"].type).toBe("http");
     });
 
     it("VS Code 片段顶层键为 servers", () => {
@@ -89,7 +89,7 @@ describe("MCP_CLIENTS 配置生成", () => {
         if (view?.kind !== "snippet") {
             throw new Error("expect snippet");
         }
-        expect(JSON.parse(view.code).servers["mimo-blog"].type).toBe("http");
+        expect(JSON.parse(view.code).servers["violet"].type).toBe("http");
     });
 
     it("Gemini 片段使用 httpUrl 字段", () => {
@@ -97,7 +97,7 @@ describe("MCP_CLIENTS 配置生成", () => {
         if (view?.kind !== "snippet") {
             throw new Error("expect snippet");
         }
-        expect(JSON.parse(view.code).mcpServers["mimo-blog"].httpUrl).toBe(
+        expect(JSON.parse(view.code).mcpServers["violet"].httpUrl).toBe(
             "https://blog.example.com/api/v1/mcp",
         );
     });
@@ -107,8 +107,8 @@ describe("MCP_CLIENTS 配置生成", () => {
         if (view.kind !== "commands") {
             throw new Error("expect commands");
         }
-        expect(view.commands[0]).toBe("export MIMO_BLOG_TOKEN=tok_test_123");
-        expect(view.commands[1]).toContain("--bearer-token-env-var MIMO_BLOG_TOKEN");
+        expect(view.commands[0]).toBe("export VIOLET_TOKEN=tok_test_123");
+        expect(view.commands[1]).toContain("--bearer-token-env-var VIOLET_TOKEN");
     });
 
     it("Codex TOML 备选含 http_headers", () => {
@@ -117,7 +117,7 @@ describe("MCP_CLIENTS 配置生成", () => {
             throw new Error("expect snippet");
         }
         expect(view.lang).toBe("toml");
-        expect(view.code).toContain("[mcp_servers.mimo-blog]");
+        expect(view.code).toContain("[mcp_servers.violet]");
         expect(view.code).toContain('Authorization = "Bearer tok_test_123"');
     });
 

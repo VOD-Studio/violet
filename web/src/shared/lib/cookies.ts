@@ -1,8 +1,8 @@
 /**
  * 浏览器 cookie 读取工具
  *
- * 仅用于读取非 HttpOnly cookie（如 mimo_csrf），
- * HttpOnly cookie（如 mimo_session）JS 无法读取，
+ * 仅用于读取非 HttpOnly cookie（如 violet_csrf），
+ * HttpOnly cookie（如 violet_session）JS 无法读取，
  * 由浏览器自动随请求携带。
  */
 
@@ -13,7 +13,7 @@
  * @returns cookie 值（已 URL 解码），不存在或 SSR 时返回空串
  *
  * @example
- * getCookie("mimo_csrf") // "abc123..."
+ * getCookie("violet_csrf") // "abc123..."
  */
 export const getCookie = (name: string): string => {
     if (typeof document === "undefined") return "";

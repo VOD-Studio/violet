@@ -15,6 +15,9 @@ import type { MCPServerSpec } from "./types";
 /** 无可用明文令牌时的占位符 */
 export const TOKEN_PLACEHOLDER = "<TOKEN>";
 
+/** Codex 等客户端传入 PAT 的环境变量名 */
+export const ENV_TOKEN_VAR = "VIOLET_TOKEN";
+
 /** 配置生成上下文 */
 export interface ConfigContext {
     /** 站点源，如 https://blog.example.com */
@@ -159,10 +162,10 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
             title: "一键安装（逐条在终端执行）",
             note: "令牌经环境变量传入，不写入配置文件明文。",
             commands: [
-                `export MIMO_BLOG_TOKEN=${ctx.token ?? TOKEN_PLACEHOLDER}`,
+                `export ${ENV_TOKEN_VAR}=${ctx.token ?? TOKEN_PLACEHOLDER}`,
                 ...ctx.servers.map(
                     (s) =>
-                        `codex mcp add ${s.key} --url ${urlOf(ctx, s)} --bearer-token-env-var MIMO_BLOG_TOKEN`,
+                        `codex mcp add ${s.key} --url ${urlOf(ctx, s)} --bearer-token-env-var ${ENV_TOKEN_VAR}`,
                 ),
             ],
         }),

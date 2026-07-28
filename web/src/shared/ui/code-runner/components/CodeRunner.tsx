@@ -7,7 +7,7 @@
  * 运行流程：点击运行 → useCodeRun 提交流式执行 → SSE stdout/stderr 实时写入终端 →
  * done 收尾显示 exit code/耗时/OOM/超时。
  *
- * 样式遵循 mimo-blog 约定：bg-[#24292e]、border-edge-hairline、rounded-lg、
+ * 样式遵循 violet 约定：bg-[#24292e]、border-edge-hairline、rounded-lg、
  * Tailwind v4 canonical 类（4px 倍数裸数字）。
  */
 import { ChevronDown, ChevronUp, Play, Terminal as TerminalIcon } from "lucide-react";

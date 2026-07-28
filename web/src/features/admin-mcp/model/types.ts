@@ -28,14 +28,14 @@ export interface MCPServerSpec {
 
 export const MCP_SERVERS: MCPServerSpec[] = [
     {
-        key: "mimo-blog",
+        key: "violet",
         label: "文章",
         endpoint: "/api/v1/mcp",
         description: "5 个文章 CRUD tool",
         scopes: ["posts:read", "posts:write", "posts:publish"],
     },
     {
-        key: "mimo-blog-scraper",
+        key: "violet-scraper",
         label: "抓取",
         endpoint: "/api/v1/mcp/scraper",
         description: "scrape_url + 7 个订阅 tool",
