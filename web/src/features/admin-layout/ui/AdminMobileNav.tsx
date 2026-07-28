@@ -34,13 +34,12 @@ export function AdminMobileNav() {
                 </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-                <SheetHeader className="h-14 justify-center border-b">
-                    <SheetTitle className="flex items-center gap-2 text-base">
-                        <span className="bg-primary size-6 rounded-md" />
-                        Violet Admin
+                <SheetHeader className="h-24 justify-center border-b">
+                    <SheetTitle className="flex items-center justify-center text-base">
+                        <img src="/wordmark.png" alt="Violet" className="h-20 w-auto" />
                     </SheetTitle>
                 </SheetHeader>
-                <div className="flex h-[calc(100%-3.5rem)] flex-col p-3">
+                <div className="flex h-[calc(100%-6rem)] flex-col p-3">
                     <div className="flex-1 overflow-y-auto">
                         <SheetClose asChild>
                             <div>
