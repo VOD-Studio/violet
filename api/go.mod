@@ -5,6 +5,7 @@ go 1.25.8
 require (
 	codeberg.org/readeck/go-readability/v2 v2.1.1
 	github.com/HugoSmits86/nativewebp v1.3.0
+	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/docker/docker v28.5.2+incompatible
@@ -19,6 +20,7 @@ require (
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.12.3
+	github.com/mmcdole/gofeed v1.4.0
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/mozillazg/go-pinyin v0.21.0
 	github.com/openai/openai-go v1.12.0
@@ -28,6 +30,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.5
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
+	github.com/temoto/robotstxt v1.1.2
 	golang.org/x/crypto v0.53.0
 	golang.org/x/image v0.24.0
 	golang.org/x/net v0.56.0
@@ -41,6 +44,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/PuerkitoBio/goquery v1.9.2 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -77,6 +81,7 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
+	github.com/mmcdole/goxpp/v2 v2.0.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/sys/atomicwriter v0.1.0 // indirect
 	github.com/oasdiff/yaml v0.1.1 // indirect
@@ -120,6 +125,7 @@ require (
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
 	gotest.tools/v3 v3.5.2 // indirect

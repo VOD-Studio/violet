@@ -123,3 +123,50 @@ func TestExtractSeoDescription_Priority(t *testing.T) {
 		})
 	}
 }
+
+// --- extractCanonicalURL / extractCoverImage（T5 新增，重构 walk 前补测试锁行为）---
+
+func TestExtractCanonicalURL_OgURLFirst(t *testing.T) {
+	doc := parseDoc(t, `<!DOCTYPE html><html><head>
+<meta property="og:url" content="https://example.com/og">
+<link rel="canonical" href="https://example.com/link">
+</head></html>`)
+	if got := extractCanonicalURL(doc); got != "https://example.com/og" {
+		t.Errorf("og:url 应优先，实际 %q", got)
+	}
+}
+
+func TestExtractCanonicalURL_FallbackToLinkRel(t *testing.T) {
+	doc := parseDoc(t, `<!DOCTYPE html><html><head>
+<link rel="canonical" href="https://example.com/link">
+</head></html>`)
+	if got := extractCanonicalURL(doc); got != "https://example.com/link" {
+		t.Errorf("link rel=canonical 回退失败，实际 %q", got)
+	}
+}
+
+func TestExtractCanonicalURL_EmptyWhenAbsent(t *testing.T) {
+	doc := parseDoc(t, `<!DOCTYPE html><html><head></head></html>`)
+	if got := extractCanonicalURL(doc); got != "" {
+		t.Errorf("都缺时应空串，实际 %q", got)
+	}
+}
+
+func TestExtractCoverImage_OgImageFirst(t *testing.T) {
+	doc := parseDoc(t, `<!DOCTYPE html><html><head>
+<meta property="og:image" content="https://example.com/og.jpg">
+<meta name="twitter:image" content="https://example.com/tw.jpg">
+</head></html>`)
+	if got := extractCoverImage(doc); got != "https://example.com/og.jpg" {
+		t.Errorf("og:image 应优先，实际 %q", got)
+	}
+}
+
+func TestExtractCoverImage_FallbackToTwitter(t *testing.T) {
+	doc := parseDoc(t, `<!DOCTYPE html><html><head>
+<meta name="twitter:image" content="https://example.com/tw.jpg">
+</head></html>`)
+	if got := extractCoverImage(doc); got != "https://example.com/tw.jpg" {
+		t.Errorf("twitter:image 回退失败，实际 %q", got)
+	}
+}

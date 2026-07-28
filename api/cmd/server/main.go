@@ -94,6 +94,8 @@ func main() {
 		&newmodel.MusicSetting{},
 		&newmodel.File{}, &newmodel.UploadSession{},
 		&newmodel.APIToken{},
+		&newmodel.Subscription{},
+		&newmodel.SubscriptionEntry{},
 	); err != nil {
 		log.Warn().Err(err).Msg("AutoMigrate error")
 	}
@@ -140,9 +142,10 @@ func main() {
 	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
 	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
 	apiTokenContainer := app.NewAPITokenContainer(gormDB)
+	subscriptionContainer := app.NewSubscriptionContainer(gormDB, postContainer.PostService)
 	// MCP 服务器：PAT 鉴权已在内层 handler 经由 auth.RequireBearerToken 完成；
-	// postSvc 复用文章模块，tokenLookup 复用 PAT 模块仓储。
-	mcpContainer := app.NewMCPContainer(apiTokenContainer.TokenLookup, postContainer.PostService)
+	// postSvc 复用文章模块，tokenLookup 复用 PAT 模块仓储，subSvc 复用订阅模块。
+	mcpContainer := app.NewMCPContainer(apiTokenContainer.TokenLookup, postContainer.PostService, subscriptionContainer.SubscriptionService)
 
 	// 服务器监控模块（DDD）：启动 30s 采样 goroutine，随 appCtx 退出
 	systemContainer := app.NewSystemContainer(gormDB, redisClient, ctx)
@@ -174,6 +177,15 @@ func main() {
 
 	cleanupJob := job.NewCleanupJob(gormDB, chunkDir, uploadRoot)
 	go cleanupJob.Start(ctx)
+
+	// 订阅定时抓取调度器（T8）：与 cleanupJob 并列，30 分钟轮询 due 订阅，
+	// 有界并行 worker pool 抓取，失败按 Miniflux 共识分类处理
+	subscriptionJob := job.NewSubscriptionJob(
+		subscriptionContainer.SubscriptionService,
+		subscriptionContainer.SubscriptionRepository,
+		nil, 0, 0, // now/worker/tick 用默认（time.Now / 5 / 30min）
+	)
+	go subscriptionJob.Start(ctx)
 
 	// --- 超级管理员初始化---
 	if cfg.SuperAdmin.Enabled {
@@ -493,6 +505,22 @@ func main() {
 			r.With(middleware.RequirePermission(permissionChecker, "mcp:manage-tokens")).
 				Delete("/api-tokens/{id}", apiTokenContainer.APITokenHandler.Delete) // 吊销 PAT
 
+			// RSS 订阅管理（T9 后台管理页；读/写需 subscription:manage）
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Get("/subscriptions", subscriptionContainer.SubscriptionHandler.List)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Get("/subscriptions/{id}", subscriptionContainer.SubscriptionHandler.Get)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Post("/subscriptions", subscriptionContainer.SubscriptionHandler.Create)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Put("/subscriptions/{id}", subscriptionContainer.SubscriptionHandler.Update)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Post("/subscriptions/{id}/pause", subscriptionContainer.SubscriptionHandler.Pause)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Post("/subscriptions/{id}/resume", subscriptionContainer.SubscriptionHandler.Resume)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Delete("/subscriptions/{id}", subscriptionContainer.SubscriptionHandler.Delete)
+
 			// 评论审核（读 comment:view；批量状态 comment:approve）
 			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
 				Get("/comments/pending", commentH.ListPending) // 待审核评论列表
@@ -631,8 +659,12 @@ func main() {
 	// 继承 r 的 Recoverer/RequestID/Logger/CORS/SecurityHeaders，
 	// 绕过 v1 组的 CSRF（MCP 是 JSON-RPC、无 X-CSRF-Token）与 SessionAuth（用 PAT）。
 	// PAT 鉴权已在 handler 内（auth.RequireBearerToken），此处仅叠加独立限流。
+	// ADR-0007：文章 server（/api/v1/mcp，低风险）与抓取 server（/api/v1/mcp/scraper，
+	// 高风险 SSRF）分离，各自独立限流。
 	r.With(middleware.RateLimit("mcp", redisClient, time.Minute, 60)).
-		Handle("/api/v1/mcp", mcpContainer.Handler)
+		Handle("/api/v1/mcp", mcpContainer.PostHandler)
+	r.With(middleware.RateLimit("mcp-scraper", redisClient, time.Minute, 30)).
+		Handle("/api/v1/mcp/scraper", mcpContainer.ScraperHandler)
 
 	// ============================================================
 	// ============================================================

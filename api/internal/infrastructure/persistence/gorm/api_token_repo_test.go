@@ -39,7 +39,7 @@ func TestAPITokenRepository_SaveAndFindByHash(t *testing.T) {
 	now := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
 
 	p, plaintext, err := domainapitoken.NewPAT("u-1", "测试令牌",
-		[]string{domainapitoken.ScopePostsRead, domainapitoken.ScopePostsWrite}, 90*24*time.Hour, now)
+		[]string{domainapitoken.ScopePostsRead, domainapitoken.ScopePostsWrite}, now.Add(90*24*time.Hour), now)
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, p))
 
@@ -65,7 +65,7 @@ func TestAPITokenRepository_NeverExpires_Roundtrip(t *testing.T) {
 	repo := NewAPITokenRepository(db)
 	now := time.Now()
 
-	p, pt, _ := domainapitoken.NewPAT("u-1", "永久", []string{domainapitoken.ScopePostsRead}, 0, now)
+	p, pt, _ := domainapitoken.NewPAT("u-1", "永久", []string{domainapitoken.ScopePostsRead}, time.Time{}, now)
 	require.NoError(t, repo.Save(context.Background(), p))
 
 	got, _ := repo.FindByHash(context.Background(), domainapitoken.HashToken(pt))
@@ -78,9 +78,9 @@ func TestAPITokenRepository_FindByUser(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	p1, _, _ := domainapitoken.NewPAT("u-1", "令牌1", []string{domainapitoken.ScopePostsRead}, 0, now)
-	p2, _, _ := domainapitoken.NewPAT("u-1", "令牌2", []string{domainapitoken.ScopePostsWrite}, 0, now)
-	p3, _, _ := domainapitoken.NewPAT("u-2", "他人令牌", []string{domainapitoken.ScopePostsRead}, 0, now)
+	p1, _, _ := domainapitoken.NewPAT("u-1", "令牌1", []string{domainapitoken.ScopePostsRead}, time.Time{}, now)
+	p2, _, _ := domainapitoken.NewPAT("u-1", "令牌2", []string{domainapitoken.ScopePostsWrite}, time.Time{}, now)
+	p3, _, _ := domainapitoken.NewPAT("u-2", "他人令牌", []string{domainapitoken.ScopePostsRead}, time.Time{}, now)
 	require.NoError(t, repo.Save(ctx, p1))
 	require.NoError(t, repo.Save(ctx, p2))
 	require.NoError(t, repo.Save(ctx, p3))
@@ -96,7 +96,7 @@ func TestAPITokenRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	p, pt, _ := domainapitoken.NewPAT("u-1", "待删", []string{domainapitoken.ScopePostsRead}, 0, now)
+	p, pt, _ := domainapitoken.NewPAT("u-1", "待删", []string{domainapitoken.ScopePostsRead}, time.Time{}, now)
 	require.NoError(t, repo.Save(ctx, p))
 
 	// 按 id+userID 删除
@@ -111,7 +111,7 @@ func TestAPITokenRepository_Delete_PreventsCrossUser(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	p, pt, _ := domainapitoken.NewPAT("u-1", "victim", []string{domainapitoken.ScopePostsRead}, 0, now)
+	p, pt, _ := domainapitoken.NewPAT("u-1", "victim", []string{domainapitoken.ScopePostsRead}, time.Time{}, now)
 	require.NoError(t, repo.Save(ctx, p))
 
 	// u-2 试图删 u-1 的 token：不报错但不生效（DELETE 0 行）
@@ -127,7 +127,7 @@ func TestAPITokenRepository_TouchLastUsed(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now()
 
-	p, pt, _ := domainapitoken.NewPAT("u-1", "x", []string{domainapitoken.ScopePostsRead}, 0, now)
+	p, pt, _ := domainapitoken.NewPAT("u-1", "x", []string{domainapitoken.ScopePostsRead}, time.Time{}, now)
 	require.NoError(t, repo.Save(ctx, p))
 	assert.True(t, repo.FindByHashMust(t, domainapitoken.HashToken(pt)).LastUsedAt().IsZero(), "初始 last_used_at 为零值")
 

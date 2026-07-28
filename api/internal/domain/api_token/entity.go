@@ -6,18 +6,25 @@ import (
 	domainshared "blog-api/internal/domain/shared"
 )
 
-// PAT scope 枚举。固定三分：读 / 写 / 发布，创建时多选。
+// PAT scope 枚举。固定六分：读 / 写 / 发布 / 抓取 / 订阅读 / 订阅写，创建时多选。
 const (
-	ScopePostsRead   = "posts:read"
-	ScopePostsWrite  = "posts:write"
-	ScopePostsPublish = "posts:publish"
+	ScopePostsRead         = "posts:read"
+	ScopePostsWrite        = "posts:write"
+	ScopePostsPublish      = "posts:publish"
+	ScopePostsScrape       = "posts:scrape"          // 抓取外站文章（scrape_url tool），SSRF 风险点，独立回收权限
+	ScopeSubscriptionsRead = "subscriptions:read"    // 列/查订阅源
+	ScopeSubscriptionsWrite = "subscriptions:write"  // 增删改订阅源、暂停/恢复
 )
 
-// validScopes 合法 scope 集合，校验与新增 scope 时三处同步（此处 + DB + 前端类型）。
+// validScopes 合法 scope 集合，校验与新增 scope 时同步此处 + 前端 PAT_SCOPES 常量
+// （本仓库 PAT scope 不入 DB seed，校验在创建/查询时即时做）。
 var validScopes = map[string]struct{}{
-	ScopePostsRead:    {},
-	ScopePostsWrite:   {},
-	ScopePostsPublish: {},
+	ScopePostsRead:          {},
+	ScopePostsWrite:         {},
+	ScopePostsPublish:       {},
+	ScopePostsScrape:        {},
+	ScopeSubscriptionsRead:  {},
+	ScopeSubscriptionsWrite: {},
 }
 
 // IsValidScope 判断 scope 是否在预定义枚举内。
@@ -48,9 +55,9 @@ type PAT struct {
 
 // NewPAT 创建新 PAT。返回聚合根与 token 哈希（明文由调用方保留并一次性返回）。
 //
-// ttl<=0 表示永不过期（expiresAt 保持零值）；ttl>0 时 expiresAt = now + ttl。
+// expiresAt 零值表示永不过期；非零值时与 now 比较判过期。
 // 随机源失败返回错误，调用方映射为 500。
-func NewPAT(userID, name string, scopes []string, ttl time.Duration, now time.Time) (*PAT, string, error) {
+func NewPAT(userID, name string, scopes []string, expiresAt, now time.Time) (*PAT, string, error) {
 	if len(scopes) == 0 {
 		return nil, "", domainshared.BadRequest("至少选择一个权限范围")
 	}
@@ -69,7 +76,7 @@ func NewPAT(userID, name string, scopes []string, ttl time.Duration, now time.Ti
 		name:      name,
 		tokenHash: HashToken(raw),
 		scopes:    scopes,
-		expiresAt: expiryFromTTL(ttl, now),
+		expiresAt: expiresAt,
 		createdAt: now,
 	}
 	return p, raw, nil
@@ -81,13 +88,6 @@ func Reconstruct(id, userID, name, tokenHash string, scopes []string, expiresAt,
 		id: id, userID: userID, name: name, tokenHash: tokenHash,
 		scopes: scopes, expiresAt: expiresAt, lastUsedAt: lastUsedAt, createdAt: createdAt,
 	}
-}
-
-func expiryFromTTL(ttl time.Duration, now time.Time) time.Time {
-	if ttl <= 0 {
-		return time.Time{}
-	}
-	return now.Add(ttl)
 }
 
 func (p *PAT) ID() string         { return p.id }

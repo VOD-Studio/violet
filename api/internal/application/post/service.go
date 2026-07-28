@@ -17,6 +17,7 @@ import (
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	userdomain "blog-api/internal/domain/user"
+	"blog-api/internal/infrastructure/ssrf"
 	"blog-api/internal/middleware"
 )
 
@@ -43,6 +44,7 @@ type PostDTO struct {
 	SEOTitle       string       `json:"seo_title"`
 	SEODescription string       `json:"seo_description"`
 	PublishedAt    string       `json:"published_at,omitempty"`
+	CanonicalURL   *string      `json:"canonical_url,omitempty"` // 转载源 URL；nil/缺省 = 原创，非空 = 转载
 	Tags           []string     `json:"tags"`
 	CreatedAt      string       `json:"created_at"`
 	UpdatedAt      string       `json:"updated_at"`
@@ -207,6 +209,7 @@ type CreateInput struct {
 	CoverImage     string
 	SEOTitle       string
 	SEODescription string
+	CanonicalURL   *string // 转载源 URL；nil = 原创，非 nil = 转载
 	Tags           []string
 	IsFeatured     bool
 }
@@ -231,6 +234,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 		return PostDTO{}, err
 	}
 	p.UpdateSEO(in.SEOTitle, in.SEODescription)
+	p.SetCanonicalURL(in.CanonicalURL)
 	p.SetTags(in.Tags)
 	p.SetFeatured(in.IsFeatured)
 	if err := s.repo.Save(ctx, p); err != nil {
@@ -279,6 +283,7 @@ type UpdateInput struct {
 	CoverImage     string
 	SEOTitle       string
 	SEODescription string
+	CanonicalURL   *string // 转载源 URL；nil = 原创，非 nil = 转载
 	Tags           []string
 	IsFeatured     bool
 }
@@ -318,6 +323,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID string)
 		return err
 	}
 	p.UpdateSEO(in.SEOTitle, in.SEODescription)
+	p.SetCanonicalURL(in.CanonicalURL)
 	p.SetTags(in.Tags)
 	p.SetFeatured(in.IsFeatured)
 
@@ -558,9 +564,12 @@ func (s *Service) RestoreVersion(ctx context.Context, postID, versionID, operato
 type ImportResult struct {
 	Title          string   `json:"title"`           // 文章正文标题
 	HTML           string   `json:"html"`            // 正文 HTML
+	Markdown       string   `json:"markdown"`        // 正文 Markdown（由 HTML 转换，公式还原为 $..$ / $$..$$，供 MCP scrape_url 使用）
 	Excerpt        string   `json:"excerpt"`         // 摘要
 	SeoTitle       string   `json:"seo_title"`       // SEO 标题（社交分享用，可与正文不同）
 	SeoDescription string   `json:"seo_description"` // SEO 描述
+	CanonicalURL   string   `json:"canonical_url"`   // 文章源 canonical URL（og:url > <link rel=canonical> > 输入 url），转载归属
+	CoverImage     string   `json:"cover_image"`     // 封面图 URL（og:image > twitter:image）
 	Warnings       []string `json:"warnings"`        // 非致命提示（如 AI 还原失败的公式数）
 }
 
@@ -602,6 +611,8 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string, opts ImportURLOp
 	title := extractArticleTitle(doc)
 	seoTitle := extractSeoTitle(doc)
 	seoDescription := extractSeoDescription(doc)
+	canonicalURL := extractCanonicalURL(doc)
+	coverImage := extractCoverImage(doc)
 
 	// MathJax 源码藏在 <script type="math/tex"> 里，readability 的 removeScripts 会删。
 	// 必须在 ParseDocument 之前替换成占位 span，否则源码和位置一起丢失。
@@ -645,20 +656,40 @@ func (s *Service) ImportURL(ctx context.Context, rawURL string, opts ImportURLOp
 	if strings.TrimSpace(buf.String()) == "" {
 		return ImportResult{}, shared.BadRequest("未能从该链接提取到正文")
 	}
+	// HTML→Markdown：失败非致命，记 warning 不阻塞 HTML 路径（admin ImportURL 仍主要返回 HTML）
+	markdownText, mdErr := htmlToMarkdown(buf.String())
+	if mdErr != nil {
+		if warnings == nil {
+			warnings = []string{}
+		}
+		warnings = append(warnings, "Markdown 转换失败："+mdErr.Error())
+	}
 	return ImportResult{
 		Title:          title,
 		HTML:           buf.String(),
+		Markdown:       markdownText,
 		Excerpt:        excerpt,
 		SeoTitle:       seoTitle,
 		SeoDescription: seoDescription,
+		CanonicalURL:   canonicalURL,
+		CoverImage:     coverImage,
 		Warnings:       warnings,
 	}, nil
 }
 
 // fetchHTML 抓取远程 HTML 文档，校验 Content-Type 必须为 text/html。
 // UA 伪装为桌面浏览器避免被某些站点拦截。
+//
+// SSRF 防护三件套：发起前 ValidateURL（协议/host 预检）+ 出站走 SafeTransport
+// （DNS 解析后拨号前校验 IP，防 DNS 重绑定）+ resp.Body 包 LimitBody（防超大响应 OOM）。
 func fetchHTML(rawURL string, timeout time.Duration) (*http.Response, error) {
-	client := &http.Client{Timeout: timeout}
+	if _, err := ssrf.ValidateURL(rawURL); err != nil {
+		return nil, err
+	}
+	client := &http.Client{
+		Timeout:   timeout,
+		Transport: ssrf.NewSafeTransport(),
+	}
 	req, err := http.NewRequest("GET", rawURL, nil)
 	if err != nil {
 		return nil, err
@@ -672,6 +703,8 @@ func fetchHTML(rawURL string, timeout time.Duration) (*http.Response, error) {
 		resp.Body.Close()
 		return nil, fmt.Errorf("目标链接不是 HTML 文档（Content-Type: %s）", ct)
 	}
+	// 包装有界 reader 防止恶意/巨型响应打爆内存；调用方读 resp.Body 超限会收到错误
+	resp.Body = ssrf.LimitBody(resp.Body, ssrf.MaxBodyBytes)
 	return resp, nil
 }
 
@@ -834,9 +867,10 @@ func toDTO(p *domain.Post) PostDTO {
 		Status: p.Status(), AuthorID: p.AuthorID().String(),
 		ViewCount: p.ViewCount(), IsFeatured: p.IsFeatured(),
 		SEOTitle: p.SEOTitle(), SEODescription: p.SEODescription(),
-		Tags:      p.Tags(),
-		CreatedAt: p.CreatedAt().Format(time.RFC3339),
-		UpdatedAt: p.UpdatedAt().Format(time.RFC3339),
+		CanonicalURL: p.CanonicalURL(),
+		Tags:         p.Tags(),
+		CreatedAt:    p.CreatedAt().Format(time.RFC3339),
+		UpdatedAt:    p.UpdatedAt().Format(time.RFC3339),
 	}
 	if p.PublishedAt() != nil {
 		dto.PublishedAt = p.PublishedAt().Format(time.RFC3339)

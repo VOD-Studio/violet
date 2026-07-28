@@ -63,27 +63,56 @@ func extractSeoDescription(doc *html.Node) string {
 	return ""
 }
 
+// nodeMatchFn 节点匹配谓词。返回 true 表示命中（findFirstNode 据此短路，
+// findAllNodes 据此收集）。
+type nodeMatchFn func(*html.Node) bool
+
+// walkChildOnly 遍历整棵子树（深度优先，FirstChild/NextSibling 顺序），
+// 对每个 ElementNode 调用谓词。不剪枝（即便命中也继续遍历，由调用方决定是否停）。
+func walkAll(n *html.Node, fn func(*html.Node)) {
+	if n.Type == html.ElementNode {
+		fn(n)
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		walkAll(c, fn)
+	}
+}
+
+// findFirstNode 返回首个匹配 predicate 的节点，无匹配返回 nil。命中即短路。
+func findFirstNode(doc *html.Node, match nodeMatchFn) *html.Node {
+	var found *html.Node
+	walkAll(doc, func(n *html.Node) {
+		if found != nil {
+			return
+		}
+		if match(n) {
+			found = n
+		}
+	})
+	return found
+}
+
+// findAllNodes 返回所有匹配 predicate 的节点（按文档顺序）。
+func findAllNodes(doc *html.Node, match nodeMatchFn) []*html.Node {
+	var result []*html.Node
+	walkAll(doc, func(n *html.Node) {
+		if match(n) {
+			result = append(result, n)
+		}
+	})
+	return result
+}
+
 // metaContent 查找 <meta> 标签的 content 值，按 attr=key=val 匹配。
 // 同时兼容 attr 在 property/name 两种位置的容错由调用方通过 key 指定。
 func metaContent(doc *html.Node, attr, key string) string {
-	var found string
-	var walk func(*html.Node)
-	walk = func(n *html.Node) {
-		if found != "" {
-			return
-		}
-		if n.Type == html.ElementNode && n.Data == "meta" {
-			if getAttr(n, attr) == key {
-				found = strings.TrimSpace(getAttr(n, "content"))
-				return
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			walk(c)
-		}
+	n := findFirstNode(doc, func(n *html.Node) bool {
+		return n.Data == "meta" && getAttr(n, attr) == key
+	})
+	if n == nil {
+		return ""
 	}
-	walk(doc)
-	return found
+	return strings.TrimSpace(getAttr(n, "content"))
 }
 
 // jsonLDString 从 <script type="application/ld+json"> 里取指定字段（取第一个非空）。
@@ -128,38 +157,44 @@ func pickString(obj map[string]any, keys []string) string {
 
 // findScriptsByType 查找所有 <script type="..."> 节点。
 func findScriptsByType(doc *html.Node, targetType string) []*html.Node {
-	var result []*html.Node
-	var walk func(*html.Node)
-	walk = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "script" {
-			if strings.EqualFold(getAttr(n, "type"), targetType) {
-				result = append(result, n)
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			walk(c)
-		}
-	}
-	walk(doc)
-	return result
+	return findAllNodes(doc, func(n *html.Node) bool {
+		return n.Data == "script" && strings.EqualFold(getAttr(n, "type"), targetType)
+	})
 }
 
 // firstTagText 取文档里首个指定标签的纯文本（trim 后）。
 func firstTagText(doc *html.Node, tag string) string {
-	var found string
-	var walk func(*html.Node)
-	walk = func(n *html.Node) {
-		if found != "" {
-			return
-		}
-		if n.Type == html.ElementNode && n.Data == tag {
-			found = strings.TrimSpace(textContent(n))
-			return
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			walk(c)
-		}
+	n := findFirstNode(doc, func(n *html.Node) bool {
+		return n.Data == tag
+	})
+	if n == nil {
+		return ""
 	}
-	walk(doc)
-	return found
+	return strings.TrimSpace(textContent(n))
+}
+
+// extractCanonicalURL 取文章的 canonical URL：
+// 优先 og:url → 次 <link rel="canonical">。都缺时返回空串（调用方回退到输入 url）。
+func extractCanonicalURL(doc *html.Node) string {
+	if v := metaContent(doc, "property", "og:url"); v != "" {
+		return v
+	}
+	n := findFirstNode(doc, func(n *html.Node) bool {
+		return n.Data == "link" && strings.EqualFold(getAttr(n, "rel"), "canonical")
+	})
+	if n == nil {
+		return ""
+	}
+	return strings.TrimSpace(getAttr(n, "href"))
+}
+
+// extractCoverImage 取封面图 URL：优先 og:image → 次 twitter:image。
+func extractCoverImage(doc *html.Node) string {
+	if v := metaContent(doc, "property", "og:image"); v != "" {
+		return v
+	}
+	if v := metaContent(doc, "name", "twitter:image"); v != "" {
+		return v
+	}
+	return ""
 }

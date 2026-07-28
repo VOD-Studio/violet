@@ -7,6 +7,7 @@ import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import MobileTocFab from "@features/posts/ui/MobileTocFab";
 import { apiPost } from "@shared/api/request";
+import { SITE_URL } from "@shared/config/env";
 import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
 import { extractToc } from "@shared/lib/hooks/use-toc";
@@ -16,7 +17,7 @@ import { BackToTop } from "@shared/ui/back-to-top";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Calendar, Eye } from "lucide-react";
+import { ArrowLeft, Calendar, ExternalLink, Eye } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef } from "react";
 
 /**
@@ -158,6 +159,20 @@ function BlogDetailPage() {
                         {post.title}
                     </h1>
 
+                    {/* 转载来源（canonical_url 非空时显示，零设计成本的最小可见标记）。
+                        显示域名保持视觉简洁，链接 href 仍指完整 canonical_url（两全其美） */}
+                    {post.canonical_url ? (
+                        <a
+                            href={post.canonical_url}
+                            target="_blank"
+                            rel="noopener noreferrer external"
+                            className="mb-5 inline-flex items-center gap-1.5 font-mono text-sm text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                            <ExternalLink className="size-3.5" />
+                            转载自 · {sourceHostname(post.canonical_url)}
+                        </a>
+                    ) : null}
+
                     {/* 元信息 */}
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
                         {post.author ? (
@@ -292,6 +307,17 @@ function formatDate(s: string): string {
     return d.toLocaleDateString("zh-CN", { year: "numeric", month: "long", day: "numeric" });
 }
 
+// sourceHostname 从 canonical URL 提取 hostname 用于转载来源显示。
+// URL 非法或无 hostname 时回退到原始字符串（保证总是有可读内容）。
+function sourceHostname(canonicalUrl: string): string {
+    try {
+        const u = new URL(canonicalUrl);
+        return u.hostname || canonicalUrl;
+    } catch {
+        return canonicalUrl;
+    }
+}
+
 export const Route = createFileRoute("/blog/$slug")({
     loader: async ({ context, params }) => {
         const post = await context.queryClient.ensureQueryData({
@@ -309,10 +335,15 @@ export const Route = createFileRoute("/blog/$slug")({
         }
         return post;
     },
-    // 动态 SEO：映射文章的 seo_title / seo_description / 封面图
+    // 动态 SEO：映射文章的 seo_title / seo_description / 封面图 / canonical
+    // rel=canonical：canonical_url 非空（转载）→ 指源（避免被 Google 当抄袭降权）；
+    // 空（原创）→ 自指本站绝对 URL（Google 建议 rel=canonical 用绝对地址）。
+    // og:url 是本页面对象标识，始终指本站绝对 URL——转载也不把社交图谱归属让渡给源站。
     head: ({ loaderData }) => {
         const post = loaderData as PostDetail | undefined;
         if (!post) return { meta: [] };
+        const pageUrl = `${SITE_URL.replace(/\/+$/, "")}/blog/${post.slug}`;
+        const canonicalHref = post.canonical_url || pageUrl;
         return {
             meta: [
                 { title: post.seo_title || post.title },
@@ -321,7 +352,9 @@ export const Route = createFileRoute("/blog/$slug")({
                 { property: "og:description", content: post.seo_description || post.excerpt },
                 ...(post.cover_image ? [{ property: "og:image", content: post.cover_image }] : []),
                 { property: "og:type", content: "article" },
+                { property: "og:url", content: pageUrl },
             ],
+            links: [{ rel: "canonical", href: canonicalHref }],
         };
     },
     component: BlogDetailPage,

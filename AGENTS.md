@@ -61,6 +61,18 @@
 - `Fix/Login`(大写)
 - `new-feature`(能定位到模块时该写 scope,而非泛称)
 
+### PRD / issues 与分支的关系
+
+**PRD、issues 属于 feature 分支的一部分,不是独立任务,不单独建文档分支。** 这是「每个新任务先建分支」规则在文档场景下的具体含义,容易误判,单列一节。
+
+- 一个 feature 的完整生命周期(PRD 起草 → PRD 迭代 → issues 拆分 → 各 issue 实现)都在**同一个 feature 分支**上推进。PRD 和 issues 是该分支的早期 commit,实现代码是后续 commit。
+- **不存在「为写 PRD 单独建 `docs/xxx-prd` 分支」这种事**。写 PRD 的第一步就是建 feature 分支(如 `feat/scrape-mcp`),PRD 作为该分支第一个 commit。
+- PRD 与 issues 可同 commit(如 `docs(prd): 沉淀 X PRD 与 issue 拆分`),也可分开(`docs(prd): ...` + `docs(issues): ...`),按改动体量决定。
+- 各 issue 的**实现**仍可从 feature 分支再叉子分支(可选),也可直接在 feature 分支上按原子提交规则提交。子分支与否不影响「PRD 在 feature 分支上」这一前提。
+- 参考历史:`feat/web-session-cleanup` 分支从 `docs(prd): 沉淀 PRD-0001` 起步,经历多次 PRD 迭代 + issues 拆分,最后到 `feat(web): ...` 实现代码,全部在同一分支。
+
+**判定方法**:如果这份 PRD/issues 服务于一个具体的 feature,它就属于该 feature 分支;只有跨 feature 的纯架构/流程文档(如本 AGENTS.md、ADR)才考虑独立 docs 分支。
+
 ## Agent skills
 
 ### Issue tracker
