@@ -1,0 +1,72 @@
+/** admin-subscriptions 模块类型定义。
+ * 对齐后端 subscription handler adminSubscriptionDTO（含 user_id）。 */
+
+/** 抓取频率枚举（对齐后端 domain/subscription 常量） */
+export const SUBSCRIPTION_INTERVALS = ["hourly", "every-6h", "daily", "weekly"] as const;
+export type SubscriptionInterval = (typeof SUBSCRIPTION_INTERVALS)[number];
+
+/** 订阅状态 */
+export const SUBSCRIPTION_STATUSES = ["active", "paused"] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
+/** SubscriptionDTO - 订阅读模型（admin 视角，含 user_id） */
+export interface SubscriptionDTO {
+    id: string;
+    user_id: string;
+    feed_url: string;
+    title: string;
+    source_type: string;
+    interval: SubscriptionInterval;
+    auto_publish: boolean;
+    canonical_override?: string;
+    tags: string[];
+    status: SubscriptionStatus;
+    consecutive_failures: number;
+    last_error?: string;
+    last_fetched_at?: string;
+    next_fetch_at?: string;
+    retry_after_until?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+/** CreateSubscriptionRequest - 创建订阅请求体 */
+export interface CreateSubscriptionRequest {
+    feed_url: string;
+    title?: string;
+    interval?: SubscriptionInterval;
+    auto_publish?: boolean;
+    canonical_override?: string;
+    tags?: string[];
+}
+
+/** UpdateSubscriptionRequest - 更新订阅（指针字段 nil 表示不改） */
+export interface UpdateSubscriptionRequest {
+    title?: string;
+    interval?: SubscriptionInterval;
+    auto_publish?: boolean;
+    canonical_override?: string;
+    tags?: string[];
+}
+
+/** 分页列表响应 */
+export interface SubscriptionListResponse {
+    items: SubscriptionDTO[];
+    total: number;
+    page: number;
+    limit: number;
+}
+
+/** interval 中文标签 */
+export const intervalLabel = (i: SubscriptionInterval): string => {
+    switch (i) {
+        case "hourly":
+            return "每小时";
+        case "every-6h":
+            return "每 6 小时";
+        case "daily":
+            return "每天";
+        case "weekly":
+            return "每周";
+    }
+};
