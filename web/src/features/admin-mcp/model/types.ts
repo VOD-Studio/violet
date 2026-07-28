@@ -16,9 +16,8 @@ export const PAT_SCOPES = [
 ] as const;
 export type PATScope = (typeof PAT_SCOPES)[number];
 
-/** PAT 过期选项 */
-export const PAT_EXPIRIES = ["90d", "365d", "never"] as const;
-export type PATExpiry = (typeof PAT_EXPIRIES)[number];
+/** PAT 过期：ISO 日期（YYYY-MM-DD）或 "never"（永不过期）。空串由后端默认 90 天。 */
+export type PATExpiry = string;
 
 /**
  * MCP server 清单（ADR-0007：文章 + 抓取两个独立端点）。
@@ -73,6 +72,6 @@ export interface PATDTO {
 export interface CreatePATRequest {
     name: string;
     scopes: PATScope[];
-    /** 默认 90d */
-    expiry: PATExpiry;
+    /** ISO 日期（YYYY-MM-DD）或 "never"（永不过期）。空串后端默认 90 天。 */
+    expires_at: string;
 }

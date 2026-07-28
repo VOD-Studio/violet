@@ -3,10 +3,8 @@ import { useCreatePAT, useDeletePAT, usePATs } from "@features/admin-mcp/api/que
 import {
     type CreatePATRequest,
     MCP_SERVERS,
-    PAT_EXPIRIES,
     PAT_SCOPES,
     type PATDTO,
-    type PATExpiry,
     type PATScope,
 } from "@features/admin-mcp/model/types";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
@@ -16,13 +14,8 @@ import { Button } from "@shared/ui/base/button";
 import { Checkbox } from "@shared/ui/base/checkbox";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@shared/ui/base/select";
+import { DateTimePicker } from "@shared/ui/date-time-picker/components/DateTimePicker";
+import type { DateTimePreset } from "@shared/ui/date-time-picker/types/date-time-picker-types";
 import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Copy, KeyRound, Loader2, Plus, Trash2 } from "lucide-react";
@@ -177,13 +170,30 @@ function CreatePATDialog({
     const create = useCreatePAT();
     const [name, setName] = React.useState("");
     const [scopes, setScopes] = React.useState<Set<PATScope>>(new Set(["posts:read"]));
-    const [expiry, setExpiry] = React.useState<PATExpiry>("90d");
+    // expiresAt：ISO 日期（YYYY-MM-DD）或 "never"（永不过期）。空串后端默认 90 天。
+    const [expiresAt, setExpiresAt] = React.useState("");
+
+    // 预设快捷项（90 天 / 365 天 / 永不过期）。value 与 mode=date 格式一致（YYYY-MM-DD）。
+    const expiryPresets: DateTimePreset[] = React.useMemo(() => {
+        const fmt = (d: Date) => d.toISOString().slice(0, 10);
+        const now = new Date();
+        const addDays = (n: number) => {
+            const x = new Date(now);
+            x.setDate(x.getDate() + n);
+            return fmt(x);
+        };
+        return [
+            { label: "90 天", value: addDays(90) },
+            { label: "365 天", value: addDays(365) },
+            { label: "永不过期", value: "never" },
+        ];
+    }, []);
 
     React.useEffect(() => {
         if (open) {
             setName("");
             setScopes(new Set(["posts:read"]));
-            setExpiry("90d");
+            setExpiresAt(""); // 空串 = 后端默认 90 天
         }
     }, [open]);
 
@@ -211,7 +221,7 @@ function CreatePATDialog({
         const body: CreatePATRequest = {
             name: name.trim(),
             scopes: [...scopes],
-            expiry,
+            expires_at: expiresAt,
         };
         create.mutate(body, {
             onSuccess: (dto) => {
@@ -282,22 +292,15 @@ function CreatePATDialog({
                 </div>
                 <div className="space-y-2">
                     <Label>有效期</Label>
-                    <Select
-                        value={expiry}
-                        onValueChange={(v) => setExpiry(v as PATExpiry)}
+                    <DateTimePicker
+                        value={expiresAt}
+                        onChange={setExpiresAt}
+                        mode="date"
+                        placeholder="选择过期日期（留空默认 90 天）"
                         disabled={create.isPending}
-                    >
-                        <SelectTrigger className="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {PAT_EXPIRIES.map((e) => (
-                                <SelectItem key={e} value={e}>
-                                    {expiryLabel(e)}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                        clearable
+                        presets={expiryPresets}
+                    />
                 </div>
             </div>
         </Modal>
@@ -423,17 +426,6 @@ function fmtDate(iso: string): string {
         hour: "2-digit",
         minute: "2-digit",
     });
-}
-
-function expiryLabel(e: PATExpiry): string {
-    switch (e) {
-        case "90d":
-            return "90 天";
-        case "365d":
-            return "1 年";
-        case "never":
-            return "永不过期";
-    }
 }
 
 export const Route = createFileRoute("/admin/mcp")({
