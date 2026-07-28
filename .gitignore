@@ -70,3 +70,6 @@ api/migrate-bilibili-covers
 docs/superpowers/
 .superpowers
 .qoder
+
+# TanStack Router 自动生成
+routeTree.gen.ts
