@@ -9,16 +9,10 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	appapitoken "blog-api/internal/application/api_token"
+	domainshared "blog-api/internal/domain/shared"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
 )
-
-// 预定义过期选项（秒）。前端传 expiry 字符串枚举，映射到 Duration。
-var expiryOptions = map[string]time.Duration{
-	"90d":  90 * 24 * time.Hour,
-	"365d": 365 * 24 * time.Hour,
-	"never": 0,
-}
 
 // Handler PAT 管理 HTTP handler。
 type Handler struct {
@@ -32,9 +26,10 @@ func NewHandler(svc *appapitoken.Service) *Handler {
 }
 
 type createTokenRequest struct {
-	Name   string   `json:"name" validate:"required,max=100"`
-	Scopes []string `json:"scopes" validate:"required,min=1,dive,oneof=posts:read posts:write posts:publish"`
-	Expiry string   `json:"expiry" validate:"omitempty,oneof=90d 365d never"`
+	Name      string   `json:"name" validate:"required,max=100"`
+	Scopes    []string `json:"scopes" validate:"required,min=1,dive,oneof=posts:read posts:write posts:publish posts:scrape subscriptions:read subscriptions:write"`
+	// ExpiresAt：ISO 日期（YYYY-MM-DD）或 "never"（永不过期）。空串默认 90 天。
+	ExpiresAt string `json:"expires_at" validate:"omitempty"`
 }
 
 // Create 创建 PAT（后台 admin）。返回明文 token，仅此一次。
@@ -49,21 +44,39 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	expiry := req.Expiry
-	if expiry == "" {
-		expiry = "90d" // 默认 90 天（spec：默认 90 天）
+	expiresAt, err := parseExpiry(req.ExpiresAt, time.Now())
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
 	}
 	result, err := h.svc.Create(r.Context(), appapitoken.CreateInput{
 		UserID:    userID,
 		Name:      req.Name,
 		Scopes:    req.Scopes,
-		ExpiresIn: expiryOptions[expiry],
+		ExpiresAt: expiresAt,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
 	response.RespondCreated(w, result.Token)
+}
+
+// parseExpiry 把前端传入的过期值解析为绝对时间。
+//   - "" / "never"：零值（永不过期）
+//   - "YYYY-MM-DD"：当天 23:59:59（给足整天，避免创建即过期）
+//
+// 非法格式返回 BadRequest。
+func parseExpiry(s string, now time.Time) (time.Time, error) {
+	if s == "" || s == "never" {
+		return time.Time{}, nil
+	}
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return time.Time{}, domainshared.BadRequest("过期日期格式无效，需 YYYY-MM-DD 或 never")
+	}
+	// 当天 23:59:59，避免选当天导致创建即过期
+	return t.Add(24*time.Hour - time.Second), nil
 }
 
 // List 列出当前用户的全部 PAT。

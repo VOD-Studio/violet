@@ -55,9 +55,9 @@ type PAT struct {
 
 // NewPAT 创建新 PAT。返回聚合根与 token 哈希（明文由调用方保留并一次性返回）。
 //
-// ttl<=0 表示永不过期（expiresAt 保持零值）；ttl>0 时 expiresAt = now + ttl。
+// expiresAt 零值表示永不过期；非零值时与 now 比较判过期。
 // 随机源失败返回错误，调用方映射为 500。
-func NewPAT(userID, name string, scopes []string, ttl time.Duration, now time.Time) (*PAT, string, error) {
+func NewPAT(userID, name string, scopes []string, expiresAt, now time.Time) (*PAT, string, error) {
 	if len(scopes) == 0 {
 		return nil, "", domainshared.BadRequest("至少选择一个权限范围")
 	}
@@ -76,7 +76,7 @@ func NewPAT(userID, name string, scopes []string, ttl time.Duration, now time.Ti
 		name:      name,
 		tokenHash: HashToken(raw),
 		scopes:    scopes,
-		expiresAt: expiryFromTTL(ttl, now),
+		expiresAt: expiresAt,
 		createdAt: now,
 	}
 	return p, raw, nil
@@ -88,13 +88,6 @@ func Reconstruct(id, userID, name, tokenHash string, scopes []string, expiresAt,
 		id: id, userID: userID, name: name, tokenHash: tokenHash,
 		scopes: scopes, expiresAt: expiresAt, lastUsedAt: lastUsedAt, createdAt: createdAt,
 	}
-}
-
-func expiryFromTTL(ttl time.Duration, now time.Time) time.Time {
-	if ttl <= 0 {
-		return time.Time{}
-	}
-	return now.Add(ttl)
 }
 
 func (p *PAT) ID() string         { return p.id }

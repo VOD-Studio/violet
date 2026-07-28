@@ -18,15 +18,12 @@ func NewService(repo domainapitoken.TokenRepository) *Service {
 	return &Service{repo: repo}
 }
 
-// ExpiryNever 永不过期哨兵，供 CreateInput.ExpiresIn 引用。
-const ExpiryNever time.Duration = 0
-
 // CreateInput 创建 PAT 入参。
 type CreateInput struct {
-	UserID    string
-	Name      string
-	Scopes    []string
-	ExpiresIn time.Duration // <=0 表示永不过期
+	UserID     string
+	Name       string
+	Scopes     []string
+	ExpiresAt  time.Time // 零值表示永不过期
 }
 
 // CreateResult 创建结果。Token 为明文，仅此一次返回。
@@ -36,7 +33,7 @@ type CreateResult struct {
 
 // Create 创建 PAT，返回明文 token（仅此一次）。
 func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, error) {
-	p, plaintext, err := domainapitoken.NewPAT(in.UserID, in.Name, in.Scopes, in.ExpiresIn, time.Now())
+	p, plaintext, err := domainapitoken.NewPAT(in.UserID, in.Name, in.Scopes, in.ExpiresAt, time.Now())
 	if err != nil {
 		return CreateResult{}, err
 	}
