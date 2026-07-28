@@ -20,6 +20,41 @@ export type PATScope = (typeof PAT_SCOPES)[number];
 export const PAT_EXPIRIES = ["90d", "365d", "never"] as const;
 export type PATExpiry = (typeof PAT_EXPIRIES)[number];
 
+/**
+ * MCP server 清单（ADR-0007：文章 + 抓取两个独立端点）。
+ * 未来新增 MCP server 只在此追加一项，MCPConfigCard 自动渲染对应勾选项与配置生成。
+ * 与后端 ADR-0007 路由 + scope 对齐。
+ */
+export interface MCPServerSpec {
+    /** mcpServers 配置里的 key（也是客户端识别名） */
+    key: string;
+    /** 显示名 */
+    label: string;
+    /** 后端端点路径 */
+    endpoint: string;
+    /** 能力描述（勾选时展示） */
+    description: string;
+    /** 该 server 涉及的 scope（用于提示 PAT 应包含哪些权限） */
+    scopes: string[];
+}
+
+export const MCP_SERVERS: MCPServerSpec[] = [
+    {
+        key: "mimo-blog",
+        label: "文章",
+        endpoint: "/api/v1/mcp",
+        description: "5 个文章 CRUD tool",
+        scopes: ["posts:read", "posts:write", "posts:publish"],
+    },
+    {
+        key: "mimo-blog-scraper",
+        label: "抓取",
+        endpoint: "/api/v1/mcp/scraper",
+        description: "scrape_url + 7 个订阅 tool",
+        scopes: ["posts:scrape", "subscriptions:read", "subscriptions:write"],
+    },
+];
+
 /** PATDTO - 个人访问令牌读模型 */
 export interface PATDTO {
     id: string;

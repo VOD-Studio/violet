@@ -2,6 +2,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useCreatePAT, useDeletePAT, usePATs } from "@features/admin-mcp/api/queries";
 import {
     type CreatePATRequest,
+    MCP_SERVERS,
     PAT_EXPIRIES,
     PAT_SCOPES,
     type PATDTO,
@@ -15,6 +16,13 @@ import { Button } from "@shared/ui/base/button";
 import { Checkbox } from "@shared/ui/base/checkbox";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@shared/ui/base/select";
 import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Copy, KeyRound, Loader2, Plus, Trash2 } from "lucide-react";
@@ -274,61 +282,65 @@ function CreatePATDialog({
                 </div>
                 <div className="space-y-2">
                     <Label>有效期</Label>
-                    <div className="flex gap-2">
-                        {PAT_EXPIRIES.map((e) => (
-                            <Button
-                                key={e}
-                                type="button"
-                                variant={expiry === e ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setExpiry(e)}
-                                disabled={create.isPending}
-                            >
-                                {expiryLabel(e)}
-                            </Button>
-                        ))}
-                    </div>
+                    <Select
+                        value={expiry}
+                        onValueChange={(v) => setExpiry(v as PATExpiry)}
+                        disabled={create.isPending}
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {PAT_EXPIRIES.map((e) => (
+                                <SelectItem key={e} value={e}>
+                                    {expiryLabel(e)}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
         </Modal>
     );
 }
 
-/** MCP server 选项（对齐后端 ADR-0007 拆分） */
-type MCPServerChoice = "post" | "scraper" | "both";
-
-const MCP_SERVER_CHOICES: { value: MCPServerChoice; label: string; desc: string }[] = [
-    { value: "post", label: "仅文章", desc: "5 个文章 CRUD tool（posts:read/write/publish）" },
-    {
-        value: "scraper",
-        label: "仅抓取",
-        desc: "scrape_url + 7 个订阅 tool（posts:scrape + subscriptions:*）",
-    },
-    { value: "both", label: "两者", desc: "文章 + 抓取（两个 server 都配）" },
-];
-
-/** MCPConfigCard - 展示 + 复制 mcpServers 配置 JSON */
+/** MCPConfigCard - 展示 + 复制 mcpServers 配置 JSON。
+ * 数据驱动：从 MCP_SERVERS 渲染勾选项，未来加 MCP server 只改数据源不改 UI。
+ * 默认全选；用户按需勾选要接入的 server，配置 JSON 由勾选项动态生成。
+ */
 function MCPConfigCard({ token }: { token: string | null }) {
     const [copied, setCopied] = React.useState(false);
-    const [serverChoice, setServerChoice] = React.useState<MCPServerChoice>("both");
+    // 默认全选所有 server；未来加 server 自动出现勾选项
+    const [selected, setSelected] = React.useState<Set<string>>(
+        () => new Set(MCP_SERVERS.map((s) => s.key)),
+    );
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
     const config = React.useMemo(() => {
-        if (!token) {
+        if (!token || selected.size === 0) {
             return null;
         }
-        const auth = { Authorization: `Bearer ${token}` };
-        const mcpServers: Record<string, { url: string; headers: typeof auth }> = {};
-        if (serverChoice === "post" || serverChoice === "both") {
-            mcpServers["mimo-blog"] = { url: `${baseUrl}/api/v1/mcp`, headers: auth };
-        }
-        if (serverChoice === "scraper" || serverChoice === "both") {
-            mcpServers["mimo-blog-scraper"] = {
-                url: `${baseUrl}/api/v1/mcp/scraper`,
-                headers: auth,
-            };
+        const headers = { Authorization: `Bearer ${token}` };
+        const mcpServers: Record<string, { url: string; headers: typeof headers }> = {};
+        for (const spec of MCP_SERVERS) {
+            if (selected.has(spec.key)) {
+                mcpServers[spec.key] = { url: `${baseUrl}${spec.endpoint}`, headers };
+            }
         }
         return { mcpServers };
-    }, [token, baseUrl, serverChoice]);
+    }, [token, baseUrl, selected]);
+
+    const toggleServer = (key: string) => {
+        setSelected((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+            return next;
+        });
+    };
 
     const json = config ? JSON.stringify(config, null, 2) : "";
     const onCopy = async () => {
@@ -357,18 +369,31 @@ function MCPConfigCard({ token }: { token: string | null }) {
                     复制
                 </Button>
             </div>
-            {/* server 选择（ADR-0007：文章 + 抓取两个独立 server） */}
-            <div className="flex flex-wrap gap-2">
-                {MCP_SERVER_CHOICES.map((c) => (
-                    <Button
-                        key={c.value}
-                        size="sm"
-                        variant={serverChoice === c.value ? "default" : "outline"}
-                        onClick={() => setServerChoice(c.value)}
-                        title={c.desc}
+            {/* server 勾选（数据驱动，未来加 MCP 只改 MCP_SERVERS 数据源） */}
+            <div className="space-y-2">
+                {MCP_SERVERS.map((spec) => (
+                    <label
+                        key={spec.key}
+                        htmlFor={`mcp-server-${spec.key}`}
+                        className="flex cursor-pointer items-start gap-2"
                     >
-                        {c.label}
-                    </Button>
+                        <Checkbox
+                            id={`mcp-server-${spec.key}`}
+                            checked={selected.has(spec.key)}
+                            onCheckedChange={() => toggleServer(spec.key)}
+                            disabled={!token}
+                            className="mt-0.5"
+                        />
+                        <div className="space-y-0.5">
+                            <div className="font-mono text-sm">
+                                <span className="font-medium">{spec.label}</span>
+                                <span className="text-muted-foreground"> · {spec.key}</span>
+                            </div>
+                            <p className="text-muted-foreground text-xs">
+                                {spec.description}（{spec.scopes.join(", ")}）
+                            </p>
+                        </div>
+                    </label>
                 ))}
             </div>
             {json ? (
@@ -377,7 +402,9 @@ function MCPConfigCard({ token }: { token: string | null }) {
                 </pre>
             ) : (
                 <p className="text-muted-foreground text-sm">
-                    创建令牌后或选中列表中的令牌，此处展示可复制的 mcpServers 配置 JSON。
+                    {token
+                        ? "至少勾选一个 server。"
+                        : "创建令牌后或选中列表中的令牌，此处展示可复制的 mcpServers 配置 JSON。"}
                 </p>
             )}
         </div>
