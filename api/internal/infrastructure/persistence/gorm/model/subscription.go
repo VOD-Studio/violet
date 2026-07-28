@@ -45,8 +45,8 @@ func (Subscription) TableName() string { return "subscriptions" }
 // 删除订阅时 ON DELETE CASCADE 连带清理。
 type SubscriptionEntry struct {
 	ID             int64      `gorm:"primaryKey;autoIncrement" json:"id"`
-	SubscriptionID uuid.UUID  `gorm:"type:uuid;column:subscription_id;not null;index:idx_subscription_entries_sub" json:"subscription_id"`
-	GUID           string     `gorm:"type:text;column:guid;not null;uniqueIndex:uniq_sub_guid" json:"guid"`
+	SubscriptionID uuid.UUID  `gorm:"type:uuid;column:subscription_id;not null;index:idx_subscription_entries_sub;uniqueIndex:uniq_sub_guid,priority:1" json:"subscription_id"`
+	GUID           string     `gorm:"type:text;column:guid;not null;uniqueIndex:uniq_sub_guid,priority:2" json:"guid"`
 	EntryURL       string     `gorm:"type:text;column:entry_url" json:"entry_url"`
 	Title          string     `gorm:"type:varchar(255)" json:"title"`
 	PostID         *uuid.UUID `gorm:"type:uuid;column:post_id" json:"post_id,omitempty"`
