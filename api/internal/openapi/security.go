@@ -9,7 +9,7 @@ func registerSecuritySchemes(t *openapi3.T) {
 	t.Components.SecuritySchemes[secCookieAuth] = &openapi3.SecuritySchemeRef{Value: &openapi3.SecurityScheme{
 		Type:        "apiKey",
 		In:          "cookie",
-		Name:        "mimo_session",
+		Name:        "violet_session",
 		Description: "登录后服务端下发的 opaque session cookie（HttpOnly）。登录接口会自动设置。",
 	}}
 }
@@ -34,6 +34,6 @@ func csrfHeaderParam() *openapi3.ParameterRef {
 	return &openapi3.ParameterRef{Value: &openapi3.Parameter{
 		Name: "X-CSRF-Token", In: openapi3.ParameterInHeader, Required: true,
 		Schema:      &openapi3.SchemaRef{Value: &openapi3.Schema{Type: &openapi3.Types{openapi3.TypeString}}},
-		Description: "CSRF Token，所有非 GET 写操作必需。通过 GET /auth/csrf-token 获取，与 mimo_csrf cookie 配套。",
+		Description: "CSRF Token，所有非 GET 写操作必需。通过 GET /auth/csrf-token 获取，与 violet_csrf cookie 配套。",
 	}}
 }

@@ -39,7 +39,7 @@ export default function LandingHero() {
                         <div className="max-w-[40rem]">
                             <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono">
                                 <span className="text-[2.5rem] font-bold leading-none tracking-tight md:text-[3.4rem]">
-                                    MIMO
+                                    VIOLET
                                 </span>
                                 <span className="text-[2.5rem] font-bold italic leading-none tracking-tight text-muted-foreground md:text-[3.4rem]">
                                     Blog

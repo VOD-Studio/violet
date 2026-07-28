@@ -14,7 +14,7 @@ func TestGenerateToken_Format(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(raw, TokenPrefix),
 		"token 必须以 %s 开头，实际: %s", TokenPrefix, raw)
-	// mimo_pat_ (10) + 32 字节 base64url (≈43 字符) > 40
+	// violet_pat_ (12) + 32 字节 base64url (≈43 字符) > 40
 	assert.Greater(t, len(raw), 40, "token 随机部分应足够长")
 }
 
@@ -25,7 +25,7 @@ func TestGenerateToken_Uniqueness(t *testing.T) {
 }
 
 func TestHashToken_Deterministic(t *testing.T) {
-	tok := "mimo_pat_testtoken123"
+	tok := "violet_pat_testtoken123"
 	h1 := HashToken(tok)
 	h2 := HashToken(tok)
 	assert.Equal(t, h1, h2, "同一 token 哈希必须相同")

@@ -1,5 +1,5 @@
 {
-  "name": "Mimo Blog OpenAPI 同步",
+  "name": "Violet OpenAPI 同步",
   "sourceType": "openapi",
   "originType": "URL",
   "sourceUrl": "http://localhost:9090/api/v1/openapi.json",

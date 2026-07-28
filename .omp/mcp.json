@@ -1,11 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json",
   "mcpServers": {
-    "mimo-blog": {
+    "violet": {
       "type": "http",
       "url": "http://localhost:5174/api/v1/mcp",
       "headers": {
-        "Authorization": "Bearer ${MIMO_MCP_PAT}"
+        "Authorization": "Bearer ${VIOLET_MCP_PAT}"
       }
     }
   }

@@ -105,7 +105,7 @@ func UploadRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler 
 // 阈值理由：每次执行起一个 Docker 容器，资源开销大。5/min 对正常读者
 // （试运行示例、调试代码）足够，但能挡住容器资源耗尽攻击。
 // admin 角色的放行在 service 层之外由前端权限控制——此处按 IP 统一限流，
-// 与 ygggrasil「admin 跳过速率限制」的差异：mimo-blog 的限流在中间件层，
+// 与 ygggrasil「admin 跳过速率限制」的差异：violet 的限流在中间件层，
 // admin 判断需额外中间件，本期暂按 IP 统一限流（admin 同样受限，影响可忽略）。
 func CodeRunnerRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 	return RateLimit("code_runner", redisClient, time.Minute, 5)

@@ -4,17 +4,19 @@ import (
 	"net/http"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"blog-api/internal/brand"
 )
 
 // ServerMeta 服务器实现元信息（MCP initialize 响应里的 name/version）。
 var ServerMeta = &mcp.Implementation{
-	Name:    "mimo-blog",
+	Name:    brand.MCPServerName,
 	Version: "1.0.0",
 }
 
 // ScraperServerMeta 抓取 server 元信息（与文章 server 区分，便于客户端识别）。
 var ScraperServerMeta = &mcp.Implementation{
-	Name:    "mimo-blog-scraper",
+	Name:    brand.MCPScraperServerName,
 	Version: "1.0.0",
 }
 

@@ -13,7 +13,7 @@ func TestSpec_BuildsWithoutError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, spec)
 	require.Equal(t, "3.0.3", spec.OpenAPI)
-	require.Equal(t, "Mimo Blog API", spec.Info.Title)
+	require.Equal(t, "Violet API", spec.Info.Title)
 	require.Equal(t, "2.0.0", spec.Info.Version)
 	require.Equal(t, "/api/v1", spec.Servers[0].URL)
 }

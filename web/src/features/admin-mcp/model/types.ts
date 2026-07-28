@@ -28,20 +28,26 @@ export interface MCPServerSpec {
 
 export const MCP_SERVERS: MCPServerSpec[] = [
     {
-        key: "mimo-blog",
+        key: "violet",
         label: "文章",
         endpoint: "/api/v1/mcp",
         description: "5 个文章 CRUD tool",
         scopes: ["posts:read", "posts:write", "posts:publish"],
     },
     {
-        key: "mimo-blog-scraper",
+        key: "violet-scraper",
         label: "抓取",
         endpoint: "/api/v1/mcp/scraper",
         description: "scrape_url + 7 个订阅 tool",
         scopes: ["posts:scrape", "subscriptions:read", "subscriptions:write"],
     },
 ];
+
+/** serversForScopes - 按 PAT scope 推导可见的 MCP server：命中该 server 任一 scope 即包含 */
+export function serversForScopes(scopes: readonly string[]): MCPServerSpec[] {
+    const set = new Set(scopes);
+    return MCP_SERVERS.filter((s) => s.scopes.some((sc) => set.has(sc)));
+}
 
 /** PAT 读模型 */
 export interface PATDTO {

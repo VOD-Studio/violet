@@ -1,13 +1,13 @@
 # 贡献指南
 
-感谢你对 mimo-blog 项目的关注！本文档描述参与开发的流程与规范。
+感谢你对 violet 项目的关注！本文档描述参与开发的流程与规范。
 
 ## 开发环境搭建
 
 ```bash
 # 1. Fork 并 clone 仓库
 git clone <your-fork-url>
-cd mimo-blog
+cd violet
 
 # 2. 安装依赖
 make install          # 后端 go mod download + 前端 pnpm install

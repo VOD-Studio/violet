@@ -23,12 +23,12 @@ const CSRFCookieMaxAge = 7 * 24 * 3600
 
 // UIDCookieName 前端可读的 user_id Cookie 名。
 // 供不挂 useMe 的轻量组件直接读取当前 user_id（如评论卡片判断是不是自己发的）。
-const UIDCookieName = "mimo_uid"
+const UIDCookieName = "violet_uid"
 
-// SetSessionCookie 下发 opaque session 相关 Cookie：mimo_session(HttpOnly) + mimo_csrf + mimo_uid。
+// SetSessionCookie 下发 opaque session 相关 Cookie：violet_session(HttpOnly) + violet_csrf + violet_uid。
 //
-// session id 经 HttpOnly Cookie 传递，前端不读取；mimo_csrf 供前端回传 X-CSRF-Token；
-// mimo_uid 供前端轻量组件直接读 user_id。必须在 WriteHeader 前调用。
+// session id 经 HttpOnly Cookie 传递，前端不读取；violet_csrf 供前端回传 X-CSRF-Token；
+// violet_uid 供前端轻量组件直接读 user_id。必须在 WriteHeader 前调用。
 // MaxAge 取 idleTTL，与 session 滑动续期窗口对齐，活跃用户 cookie 随 session 一起续命。
 func SetSessionCookie(w http.ResponseWriter, sessionID, csrfToken, userID string, cfg config.CookieConfig, idleTTL time.Duration) {
 	http.SetCookie(w, &http.Cookie{
@@ -52,7 +52,7 @@ func SetSessionCookie(w http.ResponseWriter, sessionID, csrfToken, userID string
 	}
 }
 
-// ClearSessionCookies 清除 mimo_session + mimo_csrf + mimo_uid。
+// ClearSessionCookies 清除 violet_session + violet_csrf + violet_uid。
 // MaxAge=-1 让浏览器立即删除；logout 与 session 失效时调用。
 // 三个 Cookie 的 Path 必须与 SetSessionCookie 一致，否则浏览器不会删除。
 func ClearSessionCookies(w http.ResponseWriter, cfg config.CookieConfig) {

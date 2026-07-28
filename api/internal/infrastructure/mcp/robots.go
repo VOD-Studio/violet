@@ -19,12 +19,13 @@ import (
 
 	"github.com/temoto/robotstxt"
 
+	"blog-api/internal/brand"
 	"blog-api/internal/infrastructure/ssrf"
 )
 
 // RobotsChecker robots.txt 预检的默认实现。
 // 每次抓取前拉 /robots.txt（SSRF 防护 Transport）→ 用 temoto/robotstxt 解析 →
-// 按 User-Agent "mimo-blog-importer" 判定目标 path 是否允许。
+// 按 User-Agent brand.ImporterProduct 判定目标 path 是否允许。
 //
 // 不缓存 robots.txt（站点稀疏访问，缓存收益低；TTL 失效反而是 bug 源）。
 // 真要缓存可后续在 infra 加 LRU，本期不做（YAGNI）。
@@ -43,7 +44,6 @@ func NewRobotsChecker() *RobotsChecker {
 	}
 }
 
-const robotsUserAgent = "mimo-blog-importer"
 
 // Allowed 判断 target URL 是否被目标站点 robots.txt 允许抓取。
 // 第二返回值为拒绝原因。
@@ -67,7 +67,7 @@ func (r *RobotsChecker) Allowed(ctx context.Context, target string) (bool, strin
 	if err != nil {
 		return false, "", err
 	}
-	req.Header.Set("User-Agent", robotsUserAgent)
+	req.Header.Set("User-Agent", brand.ImporterProduct)
 	resp, err := r.client.Do(req)
 	if err != nil {
 		// 网络不可达：RFC 9309 是 temporary disallow，本博客产品决策 fail-open（见 Allowed 注释）
@@ -87,7 +87,7 @@ func (r *RobotsChecker) Allowed(ctx context.Context, target string) (bool, strin
 	if err != nil {
 		return true, "", nil // 解析失败也放行
 	}
-	group := robots.FindGroup(robotsUserAgent)
+	group := robots.FindGroup(brand.ImporterProduct)
 	if group == nil {
 		// 无匹配 UA 组：默认 * 组或全允许
 		return true, "", nil
@@ -95,5 +95,5 @@ func (r *RobotsChecker) Allowed(ctx context.Context, target string) (bool, strin
 	if group.Test(parsed.Path) {
 		return true, "", nil
 	}
-	return false, fmt.Sprintf("robots.txt 禁止 %s 抓取路径 %s", robotsUserAgent, parsed.Path), nil
+	return false, fmt.Sprintf("robots.txt 禁止 %s 抓取路径 %s", brand.ImporterProduct, parsed.Path), nil
 }

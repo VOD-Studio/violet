@@ -42,8 +42,8 @@ cookie:
   domain: ""
   secure: false
   samesite: lax
-  csrf_name: mimo_csrf
-  session_name: mimo_session
+  csrf_name: violet_csrf
+  session_name: violet_session
 
 # ── Session 生命周期 ─────────────────────────────
 # idle_ttl 滑动续期窗口（活跃用户不过期）；max_ttl 绝对寿命上限（<=0 无上限）

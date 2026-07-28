@@ -10,7 +10,7 @@ import type { UserRole } from "@entities/user/model/types";
 /**
  * CsrfTokenResponse - GET /auth/csrf-token 返回
  *
- * handler 同时下发 mimo_csrf cookie（HttpOnly=false，JS 可读）并返回 token 字符串。
+ * handler 同时下发 violet_csrf cookie（HttpOnly=false，JS 可读）并返回 token 字符串。
  * double-submit 模式下前端需把该 token 放入自定义请求头，值与 cookie 一致。
  */
 export interface CsrfTokenResponse {

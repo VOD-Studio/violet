@@ -16,7 +16,7 @@ set -euo pipefail
 
 # ==================== 配置 ====================
 REMOTE_HOST="rua"
-REMOTE_DIR="/root/docker/mimo-blog"
+REMOTE_DIR="/root/docker/violet"
 COMPOSE_FILE="docker-compose.prod.yml"
 IMAGE_FILE="images.tar.gz"
 SKIP_BUILD=false
@@ -90,8 +90,8 @@ if [ "$SKIP_BUILD" = false ]; then
     # 保存镜像
     info "  保存镜像到 $IMAGE_FILE..."
     docker save \
-        localhost/mimo-blog-api:latest \
-        localhost/mimo-blog-web:latest \
+        localhost/violet-api:latest \
+        localhost/violet-web:latest \
         docker.io/library/postgres:16-alpine \
         docker.io/library/redis:7-alpine \
         | gzip > "$IMAGE_FILE"
@@ -119,7 +119,7 @@ info "在服务器上部署..."
 ssh "$REMOTE_HOST" bash -s << 'REMOTE_SCRIPT'
 set -euo pipefail
 
-cd /root/docker/mimo-blog
+cd /root/docker/violet
 
 echo "📦 导入镜像..."
 podman load -i images.tar.gz 2>/dev/null || docker load -i images.tar.gz
