@@ -13,51 +13,57 @@ import { getSingletonHighlighterCore, type HighlighterCore } from "shiki/core";
 import { createOnigurumaEngine } from "shiki/engine/oniguruma";
 
 /**
- * 支持的语言白名单：与编辑器下拉（CodeBlockView.tsx LANGUAGES）保持一致，
- * 覆盖博客实际会出现的全部语言。未命中白名单的 lang 降级为纯文本。
+ * 语言包加载器静态映射：键即白名单语言 id。
+ *
+ * 必须用字面量 import：vite 才能静态解析并预构建/分包，运行时按需拉取。
+ * 此前用模板 import + @vite-ignore（`shiki/dist/langs/${lang}.mjs`），裸
+ * specifier 原样进入浏览器直接抛 TypeError，白名单内语言全部静默降级
+ * 为纯文本（无语法高亮）。独立 chunk 只含映射内语言，未列出语言不进构建。
  */
-const SUPPORTED_LANGUAGES = [
-    "html",
-    "css",
-    "scss",
-    "less",
-    "javascript",
-    "typescript",
-    "jsx",
-    "tsx",
-    "vue",
-    "json",
-    "yaml",
-    "markdown",
-    "bash",
-    "shell",
-    "powershell",
-    "dockerfile",
-    "nginx",
-    "makefile",
-    "ini",
-    "diff",
-    "go",
-    "rust",
-    "python",
-    "java",
-    "kotlin",
-    "swift",
-    "ruby",
-    "php",
-    "c",
-    "cpp",
-    "csharp",
-    "objectivec",
-    "lua",
-    "r",
-    "perl",
-    "graphql",
-    "sql",
-    "xml",
-    "arduino",
-    "wasm",
-] as const;
+const LANG_LOADERS = {
+    html: () => import("shiki/dist/langs/html.mjs"),
+    css: () => import("shiki/dist/langs/css.mjs"),
+    scss: () => import("shiki/dist/langs/scss.mjs"),
+    less: () => import("shiki/dist/langs/less.mjs"),
+    javascript: () => import("shiki/dist/langs/javascript.mjs"),
+    typescript: () => import("shiki/dist/langs/typescript.mjs"),
+    jsx: () => import("shiki/dist/langs/jsx.mjs"),
+    tsx: () => import("shiki/dist/langs/tsx.mjs"),
+    vue: () => import("shiki/dist/langs/vue.mjs"),
+    json: () => import("shiki/dist/langs/json.mjs"),
+    yaml: () => import("shiki/dist/langs/yaml.mjs"),
+    markdown: () => import("shiki/dist/langs/markdown.mjs"),
+    bash: () => import("shiki/dist/langs/bash.mjs"),
+    shell: () => import("shiki/dist/langs/shell.mjs"),
+    powershell: () => import("shiki/dist/langs/powershell.mjs"),
+    dockerfile: () => import("shiki/dist/langs/dockerfile.mjs"),
+    nginx: () => import("shiki/dist/langs/nginx.mjs"),
+    makefile: () => import("shiki/dist/langs/makefile.mjs"),
+    ini: () => import("shiki/dist/langs/ini.mjs"),
+    diff: () => import("shiki/dist/langs/diff.mjs"),
+    go: () => import("shiki/dist/langs/go.mjs"),
+    rust: () => import("shiki/dist/langs/rust.mjs"),
+    python: () => import("shiki/dist/langs/python.mjs"),
+    java: () => import("shiki/dist/langs/java.mjs"),
+    kotlin: () => import("shiki/dist/langs/kotlin.mjs"),
+    swift: () => import("shiki/dist/langs/swift.mjs"),
+    ruby: () => import("shiki/dist/langs/ruby.mjs"),
+    php: () => import("shiki/dist/langs/php.mjs"),
+    c: () => import("shiki/dist/langs/c.mjs"),
+    cpp: () => import("shiki/dist/langs/cpp.mjs"),
+    csharp: () => import("shiki/dist/langs/csharp.mjs"),
+    "objective-c": () => import("shiki/dist/langs/objective-c.mjs"),
+    lua: () => import("shiki/dist/langs/lua.mjs"),
+    r: () => import("shiki/dist/langs/r.mjs"),
+    perl: () => import("shiki/dist/langs/perl.mjs"),
+    graphql: () => import("shiki/dist/langs/graphql.mjs"),
+    sql: () => import("shiki/dist/langs/sql.mjs"),
+    xml: () => import("shiki/dist/langs/xml.mjs"),
+    wasm: () => import("shiki/dist/langs/wasm.mjs"),
+} satisfies Record<string, () => Promise<unknown>>;
+
+/** 白名单语言 id（= LANG_LOADERS 键） */
+type SupportedLanguage = keyof typeof LANG_LOADERS;
 
 /** 主题（前台展示固定 github-dark，与原 useShikiHighlight/useCodeHighlight 一致） */
 const THEME = "github-dark";
@@ -91,6 +97,7 @@ const LANG_ALIAS: Record<string, string> = {
     mak: "makefile",
     toml: "ini",
     conf: "ini",
+    arduino: "cpp",
     yml: "yaml",
     md: "markdown",
 };
@@ -98,11 +105,11 @@ const LANG_ALIAS: Record<string, string> = {
 /**
  * 把任意 lang id 规整为白名单内 id；不在白名单内返回 null（调用方降级纯文本）。
  */
-export function resolveSupportedLanguage(lang: string): string | null {
+export function resolveSupportedLanguage(lang: string): SupportedLanguage | null {
     if (!lang) return null;
     const lower = lang.toLowerCase();
     const aliased = LANG_ALIAS[lower] ?? lower;
-    if ((SUPPORTED_LANGUAGES as readonly string[]).includes(aliased)) return aliased;
+    if (aliased in LANG_LOADERS) return aliased as SupportedLanguage;
     return null;
 }
 
@@ -133,7 +140,7 @@ const loadingLanguages = new Map<string, Promise<void>>();
  *
  * @param lang 白名单内语言 id（外部应先用 resolveSupportedLanguage 校验）
  */
-export function ensureLanguage(lang: string): Promise<void> {
+export function ensureLanguage(lang: SupportedLanguage): Promise<void> {
     const pending = loadingLanguages.get(lang);
     if (pending) return pending;
     // 已加载直接返回（getLoadedLanguages 同步可查）
@@ -141,9 +148,7 @@ export function ensureLanguage(lang: string): Promise<void> {
     const p = (async () => {
         const highlighter = await (hl ?? getHighlighter());
         if (highlighter.getLoadedLanguages().includes(lang)) return;
-        await highlighter.loadLanguage(
-            () => import(/* @vite-ignore */ `shiki/dist/langs/${lang}.mjs`),
-        );
+        await highlighter.loadLanguage(LANG_LOADERS[lang]);
     })();
     loadingLanguages.set(lang, p);
     return p;
