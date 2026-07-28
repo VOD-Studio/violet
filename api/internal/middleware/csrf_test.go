@@ -13,7 +13,7 @@ import (
 // testCSRFCfg 构造测试用 Cookie 配置
 func testCSRFCfg() config.CookieConfig {
 	return config.CookieConfig{
-		CSRFName: "mimo_csrf",
+		CSRFName: "violet_csrf",
 		Secure:   false,
 		SameSite: "lax",
 	}
@@ -71,7 +71,7 @@ func TestCSRF_PostWithoutHeader(t *testing.T) {
 	assert.False(t, called, "缺失 header 不应调用下游")
 }
 
-// TestCSRF_PostWithoutCookie 缺失 mimo_csrf cookie → 403
+// TestCSRF_PostWithoutCookie 缺失 violet_csrf cookie → 403
 func TestCSRF_PostWithoutCookie(t *testing.T) {
 	cfg := testCSRFCfg()
 	status, called := callCSRF(t, http.MethodPost, "/posts", cfg, nil, "token-abc", "")

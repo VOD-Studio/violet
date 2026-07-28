@@ -90,7 +90,7 @@ func registerAuthPaths(t *openapi3.T) {
 		Get: &openapi3.Operation{
 			Tags:        []string{"认证"},
 			Summary:     "获取 CSRF Token",
-			Description: "返回 CSRF Token，并设置 mimo_csrf cookie（JS 可读）。首次访问需先调用此端点拿到 cookie 才能 login。",
+			Description: "返回 CSRF Token，并设置 violet_csrf cookie（JS 可读）。首次访问需先调用此端点拿到 cookie 才能 login。",
 			Responses: responses(
 				200, dataResponse("CSRFToken", "CSRF Token", 200),
 			),

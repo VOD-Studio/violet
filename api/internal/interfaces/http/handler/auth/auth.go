@@ -170,7 +170,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	// 创建 opaque session 并下发 mimo_session + mimo_csrf + mimo_uid Cookie。
+	// 创建 opaque session 并下发 violet_session + violet_csrf + violet_uid Cookie。
 	// csrf 由 session 自带（CreateSession 生成），不再单独 generateCSRFToken。
 	sess, err := h.createSession.Handle(r.Context(), authcmd.CreateSessionInput{
 		UserID: out.UserID, IdleTTL: h.session.IdleTTL, MaxTTL: h.session.MaxTTL,
@@ -293,7 +293,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 // GetCSRFToken GET /auth/csrf-token（公开）
 //
 // 为 double-submit CSRF 防护提供初始 token：
-//   - 已登录用户：登录时已下发 mimo_csrf cookie，本端点刷新 token（防止长期不变）
+//   - 已登录用户：登录时已下发 violet_csrf cookie，本端点刷新 token（防止长期不变）
 //   - 未登录用户：首次访问时取一个 CSRF cookie 才能发起 login/register（防 login CSRF）
 //
 // 响应体同时返回 token 字符串（非敏感，攻击者拿不到 cookie 也无法伪造 header）。

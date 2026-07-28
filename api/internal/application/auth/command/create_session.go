@@ -24,9 +24,9 @@ type CreateSessionInput struct {
 
 // CreateSessionOutput 新建的 session 凭证，由 HTTP 层写入 cookie。
 type CreateSessionOutput struct {
-	// SessionID opaque session id，写入 mimo_session cookie
+	// SessionID opaque session id，写入 violet_session cookie
 	SessionID string
-	// CSRFToken double-submit CSRF 凭证，写入 mimo_csrf cookie
+	// CSRFToken double-submit CSRF 凭证，写入 violet_csrf cookie
 	CSRFToken string
 }
 
