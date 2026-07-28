@@ -5,7 +5,7 @@
 // - header:false 不重写 CHANGELOG.md 顶部已有的标题块,只在 [Unreleased] 下前插新版本段
 // - types 按中文习惯重命名分组,隐藏 chore/ci/build/test 减少噪音
 // - skip 对 ctv 会自动改动的非真相源文件,避免污染(版本真相源是 git tag + 根 package.json)
-// - commit/compare 链接指向 VOD-Studio/mimo-blog
+// - commit/compare 链接指向 VOD-Studio/violet
 
 module.exports = {
   tagPrefix: 'v',
@@ -28,9 +28,9 @@ module.exports = {
   ],
 
   // 提交信息与 CHANGELOG 链接指向
-  commitUrlFormat: 'https://github.com/VOD-Studio/mimo-blog/commit/{{hash}}',
-  compareUrlFormat: 'https://github.com/VOD-Studio/mimo-blog/compare/{{previousTag}}...{{currentTag}}',
-  issueUrlFormat: 'https://github.com/VOD-Studio/mimo-blog/issues/{{id}}',
+  commitUrlFormat: 'https://github.com/VOD-Studio/violet/commit/{{hash}}',
+  compareUrlFormat: 'https://github.com/VOD-Studio/violet/compare/{{previousTag}}...{{currentTag}}',
+  issueUrlFormat: 'https://github.com/VOD-Studio/violet/issues/{{id}}',
 
   // commit-and-tag-version 默认会 bump 这些文件的版本号。
   // 版本真相源只有根 package.json + git tag,其余全部跳过。

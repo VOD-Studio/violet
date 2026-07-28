@@ -1,4 +1,4 @@
-# mimo-blog (blog-project)
+# violet (blog-project)
 
 全栈博客平台 monorepo。
 

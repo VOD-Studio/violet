@@ -9,7 +9,7 @@
    git push origin v2.0.1
    ```
 3. `Deploy` 工作流自动触发：构建镜像 → 迁移门禁 → 部署 api → 健康检查 → 创建 GitHub Release。
-4. 在 Actions 页或 `gh run list --workflow=deploy.yml` 观察结果；成功后线上版本写入 `/root/docker/mimo-blog/.current-version`。
+4. 在 Actions 页或 `gh run list --workflow=deploy.yml` 观察结果；成功后线上版本写入 `/root/docker/violet/.current-version`。
 
 健康检查失败会自动回滚到 `.current-version` 记录的上一版本；若回滚后仍失败，工作流报错，需人工介入。
 

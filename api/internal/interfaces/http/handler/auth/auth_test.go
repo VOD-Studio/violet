@@ -22,11 +22,11 @@ import (
 	"blog-api/internal/middleware"
 )
 
-// testCookieCfg 测试用 Cookie 配置（与默认 mimo_session/mimo_csrf 名对齐）。
+// testCookieCfg 测试用 Cookie 配置（与默认 violet_session/violet_csrf 名对齐）。
 func testCookieCfg() config.CookieConfig {
 	return config.CookieConfig{
-		CSRFName:    "mimo_csrf",
-		SessionName: "mimo_session",
+		CSRFName:    "violet_csrf",
+		SessionName: "violet_session",
 		Secure:      false,
 		SameSite:    "lax",
 	}
@@ -48,7 +48,7 @@ func hashedTestUser(t *testing.T, plainPassword string) *domainuser.User {
 	)
 }
 
-// TestLogin_SetsSessionAndCSRFCookies 验证登录成功后下发 mimo_session + mimo_csrf cookie，body 含 user_id。
+// TestLogin_SetsSessionAndCSRFCookies 验证登录成功后下发 violet_session + violet_csrf cookie，body 含 user_id。
 // 对应 Issue-0003：Login handler 调 createSession → SetSessionCookie，响应体 {user_id}。
 func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 	const plainPwd = "pass-word-123"
@@ -89,22 +89,22 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 	assert.Equal(t, u.GetID().String(), env.Data["user_id"])
 	assert.NotContains(t, env.Data, "access_token", "session 链路不返回 access_token")
 
-	// Set-Cookie 含 mimo_session 与 mimo_csrf
+	// Set-Cookie 含 violet_session 与 violet_csrf
 	cookies := rec.Result().Cookies()
 	var hasSession, hasCSRF bool
 	for _, c := range cookies {
 		switch c.Name {
-		case "mimo_session":
+		case "violet_session":
 			hasSession = true
-			assert.True(t, c.HttpOnly, "mimo_session 必须 HttpOnly")
+			assert.True(t, c.HttpOnly, "violet_session 必须 HttpOnly")
 			assert.NotEmpty(t, c.Value)
-		case "mimo_csrf":
+		case "violet_csrf":
 			hasCSRF = true
-			assert.False(t, c.HttpOnly, "mimo_csrf 必须非 HttpOnly（前端需读取）")
+			assert.False(t, c.HttpOnly, "violet_csrf 必须非 HttpOnly（前端需读取）")
 		}
 	}
-	assert.True(t, hasSession, "响应应下发 mimo_session cookie")
-	assert.True(t, hasCSRF, "响应应下发 mimo_csrf cookie")
+	assert.True(t, hasSession, "响应应下发 violet_session cookie")
+	assert.True(t, hasCSRF, "响应应下发 violet_csrf cookie")
 
 	sessionStore.AssertNumberOfCalls(t, "Create", 1)
 }
@@ -184,7 +184,7 @@ func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 
 	// 清 cookie：三个 cookie 都应 MaxAge=-1
 	cookies := rec.Result().Cookies()
-	require.GreaterOrEqual(t, len(cookies), 2, "应清除 mimo_session 与 mimo_csrf")
+	require.GreaterOrEqual(t, len(cookies), 2, "应清除 violet_session 与 violet_csrf")
 	for _, c := range cookies {
 		assert.Equal(t, -1, c.MaxAge, "cookie %s 应被清除（MaxAge=-1）", c.Name)
 	}

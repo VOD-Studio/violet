@@ -33,7 +33,7 @@ func NewID() (ID, error) {
 
 // CSRFToken double-submit CSRF 凭证。
 //
-// 与非 HttpOnly 的 mimo_csrf cookie 同值；前端读 cookie 后放入 X-CSRF-Token
+// 与非 HttpOnly 的 violet_csrf cookie 同值；前端读 cookie 后放入 X-CSRF-Token
 // header 回传，后端比对 cookie 与 header 是否相等。
 // 该值存于 session 记录中，与 session 同生命周期——session 失效即 csrf 失效。
 type CSRFToken string

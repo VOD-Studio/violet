@@ -1,4 +1,4 @@
-# mimo-blog / web
+# violet / web
 
 博客平台前端应用，基于 **TanStack Start** 构建，支持 SSR/SSG、文件路由与 Server Function。
 
@@ -113,9 +113,9 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 
 - 开发环境通过 Vite 反向代理将 `/api/*` 与 `/uploads/*` 转发到后端 `http://localhost:9090`，避免跨域与 CSRF 边界问题。
 - 后端认证采用 **opaque session cookie**：
-  - `mimo_session`：HttpOnly session id
-  - `mimo_csrf`：CSRF token，写请求需回传 `X-CSRF-Token`
-  - `mimo_uid`：前端可读 user id
+  - `violet_session`：HttpOnly session id
+  - `violet_csrf`：CSRF token，写请求需回传 `X-CSRF-Token`
+  - `violet_uid`：前端可读 user id
 - SSR 场景只读 `/auth/session` 探活，不续期、不写 cookie。
 
 API 基础配置见 `src/shared/api/`。

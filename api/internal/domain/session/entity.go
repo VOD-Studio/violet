@@ -50,7 +50,7 @@ type Session struct {
 	role string
 	// isBuiltinSuperAdmin 内置超管标志位
 	isBuiltinSuperAdmin bool
-	// csrf double-submit CSRF 凭证，与 mimo_csrf cookie 同值
+	// csrf double-submit CSRF 凭证，与 violet_csrf cookie 同值
 	csrf CSRFToken
 	// createdAt session 创建时间，用于计算绝对寿命是否到点
 	createdAt time.Time

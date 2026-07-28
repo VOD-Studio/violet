@@ -2,11 +2,11 @@
 //
 // 采用 double-submit cookie 模式（OWASP 推荐）：
 //
-//  1. 后端在 login/refresh 时下发非 HttpOnly 的 mimo_csrf cookie（已在 step 1 实现）
+//  1. 后端在 login/refresh 时下发非 HttpOnly 的 violet_csrf cookie（已在 step 1 实现）
 //  2. 前端 JS 读取该 cookie 值，在每个写请求的 X-CSRF-Token header 中回传
 //  3. 本中间件校验 cookie 值与 header 值相等，否则拒绝
 //
-// 安全性原理：攻击者诱导用户访问 evil.com 时，虽然浏览器会自动携带 mimo_csrf cookie
+// 安全性原理：攻击者诱导用户访问 evil.com 时，虽然浏览器会自动携带 violet_csrf cookie
 // 到 API，但 evil.com 的 JS 受同源策略限制无法读取 api 的 cookie 内容，
 // 因此无法构造 X-CSRF-Token header 与 cookie 值匹配。
 //
@@ -47,7 +47,7 @@ var safeMethods = map[string]bool{
 // 校验顺序：
 //  1. GET/HEAD/OPTIONS 直接放行
 //  2. 路径在豁免列表中直接放行
-//  3. 读 X-CSRF-Token header 与 mimo_csrf cookie，缺失或不等 → 403
+//  3. 读 X-CSRF-Token header 与 violet_csrf cookie，缺失或不等 → 403
 //
 // 为什么不豁免 /auth/login：login CSRF 是真实攻击向量（攻击者用受害者身份
 // 绑定攻击者密码的账号），必须防护。未登录访问通过先 GET /auth/csrf-token 取 cookie。

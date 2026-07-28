@@ -17,6 +17,7 @@ import (
 	"github.com/mmcdole/gofeed"
 
 	appsub "blog-api/internal/application/subscription"
+	"blog-api/internal/brand"
 	"blog-api/internal/infrastructure/ssrf"
 )
 
@@ -49,7 +50,7 @@ func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) ([]appsub.Feed
 	if err != nil {
 		return nil, &appsub.FeedError{Kind: appsub.FeedErrTransient, Cause: err}
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; mimo-blog-feed-fetcher/1.0)")
+	req.Header.Set("User-Agent", brand.FeedFetcherUA)
 	resp, err := g.client.Do(req)
 	if err != nil {
 		// 网络/超时/DNS 错误 → 瞬时

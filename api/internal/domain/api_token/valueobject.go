@@ -12,7 +12,7 @@ import (
 )
 
 // TokenPrefix PAT 明文前缀，便于人眼与日志识别。
-const TokenPrefix = "mimo_pat_"
+const TokenPrefix = "violet_pat_"
 
 // GenerateToken 生成明文 PAT：前缀 + 32 字节 cryptographically random（base64url）。
 //

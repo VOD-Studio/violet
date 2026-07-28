@@ -11,8 +11,8 @@
 | 容器运行时 | `podman` + `podman-compose`（**非 docker**） |
 | 默认 shell | `fish`（脚本一律用 `bash -lc '...'` 显式调用） |
 | 前置反代 | `nginx-proxy` + `letsencrypt-companion` 容器，监听 80/443 |
-| 部署目录 | `/root/docker/mimo-blog`（含 `api/.env`、`secrets/`、`docker-compose.prod.yml`） |
-| 构建目录 | `/root/build/mimo-blog`（临时，源码 + podman build，构建完可删） |
+| 部署目录 | `/root/docker/violet`（含 `api/.env`、`secrets/`、`docker-compose.prod.yml`） |
+| 构建目录 | `/root/build/violet`（临时，源码 + podman build，构建完可删） |
 
 ### 架构概览
 
@@ -41,7 +41,7 @@ blog-api ──► blog-postgres:5432, blog-redis:6379 (via blog_network)
 
 1. 本地能 `ssh xunrua.top echo ok`（免密）。
 2. 本地装了 `rsync`。
-3. 服务器 `/root/docker/mimo-blog` 已就绪：含 `api/.env`（敏感凭据，**部署过程绝不覆盖**）。
+3. 服务器 `/root/docker/violet` 已就绪：含 `api/.env`（敏感凭据，**部署过程绝不覆盖**）。
 4. `nginx-proxy` + `letsencrypt-companion` 容器在跑（负责 TLS 证书与反代）。
 
 ## 完整部署流程
@@ -61,7 +61,7 @@ rsync -az --delete \
   --exclude='dist' \
   --exclude='.tanstack' \
   --exclude='.omc' \
-  api web xunrua.top:/root/build/mimo-blog/
+  api web xunrua.top:/root/build/violet/
 ```
 
 排除 `node_modules` / `uploads`（可达数百 MB），服务器上 podman build 会重新装依赖。
@@ -72,14 +72,14 @@ rsync -az --delete \
 
 ```bash
 # 构建 API 镜像
-ssh xunrua.top "bash -lc 'cd /root/build/mimo-blog && \
+ssh xunrua.top "bash -lc 'cd /root/build/violet && \
   rm -f /tmp/build-api.log && \
-  nohup bash -c \"podman build -t localhost/mimo-blog-api:latest -f api/Dockerfile api > /tmp/build-api.log 2>&1; echo BUILD_API_EXIT=\$? >> /tmp/build-api.log\" >/dev/null 2>&1 & disown'"
+  nohup bash -c \"podman build -t localhost/violet-api:latest -f api/Dockerfile api > /tmp/build-api.log 2>&1; echo BUILD_API_EXIT=\$? >> /tmp/build-api.log\" >/dev/null 2>&1 & disown'"
 
 # 构建 Web 镜像
-ssh xunrua.top "bash -lc 'cd /root/build/mimo-blog && \
+ssh xunrua.top "bash -lc 'cd /root/build/violet && \
   rm -f /tmp/build-web.log && \
-  nohup bash -c \"podman build -t localhost/mimo-blog-web:latest -f web/Dockerfile web > /tmp/build-web.log 2>&1; echo BUILD_WEB_EXIT=\$? >> /tmp/build-web.log\" >/dev/null 2>&1 & disown'"
+  nohup bash -c \"podman build -t localhost/violet-web:latest -f web/Dockerfile web > /tmp/build-web.log 2>&1; echo BUILD_WEB_EXIT=\$? >> /tmp/build-web.log\" >/dev/null 2>&1 & disown'"
 ```
 
 轮询日志直到 `BUILD_*_EXIT=0`：
@@ -96,16 +96,16 @@ ssh xunrua.top "grep BUILD_WEB_EXIT /tmp/build-web.log; tail -3 /tmp/build-web.l
 
 ### 第 3 步：准备部署用 compose 文件
 
-服务器 `/root/docker/mimo-blog` 没有 `api/`、`web/` 源码（只有 `api/.env` 和 `secrets/`），所以 compose 必须用 `image:` 引用已构建的镜像，**不能用 `build:`**。
+服务器 `/root/docker/violet` 没有 `api/`、`web/` 源码（只有 `api/.env` 和 `secrets/`），所以 compose 必须用 `image:` 引用已构建的镜像，**不能用 `build:`**。
 
-生成 `/root/docker/mimo-blog/docker-compose.prod.yml`（关键片段）：
+生成 `/root/docker/violet/docker-compose.prod.yml`（关键片段）：
 
 ```yaml
 services:
   # postgres / redis: 同本地 docker-compose.prod.yml，省略
 
   api:
-    image: localhost/mimo-blog-api:latest   # ← 用 image，不是 build
+    image: localhost/violet-api:latest   # ← 用 image，不是 build
     container_name: blog-api
     expose: ["9090"]                         # ← 2.0 端口是 9090（旧版 8080）
     env_file: [./api/.env]
@@ -120,7 +120,7 @@ services:
     networks: [backend, proxy]               # ← 必须同时在 proxy 网络，nginx-proxy 才能转发
 
   web:
-    image: localhost/mimo-blog-web:latest
+    image: localhost/violet-web:latest
     container_name: blog-web
     expose: ["3000"]                         # ← 不用 ports，避免和 nginx-proxy 抢 80
     environment:
@@ -139,17 +139,17 @@ services:
 
 ```bash
 # 备份（回滚用）
-ssh xunrua.top "cp /root/docker/mimo-blog/docker-compose.prod.yml \
-  /root/docker/mimo-blog/docker-compose.prod.yml.bak-$(date +%Y%m%d-%H%M%S)"
+ssh xunrua.top "cp /root/docker/violet/docker-compose.prod.yml \
+  /root/docker/violet/docker-compose.prod.yml.bak-$(date +%Y%m%d-%H%M%S)"
 
 # 上传（本地把 image 版 compose 放到 /tmp 再 scp）
-scp /tmp/deploy-compose.yml xunrua.top:/root/docker/mimo-blog/docker-compose.prod.yml
+scp /tmp/deploy-compose.yml xunrua.top:/root/docker/violet/docker-compose.prod.yml
 ```
 
 ### 第 5 步：重启服务（保留 secrets / 数据卷）
 
 ```bash
-ssh xunrua.top "bash -lc 'cd /root/docker/mimo-blog && \
+ssh xunrua.top "bash -lc 'cd /root/docker/violet && \
   podman-compose --env-file api/.env -f docker-compose.prod.yml down && \
   podman-compose --env-file api/.env -f docker-compose.prod.yml up -d'"
 ```
@@ -159,7 +159,7 @@ ssh xunrua.top "bash -lc 'cd /root/docker/mimo-blog && \
 **重要**：如果只改了 web，重建 web 容器即可（避免 API 短暂中断）。但 `podman-compose up -d web` 若容器已存在会**复用旧容器**，必须先 `podman rm -f blog-web`：
 
 ```bash
-ssh xunrua.top "bash -lc 'cd /root/docker/mimo-blog && \
+ssh xunrua.top "bash -lc 'cd /root/docker/violet && \
   podman rm -f blog-web && \
   podman-compose --env-file api/.env -f docker-compose.prod.yml up -d web'"
 ```
@@ -346,7 +346,7 @@ reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-
 
 ```bash
 # 重启 api 容器加载新配置
-ssh xunrua.top "cd /root/docker/mimo-blog && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate api"
+ssh xunrua.top "cd /root/docker/violet && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate api"
 
 # api 容器内验证能调 podman daemon
 ssh xunrua.top "podman exec blog-api ls /var/run/docker.sock"
@@ -373,17 +373,17 @@ ssh xunrua.top "podman images | grep yggdrasil-runner"
 ### 镜像级回滚（podman 保留了旧镜像层）
 ```bash
 # 查看历史镜像
-ssh xunrua.top "podman images localhost/mimo-blog-api"
+ssh xunrua.top "podman images localhost/violet-api"
 # 旧镜像若还在，retag 后重启
-ssh xunrua.top "bash -lc 'podman tag <旧image-id> localhost/mimo-blog-api:latest && \
-  cd /root/docker/mimo-blog && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate api'"
+ssh xunrua.top "bash -lc 'podman tag <旧image-id> localhost/violet-api:latest && \
+  cd /root/docker/violet && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate api'"
 ```
 
 ### compose 回滚
 ```bash
-ssh xunrua.top "cp /root/docker/mimo-blog/docker-compose.prod.yml.bak-YYYYMMDD-HHMMSS \
-  /root/docker/mimo-blog/docker-compose.prod.yml && \
-  cd /root/docker/mimo-blog && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate"
+ssh xunrua.top "cp /root/docker/violet/docker-compose.prod.yml.bak-YYYYMMDD-HHMMSS \
+  /root/docker/violet/docker-compose.prod.yml && \
+  cd /root/docker/violet && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate"
 ```
 
 ### 数据库回滚
@@ -410,10 +410,10 @@ placeholder 让 nginx-proxy 生成 xunrua.top 配置，`/api/` 反代照常工�
 
 ```bash
 # 删除构建目录（镜像已 tag，源码不再需要）
-ssh xunrua.top "rm -rf /root/build/mimo-blog"
+ssh xunrua.top "rm -rf /root/build/violet"
 
 # 删除旧 image tar 包（若用 rsync + 服务器构建，不再有 images.tar.gz）
-ssh xunrua.top "rm -f /root/docker/mimo-blog/images.tar.gz /root/docker/mimo-blog/*.tar.gz"
+ssh xunrua.top "rm -f /root/docker/violet/images.tar.gz /root/docker/violet/*.tar.gz"
 
 # podman 清理未使用的镜像层（释放空间）
 ssh xunrua.top "podman image prune -f"

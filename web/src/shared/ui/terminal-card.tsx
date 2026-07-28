@@ -9,7 +9,7 @@ export interface TerminalQuote {
 interface TerminalCardProps {
     /** 循环展示的引言列表 */
     quotes: TerminalQuote[];
-    /** 终端标题栏路径，默认 ~/mimo/status */
+    /** 终端标题栏路径，默认 ~/violet/status */
     titlePath?: string;
     /** 自定义 className */
     className?: string;
@@ -26,7 +26,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  */
 export function TerminalCard({
     quotes,
-    titlePath = "~/mimo/status",
+    titlePath = "~/violet/status",
     className,
 }: TerminalCardProps) {
     const textRef = useRef<HTMLSpanElement>(null);
@@ -124,7 +124,7 @@ export function TerminalCard({
             <div className="flex flex-1 flex-col px-4 pb-4 pt-3.5 font-mono text-[13px] leading-7">
                 <p className="m-0">
                     <span className="bg-linear-to-br from-neon-blue to-neon-purple bg-clip-text font-medium text-transparent">
-                        mimo@blog
+                        violet@blog
                     </span>
                     <span className="ml-[1px] text-muted-foreground">:~$</span>
                     <span className="ml-1 text-foreground">quote</span>

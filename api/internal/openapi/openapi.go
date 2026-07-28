@@ -64,7 +64,7 @@ func build() (*openapi3.T, error) {
 	t := &openapi3.T{
 		OpenAPI: "3.0.3",
 		Info: &openapi3.Info{
-			Title:       "Mimo Blog API",
+			Title:       "Violet API",
 			Description: "全栈博客平台后端接口文档。鉴权采用 Cookie + CSRF Token（X-CSRF-Token 头），所有非 GET 写操作需携带有效的 CSRF Token。",
 			Version:     "2.0.0",
 		},

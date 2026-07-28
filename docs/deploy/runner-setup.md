@@ -6,7 +6,7 @@ CI 检查跑在 GitHub-hosted runner；生产部署跑在 rua 上的 self-hosted
 
 - rua 可访问 `https://github.com`（拉取 runner 发行包与 checkout 代码）。
 - rua 已安装 docker 或 podman + docker compose / podman-compose。
-- `/root/docker/mimo-blog` 已就绪：含 `api/.env`。
+- `/root/docker/violet` 已就绪：含 `api/.env`。
 
 ## 注册 runner
 

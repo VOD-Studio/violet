@@ -47,23 +47,23 @@ describe("ClientConnectPanel", () => {
     it("关闭 server 开关后配置不再包含该 server", async () => {
         render(<ClientConnectPanel token={null} scopes={null} />);
         fireEvent.click(screen.getByRole("button", { name: /抓取/ }));
-        expect(await screen.findByText(/claude mcp add --transport http mimo-blog /)).toBeTruthy();
-        expect(screen.queryByText(/mimo-blog-scraper/)).toBeNull();
+        expect(await screen.findByText(/claude mcp add --transport http violet /)).toBeTruthy();
+        expect(screen.queryByText(/violet-scraper/)).toBeNull();
     });
 
     it("按令牌 scope 限定可见 server（无抓取权限则不出现）", async () => {
         render(<ClientConnectPanel token={null} scopes={["posts:read"]} />);
         expect(screen.queryByRole("button", { name: /抓取/ })).toBeNull();
-        expect((await screen.findAllByText(/mimo-blog/)).length).toBeGreaterThan(0);
-        expect(screen.queryByText(/mimo-blog-scraper/)).toBeNull();
+        expect((await screen.findAllByText(/violet/)).length).toBeGreaterThan(0);
+        expect(screen.queryByText(/violet-scraper/)).toBeNull();
     });
 
     it("切换客户端展示对应安装方式（Codex 走环境变量）", async () => {
         render(<ClientConnectPanel token={null} scopes={null} />);
         fireEvent.click(screen.getByRole("button", { name: "Codex" }));
-        expect(
-            (await screen.findAllByText(/codex mcp add mimo-blog --url/)).length,
-        ).toBeGreaterThan(0);
+        expect((await screen.findAllByText(/codex mcp add violet --url/)).length).toBeGreaterThan(
+            0,
+        );
         expect((await screen.findAllByText(/bearer-token-env-var/)).length).toBeGreaterThan(0);
     });
 

@@ -83,9 +83,9 @@ api/
 
 | cookie | 内容 | HttpOnly | 作用 |
 |--------|------|----------|------|
-| `mimo_session` | 不透明 session id（cryptographically random ≥256-bit） | 是 | 鉴权凭证，后端查 Redis session 鉴权 |
-| `mimo_csrf` | CSRF token | 否 | double-submit：写请求需回传 `X-CSRF-Token` |
-| `mimo_uid` | user_id | 否 | 前端直读，减少一次请求 |
+| `violet_session` | 不透明 session id（cryptographically random ≥256-bit） | 是 | 鉴权凭证，后端查 Redis session 鉴权 |
+| `violet_csrf` | CSRF token | 否 | double-submit：写请求需回传 `X-CSRF-Token` |
+| `violet_uid` | user_id | 否 | 前端直读，减少一次请求 |
 
 ### 生命周期
 

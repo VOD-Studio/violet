@@ -39,7 +39,7 @@ func testSnapMW() domainsession.UserSnapshot {
 
 // testCookieCfg 构造测试用 CookieConfig。
 func testCookieCfg() config.CookieConfig {
-	return config.CookieConfig{SessionName: "mimo_session", CSRFName: "mimo_csrf"}
+	return config.CookieConfig{SessionName: "violet_session", CSRFName: "violet_csrf"}
 }
 
 // reqWithCookie 构造带指定 cookie 的请求，val 为空表示不带。
@@ -61,7 +61,7 @@ func TestSessionAuth_ValidCookieAuthorizes(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, reqWithCookie("mimo_session", string(s.ID())))
+	h.ServeHTTP(rec, reqWithCookie("violet_session", string(s.ID())))
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.True(t, lookup.touched, "成功路径应 Touch 续期")
 }
@@ -72,7 +72,7 @@ func TestSessionAuth_MissingCookieReturns401(t *testing.T) {
 		t.Fatal("不应进入下游")
 	}))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, reqWithCookie("mimo_session", ""))
+	h.ServeHTTP(rec, reqWithCookie("violet_session", ""))
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }
 
@@ -83,7 +83,7 @@ func TestSessionAuth_InvalidCookieReturns401(t *testing.T) {
 		t.Fatal("不应进入下游")
 	}))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, reqWithCookie("mimo_session", "stale-id"))
+	h.ServeHTTP(rec, reqWithCookie("violet_session", "stale-id"))
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 }
 
@@ -96,7 +96,7 @@ func TestOptionalSessionAuth_NoCookiePassesThrough(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, reqWithCookie("mimo_session", ""))
+	h.ServeHTTP(rec, reqWithCookie("violet_session", ""))
 	assert.True(t, called)
 }
 
@@ -108,7 +108,7 @@ func TestSessionAuthReadOnly_DoesNotTouch(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, reqWithCookie("mimo_session", string(s.ID())))
+	h.ServeHTTP(rec, reqWithCookie("violet_session", string(s.ID())))
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.False(t, lookup.touched, "只读探活不应 Touch 续期")
 }

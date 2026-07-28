@@ -246,8 +246,8 @@ func Load() *Config {
 	v.SetDefault("cookie.domain", "")
 	v.SetDefault("cookie.secure", false)
 	v.SetDefault("cookie.samesite", "lax")
-	v.SetDefault("cookie.csrf_name", "mimo_csrf")
-	v.SetDefault("cookie.session_name", "mimo_session")
+	v.SetDefault("cookie.csrf_name", "violet_csrf")
+	v.SetDefault("cookie.session_name", "violet_session")
 	// session 滑动续期默认 7 天，绝对寿命默认 0（无上限）
 	v.SetDefault("session.idle_ttl", "168h")
 	v.SetDefault("session.max_ttl", "0s")

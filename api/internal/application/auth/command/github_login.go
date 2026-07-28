@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"blog-api/internal/brand"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 )
@@ -54,7 +55,7 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "Mimo-Blog")
+	req.Header.Set("User-Agent", brand.GitHubOAuthUA)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -86,7 +87,7 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 	}
 	reqInfo.Header.Set("Authorization", "Bearer "+tokenRes.AccessToken)
 	reqInfo.Header.Set("Accept", "application/json")
-	reqInfo.Header.Set("User-Agent", "Mimo-Blog")
+	reqInfo.Header.Set("User-Agent", brand.GitHubOAuthUA)
 
 	respInfo, err := http.DefaultClient.Do(reqInfo)
 	if err != nil {
@@ -119,7 +120,7 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 		if err == nil {
 			reqEmail.Header.Set("Authorization", "Bearer "+tokenRes.AccessToken)
 			reqEmail.Header.Set("Accept", "application/json")
-			reqEmail.Header.Set("User-Agent", "Mimo-Blog")
+			reqEmail.Header.Set("User-Agent", brand.GitHubOAuthUA)
 			respEmail, err := http.DefaultClient.Do(reqEmail)
 			if err == nil {
 				defer respEmail.Body.Close()
