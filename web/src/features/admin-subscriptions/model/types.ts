@@ -1,5 +1,5 @@
 /** admin-subscriptions 模块类型定义。
- * 对齐后端 subscription handler adminSubscriptionDTO（含 user_id）。 */
+ * 对齐后端 application/subscription.SubscriptionDTO（含 user_id）。 */
 
 /** 抓取频率枚举（对齐后端 domain/subscription 常量） */
 export const SUBSCRIPTION_INTERVALS = ["hourly", "every-6h", "daily", "weekly"] as const;

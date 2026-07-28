@@ -19,6 +19,10 @@ import (
 // 订阅量小时一轮全取；量大时多取些避免 worker 空闲。
 const dueOversubscribeFactor = 4
 
+// defaultRateLimitBackoff 429 无 Retry-After 头时的默认退避时长。
+// 源站限流却不给重试时间时，按 1h 推迟避免每轮照打。
+const defaultRateLimitBackoff = time.Hour
+
 // SubscriptionFetcher FetchOne 抓取编排端口（*appsub.Service 实现之）。
 // 抽接口便于单测注入 fake（避免 runOnce 测试依赖真 Service + DB）。
 type SubscriptionFetcher interface {
@@ -120,22 +124,26 @@ func (j *SubscriptionJob) fetchAndUpdate(ctx context.Context, sub *domainsubscri
 }
 
 // applyFeedError 据 FeedError 分类更新订阅状态（PRD Q5 Miniflux 共识）：
-//   - RateLimited (429+Retry-After)：推迟 retry_after_until，不增计数
+//   - RateLimited (429)：推迟 retry_after_until，不增计数。
+//     无 Retry-After 头时用默认退避 defaultRateLimitBackoff，避免每轮照打不收敛。
 //   - Permanent (4xx/malformed)：立即 Pause
 //   - Transient (5xx/网络)：RecordFailure 计数，达阈值自动 paused
 //
 // feedErr 为 nil（非 *FeedError，如 FindByID 失败）时按瞬时错误处理。
-// 注：当前 GoFeedParser 只在能解析 Retry-After 头时才 emit RateLimited，
-// 故 fe.Kind==RateLimited && fe.RetryAfter==nil 实际不可达——保留 nil 检查作防御。
 func (j *SubscriptionJob) applyFeedError(sub *domainsubscription.Subscription, feedErr *appsub.FeedError, now time.Time, desc string) {
 	if feedErr != nil {
 		switch feedErr.Kind {
 		case appsub.FeedErrRateLimited:
-			if feedErr.RetryAfter != nil {
-				sub.SetRetryAfter(*feedErr.RetryAfter)
+			until := feedErr.RetryAfter
+			if until == nil {
+				// 429 但无 Retry-After 头（GoFeedParser parseRetryAfter 返回 nil）：
+				// 默认退避 1h，否则不推迟不增计数，每 30min 照打源站不收敛
+				def := now.Add(defaultRateLimitBackoff)
+				until = &def
 			}
+			sub.SetRetryAfter(*until)
 			log.Printf("[subscription_job] 订阅 %s 被 429 限流，推迟到 %v（不增计数）",
-				sub.ID(), feedErr.RetryAfter)
+				sub.ID(), until)
 			return
 		case appsub.FeedErrPermanent:
 			sub.Pause()

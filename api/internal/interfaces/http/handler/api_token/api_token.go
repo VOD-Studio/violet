@@ -63,12 +63,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // parseExpiry 把前端传入的过期值解析为绝对时间。
-//   - "" / "never"：零值（永不过期）
+//   - ""：默认 90 天（安全默认值，防止留空拿到永不过期 PAT）
+//   - "never"：零值（永不过期）
 //   - "YYYY-MM-DD"：当天 23:59:59（给足整天，避免创建即过期）
 //
-// 非法格式返回 BadRequest。
+// 非法格式或已过去的日期返回 BadRequest。
 func parseExpiry(s string, now time.Time) (time.Time, error) {
-	if s == "" || s == "never" {
+	if s == "" {
+		return now.Add(90 * 24 * time.Hour), nil
+	}
+	if s == "never" {
 		return time.Time{}, nil
 	}
 	t, err := time.Parse("2006-01-02", s)
@@ -76,7 +80,11 @@ func parseExpiry(s string, now time.Time) (time.Time, error) {
 		return time.Time{}, domainshared.BadRequest("过期日期格式无效，需 YYYY-MM-DD 或 never")
 	}
 	// 当天 23:59:59，避免选当天导致创建即过期
-	return t.Add(24*time.Hour - time.Second), nil
+	expiresAt := t.Add(24*time.Hour - time.Second)
+	if !expiresAt.After(now) {
+		return time.Time{}, domainshared.BadRequest("过期日期不能早于今天")
+	}
+	return expiresAt, nil
 }
 
 // List 列出当前用户的全部 PAT。

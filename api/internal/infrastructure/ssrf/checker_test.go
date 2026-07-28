@@ -49,6 +49,7 @@ func TestIsPrivateIP_RejectsPrivateRanges(t *testing.T) {
 		"172.16.0.1", "172.31.255.255", // 172.16/12
 		"192.168.1.1", "192.168.0.0", // 192.168/16
 		"169.254.169.254", "169.254.0.1", // link-local / 云元数据
+		"100.64.0.1", "100.127.255.254", // CGNAT 100.64.0.0/10（RFC 6598）
 		"0.0.0.0", "0.0.0.1", // 0/8
 		"224.0.0.1", "239.0.0.1", // 多播
 	}
@@ -62,6 +63,7 @@ func TestIsPrivateIP_RejectsPrivateRanges(t *testing.T) {
 func TestIsPrivateIP_AcceptsPublicAddresses(t *testing.T) {
 	cases := []string{
 		"8.8.8.8", "1.1.1.1", "93.184.216.34", // 公网
+		"100.63.255.255", "100.128.0.1", // CGNAT 区间两侧边界（公网）
 	}
 	for _, ip := range cases {
 		parsed := net.ParseIP(ip)

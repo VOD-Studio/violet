@@ -195,7 +195,7 @@ type updateSubscriptionArgs struct {
 	ID                string   `json:"id" jsonschema:"订阅 ID"`
 	Title             string   `json:"title,omitempty" jsonschema:"订阅源标题"`
 	Interval          string   `json:"interval,omitempty" jsonschema:"抓取频率：hourly/every-6h/daily/weekly"`
-	AutoPublish       bool     `json:"auto_publish,omitempty" jsonschema:"抓来是否自动发布"`
+	AutoPublish       bool     `json:"auto_publish,omitempty" jsonschema:"抓来是否自动发布。全量覆盖语义：省略=false。若订阅已是自动发布且本次不改，须显式传 true（另需 posts:publish scope）"`
 	CanonicalOverride string   `json:"canonical_override,omitempty" jsonschema:"覆盖 entry.link 作为 canonical"`
 	Tags              []string `json:"tags,omitempty" jsonschema:"订阅级默认标签"`
 }

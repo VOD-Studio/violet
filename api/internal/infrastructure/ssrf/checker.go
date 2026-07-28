@@ -56,6 +56,7 @@ func ValidateURL(rawURL string) (*url.URL, error) {
 // 覆盖：
 //   - IPv4 loopback 127/8、私网 10/8、172.16/12、192.168/16
 //   - IPv4 link-local 169.254/16（含云元数据服务 169.254.169.254）
+//   - IPv4 CGNAT 100.64.0.0/10（RFC 6598 共享地址空间）
 //   - IPv4 0/8（本机网络）、多播 224/4、保留 240/4
 //   - IPv6 loopback ::1、link-local fe80::/10、ULA fc00::/7、多播 ff00::/8
 //   - 所有未指定/全零地址
@@ -79,6 +80,8 @@ func IsPrivateIP(ip net.IP) bool {
 		case v4[0] == 127: // 127/8 loopback（IsLoopback 已覆盖，保险）
 			return true
 		case v4[0] == 169 && v4[1] == 254: // 169.254/16 link-local
+			return true
+		case v4[0] == 100 && v4[1] >= 64 && v4[1] <= 127: // 100.64.0.0/10 CGNAT（RFC 6598）
 			return true
 		case v4[0] >= 240: // 240/4 保留（E 类）
 			return true
@@ -137,11 +140,12 @@ func checkIPs(host string, ips []net.IP) error {
 }
 
 // NewSafeTransport 返回一个自带 SSRF 防护的 http.Transport：
-// 每次出站连接前解析 host，校验解析结果不含私网/保留地址，再放行拨号。
+// 每次出站连接前解析 host，校验解析结果不含私网/保留地址，再拨解析出的 IP。
 //
-// 防护发生在 TCP/UDP 连接建立前（DialContext 内部），天然防 DNS 重绑定——
-// 即使攻击者让 DNS 在两次查询间切换 IP，拨号前这次解析用的是同一次结果。
-// 不破坏 TLS SNI：拨号仍用 host 原文，仅校验后放行。
+// 防护发生在 TCP/UDP 连接建立前（DialContext 内部）：解析、校验、拨号共用
+// 同一次 DNS 结果，无 TOCTOU 窗口——攻击者即使在两次独立查询间切换记录
+// （DNS 重绑定），实际拨号的也是已通过校验的 IP。
+// 不破坏 TLS SNI 与 HTTP Host：二者由 Transport 上层取 URL 原 host，与拨号目标解耦。
 //
 // 默认拨号超时 15s，与抓取管线对齐。Transport 可复用，零配置即可接入 http.Client。
 func NewSafeTransport() *http.Transport {
@@ -150,16 +154,25 @@ func NewSafeTransport() *http.Transport {
 	}
 	return &http.Transport{
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			host, _, err := net.SplitHostPort(addr)
+			host, port, err := net.SplitHostPort(addr)
 			if err != nil {
 				// 无端口的字面量（罕见），原样用作 host
 				host = addr
 			}
-			// 拨号前先解析并校验，确保实际连接的 IP 不在私网段
-			if err := CheckHost(ctx, host, nil); err != nil {
+			// 解析一次 → 校验 → 拨解析出的 IP，消除 TOCTOU 窗口
+			ips, err := defaultLookup(ctx, host)
+			if err != nil {
+				return nil, fmt.Errorf("DNS 解析 %q 失败: %w", host, err)
+			}
+			if err := checkIPs(host, ips); err != nil {
 				return nil, err
 			}
-			return dialer.DialContext(ctx, network, addr)
+			// 全部 IP 已通过私网校验，拨任一结果均安全，取第一个
+			target := ips[0].String()
+			if port != "" {
+				target = net.JoinHostPort(target, port)
+			}
+			return dialer.DialContext(ctx, network, target)
 		},
 	}
 }

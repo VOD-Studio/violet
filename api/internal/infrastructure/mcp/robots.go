@@ -46,8 +46,13 @@ func NewRobotsChecker() *RobotsChecker {
 const robotsUserAgent = "mimo-blog-importer"
 
 // Allowed 判断 target URL 是否被目标站点 robots.txt 允许抓取。
-// 第二返回值为拒绝原因。robots.txt 拉取失败时保守放行（按 RFC 9309，
-// 拉不到 robots.txt 视为 allow-all，避免源站 robots 故障导致全量不可抓）。
+// 第二返回值为拒绝原因。
+//
+// 拉不到 robots.txt 时的放行策略（显式产品决策，非完全遵循 RFC 9309）：
+//   - 4xx：RFC 9309 §2.3.1.3 规定 allow-all，遵循。
+//   - 5xx / 网络不可达：RFC 9309 规定 temporary full disallow；
+//     本博客选择 fail-open 放行——源站 robots 故障不应导致全量不可抓，
+//     且抓取方仅单点低频请求，风险可控。此为偏离规范的产品决策。
 func (r *RobotsChecker) Allowed(ctx context.Context, target string) (bool, string, error) {
 	parsed, err := url.Parse(target)
 	if err != nil {
@@ -65,12 +70,13 @@ func (r *RobotsChecker) Allowed(ctx context.Context, target string) (bool, strin
 	req.Header.Set("User-Agent", robotsUserAgent)
 	resp, err := r.client.Do(req)
 	if err != nil {
-		// 拉不到 robots.txt：按 RFC 9309 默认放行（4xx/5xx/网络错误都视为 allow）
+		// 网络不可达：RFC 9309 是 temporary disallow，本博客产品决策 fail-open（见 Allowed 注释）
 		return true, "", nil
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		// 4xx 视为 allow-all
+		// 4xx：RFC 9309 §2.3.1.3 allow-all。
+		// 5xx：RFC 9309 是 temporary disallow，本博客产品决策 fail-open（见 Allowed 注释）。
 		return true, "", nil
 	}
 	body, err := io.ReadAll(ssrf.LimitBody(resp.Body, ssrf.MaxBodyBytes))

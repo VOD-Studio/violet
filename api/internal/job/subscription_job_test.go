@@ -112,6 +112,22 @@ func TestApplyFeedError_RateLimited_SetsRetryAfterNoCount(t *testing.T) {
 	assert.Equal(t, domainsubscription.StatusActive, sub.Status(), "429 不 paused")
 }
 
+func TestApplyFeedError_RateLimitedNoHeader_DefaultBackoff(t *testing.T) {
+	now := time.Now()
+	j := &SubscriptionJob{now: time.Now}
+	sub := mustDueSub(t)
+	// 429 但源站没给 Retry-After 头（GoFeedParser parseRetryAfter 返回 nil）
+	fe := &appsub.FeedError{Kind: appsub.FeedErrRateLimited, RetryAfter: nil, StatusCode: 429}
+
+	j.applyFeedError(sub, fe, now, "429")
+
+	assert.Equal(t, 0, sub.ConsecutiveFailures(), "429 不增计数")
+	require.NotNil(t, sub.RetryAfterUntil(), "无 Retry-After 头时应用默认退避，不能为空转")
+	assert.True(t, sub.RetryAfterUntil().Equal(now.Add(defaultRateLimitBackoff)),
+		"默认退避应为 now+1h")
+	assert.Equal(t, domainsubscription.StatusActive, sub.Status(), "429 不 paused")
+}
+
 func TestApplyFeedError_Permanent_PausesImmediately(t *testing.T) {
 	j := &SubscriptionJob{now: time.Now}
 	sub := mustDueSub(t)

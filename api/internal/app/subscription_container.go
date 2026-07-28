@@ -35,6 +35,6 @@ func NewSubscriptionContainer(db *gorm.DB, postSvc *apppost.Service) *Subscripti
 	return &SubscriptionContainer{
 		SubscriptionService:   svc,
 		SubscriptionRepository: subRepo,
-		SubscriptionHandler:    subscriptionhttp.NewHandler(subRepo),
+		SubscriptionHandler:    subscriptionhttp.NewHandler(svc),
 	}
 }

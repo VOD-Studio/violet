@@ -74,8 +74,10 @@ type UpdateInput struct {
 }
 
 // SubscriptionDTO 订阅读模型（序列化跨层传输）。
+// UserID：admin 视角标识归属者；用户视角即调用者本人，无额外暴露。
 type SubscriptionDTO struct {
 	ID                 string   `json:"id"`
+	UserID             string   `json:"user_id,omitempty"`
 	FeedURL            string   `json:"feed_url"`
 	Title              string   `json:"title"`
 	SourceType         string   `json:"source_type"`
@@ -221,6 +223,109 @@ func (s *Service) Delete(ctx context.Context, id, userID string) error {
 	return s.repo.Delete(ctx, sid, uid)
 }
 
+// --- admin 视角用例（后台订阅管理，跨用户不校验所有权） ---
+
+// AdminUpdateInput admin 更新订阅配置入参。
+// 部分更新语义：指针字段 nil = 保持原值，非 nil = 覆盖；Tags nil = 保持原值。
+type AdminUpdateInput struct {
+	ID                string
+	Title             *string
+	Interval          *string
+	AutoPublish       *bool
+	CanonicalOverride *string
+	Tags              []string
+}
+
+// GetByIDForAdmin 查单个订阅（admin 后台用，跨用户不校验所有权）。
+func (s *Service) GetByIDForAdmin(ctx context.Context, id string) (SubscriptionDTO, error) {
+	sub, err := s.findByIDForAdmin(ctx, id)
+	if err != nil {
+		return SubscriptionDTO{}, err
+	}
+	return toDTO(sub), nil
+}
+
+// UpdateForAdmin 更新订阅配置（admin 后台用，部分更新：nil 字段保持原值）。
+func (s *Service) UpdateForAdmin(ctx context.Context, in AdminUpdateInput) (SubscriptionDTO, error) {
+	sub, err := s.findByIDForAdmin(ctx, in.ID)
+	if err != nil {
+		return SubscriptionDTO{}, err
+	}
+	// 部分更新合并：nil 保持原值，非 nil 覆盖
+	title := sub.Title()
+	if in.Title != nil {
+		title = *in.Title
+	}
+	interval := ""
+	if in.Interval != nil {
+		interval = *in.Interval
+	}
+	autoPublish := sub.AutoPublish()
+	if in.AutoPublish != nil {
+		autoPublish = *in.AutoPublish
+	}
+	canonical := sub.CanonicalOverride()
+	if in.CanonicalOverride != nil {
+		canonical = *in.CanonicalOverride
+	}
+	tags := sub.Tags()
+	if in.Tags != nil {
+		tags = in.Tags
+	}
+	if err := sub.UpdateConfig(title, interval, autoPublish, canonical, tags); err != nil {
+		return SubscriptionDTO{}, err
+	}
+	if err := s.repo.Save(ctx, sub); err != nil {
+		return SubscriptionDTO{}, err
+	}
+	return toDTO(sub), nil
+}
+
+// PauseForAdmin 手动暂停订阅（admin 后台用，跨用户不校验所有权）。
+func (s *Service) PauseForAdmin(ctx context.Context, id string) (SubscriptionDTO, error) {
+	sub, err := s.findByIDForAdmin(ctx, id)
+	if err != nil {
+		return SubscriptionDTO{}, err
+	}
+	sub.Pause()
+	if err := s.repo.Save(ctx, sub); err != nil {
+		return SubscriptionDTO{}, err
+	}
+	return toDTO(sub), nil
+}
+
+// ResumeForAdmin 手动恢复订阅（admin 后台用，清零失败计数回 active）。
+func (s *Service) ResumeForAdmin(ctx context.Context, id string) (SubscriptionDTO, error) {
+	sub, err := s.findByIDForAdmin(ctx, id)
+	if err != nil {
+		return SubscriptionDTO{}, err
+	}
+	sub.Resume()
+	if err := s.repo.Save(ctx, sub); err != nil {
+		return SubscriptionDTO{}, err
+	}
+	return toDTO(sub), nil
+}
+
+// DeleteForAdmin 删除订阅（admin 后台用，跨用户不校验所有权）。
+// 连带 entries 由 ON DELETE CASCADE 处理。
+func (s *Service) DeleteForAdmin(ctx context.Context, id string) error {
+	sub, err := s.findByIDForAdmin(ctx, id)
+	if err != nil {
+		return err
+	}
+	return s.repo.Delete(ctx, sub.ID(), sub.UserID())
+}
+
+// findByIDForAdmin 解析 ID + FindByIDForSchedule（admin 视角，无所有权校验）。
+func (s *Service) findByIDForAdmin(ctx context.Context, id string) (*domainsubscription.Subscription, error) {
+	sid, err := shared.ParseID(id)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.FindByIDForSchedule(ctx, sid)
+}
+
 // --- 内部辅助 ---
 
 // findByID 解析 ID + 走 repo（带所有权校验）。
@@ -328,8 +433,10 @@ func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchRepo
 				report.Dead++
 			}
 		} else {
-			// 成功：fetchAndImport 内部已 MarkImported 回填 postID
+			// 成功：fetchAndImport 内部已 MarkImported 回填 postID。
+			// 计数与失败路径对称地立即 ++，Save 失败回退才不为负。
 			imported = true
+			report.Imported++
 		}
 		// 持久化 entry 状态；失败时回退本轮计数（未真落地，下轮重试按旧状态）
 		if err := s.entryRepo.Save(ctx, entry); err != nil {
@@ -346,9 +453,6 @@ func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchRepo
 				report.SubscriptionError = "部分条目持久化失败：" + err.Error()
 			}
 			continue
-		}
-		if imported {
-			report.Imported++
 		}
 		if existing == nil {
 			report.NewEntries++
@@ -426,6 +530,7 @@ func firstNonEmpty(vals ...string) string {
 func toDTO(s *domainsubscription.Subscription) SubscriptionDTO {
 	dto := SubscriptionDTO{
 		ID:                  s.ID().String(),
+		UserID:              s.UserID().String(),
 		FeedURL:             s.FeedURL(),
 		Title:               s.Title(),
 		SourceType:          s.SourceType(),

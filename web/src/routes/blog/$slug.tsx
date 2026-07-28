@@ -7,6 +7,7 @@ import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import MobileTocFab from "@features/posts/ui/MobileTocFab";
 import { apiPost } from "@shared/api/request";
+import { SITE_URL } from "@shared/config/env";
 import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
 import { useScrollProgress } from "@shared/lib/hooks/use-scroll-progress";
 import { extractToc } from "@shared/lib/hooks/use-toc";
@@ -335,12 +336,14 @@ export const Route = createFileRoute("/blog/$slug")({
         return post;
     },
     // 动态 SEO：映射文章的 seo_title / seo_description / 封面图 / canonical
-    // canonical_url 非空（转载）→ 指向源，避免被 Google 当抄袭降权（对齐 Google Search Central）
-    // canonical_url 空（原创）→ 自指 /blog/<slug>
+    // rel=canonical：canonical_url 非空（转载）→ 指源（避免被 Google 当抄袭降权）；
+    // 空（原创）→ 自指本站绝对 URL（Google 建议 rel=canonical 用绝对地址）。
+    // og:url 是本页面对象标识，始终指本站绝对 URL——转载也不把社交图谱归属让渡给源站。
     head: ({ loaderData }) => {
         const post = loaderData as PostDetail | undefined;
         if (!post) return { meta: [] };
-        const canonicalHref = post.canonical_url || `/blog/${post.slug}`;
+        const pageUrl = `${SITE_URL.replace(/\/+$/, "")}/blog/${post.slug}`;
+        const canonicalHref = post.canonical_url || pageUrl;
         return {
             meta: [
                 { title: post.seo_title || post.title },
@@ -349,7 +352,7 @@ export const Route = createFileRoute("/blog/$slug")({
                 { property: "og:description", content: post.seo_description || post.excerpt },
                 ...(post.cover_image ? [{ property: "og:image", content: post.cover_image }] : []),
                 { property: "og:type", content: "article" },
-                { property: "og:url", content: canonicalHref },
+                { property: "og:url", content: pageUrl },
             ],
             links: [{ rel: "canonical", href: canonicalHref }],
         };

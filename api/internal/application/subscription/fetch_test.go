@@ -21,6 +21,7 @@ type fakeEntryRepo struct {
 	byKey map[string]*domainentry.SubscriptionEntry // key = subID|guid
 	saved []*domainentry.SubscriptionEntry
 	err   error
+	saveErr error // 仅 Save 失败（FindBySubAndGUID 不受影响）
 }
 
 func newFakeEntryRepo() *fakeEntryRepo {
@@ -28,6 +29,9 @@ func newFakeEntryRepo() *fakeEntryRepo {
 }
 
 func (r *fakeEntryRepo) Save(ctx context.Context, e *domainentry.SubscriptionEntry) error {
+	if r.saveErr != nil {
+		return r.saveErr
+	}
 	if r.err != nil {
 		return r.err
 	}
@@ -169,6 +173,19 @@ func TestFetchOne_DedupesDeadEntries(t *testing.T) {
 	report := svc.FetchOne(context.Background(), sub.ID().String())
 	assert.Equal(t, 1, report.Skipped, "dead 应跳过不重试")
 	assert.Equal(t, 0, report.Imported)
+}
+
+func TestFetchOne_ImportSuccessButEntrySaveFails_CountNotNegative(t *testing.T) {
+	svc, _, entryRepo, _, parser, sub := setupFetchSvc(t)
+	entryRepo.saveErr = errors.New("db down") // 导入成功但 entry 持久化失败
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1", Title: "x"}}
+
+	report := svc.FetchOne(context.Background(), sub.ID().String())
+
+	assert.Equal(t, 0, report.Imported, "Save 失败回退后 Imported 应归零，不为负")
+	assert.Equal(t, 0, report.Failed, "本轮无导入失败")
+	assert.Equal(t, 0, report.NewEntries, "未落地不算新 entry")
+	assert.Contains(t, report.SubscriptionError, "持久化失败")
 }
 
 func TestFetchOne_FailureIncrementsFailCount(t *testing.T) {
