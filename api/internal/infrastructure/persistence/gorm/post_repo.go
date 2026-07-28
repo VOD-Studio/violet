@@ -131,8 +131,43 @@ func (r *PostRepository) FindAll(ctx context.Context, page, limit int, status st
 	return result, total, nil
 }
 
-func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, error) {
-	var count int64
+// likeEscaper 转义 LIKE 模式中的特殊字符，配合 ESCAPE '\' 使用。
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
+// Search 在 authorID 的文章内做大小写不敏感子串检索。
+// 用 LOWER(col) LIKE LOWER(?) 而非 ILIKE 关键字：语义与 ILIKE 等价（中文无大小写，
+// 子串精确命中），且 SQLite 测试库可跑同一 SQL（ILIKE 是 PostgreSQL 方言）。
+// 排序按 updated_at 倒序——检索场景「最近改过的最相关」，与 FindAll 的 created_at 区分。
+func (r *PostRepository) Search(ctx context.Context, authorID domainshared.ID, query, status string, page, limit int) ([]*post.Post, int64, error) {
+	q := r.db.WithContext(ctx).Model(&model.Post{}).Where("author_id = ?", authorID.UUID())
+	if status != "" && status != "all" {
+		q = q.Where("status = ?", status)
+	}
+	for _, kw := range strings.Fields(query) {
+		like := "%" + likeEscaper.Replace(kw) + "%"
+		q = q.Where(
+			"(LOWER(title) LIKE LOWER(?) ESCAPE '\\' OR LOWER(excerpt) LIKE LOWER(?) ESCAPE '\\' OR LOWER(content_md) LIKE LOWER(?) ESCAPE '\\')",
+			like, like, like,
+		)
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, domainshared.Internal("统计检索结果失败", err)
+	}
+	var pos []model.Post
+	offset := (page - 1) * limit
+	if err := q.Preload("Tags").Order("updated_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
+		return nil, 0, domainshared.Internal("查询检索结果失败", err)
+	}
+	result := make([]*post.Post, 0, len(pos))
+	for _, po := range pos {
+		p, _ := postToDomain(po)
+		result = append(result, p)
+	}
+	return result, total, nil
+}
+
+func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, error) {	var count int64
 	if err := r.db.WithContext(ctx).Model(&model.Post{}).Where("slug = ?", slug).Count(&count).Error; err != nil {
 		return false, domainshared.Internal("查询 slug 存在性失败", err)
 	}
