@@ -1,5 +1,10 @@
 import { useCreatePAT } from "@features/admin-mcp/api/queries";
-import { type CreatePATRequest, PAT_SCOPES, type PATScope } from "@features/admin-mcp/model/types";
+import {
+    type CreatePATRequest,
+    MCP_SERVERS,
+    PAT_SCOPES,
+    type PATScope,
+} from "@features/admin-mcp/model/types";
 import { Button } from "@shared/ui/base/button";
 import { Checkbox } from "@shared/ui/base/checkbox";
 import { Input } from "@shared/ui/base/input";
@@ -14,7 +19,8 @@ import { toast } from "sonner";
 interface CreatePATDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onCreated: (token: string) => void;
+    /** 创建成功：回传一次性明文令牌与所选 scope */
+    onCreated: (token: string, scopes: PATScope[]) => void;
 }
 
 export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDialogProps) {
@@ -78,7 +84,7 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
         create.mutate(body, {
             onSuccess: (dto) => {
                 if (dto.token) {
-                    onCreated(dto.token);
+                    onCreated(dto.token, [...scopes]);
                 }
             },
         });
@@ -122,26 +128,43 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
                     <Label>
                         权限范围 <span className="text-destructive">*</span>
                     </Label>
-                    <div className="space-y-2">
-                        {PAT_SCOPES.map((s) => (
-                            <label
-                                key={s}
-                                htmlFor={`pat-scope-${s}`}
-                                className="flex cursor-pointer items-center gap-2"
-                            >
-                                <Checkbox
-                                    id={`pat-scope-${s}`}
-                                    checked={scopes.has(s)}
-                                    onCheckedChange={() => toggleScope(s)}
-                                    disabled={create.isPending}
-                                />
-                                <Label
-                                    htmlFor={`pat-scope-${s}`}
-                                    className="cursor-pointer font-mono text-sm"
-                                >
-                                    {s}
-                                </Label>
-                            </label>
+                    <div className="space-y-3">
+                        {MCP_SERVERS.map((server) => (
+                            <div key={server.key} className="space-y-1.5">
+                                <p className="text-sm">
+                                    <span className="font-medium">{server.label}</span>
+                                    <span className="text-muted-foreground">
+                                        {" "}
+                                        · {server.description}
+                                    </span>
+                                </p>
+                                <div className="space-y-1.5 pl-1">
+                                    {server.scopes
+                                        .filter((s): s is PATScope =>
+                                            (PAT_SCOPES as readonly string[]).includes(s),
+                                        )
+                                        .map((s) => (
+                                            <label
+                                                key={s}
+                                                htmlFor={`pat-scope-${s}`}
+                                                className="flex cursor-pointer items-center gap-2"
+                                            >
+                                                <Checkbox
+                                                    id={`pat-scope-${s}`}
+                                                    checked={scopes.has(s)}
+                                                    onCheckedChange={() => toggleScope(s)}
+                                                    disabled={create.isPending}
+                                                />
+                                                <Label
+                                                    htmlFor={`pat-scope-${s}`}
+                                                    className="cursor-pointer font-mono text-sm"
+                                                >
+                                                    {s}
+                                                </Label>
+                                            </label>
+                                        ))}
+                                </div>
+                            </div>
                         ))}
                     </div>
                 </div>
