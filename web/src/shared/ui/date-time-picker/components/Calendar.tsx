@@ -82,10 +82,13 @@ export function Calendar({
     const prevYearRange = () => setPickerYear((y) => y - 12);
     const nextYearRange = () => setPickerYear((y) => y + 12);
 
-    const handleSelectDay = (day: number, current: boolean) => {
-        if (disabled || !current) return;
-        const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
+    const handleSelectDay = (date: Date) => {
+        if (disabled) return;
         if (isDateDisabled(date, { minDate, maxDate, disabledDate })) return;
+        // 点击非当月补齐日期时自动翻月到该日期所在月份
+        if (date.getMonth() !== month.getMonth()) {
+            updateMonth(date);
+        }
         onSelect?.(date);
     };
 
@@ -314,17 +317,20 @@ export function Calendar({
                                         type="button"
                                         variant="ghost"
                                         size="icon-xs"
-                                        disabled={disabled || !current || isDisabled}
-                                        onClick={() => handleSelectDay(date.getDate(), current)}
-                                        onMouseEnter={() => current && onHoverDateChange?.(date)}
+                                        disabled={disabled || isDisabled}
+                                        onClick={() => handleSelectDay(date)}
+                                        onMouseEnter={() => onHoverDateChange?.(date)}
                                         className={cn(
                                             "size-8 text-xs",
-                                            !current && "text-muted-foreground/50",
+                                            // 非当月补齐日期：淡灰但仍可点（点击自动翻月）
+                                            !current && "text-muted-foreground/60",
                                             isToday &&
                                                 !isEndpoint &&
                                                 !inRange &&
                                                 "border border-primary text-primary",
-                                            isDisabled && "text-muted-foreground/40",
+                                            // 禁用日期：删除线 + 更淡 + 禁止指针，与补齐日期明确区分
+                                            isDisabled &&
+                                                "text-muted-foreground/30 line-through cursor-not-allowed hover:bg-transparent",
                                             isEndpoint &&
                                                 "bg-transparent text-primary-foreground hover:bg-transparent hover:text-primary-foreground",
                                             inRange &&
