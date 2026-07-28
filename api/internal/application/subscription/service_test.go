@@ -107,6 +107,31 @@ func (r *fakeRepo) FindByUser(ctx context.Context, userID shared.ID, status stri
 	return result[start:end], total, nil
 }
 
+// FindAll 镜像 FindByUser 但不按 userID 过滤（admin 全站视角）。
+func (r *fakeRepo) FindAll(ctx context.Context, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
+	if r.listErr != nil {
+		return nil, 0, r.listErr
+	}
+	var result []*domainsubscription.Subscription
+	for _, s := range r.subs {
+		if status != "" && s.Status() != status {
+			continue
+		}
+		cp := *s
+		result = append(result, &cp)
+	}
+	total := int64(len(result))
+	start := (page - 1) * limit
+	if start > len(result) {
+		return nil, total, nil
+	}
+	end := start + limit
+	if end > len(result) {
+		end = len(result)
+	}
+	return result[start:end], total, nil
+}
+
 func (r *fakeRepo) Delete(ctx context.Context, id, userID shared.ID) error {
 	r.delCalls++
 	if r.delErr != nil {

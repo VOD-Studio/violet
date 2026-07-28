@@ -43,6 +43,9 @@ func (r *fakeSubRepo) FindByUser(ctx context.Context, userID shared.ID, status s
 	return nil, 0, nil
 }
 func (r *fakeSubRepo) Delete(ctx context.Context, id, userID shared.ID) error { return nil }
+func (r *fakeSubRepo) FindAll(ctx context.Context, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
+	return nil, 0, nil // job 测试不用 FindAll
+}
 func (r *fakeSubRepo) FindDue(ctx context.Context, now time.Time, limit int) ([]*domainsubscription.Subscription, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

@@ -112,6 +112,32 @@ func (r *SubscriptionRepository) FindByUser(ctx context.Context, userID domainsh
 	return result, total, nil
 }
 
+// FindAll 列出全站订阅（admin 后台用，跨用户）。可选 status 过滤，分页。
+func (r *SubscriptionRepository) FindAll(ctx context.Context, status string, page, limit int) ([]*domainsubscription.Subscription, int64, error) {
+	query := r.db.WithContext(ctx).Model(&model.Subscription{})
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, domainshared.Internal("统计订阅失败", err)
+	}
+	var pos []model.Subscription
+	offset := (page - 1) * limit
+	if err := query.Order("created_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
+		return nil, 0, domainshared.Internal("查询订阅列表失败", err)
+	}
+	result := make([]*domainsubscription.Subscription, 0, len(pos))
+	for _, po := range pos {
+		s, err := subscriptionToDomain(po)
+		if err != nil {
+			return nil, 0, err
+		}
+		result = append(result, s)
+	}
+	return result, total, nil
+}
+
 // Delete 按 (id, userID) 双键删（防跨用户）。
 func (r *SubscriptionRepository) Delete(ctx context.Context, id, userID domainshared.ID) error {
 	res := r.db.WithContext(ctx).

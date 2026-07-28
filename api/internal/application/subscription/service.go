@@ -133,10 +133,16 @@ func (s *Service) GetByID(ctx context.Context, id, userID string) (SubscriptionD
 // ListByUser 列出某用户的订阅（分页 + 可选 status 过滤）。
 // status 空串 = 不过滤；page 从 1 起；limit 由调用方钳制上限。
 func (s *Service) ListByUser(ctx context.Context, userID, status string, page, limit int) ([]SubscriptionDTO, int64, error) {
-	uid, err := shared.ParseID(userID)
-	if err != nil {
-		return nil, 0, err
-	}
+	return s.list(ctx, status, page, limit, userID)
+}
+
+// ListAll 列出全站订阅（admin 后台用，跨用户）。
+func (s *Service) ListAll(ctx context.Context, status string, page, limit int) ([]SubscriptionDTO, int64, error) {
+	return s.list(ctx, status, page, limit, "")
+}
+
+// list 是 ListByUser/ListAll 的共享实现。userFilter 空串 = 不过滤用户（全站）。
+func (s *Service) list(ctx context.Context, status string, page, limit int, userFilter string) ([]SubscriptionDTO, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -146,7 +152,20 @@ func (s *Service) ListByUser(ctx context.Context, userID, status string, page, l
 	if limit > 100 {
 		limit = 100
 	}
-	subs, total, err := s.repo.FindByUser(ctx, uid, status, page, limit)
+	var (
+		subs  []*domainsubscription.Subscription
+		total int64
+		err   error
+	)
+	if userFilter == "" {
+		subs, total, err = s.repo.FindAll(ctx, status, page, limit)
+	} else {
+		uid, perr := shared.ParseID(userFilter)
+		if perr != nil {
+			return nil, 0, perr
+		}
+		subs, total, err = s.repo.FindByUser(ctx, uid, status, page, limit)
+	}
 	if err != nil {
 		return nil, 0, err
 	}

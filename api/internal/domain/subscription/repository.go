@@ -27,6 +27,8 @@ type SubscriptionRepository interface {
 	// FindByUser 列出某用户的所有订阅（可选按 status 过滤，空串=不过滤）。
 	// 分页：page 从 1 起，limit 上限由调用方钳制。
 	FindByUser(ctx context.Context, userID shared.ID, status string, page, limit int) ([]*Subscription, int64, error)
+	// FindAll 列出全站订阅（admin 后台用，跨用户）。可选 status 过滤，分页。
+	FindAll(ctx context.Context, status string, page, limit int) ([]*Subscription, int64, error)
 	// Delete 按 (id, userID) 双键删除（防跨用户）。返回 ErrNotFound 表示无匹配。
 	Delete(ctx context.Context, id, userID shared.ID) error
 }

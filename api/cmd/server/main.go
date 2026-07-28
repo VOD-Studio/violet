@@ -505,6 +505,22 @@ func main() {
 			r.With(middleware.RequirePermission(permissionChecker, "mcp:manage-tokens")).
 				Delete("/api-tokens/{id}", apiTokenContainer.APITokenHandler.Delete) // 吊销 PAT
 
+			// RSS 订阅管理（T9 后台管理页；读/写需 subscription:manage）
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Get("/subscriptions", subscriptionContainer.SubscriptionHandler.List)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Get("/subscriptions/{id}", subscriptionContainer.SubscriptionHandler.Get)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Post("/subscriptions", subscriptionContainer.SubscriptionHandler.Create)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Put("/subscriptions/{id}", subscriptionContainer.SubscriptionHandler.Update)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Post("/subscriptions/{id}/pause", subscriptionContainer.SubscriptionHandler.Pause)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Post("/subscriptions/{id}/resume", subscriptionContainer.SubscriptionHandler.Resume)
+			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
+				Delete("/subscriptions/{id}", subscriptionContainer.SubscriptionHandler.Delete)
+
 			// 评论审核（读 comment:view；批量状态 comment:approve）
 			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
 				Get("/comments/pending", commentH.ListPending) // 待审核评论列表
