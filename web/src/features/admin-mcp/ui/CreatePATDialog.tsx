@@ -23,7 +23,7 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
     const [scopes, setScopes] = React.useState<Set<PATScope>>(new Set(["posts:read"]));
     const [expiresAt, setExpiresAt] = React.useState("");
 
-    const expiryPresets: DateTimePreset[] = React.useMemo(() => {
+    const { today, expiryPresets } = React.useMemo(() => {
         const fmt = (d: Date) => d.toISOString().slice(0, 10);
         const now = new Date();
         const addDays = (n: number) => {
@@ -31,11 +31,14 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
             x.setDate(x.getDate() + n);
             return fmt(x);
         };
-        return [
-            { label: "90 天", value: addDays(90) },
-            { label: "365 天", value: addDays(365) },
-            { label: "永不过期", value: "never" },
-        ];
+        return {
+            today: fmt(now),
+            expiryPresets: [
+                { label: "90 天", value: addDays(90) },
+                { label: "365 天", value: addDays(365) },
+                { label: "永不过期", value: "never" },
+            ] as DateTimePreset[],
+        };
     }, []);
 
     React.useEffect(() => {
@@ -149,6 +152,7 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
                         onChange={setExpiresAt}
                         mode="date"
                         placeholder="留空默认 90 天"
+                        min={today}
                         disabled={create.isPending}
                         clearable
                         presets={expiryPresets}
