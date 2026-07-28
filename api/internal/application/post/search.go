@@ -22,6 +22,23 @@ import (
 // 个人博客文章量远小于此，截断只影响理论完备性。
 const searchCandidateLimit = 500
 
+// PageMeta 分页元数据，内嵌进各检索结果（JSON 展平，契约字段不变）。
+type PageMeta struct {
+	TotalCount int64 `json:"total_count"`
+	HasMore    bool  `json:"has_more"`
+	NextOffset int   `json:"next_offset"`
+}
+
+// newPageMeta 由总数与当前页形态推导分页元数据。
+func newPageMeta(total int64, offset, pageLen int) PageMeta {
+	next := offset + pageLen
+	return PageMeta{
+		TotalCount: total,
+		HasMore:    int64(next) < total,
+		NextOffset: next,
+	}
+}
+
 // SearchPostItem 检索命中的文章（snippet 替代全文，保护 agent 上下文窗口）。
 type SearchPostItem struct {
 	ID        string    `json:"id"`
@@ -35,10 +52,8 @@ type SearchPostItem struct {
 
 // SearchPostsResult 文章检索结果 + 分页元数据。
 type SearchPostsResult struct {
-	Posts      []SearchPostItem `json:"posts"`
-	TotalCount int64            `json:"total_count"`
-	HasMore    bool             `json:"has_more"`
-	NextOffset int              `json:"next_offset"`
+	Posts []SearchPostItem `json:"posts"`
+	PageMeta
 }
 
 // SearchFormulaItem 检索命中的公式。
@@ -53,10 +68,8 @@ type SearchFormulaItem struct {
 
 // SearchFormulasResult 公式检索结果 + 分页元数据。
 type SearchFormulasResult struct {
-	Formulas   []SearchFormulaItem `json:"formulas"`
-	TotalCount int64               `json:"total_count"`
-	HasMore    bool                `json:"has_more"`
-	NextOffset int                 `json:"next_offset"`
+	Formulas []SearchFormulaItem `json:"formulas"`
+	PageMeta
 }
 
 // SearchCodeBlockItem 检索命中的代码块。
@@ -72,9 +85,7 @@ type SearchCodeBlockItem struct {
 // SearchCodeBlocksResult 代码块检索结果 + 分页元数据。
 type SearchCodeBlocksResult struct {
 	CodeBlocks []SearchCodeBlockItem `json:"code_blocks"`
-	TotalCount int64                 `json:"total_count"`
-	HasMore    bool                  `json:"has_more"`
-	NextOffset int                   `json:"next_offset"`
+	PageMeta
 }
 
 // SearchPosts 文章检索：仓储分页 + snippet 生成。
@@ -99,10 +110,8 @@ func (s *Service) SearchPosts(ctx context.Context, authorID shared.ID, query, st
 		})
 	}
 	return &SearchPostsResult{
-		Posts:      items,
-		TotalCount: total,
-		HasMore:    int64(offset+len(posts)) < total,
-		NextOffset: offset + len(posts),
+		Posts:    items,
+		PageMeta: newPageMeta(total, offset, len(posts)),
 	}, nil
 }
 
@@ -131,12 +140,10 @@ func (s *Service) SearchFormulas(ctx context.Context, authorID shared.ID, query 
 			})
 		}
 	}
-	page, total, hasMore, next := paginateSlice(matched, limit, offset)
+	page, meta := paginateSlice(matched, limit, offset)
 	return &SearchFormulasResult{
-		Formulas:   page,
-		TotalCount: total,
-		HasMore:    hasMore,
-		NextOffset: next,
+		Formulas: page,
+		PageMeta: meta,
 	}, nil
 }
 
@@ -173,12 +180,10 @@ func (s *Service) SearchCodeBlocks(ctx context.Context, authorID shared.ID, quer
 			})
 		}
 	}
-	page, total, hasMore, next := paginateSlice(matched, limit, offset)
+	page, meta := paginateSlice(matched, limit, offset)
 	return &SearchCodeBlocksResult{
 		CodeBlocks: page,
-		TotalCount: total,
-		HasMore:    hasMore,
-		NextOffset: next,
+		PageMeta:   meta,
 	}, nil
 }
 
@@ -252,15 +257,14 @@ func windowAround(text string, start, end, window int) string {
 }
 
 // paginateSlice 元素级内存分页，返回当前页与分页元数据。
-func paginateSlice[T any](items []T, limit, offset int) (page []T, total int64, hasMore bool, nextOffset int) {
-	total = int64(len(items))
+func paginateSlice[T any](items []T, limit, offset int) (page []T, meta PageMeta) {
+	total := int64(len(items))
 	if offset >= len(items) {
-		return []T{}, total, false, offset
+		return []T{}, PageMeta{TotalCount: total, HasMore: false, NextOffset: offset}
 	}
 	end := offset + limit
 	if end > len(items) {
 		end = len(items)
 	}
-	page = items[offset:end]
-	return page, total, end < len(items), end
+	return items[offset:end], newPageMeta(total, offset, end-offset)
 }

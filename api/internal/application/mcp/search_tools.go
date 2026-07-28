@@ -6,8 +6,8 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
+	domainapitoken "blog-api/internal/domain/api_token"
 	"blog-api/internal/domain/shared"
 )
 
@@ -84,10 +84,33 @@ func emptyHint(query string) *mcp.CallToolResult {
 		"未找到匹配 %q。建议：缩短关键词 / 换英文术语 / 去掉空格用单词重试。", query))
 }
 
+// withSearchAuth 检索 tool 公共门禁：posts:read scope 校验 + PAT 持有人解析。
+// 失败时返回已包装好的 tool error（调用方直接 return）。
+func withSearchAuth(req *mcp.CallToolRequest) (shared.ID, *mcp.CallToolResult) {
+	if err := requireScope(req, domainapitoken.ScopePostsRead); err != nil {
+		return shared.ID{}, errResult(err)
+	}
+	authorID, err := operatorID(req)
+	if err != nil {
+		return shared.ID{}, errResult(fmt.Errorf("PAT 持有人 ID 非法: %w", err))
+	}
+	return authorID, nil
+}
+
+// finishSearch 检索 tool 公共出口：首页空结果给可操作提示（错误即指令），
+// 翻页后的空页是正常分页终止，返回 JSON；其余返回序列化结果。
+func finishSearch(itemCount, offset int, query string, payload any) (*mcp.CallToolResult, any, error) {
+	if itemCount == 0 && offset == 0 {
+		return emptyHint(query), nil, nil
+	}
+	return okResult(payload), nil, nil
+}
+
 // SearchPosts 全文检索自己的文章（含草稿），返回标题与上下文片段（需 posts:read）。
 func (t *SearchTools) SearchPosts(ctx context.Context, req *mcp.CallToolRequest, args searchPostsArgs) (*mcp.CallToolResult, any, error) {
-	if err := requireScope(req, domainapitoken.ScopePostsRead); err != nil {
-		return errResult(err), nil, nil
+	authorID, errRes := withSearchAuth(req)
+	if errRes != nil {
+		return errRes, nil, nil
 	}
 	if args.Query == "" {
 		return errResult(fmt.Errorf("query 不能为空：提供检索关键词，如「量子」「transformer」")), nil, nil
@@ -101,48 +124,36 @@ func (t *SearchTools) SearchPosts(ctx context.Context, req *mcp.CallToolRequest,
 	default:
 		return errResult(fmt.Errorf("status 必须是 all / draft / published / archived 之一，收到 %q", args.Status)), nil, nil
 	}
-	authorID, err := operatorID(req)
-	if err != nil {
-		return errResult(fmt.Errorf("PAT 持有人 ID 非法: %w", err)), nil, nil
-	}
 	limit, offset := normalizePage(args.Limit, args.Offset)
 	res, err := t.search.SearchPosts(ctx, authorID, args.Query, status, limit, offset)
 	if err != nil {
 		return errResult(err), nil, nil
 	}
-	if len(res.Posts) == 0 && offset == 0 {
-		return emptyHint(args.Query), nil, nil
-	}
-	return okResult(res), nil, nil
+	return finishSearch(len(res.Posts), offset, args.Query, res)
 }
 
 // SearchFormulas 按 LaTeX 源码片段检索文章中的公式（需 posts:read）。
 func (t *SearchTools) SearchFormulas(ctx context.Context, req *mcp.CallToolRequest, args searchFormulasArgs) (*mcp.CallToolResult, any, error) {
-	if err := requireScope(req, domainapitoken.ScopePostsRead); err != nil {
-		return errResult(err), nil, nil
+	authorID, errRes := withSearchAuth(req)
+	if errRes != nil {
+		return errRes, nil, nil
 	}
 	if args.Query == "" {
 		return errResult(fmt.Errorf("query 不能为空：提供 LaTeX 片段，如 \\frac、\\ket、\\ce{H2O}")), nil, nil
-	}
-	authorID, err := operatorID(req)
-	if err != nil {
-		return errResult(fmt.Errorf("PAT 持有人 ID 非法: %w", err)), nil, nil
 	}
 	limit, offset := normalizePage(args.Limit, args.Offset)
 	res, err := t.search.SearchFormulas(ctx, authorID, args.Query, limit, offset)
 	if err != nil {
 		return errResult(err), nil, nil
 	}
-	if len(res.Formulas) == 0 && offset == 0 {
-		return emptyHint(args.Query), nil, nil
-	}
-	return okResult(res), nil, nil
+	return finishSearch(len(res.Formulas), offset, args.Query, res)
 }
 
 // SearchCodeBlocks 按语言/内容检索文章中的代码块（需 posts:read）。
 func (t *SearchTools) SearchCodeBlocks(ctx context.Context, req *mcp.CallToolRequest, args searchCodeBlocksArgs) (*mcp.CallToolResult, any, error) {
-	if err := requireScope(req, domainapitoken.ScopePostsRead); err != nil {
-		return errResult(err), nil, nil
+	authorID, errRes := withSearchAuth(req)
+	if errRes != nil {
+		return errRes, nil, nil
 	}
 	lang := args.Lang
 	if lang == "" {
@@ -153,17 +164,10 @@ func (t *SearchTools) SearchCodeBlocks(ctx context.Context, req *mcp.CallToolReq
 	default:
 		return errResult(fmt.Errorf("lang 必须是 python / node / go / rust / bun / all 之一，收到 %q", args.Lang)), nil, nil
 	}
-	authorID, err := operatorID(req)
-	if err != nil {
-		return errResult(fmt.Errorf("PAT 持有人 ID 非法: %w", err)), nil, nil
-	}
 	limit, offset := normalizePage(args.Limit, args.Offset)
 	res, err := t.search.SearchCodeBlocks(ctx, authorID, args.Query, lang, args.RunnableOnly, limit, offset)
 	if err != nil {
 		return errResult(err), nil, nil
 	}
-	if len(res.CodeBlocks) == 0 && offset == 0 {
-		return emptyHint(args.Query), nil, nil
-	}
-	return okResult(res), nil, nil
+	return finishSearch(len(res.CodeBlocks), offset, args.Query, res)
 }

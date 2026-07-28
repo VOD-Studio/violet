@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
+	domainapitoken "blog-api/internal/domain/api_token"
 	"blog-api/internal/domain/shared"
 )
 
@@ -50,8 +50,8 @@ func uuidUser() string { return shared.NewID().String() }
 
 func onePostResult() *apppost.SearchPostsResult {
 	return &apppost.SearchPostsResult{
-		Posts:      []apppost.SearchPostItem{{ID: "p1", Title: "量子", Snippet: "…量子…"}},
-		TotalCount: 1, HasMore: false, NextOffset: 1,
+		Posts:    []apppost.SearchPostItem{{ID: "p1", Title: "量子", Snippet: "…量子…"}},
+		PageMeta: apppost.PageMeta{TotalCount: 1, HasMore: false, NextOffset: 1},
 	}
 }
 
@@ -119,7 +119,7 @@ func TestSearchPosts_LimitClamped(t *testing.T) {
 }
 
 func TestSearchPosts_EmptyResultGivesHint(t *testing.T) {
-	fake := &fakeSearchService{postsRes: &apppost.SearchPostsResult{Posts: nil, TotalCount: 0}}
+	fake := &fakeSearchService{postsRes: &apppost.SearchPostsResult{Posts: nil, PageMeta: apppost.PageMeta{TotalCount: 0}}}
 	tools := NewSearchTools(fake)
 
 	res, _, err := tools.SearchPosts(context.Background(),
@@ -132,7 +132,7 @@ func TestSearchPosts_EmptyResultGivesHint(t *testing.T) {
 
 func TestSearchPosts_EmptyPageBeyondOffsetReturnsJSON(t *testing.T) {
 	// 翻页后的空页是正常分页终止，不应返回提示文案
-	fake := &fakeSearchService{postsRes: &apppost.SearchPostsResult{Posts: nil, TotalCount: 3}}
+	fake := &fakeSearchService{postsRes: &apppost.SearchPostsResult{Posts: nil, PageMeta: apppost.PageMeta{TotalCount: 3}}}
 	tools := NewSearchTools(fake)
 
 	res, _, _ := tools.SearchPosts(context.Background(),
@@ -159,7 +159,7 @@ func TestSearchPosts_ServiceErrorBecomesToolError(t *testing.T) {
 func TestSearchFormulas_DelegatesWithReadScope(t *testing.T) {
 	fake := &fakeSearchService{formRes: &apppost.SearchFormulasResult{
 		Formulas: []apppost.SearchFormulaItem{{Latex: "\\frac{1}{2}", DisplayMode: "block"}},
-		TotalCount: 1,
+		PageMeta: apppost.PageMeta{TotalCount: 1},
 	}}
 	tools := NewSearchTools(fake)
 	uid := uuidUser()
@@ -197,7 +197,7 @@ func TestSearchFormulas_EmptyQueryIsToolError(t *testing.T) {
 func TestSearchCodeBlocks_DelegatesWithReadScope(t *testing.T) {
 	fake := &fakeSearchService{codeRes: &apppost.SearchCodeBlocksResult{
 		CodeBlocks: []apppost.SearchCodeBlockItem{{Lang: "python", Runnable: true, Code: "print(1)"}},
-		TotalCount: 1,
+		PageMeta:   apppost.PageMeta{TotalCount: 1},
 	}}
 	tools := NewSearchTools(fake)
 
