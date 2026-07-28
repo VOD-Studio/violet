@@ -57,13 +57,12 @@ export function PATTable({ tokens, loading, onConnect }: PATTableProps) {
         },
         {
             key: "_actions",
-            header: "",
+            header: "操作",
             hideable: false,
             sticky: "right",
             width: "96px",
-            align: "center",
             cell: (row) => (
-                <div className="flex items-center justify-center gap-1">
+                <div className="flex items-center gap-2">
                     <Button
                         variant="ghost"
                         size="icon-sm"
