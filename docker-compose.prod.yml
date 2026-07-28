@@ -55,7 +55,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    image: localhost/mimo-blog-api:latest
+    image: localhost/violet-api:latest
     container_name: blog-api
     restart: always
     # API Dockerfile 创建 UID/GID 65532 的非 root 用户，
@@ -110,7 +110,7 @@ services:
         VITE_SITE_URL: ${VITE_SITE_URL:-https://xunrua.top}
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
         VITE_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
-    image: localhost/mimo-blog-web:latest
+    image: localhost/violet-web:latest
     container_name: blog-web
     restart: always
     expose:

@@ -130,7 +130,7 @@ web-test: ## 运行前端单元测试 (Vitest)
 
 # ==================== 代码运行器（可运行代码块沙箱执行） ====================
 # runner 镜像字面复用 yggdrasil 项目（yggdrasil-runner-{python,node,go,rust,bun}），
-# mimo-blog 本身不构建这些镜像。启用 code runner 前需先在 yggdrasil 项目构建并 load。
+# violet 本身不构建这些镜像。启用 code runner 前需先在 yggdrasil 项目构建并 load。
 # 完整步骤见 docs/deploy/manual-deploy.md「代码运行器」段。
 
 runner-images-help: ## 显示 runner 镜像准备说明

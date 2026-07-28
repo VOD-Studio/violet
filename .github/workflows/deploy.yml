@@ -61,8 +61,8 @@ jobs:
         id: prev
         run: |
           PREV=""
-          if [ -f /root/docker/mimo-blog/.current-version ]; then
-            PREV="$(cat /root/docker/mimo-blog/.current-version)"
+          if [ -f /root/docker/violet/.current-version ]; then
+            PREV="$(cat /root/docker/violet/.current-version)"
           fi
           echo "prev_tag=${PREV}" >> "$GITHUB_OUTPUT"
           echo "当前线上版本: ${PREV:-无，疑似首次部署}"
@@ -90,12 +90,12 @@ jobs:
 
       - name: 同步 compose 文件到部署目录
         run: |
-          cp docker-compose.prod.yml /root/docker/mimo-blog/docker-compose.prod.yml
-          cp docker-compose.ci.yml   /root/docker/mimo-blog/docker-compose.ci.yml
+          cp docker-compose.prod.yml /root/docker/violet/docker-compose.prod.yml
+          cp docker-compose.ci.yml   /root/docker/violet/docker-compose.ci.yml
 
       - name: 数据库迁移门禁
         id: migrate
-        working-directory: /root/docker/mimo-blog
+        working-directory: /root/docker/violet
         run: |
           docker compose \
             --env-file api/.env \
@@ -105,7 +105,7 @@ jobs:
 
       - name: 部署 api 服务
         id: deploy
-        working-directory: /root/docker/mimo-blog
+        working-directory: /root/docker/violet
         run: |
           docker compose \
             --env-file api/.env \
@@ -115,7 +115,7 @@ jobs:
 
       - name: 健康检查
         id: health
-        working-directory: /root/docker/mimo-blog
+        working-directory: /root/docker/violet
         run: |
           for i in $(seq 1 15); do
             if docker compose exec -T api wget -qO- http://localhost:9090/api/health 2>/dev/null | grep -q '"status":"ok"'; then
@@ -130,7 +130,7 @@ jobs:
 
       - name: 自动回滚到上一版本
         if: failure() && steps.migrate.outcome == 'success' && steps.prev.outputs.prev_tag != '' && steps.ver.outputs.rollback != 'true'
-        working-directory: /root/docker/mimo-blog
+        working-directory: /root/docker/violet
         run: |
           PREV="${{ steps.prev.outputs.prev_tag }}"
           echo "部署失败，自动回滚到 ${PREV}"
@@ -153,7 +153,7 @@ jobs:
       - name: 更新版本锚点
         if: success() && steps.ver.outputs.rollback != 'true'
         run: |
-          echo "${{ steps.ver.outputs.tag }}" > /root/docker/mimo-blog/.current-version
+          echo "${{ steps.ver.outputs.tag }}" > /root/docker/violet/.current-version
           echo "版本锚点已更新为 ${{ steps.ver.outputs.tag }}"
 
       - name: 创建 GitHub Release
