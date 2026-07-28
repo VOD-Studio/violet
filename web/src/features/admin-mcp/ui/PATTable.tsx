@@ -1,34 +1,26 @@
 import { useDeletePAT } from "@features/admin-mcp/api/queries";
-import type { PATDTO } from "@features/admin-mcp/model/types";
+import type { PATDTO, PATScope } from "@features/admin-mcp/model/types";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Cable, Trash2 } from "lucide-react";
 
 interface PATTableProps {
     tokens: PATDTO[];
     loading: boolean;
-    onReveal: (token: string) => void;
+    /** 跳转接入区，按该令牌 scope 推导可见 server */
+    onConnect: (scopes: PATScope[]) => void;
 }
 
-export function PATTable({ tokens, loading, onReveal }: PATTableProps) {
+export function PATTable({ tokens, loading, onConnect }: PATTableProps) {
     const del = useDeletePAT();
 
     const columns: DataTableColumn<PATDTO>[] = [
         {
             key: "name",
             header: "名称",
-            cell: (row) => (
-                <div className="flex items-center gap-2">
-                    <span className="font-medium">{row.name}</span>
-                    {row.token && (
-                        <Button variant="ghost" size="sm" onClick={() => onReveal(row.token ?? "")}>
-                            配置
-                        </Button>
-                    )}
-                </div>
-            ),
+            cell: (row) => <span className="font-medium">{row.name}</span>,
         },
         {
             key: "scopes",
@@ -68,19 +60,29 @@ export function PATTable({ tokens, loading, onReveal }: PATTableProps) {
             header: "",
             hideable: false,
             sticky: "right",
-            width: "60px",
+            width: "96px",
             align: "center",
             cell: (row) => (
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    title="吊销"
-                    className="hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => del.mutate(row.id)}
-                    disabled={del.isPending}
-                >
-                    <Trash2 className="size-3.5" />
-                </Button>
+                <div className="flex items-center justify-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="接入配置"
+                        onClick={() => onConnect(row.scopes)}
+                    >
+                        <Cable className="size-3.5" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="吊销"
+                        className="hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => del.mutate(row.id)}
+                        disabled={del.isPending}
+                    >
+                        <Trash2 className="size-3.5" />
+                    </Button>
+                </div>
             ),
         },
     ];
