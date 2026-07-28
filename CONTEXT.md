@@ -1,4 +1,4 @@
-# mimo-blog
+# violet
 
 全栈博客平台：Go (Chi) 后端 + React (Vite) 前端，PostgreSQL + Redis。本文档是项目领域语言的术语表，仅定义概念，不含实现细节。
 
@@ -7,7 +7,7 @@
 > 登录态采用 **opaque session cookie** 模型（对标 bilibili SESSDATA），取代历史的 access/refresh JWT。决策与命门不变量见 `docs/adr/0003-login-opaque-session.md`（ADR-0001、ADR-0002 均 superseded）。
 
 **Session ID**:
-opaque（不透明）随机串（≥256-bit），作为登录态凭证存于 HttpOnly Cookie `mimo_session`。本身不含任何用户信息，后端必须查 Redis（`session:<id>`）才能换出用户身份。安全性靠 cookie 的 HttpOnly + SameSite + Secure，以及后端可即时删除。
+opaque（不透明）随机串（≥256-bit），作为登录态凭证存于 HttpOnly Cookie `violet_session`。本身不含任何用户信息，后端必须查 Redis（`session:<id>`）才能换出用户身份。安全性靠 cookie 的 HttpOnly + SameSite + Secure，以及后端可即时删除。
 _Avoid_: access token、login token（这些是已废弃 JWT 时代的词）
 
 **Session Envelope（信封）**:
@@ -21,7 +21,7 @@ _Avoid_: cookie lifetime（混淆了信封与信件）
 可选配置项，从登录起算的 session 最长存活上限。`max <= 0`（0 或 -1）表示无上限（默认）；`max > 0` 时，无论用户多活跃，到点强制重登。session 实际过期 = min(滑动到期, 绝对到期[若启用])。
 
 **CSRF Token**:
-随机不可预测串，double-submit 模式：非 HttpOnly Cookie `mimo_csrf`（前端可读）+ `X-CSRF-Token` header 回传比对。token 值同时存于后端 session 记录中，与 session 同生命周期。保护 session 探活端点之外的写操作。对标 bilibili `bili_jct`。
+随机不可预测串，double-submit 模式：非 HttpOnly Cookie `violet_csrf`（前端可读）+ `X-CSRF-Token` header 回传比对。token 值同时存于后端 session 记录中，与 session 同生命周期。保护 session 探活端点之外的写操作。对标 bilibili `bili_jct`。
 _Avoid_: anti-forgery token（笼统）
 
 **Session 吊销（Revocation）**:
@@ -29,7 +29,7 @@ _Avoid_: anti-forgery token（笼统）
 _Avoid_: logout（吊销是机制，登出是触发场景之一）
 
 **SSR 会话探活**:
-SSR（TanStack Start）判断当前请求是否登录的方式：调后端**只读**端点 `/auth/session`，由其读 `mimo_session` cookie 查 Redis 返回 user claims。完整 UserDTO 仍由客户端 useMe 按需拉。
+SSR（TanStack Start）判断当前请求是否登录的方式：调后端**只读**端点 `/auth/session`，由其读 `violet_session` cookie 查 Redis 返回 user claims。完整 UserDTO 仍由客户端 useMe 按需拉。
 _Avoid_: SSR 鉴权（混淆「探活」与「取完整用户信息」）
 
 **命门不变量（opaque session 成立前提）**:

@@ -1,4 +1,4 @@
-# mimo-blog
+# violet
 
 > 全栈博客平台 · Go 后端 + React 前端
 
