@@ -30,9 +30,10 @@ func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Se
 	verifier := inframcp.NewPATVerifier(tokenLookup)
 	robots := inframcp.NewRobotsChecker()
 
-	// 文章 server（5 个 post CRUD tool）
+	// 文章 server（5 个 post CRUD tool + 3 个检索 tool）
 	postTools := appmcp.NewPostTools(postSvc)
-	postServer := appmcp.NewPostServer(postTools)
+	searchTools := appmcp.NewSearchTools(postSvc)
+	postServer := appmcp.NewPostServer(postTools, searchTools)
 	// 抓取 server（scrape_url + 7 个 subscription tool）
 	scraperTools := appmcp.NewScraperTools(postSvc, robots, subSvc)
 	scraperServer := appmcp.NewScraperServer(scraperTools)

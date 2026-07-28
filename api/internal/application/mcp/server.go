@@ -20,10 +20,10 @@ var ScraperServerMeta = &mcp.Implementation{
 	Version: "1.0.0",
 }
 
-// NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool。
-// 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。
+// NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool。
+// 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。检索为私有视角（PAT 持有人全部文章）。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。
-func NewPostServer(tools *PostTools) *mcp.Server {
+func NewPostServer(tools *PostTools, search *SearchTools) *mcp.Server {
 	s := mcp.NewServer(ServerMeta, nil)
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -50,6 +50,24 @@ func NewPostServer(tools *PostTools) *mcp.Server {
 		Name:        "list_drafts",
 		Description: "列出草稿状态的文章（分页）。需 posts:read 权限。",
 	}, tools.ListDrafts)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "search_posts",
+		Description: "全文检索自己的文章（含草稿），返回标题与命中上下文片段而非全文。" +
+			"写作前查重、找可引用旧文时使用；需要全文时再用 get_post。需 posts:read 权限。",
+	}, search.SearchPosts)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "search_formulas",
+		Description: "按 LaTeX 源码片段检索自己文章中的数学/化学公式，返回公式所在文章、源码与展示模式。" +
+			"找「哪篇文章用过某表达式」时使用。需 posts:read 权限。",
+	}, search.SearchFormulas)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "search_code_blocks",
+		Description: "按语言/内容检索自己文章中的代码块，可只看可运行块（runnable）。" +
+			"写作时复用旧代码使用。需 posts:read 权限。",
+	}, search.SearchCodeBlocks)
 
 	return s
 }
