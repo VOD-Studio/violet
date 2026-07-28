@@ -43,6 +43,12 @@ export const MCP_SERVERS: MCPServerSpec[] = [
     },
 ];
 
+/** serversForScopes - 按 PAT scope 推导可见的 MCP server：命中该 server 任一 scope 即包含 */
+export function serversForScopes(scopes: readonly string[]): MCPServerSpec[] {
+    const set = new Set(scopes);
+    return MCP_SERVERS.filter((s) => s.scopes.some((sc) => set.has(sc)));
+}
+
 /** PAT 读模型 */
 export interface PATDTO {
     id: string;
