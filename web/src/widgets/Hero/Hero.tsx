@@ -48,7 +48,7 @@ export default function Hero() {
                     className="mb-4 text-6xl font-black tracking-tighter md:text-8xl"
                 >
                     <span className="bg-linear-to-b from-foreground to-foreground/70 bg-clip-text text-transparent">
-                        MIMO BLOG
+                        VIOLET BLOG
                     </span>
                 </motion.h1>
 

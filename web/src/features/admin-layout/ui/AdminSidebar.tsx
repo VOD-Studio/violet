@@ -14,7 +14,7 @@ export function AdminSidebar() {
         <aside className="hidden w-64 shrink-0 flex-col border-r bg-card md:flex">
             <div className="flex h-14 items-center gap-2 border-b px-5">
                 <span className="bg-primary size-6 rounded-md" />
-                <span className="text-base font-semibold">Mimo Admin</span>
+                <span className="text-base font-semibold">Violet Admin</span>
             </div>
             <div className="flex-1 overflow-y-auto p-3">
                 <AdminSidebarBody />

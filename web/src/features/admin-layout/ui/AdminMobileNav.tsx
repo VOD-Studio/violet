@@ -37,7 +37,7 @@ export function AdminMobileNav() {
                 <SheetHeader className="h-14 justify-center border-b">
                     <SheetTitle className="flex items-center gap-2 text-base">
                         <span className="bg-primary size-6 rounded-md" />
-                        Mimo Admin
+                        Violet Admin
                     </SheetTitle>
                 </SheetHeader>
                 <div className="flex h-[calc(100%-3.5rem)] flex-col p-3">
