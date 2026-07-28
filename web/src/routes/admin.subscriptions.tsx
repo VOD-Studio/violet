@@ -13,16 +13,12 @@ import {
 import {
     type CreateSubscriptionRequest,
     intervalLabel,
-    SUBSCRIPTION_INTERVALS,
     type SubscriptionDTO,
-    type SubscriptionInterval,
 } from "@features/admin-subscriptions/model/types";
+import { SubscriptionFormDialog } from "@features/admin-subscriptions/ui/SubscriptionFormDialog";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
-import { Checkbox } from "@shared/ui/base/checkbox";
-import { Input } from "@shared/ui/base/input";
-import { Label } from "@shared/ui/base/label";
 import {
     Select,
     SelectContent,
@@ -30,11 +26,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@shared/ui/base/select";
-import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import * as React from "react";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/subscriptions")({
     component: AdminSubscriptionsPage,
@@ -168,7 +162,7 @@ function AdminSubscriptionsPage() {
     return (
         <PageShell
             title="RSS 订阅管理"
-            description="管理 RSS feed 订阅源，定时抓取外站文章进草稿箱"
+            description="管理 RSS 订阅源"
             action={
                 <Button size="sm" onClick={() => setCreateOpen(true)}>
                     <Plus className="size-3.5" />
@@ -213,7 +207,6 @@ function AdminSubscriptionsPage() {
                 />
             </PermissionGuard>
 
-            {/* 创建对话框 */}
             <SubscriptionFormDialog
                 open={createOpen}
                 onOpenChange={setCreateOpen}
@@ -224,7 +217,6 @@ function AdminSubscriptionsPage() {
                 }}
             />
 
-            {/* 编辑对话框 */}
             <SubscriptionFormDialog
                 open={!!editing}
                 onOpenChange={(open) => {
@@ -233,7 +225,7 @@ function AdminSubscriptionsPage() {
                 title="编辑订阅"
                 initial={editing ?? undefined}
                 loading={updateMut.isPending}
-                onSubmit={(body) => {
+                onSubmit={(body: CreateSubscriptionRequest) => {
                     if (!editing) return;
                     updateMut.mutate(
                         { id: editing.id, body },
@@ -242,7 +234,6 @@ function AdminSubscriptionsPage() {
                 }}
             />
 
-            {/* 删除确认 */}
             <ConfirmDialog
                 open={!!deleting}
                 onOpenChange={(open) => {
@@ -258,162 +249,5 @@ function AdminSubscriptionsPage() {
                 }}
             />
         </PageShell>
-    );
-}
-
-/** SubscriptionFormDialog - 创建/编辑订阅表单对话框 */
-function SubscriptionFormDialog({
-    open,
-    onOpenChange,
-    title,
-    initial,
-    loading,
-    onSubmit,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    title: string;
-    initial?: SubscriptionDTO;
-    loading: boolean;
-    onSubmit: (body: CreateSubscriptionRequest) => void;
-}) {
-    const [feedUrl, setFeedUrl] = React.useState("");
-    const [subTitle, setSubTitle] = React.useState("");
-    const [interval, setInterval] = React.useState<SubscriptionInterval>("daily");
-    const [autoPublish, setAutoPublish] = React.useState(false);
-    const [canonicalOverride, setCanonicalOverride] = React.useState("");
-    const [tagsInput, setTagsInput] = React.useState("");
-
-    React.useEffect(() => {
-        if (open) {
-            setFeedUrl(initial?.feed_url ?? "");
-            setSubTitle(initial?.title ?? "");
-            setInterval(initial?.interval ?? "daily");
-            setAutoPublish(initial?.auto_publish ?? false);
-            setCanonicalOverride(initial?.canonical_override ?? "");
-            setTagsInput(initial?.tags.join(", ") ?? "");
-        }
-    }, [open, initial]);
-
-    const submit = () => {
-        if (!feedUrl.trim()) {
-            toast.error("请填写 feed URL");
-            return;
-        }
-        const tags = tagsInput
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean);
-        onSubmit({
-            feed_url: feedUrl.trim(),
-            title: subTitle.trim() || undefined,
-            interval,
-            auto_publish: autoPublish,
-            canonical_override: canonicalOverride.trim() || undefined,
-            tags: tags.length > 0 ? tags : undefined,
-        });
-    };
-
-    return (
-        <Modal
-            open={open}
-            onOpenChange={onOpenChange}
-            title={title}
-            description="RSS feed 订阅源配置"
-            footer={
-                <>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        disabled={loading}
-                    >
-                        取消
-                    </Button>
-                    <Button onClick={submit} disabled={loading}>
-                        {loading ? "保存中…" : "保存"}
-                    </Button>
-                </>
-            }
-        >
-            <div className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="sub-feed-url">
-                        Feed URL <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                        id="sub-feed-url"
-                        value={feedUrl}
-                        onChange={(e) => setFeedUrl(e.target.value)}
-                        placeholder="https://example.com/feed.xml"
-                        disabled={loading || !!initial}
-                    />
-                    {initial && (
-                        <p className="text-muted-foreground text-xs">feed URL 创建后不可修改</p>
-                    )}
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="sub-title">标题</Label>
-                    <Input
-                        id="sub-title"
-                        value={subTitle}
-                        onChange={(e) => setSubTitle(e.target.value)}
-                        placeholder="订阅源显示名（留空用 feed 自带标题）"
-                        disabled={loading}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label>抓取频率</Label>
-                    <Select
-                        value={interval}
-                        onValueChange={(v) => setInterval(v as SubscriptionInterval)}
-                    >
-                        <SelectTrigger className="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {SUBSCRIPTION_INTERVALS.map((i) => (
-                                <SelectItem key={i} value={i}>
-                                    {intervalLabel(i)}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="sub-canonical">canonical 覆盖（可选）</Label>
-                    <Input
-                        id="sub-canonical"
-                        value={canonicalOverride}
-                        onChange={(e) => setCanonicalOverride(e.target.value)}
-                        placeholder="留空用 entry.link 作 canonical"
-                        disabled={loading}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="sub-tags">标签（逗号分隔）</Label>
-                    <Input
-                        id="sub-tags"
-                        value={tagsInput}
-                        onChange={(e) => setTagsInput(e.target.value)}
-                        placeholder="如：转载, 技术"
-                        disabled={loading}
-                    />
-                </div>
-                <label
-                    htmlFor="sub-auto-publish"
-                    className="flex cursor-pointer items-center gap-2"
-                >
-                    <Checkbox
-                        id="sub-auto-publish"
-                        checked={autoPublish}
-                        onCheckedChange={(v) => setAutoPublish(v === true)}
-                        disabled={loading}
-                    />
-                    <Label htmlFor="sub-auto-publish" className="cursor-pointer">
-                        自动发布（默认建草稿，开启后抓来直接发布）
-                    </Label>
-                </label>
-            </div>
-        </Modal>
     );
 }
