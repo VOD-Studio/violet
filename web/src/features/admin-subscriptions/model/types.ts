@@ -1,7 +1,4 @@
-/** admin-subscriptions 模块类型定义。
- * 对齐后端 application/subscription.SubscriptionDTO（含 user_id）。 */
-
-/** 抓取频率枚举（对齐后端 domain/subscription 常量） */
+/** 抓取频率 */
 export const SUBSCRIPTION_INTERVALS = ["hourly", "every-6h", "daily", "weekly"] as const;
 export type SubscriptionInterval = (typeof SUBSCRIPTION_INTERVALS)[number];
 
@@ -9,7 +6,7 @@ export type SubscriptionInterval = (typeof SUBSCRIPTION_INTERVALS)[number];
 export const SUBSCRIPTION_STATUSES = ["active", "paused"] as const;
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 
-/** SubscriptionDTO - 订阅读模型（admin 视角，含 user_id） */
+/** 订阅读模型 */
 export interface SubscriptionDTO {
     id: string;
     user_id: string;
@@ -30,7 +27,7 @@ export interface SubscriptionDTO {
     updated_at: string;
 }
 
-/** CreateSubscriptionRequest - 创建订阅请求体 */
+/** 创建订阅请求 */
 export interface CreateSubscriptionRequest {
     feed_url: string;
     title?: string;
@@ -40,7 +37,7 @@ export interface CreateSubscriptionRequest {
     tags?: string[];
 }
 
-/** UpdateSubscriptionRequest - 更新订阅（指针字段 nil 表示不改） */
+/** 更新订阅请求（nil 字段不修改） */
 export interface UpdateSubscriptionRequest {
     title?: string;
     interval?: SubscriptionInterval;
