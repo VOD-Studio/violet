@@ -1,11 +1,4 @@
-/**
- * admin-mcp 模块类型定义
- *
- * 对齐后端 application/api_token.PATDTO（GET/POST /admin/api-tokens 返回）。
- * scope 取值与后端 domain/api_token 常量一致（read/write/publish/scrape）。
- */
-
-/** PAT 可选 scope（与后端 domain/api_token 的 ScopePosts* 与 ScopeSubscriptions* 对齐） */
+/** PAT 可选 scope */
 export const PAT_SCOPES = [
     "posts:read",
     "posts:write",
@@ -16,24 +9,20 @@ export const PAT_SCOPES = [
 ] as const;
 export type PATScope = (typeof PAT_SCOPES)[number];
 
-/** PAT 过期：ISO 日期（YYYY-MM-DD）或 "never"（永不过期）。空串由后端默认 90 天。 */
+/** PAT 过期：ISO 日期或 "never"，空串后端默认 90 天 */
 export type PATExpiry = string;
 
-/**
- * MCP server 清单（ADR-0007：文章 + 抓取两个独立端点）。
- * 未来新增 MCP server 只在此追加一项，MCPConfigCard 自动渲染对应勾选项与配置生成。
- * 与后端 ADR-0007 路由 + scope 对齐。
- */
+/** MCP server 规格，新增 server 在此追加即可 */
 export interface MCPServerSpec {
-    /** mcpServers 配置里的 key（也是客户端识别名） */
+    /** mcpServers 配置里的 key */
     key: string;
     /** 显示名 */
     label: string;
     /** 后端端点路径 */
     endpoint: string;
-    /** 能力描述（勾选时展示） */
+    /** 能力描述 */
     description: string;
-    /** 该 server 涉及的 scope（用于提示 PAT 应包含哪些权限） */
+    /** 该 server 涉及的 scope */
     scopes: string[];
 }
 
@@ -54,7 +43,7 @@ export const MCP_SERVERS: MCPServerSpec[] = [
     },
 ];
 
-/** PATDTO - 个人访问令牌读模型 */
+/** PAT 读模型 */
 export interface PATDTO {
     id: string;
     name: string;
@@ -64,14 +53,13 @@ export interface PATDTO {
     /** RFC3339，空表示从未使用 */
     last_used_at?: string;
     created_at: string;
-    /** 明文 token，仅创建响应返回（一次性） */
+    /** 明文 token，仅创建响应返回 */
     token?: string;
 }
 
-/** CreatePATRequest - 创建 PAT 请求体 */
+/** 创建 PAT 请求 */
 export interface CreatePATRequest {
     name: string;
     scopes: PATScope[];
-    /** ISO 日期（YYYY-MM-DD）或 "never"（永不过期）。空串后端默认 90 天。 */
     expires_at: string;
 }
