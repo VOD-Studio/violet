@@ -33,6 +33,9 @@ func (f *fakeSlugRepo) FindPublished(context.Context, int, int, string) ([]*doma
 func (f *fakeSlugRepo) FindAll(context.Context, int, int, string) ([]*domain.Post, int64, error) {
 	panic("not implemented")
 }
+func (f *fakeSlugRepo) Search(context.Context, shared.ID, string, string, int, int) ([]*domain.Post, int64, error) {
+	panic("not implemented")
+}
 func (f *fakeSlugRepo) Save(context.Context, *domain.Post) error          { panic("not implemented") }
 func (f *fakeSlugRepo) Delete(context.Context, shared.ID) error           { panic("not implemented") }
 func (f *fakeSlugRepo) Restore(context.Context, shared.ID) error          { panic("not implemented") }
