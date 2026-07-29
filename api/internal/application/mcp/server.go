@@ -31,10 +31,11 @@ var ReaderServerMeta = &mcp.Implementation{
 // server 选型层（比 tool/resource 描述高一层）即告知公开只读定位。
 const readerInstructions = `本 server 是博客的公开只读通道：匿名访问，仅暴露已发布文章（Resources）与写作风格指南（Prompts）。不含草稿、公告、评论。草稿访问与写操作请用 violet server（需 PAT）。`
 
-// NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool。
+// NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool + 1 个编排 prompt。
 // 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。检索为私有视角（PAT 持有人全部文章）。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。
-func NewPostServer(tools *PostTools, search *SearchTools) *mcp.Server {
+// prompts 提供 polish_draft 编排 prompt（PAT posts:read）。
+func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools) *mcp.Server {
 	s := mcp.NewServer(ServerMeta, nil)
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -79,6 +80,18 @@ func NewPostServer(tools *PostTools, search *SearchTools) *mcp.Server {
 		Description: "按语言/内容检索自己文章中的代码块，可只看可运行块（runnable）。" +
 			"写作时复用旧代码使用。需 posts:read 权限。",
 	}, search.SearchCodeBlocks)
+
+	// polish_draft 编排 prompt：读草稿 + 注入风格 + 触发润色（PAT posts:read）
+	s.AddPrompt(&mcp.Prompt{
+		Name:        "polish_draft",
+		Title:       "润色草稿",
+		Description: "按本博客风格润色指定草稿。注入草稿全文+风格指南；仅可润色自己的草稿。需 posts:read 权限。",
+		Arguments: []*mcp.PromptArgument{{
+			Name:        "slug",
+			Description: "要润色的草稿 slug",
+			Required:    true,
+		}},
+	}, prompts.PolishDraft)
 
 	return s
 }
@@ -132,10 +145,17 @@ func NewScraperServer(tools *ScraperTools) *mcp.Server {
 // （PRD-0007 / ADR-0008：匿名 vs 鉴权是新形态的信任域边界）。
 //
 // resources/list 不自动展开 ResourceTemplate 实例，故目录用独立静态 Resource。
-func NewPublicServer(tools *PublicTools) *mcp.Server {
+func NewPublicServer(tools *PublicTools, prompts *PromptTools) *mcp.Server {
 	s := mcp.NewServer(ReaderServerMeta, &mcp.ServerOptions{
 		Instructions: readerInstructions,
 	})
+
+	// writing_style 写作风格指南（匿名静态，无参数）
+	s.AddPrompt(&mcp.Prompt{
+		Name:        "writing_style",
+		Title:       "写作风格指南",
+		Description: "本博客品牌写作风格指南（匿名可读）。写作前注入以保持文风一致。",
+	}, prompts.WritingStyle)
 
 	// 单篇已发布文章：blog://posts/{slug}
 	s.AddResourceTemplate(&mcp.ResourceTemplate{

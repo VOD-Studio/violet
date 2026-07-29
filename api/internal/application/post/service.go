@@ -178,7 +178,23 @@ func (s *Service) GetPublishedBySlug(ctx context.Context, slug string) (PostDTO,
 	return dto, nil
 }
 
-// GetByID 按 ID 获取文章（后台）
+// GetBySlugForAuthor 按 slug 获取当前操作者（PAT 持有人）自己的文章（任意状态）。
+// 用于 MCP polish_draft prompt：读自己的草稿做润色编排。非持有人/不存在统一
+// 返回 ErrNotFound（不区分，防所有权枚举）。所有权校验依赖 ctx 的 operator
+// （middleware.UserIDKey，由 MCP tool 的 ctxWithOperator 注入）。
+func (s *Service) GetBySlugForAuthor(ctx context.Context, slug string) (PostDTO, error) {
+	p, err := s.repo.FindBySlug(ctx, slug)
+	if err != nil {
+		return PostDTO{}, err
+	}
+	if !s.canModify(ctx, p, "") {
+		return PostDTO{}, domain.ErrNotFound
+	}
+	dto := toDTO(p)
+	s.fillAuthor(ctx, []PostDTO{dto})
+	s.fillCollaborators(ctx, &dto)
+	return dto, nil
+}
 func (s *Service) GetByID(ctx context.Context, id string) (PostDTO, error) {
 	pid, err := shared.ParseID(id)
 	if err != nil {

@@ -32,16 +32,17 @@ func NewMCPContainer(tokenLookup domainapitoken.TokenLookup, postSvc *apppost.Se
 	verifier := inframcp.NewPATVerifier(tokenLookup)
 	robots := inframcp.NewRobotsChecker()
 
-	// 文章 server（5 个 post CRUD tool + 3 个检索 tool）
+	// 文章 server（5 个 post CRUD tool + 3 个检索 tool + 1 个编排 prompt）
 	postTools := appmcp.NewPostTools(postSvc)
 	searchTools := appmcp.NewSearchTools(postSvc)
-	postServer := appmcp.NewPostServer(postTools, searchTools)
+	promptTools := appmcp.NewPromptTools(postSvc)
+	postServer := appmcp.NewPostServer(postTools, searchTools, promptTools)
 	// 抓取 server（scrape_url + 7 个 subscription tool）
 	scraperTools := appmcp.NewScraperTools(postSvc, robots, subSvc)
 	scraperServer := appmcp.NewScraperServer(scraperTools)
-	// 公开只读 server（2 个 Resource，匿名，仅已发布文章）
+	// 公开只读 server（2 个 Resource + 1 个匿名 prompt，仅已发布文章）
 	publicTools := appmcp.NewPublicTools(postSvc)
-	publicServer := appmcp.NewPublicServer(publicTools)
+	publicServer := appmcp.NewPublicServer(publicTools, promptTools)
 
 	auth := mcpauth.RequireBearerToken(verifier.Verify, nil)
 	return &MCPContainer{

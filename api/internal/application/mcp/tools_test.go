@@ -58,6 +58,9 @@ func (f *fakePostService) GetByID(ctx context.Context, id string) (apppost.PostD
 	f.getID = id
 	return apppost.PostDTO{ID: id, Title: "标题"}, f.getErr
 }
+func (f *fakePostService) GetBySlugForAuthor(_ context.Context, slug string) (apppost.PostDTO, error) {
+	return apppost.PostDTO{ID: "post-1", Slug: slug, Title: "草稿标题", ContentMD: "# 草稿\n正文"}, f.getErr
+}
 func (f *fakePostService) ListAll(ctx context.Context, page, limit int, status string) ([]apppost.PostListItemDTO, int64, error) {
 	f.listStatus = status
 	f.listPage = page

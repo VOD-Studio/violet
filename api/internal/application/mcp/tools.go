@@ -28,6 +28,7 @@ type PostService interface {
 	Update(ctx context.Context, in apppost.UpdateInput, operatorID string) error
 	UpdateStatus(ctx context.Context, id, status string) (apppost.PostDTO, error)
 	GetByID(ctx context.Context, id string) (apppost.PostDTO, error)
+	GetBySlugForAuthor(ctx context.Context, slug string) (apppost.PostDTO, error)
 	ListAll(ctx context.Context, page, limit int, status string) ([]apppost.PostListItemDTO, int64, error)
 	ImportURL(ctx context.Context, rawURL string, opts apppost.ImportURLOpts) (apppost.ImportResult, error)
 }
