@@ -49,8 +49,10 @@ export const getRouter = () => {
                     useViewTransitionStore.getState().setSharedCoverSlug(null);
                 }
 
+                // 后台段不做 View Transition：侧边栏/顶栏等静态区域会随整页
+                // root 快照一起淡入淡出，表现为布局闪烁；后台导航无需转场。
                 if (isAdminRoute(to) || (from && isAdminRoute(from))) {
-                    return ["fade"];
+                    return false;
                 }
                 const dir = getNavDirection(from, to);
                 return dir ? [dir] : ["fade"];

@@ -10,6 +10,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Menu } from "lucide-react";
 import { useState } from "react";
+import { AdminBrand } from "./AdminBrand";
 import { AdminSidebarBody } from "./AdminSidebarBody";
 
 /**
@@ -33,13 +34,12 @@ export function AdminMobileNav() {
                     <Menu className="size-5" />
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-                <SheetHeader className="h-24 justify-center border-b">
-                    <SheetTitle className="flex items-center justify-center text-base">
-                        <img src="/wordmark.png" alt="Violet" className="h-20 w-auto" />
-                    </SheetTitle>
+            <SheetContent side="left" className="flex w-64 flex-col p-0">
+                <SheetHeader className="p-0">
+                    <SheetTitle className="sr-only">管理后台导航</SheetTitle>
+                    <AdminBrand />
                 </SheetHeader>
-                <div className="flex h-[calc(100%-6rem)] flex-col p-3">
+                <div className="flex min-h-0 flex-1 flex-col p-3">
                     <div className="flex-1 overflow-y-auto">
                         <SheetClose asChild>
                             <div>
