@@ -5,7 +5,7 @@ import { copyText } from "@shared/lib/clipboard";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { Check, Copy, KeyRound, X } from "lucide-react";
+import { Check, Copy, Globe, KeyRound, X } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -84,7 +84,11 @@ export function ClientConnectPanel({ token, scopes }: ClientConnectPanelProps) {
                         <button
                             key={s.key}
                             type="button"
-                            title={`${s.description}（${s.scopes.join(", ")}）`}
+                            title={
+                                s.anonymous
+                                    ? `${s.description}（公开·无需令牌）`
+                                    : `${s.description}（${s.scopes.join(", ")}）`
+                            }
                             onClick={() => toggleServer(s.key)}
                             className={cn(
                                 "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors",
@@ -95,6 +99,12 @@ export function ClientConnectPanel({ token, scopes }: ClientConnectPanelProps) {
                         >
                             {on ? <Check className="size-3" /> : null}
                             {s.label}
+                            {s.anonymous ? (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                                    <Globe className="size-2.5" />
+                                    公开
+                                </span>
+                            ) : null}
                         </button>
                     );
                 })}

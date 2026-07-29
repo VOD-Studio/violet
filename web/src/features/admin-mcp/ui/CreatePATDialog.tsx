@@ -129,7 +129,7 @@ export function CreatePATDialog({ open, onOpenChange, onCreated }: CreatePATDial
                         权限范围 <span className="text-destructive">*</span>
                     </Label>
                     <div className="space-y-3">
-                        {MCP_SERVERS.map((server) => (
+                        {MCP_SERVERS.filter((s) => !s.anonymous).map((server) => (
                             <div key={server.key} className="space-y-1.5">
                                 <p className="text-sm">
                                     <span className="font-medium">{server.label}</span>
