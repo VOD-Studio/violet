@@ -66,7 +66,7 @@ func (n RoleName) Equal(other RoleName) bool { return n.value == other.value }
 // RolePermissionsChanged 角色权限已变更事件
 //
 // 触发场景：管理员调整角色拥有的权限点后。
-// 订阅者：PermissionService（重载权限缓存）、审计服务。
+// 订阅者：application/permission.Checker（重载权限缓存）。
 type RolePermissionsChanged struct {
 	shared.BaseEvent
 	// RoleID 变更权限的角色 ID

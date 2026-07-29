@@ -1,5 +1,8 @@
-// Package service 提供跨领域的应用服务实现。
-package service
+// Package permission 提供权限聚合的用例层（CRUD 管理面 + 运行时检查面）。
+//
+// 本文件承载运行时检查面：Checker 在请求路径上判断「某角色是否拥有指定权限码」，
+// 供 middleware.PermissionChecker / post.PostPermissionChecker 两个消费方端口使用。
+package permission
 
 import (
 	"context"
@@ -9,9 +12,10 @@ import (
 	"github.com/rs/zerolog/log"
 
 	domainrole "blog-api/internal/domain/role"
+	domainshared "blog-api/internal/domain/shared"
 )
 
-// PermissionService 权限检查服务
+// Checker 运行时权限检查器
 //
 // 实现 middleware.PermissionChecker 接口，供 RequirePermission 中间件使用。
 //
@@ -19,7 +23,7 @@ import (
 //   - superadmin 通配放行（拥有所有权限，新增权限自动拥有，无需手动分配）
 //   - 其他角色按 role_permissions 表查询，结果缓存在内存（角色权限变更不频繁）
 //   - 缓存带 TTL（默认 5 分钟），过期后下次查询重新加载；变更角色权限后可调 Refresh 强制刷新
-type PermissionService struct {
+type Checker struct {
 	roleRepo domainrole.RoleRepository
 	ttl      time.Duration
 
@@ -28,14 +32,14 @@ type PermissionService struct {
 	loadedAt time.Time
 }
 
-// NewPermissionService 创建权限检查服务
+// NewChecker 创建权限检查器
 //
 // ttl 为缓存有效期，传 0 表示用默认 5 分钟。
-func NewPermissionService(roleRepo domainrole.RoleRepository, ttl time.Duration) *PermissionService {
+func NewChecker(roleRepo domainrole.RoleRepository, ttl time.Duration) *Checker {
 	if ttl <= 0 {
 		ttl = 5 * time.Minute
 	}
-	return &PermissionService{
+	return &Checker{
 		roleRepo: roleRepo,
 		ttl:      ttl,
 	}
@@ -46,7 +50,7 @@ func NewPermissionService(roleRepo domainrole.RoleRepository, ttl time.Duration)
 // 内置超管（isBuiltinSuperAdmin=true）通配放行：拥有所有权限，新增权限自动拥有，无需手动分配。
 // 其他角色（含被委派超管）查缓存（过期则重新加载全部角色权限）。
 // 任一权限码缺失即返回 false。
-func (s *PermissionService) HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool {
+func (s *Checker) HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool {
 	// 内置超级管理员通配：拥有所有权限
 	if isBuiltinSuperAdmin {
 		return true
@@ -71,17 +75,27 @@ func (s *PermissionService) HasPermission(role string, isBuiltinSuperAdmin bool,
 // Refresh 强制清空缓存，下次查询重新加载
 //
 // 在角色权限变更后调用，确保新权限立即生效（内置超管靠标志位短路，不受影响）。
-func (s *PermissionService) Refresh() {
+func (s *Checker) Refresh() {
 	s.mu.Lock()
 	s.cache = nil
 	s.loadedAt = time.Time{}
 	s.mu.Unlock()
 }
 
+// HandleRolePermissionsChanged 处理「角色权限已变更」事件
+//
+// 作为 eventbus.Handler 注册到总线，事件名 "role.permissions_changed"。
+// 角色权限变更后立即清缓存，使新权限在下一次请求即时生效（而非等 TTL 过期）。
+// 不关心事件 payload——任何角色权限变更都使全量缓存失效，下次查询重新加载。
+func (s *Checker) HandleRolePermissionsChanged(_ context.Context, _ domainshared.DomainEvent) error {
+	s.Refresh()
+	return nil
+}
+
 // load 获取指定角色的权限码集合（带 TTL 缓存）
 //
 // 缓存未命中或过期时全量重新加载所有角色权限（一次性查询，避免每角色查库）。
-func (s *PermissionService) load(role string) (map[string]struct{}, bool) {
+func (s *Checker) load(role string) (map[string]struct{}, bool) {
 	// 快路径：读缓存
 	s.mu.RLock()
 	if s.cache != nil && time.Since(s.loadedAt) < s.ttl {
@@ -115,7 +129,7 @@ func (s *PermissionService) load(role string) (map[string]struct{}, bool) {
 }
 
 // reload 全量加载所有角色及其权限码到缓存
-func (s *PermissionService) reload(ctx context.Context) error {
+func (s *Checker) reload(ctx context.Context) error {
 	roles, err := s.roleRepo.FindAll(ctx)
 	if err != nil {
 		return err

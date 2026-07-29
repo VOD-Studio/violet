@@ -8,6 +8,7 @@ import (
 	"github.com/google/wire"
 	"gorm.io/gorm"
 
+	appperm "blog-api/internal/application/permission"
 	"blog-api/internal/application/permission/command"
 	permquery "blog-api/internal/application/permission/query"
 	rolecmd "blog-api/internal/application/role/command"
@@ -51,9 +52,20 @@ var RoleApplicationSet = wire.NewSet(
 // RoleInterfacesSet role/permission HTTP handler
 var RoleInterfacesSet = wire.NewSet(rolehttp.NewHandler)
 
+// PermissionCheckerSet 运行时权限检查器装配
+//
+// NewPermissionCheckerWithSubscription 是 *appperm.Checker 的唯一 provider，
+// 内部同时完成构造与事件订阅注册。它依赖 wire 单例 *InMemory——
+// 该单例同时被 RoleApplicationSet 注入给 ReplaceRolePermissionsHandler，
+// 因此订阅方与发布方共享同一总线实例，事件链在此闭合。
+var PermissionCheckerSet = wire.NewSet(
+	NewPermissionCheckerWithSubscription,
+)
+
 // RoleContainer role/permission 模块容器
 type RoleContainer struct {
-	RoleHandler *rolehttp.Handler
+	RoleHandler       *rolehttp.Handler
+	PermissionChecker *appperm.Checker
 }
 
 // InitializeRoleContainer 装配 role/permission 模块依赖图
@@ -63,11 +75,12 @@ func InitializeRoleContainer(db *gorm.DB) (*RoleContainer, func(), error) {
 		RoleDomainSet,
 		RoleApplicationSet,
 		RoleInterfacesSet,
+		PermissionCheckerSet,
 		newRoleContainer,
 	)
 	return nil, nil, nil
 }
 
-func newRoleContainer(roleHandler *rolehttp.Handler) *RoleContainer {
-	return &RoleContainer{RoleHandler: roleHandler}
+func newRoleContainer(roleHandler *rolehttp.Handler, checker *appperm.Checker) *RoleContainer {
+	return &RoleContainer{RoleHandler: roleHandler, PermissionChecker: checker}
 }

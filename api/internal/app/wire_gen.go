@@ -7,9 +7,10 @@
 package app
 
 import (
-	command3 "blog-api/internal/application/permission/command"
+	permission2 "blog-api/internal/application/permission"
+	command2 "blog-api/internal/application/permission/command"
 	query2 "blog-api/internal/application/permission/query"
-	command2 "blog-api/internal/application/role/command"
+	"blog-api/internal/application/role/command"
 	"blog-api/internal/application/role/query"
 	"blog-api/internal/application/shared"
 	"blog-api/internal/domain/permission"
@@ -17,10 +18,11 @@ import (
 	"blog-api/internal/infrastructure/eventbus"
 	gorm2 "blog-api/internal/infrastructure/persistence/gorm"
 	"blog-api/internal/interfaces/http/handler/role"
-
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
+
+// Injectors from wire.go:
 
 // InitializeRoleContainer 装配 role/permission 模块依赖图
 func InitializeRoleContainer(db *gorm.DB) (*RoleContainer, func(), error) {
@@ -29,16 +31,17 @@ func InitializeRoleContainer(db *gorm.DB) (*RoleContainer, func(), error) {
 	permissionRepository := gorm2.NewPermissionRepository(db)
 	getRoleWithPermissionsHandler := query.NewGetRoleWithPermissionsHandler(roleRepository, permissionRepository)
 	inMemory := eventbus.NewInMemory()
-	createRoleHandler := command2.NewCreateRoleHandler(roleRepository, inMemory)
-	updateRoleHandler := command2.NewUpdateRoleHandler(roleRepository)
-	deleteRoleHandler := command2.NewDeleteRoleHandler(roleRepository)
-	replaceRolePermissionsHandler := command2.NewReplaceRolePermissionsHandler(roleRepository, inMemory)
+	createRoleHandler := command.NewCreateRoleHandler(roleRepository, inMemory)
+	updateRoleHandler := command.NewUpdateRoleHandler(roleRepository)
+	deleteRoleHandler := command.NewDeleteRoleHandler(roleRepository)
+	replaceRolePermissionsHandler := command.NewReplaceRolePermissionsHandler(roleRepository, inMemory)
 	listPermissionsHandler := query2.NewListPermissionsHandler(permissionRepository)
-	createPermissionHandler := command3.NewCreatePermissionHandler(permissionRepository)
-	updatePermissionHandler := command3.NewUpdatePermissionHandler(permissionRepository)
-	deletePermissionHandler := command3.NewDeletePermissionHandler(permissionRepository)
+	createPermissionHandler := command2.NewCreatePermissionHandler(permissionRepository)
+	updatePermissionHandler := command2.NewUpdatePermissionHandler(permissionRepository)
+	deletePermissionHandler := command2.NewDeletePermissionHandler(permissionRepository)
 	handler := role.NewHandler(listRolesWithUserCountHandler, getRoleWithPermissionsHandler, createRoleHandler, updateRoleHandler, deleteRoleHandler, replaceRolePermissionsHandler, listPermissionsHandler, createPermissionHandler, updatePermissionHandler, deletePermissionHandler)
-	roleContainer := newRoleContainer(handler)
+	checker := NewPermissionCheckerWithSubscription(roleRepository, inMemory)
+	roleContainer := newRoleContainer(handler, checker)
 	return roleContainer, func() {
 	}, nil
 }
@@ -52,16 +55,27 @@ var InfrastructureSet = wire.NewSet(eventbus.NewInMemory, wire.Bind(new(shared.E
 var RoleDomainSet = wire.NewSet(gorm2.NewRoleRepository, wire.Bind(new(role2.RoleRepository), new(*gorm2.RoleRepository)), gorm2.NewPermissionRepository, wire.Bind(new(permission.PermissionRepository), new(*gorm2.PermissionRepository)))
 
 // RoleApplicationSet role/permission 用例层（CQRS）
-var RoleApplicationSet = wire.NewSet(command2.NewCreateRoleHandler, command2.NewUpdateRoleHandler, command2.NewDeleteRoleHandler, command2.NewReplaceRolePermissionsHandler, query.NewListRolesWithUserCountHandler, query.NewGetRoleWithPermissionsHandler, command3.NewCreatePermissionHandler, command3.NewUpdatePermissionHandler, command3.NewDeletePermissionHandler, query2.NewListPermissionsHandler)
+var RoleApplicationSet = wire.NewSet(command.NewCreateRoleHandler, command.NewUpdateRoleHandler, command.NewDeleteRoleHandler, command.NewReplaceRolePermissionsHandler, query.NewListRolesWithUserCountHandler, query.NewGetRoleWithPermissionsHandler, command2.NewCreatePermissionHandler, command2.NewUpdatePermissionHandler, command2.NewDeletePermissionHandler, query2.NewListPermissionsHandler)
 
 // RoleInterfacesSet role/permission HTTP handler
 var RoleInterfacesSet = wire.NewSet(role.NewHandler)
 
+// PermissionCheckerSet 运行时权限检查器装配
+//
+// NewPermissionCheckerWithSubscription 是 *appperm.Checker 的唯一 provider，
+// 内部同时完成构造与事件订阅注册。它依赖 wire 单例 *InMemory——
+// 该单例同时被 RoleApplicationSet 注入给 ReplaceRolePermissionsHandler，
+// 因此订阅方与发布方共享同一总线实例，事件链在此闭合。
+var PermissionCheckerSet = wire.NewSet(
+	NewPermissionCheckerWithSubscription,
+)
+
 // RoleContainer role/permission 模块容器
 type RoleContainer struct {
-	RoleHandler *role.Handler
+	RoleHandler       *role.Handler
+	PermissionChecker *permission2.Checker
 }
 
-func newRoleContainer(roleHandler *role.Handler) *RoleContainer {
-	return &RoleContainer{RoleHandler: roleHandler}
+func newRoleContainer(roleHandler *role.Handler, checker *permission2.Checker) *RoleContainer {
+	return &RoleContainer{RoleHandler: roleHandler, PermissionChecker: checker}
 }
