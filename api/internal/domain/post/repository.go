@@ -12,6 +12,10 @@ type PostRepository interface {
 	FindBySlug(ctx context.Context, slug string) (*Post, error)
 	FindPublished(ctx context.Context, page, limit int, tag string) ([]*Post, int64, error)
 	FindAll(ctx context.Context, page, limit int, status string) ([]*Post, int64, error)
+	// Search 在 authorID 的文章内做大小写不敏感子串检索（title/excerpt/content_md 三列）。
+	// query 空格分词、多词 AND；status 为空或 "all" 不过滤，否则按 draft/published/archived 过滤。
+	// 按 updated_at 倒序，返回当前页结果与总数（has_more 由上层依 total 推导）。
+	Search(ctx context.Context, authorID shared.ID, query, status string, page, limit int) ([]*Post, int64, error)
 	ExistsBySlug(ctx context.Context, slug string) (bool, error)
 	Save(ctx context.Context, p *Post) error
 	Delete(ctx context.Context, id shared.ID) error
