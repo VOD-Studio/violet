@@ -453,7 +453,314 @@ $$\frac{1 + 2}{3$$
 
 ---
 
-## 9. Markdown 快捷输入（输入规则）
+## 9. 图块与流程图
+
+图块承载结构化图示（流程图、时序图、状态图等），架构与数学公式同源（ADR-0004 图块模型）：通用 `format` 属性节点 + 围栏块 Markdown 载体 + 浏览时渲染 + 渲染器注册表。首期支持 **Mermaid** 格式，后续按渲染器注册表纯增量扩展其他格式。
+
+### 9.1 输入与形态
+
+用 ` ```mermaid ` 围栏块或 Slash 菜单「流程图」插入。每张图是一个独立图块节点（atom），点击进入弹层编辑（源码 + 实时预览），`Esc` / 点击外部退出。主题跟随站点明暗——框架色（背景、文字、线条）对齐站点配色，节点填色保留 mermaid 默认彩色以便区分。
+
+> **输入提示**：最稳的方式是走 Slash 菜单「流程图」或直接粘贴 ` ```mermaid ` 围栏块。手动逐字键入围栏可能先被识别为普通代码块，撤销后改走 Slash 菜单即可。
+>
+> **当前状态**：编辑器节点与输入入口已就绪，阅读端渲染与弹层编辑正在接入。完成前，文章中的 mermaid 围栏在阅读端会降级显示为源码文本。
+
+> 本节每张图都是**可直接渲染的真实 mermaid 源码**——把对应围栏块贴入编辑器，应该看到渲染出的图，而非源码文本。mermaid 覆盖流程图、时序图、类图、状态图、ER、甘特、饼图、思维导图等十余种图类型，下面逐类给出示例。
+
+### 9.2 流程图（Flowchart）
+
+最常用。`graph` 或 `flowchart` 起头，方向 `TB`/`TD`（上下）、`LR`（左右）、`BT`/`RL`。节点形状用括号区分：`[矩形]`、`(圆角)`、`{菱形}`、`((圆形))`、`>旗形]`、`[/平行四边形/]`。
+
+```mermaid
+graph LR
+    A[需求] --> B{评审通过?}
+    B -->|是| C[开发]
+    B -->|否| D[打回修改]
+    D --> A
+    C --> E[测试] --> F[发布]
+```
+
+子图（subgraph）分组、虚线箭头(`-.->`)、带文字箭头(`-->|文字|`)、样式按节点 id 指定（`class A red;` 配 `classDef red fill:#fee`）。
+
+### 9.3 时序图（Sequence）
+
+参与者之间的消息时序。`participant` 声明角色，`->>` 实线实心箭头、`-->>` 虚线、`--)`/`--)` 异步、`x` 失败。`activate`/`deactivate` 显示激活条，`Note over/aside` 加注释，`loop`/`alt`/`opt`/`par` 分组。
+
+```mermaid
+sequenceDiagram
+    participant U as 用户
+    participant A as 前端
+    participant B as 后端
+    participant D as 数据库
+    U->>A: 点击登录
+    A->>B: POST /auth/login
+    B->>D: 查询用户
+    D-->>B: 用户记录
+    B-->>A: Set-Cookie: session
+    A-->>U: 跳转首页
+    Note over A,B: opaque session 模型
+```
+
+### 9.4 类图（Class Diagram）
+
+UML 类关系。`class` 定义类（属性 `+`public/`-`private/`#`protected），关系：`<|--` 继承、`*--` 组合、`o--` 聚合、`-->` 关联、`..>` 依赖、`..|>` 实现。
+
+```mermaid
+classDiagram
+    class Animal {
+        +String name
+        +int age
+        +eat() void
+        +sleep() void
+    }
+    class Dog {
+        +bark() void
+    }
+    class Cat {
+        +meow() void
+    }
+    Animal <|-- Dog
+    Animal <|-- Cat
+```
+
+### 9.5 状态图（State Diagram）
+
+状态机。`stateDiagram-v2` 起头（v2 语法更全），`[*]` 表示起止状态，`A --> B: 触发条件`。`note` 加注释，复合状态用 `state 名称 {...}` 嵌套。
+
+```mermaid
+stateDiagram-v2
+    [*] --> 待支付
+    待支付 --> 已支付: 用户付款
+    待支付 --> 已取消: 超时/取消
+    已支付 --> 已发货: 商家发货
+    已发货 --> 已签收: 用户签收
+    已签收 --> [*]
+    已取消 --> [*]
+```
+
+### 9.6 实体关系图（ER Diagram）
+
+数据库表关系。`实体A ||--o{ 实体B : "关系名"`，连接符四段：基数（`||` 一对一、`}|` 一对多强制、`o{` 零对多）+ 关系线。字段在实体 `{}` 内，`PK`/`FK` 标主外键。
+
+```mermaid
+erDiagram
+    USER ||--o{ POST : "发布"
+    USER ||--o{ COMMENT : "评论"
+    POST ||--o{ COMMENT : "包含"
+    USER {
+        bigint id PK
+        string username
+        string email
+    }
+    POST {
+        bigint id PK
+        bigint author_id FK
+        string title
+        text content
+    }
+    COMMENT {
+        bigint id PK
+        bigint post_id FK
+        bigint author_id FK
+        text body
+    }
+```
+
+### 9.7 甘特图（Gantt）
+
+项目排期。`dateFormat` 指定日期格式，`section` 分组，任务语法 `名称 :状态, id, 起始, 持续`。状态 `done`/`active`/`crit`/空（待办），`after id` 表示依赖前序任务。
+
+```mermaid
+gantt
+    title 项目排期
+    dateFormat YYYY-MM-DD
+    section 设计
+    需求分析 :done, a1, 2026-01-01, 7d
+    原型设计 :done, a2, after a1, 5d
+    section 开发
+    前端开发 :active, b1, after a2, 14d
+    后端开发 :b2, after a2, 14d
+    section 上线
+    测试 :c1, after b1, 5d
+    部署 :c2, after c1, 2d
+```
+
+### 9.8 饼图（Pie Chart）
+
+占比可视化。`pie title 标题` 起头，每行 `"标签" : 数值`。
+
+```mermaid
+pie title 技术栈占比
+    "React 前端" : 45
+    "Go 后端" : 30
+    "PostgreSQL" : 15
+    "Redis 缓存" : 10
+```
+
+### 9.9 用户旅程图（User Journey）
+
+体验地图，按步骤打分（0-5，越高越满意）。`journey title` 起头，`section` 分阶段，每行 `任务名: 分数: 参与者`。
+
+```mermaid
+journey
+    title 用户购物之旅
+    section 浏览
+      打开首页: 5: 用户
+      搜索商品: 4: User
+      查看详情: 4: User
+    section 下单
+      加入购物车: 5: User
+      结算付款: 3: User, 系统
+    section 售后
+      收货: 5: User
+      评价: 4: User
+```
+
+### 9.10 思维导图（Mindmap）
+
+树状发散。`mindmap` 起头，缩进表达层级（不同深度的节点形状可用 `((圆形))`、`[方形]`、`(圆角)` 区分）。
+
+```mermaid
+mindmap
+  root((博客系统))
+    前端
+      React
+      Vite
+      Tailwind
+    后端
+      Go
+      Chi
+      PostgreSQL
+    功能
+      文章
+      公式
+      图块
+```
+
+> 思维导图靠缩进定层级，**必须用空格缩进**（与编辑器整体 4 空格缩进一致），不要混 Tab。
+
+### 9.11 时间线（Timeline）
+
+按时间排列的事件。`timeline title` 起头，`时间段 : 事件`，同一时间段下多事件换行缩进。
+
+```mermaid
+timeline
+    title 图块功能演进
+    2026 Q1 : 设计 ADR-0004
+           : 数学公式落地
+    2026 Q3 : mermaid 图块接入
+           : 渲染器注册表
+    未来 : PlantUML
+         : Graphviz
+```
+
+### 9.12 Git 图（Gitgraph）
+
+分支与提交历史。`gitGraph` 起头，`commit` 提交、`branch 名称` 建分支、`checkout 名称` 切换、`merge 名称` 合并。提交可加 `id:`/`tag:`/`type:`（NORMAL/REVERSE/HIGHLIGHT）。
+
+```mermaid
+gitGraph
+    commit id: "init"
+    commit id: "基座"
+    branch develop
+    checkout develop
+    commit id: "开发"
+    checkout main
+    merge develop tag: "v1.0"
+    commit id: "发布"
+```
+
+### 9.13 象限图（Quadrant Chart）
+
+四象限定位。`quadrantChart title` 起头，定义 `x-axis`/`y-axis`、四个 `quadrant-N` 标签，数据点 `名称: [x, y]`（0-1 归一化坐标）。
+
+```mermaid
+quadrantChart
+    title 技术选型评估
+    x-axis 低成本 --> 高成本
+    y-axis 低收益 --> 高收益
+    quadrant-1 重点投入
+    quadrant-2 谨慎评估
+    quadrant-3 暂不考虑
+    quadrant-4 快速验证
+    Mermaid: [0.3, 0.85]
+    PlantUML: [0.6, 0.7]
+    D2: [0.5, 0.55]
+    Graphviz: [0.4, 0.5]
+```
+
+### 9.14 数值图表（XYChart）
+
+柱状 / 折线图（beta，语法稳定中）。`xychart-beta` 起头，`title`、`x-axis` 标签数组、`y-axis "名称" 下限 --> 上限`，`bar [...]`/`line [...]` 数据。
+
+```mermaid
+xychart-beta
+    title "月度文章发布量"
+    x-axis [1月, 2月, 3月, 4月, 5月, 6月]
+    y-axis "篇数" 0 --> 20
+    bar [5, 8, 12, 10, 15, 18]
+    line [5, 8, 12, 10, 15, 18]
+```
+
+> 还有 C4 架构图、需求图（Requirement）、桑基图（Sankey）、看板（Kanban）、数据包（Packet）等更小众类型，语法见 [mermaid 官方文档](https://mermaid.js.org/intro/)，渲染管线一致。
+
+### 9.15 渲染与安全
+
+- **浏览时渲染**：content_html 只存语义化标记 `<div data-type="diagram-block" data-format="mermaid" data-source="...">`，最终 SVG 在读者浏览器渲染，不烘焙进 HTML（体积小、主题可跟随、源码可搜索可复制、升级渲染器不动存量数据）。
+- **双重 XSS 防线**：全局 `securityLevel: strict` + render 产物经 DOMPurify 二次清理。mermaid 支持 per-diagram `%%{init}%%` 指令覆盖全局 strict（docmost CVE-2026-23630 的存储型 XSS 攻击路径），第二道 DOMPurify 兜底剥除 `<script>`、`on*` 事件属性、`foreignObject` 可执行内容。
+- **主题重渲染**：mermaid 把颜色烘焙进 SVG，切主题需重新渲染（非 CSS 跟随）。组件持有 source，主题变化时重新 initialize + 重渲染所有可见图块。
+
+### 9.16 渲染器注册表（扩展机制）
+
+图块通过 **`format → 渲染器`** 注册表支持多格式扩展，收敛了原本散落在阅读端的 if/else 分发。新增图表格式只需：
+
+1. 在 `shared/ui/diagram/` 注册表登记一个渲染器组件（含 lazy 加载、主题适配、错误降级）
+2. 扩展 `diagramBlock` 节点的 `format` 属性取值
+3. Slash 菜单与围栏 info string 增加对应入口
+
+分发逻辑集中在注册表，不散落在分发代码里，互不影响。
+
+### 9.17 其它图表格式（路线图）
+
+上面 9.2-9.14 都是 mermaid 一种格式内的图类型。图块的 `format` 属性还支持接入**其它独立的图表语言**（每种自带渲染器）。下表穷举业界主流格式，按渲染路径分组——纯前端渲染的接入成本低（注册 lazy 组件即可），需服务端的要评估渲染服务部署。
+
+#### 纯前端渲染（浏览器内，无需后端）
+
+| 格式 | info string | 渲染依赖 | 适用场景 | 状态 |
+|---|---|---|---|---|
+| Mermaid | ` ```mermaid ` | mermaid.js | 见 9.2-9.14，覆盖最广 | **首期实现** |
+| Graphviz (DOT) | ` ```dot ` 或 ` ```graphviz ` | viz.js (Wasm) | 通用有向 / 无向图、依赖图、状态机，学术与图谱可视化 | 规划中 |
+| D2 | ` ```d2 ` | @terrastruct/d2（Wasm 或 JS） | 现代架构图，多布局引擎，语法比 mermaid 更适合复杂拓扑 | 规划中 |
+| nomnoml | ` ```nomnoml ` | nomnoml | UML 类图专用，极简语法，适合快速类关系 | 规划中 |
+| Excalidraw | ` ```excalidraw ` | @excalidraw/excalidraw | 手绘风格草图 / 白板，SVG/JSON 源 | 评估中 |
+| Markwhen | ` ```markwhen ` | markwhen | 时间线 / Gantt / 项目里程碑，Markdown 风语法 | 评估中 |
+
+#### 需服务端渲染（前端发源码，后端返回 SVG/PNG）
+
+这些格式依赖 Java / 二进制运行时或大型布局引擎，浏览器内渲染成本过高，走后端渲染服务。部署可选自建渲染服务（如 PlantUML Server、Kroki）或对接 [Kroki.io](https://kroki.io) 公共实例。
+
+| 格式 | info string | 运行时 | 适用场景 | 状态 |
+|---|---|---|---|---|
+| PlantUML | ` ```plantuml ` | Java | 全 UML 覆盖（类 / 组件 / 部署 / 时序 / 活动），企业生态成熟 | 规划中 |
+| Structurizr DSL | ` ```structurizr ` | Java | C4 模型架构图（上下文 / 容器 / 组件），单一模型多视图 | 评估中 |
+| Blockdiag | ` ```blockdiag ` | Python | 简单框图 / 网络图 / 时序图，日系生态 | 评估中 |
+| ditaa | ` ```ditaa ` | Java | ASCII 草图转结构图，嵌入式文档常用 | 评估中 |
+| Pikchr | ` ```pikchr ` | C 二进制 | PIC 风格精确布局，Fossil 文档系统原生 | 评估中 |
+| DBML | ` ```dbml ` | JS（@dbml/core） | 数据库 schema（ER 图），DBDiagram 语法 | 评估中 |
+
+> **Kroki 统一渲染网关**：上述服务端格式可通过部署 [Kroki](https://kroki.io) 一个服务统一承接（支持 PlantUML / Graphviz / D2 / Blockdiag / ditaa / Pikchr / DBML / Structurizr 等十余种格式），减少自建多种运行时的成本。未来接入服务端格式时，建议优先评估 Kroki 而非逐个自建。
+
+> 新增格式的优先级与排期见 issue 跟踪。
+
+### 9.18 容错与降级
+
+- **语法错误**：编辑器内显示 mermaid 报错信息（便于作者定位）；阅读端降级为「图表渲染失败」占位 + 折叠的源码（不向读者暴露详细错误）。
+- **无 JS 环境**：显示 mermaid 源码文本（源码本身可读，与公式降级一致）。
+- **未知 format**：注册表查不到对应渲染器时，降级显示 source 文本。
+
+---
+
+## 10. Markdown 快捷输入（输入规则）
 
 输入即转换，无需菜单：
 
@@ -467,28 +774,28 @@ $$\frac{1 + 2}{3$$
 | `---` | 分割线 |
 | `**文本**` `*文本*` `~~文本~~` `==文本==` `` `代码` `` | 行内样式 |
 | `$$公式$$`（段内）/ `$$$公式$$$`（行首三美元） | 公式节点 |
+| ` ```mermaid ` 围栏 | 流程图（图块，见 §9） |
 
 > 单 `$公式$` 在键入时不会即时转换，但粘贴/MD 导入时有效；手动插入走 Slash 菜单最稳。
 
-## 10. Slash 菜单
+## 11. Slash 菜单
 
-任意位置输入 `/` 唤起，支持关键词/中文模糊搜索。共 14 项，按组：
+任意位置输入 `/` 唤起，支持关键词/中文模糊搜索。共 15 项，按组：
 
 - **基础**：正文、一/二/三级标题
 - **列表**：无序、有序、任务列表
 - **块**：引用、代码块、分割线、表格（3×3 带表头）
-- **媒体**：行内公式、公式块、图片
+- **媒体**：行内公式、公式块、图片、流程图
 
 > H4–H6、对齐、颜色、链接、行内样式、撤销重做等不在 Slash 菜单——只在工具栏/气泡菜单。
 
-## 11. 存储与有损说明（重要）
+## 12. 存储与有损说明（重要）
 
 - **content_html 是展示权威源**：下划线、文字颜色、高亮颜色、对齐这些 Markdown 表达不了的样式只存在这里，文章页始终正确。
-- **content_md 是有损的**：上述样式在 Markdown 导出/降级展示时会丢失（加粗/斜体/删除线/高亮标记保留）。公式、代码块、表格、任务列表、图片在两条路径间无损往返（round-trip 测试保障）。
+- **content_md 是有损的**：上述样式在 Markdown 导出/降级展示时会丢失（加粗/斜体/删除线/高亮标记保留）。公式、代码块、表格、任务列表、图片、图块（mermaid 围栏）在两条路径间无损往返（round-trip 测试保障）。
 - 旧 Markdown 文章走降级渲染路径（react-markdown + remark-math），公式渲染与主路径同一套 KaTeX 组件，视觉一致。
 
-## 12. 暂不支持
+## 13. 暂不支持
 
-- 流程图等图块（Mermaid）：已定设计（ADR-0004 图块模型），下期实现。
 - 脚注、上标下标（正文文本）、Wiki 链接、HTML 混排（降级路径不解析原始 HTML）。
 

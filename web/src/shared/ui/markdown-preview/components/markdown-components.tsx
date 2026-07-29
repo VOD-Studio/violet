@@ -11,6 +11,10 @@ import type { Components } from "react-markdown";
 import { contentImageUrl } from "@/shared/lib/image-url";
 import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/base/checkbox";
+// 直连 renderers.ts（不经 diagram/index barrel）：barrel 会静态 re-export
+// DiagramBlock/renderMermaid，把 mermaid 依赖树拉进文章正文主 chunk；直连仅注册
+// 注册表 + lazy factory，mermaid 留在 DiagramBlock 的 lazy chunk（PRD 懒加载决策）。
+import { diagramRenderers } from "../../diagram/renderers";
 
 /**
  * FencedCodeBlock 懒加载：避免 shiki 高亮链（CodeBlock → useShikiHighlight →
@@ -46,6 +50,20 @@ function nodeToText(node: React.ReactNode): string {
         return nodeToText(props.children);
     }
     return "";
+}
+
+/**
+ * 图块源码降级：mermaid 源以可读 <pre> 呈现。用于
+ * - Suspense fallback：mermaid chunk 加载中
+ * - 未知 format：注册表未登记
+ * - 无 JS：React 不运行时 content_html 的 div 无内容，源码作为文本降级可见
+ */
+function DiagramSourceFallback({ source }: { source: string }) {
+    return (
+        <pre className="code-block-scrollbar my-6 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90">
+            <code>{source}</code>
+        </pre>
+    );
 }
 
 export const markdownComponents: Components = {
@@ -185,9 +203,25 @@ export const markdownComponents: Components = {
         }
         return <span>{children}</span>;
     },
-    // HTML 路径：公式块
+    // HTML 路径：图块（流程图）—— 走渲染器注册表分发，未注册格式降级为源码文本
+    // data-source 是 HTML 转义后的原始源码，DOM 解析时已自动反转义，无损提取。
+    // Suspense fallback / 未知格式 / 无 JS 均以源码 <pre> 降级（mermaid 源本身可读）。
     div: ({ children, ...props }) => {
         const p = props as Record<string, unknown>;
+        if (p["data-type"] === "diagram-block") {
+            const format = String(p["data-format"] ?? "");
+            const source = String(p["data-source"] ?? "");
+            const renderer = diagramRenderers[format];
+            if (!renderer) {
+                return <DiagramSourceFallback source={source} />;
+            }
+            const ReaderComponent = renderer.ReaderComponent;
+            return (
+                <Suspense fallback={<DiagramSourceFallback source={source} />}>
+                    <ReaderComponent format={format} source={source} />
+                </Suspense>
+            );
+        }
         if (p["data-type"] === "block-math") {
             const latex = String(p["data-latex"] ?? "");
             return (

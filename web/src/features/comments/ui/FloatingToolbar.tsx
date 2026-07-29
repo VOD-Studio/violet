@@ -15,7 +15,11 @@
 import { useCreateComment } from "@features/comments/api/mutations";
 import { toCreateCommentAnchor } from "@features/comments/lib/anchor-mapper";
 import { findBlockElement } from "@features/comments/lib/extract-blocks";
-import { clearSelection, selectionToAnchor } from "@features/comments/lib/selection-to-anchor";
+import {
+    clearSelection,
+    isSelectionInUnannotatableContainer,
+    selectionToAnchor,
+} from "@features/comments/lib/selection-to-anchor";
 import type { Anchor } from "@features/comments/lib/types";
 import { ApiError } from "@shared/api/error";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
@@ -108,6 +112,17 @@ export function FloatingToolbar({ contentRef, isLoggedIn, postId }: FloatingTool
                 if (!root.contains(range.commonAncestorContainer)) {
                     lastRangeRef.current = null;
                     setPos(null);
+                    return;
+                }
+
+                // 不可批注容器（代码块/图块/块级公式）→ 直接隐藏，不置灰。
+                // 区别于跨块：跨块是用户选了多段（置灰 + 提示），这里选的是单个不可批注块，
+                // 置灰 tooltip "请在同一段落内选择" 会误导用户，应直接消失。
+                if (isSelectionInUnannotatableContainer(range)) {
+                    lastRangeRef.current = null;
+                    setPos(null);
+                    setAnchor(null);
+                    setIsCrossBlock(false);
                     return;
                 }
 

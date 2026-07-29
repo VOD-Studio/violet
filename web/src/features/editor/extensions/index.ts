@@ -27,6 +27,7 @@ import { common, createLowlight } from "lowlight";
 import { SlashCommand } from "../slash-menu/SlashCommand";
 import { buildSlashItems } from "../slash-menu/slash-items";
 import { createCodeBlockExtension } from "../ui/CodeBlockView";
+import { createDiagramBlockExtension } from "../ui/DiagramBlockView";
 import { createImageExtension } from "../ui/ImageView";
 import { createMathExtensions } from "../ui/MathView";
 import { CustomTaskItem } from "../ui/TaskItemView";
@@ -126,6 +127,8 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
         createCodeBlockExtension(lowlight),
         // —— 数学公式（KaTeX 双态编辑，宏表与阅读端同源）——
         ...createMathExtensions(),
+        // —— 图块（Mermaid 流程图，atom 节点 + ```mermaid 围栏往返 + 弹层 NodeView）——
+        createDiagramBlockExtension(),
         // —— 占位符 ——
         Placeholder.configure({ placeholder }),
         // —— Markdown 双向序列化 ——

@@ -14,6 +14,15 @@ vi.mock("@/shared/ui/code-preview/use-shiki-highlight", () => ({
     useShikiHighlight: () => ({ html: "", loading: false }),
 }));
 
+// 真实 mermaid 在 jsdom 跑不了（依赖 layout/worker）；mock renderMermaid 同步返回
+// 固定 SVG，断言白名单保留 → 注册表分发 → SVG 写入容器的完整链路。
+// 参考 diagram/__tests__/render-mermaid.test.ts 同款 mock 思路。
+vi.mock("@/shared/ui/diagram/render-mermaid", () => ({
+    renderMermaid: async () => ({
+        svg: '<svg xmlns="http://www.w3.org/2000/svg"><text>mock-svg</text></svg>',
+    }),
+}));
+
 describe("HtmlContent", () => {
     it("代码块内含空行时不被拆分：单个 pre、文本完整、无段落混入", () => {
         // 模拟 TipTap getHTML 产出：pre > code.language-x，代码内含空行（函数间）
@@ -131,5 +140,36 @@ describe("HtmlContent 数学公式（浏览时渲染）", () => {
             <HtmlContent html='<div data-type="block-math" data-latex="\sum_{i=1}^{n} i"></div>' />,
         );
         await waitFor(() => expect(document.querySelector(".katex-display")).toBeTruthy());
+    });
+});
+
+describe("HtmlContent 图块（流程图，浏览时渲染）", () => {
+    it("mermaid diagram-block：白名单保留属性 → 注册表分发 → SVG 写入容器", async () => {
+        // data-source 含 HTML 转义后的源码（&#10;=\n、&amp;=&）→ DOM 解析自动还原
+        const html =
+            '<div data-type="diagram-block" data-format="mermaid" data-source="graph TD;&#10;A&amp;B"></div>';
+        const { container } = render(<HtmlContent html={html} />);
+
+        // 等待 mock 的 renderMermaid 解析后 SVG 写入容器（role=img 载体）
+        await waitFor(() => expect(container.querySelector('div[role="img"] svg')).toBeTruthy());
+        expect(container.querySelector('div[role="img"] svg')?.textContent).toContain("mock-svg");
+    });
+
+    it("未注册 format（非 mermaid）→ 降级为源码 <pre>，不调渲染器", () => {
+        const html =
+            '<div data-type="diagram-block" data-format="plantuml" data-source="@startuml\nBob-->Alice\n@enduml"></div>';
+        const { container } = render(<HtmlContent html={html} />);
+
+        // 未注册格式命中 DiagramSourceFallback：显示源码文本，不渲染 SVG 容器
+        expect(container.querySelector('div[role="img"]')).toBeNull();
+        expect(container.querySelector("pre")?.textContent).toContain("@startuml");
+    });
+
+    it("无 data-format（缺格式）→ 降级为源码 <pre>", () => {
+        const html = '<div data-type="diagram-block" data-source="graph TD; A-->B"></div>';
+        const { container } = render(<HtmlContent html={html} />);
+
+        expect(container.querySelector('div[role="img"]')).toBeNull();
+        expect(container.querySelector("pre")?.textContent).toContain("graph TD");
     });
 });
