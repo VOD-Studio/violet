@@ -20,6 +20,17 @@ var ScraperServerMeta = &mcp.Implementation{
 	Version: "1.0.0",
 }
 
+// ReaderServerMeta 公开只读 server 元信息（匿名，仅已发布文章）。
+var ReaderServerMeta = &mcp.Implementation{
+	Name:    brand.MCPReaderServerName,
+	Title:   "Violet 公开阅读",
+	Version: "1.0.0",
+}
+
+// readerInstructions 进 initialize 响应、入 agent context（PRD-0007 边界表达层次 2）。
+// server 选型层（比 tool/resource 描述高一层）即告知公开只读定位。
+const readerInstructions = `本 server 是博客的公开只读通道：匿名访问，仅暴露已发布文章（Resources）与写作风格指南（Prompts）。不含草稿、公告、评论。草稿访问与写操作请用 violet server（需 PAT）。`
+
 // NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool。
 // 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。检索为私有视角（PAT 持有人全部文章）。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。
@@ -111,6 +122,37 @@ func NewScraperServer(tools *ScraperTools) *mcp.Server {
 		Name:        "delete_subscription",
 		Description: "删除订阅（连带其抓取记录）。需 subscriptions:write 权限。",
 	}, tools.DeleteSubscription)
+
+	return s
+}
+
+// NewPublicServer 构造公开只读 MCP 服务器（/api/v1/mcp/reader），注册 2 个 Resource。
+// 匿名访问：不套 auth.RequireBearerToken（由 mcp_container 装配保证），
+// 仅暴露已发布文章；草稿/公告/评论均不在此域。信任域与两个 PAT server 物理隔离
+// （PRD-0007 / ADR-0008：匿名 vs 鉴权是新形态的信任域边界）。
+//
+// resources/list 不自动展开 ResourceTemplate 实例，故目录用独立静态 Resource。
+func NewPublicServer(tools *PublicTools) *mcp.Server {
+	s := mcp.NewServer(ReaderServerMeta, &mcp.ServerOptions{
+		Instructions: readerInstructions,
+	})
+
+	// 单篇已发布文章：blog://posts/{slug}
+	s.AddResourceTemplate(&mcp.ResourceTemplate{
+		Name:        "post",
+		Title:       "已发布文章",
+		Description: "按 slug 读取已发布文章的完整 Markdown 源码（含公式 LaTeX 与代码块）。仅已发布；读草稿用 violet server 的 get_post（需 PAT）。",
+		MIMEType:    "text/markdown",
+		URITemplate: "blog://posts/{slug}",
+	}, tools.ReadPost)
+
+	// 已发布文章目录：blog://posts（slug + 标题列表，供发现）
+	s.AddResource(&mcp.Resource{
+		Name:        "posts-index",
+		Title:       "已发布文章目录",
+		Description: "已发布文章目录（slug + 标题列表），用于发现可读文章。无需令牌。",
+		MIMEType:    "text/markdown",
+	}, tools.ListPosts)
 
 	return s
 }

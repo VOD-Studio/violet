@@ -16,4 +16,7 @@ func TestNewServers_RegisterAllToolsWithoutPanic(t *testing.T) {
 
 	scraper := NewScraperServer(NewScraperTools(nil, nil, nil))
 	require.NotNil(t, scraper, "抓取 server 应构造成功（8 tool 注册无 panic）")
+
+	reader := NewPublicServer(NewPublicTools(nil))
+	require.NotNil(t, reader, "公开只读 server 应构造成功（2 Resource 注册无 panic）")
 }
