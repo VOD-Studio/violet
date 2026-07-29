@@ -161,6 +161,27 @@ _Avoid_: 文章详情页、blog/$slug（混淆了简报与文章阅读）
 公告影响的**功能模块**字段，DB 列 `affects`（JSON 数组），Go `Affects`，前端 `affects`。**预定义枚举多选**（硬编码，不 DB 驱动），初值基于代码扫描的功能模块边界：`posts / comments / auth / media / search / projects / profile / site`。`site` 为全站兜底值。多选，可空（非必填）。管理员在后台用多选框选择，无法自由输入——保证术语统一、可筛选、可统计。加新功能模块时需同步更新枚举常量 + DB CHECK 约束 + 前端类型（三处同步）。主要消费场景：article 简报的 timeline 区展示、将来可按模块筛选历史公告或受影响模块页面自动弹出对应公告。
 _Avoid_: 自由字符串数组（伪结构化，术语会腐烂）、单字符串文本（无法消费）
 
+## MCP 通道（MCP Channels）
+
+博客通过 MCP（Model Context Protocol）向 AI agent 暴露能力，经 PRD-0005/0006/0007 演进形成**三 server 两通道**格局（ADR-0007 + ADR-0008）。
+
+**MCP 三原语（Three Primitives）**:
+MCP 暴露能力的三种语义通道，分工正交：**Tools = 动作**（model-controlled，模型自主调用，有副作用）；**Resources = 只读数据**（application-controlled，宿主/用户决定拉取）；**Prompts = 可复用指令**（user-controlled，用户显式选择，如斜杠命令）。本博客的私有/公开分工依据此：私有动作走 Tools，公开只读数据走 Resources，写作模板走 Prompts。
+_Avoid_: MCP API（混淆了 MCP 通道与 HTTP REST API 语境）
+
+**私有通道（Private Channel）**:
+MCP 体系中需 **PAT 鉴权**的 server，暴露 PAT 持有人的私有视角（含草稿）。含两个 server：`violet`（`/api/v1/mcp`，文章 CRUD + 检索 tool + `polish_draft` prompt，scope `posts:read/write/publish`）与 `violet-scraper`（`/api/v1/mcp/scraper`，抓取 + 订阅 tool，scope `posts:scrape + subscriptions:read/write`）。检索范围 = PAT 持有人的全部文章。
+
+**公开通道（Public Channel）**:
+MCP 体系中**匿名可读**的 server（`violet-reader`，`/api/v1/mcp/reader`），仅暴露已发布文章（Resources）与写作风格指南（Prompts），不暴露草稿/公告/评论。与私有通道互补。匿名端点不套 `RequireBearerToken`，独立限流维度 `mcp-reader`。
+_Avoid_: 公开 server（未区分通道语义）、reader API（HTTP REST 语境混淆）
+
+**已发布双通道（有意冗余）**:
+已发布文章**两通道均可读**：私有 `get_post`（PAT，按 ID）与公开 `blog://posts/{slug}`（匿名，按 slug）。这是**有意为之的非待消除冗余**——匿名读者无 PAT，必须经公开通道触达已发布内容。两通道按"寻址方式（ID vs slug）+ 状态（草稿 vs 已发布）"两维度区分，primitive 描述给选型规则。维护者勿当冗余合并。
+
+**blog:// URI 路径段（状态编码）**:
+公开通道 Resources 用 `blog://` scheme（品牌解耦，非 `violet://`，因 scheme 是长期标识符）。路径段编码文章状态：`blog://posts/{slug}` = 已发布（reader 注册）；`blog://drafts/{slug}` = 草稿（仅 `polish_draft` prompt 内部 embed 用，reader 不注册，保持公开通道仅 published 边界）。区分原因是 `EmbeddedResource.URI` 是可寻址标识，agent 可能 `resources/read` 它，草稿必须用独立 URI 避免读到内容不符的已发布旧版。
+
 **react-bits 组件依赖**:
 公告 card/article 视觉依赖 react-bits（`https://reactbits.dev/`）的以下组件，项目已配置 `@react-bits` registry（shadcn），用 `pnpm dlx shadcn@latest add @react-bits/<Name>-TS-TW` 安装到 `web/src/shared/vendor/react-bits/`。**已安装**：`BorderGlow`（card 外壳，柔色发光描边）、`BlurText`（标题按词渐显）、`Counter`（ID 数字滚动）、`Magnet`（按钮磁吸）、`AnimatedList`（详情页时间轴）。仍在使用：`DecryptedText`（empty / 404 状态）、`SpotlightCard`（PostCard）。注意：`FluidGlass`（依赖 three.js）与 `SplitText`（依赖 GSAP 商用插件）曾试用后已移除；`ClickSpark`、`Aurora`、`GradientText`、`ParticleField`、`ShinyText`、`CountUp` 等历史原型组件也已移除，不要再装。banner 原型（FlipX / CubeFlipY）在 `announcement-lab` 实验页保留作参考。
 
