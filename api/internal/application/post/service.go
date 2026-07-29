@@ -159,6 +159,25 @@ func (s *Service) GetBySlug(ctx context.Context, slug string) (PostDTO, error) {
 	return dto, nil
 }
 
+// GetPublishedBySlug 按 slug 获取已发布文章（公开只读通道用，见 PRD-0007）。
+//
+// 与 GetBySlug 的区别：仅返回 status == published 的文章，draft/archived/不存在
+// 统一返回 ErrNotFound（不区分，防状态枚举）。status 过滤收敛在此层，调用方
+// （如匿名 MCP reader）零状态判断，杜绝草稿泄露。
+func (s *Service) GetPublishedBySlug(ctx context.Context, slug string) (PostDTO, error) {
+	p, err := s.repo.FindBySlug(ctx, slug)
+	if err != nil {
+		return PostDTO{}, err
+	}
+	if !p.IsPublished() {
+		return PostDTO{}, domain.ErrNotFound
+	}
+	dto := toDTO(p)
+	s.fillAuthor(ctx, []PostDTO{dto})
+	s.fillCollaborators(ctx, &dto)
+	return dto, nil
+}
+
 // GetByID 按 ID 获取文章（后台）
 func (s *Service) GetByID(ctx context.Context, id string) (PostDTO, error) {
 	pid, err := shared.ParseID(id)
