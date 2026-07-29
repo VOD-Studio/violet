@@ -33,6 +33,8 @@ export interface AdminNavItem {
     icon: LucideIcon;
     /** 是否精确匹配激活（首页用 exact） */
     exact?: boolean;
+    /** 所属分组；省略为顶级项（概览），渲染在所有分组之上 */
+    group?: AdminNavGroup;
     /**
      * 可见所需权限码（满足任一即显示）。
      * 省略表示仅需 admin:access（由后台路由守卫统一保证）。
@@ -40,6 +42,20 @@ export interface AdminNavItem {
      */
     permissions?: string[];
 }
+
+/** 菜单分组标识 */
+export type AdminNavGroup = "content" | "member" | "system";
+
+/**
+ * ADMIN_NAV_GROUPS - 分组展示顺序与标题
+ *
+ * 仅定义顺序与文案；组内成员由 ADMIN_NAV_ITEMS 的 group 字段归属。
+ */
+export const ADMIN_NAV_GROUPS: { key: AdminNavGroup; label: string }[] = [
+    { key: "content", label: "内容" },
+    { key: "member", label: "用户与权限" },
+    { key: "system", label: "系统" },
+];
 
 /**
  * ADMIN_NAV_ITEMS - 后台导航单一来源
@@ -49,44 +65,109 @@ export interface AdminNavItem {
  */
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     { label: "概览", to: "/admin", icon: LayoutDashboard, exact: true },
-    { label: "文章管理", to: "/admin/posts", icon: FileText, permissions: ["post:view"] },
-    { label: "用户管理", to: "/admin/users", icon: Users, permissions: ["user:view"] },
-    { label: "角色管理", to: "/admin/roles", icon: UserCog, permissions: ["role:view"] },
-    { label: "权限管理", to: "/admin/permissions", icon: Shield, permissions: ["role:view"] },
-    { label: "标签管理", to: "/admin/tags", icon: Tag, permissions: ["tag:view"] },
+    {
+        label: "文章管理",
+        to: "/admin/posts",
+        icon: FileText,
+        group: "content",
+        permissions: ["post:view"],
+    },
+    {
+        label: "标签管理",
+        to: "/admin/tags",
+        icon: Tag,
+        group: "content",
+        permissions: ["tag:view"],
+    },
     {
         label: "公告管理",
         to: "/admin/announcements",
         icon: Megaphone,
+        group: "content",
         permissions: ["announcement:view"],
     },
     {
         label: "评论审核",
         to: "/admin/comments",
         icon: MessageSquare,
+        group: "content",
         permissions: ["comment:view"],
     },
     {
         label: "订阅管理",
         to: "/admin/subscriptions",
         icon: Rss,
+        group: "content",
         permissions: ["subscription:manage"],
     },
-    { label: "项目管理", to: "/admin/projects", icon: FolderKanban, permissions: ["project:view"] },
-    { label: "素材管理", to: "/admin/media", icon: Images, permissions: ["media:view"] },
+    {
+        label: "项目管理",
+        to: "/admin/projects",
+        icon: FolderKanban,
+        group: "content",
+        permissions: ["project:view"],
+    },
+    {
+        label: "素材管理",
+        to: "/admin/media",
+        icon: Images,
+        group: "content",
+        permissions: ["media:view"],
+    },
     {
         label: "表情管理",
         to: "/admin/emojis",
         icon: Smile,
+        group: "content",
         permissions: ["emoji:view"],
     },
-    { label: "站点设置", to: "/admin/settings", icon: Settings, permissions: ["settings:view"] },
+    {
+        label: "用户管理",
+        to: "/admin/users",
+        icon: Users,
+        group: "member",
+        permissions: ["user:view"],
+    },
+    {
+        label: "角色管理",
+        to: "/admin/roles",
+        icon: UserCog,
+        group: "member",
+        permissions: ["role:view"],
+    },
+    {
+        label: "权限管理",
+        to: "/admin/permissions",
+        icon: Shield,
+        group: "member",
+        permissions: ["role:view"],
+    },
+    {
+        label: "站点设置",
+        to: "/admin/settings",
+        icon: Settings,
+        group: "system",
+        permissions: ["settings:view"],
+    },
     {
         label: "MCP 接入",
         to: "/admin/mcp",
         icon: KeyRound,
+        group: "system",
         permissions: ["mcp:manage-tokens"],
     },
-    { label: "系统监控", to: "/admin/system", icon: Activity, permissions: ["system:view"] },
-    { label: "操作日志", to: "/admin/logs", icon: ScrollText, permissions: ["log:view"] },
+    {
+        label: "系统监控",
+        to: "/admin/system",
+        icon: Activity,
+        group: "system",
+        permissions: ["system:view"],
+    },
+    {
+        label: "操作日志",
+        to: "/admin/logs",
+        icon: ScrollText,
+        group: "system",
+        permissions: ["log:view"],
+    },
 ];
