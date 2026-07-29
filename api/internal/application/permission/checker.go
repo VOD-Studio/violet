@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	domainrole "blog-api/internal/domain/role"
+	domainshared "blog-api/internal/domain/shared"
 )
 
 // Checker 运行时权限检查器
@@ -79,6 +80,16 @@ func (s *Checker) Refresh() {
 	s.cache = nil
 	s.loadedAt = time.Time{}
 	s.mu.Unlock()
+}
+
+// HandleRolePermissionsChanged 处理「角色权限已变更」事件
+//
+// 作为 eventbus.Handler 注册到总线，事件名 "role.permissions_changed"。
+// 角色权限变更后立即清缓存，使新权限在下一次请求即时生效（而非等 TTL 过期）。
+// 不关心事件 payload——任何角色权限变更都使全量缓存失效，下次查询重新加载。
+func (s *Checker) HandleRolePermissionsChanged(_ context.Context, _ domainshared.DomainEvent) error {
+	s.Refresh()
+	return nil
 }
 
 // load 获取指定角色的权限码集合（带 TTL 缓存）

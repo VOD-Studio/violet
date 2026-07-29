@@ -111,9 +111,10 @@ func main() {
 	// 邮件发送：devMode 下打印验证码明文到日志，方便开发期联调（无需配置 Resend）。
 	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
 
-	// 权限检查服务：RequirePermission 中间件依赖。superadmin 通配放行，
-	// 其他角色按 role_permissions 表判断（带 5min 内存缓存）。
-	permissionChecker := service.NewPermissionService(gormrepo.NewRoleRepository(gormDB), 0)
+	// 权限检查器：由 RoleContainer 装配（wire 单例总线 + 事件订阅），
+	// superadmin 通配放行，其他角色按 role_permissions 表判断（带 5min 内存缓存）。
+	// 角色权限变更经 RolePermissionsChanged 事件即时清缓存，不再等 TTL 过期。
+	permissionChecker := roleContainer.PermissionChecker
 
 	// 事件总线：当前无异步事件订阅者，用 NoopEventBus 占位（非 nil），
 	// 避免 RegisterUserHandler.Publish 在 nil bus 上触发 panic。
