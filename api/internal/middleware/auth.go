@@ -12,7 +12,7 @@ import (
 //
 // 任何能根据 (role, isBuiltinSuperAdmin, codes) 判断是否授权的实现都能作为 RequirePermission 中间件依赖。
 // isBuiltinSuperAdmin 承载通配符语义：内置超管短路拥有所有权限，不查权限表。
-// 当前实现：*service.PermissionService。
+// 当前实现：*application/permission.Checker。
 type PermissionChecker interface {
 	HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool
 }
