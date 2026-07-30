@@ -59,7 +59,7 @@ info "检查环境..."
 
 # 检查本地文件
 [ -f "$COMPOSE_FILE" ] || err "未找到 $COMPOSE_FILE"
-[ -f api/.env ] || err "未找到 api/.env（运行 make deploy-prod-init 初始化）"
+[ -f .env ] || err "未找到 .env(运行 make deploy-prod-init 初始化)"
 
 # 检查 SSH 连接
 ssh "$REMOTE_HOST" "echo ok" >/dev/null 2>&1 || err "无法连接到 $REMOTE_HOST"
@@ -76,11 +76,11 @@ if [ "$SKIP_BUILD" = false ]; then
 
     # 构建 API 镜像
     info "  构建 blog-api..."
-    docker compose --env-file api/.env -f "$COMPOSE_FILE" build api
+    docker compose -f "$COMPOSE_FILE" build api
 
     # 构建 Web 镜像
     info "  构建 blog-web..."
-    docker compose --env-file api/.env -f "$COMPOSE_FILE" build web
+    docker compose -f "$COMPOSE_FILE" build web
 
     # 拉取 amd64 版本的外部镜像以防在 ARM 本地打包时误打入 arm64 版本
     info "  拉取 amd64 版本的外部基础镜像..."
@@ -121,6 +121,12 @@ set -euo pipefail
 
 cd /root/docker/violet
 
+# 一次性迁移:api/.env → .env(配置架构重构后,根 .env 是唯一 env 文件)
+if [ -f api/.env ] && [ ! -f .env ]; then
+    cp api/.env .env
+    echo "已迁移 api/.env → .env"
+fi
+
 echo "📦 导入镜像..."
 podman load -i images.tar.gz 2>/dev/null || docker load -i images.tar.gz
 
@@ -133,10 +139,10 @@ else
 fi
 
 # 停止旧服务
-$COMPOSE_CMD --env-file api/.env down 2>/dev/null || true
+$COMPOSE_CMD down 2>/dev/null || true
 
-# 启动新服务（使用 .env 文件）
-$COMPOSE_CMD --env-file api/.env up -d
+# 启动新服务(compose 默认加载同目录 .env)
+$COMPOSE_CMD up -d
 
 echo "⏳ 等待服务健康..."
 for i in $(seq 1 30); do

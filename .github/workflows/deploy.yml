@@ -93,12 +93,20 @@ jobs:
           cp docker-compose.prod.yml /root/docker/violet/docker-compose.prod.yml
           cp docker-compose.ci.yml   /root/docker/violet/docker-compose.ci.yml
 
+      - name: 一次性迁移 env 文件(api/.env → .env)
+        working-directory: /root/docker/violet
+        run: |
+          # 配置架构重构后根 .env 是唯一 env 文件;老服务器目录一次性迁移
+          if [ -f api/.env ] && [ ! -f .env ]; then
+            cp api/.env .env
+            echo "已迁移 api/.env → .env"
+          fi
+
       - name: 数据库迁移门禁
         id: migrate
         working-directory: /root/docker/violet
         run: |
           docker compose \
-            --env-file api/.env \
             -f docker-compose.prod.yml \
             -f docker-compose.ci.yml \
             run --rm --no-deps --entrypoint /migrate api up
@@ -108,7 +116,6 @@ jobs:
         working-directory: /root/docker/violet
         run: |
           docker compose \
-            --env-file api/.env \
             -f docker-compose.prod.yml \
             -f docker-compose.ci.yml \
             up -d --no-build --no-deps api
@@ -136,7 +143,6 @@ jobs:
           echo "部署失败，自动回滚到 ${PREV}"
           docker tag "blog-api:${PREV}" blog-api:latest
           docker compose \
-            --env-file api/.env \
             -f docker-compose.prod.yml \
             -f docker-compose.ci.yml \
             up -d --no-build --no-deps api

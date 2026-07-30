@@ -14,10 +14,10 @@ if [ ! -f .env ]; then
   echo "✅ 已创建 .env 文件，请根据需要修改配置（特别是 DATABASE_PASSWORD）"
 fi
 
-# 加载环境变量
-set -a
-source .env
-set +a
+# 从根 .env 提取数据库连接参数（仅供下方 pg_isready 使用；
+# api 进程由 config.Load 经 godotenv 自行加载根 .env，不在此 export）
+DATABASE_USER=$(grep '^DATABASE_USER=' .env | cut -d= -f2-)
+DATABASE_NAME=$(grep '^DATABASE_NAME=' .env | cut -d= -f2-)
 
 # 启动 PostgreSQL 和 Redis
 docker compose up -d postgres redis

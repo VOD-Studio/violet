@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -37,8 +36,8 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
 	ctx := context.Background()
+	// config.Load 内部完成根 .env 加载与来源打印,启动日志可见每个配置项的来源
 	cfg := config.Load()
 
 	// --- 日志初始化 ---

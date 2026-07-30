@@ -1,15 +1,10 @@
-# Docker Compose 配置
+# Docker Compose 配置(本地开发依赖:PostgreSQL + Redis)
 #
-# 本地开发模式：
-#   docker compose up -d postgres redis
+# 用法:
+#   docker compose up -d(或 make up)
 #   然后在宿主机运行: make dev
 #
-# 完整容器化部署：
-#   docker compose --env-file .env.production up -d
-#
-# 配置说明：
-#   - 本地开发：使用 api/config.yaml
-#   - 容器部署：通过环境变量配置
+# 完整容器化部署走 docker-compose.prod.yml(make deploy-prod),本文件不含 api/web 服务。
 
 services:
   # PostgreSQL 数据库
@@ -61,88 +56,6 @@ services:
       retries: 5
       start_period: 10s
 
-  # Go API 服务（可选，用于完整容器化部署）
-  # 本地开发时不需要启动此服务
-  api:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
-    container_name: blog-api
-    restart: unless-stopped
-    ports:
-      - "9090:9090"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      # 环境标识
-      ENVIRONMENT: ${ENVIRONMENT:-production}
-
-      # 服务配置
-      PORT: ${PORT:-9090}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
-      UPLOAD_PATH_PREFIX: ${UPLOAD_PATH_PREFIX:-/uploads/}
-
-      # 数据库配置（容器内通过 Docker 网络连接）
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: ${DATABASE_NAME:-blog}
-      DATABASE_USER: ${DATABASE_USER:?DATABASE_USER is required (set in .env)}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?DATABASE_PASSWORD is required (set in .env)}
-      DATABASE_SSLMODE: ${DATABASE_SSLMODE:-disable}
-
-      # Redis 配置（容器内通过 Docker 网络连接）
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_DB: ${REDIS_DB:-0}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-
-      # 邮件服务
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
-      EMAIL_FROM: ${EMAIL_FROM:-noreply@yourdomain.com}
-
-      # B站表情种子数据
-      BILIBILI_COOKIES: ${BILIBILI_COOKIES:-}
-
-      # 超级管理员
-      SUPERADMIN_ENABLED: ${SUPERADMIN_ENABLED:-false}
-      SUPERADMIN_USERNAME: ${SUPERADMIN_USERNAME:-admin}
-      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-admin@example.com}
-      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
-
-      # 代码运行器（可运行代码块沙箱执行）
-      # 启用前需挂载 docker.sock 并 load yggdrasil-runner-* 镜像（见 docs/deploy/manual-deploy.md）
-      CODE_RUNNER_ENABLED: ${CODE_RUNNER_ENABLED:-true}
-      CODE_RUNNER_MAX_CPU_CORES: ${CODE_RUNNER_MAX_CPU_CORES:-2.0}
-      CODE_RUNNER_MAX_MEMORY_MB: ${CODE_RUNNER_MAX_MEMORY_MB:-1024}
-      CODE_RUNNER_MAX_TIMEOUT_SECS: ${CODE_RUNNER_MAX_TIMEOUT_SECS:-30}
-      CODE_RUNNER_MAX_OUTPUT_BYTES: ${CODE_RUNNER_MAX_OUTPUT_BYTES:-1048576}
-      CODE_RUNNER_MAX_SOURCE_BYTES: ${CODE_RUNNER_MAX_SOURCE_BYTES:-65536}
-      CODE_RUNNER_ALLOW_NETWORK: ${CODE_RUNNER_ALLOW_NETWORK:-false}
-      CODE_RUNNER_MAX_CONCURRENT: ${CODE_RUNNER_MAX_CONCURRENT:-4}
-      CODE_RUNNER_QUEUE_TIMEOUT_SECS: ${CODE_RUNNER_QUEUE_TIMEOUT_SECS:-30}
-      CODE_RUNNER_TASK_TTL_SECS: ${CODE_RUNNER_TASK_TTL_SECS:-300}
-      DOCKER_SOCKET_PATH: ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
-      CODE_RUNNER_LANGUAGES: ${CODE_RUNNER_LANGUAGES:-}
-    volumes:
-      # 挂载上传目录
-      - uploads_data:/uploads
-      # 代码运行器需调宿主 docker/podman daemon 起隔离容器执行用户代码。
-      # 挂载 sock = 把宿主 root 权限交给 api 容器，靠沙箱隔离配置兜底（见 ADR-0006）。
-      # podman 改挂 /run/podman/podman.sock 并设 DOCKER_SOCKET_PATH。
-      - /var/run/docker.sock:/var/run/docker.sock
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:9090/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    profiles:
-      - full  # 使用 --profile full 启动 API 服务
-
 volumes:
   postgres_data:
   redis_data:
-  uploads_data:

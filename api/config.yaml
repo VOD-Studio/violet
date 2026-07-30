@@ -1,0 +1,154 @@
+# violet API 配置文件（入库，全量配置文档）
+#
+# 配置来源与优先级（高 → 低）:
+#   1. 环境变量（生产由 docker-compose.prod.yml 注入；本地由根 .env 经 godotenv 注入）
+#   2. 本文件
+#   3. 代码默认值（config/config.go SetDefault，仅作兜底）
+#
+# 规则:
+#   - 密钥、密码、令牌禁止写入本文件，一律走环境变量（见根 .env.example）
+#   - 每个键上方注释标注对应的 env 覆盖名
+#   - 本文件随镜像分发（api/Dockerfile COPY），本地与生产走同一条解析链
+#   - 启动时 API 会打印每个键的生效值与来源（env / config.yaml / default）
+
+# ── 运行环境 ────────────────────────────────
+# env: ENVIRONMENT（development / production；生产由 compose 显式注入）
+environment: development
+
+# ── 服务配置 ────────────────────────────────
+# env: PORT
+port: 9090
+# env: UPLOAD_PATH_PREFIX
+upload_path_prefix: /uploads/
+# env: UPLOAD_DIR（相对进程工作目录）
+upload_dir: uploads
+
+# ── 数据库 ──────────────────────────────────
+database:
+  # env: DATABASE_HOST
+  host: localhost
+  # env: DATABASE_PORT
+  port: 5432
+  # env: DATABASE_NAME
+  name: blog
+  # env: DATABASE_USER
+  user: blog
+  # env: DATABASE_PASSWORD（密钥，禁止写入本文件）
+  password: ""
+  # env: DATABASE_SSLMODE（disable / require / verify-ca / verify-full）
+  sslmode: disable
+  # env: DATABASE_MAX_OPEN_CONNS
+  max_open_conns: 25
+  # env: DATABASE_MAX_IDLE_CONNS（必须 ≤ max_open_conns）
+  max_idle_conns: 5
+  # env: DATABASE_CONN_MAX_LIFETIME（Go duration 格式）
+  conn_max_lifetime: 30m
+
+# ── Redis ───────────────────────────────────
+redis:
+  # env: REDIS_HOST
+  host: localhost
+  # env: REDIS_PORT
+  port: 6379
+  # env: REDIS_DB
+  db: 0
+  # env: REDIS_PASSWORD（可选）
+  password: ""
+
+# ── OAuth ────────────────────────────────────
+# env: GOOGLE_CLIENT_ID
+google_client_id: ""
+# env: GITHUB_CLIENT_ID
+github_client_id: ""
+# env: GITHUB_CLIENT_SECRET（密钥，禁止写入本文件）
+github_client_secret: ""
+
+# ── 鉴权 Cookie ─────────────────────────────
+# opaque session id 通过 HttpOnly Cookie 下发；CSRF 通过 double-submit cookie 防护
+cookie:
+  # env: COOKIE_DOMAIN（生产填站点主域名支持子域共享）
+  domain: ""
+  # env: COOKIE_SECURE（生产必须 true，HTTPS 才下发）
+  secure: false
+  # env: COOKIE_SAMESITE（lax / strict / none；none 必须配 secure=true）
+  samesite: lax
+  # env: COOKIE_CSRF_NAME
+  csrf_name: violet_csrf
+  # env: COOKIE_SESSION_NAME
+  session_name: violet_session
+
+# ── Session 生命周期 ─────────────────────────
+# idle_ttl 滑动续期窗口（活跃用户不过期）；max_ttl 绝对寿命上限（<=0 无上限）
+session:
+  # env: SESSION_IDLE_TTL（Go duration 格式）
+  idle_ttl: 168h
+  # env: SESSION_MAX_TTL
+  max_ttl: 0s
+
+# ── CORS 允许来源 ────────────────────────────
+# env: CORS_ALLOWED_ORIGINS（空格分隔的 origin 列表）
+# 生产环境必须显式覆盖为真实域名，禁止使用 localhost 值
+cors_allowed_origins:
+  - http://localhost:3000
+  - http://localhost:5173
+
+# ── 受信代理 ─────────────────────────────────
+# env: TRUSTED_PROXIES（空格分隔的 CIDR 列表，填 Nginx/CDN 出口）
+# 留空时一律使用 TCP 连接对端地址作为客户端 IP，忽略 X-Forwarded-For（防欺骗）
+trusted_proxies: []
+
+# ── 邮件服务 (Resend) ────────────────────────
+# env: RESEND_API_KEY（密钥，禁止写入本文件；留空时开发模式打印验证码到日志）
+resend_api_key: ""
+# env: EMAIL_FROM
+email_from: noreply@yourdomain.com
+
+# ── B站表情种子数据 ──────────────────────────
+# env: BILIBILI_API_TYPE（user 用户收藏 / official 官方）
+bilibili_api_type: user
+# env: BILIBILI_COOKIES（密钥，禁止写入本文件）
+bilibili_cookies: ""
+
+# ── 音乐解析服务（独立仓库 VOD-Studio/kite）──────
+# env: KITE_URL
+kite_url: http://localhost:3721
+
+# ── 超级管理员 ────────────────────────────────
+superadmin:
+  # env: SUPERADMIN_ENABLED（首次部署创建管理员后建议改回 false）
+  enabled: false
+  # env: SUPERADMIN_USERNAME
+  username: admin
+  # env: SUPERADMIN_EMAIL
+  email: admin@example.com
+  # env: SUPERADMIN_PASSWORD（密钥，禁止写入本文件）
+  password: ""
+
+# ── 代码运行器（可运行代码块沙箱执行）──────────
+# 需 api 容器挂载 docker.sock（生产 podman 见 docs/deploy/manual-deploy.md）
+# 架构决策见 docs/adr/0006-code-runner-architecture.md
+code_runner:
+  # env: CODE_RUNNER_ENABLED（生产未挂 docker.sock 时自动降级，不 panic）
+  enabled: true
+  # env: CODE_RUNNER_MAX_CPU_CORES
+  max_cpu_cores: 2.0 # 单次执行 CPU 上限（核数）
+  # env: CODE_RUNNER_MAX_MEMORY_MB
+  max_memory_mb: 1024 # 单次执行内存上限（MB）
+  # env: CODE_RUNNER_MAX_TIMEOUT_SECS
+  max_timeout_secs: 30 # 单次执行墙上时间上限（秒）
+  # env: CODE_RUNNER_MAX_OUTPUT_BYTES
+  max_output_bytes: 1048576 # stdout+stderr 输出上限（字节，默认 1MB）
+  # env: CODE_RUNNER_MAX_SOURCE_BYTES
+  max_source_bytes: 65536 # 提交源码大小上限（字节，默认 64KB）
+  # env: CODE_RUNNER_ALLOW_NETWORK
+  allow_network: false # 全局网络开关（需作者声明+语言允许+此开关三者为真）
+  # env: CODE_RUNNER_MAX_CONCURRENT
+  max_concurrent: 4 # 同时在跑的容器数上限
+  # env: CODE_RUNNER_QUEUE_TIMEOUT_SECS
+  queue_timeout_secs: 30 # 排队等容器槽超时（秒）
+  # env: CODE_RUNNER_TASK_TTL_SECS
+  task_ttl_secs: 300 # 完成任务 Redis 保留时长（秒）
+  # env: DOCKER_SOCKET_PATH（podman 改 /run/podman/podman.sock）
+  docker_socket_path: /var/run/docker.sock
+  # env: CODE_RUNNER_LANGUAGES（空格分隔 canonical key，空=全部）
+  languages: []

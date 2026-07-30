@@ -44,6 +44,10 @@ COPY --from=builder --chown=appuser:appgroup /server /server
 COPY --from=builder --chown=appuser:appgroup /migrate /migrate
 COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
 
+# config.yaml 入库并随镜像分发：承载全部配置键与非敏感默认值（权威文档）
+# 密钥与环境差异由 compose 注入进程环境,优先级 env > config.yaml > 代码默认值
+COPY --from=builder --chown=appuser:appgroup /app/config.yaml ./config.yaml
+
 # 预创建上传根目录并设置所有权：命名卷（uploads_data:/app/uploads）首次挂载时为空，
 # podman 会从镜像该路径复制属主——若此处为 root，appuser 将无法创建分片目录，
 # 触发「创建分片目录失败」500。先建好并 chown，保证卷挂载后 appuser 可写。

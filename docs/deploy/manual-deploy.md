@@ -11,7 +11,7 @@
 | 容器运行时 | `podman` + `podman-compose`（**非 docker**） |
 | 默认 shell | `fish`（脚本一律用 `bash -lc '...'` 显式调用） |
 | 前置反代 | `nginx-proxy` + `letsencrypt-companion` 容器，监听 80/443 |
-| 部署目录 | `/root/docker/violet`（含 `api/.env`、`secrets/`、`docker-compose.prod.yml`） |
+| 部署目录 | `/root/docker/violet`（含 `.env`、`secrets/`、`docker-compose.prod.yml`） |
 | 构建目录 | `/root/build/violet`（临时，源码 + podman build，构建完可删） |
 
 ### 架构概览
@@ -41,7 +41,7 @@ blog-api ──► blog-postgres:5432, blog-redis:6379 (via blog_network)
 
 1. 本地能 `ssh xunrua.top echo ok`（免密）。
 2. 本地装了 `rsync`。
-3. 服务器 `/root/docker/violet` 已就绪：含 `api/.env`（敏感凭据，**部署过程绝不覆盖**）。
+3. 服务器 `/root/docker/violet` 已就绪：含 `.env`（敏感凭据，**部署过程绝不覆盖**）。
 4. `nginx-proxy` + `letsencrypt-companion` 容器在跑（负责 TLS 证书与反代）。
 
 ## 完整部署流程
@@ -96,7 +96,7 @@ ssh xunrua.top "grep BUILD_WEB_EXIT /tmp/build-web.log; tail -3 /tmp/build-web.l
 
 ### 第 3 步：准备部署用 compose 文件
 
-服务器 `/root/docker/violet` 没有 `api/`、`web/` 源码（只有 `api/.env` 和 `secrets/`），所以 compose 必须用 `image:` 引用已构建的镜像，**不能用 `build:`**。
+服务器 `/root/docker/violet` 没有 `api/`、`web/` 源码（只有 `.env` 和 `secrets/`），所以 compose 必须用 `image:` 引用已构建的镜像，**不能用 `build:`**。
 
 生成 `/root/docker/violet/docker-compose.prod.yml`（关键片段）：
 
@@ -108,7 +108,7 @@ services:
     image: localhost/violet-api:latest   # ← 用 image，不是 build
     container_name: blog-api
     expose: ["9090"]                         # ← 2.0 端口是 9090（旧版 8080）
-    env_file: [./api/.env]
+    env_file: [./.env]
     environment:
       DATABASE_HOST: postgres
       # ...其余同本地
@@ -150,8 +150,8 @@ scp /tmp/deploy-compose.yml xunrua.top:/root/docker/violet/docker-compose.prod.y
 
 ```bash
 ssh xunrua.top "bash -lc 'cd /root/docker/violet && \
-  podman-compose --env-file api/.env -f docker-compose.prod.yml down && \
-  podman-compose --env-file api/.env -f docker-compose.prod.yml up -d'"
+  podman-compose -f docker-compose.prod.yml down && \
+  podman-compose -f docker-compose.prod.yml up -d'"
 ```
 
 `down` 只删容器，命名卷 `blog_postgres_data` / `blog_redis_data` / `blog_uploads_data` 保留，数据不丢。
@@ -161,7 +161,7 @@ ssh xunrua.top "bash -lc 'cd /root/docker/violet && \
 ```bash
 ssh xunrua.top "bash -lc 'cd /root/docker/violet && \
   podman rm -f blog-web && \
-  podman-compose --env-file api/.env -f docker-compose.prod.yml up -d web'"
+  podman-compose -f docker-compose.prod.yml up -d web'"
 ```
 
 ### 第 6 步：确认 nginx 反代
@@ -338,7 +338,7 @@ reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-
    ssh xunrua.top "podman images | grep yggdrasil-runner"
    ```
 
-3. **配置环境变量**：在 `api/.env` 加 `CODE_RUNNER_ENABLED=true` + `DOCKER_SOCKET_PATH=/run/podman/podman.sock`（覆盖默认 `/var/run/docker.sock`）。全套配置项见 `.env.example` 的「代码运行器」段。
+3. **配置环境变量**：在 `.env` 加 `CODE_RUNNER_ENABLED=true` + `DOCKER_SOCKET_PATH=/run/podman/podman.sock`（覆盖默认 `/var/run/docker.sock`）。全套配置项见 `.env.example` 的「代码运行器」段。
 
 4. **挂载 sock**：`docker-compose.prod.yml` 已配 `${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock`，通过 `DOCKER_SOCKET_PATH` 环境变量控制宿主端路径。
 
@@ -346,7 +346,7 @@ reload：`ssh xunrua.top 'podman exec nginx-proxy nginx -t && podman exec nginx-
 
 ```bash
 # 重启 api 容器加载新配置
-ssh xunrua.top "cd /root/docker/violet && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate api"
+ssh xunrua.top "cd /root/docker/violet && podman-compose -f docker-compose.prod.yml up -d --force-recreate api"
 
 # api 容器内验证能调 podman daemon
 ssh xunrua.top "podman exec blog-api ls /var/run/docker.sock"
@@ -376,14 +376,14 @@ ssh xunrua.top "podman images | grep yggdrasil-runner"
 ssh xunrua.top "podman images localhost/violet-api"
 # 旧镜像若还在，retag 后重启
 ssh xunrua.top "bash -lc 'podman tag <旧image-id> localhost/violet-api:latest && \
-  cd /root/docker/violet && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate api'"
+  cd /root/docker/violet && podman-compose -f docker-compose.prod.yml up -d --force-recreate api'"
 ```
 
 ### compose 回滚
 ```bash
 ssh xunrua.top "cp /root/docker/violet/docker-compose.prod.yml.bak-YYYYMMDD-HHMMSS \
   /root/docker/violet/docker-compose.prod.yml && \
-  cd /root/docker/violet && podman-compose --env-file api/.env -f docker-compose.prod.yml up -d --force-recreate"
+  cd /root/docker/violet && podman-compose -f docker-compose.prod.yml up -d --force-recreate"
 ```
 
 ### 数据库回滚

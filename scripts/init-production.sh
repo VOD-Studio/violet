@@ -6,30 +6,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-ENV_FILES_CREATED=false
-
-# 检查并初始化 api/.env
-if [ ! -f api/.env ]; then
-    cp api/.env.example api/.env
-    echo "⚠️  已创建 api/.env"
-    ENV_FILES_CREATED=true
-fi
-
-# 检查并初始化 web/.env.production
-if [ ! -f web/.env.production ]; then
-    cp web/.env.example web/.env.production
-    echo "⚠️  已创建 web/.env.production"
-    ENV_FILES_CREATED=true
-fi
-
-echo ""
-echo "初始化完成"
-
-if [ "$ENV_FILES_CREATED" = true ]; then
+# 生产环境唯一 env 文件:根 .env(compose 插值与 api 容器 env_file 共用)
+if [ ! -f .env ]; then
+    cp .env.example .env
+    echo "⚠️  已从 .env.example 创建 .env"
     echo ""
-    echo "⚠️  请编辑以下环境文件后再运行 make deploy-prod："
-    [ -f api/.env ] && echo "    - api/.env（特别是 POSTGRES_PASSWORD、SUPERADMIN_PASSWORD 等）"
-    [ -f web/.env.production ] && echo "    - web/.env.production"
+    echo "⚠️  请编辑 .env 后再运行 make deploy-prod，特别是："
+    echo "    - DATABASE_PASSWORD（数据库密码）"
+    echo "    - CORS_ALLOWED_ORIGINS（真实域名，逗号分隔；prod compose 强制检查）"
+    echo "    - SUPERADMIN_PASSWORD（首次部署创建管理员用，之后建议 SUPERADMIN_ENABLED=false）"
+    echo "    - RESEND_API_KEY（邮件服务，可选）"
+else
+    echo "✓ .env 已存在"
 fi
 
 echo ""

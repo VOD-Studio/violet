@@ -3,9 +3,13 @@ package config
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"slices"
 	"strings"
+	"text/tabwriter"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
@@ -27,8 +31,6 @@ type Config struct {
 	ResendAPIKey string
 	// EmailFrom 发件人邮箱地址
 	EmailFrom string
-	// FrontendURL 前端应用地址，用于邮件中的链接
-	FrontendURL string
 	// Port 服务监听端口
 	Port string
 	// UploadPathPrefix 上传文件 URL 前缀，如 "/uploads/"
@@ -198,10 +200,19 @@ type SuperAdminConfig struct {
 	Password string
 }
 
-// Load 从配置文件和环境变量加载配置
-// 优先级：环境变量 > config.yaml > 默认值
+// Load 加载配置，来源优先级：进程环境变量 > 根 .env > config.yaml > 代码默认值。
+//
+// config.yaml 入库并随镜像分发，承载全部配置键与非敏感默认值（唯一权威文档）；
+// 根 .env（不入库）承载密钥与环境差异值。启动末尾打印每个配置项的来源与脱敏值。
 // 如果必需配置缺失或格式错误，会 panic
 func Load() *Config {
+	// 加载根 .env（本地开发的密钥唯一来源）。候选路径覆盖两种工作目录：
+	// api/(go run/air) 读 ../.env；仓库根(直接跑二进制)读 .env。
+	// 容器内两者均不存在,静默跳过(compose 已注入进程环境)。
+	preEnvKeys := currentEnvKeys()
+	_ = godotenv.Load("../.env", ".env")
+	dotenvKeys := readDotenvKeys()
+
 	v := viper.New()
 
 	// 配置文件
@@ -234,7 +245,6 @@ func Load() *Config {
 	v.SetDefault("github_client_secret", "")
 	v.SetDefault("resend_api_key", "")
 	v.SetDefault("email_from", "noreply@yourdomain.com")
-	v.SetDefault("frontend_url", "http://localhost:3000")
 	v.SetDefault("port", "9090")
 	v.SetDefault("upload_path_prefix", "/uploads/")
 	v.SetDefault("upload_dir", "uploads")
@@ -324,7 +334,6 @@ func Load() *Config {
 		GithubClientSecret:   v.GetString("github_client_secret"),
 		ResendAPIKey:         v.GetString("resend_api_key"),
 		EmailFrom:            v.GetString("email_from"),
-		FrontendURL:          v.GetString("frontend_url"),
 		Port:                 v.GetString("port"),
 		UploadPathPrefix:     v.GetString("upload_path_prefix"),
 		UploadDir:            v.GetString("upload_dir"),
@@ -342,14 +351,14 @@ func Load() *Config {
 			IdleTTL: sessionIdleTTL,
 			MaxTTL:  sessionMaxTTL,
 		},
-		CORSAllowedOrigins: v.GetStringSlice("cors_allowed_origins"),
+		CORSAllowedOrigins: getStringSlice(v, "cors_allowed_origins"),
 		SuperAdmin: SuperAdminConfig{
 			Enabled:  v.GetBool("superadmin.enabled"),
 			Username: v.GetString("superadmin.username"),
 			Email:    v.GetString("superadmin.email"),
 			Password: v.GetString("superadmin.password"),
 		},
-		TrustedProxies: v.GetStringSlice("trusted_proxies"),
+		TrustedProxies: getStringSlice(v, "trusted_proxies"),
 		CodeRunner: CodeRunnerConfig{
 			Enabled:          v.GetBool("code_runner.enabled"),
 			MaxCPUCores:      v.GetFloat64("code_runner.max_cpu_cores"),
@@ -362,7 +371,7 @@ func Load() *Config {
 			QueueTimeoutSecs: v.GetUint64("code_runner.queue_timeout_secs"),
 			TaskTTLSecs:      v.GetUint64("code_runner.task_ttl_secs"),
 			DockerSocketPath: v.GetString("code_runner.docker_socket_path"),
-			Languages:        v.GetStringSlice("code_runner.languages"),
+			Languages:        getStringSlice(v, "code_runner.languages"),
 		},
 	}
 
@@ -371,6 +380,8 @@ func Load() *Config {
 		panic(fmt.Sprintf("配置验证失败: %v", err))
 	}
 
+	printConfigSources(v, preEnvKeys, dotenvKeys)
+
 	return cfg
 }
 
@@ -378,25 +389,25 @@ func Load() *Config {
 func (c *Config) Validate() error {
 	// 数据库配置必须完整
 	if c.Database.Host == "" {
-		return fmt.Errorf("DB_HOST 未配置")
+		return fmt.Errorf("DATABASE_HOST 未配置")
 	}
 	if c.Database.Port == 0 {
-		return fmt.Errorf("DB_PORT 未配置")
+		return fmt.Errorf("DATABASE_PORT 未配置")
 	}
 	if c.Database.Name == "" {
-		return fmt.Errorf("DB_NAME 未配置")
+		return fmt.Errorf("DATABASE_NAME 未配置")
 	}
 	if c.Database.User == "" {
-		return fmt.Errorf("DB_USER 未配置")
+		return fmt.Errorf("DATABASE_USER 未配置")
 	}
 
 	// 生产环境必须配置数据库密码；SSL 模式可为 disable（内部 Docker 网络）或启用加密传输
 	if c.Environment == "production" {
 		if c.Database.Password == "" {
-			return fmt.Errorf("生产环境必须配置 DB_PASSWORD")
+			return fmt.Errorf("生产环境必须配置 DATABASE_PASSWORD")
 		}
 		if c.Database.SSLMode != "disable" && c.Database.SSLMode != "require" && c.Database.SSLMode != "verify-ca" && c.Database.SSLMode != "verify-full" {
-			return fmt.Errorf("生产环境 DB_SSLMODE 必须为 disable、require、verify-ca 或 verify-full")
+			return fmt.Errorf("生产环境 DATABASE_SSLMODE 必须为 disable、require、verify-ca 或 verify-full")
 		}
 	}
 
@@ -452,7 +463,13 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("生产环境必须 cookie.secure=true")
 		}
 		if len(c.CORSAllowedOrigins) == 0 {
-			return fmt.Errorf("生产环境必须配置 CORS_ALLOWED_ORIGINS（且禁止使用通配符）")
+			return fmt.Errorf("生产环境必须配置 CORS_ALLOWED_ORIGINS(且禁止使用通配符)")
+		}
+		// 拒绝 localhost 来源:生产落到 localhost 默认值说明 CORS_ALLOWED_ORIGINS 未显式配置
+		for _, origin := range c.CORSAllowedOrigins {
+			if strings.Contains(origin, "localhost") || strings.Contains(origin, "127.0.0.1") {
+				return fmt.Errorf("生产环境 CORS_ALLOWED_ORIGINS 不能包含 localhost/127.0.0.1: %s", origin)
+			}
 		}
 	}
 
@@ -476,4 +493,131 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// getStringSlice 读取字符串列表配置。
+//
+// viper 对 env 中的列表值按空白预切分(元素可能带逗号残留),对无空格逗号串又不切,
+// 两种写法都兼容:逐元素再按逗号切分并去空白。
+//   CORS_ALLOWED_ORIGINS=https://a.com,https://b.com   →  [a.com, b.com]
+//   CORS_ALLOWED_ORIGINS="https://a.com, https://b.com" →  [a.com, b.com]
+func getStringSlice(v *viper.Viper, key string) []string {
+	raw := v.GetStringSlice(key)
+	var out []string
+	for _, item := range raw {
+		for _, part := range strings.Split(item, ",") {
+			if p := strings.TrimSpace(part); p != "" {
+				out = append(out, p)
+			}
+		}
+	}
+	return out
+}
+
+// currentEnvKeys 返回当前进程环境变量名集合(godotenv 加载前调用,用于区分 env 与 .env 来源)
+func currentEnvKeys() map[string]bool {
+	m := make(map[string]bool, 64)
+	for _, kv := range os.Environ() {
+		if i := strings.IndexByte(kv, '='); i > 0 {
+			m[kv[:i]] = true
+		}
+	}
+	return m
+}
+
+// readDotenvKeys 解析根 .env 的变量名集合(不注入进程,仅用于来源标注)
+func readDotenvKeys() map[string]bool {
+	m := map[string]bool{}
+	// 逐文件读取:任一文件不存在时 godotenv.Read 返回 error 且放弃全部结果,须忽略单文件错误
+	for _, f := range []string{"../.env", ".env"} {
+		if kv, err := godotenv.Read(f); err == nil {
+			for k := range kv {
+				m[k] = true
+			}
+		}
+	}
+	return m
+}
+
+// sensitiveKeyParts 键名中出现这些片段时,打印值一律脱敏
+// 注意用复数 cookies:单数 cookie 会误伤 cookie.csrf_name 等非敏感键
+var sensitiveKeyParts = []string{"password", "secret", "cookies", "token", "api_key"}
+
+// printConfigSources 打印全部配置项的最终值(脱敏)与来源。
+//
+// 回答「启动时读的到底是哪个配置」:每一项标注来自进程环境变量(env)、
+// 根 .env 文件(.env)、config.yaml(yaml)还是代码默认值(default)。
+// 输出到 stderr:此时 zerolog 尚未初始化,且容器日志可直接采集。
+//
+// 用 text/tabwriter 自动对齐列宽(避免固定 %-32s 被长键撑破),
+// 并按来源分组(env → .env → yaml → default),让「哪些键被显式覆盖、
+// 哪些走了默认」一眼可读。
+func printConfigSources(v *viper.Viper, preEnv, dotenv map[string]bool) {
+	keys := v.AllKeys()
+	slices.Sort(keys)
+
+	type item struct {
+		key, masked, source string
+	}
+	items := make([]item, 0, len(keys))
+	counts := map[string]int{}
+	for _, key := range keys {
+		envName := strings.ToUpper(strings.ReplaceAll(key, ".", "_"))
+		source := "default"
+		switch {
+		case preEnv[envName]:
+			source = "env"
+		case dotenv[envName]:
+			source = ".env"
+		case v.InConfig(key):
+			source = "yaml"
+		}
+		counts[source]++
+		items = append(items, item{key, maskValue(key, v.Get(key)), source})
+	}
+
+	// 按来源分组:被覆盖的(env/.env/yaml)在前,默认值(default)在后;
+	// 组内按键名字典序,保证多次启动输出稳定、可 diff。
+	sourceRank := map[string]int{"env": 0, ".env": 1, "yaml": 2, "default": 3}
+	slices.SortFunc(items, func(a, b item) int {
+		if r := sourceRank[a.source] - sourceRank[b.source]; r != 0 {
+			return r
+		}
+		return strings.Compare(a.key, b.key)
+	})
+
+	// tabwriter:最小列宽 0(按内容自适应),padding 2,无填充符对齐。
+	// 走 stderr,格式 `  KEY\t = VALUE\t [SOURCE]`。
+	w := tabwriter.NewWriter(os.Stderr, 0, 0, 2, ' ', 0)
+	fmt.Fprintf(w, "配置加载: %d 项\t  env=%d  .env=%d  yaml=%d  default=%d\n\n",
+		len(keys), counts["env"], counts[".env"], counts["yaml"], counts["default"])
+
+	prevSource := ""
+	for _, it := range items {
+		// 来源切换时打分组标题,视觉分隔
+		if it.source != prevSource {
+			if prevSource != "" {
+				fmt.Fprintln(w)
+			}
+			fmt.Fprintf(w, "  [%s]\n", it.source)
+			prevSource = it.source
+		}
+		fmt.Fprintf(w, "    %s\t = %s\n", it.key, it.masked)
+	}
+	_ = w.Flush()
+}
+
+// maskValue 脱敏敏感配置值;非敏感值原样返回,空值标注 (empty)
+func maskValue(key string, value any) string {
+	s := fmt.Sprintf("%v", value)
+	if s == "" {
+		return "(empty)"
+	}
+	lk := strings.ToLower(key)
+	for _, p := range sensitiveKeyParts {
+		if strings.Contains(lk, p) {
+			return "***"
+		}
+	}
+	return s
 }

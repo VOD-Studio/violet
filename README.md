@@ -108,11 +108,11 @@ make deploy-prod
 ### 前置条件
 
 - 已安装 Docker 与 Docker Compose
-- 首次部署前运行 `make deploy-prod-init`，从模板创建 `api/.env` 和 `web/.env.production`
-- 编辑 `api/.env`，确保以下变量已设置：
-  - **必填项（会被 compose 和 API 使用）**：`POSTGRES_USER`、`POSTGRES_PASSWORD`、`POSTGRES_DB`、`SUPERADMIN_PASSWORD`
-  - 其他数据库/Redis 配置（如 `DATABASE_HOST`、`DATABASE_PORT` 等）会被 `docker-compose.prod.yml` 自动覆盖为内部 Docker 网络地址，首次部署可保持默认
-- **务必修改 `POSTGRES_PASSWORD` 和 `SUPERADMIN_PASSWORD`**，不要使用默认值；首次部署后建议将 `SUPERADMIN_ENABLED` 设为 `false` 或修改 `SUPERADMIN_PASSWORD`
+- 首次部署前运行 `make deploy-prod-init`，从模板创建 `.env`
+- 编辑 `.env`，确保以下变量已设置：
+  - **必填项**：`DATABASE_PASSWORD`、`SUPERADMIN_PASSWORD`、`CORS_ALLOWED_ORIGINS`（前端真实域名，逗号分隔；prod compose 强制检查）
+  - 数据库/Redis 的 HOST/PORT 等会被 `docker-compose.prod.yml` 覆盖为内部 Docker 网络地址，首次部署可保持默认
+- **务必修改 `DATABASE_PASSWORD` 和 `SUPERADMIN_PASSWORD`**，不要使用默认值；首次部署后建议将 `SUPERADMIN_ENABLED` 设为 `false` 或修改 `SUPERADMIN_PASSWORD`
 - 确保服务器 **80 端口**空闲
 
 ### 架构图

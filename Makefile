@@ -138,7 +138,7 @@ runner-images-help: ## 显示 runner 镜像准备说明
 	@echo "  1. cd ~/Developer/xfy/yggdrasil && docker/build-runners.sh"
 	@echo "  2. docker save yggdrasil-runner-{python,node,go,rust,bun} | gzip > /tmp/runners.tar.gz"
 	@echo "  3. scp + podman load 到生产服务器"
-	@echo "  4. api/.env 设 CODE_RUNNER_ENABLED=true + DOCKER_SOCKET_PATH"
+	@echo "  4. .env 设 CODE_RUNNER_ENABLED=true + DOCKER_SOCKET_PATH"
 	@echo "详见 docs/deploy/manual-deploy.md"
 
 # ==================== 构建 ====================
@@ -156,19 +156,19 @@ deploy-prod-init: ## 生产环境首次初始化（从模板生成 .env）
 	@./scripts/init-production.sh
 
 deploy-prod: deploy-prod-init ## 构建并启动生产环境容器
-	@docker compose --env-file api/.env -f docker-compose.prod.yml up -d --build
+	@docker compose -f docker-compose.prod.yml up -d --build
 
 deploy-prod-build: ## 只构建生产环境镜像，不运行容器
-	@docker compose --env-file api/.env -f docker-compose.prod.yml build
+	@docker compose -f docker-compose.prod.yml build
 
 deploy-prod-down: ## 停止生产环境容器
-	@docker compose --env-file api/.env -f docker-compose.prod.yml down
+	@docker compose -f docker-compose.prod.yml down
 
 deploy-prod-ps: ## 查看生产环境容器状态
-	@docker compose --env-file api/.env -f docker-compose.prod.yml ps
+	@docker compose -f docker-compose.prod.yml ps
 
 deploy-prod-logs: ## 查看生产环境容器日志
-	@docker compose --env-file api/.env -f docker-compose.prod.yml logs -f
+	@docker compose -f docker-compose.prod.yml logs -f
 
 # ==================== 远程部署 (rua) ====================
 

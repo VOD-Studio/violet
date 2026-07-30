@@ -39,9 +39,7 @@ Thumbs.db
 .env.*.local
 .env.production
 
-# Config
-api/config.yaml
-config.yaml
+# Config(config.yaml 入库:承载非敏感默认值;密钥走根 .env)
 api/jwt_*.pem
 jwt_*.pem
 secrets/*.pem

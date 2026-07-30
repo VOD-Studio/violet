@@ -4,15 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/spf13/viper"
 
+	"blog-api/config"
 	"blog-api/internal/infrastructure/bilibili"
 )
 
@@ -26,60 +24,33 @@ func main() {
 	dryRun := flag.Bool("dry-run", false, "只输出不匹配的数据，不写入数据库")
 	dbURL := flag.String("db", "", "数据库连接URL")
 	cookie := flag.String("cookie", "", "B站登录Cookie")
-	apiType := flag.String("api", "", "API类型: user(用户收藏) 或 official(官方)，默认从 config.yaml 读取")
+	apiType := flag.String("api", "", "API类型: user(用户收藏) 或 official(官方)，默认从配置链读取")
 	flag.Parse()
 
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath(".")
-	v.AddConfigPath("./api")
-	_ = v.ReadInConfig()
+	// 统一配置链:进程 env > 根 .env > config.yaml > 默认值(与服务一致)
+	cfg := config.Load()
 
+	// 数据库连接:命令行参数优先,否则用配置链结果
 	databaseURL := *dbURL
 	if databaseURL == "" {
-		databaseURL = os.Getenv("DATABASE_URL")
-	}
-	if databaseURL == "" {
-		databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
-			v.GetString("database.user"),
-			v.GetString("database.password"),
-			v.GetString("database.host"),
-			v.GetInt("database.port"),
-			v.GetString("database.name"),
-			v.GetString("database.sslmode"))
-	}
-	if databaseURL == "" {
-		databaseURL = "postgres://blog:blog123@localhost:5432/blog?sslmode=disable"
+		databaseURL = cfg.Database.DSN()
 	}
 
-	// 获取 Cookie（优先命令行参数，其次环境变量 BILIBILI_COOKIE，最后配置文件 bilibili_cookies）
+	// Cookie:命令行参数优先,否则用配置链结果(env BILIBILI_COOKIES > config.yaml)
 	bilibiliCookie := *cookie
 	if bilibiliCookie == "" {
-		bilibiliCookie = os.Getenv("BILIBILI_COOKIE")
-	}
-	if bilibiliCookie == "" {
-		bilibiliCookie = v.GetString("bilibili_cookies")
+		bilibiliCookie = cfg.BilibiliCookie
 	}
 
+	// API 类型:命令行参数优先,否则用配置链结果
 	apiTypeValue := *apiType
 	if apiTypeValue == "" {
-		apiTypeValue = v.GetString("bilibili_api_type")
-	}
-	if apiTypeValue == "" {
-		apiTypeValue = "user"
+		apiTypeValue = cfg.BilibiliAPIType
 	}
 
-	// 上传目录配置（用于本地下载封面图）
-	uploadDir := v.GetString("upload_dir")
-	if uploadDir == "" {
-		uploadDir = "uploads"
-	}
-	emojiDir := filepath.Join(uploadDir, "emojis")
-	urlPrefix := v.GetString("upload_path_prefix")
-	if urlPrefix == "" {
-		urlPrefix = "/uploads/"
-	}
+	// 上传目录配置(用于本地下载封面图)
+	emojiDir := filepath.Join(cfg.UploadDir, "emojis")
+	urlPrefix := cfg.UploadPathPrefix
 
 	log.Println("正在获取 B站表情数据...")
 	ctx := context.Background()
