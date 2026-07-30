@@ -1,7 +1,7 @@
 # 博客项目 Makefile
 # 使用: make help
 
-.PHONY: help dev dev-docker dev-docker-down dev-docker-logs up down restart logs \
+.PHONY: help dev dev-docker dev-docker-app dev-docker-down dev-docker-logs up down restart logs \
         migrate migrate-down migrate-version reset-db db-shell redis-shell \
         api api-build api-test api-lint sqlc wire \
         web web-build web-preview web-lint web-format web-typecheck \
@@ -33,6 +33,14 @@ dev-docker: ## 一键启动完整 Docker 开发环境 (PostgreSQL + Redis + API 
 	@echo "  API:  http://localhost:9090"
 	@echo "  数据库: localhost:5432"
 	@echo "  Redis: localhost:6379"
+
+dev-docker-app: ## 仅启动 Docker 前后端 (不启动数据库容器，连接宿主机/外部 DB)
+	@if [ ! -f .env ]; then echo "⚠️  缺少 .env 文件，运行 make env 创建"; exit 1; fi
+	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} REDIS_HOST=$${DEV_REDIS_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml up -d --no-deps --build api web
+	@echo ""
+	@echo "Docker 应用服务已启动 (已跳过 DB 容器，连接宿主机/外部数据库):"
+	@echo "  前端: http://localhost:5173"
+	@echo "  API:  http://localhost:9090"
 
 dev-docker-down: ## 停止 Docker 开发环境
 	docker compose -f docker-compose.dev.yml down

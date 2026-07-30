@@ -78,6 +78,8 @@ services:
       REDIS_DB: 0
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       PORT: 9090
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./api:/app
       - go_pkg_mod:/go/pkg/mod
