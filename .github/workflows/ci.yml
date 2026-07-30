@@ -19,6 +19,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   # ============================================================
   # 后端检查（Go）
@@ -49,7 +52,7 @@ jobs:
         run: go build ./...
 
       - name: Go test
-        run: go test ./internal/domain/... ./internal/application/... ./internal/infrastructure/... -v -count=1
+        run: go test ./... -v -count=1
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
@@ -100,3 +103,33 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # ============================================================
+  # 依赖漏洞扫描
+  # govulncheck 做 reachability 分析(只报实际调用到的漏洞),噪音低,适合阻断 CI;
+  # pnpm audit 无 reachability 分析,高危漏洞未必被实际调用,初期仅告警不阻断。
+  # 待前端依赖基线清理后,移除 continue-on-error 升级为阻断。
+  # ============================================================
+  security:
+    name: Dependency Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: govulncheck (Go)
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: "1.26"
+          work-dir: api
+          cache-dependency-path: api/go.sum
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: pnpm audit (frontend)
+        working-directory: web
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
