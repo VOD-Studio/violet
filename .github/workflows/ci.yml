@@ -28,6 +28,9 @@ jobs:
   # ============================================================
   backend:
     name: Backend (Go)
+    permissions:
+      actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
+      contents: read
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -61,8 +64,17 @@ jobs:
           working-directory: api
           args: --timeout 5m
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Docker 镜像构建验证
-        run: docker build -t violet-api:ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          push: false
+          tags: violet-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ============================================================
   # 前端检查（TypeScript）
