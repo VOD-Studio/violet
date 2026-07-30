@@ -367,6 +367,47 @@ func TestUpdatePost_OmitsCanonicalURLWhenAbsent(t *testing.T) {
 	assert.Nil(t, fake.updateInput.CanonicalURL, "update 不传 canonical_url 时为 nil")
 }
 
+// ---- content_html 透传（回归：MCP 落库空 HTML 致编辑页/预览无数据）----
+//
+// 根因：create_post/update_post 原本只接受 content_md，而编辑器与阅读端都以
+// content_html 为权威源。修复后两个 tool 都透传 content_html，从 scrape_url 拿到的
+// HTML carrier 能正确落库。
+func TestCreatePost_PassesContentHTML(t *testing.T) {
+	fake := &fakePostService{}
+	tools := NewPostTools(fake)
+	args := createPostArgs{
+		Title:       "抓取文",
+		Slug:        "scraped",
+		ContentHTML: `<h2>标题</h2><p>正文</p>`,
+		ContentMD:   "## 标题\n正文",
+	}
+
+	res, _, err := tools.CreatePost(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), args)
+	require.NoError(t, err)
+	assert.False(t, res.IsError)
+	require.NotNil(t, fake.createInput)
+	assert.Equal(t, `<h2>标题</h2><p>正文</p>`, fake.createInput.ContentHTML,
+		"content_html 应透传到 CreateInput（渲染/编辑权威源）")
+	assert.Equal(t, "## 标题\n正文", fake.createInput.ContentMD)
+}
+
+func TestUpdatePost_PassesContentHTML(t *testing.T) {
+	fake := &fakePostService{}
+	tools := NewPostTools(fake)
+	args := updatePostArgs{
+		ID:          "post-9",
+		ContentHTML: `<p>新正文</p>`,
+	}
+
+	res, _, err := tools.UpdatePost(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), args)
+	require.NoError(t, err)
+	assert.False(t, res.IsError)
+	require.NotNil(t, fake.updateInput)
+	assert.Equal(t, `<p>新正文</p>`, fake.updateInput.ContentHTML)
+}
+
 // stringPtr 测试辅助：返回字符串指针。
 func stringPtr(s string) *string { return &s }
 

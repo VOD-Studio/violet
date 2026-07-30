@@ -136,7 +136,8 @@ func ctxWithOperator(ctx context.Context, userID string) context.Context {
 type createPostArgs struct {
 	Title        string   `json:"title" jsonschema:"文章标题"`
 	Slug         string   `json:"slug" jsonschema:"URL slug（小写字母数字连字符）"`
-	ContentMD    string   `json:"content_md,omitempty" jsonschema:"Markdown 原文"`
+	ContentHTML  string   `json:"content_html,omitempty" jsonschema:"正文 HTML（violet 编辑器 schema 格式，渲染/编辑权威源，优先于 content_md；抓取场景应从 scrape_url 的 content_html 透传）"`
+	ContentMD    string   `json:"content_md,omitempty" jsonschema:"Markdown 原文（仅当无 content_html 时作为兜底，后端会自动转 HTML）"`
 	Excerpt      string   `json:"excerpt,omitempty" jsonschema:"摘要"`
 	CoverImage   string   `json:"cover_image,omitempty" jsonschema:"封面图 URL"`
 	CanonicalURL *string  `json:"canonical_url,omitempty" jsonschema:"转载源 URL；不传=原创，传值=转载（指向源文章）"`
@@ -147,7 +148,8 @@ type updatePostArgs struct {
 	ID           string   `json:"id" jsonschema:"文章 ID"`
 	Title        string   `json:"title,omitempty" jsonschema:"文章标题"`
 	Slug         string   `json:"slug,omitempty" jsonschema:"URL slug"`
-	ContentMD    string   `json:"content_md,omitempty" jsonschema:"Markdown 原文"`
+	ContentHTML  string   `json:"content_html,omitempty" jsonschema:"正文 HTML（violet 编辑器 schema 格式，渲染/编辑权威源，优先于 content_md）"`
+	ContentMD    string   `json:"content_md,omitempty" jsonschema:"Markdown 原文（仅当无 content_html 时作为兜底，后端会自动转 HTML）"`
 	Excerpt      string   `json:"excerpt,omitempty" jsonschema:"摘要"`
 	CoverImage   string   `json:"cover_image,omitempty" jsonschema:"封面图 URL"`
 	CanonicalURL *string  `json:"canonical_url,omitempty" jsonschema:"转载源 URL。全量覆盖语义（同其它字段）：传值=转载，传 null/省略=清空回原创。若文章已是转载且本次不改，须显式传原值"`

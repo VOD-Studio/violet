@@ -31,6 +31,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/temoto/robotstxt v1.1.2
+	github.com/yuin/goldmark v1.7.1
 	golang.org/x/crypto v0.53.0
 	golang.org/x/image v0.24.0
 	golang.org/x/net v0.56.0

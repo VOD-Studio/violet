@@ -39,7 +39,7 @@ func (t *PostTools) CreatePost(ctx context.Context, req *mcp.CallToolRequest, ar
 	dto, err := t.posts.Create(ctxWithOperator(ctx, operatorUserID(req)), apppost.CreateInput{
 		AuthorID: operatorUserID(req),
 		Title:    args.Title, Slug: args.Slug,
-		ContentMD: args.ContentMD, Excerpt: args.Excerpt,
+		ContentHTML: args.ContentHTML, ContentMD: args.ContentMD, Excerpt: args.Excerpt,
 		CoverImage: args.CoverImage, CanonicalURL: args.CanonicalURL, Tags: args.Tags,
 	})
 	if err != nil {
@@ -55,7 +55,7 @@ func (t *PostTools) UpdatePost(ctx context.Context, req *mcp.CallToolRequest, ar
 	}
 	err := t.posts.Update(ctxWithOperator(ctx, operatorUserID(req)), apppost.UpdateInput{
 		ID: args.ID, Title: args.Title, Slug: args.Slug,
-		ContentMD: args.ContentMD, Excerpt: args.Excerpt,
+		ContentHTML: args.ContentHTML, ContentMD: args.ContentMD, Excerpt: args.Excerpt,
 		CoverImage: args.CoverImage, CanonicalURL: args.CanonicalURL, Tags: args.Tags,
 	}, operatorUserID(req))
 	if err != nil {
@@ -112,8 +112,9 @@ func (t *PostTools) ListDrafts(ctx context.Context, req *mcp.CallToolRequest, ar
 	}), nil, nil
 }
 
-// ScrapeResult scrape_url tool 的返回结构（9 字段，对齐 Firecrawl formats 思路，
-// 同时给 markdown 与 html，让 agent 二选一传给 create_post）。
+// ScrapeResult scrape_url tool 的返回结构（9 字段，对齐 Firecrawl formats 思路）。
+// content_html 为渲染/编辑权威源，agent 应优先透传给 create_post 的 content_html；
+// content_md 仅作降级（后端在缺 content_html 时自动转 HTML）。
 type ScrapeResult struct {
 	Title          string   `json:"title"`
 	ContentMD      string   `json:"content_md"`
