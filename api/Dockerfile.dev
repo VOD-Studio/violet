@@ -1,0 +1,16 @@
+# Dockerfile.dev - 开发环境 Go API 容器配置 (支持 Air 热重载)
+FROM golang:1.25-alpine
+
+ENV GOPROXY=https://goproxy.cn,direct
+
+# 安装运行时 C 库/工具 (ffmpeg 用于视频抽取封面，wget/ca-certificates/git)
+RUN apk add --no-cache ca-certificates wget ffmpeg git
+
+# 安装 air (Go 热重载工具)
+RUN go install github.com/air-verse/air@latest
+
+WORKDIR /app
+
+EXPOSE 9090
+
+CMD ["air"]
