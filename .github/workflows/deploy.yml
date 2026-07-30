@@ -68,7 +68,7 @@ jobs:
           echo "当前线上版本: ${PREV:-无，疑似首次部署}"
 
       - name: Checkout 代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.ver.outputs.tag }}
 
