@@ -76,17 +76,17 @@ jobs:
         if: ${{ inputs.skip_build != 'true' }}
         run: |
           docker build \
-            -t blog-api:${{ steps.ver.outputs.tag }} \
-            -t blog-api:latest \
+            -t violet-api:${{ steps.ver.outputs.tag }} \
+            -t violet-api:latest \
             -f api/Dockerfile api/
-          echo "已构建 blog-api:${{ steps.ver.outputs.tag }} 与 blog-api:latest"
+          echo "已构建 violet-api:${{ steps.ver.outputs.tag }} 与 violet-api:latest"
 
       - name: 回滚模式复用缓存镜像
         if: ${{ inputs.skip_build == 'true' }}
         run: |
-          docker image inspect blog-api:${{ steps.ver.outputs.tag }} >/dev/null 2>&1 || { echo "::error::rua 本地无 blog-api:${{ steps.ver.outputs.tag }} 镜像，回滚中止"; exit 1; }
-          docker tag blog-api:${{ steps.ver.outputs.tag }} blog-api:latest
-          echo "已将 blog-api:${{ steps.ver.outputs.tag }} 复用为 latest"
+          docker image inspect violet-api:${{ steps.ver.outputs.tag }} >/dev/null 2>&1 || { echo "::error::rua 本地无 violet-api:${{ steps.ver.outputs.tag }} 镜像，回滚中止"; exit 1; }
+          docker tag violet-api:${{ steps.ver.outputs.tag }} violet-api:latest
+          echo "已将 violet-api:${{ steps.ver.outputs.tag }} 复用为 latest"
 
       - name: 同步 compose 文件到部署目录
         run: |
@@ -141,7 +141,7 @@ jobs:
         run: |
           PREV="${{ steps.prev.outputs.prev_tag }}"
           echo "部署失败，自动回滚到 ${PREV}"
-          docker tag "blog-api:${PREV}" blog-api:latest
+          docker tag "violet-api:${PREV}" violet-api:latest
           docker compose \
             -f docker-compose.prod.yml \
             -f docker-compose.ci.yml \
