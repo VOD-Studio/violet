@@ -154,7 +154,6 @@ volumes:
 networks:
   backend:
     name: blog_network
-    external: true
   proxy:
     name: nginx-proxy
     external: true
