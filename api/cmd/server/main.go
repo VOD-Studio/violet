@@ -641,9 +641,11 @@ func main() {
 			// 更新素材元数据：media:upload（可编辑描述/分类/重命名）
 			r.With(middleware.RequirePermission(permissionChecker, "media:upload")).
 				Patch("/media/{id}", mediaH.UpdateFileMetadata) // 更新素材元数据
-			// 删除素材：media:delete
+			// 删除素材：media:delete（单删 + 批量删共用权限）
 			r.With(middleware.RequirePermission(permissionChecker, "media:delete")).
 				Delete("/media/{id}", mediaH.DeleteFile) // 删除素材
+			r.With(middleware.RequirePermission(permissionChecker, "media:delete")).
+				Post("/media/batch-delete", mediaH.BatchDeleteMedia) // 批量删除素材
 
 			// 服务器监控（admin-only，需 system:view 查看主机/磁盘/运行时指标）
 			r.Route("/system", func(r chi.Router) {

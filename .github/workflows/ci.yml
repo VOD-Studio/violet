@@ -19,12 +19,18 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   # ============================================================
   # 后端检查（Go）
   # ============================================================
   backend:
     name: Backend (Go)
+    permissions:
+      actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
+      contents: read
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -49,7 +55,7 @@ jobs:
         run: go build ./...
 
       - name: Go test
-        run: go test ./internal/domain/... ./internal/application/... ./internal/infrastructure/... -v -count=1
+        run: go test ./... -v -count=1
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
@@ -58,8 +64,17 @@ jobs:
           working-directory: api
           args: --timeout 5m
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Docker 镜像构建验证
-        run: docker build -t violet-api:ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          push: false
+          tags: violet-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ============================================================
   # 前端检查（TypeScript）
@@ -74,15 +89,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
           version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -98,3 +115,58 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # ============================================================
+  # 依赖漏洞扫描
+  # govulncheck 做 reachability 分析;有修复版本的漏洞阻断 CI,Fixed-in-N/A 的(上游未发版)
+  # 降级为 warning——docker/docker 的 daemon 端漏洞(v1 +incompatible 永不修复,v2 尚在 beta),
+  # violet 作为 client 不触发,属于模块级假阳性。
+  # pnpm audit 无 reachability 分析,高危漏洞未必被实际调用,初期仅告警不阻断。
+  # 待前端依赖基线清理后,移除 continue-on-error 升级为阻断。
+  # ============================================================
+  security:
+    name: Dependency Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: api/go.sum
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: govulncheck (Go)
+        # govulncheck exit 3 = 发现漏洞。过滤策略:
+        # - Fixed-in-N/A(上游未发修复版,如 docker/docker 的 daemon 端漏洞)降级为 warning
+        # - 有修复版本的漏洞阻断 CI,迫使升级依赖
+        working-directory: api
+        run: |
+          set +e
+          output=$(govulncheck ./... 2>&1)
+          code=$?
+          echo "$output"
+          set -e
+          [ "$code" -eq 0 ] && exit 0
+          # 提取有修复版本的漏洞(Fixed in: 非 N/A)
+          fixable=$(echo "$output" | grep "Fixed in:" | grep -v "N/A" || true)
+          if [ -n "$fixable" ]; then
+            echo "::error::发现可修复的漏洞,请升级依赖:"
+            echo "$fixable"
+            exit 1
+          fi
+          echo "::warning::所有漏洞均为 Fixed-in-N/A(上游未发修复版),降级为 advisory"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: pnpm audit (frontend)
+        working-directory: web
+        run: pnpm audit --audit-level=high
+        continue-on-error: true
