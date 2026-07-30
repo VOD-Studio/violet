@@ -153,7 +153,7 @@ volumes:
 
 networks:
   backend:
-    name: blog_network
+    name: violet_network
   proxy:
     name: nginx-proxy
     external: true

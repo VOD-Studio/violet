@@ -9,7 +9,7 @@ set -euo pipefail
 # 用法: ./scripts/patch-nginx-api.sh
 #
 # 工作原理:
-# 1. 确保 nginx-proxy 加入 blog_network（可访问 blog-api）
+# 1. 确保 nginx-proxy 加入 violet_network（可访问 blog-api）
 # 2. 检查 default.conf 是否已包含 API 代理配置
 # 3. 若未包含，在 xun.rua.plus HTTPS server block 的 location / 之前插入 API location 块
 # 4. 验证配置语法并 reload nginx
@@ -30,15 +30,15 @@ else
     exit 1
 fi
 
-echo "🔧 检查 nginx-proxy 与 blog_network 的连接..."
+echo "🔧 检查 nginx-proxy 与 violet_network 的连接..."
 
-# 确保 nginx-proxy 在 blog_network 上
-if ! $CONTAINER_CMD network inspect blog_network 2>/dev/null | grep -q "$NGINX_CONTAINER"; then
-    echo "  连接 nginx-proxy 到 blog_network..."
-    $CONTAINER_CMD network connect blog_network "$NGINX_CONTAINER" 2>/dev/null || true
+# 确保 nginx-proxy 在 violet_network 上
+if ! $CONTAINER_CMD network inspect violet_network 2>/dev/null | grep -q "$NGINX_CONTAINER"; then
+    echo "  连接 nginx-proxy 到 violet_network..."
+    $CONTAINER_CMD network connect violet_network "$NGINX_CONTAINER" 2>/dev/null || true
     echo "  ✅ 已连接"
 else
-    echo "  ✅ 已在 blog_network 中"
+    echo "  ✅ 已在 violet_network 中"
 fi
 
 # 检查博客服务是否在运行

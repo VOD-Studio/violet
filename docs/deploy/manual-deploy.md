@@ -27,8 +27,8 @@ Internet ──► nginx-proxy (80/443, TLS)
                 └─ /assets/* + 静态扩展名 （vhost.d 手动配置）
                     └─ try_files /var/www/blog-client （nginx 直接服务文件）
 
-blog-web ──SSR 回源──► blog-api:9090 (via blog_network, VITE_SSR_API_BASE_URL)
-blog-api ──► blog-postgres:5432, blog-redis:6379 (via blog_network)
+blog-web ──SSR 回源──► blog-api:9090 (via violet_network, VITE_SSR_API_BASE_URL)
+blog-api ──► blog-postgres:5432, blog-redis:6379 (via violet_network)
 
 # 静态资源产物路径：
 # web 容器 build → /app/dist/client/ → podman cp → 宿主机 /root/docker/nginx-proxy/blog-client/
@@ -235,7 +235,7 @@ web 容器若用 `ports: ["80:3000"]`，会和 `nginx-proxy`（已占 80）冲�
 `/api/health` 路由只注册了 GET。旧 compose 用 `wget --spider`（发 HEAD）返回 405，API 永远 unhealthy，web 因 `depends_on: api healthy` 起不来。**healthcheck 必须显式 `--method=GET`**。
 
 ### 3. blog-api 不在 nginx-proxy 网络
-若 `nginx-proxy` 转发 `/api/` 报 502，检查 `blog-api` 是否同时在 `blog_network` 和 `nginx-proxy` 两个网络。podman-compose 的 external 网络偶尔不自动接入，用 `podman network connect nginx-proxy blog-api` 手动补。
+若 `nginx-proxy` 转发 `/api/` 报 502，检查 `blog-api` 是否同时在 `violet_network` 和 `nginx-proxy` 两个网络。podman-compose 的 external 网络偶尔不自动接入，用 `podman network connect nginx-proxy blog-api` 手动补。
 
 ### 4. podman-compose up 不重建已存在容器
 改了镜像后 `podman-compose up -d web` 若 `blog-web` 容器已存在，会复用旧容器（跑旧镜像）。**必须先 `podman rm -f blog-web`** 再 up，或用 `podman-compose up -d --force-recreate web`。

@@ -39,4 +39,4 @@ CI 检查跑在 GitHub-hosted runner；生产部署跑在 rua 上的 self-hosted
 
 - **deploy 一直 pending**：runner 离线。检查 `systemctl status`、网络、磁盘空间。
 - **checkout 失败**：rua 访问 github.com 超时，检查出网。
-- **migrate 步骤连不上 postgres**：确认 postgres 容器在 `blog_network` 内健康，`.env` 与 `docker-compose.prod.yml` 的 `DATABASE_HOST=postgres` 一致。
+- **migrate 步骤连不上 postgres**：确认 postgres 容器在 `violet_network` 内健康，`.env` 与 `docker-compose.prod.yml` 的 `DATABASE_HOST=postgres` 一致。
