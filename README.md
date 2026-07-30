@@ -9,7 +9,7 @@
 ### 后端 (`api/`)
 | 类别 | 选型 |
 |------|------|
-| 语言 | Go 1.25 |
+| 语言 | Go 1.26 |
 | 路由 | chi v5 |
 | 数据库 | PostgreSQL 16 + GORM + golang-migrate |
 | 缓存 | Redis 7 |
@@ -76,7 +76,7 @@ blog-project/
 ## 快速开始
 
 ### 环境要求
-- Go 1.25+
+- Go 1.26+
 - Node.js 20+ 与 **pnpm**（前端包管理器，`npm install -g pnpm` 安装）
 - Docker & Docker Compose
 

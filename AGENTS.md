@@ -3,7 +3,7 @@
 全栈博客平台 monorepo。
 
 ## 架构与代码边界
-- **后端 (`api/`)**: Go 1.25, Chi 路由, PostgreSQL 16, Redis 7。
+- **后端 (`api/`)**: Go 1.26, Chi 路由, PostgreSQL 16, Redis 7。
   - **关键**: 后端正在进行 DDD 架构重构，新旧架构并存。
   - 新代码使用 DDD 结构: `internal/{domain,application,infrastructure,interfaces,app}`。依赖注入使用 `wire` 管理。
   - 旧代码使用传统分层: `internal/{handler,service,repository}`（迁移中，请勿混用架构模式）。
@@ -25,7 +25,7 @@
 - **数据库迁移**: `make migrate` (使用 golang-migrate)
 
 ### 后端 (`api/`) 须知
-- **环境依赖**: 后端需要 Go 1.25。如果当前环境没有安装 Go，`make check` 会提示缺失，但**不要自行安装 Go**，应停下来告知用户并等待其处理。
+- **环境依赖**: 后端需要 Go 1.26。如果当前环境没有安装 Go，`make check` 会提示缺失，但**不要自行安装 Go**，应停下来告知用户并等待其处理。
 - **数据库代码生成**: 修改 SQL 查询后，**必须**运行 `make sqlc`。
 - **依赖注入生成**: 修改 DDD 的依赖注入项后，**必须**运行 `make wire`。
 - **测试**: `make api-test`
