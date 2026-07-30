@@ -333,6 +333,22 @@ func (m *MockCommentRepository) FindAll(ctx context.Context, status string, anch
 	return args.Get(0).([]*domaincomment.CommentWithPost), args.Get(1).(int64), args.Error(2)
 }
 
+func (m *MockCommentRepository) Search(ctx context.Context, status, query string, anchorFilter domaincomment.AnchorFilter, page, limit int) ([]*domaincomment.CommentWithPost, int64, error) {
+	args := m.Called(ctx, status, query, anchorFilter, page, limit)
+	if args.Get(0) == nil {
+		return nil, args.Get(1).(int64), args.Error(2)
+	}
+	return args.Get(0).([]*domaincomment.CommentWithPost), args.Get(1).(int64), args.Error(2)
+}
+
+func (m *MockCommentRepository) Stats(ctx context.Context, status string) ([]domaincomment.PostCommentStat, error) {
+	args := m.Called(ctx, status)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]domaincomment.PostCommentStat), args.Error(1)
+}
+
 func (m *MockCommentRepository) FindByIDWithPost(ctx context.Context, id shared.ID) (*domaincomment.CommentWithPost, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {

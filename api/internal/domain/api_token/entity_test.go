@@ -32,6 +32,12 @@ func TestNewPAT_RejectsInvalidScope(t *testing.T) {
 	assert.Error(t, err, "未知 scope 必须拒绝")
 }
 
+func TestNewPAT_AcceptsCommentsReadScope(t *testing.T) {
+	p, _, err := NewPAT("u-1", "x", []string{ScopeCommentsRead}, time.Time{}, time.Now())
+	assert.NoError(t, err, "comments:read 是合法 scope")
+	assert.True(t, p.HasScope(ScopeCommentsRead))
+}
+
 func TestNewPAT_RejectsEmptyScopes(t *testing.T) {
 	_, _, err := NewPAT("u-1", "x", nil, time.Time{}, time.Now())
 	assert.Error(t, err, "至少要有一个 scope")

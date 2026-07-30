@@ -20,7 +20,7 @@ const client = (key: string) => {
 describe("serversForScopes", () => {
     it("命中文章类 scope 含文章 server 与恒并入的匿名 reader", () => {
         expect(serversForScopes(["posts:read"]).map((s) => s.key)).toEqual([
-            "violet",
+            "violet-posts",
             "violet-reader",
         ]);
     });
@@ -35,6 +35,13 @@ describe("serversForScopes", () => {
     it("无 scope 命中也返回匿名 reader（恒并入）", () => {
         expect(serversForScopes([]).map((s) => s.key)).toEqual(["violet-reader"]);
     });
+
+    it("comments:read 命中评论 server（reader 恒并入）", () => {
+        expect(serversForScopes(["comments:read"]).map((s) => s.key)).toEqual([
+            "violet-reader",
+            "violet-comments",
+        ]);
+    });
 });
 
 describe("MCP_CLIENTS 配置生成", () => {
@@ -43,10 +50,10 @@ describe("MCP_CLIENTS 配置生成", () => {
         if (view.kind !== "commands") {
             throw new Error("expect commands");
         }
-        // 3 个 server（violet / scraper / reader）各一条命令
-        expect(view.commands).toHaveLength(3);
+        // 4 个 server（violet-posts / scraper / reader / comments）各一条命令
+        expect(view.commands).toHaveLength(4);
         expect(view.commands[0]).toContain(
-            "claude mcp add --transport http violet https://blog.example.com/api/v1/mcp",
+            "claude mcp add --transport http violet-posts https://blog.example.com/api/v1/mcp",
         );
         expect(view.commands[0]).toContain("Authorization: Bearer tok_test_123");
     });
@@ -77,9 +84,9 @@ describe("MCP_CLIENTS 配置生成", () => {
             throw new Error("expect snippet");
         }
         const parsed = JSON.parse(view.code);
-        expect(parsed.mcp["violet"].type).toBe("remote");
-        expect(parsed.mcp["violet"].enabled).toBe(true);
-        expect(parsed.mcp["violet"].headers.Authorization).toBe("Bearer tok_test_123");
+        expect(parsed.mcp["violet-posts"].type).toBe("remote");
+        expect(parsed.mcp["violet-posts"].enabled).toBe(true);
+        expect(parsed.mcp["violet-posts"].headers.Authorization).toBe("Bearer tok_test_123");
     });
 
     it("oh-my-pi 片段显式带 type http（省略会被当作 stdio）", () => {
@@ -87,7 +94,7 @@ describe("MCP_CLIENTS 配置生成", () => {
         if (view.kind !== "snippet") {
             throw new Error("expect snippet");
         }
-        expect(JSON.parse(view.code).mcpServers["violet"].type).toBe("http");
+        expect(JSON.parse(view.code).mcpServers["violet-posts"].type).toBe("http");
     });
 
     it("VS Code 片段顶层键为 servers", () => {
@@ -95,7 +102,7 @@ describe("MCP_CLIENTS 配置生成", () => {
         if (view?.kind !== "snippet") {
             throw new Error("expect snippet");
         }
-        expect(JSON.parse(view.code).servers["violet"].type).toBe("http");
+        expect(JSON.parse(view.code).servers["violet-posts"].type).toBe("http");
     });
 
     it("Gemini 片段使用 httpUrl 字段", () => {
@@ -103,7 +110,7 @@ describe("MCP_CLIENTS 配置生成", () => {
         if (view?.kind !== "snippet") {
             throw new Error("expect snippet");
         }
-        expect(JSON.parse(view.code).mcpServers["violet"].httpUrl).toBe(
+        expect(JSON.parse(view.code).mcpServers["violet-posts"].httpUrl).toBe(
             "https://blog.example.com/api/v1/mcp",
         );
     });
@@ -123,7 +130,7 @@ describe("MCP_CLIENTS 配置生成", () => {
             throw new Error("expect snippet");
         }
         expect(view.lang).toBe("toml");
-        expect(view.code).toContain("[mcp_servers.violet]");
+        expect(view.code).toContain("[mcp_servers.violet-posts]");
         expect(view.code).toContain('Authorization = "Bearer tok_test_123"');
     });
 
@@ -132,8 +139,8 @@ describe("MCP_CLIENTS 配置生成", () => {
         if (view.kind !== "deeplinks") {
             throw new Error("expect deeplinks");
         }
-        // 3 个 server 各一个 deeplink
-        expect(view.links).toHaveLength(3);
+        // 4 个 server 各一个 deeplink
+        expect(view.links).toHaveLength(4);
         const url = new URL(view.links[0].href.replace("cursor://", "https://deeplink/"));
         const config = JSON.parse(atob(url.searchParams.get("config") ?? ""));
         expect(config.url).toBe("https://blog.example.com/api/v1/mcp");
@@ -146,7 +153,7 @@ describe("MCP_CLIENTS 配置生成", () => {
 });
 
 describe("匿名 server 配置不带 Authorization", () => {
-    // 混合启用：violet(PAT) + violet-reader(匿名)
+    // 混合启用：violet-posts(PAT) + violet-reader(匿名)
     const mixedServers = serversForScopes(["posts:read"]);
 
     it("JSON snippet 系：匿名 entry 无 headers 键，PAT entry 有", () => {
@@ -155,7 +162,7 @@ describe("匿名 server 配置不带 Authorization", () => {
             throw new Error("expect snippet");
         }
         const parsed = JSON.parse(view.code);
-        expect(parsed.mcpServers["violet"].headers.Authorization).toBe("Bearer tok_test_123");
+        expect(parsed.mcpServers["violet-posts"].headers.Authorization).toBe("Bearer tok_test_123");
         // 匿名 entry 无 headers 键（undefined 被 JSON.stringify 省略）
         expect(parsed.mcpServers["violet-reader"].headers).toBeUndefined();
         expect(parsed.mcpServers["violet-reader"].url).toBe(
@@ -168,7 +175,7 @@ describe("匿名 server 配置不带 Authorization", () => {
         if (view.kind !== "commands") {
             throw new Error("expect commands");
         }
-        const violetCmd = view.commands.find((c) => c.includes(" violet ")) ?? "";
+        const violetCmd = view.commands.find((c) => c.includes("violet-posts")) ?? "";
         const readerCmd = view.commands.find((c) => c.includes("violet-reader")) ?? "";
         expect(violetCmd).toContain("Authorization: Bearer tok_test_123");
         expect(readerCmd).not.toContain("Authorization");
@@ -211,11 +218,36 @@ describe("匿名 server 配置不带 Authorization", () => {
             throw new Error("expect snippet");
         }
         const parsed = JSON.parse(view.code);
-        expect(parsed.mcpServers["violet"].args).toContain("--header");
+        expect(parsed.mcpServers["violet-posts"].args).toContain("--header");
         expect(parsed.mcpServers["violet-reader"].args).not.toContain("--header");
         expect(parsed.mcpServers["violet-reader"].args).toEqual([
             "mcp-remote",
             "https://blog.example.com/api/v1/mcp/reader",
         ]);
+    });
+});
+
+describe("violet-comments 评论 server 配置", () => {
+    it("PAT server 配置带 Authorization", () => {
+        const view = client("generic").primary(
+            ctx({ servers: serversForScopes(["comments:read"]) }),
+        );
+        if (view.kind !== "snippet") {
+            throw new Error("expect snippet");
+        }
+        const parsed = JSON.parse(view.code);
+        expect(parsed.mcpServers["violet-comments"].url).toBe(
+            "https://blog.example.com/api/v1/mcp/comments",
+        );
+        expect(parsed.mcpServers["violet-comments"].headers.Authorization).toBe(
+            "Bearer tok_test_123",
+        );
+    });
+
+    it("CreatePATDialog 列出评论 server（非 anonymous，进 scope 勾选区）", () => {
+        // violet-comments 是 PAT server（非 anonymous），serversForScopes 推导得到
+        const servers = serversForScopes(["comments:read"]);
+        expect(servers.some((s) => s.key === "violet-comments")).toBe(true);
+        expect(servers.find((s) => s.key === "violet-comments")?.scopes).toEqual(["comments:read"]);
     });
 });

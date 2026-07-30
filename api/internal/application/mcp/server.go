@@ -31,6 +31,16 @@ var ReaderServerMeta = &mcp.Implementation{
 // server 选型层（比 tool/resource 描述高一层）即告知公开只读定位。
 const readerInstructions = `本 server 是博客的公开只读通道：匿名访问，仅暴露已发布文章（Resources）与写作风格指南（Prompts）。不含草稿、公告、评论。草稿访问与写操作请用 violet server（需 PAT）。`
 
+// CommentsServerMeta 评论检索 server 元信息（评论独立 bounded context，PAT）。
+var CommentsServerMeta = &mcp.Implementation{
+	Name:    brand.MCPCommentsServerName,
+	Version: "1.0.0",
+}
+
+// commentsInstructions 进 initialize 响应、入 agent context。
+// server 选型层告知评论检索定位，与文章域区分。
+const commentsInstructions = `本 server 检索读者评论/批注反馈，仅已审核通过（approved）；用于「读者批注→写作改进」闭环。文章本身（读全文/写文章）用 violet-posts server。批注带 anchor.selected_text 标注读者划中的原文。`
+
 // NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool + 1 个编排 prompt。
 // 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。检索为私有视角（PAT 持有人全部文章）。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。
@@ -173,6 +183,35 @@ func NewPublicServer(tools *PublicTools, prompts *PromptTools) *mcp.Server {
 		Description: "已发布文章目录（slug + 标题列表），用于发现可读文章。无需令牌。",
 		MIMEType:    "text/markdown",
 	}, tools.ListPosts)
+
+	return s
+}
+
+// NewCommentsServer 构造评论检索 MCP 服务器（/api/v1/mcp/comments），注册 3 个检索 tool。
+// 评论与文章是独立 bounded context（AWS DDD MCP 实践：each server owns one domain），
+// 故评论检索独立 server，不挂文章 server。PAT comments:read 私有视角，仅 approved。
+func NewCommentsServer(tools *CommentTools) *mcp.Server {
+	s := mcp.NewServer(CommentsServerMeta, &mcp.ServerOptions{
+		Instructions: commentsInstructions,
+	})
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "search_comments",
+		Description: "按关键词检索已审核评论/批注，返回正文 + 所属文章。" +
+			"批注带锚点选区原文（读者划中的文字）。找「读者提过某类反馈」时使用。需 comments:read 权限。",
+	}, tools.SearchComments)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "list_recent_comments",
+		Description: "按时间倒序浏览最新已审核评论/批注（无关键词，看最近反馈动态）。" +
+			"了解「最近读者有什么反馈」时使用。需 comments:read 权限。",
+	}, tools.ListRecentComments)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name: "comment_stats",
+		Description: "按文章聚合评论/批注统计，返回全局汇总 + 每篇文章批注密度。" +
+			"判断「哪些文章反馈最密集、最该先改进」时使用。需 comments:read 权限。",
+	}, tools.CommentStats)
 
 	return s
 }

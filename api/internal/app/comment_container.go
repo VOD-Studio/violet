@@ -16,6 +16,7 @@ import (
 // CommentContainer 评论模块容器
 type CommentContainer struct {
 	CommentHandler *commenthttp.Handler
+	CommentService *appcomment.Service
 }
 
 // NewCommentContainer 装配评论 DDD 模块。
@@ -31,6 +32,7 @@ func NewCommentContainer(db *gorm.DB, codeStore appshared.CodeStore, emailSender
 	commentSvc := appcomment.NewService(commentRepo, codeStore, emailSender, &emojiLookupAdapter{repo: emojiRepo})
 	return &CommentContainer{
 		CommentHandler: commenthttp.NewHandler(commentSvc, userRepo, postRepo),
+		CommentService: commentSvc,
 	}
 }
 

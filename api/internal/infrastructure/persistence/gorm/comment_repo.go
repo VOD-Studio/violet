@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -383,6 +384,120 @@ func (r *CommentRepository) FindAll(ctx context.Context, status string, anchorFi
 		result = append(result, cwp)
 	}
 	return result, total, nil
+}
+
+// Search 按 body 全文检索评论（MCP search_comments），关联所属文章。
+// query 空格分词多关键词 AND；复刻 FindAll 的双 query 计数模式。
+func (r *CommentRepository) Search(ctx context.Context, status, query string, anchorFilter comment.AnchorFilter, page, limit int) ([]*comment.CommentWithPost, int64, error) {
+	applyFilters := func(q *gorm.DB) *gorm.DB {
+		if status != "" {
+			q = q.Where("c.status = ?", status)
+		}
+		switch anchorFilter {
+		case comment.AnchorFilterFree:
+			q = q.Where("c.anchor_block_id IS NULL")
+		case comment.AnchorFilterAnnotation:
+			q = q.Where("c.anchor_block_id IS NOT NULL")
+		}
+		// 多关键词 AND：每个词都命中 body 检索。
+		// 用 LOWER(body) LIKE LOWER(?) 跨库兼容（SQLite 无 ILIKE，PG ILIKE 等价于此）。
+		for _, kw := range strings.Fields(query) {
+			like := "%" + likeEscaper.Replace(kw) + "%"
+			q = q.Where("LOWER(c.body) LIKE LOWER(?) ESCAPE '\\'", like)
+		}
+		return q
+	}
+
+	queryDB := applyFilters(r.db.WithContext(ctx).
+		Table("comments c").
+		Select("c.*, p.title AS post_title, p.slug AS post_slug").
+		Joins("LEFT JOIN posts p ON p.id = c.post_id"))
+
+	var total int64
+	countDB := applyFilters(r.db.WithContext(ctx).
+		Table("comments c").
+		Joins("LEFT JOIN posts p ON p.id = c.post_id"))
+	if err := countDB.Distinct("c.id").Count(&total).Error; err != nil {
+		return nil, 0, domainshared.Internal("统计检索评论失败", err)
+	}
+
+	offset := (page - 1) * limit
+	var rows []commentWithPostRow
+	if err := queryDB.Order("c.created_at DESC").Offset(offset).Limit(limit).Scan(&rows).Error; err != nil {
+		return nil, 0, domainshared.Internal("检索评论失败", err)
+	}
+	result := make([]*comment.CommentWithPost, 0, len(rows))
+	for _, row := range rows {
+		cwp, err := rowToCommentWithPost(row)
+		if err != nil {
+			return nil, 0, err
+		}
+		result = append(result, cwp)
+	}
+	return result, total, nil
+}
+
+// Stats 按文章聚合评论统计（MCP comment_stats），仅含有反馈的文章。
+func (r *CommentRepository) Stats(ctx context.Context, status string) ([]comment.PostCommentStat, error) {
+	q := r.db.WithContext(ctx).
+		Table("comments c").
+		Joins("JOIN posts p ON p.id = c.post_id").
+		Where("c.post_id IS NOT NULL")
+	if status != "" {
+		q = q.Where("c.status = ?", status)
+	}
+	// 批注计数用条件聚合（anchor_block_id IS NOT NULL 计 1，否则 0）
+	type statRow struct {
+		PostID          string `gorm:"column:post_id"`
+		PostTitle       string `gorm:"column:post_title"`
+		PostSlug        string `gorm:"column:post_slug"`
+		AnnotationCount int64  `gorm:"column:annotation_count"`
+		CommentCount    int64  `gorm:"column:comment_count"`
+		// LatestAt 用 string 接收跨库兼容（SQLite MAX(date) 返回 TEXT，PG 返回 timestamp 文本），
+		// 再 time.Parse 转回 time.Time。
+		LatestAt string `gorm:"column:latest_at"`
+	}
+	var rows []statRow
+	// HAVING COUNT(*) > 0 排除零反馈文章（JOIN posts 已隐含 post 存在）；
+	// annotation_count DESC 排序，批注密集的优先。
+	if err := q.Select(`
+		c.post_id AS post_id,
+		p.title AS post_title,
+		p.slug AS post_slug,
+		COUNT(*) AS comment_count,
+		COUNT(c.anchor_block_id) AS annotation_count,
+		MAX(c.created_at) AS latest_at
+	`).
+		Group("c.post_id, p.title, p.slug").
+		Having("COUNT(*) > 0").
+		Order("annotation_count DESC, comment_count DESC").
+		Scan(&rows).Error; err != nil {
+		return nil, domainshared.Internal("聚合评论统计失败", err)
+	}
+	result := make([]comment.PostCommentStat, 0, len(rows))
+	for _, row := range rows {
+		pid, err := domainshared.ParseID(row.PostID)
+		if err != nil {
+			return nil, domainshared.Internal("解析 post_id 失败", err)
+		}
+		// MAX(created_at) 跨库返回字符串，尝试多格式解析（RFC3339 / SQLite datetime）。
+		var latest time.Time
+		for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02 15:04:05+00:00", "2006-01-02 15:04:05"} {
+			if t, e := time.Parse(layout, row.LatestAt); e == nil {
+				latest = t
+				break
+			}
+		}
+		result = append(result, comment.PostCommentStat{
+			PostID:          pid,
+			PostTitle:       row.PostTitle,
+			PostSlug:        row.PostSlug,
+			AnnotationCount: row.AnnotationCount,
+			CommentCount:    row.CommentCount,
+			LatestAt:        latest,
+		})
+	}
+	return result, nil
 }
 
 // FindByIDWithPost 按ID查评论并关联所属文章（后台详情）

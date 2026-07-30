@@ -23,10 +23,13 @@ const (
 	// FeedFetcherUA 订阅 feed 拉取请求的完整 User-Agent。
 	FeedFetcherUA = "Mozilla/5.0 (compatible; " + FeedFetcherProduct + "/1.0)"
 
-	// MCPServerName 文章 MCP server 标识（前端管理页 key 与之对应）。
-	MCPServerName = "violet"
+	// MCPServerName 文章域 MCP server 标识（前端管理页 key 与之对应）。
+	// 按域命名（AWS DDD MCP 实践：server 名描述所拥有的域，非品牌名）。
+	MCPServerName = "violet-posts"
 	// MCPScraperServerName 抓取 MCP server 标识。
 	MCPScraperServerName = "violet-scraper"
 	// MCPReaderServerName 公开只读 MCP server 标识（匿名，仅已发布文章）。
 	MCPReaderServerName = "violet-reader"
+	// MCPCommentsServerName 评论检索 MCP server 标识（PAT，评论独立 bounded context）。
+	MCPCommentsServerName = "violet-comments"
 )

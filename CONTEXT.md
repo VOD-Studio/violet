@@ -185,3 +185,21 @@ _Avoid_: 公开 server（未区分通道语义）、reader API（HTTP REST 语�
 **react-bits 组件依赖**:
 公告 card/article 视觉依赖 react-bits（`https://reactbits.dev/`）的以下组件，项目已配置 `@react-bits` registry（shadcn），用 `pnpm dlx shadcn@latest add @react-bits/<Name>-TS-TW` 安装到 `web/src/shared/vendor/react-bits/`。**已安装**：`BorderGlow`（card 外壳，柔色发光描边）、`BlurText`（标题按词渐显）、`Counter`（ID 数字滚动）、`Magnet`（按钮磁吸）、`AnimatedList`（详情页时间轴）。仍在使用：`DecryptedText`（empty / 404 状态）、`SpotlightCard`（PostCard）。注意：`FluidGlass`（依赖 three.js）与 `SplitText`（依赖 GSAP 商用插件）曾试用后已移除；`ClickSpark`、`Aurora`、`GradientText`、`ParticleField`、`ShinyText`、`CountUp` 等历史原型组件也已移除，不要再装。banner 原型（FlipX / CubeFlipY）在 `announcement-lab` 实验页保留作参考。
 
+
+## MCP 通道（MCP Channels）
+
+博客通过 MCP（Model Context Protocol）向 AI agent 暴露能力，按**域（bounded context）**拆分独立 server（AWS DDD MCP 实践："Name your MCP servers after the domain they own" + "each server owns one domain"）。混域是 context boundary 设计失败。
+
+**violet-posts（文章域 server）**:`/api/v1/mcp`，PAT `posts:read/write/publish`。文章 CRUD + 文章检索（S1：search_posts/formulas/code_blocks）。原用裸品牌名 `violet`，S3 正名为 `violet-posts`（按域命名）。
+_Avoid_: 把评论检索塞进文章 server（评论是独立 bounded context）
+
+**violet-scraper（抓取域 server）**:`/api/v1/mcp/scraper`，PAT `posts:scrape`+`subscriptions:read/write`。scrape_url + 7 个订阅 tool。高风险 SSRF 域，独立限流。
+
+**violet-comments（评论检索 server）**:`/api/v1/mcp/comments`，PAT `comments:read`。检索读者评论/批注反馈（S3：search_comments / list_recent_comments / comment_stats）。评论与文章是独立 bounded context——有独立聚合根/仓储/审核流程/HTTP 权限，故评论检索独立 server，不挂文章 server。用于「读者批注→写作改进」闭环。
+_Avoid_: 评论 server（未点明检索/反馈语义）
+
+**写作改进闭环（S1+S2+S3 组合）**:读者批注/评论 → S3 检索反馈（含锚点选区原文 `anchor.selected_text`）→ agent 理解"读者对原文 X 的反馈是 Y"→ S1 get_post 读草稿 / S2 reader 读已发布全文 → agent 起草改进 → update_post 写回。S3 是闭环的"反馈数据接入"环，纯读不越界（评论写操作/审核归后台 UI）。
+
+**MCP status 可见性分工**:approved 评论 ≈ published 文章（都是"已审阅有效内容"），MCP 检索仅消费 approved/published。pending 评论 ≈ draft 文章（未审阅），前者进后台审核 UI、后者进 PAT 私有检索——**pending 不进 MCP agent 上下文**（避免未审阅内容/垃圾污染写作建议）。
+
+**评论锚点选区原文（anchor.selected_text）**:批注（anchor_block_id 非空的评论）携带读者划中的原文片段，是 S3 写作改进闭环的核心字段——它让 agent 精确定位"读者说这段有问题"的"这段"是哪段，构成"读者对原文 X 的反馈是 Y"的完整闭环。自由评论（anchor 为空）无此字段。

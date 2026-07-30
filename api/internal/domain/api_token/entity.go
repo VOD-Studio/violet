@@ -6,14 +6,15 @@ import (
 	domainshared "blog-api/internal/domain/shared"
 )
 
-// PAT scope 枚举。固定六分：读 / 写 / 发布 / 抓取 / 订阅读 / 订阅写，创建时多选。
+// PAT scope 枚举。固定七分：文章读/写/发布、抓取、订阅读/写、评论读，创建时多选。
 const (
-	ScopePostsRead         = "posts:read"
-	ScopePostsWrite        = "posts:write"
-	ScopePostsPublish      = "posts:publish"
-	ScopePostsScrape       = "posts:scrape"          // 抓取外站文章（scrape_url tool），SSRF 风险点，独立回收权限
-	ScopeSubscriptionsRead = "subscriptions:read"    // 列/查订阅源
-	ScopeSubscriptionsWrite = "subscriptions:write"  // 增删改订阅源、暂停/恢复
+	ScopePostsRead          = "posts:read"
+	ScopePostsWrite         = "posts:write"
+	ScopePostsPublish       = "posts:publish"
+	ScopePostsScrape        = "posts:scrape"          // 抓取外站文章（scrape_url tool），SSRF 风险点，独立回收权限
+	ScopeSubscriptionsRead  = "subscriptions:read"    // 列/查订阅源
+	ScopeSubscriptionsWrite = "subscriptions:write"   // 增删改订阅源、暂停/恢复
+	ScopeCommentsRead       = "comments:read"         // 评论/批注检索（MCP violet-comments server）
 )
 
 // validScopes 合法 scope 集合，校验与新增 scope 时同步此处 + 前端 PAT_SCOPES 常量
@@ -25,6 +26,7 @@ var validScopes = map[string]struct{}{
 	ScopePostsScrape:        {},
 	ScopeSubscriptionsRead:  {},
 	ScopeSubscriptionsWrite: {},
+	ScopeCommentsRead:       {},
 }
 
 // IsValidScope 判断 scope 是否在预定义枚举内。

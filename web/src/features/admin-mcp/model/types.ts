@@ -6,6 +6,7 @@ export const PAT_SCOPES = [
     "posts:scrape",
     "subscriptions:read",
     "subscriptions:write",
+    "comments:read",
 ] as const;
 export type PATScope = (typeof PAT_SCOPES)[number];
 
@@ -30,7 +31,7 @@ export interface MCPServerSpec {
 
 export const MCP_SERVERS: MCPServerSpec[] = [
     {
-        key: "violet",
+        key: "violet-posts",
         label: "文章",
         endpoint: "/api/v1/mcp",
         description: "文章读写 + 检索 tool",
@@ -50,6 +51,13 @@ export const MCP_SERVERS: MCPServerSpec[] = [
         description: "已发布文章 Resources + 写作风格 Prompts，匿名只读",
         scopes: [],
         anonymous: true,
+    },
+    {
+        key: "violet-comments",
+        label: "评论",
+        endpoint: "/api/v1/mcp/comments",
+        description: "评论/批注检索 tool，读读者反馈改进文章",
+        scopes: ["comments:read"],
     },
 ];
 

@@ -146,7 +146,7 @@ func main() {
 	subscriptionContainer := app.NewSubscriptionContainer(gormDB, postContainer.PostService)
 	// MCP 服务器：PAT 鉴权已在内层 handler 经由 auth.RequireBearerToken 完成；
 	// postSvc 复用文章模块，tokenLookup 复用 PAT 模块仓储，subSvc 复用订阅模块。
-	mcpContainer := app.NewMCPContainer(apiTokenContainer.TokenLookup, postContainer.PostService, subscriptionContainer.SubscriptionService)
+	mcpContainer := app.NewMCPContainer(apiTokenContainer.TokenLookup, postContainer.PostService, subscriptionContainer.SubscriptionService, commentContainer.CommentService)
 
 	// 服务器监控模块（DDD）：启动 30s 采样 goroutine，随 appCtx 退出
 	systemContainer := app.NewSystemContainer(gormDB, redisClient, ctx)
@@ -664,12 +664,16 @@ func main() {
 	// 高风险 SSRF）分离，各自独立限流。
 	// ADR-0008：公开只读 server（/api/v1/mcp/reader，匿名）独立第三端点，
 	// 不套 PAT 鉴权，独立限流维度。
+	// PRD-0008：评论检索 server（/api/v1/mcp/comments）独立第四端点，评论与文章是
+	// 独立 bounded context（AWS DDD MCP 实践），各自独立限流。
 	r.With(middleware.RateLimit("mcp", redisClient, time.Minute, 60)).
 		Handle("/api/v1/mcp", mcpContainer.PostHandler)
 	r.With(middleware.RateLimit("mcp-scraper", redisClient, time.Minute, 30)).
 		Handle("/api/v1/mcp/scraper", mcpContainer.ScraperHandler)
 	r.With(middleware.RateLimit("mcp-reader", redisClient, time.Minute, 120)).
 		Handle("/api/v1/mcp/reader", mcpContainer.PublicHandler)
+	r.With(middleware.RateLimit("mcp-comments", redisClient, time.Minute, 60)).
+		Handle("/api/v1/mcp/comments", mcpContainer.CommentsHandler)
 
 	// ============================================================
 	// ============================================================

@@ -2,6 +2,7 @@ package comment
 
 import (
 	"context"
+	"time"
 
 	"blog-api/internal/domain/shared"
 )
@@ -44,6 +45,17 @@ const (
 type BlockCount struct {
 	BlockID string
 	Count   int64
+}
+
+// PostCommentStat 按文章聚合的评论统计（MCP comment_stats 读模型）。
+// 用于 agent 判断哪些文章反馈最密集、最该先改进。
+type PostCommentStat struct {
+	PostID          shared.ID
+	PostTitle       string
+	PostSlug        string
+	AnnotationCount int64 // anchor_block_id IS NOT NULL 的评论数
+	CommentCount    int64 // 全部评论数
+	LatestAt        time.Time
 }
 
 // CommentRepository 评论仓储接口
@@ -100,6 +112,18 @@ type CommentRepository interface {
 	//
 	// anchorFilter 控制按 anchor 列过滤（自由评论 / 批注 / 全部），见 AnchorFilter 常量。
 	FindAll(ctx context.Context, status string, anchorFilter AnchorFilter, page, limit int) ([]*CommentWithPost, int64, error)
+	// Search 按 body 全文检索评论（MCP search_comments），关联所属文章。
+	//
+	// query 空格分词多关键词 AND（每个词都命中 body ILIKE）。status 固定由调用方
+	// 传 approved（MCP 仅消费已审核反馈）。anchorFilter 同 FindAll。created_at DESC。
+	// 复刻 FindAll 的双 query 计数模式（ILIKE WHERE 同步加到 query 和 countQuery）。
+	Search(ctx context.Context, status, query string, anchorFilter AnchorFilter, page, limit int) ([]*CommentWithPost, int64, error)
+	// Stats 按文章聚合评论统计（MCP comment_stats），仅含有反馈的文章。
+	//
+	// 按 post_id GROUP BY，计 annotation_count（anchor_block_id IS NOT NULL）/
+	// comment_count（全部）/ latest_at（MAX(created_at)），JOIN posts 取标题/slug。
+	// HAVING COUNT(*) > 0 排除零反馈文章，annotation_count DESC 排序。
+	Stats(ctx context.Context, status string) ([]PostCommentStat, error)
 	// FindByIDWithPost 按ID查评论并关联所属文章（后台详情）
 	FindByIDWithPost(ctx context.Context, id shared.ID) (*CommentWithPost, error)
 	// BatchUpdateStatus 批量更新评论状态，返回受影响行数
