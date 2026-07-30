@@ -40,7 +40,13 @@ export function DateTimePicker({
     const maxDate = React.useMemo(() => parsePickerValue(max || "", mode), [max, mode]);
 
     const displayText = React.useMemo(() => {
-        if (!date) return placeholder ?? getDefaultPlaceholder(mode);
+        if (!date) {
+            // 值无法解析为日期时（如 "never" 这类哨兵串），若匹配某个 preset，
+            // 显示该 preset 的 label，避免与空值占位符混淆。
+            const matchedPreset = presets?.find((p) => p.value === value);
+            if (matchedPreset) return matchedPreset.label;
+            return placeholder ?? getDefaultPlaceholder(mode);
+        }
         switch (mode) {
             case "date":
                 return format(date, "yyyy-MM-dd");
@@ -49,7 +55,7 @@ export function DateTimePicker({
             default:
                 return format(date, "yyyy-MM-dd HH:mm");
         }
-    }, [date, mode, placeholder]);
+    }, [date, mode, placeholder, presets, value]);
 
     const handleDateSelect = (nextDate: Date) => {
         if (mode === "time") return;

@@ -5,6 +5,7 @@ import {
     getDaysInMonth,
     isSameDay,
     setMonth as setMonthDate,
+    setYear,
     startOfDay,
     startOfMonth,
     startOfToday,
@@ -94,7 +95,9 @@ export function Calendar({
 
     const handleSelectMonth = (monthIndex: number) => {
         if (disabled) return;
-        const next = setMonthDate(month, monthIndex);
+        // 在月份选择视图中选月时，沿用 pickerYear（用户在年份视图已选定的年），
+        // 否则 setMonth 只改月，年份仍是 month 里的旧值，导致选 27/28 年最终落到当前年。
+        const next = setYear(setMonthDate(month, monthIndex), pickerYear);
         updateMonth(next);
         setView("days");
     };
