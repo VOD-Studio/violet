@@ -10,7 +10,8 @@ RUN sed -i 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories
 RUN apk add --no-cache ca-certificates wget ffmpeg git
 
 # 安装 air (Go 热重载工具)
-RUN go install github.com/air-verse/air@latest
+# 锁定与 Go 1.25 兼容的 air 版本，避免 @latest 引用要求 Go >= 1.26 的新版
+RUN go install github.com/air-verse/air@v1.61.7
 
 WORKDIR /app
 
