@@ -162,8 +162,38 @@ jobs:
           echo "${{ steps.ver.outputs.tag }}" > /root/docker/violet/.current-version
           echo "版本锚点已更新为 ${{ steps.ver.outputs.tag }}"
 
-      - name: 创建 GitHub Release
-        if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+      - name: 从 CHANGELOG 抽取本版本段落
+        id: notes
+        run: |
+          VERSION="${{ steps.ver.outputs.tag }}"
+          VERSION="${VERSION#v}"
+          # 匹配 `## [X.Y.Z]` 标题(兼容 ctv 生成的 `## [X.Y.Z](compare-url)` 形式),
+          # 抽到下一个 `## [` 标题为止
+          awk -v ver="$VERSION" '
+            /^## \[/ {
+              if (substr($0, 5, length(ver)) == ver && substr($0, 5 + length(ver), 1) == "]") {
+                found = 1; print; next
+              } else if (found) { exit }
+            }
+            found { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
+          if [ -s "$RUNNER_TEMP/release-notes.md" ]; then
+            echo "source=changelog" >> "$GITHUB_OUTPUT"
+            echo "已从 CHANGELOG.md 抽取 [$VERSION] 段落 ($(wc -l < "$RUNNER_TEMP/release-notes.md") 行)"
+          else
+            echo "source=generated" >> "$GITHUB_OUTPUT"
+            echo "::warning::CHANGELOG.md 未找到 [$VERSION] 段落,回退到自动生成 release notes"
+          fi
+
+      - name: 创建 GitHub Release(CHANGELOG 段落)
+        if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'changelog'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          body_path: ${{ runner.temp }}/release-notes.md
+
+      - name: 创建 GitHub Release(自动生成 notes)
+        if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'generated'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
