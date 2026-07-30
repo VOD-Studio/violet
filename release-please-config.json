@@ -10,7 +10,7 @@
     ".": {
       "changelog-path": "CHANGELOG.md",
       "release-type": "simple",
-      "changelog-types": [
+      "changelog-sections": [
         { "type": "feat", "section": "✨ 新增", "hidden": false },
         { "type": "fix", "section": "🐛 修复", "hidden": false },
         { "type": "perf", "section": "⚡ 性能", "hidden": false },
@@ -19,7 +19,7 @@
         { "type": "style", "section": "🎨 样式", "hidden": false },
         { "type": "revert", "section": "⏪ 回滚", "hidden": false },
         { "type": "chore", "section": "🔧 杂项", "hidden": true },
-        { "type": "ci", "section": "👷 CI", "hidden": true },
+        { "type": "ci", "section": "👷 CI", "hidden": false },
         { "type": "build", "section": "📦 构建", "hidden": true },
         { "type": "test", "section": "✅ 测试", "hidden": true }
       ]

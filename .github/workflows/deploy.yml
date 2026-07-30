@@ -207,6 +207,17 @@ jobs:
           echo "::error::web 健康检查失败,web 未在超时内就绪"
           exit 1
 
+      - name: reload nginx-proxy 刷新容器 IP
+        # 容器重建后 nginx-proxy 的上游 DNS 缓存可能指向旧 IP,导致间歇 502。
+        # 健康检查通过后 reload nginx,让它重新解析 blog-api/blog-web 的当前 IP。
+        if: ${{ success() && steps.deploy.outcome == 'success' || steps.deploy-web.outcome == 'success' }}
+        run: |
+          if podman exec nginx-proxy nginx -t 2>/dev/null; then
+            podman exec nginx-proxy nginx -s reload 2>/dev/null && echo "nginx-proxy 已 reload" || echo "reload 失败(非致命,nginx 会自行刷新缓存)"
+          else
+            echo "nginx-proxy 不可达,跳过 reload"
+          fi
+
       - name: 自动回滚到上一版本
         if: failure() && steps.migrate.outcome == 'success' && steps.prev.outputs.prev_tag != '' && steps.ver.outputs.rollback != 'true'
         working-directory: /root/docker/violet

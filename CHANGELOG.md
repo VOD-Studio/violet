@@ -5,18 +5,41 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本管理遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [2.0.2](https://github.com/VOD-Studio/violet/compare/v2.0.1...v2.0.2) (2026-07-30)
-
-
-### Bug Fixes
-
-* **ci:** release-please 改用 manifest 配置文件(v4 不再支持内联参数) ([e8218cf](https://github.com/VOD-Studio/violet/commit/e8218cf6075d557f870219850f4d0ea41a75b69a))
-* **ci:** release-please 用 PAT 绕过组织 GITHUB_TOKEN 创建 PR 限制 ([2ce1386](https://github.com/VOD-Studio/violet/commit/2ce1386843c7122320651562226c43116837f6f4))
+v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 从 Conventional Commits 自动维护（见 `.github/workflows/release-please.yml`）。
 
 ## [Unreleased]
 
-> 2.0.0 之后未发版的改动。每次 `make release-*` 会从此处上方的 commit 自动生成本段内容。
-> 路线规划见 [`docs/2.0-roadmap.md`](./docs/2.0-roadmap.md)，不在此维护。
+> 未发版的改动。push 发版型 commit（feat/fix 等）到 `release/2.0` 后，release-please 自动开 release PR，合并即发版。
+
+## [2.0.2](https://github.com/VOD-Studio/violet/compare/v2.0.1...v2.0.2) - 2026-07-30
+
+### 🐛 修复
+
+- **ci:** release-please 改用 manifest 配置文件(v4 不再支持内联参数) ([e8218cf](https://github.com/VOD-Studio/violet/commit/e8218cf6075d557f870219850f4d0ea41a75b69a))
+- **ci:** release-please 用 PAT 绕过组织 GITHUB_TOKEN 创建 PR 限制 ([2ce1386](https://github.com/VOD-Studio/violet/commit/2ce1386843c7122320651562226c43116837f6f4))
+
+## [2.0.1] - 2026-07-30
+
+CI/CD 基础设施修复版本。rebrand（mimo-blog → violet）后遗留的部署链路不一致问题集中修复，并正式接入 release-please 自动发版与 self-hosted runner 自动部署。
+
+### 🐛 修复
+
+- **CI 镜像名统一**：deploy.yml 与 docker-compose.ci.yml 的镜像名从 `blog-api` 统一为 `violet-api`，与 docker-compose.prod.yml 对齐（rebrand 时漏改 CI 路径导致手动/CI 部署镜像名不一致）
+- **网络名规范化**：`blog_network` → `violet_network`（mimo-blog 迁移残留），同步 patch-nginx-api.sh 与部署文档
+- **CORS 启动门禁**：docker-compose.prod.yml 新增 `CORS_ALLOWED_ORIGINS` 强制检查（compose `:?` 语法）与 `COOKIE_SECURE=true` 生产安全基线
+
+### ♻️ 重构
+
+- **配置架构收敛**：配置链收敛为 `env > .env > config.yaml > 默认值` 单链，部署目录收敛到根 `.env` 单一来源（api/.env 废弃），config.yaml 入库随镜像分发
+- **环境变量架构**：根 `.env.example` 成为唯一模板，启动时 tabwriter 对齐打印 50 项配置来源
+
+### 👷 CI
+
+- **release-please 自动发版**：push release/2.0 自动开 release PR（含 CHANGELOG 段落），合并即打 tag 触发部署；PAT 绕过组织 GITHUB_TOKEN 创建 PR 限制
+- **deploy.yml 扩展**：支持 api+web 原子部署，新增 web 镜像构建 + sync-client 静态资源同步 + web 健康检查；`component` 输入支持单组件回滚（api/web/both）
+- **self-hosted runner**：接入 GitHub Actions self-hosted runner（标签 `rua`，root 身份），本地 podman-docker 兼容层让 CI 用标准 docker 命令
+- **actions/checkout v4 → v7**：消除 Node 20 弃用警告
+- 废弃本地 `scripts/release.sh` + `make release*` + commit-and-tag-version 依赖，发版统一走 release-please
 
 ## [2.0.0] - 2026-07-07
 
@@ -137,13 +160,3 @@
 - **全 GORM AutoMigrate**: model struct 即 schema，废弃 sqlc 手写 SQL
 - **测试**: 26 domain 单测 + 20 集成测 + 16 application mock 测 + 16 前端单测
 - **影子路由**: DDD 路由通过 `/ddd/` 前缀与旧路由并存运行
-
-#### P3 企业级完善
-- **CI/CD**: GitHub Actions 流水线（后端 Go + 前端 TS 并行检查）
-- **Docker**: 前端多阶段 Dockerfile（Node 构建 → Nginx 托管）+ gzip 压缩 + 静态资源缓存
-- **文档**: P2 迁移状态文档 + CHANGELOG
-
-### 测试
-- 后端: `go test ./internal/...` (62 测试)
-- 前端: `pnpm test` (16 Vitest 测试)
-- 类型检查: `pnpm typecheck` (strict 模式零错误)
