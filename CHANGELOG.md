@@ -41,79 +41,44 @@ CI/CD 基础设施修复版本。rebrand（mimo-blog → violet）后遗留的�
 - **actions/checkout v4 → v7**：消除 Node 20 弃用警告
 - 废弃本地 `scripts/release.sh` + `make release*` + commit-and-tag-version 依赖，发版统一走 release-please
 
-## [2.0.0] - 2026-07-07
+## [2.0.0] - 2026-07-30
 
-2.0 发版线主题：**交互体验升级 + 类型安全路由 + SSR 直出**。
-1283 个 commit 沉淀，相对 1.0 是一次架构与功能的大跃迁。
+violet（原 mimo-blog）仓库迁移到 VOD-Studio 后的首个正式 release，沉淀了从项目脚手架到完整博客平台的全部开发成果（2093 个 commit）。这是一个全栈博客平台的成型版本。
 
-### 重构 — 架构演进
+### ✨ 新增 — 核心平台
 
-- **SSR 认证架构**: 公开页 SSR 直出，鉴权改 `/auth/session` 只读探活；
-  路由中间件从 JWT 切换到 SessionAuth。决策记录见 ADR-0002
-- **DDD 四层扩展**: `audit` / `stats` / `user_management` 模块补齐 DDD 四层，
-  后端领域模型覆盖度从 9 模块扩到 12 模块
-- **路由**: 从 `react-router` v7 迁移到 `@tanstack/react-router`，
-  代码生成的类型安全路由树 + `beforeLoad` 守卫 + 类型化 `<Link to>`
-- **字段统一**: 用户管理 DTO 的 `avatar` 统一为 `avatar_url`，
-  Go 字段 `Avatar` 统一为 `AvatarURL`，前后端契约对齐
-
-### ✨ 新增 — 编辑器与内容
-
-- **文章编辑器**: 基于 Tiptap 的富文本编辑器，含 bubble menu（滚动容器裁剪避免飘出编辑区）、
-  lowlight 按需动态注册代码块语法、封面图 Cover 组件、Markdown 导入导出、素材选择器
-- **文章管理后台**: 文章列表 + 编辑页（骨架屏 + 数据预填）+ 回收站（恢复与彻底删除）
-- **批注与自由评论拆分**: 文章详情页批注与自由评论拆成独立查询，
-  顶层评论改 `useInfiniteQuery` 滚动加载
-
-### ✨ 新增 — 评论系统双轨认证
-
-- **双轨模型**: 底部匿名留言板 + 文内批注登录，评论 domain 加双轨认证与匿名配额契约
-  （黑洞 + 验证码 + 一篇一次）
-- **anchor 维度**: `comments` 表加 anchor 5 列，`FindByPost` 支持 depth 维度过滤，
-  `FindReplies` 改造为按 `parent_id` 分页查询
-- **读模型**: CommentDTO 增 `is_author` / `reply_to_name` / `replies` / `replies_total`，
-  顶层评论带回复预览
-- **安全**: `OptionalAuth` 软认证中间件修复登录评论被误判匿名；
-  评论反应删除接口要求认证防匿名删除他人反应
+- **文章系统**: 基于 Tiptap 的富文本编辑器（bubble menu、代码块高亮、封面图、Markdown 导入导出）、文章 CRUD、回收站、草稿与发布流程
+- **评论双轨制**: 底部匿名留言板 + 文内批注，双轨认证与匿名配额（黑洞 + 验证码）
+- **用户与权限**: 角色 + 权限树管理、超级管理员、OAuth 登录（Google / GitHub）、PAT 个人访问令牌
+- **素材管理**: 媒体库（分片上传、视频封面截取、PDF/音频/图片预览）、素材选择器
 
 ### ✨ 新增 — 后台管理
 
-- **DataTable 全家桶**: 封装通用 DataTable + Pagination，支持行展开、CSV 导出、
-  列宽拖拽、行点击、复选框批量操作；接入 SearchInput 防抖搜索组件 + 通用防抖 hook
-- **服务器监控面板**: 后端 gopsutil 系统指标采集器 + 30s 定时采样 goroutine，
-  前端实时指标卡（`useCountUp` + `MetricCard`）+ 历史采样读取
-- **操作日志**: audit 模块 DDD 四层 + 前端分页列表与详情弹窗，
-  snake_case 序列化 + `user_name` / `resource_name` 补全
-- **权限管理**: 权限树形展示 + 增删改查（内置不可删），
-  新建/编辑对话框全字段 zod + hook-form
-- **站点设置 / 公告 / 标签 / 项目管理**: 全部接入后台 CRUD + 侧边栏导航
+- **管理控制台**: DataTable 全家桶（分页、批量操作、CSV 导出）、服务器监控面板、操作日志（audit）、站点设置、公告、标签、项目管理
+- **侧边栏导航**: 品牌区、菜单分组、激活指示条、收起模式
 
-### ✨ 新增 — 素材与预览
+### ✨ 新增 — 高级功能
 
-- **预览组件套件**: 封装 PDF / 文档 / 压缩包 / 代码 / Markdown 预览组件
-- **音乐播放器**: 音频预览重构为音乐播放器风格，修复 PDF worker 永久加载
-- **头像组**: 博客列表卡片与协同者头像组展示
-- **素材管理**: 表格视图迁移到共享 DataTable，支持复选框批量删除
+- **MCP 集成**: 文章/评论检索 tool、匿名公开只读 server（violet-reader）、客户端接入面板与配置生成
+- **RSS 订阅**: 订阅源管理、定时抓取调度器、Feed 解析与去重
+- **图块与流程图**: Mermaid 流程图渲染、可运行代码块沙箱执行（python/node/go/rust/bun）
+- **SEO 与发现**: sitemap、canonical URL、OpenGraph meta、转载来源标记
 
-### ✨ 新增 — 部署
+### ♻️ 重构 — 架构演进
 
-- **SSR Dockerfile**: 生产环境 SSR 镜像构建（Node 构建 → SSR 启动）
-- **deploy.yml**: GitHub Actions CD 流水线，self-hosted runner 本地构建，
-  迁移门禁 + 健康检查 + 失败自动回滚 + GitHub Release
-- **一键发版**: `make release*` 命令，commit-and-tag-version 自动生成 CHANGELOG
+- **认证架构**: opaque session（Redis 后端）+ CSRF double-submit，公开页 SSR 直出
+- **路由**: 迁移到 `@tanstack/react-router`，类型安全路由树 + `beforeLoad` 守卫
+- **后端 DDD**: 按领域划分四层（domain/application/infrastructure/interfaces），wire 依赖注入
+- **SSR**: TanStack Start + Vite，`server.mjs` 桥接 node:http，nginx 直接服务静态资源
 
-### 🐛 修复
+### 👷 部署
 
-- 修复 `$RefreshSig$ is not defined`（pnpm hoist 导致 React Fast Refresh preamble 注入失败）
-- 修复素材预览多项问题（音视频 / PDF / 图片灯箱）
-- 修复 stats / audit / admin / session 存储吞错，统一映射 DomainError
-
-### 详细数据
-
-- 2.0 开发线总 commit: 1283
-- 分布: feat ≈ 270, fix ≈ 306, refactor ≈ 135, docs ≈ 53, perf ≈ 4
+- 生产 docker-compose（postgres + redis + api + web SSR），nginx-proxy 反代 + Let's Encrypt
+- self-hosted runner 本地构建，podman-docker 兼容层
 
 ## [1.0.1] - 2026-06-16
+
+> 此 tag 在仓库迁移时丢失，内容为迁移前的早期版本。详见迁移前的历史仓库。
 
 ### 修复
 - **web**: 修复 `$RefreshSig$ is not defined` (pnpm hoist 导致 React Fast Refresh
