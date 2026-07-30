@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本管理遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.0.2](https://github.com/VOD-Studio/violet/compare/v2.0.1...v2.0.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* **ci:** release-please 改用 manifest 配置文件(v4 不再支持内联参数) ([e8218cf](https://github.com/VOD-Studio/violet/commit/e8218cf6075d557f870219850f4d0ea41a75b69a))
+* **ci:** release-please 用 PAT 绕过组织 GITHUB_TOKEN 创建 PR 限制 ([2ce1386](https://github.com/VOD-Studio/violet/commit/2ce1386843c7122320651562226c43116837f6f4))
+
 ## [Unreleased]
 
 > 2.0.0 之后未发版的改动。每次 `make release-*` 会从此处上方的 commit 自动生成本段内容。
