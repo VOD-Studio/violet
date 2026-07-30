@@ -11,6 +11,7 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+.pnpm-store/
 
 # 体积分析报告（ANALYZE=true 生成）
 .reports/

@@ -12,6 +12,7 @@ api/vendor/
 node_modules/
 dist/
 *.local
+.pnpm-store/
 
 # IDE
 .vscode/
