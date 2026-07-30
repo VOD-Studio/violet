@@ -662,10 +662,14 @@ func main() {
 	// PAT 鉴权已在 handler 内（auth.RequireBearerToken），此处仅叠加独立限流。
 	// ADR-0007：文章 server（/api/v1/mcp，低风险）与抓取 server（/api/v1/mcp/scraper，
 	// 高风险 SSRF）分离，各自独立限流。
+	// ADR-0008：公开只读 server（/api/v1/mcp/reader，匿名）独立第三端点，
+	// 不套 PAT 鉴权，独立限流维度。
 	r.With(middleware.RateLimit("mcp", redisClient, time.Minute, 60)).
 		Handle("/api/v1/mcp", mcpContainer.PostHandler)
 	r.With(middleware.RateLimit("mcp-scraper", redisClient, time.Minute, 30)).
 		Handle("/api/v1/mcp/scraper", mcpContainer.ScraperHandler)
+	r.With(middleware.RateLimit("mcp-reader", redisClient, time.Minute, 120)).
+		Handle("/api/v1/mcp/reader", mcpContainer.PublicHandler)
 
 	// ============================================================
 	// ============================================================

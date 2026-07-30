@@ -11,9 +11,12 @@ import (
 // sdk ForType 会按 key=value 解析并以非法 key panic（曾致 server 启动崩溃）。
 // 注册路径只取方法值不触发调用，nil 依赖即可覆盖全部 16 个 tool 的 schema 推导。
 func TestNewServers_RegisterAllToolsWithoutPanic(t *testing.T) {
-	post := NewPostServer(NewPostTools(nil), NewSearchTools(nil))
-	require.NotNil(t, post, "文章 server 应构造成功（8 tool 注册无 panic）")
+	post := NewPostServer(NewPostTools(nil), NewSearchTools(nil), NewPromptTools(nil))
+	require.NotNil(t, post, "文章 server 应构造成功（8 tool + 1 prompt 注册无 panic）")
 
 	scraper := NewScraperServer(NewScraperTools(nil, nil, nil))
 	require.NotNil(t, scraper, "抓取 server 应构造成功（8 tool 注册无 panic）")
+
+	reader := NewPublicServer(NewPublicTools(nil), NewPromptTools(nil))
+	require.NotNil(t, reader, "公开只读 server 应构造成功（2 Resource + 1 prompt 注册无 panic）")
 }

@@ -22,8 +22,10 @@ export interface MCPServerSpec {
     endpoint: string;
     /** 能力描述 */
     description: string;
-    /** 该 server 涉及的 scope */
+    /** 该 server 涉及的 scope；匿名 server 为 [] */
     scopes: string[];
+    /** 匿名可读：不进 PAT 对话框、配置不带 Authorization、任何 scope 上下文均可见 */
+    anonymous?: boolean;
 }
 
 export const MCP_SERVERS: MCPServerSpec[] = [
@@ -31,7 +33,7 @@ export const MCP_SERVERS: MCPServerSpec[] = [
         key: "violet",
         label: "文章",
         endpoint: "/api/v1/mcp",
-        description: "5 个文章 CRUD tool",
+        description: "文章读写 + 检索 tool",
         scopes: ["posts:read", "posts:write", "posts:publish"],
     },
     {
@@ -41,12 +43,22 @@ export const MCP_SERVERS: MCPServerSpec[] = [
         description: "scrape_url + 7 个订阅 tool",
         scopes: ["posts:scrape", "subscriptions:read", "subscriptions:write"],
     },
+    {
+        key: "violet-reader",
+        label: "公开阅读",
+        endpoint: "/api/v1/mcp/reader",
+        description: "已发布文章 Resources + 写作风格 Prompts，匿名只读",
+        scopes: [],
+        anonymous: true,
+    },
 ];
 
-/** serversForScopes - 按 PAT scope 推导可见的 MCP server：命中该 server 任一 scope 即包含 */
+/** serversForScopes - 按 PAT scope 推导可见的 MCP server：匿名 server 恒可见，
+ * scope 命中任一即包含。匿名 reader 恒并入是为了让用户主路径（创建 PAT → 复制配置）
+ * 也能看到公开通道，否则 reader 只在初始占位态出现，推广落空。 */
 export function serversForScopes(scopes: readonly string[]): MCPServerSpec[] {
     const set = new Set(scopes);
-    return MCP_SERVERS.filter((s) => s.scopes.some((sc) => set.has(sc)));
+    return MCP_SERVERS.filter((s) => s.anonymous || s.scopes.some((sc) => set.has(sc)));
 }
 
 /** PAT 读模型 */

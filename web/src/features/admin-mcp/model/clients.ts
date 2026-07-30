@@ -56,7 +56,10 @@ export interface MCPClientSpec {
 
 const bearer = (ctx: ConfigContext) => `Bearer ${ctx.token ?? TOKEN_PLACEHOLDER}`;
 const urlOf = (ctx: ConfigContext, s: MCPServerSpec) => `${ctx.origin}${s.endpoint}`;
-const headersOf = (ctx: ConfigContext) => ({ Authorization: bearer(ctx) });
+/** headersOf 匿名 server 返回 undefined（不生成 Authorization）；PAT server 返回 Bearer 头。
+ * 签名下沉到 (ctx, server) 级，让每个 client 按需条件化。 */
+const headersOf = (ctx: ConfigContext, s: MCPServerSpec) =>
+    s.anonymous ? undefined : { Authorization: bearer(ctx) };
 const toJson = (v: unknown) => JSON.stringify(v, null, 2);
 
 /** 合并多个 server 为 { key: entry } 映射 */
@@ -70,12 +73,12 @@ const cursorSnippet = (ctx: ConfigContext): InstallView => ({
     path: "~/.cursor/mcp.json（或项目内 .cursor/mcp.json）",
     lang: "json",
     code: toJson({
-        mcpServers: serverEntries(ctx, (s) => ({ url: urlOf(ctx, s), headers: headersOf(ctx) })),
+        mcpServers: serverEntries(ctx, (s) => ({ url: urlOf(ctx, s), headers: headersOf(ctx, s) })),
     }),
 });
 
 const cursorDeeplink = (ctx: ConfigContext, s: MCPServerSpec) => {
-    const config = btoa(JSON.stringify({ url: urlOf(ctx, s), headers: headersOf(ctx) }));
+    const config = btoa(JSON.stringify({ url: urlOf(ctx, s), headers: headersOf(ctx, s) }));
     return `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(s.key)}&config=${encodeURIComponent(config)}`;
 };
 
@@ -89,10 +92,10 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
             kind: "commands",
             title: "一键安装（逐条在终端执行）",
             note: "默认写入当前项目配置；追加 --scope user 可全局生效。",
-            commands: ctx.servers.map(
-                (s) =>
-                    `claude mcp add --transport http ${s.key} ${urlOf(ctx, s)} --header "Authorization: ${bearer(ctx)}"`,
-            ),
+            commands: ctx.servers.map((s) => {
+                const auth = s.anonymous ? "" : ` --header "Authorization: ${bearer(ctx)}"`;
+                return `claude mcp add --transport http ${s.key} ${urlOf(ctx, s)}${auth}`;
+            }),
         }),
         fallback: (ctx) => ({
             kind: "snippet",
@@ -103,7 +106,7 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
                 mcpServers: serverEntries(ctx, (s) => ({
                     type: "http",
                     url: urlOf(ctx, s),
-                    headers: headersOf(ctx),
+                    headers: headersOf(ctx, s),
                 })),
             }),
         }),
@@ -136,7 +139,7 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
             note: "写入用户级配置；项目级请用手动编辑方式。",
             commands: ctx.servers.map(
                 (s) =>
-                    `code --add-mcp '${JSON.stringify({ name: s.key, type: "http", url: urlOf(ctx, s), headers: headersOf(ctx) })}'`,
+                    `code --add-mcp '${JSON.stringify({ name: s.key, type: "http", url: urlOf(ctx, s), headers: headersOf(ctx, s) })}'`,
             ),
         }),
         fallback: (ctx) => ({
@@ -148,7 +151,7 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
                 servers: serverEntries(ctx, (s) => ({
                     type: "http",
                     url: urlOf(ctx, s),
-                    headers: headersOf(ctx),
+                    headers: headersOf(ctx, s),
                 })),
             }),
         }),
@@ -162,11 +165,14 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
             title: "一键安装（逐条在终端执行）",
             note: "令牌经环境变量传入，不写入配置文件明文。",
             commands: [
-                `export ${ENV_TOKEN_VAR}=${ctx.token ?? TOKEN_PLACEHOLDER}`,
-                ...ctx.servers.map(
-                    (s) =>
-                        `codex mcp add ${s.key} --url ${urlOf(ctx, s)} --bearer-token-env-var ${ENV_TOKEN_VAR}`,
-                ),
+                // export 仅当启用集中含 PAT server 时输出；全匿名无需令牌环境变量
+                ...(ctx.servers.some((s) => !s.anonymous)
+                    ? [`export ${ENV_TOKEN_VAR}=${ctx.token ?? TOKEN_PLACEHOLDER}`]
+                    : []),
+                ...ctx.servers.map((s) => {
+                    const auth = s.anonymous ? "" : ` --bearer-token-env-var ${ENV_TOKEN_VAR}`;
+                    return `codex mcp add ${s.key} --url ${urlOf(ctx, s)}${auth}`;
+                }),
             ],
         }),
         fallback: (ctx) => ({
@@ -175,10 +181,12 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
             path: "~/.codex/config.toml（或项目内 .codex/config.toml）",
             lang: "toml",
             code: ctx.servers
-                .map(
-                    (s) =>
-                        `[mcp_servers.${s.key}]\nurl = "${urlOf(ctx, s)}"\nhttp_headers = { Authorization = "${bearer(ctx)}" }`,
-                )
+                .map((s) => {
+                    const head = `[mcp_servers.${s.key}]\nurl = "${urlOf(ctx, s)}"`;
+                    return s.anonymous
+                        ? head
+                        : `${head}\nhttp_headers = { Authorization = "${bearer(ctx)}" }`;
+                })
                 .join("\n\n"),
         }),
     },
@@ -189,10 +197,10 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
         primary: (ctx) => ({
             kind: "commands",
             title: "一键安装（逐条在终端执行）",
-            commands: ctx.servers.map(
-                (s) =>
-                    `gemini mcp add --transport http ${s.key} ${urlOf(ctx, s)} --header "Authorization: ${bearer(ctx)}"`,
-            ),
+            commands: ctx.servers.map((s) => {
+                const auth = s.anonymous ? "" : ` --header "Authorization: ${bearer(ctx)}"`;
+                return `gemini mcp add --transport http ${s.key} ${urlOf(ctx, s)}${auth}`;
+            }),
         }),
         fallback: (ctx) => ({
             kind: "snippet",
@@ -202,7 +210,7 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
             code: toJson({
                 mcpServers: serverEntries(ctx, (s) => ({
                     httpUrl: urlOf(ctx, s),
-                    headers: headersOf(ctx),
+                    headers: headersOf(ctx, s),
                 })),
             }),
         }),
@@ -221,7 +229,7 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
                     type: "remote",
                     url: urlOf(ctx, s),
                     enabled: true,
-                    headers: headersOf(ctx),
+                    headers: headersOf(ctx, s),
                 })),
             }),
         }),
@@ -239,7 +247,7 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
                 mcpServers: serverEntries(ctx, (s) => ({
                     type: "http",
                     url: urlOf(ctx, s),
-                    headers: headersOf(ctx),
+                    headers: headersOf(ctx, s),
                 })),
             }),
             note: 'type: "http" 必填，省略会被当作 stdio；也可在 TUI 内用 /mcp add 向导添加。',
@@ -257,12 +265,15 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
             code: toJson({
                 mcpServers: serverEntries(ctx, (s) => ({
                     command: "npx",
-                    args: [
-                        "mcp-remote",
-                        urlOf(ctx, s),
-                        "--header",
-                        `Authorization: ${bearer(ctx)}`,
-                    ],
+                    // 匿名 server 去掉 --header 与 Authorization 值两项
+                    args: s.anonymous
+                        ? ["mcp-remote", urlOf(ctx, s)]
+                        : [
+                              "mcp-remote",
+                              urlOf(ctx, s),
+                              "--header",
+                              `Authorization: ${bearer(ctx)}`,
+                          ],
                 })),
             }),
             note: "经 mcp-remote 桥接远程 server；保存后完全退出并重启 Claude Desktop。",
@@ -281,7 +292,7 @@ export const MCP_CLIENTS: MCPClientSpec[] = [
                 mcpServers: serverEntries(ctx, (s) => ({
                     type: "http",
                     url: urlOf(ctx, s),
-                    headers: headersOf(ctx),
+                    headers: headersOf(ctx, s),
                 })),
             }),
             note: "适用于支持 Streamable HTTP 的其他客户端（Windsurf、Zed 等），按其文档调整键名。",

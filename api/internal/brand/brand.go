@@ -27,4 +27,6 @@ const (
 	MCPServerName = "violet"
 	// MCPScraperServerName 抓取 MCP server 标识。
 	MCPScraperServerName = "violet-scraper"
+	// MCPReaderServerName 公开只读 MCP server 标识（匿名，仅已发布文章）。
+	MCPReaderServerName = "violet-reader"
 )
