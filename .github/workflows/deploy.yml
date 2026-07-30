@@ -136,6 +136,9 @@ jobs:
 
       - name: 数据库迁移门禁
         # 只部署 web 时跳过(api 没变,无需迁移)
+        # 破坏性迁移(drop column/rename/alter type)须遵循 expand-contract:
+        # 先发兼容代码(忽略待删列/双写新列),下个发版再执行破坏性迁移。
+        # 这样镜像回滚时旧代码面对新 schema 仍兼容——回滚只换镜像不回退 schema。
         if: ${{ inputs.component != 'web' }}
         id: migrate
         working-directory: /root/docker/violet
@@ -246,7 +249,8 @@ jobs:
             fi
             sleep 6
           done
-          echo "::error::回滚后健康检查仍失败，需人工介入"
+          echo "::error::回滚后健康检查仍失败:本次部署已把数据库 schema 迁移到 ${{ steps.ver.outputs.tag }},回滚的 ${PREV} 旧镜像可能因 schema 不兼容而异常"
+          echo "::error::建议优先向前修复(部署兼容新 schema 的修复版本);migrate down 回退 schema 有数据丢失风险"
           exit 1
 
       - name: 更新版本锚点
