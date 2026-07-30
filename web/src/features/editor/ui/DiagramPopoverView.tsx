@@ -20,6 +20,7 @@
  *
  * 由 createDiagramBlockExtension（DiagramBlockView）以 .extend({ addNodeView }) 挂载。
  */
+import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
@@ -58,7 +59,13 @@ export function DiagramPopoverView({ node, selected, editor, getPos }: NodeViewP
     // 下降沿 rAF 延迟一帧确认 PM selection 确实不再选中此节点，跳过假 deselectNode。
     useEffect(() => {
         if (selected) {
-            setPopoverOpen(true);
+            // 只对锚在本节点的 NodeSelection 开窗（同 MathPopoverView）：
+            // selected 用区间覆盖判断，Ctrl+A 全选 / 拖选经过时所有图块
+            // selected 同为 true，若据此开窗会 N 个弹窗齐开卡死页面。
+            const sel = editor.state.selection;
+            if (typeof pos === "number" && sel instanceof NodeSelection && sel.from === pos) {
+                setPopoverOpen(true);
+            }
             return;
         }
         const id = requestAnimationFrame(() => {

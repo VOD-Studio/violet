@@ -68,6 +68,9 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
                     const mount = (props: SuggestionProps<SlashMenuItem>) => {
                         const host = document.createElement("div");
                         host.className = "slash-menu-host";
+                        // managed mount 把 host 挂到 document.body 且不设 z-index；
+                        // Zen 专注根容器是 fixed inset-0 z-40，不设层级菜单会被整体遮挡
+                        host.style.zIndex = "50";
                         const root = createRoot(host);
                         root.render(<SlashMenuView {...props} />);
                         const unmount = props.mount?.(host) ?? undefined;

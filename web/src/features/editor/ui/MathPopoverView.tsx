@@ -16,6 +16,7 @@
  *
  * 由 MathView 以 displayMode 适配出行内/块级两个 NodeView。
  */
+import { NodeSelection } from "@tiptap/pm/state";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewWrapper } from "@tiptap/react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -59,7 +60,13 @@ export function MathPopoverView({
 
     useEffect(() => {
         if (selected) {
-            setPopoverOpen(true);
+            // 只对锚在本节点的 NodeSelection 开窗。TipTap 的 selected 用区间覆盖
+            // 判断（from <= pos && to >= pos + nodeSize），Ctrl+A 全选 / 拖选经过
+            // 时所有公式 selected 同为 true，若据此开窗会 N 个弹窗齐开卡死页面。
+            const sel = editor.state.selection;
+            if (typeof pos === "number" && sel instanceof NodeSelection && sel.from === pos) {
+                setPopoverOpen(true);
+            }
             return;
         }
         const id = requestAnimationFrame(() => {

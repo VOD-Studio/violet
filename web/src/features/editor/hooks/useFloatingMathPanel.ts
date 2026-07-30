@@ -64,13 +64,20 @@ export function useFloatingMathPanel(
                 shift({ padding: 8, boundary: scroller }),
             ],
         }).then(({ x, y }) => {
-            setPosition({ top: y, left: x });
+            // 相等守卫：坐标未变时复用旧对象，避免新对象 identity 触发重渲染，
+            // 打断「渲染 → 重定位 → setState → 渲染」失控循环
+            setPosition((prev) =>
+                prev && prev.top === y && prev.left === x ? prev : { top: y, left: x },
+            );
         });
     };
 
+    // 仅在 open/editor 变化时重定位：滚动与 resize 由下方 effect 的 trigger 处理；
+    // 无依赖数组会让 setPosition 引发的重渲染再次触发 update，形成失控循环
+    // biome-ignore lint/correctness/useExhaustiveDependencies: update 闭包捕获 ref，依赖 [open,editor] 足够触发重绑
     useLayoutEffect(() => {
         update();
-    });
+    }, [open, editor]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: update 闭包捕获 ref，依赖 [open,editor] 足够触发重绑
     useEffect(() => {
