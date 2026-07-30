@@ -1,0 +1,120 @@
+# Docker Compose 配置 (本地 Docker 开发环境: PostgreSQL + Redis + API + Web)
+#
+# 用法:
+#   docker compose -f docker-compose.dev.yml up -d (或 make dev-docker)
+#
+# 停止:
+#   docker compose -f docker-compose.dev.yml down (或 make dev-docker-down)
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: blog-postgres-dev
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${DATABASE_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-blog}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-changeme-strong-password}
+      POSTGRES_DB: ${DATABASE_NAME:-blog}
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-blog} -d ${DATABASE_NAME:-blog}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: blog-redis-dev
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: >
+      sh -c "if [ -n \"$${REDIS_PASSWORD}\" ]; then
+        redis-server --requirepass \"$${REDIS_PASSWORD}\";
+      else
+        redis-server;
+      fi"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: >
+        sh -c "if [ -n \"$${REDIS_PASSWORD}\" ]; then
+          redis-cli -a \"$${REDIS_PASSWORD}\" ping;
+        else
+          redis-cli ping;
+        fi"
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # Go API 服务 (Air 热重载)
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    container_name: blog-api-dev
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    environment:
+      ENVIRONMENT: development
+      DATABASE_HOST: ${DEV_DATABASE_HOST:-postgres}
+      DATABASE_PORT: ${DATABASE_PORT:-5432}
+      DATABASE_NAME: ${DATABASE_NAME:-blog}
+      DATABASE_USER: ${DATABASE_USER:-blog}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-changeme-strong-password}
+      DATABASE_SSLMODE: disable
+      REDIS_HOST: ${DEV_REDIS_HOST:-redis}
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      PORT: 9090
+    volumes:
+      - ./api:/app
+      - go_pkg_mod:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:9090/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # React Web 前端 (Vite HMR 热更新)
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.dev
+    container_name: blog-web-dev
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_PROXY_TARGET: ${DEV_API_TARGET:-http://api:9090}
+      VITE_SSR_API_BASE_URL: ${DEV_SSR_API_BASE_URL:-http://api:9090/api/v1}
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  go_pkg_mod:
