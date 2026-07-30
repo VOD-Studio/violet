@@ -5,7 +5,10 @@ name: Release Please
 # 维护者 review 后合并 → 自动打 tag → 触发 deploy.yml(部署 api+web 到 rua 生产环境)。
 #
 # 发版型 commit(feat/fix/perf/refactor 等)才会触发新版本;
-# 纯 docs/chore/ci/build/test 改动不触发发版(changelog-types 里 hidden)。
+# 纯 docs/chore/ci/build/test 改动不触发发版(changelog-types 配置为 hidden)。
+#
+# v4 自定义配置(tag-prefix / changelog-types 等)通过 manifest 配置文件传入,
+# 见 release-please-config.json。
 
 on:
   push:
@@ -21,29 +24,6 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v4
         with:
-          release-type: simple
-          # violet 是单一版本 monorepo(根 package.json 是版本真相源),不分组件发版
-          # tagPrefix v 匹配 deploy.yml 的 v* 触发规则
-          tag-prefix: v
-          # release PR 标题与历史 ctv 提交格式一致(chore(release): vX.Y.Z)
-          pull-request-title-pattern: 'chore(release): ${version}'
-          # CHANGELOG 中文分组,沿用 .versionrc.cjs 的分类习惯
-          # hidden:true 的类型不进入 CHANGELOG,也不触发新版本
-          changelog-types: |
-            [
-              {"type":"feat","section":"✨ 新增","hidden":false},
-              {"type":"fix","section":"🐛 修复","hidden":false},
-              {"type":"perf","section":"⚡ 性能","hidden":false},
-              {"type":"refactor","section":"♻️ 重构","hidden":false},
-              {"type":"docs","section":"📝 文档","hidden":false},
-              {"type":"style","section":"🎨 样式","hidden":false},
-              {"type":"revert","section":"⏪ 回滚","hidden":false},
-              {"type":"chore","section":"🔧 杂项","hidden":true},
-              {"type":"ci","section":"👷 CI","hidden":true},
-              {"type":"build","section":"📦 构建","hidden":true},
-              {"type":"test","section":"✅ 测试","hidden":true}
-            ]
-          # 仓库已存在 CHANGELOG.md(v2.0.1 段),release-please 从最近 tag 开始
-          # 扫描新 commit,在 [Unreleased] 下插入新段落,不覆盖已有内容
-          # bootstrap-changelog:false 明确表示不重写已有 CHANGELOG
-          bootstrap-changelog: false
+          # v4 自定义配置走 manifest 文件(workflow 只传文件路径)
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
