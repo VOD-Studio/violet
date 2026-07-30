@@ -1,11 +1,12 @@
 # CD 发布流水线
 #
 # 触发:
-#   - 打 v* tag: 自动发版到 rua 生产环境
-#   - workflow_dispatch: 手动触发，可选 version 回滚到历史 tag
+#   - 打 v* tag: 自动发版到 rua 生产环境(release-please 合并 release PR 时触发)
+#   - workflow_dispatch: 手动触发,可选 version 回滚到历史 tag,可选 component 单组件部署
 #
-# 运行在 rua 的 self-hosted runner 上，本地构建并部署，不穿越 GFW、无需镜像仓库。
-# 流程: 构建 → 迁移门禁 → 部署 api → 健康检查 → 失败自动回滚 → 创建 Release
+# 运行在 rua 的 self-hosted runner 上,本地构建并部署,不穿越 GFW、无需镜像仓库。
+# 流程: 构建 → 迁移门禁 → 部署 api → 健康检查 → 部署 web → sync-client → 创建 Release
+# 单组件回滚: workflow_dispatch 选 component=api/web,只重建对应容器,复用缓存镜像
 
 name: Deploy
 
@@ -24,6 +25,15 @@ on:
         required: false
         type: boolean
         default: false
+      component:
+        description: '部署/回滚目标组件: both(默认,api+web) / api / web'
+        required: false
+        type: choice
+        options:
+          - both
+          - api
+          - web
+        default: both
 
 # 生产部署串行，绝不并发、绝不取消进行中的部署
 concurrency:
@@ -72,8 +82,8 @@ jobs:
         with:
           ref: ${{ steps.ver.outputs.tag }}
 
-      - name: 构建镜像
-        if: ${{ inputs.skip_build != 'true' }}
+      - name: 构建 api 镜像
+        if: ${{ inputs.skip_build != 'true' && inputs.component != 'web' }}
         run: |
           docker build \
             -t violet-api:${{ steps.ver.outputs.tag }} \
@@ -81,12 +91,34 @@ jobs:
             -f api/Dockerfile api/
           echo "已构建 violet-api:${{ steps.ver.outputs.tag }} 与 violet-api:latest"
 
-      - name: 回滚模式复用缓存镜像
-        if: ${{ inputs.skip_build == 'true' }}
+      - name: 构建 web 镜像
+        if: ${{ inputs.skip_build != 'true' && inputs.component != 'api' }}
+        run: |
+          # build args 从线上 .env 读取(OAuth client id 等),保持与现网配置一致
+          set -a; . /root/docker/violet/.env; set +a
+          docker build \
+            -t violet-web:${{ steps.ver.outputs.tag }} \
+            -t violet-web:latest \
+            --build-arg "VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api/v1}" \
+            --build-arg "VITE_SITE_URL=${VITE_SITE_URL:-https://xunrua.top}" \
+            --build-arg "VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
+            --build-arg "VITE_GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}" \
+            -f web/Dockerfile web/
+          echo "已构建 violet-web:${{ steps.ver.outputs.tag }} 与 violet-web:latest"
+
+      - name: 回滚模式复用缓存 api 镜像
+        if: ${{ inputs.skip_build == 'true' && inputs.component != 'web' }}
         run: |
           docker image inspect violet-api:${{ steps.ver.outputs.tag }} >/dev/null 2>&1 || { echo "::error::rua 本地无 violet-api:${{ steps.ver.outputs.tag }} 镜像，回滚中止"; exit 1; }
           docker tag violet-api:${{ steps.ver.outputs.tag }} violet-api:latest
           echo "已将 violet-api:${{ steps.ver.outputs.tag }} 复用为 latest"
+
+      - name: 回滚模式复用缓存 web 镜像
+        if: ${{ inputs.skip_build == 'true' && inputs.component != 'api' }}
+        run: |
+          docker image inspect violet-web:${{ steps.ver.outputs.tag }} >/dev/null 2>&1 || { echo "::error::rua 本地无 violet-web:${{ steps.ver.outputs.tag }} 镜像，回滚中止"; exit 1; }
+          docker tag violet-web:${{ steps.ver.outputs.tag }} violet-web:latest
+          echo "已将 violet-web:${{ steps.ver.outputs.tag }} 复用为 latest"
 
       - name: 同步 compose 文件到部署目录
         run: |
@@ -103,6 +135,8 @@ jobs:
           fi
 
       - name: 数据库迁移门禁
+        # 只部署 web 时跳过(api 没变,无需迁移)
+        if: ${{ inputs.component != 'web' }}
         id: migrate
         working-directory: /root/docker/violet
         run: |
@@ -112,6 +146,7 @@ jobs:
             run --rm --no-deps --entrypoint /migrate api up
 
       - name: 部署 api 服务
+        if: ${{ inputs.component != 'web' }}
         id: deploy
         working-directory: /root/docker/violet
         run: |
@@ -120,19 +155,56 @@ jobs:
             -f docker-compose.ci.yml \
             up -d --no-build --no-deps api
 
-      - name: 健康检查
+      - name: api 健康检查
+        if: ${{ inputs.component != 'web' }}
         id: health
         working-directory: /root/docker/violet
         run: |
           for i in $(seq 1 15); do
             if docker compose exec -T api wget -qO- http://localhost:9090/api/health 2>/dev/null | grep -q '"status":"ok"'; then
-              echo "健康检查通过，第 ${i} 次尝试"
+              echo "api 健康检查通过，第 ${i} 次尝试"
               exit 0
             fi
             echo "等待 api 就绪 (${i}/15)..."
             sleep 6
           done
-          echo "::error::健康检查失败，api 未在超时内就绪"
+          echo "::error::api 健康检查失败，api 未在超时内就绪"
+          exit 1
+
+      - name: 部署 web 服务
+        if: ${{ inputs.component != 'api' }}
+        id: deploy-web
+        working-directory: /root/docker/violet
+        run: |
+          docker compose \
+            -f docker-compose.prod.yml \
+            -f docker-compose.ci.yml \
+            up -d --no-build --no-deps web
+
+      - name: 同步 web 静态资源
+        # web 重建后必须同步 dist/client 到 nginx-proxy 共享目录,否则 hash 不匹配白屏
+        if: ${{ inputs.component != 'api' }}
+        working-directory: /root/docker/violet
+        run: |
+          SHARED_DIR=/root/docker/nginx-proxy/blog-client
+          rm -rf "$SHARED_DIR"/* && mkdir -p "$SHARED_DIR"
+          docker cp blog-web:/app/dist/client/. "$SHARED_DIR"/
+          echo "静态资源已同步到 $SHARED_DIR ($(ls "$SHARED_DIR" | wc -l) 个条目)"
+
+      - name: web 健康检查
+        if: ${{ inputs.component != 'api' }}
+        id: health-web
+        working-directory: /root/docker/violet
+        run: |
+          for i in $(seq 1 15); do
+            if docker compose exec -T web wget -qO- http://127.0.0.1:3000/ 2>/dev/null | grep -q '<title>'; then
+              echo "web 健康检查通过，第 ${i} 次尝试"
+              exit 0
+            fi
+            echo "等待 web 就绪 (${i}/15)..."
+            sleep 6
+          done
+          echo "::error::web 健康检查失败,web 未在超时内就绪"
           exit 1
 
       - name: 自动回滚到上一版本
@@ -141,11 +213,21 @@ jobs:
         run: |
           PREV="${{ steps.prev.outputs.prev_tag }}"
           echo "部署失败，自动回滚到 ${PREV}"
-          docker tag "violet-api:${PREV}" violet-api:latest
-          docker compose \
-            -f docker-compose.prod.yml \
-            -f docker-compose.ci.yml \
-            up -d --no-build --no-deps api
+          # api 回滚(若本次部署了 api)
+          if [ "${{ inputs.component }}" != "web" ] && docker image inspect violet-api:"${PREV}" >/dev/null 2>&1; then
+            docker tag "violet-api:${PREV}" violet-api:latest
+            docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --no-build --no-deps api
+            echo "已回滚 api 到 ${PREV}"
+          fi
+          # web 回滚(若本次部署了 web)
+          if [ "${{ inputs.component }}" != "api" ] && docker image inspect violet-web:"${PREV}" >/dev/null 2>&1; then
+            docker tag "violet-web:${PREV}" violet-web:latest
+            docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --no-build --no-deps web
+            SHARED_DIR=/root/docker/nginx-proxy/blog-client
+            rm -rf "$SHARED_DIR"/* && mkdir -p "$SHARED_DIR"
+            docker cp blog-web:/app/dist/client/. "$SHARED_DIR"/
+            echo "已回滚 web 到 ${PREV}"
+          fi
           for i in $(seq 1 10); do
             if docker compose exec -T api wget -qO- http://localhost:9090/api/health 2>/dev/null | grep -q '"status":"ok"'; then
               echo "回滚成功，线上已恢复到 ${PREV}"

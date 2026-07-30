@@ -238,17 +238,26 @@ rollback: ## 回滚到历史版本，用法: make rollback v=v2.0.0
 
 # ==================== 发版 (tag → 触发部署) ====================
 
-release: ## 发版，显式指定版本: make release v=v2.0.1
+# ==================== 发版(已迁移到 release-please 自动化) ====================
+# 现在发版流程:push 发版型 commit(feat/fix 等)到 release/2.0 → release-please 自动开 release PR →
+# 在 GitHub 合并 release PR 即自动打 tag + 触发 deploy.yml 部署。
+# 下面的 make release* target 保留作应急(如 release-please 故障),日常不用。
+
+release: ## [已废弃,用 release-please] 应急发版,显式指定版本: make release v=v2.0.1
 	@if [ -z "$(v)" ]; then echo "用法: make release v=v2.0.1 或 make release-patch/minor/major"; exit 1; fi
+	@echo "⚠️  日常发版请用 release-please(合并 release PR),本 target 仅作应急"; sleep 2
 	@./scripts/release.sh --version "$(v)"
 
-release-patch: ## 发补丁版，从最近 tag 自动 +1: make release-patch
+release-patch: ## [已废弃,用 release-please] 应急发补丁版: make release-patch
+	@echo "⚠️  日常发版请用 release-please(合并 release PR),本 target 仅作应急"; sleep 2
 	@./scripts/release.sh --bump patch
 
-release-minor: ## 发次版本，从最近 tag 自动 +1: make release-minor
+release-minor: ## [已废弃,用 release-please] 应急发次版本: make release-minor
+	@echo "⚠️  日常发版请用 release-please(合并 release PR),本 target 仅作应急"; sleep 2
 	@./scripts/release.sh --bump minor
 
-release-major: ## 发主版本，从最近 tag 自动 +1: make release-major
+release-major: ## [已废弃,用 release-please] 应急发主版本: make release-major
+	@echo "⚠️  日常发版请用 release-please(合并 release PR),本 target 仅作应急"; sleep 2
 	@./scripts/release.sh --bump major
 
 # ==================== 工具 ====================

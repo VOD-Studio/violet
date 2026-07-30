@@ -1,6 +1,8 @@
 # xunrua.top 手动部署指南
 
-记录手动部署 2.0（API + SSR Web）到 `xunrua.top` 的完整流程。该流程独立于 CI（`release-runbook.md` 描述的 rua + GitHub Actions 路径），适用于 runner 不可用或需要紧急手动发布的场景。
+> ⚠️ **日常部署请用 CI**:`release-runbook.md` 描述的 release-please + deploy.yml 已支持 api+web 自动部署。本手册仅作 runner 不可用或紧急手动发布的应急兜底。
+
+记录手动部署 2.0（API + SSR Web）到 `xunrua.top` 的完整流程。该流程独立于 CI（`release-runbook.md` 描述的 release-please + GitHub Actions 路径），适用于 runner 不可用或需要紧急手动发布的场景。
 
 ## 服务器环境
 

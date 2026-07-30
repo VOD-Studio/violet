@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# ⚠️ 已废弃:发版流程已迁移到 release-please(GitHub Actions 自动化)。
+# 现在发版方式:push 发版型 commit(feat/fix 等)到 release/2.0 → release-please 自动开 release PR →
+# 合并 release PR 即自动打 tag + 触发 deploy.yml 部署。
+#
+# 本脚本保留仅作应急回退(如 release-please 故障时的手动发版),日常请勿使用。
+#
 # release.sh
 # 一键发版:校验 → 生成 CHANGELOG → 打 tag → 确认 → push(触发 deploy.yml)
 #
