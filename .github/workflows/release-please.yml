@@ -7,8 +7,8 @@ name: Release Please
 # 发版型 commit(feat/fix/perf/refactor 等)才会触发新版本;
 # 纯 docs/chore/ci/build/test 改动不触发发版(changelog-types 配置为 hidden)。
 #
-# v4 自定义配置(tag-prefix / changelog-types 等)通过 manifest 配置文件传入,
-# 见 release-please-config.json。
+# 用 PAT 而非 GITHUB_TOKEN:组织策略禁止 GITHUB_TOKEN 创建 PR,PAT 绕过该限制。
+# v4 自定义配置(tag-prefix / changelog-types 等)通过 manifest 配置文件传入。
 
 on:
   push:
@@ -24,6 +24,8 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v4
         with:
-          # v4 自定义配置走 manifest 文件(workflow 只传文件路径)
+          # PAT 绕过组织对 GITHUB_TOKEN 创建 PR 的限制
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          # v4 自定义配置走 manifest 文件
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
