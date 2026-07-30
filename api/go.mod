@@ -1,6 +1,6 @@
 module blog-api
 
-go 1.25.8
+go 1.26.5
 
 require (
 	codeberg.org/readeck/go-readability/v2 v2.1.1
