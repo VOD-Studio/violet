@@ -71,8 +71,9 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		SocialEmail     *string `json:"social_email"`
 		SocialRss       *string `json:"social_rss"`
 		SocialBilibili  *string `json:"social_bilibili"`
-		ReleasesRepo    *string `json:"releases_repo"`
-		LLMAPIKey       *string `json:"llm_api_key"`
+		ReleasesRepo      *string `json:"releases_repo"`
+		ProjectMilestones *string `json:"project_milestones"`
+		LLMAPIKey         *string `json:"llm_api_key"`
 		LLMAPIURL          *string `json:"llm_api_url"`
 		LLMModel           *string `json:"llm_model"`
 		LLMProtocol        *string `json:"llm_protocol"`
@@ -105,6 +106,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		SocialTwitter: req.SocialTwitter, SocialMastodon: req.SocialMastodon,
 		SocialEmail: req.SocialEmail, SocialRss: req.SocialRss, SocialBilibili: req.SocialBilibili,
 		ReleasesRepo: req.ReleasesRepo,
+		ProjectMilestones: req.ProjectMilestones,
 		LLMAPIKey: req.LLMAPIKey, LLMAPIURL: req.LLMAPIURL,
 		LLMModel: req.LLMModel, LLMProtocol: req.LLMProtocol,
 		CodeRunnerEnabled:        req.CodeRunnerEnabled,

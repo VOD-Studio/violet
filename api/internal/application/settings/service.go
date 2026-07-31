@@ -63,6 +63,7 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		"social_email":         settings.SocialEmail,
 		"social_rss":           settings.SocialRss,
 		"social_bilibili":      settings.SocialBilibili,
+		"project_milestones":   settings.ProjectMilestones,
 		"code_runner_enabled":  settings.CodeRunnerEnabled,
 	}, nil
 }
@@ -134,6 +135,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 		"social_rss":      in.SocialRss,
 		"social_bilibili": in.SocialBilibili,
 		"releases_repo":  in.ReleasesRepo,
+		"project_milestones": in.ProjectMilestones,
 	} {
 		if p != nil {
 			updates[k] = *p

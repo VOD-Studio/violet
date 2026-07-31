@@ -46,6 +46,8 @@ type SiteSettings struct {
 	SocialBilibili   string `json:"social_bilibili"`
 	// ReleasesRepo 更新日志区块读取的 GitHub 仓库名（owner/repo 或 repo，配合 github_username）
 	ReleasesRepo string `json:"releases_repo"`
+	// ProjectMilestones 项目时间轴的手工里程碑（聚合 JSON 字符串，{milestones:[{date,title,description,link}]}）
+	ProjectMilestones string `json:"project_milestones"`
 	// LLM 配置（OpenAI 协议兼容端点，覆盖 OpenAI/DeepSeek/Moonshot/通义/智谱/Ollama/vLLM）
 	LLMAPIKey   string `json:"llm_api_key"`
 	LLMAPIURL   string `json:"llm_api_url"`
@@ -93,8 +95,9 @@ type UpdateInput struct {
 	SocialEmail     *string
 	SocialRss       *string
 	SocialBilibili  *string
-	ReleasesRepo    *string
-	LLMAPIKey       *string
+	ReleasesRepo      *string
+	ProjectMilestones *string
+	LLMAPIKey         *string
 	LLMAPIURL          *string
 	LLMModel           *string
 	LLMProtocol        *string
@@ -158,6 +161,7 @@ func fromMap(m map[string]string) SiteSettings {
 	s.SocialRss = m["social_rss"]
 	s.SocialBilibili = m["social_bilibili"]
 	s.ReleasesRepo = m["releases_repo"]
+	s.ProjectMilestones = m["project_milestones"]
 	s.LLMAPIKey = m["llm_api_key"]
 	s.LLMAPIURL = m["llm_api_url"]
 	s.LLMModel = m["llm_model"]
