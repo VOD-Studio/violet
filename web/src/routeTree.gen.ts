@@ -41,6 +41,12 @@ import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
+import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
+import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
+import { Route as AdminSettingsGithubRouteImport } from './routes/admin.settings.github'
+import { Route as AdminSettingsGeneralRouteImport } from './routes/admin.settings.general'
+import { Route as AdminSettingsCodeRunnerRouteImport } from './routes/admin.settings.code-runner'
+import { Route as AdminSettingsAuthRouteImport } from './routes/admin.settings.auth'
 import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
 import { Route as AdminPostsIdRouteImport } from './routes/admin.posts.$id'
 
@@ -204,6 +210,36 @@ const AuthGithubCallbackRoute = AuthGithubCallbackRouteImport.update({
   path: '/auth/github/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSettingsProfileRoute = AdminSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
+const AdminSettingsLlmRoute = AdminSettingsLlmRouteImport.update({
+  id: '/llm',
+  path: '/llm',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
+const AdminSettingsGithubRoute = AdminSettingsGithubRouteImport.update({
+  id: '/github',
+  path: '/github',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
+const AdminSettingsGeneralRoute = AdminSettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
+const AdminSettingsCodeRunnerRoute = AdminSettingsCodeRunnerRouteImport.update({
+  id: '/code-runner',
+  path: '/code-runner',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
+const AdminSettingsAuthRoute = AdminSettingsAuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
 const AdminPostsNewRoute = AdminPostsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -233,7 +269,7 @@ export interface FileRoutesByFullPath {
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
-  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/settings': typeof AdminSettingsRouteWithChildren
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/system': typeof AdminSystemRoute
   '/admin/tags': typeof AdminTagsRoute
@@ -248,6 +284,12 @@ export interface FileRoutesByFullPath {
   '/projects/': typeof ProjectsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/settings/auth': typeof AdminSettingsAuthRoute
+  '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
+  '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/github': typeof AdminSettingsGithubRoute
+  '/admin/settings/llm': typeof AdminSettingsLlmRoute
+  '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
 }
@@ -267,7 +309,7 @@ export interface FileRoutesByTo {
   '/admin/permissions': typeof AdminPermissionsRoute
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
-  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/settings': typeof AdminSettingsRouteWithChildren
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/system': typeof AdminSystemRoute
   '/admin/tags': typeof AdminTagsRoute
@@ -282,6 +324,12 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/settings/auth': typeof AdminSettingsAuthRoute
+  '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
+  '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/github': typeof AdminSettingsGithubRoute
+  '/admin/settings/llm': typeof AdminSettingsLlmRoute
+  '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/admin/posts': typeof AdminPostsIndexRoute
 }
@@ -304,7 +352,7 @@ export interface FileRoutesById {
   '/admin/posts': typeof AdminPostsRouteWithChildren
   '/admin/projects': typeof AdminProjectsRoute
   '/admin/roles': typeof AdminRolesRoute
-  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/settings': typeof AdminSettingsRouteWithChildren
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/system': typeof AdminSystemRoute
   '/admin/tags': typeof AdminTagsRoute
@@ -319,6 +367,12 @@ export interface FileRoutesById {
   '/projects/': typeof ProjectsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/settings/auth': typeof AdminSettingsAuthRoute
+  '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
+  '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/github': typeof AdminSettingsGithubRoute
+  '/admin/settings/llm': typeof AdminSettingsLlmRoute
+  '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
 }
@@ -357,6 +411,12 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
+    | '/admin/settings/auth'
+    | '/admin/settings/code-runner'
+    | '/admin/settings/general'
+    | '/admin/settings/github'
+    | '/admin/settings/llm'
+    | '/admin/settings/profile'
     | '/auth/github/callback'
     | '/admin/posts/'
   fileRoutesByTo: FileRoutesByTo
@@ -391,6 +451,12 @@ export interface FileRouteTypes {
     | '/projects'
     | '/admin/posts/$id'
     | '/admin/posts/new'
+    | '/admin/settings/auth'
+    | '/admin/settings/code-runner'
+    | '/admin/settings/general'
+    | '/admin/settings/github'
+    | '/admin/settings/llm'
+    | '/admin/settings/profile'
     | '/auth/github/callback'
     | '/admin/posts'
   id:
@@ -427,6 +493,12 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
+    | '/admin/settings/auth'
+    | '/admin/settings/code-runner'
+    | '/admin/settings/general'
+    | '/admin/settings/github'
+    | '/admin/settings/llm'
+    | '/admin/settings/profile'
     | '/auth/github/callback'
     | '/admin/posts/'
   fileRoutesById: FileRoutesById
@@ -675,6 +747,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGithubCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/settings/profile': {
+      id: '/admin/settings/profile'
+      path: '/profile'
+      fullPath: '/admin/settings/profile'
+      preLoaderRoute: typeof AdminSettingsProfileRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
+    '/admin/settings/llm': {
+      id: '/admin/settings/llm'
+      path: '/llm'
+      fullPath: '/admin/settings/llm'
+      preLoaderRoute: typeof AdminSettingsLlmRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
+    '/admin/settings/github': {
+      id: '/admin/settings/github'
+      path: '/github'
+      fullPath: '/admin/settings/github'
+      preLoaderRoute: typeof AdminSettingsGithubRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
+    '/admin/settings/general': {
+      id: '/admin/settings/general'
+      path: '/general'
+      fullPath: '/admin/settings/general'
+      preLoaderRoute: typeof AdminSettingsGeneralRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
+    '/admin/settings/code-runner': {
+      id: '/admin/settings/code-runner'
+      path: '/code-runner'
+      fullPath: '/admin/settings/code-runner'
+      preLoaderRoute: typeof AdminSettingsCodeRunnerRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
+    '/admin/settings/auth': {
+      id: '/admin/settings/auth'
+      path: '/auth'
+      fullPath: '/admin/settings/auth'
+      preLoaderRoute: typeof AdminSettingsAuthRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
     '/admin/posts/new': {
       id: '/admin/posts/new'
       path: '/new'
@@ -708,6 +822,28 @@ const AdminPostsRouteWithChildren = AdminPostsRoute._addFileChildren(
   AdminPostsRouteChildren,
 )
 
+interface AdminSettingsRouteChildren {
+  AdminSettingsAuthRoute: typeof AdminSettingsAuthRoute
+  AdminSettingsCodeRunnerRoute: typeof AdminSettingsCodeRunnerRoute
+  AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
+  AdminSettingsGithubRoute: typeof AdminSettingsGithubRoute
+  AdminSettingsLlmRoute: typeof AdminSettingsLlmRoute
+  AdminSettingsProfileRoute: typeof AdminSettingsProfileRoute
+}
+
+const AdminSettingsRouteChildren: AdminSettingsRouteChildren = {
+  AdminSettingsAuthRoute: AdminSettingsAuthRoute,
+  AdminSettingsCodeRunnerRoute: AdminSettingsCodeRunnerRoute,
+  AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,
+  AdminSettingsGithubRoute: AdminSettingsGithubRoute,
+  AdminSettingsLlmRoute: AdminSettingsLlmRoute,
+  AdminSettingsProfileRoute: AdminSettingsProfileRoute,
+}
+
+const AdminSettingsRouteWithChildren = AdminSettingsRoute._addFileChildren(
+  AdminSettingsRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCommentsRoute: typeof AdminCommentsRoute
@@ -719,7 +855,7 @@ interface AdminRouteChildren {
   AdminPostsRoute: typeof AdminPostsRouteWithChildren
   AdminProjectsRoute: typeof AdminProjectsRoute
   AdminRolesRoute: typeof AdminRolesRoute
-  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminSettingsRoute: typeof AdminSettingsRouteWithChildren
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminSystemRoute: typeof AdminSystemRoute
   AdminTagsRoute: typeof AdminTagsRoute
@@ -738,7 +874,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPostsRoute: AdminPostsRouteWithChildren,
   AdminProjectsRoute: AdminProjectsRoute,
   AdminRolesRoute: AdminRolesRoute,
-  AdminSettingsRoute: AdminSettingsRoute,
+  AdminSettingsRoute: AdminSettingsRouteWithChildren,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminSystemRoute: AdminSystemRoute,
   AdminTagsRoute: AdminTagsRoute,
@@ -768,12 +904,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
