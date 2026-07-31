@@ -133,6 +133,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 		"social_email":    in.SocialEmail,
 		"social_rss":      in.SocialRss,
 		"social_bilibili": in.SocialBilibili,
+		"releases_repo":  in.ReleasesRepo,
 	} {
 		if p != nil {
 			updates[k] = *p
