@@ -1,3 +1,5 @@
+import { parseAboutConfig, resolveSectionOrder } from "@features/about/model/about-config";
+import { resolveSectionComponent } from "@features/about/ui/section-registry";
 import { useSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
 import { Code, ExternalLink } from "lucide-react";
@@ -6,9 +8,16 @@ import { motion } from "motion/react";
 /**
  * /about - 关于页
  *
- * 数据来自 useSettings（已全局预取，零后端改动）。
- * 设计对齐首页 Hero 的极简 + 渐变光斑 + motion 入场动画。
- * 区块：Hero（站点名/描述）→ 个人简介 → 技术栈标签云 → 社交链接卡片。
+ * 数据来自 useSettings（已全局预取）。
+ *
+ * 渲染模式（Issue-0002 引入区块版面配置）：
+ * - 站长未配置 about_config（空串）→ 回退默认渲染（Hero/简介/技术栈/社交 4 区块），
+ *   保证现有页面不破坏。
+ * - 已配置 about_config → 解析 sections，按 order 排序、enabled 过滤，
+ *   用区块注册表（section-registry）把每个 id 映射到对应组件渲染。
+ *   未实现的区块用占位组件（后续 issue 逐个填实）。
+ *
+ * 区块真实组件见 features/about/ui/，注册表统一映射 id → 组件。
  */
 function AboutPage() {
     const { data: settings, isLoading } = useSettings();
@@ -24,6 +33,35 @@ function AboutPage() {
         );
     }
 
+    const config = parseAboutConfig(settings.about_config);
+    const orderedIds = resolveSectionOrder(config);
+
+    // 配置为空 → 回退默认渲染（向后兼容，保护现有页面）
+    if (orderedIds.length === 0) {
+        return <AboutDefaultSections settings={settings} />;
+    }
+
+    // 配置模式：按 about_config 遍历渲染区块
+    return (
+        <div className="flex flex-col">
+            {orderedIds.map((id) => {
+                const Section = resolveSectionComponent(id);
+                const section = config.sections.find((s) => s.id === id) ?? {
+                    id,
+                    enabled: true,
+                };
+                return <Section key={id} section={section} settings={settings} />;
+            })}
+        </div>
+    );
+}
+
+/** 默认渲染（about_config 未配置时的回退，对齐原有 4 区块布局） */
+function AboutDefaultSections({
+    settings,
+}: {
+    settings: NonNullable<ReturnType<typeof useSettings>["data"]>;
+}) {
     const techStack = settings.tech_stack
         ? settings.tech_stack
               .split(/[,，、\s]+/)
@@ -35,7 +73,6 @@ function AboutPage() {
         <div className="flex flex-col">
             {/* Hero 区 */}
             <section className="relative flex h-[60vh] items-center justify-center overflow-hidden bg-background">
-                {/* 渐变光斑背景（复用首页风格） */}
                 <div className="absolute inset-0 opacity-30">
                     <div className="absolute left-1/4 top-1/4 size-96 rounded-full bg-blue-400/30 mix-blend-multiply blur-3xl animate-blob" />
                     <div className="absolute right-1/4 top-1/3 size-96 rounded-full bg-purple-400/30 mix-blend-multiply blur-3xl animate-blob [animation-delay:2s]" />
@@ -205,7 +242,6 @@ function SocialCard({
 }
 
 export const Route = createFileRoute("/about/")({
-    // 关于页 SEO：标题静态「关于」，描述可后续按需补充
     head: () => ({
         meta: [{ title: "关于" }],
     }),

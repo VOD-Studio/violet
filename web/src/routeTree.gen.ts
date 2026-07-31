@@ -47,6 +47,7 @@ import { Route as AdminSettingsGithubRouteImport } from './routes/admin.settings
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin.settings.general'
 import { Route as AdminSettingsCodeRunnerRouteImport } from './routes/admin.settings.code-runner'
 import { Route as AdminSettingsAuthRouteImport } from './routes/admin.settings.auth'
+import { Route as AdminSettingsAboutRouteImport } from './routes/admin.settings.about'
 import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
 import { Route as AdminPostsIdRouteImport } from './routes/admin.posts.$id'
 
@@ -240,6 +241,11 @@ const AdminSettingsAuthRoute = AdminSettingsAuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => AdminSettingsRoute,
 } as any)
+const AdminSettingsAboutRoute = AdminSettingsAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => AdminSettingsRoute,
+} as any)
 const AdminPostsNewRoute = AdminPostsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -284,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/projects/': typeof ProjectsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/settings/about': typeof AdminSettingsAboutRoute
   '/admin/settings/auth': typeof AdminSettingsAuthRoute
   '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/settings/about': typeof AdminSettingsAboutRoute
   '/admin/settings/auth': typeof AdminSettingsAuthRoute
   '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
@@ -367,6 +375,7 @@ export interface FileRoutesById {
   '/projects/': typeof ProjectsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
+  '/admin/settings/about': typeof AdminSettingsAboutRoute
   '/admin/settings/auth': typeof AdminSettingsAuthRoute
   '/admin/settings/code-runner': typeof AdminSettingsCodeRunnerRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
@@ -411,6 +420,7 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
+    | '/admin/settings/about'
     | '/admin/settings/auth'
     | '/admin/settings/code-runner'
     | '/admin/settings/general'
@@ -451,6 +461,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/admin/posts/$id'
     | '/admin/posts/new'
+    | '/admin/settings/about'
     | '/admin/settings/auth'
     | '/admin/settings/code-runner'
     | '/admin/settings/general'
@@ -493,6 +504,7 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
+    | '/admin/settings/about'
     | '/admin/settings/auth'
     | '/admin/settings/code-runner'
     | '/admin/settings/general'
@@ -789,6 +801,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsAuthRouteImport
       parentRoute: typeof AdminSettingsRoute
     }
+    '/admin/settings/about': {
+      id: '/admin/settings/about'
+      path: '/about'
+      fullPath: '/admin/settings/about'
+      preLoaderRoute: typeof AdminSettingsAboutRouteImport
+      parentRoute: typeof AdminSettingsRoute
+    }
     '/admin/posts/new': {
       id: '/admin/posts/new'
       path: '/new'
@@ -823,6 +842,7 @@ const AdminPostsRouteWithChildren = AdminPostsRoute._addFileChildren(
 )
 
 interface AdminSettingsRouteChildren {
+  AdminSettingsAboutRoute: typeof AdminSettingsAboutRoute
   AdminSettingsAuthRoute: typeof AdminSettingsAuthRoute
   AdminSettingsCodeRunnerRoute: typeof AdminSettingsCodeRunnerRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
@@ -832,6 +852,7 @@ interface AdminSettingsRouteChildren {
 }
 
 const AdminSettingsRouteChildren: AdminSettingsRouteChildren = {
+  AdminSettingsAboutRoute: AdminSettingsAboutRoute,
   AdminSettingsAuthRoute: AdminSettingsAuthRoute,
   AdminSettingsCodeRunnerRoute: AdminSettingsCodeRunnerRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,

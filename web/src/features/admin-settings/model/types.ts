@@ -34,6 +34,8 @@ export interface SiteSettingsDTO {
     bio: string;
     /** 页脚文案 */
     footer_text: string;
+    /** 关于页区块版面配置（聚合 JSON 字符串） */
+    about_config: string;
     /** LLM API Key（OpenAI 协议兼容端点，敏感） */
     llm_api_key: string;
     /** LLM API Base URL（如 https://api.openai.com/v1） */
@@ -90,6 +92,8 @@ export interface UpdateSettingsRequest {
     bio: string;
     /** 页脚文案 */
     footer_text: string;
+    /** 关于页区块版面配置（聚合 JSON 字符串） */
+    about_config: string;
     /** LLM API Key */
     llm_api_key: string;
     /** LLM API Base URL */

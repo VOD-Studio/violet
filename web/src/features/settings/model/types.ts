@@ -35,6 +35,12 @@ export interface SiteSettings {
     bio: string;
     /** 页脚文案 */
     footer_text: string;
+    /**
+     * 关于页区块版面配置（聚合 JSON 字符串）。
+     * 结构 { sections: [{ id, enabled, order, params }] }，前台解析后按 order 排序、enabled 过滤渲染。
+     * 后端透明存储原始 JSON；空串表示未配置，前台回退默认渲染。
+     */
+    about_config: string;
     /** 是否启用代码运行器（阅读页据此决定渲染 CodeRunner 还是普通 pre） */
     code_runner_enabled: boolean;
 }
