@@ -8,12 +8,14 @@ import { createFileRoute } from "@tanstack/react-router";
 interface GithubForm {
     github_username: string;
     github_token: string;
+    releases_repo: string;
 }
 
 function GithubSettingsPage() {
     const { register, isLoading, isPending, onSubmit } = useSettingsForm<GithubForm>((data) => ({
         github_username: data.github_username,
         github_token: data.github_token,
+        releases_repo: data.releases_repo,
     }));
 
     return (
@@ -31,6 +33,12 @@ function GithubSettingsPage() {
                 </Field>
                 <Field label="GitHub Token">
                     <Input type="password" {...register("github_token")} />
+                </Field>
+                <Field label="更新日志仓库名">
+                    <Input
+                        {...register("releases_repo")}
+                        placeholder="如 violet（配合用户名拼 owner/repo）"
+                    />
                 </Field>
             </section>
         </SettingsSubPage>

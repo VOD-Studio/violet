@@ -50,6 +50,8 @@ export interface SiteSettingsDTO {
     social_email: string;
     social_rss: string;
     social_bilibili: string;
+    /** 更新日志区块读取的 GitHub 仓库名 */
+    releases_repo: string;
     /** LLM API Key（OpenAI 协议兼容端点，敏感） */
     llm_api_key: string;
     /** LLM API Base URL（如 https://api.openai.com/v1） */
@@ -122,6 +124,8 @@ export interface UpdateSettingsRequest {
     social_email: string;
     social_rss: string;
     social_bilibili: string;
+    /** 更新日志区块读取的 GitHub 仓库名 */
+    releases_repo: string;
     /** LLM API Key */
     llm_api_key: string;
     /** LLM API Base URL */
