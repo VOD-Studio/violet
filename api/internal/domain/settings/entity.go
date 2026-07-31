@@ -48,6 +48,10 @@ type SiteSettings struct {
 	ReleasesRepo string `json:"releases_repo"`
 	// ProjectMilestones 项目时间轴的手工里程碑（聚合 JSON 字符串，{milestones:[{date,title,description,link}]}）
 	ProjectMilestones string `json:"project_milestones"`
+	// B5/B6/B7 项目向区块内容（均为聚合 JSON 字符串，后端透明存储，前端解析）
+	ProjectStack string `json:"project_stack"` // {stack:[{name,icon,purpose}]}
+	BlogNumbers  string `json:"blog_numbers"`  // {numbers:[{label,value}]}
+	Thanks       string `json:"thanks"`        // {thanks:[{name,url,reason}]}
 	// LLM 配置（OpenAI 协议兼容端点，覆盖 OpenAI/DeepSeek/Moonshot/通义/智谱/Ollama/vLLM）
 	LLMAPIKey   string `json:"llm_api_key"`
 	LLMAPIURL   string `json:"llm_api_url"`
@@ -97,6 +101,9 @@ type UpdateInput struct {
 	SocialBilibili  *string
 	ReleasesRepo      *string
 	ProjectMilestones *string
+	ProjectStack      *string
+	BlogNumbers       *string
+	Thanks            *string
 	LLMAPIKey         *string
 	LLMAPIURL          *string
 	LLMModel           *string
@@ -162,6 +169,9 @@ func fromMap(m map[string]string) SiteSettings {
 	s.SocialBilibili = m["social_bilibili"]
 	s.ReleasesRepo = m["releases_repo"]
 	s.ProjectMilestones = m["project_milestones"]
+	s.ProjectStack = m["project_stack"]
+	s.BlogNumbers = m["blog_numbers"]
+	s.Thanks = m["thanks"]
 	s.LLMAPIKey = m["llm_api_key"]
 	s.LLMAPIURL = m["llm_api_url"]
 	s.LLMModel = m["llm_model"]
