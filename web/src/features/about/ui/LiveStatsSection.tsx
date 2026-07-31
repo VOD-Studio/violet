@@ -62,7 +62,7 @@ function CountUp({ to, className }: { to: number; className?: string }) {
         const tick = (now: number) => {
             const t = Math.min((now - start) / duration, 1);
             // easeOutCubic
-            const eased = 1 - Math.pow(1 - t, 3);
+            const eased = 1 - (1 - t) ** 3;
             setValue(Math.round(eased * to));
             if (t < 1) {
                 rafRef.current = requestAnimationFrame(tick);

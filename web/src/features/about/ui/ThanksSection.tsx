@@ -1,6 +1,6 @@
+import { parseJsonList } from "@features/about/model/parse-json-list";
 import { motion } from "motion/react";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
-import { parseJsonList } from "./ProjectStackSection";
 
 /** thanks JSON 的条目 */
 interface ThankItem {

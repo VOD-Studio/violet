@@ -1,3 +1,4 @@
+import { parseJsonList } from "@features/about/model/parse-json-list";
 import { motion } from "motion/react";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
@@ -53,16 +54,4 @@ export function ProjectStackSection({ settings }: AboutSectionProps) {
             </motion.div>
         </section>
     );
-}
-
-/** parseJsonList 解析 {<key>:[...]} 结构的 JSON，容错回退空数组 */
-export function parseJsonList<T>(raw: string | undefined | null, key: string): T[] {
-    if (!raw || raw.trim() === "") return [];
-    try {
-        const parsed = JSON.parse(raw) as Record<string, unknown>;
-        const arr = parsed[key];
-        return Array.isArray(arr) ? (arr as T[]) : [];
-    } catch {
-        return [];
-    }
 }

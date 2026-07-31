@@ -1,4 +1,5 @@
 import { type Release, useReleases } from "@features/about/api/queries";
+import { formatDate } from "@features/about/model/format";
 import { motion } from "motion/react";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
@@ -127,11 +128,4 @@ function parseMilestones(raw: string | undefined | null): Milestone[] {
     } catch {
         return [];
     }
-}
-
-/** formatDate - 格式化 ISO 日期为 YYYY-MM-DD */
-function formatDate(iso: string): string {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
