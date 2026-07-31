@@ -137,6 +137,7 @@ func main() {
 	postContainer := app.NewPostContainer(gormDB, permissionChecker, settingsContainer.Store)
 	tagContainer := app.NewTagContainer(gormDB)
 	githubContainer := app.NewGitHubContainer(settingsContainer.Store)
+	releasesContainer := app.NewReleasesContainer(settingsContainer.Store, redisClient)
 	auditContainer := app.NewAuditContainer(gormDB)
 	statsContainer := app.NewStatsContainer(gormDB)
 	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
@@ -246,6 +247,9 @@ func main() {
 		// GitHub 数据（公开，Token 在后端管理）
 		v1.Get("/github/contributions", githubContainer.GitHubHandler.GetContributions) // GitHub 贡献数据
 		v1.Get("/github/repos", githubContainer.GitHubHandler.GetRepos)                 // GitHub 仓库数据
+
+		// 更新日志（公开，后端代理 GitHub Releases + Redis 缓存）
+		v1.Get("/releases", releasesContainer.ReleasesHandler.GetReleases) // 博客项目更新日志
 
 		// 认证
 		authH := authContainer.AuthHandler
