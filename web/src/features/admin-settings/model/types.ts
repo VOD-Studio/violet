@@ -52,6 +52,8 @@ export interface SiteSettingsDTO {
     social_bilibili: string;
     /** 更新日志区块读取的 GitHub 仓库名 */
     releases_repo: string;
+    /** 项目时间轴的手工里程碑（聚合 JSON 字符串） */
+    project_milestones: string;
     /** LLM API Key（OpenAI 协议兼容端点，敏感） */
     llm_api_key: string;
     /** LLM API Base URL（如 https://api.openai.com/v1） */
@@ -126,6 +128,8 @@ export interface UpdateSettingsRequest {
     social_bilibili: string;
     /** 更新日志区块读取的 GitHub 仓库名 */
     releases_repo: string;
+    /** 项目时间轴的手工里程碑（聚合 JSON 字符串） */
+    project_milestones: string;
     /** LLM API Key */
     llm_api_key: string;
     /** LLM API Base URL */

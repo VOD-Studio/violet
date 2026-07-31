@@ -55,6 +55,8 @@ export interface SiteSettings {
     social_email: string;
     social_rss: string;
     social_bilibili: string;
+    /** 项目时间轴的手工里程碑（聚合 JSON 字符串） */
+    project_milestones: string;
     /** 是否启用代码运行器（阅读页据此决定渲染 CodeRunner 还是普通 pre） */
     code_runner_enabled: boolean;
 }

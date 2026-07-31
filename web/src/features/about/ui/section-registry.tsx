@@ -4,6 +4,7 @@ import { AvatarTaglineSection } from "./AvatarTaglineSection";
 import { ChangelogSection } from "./ChangelogSection";
 import { LiveStatsSection } from "./LiveStatsSection";
 import { ProfileCardSection } from "./ProfileCardSection";
+import { ProjectTimelineSection } from "./ProjectTimelineSection";
 import { SkillsSection } from "./SkillsSection";
 import { SocialMatrixSection } from "./SocialMatrixSection";
 
@@ -64,6 +65,7 @@ const registry: Record<string, ComponentType<AboutSectionProps>> = {
     social_matrix: SocialMatrixSection,
     live_stats: LiveStatsSection,
     changelog: ChangelogSection,
+    project_timeline: ProjectTimelineSection,
 };
 
 /** 取某区块的渲染组件；未注册的 id 回退到占位 */
