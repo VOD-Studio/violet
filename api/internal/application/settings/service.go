@@ -49,6 +49,7 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		"tech_stack":           settings.TechStack,
 		"bio":                  settings.Bio,
 		"footer_text":          settings.FooterText,
+		"about_config":         settings.AboutConfig,
 		"code_runner_enabled":  settings.CodeRunnerEnabled,
 	}, nil
 }
@@ -100,6 +101,9 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	}
 	if in.FooterText != nil {
 		updates["footer_text"] = *in.FooterText
+	}
+	if in.AboutConfig != nil {
+		updates["about_config"] = *in.AboutConfig
 	}
 	if in.LLMAPIKey != nil {
 		updates["llm_api_key"] = *in.LLMAPIKey

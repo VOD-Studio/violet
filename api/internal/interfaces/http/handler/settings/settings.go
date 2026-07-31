@@ -56,6 +56,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		TechStack          *string `json:"tech_stack"`
 		Bio                *string `json:"bio"`
 		FooterText         *string `json:"footer_text"`
+		AboutConfig        *string `json:"about_config"`
 		LLMAPIKey          *string `json:"llm_api_key"`
 		LLMAPIURL          *string `json:"llm_api_url"`
 		LLMModel           *string `json:"llm_model"`
@@ -81,6 +82,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		GoogleLoginEnabled: req.GoogleLoginEnabled, GithubLoginEnabled: req.GithubLoginEnabled,
 		GitHubUsername: req.GitHubUsername, GitHubToken: req.GitHubToken,
 		TechStack: req.TechStack, Bio: req.Bio, FooterText: req.FooterText,
+		AboutConfig: req.AboutConfig,
 		LLMAPIKey: req.LLMAPIKey, LLMAPIURL: req.LLMAPIURL,
 		LLMModel: req.LLMModel, LLMProtocol: req.LLMProtocol,
 		CodeRunnerEnabled:        req.CodeRunnerEnabled,
