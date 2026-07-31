@@ -19,7 +19,7 @@
         { "type": "style", "section": "🎨 样式", "hidden": false },
         { "type": "revert", "section": "⏪ 回滚", "hidden": false },
         { "type": "chore", "section": "🔧 杂项", "hidden": true },
-        { "type": "ci", "section": "👷 CI", "hidden": false },
+        { "type": "ci", "section": "👷 CI", "hidden": true },
         { "type": "build", "section": "📦 构建", "hidden": true },
         { "type": "test", "section": "✅ 测试", "hidden": true }
       ]
