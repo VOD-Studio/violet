@@ -47,3 +47,16 @@ PRD-0009（`../../prd/0009-about-redesign.md`）
 ## Blocked by
 
 - Issue-0001（依赖其子菜单导航能力与设置子页拆分基础）
+
+---
+
+## 完成状态：✅ 已完成
+
+实现 commit（feat/about-redesign 分支）：
+- b85a22c feat(settings): about_config 字段端到端存储与公开
+- 970e402 feat(about): about_config 解析模型与区块注册表
+- 2b290bd feat(about): 后台关于页配置子页
+- a531618 feat(about): 前台 About 页接入 about_config 渲染框架
+
+验收：typecheck / 522 测试全绿（+8 about_config 解析单测）/ go vet 干净。
+端到端打通：后台改配置 → 保存 → 前台按显隐+顺序渲染；about_config 为空时回退默认渲染。
