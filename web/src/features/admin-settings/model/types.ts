@@ -36,6 +36,20 @@ export interface SiteSettingsDTO {
     footer_text: string;
     /** 关于页区块版面配置（聚合 JSON 字符串） */
     about_config: string;
+    /** 关于博主（A 线）内容字段 */
+    avatar_url: string;
+    tagline: string;
+    profile_role: string;
+    profile_location: string;
+    available_for: string;
+    skills_strong: string;
+    skills_learning: string;
+    skills_interests: string;
+    social_twitter: string;
+    social_mastodon: string;
+    social_email: string;
+    social_rss: string;
+    social_bilibili: string;
     /** LLM API Key（OpenAI 协议兼容端点，敏感） */
     llm_api_key: string;
     /** LLM API Base URL（如 https://api.openai.com/v1） */
@@ -94,6 +108,20 @@ export interface UpdateSettingsRequest {
     footer_text: string;
     /** 关于页区块版面配置（聚合 JSON 字符串） */
     about_config: string;
+    /** 关于博主（A 线）内容字段 */
+    avatar_url: string;
+    tagline: string;
+    profile_role: string;
+    profile_location: string;
+    available_for: string;
+    skills_strong: string;
+    skills_learning: string;
+    skills_interests: string;
+    social_twitter: string;
+    social_mastodon: string;
+    social_email: string;
+    social_rss: string;
+    social_bilibili: string;
     /** LLM API Key */
     llm_api_key: string;
     /** LLM API Base URL */

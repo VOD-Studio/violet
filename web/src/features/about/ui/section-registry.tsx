@@ -1,5 +1,9 @@
 import type { ComponentType } from "react";
 import { AboutSectionPlaceholder, type AboutSectionProps } from "./AboutSectionPlaceholder";
+import { AvatarTaglineSection } from "./AvatarTaglineSection";
+import { ProfileCardSection } from "./ProfileCardSection";
+import { SkillsSection } from "./SkillsSection";
+import { SocialMatrixSection } from "./SocialMatrixSection";
 
 /**
  * ABOUT_SECTION_IDS - 关于页区块标识常量
@@ -51,7 +55,12 @@ export const ABOUT_SECTION_LABELS: Record<string, string> = {
  * 后续 issue 实现真实区块后，在此替换对应条目。
  * 未知 id（配置中存在但未注册）也回退到占位，保证容错。
  */
-const registry: Record<string, ComponentType<AboutSectionProps>> = {};
+const registry: Record<string, ComponentType<AboutSectionProps>> = {
+    avatar_tagline: AvatarTaglineSection,
+    profile_card: ProfileCardSection,
+    skills: SkillsSection,
+    social_matrix: SocialMatrixSection,
+};
 
 /** 取某区块的渲染组件；未注册的 id 回退到占位 */
 export function resolveSectionComponent(id: string): ComponentType<AboutSectionProps> {

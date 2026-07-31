@@ -41,6 +41,20 @@ export interface SiteSettings {
      * 后端透明存储原始 JSON；空串表示未配置，前台回退默认渲染。
      */
     about_config: string;
+    /** 关于博主（A 线）内容字段 */
+    avatar_url: string;
+    tagline: string;
+    profile_role: string;
+    profile_location: string;
+    available_for: string;
+    skills_strong: string;
+    skills_learning: string;
+    skills_interests: string;
+    social_twitter: string;
+    social_mastodon: string;
+    social_email: string;
+    social_rss: string;
+    social_bilibili: string;
     /** 是否启用代码运行器（阅读页据此决定渲染 CodeRunner 还是普通 pre） */
     code_runner_enabled: boolean;
 }
