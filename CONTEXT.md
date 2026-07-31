@@ -203,3 +203,19 @@ _Avoid_: 评论 server（未点明检索/反馈语义）
 **MCP status 可见性分工**:approved 评论 ≈ published 文章（都是"已审阅有效内容"），MCP 检索仅消费 approved/published。pending 评论 ≈ draft 文章（未审阅），前者进后台审核 UI、后者进 PAT 私有检索——**pending 不进 MCP agent 上下文**（避免未审阅内容/垃圾污染写作建议）。
 
 **评论锚点选区原文（anchor.selected_text）**:批注（anchor_block_id 非空的评论）携带读者划中的原文片段，是 S3 写作改进闭环的核心字段——它让 agent 精确定位"读者说这段有问题"的"这段"是哪段，构成"读者对原文 X 的反馈是 Y"的完整闭环。自由评论（anchor 为空）无此字段。
+
+## 关于页（About Page）
+
+> 关于页（`/about`）的重构见 PRD-0009。本节定义该域的术语，不含实现细节。
+
+**关于区块（About Section）**:
+关于页的可配置渲染单元，分三线：**A 线（关于博主）**含头像/标语、名片卡、技能标签云、社交矩阵；**B 线（关于博客项目）**含站点生命体征（Live Stats）、更新日志、项目时间轴、项目技术栈、"这座博客的数字"、开源致谢。每个区块有显隐开关、排序权重、独立参数（如头像 URL、社交平台列表）。前台按配置渲染、过滤、排序。
+_Avoid_: 组件（混淆了渲染单元与 React 组件）、模块（与 FSD 模块混淆）
+
+**区块版面配置（about_config）**:
+承载整个关于页版面的**聚合 JSON 配置**，存于 `site_settings` 表单一键 `about_config`。结构为 `{ sections: [{ id, enabled, order, params }] }`——一个键统管所有区块的显隐 + 顺序 + 参数。选聚合 JSON 而非扁平多键，核心原因是**顺序**：区块要自由编排上下位置，扁平 key-value 无法表达顺序。前台拿到数组按 `order` 排序、按 `enabled` 过滤渲染。站长在后台「关于页配置」子页可视化编辑。
+_Avoid_: About 设置（未点明聚合配置语义）、区块开关（仅显隐，漏了顺序与参数）
+
+**更新日志（Changelog / Releases）**:
+关于页 B 线区块，展示博客项目的版本演进。**数据源是 GitHub Releases API（后端代理 + Redis 缓存）**——GitHub Releases 是 release-please 发版的天然副产物，发版即更新、零手工维护。后端复用现有 `github_token` 提限流到 5000/小时，结果用 Redis 缓存（~1h）解决访客直连必爆限流。呈现对齐业界最佳实践（个人博客变体）：版本时间线卡片 + 日期戳 + **分类标签直接从 release body 的 emoji 行解析**（release-please 已把 commit 类型映射成 ✨新增/🐛修复/♻️重构等）+ Breaking change 醒目标记。**变通业界实践**：受众是技术读者，保留技术事实而非营销话术；舍弃截图/GIF（保证发版零维护）。该能力对齐并增强现有 `/api/v1/github/contributions` 代理模式（后者无缓存，releases 是加缓存层的演进版）。
+_Avoid_: CHANGELOG（指仓库根的 release-please 维护文件，非应用能力）、版本日志（口语）
