@@ -9,6 +9,7 @@ import {
     Images,
     KeyRound,
     LayoutDashboard,
+    LayoutPanelLeft,
     Megaphone,
     MessageSquare,
     Rss,
@@ -181,6 +182,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
                 label: "关于",
                 to: "/admin/settings/profile",
                 icon: User,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "关于页配置",
+                to: "/admin/settings/about",
+                icon: LayoutPanelLeft,
                 permissions: ["settings:view"],
             },
             {
