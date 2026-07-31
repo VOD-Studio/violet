@@ -50,6 +50,19 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		"bio":                  settings.Bio,
 		"footer_text":          settings.FooterText,
 		"about_config":         settings.AboutConfig,
+		"avatar_url":           settings.AvatarURL,
+		"tagline":              settings.Tagline,
+		"profile_role":         settings.ProfileRole,
+		"profile_location":     settings.ProfileLocation,
+		"available_for":        settings.AvailableFor,
+		"skills_strong":        settings.SkillsStrong,
+		"skills_learning":      settings.SkillsLearning,
+		"skills_interests":     settings.SkillsInterests,
+		"social_twitter":       settings.SocialTwitter,
+		"social_mastodon":      settings.SocialMastodon,
+		"social_email":         settings.SocialEmail,
+		"social_rss":           settings.SocialRss,
+		"social_bilibili":      settings.SocialBilibili,
 		"code_runner_enabled":  settings.CodeRunnerEnabled,
 	}, nil
 }
@@ -104,6 +117,26 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	}
 	if in.AboutConfig != nil {
 		updates["about_config"] = *in.AboutConfig
+	}
+	// 关于博主（A 线）内容字段：均为字符串，统一批量写入
+	for k, p := range map[string]*string{
+		"avatar_url":      in.AvatarURL,
+		"tagline":         in.Tagline,
+		"profile_role":    in.ProfileRole,
+		"profile_location": in.ProfileLocation,
+		"available_for":   in.AvailableFor,
+		"skills_strong":   in.SkillsStrong,
+		"skills_learning": in.SkillsLearning,
+		"skills_interests": in.SkillsInterests,
+		"social_twitter":  in.SocialTwitter,
+		"social_mastodon": in.SocialMastodon,
+		"social_email":    in.SocialEmail,
+		"social_rss":      in.SocialRss,
+		"social_bilibili": in.SocialBilibili,
+	} {
+		if p != nil {
+			updates[k] = *p
+		}
 	}
 	if in.LLMAPIKey != nil {
 		updates["llm_api_key"] = *in.LLMAPIKey
