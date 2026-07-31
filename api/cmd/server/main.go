@@ -240,6 +240,9 @@ func main() {
 		// 公开站点设置
 		v1.Get("/settings", settingsContainer.SettingsHandler.GetPublicSettings) // 获取公开站点配置
 
+		// 公开只读统计（About 页站点生命体征用，仅安全字段）
+		v1.Get("/stats", statsContainer.StatsHandler.GetPublicStats) // 站点生命体征统计
+
 		// GitHub 数据（公开，Token 在后端管理）
 		v1.Get("/github/contributions", githubContainer.GitHubHandler.GetContributions) // GitHub 贡献数据
 		v1.Get("/github/repos", githubContainer.GitHubHandler.GetRepos)                 // GitHub 仓库数据

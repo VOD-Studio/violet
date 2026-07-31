@@ -116,3 +116,52 @@ func postToSummary(p newmodel.Post) domainstats.PostSummary {
 	}
 	return s
 }
+
+// GetPublic 公开只读统计：仅安全字段，口径面向访客。
+// 已发布文章数、已发布正文总字数（剥离 HTML 标签后的字符数近似）、
+// 已通过审核评论数、运行天数（从最早记录到今天）。
+func (s *StatsStore) GetPublic(ctx context.Context) (domainstats.PublicStats, error) {
+	var stats domainstats.PublicStats
+
+	// 已发布文章数
+	if err := s.db.WithContext(ctx).
+		Model(&newmodel.Post{}).
+		Where("status = ?", "published").
+		Count(&stats.PostsCount).Error; err != nil {
+		return stats, domainshared.Internal("统计已发布文章数失败", err)
+	}
+
+	// 已发布正文总字数：剥离 HTML 标签后的字符数近似
+	type wordSum struct{ Total int64 }
+	var ws wordSum
+	if err := s.db.WithContext(ctx).
+		Model(&newmodel.Post{}).
+		Where("status = ?", "published").
+		Select("COALESCE(SUM(LENGTH(REGEXP_REPLACE(content_html, '<[^>]+>', '', 'g'))),0) AS total").
+		Scan(&ws).Error; err != nil {
+		return stats, domainshared.Internal("统计总字数失败", err)
+	}
+	stats.TotalWords = ws.Total
+
+	// 已通过审核评论数
+	if err := s.db.WithContext(ctx).
+		Model(&newmodel.Comment{}).
+		Where("status = ?", "approved").
+		Count(&stats.CommentsCount).Error; err != nil {
+		return stats, domainshared.Internal("统计评论数失败", err)
+	}
+
+	// 运行天数：从最早 published 文章的 created_at 算到今天
+	var earliest struct{ CreatedAt time.Time }
+	if err := s.db.WithContext(ctx).
+		Model(&newmodel.Post{}).
+		Where("status = ?", "published").
+		Select("MIN(created_at) AS created_at").
+		Scan(&earliest).Error; err != nil {
+		return stats, domainshared.Internal("查询建站时间失败", err)
+	}
+	if !earliest.CreatedAt.IsZero() {
+		stats.UptimeDays = int64(time.Since(earliest.CreatedAt).Hours() / 24)
+	}
+	return stats, nil
+}

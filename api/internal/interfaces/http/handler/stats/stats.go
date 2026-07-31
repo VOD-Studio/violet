@@ -37,3 +37,13 @@ func (h *Handler) GetViewTrends(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondOK(w, data)
 }
+
+// GetPublicStats 公开只读统计（About 页站点生命体征用，无需鉴权）
+func (h *Handler) GetPublicStats(w http.ResponseWriter, r *http.Request) {
+	data, err := h.svc.GetPublic(r.Context())
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, data)
+}

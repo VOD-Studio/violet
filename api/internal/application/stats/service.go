@@ -26,3 +26,8 @@ func (s *Service) GetDashboard(ctx context.Context) (domainstats.DashboardStats,
 func (s *Service) GetViewTrends(ctx context.Context) (domainstats.ViewTrends, error) {
 	return s.store.GetViewTrends(ctx)
 }
+
+// GetPublic 获取公开只读统计（About 页站点生命体征用，仅安全字段）
+func (s *Service) GetPublic(ctx context.Context) (domainstats.PublicStats, error) {
+	return s.store.GetPublic(ctx)
+}
