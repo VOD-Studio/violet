@@ -11,11 +11,11 @@ export const useAdminSettings = () =>
         queryFn: () => api.getSettings(),
     });
 
-/** useUpdateSettings - 更新站点配置 hook */
+/** useUpdateSettings - 更新站点配置 hook（部分更新：body 仅含本次改动字段） */
 export const useUpdateSettings = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: (body: UpdateSettingsRequest) => api.updateSettings(body),
+        mutationFn: (body: Partial<UpdateSettingsRequest>) => api.updateSettings(body),
         onSuccess: (data) => {
             // 用返回的最新配置直接覆盖缓存，避免二次请求
             qc.setQueryData(settingsKeys.detail(), data);
