@@ -24,6 +24,10 @@ interface ProfileForm {
     social_email: string;
     social_rss: string;
     social_bilibili: string;
+    /** B5/B6/B7 项目向区块内容（聚合 JSON 字符串） */
+    project_stack: string;
+    blog_numbers: string;
+    thanks: string;
 }
 
 function ProfileSettingsPage() {
@@ -44,6 +48,9 @@ function ProfileSettingsPage() {
         social_email: data.social_email,
         social_rss: data.social_rss,
         social_bilibili: data.social_bilibili,
+        project_stack: data.project_stack,
+        blog_numbers: data.blog_numbers,
+        thanks: data.thanks,
     }));
 
     return (
@@ -115,6 +122,34 @@ function ProfileSettingsPage() {
                 </Field>
                 <Field label="Bilibili">
                     <Input {...register("social_bilibili")} placeholder="https://..." />
+                </Field>
+            </section>
+
+            <section className="space-y-4">
+                <h3 className="text-sm font-semibold">项目向内容（JSON）</h3>
+                <p className="text-xs text-muted-foreground">
+                    以下三项以聚合 JSON 字符串存储，直接粘贴 JSON。格式见各区块说明。
+                </p>
+                <Field label="项目技术栈 project_stack">
+                    <Textarea
+                        rows={3}
+                        {...register("project_stack")}
+                        placeholder={'{"stack":[{"name":"Go","icon":"🐹","purpose":"后端"}]}'}
+                    />
+                </Field>
+                <Field label="博客的数字 blog_numbers">
+                    <Textarea
+                        rows={3}
+                        {...register("blog_numbers")}
+                        placeholder={'{"numbers":[{"label":"代码行数","value":"50k"}]}'}
+                    />
+                </Field>
+                <Field label="开源致谢 thanks">
+                    <Textarea
+                        rows={3}
+                        {...register("thanks")}
+                        placeholder={'{"thanks":[{"name":"React","url":"https://react.dev"}]}'}
+                    />
                 </Field>
             </section>
         </SettingsSubPage>

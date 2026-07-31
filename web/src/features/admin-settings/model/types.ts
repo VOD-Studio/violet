@@ -54,6 +54,12 @@ export interface SiteSettingsDTO {
     releases_repo: string;
     /** 项目时间轴的手工里程碑（聚合 JSON 字符串） */
     project_milestones: string;
+    /** B5 项目技术栈（聚合 JSON 字符串） */
+    project_stack: string;
+    /** B6 博客的数字（聚合 JSON 字符串） */
+    blog_numbers: string;
+    /** B7 开源致谢（聚合 JSON 字符串） */
+    thanks: string;
     /** LLM API Key（OpenAI 协议兼容端点，敏感） */
     llm_api_key: string;
     /** LLM API Base URL（如 https://api.openai.com/v1） */
@@ -130,6 +136,12 @@ export interface UpdateSettingsRequest {
     releases_repo: string;
     /** 项目时间轴的手工里程碑（聚合 JSON 字符串） */
     project_milestones: string;
+    /** B5 项目技术栈（聚合 JSON 字符串） */
+    project_stack: string;
+    /** B6 博客的数字（聚合 JSON 字符串） */
+    blog_numbers: string;
+    /** B7 开源致谢（聚合 JSON 字符串） */
+    thanks: string;
     /** LLM API Key */
     llm_api_key: string;
     /** LLM API Base URL */

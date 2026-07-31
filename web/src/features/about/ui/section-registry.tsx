@@ -1,12 +1,15 @@
 import type { ComponentType } from "react";
 import { AboutSectionPlaceholder, type AboutSectionProps } from "./AboutSectionPlaceholder";
 import { AvatarTaglineSection } from "./AvatarTaglineSection";
+import { BlogNumbersSection } from "./BlogNumbersSection";
 import { ChangelogSection } from "./ChangelogSection";
 import { LiveStatsSection } from "./LiveStatsSection";
 import { ProfileCardSection } from "./ProfileCardSection";
+import { ProjectStackSection } from "./ProjectStackSection";
 import { ProjectTimelineSection } from "./ProjectTimelineSection";
 import { SkillsSection } from "./SkillsSection";
 import { SocialMatrixSection } from "./SocialMatrixSection";
+import { ThanksSection } from "./ThanksSection";
 
 /**
  * ABOUT_SECTION_IDS - 关于页区块标识常量
@@ -66,6 +69,9 @@ const registry: Record<string, ComponentType<AboutSectionProps>> = {
     live_stats: LiveStatsSection,
     changelog: ChangelogSection,
     project_timeline: ProjectTimelineSection,
+    project_stack: ProjectStackSection,
+    blog_numbers: BlogNumbersSection,
+    thanks: ThanksSection,
 };
 
 /** 取某区块的渲染组件；未注册的 id 回退到占位 */

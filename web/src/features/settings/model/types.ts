@@ -57,6 +57,12 @@ export interface SiteSettings {
     social_bilibili: string;
     /** 项目时间轴的手工里程碑（聚合 JSON 字符串） */
     project_milestones: string;
+    /** B5 项目技术栈（聚合 JSON 字符串） */
+    project_stack: string;
+    /** B6 博客的数字（聚合 JSON 字符串） */
+    blog_numbers: string;
+    /** B7 开源致谢（聚合 JSON 字符串） */
+    thanks: string;
     /** 是否启用代码运行器（阅读页据此决定渲染 CodeRunner 还是普通 pre） */
     code_runner_enabled: boolean;
 }
