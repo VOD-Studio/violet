@@ -25,7 +25,7 @@ export function NavMenuGroupItem({
     collapsed?: boolean;
 }) {
     const pathname = useRouterState({ select: (s) => s.location.pathname });
-    const toggleGroup = useAdminSidebarStore((s) => s.toggleGroup);
+    const setGroupExpanded = useAdminSidebarStore((s) => s.setGroupExpanded);
     const expandedGroups = useAdminSidebarStore((s) => s.expandedGroups);
 
     // 命中任一子项（或父项路径本身）时视为激活，自动展开
@@ -34,14 +34,17 @@ export function NavMenuGroupItem({
         pathname.startsWith(`${item.to}/`) ||
         (item.children?.some((c) => pathname === c.to || pathname.startsWith(`${c.to}/`)) ?? false);
 
-    const expanded = childHit || expandedGroups[item.to] === true;
+    // 手动状态优先于命中路由：未操作时跟随 childHit，手动展开/折叠后固定。
+    // 否则命中子路由时 childHit 恒为 true 会覆盖手动折叠，导致无法收起。
+    const manualState = expandedGroups[item.to];
+    const expanded = manualState !== undefined ? manualState : childHit;
 
     const Icon: LucideIcon = item.icon;
     const trigger = (
         <button
             type="button"
             aria-expanded={expanded}
-            onClick={() => toggleGroup(item.to)}
+            onClick={() => setGroupExpanded(item.to, !expanded)}
             className={cn(
                 NAV_ITEM_BASE,
                 "w-full",
