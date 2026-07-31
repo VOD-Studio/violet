@@ -1,7 +1,7 @@
 /**
- * AdminSidebarBody 子菜单渲染测试
+ * NavMenu 子菜单渲染测试
  *
- * 覆盖 Issue-0001 引入的「可折叠父项」行为：
+ * 覆盖「可折叠父项」行为：
  * - 带 children 的导航项渲染为父项按钮（aria-expanded 可见）。
  * - 命中任一子项路由时，父项自动展开、子项可见。
  * - 未命中且未手动展开时，子项不可见。
@@ -46,8 +46,8 @@ vi.mock("@features/auth/api/queries", () => ({
     }),
 }));
 
-import { AdminSidebarBody } from "../AdminSidebarBody";
-import { useAdminSidebarStore } from "../admin-sidebar-store";
+import { useAdminSidebarStore } from "../../admin-sidebar-store";
+import { NavMenu } from "../NavMenu";
 
 /**
  * store 状态隔离：admin-sidebar-store 用 zustand persist（localStorage），
@@ -67,10 +67,10 @@ const getSettingsParent = () =>
         .getAllByRole("button", { name: /站点设置/ })
         .find((b) => b.hasAttribute("aria-expanded"));
 
-describe("AdminSidebarBody 子菜单渲染", () => {
+describe("NavMenu 子菜单渲染", () => {
     it("命中子项路由时，父项「站点设置」自动展开并渲染子项", () => {
         setPath("/admin/settings/github");
-        render(<AdminSidebarBody />);
+        render(<NavMenu />);
 
         // 父项标记为展开
         expect(getSettingsParent()?.getAttribute("aria-expanded")).toBe("true");
@@ -81,7 +81,7 @@ describe("AdminSidebarBody 子菜单渲染", () => {
 
     it("未命中设置子项且未手动展开时，子项不渲染", () => {
         setPath("/admin/posts");
-        render(<AdminSidebarBody />);
+        render(<NavMenu />);
 
         // 父项标记为折叠
         expect(getSettingsParent()?.getAttribute("aria-expanded")).toBe("false");
@@ -92,7 +92,7 @@ describe("AdminSidebarBody 子菜单渲染", () => {
 
     it("点击父项切换展开/折叠", () => {
         setPath("/admin/posts");
-        render(<AdminSidebarBody />);
+        render(<NavMenu />);
 
         const parent = getSettingsParent();
         // 初始折叠，子项不可见
@@ -106,7 +106,7 @@ describe("AdminSidebarBody 子菜单渲染", () => {
 
     it("普通叶子项（无 children）仍渲染为链接而非按钮", () => {
         setPath("/admin");
-        render(<AdminSidebarBody />);
+        render(<NavMenu />);
 
         // 文章管理是叶子项 → 渲染为 <a>（testid 存在）
         expect(screen.queryAllByTestId("link-/admin/posts").length).toBeGreaterThan(0);

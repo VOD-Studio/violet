@@ -5,13 +5,13 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { AdminBrand } from "./AdminBrand";
 import { useAdminSidebarStore } from "./admin-sidebar-store";
-import { AdminSidebarBody } from "./AdminSidebarBody";
+import { NavMenu } from "./nav-menu/NavMenu";
 
 /**
  * AdminSidebar - 桌面侧边栏
  *
  * hidden md:flex，移动端由 AdminMobileNav 接管。语义色 token，
- * 随全局主题自动切换。品牌区（AdminBrand）+ 分组菜单（AdminSidebarBody）
+ * 随全局主题自动切换。品牌区（AdminBrand）+ 分组菜单（NavMenu）
  * + 底部返回前台。
  *
  * 支持收起模式（w-64 ↔ w-16，状态 persist 到 localStorage）：收起后
@@ -53,7 +53,7 @@ export function AdminSidebar() {
                 </Tooltip>
                 <AdminBrand collapsed={collapsed} />
                 <div className="flex-1 overflow-x-hidden overflow-y-auto p-3">
-                    <AdminSidebarBody collapsed={collapsed} />
+                    <NavMenu collapsed={collapsed} />
                 </div>
                 <div
                     className={cn(
