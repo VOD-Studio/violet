@@ -1,8 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import {
     Activity,
+    Bot,
+    Cpu,
     FileText,
     FolderKanban,
+    GitBranch,
     Images,
     KeyRound,
     LayoutDashboard,
@@ -14,6 +17,7 @@ import {
     Shield,
     Smile,
     Tag,
+    User,
     UserCog,
     Users,
 } from "lucide-react";
@@ -41,6 +45,12 @@ export interface AdminNavItem {
      * 内置超管通配短路，永远可见。
      */
     permissions?: string[];
+    /**
+     * 子菜单项。存在时该项渲染为可折叠父项（点按切换展开/收起，不直接导航），
+     * 父项本身只作分组容器。父项可见性 = 任一子项可见（权限逻辑同上）。
+     * 父项的 `to` 仍需提供，用于当前路由命中任一子项时的激活态判定（前缀匹配）。
+     */
+    children?: AdminNavItem[];
 }
 
 /** 菜单分组标识 */
@@ -148,6 +158,44 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
         icon: Settings,
         group: "system",
         permissions: ["settings:view"],
+        children: [
+            {
+                label: "基础信息",
+                to: "/admin/settings/general",
+                icon: Settings,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "认证",
+                to: "/admin/settings/auth",
+                icon: Shield,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "GitHub",
+                to: "/admin/settings/github",
+                icon: GitBranch,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "关于",
+                to: "/admin/settings/profile",
+                icon: User,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "LLM 配置",
+                to: "/admin/settings/llm",
+                icon: Bot,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "代码运行器",
+                to: "/admin/settings/code-runner",
+                icon: Cpu,
+                permissions: ["settings:view"],
+            },
+        ],
     },
     {
         label: "MCP 接入",
