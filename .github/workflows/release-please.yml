@@ -22,7 +22,7 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
           # PAT 绕过组织对 GITHUB_TOKEN 创建 PR 的限制
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
