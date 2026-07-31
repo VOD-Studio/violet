@@ -10,8 +10,12 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
  * 对齐 admin.posts.tsx 的父布局先例。
  */
 export const Route = createFileRoute("/admin/settings")({
-    beforeLoad: () => {
-        throw redirect({ to: "/admin/settings/general", replace: true });
+    beforeLoad: ({ location }) => {
+        // 仅在精确访问 /admin/settings（无子路径）时重定向到首个子页，
+        // 避免无条件 redirect 导致访问任意子页时父路由 beforeLoad 反复触发形成死循环。
+        if (location.pathname === "/admin/settings") {
+            throw redirect({ to: "/admin/settings/general", replace: true });
+        }
     },
     component: SettingsLayout,
 });
