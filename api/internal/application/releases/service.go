@@ -28,6 +28,7 @@ var emojiLabel = map[string][2]string{
 	"💄": {"💄", "样式"},
 	"🎉": {"🎉", "开始"},
 	"🚨": {"🚨", "破坏性变更"},
+	"💥": {"💥", "破坏性变更"},
 }
 
 // breakingEmojis 标记为 breaking change 的 emoji
