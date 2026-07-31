@@ -20,15 +20,18 @@ export function useSettingsForm<T extends FieldValues>(
     const updateMut = useUpdateSettings();
     // 不传 defaultValues：首次 data 到达时由下方 reset 回填，避免 undefined 强转 T。
     const form = useForm<T>();
+    // 解构 reset：react-hook-form 的方法引用稳定（不会每渲染变），
+    // 用它做依赖避免把整个 form 对象放进依赖数组导致无限重渲染。
+    const { reset } = form;
 
-    // mapDataToForm 是调用方内联函数（每次渲染新引用），列入依赖会导致无意义重置；
-    // 这里有意只在 data 变化时回填，故豁免 exhaustive-deps。
+    // 仅在 data 变化时回填表单。mapDataToForm 是调用方内联闭包（每渲染新引用），
+    // 列入依赖会触发无意义重置；reset 引用稳定。故只依赖 [data, reset]，exhaustive-deps 豁免 mapDataToForm。
     // biome-ignore lint/correctness/useExhaustiveDependencies: mapDataToForm 为内联闭包，仅 data 变化时回填
     useEffect(() => {
         if (data) {
-            form.reset(mapDataToForm(data));
+            reset(mapDataToForm(data));
         }
-    }, [data, form]);
+    }, [data, reset]);
 
     const onSubmit = form.handleSubmit((values) => updateMut.mutate(values));
 
