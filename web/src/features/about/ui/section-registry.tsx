@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { AboutSectionPlaceholder, type AboutSectionProps } from "./AboutSectionPlaceholder";
 import { AvatarTaglineSection } from "./AvatarTaglineSection";
+import { LiveStatsSection } from "./LiveStatsSection";
 import { ProfileCardSection } from "./ProfileCardSection";
 import { SkillsSection } from "./SkillsSection";
 import { SocialMatrixSection } from "./SocialMatrixSection";
@@ -60,6 +61,7 @@ const registry: Record<string, ComponentType<AboutSectionProps>> = {
     profile_card: ProfileCardSection,
     skills: SkillsSection,
     social_matrix: SocialMatrixSection,
+    live_stats: LiveStatsSection,
 };
 
 /** 取某区块的渲染组件；未注册的 id 回退到占位 */
