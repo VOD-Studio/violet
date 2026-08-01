@@ -136,6 +136,37 @@
 - **Seam 2（后端）未落地——已知缺口**：code-review 发现**仓库后端从未有测试基建**（全 `api/` 零 `_test.go`、go.mod 无 testify/gomock、Makefile 无 `api-test` 目标）。PRD 原设想的 `make api-test` 与"补 handler 测试"在现实中是从零搭建整条后端测试 harness（mock 框架 + httptest + fake store），属独立基建工作，超出本 PRD 单功能范围，也违背仓库极简风格。**决策：不在本 PRD 强行引入后端测试基建**，记录为已知缺口；安全断言（公开 stats 不泄露 admin 字段、releases 降级链）改由代码审查 + 字段白名单硬编码保障。若将来要立后端测试，应作为独立的"后端测试基建"专项，而非绑在单个 feature 上。
 
 
+## 收敛决策（实现后修订）
+
+初版 PRD 设计了 14 个区块（A 线讲博主 + B 线讲博客项目）。实现后 review 发现 B 线整体是定位错乱——把 About 页拽成了项目 README，且实现存在致命 bug。收敛如下：
+
+### 砍掉的区块
+
+| 区块 | 砍掉理由 |
+|---|---|
+| B4 项目时间轴 | 与 B3 更新日志信息冗余——都是 releases 数据，读者看到两份版本列表 |
+| B5 项目技术栈 | 项目 README 内容；访客点 About 不是来看依赖列表的 |
+| B6 博客的数字 | 最离谱：代码行数/commit 数全是开发者内部指标，且数据源是手工填 JSON |
+| B7 开源致谢 | 企业开源项目做法，个人博客不需要 |
+| tech_stack（旧·单字符串） | 被 A3 skills（三组标签云）取代，双轨共存造成混乱 |
+| social（旧·卡片） | 被 A4 social_matrix（社交矩阵）取代，双轨共存 |
+
+**保留 8 区块**：hero · avatar_tagline(A1) · bio · profile_card(A2) · skills(A3) · social_matrix(A4) · live_stats(B2) · changelog(B3)。About 页回归讲「人 + 站的演进」。
+
+### 修复的致命 bug
+
+1. **配置模式与默认模式割裂**：原实现有两套渲染——`about_config` 为空走默认渲染（4 个真实区块），非空走配置模式。站长一开任何区块，默认 4 区块全部消失，配置模式下旧区块（hero/bio/tech_stack/social）又只渲染虚线占位框 → 「开了什么都不显示」。**修复**：删除双轨，单套渲染；旧 hero/bio 抽成真实组件注册；未知 id 返回 null 不渲染占位；空配置默认全显。
+2. **更新日志永远空**：`releases_repo` 未配置时后端直接返回空数据，但后台无任何提示。**修复**：about 配置页 changelog 区块项提示「需先配置 releases_repo」。
+3. **字段双轨混乱**：新旧字段在后台配置页混在一起，分不清哪个能用。**修复**：移除旧字段定义（前后端同步），配置页只列保留区块。
+
+### 拖拽排序
+
+初版 user story 17 要求拖拽排序，实现降级成了上下箭头按钮。收敛时改用 `@dnd-kit/sortable` 恢复拖拽，符合原始设计。
+
+### 同步清理
+
+砍掉的区块对应后端字段（`project_milestones` / `project_stack` / `blog_numbers` / `thanks` / `tech_stack`）从 domain entity、application service、handler、前端类型定义中全部移除，不留死代码。
+
 ## Out of Scope
 
 - **C 线（C1–C4 互动/趣味）整体移出本期**（已确认）：C1 访客足迹 / C2 博主在线状态需新建访客追踪/在线状态基础设施（接口 + 存储 + 隐私考量），C3 随机文章 / C4 留言虽复用现有接口但仍需新 UI 与交互。本期核心是"About 重设计 + 更新日志 + 后台 IA"，C 线拆为后续 PRD（如 PRD-0010）独立推进。
