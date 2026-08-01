@@ -245,8 +245,10 @@ func main() {
 		v1.Get("/stats", statsContainer.StatsHandler.GetPublicStats) // 站点生命体征统计
 
 		// GitHub 数据（公开，Token 在后端管理）
-		v1.Get("/github/contributions", githubContainer.GitHubHandler.GetContributions) // GitHub 贡献数据
-		v1.Get("/github/repos", githubContainer.GitHubHandler.GetRepos)                 // GitHub 仓库数据
+		v1.Route("/github", func(r chi.Router) {
+			r.Get("/contributions", githubContainer.GitHubHandler.GetContributions) // GitHub 贡献数据
+			r.Get("/repos", githubContainer.GitHubHandler.GetRepos)                 // GitHub 仓库数据
+		})
 
 		// 更新日志（公开，后端代理 GitHub Releases + Redis 缓存）
 		v1.Get("/releases", releasesContainer.ReleasesHandler.GetReleases) // 博客项目更新日志
@@ -421,8 +423,10 @@ func main() {
 		})
 
 		// 公告
-		v1.Get("/announcements", contentH.ListActiveAnnouncements)    // 获取生效公告列表
-		v1.Get("/announcements/{id}", contentH.GetActiveAnnouncement) // 获取单个生效公告(article 详情页)
+		v1.Route("/announcements", func(r chi.Router) {
+			r.Get("/", contentH.ListActiveAnnouncements)    // 获取生效公告列表
+			r.Get("/{id}", contentH.GetActiveAnnouncement) // 获取单个生效公告(article 详情页)
+		})
 
 		// =====================================================
 		// 管理员路由（认证 + 管理员权限）
@@ -463,24 +467,28 @@ func main() {
 			})
 
 			// 用户管理（DDD userAdminContainer）
-			r.With(middleware.RequirePermission(permissionChecker, "user:view")).
-				Get("/users", userAdminContainer.UserAdminHandler.ListUsers) // 用户列表
-			r.With(middleware.RequirePermission(permissionChecker, "user:view")).
-				Get("/users/{id}", userAdminContainer.UserAdminHandler.GetUserDetail) // 用户详情
-			r.With(middleware.RequirePermission(permissionChecker, "user:update-role")).
-				Post("/users", userAdminContainer.UserAdminHandler.CreateUser) // 创建用户
-			r.With(middleware.RequirePermission(permissionChecker, "user:update-role")).
-				Put("/users/{id}", userAdminContainer.UserAdminHandler.UpdateUser) // 编辑用户
-			r.With(middleware.RequirePermission(permissionChecker, "user:ban")).
-				Delete("/users/{id}", userAdminContainer.UserAdminHandler.DeleteUser) // 删除用户
-			r.With(middleware.RequirePermission(permissionChecker, "user:update-role")).
-				Patch("/users/{id}/role", userAdminContainer.UserAdminHandler.UpdateUserRole) // 修改用户角色
-			r.With(middleware.RequirePermission(permissionChecker, "user:ban")).
-				Patch("/users/{id}/status", userAdminContainer.UserAdminHandler.UpdateUserStatus) // 启用/禁用用户
-			r.With(middleware.RequirePermission(permissionChecker, "user:ban")).
-				Post("/users/batch-status", userAdminContainer.UserAdminHandler.BatchUpdateStatus) // 批量启用/禁用用户
-			r.With(middleware.RequirePermission(permissionChecker, "user:update-role")).
-				Post("/users/batch-role", userAdminContainer.UserAdminHandler.BatchUpdateRole) // 批量修改用户角色
+			// 读 user:view；创建/改角色 user:update-role；删除/禁用 user:ban
+			userAdminH := userAdminContainer.UserAdminHandler
+			r.Route("/users", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequirePermission(permissionChecker, "user:view"))
+					r.Get("/", userAdminH.ListUsers)     // 用户列表
+					r.Get("/{id}", userAdminH.GetUserDetail) // 用户详情
+				})
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequirePermission(permissionChecker, "user:update-role"))
+					r.Post("/", userAdminH.CreateUser)           // 创建用户
+					r.Put("/{id}", userAdminH.UpdateUser)        // 编辑用户
+					r.Patch("/{id}/role", userAdminH.UpdateUserRole) // 修改用户角色
+					r.Post("/batch-role", userAdminH.BatchUpdateRole) // 批量修改用户角色
+				})
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequirePermission(permissionChecker, "user:ban"))
+					r.Delete("/{id}", userAdminH.DeleteUser)           // 删除用户
+					r.Patch("/{id}/status", userAdminH.UpdateUserStatus) // 启用/禁用用户
+					r.Post("/batch-status", userAdminH.BatchUpdateStatus) // 批量启用/禁用用户
+				})
+			})
 
 			// 权限管理
 			r.Get("/permissions", roleH.ListPermissions) // 获取所有权限定义
@@ -494,18 +502,20 @@ func main() {
 			})
 
 			// 角色管理（读 role:view；写 role:manage）
-			r.With(middleware.RequirePermission(permissionChecker, "role:view")).
-				Get("/roles", roleH.ListRoles)    // 角色列表
-			r.With(middleware.RequirePermission(permissionChecker, "role:view")).
-				Get("/roles/{id}", roleH.GetRole) // 角色详情
-			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
-				Post("/roles", roleH.CreateRole) // 创建角色
-			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
-				Patch("/roles/{id}", roleH.UpdateRole) // 更新角色
-			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
-				Delete("/roles/{id}", roleH.DeleteRole) // 删除角色
-			r.With(middleware.RequirePermission(permissionChecker, "role:manage")).
-				Patch("/roles/{id}/permissions", roleH.UpdateRolePermissions) // 设置角色权限
+			r.Route("/roles", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequirePermission(permissionChecker, "role:view"))
+					r.Get("/", roleH.ListRoles)    // 角色列表
+					r.Get("/{id}", roleH.GetRole)  // 角色详情
+				})
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequirePermission(permissionChecker, "role:manage"))
+					r.Post("/", roleH.CreateRole)                       // 创建角色
+					r.Patch("/{id}", roleH.UpdateRole)                   // 更新角色
+					r.Delete("/{id}", roleH.DeleteRole)                  // 删除角色
+					r.Patch("/{id}/permissions", roleH.UpdateRolePermissions) // 设置角色权限
+				})
+			})
 
 			// 操作日志（含 IP/操作明细，需 log:view）
 			r.With(middleware.RequirePermission(permissionChecker, "log:view")).
@@ -514,52 +524,52 @@ func main() {
 				Get("/logs/user/{id}", auditContainer.AuditHandler.ListLogsByUser) // 用户操作日志
 
 			// 公告管理（读 announcement:view；写 announcement:manage）
-			r.With(middleware.RequirePermission(permissionChecker, "announcement:view")).
-				Get("/announcements", contentH.ListAnnouncements) // 公告列表
-			r.With(middleware.RequirePermission(permissionChecker, "announcement:view")).
-				Get("/announcements/{id}", contentH.GetAnnouncement) // 公告详情
-			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
-				Post("/announcements", contentH.CreateAnnouncement) // 创建公告
-			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
-				Patch("/announcements/{id}", contentH.UpdateAnnouncement) // 更新公告
-			r.With(middleware.RequirePermission(permissionChecker, "announcement:manage")).
-				Delete("/announcements/{id}", contentH.DeleteAnnouncement) // 删除公告
+			r.Route("/announcements", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequirePermission(permissionChecker, "announcement:view"))
+					r.Get("/", contentH.ListAnnouncements)   // 公告列表
+					r.Get("/{id}", contentH.GetAnnouncement) // 公告详情
+				})
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequirePermission(permissionChecker, "announcement:manage"))
+					r.Post("/", contentH.CreateAnnouncement)       // 创建公告
+					r.Patch("/{id}", contentH.UpdateAnnouncement)  // 更新公告
+					r.Delete("/{id}", contentH.DeleteAnnouncement) // 删除公告
+				})
+			})
 
 			// MCP 访问令牌管理（PAT；读/写需 mcp:manage-tokens）
-			r.With(middleware.RequirePermission(permissionChecker, "mcp:manage-tokens")).
-				Get("/api-tokens", apiTokenContainer.APITokenHandler.List)   // 列出当前用户 PAT
-			r.With(middleware.RequirePermission(permissionChecker, "mcp:manage-tokens")).
-				Post("/api-tokens", apiTokenContainer.APITokenHandler.Create) // 创建 PAT（返回明文一次性）
-			r.With(middleware.RequirePermission(permissionChecker, "mcp:manage-tokens")).
-				Delete("/api-tokens/{id}", apiTokenContainer.APITokenHandler.Delete) // 吊销 PAT
+			r.Route("/api-tokens", func(r chi.Router) {
+				r.Use(middleware.RequirePermission(permissionChecker, "mcp:manage-tokens"))
+				r.Get("/", apiTokenContainer.APITokenHandler.List)    // 列出当前用户 PAT
+				r.Post("/", apiTokenContainer.APITokenHandler.Create) // 创建 PAT（返回明文一次性）
+				r.Delete("/{id}", apiTokenContainer.APITokenHandler.Delete) // 吊销 PAT
+			})
 
 			// RSS 订阅管理（T9 后台管理页；读/写需 subscription:manage）
-			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
-				Get("/subscriptions", subscriptionContainer.SubscriptionHandler.List)
-			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
-				Get("/subscriptions/{id}", subscriptionContainer.SubscriptionHandler.Get)
-			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
-				Post("/subscriptions", subscriptionContainer.SubscriptionHandler.Create)
-			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
-				Put("/subscriptions/{id}", subscriptionContainer.SubscriptionHandler.Update)
-			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
-				Post("/subscriptions/{id}/pause", subscriptionContainer.SubscriptionHandler.Pause)
-			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
-				Post("/subscriptions/{id}/resume", subscriptionContainer.SubscriptionHandler.Resume)
-			r.With(middleware.RequirePermission(permissionChecker, "subscription:manage")).
-				Delete("/subscriptions/{id}", subscriptionContainer.SubscriptionHandler.Delete)
+			r.Route("/subscriptions", func(r chi.Router) {
+				r.Use(middleware.RequirePermission(permissionChecker, "subscription:manage"))
+				r.Get("/", subscriptionContainer.SubscriptionHandler.List)
+				r.Get("/{id}", subscriptionContainer.SubscriptionHandler.Get)
+				r.Post("/", subscriptionContainer.SubscriptionHandler.Create)
+				r.Put("/{id}", subscriptionContainer.SubscriptionHandler.Update)
+				r.Post("/{id}/pause", subscriptionContainer.SubscriptionHandler.Pause)
+				r.Post("/{id}/resume", subscriptionContainer.SubscriptionHandler.Resume)
+				r.Delete("/{id}", subscriptionContainer.SubscriptionHandler.Delete)
+			})
 
 			// 评论审核（读 comment:view；批量状态 comment:approve）
-			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
-				Get("/comments/pending", commentH.ListPending) // 待审核评论列表
-			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
-				Get("/comments/pending/count", commentH.CountPending) // 待审核评论数量
-			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
-				Get("/comments", commentH.ListAll) // 所有评论列表（支持状态筛选）
-			r.With(middleware.RequirePermission(permissionChecker, "comment:view")).
-				Get("/comments/{id}", commentH.GetDetail) // 评论详情
-			r.With(middleware.RequirePermission(permissionChecker, "comment:approve")).
-				Patch("/comments/batch-status", commentH.BatchUpdateStatus) // 批量更新评论状态
+			r.Route("/comments", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(middleware.RequirePermission(permissionChecker, "comment:view"))
+					r.Get("/pending", commentH.ListPending)           // 待审核评论列表
+					r.Get("/pending/count", commentH.CountPending)    // 待审核评论数量
+					r.Get("/", commentH.ListAll)                      // 所有评论列表（支持状态筛选）
+					r.Get("/{id}", commentH.GetDetail)               // 评论详情
+				})
+				r.With(middleware.RequirePermission(permissionChecker, "comment:approve")).
+					Patch("/batch-status", commentH.BatchUpdateStatus) // 批量更新评论状态
+			})
 
 			// 文章管理（DDD postH）
 			// 读：post:view；写：权限下放应用层（所有权 + 权限码判定）
