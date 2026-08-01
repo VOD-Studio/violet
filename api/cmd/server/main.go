@@ -21,6 +21,7 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 	appshared "blog-api/internal/application/shared"
 	infraemail "blog-api/internal/infrastructure/email"
+	"blog-api/internal/interfaces/http/routing"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
 )
@@ -155,32 +156,40 @@ func main() {
 	))
 	r.Use(middleware.SecurityHeaders) // 安全响应头
 
-	app.RegisterRoutes(r, &app.Deps{
+	imageContainer := app.NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
+
+	routing.RegisterRoutes(r, &routing.Deps{
 		Cfg:                   cfg,
 		Redis:                 redisClient,
 		PermissionChecker:     permissionChecker,
 		SessionAuth:           middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
 		OptionalAuth:          middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
 		SessionAuthReadOnlyMW: middleware.SessionAuthReadOnly(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
-		Role:                  roleContainer,
-		Settings:              settingsContainer,
-		Stats:                 statsContainer,
-		GitHub:                githubContainer,
-		Releases:              releasesContainer,
-		Auth:                  authContainer,
-		Content:               contentContainer,
-		Comment:               commentContainer,
-		CommentReaction:       commentReactionContainer,
-		Media:                 mediaContainer,
-		Post:                  postContainer,
-		Tag:                   tagContainer,
-		Audit:                 auditContainer,
-		UserAdmin:             userAdminContainer,
-		APIToken:              apiTokenContainer,
-		Subscription:          subscriptionContainer,
-		MCP:                   mcpContainer,
-		CodeRunner:            codeRunnerContainer,
-		System:                systemContainer,
+		Role:                  roleContainer.RoleHandler,
+		Settings:              settingsContainer.SettingsHandler,
+		Stats:                 statsContainer.StatsHandler,
+		GitHub:                githubContainer.GitHubHandler,
+		Releases:              releasesContainer.ReleasesHandler,
+		Auth:                  authContainer.AuthHandler,
+		Content:               contentContainer.ContentHandler,
+		Comment:               commentContainer.CommentHandler,
+		CommentReaction:       commentReactionContainer.CommentReactionHandler,
+		Media:                 mediaContainer.MediaHandler,
+		Post:                  postContainer.PostHandler,
+		Tag:                   tagContainer.TagHandler,
+		Audit:                 auditContainer.AuditHandler,
+		UserAdmin:             userAdminContainer.UserAdminHandler,
+		APIToken:              apiTokenContainer.APITokenHandler,
+		Subscription:          subscriptionContainer.SubscriptionHandler,
+		CodeRunner:            codeRunnerContainer.CodeRunnerHandler,
+		System:                systemContainer.SystemHandler,
+		Image:                 imageContainer.ImageHandler,
+		MCP: routing.MCPHandlers{
+			Post:     mcpContainer.PostHandler,
+			Scraper:  mcpContainer.ScraperHandler,
+			Public:   mcpContainer.PublicHandler,
+			Comments: mcpContainer.CommentsHandler,
+		},
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

@@ -1,6 +1,6 @@
-// Package app admin_router 提供管理后台独立 sub-router（chi 官方 adminRouter 模式）。
+// Package routing admin_router 提供管理后台独立 sub-router（chi 官方 adminRouter 模式）。
 // 统一套 SessionAuth + AdminRequired 基线，内部按模块/权限码细分。
-package app
+package routing
 
 import (
 	"github.com/go-chi/chi/v5"
@@ -18,17 +18,17 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.Use(d.SessionAuth)
 	r.Use(middleware.AdminRequired(perm))
 
-	roleH := d.Role.RoleHandler
-	settingsH := d.Settings.SettingsHandler
-	userAdminH := d.UserAdmin.UserAdminHandler
-	commentH := d.Comment.CommentHandler
-	postH := d.Post.PostHandler
-	mediaH := d.Media.MediaHandler
-	contentH := d.Content.ContentHandler
+	roleH := d.Role
+	settingsH := d.Settings
+	userAdminH := d.UserAdmin
+	commentH := d.Comment
+	postH := d.Post
+	mediaH := d.Media
+	contentH := d.Content
 
 	// 仪表盘统计
-	r.Get("/stats", d.Stats.StatsHandler.GetDashboardStats)
-	r.Get("/stats/views", d.Stats.StatsHandler.GetViewTrends)
+	r.Get("/stats", d.Stats.GetDashboardStats)
+	r.Get("/stats/views", d.Stats.GetViewTrends)
 
 	// 站点设置（按菜单子页拆成 7 组，每组独立 GET/PUT）
 	r.Route("/settings", func(sub chi.Router) {
@@ -105,9 +105,9 @@ func NewAdminRouter(d *Deps) chi.Router {
 
 	// 操作日志（需 log:view）
 	r.With(middleware.RequirePermission(perm, "log:view")).
-		Get("/logs", d.Audit.AuditHandler.ListLogs)
+		Get("/logs", d.Audit.ListLogs)
 	r.With(middleware.RequirePermission(perm, "log:view")).
-		Get("/logs/user/{id}", d.Audit.AuditHandler.ListLogsByUser)
+		Get("/logs/user/{id}", d.Audit.ListLogsByUser)
 
 	// 公告管理（读 announcement:view；写 announcement:manage）
 	r.Route("/announcements", func(r chi.Router) {
@@ -127,21 +127,21 @@ func NewAdminRouter(d *Deps) chi.Router {
 	// MCP 访问令牌管理（PAT；需 mcp:manage-tokens）
 	r.Route("/api-tokens", func(r chi.Router) {
 		r.Use(middleware.RequirePermission(perm, "mcp:manage-tokens"))
-		r.Get("/", d.APIToken.APITokenHandler.List)
-		r.Post("/", d.APIToken.APITokenHandler.Create)
-		r.Delete("/{id}", d.APIToken.APITokenHandler.Delete)
+		r.Get("/", d.APIToken.List)
+		r.Post("/", d.APIToken.Create)
+		r.Delete("/{id}", d.APIToken.Delete)
 	})
 
 	// RSS 订阅管理（需 subscription:manage）
 	r.Route("/subscriptions", func(r chi.Router) {
 		r.Use(middleware.RequirePermission(perm, "subscription:manage"))
-		r.Get("/", d.Subscription.SubscriptionHandler.List)
-		r.Get("/{id}", d.Subscription.SubscriptionHandler.Get)
-		r.Post("/", d.Subscription.SubscriptionHandler.Create)
-		r.Put("/{id}", d.Subscription.SubscriptionHandler.Update)
-		r.Post("/{id}/pause", d.Subscription.SubscriptionHandler.Pause)
-		r.Post("/{id}/resume", d.Subscription.SubscriptionHandler.Resume)
-		r.Delete("/{id}", d.Subscription.SubscriptionHandler.Delete)
+		r.Get("/", d.Subscription.List)
+		r.Get("/{id}", d.Subscription.Get)
+		r.Post("/", d.Subscription.Create)
+		r.Put("/{id}", d.Subscription.Update)
+		r.Post("/{id}/pause", d.Subscription.Pause)
+		r.Post("/{id}/resume", d.Subscription.Resume)
+		r.Delete("/{id}", d.Subscription.Delete)
 	})
 
 	// 评论审核（读 comment:view；批量状态 comment:approve）
@@ -163,12 +163,12 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts", postH.Create)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/import-url", postH.ImportURL)
 	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/slugify", postH.Slugify)
-	r.Put("/posts/{id}", postH.Update)                       // 应用层鉴权
-	r.Patch("/posts/{id}/status", postH.UpdateStatus)        // 应用层鉴权
-	r.Patch("/posts/{id}/featured", postH.SetFeatured)       // 应用层鉴权
-	r.Delete("/posts/{id}", postH.Delete)                    // 应用层鉴权
-	r.Post("/posts/{id}/restore", postH.Restore)             // 应用层鉴权
-	r.Delete("/posts/{id}/hard", postH.HardDelete)           // 应用层鉴权
+	r.Put("/posts/{id}", postH.Update)                 // 应用层鉴权
+	r.Patch("/posts/{id}/status", postH.UpdateStatus)  // 应用层鉴权
+	r.Patch("/posts/{id}/featured", postH.SetFeatured) // 应用层鉴权
+	r.Delete("/posts/{id}", postH.Delete)              // 应用层鉴权
+	r.Post("/posts/{id}/restore", postH.Restore)       // 应用层鉴权
+	r.Delete("/posts/{id}/hard", postH.HardDelete)     // 应用层鉴权
 
 	// 文章版本管理
 	r.With(middleware.RequirePermission(perm, "post:view")).Get("/posts/{id}/versions", postH.ListVersions)
@@ -230,8 +230,8 @@ func NewAdminRouter(d *Deps) chi.Router {
 
 	// 服务器监控（需 system:view）
 	r.Route("/system", func(r chi.Router) {
-		r.With(middleware.RequirePermission(perm, "system:view")).Get("/snapshot", d.System.SystemHandler.GetSnapshot)
-		r.With(middleware.RequirePermission(perm, "system:view")).Get("/history", d.System.SystemHandler.GetHistory)
+		r.With(middleware.RequirePermission(perm, "system:view")).Get("/snapshot", d.System.GetSnapshot)
+		r.With(middleware.RequirePermission(perm, "system:view")).Get("/history", d.System.GetHistory)
 	})
 
 	return r

@@ -1,10 +1,4 @@
-// Package app 提供 HTTP 路由装配。
-//
-// 路由按 chi 官方模式组织（见 chi/_examples/rest）：
-//   - 公开路由在 RegisterRoutes 内按资源域 r.Route 注册；
-//   - 管理后台用独立 sub-router（NewAdminRouter），经 r.Mount("/admin", ...) 挂载；
-//   - MCP 端点在顶层独立挂载，绕过 v1 组的 CSRF/SessionAuth。
-package app
+package routing
 
 import (
 	"fmt"
@@ -12,45 +6,10 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/redis/go-redis/v9"
 
-	"blog-api/config"
 	"blog-api/internal/middleware"
 	"blog-api/internal/openapi"
 )
-
-// Deps 聚合路由注册所需的全部依赖：配置、基础设施中间件依赖与各模块容器。
-type Deps struct {
-	Cfg               *config.Config
-	Redis             *redis.Client
-	PermissionChecker middleware.PermissionChecker
-
-	// 预构造的 session 中间件（在 main.go 一次性构造，省去各注册函数重复传
-	// sessionLookup/cfg.Cookie/IdleTTL 三参）。
-	SessionAuth           func(http.Handler) http.Handler
-	OptionalAuth          func(http.Handler) http.Handler
-	SessionAuthReadOnlyMW func(http.Handler) http.Handler
-
-	Role            *RoleContainer
-	Settings        *SettingsContainer
-	Stats           *StatsContainer
-	GitHub          *GitHubContainer
-	Releases        *ReleasesContainer
-	Auth            *AuthContainer
-	Content         *ContentContainer
-	Comment         *CommentContainer
-	CommentReaction *CommentReactionContainer
-	Media           *MediaContainer
-	Post            *PostContainer
-	Tag             *TagContainer
-	Audit           *AuditContainer
-	UserAdmin       *UserAdminContainer
-	APIToken        *APITokenContainer
-	Subscription    *SubscriptionContainer
-	MCP             *MCPContainer
-	CodeRunner      *CodeRunnerContainer
-	System          *SystemContainer
-}
 
 // RegisterRoutes 注册全部业务路由。
 //
@@ -75,17 +34,17 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		v1.Get("/openapi.json", openapi.Handler())
 
 		// 公开站点设置 / 只读统计
-		v1.Get("/settings", d.Settings.SettingsHandler.GetPublicSettings)
-		v1.Get("/stats", d.Stats.StatsHandler.GetPublicStats)
+		v1.Get("/settings", d.Settings.GetPublicSettings)
+		v1.Get("/stats", d.Stats.GetPublicStats)
 
 		// GitHub 数据（公开，Token 在后端管理）
 		v1.Route("/github", func(r chi.Router) {
-			r.Get("/contributions", d.GitHub.GitHubHandler.GetContributions)
-			r.Get("/repos", d.GitHub.GitHubHandler.GetRepos)
+			r.Get("/contributions", d.GitHub.GetContributions)
+			r.Get("/repos", d.GitHub.GetRepos)
 		})
 
 		// 更新日志（公开，后端代理 GitHub Releases + Redis 缓存）
-		v1.Get("/releases", d.Releases.ReleasesHandler.GetReleases)
+		v1.Get("/releases", d.Releases.GetReleases)
 
 		// 认证
 		registerAuthRoutes(v1, d)
@@ -104,12 +63,12 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 
 		// 项目 / 公告（公开）
 		v1.Route("/projects", func(r chi.Router) {
-			r.Get("/", d.Content.ContentHandler.ListProjects)
-			r.Get("/{id}", d.Content.ContentHandler.GetProject)
+			r.Get("/", d.Content.ListProjects)
+			r.Get("/{id}", d.Content.GetProject)
 		})
 		v1.Route("/announcements", func(r chi.Router) {
-			r.Get("/", d.Content.ContentHandler.ListActiveAnnouncements)
-			r.Get("/{id}", d.Content.ContentHandler.GetActiveAnnouncement)
+			r.Get("/", d.Content.ListActiveAnnouncements)
+			r.Get("/{id}", d.Content.GetActiveAnnouncement)
 		})
 
 		// 代码运行器（登录可执行，SSE 用 GET 绕过 CSRF）
@@ -123,8 +82,7 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 	registerMCPRoutes(r, d)
 
 	// 图片服务（动态 resize/转码 + 二级缓存 + ETag/304）
-	imageContainer := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
-	r.Get(cfg.UploadPathPrefix+"*", imageContainer.ImageHandler.ServeImage)
+	r.Get(cfg.UploadPathPrefix+"*", d.Image.ServeImage)
 }
 
 // healthHandler 健康检查（无版本前缀，无鉴权）。
@@ -141,7 +99,7 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 // 登录态组（logout/me/profile/password）。
 func registerAuthRoutes(v1 chi.Router, d *Deps) {
 	redisClient := d.Redis
-	authH := d.Auth.AuthHandler
+	authH := d.Auth
 
 	v1.Route("/auth", func(r chi.Router) {
 		r.Get("/csrf-token", authH.GetCSRFToken)
@@ -170,7 +128,7 @@ func registerAuthRoutes(v1 chi.Router, d *Deps) {
 
 // registerPostPublicRoutes 注册 /posts 前台公开路由。
 func registerPostPublicRoutes(v1 chi.Router, d *Deps) {
-	postH := d.Post.PostHandler
+	postH := d.Post
 	v1.Route("/posts", func(r chi.Router) {
 		r.Get("/", postH.ListPublished)
 		r.Get("/archive", postH.ArchiveYears)
@@ -183,7 +141,7 @@ func registerPostPublicRoutes(v1 chi.Router, d *Deps) {
 // registerTagRoutes 注册 /tags 路由（公开 List + 登录管理员写操作）。
 func registerTagRoutes(v1 chi.Router, d *Deps) {
 	perm := d.PermissionChecker
-	tagH := d.Tag.TagHandler
+	tagH := d.Tag
 
 	v1.Route("/tags", func(r chi.Router) {
 		r.Get("/", tagH.List) // 公开
@@ -204,7 +162,7 @@ func registerTagRoutes(v1 chi.Router, d *Deps) {
 func registerCommentRoutes(v1 chi.Router, d *Deps) {
 	redisClient := d.Redis
 	perm := d.PermissionChecker
-	commentH := d.Comment.CommentHandler
+	commentH := d.Comment
 	// /posts/{postId}/comments（列表 OptionalAuth；创建 OptionalAuth + 限流；发码独立限流）
 	v1.Route("/posts/{postId}/comments", func(r chi.Router) {
 		r.With(d.OptionalAuth).
@@ -225,7 +183,7 @@ func registerCommentRoutes(v1 chi.Router, d *Deps) {
 		Get("/posts/{postId}/annotations/summary", commentH.AnnotationSummary)
 
 	// 评论反应（DDD commentReactionContainer）
-	crH := d.CommentReaction.CommentReactionHandler
+	crH := d.CommentReaction
 	v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
 		r.With(d.OptionalAuth).
 			Get("/", crH.GetCommentReactions)
@@ -233,7 +191,7 @@ func registerCommentRoutes(v1 chi.Router, d *Deps) {
 			With(middleware.CommentRateLimit(redisClient)).
 			Post("/", crH.AddReaction)
 		r.With(d.SessionAuth). // 删除反应需认证，防匿名删除他人反应
-			Delete("/{emoji_id}", crH.RemoveReaction)
+					Delete("/{emoji_id}", crH.RemoveReaction)
 	})
 	v1.With(d.OptionalAuth).
 		Post("/comments/reactions/batch", crH.GetReactionsBatch)
@@ -253,7 +211,7 @@ func registerCommentRoutes(v1 chi.Router, d *Deps) {
 // registerMediaRoutes 注册媒体相关路由（公开获取 + 登录上传 + 音乐/表情公开查询）。
 func registerMediaRoutes(v1 chi.Router, d *Deps) {
 	redisClient := d.Redis
-	mediaH := d.Media.MediaHandler
+	mediaH := d.Media
 
 	// 媒体（公开获取详情 + 登录列表/删除/批量删除）
 	v1.Route("/media", func(r chi.Router) {
@@ -303,7 +261,7 @@ func registerMediaRoutes(v1 chi.Router, d *Deps) {
 // registerCodeRunnerRoutes 注册 /code-runner 路由（登录可执行，SSE 用 GET）。
 func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {
 	redisClient := d.Redis
-	codeRunnerH := d.CodeRunner.CodeRunnerHandler
+	codeRunnerH := d.CodeRunner
 
 	v1.Route("/code-runner", func(r chi.Router) {
 		r.Use(d.SessionAuth)
@@ -322,11 +280,11 @@ func registerMCPRoutes(r chi.Router, d *Deps) {
 	mcp := d.MCP
 
 	r.With(middleware.RateLimit("mcp", redisClient, time.Minute, 60)).
-		Handle("/api/v1/mcp", mcp.PostHandler)
+		Handle("/api/v1/mcp", mcp.Post)
 	r.With(middleware.RateLimit("mcp-scraper", redisClient, time.Minute, 30)).
-		Handle("/api/v1/mcp/scraper", mcp.ScraperHandler)
+		Handle("/api/v1/mcp/scraper", mcp.Scraper)
 	r.With(middleware.RateLimit("mcp-reader", redisClient, time.Minute, 120)).
-		Handle("/api/v1/mcp/reader", mcp.PublicHandler)
+		Handle("/api/v1/mcp/reader", mcp.Public)
 	r.With(middleware.RateLimit("mcp-comments", redisClient, time.Minute, 60)).
-		Handle("/api/v1/mcp/comments", mcp.CommentsHandler)
+		Handle("/api/v1/mcp/comments", mcp.Comments)
 }
