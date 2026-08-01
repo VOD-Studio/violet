@@ -12,12 +12,10 @@ import (
 // 基线中间件：SessionAuth + AdminRequired。
 // 由 RegisterRoutes 经 v1.Mount("/admin", ...) 挂载。
 func NewAdminRouter(d *Deps) chi.Router {
-	cfg := d.Cfg
 	perm := d.PermissionChecker
-	sessionLookup := d.SessionLookup
 
 	r := chi.NewRouter()
-	r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
+	r.Use(d.SessionAuth)
 	r.Use(middleware.AdminRequired(perm))
 
 	roleH := d.Role.RoleHandler

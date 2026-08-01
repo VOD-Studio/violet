@@ -24,7 +24,12 @@ type Deps struct {
 	Cfg               *config.Config
 	Redis             *redis.Client
 	PermissionChecker middleware.PermissionChecker
-	SessionLookup     middleware.SessionLookup
+
+	// 预构造的 session 中间件（在 main.go 一次性构造，省去各注册函数重复传
+	// sessionLookup/cfg.Cookie/IdleTTL 三参）。
+	SessionAuth           func(http.Handler) http.Handler
+	OptionalAuth          func(http.Handler) http.Handler
+	SessionAuthReadOnlyMW func(http.Handler) http.Handler
 
 	Role            *RoleContainer
 	Settings        *SettingsContainer
@@ -135,9 +140,7 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 // 公开端点（csrf-token/register/login 等）+ 限流防暴力；session 端点只读探活；
 // 登录态组（logout/me/profile/password）。
 func registerAuthRoutes(v1 chi.Router, d *Deps) {
-	cfg := d.Cfg
 	redisClient := d.Redis
-	sessionLookup := d.SessionLookup
 	authH := d.Auth.AuthHandler
 
 	v1.Route("/auth", func(r chi.Router) {
@@ -152,11 +155,11 @@ func registerAuthRoutes(v1 chi.Router, d *Deps) {
 		r.With(middleware.AuthRateLimit(redisClient)).Post("/reset-password", authH.ResetPassword)
 
 		// SSR 探活端点：只读校验当前 session，不续期、不写 cookie（命门不变量①）
-		r.With(middleware.SessionAuthReadOnly(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+		r.With(d.SessionAuthReadOnlyMW).
 			Get("/session", authH.Session)
 
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
+			r.Use(d.SessionAuth)
 			r.Post("/logout", authH.Logout)
 			r.Get("/me", authH.GetMe)
 			r.Patch("/profile", authH.UpdateProfile)
@@ -179,16 +182,14 @@ func registerPostPublicRoutes(v1 chi.Router, d *Deps) {
 
 // registerTagRoutes 注册 /tags 路由（公开 List + 登录管理员写操作）。
 func registerTagRoutes(v1 chi.Router, d *Deps) {
-	cfg := d.Cfg
 	perm := d.PermissionChecker
-	sessionLookup := d.SessionLookup
 	tagH := d.Tag.TagHandler
 
 	v1.Route("/tags", func(r chi.Router) {
 		r.Get("/", tagH.List) // 公开
 
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
+			r.Use(d.SessionAuth)
 			r.Use(middleware.AdminRequired(perm))
 			r.With(middleware.RequirePermission(perm, "tag:create")).Post("/", tagH.Create)
 			r.With(middleware.RequirePermission(perm, "tag:update")).Patch("/{id}", tagH.Update)
@@ -201,48 +202,46 @@ func registerTagRoutes(v1 chi.Router, d *Deps) {
 // 评论方法散在多个前缀：/posts/{postId}/comments、/comments/{id}、/comments/{commentId}/replies 等。
 // admin 审核列表走 NewAdminRouter 内 /admin/comments。
 func registerCommentRoutes(v1 chi.Router, d *Deps) {
-	cfg := d.Cfg
 	redisClient := d.Redis
 	perm := d.PermissionChecker
-	sessionLookup := d.SessionLookup
 	commentH := d.Comment.CommentHandler
 	// /posts/{postId}/comments（列表 OptionalAuth；创建 OptionalAuth + 限流；发码独立限流）
 	v1.Route("/posts/{postId}/comments", func(r chi.Router) {
-		r.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+		r.With(d.OptionalAuth).
 			Get("/", commentH.ListByPost)
 		r.With(
-			middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
+			d.OptionalAuth,
 			middleware.CommentRateLimit(redisClient),
 		).Post("/", commentH.Create)
 		r.With(middleware.CommentCodeRateLimit(redisClient)).Post("/code", commentH.SendCode)
 	})
 
 	// 评论回复列表（公开 + OptionalAuth）
-	v1.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+	v1.With(d.OptionalAuth).
 		Get("/comments/{commentId}/replies", commentH.ListReplies)
 
 	// 批注按块聚合统计
-	v1.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+	v1.With(d.OptionalAuth).
 		Get("/posts/{postId}/annotations/summary", commentH.AnnotationSummary)
 
 	// 评论反应（DDD commentReactionContainer）
 	crH := d.CommentReaction.CommentReactionHandler
 	v1.Route("/comments/{comment_id}/reactions", func(r chi.Router) {
-		r.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+		r.With(d.OptionalAuth).
 			Get("/", crH.GetCommentReactions)
-		r.With(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+		r.With(d.SessionAuth).
 			With(middleware.CommentRateLimit(redisClient)).
 			Post("/", crH.AddReaction)
-		r.With(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)). // 删除反应需认证，防匿名删除他人反应
+		r.With(d.SessionAuth). // 删除反应需认证，防匿名删除他人反应
 			Delete("/{emoji_id}", crH.RemoveReaction)
 	})
-	v1.With(middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)).
+	v1.With(d.OptionalAuth).
 		Post("/comments/reactions/batch", crH.GetReactionsBatch)
 
 	// 评论审核/删除（admin 权限，但路径在 /comments/{id} 不在 /admin 下）
 	v1.Route("/comments/{id}", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
+			r.Use(d.SessionAuth)
 			r.Use(middleware.AdminRequired(perm))
 			r.Patch("/approve", commentH.Approve)
 			r.Patch("/spam", commentH.MarkSpam)
@@ -253,17 +252,14 @@ func registerCommentRoutes(v1 chi.Router, d *Deps) {
 
 // registerMediaRoutes 注册媒体相关路由（公开获取 + 登录上传 + 音乐/表情公开查询）。
 func registerMediaRoutes(v1 chi.Router, d *Deps) {
-	cfg := d.Cfg
 	redisClient := d.Redis
-	sessionLookup := d.SessionLookup
 	mediaH := d.Media.MediaHandler
-	sessionAuth := func(r chi.Router) { r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL)) }
 
 	// 媒体（公开获取详情 + 登录列表/删除/批量删除）
 	v1.Route("/media", func(r chi.Router) {
 		r.Get("/{id}", mediaH.GetMedia)
 		r.Group(func(r chi.Router) {
-			sessionAuth(r)
+			r.Use(d.SessionAuth)
 			r.Get("/", mediaH.ListFiles)
 			r.Delete("/{id}", mediaH.DeleteFile)
 			r.Post("/batch-delete", mediaH.BatchDeleteMedia)
@@ -272,7 +268,7 @@ func registerMediaRoutes(v1 chi.Router, d *Deps) {
 
 	// 上传（统一入口，分片/整体/秒传；登录 + UploadRateLimit）
 	v1.Route("/uploads", func(r chi.Router) {
-		r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
+		r.Use(d.SessionAuth)
 		r.Use(middleware.UploadRateLimit(redisClient))
 		r.Post("/", mediaH.InitUploadSession)
 		r.Put("/{uploadId}/chunks/{index}", mediaH.SaveUploadChunk)
@@ -306,13 +302,11 @@ func registerMediaRoutes(v1 chi.Router, d *Deps) {
 
 // registerCodeRunnerRoutes 注册 /code-runner 路由（登录可执行，SSE 用 GET）。
 func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {
-	cfg := d.Cfg
 	redisClient := d.Redis
-	sessionLookup := d.SessionLookup
 	codeRunnerH := d.CodeRunner.CodeRunnerHandler
 
 	v1.Route("/code-runner", func(r chi.Router) {
-		r.Use(middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL))
+		r.Use(d.SessionAuth)
 		r.With(middleware.CodeRunnerRateLimit(redisClient)).Post("/run", codeRunnerH.Run)
 		r.Get("/tasks/{id}", codeRunnerH.GetTask)
 		r.With(middleware.CodeRunnerRateLimit(redisClient)).Post("/run/stream", codeRunnerH.RunStream)
