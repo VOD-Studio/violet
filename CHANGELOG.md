@@ -7,6 +7,18 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 从 Conventional Commits 自动维护（见 `.github/workflows/release-please.yml`）。
 
+## [2.1.0](https://github.com/VOD-Studio/violet/compare/v2.0.4...v2.1.0) (2026-08-01)
+
+
+### ✨ 新增
+
+* **about:** About 页重设计 + 更新日志（PRD-0009） ([#7](https://github.com/VOD-Studio/violet/issues/7)) ([b718fbe](https://github.com/VOD-Studio/violet/commit/b718fbec809103cec0564a4f06307d9f176a73c6))
+
+
+### 👷 CI
+
+* **release-please:** 升级 action v4→v5(Node 24 运行时) ([#5](https://github.com/VOD-Studio/violet/issues/5)) ([fa5a5c6](https://github.com/VOD-Studio/violet/commit/fa5a5c6c53482421fa1a64f4144f28bd3b50607b))
+
 ## [2.0.4](https://github.com/VOD-Studio/violet/compare/v2.0.3...v2.0.4) (2026-07-30)
 
 
