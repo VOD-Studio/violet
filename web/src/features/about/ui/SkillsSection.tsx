@@ -39,13 +39,13 @@ export function SkillsSection({ settings }: AboutSectionProps) {
     if (groups.length === 0) return null;
 
     return (
-        <section className="container mx-auto px-6 py-20">
+        <section className="mx-auto w-full max-w-5xl px-6 py-14">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
-                className="mx-auto max-w-2xl space-y-8"
+                className="space-y-8"
             >
                 {groups.map((group) => (
                     <div key={group.title}>

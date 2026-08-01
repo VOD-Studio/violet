@@ -5,7 +5,7 @@ import type { AboutSection } from "../model/about-config";
 export interface AboutSectionProps {
     /** 本区块的配置（params 在此取） */
     section: AboutSection;
-    /** 全站点设置（bio/tech_stack/github_username 等公共字段） */
+    /** 全站点设置（bio/github_username 等公共字段） */
     settings: SiteSettings;
 }
 

@@ -1,7 +1,7 @@
 /**
  * formatDate - 把 ISO 日期格式化为 YYYY-MM-DD（关于页区块共用）
  *
- * 非法日期原样返回，避免吞错。抽公共以消除 ChangelogSection / ProjectTimelineSection 的重复。
+ * 非法日期原样返回，避免吞错。抽公共以消除 ChangelogSection 的重复。
  */
 export function formatDate(iso: string): string {
     const d = new Date(iso);

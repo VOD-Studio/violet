@@ -43,13 +43,12 @@ export function SocialMatrixSection({ settings }: AboutSectionProps) {
     if (entries.length === 0) return null;
 
     return (
-        <section className="container mx-auto px-6 py-20">
+        <section className="mx-auto w-full max-w-5xl px-6 py-14">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
-                className="mx-auto max-w-2xl"
             >
                 <h2 className="mb-6 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
                     链接

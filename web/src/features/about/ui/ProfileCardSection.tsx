@@ -5,8 +5,8 @@ import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 /**
  * ProfileCardSection - A2 名片卡
  *
- * 展示 role / location / available_for / email 的卡片。空字段不显示对应行。
- * 消费 settings.profile_role / profile_location / available_for / social_email。
+ * 展示 role / location / available_for / email。空字段不显示对应行。
+ * 横向 flex-wrap 布局，与内容流宽度一致（不再孤立窄卡片）。
  */
 export function ProfileCardSection({ settings }: AboutSectionProps) {
     const rows = [
@@ -19,22 +19,20 @@ export function ProfileCardSection({ settings }: AboutSectionProps) {
     if (rows.length === 0) return null;
 
     return (
-        <section className="container mx-auto px-6 py-20">
+        <section className="mx-auto w-full max-w-5xl px-6 py-14">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
-                className="mx-auto max-w-md rounded-xl border border-edge-hairline bg-background p-6 shadow-sm"
+                className="flex flex-wrap gap-x-8 gap-y-3"
             >
-                <div className="space-y-4">
-                    {rows.map(({ icon: Icon, label }) => (
-                        <div key={label} className="flex items-center gap-3">
-                            <Icon className="size-4 shrink-0 text-muted-foreground" />
-                            <span className="text-sm text-foreground/80">{label}</span>
-                        </div>
-                    ))}
-                </div>
+                {rows.map(({ icon: Icon, label }) => (
+                    <div key={label} className="flex items-center gap-2 text-sm text-foreground/80">
+                        <Icon className="size-4 shrink-0 text-muted-foreground" />
+                        <span>{label}</span>
+                    </div>
+                ))}
             </motion.div>
         </section>
     );

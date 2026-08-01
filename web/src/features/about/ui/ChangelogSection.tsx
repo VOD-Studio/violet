@@ -1,6 +1,7 @@
 import { useReleases } from "@features/about/api/queries";
 import { formatDate } from "@features/about/model/format";
 import { motion } from "motion/react";
+import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
 /** 分类标签的色相（emoji → tailwind 配色类） */
@@ -24,13 +25,12 @@ export function ChangelogSection(_: AboutSectionProps) {
     if (!data || data.releases.length === 0) return null;
 
     return (
-        <section className="container mx-auto px-6 py-20">
+        <section className="mx-auto w-full max-w-5xl px-6 py-14">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
-                className="mx-auto max-w-2xl"
             >
                 <h2 className="mb-8 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
                     更新日志
@@ -75,18 +75,20 @@ export function ChangelogSection(_: AboutSectionProps) {
                                                 >
                                                     {cat.emoji} {cat.label}
                                                 </span>
-                                                <ul className="mt-1.5 space-y-1 pl-1 text-sm text-foreground/70">
+                                                <ul className="mt-1.5 space-y-1 pl-1 text-sm text-foreground/70 [&>li>p]:my-0 [&>li>p]:leading-6">
                                                     {cat.items.map((item, idx) => (
-                                                        <li key={idx}>{item}</li>
+                                                        <li key={idx}>
+                                                            <MarkdownContent content={item} />
+                                                        </li>
                                                     ))}
                                                 </ul>
                                             </div>
                                         ))}
                                     </div>
                                 ) : release.body ? (
-                                    <p className="whitespace-pre-line text-sm text-foreground/70">
-                                        {release.body}
-                                    </p>
+                                    <div className="text-sm text-foreground/70">
+                                        <MarkdownContent content={release.body} />
+                                    </div>
                                 ) : null}
                             </div>
                         </motion.article>

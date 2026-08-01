@@ -11,13 +11,13 @@ export function AvatarTaglineSection({ settings }: AboutSectionProps) {
     if (!settings.tagline && !settings.avatar_url) return null;
 
     return (
-        <section className="container mx-auto px-6 py-20">
+        <section className="mx-auto w-full max-w-5xl px-6 py-14">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
-                className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center"
+                className="flex flex-col items-center gap-6 text-center"
             >
                 {settings.avatar_url ? (
                     <img

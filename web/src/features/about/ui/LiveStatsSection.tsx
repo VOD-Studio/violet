@@ -23,13 +23,13 @@ export function LiveStatsSection(_: AboutSectionProps) {
     ];
 
     return (
-        <section className="container mx-auto px-6 py-20">
+        <section className="mx-auto w-full max-w-5xl px-6 py-14">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
-                className="mx-auto grid max-w-4xl grid-cols-2 gap-8 md:grid-cols-4"
+                className="grid grid-cols-2 gap-8 md:grid-cols-4"
             >
                 {items.map((item) => (
                     <div key={item.label} className="text-center">
