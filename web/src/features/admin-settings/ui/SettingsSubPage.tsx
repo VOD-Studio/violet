@@ -1,12 +1,14 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Button } from "@shared/ui/base/button";
-import type { FormEventHandler, ReactNode } from "react";
+import { type FormEventHandler, type ReactNode, useId } from "react";
 
 /**
  * SettingsSubPage - 设置子页外壳
  *
- * 各设置子页共享同一布局骨架：PageShell 包裹 + 加载中分支 + form + PermissionGuard 保存按钮。
+ * 各设置子页共享同一布局骨架：PageShell 包裹 + 加载中分支 + form。
+ * 保存按钮放 PageShell action（sticky 标题区右侧），通过 form 属性关联表单，
+ * 无需滚动到底部即可提交。
  * 本组件消除 6 个子页重复的外壳样板，子页只关心表单内容（children）。
  *
  * @param title/description  PageShell 标题与描述
@@ -30,6 +32,8 @@ export function SettingsSubPage({
     onSubmit: FormEventHandler<HTMLFormElement>;
     children: ReactNode;
 }) {
+    const formId = useId();
+
     if (isLoading) {
         return (
             <PageShell title={title} description={description}>
@@ -39,14 +43,19 @@ export function SettingsSubPage({
     }
 
     return (
-        <PageShell title={title} description={description}>
-            <form onSubmit={onSubmit} className="max-w-2xl space-y-8">
-                {children}
+        <PageShell
+            title={title}
+            description={description}
+            action={
                 <PermissionGuard permission="settings:update">
-                    <Button type="submit" disabled={isPending}>
+                    <Button type="submit" form={formId} size="sm" disabled={isPending}>
                         {isPending ? "保存中…" : "保存设置"}
                     </Button>
                 </PermissionGuard>
+            }
+        >
+            <form id={formId} onSubmit={onSubmit} className="space-y-6">
+                {children}
             </form>
         </PageShell>
     );

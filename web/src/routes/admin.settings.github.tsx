@@ -34,11 +34,15 @@ function GithubSettingsPage() {
                 <Field label="GitHub Token">
                     <Input type="password" {...register("github_token")} />
                 </Field>
-                <Field label="更新日志仓库名">
+                <Field label="更新日志仓库">
                     <Input
                         {...register("releases_repo")}
-                        placeholder="如 violet（配合用户名拼 owner/repo）"
+                        placeholder="如 violet 或 VOD-Studio/violet"
                     />
+                    <p className="text-xs text-muted-foreground">
+                        仓库名（如 violet，owner 取上方用户名）或完整 owner/repo（如
+                        VOD-Studio/violet）
+                    </p>
                 </Field>
             </section>
         </SettingsSubPage>
