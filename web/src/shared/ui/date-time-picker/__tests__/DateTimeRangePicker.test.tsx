@@ -61,13 +61,15 @@ describe("DateTimeRangePicker", () => {
         expect(trigger).not.toBeNull();
         if (trigger) fireEvent.click(trigger);
 
+        const now = new Date();
+        const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-`;
         const day1 = Array.from(document.querySelectorAll('div[data-current="true"]'))
             .find((el) => el.textContent === "1")
             ?.querySelector("button");
         expect(day1).not.toBeNull();
         if (day1) fireEvent.click(day1);
 
-        expect(onChange).toHaveBeenCalledWith({ start: "2026-07-01T00:00", end: undefined });
+        expect(onChange).toHaveBeenCalledWith({ start: `${ym}01T00:00`, end: undefined });
 
         const day4 = Array.from(document.querySelectorAll('div[data-current="true"]'))
             .find((el) => el.textContent === "4")
@@ -76,16 +78,18 @@ describe("DateTimeRangePicker", () => {
         if (day4) fireEvent.click(day4);
 
         expect(onChange).toHaveBeenLastCalledWith({
-            start: "2026-07-01T00:00",
-            end: "2026-07-04T00:00",
+            start: `${ym}01T00:00`,
+            end: `${ym}04T00:00`,
         });
     });
 
     it("结束日期早于开始日期时自动交换", () => {
         const onChange = vi.fn();
+        const now = new Date();
+        const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-`;
         const { container } = render(
             <ControlledDateTimeRangePicker
-                initialValue={{ start: "2026-07-10T00:00" }}
+                initialValue={{ start: `${ym}10T00:00` }}
                 onChange={onChange}
             />,
         );
@@ -100,8 +104,8 @@ describe("DateTimeRangePicker", () => {
         if (day5) fireEvent.click(day5);
 
         expect(onChange).toHaveBeenCalledWith({
-            start: "2026-07-05T00:00",
-            end: "2026-07-10T00:00",
+            start: `${ym}05T00:00`,
+            end: `${ym}10T00:00`,
         });
     });
 

@@ -155,7 +155,7 @@ function BlogDetailPage() {
                         </div>
                     ) : null}
 
-                    <h1 className="mb-5 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+                    <h1 className="mb-3 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
                         {post.title}
                     </h1>
 
@@ -201,7 +201,7 @@ function BlogDetailPage() {
                 {/* 封面图 */}
                 {post.cover_image ? (
                     <div
-                        className="mx-auto mb-12 max-w-4xl overflow-hidden rounded-2xl"
+                        className="mx-auto mb-9 max-w-4xl overflow-hidden rounded-2xl"
                         style={{ viewTransitionName: "post-cover" }}
                     >
                         <CroppedImage

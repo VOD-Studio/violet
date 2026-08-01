@@ -6,6 +6,7 @@ package settings
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 
 	"blog-api/internal/domain/shared"
@@ -27,6 +28,26 @@ type SiteSettings struct {
 	TechStack          string `json:"tech_stack"`
 	Bio                string `json:"bio"`
 	FooterText         string `json:"footer_text"`
+	// AboutConfig 关于页区块版面配置（{sections:[{id,enabled,order,params}]}）。
+	// 存储层为 JSON 字符串（site_settings key-value 表）；API 边界用 json.RawMessage
+	// 使其序列化为原生 JSON 对象（空配置序列化为 null），前端无需二次 parse。
+	AboutConfig json.RawMessage `json:"about_config"`
+	// 关于博主（A 线）内容字段：头像/标语/名片/技能/社交矩阵
+	AvatarURL        string `json:"avatar_url"`
+	Tagline          string `json:"tagline"`
+	ProfileRole      string `json:"profile_role"`
+	ProfileLocation  string `json:"profile_location"`
+	AvailableFor     string `json:"available_for"`
+	SkillsStrong     string `json:"skills_strong"`
+	SkillsLearning   string `json:"skills_learning"`
+	SkillsInterests  string `json:"skills_interests"`
+	SocialTwitter    string `json:"social_twitter"`
+	SocialMastodon   string `json:"social_mastodon"`
+	SocialEmail      string `json:"social_email"`
+	SocialRss        string `json:"social_rss"`
+	SocialBilibili   string `json:"social_bilibili"`
+	// ReleasesRepo 更新日志区块读取的 GitHub 仓库名（owner/repo 或 repo，配合 github_username）
+	ReleasesRepo string `json:"releases_repo"`
 	// LLM 配置（OpenAI 协议兼容端点，覆盖 OpenAI/DeepSeek/Moonshot/通义/智谱/Ollama/vLLM）
 	LLMAPIKey   string `json:"llm_api_key"`
 	LLMAPIURL   string `json:"llm_api_url"`
@@ -59,7 +80,23 @@ type UpdateInput struct {
 	TechStack          *string
 	Bio                *string
 	FooterText         *string
-	LLMAPIKey          *string
+	AboutConfig        *json.RawMessage
+	// 关于博主（A 线）内容字段
+	AvatarURL       *string
+	Tagline         *string
+	ProfileRole     *string
+	ProfileLocation *string
+	AvailableFor    *string
+	SkillsStrong    *string
+	SkillsLearning  *string
+	SkillsInterests *string
+	SocialTwitter   *string
+	SocialMastodon  *string
+	SocialEmail     *string
+	SocialRss       *string
+	SocialBilibili  *string
+	ReleasesRepo      *string
+	LLMAPIKey         *string
 	LLMAPIURL          *string
 	LLMModel           *string
 	LLMProtocol        *string
@@ -107,6 +144,24 @@ func fromMap(m map[string]string) SiteSettings {
 	s.TechStack = m["tech_stack"]
 	s.Bio = m["bio"]
 	s.FooterText = m["footer_text"]
+	if raw := m["about_config"]; raw != "" {
+		s.AboutConfig = json.RawMessage(raw)
+	}
+	// 关于博主（A 线）内容字段
+	s.AvatarURL = m["avatar_url"]
+	s.Tagline = m["tagline"]
+	s.ProfileRole = m["profile_role"]
+	s.ProfileLocation = m["profile_location"]
+	s.AvailableFor = m["available_for"]
+	s.SkillsStrong = m["skills_strong"]
+	s.SkillsLearning = m["skills_learning"]
+	s.SkillsInterests = m["skills_interests"]
+	s.SocialTwitter = m["social_twitter"]
+	s.SocialMastodon = m["social_mastodon"]
+	s.SocialEmail = m["social_email"]
+	s.SocialRss = m["social_rss"]
+	s.SocialBilibili = m["social_bilibili"]
+	s.ReleasesRepo = m["releases_repo"]
 	s.LLMAPIKey = m["llm_api_key"]
 	s.LLMAPIURL = m["llm_api_url"]
 	s.LLMModel = m["llm_model"]

@@ -1,11 +1,15 @@
 import type { LucideIcon } from "lucide-react";
 import {
     Activity,
+    Bot,
+    Cpu,
     FileText,
     FolderKanban,
+    GitBranch,
     Images,
     KeyRound,
     LayoutDashboard,
+    LayoutPanelLeft,
     Megaphone,
     MessageSquare,
     Rss,
@@ -14,17 +18,18 @@ import {
     Shield,
     Smile,
     Tag,
+    User,
     UserCog,
     Users,
 } from "lucide-react";
 
 /**
- * AdminNavItem - 后台导航项
+ * NavMenuItem - 后台导航项
  *
  * 仅路由型（后台导航全部是路由跳转，不像前台有 action 型）。
  * 对齐 @shared/config/nav.ts 的 NavRouteItem 模型。
  */
-export interface AdminNavItem {
+export interface NavMenuItem {
     /** 显示文案 */
     label: string;
     /** 路由路径 */
@@ -34,36 +39,42 @@ export interface AdminNavItem {
     /** 是否精确匹配激活（首页用 exact） */
     exact?: boolean;
     /** 所属分组；省略为顶级项（概览），渲染在所有分组之上 */
-    group?: AdminNavGroup;
+    group?: NavMenuGroup;
     /**
      * 可见所需权限码（满足任一即显示）。
      * 省略表示仅需 admin:access（由后台路由守卫统一保证）。
      * 内置超管通配短路，永远可见。
      */
     permissions?: string[];
+    /**
+     * 子菜单项。存在时该项渲染为可折叠父项（点按切换展开/收起，不直接导航），
+     * 父项本身只作分组容器。父项可见性 = 任一子项可见（权限逻辑同上）。
+     * 父项的 `to` 仍需提供，用于当前路由命中任一子项时的激活态判定（前缀匹配）。
+     */
+    children?: NavMenuItem[];
 }
 
 /** 菜单分组标识 */
-export type AdminNavGroup = "content" | "member" | "system";
+export type NavMenuGroup = "content" | "member" | "system";
 
 /**
- * ADMIN_NAV_GROUPS - 分组展示顺序与标题
+ * NAV_MENU_GROUPS - 分组展示顺序与标题
  *
- * 仅定义顺序与文案；组内成员由 ADMIN_NAV_ITEMS 的 group 字段归属。
+ * 仅定义顺序与文案；组内成员由 NAV_MENU_ITEMS 的 group 字段归属。
  */
-export const ADMIN_NAV_GROUPS: { key: AdminNavGroup; label: string }[] = [
+export const NAV_MENU_GROUPS: { key: NavMenuGroup; label: string }[] = [
     { key: "content", label: "内容" },
     { key: "member", label: "用户与权限" },
     { key: "system", label: "系统" },
 ];
 
 /**
- * ADMIN_NAV_ITEMS - 后台导航单一来源
+ * NAV_MENU_ITEMS - 后台导航单一来源
  *
- * AdminSidebar 与 AdminMobileNav 共用此配置。
+ * 桌面 Sidebar 与移动 MobileNav 共用此配置。
  * permissions 控制菜单项可见性（满足任一权限即显示）。
  */
-export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
+export const NAV_MENU_ITEMS: NavMenuItem[] = [
     { label: "概览", to: "/admin", icon: LayoutDashboard, exact: true },
     {
         label: "文章管理",
@@ -148,6 +159,50 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
         icon: Settings,
         group: "system",
         permissions: ["settings:view"],
+        children: [
+            {
+                label: "基础信息",
+                to: "/admin/settings/general",
+                icon: Settings,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "认证",
+                to: "/admin/settings/auth",
+                icon: Shield,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "GitHub",
+                to: "/admin/settings/github",
+                icon: GitBranch,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "关于",
+                to: "/admin/settings/profile",
+                icon: User,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "关于页配置",
+                to: "/admin/settings/about",
+                icon: LayoutPanelLeft,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "LLM 配置",
+                to: "/admin/settings/llm",
+                icon: Bot,
+                permissions: ["settings:view"],
+            },
+            {
+                label: "代码运行器",
+                to: "/admin/settings/code-runner",
+                icon: Cpu,
+                permissions: ["settings:view"],
+            },
+        ],
     },
     {
         label: "MCP 接入",

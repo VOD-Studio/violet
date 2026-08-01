@@ -11,7 +11,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Menu } from "lucide-react";
 import { useState } from "react";
 import { AdminBrand } from "./AdminBrand";
-import { AdminSidebarBody } from "./AdminSidebarBody";
+import { NavMenu } from "./nav-menu/NavMenu";
 
 /**
  * AdminMobileNav - 移动端抽屉导航
@@ -43,7 +43,7 @@ export function AdminMobileNav() {
                     <div className="flex-1 overflow-y-auto">
                         <SheetClose asChild>
                             <div>
-                                <AdminSidebarBody onNavigate={() => setOpen(false)} />
+                                <NavMenu onNavigate={() => setOpen(false)} />
                             </div>
                         </SheetClose>
                     </div>

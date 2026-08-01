@@ -107,7 +107,7 @@ export const markdownComponents: Components = {
         </h4>
     ),
     p: ({ children, style, className }) => (
-        <p style={style} className={cn("my-5 leading-8 text-foreground/90", className)}>
+        <p style={style} className={cn("my-5 text-foreground/90", className)}>
             {children}
         </p>
     ),
@@ -150,7 +150,7 @@ export const markdownComponents: Components = {
                 </li>
             );
         }
-        return <li className="leading-8">{children}</li>;
+        return <li>{children}</li>;
     },
     // HTML 路径的 input[type=checkbox] → 用项目 Checkbox 组件
     input: ({ type, checked, ...rest }) => {
@@ -160,7 +160,7 @@ export const markdownComponents: Components = {
         return <input type={type} {...rest} />;
     },
     blockquote: ({ children }) => (
-        <blockquote className="my-6 border-l-4 border-primary/50 bg-muted/40 py-2 pl-5 italic text-foreground/80">
+        <blockquote className="my-6 border-l-4 border-primary/50 bg-muted/40 py-2 pl-5 text-foreground/80">
             {children}
         </blockquote>
     ),

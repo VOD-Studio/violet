@@ -51,16 +51,18 @@ describe("DateRangePicker", () => {
         expect(trigger).not.toBeNull();
         if (trigger) fireEvent.click(trigger);
 
-        // 打开面板后选择 7月1日
+        // 打开面板后选择当前月的 1 日
+        const now = new Date();
+        const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-`;
         const day1 = Array.from(document.querySelectorAll('div[data-current="true"]'))
             .find((el) => el.textContent === "1")
             ?.querySelector("button");
         expect(day1).not.toBeNull();
         if (day1) fireEvent.click(day1);
 
-        expect(onChange).toHaveBeenCalledWith({ start: "2026-07-01", end: undefined });
+        expect(onChange).toHaveBeenCalledWith({ start: `${ym}01`, end: undefined });
 
-        // 面板仍打开，选择结束日期 7月4日
+        // 面板仍打开，选择结束日期 4 日
         const day4 = Array.from(document.querySelectorAll('div[data-current="true"]'))
             .find((el) => el.textContent === "4")
             ?.querySelector("button");
@@ -68,16 +70,18 @@ describe("DateRangePicker", () => {
         if (day4) fireEvent.click(day4);
 
         expect(onChange).toHaveBeenLastCalledWith({
-            start: "2026-07-01",
-            end: "2026-07-04",
+            start: `${ym}01`,
+            end: `${ym}04`,
         });
     });
 
     it("结束日期早于开始日期时自动交换", () => {
         const onChange = vi.fn();
+        const now = new Date();
+        const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-`;
         const { container } = render(
             <ControlledDateRangePicker
-                initialValue={{ start: "2026-07-10" }}
+                initialValue={{ start: `${ym}10` }}
                 onChange={onChange}
             />,
         );
@@ -92,8 +96,8 @@ describe("DateRangePicker", () => {
         if (day5) fireEvent.click(day5);
 
         expect(onChange).toHaveBeenCalledWith({
-            start: "2026-07-05",
-            end: "2026-07-10",
+            start: `${ym}05`,
+            end: `${ym}10`,
         });
     });
 

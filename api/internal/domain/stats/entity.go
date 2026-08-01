@@ -36,8 +36,20 @@ type ViewPoint struct {
 	Count int64  `json:"count"`
 }
 
+// PublicStats 公开只读统计（About 页站点生命体征区块用）
+//
+// 与 DashboardStats 的区别：仅暴露安全字段，口径面向访客——
+// 只统计已发布文章、已通过审核评论；不含 pending/users/浏览量等 admin 维度。
+type PublicStats struct {
+	PostsCount    int64 `json:"posts_count"`
+	TotalWords    int64 `json:"total_words"`
+	CommentsCount int64 `json:"comments_count"`
+	UptimeDays    int64 `json:"uptime_days"`
+}
+
 // StatsStore 统计查询端口
 type StatsStore interface {
 	GetDashboard(ctx context.Context) (DashboardStats, error)
 	GetViewTrends(ctx context.Context) (ViewTrends, error)
+	GetPublic(ctx context.Context) (PublicStats, error)
 }

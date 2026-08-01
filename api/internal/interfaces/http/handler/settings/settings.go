@@ -56,7 +56,23 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		TechStack          *string `json:"tech_stack"`
 		Bio                *string `json:"bio"`
 		FooterText         *string `json:"footer_text"`
-		LLMAPIKey          *string `json:"llm_api_key"`
+		AboutConfig        *json.RawMessage `json:"about_config"`
+		// 关于博主（A 线）内容字段
+		AvatarURL       *string `json:"avatar_url"`
+		Tagline         *string `json:"tagline"`
+		ProfileRole     *string `json:"profile_role"`
+		ProfileLocation *string `json:"profile_location"`
+		AvailableFor    *string `json:"available_for"`
+		SkillsStrong    *string `json:"skills_strong"`
+		SkillsLearning  *string `json:"skills_learning"`
+		SkillsInterests *string `json:"skills_interests"`
+		SocialTwitter   *string `json:"social_twitter"`
+		SocialMastodon  *string `json:"social_mastodon"`
+		SocialEmail     *string `json:"social_email"`
+		SocialRss       *string `json:"social_rss"`
+		SocialBilibili  *string `json:"social_bilibili"`
+		ReleasesRepo      *string `json:"releases_repo"`
+		LLMAPIKey         *string `json:"llm_api_key"`
 		LLMAPIURL          *string `json:"llm_api_url"`
 		LLMModel           *string `json:"llm_model"`
 		LLMProtocol        *string `json:"llm_protocol"`
@@ -81,6 +97,14 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		GoogleLoginEnabled: req.GoogleLoginEnabled, GithubLoginEnabled: req.GithubLoginEnabled,
 		GitHubUsername: req.GitHubUsername, GitHubToken: req.GitHubToken,
 		TechStack: req.TechStack, Bio: req.Bio, FooterText: req.FooterText,
+		AboutConfig: req.AboutConfig,
+		AvatarURL: req.AvatarURL, Tagline: req.Tagline,
+		ProfileRole: req.ProfileRole, ProfileLocation: req.ProfileLocation,
+		AvailableFor: req.AvailableFor, SkillsStrong: req.SkillsStrong,
+		SkillsLearning: req.SkillsLearning, SkillsInterests: req.SkillsInterests,
+		SocialTwitter: req.SocialTwitter, SocialMastodon: req.SocialMastodon,
+		SocialEmail: req.SocialEmail, SocialRss: req.SocialRss, SocialBilibili: req.SocialBilibili,
+		ReleasesRepo: req.ReleasesRepo,
 		LLMAPIKey: req.LLMAPIKey, LLMAPIURL: req.LLMAPIURL,
 		LLMModel: req.LLMModel, LLMProtocol: req.LLMProtocol,
 		CodeRunnerEnabled:        req.CodeRunnerEnabled,

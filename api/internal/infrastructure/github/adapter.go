@@ -15,6 +15,7 @@ import (
 	"time"
 
 	domaingithub "blog-api/internal/domain/github"
+	domainreleases "blog-api/internal/domain/releases"
 )
 
 // Adapter GitHub API 适配器
@@ -222,4 +223,53 @@ func (a *Adapter) graphql(ctx context.Context, token string, payload []byte) ([]
 	return body, nil
 }
 
+// ListReleases 获取仓库的 releases 列表（REST API）
+//
+// 实现 domain/releases.Provider 端口。无 token 时返回空（避免未鉴权 60/h 限流）。
+func (a *Adapter) ListReleases(ctx context.Context, owner, repo, token string) ([]domainreleases.Release, error) {
+	if token == "" {
+		return nil, fmt.Errorf("缺少 GitHub token")
+	}
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases?per_page=30",
+		url.PathEscape(owner), url.PathEscape(repo))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Authorization", "bearer "+token)
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求 GitHub Releases 失败: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GitHub Releases API 返回 %d", resp.StatusCode)
+	}
+	var raws []struct {
+		TagName     string `json:"tag_name"`
+		Name        string `json:"name"`
+		PublishedAt string `json:"published_at"`
+		Body        string `json:"body"`
+		HTMLURL     string `json:"html_url"`
+		Prerelease  bool   `json:"prerelease"`
+		Draft       bool   `json:"draft"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&raws); err != nil {
+		return nil, fmt.Errorf("解析 releases 数据失败: %w", err)
+	}
+	out := make([]domainreleases.Release, 0, len(raws))
+	for _, r := range raws {
+		if r.Draft || r.Prerelease {
+			continue
+		}
+		out = append(out, domainreleases.Release{
+			TagName:     r.TagName,
+			Name:        r.Name,
+			PublishedAt: r.PublishedAt,
+			Body:        r.Body,
+			HTMLURL:     r.HTMLURL,
+		})
+	}
+	return out, nil
+}
+
 var _ domaingithub.GitHubProvider = (*Adapter)(nil)
+var _ domainreleases.Provider = (*Adapter)(nil)

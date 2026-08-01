@@ -3,6 +3,7 @@
  *
  * 对齐后端 domain/settings.SiteSettings（GET /admin/settings 返回）。
  */
+import type { AboutConfig } from "@features/settings/model/types";
 
 /** SiteSettingsDTO - 站点配置读模型 */
 export interface SiteSettingsDTO {
@@ -28,12 +29,28 @@ export interface SiteSettingsDTO {
     github_username: string;
     /** GitHub Token */
     github_token: string;
-    /** 技术栈（单字符串） */
-    tech_stack: string;
     /** 个人简介 */
     bio: string;
     /** 页脚文案 */
     footer_text: string;
+    /** 关于页区块版面配置（原生 JSON 对象；null 表示未配置） */
+    about_config: AboutConfig | null;
+    /** 关于博主（A 线）内容字段 */
+    avatar_url: string;
+    tagline: string;
+    profile_role: string;
+    profile_location: string;
+    available_for: string;
+    skills_strong: string;
+    skills_learning: string;
+    skills_interests: string;
+    social_twitter: string;
+    social_mastodon: string;
+    social_email: string;
+    social_rss: string;
+    social_bilibili: string;
+    /** 更新日志区块读取的 GitHub 仓库名 */
+    releases_repo: string;
     /** LLM API Key（OpenAI 协议兼容端点，敏感） */
     llm_api_key: string;
     /** LLM API Base URL（如 https://api.openai.com/v1） */
@@ -84,12 +101,28 @@ export interface UpdateSettingsRequest {
     github_username: string;
     /** GitHub Token */
     github_token: string;
-    /** 技术栈 */
-    tech_stack: string;
     /** 个人简介 */
     bio: string;
     /** 页脚文案 */
     footer_text: string;
+    /** 关于页区块版面配置（原生 JSON 对象；null 表示未配置） */
+    about_config: AboutConfig | null;
+    /** 关于博主（A 线）内容字段 */
+    avatar_url: string;
+    tagline: string;
+    profile_role: string;
+    profile_location: string;
+    available_for: string;
+    skills_strong: string;
+    skills_learning: string;
+    skills_interests: string;
+    social_twitter: string;
+    social_mastodon: string;
+    social_email: string;
+    social_rss: string;
+    social_bilibili: string;
+    /** 更新日志区块读取的 GitHub 仓库名 */
+    releases_repo: string;
     /** LLM API Key */
     llm_api_key: string;
     /** LLM API Base URL */

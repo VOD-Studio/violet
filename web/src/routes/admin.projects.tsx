@@ -163,8 +163,8 @@ function AdminProjectsPage() {
             description="管理展示在「项目」页的项目"
             action={
                 canCreate ? (
-                    <Button onClick={openCreate}>
-                        <Plus className="size-4" /> 创建项目
+                    <Button size="sm" onClick={openCreate}>
+                        <Plus className="size-3.5" /> 创建项目
                     </Button>
                 ) : null
             }
