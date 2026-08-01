@@ -17,7 +17,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { AboutConfig, AboutSection } from "@features/about/model/about-config";
 import { ABOUT_SECTION_IDS, ABOUT_SECTION_LABELS } from "@features/about/ui/section-registry";
-import { useAdminSettings } from "@features/admin-settings/api/queries";
+import {
+    useAboutSettings,
+    useGithubSettings,
+    useUpdateAbout,
+} from "@features/admin-settings/api/queries";
+import type { AboutSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
 import { Switch } from "@shared/ui/base/switch";
@@ -34,14 +39,15 @@ interface AboutSettingsForm {
 }
 
 function AboutConfigPage() {
-    const { watch, setValue, isLoading, isPending, onSubmit } = useSettingsForm<AboutSettingsForm>(
-        (data) => ({
-            about_config: data.about_config ?? null,
-        }),
-    );
-    // 读完整 settings 判断 releases_repo 是否已配置（更新日志区块依赖它）
-    const { data: allSettings } = useAdminSettings();
-    const releasesRepoConfigured = !!allSettings?.releases_repo;
+    const { watch, setValue, isLoading, isPending, onSubmit } = useSettingsForm<
+        AboutSettingsForm,
+        AboutSettingsDTO
+    >(useAboutSettings(), useUpdateAbout(), (data) => ({
+        about_config: data.about_config ?? null,
+    }));
+    // 读 github 组配置判断 releases_repo 是否已配置（更新日志区块依赖它，属跨组只读）
+    const { data: githubSettings } = useGithubSettings();
+    const releasesRepoConfigured = !!githubSettings?.releases_repo;
 
     // watch about_config 对象，派生可编辑的 sections 列表。
     // setValue 改对象后 watch 触发重渲染，保持单向数据流：编辑 sections → 同步回对象。

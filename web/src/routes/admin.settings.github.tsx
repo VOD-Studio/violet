@@ -1,3 +1,5 @@
+import { useGithubSettings, useUpdateGithub } from "@features/admin-settings/api/queries";
+import type { GithubSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field } from "@features/admin-settings/ui/settings-fields";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
@@ -12,7 +14,10 @@ interface GithubForm {
 }
 
 function GithubSettingsPage() {
-    const { register, isLoading, isPending, onSubmit } = useSettingsForm<GithubForm>((data) => ({
+    const { register, isLoading, isPending, onSubmit } = useSettingsForm<
+        GithubForm,
+        GithubSettingsDTO
+    >(useGithubSettings(), useUpdateGithub(), (data) => ({
         github_username: data.github_username,
         github_token: data.github_token,
         releases_repo: data.releases_repo,

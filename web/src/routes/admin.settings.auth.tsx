@@ -1,3 +1,5 @@
+import { useAuthSettings, useUpdateAuth } from "@features/admin-settings/api/queries";
+import type { AuthSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { SwitchField } from "@features/admin-settings/ui/settings-fields";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
@@ -11,10 +13,14 @@ interface AuthForm {
 }
 
 function AuthSettingsPage() {
-    const { control, isLoading, isPending, onSubmit } = useSettingsForm<AuthForm>((data) => ({
-        google_login_enabled: data.google_login_enabled,
-        github_login_enabled: data.github_login_enabled,
-    }));
+    const { control, isLoading, isPending, onSubmit } = useSettingsForm<AuthForm, AuthSettingsDTO>(
+        useAuthSettings(),
+        useUpdateAuth(),
+        (data) => ({
+            google_login_enabled: data.google_login_enabled,
+            github_login_enabled: data.github_login_enabled,
+        }),
+    );
 
     return (
         <SettingsSubPage

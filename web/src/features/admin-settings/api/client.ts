@@ -1,17 +1,55 @@
 import { apiGet, apiPut } from "@shared/api/request";
-import type { SiteSettingsDTO, UpdateSettingsRequest } from "../model/types";
+import type {
+    AboutSettingsDTO,
+    AuthSettingsDTO,
+    CodeRunnerSettingsDTO,
+    GeneralSettingsDTO,
+    GithubSettingsDTO,
+    LlmSettingsDTO,
+    ProfileSettingsDTO,
+} from "../model/types";
 
 const BASE = "/admin/settings";
 
-/** getSettings - 调 GET /admin/settings 获取站点配置 */
-export const getSettings = async (): Promise<SiteSettingsDTO> => apiGet<SiteSettingsDTO>(BASE);
-
 /**
- * updateSettings - 调 PUT /admin/settings 更新站点配置，返回更新后的全量配置
+ * 站点设置分组 client —— 对齐后端 7 组子接口。
  *
- * 入参为 Partial：后端按指针语义做部分更新（nil 字段不更新），
- * 调用方可只提交本次改动的字段（如设置子页各自只提交本页字段），未提交字段后端保持不变。
+ * 每组 get 调 GET /admin/settings/{group}，update 调 PUT 同路径。
+ * update 入参为 Partial（后端按指针语义部分更新），调用方可只提交改动字段。
+ * 返回更新后的该组全量配置。
  */
-export const updateSettings = async (
-    body: Partial<UpdateSettingsRequest>,
-): Promise<SiteSettingsDTO> => apiPut<SiteSettingsDTO>(BASE, body);
+
+/** getGeneral / updateGeneral —— 基础信息组 */
+export const getGeneral = () => apiGet<GeneralSettingsDTO>(`${BASE}/general`);
+export const updateGeneral = (body: Partial<GeneralSettingsDTO>) =>
+    apiPut<GeneralSettingsDTO>(`${BASE}/general`, body);
+
+/** getAuth / updateAuth —— 认证组 */
+export const getAuth = () => apiGet<AuthSettingsDTO>(`${BASE}/auth`);
+export const updateAuth = (body: Partial<AuthSettingsDTO>) =>
+    apiPut<AuthSettingsDTO>(`${BASE}/auth`, body);
+
+/** getGithub / updateGithub —— GitHub 组 */
+export const getGithub = () => apiGet<GithubSettingsDTO>(`${BASE}/github`);
+export const updateGithub = (body: Partial<GithubSettingsDTO>) =>
+    apiPut<GithubSettingsDTO>(`${BASE}/github`, body);
+
+/** getProfile / updateProfile —— 关于博主组 */
+export const getProfile = () => apiGet<ProfileSettingsDTO>(`${BASE}/profile`);
+export const updateProfile = (body: Partial<ProfileSettingsDTO>) =>
+    apiPut<ProfileSettingsDTO>(`${BASE}/profile`, body);
+
+/** getAbout / updateAbout —— 关于页区块配置组 */
+export const getAbout = () => apiGet<AboutSettingsDTO>(`${BASE}/about`);
+export const updateAbout = (body: Partial<AboutSettingsDTO>) =>
+    apiPut<AboutSettingsDTO>(`${BASE}/about`, body);
+
+/** getLlm / updateLlm —— LLM 组 */
+export const getLlm = () => apiGet<LlmSettingsDTO>(`${BASE}/llm`);
+export const updateLlm = (body: Partial<LlmSettingsDTO>) =>
+    apiPut<LlmSettingsDTO>(`${BASE}/llm`, body);
+
+/** getCodeRunner / updateCodeRunner —— 代码运行器组 */
+export const getCodeRunner = () => apiGet<CodeRunnerSettingsDTO>(`${BASE}/code-runner`);
+export const updateCodeRunner = (body: Partial<CodeRunnerSettingsDTO>) =>
+    apiPut<CodeRunnerSettingsDTO>(`${BASE}/code-runner`, body);
