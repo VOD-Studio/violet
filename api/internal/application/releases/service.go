@@ -16,19 +16,29 @@ import (
 	domainsettings "blog-api/internal/domain/settings"
 )
 
-// emojiLabel release-please commit 类型 → emoji + 中文标签映射
+// emojiLabel release-please 标题行 emoji → 中文标签映射
+// 对齐 conventional-commits 全类型（release-please action v4 输出）
 var emojiLabel = map[string][2]string{
+	"🎉": {"🎉", "开始"},
 	"✨": {"✨", "新增"},
 	"🐛": {"🐛", "修复"},
+	"📚": {"📚", "文档"},
+	"📝": {"📝", "文档"},
+	"💄": {"💄", "样式"},
+	"🎨": {"🎨", "样式"},
 	"♻️": {"♻️", "重构"},
 	"🚀": {"🚀", "性能"},
-	"📜": {"📜", "文档"},
-	"🔒️": {"🔒️", "安全"},
 	"⚡️": {"⚡️", "优化"},
-	"💄": {"💄", "样式"},
-	"🎉": {"🎉", "开始"},
+	"🔧": {"🔧", "配置"},
+	"👷": {"👷", "CI"},
+	"🔨": {"🔨", "构建"},
+	"🔒️": {"🔒️", "安全"},
 	"🚨": {"🚨", "破坏性变更"},
 	"💥": {"💥", "破坏性变更"},
+	"⏪️": {"⏪️", "回退"},
+	"🗑️": {"🗑️", "移除"},
+	"🧪": {"🧪", "测试"},
+	"📦️": {"📦️", "依赖"},
 }
 
 // breakingEmojis 标记为 breaking change 的 emoji
@@ -64,10 +74,16 @@ func (s *Service) Get(ctx context.Context) (*domainreleases.ReleasesData, error)
 	}
 	token := m["github_token"]
 	owner := m["github_username"]
-	repo := m["releases_repo"] // 可选配置项，缺省用 username 推导的仓库
+	repo := m["releases_repo"]
 	if repo == "" {
-		// 默认仓库名：若 owner 含「博客项目」语义，可配置；此处留空则不拉取
 		return emptyData(), nil
+	}
+	// releases_repo 支持完整 owner/repo 格式（如 "VOD-Studio/violet"）：
+	// 含 "/" 时拆分，直接用其中的 owner，不依赖 github_username（后者可能是个人号而非组织）。
+	// 仅填仓库名（如 "violet"）时回退用 github_username 作 owner。
+	if parts := strings.SplitN(repo, "/", 2); len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+		owner = parts[0]
+		repo = parts[1]
 	}
 
 	// 尝试调 GitHub API
@@ -103,12 +119,19 @@ func buildData(raw []domainreleases.Release) *domainreleases.ReleasesData {
 	}
 }
 
-// parseBody 解析 release body 的 emoji 行成分类条目，并检测 breaking
+// parseBody 解析 release-please 标准格式的 release body 成分类条目，并检测 breaking
 //
-// release-please 生成的格式形如：
-//   * ✨ 新功能 A
-//   * 🐛 修复 B
-// 按行扫描，匹配已知 emoji 前缀，归入对应分类。
+// release-please 生成的格式（conventional-commits）形如：
+//   ### 🐛 修复
+//
+//   * **media:** 补注册 admin 组批量删除路由修复 405 ([#3](...)) ([f5eff6f](...))
+//
+//   ### 📝 文档
+//
+//   * **changelog:** 重写 v2.0.0 段落 ([f378a4d](...))
+//
+// 解析逻辑：`### <emoji> <label>` 标题行开启一个分类，其后的 `* <item>` 行归入该分类。
+// emoji 不在已知映射时用原标题 label 兜底。breaking emoji 触发 breaking 标记。
 func parseBody(body string) ([]domainreleases.Category, bool) {
 	if body == "" {
 		return nil, false
@@ -116,44 +139,58 @@ func parseBody(body string) ([]domainreleases.Category, bool) {
 	idx := make(map[string]*domainreleases.Category)
 	order := make([]string, 0)
 	breaking := false
+	var current *domainreleases.Category
 
 	for _, line := range strings.Split(body, "\n") {
 		line = strings.TrimSpace(line)
-		// 去掉 bullet 前缀（* - • 等）
-		line = strings.TrimLeft(line, "*-• ")
-		// 找行首 emoji
-		var matchedEmoji string
-		for emoji := range emojiLabel {
-			if strings.HasPrefix(line, emoji) {
-				matchedEmoji = emoji
-				break
+		if line == "" {
+			continue
+		}
+
+		// 标题行：### <emoji> <label>
+		if strings.HasPrefix(line, "###") {
+			rest := strings.TrimSpace(strings.TrimPrefix(line, "###"))
+			matchedEmoji := ""
+			for emoji := range emojiLabel {
+				if strings.HasPrefix(rest, emoji) {
+					matchedEmoji = emoji
+					break
+				}
 			}
-		}
-		if matchedEmoji == "" {
+			if matchedEmoji == "" {
+				continue
+			}
+			if breakingEmojis[matchedEmoji] {
+				breaking = true
+			}
+			if cat, ok := idx[matchedEmoji]; ok {
+				current = cat
+			} else {
+				pair := emojiLabel[matchedEmoji]
+				current = &domainreleases.Category{Emoji: pair[0], Label: pair[1]}
+				idx[matchedEmoji] = current
+				order = append(order, matchedEmoji)
+			}
 			continue
 		}
-		if breakingEmojis[matchedEmoji] {
-			breaking = true
+
+		// 条目行：* <text> 或 - <text>
+		if current != nil && (strings.HasPrefix(line, "*") || strings.HasPrefix(line, "-")) {
+			item := strings.TrimSpace(strings.TrimLeft(line, "*-"))
+			if item == "" {
+				continue
+			}
+			current.Items = append(current.Items, item)
 		}
-		// 提取 emoji 后的条目文本
-		item := strings.TrimSpace(strings.TrimPrefix(line, matchedEmoji))
-		item = strings.TrimPrefix(item, ": ")
-		if item == "" {
-			continue
-		}
-		cat, ok := idx[matchedEmoji]
-		if !ok {
-			pair := emojiLabel[matchedEmoji]
-			cat = &domainreleases.Category{Emoji: pair[0], Label: pair[1]}
-			idx[matchedEmoji] = cat
-			order = append(order, matchedEmoji)
-		}
-		cat.Items = append(cat.Items, item)
 	}
 
 	cats := make([]domainreleases.Category, 0, len(order))
 	for _, emoji := range order {
-		cats = append(cats, *idx[emoji])
+		cat := *idx[emoji]
+		if cat.Items == nil {
+			cat.Items = []string{}
+		}
+		cats = append(cats, cat)
 	}
 	return cats, breaking
 }
