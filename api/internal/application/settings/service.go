@@ -63,10 +63,6 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 		"social_email":         settings.SocialEmail,
 		"social_rss":           settings.SocialRss,
 		"social_bilibili":      settings.SocialBilibili,
-		"project_milestones":   settings.ProjectMilestones,
-		"project_stack":        settings.ProjectStack,
-		"blog_numbers":         settings.BlogNumbers,
-		"thanks":               settings.Thanks,
 		"code_runner_enabled":  settings.CodeRunnerEnabled,
 	}, nil
 }
@@ -120,7 +116,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 		updates["footer_text"] = *in.FooterText
 	}
 	if in.AboutConfig != nil {
-		updates["about_config"] = *in.AboutConfig
+		updates["about_config"] = string(*in.AboutConfig)
 	}
 	// 关于博主（A 线）内容字段：均为字符串，统一批量写入
 	for k, p := range map[string]*string{
@@ -138,10 +134,6 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 		"social_rss":      in.SocialRss,
 		"social_bilibili": in.SocialBilibili,
 		"releases_repo":  in.ReleasesRepo,
-		"project_milestones": in.ProjectMilestones,
-		"project_stack":     in.ProjectStack,
-		"blog_numbers":      in.BlogNumbers,
-		"thanks":            in.Thanks,
 	} {
 		if p != nil {
 			updates[k] = *p

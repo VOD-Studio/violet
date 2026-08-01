@@ -10,6 +10,19 @@
  * 对接后端 GET /api/v1/settings，公开子集。
  * 字段对齐 application/settings/service.go 的 GetPublic 返回 map（snake_case）。
  */
+/** 单个关于页区块配置 */
+export interface AboutSection {
+    id: string;
+    enabled: boolean;
+    order?: number;
+    params?: Record<string, unknown>;
+}
+
+/** 关于页区块版面配置（about_config 字段结构） */
+export interface AboutConfig {
+    sections: AboutSection[];
+}
+
 export interface SiteSettings {
     /** 站点名称 */
     site_name: string;
@@ -29,18 +42,16 @@ export interface SiteSettings {
     github_login_enabled: boolean;
     /** GitHub 用户名 */
     github_username: string;
-    /** 技术栈（单字符串） */
-    tech_stack: string;
     /** 个人简介 */
     bio: string;
     /** 页脚文案 */
     footer_text: string;
     /**
-     * 关于页区块版面配置（聚合 JSON 字符串）。
-     * 结构 { sections: [{ id, enabled, order, params }] }，前台解析后按 order 排序、enabled 过滤渲染。
-     * 后端透明存储原始 JSON；空串表示未配置，前台回退默认渲染。
+     * 关于页区块版面配置（原生 JSON 对象，后端 json.RawMessage 序列化）。
+     * 结构 { sections: [{ id, enabled, order, params }] }，前台按 order 排序、enabled 过滤渲染。
+     * 未配置时为 null，前台回退默认全显。
      */
-    about_config: string;
+    about_config: AboutConfig | null;
     /** 关于博主（A 线）内容字段 */
     avatar_url: string;
     tagline: string;
@@ -55,14 +66,6 @@ export interface SiteSettings {
     social_email: string;
     social_rss: string;
     social_bilibili: string;
-    /** 项目时间轴的手工里程碑（聚合 JSON 字符串） */
-    project_milestones: string;
-    /** B5 项目技术栈（聚合 JSON 字符串） */
-    project_stack: string;
-    /** B6 博客的数字（聚合 JSON 字符串） */
-    blog_numbers: string;
-    /** B7 开源致谢（聚合 JSON 字符串） */
-    thanks: string;
     /** 是否启用代码运行器（阅读页据此决定渲染 CodeRunner 还是普通 pre） */
     code_runner_enabled: boolean;
 }

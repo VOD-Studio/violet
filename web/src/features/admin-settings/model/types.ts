@@ -3,6 +3,7 @@
  *
  * 对齐后端 domain/settings.SiteSettings（GET /admin/settings 返回）。
  */
+import type { AboutConfig } from "@features/settings/model/types";
 
 /** SiteSettingsDTO - 站点配置读模型 */
 export interface SiteSettingsDTO {
@@ -28,14 +29,12 @@ export interface SiteSettingsDTO {
     github_username: string;
     /** GitHub Token */
     github_token: string;
-    /** 技术栈（单字符串） */
-    tech_stack: string;
     /** 个人简介 */
     bio: string;
     /** 页脚文案 */
     footer_text: string;
-    /** 关于页区块版面配置（聚合 JSON 字符串） */
-    about_config: string;
+    /** 关于页区块版面配置（原生 JSON 对象；null 表示未配置） */
+    about_config: AboutConfig | null;
     /** 关于博主（A 线）内容字段 */
     avatar_url: string;
     tagline: string;
@@ -52,14 +51,6 @@ export interface SiteSettingsDTO {
     social_bilibili: string;
     /** 更新日志区块读取的 GitHub 仓库名 */
     releases_repo: string;
-    /** 项目时间轴的手工里程碑（聚合 JSON 字符串） */
-    project_milestones: string;
-    /** B5 项目技术栈（聚合 JSON 字符串） */
-    project_stack: string;
-    /** B6 博客的数字（聚合 JSON 字符串） */
-    blog_numbers: string;
-    /** B7 开源致谢（聚合 JSON 字符串） */
-    thanks: string;
     /** LLM API Key（OpenAI 协议兼容端点，敏感） */
     llm_api_key: string;
     /** LLM API Base URL（如 https://api.openai.com/v1） */
@@ -110,14 +101,12 @@ export interface UpdateSettingsRequest {
     github_username: string;
     /** GitHub Token */
     github_token: string;
-    /** 技术栈 */
-    tech_stack: string;
     /** 个人简介 */
     bio: string;
     /** 页脚文案 */
     footer_text: string;
-    /** 关于页区块版面配置（聚合 JSON 字符串） */
-    about_config: string;
+    /** 关于页区块版面配置（原生 JSON 对象；null 表示未配置） */
+    about_config: AboutConfig | null;
     /** 关于博主（A 线）内容字段 */
     avatar_url: string;
     tagline: string;
@@ -134,14 +123,6 @@ export interface UpdateSettingsRequest {
     social_bilibili: string;
     /** 更新日志区块读取的 GitHub 仓库名 */
     releases_repo: string;
-    /** 项目时间轴的手工里程碑（聚合 JSON 字符串） */
-    project_milestones: string;
-    /** B5 项目技术栈（聚合 JSON 字符串） */
-    project_stack: string;
-    /** B6 博客的数字（聚合 JSON 字符串） */
-    blog_numbers: string;
-    /** B7 开源致谢（聚合 JSON 字符串） */
-    thanks: string;
     /** LLM API Key */
     llm_api_key: string;
     /** LLM API Base URL */

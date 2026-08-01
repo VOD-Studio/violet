@@ -6,6 +6,7 @@ package settings
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 
 	"blog-api/internal/domain/shared"
@@ -27,9 +28,10 @@ type SiteSettings struct {
 	TechStack          string `json:"tech_stack"`
 	Bio                string `json:"bio"`
 	FooterText         string `json:"footer_text"`
-	// AboutConfig 关于页区块版面配置（聚合 JSON 字符串，前台按 {sections:[{id,enabled,order,params}]} 渲染）。
-	// 后端透明存储原始 JSON，不解析——解析与校验在前端消费侧。
-	AboutConfig string `json:"about_config"`
+	// AboutConfig 关于页区块版面配置（{sections:[{id,enabled,order,params}]}）。
+	// 存储层为 JSON 字符串（site_settings key-value 表）；API 边界用 json.RawMessage
+	// 使其序列化为原生 JSON 对象（空配置序列化为 null），前端无需二次 parse。
+	AboutConfig json.RawMessage `json:"about_config"`
 	// 关于博主（A 线）内容字段：头像/标语/名片/技能/社交矩阵
 	AvatarURL        string `json:"avatar_url"`
 	Tagline          string `json:"tagline"`
@@ -46,12 +48,6 @@ type SiteSettings struct {
 	SocialBilibili   string `json:"social_bilibili"`
 	// ReleasesRepo 更新日志区块读取的 GitHub 仓库名（owner/repo 或 repo，配合 github_username）
 	ReleasesRepo string `json:"releases_repo"`
-	// ProjectMilestones 项目时间轴的手工里程碑（聚合 JSON 字符串，{milestones:[{date,title,description,link}]}）
-	ProjectMilestones string `json:"project_milestones"`
-	// B5/B6/B7 项目向区块内容（均为聚合 JSON 字符串，后端透明存储，前端解析）
-	ProjectStack string `json:"project_stack"` // {stack:[{name,icon,purpose}]}
-	BlogNumbers  string `json:"blog_numbers"`  // {numbers:[{label,value}]}
-	Thanks       string `json:"thanks"`        // {thanks:[{name,url,reason}]}
 	// LLM 配置（OpenAI 协议兼容端点，覆盖 OpenAI/DeepSeek/Moonshot/通义/智谱/Ollama/vLLM）
 	LLMAPIKey   string `json:"llm_api_key"`
 	LLMAPIURL   string `json:"llm_api_url"`
@@ -84,7 +80,7 @@ type UpdateInput struct {
 	TechStack          *string
 	Bio                *string
 	FooterText         *string
-	AboutConfig        *string
+	AboutConfig        *json.RawMessage
 	// 关于博主（A 线）内容字段
 	AvatarURL       *string
 	Tagline         *string
@@ -100,10 +96,6 @@ type UpdateInput struct {
 	SocialRss       *string
 	SocialBilibili  *string
 	ReleasesRepo      *string
-	ProjectMilestones *string
-	ProjectStack      *string
-	BlogNumbers       *string
-	Thanks            *string
 	LLMAPIKey         *string
 	LLMAPIURL          *string
 	LLMModel           *string
@@ -152,7 +144,9 @@ func fromMap(m map[string]string) SiteSettings {
 	s.TechStack = m["tech_stack"]
 	s.Bio = m["bio"]
 	s.FooterText = m["footer_text"]
-	s.AboutConfig = m["about_config"]
+	if raw := m["about_config"]; raw != "" {
+		s.AboutConfig = json.RawMessage(raw)
+	}
 	// 关于博主（A 线）内容字段
 	s.AvatarURL = m["avatar_url"]
 	s.Tagline = m["tagline"]
@@ -168,10 +162,6 @@ func fromMap(m map[string]string) SiteSettings {
 	s.SocialRss = m["social_rss"]
 	s.SocialBilibili = m["social_bilibili"]
 	s.ReleasesRepo = m["releases_repo"]
-	s.ProjectMilestones = m["project_milestones"]
-	s.ProjectStack = m["project_stack"]
-	s.BlogNumbers = m["blog_numbers"]
-	s.Thanks = m["thanks"]
 	s.LLMAPIKey = m["llm_api_key"]
 	s.LLMAPIURL = m["llm_api_url"]
 	s.LLMModel = m["llm_model"]

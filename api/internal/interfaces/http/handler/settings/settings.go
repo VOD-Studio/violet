@@ -56,7 +56,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		TechStack          *string `json:"tech_stack"`
 		Bio                *string `json:"bio"`
 		FooterText         *string `json:"footer_text"`
-		AboutConfig        *string `json:"about_config"`
+		AboutConfig        *json.RawMessage `json:"about_config"`
 		// 关于博主（A 线）内容字段
 		AvatarURL       *string `json:"avatar_url"`
 		Tagline         *string `json:"tagline"`
@@ -72,10 +72,6 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		SocialRss       *string `json:"social_rss"`
 		SocialBilibili  *string `json:"social_bilibili"`
 		ReleasesRepo      *string `json:"releases_repo"`
-		ProjectMilestones *string `json:"project_milestones"`
-		ProjectStack      *string `json:"project_stack"`
-		BlogNumbers       *string `json:"blog_numbers"`
-		Thanks            *string `json:"thanks"`
 		LLMAPIKey         *string `json:"llm_api_key"`
 		LLMAPIURL          *string `json:"llm_api_url"`
 		LLMModel           *string `json:"llm_model"`
@@ -109,8 +105,6 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		SocialTwitter: req.SocialTwitter, SocialMastodon: req.SocialMastodon,
 		SocialEmail: req.SocialEmail, SocialRss: req.SocialRss, SocialBilibili: req.SocialBilibili,
 		ReleasesRepo: req.ReleasesRepo,
-		ProjectMilestones: req.ProjectMilestones,
-		ProjectStack: req.ProjectStack, BlogNumbers: req.BlogNumbers, Thanks: req.Thanks,
 		LLMAPIKey: req.LLMAPIKey, LLMAPIURL: req.LLMAPIURL,
 		LLMModel: req.LLMModel, LLMProtocol: req.LLMProtocol,
 		CodeRunnerEnabled:        req.CodeRunnerEnabled,
