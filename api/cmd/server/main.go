@@ -5,14 +5,16 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"path/filepath"
-
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"net/http"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
 
 	"blog-api/config"
 	"blog-api/internal/app"
@@ -24,7 +26,8 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	// config.Load 内部完成根 .env 加载与来源打印,启动日志可见每个配置项的来源
 	cfg := config.Load()
 
@@ -181,8 +184,23 @@ func main() {
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
-	log.Info().Str("addr", addr).Msg("博客 API 服务启动")
-	if err := http.ListenAndServe(addr, r); err != nil {
-		log.Fatal().Err(err).Msg("服务启动失败")
+	srv := &http.Server{Addr: addr, Handler: r}
+
+	go func() {
+		log.Info().Str("addr", addr).Msg("博客 API 服务启动")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal().Err(err).Msg("服务启动失败")
+		}
+	}()
+
+	<-ctx.Done()
+	log.Info().Msg("收到退出信号，开始优雅关闭")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Error().Err(err).Msg("HTTP 优雅关闭失败")
 	}
+	stop()
+	log.Info().Msg("服务已关闭")
 }
