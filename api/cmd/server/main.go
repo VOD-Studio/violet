@@ -436,10 +436,31 @@ func main() {
 			r.Get("/stats", statsContainer.StatsHandler.GetDashboardStats)   // 仪表盘总览统计
 			r.Get("/stats/views", statsContainer.StatsHandler.GetViewTrends) // 浏览量趋势
 
-			r.With(middleware.RequirePermission(permissionChecker, "settings:view")).
-				Get("/settings", settingsContainer.SettingsHandler.GetSettings) // 获取站点设置
-			r.With(middleware.RequirePermission(permissionChecker, "settings:update")).
-				Put("/settings", settingsContainer.SettingsHandler.UpdateSettings) // 更新站点设置
+			// 站点设置（按菜单子页拆成 7 组，每组独立 GET/PUT，前端各子页独立 queryKey 互不干扰）
+			// 收进 /settings Route 组，读取/更新各自 RequirePermission 一次
+			settingsH := settingsContainer.SettingsHandler
+			r.Route("/settings", func(sub chi.Router) {
+				sub.Group(func(sub chi.Router) {
+					sub.Use(middleware.RequirePermission(permissionChecker, "settings:view"))
+					sub.Get("/general", settingsH.GetGeneral)
+					sub.Get("/auth", settingsH.GetAuth)
+					sub.Get("/github", settingsH.GetGithub)
+					sub.Get("/profile", settingsH.GetProfile)
+					sub.Get("/about", settingsH.GetAbout)
+					sub.Get("/llm", settingsH.GetLlm)
+					sub.Get("/code-runner", settingsH.GetCodeRunner)
+				})
+				sub.Group(func(sub chi.Router) {
+					sub.Use(middleware.RequirePermission(permissionChecker, "settings:update"))
+					sub.Put("/general", settingsH.UpdateGeneral)
+					sub.Put("/auth", settingsH.UpdateAuth)
+					sub.Put("/github", settingsH.UpdateGithub)
+					sub.Put("/profile", settingsH.UpdateProfile)
+					sub.Put("/about", settingsH.UpdateAbout)
+					sub.Put("/llm", settingsH.UpdateLlm)
+					sub.Put("/code-runner", settingsH.UpdateCodeRunner)
+				})
+			})
 
 			// 用户管理（DDD userAdminContainer）
 			r.With(middleware.RequirePermission(permissionChecker, "user:view")).

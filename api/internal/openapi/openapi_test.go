@@ -176,13 +176,21 @@ func TestAdminRBACPaths(t *testing.T) {
 
 func TestAdminStatsAndSettingsPaths(t *testing.T) {
 	spec, _ := Spec()
+	// 站点设置按菜单子页拆成 7 组，每组 GET/PUT 两个路径
 	for _, p := range []string{
-		"/admin/stats", "/admin/stats/views",
-		"/admin/settings", "/admin/logs", "/admin/logs/user/{id}",
+		"/admin/settings/general", "/admin/settings/auth", "/admin/settings/github",
+		"/admin/settings/profile", "/admin/settings/about", "/admin/settings/llm",
+		"/admin/settings/code-runner",
+		"/admin/logs", "/admin/logs/user/{id}",
 	} {
 		require.NotNil(t, spec.Paths.Find(p), "missing path %s", p)
 	}
-	for _, s := range []string{"DashboardStats", "ViewTrends", "SiteSettings", "AuditLog"} {
+	for _, s := range []string{
+		"DashboardStats", "ViewTrends",
+		"GeneralSettings", "AuthSettings", "GithubSettings", "ProfileSettings",
+		"AboutSettings", "LlmSettings", "CodeRunnerSettings",
+		"AuditLog",
+	} {
 		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
 	}
 	// AuditLog 用 PascalCase 字段（无 json tag）
