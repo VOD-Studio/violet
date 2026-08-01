@@ -18,13 +18,9 @@ import (
 	"blog-api/internal/app"
 	authcmd "blog-api/internal/application/auth/command"
 	appshared "blog-api/internal/application/shared"
-	infraauth "blog-api/internal/infrastructure/auth"
 	infraemail "blog-api/internal/infrastructure/email"
-	infraemoji "blog-api/internal/infrastructure/emoji"
-	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
-	"blog-api/internal/service"
 )
 
 func main() {
@@ -81,8 +77,7 @@ func main() {
 
 	contentContainer := app.NewContentContainer(gormDB)
 
-	commentCodeStore := infraauth.NewRedisCodeStore(redisClient)
-	commentContainer := app.NewCommentContainer(gormDB, commentCodeStore, emailSender)
+	commentContainer := app.NewCommentContainer(gormDB, redisClient, emailSender)
 
 	postContainer := app.NewPostContainer(gormDB, permissionChecker, settingsContainer.Store)
 	tagContainer := app.NewTagContainer(gormDB)
@@ -101,17 +96,13 @@ func main() {
 	// 服务器监控模块（DDD）：启动 30s 采样 goroutine，随 appCtx 退出
 	systemContainer := app.NewSystemContainer(gormDB, redisClient, ctx)
 
-	// 上传目录与 URL 前缀：统一从配置派生，保持相对路径（搬家可移植）。
-	// 绝对路径仅在进程内按需 filepath.Abs，绝不持久化、绝不硬编码。
-	uploadRoot := cfg.UploadDir                     // "uploads"
-	emojiDir := filepath.Join(uploadRoot, "emojis") // uploads/emojis
-	chunkDir := filepath.Join(uploadRoot, "tmp")    // uploads/tmp
-	urlPrefix := cfg.UploadPathPrefix               // "/uploads/"
+	// 媒体模块：infra 对象由 media_container 内部自建，main 仅传 db/redisClient/cfg。
+	mediaContainer := app.NewMediaContainer(gormDB, redisClient, cfg)
+	emojiSeedService := mediaContainer.EmojiSeedService
 
-	emojiRepo := gormrepo.NewEmojiGroupRepository(gormDB)
-	emojiSeedService := service.NewEmojiSeedService(emojiRepo, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
-	refetchStatusStore := infraemoji.NewRefetchStatusStore(redisClient)
-	mediaContainer := app.NewMediaContainer(gormDB, emojiDir, chunkDir, uploadRoot, urlPrefix, cfg.KiteURL, emojiSeedService, refetchStatusStore)
+	// 上传目录：仅供 cleanupJob 使用；media_container / image 服务从 cfg 自行派生。
+	uploadRoot := cfg.UploadDir
+	chunkDir := filepath.Join(uploadRoot, "tmp")
 
 	// 代码运行器（可运行代码块沙箱执行）：始终连 docker.sock 起隔离容器执行用户代码。
 	// enabled 开关与资源阈值走 site_settings（运行时可改），settingsStore 注入 service 实时读取。
@@ -162,31 +153,31 @@ func main() {
 	r.Use(middleware.SecurityHeaders) // 安全响应头
 
 	app.RegisterRoutes(r, &app.Deps{
-		Cfg:               cfg,
-		Redis:             redisClient,
-		PermissionChecker: permissionChecker,
+		Cfg:                   cfg,
+		Redis:                 redisClient,
+		PermissionChecker:     permissionChecker,
 		SessionAuth:           middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
 		OptionalAuth:          middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
 		SessionAuthReadOnlyMW: middleware.SessionAuthReadOnly(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
-		Role:              roleContainer,
-		Settings:          settingsContainer,
-		Stats:             statsContainer,
-		GitHub:            githubContainer,
-		Releases:          releasesContainer,
-		Auth:              authContainer,
-		Content:           contentContainer,
-		Comment:           commentContainer,
-		CommentReaction:   commentReactionContainer,
-		Media:             mediaContainer,
-		Post:              postContainer,
-		Tag:               tagContainer,
-		Audit:             auditContainer,
-		UserAdmin:         userAdminContainer,
-		APIToken:          apiTokenContainer,
-		Subscription:      subscriptionContainer,
-		MCP:               mcpContainer,
-		CodeRunner:        codeRunnerContainer,
-		System:            systemContainer,
+		Role:                  roleContainer,
+		Settings:              settingsContainer,
+		Stats:                 statsContainer,
+		GitHub:                githubContainer,
+		Releases:              releasesContainer,
+		Auth:                  authContainer,
+		Content:               contentContainer,
+		Comment:               commentContainer,
+		CommentReaction:       commentReactionContainer,
+		Media:                 mediaContainer,
+		Post:                  postContainer,
+		Tag:                   tagContainer,
+		Audit:                 auditContainer,
+		UserAdmin:             userAdminContainer,
+		APIToken:              apiTokenContainer,
+		Subscription:          subscriptionContainer,
+		MCP:                   mcpContainer,
+		CodeRunner:            codeRunnerContainer,
+		System:                systemContainer,
 	})
 
 	addr := fmt.Sprintf(":%s", cfg.Port)

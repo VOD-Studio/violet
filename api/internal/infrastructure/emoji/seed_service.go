@@ -1,5 +1,5 @@
-// Package service 提供业务逻辑层，封装数据访问和业务规则
-package service
+// Package emoji 提供表情相关基础设施适配器：B站表情种子抓取、重新拉取状态存储。
+package emoji
 
 import (
 	"context"
