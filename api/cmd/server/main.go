@@ -4,7 +4,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,11 +11,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"blog-api/config"
 	"blog-api/internal/app"
@@ -26,10 +22,8 @@ import (
 	infraemail "blog-api/internal/infrastructure/email"
 	infraemoji "blog-api/internal/infrastructure/emoji"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
-	newmodel "blog-api/internal/infrastructure/persistence/gorm/model"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
-	"blog-api/internal/migrate"
 	"blog-api/internal/service"
 )
 
@@ -49,53 +43,11 @@ func main() {
 	}
 	log.Logger = log.With().Str("service", "blog-api").Logger()
 
-	// --- 基础设施初始化 ---
-
-	db, err := sql.Open("pgx", cfg.Database.DSN())
-	if err != nil {
-		log.Fatal().Err(err).Msg("数据库连接失败")
-	}
-	defer db.Close()
-
-	migrateURL := fmt.Sprintf("pgx5://%s", cfg.Database.DSN()[len("postgres://"):])
-	if err := migrate.RunMigrations("migrations", migrateURL, db); err != nil {
-		log.Fatal().Err(err).Msg("数据库迁移失败")
-	}
-
-	redisOpt, err := redis.ParseURL(cfg.Redis.DSN())
-	if err != nil {
-		log.Fatal().Err(err).Msg("解析 Redis 地址失败")
-	}
-	redisClient := redis.NewClient(redisOpt)
-	if err := redisClient.Ping(ctx).Err(); err != nil {
-		log.Fatal().Err(err).Msg("Redis 连接失败")
-	}
-	log.Info().Msg("Redis 连接成功")
-
-	// 配置受信代理（限流/IP 提取依赖；为空时一律使用 RemoteAddr）
-	middleware.SetTrustedProxies(cfg.TrustedProxies)
-
-	gormDB, err := gorm.Open(postgres.Open(cfg.Database.DSN()), &gorm.Config{})
-	if err != nil {
-		log.Fatal().Err(err).Msg("GORM 连接失败")
-	}
-
-	// P2: DDD 新 model 的 AutoMigrate（全 GORM AutoMigrate 策略）
-	// 记录警告但不致命退出，保证服务能启动。
-	if err := gormDB.AutoMigrate(
-		&newmodel.User{}, &newmodel.Role{}, &newmodel.Permission{}, &newmodel.RolePermission{},
-		&newmodel.Post{}, &newmodel.PostVersion{}, &newmodel.PostView{}, &newmodel.Tag{},
-		&newmodel.Comment{}, &newmodel.CommentReaction{},
-		&newmodel.Announcement{}, &newmodel.Project{},
-		&newmodel.EmojiGroup{}, &newmodel.Emoji{}, &newmodel.Playlist{},
-		&newmodel.MusicSetting{},
-		&newmodel.File{}, &newmodel.UploadSession{},
-		&newmodel.APIToken{},
-		&newmodel.Subscription{},
-		&newmodel.SubscriptionEntry{},
-	); err != nil {
-		log.Warn().Err(err).Msg("AutoMigrate error")
-	}
+	// --- 基础设施初始化（DB/Redis/GORM + 迁移 + AutoMigrate）---
+	infra, infraCleanup := app.InitInfra(ctx, cfg)
+	defer infraCleanup()
+	gormDB := infra.Gorm
+	redisClient := infra.Redis
 
 	roleContainer, roleCleanup, err := app.InitializeRoleContainer(gormDB)
 	if err != nil {
