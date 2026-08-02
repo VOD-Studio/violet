@@ -161,7 +161,6 @@ func TestEventStore_ListPaginationAndOrder(t *testing.T) {
 	// 写 5 条，每条 occurred_at +1s
 	base := time.Now().UTC().Truncate(time.Second)
 	for i := 0; i < 5; i++ {
-		i := i
 		require.NoError(t, store.Append(ctx, sampleEvent(func(e *domainaudit.AuditEvent) {
 			e.OccurredAt = base.Add(time.Duration(i) * time.Second)
 			e.Resource.ID = string(rune('a' + i))
