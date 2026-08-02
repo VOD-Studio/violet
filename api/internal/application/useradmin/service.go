@@ -27,10 +27,6 @@ type Service struct {
 	bus    appshared.EventBus
 }
 
-// NewService 构造用户管理服务
-//
-// 审计由领域事件驱动（聚合根 RecordEvent → 应用层 Publish），
-// 不再手工注入 AuditLogger。
 func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus) *Service {
 	return &Service{store: store, hasher: hasher, bus: bus}
 }
@@ -248,7 +244,7 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole strin
 		return err
 	}
 	// 删除是破坏性操作，手动构造事件发布（聚合根不可继续存在）
-	if err := s.bus.Publish(ctx, []shared.DomainEvent{domainuser.NewUserDeleted(uid)}); err != nil {
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{domainuser.NewUserDeleted(uid, u.Username().String())}); err != nil {
 		log.Warn().Err(err).Msg("发布用户删除事件失败")
 	}
 	return nil

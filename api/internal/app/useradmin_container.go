@@ -15,10 +15,6 @@ type UserAdminContainer struct {
 	UserAdminHandler *useradminhttp.Handler
 }
 
-// NewUserAdminContainer 装配用户管理模块
-//
-// 审计由领域事件驱动（聚合根 RecordEvent → 应用层 Publish），
-// 不再手工注入 AuditLogger。
 func NewUserAdminContainer(db *gorm.DB, hasher authcmd.PasswordHasher, bus appshared.EventBus) *UserAdminContainer {
 	store := gormrepo.NewAdminUserStore(db)
 	svc := appuseradmin.NewService(store, hasher, bus)

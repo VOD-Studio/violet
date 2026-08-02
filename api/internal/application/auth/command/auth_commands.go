@@ -231,7 +231,9 @@ func (h *LoginHandler) Handle(ctx context.Context, in LoginInput) (LoginOutput, 
 	}
 	u, err := h.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		// 用户不存在统一返回无效凭证（不暴露邮箱是否注册）
+		// 用户不存在统一返回无效凭证（不暴露邮箱是否注册），
+		// 但记审计（邮箱探测/暴力破解也要有痕迹）
+		h.publishFailed(ctx, "用户不存在")
 		return LoginOutput{}, user.ErrInvalidCredentials
 	}
 

@@ -153,7 +153,8 @@ func TestSubscriber_UserLoggedIn_RecordsLoginWithProvider(t *testing.T) {
 	assert.Equal(t, "auth", e.Resource.Type)
 	assert.Equal(t, userID.String(), e.Resource.ID)
 	assert.Equal(t, "password", e.Metadata["provider"])
-	assert.Equal(t, "actor-1", e.Actor.UserID)
+	// 登录发布在 session 创建前，Actor.UserID 从事件 payload 取（被登录用户）
+	assert.Equal(t, userID.String(), e.Actor.UserID)
 	assert.Equal(t, "1.2.3.4", e.Actor.IPAddress)
 }
 
@@ -188,7 +189,7 @@ func TestSubscriber_UserRoleChanged_RecordsUpdateRoleWithBeforeAfter(t *testing.
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
 	userID := shared.NewID()
-	require.NoError(t, sub.Handle(ctx, domainuser.NewUserRoleChanged(userID, domainuser.RoleUser, domainuser.RoleAdmin)))
+	require.NoError(t, sub.Handle(ctx, domainuser.NewUserRoleChanged(userID, domainuser.RoleUser, domainuser.RoleAdmin, "victim")))
 
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
@@ -205,7 +206,7 @@ func TestSubscriber_UserStatusChanged_RecordsUpdateStatus(t *testing.T) {
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
 	userID := shared.NewID()
-	require.NoError(t, sub.Handle(ctx, domainuser.NewUserStatusChanged(userID, true, false)))
+	require.NoError(t, sub.Handle(ctx, domainuser.NewUserStatusChanged(userID, true, false, "victim")))
 
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
@@ -222,7 +223,7 @@ func TestSubscriber_UserDeleted_RecordsDelete(t *testing.T) {
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
 	userID := shared.NewID()
-	require.NoError(t, sub.Handle(ctx, domainuser.NewUserDeleted(userID)))
+	require.NoError(t, sub.Handle(ctx, domainuser.NewUserDeleted(userID, "victim")))
 
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
@@ -250,7 +251,7 @@ func TestSubscriber_PostPublished_RecordsPublish(t *testing.T) {
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
 	postID := shared.NewID()
-	require.NoError(t, sub.Handle(ctx, domainpost.NewPostPublished(postID)))
+	require.NoError(t, sub.Handle(ctx, domainpost.NewPostPublished(postID, "测试文章")))
 
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
@@ -264,7 +265,7 @@ func TestSubscriber_PostArchived_RecordsArchive(t *testing.T) {
 	sub := newTestSubscriber(store)
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
-	require.NoError(t, sub.Handle(ctx, domainpost.NewPostArchived(shared.NewID())))
+	require.NoError(t, sub.Handle(ctx, domainpost.NewPostArchived(shared.NewID(), "测试文章")))
 	require.Len(t, store.appended, 1)
 	assert.Equal(t, domainaudit.ActionArchive, store.appended[0].Action)
 }

@@ -121,7 +121,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.register.Handle(r.Context(), authcmd.RegisterUserInput{
+	if err := h.register.Handle(ctxWithAuditInfo(r), authcmd.RegisterUserInput{
 		Email: req.Email, Username: req.Username, Password: req.Password,
 	}); err != nil {
 		response.RespondError(w, r, err)

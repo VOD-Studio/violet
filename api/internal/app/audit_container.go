@@ -13,7 +13,6 @@ type AuditContainer struct {
 	AuditHandler *audithttp.Handler
 }
 
-// NewAuditContainer 装配操作日志模块
 func NewAuditContainer(db *gorm.DB) *AuditContainer {
 	store := gormrepo.NewEventStore(db)
 	query := appaudit.NewQuery(store)

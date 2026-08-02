@@ -55,11 +55,19 @@ func (s *Subscriber) Handle(ctx context.Context, event shared.DomainEvent) error
 		return nil
 	}
 	if err := s.store.Append(ctx, auditEvent); err != nil {
+		// fail-safe：降级日志含完整事件快照，丢失记录仍可人工追回
 		s.log.Error().
 			Err(err).
 			Str("event", event.EventName()).
 			Str("event_id", event.EventID().String()).
 			Str("aggregate_id", event.AggregateID().String()).
+			Str("action", auditEvent.Action.String()).
+			Str("resource_type", auditEvent.Resource.Type).
+			Str("resource_id", auditEvent.Resource.ID).
+			Str("resource_name", auditEvent.Resource.Name).
+			Str("actor_user_id", auditEvent.Actor.UserID).
+			Str("actor_user_name", auditEvent.Actor.UserName).
+			Str("ip_address", auditEvent.Actor.IPAddress).
 			Msg("审计事件写入失败")
 		return err
 	}
@@ -113,7 +121,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionUpdateRole,
 			Actor:      actor,
-			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String(), Name: e.UserName},
 			Changes:    []domainaudit.FieldChange{{Field: "role", From: string(e.From), To: string(e.To)}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -123,7 +131,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionUpdateStatus,
 			Actor:      actor,
-			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String(), Name: e.UserName},
 			Changes:    []domainaudit.FieldChange{{Field: "is_active", From: e.From, To: e.To}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -143,7 +151,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
-			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String(), Name: e.UserName},
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -177,11 +185,19 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 		}, true
 
 	case domainrole.RolePermissionsChanged:
+		changes := make([]domainaudit.FieldChange, 0, 2)
+		if len(e.Added) > 0 {
+			changes = append(changes, domainaudit.FieldChange{Field: "permissions_added", From: nil, To: e.Added})
+		}
+		if len(e.Removed) > 0 {
+			changes = append(changes, domainaudit.FieldChange{Field: "permissions_removed", From: e.Removed, To: nil})
+		}
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionUpdatePerms,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "role", ID: idToString(e.RoleID)},
+			Changes:    changes,
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -209,7 +225,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionPublish,
 			Actor:      actor,
-			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String()},
+			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String(), Name: e.Title},
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -218,7 +234,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionArchive,
 			Actor:      actor,
-			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String()},
+			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String(), Name: e.Title},
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -227,7 +243,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionUnpublish,
 			Actor:      actor,
-			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String()},
+			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String(), Name: e.Title},
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -241,11 +257,16 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 		}, true
 
 	case domainannouncement.AnnouncementUpdated:
+		changes := make([]domainaudit.FieldChange, 0, len(e.Changes))
+		for _, c := range e.Changes {
+			changes = append(changes, domainaudit.FieldChange{Field: c.Field, From: c.From, To: c.To})
+		}
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionUpdate,
 			Actor:      actor,
-			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID)},
+			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID), Name: e.Title},
+			Changes:    changes,
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -259,6 +280,9 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 		}, true
 
 	case authcmd.UserLoggedIn:
+		// 登录发布发生在 session 创建前，ctx 无 UserID——Actor 从事件 payload 取，
+		// 保证 /admin/logs/user/{id} 能按操作人查到登录记录（与 logout 行为一致）
+		actor.UserID = e.AggregateID().String()
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionLogin,
