@@ -7,6 +7,8 @@ package releases
 import (
 	"context"
 	"encoding/json"
+	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -22,6 +24,23 @@ var breakingKeywords = map[string]bool{
 	"破坏":       true,
 	"破坏性":      true,
 	"不兼容":      true,
+}
+
+// 条目尾部的 commit hash 引用（7-40 位十六进制，与 PR/issue 的 (#36) 区分：后者带 # 且是十进制）。
+// 三种形态：括号包链接 ([704a52a](url))、裸链接 [704a52a](url)、纯文本短 hash (704a52a)。
+// 读者不关心短 hash；merge 合并时同一条目带两个不同 hash 还会破坏去重。
+var (
+	commitRefParenLinkRe = regexp.MustCompile(`\s*\(\[[0-9a-f]{7,40}\]\([^)]*\)\)`)
+	commitRefLinkRe      = regexp.MustCompile(`\s*\[[0-9a-f]{7,40}\]\([^)]*\)`)
+	commitRefTextRe      = regexp.MustCompile(`\s*\([0-9a-f]{7,40}\)`)
+)
+
+// cleanCommitRef 去掉条目中的 commit hash 引用。
+func cleanCommitRef(item string) string {
+	item = commitRefParenLinkRe.ReplaceAllString(item, "")
+	item = commitRefLinkRe.ReplaceAllString(item, "")
+	item = commitRefTextRe.ReplaceAllString(item, "")
+	return strings.TrimSpace(item)
 }
 
 // cacheKey Redis 缓存键，cacheTTL 缓存有效期
@@ -173,6 +192,12 @@ func parseBody(body string) ([]domainreleases.Category, bool) {
 			}
 			if isBreaking(item) {
 				breaking = true
+			}
+			// 先清理 commit hash 引用再去重：merge 合并 PR 时 release-please 会以
+			// PR title 与原始 commit 各记一条，hash 不同但内容相同，不清理则去不掉。
+			item = cleanCommitRef(item)
+			if slices.Contains(current.Items, item) {
+				continue
 			}
 			current.Items = append(current.Items, item)
 		}
