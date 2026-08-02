@@ -11,15 +11,24 @@ import (
 type Project struct {
 	shared.AggregateRoot
 
-	id          shared.ID
-	title       string
+	// id 项目 ID
+	id shared.ID
+	// title 项目标题（必填，不能为空）
+	title string
+	// description 项目简介
 	description string
-	url         string
-	githubURL   string
-	imageURL    string
-	techStack   []string
-	sortOrder   int
-	timestamps  shared.Timestamps
+	// url 项目在线链接（可空）
+	url string
+	// githubURL 源码仓库链接（可空）
+	githubURL string
+	// imageURL 封面图链接（可空）
+	imageURL string
+	// techStack 技术栈标签列表（永不 nil，空为 []string{}）
+	techStack []string
+	// sortOrder 排序值（越小越靠前）
+	sortOrder int
+	// timestamps 创建/更新时间戳
+	timestamps shared.Timestamps
 }
 
 // NewProject 创建新项目

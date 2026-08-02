@@ -1,5 +1,7 @@
 import type { MediaFile } from "@entities/media/model/types";
 import { MediaPicker } from "@features/admin-media/ui/MediaPicker";
+import { useProfileSettings, useUpdateProfile } from "@features/admin-settings/api/queries";
+import type { ProfileSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field } from "@features/admin-settings/ui/settings-fields";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
@@ -29,8 +31,10 @@ interface ProfileForm {
 }
 
 function ProfileSettingsPage() {
-    const { register, watch, setValue, isLoading, isPending, onSubmit } =
-        useSettingsForm<ProfileForm>((data) => ({
+    const { register, watch, setValue, isLoading, isPending, onSubmit } = useSettingsForm<
+        ProfileForm,
+        ProfileSettingsDTO
+    >(useProfileSettings(), useUpdateProfile(), (data) => ({
         bio: data.bio,
         footer_text: data.footer_text,
         avatar_url: data.avatar_url,
@@ -64,9 +68,7 @@ function ProfileSettingsPage() {
                     <div className="flex shrink-0 flex-col items-center gap-1.5">
                         <AvatarPicker
                             value={watch("avatar_url")}
-                            onChange={(url) =>
-                                setValue("avatar_url", url, { shouldDirty: true })
-                            }
+                            onChange={(url) => setValue("avatar_url", url, { shouldDirty: true })}
                         />
                         <span className="text-sm font-medium">头像</span>
                     </div>
@@ -101,10 +103,7 @@ function ProfileSettingsPage() {
                         <Input {...register("profile_location")} />
                     </Field>
                     <Field label="是否接活/合作">
-                        <Input
-                            {...register("available_for")}
-                            placeholder="如：开放合作机会"
-                        />
+                        <Input {...register("available_for")} placeholder="如：开放合作机会" />
                     </Field>
                 </div>
             </section>
@@ -158,13 +157,7 @@ function ProfileSettingsPage() {
  * 整个容器可点击打开素材库；有头像时悬浮显示半透明遮罩。
  * 删除按钮 absolute 在容器内部右上角（不占布局空间，group-hover 可见）。
  */
-function AvatarPicker({
-    value,
-    onChange,
-}: {
-    value: string;
-    onChange: (url: string) => void;
-}) {
+function AvatarPicker({ value, onChange }: { value: string; onChange: (url: string) => void }) {
     const [pickerOpen, setPickerOpen] = useState(false);
 
     return (
@@ -177,11 +170,7 @@ function AvatarPicker({
             >
                 <span className="block size-full overflow-hidden rounded-full">
                     {value ? (
-                        <img
-                            src={value}
-                            alt="头像"
-                            className="size-full object-cover"
-                        />
+                        <img src={value} alt="头像" className="size-full object-cover" />
                     ) : (
                         <span className="flex size-full flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
                             <ImagePlus className="size-4" />

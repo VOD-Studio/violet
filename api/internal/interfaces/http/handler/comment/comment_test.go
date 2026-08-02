@@ -43,10 +43,10 @@ type stubCommentService struct {
 	listRepliesSort   string
 	listRepliesResult []appcomment.CommentDTO
 
-	createInput      appcomment.CreateInput
-	createCalled     bool
-	createErr        error
-	createResult     appcomment.CommentDTO
+	createInput  appcomment.CreateInput
+	createCalled bool
+	createErr    error
+	createResult appcomment.CommentDTO
 
 	sendCodeInput  appcomment.SendCodeInput
 	sendCodeErr    error
@@ -94,14 +94,14 @@ func (s *stubCommentService) ListAll(_ context.Context, _ string, anchorFilter d
 	s.listAllAnchorFilter = anchorFilter
 	return s.listAllResult, int64(len(s.listAllResult)), nil
 }
-func (s *stubCommentService) CountPending(context.Context) (int64, error)               { return 0, nil }
+func (s *stubCommentService) CountPending(context.Context) (int64, error) { return 0, nil }
 func (s *stubCommentService) GetDetail(context.Context, string) (appcomment.AdminCommentDTO, error) {
 	return appcomment.AdminCommentDTO{}, nil
 }
 func (s *stubCommentService) BatchUpdateStatus(context.Context, []string, string) (int64, error) {
 	return 0, nil
 }
-func (s *stubCommentService) Approve(context.Context, string) error { return nil }
+func (s *stubCommentService) Approve(context.Context, string) error  { return nil }
 func (s *stubCommentService) MarkSpam(context.Context, string) error { return nil }
 func (s *stubCommentService) Delete(context.Context, string) error   { return nil }
 
@@ -169,9 +169,9 @@ func TestListByPost_LoggedInViewer_PassesUserID(t *testing.T) {
 //   - ?type=unknown → AnchorFilterFree（降级）
 func TestListByPost_TypeQueryParam_PassthroughAndDefault(t *testing.T) {
 	cases := []struct {
-		query   string
-		expect  domaincomment.AnchorFilter
-		desc    string
+		query  string
+		expect domaincomment.AnchorFilter
+		desc   string
 	}{
 		{"", domaincomment.AnchorFilterFree, "缺省 type 默认 free"},
 		{"?type=free", domaincomment.AnchorFilterFree, "显式 free"},

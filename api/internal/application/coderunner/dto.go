@@ -21,11 +21,11 @@ type ExecRequest struct {
 
 // ExecResult 单次执行的最终结果（轮询路径返回，SSE 路径的 done 事件载荷）。
 type ExecResult struct {
-	Status     string `json:"status"`
+	Status     string `json:"status"` // 终态状态：success（正常退出）/error（用户代码非零退出）/timeout（超时强杀）/oom_killed（内存超限）/failed（系统异常）
 	Stdout     string `json:"stdout"`
 	Stderr     string `json:"stderr"`
 	ExitCode   *int   `json:"exit_code,omitempty"`
-	DurationMs uint64 `json:"duration_ms"`
+	DurationMs uint64 `json:"duration_ms"` // 执行耗时（毫秒）
 	Language   string `json:"language"`
 }
 
@@ -36,11 +36,11 @@ type ExecResult struct {
 type ExecTask struct {
 	ID         string `json:"id"`
 	Language   string `json:"language"`
-	Status     string `json:"status"`
+	Status     string `json:"status"` // 状态机：queued/running（进行中，前端继续轮询）→ success/error/timeout/oom_killed/failed（终态）
 	Stdout     string `json:"stdout"`
 	Stderr     string `json:"stderr"`
 	ExitCode   *int   `json:"exit_code,omitempty"`
-	DurationMs uint64 `json:"duration_ms"`
+	DurationMs uint64 `json:"duration_ms"` // 执行耗时（毫秒）；queued/running 态为 0
 }
 
 // FromDomainTask 把 domain 聚合转为对外 DTO。

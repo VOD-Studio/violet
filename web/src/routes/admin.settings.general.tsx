@@ -1,3 +1,5 @@
+import { useGeneralSettings, useUpdateGeneral } from "@features/admin-settings/api/queries";
+import type { GeneralSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field, SwitchField } from "@features/admin-settings/ui/settings-fields";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
@@ -18,17 +20,18 @@ interface GeneralForm {
 }
 
 function GeneralSettingsPage() {
-    const { register, control, isLoading, isPending, onSubmit } = useSettingsForm<GeneralForm>(
-        (data) => ({
-            site_name: data.site_name,
-            site_description: data.site_description,
-            site_url: data.site_url,
-            admin_email: data.admin_email,
-            posts_per_page: data.posts_per_page,
-            comments_enabled: data.comments_enabled,
-            comments_moderation: data.comments_moderation,
-        }),
-    );
+    const { register, control, isLoading, isPending, onSubmit } = useSettingsForm<
+        GeneralForm,
+        GeneralSettingsDTO
+    >(useGeneralSettings(), useUpdateGeneral(), (data) => ({
+        site_name: data.site_name,
+        site_description: data.site_description,
+        site_url: data.site_url,
+        admin_email: data.admin_email,
+        posts_per_page: data.posts_per_page,
+        comments_enabled: data.comments_enabled,
+        comments_moderation: data.comments_moderation,
+    }));
 
     return (
         <SettingsSubPage

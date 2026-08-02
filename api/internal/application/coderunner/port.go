@@ -23,8 +23,8 @@ type RunOutcome struct {
 	ExitCode   *int
 	Stdout     string
 	Stderr     string
-	OOMKilled  bool
-	TimedOut   bool
+	OOMKilled  bool // 容器被 OOM killer 杀掉；true 时调用方将 Status 映射为 oom_killed
+	TimedOut   bool // context 超时强杀容器；true 时调用方将 Status 映射为 timeout
 }
 
 // SandboxRunner 沙箱执行器端口（基础设施接口）。

@@ -82,6 +82,7 @@ func (a *AggregateRoot) HasEvents() bool { return len(a.events) > 0 }
 // 1. 在领域层表达"这是身份标识"而非任意字符串
 // 2. 未来切换 ID 生成策略时只改一处
 type ID struct {
+	// value 底层 UUID 值；不直接暴露，通过方法访问以便未来切换 ID 生成策略
 	value uuid.UUID
 }
 
@@ -127,7 +128,9 @@ var ErrInvalidID = NewError("INVALID_ID", "ID 格式非法")
 
 // Timestamps 创建/更新时间戳，可被聚合或实体嵌入
 type Timestamps struct {
+	// CreatedAt 实体创建时间（首次持久化的时刻）
 	CreatedAt time.Time
+	// UpdatedAt 最后更新时间（每次状态变更时刷新）
 	UpdatedAt time.Time
 }
 

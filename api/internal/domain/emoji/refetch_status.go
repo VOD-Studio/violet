@@ -15,18 +15,26 @@ const (
 
 // RefetchProgress 重新拉取进度（seed 执行过程中回调上报）
 type RefetchProgress struct {
-	GroupsDone  int `json:"groups_done"`
+	// GroupsDone 已完成拉取的分组数
+	GroupsDone int `json:"groups_done"`
+	// GroupsTotal 待拉取的分组总数
 	GroupsTotal int `json:"groups_total"`
 }
 
 // RefetchStatus 重新拉取任务状态快照（前端轮询读取）
 type RefetchStatus struct {
-	State       string     `json:"state"`
-	StartedAt   *time.Time `json:"started_at,omitempty"`
-	FinishedAt  *time.Time `json:"finished_at,omitempty"`
-	GroupsDone  int        `json:"groups_done"`
-	GroupsTotal int        `json:"groups_total"`
-	Error       string     `json:"error,omitempty"`
+	// State 任务状态（RefetchStateRunning/Done/Failed/Idle）
+	State string `json:"state"`
+	// StartedAt 任务开始时间（无任务时为 nil）
+	StartedAt *time.Time `json:"started_at,omitempty"`
+	// FinishedAt 任务结束时间（running 中为 nil）
+	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	// GroupsDone 已完成拉取的分组数
+	GroupsDone int `json:"groups_done"`
+	// GroupsTotal 分组总数（用于计算进度百分比）
+	GroupsTotal int `json:"groups_total"`
+	// Error 失败时的错误信息（成功时为空，omitempty 省略）
+	Error string `json:"error,omitempty"`
 }
 
 // RefetchStatusStore 重新拉取任务状态存储端口。

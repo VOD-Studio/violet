@@ -8,10 +8,14 @@ import "fmt"
 
 // TransformParams 动态处理参数
 type TransformParams struct {
-	Width   int
-	Height  int
-	ThumbW  int
-	ThumbH  int
+	// width 目标宽度(px);>0 时触发等比缩放(只缩不放),0 表示保持原图宽度
+	Width int
+	// height 目标高度(px);>0 时触发等比缩放(只缩不放),0 表示保持原图高度
+	Height int
+	// thumbW 缩略图宽度(px);需与 thumbH 同时 >0 才生效,强制裁剪到精确尺寸
+	ThumbW int
+	// thumbH 缩略图高度(px);需与 thumbW 同时 >0 才生效,强制裁剪到精确尺寸
+	ThumbH int
 	Rotate  int    // 0|90|180|270
 	Format  string // jpeg|png|webp
 	Quality int    // 1-100
@@ -26,9 +30,12 @@ func (p TransformParams) Key() string {
 
 // TransformResult 处理结果
 type TransformResult struct {
-	Bytes    []byte
+	// bytes 处理后的图片二进制数据
+	Bytes []byte
+	// mimeType 输出内容的 MIME 类型(与 Format 对应,如 image/webp)
 	MimeType string
-	ETag     string
+	// etag 内容校验标识,用于客户端缓存协商(304 响应)
+	ETag string
 }
 
 // ImageTransformer 图片动态处理端口

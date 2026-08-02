@@ -9,8 +9,11 @@ import (
 
 // Tag 标签实体
 type Tag struct {
-	id   int32
+	// id 标签主键
+	id int32
+	// name 标签名称
 	name string
+	// slug URL 友好别名（由 application 层据 name 自动生成，用于路由与去重）
 	slug string
 }
 

@@ -24,7 +24,9 @@ type AuditLog struct {
 
 // ListResult 日志列表结果（含分页）
 type ListResult struct {
-	Logs  []AuditLog
+	// Logs 当前页的操作日志列表
+	Logs []AuditLog
+	// Total 符合筛选条件的总条数（供分页计算总页数）
 	Total int64
 }
 

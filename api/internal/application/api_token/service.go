@@ -62,8 +62,6 @@ func (s *Service) Delete(ctx context.Context, id, userID string) error {
 }
 
 // PATDTO PAT 读模型。
-//
-// PlaintextToken 仅在创建响应中非空（一次性）；列表/其他场景恒为空。
 type PATDTO struct {
 	ID             string   `json:"id"`
 	Name           string   `json:"name"`
@@ -71,7 +69,7 @@ type PATDTO struct {
 	ExpiresAt      string   `json:"expires_at,omitempty"`     // 空表示永不过期
 	LastUsedAt     string   `json:"last_used_at,omitempty"`   // 空表示从未使用
 	CreatedAt      string   `json:"created_at"`
-	PlaintextToken string   `json:"token,omitempty"`          // 仅创建时返回
+	PlaintextToken string   `json:"token,omitempty"`          // 明文 token（一次性，仅创建响应非空）；列表及其他场景恒为空
 }
 
 func toDTO(p *domainapitoken.PAT, plaintext string) PATDTO {

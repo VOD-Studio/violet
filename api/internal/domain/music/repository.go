@@ -36,25 +36,36 @@ type MusicProvider interface {
 
 // EmbedInfo 音乐嵌入信息
 type EmbedInfo struct {
+	// Platform 来源平台标识（如 netease）
 	Platform string
-	SongID   string
+	// SongID 平台侧歌曲 id（用于拉歌词/详情/元数据）
+	SongID string
+	// EmbedURL 可直接嵌入播放器的 URL
 	EmbedURL string
 }
 
 // SongMeta 歌曲元数据（封面+歌词）
 type SongMeta struct {
-	Cover  string
+	// Cover 封面图 URL
+	Cover string
+	// Lyrics 歌词文本（纯文本或 LRC）
 	Lyrics string
 }
 
 // PlaylistMeta 歌单元数据（导入/刷新时解析第三方歌单）
 type PlaylistMeta struct {
-	Title      string
-	Cover      string
-	Creator    string
-	Platform   string
+	// Title 歌单标题
+	Title string
+	// Cover 歌单封面图 URL
+	Cover string
+	// Creator 歌单创建者名
+	Creator string
+	// Platform 来源平台标识（如 netease）
+	Platform string
+	// PlaylistID 平台侧歌单 id
 	PlaylistID string
-	Songs      []Song
+	// Songs 歌单内歌曲列表（导入/刷新时落库）
+	Songs []Song
 }
 
 var ErrNotFound = shared.NotFound("歌单")

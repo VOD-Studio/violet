@@ -38,9 +38,13 @@ type DomainEvent interface {
 //	}
 //	// 构造：UserRegistered{BaseEvent: shared.NewBaseEvent("user.registered", userID)}
 type BaseEvent struct {
-	eventName   string
-	eventID     uuid.UUID
-	occurredAt  time.Time
+	// eventName 事件类型名称，用于路由订阅（如 "user.registered"）
+	eventName string
+	// eventID 事件唯一标识，供消费者做幂等去重
+	eventID uuid.UUID
+	// occurredAt 事件发生时间（聚合根记录事件的时刻）
+	occurredAt time.Time
+	// aggregateID 触发该事件的聚合根 ID
 	aggregateID ID
 }
 

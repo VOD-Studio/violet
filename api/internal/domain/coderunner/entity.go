@@ -22,16 +22,28 @@ const (
 type ExecutionTask struct {
 	domainshared.AggregateRoot
 
-	id          domainshared.ID
-	userID      domainshared.ID
-	language    string
-	source      string
-	status      string
-	stdout      string
-	stderr      string
-	exitCode    *int
-	durationMs  uint64
-	timestamps  domainshared.Timestamps
+	// id 任务唯一标识（NewExecutionTask 时 NewID 生成）
+	id domainshared.ID
+	// userID 提交执行的用户 ID
+	userID domainshared.ID
+	// language 代码语言 canonical key（python/node/go/rust/bun）
+	//
+	// domain 不二次校验——application 层入队前已用 IsValidLanguage 拦截，这里只记录原值。
+	language string
+	// source 待执行的源码
+	source string
+	// status 任务状态（queued/running/success/error/timeout/oom_killed/failed，见状态机注释）
+	status string
+	// stdout 用户代码标准输出（仅终态方法 MarkSuccess/MarkError/MarkOomKilled 填充）
+	stdout string
+	// stderr 用户代码标准错误（成功/错误态记真实内容；系统异常态记固定脱敏文案 failedMessage）
+	stderr string
+	// exitCode 用户进程退出码（指针；超时强杀等无自然退出码的终态为 nil）
+	exitCode *int
+	// durationMs 执行耗时（毫秒，各终态方法写入）
+	durationMs uint64
+	// timestamps 创建/更新时间（每次状态变更刷新 UpdatedAt，供 TaskRepository 判定 GC 时机）
+	timestamps domainshared.Timestamps
 }
 
 // NewExecutionTask 创建新执行任务（Queued 状态）。

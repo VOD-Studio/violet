@@ -21,7 +21,9 @@ type ListFilter struct {
 
 // ListResult 用户列表结果
 type ListResult struct {
+	// Users 当前页的用户列表
 	Users []user.User
+	// Total 符合筛选条件的用户总数（供分页计算总页数）
 	Total int64
 }
 

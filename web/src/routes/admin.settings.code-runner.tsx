@@ -1,3 +1,5 @@
+import { useCodeRunnerSettings, useUpdateCodeRunner } from "@features/admin-settings/api/queries";
+import type { CodeRunnerSettingsDTO } from "@features/admin-settings/model/types";
 import { SettingsSubPage } from "@features/admin-settings/ui/SettingsSubPage";
 import { Field, SwitchField } from "@features/admin-settings/ui/settings-fields";
 import { useSettingsForm } from "@features/admin-settings/ui/use-settings-form";
@@ -18,7 +20,12 @@ interface CodeRunnerForm {
 }
 
 function CodeRunnerSettingsPage() {
-    const { register, control, isLoading, isPending, onSubmit } = useSettingsForm<CodeRunnerForm>(
+    const { register, control, isLoading, isPending, onSubmit } = useSettingsForm<
+        CodeRunnerForm,
+        CodeRunnerSettingsDTO
+    >(
+        useCodeRunnerSettings(),
+        useUpdateCodeRunner(),
         // 数值字段后端返回 0 表示未配置，前端显示默认值
         (data) => ({
             code_runner_enabled: data.code_runner_enabled ?? true,

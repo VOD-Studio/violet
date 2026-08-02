@@ -52,20 +52,29 @@ func (h *ListPermissionsHandler) Handle(ctx context.Context) ([]approle.Permissi
 		byID[dtos[i].ID] = &dtos[i]
 	}
 
-	// 2. 挂载 children：把 action 挂到父 menu 的 Children
+	// 2. 挂载 children：把 action 挂到父 menu 的 Children。
+	//
+	// 注意：必须先把所有 children 挂到 byID 中的 *dto（这是 dtos 切片里的同一块内存），
+	// 再收集 roots 的拷贝——否则 root 拷贝取到的 Children 仍是 nil（slice append
+	// 从 nil 扩容会分配新底层数组，roots 里的副本不会随之更新）。
 	roots := make([]approle.PermissionDTO, 0)
+	rootIdx := make([]int, 0)
 	for i := range dtos {
 		dto := &dtos[i]
 		if dto.ParentID == nil {
-			roots = append(roots, *dto)
+			rootIdx = append(rootIdx, i)
 			continue
 		}
 		if parent, ok := byID[*dto.ParentID]; ok {
 			parent.Children = append(parent.Children, *dto)
 		} else {
 			// 孤立 action（父不存在），作为顶层兜底
-			roots = append(roots, *dto)
+			rootIdx = append(rootIdx, i)
 		}
+	}
+	// 此时 dtos[i].Children 已挂载完毕，拷贝到 roots 保留完整子树。
+	for _, i := range rootIdx {
+		roots = append(roots, dtos[i])
 	}
 	return roots, nil
 }

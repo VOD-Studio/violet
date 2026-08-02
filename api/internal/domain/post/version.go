@@ -8,17 +8,28 @@ import (
 
 // PostVersion 文章版本快照实体
 type PostVersion struct {
-	id          shared.ID
-	postID      shared.ID
-	title       string
-	contentMD   string
+	// id 版本快照唯一标识（每次保存生成新 ID）
+	id shared.ID
+	// postID 所属文章 ID（快照与文章的多对一关系）
+	postID shared.ID
+	// title 该版本保存时刻的标题快照
+	title string
+	// contentMD 该版本保存时刻的 Markdown 正文快照
+	contentMD string
+	// contentHTML 该版本保存时刻的预渲染 HTML 快照
 	contentHTML string
-	excerpt     string
-	coverImage  string
-	tags        []string
-	editorID    shared.ID // 编辑这一版的操作人（非文章所有者）
-	summary     string
-	createdAt   time.Time
+	// excerpt 该版本保存时刻的摘要快照
+	excerpt string
+	// coverImage 该版本保存时刻的封面图 URL 快照
+	coverImage string
+	// tags 该版本保存时刻的标签名列表快照（深拷贝，避免与文章共享底层数组）
+	tags []string
+	// editorID 编辑这一版的操作人（执行编辑的用户，与文章所有者 authorID 区分）
+	editorID shared.ID
+	// summary 本次保存的版本说明（编辑者填写的改动摘要，可为空）
+	summary string
+	// createdAt 该版本的创建时间（快照保存时刻）
+	createdAt time.Time
 }
 
 // NewPostVersion 创建新快照（自动继承文章当前状态）

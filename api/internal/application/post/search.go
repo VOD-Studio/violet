@@ -44,7 +44,7 @@ type SearchPostItem struct {
 	ID        string    `json:"id"`
 	Slug      string    `json:"slug"`
 	Title     string    `json:"title"`
-	Status    string    `json:"status"`
+	Status    string    `json:"status"` // 状态机：draft/published/archived
 	Tags      []string  `json:"tags"`
 	Snippet   string    `json:"snippet"`
 	UpdatedAt time.Time `json:"updated_at"`

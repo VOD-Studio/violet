@@ -11,10 +11,10 @@ const (
 	ScopePostsRead          = "posts:read"
 	ScopePostsWrite         = "posts:write"
 	ScopePostsPublish       = "posts:publish"
-	ScopePostsScrape        = "posts:scrape"          // 抓取外站文章（scrape_url tool），SSRF 风险点，独立回收权限
-	ScopeSubscriptionsRead  = "subscriptions:read"    // 列/查订阅源
-	ScopeSubscriptionsWrite = "subscriptions:write"   // 增删改订阅源、暂停/恢复
-	ScopeCommentsRead       = "comments:read"         // 评论/批注检索（MCP violet-comments server）
+	ScopePostsScrape        = "posts:scrape"        // 抓取外站文章（scrape_url tool），SSRF 风险点，独立回收权限
+	ScopeSubscriptionsRead  = "subscriptions:read"  // 列/查订阅源
+	ScopeSubscriptionsWrite = "subscriptions:write" // 增删改订阅源、暂停/恢复
+	ScopeCommentsRead       = "comments:read"       // 评论/批注检索（MCP violet-comments server）
 )
 
 // validScopes 合法 scope 集合，校验与新增 scope 时同步此处 + 前端 PAT_SCOPES 常量
@@ -45,13 +45,21 @@ func IsValidScope(s string) bool {
 // 聚合根只做纯领域逻辑（HasScope/IsExpired），不访问 DB；
 // 持久化由 TokenRepository 完成。
 type PAT struct {
-	id        string
-	userID    string
-	name      string
+	// id PAT 标识（持久化主键，如 ULID）
+	id string
+	// userID 所属用户 ID
+	userID string
+	// name 用户自命名（便于区分多个 PAT）
+	name string
+	// tokenHash 令牌哈希（创建后永不变；明文仅在创建时一次性返回，库中只存哈希）
 	tokenHash string
-	scopes    []string
-	expiresAt time.Time // 零值 = 永不过期
+	// scopes 授权 scope 列表（创建时声明的子集，HasScope 按子集判定）
+	scopes []string
+	// expiresAt 过期时间（零值表示永不过期；非零值时与 now 比较判过期）
+	expiresAt time.Time
+	// lastUsedAt 最近一次使用时间（零值表示从未使用，每次鉴权成功后更新）
 	lastUsedAt time.Time
+	// createdAt 创建时间
 	createdAt time.Time
 }
 
@@ -92,11 +100,11 @@ func Reconstruct(id, userID, name, tokenHash string, scopes []string, expiresAt,
 	}
 }
 
-func (p *PAT) ID() string         { return p.id }
-func (p *PAT) UserID() string     { return p.userID }
-func (p *PAT) Name() string       { return p.name }
-func (p *PAT) TokenHash() string  { return p.tokenHash }
-func (p *PAT) Scopes() []string   { return p.scopes }
+func (p *PAT) ID() string            { return p.id }
+func (p *PAT) UserID() string        { return p.userID }
+func (p *PAT) Name() string          { return p.name }
+func (p *PAT) TokenHash() string     { return p.tokenHash }
+func (p *PAT) Scopes() []string      { return p.scopes }
 func (p *PAT) ExpiresAt() time.Time  { return p.expiresAt }
 func (p *PAT) LastUsedAt() time.Time { return p.lastUsedAt }
 func (p *PAT) CreatedAt() time.Time  { return p.createdAt }

@@ -192,3 +192,167 @@ func boolStr(b bool) string {
 	}
 	return "false"
 }
+
+// ---- 分组用例（admin 各菜单子页独立读写）----
+//
+// 每组 Get 调聚合 GetAll 构造该组视图；Update 把分组入参映射成
+// domain.UpdateInput 子集后复用 s.Update（部分更新），其余字段保持不变。
+// 这样 admin 按菜单隔离读写，既消除回填竞态，又复用底层聚合与存储逻辑。
+
+// GetGeneral 读取基础信息组
+func (s *Service) GetGeneral(ctx context.Context) (GeneralView, error) {
+	all, err := s.GetAll(ctx)
+	if err != nil {
+		return GeneralView{}, err
+	}
+	return generalView(all), nil
+}
+
+// UpdateGeneral 更新基础信息组
+func (s *Service) UpdateGeneral(ctx context.Context, in GeneralUpdate) (GeneralView, error) {
+	all, err := s.Update(ctx, domainsettings.UpdateInput{
+		SiteName: in.SiteName, SiteDescription: in.SiteDescription,
+		SiteURL: in.SiteURL, AdminEmail: in.AdminEmail,
+		PostsPerPage: in.PostsPerPage, CommentsEnabled: in.CommentsEnabled,
+		CommentsModeration: in.CommentsModeration, TechStack: in.TechStack,
+	})
+	if err != nil {
+		return GeneralView{}, err
+	}
+	return generalView(all), nil
+}
+
+// GetAuth 读取认证组
+func (s *Service) GetAuth(ctx context.Context) (AuthView, error) {
+	all, err := s.GetAll(ctx)
+	if err != nil {
+		return AuthView{}, err
+	}
+	return authView(all), nil
+}
+
+// UpdateAuth 更新认证组
+func (s *Service) UpdateAuth(ctx context.Context, in AuthUpdate) (AuthView, error) {
+	all, err := s.Update(ctx, domainsettings.UpdateInput{
+		GoogleLoginEnabled: in.GoogleLoginEnabled, GithubLoginEnabled: in.GithubLoginEnabled,
+	})
+	if err != nil {
+		return AuthView{}, err
+	}
+	return authView(all), nil
+}
+
+// GetGithub 读取 GitHub 组
+func (s *Service) GetGithub(ctx context.Context) (GithubView, error) {
+	all, err := s.GetAll(ctx)
+	if err != nil {
+		return GithubView{}, err
+	}
+	return githubView(all), nil
+}
+
+// UpdateGithub 更新 GitHub 组
+func (s *Service) UpdateGithub(ctx context.Context, in GithubUpdate) (GithubView, error) {
+	all, err := s.Update(ctx, domainsettings.UpdateInput{
+		GitHubUsername: in.GitHubUsername, GitHubToken: in.GitHubToken,
+		ReleasesRepo: in.ReleasesRepo,
+	})
+	if err != nil {
+		return GithubView{}, err
+	}
+	return githubView(all), nil
+}
+
+// GetProfile 读取关于博主组
+func (s *Service) GetProfile(ctx context.Context) (ProfileView, error) {
+	all, err := s.GetAll(ctx)
+	if err != nil {
+		return ProfileView{}, err
+	}
+	return profileView(all), nil
+}
+
+// UpdateProfile 更新关于博主组
+func (s *Service) UpdateProfile(ctx context.Context, in ProfileUpdate) (ProfileView, error) {
+	all, err := s.Update(ctx, domainsettings.UpdateInput{
+		Bio: in.Bio, FooterText: in.FooterText,
+		AvatarURL: in.AvatarURL, Tagline: in.Tagline,
+		ProfileRole: in.ProfileRole, ProfileLocation: in.ProfileLocation,
+		AvailableFor: in.AvailableFor, SkillsStrong: in.SkillsStrong,
+		SkillsLearning: in.SkillsLearning, SkillsInterests: in.SkillsInterests,
+		SocialTwitter: in.SocialTwitter, SocialMastodon: in.SocialMastodon,
+		SocialEmail: in.SocialEmail, SocialRss: in.SocialRss, SocialBilibili: in.SocialBilibili,
+	})
+	if err != nil {
+		return ProfileView{}, err
+	}
+	return profileView(all), nil
+}
+
+// GetAbout 读取关于页区块配置组
+func (s *Service) GetAbout(ctx context.Context) (AboutView, error) {
+	all, err := s.GetAll(ctx)
+	if err != nil {
+		return AboutView{}, err
+	}
+	return aboutView(all), nil
+}
+
+// UpdateAbout 更新关于页区块配置组
+func (s *Service) UpdateAbout(ctx context.Context, in AboutUpdate) (AboutView, error) {
+	all, err := s.Update(ctx, domainsettings.UpdateInput{
+		AboutConfig: in.AboutConfig,
+	})
+	if err != nil {
+		return AboutView{}, err
+	}
+	return aboutView(all), nil
+}
+
+// GetLlm 读取 LLM 组
+func (s *Service) GetLlm(ctx context.Context) (LlmView, error) {
+	all, err := s.GetAll(ctx)
+	if err != nil {
+		return LlmView{}, err
+	}
+	return llmView(all), nil
+}
+
+// UpdateLlm 更新 LLM 组
+func (s *Service) UpdateLlm(ctx context.Context, in LlmUpdate) (LlmView, error) {
+	all, err := s.Update(ctx, domainsettings.UpdateInput{
+		LLMAPIKey: in.LLMAPIKey, LLMAPIURL: in.LLMAPIURL,
+		LLMModel: in.LLMModel, LLMProtocol: in.LLMProtocol,
+	})
+	if err != nil {
+		return LlmView{}, err
+	}
+	return llmView(all), nil
+}
+
+// GetCodeRunner 读取代码运行器组
+func (s *Service) GetCodeRunner(ctx context.Context) (CodeRunnerView, error) {
+	all, err := s.GetAll(ctx)
+	if err != nil {
+		return CodeRunnerView{}, err
+	}
+	return codeRunnerView(all), nil
+}
+
+// UpdateCodeRunner 更新代码运行器组
+func (s *Service) UpdateCodeRunner(ctx context.Context, in CodeRunnerUpdate) (CodeRunnerView, error) {
+	all, err := s.Update(ctx, domainsettings.UpdateInput{
+		CodeRunnerEnabled:        in.CodeRunnerEnabled,
+		CodeRunnerMaxCPUCores:    in.CodeRunnerMaxCPUCores,
+		CodeRunnerMaxMemoryMB:    in.CodeRunnerMaxMemoryMB,
+		CodeRunnerMaxTimeoutSecs: in.CodeRunnerMaxTimeoutSecs,
+		CodeRunnerMaxOutputBytes: in.CodeRunnerMaxOutputBytes,
+		CodeRunnerMaxSourceBytes: in.CodeRunnerMaxSourceBytes,
+		CodeRunnerAllowNetwork:   in.CodeRunnerAllowNetwork,
+		CodeRunnerLanguages:      in.CodeRunnerLanguages,
+	})
+	if err != nil {
+		return CodeRunnerView{}, err
+	}
+	return codeRunnerView(all), nil
+}

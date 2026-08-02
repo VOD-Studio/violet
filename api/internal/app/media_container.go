@@ -1,11 +1,15 @@
 package app
 
 import (
+	"path/filepath"
+
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"blog-api/config"
 	appmedia "blog-api/internal/application/media"
-	domainemoji "blog-api/internal/domain/emoji"
 	infrapimage "blog-api/internal/infrastructure/image"
+	infraemoji "blog-api/internal/infrastructure/emoji"
 	inframusic "blog-api/internal/infrastructure/music"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	"blog-api/internal/infrastructure/storage"
@@ -14,32 +18,38 @@ import (
 
 // MediaContainer emoji/music/upload 模块容器
 type MediaContainer struct {
-	MediaHandler *mediahttp.Handler
+	MediaHandler     *mediahttp.Handler
+	EmojiSeedService *infraemoji.EmojiSeedService
 }
 
 // NewMediaContainer 装配 emoji/music/upload DDD 模块。
-// reseeder/statusStore 用于「重新拉取」功能。
-// kiteURL 是自托管 kite 服务地址。
-func NewMediaContainer(
-	db *gorm.DB,
-	emojiDir, chunkDir, uploadDir, urlPrefix, kiteURL string,
-	reseeder appmedia.ReseedRunner,
-	statusStore domainemoji.RefetchStatusStore,
-) *MediaContainer {
+// 内部自建 emojiRepo / refetchStatusStore / emojiSeedService，
+// 调用方只需传入 db / redisClient / cfg，不再在 main 构造 infra 对象。
+func NewMediaContainer(db *gorm.DB, redisClient *redis.Client, cfg *config.Config) *MediaContainer {
+	uploadRoot := cfg.UploadDir
+	emojiDir := filepath.Join(uploadRoot, "emojis")
+	chunkDir := filepath.Join(uploadRoot, "tmp")
+	urlPrefix := cfg.UploadPathPrefix
+	kiteURL := cfg.KiteURL
+
 	emojiRepo := gormrepo.NewEmojiGroupRepository(db)
 	musicRepo := gormrepo.NewPlaylistRepository(db)
 	fileRepo := gormrepo.NewFileRepository(db)
 	sessionRepo := gormrepo.NewUploadSessionRepository(db)
-	localStorage := storage.NewLocalStorage(uploadDir, urlPrefix)
+	localStorage := storage.NewLocalStorage(uploadRoot, urlPrefix)
 	musicProvider := inframusic.NewKiteProvider(kiteURL)
 	musicSettingStore := gormrepo.NewMusicSettingStore(db)
 
-	emojiSvc := appmedia.NewEmojiService(emojiRepo, emojiDir, urlPrefix, reseeder, statusStore)
+	emojiSeedService := infraemoji.NewEmojiSeedService(emojiRepo, emojiDir, urlPrefix, cfg.BilibiliCookie, cfg.BilibiliAPIType)
+	refetchStatusStore := infraemoji.NewRefetchStatusStore(redisClient)
+
+	emojiSvc := appmedia.NewEmojiService(emojiRepo, emojiDir, urlPrefix, emojiSeedService, refetchStatusStore)
 	musicSvc := appmedia.NewMusicService(musicRepo, musicProvider, musicSettingStore)
-	processor := infrapimage.NewProcessor(uploadDir, urlPrefix)
-	uploadSvc := appmedia.NewUploadService(fileRepo, sessionRepo, localStorage, processor, chunkDir, uploadDir, urlPrefix)
+	processor := infrapimage.NewProcessor(uploadRoot, urlPrefix)
+	uploadSvc := appmedia.NewUploadService(fileRepo, sessionRepo, localStorage, processor, chunkDir, uploadRoot, urlPrefix)
 
 	return &MediaContainer{
-		MediaHandler: mediahttp.NewHandler(emojiSvc, musicSvc, uploadSvc),
+		MediaHandler:     mediahttp.NewHandler(emojiSvc, musicSvc, uploadSvc),
+		EmojiSeedService: emojiSeedService,
 	}
 }

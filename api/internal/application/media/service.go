@@ -77,7 +77,7 @@ var extToMIME = map[string]string{
 	".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
 }
 
-// ReseedRunner 执行 B站表情重新拉取（由 EmojiSeedService 实现，打破对 service 包的依赖）。
+// ReseedRunner 执行 B站表情重新拉取（由 infrastructure/emoji.EmojiSeedService 实现）。
 type ReseedRunner interface {
 	Reseed(ctx context.Context, cookie string, progress func(domainemoji.RefetchProgress)) error
 	// BilibiliCookieDefault 返回启动期注入的 B站 Cookie（来自 env），供后台弹窗预填。

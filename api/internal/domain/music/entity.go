@@ -8,24 +8,36 @@ import "blog-api/internal/domain/shared"
 
 // Song 歌曲信息（JSONB 内联结构）
 type Song struct {
-	Name   string `json:"name"`
+	// Name 歌曲名
+	Name string `json:"name"`
+	// Artist 艺术家/歌手
 	Artist string `json:"artist"`
-	URL    string `json:"url"`
-	Cover  string `json:"cover"`
+	// URL 播放地址（嵌入播放器用）
+	URL string `json:"url"`
+	// Cover 封面图 URL
+	Cover string `json:"cover"`
 }
 
 // Playlist 歌单聚合根
 type Playlist struct {
 	shared.AggregateRoot
-	id         shared.ID
-	title      string
-	cover      string
-	creator    string
+	// id 歌单唯一 id
+	id shared.ID
+	// title 歌单标题（创建时必填非空）
+	title string
+	// cover 歌单封面图 URL
+	cover string
+	// creator 歌单创建者（来自第三方平台）
+	creator string
+	// platform 来源平台标识（如 netease）
 	platform   string
 	playlistID string // 第三方歌单 ID
-	songCount  int
-	songs      []Song
-	isActive   bool
+	// songCount 歌曲数量（SetSongs 时同步更新 = len(songs)）
+	songCount int
+	// songs 歌曲列表（JSONB 内联存储，nil 防御为空切片）
+	songs []Song
+	// isActive 是否在前台展示（仅活跃歌单进播放器）
+	isActive bool
 }
 
 func NewPlaylist(id shared.ID, title, platform, playlistID string) (*Playlist, error) {

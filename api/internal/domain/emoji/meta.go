@@ -63,9 +63,12 @@ func (g GroupType) IsValid() bool {
 // 源自 B站 emote 的 meta 子对象与顶层 type 字段，承载只读展示属性。
 // 别名用于搜索/补全，尺寸/类型用于渲染与门槛展示；当前不参与过滤。
 type EmojiMeta struct {
+	// alias 别名（搜索/补全匹配用）
 	alias string
-	size  EmojiSize
-	typ   EmojiType
+	// size 尺寸（SizeSmall 小 / SizeLarge 大），picker 渲染列数依据
+	size EmojiSize
+	// typ 获取门槛类型（普通/会员专属/购买/颜文字），仅展示不参与拉取过滤
+	typ EmojiType
 }
 
 // ReconstructEmojiMeta 从持久化或拉取数据重建表情元数据。
@@ -73,6 +76,6 @@ func ReconstructEmojiMeta(alias string, size EmojiSize, typ EmojiType) EmojiMeta
 	return EmojiMeta{alias: alias, size: size, typ: typ}
 }
 
-func (m EmojiMeta) Alias() string    { return m.alias }
-func (m EmojiMeta) Size() EmojiSize  { return m.size }
-func (m EmojiMeta) Type() EmojiType  { return m.typ }
+func (m EmojiMeta) Alias() string   { return m.alias }
+func (m EmojiMeta) Size() EmojiSize { return m.size }
+func (m EmojiMeta) Type() EmojiType { return m.typ }

@@ -3,7 +3,9 @@ package gorm
 
 import (
 	"context"
+	"regexp"
 	"time"
+	"unicode/utf8"
 
 	"gorm.io/gorm"
 
@@ -110,11 +112,26 @@ func postToSummary(p newmodel.Post) domainstats.PostSummary {
 		ID: p.ID.String(), Title: p.Title, Slug: p.Slug,
 		Status: p.Status, ViewCount: p.ViewCount,
 	}
-	if !p.PublishedAt.IsZero() {
+	if p.PublishedAt != nil && !p.PublishedAt.IsZero() {
 		t := p.PublishedAt.Format(time.RFC3339)
 		s.PublishedAt = &t
 	}
 	return s
+}
+
+var htmlTagRe = regexp.MustCompile(`<[^>]+>`)
+
+// countStrippedChars 统计多篇文章剥离 HTML 标签后的总字符数。
+// 按 rune 计数，对齐 PostgreSQL LENGTH(text) 的字符口径。
+//
+// 应用层计算而非 SQL REGEXP_REPLACE：后者是 PostgreSQL 专属函数，
+// 会让 SQLite 集成测试失败；此处保证两个后端口径一致。
+func countStrippedChars(htmls []string) int64 {
+	var total int64
+	for _, h := range htmls {
+		total += int64(utf8.RuneCountInString(htmlTagRe.ReplaceAllString(h, "")))
+	}
+	return total
 }
 
 // GetPublic 公开只读统计：仅安全字段，口径面向访客。
@@ -132,16 +149,14 @@ func (s *StatsStore) GetPublic(ctx context.Context) (domainstats.PublicStats, er
 	}
 
 	// 已发布正文总字数：剥离 HTML 标签后的字符数近似
-	type wordSum struct{ Total int64 }
-	var ws wordSum
+	var htmls []string
 	if err := s.db.WithContext(ctx).
 		Model(&newmodel.Post{}).
 		Where("status = ?", "published").
-		Select("COALESCE(SUM(LENGTH(REGEXP_REPLACE(content_html, '<[^>]+>', '', 'g'))),0) AS total").
-		Scan(&ws).Error; err != nil {
+		Pluck("content_html", &htmls).Error; err != nil {
 		return stats, domainshared.Internal("统计总字数失败", err)
 	}
-	stats.TotalWords = ws.Total
+	stats.TotalWords = countStrippedChars(htmls)
 
 	// 已通过审核评论数
 	if err := s.db.WithContext(ctx).
@@ -151,12 +166,15 @@ func (s *StatsStore) GetPublic(ctx context.Context) (domainstats.PublicStats, er
 		return stats, domainshared.Internal("统计评论数失败", err)
 	}
 
-	// 运行天数：从最早 published 文章的 created_at 算到今天
-	var earliest struct{ CreatedAt time.Time }
+	// 运行天数：从最早 published 文章的 created_at 算到今天。
+	// 取最早一行而非 MIN(created_at) 聚合——聚合会丢失列类型，SQLite 会把
+	// 结果当字符串返回、无法扫描进 time.Time；读真实列在 SQLite/PostgreSQL 均可。
+	var earliest newmodel.Post
 	if err := s.db.WithContext(ctx).
 		Model(&newmodel.Post{}).
 		Where("status = ?", "published").
-		Select("MIN(created_at) AS created_at").
+		Order("created_at ASC").
+		Limit(1).
 		Scan(&earliest).Error; err != nil {
 		return stats, domainshared.Internal("查询建站时间失败", err)
 	}

@@ -43,19 +43,25 @@ const (
 
 // BlockCount 批注按块聚合的计数结果
 type BlockCount struct {
+	// BlockID 块标识符（块纯文本 SHA1 前 8 位，同 Anchor.BlockID）
 	BlockID string
-	Count   int64
+	// Count 该块上的批注数量（仅 depth=0 顶层批注）
+	Count int64
 }
 
 // PostCommentStat 按文章聚合的评论统计（MCP comment_stats 读模型）。
 // 用于 agent 判断哪些文章反馈最密集、最该先改进。
 type PostCommentStat struct {
-	PostID          shared.ID
-	PostTitle       string
+	// PostID 文章 id
+	PostID shared.ID
+	// PostTitle 文章标题（JOIN posts 取，展示用）
+	PostTitle string
+	// PostSlug 文章 slug（JOIN posts 取，用于构造文章链接）
 	PostSlug        string
 	AnnotationCount int64 // anchor_block_id IS NOT NULL 的评论数
 	CommentCount    int64 // 全部评论数
-	LatestAt        time.Time
+	// LatestAt 该文章最新评论时间（MAX(created_at)）
+	LatestAt time.Time
 }
 
 // CommentRepository 评论仓储接口
@@ -135,15 +141,20 @@ type CommentRepository interface {
 
 // PostRef 所属文章只读视图（评论列表/详情需要展示文章来源）
 type PostRef struct {
-	ID    shared.ID
+	// ID 文章 id
+	ID shared.ID
+	// Title 文章标题
 	Title string
-	Slug  string
+	// Slug 文章 slug（构造文章链接用）
+	Slug string
 }
 
 // CommentWithPost 评论 + 所属文章视图（后台管理读模型）
 type CommentWithPost struct {
+	// Comment 评论
 	Comment *Comment
-	Post    PostRef
+	// Post 所属文章只读视图
+	Post PostRef
 }
 
 // 领域错误
@@ -155,11 +166,16 @@ var (
 
 // Reaction 评论反应实体（emoji 点赞）
 type Reaction struct {
-	id        shared.ID
+	// id 反应唯一 id
+	id shared.ID
+	// commentID 所属评论 id
 	commentID shared.ID
-	emojiID   int32
-	userID    *shared.ID
-	ipHash    string
+	// emojiID 表情 id（指向 emoji 分组里的某个表情）
+	emojiID int32
+	// userID 反应者用户 id；nil 表示匿名反应（按 ipHash 去重）
+	userID *shared.ID
+	// ipHash 反应者 IP 的 SHA256（匿名反应的去重标识，登录态可为空）
+	ipHash string
 }
 
 // NewReaction 创建反应

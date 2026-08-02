@@ -102,180 +102,173 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 - **body 用 bullet points 列出改动事实**，不写散文、不夹带主观评判。详细的决策过程应写在 PR 描述或 ADR。
 - **请勿推送**，仅在本地进行 commit。
 
-### 提交原子性
+### 原子性
 
-一个 commit 只做一件完整的事。完整是指：这个 commit 可以被单独 revert、单独 cherry-pick、单独 review，而不会让代码处于中间态或同时影响多个无关模块。
+通用判据(三问 + 反对过度拆分 + draft 阶段宽松)见 [VOD-Studio/kite AGENTS.md](https://github.com/VOD-Studio/kite/blob/main/AGENTS.md) 「原子性」章节,两仓库共用同一套实践,不在此复制(单一真相,避免双份漂移)。
 
-拆分原则按优先级从高到低执行：
+violet 是 monorepo(`api/` + `web/`),额外两条:
 
-1. **公共组件单独提交**
-   只有**公共组件**需要单独提交：`shared/ui` 下的通用组件，或被**多个 feature 引用**的实体、接口、hooks、utils，新增、重构、修 bug 都要单独提交。**feature 内部组件**（如 `features/posts/ui/*`、`features/comments/ui/*`）属于该 feature 私有，按职责分组提交即可，**不必每个组件单独拆 commit**。
+- **前后端必须分离提交**。同一需求同时改到 `api/` 和 `web/` 时,必须拆成多个 commit——前后端发布节奏、review 人、回滚影响面都不同。
+- **公共组件倾向单独提交**。`web/src/shared/ui` 下的通用组件,或被多个 feature 引用的实体/接口/hooks/utils 的改动,**能独立 revert 时就单独提交**(如修 bug、加通用能力)。但当公共组件改动与某 feature 强耦合(如为该 feature 加了专属 prop,改完其他地方用不了)时,按三问判据合并——拆开后 revert 会坏构建的,不拆。feature 内部组件(`features/posts/ui/*` 等)属于该 feature 私有,按职责分组提交即可,不必每个组件单独拆。判断「是否公共」看**是否被多个 feature 引用**——私有逻辑一旦被第二个 feature 复用,应先 `refactor(shared-ui): 将 X 提到 shared/ui` 单独提交,再在新 feature 接入。
 
-   ✅ 正确：
-   - `feat(web): 封装封面图选择器 Cover 组件`
-   - `fix(web): Cover 组件空值时回显异常`
+## 代码注释规范
 
-   ❌ 错误：
-   - `feat(web): 文章编辑页接入 Cover 并修复空值回显`
+注释只写代码**无法自表达**的信息。代码已说明的,注释复述就是噪音——维护时注释与代码双线漂移,先信谁都是坑。
 
-   原因：接入页面和修复组件是两件事。混在一起回滚时会把页面改动一起带走。
+### 无效注释(禁止新增,存量逐步清理)
 
-   判断「是否公共」看**是否被多个 feature 引用**，而非位置。feature 内部组件一旦被第二个 feature 复用，应先 `refactor(web): 将 X 从 features/A 移动到 shared/ui` 单独提交，再在新 feature 接入。
+**1. 复读签名**——把类型名/函数名/字段名用中文重述一遍,没补充任何新信息。
 
-2. **前后端必须分离提交**
-   同一需求如果同时改到 `api/` 和 `web/`，必须拆成多个 commit。API 接口变更、Web 接入、类型同步、测试补全都可以各自独立。
+```go
+// ❌ AuditContainer 操作日志模块容器
+type AuditContainer struct { ... }
+// 类型名 AuditContainer 已说明它是 audit 模块的容器,注释只是翻译了一遍。
 
-   ✅ 正确：
-   - `feat(api): 站点设置支持控制 Google/GitHub 登录开关`
-   - `feat(api): 站点设置接口返回 OAuth 开关字段`
-   - `feat(web): 站点设置页按开关隐藏 OAuth 登录按钮`
+// ❌ NewAuditContainer 装配操作日志模块
+func NewAuditContainer(db *gorm.DB) *AuditContainer {
+// 函数名 NewAuditContainer 已说明它构造这个容器,注释是复读。
 
-   ❌ 错误：
-   - `feat: 站点设置支持 OAuth 开关`
+// ✅ Handle 执行邮箱验证
+func (h *VerifyEmailHandler) Handle(...) {
+// Handle 是泛词(不知道做什么),"邮箱验证"补充了签名没有的信息——有效。
 
-   原因：前后端发布节奏、review 人、回滚影响面都不同，混在一起会增加风险。
-
-3. **同层内按职责拆分**
-   即使全在前端或全在后端，也要按改动职责拆分：
-   - 组件本身改动 vs 页面接入
-   - 类型定义改动 vs 业务逻辑改动
-   - API client 层改动 vs UI 状态改动
-   - 纯样式/排版调整 vs 功能改动
-
-   ✅ 正确：
-   - `feat(web): PostEditor 支持代码块高亮`
-   - `feat(web): 文章详情页接入代码块高亮`
-   - `style(web): 代码块内边距与字体调整`
-
-   ❌ 错误：
-   - `feat(web): 代码块高亮接入并调整样式`
-
-4. **修复必须指向具体对象**
-   `fix:` 开头的提交要让人一眼看出修了什么。禁止用 `fix(web): 修复若干问题`、`fix(api): 处理一些 bug` 这种笼统描述。
-
-   ✅ 正确：
-   - `fix(web): bubble menu 利用滚动容器裁剪避免飘出编辑区`
-   - `fix(api): 文章列表分页参数越界时返回空数组而非 500`
-
-   ❌ 错误：
-   - `fix(web): 修复编辑器问题`
-
-5. **重构与功能分离提交**
-   重命名、移动文件、提取公共函数、调整导入路径等重构操作，如果伴随着功能改动，要先把重构单独提交。
-
-   ✅ 正确：
-   - `refactor(web): 将 Cover 组件从 widgets 移动到 shared/ui`
-   - `feat(web): 文章编辑页接入 Cover 组件`
-
-   ❌ 错误：
-   - `feat(web): 移动 Cover 组件并接入文章编辑页`
-
-6. **测试与实现同组但不混主体**
-   为当前改动补测试，可以和实现放在同一个 commit；但跨多个改动的集中补测试要单独提交。
-
-   ✅ 正确：
-   - `feat(api): 添加文章发布校验` + body 里说明同时补了单测
-   - `test(api): 补全文章仓库的边界场景测试`
-
-### 反对过度拆分
-
-上面 6 条规则管的是「**跨职责必须拆**」(公共组件 ≠ 业务接入 ≠ 样式 ≠ 重构)。本节管的是另一头:**同一职责内部,不要按文件机械切碎**。
-
-一个完整任务可以跨多个文件、跨多层,只要服务同一目标,就该是一个 commit。强行按文件拆成"加定义""加实现""接调用"三个 commit,每个单独看都不完整,反而破坏可读性。
-
-✅ 正确(同一职责,跨文件合一个 commit):
-- `feat(api): 添加文章发布校验` —— 校验规则定义 + handler 接入 + 单测同属"发布校验"这一职责,可一个 commit(规则 6 已认定)
-- `feat(web): PostEditor 支持代码块高亮` —— 高亮组件实现 + toolbar 入口 + 渲染逻辑同属"编辑器高亮"这一职责,组件本身的实现部分可一个 commit(组件接入页面是另一职责,见规则 3)
-
-❌ 错误(同一职责被切碎):
-- 把"添加文章发布校验"拆成 `feat(api): 定义校验规则` + `feat(api): handler 接入校验` + `test(api): 发布校验单测` 三个 commit。单独 revert 任一个都会让发布校验功能残缺。
-
-判断依据:这个 commit 单独 revert 后,该功能是否还能完整工作?能 → 拆对了;不能(留下半成品)→ 拆太碎了。
-
-### Draft 阶段宽松
-
-开发过程中可以先随便提交(WIP、调试片段、临时方案都行),**不要求边写边原子**。要求的是**最终进入 PR 的历史是原子的**——开发完成后用 `git rebase -i` 整理成符合上面规则的原子 commit 再推送。
-
-这条与「反对过度拆分」配合:允许 draft 阶段粗糙,但整理时不要为了凑原子性而把同一职责拆碎。
-
-### 提交前自检
-
-写完提交信息后，问自己三个问题：
-
-- 这个 commit 如果单独 revert，会不会误伤其他功能？
-- 这个 commit 的标题能不能让我三个月后一眼看出它做了什么？
-- body 里的每一项改动是否都指向同一个目标？
-
-如果任一答案为否，就再拆分。
-
-### 提交信息风格反例
-
-下面两种提交信息的原子性没问题，但 body 写成散文，夹带主观评判和过多背景说明，同样不合格。
-
-**反例一：把 body 写成设计论证**
-
-```text
-fix(web): 用 navigator.locks ifAvailable 实现真正的跨 tab 互斥
-
-此前用 refreshedThisRound 模块级标志判断「本轮是否已刷新」是错的：
-模块变量每 tab 独立，跨 tab 不共享，排队 tab 仍看到自己的 false 照样
-执行 doRefresh → 触发家族吊销。逻辑自欺欺人。
-
-改用 navigator.locks.request 的 ifAvailable:true：锁被其他 tab 持有时
-回调收到 null，该 tab 直接跳过 refresh 返回哨兵。这才是真正的跨 tab
-互斥原语——同一 origin 同一时刻只有一个 tab 真正执行 doRefresh。
-
-跳过 tab 重放原请求即可：cookie 跨同源 tab 共享，持锁 tab 成功后新
-cookie 自动可见；持锁失败则重放再 401 走 auth-gate。
-
-补充「锁被其他 tab 持有 → 跳过 doRefresh」用例，此前无法真正验证。
+// ✅ List 分页查询日志
+func (s *Service) List(...) {
+// List 是泛词(不知道 list 什么),"日志"补充了签名没有的信息——有效。
 ```
 
-问题：
-- body 是大段散文，不是 bullet points
-- 「逻辑自欺欺人」是情绪词，不应出现在提交信息
-- 旧方案为什么错、新方案为什么对，这些论证应该放在 PR 描述或 ADR
+判定:名字本身是否已自解释?是 → 注释复读,无效。名字是泛词(Handle/List/Get/Update),注释补充了"做什么/查什么" → 有效。
 
-应改为：
+**2. 短函数里的废话分隔标签**——函数几行长,`// --- XXX ---` 比代码还多。
 
-```text
-fix(web): 用 navigator.locks ifAvailable 实现跨 tab 互斥
+```go
+// ❌
+func Run(ctx context.Context, cfg *config.Config) error {
+    // --- 基础设施 ---
+    infra, cleanup := InitInfra(ctx, cfg)
+    defer cleanup()
 
-- 移除 refreshedThisRound 模块级标志
-- 改用 navigator.locks.request({ ifAvailable: true }) 保证同 origin 单 tab 执行 refresh
-- 跳过 refresh 的 tab 直接重放原请求，依赖共享 cookie 获取新凭证
-- 补充锁被占用时跳过 doRefresh 的测试用例
+    // --- 模块容器 ---
+    container, cc, err := NewContainer(...)
 ```
 
-**反例二：把 body 写成设计讨论**
+边界:**长文件**(如 300+ 行的 service)用 `// --- 输入/输出 DTO ---` `// --- CRUD 用例 ---` 分段有导航价值,保留;**短函数**(几十行)的分隔标签纯噪音,删。
 
-```text
-refactor(api): 删除 TokenStore.Verify 死代码
+**3. 设计论证当注释**——把 why、框架原则、历史决策塞进注释。
 
-refresh 改用原子 Rotate 后，Verify 已无调用者（grep 确认零引用）。
-此前保留是出于「未来可能只读校验」的推测，属于 speculative generality——
-YAGNI，删之。Rotate 的 Lua 内部已用字符串比对完成校验，无需独立 Verify。
+项目 AGENTS.md「提交信息风格反例」已规定:详细的决策过程应写在 PR 描述或 ADR,代码注释和 commit body 都不该写散文。同理:
 
-涉及：TokenStore 接口、RedisTokenStore 实现、MockTokenStore 三处同步删除，
-以及随之失效的 crypto/subtle import。CodeStore.Verify（验证码存储）不受影响。
-编译期断言（auth_adapters.go）确保所有实现同步更新。
+```go
+// ❌ seed 调用 application use case 合规,但 input DTO 构造由模块自治。
+// ❌ 符合 ABP「seed contributor 封装在模块内」原则。
+// ❌ 此前 role 模块用 google/wire 装配...为统一 DI 方式、消除 wire 孤岛...
 ```
 
-问题：
-- 出现 YAGNI、speculative generality 等设计讨论用语
-- 「此前保留是出于……」这种历史心路历程没必要写
-- 仍然是散文，不是 bullet points
+这些是「为什么这么设计」的论证,属于 PR/ADR,不属于代码。代码注释只管「这段代码现在做了什么、有什么陷阱」,不管「过去为什么这么决定」。
 
-应改为：
+**4. 过期/不准确注释**——重构后没更新,注释指向已被删除的符号或旧的调用方。
 
-```text
-refactor(api): 删除 TokenStore.Verify 死代码
-
-- refresh 改用原子 Rotate 后 Verify 已无调用者
-- 同步删除 TokenStore 接口、RedisTokenStore、MockTokenStore 中的 Verify
-- 移除 crypto/subtle 中失效的 import
-- CodeStore.Verify 保持不变
+```go
+// ❌ "由 main.go 调用"    ← 实际已改为 app.NewContainer 调用
+// ❌ "从 main.go 抽离"    ← 实际已在 app.Run 内部
 ```
+
+重构搬代码时,跟着搬的注释要同步改指向。拿不准就删——过期的注释比没有注释更危险。
+
+**5. 一个包多个 package comment**——Go 规范要求一个包**只在一个文件**有 `// Package xxx` 文档。
+
+```go
+// ❌ 同一个 internal/app 包下,多个文件各写一份:
+// auth_container.go:   // Package app 提供 auth/user DDD 模块的手工 DI 装配。
+// container.go:        // Package app 根容器:聚合全部 DDD 模块容器。
+// run.go:              // Package app 应用启动入口。
+```
+
+包级文档只在**一个文件**保留(通常 `doc.go`,或字母序第一个文件)。其余文件的 `package app` 行不带注释。`go vet`/`revive` 会警告重复。
+
+### 有效注释(保留)
+
+注释值得存在,当且仅当它提供了代码本身没有的信息:
+
+- **非显然陷阱**:`// 返回 error 而非 log.Fatal:Fatal 调 os.Exit 会跳过 defer cleanup,导致连接泄漏。`
+- **不明显的业务规则**:`// display 字段创建后不可变更:不同形态语义与必填字段不同,中途切换会数据不完整。`
+- **跨模块编排约束**:`// login 只校验凭证返回 userID,session 创建交由 CreateSessionHandler,避免三种登录方式重复 session 逻辑。`
+- **魔法值的理由**:`const replyPreviewLimit = 3 // 前端首屏无需为每条顶层发独立请求拉预览。`
+- **公开 API 的 godoc**(导出符号的契约文档,调用方靠它理解用法)。
+
+### 自检
+
+写注释前问:这段话是不是在描述代码「做了什么」(代码已说明)?还是「为什么这么做、有什么坑」(代码没说)?前者删,后者留。
+
+### 新增代码强制遵守;存量注释不专门开 PR 清理
+
+新代码(含重构搬移)必须遵守上述规范。存量无效注释**不单独开 PR 清理**(噪音清理不构成可单独 revert 的原子改动),但在**因其他原因改动到该文件时顺手清理**(规则 3 同层按职责拆分的延伸:改到即清)。
+
+### 字段注释规范(struct field)
+
+上一节讲「该删什么注释」,本节讲「该补什么注释」。两者不矛盾:废话注释删掉,关键注释补上。
+
+#### 金标准:领域实体/值对象的每个字段都要注释
+
+`domain/user/entity.go` 的 `User`、`domain/comment/entity.go` 的 `Comment`/`Anchor`、`domain/subscription/entity.go` 的 `Subscription`、`config/config.go` 的全部配置 struct 是项目主流高质量样本。它们的共同点:
+
+```go
+type User struct {
+    shared.AggregateRoot
+    // email 邮箱(值对象)
+    email Email
+    // username 用户名(值对象)
+    username Username
+    // ...
+    // isBuiltinSuperAdmin 是否为内置超级管理员
+    //
+    // 区分"内置超管"(系统初始化的唯一超管,通配符权限,靠标志位短路)
+    // 与"被委派超管"(被内置超管授予 superadmin 角色的用户,按 role_permissions 表授权)。
+    isBuiltinSuperAdmin bool
+}
+```
+
+- 每个命名字段一行 `// fieldName 中文说明`。
+- 嵌入字段(`shared.AggregateRoot` 等)豁免,不注释。
+- 语义不显然的字段(如上例 `isBuiltinSuperAdmin`)补多行 why,解释不变量/取值约束/与相邻字段的区分。
+
+#### 强制范围(必须补字段注释)
+
+按对象类型分两档,判定标准是「字段名 + 类型 + tag 能否让调用方推断正确用法」:
+
+**领域实体 / 值对象(`internal/domain/**`):每个命名字段必须补。**
+
+原因:领域对象有不变量、状态机、取值约束、业务语义,代码本身看不出这些。这是项目既有基线(`User`、`Comment`、`Subscription` 均如此),存量未达标的领域 struct(如 `Announcement`、`PAT`、`ExecutionTask`、`Emoji*`、`SiteSettings`、`upload.File`、`stats.*`)改动到该文件时补齐。嵌入字段豁免。
+
+**对外 DTO(application 导出 `*DTO`/`*Input`/`*Output`、handler 导出 `*Request`/`*Response`):只补非自解释字段。**
+
+原因:DTO 是原始类型 + `json` tag 的数据载体,字段名 + 类型 + tag 多数已说清 schema。给自解释字段补注释会沦为复读签名(无效注释第 1 类)。**只补这些:**
+
+- 零值 / nil / 空串的语义(`CanonicalURL *string // nil=原创,非空=转载源 URL`)
+- 合法值枚举(`Status string // 'draft'|'published'|'archived'`)
+- 单位 / 格式(`Duration uint64 // 微秒`、`PublishedAt string // RFC3339`)
+- 引用关系 / 计算口径(`IsAuthor bool // created_by == post.author_id`、`AnnotationCount // 批注数,非评论总数`)
+- PATCH 语义(`Interval string // 空串=保留原值`)
+
+判定方法:去掉注释,调用方/前端能否从字段名 + 类型 + json tag 推断出**正确**用法?能 → 不补;不能(有歧义)→ 补。
+
+反例(不需要补,补了就是复读):`Hostname string \`json:"hostname"\``、`TotalBytes uint64 \`json:"totalBytes"\``、`CommentsEnabled bool \`json:"comments_enabled"\``。
+
+#### 豁免范围(不强制字段注释)
+
+以下 struct 字段不要求 `// fieldName` 注释,因为信息已由代码其他部分自表达,补注释反而是噪音:
+
+- **GORM PO 模型**(`infrastructure/persistence/gorm/model/`):字段带 `gorm:"column:xxx"` + `json:"xxx"` tag,列名与类型已自描述。
+- **单字段依赖注入容器**(`app/*Container`、`application/*Service`/`*Handler`、`interfaces/http/handler/*Handler`):字段是注入的依赖,构造函数签名已说明,struct 内重复注释即「复读签名」(见无效注释第 1 类)。
+- **带 `jsonschema` 描述 tag 的 DTO**(如 MCP tool 参数 struct):tag 里的描述已是字段文档。
+- **函数内临时 row struct**(如 GORM 查询的 `row`/`statRow`):局部临时,不暴露。
+- **带 `validate` tag 的未导出请求 DTO**:校验规则已由 tag 表达。
+
+#### 写法约定
+
+- 行上注释优先(`// fieldName 说明` 紧贴字段上方一行),与金标准一致。
+- 行尾内联注释(`field Type // 说明`)仅用于一句话能说清的简单字段(如 `sourceType string // 'rss' | 'page'`),复杂字段仍用行上多行。
+- 注释内容是「这个字段是什么/取什么值/有什么约束」,不是「这个字段叫什么」(后者是复读字段名)。
 
 ## PR 与 issue 规范
 

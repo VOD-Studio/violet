@@ -12,28 +12,47 @@ const (
 // EmojiGroup 表情分组聚合根
 type EmojiGroup struct {
 	shared.AggregateRoot
-	id        int32
-	name      string
-	source    string
-	coverURL  string
+	// id 分组 id（来自 B站 emote 包 id）
+	id int32
+	// name 分组名称（picker 顶部展示）
+	name string
+	// source 表情来源标识（如 SourceCustom）
+	source string
+	// coverURL 分组封面图 URL
+	coverURL string
+	// sortOrder 排序序号（数值越小越靠前）
 	sortOrder int
+	// isEnabled 是否启用（禁用的分组不进 picker）
 	isEnabled bool
+	// groupType 分组类型（GroupTypeText 颜文字 / GroupTypeImage 图片），
+	// 决定 EmojiPicker 的列数与渲染策略
 	groupType GroupType
-	emojis    []Emoji
-	meta      EmojiMeta
+	// emojis 分组内的表情列表
+	emojis []Emoji
+	// meta 分组元数据（仅 size 有意义，picker 渲染用；alias/type 为零值）
+	meta EmojiMeta
 }
 
 // Emoji 表情实体（属于分组）
 type Emoji struct {
-	id          int32
-	groupID     int32
-	name        string
-	url         string
-	sourceURL   string
-	gifURL      string
+	// id 表情 id
+	id int32
+	// groupID 所属分组 id
+	groupID int32
+	// name 表情名称（B站 emote name，用于搜索/补全/语法 :name:）
+	name string
+	// url 表情静态图 URL
+	url string
+	// sourceURL 表情来源页 URL（B站 emote 详情页）
+	sourceURL string
+	// gifURL 表情动图 URL（hover 放大时用，图片组才有）
+	gifURL string
+	// textContent 颜文字纯文本内容（GroupTypeText 文字组用，复制时取此值）
 	textContent string
-	sortOrder   int
-	meta        EmojiMeta
+	// sortOrder 组内排序序号
+	sortOrder int
+	// meta 表情元数据（别名/尺寸/门槛类型）
+	meta EmojiMeta
 }
 
 // NewEmojiGroup 创建表情分组
@@ -100,15 +119,15 @@ func (g *EmojiGroup) SetMeta(meta EmojiMeta) {
 	g.meta = meta
 }
 
-func (g *EmojiGroup) ID() int32           { return g.id }
-func (g *EmojiGroup) Name() string        { return g.name }
-func (g *EmojiGroup) Source() string      { return g.source }
-func (g *EmojiGroup) CoverURL() string    { return g.coverURL }
-func (g *EmojiGroup) SortOrder() int      { return g.sortOrder }
-func (g *EmojiGroup) IsEnabled() bool     { return g.isEnabled }
+func (g *EmojiGroup) ID() int32            { return g.id }
+func (g *EmojiGroup) Name() string         { return g.name }
+func (g *EmojiGroup) Source() string       { return g.source }
+func (g *EmojiGroup) CoverURL() string     { return g.coverURL }
+func (g *EmojiGroup) SortOrder() int       { return g.sortOrder }
+func (g *EmojiGroup) IsEnabled() bool      { return g.isEnabled }
 func (g *EmojiGroup) GroupType() GroupType { return g.groupType }
-func (g *EmojiGroup) Emojis() []Emoji  { return g.emojis }
-func (g *EmojiGroup) Meta() EmojiMeta  { return g.meta }
+func (g *EmojiGroup) Emojis() []Emoji      { return g.emojis }
+func (g *EmojiGroup) Meta() EmojiMeta      { return g.meta }
 
 // NewEmoji 创建表情（基础字段）
 func NewEmoji(id, groupID int32, name, url string) Emoji {
