@@ -1,33 +1,65 @@
 /** admin-audit-logs 模块类型定义 */
 
-/** AuditLogDTO - 操作日志数据传输对象 */
-export interface AuditLogDTO {
-    /** 日志主键 */
-    id: number;
-    /** 操作人 ID（匿名操作时为 null） */
-    user_id: string | null;
-    /** 操作人用户名（JOIN users 查出，可能为空字符串） */
-    user_name: string;
-    /** 操作类型：create/update/delete/login 等 */
-    action: string;
-    /** 资源类型：user/post/comment 等 */
-    resource: string;
-    /** 资源 ID */
-    resource_id: string;
-    /** 资源名称（用户名/文章标题等，可能为空字符串） */
-    resource_name: string;
-    /** 变更详情（任意结构，可能为 null） */
-    detail: Record<string, unknown> | null;
-    /** 来源 IP */
-    ip_address: string;
-    /** 发生时间（RFC3339 字符串） */
-    created_at: string;
+/** FieldChangeDTO - 单字段 before/after 变更 */
+export interface FieldChangeDTO {
+    /** 字段名（如 role/is_active/username） */
+    field: string;
+    /** 变更前值 */
+    from: unknown;
+    /** 变更后值 */
+    to: unknown;
 }
 
-/** AuditLogListQuery - 操作日志列表查询参数 */
+/** ActorDTO - 操作人快照 */
+export interface ActorDTO {
+    /** 操作人 UUID（匿名操作时为空串） */
+    user_id: string;
+    /** 操作人用户名快照（用户删除后仍可追溯） */
+    user_name: string;
+    /** 来源 IP */
+    ip_address: string;
+    /** User-Agent */
+    user_agent: string;
+}
+
+/** ResourceDTO - 资源引用快照 */
+export interface ResourceDTO {
+    /** 资源类型：user/post/role/announcement/auth */
+    type: string;
+    /** 资源 ID */
+    id: string;
+    /** 资源名称快照（文章标题/用户名等，可空） */
+    name?: string;
+}
+
+/** AuditEventDTO - 操作日志事件（append-only 审计存储的读模型） */
+export interface AuditEventDTO {
+    /** 事件 UUID（幂等去重） */
+    event_id: string;
+    /** 操作类型（受控枚举：create/update/delete/publish/login 等） */
+    action: string;
+    /** 操作人 */
+    actor: ActorDTO;
+    /** 资源引用 */
+    resource: ResourceDTO;
+    /** 字段变更列表（before/after，update 类事件有值） */
+    changes?: FieldChangeDTO[];
+    /** 兜底元数据（如登录 provider、批量 count） */
+    metadata?: Record<string, unknown>;
+    /** 发生时间（RFC3339 字符串） */
+    occurred_at: string;
+}
+
+/** AuditLogListQuery - 操作日志列表查询参数（分页 + 过滤） */
 export interface AuditLogListQuery {
     /** 页码（从 1 开始） */
     page?: number;
     /** 每页条数 */
     limit?: number;
+    /** 操作类型过滤（精确匹配） */
+    action?: string;
+    /** 资源类型过滤（精确匹配） */
+    resource_type?: string;
+    /** 操作人 UUID 过滤（精确匹配） */
+    actor?: string;
 }

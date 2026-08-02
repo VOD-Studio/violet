@@ -6,6 +6,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	domainuseradmin "blog-api/internal/domain/useradmin"
@@ -19,22 +20,15 @@ type PasswordHasher interface {
 	Hash(password string) (domainuser.PasswordHash, error)
 }
 
-// AuditLogger 审计日志端口
-type AuditLogger interface {
-	Log(ctx context.Context, action, resource, resourceID, userID, ip, ua string) error
-	LogWithDetail(ctx context.Context, action, resource, resourceID, userID, ip, ua string, detail map[string]any) error
-}
-
 // Service 用户管理用例服务
 type Service struct {
-	store    domainuseradmin.AdminUserStore
-	hasher   PasswordHasher
-	auditSvc AuditLogger
+	store  domainuseradmin.AdminUserStore
+	hasher PasswordHasher
+	bus    appshared.EventBus
 }
 
-// NewService 构造用户管理服务
-func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, auditSvc AuditLogger) *Service {
-	return &Service{store: store, hasher: hasher, auditSvc: auditSvc}
+func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus) *Service {
+	return &Service{store: store, hasher: hasher, bus: bus}
 }
 
 // UserDTO 用户读模型（管理后台）
@@ -119,9 +113,8 @@ func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operat
 	if err := s.store.Save(ctx, u); err != nil {
 		return UserDTO{}, err
 	}
-	_ = s.auditSvc.LogWithDetail(ctx, "create", "user", u.GetID().String(), operatorID, in.IPAddress, in.UserAgent, map[string]any{
-		"username": in.Username, "email": in.Email, "role": in.Role,
-	})
+	// 发布聚合根事件（UserRegistered + RoleChanged + StatusChanged，审计订阅者消费）
+	s.publishEvents(ctx, u)
 	return toDTO(u), nil
 }
 
@@ -220,7 +213,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 	if err := s.store.Save(ctx, u); err != nil {
 		return UserDTO{}, err
 	}
-	_ = s.auditSvc.LogWithDetail(ctx, "update", "user", in.ID, operatorID, in.IPAddress, in.UserAgent, nil)
+	s.publishEvents(ctx, u)
 	return toDTO(u), nil
 }
 
@@ -250,7 +243,11 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole strin
 	if err := s.store.Delete(ctx, uid); err != nil {
 		return err
 	}
-	return s.auditSvc.Log(ctx, "delete", "user", id, operatorID, ip, ua)
+	// 删除是破坏性操作，手动构造事件发布（聚合根不可继续存在）
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{domainuser.NewUserDeleted(uid, u.Username().String())}); err != nil {
+		log.Warn().Err(err).Msg("发布用户删除事件失败")
+	}
+	return nil
 }
 
 // UpdateUserRole 修改单个用户角色
@@ -284,7 +281,8 @@ func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, oper
 	if err := s.store.Save(ctx, u); err != nil {
 		return err
 	}
-	return s.auditSvc.LogWithDetail(ctx, "update_role", "user", id, operatorID, ip, ua, map[string]any{"role": role})
+	s.publishEvents(ctx, u)
+	return nil
 }
 
 // UpdateUserStatus 修改单个用户状态
@@ -318,7 +316,8 @@ func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool
 	if err := s.store.Save(ctx, u); err != nil {
 		return err
 	}
-	return s.auditSvc.LogWithDetail(ctx, "update_status", "user", id, operatorID, ip, ua, map[string]any{"is_active": isActive})
+	s.publishEvents(ctx, u)
+	return nil
 }
 
 // BatchUpdateStatus 批量启用/禁用
@@ -352,9 +351,8 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActi
 		return 0, err
 	}
 	log.Info().Int64("affected", affected).Bool("is_active", isActive).Msg("批量更新用户状态")
-	return affected, s.auditSvc.LogWithDetail(ctx, "batch_update_status", "user", "", operatorID, ip, ua, map[string]any{
-		"count": affected, "is_active": isActive,
-	})
+	s.publishBatchStatus(ctx, affected, isActive)
+	return affected, nil
 }
 
 // BatchUpdateRole 批量修改角色
@@ -391,9 +389,33 @@ func (s *Service) BatchUpdateRole(ctx context.Context, idStrs []string, role, op
 		return 0, err
 	}
 	log.Info().Int64("affected", affected).Str("role", role).Msg("批量更新用户角色")
-	return affected, s.auditSvc.LogWithDetail(ctx, "batch_update_role", "user", "", operatorID, ip, ua, map[string]any{
-		"count": affected, "role": role,
-	})
+	s.publishBatchRole(ctx, affected, role)
+	return affected, nil
+}
+
+// publishEvents 发布聚合根累积的领域事件（审计订阅者消费）
+func (s *Service) publishEvents(ctx context.Context, u *domainuser.User) {
+	events := u.PullEvents()
+	if len(events) == 0 {
+		return
+	}
+	if err := s.bus.Publish(ctx, events); err != nil {
+		log.Warn().Err(err).Msg("发布用户管理事件失败")
+	}
+}
+
+// publishBatchStatus 发布批量状态变更事件（聚合根不参与批量 SQL，手动构造）
+func (s *Service) publishBatchStatus(ctx context.Context, affected int64, isActive bool) {
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{domainuser.NewBatchUserStatusChanged(affected, isActive)}); err != nil {
+		log.Warn().Err(err).Msg("发布批量状态事件失败")
+	}
+}
+
+// publishBatchRole 发布批量角色变更事件（聚合根不参与批量 SQL，手动构造）
+func (s *Service) publishBatchRole(ctx context.Context, affected int64, role string) {
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{domainuser.NewBatchUserRoleChanged(affected, role)}); err != nil {
+		log.Warn().Err(err).Msg("发布批量角色事件失败")
+	}
 }
 
 func parseIDs(idStrs []string) ([]shared.ID, error) {

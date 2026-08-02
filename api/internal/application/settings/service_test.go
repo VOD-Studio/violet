@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
+
 	domainsettings "blog-api/internal/domain/settings"
 )
 
@@ -31,7 +33,7 @@ func (m *mockSettingsStore) UpsertMany(ctx context.Context, kvs map[string]strin
 
 func newSvc() (*Service, *mockSettingsStore) {
 	store := new(mockSettingsStore)
-	return NewService(store), store
+	return NewService(store, infraeventbus.NewInMemory()), store
 }
 
 // GetPublic 必须返回公开配置 map，且过滤 github_token 等敏感字段。

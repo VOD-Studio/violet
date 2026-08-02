@@ -104,7 +104,7 @@ func TestListActiveAnnouncements_Returns200(t *testing.T) {
 		true, nil, nil, 0, nil, "", "", "", "", nil, time.Now(), time.Now(),
 	)
 	repo := &stubAnnRepo{active: []*domainann.Announcement{ann}}
-	h := NewHandler(appann.NewService(repo), nil)
+	h := NewHandler(appann.NewService(repo, nil), nil)
 
 	r := httptest.NewRequest(http.MethodGet, "/announcements/active", nil)
 	w := httptest.NewRecorder()
@@ -187,7 +187,7 @@ func TestGetProject_NotFound_Returns404(t *testing.T) {
 // =====================================================================
 
 func TestCreateAnnouncement_EmptyBody_Returns400(t *testing.T) {
-	h := NewHandler(appann.NewService(&stubAnnRepo{}), nil)
+	h := NewHandler(appann.NewService(&stubAnnRepo{}, nil), nil)
 	r := newJSONRequest(http.MethodPost, "/admin/announcements", "")
 	w := httptest.NewRecorder()
 
@@ -199,7 +199,7 @@ func TestCreateAnnouncement_EmptyBody_Returns400(t *testing.T) {
 
 // announcementRequest.Title/Type 均 required；缺 type → 400。
 func TestCreateAnnouncement_MissingType_Returns400(t *testing.T) {
-	h := NewHandler(appann.NewService(&stubAnnRepo{}), nil)
+	h := NewHandler(appann.NewService(&stubAnnRepo{}, nil), nil)
 	r := newJSONRequest(http.MethodPost, "/admin/announcements", `{"title":"有标题"}`)
 	w := httptest.NewRecorder()
 
@@ -211,7 +211,7 @@ func TestCreateAnnouncement_MissingType_Returns400(t *testing.T) {
 
 // Type 枚举校验 oneof；非法值 → 400。
 func TestCreateAnnouncement_InvalidType_Returns400(t *testing.T) {
-	h := NewHandler(appann.NewService(&stubAnnRepo{}), nil)
+	h := NewHandler(appann.NewService(&stubAnnRepo{}, nil), nil)
 	r := newJSONRequest(http.MethodPost, "/admin/announcements", `{"title":"x","type":"wat"}`)
 	w := httptest.NewRecorder()
 

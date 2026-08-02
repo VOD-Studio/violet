@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 
 	apppost "blog-api/internal/application/post"
+	appshared "blog-api/internal/application/shared"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/middleware"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
@@ -18,9 +19,9 @@ type PostContainer struct {
 
 // NewPostContainer 装配文章模块。
 // settingsStore 用于 import-url 的「AI 还原公式」功能读取 llm_* 配置。
-func NewPostContainer(db *gorm.DB, perm middleware.PermissionChecker, settingsStore domainsettings.SettingsStore) *PostContainer {
+func NewPostContainer(db *gorm.DB, perm middleware.PermissionChecker, settingsStore domainsettings.SettingsStore, bus appshared.EventBus) *PostContainer {
 	repo := gormrepo.NewPostRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
-	svc := apppost.NewService(repo, userRepo, perm, settingsStore)
+	svc := apppost.NewService(repo, userRepo, perm, settingsStore, bus)
 	return &PostContainer{PostHandler: posthttp.NewHandler(svc), PostService: svc}
 }

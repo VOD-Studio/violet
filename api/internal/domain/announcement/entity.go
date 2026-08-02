@@ -40,6 +40,74 @@ var validDisplays = map[string]bool{
 // IsValidDisplay 校验展示形态是否合法
 func IsValidDisplay(d string) bool { return validDisplays[d] }
 
+// AnnouncementCreated 公告已创建事件
+//
+// 订阅者：审计服务（记录公告创建操作）。
+// 公告用 int32 主键，聚合根 ID 用占位（与 role 聚合一致），ID 字段承载实际主键。
+type AnnouncementCreated struct {
+	shared.BaseEvent
+	// ID 公告主键
+	ID int32
+}
+
+// NewAnnouncementCreated 构造公告创建事件
+func NewAnnouncementCreated(id int32) AnnouncementCreated {
+	return AnnouncementCreated{
+		BaseEvent: shared.NewBaseEvent("announcement.created", shared.ID{}),
+		ID:        id,
+	}
+}
+
+// AnnouncementChange 公告单字段变更（before/after）
+type AnnouncementChange struct {
+	// Field 字段名（title/content/severity/is_active/...）
+	Field string
+	// From 变更前值
+	From string
+	// To 变更后值
+	To string
+}
+
+// AnnouncementUpdated 公告已更新事件
+//
+// Title 为公告标题快照；Changes 为字段变更列表（before/after）。
+type AnnouncementUpdated struct {
+	shared.BaseEvent
+	// ID 公告主键
+	ID int32
+	// Title 公告标题快照
+	Title string
+	// Changes 字段变更列表（before/after）
+	Changes []AnnouncementChange
+}
+
+// NewAnnouncementUpdated 构造公告更新事件
+func NewAnnouncementUpdated(id int32, title string, changes []AnnouncementChange) AnnouncementUpdated {
+	return AnnouncementUpdated{
+		BaseEvent: shared.NewBaseEvent("announcement.updated", shared.ID{}),
+		ID:        id,
+		Title:     title,
+		Changes:   changes,
+	}
+}
+
+// AnnouncementDeleted 公告已删除事件
+//
+// 删除后聚合根不可继续存在，事件由应用层手动构造发布。
+type AnnouncementDeleted struct {
+	shared.BaseEvent
+	// ID 公告主键
+	ID int32
+}
+
+// NewAnnouncementDeleted 构造公告删除事件
+func NewAnnouncementDeleted(id int32) AnnouncementDeleted {
+	return AnnouncementDeleted{
+		BaseEvent: shared.NewBaseEvent("announcement.deleted", shared.ID{}),
+		ID:        id,
+	}
+}
+
 // Announcement 公告聚合根
 type Announcement struct {
 	shared.AggregateRoot
@@ -91,10 +159,12 @@ func NewAnnouncement(id int32, title, content, severity string) (*Announcement, 
 	if !IsValidSeverity(severity) {
 		return nil, shared.BadRequest("无效的公告类型")
 	}
-	return &Announcement{
+	a := &Announcement{
 		id: id, title: title, content: content, severity: severity,
 		display: DisplayBanner, isActive: true,
-	}, nil
+	}
+	// 不在此 RecordEvent：创建事件由应用层发布（需真实自增 ID，Save 前未知）
+	return a, nil
 }
 
 // ReconstructAnnouncement 从持久化数据重建公告
@@ -112,6 +182,9 @@ func ReconstructAnnouncement(
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }
+
+// SetID 回填公告主键（仅创建持久化后调用：Save 生成自增 ID，事件发布前必须回填）
+func (a *Announcement) SetID(id int32) { a.id = id }
 
 // SetActive 设置活跃状态
 func (a *Announcement) SetActive(active bool) { a.isActive = active }
@@ -174,12 +247,22 @@ func (a *Announcement) Update(title, content, severity string) error {
 	if severity != "" && !IsValidSeverity(severity) {
 		return shared.BadRequest("无效的公告类型")
 	}
-	a.title = title
-	if content != "" {
+	// 收集实际变更（before/after），无变更不记事件
+	changes := make([]AnnouncementChange, 0, 3)
+	if a.title != title {
+		changes = append(changes, AnnouncementChange{Field: "title", From: a.title, To: title})
+		a.title = title
+	}
+	if content != "" && a.content != content {
+		changes = append(changes, AnnouncementChange{Field: "content", From: a.content, To: content})
 		a.content = content
 	}
-	if severity != "" {
+	if severity != "" && a.severity != severity {
+		changes = append(changes, AnnouncementChange{Field: "severity", From: a.severity, To: severity})
 		a.severity = severity
+	}
+	if len(changes) > 0 {
+		a.RecordEvent(NewAnnouncementUpdated(a.id, a.title, changes))
 	}
 	return nil
 }

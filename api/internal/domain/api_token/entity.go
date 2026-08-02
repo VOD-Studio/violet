@@ -35,6 +35,38 @@ func IsValidScope(s string) bool {
 	return ok
 }
 
+// PATCreated PAT 已创建事件
+//
+// 凭据生命周期应审计。Name 为 PAT 名称快照。
+type PATCreated struct {
+	domainshared.BaseEvent
+	// Name PAT 名称
+	Name string
+}
+
+// NewPATCreated 构造 PAT 创建事件
+func NewPATCreated(userID domainshared.ID, name string) PATCreated {
+	return PATCreated{
+		BaseEvent: domainshared.NewBaseEvent("api_token.created", userID),
+		Name:      name,
+	}
+}
+
+// PATDeleted PAT 已删除事件
+type PATDeleted struct {
+	domainshared.BaseEvent
+	// Name PAT 名称（删除前快照，删除时从 repo 加载）
+	Name string
+}
+
+// NewPATDeleted 构造 PAT 删除事件
+func NewPATDeleted(userID domainshared.ID, name string) PATDeleted {
+	return PATDeleted{
+		BaseEvent: domainshared.NewBaseEvent("api_token.deleted", userID),
+		Name:      name,
+	}
+}
+
 // PAT 个人访问令牌聚合根。
 //
 // 不变量：

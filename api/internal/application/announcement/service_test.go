@@ -7,13 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
+
 	domain "blog-api/internal/domain/announcement"
 	"blog-api/internal/application/mocks"
 )
 
 func newServiceWithMock() (*Service, *mocks.MockAnnouncementRepository) {
 	repo := new(mocks.MockAnnouncementRepository)
-	return NewService(repo), repo
+	return NewService(repo, infraeventbus.NewInMemory()), repo
 }
 
 func TestService_Create(t *testing.T) {

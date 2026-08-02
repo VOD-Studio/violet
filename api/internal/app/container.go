@@ -7,10 +7,14 @@ package app
 import (
 	"context"
 
+	"github.com/rs/zerolog/log"
+
 	"blog-api/config"
 	authcmd "blog-api/internal/application/auth/command"
-	appshared "blog-api/internal/application/shared"
+	appaudit "blog-api/internal/application/audit"
 	infraemail "blog-api/internal/infrastructure/email"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
+	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 )
 
 type Container struct {
@@ -39,8 +43,6 @@ type Container struct {
 // 跨模块依赖（装配顺序即依赖序）：
 //   - role 无依赖但持有 cleanup
 //   - emailSender 从 cfg 派生，被 auth + comment 复用
-//   - settings.Service 被 auth 依赖，settings.Store 被 post/github/coderunner 依赖
-//   - audit.Service 被 userAdmin 依赖
 //   - post.PostService 被 subscription + mcp 依赖
 //   - apiToken.TokenLookup + comment.CommentService 被 mcp 依赖
 //
@@ -50,7 +52,15 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	db := infra.Gorm
 	rdb := infra.Redis
 
-	role, roleCleanup, err := InitializeRoleContainer(db)
+	// 事件总线：进程内 InMemory 同步实现，全部模块共享单一实例，
+	// 保证跨模块事件（role 创建 → 审计订阅者）在同一总线上可达。
+	bus := infraeventbus.NewInMemory()
+
+	// 审计订阅者：消费全部领域事件 → 写 audit_events（append-only）
+	auditSub := appaudit.NewSubscriber(gormrepo.NewEventStore(db), log.Logger)
+	auditSub.Subscribe(bus)
+
+	role, roleCleanup, err := InitializeRoleContainer(db, bus)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -58,25 +68,25 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
 	permissionChecker := role.PermissionChecker
 
-	settings := NewSettingsContainer(db)
+	settings := NewSettingsContainer(db, bus)
 
-	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, appshared.NoopEventBus{}, settings.Service)
+	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service)
 	if err != nil {
 		roleCleanup()
 		return nil, nil, err
 	}
 
-	content := NewContentContainer(db)
-	comment := NewCommentContainer(db, rdb, emailSender)
-	post := NewPostContainer(db, permissionChecker, settings.Store)
+	content := NewContentContainer(db, bus)
+	comment := NewCommentContainer(db, rdb, emailSender, bus)
+	post := NewPostContainer(db, permissionChecker, settings.Store, bus)
 	tag := NewTagContainer(db)
 	github := NewGitHubContainer(settings.Store)
 	releases := NewReleasesContainer(settings.Store, rdb)
 	audit := NewAuditContainer(db)
 	stats := NewStatsContainer(db)
-	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), audit.Service)
+	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus)
 	commentReaction := NewCommentReactionContainer(db)
-	apiToken := NewAPITokenContainer(db)
+	apiToken := NewAPITokenContainer(db, bus)
 	subscription := NewSubscriptionContainer(db, post.PostService)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, subscription.SubscriptionService, comment.CommentService)
 	system := NewSystemContainer(db, rdb, ctx)

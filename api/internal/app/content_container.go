@@ -5,6 +5,7 @@ import (
 
 	appann "blog-api/internal/application/announcement"
 	appproj "blog-api/internal/application/project"
+	appshared "blog-api/internal/application/shared"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	contenthttp "blog-api/internal/interfaces/http/handler/content"
 )
@@ -15,11 +16,11 @@ type ContentContainer struct {
 }
 
 // NewContentContainer 装配 announcement + project DDD 模块
-func NewContentContainer(db *gorm.DB) *ContentContainer {
+func NewContentContainer(db *gorm.DB, bus appshared.EventBus) *ContentContainer {
 	annRepo := gormrepo.NewAnnouncementRepository(db)
 	projRepo := gormrepo.NewProjectRepository(db)
 
-	annSvc := appann.NewService(annRepo)
+	annSvc := appann.NewService(annRepo, bus)
 	projSvc := appproj.NewService(projRepo)
 
 	return &ContentContainer{

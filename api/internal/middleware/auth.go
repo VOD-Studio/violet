@@ -24,6 +24,9 @@ const (
 	UserRoleKey                contextKey = "userRole"
 	UserEmailKey               contextKey = "userEmail"
 	UserIsBuiltinSuperAdminKey contextKey = "userIsBuiltinSuperAdmin"
+	// ClientIPKey / UserAgentKey 审计上下文：供审计订阅者从 ctx 提取操作人网络信息
+	ClientIPKey    contextKey = "clientIP"
+	UserAgentKey   contextKey = "userAgent"
 )
 
 // AdminRequired 管理后台入口权限中间件
@@ -89,6 +92,22 @@ func RequirePermission(checker PermissionChecker, codes ...string) func(http.Han
 func GetUserID(ctx context.Context) string {
 	if userID, ok := ctx.Value(UserIDKey).(string); ok {
 		return userID
+	}
+	return ""
+}
+
+// GetClientIPFromContext 从上下文中获取客户端 IP（审计上下文，session 中间件注入）
+func GetClientIPFromContext(ctx context.Context) string {
+	if ip, ok := ctx.Value(ClientIPKey).(string); ok {
+		return ip
+	}
+	return ""
+}
+
+// GetUserAgentFromContext 从上下文中获取 User-Agent（审计上下文，session 中间件注入）
+func GetUserAgentFromContext(ctx context.Context) string {
+	if ua, ok := ctx.Value(UserAgentKey).(string); ok {
+		return ua
 	}
 	return ""
 }

@@ -135,6 +135,10 @@ func (m *MockEventBus) Publish(ctx context.Context, events []shared.DomainEvent)
 	return m.Called(ctx, events).Error(0)
 }
 
+func (m *MockEventBus) Subscribe(eventName string, handler appshared.EventHandler) {
+	m.Called(eventName, handler)
+}
+
 // ============================================================
 // SessionStore Mock
 // ============================================================

@@ -8,18 +8,15 @@ import (
 	audithttp "blog-api/internal/interfaces/http/handler/audit"
 )
 
-// AuditContainer 操作日志模块容器
+// AuditContainer 操作日志模块容器（读侧：订阅者写入，Query 读取）
 type AuditContainer struct {
 	AuditHandler *audithttp.Handler
-	Service      *appaudit.Service
 }
 
-// NewAuditContainer 装配操作日志模块
 func NewAuditContainer(db *gorm.DB) *AuditContainer {
-	store := gormrepo.NewAuditStore(db)
-	svc := appaudit.NewService(store)
+	store := gormrepo.NewEventStore(db)
+	query := appaudit.NewQuery(store)
 	return &AuditContainer{
-		AuditHandler: audithttp.NewHandler(svc),
-		Service:      svc,
+		AuditHandler: audithttp.NewHandler(query),
 	}
 }

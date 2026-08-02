@@ -28,7 +28,7 @@ import (
 // newTestHandler 构造依赖全部为 nil 的真实 Service 的 Handler。
 // nil 依赖对校验失败路径与 Slugify 纯计算路径安全（svc 方法不会被触达）。
 func newTestHandler() *Handler {
-	return NewHandler(apppost.NewService(nil, nil, nil, nil))
+	return NewHandler(apppost.NewService(nil, nil, nil, nil, nil))
 }
 
 // decodeBody 把响应体解析为 map，便于断言 error/data 字段。

@@ -11,6 +11,7 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/application/mocks"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	domain "blog-api/internal/domain/comment"
 	"blog-api/internal/domain/shared"
 )
@@ -27,7 +28,7 @@ func newServiceWithMocks() (*Service, *mocks.MockCommentRepository, *mocks.MockC
 	repo := new(mocks.MockCommentRepository)
 	codeStore := new(mocks.MockCommentCodeStore)
 	emailSender := new(mocks.MockCommentEmailSender)
-	return NewService(repo, codeStore, emailSender, noopEmojiLookup{}), repo, codeStore, emailSender
+	return NewService(repo, codeStore, emailSender, noopEmojiLookup{}, infraeventbus.NewInMemory()), repo, codeStore, emailSender
 }
 
 func TestCreate_LoggedIn_SkipsCodeAndQuota(t *testing.T) {

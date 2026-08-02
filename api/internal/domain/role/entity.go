@@ -67,19 +67,26 @@ func (n RoleName) Equal(other RoleName) bool { return n.value == other.value }
 // RolePermissionsChanged 角色权限已变更事件
 //
 // 触发场景：管理员调整角色拥有的权限点后。
-// 订阅者：application/permission.Checker（重载权限缓存）。
+// 订阅者：application/permission.Checker（重载权限缓存）+ 审计服务。
+// Added/Removed 为权限点增删列表（审计 before/after）。
 type RolePermissionsChanged struct {
 	shared.BaseEvent
 	// RoleID 变更权限的角色 ID
 	RoleID int32
+	// Added 新增的权限点
+	Added []string
+	// Removed 移除的权限点
+	Removed []string
 }
 
 // NewRolePermissionsChanged 构造角色权限变更事件
-func NewRolePermissionsChanged(roleID int32) RolePermissionsChanged {
+func NewRolePermissionsChanged(roleID int32, added, removed []string) RolePermissionsChanged {
 	// 角色用 int32 ID，聚合根 ID 用占位（角色聚合与 user 聚合 ID 体系不同）
 	return RolePermissionsChanged{
 		BaseEvent: shared.NewBaseEvent("role.permissions_changed", shared.ID{}),
 		RoleID:    roleID,
+		Added:     added,
+		Removed:   removed,
 	}
 }
 
@@ -96,6 +103,49 @@ type RoleCreated struct {
 func NewRoleCreated(roleID int32, name RoleName) RoleCreated {
 	return RoleCreated{
 		BaseEvent: shared.NewBaseEvent("role.created", shared.ID{}),
+		RoleID:    roleID,
+		RoleName:  name,
+	}
+}
+
+// RoleUpdated 角色已更新事件（重命名/改描述）
+//
+// FromName/ToName 为变更前后角色名（审计 before/after 字段，未改名时相同）。
+type RoleUpdated struct {
+	shared.BaseEvent
+	// RoleID 角色 ID
+	RoleID int32
+	// FromName 变更前角色名
+	FromName string
+	// ToName 变更后角色名
+	ToName string
+}
+
+// NewRoleUpdated 构造角色更新事件
+func NewRoleUpdated(roleID int32, fromName, toName string) RoleUpdated {
+	return RoleUpdated{
+		BaseEvent: shared.NewBaseEvent("role.updated", shared.ID{}),
+		RoleID:    roleID,
+		FromName:  fromName,
+		ToName:    toName,
+	}
+}
+
+// RoleDeleted 角色已删除事件
+//
+// 删除后聚合根不可继续存在，事件由应用层手动构造发布。
+type RoleDeleted struct {
+	shared.BaseEvent
+	// RoleID 角色 ID
+	RoleID int32
+	// RoleName 删除前角色名
+	RoleName string
+}
+
+// NewRoleDeleted 构造角色删除事件
+func NewRoleDeleted(roleID int32, name string) RoleDeleted {
+	return RoleDeleted{
+		BaseEvent: shared.NewBaseEvent("role.deleted", shared.ID{}),
 		RoleID:    roleID,
 		RoleName:  name,
 	}
@@ -135,7 +185,8 @@ func NewRole(id int32, name RoleName, description string) *Role {
 		description: description,
 		permissions: make(map[string]struct{}),
 	}
-	r.RecordEvent(NewRoleCreated(id, name))
+	// 不在此 RecordEvent：创建事件由应用层发布（RoleCreated 需真实自增 ID，
+	// 而 Save 前 ID 未知——聚合根里记录只能是占位 0）
 	return r
 }
 
@@ -176,7 +227,9 @@ func (r *Role) Rename(newName RoleName) error {
 	if r.name.IsBuiltin() {
 		return shared.Forbidden("不能修改内置角色的名称")
 	}
+	old := r.name.String()
 	r.name = newName
+	r.RecordEvent(NewRoleUpdated(r.roleID, old, newName.String()))
 	return nil
 }
 
@@ -214,11 +267,25 @@ func (r *Role) Revoke(permissionCode string) {
 // 调整 superadmin 角色的权限行只影响被委派超管的兜底权限，不会影响内置超管。
 // 记录 RolePermissionsChanged 事件。
 func (r *Role) ReplacePermissions(codes []string) error {
-	r.permissions = make(map[string]struct{}, len(codes))
+	// 对比新旧权限集，收集增删（审计 before/after）
+	newSet := make(map[string]struct{}, len(codes))
 	for _, code := range codes {
-		r.permissions[code] = struct{}{}
+		newSet[code] = struct{}{}
 	}
-	r.RecordEvent(NewRolePermissionsChanged(r.roleID))
+	added := make([]string, 0, len(codes))
+	removed := make([]string, 0, len(r.permissions))
+	for code := range newSet {
+		if _, ok := r.permissions[code]; !ok {
+			added = append(added, code)
+		}
+	}
+	for code := range r.permissions {
+		if _, ok := newSet[code]; !ok {
+			removed = append(removed, code)
+		}
+	}
+	r.permissions = newSet
+	r.RecordEvent(NewRolePermissionsChanged(r.roleID, added, removed))
 	return nil
 }
 
@@ -247,6 +314,9 @@ func (r *Role) CanDelete() bool {
 // ============================================================
 // 访问器
 // ============================================================
+
+// SetRoleID 回填角色 ID（仅创建持久化后调用：Save 生成自增 ID，事件发布前必须回填）
+func (r *Role) SetRoleID(id int32) { r.roleID = id }
 
 func (r *Role) RoleID() int32        { return r.roleID }
 func (r *Role) Name() RoleName       { return r.name }

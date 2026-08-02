@@ -18,6 +18,53 @@ const (
 	StatusArchived  = "archived"
 )
 
+// PostPublished 文章已发布事件
+//
+// 订阅者：审计服务（记录发布操作）。Title 为文章标题快照。
+type PostPublished struct {
+	shared.BaseEvent
+	// Title 文章标题快照
+	Title string
+}
+
+// NewPostPublished 构造文章发布事件
+func NewPostPublished(postID shared.ID, title string) PostPublished {
+	return PostPublished{
+		BaseEvent: shared.NewBaseEvent("post.published", postID),
+		Title:     title,
+	}
+}
+
+// PostArchived 文章已归档事件
+type PostArchived struct {
+	shared.BaseEvent
+	// Title 文章标题快照
+	Title string
+}
+
+// NewPostArchived 构造文章归档事件
+func NewPostArchived(postID shared.ID, title string) PostArchived {
+	return PostArchived{
+		BaseEvent: shared.NewBaseEvent("post.archived", postID),
+		Title:     title,
+	}
+}
+
+// PostRevertedToDraft 文章回退草稿事件（取消发布）
+type PostRevertedToDraft struct {
+	shared.BaseEvent
+	// Title 文章标题快照
+	Title string
+}
+
+// NewPostRevertedToDraft 构造文章回退草稿事件
+func NewPostRevertedToDraft(postID shared.ID, title string) PostRevertedToDraft {
+	return PostRevertedToDraft{
+		BaseEvent: shared.NewBaseEvent("post.reverted_to_draft", postID),
+		Title:     title,
+	}
+}
+
 // slugPattern slug 格式：小写字母数字连字符
 var slugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
@@ -110,16 +157,27 @@ func (p *Post) Publish() {
 		now := time.Now()
 		p.publishedAt = &now
 		p.status = StatusPublished
+		p.RecordEvent(NewPostPublished(p.id, p.title))
 	}
 }
 
 // Archive 归档
-func (p *Post) Archive() { p.status = StatusArchived }
+func (p *Post) Archive() {
+	if p.status == StatusArchived {
+		return
+	}
+	p.status = StatusArchived
+	p.RecordEvent(NewPostArchived(p.id, p.title))
+}
 
 // RevertToDraft 回退到草稿
 func (p *Post) RevertToDraft() {
+	if p.status == StatusDraft {
+		return
+	}
 	p.status = StatusDraft
 	p.publishedAt = nil
+	p.RecordEvent(NewPostRevertedToDraft(p.id, p.title))
 }
 
 // IncrementView 浏览量 +1

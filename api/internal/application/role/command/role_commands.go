@@ -4,9 +4,12 @@ package command
 import (
 	"context"
 
+	"github.com/rs/zerolog/log"
+
 	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/permission"
 	"blog-api/internal/domain/role"
+	"blog-api/internal/domain/shared"
 )
 
 // ============================================================
@@ -68,9 +71,11 @@ func (h *CreateRoleHandler) Handle(ctx context.Context, in CreateRoleInput) (Cre
 		return CreateRoleOutput{}, err
 	}
 
-	// 5. 发布事件
-	if events := rl.PullEvents(); len(events) > 0 {
-		_ = h.bus.Publish(ctx, events)
+	// 5. 回填自增 ID（Save 生成），手动构造创建事件发布。
+	//    聚合根不在 NewRole 里 RecordEvent（Save 前 ID 未知，占位 0 无意义）
+	rl.SetRoleID(id)
+	if err := h.bus.Publish(ctx, []shared.DomainEvent{role.NewRoleCreated(id, name)}); err != nil {
+		log.Warn().Err(err).Msg("发布角色创建事件失败")
 	}
 
 	return CreateRoleOutput{ID: id}, nil
@@ -92,11 +97,12 @@ type UpdateRoleInput struct {
 // 内置角色禁止改名（由领域层守卫）。
 type UpdateRoleHandler struct {
 	roleRepo role.RoleRepository
+	bus      appshared.EventBus
 }
 
 // NewUpdateRoleHandler 构造更新角色用例
-func NewUpdateRoleHandler(repo role.RoleRepository) *UpdateRoleHandler {
-	return &UpdateRoleHandler{roleRepo: repo}
+func NewUpdateRoleHandler(repo role.RoleRepository, bus appshared.EventBus) *UpdateRoleHandler {
+	return &UpdateRoleHandler{roleRepo: repo, bus: bus}
 }
 
 // Handle 执行更新角色
@@ -134,8 +140,16 @@ func (h *UpdateRoleHandler) Handle(ctx context.Context, in UpdateRoleInput) erro
 	}
 
 	// 4. 持久化
-	_, err = h.roleRepo.Save(ctx, rl)
-	return err
+	if _, err := h.roleRepo.Save(ctx, rl); err != nil {
+		return err
+	}
+	// 5. 发布聚合根事件（RoleUpdated，审计订阅者消费）
+	if events := rl.PullEvents(); len(events) > 0 {
+		if err := h.bus.Publish(ctx, events); err != nil {
+			log.Warn().Err(err).Msg("发布角色更新事件失败")
+		}
+	}
+	return nil
 }
 
 // ============================================================
@@ -154,11 +168,12 @@ type DeleteRoleInput struct {
 //   - 正在被用户使用的角色不可删除（CountUsers 检查）
 type DeleteRoleHandler struct {
 	roleRepo role.RoleRepository
+	bus      appshared.EventBus
 }
 
 // NewDeleteRoleHandler 构造删除角色用例
-func NewDeleteRoleHandler(repo role.RoleRepository) *DeleteRoleHandler {
-	return &DeleteRoleHandler{roleRepo: repo}
+func NewDeleteRoleHandler(repo role.RoleRepository, bus appshared.EventBus) *DeleteRoleHandler {
+	return &DeleteRoleHandler{roleRepo: repo, bus: bus}
 }
 
 // Handle 执行删除角色
@@ -184,7 +199,14 @@ func (h *DeleteRoleHandler) Handle(ctx context.Context, in DeleteRoleInput) erro
 	}
 
 	// 4. 删除
-	return h.roleRepo.Delete(ctx, in.ID)
+	if err := h.roleRepo.Delete(ctx, in.ID); err != nil {
+		return err
+	}
+	// 5. 发布角色删除事件（聚合根不可继续存在，手动构造）
+	if err := h.bus.Publish(ctx, []shared.DomainEvent{role.NewRoleDeleted(in.ID, rl.Name().String())}); err != nil {
+		log.Warn().Err(err).Msg("发布角色删除事件失败")
+	}
+	return nil
 }
 
 // ============================================================

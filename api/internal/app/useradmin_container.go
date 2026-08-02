@@ -3,8 +3,8 @@ package app
 import (
 	"gorm.io/gorm"
 
-	appaudit "blog-api/internal/application/audit"
 	authcmd "blog-api/internal/application/auth/command"
+	appshared "blog-api/internal/application/shared"
 	appuseradmin "blog-api/internal/application/useradmin"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	useradminhttp "blog-api/internal/interfaces/http/handler/useradmin"
@@ -15,9 +15,8 @@ type UserAdminContainer struct {
 	UserAdminHandler *useradminhttp.Handler
 }
 
-// NewUserAdminContainer 装配用户管理模块
-func NewUserAdminContainer(db *gorm.DB, hasher authcmd.PasswordHasher, auditSvc *appaudit.Service) *UserAdminContainer {
+func NewUserAdminContainer(db *gorm.DB, hasher authcmd.PasswordHasher, bus appshared.EventBus) *UserAdminContainer {
 	store := gormrepo.NewAdminUserStore(db)
-	svc := appuseradmin.NewService(store, hasher, auditSvc)
+	svc := appuseradmin.NewService(store, hasher, bus)
 	return &UserAdminContainer{UserAdminHandler: useradminhttp.NewHandler(svc)}
 }

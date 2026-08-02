@@ -5,17 +5,22 @@ import (
 	"context"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
+	appshared "blog-api/internal/application/shared"
 	domainapitoken "blog-api/internal/domain/api_token"
+	"blog-api/internal/domain/shared"
 )
 
 // Service PAT 应用服务。
 type Service struct {
 	repo domainapitoken.TokenRepository
+	bus  appshared.EventBus
 }
 
 // NewService 创建 PAT 应用服务。
-func NewService(repo domainapitoken.TokenRepository) *Service {
-	return &Service{repo: repo}
+func NewService(repo domainapitoken.TokenRepository, bus appshared.EventBus) *Service {
+	return &Service{repo: repo, bus: bus}
 }
 
 // CreateInput 创建 PAT 入参。
@@ -40,6 +45,13 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	if err := s.repo.Save(ctx, p); err != nil {
 		return CreateResult{}, err
 	}
+	// PAT 是简单实体无聚合事件，应用层手动构造发布（凭据生命周期审计）
+	uid, err := shared.ParseID(p.UserID())
+	if err == nil {
+		if err := s.bus.Publish(ctx, []shared.DomainEvent{domainapitoken.NewPATCreated(uid, p.Name())}); err != nil {
+			log.Warn().Err(err).Msg("发布 PAT 创建事件失败")
+		}
+	}
 	return CreateResult{Token: toDTO(p, plaintext)}, nil
 }
 
@@ -58,7 +70,26 @@ func (s *Service) List(ctx context.Context, userID string) ([]PATDTO, error) {
 
 // Delete 吊销 PAT。按 id + userID 双重定位，防越权。
 func (s *Service) Delete(ctx context.Context, id, userID string) error {
-	return s.repo.Delete(ctx, id, userID)
+	// 删除前先查 name（删除后无法追溯）
+	name := ""
+	if pats, err := s.repo.FindByUser(ctx, userID); err == nil {
+		for _, p := range pats {
+			if p.ID() == id {
+				name = p.Name()
+				break
+			}
+		}
+	}
+	if err := s.repo.Delete(ctx, id, userID); err != nil {
+		return err
+	}
+	uid, err := shared.ParseID(userID)
+	if err == nil {
+		if err := s.bus.Publish(ctx, []shared.DomainEvent{domainapitoken.NewPATDeleted(uid, name)}); err != nil {
+			log.Warn().Err(err).Msg("发布 PAT 删除事件失败")
+		}
+	}
+	return nil
 }
 
 // PATDTO PAT 读模型。

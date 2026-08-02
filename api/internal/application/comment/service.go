@@ -114,14 +114,15 @@ type Service struct {
 	codeStore   appshared.CodeStore
 	emailSender EmailSender
 	emojiLookup EmojiLookup
+	bus         appshared.EventBus
 }
 
 // NewService 构造评论用例服务。
 //
 // codeStore 和 emailSender 用于匿名评论的邮箱验证码两步流（PRD-0001）。
 // emojiLookup 用于 toDTO 后解析 body 中的 [name] 构建 emote 映射，nil 时跳过。
-func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup) *Service {
-	return &Service{commentRepo: repo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup}
+func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, bus appshared.EventBus) *Service {
+	return &Service{commentRepo: repo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, bus: bus}
 }
 
 // ListByPost 按文章列出评论。
@@ -351,7 +352,20 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, ids []string, status st
 		}
 		domainIDs = append(domainIDs, id)
 	}
-	return s.commentRepo.BatchUpdateStatus(ctx, domainIDs, status)
+	affected, err := s.commentRepo.BatchUpdateStatus(ctx, domainIDs, status)
+	if err != nil {
+		return 0, err
+	}
+	// 批量审核审计：按目标状态逐个发布事件（approved→approve / spam→reject）
+	for _, id := range domainIDs {
+		switch status {
+		case domain.StatusApproved:
+			s.publish(ctx, domain.NewCommentApproved(id))
+		case domain.StatusSpam:
+			s.publish(ctx, domain.NewCommentSpammed(id))
+		}
+	}
+	return affected, nil
 }
 
 // ListPending 列出待审核评论（后台，可选 anchor 维度筛选，Issue-0008）
@@ -610,7 +624,12 @@ func (s *Service) Approve(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	return s.commentRepo.UpdateStatus(ctx, cid, domain.StatusApproved)
+	if err := s.commentRepo.UpdateStatus(ctx, cid, domain.StatusApproved); err != nil {
+		return err
+	}
+	// 审核操作不经聚合根（repo 直改状态），手动构造事件发布
+	s.publish(ctx, domain.NewCommentApproved(cid))
+	return nil
 }
 
 // MarkSpam 标记垃圾
@@ -619,7 +638,11 @@ func (s *Service) MarkSpam(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	return s.commentRepo.UpdateStatus(ctx, cid, domain.StatusSpam)
+	if err := s.commentRepo.UpdateStatus(ctx, cid, domain.StatusSpam); err != nil {
+		return err
+	}
+	s.publish(ctx, domain.NewCommentSpammed(cid))
+	return nil
 }
 
 // Delete 删除评论
@@ -628,7 +651,18 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	return s.commentRepo.Delete(ctx, cid)
+	if err := s.commentRepo.Delete(ctx, cid); err != nil {
+		return err
+	}
+	s.publish(ctx, domain.NewCommentDeleted(cid))
+	return nil
+}
+
+// publish 发布单个领域事件（审计订阅者消费）
+func (s *Service) publish(ctx context.Context, event shared.DomainEvent) {
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{event}); err != nil {
+		log.Warn().Err(err).Msg("发布评论事件失败")
+	}
 }
 
 // toDTO 把 domain.Comment 转成 CommentDTO。

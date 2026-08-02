@@ -12,6 +12,24 @@ import (
 	"blog-api/internal/domain/shared"
 )
 
+// SettingsUpdated 站点配置已更新事件
+//
+// 配置以 key-value 存储无聚合根，事件由应用层在批量写入后构造发布。
+// ChangedKeys 为本次实际变更的配置键列表（不含敏感值如 github_token/llm_api_key）。
+type SettingsUpdated struct {
+	shared.BaseEvent
+	// ChangedKeys 本次变更的配置键
+	ChangedKeys []string
+}
+
+// NewSettingsUpdated 构造配置更新事件
+func NewSettingsUpdated(changedKeys []string) SettingsUpdated {
+	return SettingsUpdated{
+		BaseEvent:    shared.NewBaseEvent("settings.updated", shared.ID{}),
+		ChangedKeys:  changedKeys,
+	}
+}
+
 // SiteSettings 站点配置读模型（聚合全部配置项）
 type SiteSettings struct {
 	// SiteName 站点名称
