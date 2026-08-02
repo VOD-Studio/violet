@@ -52,6 +52,120 @@ func NewUserEmailVerified(userID shared.ID) UserEmailVerified {
 	}
 }
 
+// UserRoleChanged 用户角色已变更事件
+//
+// From/To 为变更前后角色（审计 before/after 字段）。
+type UserRoleChanged struct {
+	shared.BaseEvent
+	// From 变更前角色
+	From Role
+	// To 变更后角色
+	To Role
+}
+
+// NewUserRoleChanged 构造角色变更事件
+func NewUserRoleChanged(userID shared.ID, from, to Role) UserRoleChanged {
+	return UserRoleChanged{
+		BaseEvent: shared.NewBaseEvent("user.role_changed", userID),
+		From:      from,
+		To:        to,
+	}
+}
+
+// UserStatusChanged 用户账户状态已变更事件
+//
+// From/To 为变更前后激活状态（审计 before/after 字段）。
+type UserStatusChanged struct {
+	shared.BaseEvent
+	// From 变更前状态
+	From bool
+	// To 变更后状态
+	To bool
+}
+
+// NewUserStatusChanged 构造状态变更事件
+func NewUserStatusChanged(userID shared.ID, from, to bool) UserStatusChanged {
+	return UserStatusChanged{
+		BaseEvent: shared.NewBaseEvent("user.status_changed", userID),
+		From:      from,
+		To:        to,
+	}
+}
+
+// UserUsernameChanged 用户名已变更事件
+//
+// From/To 为变更前后用户名（审计 before/after 字段）。
+type UserUsernameChanged struct {
+	shared.BaseEvent
+	// From 变更前用户名
+	From string
+	// To 变更后用户名
+	To string
+}
+
+// NewUserUsernameChanged 构造用户名变更事件
+func NewUserUsernameChanged(userID shared.ID, from, to string) UserUsernameChanged {
+	return UserUsernameChanged{
+		BaseEvent: shared.NewBaseEvent("user.username_changed", userID),
+		From:      from,
+		To:        to,
+	}
+}
+
+// UserDeleted 用户已删除事件
+//
+// 删除是破坏性操作，聚合根不可继续存在，事件由应用层手动构造发布。
+type UserDeleted struct {
+	shared.BaseEvent
+}
+
+// NewUserDeleted 构造用户删除事件
+func NewUserDeleted(userID shared.ID) UserDeleted {
+	return UserDeleted{
+		BaseEvent: shared.NewBaseEvent("user.deleted", userID),
+	}
+}
+
+// BatchUserStatusChanged 批量用户状态变更事件
+//
+// 批量 SQL 不经聚合根，事件由应用层构造：只记录受影响数量与目标状态。
+type BatchUserStatusChanged struct {
+	shared.BaseEvent
+	// Affected 受影响用户数
+	Affected int64
+	// IsActive 目标状态
+	IsActive bool
+}
+
+// NewBatchUserStatusChanged 构造批量状态变更事件
+func NewBatchUserStatusChanged(affected int64, isActive bool) BatchUserStatusChanged {
+	return BatchUserStatusChanged{
+		BaseEvent: shared.NewBaseEvent("user.batch_status_changed", shared.ID{}),
+		Affected:  affected,
+		IsActive:  isActive,
+	}
+}
+
+// BatchUserRoleChanged 批量用户角色变更事件
+//
+// 批量 SQL 不经聚合根，事件由应用层构造：只记录受影响数量与目标角色。
+type BatchUserRoleChanged struct {
+	shared.BaseEvent
+	// Affected 受影响用户数
+	Affected int64
+	// Role 目标角色
+	Role string
+}
+
+// NewBatchUserRoleChanged 构造批量角色变更事件
+func NewBatchUserRoleChanged(affected int64, role string) BatchUserRoleChanged {
+	return BatchUserRoleChanged{
+		BaseEvent: shared.NewBaseEvent("user.batch_role_changed", shared.ID{}),
+		Affected:  affected,
+		Role:      role,
+	}
+}
+
 // ============================================================
 // User 聚合根
 // ============================================================
@@ -206,7 +320,12 @@ func (u *User) ChangePassword(newHash PasswordHash) {
 //
 // 值对象校验由调用方在 ParseUsername 完成，此处仅赋值并更新时间戳。
 func (u *User) ChangeUsername(name Username) {
+	if u.username.String() == name.String() {
+		return // 无实际变更不记事件
+	}
+	old := u.username.String()
 	u.username = name
+	u.RecordEvent(NewUserUsernameChanged(u.GetID(), old, name.String()))
 }
 
 // ChangeRole 修改角色
@@ -216,7 +335,12 @@ func (u *User) ChangeRole(role Role) error {
 	if !role.IsValid() {
 		return shared.BadRequest("无效的角色")
 	}
+	if u.role == role {
+		return nil // 无实际变更不记事件
+	}
+	old := u.role
 	u.role = role
+	u.RecordEvent(NewUserRoleChanged(u.GetID(), old, role))
 	return nil
 }
 
@@ -241,10 +365,22 @@ func (u *User) SetGithubID(id string) {
 }
 
 // Activate 启用账户
-func (u *User) Activate() { u.isActive = true }
+func (u *User) Activate() {
+	if u.isActive {
+		return // 无实际变更不记事件
+	}
+	u.isActive = true
+	u.RecordEvent(NewUserStatusChanged(u.GetID(), false, true))
+}
 
 // Deactivate 禁用账户
-func (u *User) Deactivate() { u.isActive = false }
+func (u *User) Deactivate() {
+	if !u.isActive {
+		return // 无实际变更不记事件
+	}
+	u.isActive = false
+	u.RecordEvent(NewUserStatusChanged(u.GetID(), true, false))
+}
 
 // UpdateProfile 更新个人资料（头像、简介）
 //
