@@ -1,6 +1,6 @@
 // Package releases 提供更新日志（GitHub Releases）的应用用例。
 //
-// 代理 GitHub Releases API 拉取版本列表，解析 release body 的 emoji 行成分类标签，
+// 代理 GitHub Releases API 拉取版本列表，解析 release body 的 section 标题成分类，
 // 结果用 Redis 缓存（~1h），失败回退缓存。owner/repo/token 从站点配置注入。
 package releases
 
@@ -16,33 +16,13 @@ import (
 	domainsettings "blog-api/internal/domain/settings"
 )
 
-// emojiLabel release-please 标题行 emoji → 中文标签映射
-// 对齐 conventional-commits 全类型（release-please action v4 输出）
-var emojiLabel = map[string][2]string{
-	"🎉": {"🎉", "开始"},
-	"✨": {"✨", "新增"},
-	"🐛": {"🐛", "修复"},
-	"📚": {"📚", "文档"},
-	"📝": {"📝", "文档"},
-	"💄": {"💄", "样式"},
-	"🎨": {"🎨", "样式"},
-	"♻️": {"♻️", "重构"},
-	"🚀": {"🚀", "性能"},
-	"⚡️": {"⚡️", "优化"},
-	"🔧": {"🔧", "配置"},
-	"👷": {"👷", "CI"},
-	"🔨": {"🔨", "构建"},
-	"🔒️": {"🔒️", "安全"},
-	"🚨": {"🚨", "破坏性变更"},
-	"💥": {"💥", "破坏性变更"},
-	"⏪️": {"⏪️", "回退"},
-	"🗑️": {"🗑️", "移除"},
-	"🧪": {"🧪", "测试"},
-	"📦️": {"📦️", "依赖"},
+// breakingKeywords 触发 breaking change 标记的标题/条目关键词
+var breakingKeywords = map[string]bool{
+	"breaking":  true,
+	"破坏":      true,
+	"破坏性":     true,
+	"不兼容":     true,
 }
-
-// breakingEmojis 标记为 breaking change 的 emoji
-var breakingEmojis = map[string]bool{"🚨": true, "💥": true}
 
 // cacheKey Redis 缓存键，cacheTTL 缓存有效期
 const (
@@ -119,19 +99,26 @@ func buildData(raw []domainreleases.Release) *domainreleases.ReleasesData {
 	}
 }
 
-// parseBody 解析 release-please 标准格式的 release body 成分类条目，并检测 breaking
+// parseBody 解析 GitHub 原生 release notes 成分类条目，并检测 breaking。
 //
-// release-please 生成的格式（conventional-commits）形如：
-//   ### 🐛 修复
+// GitHub 原生格式（changelog-type: github，读 .github/release.yml 分类）形如：
+//   ## What's Changed
+//   * About 页重设计 by @xunrua in #7
 //
-//   * **media:** 补注册 admin 组批量删除路由修复 405 ([#3](...)) ([f5eff6f](...))
+//   ### 新功能
+//   * About 页重设计 by @xunrua in #7
 //
-//   ### 📝 文档
+//   ### Bug 修复
+//   * 修复评论分页 by @DefectingCat in #11
 //
-//   * **changelog:** 重写 v2.0.0 段落 ([f378a4d](...))
+//   **Full Changelog**: https://github.com/.../compare/v2.0.4...v2.1.0
 //
-// 解析逻辑：`### <emoji> <label>` 标题行开启一个分类，其后的 `* <item>` 行归入该分类。
-// emoji 不在已知映射时用原标题 label 兜底。breaking emoji 触发 breaking 标记。
+// 解析逻辑：
+//   - `### <纯文字 title>` 开启分类（title 直接作 label）
+//   - `* <item>` / `- <item>` 归入当前分类
+//   - `## ` 级标题（What's Changed / New Contributors）跳过
+//   - `**Full Changelog**` 尾行跳过
+//   - label 或条目含 breaking/破坏/不兼容 关键词时标记 breaking
 func parseBody(body string) ([]domainreleases.Category, bool) {
 	if body == "" {
 		return nil, false
@@ -147,30 +134,33 @@ func parseBody(body string) ([]domainreleases.Category, bool) {
 			continue
 		}
 
-		// 标题行：### <emoji> <label>
-		if strings.HasPrefix(line, "###") {
-			rest := strings.TrimSpace(strings.TrimPrefix(line, "###"))
-			matchedEmoji := ""
-			for emoji := range emojiLabel {
-				if strings.HasPrefix(rest, emoji) {
-					matchedEmoji = emoji
-					break
-				}
-			}
-			if matchedEmoji == "" {
+		// 跳过 Full Changelog 尾行
+		if strings.HasPrefix(line, "**Full Changelog**") {
+			continue
+		}
+
+		// 分类标题行：### <纯文字 title>
+		if strings.HasPrefix(line, "### ") {
+			label := strings.TrimSpace(strings.TrimPrefix(line, "### "))
+			if label == "" {
 				continue
 			}
-			if breakingEmojis[matchedEmoji] {
+			if isBreaking(label) {
 				breaking = true
 			}
-			if cat, ok := idx[matchedEmoji]; ok {
+			if cat, ok := idx[label]; ok {
 				current = cat
 			} else {
-				pair := emojiLabel[matchedEmoji]
-				current = &domainreleases.Category{Emoji: pair[0], Label: pair[1]}
-				idx[matchedEmoji] = current
-				order = append(order, matchedEmoji)
+				current = &domainreleases.Category{Label: label}
+				idx[label] = current
+				order = append(order, label)
 			}
+			continue
+		}
+
+		// ## 级标题（What's Changed / New Contributors）不开启分类，跳过
+		if strings.HasPrefix(line, "## ") {
+			current = nil
 			continue
 		}
 
@@ -180,19 +170,33 @@ func parseBody(body string) ([]domainreleases.Category, bool) {
 			if item == "" {
 				continue
 			}
+			if isBreaking(item) {
+				breaking = true
+			}
 			current.Items = append(current.Items, item)
 		}
 	}
 
 	cats := make([]domainreleases.Category, 0, len(order))
-	for _, emoji := range order {
-		cat := *idx[emoji]
+	for _, label := range order {
+		cat := *idx[label]
 		if cat.Items == nil {
 			cat.Items = []string{}
 		}
 		cats = append(cats, cat)
 	}
 	return cats, breaking
+}
+
+// isBreaking 判断文本是否含 breaking change 关键词（大小写不敏感）。
+func isBreaking(text string) bool {
+	lower := strings.ToLower(text)
+	for kw := range breakingKeywords {
+		if strings.Contains(lower, strings.ToLower(kw)) {
+			return true
+		}
+	}
+	return false
 }
 
 // readCache 读 Redis 缓存（命中返回数据 + true）

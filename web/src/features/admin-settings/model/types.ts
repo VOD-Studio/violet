@@ -1,8 +1,4 @@
-/**
- * admin-settings 模块类型定义
- *
- * 对齐后端 domain/settings.SiteSettings（GET /admin/settings 返回）。
- */
+/** admin-settings 模块类型定义 */
 import type { AboutConfig } from "@features/settings/model/types";
 
 /** SiteSettingsDTO - 站点配置读模型 */

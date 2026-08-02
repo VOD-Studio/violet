@@ -11,7 +11,7 @@
 import { CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import type { ComponentType } from "react";
 
-/** 公告严重程度(视觉维度:配色/图标/标签),对齐后端 severity 枚举 */
+/** 公告严重程度(视觉维度:配色/图标/标签) */
 export type AnnouncementSeverity = "info" | "warning" | "success" | "error";
 
 export interface AnnouncementSevCfg {

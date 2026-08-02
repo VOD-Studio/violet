@@ -1,9 +1,4 @@
-/**
- * announcement-lab 实验室共享类型与 mock 数据
- *
- * LabSeverity 对齐后端 announcement type 枚举（info/warning/success/error），
- * 在实验室语义里它代表 severity（纯视觉维度：配色 + 标签）。
- */
+/** announcement-lab 实验室共享类型与 mock 数据 */
 
 /** 严重程度枚举（值与后端 type 一致，语义重新定义为视觉维度） */
 export type LabSeverity = "info" | "warning" | "success" | "error";

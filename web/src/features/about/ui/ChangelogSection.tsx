@@ -1,17 +1,41 @@
 import { useReleases } from "@features/about/api/queries";
 import { formatDate } from "@features/about/model/format";
-import { motion } from "motion/react";
 import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
+import { motion } from "motion/react";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
-/** 分类标签的色相（emoji → tailwind 配色类） */
-const categoryColor: Record<string, string> = {
-    "✨": "border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    "🐛": "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400",
-    "♻️": "border-purple-500/40 bg-purple-500/10 text-purple-600 dark:text-purple-400",
-    "🚀": "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    "🚨": "border-orange-500/50 bg-orange-500/15 text-orange-600 dark:text-orange-400",
-};
+/**
+ * 分类标签配色：按 label 关键词匹配（release notes 已去 emoji，按纯文字 label 配色）。
+ * 匹配规则：label 含关键词即命中，新功能优先于其他。
+ */
+const labelColorRules: { match: string; cls: string }[] = [
+    {
+        match: "破坏",
+        cls: "border-orange-500/50 bg-orange-500/15 text-orange-600 dark:text-orange-400",
+    },
+    { match: "新功能", cls: "border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+    { match: "Bug", cls: "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400" },
+    { match: "修复", cls: "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400" },
+    {
+        match: "重构",
+        cls: "border-purple-500/40 bg-purple-500/10 text-purple-600 dark:text-purple-400",
+    },
+    {
+        match: "性能",
+        cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    },
+    {
+        match: "优化",
+        cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    },
+];
+
+function categoryColor(label: string): string {
+    for (const rule of labelColorRules) {
+        if (label.includes(rule.match)) return rule.cls;
+    }
+    return "border-edge-hairline bg-muted/30 text-muted-foreground";
+}
 
 /**
  * ChangelogSection - B3 更新日志
@@ -46,7 +70,7 @@ export function ChangelogSection(_: AboutSectionProps) {
                             className="relative"
                         >
                             {/* 时间线节点 */}
-                            <span className="absolute -left-[31px] top-1.5 size-3 rounded-full border-2 border-background bg-primary" />
+                            <span className="absolute -left-7.75 top-1.5 size-3 rounded-full border-2 border-background bg-primary" />
                             <div className="rounded-xl border border-edge-hairline bg-background p-5">
                                 <div className="mb-3 flex flex-wrap items-center gap-3">
                                     <span className="font-mono text-sm font-semibold">
@@ -66,14 +90,11 @@ export function ChangelogSection(_: AboutSectionProps) {
                                 {release.categories.length > 0 ? (
                                     <div className="space-y-3">
                                         {release.categories.map((cat) => (
-                                            <div key={cat.emoji + cat.label}>
+                                            <div key={cat.label}>
                                                 <span
-                                                    className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${
-                                                        categoryColor[cat.emoji] ??
-                                                        "border-edge-hairline bg-muted/30 text-muted-foreground"
-                                                    }`}
+                                                    className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${categoryColor(cat.label)}`}
                                                 >
-                                                    {cat.emoji} {cat.label}
+                                                    {cat.label}
                                                 </span>
                                                 <ul className="mt-1.5 space-y-1 pl-1 text-sm text-foreground/70 [&>li>p]:my-0 [&>li>p]:leading-6">
                                                     {cat.items.map((item, idx) => (
