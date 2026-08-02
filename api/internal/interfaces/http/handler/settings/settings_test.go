@@ -17,6 +17,7 @@ import (
 
 	appsettings "blog-api/internal/application/settings"
 	domainsettings "blog-api/internal/domain/settings"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 )
 
 // stubSettingsStore 手写 stub，实现 domainsettings.SettingsStore。
@@ -40,7 +41,7 @@ func (s *stubSettingsStore) UpsertMany(context.Context, map[string]string) error
 var _ domainsettings.SettingsStore = (*stubSettingsStore)(nil)
 
 func newSettingsHandler(store *stubSettingsStore) *Handler {
-	return NewHandler(appsettings.NewService(store))
+	return NewHandler(appsettings.NewService(store, infraeventbus.NewInMemory()))
 }
 
 func newJSONRequest(method, target, body string) *http.Request {

@@ -68,7 +68,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
 	permissionChecker := role.PermissionChecker
 
-	settings := NewSettingsContainer(db)
+	settings := NewSettingsContainer(db, bus)
 
 	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service)
 	if err != nil {
@@ -77,7 +77,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	}
 
 	content := NewContentContainer(db, bus)
-	comment := NewCommentContainer(db, rdb, emailSender)
+	comment := NewCommentContainer(db, rdb, emailSender, bus)
 	post := NewPostContainer(db, permissionChecker, settings.Store, bus)
 	tag := NewTagContainer(db)
 	github := NewGitHubContainer(settings.Store)
@@ -86,7 +86,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	stats := NewStatsContainer(db)
 	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus)
 	commentReaction := NewCommentReactionContainer(db)
-	apiToken := NewAPITokenContainer(db)
+	apiToken := NewAPITokenContainer(db, bus)
 	subscription := NewSubscriptionContainer(db, post.PostService)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, subscription.SubscriptionService, comment.CommentService)
 	system := NewSystemContainer(db, rdb, ctx)

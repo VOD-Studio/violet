@@ -7,17 +7,20 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	appshared "blog-api/internal/application/shared"
 	domainsettings "blog-api/internal/domain/settings"
+	"blog-api/internal/domain/shared"
 )
 
 // Service 站点配置用例服务
 type Service struct {
 	store domainsettings.SettingsStore
+	bus   appshared.EventBus
 }
 
 // NewService 构造配置服务
-func NewService(store domainsettings.SettingsStore) *Service {
-	return &Service{store: store}
+func NewService(store domainsettings.SettingsStore, bus appshared.EventBus) *Service {
+	return &Service{store: store, bus: bus}
 }
 
 // GetAll 获取全部站点配置
@@ -183,7 +186,29 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 			return domainsettings.SiteSettings{}, err
 		}
 	}
+	// 配置变更审计（不含敏感值，只记变更键名）
+	if len(updates) > 0 {
+		keys := make([]string, 0, len(updates))
+		for k := range updates {
+			if isSensitiveSettingKey(k) {
+				continue
+			}
+			keys = append(keys, k)
+		}
+		if err := s.bus.Publish(ctx, []shared.DomainEvent{domainsettings.NewSettingsUpdated(keys)}); err != nil {
+			log.Warn().Err(err).Msg("发布配置更新事件失败")
+		}
+	}
 	return s.GetAll(ctx)
+}
+
+// isSensitiveSettingKey 敏感配置键不记审计（凭据值不入审计日志）
+func isSensitiveSettingKey(k string) bool {
+	switch k {
+	case "github_token", "llm_api_key", "resend_api_key", "email_from":
+		return true
+	}
+	return false
 }
 
 func boolStr(b bool) string {
