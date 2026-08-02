@@ -13,9 +13,12 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 
 	domainannouncement "blog-api/internal/domain/announcement"
+	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
+	domaincomment "blog-api/internal/domain/comment"
 	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
+	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
@@ -306,6 +309,62 @@ func TestSubscriber_AnnouncementDeleted_RecordsDelete(t *testing.T) {
 	require.NoError(t, sub.Handle(ctx, domainannouncement.NewAnnouncementDeleted(9)))
 	require.Len(t, store.appended, 1)
 	assert.Equal(t, domainaudit.ActionDelete, store.appended[0].Action)
+}
+
+func TestSubscriber_CommentApproved_RecordsApprove(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	commentID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domaincomment.NewCommentApproved(commentID)))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionApprove, e.Action)
+	assert.Equal(t, "comment", e.Resource.Type)
+	assert.Equal(t, commentID.String(), e.Resource.ID)
+}
+
+func TestSubscriber_CommentSpammed_RecordsReject(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	require.NoError(t, sub.Handle(ctx, domaincomment.NewCommentSpammed(shared.NewID())))
+	require.Len(t, store.appended, 1)
+	assert.Equal(t, domainaudit.ActionReject, store.appended[0].Action)
+}
+
+func TestSubscriber_PATCreated_RecordsCreateWithName(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	userID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainapitoken.NewPATCreated(userID, "ci-token")))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionCreate, e.Action)
+	assert.Equal(t, "api_token", e.Resource.Type)
+	assert.Equal(t, "ci-token", e.Resource.Name)
+}
+
+func TestSubscriber_SettingsUpdated_RecordsChangedKeys(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	require.NoError(t, sub.Handle(ctx, domainsettings.NewSettingsUpdated([]string{"site_name", "bio"})))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionUpdate, e.Action)
+	assert.Equal(t, "settings", e.Resource.Type)
+	changed, ok := e.Metadata["changed_keys"].([]string)
+	require.True(t, ok)
+	assert.ElementsMatch(t, []string{"site_name", "bio"}, changed)
 }
 
 func TestSubscriber_Subscribe_UsesWildcard(t *testing.T) {

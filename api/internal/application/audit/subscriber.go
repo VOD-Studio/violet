@@ -14,9 +14,12 @@ import (
 	appshared "blog-api/internal/application/shared"
 	authcmd "blog-api/internal/application/auth/command"
 	domainannouncement "blog-api/internal/domain/announcement"
+	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
+	domaincomment "blog-api/internal/domain/comment"
 	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
+	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
@@ -276,6 +279,61 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID)},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaincomment.CommentApproved:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionApprove,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "comment", ID: e.AggregateID().String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaincomment.CommentSpammed:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionReject,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "comment", ID: e.AggregateID().String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaincomment.CommentDeleted:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "comment", ID: e.AggregateID().String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainapitoken.PATCreated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionCreate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "api_token", ID: e.AggregateID().String(), Name: e.Name},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainapitoken.PATDeleted:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "api_token", ID: e.AggregateID().String(), Name: e.Name},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainsettings.SettingsUpdated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "settings"},
+			Metadata:   map[string]any{"changed_keys": e.ChangedKeys},
 			OccurredAt: e.OccurredAt(),
 		}, true
 

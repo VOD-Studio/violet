@@ -85,6 +85,8 @@ var (
 	ActionLogin          = MustParse("login")           // 登录成功
 	ActionLogout         = MustParse("logout")          // 登出
 	ActionLoginFailed    = MustParse("login_failed")    // 登录失败
+	ActionApprove        = MustParse("approve")         // 审核通过（评论）
+	ActionReject         = MustParse("reject")          // 标记垃圾/拒绝（评论）
 )
 
 // Actor 操作人
