@@ -366,6 +366,56 @@ func Run(ctx context.Context, cfg *config.Config) error {
 
 新代码(含重构搬移)必须遵守上述规范。存量无效注释**不单独开 PR 清理**(噪音清理不构成可单独 revert 的原子改动),但在**因其他原因改动到该文件时顺手清理**(规则 3 同层按职责拆分的延伸:改到即清)。
 
+### 字段注释规范(struct field)
+
+上一节讲「该删什么注释」,本节讲「该补什么注释」。两者不矛盾:废话注释删掉,关键注释补上。
+
+#### 金标准:领域实体/值对象的每个字段都要注释
+
+`domain/user/entity.go` 的 `User`、`domain/comment/entity.go` 的 `Comment`/`Anchor`、`domain/subscription/entity.go` 的 `Subscription`、`config/config.go` 的全部配置 struct 是项目主流高质量样本。它们的共同点:
+
+```go
+type User struct {
+    shared.AggregateRoot
+    // email 邮箱(值对象)
+    email Email
+    // username 用户名(值对象)
+    username Username
+    // ...
+    // isBuiltinSuperAdmin 是否为内置超级管理员
+    //
+    // 区分"内置超管"(系统初始化的唯一超管,通配符权限,靠标志位短路)
+    // 与"被委派超管"(被内置超管授予 superadmin 角色的用户,按 role_permissions 表授权)。
+    isBuiltinSuperAdmin bool
+}
+```
+
+- 每个命名字段一行 `// fieldName 中文说明`。
+- 嵌入字段(`shared.AggregateRoot` 等)豁免,不注释。
+- 语义不显然的字段(如上例 `isBuiltinSuperAdmin`)补多行 why,解释不变量/取值约束/与相邻字段的区分。
+
+#### 强制范围(必须补字段注释)
+
+**领域层**(`internal/domain/**`)的实体、值对象、聚合根:每个命名字段必须有 `// fieldName 说明`。这是项目的既有基线(见上述金标准),存量未达标的领域 struct(如 `Announcement`、`PAT`、`ExecutionTask`、`Emoji*`、`Song`/`Playlist`、`SiteSettings`/`UpdateInput`、`upload.File`/`UploadSession`、`stats.*`)在改动到该文件时补齐。
+
+**对外契约 DTO**(application 层导出的 `*DTO`、handler 层导出的 `*Request`/`*Response`):前端/agent 靠字段名 + 注释理解契约,字段语义不显然的要补。带 `json` tag 但字段名自解释的(如 `Email string \`json:"email"\``)可只补约束(如 `// 归一化后的小写邮箱`)。
+
+#### 豁免范围(不强制字段注释)
+
+以下 struct 字段不要求 `// fieldName` 注释,因为信息已由代码其他部分自表达,补注释反而是噪音:
+
+- **GORM PO 模型**(`infrastructure/persistence/gorm/model/`):字段带 `gorm:"column:xxx"` + `json:"xxx"` tag,列名与类型已自描述。
+- **单字段依赖注入容器**(`app/*Container`、`application/*Service`/`*Handler`、`interfaces/http/handler/*Handler`):字段是注入的依赖,构造函数签名已说明,struct 内重复注释即「复读签名」(见无效注释第 1 类)。
+- **带 `jsonschema` 描述 tag 的 DTO**(如 MCP tool 参数 struct):tag 里的描述已是字段文档。
+- **函数内临时 row struct**(如 GORM 查询的 `row`/`statRow`):局部临时,不暴露。
+- **带 `validate` tag 的未导出请求 DTO**:校验规则已由 tag 表达。
+
+#### 写法约定
+
+- 行上注释优先(`// fieldName 说明` 紧贴字段上方一行),与金标准一致。
+- 行尾内联注释(`field Type // 说明`)仅用于一句话能说清的简单字段(如 `sourceType string // 'rss' | 'page'`),复杂字段仍用行上多行。
+- 注释内容是「这个字段是什么/取什么值/有什么约束」,不是「这个字段叫什么」(后者是复读字段名)。
+
 ## PR 与 issue 规范
 
 ### Issue 标题格式
