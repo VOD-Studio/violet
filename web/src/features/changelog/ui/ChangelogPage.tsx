@@ -6,23 +6,23 @@ import { useState } from "react";
 /** 单分类条目超过该数折叠（如 v2.2.0 的「新增」23 条），点「展开全部」兜底 */
 const COLLAPSE_ITEMS = 6;
 
-/** 分类纯文字色（无边框胶囊，简洁优先） */
+/** 分类标签配色：浅底深字 badge（对齐全站 severity 标签范式），按 label 关键词匹配 */
 const labelColorRules: { match: string; cls: string }[] = [
-    { match: "破坏", cls: "text-orange-600 dark:text-orange-400" },
-    { match: "新功能", cls: "text-blue-600 dark:text-blue-400" },
-    { match: "新增", cls: "text-blue-600 dark:text-blue-400" },
-    { match: "Bug", cls: "text-red-600 dark:text-red-400" },
-    { match: "修复", cls: "text-red-600 dark:text-red-400" },
-    { match: "重构", cls: "text-purple-600 dark:text-purple-400" },
-    { match: "性能", cls: "text-emerald-600 dark:text-emerald-400" },
-    { match: "优化", cls: "text-emerald-600 dark:text-emerald-400" },
+    { match: "破坏", cls: "bg-orange-500/10 text-orange-600 dark:text-orange-400" },
+    { match: "新功能", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+    { match: "新增", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+    { match: "Bug", cls: "bg-red-500/10 text-red-600 dark:text-red-400" },
+    { match: "修复", cls: "bg-red-500/10 text-red-600 dark:text-red-400" },
+    { match: "重构", cls: "bg-purple-500/10 text-purple-600 dark:text-purple-400" },
+    { match: "性能", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+    { match: "优化", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
 ];
 
 function categoryColor(label: string): string {
     for (const rule of labelColorRules) {
         if (label.includes(rule.match)) return rule.cls;
     }
-    return "text-muted-foreground";
+    return "bg-muted/50 text-muted-foreground";
 }
 
 /** 条目 markdown 拆 scope：**audit:** 描述 → { scope: "audit", rest: "描述" } */
@@ -35,9 +35,9 @@ function splitItem(item: string): { scope: string; rest: string } {
 /**
  * ChangelogPage - 更新日志独立页（/changelog）
  *
- * 简洁时间线：左侧竖线 + 圆点，右侧版本号 → 分类 → 条目三级层级。
- * 分类用纯文字色 label（不做彩色胶囊堆叠），条目 scope 加粗。
- * 当前版本实心徽章高亮；长分类折叠 + 展开按钮。
+ * 视觉对齐全站语言：页面标题 font-mono text-4xl font-bold（博客页同款），
+ * 分类用浅底深字 badge（severity 范式），条目 text-base 舒朗排版。
+ * 时间线：左侧竖线 + 圆点；当前版本 primary 高亮 + 实心徽章。
  */
 export function ChangelogPage() {
     const { data } = useReleases();
@@ -49,29 +49,28 @@ export function ChangelogPage() {
     const toggle = (key: string) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
     return (
-        <main className="mx-auto w-full max-w-3xl px-6 py-20">
+        <main className="mx-auto w-full max-w-4xl px-6 py-20">
             <header className="mb-16">
-                <h1 className="text-3xl font-semibold tracking-tight">更新日志</h1>
-                <p className="mt-2 text-sm text-muted-foreground">本站各版本的变更记录</p>
+                <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                    Updates
+                </p>
+                <h1 className="font-mono text-4xl font-bold tracking-tight">更新日志</h1>
+                <p className="mt-3 text-base text-muted-foreground">本站各版本的变更记录</p>
             </header>
 
-            <div className="relative space-y-12 border-l border-edge-hairline pl-8">
+            <div className="relative space-y-14 border-l border-edge-hairline pl-10">
                 {data.releases.map((release) => {
                     const isCurrent = release.tag === current;
                     return (
                         <article key={release.tag} className="relative">
                             {/* 时间线节点：当前版本实心强调，历史版本淡化 */}
                             <span
-                                className={`absolute -left-9.5 top-1.5 size-3.5 rounded-full border-2 border-background ${
+                                className={`absolute -left-11.75 top-2 size-3.5 rounded-full border-2 border-background ${
                                     isCurrent ? "bg-primary" : "bg-muted-foreground/40"
                                 }`}
                             />
-                            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                                <h2
-                                    className={`font-mono text-lg font-semibold tracking-tight ${
-                                        isCurrent ? "text-primary" : ""
-                                    }`}
-                                >
+                            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+                                <h2 className="font-mono text-2xl font-bold tracking-tight">
                                     {release.tag}
                                 </h2>
                                 {release.published_at ? (
@@ -80,12 +79,12 @@ export function ChangelogPage() {
                                     </span>
                                 ) : null}
                                 {isCurrent ? (
-                                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
                                         当前版本
                                     </span>
                                 ) : null}
                                 {release.breaking ? (
-                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
                                         <TriangleAlert className="size-3.5" />
                                         破坏性变更
                                     </span>
@@ -93,7 +92,7 @@ export function ChangelogPage() {
                             </div>
 
                             {release.categories.length > 0 ? (
-                                <div className="mt-5 space-y-6">
+                                <div className="mt-6 space-y-7">
                                     {release.categories.map((cat) => {
                                         const key = `${release.tag}:${cat.label}`;
                                         const showAll =
@@ -104,17 +103,17 @@ export function ChangelogPage() {
                                         return (
                                             <section key={cat.label}>
                                                 <h3
-                                                    className={`text-xs font-semibold uppercase tracking-wider ${categoryColor(cat.label)}`}
+                                                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${categoryColor(cat.label)}`}
                                                 >
                                                     {cat.label}
                                                 </h3>
-                                                <ul className="mt-2.5 space-y-2.5">
+                                                <ul className="mt-3 space-y-2.5">
                                                     {visible.map((item, idx) => {
                                                         const { scope, rest } = splitItem(item);
                                                         return (
                                                             <li
                                                                 key={idx}
-                                                                className="break-words text-[15px] leading-relaxed text-foreground/75"
+                                                                className="break-words text-base leading-relaxed text-foreground/80"
                                                             >
                                                                 {scope ? (
                                                                     <span className="font-semibold text-foreground">
@@ -131,7 +130,7 @@ export function ChangelogPage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => toggle(key)}
-                                                        className="mt-2 text-sm font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary"
+                                                        className="mt-2.5 text-sm font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary"
                                                     >
                                                         {showAll
                                                             ? "收起"

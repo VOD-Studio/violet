@@ -38,31 +38,31 @@ export function ChangelogSection(_: AboutSectionProps) {
                     className="group block rounded-xl border border-edge-hairline bg-background p-6 transition-colors hover:border-primary/40"
                 >
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                        <span className="font-mono text-sm font-semibold text-foreground">
+                        <span className="font-mono text-base font-semibold text-foreground">
                             {latest.tag}
                         </span>
                         {latest.published_at ? (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-sm text-muted-foreground">
                                 {formatDate(latest.published_at)}
                             </span>
                         ) : null}
-                        <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                        <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
                             当前版本
                         </span>
                     </div>
                     {preview.length > 0 ? (
-                        <ul className="mt-3 space-y-1.5">
+                        <ul className="mt-3.5 space-y-2">
                             {preview.map((item, idx) => (
                                 <li
                                     key={idx}
-                                    className="truncate text-sm leading-6 text-foreground/70"
+                                    className="truncate text-[15px] leading-7 text-foreground/75"
                                 >
                                     {item.replace(/\*\*/g, "").replace(/^[*_-]\s*/, "")}
                                 </li>
                             ))}
                         </ul>
                     ) : null}
-                    <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
+                    <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary">
                         查看完整更新日志
                         <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
                     </span>
