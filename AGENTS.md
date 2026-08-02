@@ -396,9 +396,25 @@ type User struct {
 
 #### 强制范围(必须补字段注释)
 
-**领域层**(`internal/domain/**`)的实体、值对象、聚合根:每个命名字段必须有 `// fieldName 说明`。这是项目的既有基线(见上述金标准),存量未达标的领域 struct(如 `Announcement`、`PAT`、`ExecutionTask`、`Emoji*`、`Song`/`Playlist`、`SiteSettings`/`UpdateInput`、`upload.File`/`UploadSession`、`stats.*`)在改动到该文件时补齐。
+按对象类型分两档,判定标准是「字段名 + 类型 + tag 能否让调用方推断正确用法」:
 
-**对外契约 DTO**(application 层导出的 `*DTO`、handler 层导出的 `*Request`/`*Response`):前端/agent 靠字段名 + 注释理解契约,字段语义不显然的要补。带 `json` tag 但字段名自解释的(如 `Email string \`json:"email"\``)可只补约束(如 `// 归一化后的小写邮箱`)。
+**领域实体 / 值对象(`internal/domain/**`):每个命名字段必须补。**
+
+原因:领域对象有不变量、状态机、取值约束、业务语义,代码本身看不出这些。这是项目既有基线(`User`、`Comment`、`Subscription` 均如此),存量未达标的领域 struct(如 `Announcement`、`PAT`、`ExecutionTask`、`Emoji*`、`SiteSettings`、`upload.File`、`stats.*`)改动到该文件时补齐。嵌入字段豁免。
+
+**对外 DTO(application 导出 `*DTO`/`*Input`/`*Output`、handler 导出 `*Request`/`*Response`):只补非自解释字段。**
+
+原因:DTO 是原始类型 + `json` tag 的数据载体,字段名 + 类型 + tag 多数已说清 schema。给自解释字段补注释会沦为复读签名(无效注释第 1 类)。**只补这些:**
+
+- 零值 / nil / 空串的语义(`CanonicalURL *string // nil=原创,非空=转载源 URL`)
+- 合法值枚举(`Status string // 'draft'|'published'|'archived'`)
+- 单位 / 格式(`Duration uint64 // 微秒`、`PublishedAt string // RFC3339`)
+- 引用关系 / 计算口径(`IsAuthor bool // created_by == post.author_id`、`AnnotationCount // 批注数,非评论总数`)
+- PATCH 语义(`Interval string // 空串=保留原值`)
+
+判定方法:去掉注释,调用方/前端能否从字段名 + 类型 + json tag 推断出**正确**用法?能 → 不补;不能(有歧义)→ 补。
+
+反例(不需要补,补了就是复读):`Hostname string \`json:"hostname"\``、`TotalBytes uint64 \`json:"totalBytes"\``、`CommentsEnabled bool \`json:"comments_enabled"\``。
 
 #### 豁免范围(不强制字段注释)
 
