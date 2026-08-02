@@ -10,6 +10,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/rs/zerolog/log"
+
+	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
 )
@@ -24,6 +27,7 @@ type GoogleLoginHandler struct {
 	userRepo user.UserRepository
 	clientID string
 	hasher   PasswordHasher
+	bus      appshared.EventBus
 }
 
 // NewGoogleLoginHandler 构造谷歌登录用例。
@@ -32,11 +36,13 @@ func NewGoogleLoginHandler(
 	repo user.UserRepository,
 	clientID string,
 	hasher PasswordHasher,
+	bus appshared.EventBus,
 ) *GoogleLoginHandler {
 	return &GoogleLoginHandler{
 		userRepo: repo,
 		clientID: clientID,
 		hasher:   hasher,
+		bus:      bus,
 	}
 }
 
@@ -136,6 +142,9 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 		}
 	}
 
+	if err := h.bus.Publish(ctx, []shared.DomainEvent{NewUserLoggedIn(u.GetID(), "google")}); err != nil {
+		log.Warn().Err(err).Msg("发布 Google 登录事件失败")
+	}
 	return LoginOutput{UserID: u.GetID().String()}, nil
 }
 

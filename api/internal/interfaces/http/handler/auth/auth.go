@@ -18,6 +18,7 @@ import (
 	"blog-api/internal/domain/user"
 	interfacesmw "blog-api/internal/interfaces/http/middleware"
 	"blog-api/internal/interfaces/http/response"
+	"blog-api/internal/middleware"
 )
 
 // Handler auth HTTP 处理器（DDD 版）
@@ -143,7 +144,7 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		response.RespondError(w, r, err)
 		return
 	}
-	if err := h.verify.Handle(r.Context(), authcmd.VerifyEmailInput{Email: req.Email, Code: req.Code}); err != nil {
+	if err := h.verify.Handle(ctxWithAuditInfo(r), authcmd.VerifyEmailInput{Email: req.Email, Code: req.Code}); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
@@ -165,7 +166,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.login.Handle(r.Context(), authcmd.LoginInput{Email: req.Email, Password: req.Password})
+	out, err := h.login.Handle(ctxWithAuditInfo(r), authcmd.LoginInput{Email: req.Email, Password: req.Password})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -203,7 +204,7 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.google.Handle(r.Context(), authcmd.GoogleLoginInput{Credential: req.Credential})
+	out, err := h.google.Handle(ctxWithAuditInfo(r), authcmd.GoogleLoginInput{Credential: req.Credential})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -239,7 +240,7 @@ func (h *Handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.github.Handle(r.Context(), authcmd.GithubLoginInput{Credential: req.Credential})
+	out, err := h.github.Handle(ctxWithAuditInfo(r), authcmd.GithubLoginInput{Credential: req.Credential})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -282,7 +283,7 @@ func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	sessionID := interfacesmw.GetSessionIDFromContext(r)
-	if err := h.logout.Handle(r.Context(), authcmd.LogoutInput{UserID: userID, SessionID: sessionID}); err != nil {
+	if err := h.logout.Handle(ctxWithAuditInfo(r), authcmd.LogoutInput{UserID: userID, SessionID: sessionID}); err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
@@ -399,6 +400,17 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		"bio":        u.Bio(),
 		"role":       string(u.Role()),
 	})
+}
+
+// ctxWithAuditInfo 把客户端 IP/UA 注入 ctx，供审计订阅者提取 Actor 网络信息。
+//
+// 登录/注册等匿名请求不走 session 中间件（无 cookie），
+// 中间件注入的审计上下文在此补齐。
+func ctxWithAuditInfo(r *http.Request) context.Context {
+	ctx := r.Context()
+	ctx = context.WithValue(ctx, middleware.ClientIPKey, middleware.GetClientIP(r))
+	ctx = context.WithValue(ctx, middleware.UserAgentKey, r.UserAgent())
+	return ctx
 }
 
 // ChangePassword PATCH /auth/password（需认证）

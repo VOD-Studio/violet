@@ -12,6 +12,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rs/zerolog/log"
+
+	appshared "blog-api/internal/application/shared"
 	"blog-api/internal/brand"
 	"blog-api/internal/domain/shared"
 	"blog-api/internal/domain/user"
@@ -26,6 +29,7 @@ type GithubLoginHandler struct {
 	clientID     string
 	clientSecret string
 	hasher       PasswordHasher
+	bus          appshared.EventBus
 }
 
 func NewGithubLoginHandler(
@@ -33,12 +37,14 @@ func NewGithubLoginHandler(
 	clientID string,
 	clientSecret string,
 	hasher PasswordHasher,
+	bus appshared.EventBus,
 ) *GithubLoginHandler {
 	return &GithubLoginHandler{
 		userRepo:     repo,
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		hasher:       hasher,
+		bus:          bus,
 	}
 }
 
@@ -208,6 +214,9 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 		}
 	}
 
+	if err := h.bus.Publish(ctx, []shared.DomainEvent{NewUserLoggedIn(u.GetID(), "github")}); err != nil {
+		log.Warn().Err(err).Msg("发布 Github 登录事件失败")
+	}
 	return LoginOutput{UserID: u.GetID().String()}, nil
 }
 

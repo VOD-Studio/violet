@@ -204,10 +204,12 @@ type LoginOutput struct {
 // 1. 按邮箱查找用户
 // 2. 校验密码
 // 3. 校验账户状态（已激活）
-// 4. 返回 userID（session 创建交由 CreateSessionHandler）
+// 4. 发布登录成功/失败事件（审计）
+// 5. 返回 userID（session 创建交由 CreateSessionHandler）
 type LoginHandler struct {
 	userRepo user.UserRepository
 	hasher   PasswordHasher
+	bus      appshared.EventBus
 }
 
 // NewLoginHandler 构造登录用例。
@@ -215,8 +217,9 @@ type LoginHandler struct {
 func NewLoginHandler(
 	repo user.UserRepository,
 	hasher PasswordHasher,
+	bus appshared.EventBus,
 ) *LoginHandler {
-	return &LoginHandler{userRepo: repo, hasher: hasher}
+	return &LoginHandler{userRepo: repo, hasher: hasher, bus: bus}
 }
 
 // Handle 执行登录
@@ -234,6 +237,7 @@ func (h *LoginHandler) Handle(ctx context.Context, in LoginInput) (LoginOutput, 
 
 	// 2. 校验密码
 	if err := h.hasher.Compare(u.PasswordHash(), in.Password); err != nil {
+		h.publishFailed(ctx, "密码错误")
 		return LoginOutput{}, user.ErrInvalidCredentials
 	}
 
@@ -241,13 +245,27 @@ func (h *LoginHandler) Handle(ctx context.Context, in LoginInput) (LoginOutput, 
 	//    分别返回明确原因（之前两类状态都返回 ErrAccountDisabled，
 	//    导致未验证用户看到「账户已被禁用」的误导文案）。
 	if !u.EmailVerified() {
+		h.publishFailed(ctx, "邮箱未验证")
 		return LoginOutput{}, user.ErrEmailNotVerified
 	}
 	if !u.IsActive() {
+		h.publishFailed(ctx, "账户已禁用")
 		return LoginOutput{}, user.ErrAccountDisabled
 	}
 
+	// 4. 发布登录成功事件（审计）
+	if err := h.bus.Publish(ctx, []shared.DomainEvent{NewUserLoggedIn(u.GetID(), "password")}); err != nil {
+		log.Warn().Err(err).Msg("发布登录事件失败")
+	}
+
 	return LoginOutput{UserID: u.GetID().String()}, nil
+}
+
+// publishFailed 发布登录失败事件（失败原因不记密码明文）
+func (h *LoginHandler) publishFailed(ctx context.Context, reason string) {
+	if err := h.bus.Publish(ctx, []shared.DomainEvent{NewUserLoginFailed(reason)}); err != nil {
+		log.Warn().Err(err).Msg("发布登录失败事件失败")
+	}
 }
 
 // ============================================================
@@ -264,17 +282,30 @@ type LogoutInput struct {
 // LogoutHandler 登出用例：删除当前 session（登出当前设备），不影响该用户其他设备。
 type LogoutHandler struct {
 	store appshared.SessionStore
+	bus   appshared.EventBus
 }
 
 // NewLogoutHandler 构造登出用例。
-func NewLogoutHandler(store appshared.SessionStore) *LogoutHandler {
-	return &LogoutHandler{store: store}
+func NewLogoutHandler(store appshared.SessionStore, bus appshared.EventBus) *LogoutHandler {
+	return &LogoutHandler{store: store, bus: bus}
 }
 
 // Handle 执行登出。
 // session 删除失败会让已登出设备的 session 继续有效，故返回错误交由上层记日志。
 func (h *LogoutHandler) Handle(ctx context.Context, in LogoutInput) error {
-	return h.store.DeleteForUser(ctx, in.UserID, session.ID(in.SessionID))
+	if err := h.store.DeleteForUser(ctx, in.UserID, session.ID(in.SessionID)); err != nil {
+		return err
+	}
+	// 发布登出事件（审计）。userID 解析失败时降级为不记（登出已成功）。
+	uid, err := shared.ParseID(in.UserID)
+	if err != nil {
+		log.Warn().Err(err).Msg("解析登出用户 ID 失败，跳过登出审计")
+		return nil
+	}
+	if err := h.bus.Publish(ctx, []shared.DomainEvent{NewUserLoggedOut(uid)}); err != nil {
+		log.Warn().Err(err).Msg("发布登出事件失败")
+	}
+	return nil
 }
 
 // ============================================================
@@ -294,14 +325,16 @@ type VerifyEmailInput struct {
 // 2. 比对验证码（Redis）
 // 3. 聚合方法 VerifyEmail + 激活账户
 // 4. 持久化
+// 5. 发布聚合根事件（UserEmailVerified，审计）
 type VerifyEmailHandler struct {
 	userRepo  user.UserRepository
 	codeStore appshared.CodeStore
+	bus       appshared.EventBus
 }
 
 // NewVerifyEmailHandler 构造邮箱验证用例
-func NewVerifyEmailHandler(repo user.UserRepository, codeStore appshared.CodeStore) *VerifyEmailHandler {
-	return &VerifyEmailHandler{userRepo: repo, codeStore: codeStore}
+func NewVerifyEmailHandler(repo user.UserRepository, codeStore appshared.CodeStore, bus appshared.EventBus) *VerifyEmailHandler {
+	return &VerifyEmailHandler{userRepo: repo, codeStore: codeStore, bus: bus}
 }
 
 // Handle 执行邮箱验证
@@ -332,7 +365,17 @@ func (h *VerifyEmailHandler) Handle(ctx context.Context, in VerifyEmailInput) er
 	u.Activate()
 
 	// 持久化
-	return h.userRepo.Save(ctx, u)
+	if err := h.userRepo.Save(ctx, u); err != nil {
+		return err
+	}
+
+	// 发布聚合根事件（UserEmailVerified，审计订阅者消费）
+	if events := u.PullEvents(); len(events) > 0 {
+		if err := h.bus.Publish(ctx, events); err != nil {
+			log.Warn().Err(err).Msg("发布邮箱验证事件失败")
+		}
+	}
+	return nil
 }
 
 // ============================================================

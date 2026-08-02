@@ -17,6 +17,7 @@ import (
 	authcmd "blog-api/internal/application/auth/command"
 	"blog-api/internal/application/mocks"
 	domainsession "blog-api/internal/domain/session"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	domainshared "blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
@@ -58,7 +59,8 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 	sessionStore := new(mocks.MockSessionStore)
 	hasher := authcmd.NewBcryptHasher()
 
-	login := authcmd.NewLoginHandler(userRepo, hasher)
+	bus := infraeventbus.NewInMemory()
+	login := authcmd.NewLoginHandler(userRepo, hasher, bus)
 	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore)
 
 	// login 走 FindByEmail；createSession 走 FindByID
@@ -161,7 +163,7 @@ func TestSession_Returns401WhenUnauthenticated(t *testing.T) {
 // 对应 Issue-0003：Logout handler 从 ctx 取 sessionID 调 logout → ClearSessionCookies。
 func TestLogout_DeletesCurrentSessionAndClearsCookies(t *testing.T) {
 	sessionStore := new(mocks.MockSessionStore)
-	logout := authcmd.NewLogoutHandler(sessionStore)
+	logout := authcmd.NewLogoutHandler(sessionStore, infraeventbus.NewInMemory())
 
 	// 断言 DeleteForUser 收到 ctx 注入的 sessionID（而非空串）
 	sessionStore.On("DeleteForUser", mock.Anything, "user-1", domainsession.ID("sess-abc")).Return(nil)
