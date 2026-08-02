@@ -9,14 +9,14 @@ export interface PublicStats {
     uptime_days: number;
 }
 
-/** ReleaseCategory - 更新日志分类条目（对齐后端 Category） */
 export interface ReleaseCategory {
-    emoji: string;
+    /** 分类标题（如"新功能"、"Bug 修复"） */
     label: string;
+    /** 该分类下的变更条目（markdown） */
     items: string[];
 }
 
-/** Release - 单个版本发布（对齐后端 Release） */
+/** 单个版本发布 */
 export interface Release {
     tag: string;
     name: string;
@@ -27,7 +27,7 @@ export interface Release {
     html_url: string;
 }
 
-/** ReleasesData - 更新日志聚合（对齐后端 ReleasesData） */
+/** 更新日志聚合 */
 export interface ReleasesData {
     current_version: string;
     releases: Release[];
