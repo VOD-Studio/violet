@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
+
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	domainuseradmin "blog-api/internal/domain/useradmin"
@@ -102,7 +104,7 @@ func mustUser(t *testing.T, username, email string, role domainuser.Role, active
 }
 
 func newTestService(store *fakeStore) *Service {
-	return NewService(store, noopHasher{})
+	return NewService(store, noopHasher{}, infraeventbus.NewInMemory())
 }
 
 func TestService_List_MapsToDTOs(t *testing.T) {

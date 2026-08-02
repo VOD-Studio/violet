@@ -82,7 +82,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	github := NewGitHubContainer(settings.Store)
 	releases := NewReleasesContainer(settings.Store, rdb)
 	stats := NewStatsContainer(db)
-	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher())
+	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus)
 	commentReaction := NewCommentReactionContainer(db)
 	apiToken := NewAPITokenContainer(db)
 	subscription := NewSubscriptionContainer(db, post.PostService)

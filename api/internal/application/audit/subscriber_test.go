@@ -176,6 +176,68 @@ func TestSubscriber_UserLoginFailed_RecordsFailureWithReason(t *testing.T) {
 	assert.Equal(t, "密码错误", e.Metadata["reason"])
 }
 
+func TestSubscriber_UserRoleChanged_RecordsUpdateRoleWithBeforeAfter(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	userID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainuser.NewUserRoleChanged(userID, domainuser.RoleUser, domainuser.RoleAdmin)))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionUpdateRole, e.Action)
+	require.Len(t, e.Changes, 1)
+	assert.Equal(t, "role", e.Changes[0].Field)
+	assert.Equal(t, string(domainuser.RoleUser), e.Changes[0].From)
+	assert.Equal(t, string(domainuser.RoleAdmin), e.Changes[0].To)
+}
+
+func TestSubscriber_UserStatusChanged_RecordsUpdateStatus(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	userID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainuser.NewUserStatusChanged(userID, true, false)))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionUpdateStatus, e.Action)
+	require.Len(t, e.Changes, 1)
+	assert.Equal(t, "is_active", e.Changes[0].Field)
+	assert.Equal(t, true, e.Changes[0].From)
+	assert.Equal(t, false, e.Changes[0].To)
+}
+
+func TestSubscriber_UserDeleted_RecordsDelete(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	userID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainuser.NewUserDeleted(userID)))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionDelete, e.Action)
+	assert.Equal(t, userID.String(), e.Resource.ID)
+}
+
+func TestSubscriber_BatchUserStatusChanged_RecordsCount(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	require.NoError(t, sub.Handle(ctx, domainuser.NewBatchUserStatusChanged(5, false)))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionBatchUpdate, e.Action)
+	assert.Equal(t, int64(5), e.Metadata["count"])
+	assert.Equal(t, false, e.Metadata["is_active"])
+}
+
 func TestSubscriber_Subscribe_UsesWildcard(t *testing.T) {
 	// 通配订阅：空 eventName，保证未来新增事件无需改装配
 	sub := &Subscriber{store: &fakeStore{}, log: zerolog.Nop()}

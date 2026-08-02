@@ -106,6 +106,65 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			OccurredAt: e.OccurredAt(),
 		}, true
 
+	case domainuser.UserRoleChanged:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdateRole,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Changes:    []domainaudit.FieldChange{{Field: "role", From: string(e.From), To: string(e.To)}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainuser.UserStatusChanged:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdateStatus,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Changes:    []domainaudit.FieldChange{{Field: "is_active", From: e.From, To: e.To}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainuser.UserUsernameChanged:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Changes:    []domainaudit.FieldChange{{Field: "username", From: e.From, To: e.To}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainuser.UserDeleted:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainuser.BatchUserStatusChanged:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionBatchUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user"},
+			Metadata:   map[string]any{"count": e.Affected, "is_active": e.IsActive},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainuser.BatchUserRoleChanged:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionBatchUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "user"},
+			Metadata:   map[string]any{"count": e.Affected, "role": e.Role},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
 	case domainrole.RoleCreated:
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
