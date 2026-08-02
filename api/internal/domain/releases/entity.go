@@ -12,19 +12,19 @@ import (
 
 // Release 单个版本发布
 type Release struct {
-	TagName     string     `json:"tag"`         // 版本号（如 v2.0.4）
-	Name        string     `json:"name"`        // 发布标题
+	TagName     string     `json:"tag"`          // 版本号（如 v2.0.4）
+	Name        string     `json:"name"`         // 发布标题
 	PublishedAt string     `json:"published_at"` // ISO8601 时间
-	Body        string     `json:"body"`        // release notes 原始 Markdown
-	Categories []Category `json:"categories"`  // 解析 body 得到的分类条目
-	Breaking    bool       `json:"breaking"`    // 是否含 breaking change
-	HTMLURL     string     `json:"html_url"`    // GitHub Release 页链接
+	Body        string     `json:"body"`         // release notes 原始 Markdown
+	Categories  []Category `json:"categories"`   // 解析 body 得到的分类条目
+	Breaking    bool       `json:"breaking"`     // 是否含 breaking change
+	HTMLURL     string     `json:"html_url"`     // GitHub Release 页链接
 }
 
-// Category 单个分类（如 ✨新增 / 🐛修复），由 release body 的 emoji 行解析
+// Category 单个分类（如"新功能"、"Bug 修复"），由 release body 的 section 标题解析。
+// release notes 切换为 GitHub 原生生成（无 emoji）后，Label 直接取 section 标题纯文字。
 type Category struct {
-	Emoji string   `json:"emoji"` // 如 ✨
-	Label string   `json:"label"` // 如 新增
+	Label string   `json:"label"` // 分类标题（如"新功能"、"Bug 修复"）
 	Items []string `json:"items"` // 该分类下的条目
 }
 
