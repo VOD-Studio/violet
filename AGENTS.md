@@ -112,23 +112,23 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
    只有**公共组件**需要单独提交：`shared/ui` 下的通用组件，或被**多个 feature 引用**的实体、接口、hooks、utils，新增、重构、修 bug 都要单独提交。**feature 内部组件**（如 `features/posts/ui/*`、`features/comments/ui/*`）属于该 feature 私有，按职责分组提交即可，**不必每个组件单独拆 commit**。
 
    ✅ 正确：
-   - `feat(web): 封装封面图选择器 Cover 组件`
-   - `fix(web): Cover 组件空值时回显异常`
+   - `feat(shared-ui): 封装封面图选择器 Cover 组件`
+   - `fix(shared-ui): Cover 组件空值时回显异常`
 
    ❌ 错误：
-   - `feat(web): 文章编辑页接入 Cover 并修复空值回显`
+   - `feat(posts): 文章编辑页接入 Cover 并修复空值回显`
 
    原因：接入页面和修复组件是两件事。混在一起回滚时会把页面改动一起带走。
 
-   判断「是否公共」看**是否被多个 feature 引用**，而非位置。feature 内部组件一旦被第二个 feature 复用，应先 `refactor(web): 将 X 从 features/A 移动到 shared/ui` 单独提交，再在新 feature 接入。
+   判断「是否公共」看**是否被多个 feature 引用**，而非位置。feature 内部组件一旦被第二个 feature 复用，应先 `refactor(shared-ui): 将 X 从 features/A 移动到 shared/ui` 单独提交，再在新 feature 接入。
 
 2. **前后端必须分离提交**
    同一需求如果同时改到 `api/` 和 `web/`，必须拆成多个 commit。API 接口变更、Web 接入、类型同步、测试补全都可以各自独立。
 
    ✅ 正确：
-   - `feat(api): 站点设置支持控制 Google/GitHub 登录开关`
-   - `feat(api): 站点设置接口返回 OAuth 开关字段`
-   - `feat(web): 站点设置页按开关隐藏 OAuth 登录按钮`
+   - `feat(settings): 站点设置支持控制 Google/GitHub 登录开关`
+   - `feat(settings): 站点设置接口返回 OAuth 开关字段`
+   - `feat(admin-settings): 站点设置页按开关隐藏 OAuth 登录按钮`
 
    ❌ 错误：
    - `feat: 站点设置支持 OAuth 开关`
@@ -143,39 +143,39 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
    - 纯样式/排版调整 vs 功能改动
 
    ✅ 正确：
-   - `feat(web): PostEditor 支持代码块高亮`
-   - `feat(web): 文章详情页接入代码块高亮`
-   - `style(web): 代码块内边距与字体调整`
+   - `feat(editor): PostEditor 支持代码块高亮`
+   - `feat(posts): 文章详情页接入代码块高亮`
+   - `style(editor): 代码块内边距与字体调整`
 
    ❌ 错误：
-   - `feat(web): 代码块高亮接入并调整样式`
+   - `feat(editor): 代码块高亮接入并调整样式`
 
 4. **修复必须指向具体对象**
-   `fix:` 开头的提交要让人一眼看出修了什么。禁止用 `fix(web): 修复若干问题`、`fix(api): 处理一些 bug` 这种笼统描述。
+   `fix:` 开头的提交要让人一眼看出修了什么。禁止用 `fix(editor): 修复若干问题`、`fix(post): 处理一些 bug` 这种笼统描述。
 
    ✅ 正确：
-   - `fix(web): bubble menu 利用滚动容器裁剪避免飘出编辑区`
-   - `fix(api): 文章列表分页参数越界时返回空数组而非 500`
+   - `fix(editor): bubble menu 利用滚动容器裁剪避免飘出编辑区`
+   - `fix(post): 文章列表分页参数越界时返回空数组而非 500`
 
    ❌ 错误：
-   - `fix(web): 修复编辑器问题`
+   - `fix(editor): 修复编辑器问题`
 
 5. **重构与功能分离提交**
    重命名、移动文件、提取公共函数、调整导入路径等重构操作，如果伴随着功能改动，要先把重构单独提交。
 
    ✅ 正确：
-   - `refactor(web): 将 Cover 组件从 widgets 移动到 shared/ui`
-   - `feat(web): 文章编辑页接入 Cover 组件`
+   - `refactor(shared-ui): 将 Cover 组件从 widgets 移动到 shared/ui`
+   - `feat(posts): 文章编辑页接入 Cover 组件`
 
    ❌ 错误：
-   - `feat(web): 移动 Cover 组件并接入文章编辑页`
+   - `feat(posts): 移动 Cover 组件并接入文章编辑页`
 
 6. **测试与实现同组但不混主体**
    为当前改动补测试，可以和实现放在同一个 commit；但跨多个改动的集中补测试要单独提交。
 
    ✅ 正确：
-   - `feat(api): 添加文章发布校验` + body 里说明同时补了单测
-   - `test(api): 补全文章仓库的边界场景测试`
+   - `feat(post): 添加文章发布校验` + body 里说明同时补了单测
+   - `test(post): 补全文章仓库的边界场景测试`
 
 ### 反对过度拆分
 
@@ -184,11 +184,11 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 一个完整任务可以跨多个文件、跨多层,只要服务同一目标,就该是一个 commit。强行按文件拆成"加定义""加实现""接调用"三个 commit,每个单独看都不完整,反而破坏可读性。
 
 ✅ 正确(同一职责,跨文件合一个 commit):
-- `feat(api): 添加文章发布校验` —— 校验规则定义 + handler 接入 + 单测同属"发布校验"这一职责,可一个 commit(规则 6 已认定)
-- `feat(web): PostEditor 支持代码块高亮` —— 高亮组件实现 + toolbar 入口 + 渲染逻辑同属"编辑器高亮"这一职责,组件本身的实现部分可一个 commit(组件接入页面是另一职责,见规则 3)
+- `feat(post): 添加文章发布校验` —— 校验规则定义 + handler 接入 + 单测同属"发布校验"这一职责,可一个 commit(规则 6 已认定)
+- `feat(editor): PostEditor 支持代码块高亮` —— 高亮组件实现 + toolbar 入口 + 渲染逻辑同属"编辑器高亮"这一职责,组件本身的实现部分可一个 commit(组件接入页面是另一职责,见规则 3)
 
 ❌ 错误(同一职责被切碎):
-- 把"添加文章发布校验"拆成 `feat(api): 定义校验规则` + `feat(api): handler 接入校验` + `test(api): 发布校验单测` 三个 commit。单独 revert 任一个都会让发布校验功能残缺。
+- 把"添加文章发布校验"拆成 `feat(post): 定义校验规则` + `feat(post): handler 接入校验` + `test(post): 发布校验单测` 三个 commit。单独 revert 任一个都会让发布校验功能残缺。
 
 判断依据:这个 commit 单独 revert 后,该功能是否还能完整工作?能 → 拆对了;不能(留下半成品)→ 拆太碎了。
 
@@ -283,23 +283,27 @@ refactor(api): 删除 TokenStore.Verify 死代码
 
 ### 无效注释(禁止新增,存量逐步清理)
 
-**1. 复读签名**——把类型名/函数名/字段名用中文重述一遍。
+**1. 复读签名**——把类型名/函数名/字段名用中文重述一遍,没补充任何新信息。
 
 ```go
 // ❌ AuditContainer 操作日志模块容器
 type AuditContainer struct { ... }
+// 类型名 AuditContainer 已说明它是 audit 模块的容器,注释只是翻译了一遍。
 
 // ❌ NewAuditContainer 装配操作日志模块
 func NewAuditContainer(db *gorm.DB) *AuditContainer {
+// 函数名 NewAuditContainer 已说明它构造这个容器,注释是复读。
 
-// ❌ Handle 执行邮箱验证
+// ✅ Handle 执行邮箱验证
 func (h *VerifyEmailHandler) Handle(...) {
+// Handle 是泛词(不知道做什么),"邮箱验证"补充了签名没有的信息——有效。
 
-// ❌ List 分页查询日志
+// ✅ List 分页查询日志
 func (s *Service) List(...) {
+// List 是泛词(不知道 list 什么),"日志"补充了签名没有的信息——有效。
 ```
 
-判定:去掉注释,签名是否仍一目了然?是 → 注释无效。godoc 的 `// FuncName 描述` 格式只有当「描述」补充了签名没有的信息(副作用、错误条件、返回值约束)才值得保留。
+判定:名字本身是否已自解释?是 → 注释复读,无效。名字是泛词(Handle/List/Get/Update),注释补充了"做什么/查什么" → 有效。
 
 **2. 短函数里的废话分隔标签**——函数几行长,`// --- XXX ---` 比代码还多。
 
