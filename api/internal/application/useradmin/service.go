@@ -19,22 +19,18 @@ type PasswordHasher interface {
 	Hash(password string) (domainuser.PasswordHash, error)
 }
 
-// AuditLogger 审计日志端口
-type AuditLogger interface {
-	Log(ctx context.Context, action, resource, resourceID, userID, ip, ua string) error
-	LogWithDetail(ctx context.Context, action, resource, resourceID, userID, ip, ua string, detail map[string]any) error
-}
-
 // Service 用户管理用例服务
 type Service struct {
-	store    domainuseradmin.AdminUserStore
-	hasher   PasswordHasher
-	auditSvc AuditLogger
+	store  domainuseradmin.AdminUserStore
+	hasher PasswordHasher
 }
 
 // NewService 构造用户管理服务
-func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, auditSvc AuditLogger) *Service {
-	return &Service{store: store, hasher: hasher, auditSvc: auditSvc}
+//
+// 审计由 issue #55（useradmin 聚合根事件接入）通过 EventBus 驱动，
+// 不再手工注入 AuditLogger。
+func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher) *Service {
+	return &Service{store: store, hasher: hasher}
 }
 
 // UserDTO 用户读模型（管理后台）
@@ -119,9 +115,6 @@ func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operat
 	if err := s.store.Save(ctx, u); err != nil {
 		return UserDTO{}, err
 	}
-	_ = s.auditSvc.LogWithDetail(ctx, "create", "user", u.GetID().String(), operatorID, in.IPAddress, in.UserAgent, map[string]any{
-		"username": in.Username, "email": in.Email, "role": in.Role,
-	})
 	return toDTO(u), nil
 }
 
@@ -220,7 +213,6 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 	if err := s.store.Save(ctx, u); err != nil {
 		return UserDTO{}, err
 	}
-	_ = s.auditSvc.LogWithDetail(ctx, "update", "user", in.ID, operatorID, in.IPAddress, in.UserAgent, nil)
 	return toDTO(u), nil
 }
 
@@ -250,7 +242,7 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole strin
 	if err := s.store.Delete(ctx, uid); err != nil {
 		return err
 	}
-	return s.auditSvc.Log(ctx, "delete", "user", id, operatorID, ip, ua)
+	return nil
 }
 
 // UpdateUserRole 修改单个用户角色
@@ -284,7 +276,7 @@ func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, oper
 	if err := s.store.Save(ctx, u); err != nil {
 		return err
 	}
-	return s.auditSvc.LogWithDetail(ctx, "update_role", "user", id, operatorID, ip, ua, map[string]any{"role": role})
+	return nil
 }
 
 // UpdateUserStatus 修改单个用户状态
@@ -318,7 +310,7 @@ func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool
 	if err := s.store.Save(ctx, u); err != nil {
 		return err
 	}
-	return s.auditSvc.LogWithDetail(ctx, "update_status", "user", id, operatorID, ip, ua, map[string]any{"is_active": isActive})
+	return nil
 }
 
 // BatchUpdateStatus 批量启用/禁用
@@ -352,9 +344,7 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActi
 		return 0, err
 	}
 	log.Info().Int64("affected", affected).Bool("is_active", isActive).Msg("批量更新用户状态")
-	return affected, s.auditSvc.LogWithDetail(ctx, "batch_update_status", "user", "", operatorID, ip, ua, map[string]any{
-		"count": affected, "is_active": isActive,
-	})
+	return affected, nil
 }
 
 // BatchUpdateRole 批量修改角色
@@ -391,9 +381,7 @@ func (s *Service) BatchUpdateRole(ctx context.Context, idStrs []string, role, op
 		return 0, err
 	}
 	log.Info().Int64("affected", affected).Str("role", role).Msg("批量更新用户角色")
-	return affected, s.auditSvc.LogWithDetail(ctx, "batch_update_role", "user", "", operatorID, ip, ua, map[string]any{
-		"count": affected, "role": role,
-	})
+	return affected, nil
 }
 
 func parseIDs(idStrs []string) ([]shared.ID, error) {

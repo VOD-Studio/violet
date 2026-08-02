@@ -17,7 +17,6 @@ import (
 
 	"blog-api/config"
 	apitokenhttp "blog-api/internal/interfaces/http/handler/api_token"
-	audithttp "blog-api/internal/interfaces/http/handler/audit"
 	authhttp "blog-api/internal/interfaces/http/handler/auth"
 	codehttp "blog-api/internal/interfaces/http/handler/coderunner"
 	commenthttp "blog-api/internal/interfaces/http/handler/comment"
@@ -73,7 +72,6 @@ type Deps struct {
 	Media           *mediahttp.Handler
 	Post            *posthttp.Handler
 	Tag             *taghttp.Handler
-	Audit           *audithttp.Handler
 	UserAdmin       *useradminhttp.Handler
 	APIToken        *apitokenhttp.Handler
 	Subscription    *subscriptionhttp.Handler

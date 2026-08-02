@@ -103,11 +103,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 		})
 	})
 
-	// 操作日志（需 log:view）
-	r.With(middleware.RequirePermission(perm, "log:view")).
-		Get("/logs", d.Audit.ListLogs)
-	r.With(middleware.RequirePermission(perm, "log:view")).
-		Get("/logs/user/{id}", d.Audit.ListLogsByUser)
+// 操作日志路由由 issue #57 重建（适配新 AuditEvent 读模型）
 
 	// 公告管理（读 announcement:view；写 announcement:manage）
 	r.Route("/announcements", func(r chi.Router) {

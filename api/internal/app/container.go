@@ -23,7 +23,6 @@ type Container struct {
 	Tag             *TagContainer
 	GitHub          *GitHubContainer
 	Releases        *ReleasesContainer
-	Audit           *AuditContainer
 	Stats           *StatsContainer
 	UserAdmin       *UserAdminContainer
 	CommentReaction *CommentReactionContainer
@@ -39,8 +38,6 @@ type Container struct {
 // 跨模块依赖（装配顺序即依赖序）：
 //   - role 无依赖但持有 cleanup
 //   - emailSender 从 cfg 派生，被 auth + comment 复用
-//   - settings.Service 被 auth 依赖，settings.Store 被 post/github/coderunner 依赖
-//   - audit.Service 被 userAdmin 依赖
 //   - post.PostService 被 subscription + mcp 依赖
 //   - apiToken.TokenLookup + comment.CommentService 被 mcp 依赖
 //
@@ -76,9 +73,8 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	tag := NewTagContainer(db)
 	github := NewGitHubContainer(settings.Store)
 	releases := NewReleasesContainer(settings.Store, rdb)
-	audit := NewAuditContainer(db)
 	stats := NewStatsContainer(db)
-	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), audit.Service)
+	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher())
 	commentReaction := NewCommentReactionContainer(db)
 	apiToken := NewAPITokenContainer(db)
 	subscription := NewSubscriptionContainer(db, post.PostService)
@@ -90,7 +86,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
-		Post: post, Tag: tag, GitHub: github, Releases: releases, Audit: audit,
+		Post: post, Tag: tag, GitHub: github, Releases: releases,
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image,

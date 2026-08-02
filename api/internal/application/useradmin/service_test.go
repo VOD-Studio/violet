@@ -78,19 +78,13 @@ func (f *fakeStore) BatchUpdateRole(_ context.Context, ids []shared.ID, role str
 	return f.affected, f.batchErr
 }
 
-// noopHasher / noopAudit 仅满足 NewService 依赖，行为不被断言。
+// noopHasher 仅满足 NewService 依赖，行为不被断言。
 type noopHasher struct{}
 
 func (noopHasher) Hash(_ string) (domainuser.PasswordHash, error) {
 	return domainuser.NewPasswordHash("$2a$10$stub"), nil
 }
 
-type noopAudit struct{ logErr error }
-
-func (a noopAudit) Log(_ context.Context, _, _, _, _, _, _ string) error { return a.logErr }
-func (a noopAudit) LogWithDetail(_ context.Context, _, _, _, _, _, _ string, _ map[string]any) error {
-	return a.logErr
-}
 
 // mustUser 构造一个测试用户聚合（值拷贝供 ListResult 使用）。
 func mustUser(t *testing.T, username, email string, role domainuser.Role, active bool) domainuser.User {
@@ -108,7 +102,7 @@ func mustUser(t *testing.T, username, email string, role domainuser.Role, active
 }
 
 func newTestService(store *fakeStore) *Service {
-	return NewService(store, noopHasher{}, noopAudit{})
+	return NewService(store, noopHasher{})
 }
 
 func TestService_List_MapsToDTOs(t *testing.T) {
