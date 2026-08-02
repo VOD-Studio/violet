@@ -18,10 +18,10 @@ import (
 
 // breakingKeywords 触发 breaking change 标记的标题/条目关键词
 var breakingKeywords = map[string]bool{
-	"breaking":  true,
-	"破坏":      true,
-	"破坏性":     true,
-	"不兼容":     true,
+	"breaking": true,
+	"破坏":       true,
+	"破坏性":      true,
+	"不兼容":      true,
 }
 
 // cacheKey Redis 缓存键，cacheTTL 缓存有效期
@@ -32,9 +32,9 @@ const (
 
 // Service 更新日志用例服务
 type Service struct {
-	provider       domainreleases.Provider
-	settings       domainsettings.SettingsStore
-	rdb            *redis.Client
+	provider domainreleases.Provider
+	settings domainsettings.SettingsStore
+	rdb      *redis.Client
 }
 
 // NewService 构造更新日志服务
@@ -71,7 +71,7 @@ func (s *Service) Get(ctx context.Context) (*domainreleases.ReleasesData, error)
 	if err == nil && len(rawReleases) > 0 {
 		// 成功：解析 body 成分类 + 组装 + 写缓存
 		data := buildData(rawReleases)
-		s.cacheAsync(ctx, data)
+		s.cacheAsync(data)
 		return data, nil
 	}
 
@@ -102,16 +102,17 @@ func buildData(raw []domainreleases.Release) *domainreleases.ReleasesData {
 // parseBody 解析 GitHub 原生 release notes 成分类条目，并检测 breaking。
 //
 // GitHub 原生格式（changelog-type: github，读 .github/release.yml 分类）形如：
-//   ## What's Changed
-//   * About 页重设计 by @xunrua in #7
 //
-//   ### 新功能
-//   * About 页重设计 by @xunrua in #7
+//	## What's Changed
+//	* About 页重设计 by @xunrua in #7
 //
-//   ### Bug 修复
-//   * 修复评论分页 by @DefectingCat in #11
+//	### 新功能
+//	* About 页重设计 by @xunrua in #7
 //
-//   **Full Changelog**: https://github.com/.../compare/v2.0.4...v2.1.0
+//	### Bug 修复
+//	* 修复评论分页 by @DefectingCat in #11
+//
+//	**Full Changelog**: https://github.com/.../compare/v2.0.4...v2.1.0
 //
 // 解析逻辑：
 //   - `### <纯文字 title>` 开启分类（title 直接作 label）
@@ -215,8 +216,7 @@ func (s *Service) readCache(ctx context.Context) (*domainreleases.ReleasesData, 
 	return &data, true
 }
 
-// cacheAsync 异步写缓存（不阻塞主流程，失败静默）
-func (s *Service) cacheAsync(ctx context.Context, data *domainreleases.ReleasesData) {
+func (s *Service) cacheAsync(data *domainreleases.ReleasesData) {
 	if s.rdb == nil {
 		return
 	}
