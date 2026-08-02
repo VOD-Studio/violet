@@ -9,8 +9,8 @@ import (
 
 	"blog-api/config"
 	authcmd "blog-api/internal/application/auth/command"
-	appshared "blog-api/internal/application/shared"
 	infraemail "blog-api/internal/infrastructure/email"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 )
 
 type Container struct {
@@ -60,7 +60,11 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 
 	settings := NewSettingsContainer(db)
 
-	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, appshared.NoopEventBus{}, settings.Service)
+	// 事件总线：进程内 InMemory 同步实现（MVP）。
+	// 后续 issue（#50 审计订阅者、邮件通知等）通过 bus.Subscribe 挂载。
+	bus := infraeventbus.NewInMemory()
+
+	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service)
 	if err != nil {
 		roleCleanup()
 		return nil, nil, err
