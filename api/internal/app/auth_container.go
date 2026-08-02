@@ -1,8 +1,3 @@
-// Package app 提供 auth/user DDD 模块的手工 DI 装配。
-//
-// auth 模块依赖图复杂（SessionStore 需 Redis client、
-// 各 command handler 需组合多个依赖），用 wire 表达成本高且易错，
-// 改用手工构造函数装配，由 main.go 调用。
 package app
 
 import (
@@ -21,18 +16,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// AuthContainer auth/user 模块依赖容器
 type AuthContainer struct {
-	AuthHandler *authhttp.Handler
-	// ensureSuperAdmin 超级管理员 seed 用例（非导出，仅经 SeedSuperAdmin 调用）。
-	// 封装 input DTO 构造，使启动入口不直接依赖 application/auth/command。
+	AuthHandler      *authhttp.Handler
 	ensureSuperAdmin *authcmd.EnsureSuperAdminHandler
 	// SessionStore 同时实现 appshared.SessionStore 与 middleware.SessionLookup，
 	// 由 main.go 挂载 SessionAuth/OptionalSessionAuth/SessionAuthReadOnly 中间件时使用。
 	SessionStore *infraauth.RedisSessionStore
 }
 
-// NewAuthContainer 手工装配 auth DDD 模块
 func NewAuthContainer(
 	db *gorm.DB,
 	redisClient *redis.Client,
@@ -73,12 +64,6 @@ func NewAuthContainer(
 	return &AuthContainer{AuthHandler: authHandler, ensureSuperAdmin: ensureSuperAdmin, SessionStore: sessionStore}, nil
 }
 
-// SeedSuperAdmin 幂等确保超级管理员账号存在（启用时由 app.Run 调用）。
-//
-// 封装 authcmd.EnsureSuperAdminInput 构造，使启动入口（run.go）不直接依赖
-// application/auth/command，符合 ABP「seed contributor 封装在模块内」原则：
-// seed 调用 application use case 合规，但 input DTO 构造由模块自治。
-// 幂等性由 use case 内部保证（已存在则跳过）。
 func (c *AuthContainer) SeedSuperAdmin(ctx context.Context, sa config.SuperAdminConfig) error {
 	return c.ensureSuperAdmin.Handle(ctx, authcmd.EnsureSuperAdminInput{
 		Email:    sa.Email,

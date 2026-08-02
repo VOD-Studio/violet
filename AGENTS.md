@@ -277,6 +277,95 @@ refactor(api): 删除 TokenStore.Verify 死代码
 - CodeStore.Verify 保持不变
 ```
 
+## 代码注释规范
+
+注释只写代码**无法自表达**的信息。代码已说明的,注释复述就是噪音——维护时注释与代码双线漂移,先信谁都是坑。
+
+### 无效注释(禁止新增,存量逐步清理)
+
+**1. 复读签名**——把类型名/函数名/字段名用中文重述一遍。
+
+```go
+// ❌ AuditContainer 操作日志模块容器
+type AuditContainer struct { ... }
+
+// ❌ NewAuditContainer 装配操作日志模块
+func NewAuditContainer(db *gorm.DB) *AuditContainer {
+
+// ❌ Handle 执行邮箱验证
+func (h *VerifyEmailHandler) Handle(...) {
+
+// ❌ List 分页查询日志
+func (s *Service) List(...) {
+```
+
+判定:去掉注释,签名是否仍一目了然?是 → 注释无效。godoc 的 `// FuncName 描述` 格式只有当「描述」补充了签名没有的信息(副作用、错误条件、返回值约束)才值得保留。
+
+**2. 短函数里的废话分隔标签**——函数几行长,`// --- XXX ---` 比代码还多。
+
+```go
+// ❌
+func Run(ctx context.Context, cfg *config.Config) error {
+    // --- 基础设施 ---
+    infra, cleanup := InitInfra(ctx, cfg)
+    defer cleanup()
+
+    // --- 模块容器 ---
+    container, cc, err := NewContainer(...)
+```
+
+边界:**长文件**(如 300+ 行的 service)用 `// --- 输入/输出 DTO ---` `// --- CRUD 用例 ---` 分段有导航价值,保留;**短函数**(几十行)的分隔标签纯噪音,删。
+
+**3. 设计论证当注释**——把 why、框架原则、历史决策塞进注释。
+
+项目 AGENTS.md「提交信息风格反例」已规定:详细的决策过程应写在 PR 描述或 ADR,代码注释和 commit body 都不该写散文。同理:
+
+```go
+// ❌ seed 调用 application use case 合规,但 input DTO 构造由模块自治。
+// ❌ 符合 ABP「seed contributor 封装在模块内」原则。
+// ❌ 此前 role 模块用 google/wire 装配...为统一 DI 方式、消除 wire 孤岛...
+```
+
+这些是「为什么这么设计」的论证,属于 PR/ADR,不属于代码。代码注释只管「这段代码现在做了什么、有什么陷阱」,不管「过去为什么这么决定」。
+
+**4. 过期/不准确注释**——重构后没更新,注释指向已被删除的符号或旧的调用方。
+
+```go
+// ❌ "由 main.go 调用"    ← 实际已改为 app.NewContainer 调用
+// ❌ "从 main.go 抽离"    ← 实际已在 app.Run 内部
+```
+
+重构搬代码时,跟着搬的注释要同步改指向。拿不准就删——过期的注释比没有注释更危险。
+
+**5. 一个包多个 package comment**——Go 规范要求一个包**只在一个文件**有 `// Package xxx` 文档。
+
+```go
+// ❌ 同一个 internal/app 包下,多个文件各写一份:
+// auth_container.go:   // Package app 提供 auth/user DDD 模块的手工 DI 装配。
+// container.go:        // Package app 根容器:聚合全部 DDD 模块容器。
+// run.go:              // Package app 应用启动入口。
+```
+
+包级文档只在**一个文件**保留(通常 `doc.go`,或字母序第一个文件)。其余文件的 `package app` 行不带注释。`go vet`/`revive` 会警告重复。
+
+### 有效注释(保留)
+
+注释值得存在,当且仅当它提供了代码本身没有的信息:
+
+- **非显然陷阱**:`// 返回 error 而非 log.Fatal:Fatal 调 os.Exit 会跳过 defer cleanup,导致连接泄漏。`
+- **不明显的业务规则**:`// display 字段创建后不可变更:不同形态语义与必填字段不同,中途切换会数据不完整。`
+- **跨模块编排约束**:`// login 只校验凭证返回 userID,session 创建交由 CreateSessionHandler,避免三种登录方式重复 session 逻辑。`
+- **魔法值的理由**:`const replyPreviewLimit = 3 // 前端首屏无需为每条顶层发独立请求拉预览。`
+- **公开 API 的 godoc**(导出符号的契约文档,调用方靠它理解用法)。
+
+### 自检
+
+写注释前问:这段话是不是在描述代码「做了什么」(代码已说明)?还是「为什么这么做、有什么坑」(代码没说)?前者删,后者留。
+
+### 新增代码强制遵守;存量注释不专门开 PR 清理
+
+新代码(含重构搬移)必须遵守上述规范。存量无效注释**不单独开 PR 清理**(噪音清理不构成可单独 revert 的原子改动),但在**因其他原因改动到该文件时顺手清理**(规则 3 同层按职责拆分的延伸:改到即清)。
+
 ## PR 与 issue 规范
 
 ### Issue 标题格式

@@ -13,10 +13,6 @@ import (
 	infraemail "blog-api/internal/infrastructure/email"
 )
 
-// Container 聚合全部 DDD 模块容器，作为应用 composition root。
-//
-// 由 cmd/server/main.go 在完成基础设施初始化后调用 NewContainer 构造。
-// 持有全部子容器便于 main/jobs/seed 等从统一入口取字段。
 type Container struct {
 	Role            *RoleContainer
 	Settings        *SettingsContainer
@@ -40,11 +36,9 @@ type Container struct {
 	Image           *ImageContainer
 }
 
-// NewContainer 按依赖序装配全部模块容器，封装跨模块依赖图。
-//
-// 依赖关系（装配顺序即依赖序）：
-//   - role（无依赖，但持有 cleanup）
-//   - emailSender（从 cfg 派生，被 auth + comment 复用）
+// 跨模块依赖（装配顺序即依赖序）：
+//   - role 无依赖但持有 cleanup
+//   - emailSender 从 cfg 派生，被 auth + comment 复用
 //   - settings.Service 被 auth 依赖，settings.Store 被 post/github/coderunner 依赖
 //   - audit.Service 被 userAdmin 依赖
 //   - post.PostService 被 subscription + mcp 依赖
