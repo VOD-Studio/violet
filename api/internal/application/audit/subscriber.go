@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog"
 
 	appshared "blog-api/internal/application/shared"
+	authcmd "blog-api/internal/application/auth/command"
 	domainaudit "blog-api/internal/domain/audit"
 	domainrole "blog-api/internal/domain/role"
 	"blog-api/internal/domain/shared"
@@ -120,6 +121,35 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUpdatePerms,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "role", ID: idToString(e.RoleID)},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case authcmd.UserLoggedIn:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionLogin,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "auth", ID: e.AggregateID().String()},
+			Metadata:   map[string]any{"provider": e.Provider},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case authcmd.UserLoggedOut:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionLogout,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "auth", ID: e.AggregateID().String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case authcmd.UserLoginFailed:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionLoginFailed,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "auth"},
+			Metadata:   map[string]any{"reason": e.Reason},
 			OccurredAt: e.OccurredAt(),
 		}, true
 

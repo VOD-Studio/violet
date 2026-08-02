@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	appshared "blog-api/internal/application/shared"
+	authcmd "blog-api/internal/application/auth/command"
 
 	domainaudit "blog-api/internal/domain/audit"
 	domainrole "blog-api/internal/domain/role"
@@ -130,6 +131,49 @@ func TestSubscriber_AppendFailure_ReturnsError(t *testing.T) {
 	email, _ := domainuser.ParseEmail("alice@example.com")
 	err := sub.Handle(ctx, domainuser.NewUserRegistered(userID, email))
 	require.Error(t, err, "写库失败应返回 error（EventBus 记录处理失败）")
+}
+
+func TestSubscriber_UserLoggedIn_RecordsLoginWithProvider(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "Go-http-client")
+
+	userID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, authcmd.NewUserLoggedIn(userID, "password")))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionLogin, e.Action)
+	assert.Equal(t, "auth", e.Resource.Type)
+	assert.Equal(t, userID.String(), e.Resource.ID)
+	assert.Equal(t, "password", e.Metadata["provider"])
+	assert.Equal(t, "actor-1", e.Actor.UserID)
+	assert.Equal(t, "1.2.3.4", e.Actor.IPAddress)
+}
+
+func TestSubscriber_UserLoggedOut_RecordsLogout(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	userID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, authcmd.NewUserLoggedOut(userID)))
+
+	require.Len(t, store.appended, 1)
+	assert.Equal(t, domainaudit.ActionLogout, store.appended[0].Action)
+}
+
+func TestSubscriber_UserLoginFailed_RecordsFailureWithReason(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "", "", "9.9.9.9", "ua")
+
+	require.NoError(t, sub.Handle(ctx, authcmd.NewUserLoginFailed("密码错误")))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionLoginFailed, e.Action)
+	assert.Equal(t, "密码错误", e.Metadata["reason"])
 }
 
 func TestSubscriber_Subscribe_UsesWildcard(t *testing.T) {
