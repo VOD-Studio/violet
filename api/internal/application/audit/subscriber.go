@@ -13,7 +13,9 @@ import (
 
 	appshared "blog-api/internal/application/shared"
 	authcmd "blog-api/internal/application/auth/command"
+	domainannouncement "blog-api/internal/domain/announcement"
 	domainaudit "blog-api/internal/domain/audit"
+	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
@@ -180,6 +182,79 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUpdatePerms,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "role", ID: idToString(e.RoleID)},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainrole.RoleUpdated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "role", ID: idToString(e.RoleID)},
+			Changes:    []domainaudit.FieldChange{{Field: "name", From: e.FromName, To: e.ToName}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainrole.RoleDeleted:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "role", ID: idToString(e.RoleID), Name: e.RoleName},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainpost.PostPublished:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionPublish,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainpost.PostArchived:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionArchive,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainpost.PostRevertedToDraft:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUnpublish,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainannouncement.AnnouncementCreated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionCreate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID)},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainannouncement.AnnouncementUpdated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID)},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainannouncement.AnnouncementDeleted:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID)},
 			OccurredAt: e.OccurredAt(),
 		}, true
 

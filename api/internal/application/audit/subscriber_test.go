@@ -12,7 +12,9 @@ import (
 	appshared "blog-api/internal/application/shared"
 	authcmd "blog-api/internal/application/auth/command"
 
+	domainannouncement "blog-api/internal/domain/announcement"
 	domainaudit "blog-api/internal/domain/audit"
+	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
@@ -236,6 +238,69 @@ func TestSubscriber_BatchUserStatusChanged_RecordsCount(t *testing.T) {
 	assert.Equal(t, domainaudit.ActionBatchUpdate, e.Action)
 	assert.Equal(t, int64(5), e.Metadata["count"])
 	assert.Equal(t, false, e.Metadata["is_active"])
+}
+
+func TestSubscriber_PostPublished_RecordsPublish(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	postID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainpost.NewPostPublished(postID)))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionPublish, e.Action)
+	assert.Equal(t, "post", e.Resource.Type)
+	assert.Equal(t, postID.String(), e.Resource.ID)
+}
+
+func TestSubscriber_PostArchived_RecordsArchive(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	require.NoError(t, sub.Handle(ctx, domainpost.NewPostArchived(shared.NewID())))
+	require.Len(t, store.appended, 1)
+	assert.Equal(t, domainaudit.ActionArchive, store.appended[0].Action)
+}
+
+func TestSubscriber_RoleUpdated_RecordsNameChange(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	require.NoError(t, sub.Handle(ctx, domainrole.NewRoleUpdated(7, "old-name", "new-name")))
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionUpdate, e.Action)
+	require.Len(t, e.Changes, 1)
+	assert.Equal(t, "name", e.Changes[0].Field)
+	assert.Equal(t, "old-name", e.Changes[0].From)
+	assert.Equal(t, "new-name", e.Changes[0].To)
+}
+
+func TestSubscriber_AnnouncementCreated_RecordsCreate(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	require.NoError(t, sub.Handle(ctx, domainannouncement.NewAnnouncementCreated(42)))
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionCreate, e.Action)
+	assert.Equal(t, "announcement", e.Resource.Type)
+	assert.Equal(t, "42", e.Resource.ID)
+}
+
+func TestSubscriber_AnnouncementDeleted_RecordsDelete(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	require.NoError(t, sub.Handle(ctx, domainannouncement.NewAnnouncementDeleted(9)))
+	require.Len(t, store.appended, 1)
+	assert.Equal(t, domainaudit.ActionDelete, store.appended[0].Action)
 }
 
 func TestSubscriber_Subscribe_UsesWildcard(t *testing.T) {
