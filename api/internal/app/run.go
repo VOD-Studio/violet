@@ -17,7 +17,6 @@ import (
 	"gorm.io/gorm"
 
 	"blog-api/config"
-	authcmd "blog-api/internal/application/auth/command"
 	"blog-api/internal/interfaces/http/routing"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
@@ -48,11 +47,7 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	// 返回 error 而非 log.Fatal：Fatal 调 os.Exit 会跳过上方 defer cleanup，
 	// 导致 DB/Redis 连接泄漏。error 上抛给 main，由 main 在 cleanup 全部执行后退出。
 	if cfg.SuperAdmin.Enabled {
-		if err := container.Auth.EnsureSuperAdmin.Handle(ctx, authcmd.EnsureSuperAdminInput{
-			Email:    cfg.SuperAdmin.Email,
-			Username: cfg.SuperAdmin.Username,
-			Password: cfg.SuperAdmin.Password,
-		}); err != nil {
+		if err := container.Auth.SeedSuperAdmin(ctx, cfg.SuperAdmin); err != nil {
 			return fmt.Errorf("超级管理员初始化失败: %w", err)
 		}
 	}
