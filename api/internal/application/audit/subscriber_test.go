@@ -43,6 +43,10 @@ func (f *fakeStore) ListByActor(context.Context, string, int, int) (domainaudit.
 	return domainaudit.ListResult{}, nil
 }
 
+func (f *fakeStore) ListFiltered(context.Context, domainaudit.ListFilter, int, int) (domainaudit.ListResult, error) {
+	return domainaudit.ListResult{}, nil
+}
+
 func newTestSubscriber(store *fakeStore) *Subscriber {
 	return NewSubscriber(store, zerolog.Nop())
 }

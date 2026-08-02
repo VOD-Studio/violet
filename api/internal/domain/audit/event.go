@@ -9,6 +9,7 @@ package audit
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,6 +53,21 @@ func (a Action) String() string { return a.value }
 
 func (a Action) Equal(other Action) bool { return a.value == other.value }
 
+// MarshalJSON 序列化为字符串（而非默认的 {"value":...} 结构）
+func (a Action) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.value)
+}
+
+// UnmarshalJSON 从字符串反序列化（读路径容错：非法值降级为空 Action）
+func (a *Action) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	a.value = s
+	return nil
+}
+
 // 预定义操作类型常量（覆盖全站核心操作）
 //
 // 命名规范：动词过去时描述「事实已发生」，与领域事件命名风格一致。
@@ -76,13 +92,13 @@ var (
 // UserID/UserName/IPAddress/UserAgent 全部为写入时快照（用户删除后仍可追溯）。
 type Actor struct {
 	// UserID 操作人 UUID（匿名操作时为空）
-	UserID string
+	UserID string `json:"user_id"`
 	// UserName 操作人用户名快照（冗余存储，用户删除后仍可追溯）
-	UserName string
+	UserName string `json:"user_name"`
 	// IPAddress 来源 IP
-	IPAddress string
+	IPAddress string `json:"ip_address"`
 	// UserAgent User-Agent 字符串
-	UserAgent string
+	UserAgent string `json:"user_agent"`
 }
 
 // ResourceRef 资源引用
@@ -90,11 +106,11 @@ type Actor struct {
 // Type/ID/Name 全部为写入时快照，避免后续实体变更影响审计追溯。
 type ResourceRef struct {
 	// Type 资源类型（如 post/user/role/announcement）
-	Type string
+	Type string `json:"type"`
 	// ID 资源 ID
-	ID string
+	ID string `json:"id"`
 	// Name 资源名称快照（文章标题/用户名等，可空）
-	Name string
+	Name string `json:"name,omitempty"`
 }
 
 // FieldChange 单字段 before/after 变更
@@ -102,11 +118,11 @@ type ResourceRef struct {
 // 一等公民：update 类事件必填，审计的灵魂——没有变更内容等于残废。
 type FieldChange struct {
 	// Field 字段名（如 role/is_active/username）
-	Field string
+	Field string `json:"field"`
 	// From 变更前值（任意可序列化类型）
-	From any
+	From any `json:"from"`
 	// To 变更后值（任意可序列化类型）
-	To any
+	To any `json:"to"`
 }
 
 // AuditEvent 操作日志事件（领域模型）
@@ -117,19 +133,19 @@ type FieldChange struct {
 // Metadata 是兜底字段，承载无法结构化的额外信息。
 type AuditEvent struct {
 	// EventID 事件唯一标识（UUID，用于幂等去重）
-	EventID uuid.UUID
+	EventID uuid.UUID `json:"event_id"`
 	// Action 操作类型（受控枚举）
-	Action Action
+	Action Action `json:"action"`
 	// Actor 操作人
-	Actor Actor
+	Actor Actor `json:"actor"`
 	// Resource 资源引用
-	Resource ResourceRef
+	Resource ResourceRef `json:"resource"`
 	// Changes 字段变更列表（update 类事件必填）
-	Changes []FieldChange
+	Changes []FieldChange `json:"changes,omitempty"`
 	// Metadata 兜底元数据（无法结构化的额外信息）
-	Metadata map[string]any
+	Metadata map[string]any `json:"metadata,omitempty"`
 	// OccurredAt 发生时间
-	OccurredAt time.Time
+	OccurredAt time.Time `json:"occurred_at"`
 }
 
 // ListResult 日志列表结果（含分页）
@@ -138,6 +154,16 @@ type ListResult struct {
 	Events []AuditEvent
 	// Total 符合筛选条件的总条数（供分页计算总页数）
 	Total int64
+}
+
+// ListFilter 审计事件查询筛选条件（nil 字段不筛）
+type ListFilter struct {
+	// Action 操作类型过滤（精确匹配，nil=不过滤）
+	Action *string
+	// ResourceType 资源类型过滤（精确匹配，nil=不过滤）
+	ResourceType *string
+	// ActorUserID 操作人过滤（精确匹配，nil=不过滤）
+	ActorUserID *string
 }
 
 // EventStore 操作日志存储端口
@@ -150,4 +176,6 @@ type EventStore interface {
 	List(ctx context.Context, page, limit int) (ListResult, error)
 	// ListByActor 分页查询指定操作人的事件
 	ListByActor(ctx context.Context, userID string, page, limit int) (ListResult, error)
+	// ListFiltered 按筛选条件分页查询（action/resource_type/actor 可选）
+	ListFiltered(ctx context.Context, filter ListFilter, page, limit int) (ListResult, error)
 }

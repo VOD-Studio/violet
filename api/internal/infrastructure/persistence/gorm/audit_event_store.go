@@ -80,6 +80,21 @@ func (s *EventStore) ListByActor(ctx context.Context, userID string, page, limit
 	return s.list(ctx, s.db.WithContext(ctx).Where("actor_user_id = ?", userID), page, limit, "用户审计事件")
 }
 
+// ListFiltered 按筛选条件分页查询（action/resource_type/actor 可选）
+func (s *EventStore) ListFiltered(ctx context.Context, filter domainaudit.ListFilter, page, limit int) (domainaudit.ListResult, error) {
+	q := s.db.WithContext(ctx)
+	if filter.Action != nil {
+		q = q.Where("action = ?", *filter.Action)
+	}
+	if filter.ResourceType != nil {
+		q = q.Where("resource_type = ?", *filter.ResourceType)
+	}
+	if filter.ActorUserID != nil {
+		q = q.Where("actor_user_id = ?", *filter.ActorUserID)
+	}
+	return s.list(ctx, q, page, limit, "审计事件")
+}
+
 // list 分页查询公共骨架：count + find + 转换。
 //
 // query 为 nil 时查全部；否则在 query 上追加 Where/Order/Offset/Limit。
