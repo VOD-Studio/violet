@@ -190,6 +190,21 @@ func TestEventStore_ListPaginationAndOrder(t *testing.T) {
 	assert.Equal(t, "a", res3.Events[0].Resource.ID)
 }
 
+func TestEventStore_AnonymousActor_NullUserID(t *testing.T) {
+	store := NewEventStore(setupAuditEventDB(t))
+	ctx := context.Background()
+
+	// 匿名操作（未登录）Actor.UserID 为空串——必须 NULL 入库而非 ''（uuid 列拒绝空串）
+	require.NoError(t, store.Append(ctx, sampleEvent(func(e *domainaudit.AuditEvent) {
+		e.Actor.UserID = ""
+	})))
+
+	res, err := store.List(ctx, 1, 10)
+	require.NoError(t, err)
+	require.Len(t, res.Events, 1)
+	assert.Empty(t, res.Events[0].Actor.UserID, "匿名操作 UserID 应还原为空串")
+}
+
 func TestEventStore_ListEmpty(t *testing.T) {
 	store := NewEventStore(setupAuditEventDB(t))
 	ctx := context.Background()

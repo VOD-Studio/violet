@@ -27,7 +27,9 @@ type AuditEventPO struct {
 	OccurredAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;index;column:occurred_at" json:"occurred_at"`
 
 	// actor 操作人字段
-	ActorUserID   string `gorm:"type:uuid;index;column:actor_user_id" json:"actor_user_id"`
+	// ActorUserID 用 *string：空串写入 uuid 列会报 SQLSTATE 22P02，
+	// 匿名操作（未登录）时必须以 NULL 入库
+	ActorUserID   *string `gorm:"type:uuid;index;column:actor_user_id" json:"actor_user_id"`
 	ActorUserName string `gorm:"type:varchar(50);column:actor_user_name" json:"actor_user_name"`
 	IPAddress     string `gorm:"type:varchar(45);column:ip_address" json:"ip_address"`
 	UserAgent     string `gorm:"type:varchar(255);column:user_agent" json:"user_agent"`
@@ -38,9 +40,10 @@ type AuditEventPO struct {
 	ResourceName string `gorm:"type:varchar(255);column:resource_name" json:"resource_name"`
 
 	// changes 字段变更列表（jsonb，结构化 before/after）
-	Changes string `gorm:"type:jsonb;column:changes" json:"changes"`
+	// *string：空时以 NULL 入库（jsonb 列拒绝空串）
+	Changes *string `gorm:"type:jsonb;column:changes" json:"changes"`
 	// metadata 兜底元数据
-	Metadata string `gorm:"type:jsonb;column:metadata" json:"metadata"`
+	Metadata *string `gorm:"type:jsonb;column:metadata" json:"metadata"`
 
 	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;column:created_at" json:"created_at"`
 }
@@ -115,7 +118,6 @@ func buildPO(e domainaudit.AuditEvent) (AuditEventPO, error) {
 	po := AuditEventPO{
 		EventID:       e.EventID.String(),
 		Action:        e.Action.String(),
-		ActorUserID:   e.Actor.UserID,
 		ActorUserName: e.Actor.UserName,
 		IPAddress:     e.Actor.IPAddress,
 		UserAgent:     e.Actor.UserAgent,
@@ -124,19 +126,24 @@ func buildPO(e domainaudit.AuditEvent) (AuditEventPO, error) {
 		ResourceName:  e.Resource.Name,
 		OccurredAt:    e.OccurredAt,
 	}
+	if e.Actor.UserID != "" {
+		po.ActorUserID = &e.Actor.UserID
+	}
 	if len(e.Changes) > 0 {
 		b, err := json.Marshal(e.Changes)
 		if err != nil {
 			return AuditEventPO{}, domainshared.Internal("变更字段序列化失败", err)
 		}
-		po.Changes = string(b)
+		changes := string(b)
+		po.Changes = &changes
 	}
 	if len(e.Metadata) > 0 {
 		b, err := json.Marshal(e.Metadata)
 		if err != nil {
 			return AuditEventPO{}, domainshared.Internal("元数据序列化失败", err)
 		}
-		po.Metadata = string(b)
+		meta := string(b)
+		po.Metadata = &meta
 	}
 	return po, nil
 }
@@ -162,7 +169,6 @@ func poToDomain(po AuditEventPO) domainaudit.AuditEvent {
 		EventID:    eventID,
 		Action:     action,
 		Actor: domainaudit.Actor{
-			UserID:    po.ActorUserID,
 			UserName:  po.ActorUserName,
 			IPAddress: po.IPAddress,
 			UserAgent: po.UserAgent,
@@ -174,17 +180,20 @@ func poToDomain(po AuditEventPO) domainaudit.AuditEvent {
 		},
 		OccurredAt: po.OccurredAt,
 	}
-	if po.Changes != "" {
+	if po.Changes != nil {
 		var changes []domainaudit.FieldChange
-		if json.Unmarshal([]byte(po.Changes), &changes) == nil {
+		if json.Unmarshal([]byte(*po.Changes), &changes) == nil {
 			event.Changes = changes
 		}
 	}
-	if po.Metadata != "" {
+	if po.Metadata != nil {
 		var meta map[string]any
-		if json.Unmarshal([]byte(po.Metadata), &meta) == nil {
+		if json.Unmarshal([]byte(*po.Metadata), &meta) == nil {
 			event.Metadata = meta
 		}
+	}
+	if po.ActorUserID != nil {
+		event.Actor.UserID = *po.ActorUserID
 	}
 	return event
 }
