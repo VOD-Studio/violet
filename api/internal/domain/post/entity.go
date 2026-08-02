@@ -39,23 +39,40 @@ func IsValidSlug(s string) bool {
 type Post struct {
 	shared.AggregateRoot
 
-	id             shared.ID
-	title          string
-	slug           string
-	contentMD      string
-	contentHTML    string
-	excerpt        string
-	coverImage     string
-	status         string
-	authorID       shared.ID
-	viewCount      int
-	isFeatured     bool
-	seoTitle       string
+	// id 文章唯一标识
+	id shared.ID
+	// title 标题（用户可读，可含任意字符；不作为唯一键）
+	title string
+	// slug URL 友好标识，全局唯一；由 GenerateSlug 从标题生成，需满足 [a-z0-9-] 格式
+	slug string
+	// contentMD 正文 Markdown 源文本（编辑态，由前端渲染或转 HTML 存档）
+	contentMD string
+	// contentHTML 由 contentMD 预渲染的 HTML，发布态直接返回以避免运行时渲染
+	contentHTML string
+	// excerpt 摘要，用于列表与 SEO；为空时由调用方按规则截取正文生成
+	excerpt string
+	// coverImage 封面图 URL（可为空）
+	coverImage string
+	// status 文章状态机当前值：draft / published / archived（见 Status* 常量）
+	status string
+	// authorID 作者用户 ID（文章归属，创建后不变）
+	authorID shared.ID
+	// viewCount 累计浏览次数（每次 IncrementView 自增）
+	viewCount int
+	// isFeatured 是否精选文章（前端首页 / 精选位展示）
+	isFeatured bool
+	// seoTitle SEO 专用标题，为空时回退到 title
+	seoTitle string
+	// seoDescription SEO 专用描述，为空时回退到 excerpt
 	seoDescription string
-	publishedAt    *time.Time
-	canonicalURL   *string // 转载/分发源 URL；nil = 原创，非 nil = 转载（指向源）
-	tags           []string // tag names
-	timestamps     shared.Timestamps
+	// publishedAt 发布时间；仅 status=published 时有意义，发布前为 nil
+	publishedAt *time.Time
+	// canonicalURL 转载/分发源 URL；nil = 原创，非 nil = 转载（指向原始出处）
+	canonicalURL *string
+	// tags 关联的标签名列表（存 tag name 而非 ID，是多对多关联的快照）
+	tags []string
+	// timestamps 创建/更新时间戳（嵌入值对象，见 shared.Timestamps）
+	timestamps shared.Timestamps
 }
 
 // NewPost 创建新文章（草稿状态）

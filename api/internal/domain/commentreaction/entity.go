@@ -12,17 +12,25 @@ import (
 
 // AggregatedReaction 聚合后的评论反应读模型（面向展示）
 type AggregatedReaction struct {
-	EmojiID   int32  `json:"emoji_id"`
+	// EmojiID 表情 id
+	EmojiID int32 `json:"emoji_id"`
+	// EmojiName 表情名称（展示用）
 	EmojiName string `json:"emoji_name"`
-	EmojiURL  string `json:"emoji_url"`
-	GifURL    string `json:"gif_url"`
-	Count     int64  `json:"count"`
-	Self      bool   `json:"self"`
+	// EmojiURL 表情静态图 URL
+	EmojiURL string `json:"emoji_url"`
+	// GifURL 表情动图 URL（hover/放大时用，无则为空）
+	GifURL string `json:"gif_url"`
+	// Count 该表情的反应计数（按 emoji 分组聚合）
+	Count int64 `json:"count"`
+	// Self 当前 viewer 是否已对该表情反应（高亮「我点过的」）
+	Self bool `json:"self"`
 }
 
 // ReactionList 单条评论的聚合反应列表
 type ReactionList struct {
-	CommentID string              `json:"comment_id"`
+	// CommentID 所属评论 id
+	CommentID string `json:"comment_id"`
+	// Reactions 该评论下的聚合反应列表（按 emoji 分组）
 	Reactions []AggregatedReaction `json:"reactions"`
 }
 

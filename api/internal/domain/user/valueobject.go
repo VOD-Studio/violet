@@ -17,6 +17,7 @@ import (
 // 值对象（Value Object）没有身份标识，由属性值定义相等性。
 // 封装邮箱格式校验，避免在 service/handler 各处重复校验逻辑。
 type Email struct {
+	// value 规范化后的邮箱地址（小写、去首尾空白），构造后不可变
 	value string
 }
 
@@ -45,6 +46,7 @@ var usernamePattern = regexp.MustCompile(`^[a-zA-Z0-9_\x{4e00}-\x{9fa5}]{3,32}$`
 
 // Username 用户名值对象
 type Username struct {
+	// value 校验通过的用户名（满足 usernamePattern：3-32 位字母、数字、下划线或中文）
 	value string
 }
 
@@ -73,6 +75,7 @@ func (u Username) Equal(other Username) bool { return u.value == other.value }
 // 哈希算法（bcrypt）与 cost 配置由基础设施层 AuthService 实现，
 // 领域层只持有已哈希的结果。
 type PasswordHash struct {
+	// value 密码哈希字符串（bcrypt 输出）；明文密码从不进入领域层
 	value string
 }
 

@@ -35,7 +35,7 @@ const MaxDepth = 1
 func IsValidStatus(s string) bool {
 	switch s {
 	case StatusPending, StatusApproved, StatusSpam, StatusDeleted:
-			return true
+		return true
 	}
 	return false
 }
@@ -94,7 +94,7 @@ func (a *Anchor) Validate() error {
 // Comment 评论聚合根。
 //
 // 一条评论可以是「自由评论」（anchor 为空，挂在文章底部）或「选区批注」
-//（anchor 非空，锚到正文某段文本）。两种形态共用同一张表与同一聚合，
+// （anchor 非空，锚到正文某段文本）。两种形态共用同一张表与同一聚合，
 // 通过 anchor 字段是否为空分流（PRD-0001 双轨制）。
 type Comment struct {
 	shared.AggregateRoot
@@ -129,9 +129,9 @@ type Comment struct {
 	body     string    // 评论正文（纯文本 + emoji 语法，沿用 027 迁移的 Bilibili 哲学，无 Markdown）
 	pictures []Picture // 评论附图数组（Bilibili 式，handler 接线后可用）
 
-	status     string // 审核状态：pending/approved/spam/deleted，默认 pending（人工审核）
-	ipHash     string // 评论者 IP 的 SHA256（防伪造，由 handler 用 middleware.GetClientIP 算）。匿名配额依赖。
-	userAgent  string // 评论者 User-Agent（反垃圾元数据）
+	status    string // 审核状态：pending/approved/spam/deleted，默认 pending（人工审核）
+	ipHash    string // 评论者 IP 的 SHA256（防伪造，由 handler 用 middleware.GetClientIP 算）。匿名配额依赖。
+	userAgent string // 评论者 User-Agent（反垃圾元数据）
 
 	timestamps shared.Timestamps // 创建/更新时间
 }
@@ -146,15 +146,21 @@ type Picture struct {
 
 // CreateParams NewComment 的入参（options 模式，便于扩展）。
 type CreateParams struct {
-	ID          shared.ID
-	PostID      shared.ID
-	UserID      *shared.ID // 登录用户 id；nil 表示匿名（双轨认证）
-	Anchor      *Anchor    // 选区批注锚点；nil 表示自由评论。Anchor 非空时 UserID 必须非空。
+	// ID 新评论的唯一 id（由调用方生成）
+	ID shared.ID
+	// PostID 所属文章 id
+	PostID shared.ID
+	UserID *shared.ID // 登录用户 id；nil 表示匿名（双轨认证）
+	Anchor *Anchor    // 选区批注锚点；nil 表示自由评论。Anchor 非空时 UserID 必须非空。
+	// AuthorName 评论者显示昵称（登录态从 user 资料快照，匿名态手填）
 	AuthorName  string
 	AuthorEmail string // 原始输入，NewComment 内部会归一化（小写 + trim）
-	AuthorURL   string
-	AvatarURL   string
-	Body        string
+	// AuthorURL 评论者个人站点 URL（可选，匿名态可填）
+	AuthorURL string
+	// AvatarURL 头像 URL（登录态从 user 资料快照）
+	AvatarURL string
+	// Body 评论正文（纯文本 + emoji 语法，无 Markdown）
+	Body string
 }
 
 // NewComment 创建新评论。
@@ -206,7 +212,7 @@ func ReconstructComment(id, postID shared.ID, userID *shared.ID, parentID *share
 	}
 	return &Comment{
 		id: id, postID: postID, userID: userID, parentID: parentID, path: path, depth: depth,
-		anchor: anchor,
+		anchor:     anchor,
 		authorName: authorName, authorEmail: authorEmail,
 		authorURL: authorURL, avatarURL: avatarURL,
 		body: body, pictures: pictures, status: status,
@@ -277,8 +283,8 @@ func (c *Comment) SetIPHash(h string) { c.ipHash = h }
 func (c *Comment) SetUserAgent(ua string) { c.userAgent = ua }
 
 // 访问器
-func (c *Comment) ID() shared.ID        { return c.id }
-func (c *Comment) PostID() shared.ID    { return c.postID }
+func (c *Comment) ID() shared.ID     { return c.id }
+func (c *Comment) PostID() shared.ID { return c.postID }
 
 // UserID 返回评论者用户 id。匿名为 nil；登录非空。
 // 用于 ListByPost 黑洞模式判定（登录才返回评论）与作者高亮（== post.author_id）。
@@ -294,18 +300,17 @@ func (c *Comment) Anchor() *Anchor { return c.anchor }
 // SetInheritedAnchor 继承父评论的锚点。回复批注时调用，让回复挂在同一高亮区。
 // 仅 service.Create 在「parent 有 anchor 且当前评论没传 anchor」时调用。
 func (c *Comment) SetInheritedAnchor(a *Anchor) { c.anchor = a }
-func (c *Comment) AuthorName() string   { return c.authorName }
-func (c *Comment) AuthorEmail() string  { return c.authorEmail }
-func (c *Comment) AuthorURL() string    { return c.authorURL }
-func (c *Comment) AvatarURL() string    { return c.avatarURL }
-func (c *Comment) Body() string         { return c.body }
-func (c *Comment) Pictures() []Picture  { return c.pictures }
-func (c *Comment) Status() string       { return c.status }
-func (c *Comment) IPHash() string       { return c.ipHash }
-func (c *Comment) UserAgent() string    { return c.userAgent }
-func (c *Comment) CreatedAt() time.Time { return c.timestamps.CreatedAt }
-func (c *Comment) UpdatedAt() time.Time { return c.timestamps.UpdatedAt }
+func (c *Comment) AuthorName() string           { return c.authorName }
+func (c *Comment) AuthorEmail() string          { return c.authorEmail }
+func (c *Comment) AuthorURL() string            { return c.authorURL }
+func (c *Comment) AvatarURL() string            { return c.avatarURL }
+func (c *Comment) Body() string                 { return c.body }
+func (c *Comment) Pictures() []Picture          { return c.pictures }
+func (c *Comment) Status() string               { return c.status }
+func (c *Comment) IPHash() string               { return c.ipHash }
+func (c *Comment) UserAgent() string            { return c.userAgent }
+func (c *Comment) CreatedAt() time.Time         { return c.timestamps.CreatedAt }
+func (c *Comment) UpdatedAt() time.Time         { return c.timestamps.UpdatedAt }
 
 // 校验 path 格式
 func IsValidPath(p string) bool { return pathPattern.MatchString(p) }
-

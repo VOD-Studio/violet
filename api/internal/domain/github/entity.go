@@ -9,26 +9,38 @@ import (
 
 // ContributionData GitHub 贡献数据
 type ContributionData struct {
-	Username           string         `json:"username"`
-	TotalContributions int            `json:"total_contributions"`
-	Contributions      []Contribution `json:"contributions"`
+	// username 查询的 GitHub 用户名（同时也是 GetContributions 的入参）
+	Username string `json:"username"`
+	// totalContributions 统计时段内的总贡献数（提交/PR/issue 等计入贡献日历的活动之和）
+	TotalContributions int `json:"total_contributions"`
+	// contributions 按日展开的贡献明细列表
+	Contributions []Contribution `json:"contributions"`
 }
 
 // Contribution 单日贡献
 type Contribution struct {
-	Date  string `json:"date"`
-	Count int    `json:"count"`
+	// date 日期，格式 YYYY-MM-DD
+	Date string `json:"date"`
+	// count 当日计入贡献日历的活动次数
+	Count int `json:"count"`
 }
 
 // RepoData 仓库数据
 type RepoData struct {
-	Name        string `json:"name"`
+	// name 仓库名
+	Name string `json:"name"`
+	// description 仓库描述
 	Description string `json:"description"`
-	URL         string `json:"url"`
-	Language    string `json:"language"`
-	Stars       int    `json:"stars"`
-	Forks       int    `json:"forks"`
-	Pinned      bool   `json:"pinned"`
+	// url 仓库页面地址
+	URL string `json:"url"`
+	// language 仓库的主要编程语言
+	Language string `json:"language"`
+	// stars star 数
+	Stars int `json:"stars"`
+	// forks fork 数
+	Forks int `json:"forks"`
+	// pinned 是否为 GitHub 置顶仓库
+	Pinned bool `json:"pinned"`
 }
 
 // GitHubProvider GitHub 数据提供者端口（infrastructure 层实现）

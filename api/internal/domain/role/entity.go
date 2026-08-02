@@ -39,6 +39,7 @@ var roleNamePattern = regexp.MustCompile(`^[a-z0-9_-]{2,50}$`)
 //
 // 校验规则：2-50 字符，仅小写字母、数字、下划线、连字符
 type RoleName struct {
+	// value 角色名原始字符串,经 ParseRoleName 校验(2-50 字符,小写字母/数字/下划线/连字符)后封装
 	value string
 }
 
@@ -85,7 +86,9 @@ func NewRolePermissionsChanged(roleID int32) RolePermissionsChanged {
 // RoleCreated 角色已创建事件
 type RoleCreated struct {
 	shared.BaseEvent
-	RoleID   int32
+	// roleID 角色 ID
+	RoleID int32
+	// roleName 角色名(值对象)
 	RoleName RoleName
 }
 

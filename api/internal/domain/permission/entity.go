@@ -32,6 +32,7 @@ var permissionCodePattern = regexp.MustCompile(`^[a-z]+(:[a-z][a-z-]*)?$`)
 // 格式：module:action，如 post:create、comment:approve、admin:access
 // 全小写，两段均至少 1 个字符，总长不超过 CodeMaxLength
 type Code struct {
+	// value 权限代码原始字符串,经 ParseCode 校验(module 或 module:action 格式)后封装
 	value string
 }
 

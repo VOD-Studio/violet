@@ -38,7 +38,9 @@ type FileListFilter struct {
 
 // FileListResult 文件列表查询结果
 type FileListResult struct {
+	// Files 当前页的文件聚合列表
 	Files []*File
+	// Total 满足过滤条件的文件总数（用于分页计算总页数）
 	Total int64
 }
 

@@ -67,7 +67,9 @@ func GenerateSlug(title string) string {
 }
 
 type hanSegment struct {
-	text  string
+	// text 该段的原始文本
+	text string
+	// isHan 是否为中文段（true=逐字转拼音，false=原样保留 ASCII 整词）
 	isHan bool
 }
 

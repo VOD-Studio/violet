@@ -31,7 +31,7 @@ type Category struct {
 // ReleasesData 更新日志聚合（含当前版本）
 type ReleasesData struct {
 	CurrentVersion string    `json:"current_version"` // 最新版本号
-	Releases       []Release `json:"releases"`
+	Releases       []Release `json:"releases"`        // 全部发布版本（按时间倒序）
 }
 
 // Provider GitHub Releases 数据提供者端口（infrastructure 层实现）

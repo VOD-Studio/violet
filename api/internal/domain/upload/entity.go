@@ -48,24 +48,50 @@ func IsValidPurpose(p string) bool { return purposePattern.MatchString(p) }
 // File 已上传文件的聚合根
 type File struct {
 	shared.AggregateRoot
-	id           shared.ID
-	ownerID      shared.ID
-	purpose      string
+	// id 文件唯一标识
+	id shared.ID
+	// ownerID 上传者用户 ID（隔离 owner 维度，秒传仅命中本人文件）
+	ownerID shared.ID
+	// purpose 文件用途分类（avatar/post/emoji/material/comment，由 purposePattern 校验）
+	purpose string
+	// originalName 用户上传时的原始文件名（可选重命名，见 UpdateMetadata）
 	originalName string
-	path         string
-	url          string
-	size         int64
-	mimeType     string
-	fileHash     string // SHA-256
-	width        *int
-	height       *int
-	thumbnail    string
-	status       string
-	refCount     int
-	altText      string // 图片替代文本/素材描述（无障碍 + SEO）
-	category     string // 用户自定义分类（与系统 purpose 正交）
-	deletedAt    *time.Time
-	timestamps   shared.Timestamps
+	// path 物理存储路径（uploads/{purpose}/YYYY/MM/DD/HHMMSS.<uuid>.<ext>，由 ChunkStorage.BuildPath 生成）
+	path string
+	// url 对外访问 URL
+	url string
+	// size 文件大小（字节）
+	size int64
+	// mimeType MIME 类型
+	mimeType string
+	// fileHash 文件内容 SHA-256 哈希
+	//
+	// 秒传去重的依据：FindByHash 按它精确匹配，故 ReplaceStoredFile 覆盖原图后必须刷新为新 hash，
+	// 否则会误命中被覆盖前的旧文件。
+	fileHash string
+	// width 图片宽度（指针，非图片为 nil；SetDimensions 写入）
+	width *int
+	// height 图片高度（指针，非图片为 nil；SetDimensions 写入）
+	height *int
+	// thumbnail 缩略图访问 URL（图片用 imaging、视频用 ffmpeg 生成，不支持时为空）
+	thumbnail string
+	// status 文件处理状态机（pending/processing/ready/failed/deleted）
+	//
+	// NewFile 落 ready；后处理流转 processing→ready/failed；SoftDelete 落 deleted。
+	status string
+	// refCount 引用计数（被文章/评论等引用 +1，解除 -1）
+	//
+	// 物理删除守卫：CanPhysicallyDelete 仅在 refCount==0 且未软删除时为真，
+	// 防止删掉仍被业务引用的文件。
+	refCount int
+	// altText 图片替代文本/素材描述（无障碍 alt 属性 + SEO）
+	altText string
+	// category 用户自定义分类（与系统 purpose 正交，仅素材管理用）
+	category string
+	// deletedAt 软删除时间戳（nil 表示未删除；SoftDelete 写入，参与物理删除判定）
+	deletedAt *time.Time
+	// timestamps 创建/更新时间（ReconstructFile 从持久化层恢复，NewFile 自动取当前时间）
+	timestamps shared.Timestamps
 }
 
 // NewFile 创建新文件记录
@@ -186,20 +212,41 @@ func (f *File) UpdatedAt() time.Time  { return f.timestamps.UpdatedAt }
 // UploadSession 分片上传会话
 type UploadSession struct {
 	shared.AggregateRoot
-	id             shared.ID
-	userID         shared.ID
-	fileName       string
-	fileSize       int64
-	mimeType       string
-	fileHash       string // SHA-256，用于秒传
-	purpose        string
-	chunkSize      int
-	totalChunks    int
-	uploadedChunks []int // 已完成分片索引
-	status         string
-	tmpPath        string
-	expiresAt      time.Time
-	timestamps     shared.Timestamps
+	// id 会话唯一标识
+	id shared.ID
+	// userID 发起上传的用户 ID（FindByHash 按它匹配本人历史会话，实现断点续传）
+	userID shared.ID
+	// fileName 目标文件名
+	fileName string
+	// fileSize 待上传文件总大小（字节）
+	fileSize int64
+	// mimeType 文件 MIME 类型
+	mimeType string
+	// fileHash 目标文件 SHA-256
+	//
+	// 用于断点续传（FindByHash 命中未完成会话）与秒传（命中已完成会话直接复用文件）。
+	fileHash string
+	// purpose 文件用途分类（同 File.Purpose，由 purposePattern 校验）
+	purpose string
+	// chunkSize 单个分片大小（字节）
+	chunkSize int
+	// totalChunks 文件被切分的总分片数（IsComplete 据此与 len(uploadedChunks) 比较）
+	totalChunks int
+	// uploadedChunks 已上传完成的分片索引集合
+	//
+	// MarkChunkUploaded 幂等追加（重复索引直接跳过）；len 与 totalChunks 相等即上传完成。
+	uploadedChunks []int
+	// status 会话状态机（active/merging/completed/expired）
+	//
+	// active→merging（StartMerge，写入 tmpPath）→completed（Complete）；
+	// 超时则 active→expired（Expire）。UpdateStatus 以 CAS 保证并发安全。
+	status string
+	// tmpPath 合并阶段的临时目录路径（StartMerge 时写入，合并完成后清理）
+	tmpPath string
+	// expiresAt 会话过期时间（NewUploadSession 设为创建时刻 +24 小时，IsExpired 据此判定）
+	expiresAt time.Time
+	// timestamps 创建/更新时间（每次状态变更刷新 UpdatedAt）
+	timestamps shared.Timestamps
 }
 
 // NewUploadSession 创建上传会话

@@ -44,22 +44,40 @@ func IsValidDisplay(d string) bool { return validDisplays[d] }
 type Announcement struct {
 	shared.AggregateRoot
 
-	id          int32
-	title       string
-	content     string
-	severity    string
-	display     string
-	isActive    bool
-	startTime   *time.Time
-	endTime     *time.Time
-	sortOrder   int
-	affects     []string
-	contentMD   string
+	// id 公告主键
+	id int32
+	// title 公告标题
+	title string
+	// content 纯文本内容（banner/card 形态展示；article 形态改用 contentMD/contentHTML）
+	content string
+	// severity 严重程度：info / warning / success / error
+	//
+	// DB 列名仍为 type，语义重定义为 severity。
+	severity string
+	// display 展示形态：banner（横幅）/ card（卡片）/ article（富文本文章）
+	display string
+	// isActive 是否启用（手动开关，与时间区间叠加判定是否生效，见 IsCurrentlyActive）
+	isActive bool
+	// startTime 生效开始时间（可空：空表示立即生效）
+	startTime *time.Time
+	// endTime 生效结束时间（可空：空表示永不失效）
+	endTime *time.Time
+	// sortOrder 排序值（越小越靠前）
+	sortOrder int
+	// affects 影响范围（受影响的页面/路由列表，以 JSON 数组持久化）
+	affects []string
+	// contentMD article 形态的 Markdown 正文
+	contentMD string
+	// contentHTML article 形态渲染后的 HTML（由 contentMD 预渲染，展示用）
 	contentHTML string
-	coverImage  string
-	excerpt     string
-	createdBy   *shared.ID
-	timestamps  shared.Timestamps
+	// coverImage article 形态的封面图 URL
+	coverImage string
+	// excerpt article 形态的摘要
+	excerpt string
+	// createdBy 创建人用户 ID（可空：系统生成无创建人）
+	createdBy *shared.ID
+	// timestamps 创建/更新时间戳
+	timestamps shared.Timestamps
 }
 
 // NewAnnouncement 创建新公告

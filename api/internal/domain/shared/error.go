@@ -36,9 +36,12 @@ const (
 //
 // 领域层不感知 HTTP：状态码由 interfaces 层按 Code 翻译（见 response/httpStatusForCode）。
 type DomainError struct {
-	Code    ErrorCode
+	// Code 机器可读错误码，客户端据此分支处理（如 CodeNotFound / CodeConflict）
+	Code ErrorCode
+	// Message 用户友好的错误描述，可直接展示给前端
 	Message string
-	Err     error
+	// Err 包装的底层错误，用于日志与错误链追踪（通过 Unwrap 暴露给 errors.Is/As）
+	Err error
 }
 
 // Error 实现 error 接口
