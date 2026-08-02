@@ -5,6 +5,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
+	appshared "blog-api/internal/application/shared"
+	"blog-api/internal/domain/shared"
 	domain "blog-api/internal/domain/announcement"
 )
 
@@ -31,11 +35,12 @@ type AnnouncementDTO struct {
 // Service 公告用例服务（简化 DDD：CRUD 不强制 command/query 分包）
 type Service struct {
 	repo domain.AnnouncementRepository
+	bus   appshared.EventBus
 }
 
 // NewService 构造公告用例服务
-func NewService(repo domain.AnnouncementRepository) *Service {
-	return &Service{repo: repo}
+func NewService(repo domain.AnnouncementRepository, bus appshared.EventBus) *Service {
+	return &Service{repo: repo, bus: bus}
 }
 
 // List 获取所有公告
@@ -118,7 +123,16 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (int32, error) {
 	a.SetSortOrder(in.SortOrder)
 	a.SetAffects(in.Affects)
 	a.SetRichContent(in.ContentMD, in.ContentHTML, in.CoverImage, in.Excerpt)
-	return s.repo.Save(ctx, a)
+	id, err := s.repo.Save(ctx, a)
+	if err != nil {
+		return 0, err
+	}
+	// 回填自增 ID，手动构造创建事件发布（聚合根不在 NewAnnouncement 里 RecordEvent）
+	a.SetID(id)
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{domain.NewAnnouncementCreated(id)}); err != nil {
+		log.Warn().Err(err).Msg("发布公告创建事件失败")
+	}
+	return id, nil
 }
 
 // UpdateInput 更新公告入参
@@ -162,13 +176,34 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) error {
 	if err := a.SetTimeRange(in.StartTime, in.EndTime); err != nil {
 		return err
 	}
-	_, err = s.repo.Save(ctx, a)
-	return err
+	if _, err := s.repo.Save(ctx, a); err != nil {
+		return err
+	}
+	s.publishEvents(ctx, a)
+	return nil
 }
 
 // Delete 删除公告
 func (s *Service) Delete(ctx context.Context, id int32) error {
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	// 删除后聚合根不可继续存在，手动构造事件发布
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{domain.NewAnnouncementDeleted(id)}); err != nil {
+		log.Warn().Err(err).Msg("发布公告删除事件失败")
+	}
+	return nil
+}
+
+// publishEvents 发布聚合根累积的领域事件（审计订阅者消费）
+func (s *Service) publishEvents(ctx context.Context, a *domain.Announcement) {
+	events := a.PullEvents()
+	if len(events) == 0 {
+		return
+	}
+	if err := s.bus.Publish(ctx, events); err != nil {
+		log.Warn().Err(err).Msg("发布公告事件失败")
+	}
 }
 
 func toDTO(a *domain.Announcement) AnnouncementDTO {

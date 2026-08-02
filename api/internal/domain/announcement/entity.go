@@ -40,6 +40,56 @@ var validDisplays = map[string]bool{
 // IsValidDisplay 校验展示形态是否合法
 func IsValidDisplay(d string) bool { return validDisplays[d] }
 
+// AnnouncementCreated 公告已创建事件
+//
+// 订阅者：审计服务（记录公告创建操作）。
+// 公告用 int32 主键，聚合根 ID 用占位（与 role 聚合一致），ID 字段承载实际主键。
+type AnnouncementCreated struct {
+	shared.BaseEvent
+	// ID 公告主键
+	ID int32
+}
+
+// NewAnnouncementCreated 构造公告创建事件
+func NewAnnouncementCreated(id int32) AnnouncementCreated {
+	return AnnouncementCreated{
+		BaseEvent: shared.NewBaseEvent("announcement.created", shared.ID{}),
+		ID:        id,
+	}
+}
+
+// AnnouncementUpdated 公告已更新事件
+type AnnouncementUpdated struct {
+	shared.BaseEvent
+	// ID 公告主键
+	ID int32
+}
+
+// NewAnnouncementUpdated 构造公告更新事件
+func NewAnnouncementUpdated(id int32) AnnouncementUpdated {
+	return AnnouncementUpdated{
+		BaseEvent: shared.NewBaseEvent("announcement.updated", shared.ID{}),
+		ID:        id,
+	}
+}
+
+// AnnouncementDeleted 公告已删除事件
+//
+// 删除后聚合根不可继续存在，事件由应用层手动构造发布。
+type AnnouncementDeleted struct {
+	shared.BaseEvent
+	// ID 公告主键
+	ID int32
+}
+
+// NewAnnouncementDeleted 构造公告删除事件
+func NewAnnouncementDeleted(id int32) AnnouncementDeleted {
+	return AnnouncementDeleted{
+		BaseEvent: shared.NewBaseEvent("announcement.deleted", shared.ID{}),
+		ID:        id,
+	}
+}
+
 // Announcement 公告聚合根
 type Announcement struct {
 	shared.AggregateRoot
@@ -91,10 +141,12 @@ func NewAnnouncement(id int32, title, content, severity string) (*Announcement, 
 	if !IsValidSeverity(severity) {
 		return nil, shared.BadRequest("无效的公告类型")
 	}
-	return &Announcement{
+	a := &Announcement{
 		id: id, title: title, content: content, severity: severity,
 		display: DisplayBanner, isActive: true,
-	}, nil
+	}
+	// 不在此 RecordEvent：创建事件由应用层发布（需真实自增 ID，Save 前未知）
+	return a, nil
 }
 
 // ReconstructAnnouncement 从持久化数据重建公告
@@ -112,6 +164,9 @@ func ReconstructAnnouncement(
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
 }
+
+// SetID 回填公告主键（仅创建持久化后调用：Save 生成自增 ID，事件发布前必须回填）
+func (a *Announcement) SetID(id int32) { a.id = id }
 
 // SetActive 设置活跃状态
 func (a *Announcement) SetActive(active bool) { a.isActive = active }
@@ -181,6 +236,7 @@ func (a *Announcement) Update(title, content, severity string) error {
 	if severity != "" {
 		a.severity = severity
 	}
+	a.RecordEvent(NewAnnouncementUpdated(a.id))
 	return nil
 }
 
