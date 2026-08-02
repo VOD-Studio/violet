@@ -7,10 +7,14 @@ package app
 import (
 	"context"
 
+	"github.com/rs/zerolog/log"
+
 	"blog-api/config"
 	authcmd "blog-api/internal/application/auth/command"
+	appaudit "blog-api/internal/application/audit"
 	infraemail "blog-api/internal/infrastructure/email"
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
+	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 )
 
 type Container struct {
@@ -50,6 +54,10 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	// 事件总线：进程内 InMemory 同步实现，全部模块共享单一实例，
 	// 保证跨模块事件（role 创建 → 审计订阅者）在同一总线上可达。
 	bus := infraeventbus.NewInMemory()
+
+	// 审计订阅者：消费全部领域事件 → 写 audit_events（append-only）
+	auditSub := appaudit.NewSubscriber(gormrepo.NewEventStore(db), log.Logger)
+	auditSub.Subscribe(bus)
 
 	role, roleCleanup, err := InitializeRoleContainer(db, bus)
 	if err != nil {
