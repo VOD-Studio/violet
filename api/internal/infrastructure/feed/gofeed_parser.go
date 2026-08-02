@@ -42,25 +42,25 @@ func NewGoFeedParser() *GoFeedParser {
 // Parse 抓取并解析 feed URL，返回条目列表（按 feed 原始顺序）。
 // 失败返回 *appsub.FeedError（结构化，T8 据此分类处理）。
 // publishedAt 优先 PublishedParsed，回退 UpdatedParsed。
-func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) ([]appsub.FeedItem, error) {
+func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) (string, []appsub.FeedItem, error) {
 	if _, err := ssrf.ValidateURL(feedURL); err != nil {
-		return nil, &appsub.FeedError{Kind: appsub.FeedErrPermanent, Cause: err}
+		return "", nil, &appsub.FeedError{Kind: appsub.FeedErrPermanent, Cause: err}
 	}
 	req, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
 	if err != nil {
-		return nil, &appsub.FeedError{Kind: appsub.FeedErrTransient, Cause: err}
+		return "", nil, &appsub.FeedError{Kind: appsub.FeedErrTransient, Cause: err}
 	}
 	req.Header.Set("User-Agent", brand.FeedFetcherUA)
 	resp, err := g.client.Do(req)
 	if err != nil {
 		// 网络/超时/DNS 错误 → 瞬时
-		return nil, &appsub.FeedError{Kind: appsub.FeedErrTransient, Cause: err}
+		return "", nil, &appsub.FeedError{Kind: appsub.FeedErrTransient, Cause: err}
 	}
 	defer resp.Body.Close()
 
 	// 429 + Retry-After → RateLimited（推迟，不增计数）
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return nil, &appsub.FeedError{
+		return "", nil, &appsub.FeedError{
 			Kind:       appsub.FeedErrRateLimited,
 			StatusCode: resp.StatusCode,
 			RetryAfter: parseRetryAfter(resp, time.Now()),
@@ -69,7 +69,7 @@ func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) ([]appsub.Feed
 	}
 	// 4xx → 永久（404 源没了/403 禁止）
 	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		return nil, &appsub.FeedError{
+		return "", nil, &appsub.FeedError{
 			Kind:       appsub.FeedErrPermanent,
 			StatusCode: resp.StatusCode,
 			Cause:      fmt.Errorf("feed 源返回 %d", resp.StatusCode),
@@ -77,7 +77,7 @@ func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) ([]appsub.Feed
 	}
 	// 5xx → 瞬时
 	if resp.StatusCode >= 500 {
-		return nil, &appsub.FeedError{
+		return "", nil, &appsub.FeedError{
 			Kind:       appsub.FeedErrTransient,
 			StatusCode: resp.StatusCode,
 			Cause:      fmt.Errorf("feed 源返回 %d", resp.StatusCode),
@@ -89,7 +89,7 @@ func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) ([]appsub.Feed
 	feed, err := g.parser.Parse(body)
 	if err != nil {
 		// malformed XML → 永久（feed 格式坏了不会自愈）
-		return nil, &appsub.FeedError{
+		return "", nil, &appsub.FeedError{
 			Kind:  appsub.FeedErrPermanent,
 			Cause: fmt.Errorf("feed 解析失败: %w", err),
 		}
@@ -112,7 +112,7 @@ func (g *GoFeedParser) Parse(ctx context.Context, feedURL string) ([]appsub.Feed
 			PublishedAt: publishedStr,
 		})
 	}
-	return items, nil
+	return feed.Title, items, nil
 }
 
 // parseRetryAfter 解析 Retry-After 头（支持 delta-seconds 与 HTTP-date）。

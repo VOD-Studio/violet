@@ -75,7 +75,8 @@ func (e *FeedError) Unwrap() error { return e.Cause }
 
 // FeedParser feed 解析端口。生产用 gofeed，测试用假实现。
 type FeedParser interface {
-	// Parse 抓取并解析 feed URL，返回条目列表（按 feed 原始顺序）。
+	// Parse 抓取并解析 feed URL，返回 feed 级标题与条目列表（条目按 feed 原始顺序）。
+	// feed 标题缺失时返回空串（调用方用于回填订阅 title，空则忽略）。
 	// 失败时返回 *FeedError（结构化，便于 T8 分类处理）。
-	Parse(ctx context.Context, feedURL string) ([]FeedItem, error)
+	Parse(ctx context.Context, feedURL string) (feedTitle string, items []FeedItem, err error)
 }
