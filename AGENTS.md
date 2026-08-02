@@ -109,7 +109,7 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 violet 是 monorepo(`api/` + `web/`),额外两条:
 
 - **前后端必须分离提交**。同一需求同时改到 `api/` 和 `web/` 时,必须拆成多个 commit——前后端发布节奏、review 人、回滚影响面都不同。
-- **公共组件单独提交**。`web/src/shared/ui` 下的通用组件,或被多个 feature 引用的实体/接口/hooks/utils,新增/重构/修 bug 都要单独提交。feature 内部组件(`features/posts/ui/*` 等)属于该 feature 私有,按职责分组提交即可,不必每个组件单独拆。判断「是否公共」看**是否被多个 feature 引用**——私有逻辑一旦被第二个 feature 复用,应先 `refactor(shared-ui): 将 X 提到 shared/ui` 单独提交,再在新 feature 接入。
+- **公共组件倾向单独提交**。`web/src/shared/ui` 下的通用组件,或被多个 feature 引用的实体/接口/hooks/utils 的改动,**能独立 revert 时就单独提交**(如修 bug、加通用能力)。但当公共组件改动与某 feature 强耦合(如为该 feature 加了专属 prop,改完其他地方用不了)时,按三问判据合并——拆开后 revert 会坏构建的,不拆。feature 内部组件(`features/posts/ui/*` 等)属于该 feature 私有,按职责分组提交即可,不必每个组件单独拆。判断「是否公共」看**是否被多个 feature 引用**——私有逻辑一旦被第二个 feature 复用,应先 `refactor(shared-ui): 将 X 提到 shared/ui` 单独提交,再在新 feature 接入。
 
 ## 代码注释规范
 
