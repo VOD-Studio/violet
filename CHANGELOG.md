@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。release notes 由 GitHub 原生 generate-release-notes 生成（按 PR label 分类，见 `.github/release.yml`），label 由 `auto-label.yml` 从 Conventional Commit 前缀自动打。
 
+## [2.1.2](https://github.com/VOD-Studio/violet/compare/v2.1.1...v2.1.2) (2026-08-02)
+
+
+### 修复
+
+* **ci:** release-please changelog 从 github 原生改为 release-please 原生 ([#34](https://github.com/VOD-Studio/violet/issues/34)) ([e8ad47c](https://github.com/VOD-Studio/violet/commit/e8ad47ca9f49832d8a6b12af14f5d93561f412c1))
+
 ## 2.1.1 (2026-08-02)
 
 <!-- Release notes generated using configuration in .github/release.yml at release/2.0 -->
