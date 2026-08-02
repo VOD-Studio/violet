@@ -55,10 +55,10 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 	})
 
 	registerSchema(t, "LlmSettings", openapi3.Schemas{
-		"llm_api_key":   optStr("LLM API Key（敏感，OpenAI 协议兼容端点）"),
-		"llm_api_url":   optStr("LLM API Base URL（如 https://api.openai.com/v1）"),
-		"llm_model":     optStr("LLM 模型名（如 gpt-4o-mini）"),
-		"llm_protocol":  optStr("LLM 协议（目前仅支持 openai）"),
+		"llm_api_key":  optStr("LLM API Key（敏感，OpenAI 协议兼容端点）"),
+		"llm_api_url":  optStr("LLM API Base URL（如 https://api.openai.com/v1）"),
+		"llm_model":    optStr("LLM 模型名（如 gpt-4o-mini）"),
+		"llm_protocol": optStr("LLM 协议（目前仅支持 openai）"),
 	})
 
 	registerSchema(t, "CodeRunnerSettings", openapi3.Schemas{
@@ -85,10 +85,9 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		{"/admin/settings/code-runner", "CodeRunnerSettings", "代码运行器"},
 	}
 	for _, g := range settingsGroups {
-		g := g // capture
 		get(t, g.path, &openapi3.Operation{
-			Tags:    []string{"站点设置"},
-			Summary: "获取" + g.summary,
+			Tags:        []string{"站点设置"},
+			Summary:     "获取" + g.summary,
 			Description: "获取" + g.summary + "组站点设置。需 settings:view 权限。",
 			Security:    securityAdmin(),
 			Responses: responses(
