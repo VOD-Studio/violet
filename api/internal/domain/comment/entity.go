@@ -26,6 +26,44 @@ const (
 	StatusDeleted  = "deleted"
 )
 
+// CommentApproved 评论已审核通过事件
+//
+// 订阅者：审计服务。PostID 供资源定位（评论聚合 ID 是评论自身）。
+type CommentApproved struct {
+	shared.BaseEvent
+}
+
+// NewCommentApproved 构造评论审核通过事件
+func NewCommentApproved(commentID shared.ID) CommentApproved {
+	return CommentApproved{
+		BaseEvent: shared.NewBaseEvent("comment.approved", commentID),
+	}
+}
+
+// CommentSpammed 评论已标记垃圾事件
+type CommentSpammed struct {
+	shared.BaseEvent
+}
+
+// NewCommentSpammed 构造评论标记垃圾事件
+func NewCommentSpammed(commentID shared.ID) CommentSpammed {
+	return CommentSpammed{
+		BaseEvent: shared.NewBaseEvent("comment.spammed", commentID),
+	}
+}
+
+// CommentDeleted 评论已删除事件
+type CommentDeleted struct {
+	shared.BaseEvent
+}
+
+// NewCommentDeleted 构造评论删除事件
+func NewCommentDeleted(commentID shared.ID) CommentDeleted {
+	return CommentDeleted{
+		BaseEvent: shared.NewBaseEvent("comment.deleted", commentID),
+	}
+}
+
 // MaxDepth 展示层级上限。
 // 0 是顶层评论，1 是回复。回复不再往下嵌套（B站式两层扁平）——
 // 回复另一条回复时，depth 还是 1，对话关系靠 parent_id 和 reply_to_name 标。

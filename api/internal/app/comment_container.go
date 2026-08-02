@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	appcomment "blog-api/internal/application/comment"
+	appshared "blog-api/internal/application/shared"
 	domainemoji "blog-api/internal/domain/emoji"
 	infraauth "blog-api/internal/infrastructure/auth"
 	infraemail "blog-api/internal/infrastructure/email"
@@ -26,13 +27,13 @@ type CommentContainer struct {
 // emailSender 用于匿名评论邮箱验证码两步流（PRD-0001）；
 // userRepo 用于登录评论者的 author_* 资料填充；
 // emojiRepo 用于评论 emote 映射（解析 body 中的 [name] 查表构建）。
-func NewCommentContainer(db *gorm.DB, redisClient *redis.Client, emailSender *infraemail.Sender) *CommentContainer {
+func NewCommentContainer(db *gorm.DB, redisClient *redis.Client, emailSender *infraemail.Sender, bus appshared.EventBus) *CommentContainer {
 	commentRepo := gormrepo.NewCommentRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
 	postRepo := gormrepo.NewPostRepository(db)
 	emojiRepo := gormrepo.NewEmojiGroupRepository(db)
 	codeStore := infraauth.NewRedisCodeStore(redisClient)
-	commentSvc := appcomment.NewService(commentRepo, codeStore, emailSender, &emojiLookupAdapter{repo: emojiRepo})
+	commentSvc := appcomment.NewService(commentRepo, codeStore, emailSender, &emojiLookupAdapter{repo: emojiRepo}, bus)
 	return &CommentContainer{
 		CommentHandler: commenthttp.NewHandler(commentSvc, userRepo, postRepo),
 		CommentService: commentSvc,
