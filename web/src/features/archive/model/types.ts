@@ -1,8 +1,4 @@
-/**
- * archive 模块类型定义
- *
- * 对齐后端 application/post.ArchiveItemDTO / ArchiveYearDTO。
- */
+/** archive 模块类型定义 */
 
 /** ArchiveYearIndex - 归档年份索引 */
 export interface ArchiveYearIndex {

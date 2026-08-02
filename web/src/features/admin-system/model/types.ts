@@ -1,17 +1,6 @@
-/**
- * admin-system 模块类型定义
- *
- * 对齐后端 application/system.dto.go：
- *  - SystemSnapshotDTO ← Snapshot（GET /admin/system/snapshot 响应，字段全 camelCase）
- *  - SystemHistoryDTO  ← HistoryResponse（GET /admin/system/history 响应）
- *  - SystemSamplePointDTO ← SamplePoint（历史采样点，字段为体积优化的短键，原样保留）
- */
+/** admin-system 模块类型定义 */
 
-/**
- * SystemSnapshotDTO - 服务器实时快照
- *
- * 对齐后端 Snapshot 结构体。一次采集返回的完整状态切片。
- */
+/** 服务器实时快照，一次采集返回的完整状态切片 */
 export interface SystemSnapshotDTO {
     /** 采集时间戳（RFC3339） */
     timestamp: string;
@@ -33,7 +22,7 @@ export interface SystemSnapshotDTO {
     dependencies: SystemDepStatusDTO;
 }
 
-/** SystemHostInfoDTO - 主机信息，对齐后端 HostInfo */
+/** 主机信息 */
 export interface SystemHostInfoDTO {
     /** 主机名 */
     hostname: string;
@@ -47,7 +36,7 @@ export interface SystemHostInfoDTO {
     bootTime: string;
 }
 
-/** SystemCPUInfoDTO - CPU 使用情况，对齐后端 CPUInfo */
+/** CPU 使用情况 */
 export interface SystemCPUInfoDTO {
     /** 总体使用率（0-100） */
     usagePercent: number;
@@ -61,7 +50,7 @@ export interface SystemCPUInfoDTO {
     mhz: number;
 }
 
-/** SystemMemoryInfoDTO - 内存使用情况，对齐后端 MemoryInfo */
+/** 内存使用情况 */
 export interface SystemMemoryInfoDTO {
     /** 总内存（字节） */
     totalBytes: number;
@@ -81,7 +70,7 @@ export interface SystemMemoryInfoDTO {
     swapPercent: number;
 }
 
-/** SystemDiskInfoDTO - 单挂载点磁盘使用情况，对齐后端 DiskInfo */
+/** 单挂载点磁盘使用情况 */
 export interface SystemDiskInfoDTO {
     /** 设备名 */
     device: string;
@@ -101,7 +90,7 @@ export interface SystemDiskInfoDTO {
     writeBytes: number;
 }
 
-/** SystemNetworkInfoDTO - 网络信息，对齐后端 NetworkInfo */
+/** 网络信息 */
 export interface SystemNetworkInfoDTO {
     /** 网络接口列表 */
     interfaces: SystemNetInterfaceDTO[];
@@ -109,7 +98,7 @@ export interface SystemNetworkInfoDTO {
     io: SystemNetIODTO;
 }
 
-/** SystemNetInterfaceDTO - 网络接口，对齐后端 NetInterface */
+/** 网络接口 */
 export interface SystemNetInterfaceDTO {
     /** 接口名 */
     name: string;
@@ -121,7 +110,7 @@ export interface SystemNetInterfaceDTO {
     addrs: string[];
 }
 
-/** SystemNetIODTO - 网络 IO 累计值与速率，对齐后端 NetIO */
+/** 网络 IO 累计值与速率 */
 export interface SystemNetIODTO {
     /** 累计发送字节 */
     bytesSent: number;
@@ -137,7 +126,7 @@ export interface SystemNetIODTO {
     recvRateBytes: number;
 }
 
-/** SystemLoadInfoDTO - 系统负载，对齐后端 LoadInfo */
+/** 系统负载 */
 export interface SystemLoadInfoDTO {
     /** 1 分钟平均负载 */
     load1: number;
@@ -147,7 +136,7 @@ export interface SystemLoadInfoDTO {
     load15: number;
 }
 
-/** SystemRuntimeInfoDTO - Go 运行时信息，对齐后端 RuntimeInfo */
+/** Go 运行时信息 */
 export interface SystemRuntimeInfoDTO {
     /** Go 版本 */
     goVersion: string;
@@ -169,7 +158,7 @@ export interface SystemRuntimeInfoDTO {
     gc: SystemGCStatsDTO;
 }
 
-/** SystemGoMemStatsDTO - Go 内存统计，对齐后端 GoMemStats */
+/** Go 内存统计 */
 export interface SystemGoMemStatsDTO {
     /** 已分配字节 */
     allocBytes: number;
@@ -181,7 +170,7 @@ export interface SystemGoMemStatsDTO {
     nextGCBytes: number;
 }
 
-/** SystemGCStatsDTO - GC 统计，对齐后端 GCStats */
+/** GC 统计 */
 export interface SystemGCStatsDTO {
     /** GC 总次数 */
     numGC: number;
@@ -191,7 +180,7 @@ export interface SystemGCStatsDTO {
     lastPauseNs: number;
 }
 
-/** SystemDepStatusDTO - 依赖服务状态，对齐后端 DepStatus */
+/** 依赖服务状态 */
 export interface SystemDepStatusDTO {
     /** PostgreSQL 探活结果 */
     postgres: SystemDependencyCheckDTO;
@@ -199,7 +188,7 @@ export interface SystemDepStatusDTO {
     redis: SystemDependencyCheckDTO;
 }
 
-/** SystemDependencyCheckDTO - 单依赖探活结果，对齐后端 DependencyCheck */
+/** 单依赖探活结果 */
 export interface SystemDependencyCheckDTO {
     /** 是否连通 */
     connected: boolean;
@@ -211,7 +200,7 @@ export interface SystemDependencyCheckDTO {
     pool: SystemPoolStatsDTO;
 }
 
-/** SystemPoolStatsDTO - 连接池统计，对齐后端 PoolStats */
+/** 连接池统计 */
 export interface SystemPoolStatsDTO {
     /** 在用连接数 */
     inUse: number;
@@ -223,11 +212,7 @@ export interface SystemPoolStatsDTO {
     waitCount: number;
 }
 
-/**
- * SystemHistoryDTO - 历史趋势响应
- *
- * 对齐后端 HistoryResponse。interval 固定 30s（与后端 sampler 一致）。
- */
+/** 历史趋势响应，interval 固定 30s（与后端 sampler 一致） */
 export interface SystemHistoryDTO {
     /** 采样间隔（秒，固定 30） */
     interval: number;
@@ -235,12 +220,7 @@ export interface SystemHistoryDTO {
     points: SystemSamplePointDTO[];
 }
 
-/**
- * SystemSamplePointDTO - 单个历史采样点
- *
- * 对齐后端 SamplePoint。后端为控制 Redis 存储体积用了短键，
- * 此处原样保留并在每个字段注释里给出全名映射，避免前端误读。
- */
+/** 单个历史采样点；后端为控制 Redis 存储体积用了短键，此处原样保留并在每个字段注释里给出全名映射 */
 export interface SystemSamplePointDTO {
     /** 采样时间戳（RFC3339，对应 ts） */
     ts: string;

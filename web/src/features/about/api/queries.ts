@@ -1,7 +1,7 @@
 import { apiGet } from "@shared/api/request";
 import { useQuery } from "@tanstack/react-query";
 
-/** PublicStats - 公开只读统计（对齐后端 PublicStats） */
+/** 公开只读统计 */
 export interface PublicStats {
     posts_count: number;
     total_words: number;

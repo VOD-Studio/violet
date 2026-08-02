@@ -1,11 +1,6 @@
 import { z } from "zod";
 
-/**
- * postSchema - 文章编辑器表单校验
- *
- * 字段命名对齐后端 CreatePost 的 snake_case，提交与预填免去映射。
- * slug 仅校验非空，格式由 slugify 保证，且允许中文 slug。
- */
+/** 文章编辑器表单校验；slug 仅校验非空，格式由 slugify 保证，且允许中文 slug */
 export const postSchema = z.object({
     /** 标题，必填 */
     title: z.string().min(1, "请填写标题"),

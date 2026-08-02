@@ -23,11 +23,7 @@ export interface ContributionSummary {
     username: string;
 }
 
-/**
- * Repo - GitHub 仓库数据
- *
- * 字段 snake_case 对齐后端 RepoData json tag。
- */
+/** GitHub 仓库数据 */
 export interface Repo {
     /** 仓库名 */
     name: string;

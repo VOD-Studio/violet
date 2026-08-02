@@ -1,8 +1,4 @@
-/**
- * admin-announcements 模块类型定义
- *
- * 对齐后端 application/announcement.AnnouncementDTO
- */
+/** admin-announcements 模块类型定义 */
 
 /** 公告类型枚举(severity 视觉维度) */
 export type AnnouncementType = "info" | "warning" | "success" | "error";

@@ -3,7 +3,7 @@ import { z } from "zod";
 /** 展示形态枚举 */
 export const DISPLAY_OPTIONS = ["banner", "card", "article"] as const;
 
-/** 影响范围可选模块（对齐后端 affects 枚举） */
+/** 影响范围可选模块 */
 export const AFFECTS_OPTIONS = [
     "posts",
     "comments",
