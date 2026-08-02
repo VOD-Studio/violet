@@ -84,12 +84,13 @@ func (f *fakeImporter) Publish(ctx context.Context, id string) error {
 }
 
 type fakeParser struct {
-	items []FeedItem
-	err   error
+	items     []FeedItem
+	feedTitle string
+	err       error
 }
 
-func (f *fakeParser) Parse(ctx context.Context, feedURL string) ([]FeedItem, error) {
-	return f.items, f.err
+func (f *fakeParser) Parse(ctx context.Context, feedURL string) (string, []FeedItem, error) {
+	return f.feedTitle, f.items, f.err
 }
 
 // --- 测试 ---
@@ -320,4 +321,57 @@ func TestFetchOne_WithoutFetchDepsReturnsError(t *testing.T) {
 
 	report := svc.FetchOne(context.Background(), sub.ID().String())
 	assert.Contains(t, report.SubscriptionError, "依赖未注入")
+}
+
+func TestFetchOne_BackfillsTitleFromFeedWhenEmpty(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t)
+	// 模拟创建时未传 title
+	require.NoError(t, sub.UpdateConfig("", "", sub.AutoPublish(), sub.CanonicalOverride(), sub.Tags()))
+	parser.feedTitle = "CoolShell"
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1"}}
+
+	report := svc.FetchOne(context.Background(), sub.ID().String())
+
+	assert.Empty(t, report.SubscriptionError)
+	assert.Equal(t, "CoolShell", repo.subs[sub.ID().String()].Title(), "title 空时应从 feed 回填")
+}
+
+func TestFetchOne_KeepsExistingTitle(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t) // 订阅 title = "源"
+	parser.feedTitle = "CoolShell"
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1"}}
+
+	svc.FetchOne(context.Background(), sub.ID().String())
+
+	assert.Equal(t, "源", repo.subs[sub.ID().String()].Title(), "已有 title 不应被覆盖")
+}
+
+func TestFetchOne_BackfillPreservesOtherConfig(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t)
+	require.NoError(t, sub.UpdateConfig("", "", true, "https://canonical/x", []string{"转载"}))
+	parser.feedTitle = "Go Blog"
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1"}}
+
+	svc.FetchOne(context.Background(), sub.ID().String())
+
+	got := repo.subs[sub.ID().String()]
+	assert.Equal(t, "Go Blog", got.Title())
+	assert.True(t, got.AutoPublish(), "回填不应覆盖 auto_publish")
+	assert.Equal(t, "https://canonical/x", got.CanonicalOverride(), "回填不应覆盖 canonical_override")
+	assert.Equal(t, []string{"转载"}, got.Tags(), "回填不应覆盖 tags")
+}
+
+func TestFetchOne_BackfillSaveFailureIgnored(t *testing.T) {
+	svc, repo, entryRepo, _, parser, sub := setupFetchSvc(t)
+	require.NoError(t, sub.UpdateConfig("", "", false, "", nil))
+	parser.feedTitle = "Feed"
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1", Title: "文章1"}}
+	repo.saveErr = errors.New("db down")
+
+	report := svc.FetchOne(context.Background(), sub.ID().String())
+
+	assert.Empty(t, report.SubscriptionError, "回填 Save 失败不应阻塞抓取")
+	assert.Equal(t, 1, report.Imported, "entry 应正常导入")
+	require.Len(t, entryRepo.saved, 1)
+	assert.NotNil(t, entryRepo.saved[0].PostID(), "post_id 应回填")
 }

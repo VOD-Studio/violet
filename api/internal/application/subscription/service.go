@@ -360,6 +360,7 @@ type FetchReport struct {
 //  1. 解析订阅（按 id，无 userID 校验——调度器是系统行为，非用户操作）
 //  2. SetFetchDeps 未注入 → 返回配置错误
 //  3. parser.Parse 拉 feed（feed 层错误由调用方 T8 据 SubscriptionError 记失败计数）
+//     - 订阅 title 为空且 feed 有标题时回填（保留其它配置，失败忽略）
 //  4. 对每条 entry：去重（FindBySubAndGUID）→ 已处理则跳过
 //  5. 新 entry：importer.ImportURL 抓正文 → importer.Create 建草稿
 //     - canonical = 订阅 canonical_override 非空则用它，否则 entry.link
@@ -388,7 +389,7 @@ func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchRepo
 		return report
 	}
 
-	items, err := s.parser.Parse(ctx, sub.FeedURL())
+	feedTitle, items, err := s.parser.Parse(ctx, sub.FeedURL())
 	if err != nil {
 		// 提取 *FeedError 给 T8 分类；非 FeedError 时 FeedErr=nil（T8 当瞬时错误处理）
 		var fe *FeedError
@@ -399,6 +400,15 @@ func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchRepo
 		return report
 	}
 	report.FeedEntryCount = len(items)
+
+	// title 回填：创建订阅时未指定标题，用 feed 级标题补齐（首次抓取触发）。
+	// 其它配置（autoPublish/canonicalOverride/tags）须传现值，UpdateConfig 全量覆盖。
+	// 回填失败不阻塞抓取也不计入失败计数（下一轮抓取会再试）。
+	if feedTitle != "" && sub.Title() == "" {
+		if err := sub.UpdateConfig(feedTitle, "", sub.AutoPublish(), sub.CanonicalOverride(), sub.Tags()); err == nil {
+			_ = s.repo.Save(ctx, sub) // 保存失败忽略：回填是锦上添花，不进 SubscriptionError
+		}
+	}
 
 	for _, item := range items {
 		guid := item.GUID
