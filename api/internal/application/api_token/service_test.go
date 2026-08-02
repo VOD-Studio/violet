@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
+
 	domainapitoken "blog-api/internal/domain/api_token"
 )
 
@@ -40,7 +42,7 @@ func (f *fakeRepo) Delete(_ context.Context, id, userID string) error {
 
 func TestService_Create_ReturnsPlaintextToken(t *testing.T) {
 	repo := &fakeRepo{}
-	svc := NewService(repo)
+	svc := NewService(repo, infraeventbus.NewInMemory())
 
 	res, err := svc.Create(context.Background(), CreateInput{
 		UserID: "user-1",
@@ -87,7 +89,7 @@ func TestService_Create_ReturnsPlaintextToken(t *testing.T) {
 func TestService_Create_PropagatesSaveError(t *testing.T) {
 	wantErr := errors.New("disk full")
 	repo := &fakeRepo{saveErr: wantErr}
-	svc := NewService(repo)
+	svc := NewService(repo, infraeventbus.NewInMemory())
 
 	_, err := svc.Create(context.Background(), CreateInput{
 		UserID: "user-1", Name: "t", Scopes: []string{domainapitoken.ScopePostsRead},
@@ -99,7 +101,7 @@ func TestService_Create_PropagatesSaveError(t *testing.T) {
 
 func TestService_Create_RejectsInvalidScope(t *testing.T) {
 	repo := &fakeRepo{}
-	svc := NewService(repo)
+	svc := NewService(repo, infraeventbus.NewInMemory())
 
 	if _, err := svc.Create(context.Background(), CreateInput{
 		UserID: "user-1", Name: "t", Scopes: []string{"bogus:scope"},
@@ -121,7 +123,7 @@ func TestService_List_NeverExposesPlaintext(t *testing.T) {
 			[]string{domainapitoken.ScopeCommentsRead}, time.Time{}, now, now),
 	}
 	repo := &fakeRepo{findByUser: pats}
-	svc := NewService(repo)
+	svc := NewService(repo, infraeventbus.NewInMemory())
 
 	got, err := svc.List(context.Background(), "user-1")
 	if err != nil {
@@ -158,7 +160,7 @@ func TestService_List_NeverExposesPlaintext(t *testing.T) {
 func TestService_List_PropagatesFindError(t *testing.T) {
 	wantErr := errors.New("db down")
 	repo := &fakeRepo{findByErr: wantErr}
-	svc := NewService(repo)
+	svc := NewService(repo, infraeventbus.NewInMemory())
 
 	if _, err := svc.List(context.Background(), "user-1"); !errors.Is(err, wantErr) {
 		t.Errorf("err = %v, want %v", err, wantErr)
