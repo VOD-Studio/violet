@@ -70,13 +70,9 @@ func TestNewRole(t *testing.T) {
 		t.Error("非内置角色应可删除")
 	}
 
-	// 新角色应记录 RoleCreated 事件
-	events := role.PullEvents()
-	if len(events) != 1 {
-		t.Fatalf("新角色应记录 1 个事件，实际 %d", len(events))
-	}
-	if events[0].EventName() != "role.created" {
-		t.Errorf("事件名应为 role.created，实际 %s", events[0].EventName())
+	// 创建事件由应用层发布（需真实自增 ID，Save 前未知），聚合根不记录
+	if role.HasEvents() {
+		t.Fatal("NewRole 不应记录事件（创建事件由应用层在 Save 后手动发布）")
 	}
 }
 

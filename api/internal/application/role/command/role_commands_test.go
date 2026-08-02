@@ -65,7 +65,7 @@ func TestCreateRoleHandler_NameExists(t *testing.T) {
 
 func TestUpdateRoleHandler_Success(t *testing.T) {
 	repo := new(mocks.MockRoleRepository)
-	h := command.NewUpdateRoleHandler(repo)
+	h := command.NewUpdateRoleHandler(repo, newMockBus())
 
 	name, _ := role.ParseRoleName("editor")
 	existing := role.ReconstructRole(1, name, "旧描述", []string{}, zeroTime(), zeroTime())
@@ -84,7 +84,7 @@ func TestUpdateRoleHandler_Success(t *testing.T) {
 
 func TestUpdateRoleHandler_BuiltinCannotRename(t *testing.T) {
 	repo := new(mocks.MockRoleRepository)
-	h := command.NewUpdateRoleHandler(repo)
+	h := command.NewUpdateRoleHandler(repo, newMockBus())
 
 	name, _ := role.ParseRoleName("admin")
 	builtin := role.ReconstructRole(1, name, "管理员", []string{}, zeroTime(), zeroTime())
@@ -101,7 +101,7 @@ func TestUpdateRoleHandler_BuiltinCannotRename(t *testing.T) {
 
 func TestDeleteRoleHandler_Success(t *testing.T) {
 	repo := new(mocks.MockRoleRepository)
-	h := command.NewDeleteRoleHandler(repo)
+	h := command.NewDeleteRoleHandler(repo, newMockBus())
 
 	name, _ := role.ParseRoleName("editor")
 	rl := role.ReconstructRole(1, name, "编辑", []string{}, zeroTime(), zeroTime())
@@ -116,7 +116,7 @@ func TestDeleteRoleHandler_Success(t *testing.T) {
 
 func TestDeleteRoleHandler_BuiltinCannotDelete(t *testing.T) {
 	repo := new(mocks.MockRoleRepository)
-	h := command.NewDeleteRoleHandler(repo)
+	h := command.NewDeleteRoleHandler(repo, newMockBus())
 
 	name, _ := role.ParseRoleName("admin")
 	builtin := role.ReconstructRole(1, name, "管理员", []string{}, zeroTime(), zeroTime())
@@ -129,7 +129,7 @@ func TestDeleteRoleHandler_BuiltinCannotDelete(t *testing.T) {
 
 func TestDeleteRoleHandler_InUse(t *testing.T) {
 	repo := new(mocks.MockRoleRepository)
-	h := command.NewDeleteRoleHandler(repo)
+	h := command.NewDeleteRoleHandler(repo, newMockBus())
 
 	name, _ := role.ParseRoleName("editor")
 	rl := role.ReconstructRole(1, name, "编辑", []string{}, zeroTime(), zeroTime())

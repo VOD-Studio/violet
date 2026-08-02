@@ -35,8 +35,8 @@ func InitializeRoleContainer(db *gorm.DB, bus *infraeventbus.InMemory) (*RoleCon
 	listRoles := rolequery.NewListRolesWithUserCountHandler(roleRepo)
 	getRole := rolequery.NewGetRoleWithPermissionsHandler(roleRepo, permRepo)
 	createRole := rolecmd.NewCreateRoleHandler(roleRepo, bus)
-	updateRole := rolecmd.NewUpdateRoleHandler(roleRepo)
-	deleteRole := rolecmd.NewDeleteRoleHandler(roleRepo)
+	updateRole := rolecmd.NewUpdateRoleHandler(roleRepo, bus)
+	deleteRole := rolecmd.NewDeleteRoleHandler(roleRepo, bus)
 	replaceRolePerms := rolecmd.NewReplaceRolePermissionsHandler(roleRepo, bus)
 
 	// permission CQRS handlers

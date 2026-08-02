@@ -101,6 +101,49 @@ func NewRoleCreated(roleID int32, name RoleName) RoleCreated {
 	}
 }
 
+// RoleUpdated 角色已更新事件（重命名/改描述）
+//
+// FromName/ToName 为变更前后角色名（审计 before/after 字段，未改名时相同）。
+type RoleUpdated struct {
+	shared.BaseEvent
+	// RoleID 角色 ID
+	RoleID int32
+	// FromName 变更前角色名
+	FromName string
+	// ToName 变更后角色名
+	ToName string
+}
+
+// NewRoleUpdated 构造角色更新事件
+func NewRoleUpdated(roleID int32, fromName, toName string) RoleUpdated {
+	return RoleUpdated{
+		BaseEvent: shared.NewBaseEvent("role.updated", shared.ID{}),
+		RoleID:    roleID,
+		FromName:  fromName,
+		ToName:    toName,
+	}
+}
+
+// RoleDeleted 角色已删除事件
+//
+// 删除后聚合根不可继续存在，事件由应用层手动构造发布。
+type RoleDeleted struct {
+	shared.BaseEvent
+	// RoleID 角色 ID
+	RoleID int32
+	// RoleName 删除前角色名
+	RoleName string
+}
+
+// NewRoleDeleted 构造角色删除事件
+func NewRoleDeleted(roleID int32, name string) RoleDeleted {
+	return RoleDeleted{
+		BaseEvent: shared.NewBaseEvent("role.deleted", shared.ID{}),
+		RoleID:    roleID,
+		RoleName:  name,
+	}
+}
+
 // ============================================================
 // Role 聚合根
 // ============================================================
@@ -135,7 +178,8 @@ func NewRole(id int32, name RoleName, description string) *Role {
 		description: description,
 		permissions: make(map[string]struct{}),
 	}
-	r.RecordEvent(NewRoleCreated(id, name))
+	// 不在此 RecordEvent：创建事件由应用层发布（RoleCreated 需真实自增 ID，
+	// 而 Save 前 ID 未知——聚合根里记录只能是占位 0）
 	return r
 }
 
@@ -176,7 +220,9 @@ func (r *Role) Rename(newName RoleName) error {
 	if r.name.IsBuiltin() {
 		return shared.Forbidden("不能修改内置角色的名称")
 	}
+	old := r.name.String()
 	r.name = newName
+	r.RecordEvent(NewRoleUpdated(r.roleID, old, newName.String()))
 	return nil
 }
 
@@ -247,6 +293,9 @@ func (r *Role) CanDelete() bool {
 // ============================================================
 // 访问器
 // ============================================================
+
+// SetRoleID 回填角色 ID（仅创建持久化后调用：Save 生成自增 ID，事件发布前必须回填）
+func (r *Role) SetRoleID(id int32) { r.roleID = id }
 
 func (r *Role) RoleID() int32        { return r.roleID }
 func (r *Role) Name() RoleName       { return r.name }
