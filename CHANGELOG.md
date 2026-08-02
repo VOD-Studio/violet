@@ -7,6 +7,20 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。release notes 由 GitHub 原生 generate-release-notes 生成（按 PR label 分类，见 `.github/release.yml`），label 由 `auto-label.yml` 从 Conventional Commit 前缀自动打。
 
+## 2.1.1 (2026-08-02)
+
+<!-- Release notes generated using configuration in .github/release.yml at release/2.0 -->
+
+## What's Changed
+### 重构
+* refactor(domain): TagRepository 接口从 entity.go 拆到 repository.go by @xunrua in https://github.com/VOD-Studio/violet/pull/32
+### 其他
+* [release] Release notes 切换为 GitHub 原生生成器 by @xunrua in https://github.com/VOD-Studio/violet/pull/24
+* [app] main.go 装配层与路由架构治理 by @xunrua in https://github.com/VOD-Studio/violet/pull/23
+
+
+**Full Changelog**: https://github.com/VOD-Studio/violet/compare/v2.1.0...v2.1.1
+
 ## [2.1.0](https://github.com/VOD-Studio/violet/compare/v2.0.4...v2.1.0) (2026-08-01)
 
 
