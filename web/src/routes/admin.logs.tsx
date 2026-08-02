@@ -34,18 +34,23 @@ const ACTION_OPTIONS = [
     { value: "update_status", label: "改状态" },
     { value: "batch_update", label: "批量更新" },
     { value: "update_perms", label: "改权限" },
+    { value: "approve", label: "审核通过" },
+    { value: "reject", label: "标记垃圾" },
     { value: "login", label: "登录" },
     { value: "logout", label: "登出" },
     { value: "login_failed", label: "登录失败" },
 ];
 
-/** 资源类型选项 */
+/** 资源类型选项（与后端订阅者映射对齐） */
 const RESOURCE_OPTIONS = [
     { value: "", label: "全部资源" },
     { value: "user", label: "用户" },
     { value: "post", label: "文章" },
     { value: "role", label: "角色" },
     { value: "announcement", label: "公告" },
+    { value: "comment", label: "评论" },
+    { value: "settings", label: "站点设置" },
+    { value: "api_token", label: "访问令牌" },
     { value: "auth", label: "认证" },
 ];
 
@@ -197,7 +202,7 @@ function AdminLogsPage() {
                 open={!!detailLog}
                 onOpenChange={(open) => !open && setDetailLog(null)}
                 title="操作详情"
-                size="md"
+                size="lg"
             >
                 {detailLog && <AuditEventDetail event={detailLog} />}
             </Modal>
@@ -208,8 +213,9 @@ function AdminLogsPage() {
 /** AuditEventDetail - 事件详情（Actor + 资源 + Changes before/after） */
 function AuditEventDetail({ event }: { event: AuditEventDTO }) {
     return (
-        <div className="space-y-4 text-sm">
-            <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-5 text-sm">
+            {/* 基础信息：两列网格，短字段 */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                 <DetailItem label="动作" value={event.action} />
                 <DetailItem
                     label="时间"
@@ -220,12 +226,24 @@ function AuditEventDetail({ event }: { event: AuditEventDTO }) {
                     value={event.actor.user_name || event.actor.user_id || "匿名"}
                 />
                 <DetailItem label="IP" value={event.actor.ip_address || "-"} />
-                <DetailItem
-                    label="资源"
-                    value={`${event.resource.type}${event.resource.id ? ` #${event.resource.id}` : ""}${event.resource.name ? ` · ${event.resource.name}` : ""}`}
-                />
-                <DetailItem label="UA" value={event.actor.user_agent || "-"} />
             </div>
+
+            {/* 资源：拆行展示（type/id/name 各自一行，长 ID 可换行） */}
+            <div className="rounded-md border p-3">
+                <div className="mb-1 text-xs text-muted-foreground">资源</div>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{event.resource.type}</Badge>
+                    {event.resource.name && <span className="text-sm">{event.resource.name}</span>}
+                </div>
+                {event.resource.id && (
+                    <div className="mt-1 break-all font-mono text-xs text-muted-foreground">
+                        #{event.resource.id}
+                    </div>
+                )}
+            </div>
+
+            {/* UA：单独一行（长字符串不挤两列） */}
+            <DetailItem label="UA" value={event.actor.user_agent || "-"} />
 
             {event.changes && event.changes.length > 0 && (
                 <div>
@@ -241,7 +259,7 @@ function AuditEventDetail({ event }: { event: AuditEventDTO }) {
             {event.metadata && Object.keys(event.metadata).length > 0 && (
                 <div>
                     <h4 className="mb-2 font-medium">元数据</h4>
-                    <pre className="max-h-40 overflow-auto rounded bg-muted p-3 font-mono text-xs">
+                    <pre className="max-h-48 overflow-auto rounded bg-muted p-3 font-mono text-xs">
                         {JSON.stringify(event.metadata, null, 2)}
                     </pre>
                 </div>
@@ -263,7 +281,7 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 /** ChangeRow - 单字段 before/after 变更 */
 function ChangeRow({ change }: { change: FieldChangeDTO }) {
     return (
-        <div className="flex items-center gap-2 rounded border p-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 rounded-md border p-2 text-xs">
             <Badge variant="outline">{change.field}</Badge>
             <span className="text-muted-foreground line-through">{formatValue(change.from)}</span>
             <span aria-hidden>→</span>
