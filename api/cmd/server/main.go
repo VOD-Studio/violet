@@ -19,8 +19,6 @@ import (
 	"blog-api/config"
 	"blog-api/internal/app"
 	authcmd "blog-api/internal/application/auth/command"
-	appshared "blog-api/internal/application/shared"
-	infraemail "blog-api/internal/infrastructure/email"
 	"blog-api/internal/interfaces/http/routing"
 	"blog-api/internal/job"
 	"blog-api/internal/middleware"
@@ -49,74 +47,26 @@ func main() {
 	gormDB := infra.Gorm
 	redisClient := infra.Redis
 
-	roleContainer, roleCleanup, err := app.InitializeRoleContainer(gormDB)
+	// --- 模块容器装配（composition root: 聚合全部 DDD 模块 + 跨模块依赖）---
+	container, containerCleanup, err := app.NewContainer(ctx, infra, cfg)
 	if err != nil {
-		log.Fatal().Err(err).Msg("DDD role 容器初始化失败")
+		log.Fatal().Err(err).Msg("模块容器初始化失败")
 	}
-	defer roleCleanup()
-
-	// --- 服务层初始化 ---
-
-	// 邮件发送：devMode 下打印验证码明文到日志，方便开发期联调（无需配置 Resend）。
-	emailSender := infraemail.NewSender(cfg.ResendAPIKey, cfg.EmailFrom, cfg.Environment != "production")
-
-	// 权限检查器：由 RoleContainer 装配（wire 单例总线 + 事件订阅），
-	// superadmin 通配放行，其他角色按 role_permissions 表判断（带 5min 内存缓存）。
-	// 角色权限变更经 RolePermissionsChanged 事件即时清缓存，不再等 TTL 过期。
-	permissionChecker := roleContainer.PermissionChecker
-
-	// 事件总线：当前无异步事件订阅者，用 NoopEventBus 占位（非 nil），
-	// 避免 RegisterUserHandler.Publish 在 nil bus 上触发 panic。
-	// 后续接入真实事件总线（如发欢迎邮件、统计）时替换为 InMemory 实现。
-	settingsContainer := app.NewSettingsContainer(gormDB)
-
-	authContainer, err := app.NewAuthContainer(gormDB, redisClient, cfg, emailSender, appshared.NoopEventBus{}, settingsContainer.Service)
-	if err != nil {
-		log.Fatal().Err(err).Msg("DDD auth 容器初始化失败")
-	}
+	defer containerCleanup()
 
 	// session 鉴权中间件依赖：RedisSessionStore 同时实现 SessionStore 与 SessionLookup。
 	// main.go 挂载 SessionAuth/OptionalSessionAuth/SessionAuthReadOnly 时复用同一实例。
-	sessionLookup := authContainer.SessionStore
-
-	contentContainer := app.NewContentContainer(gormDB)
-
-	commentContainer := app.NewCommentContainer(gormDB, redisClient, emailSender)
-
-	postContainer := app.NewPostContainer(gormDB, permissionChecker, settingsContainer.Store)
-	tagContainer := app.NewTagContainer(gormDB)
-	githubContainer := app.NewGitHubContainer(settingsContainer.Store)
-	releasesContainer := app.NewReleasesContainer(settingsContainer.Store, redisClient)
-	auditContainer := app.NewAuditContainer(gormDB)
-	statsContainer := app.NewStatsContainer(gormDB)
-	userAdminContainer := app.NewUserAdminContainer(gormDB, authcmd.NewBcryptHasher(), auditContainer.Service)
-	commentReactionContainer := app.NewCommentReactionContainer(gormDB)
-	apiTokenContainer := app.NewAPITokenContainer(gormDB)
-	subscriptionContainer := app.NewSubscriptionContainer(gormDB, postContainer.PostService)
-	// MCP 服务器：PAT 鉴权已在内层 handler 经由 auth.RequireBearerToken 完成；
-	// postSvc 复用文章模块，tokenLookup 复用 PAT 模块仓储，subSvc 复用订阅模块。
-	mcpContainer := app.NewMCPContainer(apiTokenContainer.TokenLookup, postContainer.PostService, subscriptionContainer.SubscriptionService, commentContainer.CommentService)
-
-	// 服务器监控模块（DDD）：启动 30s 采样 goroutine，随 appCtx 退出
-	systemContainer := app.NewSystemContainer(gormDB, redisClient, ctx)
-
-	// 媒体模块：infra 对象由 media_container 内部自建，main 仅传 db/redisClient/cfg。
-	mediaContainer := app.NewMediaContainer(gormDB, redisClient, cfg)
-	emojiSeedService := mediaContainer.EmojiSeedService
+	sessionLookup := container.Auth.SessionStore
 
 	// 上传目录：仅供 cleanupJob 使用；media_container / image 服务从 cfg 自行派生。
 	uploadRoot := cfg.UploadDir
 	chunkDir := filepath.Join(uploadRoot, "tmp")
 
-	// 代码运行器（可运行代码块沙箱执行）：始终连 docker.sock 起隔离容器执行用户代码。
-	// enabled 开关与资源阈值走 site_settings（运行时可改），settingsStore 注入 service 实时读取。
-	codeRunnerContainer := app.NewCodeRunnerContainer(redisClient, settingsContainer.Store, cfg.CodeRunner)
-
 	// 表情种子数据初始化（幂等，后台执行）：首次启动执行完整导入，
 	// 后续启动仅回填 bilibili 分组缺失的封面 URL。不阻塞 HTTP 服务启动。
 	go func() {
 		log.Info().Msg("开始执行 B站表情种子数据初始化（幂等，后台）...")
-		if err := emojiSeedService.SeedBilibiliEmojis(ctx); err != nil {
+		if err := container.Media.EmojiSeedService.SeedBilibiliEmojis(ctx); err != nil {
 			log.Error().Err(err).Msg("表情种子数据初始化失败（不影响服务运行）")
 		}
 	}()
@@ -127,15 +77,15 @@ func main() {
 	// 订阅定时抓取调度器（T8）：与 cleanupJob 并列，30 分钟轮询 due 订阅，
 	// 有界并行 worker pool 抓取，失败按 Miniflux 共识分类处理
 	subscriptionJob := job.NewSubscriptionJob(
-		subscriptionContainer.SubscriptionService,
-		subscriptionContainer.SubscriptionRepository,
+		container.Subscription.SubscriptionService,
+		container.Subscription.SubscriptionRepository,
 		nil, 0, 0, // now/worker/tick 用默认（time.Now / 5 / 30min）
 	)
 	go subscriptionJob.Start(ctx)
 
 	// --- 超级管理员初始化---
 	if cfg.SuperAdmin.Enabled {
-		if err := authContainer.EnsureSuperAdmin.Handle(ctx, authcmd.EnsureSuperAdminInput{
+		if err := container.Auth.EnsureSuperAdmin.Handle(ctx, authcmd.EnsureSuperAdminInput{
 			Email:    cfg.SuperAdmin.Email,
 			Username: cfg.SuperAdmin.Username,
 			Password: cfg.SuperAdmin.Password,
@@ -156,39 +106,37 @@ func main() {
 	))
 	r.Use(middleware.SecurityHeaders) // 安全响应头
 
-	imageContainer := app.NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
-
 	routing.RegisterRoutes(r, &routing.Deps{
 		Cfg:                   cfg,
 		Redis:                 redisClient,
-		PermissionChecker:     permissionChecker,
+		PermissionChecker:     container.Role.PermissionChecker,
 		SessionAuth:           middleware.SessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
 		OptionalAuth:          middleware.OptionalSessionAuth(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
 		SessionAuthReadOnlyMW: middleware.SessionAuthReadOnly(sessionLookup, cfg.Cookie, cfg.Session.IdleTTL),
-		Role:                  roleContainer.RoleHandler,
-		Settings:              settingsContainer.SettingsHandler,
-		Stats:                 statsContainer.StatsHandler,
-		GitHub:                githubContainer.GitHubHandler,
-		Releases:              releasesContainer.ReleasesHandler,
-		Auth:                  authContainer.AuthHandler,
-		Content:               contentContainer.ContentHandler,
-		Comment:               commentContainer.CommentHandler,
-		CommentReaction:       commentReactionContainer.CommentReactionHandler,
-		Media:                 mediaContainer.MediaHandler,
-		Post:                  postContainer.PostHandler,
-		Tag:                   tagContainer.TagHandler,
-		Audit:                 auditContainer.AuditHandler,
-		UserAdmin:             userAdminContainer.UserAdminHandler,
-		APIToken:              apiTokenContainer.APITokenHandler,
-		Subscription:          subscriptionContainer.SubscriptionHandler,
-		CodeRunner:            codeRunnerContainer.CodeRunnerHandler,
-		System:                systemContainer.SystemHandler,
-		Image:                 imageContainer.ImageHandler,
+		Role:                  container.Role.RoleHandler,
+		Settings:              container.Settings.SettingsHandler,
+		Stats:                 container.Stats.StatsHandler,
+		GitHub:                container.GitHub.GitHubHandler,
+		Releases:              container.Releases.ReleasesHandler,
+		Auth:                  container.Auth.AuthHandler,
+		Content:               container.Content.ContentHandler,
+		Comment:               container.Comment.CommentHandler,
+		CommentReaction:       container.CommentReaction.CommentReactionHandler,
+		Media:                 container.Media.MediaHandler,
+		Post:                  container.Post.PostHandler,
+		Tag:                   container.Tag.TagHandler,
+		Audit:                 container.Audit.AuditHandler,
+		UserAdmin:             container.UserAdmin.UserAdminHandler,
+		APIToken:              container.APIToken.APITokenHandler,
+		Subscription:          container.Subscription.SubscriptionHandler,
+		CodeRunner:            container.CodeRunner.CodeRunnerHandler,
+		System:                container.System.SystemHandler,
+		Image:                 container.Image.ImageHandler,
 		MCP: routing.MCPHandlers{
-			Post:     mcpContainer.PostHandler,
-			Scraper:  mcpContainer.ScraperHandler,
-			Public:   mcpContainer.PublicHandler,
-			Comments: mcpContainer.CommentsHandler,
+			Post:     container.MCP.PostHandler,
+			Scraper:  container.MCP.ScraperHandler,
+			Public:   container.MCP.PublicHandler,
+			Comments: container.MCP.CommentsHandler,
 		},
 	})
 
