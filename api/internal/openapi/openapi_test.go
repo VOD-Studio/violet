@@ -189,14 +189,15 @@ func TestAdminStatsAndSettingsPaths(t *testing.T) {
 		"DashboardStats", "ViewTrends",
 		"GeneralSettings", "AuthSettings", "GithubSettings", "ProfileSettings",
 		"AboutSettings", "LlmSettings", "CodeRunnerSettings",
-		"AuditLog",
+		"AuditEvent",
 	} {
 		require.Contains(t, spec.Components.Schemas, s, "missing schema %s", s)
 	}
-	// AuditLog 用 PascalCase 字段（无 json tag）
-	al := spec.Components.Schemas["AuditLog"].Value.Properties
-	require.Contains(t, al, "Action")
-	require.Contains(t, al, "CreatedAt")
+	// AuditEvent 结构化读模型（snake_case 字段）
+	ev := spec.Components.Schemas["AuditEvent"].Value.Properties
+	require.Contains(t, ev, "Action")
+	require.Contains(t, ev, "OccurredAt")
+	require.Contains(t, ev, "Changes")
 }
 
 func TestAdminAnnouncementPaths(t *testing.T) {

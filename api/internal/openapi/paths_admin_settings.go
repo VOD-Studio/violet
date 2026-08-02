@@ -107,31 +107,61 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 		})
 	}
 
-	// AuditLog：操作日志（domain 无 json tag，字段名为 PascalCase）
-	registerSchema(t, "AuditLog", openapi3.Schemas{
-		"ID":         optInt64("日志 ID"),
-		"UserID":     optStr("操作用户 ID（UUID，可空）"),
-		"Action":     reqStr("操作动作"),
-		"Resource":   optStr("操作资源类型"),
-		"ResourceID": optStr("操作资源 ID"),
-		"Detail": {Value: &openapi3.Schema{
+	// AuditEvent：操作日志事件（append-only 审计存储的读模型）
+	registerSchema(t, "AuditEvent", openapi3.Schemas{
+		"EventID":    optStr("事件 UUID（幂等去重）"),
+		"Action":     reqStr("操作类型（受控枚举：create/update/delete/publish/login 等）"),
+		"Actor": {Value: &openapi3.Schema{
+			Type: &openapi3.Types{openapi3.TypeObject},
+			Properties: openapi3.Schemas{
+				"UserID":    optStr("操作人 UUID（匿名时为空）"),
+				"UserName":  optStr("操作人用户名快照"),
+				"IPAddress": optStr("来源 IP"),
+				"UserAgent": optStr("User-Agent"),
+			},
+		}},
+		"Resource": {Value: &openapi3.Schema{
+			Type: &openapi3.Types{openapi3.TypeObject},
+			Properties: openapi3.Schemas{
+				"Type": optStr("资源类型（user/post/role/announcement/auth）"),
+				"ID":   optStr("资源 ID"),
+				"Name": optStr("资源名称快照"),
+			},
+		}},
+		"Changes": {Value: &openapi3.Schema{
+			Type: &openapi3.Types{openapi3.TypeArray},
+			Items: &openapi3.SchemaRef{Value: &openapi3.Schema{
+				Type: &openapi3.Types{openapi3.TypeObject},
+				Properties: openapi3.Schemas{
+					"Field": optStr("变更字段名"),
+					"From":  optStr("变更前值"),
+					"To":    optStr("变更后值"),
+				},
+			}},
+			Description: "字段变更列表（before/after）",
+		}},
+		"Metadata": {Value: &openapi3.Schema{
 			Type:                 &openapi3.Types{openapi3.TypeObject},
 			AdditionalProperties: openapi3.AdditionalProperties{Has: openapi3.Ptr(true)},
-			Description:          "操作详情（动态字段）",
+			Description:          "兜底元数据（如登录 provider、批量 count）",
 		}},
-		"IPAddress": optStr("操作 IP"),
-		"CreatedAt": optStr("操作时间（RFC3339）"),
+		"OccurredAt": optStr("发生时间（RFC3339）"),
 	})
 
 	// ---- GET /admin/logs ----
 	get(t, "/admin/logs", &openapi3.Operation{
 		Tags:        []string{"操作日志"},
 		Summary:     "操作日志列表",
-		Description: "分页查询操作日志。需管理员权限。",
+		Description: "分页查询操作日志，支持 action/resource_type/actor 过滤。需 log:view 权限。",
 		Security:    securityAdmin(),
-		Parameters:  openapi3.Parameters{pageParam(), limitParam(100)},
+		Parameters: openapi3.Parameters{
+			pageParam(), limitParam(100),
+			queryStrParam("action", "操作类型过滤（精确匹配）"),
+			queryStrParam("resource_type", "资源类型过滤（精确匹配）"),
+			queryStrParam("actor", "操作人 UUID 过滤（精确匹配）"),
+		},
 		Responses: responses(
-			200, dataArrayResponse("AuditLog", "操作日志列表", 200, true),
+			200, dataArrayResponse("AuditEvent", "操作日志列表", 200, true),
 		),
 	})
 
@@ -139,13 +169,13 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 	get(t, "/admin/logs/user/{id}", &openapi3.Operation{
 		Tags:        []string{"操作日志"},
 		Summary:     "用户操作日志",
-		Description: "查询指定用户的操作日志。需管理员权限。",
+		Description: "查询指定用户的操作日志。需 log:view 权限。",
 		Security:    securityAdmin(),
 		Parameters: openapi3.Parameters{
 			pathStrParam("id", "用户 ID（UUID）"), pageParam(), limitParam(100),
 		},
 		Responses: responses(
-			200, dataArrayResponse("AuditLog", "用户操作日志列表", 200, true),
+			200, dataArrayResponse("AuditEvent", "用户操作日志列表", 200, true),
 		),
 	})
 }

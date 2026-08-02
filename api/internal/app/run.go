@@ -120,6 +120,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		Media:                 c.Media.MediaHandler,
 		Post:                  c.Post.PostHandler,
 		Tag:                   c.Tag.TagHandler,
+		Audit:                 c.Audit.AuditHandler,
 		UserAdmin:             c.UserAdmin.UserAdminHandler,
 		APIToken:              c.APIToken.APITokenHandler,
 		Subscription:          c.Subscription.SubscriptionHandler,

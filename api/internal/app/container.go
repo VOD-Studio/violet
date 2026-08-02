@@ -27,6 +27,7 @@ type Container struct {
 	Tag             *TagContainer
 	GitHub          *GitHubContainer
 	Releases        *ReleasesContainer
+	Audit           *AuditContainer
 	Stats           *StatsContainer
 	UserAdmin       *UserAdminContainer
 	CommentReaction *CommentReactionContainer
@@ -81,6 +82,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	tag := NewTagContainer(db)
 	github := NewGitHubContainer(settings.Store)
 	releases := NewReleasesContainer(settings.Store, rdb)
+	audit := NewAuditContainer(db)
 	stats := NewStatsContainer(db)
 	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus)
 	commentReaction := NewCommentReactionContainer(db)
@@ -94,7 +96,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
-		Post: post, Tag: tag, GitHub: github, Releases: releases,
+		Post: post, Tag: tag, GitHub: github, Releases: releases, Audit: audit,
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image,
