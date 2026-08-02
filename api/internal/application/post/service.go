@@ -11,9 +11,11 @@ import (
 	"time"
 
 	readability "codeberg.org/readeck/go-readability/v2"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/net/html"
 
 	"blog-api/internal/brand"
+	appshared "blog-api/internal/application/shared"
 	domain "blog-api/internal/domain/post"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
@@ -114,6 +116,7 @@ type Service struct {
 	userRepo      userdomain.UserRepository
 	perm          PostPermissionChecker
 	settingsStore domainsettings.SettingsStore
+	bus           appshared.EventBus
 }
 
 // NewService 构造文章用例服务
@@ -121,8 +124,8 @@ type Service struct {
 // userRepo 用于按 author_id 填充 PostDTO.Author，nil 时跳过填充。
 // perm 用于所有权鉴权：操作他人文章需对应权限码，操作自己的靠所有权放行。
 // settingsStore 用于 import-url 的「AI 还原公式」读取 llm_* 配置，nil 时禁用 AI 还原。
-func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository, perm PostPermissionChecker, settingsStore domainsettings.SettingsStore) *Service {
-	return &Service{repo: repo, userRepo: userRepo, perm: perm, settingsStore: settingsStore}
+func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository, perm PostPermissionChecker, settingsStore domainsettings.SettingsStore, bus appshared.EventBus) *Service {
+	return &Service{repo: repo, userRepo: userRepo, perm: perm, settingsStore: settingsStore, bus: bus}
 }
 
 // canModify 判断操作者是否有权修改指定文章
@@ -415,7 +418,11 @@ func (s *Service) Publish(ctx context.Context, id string) error {
 		return shared.Forbidden("无权发布他人文章")
 	}
 	p.Publish()
-	return s.repo.Save(ctx, p)
+	if err := s.repo.Save(ctx, p); err != nil {
+		return err
+	}
+	s.publishEvents(ctx, p)
+	return nil
 }
 
 // UpdateStatus 更新文章状态（draft/published/archived）
@@ -448,6 +455,7 @@ func (s *Service) UpdateStatus(ctx context.Context, id, status string) (PostDTO,
 	if err := s.repo.Save(ctx, p); err != nil {
 		return PostDTO{}, err
 	}
+	s.publishEvents(ctx, p)
 	return toDTO(p), nil
 }
 
@@ -1090,4 +1098,15 @@ func buildCollaboratorsFromUserMap(ids []shared.ID, userMap map[string]*AuthorDT
 		}
 	}
 	return collaborators
+}
+
+// publishEvents 发布聚合根累积的领域事件（审计订阅者消费）
+func (s *Service) publishEvents(ctx context.Context, p *domain.Post) {
+	events := p.PullEvents()
+	if len(events) == 0 {
+		return
+	}
+	if err := s.bus.Publish(ctx, events); err != nil {
+		log.Warn().Err(err).Msg("发布文章事件失败")
+	}
 }
