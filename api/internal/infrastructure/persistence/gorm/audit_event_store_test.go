@@ -41,7 +41,7 @@ func sampleEvent(overrides func(*domainaudit.AuditEvent)) domainaudit.AuditEvent
 		Action:     domainaudit.ActionCreate,
 		Actor:      domainaudit.Actor{UserID: "user-1", UserName: "alice", IPAddress: "1.2.3.4", UserAgent: "ua-1"},
 		Resource:   domainaudit.ResourceRef{Type: "post", ID: "post-1", Name: "量子计算"},
-		OccurredAt: time.Now().UTC().Truncate(time.Second),
+		OccurredAt: time.Now().UTC().Truncate(time.Millisecond),
 	}
 	if overrides != nil {
 		overrides(&e)
@@ -53,8 +53,13 @@ func TestEventStore_AppendAndList(t *testing.T) {
 	store := NewEventStore(setupAuditEventDB(t))
 	ctx := context.Background()
 
-	require.NoError(t, store.Append(ctx, sampleEvent(nil)))
+	// 两条事件时间戳递增，保证排序断言不依赖 SQLite 同秒 tie-break
+	base := time.Now().UTC().Truncate(time.Millisecond)
 	require.NoError(t, store.Append(ctx, sampleEvent(func(e *domainaudit.AuditEvent) {
+		e.OccurredAt = base
+	})))
+	require.NoError(t, store.Append(ctx, sampleEvent(func(e *domainaudit.AuditEvent) {
+		e.OccurredAt = base.Add(time.Millisecond)
 		e.Action = domainaudit.ActionUpdate
 		e.Resource.ID = "post-2"
 	})))
@@ -64,7 +69,7 @@ func TestEventStore_AppendAndList(t *testing.T) {
 	assert.Equal(t, int64(2), res.Total)
 	require.Len(t, res.Events, 2)
 
-	// 第二个 event（后追加）按 occurred_at DESC 排第一
+	// 较新的事件按 occurred_at DESC 排第一
 	e := res.Events[0]
 	assert.Equal(t, domainaudit.ActionUpdate, e.Action)
 	assert.Equal(t, "post-2", e.Resource.ID)

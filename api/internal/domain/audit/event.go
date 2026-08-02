@@ -15,15 +15,13 @@ import (
 
 	"blog-api/internal/domain/shared"
 )
-// Action 受控枚举
-// ============================================================
 
 // Action 操作类型。
 //
-// 受控枚举：一旦发布不可改名（[Harness: Audit Logs Are Forever]）。
-// 新增操作类型需在此处扩展，并通过 Parse/MustParse 校验，
-// 避免散落的字符串字面量进入存储。
+// 受控枚举：一旦发布不可改名，新增操作类型需在此处扩展，
+// 并通过 Parse/MustParse 校验，避免散落的字符串字面量进入存储。
 type Action struct {
+	// value 操作类型原始字符串，经 Parse 校验后封装
 	value string
 }
 
@@ -50,10 +48,8 @@ func MustParse(s string) Action {
 	return a
 }
 
-// String 返回操作类型字符串
 func (a Action) String() string { return a.value }
 
-// Equal 比较两个操作类型是否相同
 func (a Action) Equal(other Action) bool { return a.value == other.value }
 
 // 预定义操作类型常量（覆盖全站核心操作）
@@ -74,10 +70,6 @@ var (
 	ActionLogout         = MustParse("logout")          // 登出
 	ActionLoginFailed    = MustParse("login_failed")    // 登录失败
 )
-
-// ============================================================
-// Actor / ResourceRef / FieldChange
-// ============================================================
 
 // Actor 操作人
 //
@@ -117,10 +109,6 @@ type FieldChange struct {
 	To any
 }
 
-// ============================================================
-// AuditEvent
-// ============================================================
-
 // AuditEvent 操作日志事件（领域模型）
 //
 // 五要素一等公民：谁（Actor）+ 何时（OccurredAt）+ 做了什么（Action）+ 对哪个资源（Resource）+ 变更了什么（Changes）。
@@ -143,10 +131,6 @@ type AuditEvent struct {
 	// OccurredAt 发生时间
 	OccurredAt time.Time
 }
-
-// ============================================================
-// EventStore 端口
-// ============================================================
 
 // ListResult 日志列表结果（含分页）
 type ListResult struct {
