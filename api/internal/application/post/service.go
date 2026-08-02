@@ -36,7 +36,7 @@ type PostDTO struct {
 	ContentHTML    string       `json:"content_html"`
 	Excerpt        string       `json:"excerpt"`
 	CoverImage     string       `json:"cover_image"`
-	Status         string       `json:"status"`
+	Status         string       `json:"status"` // 状态机：draft（草稿）/published（已发布）/archived（已归档）
 	AuthorID       string       `json:"author_id"`
 	Author         *AuthorDTO   `json:"author,omitempty"`               // 文章所有者（Owner）
 	Collaborators  []*AuthorDTO `json:"collaborators,omitempty"`        // 协同者列表（编辑过但非所有者），按首次编辑时间排序
@@ -44,7 +44,7 @@ type PostDTO struct {
 	IsFeatured     bool         `json:"is_featured"`
 	SEOTitle       string       `json:"seo_title"`
 	SEODescription string       `json:"seo_description"`
-	PublishedAt    string       `json:"published_at,omitempty"`
+	PublishedAt    string       `json:"published_at,omitempty"` // 发布时间（RFC3339）；空串=未发布（草稿或归档）
 	CanonicalURL   *string      `json:"canonical_url,omitempty"` // 转载源 URL；nil/缺省 = 原创，非空 = 转载
 	Tags           []string     `json:"tags"`
 	CreatedAt      string       `json:"created_at"`

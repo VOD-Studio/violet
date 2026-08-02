@@ -97,7 +97,7 @@ type CommentDTO struct {
 	IsAuthor   bool             `json:"is_author"`
 	// Anchor 选区批注锚点；自由评论为 nil（JSON 省略），批注非 nil。
 	Anchor     *AnchorDTO       `json:"anchor,omitempty"`
-	Status     string           `json:"status"`
+	Status     string           `json:"status"` // 审核状态：pending（待审）/approved（通过）/spam（垃圾）/deleted（已删）
 	CreatedAt  string           `json:"created_at"`
 	// Replies 顶层评论下的回复预览（前 N 条）。仅顶层 DTO 带，回复节点省略。
 	// 配合「按需拉回复」分页策略：首屏列表每条顶层带前几条回复预览，

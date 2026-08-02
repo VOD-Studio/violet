@@ -85,12 +85,12 @@ type SubscriptionDTO struct {
 	AutoPublish        bool     `json:"auto_publish"`
 	CanonicalOverride  string   `json:"canonical_override,omitempty"`
 	Tags               []string `json:"tags"`
-	Status             string   `json:"status"`
+	Status             string   `json:"status"` // 状态：active（参与定时调度）/paused（手动暂停或失败计数达阈值自动暂停）
 	ConsecutiveFailures int     `json:"consecutive_failures"`
-	LastError          string   `json:"last_error,omitempty"`
+	LastError          string   `json:"last_error,omitempty"` // 最近一次抓取失败原因；空串=无错误
 	LastFetchedAt      string   `json:"last_fetched_at,omitempty"` // RFC3339
-	NextFetchAt        string   `json:"next_fetch_at,omitempty"`
-	RetryAfterUntil    string   `json:"retry_after_until,omitempty"`
+	NextFetchAt        string   `json:"next_fetch_at,omitempty"` // 下次抓取时间（RFC3339）；空串=未排程（paused 态或重建兜底）
+	RetryAfterUntil    string   `json:"retry_after_until,omitempty"` // 429 Retry-After 延迟截止时间（RFC3339）；空串=无延迟限制
 	CreatedAt          string   `json:"created_at"`
 	UpdatedAt          string   `json:"updated_at"`
 }
@@ -230,7 +230,7 @@ func (s *Service) Delete(ctx context.Context, id, userID string) error {
 type AdminUpdateInput struct {
 	ID                string
 	Title             *string
-	Interval          *string
+	Interval          *string // 抓取频率（hourly/every-6h/daily/weekly）；nil=保留原值（PATCH 语义，非 nil 覆盖）
 	AutoPublish       *bool
 	CanonicalOverride *string
 	Tags              []string

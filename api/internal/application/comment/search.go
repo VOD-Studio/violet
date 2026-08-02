@@ -35,7 +35,7 @@ type PostCommentStatDTO struct {
 	PostID          string    `json:"post_id"`
 	PostTitle       string    `json:"post_title"`
 	PostSlug        string    `json:"post_slug"`
-	AnnotationCount int64     `json:"annotation_count"`
+	AnnotationCount int64     `json:"annotation_count"` // 批注数（带 anchor 的评论），区别于 CommentCount（全部评论）
 	CommentCount    int64     `json:"comment_count"`
 	LatestAt        time.Time `json:"latest_at"`
 }
