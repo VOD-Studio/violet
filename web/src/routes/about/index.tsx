@@ -1,4 +1,5 @@
 import { resolveSectionOrder } from "@features/about/model/about-config";
+import { AboutPageSkeleton } from "@features/about/ui/AboutPageSkeleton";
 import { ABOUT_SECTION_IDS, resolveSectionComponent } from "@features/about/ui/section-registry";
 import { useSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
@@ -18,7 +19,10 @@ import { motion } from "motion/react";
 function AboutPage() {
     const { data: settings, isLoading } = useSettings();
 
-    if (isLoading || !settings) {
+    if (isLoading) {
+        return <AboutPageSkeleton />;
+    }
+    if (!settings) {
         return null;
     }
     const orderedIds = resolveSectionOrder(settings.about_config);

@@ -1,7 +1,10 @@
 import { formatDate } from "@features/about/model/format";
 import { useReleases } from "@shared/api/releases";
-import { TriangleAlert } from "lucide-react";
+import { Button } from "@shared/ui/base/button";
+import Empty from "@shared/ui/empty";
+import { RefreshCw, TriangleAlert } from "lucide-react";
 import { useState } from "react";
+import { ChangelogPageSkeleton } from "./ChangelogPageSkeleton";
 
 /** 单分类条目超过该数折叠（如 v2.2.0 的「新增」23 条），点「展开全部」兜底 */
 const COLLAPSE_ITEMS = 6;
@@ -40,8 +43,30 @@ function splitItem(item: string): { scope: string; rest: string } {
  * 时间线：左侧竖线 + 圆点；当前版本 primary 高亮 + 实心徽章。
  */
 export function ChangelogPage() {
-    const { data } = useReleases();
+    const { data, isPending, error, refetch } = useReleases();
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+    // 加载中：整页骨架屏（布局 1:1 模拟，避免白屏跳变）
+    if (isPending) return <ChangelogPageSkeleton />;
+
+    // 失败：错误态 + 重试（独立页无内容可降级，必须可重试）
+    if (error) {
+        return (
+            <main className="mx-auto w-full max-w-4xl px-6 py-20">
+                <Empty
+                    title="加载失败"
+                    description={error instanceof Error ? error.message : "未知错误"}
+                    action={
+                        <Button variant="outline" size="sm" onClick={() => refetch()}>
+                            <RefreshCw className="size-3.5" />
+                            重试
+                        </Button>
+                    }
+                    className="py-20"
+                />
+            </main>
+        );
+    }
 
     if (!data || data.releases.length === 0) return null;
 

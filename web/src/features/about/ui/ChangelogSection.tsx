@@ -1,5 +1,6 @@
 import { formatDate } from "@features/about/model/format";
 import { useReleases } from "@shared/api/releases";
+import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
@@ -15,7 +16,30 @@ const PREVIEW_ITEMS = 3;
  * 避免 about 页堆叠长列表。接口失败/空时优雅降级（不渲染）。
  */
 export function ChangelogSection(_: AboutSectionProps) {
-    const { data } = useReleases();
+    const { data, isPending } = useReleases();
+
+    // 加载中：区块级骨架（标题静态 + 入口卡片形状占位）
+    if (isPending) {
+        return (
+            <section className="mx-auto w-full max-w-5xl px-6 py-14">
+                <div>
+                    <ShimmerSkeleton className="mb-6 h-3 w-20" />
+                    <div className="rounded-xl border border-edge-hairline p-6">
+                        <div className="flex items-center gap-3">
+                            <ShimmerSkeleton className="h-5 w-24" />
+                            <ShimmerSkeleton className="h-3 w-16" />
+                        </div>
+                        <div className="mt-4 space-y-2">
+                            <ShimmerSkeleton className="h-4 w-full" />
+                            <ShimmerSkeleton className="h-4 w-5/6" />
+                            <ShimmerSkeleton className="h-4 w-2/3" />
+                        </div>
+                        <ShimmerSkeleton className="mt-5 h-4 w-32" />
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     if (!data || data.releases.length === 0) return null;
 
