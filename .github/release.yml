@@ -1,0 +1,43 @@
+# GitHub 原生 release notes 分类配置。
+#
+# release-please 设 changelog-type: github 后，release notes 由 GitHub 的
+# generate-release-notes API 生成（读取本文件），按 PR label 分类。
+# label 由 .github/workflows/auto-label.yml 根据 Conventional Commit 前缀自动打。
+#
+# 参考: https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot[bot]
+      - github-actions[bot]
+  categories:
+    - title: 🎉 新功能
+      labels:
+        - enhancement
+    - title: 🐛 Bug 修复
+      labels:
+        - bug
+    - title: ⚡ 性能优化
+      labels:
+        - performance
+    - title: ♻️ 重构
+      labels:
+        - refactor
+    - title: 📝 文档
+      labels:
+        - documentation
+    - title: 🏗️ CI 与构建
+      labels:
+        - ci
+    - title: 🔧 内部维护
+      labels:
+        - chore
+        - test
+        - style
+        - revert
+    - title: 其他
+      labels:
+        - "*"
