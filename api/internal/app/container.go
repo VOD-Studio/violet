@@ -47,7 +47,11 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	db := infra.Gorm
 	rdb := infra.Redis
 
-	role, roleCleanup, err := InitializeRoleContainer(db)
+	// 事件总线：进程内 InMemory 同步实现，全部模块共享单一实例，
+	// 保证跨模块事件（role 创建 → 审计订阅者）在同一总线上可达。
+	bus := infraeventbus.NewInMemory()
+
+	role, roleCleanup, err := InitializeRoleContainer(db, bus)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -56,10 +60,6 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	permissionChecker := role.PermissionChecker
 
 	settings := NewSettingsContainer(db)
-
-	// 事件总线：进程内 InMemory 同步实现（MVP）。
-	// 后续 issue（#50 审计订阅者、邮件通知等）通过 bus.Subscribe 挂载。
-	bus := infraeventbus.NewInMemory()
 
 	auth, err := NewAuthContainer(db, rdb, cfg, emailSender, bus, settings.Service)
 	if err != nil {

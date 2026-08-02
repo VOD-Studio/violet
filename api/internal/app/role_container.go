@@ -11,10 +11,10 @@ import (
 	appperm "blog-api/internal/application/permission"
 	permcmd "blog-api/internal/application/permission/command"
 	permquery "blog-api/internal/application/permission/query"
+	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	rolecmd "blog-api/internal/application/role/command"
 	rolequery "blog-api/internal/application/role/query"
 	role2 "blog-api/internal/domain/role"
-	infraeventbus "blog-api/internal/infrastructure/eventbus"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	rolehttp "blog-api/internal/interfaces/http/handler/role"
 )
@@ -27,10 +27,9 @@ type RoleContainer struct {
 
 // InitializeRoleContainer 手工装配 role/permission 模块依赖图。
 // 返回 cleanup（当前无资源需释放，返回 no-op）以保持与旧 wire 签名兼容。
-func InitializeRoleContainer(db *gorm.DB) (*RoleContainer, func(), error) {
+func InitializeRoleContainer(db *gorm.DB, bus *infraeventbus.InMemory) (*RoleContainer, func(), error) {
 	roleRepo := gormrepo.NewRoleRepository(db)
 	permRepo := gormrepo.NewPermissionRepository(db)
-	bus := infraeventbus.NewInMemory()
 
 	// role CQRS handlers
 	listRoles := rolequery.NewListRolesWithUserCountHandler(roleRepo)

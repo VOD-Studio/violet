@@ -26,7 +26,6 @@ type InMemory struct {
 	handlers map[string][]appshared.EventHandler // eventName -> handlers
 }
 
-// NewInMemory 创建进程内事件总线
 func NewInMemory() *InMemory {
 	return &InMemory{
 		handlers: make(map[string][]appshared.EventHandler),
@@ -42,24 +41,28 @@ func (b *InMemory) Subscribe(eventName string, handler appshared.EventHandler) {
 	b.handlers[eventName] = append(b.handlers[eventName], handler)
 }
 
-// Publish 同步发布事件给所有匹配的订阅者
+// Publish 同步发布事件给所有匹配的订阅者。
+//
+// 锁内只做 handler 快照复制，handler 在锁外调用——
+// 避免 handler 内部再调 Subscribe（写锁）时与 Publish 的读锁死锁。
 func (b *InMemory) Publish(ctx context.Context, events []shared.DomainEvent) error {
 	b.mu.RLock()
-	defer b.mu.RUnlock()
+	snapshot := make(map[string][]appshared.EventHandler, len(b.handlers))
+	for name, hs := range b.handlers {
+		snapshot[name] = hs
+	}
+	b.mu.RUnlock()
 
 	for _, event := range events {
-		// 精确匹配的 handler
-		name := event.EventName()
-		b.dispatch(ctx, name, event)
-		// 通配订阅者（eventName 为空）
-		b.dispatch(ctx, "", event)
+		b.dispatch(ctx, snapshot, event.EventName(), event)
+		b.dispatch(ctx, snapshot, "", event)
 	}
 	return nil
 }
 
 // dispatch 调用单个 eventName 下的所有 handler（容错隔离）
-func (b *InMemory) dispatch(ctx context.Context, eventName string, event shared.DomainEvent) {
-	handlers, ok := b.handlers[eventName]
+func (b *InMemory) dispatch(ctx context.Context, snapshot map[string][]appshared.EventHandler, eventName string, event shared.DomainEvent) {
+	handlers, ok := snapshot[eventName]
 	if !ok {
 		return
 	}

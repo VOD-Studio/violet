@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -220,4 +221,31 @@ func TestInMemory_ConcurrentPublishAndSubscribe_NoRace(t *testing.T) {
 
 	wg.Wait()
 	assert.Equal(t, int32(800), atomic.LoadInt32(&counter))
+}
+
+func TestInMemory_Publish_HandlerSubscribeDoesNotDeadlock(t *testing.T) {
+	bus := NewInMemory()
+
+	// handler 内部再 Subscribe（写锁）——修复前 Publish 持读锁调用 handler 会死锁
+	bus.Subscribe("user.registered", func(_ context.Context, _ shared.DomainEvent) error {
+		bus.Subscribe("post.published", func(_ context.Context, _ shared.DomainEvent) error {
+			return nil
+		})
+		return nil
+	})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = bus.Publish(context.Background(), []shared.DomainEvent{
+			newFakeEvent("user.registered", "alice"),
+		})
+	}()
+
+	select {
+	case <-done:
+		// 未死锁即通过
+	case <-time.After(3 * time.Second):
+		t.Fatal("Publish 死锁：handler 内 Subscribe 阻塞")
+	}
 }
