@@ -54,41 +54,47 @@ func NewUserEmailVerified(userID shared.ID) UserEmailVerified {
 
 // UserRoleChanged 用户角色已变更事件
 //
-// From/To 为变更前后角色（审计 before/after 字段）。
+// From/To 为变更前后角色（审计 before/after 字段）；UserName 为资源名快照。
 type UserRoleChanged struct {
 	shared.BaseEvent
 	// From 变更前角色
 	From Role
 	// To 变更后角色
 	To Role
+	// UserName 用户名字快照
+	UserName string
 }
 
 // NewUserRoleChanged 构造角色变更事件
-func NewUserRoleChanged(userID shared.ID, from, to Role) UserRoleChanged {
+func NewUserRoleChanged(userID shared.ID, from, to Role, userName string) UserRoleChanged {
 	return UserRoleChanged{
 		BaseEvent: shared.NewBaseEvent("user.role_changed", userID),
 		From:      from,
 		To:        to,
+		UserName:  userName,
 	}
 }
 
 // UserStatusChanged 用户账户状态已变更事件
 //
-// From/To 为变更前后激活状态（审计 before/after 字段）。
+// From/To 为变更前后激活状态（审计 before/after 字段）；UserName 为资源名快照。
 type UserStatusChanged struct {
 	shared.BaseEvent
 	// From 变更前状态
 	From bool
 	// To 变更后状态
 	To bool
+	// UserName 用户名字快照
+	UserName string
 }
 
 // NewUserStatusChanged 构造状态变更事件
-func NewUserStatusChanged(userID shared.ID, from, to bool) UserStatusChanged {
+func NewUserStatusChanged(userID shared.ID, from, to bool, userName string) UserStatusChanged {
 	return UserStatusChanged{
 		BaseEvent: shared.NewBaseEvent("user.status_changed", userID),
 		From:      from,
 		To:        to,
+		UserName:  userName,
 	}
 }
 
@@ -115,14 +121,18 @@ func NewUserUsernameChanged(userID shared.ID, from, to string) UserUsernameChang
 // UserDeleted 用户已删除事件
 //
 // 删除是破坏性操作，聚合根不可继续存在，事件由应用层手动构造发布。
+// UserName 为删除前的用户名快照。
 type UserDeleted struct {
 	shared.BaseEvent
+	// UserName 删除前用户名快照
+	UserName string
 }
 
 // NewUserDeleted 构造用户删除事件
-func NewUserDeleted(userID shared.ID) UserDeleted {
+func NewUserDeleted(userID shared.ID, userName string) UserDeleted {
 	return UserDeleted{
 		BaseEvent: shared.NewBaseEvent("user.deleted", userID),
+		UserName:  userName,
 	}
 }
 
@@ -340,7 +350,7 @@ func (u *User) ChangeRole(role Role) error {
 	}
 	old := u.role
 	u.role = role
-	u.RecordEvent(NewUserRoleChanged(u.GetID(), old, role))
+	u.RecordEvent(NewUserRoleChanged(u.GetID(), old, role, u.username.String()))
 	return nil
 }
 
@@ -370,7 +380,7 @@ func (u *User) Activate() {
 		return // 无实际变更不记事件
 	}
 	u.isActive = true
-	u.RecordEvent(NewUserStatusChanged(u.GetID(), false, true))
+	u.RecordEvent(NewUserStatusChanged(u.GetID(), false, true, u.username.String()))
 }
 
 // Deactivate 禁用账户
@@ -379,7 +389,7 @@ func (u *User) Deactivate() {
 		return // 无实际变更不记事件
 	}
 	u.isActive = false
-	u.RecordEvent(NewUserStatusChanged(u.GetID(), true, false))
+	u.RecordEvent(NewUserStatusChanged(u.GetID(), true, false, u.username.String()))
 }
 
 // UpdateProfile 更新个人资料（头像、简介）

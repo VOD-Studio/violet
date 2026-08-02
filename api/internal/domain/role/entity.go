@@ -67,19 +67,26 @@ func (n RoleName) Equal(other RoleName) bool { return n.value == other.value }
 // RolePermissionsChanged 角色权限已变更事件
 //
 // 触发场景：管理员调整角色拥有的权限点后。
-// 订阅者：application/permission.Checker（重载权限缓存）。
+// 订阅者：application/permission.Checker（重载权限缓存）+ 审计服务。
+// Added/Removed 为权限点增删列表（审计 before/after）。
 type RolePermissionsChanged struct {
 	shared.BaseEvent
 	// RoleID 变更权限的角色 ID
 	RoleID int32
+	// Added 新增的权限点
+	Added []string
+	// Removed 移除的权限点
+	Removed []string
 }
 
 // NewRolePermissionsChanged 构造角色权限变更事件
-func NewRolePermissionsChanged(roleID int32) RolePermissionsChanged {
+func NewRolePermissionsChanged(roleID int32, added, removed []string) RolePermissionsChanged {
 	// 角色用 int32 ID，聚合根 ID 用占位（角色聚合与 user 聚合 ID 体系不同）
 	return RolePermissionsChanged{
 		BaseEvent: shared.NewBaseEvent("role.permissions_changed", shared.ID{}),
 		RoleID:    roleID,
+		Added:     added,
+		Removed:   removed,
 	}
 }
 
@@ -260,11 +267,25 @@ func (r *Role) Revoke(permissionCode string) {
 // 调整 superadmin 角色的权限行只影响被委派超管的兜底权限，不会影响内置超管。
 // 记录 RolePermissionsChanged 事件。
 func (r *Role) ReplacePermissions(codes []string) error {
-	r.permissions = make(map[string]struct{}, len(codes))
+	// 对比新旧权限集，收集增删（审计 before/after）
+	newSet := make(map[string]struct{}, len(codes))
 	for _, code := range codes {
-		r.permissions[code] = struct{}{}
+		newSet[code] = struct{}{}
 	}
-	r.RecordEvent(NewRolePermissionsChanged(r.roleID))
+	added := make([]string, 0, len(codes))
+	removed := make([]string, 0, len(r.permissions))
+	for code := range newSet {
+		if _, ok := r.permissions[code]; !ok {
+			added = append(added, code)
+		}
+	}
+	for code := range r.permissions {
+		if _, ok := newSet[code]; !ok {
+			removed = append(removed, code)
+		}
+	}
+	r.permissions = newSet
+	r.RecordEvent(NewRolePermissionsChanged(r.roleID, added, removed))
 	return nil
 }
 

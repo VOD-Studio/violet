@@ -58,18 +58,36 @@ func NewAnnouncementCreated(id int32) AnnouncementCreated {
 	}
 }
 
+// AnnouncementChange 公告单字段变更（before/after）
+type AnnouncementChange struct {
+	// Field 字段名（title/content/severity/is_active/...）
+	Field string
+	// From 变更前值
+	From string
+	// To 变更后值
+	To string
+}
+
 // AnnouncementUpdated 公告已更新事件
+//
+// Title 为公告标题快照；Changes 为字段变更列表（before/after）。
 type AnnouncementUpdated struct {
 	shared.BaseEvent
 	// ID 公告主键
 	ID int32
+	// Title 公告标题快照
+	Title string
+	// Changes 字段变更列表（before/after）
+	Changes []AnnouncementChange
 }
 
 // NewAnnouncementUpdated 构造公告更新事件
-func NewAnnouncementUpdated(id int32) AnnouncementUpdated {
+func NewAnnouncementUpdated(id int32, title string, changes []AnnouncementChange) AnnouncementUpdated {
 	return AnnouncementUpdated{
 		BaseEvent: shared.NewBaseEvent("announcement.updated", shared.ID{}),
 		ID:        id,
+		Title:     title,
+		Changes:   changes,
 	}
 }
 
@@ -229,14 +247,23 @@ func (a *Announcement) Update(title, content, severity string) error {
 	if severity != "" && !IsValidSeverity(severity) {
 		return shared.BadRequest("无效的公告类型")
 	}
-	a.title = title
-	if content != "" {
+	// 收集实际变更（before/after），无变更不记事件
+	changes := make([]AnnouncementChange, 0, 3)
+	if a.title != title {
+		changes = append(changes, AnnouncementChange{Field: "title", From: a.title, To: title})
+		a.title = title
+	}
+	if content != "" && a.content != content {
+		changes = append(changes, AnnouncementChange{Field: "content", From: a.content, To: content})
 		a.content = content
 	}
-	if severity != "" {
+	if severity != "" && a.severity != severity {
+		changes = append(changes, AnnouncementChange{Field: "severity", From: a.severity, To: severity})
 		a.severity = severity
 	}
-	a.RecordEvent(NewAnnouncementUpdated(a.id))
+	if len(changes) > 0 {
+		a.RecordEvent(NewAnnouncementUpdated(a.id, a.title, changes))
+	}
 	return nil
 }
 
