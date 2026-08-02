@@ -65,7 +65,8 @@ func TestListRolesWithUserCount_Success(t *testing.T) {
 	assert.Equal(t, int32(2), out[1].ID)
 	assert.Equal(t, "editor", out[1].Name)
 	assert.False(t, out[1].IsBuiltin)
-	assert.Equal(t, []string{"post:create", "post:edit"}, out[1].PermissionCodes)
+	// 权限集语义上无序（底层 map 存储），断言顺序无关
+	assert.ElementsMatch(t, []string{"post:create", "post:edit"}, out[1].PermissionCodes)
 	assert.Equal(t, int64(0), out[1].UserCount)
 }
 
@@ -142,10 +143,10 @@ func TestGetRoleWithPermissions_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int32(1), out.ID)
 	assert.Equal(t, "editor", out.Name)
-	assert.Equal(t, []string{"post:create", "post:delete"}, out.PermissionCodes)
+	// 权限集语义上无序（底层 map 存储），断言顺序无关
+	assert.ElementsMatch(t, []string{"post:create", "post:delete"}, out.PermissionCodes)
 	require.Len(t, out.Permissions, 2)
-	assert.Equal(t, "\u65b0\u5efa\u6587\u7ae0", out.Permissions[0].Name)
-	assert.Equal(t, "\u5220\u9664\u6587\u7ae0", out.Permissions[1].Name)
+	assert.ElementsMatch(t, []string{"新建文章", "删除文章"}, []string{out.Permissions[0].Name, out.Permissions[1].Name})
 }
 
 func TestGetRoleWithPermissions_NotFound(t *testing.T) {
