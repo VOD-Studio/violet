@@ -7,6 +7,54 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.2.0](https://github.com/VOD-Studio/violet/compare/v2.1.3...v2.2.0) (2026-08-02)
+
+
+### 新增
+
+* **announcement:** 公告创建/更新/删除事件（含 ID 回填） ([1f641dd](https://github.com/VOD-Studio/violet/commit/1f641dd307ac3b9b05ea01854bda6a3ba51d13b7))
+* **api-token:** PAT 签发/吊销审计（凭据生命周期） ([378c437](https://github.com/VOD-Studio/violet/commit/378c437b044b41b9c7d8248b778807f2e848d4e7))
+* **audit:** append-only AuditEventPO + EventStore GORM 实现 ([b623e6f](https://github.com/VOD-Studio/violet/commit/b623e6f27d4da20cf4d18d5e23272856a8803226))
+* **audit:** AuditEvent JSON 序列化 + 查询筛选（ListFiltered + Query 用例） ([e707bd3](https://github.com/VOD-Studio/violet/commit/e707bd340ba4ffbb506356d901b2e1b572fba929))
+* **audit:** HTTP handler + /admin/logs 路由 + OpenAPI 重建 ([e7310e4](https://github.com/VOD-Studio/violet/commit/e7310e4d9db71e5ecbecd08d4edaa4a07440fa44))
+* **audit:** useradmin 操作发布领域事件（特权操作审计闭环） ([6bc1155](https://github.com/VOD-Studio/violet/commit/6bc1155ad59f4195c1eacc510711d9a349b4087e))
+* **audit:** 审计订阅者消费领域事件写入 audit_events ([0887583](https://github.com/VOD-Studio/violet/commit/088758341ae0d032e6c5fb5414e2407fd7aea774))
+* **audit:** 操作日志模块推倒重做——事件驱动审计基础设施 ([4e354c2](https://github.com/VOD-Studio/violet/commit/4e354c2c3a2a23b5469144b0727e008d98c75ffc))
+* **audit:** 数据库迁移 064 drop audit_logs + 065 create audit_events ([240bc63](https://github.com/VOD-Studio/violet/commit/240bc63fb94cc2023865c5747fa276f59fc0afb6))
+* **audit:** 结构化 AuditEvent + 受控 Action 枚举 ([5df5007](https://github.com/VOD-Studio/violet/commit/5df5007c2533781143976e0d4ed5cd67755f9aff))
+* **audit:** 订阅者映射 auth 登录/登出/失败事件 ([53795f4](https://github.com/VOD-Studio/violet/commit/53795f48a060e19131476610d35c6fa23c97e88d))
+* **audit:** 订阅者映射 comment/PAT/settings 事件 ([aade746](https://github.com/VOD-Studio/violet/commit/aade746848e5a6684d686c79b7f4d2248af15245))
+* **audit:** 订阅者映射 post/role/announcement 事件 ([7ec661a](https://github.com/VOD-Studio/violet/commit/7ec661aafe6e90c1a6453780e0ae963858810df5))
+* **audit:** 领域事件补全资源快照与 before/after（review [#58](https://github.com/VOD-Studio/violet/issues/58) 修复） ([4d60e4f](https://github.com/VOD-Studio/violet/commit/4d60e4f7c0f75bae5e03a1e0ce45dd4385419adc))
+* **auth:** login/logout/verify 发布领域事件（审计接入） ([98298e7](https://github.com/VOD-Studio/violet/commit/98298e78109e9fb641b090646bae1ae915e92b08))
+* **comment:** 评论审核审计（Approve/Spam/Delete + 批量） ([9c4579d](https://github.com/VOD-Studio/violet/commit/9c4579d196b203acd7b492ae574fea87708b5eed))
+* **eventbus:** EventBus 加 Subscribe 机制，激活领域事件分发 ([268977f](https://github.com/VOD-Studio/violet/commit/268977ff39ab7ab8ee3d6d8a8fae178471e207cb))
+* **post:** 文章状态变更事件（发布/归档/回退草稿） ([bfc1d2d](https://github.com/VOD-Studio/violet/commit/bfc1d2d39283251469c07eaf5db36246f9138393))
+* **role:** 角色更新/删除事件（含创建事件 ID 修复） ([1968f0e](https://github.com/VOD-Studio/violet/commit/1968f0e653012b3c132c42e73ec99f479a9ea35a))
+* **settings:** 站点配置变更审计（SettingsUpdated 事件） ([b002297](https://github.com/VOD-Studio/violet/commit/b0022970b1fd533942d0425d9a44cbac1c5a4815))
+* **user:** 用户聚合根状态变更事件（角色/状态/用户名/删除/批量） ([8edfdc7](https://github.com/VOD-Studio/violet/commit/8edfdc775afc42227caf570a1ca8498980f2fe63))
+* **web:** 操作日志页适配新 AuditEvent 读模型 ([467b28c](https://github.com/VOD-Studio/violet/commit/467b28c5892848aae55756d32ea8da2c0c5915ae))
+
+
+### 修复
+
+* **audit:** 空值写入 uuid/jsonb 列失败修复（e2e 发现） ([810d629](https://github.com/VOD-Studio/violet/commit/810d6292b5b3a3d2469133399c706703b9455e23))
+* **audit:** 订阅者映射快照字段 + 登录/注册审计修复（review [#58](https://github.com/VOD-Studio/violet/issues/58)） ([e807700](https://github.com/VOD-Studio/violet/commit/e807700357c18221acac3a50d93364672e4d4234))
+* **eventbus:** 合并双 bus 实例 + Publish 死锁修复 ([f5704a0](https://github.com/VOD-Studio/violet/commit/f5704a0ac336370eec1cf20a0c7007dc47202d60))
+* **role:** 修复权限断言顺序依赖（flaky 测试，CI 撞出） ([d4600f7](https://github.com/VOD-Studio/violet/commit/d4600f73ff5a2df50123e6075743a22b8a6fbcb7))
+
+
+### 重构
+
+* **audit:** 删除旧 audit 服务/存储/handler 装配（前置 [#49](https://github.com/VOD-Studio/violet/issues/49)/[#11](https://github.com/VOD-Studio/violet/issues/11)） ([c365b68](https://github.com/VOD-Studio/violet/commit/c365b68f9127d76b934df1394b6d08de064aa5e1))
+* **audit:** 清理 review 发现的注释违规与读路径 panic ([6a81488](https://github.com/VOD-Studio/violet/commit/6a81488e52af084e0f63a80a862826dd2f1aa960))
+
+
+### 文档
+
+* **prd:** 沉淀操作日志重构 PRD-0010 ([c0e4a7c](https://github.com/VOD-Studio/violet/commit/c0e4a7c2690b09bf08426a36986f35afa6cd277b))
+* **prd:** 重写 PRD-0010 为事件驱动 audit 推倒重做方案 ([aaa1402](https://github.com/VOD-Studio/violet/commit/aaa1402266709d62bc6abbecab344441d9cf9a6c))
+
 ## [2.1.3](https://github.com/VOD-Studio/violet/compare/v2.1.2...v2.1.3) (2026-08-02)
 
 
