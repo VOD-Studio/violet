@@ -1,8 +1,4 @@
-/**
- * admin-audit-logs 模块类型定义
- *
- * 对齐后端 domain/audit.AuditLog（GET /admin/logs 返回）。
- */
+/** admin-audit-logs 模块类型定义 */
 
 /** AuditLogDTO - 操作日志数据传输对象 */
 export interface AuditLogDTO {

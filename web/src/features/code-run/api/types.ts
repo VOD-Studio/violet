@@ -1,9 +1,4 @@
-/**
- * 代码执行相关类型，对齐后端 DTO（application/coderunner/dto.go）。
- *
- * ExecRequest 为提交执行请求体；ExecResult 为执行结果（done 事件载荷）；
- * ExecTask 为轮询查询返回的任务视图。
- */
+/** 代码执行相关类型 */
 
 /** 单次执行的资源限制（作者可在围栏 info string 声明覆盖） */
 export interface ResourceLimits {
@@ -21,7 +16,7 @@ export interface ExecRequest {
     overrides?: ResourceLimits;
 }
 
-/** 执行状态（对齐后端 domain/coderunner/valueobject.go） */
+/** 执行状态 */
 export type ExecStatus =
     | "queued"
     | "running"

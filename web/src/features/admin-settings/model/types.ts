@@ -1,10 +1,4 @@
-/**
- * admin-settings 模块类型定义
- *
- * 站点设置已按菜单子页拆成 7 组，对齐后端分组接口：
- *   GET/PUT /admin/settings/{general|auth|github|profile|about|llm|code-runner}
- * 每组独立 DTO，前端各子页独立 queryKey 互不干扰，消除全量聚合带来的回填竞态。
- */
+/** admin-settings 模块类型定义 */
 import type { AboutConfig } from "@features/settings/model/types";
 
 /** 基础信息组 */
