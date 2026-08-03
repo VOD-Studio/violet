@@ -72,10 +72,11 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
 
     // 渲染：source / theme 任一变化即重新 renderMermaid，清理后 SVG 写入容器。
     // 上一轮未决的 promise 由 cancelled 标志作废，避免竞态写入过期 SVG。
+    // 不清空 containerRef：重渲染（主题切换）时保留上一帧 SVG，新 SVG 就绪后覆盖，
+    // 避免切主题瞬间整块变白。
     useEffect(() => {
         let cancelled = false;
         setResult(null);
-        if (containerRef.current) containerRef.current.innerHTML = "";
         renderMermaid(source, theme).then((r) => {
             if (cancelled) return;
             setResult(r);
@@ -88,6 +89,7 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
         };
     }, [source, theme]);
 
+    const loading = result === null;
     const errored = result !== null && !("svg" in result);
 
     // 复制源码：剪贴板 API 不可用（非安全上下文等）时静默降级，不阻塞渲染
@@ -102,29 +104,29 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
         }
     };
 
-    // 渲染中（mermaid 异步）：容器以 hidden 保持挂载（同一 DOM 元素贯穿两态，
-    // 渲染回调写入 containerRef.innerHTML 后才切显示——提前 return 或结构切换
-    // 都会让 ref 指向的 DOM 被替换，SVG 写入丢失（图永远空白）。工具条同步隐藏。
+    // 容器结构全程稳定：加载与加载完用同一 DOM，仅内容填充不同。
+    // containerRef 始终 min-h-24（加载时撑住 96px 防凹陷，加载完 SVG 撑开后
+    // min-h 不限制更高内容）→ 零尺寸跳变。spinner 绝对定位覆盖在空容器中央。
     return (
-        <div
-            className={
-                result === null ? "my-6 flex min-h-24 justify-center" : "my-6 flex justify-center"
-            }
-        >
+        <div className="relative my-6 flex justify-center">
             {errored ? null : (
-                <DiagramViewport
-                    onCopySource={copySource}
-                    copied={copied}
-                    renderToolbar={result !== null}
-                >
+                <DiagramViewport onCopySource={copySource} copied={copied} renderToolbar={!loading}>
                     <div
                         ref={containerRef}
-                        className={result === null ? "hidden" : "flex justify-center"}
+                        className="flex min-h-24 justify-center"
                         role="img"
                         aria-label="流程图"
                     />
                 </DiagramViewport>
             )}
+            {loading ? (
+                <div
+                    className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                    aria-live="polite"
+                >
+                    <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground" />
+                </div>
+            ) : null}
             {errored ? <DiagramError source={source} /> : null}
         </div>
     );
