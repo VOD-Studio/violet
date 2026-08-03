@@ -9,7 +9,7 @@
 1. 正常开发,提交发版型 commit（`feat:` / `fix:` / `perf:` / `refactor:` 等）到 `release/2.0`。
    - 纯 `docs:` / `chore:` / `ci:` / `build:` / `test:` 改动不触发新版本（changelog-types 配置为 hidden）。
 2. push 到 `release/2.0` 后,release-please 自动开一个「release PR」,标题形如 `chore(release): v2.0.2`,body 含从 commit log 生成的 CHANGELOG 段落。
-3. review release PR 的 CHANGELOG 内容,确认无误后**合并该 PR**。
+3. review release PR 的 CHANGELOG 内容,确认无误后**squash merge 合并该 PR**(release PR 固定用 squash 合并,合并 commit 即 `chore(release): vX.Y.Z` 单提交,release-please 据此识别不发新版本;功能/修复 PR 用 merge commit 保留原子提交,见 AGENTS.md「PR 与 issue 规范」)。
 4. 合并即触发:release-please 自动打 `vX.Y.Z` tag → 触发 `Deploy` workflow。
 5. `Deploy` 自动执行:构建 api+web 镜像 → 数据库迁移门禁 → 部署 api → 健康检查 → 部署 web → 同步静态资源 → 创建 GitHub Release。
 6. 在 Actions 页或 `gh run list --workflow=deploy.yml` 观察结果;成功后线上版本写入 `/root/docker/violet/.current-version`。
