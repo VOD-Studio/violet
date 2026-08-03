@@ -111,7 +111,12 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
     return (
         <div className="relative my-6 flex justify-center">
             {errored ? null : (
-                <DiagramViewport onCopySource={copySource} copied={copied} renderToolbar={!loading}>
+                <DiagramViewport
+                    onCopySource={copySource}
+                    copied={copied}
+                    renderToolbar={!loading}
+                    exportSvg={result && "svg" in result ? result.svg : undefined}
+                >
                     <div
                         ref={containerRef}
                         className="flex min-h-24 justify-center"

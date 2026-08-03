@@ -10,9 +10,21 @@
  *
  * 不感知 mermaid：children 是任意渲染产物（SVG），纯交互容器。
  */
-import { Check, Copy, Lock, RotateCcw, Unlock, ZoomIn, ZoomOut } from "lucide-react";
-import type { ReactNode } from "react";
+import {
+    Check,
+    Copy,
+    Download,
+    FileCode,
+    FileImage,
+    Lock,
+    RotateCcw,
+    Unlock,
+    ZoomIn,
+    ZoomOut,
+} from "lucide-react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/shared/ui/base/button";
+import { exportPng, exportSvg as exportSvgFile } from "./export";
 import { useDiagramViewport } from "./useDiagramViewport";
 
 export interface DiagramViewportProps {
@@ -21,6 +33,8 @@ export interface DiagramViewportProps {
     onCopySource?: () => void;
     /** 已复制反馈（短暂替换复制图标，由调用方控制计时） */
     copied?: boolean;
+    /** 提供时工具条显示导出按钮（SVG/PNG 菜单）；传已清理的 SVG 字符串 */
+    exportSvg?: string;
     /** 是否渲染工具条（默认 true；阅读端渲染完成前隐藏，避免空区域角落出现按钮） */
     renderToolbar?: boolean;
 }
@@ -33,6 +47,7 @@ export function DiagramViewport({
     children,
     onCopySource,
     copied,
+    exportSvg,
     renderToolbar = true,
 }: DiagramViewportProps) {
     const {
@@ -47,6 +62,27 @@ export function DiagramViewport({
         zoomOut,
         reset,
     } = useDiagramViewport();
+
+    const [exportMenuOpen, setExportMenuOpen] = useState(false);
+    const exportMenuRef = useRef<HTMLDivElement>(null);
+
+    // 导出菜单：点击外部或 Esc 关闭
+    useEffect(() => {
+        if (!exportMenuOpen) return;
+        const onPointerDown = (e: PointerEvent) => {
+            if (exportMenuRef.current?.contains(e.target as Node)) return;
+            setExportMenuOpen(false);
+        };
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setExportMenuOpen(false);
+        };
+        document.addEventListener("pointerdown", onPointerDown);
+        document.addEventListener("keydown", onKey);
+        return () => {
+            document.removeEventListener("pointerdown", onPointerDown);
+            document.removeEventListener("keydown", onKey);
+        };
+    }, [exportMenuOpen]);
 
     return (
         <div ref={containerRef} className="relative w-full">
@@ -134,6 +170,54 @@ export function DiagramViewport({
                                 <Copy className="size-3.5" />
                             )}
                         </Button>
+                    ) : null}
+                    {exportSvg ? (
+                        <div ref={exportMenuRef} className="relative">
+                            <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                onClick={() => setExportMenuOpen((v) => !v)}
+                                aria-label="导出图表"
+                                aria-haspopup="menu"
+                                aria-expanded={exportMenuOpen}
+                                title="导出"
+                            >
+                                <Download className="size-3.5" />
+                            </Button>
+                            {exportMenuOpen ? (
+                                <div
+                                    role="menu"
+                                    className="code-block-scrollbar absolute right-0 top-full z-20 mt-1 flex min-w-32 flex-col gap-0.5 rounded-md border border-edge-hairline bg-popover p-1 text-popover-foreground shadow-md"
+                                >
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="flex items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent"
+                                        onClick={() => {
+                                            exportSvgFile(exportSvg);
+                                            setExportMenuOpen(false);
+                                        }}
+                                    >
+                                        <FileCode className="size-3.5" />
+                                        导出 SVG
+                                    </button>
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        className="flex items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent"
+                                        onClick={() => {
+                                            exportPng(exportSvg).catch(() => {
+                                                // PNG 转换失败（canvas 不可用/解码失败）：静默降级，不阻塞
+                                            });
+                                            setExportMenuOpen(false);
+                                        }}
+                                    >
+                                        <FileImage className="size-3.5" />
+                                        导出 PNG
+                                    </button>
+                                </div>
+                            ) : null}
+                        </div>
                     ) : null}
                     <Button
                         variant="ghost"

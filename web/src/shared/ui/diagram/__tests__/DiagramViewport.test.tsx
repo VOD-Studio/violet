@@ -5,7 +5,7 @@
  * 不测真实 mermaid 渲染（PRD Testing Decisions：手动验证），children 用占位 div。
  */
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DiagramViewport } from "../DiagramViewport";
 
 afterEach(cleanup);
@@ -113,5 +113,66 @@ describe("DiagramViewport 键盘 a11y", () => {
             </DiagramViewport>,
         );
         expect(screen.queryByLabelText("解锁缩放")).toBeNull();
+    });
+});
+
+describe("DiagramViewport 导出菜单（T1）", () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it("传 exportSvg 时渲染导出按钮，不传时不渲染", () => {
+        const { rerender } = render(
+            <DiagramViewport exportSvg="<svg/>">
+                <div />
+            </DiagramViewport>,
+        );
+        expect(screen.getByLabelText("导出图表")).toBeTruthy();
+
+        rerender(
+            <DiagramViewport>
+                <div />
+            </DiagramViewport>,
+        );
+        expect(screen.queryByLabelText("导出图表")).toBeNull();
+    });
+
+    it("点击导出按钮弹出 SVG/PNG 菜单", () => {
+        render(
+            <DiagramViewport exportSvg="<svg/>">
+                <div />
+            </DiagramViewport>,
+        );
+        // 初始菜单不显示
+        expect(screen.queryByText("导出 SVG")).toBeNull();
+
+        fireEvent.click(screen.getByLabelText("导出图表"));
+        expect(screen.getByText("导出 SVG")).toBeTruthy();
+        expect(screen.getByText("导出 PNG")).toBeTruthy();
+    });
+
+    it("点击「导出 SVG」后菜单关闭", () => {
+        render(
+            <DiagramViewport exportSvg="<svg/>">
+                <div />
+            </DiagramViewport>,
+        );
+        fireEvent.click(screen.getByLabelText("导出图表"));
+        fireEvent.click(screen.getByText("导出 SVG"));
+        expect(screen.queryByText("导出 SVG")).toBeNull();
+    });
+
+    it("导出按钮有 aria-haspopup=menu 与 aria-expanded", () => {
+        render(
+            <DiagramViewport exportSvg="<svg/>">
+                <div />
+            </DiagramViewport>,
+        );
+        const btn = screen.getByLabelText("导出图表");
+        expect(btn.getAttribute("aria-haspopup")).toBe("menu");
+        expect(btn.getAttribute("aria-expanded")).toBe("false");
+
+        fireEvent.click(btn);
+        expect(btn.getAttribute("aria-expanded")).toBe("true");
     });
 });
