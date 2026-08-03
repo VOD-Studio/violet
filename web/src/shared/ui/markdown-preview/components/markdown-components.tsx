@@ -66,6 +66,26 @@ function DiagramSourceFallback({ source }: { source: string }) {
     );
 }
 
+/**
+ * DiagramLoadingFallback - 图块懒加载/异步渲染期间的空白占位
+ *
+ * 替代 DiagramSourceFallback 作为 Suspense fallback：mermaid chunk 懒加载期间
+ * 不显示任何内容（源码/文案都不要，图渲染完直接出现，无中间态闪烁）。
+ * 保留 min-h 防下方内容跳动；<noscript> 内保留源码（无 JS 环境降级不丢）。
+ * 未知 format 仍走 DiagramSourceFallback（源码即最终呈现，无闪烁问题）。
+ */
+function DiagramLoadingFallback({ source }: { source: string }) {
+    return (
+        <div className="my-6 flex min-h-24 items-center justify-center">
+            <noscript>
+                <pre className="code-block-scrollbar overflow-x-auto px-4 py-3">
+                    <code>{source}</code>
+                </pre>
+            </noscript>
+        </div>
+    );
+}
+
 export const markdownComponents: Components = {
     h1: ({ children, style, className, id }) => (
         <h1
@@ -217,7 +237,7 @@ export const markdownComponents: Components = {
             }
             const ReaderComponent = renderer.ReaderComponent;
             return (
-                <Suspense fallback={<DiagramSourceFallback source={source} />}>
+                <Suspense fallback={<DiagramLoadingFallback source={source} />}>
                     <ReaderComponent format={format} source={source} />
                 </Suspense>
             );

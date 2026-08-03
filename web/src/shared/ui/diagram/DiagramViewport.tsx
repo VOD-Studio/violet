@@ -10,7 +10,7 @@
  *
  * 不感知 mermaid：children 是任意渲染产物（SVG），纯交互容器。
  */
-import { Copy, Lock, RotateCcw, Unlock, ZoomIn, ZoomOut } from "lucide-react";
+import { Check, Copy, Lock, RotateCcw, Unlock, ZoomIn, ZoomOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { useDiagramViewport } from "./useDiagramViewport";
 
@@ -109,7 +109,11 @@ export function DiagramViewport({ children, onCopySource, copied }: DiagramViewp
                         title={copied ? "已复制" : "复制源码"}
                         className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
-                        <Copy className="size-3.5" />
+                        {copied ? (
+                            <Check className="size-3.5 text-emerald-500" />
+                        ) : (
+                            <Copy className="size-3.5" />
+                        )}
                     </button>
                 ) : null}
                 <button

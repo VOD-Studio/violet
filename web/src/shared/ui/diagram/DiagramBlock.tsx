@@ -102,6 +102,19 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
         }
     };
 
+    // 渲染中（mermaid 异步）：空白占位，不显示空容器与工具条（图渲染完直接出现）
+    if (result === null) {
+        return (
+            <div className="my-6 flex min-h-24 items-center justify-center">
+                <noscript>
+                    <pre className="code-block-scrollbar overflow-x-auto px-4 py-3">
+                        <code>{source}</code>
+                    </pre>
+                </noscript>
+            </div>
+        );
+    }
+
     return (
         <div className="my-6 flex justify-center">
             {errored ? null : (
