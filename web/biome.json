@@ -50,7 +50,8 @@
             },
             "a11y": {
                 "useSemanticElements": "off",
-                "noStaticElementInteractions": "off"
+                "noStaticElementInteractions": "off",
+                "noNoninteractiveTabindex": "off"
             }
         }
     },

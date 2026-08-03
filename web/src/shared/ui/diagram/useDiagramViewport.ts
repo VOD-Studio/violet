@@ -6,13 +6,15 @@
  * 纯函数 zoomAtPoint 与 clamp 抽在模块顶层，供单测直接覆盖（PRD Testing 决策）。
  */
 
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const VIEWPORT_SCALE_MIN = 0.25;
 export const VIEWPORT_SCALE_MAX = 4;
 /** 滚轮每格缩放步进（放大 1.1x / 缩小 1/1.1x） */
 export const WHEEL_SCALE_FACTOR = 1.1;
+/** 键盘方向键平移步进（px），对齐主流图查看器的方向键探索步幅 */
+export const KEYBOARD_PAN_STEP = 40;
 
 export interface ViewportTransform {
     scale: number;
@@ -234,12 +236,65 @@ export function useDiagramViewport() {
         setState((s) => ({ ...s, scale: 1, translateX: 0, translateY: 0 }));
     }, []);
 
+    /**
+     * 键盘缩放平移（T4 a11y）：
+     * - Enter 在锁定/解锁两态下都切换锁
+     * - 锁定态下方向键与缩放键不拦截 preventDefault，让位页面滚动
+     * - 解锁态：+/= 放大、- 缩小、0 重置、方向键平移（scroll 方向约定）
+     */
+    const handleKeyDown = useCallback(
+        (e: ReactKeyboardEvent) => {
+            // Enter 切锁：两态通用入口（锁定态下唯一键盘交互）
+            if (e.key === "Enter") {
+                e.preventDefault();
+                toggleLock();
+                return;
+            }
+            // 锁定态：其余键不拦截，方向键让位页面滚动
+            if (state.locked) return;
+
+            switch (e.key) {
+                case "+":
+                case "=":
+                    e.preventDefault();
+                    zoomIn();
+                    break;
+                case "-":
+                    e.preventDefault();
+                    zoomOut();
+                    break;
+                case "0":
+                    e.preventDefault();
+                    reset();
+                    break;
+                case "ArrowUp":
+                    e.preventDefault();
+                    setState((s) => ({ ...s, translateY: s.translateY + KEYBOARD_PAN_STEP }));
+                    break;
+                case "ArrowDown":
+                    e.preventDefault();
+                    setState((s) => ({ ...s, translateY: s.translateY - KEYBOARD_PAN_STEP }));
+                    break;
+                case "ArrowLeft":
+                    e.preventDefault();
+                    setState((s) => ({ ...s, translateX: s.translateX + KEYBOARD_PAN_STEP }));
+                    break;
+                case "ArrowRight":
+                    e.preventDefault();
+                    setState((s) => ({ ...s, translateX: s.translateX - KEYBOARD_PAN_STEP }));
+                    break;
+            }
+        },
+        [state.locked, toggleLock, zoomIn, zoomOut, reset],
+    );
+
     return {
         containerRef,
         state,
         handlePointerDown,
         handlePointerMove,
         handlePointerUp,
+        handleKeyDown,
         toggleLock,
         zoomIn,
         zoomOut,

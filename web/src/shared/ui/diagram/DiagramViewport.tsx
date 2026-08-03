@@ -25,6 +25,10 @@ export interface DiagramViewportProps {
     renderToolbar?: boolean;
 }
 
+/** 键盘聚焦时的可见焦点环（与按钮 focus-visible 统一） */
+const FOCUS_RING =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+
 export function DiagramViewport({
     children,
     onCopySource,
@@ -37,6 +41,7 @@ export function DiagramViewport({
         handlePointerDown,
         handlePointerMove,
         handlePointerUp,
+        handleKeyDown,
         toggleLock,
         zoomIn,
         zoomOut,
@@ -45,14 +50,19 @@ export function DiagramViewport({
 
     return (
         <div ref={containerRef} className="relative w-full">
-            {/* 滚动/裁剪切换：锁定态横向滚动（PRD-0005 决策），解锁态裁剪给 transform；
-			    overscroll-contain 阻断滚轮滚动链传播到页面（配合 hook 原生 passive:false 监听） */}
+            {/* 锁定态横向滚动（PRD-0005 决策），解锁态裁剪给 transform；
+			    overscroll-contain 阻断滚轮滚动链传播到页面（配合 hook 原生 passive:false 监听）。
+			    键盘缩放平移契约见 onKeyDown（T4 a11y）。 */}
             <div
                 className={
                     state.locked
-                        ? "code-block-scrollbar overflow-x-auto"
-                        : "overflow-hidden overscroll-contain"
+                        ? `code-block-scrollbar overflow-x-auto ${FOCUS_RING}`
+                        : `overflow-hidden overscroll-contain ${FOCUS_RING}`
                 }
+                role="application"
+                aria-label="图表缩放区"
+                tabIndex={0}
+                onKeyDown={handleKeyDown}
             >
                 <div
                     className={

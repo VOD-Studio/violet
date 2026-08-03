@@ -14,6 +14,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { DiagramViewport } from "./DiagramViewport";
+import { extractDiagramLabel } from "./label";
 import type { DiagramTheme, RenderMermaidResult } from "./render-mermaid";
 import { renderMermaid } from "./render-mermaid";
 
@@ -115,7 +116,7 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
                         ref={containerRef}
                         className="flex min-h-24 justify-center"
                         role="img"
-                        aria-label="流程图"
+                        aria-label={extractDiagramLabel(source)}
                     />
                 </DiagramViewport>
             )}

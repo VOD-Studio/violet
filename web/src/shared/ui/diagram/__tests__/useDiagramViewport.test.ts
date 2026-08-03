@@ -5,10 +5,11 @@
  * 交互手感（拖拽、滚轮事件）不测——PRD 声明手动验证。
  */
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
     clamp,
     distance,
+    KEYBOARD_PAN_STEP,
     midpoint,
     useDiagramViewport,
     VIEWPORT_SCALE_MAX,
@@ -244,5 +245,109 @@ describe("useDiagramViewport 捏合缩放（双指）", () => {
             handlePointerMove(pointer(2, 225, 150));
         });
         expect(result.current.state.scale).toBe(1);
+    });
+});
+
+/**
+ * 构造最小 KeyboardEvent mock：记录 preventDefault 是否被调用。
+ */
+function keyDown(key: string): { key: string; preventDefaultCalled: boolean } {
+    const ev = { key, preventDefault: vi.fn() };
+    return ev as unknown as { key: string; preventDefaultCalled: boolean } & typeof ev;
+}
+
+describe("useDiagramViewport 键盘交互（T4 a11y）", () => {
+    it("Enter 在锁定态下解锁", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        expect(result.current.state.locked).toBe(true);
+        act(() => result.current.handleKeyDown(keyDown("Enter") as never));
+        expect(result.current.state.locked).toBe(false);
+    });
+
+    it("Enter 在解锁态下锁定并复位", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        act(() => result.current.toggleLock());
+        act(() => result.current.zoomIn());
+        act(() => result.current.handleKeyDown(keyDown("Enter") as never));
+        expect(result.current.state.locked).toBe(true);
+        expect(result.current.state.scale).toBe(1);
+    });
+
+    it("锁定态下 + / - / 0 / 方向键不改变状态（让位页面滚动）", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        const before = { ...result.current.state };
+        for (const key of ["+", "-", "0", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]) {
+            act(() => result.current.handleKeyDown(keyDown(key) as never));
+        }
+        expect(result.current.state).toEqual(before);
+    });
+
+    it("解锁后 + 放大", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        act(() => result.current.toggleLock());
+        act(() => result.current.handleKeyDown(keyDown("+") as never));
+        expect(result.current.state.scale).toBeGreaterThan(1);
+    });
+
+    it("解锁后 = 等价 + 放大", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        act(() => result.current.toggleLock());
+        act(() => result.current.handleKeyDown(keyDown("=") as never));
+        expect(result.current.state.scale).toBeGreaterThan(1);
+    });
+
+    it("解锁后 - 缩小", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        act(() => result.current.toggleLock());
+        act(() => result.current.zoomIn());
+        const scaleBefore = result.current.state.scale;
+        act(() => result.current.handleKeyDown(keyDown("-") as never));
+        expect(result.current.state.scale).toBeLessThan(scaleBefore);
+    });
+
+    it("解锁后 0 复位 transform", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        act(() => result.current.toggleLock());
+        act(() => result.current.zoomIn());
+        act(() => result.current.handleKeyDown(keyDown("0") as never));
+        expect(result.current.state.scale).toBe(1);
+        expect(result.current.state.translateX).toBe(0);
+        expect(result.current.state.translateY).toBe(0);
+    });
+
+    it("方向键平移 translate（ArrowRight → translateX 减小）", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        act(() => result.current.toggleLock());
+        act(() => result.current.handleKeyDown(keyDown("ArrowRight") as never));
+        expect(result.current.state.translateX).toBe(-KEYBOARD_PAN_STEP);
+    });
+
+    it("方向键平移 translate（ArrowUp → translateY 增大）", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        act(() => result.current.toggleLock());
+        act(() => result.current.handleKeyDown(keyDown("ArrowUp") as never));
+        expect(result.current.state.translateY).toBe(KEYBOARD_PAN_STEP);
+    });
+
+    it("锁定态下方向键不调用 preventDefault（让位页面滚动）", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        const mock = { key: "ArrowDown", preventDefault: vi.fn() };
+        act(() => result.current.handleKeyDown(mock as never));
+        expect(mock.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it("锁定态下 Enter 调用 preventDefault", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        const mock = { key: "Enter", preventDefault: vi.fn() };
+        act(() => result.current.handleKeyDown(mock as never));
+        expect(mock.preventDefault).toHaveBeenCalledOnce();
+    });
+
+    it("解锁态下缩放键调用 preventDefault", () => {
+        const { result } = renderHook(() => useDiagramViewport());
+        act(() => result.current.toggleLock());
+        const mock = { key: "+", preventDefault: vi.fn() };
+        act(() => result.current.handleKeyDown(mock as never));
+        expect(mock.preventDefault).toHaveBeenCalledOnce();
     });
 });
