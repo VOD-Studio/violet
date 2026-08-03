@@ -93,7 +93,7 @@ Single-context:根 `CONTEXT.md` 单文件统管所有域(认证/文章/公告),`
 
 - 每次完成一个任务或一个功能点都要进行 Git 提交。
 - 提交信息必须使用**中文**，并严格符合历史的 Conventional Commits 格式，例如 `feat(api): 添加新功能`、`fix(web): 修复页面 bug`。
-- **subject 只概括一个主要变更**，祈使句、简洁（50 字符内为宜）。一个 commit 含多个独立变更时应拆分提交，subject 禁止用 `+` / `、` 等符号堆砌多个要点（次要变更的细节写进 body）——subject 写不下说明改动太杂，回归「三问」拆 commit。
+- **subject 只概括一个主要变更**，祈使句、简洁（50 字符内为宜）。一个 commit 含多个独立变更时应拆分提交，subject 禁止用 `+` / `、` 等符号堆砌多个要点（次要变更的细节写进 body）——subject 写不下说明改动太杂，回归「三问」拆 commit。**该约束同样适用于 issue 标题与 PR 标题**：一律不用 `+` 连接多要点，用「与」「并」等连接词或拆分。
 - **scope 指向最小改动单元**，不要叠加冗余前缀。scope 的作用是区分同一仓库里不同模块的改动，当改动集中在一个子模块时，scope 只写最内层模块名。
   - ✅ 正确：`fix(handler): 搜索接口 URL 编码修复`
   - ✅ 正确：`feat(observability): 接入 OTel trace_id 注入`
@@ -275,10 +275,10 @@ type User struct {
 
 ### Issue 标题格式
 
-用 **`[scope] 描述`**,不要 `vertical: ...`(vertical slice 是拆分方法论,不该暴露在标题)。对齐仓库已有的 `[code-runner] Tn` 系列惯例。
+用 **`[scope] 描述`**,不要 `vertical: ...`(vertical slice 是拆分方法论,不该暴露在标题)。对齐仓库已有的 `[code-runner] Tn` 系列惯例。**标题禁止用 `+` / `、` 堆砌多要点**,多要点用「与」等连接词或拆分。
 
 - ✅ 正确：`[auth] opaque session 退出码归一`
-- ✅ 正确：`[code-runner] T9 部署配置 + 文档同步`
+- ✅ 正确：`[code-runner] T9 部署配置与文档同步`
 - ❌ 错误：`vertical: 补全挂载(kit 表驱动...)`(暴露实现方法论,且冗长)
 
 连续任务序列(如 code-runner T1–Tn)带 `Tn` 编号;独立 feature 不带编号。scope 用最内层模块名(同提交 scope 规则)。
