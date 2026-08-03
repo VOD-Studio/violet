@@ -56,7 +56,7 @@ export function FencedCodeBlock({ code, language }: { code: string; language: st
             ) : html ? (
                 <div
                     className="shiki-code code-block-scrollbar overflow-x-auto px-4 py-3 text-sm leading-relaxed [&_pre]:m-0! [&_pre]:bg-transparent! [&_pre]:p-0! [&_code]:font-mono! [&_code]:text-sm!"
-                    // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki 本地高亮输出，非用户直接输入
+                    // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki codeToHtml 对代码文本做 HTML 实体转义（<script> 渲染为 &#x3C;script&#x3E; 纯文本，实测无裸标签），输出属性仅 class/style/tabindex 受控集合，无 href/src/on*；代码块内容不可能注入可执行 HTML
                     dangerouslySetInnerHTML={{ __html: html }}
                 />
             ) : (

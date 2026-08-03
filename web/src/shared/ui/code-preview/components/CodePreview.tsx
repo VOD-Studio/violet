@@ -107,7 +107,7 @@ function CodeBlock({ html, showLineNumbers }: { html: string; showLineNumbers: b
             ) : null}
             <div
                 className="shiki-code flex-1 overflow-x-auto px-4 py-3 [&_pre]:bg-transparent! [&_pre]:m-0! [&_pre]:p-0 [&_code]:font-mono! [&_code]:text-xs! [&_code]:leading-relaxed!"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki 输出的 HTML 来自受信任的代码高亮，无用户输入
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: shiki codeToHtml 对代码文本做 HTML 实体转义（<script> 渲染为 &#x3C;script&#x3E; 纯文本，实测无裸标签），输出属性仅 class/style/tabindex 受控集合，无 href/src/on*；代码内容不可能注入可执行 HTML
                 dangerouslySetInnerHTML={{ __html: html }}
             />
         </div>
