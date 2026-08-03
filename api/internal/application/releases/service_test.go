@@ -122,6 +122,29 @@ func TestParseBody_EmptyCategoryHasEmptyItems(t *testing.T) {
 	}
 }
 
+func TestParseBody_DeduplicatesIdenticalItems(t *testing.T) {
+	// merge 合并 PR 场景：release-please 以 PR title 与原始 commit 各记一条，
+	// hash 不同但清理后内容相同，应去重为一条。
+	body := `### 修复
+* **subscription:** 抓取时回填订阅源标题 ([704a52a](https://github.com/VOD-Studio/violet/commit/704a52abbe6b5c26aea032b8ae633593b738b44f))
+* **subscription:** 抓取时回填订阅源标题 ([6ffbe7e](https://github.com/VOD-Studio/violet/commit/6ffbe7e089d852bee3a4ce99497c4992e9023351))
+* 其它修复`
+	cats, _ := parseBody(body)
+
+	assertCategory(t, cats[0], "修复", []string{"**subscription:** 抓取时回填订阅源标题", "其它修复"})
+}
+
+func TestParseBody_StripsCommitHashRefs(t *testing.T) {
+	// 三种形态：括号包链接 / 裸链接 / 纯文本短 hash；PR/issue 引用 (#36) 必须保留
+	body := `### 修复
+* **subscription:** 标题 ([704a52a](https://github.com/x/y/commit/704a52abbe))
+* **media:** 批量删除 [f5eff6f](https://github.com/x/y/commit/f5eff6fa2413c87c8f8c67fd8a57f24e972e6ad1) (#36)
+* 纯文本引用 (abc1234)`
+	cats, _ := parseBody(body)
+
+	assertCategory(t, cats[0], "修复", []string{"**subscription:** 标题", "**media:** 批量删除 (#36)", "纯文本引用"})
+}
+
 func assertCategory(t *testing.T, cat domainreleases.Category, label string, items []string) {
 	t.Helper()
 	if cat.Label != label {

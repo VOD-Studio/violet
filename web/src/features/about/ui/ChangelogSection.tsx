@@ -1,52 +1,50 @@
-import { useReleases } from "@features/about/api/queries";
 import { formatDate } from "@features/about/model/format";
-import { MarkdownContent } from "@shared/ui/markdown-preview/MarkdownContent";
+import { useReleases } from "@shared/api/releases";
+import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
-/**
- * 分类标签配色：按 label 关键词匹配（release notes 已去 emoji，按纯文字 label 配色）。
- * 匹配规则：label 含关键词即命中，新功能优先于其他。
- */
-const labelColorRules: { match: string; cls: string }[] = [
-    {
-        match: "破坏",
-        cls: "border-orange-500/50 bg-orange-500/15 text-orange-600 dark:text-orange-400",
-    },
-    { match: "新功能", cls: "border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-    { match: "Bug", cls: "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400" },
-    { match: "修复", cls: "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400" },
-    {
-        match: "重构",
-        cls: "border-purple-500/40 bg-purple-500/10 text-purple-600 dark:text-purple-400",
-    },
-    {
-        match: "性能",
-        cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    },
-    {
-        match: "优化",
-        cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    },
-];
-
-function categoryColor(label: string): string {
-    for (const rule of labelColorRules) {
-        if (label.includes(rule.match)) return rule.cls;
-    }
-    return "border-edge-hairline bg-muted/30 text-muted-foreground";
-}
+/** 入口卡片展示的最新动态条数 */
+const PREVIEW_ITEMS = 3;
 
 /**
- * ChangelogSection - B3 更新日志
+ * ChangelogSection - 更新日志入口（about 页区块，后台可开关/排序）
  *
- * 版本时间线卡片：每版本一张卡，含版本号 + 日期 + 分类 Chip（emoji + label）
- * + 该分类下的条目。breaking change 醒目标记。接口失败/空时优雅降级。
+ * 完整日志在独立路由 /changelog；本区块只展示最新版本摘要 + 跳转入口，
+ * 避免 about 页堆叠长列表。接口失败/空时优雅降级（不渲染）。
  */
 export function ChangelogSection(_: AboutSectionProps) {
-    const { data } = useReleases();
+    const { data, isPending } = useReleases();
+
+    // 加载中：区块级骨架（标题静态 + 入口卡片形状占位）
+    if (isPending) {
+        return (
+            <section className="mx-auto w-full max-w-5xl px-6 py-14">
+                <div>
+                    <ShimmerSkeleton className="mb-6 h-3 w-20" />
+                    <div className="rounded-xl border border-edge-hairline p-6">
+                        <div className="flex items-center gap-3">
+                            <ShimmerSkeleton className="h-5 w-24" />
+                            <ShimmerSkeleton className="h-3 w-16" />
+                        </div>
+                        <div className="mt-4 space-y-2">
+                            <ShimmerSkeleton className="h-4 w-full" />
+                            <ShimmerSkeleton className="h-4 w-5/6" />
+                            <ShimmerSkeleton className="h-4 w-2/3" />
+                        </div>
+                        <ShimmerSkeleton className="mt-5 h-4 w-32" />
+                    </div>
+                </div>
+            </section>
+        );
+    }
 
     if (!data || data.releases.length === 0) return null;
+
+    const latest = data.releases[0];
+    const preview = latest.categories.flatMap((c) => c.items).slice(0, PREVIEW_ITEMS);
 
     return (
         <section className="mx-auto w-full max-w-5xl px-6 py-14">
@@ -56,65 +54,43 @@ export function ChangelogSection(_: AboutSectionProps) {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
             >
-                <h2 className="mb-8 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                <h2 className="mb-6 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
                     更新日志
                 </h2>
-                <div className="relative space-y-6 border-l border-edge-hairline pl-6">
-                    {data.releases.map((release, i) => (
-                        <motion.article
-                            key={release.tag}
-                            initial={{ opacity: 0, x: -10 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.4, delay: i * 0.05 }}
-                            className="relative"
-                        >
-                            {/* 时间线节点 */}
-                            <span className="absolute -left-7.75 top-1.5 size-3 rounded-full border-2 border-background bg-primary" />
-                            <div className="rounded-xl border border-edge-hairline bg-background p-5">
-                                <div className="mb-3 flex flex-wrap items-center gap-3">
-                                    <span className="font-mono text-sm font-semibold">
-                                        {release.tag}
-                                    </span>
-                                    {release.published_at ? (
-                                        <span className="text-xs text-muted-foreground">
-                                            {formatDate(release.published_at)}
-                                        </span>
-                                    ) : null}
-                                    {release.breaking ? (
-                                        <span className="rounded-full border border-orange-500/50 bg-orange-500/15 px-2 py-0.5 text-xs font-medium text-orange-600 dark:text-orange-400">
-                                            ⚠ 破坏性变更
-                                        </span>
-                                    ) : null}
-                                </div>
-                                {release.categories.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {release.categories.map((cat) => (
-                                            <div key={cat.label}>
-                                                <span
-                                                    className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${categoryColor(cat.label)}`}
-                                                >
-                                                    {cat.label}
-                                                </span>
-                                                <ul className="mt-1.5 space-y-1 pl-1 text-sm text-foreground/70 [&>li>p]:my-0 [&>li>p]:leading-6">
-                                                    {cat.items.map((item, idx) => (
-                                                        <li key={idx}>
-                                                            <MarkdownContent content={item} />
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : release.body ? (
-                                    <div className="text-sm text-foreground/70">
-                                        <MarkdownContent content={release.body} />
-                                    </div>
-                                ) : null}
-                            </div>
-                        </motion.article>
-                    ))}
-                </div>
+                <Link
+                    to="/changelog"
+                    className="group block rounded-xl border border-edge-hairline bg-background p-6 transition-colors hover:border-primary/40"
+                >
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <span className="font-mono text-base font-semibold text-foreground">
+                            {latest.tag}
+                        </span>
+                        {latest.published_at ? (
+                            <span className="text-sm text-muted-foreground">
+                                {formatDate(latest.published_at)}
+                            </span>
+                        ) : null}
+                        <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
+                            当前版本
+                        </span>
+                    </div>
+                    {preview.length > 0 ? (
+                        <ul className="mt-3.5 space-y-2">
+                            {preview.map((item, idx) => (
+                                <li
+                                    key={idx}
+                                    className="truncate text-[15px] leading-7 text-foreground/75"
+                                >
+                                    {item.replace(/\*\*/g, "").replace(/^[*_-]\s*/, "")}
+                                </li>
+                            ))}
+                        </ul>
+                    ) : null}
+                    <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary">
+                        查看完整更新日志
+                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                </Link>
             </motion.div>
         </section>
     );

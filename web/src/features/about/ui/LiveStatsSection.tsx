@@ -1,4 +1,5 @@
 import { usePublicStats } from "@features/about/api/queries";
+import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
@@ -11,7 +12,23 @@ import type { AboutSectionProps } from "./AboutSectionPlaceholder";
  * 接口失败时空数据降级（不渲染）。
  */
 export function LiveStatsSection(_: AboutSectionProps) {
-    const { data } = usePublicStats();
+    const { data, isPending } = usePublicStats();
+
+    // 加载中：区块级骨架（四格数字占位，避免数字从 0 跳变闪烁）
+    if (isPending) {
+        return (
+            <section className="mx-auto w-full max-w-5xl px-6 py-14">
+                <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+                    {Array.from({ length: 4 }, (_, i) => (
+                        <div key={i} className="text-center">
+                            <ShimmerSkeleton className="mx-auto h-12 w-20" />
+                            <ShimmerSkeleton className="mx-auto mt-2 h-3 w-14" />
+                        </div>
+                    ))}
+                </div>
+            </section>
+        );
+    }
 
     if (!data) return null;
 
