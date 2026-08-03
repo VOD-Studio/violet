@@ -81,8 +81,7 @@ export function ImagePreviewControls({
     return (
         <>
             {/* 顶部工具栏 */}
-            {/* onClick：整个工具栏区域（含 disabled 按钮穿透的点击）都不冒泡到外层关闭 */}
-            {/* biome-ignore lint/a11y/useKeyWithClickEvents: 此 div 非交互元素，onClick 仅用于拦截事件冒泡到外层 onClose，真正的键盘交互由内部按钮提供 */}
+            {/* onClick：整个工具栏区域（含 disabled 按钮穿透的点击）都不冒泡到外层关闭；真正的键盘交互由内部按钮提供 */}
             <div
                 onClick={(e) => e.stopPropagation()}
                 className="absolute inset-x-0 top-0 z-50 flex items-center justify-between gap-2 bg-linear-to-b from-black/50 to-transparent p-2 sm:p-4"

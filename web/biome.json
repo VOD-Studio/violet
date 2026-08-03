@@ -51,7 +51,8 @@
             "a11y": {
                 "useSemanticElements": "off",
                 "noStaticElementInteractions": "off",
-                "noNoninteractiveTabindex": "off"
+                "noNoninteractiveTabindex": "off",
+                "useKeyWithClickEvents": "off"
             }
         }
     },

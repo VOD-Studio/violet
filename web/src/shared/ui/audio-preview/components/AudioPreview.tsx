@@ -19,7 +19,6 @@ export function AudioPreview({ url, name, className, autoPlay = false }: AudioPr
         <div
             ref={player.containerRef}
             className={`flex flex-col items-center gap-5 rounded-lg border bg-gradient-to-b from-card to-muted/30 p-8 focus:outline-none ${className ?? ""}`}
-            // biome-ignore lint/a11y/noNoninteractiveTabindex: 音频播放器需聚焦接收键盘快捷键
             tabIndex={0}
             role="region"
             aria-label={name ?? "音频预览"}

@@ -66,7 +66,6 @@ export function VideoPreview({
             ref={containerRef}
             className={`overflow-hidden rounded-lg border bg-black focus:outline-none ${className ?? ""}`}
             onMouseMove={handleMouseMove}
-            // biome-ignore lint/a11y/noNoninteractiveTabindex: 视频播放器需聚焦接收键盘快捷键
             tabIndex={0}
             role="region"
             aria-label={name ?? "视频预览"}

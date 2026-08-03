@@ -93,7 +93,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
             }}
         >
             {/* 顶部工具栏：对齐灯箱——渐变背景、左缩放控件、右关闭 */}
-            {/* biome-ignore lint/a11y/useKeyWithClickEvents: Esc 由全局 keydown 监听 + 元素 onKeyDown 处理 */}
+            {/* 此 div 的 onClick 仅拦截事件冒泡（Esc 由外层 onKeyDown 处理） */}
             <div
                 className="absolute inset-x-0 top-0 z-50 flex items-center justify-between gap-2 bg-linear-to-b from-black/50 to-transparent p-2 sm:p-4"
                 onClick={(e) => e.stopPropagation()}
@@ -234,7 +234,6 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
                             className="flex cursor-grab items-center justify-center active:cursor-grabbing"
                             role="img"
                             aria-label={label}
-                            onClick={(e) => e.stopPropagation()}
                             // biome-ignore lint/security/noDangerouslySetInnerHtml: svg 经 renderMermaid 内 DOMPurify 清理：svg/svgFilters profile + foreignObject 内纯文本 HTML 白名单（div/span/p 等，无 href/src 能力）+ FORBID script/a + on* 事件属性与 CSS url() 剥除，与阅读端同防线
                             dangerouslySetInnerHTML={{ __html: fullscreenSvg }}
                         />
