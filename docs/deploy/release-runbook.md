@@ -11,15 +11,16 @@
 2. push 到 `release/2.0` 后,release-please 自动开一个「release PR」,标题形如 `chore(release): v2.0.2`,body 含从 commit log 生成的 CHANGELOG 段落。
 3. review release PR 的 CHANGELOG 内容,确认无误后**squash merge 合并该 PR**(release PR 固定用 squash 合并,合并 commit 即 `chore(release): vX.Y.Z` 单提交,release-please 据此识别不发新版本;功能/修复 PR 用 merge commit 保留原子提交,见 AGENTS.md「PR 与 issue 规范」)。
 4. 合并即触发:release-please 自动打 `vX.Y.Z` tag → 触发 `Deploy` workflow。
-5. `Deploy` 自动执行:构建 api+web 镜像 → 数据库迁移门禁 → 部署 api → 健康检查 → 部署 web → 同步静态资源 → 创建 GitHub Release。
-6. 在 Actions 页或 `gh run list --workflow=deploy.yml` 观察结果;成功后线上版本写入 `/root/docker/violet/.current-version`。
+5. `Deploy` 自动执行(8 job 流水线):detect 按侧变更检测 → prepare 解析版本 → build 构建镜像 → 迁移门禁 → 部署 api(含跨组件冒烟) → 部署 web → release(reload + 建 Release + 回写锚点);失败时 rollback 按侧自动回滚。
+   - **单侧部署**:只部署实际变更侧(api/ 或 web/ 变更分别触发),未改动侧不重建容器;`docker-compose*.yml` 与 `scripts/**` 变更视为双侧。变更基线 = 各侧锚点(线上实际版本)。
+6. 在 Actions 页或 `gh run list --workflow=deploy.yml` 观察结果;成功后各侧版本分别写入 `/root/docker/violet/.current-version-api` 与 `.current-version-web`。
 
-健康检查失败会自动回滚到 `.current-version` 记录的上一版本;若回滚后仍失败,工作流报错,需人工介入。
+健康检查失败会自动回滚到各侧锚点记录的上一版本;若回滚后仍失败,工作流报错,需人工介入。
 
 ### 发版节奏说明
 
-- violet 不做前后端独立版本(ADR-0003 明确不保留向后兼容),api 和 web 同 tag 原子部署,保证契约一致。
-- 每次 release PR 合并都会同时构建并部署 api + web,即使本次只改了其中一个(self-hosted runner 有本地镜像层缓存,未改动侧构建会命中缓存,耗时极短)。
+- violet 不做前后端独立版本(ADR-0003 明确不保留向后兼容),api 和 web 同 tag 发版,保证契约一致;但**部署按变更检测只部署实际变更侧**,未改动侧不重建容器。
+- 纯非部署物变更(docs/CI/README 等)不发部署,仅创建 GitHub Release。
 
 ## 单组件回滚
 
@@ -54,7 +55,8 @@ gh workflow run deploy.yml -f version=v2.0.1 -f skip_build=true -f component=bot
 回滚注意事项:
 
 - 回滚假设 schema 向后兼容。若待回滚的新版本含破坏性迁移（删列、改类型）,回滚前需在 rua 手动 `make migrate-down` 或用 `go run ./cmd/migrate goto <v>`,并人工评审。
-- 回滚成功后 `.current-version` 不变（回滚不更新锚点）,便于再次前进。
+- **回滚成功后按侧回写锚点**为回滚目标版本(`.current-version-api` / `.current-version-web`)——保证下次发版的变更检测基线 = 线上实际版本,不泄漏未部署变更。
+- **行为变更声明**:web-only 部署失败现在会自动回滚 web 侧(旧版 deploy.yml 的迁移门禁条件导致 web-only 失败不回滚),回滚后双侧健康检查。
 
 ## 手动重新部署当前版本
 
