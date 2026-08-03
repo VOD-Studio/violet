@@ -1,12 +1,16 @@
-# CD 发布流水线
+# CD 发布流水线（结构化：detect → prepare → build → migrate → deploy-api → deploy-web → release + rollback）
 #
 # 触发:
 #   - 打 v* tag: 自动发版到 rua 生产环境(release-please 合并 release PR 时触发)
-#   - workflow_dispatch: 手动触发,可选 version 回滚到历史 tag,可选 component 单组件部署
+#   - workflow_dispatch: 手动触发,可选 version 回滚 / skip_build 复用镜像 / component 单组件
 #
 # 运行在 rua 的 self-hosted runner 上,本地构建并部署,不穿越 GFW、无需镜像仓库。
-# 流程: 构建 → 迁移门禁 → 部署 api → 健康检查 → 部署 web → sync-client → 创建 Release
-# 单组件回滚: workflow_dispatch 选 component=api/web,只重建对应容器,复用缓存镜像
+#
+# 变更检测(detect): 按侧锚点(.current-version-api/.current-version-web)做 diff 基线,
+#   只部署实际变更侧——未改动侧不重建容器。锚点缺失(首次发版)或手动模式 → 全量。
+# 契约安全: deploy-api 部署后跑 scripts/smoke.sh 跨组件冒烟(旧 web + 新 api),失败触发 rollback。
+# 回滚: 按侧回滚到各侧锚点 + 双侧健康检查。
+# 锚点: release 按实际部署侧回写(放最后,前面翻车不误写);手动回滚成功后同样按侧回写。
 
 name: Deploy
 
@@ -17,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '目标版本 tag，用于手动回滚，如 v2.0.1。留空则部署触发的 tag。'
+        description: '目标版本 tag，用于手动回滚，如 v2.0.1。留空则部署触发的 ref。'
         required: false
         default: ''
       skip_build:
@@ -26,7 +30,7 @@ on:
         type: boolean
         default: false
       component:
-        description: '部署/回滚目标组件: both(默认,api+web) / api / web'
+        description: '部署/回滚目标组件: both(默认) / api / web'
         required: false
         type: choice
         options:
@@ -36,6 +40,7 @@ on:
         default: both
 
 # 生产部署串行，绝不并发、绝不取消进行中的部署
+# 8 job 共享 runner 与 /root/docker/violet(锚点/镜像/compose),并发 run 会交错读写
 concurrency:
   group: deploy-production
   cancel-in-progress: false
@@ -44,14 +49,78 @@ permissions:
   contents: write   # 创建 GitHub Release 需要
 
 jobs:
-  deploy:
-    name: 部署到 rua 生产环境
+  # ── detect: 按侧变更检测（对比各侧锚点，输出部署侧布尔）──
+  detect:
     runs-on: [self-hosted, rua]
-    environment: production
-    timeout-minutes: 15
-    defaults:
-      run:
-        shell: bash
+    outputs:
+      api: ${{ steps.result.outputs.api }}
+      web: ${{ steps.result.outputs.web }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # paths-filter 的 base 是历史 tag，需本地有对应提交
+          fetch-depth: 0
+
+      - name: 读取两侧版本锚点
+        id: anchors
+        run: |
+          API_ANCHOR=""
+          WEB_ANCHOR=""
+          [ -f /root/docker/violet/.current-version-api ] && API_ANCHOR="$(cat /root/docker/violet/.current-version-api)"
+          [ -f /root/docker/violet/.current-version-web ] && WEB_ANCHOR="$(cat /root/docker/violet/.current-version-web)"
+          echo "api_anchor=${API_ANCHOR}" >> "$GITHUB_OUTPUT"
+          echo "web_anchor=${WEB_ANCHOR}" >> "$GITHUB_OUTPUT"
+          echo "锚点: api=${API_ANCHOR:-无} web=${WEB_ANCHOR:-无}"
+
+      - uses: dorny/paths-filter@v3
+        id: filter-api
+        if: steps.anchors.outputs.api_anchor != ''
+        with:
+          base: ${{ steps.anchors.outputs.api_anchor }}
+          filters: |
+            changed:
+              - 'api/**'
+              - 'docker-compose*.yml'
+              - 'scripts/**'
+
+      - uses: dorny/paths-filter@v3
+        id: filter-web
+        if: steps.anchors.outputs.web_anchor != ''
+        with:
+          base: ${{ steps.anchors.outputs.web_anchor }}
+          filters: |
+            changed:
+              - 'web/**'
+              - 'docker-compose*.yml'
+              - 'scripts/**'
+
+      - name: 汇总部署侧（锚点缺失或手动模式 → 全量）
+        id: result
+        env:
+          API_ANCHOR: ${{ steps.anchors.outputs.api_anchor }}
+          WEB_ANCHOR: ${{ steps.anchors.outputs.web_anchor }}
+          FILTER_API: ${{ steps.filter-api.outputs.changed }}
+          FILTER_WEB: ${{ steps.filter-web.outputs.changed }}
+        run: |
+          if [ "${{ github.event_name }}" != "push" ]; then
+            API=true; WEB=true
+          else
+            if [ -z "$API_ANCHOR" ]; then API=true; else API=${FILTER_API:-false}; fi
+            if [ -z "$WEB_ANCHOR" ]; then WEB=true; else WEB=${FILTER_WEB:-false}; fi
+          fi
+          echo "api=${API}" >> "$GITHUB_OUTPUT"
+          echo "web=${WEB}" >> "$GITHUB_OUTPUT"
+          echo "检测结果: api=${API} web=${WEB}"
+
+  # ── prepare: 解析目标版本 + 决定最终部署侧 ──
+  prepare:
+    needs: detect
+    runs-on: [self-hosted, rua]
+    outputs:
+      tag: ${{ steps.ver.outputs.tag }}
+      rollback: ${{ steps.ver.outputs.rollback }}
+      deploy_api: ${{ steps.side.outputs.deploy_api }}
+      deploy_web: ${{ steps.side.outputs.deploy_web }}
     steps:
       - name: 解析目标版本
         id: ver
@@ -59,66 +128,80 @@ jobs:
           VER_INPUT: ${{ inputs.version }}
         run: |
           if [ -n "$VER_INPUT" ]; then
-            echo "tag=$VER_INPUT" >> "$GITHUB_OUTPUT"
-            echo "rollback=true" >> "$GITHUB_OUTPUT"
+            TAG_VALUE="$VER_INPUT"; ROLLBACK=true
           else
-            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-            echo "rollback=false" >> "$GITHUB_OUTPUT"
+            TAG_VALUE="${GITHUB_REF_NAME}"; ROLLBACK=false
           fi
-          echo "目标版本: ${{ steps.ver.outputs.tag }}"
+          echo "tag=${TAG_VALUE}" >> "$GITHUB_OUTPUT"
+          echo "rollback=${ROLLBACK}" >> "$GITHUB_OUTPUT"
+          echo "目标版本: ${TAG_VALUE}"
 
-      - name: 快照当前线上版本作为回滚目标
-        id: prev
+      - name: 决定部署侧（回滚按 component 输入;发版按 detect 输出 + component 过滤）
+        id: side
+        env:
+          VER_INPUT: ${{ inputs.version }}
+          COMPONENT: ${{ inputs.component }}
+          DETECT_API: ${{ needs.detect.outputs.api }}
+          DETECT_WEB: ${{ needs.detect.outputs.web }}
         run: |
-          PREV=""
-          if [ -f /root/docker/violet/.current-version ]; then
-            PREV="$(cat /root/docker/violet/.current-version)"
+          if [ -n "$VER_INPUT" ]; then
+            [ "$COMPONENT" != "web" ] && DEPLOY_API=true || DEPLOY_API=false
+            [ "$COMPONENT" != "api" ] && DEPLOY_WEB=true || DEPLOY_WEB=false
+          else
+            [ "$COMPONENT" != "web" ] && [ "$DETECT_API" == "true" ] && DEPLOY_API=true || DEPLOY_API=false
+            [ "$COMPONENT" != "api" ] && [ "$DETECT_WEB" == "true" ] && DEPLOY_WEB=true || DEPLOY_WEB=false
           fi
-          echo "prev_tag=${PREV}" >> "$GITHUB_OUTPUT"
-          echo "当前线上版本: ${PREV:-无，疑似首次部署}"
+          echo "deploy_api=${DEPLOY_API}" >> "$GITHUB_OUTPUT"
+          echo "deploy_web=${DEPLOY_WEB}" >> "$GITHUB_OUTPUT"
+          echo "部署侧: api=${DEPLOY_API} web=${DEPLOY_WEB}"
 
-      - name: Checkout 代码
-        uses: actions/checkout@v7
+  # ── build: 构建/复用镜像 + 同步部署文件（timeout 大头）──
+  build:
+    needs: prepare
+    runs-on: [self-hosted, rua]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
         with:
-          ref: ${{ steps.ver.outputs.tag }}
+          ref: ${{ needs.prepare.outputs.tag }}
 
       - name: 构建 api 镜像
-        if: ${{ inputs.skip_build != 'true' && inputs.component != 'web' }}
+        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
         run: |
           docker build \
-            -t violet-api:${{ steps.ver.outputs.tag }} \
+            -t violet-api:${{ needs.prepare.outputs.tag }} \
             -t violet-api:latest \
             -f api/Dockerfile api/
-          echo "已构建 violet-api:${{ steps.ver.outputs.tag }} 与 violet-api:latest"
+          echo "已构建 violet-api:${{ needs.prepare.outputs.tag }} 与 violet-api:latest"
 
       - name: 构建 web 镜像
-        if: ${{ inputs.skip_build != 'true' && inputs.component != 'api' }}
+        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
         run: |
           # build args 从线上 .env 读取(OAuth client id 等),保持与现网配置一致
           set -a; . /root/docker/violet/.env; set +a
           docker build \
-            -t violet-web:${{ steps.ver.outputs.tag }} \
+            -t violet-web:${{ needs.prepare.outputs.tag }} \
             -t violet-web:latest \
             --build-arg "VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api/v1}" \
             --build-arg "VITE_SITE_URL=${VITE_SITE_URL:-https://xunrua.top}" \
             --build-arg "VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
             --build-arg "VITE_GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}" \
             -f web/Dockerfile web/
-          echo "已构建 violet-web:${{ steps.ver.outputs.tag }} 与 violet-web:latest"
+          echo "已构建 violet-web:${{ needs.prepare.outputs.tag }} 与 violet-web:latest"
 
       - name: 回滚模式复用缓存 api 镜像
-        if: ${{ inputs.skip_build == 'true' && inputs.component != 'web' }}
+        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build == 'true'
         run: |
-          docker image inspect violet-api:${{ steps.ver.outputs.tag }} >/dev/null 2>&1 || { echo "::error::rua 本地无 violet-api:${{ steps.ver.outputs.tag }} 镜像，回滚中止"; exit 1; }
-          docker tag violet-api:${{ steps.ver.outputs.tag }} violet-api:latest
-          echo "已将 violet-api:${{ steps.ver.outputs.tag }} 复用为 latest"
+          docker image inspect violet-api:${{ needs.prepare.outputs.tag }} >/dev/null 2>&1 || { echo "::error::rua 本地无 violet-api:${{ needs.prepare.outputs.tag }} 镜像，回滚中止"; exit 1; }
+          docker tag violet-api:${{ needs.prepare.outputs.tag }} violet-api:latest
+          echo "已将 violet-api:${{ needs.prepare.outputs.tag }} 复用为 latest"
 
       - name: 回滚模式复用缓存 web 镜像
-        if: ${{ inputs.skip_build == 'true' && inputs.component != 'api' }}
+        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build == 'true'
         run: |
-          docker image inspect violet-web:${{ steps.ver.outputs.tag }} >/dev/null 2>&1 || { echo "::error::rua 本地无 violet-web:${{ steps.ver.outputs.tag }} 镜像，回滚中止"; exit 1; }
-          docker tag violet-web:${{ steps.ver.outputs.tag }} violet-web:latest
-          echo "已将 violet-web:${{ steps.ver.outputs.tag }} 复用为 latest"
+          docker image inspect violet-web:${{ needs.prepare.outputs.tag }} >/dev/null 2>&1 || { echo "::error::rua 本地无 violet-web:${{ needs.prepare.outputs.tag }} 镜像，回滚中止"; exit 1; }
+          docker tag violet-web:${{ needs.prepare.outputs.tag }} violet-web:latest
+          echo "已将 violet-web:${{ needs.prepare.outputs.tag }} 复用为 latest"
 
       - name: 同步 compose 文件到部署目录
         run: |
@@ -134,22 +217,40 @@ jobs:
             echo "已迁移 api/.env → .env"
           fi
 
+  # ── migrate: 迁移门禁（仅部署 api 时）──
+  migrate:
+    needs: [prepare, build]
+    if: needs.prepare.outputs.deploy_api == 'true'
+    runs-on: [self-hosted, rua]
+    environment: production
+    timeout-minutes: 15
+    steps:
       - name: 数据库迁移门禁
-        # 只部署 web 时跳过(api 没变,无需迁移)
-        # 破坏性迁移(drop column/rename/alter type)须遵循 expand-contract:
-        # 先发兼容代码(忽略待删列/双写新列),下个发版再执行破坏性迁移。
-        # 这样镜像回滚时旧代码面对新 schema 仍兼容——回滚只换镜像不回退 schema。
-        if: ${{ inputs.component != 'web' }}
         id: migrate
         working-directory: /root/docker/violet
         run: |
+          # 破坏性迁移(drop column/rename/alter type)须遵循 expand-contract:
+          # 先发兼容代码(忽略待删列/双写新列),下个发版再执行破坏性迁移。
+          # 这样镜像回滚时旧代码面对新 schema 仍兼容——回滚只换镜像不回退 schema。
           docker compose \
             -f docker-compose.prod.yml \
             -f docker-compose.ci.yml \
             run --rm --no-deps --entrypoint /migrate api up
 
+  # ── deploy-api: 部署 api + 健康检查 + 跨组件冒烟 ──
+  deploy-api:
+    needs: [prepare, migrate]
+    if: needs.prepare.outputs.deploy_api == 'true'
+    runs-on: [self-hosted, rua]
+    environment: production
+    timeout-minutes: 15
+    steps:
+      # smoke.sh 来自仓库(版本化管理),需 checkout
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
       - name: 部署 api 服务
-        if: ${{ inputs.component != 'web' }}
         id: deploy
         working-directory: /root/docker/violet
         run: |
@@ -159,7 +260,6 @@ jobs:
             up -d --no-build --no-deps api
 
       - name: api 健康检查
-        if: ${{ inputs.component != 'web' }}
         id: health
         working-directory: /root/docker/violet
         run: |
@@ -174,8 +274,20 @@ jobs:
           echo "::error::api 健康检查失败，api 未在超时内就绪"
           exit 1
 
+      - name: 跨组件冒烟（旧 web + 新 api，契约兼容验证）
+        run: |
+          bash scripts/smoke.sh
+
+  # ── deploy-web: 部署 web + 同步 + 健康检查（api-only 时整体 skip）──
+  deploy-web:
+    needs: [prepare, deploy-api]
+    # web-only 时 deploy-api 被 skip(result=skipped ≠ failure)自动放行; both 时等 api 健康检查通过
+    if: needs.prepare.outputs.deploy_web == 'true' && needs.deploy-api.result != 'failure'
+    runs-on: [self-hosted, rua]
+    environment: production
+    timeout-minutes: 15
+    steps:
       - name: 部署 web 服务
-        if: ${{ inputs.component != 'api' }}
         id: deploy-web
         working-directory: /root/docker/violet
         run: |
@@ -186,7 +298,6 @@ jobs:
 
       - name: 同步 web 静态资源
         # web 重建后必须同步 dist/client 到 nginx-proxy 共享目录,否则 hash 不匹配白屏
-        if: ${{ inputs.component != 'api' }}
         working-directory: /root/docker/violet
         run: |
           SHARED_DIR=/root/docker/nginx-proxy/blog-client
@@ -195,7 +306,6 @@ jobs:
           echo "静态资源已同步到 $SHARED_DIR ($(ls "$SHARED_DIR" | wc -l) 个条目)"
 
       - name: web 健康检查
-        if: ${{ inputs.component != 'api' }}
         id: health-web
         working-directory: /root/docker/violet
         run: |
@@ -210,10 +320,72 @@ jobs:
           echo "::error::web 健康检查失败,web 未在超时内就绪"
           exit 1
 
+  # ── rollback: 跨 job 失败聚合自动回滚（按侧回各侧锚点 + 双侧健康检查）──
+  rollback:
+    needs: [prepare, migrate, deploy-api, deploy-web]
+    # 任一部署失败 && 迁移未失败(schema 没变) && 非手动回滚
+    # 构建失败时部署链全 skipped(无 failure) → 不触发,线上未动
+    if: always() && needs.prepare.outputs.rollback != 'true' && needs.migrate.result != 'failure' && (needs.deploy-api.result == 'failure' || needs.deploy-web.result == 'failure')
+    runs-on: [self-hosted, rua]
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - name: 按侧自动回滚
+        env:
+          API_RESULT: ${{ needs.deploy-api.result }}
+          WEB_RESULT: ${{ needs.deploy-web.result }}
+        working-directory: /root/docker/violet
+        run: |
+          # 回滚目标 = 各侧锚点(各自最后成功部署版本),避免单侧部署后另一侧无对应镜像
+          API_PREV=""
+          WEB_PREV=""
+          [ -f .current-version-api ] && API_PREV="$(cat .current-version-api)"
+          [ -f .current-version-web ] && WEB_PREV="$(cat .current-version-web)"
+          echo "回滚目标: api=${API_PREV:-无} web=${WEB_PREV:-无}"
+          if [ "$API_RESULT" == "failure" ] && [ -n "$API_PREV" ] && docker image inspect violet-api:"${API_PREV}" >/dev/null 2>&1; then
+            docker tag "violet-api:${API_PREV}" violet-api:latest
+            docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --no-build --no-deps api
+            echo "已回滚 api 到 ${API_PREV}"
+          fi
+          if [ "$WEB_RESULT" == "failure" ] && [ -n "$WEB_PREV" ] && docker image inspect violet-web:"${WEB_PREV}" >/dev/null 2>&1; then
+            docker tag "violet-web:${WEB_PREV}" violet-web:latest
+            docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --no-build --no-deps web
+            SHARED_DIR=/root/docker/nginx-proxy/blog-client
+            rm -rf "$SHARED_DIR"/* && mkdir -p "$SHARED_DIR"
+            docker cp blog-web:/app/dist/client/. "$SHARED_DIR"/
+            echo "已回滚 web 到 ${WEB_PREV}"
+          fi
+          for i in $(seq 1 10); do
+            API_OK=0; WEB_OK=0
+            if docker compose exec -T api wget -qO- http://localhost:9090/api/health 2>/dev/null | grep -q '"status":"ok"'; then API_OK=1; fi
+            if docker compose exec -T web wget -qO- http://127.0.0.1:3000/ 2>/dev/null | grep -q '<title>'; then WEB_OK=1; fi
+            if [ "$API_OK" -eq 1 ] && [ "$WEB_OK" -eq 1 ]; then
+              echo "回滚后双侧健康检查通过，线上已恢复"
+              exit 0
+            fi
+            echo "等待回滚后服务就绪 (${i}/10)..."
+            sleep 6
+          done
+          echo "::error::回滚后健康检查仍失败:本次部署已把数据库 schema 迁移到新版本,回滚的旧镜像可能因 schema 不兼容而异常"
+          echo "::error::建议优先向前修复(部署兼容新 schema 的修复版本);migrate down 回退 schema 有数据丢失风险"
+          exit 1
+
+  # ── release: nginx reload + GitHub Release + 按侧回写锚点(最后) ──
+  release:
+    needs: [prepare, build, migrate, deploy-api, deploy-web, rollback]
+    # !failure() 拦截 migrate/deploy 失败; prepare/build 必须 success 拦截 detect/prepare 失败;
+    # 纯非部署物变更(两侧全 skip)时 prepare/build 均 success → 仍建 Release(tag 已打,About 更新日志依赖 Releases)
+    if: always() && !cancelled() && !failure() && needs.prepare.result == 'success' && needs.build.result == 'success'
+    runs-on: [self-hosted, rua]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
       - name: reload nginx-proxy 刷新容器 IP
         # 容器重建后 nginx-proxy 的上游 DNS 缓存可能指向旧 IP,导致间歇 502。
         # 健康检查通过后 reload nginx,让它重新解析 blog-api/blog-web 的当前 IP。
-        if: ${{ success() && (steps.deploy.outcome == 'success' || steps.deploy-web.outcome == 'success') }}
         run: |
           if podman exec nginx-proxy nginx -t 2>/dev/null; then
             podman exec nginx-proxy nginx -s reload 2>/dev/null && echo "nginx-proxy 已 reload" || echo "reload 失败(非致命,nginx 会自行刷新缓存)"
@@ -221,48 +393,10 @@ jobs:
             echo "nginx-proxy 不可达,跳过 reload"
           fi
 
-      - name: 自动回滚到上一版本
-        if: failure() && steps.migrate.outcome == 'success' && steps.prev.outputs.prev_tag != '' && steps.ver.outputs.rollback != 'true'
-        working-directory: /root/docker/violet
-        run: |
-          PREV="${{ steps.prev.outputs.prev_tag }}"
-          echo "部署失败，自动回滚到 ${PREV}"
-          # api 回滚(若本次部署了 api)
-          if [ "${{ inputs.component }}" != "web" ] && docker image inspect violet-api:"${PREV}" >/dev/null 2>&1; then
-            docker tag "violet-api:${PREV}" violet-api:latest
-            docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --no-build --no-deps api
-            echo "已回滚 api 到 ${PREV}"
-          fi
-          # web 回滚(若本次部署了 web)
-          if [ "${{ inputs.component }}" != "api" ] && docker image inspect violet-web:"${PREV}" >/dev/null 2>&1; then
-            docker tag "violet-web:${PREV}" violet-web:latest
-            docker compose -f docker-compose.prod.yml -f docker-compose.ci.yml up -d --no-build --no-deps web
-            SHARED_DIR=/root/docker/nginx-proxy/blog-client
-            rm -rf "$SHARED_DIR"/* && mkdir -p "$SHARED_DIR"
-            docker cp blog-web:/app/dist/client/. "$SHARED_DIR"/
-            echo "已回滚 web 到 ${PREV}"
-          fi
-          for i in $(seq 1 10); do
-            if docker compose exec -T api wget -qO- http://localhost:9090/api/health 2>/dev/null | grep -q '"status":"ok"'; then
-              echo "回滚成功，线上已恢复到 ${PREV}"
-              exit 0
-            fi
-            sleep 6
-          done
-          echo "::error::回滚后健康检查仍失败:本次部署已把数据库 schema 迁移到 ${{ steps.ver.outputs.tag }},回滚的 ${PREV} 旧镜像可能因 schema 不兼容而异常"
-          echo "::error::建议优先向前修复(部署兼容新 schema 的修复版本);migrate down 回退 schema 有数据丢失风险"
-          exit 1
-
-      - name: 更新版本锚点
-        if: success() && steps.ver.outputs.rollback != 'true'
-        run: |
-          echo "${{ steps.ver.outputs.tag }}" > /root/docker/violet/.current-version
-          echo "版本锚点已更新为 ${{ steps.ver.outputs.tag }}"
-
       - name: 从 CHANGELOG 抽取本版本段落
         id: notes
         run: |
-          VERSION="${{ steps.ver.outputs.tag }}"
+          VERSION="${{ needs.prepare.outputs.tag }}"
           VERSION="${VERSION#v}"
           # 匹配 `## [X.Y.Z]` 标题(兼容 ctv 生成的 `## [X.Y.Z](compare-url)` 形式),
           # 抽到下一个 `## [` 标题为止
@@ -283,15 +417,33 @@ jobs:
           fi
 
       - name: 创建 GitHub Release(CHANGELOG 段落)
-        if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'changelog'
+        # 仅 tag push 创建 Release;手动 dispatch(部署/回滚)不建
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'changelog'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.ver.outputs.tag }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
           body_path: ${{ runner.temp }}/release-notes.md
 
       - name: 创建 GitHub Release(自动生成 notes)
-        if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'generated'
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'generated'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.ver.outputs.tag }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
           generate_release_notes: true
+
+      - name: 按侧回写版本锚点（最后,reload/Release 翻车不误写）
+        # 手动回滚也走此路径:tag 即回滚目标版本,成功后锚点推进到回滚目标,
+        # 避免锚点陈旧导致下次发版 diff 漏掉未部署变更
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          API_RESULT: ${{ needs.deploy-api.result }}
+          WEB_RESULT: ${{ needs.deploy-web.result }}
+        run: |
+          if [ "$API_RESULT" == "success" ]; then
+            echo "$TAG" > /root/docker/violet/.current-version-api
+            echo "api 锚点更新为 $TAG"
+          fi
+          if [ "$WEB_RESULT" == "success" ]; then
+            echo "$TAG" > /root/docker/violet/.current-version-web
+            echo "web 锚点更新为 $TAG"
+          fi
