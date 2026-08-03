@@ -1,12 +1,8 @@
 import { useMe } from "@features/auth/api/queries";
 import { cn } from "@shared/lib/utils";
-import {
-    NAV_MENU_GROUPS,
-    NAV_MENU_ITEMS,
-    type NavMenuItem,
-} from "./nav-menu-config";
 import { NavMenuGroupItem } from "./NavMenuGroupItem";
 import { NavMenuLink } from "./NavMenuLink";
+import { NAV_MENU_GROUPS, NAV_MENU_ITEMS, type NavMenuItem } from "./nav-menu-config";
 
 /** 判断权限：内置超管通配短路，否则看 permissions 任一命中 */
 function isVisible(item: NavMenuItem, isSuper: boolean, perms: Set<string>): boolean {
@@ -15,18 +11,9 @@ function isVisible(item: NavMenuItem, isSuper: boolean, perms: Set<string>): boo
     return item.permissions.some((code) => perms.has(code));
 }
 
-const renderItem = (
-    item: NavMenuItem,
-    onNavigate?: () => void,
-    collapsed = false,
-) =>
+const renderItem = (item: NavMenuItem, onNavigate?: () => void, collapsed = false) =>
     item.children && item.children.length > 0 ? (
-        <NavMenuGroupItem
-            key={item.to}
-            item={item}
-            onNavigate={onNavigate}
-            collapsed={collapsed}
-        />
+        <NavMenuGroupItem key={item.to} item={item} onNavigate={onNavigate} collapsed={collapsed} />
     ) : (
         <NavMenuLink key={item.to} item={item} onNavigate={onNavigate} collapsed={collapsed} />
     );
@@ -65,7 +52,9 @@ export function NavMenu({
 
     return (
         <nav className={cn("flex flex-col gap-1")}>
-            {visibleItems.filter((item) => !item.group).map((item) => renderItem(item, onNavigate, collapsed))}
+            {visibleItems
+                .filter((item) => !item.group)
+                .map((item) => renderItem(item, onNavigate, collapsed))}
             {NAV_MENU_GROUPS.map((group) => {
                 const items = visibleItems.filter((item) => item.group === group.key);
                 if (items.length === 0) return null;

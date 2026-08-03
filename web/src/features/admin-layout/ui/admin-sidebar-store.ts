@@ -38,4 +38,3 @@ export const useAdminSidebarStore = create<AdminSidebarState>()(
         { name: "admin-sidebar" },
     ),
 );
-

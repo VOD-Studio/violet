@@ -79,7 +79,9 @@ export function AdminSidebar() {
                             返回前台
                         </span>
                     </Link>
-                    {!collapsed && <span className="text-muted-foreground/60 px-3 text-xs">v2.0</span>}
+                    {!collapsed && (
+                        <span className="text-muted-foreground/60 px-3 text-xs">v2.0</span>
+                    )}
                 </div>
             </aside>
         </TooltipProvider>

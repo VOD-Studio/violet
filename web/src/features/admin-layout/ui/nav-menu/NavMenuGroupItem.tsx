@@ -3,8 +3,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@shared/ui/base/tooltip
 import { useRouterState } from "@tanstack/react-router";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { useAdminSidebarStore } from "../admin-sidebar-store";
-import type { NavMenuItem } from "./nav-menu-config";
 import { NAV_ITEM_BASE, NavMenuLink } from "./NavMenuLink";
+import type { NavMenuItem } from "./nav-menu-config";
 
 /**
  * NavMenuGroupItem - 带子菜单的父项
@@ -45,11 +45,7 @@ export function NavMenuGroupItem({
             type="button"
             aria-expanded={expanded}
             onClick={() => setGroupExpanded(item.to, !expanded)}
-            className={cn(
-                NAV_ITEM_BASE,
-                "w-full",
-                collapsed && "justify-center gap-0 px-0",
-            )}
+            className={cn(NAV_ITEM_BASE, "w-full", collapsed && "justify-center gap-0 px-0")}
         >
             <Icon className="size-4 shrink-0" />
             <span

@@ -15,13 +15,11 @@ export function Field({ label, children }: { label: string; children: React.Reac
                 {label}
             </label>
             {React.Children.map(children, (child) =>
-                React.isValidElement(child) ? (
-                    React.cloneElement(child as React.ReactElement<{ id?: string }>, {
-                        id,
-                    })
-                ) : (
-                    child
-                ),
+                React.isValidElement(child)
+                    ? React.cloneElement(child as React.ReactElement<{ id?: string }>, {
+                          id,
+                      })
+                    : child,
             )}
         </div>
     );
