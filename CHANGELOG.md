@@ -7,6 +7,21 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.3.0](https://github.com/VOD-Studio/violet/compare/v2.2.1...v2.3.0) (2026-08-03)
+
+
+### 新增
+
+* **web:** 更新日志区块渲染优化 ([3ab3d44](https://github.com/VOD-Studio/violet/commit/3ab3d44eec1c09fe4adeccc9531bcc404eb5935d))
+* **web:** 更新日志独立页 /changelog + about 入口卡片 ([fca7d60](https://github.com/VOD-Studio/violet/commit/fca7d60722a7da372c113e2006436c10c67608fe))
+* **web:** 更新日志页与 about 页加载态（骨架屏 + 错误重试） ([fc9ae94](https://github.com/VOD-Studio/violet/commit/fc9ae94d0415bf617c14ef3b6fd6ad62e67bdb7b))
+
+
+### 修复
+
+* **releases:** 更新日志条目去重 + 去掉 commit hash 引用 ([83899c5](https://github.com/VOD-Studio/violet/commit/83899c59a1e6d2bf8da22128a7d1248e5a5bc7a1))
+* **web:** 更新日志独立页、重复条目修复、加载态 ([60495f9](https://github.com/VOD-Studio/violet/commit/60495f9c0e28d1788a362c0a8bb013f67a72320a))
+
 ## [2.2.1](https://github.com/VOD-Studio/violet/compare/v2.2.0...v2.2.1) (2026-08-02)
 
 
