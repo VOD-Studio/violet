@@ -20,9 +20,16 @@ export interface DiagramViewportProps {
     onCopySource?: () => void;
     /** 已复制反馈（短暂替换复制图标，由调用方控制计时） */
     copied?: boolean;
+    /** 是否渲染工具条（默认 true；阅读端渲染完成前隐藏，避免空区域角落出现按钮） */
+    renderToolbar?: boolean;
 }
 
-export function DiagramViewport({ children, onCopySource, copied }: DiagramViewportProps) {
+export function DiagramViewport({
+    children,
+    onCopySource,
+    copied,
+    renderToolbar = true,
+}: DiagramViewportProps) {
     const {
         containerRef,
         state,
@@ -64,68 +71,74 @@ export function DiagramViewport({ children, onCopySource, copied }: DiagramViewp
                     {children}
                 </div>
             </div>
-            {/* 工具条：锁定态仅锁 + 复制；解锁态追加缩放控制 */}
-            <div className="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-md border border-edge-hairline bg-background/85 p-0.5 shadow-sm backdrop-blur">
-                {!state.locked ? (
-                    <>
+            {/* 工具条：锁定态仅锁 + 复制；解锁态追加缩放控制（renderToolbar=false 时整条隐藏） */}
+            {renderToolbar ? (
+                <div className="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-md border border-edge-hairline bg-background/85 p-0.5 shadow-sm backdrop-blur">
+                    {!state.locked ? (
+                        <>
+                            <button
+                                type="button"
+                                onClick={zoomIn}
+                                aria-label="放大"
+                                title="放大"
+                                className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                                <ZoomIn className="size-3.5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={zoomOut}
+                                aria-label="缩小"
+                                title="缩小"
+                                className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                                <ZoomOut className="size-3.5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={reset}
+                                aria-label="重置缩放"
+                                title="重置缩放与位置"
+                                className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                                <RotateCcw className="size-3.5" />
+                            </button>
+                            <span className="w-9 text-center text-[10px] tabular-nums text-muted-foreground">
+                                {Math.round(state.scale * 100)}%
+                            </span>
+                            <span className="mx-0.5 h-4 w-px bg-border" />
+                        </>
+                    ) : null}
+                    {onCopySource ? (
                         <button
                             type="button"
-                            onClick={zoomIn}
-                            aria-label="放大"
-                            title="放大"
+                            onClick={onCopySource}
+                            aria-label="复制 mermaid 源码"
+                            title={copied ? "已复制" : "复制源码"}
                             className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                         >
-                            <ZoomIn className="size-3.5" />
+                            {copied ? (
+                                <Check className="size-3.5 text-emerald-500" />
+                            ) : (
+                                <Copy className="size-3.5" />
+                            )}
                         </button>
-                        <button
-                            type="button"
-                            onClick={zoomOut}
-                            aria-label="缩小"
-                            title="缩小"
-                            className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-                        >
-                            <ZoomOut className="size-3.5" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={reset}
-                            aria-label="重置缩放"
-                            title="重置缩放与位置"
-                            className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-                        >
-                            <RotateCcw className="size-3.5" />
-                        </button>
-                        <span className="w-9 text-center text-[10px] tabular-nums text-muted-foreground">
-                            {Math.round(state.scale * 100)}%
-                        </span>
-                        <span className="mx-0.5 h-4 w-px bg-border" />
-                    </>
-                ) : null}
-                {onCopySource ? (
+                    ) : null}
                     <button
                         type="button"
-                        onClick={onCopySource}
-                        aria-label="复制 mermaid 源码"
-                        title={copied ? "已复制" : "复制源码"}
+                        onClick={toggleLock}
+                        aria-label={state.locked ? "解锁缩放" : "锁定缩放"}
+                        title={state.locked ? "解锁缩放（可平移放大）" : "锁定（恢复页面滚动）"}
                         className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
-                        {copied ? (
-                            <Check className="size-3.5 text-emerald-500" />
+                        {state.locked ? (
+                            <Lock className="size-3.5" />
                         ) : (
-                            <Copy className="size-3.5" />
+                            <Unlock className="size-3.5" />
                         )}
                     </button>
-                ) : null}
-                <button
-                    type="button"
-                    onClick={toggleLock}
-                    aria-label={state.locked ? "解锁缩放" : "锁定缩放"}
-                    title={state.locked ? "解锁缩放（可平移放大）" : "锁定（恢复页面滚动）"}
-                    className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                    {state.locked ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}
-                </button>
-            </div>
+                </div>
+            ) : null}
         </div>
     );
 }

@@ -102,26 +102,24 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
         }
     };
 
-    // 渲染中（mermaid 异步）：空白占位，不显示空容器与工具条（图渲染完直接出现）
-    if (result === null) {
-        return (
-            <div className="my-6 flex min-h-24 items-center justify-center">
-                <noscript>
-                    <pre className="code-block-scrollbar overflow-x-auto px-4 py-3">
-                        <code>{source}</code>
-                    </pre>
-                </noscript>
-            </div>
-        );
-    }
-
+    // 渲染中（mermaid 异步）：容器以 hidden 保持挂载（同一 DOM 元素贯穿两态，
+    // 渲染回调写入 containerRef.innerHTML 后才切显示——提前 return 或结构切换
+    // 都会让 ref 指向的 DOM 被替换，SVG 写入丢失（图永远空白）。工具条同步隐藏。
     return (
-        <div className="my-6 flex justify-center">
+        <div
+            className={
+                result === null ? "my-6 flex min-h-24 justify-center" : "my-6 flex justify-center"
+            }
+        >
             {errored ? null : (
-                <DiagramViewport onCopySource={copySource} copied={copied}>
+                <DiagramViewport
+                    onCopySource={copySource}
+                    copied={copied}
+                    renderToolbar={result !== null}
+                >
                     <div
                         ref={containerRef}
-                        className="flex justify-center"
+                        className={result === null ? "hidden" : "flex justify-center"}
                         role="img"
                         aria-label="流程图"
                     />
