@@ -29,6 +29,18 @@ export function clamp(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
 }
 
+/** 两点欧氏距离（捏合缩放算双指距离用） */
+export function distance(ax: number, ay: number, bx: number, by: number): number {
+    const dx = bx - ax;
+    const dy = by - ay;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+/** 两点中点（捏合缩放中心取双指中点） */
+export function midpoint(ax: number, ay: number, bx: number, by: number): { x: number; y: number } {
+    return { x: (ax + bx) / 2, y: (ay + by) / 2 };
+}
+
 /**
  * 滚轮缩放的光标中心换算（纯函数）。
  *
@@ -56,8 +68,13 @@ export function zoomAtPoint(
     };
 }
 
+interface Point {
+    x: number;
+    y: number;
+}
+
+/** 单指拖拽会话：记录按下时的指针起点与当时的 translate */
 interface DragSession {
-    pointerId: number;
     startX: number;
     startY: number;
     originX: number;
@@ -73,7 +90,12 @@ export function useDiagramViewport() {
     });
     /** 缩放中心取值用的容器（按钮缩放以视口中心为锚，滚轮以光标为锚） */
     const containerRef = useRef<HTMLDivElement>(null);
+    /** 活跃指针缓存：pointerId → 当前坐标。≥2 个指针触发捏合缩放 */
+    const pointersRef = useRef<Map<number, Point>>(new Map());
+    /** 单指拖拽会话（缓存内仅 1 指针时活跃） */
     const dragRef = useRef<DragSession | null>(null);
+    /** 上一次捏合的双指距离（算 factor = curDist / prevDist） */
+    const pinchDistRef = useRef<number | null>(null);
 
     /**
      * 滚轮缩放：仅解锁态响应，以光标位置为缩放中心；preventDefault 阻止页面滚动。
@@ -100,22 +122,57 @@ export function useDiagramViewport() {
         (e: ReactPointerEvent) => {
             if (state.locked) return;
             e.preventDefault();
-            dragRef.current = {
-                pointerId: e.pointerId,
-                startX: e.clientX,
-                startY: e.clientY,
-                originX: state.translateX,
-                originY: state.translateY,
-            };
+            pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
             // 指针捕获：拖出容器仍持续收到 move/up
             e.currentTarget.setPointerCapture?.(e.pointerId);
+
+            const count = pointersRef.current.size;
+            if (count === 1) {
+                // 首个指针：进入拖拽会话，记录起点与当前 translate
+                dragRef.current = {
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    originX: state.translateX,
+                    originY: state.translateY,
+                };
+                pinchDistRef.current = null;
+            } else if (count === 2) {
+                // 第二个指针落下：进入捏合，清拖拽会话，记初始双指距离
+                dragRef.current = null;
+                const [a, b] = [...pointersRef.current.values()];
+                pinchDistRef.current = distance(a.x, a.y, b.x, b.y);
+            }
         },
         [state.locked, state.translateX, state.translateY],
     );
 
     const handlePointerMove = useCallback((e: ReactPointerEvent) => {
+        const pointers = pointersRef.current;
+        if (!pointers.has(e.pointerId)) return;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+        if (pointers.size >= 2) {
+            // 双指捏合缩放：factor = 当前距离 / 上次距离，中心取双指中点
+            const [a, b] = [...pointers.values()];
+            const curDist = distance(a.x, a.y, b.x, b.y);
+            if (pinchDistRef.current !== null && pinchDistRef.current > 0) {
+                const factor = curDist / pinchDistRef.current;
+                const mid = midpoint(a.x, a.y, b.x, b.y);
+                const rect = containerRef.current?.getBoundingClientRect();
+                const originLeft = rect?.left ?? 0;
+                const originTop = rect?.top ?? 0;
+                setState((s) => ({
+                    ...zoomAtPoint(s, factor, mid.x - originLeft, mid.y - originTop),
+                    locked: s.locked,
+                }));
+            }
+            pinchDistRef.current = curDist;
+            return;
+        }
+
+        // 单指拖拽平移
         const drag = dragRef.current;
-        if (!drag || drag.pointerId !== e.pointerId) return;
+        if (!drag) return;
         setState((s) => ({
             ...s,
             translateX: drag.originX + e.clientX - drag.startX,
@@ -124,8 +181,29 @@ export function useDiagramViewport() {
     }, []);
 
     const handlePointerUp = useCallback((e: ReactPointerEvent) => {
-        if (dragRef.current?.pointerId === e.pointerId) {
+        const pointers = pointersRef.current;
+        if (!pointers.has(e.pointerId)) return;
+        pointers.delete(e.pointerId);
+
+        const count = pointers.size;
+        if (count === 0) {
             dragRef.current = null;
+            pinchDistRef.current = null;
+        } else if (count === 1) {
+            // 从双指切回单指：用剩余指针重建拖拽会话（origin 用当前 translate）
+            pinchDistRef.current = null;
+            const [remainingId] = [...pointers.keys()];
+            const p = pointers.get(remainingId);
+            if (!p) return;
+            setState((s) => {
+                dragRef.current = {
+                    startX: p.x,
+                    startY: p.y,
+                    originX: s.translateX,
+                    originY: s.translateY,
+                };
+                return s;
+            });
         }
     }, []);
 
