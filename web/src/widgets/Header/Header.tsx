@@ -1,5 +1,6 @@
 import { useMusicUIStore } from "@features/music/model/ui-store";
 import { useSessionStore } from "@shared/api/session";
+import { cn } from "@shared/lib/utils";
 import { useEffect, useState } from "react";
 import { useMe } from "@/features/auth/api/queries";
 
@@ -32,23 +33,28 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
         if (action === "open-music") openMusic();
     };
 
+    // scrolled 只控制底边框显隐；背景常驻（bg-background/70 + backdrop-blur），
+    // 不随滚动切换，从而避开 scroll restoration 与 hydrate 的时序竞态。
+    // mounted 让首帧底边框不经过 transition（与首屏静默对齐），之后滚动切换才过渡。
     const [scrolled, setScrolled] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         const handleScroll = () => setScrolled(window.scrollY > 50);
         handleScroll();
-        window.addEventListener("scroll", handleScroll);
+        window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
     return (
         <header
             style={{ viewTransitionName: "site-header" }}
-            className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-                scrolled
-                    ? "border-b border-edge-hairline bg-background/70 backdrop-blur-md"
-                    : "bg-transparent"
-            }`}
+            className={cn(
+                "sticky top-0 z-50 w-full border-b border-edge-hairline bg-background/70 backdrop-blur-md",
+                scrolled ? "border-b" : "border-transparent",
+                mounted && "transition-colors duration-300",
+            )}
         >
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <HeaderLogo />
