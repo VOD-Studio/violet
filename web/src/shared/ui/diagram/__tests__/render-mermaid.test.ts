@@ -2,7 +2,8 @@
  * renderMermaid 测试
  *
  * 安全命门：mock mermaid.render 返回固定 SVG（含攻击 payload），真实跑 DOMPurify
- * 清理，断言 on* 事件属性、script、foreignObject 可执行内容被剥除。这是针对 docmost
+ * 清理，断言 on* 事件属性、script、img/a/iframe 等可执行/可导航内容被剥除，而
+ * mermaid v11 渲染节点文字的 foreignObject+div/span/p 结构被保留。这是针对 docmost
  * CVE-2026-23630（per-diagram %%{init:loose}%% 绕过全局 strict）的第二道防线验证。
  *
  * jsdom 跑不了真实 mermaid.render（依赖真实 DOM layout / web worker），故 mock；
@@ -98,14 +99,18 @@ describe("renderMermaid", () => {
     });
 
     // —— 安全命门：per-diagram %%{init:loose}%% 绕过 strict 后，DOMPurify 兜底 ——
-    it("XSS payload（%%{init:loose}%% + <script> + <img onerror> + foreignObject<script>）→ 清理后不含 script/任意 on*/foreignObject", async () => {
-        // 模拟攻击者通过 %%{init}%% 强制 loose+htmlLabels 后 mermaid 可能产出的污染 SVG
+    it("XSS payload（%%{init:loose}%% + <script> + <img onerror> + foreignObject<script>）→ 清理后 script/on*/img/a 全消失，但 foreignObject 文字结构保留", async () => {
+        // 模拟攻击者通过 %%{init}%% 强制 loose+htmlLabels 后 mermaid 可能产出的污染 SVG：
+        // foreignObject 内同时含合法文字结构（div/span/p）与恶意 payload（script/img onerror）
         const pollutedSvg = `<svg xmlns="http://www.w3.org/2000/svg">
   <script>alert('xss-script')</script>
   <foreignObject width="100" height="100">
+    <div xmlns="http://www.w3.org/1999/xhtml" class="nodeLabel"><p>合法节点文字</p></div>
     <body xmlns="http://www.w3.org/1999/xhtml">
       <script>alert('foreign-script')</script>
       <img src="x" onerror="alert('foreign-img-onerror')"/>
+      <a href="javascript:alert(1)">link</a>
+      <iframe src="//evil"></iframe>
     </body>
   </foreignObject>
   <image href="x" onerror="alert('image-onerror')"/>
@@ -125,17 +130,28 @@ describe("renderMermaid", () => {
         // <script> 标签（开/闭）必须消失
         expect(svg).not.toContain("<script");
         expect(svg).not.toContain("</script");
-        // foreignObject 整体消失（其内的 HTML+script 一并清除）
-        expect(svg).not.toContain("foreignobject");
+        // foreignObject 必须保留（mermaid v11 节点文字载体，剥了文字全丢）
+        expect(svg).toContain("foreignobject");
+        // 文字结构（div/span/p）保留，节点文字不丢
+        expect(svg).toContain("<div");
+        expect(svg).toContain("<p");
+        expect(svg).toContain("合法节点文字");
+        // img/a/iframe/body 可执行或可导航标签必须消失（剥标签，文本内容保留）
+        expect(svg).not.toContain("<img");
+        expect(svg).not.toContain("<a ");
+        expect(svg).not.toContain("<iframe");
+        expect(svg).not.toContain("<body");
         // 任意 on* 事件属性必须消失（onerror/onclick/onload/onmouseover 全覆盖）
         expect(svg).not.toMatch(/\son[a-z]+\s*=/i);
         expect(svg).not.toContain("onerror");
         expect(svg).not.toContain("onclick");
         expect(svg).not.toContain("onload");
         expect(svg).not.toContain("onmouseover");
+        // javascript: URI 不能残留在 href 里
+        expect(svg).not.toContain("javascript:");
     });
 
-    it("清理后保留合法 SVG 结构（svg/g/rect/path/text 不被误删）", async () => {
+    it("清理后保留合法 SVG 结构（svg/g/rect/path/text/style 不被误删）", async () => {
         const legitSvg =
             '<svg xmlns="http://www.w3.org/2000/svg"><style>.node{fill:#fff}</style><g class="node"><rect width="10" height="10"/><text>hello</text><path d="M0 0"/></g></svg>';
         mermaidRender.mockResolvedValue({ svg: legitSvg });
@@ -149,5 +165,35 @@ describe("renderMermaid", () => {
         expect(svg).toContain("<text");
         // mermaid 把配色烘焙进 <style>，保留才不花图
         expect(svg).toContain("<style");
+    });
+
+    it("mermaid v11 真实 label 结构（foreignObject>div[class][style]>span>p）完整保留，style/class 属性不丢", async () => {
+        // 浏览器实测的 flowchart 节点 label 结构（mermaid 11.16 产物），文字与布局样式都必须存活
+        const realisticSvg = `<svg xmlns="http://www.w3.org/2000/svg">
+  <foreignObject width="32" height="24">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;">
+      <span class="nodeLabel markdown-node-label"><p>开始</p></span>
+    </div>
+  </foreignObject>
+  <foreignObject width="23.09" height="24">
+    <div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; max-width: 200px;">
+      <span class="edgeLabel"><p>yes</p></span>
+    </div>
+  </foreignObject>
+</svg>`;
+        mermaidRender.mockResolvedValue({ svg: realisticSvg });
+
+        const result = await renderMermaid("flowchart TD\n    A[开始] --> B{条件}", "light");
+
+        const svg = unwrapSvg(result);
+        expect(svg).toContain("<foreignObject");
+        expect(svg).toContain("<div");
+        expect(svg).toContain("<span");
+        expect(svg).toContain("<p>开始</p>");
+        expect(svg).toContain("<p>yes</p>");
+        // 布局关键属性存活：class 与 style（text-align/white-space 居中与不换行依赖它们）
+        expect(svg).toContain('class="nodeLabel markdown-node-label"');
+        expect(svg).toContain("text-align: center");
+        expect(svg).toContain("white-space: nowrap");
     });
 });

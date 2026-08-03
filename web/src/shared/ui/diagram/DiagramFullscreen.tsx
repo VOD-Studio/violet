@@ -235,7 +235,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
                             role="img"
                             aria-label={label}
                             onClick={(e) => e.stopPropagation()}
-                            // biome-ignore lint/security/noDangerouslySetInnerHtml: svg 经 renderMermaid 内 DOMPurify 双重清理
+                            // biome-ignore lint/security/noDangerouslySetInnerHtml: svg 经 renderMermaid 内 DOMPurify 清理：svg/svgFilters profile + foreignObject 内纯文本 HTML 白名单（div/span/p 等，无 href/src 能力）+ FORBID script/a + on* 事件属性与 CSS url() 剥除，与阅读端同防线
                             dangerouslySetInnerHTML={{ __html: fullscreenSvg }}
                         />
                     </div>
