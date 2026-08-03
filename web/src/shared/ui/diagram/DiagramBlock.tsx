@@ -13,6 +13,7 @@
  * 不向读者暴露详细错误（作者在编辑弹层看具体错误，那是 slice #4 的职责）。
  */
 import { useEffect, useRef, useState } from "react";
+import { DiagramViewport } from "./DiagramViewport";
 import type { DiagramTheme, RenderMermaidResult } from "./render-mermaid";
 import { renderMermaid } from "./render-mermaid";
 
@@ -89,15 +90,29 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
 
     const errored = result !== null && !("svg" in result);
 
+    // 复制源码：剪贴板 API 不可用（非安全上下文等）时静默降级，不阻塞渲染
+    const [copied, setCopied] = useState(false);
+    const copySource = async () => {
+        try {
+            await navigator.clipboard.writeText(source);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch {
+            // 剪贴板不可用，忽略
+        }
+    };
+
     return (
         <div className="my-6 flex justify-center">
             {errored ? null : (
-                <div
-                    ref={containerRef}
-                    className="code-block-scrollbar overflow-x-auto"
-                    role="img"
-                    aria-label="流程图"
-                />
+                <DiagramViewport onCopySource={copySource} copied={copied}>
+                    <div
+                        ref={containerRef}
+                        className="flex justify-center"
+                        role="img"
+                        aria-label="流程图"
+                    />
+                </DiagramViewport>
             )}
             {errored ? <DiagramError source={source} /> : null}
         </div>
