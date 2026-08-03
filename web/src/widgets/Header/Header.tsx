@@ -56,9 +56,13 @@ const Header = ({ isAuthenticated }: HeaderProps) => {
                 mounted && "transition-colors duration-300",
             )}
         >
-            <div className="container mx-auto flex h-16 items-center justify-between px-4">
+            {/* 左 logo 与右工具由 justify-between 顶两端；nav 绝对定位钉在容器水平中点，
+                脱离两端宽度变化的推挤（站名异步落定、登录态切换、用户名长短都不再带动 nav 跳）。 */}
+            <div className="container mx-auto relative flex h-16 items-center justify-between px-4">
                 <HeaderLogo />
-                <HeaderNav onAction={handleAction} />
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <HeaderNav onAction={handleAction} />
+                </div>
                 <div className="flex items-center gap-2">
                     <HeaderActions user={user} />
                     <HeaderMobile onAction={handleAction} />
