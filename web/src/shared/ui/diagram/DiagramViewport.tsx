@@ -17,6 +17,7 @@ import {
     FileCode,
     FileImage,
     Lock,
+    Maximize,
     RotateCcw,
     Unlock,
     ZoomIn,
@@ -35,8 +36,14 @@ export interface DiagramViewportProps {
     copied?: boolean;
     /** 提供时工具条显示导出按钮（SVG/PNG 菜单）；传已清理的 SVG 字符串 */
     exportSvg?: string;
+    /** 提供时工具条显示全屏按钮（阅读端传回调，编辑器弹层不传） */
+    onFullscreen?: () => void;
     /** 是否渲染工具条（默认 true；阅读端渲染完成前隐藏，避免空区域角落出现按钮） */
     renderToolbar?: boolean;
+    /** 初始锁定态（默认 true；全屏模态传 false 默认解锁） */
+    defaultLocked?: boolean;
+    /** 外层容器额外 className（全屏态传 h-full 撑满高度） */
+    className?: string;
 }
 
 /** 键盘聚焦时的可见焦点环（与按钮 focus-visible 统一） */
@@ -47,7 +54,10 @@ export function DiagramViewport({
     children,
     onCopySource,
     copied,
+    defaultLocked = true,
     exportSvg,
+    className,
+    onFullscreen,
     renderToolbar = true,
 }: DiagramViewportProps) {
     const {
@@ -61,7 +71,7 @@ export function DiagramViewport({
         zoomIn,
         zoomOut,
         reset,
-    } = useDiagramViewport();
+    } = useDiagramViewport(defaultLocked);
 
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
     const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -85,7 +95,7 @@ export function DiagramViewport({
     }, [exportMenuOpen]);
 
     return (
-        <div ref={containerRef} className="relative w-full">
+        <div ref={containerRef} className={`relative w-full ${className ?? ""}`}>
             {/* 锁定态横向滚动（PRD-0005 决策），解锁态裁剪给 transform；
 			    overscroll-contain 阻断滚轮滚动链传播到页面（配合 hook 原生 passive:false 监听）。
 			    键盘缩放平移契约见 onKeyDown（T4 a11y）。 */}
@@ -232,6 +242,17 @@ export function DiagramViewport({
                             <Unlock className="size-3.5" />
                         )}
                     </Button>
+                    {onFullscreen ? (
+                        <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={onFullscreen}
+                            aria-label="全屏查看"
+                            title="全屏查看"
+                        >
+                            <Maximize className="size-3.5" />
+                        </Button>
+                    ) : null}
                 </div>
             ) : null}
         </div>

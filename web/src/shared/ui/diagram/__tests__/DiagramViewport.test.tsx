@@ -176,3 +176,32 @@ describe("DiagramViewport 导出菜单（T1）", () => {
         expect(btn.getAttribute("aria-expanded")).toBe("true");
     });
 });
+
+describe("DiagramViewport 全屏按钮（T3）", () => {
+    it("传 onFullscreen 时渲染全屏按钮，不传时不渲染", () => {
+        const { rerender } = render(
+            <DiagramViewport onFullscreen={() => {}}>
+                <div />
+            </DiagramViewport>,
+        );
+        expect(screen.getByLabelText("全屏查看")).toBeTruthy();
+
+        rerender(
+            <DiagramViewport>
+                <div />
+            </DiagramViewport>,
+        );
+        expect(screen.queryByLabelText("全屏查看")).toBeNull();
+    });
+
+    it("点击全屏按钮触发 onFullscreen", () => {
+        const onFullscreen = vi.fn();
+        render(
+            <DiagramViewport onFullscreen={onFullscreen}>
+                <div />
+            </DiagramViewport>,
+        );
+        fireEvent.click(screen.getByLabelText("全屏查看"));
+        expect(onFullscreen).toHaveBeenCalledOnce();
+    });
+});

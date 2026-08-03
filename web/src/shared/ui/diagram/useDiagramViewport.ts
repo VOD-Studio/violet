@@ -83,12 +83,12 @@ interface DragSession {
     originY: number;
 }
 
-export function useDiagramViewport() {
+export function useDiagramViewport(initialLocked = true) {
     const [state, setState] = useState<DiagramViewportState>({
         scale: 1,
         translateX: 0,
         translateY: 0,
-        locked: true,
+        locked: initialLocked,
     });
     /** 缩放中心取值用的容器（按钮缩放以视口中心为锚，滚轮以光标为锚） */
     const containerRef = useRef<HTMLDivElement>(null);

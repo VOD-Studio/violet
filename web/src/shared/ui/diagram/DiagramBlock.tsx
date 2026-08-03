@@ -12,7 +12,9 @@
  * 失败降级：renderMermaid 返回 { error } → 显示「图表渲染失败」占位 + 折叠源码，
  * 不向读者暴露详细错误（作者在编辑弹层看具体错误，那是 slice #4 的职责）。
  */
+import { AnimatePresence } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { DiagramFullscreen } from "./DiagramFullscreen";
 import { DiagramViewport } from "./DiagramViewport";
 import { extractDiagramLabel } from "./label";
 import type { DiagramTheme, RenderMermaidResult } from "./render-mermaid";
@@ -54,9 +56,11 @@ function DiagramError({ source }: { source: string }) {
 
 export function DiagramBlock({ source }: DiagramBlockProps) {
     const containerRef = useRef<HTMLDivElement>(null);
+    /** 全屏打开前保存焦点元素，关闭后回归（PRD 焦点管理） */
+    const fullscreenTriggerRef = useRef<HTMLElement | null>(null);
+    const [fullscreen, setFullscreen] = useState(false);
     const [result, setResult] = useState<RenderMermaidResult | null>(null);
     const [theme, setTheme] = useState<DiagramTheme>(readCurrentTheme);
-
     // 主题跟随：mermaid 颜色烘焙进 SVG，切主题必须重新 render。
     // 监听 <html>.classList（next-themes 在此注入 dark），参照 particle-field 先例。
     useEffect(() => {
@@ -114,8 +118,12 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
                 <DiagramViewport
                     onCopySource={copySource}
                     copied={copied}
-                    renderToolbar={!loading}
                     exportSvg={result && "svg" in result ? result.svg : undefined}
+                    onFullscreen={() => {
+                        fullscreenTriggerRef.current =
+                            (document.activeElement as HTMLElement) ?? null;
+                        setFullscreen(true);
+                    }}
                 >
                     <div
                         ref={containerRef}
@@ -134,6 +142,16 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
                 </div>
             ) : null}
             {errored ? <DiagramError source={source} /> : null}
+            <AnimatePresence>
+                {fullscreen && result && "svg" in result ? (
+                    <DiagramFullscreen
+                        svg={result.svg}
+                        label={extractDiagramLabel(source)}
+                        onClose={() => setFullscreen(false)}
+                        triggerRef={fullscreenTriggerRef}
+                    />
+                ) : null}
+            </AnimatePresence>
         </div>
     );
 }
