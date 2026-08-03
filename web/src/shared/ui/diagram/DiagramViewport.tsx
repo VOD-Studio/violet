@@ -26,7 +26,6 @@ export function DiagramViewport({ children, onCopySource, copied }: DiagramViewp
     const {
         containerRef,
         state,
-        handleWheel,
         handlePointerDown,
         handlePointerMove,
         handlePointerUp,
@@ -37,11 +36,14 @@ export function DiagramViewport({ children, onCopySource, copied }: DiagramViewp
     } = useDiagramViewport();
 
     return (
-        <div ref={containerRef} className="relative">
-            {/* 滚动/裁剪切换：锁定态横向滚动（PRD-0005 决策），解锁态裁剪给 transform */}
+        <div ref={containerRef} className="relative w-full">
+            {/* 滚动/裁剪切换：锁定态横向滚动（PRD-0005 决策），解锁态裁剪给 transform；
+			    overscroll-contain 阻断滚轮滚动链传播到页面（配合 hook 原生 passive:false 监听） */}
             <div
                 className={
-                    state.locked ? "code-block-scrollbar overflow-x-auto" : "overflow-hidden"
+                    state.locked
+                        ? "code-block-scrollbar overflow-x-auto"
+                        : "overflow-hidden overscroll-contain"
                 }
             >
                 <div
@@ -54,7 +56,6 @@ export function DiagramViewport({ children, onCopySource, copied }: DiagramViewp
                         transform: `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`,
                         transformOrigin: "0 0",
                     }}
-                    onWheel={handleWheel}
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}

@@ -6,8 +6,8 @@
  * 纯函数 zoomAtPoint 与 clamp 抽在模块顶层，供单测直接覆盖（PRD Testing 决策）。
  */
 
-import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
-import { useCallback, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export const VIEWPORT_SCALE_MIN = 0.25;
 export const VIEWPORT_SCALE_MAX = 4;
@@ -75,21 +75,26 @@ export function useDiagramViewport() {
     const containerRef = useRef<HTMLDivElement>(null);
     const dragRef = useRef<DragSession | null>(null);
 
-    /** 滚轮缩放：仅解锁态响应，以光标位置为缩放中心；preventDefault 阻止页面滚动 */
-    const handleWheel = useCallback(
-        (e: ReactWheelEvent) => {
-            if (state.locked) return;
+    /**
+     * 滚轮缩放：仅解锁态响应，以光标位置为缩放中心；preventDefault 阻止页面滚动。
+     * 必须用原生监听（passive: false）——React 的 onWheel 在 root 委托中注册为
+     * passive，preventDefault 无效，滚轮会同时缩放图与滚动页面（React 17+ 已知限制）。
+     */
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el || state.locked) return;
+        const onWheel = (e: WheelEvent) => {
             e.preventDefault();
-            const rect = containerRef.current?.getBoundingClientRect();
-            if (!rect) return;
+            const rect = el.getBoundingClientRect();
             const factor = e.deltaY < 0 ? WHEEL_SCALE_FACTOR : 1 / WHEEL_SCALE_FACTOR;
             setState((s) => ({
                 ...zoomAtPoint(s, factor, e.clientX - rect.left, e.clientY - rect.top),
                 locked: s.locked,
             }));
-        },
-        [state.locked],
-    );
+        };
+        el.addEventListener("wheel", onWheel, { passive: false });
+        return () => el.removeEventListener("wheel", onWheel);
+    }, [state.locked]);
 
     const handlePointerDown = useCallback(
         (e: ReactPointerEvent) => {
@@ -154,7 +159,6 @@ export function useDiagramViewport() {
     return {
         containerRef,
         state,
-        handleWheel,
         handlePointerDown,
         handlePointerMove,
         handlePointerUp,
