@@ -13,7 +13,7 @@ export function DiagramPlaceholder({ className }: { className?: string }) {
     return (
         <div
             className={cn(
-                "flex min-h-24 w-full items-center justify-center rounded-lg bg-muted/40",
+                "flex min-h-64 w-full items-center justify-center rounded-lg bg-muted/40",
                 className,
             )}
             aria-hidden
