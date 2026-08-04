@@ -14,9 +14,17 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
 
-# 前端 TS/JS/JSON 由 biome 强制 tab 缩进，覆盖默认 space
+# 前端 TS/JS/JSON 与 biome 对齐：tab 缩进、4 宽、100 列
 [*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}]
 indent_style = tab
+tab_width = 4
+max_line_length = 100
+
+# CSS 与 biome 对齐：tab 缩进
+[*.css]
+indent_style = tab
+tab_width = 4
+max_line_length = 100
 
 # Go: tab 缩进 (gofmt 规范)
 [*.go]
