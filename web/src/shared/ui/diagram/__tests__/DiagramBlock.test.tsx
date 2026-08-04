@@ -52,6 +52,11 @@ describe("DiagramBlock 加载与渲染", () => {
         });
     });
 
+    it("根容器带 data-type=diagram-block（批注拦截选择器依赖）", () => {
+        const { container } = render(<DiagramBlock format="mermaid" source="graph TD" />);
+        expect(container.firstElementChild?.getAttribute("data-type")).toBe("diagram-block");
+    });
+
     it("渲染失败显示降级占位 + <details> 折叠源码", async () => {
         vi.mocked(renderMermaid).mockResolvedValue({ error: "syntax error" });
         const { container } = render(<DiagramBlock format="mermaid" source="bad source" />);

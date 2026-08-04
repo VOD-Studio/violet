@@ -12,6 +12,7 @@
  * 失败降级：renderMermaid 返回 { error } → 显示「图表渲染失败」占位 + 折叠源码，
  * 不向读者暴露详细错误（作者在编辑弹层看具体错误，那是 slice #4 的职责）。
  */
+import { TriangleAlert } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { DiagramFullscreen } from "./DiagramFullscreen";
@@ -37,16 +38,21 @@ function readCurrentTheme(): DiagramTheme {
  * 渲染失败占位：固定提示 + 折叠源码（<details> 无 JS 也可见，作降级）
  *
  * 不展示 error.message：读者无需、也不应看到 mermaid 内部错误细节。
+ * 视觉对齐未注册格式的 DiagramSourceFallback：提示行（图标 + muted 小字）
+ * + 深色代码块源码，与围栏代码块同一视觉族，不做独立卡片。
  */
 function DiagramError({ source }: { source: string }) {
     return (
-        <figure className="my-6 rounded-lg border border-edge-hairline bg-muted/40 p-4 text-center">
-            <figcaption className="text-sm text-muted-foreground">图表渲染失败</figcaption>
-            <details className="mt-2 text-left">
+        <figure className="my-6 w-full">
+            <figcaption className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <TriangleAlert className="size-4" aria-hidden />
+                图表渲染失败
+            </figcaption>
+            <details className="mt-2">
                 <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
                     查看源码
                 </summary>
-                <pre className="code-block-scrollbar mt-2 overflow-x-auto rounded bg-muted p-3 text-xs leading-relaxed">
+                <pre className="code-block-scrollbar mt-2 overflow-x-auto rounded-lg border border-edge-hairline bg-[#24292e] px-4 py-3 text-sm leading-relaxed text-white/90">
                     <code>{source}</code>
                 </pre>
             </details>
@@ -112,8 +118,12 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
     // 容器结构全程稳定：加载与加载完用同一 DOM，仅内容填充不同。
     // containerRef 始终 min-h-24（加载时撑住 96px 防凹陷，加载完 SVG 撑开后
     // min-h 不限制更高内容）→ 零尺寸跳变。spinner 绝对定位覆盖在空容器中央。
+    // data-type 与编辑器节点载体同名：批注的 UNANNOTATABLE_SELECTOR 靠它拦截
+    // （markdown-components 分发时原 data-type div 被组件整体替换，需在此补回）；
+    // select-none 使图内文字（SVG text / foreignObject HTML）不可选，从源头
+    // 消除划线批注选区与拖拽时的误选。
     return (
-        <div className="relative my-6 flex justify-center">
+        <div className="relative my-6 flex justify-center" data-type="diagram-block">
             {errored ? null : (
                 <DiagramViewport
                     onCopySource={copySource}
@@ -127,7 +137,7 @@ export function DiagramBlock({ source }: DiagramBlockProps) {
                 >
                     <div
                         ref={containerRef}
-                        className="flex min-h-24 justify-center"
+                        className="flex min-h-24 select-none justify-center"
                         role="img"
                         aria-label={extractDiagramLabel(source)}
                     />
