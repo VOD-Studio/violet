@@ -79,19 +79,21 @@ describe("getThemeVariables", () => {
         expect(vars.primaryBorderColor).toMatch(/^#[0-9a-f]{6}$/);
     });
 
-    it("isDark=true → 返回暗色变量集（全部 hex 格式）", () => {
+    it("isDark=true → 仅背景对齐站点（内置 dark 主题自带节点/文字配对）", () => {
         mockComputedStyle(LIGHT_VARS, DARK_VARS);
         const vars = getThemeVariables(true);
         expect(vars.background).toMatch(/^#[0-9a-f]{6}$/);
-        expect(vars.primaryTextColor).toMatch(/^#[0-9a-f]{6}$/);
+        // 站点 border 灰在深色节点上对比度不足，框架色用 dark 主题内建值
+        expect(vars.primaryTextColor).toBeUndefined();
+        expect(vars.lineColor).toBeUndefined();
+        expect(vars.primaryBorderColor).toBeUndefined();
     });
 
-    it("浅色与暗色的背景/文字色不同（证明 isDark 分支生效）", () => {
+    it("浅色与暗色的背景不同（证明 isDark 分支生效）", () => {
         mockComputedStyle(LIGHT_VARS, DARK_VARS);
         const light = getThemeVariables(false);
         const dark = getThemeVariables(true);
         expect(light.background).not.toBe(dark.background);
-        expect(light.primaryTextColor).not.toBe(dark.primaryTextColor);
     });
 
     it("节点填色（primaryColor/secondaryColor/tertiaryColor）刻意未设置——保留 mermaid 默认彩色", () => {

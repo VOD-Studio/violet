@@ -119,7 +119,9 @@ export async function renderMermaid(
         mermaid.initialize({
             startOnLoad: false,
             securityLevel: "strict",
-            theme: "base",
+            // 明暗双主题：dark 用内置主题（深色节点 + 浅字全图配对），
+            // light 用 base + 站点框架色（保留默认彩色节点）
+            theme: theme === "dark" ? "dark" : "base",
             themeVariables,
             // suppressErrorRendering: true — mermaid v11 默认 false，解析失败时不抛错，
             // 而是路由到内置 errorDiagram 把含 "Syntax error in text" + "mermaid version"
