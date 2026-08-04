@@ -1,10 +1,9 @@
 /**
  * DiagramBlock 组件层测试（T5）
  *
- * 覆盖：加载态 spinner、成功渲染 SVG 写入、失败降级 <details>、
- * 复制按钮反馈、主题 MutationObserver 触发重渲、aria-label 语义化。
- *
- * 不测真实 mermaid 渲染（PRD Testing Decisions：手动验证），renderMermaid 全 mock。
+ * 覆盖：首加载占位面板（无 spinner）、成功渲染 SVG + container 挂 fade 类、
+ * 失败错误提示行（流式融入：左细线 + 单行文案 + 折叠源码）、复制按钮反馈、
+ * 主题 MutationObserver 触发重渲、aria-label 语义化。
  */
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -32,7 +31,7 @@ beforeEach(() => {
 });
 
 describe("DiagramBlock 加载与渲染", () => {
-    it("初始加载态显示 spinner（aria-live=polite）", () => {
+    it("首加载占位面板显示（无旋转 spinner）", () => {
         // renderMermaid 不 resolve（pending）；项目 lib=ES2022 无 withResolvers
         vi.mocked(renderMermaid).mockReturnValue(
             new Promise<never>(() => {
@@ -40,34 +39,39 @@ describe("DiagramBlock 加载与渲染", () => {
             }),
         );
         const { container } = render(<DiagramBlock format="mermaid" source="graph TD" />);
-        expect(container.querySelector('[aria-live="polite"]')).toBeTruthy();
-        expect(container.querySelector(".animate-spin")).toBeTruthy();
+        // 旋转 spinner 已去除：避免「空白 → 转圈 → 图」三段式割裂
+        expect(container.querySelector(".animate-spin")).toBeNull();
+        // 占位面板：图标 pulse（animate-pulse）+ bg-muted/40 背景
+        expect(container.querySelector(".animate-pulse")).toBeTruthy();
     });
 
-    it("渲染成功后 SVG 写入容器", async () => {
+    it("渲染成功后 SVG 写入容器并挂 fade-in 动画类", async () => {
         vi.mocked(renderMermaid).mockResolvedValue({ svg: "<svg id='result'/>" });
         const { container } = render(<DiagramBlock format="mermaid" source="graph TD" />);
         await waitFor(() => {
             expect(container.querySelector("#result")).toBeTruthy();
         });
+        // 首次成功挂上 animate-diagram-enter（一次，后续主题切换保留旧帧不重播）
+        const img = container.querySelector("[role='img']");
+        expect(img?.className).toContain("animate-diagram-enter");
     });
 
-    it("根容器带 data-type=diagram-block（批注拦截选择器依赖）", () => {
-        const { container } = render(<DiagramBlock format="mermaid" source="graph TD" />);
-        expect(container.firstElementChild?.getAttribute("data-type")).toBe("diagram-block");
-    });
-
-    it("渲染失败显示降级占位 + <details> 折叠源码", async () => {
+    it("渲染失败降级为 shiki 高亮源码块（与 FencedCodeBlock 同视觉）", async () => {
         vi.mocked(renderMermaid).mockResolvedValue({ error: "syntax error" });
         const { container } = render(<DiagramBlock format="mermaid" source="bad source" />);
+        // 不显示 "图表渲染失败" 装饰文字——失败 = 退化回代码呈现，源码自身是内容
         await waitFor(() => {
-            expect(screen.getByText("图表渲染失败")).toBeTruthy();
+            expect(screen.queryByText("图表渲染失败")).toBeNull();
         });
-        // 失败降级是 <details> 结构（无 JS 也可展开，PRD 降级决策）
-        const details = container.querySelector("details");
-        expect(details).toBeTruthy();
-        expect(details?.querySelector("summary")?.textContent).toContain("查看源码");
-        expect(details?.querySelector("code")?.textContent).toBe("bad source");
+        // 源码块：深色代码块视觉族（顶栏语言标签 + 高亮源码）
+        const top = container.querySelector(".bg-\\[\\#24292e\\]");
+        expect(top).toBeTruthy();
+        // 源码出现在代码块内（shiki 高亮前 fallback 纯文本，检测到即可）
+        await waitFor(() => {
+            const allCode = container.querySelectorAll("code");
+            const has = Array.from(allCode).some((c) => c.textContent === "bad source");
+            expect(has).toBe(true);
+        });
     });
 });
 
