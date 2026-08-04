@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # Dockerfile.dev - 开发环境 Go API 容器配置 (Air 热重载)
 # 源码由 docker compose watch sync 实时同步，依赖变更触发自动 rebuild
 FROM golang:1.26-alpine
@@ -15,9 +16,11 @@ RUN go install github.com/air-verse/air@latest
 
 WORKDIR /app
 
-# 先复制 go.mod/go.sum，利用 Docker 层缓存：依赖不变时跳过 download
+# 先复制 go.mod/go.sum，利用 Docker 层缓存与 BuildKit 缓存：依赖不变时跳过 download
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
 
 # 复制源码（初始状态，后续由 docker compose watch sync 实时更新）
 COPY . .

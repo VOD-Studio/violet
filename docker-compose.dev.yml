@@ -9,6 +9,8 @@
 # 停止:
 #   docker compose -f docker-compose.dev.yml down (或 make dev-docker-down)
 
+name: violet-dev
+
 services:
   # PostgreSQL 数据库
   postgres:
@@ -29,6 +31,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   # Redis 缓存
   redis:
@@ -58,6 +64,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # Go API 服务 (Air 热重载 + docker compose watch sync)
   api:
@@ -91,8 +101,11 @@ services:
           target: /app
           ignore:
             - tmp/
+            - bin/
             - .git/
             - uploads/
+            - .idea/
+            - .vscode/
         - action: sync+restart
           path: ./api/.air.toml
           target: /app/.air.toml
@@ -113,6 +126,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
   # React Web 前端 (Vite HMR + docker compose watch sync)
   web:
@@ -131,10 +148,15 @@ services:
     develop:
       watch:
         # 前端源码同步进容器后由 Vite 检测变化并触发 HMR；
-        # node_modules/dist/.env 等由 web/.dockerignore 排除
+        # node_modules/dist/.env 等由 ignore 排除，防止宿主机目录同步覆盖容器内部文件
         - action: sync
           path: ./web
           target: /app
+          ignore:
+            - node_modules/
+            - dist/
+            - .git/
+            - .vite/
         # pnpm-workspace.yaml 承载 allowBuilds 等 install 行为配置，需 rebuild 才生效
         - action: rebuild
           path: ./web/pnpm-workspace.yaml
@@ -147,6 +169,16 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:5173/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
 volumes:
   postgres_dev_data:
