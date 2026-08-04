@@ -1,0 +1,16 @@
+# Docker 构建上下文排除（同时作用于 docker compose watch sync）
+
+# 宿主 node_modules 不得进入镜像/容器：覆盖会引入宿主平台二进制（如 macOS arm64），
+# 破坏镜像内 linux 依赖；pnpm verifyDepsBeforeRun 检测到不一致还会触发重装
+node_modules/
+.pnpm-store/
+
+# 构建产物
+dist/
+.reports/
+
+# 环境文件不进镜像，运行时由 compose environment 注入
+.env*
+!.env.example
+
+.git/

@@ -36,3 +36,6 @@ minimumReleaseAgeExclude:
 allowBuilds:
   esbuild: true
   lightningcss: true
+
+# 容器内无 TTY，跳过交互式确认（node_modules 状态不一致需清理时不再阻塞）
+confirmModulesPurge: false
