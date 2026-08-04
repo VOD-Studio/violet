@@ -17,8 +17,6 @@ services:
     image: postgres:16-alpine
     container_name: blog-postgres-dev
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:${DATABASE_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${DATABASE_USER:-blog}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-changeme-strong-password}
@@ -41,8 +39,6 @@ services:
     image: redis:7-alpine
     container_name: blog-redis-dev
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"
     command: >
       sh -c "if [ -n \"$${REDIS_PASSWORD}\" ]; then
         redis-server --requirepass \"$${REDIS_PASSWORD}\";

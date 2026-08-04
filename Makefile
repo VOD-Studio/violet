@@ -31,8 +31,6 @@ dev-docker: ## 一键启动完整 Docker 开发环境 (PostgreSQL + Redis + API 
 	@echo "Docker 开发环境已启动:"
 	@echo "  前端: http://localhost:5173"
 	@echo "  API:  http://localhost:9090"
-	@echo "  数据库: localhost:5432"
-	@echo "  Redis: localhost:6379"
 	@echo ""
 	@echo "监控文件变化中 (按 Ctrl+C 退出)..."
 	docker compose -f docker-compose.dev.yml watch --no-up
@@ -55,7 +53,6 @@ dev-docker-redis-app: ## 仅启动 Redis + 前后端容器 (不启动 PostgreSQL
 	@echo "Docker 服务已启动 (包含 Redis 容器，跳过 PostgreSQL 容器):"
 	@echo "  前端: http://localhost:5173"
 	@echo "  API:  http://localhost:9090"
-	@echo "  Redis 容器: localhost:6379"
 	@echo "  PostgreSQL: 连接宿主机/外部数据库 (host.docker.internal)"
 	@echo ""
 	@echo "监控文件变化中 (按 Ctrl+C 退出)..."
