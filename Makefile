@@ -35,7 +35,7 @@ dev-docker: ## 一键启动完整 Docker 开发环境 (PostgreSQL + Redis + API 
 	@echo "  Redis: localhost:6379"
 	@echo ""
 	@echo "监控文件变化中 (按 Ctrl+C 退出)..."
-	docker compose -f docker-compose.dev.yml watch
+	docker compose -f docker-compose.dev.yml watch --no-up
 
 dev-docker-app: ## 仅启动 Docker 前后端 (不启动数据库容器，连接宿主机/外部 DB)
 	@if [ ! -f .env ]; then echo "⚠️  缺少 .env 文件，运行 make env 创建"; exit 1; fi
@@ -65,7 +65,7 @@ dev-docker-down: ## 停止 Docker 开发环境
 	docker compose -f docker-compose.dev.yml down
 
 dev-docker-watch: ## 仅启动 watch 模式（容器需已由 make dev-docker 启动）
-	docker compose -f docker-compose.dev.yml watch
+	docker compose -f docker-compose.dev.yml watch --no-up
 
 dev-docker-logs: ## 查看 Docker 开发环境日志
 	docker compose -f docker-compose.dev.yml logs -f

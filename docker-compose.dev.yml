@@ -120,16 +120,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      # go 编译缓存持久化：recreate 后 air 增量编译秒级完成，
+      # 否则每次全量编译 ~2.5 分钟
+      - go_build_cache:/root/.cache/go-build
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--method=GET", "-O-", "http://localhost:9090/api/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 15s
+      retries: 12
+      start_period: 60s
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
 
   # React Web 前端 (Vite HMR + docker compose watch sync)
   web:
@@ -183,3 +187,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  go_build_cache:
