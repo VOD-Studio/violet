@@ -3,6 +3,9 @@
 # 用法:
 #   docker compose -f docker-compose.dev.yml up -d (或 make dev-docker)
 #
+# 源码通过 docker compose watch sync 实时同步到容器:
+#   docker compose -f docker-compose.dev.yml watch (或 make dev-docker-watch)
+#
 # 停止:
 #   docker compose -f docker-compose.dev.yml down (或 make dev-docker-down)
 
@@ -56,7 +59,7 @@ services:
       retries: 5
       start_period: 5s
 
-  # Go API 服务 (Air 热重载)
+  # Go API 服务 (Air 热重载 + docker compose watch sync)
   api:
     build:
       context: ./api
@@ -80,9 +83,25 @@ services:
       PORT: 9090
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    volumes:
-      - ./api:/app
-      - go_pkg_mod:/go/pkg/mod
+    develop:
+      watch:
+        # Go 源码同步进容器后由 Air 检测变化并自动重编译重启
+        - action: sync
+          path: ./api
+          target: /app
+          ignore:
+            - tmp/
+            - .git/
+            - uploads/
+        - action: sync+restart
+          path: ./api/.air.toml
+          target: /app/.air.toml
+        - action: rebuild
+          path: ./api/go.mod
+        - action: rebuild
+          path: ./api/go.sum
+        - action: rebuild
+          path: ./api/Dockerfile.dev
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,7 +114,7 @@ services:
       retries: 5
       start_period: 15s
 
-  # React Web 前端 (Vite HMR 热更新)
+  # React Web 前端 (Vite HMR + docker compose watch sync)
   web:
     build:
       context: ./web
@@ -109,9 +128,22 @@ services:
       VITE_SSR_API_BASE_URL: ${DEV_SSR_API_BASE_URL:-http://api:9090/api/v1}
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
-    volumes:
-      - ./web:/app
-      - /app/node_modules
+    develop:
+      watch:
+        # 前端源码同步进容器后由 Vite 检测变化并触发 HMR；
+        # node_modules/dist/.env 等由 web/.dockerignore 排除
+        - action: sync
+          path: ./web
+          target: /app
+        # pnpm-workspace.yaml 承载 allowBuilds 等 install 行为配置，需 rebuild 才生效
+        - action: rebuild
+          path: ./web/pnpm-workspace.yaml
+        - action: rebuild
+          path: ./web/package.json
+        - action: rebuild
+          path: ./web/pnpm-lock.yaml
+        - action: rebuild
+          path: ./web/Dockerfile.dev
     depends_on:
       api:
         condition: service_healthy
@@ -119,4 +151,3 @@ services:
 volumes:
   postgres_dev_data:
   redis_dev_data:
-  go_pkg_mod:
