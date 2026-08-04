@@ -39,3 +39,7 @@ allowBuilds:
 
 # 容器内无 TTY，跳过交互式确认（node_modules 状态不一致需清理时不再阻塞）
 confirmModulesPurge: false
+
+# 由 biome 统一任务迁移自 .npmrc：npm/npx 不识别 pnpm 专属键，统一声明在此
+shamefullyHoist: true
+strictPeerDependencies: false
