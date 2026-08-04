@@ -2,10 +2,10 @@
  * DiagramFullscreen - 图块全屏模态查看（PRD-0012 §全屏）
  *
  * React Portal 到 document.body 的深色遮罩，脱离正文栏宽度约束。
- * 视觉完全对齐图片灯箱（ImagePreviewControls）：顶部渐变工具栏、
+ * 视觉对齐图片灯箱（ImagePreview）：bg-black/70 遮罩、顶部渐变工具栏、
  * ghost 白色按钮、framer-motion 淡入淡出 + 缩放。
  *
- * 关闭：Esc / 点遮罩空白 / 右上关闭按钮。
+ * 关闭：Esc / 点图外空白 / 右上关闭按钮。
  * 焦点管理：打开时聚焦模态容器，关闭后焦点回触发按钮。
  *
  * AnimatePresence 由父组件（DiagramBlock）包裹，本组件只渲染 motion.div。
@@ -29,10 +29,18 @@ export interface DiagramFullscreenProps {
 
 const BTN_CLS = "text-white hover:bg-white/15 hover:text-white active:scale-100";
 
+/** 拖拽判定阈值（px）：按下后位移超过才算拖拽，避免手抖点击被误判 */
+const DRAG_THRESHOLD_PX = 6;
+
 export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFullscreenProps) {
     const overlayRef = useRef<HTMLDivElement>(null);
     /** 拖拽标志：pointermove 超过阈值后置 true，抑制松手时的合成 click 关闭 */
     const draggedRef = useRef(false);
+    /**
+     * 按下快照：pointer capture 会把松手后的 click 重定向到捕获元素，
+     * click 的 target 不再是真实命中元素——用按下时的 target 判定「点图/点空白」。
+     */
+    const downRef = useRef<{ target: EventTarget; x: number; y: number } | null>(null);
     const {
         containerRef,
         state,
@@ -84,7 +92,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-50 flex flex-col bg-black/80 backdrop-blur-sm focus-visible:outline-none"
+            className="fixed inset-0 z-50 flex flex-col bg-black/70 focus-visible:outline-none"
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
             }}
@@ -189,8 +197,13 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
             </div>
 
             {/* 内容区：撑满视口，SVG 自然尺寸居中。
-                点击空白处（非 SVG）关闭；拖拽后的合成 click 不关闭。
-                motion.div 管淡入动画，transform 在内层普通 div。 */}
+                点图外空白关闭（以按下时的真实命中元素判定，pointer capture
+                会篡改 click target）；拖拽超阈值后的合成 click 不关闭。
+                motion.div 管淡入动画，transform 在内层普通 div。
+                will-change 只在 data-dragging 期间加：合成层按栅格化位图做
+                transform，拖拽是纯平移（位图无损）所以流畅；若常设，缩放
+                会变成拉伸位图（SVG 放大发虚）。非拖拽时浏览器对 transform
+                重栅格化，矢量内容任意缩放保持清晰。 */}
             <div
                 ref={containerRef}
                 className="relative flex-1 overflow-hidden overscroll-contain"
@@ -199,8 +212,10 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
                         draggedRef.current = false;
                         return;
                     }
-                    const target = e.target as HTMLElement;
-                    if (!target.closest("[role=img]")) onClose();
+                    const down = downRef.current;
+                    downRef.current = null;
+                    const target = (down?.target ?? e.target) as HTMLElement;
+                    if (!target.closest?.("[role=img]")) onClose();
                 }}
             >
                 <motion.div
@@ -210,17 +225,30 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
                     transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
                 >
                     <div
-                        className="absolute inset-0 flex touch-none items-center justify-center"
+                        className="absolute inset-0 flex touch-none cursor-grab select-none items-center justify-center data-[dragging]:cursor-grabbing data-[dragging]:will-change-transform [&_*]:cursor-inherit"
                         style={{
                             transform: `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`,
                             transformOrigin: "0 0",
                         }}
                         onPointerDown={(e) => {
+                            downRef.current = {
+                                target: e.target,
+                                x: e.clientX,
+                                y: e.clientY,
+                            };
                             draggedRef.current = false;
                             handlePointerDown(e);
                         }}
                         onPointerMove={(e) => {
-                            if (e.buttons > 0) draggedRef.current = true;
+                            const down = downRef.current;
+                            if (
+                                down &&
+                                e.buttons > 0 &&
+                                Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) >
+                                    DRAG_THRESHOLD_PX
+                            ) {
+                                draggedRef.current = true;
+                            }
                             handlePointerMove(e);
                         }}
                         onPointerUp={handlePointerUp}
@@ -231,7 +259,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
                         aria-label="图表缩放区"
                     >
                         <div
-                            className="flex cursor-grab items-center justify-center active:cursor-grabbing"
+                            className="flex items-center justify-center"
                             role="img"
                             aria-label={label}
                             // biome-ignore lint/security/noDangerouslySetInnerHtml: svg 经 renderMermaid 内 DOMPurify 清理：svg/svgFilters profile + foreignObject 内纯文本 HTML 白名单（div/span/p 等，无 href/src 能力）+ FORBID script/a + on* 事件属性与 CSS url() 剥除，与阅读端同防线

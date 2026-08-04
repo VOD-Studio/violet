@@ -114,7 +114,7 @@ export function DiagramViewport({
                     className={
                         state.locked
                             ? undefined
-                            : "cursor-grab touch-none select-none active:cursor-grabbing"
+                            : "cursor-grab touch-none select-none data-[dragging]:cursor-grabbing data-[dragging]:will-change-transform [&_*]:cursor-inherit"
                     }
                     style={{
                         transform: `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`,

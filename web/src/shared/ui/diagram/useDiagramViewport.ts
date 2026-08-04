@@ -123,10 +123,18 @@ export function useDiagramViewport(initialLocked = true) {
     const handlePointerDown = useCallback(
         (e: ReactPointerEvent) => {
             if (state.locked) return;
-            e.preventDefault();
+            // 不 preventDefault：pointerdown 的默认抑制会连带吃掉 click
+            // （全屏「点空白关闭」失灵）并阻止焦点转移（键盘平移失效）。
+            // 拖拽时的文本选择由容器 select-none 兜底。
+            const el = e.currentTarget as HTMLElement;
+            // 点击即聚焦最近交互区（role=application），方向键平移立即可用
+            (el.closest("[role=application]") as HTMLElement | null)?.focus();
+            // 拖拽光标：CSS active:cursor-grabbing 在 pointer capture 下不可靠
+            // （捕获期间光标由捕获元素决定），改 dataset 状态驱动
+            el.dataset.dragging = "true";
             pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
             // 指针捕获：拖出容器仍持续收到 move/up
-            e.currentTarget.setPointerCapture?.(e.pointerId);
+            el.setPointerCapture?.(e.pointerId);
 
             const count = pointersRef.current.size;
             if (count === 1) {
@@ -191,6 +199,7 @@ export function useDiagramViewport(initialLocked = true) {
         if (count === 0) {
             dragRef.current = null;
             pinchDistRef.current = null;
+            delete (e.currentTarget as HTMLElement).dataset.dragging;
         } else if (count === 1) {
             // 从双指切回单指：用剩余指针重建拖拽会话（origin 用当前 translate）
             pinchDistRef.current = null;

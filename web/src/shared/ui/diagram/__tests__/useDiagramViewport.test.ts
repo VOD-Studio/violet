@@ -144,7 +144,7 @@ describe("useDiagramViewport", () => {
 
 /**
  * 构造最小 PointerEvent mock：仅含捏合测试所需的字段。
- * setPointerCapture 用空实现（真实 DOM 行为不影响状态机逻辑）。
+ * setPointerCapture/closest/dataset 用空实现（真实 DOM 行为不影响状态机逻辑）。
  */
 function pointer(pointerId: number, x: number, y: number): React.PointerEvent<Element> {
     return {
@@ -152,7 +152,11 @@ function pointer(pointerId: number, x: number, y: number): React.PointerEvent<El
         clientX: x,
         clientY: y,
         preventDefault: () => {},
-        currentTarget: { setPointerCapture: () => {} },
+        currentTarget: {
+            setPointerCapture: () => {},
+            closest: () => null,
+            dataset: {},
+        },
     } as unknown as React.PointerEvent<Element>;
 }
 

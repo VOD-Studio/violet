@@ -63,6 +63,40 @@ describe("DiagramFullscreen 关闭", () => {
         expect(onClose).toHaveBeenCalledOnce();
     });
 
+    it("点击内容区空白（图外）触发 onClose", () => {
+        const onClose = vi.fn();
+        render(<DiagramFullscreen svg="<svg/>" label="测试" onClose={onClose} />);
+        const area = screen.getByRole("application");
+        // pointer capture 会把 click target 重定向到捕获元素，
+        // 关闭判定必须以按下时的真实命中元素为准
+        fireEvent.pointerDown(area, { clientX: 100, clientY: 100 });
+        fireEvent.click(area);
+        expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it("点击图上（role=img 内）不触发 onClose", () => {
+        const onClose = vi.fn();
+        render(<DiagramFullscreen svg='<svg id="fs-svg"/>' label="测试" onClose={onClose} />);
+        const img = screen.getByRole("img");
+        fireEvent.pointerDown(img, { clientX: 100, clientY: 100 });
+        fireEvent.click(img);
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it("拖拽超阈值后松手的合成 click 不触发 onClose", () => {
+        const onClose = vi.fn();
+        render(<DiagramFullscreen svg="<svg/>" label="测试" onClose={onClose} />);
+        const area = screen.getByRole("application");
+        fireEvent.pointerDown(area, { clientX: 100, clientY: 100 });
+        fireEvent.pointerMove(area, { clientX: 140, clientY: 100, buttons: 1 });
+        fireEvent.click(area);
+        expect(onClose).not.toHaveBeenCalled();
+        // 拖拽标志已重置：下一次纯点击（图外）正常关闭
+        fireEvent.pointerDown(area, { clientX: 200, clientY: 200 });
+        fireEvent.click(area);
+        expect(onClose).toHaveBeenCalledOnce();
+    });
+
     it("点击内容区不触发 onClose（仅遮罩空白关闭）", () => {
         const onClose = vi.fn();
         render(<DiagramFullscreen svg="<svg/>" label="测试" onClose={onClose} />);
