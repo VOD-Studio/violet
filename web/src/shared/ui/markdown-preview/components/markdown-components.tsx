@@ -11,6 +11,7 @@ import type { Components } from "react-markdown";
 import { contentImageUrl } from "@/shared/lib/image-url";
 import { cn } from "@/shared/lib/utils";
 import { Checkbox } from "@/shared/ui/base/checkbox";
+import { DiagramPlaceholder } from "../../diagram/DiagramPlaceholder";
 // 直连 renderers.ts（不经 diagram/index barrel）：barrel 会静态 re-export
 // DiagramBlock/renderMermaid，把 mermaid 依赖树拉进文章正文主 chunk；直连仅注册
 // 注册表 + lazy factory，mermaid 留在 DiagramBlock 的 lazy chunk（PRD 懒加载决策）。
@@ -67,16 +68,17 @@ function DiagramSourceFallback({ source }: { source: string }) {
 }
 
 /**
- * DiagramLoadingFallback - 图块懒加载/异步渲染期间的空白占位
+ * DiagramLoadingFallback - 图块懒加载/异步渲染期间的占位
  *
- * 替代 DiagramSourceFallback 作为 Suspense fallback：mermaid chunk 懒加载期间
- * 不显示任何内容（源码/文案都不要，图渲染完直接出现，无中间态闪烁）。
- * 保留 min-h 防下方内容跳动；<noscript> 内保留源码（无 JS 环境降级不丢）。
- * 未知 format 仍走 DiagramSourceFallback（源码即最终呈现，无闪烁问题）。
+ * 与 DiagramBlock 的渲染中占位复用同一面板（DiagramPlaceholder），保证 chunk
+ * 加载 → mermaid 渲染两段等待视觉一致。引入路径深连 diagram/DiagramPlaceholder
+ * 直连（同 renderers.ts 的 barrel 规避，见本文件头部 import 注释）。无 JS 环境下
+ * React 不渲染此占位，源码作为 <noscript> 内文本降级可见。
  */
 function DiagramLoadingFallback({ source }: { source: string }) {
     return (
-        <div className="my-6 flex min-h-24 items-center justify-center">
+        <div className="my-6">
+            <DiagramPlaceholder />
             <noscript>
                 <pre className="code-block-scrollbar overflow-x-auto px-4 py-3">
                     <code>{source}</code>
@@ -85,7 +87,6 @@ function DiagramLoadingFallback({ source }: { source: string }) {
         </div>
     );
 }
-
 export const markdownComponents: Components = {
     h1: ({ children, style, className, id }) => (
         <h1
