@@ -1,13 +1,13 @@
 # Docker Compose 配置 (本地 Docker 开发环境: PostgreSQL + Redis + API + Web)
 #
 # 用法:
-#   docker compose -f docker-compose.dev.yml up -d (或 make dev-docker)
+#   docker compose -f docker-compose.dev.yml up -d (或 make docker-dev)
 #
 # 源码通过 docker compose watch sync 实时同步到容器:
-#   docker compose -f docker-compose.dev.yml watch (或 make dev-docker-watch)
+#   docker compose -f docker-compose.dev.yml watch (或 make docker-dev-watch)
 #
 # 停止:
-#   docker compose -f docker-compose.dev.yml down (或 make dev-docker-down)
+#   docker compose -f docker-compose.dev.yml down (或 make docker-dev-down)
 
 name: violet-dev
 
