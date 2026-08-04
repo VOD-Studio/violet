@@ -46,7 +46,7 @@ dev-docker-app: ## 仅启动 Docker 前后端 (不启动数据库容器，连接
 	@echo "  API:  http://localhost:9090"
 	@echo ""
 	@echo "监控文件变化中 (按 Ctrl+C 退出)..."
-	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} REDIS_HOST=$${DEV_REDIS_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml watch
+	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} REDIS_HOST=$${DEV_REDIS_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml watch --no-up
 
 dev-docker-redis-app: ## 仅启动 Redis + 前后端容器 (不启动 PostgreSQL，PostgreSQL 连接宿主机/外部)
 	@if [ ! -f .env ]; then echo "⚠️  缺少 .env 文件，运行 make env 创建"; exit 1; fi
@@ -59,7 +59,7 @@ dev-docker-redis-app: ## 仅启动 Redis + 前后端容器 (不启动 PostgreSQL
 	@echo "  PostgreSQL: 连接宿主机/外部数据库 (host.docker.internal)"
 	@echo ""
 	@echo "监控文件变化中 (按 Ctrl+C 退出)..."
-	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml watch
+	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml watch --no-up
 
 dev-docker-down: ## 停止 Docker 开发环境
 	docker compose -f docker-compose.dev.yml down
