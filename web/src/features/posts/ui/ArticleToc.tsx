@@ -334,7 +334,7 @@ const ArticleToc = ({
         <nav aria-label="目录" className="flex h-full flex-col">
             {hideTitle ? null : (
                 <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Contents
+                    目录
                 </p>
             )}
             <ScrollArea ref={viewportRef} className="flex-1">

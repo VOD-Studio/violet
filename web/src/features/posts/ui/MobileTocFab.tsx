@@ -35,7 +35,7 @@ const MobileTocFab = ({ items, contentRef }: MobileTocFabProps) => {
             <SheetContent side="bottom" className="max-h-[70vh] p-0">
                 <SheetHeader className="border-b border-edge-hairline">
                     <SheetTitle className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                        Contents
+                        目录
                     </SheetTitle>
                 </SheetHeader>
                 <div className="max-h-[60vh] overflow-hidden px-4 py-4">
