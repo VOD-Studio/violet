@@ -2,8 +2,10 @@
  * DiagramFullscreen - 图块全屏模态查看（PRD-0012 §全屏）
  *
  * React Portal 到 document.body 的深色遮罩，脱离正文栏宽度约束。
- * 视觉对齐图片灯箱（ImagePreview）：bg-black/70 遮罩、顶部渐变工具栏、
- * ghost 白色按钮、framer-motion 淡入淡出 + 缩放。
+ * 与图片灯箱的差异：图片是不透明矩形，/70 遮罩即可；mermaid SVG 透明底、
+ * 主题色烘焙（light 主题深色文字无底色），深遮罩上直接不可读——故遮罩
+ * 加深到 /85 压掉透出正文的干扰，图下垫 bg-background 衬底卡片（图主题
+ * 跟随站点，衬底总与图匹配），ghost 白色按钮、framer-motion 淡入淡出 + 缩放。
  *
  * 关闭：Esc / 点图外空白 / 右上关闭按钮。
  * 焦点管理：打开时聚焦模态容器，关闭后焦点回触发按钮。
@@ -92,7 +94,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-50 flex flex-col bg-black/70 focus-visible:outline-none"
+            className="fixed inset-0 z-50 flex flex-col bg-black/85 focus-visible:outline-none"
             onClick={(e) => {
                 if (e.target === e.currentTarget) onClose();
             }}
@@ -259,7 +261,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
                         aria-label="图表缩放区"
                     >
                         <div
-                            className="flex items-center justify-center"
+                            className="flex items-center justify-center rounded-lg bg-background p-6 shadow-2xl"
                             role="img"
                             aria-label={label}
                             // biome-ignore lint/security/noDangerouslySetInnerHtml: svg 经 renderMermaid 内 DOMPurify 清理：svg/svgFilters profile + foreignObject 内纯文本 HTML 白名单（div/span/p 等，无 href/src 能力）+ FORBID script/a + on* 事件属性与 CSS url() 剥除，与阅读端同防线
