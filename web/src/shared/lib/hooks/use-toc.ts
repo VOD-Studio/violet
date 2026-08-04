@@ -100,10 +100,18 @@ export function useActiveHeading(containerRef: React.RefObject<HTMLElement | nul
 
         window.addEventListener("scroll", schedule, { passive: true });
         window.addEventListener("resize", schedule, { passive: true });
+
+        // 内容尺寸变化（mermaid 图块异步渲染撑开、懒加载组件挂载）也触发重算，
+        // 否则图块渲染后 heading 位置偏移但 scroll/resize 都不触发，TOC 高亮卡在
+        // 渲染前的中间态位置（刷新到中间锚点时尤其明显）。
+        const resizeObserver = new ResizeObserver(schedule);
+        resizeObserver.observe(el);
+
         return () => {
             window.removeEventListener("scroll", schedule);
             window.removeEventListener("resize", schedule);
             if (frame) cancelAnimationFrame(frame);
+            resizeObserver.disconnect();
         };
     }, [containerRef]);
 
