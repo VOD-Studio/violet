@@ -1,4 +1,5 @@
 import { formatDate } from "@features/about/model/format";
+import { cleanItem, groupItems } from "@features/changelog/model/clean-item";
 import { useReleases } from "@shared/api/releases";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
@@ -6,7 +7,7 @@ import { RefreshCw, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { ChangelogPageSkeleton } from "./ChangelogPageSkeleton";
 
-/** 单分类条目超过该数折叠（如 v2.2.0 的「新增」23 条），点「展开全部」兜底 */
+/** 单分类条目超过该数折叠（如 v2.4.0 的「修复」18 条），点「展开全部」兜底 */
 const COLLAPSE_ITEMS = 6;
 
 /** 分类标签配色：浅底深字 badge（对齐全站 severity 标签范式），按 label 关键词匹配 */
@@ -28,19 +29,11 @@ function categoryColor(label: string): string {
 	return "bg-muted/50 text-muted-foreground";
 }
 
-/** 条目 markdown 拆 scope：**audit:** 描述 → { scope: "audit", rest: "描述" } */
-function splitItem(item: string): { scope: string; rest: string } {
-	const m = item.match(/^\*\*([^*]+)\*\*:\s*(.*)$/);
-	if (m) return { scope: m[1], rest: m[2] };
-	return { scope: "", rest: item.replace(/[*_`]/g, "") };
-}
-
 /**
  * ChangelogPage - 更新日志独立页（/changelog）
  *
- * 视觉对齐全站语言：页面标题 font-mono text-4xl font-bold（博客页同款），
- * 分类用浅底深字 badge（severity 范式），条目 text-base 舒朗排版。
- * 时间线：左侧竖线 + 圆点；当前版本 primary 高亮 + 实心徽章。
+ * 条目经 cleanItem 清洗（issue 引用收成行尾小链接、任务号剥除），
+ * 同分类内 ≥2 次的 scope 聚合为子组。
  */
 export function ChangelogPage() {
 	const { data, isPending, error, refetch } = useReleases();
@@ -54,15 +47,14 @@ export function ChangelogPage() {
 		return (
 			<main className="mx-auto w-full max-w-4xl px-6 py-20">
 				<Empty
-					title="加载失败"
-					description={error instanceof Error ? error.message : "未知错误"}
+					title="更新日志加载失败"
+					description="无法获取版本发布记录，请稍后重试"
 					action={
 						<Button variant="outline" size="sm" onClick={() => refetch()}>
-							<RefreshCw className="size-3.5" />
+							<RefreshCw className="size-4" />
 							重试
 						</Button>
 					}
-					className="py-20"
 				/>
 			</main>
 		);
@@ -90,7 +82,7 @@ export function ChangelogPage() {
 						<article key={release.tag} className="relative">
 							{/* 时间线节点：当前版本实心强调，历史版本淡化 */}
 							<span
-								className={`absolute -left-11.75 top-2 size-3.5 rounded-full border-2 border-background ${
+								className={`absolute top-2 -left-11.75 size-3.5 rounded-full border-2 border-background ${
 									isCurrent ? "bg-primary" : "bg-muted-foreground/40"
 								}`}
 							/>
@@ -122,9 +114,11 @@ export function ChangelogPage() {
 										const key = `${release.tag}:${cat.label}`;
 										const showAll =
 											expanded[key] || cat.items.length <= COLLAPSE_ITEMS;
-										const visible = showAll
-											? cat.items
-											: cat.items.slice(0, COLLAPSE_ITEMS);
+										const groups = groupItems(cat.items.map(cleanItem));
+										// 折叠按条目数跨组截断；组内可见条目为空则不渲染该组
+										let budget = showAll
+											? Number.POSITIVE_INFINITY
+											: COLLAPSE_ITEMS;
 										return (
 											<section key={cat.label}>
 												<h3
@@ -132,25 +126,49 @@ export function ChangelogPage() {
 												>
 													{cat.label}
 												</h3>
-												<ul className="mt-3 space-y-2.5">
-													{visible.map((item, idx) => {
-														const { scope, rest } = splitItem(item);
+												<div className="mt-4 space-y-5">
+													{groups.map((g) => {
+														if (budget <= 0) return null;
+														const visible = g.items.slice(0, budget);
+														budget -= visible.length;
 														return (
-															<li
-																key={idx}
-																className="break-words text-base leading-relaxed text-foreground/80"
-															>
-																{scope ? (
-																	<span className="font-semibold text-foreground">
-																		{scope}:
-																	</span>
+															<div key={g.scope ?? "loose"}>
+																{g.scope ? (
+																	<p className="mb-2 font-mono text-sm font-semibold text-foreground/60">
+																		{g.scope}
+																	</p>
 																) : null}
-																{scope ? " " : null}
-																{rest}
-															</li>
+																<ul className="space-y-2.5">
+																	{visible.map((item, idx) => (
+																		<li
+																			key={idx}
+																			className="break-words text-base leading-relaxed text-foreground/80"
+																		>
+																			{item.text}
+																			{item.refs.map(
+																				(ref) => (
+																					<a
+																						key={
+																							ref.label
+																						}
+																						href={
+																							ref.url
+																						}
+																						target="_blank"
+																						rel="noreferrer"
+																						className="ml-1.5 align-baseline text-xs font-medium text-muted-foreground/70 underline decoration-muted-foreground/30 underline-offset-2 transition-colors hover:text-primary hover:decoration-primary/50"
+																					>
+																						{ref.label}
+																					</a>
+																				),
+																			)}
+																		</li>
+																	))}
+																</ul>
+															</div>
 														);
 													})}
-												</ul>
+												</div>
 												{cat.items.length > COLLAPSE_ITEMS && (
 													<button
 														type="button"
