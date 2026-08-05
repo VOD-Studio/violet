@@ -162,7 +162,7 @@ export function ChangelogPage() {
 																			{g.scope}
 																		</p>
 																	) : null}
-																	<ul className="space-y-2.5">
+																	<ul className="list-disc space-y-2.5 pl-5 marker:text-muted-foreground/40">
 																		{visible.map(
 																			(item, idx) => (
 																				<li
