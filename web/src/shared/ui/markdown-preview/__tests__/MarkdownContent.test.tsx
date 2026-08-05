@@ -9,13 +9,13 @@ import { describe, expect, it } from "vitest";
 import { MarkdownContent } from "../MarkdownContent";
 
 describe("MarkdownContent 数学公式", () => {
-    it("行内 $..$ 渲染 KaTeX", async () => {
-        render(<MarkdownContent content={"质能方程 $E=mc^2$ 著名"} />);
-        await waitFor(() => expect(document.querySelector(".katex")).toBeTruthy());
-    });
+	it("行内 $..$ 渲染 KaTeX", async () => {
+		render(<MarkdownContent content={"质能方程 $E=mc^2$ 著名"} />);
+		await waitFor(() => expect(document.querySelector(".katex")).toBeTruthy());
+	});
 
-    it("块级 $$..$$ 渲染 display 模式", async () => {
-        render(<MarkdownContent content={"$$\n\\sum_{i=1}^{n} i\n$$"} />);
-        await waitFor(() => expect(document.querySelector(".katex-display")).toBeTruthy());
-    });
+	it("块级 $$..$$ 渲染 display 模式", async () => {
+		render(<MarkdownContent content={"$$\n\\sum_{i=1}^{n} i\n$$"} />);
+		await waitFor(() => expect(document.querySelector(".katex-display")).toBeTruthy());
+	});
 });

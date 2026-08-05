@@ -7,70 +7,71 @@
 @plugin "tailwindcss-animate";
 
 @theme {
-  --animate-blob: blob 7s infinite;
-  --animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
-  --animate-caret-blink: caret-blink 1s ease infinite;
-  --animate-blur-in: blur-in 0.8s ease-out both;
-  --animate-clip-reveal: clip-reveal 0.6s 0.15s ease-out both;
-  --font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	--animate-blob: blob 7s infinite;
+	--animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
+	--animate-caret-blink: caret-blink 1s ease infinite;
+	--animate-blur-in: blur-in 0.8s ease-out both;
+	--animate-clip-reveal: clip-reveal 0.6s 0.15s ease-out both;
+	--font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	--animate-diagram-enter: diagram-enter 0.25s ease-out;
 
-  /* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
-  /* bg-background / text-foreground / bg-primary / border-border 等 */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+	/* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
+	/* bg-background / text-foreground / bg-primary / border-border 等 */
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
 
-  /* 前台遗留语义色（向后兼容） */
-  --color-edge-hairline: var(--edge-hairline);
-  --color-surface-glass: var(--surface-glass);
+	/* 前台遗留语义色（向后兼容） */
+	--color-edge-hairline: var(--edge-hairline);
+	--color-surface-glass: var(--surface-glass);
 
-  /* Neon 强调色板（bg-neon-purple / text-neon-blue 等工具类由此映射） */
-  --color-neon-purple: var(--neon-purple);
-  --color-neon-blue: var(--neon-blue);
-  --color-neon-green: var(--neon-green);
-  --color-neon-pink: var(--neon-pink);
-  --color-neon-cyan: var(--neon-cyan);
+	/* Neon 强调色板（bg-neon-purple / text-neon-blue 等工具类由此映射） */
+	--color-neon-purple: var(--neon-purple);
+	--color-neon-blue: var(--neon-blue);
+	--color-neon-green: var(--neon-green);
+	--color-neon-pink: var(--neon-pink);
+	--color-neon-cyan: var(--neon-cyan);
 
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+	--radius-lg: var(--radius);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-sm: calc(var(--radius) - 4px);
 
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
 }
 
 /* 全局滚动条：细条半透明，不使用 ::-webkit-scrollbar（会强制经典模式占空间） */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklch, var(--muted-foreground), transparent 60%) transparent;
 }
 
 /* OverlayScroll 组件：隐藏原生滚动条，由自定义 thumb 替代 */
 .os-host {
-  scrollbar-width: none;
+	scrollbar-width: none;
 }
 .os-host::-webkit-scrollbar {
-  width: 0;
-  height: 0;
+	width: 0;
+	height: 0;
 }
 
 /*
@@ -78,48 +79,48 @@
  * next-themes 用 attribute="class"，默认（无 .dark）即浅色。
  */
 :root {
-  --radius: 0.625rem;
+	--radius: 0.625rem;
 
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.145 0 0);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.145 0 0);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.145 0 0);
+	--primary: oklch(0.205 0 0);
+	--primary-foreground: oklch(0.985 0 0);
+	--secondary: oklch(0.97 0 0);
+	--secondary-foreground: oklch(0.205 0 0);
+	--muted: oklch(0.97 0 0);
+	--muted-foreground: oklch(0.556 0 0);
+	--accent: oklch(0.97 0 0);
+	--accent-foreground: oklch(0.205 0 0);
+	--destructive: oklch(0.577 0.245 27.325);
+	--destructive-foreground: oklch(0.985 0 0);
+	--border: oklch(0.922 0 0);
+	--input: oklch(0.922 0 0);
+	--ring: oklch(0.708 0 0);
 
-  /* 前台遗留语义色（向后兼容） */
-  --bg: #ffffff;
-  --fg: #0a0a0a;
-  --edge-hairline: rgba(0, 0, 0, 0.05);
-  --surface-glass: rgba(255, 255, 255, 0.5);
-  --glow-soft: 220 90% 60%;
+	/* 前台遗留语义色（向后兼容） */
+	--bg: #ffffff;
+	--fg: #0a0a0a;
+	--edge-hairline: rgba(0, 0, 0, 0.05);
+	--surface-glass: rgba(255, 255, 255, 0.5);
+	--glow-soft: 220 90% 60%;
 
-  /* shadcn charts 调色板（5 色） */
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+	/* shadcn charts 调色板（5 色） */
+	--chart-1: oklch(0.646 0.222 41.116);
+	--chart-2: oklch(0.6 0.118 184.704);
+	--chart-3: oklch(0.398 0.07 227.392);
+	--chart-4: oklch(0.828 0.189 84.429);
+	--chart-5: oklch(0.769 0.188 70.08);
 
-  /* Neon 强调色（浅色：饱和度适中，保证白底可读） */
-  --neon-purple: oklch(0.55 0.28 300);
-  --neon-blue: oklch(0.6 0.22 245);
-  --neon-green: oklch(0.62 0.19 150);
-  --neon-pink: oklch(0.65 0.25 350);
-  --neon-cyan: oklch(0.7 0.15 200);
+	/* Neon 强调色（浅色：饱和度适中，保证白底可读） */
+	--neon-purple: oklch(0.55 0.28 300);
+	--neon-blue: oklch(0.6 0.22 245);
+	--neon-green: oklch(0.62 0.19 150);
+	--neon-pink: oklch(0.65 0.25 350);
+	--neon-cyan: oklch(0.7 0.15 200);
 }
 
 /*
@@ -127,125 +128,134 @@
  * （替代原来的 @media prefers-color-scheme，与 ThemeProvider attribute="class" 协同）
  */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+	--background: oklch(0.145 0 0);
+	--foreground: oklch(0.985 0 0);
+	--card: oklch(0.205 0 0);
+	--card-foreground: oklch(0.985 0 0);
+	--popover: oklch(0.205 0 0);
+	--popover-foreground: oklch(0.985 0 0);
+	--primary: oklch(0.922 0 0);
+	--primary-foreground: oklch(0.205 0 0);
+	--secondary: oklch(0.269 0 0);
+	--secondary-foreground: oklch(0.985 0 0);
+	--muted: oklch(0.269 0 0);
+	--muted-foreground: oklch(0.708 0 0);
+	--accent: oklch(0.269 0 0);
+	--accent-foreground: oklch(0.985 0 0);
+	--destructive: oklch(0.704 0.191 22.216);
+	--destructive-foreground: oklch(0.985 0 0);
+	--border: oklch(1 0 0 / 10%);
+	--input: oklch(1 0 0 / 15%);
+	--ring: oklch(0.556 0 0);
 
-  /* 前台遗留语义色（向后兼容） */
-  --bg: #0a0a0a;
-  --fg: #ffffff;
-  --edge-hairline: rgba(255, 255, 255, 0.1);
-  --surface-glass: rgba(0, 0, 0, 0.5);
-  --glow-soft: 210 100% 70%;
+	/* 前台遗留语义色（向后兼容） */
+	--bg: #0a0a0a;
+	--fg: #ffffff;
+	--edge-hairline: rgba(255, 255, 255, 0.1);
+	--surface-glass: rgba(0, 0, 0, 0.5);
+	--glow-soft: 210 100% 70%;
 
-  /* shadcn charts 调色板（暗色 5 色） */
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+	/* shadcn charts 调色板（暗色 5 色） */
+	--chart-1: oklch(0.488 0.243 264.376);
+	--chart-2: oklch(0.696 0.17 162.48);
+	--chart-3: oklch(0.769 0.188 70.08);
+	--chart-4: oklch(0.627 0.265 303.9);
+	--chart-5: oklch(0.645 0.246 16.439);
 
-  /* Neon 强调色（暗色：高饱和高亮度，发光感） */
-  --neon-purple: oklch(0.72 0.32 300);
-  --neon-blue: oklch(0.78 0.28 245);
-  --neon-green: oklch(0.8 0.25 150);
-  --neon-pink: oklch(0.75 0.3 350);
-  --neon-cyan: oklch(0.82 0.2 200);
+	/* Neon 强调色（暗色：高饱和高亮度，发光感） */
+	--neon-purple: oklch(0.72 0.32 300);
+	--neon-blue: oklch(0.78 0.28 245);
+	--neon-green: oklch(0.8 0.25 150);
+	--neon-pink: oklch(0.75 0.3 350);
+	--neon-cyan: oklch(0.82 0.2 200);
 }
 
 @keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
+	0% {
+		transform: translate(0px, 0px) scale(1);
+	}
+	33% {
+		transform: translate(30px, -50px) scale(1.1);
+	}
+	66% {
+		transform: translate(-20px, 20px) scale(0.9);
+	}
+	100% {
+		transform: translate(0px, 0px) scale(1);
+	}
 }
 
 @keyframes nexus-shimmer {
-  100% {
-    transform: translateX(100%);
-  }
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+@keyframes diagram-enter {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 /* —— LandingHero 入场动画（纯 CSS，合成线程驱动，零 JS 开销） —— */
 
 /* 左栏：模糊聚焦 — 从模糊缩小渐变到清晰，"对焦"隐喻 */
 @keyframes blur-in {
-  from {
-    opacity: 0;
-    filter: blur(12px);
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: scale(1);
-  }
+	from {
+		opacity: 0;
+		filter: blur(12px);
+		transform: scale(0.98);
+	}
+	to {
+		opacity: 1;
+		filter: blur(0);
+		transform: scale(1);
+	}
 }
 
 /* 右栏：终端开机 — clip-path 从上往下揭开，模拟终端窗口启动 */
 @keyframes clip-reveal {
-  from {
-    opacity: 0;
-    clip-path: inset(0 0 100% 0 round 1.6rem);
-  }
-  to {
-    opacity: 1;
-    clip-path: inset(0 0 0 0 round 1.6rem);
-  }
+	from {
+		opacity: 0;
+		clip-path: inset(0 0 100% 0 round 1.6rem);
+	}
+	to {
+		opacity: 1;
+		clip-path: inset(0 0 0 0 round 1.6rem);
+	}
 }
 
 @keyframes caret-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0;
+	}
 }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC",
-    "PingFang SC", "Microsoft YaHei", sans-serif;
+	background-color: var(--color-background);
+	color: var(--color-foreground);
+	font-family:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+		"Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 /* Maple Mono 连字：所有 font-mono 元素启用标准连字 + 上下文替代 */
 .font-mono {
-  font-feature-settings: "liga", "calt";
+	font-feature-settings: "liga", "calt";
 }
 
 /* 让整个页面参与 View Transition 的圆圈扩散动画 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
+	animation: none;
+	mix-blend-mode: normal;
 }
 
 /*
@@ -269,122 +279,133 @@ body {
 
 /* Header 保持静止，不跟随内容滑动 */
 ::view-transition-group(site-header) {
-  animation: none;
+	animation: none;
 }
 
 /* —— forward：旧页左移退出，新页右侧滑入 —— */
 :active-view-transition-type(forward)::view-transition-old(root) {
-  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-left;
+	animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-left;
 }
 :active-view-transition-type(forward)::view-transition-new(root) {
-  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-right;
+	animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-right;
 }
 
 /* —— back：旧页右移退出，新页左侧滑入 —— */
 :active-view-transition-type(back)::view-transition-old(root) {
-  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-right;
+	animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-exit-right;
 }
 :active-view-transition-type(back)::view-transition-new(root) {
-  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-left;
+	animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both page-enter-left;
 }
 
 /* —— fade：同段导航交叉淡入 —— */
 :active-view-transition-type(fade)::view-transition-old(root) {
-  animation: 220ms ease-out both page-fade-out;
+	animation: 220ms ease-out both page-fade-out;
 }
 :active-view-transition-type(fade)::view-transition-new(root) {
-  animation: 220ms ease-out both page-fade-in;
+	animation: 220ms ease-out both page-fade-in;
 }
 
 @keyframes page-enter-right {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 @keyframes page-enter-left {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(-20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 @keyframes page-exit-left {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(-14px);
+	}
 }
 @keyframes page-exit-right {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(14px);
-  }
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(14px);
+	}
 }
 @keyframes page-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 @keyframes page-fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
 }
 
 /* —— 共享元素 morph：博客封面 —— */
 ::view-transition-group(post-cover) {
-  animation-duration: 420ms;
-  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	animation-duration: 420ms;
+	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* —— 主题切换 VT：抑制所有命名组，让圆形扩散只作用于 root —— */
 html.theme-vt * {
-  /* biome-ignore lint/complexity/noImportantStyles: 必须覆盖内联 view-transition-name */
-  view-transition-name: none !important;
+	/* biome-ignore lint/complexity/noImportantStyles: 必须覆盖内联 view-transition-name */
+	view-transition-name: none !important;
+}
+
+/* 主题切换 VT 期间禁用 CSS transition：替代 next-themes disableTransitionOnChange
+   的 JS 实现（注入 style + 强制 reflow，在 VT update 里是三次全文档重算）。
+   纯 CSS 零 reflow，仅覆盖 VT 窗口；非 VT 降级路径（Firefox）允许元素自然渐变。 */
+html.theme-vt,
+html.theme-vt *,
+html.theme-vt *::before,
+html.theme-vt *::after {
+	/* biome-ignore lint/complexity/noImportantStyles: VT 期间必须禁用 transition，纯 CSS 替代 next-themes disableTransitionOnChange 的 JS 注入 */
+	transition: none !important;
 }
 
 .prose {
-  line-height: 1.75;
-  /*
+	line-height: 1.75;
+	/*
    * 排版颜色强制跟随主题 token，不依赖 typography 插件硬编码色值。
    * 避免 proseNeutral 的固定灰色在主题下对比度异常（文字发灰不可读）。
    */
-  --tw-prose-body: var(--color-foreground);
-  --tw-prose-headings: var(--color-foreground);
-  --tw-prose-bold: var(--color-foreground);
-  --tw-prose-lead: var(--color-foreground);
-  --tw-prose-links: var(--color-primary);
-  --tw-prose-counters: var(--color-muted-foreground);
-  --tw-prose-bullets: var(--color-muted-foreground);
-  --tw-prose-hr: var(--color-border);
-  --tw-prose-quotes: var(--color-foreground);
-  --tw-prose-quote-borders: var(--color-border);
-  --tw-prose-captions: var(--color-muted-foreground);
-  --tw-prose-code: var(--color-foreground);
-  --tw-prose-th: var(--color-foreground);
-  --tw-prose-td: var(--color-foreground);
+	--tw-prose-body: var(--color-foreground);
+	--tw-prose-headings: var(--color-foreground);
+	--tw-prose-bold: var(--color-foreground);
+	--tw-prose-lead: var(--color-foreground);
+	--tw-prose-links: var(--color-primary);
+	--tw-prose-counters: var(--color-muted-foreground);
+	--tw-prose-bullets: var(--color-muted-foreground);
+	--tw-prose-hr: var(--color-border);
+	--tw-prose-quotes: var(--color-foreground);
+	--tw-prose-quote-borders: var(--color-border);
+	--tw-prose-captions: var(--color-muted-foreground);
+	--tw-prose-code: var(--color-foreground);
+	--tw-prose-th: var(--color-foreground);
+	--tw-prose-td: var(--color-foreground);
 }
 
 /*
@@ -397,167 +418,167 @@ html.theme-vt * {
 
 /* 全局边框工具类：Tailwind v4 默认不生成 border-border，显式提供 */
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-border);
-  }
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--color-border);
+	}
 
-  /*
+	/*
    * 文章标题锚点滚动偏移：点击目录跳转时，标题不被 sticky 头部（64px）遮挡。
    * 80px = 头部 64px + 缓冲 16px，与 archive 页 scroll-mt-20 约定一致。
    * 用 :where() 保持低优先级；同时覆盖 Markdown(.prose) 与 HTML(HtmlContent) 两路。
    */
-  :where([data-article-content]) :is(h2, h3, h4)[id] {
-    scroll-margin-top: 80px;
-  }
+	:where([data-article-content]) :is(h2, h3, h4)[id] {
+		scroll-margin-top: 80px;
+	}
 }
 
 /* 文章详情页任务列表对齐（HtmlContent 路径）
  * Tiptap 输出 <li><label><input/checkbox></label><div><p>text</p></div></li>
  * label 高度 = leading-8(2rem)，checkbox 垂直居中与首行文字中线对齐 */
 .prose ul[data-type="taskList"] li > label {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  height: 2rem;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	height: 2rem;
 }
 .prose ul[data-type="taskList"] li > div > p:first-child {
-  margin-top: 0;
+	margin-top: 0;
 }
 
 /* 代码块滚动条：细窄圆角暗色 */
 .code-block-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 .code-block-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+	width: 6px;
+	height: 6px;
 }
 
 .code-block-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+	background: transparent;
 }
 
 .code-block-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-radius: 9999px;
+	background-color: rgba(255, 255, 255, 0.15);
+	border-radius: 9999px;
 }
 
 .code-block-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.25);
+	background-color: rgba(255, 255, 255, 0.25);
 }
 
 /* 监控面板动画 */
 @keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-4px);
-  }
-  75% {
-    transform: translateX(4px);
-  }
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	25% {
+		transform: translateX(-4px);
+	}
+	75% {
+		transform: translateX(4px);
+	}
 }
 
 .animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out both;
+	animation: fade-in-up 0.5s ease-out both;
 }
 
 .animate-shake {
-  animation: shake 0.4s ease-in-out;
+	animation: shake 0.4s ease-in-out;
 }
 
 /* AnnotationLayer 批注高亮块（块级背景标记 + 左色条，PRD-0001 Issue-0005） */
 .annotation-highlight {
-  border-left: 3px solid hsl(217 91% 60% / 0.6);
-  background-color: hsl(217 91% 60% / 0.06);
-  border-radius: 0 4px 4px 0;
-  padding-left: 0.5em;
-  margin-left: -0.5em;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s;
-  scroll-margin-top: 80px;
+	border-left: 3px solid hsl(217 91% 60% / 0.6);
+	background-color: hsl(217 91% 60% / 0.06);
+	border-radius: 0 4px 4px 0;
+	padding-left: 0.5em;
+	margin-left: -0.5em;
+	transition:
+		background-color 0.2s,
+		border-color 0.2s;
+	scroll-margin-top: 80px;
 }
 .annotation-highlight:hover {
-  background-color: hsl(217 91% 60% / 0.12);
-  border-left-color: hsl(217 91% 60%);
+	background-color: hsl(217 91% 60% / 0.12);
+	border-left-color: hsl(217 91% 60%);
 }
 
 /* 草稿批注临时高亮：展开输入区时标记选中块，比已提交批注更醒目（amber 暖色区分） */
 .annotation-draft-highlight {
-  border-left: 3px solid hsl(38 92% 50% / 0.9);
-  background-color: hsl(38 92% 50% / 0.12);
-  border-radius: 0 4px 4px 0;
-  padding-left: 0.5em;
-  margin-left: -0.5em;
-  transition: background-color 0.2s;
-  scroll-margin-top: 80px;
+	border-left: 3px solid hsl(38 92% 50% / 0.9);
+	background-color: hsl(38 92% 50% / 0.12);
+	border-radius: 0 4px 4px 0;
+	padding-left: 0.5em;
+	margin-left: -0.5em;
+	transition: background-color 0.2s;
+	scroll-margin-top: 80px;
 }
 
 /* 段评角标：段落末尾的 inline SVG（chat-bubble 气泡 + 数字 + 已评论对号切口）。
    设计目标：比文字略大、紧贴段末、配色低饱和统一。 */
 .annotation-marker-inline {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 0.2em;
-  vertical-align: text-top;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  padding: 0;
-  user-select: none;
-  /* muted slate 灰：低对比，不抢正文视觉（替代原先的鲜艳蓝） */
-  color: hsl(215 16% 47%);
-  transition:
-    color 0.15s,
-    opacity 0.15s;
-  /* 对号徽章描边颜色（切口色）：跟随页面背景，light 白 / dark 深 */
-  --marker-bg: hsl(var(--background));
+	display: inline-flex;
+	align-items: center;
+	margin-left: 0.2em;
+	vertical-align: text-top;
+	cursor: pointer;
+	border: none;
+	background: transparent;
+	padding: 0;
+	user-select: none;
+	/* muted slate 灰：低对比，不抢正文视觉（替代原先的鲜艳蓝） */
+	color: hsl(215 16% 47%);
+	transition:
+		color 0.15s,
+		opacity 0.15s;
+	/* 对号徽章描边颜色（切口色）：跟随页面背景，light 白 / dark 深 */
+	--marker-bg: hsl(var(--background));
 }
 .annotation-marker-inline:hover {
-  color: hsl(215 25% 35%);
+	color: hsl(215 25% 35%);
 }
 /* SVG 角标：比文字略大（1.15em），醒目可点；宽度自适应 */
 .annotation-marker-inline .annotation-marker-svg {
-  height: 1.15em;
-  width: auto;
-  display: block;
-  overflow: visible; /* 允许右上角对号徽章溢出气泡 viewBox */
+	height: 1.15em;
+	width: auto;
+	display: block;
+	overflow: visible; /* 允许右上角对号徽章溢出气泡 viewBox */
 }
 
 /* 批注面板自定义滚动条：细条半透明，出现时不挤压内容 */
 .annotation-scroll {
-  scrollbar-gutter: stable;
+	scrollbar-gutter: stable;
 }
 
 /* ———— prefers-reduced-motion：禁用方向性页面过渡 ———— */
 @media (prefers-reduced-motion: reduce) {
-  :active-view-transition-type(forward)::view-transition-old(root),
-  :active-view-transition-type(forward)::view-transition-new(root),
-  :active-view-transition-type(back)::view-transition-old(root),
-  :active-view-transition-type(back)::view-transition-new(root),
-  :active-view-transition-type(fade)::view-transition-old(root),
-  :active-view-transition-type(fade)::view-transition-new(root) {
-    /* biome-ignore lint/complexity/noImportantStyles: 无障碍要求强制禁用所有动画 */
-    animation: none !important;
-  }
+	:active-view-transition-type(forward)::view-transition-old(root),
+	:active-view-transition-type(forward)::view-transition-new(root),
+	:active-view-transition-type(back)::view-transition-old(root),
+	:active-view-transition-type(back)::view-transition-new(root),
+	:active-view-transition-type(fade)::view-transition-old(root),
+	:active-view-transition-type(fade)::view-transition-new(root) {
+		/* biome-ignore lint/complexity/noImportantStyles: 无障碍要求强制禁用所有动画 */
+		animation: none !important;
+	}
 }

@@ -12,21 +12,21 @@
 import { useEffect, useState } from "react";
 
 export function useIsDarkTheme(): boolean {
-    const [isDark, setIsDark] = useState<boolean>(() =>
-        typeof document !== "undefined"
-            ? document.documentElement.classList.contains("dark")
-            : false,
-    );
+	const [isDark, setIsDark] = useState<boolean>(() =>
+		typeof document !== "undefined"
+			? document.documentElement.classList.contains("dark")
+			: false,
+	);
 
-    useEffect(() => {
-        const root = document.documentElement;
-        const sync = () => setIsDark(root.classList.contains("dark"));
-        // 初始同步一次：mount 可能晚于主题注入
-        sync();
-        const observer = new MutationObserver(sync);
-        observer.observe(root, { attributes: true, attributeFilter: ["class"] });
-        return () => observer.disconnect();
-    }, []);
+	useEffect(() => {
+		const root = document.documentElement;
+		const sync = () => setIsDark(root.classList.contains("dark"));
+		// 初始同步一次：mount 可能晚于主题注入
+		sync();
+		const observer = new MutationObserver(sync);
+		observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+		return () => observer.disconnect();
+	}, []);
 
-    return isDark;
+	return isDark;
 }

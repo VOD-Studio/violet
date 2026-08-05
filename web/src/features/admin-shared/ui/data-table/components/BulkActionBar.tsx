@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 import { Button } from "@/shared/ui/base/button";
 
 interface BulkActionBarProps {
-    /** 当前选中行数 */
-    selectedCount: number;
-    /** 清空选择 */
-    onClear: () => void;
-    /** 批量操作按钮区，由调用方传入 */
-    children?: ReactNode;
+	/** 当前选中行数 */
+	selectedCount: number;
+	/** 清空选择 */
+	onClear: () => void;
+	/** 批量操作按钮区，由调用方传入 */
+	children?: ReactNode;
 }
 
 /**
@@ -17,22 +17,22 @@ interface BulkActionBarProps {
  * 中部由调用方填充具体操作（批量删除等）。
  */
 export function BulkActionBar({ selectedCount, onClear, children }: BulkActionBarProps) {
-    if (selectedCount === 0) return null;
+	if (selectedCount === 0) return null;
 
-    return (
-        <div
-            className="bg-card animate-in fade-in-0 slide-in-from-bottom-4 fixed inset-x-0 bottom-4 z-40 mx-auto flex w-[calc(100%-2rem)] max-w-3xl items-center gap-3 rounded-lg border p-3 shadow-lg"
-            aria-live="polite"
-        >
-            <span className="text-sm font-medium">
-                已选 <span className="text-primary">{selectedCount}</span> 项
-            </span>
-            <div className="ml-auto flex items-center gap-2">
-                {children}
-                <Button type="button" variant="ghost" size="sm" onClick={onClear}>
-                    取消选择
-                </Button>
-            </div>
-        </div>
-    );
+	return (
+		<div
+			className="bg-card animate-in fade-in-0 slide-in-from-bottom-4 fixed inset-x-0 bottom-4 z-40 mx-auto flex w-[calc(100%-2rem)] max-w-3xl items-center gap-3 rounded-lg border p-3 shadow-lg"
+			aria-live="polite"
+		>
+			<span className="text-sm font-medium">
+				已选 <span className="text-primary">{selectedCount}</span> 项
+			</span>
+			<div className="ml-auto flex items-center gap-2">
+				{children}
+				<Button type="button" variant="ghost" size="sm" onClick={onClear}>
+					取消选择
+				</Button>
+			</div>
+		</div>
+	);
 }

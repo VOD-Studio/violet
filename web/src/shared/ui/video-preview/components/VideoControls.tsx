@@ -7,14 +7,14 @@
  */
 
 import {
-    Maximize,
-    Minimize,
-    Pause,
-    Play,
-    RotateCcw,
-    Volume1,
-    Volume2,
-    VolumeX,
+	Maximize,
+	Minimize,
+	Pause,
+	Play,
+	RotateCcw,
+	Volume1,
+	Volume2,
+	VolumeX,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/shared/ui/base/button";
@@ -22,249 +22,249 @@ import { PLAYBACK_RATES, type VideoPlayerState } from "../types/video-preview-ty
 import { formatTime } from "../utils/format";
 
 interface VideoControlsProps {
-    state: VideoPlayerState;
-    /** 倍速菜单是否展开（受控，用于父组件阻止控制栏自动隐藏） */
-    menuOpen: boolean;
-    onMenuOpenChange: (open: boolean) => void;
-    onTogglePlay: () => void;
-    onSeek: (time: number) => void;
-    onSetVolume: (volume: number) => void;
-    onToggleMute: () => void;
-    onSetPlaybackRate: (rate: number) => void;
-    onToggleFullscreen: () => void;
-    isFullscreen: boolean;
+	state: VideoPlayerState;
+	/** 倍速菜单是否展开（受控，用于父组件阻止控制栏自动隐藏） */
+	menuOpen: boolean;
+	onMenuOpenChange: (open: boolean) => void;
+	onTogglePlay: () => void;
+	onSeek: (time: number) => void;
+	onSetVolume: (volume: number) => void;
+	onToggleMute: () => void;
+	onSetPlaybackRate: (rate: number) => void;
+	onToggleFullscreen: () => void;
+	isFullscreen: boolean;
 }
 
 export function VideoControls({
-    state,
-    menuOpen,
-    onMenuOpenChange,
-    onTogglePlay,
-    onSeek,
-    onSetVolume,
-    onToggleMute,
-    onSetPlaybackRate,
-    onToggleFullscreen,
-    isFullscreen,
+	state,
+	menuOpen,
+	onMenuOpenChange,
+	onTogglePlay,
+	onSeek,
+	onSetVolume,
+	onToggleMute,
+	onSetPlaybackRate,
+	onToggleFullscreen,
+	isFullscreen,
 }: VideoControlsProps) {
-    const [isDragging, setIsDragging] = useState(false);
-    const [hoverTime, setHoverTime] = useState<number | null>(null);
-    const progressBarRef = useRef<HTMLDivElement>(null);
-    const rateRef = useRef<HTMLDivElement>(null);
+	const [isDragging, setIsDragging] = useState(false);
+	const [hoverTime, setHoverTime] = useState<number | null>(null);
+	const progressBarRef = useRef<HTMLDivElement>(null);
+	const rateRef = useRef<HTMLDivElement>(null);
 
-    const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
-    const bufferedPercent = useBufferedPercent(state.currentTime, state.duration);
+	const progress = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
+	const bufferedPercent = useBufferedPercent(state.currentTime, state.duration);
 
-    // 倍速菜单：点击外部关闭
-    useEffect(() => {
-        if (!menuOpen) return;
-        const handler = (e: MouseEvent) => {
-            if (rateRef.current && !rateRef.current.contains(e.target as Node)) {
-                onMenuOpenChange(false);
-            }
-        };
-        // 延迟绑定避免触发本次 click
-        const timer = setTimeout(() => document.addEventListener("click", handler), 0);
-        return () => {
-            clearTimeout(timer);
-            document.removeEventListener("click", handler);
-        };
-    }, [menuOpen, onMenuOpenChange]);
+	// 倍速菜单：点击外部关闭
+	useEffect(() => {
+		if (!menuOpen) return;
+		const handler = (e: MouseEvent) => {
+			if (rateRef.current && !rateRef.current.contains(e.target as Node)) {
+				onMenuOpenChange(false);
+			}
+		};
+		// 延迟绑定避免触发本次 click
+		const timer = setTimeout(() => document.addEventListener("click", handler), 0);
+		return () => {
+			clearTimeout(timer);
+			document.removeEventListener("click", handler);
+		};
+	}, [menuOpen, onMenuOpenChange]);
 
-    // 根据进度条位置计算时间
-    const getTimeFromEvent = (clientX: number): number => {
-        const bar = progressBarRef.current;
-        if (!bar || state.duration === 0) return 0;
-        const rect = bar.getBoundingClientRect();
-        const ratio = Math.max(0, Math.min((clientX - rect.left) / rect.width, 1));
-        return ratio * state.duration;
-    };
+	// 根据进度条位置计算时间
+	const getTimeFromEvent = (clientX: number): number => {
+		const bar = progressBarRef.current;
+		if (!bar || state.duration === 0) return 0;
+		const rect = bar.getBoundingClientRect();
+		const ratio = Math.max(0, Math.min((clientX - rect.left) / rect.width, 1));
+		return ratio * state.duration;
+	};
 
-    // 进度条拖拽
-    // biome-ignore lint/correctness/useExhaustiveDependencies: onSeek/getTimeFromEvent 是稳定引用，仅需响应拖拽与时长变化
-    useEffect(() => {
-        if (!isDragging) return;
+	// 进度条拖拽
+	// biome-ignore lint/correctness/useExhaustiveDependencies: onSeek/getTimeFromEvent 是稳定引用，仅需响应拖拽与时长变化
+	useEffect(() => {
+		if (!isDragging) return;
 
-        const onMove = (e: MouseEvent) => onSeek(getTimeFromEvent(e.clientX));
-        const onUp = () => setIsDragging(false);
-        window.addEventListener("mousemove", onMove);
-        window.addEventListener("mouseup", onUp);
-        return () => {
-            window.removeEventListener("mousemove", onMove);
-            window.removeEventListener("mouseup", onUp);
-        };
-    }, [isDragging, state.duration]);
+		const onMove = (e: MouseEvent) => onSeek(getTimeFromEvent(e.clientX));
+		const onUp = () => setIsDragging(false);
+		window.addEventListener("mousemove", onMove);
+		window.addEventListener("mouseup", onUp);
+		return () => {
+			window.removeEventListener("mousemove", onMove);
+			window.removeEventListener("mouseup", onUp);
+		};
+	}, [isDragging, state.duration]);
 
-    const VolumeIcon =
-        state.isMuted || state.volume === 0 ? VolumeX : state.volume < 0.5 ? Volume1 : Volume2;
+	const VolumeIcon =
+		state.isMuted || state.volume === 0 ? VolumeX : state.volume < 0.5 ? Volume1 : Volume2;
 
-    return (
-        <div className="absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent px-3 pb-2 pt-8">
-            {/* 进度条 */}
-            <div
-                ref={progressBarRef}
-                role="slider"
-                tabIndex={0}
-                aria-label="播放进度"
-                aria-valuemin={0}
-                aria-valuemax={Math.floor(state.duration)}
-                aria-valuenow={Math.floor(state.currentTime)}
-                className="group/progress relative flex h-4 cursor-pointer items-center"
-                onClick={(e) => onSeek(getTimeFromEvent(e.clientX))}
-                onKeyDown={(e) => {
-                    if (e.key === "ArrowLeft") {
-                        e.preventDefault();
-                        onSeek(state.currentTime - 5);
-                    } else if (e.key === "ArrowRight") {
-                        e.preventDefault();
-                        onSeek(state.currentTime + 5);
-                    }
-                }}
-                onMouseMove={(e) => setHoverTime(getTimeFromEvent(e.clientX))}
-                onMouseLeave={() => setHoverTime(null)}
-                onMouseDown={(e) => {
-                    setIsDragging(true);
-                    onSeek(getTimeFromEvent(e.clientX));
-                }}
-            >
-                {/* 轨道 */}
-                <div className="relative h-1 w-full rounded-full bg-white/25 transition-all group-hover/progress:h-1.5">
-                    {/* 已缓冲 */}
-                    <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-white/30"
-                        style={{ width: `${bufferedPercent}%` }}
-                    />
-                    {/* 已播放 */}
-                    <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-primary"
-                        style={{ width: `${progress}%` }}
-                    />
-                    {/* 拖拽手柄 */}
-                    <div
-                        className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow transition-opacity group-hover/progress:opacity-100"
-                        style={{ left: `${progress}%` }}
-                    />
-                </div>
-                {/* 悬停时间提示 */}
-                {hoverTime !== null ? (
-                    <div
-                        className="pointer-events-none absolute -top-7 -translate-x-1/2 rounded bg-black/90 px-1.5 py-0.5 text-[10px] text-white"
-                        style={{ left: `${(hoverTime / (state.duration || 1)) * 100}%` }}
-                    >
-                        {formatTime(hoverTime)}
-                    </div>
-                ) : null}
-            </div>
+	return (
+		<div className="absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent px-3 pb-2 pt-8">
+			{/* 进度条 */}
+			<div
+				ref={progressBarRef}
+				role="slider"
+				tabIndex={0}
+				aria-label="播放进度"
+				aria-valuemin={0}
+				aria-valuemax={Math.floor(state.duration)}
+				aria-valuenow={Math.floor(state.currentTime)}
+				className="group/progress relative flex h-4 cursor-pointer items-center"
+				onClick={(e) => onSeek(getTimeFromEvent(e.clientX))}
+				onKeyDown={(e) => {
+					if (e.key === "ArrowLeft") {
+						e.preventDefault();
+						onSeek(state.currentTime - 5);
+					} else if (e.key === "ArrowRight") {
+						e.preventDefault();
+						onSeek(state.currentTime + 5);
+					}
+				}}
+				onMouseMove={(e) => setHoverTime(getTimeFromEvent(e.clientX))}
+				onMouseLeave={() => setHoverTime(null)}
+				onMouseDown={(e) => {
+					setIsDragging(true);
+					onSeek(getTimeFromEvent(e.clientX));
+				}}
+			>
+				{/* 轨道 */}
+				<div className="relative h-1 w-full rounded-full bg-white/25 transition-all group-hover/progress:h-1.5">
+					{/* 已缓冲 */}
+					<div
+						className="absolute inset-y-0 left-0 rounded-full bg-white/30"
+						style={{ width: `${bufferedPercent}%` }}
+					/>
+					{/* 已播放 */}
+					<div
+						className="absolute inset-y-0 left-0 rounded-full bg-primary"
+						style={{ width: `${progress}%` }}
+					/>
+					{/* 拖拽手柄 */}
+					<div
+						className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary opacity-0 shadow transition-opacity group-hover/progress:opacity-100"
+						style={{ left: `${progress}%` }}
+					/>
+				</div>
+				{/* 悬停时间提示 */}
+				{hoverTime !== null ? (
+					<div
+						className="pointer-events-none absolute -top-7 -translate-x-1/2 rounded bg-black/90 px-1.5 py-0.5 text-[10px] text-white"
+						style={{ left: `${(hoverTime / (state.duration || 1)) * 100}%` }}
+					>
+						{formatTime(hoverTime)}
+					</div>
+				) : null}
+			</div>
 
-            {/* 按钮组 */}
-            <div className="mt-1 flex items-center gap-2 text-white">
-                {/* 播放/暂停/重播 */}
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    className="text-white hover:bg-white/20"
-                    onClick={onTogglePlay}
-                    title={state.isPlaying ? "暂停 (空格)" : "播放 (空格)"}
-                >
-                    {state.isEnded ? (
-                        <RotateCcw className="size-4" />
-                    ) : state.isPlaying ? (
-                        <Pause className="size-4" />
-                    ) : (
-                        <Play className="size-4" />
-                    )}
-                </Button>
+			{/* 按钮组 */}
+			<div className="mt-1 flex items-center gap-2 text-white">
+				{/* 播放/暂停/重播 */}
+				<Button
+					type="button"
+					size="icon-sm"
+					variant="ghost"
+					className="text-white hover:bg-white/20"
+					onClick={onTogglePlay}
+					title={state.isPlaying ? "暂停 (空格)" : "播放 (空格)"}
+				>
+					{state.isEnded ? (
+						<RotateCcw className="size-4" />
+					) : state.isPlaying ? (
+						<Pause className="size-4" />
+					) : (
+						<Play className="size-4" />
+					)}
+				</Button>
 
-                {/* 音量 */}
-                <div className="group/volume flex items-center">
-                    <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="ghost"
-                        className="text-white hover:bg-white/20"
-                        onClick={onToggleMute}
-                        title="静音 (M)"
-                    >
-                        <VolumeIcon className="size-4" />
-                    </Button>
-                    <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.05}
-                        value={state.isMuted ? 0 : state.volume}
-                        onChange={(e) => onSetVolume(Number(e.target.value))}
-                        className="h-1 w-0 cursor-pointer appearance-none rounded-full bg-white/30 opacity-0 transition-all group-hover/volume:w-16 group-hover/volume:opacity-100 [&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
-                        aria-label="音量"
-                    />
-                </div>
+				{/* 音量 */}
+				<div className="group/volume flex items-center">
+					<Button
+						type="button"
+						size="icon-sm"
+						variant="ghost"
+						className="text-white hover:bg-white/20"
+						onClick={onToggleMute}
+						title="静音 (M)"
+					>
+						<VolumeIcon className="size-4" />
+					</Button>
+					<input
+						type="range"
+						min={0}
+						max={1}
+						step={0.05}
+						value={state.isMuted ? 0 : state.volume}
+						onChange={(e) => onSetVolume(Number(e.target.value))}
+						className="h-1 w-0 cursor-pointer appearance-none rounded-full bg-white/30 opacity-0 transition-all group-hover/volume:w-16 group-hover/volume:opacity-100 [&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+						aria-label="音量"
+					/>
+				</div>
 
-                {/* 时间 */}
-                <span className="ml-1 text-xs tabular-nums text-white/90">
-                    {formatTime(state.currentTime)} / {formatTime(state.duration)}
-                </span>
+				{/* 时间 */}
+				<span className="ml-1 text-xs tabular-nums text-white/90">
+					{formatTime(state.currentTime)} / {formatTime(state.duration)}
+				</span>
 
-                {/* 占位推开右侧 */}
-                <div className="flex-1" />
+				{/* 占位推开右侧 */}
+				<div className="flex-1" />
 
-                {/* 倍速 */}
-                <div ref={rateRef} className="relative">
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs text-white hover:bg-white/20"
-                        title="倍速"
-                        onClick={() => onMenuOpenChange(!menuOpen)}
-                    >
-                        {state.playbackRate}x
-                    </Button>
-                    {menuOpen ? (
-                        <div className="absolute right-0 bottom-full z-50 mb-1 flex flex-col rounded-md bg-black/90 py-1 shadow-lg">
-                            {PLAYBACK_RATES.map((rate) => (
-                                <button
-                                    type="button"
-                                    key={rate}
-                                    className={`flex min-w-20 items-center justify-between gap-2 px-3 py-1 text-left text-xs hover:bg-white/20 ${rate === state.playbackRate ? "font-bold text-white" : "text-white/70"}`}
-                                    onClick={() => {
-                                        onSetPlaybackRate(rate);
-                                        onMenuOpenChange(false);
-                                    }}
-                                >
-                                    <span>{rate === 1 ? "正常" : `${rate}x`}</span>
-                                    {rate === state.playbackRate ? (
-                                        <span className="text-white">✓</span>
-                                    ) : null}
-                                </button>
-                            ))}
-                        </div>
-                    ) : null}
-                </div>
+				{/* 倍速 */}
+				<div ref={rateRef} className="relative">
+					<Button
+						type="button"
+						size="sm"
+						variant="ghost"
+						className="text-xs text-white hover:bg-white/20"
+						title="倍速"
+						onClick={() => onMenuOpenChange(!menuOpen)}
+					>
+						{state.playbackRate}x
+					</Button>
+					{menuOpen ? (
+						<div className="absolute right-0 bottom-full z-50 mb-1 flex flex-col rounded-md bg-black/90 py-1 shadow-lg">
+							{PLAYBACK_RATES.map((rate) => (
+								<button
+									type="button"
+									key={rate}
+									className={`flex min-w-20 items-center justify-between gap-2 px-3 py-1 text-left text-xs hover:bg-white/20 ${rate === state.playbackRate ? "font-bold text-white" : "text-white/70"}`}
+									onClick={() => {
+										onSetPlaybackRate(rate);
+										onMenuOpenChange(false);
+									}}
+								>
+									<span>{rate === 1 ? "正常" : `${rate}x`}</span>
+									{rate === state.playbackRate ? (
+										<span className="text-white">✓</span>
+									) : null}
+								</button>
+							))}
+						</div>
+					) : null}
+				</div>
 
-                {/* 全屏 */}
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="ghost"
-                    className="text-white hover:bg-white/20"
-                    onClick={onToggleFullscreen}
-                    title="全屏 (F)"
-                >
-                    {isFullscreen ? (
-                        <Minimize className="size-4" />
-                    ) : (
-                        <Maximize className="size-4" />
-                    )}
-                </Button>
-            </div>
-        </div>
-    );
+				{/* 全屏 */}
+				<Button
+					type="button"
+					size="icon-sm"
+					variant="ghost"
+					className="text-white hover:bg-white/20"
+					onClick={onToggleFullscreen}
+					title="全屏 (F)"
+				>
+					{isFullscreen ? (
+						<Minimize className="size-4" />
+					) : (
+						<Maximize className="size-4" />
+					)}
+				</Button>
+			</div>
+		</div>
+	);
 }
 
 /** 计算已缓冲百分比（简化：基于当前时间之前视为已缓冲） */
 function useBufferedPercent(currentTime: number, duration: number): number {
-    if (duration === 0) return 0;
-    // 简化处理：用当前播放进度作为缓冲参考（真实缓冲需访问 video.buffered）
-    return Math.min((currentTime / duration) * 100, 100);
+	if (duration === 0) return 0;
+	// 简化处理：用当前播放进度作为缓冲参考（真实缓冲需访问 video.buffered）
+	return Math.min((currentTime / duration) * 100, 100);
 }

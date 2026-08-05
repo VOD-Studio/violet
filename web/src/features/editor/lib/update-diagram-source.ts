@@ -16,8 +16,8 @@ import { NodeSelection, type Transaction } from "@tiptap/pm/state";
  * pos 处无节点时不做任何改动。
  */
 export function updateDiagramSource(tr: Transaction, pos: number, source: string): void {
-    const node = tr.doc.nodeAt(pos);
-    if (!node) return;
-    tr.setNodeMarkup(pos, undefined, { ...node.attrs, source });
-    tr.setSelection(NodeSelection.create(tr.doc, pos));
+	const node = tr.doc.nodeAt(pos);
+	if (!node) return;
+	tr.setNodeMarkup(pos, undefined, { ...node.attrs, source });
+	tr.setSelection(NodeSelection.create(tr.doc, pos));
 }

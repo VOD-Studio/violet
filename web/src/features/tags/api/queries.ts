@@ -11,7 +11,7 @@ import { tagKeys } from "./keys";
  * @returns 标签列表
  */
 export const fetchTags = async (): Promise<Tag[]> => {
-    return await apiGet<Tag[]>("/tags");
+	return await apiGet<Tag[]>("/tags");
 };
 
 /**
@@ -20,7 +20,7 @@ export const fetchTags = async (): Promise<Tag[]> => {
  * 自动缓存与去重，标签更新频率低故沿用 QueryClient 默认 staleTime。
  */
 export const useTags = () =>
-    useQuery({
-        queryKey: tagKeys.list(),
-        queryFn: fetchTags,
-    });
+	useQuery({
+		queryKey: tagKeys.list(),
+		queryFn: fetchTags,
+	});

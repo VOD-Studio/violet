@@ -21,9 +21,9 @@ import { markdownComponents } from "./components/markdown-components";
 
 /** 提取 hast 节点的纯文本（递归拼接子节点的 text） */
 function hastText(node: Nodes): string {
-    if (node.type === "text") return node.value;
-    if (node.type === "element") return node.children.map(hastText).join("");
-    return "";
+	if (node.type === "text") return node.value;
+	if (node.type === "element") return node.children.map(hastText).join("");
+	return "";
 }
 
 /**
@@ -34,48 +34,48 @@ function hastText(node: Nodes): string {
  * 每次 transform 新建 Slugger 实例（一篇文章内去重，跨文章不累积）。
  */
 function rehypeSlugHeadings() {
-    const slugger = new Slugger();
-    const visit = (node: Nodes) => {
-        if (node.type === "element") {
-            const el = node as Element;
-            if (
-                el.tagName.length === 2 &&
-                el.tagName[0] === "h" &&
-                el.tagName[1] >= "1" &&
-                el.tagName[1] <= "6" &&
-                !el.properties?.id
-            ) {
-                const text = el.children.map(hastText).join("").trim();
-                if (text) {
-                    el.properties = { ...(el.properties ?? {}), id: slugger.slug(text) };
-                }
-            }
-        }
-        if ("children" in node) {
-            for (const c of node.children) visit(c);
-        }
-    };
-    return (tree: Root) => {
-        visit(tree);
-    };
+	const slugger = new Slugger();
+	const visit = (node: Nodes) => {
+		if (node.type === "element") {
+			const el = node as Element;
+			if (
+				el.tagName.length === 2 &&
+				el.tagName[0] === "h" &&
+				el.tagName[1] >= "1" &&
+				el.tagName[1] <= "6" &&
+				!el.properties?.id
+			) {
+				const text = el.children.map(hastText).join("").trim();
+				if (text) {
+					el.properties = { ...(el.properties ?? {}), id: slugger.slug(text) };
+				}
+			}
+		}
+		if ("children" in node) {
+			for (const c of node.children) visit(c);
+		}
+	};
+	return (tree: Root) => {
+		visit(tree);
+	};
 }
 
 export interface MarkdownContentProps {
-    /** Markdown 源文本 */
-    content: string;
-    className?: string;
+	/** Markdown 源文本 */
+	content: string;
+	className?: string;
 }
 
 export function MarkdownContent({ content, className }: MarkdownContentProps) {
-    return (
-        <div className={className}>
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeSlugHeadings]}
-                components={markdownComponents}
-            >
-                {content}
-            </ReactMarkdown>
-        </div>
-    );
+	return (
+		<div className={className}>
+			<ReactMarkdown
+				remarkPlugins={[remarkGfm, remarkMath]}
+				rehypePlugins={[rehypeSlugHeadings]}
+				components={markdownComponents}
+			>
+				{content}
+			</ReactMarkdown>
+		</div>
+	);
 }

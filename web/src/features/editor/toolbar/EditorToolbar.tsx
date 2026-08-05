@@ -12,22 +12,22 @@ import { useMemo } from "react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/base/button";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
 } from "@/shared/ui/base/dropdown-menu";
 import { ColorSwatch } from "@/shared/ui/color-picker";
 import { buildToolbarItems, TOOLBAR_DIVIDER, type ToolbarItem } from "./toolbar-items";
 
 interface EditorToolbarProps {
-    editor: Editor | null;
-    /** 从素材库选择图片 */
-    onPickImage: () => void;
-    /** 上传本地图片到编辑器 */
-    onUploadImage: () => void;
-    /** 链接插入回调（由父组件注入：打开输入弹窗） */
-    onInsertLink: () => void;
+	editor: Editor | null;
+	/** 从素材库选择图片 */
+	onPickImage: () => void;
+	/** 上传本地图片到编辑器 */
+	onUploadImage: () => void;
+	/** 链接插入回调（由父组件注入：打开输入弹窗） */
+	onInsertLink: () => void;
 }
 
 /**
@@ -36,88 +36,88 @@ interface EditorToolbarProps {
  * ProseMirror 失去选区，命令仍会因选区丢失而失效。
  */
 function keepFocus(e: MouseEvent) {
-    e.preventDefault();
+	e.preventDefault();
 }
 
 export function EditorToolbar({
-    editor,
-    onPickImage,
-    onUploadImage,
-    onInsertLink,
+	editor,
+	onPickImage,
+	onUploadImage,
+	onInsertLink,
 }: EditorToolbarProps) {
-    const items = useMemo(() => buildToolbarItems(onInsertLink), [onInsertLink]);
-    if (!editor) return null;
+	const items = useMemo(() => buildToolbarItems(onInsertLink), [onInsertLink]);
+	if (!editor) return null;
 
-    const renderItem = (item: ToolbarItem | typeof TOOLBAR_DIVIDER, idx: number) => {
-        if (item === TOOLBAR_DIVIDER) {
-            return (
-                <span
-                    key={`d-${idx}`}
-                    className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline"
-                    aria-hidden
-                />
-            );
-        }
-        const Icon = item.icon;
-        const active = item.isActive(editor);
-        const disabled = item.canRun ? !item.canRun(editor) : false;
-        return (
-            <Button
-                key={item.id}
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                title={item.title}
-                disabled={disabled}
-                onMouseDown={keepFocus}
-                onClick={() => item.run(editor)}
-                className={cn(active && "bg-accent text-accent-foreground")}
-            >
-                <Icon />
-            </Button>
-        );
-    };
+	const renderItem = (item: ToolbarItem | typeof TOOLBAR_DIVIDER, idx: number) => {
+		if (item === TOOLBAR_DIVIDER) {
+			return (
+				<span
+					key={`d-${idx}`}
+					className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline"
+					aria-hidden
+				/>
+			);
+		}
+		const Icon = item.icon;
+		const active = item.isActive(editor);
+		const disabled = item.canRun ? !item.canRun(editor) : false;
+		return (
+			<Button
+				key={item.id}
+				type="button"
+				variant="ghost"
+				size="icon-sm"
+				title={item.title}
+				disabled={disabled}
+				onMouseDown={keepFocus}
+				onClick={() => item.run(editor)}
+				className={cn(active && "bg-accent text-accent-foreground")}
+			>
+				<Icon />
+			</Button>
+		);
+	};
 
-    return (
-        <div
-            className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-edge-hairline bg-background/80 px-2 py-1.5 backdrop-blur"
-            // 容器统一拦截 mousedown，避免按钮点击让编辑器失焦（#1）
-            onMouseDown={keepFocus}
-        >
-            {items.map(renderItem)}
-            <span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
-            {/* 文字颜色色板 */}
-            <ColorSwatch
-                value={editor.getAttributes("textStyle").color}
-                onChange={(c) => editor.chain().focus().setColor(c).run()}
-                onClear={() => editor.chain().focus().unsetColor().run()}
-            />
-            <span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
-            {/* 图片：素材库选择 / 本地上传 二选一 */}
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        title="插入图片"
-                        className="w-auto min-w-8 px-1.5"
-                    >
-                        <ImagePlus />
-                        <ChevronDown className="size-3 opacity-50" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={onPickImage}>
-                        <ImagePlus className="size-3.5" />
-                        从素材库选择
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onUploadImage}>
-                        <Upload className="size-3.5" />
-                        上传本地图片
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-    );
+	return (
+		<div
+			className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 border-b border-edge-hairline bg-background/80 px-2 py-1.5 backdrop-blur"
+			// 容器统一拦截 mousedown，避免按钮点击让编辑器失焦（#1）
+			onMouseDown={keepFocus}
+		>
+			{items.map(renderItem)}
+			<span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
+			{/* 文字颜色色板 */}
+			<ColorSwatch
+				value={editor.getAttributes("textStyle").color}
+				onChange={(c) => editor.chain().focus().setColor(c).run()}
+				onClear={() => editor.chain().focus().unsetColor().run()}
+			/>
+			<span className="mx-0.5 h-5 w-px shrink-0 bg-edge-hairline" aria-hidden />
+			{/* 图片：素材库选择 / 本地上传 二选一 */}
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						title="插入图片"
+						className="w-auto min-w-8 px-1.5"
+					>
+						<ImagePlus />
+						<ChevronDown className="size-3 opacity-50" />
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end">
+					<DropdownMenuItem onClick={onPickImage}>
+						<ImagePlus className="size-3.5" />
+						从素材库选择
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={onUploadImage}>
+						<Upload className="size-3.5" />
+						上传本地图片
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</div>
+	);
 }

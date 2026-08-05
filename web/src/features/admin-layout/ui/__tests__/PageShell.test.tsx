@@ -10,23 +10,23 @@ import { PageShell } from "../PageShell";
  * 丢失内边距导致内容紧贴边缘(概览页)。
  */
 describe("PageShell 内边距", () => {
-    it("无标题区(early return)也保留页面内边距,内容不贴边", () => {
-        const { container } = render(
-            <PageShell title="概览">
-                <p>内容</p>
-            </PageShell>,
-        );
-        const wrapper = container.firstElementChild;
-        expect(wrapper?.className).toContain("px-4");
-    });
+	it("无标题区(early return)也保留页面内边距,内容不贴边", () => {
+		const { container } = render(
+			<PageShell title="概览">
+				<p>内容</p>
+			</PageShell>,
+		);
+		const wrapper = container.firstElementChild;
+		expect(wrapper?.className).toContain("px-4");
+	});
 
-    it("有标题区(正常路径)内容区带内边距", () => {
-        const { container } = render(
-            <PageShell title="文章管理" description="管理博客文章">
-                <p>内容</p>
-            </PageShell>,
-        );
-        const content = container.querySelector(".isolate");
-        expect(content?.className).toContain("px-4");
-    });
+	it("有标题区(正常路径)内容区带内边距", () => {
+		const { container } = render(
+			<PageShell title="文章管理" description="管理博客文章">
+				<p>内容</p>
+			</PageShell>,
+		);
+		const content = container.querySelector(".isolate");
+		expect(content?.className).toContain("px-4");
+	});
 });

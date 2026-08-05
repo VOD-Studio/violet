@@ -18,32 +18,32 @@ import { HtmlContent } from "./HtmlContent";
 
 /** react-markdown 管线懒加载，避免其依赖进入正文主 chunk */
 const MarkdownContent = lazy(() =>
-    import("./MarkdownContent").then((m) => ({ default: m.MarkdownContent })),
+	import("./MarkdownContent").then((m) => ({ default: m.MarkdownContent })),
 );
 
 export interface ArticleContentProps {
-    /** 文章内容（Markdown 或 HTML 字符串） */
-    content: string;
-    className?: string;
+	/** 文章内容（Markdown 或 HTML 字符串） */
+	content: string;
+	className?: string;
 }
 
 /** 检测内容是否为 HTML（含开闭标签，排除纯文本里的 < > 比较） */
 function isHTML(content: string): boolean {
-    // 需同时含 <tag> 开标签且非行内代码块内的片段
-    return /<(p|div|h[1-6]|ul|ol|li|blockquote|pre|code|table|img|span|figure|section|article)\b[\s>]/i.test(
-        content,
-    );
+	// 需同时含 <tag> 开标签且非行内代码块内的片段
+	return /<(p|div|h[1-6]|ul|ol|li|blockquote|pre|code|table|img|span|figure|section|article)\b[\s>]/i.test(
+		content,
+	);
 }
 
 function ArticleContent({ content, className }: ArticleContentProps) {
-    if (isHTML(content)) {
-        return <HtmlContent html={content} className={className} />;
-    }
-    return (
-        <Suspense fallback={<div className={className} />}>
-            <MarkdownContent content={content} className={className} />
-        </Suspense>
-    );
+	if (isHTML(content)) {
+		return <HtmlContent html={content} className={className} />;
+	}
+	return (
+		<Suspense fallback={<div className={className} />}>
+			<MarkdownContent content={content} className={className} />
+		</Suspense>
+	);
 }
 
 /** 正文渲染开销较大，props 不变时跳过重渲染，避免目录高亮/滚动状态变化触发整篇文章重排。 */

@@ -8,14 +8,14 @@ import type { DateTimePickerMode } from "../types/date-time-picker-types";
  * - time: HH:mm
  */
 function getParseFormat(mode: DateTimePickerMode): string {
-    switch (mode) {
-        case "date":
-            return "yyyy-MM-dd";
-        case "time":
-            return "HH:mm";
-        default:
-            return "yyyy-MM-dd'T'HH:mm";
-    }
+	switch (mode) {
+		case "date":
+			return "yyyy-MM-dd";
+		case "time":
+			return "HH:mm";
+		default:
+			return "yyyy-MM-dd'T'HH:mm";
+	}
 }
 
 /**
@@ -25,9 +25,9 @@ function getParseFormat(mode: DateTimePickerMode): string {
  * @returns 解析后的 Date，无效时返回 null
  */
 export function parsePickerValue(value: string, mode: DateTimePickerMode): Date | null {
-    if (!value) return null;
-    const parsed = parse(value, getParseFormat(mode), new Date());
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
+	if (!value) return null;
+	const parsed = parse(value, getParseFormat(mode), new Date());
+	return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 /**
@@ -36,7 +36,7 @@ export function parsePickerValue(value: string, mode: DateTimePickerMode): Date 
  * @param mode 选择器模式
  */
 export function formatPickerValue(date: Date, mode: DateTimePickerMode): string {
-    return format(date, getParseFormat(mode));
+	return format(date, getParseFormat(mode));
 }
 
 /**
@@ -45,18 +45,18 @@ export function formatPickerValue(date: Date, mode: DateTimePickerMode): string 
  * @param mode 选择器模式
  */
 export function splitDateTime(
-    value: string,
-    mode: DateTimePickerMode,
+	value: string,
+	mode: DateTimePickerMode,
 ): { date: Date | null; time: string } {
-    const date = parsePickerValue(value, mode);
-    if (!date) return { date: null, time: "" };
+	const date = parsePickerValue(value, mode);
+	if (!date) return { date: null, time: "" };
 
-    if (mode === "date") {
-        return { date, time: "" };
-    }
+	if (mode === "date") {
+		return { date, time: "" };
+	}
 
-    const time = format(date, "HH:mm");
-    return { date: mode === "time" ? null : date, time };
+	const time = format(date, "HH:mm");
+	return { date: mode === "time" ? null : date, time };
 }
 
 /**
@@ -65,9 +65,9 @@ export function splitDateTime(
  * @param time 时间部分（HH:mm）
  */
 export function combineDateTime(date: string, time: string): string {
-    if (!date) return "";
-    if (!time) return `${date}T00:00`;
-    return `${date}T${time}`;
+	if (!date) return "";
+	if (!time) return `${date}T00:00`;
+	return `${date}T${time}`;
 }
 
 /**
@@ -76,18 +76,18 @@ export function combineDateTime(date: string, time: string): string {
  * @param options 禁用规则
  */
 export function isDateDisabled(
-    date: Date,
-    options?: {
-        minDate?: Date;
-        maxDate?: Date;
-        disabledDate?: (date: Date) => boolean;
-    },
+	date: Date,
+	options?: {
+		minDate?: Date;
+		maxDate?: Date;
+		disabledDate?: (date: Date) => boolean;
+	},
 ): boolean {
-    const { minDate, maxDate, disabledDate } = options ?? {};
-    if (minDate && date < minDate) return true;
-    if (maxDate && date > maxDate) return true;
-    if (disabledDate?.(date)) return true;
-    return false;
+	const { minDate, maxDate, disabledDate } = options ?? {};
+	if (minDate && date < minDate) return true;
+	if (maxDate && date > maxDate) return true;
+	if (disabledDate?.(date)) return true;
+	return false;
 }
 
 /**
@@ -95,5 +95,5 @@ export function isDateDisabled(
  * @param date 日期对象
  */
 export function formatTime(date: Date): string {
-    return format(date, "HH:mm");
+	return format(date, "HH:mm");
 }

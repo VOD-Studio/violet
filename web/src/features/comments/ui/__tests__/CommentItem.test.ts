@@ -10,23 +10,23 @@ import { toGridImages } from "../CommentItem";
 const pic = (url: string) => ({ url, width: 0, height: 0, size: 1024 });
 
 describe("toGridImages", () => {
-    it("多图:缩略图 w=400 保比例,不用 thumb 裁方", () => {
-        const out = toGridImages([pic("/uploads/a.jpg"), pic("/uploads/b.jpg")]);
-        for (const img of out) {
-            expect(img.thumbnail).toContain("w=400");
-            expect(img.thumbnail).toContain("format=webp");
-            expect(img.thumbnail).not.toContain("thumb=");
-        }
-    });
+	it("多图:缩略图 w=400 保比例,不用 thumb 裁方", () => {
+		const out = toGridImages([pic("/uploads/a.jpg"), pic("/uploads/b.jpg")]);
+		for (const img of out) {
+			expect(img.thumbnail).toContain("w=400");
+			expect(img.thumbnail).toContain("format=webp");
+			expect(img.thumbnail).not.toContain("thumb=");
+		}
+	});
 
-    it("单图:w=800 保比例", () => {
-        const out = toGridImages([pic("/uploads/a.jpg")]);
-        expect(out[0].thumbnail).toContain("w=800");
-        expect(out[0].thumbnail).not.toContain("thumb=");
-    });
+	it("单图:w=800 保比例", () => {
+		const out = toGridImages([pic("/uploads/a.jpg")]);
+		expect(out[0].thumbnail).toContain("w=800");
+		expect(out[0].thumbnail).not.toContain("thumb=");
+	});
 
-    it("单图 GIF:剥参数保动画", () => {
-        const out = toGridImages([pic("/uploads/a.gif")]);
-        expect(out[0].thumbnail).toBe("/uploads/a.gif");
-    });
+	it("单图 GIF:剥参数保动画", () => {
+		const out = toGridImages([pic("/uploads/a.gif")]);
+		expect(out[0].thumbnail).toBe("/uploads/a.gif");
+	});
 });

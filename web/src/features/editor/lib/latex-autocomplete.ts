@@ -8,10 +8,10 @@
 import { LATEX_COMMANDS, type LatexCommand } from "./latex-commands";
 
 export interface LatexQuery {
-    /** 反斜杠在输入值中的下标 */
-    start: number;
-    /** 反斜杠之后、光标之前的查询串（可能为空串） */
-    text: string;
+	/** 反斜杠在输入值中的下标 */
+	start: number;
+	/** 反斜杠之后、光标之前的查询串（可能为空串） */
+	text: string;
 }
 
 /**
@@ -20,11 +20,11 @@ export interface LatexQuery {
  * 光标停在命令中间时，以光标前段为查询（替换只到光标处，不动后半截）。
  */
 export function extractQuery(value: string, cursorPos: number): LatexQuery | null {
-    let i = cursorPos;
-    while (i > 0 && /[a-zA-Z]/.test(value[i - 1])) i--;
-    if (i > 0 && value[i - 1] === "\\") return { start: i - 1, text: value.slice(i, cursorPos) };
-    if (cursorPos > 0 && value[cursorPos - 1] === "\\") return { start: cursorPos - 1, text: "" };
-    return null;
+	let i = cursorPos;
+	while (i > 0 && /[a-zA-Z]/.test(value[i - 1])) i--;
+	if (i > 0 && value[i - 1] === "\\") return { start: i - 1, text: value.slice(i, cursorPos) };
+	if (cursorPos > 0 && value[cursorPos - 1] === "\\") return { start: cursorPos - 1, text: "" };
+	return null;
 }
 
 /**
@@ -32,17 +32,17 @@ export function extractQuery(value: string, cursorPos: number): LatexQuery | nul
  * 前缀匹配排在包含匹配之前，同组内保持清单原有顺序（常用在前）。
  */
 export function filterCommands(query: string, limit = 8): LatexCommand[] {
-    if (!query) return LATEX_COMMANDS.slice(0, limit);
-    const q = query.toLowerCase();
-    const prefix: LatexCommand[] = [];
-    const contains: LatexCommand[] = [];
-    for (const cmd of LATEX_COMMANDS) {
-        const name = cmd.name.slice(1).toLowerCase();
-        if (name.startsWith(q)) prefix.push(cmd);
-        else if (name.includes(q)) contains.push(cmd);
-        if (prefix.length >= limit) break;
-    }
-    return [...prefix, ...contains].slice(0, limit);
+	if (!query) return LATEX_COMMANDS.slice(0, limit);
+	const q = query.toLowerCase();
+	const prefix: LatexCommand[] = [];
+	const contains: LatexCommand[] = [];
+	for (const cmd of LATEX_COMMANDS) {
+		const name = cmd.name.slice(1).toLowerCase();
+		if (name.startsWith(q)) prefix.push(cmd);
+		else if (name.includes(q)) contains.push(cmd);
+		if (prefix.length >= limit) break;
+	}
+	return [...prefix, ...contains].slice(0, limit);
 }
 
 /**
@@ -51,13 +51,13 @@ export function filterCommands(query: string, limit = 8): LatexCommand[] {
  * 无占位符时落在模板末尾。
  */
 export function applyCompletion(
-    value: string,
-    cursorPos: number,
-    start: number,
-    template: string,
+	value: string,
+	cursorPos: number,
+	start: number,
+	template: string,
 ): { value: string; cursor: number } {
-    const next = value.slice(0, start) + template + value.slice(cursorPos);
-    const placeholder = template.search(/\{\}|\[\]/);
-    const cursor = placeholder === -1 ? start + template.length : start + placeholder + 1;
-    return { value: next, cursor };
+	const next = value.slice(0, start) + template + value.slice(cursorPos);
+	const placeholder = template.search(/\{\}|\[\]/);
+	const cursor = placeholder === -1 ? start + template.length : start + placeholder + 1;
+	return { value: next, cursor };
 }

@@ -12,10 +12,10 @@ export const fetchAllEmojis = async (): Promise<EmojiGroup[]> => apiGet<EmojiGro
 
 /** useAllEmojis - 全部启用表情分组 hook */
 export const useAllEmojis = () =>
-    useQuery({
-        queryKey: emojiKeys.publicGroupList(),
-        queryFn: fetchAllEmojis,
-    });
+	useQuery({
+		queryKey: emojiKeys.publicGroupList(),
+		queryFn: fetchAllEmojis,
+	});
 
 /**
  * fetchEmojiGroupByName - 调后端 GET /emojis/groups/{name} 获取指定分组
@@ -23,12 +23,12 @@ export const useAllEmojis = () =>
  * @param name 分组名称，不存在时后端返回 404
  */
 export const fetchEmojiGroupByName = async (name: string): Promise<EmojiGroup> =>
-    apiGet<EmojiGroup>(`/emojis/groups/${name}`);
+	apiGet<EmojiGroup>(`/emojis/groups/${name}`);
 
 /** useEmojiGroupByName - 按名称获取分组 hook，传空串时不启用查询 */
 export const useEmojiGroupByName = (name: string) =>
-    useQuery({
-        queryKey: emojiKeys.publicGroupByName(name),
-        queryFn: () => fetchEmojiGroupByName(name),
-        enabled: !!name,
-    });
+	useQuery({
+		queryKey: emojiKeys.publicGroupByName(name),
+		queryFn: () => fetchEmojiGroupByName(name),
+		enabled: !!name,
+	});

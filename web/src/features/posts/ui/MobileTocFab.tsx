@@ -12,44 +12,44 @@ import { ListTree } from "lucide-react";
 import { useState } from "react";
 
 interface MobileTocFabProps {
-    items: ArticleTocProps["items"];
-    contentRef: ArticleTocProps["contentRef"];
+	items: ArticleTocProps["items"];
+	contentRef: ArticleTocProps["contentRef"];
 }
 
 const MobileTocFab = ({ items, contentRef }: MobileTocFabProps) => {
-    const [open, setOpen] = useState(false);
+	const [open, setOpen] = useState(false);
 
-    if (!items.length) return null;
+	if (!items.length) return null;
 
-    return (
-        <Sheet open={open} onOpenChange={setOpen}>
-            <button
-                type="button"
-                onClick={() => setOpen(true)}
-                aria-label="打开目录"
-                className="group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 shadow-lg backdrop-blur transition-all duration-300 hover:border-primary/50 hover:bg-accent active:scale-90"
-            >
-                <span className="absolute inset-0 rounded-full bg-primary/10 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100" />
-                <ListTree className="relative size-5 transition-transform duration-300 group-hover:scale-110" />
-            </button>
-            <SheetContent side="bottom" className="max-h-[70vh] p-0">
-                <SheetHeader className="border-b border-edge-hairline">
-                    <SheetTitle className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                        Contents
-                    </SheetTitle>
-                </SheetHeader>
-                <div className="max-h-[60vh] overflow-hidden px-4 py-4">
-                    <ArticleToc
-                        items={items}
-                        contentRef={contentRef}
-                        hideTitle
-                        forceFocus={open}
-                        onNavigate={() => setOpen(false)}
-                    />
-                </div>
-            </SheetContent>
-        </Sheet>
-    );
+	return (
+		<Sheet open={open} onOpenChange={setOpen}>
+			<button
+				type="button"
+				onClick={() => setOpen(true)}
+				aria-label="打开目录"
+				className="group flex size-11 items-center justify-center rounded-full border border-edge-hairline bg-background/80 shadow-lg backdrop-blur transition-all duration-300 hover:border-primary/50 hover:bg-accent active:scale-90"
+			>
+				<span className="absolute inset-0 rounded-full bg-primary/10 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100" />
+				<ListTree className="relative size-5 transition-transform duration-300 group-hover:scale-110" />
+			</button>
+			<SheetContent side="bottom" className="max-h-[70vh] p-0">
+				<SheetHeader className="border-b border-edge-hairline">
+					<SheetTitle className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+						目录
+					</SheetTitle>
+				</SheetHeader>
+				<div className="max-h-[60vh] overflow-hidden px-4 py-4">
+					<ArticleToc
+						items={items}
+						contentRef={contentRef}
+						hideTitle
+						forceFocus={open}
+						onNavigate={() => setOpen(false)}
+					/>
+				</div>
+			</SheetContent>
+		</Sheet>
+	);
 };
 
 export default MobileTocFab;

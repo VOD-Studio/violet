@@ -12,11 +12,11 @@ import { create } from "zustand";
  * 避免其他页面出现残留 VT name 导致诡异飞入动画。
  */
 interface ViewTransitionCoverState {
-    sharedCoverSlug: string | null;
-    setSharedCoverSlug: (slug: string | null) => void;
+	sharedCoverSlug: string | null;
+	setSharedCoverSlug: (slug: string | null) => void;
 }
 
 export const useViewTransitionStore = create<ViewTransitionCoverState>((set) => ({
-    sharedCoverSlug: null,
-    setSharedCoverSlug: (slug) => set({ sharedCoverSlug: slug }),
+	sharedCoverSlug: null,
+	setSharedCoverSlug: (slug) => set({ sharedCoverSlug: slug }),
 }));

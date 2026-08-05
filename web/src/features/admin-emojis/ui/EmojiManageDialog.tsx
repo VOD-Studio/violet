@@ -1,8 +1,8 @@
 import type { Emoji, EmojiGroup, EmojiUploadResult } from "@entities/emoji/model/types";
 import {
-    useCreateEmoji,
-    useDeleteEmoji,
-    useUpdateEmoji,
+	useCreateEmoji,
+	useDeleteEmoji,
+	useUpdateEmoji,
 } from "@features/admin-emojis/api/mutations";
 import { useGroupEmojisAdmin } from "@features/admin-emojis/api/queries";
 import type { CreateEmojiRequest, UpdateEmojiRequest } from "@features/admin-emojis/model/types";
@@ -21,9 +21,9 @@ import { EmojiUploader } from "./EmojiUploader";
 type InnerDialog = "edit" | "delete" | null;
 
 interface EmojiManageDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    group: EmojiGroup | null;
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	group: EmojiGroup | null;
 }
 
 /**
@@ -33,269 +33,269 @@ interface EmojiManageDialogProps {
  * 单条编辑删除；上传侧批量上传图片并立即落库。
  */
 export function EmojiManageDialog({ open, onOpenChange, group }: EmojiManageDialogProps) {
-    const groupId = group?.id ?? 0;
-    // 组内新建表情默认继承分组的 size（1=小 2=大）
-    const groupSize = group?.meta?.size;
-    const { data: emojis = [] } = useGroupEmojisAdmin(groupId);
-    const createEmoji = useCreateEmoji();
-    const updateEmoji = useUpdateEmoji();
-    const deleteEmoji = useDeleteEmoji();
+	const groupId = group?.id ?? 0;
+	// 组内新建表情默认继承分组的 size（1=小 2=大）
+	const groupSize = group?.meta?.size;
+	const { data: emojis = [] } = useGroupEmojisAdmin(groupId);
+	const createEmoji = useCreateEmoji();
+	const updateEmoji = useUpdateEmoji();
+	const deleteEmoji = useDeleteEmoji();
 
-    const [activeTab, setActiveTab] = useState("manage");
-    const [searchQuery, setSearchQuery] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-    const [isSelectMode, setIsSelectMode] = useState(false);
-    const [showAddText, setShowAddText] = useState(false);
-    const [deleting, setDeleting] = useState(false);
+	const [activeTab, setActiveTab] = useState("manage");
+	const [searchQuery, setSearchQuery] = useState("");
+	const [currentPage, setCurrentPage] = useState(1);
+	const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+	const [isSelectMode, setIsSelectMode] = useState(false);
+	const [showAddText, setShowAddText] = useState(false);
+	const [deleting, setDeleting] = useState(false);
 
-    const [deleteConfirm, setDeleteConfirm] = useState<number[]>([]);
-    const [editEmoji, setEditEmoji] = useState<Emoji | null>(null);
-    // 内层弹窗互斥：edit/delete 同一时刻仅一个 open，且 open 期间拦截外层
-    // ManageDialog 的关闭（取消编辑不关管理弹窗）
-    const [innerDialog, setInnerDialog] = useState<InnerDialog>(null);
-    const closeInner = () => setInnerDialog(null);
+	const [deleteConfirm, setDeleteConfirm] = useState<number[]>([]);
+	const [editEmoji, setEditEmoji] = useState<Emoji | null>(null);
+	// 内层弹窗互斥：edit/delete 同一时刻仅一个 open，且 open 期间拦截外层
+	// ManageDialog 的关闭（取消编辑不关管理弹窗）
+	const [innerDialog, setInnerDialog] = useState<InnerDialog>(null);
+	const closeInner = () => setInnerDialog(null);
 
-    // 内层弹窗（编辑/删除确认）打开时，阻止外层被 Radix 嵌套关闭事件连关。
-    const handleOpenChange = (o: boolean) => {
-        if (!o && innerDialog !== null) return;
-        onOpenChange(o);
-    };
+	// 内层弹窗（编辑/删除确认）打开时，阻止外层被 Radix 嵌套关闭事件连关。
+	const handleOpenChange = (o: boolean) => {
+		if (!o && innerDialog !== null) return;
+		onOpenChange(o);
+	};
 
-    const handleSearchChange = (value: string) => {
-        setSearchQuery(value);
-        setCurrentPage(1);
-    };
+	const handleSearchChange = (value: string) => {
+		setSearchQuery(value);
+		setCurrentPage(1);
+	};
 
-    const handleUpload = (result: EmojiUploadResult) => {
-        const name = result.url.split("/").pop() ?? "emoji";
-        createEmoji.mutate(
-            {
-                groupId,
-                body: { name, url: result.url, meta: groupSize ? { size: groupSize } : undefined },
-            },
-            {
-                onSuccess: () => toast.success("表情已添加"),
-                onError: (err) => toast.error(err.message),
-            },
-        );
-    };
+	const handleUpload = (result: EmojiUploadResult) => {
+		const name = result.url.split("/").pop() ?? "emoji";
+		createEmoji.mutate(
+			{
+				groupId,
+				body: { name, url: result.url, meta: groupSize ? { size: groupSize } : undefined },
+			},
+			{
+				onSuccess: () => toast.success("表情已添加"),
+				onError: (err) => toast.error(err.message),
+			},
+		);
+	};
 
-    const handleAddTextEmoji = (body: CreateEmojiRequest) => {
-        createEmoji.mutate(
-            {
-                groupId,
-                body: { ...body, meta: groupSize ? { size: groupSize } : undefined },
-            },
-            {
-                onSuccess: () => {
-                    toast.success("文本表情已添加");
-                    setShowAddText(false);
-                },
-                onError: (err) => toast.error(err.message),
-            },
-        );
-    };
+	const handleAddTextEmoji = (body: CreateEmojiRequest) => {
+		createEmoji.mutate(
+			{
+				groupId,
+				body: { ...body, meta: groupSize ? { size: groupSize } : undefined },
+			},
+			{
+				onSuccess: () => {
+					toast.success("文本表情已添加");
+					setShowAddText(false);
+				},
+				onError: (err) => toast.error(err.message),
+			},
+		);
+	};
 
-    const startEdit = (emoji: Emoji) => {
-        setEditEmoji(emoji);
-        setInnerDialog("edit");
-    };
+	const startEdit = (emoji: Emoji) => {
+		setEditEmoji(emoji);
+		setInnerDialog("edit");
+	};
 
-    const handleSaveEdit = (body: UpdateEmojiRequest) => {
-        if (!editEmoji) return;
-        updateEmoji.mutate(
-            {
-                id: editEmoji.id,
-                groupId,
-                body,
-            },
-            {
-                onSuccess: () => {
-                    toast.success("表情已更新");
-                    closeInner();
-                    setEditEmoji(null);
-                },
-                onError: (err) => toast.error(err.message),
-            },
-        );
-    };
+	const handleSaveEdit = (body: UpdateEmojiRequest) => {
+		if (!editEmoji) return;
+		updateEmoji.mutate(
+			{
+				id: editEmoji.id,
+				groupId,
+				body,
+			},
+			{
+				onSuccess: () => {
+					toast.success("表情已更新");
+					closeInner();
+					setEditEmoji(null);
+				},
+				onError: (err) => toast.error(err.message),
+			},
+		);
+	};
 
-    const handleDelete = (id: number) => {
-        setDeleteConfirm([id]);
-        setInnerDialog("delete");
-    };
+	const handleDelete = (id: number) => {
+		setDeleteConfirm([id]);
+		setInnerDialog("delete");
+	};
 
-    const handleBatchDelete = () => {
-        if (selectedIds.size === 0) {
-            toast.error("请先选择要删除的表情");
-            return;
-        }
-        setDeleteConfirm(Array.from(selectedIds));
-        setInnerDialog("delete");
-    };
+	const handleBatchDelete = () => {
+		if (selectedIds.size === 0) {
+			toast.error("请先选择要删除的表情");
+			return;
+		}
+		setDeleteConfirm(Array.from(selectedIds));
+		setInnerDialog("delete");
+	};
 
-    const confirmDelete = async () => {
-        setDeleting(true);
-        let ok = 0;
-        let fail = 0;
-        for (const id of deleteConfirm) {
-            try {
-                await deleteEmoji.mutateAsync({ id, groupId });
-                ok++;
-            } catch {
-                fail++;
-            }
-        }
-        if (ok > 0) toast.success(`已删除 ${ok} 个表情`);
-        if (fail > 0) toast.error(`${fail} 个表情删除失败`);
-        setDeleting(false);
-        setDeleteConfirm([]);
-        setSelectedIds(new Set());
-        setIsSelectMode(false);
-        closeInner();
-    };
+	const confirmDelete = async () => {
+		setDeleting(true);
+		let ok = 0;
+		let fail = 0;
+		for (const id of deleteConfirm) {
+			try {
+				await deleteEmoji.mutateAsync({ id, groupId });
+				ok++;
+			} catch {
+				fail++;
+			}
+		}
+		if (ok > 0) toast.success(`已删除 ${ok} 个表情`);
+		if (fail > 0) toast.error(`${fail} 个表情删除失败`);
+		setDeleting(false);
+		setDeleteConfirm([]);
+		setSelectedIds(new Set());
+		setIsSelectMode(false);
+		closeInner();
+	};
 
-    const toggleSelect = (id: number) => {
-        setSelectedIds((prev) => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
-    };
+	const toggleSelect = (id: number) => {
+		setSelectedIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+	};
 
-    const toggleSelectAll = () => {
-        const start = (currentPage - 1) * 40;
-        const pageIds = emojis.slice(start, start + 40).map((e) => e.id);
-        const allSelected = pageIds.every((id) => selectedIds.has(id));
-        setSelectedIds((prev) => {
-            const next = new Set(prev);
-            if (allSelected) {
-                pageIds.forEach((id) => {
-                    next.delete(id);
-                });
-            } else {
-                pageIds.forEach((id) => {
-                    next.add(id);
-                });
-            }
-            return next;
-        });
-    };
+	const toggleSelectAll = () => {
+		const start = (currentPage - 1) * 40;
+		const pageIds = emojis.slice(start, start + 40).map((e) => e.id);
+		const allSelected = pageIds.every((id) => selectedIds.has(id));
+		setSelectedIds((prev) => {
+			const next = new Set(prev);
+			if (allSelected) {
+				pageIds.forEach((id) => {
+					next.delete(id);
+				});
+			} else {
+				pageIds.forEach((id) => {
+					next.add(id);
+				});
+			}
+			return next;
+		});
+	};
 
-    const imageCount = emojis.filter((e) => e.url).length;
-    const textCount = emojis.length - imageCount;
+	const imageCount = emojis.filter((e) => e.url).length;
+	const textCount = emojis.length - imageCount;
 
-    return (
-        <>
-            <Modal
-                open={open}
-                onOpenChange={handleOpenChange}
-                size="xl"
-                footer={null}
-                scrollable={false}
-                title={
-                    <span className="flex items-center gap-2">
-                        <Images className="size-5" />
-                        管理表情
-                        {emojis.length > 0 && (
-                            <span className="text-sm font-normal text-muted-foreground">
-                                共 {emojis.length} 个{(imageCount > 0 || textCount > 0) && " ("}
-                                {imageCount > 0 && `图片 ${imageCount}`}
-                                {imageCount > 0 && textCount > 0 && "，"}
-                                {textCount > 0 && `文本 ${textCount}`}
-                                {(imageCount > 0 || textCount > 0) && ")"}
-                            </span>
-                        )}
-                    </span>
-                }
-            >
-                <div className="flex h-full flex-col">
-                    <Tabs
-                        value={activeTab}
-                        onValueChange={setActiveTab}
-                        className="flex h-full flex-col overflow-hidden"
-                    >
-                        <TabsList className="shrink-0">
-                            <TabsTrigger value="manage">
-                                <Images className="mr-1 size-4" />
-                                管理
-                            </TabsTrigger>
-                            <TabsTrigger value="upload">
-                                <Upload className="mr-1 size-4" />
-                                上传
-                            </TabsTrigger>
-                        </TabsList>
+	return (
+		<>
+			<Modal
+				open={open}
+				onOpenChange={handleOpenChange}
+				size="xl"
+				footer={null}
+				scrollable={false}
+				title={
+					<span className="flex items-center gap-2">
+						<Images className="size-5" />
+						管理表情
+						{emojis.length > 0 && (
+							<span className="text-sm font-normal text-muted-foreground">
+								共 {emojis.length} 个{(imageCount > 0 || textCount > 0) && " ("}
+								{imageCount > 0 && `图片 ${imageCount}`}
+								{imageCount > 0 && textCount > 0 && "，"}
+								{textCount > 0 && `文本 ${textCount}`}
+								{(imageCount > 0 || textCount > 0) && ")"}
+							</span>
+						)}
+					</span>
+				}
+			>
+				<div className="flex h-full flex-col">
+					<Tabs
+						value={activeTab}
+						onValueChange={setActiveTab}
+						className="flex h-full flex-col overflow-hidden"
+					>
+						<TabsList className="shrink-0">
+							<TabsTrigger value="manage">
+								<Images className="mr-1 size-4" />
+								管理
+							</TabsTrigger>
+							<TabsTrigger value="upload">
+								<Upload className="mr-1 size-4" />
+								上传
+							</TabsTrigger>
+						</TabsList>
 
-                        <TabsContent
-                            value="manage"
-                            className="mt-4 flex flex-1 flex-col overflow-hidden"
-                        >
-                            <EmojiToolbar
-                                searchQuery={searchQuery}
-                                onSearchChange={handleSearchChange}
-                                isSelectMode={isSelectMode}
-                                onToggleSelectMode={() => {
-                                    setIsSelectMode(!isSelectMode);
-                                    if (isSelectMode) setSelectedIds(new Set());
-                                }}
-                                selectedCount={selectedIds.size}
-                                onBatchDelete={handleBatchDelete}
-                                showAddText={showAddText}
-                                onToggleAddText={() => setShowAddText(!showAddText)}
-                                onAddTextEmoji={handleAddTextEmoji}
-                                isAddingText={createEmoji.isPending}
-                            />
+						<TabsContent
+							value="manage"
+							className="mt-4 flex flex-1 flex-col overflow-hidden"
+						>
+							<EmojiToolbar
+								searchQuery={searchQuery}
+								onSearchChange={handleSearchChange}
+								isSelectMode={isSelectMode}
+								onToggleSelectMode={() => {
+									setIsSelectMode(!isSelectMode);
+									if (isSelectMode) setSelectedIds(new Set());
+								}}
+								selectedCount={selectedIds.size}
+								onBatchDelete={handleBatchDelete}
+								showAddText={showAddText}
+								onToggleAddText={() => setShowAddText(!showAddText)}
+								onAddTextEmoji={handleAddTextEmoji}
+								isAddingText={createEmoji.isPending}
+							/>
 
-                            <div className="-mr-1 flex-1 overflow-y-auto pr-1">
-                                <EmojiList
-                                    emojis={emojis}
-                                    searchQuery={searchQuery}
-                                    currentPage={currentPage}
-                                    onPageChange={setCurrentPage}
-                                    isSelectMode={isSelectMode}
-                                    selectedIds={selectedIds}
-                                    onToggleSelect={toggleSelect}
-                                    onToggleSelectAll={toggleSelectAll}
-                                    onEdit={startEdit}
-                                    onDelete={handleDelete}
-                                />
-                            </div>
-                        </TabsContent>
+							<div className="-mr-1 flex-1 overflow-y-auto pr-1">
+								<EmojiList
+									emojis={emojis}
+									searchQuery={searchQuery}
+									currentPage={currentPage}
+									onPageChange={setCurrentPage}
+									isSelectMode={isSelectMode}
+									selectedIds={selectedIds}
+									onToggleSelect={toggleSelect}
+									onToggleSelectAll={toggleSelectAll}
+									onEdit={startEdit}
+									onDelete={handleDelete}
+								/>
+							</div>
+						</TabsContent>
 
-                        <TabsContent value="upload" className="mt-4 flex-1 overflow-y-auto">
-                            <EmojiUploader onUpload={handleUpload} maxFiles={20} />
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            </Modal>
+						<TabsContent value="upload" className="mt-4 flex-1 overflow-y-auto">
+							<EmojiUploader onUpload={handleUpload} maxFiles={20} />
+						</TabsContent>
+					</Tabs>
+				</div>
+			</Modal>
 
-            <EmojiEditDialog
-                open={innerDialog === "edit"}
-                onOpenChange={(o) => {
-                    if (!o) closeInner();
-                }}
-                emoji={editEmoji}
-                onSave={handleSaveEdit}
-                isSaving={updateEmoji.isPending}
-            />
+			<EmojiEditDialog
+				open={innerDialog === "edit"}
+				onOpenChange={(o) => {
+					if (!o) closeInner();
+				}}
+				emoji={editEmoji}
+				onSave={handleSaveEdit}
+				isSaving={updateEmoji.isPending}
+			/>
 
-            <ConfirmDialog
-                open={innerDialog === "delete"}
-                onOpenChange={(o: boolean) => {
-                    if (!o) closeInner();
-                }}
-                title="删除表情"
-                description={
-                    deleteConfirm.length > 1
-                        ? `确定要删除这 ${deleteConfirm.length} 个表情吗？此操作不可撤销。`
-                        : "确定要删除这个表情吗？此操作不可撤销。"
-                }
-                confirmLabel="删除"
-                loading={deleting}
-                onConfirm={confirmDelete}
-            />
-        </>
-    );
+			<ConfirmDialog
+				open={innerDialog === "delete"}
+				onOpenChange={(o: boolean) => {
+					if (!o) closeInner();
+				}}
+				title="删除表情"
+				description={
+					deleteConfirm.length > 1
+						? `确定要删除这 ${deleteConfirm.length} 个表情吗？此操作不可撤销。`
+						: "确定要删除这个表情吗？此操作不可撤销。"
+				}
+				confirmLabel="删除"
+				loading={deleting}
+				onConfirm={confirmDelete}
+			/>
+		</>
+	);
 }

@@ -21,13 +21,13 @@ const BLOCK_ID_LENGTH = 8;
  * @returns 8 位 hex 字符串；空/纯空白文本返回 null（约定哨兵，避免空段撞同一 id）
  */
 export async function computeBlockId(text: string): Promise<string | null> {
-    const trimmed = text.trim();
-    if (trimmed === "") return null;
+	const trimmed = text.trim();
+	if (trimmed === "") return null;
 
-    const data = new TextEncoder().encode(trimmed);
-    const digest = await crypto.subtle.digest("SHA-256", data);
-    return Array.from(new Uint8Array(digest))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("")
-        .slice(0, BLOCK_ID_LENGTH);
+	const data = new TextEncoder().encode(trimmed);
+	const digest = await crypto.subtle.digest("SHA-256", data);
+	return Array.from(new Uint8Array(digest))
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("")
+		.slice(0, BLOCK_ID_LENGTH);
 }

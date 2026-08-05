@@ -13,12 +13,12 @@
 
 /** 单个顶层块在两边的位置映射条目 */
 export interface BlockLineEntry {
-    /** 该块在 ProseMirror doc 中的起始 position */
-    pmPos: number;
-    /** 该块序列化后在整篇 Markdown 中占据的起始行号（0 基） */
-    mdStartLine: number;
-    /** 该块序列化后占据的结束行号（含，按 split('\n').length 累计） */
-    mdEndLine: number;
+	/** 该块在 ProseMirror doc 中的起始 position */
+	pmPos: number;
+	/** 该块序列化后在整篇 Markdown 中占据的起始行号（0 基） */
+	mdStartLine: number;
+	/** 该块序列化后占据的结束行号（含，按 split('\n').length 累计） */
+	mdEndLine: number;
 }
 
 /**
@@ -40,40 +40,40 @@ export interface BlockLineEntry {
  * @returns 行号映射表，顺序与输入一致
  */
 export function buildBlockLineMap(
-    blocks: ReadonlyArray<readonly [pmPos: number, markdown: string]>,
-    separator = "\n\n",
+	blocks: ReadonlyArray<readonly [pmPos: number, markdown: string]>,
+	separator = "\n\n",
 ): BlockLineEntry[] {
-    // 分隔符对「下一块 startLine」的跨度贡献:
-    // 整体 = A + sep + B,按 \n 切后 B.startLine = A.startLine + A_lines - 1 + 换行数。
-    // 跨度 = A_lines + (换行数 - 1)。"\n\n" 含 2 个换行 → sepLines = 1(1 个空行)。
-    const sepNewlines = (separator.match(/\n/g) ?? []).length;
-    const sepLines = Math.max(0, sepNewlines - 1);
-    // 先算出每块的内容行数和起始行号
-    const starts: number[] = [];
-    const contentLines: number[] = [];
-    let acc = 0;
-    for (let i = 0; i < blocks.length; i++) {
-        starts.push(acc);
-        const lines = blocks[i][1].split("\n").length;
-        contentLines.push(lines);
-        acc += lines + (i < blocks.length - 1 ? sepLines : 0);
-    }
-    // mdEndLine 扩展到「下一块起始行 - 1」(含尾随块间空行),让区间连续
-    // 无空洞——textarea 停在空行时 findBlockByLine 二分能落到确定块上,
-    // 而不是落回兜底的首块。空行视觉上靠下方块更近,但归到上一个块是
-    // 保守选择(最多差一个块),且实现简单(区间连续)。
-    const entries: BlockLineEntry[] = [];
-    for (let i = 0; i < blocks.length; i++) {
-        const start = starts[i];
-        const contentEnd = start + contentLines[i] - 1;
-        const ownedEnd = i < blocks.length - 1 ? starts[i + 1] - 1 : contentEnd;
-        entries.push({
-            pmPos: blocks[i][0],
-            mdStartLine: start,
-            mdEndLine: ownedEnd,
-        });
-    }
-    return entries;
+	// 分隔符对「下一块 startLine」的跨度贡献:
+	// 整体 = A + sep + B,按 \n 切后 B.startLine = A.startLine + A_lines - 1 + 换行数。
+	// 跨度 = A_lines + (换行数 - 1)。"\n\n" 含 2 个换行 → sepLines = 1(1 个空行)。
+	const sepNewlines = (separator.match(/\n/g) ?? []).length;
+	const sepLines = Math.max(0, sepNewlines - 1);
+	// 先算出每块的内容行数和起始行号
+	const starts: number[] = [];
+	const contentLines: number[] = [];
+	let acc = 0;
+	for (let i = 0; i < blocks.length; i++) {
+		starts.push(acc);
+		const lines = blocks[i][1].split("\n").length;
+		contentLines.push(lines);
+		acc += lines + (i < blocks.length - 1 ? sepLines : 0);
+	}
+	// mdEndLine 扩展到「下一块起始行 - 1」(含尾随块间空行),让区间连续
+	// 无空洞——textarea 停在空行时 findBlockByLine 二分能落到确定块上,
+	// 而不是落回兜底的首块。空行视觉上靠下方块更近,但归到上一个块是
+	// 保守选择(最多差一个块),且实现简单(区间连续)。
+	const entries: BlockLineEntry[] = [];
+	for (let i = 0; i < blocks.length; i++) {
+		const start = starts[i];
+		const contentEnd = start + contentLines[i] - 1;
+		const ownedEnd = i < blocks.length - 1 ? starts[i + 1] - 1 : contentEnd;
+		entries.push({
+			pmPos: blocks[i][0],
+			mdStartLine: start,
+			mdEndLine: ownedEnd,
+		});
+	}
+	return entries;
 }
 
 /**
@@ -84,25 +84,25 @@ export function buildBlockLineMap(
  * @returns pmPos；映射表为空返回 null
  */
 export function findBlockByLine(map: ReadonlyArray<BlockLineEntry>, line: number): number | null {
-    if (map.length === 0) return null;
-    if (line < 0) return map[0].pmPos;
-    if (line > map[map.length - 1].mdEndLine) return map[map.length - 1].pmPos;
+	if (map.length === 0) return null;
+	if (line < 0) return map[0].pmPos;
+	if (line > map[map.length - 1].mdEndLine) return map[map.length - 1].pmPos;
 
-    let lo = 0;
-    let hi = map.length - 1;
-    while (lo <= hi) {
-        const mid = (lo + hi) >> 1;
-        const entry = map[mid];
-        if (line < entry.mdStartLine) {
-            hi = mid - 1;
-        } else if (line > entry.mdEndLine) {
-            lo = mid + 1;
-        } else {
-            return entry.pmPos;
-        }
-    }
-    // 理论不可达（上面已覆盖 line 全域），兜底返回首块
-    return map[0].pmPos;
+	let lo = 0;
+	let hi = map.length - 1;
+	while (lo <= hi) {
+		const mid = (lo + hi) >> 1;
+		const entry = map[mid];
+		if (line < entry.mdStartLine) {
+			hi = mid - 1;
+		} else if (line > entry.mdEndLine) {
+			lo = mid + 1;
+		} else {
+			return entry.pmPos;
+		}
+	}
+	// 理论不可达（上面已覆盖 line 全域），兜底返回首块
+	return map[0].pmPos;
 }
 
 /**
@@ -118,12 +118,12 @@ export function findBlockByLine(map: ReadonlyArray<BlockLineEntry>, line: number
  * @returns 当前可见块的 pmPos；序列为空返回 null
  */
 export function findVisibleBlockPos(
-    blockTops: ReadonlyArray<readonly [pmPos: number, rectBottom: number]>,
+	blockTops: ReadonlyArray<readonly [pmPos: number, rectBottom: number]>,
 ): number | null {
-    if (blockTops.length === 0) return null;
-    // 第一个 bottom > 0 的块；都不满足（视口在文档末尾之外）返回最后一块
-    for (const [pmPos, rectBottom] of blockTops) {
-        if (rectBottom > 0) return pmPos;
-    }
-    return blockTops[blockTops.length - 1][0];
+	if (blockTops.length === 0) return null;
+	// 第一个 bottom > 0 的块；都不满足（视口在文档末尾之外）返回最后一块
+	for (const [pmPos, rectBottom] of blockTops) {
+		if (rectBottom > 0) return pmPos;
+	}
+	return blockTops[blockTops.length - 1][0];
 }

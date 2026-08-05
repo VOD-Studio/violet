@@ -8,16 +8,16 @@ import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
  * 独立数据源区块（life stats / changelog）各自有区块级骨架，渐进替换。
  */
 export function AboutPageSkeleton() {
-    return (
-        <div className="mx-auto w-full max-w-5xl space-y-16 px-6 py-14">
-            {Array.from({ length: 3 }, (_, i) => (
-                <section key={i}>
-                    <ShimmerSkeleton className="mb-6 h-3 w-20" />
-                    <ShimmerSkeleton className="h-5 w-2/3" />
-                    <ShimmerSkeleton className="mt-3 h-5 w-1/2" />
-                    <ShimmerSkeleton className="mt-2 h-5 w-3/4" />
-                </section>
-            ))}
-        </div>
-    );
+	return (
+		<div className="mx-auto w-full max-w-5xl space-y-16 px-6 py-14">
+			{Array.from({ length: 3 }, (_, i) => (
+				<section key={i}>
+					<ShimmerSkeleton className="mb-6 h-3 w-20" />
+					<ShimmerSkeleton className="h-5 w-2/3" />
+					<ShimmerSkeleton className="mt-3 h-5 w-1/2" />
+					<ShimmerSkeleton className="mt-2 h-5 w-3/4" />
+				</section>
+			))}
+		</div>
+	);
 }

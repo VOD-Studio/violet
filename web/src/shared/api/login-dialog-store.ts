@@ -13,16 +13,16 @@ import { create } from "zustand";
  * 与 CommandUIStore 同模式（zustand 单例，不持久化）。
  */
 export interface LoginDialogState {
-    /** 是否打开 */
-    isOpen: boolean;
-    /** 打开弹窗 */
-    open: () => void;
-    /** 关闭弹窗 */
-    close: () => void;
+	/** 是否打开 */
+	isOpen: boolean;
+	/** 打开弹窗 */
+	open: () => void;
+	/** 关闭弹窗 */
+	close: () => void;
 }
 
 export const useLoginDialogStore = create<LoginDialogState>((set) => ({
-    isOpen: false,
-    open: () => set({ isOpen: true }),
-    close: () => set({ isOpen: false }),
+	isOpen: false,
+	open: () => set({ isOpen: true }),
+	close: () => set({ isOpen: false }),
 }));

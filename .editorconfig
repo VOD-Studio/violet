@@ -1,9 +1,4 @@
-# EditorConfig 跨编辑器统一基础风格
-# https://editorconfig.org
-#
-# 确保 VSCode/Vim/GoLand/IntelliJ 等编辑器在无项目配置时也保持一致格式。
-# 各语言具体规则由各自的格式化工具 (gofmt/biome) 进一步强制。
-
+# Go / YAML / Makefile / 根级 JSON
 root = true
 
 [*]
@@ -11,38 +6,25 @@ charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
-indent_style = space
-indent_size = 2
-
-# 前端 TS/JS/JSON 与 biome 对齐：tab 缩进、4 宽、100 列
-[*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}]
-indent_style = tab
-tab_width = 4
-max_line_length = 100
-
-# CSS 与 biome 对齐：tab 缩进
-[*.css]
-indent_style = tab
-tab_width = 4
-max_line_length = 100
-
-# Go: tab 缩进 (gofmt 规范)
-[*.go]
 indent_style = tab
 indent_size = 4
-
-# Makefile 必须用 tab
-[Makefile]
-indent_style = tab
+max_line_length = 100
 
 # Shell 脚本保持 2 空格
 [*.sh]
 indent_size = 2
 
-# Markdown 不裁剪行尾空格（双空格表示换行）
-[*.md]
-trim_trailing_whitespace = false
-
-# YAML 配置 2 空格
-[*.{yml,yaml}]
+# YAML 语法不允许 tab
+[**.{yml,yaml}]
+indent_style = space
 indent_size = 2
+
+# 根级 JSON 由 npm / release-please 管理（2 空格）；web/ 下 JSON 归 Biome 管（tab），不受本节影响
+[*.json]
+indent_style = space
+indent_size = 2
+
+# Markdown 行尾双空格是硬换行语法，不能 trim
+[**.md]
+trim_trailing_whitespace = false
+max_line_length = off

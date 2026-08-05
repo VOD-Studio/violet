@@ -16,27 +16,27 @@ import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
  * 调用方继续 .configure({ inline, allowBase64, HTMLAttributes }) 即可。
  */
 export function createImageExtension() {
-    return Image.extend({
-        addNodeView() {
-            return ReactNodeViewRenderer(ImageViewComponent);
-        },
-    });
+	return Image.extend({
+		addNodeView() {
+			return ReactNodeViewRenderer(ImageViewComponent);
+		},
+	});
 }
 
 function ImageViewComponent({ node, selected }: NodeViewProps) {
-    const src = (node.attrs.src as string) ?? "";
-    const alt = (node.attrs.alt as string) ?? "";
-    const title = (node.attrs.title as string | null) ?? undefined;
-    return (
-        <NodeViewWrapper data-type="image">
-            <img
-                src={contentImageUrl(src, { width: 1200 })}
-                alt={alt}
-                title={title}
-                // rounded-lg 与原 HTMLAttributes.class 保持一致;选中态描边提示
-                className={`rounded-lg ${selected ? "ring-2 ring-primary" : ""}`}
-                draggable={false}
-            />
-        </NodeViewWrapper>
-    );
+	const src = (node.attrs.src as string) ?? "";
+	const alt = (node.attrs.alt as string) ?? "";
+	const title = (node.attrs.title as string | null) ?? undefined;
+	return (
+		<NodeViewWrapper data-type="image">
+			<img
+				src={contentImageUrl(src, { width: 1200 })}
+				alt={alt}
+				title={title}
+				// rounded-lg 与原 HTMLAttributes.class 保持一致;选中态描边提示
+				className={`rounded-lg ${selected ? "ring-2 ring-primary" : ""}`}
+				draggable={false}
+			/>
+		</NodeViewWrapper>
+	);
 }

@@ -2,13 +2,13 @@ import { apiGet, apiGetPaged, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
-    BatchReactionResult,
-    BatchReactionsQuery,
-    BlockCount,
-    Comment,
-    CommentListQuery,
-    Reaction,
-    ReplyListQuery,
+	BatchReactionResult,
+	BatchReactionsQuery,
+	BlockCount,
+	Comment,
+	CommentListQuery,
+	Reaction,
+	ReplyListQuery,
 } from "../model/types";
 import { commentKeys } from "./keys";
 
@@ -24,10 +24,10 @@ import { commentKeys } from "./keys";
  * 前端无需额外过滤，按返回结果直接渲染即可。
  */
 export const fetchComments = async (
-    postId: string,
-    query: CommentListQuery = {},
+	postId: string,
+	query: CommentListQuery = {},
 ): Promise<PagedResponse<Comment>> =>
-    apiGetPaged<Comment>(`/posts/${postId}/comments`, { params: query });
+	apiGetPaged<Comment>(`/posts/${postId}/comments`, { params: query });
 
 /**
  * useComments - 文章评论列表 hook（支持 type 维度过滤）
@@ -36,11 +36,11 @@ export const fetchComments = async (
  * 文章详情页首帧 SSR/postId 尚未就绪时会被守卫拦下，postId 到位后自动启用。
  */
 export const useComments = (postId: string, query: CommentListQuery = {}) =>
-    useQuery({
-        queryKey: commentKeys.list(postId, query),
-        queryFn: () => fetchComments(postId, query),
-        enabled: !!postId,
-    });
+	useQuery({
+		queryKey: commentKeys.list(postId, query),
+		queryFn: () => fetchComments(postId, query),
+		enabled: !!postId,
+	});
 
 /**
  * useAnnotationComments - 批注专用便捷 hook
@@ -49,7 +49,7 @@ export const useComments = (postId: string, query: CommentListQuery = {}) =>
  * 缓存键与 free/all 隔离（commentKeys.list 带 query 对象），互不污染。
  */
 export const useAnnotationComments = (postId: string) =>
-    useComments(postId, { type: "annotation" });
+	useComments(postId, { type: "annotation" });
 
 /**
  * fetchAnnotationSummary - 调 GET /posts/{postId}/annotations/summary 拉批注按块聚合计数
@@ -58,7 +58,7 @@ export const useAnnotationComments = (postId: string) =>
  * 轻量数据（不含正文），用于角标渲染；点击角标后按 block_id 懒加载完整批注。
  */
 export const fetchAnnotationSummary = async (postId: string): Promise<BlockCount[]> =>
-    apiGet<BlockCount[]>(`/posts/${postId}/annotations/summary`);
+	apiGet<BlockCount[]>(`/posts/${postId}/annotations/summary`);
 
 /**
  * useAnnotationSummary - 批注按块聚合计数 hook
@@ -66,11 +66,11 @@ export const fetchAnnotationSummary = async (postId: string): Promise<BlockCount
  * postId 为空时禁用查询。
  */
 export const useAnnotationSummary = (postId: string) =>
-    useQuery({
-        queryKey: commentKeys.annotationSummary(postId),
-        queryFn: () => fetchAnnotationSummary(postId),
-        enabled: !!postId,
-    });
+	useQuery({
+		queryKey: commentKeys.annotationSummary(postId),
+		queryFn: () => fetchAnnotationSummary(postId),
+		enabled: !!postId,
+	});
 
 /**
  * useBlockAnnotations - 按 block_id 懒加载某块的完整批注
@@ -79,16 +79,16 @@ export const useAnnotationSummary = (postId: string) =>
  * postId 或 blockId 为空时禁用查询。
  */
 export const useBlockAnnotations = (postId: string, blockId: string) =>
-    useQuery({
-        queryKey: commentKeys.list(postId, {
-            type: "annotation",
-            block_id: blockId,
-            top_level: true,
-        }),
-        queryFn: () =>
-            fetchComments(postId, { type: "annotation", block_id: blockId, top_level: true }),
-        enabled: !!postId && !!blockId,
-    });
+	useQuery({
+		queryKey: commentKeys.list(postId, {
+			type: "annotation",
+			block_id: blockId,
+			top_level: true,
+		}),
+		queryFn: () =>
+			fetchComments(postId, { type: "annotation", block_id: blockId, top_level: true }),
+		enabled: !!postId && !!blockId,
+	});
 
 /**
  * fetchReplies - 调 GET /comments/{commentId}/replies 拉某顶层评论的回复
@@ -97,43 +97,43 @@ export const useBlockAnnotations = (postId: string, blockId: string) =>
  * 点「查看全部 xx 条回复」走此接口翻页。黑洞模式同 useComments。
  */
 export const fetchReplies = async (
-    commentId: string,
-    query: ReplyListQuery = {},
+	commentId: string,
+	query: ReplyListQuery = {},
 ): Promise<PagedResponse<Comment>> =>
-    apiGetPaged<Comment>(`/comments/${commentId}/replies`, { params: query });
+	apiGetPaged<Comment>(`/comments/${commentId}/replies`, { params: query });
 
 /** useReplies - 某顶层评论的回复列表 hook（滚动加载 + sort 切换）。
  *  sort 变化时缓存键变化，自动重新查询。 */
 export const useReplies = (commentId: string, query: ReplyListQuery = {}) =>
-    useInfiniteQuery({
-        queryKey: commentKeys.replyList(commentId, query),
-        queryFn: ({ pageParam }) => fetchReplies(commentId, { ...query, page: pageParam }),
-        initialPageParam: 1,
-        getNextPageParam: (lastPage) => {
-            const totalPages = lastPage.pagination?.total_pages ?? 1;
-            const currentPage = lastPage.pagination?.page ?? 1;
-            return currentPage < totalPages ? currentPage + 1 : undefined;
-        },
-        enabled: !!commentId,
-    });
+	useInfiniteQuery({
+		queryKey: commentKeys.replyList(commentId, query),
+		queryFn: ({ pageParam }) => fetchReplies(commentId, { ...query, page: pageParam }),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage) => {
+			const totalPages = lastPage.pagination?.total_pages ?? 1;
+			const currentPage = lastPage.pagination?.page ?? 1;
+			return currentPage < totalPages ? currentPage + 1 : undefined;
+		},
+		enabled: !!commentId,
+	});
 
 /** fetchCommentReactions - GET /comments/{commentId}/reactions 评论反应列表 */
 export const fetchCommentReactions = async (commentId: string): Promise<Reaction[]> =>
-    apiGet<Reaction[]>(`/comments/${commentId}/reactions`);
+	apiGet<Reaction[]>(`/comments/${commentId}/reactions`);
 
 /** useCommentReactions - 单条评论反应列表 hook */
 export const useCommentReactions = (commentId: string, options: { enabled?: boolean } = {}) =>
-    useQuery({
-        queryKey: commentKeys.reactionList(commentId),
-        queryFn: () => fetchCommentReactions(commentId),
-        enabled: !!commentId && (options.enabled ?? true),
-    });
+	useQuery({
+		queryKey: commentKeys.reactionList(commentId),
+		queryFn: () => fetchCommentReactions(commentId),
+		enabled: !!commentId && (options.enabled ?? true),
+	});
 
 /** fetchBatchReactions - POST /comments/reactions/batch 批量获取反应，避免 N+1 */
 export const fetchBatchReactions = async (
-    body: BatchReactionsQuery,
+	body: BatchReactionsQuery,
 ): Promise<BatchReactionResult[]> =>
-    apiPost<BatchReactionResult[]>("/comments/reactions/batch", body);
+	apiPost<BatchReactionResult[]>("/comments/reactions/batch", body);
 
 /**
  * useBatchReactions - 批量获取多条评论的反应
@@ -142,9 +142,9 @@ export const fetchBatchReactions = async (
  * commentIds 为空时禁用查询。
  */
 export const useBatchReactions = (commentIds: string[]) =>
-    useQuery({
-        queryKey: [...commentKeys.reactions(), "batch", commentIds],
-        queryFn: () => fetchBatchReactions({ comment_ids: commentIds }),
-        enabled: commentIds.length > 0,
-        staleTime: 30 * 1000,
-    });
+	useQuery({
+		queryKey: [...commentKeys.reactions(), "batch", commentIds],
+		queryFn: () => fetchBatchReactions({ comment_ids: commentIds }),
+		enabled: commentIds.length > 0,
+		staleTime: 30 * 1000,
+	});

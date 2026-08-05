@@ -13,10 +13,10 @@ export type SheetData = CellValue[][];
 
 /** Spreadsheet 预览组件属性 */
 export interface SpreadsheetPreviewProps {
-    /** .xlsx/.xls 文件 URL */
-    url: string;
-    /** 文件标题 */
-    name?: string;
-    /** 自定义类名 */
-    className?: string;
+	/** .xlsx/.xls 文件 URL */
+	url: string;
+	/** 文件标题 */
+	name?: string;
+	/** 自定义类名 */
+	className?: string;
 }

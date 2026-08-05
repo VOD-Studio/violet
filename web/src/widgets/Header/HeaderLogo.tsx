@@ -8,12 +8,12 @@ import { Link } from "@tanstack/react-router";
  * 配置未加载时显示 "Blog" 占位，避免布局闪烁。
  */
 const HeaderLogo = () => {
-    const { data } = useSettings();
-    return (
-        <Link to="/" className="font-mono text-xl font-bold tracking-tight">
-            {data?.site_name ?? "Blog"}
-        </Link>
-    );
+	const { data } = useSettings();
+	return (
+		<Link to="/" className="font-mono text-xl font-bold tracking-tight">
+			{data?.site_name ?? "Blog"}
+		</Link>
+	);
 };
 
 export default HeaderLogo;

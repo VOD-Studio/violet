@@ -1,11 +1,11 @@
 import { Button } from "@shared/ui/base/button";
 import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
+	Sheet,
+	SheetClose,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
 } from "@shared/ui/base/sheet";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Menu } from "lucide-react";
@@ -20,44 +20,44 @@ import { NavMenu } from "./nav-menu/NavMenu";
  * 点击导航项后通过 onNavigate 关闭抽屉。
  */
 export function AdminMobileNav() {
-    const [open, setOpen] = useState(false);
+	const [open, setOpen] = useState(false);
 
-    return (
-        <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="md:hidden"
-                    aria-label="打开导航菜单"
-                >
-                    <Menu className="size-5" />
-                </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex w-64 flex-col p-0">
-                <SheetHeader className="p-0">
-                    <SheetTitle className="sr-only">管理后台导航</SheetTitle>
-                    <AdminBrand />
-                </SheetHeader>
-                <div className="flex min-h-0 flex-1 flex-col p-3">
-                    <div className="flex-1 overflow-y-auto">
-                        <SheetClose asChild>
-                            <div>
-                                <NavMenu onNavigate={() => setOpen(false)} />
-                            </div>
-                        </SheetClose>
-                    </div>
-                    <SheetClose asChild>
-                        <Link
-                            to="/"
-                            className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                        >
-                            <ArrowLeft className="size-4 shrink-0" />
-                            返回前台
-                        </Link>
-                    </SheetClose>
-                </div>
-            </SheetContent>
-        </Sheet>
-    );
+	return (
+		<Sheet open={open} onOpenChange={setOpen}>
+			<SheetTrigger asChild>
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					className="md:hidden"
+					aria-label="打开导航菜单"
+				>
+					<Menu className="size-5" />
+				</Button>
+			</SheetTrigger>
+			<SheetContent side="left" className="flex w-64 flex-col p-0">
+				<SheetHeader className="p-0">
+					<SheetTitle className="sr-only">管理后台导航</SheetTitle>
+					<AdminBrand />
+				</SheetHeader>
+				<div className="flex min-h-0 flex-1 flex-col p-3">
+					<div className="flex-1 overflow-y-auto">
+						<SheetClose asChild>
+							<div>
+								<NavMenu onNavigate={() => setOpen(false)} />
+							</div>
+						</SheetClose>
+					</div>
+					<SheetClose asChild>
+						<Link
+							to="/"
+							className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+						>
+							<ArrowLeft className="size-4 shrink-0" />
+							返回前台
+						</Link>
+					</SheetClose>
+				</div>
+			</SheetContent>
+		</Sheet>
+	);
 }

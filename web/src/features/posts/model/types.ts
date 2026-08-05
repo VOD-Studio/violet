@@ -10,10 +10,10 @@ export type { Post, PostDetail } from "@entities/post/model/types";
  * PostListQuery - 文章列表查询参数
  */
 export interface PostListQuery {
-    /** 页码，从 1 开始 */
-    page?: number;
-    /** 每页条数 */
-    limit?: number;
-    /** 标签筛选 */
-    tag?: string;
+	/** 页码，从 1 开始 */
+	page?: number;
+	/** 每页条数 */
+	limit?: number;
+	/** 标签筛选 */
+	tag?: string;
 }

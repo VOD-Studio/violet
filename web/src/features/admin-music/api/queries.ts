@@ -9,14 +9,14 @@ import { adminMusicKeys } from "./keys";
  * 含未启用歌单。后端 ListAllPlaylists 直接序列化 PlaylistDTO 数组，未走分页封装。
  */
 export const fetchAllPlaylistsAdmin = async (): Promise<Playlist[]> =>
-    apiGet<Playlist[]>("/admin/music/playlists");
+	apiGet<Playlist[]>("/admin/music/playlists");
 
 /** useAllPlaylistsAdmin - 后台全部歌单列表 hook */
 export const useAllPlaylistsAdmin = () =>
-    useQuery({
-        queryKey: adminMusicKeys.adminList(),
-        queryFn: fetchAllPlaylistsAdmin,
-    });
+	useQuery({
+		queryKey: adminMusicKeys.adminList(),
+		queryFn: fetchAllPlaylistsAdmin,
+	});
 
 /**
  * fetchPlaylistDetailAdmin - 调后端 GET /admin/music/playlists/{id} 获取歌单详情
@@ -24,12 +24,12 @@ export const useAllPlaylistsAdmin = () =>
  * @param id 歌单 ID
  */
 export const fetchPlaylistDetailAdmin = async (id: string): Promise<Playlist> =>
-    apiGet<Playlist>(`/admin/music/playlists/${id}`);
+	apiGet<Playlist>(`/admin/music/playlists/${id}`);
 
 /** usePlaylistDetailAdmin - 后台歌单详情 hook，传空串时不启用查询 */
 export const usePlaylistDetailAdmin = (id: string) =>
-    useQuery({
-        queryKey: adminMusicKeys.adminDetail(id),
-        queryFn: () => fetchPlaylistDetailAdmin(id),
-        enabled: !!id,
-    });
+	useQuery({
+		queryKey: adminMusicKeys.adminDetail(id),
+		queryFn: () => fetchPlaylistDetailAdmin(id),
+		enabled: !!id,
+	});

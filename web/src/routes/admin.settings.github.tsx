@@ -8,52 +8,52 @@ import { createFileRoute } from "@tanstack/react-router";
 
 /** GitHub 子页表单值（仅本页字段） */
 interface GithubForm {
-    github_username: string;
-    github_token: string;
-    releases_repo: string;
+	github_username: string;
+	github_token: string;
+	releases_repo: string;
 }
 
 function GithubSettingsPage() {
-    const { register, isLoading, isPending, onSubmit } = useSettingsForm<
-        GithubForm,
-        GithubSettingsDTO
-    >(useGithubSettings(), useUpdateGithub(), (data) => ({
-        github_username: data.github_username,
-        github_token: data.github_token,
-        releases_repo: data.releases_repo,
-    }));
+	const { register, isLoading, isPending, onSubmit } = useSettingsForm<
+		GithubForm,
+		GithubSettingsDTO
+	>(useGithubSettings(), useUpdateGithub(), (data) => ({
+		github_username: data.github_username,
+		github_token: data.github_token,
+		releases_repo: data.releases_repo,
+	}));
 
-    return (
-        <SettingsSubPage
-            title="GitHub"
-            description="GitHub 集成凭证"
-            isLoading={isLoading}
-            isPending={isPending}
-            onSubmit={onSubmit}
-        >
-            <section className="space-y-4">
-                <h3 className="text-sm font-semibold">GitHub 资料</h3>
-                <Field label="GitHub 用户名">
-                    <Input {...register("github_username")} />
-                </Field>
-                <Field label="GitHub Token">
-                    <Input type="password" {...register("github_token")} />
-                </Field>
-                <Field label="更新日志仓库">
-                    <Input
-                        {...register("releases_repo")}
-                        placeholder="如 violet 或 VOD-Studio/violet"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                        仓库名（如 violet，owner 取上方用户名）或完整 owner/repo（如
-                        VOD-Studio/violet）
-                    </p>
-                </Field>
-            </section>
-        </SettingsSubPage>
-    );
+	return (
+		<SettingsSubPage
+			title="GitHub"
+			description="GitHub 集成凭证"
+			isLoading={isLoading}
+			isPending={isPending}
+			onSubmit={onSubmit}
+		>
+			<section className="space-y-4">
+				<h3 className="text-sm font-semibold">GitHub 资料</h3>
+				<Field label="GitHub 用户名">
+					<Input {...register("github_username")} />
+				</Field>
+				<Field label="GitHub Token">
+					<Input type="password" {...register("github_token")} />
+				</Field>
+				<Field label="更新日志仓库">
+					<Input
+						{...register("releases_repo")}
+						placeholder="如 violet 或 VOD-Studio/violet"
+					/>
+					<p className="text-xs text-muted-foreground">
+						仓库名（如 violet，owner 取上方用户名）或完整 owner/repo（如
+						VOD-Studio/violet）
+					</p>
+				</Field>
+			</section>
+		</SettingsSubPage>
+	);
 }
 
 export const Route = createFileRoute("/admin/settings/github")({
-    component: GithubSettingsPage,
+	component: GithubSettingsPage,
 });

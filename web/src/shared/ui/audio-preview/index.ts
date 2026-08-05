@@ -4,7 +4,7 @@ export { AudioPreview } from "./components/AudioPreview";
 export { useAudioPlayer } from "./hooks/useAudioPlayer";
 // 类型
 export type {
-    AudioLoadStatus,
-    AudioPlayerState,
-    AudioPreviewProps,
+	AudioLoadStatus,
+	AudioPlayerState,
+	AudioPreviewProps,
 } from "./types/audio-preview-types";

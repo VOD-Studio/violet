@@ -17,7 +17,7 @@ beforeAll(() => {
 function createEditor(): Editor {
 	return new Editor({
 		element: document.createElement("div"),
-		extensions: buildEditorExtensionsWithSlash(() => { }),
+		extensions: buildEditorExtensionsWithSlash(() => {}),
 		content: "",
 	});
 }

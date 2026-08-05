@@ -8,11 +8,11 @@
 import { apiDelete, apiGet, apiPost, apiPut } from "@shared/api/request";
 import { useMutation } from "@tanstack/react-query";
 import type {
-    CompleteUploadResult,
-    InitUploadRequest,
-    InitUploadResult,
-    ReplaceMediaResult,
-    ThumbnailUploadResult,
+	CompleteUploadResult,
+	InitUploadRequest,
+	InitUploadResult,
+	ReplaceMediaResult,
+	ThumbnailUploadResult,
 } from "../model/types";
 
 /**
@@ -24,7 +24,7 @@ import type {
  * @returns 秒传命中时带 url，否则带 upload_id 供后续分片上传
  */
 export const initUpload = (opts: InitUploadRequest): Promise<InitUploadResult> =>
-    apiPost<InitUploadResult>("/uploads", opts);
+	apiPost<InitUploadResult>("/uploads", opts);
 
 /**
  * uploadChunk - 上传单个分片
@@ -37,13 +37,13 @@ export const initUpload = (opts: InitUploadRequest): Promise<InitUploadResult> =
  * @param data 分片二进制内容
  */
 export const uploadChunk = async (
-    uploadId: string,
-    index: number,
-    data: ArrayBuffer,
+	uploadId: string,
+	index: number,
+	data: ArrayBuffer,
 ): Promise<void> => {
-    await apiPut<null>(`/uploads/${uploadId}/chunks/${index}`, data, {
-        headers: { "Content-Type": "application/octet-stream" },
-    });
+	await apiPut<null>(`/uploads/${uploadId}/chunks/${index}`, data, {
+		headers: { "Content-Type": "application/octet-stream" },
+	});
 };
 
 /**
@@ -55,7 +55,7 @@ export const uploadChunk = async (
  * @returns 最终文件 ID 与访问 URL
  */
 export const completeUpload = (uploadId: string): Promise<CompleteUploadResult> =>
-    apiPost<CompleteUploadResult>(`/uploads/${uploadId}/complete`);
+	apiPost<CompleteUploadResult>(`/uploads/${uploadId}/complete`);
 
 /**
  * cancelUpload - 取消上传，清理临时分片
@@ -63,7 +63,7 @@ export const completeUpload = (uploadId: string): Promise<CompleteUploadResult> 
  * 调后端 DELETE /uploads/{uploadId}，后端清理临时分片并删除会话。
  */
 export const cancelUpload = (uploadId: string): Promise<void> => {
-    return apiDelete<null>(`/uploads/${uploadId}`).then(() => undefined);
+	return apiDelete<null>(`/uploads/${uploadId}`).then(() => undefined);
 };
 
 /**
@@ -72,7 +72,7 @@ export const cancelUpload = (uploadId: string): Promise<void> => {
  * 调后端 GET /uploads/{uploadId}。
  */
 export const getUploadStatus = (uploadId: string): Promise<InitUploadResult> =>
-    apiGet<InitUploadResult>(`/uploads/${uploadId}`);
+	apiGet<InitUploadResult>(`/uploads/${uploadId}`);
 
 /**
  * uploadThumbnail - 上传缩略图底层请求函数
@@ -85,10 +85,10 @@ export const getUploadStatus = (uploadId: string): Promise<InitUploadResult> =>
  * @param file 缩略图文件
  */
 export const uploadThumbnail = async (id: string, file: File): Promise<ThumbnailUploadResult> => {
-    const form = new FormData();
-    form.append("file", file);
-    form.append("fileId", id);
-    return apiPost<ThumbnailUploadResult>("/uploads/thumbnail", form);
+	const form = new FormData();
+	form.append("file", file);
+	form.append("fileId", id);
+	return apiPost<ThumbnailUploadResult>("/uploads/thumbnail", form);
 };
 
 /**
@@ -98,9 +98,9 @@ export const uploadThumbnail = async (id: string, file: File): Promise<Thumbnail
  * 由调用方在 onSuccess 自行失效。
  */
 export const useUploadThumbnail = () =>
-    useMutation({
-        mutationFn: ({ id, file }: { id: string; file: File }) => uploadThumbnail(id, file),
-    });
+	useMutation({
+		mutationFn: ({ id, file }: { id: string; file: File }) => uploadThumbnail(id, file),
+	});
 
 /**
  * replaceMediaFile - 覆盖素材原图底层请求函数
@@ -110,10 +110,10 @@ export const useUploadThumbnail = () =>
  * 仅 owner 可覆盖自己上传的素材，GIF 拒绝。
  */
 export const replaceMediaFile = async (fileId: string, file: File): Promise<ReplaceMediaResult> => {
-    const form = new FormData();
-    form.append("file", file);
-    form.append("fileId", fileId);
-    return apiPost<ReplaceMediaResult>("/uploads/replace", form);
+	const form = new FormData();
+	form.append("file", file);
+	form.append("fileId", fileId);
+	return apiPost<ReplaceMediaResult>("/uploads/replace", form);
 };
 
 /**
@@ -123,7 +123,7 @@ export const replaceMediaFile = async (fileId: string, file: File): Promise<Repl
  * 由调用方在 onSuccess 自行失效。
  */
 export const useReplaceMediaFile = () =>
-    useMutation({
-        mutationFn: ({ fileId, file }: { fileId: string; file: File }) =>
-            replaceMediaFile(fileId, file),
-    });
+	useMutation({
+		mutationFn: ({ fileId, file }: { fileId: string; file: File }) =>
+			replaceMediaFile(fileId, file),
+	});

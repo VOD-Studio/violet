@@ -12,35 +12,35 @@ import { cn } from "@/shared/lib/utils";
  * <InputOTP maxLength={6} value={code} onChange={setCode} onComplete={handleSubmit} />
  */
 function InputOTP({
-    className,
-    containerClassName,
-    ...props
+	className,
+	containerClassName,
+	...props
 }: React.ComponentProps<typeof OTPInput>) {
-    return (
-        <OTPInput
-            data-slot="input-otp"
-            pattern={REGEXP_ONLY_DIGITS}
-            containerClassName={cn(
-                "flex items-center gap-2 has-disabled:opacity-50",
-                containerClassName,
-            )}
-            className={cn("disabled:cursor-not-allowed", className)}
-            {...props}
-        />
-    );
+	return (
+		<OTPInput
+			data-slot="input-otp"
+			pattern={REGEXP_ONLY_DIGITS}
+			containerClassName={cn(
+				"flex items-center gap-2 has-disabled:opacity-50",
+				containerClassName,
+			)}
+			className={cn("disabled:cursor-not-allowed", className)}
+			{...props}
+		/>
+	);
 }
 
 /**
  * InputOTPGroup - 一组 OTP slot 容器
  */
 function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
-    return (
-        <div
-            data-slot="input-otp-group"
-            className={cn("flex items-center", className)}
-            {...props}
-        />
-    );
+	return (
+		<div
+			data-slot="input-otp-group"
+			className={cn("flex items-center", className)}
+			{...props}
+		/>
+	);
 }
 
 /**
@@ -49,40 +49,40 @@ function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
  * 通过 OTPInputContext 读取该 index 的 slot 状态（是否激活、字符、假光标）。
  */
 function InputOTPSlot({
-    index,
-    className,
-    ...props
+	index,
+	className,
+	...props
 }: React.ComponentProps<"div"> & {
-    /** 该格在整组中的位置（从 0 开始） */
-    index: number;
+	/** 该格在整组中的位置（从 0 开始） */
+	index: number;
 }) {
-    const inputOTPContext = React.useContext(OTPInputContext);
-    const slot = inputOTPContext.slots[index] as SlotProps | undefined;
-    const char = slot?.char;
-    const hasFakeCaret = slot?.hasFakeCaret;
-    const isActive = slot?.isActive;
+	const inputOTPContext = React.useContext(OTPInputContext);
+	const slot = inputOTPContext.slots[index] as SlotProps | undefined;
+	const char = slot?.char;
+	const hasFakeCaret = slot?.hasFakeCaret;
+	const isActive = slot?.isActive;
 
-    if (!inputOTPContext.slots) return null;
+	if (!inputOTPContext.slots) return null;
 
-    return (
-        <div
-            data-slot="input-otp-slot"
-            data-active={isActive ? "" : undefined}
-            className={cn(
-                "relative flex size-10 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-                isActive && "z-10 ring-2 ring-ring ring-offset-background",
-                className,
-            )}
-            {...props}
-        >
-            {char}
-            {hasFakeCaret && (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
-                </div>
-            )}
-        </div>
-    );
+	return (
+		<div
+			data-slot="input-otp-slot"
+			data-active={isActive ? "" : undefined}
+			className={cn(
+				"relative flex size-10 items-center justify-center border-y border-r border-input text-sm shadow-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
+				isActive && "z-10 ring-2 ring-ring ring-offset-background",
+				className,
+			)}
+			{...props}
+		>
+			{char}
+			{hasFakeCaret && (
+				<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+					<div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
+				</div>
+			)}
+		</div>
+	);
 }
 
 export { InputOTP, InputOTPGroup, InputOTPSlot };

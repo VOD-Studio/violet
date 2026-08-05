@@ -20,38 +20,38 @@ import type { CropRect } from "@shared/ui/image-cropper/types";
  * @param quality WebP 质量 0~1,默认 0.9
  */
 export async function cropImageToBlob(src: string, rect: CropRect, quality = 0.9): Promise<Blob> {
-    const img = await loadImage(src);
-    const sx = rect.x * img.naturalWidth;
-    const sy = rect.y * img.naturalHeight;
-    const sw = rect.w * img.naturalWidth;
-    const sh = rect.h * img.naturalHeight;
+	const img = await loadImage(src);
+	const sx = rect.x * img.naturalWidth;
+	const sy = rect.y * img.naturalHeight;
+	const sw = rect.w * img.naturalWidth;
+	const sh = rect.h * img.naturalHeight;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(sw);
-    canvas.height = Math.round(sh);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("无法创建 canvas 2D 上下文");
+	const canvas = document.createElement("canvas");
+	canvas.width = Math.round(sw);
+	canvas.height = Math.round(sh);
+	const ctx = canvas.getContext("2d");
+	if (!ctx) throw new Error("无法创建 canvas 2D 上下文");
 
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+	ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
 
-    return new Promise((resolve, reject) => {
-        canvas.toBlob(
-            (blob) => {
-                if (blob) resolve(blob);
-                else reject(new Error("canvas.toBlob 返回 null"));
-            },
-            "image/webp",
-            quality,
-        );
-    });
+	return new Promise((resolve, reject) => {
+		canvas.toBlob(
+			(blob) => {
+				if (blob) resolve(blob);
+				else reject(new Error("canvas.toBlob 返回 null"));
+			},
+			"image/webp",
+			quality,
+		);
+	});
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous"; // 避免 canvas 污染(tainted)
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error(`图片加载失败: ${src}`));
-        img.src = src;
-    });
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.crossOrigin = "anonymous"; // 避免 canvas 污染(tainted)
+		img.onload = () => resolve(img);
+		img.onerror = () => reject(new Error(`图片加载失败: ${src}`));
+		img.src = src;
+	});
 }

@@ -11,12 +11,12 @@ import { adminMediaKeys } from "./keys";
  * 需 media:upload 或 media:delete 权限，不限 owner，支持多维筛选。
  */
 export const fetchAdminMedia = async (
-    query: AdminMediaListQuery = {},
+	query: AdminMediaListQuery = {},
 ): Promise<PagedResponse<MediaFile>> => {
-    const { page, limit, purpose, type, category, keyword } = query;
-    return apiGetPaged<MediaFile>("/admin/media", {
-        params: { page, limit, purpose, type, category, keyword },
-    });
+	const { page, limit, purpose, type, category, keyword } = query;
+	return apiGetPaged<MediaFile>("/admin/media", {
+		params: { page, limit, purpose, type, category, keyword },
+	});
 };
 
 /**
@@ -25,7 +25,7 @@ export const fetchAdminMedia = async (
  * @param query 分页与多维筛选
  */
 export const useAdminMedia = (query: AdminMediaListQuery = {}) =>
-    useQuery({
-        queryKey: adminMediaKeys.list(query),
-        queryFn: () => fetchAdminMedia(query),
-    });
+	useQuery({
+		queryKey: adminMediaKeys.list(query),
+		queryFn: () => fetchAdminMedia(query),
+	});

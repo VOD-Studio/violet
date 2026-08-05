@@ -20,27 +20,27 @@ import { useDebouncedCallback } from "./use-debounced-callback";
  * const debounced = useDebouncedValue(filter, 300, (a, b) => a.q === b.q);
  */
 export function useDebouncedValue<T>(
-    value: T,
-    delay = 300,
-    equalityFn: (prev: T, next: T) => boolean = Object.is,
+	value: T,
+	delay = 300,
+	equalityFn: (prev: T, next: T) => boolean = Object.is,
 ): T {
-    const [debounced, setDebounced] = useState(value);
-    // 记录上一次防抖发射的值，用 equalityFn 判断是否需要重新挂起
-    const lastEmitted = useRef(value);
+	const [debounced, setDebounced] = useState(value);
+	// 记录上一次防抖发射的值，用 equalityFn 判断是否需要重新挂起
+	const lastEmitted = useRef(value);
 
-    const debouncedCb = useDebouncedCallback(
-        (next: T) => {
-            lastEmitted.current = next;
-            setDebounced(next);
-        },
-        { delay },
-    );
+	const debouncedCb = useDebouncedCallback(
+		(next: T) => {
+			lastEmitted.current = next;
+			setDebounced(next);
+		},
+		{ delay },
+	);
 
-    useEffect(() => {
-        // 相等则不挂起，避免无谓的定时器与渲染
-        if (equalityFn(lastEmitted.current, value)) return;
-        debouncedCb.run(value);
-    }, [value, equalityFn, debouncedCb]);
+	useEffect(() => {
+		// 相等则不挂起，避免无谓的定时器与渲染
+		if (equalityFn(lastEmitted.current, value)) return;
+		debouncedCb.run(value);
+	}, [value, equalityFn, debouncedCb]);
 
-    return debounced;
+	return debounced;
 }

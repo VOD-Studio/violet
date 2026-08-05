@@ -6,8 +6,8 @@
  * 依赖方向:features → shared(合法)。
  */
 export interface CropRect {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
+	x: number;
+	y: number;
+	w: number;
+	h: number;
 }

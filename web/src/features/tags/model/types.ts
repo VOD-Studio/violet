@@ -13,8 +13,8 @@ import type { Tag } from "@entities/tag/model/types";
  * slug 由后端 GenerateSlug 自动生成。
  */
 export interface CreateTag {
-    /** 标签名，必填 */
-    name: string;
+	/** 标签名，必填 */
+	name: string;
 }
 
 /**
@@ -23,8 +23,8 @@ export interface CreateTag {
  * 对接后端 PATCH /api/v1/tags/{id} 的请求体，slug 由后端按 name 自动重算。
  */
 export interface UpdateTagRequest {
-    /** 标签名，必填 */
-    name: string;
+	/** 标签名，必填 */
+	name: string;
 }
 
 // 领域读模型转出

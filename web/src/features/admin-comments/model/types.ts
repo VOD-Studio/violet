@@ -6,10 +6,10 @@
  */
 
 import type {
-    AdminComment,
-    Comment,
-    CommentPicture,
-    CommentStatus,
+	AdminComment,
+	Comment,
+	CommentPicture,
+	CommentStatus,
 } from "@entities/comment/model/types";
 import type { CommentType } from "@features/comments/model/types";
 
@@ -20,27 +20,26 @@ import type { CommentType } from "@features/comments/model/types";
  * 与前台 comments 模块共用 CommentType 字面量联合，API 语义全站统一。
  */
 export interface CommentListQuery {
-    /** 页码，从 1 开始 */
-    page?: number;
-    /** 每页条数 */
-    limit?: number;
-    /** 状态筛选 */
-    status?: CommentStatus;
-    /** anchor 维度筛选（free/annotation/all）；后台默认 all（不传由后端兜底） */
-    type?: CommentType;
+	/** 页码，从 1 开始 */
+	page?: number;
+	/** 每页条数 */
+	limit?: number;
+	/** 状态筛选 */
+	status?: CommentStatus;
+	/** anchor 维度筛选（free/annotation/all）；后台默认 all（不传由后端兜底） */
+	type?: CommentType;
 }
 
 // 领域读模型转出
-export type { AdminComment, Comment, CommentPicture, CommentStatus };
 // 复用前台 CommentType，避免重复定义
-export type { CommentType };
+export type { AdminComment, Comment, CommentPicture, CommentStatus, CommentType };
 
 /**
  * BatchUpdateCommentsRequest - 批量更新评论状态请求体
  */
 export interface BatchUpdateCommentsRequest {
-    /** 评论 ID 列表，1-100 条 */
-    ids: string[];
-    /** 目标状态 */
-    status: CommentStatus;
+	/** 评论 ID 列表，1-100 条 */
+	ids: string[];
+	/** 目标状态 */
+	status: CommentStatus;
 }

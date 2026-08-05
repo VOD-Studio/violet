@@ -25,39 +25,39 @@ const FACE_HEIGHT = 28; // 每面高度 px（h-7）
 
 /** severity → neon 色板 + lucide 图标映射 */
 interface SevCfg {
-    text: string;
-    Icon: ComponentType<{ className?: string }>;
+	text: string;
+	Icon: ComponentType<{ className?: string }>;
 }
 const SEVERITY_STYLE: Record<string, SevCfg> = {
-    info: { text: "text-neon-cyan", Icon: Info },
-    warning: { text: "text-neon-purple", Icon: TriangleAlert },
-    success: { text: "text-neon-green", Icon: CircleCheck },
-    error: { text: "text-neon-pink", Icon: CircleX },
+	info: { text: "text-neon-cyan", Icon: Info },
+	warning: { text: "text-neon-purple", Icon: TriangleAlert },
+	success: { text: "text-neon-green", Icon: CircleCheck },
+	error: { text: "text-neon-pink", Icon: CircleX },
 };
 
 /** 读取已读 id 集合 */
 function readReadIds(): Set<number> {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return new Set();
-        return new Set(JSON.parse(raw).map(Number));
-    } catch {
-        return new Set();
-    }
+	try {
+		const raw = localStorage.getItem(STORAGE_KEY);
+		if (!raw) return new Set();
+		return new Set(JSON.parse(raw).map(Number));
+	} catch {
+		return new Set();
+	}
 }
 
 /** 检测 prefers-reduced-motion */
 function usePrefersReducedMotion(): boolean {
-    const [reduced, setReduced] = useState(false);
-    useEffect(() => {
-        if (typeof window === "undefined" || !window.matchMedia) return;
-        const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-        setReduced(mq.matches);
-        const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
-        mq.addEventListener("change", handler);
-        return () => mq.removeEventListener("change", handler);
-    }, []);
-    return reduced;
+	const [reduced, setReduced] = useState(false);
+	useEffect(() => {
+		if (typeof window === "undefined" || !window.matchMedia) return;
+		const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+		setReduced(mq.matches);
+		const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
+		mq.addEventListener("change", handler);
+		return () => mq.removeEventListener("change", handler);
+	}, []);
+	return reduced;
 }
 
 /**
@@ -67,124 +67,124 @@ function usePrefersReducedMotion(): boolean {
  *   保证相邻面正好相接，形成闭合棱柱。
  */
 function faceTransform(i: number, n: number): string {
-    const angle = (360 / n) * i;
-    const depth = FACE_HEIGHT / 2 / Math.tan(Math.PI / n);
-    return `rotateX(${angle}deg) translateZ(${depth}px)`;
+	const angle = (360 / n) * i;
+	const depth = FACE_HEIGHT / 2 / Math.tan(Math.PI / n);
+	return `rotateX(${angle}deg) translateZ(${depth}px)`;
 }
 
 export default function AnnouncementBar() {
-    const { data } = useAnnouncements();
-    const prefersReducedMotion = usePrefersReducedMotion();
-    const [index, setIndex] = useState(0);
-    const [isPaused, setIsPaused] = useState(false);
-    const [readIds, setReadIds] = useState<Set<number>>(() => readReadIds());
+	const { data } = useAnnouncements();
+	const prefersReducedMotion = usePrefersReducedMotion();
+	const [index, setIndex] = useState(0);
+	const [isPaused, setIsPaused] = useState(false);
+	const [readIds, setReadIds] = useState<Set<number>>(() => readReadIds());
 
-    const banners = useMemo(
-        () => (data ?? []).filter((a) => a.display === "banner").filter((a) => !readIds.has(a.id)),
-        [data, readIds],
-    );
+	const banners = useMemo(
+		() => (data ?? []).filter((a) => a.display === "banner").filter((a) => !readIds.has(a.id)),
+		[data, readIds],
+	);
 
-    const current = banners[index];
-    const n = banners.length;
+	const current = banners[index];
+	const n = banners.length;
 
-    // 自动推进
-    useEffect(() => {
-        if (isPaused || prefersReducedMotion || n <= 1) return;
-        const timer = window.setInterval(() => setIndex((i) => (i + 1) % n), AUTO_INTERVAL);
-        return () => window.clearInterval(timer);
-    }, [isPaused, prefersReducedMotion, n]);
+	// 自动推进
+	useEffect(() => {
+		if (isPaused || prefersReducedMotion || n <= 1) return;
+		const timer = window.setInterval(() => setIndex((i) => (i + 1) % n), AUTO_INTERVAL);
+		return () => window.clearInterval(timer);
+	}, [isPaused, prefersReducedMotion, n]);
 
-    // 重置 index 防越界
-    useEffect(() => {
-        if (index >= n) setIndex(0);
-    }, [n, index]);
+	// 重置 index 防越界
+	useEffect(() => {
+		if (index >= n) setIndex(0);
+	}, [n, index]);
 
-    const handleClose = () => {
-        const ids = banners.map((a) => a.id);
-        const next = new Set([...readIds, ...ids]);
-        setReadIds(next);
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
-        } catch {
-            /* localStorage 不可用时静默降级 */
-        }
-    };
+	const handleClose = () => {
+		const ids = banners.map((a) => a.id);
+		const next = new Set([...readIds, ...ids]);
+		setReadIds(next);
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]));
+		} catch {
+			/* localStorage 不可用时静默降级 */
+		}
+	};
 
-    if (!current) return null;
-    const cfg = SEVERITY_STYLE[current.severity] ?? SEVERITY_STYLE.info;
+	if (!current) return null;
+	const cfg = SEVERITY_STYLE[current.severity] ?? SEVERITY_STYLE.info;
 
-    // 单条：直接静态展示，不做多面体（1 面无需旋转）
-    if (n === 1 || prefersReducedMotion) {
-        return (
-            <div className="relative border-b border-edge-hairline bg-primary/95 font-mono text-xs dark:bg-zinc-900">
-                <div className={`flex h-7 items-center justify-center gap-2 px-12 ${cfg.text}`}>
-                    <cfg.Icon className="size-3.5 shrink-0" />
-                    <span className="truncate text-primary-foreground dark:text-foreground">
-                        {current.content}
-                    </span>
-                </div>
-                <button
-                    type="button"
-                    onClick={handleClose}
-                    aria-label="关闭公告"
-                    className="absolute top-1/2 right-3 z-10 -translate-y-1/2 text-primary-foreground/70 transition-colors hover:text-primary-foreground dark:text-foreground/70 dark:hover:text-foreground"
-                >
-                    ✕
-                </button>
-            </div>
-        );
-    }
+	// 单条：直接静态展示，不做多面体（1 面无需旋转）
+	if (n === 1 || prefersReducedMotion) {
+		return (
+			<div className="relative border-b border-edge-hairline bg-primary/95 font-mono text-xs dark:bg-zinc-900">
+				<div className={`flex h-7 items-center justify-center gap-2 px-12 ${cfg.text}`}>
+					<cfg.Icon className="size-3.5 shrink-0" />
+					<span className="truncate text-primary-foreground dark:text-foreground">
+						{current.content}
+					</span>
+				</div>
+				<button
+					type="button"
+					onClick={handleClose}
+					aria-label="关闭公告"
+					className="absolute top-1/2 right-3 z-10 -translate-y-1/2 text-primary-foreground/70 transition-colors hover:text-primary-foreground dark:text-foreground/70 dark:hover:text-foreground"
+				>
+					✕
+				</button>
+			</div>
+		);
+	}
 
-    // 多条：N 面棱柱，容器整体 rotateX 到当前面
-    const targetRotation = -(360 / n) * index;
+	// 多条：N 面棱柱，容器整体 rotateX 到当前面
+	const targetRotation = -(360 / n) * index;
 
-    return (
-        <div
-            className="relative border-b border-edge-hairline bg-primary/95 font-mono text-xs dark:bg-zinc-900"
-            style={{ perspective: "800px" }}
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            onWheel={(e) => {
-                if (Math.abs(e.deltaY) < 10) return;
-                if (e.deltaY > 0) setIndex((i) => (i + 1) % n);
-                else setIndex((i) => (i - 1 + n) % n);
-            }}
-        >
-            <motion.div
-                className="relative"
-                style={{ transformStyle: "preserve-3d", height: FACE_HEIGHT }}
-                animate={{ rotateX: targetRotation }}
-                transition={{ duration: FLIP_DURATION, ease: FLIP_EASE }}
-            >
-                {banners.map((a, i) => {
-                    const fcfg = SEVERITY_STYLE[a.severity] ?? SEVERITY_STYLE.info;
-                    return (
-                        <div
-                            key={a.id}
-                            className={`absolute inset-0 flex items-center justify-center gap-2 px-12 backface-hidden ${fcfg.text}`}
-                            style={{ transform: faceTransform(i, n) }}
-                        >
-                            <fcfg.Icon className="size-3.5 shrink-0" />
-                            <span className="truncate text-primary-foreground dark:text-foreground">
-                                {a.content}
-                            </span>
-                        </div>
-                    );
-                })}
-            </motion.div>
+	return (
+		<div
+			className="relative border-b border-edge-hairline bg-primary/95 font-mono text-xs dark:bg-zinc-900"
+			style={{ perspective: "800px" }}
+			onMouseEnter={() => setIsPaused(true)}
+			onMouseLeave={() => setIsPaused(false)}
+			onWheel={(e) => {
+				if (Math.abs(e.deltaY) < 10) return;
+				if (e.deltaY > 0) setIndex((i) => (i + 1) % n);
+				else setIndex((i) => (i - 1 + n) % n);
+			}}
+		>
+			<motion.div
+				className="relative"
+				style={{ transformStyle: "preserve-3d", height: FACE_HEIGHT }}
+				animate={{ rotateX: targetRotation }}
+				transition={{ duration: FLIP_DURATION, ease: FLIP_EASE }}
+			>
+				{banners.map((a, i) => {
+					const fcfg = SEVERITY_STYLE[a.severity] ?? SEVERITY_STYLE.info;
+					return (
+						<div
+							key={a.id}
+							className={`absolute inset-0 flex items-center justify-center gap-2 px-12 backface-hidden ${fcfg.text}`}
+							style={{ transform: faceTransform(i, n) }}
+						>
+							<fcfg.Icon className="size-3.5 shrink-0" />
+							<span className="truncate text-primary-foreground dark:text-foreground">
+								{a.content}
+							</span>
+						</div>
+					);
+				})}
+			</motion.div>
 
-            <button
-                type="button"
-                onClick={handleClose}
-                aria-label="关闭公告"
-                className="absolute top-1/2 right-3 z-10 -translate-y-1/2 text-primary-foreground/70 transition-colors hover:text-primary-foreground dark:text-foreground/70 dark:hover:text-foreground"
-            >
-                ✕
-            </button>
+			<button
+				type="button"
+				onClick={handleClose}
+				aria-label="关闭公告"
+				className="absolute top-1/2 right-3 z-10 -translate-y-1/2 text-primary-foreground/70 transition-colors hover:text-primary-foreground dark:text-foreground/70 dark:hover:text-foreground"
+			>
+				✕
+			</button>
 
-            <span className="absolute top-1/2 left-3 z-10 -translate-y-1/2 font-mono text-[10px] text-primary-foreground/50 dark:text-foreground/50">
-                {index + 1}/{n}
-            </span>
-        </div>
-    );
+			<span className="absolute top-1/2 left-3 z-10 -translate-y-1/2 font-mono text-[10px] text-primary-foreground/50 dark:text-foreground/50">
+				{index + 1}/{n}
+			</span>
+		</div>
+	);
 }

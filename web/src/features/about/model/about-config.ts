@@ -16,9 +16,9 @@ import type { AboutConfig } from "@features/settings/model/types";
  * 返回的 id 列表供前台按序渲染对应区块组件。
  */
 export function resolveSectionOrder(config: AboutConfig | null | undefined): string[] {
-    if (!config?.sections) return [];
-    return [...config.sections]
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .filter((s) => s.enabled)
-        .map((s) => s.id);
+	if (!config?.sections) return [];
+	return [...config.sections]
+		.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+		.filter((s) => s.enabled)
+		.map((s) => s.id);
 }

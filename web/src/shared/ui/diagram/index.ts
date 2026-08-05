@@ -10,7 +10,7 @@ export { DiagramBlock, type DiagramBlockProps } from "./DiagramBlock";
 export { type DiagramTheme, type RenderMermaidResult, renderMermaid } from "./render-mermaid";
 export { type DiagramRenderer, diagramRenderers } from "./renderers";
 export {
-    cssColorToHex,
-    getThemeVariables,
-    type MermaidThemeVariables,
+	cssColorToHex,
+	getThemeVariables,
+	type MermaidThemeVariables,
 } from "./theme-variables";

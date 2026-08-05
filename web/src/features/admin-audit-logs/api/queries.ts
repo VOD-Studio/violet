@@ -5,15 +5,15 @@ import { auditLogKeys } from "./keys";
 
 /** useAdminAuditLogs - 操作日志列表 hook（服务端分页） */
 export const useAdminAuditLogs = (query: AuditLogListQuery = {}) =>
-    useQuery({
-        queryKey: auditLogKeys.list(query),
-        queryFn: () => api.listAuditLogs(query),
-    });
+	useQuery({
+		queryKey: auditLogKeys.list(query),
+		queryFn: () => api.listAuditLogs(query),
+	});
 
 /** useAdminAuditLogsByUser - 指定用户操作日志列表 hook */
 export const useAdminAuditLogsByUser = (userId: string, query: AuditLogListQuery = {}) =>
-    useQuery({
-        queryKey: auditLogKeys.userList(userId, query),
-        queryFn: () => api.listAuditLogsByUser(userId, query),
-        enabled: userId.length > 0,
-    });
+	useQuery({
+		queryKey: auditLogKeys.userList(userId, query),
+		queryFn: () => api.listAuditLogsByUser(userId, query),
+		enabled: userId.length > 0,
+	});

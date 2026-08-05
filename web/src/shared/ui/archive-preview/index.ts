@@ -7,7 +7,7 @@ export { ArchiveTree } from "./components/ArchiveTree";
 export { useArchive } from "./hooks/useArchive";
 // 类型
 export type {
-    ArchiveEntry,
-    ArchiveLoadStatus,
-    ArchivePreviewProps,
+	ArchiveEntry,
+	ArchiveLoadStatus,
+	ArchivePreviewProps,
 } from "./types/archive-preview-types";

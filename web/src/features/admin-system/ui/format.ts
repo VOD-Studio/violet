@@ -12,16 +12,16 @@
  * @returns 形如 "1.5 GB"、"512 MB"；bytes<1024 时回退到 "N B"
  */
 export function formatBytes(bytes: number, fractionDigits = 1): string {
-    if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
-    if (bytes < 1024) return `${bytes} B`;
-    const units = ["KB", "MB", "GB", "TB", "PB"];
-    let value = bytes / 1024;
-    let unitIndex = 0;
-    while (value >= 1024 && unitIndex < units.length - 1) {
-        value /= 1024;
-        unitIndex++;
-    }
-    return `${value.toFixed(fractionDigits)} ${units[unitIndex]}`;
+	if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
+	if (bytes < 1024) return `${bytes} B`;
+	const units = ["KB", "MB", "GB", "TB", "PB"];
+	let value = bytes / 1024;
+	let unitIndex = 0;
+	while (value >= 1024 && unitIndex < units.length - 1) {
+		value /= 1024;
+		unitIndex++;
+	}
+	return `${value.toFixed(fractionDigits)} ${units[unitIndex]}`;
 }
 
 /**
@@ -31,7 +31,7 @@ export function formatBytes(bytes: number, fractionDigits = 1): string {
  * @returns 形如 "1.2 MB/s"
  */
 export function formatRate(bytesPerSec: number): string {
-    return `${formatBytes(bytesPerSec)}/s`;
+	return `${formatBytes(bytesPerSec)}/s`;
 }
 
 /**
@@ -42,8 +42,8 @@ export function formatRate(bytesPerSec: number): string {
  * @returns 形如 "42.5%"
  */
 export function formatPercent(value: number, fractionDigits = 1): string {
-    if (!Number.isFinite(value)) return "0%";
-    return `${value.toFixed(fractionDigits)}%`;
+	if (!Number.isFinite(value)) return "0%";
+	return `${value.toFixed(fractionDigits)}%`;
 }
 
 /**
@@ -53,8 +53,8 @@ export function formatPercent(value: number, fractionDigits = 1): string {
  * @returns 形如 "2ms"；为 0 时返回 "0ms"
  */
 export function formatLatency(ms: number): string {
-    if (!Number.isFinite(ms) || ms < 0) return "-";
-    return `${ms}ms`;
+	if (!Number.isFinite(ms) || ms < 0) return "-";
+	return `${ms}ms`;
 }
 
 /**
@@ -64,14 +64,14 @@ export function formatLatency(ms: number): string {
  * @returns 1 天以上用 "Xd Yh"，否则用 "Yh Zm"；不足 1 分钟返回 "<1m"
  */
 export function formatUptime(seconds: number): string {
-    if (!Number.isFinite(seconds) || seconds < 0) return "-";
-    if (seconds < 60) return "<1m";
-    const totalMinutes = Math.floor(seconds / 60);
-    const days = Math.floor(totalMinutes / (60 * 24));
-    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-    const minutes = totalMinutes % 60;
-    if (days >= 1) return `${days}d ${hours}h`;
-    return `${hours}h ${minutes}m`;
+	if (!Number.isFinite(seconds) || seconds < 0) return "-";
+	if (seconds < 60) return "<1m";
+	const totalMinutes = Math.floor(seconds / 60);
+	const days = Math.floor(totalMinutes / (60 * 24));
+	const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+	const minutes = totalMinutes % 60;
+	if (days >= 1) return `${days}d ${hours}h`;
+	return `${hours}h ${minutes}m`;
 }
 
 /**
@@ -81,8 +81,8 @@ export function formatUptime(seconds: number): string {
  * @returns 形如 "1.2ms"
  */
 export function formatNsToMs(ns: number): string {
-    if (!Number.isFinite(ns) || ns < 0) return "0ms";
-    return `${(ns / 1_000_000).toFixed(2)}ms`;
+	if (!Number.isFinite(ns) || ns < 0) return "0ms";
+	return `${(ns / 1_000_000).toFixed(2)}ms`;
 }
 
 /**
@@ -94,7 +94,7 @@ export function formatNsToMs(ns: number): string {
  * @returns CSS 变量字符串
  */
 export function thresholdColor(percent: number): string {
-    if (percent > 85) return "var(--destructive)";
-    if (percent > 60) return "var(--chart-4)";
-    return "var(--chart-2)";
+	if (percent > 85) return "var(--destructive)";
+	if (percent > 60) return "var(--chart-4)";
+	return "var(--chart-2)";
 }

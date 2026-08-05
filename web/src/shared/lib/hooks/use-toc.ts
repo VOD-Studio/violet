@@ -2,12 +2,12 @@ import { Slugger } from "@shared/lib/slug";
 import { useEffect, useState } from "react";
 
 export interface TocItem {
-    /** 标题层级 2|3|4 */
-    level: 2 | 3 | 4;
-    /** 标题文本 */
-    text: string;
-    /** 锚点 id */
-    id: string;
+	/** 标题层级 2|3|4 */
+	level: 2 | 3 | 4;
+	/** 标题文本 */
+	text: string;
+	/** 锚点 id */
+	id: string;
 }
 
 /**
@@ -19,24 +19,24 @@ export interface TocItem {
  * 点击目录才能滚动到位。
  */
 export function extractToc(html: string): TocItem[] {
-    const re = /<h([234])[^>]*?(?:\sid=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/h\1>/gi;
-    const out: TocItem[] = [];
-    const slugger = new Slugger();
-    let m = re.exec(html);
-    while (m !== null) {
-        const level = Number(m[1]) as 2 | 3 | 4;
-        const text = stripTags(m[3]).trim();
-        if (text) {
-            const id = m[2] || slugger.slug(text);
-            out.push({ level, id, text });
-        }
-        m = re.exec(html);
-    }
-    return out;
+	const re = /<h([234])[^>]*?(?:\sid=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/h\1>/gi;
+	const out: TocItem[] = [];
+	const slugger = new Slugger();
+	let m = re.exec(html);
+	while (m !== null) {
+		const level = Number(m[1]) as 2 | 3 | 4;
+		const text = stripTags(m[3]).trim();
+		if (text) {
+			const id = m[2] || slugger.slug(text);
+			out.push({ level, id, text });
+		}
+		m = re.exec(html);
+	}
+	return out;
 }
 
 function stripTags(s: string): string {
-    return s.replace(/<[^>]+>/g, "");
+	return s.replace(/<[^>]+>/g, "");
 }
 
 /** 默认触发线偏移，与 styles.css 的 scroll-margin-top: 80px 一致，作为读取失败时的兜底 */
@@ -50,12 +50,12 @@ const DEFAULT_TRIGGER_OFFSET = 80;
  * 空列表返回 null。
  */
 export function pickActiveByPosition(offsets: number[]): number | null {
-    if (offsets.length === 0) return null;
-    let last = -1;
-    for (let i = 0; i < offsets.length; i++) {
-        if (offsets[i] <= 0) last = i;
-    }
-    return last === -1 ? 0 : last;
+	if (offsets.length === 0) return null;
+	let last = -1;
+	for (let i = 0; i < offsets.length; i++) {
+		if (offsets[i] <= 0) last = i;
+	}
+	return last === -1 ? 0 : last;
 }
 
 /**
@@ -66,46 +66,54 @@ export function pickActiveByPosition(offsets: number[]): number | null {
  * 停留位置共享同一来源；读不到时回落到默认 80px。
  */
 export function useActiveHeading(containerRef: React.RefObject<HTMLElement | null>): string | null {
-    const [active, setActive] = useState<string | null>(null);
+	const [active, setActive] = useState<string | null>(null);
 
-    useEffect(() => {
-        const el = containerRef.current;
-        if (!el) return;
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
 
-        const headings = Array.from(el.querySelectorAll<HTMLElement>("h2[id], h3[id], h4[id]"));
-        if (headings.length === 0) return;
-        const orderedIds = headings.map((h) => h.id);
+		const headings = Array.from(el.querySelectorAll<HTMLElement>("h2[id], h3[id], h4[id]"));
+		if (headings.length === 0) return;
+		const orderedIds = headings.map((h) => h.id);
 
-        const triggerOffset =
-            Number.parseFloat(getComputedStyle(headings[0]).scrollMarginTop) ||
-            DEFAULT_TRIGGER_OFFSET;
+		const triggerOffset =
+			Number.parseFloat(getComputedStyle(headings[0]).scrollMarginTop) ||
+			DEFAULT_TRIGGER_OFFSET;
 
-        const update = () => {
-            const offsets = headings.map((h) => h.getBoundingClientRect().top - triggerOffset);
-            const idx = pickActiveByPosition(offsets);
-            setActive(idx === null ? null : orderedIds[idx]);
-        };
+		const update = () => {
+			const offsets = headings.map((h) => h.getBoundingClientRect().top - triggerOffset);
+			const idx = pickActiveByPosition(offsets);
+			setActive(idx === null ? null : orderedIds[idx]);
+		};
 
-        update();
+		update();
 
-        // 滚动与尺寸变化用 rAF 合并，避免每帧重复读布局
-        let frame = 0;
-        const schedule = () => {
-            if (frame) return;
-            frame = requestAnimationFrame(() => {
-                frame = 0;
-                update();
-            });
-        };
+		// 滚动与尺寸变化用 rAF 合并，避免每帧重复读布局
+		let frame = 0;
+		const schedule = () => {
+			if (frame) return;
+			frame = requestAnimationFrame(() => {
+				frame = 0;
+				update();
+			});
+		};
 
-        window.addEventListener("scroll", schedule, { passive: true });
-        window.addEventListener("resize", schedule, { passive: true });
-        return () => {
-            window.removeEventListener("scroll", schedule);
-            window.removeEventListener("resize", schedule);
-            if (frame) cancelAnimationFrame(frame);
-        };
-    }, [containerRef]);
+		window.addEventListener("scroll", schedule, { passive: true });
+		window.addEventListener("resize", schedule, { passive: true });
 
-    return active;
+		// 内容尺寸变化（mermaid 图块异步渲染撑开、懒加载组件挂载）也触发重算，
+		// 否则图块渲染后 heading 位置偏移但 scroll/resize 都不触发，TOC 高亮卡在
+		// 渲染前的中间态位置（刷新到中间锚点时尤其明显）。
+		const resizeObserver = new ResizeObserver(schedule);
+		resizeObserver.observe(el);
+
+		return () => {
+			window.removeEventListener("scroll", schedule);
+			window.removeEventListener("resize", schedule);
+			if (frame) cancelAnimationFrame(frame);
+			resizeObserver.disconnect();
+		};
+	}, [containerRef]);
+
+	return active;
 }

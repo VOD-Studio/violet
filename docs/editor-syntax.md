@@ -696,7 +696,7 @@ quadrantChart
 ```mermaid
 xychart-beta
     title "月度文章发布量"
-    x-axis [1月, 2月, 3月, 4月, 5月, 6月]
+    x-axis ["1月", "2月", "3月", "4月", "5月", "6月"]
     y-axis "篇数" 0 --> 20
     bar [5, 8, 12, 10, 15, 18]
     line [5, 8, 12, 10, 15, 18]

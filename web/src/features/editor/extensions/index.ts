@@ -54,25 +54,25 @@ const registering = new Map<string, Promise<void>>();
  * @param id 语言 id（与 highlight.js/lib/languages/<id> 文件名一致）
  */
 export async function ensureLanguageRegistered(id: string): Promise<void> {
-    if (!id || id === "text" || registeredLanguages.has(id)) return;
-    const pending = registering.get(id);
-    if (pending) return pending;
-    const p = (async () => {
-        try {
-            const mod = await import(/* @vite-ignore */ `highlight.js/lib/languages/${id}`);
-            const grammar = mod.default;
-            if (typeof grammar === "function") {
-                lowlight.register(id, grammar);
-                registeredLanguages.add(id);
-            }
-        } catch {
-            // 不支持的 id 静默失败，lowlight 会回退到 highlightAuto
-        } finally {
-            registering.delete(id);
-        }
-    })();
-    registering.set(id, p);
-    return p;
+	if (!id || id === "text" || registeredLanguages.has(id)) return;
+	const pending = registering.get(id);
+	if (pending) return pending;
+	const p = (async () => {
+		try {
+			const mod = await import(/* @vite-ignore */ `highlight.js/lib/languages/${id}`);
+			const grammar = mod.default;
+			if (typeof grammar === "function") {
+				lowlight.register(id, grammar);
+				registeredLanguages.add(id);
+			}
+		} catch {
+			// 不支持的 id 静默失败，lowlight 会回退到 highlightAuto
+		} finally {
+			registering.delete(id);
+		}
+	})();
+	registering.set(id, p);
+	return p;
 }
 
 /**
@@ -81,61 +81,61 @@ export async function ensureLanguageRegistered(id: string): Promise<void> {
  * @param placeholder 占位符文案
  */
 export function buildEditorExtensions(placeholder = "开始书写，或输入 / 唤起命令菜单…") {
-    return [
-        StarterKit.configure({
-            // 关闭 StarterKit 内置项，改用下方独立扩展以获得更高定制性
-            codeBlock: false,
-            link: false,
-            // Tiptap v3 的 StarterKit 默认已包含 underline，
-            // 需显式关闭，避免与下方独立 Underline 扩展重复注册。
-            underline: false,
-            // 保留：文档/段落/文本/标题/粗斜/删除线/行内代码/引用/分割线/
-            //       有序无序列表/列表项/历史/拖放/粘贴等
-        }),
-        // —— 文本样式 ——
-        TextStyle,
-        Underline,
-        Color,
-        Highlight.configure({ multicolor: true }),
-        // —— 文本对齐 ——
-        TextAlign.configure({ types: ["heading", "paragraph"] }),
-        // —— 链接与图片 ——
-        Link.configure({
-            openOnClick: false,
-            autolink: true,
-            HTMLAttributes: {
-                rel: "noopener noreferrer nofollow",
-                target: "_blank",
-                class: "text-primary underline underline-offset-2",
-            },
-        }),
-        // 图片:自定义 NodeView,编辑时显示 w=1200 缩略,序列化仍输出原图
-        createImageExtension().configure({
-            inline: false,
-            allowBase64: false,
-            HTMLAttributes: { class: "rounded-lg" },
-        }),
-        // —— 列表 ——
-        TaskList,
-        CustomTaskItem,
-        // —— 表格 ——
-        Table.configure({ resizable: false }),
-        TableRow,
-        TableHeader,
-        TableCell,
-        // —— 代码块（高亮 + 语言下拉 nodeView）——
-        createCodeBlockExtension(lowlight),
-        // —— 数学公式（KaTeX 双态编辑，宏表与阅读端同源）——
-        ...createMathExtensions(),
-        // —— 图块（Mermaid 流程图，atom 节点 + ```mermaid 围栏往返 + 弹层 NodeView）——
-        createDiagramBlockExtension(),
-        // —— 占位符 ——
-        Placeholder.configure({ placeholder }),
-        // —— Markdown 双向序列化 ——
-        Markdown.configure({
-            indentation: { style: "space", size: 4 },
-        }),
-    ];
+	return [
+		StarterKit.configure({
+			// 关闭 StarterKit 内置项，改用下方独立扩展以获得更高定制性
+			codeBlock: false,
+			link: false,
+			// Tiptap v3 的 StarterKit 默认已包含 underline，
+			// 需显式关闭，避免与下方独立 Underline 扩展重复注册。
+			underline: false,
+			// 保留：文档/段落/文本/标题/粗斜/删除线/行内代码/引用/分割线/
+			//       有序无序列表/列表项/历史/拖放/粘贴等
+		}),
+		// —— 文本样式 ——
+		TextStyle,
+		Underline,
+		Color,
+		Highlight.configure({ multicolor: true }),
+		// —— 文本对齐 ——
+		TextAlign.configure({ types: ["heading", "paragraph"] }),
+		// —— 链接与图片 ——
+		Link.configure({
+			openOnClick: false,
+			autolink: true,
+			HTMLAttributes: {
+				rel: "noopener noreferrer nofollow",
+				target: "_blank",
+				class: "text-primary underline underline-offset-2",
+			},
+		}),
+		// 图片:自定义 NodeView,编辑时显示 w=1200 缩略,序列化仍输出原图
+		createImageExtension().configure({
+			inline: false,
+			allowBase64: false,
+			HTMLAttributes: { class: "rounded-lg" },
+		}),
+		// —— 列表 ——
+		TaskList,
+		CustomTaskItem,
+		// —— 表格 ——
+		Table.configure({ resizable: false }),
+		TableRow,
+		TableHeader,
+		TableCell,
+		// —— 代码块（高亮 + 语言下拉 nodeView）——
+		createCodeBlockExtension(lowlight),
+		// —— 数学公式（KaTeX 双态编辑，宏表与阅读端同源）——
+		...createMathExtensions(),
+		// —— 图块（Mermaid 流程图，atom 节点 + ```mermaid 围栏往返 + 弹层 NodeView）——
+		createDiagramBlockExtension(),
+		// —— 占位符 ——
+		Placeholder.configure({ placeholder }),
+		// —— Markdown 双向序列化 ——
+		Markdown.configure({
+			indentation: { style: "space", size: 4 },
+		}),
+	];
 }
 
 /**
@@ -145,16 +145,16 @@ export function buildEditorExtensions(placeholder = "开始书写，或输入 / 
  * @param placeholder 占位符文案
  */
 export function buildEditorExtensionsWithSlash(
-    onPickImage: () => void,
-    placeholder = "开始书写，或输入 / 唤起命令菜单…",
+	onPickImage: () => void,
+	placeholder = "开始书写，或输入 / 唤起命令菜单…",
 ) {
-    return [
-        ...buildEditorExtensions(placeholder).filter((e) => e.name !== "slashCommand"),
-        SlashCommand.configure({
-            onPickImage,
-            items: (cb) => buildSlashItems(cb),
-        }),
-    ];
+	return [
+		...buildEditorExtensions(placeholder).filter((e) => e.name !== "slashCommand"),
+		SlashCommand.configure({
+			onPickImage,
+			items: (cb) => buildSlashItems(cb),
+		}),
+	];
 }
 
 /** lowlight 实例导出，供代码块样式 / 语言列表复用 */

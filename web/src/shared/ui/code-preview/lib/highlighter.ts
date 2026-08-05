@@ -21,45 +21,45 @@ import { createOnigurumaEngine } from "shiki/engine/oniguruma";
  * 为纯文本（无语法高亮）。独立 chunk 只含映射内语言，未列出语言不进构建。
  */
 const LANG_LOADERS = {
-    html: () => import("shiki/dist/langs/html.mjs"),
-    css: () => import("shiki/dist/langs/css.mjs"),
-    scss: () => import("shiki/dist/langs/scss.mjs"),
-    less: () => import("shiki/dist/langs/less.mjs"),
-    javascript: () => import("shiki/dist/langs/javascript.mjs"),
-    typescript: () => import("shiki/dist/langs/typescript.mjs"),
-    jsx: () => import("shiki/dist/langs/jsx.mjs"),
-    tsx: () => import("shiki/dist/langs/tsx.mjs"),
-    vue: () => import("shiki/dist/langs/vue.mjs"),
-    json: () => import("shiki/dist/langs/json.mjs"),
-    yaml: () => import("shiki/dist/langs/yaml.mjs"),
-    markdown: () => import("shiki/dist/langs/markdown.mjs"),
-    bash: () => import("shiki/dist/langs/bash.mjs"),
-    shell: () => import("shiki/dist/langs/shell.mjs"),
-    powershell: () => import("shiki/dist/langs/powershell.mjs"),
-    dockerfile: () => import("shiki/dist/langs/dockerfile.mjs"),
-    nginx: () => import("shiki/dist/langs/nginx.mjs"),
-    makefile: () => import("shiki/dist/langs/makefile.mjs"),
-    ini: () => import("shiki/dist/langs/ini.mjs"),
-    diff: () => import("shiki/dist/langs/diff.mjs"),
-    go: () => import("shiki/dist/langs/go.mjs"),
-    rust: () => import("shiki/dist/langs/rust.mjs"),
-    python: () => import("shiki/dist/langs/python.mjs"),
-    java: () => import("shiki/dist/langs/java.mjs"),
-    kotlin: () => import("shiki/dist/langs/kotlin.mjs"),
-    swift: () => import("shiki/dist/langs/swift.mjs"),
-    ruby: () => import("shiki/dist/langs/ruby.mjs"),
-    php: () => import("shiki/dist/langs/php.mjs"),
-    c: () => import("shiki/dist/langs/c.mjs"),
-    cpp: () => import("shiki/dist/langs/cpp.mjs"),
-    csharp: () => import("shiki/dist/langs/csharp.mjs"),
-    "objective-c": () => import("shiki/dist/langs/objective-c.mjs"),
-    lua: () => import("shiki/dist/langs/lua.mjs"),
-    r: () => import("shiki/dist/langs/r.mjs"),
-    perl: () => import("shiki/dist/langs/perl.mjs"),
-    graphql: () => import("shiki/dist/langs/graphql.mjs"),
-    sql: () => import("shiki/dist/langs/sql.mjs"),
-    xml: () => import("shiki/dist/langs/xml.mjs"),
-    wasm: () => import("shiki/dist/langs/wasm.mjs"),
+	html: () => import("shiki/dist/langs/html.mjs"),
+	css: () => import("shiki/dist/langs/css.mjs"),
+	scss: () => import("shiki/dist/langs/scss.mjs"),
+	less: () => import("shiki/dist/langs/less.mjs"),
+	javascript: () => import("shiki/dist/langs/javascript.mjs"),
+	typescript: () => import("shiki/dist/langs/typescript.mjs"),
+	jsx: () => import("shiki/dist/langs/jsx.mjs"),
+	tsx: () => import("shiki/dist/langs/tsx.mjs"),
+	vue: () => import("shiki/dist/langs/vue.mjs"),
+	json: () => import("shiki/dist/langs/json.mjs"),
+	yaml: () => import("shiki/dist/langs/yaml.mjs"),
+	markdown: () => import("shiki/dist/langs/markdown.mjs"),
+	bash: () => import("shiki/dist/langs/bash.mjs"),
+	shell: () => import("shiki/dist/langs/shell.mjs"),
+	powershell: () => import("shiki/dist/langs/powershell.mjs"),
+	dockerfile: () => import("shiki/dist/langs/dockerfile.mjs"),
+	nginx: () => import("shiki/dist/langs/nginx.mjs"),
+	makefile: () => import("shiki/dist/langs/makefile.mjs"),
+	ini: () => import("shiki/dist/langs/ini.mjs"),
+	diff: () => import("shiki/dist/langs/diff.mjs"),
+	go: () => import("shiki/dist/langs/go.mjs"),
+	rust: () => import("shiki/dist/langs/rust.mjs"),
+	python: () => import("shiki/dist/langs/python.mjs"),
+	java: () => import("shiki/dist/langs/java.mjs"),
+	kotlin: () => import("shiki/dist/langs/kotlin.mjs"),
+	swift: () => import("shiki/dist/langs/swift.mjs"),
+	ruby: () => import("shiki/dist/langs/ruby.mjs"),
+	php: () => import("shiki/dist/langs/php.mjs"),
+	c: () => import("shiki/dist/langs/c.mjs"),
+	cpp: () => import("shiki/dist/langs/cpp.mjs"),
+	csharp: () => import("shiki/dist/langs/csharp.mjs"),
+	"objective-c": () => import("shiki/dist/langs/objective-c.mjs"),
+	lua: () => import("shiki/dist/langs/lua.mjs"),
+	r: () => import("shiki/dist/langs/r.mjs"),
+	perl: () => import("shiki/dist/langs/perl.mjs"),
+	graphql: () => import("shiki/dist/langs/graphql.mjs"),
+	sql: () => import("shiki/dist/langs/sql.mjs"),
+	xml: () => import("shiki/dist/langs/xml.mjs"),
+	wasm: () => import("shiki/dist/langs/wasm.mjs"),
 } satisfies Record<string, () => Promise<unknown>>;
 
 /** 白名单语言 id（= LANG_LOADERS 键） */
@@ -70,47 +70,47 @@ const THEME = "github-dark";
 
 /** 语言别名 → 白名单 id（处理 sh/bash、yml/yaml 等常见等价写法） */
 const LANG_ALIAS: Record<string, string> = {
-    js: "javascript",
-    mjs: "javascript",
-    cjs: "javascript",
-    ts: "typescript",
-    mts: "typescript",
-    cts: "typescript",
-    sh: "bash",
-    zsh: "bash",
-    shellsession: "shell",
-    ps1: "powershell",
-    py: "python",
-    rb: "ruby",
-    rs: "rust",
-    kt: "kotlin",
-    "c++": "cpp",
-    h: "c",
-    hh: "c",
-    cc: "cpp",
-    cxx: "cpp",
-    hpp: "cpp",
-    hxx: "cpp",
-    cs: "csharp",
-    golang: "go",
-    docker: "dockerfile",
-    mak: "makefile",
-    toml: "ini",
-    conf: "ini",
-    arduino: "cpp",
-    yml: "yaml",
-    md: "markdown",
+	js: "javascript",
+	mjs: "javascript",
+	cjs: "javascript",
+	ts: "typescript",
+	mts: "typescript",
+	cts: "typescript",
+	sh: "bash",
+	zsh: "bash",
+	shellsession: "shell",
+	ps1: "powershell",
+	py: "python",
+	rb: "ruby",
+	rs: "rust",
+	kt: "kotlin",
+	"c++": "cpp",
+	h: "c",
+	hh: "c",
+	cc: "cpp",
+	cxx: "cpp",
+	hpp: "cpp",
+	hxx: "cpp",
+	cs: "csharp",
+	golang: "go",
+	docker: "dockerfile",
+	mak: "makefile",
+	toml: "ini",
+	conf: "ini",
+	arduino: "cpp",
+	yml: "yaml",
+	md: "markdown",
 };
 
 /**
  * 把任意 lang id 规整为白名单内 id；不在白名单内返回 null（调用方降级纯文本）。
  */
 export function resolveSupportedLanguage(lang: string): SupportedLanguage | null {
-    if (!lang) return null;
-    const lower = lang.toLowerCase();
-    const aliased = LANG_ALIAS[lower] ?? lower;
-    if (aliased in LANG_LOADERS) return aliased as SupportedLanguage;
-    return null;
+	if (!lang) return null;
+	const lower = lang.toLowerCase();
+	const aliased = LANG_ALIAS[lower] ?? lower;
+	if (aliased in LANG_LOADERS) return aliased as SupportedLanguage;
+	return null;
 }
 
 let highlighterPromise: Promise<HighlighterCore> | null = null;
@@ -122,15 +122,15 @@ let highlighterPromise: Promise<HighlighterCore> | null = null;
  * 预加载 github-dark 主题，不预加载任何语言（按需 loadLanguage）。
  */
 export function getHighlighter(): Promise<HighlighterCore> {
-    if (!highlighterPromise) {
-        // engine 传入内联 wasm（shiki/wasm re-export @shikijs/engine-oniguruma/wasm-inlined，
-        // base64 内联，无需运行时 fetch），与 shiki/bundle/full 的 engine 装配方式一致。
-        highlighterPromise = getSingletonHighlighterCore({
-            engine: createOnigurumaEngine(import("shiki/wasm")),
-            themes: [() => import("shiki/dist/themes/github-dark.mjs")],
-        });
-    }
-    return highlighterPromise;
+	if (!highlighterPromise) {
+		// engine 传入内联 wasm（shiki/wasm re-export @shikijs/engine-oniguruma/wasm-inlined，
+		// base64 内联，无需运行时 fetch），与 shiki/bundle/full 的 engine 装配方式一致。
+		highlighterPromise = getSingletonHighlighterCore({
+			engine: createOnigurumaEngine(import("shiki/wasm")),
+			themes: [() => import("shiki/dist/themes/github-dark.mjs")],
+		});
+	}
+	return highlighterPromise;
 }
 
 const loadingLanguages = new Map<string, Promise<void>>();
@@ -141,17 +141,17 @@ const loadingLanguages = new Map<string, Promise<void>>();
  * @param lang 白名单内语言 id（外部应先用 resolveSupportedLanguage 校验）
  */
 export function ensureLanguage(lang: SupportedLanguage): Promise<void> {
-    const pending = loadingLanguages.get(lang);
-    if (pending) return pending;
-    // 已加载直接返回（getLoadedLanguages 同步可查）
-    const hl = highlighterPromise;
-    const p = (async () => {
-        const highlighter = await (hl ?? getHighlighter());
-        if (highlighter.getLoadedLanguages().includes(lang)) return;
-        await highlighter.loadLanguage(LANG_LOADERS[lang]);
-    })();
-    loadingLanguages.set(lang, p);
-    return p;
+	const pending = loadingLanguages.get(lang);
+	if (pending) return pending;
+	// 已加载直接返回（getLoadedLanguages 同步可查）
+	const hl = highlighterPromise;
+	const p = (async () => {
+		const highlighter = await (hl ?? getHighlighter());
+		if (highlighter.getLoadedLanguages().includes(lang)) return;
+		await highlighter.loadLanguage(LANG_LOADERS[lang]);
+	})();
+	loadingLanguages.set(lang, p);
+	return p;
 }
 
 /**
@@ -163,14 +163,14 @@ export function ensureLanguage(lang: SupportedLanguage): Promise<void> {
  * @returns 高亮 HTML（shiki 输出）
  */
 export async function highlightCode(code: string, lang: string): Promise<string> {
-    const resolved = resolveSupportedLanguage(lang);
-    const highlighter = await getHighlighter();
-    // 不在白名单内的语言用 plaintext 兜底（shiki 内置，无需 loadLanguage）
-    const finalLang = resolved ?? "plaintext";
-    if (resolved) {
-        await ensureLanguage(resolved);
-    }
-    return highlighter.codeToHtml(code, { lang: finalLang, theme: THEME });
+	const resolved = resolveSupportedLanguage(lang);
+	const highlighter = await getHighlighter();
+	// 不在白名单内的语言用 plaintext 兜底（shiki 内置，无需 loadLanguage）
+	const finalLang = resolved ?? "plaintext";
+	if (resolved) {
+		await ensureLanguage(resolved);
+	}
+	return highlighter.codeToHtml(code, { lang: finalLang, theme: THEME });
 }
 
 /** Theme 名导出，供外部复用样式约定 */

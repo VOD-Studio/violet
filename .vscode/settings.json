@@ -1,0 +1,11 @@
+{
+  "biome.lsp.bin": "./web/node_modules/.pnpm/@biomejs+cli-darwin-arm64@2.5.2/node_modules/@biomejs/cli-darwin-arm64/biome",
+  "biome.requireConfiguration": false,
+  "biome.configurationPath": "./web/biome.json",
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  }
+}

@@ -10,17 +10,17 @@ import { createFileRoute, useRouterState } from "@tanstack/react-router";
  * 不套 PageShell；内边距由本路由自带（同 admin.posts.new），h-full 保持高度链。
  */
 export const Route = createFileRoute("/admin/posts/$id")({
-    component: EditPostPage,
+	component: EditPostPage,
 });
 
 function EditPostPage() {
-    const { id } = Route.useParams();
-    const post = useRouterState({
-        select: (s) => (s.location.state as { post?: AdminPostListItem } | undefined)?.post,
-    });
-    return (
-        <div className="h-full px-4 pt-4 pb-6 md:px-6">
-            <PostEditor postId={id} initialData={post} />
-        </div>
-    );
+	const { id } = Route.useParams();
+	const post = useRouterState({
+		select: (s) => (s.location.state as { post?: AdminPostListItem } | undefined)?.post,
+	});
+	return (
+		<div className="h-full px-4 pt-4 pb-6 md:px-6">
+			<PostEditor postId={id} initialData={post} />
+		</div>
+	);
 }

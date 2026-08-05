@@ -8,14 +8,14 @@ const BASE = "/admin/logs";
  * listAuditLogs - 调后端 GET /admin/logs 拉取操作日志列表（分页 + 过滤）
  */
 export const listAuditLogs = async (
-    query: AuditLogListQuery = {},
+	query: AuditLogListQuery = {},
 ): Promise<PagedResponse<AuditEventDTO>> => apiGetPaged<AuditEventDTO>(BASE, { params: query });
 
 /**
  * listAuditLogsByUser - 调后端 GET /admin/logs/user/{id} 拉取指定用户日志
  */
 export const listAuditLogsByUser = async (
-    userId: string,
-    query: AuditLogListQuery = {},
+	userId: string,
+	query: AuditLogListQuery = {},
 ): Promise<PagedResponse<AuditEventDTO>> =>
-    apiGetPaged<AuditEventDTO>(`${BASE}/user/${userId}`, { params: query });
+	apiGetPaged<AuditEventDTO>(`${BASE}/user/${userId}`, { params: query });

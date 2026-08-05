@@ -9,12 +9,12 @@
  */
 
 interface ImportMetaEnv {
-    /** 客户端 API 基础路径（相对 /api/v1，由反向代理转发） */
-    readonly VITE_API_BASE_URL: string;
-    /** 前端对外地址（SEO、OpenGraph） */
-    readonly VITE_SITE_URL: string;
-    /** SSR 端内网回源地址（绕过反代直连后端容器） */
-    readonly VITE_SSR_API_BASE_URL: string;
+	/** 客户端 API 基础路径（相对 /api/v1，由反向代理转发） */
+	readonly VITE_API_BASE_URL: string;
+	/** 前端对外地址（SEO、OpenGraph） */
+	readonly VITE_SITE_URL: string;
+	/** SSR 端内网回源地址（绕过反代直连后端容器） */
+	readonly VITE_SSR_API_BASE_URL: string;
 }
 
 /**

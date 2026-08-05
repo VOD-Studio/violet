@@ -20,36 +20,36 @@ import { useCallback, useState } from "react";
  * <ImagePreview {...preview} />
  */
 export function useImagePreview() {
-    const [open, setOpen] = useState(false);
-    const [images, setImages] = useState<string[]>([]);
-    const [thumbnails, setThumbnails] = useState<string[] | undefined>(undefined);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [triggerElement, setTriggerElement] = useState<HTMLElement | null>(null);
+	const [open, setOpen] = useState(false);
+	const [images, setImages] = useState<string[]>([]);
+	const [thumbnails, setThumbnails] = useState<string[] | undefined>(undefined);
+	const [currentIndex, setCurrentIndex] = useState(0);
+	const [triggerElement, setTriggerElement] = useState<HTMLElement | null>(null);
 
-    // thumbnails 与 imageList 一一对应(预览飞入占位/底部导航条用),可选
-    const openPreview = useCallback(
-        (imageList: string[], index = 0, element?: HTMLElement, thumbnailList?: string[]) => {
-            setImages(imageList);
-            setThumbnails(thumbnailList);
-            setCurrentIndex(index);
-            setTriggerElement(element || null);
-            setOpen(true);
-        },
-        [],
-    );
+	// thumbnails 与 imageList 一一对应(预览飞入占位/底部导航条用),可选
+	const openPreview = useCallback(
+		(imageList: string[], index = 0, element?: HTMLElement, thumbnailList?: string[]) => {
+			setImages(imageList);
+			setThumbnails(thumbnailList);
+			setCurrentIndex(index);
+			setTriggerElement(element || null);
+			setOpen(true);
+		},
+		[],
+	);
 
-    const closePreview = useCallback(() => {
-        setOpen(false);
-    }, []);
+	const closePreview = useCallback(() => {
+		setOpen(false);
+	}, []);
 
-    return {
-        open,
-        images,
-        thumbnails,
-        currentIndex,
-        triggerElement,
-        openPreview,
-        closePreview,
-        setCurrentIndex,
-    };
+	return {
+		open,
+		images,
+		thumbnails,
+		currentIndex,
+		triggerElement,
+		openPreview,
+		closePreview,
+		setCurrentIndex,
+	};
 }

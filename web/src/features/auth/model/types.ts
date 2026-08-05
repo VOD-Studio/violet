@@ -14,40 +14,40 @@ import type { UserRole } from "@entities/user/model/types";
  * double-submit 模式下前端需把该 token 放入自定义请求头，值与 cookie 一致。
  */
 export interface CsrfTokenResponse {
-    /** CSRF token 字符串，hex 编码 64 字符 */
-    csrf_token: string;
+	/** CSRF token 字符串，hex 编码 64 字符 */
+	csrf_token: string;
 }
 
 /**
  * RegisterRequest - POST /auth/register 请求体
  */
 export interface RegisterRequest {
-    /** 邮箱 */
-    email: string;
-    /** 用户名，3 到 32 字符 */
-    username: string;
-    /** 密码，至少 8 位 */
-    password: string;
+	/** 邮箱 */
+	email: string;
+	/** 用户名，3 到 32 字符 */
+	username: string;
+	/** 密码，至少 8 位 */
+	password: string;
 }
 
 /**
  * VerifyEmailRequest - POST /auth/verify-email 请求体
  */
 export interface VerifyEmailRequest {
-    /** 邮箱 */
-    email: string;
-    /** 6 位数字验证码 */
-    code: string;
+	/** 邮箱 */
+	email: string;
+	/** 6 位数字验证码 */
+	code: string;
 }
 
 /**
  * LoginRequest - POST /auth/login 请求体
  */
 export interface LoginRequest {
-    /** 邮箱 */
-    email: string;
-    /** 密码 */
-    password: string;
+	/** 邮箱 */
+	email: string;
+	/** 密码 */
+	password: string;
 }
 
 /**
@@ -56,28 +56,28 @@ export interface LoginRequest {
  * 后端通过 HttpOnly cookie 下发 session，响应体仅返回 user_id。
  */
 export interface LoginResponse {
-    /** 用户 ID */
-    user_id: string;
+	/** 用户 ID */
+	user_id: string;
 }
 
 /**
  * ForgotPasswordRequest - POST /auth/forgot-password 请求体
  */
 export interface ForgotPasswordRequest {
-    /** 邮箱 */
-    email: string;
+	/** 邮箱 */
+	email: string;
 }
 
 /**
  * ResetPasswordRequest - POST /auth/reset-password 请求体
  */
 export interface ResetPasswordRequest {
-    /** 邮箱 */
-    email: string;
-    /** 重置验证码 */
-    code: string;
-    /** 新密码，至少 8 位 */
-    new_password: string;
+	/** 邮箱 */
+	email: string;
+	/** 重置验证码 */
+	code: string;
+	/** 新密码，至少 8 位 */
+	new_password: string;
 }
 
 /**
@@ -86,12 +86,12 @@ export interface ResetPasswordRequest {
  * 所有字段均可选，omitempty 校验，仅传需要更新的字段。
  */
 export interface UpdateProfileRequest {
-    /** 用户名，3 到 32 字符 */
-    username?: string;
-    /** 个人简介，最多 500 字符 */
-    bio?: string;
-    /** 头像 URL，最多 2048 字符 */
-    avatar_url?: string;
+	/** 用户名，3 到 32 字符 */
+	username?: string;
+	/** 个人简介，最多 500 字符 */
+	bio?: string;
+	/** 头像 URL，最多 2048 字符 */
+	avatar_url?: string;
 }
 
 /**
@@ -101,28 +101,28 @@ export interface UpdateProfileRequest {
  * created_at/permissions。需要完整用户请改用 GET /auth/me。
  */
 export interface UpdatedProfile {
-    /** 用户 ID */
-    id: string;
-    /** 用户名 */
-    username: string;
-    /** 邮箱 */
-    email: string;
-    /** 头像 URL */
-    avatar_url: string;
-    /** 个人简介 */
-    bio: string;
-    /** 角色，复用 entities 的 UserRole 联合类型 */
-    role: UserRole;
+	/** 用户 ID */
+	id: string;
+	/** 用户名 */
+	username: string;
+	/** 邮箱 */
+	email: string;
+	/** 头像 URL */
+	avatar_url: string;
+	/** 个人简介 */
+	bio: string;
+	/** 角色，复用 entities 的 UserRole 联合类型 */
+	role: UserRole;
 }
 
 /**
  * ChangePasswordRequest - PATCH /auth/password 请求体
  */
 export interface ChangePasswordRequest {
-    /** 旧密码 */
-    old_password: string;
-    /** 新密码，至少 8 位 */
-    new_password: string;
+	/** 旧密码 */
+	old_password: string;
+	/** 新密码，至少 8 位 */
+	new_password: string;
 }
 
 /**

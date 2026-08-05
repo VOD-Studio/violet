@@ -17,24 +17,24 @@ import { ApiError } from "./error";
  * @returns 配好默认 options 的 QueryClient
  */
 export const createQueryClient = (): QueryClient =>
-    new QueryClient({
-        defaultOptions: {
-            queries: {
-                staleTime: 60_000,
-                retry: (failureCount, err) => {
-                    // 业务错误（4xx）不重试
-                    if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
-                        return false;
-                    }
-                    return failureCount < 2;
-                },
-                refetchOnWindowFocus: false,
-            },
-            mutations: {
-                retry: false,
-            },
-        },
-    });
+	new QueryClient({
+		defaultOptions: {
+			queries: {
+				staleTime: 60_000,
+				retry: (failureCount, err) => {
+					// 业务错误（4xx）不重试
+					if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+						return false;
+					}
+					return failureCount < 2;
+				},
+				refetchOnWindowFocus: false,
+			},
+			mutations: {
+				retry: false,
+			},
+		},
+	});
 
 /**
  * clientQueryClient - 客户端 QueryClient 单例

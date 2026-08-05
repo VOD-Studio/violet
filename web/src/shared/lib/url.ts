@@ -19,15 +19,15 @@ const DOMAIN_RE = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{
 
 /** 判断 hostname 是否为合法域名 / IP / localhost */
 function isValidHost(hostname: string): boolean {
-    if (!hostname) return false;
-    if (hostname === "localhost") return true;
-    // URL 解析时 IPv6 会被方括号包裹，hostname 形如 [::1]
-    const bare = hostname.replace(/^\[|\]$/g, "");
-    if (bare.includes(":")) return IPV6_RE.test(bare);
-    if (/^\d+$/.test(hostname) || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
-        return IPV4_RE.test(hostname);
-    }
-    return DOMAIN_RE.test(hostname);
+	if (!hostname) return false;
+	if (hostname === "localhost") return true;
+	// URL 解析时 IPv6 会被方括号包裹，hostname 形如 [::1]
+	const bare = hostname.replace(/^\[|\]$/g, "");
+	if (bare.includes(":")) return IPV6_RE.test(bare);
+	if (/^\d+$/.test(hostname) || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+		return IPV4_RE.test(hostname);
+	}
+	return DOMAIN_RE.test(hostname);
 }
 
 /**
@@ -45,23 +45,23 @@ function isValidHost(hostname: string): boolean {
  * validateUrl("https://wwww..,.,.")        // "host"
  */
 export function validateUrl(input: string): UrlInvalidReason | null {
-    const trimmed = input.trim();
-    if (!trimmed) return "empty";
+	const trimmed = input.trim();
+	if (!trimmed) return "empty";
 
-    let parsed: URL;
-    try {
-        parsed = new URL(trimmed);
-    } catch {
-        return "malformed";
-    }
+	let parsed: URL;
+	try {
+		parsed = new URL(trimmed);
+	} catch {
+		return "malformed";
+	}
 
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-        return "scheme";
-    }
+	if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+		return "scheme";
+	}
 
-    if (!isValidHost(parsed.hostname)) return "host";
+	if (!isValidHost(parsed.hostname)) return "host";
 
-    return null;
+	return null;
 }
 
 /**
@@ -71,21 +71,21 @@ export function validateUrl(input: string): UrlInvalidReason | null {
  * 颜文字等文本表情的 url 字段可能直接存储文字内容，应返回 false。
  */
 export function isImageURL(url: string): boolean {
-    return /^https?:\/\//.test(url) || url.startsWith("/");
+	return /^https?:\/\//.test(url) || url.startsWith("/");
 }
 
 /** 将失败原因映射为中文错误文案，供表单校验直接展示 */
 export function urlErrorMessage(reason: UrlInvalidReason | null): string | null {
-    switch (reason) {
-        case null:
-            return null;
-        case "empty":
-            return "请输入 URL";
-        case "malformed":
-            return "请输入合法的 URL";
-        case "scheme":
-            return "仅支持 http/https 链接";
-        case "host":
-            return "请输入合法的域名或 IP";
-    }
+	switch (reason) {
+		case null:
+			return null;
+		case "empty":
+			return "请输入 URL";
+		case "malformed":
+			return "请输入合法的 URL";
+		case "scheme":
+			return "仅支持 http/https 链接";
+		case "host":
+			return "请输入合法的域名或 IP";
+	}
 }
