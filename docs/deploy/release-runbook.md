@@ -32,6 +32,7 @@ release-please 的 CHANGELOG 粒度 = commit：功能/修复 PR 用 merge commit
 - **功能聚合**:同主题的多个 commit 合并为一条（如「图块交互全面升级:全屏模态查看、捏合缩放、导出 SVG/PNG」替代 N 条 diagram 前缀条目）。
 - **删开发中间态**:修本轮开发自引入问题的 commit、lint/CI/重构收尾等内部维护条目,一律不写入。
 - **保留 `**scope:**` 前缀与 `([#N](url))` issue 引用**:网站 /changelog 页依赖这两种格式渲染（scope 聚合分组、行尾引用小链接）;任务号 Tn/PRD 号等过程标注删去。
+- **scope 中文化**:commit 的 scope 是英文模块名（diagram/deploy/web）,读者看不懂;改写为 release notes 时译成可读中文名——diagram→图块、web→网站、header→页头、theme→主题、toc→目录、deploy→部署、subscription→订阅、releases→发版。commit message 本身不变,中文化只发生在 release notes 改写环节。
 - **删 commit hash 引用**:`([abc1234](commit-url))` 读者不关心,改写时直接删（后端渲染时本也会剥离）。
 - **保留版本标题行** `## [x.y.z](compare-url) (date)`:release-please 按此解析版本段。
 
