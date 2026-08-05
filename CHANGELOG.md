@@ -12,44 +12,44 @@ v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/go
 
 ### 修复
 
-* **deploy:** 删除 web Dockerfile 对已移除 .npmrc 的 COPY 引用 ([#74](https://github.com/VOD-Studio/violet/issues/74)) ([1022a44](https://github.com/VOD-Studio/violet/commit/1022a448df41aebb488f6dc72eabe17ba8879bba))
+* **部署:** 删除 web Dockerfile 对已移除 .npmrc 的 COPY 引用 ([#74](https://github.com/VOD-Studio/violet/issues/74)) ([1022a44](https://github.com/VOD-Studio/violet/commit/1022a448df41aebb488f6dc72eabe17ba8879bba))
 
 ## [2.4.0](https://github.com/VOD-Studio/violet/compare/v2.3.0...v2.4.0) (2026-08-05)
 
 
 ### 新增
 
-* **diagram:** 图块交互全面升级：全屏模态查看 ([#69](https://github.com/VOD-Studio/violet/issues/69))、移动端双指捏合缩放 ([#68](https://github.com/VOD-Studio/violet/issues/68))、阅读端导出 SVG / PNG ([#67](https://github.com/VOD-Studio/violet/issues/67))、缩放平移与交互开关
-* **diagram:** 加载占位与失败降级重设计，消除渲染撑开的布局跳动
-* **diagram:** 键盘可访问性与 aria-label 语义化 ([#71](https://github.com/VOD-Studio/violet/issues/71))
+* **图块:** 交互全面升级：全屏模态查看 ([#69](https://github.com/VOD-Studio/violet/issues/69))、移动端双指捏合缩放 ([#68](https://github.com/VOD-Studio/violet/issues/68))、阅读端导出 SVG / PNG ([#67](https://github.com/VOD-Studio/violet/issues/67))、缩放平移与交互开关
+* **图块:** 加载占位与失败降级重设计，消除渲染撑开的布局跳动
+* **图块:** 键盘可访问性与 aria-label 语义化 ([#71](https://github.com/VOD-Studio/violet/issues/71))
 
 
 ### 修复
 
-* **header:** nav 绝对定位消除左右抖动
-* **header:** 背景常驻修复刷新后非顶部位置背景丢失
-* **theme:** 修复多图块页面切换主题卡死
-* **toc:** 异步内容撑开后重算激活标题
-* **toc:** "Contents" 汉化为"目录"
+* **页头:** 导航绝对定位消除左右抖动
+* **页头:** 背景常驻修复刷新后非顶部位置背景丢失
+* **主题:** 修复多图块页面切换主题卡死
+* **目录:** 异步内容撑开后重算激活标题
+* **目录:** "Contents" 汉化为"目录"
 
 ## [2.3.0](https://github.com/VOD-Studio/violet/compare/v2.2.1...v2.3.0) (2026-08-03)
 
 
 ### 新增
 
-* **web:** 更新日志页 /changelog 与 about 页入口卡片（含骨架屏与错误重试）
+* **网站:** 更新日志页 /changelog 与 about 页入口卡片（含骨架屏与错误重试）
 
 
 ### 修复
 
-* **releases:** 更新日志条目去重，去掉 commit hash 引用
+* **发版:** 更新日志条目去重，去掉 commit hash 引用
 
 ## [2.2.1](https://github.com/VOD-Studio/violet/compare/v2.2.0...v2.2.1) (2026-08-02)
 
 
 ### 修复
 
-* **subscription:** 抓取时回填订阅源标题 ([704a52a](https://github.com/VOD-Studio/violet/commit/704a52abbe6b5c26aea032b8ae633593b738b44f))
+* **订阅:** 抓取时回填订阅源标题 ([704a52a](https://github.com/VOD-Studio/violet/commit/704a52abbe6b5c26aea032b8ae633593b738b44f))
 
 ## [2.2.0](https://github.com/VOD-Studio/violet/compare/v2.1.3...v2.2.0) (2026-08-02)
 
