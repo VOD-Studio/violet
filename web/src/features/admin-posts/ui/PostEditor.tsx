@@ -36,7 +36,7 @@ import { useDebouncedCallback } from "@shared/lib/hooks/use-debounced-callback";
 import { Input } from "@shared/ui/base/input";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -117,11 +117,11 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 	// 新建模式固定用一个 key，避免随 slug 变化留下旧草稿；编辑模式按 postId 隔离
 	const draftKey = isEdit ? `${DRAFT_PREFIX}edit:${postId}` : `${DRAFT_PREFIX}new`;
 
-	const toggleZen = () => {
+	const toggleZen = useCallback(() => {
 		const next = !zenMode;
 		if (next) setSidebarCollapsed(true);
 		setZen(next);
-	};
+	}, [zenMode, setZen]);
 
 	useEffect(() => {
 		if (!zenMode) return;
@@ -132,7 +132,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 		};
 		document.addEventListener("keydown", onKey);
 		return () => document.removeEventListener("keydown", onKey);
-	}, [zenMode]);
+	}, [zenMode, toggleZen]);
 
 	// 编辑模式：数据到达后预填，仅初始化一次
 	useEffect(() => {
