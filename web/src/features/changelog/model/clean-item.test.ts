@@ -74,6 +74,22 @@ describe("cleanItem", () => {
 		expect(r.text).toBe("图块交互增强与图表渲染修复");
 		expect(r.refs).toEqual([]);
 	});
+
+	it("链接移除后中文标点前不残留空格", () => {
+		const r = cleanItem(
+			"**图块:** 交互升级：全屏模态查看 ([#69](https://github.com/VOD-Studio/violet/issues/69))、捏合缩放 ([#68](https://github.com/VOD-Studio/violet/issues/68))",
+		);
+		expect(r.text).toBe("交互升级：全屏模态查看、捏合缩放");
+		expect(r.refs.map((x) => x.label)).toEqual(["#69", "#68"]);
+	});
+
+	it("中文 scope 正常拆出", () => {
+		const r = cleanItem(
+			"**图块:** 全屏模态查看 ([#69](https://github.com/VOD-Studio/violet/issues/69))",
+		);
+		expect(r.scope).toBe("图块");
+		expect(r.text).toBe("全屏模态查看");
+	});
 });
 
 describe("groupItems", () => {

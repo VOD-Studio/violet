@@ -65,10 +65,11 @@ export function cleanItem(raw: string): CleanItem {
 		text = text.slice(m[0].length);
 	}
 
-	// 4. 收尾：markdown 残留符号、多余空白、尾部孤立标点
+	// 4. 收尾：markdown 残留符号、多余空白（含链接移除后中文标点前残留的空格）、尾部孤立标点
 	text = text
 		.replace(/\*\*/g, "")
 		.replace(/`/g, "")
+		.replace(/\s+([、，。；：])/g, "$1")
 		.replace(/\s{2,}/g, " ")
 		.replace(/[\s,，、;；:：]+$/, "")
 		.trim();
