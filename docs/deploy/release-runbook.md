@@ -9,7 +9,7 @@
 1. 正常开发,提交发版型 commit（`feat:` / `fix:` / `perf:` / `refactor:` 等）到 `release/2.0`。
    - 纯 `docs:` / `chore:` / `ci:` / `build:` / `test:` 改动不触发新版本（changelog-types 配置为 hidden）。
 2. push 到 `release/2.0` 后,release-please 自动开一个「release PR」,标题形如 `chore(release): v2.0.2`,body 含从 commit log 生成的 CHANGELOG 段落。
-3. review release PR 的 CHANGELOG 内容,确认无误后**squash merge 合并该 PR**(release PR 固定用 squash 合并,合并 commit 即 `chore(release): vX.Y.Z` 单提交,release-please 据此识别不发新版本;功能/修复 PR 用 merge commit 保留原子提交,见 AGENTS.md「PR 与 issue 规范」)。
+3. review release PR 的 CHANGELOG 内容，并按「Release notes 改写规范」把新段落改写为功能聚合风格后**squash merge 合并该 PR**(release PR 固定用 squash 合并,合并 commit 即 `chore(release): vX.Y.Z` 单提交,release-please 据此识别不发新版本;功能/修复 PR 用 merge commit 保留原子提交,见 AGENTS.md「PR 与 issue 规范」)。
 4. 合并即触发:release-please 自动打 `vX.Y.Z` tag → 触发 `Deploy` workflow。
 5. `Deploy` 自动执行(8 job 流水线):detect 按侧变更检测 → prepare 解析版本 → build 构建镜像 → 迁移门禁 → 部署 api(含跨组件冒烟) → 部署 web → release(reload + 建 Release + 回写锚点);失败时 rollback 按侧自动回滚。
    - **单侧部署**:只部署实际变更侧(api/ 或 web/ 变更分别触发),未改动侧不重建容器;`docker-compose*.yml` 与 `scripts/**` 变更视为双侧。变更基线 = 各侧锚点(线上实际版本)。
@@ -21,6 +21,21 @@
 
 - violet 不做前后端独立版本(ADR-0003 明确不保留向后兼容),api 和 web 同 tag 发版,保证契约一致;但**部署按变更检测只部署实际变更侧**,未改动侧不重建容器。
 - 纯非部署物变更(docs/CI/README 等)不发部署,仅创建 GitHub Release。
+
+## Release notes 改写规范
+
+release-please 的 CHANGELOG 粒度 = commit：功能/修复 PR 用 merge commit 合并时,分支上每个发版型 commit 都平铺进段落（v2.4.0 曾 25 条流水账上线,读者视角全是噪音）。因此 **release PR 合并前,先把新段落改写为功能聚合风格**（在 release PR 分支上 commit,squash 合并后段落即为最终态;Release body 由 release-please 从 CHANGELOG 段落生成,自动一致）。
+
+改写原则:
+
+- **读者视角**:写用户可感知的能力,不写 commit 流水账。
+- **功能聚合**:同主题的多个 commit 合并为一条（如「图块交互全面升级:全屏模态查看、捏合缩放、导出 SVG/PNG」替代 N 条 diagram 前缀条目）。
+- **删开发中间态**:修本轮开发自引入问题的 commit、lint/CI/重构收尾等内部维护条目,一律不写入。
+- **保留 `**scope:**` 前缀与 `([#N](url))` issue 引用**:网站 /changelog 页依赖这两种格式渲染（scope 聚合分组、行尾引用小链接）;任务号 Tn/PRD 号等过程标注删去。
+- **删 commit hash 引用**:`([abc1234](commit-url))` 读者不关心,改写时直接删（后端渲染时本也会剥离）。
+- **保留版本标题行** `## [x.y.z](compare-url) (date)`:release-please 按此解析版本段。
+
+已发布版本的补改:release-please 不会重写已发布段落,可直接在 `release/2.0` 上改 CHANGELOG.md 历史段落,并同步 `gh release edit <tag> --notes-file <file>` 更新 GitHub Release body（网站 changelog 数据源是 Releases API,Redis 缓存 ~1h 后自动刷新）。
 
 ## 单组件回滚
 
