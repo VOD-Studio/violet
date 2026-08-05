@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.4.1](https://github.com/VOD-Studio/violet/compare/v2.4.0...v2.4.1) (2026-08-05)
+
+
+### 修复
+
+* **deploy:** 删除 web Dockerfile 对已移除 .npmrc 的 COPY 引用 ([#74](https://github.com/VOD-Studio/violet/issues/74)) ([1022a44](https://github.com/VOD-Studio/violet/commit/1022a448df41aebb488f6dc72eabe17ba8879bba))
+
 ## [2.4.0](https://github.com/VOD-Studio/violet/compare/v2.3.0...v2.4.0) (2026-08-05)
 
 
