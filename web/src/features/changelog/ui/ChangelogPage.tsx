@@ -158,7 +158,7 @@ export function ChangelogPage() {
 															return (
 																<div key={g.scope ?? "loose"}>
 																	{g.scope ? (
-																		<p className="mb-2 font-mono text-sm font-semibold text-foreground/60">
+																		<p className="mb-2 inline-flex items-center rounded-full bg-muted/70 px-2 py-0.5 text-xs font-semibold text-foreground/80">
 																			{g.scope}
 																		</p>
 																	) : null}
