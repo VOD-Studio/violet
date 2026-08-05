@@ -1,7 +1,7 @@
 # 博客项目 Makefile
 # 使用: make help
 
-.PHONY: help dev dev-docker dev-docker-app dev-docker-redis-app dev-docker-down dev-docker-logs up down restart logs \
+.PHONY: help dev docker-dev docker-dev-app docker-dev-redis-app docker-dev-down docker-dev-logs docker-dev-watch up down restart logs \
         migrate migrate-down migrate-version reset-db db-shell redis-shell \
         api api-build api-test api-lint sqlc wire \
         web web-build web-preview web-lint web-format web-typecheck \
@@ -24,20 +24,18 @@ help: ## 显示帮助信息
 dev: ## 一键启动完整开发环境
 	@./dev.sh
 
-dev-docker: ## 一键启动完整 Docker 开发环境 (PostgreSQL + Redis + API + Web 均运行于容器内)
+docker-dev: ## 一键启动完整 Docker 开发环境 (PostgreSQL + Redis + API + Web 均运行于容器内)
 	@if [ ! -f .env ]; then echo "⚠️  缺少 .env 文件，运行 make env 创建"; exit 1; fi
 	docker compose -f docker-compose.dev.yml up -d --build
 	@echo ""
 	@echo "Docker 开发环境已启动:"
 	@echo "  前端: http://localhost:5173"
 	@echo "  API:  http://localhost:9090"
-	@echo "  数据库: localhost:5432"
-	@echo "  Redis: localhost:6379"
 	@echo ""
-	@echo "正在跟踪服务日志 (按 Ctrl+C 退出日志跟踪)..."
-	docker compose -f docker-compose.dev.yml logs -f
+	@echo "监控文件变化中 (按 Ctrl+C 退出)..."
+	docker compose -f docker-compose.dev.yml watch --no-up
 
-dev-docker-app: ## 仅启动 Docker 前后端 (不启动数据库容器，连接宿主机/外部 DB)
+docker-dev-app: ## 仅启动 Docker 前后端 (不启动数据库容器，连接宿主机/外部 DB)
 	@if [ ! -f .env ]; then echo "⚠️  缺少 .env 文件，运行 make env 创建"; exit 1; fi
 	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} REDIS_HOST=$${DEV_REDIS_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml up -d --no-deps --build api web
 	@echo ""
@@ -45,25 +43,28 @@ dev-docker-app: ## 仅启动 Docker 前后端 (不启动数据库容器，连接
 	@echo "  前端: http://localhost:5173"
 	@echo "  API:  http://localhost:9090"
 	@echo ""
-	@echo "正在跟踪服务日志 (按 Ctrl+C 退出日志跟踪)..."
-	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} REDIS_HOST=$${DEV_REDIS_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml logs -f api web
+	@echo "监控文件变化中 (按 Ctrl+C 退出)..."
+	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} REDIS_HOST=$${DEV_REDIS_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml watch --no-up
 
-dev-docker-redis-app: ## 仅启动 Redis + 前后端容器 (不启动 PostgreSQL，PostgreSQL 连接宿主机/外部)
+docker-dev-redis-app: ## 仅启动 Redis + 前后端容器 (不启动 PostgreSQL，PostgreSQL 连接宿主机/外部)
 	@if [ ! -f .env ]; then echo "⚠️  缺少 .env 文件，运行 make env 创建"; exit 1; fi
 	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml up -d --no-deps --build redis api web
 	@echo ""
 	@echo "Docker 服务已启动 (包含 Redis 容器，跳过 PostgreSQL 容器):"
 	@echo "  前端: http://localhost:5173"
 	@echo "  API:  http://localhost:9090"
-	@echo "  Redis 容器: localhost:6379"
 	@echo "  PostgreSQL: 连接宿主机/外部数据库 (host.docker.internal)"
 	@echo ""
-	@echo "正在跟踪服务日志 (按 Ctrl+C 退出日志跟踪)..."
-	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml logs -f redis api web
-dev-docker-down: ## 停止 Docker 开发环境
+	@echo "监控文件变化中 (按 Ctrl+C 退出)..."
+	DEV_DATABASE_HOST=$${DEV_DATABASE_HOST:-host.docker.internal} docker compose -f docker-compose.dev.yml watch --no-up
+
+docker-dev-down: ## 停止 Docker 开发环境
 	docker compose -f docker-compose.dev.yml down
 
-dev-docker-logs: ## 查看 Docker 开发环境日志
+docker-dev-watch: ## 仅启动 watch 模式（容器需已由 make docker-dev 启动）
+	docker compose -f docker-compose.dev.yml watch --no-up
+
+docker-dev-logs: ## 查看 Docker 开发环境日志
 	docker compose -f docker-compose.dev.yml logs -f
 
 up: ## 启动 Docker 服务 (PostgreSQL + Redis)

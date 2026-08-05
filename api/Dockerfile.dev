@@ -1,4 +1,5 @@
-# Dockerfile.dev - 开发环境 Go API 容器配置 (支持 Air 热重载)
+# Dockerfile.dev - 开发环境 Go API 容器配置 (Air 热重载)
+# 源码由 docker compose watch sync 实时同步，依赖变更触发自动 rebuild
 FROM golang:1.26-alpine
 
 ENV GOPROXY=https://goproxy.cn,direct
@@ -13,6 +14,16 @@ RUN apk add --no-cache ca-certificates wget ffmpeg git
 RUN go install github.com/air-verse/air@latest
 
 WORKDIR /app
+
+# 先复制 go.mod/go.sum，利用 Docker 层缓存：依赖不变时跳过 download
+# 不用 BuildKit cache mount：/go/pkg/mod 的下载产物需持久化到镜像层，
+# 容器运行时 air 编译直接复用；cache mount 卸载后镜像内为空，会导致每次
+# 重建容器后首次编译全量重新下载依赖
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 复制源码（初始状态，后续由 docker compose watch sync 实时更新）
+COPY . .
 
 EXPOSE 9090
 
