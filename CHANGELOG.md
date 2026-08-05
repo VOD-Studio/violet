@@ -7,6 +7,41 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.4.0](https://github.com/VOD-Studio/violet/compare/v2.3.0...v2.4.0) (2026-08-05)
+
+
+### 新增
+
+* **diagram:** 全屏模态查看（T3 [#69](https://github.com/VOD-Studio/violet/issues/69)） ([d5113c6](https://github.com/VOD-Studio/violet/commit/d5113c67c3ebb53f48d92ed8f0b2f463e69255a2))
+* **diagram:** 加载占位与失败降级重设计 ([781553c](https://github.com/VOD-Studio/violet/commit/781553c5bc3728ddfa76b3fece554a695a061aa9))
+* **diagram:** 图块键盘可访问性与 aria-label 语义化（T4 [#71](https://github.com/VOD-Studio/violet/issues/71)） ([f4af833](https://github.com/VOD-Studio/violet/commit/f4af8334b4f26bf6518c5d64389f0f9f549a440a))
+* **diagram:** 移动端双指捏合缩放（T2 [#68](https://github.com/VOD-Studio/violet/issues/68)） ([e87def4](https://github.com/VOD-Studio/violet/commit/e87def423feae5f3b5bc5e006d114521bdd6710a))
+* **diagram:** 阅读端图块导出 SVG / PNG（T1 [#67](https://github.com/VOD-Studio/violet/issues/67)） ([5918d6f](https://github.com/VOD-Studio/violet/commit/5918d6fc3df93fdce3769caf0289efcf55ab5ed1))
+* **web:** 图块交互增强与图表渲染修复 ([898afca](https://github.com/VOD-Studio/violet/commit/898afca63197a5bcdc2cf8e5c936e12e53379705))
+* **web:** 图块缩放平移与交互开关（阅读端） ([54782f4](https://github.com/VOD-Studio/violet/commit/54782f4c7359ed565e99f377292518818b178c4c))
+
+
+### 修复
+
+* **diagram:** 修复 DOMPurify 剥除 foreignObject 导致五类图文字丢失 ([822322d](https://github.com/VOD-Studio/violet/commit/822322d82f3120c93ed2f8ea6bde49342f7ed212))
+* **diagram:** 全屏灯箱交互与渲染缺陷修复 ([ea3c6a6](https://github.com/VOD-Studio/violet/commit/ea3c6a6d27099b3daef802a516a820648943c785))
+* **diagram:** 加大占位高度缓解渲染撑开的布局跳动 ([0b0b356](https://github.com/VOD-Studio/violet/commit/0b0b356519f8a68147d95b0e38fe923657492d33))
+* **diagram:** 加载态容器结构稳定，消除撑开缩小跳变 ([6b6b2da](https://github.com/VOD-Studio/violet/commit/6b6b2daf0226f2104ff6c4e6767ef42ee58f9fca))
+* **diagram:** 图块批注拦截与失败占位样式修复 ([5cebe98](https://github.com/VOD-Studio/violet/commit/5cebe98f8b2173872a5798025372d94629b39876))
+* **diagram:** 暗色主题改用内置 dark 主题修复文字可读性 ([cf6bc9a](https://github.com/VOD-Studio/violet/commit/cf6bc9afaf58c795ce1551484e98be000a570cb2))
+* **diagram:** 灯箱遮盖层加深并为图垫背景色衬底 ([151af0b](https://github.com/VOD-Studio/violet/commit/151af0b02fdd8e705ff2ce291793ab96ad4b2bef))
+* **header:** nav 绝对定位消除左右抖动 ([c9941c6](https://github.com/VOD-Studio/violet/commit/c9941c6c3fe9e6c9286d89f06524737b18cc967a))
+* **header:** 背景常驻消除刷新非顶部位置背景丢失 ([bfaef66](https://github.com/VOD-Studio/violet/commit/bfaef666e675714746d4a8538dcc04a29e7fcebc))
+* **theme:** 修复多图块页面切换主题卡死 ([a394479](https://github.com/VOD-Studio/violet/commit/a394479a7e5bb0404d568da791e4c88fd939eb74))
+* **toc:** 内容异步撑开后重算激活标题 ([b8bbcbf](https://github.com/VOD-Studio/violet/commit/b8bbcbf0bbf3bed3224b9b90a268c6a4f5b76a2c))
+* **toc:** 将 "Contents" 文本翻译为 "目录" ([43817f7](https://github.com/VOD-Studio/violet/commit/43817f7d63500e9417bcce3fe5995addb34c17a8))
+* **web:** a11y lint 收尾——配置级 off useKeyWithClickEvents 与失效 ignore 清理 ([a5abd27](https://github.com/VOD-Studio/violet/commit/a5abd270c345b95e59f76e3fea268f0944c0f38a))
+* **web:** useCallback 包裹 toggleZen 修复 useExhaustiveDependencies ([fc9c323](https://github.com/VOD-Studio/violet/commit/fc9c32392e0b7639f18f9b80df5f6af0310e73a4))
+* **web:** 修复 biome lint 检查暴露的 a11y 与代码质量问题 ([39ac083](https://github.com/VOD-Studio/violet/commit/39ac083a804ad0427ebfdac68048b08d7d06367d))
+* **web:** 修复图块空白回归（加载态容器 ref 时序） ([c0788a0](https://github.com/VOD-Studio/violet/commit/c0788a040f195a06f44394cea284a2750171d9fb))
+* **web:** 图块加载期空白占位与复制按钮图标反馈 ([4e32c06](https://github.com/VOD-Studio/violet/commit/4e32c06521b629b827c1e3d3f1c14150becc412c))
+* **web:** 图块滚轮缩放不再带动页面滚动，容器撑满正文栏 ([1a1ef63](https://github.com/VOD-Studio/violet/commit/1a1ef631e1d42436f687529e70d2ef69a5858cc7))
+
 ## [2.3.0](https://github.com/VOD-Studio/violet/compare/v2.2.1...v2.3.0) (2026-08-03)
 
 
