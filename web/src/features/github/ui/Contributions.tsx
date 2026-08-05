@@ -213,7 +213,7 @@ const Contributions = ({ className }: ContributionsProps) => {
 
 	// data.contributions 可能为 null/undefined（后端返回空对象或字段缺失），
 	// 不能直接读 .length，用可选链防御，避免 SSR 崩溃。
-	if (!data || !data.contributions?.length) {
+	if (!data?.contributions?.length) {
 		return (
 			<Empty
 				title="NO CONTRIBUTIONS"

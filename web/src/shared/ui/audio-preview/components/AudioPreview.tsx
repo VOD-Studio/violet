@@ -18,8 +18,7 @@ export function AudioPreview({ url, name, className, autoPlay = false }: AudioPr
 	return (
 		<div
 			ref={player.containerRef}
-			className={`flex flex-col items-center gap-5 rounded-lg border bg-gradient-to-b from-card to-muted/30 p-8 focus:outline-none ${className ?? ""}`}
-			tabIndex={0}
+			className={`flex flex-col items-center gap-5 rounded-lg border bg-linear-to-b from-card to-muted/30 p-8 focus:outline-none ${className ?? ""}`}
 			role="region"
 			aria-label={name ?? "音频预览"}
 		>

@@ -104,6 +104,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 		>
 			{/* 顶部工具栏：对齐灯箱——渐变背景、左缩放控件、右关闭 */}
 			{/* 此 div 的 onClick 仅拦截事件冒泡（Esc 由外层 onKeyDown 处理） */}
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: 纯事件拦截容器（stopPropagation），无点击语义，键盘交互由内部按钮提供 */}
 			<div
 				className="absolute inset-x-0 top-0 z-50 flex items-center justify-between gap-2 bg-linear-to-b from-black/50 to-transparent p-2 sm:p-4"
 				onClick={(e) => e.stopPropagation()}
@@ -206,6 +207,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
                 transform，拖拽是纯平移（位图无损）所以流畅；若常设，缩放
                 会变成拉伸位图（SVG 放大发虚）。非拖拽时浏览器对 transform
                 重栅格化，矢量内容任意缩放保持清晰。 */}
+			{/* biome-ignore lint/a11y/useKeyWithClickEvents: 点击空白关闭是鼠标手势，键盘关闭由外层 onKeyDown(Escape) 承担 */}
 			<div
 				ref={containerRef}
 				className="relative flex-1 overflow-hidden overscroll-contain"
@@ -256,6 +258,7 @@ export function DiagramFullscreen({ svg, label, onClose, triggerRef }: DiagramFu
 						onPointerUp={handlePointerUp}
 						onPointerCancel={handlePointerUp}
 						onKeyDown={handleKeyDown}
+						// biome-ignore lint/a11y/noNoninteractiveTabindex: role=application 的可聚焦容器，onKeyDown 提供方向键缩放/平移键盘契约（T4 a11y）
 						tabIndex={0}
 						role="application"
 						aria-label="图表缩放区"

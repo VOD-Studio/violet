@@ -98,7 +98,7 @@ export function DiagramViewport({
 		<div ref={containerRef} className={`relative w-full ${className ?? ""}`}>
 			{/* 锁定态横向滚动（PRD-0005 决策），解锁态裁剪给 transform；
 			    overscroll-contain 阻断滚轮滚动链传播到页面（配合 hook 原生 passive:false 监听）。
-			    键盘缩放平移契约见 onKeyDown（T4 a11y）。 */}
+			键盘缩放平移契约见 onKeyDown（T4 a11y）。 */}
 			<div
 				className={
 					state.locked
@@ -107,6 +107,7 @@ export function DiagramViewport({
 				}
 				role="application"
 				aria-label="图表缩放区"
+				// biome-ignore lint/a11y/noNoninteractiveTabindex: role=application 的可聚焦容器，onKeyDown 提供方向键缩放/平移键盘契约（T4 a11y）
 				tabIndex={0}
 				onKeyDown={handleKeyDown}
 			>

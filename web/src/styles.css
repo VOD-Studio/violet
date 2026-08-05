@@ -382,6 +382,7 @@ html.theme-vt,
 html.theme-vt *,
 html.theme-vt *::before,
 html.theme-vt *::after {
+	/* biome-ignore lint/complexity/noImportantStyles: VT 期间必须禁用 transition，纯 CSS 替代 next-themes disableTransitionOnChange 的 JS 注入 */
 	transition: none !important;
 }
 

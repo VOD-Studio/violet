@@ -123,7 +123,6 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 		setZen(next);
 	};
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: toggleZen 依赖 zenMode，[zenMode] 足够
 	useEffect(() => {
 		if (!zenMode) return;
 		const onKey = (e: KeyboardEvent) => {
@@ -308,7 +307,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 			field: "title" | "excerpt" | "seo_title" | "seo_description",
 			value?: string,
 		) => {
-			if (!value || !value.trim()) return;
+			if (!value?.trim()) return;
 			if ((getValues(field) || "").trim()) return;
 			setValue(field, value, { shouldDirty: true });
 		};
