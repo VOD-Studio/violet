@@ -33,7 +33,7 @@ const AppProvider = ({ children }: AppProviderProps) => {
     return (
         <GoogleOAuthProvider clientId={googleClientId}>
             <QueryClientProvider client={clientQueryClient}>
-                <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange>
+                <ThemeProvider attribute="class" defaultTheme="system">
                     {children}
                     <Toaster />
                 </ThemeProvider>

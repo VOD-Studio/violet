@@ -3,10 +3,11 @@
  *
  * 覆盖：首加载占位面板（无 spinner）、成功渲染 SVG + container 挂 fade 类、
  * 失败错误提示行（流式融入：左细线 + 单行文案 + 折叠源码）、复制按钮反馈、
- * 主题 MutationObserver 触发重渲、aria-label 语义化。
+ * 主题订阅重渲（注册表统一 await）、aria-label 语义化。
  */
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { runThemeRerender } from "@/shared/lib/theme-rerender";
 import { DiagramBlock } from "../DiagramBlock";
 import { renderMermaid } from "../render-mermaid";
 
@@ -119,18 +120,19 @@ describe("DiagramBlock 复制按钮", () => {
     });
 });
 
-describe("DiagramBlock 主题 MutationObserver", () => {
-    it("documentElement.classList 变化触发重新渲染", async () => {
+describe("DiagramBlock 主题订阅重渲", () => {
+    it("主题切换经注册表触发重渲，且用新主题参数", async () => {
         render(<DiagramBlock format="mermaid" source="graph TD" />);
         await waitFor(() => {
             expect(vi.mocked(renderMermaid)).toHaveBeenCalledTimes(1);
         });
 
-        // 模拟切暗色主题：注入 dark class
-        document.documentElement.classList.add("dark");
+        // 模拟主题切换 VT update 回调的行为：apply 后 await 注册表（target 显式传）
+        await runThemeRerender("dark");
 
         await waitFor(() => {
             expect(vi.mocked(renderMermaid)).toHaveBeenCalledTimes(2);
         });
+        expect(vi.mocked(renderMermaid)).toHaveBeenLastCalledWith("graph TD", "dark");
     });
 });

@@ -375,6 +375,17 @@ html.theme-vt * {
   view-transition-name: none !important;
 }
 
+/* 主题切换 VT 期间禁用 CSS transition：替代 next-themes disableTransitionOnChange
+   的 JS 实现（注入 style + 强制 reflow，在 VT update 里是三次全文档重算）。
+   纯 CSS 零 reflow，仅覆盖 VT 窗口；非 VT 降级路径（Firefox）允许元素自然渐变。 */
+html.theme-vt,
+html.theme-vt *,
+html.theme-vt *::before,
+html.theme-vt *::after {
+  transition: none !important;
+}
+
+
 .prose {
   line-height: 1.75;
   /*

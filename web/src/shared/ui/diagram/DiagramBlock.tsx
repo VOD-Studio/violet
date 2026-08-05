@@ -23,7 +23,8 @@
  * 占满父宽。成功态 SVG 居中改在内层 flex wrapper 内部，保留视觉。
  */
 import { AnimatePresence } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { subscribeThemeRerender } from "@/shared/lib/theme-rerender";
 import { cn } from "@/shared/lib/utils";
 import { FencedCodeBlock } from "@/shared/ui/markdown-preview/components/CodeBlock";
 import { DiagramFullscreen } from "./DiagramFullscreen";
@@ -64,40 +65,48 @@ export function DiagramBlock({ format, source }: DiagramBlockProps) {
      *   进出 null 不会重新挂载类，动画不重播。
      */
     const [hasRendered, setHasRendered] = useState(false);
-    const [theme, setTheme] = useState<DiagramTheme>(readCurrentTheme);
-    // 主题跟随：mermaid 颜色烘焙进 SVG，切主题必须重新 render。
-    // 监听 <html>.classList（next-themes 在此注入 dark），参照 particle-field 先例。
-    useEffect(() => {
-        const observer = new MutationObserver(() => {
-            const next = readCurrentTheme();
-            setTheme((prev) => (prev !== next ? next : prev));
-        });
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class"],
-        });
-        return () => observer.disconnect();
-    }, []);
+    /** 当前 SVG 对应的主题（首渲染取当前主题；之后由主题订阅驱动更新） */
+    const themeRef = useRef<DiagramTheme>(readCurrentTheme());
+    /** 渲染序号：每渲一次递增，旧序号结果丢弃（防竞态写入过期 SVG） */
+    const renderSeqRef = useRef(0);
 
-    // 渲染：source / theme 任一变化即重新 renderMermaid，清理后 SVG 写入容器。
-    // 上一轮未决的 promise 由 cancelled 标志作废，避免竞态写入过期 SVG。
+    // 渲染：source 变化或主题切换时重新 renderMermaid，清理后 SVG 写入容器。
     // 不清空 containerRef：重渲染（主题切换）时保留上一帧 SVG，新 SVG 就绪后覆盖，
     // 避免切主题瞬间整块变白。
-    useEffect(() => {
-        let cancelled = false;
-        setResult(null);
-        renderMermaid(source, theme).then((r) => {
-            if (cancelled) return;
+    const doRender = useCallback(
+        async (t: DiagramTheme) => {
+            const seq = ++renderSeqRef.current;
+            setResult(null);
+            const r = await renderMermaid(source, t);
+            if (seq !== renderSeqRef.current) return;
             setResult(r);
             if ("svg" in r) {
                 setHasRendered(true);
                 if (containerRef.current) containerRef.current.innerHTML = r.svg;
             }
-        });
-        return () => {
-            cancelled = true;
-        };
-    }, [source, theme]);
+        },
+        [source],
+    );
+
+    // 首渲染与 source 变化（用当前主题）
+    useEffect(() => {
+        void doRender(themeRef.current);
+    }, [doRender]);
+
+    // 主题跟随：mermaid 颜色烘焙进 SVG，切主题必须重新 render。
+    // 各自治 MutationObserver 会让重渲落在 VT 动画期间，DOM 写入与动画互相放大
+    // （实测 VT finished 从 ~500ms 拖到 9.5s）。改注册到 theme-rerender 表，
+    // 由主题切换的 VT update 回调统一 await——VT 等重渲完才捕获新帧，
+    // 动画期间 DOM 零变化（对齐 rua.plus 的 U/Be 模式）。
+    useEffect(
+        () =>
+            subscribeThemeRerender(async (next) => {
+                if (next === themeRef.current) return;
+                themeRef.current = next;
+                await doRender(next);
+            }),
+        [doRender],
+    );
 
     const initialLoading = result === null && !hasRendered;
     const errored = result !== null && !("svg" in result);

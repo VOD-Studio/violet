@@ -1,6 +1,7 @@
-import { animateThemeRipple } from "@shared/ui/theme-transition";
+import { animateThemeRipple, applyThemeClass } from "@shared/ui/theme-transition";
 import { useTheme } from "next-themes";
 import { useCallback } from "react";
+import type { TargetTheme } from "@/shared/lib/theme-rerender";
 import type { ThemeOption } from "./types";
 
 /**
@@ -28,7 +29,25 @@ export function useThemeSwitcher() {
             }
             const px = pointer?.clientX ?? window.innerWidth / 2;
             const py = pointer?.clientY ?? window.innerHeight / 2;
-            animateThemeRipple({ px, py }, () => setTheme(target));
+            // target 为 system 时解析出实际主题：图块重渲与 class 切换只要 dark/light 二态
+            const resolvedTarget: TargetTheme =
+                target === "system"
+                    ? window.matchMedia("(prefers-color-scheme: dark)").matches
+                        ? "dark"
+                        : "light"
+                    : target;
+            // next-themes setTheme 放 VT update 里会卡死（见 theme-transition 注释）：
+            // update 里手动切 class，finished 后再 setTheme 同步状态与存储
+            const tr = animateThemeRipple(
+                { px, py },
+                () => applyThemeClass(resolvedTarget),
+                resolvedTarget,
+            );
+            if (tr) {
+                tr.finished.finally(() => setTheme(target));
+            } else {
+                setTheme(target);
+            }
         },
         [theme, setTheme],
     );
