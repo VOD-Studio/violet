@@ -1,4 +1,5 @@
 import { formatDate } from "@features/about/model/format";
+import { cleanItem } from "@features/changelog/model/clean-item";
 import { useReleases } from "@shared/api/releases";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { Link } from "@tanstack/react-router";
@@ -44,7 +45,10 @@ export function ChangelogSection(_: AboutSectionProps) {
 	if (!data || data.releases.length === 0) return null;
 
 	const latest = data.releases[0];
-	const preview = latest.categories.flatMap((c) => c.items).slice(0, PREVIEW_ITEMS);
+	const preview = latest.categories
+		.flatMap((c) => c.items)
+		.slice(0, PREVIEW_ITEMS)
+		.map((item) => cleanItem(item).text);
 
 	return (
 		<section className="mx-auto w-full max-w-5xl px-6 py-14">
@@ -76,12 +80,12 @@ export function ChangelogSection(_: AboutSectionProps) {
 					</div>
 					{preview.length > 0 ? (
 						<ul className="mt-3.5 space-y-2">
-							{preview.map((item, idx) => (
+							{preview.map((text, idx) => (
 								<li
 									key={idx}
 									className="truncate text-[15px] leading-7 text-foreground/75"
 								>
-									{item.replace(/\*\*/g, "").replace(/^[*_-]\s*/, "")}
+									{text}
 								</li>
 							))}
 						</ul>
