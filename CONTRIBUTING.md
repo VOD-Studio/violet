@@ -1,6 +1,6 @@
 # 贡献指南
 
-感谢你对 violet 项目的关注！本文档描述参与开发的流程与规范。
+感谢你对 violet 项目的关注！本文档描述参与开发的流程与规范。开发主分支为 **`release/2.0`**。
 
 ## 开发环境搭建
 
@@ -12,138 +12,112 @@ cd violet
 # 2. 安装依赖
 make install          # 后端 go mod download + 前端 pnpm install
 
-# 3. 初始化环境
-make env          # 复制 .env.example 到 .env，修改敏感配置
-make setup        # 启动数据库 + 迁移
+# 3. 初始化环境（复制根 .env 模板；api/config.yaml 已入库无需复制）
+make env
 
-# 4. 启用 Git 钩子 (代码格式检查)
+# 4. 启动数据库 + 迁移
+make setup
+
+# 5. 启用 Git 钩子（提交前格式检查）
 ./scripts/install-hooks.sh
 ```
 
-## 分支与提交规范
+## 分支规范
 
-### 分支命名
-- `feat/<scope>-<description>`: 新功能，如 `feat/comment-reactions`
-- `fix/<scope>-<description>`: Bug 修复
-- `refactor/<scope>-<description>`: 重构
-- `docs/<description>`: 文档
+每个新任务 / feature 先从 `release/2.0` 新建分支完成，不在 `release/2.0` 上直接开发。
 
-### Commit Message 格式
+格式：**`<type>/<scope>-<简述>`**
 
-commit message 无强制格式，请清晰描述本次变更的动机与内容。建议首行为简短摘要，空一行后写详细说明。
+- **type** 对齐 Conventional Commits：`feat` / `fix` / `chore` / `docs` / `refactor` / `style` / `test` / `perf` / `hotfix`
+- **scope** 指向最内层模块：前端（`posts`/`editor`/`auth`/`comments`）、后端（`handler`/`service`/`domain`/`repository`）、或文件 / 区域名（`readme`/`ci`/`deps`）
+- 全小写，`/` 分段，`-` 连词；无空格、无大写、无特殊字符
 
-**示例**：
-```
-添加 OAuth 登录
+✅ 正确：`feat/post-slug-pinyin`、`fix/handler-search-encoding`、`chore/deps-bump`
+❌ 错误：`update`、`Fix/Login`、`new-feature`
 
-集成 Google OAuth，登录后写入 user 表并创建会话。
-```
+## 提交规范（Conventional Commits）
 
-> `pre-commit` 钩子会检查代码格式（Go gofmt、前端 biome），不影响 commit message 内容。
+提交信息使用**中文**，严格遵循 Conventional Commits 格式，如 `feat(api): 添加新功能`：
+
+- **subject 只概括一个主要变更**：祈使句、简洁（50 字符内为宜）、禁止用 `+`/`、` 堆砌多要点
+- **scope 指向最小改动单元**：`fix(handler): 搜索接口 URL 编码修复` ✅，`fix(api/handler): ...` ❌（api 是冗余前缀）
+- **body 用 bullet points 列出改动事实**，不写散文；决策过程写在 PR 描述或 ADR
+- **前后端必须分离提交**：同时改到 `api/` 和 `web/` 时拆成多个 commit
+- **公共组件倾向单独提交**：`web/src/shared/ui` 下被多个 feature 引用的改动，能独立 revert 时单独提交
 
 ## 代码规范
 
 ### 后端 (Go)
-- 格式化：`gofmt -w .`（pre-commit 强制）
-- 检查：`go vet ./...`（`make api-lint`）
-- 测试：`go test ./...`
-- 架构：遵循 DDD 分层（P1 重构进行中，新代码走 `domain/application/infrastructure/interfaces`）
-- 注释：导出函数/类型必须有中文 doc comment
+
+- 检查 / 测试：`make api-lint`（golangci-lint）、`make api-test`
+- **架构**：新代码走 DDD 四层 `internal/{domain,application,infrastructure,interfaces}`；旧分层 `internal/{handler,service,repository}` 迁移中，**不要在其中新增模块**。领域逻辑进 domain，用例编排进 application，基础设施细节进 infrastructure
+- **注释**：只写代码无法自表达的信息（非显然陷阱、业务规则、魔法值理由）；领域实体/值对象的每个命名字段补中文注释；不要复读签名、不要写设计论证
 
 ### 前端 (TypeScript)
-- 格式化 + 检查：`npx @biomejs/biome check --write .`（`make web-lint`）
-- 类型检查：`npx tsc --noEmit`（strict 模式已启用）
-- 构建：`npm run build`
-- 架构：feature-sliced（每个业务模块自带 `api.ts` + `queryKeys.ts` + `types.ts`）
+
+- 包管理器：**pnpm**，禁止 npm / yarn
+- 检查 / 测试：`make web-lint`（Biome）、`make web-typecheck`（tsc）、`make web-test`（Vitest）；`make web-format` 自动修复
+- **架构**：Feature-Sliced Design（`shared` → `entities` → `features` → `widgets`）。业务逻辑不进 `shared/`；跨 feature 复用件先提到 `shared/` 落定归属再接新 feature
+- 依赖方向：`shared` 不反向依赖 `features`
 
 ### 通用
-- 缩进：Go 用 tab，TS/JS/YAML 用 2 空格（详见 `.editorconfig`）
-- 换行符：LF
-- 文件末尾保留空行
+
+- 缩进：tab（Go 与前端统一 tab 4，见 `.editorconfig`）；YAML 与根级 JSON 用 2 空格
+- 换行符：LF，文件末尾保留空行
+- 配置/文档改动若涉及配置架构，遵循 Grafana 模式：`api/config.yaml` 入库为权威文档，敏感值一律走根 `.env`
 
 ## 提交 PR 流程
 
-1. 从 `main` 创建特性分支
+1. 从 `release/2.0` 创建特性分支（见上）
 2. 开发并确保本地检查通过：
    ```bash
    make api-lint && make web-lint && make web-typecheck
-   go test ./...
+   make api-test && make web-test
    ```
-3. 提交，commit message 清晰描述变更即可（无格式强制）
-4. 推送并创建 PR，描述：
-   - 变更内容与动机
-   - 是否有破坏性变更
-   - 测试情况
-5. 等待 CI 通过 + Code Review
+3. 原子提交（见提交规范），推送分支
+4. 创建 PR，固定配齐：
+   - **base**：`release/2.0`（不是 `main`）
+   - **assignees**：`@me`
+   - **reviewers**：仓库全部 collaborator（`DefectingCat`、`xunrua`、`JingpengZhang`）
+   - **labels**：默认不加；仅当性质明确匹配内置语义时才加（纯文档 `documentation`、修 bug `bug`）
+   - 描述：变更内容与动机、破坏性变更、测试情况
+5. 等待 CI 通过 + Code Review；合并使用 **merge commit**（保留原子 commit 粒度），合并后自动删除分支
+
+## 发版流程（release-please 自动化）
+
+violet 的发版由 **release-please** 全自动驱动，本地不需要任何发版命令：
+
+```
+push 发版型 commit 到 release/2.0
+  → CI 通过
+  → release-please 自动开 release PR（含 CHANGELOG 更新与版本号推导）
+  → 维护者 review 合并 release PR
+  → 自动打 tag → deploy.yml 自动部署到 xunrua.top
+```
+
+- **发版型 commit**：`feat` / `fix` / `perf` / `refactor` 等，才会触发新版本
+- **不发版**：`docs` / `chore` / `ci` / `build` / `test` 类型不触发（changelog-sections 配置为 hidden，全部 hidden 时跳过开 PR）
+- **提交信息质量直接决定 CHANGELOG 可读性**：一个 commit 一件事、scope 写具体模块
+- 部署链路有迁移门禁、健康检查、失败自动回滚保护；细节见 [发布手册](docs/deploy/release-runbook.md)
+- release-please 故障需应急时：`git tag vX.Y.Z && git push origin vX.Y.Z` 直接触发部署
 
 ## 测试要求
 
-- 新功能必须附带单元测试
-- Bug 修复应包含回归测试
-- 后端测试在 `api/go test ./...`
-- 前端测试（P2 引入 Vitest）
+- 新功能必须附带单元测试；Bug 修复应包含回归测试
+- 后端：`make api-test`（domain 层聚合根不变量 + application 层用例编排）
+- 前端：`make web-test`（Vitest + React Testing Library）
+- 后端 DDL 类改动（uuid/jsonb 等强类型列）建议跑真实 PostgreSQL 端到端验证
 
 ## 目录约定
 
 新增功能时参考现有目录结构。**特别提醒**：
 
-- 后端新代码应放在 DDD 四层结构下（`internal/domain/<module>/`、`internal/application/<module>/` 等）
-- 旧分层 `internal/{handler,service,repository}` 正在逐步废弃，不要在其中新增模块
-- 前端业务模块放在 `src/features/<module>/`，跨功能复用组件放 `src/components/`
+- 后端新代码放在 DDD 四层结构下（`internal/domain/<module>/`、`internal/application/<module>/` 等）
+- 前端业务模块放在 `src/features/<module>/`，跨功能复用组件放 `src/shared/ui/`
+- 公共件是否归 `shared/` 看「是否被多个 feature 引用」，而非位置
 
 ## 问题与反馈
 
 - 发现 Bug：创建 Issue，附复现步骤与日志
 - 新功能建议：创建 Issue 描述使用场景
 - 安全漏洞：请勿公开 Issue，私信维护者
-
-## 发版流程
-
-### Conventional Commits 是 CHANGELOG 的数据源
-
-每次发版由 [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version)
-从 `feat` / `fix` / `refactor` / `perf` / `docs` / `style` 类型的 commit 自动生成 CHANGELOG 条目。
-因此**提交信息的质量直接决定 CHANGELOG 的可读性**：
-
-- ✅ 一个 commit 一件事，标题清晰：`feat(admin): 接入操作日志页`
-- ✅ scope 写具体模块：`api/comment`、`web/admin`，而不是笼统的 `api` / `web`
-- ❌ 散文式标题：`修复编辑器的一些问题`
-- ❌ 一个 commit 混多个职责：发版时无法归类
-
-`chore` / `ci` / `build` / `test` 类型的 commit 不进入 CHANGELOG。
-
-### 发版命令
-
-在 `release/2.0` 分支、工作区干净、与 origin 同步时：
-
-```bash
-make release v=v2.0.1      # 显式指定版本（推荐用于里程碑版本）
-make release-patch          # 从最近 tag 自动 +1（v2.0.1 → v2.0.2）
-make release-minor          # 自动 +1（v2.0.1 → v2.1.0）
-make release-major          # 自动 +1（v2.0.1 → v3.0.0）
-
-# 预览不执行
-make release v=v2.0.1 -- --dry-run    # 不太直观，推荐直接：
-./scripts/release.sh --version v2.0.1 --dry-run
-```
-
-发版脚本会依次做：前置校验（工作区干净 / 分支正确 / 与 origin 同步 / tag 不重复 /
-HEAD 上 CI 通过）→ 生成 CHANGELOG → 打 tag → 提交版本 commit → **二次确认** →
-`git push --follow-tags`。
-
-### push 即部署
-
-push tag 会立即触发 `.github/workflows/deploy.yml`，部署到 rua 生产环境。
-deploy.yml 有迁移门禁、健康检查、失败自动回滚保护。
-
-### 回滚
-
-```bash
-make rollback v=v2.0.0      # 用 gh CLI 手动触发 deploy.yml 回滚到历史 tag（复用本地缓存镜像）
-```
-
-### 首次发版特殊处理
-
-仓库尚无 tag 时，首次 `make release v=v2.0.0` 会用 `--first-release` 跳过 CHANGELOG
-自动生成（避免把全部历史 commit 倒进一个段），CHANGELOG 的 2.0.0 条目由人工梳理。
-之后的发版才走自动生成。

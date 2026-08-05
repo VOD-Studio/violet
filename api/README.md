@@ -20,12 +20,12 @@ Go 后端服务，为博客平台提供 RESTful API。采用 **DDD 四层架构*
 ## 快速开始
 
 ```bash
-# 1. 启动基础设施（PostgreSQL + Redis）
-make up
+# 1. 初始化环境（复制根 .env 模板；api/config.yaml 已入库自带注释，无需复制）
+make env
 
-# 2. 复制配置
-cp config.example.yaml config.yaml
-cp .env.example .env
+# 2. 启动基础设施（PostgreSQL + Redis）并迁移
+make up
+make migrate
 
 # 3. 启动 API（热重载）
 make api
@@ -34,7 +34,7 @@ make api
 或从项目根目录一键初始化：
 
 ```bash
-make setup   # 复制配置、生成密钥、启动数据库、执行迁移
+make setup   # 复制环境变量、启动数据库、执行迁移
 make api     # 启动 API
 ```
 
@@ -117,6 +117,10 @@ api/
 | **settings** | settings | settings | 站点配置（key-value） |
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
+| **mcp** | — | mcp | MCP 服务（写作/评论检索/RSS 抓取，按 PAT scope 拆分） |
+| **system** | — | system | 系统级设置（site settings） |
+| **coderunner** | coderunner | coderunner | 可运行代码块沙箱执行（复用 yggdrasil runner 镜像） |
+| **subscription** | subscription | subscription | RSS 订阅源管理、抓取与转载 |
 | **audit** | audit | audit | 操作日志记录与查询 |
 | **stats** | stats | stats | 仪表盘统计聚合 |
 | **useradmin** | useradmin | useradmin | 用户管理（CRUD/角色/状态/批量操作） |
@@ -131,7 +135,7 @@ api/
 |------|---------------------|------|------|
 | `auth/` | `SessionStore`, `CodeStore` | RedisSessionStore, RedisCodeStore | session 存储、验证码存储 |
 | `email/` | `EmailSender` | Sender (Resend) | 验证码/密码重置邮件 |
-| `eventbus/` | `EventBus` | Noop / InMemory | 领域事件总线（当前以 Noop 占位） |
+| `eventbus/` | `EventBus` | Noop / InMemory | 领域事件总线（audit 订阅者事件驱动写日志） |
 | `github/` | `GitHubProvider` | Adapter | GitHub GraphQL + REST API |
 | `music/` | `MusicProvider` | Provider | 网易云解析（kite SDK） |
 | `storage/` | `ChunkStorage` | LocalStorage | 分片文件存储、缩略图生成（imaging + ffmpeg） |
@@ -166,7 +170,7 @@ make wire
 
 ## 如何新增一个模块
 
-以新增 `newsletter`（订阅）模块为例：
+以新增 `subscription`（RSS 订阅）模块为例（仓库已有同名模块，可按此模式扩展）：
 
 ### 1. domain 层
 
@@ -269,7 +273,13 @@ make help         # 查看所有命令
 
 ## 配置
 
-配置文件 `config.yaml`（参考 `config.example.yaml`），关键字段：
+配置架构遵循 Grafana 模式：
+
+- **`config.yaml`（入库）**：全部配置键 + 非敏感默认值 + 注释，配置的权威文档，随镜像分发
+- **根 `.env`（不入库）**：密钥与敏感值，唯一敏感来源（参考 `.env.example`）
+- **优先级**：进程环境变量 > 根 `.env` > `config.yaml` > 代码默认值
+
+启动时 API 会打印每个键的生效值与来源（env / config.yaml / default）。
 
 | 配置项 | 说明 |
 |--------|------|
@@ -283,7 +293,7 @@ make help         # 查看所有命令
 | `superadmin.*` | 初始超级管理员账户 |
 | `bilibili_*` | B站表情导入 Cookie |
 
-环境变量覆盖配置（见 `.env.example`）。
+> 各键上方的行内注释标注对应的 env 覆盖名；敏感值一律走环境变量，不写入 `config.yaml`。
 
 ## 测试
 

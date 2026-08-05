@@ -96,11 +96,13 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 |------|------|
 | `/` | 首页/文章列表 |
 | `/blog/:slug` | 文章详情 |
+| `/announcements/:id` | 公告详情 |
 | `/projects` | 项目展示 |
 | `/profile` | 个人资料 |
 | `/login`, `/register`, `/forgot-password` | 认证 |
-| `/admin/*` | 后台管理 |
-| `/announcement-lab`, `/theme-lab` | 实验/演示页面 |
+| `/changelog` | 更新日志 |
+| `/announcement-lab` | 公告实验页 |
+| `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/审计日志/MCP/订阅/设置等） |
 
 路由配置入口：`src/router.tsx`。根布局：`src/routes/__root.tsx`。
 
@@ -164,13 +166,13 @@ make web-build
 make build          # 前后端一起构建
 ```
 
-生产环境使用 `server.mjs` 作为 Node.js SSR 入口，配合 `nginx/` 反代。详见根目录 README「生产部署」章节。
+生产环境使用 `server.mjs`（srvx 桥接）作为 Node.js SSR 入口，经外部 nginx-proxy 反代对外提供服务（线上 xunrua.top）。详见根目录 README「生产部署」章节。
 
 ## 代码规范
 
-- 缩进：2 空格
+- 缩进：tab（biome.json / .editorconfig 统一为 tab 4）
 - 换行符：LF
-- 格式化 + Lint：Biome（`pnpm check`）
+- 格式化 + Lint：Biome（`pnpm check`，`make web-format` 可自动修复）
 - 类型检查：`pnpm typecheck`（strict 模式）
 
 Git 钩子会在提交前检查前端 biome 规则，可通过根目录 `scripts/install-hooks.sh` 安装。
