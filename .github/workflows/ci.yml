@@ -81,6 +81,9 @@ jobs:
   # ============================================================
   frontend:
     name: Frontend (React)
+    permissions:
+      actions: write   # buildx type=gha 缓存读写;同 backend job
+      contents: read
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -115,6 +118,20 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 镜像构建验证:Dockerfile COPY 引用失效文件、lockfile 与依赖漂移等问题
+      # 在此拦截,避免流入生产部署才暴露
+      - name: Docker 镜像构建验证
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          push: false
+          tags: violet-web:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ============================================================
   # 依赖漏洞扫描
