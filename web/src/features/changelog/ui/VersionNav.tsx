@@ -1,4 +1,5 @@
 import { cn } from "@shared/lib/utils";
+import { useEffect, useRef } from "react";
 
 /** 版本导航项（tag + 锚点 id） */
 export interface VersionNavItem {
@@ -26,6 +27,16 @@ export const versionAnchorId = (tag: string) => `rel-${tag}`;
  * （top-16 贴全站 Header 下沿，Header 为 sticky h-16）。
  */
 export function VersionNav({ items, current, activeId }: VersionNavProps) {
+	const mobileBarRef = useRef<HTMLDivElement>(null);
+
+	// scroll-spy 激活远端版本时，移动端 chip 可能还在横向可视区外——自动滚入居中
+	useEffect(() => {
+		if (!activeId) return;
+		mobileBarRef.current
+			?.querySelector(`[data-anchor="${activeId}"]`)
+			?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+	}, [activeId]);
+
 	const jump = (tag: string) => {
 		document
 			.getElementById(versionAnchorId(tag))
@@ -79,13 +90,14 @@ export function VersionNav({ items, current, activeId }: VersionNavProps) {
 				aria-label="版本目录"
 				className="sticky top-16 z-40 -mx-6 mb-10 overflow-x-auto border-b border-edge-hairline bg-background/80 backdrop-blur-md lg:hidden"
 			>
-				<div className="flex gap-1.5 px-6 py-2.5">
+				<div ref={mobileBarRef} className="flex gap-1.5 px-6 py-2.5">
 					{items.map(({ tag }) => {
 						const active = activeId === versionAnchorId(tag);
 						return (
 							<button
 								key={tag}
 								type="button"
+								data-anchor={versionAnchorId(tag)}
 								onClick={() => jump(tag)}
 								className={cn(
 									"shrink-0 rounded-full px-3 py-1 font-mono text-xs transition-colors",
