@@ -19,8 +19,11 @@ v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/go
 
 ### 新增
 
-* **图块:** 交互全面升级：全屏模态查看 ([#69](https://github.com/VOD-Studio/violet/issues/69))、移动端双指捏合缩放 ([#68](https://github.com/VOD-Studio/violet/issues/68))、阅读端导出 SVG / PNG ([#67](https://github.com/VOD-Studio/violet/issues/67))、缩放平移与交互开关
-* **图块:** 加载占位与失败降级重设计，消除渲染撑开的布局跳动
+* **图块:** 全屏模态查看 ([#69](https://github.com/VOD-Studio/violet/issues/69))
+* **图块:** 移动端双指捏合缩放 ([#68](https://github.com/VOD-Studio/violet/issues/68))
+* **图块:** 阅读端导出 SVG / PNG ([#67](https://github.com/VOD-Studio/violet/issues/67))
+* **图块:** 缩放平移与交互开关
+* **图块:** 加载占位与失败降级重设计
 * **图块:** 键盘可访问性与 aria-label 语义化 ([#71](https://github.com/VOD-Studio/violet/issues/71))
 
 
@@ -28,7 +31,7 @@ v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/go
 
 * **页头:** 导航绝对定位消除左右抖动
 * **页头:** 背景常驻修复刷新后非顶部位置背景丢失
-* \*\*主题:\*\* 多图块页面切换主题时卡死
+* **主题:** 多图块页面切换主题时卡死
 * **目录:** 异步内容撑开后重算激活标题
 * **目录:** "Contents" 汉化为"目录"
 
