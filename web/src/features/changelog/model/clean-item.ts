@@ -86,20 +86,16 @@ export interface ItemGroup {
 /**
  * groupItems - 同分类条目按 scope 聚合。
  *
- * 只有同 scope 出现 ≥2 次才成组（v2.4.0「新增」7 条里 diagram×5、web×2），
- * 单例 scope 挂前缀反而是噪音，剥掉与无 scope 条目一起平铺。
- * 组按 scope 首次出现排序，散条目组固定在最后。
+ * 所有非空 scope 都成组，无 scope 条目进散条目组；
+ * 组按 scope 首次出现排序，散条目组固定在最后。单例 scope 也成组——
+ * 前缀只出现一次时没有重复噪音，剥掉反而丢失模块信息。
  */
 export function groupItems(items: CleanItem[]): ItemGroup[] {
-	const counts = new Map<string, number>();
-	for (const it of items) {
-		if (it.scope) counts.set(it.scope, (counts.get(it.scope) ?? 0) + 1);
-	}
 	const groups: ItemGroup[] = [];
 	const byScope = new Map<string, ItemGroup>();
 	const loose: CleanItem[] = [];
 	for (const it of items) {
-		if (it.scope && (counts.get(it.scope) ?? 0) >= 2) {
+		if (it.scope) {
 			let g = byScope.get(it.scope);
 			if (!g) {
 				g = { scope: it.scope, items: [] };

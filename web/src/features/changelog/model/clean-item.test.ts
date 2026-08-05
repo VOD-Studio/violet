@@ -93,7 +93,7 @@ describe("cleanItem", () => {
 });
 
 describe("groupItems", () => {
-	it("同 scope ≥2 聚合成组，单例与无 scope 进散条目组", () => {
+	it("同 scope 聚合成组，无 scope 进散条目组", () => {
 		const items = [
 			"**diagram:** a",
 			"**diagram:** b",
@@ -102,10 +102,18 @@ describe("groupItems", () => {
 			"无 scope 条目",
 		].map(cleanItem);
 		const groups = groupItems(items);
-		expect(groups.map((g) => g.scope)).toEqual(["diagram", null]);
+		expect(groups.map((g) => g.scope)).toEqual(["diagram", "web", "deploy", null]);
 		expect(groups[0].items.map((i) => i.text)).toEqual(["a", "b"]);
-		// 单例 web/deploy 被剥前缀进散组，保持原顺序
-		expect(groups[1].items.map((i) => i.text)).toEqual(["c", "d", "无 scope 条目"]);
+		expect(groups[1].items.map((i) => i.text)).toEqual(["c"]);
+		expect(groups[2].items.map((i) => i.text)).toEqual(["d"]);
+		expect(groups[3].items.map((i) => i.text)).toEqual(["无 scope 条目"]);
+	});
+
+	it("单例 scope 也成组（不剥前缀丢模块信息）", () => {
+		const items = ["**主题:** 多图块页面切换主题时卡死"].map(cleanItem);
+		const groups = groupItems(items);
+		expect(groups.map((g) => g.scope)).toEqual(["主题"]);
+		expect(groups[0].items[0].text).toBe("多图块页面切换主题时卡死");
 	});
 
 	it("组按 scope 首次出现排序", () => {

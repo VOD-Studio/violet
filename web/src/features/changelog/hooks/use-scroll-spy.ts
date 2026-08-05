@@ -17,10 +17,7 @@ export function useScrollSpy(ids: string[]): string | null {
 		let raf = 0;
 		const update = () => {
 			// 滚到底：最后一个版本段落再矮也必须可选中
-			if (
-				window.scrollY + window.innerHeight >=
-				document.documentElement.scrollHeight - 8
-			) {
+			if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 8) {
 				setActive(ids[ids.length - 1]);
 				return;
 			}
