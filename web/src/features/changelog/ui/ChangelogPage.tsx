@@ -91,7 +91,7 @@ export function ChangelogPage() {
 			<div className="lg:grid lg:grid-cols-[10rem_minmax(0,1fr)] lg:gap-16">
 				<VersionNav items={navItems} current={current} activeId={activeId} />
 
-				<div className="relative space-y-14 border-l border-edge-hairline pl-10">
+				<div className="relative space-y-14 lg:border-l lg:border-edge-hairline lg:pl-10">
 					{data.releases.map((release) => {
 						const isCurrent = release.tag === current;
 						return (
@@ -101,13 +101,13 @@ export function ChangelogPage() {
 								// 吸顶 Header(h-16) + 移动端 chip 条：锚点跳转需留出遮挡高度
 								className="relative scroll-mt-32 lg:scroll-mt-24"
 							>
-								{/* 时间线节点：当前版本实心强调，历史版本淡化 */}
+								{/* 时间线节点：当前版本实心强调，历史版本淡化；移动端无时间线不渲染 */}
 								<span
-									className={`absolute top-2 -left-11.75 size-3.5 rounded-full border-2 border-background ${
+									className={`absolute top-2 -left-11.75 hidden size-3.5 rounded-full border-2 border-background lg:block ${
 										isCurrent ? "bg-primary" : "bg-muted-foreground/40"
 									}`}
 								/>
-								<div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+								<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 									<h2 className="font-mono text-2xl font-bold tracking-tight">
 										{release.tag}
 									</h2>
@@ -117,7 +117,7 @@ export function ChangelogPage() {
 										</span>
 									) : null}
 									{isCurrent ? (
-										<span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
+										<span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
 											当前版本
 										</span>
 									) : null}
