@@ -7,10 +7,10 @@ import type { Comment } from "@entities/comment/model/types";
 
 /** CommentTreeNode 树节点：评论本体 + 扁平回复列表 */
 export interface CommentTreeNode {
-    comment: Comment;
-    /** 顶层评论下的回复（两层扁平，不深嵌套）。
-     *  回复另一条回复时，仍挂同一顶层下，靠 comment.reply_to_name 标对话关系。 */
-    replies: CommentTreeNode[];
+	comment: Comment;
+	/** 顶层评论下的回复（两层扁平，不深嵌套）。
+	 *  回复另一条回复时，仍挂同一顶层下，靠 comment.reply_to_name 标对话关系。 */
+	replies: CommentTreeNode[];
 }
 
 /**
@@ -27,34 +27,34 @@ export interface CommentTreeNode {
  * 时间复杂度 O(n)：第一遍建 id→node 索引，第二遍沿 parent_id 链挂载。
  */
 export const buildCommentTree = (comments: Comment[]): CommentTreeNode[] => {
-    // 第一遍：建 id → node 索引
-    const nodeById = new Map<string, CommentTreeNode>();
-    for (const c of comments) {
-        nodeById.set(c.id, { comment: c, replies: [] });
-    }
+	// 第一遍：建 id → node 索引
+	const nodeById = new Map<string, CommentTreeNode>();
+	for (const c of comments) {
+		nodeById.set(c.id, { comment: c, replies: [] });
+	}
 
-    const roots: CommentTreeNode[] = [];
-    // 第二遍：每条评论找它的顶层祖先，挂到顶层 replies 下。
-    for (const c of comments) {
-        const node = nodeById.get(c.id);
-        if (!node) continue;
+	const roots: CommentTreeNode[] = [];
+	// 第二遍：每条评论找它的顶层祖先，挂到顶层 replies 下。
+	for (const c of comments) {
+		const node = nodeById.get(c.id);
+		if (!node) continue;
 
-        if (!c.parent_id) {
-            // 顶层评论，直接进 roots
-            roots.push(node);
-            continue;
-        }
+		if (!c.parent_id) {
+			// 顶层评论，直接进 roots
+			roots.push(node);
+			continue;
+		}
 
-        // 回复：沿 parent_id 链向上找顶层祖先
-        const topLevel = findTopAncestor(c, nodeById);
-        if (topLevel) {
-            topLevel.replies.push(node);
-        } else {
-            // 顶层祖先不在列表里（分页/状态过滤切走），降级为顶层节点
-            roots.push(node);
-        }
-    }
-    return roots;
+		// 回复：沿 parent_id 链向上找顶层祖先
+		const topLevel = findTopAncestor(c, nodeById);
+		if (topLevel) {
+			topLevel.replies.push(node);
+		} else {
+			// 顶层祖先不在列表里（分页/状态过滤切走），降级为顶层节点
+			roots.push(node);
+		}
+	}
+	return roots;
 };
 
 /**
@@ -68,23 +68,23 @@ export const buildCommentTree = (comments: Comment[]): CommentTreeNode[] => {
  * 找不到（链上某个节点不在 nodeById 里）→ 返回 null，调用方降级为顶层。
  */
 function findTopAncestor(
-    comment: Comment,
-    nodeById: Map<string, CommentTreeNode>,
+	comment: Comment,
+	nodeById: Map<string, CommentTreeNode>,
 ): CommentTreeNode | null {
-    let current = comment;
-    const visited = new Set<string>();
-    while (current.parent_id) {
-        if (visited.has(current.id)) return null; // 防环
-        visited.add(current.id);
-        const parent = nodeById.get(current.parent_id);
-        if (!parent) return null; // 链断了，找不到顶层
-        if (!parent.comment.parent_id) {
-            // parent 是顶层评论
-            return parent;
-        }
-        current = parent.comment;
-    }
-    return null;
+	let current = comment;
+	const visited = new Set<string>();
+	while (current.parent_id) {
+		if (visited.has(current.id)) return null; // 防环
+		visited.add(current.id);
+		const parent = nodeById.get(current.parent_id);
+		if (!parent) return null; // 链断了，找不到顶层
+		if (!parent.comment.parent_id) {
+			// parent 是顶层评论
+			return parent;
+		}
+		current = parent.comment;
+	}
+	return null;
 }
 
 /** CommentSeverity 三态，对应 shadcn 色阶（参考 announcement-severity 结构） */
@@ -101,10 +101,10 @@ export type CommentSeverity = "default" | "discussion" | "author";
  * 优先级：author > discussion > default。
  */
 export const getCommentSeverity = (
-    node: CommentTreeNode,
-    opts: { isAuthor: boolean },
+	node: CommentTreeNode,
+	opts: { isAuthor: boolean },
 ): CommentSeverity => {
-    if (opts.isAuthor) return "author";
-    if (node.replies.length > 0) return "discussion";
-    return "default";
+	if (opts.isAuthor) return "author";
+	if (node.replies.length > 0) return "discussion";
+	return "default";
 };

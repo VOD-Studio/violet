@@ -10,21 +10,21 @@
 import { Clock } from "lucide-react";
 
 export interface PendingBadgeProps {
-    /** 是否显示（通常为 status === 'pending'） */
-    show: boolean;
+	/** 是否显示（通常为 status === 'pending'） */
+	show: boolean;
 }
 
 export function PendingBadge({ show }: PendingBadgeProps) {
-    if (!show) return null;
-    return (
-        <span
-            className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-600 dark:text-amber-400"
-            title="管理员审核通过后公开"
-        >
-            <Clock className="size-3" />
-            审批中
-        </span>
-    );
+	if (!show) return null;
+	return (
+		<span
+			className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs text-amber-600 dark:text-amber-400"
+			title="管理员审核通过后公开"
+		>
+			<Clock className="size-3" />
+			审批中
+		</span>
+	);
 }
 
 export default PendingBadge;

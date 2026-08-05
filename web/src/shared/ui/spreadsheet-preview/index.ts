@@ -4,8 +4,8 @@ export { SpreadsheetPreview } from "./components/SpreadsheetPreview";
 export { useSpreadsheet } from "./hooks/useSpreadsheet";
 // 类型
 export type {
-    CellValue,
-    SheetData,
-    SpreadsheetLoadStatus,
-    SpreadsheetPreviewProps,
+	CellValue,
+	SheetData,
+	SpreadsheetLoadStatus,
+	SpreadsheetPreviewProps,
 } from "./types/spreadsheet-preview-types";

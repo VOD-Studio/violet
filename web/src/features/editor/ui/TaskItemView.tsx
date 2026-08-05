@@ -7,34 +7,34 @@
 
 import TaskItem from "@tiptap/extension-task-item";
 import {
-    NodeViewContent,
-    type NodeViewProps,
-    NodeViewWrapper,
-    ReactNodeViewRenderer,
+	NodeViewContent,
+	type NodeViewProps,
+	NodeViewWrapper,
+	ReactNodeViewRenderer,
 } from "@tiptap/react";
 import { Checkbox } from "@/shared/ui/base/checkbox";
 
 function TaskItemComponent({ node, updateAttributes, editor }: NodeViewProps) {
-    const checked = node.attrs.checked as boolean;
+	const checked = node.attrs.checked as boolean;
 
-    return (
-        <NodeViewWrapper className="flex items-start gap-2" data-checked={checked}>
-            <Checkbox
-                checked={checked}
-                disabled={!editor.isEditable}
-                onCheckedChange={(val) => updateAttributes({ checked: val === true })}
-                className="mt-1.5 shrink-0"
-            />
-            <NodeViewContent as="div" className="flex-1 min-w-0" />
-        </NodeViewWrapper>
-    );
+	return (
+		<NodeViewWrapper className="flex items-start gap-2" data-checked={checked}>
+			<Checkbox
+				checked={checked}
+				disabled={!editor.isEditable}
+				onCheckedChange={(val) => updateAttributes({ checked: val === true })}
+				className="mt-1.5 shrink-0"
+			/>
+			<NodeViewContent as="div" className="flex-1 min-w-0" />
+		</NodeViewWrapper>
+	);
 }
 
 /** 自定义 TaskItem：继承原扩展，仅覆盖 NodeView */
 export const CustomTaskItem = TaskItem.extend({
-    addNodeView() {
-        // as: "li" 让 ReactRenderer 宿主元素（= NodeView dom）为 <li>，
-        // 否则默认 <div> 会破坏 <ul> > <li> 结构导致 flex 布局失效
-        return ReactNodeViewRenderer(TaskItemComponent, { as: "li" });
-    },
+	addNodeView() {
+		// as: "li" 让 ReactRenderer 宿主元素（= NodeView dom）为 <li>，
+		// 否则默认 <div> 会破坏 <ul> > <li> 结构导致 flex 布局失效
+		return ReactNodeViewRenderer(TaskItemComponent, { as: "li" });
+	},
 }).configure({ nested: true });

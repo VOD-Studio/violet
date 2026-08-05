@@ -10,9 +10,9 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
  * 二者布局差异大，故不在此共享布局，各自由组件内部决定。
  */
 export const Route = createFileRoute("/admin/posts")({
-    component: PostsLayout,
+	component: PostsLayout,
 });
 
 function PostsLayout() {
-    return <Outlet />;
+	return <Outlet />;
 }

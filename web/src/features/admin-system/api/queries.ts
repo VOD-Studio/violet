@@ -20,31 +20,31 @@ const HISTORY_INTERVAL_MS = 30_000;
 
 /** UseSystemMonitorOptions - 监控查询的公共控参 */
 export interface UseSystemMonitorOptions {
-    /**
-     * 是否开启自动轮询。
-     * - true：快照按 SNAPSHOT_INTERVAL_MS、历史按 HISTORY_INTERVAL_MS 各自节奏自动刷新；
-     *   标签页隐藏时自停（refetchIntervalInBackground:false）。
-     * - false：仅首次拉取，后续靠手动 invalidateQueries 触发。
-     */
-    polling: boolean;
+	/**
+	 * 是否开启自动轮询。
+	 * - true：快照按 SNAPSHOT_INTERVAL_MS、历史按 HISTORY_INTERVAL_MS 各自节奏自动刷新；
+	 *   标签页隐藏时自停（refetchIntervalInBackground:false）。
+	 * - false：仅首次拉取，后续靠手动 invalidateQueries 触发。
+	 */
+	polling: boolean;
 }
 
 /** useSystemSnapshot - 服务器实时快照 hook（按 polling 决定是否 5s 自动轮询） */
 export const useSystemSnapshot = ({ polling }: UseSystemMonitorOptions) =>
-    useQuery({
-        queryKey: systemKeys.snapshot(),
-        queryFn: () => api.getSystemSnapshot(),
-        // 仓库首个 refetchInterval 用例：开启时每 5s 实时刷新
-        refetchInterval: polling ? SNAPSHOT_INTERVAL_MS : 0,
-        // 标签页隐藏时不轮询，避免无人盯盘时浪费后端采集 + 依赖探活开销
-        refetchIntervalInBackground: false,
-    });
+	useQuery({
+		queryKey: systemKeys.snapshot(),
+		queryFn: () => api.getSystemSnapshot(),
+		// 仓库首个 refetchInterval 用例：开启时每 5s 实时刷新
+		refetchInterval: polling ? SNAPSHOT_INTERVAL_MS : 0,
+		// 标签页隐藏时不轮询，避免无人盯盘时浪费后端采集 + 依赖探活开销
+		refetchIntervalInBackground: false,
+	});
 
 /** useSystemHistory - 历史采样点 hook（按 polling 决定是否 30s 自动轮询） */
 export const useSystemHistory = ({ polling }: UseSystemMonitorOptions) =>
-    useQuery({
-        queryKey: systemKeys.history(),
-        queryFn: () => api.getSystemHistory(),
-        refetchInterval: polling ? HISTORY_INTERVAL_MS : 0,
-        refetchIntervalInBackground: false,
-    });
+	useQuery({
+		queryKey: systemKeys.history(),
+		queryFn: () => api.getSystemHistory(),
+		refetchInterval: polling ? HISTORY_INTERVAL_MS : 0,
+		refetchIntervalInBackground: false,
+	});

@@ -13,16 +13,16 @@ import type { Editor } from "@tiptap/react";
  * @param file 用户选择的 .md/.markdown/.txt 文件
  */
 export function importMarkdownFile(editor: Editor, file: File): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-            const text = typeof reader.result === "string" ? reader.result : "";
-            editor.commands.setContent(text, { contentType: "markdown" });
-            resolve();
-        };
-        reader.onerror = () => reject(reader.error);
-        reader.readAsText(file);
-    });
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => {
+			const text = typeof reader.result === "string" ? reader.result : "";
+			editor.commands.setContent(text, { contentType: "markdown" });
+			resolve();
+		};
+		reader.onerror = () => reject(reader.error);
+		reader.readAsText(file);
+	});
 }
 
 /**
@@ -32,14 +32,14 @@ export function importMarkdownFile(editor: Editor, file: File): Promise<void> {
  * @param filename 文件名（不含扩展名），默认 "article"
  */
 export function exportMarkdown(editor: Editor, filename = "article"): void {
-    const md = editor.getMarkdown();
-    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${filename}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+	const md = editor.getMarkdown();
+	const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = `${filename}.md`;
+	document.body.appendChild(a);
+	a.click();
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
 }

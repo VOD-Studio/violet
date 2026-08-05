@@ -14,48 +14,48 @@ import { buildEditorExtensions } from "../../extensions";
 import { buildSlashItems } from "../slash-items";
 
 function createEditor(): Editor {
-    return new Editor({
-        element: document.createElement("div"),
-        extensions: buildEditorExtensions(),
-        content: "",
-    });
+	return new Editor({
+		element: document.createElement("div"),
+		extensions: buildEditorExtensions(),
+		content: "",
+	});
 }
 
 function slashCommand(id: string) {
-    const item = buildSlashItems(() => {}).find((i) => i.id === id);
-    if (!item) throw new Error(`无此 slash 项: ${id}`);
-    return item.command;
+	const item = buildSlashItems(() => {}).find((i) => i.id === id);
+	if (!item) throw new Error(`无此 slash 项: ${id}`);
+	return item.command;
 }
 
 describe("slash 公式项", () => {
-    it("行内公式：插入空节点并置于 NodeSelection", () => {
-        const editor = createEditor();
-        expect(() => slashCommand("inlineMath")(editor)).not.toThrow();
-        expect(editor.getHTML()).toContain('data-type="inline-math"');
-        const selection = editor.state.selection;
-        expect(selection).toBeInstanceOf(NodeSelection);
-        expect((selection as NodeSelection).node.type.name).toBe("inlineMath");
-        editor.destroy();
-    });
+	it("行内公式：插入空节点并置于 NodeSelection", () => {
+		const editor = createEditor();
+		expect(() => slashCommand("inlineMath")(editor)).not.toThrow();
+		expect(editor.getHTML()).toContain('data-type="inline-math"');
+		const selection = editor.state.selection;
+		expect(selection).toBeInstanceOf(NodeSelection);
+		expect((selection as NodeSelection).node.type.name).toBe("inlineMath");
+		editor.destroy();
+	});
 
-    it("公式块：插入空节点并置于 NodeSelection", () => {
-        const editor = createEditor();
-        expect(() => slashCommand("blockMath")(editor)).not.toThrow();
-        expect(editor.getHTML()).toContain('data-type="block-math"');
-        const selection = editor.state.selection;
-        expect(selection).toBeInstanceOf(NodeSelection);
-        expect((selection as NodeSelection).node.type.name).toBe("blockMath");
-        editor.destroy();
-    });
+	it("公式块：插入空节点并置于 NodeSelection", () => {
+		const editor = createEditor();
+		expect(() => slashCommand("blockMath")(editor)).not.toThrow();
+		expect(editor.getHTML()).toContain('data-type="block-math"');
+		const selection = editor.state.selection;
+		expect(selection).toBeInstanceOf(NodeSelection);
+		expect((selection as NodeSelection).node.type.name).toBe("blockMath");
+		editor.destroy();
+	});
 
-    it("公式块插入到非空段落中间也能选中", () => {
-        const editor = createEditor();
-        editor.commands.setContent("前文段落", { contentType: "markdown" });
-        editor.commands.focus("end");
-        expect(() => slashCommand("blockMath")(editor)).not.toThrow();
-        const selection = editor.state.selection;
-        expect(selection).toBeInstanceOf(NodeSelection);
-        expect((selection as NodeSelection).node.type.name).toBe("blockMath");
-        editor.destroy();
-    });
+	it("公式块插入到非空段落中间也能选中", () => {
+		const editor = createEditor();
+		editor.commands.setContent("前文段落", { contentType: "markdown" });
+		editor.commands.focus("end");
+		expect(() => slashCommand("blockMath")(editor)).not.toThrow();
+		const selection = editor.state.selection;
+		expect(selection).toBeInstanceOf(NodeSelection);
+		expect((selection as NodeSelection).node.type.name).toBe("blockMath");
+		editor.destroy();
+	});
 });

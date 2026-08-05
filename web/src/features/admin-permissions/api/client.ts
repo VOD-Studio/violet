@@ -3,9 +3,9 @@
  */
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/shared/api/request";
 import type {
-    CreatePermissionRequest,
-    PermissionDTO,
-    UpdatePermissionRequest,
+	CreatePermissionRequest,
+	PermissionDTO,
+	UpdatePermissionRequest,
 } from "../model/types";
 
 /**
@@ -15,7 +15,7 @@ import type {
  * 需要管理员权限
  */
 export const listPermissions = async (): Promise<PermissionDTO[]> => {
-    return apiGet<PermissionDTO[]>("/admin/permissions");
+	return apiGet<PermissionDTO[]>("/admin/permissions");
 };
 
 /**
@@ -25,7 +25,7 @@ export const listPermissions = async (): Promise<PermissionDTO[]> => {
  * 需要超级管理员权限
  */
 export const createPermission = async (data: CreatePermissionRequest): Promise<PermissionDTO> => {
-    return apiPost<PermissionDTO>("/admin/permissions", data);
+	return apiPost<PermissionDTO>("/admin/permissions", data);
 };
 
 /**
@@ -35,10 +35,10 @@ export const createPermission = async (data: CreatePermissionRequest): Promise<P
  * 需要超级管理员权限
  */
 export const updatePermission = async (
-    id: number,
-    data: UpdatePermissionRequest,
+	id: number,
+	data: UpdatePermissionRequest,
 ): Promise<PermissionDTO> => {
-    return apiPatch<PermissionDTO>(`/admin/permissions/${id}`, data);
+	return apiPatch<PermissionDTO>(`/admin/permissions/${id}`, data);
 };
 
 /**
@@ -48,5 +48,5 @@ export const updatePermission = async (
  * 需要超级管理员权限
  */
 export const deletePermission = async (id: number): Promise<void> => {
-    return apiDelete<void>(`/admin/permissions/${id}`);
+	return apiDelete<void>(`/admin/permissions/${id}`);
 };

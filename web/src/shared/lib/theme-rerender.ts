@@ -25,8 +25,8 @@ const subscribers = new Set<ThemeRerenderFn>();
 
 /** 注册主题重渲染任务,返回取消函数(组件卸载时调) */
 export function subscribeThemeRerender(fn: ThemeRerenderFn): () => void {
-    subscribers.add(fn);
-    return () => subscribers.delete(fn);
+	subscribers.add(fn);
+	return () => subscribers.delete(fn);
 }
 
 /**
@@ -34,14 +34,14 @@ export function subscribeThemeRerender(fn: ThemeRerenderFn): () => void {
  * 单个订阅者异常/失败不阻塞其他订阅者与主题切换本身。
  */
 export async function runThemeRerender(theme: TargetTheme): Promise<void> {
-    const pending: Promise<void>[] = [];
-    for (const fn of subscribers) {
-        try {
-            const r = fn(theme);
-            if (r) pending.push(Promise.resolve(r).catch(() => {}));
-        } catch {
-            // 订阅者同步异常:忽略,不阻塞主题切换
-        }
-    }
-    await Promise.all(pending);
+	const pending: Promise<void>[] = [];
+	for (const fn of subscribers) {
+		try {
+			const r = fn(theme);
+			if (r) pending.push(Promise.resolve(r).catch(() => {}));
+		} catch {
+			// 订阅者同步异常:忽略,不阻塞主题切换
+		}
+	}
+	await Promise.all(pending);
 }

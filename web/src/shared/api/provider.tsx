@@ -9,10 +9,10 @@ import { clientQueryClient } from "./query-client";
  * AppProviderProps
  */
 export interface AppProviderProps {
-    /**
-     * 应用子节点
-     */
-    children: ReactNode;
+	/**
+	 * 应用子节点
+	 */
+	children: ReactNode;
 }
 
 /**
@@ -26,20 +26,20 @@ export interface AppProviderProps {
  * - GoogleOAuthProvider: Google 登录
  */
 const AppProvider = ({ children }: AppProviderProps) => {
-    // 如果没有配置 client_id，传入一个占位符避免 @react-oauth/google 抛出致命错误崩溃。
-    // 在具体使用的地方（如 LoginDialog），我们可以通过判断环境变量来禁用相关按钮。
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "missing_client_id";
+	// 如果没有配置 client_id，传入一个占位符避免 @react-oauth/google 抛出致命错误崩溃。
+	// 在具体使用的地方（如 LoginDialog），我们可以通过判断环境变量来禁用相关按钮。
+	const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "missing_client_id";
 
-    return (
-        <GoogleOAuthProvider clientId={googleClientId}>
-            <QueryClientProvider client={clientQueryClient}>
-                <ThemeProvider attribute="class" defaultTheme="system">
-                    {children}
-                    <Toaster />
-                </ThemeProvider>
-            </QueryClientProvider>
-        </GoogleOAuthProvider>
-    );
+	return (
+		<GoogleOAuthProvider clientId={googleClientId}>
+			<QueryClientProvider client={clientQueryClient}>
+				<ThemeProvider attribute="class" defaultTheme="system">
+					{children}
+					<Toaster />
+				</ThemeProvider>
+			</QueryClientProvider>
+		</GoogleOAuthProvider>
+	);
 };
 
 export default AppProvider;

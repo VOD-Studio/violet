@@ -10,14 +10,14 @@ import { adminEmojiKeys } from "./keys";
  * 含未启用分组。后端 ListAllEmojiGroups 直接序列化 EmojiGroupDTO 数组，未走分页封装。
  */
 export const fetchAllEmojiGroupsAdmin = async (): Promise<EmojiGroup[]> =>
-    apiGet<EmojiGroup[]>("/admin/emojis/groups");
+	apiGet<EmojiGroup[]>("/admin/emojis/groups");
 
 /** useAllEmojiGroupsAdmin - 后台全部分组列表 hook */
 export const useAllEmojiGroupsAdmin = () =>
-    useQuery({
-        queryKey: adminEmojiKeys.adminGroupList(),
-        queryFn: fetchAllEmojiGroupsAdmin,
-    });
+	useQuery({
+		queryKey: adminEmojiKeys.adminGroupList(),
+		queryFn: fetchAllEmojiGroupsAdmin,
+	});
 
 /**
  * fetchGroupEmojisAdmin - 调后端 GET /admin/emojis/groups/{id}/emojis 获取分组内表情
@@ -25,31 +25,31 @@ export const useAllEmojiGroupsAdmin = () =>
  * @param groupId 分组 ID
  */
 export const fetchGroupEmojisAdmin = async (groupId: number): Promise<Emoji[]> =>
-    apiGet<Emoji[]>(`/admin/emojis/groups/${groupId}/emojis`);
+	apiGet<Emoji[]>(`/admin/emojis/groups/${groupId}/emojis`);
 
 /** useGroupEmojisAdmin - 后台分组内表情列表 hook */
 export const useGroupEmojisAdmin = (groupId: number) =>
-    useQuery({
-        queryKey: adminEmojiKeys.adminGroupEmojis(groupId),
-        queryFn: () => fetchGroupEmojisAdmin(groupId),
-        enabled: !!groupId,
-    });
+	useQuery({
+		queryKey: adminEmojiKeys.adminGroupEmojis(groupId),
+		queryFn: () => fetchGroupEmojisAdmin(groupId),
+		enabled: !!groupId,
+	});
 
 /** useRefetchStatus - 轮询重新拉取任务状态，仅 running 时每 2s 轮询 */
 export const useRefetchStatus = () =>
-    useQuery({
-        queryKey: adminEmojiKeys.refetchStatus(),
-        queryFn: () => apiGet<RefetchStatus>("/admin/emojis/bilibili/refetch/status"),
-        refetchInterval: (query) => {
-            const data = query.state.data;
-            if (!data) return false;
-            return data.state === "running" ? 2000 : false;
-        },
-    });
+	useQuery({
+		queryKey: adminEmojiKeys.refetchStatus(),
+		queryFn: () => apiGet<RefetchStatus>("/admin/emojis/bilibili/refetch/status"),
+		refetchInterval: (query) => {
+			const data = query.state.data;
+			if (!data) return false;
+			return data.state === "running" ? 2000 : false;
+		},
+	});
 
 /** useBilibiliCookieDefault - 读取 env 配置的 B站 Cookie 默认值，用于重新拉取弹窗预填 */
 export const useBilibiliCookieDefault = () =>
-    useQuery({
-        queryKey: adminEmojiKeys.bilibiliCookie(),
-        queryFn: () => apiGet<{ cookie: string }>("/admin/emojis/bilibili/cookie"),
-    });
+	useQuery({
+		queryKey: adminEmojiKeys.bilibiliCookie(),
+		queryFn: () => apiGet<{ cookie: string }>("/admin/emojis/bilibili/cookie"),
+	});

@@ -3,9 +3,9 @@ import { cn } from "@shared/lib/utils";
 import type * as React from "react";
 
 export interface MagneticProps extends React.HTMLAttributes<HTMLSpanElement> {
-    /** 吸附强度 0..1（默认 0.25） */
-    strength?: number;
-    children: React.ReactNode;
+	/** 吸附强度 0..1（默认 0.25） */
+	strength?: number;
+	children: React.ReactNode;
 }
 
 /**
@@ -17,21 +17,21 @@ export interface MagneticProps extends React.HTMLAttributes<HTMLSpanElement> {
  * 完整磁力效果。
  */
 function Magnetic({ strength, className, children, ...props }: MagneticProps) {
-    const { onMouseMove, onMouseLeave } = useMagnetic(strength);
-    return (
-        <span
-            onMouseMove={onMouseMove}
-            onMouseLeave={onMouseLeave}
-            className={cn(
-                "inline-block transition-transform duration-200 ease-out will-change-transform",
-                className,
-            )}
-            style={{ transform: "translate(var(--mx, 0), var(--my, 0))" }}
-            {...props}
-        >
-            {children}
-        </span>
-    );
+	const { onMouseMove, onMouseLeave } = useMagnetic(strength);
+	return (
+		<span
+			onMouseMove={onMouseMove}
+			onMouseLeave={onMouseLeave}
+			className={cn(
+				"inline-block transition-transform duration-200 ease-out will-change-transform",
+				className,
+			)}
+			style={{ transform: "translate(var(--mx, 0), var(--my, 0))" }}
+			{...props}
+		>
+			{children}
+		</span>
+	);
 }
 
 export { Magnetic };

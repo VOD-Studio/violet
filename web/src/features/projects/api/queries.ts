@@ -14,7 +14,7 @@ import { projectKeys } from "./keys";
  * @returns 项目数组
  */
 export const fetchProjects = async (query: ProjectListQuery = {}): Promise<Project[]> =>
-    apiGet<Project[]>("/projects", { params: query });
+	apiGet<Project[]>("/projects", { params: query });
 
 /**
  * useProjects - 项目列表 hook
@@ -24,10 +24,10 @@ export const fetchProjects = async (query: ProjectListQuery = {}): Promise<Proje
  * @param query 预留分页参数
  */
 export const useProjects = (query: ProjectListQuery = {}) =>
-    useQuery({
-        queryKey: projectKeys.list(query),
-        queryFn: () => fetchProjects(query),
-    });
+	useQuery({
+		queryKey: projectKeys.list(query),
+		queryFn: () => fetchProjects(query),
+	});
 
 /**
  * fetchProject - 调后端 GET /projects/{id} 按 ID 获取项目详情
@@ -35,7 +35,7 @@ export const useProjects = (query: ProjectListQuery = {}) =>
  * @param id 项目 ID
  */
 export const fetchProject = async (id: string): Promise<Project> =>
-    apiGet<Project>(`/projects/${id}`);
+	apiGet<Project>(`/projects/${id}`);
 
 /**
  * useProject - 按 ID 获取项目详情 hook
@@ -43,8 +43,8 @@ export const fetchProject = async (id: string): Promise<Project> =>
  * @param id 项目 ID，传入空串时不启用查询
  */
 export const useProject = (id: string) =>
-    useQuery({
-        queryKey: projectKeys.detail(id),
-        queryFn: () => fetchProject(id),
-        enabled: id.length > 0,
-    });
+	useQuery({
+		queryKey: projectKeys.detail(id),
+		queryFn: () => fetchProject(id),
+		enabled: id.length > 0,
+	});

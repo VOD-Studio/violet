@@ -37,27 +37,27 @@ export type RenderMermaidResult = { svg: string } | { error: string };
  * - on* 事件属性：不在 DOMPurify 任何 allow list 中，默认即被剥除（无需列举）
  */
 const SANITIZE_CONFIG: Config = {
-    USE_PROFILES: { svg: true, svgFilters: true },
-    FORBID_TAGS: ["script", "a"],
-    ADD_TAGS: [
-        "style",
-        "foreignObject",
-        "div",
-        "span",
-        "p",
-        "br",
-        "b",
-        "i",
-        "em",
-        "strong",
-        "code",
-        "pre",
-        "ul",
-        "ol",
-        "li",
-    ],
-    ADD_ATTR: ["class", "style"],
-    HTML_INTEGRATION_POINTS: { "annotation-xml": true, foreignobject: true },
+	USE_PROFILES: { svg: true, svgFilters: true },
+	FORBID_TAGS: ["script", "a"],
+	ADD_TAGS: [
+		"style",
+		"foreignObject",
+		"div",
+		"span",
+		"p",
+		"br",
+		"b",
+		"i",
+		"em",
+		"strong",
+		"code",
+		"pre",
+		"ul",
+		"ol",
+		"li",
+	],
+	ADD_ATTR: ["class", "style"],
+	HTML_INTEGRATION_POINTS: { "annotation-xml": true, foreignobject: true },
 };
 
 /**
@@ -70,33 +70,33 @@ const SANITIZE_CONFIG: Config = {
  * text-align...），清洗只影响注入者写的 url()/@import 等内容。
  */
 const STYLE_FUNCTION_CALL_RE =
-    /(?:url|expression|attr|image|cross-fade|element|progid|format)\s*\([^)]*\)/gi;
+	/(?:url|expression|attr|image|cross-fade|element|progid|format)\s*\([^)]*\)/gi;
 const STYLE_AT_RULE_RE = /@(?:import|charset|namespace)[^;]*;?/gi;
 const STYLE_DANGEROUS_PROP_RE = /(?:^|;)\s*(?:behavior|-moz-binding)\s*:[^;]*/gi;
 
 function sanitizeStyleValue(value: string): string {
-    return value
-        .replace(STYLE_FUNCTION_CALL_RE, "")
-        .replace(STYLE_AT_RULE_RE, "")
-        .replace(STYLE_DANGEROUS_PROP_RE, ";");
+	return value
+		.replace(STYLE_FUNCTION_CALL_RE, "")
+		.replace(STYLE_AT_RULE_RE, "")
+		.replace(STYLE_DANGEROUS_PROP_RE, ";");
 }
 
 // 全局注册一次（DOMPurify hooks 不走 config）；项目内 DOMPurify 仅本模块使用，
 // 不影响其他清理路径（文章 HTML 走 hast-util-sanitize 白名单）。
 DOMPurify.addHook("uponSanitizeAttribute", (_node, data) => {
-    if (data.attrName === "style") {
-        data.attrValue = sanitizeStyleValue(data.attrValue);
-    }
+	if (data.attrName === "style") {
+		data.attrValue = sanitizeStyleValue(data.attrValue);
+	}
 });
 
 /** mermaid 模块缓存：首次渲染才动态 import（懒加载，不含图块的文章页不付体积） */
 let mermaidLoader: Promise<typeof import("mermaid").default> | null = null;
 
 async function loadMermaid(): Promise<typeof import("mermaid").default> {
-    if (!mermaidLoader) {
-        mermaidLoader = import("mermaid").then((m) => m.default);
-    }
-    return mermaidLoader;
+	if (!mermaidLoader) {
+		mermaidLoader = import("mermaid").then((m) => m.default);
+	}
+	return mermaidLoader;
 }
 
 /** 渲染实例自增 id，保证多次调用互不撞 id */
@@ -110,31 +110,31 @@ let renderSeq = 0;
  * @returns 成功 { svg }（已清理），失败 { error }（错误信息字符串）
  */
 export async function renderMermaid(
-    source: string,
-    theme: DiagramTheme = "light",
+	source: string,
+	theme: DiagramTheme = "light",
 ): Promise<RenderMermaidResult> {
-    try {
-        const mermaid = await loadMermaid();
-        const themeVariables: MermaidThemeVariables = getThemeVariables(theme === "dark");
-        mermaid.initialize({
-            startOnLoad: false,
-            securityLevel: "strict",
-            // 明暗双主题：dark 用内置主题（深色节点 + 浅字全图配对），
-            // light 用 base + 站点框架色（保留默认彩色节点）
-            theme: theme === "dark" ? "dark" : "base",
-            themeVariables,
-            // suppressErrorRendering: true — mermaid v11 默认 false，解析失败时不抛错，
-            // 而是路由到内置 errorDiagram 把含 "Syntax error in text" + "mermaid version"
-            // 的错误图画进挂在 document.body 的临时 div，事后虽会 throw，但 throw 前不
-            // 清理该临时 div → 残留在页面底部（mermaid.esm.mjs:1670-1679 / 1718-1719）。
-            // 我们有自己的 DiagramError 占位降级，要 mermaid 在画错误图之前就抛错，
-            // 由下方 try/catch 捕获返回 { error }。
-            suppressErrorRendering: true,
-        });
-        const id = `diagram-render-${++renderSeq}`;
-        const { svg } = await mermaid.render(id, source);
-        return { svg: DOMPurify.sanitize(svg, SANITIZE_CONFIG) as string };
-    } catch (error) {
-        return { error: error instanceof Error ? error.message : String(error) };
-    }
+	try {
+		const mermaid = await loadMermaid();
+		const themeVariables: MermaidThemeVariables = getThemeVariables(theme === "dark");
+		mermaid.initialize({
+			startOnLoad: false,
+			securityLevel: "strict",
+			// 明暗双主题：dark 用内置主题（深色节点 + 浅字全图配对），
+			// light 用 base + 站点框架色（保留默认彩色节点）
+			theme: theme === "dark" ? "dark" : "base",
+			themeVariables,
+			// suppressErrorRendering: true — mermaid v11 默认 false，解析失败时不抛错，
+			// 而是路由到内置 errorDiagram 把含 "Syntax error in text" + "mermaid version"
+			// 的错误图画进挂在 document.body 的临时 div，事后虽会 throw，但 throw 前不
+			// 清理该临时 div → 残留在页面底部（mermaid.esm.mjs:1670-1679 / 1718-1719）。
+			// 我们有自己的 DiagramError 占位降级，要 mermaid 在画错误图之前就抛错，
+			// 由下方 try/catch 捕获返回 { error }。
+			suppressErrorRendering: true,
+		});
+		const id = `diagram-render-${++renderSeq}`;
+		const { svg } = await mermaid.render(id, source);
+		return { svg: DOMPurify.sanitize(svg, SANITIZE_CONFIG) as string };
+	} catch (error) {
+		return { error: error instanceof Error ? error.message : String(error) };
+	}
 }

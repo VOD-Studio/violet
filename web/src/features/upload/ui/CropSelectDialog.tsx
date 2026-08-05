@@ -6,14 +6,14 @@ import { Modal } from "@shared/ui/modal";
 import { useState } from "react";
 
 export interface CropSelectDialogProps {
-    /** 已有素材 URL,选区后拼 ?crop= 回填 */
-    src: string;
-    /** 选区宽高比(封面 16/9、头像 1);undefined 自由 */
-    aspect?: number;
-    open: boolean;
-    onOpenChange: (v: boolean) => void;
-    /** 确认:回传带 ?crop= 的 URL;跳过选区时回传原图 URL(无 crop) */
-    onConfirm: (url: string) => void;
+	/** 已有素材 URL,选区后拼 ?crop= 回填 */
+	src: string;
+	/** 选区宽高比(封面 16/9、头像 1);undefined 自由 */
+	aspect?: number;
+	open: boolean;
+	onOpenChange: (v: boolean) => void;
+	/** 确认:回传带 ?crop= 的 URL;跳过选区时回传原图 URL(无 crop) */
+	onConfirm: (url: string) => void;
 }
 
 /**
@@ -26,47 +26,47 @@ export interface CropSelectDialogProps {
  * 纯前端坐标编辑,适合「展示区域固定但要选聚焦区域」的场景(如封面)。
  */
 export function CropSelectDialog({
-    src,
-    aspect,
-    open,
-    onOpenChange,
-    onConfirm,
+	src,
+	aspect,
+	open,
+	onOpenChange,
+	onConfirm,
 }: CropSelectDialogProps) {
-    const [rect, setRect] = useState<CropRect | undefined>(undefined);
+	const [rect, setRect] = useState<CropRect | undefined>(undefined);
 
-    const handleConfirm = () => {
-        onConfirm(rect ? withCrop(src, rect) : src);
-        onOpenChange(false);
-    };
+	const handleConfirm = () => {
+		onConfirm(rect ? withCrop(src, rect) : src);
+		onOpenChange(false);
+	};
 
-    const handleSkip = () => {
-        onConfirm(src);
-        onOpenChange(false);
-    };
+	const handleSkip = () => {
+		onConfirm(src);
+		onOpenChange(false);
+	};
 
-    return (
-        <Modal
-            open={open}
-            onOpenChange={onOpenChange}
-            title="选择展示区域"
-            size="md"
-            footer={
-                <div className="flex justify-end gap-2">
-                    <Button variant="ghost" onClick={handleSkip}>
-                        直接使用原图
-                    </Button>
-                    {rect && (
-                        <Button variant="ghost" onClick={() => setRect(undefined)}>
-                            清除选区
-                        </Button>
-                    )}
-                    <Button onClick={handleConfirm} disabled={!rect}>
-                        确认选区
-                    </Button>
-                </div>
-            }
-        >
-            <ImageCropper src={src} aspect={aspect} rect={rect} onChange={setRect} />
-        </Modal>
-    );
+	return (
+		<Modal
+			open={open}
+			onOpenChange={onOpenChange}
+			title="选择展示区域"
+			size="md"
+			footer={
+				<div className="flex justify-end gap-2">
+					<Button variant="ghost" onClick={handleSkip}>
+						直接使用原图
+					</Button>
+					{rect && (
+						<Button variant="ghost" onClick={() => setRect(undefined)}>
+							清除选区
+						</Button>
+					)}
+					<Button onClick={handleConfirm} disabled={!rect}>
+						确认选区
+					</Button>
+				</div>
+			}
+		>
+			<ImageCropper src={src} aspect={aspect} rect={rect} onChange={setRect} />
+		</Modal>
+	);
 }

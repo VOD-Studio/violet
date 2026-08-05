@@ -12,19 +12,19 @@ import type { Anchor } from "./types";
 
 /** 判断两个块是否同一块（blockId 相同且都非空）。 */
 export function sameBlock(a: string | null, b: string | null): boolean {
-    return a !== null && b !== null && a === b;
+	return a !== null && b !== null && a === b;
 }
 
 /** BuildAnchorInput 规范化的选区数据（已从 DOM Selection 提取）。 */
 export interface BuildAnchorInput {
-    /** 选区所在块的 block_id；null 表示跨块选区 */
-    blockId: string | null;
-    /** 选区所在块的纯文本；null 表示跨块 */
-    blockText: string | null;
-    /** 选区起始偏移（块内字符位） */
-    startOffset: number;
-    /** 选区结束偏移（块内字符位，exclusive） */
-    endOffset: number;
+	/** 选区所在块的 block_id；null 表示跨块选区 */
+	blockId: string | null;
+	/** 选区所在块的纯文本；null 表示跨块 */
+	blockText: string | null;
+	/** 选区起始偏移（块内字符位） */
+	startOffset: number;
+	/** 选区结束偏移（块内字符位，exclusive） */
+	endOffset: number;
 }
 
 /**
@@ -39,27 +39,27 @@ export interface BuildAnchorInput {
  * 这是漂移检测的前提：hash 匹配 → 直接用 offset 快路径，不匹配 → fuzzy 重定位。
  */
 export async function buildAnchorFromRange(input: BuildAnchorInput): Promise<Anchor | null> {
-    const { blockId, blockText, startOffset, endOffset } = input;
+	const { blockId, blockText, startOffset, endOffset } = input;
 
-    // 跨块或无效块 → 无法锚定
-    if (blockId === null || blockText === null) return null;
-    // 无效选区
-    if (startOffset >= endOffset) return null;
+	// 跨块或无效块 → 无法锚定
+	if (blockId === null || blockText === null) return null;
+	// 无效选区
+	if (startOffset >= endOffset) return null;
 
-    const blockTextHash = await computeBlockId(blockText);
-    if (blockTextHash === null) return null; // 空块无法锚定
+	const blockTextHash = await computeBlockId(blockText);
+	if (blockTextHash === null) return null; // 空块无法锚定
 
-    // offset 越界截断到合法范围
-    const len = blockText.length;
-    const start = Math.max(0, Math.min(startOffset, len));
-    const end = Math.max(start + 1, Math.min(endOffset, len));
-    const selectedText = blockText.slice(start, end);
+	// offset 越界截断到合法范围
+	const len = blockText.length;
+	const start = Math.max(0, Math.min(startOffset, len));
+	const end = Math.max(start + 1, Math.min(endOffset, len));
+	const selectedText = blockText.slice(start, end);
 
-    return {
-        blockId,
-        startOffset: start,
-        endOffset: end,
-        selectedText,
-        blockTextHash,
-    };
+	return {
+		blockId,
+		startOffset: start,
+		endOffset: end,
+		selectedText,
+		blockTextHash,
+	};
 }

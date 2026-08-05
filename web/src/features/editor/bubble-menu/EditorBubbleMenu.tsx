@@ -14,81 +14,81 @@ import { Button } from "@/shared/ui/base/button";
 import { shouldShowBubbleMenu } from "./should-show";
 
 interface EditorBubbleMenuProps {
-    editor: Editor;
-    /** 编辑器内部滚动容器，用于 BubbleMenu 监听滚动并更新位置 */
-    scrollTarget?: HTMLElement | Window;
-    /** 链接插入回调（由父组件打开输入弹窗） */
-    onInsertLink: () => void;
+	editor: Editor;
+	/** 编辑器内部滚动容器，用于 BubbleMenu 监听滚动并更新位置 */
+	scrollTarget?: HTMLElement | Window;
+	/** 链接插入回调（由父组件打开输入弹窗） */
+	onInsertLink: () => void;
 }
 
 /** 阻止 mousedown 让编辑器失焦（同 EditorToolbar 的 keepFocus） */
 function keepFocus(e: MouseEvent) {
-    e.preventDefault();
+	e.preventDefault();
 }
 
 export function EditorBubbleMenu({ editor, scrollTarget, onInsertLink }: EditorBubbleMenuProps) {
-    return (
-        <BubbleMenu
-            editor={editor}
-            // updateDelay：选区变化后延迟定位，等编辑器布局稳定再测量，
-            // 修复首次选中位置偏移（首次 rect 未稳定导致 Floating UI 计算错位）
-            updateDelay={60}
-            // resizeDelay：滚动/resize 时立即更新位置，避免菜单跟随延迟
-            resizeDelay={0}
-            // 显示条件抽为 should-show.ts（可测）：仅文本选区显示，
-            // 空选区/代码块/全选/节点选中（公式、图片）均不显示
-            shouldShow={({ editor: e, state, from, to }) =>
-                shouldShowBubbleMenu({ editor: e, state, from, to })
-            }
-            options={{
-                placement: "top",
-                offset: 8,
-                // 顶部空间不足时翻转到下方
-                flip: true,
-                // padding 让翻转阈值提前触发，避免菜单顶部贴着容器上边缘被工具栏遮挡
-                // flip: { padding: 48 },
-                // shift：贴边时水平偏移，避免浮窗溢出视口
-                shift: true,
-                // scrollTarget：监听编辑器内部滚动容器，否则默认只监听 window，
-                // 导致自定义 overflow-y-auto 容器内滚动时菜单不跟随。
-                scrollTarget,
-            }}
-            className="z-50 flex items-center gap-0.5 rounded-lg border border-edge-hairline bg-popover p-1 shadow-lg"
-            // BubbleMenu 自身点击不应收起选区
-            onMouseDown={keepFocus}
-        >
-            <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                className={cn(editor.isActive("bold") && "bg-accent")}
-            >
-                <Bold />
-            </Button>
-            <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                className={cn(editor.isActive("italic") && "bg-accent")}
-            >
-                <Italic />
-            </Button>
-            <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => editor.chain().focus().toggleCode().run()}
-                className={cn(editor.isActive("code") && "bg-accent")}
-            >
-                <Code />
-            </Button>
-            <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={onInsertLink}
-                className={cn(editor.isActive("link") && "bg-accent")}
-            >
-                <LinkIcon />
-            </Button>
-        </BubbleMenu>
-    );
+	return (
+		<BubbleMenu
+			editor={editor}
+			// updateDelay：选区变化后延迟定位，等编辑器布局稳定再测量，
+			// 修复首次选中位置偏移（首次 rect 未稳定导致 Floating UI 计算错位）
+			updateDelay={60}
+			// resizeDelay：滚动/resize 时立即更新位置，避免菜单跟随延迟
+			resizeDelay={0}
+			// 显示条件抽为 should-show.ts（可测）：仅文本选区显示，
+			// 空选区/代码块/全选/节点选中（公式、图片）均不显示
+			shouldShow={({ editor: e, state, from, to }) =>
+				shouldShowBubbleMenu({ editor: e, state, from, to })
+			}
+			options={{
+				placement: "top",
+				offset: 8,
+				// 顶部空间不足时翻转到下方
+				flip: true,
+				// padding 让翻转阈值提前触发，避免菜单顶部贴着容器上边缘被工具栏遮挡
+				// flip: { padding: 48 },
+				// shift：贴边时水平偏移，避免浮窗溢出视口
+				shift: true,
+				// scrollTarget：监听编辑器内部滚动容器，否则默认只监听 window，
+				// 导致自定义 overflow-y-auto 容器内滚动时菜单不跟随。
+				scrollTarget,
+			}}
+			className="z-50 flex items-center gap-0.5 rounded-lg border border-edge-hairline bg-popover p-1 shadow-lg"
+			// BubbleMenu 自身点击不应收起选区
+			onMouseDown={keepFocus}
+		>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onClick={() => editor.chain().focus().toggleBold().run()}
+				className={cn(editor.isActive("bold") && "bg-accent")}
+			>
+				<Bold />
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onClick={() => editor.chain().focus().toggleItalic().run()}
+				className={cn(editor.isActive("italic") && "bg-accent")}
+			>
+				<Italic />
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onClick={() => editor.chain().focus().toggleCode().run()}
+				className={cn(editor.isActive("code") && "bg-accent")}
+			>
+				<Code />
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon-sm"
+				onClick={onInsertLink}
+				className={cn(editor.isActive("link") && "bg-accent")}
+			>
+				<LinkIcon />
+			</Button>
+		</BubbleMenu>
+	);
 }

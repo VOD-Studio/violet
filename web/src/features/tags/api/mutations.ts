@@ -9,13 +9,13 @@ import { tagKeys } from "./keys";
  * 对接 POST /api/v1/tags，成功后 invalidate 标签列表使缓存自动刷新。
  */
 export const useCreateTag = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (body: CreateTag) => apiPost<Tag>("/tags", body),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
-        },
-    });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (body: CreateTag) => apiPost<Tag>("/tags", body),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
+		},
+	});
 };
 
 /**
@@ -24,14 +24,14 @@ export const useCreateTag = () => {
  * 对接 PATCH /api/v1/tags/{id}，成功后 invalidate 标签列表使缓存自动刷新。
  */
 export const useUpdateTag = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: ({ id, body }: { id: number; body: UpdateTagRequest }) =>
-            apiPatch<Tag>(`/tags/${id}`, body),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
-        },
-    });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, body }: { id: number; body: UpdateTagRequest }) =>
+			apiPatch<Tag>(`/tags/${id}`, body),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
+		},
+	});
 };
 
 /**
@@ -43,11 +43,11 @@ export const useUpdateTag = () => {
  * @param id 标签 ID
  */
 export const useDeleteTag = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (id: number) => apiDelete<null>(`/tags/${id}`),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
-        },
-    });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: number) => apiDelete<null>(`/tags/${id}`),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
+		},
+	});
 };

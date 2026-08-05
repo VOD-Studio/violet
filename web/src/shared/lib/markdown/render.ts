@@ -16,12 +16,12 @@ import { markedHighlight } from "marked-highlight";
 // HTML 实体反转义（marked 的 inline token 可能含 &amp; 等,影响 slug 准确性）
 const ENTITY = /&(?:#(\d+)|#x([0-9a-f]+)|(\w+));?/gi;
 function unescapeEntities(s: string): string {
-    return s.replace(ENTITY, (_, dec, hex, name) => {
-        if (dec) return String.fromCodePoint(Number.parseInt(dec, 10));
-        if (hex) return String.fromCodePoint(Number.parseInt(hex, 16));
-        if (name === "colon") return ":";
-        return "";
-    });
+	return s.replace(ENTITY, (_, dec, hex, name) => {
+		if (dec) return String.fromCodePoint(Number.parseInt(dec, 10));
+		if (hex) return String.fromCodePoint(Number.parseInt(hex, 16));
+		if (name === "colon") return ":";
+		return "";
+	});
 }
 
 // 每次 parse 用独立 Slugger(一篇文章内去重,跨文章不累积)。
@@ -30,35 +30,35 @@ let slugger = new Slugger();
 
 // 启用 GFM（表格/删除线/任务列表）+ 标题 id（项目统一 slugify 规则）+ 代码高亮
 marked.use(
-    {
-        hooks: {
-            preprocess(src) {
-                slugger = new Slugger();
-                return src;
-            },
-        },
-        renderer: {
-            heading({ tokens, depth }) {
-                const text = this.parser.parseInline(tokens);
-                const raw = unescapeEntities(text)
-                    .trim()
-                    .replace(/<[!/a-z].*?>/gi, "");
-                const id = slugger.slug(raw);
-                return `<h${depth} id="${id}">${text}</h${depth}>\n`;
-            },
-        },
-    },
-    markedHighlight({
-        langPrefix: "hljs language-",
-        highlight(code, lang) {
-            const language = hljs.getLanguage(lang) ? lang : "plaintext";
-            try {
-                return hljs.highlight(code, { language }).value;
-            } catch {
-                return code;
-            }
-        },
-    }),
+	{
+		hooks: {
+			preprocess(src) {
+				slugger = new Slugger();
+				return src;
+			},
+		},
+		renderer: {
+			heading({ tokens, depth }) {
+				const text = this.parser.parseInline(tokens);
+				const raw = unescapeEntities(text)
+					.trim()
+					.replace(/<[!/a-z].*?>/gi, "");
+				const id = slugger.slug(raw);
+				return `<h${depth} id="${id}">${text}</h${depth}>\n`;
+			},
+		},
+	},
+	markedHighlight({
+		langPrefix: "hljs language-",
+		highlight(code, lang) {
+			const language = hljs.getLanguage(lang) ? lang : "plaintext";
+			try {
+				return hljs.highlight(code, { language }).value;
+			} catch {
+				return code;
+			}
+		},
+	}),
 );
 
 /**
@@ -68,5 +68,5 @@ marked.use(
  * 与详情页 TOC（extractMarkdownToc 用同一 Slugger）锚点一致。
  */
 export function markdownToHtml(md: string): string {
-    return marked.parse(md, { async: false }) as string;
+	return marked.parse(md, { async: false }) as string;
 }

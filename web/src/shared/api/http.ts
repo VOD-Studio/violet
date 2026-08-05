@@ -7,30 +7,30 @@ import { clearSessionActive } from "./session";
 import type { Envelope, Pagination } from "./types";
 
 declare module "axios" {
-    interface AxiosRequestConfig {
-        /**
-         * 跳过 401 弹窗处理。
-         *
-         * 用于「身份认证」类请求（login/register/verify-email/logout 等）：
-         * 它们的 401/403 是业务结果，不应触发登录弹窗。
-         * 设为 true 时，401 走普通错误流直接 reject，由调用方处理。
-         */
-        __skipAuthDialog?: boolean;
-    }
+	interface AxiosRequestConfig {
+		/**
+		 * 跳过 401 弹窗处理。
+		 *
+		 * 用于「身份认证」类请求（login/register/verify-email/logout 等）：
+		 * 它们的 401/403 是业务结果，不应触发登录弹窗。
+		 * 设为 true 时，401 走普通错误流直接 reject，由调用方处理。
+		 */
+		__skipAuthDialog?: boolean;
+	}
 }
 
 /**
  * HttpClientOptions - createHttpClient 的参数
  */
 export interface HttpClientOptions {
-    /** 覆盖默认 baseURL；SSR 必须传绝对 URL */
-    baseURL?: string;
-    /**
-     * SSR 转发入口请求的 cookie header
-     * Node server 是长驻进程，必须每请求独立实例并注入对应 cookie，
-     * 避免跨请求 cookie 串扰（A 请求的 cookie 注入到 B 请求）。
-     */
-    forwardedCookie?: string;
+	/** 覆盖默认 baseURL；SSR 必须传绝对 URL */
+	baseURL?: string;
+	/**
+	 * SSR 转发入口请求的 cookie header
+	 * Node server 是长驻进程，必须每请求独立实例并注入对应 cookie，
+	 * 避免跨请求 cookie 串扰（A 请求的 cookie 注入到 B 请求）。
+	 */
+	forwardedCookie?: string;
 }
 
 /**
@@ -44,10 +44,10 @@ export interface HttpClientOptions {
  * @typeParam T - 业务数据类型
  */
 export interface UnpackedResponse<T = unknown> {
-    /** 业务数据 */
-    data: T;
-    /** 分页元数据（仅列表接口存在） */
-    pagination?: Pagination;
+	/** 业务数据 */
+	data: T;
+	/** 分页元数据（仅列表接口存在） */
+	pagination?: Pagination;
 }
 
 /**
@@ -57,10 +57,10 @@ export interface UnpackedResponse<T = unknown> {
  * - 服务端：从 VITE_SSR_API_BASE_URL 读内网地址（绕过反代，直连后端容器）
  */
 const getBaseUrl = (): string => {
-    if (typeof window === "undefined") {
-        return import.meta.env.VITE_SSR_API_BASE_URL || "http://localhost:9090/api/v1";
-    }
-    return import.meta.env.VITE_API_BASE_URL || "/api/v1";
+	if (typeof window === "undefined") {
+		return import.meta.env.VITE_SSR_API_BASE_URL || "http://localhost:9090/api/v1";
+	}
+	return import.meta.env.VITE_API_BASE_URL || "/api/v1";
 };
 
 /**
@@ -77,95 +77,95 @@ const getBaseUrl = (): string => {
  * @returns 配好的 axios 实例
  */
 export const createHttpClient = (opts: HttpClientOptions = {}): AxiosInstance => {
-    const client = axios.create({
-        baseURL: opts.baseURL || getBaseUrl(),
-        timeout: 15000,
-        withCredentials: true,
-    });
+	const client = axios.create({
+		baseURL: opts.baseURL || getBaseUrl(),
+		timeout: 15000,
+		withCredentials: true,
+	});
 
-    if (opts.forwardedCookie) {
-        client.defaults.headers.common.Cookie = opts.forwardedCookie;
-    }
+	if (opts.forwardedCookie) {
+		client.defaults.headers.common.Cookie = opts.forwardedCookie;
+	}
 
-    axiosRetry(client, {
-        retries: 2,
-        retryCondition: (err: AxiosError) => {
-            // 仅网络错误或服务端错误重试；业务 4xx 重试无意义且可能放大问题
-            if (err.code === "ERR_NETWORK" || err.code === "ETIMEDOUT") return true;
-            const status = err.response?.status ?? 0;
-            return status >= 500;
-        },
-        retryDelay: axiosRetry.exponentialDelay,
-    });
+	axiosRetry(client, {
+		retries: 2,
+		retryCondition: (err: AxiosError) => {
+			// 仅网络错误或服务端错误重试；业务 4xx 重试无意义且可能放大问题
+			if (err.code === "ERR_NETWORK" || err.code === "ETIMEDOUT") return true;
+			const status = err.response?.status ?? 0;
+			return status >= 500;
+		},
+		retryDelay: axiosRetry.exponentialDelay,
+	});
 
-    // 写请求自动注入 CSRF token（配合后端 double-submit 校验）
-    client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-        const method = config.method?.toLowerCase();
-        if (method && method !== "get") {
-            const token = getCSRFToken();
-            if (token) {
-                config.headers.set(CSRF_HEADER, token);
-            }
-        }
-        return config;
-    });
+	// 写请求自动注入 CSRF token（配合后端 double-submit 校验）
+	client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+		const method = config.method?.toLowerCase();
+		if (method && method !== "get") {
+			const token = getCSRFToken();
+			if (token) {
+				config.headers.set(CSRF_HEADER, token);
+			}
+		}
+		return config;
+	});
 
-    // 成功响应：拆 envelope，业务层不感知 { data, meta } 结构
-    client.interceptors.response.use(
-        (response) => {
-            const env = response.data as Envelope;
-            const unpacked: UnpackedResponse = {
-                data: env.data,
-                pagination: env.meta?.pagination,
-            };
-            response.data = unpacked;
-            return response;
-        },
-        async (err: AxiosError) => {
-            const status = err.response?.status ?? 0;
+	// 成功响应：拆 envelope，业务层不感知 { data, meta } 结构
+	client.interceptors.response.use(
+		(response) => {
+			const env = response.data as Envelope;
+			const unpacked: UnpackedResponse = {
+				data: env.data,
+				pagination: env.meta?.pagination,
+			};
+			response.data = unpacked;
+			return response;
+		},
+		async (err: AxiosError) => {
+			const status = err.response?.status ?? 0;
 
-            // 401 处理：opaque session 下 token 不再续期，直接标记会话失效并提示重登。
-            // __skipAuthDialog 用于主动认证请求，避免登录失败还弹登录窗。
-            if (status === 401 && err.config && !err.config.__skipAuthDialog) {
-                clearSessionActive();
-                if (typeof window !== "undefined") {
-                    useLoginDialogStore.getState().open();
-                }
-            }
+			// 401 处理：opaque session 下 token 不再续期，直接标记会话失效并提示重登。
+			// __skipAuthDialog 用于主动认证请求，避免登录失败还弹登录窗。
+			if (status === 401 && err.config && !err.config.__skipAuthDialog) {
+				clearSessionActive();
+				if (typeof window !== "undefined") {
+					useLoginDialogStore.getState().open();
+				}
+			}
 
-            // 归一化错误：把后端错误结构转成 ApiError 抛出
-            const body = err.response?.data as
-                | (Envelope & {
-                      error?: string;
-                      message?: string;
-                      details?: Record<string, string[]>;
-                      request_id?: string;
-                  })
-                | undefined;
+			// 归一化错误：把后端错误结构转成 ApiError 抛出
+			const body = err.response?.data as
+				| (Envelope & {
+						error?: string;
+						message?: string;
+						details?: Record<string, string[]>;
+						request_id?: string;
+				  })
+				| undefined;
 
-            if (body?.error) {
-                throw new ApiError({
-                    error: body.error,
-                    message: body.message ?? "请求失败",
-                    status,
-                    details: body.details,
-                    requestId: body.request_id,
-                });
-            }
+			if (body?.error) {
+				throw new ApiError({
+					error: body.error,
+					message: body.message ?? "请求失败",
+					status,
+					details: body.details,
+					requestId: body.request_id,
+				});
+			}
 
-            if (err.code === "ERR_NETWORK" || err.code === "ETIMEDOUT") {
-                throw ApiError.network();
-            }
+			if (err.code === "ERR_NETWORK" || err.code === "ETIMEDOUT") {
+				throw ApiError.network();
+			}
 
-            throw new ApiError({
-                error: "UNKNOWN",
-                message: err.message || "未知错误",
-                status,
-            });
-        },
-    );
+			throw new ApiError({
+				error: "UNKNOWN",
+				message: err.message || "未知错误",
+				status,
+			});
+		},
+	);
 
-    return client;
+	return client;
 };
 
 /**

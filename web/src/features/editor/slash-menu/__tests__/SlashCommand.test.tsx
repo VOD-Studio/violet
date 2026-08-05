@@ -10,40 +10,40 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { buildEditorExtensionsWithSlash } from "../../extensions";
 
 beforeAll(() => {
-    // jsdom 未实现 scrollIntoView，SlashMenuView 选中变化时会调用（同 SlashMenu.test 的桩）
-    Element.prototype.scrollIntoView = vi.fn();
+	// jsdom 未实现 scrollIntoView，SlashMenuView 选中变化时会调用（同 SlashMenu.test 的桩）
+	Element.prototype.scrollIntoView = vi.fn();
 });
 
 function createEditor(): Editor {
-    return new Editor({
-        element: document.createElement("div"),
-        extensions: buildEditorExtensionsWithSlash(() => {}),
-        content: "",
-    });
+	return new Editor({
+		element: document.createElement("div"),
+		extensions: buildEditorExtensionsWithSlash(() => {}),
+		content: "",
+	});
 }
 
 /** v3 Suggestion 走 plugin apply 检查事务，普通插入即触发真实激活路径 */
 function typeText(editor: Editor, text: string): void {
-    editor.commands.insertContent(text);
+	editor.commands.insertContent(text);
 }
 
 describe("SlashCommand 挂载层叠", () => {
-    it("输入 / 唤起菜单，host 挂在 body 且 z-index 高于 zen 容器（z-40）", async () => {
-        const editor = createEditor();
+	it("输入 / 唤起菜单，host 挂在 body 且 z-index 高于 zen 容器（z-40）", async () => {
+		const editor = createEditor();
 
-        typeText(editor, "/");
-        // plugin view 的 update 是 async 的，onStart 在 microtask 后才 dispatch
-        await new Promise<void>((resolve) => {
-            setTimeout(resolve, 50);
-        });
+		typeText(editor, "/");
+		// plugin view 的 update 是 async 的，onStart 在 microtask 后才 dispatch
+		await new Promise<void>((resolve) => {
+			setTimeout(resolve, 50);
+		});
 
-        const host = document.querySelector<HTMLElement>(".slash-menu-host");
-        expect(host).toBeTruthy();
-        // 遮挡前提：host 在 body 下、zen fixed 容器之外，无 z-index 即被压
-        expect(host?.parentElement).toBe(document.body);
-        expect(host?.style.zIndex).toBe("50");
+		const host = document.querySelector<HTMLElement>(".slash-menu-host");
+		expect(host).toBeTruthy();
+		// 遮挡前提：host 在 body 下、zen fixed 容器之外，无 z-index 即被压
+		expect(host?.parentElement).toBe(document.body);
+		expect(host?.style.zIndex).toBe("50");
 
-        editor.destroy();
-        expect(document.querySelector(".slash-menu-host")).toBeNull();
-    });
+		editor.destroy();
+		expect(document.querySelector(".slash-menu-host")).toBeNull();
+	});
 });

@@ -14,7 +14,7 @@ import { authKeys } from "./keys";
  * @returns 包含 csrf_token 字符串的对象
  */
 export const fetchCsrfToken = (): Promise<CsrfTokenResponse> =>
-    apiGet<CsrfTokenResponse>("/auth/csrf-token");
+	apiGet<CsrfTokenResponse>("/auth/csrf-token");
 
 /**
  * useCsrfToken - 获取 CSRF token 的 hook 形态
@@ -30,14 +30,14 @@ export const fetchCsrfToken = (): Promise<CsrfTokenResponse> =>
  * @returns CSRF token 字符串，未取到返回空串
  */
 export const useCsrfToken = (options: { enabled?: boolean } = {}): string => {
-    const { data } = useQuery({
-        queryKey: authKeys.csrfToken(),
-        queryFn: fetchCsrfToken,
-        enabled: options.enabled,
-        // violet_csrf cookie MaxAge 为 1 小时，token 在此期间有效
-        staleTime: 60 * 60 * 1000,
-    });
-    return data?.csrf_token ?? "";
+	const { data } = useQuery({
+		queryKey: authKeys.csrfToken(),
+		queryFn: fetchCsrfToken,
+		enabled: options.enabled,
+		// violet_csrf cookie MaxAge 为 1 小时，token 在此期间有效
+		staleTime: 60 * 60 * 1000,
+	});
+	return data?.csrf_token ?? "";
 };
 
 /**
@@ -52,7 +52,7 @@ export const useCsrfToken = (options: { enabled?: boolean } = {}): string => {
  * @returns 当前登录用户完整信息
  */
 export const fetchMe = (): Promise<UserDTO> =>
-    apiGet<UserDTO>("/auth/me", { __skipAuthDialog: true });
+	apiGet<UserDTO>("/auth/me", { __skipAuthDialog: true });
 
 /**
  * useMe - 当前登录用户 hook
@@ -66,9 +66,9 @@ export const fetchMe = (): Promise<UserDTO> =>
  * @param options 透传 useQuery 选项，常用于禁用自动请求
  */
 export const useMe = (options: { enabled?: boolean } = {}): UseQueryResult<UserDTO | null> =>
-    useQuery<UserDTO | null>({
-        queryKey: authKeys.me(),
-        queryFn: fetchMe,
-        enabled: options.enabled,
-        staleTime: Infinity,
-    });
+	useQuery<UserDTO | null>({
+		queryKey: authKeys.me(),
+		queryFn: fetchMe,
+		enabled: options.enabled,
+		staleTime: Infinity,
+	});

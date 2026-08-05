@@ -9,29 +9,29 @@ import { useCallback, useState } from "react";
 const STORAGE_KEY = "violet-code-runner-vim";
 
 function readStored(): boolean {
-    try {
-        const val = localStorage.getItem(STORAGE_KEY);
-        if (val === null) return true; // 默认开启
-        return val === "true";
-    } catch {
-        return true; // localStorage 不可用时默认开启
-    }
+	try {
+		const val = localStorage.getItem(STORAGE_KEY);
+		if (val === null) return true; // 默认开启
+		return val === "true";
+	} catch {
+		return true; // localStorage 不可用时默认开启
+	}
 }
 
 export function useVimPreference() {
-    const [vimEnabled, setVimEnabled] = useState(readStored);
+	const [vimEnabled, setVimEnabled] = useState(readStored);
 
-    const toggle = useCallback(() => {
-        setVimEnabled((prev) => {
-            const next = !prev;
-            try {
-                localStorage.setItem(STORAGE_KEY, String(next));
-            } catch {
-                // 写入失败不影响内存状态
-            }
-            return next;
-        });
-    }, []);
+	const toggle = useCallback(() => {
+		setVimEnabled((prev) => {
+			const next = !prev;
+			try {
+				localStorage.setItem(STORAGE_KEY, String(next));
+			} catch {
+				// 写入失败不影响内存状态
+			}
+			return next;
+		});
+	}, []);
 
-    return { vimEnabled, toggleVim: toggle };
+	return { vimEnabled, toggleVim: toggle };
 }

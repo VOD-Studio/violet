@@ -10,15 +10,15 @@ import { Workflow } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 export function DiagramPlaceholder({ className }: { className?: string }) {
-    return (
-        <div
-            className={cn(
-                "flex min-h-64 w-full items-center justify-center rounded-lg bg-muted/40",
-                className,
-            )}
-            aria-hidden
-        >
-            <Workflow className="size-5 animate-pulse text-muted-foreground/40" />
-        </div>
-    );
+	return (
+		<div
+			className={cn(
+				"flex min-h-64 w-full items-center justify-center rounded-lg bg-muted/40",
+				className,
+			)}
+			aria-hidden
+		>
+			<Workflow className="size-5 animate-pulse text-muted-foreground/40" />
+		</div>
+	);
 }

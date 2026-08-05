@@ -12,10 +12,10 @@
  * 对应后端 application/tag.TagDTO。
  */
 export interface Tag {
-    /** 标签 ID */
-    id: number;
-    /** 标签名 */
-    name: string;
-    /** URL 友好的 slug */
-    slug: string;
+	/** 标签 ID */
+	id: number;
+	/** 标签名 */
+	name: string;
+	/** URL 友好的 slug */
+	slug: string;
 }

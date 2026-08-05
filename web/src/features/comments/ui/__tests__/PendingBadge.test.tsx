@@ -9,17 +9,17 @@ import { afterEach, describe, expect, it } from "vitest";
 import { PendingBadge } from "../PendingBadge";
 
 describe("PendingBadge", () => {
-    afterEach(() => {
-        cleanup();
-    });
+	afterEach(() => {
+		cleanup();
+	});
 
-    it("show=true 时渲染徽章", () => {
-        render(<PendingBadge show={true} />);
-        expect(screen.getAllByText("审批中").length).toBe(1);
-    });
+	it("show=true 时渲染徽章", () => {
+		render(<PendingBadge show={true} />);
+		expect(screen.getAllByText("审批中").length).toBe(1);
+	});
 
-    it("show=false 时不渲染", () => {
-        render(<PendingBadge show={false} />);
-        expect(screen.queryByText("审批中")).toBeNull();
-    });
+	it("show=false 时不渲染", () => {
+		render(<PendingBadge show={false} />);
+		expect(screen.queryByText("审批中")).toBeNull();
+	});
 });

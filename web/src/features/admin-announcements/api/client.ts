@@ -3,9 +3,9 @@
  */
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/shared/api/request";
 import type {
-    AnnouncementDTO,
-    CreateAnnouncementRequest,
-    UpdateAnnouncementRequest,
+	AnnouncementDTO,
+	CreateAnnouncementRequest,
+	UpdateAnnouncementRequest,
 } from "../model/types";
 
 const BASE = "/admin/announcements";
@@ -16,7 +16,7 @@ const BASE = "/admin/announcements";
  * GET /admin/announcements
  */
 export const listAnnouncements = async (): Promise<AnnouncementDTO[]> =>
-    apiGet<AnnouncementDTO[]>(BASE);
+	apiGet<AnnouncementDTO[]>(BASE);
 
 /**
  * 获取单个公告详情
@@ -24,7 +24,7 @@ export const listAnnouncements = async (): Promise<AnnouncementDTO[]> =>
  * GET /admin/announcements/{id}
  */
 export const getAnnouncement = async (id: number): Promise<AnnouncementDTO> =>
-    apiGet<AnnouncementDTO>(`${BASE}/${id}`);
+	apiGet<AnnouncementDTO>(`${BASE}/${id}`);
 
 /**
  * 创建公告
@@ -32,7 +32,7 @@ export const getAnnouncement = async (id: number): Promise<AnnouncementDTO> =>
  * POST /admin/announcements
  */
 export const createAnnouncement = async (
-    body: CreateAnnouncementRequest,
+	body: CreateAnnouncementRequest,
 ): Promise<{ id: number }> => apiPost<{ id: number }>(BASE, body);
 
 /**
@@ -41,8 +41,8 @@ export const createAnnouncement = async (
  * PATCH /admin/announcements/{id}
  */
 export const updateAnnouncement = async (
-    id: number,
-    body: UpdateAnnouncementRequest,
+	id: number,
+	body: UpdateAnnouncementRequest,
 ): Promise<void> => apiPatch<void>(`${BASE}/${id}`, body);
 
 /**
@@ -51,4 +51,4 @@ export const updateAnnouncement = async (
  * DELETE /admin/announcements/{id}
  */
 export const deleteAnnouncement = async (id: number): Promise<void> =>
-    apiDelete<void>(`${BASE}/${id}`);
+	apiDelete<void>(`${BASE}/${id}`);

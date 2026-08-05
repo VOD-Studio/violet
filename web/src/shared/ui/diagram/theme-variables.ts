@@ -14,14 +14,14 @@
  */
 /** mermaid themeVariables 子集：只覆盖框架色，节点填色留给 mermaid 主题自带 */
 export interface MermaidThemeVariables {
-    /** 图表整体背景 */
-    background?: string;
-    /** 节点内文字色（on 节点填充） */
-    primaryTextColor?: string;
-    /** 连线颜色 */
-    lineColor?: string;
-    /** 主边框颜色 */
-    primaryBorderColor?: string;
+	/** 图表整体背景 */
+	background?: string;
+	/** 节点内文字色（on 节点填充） */
+	primaryTextColor?: string;
+	/** 连线颜色 */
+	lineColor?: string;
+	/** 主边框颜色 */
+	primaryBorderColor?: string;
 }
 
 /** 站点 CSS 变量读不到时（SSR / 测试环境无 CSS）的灰度兜底，保证渲染不白屏 */
@@ -37,30 +37,30 @@ const FALLBACK_DARK = { background: "#0a0a0a", foreground: "#fafafa", border: "#
  * 空/null/undefined → null（不变黑），让调用方走兜底。
  */
 export function cssColorToHex(color: string | undefined | null): string | null {
-    const value = color?.trim();
-    if (!value) return null;
-    if (/^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(value)) {
-        return value.slice(0, 7).toLowerCase();
-    }
-    if (typeof window === "undefined" || typeof document === "undefined") return null;
-    const probe = document.createElement("span");
-    probe.style.color = value;
-    probe.style.display = "none";
-    document.documentElement.appendChild(probe);
-    const computed = window.getComputedStyle(probe).color;
-    probe.remove();
-    const match = computed.match(/rgba?\(([^)]+)\)/);
-    if (!match) return null;
-    const channels = match[1].split(",").map((n) => Number.parseFloat(n));
-    if (channels.some((n) => Number.isNaN(n))) return null;
-    const [r, g, b] = channels;
-    return `#${[r, g, b]
-        .map((n) =>
-            Math.max(0, Math.min(255, Math.round(n)))
-                .toString(16)
-                .padStart(2, "0"),
-        )
-        .join("")}`;
+	const value = color?.trim();
+	if (!value) return null;
+	if (/^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(value)) {
+		return value.slice(0, 7).toLowerCase();
+	}
+	if (typeof window === "undefined" || typeof document === "undefined") return null;
+	const probe = document.createElement("span");
+	probe.style.color = value;
+	probe.style.display = "none";
+	document.documentElement.appendChild(probe);
+	const computed = window.getComputedStyle(probe).color;
+	probe.remove();
+	const match = computed.match(/rgba?\(([^)]+)\)/);
+	if (!match) return null;
+	const channels = match[1].split(",").map((n) => Number.parseFloat(n));
+	if (channels.some((n) => Number.isNaN(n))) return null;
+	const [r, g, b] = channels;
+	return `#${[r, g, b]
+		.map((n) =>
+			Math.max(0, Math.min(255, Math.round(n)))
+				.toString(16)
+				.padStart(2, "0"),
+		)
+		.join("")}`;
 }
 
 /**
@@ -70,16 +70,16 @@ export function cssColorToHex(color: string | undefined | null): string | null {
  * 不带类时读到 :root 的浅色值。与 <html> 当前主题解耦。
  */
 function readSiteVar(name: string, isDark: boolean): string {
-    if (typeof window === "undefined" || typeof document === "undefined") return "";
-    const probe = document.createElement("span");
-    if (isDark) probe.className = "dark";
-    probe.style.display = "none";
-    document.documentElement.appendChild(probe);
-    try {
-        return window.getComputedStyle(probe).getPropertyValue(name).trim();
-    } finally {
-        probe.remove();
-    }
+	if (typeof window === "undefined" || typeof document === "undefined") return "";
+	const probe = document.createElement("span");
+	if (isDark) probe.className = "dark";
+	probe.style.display = "none";
+	document.documentElement.appendChild(probe);
+	try {
+		return window.getComputedStyle(probe).getPropertyValue(name).trim();
+	} finally {
+		probe.remove();
+	}
 }
 
 /**
@@ -90,20 +90,20 @@ function readSiteVar(name: string, isDark: boolean): string {
  * isDark 决定读浅色（:root）还是深色（.dark）变体。
  */
 export function getThemeVariables(isDark: boolean): MermaidThemeVariables {
-    const fallback = isDark ? FALLBACK_DARK : FALLBACK_LIGHT;
-    const resolve = (varName: string, fb: string): string =>
-        cssColorToHex(readSiteVar(varName, isDark)) ?? fb;
-    // dark 走内置 dark 主题（render-mermaid.ts 按明暗切换 theme）：节点深色系
-    // 填充与浅色文字已全图配对，只需把背景对齐站点；连线/边框/文字用主题
-    // 内建值（站点 border 灰在深色节点上对比度不足）。
-    // light 走 base 主题：框架色对齐站点，节点填色保留默认彩色（PRD 决策）。
-    if (isDark) {
-        return { background: resolve("--background", fallback.background) };
-    }
-    return {
-        background: resolve("--background", fallback.background),
-        primaryTextColor: resolve("--foreground", fallback.foreground),
-        lineColor: resolve("--border", fallback.border),
-        primaryBorderColor: resolve("--border", fallback.border),
-    };
+	const fallback = isDark ? FALLBACK_DARK : FALLBACK_LIGHT;
+	const resolve = (varName: string, fb: string): string =>
+		cssColorToHex(readSiteVar(varName, isDark)) ?? fb;
+	// dark 走内置 dark 主题（render-mermaid.ts 按明暗切换 theme）：节点深色系
+	// 填充与浅色文字已全图配对，只需把背景对齐站点；连线/边框/文字用主题
+	// 内建值（站点 border 灰在深色节点上对比度不足）。
+	// light 走 base 主题：框架色对齐站点，节点填色保留默认彩色（PRD 决策）。
+	if (isDark) {
+		return { background: resolve("--background", fallback.background) };
+	}
+	return {
+		background: resolve("--background", fallback.background),
+		primaryTextColor: resolve("--foreground", fallback.foreground),
+		lineColor: resolve("--border", fallback.border),
+		primaryBorderColor: resolve("--border", fallback.border),
+	};
 }

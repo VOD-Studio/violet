@@ -12,60 +12,60 @@ import { buildEditorExtensions } from "../../extensions";
 import { updateMathLatex } from "../update-math-latex";
 
 function createEditor(content: string): Editor {
-    const editor = new Editor({
-        element: document.createElement("div"),
-        extensions: buildEditorExtensions(),
-        content: "",
-    });
-    editor.commands.setContent(content, { contentType: "markdown" });
-    return editor;
+	const editor = new Editor({
+		element: document.createElement("div"),
+		extensions: buildEditorExtensions(),
+		content: "",
+	});
+	editor.commands.setContent(content, { contentType: "markdown" });
+	return editor;
 }
 
 function findNodePos(editor: Editor, type: string): number {
-    let found = -1;
-    editor.state.doc.descendants((node, pos) => {
-        if (node.type.name === type) {
-            found = pos;
-            return false;
-        }
-        return true;
-    });
-    return found;
+	let found = -1;
+	editor.state.doc.descendants((node, pos) => {
+		if (node.type.name === type) {
+			found = pos;
+			return false;
+		}
+		return true;
+	});
+	return found;
 }
 
 function applyLatex(editor: Editor, pos: number, latex: string): void {
-    editor.commands.command(({ tr }) => {
-        updateMathLatex(tr, pos, latex);
-        return true;
-    });
+	editor.commands.command(({ tr }) => {
+		updateMathLatex(tr, pos, latex);
+		return true;
+	});
 }
 
 describe("updateMathLatex", () => {
-    it("行内公式：更新 latex 后保持 NodeSelection 选中该节点", () => {
-        const editor = createEditor("公式 $E=mc^2$ 测试");
-        const pos = findNodePos(editor, "inlineMath");
-        editor.commands.setNodeSelection(pos);
+	it("行内公式：更新 latex 后保持 NodeSelection 选中该节点", () => {
+		const editor = createEditor("公式 $E=mc^2$ 测试");
+		const pos = findNodePos(editor, "inlineMath");
+		editor.commands.setNodeSelection(pos);
 
-        applyLatex(editor, pos, "E=mc^3");
+		applyLatex(editor, pos, "E=mc^3");
 
-        const sel = editor.state.selection;
-        expect(sel).toBeInstanceOf(NodeSelection);
-        expect((sel as NodeSelection).node.type.name).toBe("inlineMath");
-        expect((sel as NodeSelection).node.attrs.latex).toBe("E=mc^3");
-        editor.destroy();
-    });
+		const sel = editor.state.selection;
+		expect(sel).toBeInstanceOf(NodeSelection);
+		expect((sel as NodeSelection).node.type.name).toBe("inlineMath");
+		expect((sel as NodeSelection).node.attrs.latex).toBe("E=mc^3");
+		editor.destroy();
+	});
 
-    it("块级公式：更新 latex 后保持 NodeSelection 选中该节点", () => {
-        const editor = createEditor("$$E=mc^2$$");
-        const pos = findNodePos(editor, "blockMath");
-        editor.commands.setNodeSelection(pos);
+	it("块级公式：更新 latex 后保持 NodeSelection 选中该节点", () => {
+		const editor = createEditor("$$E=mc^2$$");
+		const pos = findNodePos(editor, "blockMath");
+		editor.commands.setNodeSelection(pos);
 
-        applyLatex(editor, pos, "\\int_0^1 x\\,dx");
+		applyLatex(editor, pos, "\\int_0^1 x\\,dx");
 
-        const sel = editor.state.selection;
-        expect(sel).toBeInstanceOf(NodeSelection);
-        expect((sel as NodeSelection).node.type.name).toBe("blockMath");
-        expect((sel as NodeSelection).node.attrs.latex).toBe("\\int_0^1 x\\,dx");
-        editor.destroy();
-    });
+		const sel = editor.state.selection;
+		expect(sel).toBeInstanceOf(NodeSelection);
+		expect((sel as NodeSelection).node.type.name).toBe("blockMath");
+		expect((sel as NodeSelection).node.attrs.latex).toBe("\\int_0^1 x\\,dx");
+		editor.destroy();
+	});
 });

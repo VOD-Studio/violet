@@ -22,13 +22,13 @@ import { getServerHttpClient } from "./auth";
  * @returns 当前会话 claims，未登录或出错时返回 null
  */
 export const getAuthSession = createServerFn({ method: "GET" }).handler(
-    async (): Promise<SessionClaims | null> => {
-        try {
-            const client = getServerHttpClient();
-            const res = await client.get<{ data: SessionClaims }>("/auth/session");
-            return res.data.data;
-        } catch {
-            return null;
-        }
-    },
+	async (): Promise<SessionClaims | null> => {
+		try {
+			const client = getServerHttpClient();
+			const res = await client.get<{ data: SessionClaims }>("/auth/session");
+			return res.data.data;
+		} catch {
+			return null;
+		}
+	},
 );

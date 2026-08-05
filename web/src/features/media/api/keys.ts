@@ -7,14 +7,14 @@ import type { MediaListQuery } from "../model/types";
  * 后台管理 key 见 admin-media。
  */
 export const mediaKeys = {
-    /** 媒体模块根 key */
-    all: ["media"] as const,
-    /** 列表维度 */
-    lists: () => [...mediaKeys.all, "list"] as const,
-    /** 具体列表查询 */
-    list: (query: MediaListQuery) => [...mediaKeys.lists(), query] as const,
-    /** 详情维度 */
-    details: () => [...mediaKeys.all, "detail"] as const,
-    /** 具体媒体详情 */
-    detail: (id: string) => [...mediaKeys.details(), id] as const,
+	/** 媒体模块根 key */
+	all: ["media"] as const,
+	/** 列表维度 */
+	lists: () => [...mediaKeys.all, "list"] as const,
+	/** 具体列表查询 */
+	list: (query: MediaListQuery) => [...mediaKeys.lists(), query] as const,
+	/** 详情维度 */
+	details: () => [...mediaKeys.all, "detail"] as const,
+	/** 具体媒体详情 */
+	detail: (id: string) => [...mediaKeys.details(), id] as const,
 };

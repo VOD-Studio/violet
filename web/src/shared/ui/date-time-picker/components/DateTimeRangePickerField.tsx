@@ -8,16 +8,16 @@ import { DateTimeRangePicker } from "./DateTimeRangePicker";
  * 用于表单场景，自动渲染 label、选择器和错误提示。
  */
 export function DateTimeRangePickerField({
-    id,
-    label,
-    error,
-    ...pickerProps
+	id,
+	label,
+	error,
+	...pickerProps
 }: DateTimeRangePickerFieldProps) {
-    return (
-        <div className="space-y-2">
-            <Label htmlFor={id}>{label}</Label>
-            <DateTimeRangePicker {...pickerProps} />
-            {error && <p className="text-destructive text-sm">{error}</p>}
-        </div>
-    );
+	return (
+		<div className="space-y-2">
+			<Label htmlFor={id}>{label}</Label>
+			<DateTimeRangePicker {...pickerProps} />
+			{error && <p className="text-destructive text-sm">{error}</p>}
+		</div>
+	);
 }

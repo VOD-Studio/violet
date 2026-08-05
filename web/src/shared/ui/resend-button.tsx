@@ -20,77 +20,77 @@ import { Button, type ButtonProps } from "@/shared/ui/base/button";
  * <ResendButton onResend={() => register.mutate(email)} resetKey={email} />
  */
 interface ResendButtonProps {
-    /**
-     * 点击重发的回调。
-     * 返回 false 表示发送未生效（校验失败、邮箱空等），不进入冷却；
-     * 其他返回值（undefined/true/Promise<true>）进入冷却。
-     */
-    onResend: () => boolean | Promise<boolean> | undefined;
-    /** 冷却秒数，默认 60 */
-    cooldownSeconds?: number;
-    /** 重置倒计时的触发值（变化时立即结束冷却） */
-    resetKey?: string;
-    /** Button 变体，默认 link */
-    variant?: ButtonProps["variant"];
-    /** 是否禁用（如重发请求进行中） */
-    disabled?: boolean;
-    /** 按钮文案，默认「重新发送」 */
-    label?: string;
+	/**
+	 * 点击重发的回调。
+	 * 返回 false 表示发送未生效（校验失败、邮箱空等），不进入冷却；
+	 * 其他返回值（undefined/true/Promise<true>）进入冷却。
+	 */
+	onResend: () => boolean | Promise<boolean> | undefined;
+	/** 冷却秒数，默认 60 */
+	cooldownSeconds?: number;
+	/** 重置倒计时的触发值（变化时立即结束冷却） */
+	resetKey?: string;
+	/** Button 变体，默认 link */
+	variant?: ButtonProps["variant"];
+	/** 是否禁用（如重发请求进行中） */
+	disabled?: boolean;
+	/** 按钮文案，默认「重新发送」 */
+	label?: string;
 }
 
 export function ResendButton({
-    onResend,
-    cooldownSeconds = 60,
-    resetKey,
-    variant = "link",
-    disabled = false,
-    label = "重新发送",
+	onResend,
+	cooldownSeconds = 60,
+	resetKey,
+	variant = "link",
+	disabled = false,
+	label = "重新发送",
 }: ResendButtonProps) {
-    const [remaining, setRemaining] = useState(0);
+	const [remaining, setRemaining] = useState(0);
 
-    // resetKey 变化（如切换邮箱）时立即结束冷却。
-    // 依赖 resetKey 是有意为之：监听其变化触发重置，函数体内无需读取它。
-    // biome-ignore lint/correctness/useExhaustiveDependencies: resetKey 是触发器，非函数体内使用的值
-    useEffect(() => {
-        setRemaining(0);
-    }, [resetKey]);
+	// resetKey 变化（如切换邮箱）时立即结束冷却。
+	// 依赖 resetKey 是有意为之：监听其变化触发重置，函数体内无需读取它。
+	// biome-ignore lint/correctness/useExhaustiveDependencies: resetKey 是触发器，非函数体内使用的值
+	useEffect(() => {
+		setRemaining(0);
+	}, [resetKey]);
 
-    // 倒计时
-    useEffect(() => {
-        if (remaining <= 0) return;
-        const timer = setInterval(() => {
-            setRemaining((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, [remaining]);
+	// 倒计时
+	useEffect(() => {
+		if (remaining <= 0) return;
+		const timer = setInterval(() => {
+			setRemaining((prev) => {
+				if (prev <= 1) {
+					clearInterval(timer);
+					return 0;
+				}
+				return prev - 1;
+			});
+		}, 1000);
+		return () => clearInterval(timer);
+	}, [remaining]);
 
-    const handleClick = async () => {
-        if (remaining > 0 || disabled) return;
-        // onResend 返回 false 表示本次发送未生效（校验失败、邮箱空等），不进入冷却。
-        // 注意：返回 Promise 时 await——异步失败也不进入冷却。
-        const ok = await onResend();
-        if (ok === false) return;
-        setRemaining(cooldownSeconds);
-    };
+	const handleClick = async () => {
+		if (remaining > 0 || disabled) return;
+		// onResend 返回 false 表示本次发送未生效（校验失败、邮箱空等），不进入冷却。
+		// 注意：返回 Promise 时 await——异步失败也不进入冷却。
+		const ok = await onResend();
+		if (ok === false) return;
+		setRemaining(cooldownSeconds);
+	};
 
-    const isCoolingDown = remaining > 0;
+	const isCoolingDown = remaining > 0;
 
-    return (
-        <Button
-            type="button"
-            variant={variant}
-            size="sm"
-            className="h-auto p-0 text-xs"
-            disabled={isCoolingDown || disabled}
-            onClick={handleClick}
-        >
-            {isCoolingDown ? `${remaining}s 后可重发` : label}
-        </Button>
-    );
+	return (
+		<Button
+			type="button"
+			variant={variant}
+			size="sm"
+			className="h-auto p-0 text-xs"
+			disabled={isCoolingDown || disabled}
+			onClick={handleClick}
+		>
+			{isCoolingDown ? `${remaining}s 后可重发` : label}
+		</Button>
+	);
 }

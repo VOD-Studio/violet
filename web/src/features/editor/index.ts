@@ -6,10 +6,10 @@
 
 export { exportMarkdown, importMarkdownFile } from "./lib/markdown-utils";
 export {
-    type ImportUrlMeta,
-    type ImportUrlOpts,
-    type ImportUrlResult,
-    RichTextEditor,
-    type RichTextEditorHandle,
-    type RichTextEditorProps,
+	type ImportUrlMeta,
+	type ImportUrlOpts,
+	type ImportUrlResult,
+	RichTextEditor,
+	type RichTextEditorHandle,
+	type RichTextEditorProps,
 } from "./RichTextEditor";

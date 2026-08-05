@@ -32,7 +32,7 @@ const BLOCK_SELECTOR = "p, h2, h3, h4, h5, li, pre, blockquote";
  *   data-type 保留到 DOM 时漏网
  */
 const UNANNOTATABLE_SELECTOR =
-    "pre, .katex-display, .cm-editor, [data-type='diagram-block'], [data-type='block-math']";
+	"pre, .katex-display, .cm-editor, [data-type='diagram-block'], [data-type='block-math']";
 
 /**
  * 判断选区是否落在不可批注容器内。
@@ -42,11 +42,11 @@ const UNANNOTATABLE_SELECTOR =
  * 起点在内则整段选区都在内。
  */
 export function isSelectionInUnannotatableContainer(range: Range): boolean {
-    let node: Node | null = range.startContainer;
-    while (node && node.nodeType !== Node.ELEMENT_NODE) {
-        node = node.parentNode;
-    }
-    return (node as HTMLElement | null)?.closest(UNANNOTATABLE_SELECTOR) != null;
+	let node: Node | null = range.startContainer;
+	while (node && node.nodeType !== Node.ELEMENT_NODE) {
+		node = node.parentNode;
+	}
+	return (node as HTMLElement | null)?.closest(UNANNOTATABLE_SELECTOR) != null;
 }
 
 /**
@@ -54,11 +54,11 @@ export function isSelectionInUnannotatableContainer(range: Range): boolean {
  * 如果节点本身就在块外（如 body），返回 null。
  */
 function findClosestBlock(node: Node | null): HTMLElement | null {
-    let current: Node | null = node;
-    while (current && current.nodeType !== Node.ELEMENT_NODE) {
-        current = current.parentNode;
-    }
-    return (current as HTMLElement | null)?.closest<HTMLElement>(BLOCK_SELECTOR) ?? null;
+	let current: Node | null = node;
+	while (current && current.nodeType !== Node.ELEMENT_NODE) {
+		current = current.parentNode;
+	}
+	return (current as HTMLElement | null)?.closest<HTMLElement>(BLOCK_SELECTOR) ?? null;
 }
 
 /**
@@ -66,20 +66,20 @@ function findClosestBlock(node: Node | null): HTMLElement | null {
  * 用 Range.toString().length 把 DOM 节点级 offset 转块文本级 offset。
  */
 function offsetWithinBlock(blockEl: HTMLElement, endNode: Node, endOffset: number): number {
-    const range = document.createRange();
-    range.setStart(blockEl, 0);
-    try {
-        range.setEnd(endNode, endOffset);
-    } catch {
-        // endNode 不在 blockEl 内（跨块），返回 -1 表示无效
-        return -1;
-    }
-    return range.toString().length;
+	const range = document.createRange();
+	range.setStart(blockEl, 0);
+	try {
+		range.setEnd(endNode, endOffset);
+	} catch {
+		// endNode 不在 blockEl 内（跨块），返回 -1 表示无效
+		return -1;
+	}
+	return range.toString().length;
 }
 
 export interface SelectionToAnchorOptions {
-    /** 选区所在正文容器（用于校验选区在正文内） */
-    root: HTMLElement;
+	/** 选区所在正文容器（用于校验选区在正文内） */
+	root: HTMLElement;
 }
 
 /**
@@ -88,42 +88,42 @@ export interface SelectionToAnchorOptions {
  * @returns Anchor 五元组；跨块/选区无效/选区在正文外 → null
  */
 export async function selectionToAnchor(opts: SelectionToAnchorOptions): Promise<Anchor | null> {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
+	const selection = window.getSelection();
+	if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
 
-    const range = selection.getRangeAt(0);
+	const range = selection.getRangeAt(0);
 
-    // 不可批注容器（代码块/图块/块级公式）→ 拒绝，返回 null 让 FloatingToolbar 隐藏
-    if (isSelectionInUnannotatableContainer(range)) return null;
+	// 不可批注容器（代码块/图块/块级公式）→ 拒绝，返回 null 让 FloatingToolbar 隐藏
+	if (isSelectionInUnannotatableContainer(range)) return null;
 
-    const startBlock = findClosestBlock(range.startContainer);
-    const endBlock = findClosestBlock(range.endContainer);
-    if (!startBlock || !endBlock) return null;
+	const startBlock = findClosestBlock(range.startContainer);
+	const endBlock = findClosestBlock(range.endContainer);
+	if (!startBlock || !endBlock) return null;
 
-    // 选区必须在正文容器内
-    if (!opts.root.contains(startBlock) || !opts.root.contains(endBlock)) return null;
+	// 选区必须在正文容器内
+	if (!opts.root.contains(startBlock) || !opts.root.contains(endBlock)) return null;
 
-    // 跨块判定：起点和终点所在块不同 → null
-    if (startBlock !== endBlock) return null;
+	// 跨块判定：起点和终点所在块不同 → null
+	if (startBlock !== endBlock) return null;
 
-    const blockText = getBlockText(startBlock);
-    const blockId = await computeBlockId(blockText);
-    if (blockId === null) return null;
+	const blockText = getBlockText(startBlock);
+	const blockId = await computeBlockId(blockText);
+	if (blockId === null) return null;
 
-    // 算块内 startOffset / endOffset
-    const startOffset = offsetWithinBlock(startBlock, range.startContainer, range.startOffset);
-    const endOffset = offsetWithinBlock(startBlock, range.endContainer, range.endOffset);
-    if (startOffset < 0 || endOffset < 0 || startOffset >= endOffset) return null;
+	// 算块内 startOffset / endOffset
+	const startOffset = offsetWithinBlock(startBlock, range.startContainer, range.startOffset);
+	const endOffset = offsetWithinBlock(startBlock, range.endContainer, range.endOffset);
+	if (startOffset < 0 || endOffset < 0 || startOffset >= endOffset) return null;
 
-    return buildAnchorFromRange({
-        blockId,
-        blockText,
-        startOffset,
-        endOffset,
-    });
+	return buildAnchorFromRange({
+		blockId,
+		blockText,
+		startOffset,
+		endOffset,
+	});
 }
 
 /** 清除当前选区（提交批注后调用，避免工具条残留）。 */
 export function clearSelection(): void {
-    window.getSelection()?.removeAllRanges();
+	window.getSelection()?.removeAllRanges();
 }

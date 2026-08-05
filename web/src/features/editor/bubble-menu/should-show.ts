@@ -10,19 +10,19 @@ import { NodeSelection } from "@tiptap/pm/state";
 import type { Editor } from "@tiptap/react";
 
 export interface ShouldShowBubbleMenuOptions {
-    editor: Editor;
-    state: EditorState;
-    from: number;
-    to: number;
+	editor: Editor;
+	state: EditorState;
+	from: number;
+	to: number;
 }
 
 export function shouldShowBubbleMenu({ editor, state, from, to }: ShouldShowBubbleMenuOptions) {
-    const { selection } = state;
-    if (selection.empty) return false;
-    // 节点选中（公式、图片等）不显示文本格式化工具栏
-    if (selection instanceof NodeSelection) return false;
-    if (editor.isActive("codeBlock")) return false;
-    // 全选时不显示浮动菜单
-    if (from === 0 && to === state.doc.content.size) return false;
-    return true;
+	const { selection } = state;
+	if (selection.empty) return false;
+	// 节点选中（公式、图片等）不显示文本格式化工具栏
+	if (selection instanceof NodeSelection) return false;
+	if (editor.isActive("codeBlock")) return false;
+	// 全选时不显示浮动菜单
+	if (from === 0 && to === state.doc.content.size) return false;
+	return true;
 }

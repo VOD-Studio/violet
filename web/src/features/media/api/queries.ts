@@ -11,7 +11,7 @@ import { mediaKeys } from "./keys";
  * @param id 媒体 ID
  */
 export const fetchMedia = async (id: string): Promise<MediaFile> =>
-    apiGet<MediaFile>(`/media/${id}`);
+	apiGet<MediaFile>(`/media/${id}`);
 
 /**
  * useMedia - 媒体详情 hook，公开接口无需鉴权
@@ -19,11 +19,11 @@ export const fetchMedia = async (id: string): Promise<MediaFile> =>
  * @param id 媒体 ID
  */
 export const useMedia = (id: string) =>
-    useQuery({
-        queryKey: mediaKeys.detail(id),
-        queryFn: () => fetchMedia(id),
-        enabled: !!id,
-    });
+	useQuery({
+		queryKey: mediaKeys.detail(id),
+		queryFn: () => fetchMedia(id),
+		enabled: !!id,
+	});
 
 /**
  * fetchMediaList - 调后端 GET /media 拉取当前用户媒体列表
@@ -31,12 +31,12 @@ export const useMedia = (id: string) =>
  * 需鉴权，httpClient 自动携带 cookie。purpose 为用途筛选。
  */
 export const fetchMediaList = async (
-    query: MediaListQuery = {},
+	query: MediaListQuery = {},
 ): Promise<PagedResponse<MediaFile>> => {
-    const { page, limit, purpose } = query;
-    return apiGetPaged<MediaFile>("/media", {
-        params: { page, limit, purpose },
-    });
+	const { page, limit, purpose } = query;
+	return apiGetPaged<MediaFile>("/media", {
+		params: { page, limit, purpose },
+	});
 };
 
 /**
@@ -45,7 +45,7 @@ export const fetchMediaList = async (
  * @param query 分页与用途筛选
  */
 export const useMediaList = (query: MediaListQuery = {}) =>
-    useQuery({
-        queryKey: mediaKeys.list(query),
-        queryFn: () => fetchMediaList(query),
-    });
+	useQuery({
+		queryKey: mediaKeys.list(query),
+		queryFn: () => fetchMediaList(query),
+	});

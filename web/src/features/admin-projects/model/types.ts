@@ -10,20 +10,20 @@
  * 对应后端 projectRequest，title 必填，其余可选。
  */
 export interface CreateProject {
-    /** 项目标题，必填 */
-    title: string;
-    /** 项目描述 */
-    description?: string;
-    /** 项目主页 URL */
-    url?: string;
-    /** GitHub 仓库 URL */
-    github_url?: string;
-    /** 封面图 URL */
-    image_url?: string;
-    /** 技术栈标签列表 */
-    tech_stack?: string[];
-    /** 排序权重，越小越靠前 */
-    sort_order?: number;
+	/** 项目标题，必填 */
+	title: string;
+	/** 项目描述 */
+	description?: string;
+	/** 项目主页 URL */
+	url?: string;
+	/** GitHub 仓库 URL */
+	github_url?: string;
+	/** 封面图 URL */
+	image_url?: string;
+	/** 技术栈标签列表 */
+	tech_stack?: string[];
+	/** 排序权重，越小越靠前 */
+	sort_order?: number;
 }
 
 /**

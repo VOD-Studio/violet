@@ -20,70 +20,70 @@ import { NavMenu } from "./nav-menu/NavMenu";
  * 平滑移动；文字用 max-w/opacity 过渡，随宽度自然收展不挤压。
  */
 export function AdminSidebar() {
-    const collapsed = useAdminSidebarStore((s) => s.collapsed);
-    const toggle = useAdminSidebarStore((s) => s.toggle);
+	const collapsed = useAdminSidebarStore((s) => s.collapsed);
+	const toggle = useAdminSidebarStore((s) => s.toggle);
 
-    return (
-        <TooltipProvider delayDuration={200}>
-            <aside
-                className={cn(
-                    "relative hidden shrink-0 flex-col border-r bg-card transition-[width] duration-200 md:flex",
-                    collapsed ? "w-16" : "w-64",
-                )}
-            >
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={toggle}
-                            aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
-                            className="bg-background absolute top-7 -right-3.5 z-40 size-7 -translate-y-1/2 rounded-full shadow-sm"
-                        >
-                            {collapsed ? (
-                                <PanelLeftOpen className="size-3.5" />
-                            ) : (
-                                <PanelLeftClose className="size-3.5" />
-                            )}
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                        {collapsed ? "展开侧边栏" : "收起侧边栏"}
-                    </TooltipContent>
-                </Tooltip>
-                <AdminBrand collapsed={collapsed} />
-                <div className="flex-1 overflow-x-hidden overflow-y-auto p-3">
-                    <NavMenu collapsed={collapsed} />
-                </div>
-                <div
-                    className={cn(
-                        "flex items-center border-t p-3",
-                        collapsed ? "justify-center" : "justify-between",
-                    )}
-                >
-                    <Link
-                        to="/"
-                        aria-label="返回前台"
-                        className={cn(
-                            "text-muted-foreground hover:bg-accent hover:text-accent-foreground flex items-center rounded-md py-2 text-sm font-medium transition-colors",
-                            collapsed ? "justify-center px-2" : "gap-2 px-3",
-                        )}
-                    >
-                        <ArrowLeft className="size-4 shrink-0" />
-                        <span
-                            className={cn(
-                                "overflow-hidden whitespace-nowrap transition-all duration-200",
-                                collapsed ? "max-w-0 opacity-0" : "max-w-40 opacity-100",
-                            )}
-                        >
-                            返回前台
-                        </span>
-                    </Link>
-                    {!collapsed && (
-                        <span className="text-muted-foreground/60 px-3 text-xs">v2.0</span>
-                    )}
-                </div>
-            </aside>
-        </TooltipProvider>
-    );
+	return (
+		<TooltipProvider delayDuration={200}>
+			<aside
+				className={cn(
+					"relative hidden shrink-0 flex-col border-r bg-card transition-[width] duration-200 md:flex",
+					collapsed ? "w-16" : "w-64",
+				)}
+			>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button
+							variant="outline"
+							size="icon"
+							onClick={toggle}
+							aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
+							className="bg-background absolute top-7 -right-3.5 z-40 size-7 -translate-y-1/2 rounded-full shadow-sm"
+						>
+							{collapsed ? (
+								<PanelLeftOpen className="size-3.5" />
+							) : (
+								<PanelLeftClose className="size-3.5" />
+							)}
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent side="right">
+						{collapsed ? "展开侧边栏" : "收起侧边栏"}
+					</TooltipContent>
+				</Tooltip>
+				<AdminBrand collapsed={collapsed} />
+				<div className="flex-1 overflow-x-hidden overflow-y-auto p-3">
+					<NavMenu collapsed={collapsed} />
+				</div>
+				<div
+					className={cn(
+						"flex items-center border-t p-3",
+						collapsed ? "justify-center" : "justify-between",
+					)}
+				>
+					<Link
+						to="/"
+						aria-label="返回前台"
+						className={cn(
+							"text-muted-foreground hover:bg-accent hover:text-accent-foreground flex items-center rounded-md py-2 text-sm font-medium transition-colors",
+							collapsed ? "justify-center px-2" : "gap-2 px-3",
+						)}
+					>
+						<ArrowLeft className="size-4 shrink-0" />
+						<span
+							className={cn(
+								"overflow-hidden whitespace-nowrap transition-all duration-200",
+								collapsed ? "max-w-0 opacity-0" : "max-w-40 opacity-100",
+							)}
+						>
+							返回前台
+						</span>
+					</Link>
+					{!collapsed && (
+						<span className="text-muted-foreground/60 px-3 text-xs">v2.0</span>
+					)}
+				</div>
+			</aside>
+		</TooltipProvider>
+	);
 }

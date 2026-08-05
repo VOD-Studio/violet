@@ -17,44 +17,44 @@ export const FALLBACK_DIAGRAM_LABEL = "Mermaid 图表";
  * 3. 降级 {@link FALLBACK_DIAGRAM_LABEL}
  */
 export function extractDiagramLabel(source: string): string {
-    if (!source.trim()) return FALLBACK_DIAGRAM_LABEL;
+	if (!source.trim()) return FALLBACK_DIAGRAM_LABEL;
 
-    const lines = source.split("\n");
+	const lines = source.split("\n");
 
-    // 优先级 1：title 关键字
-    for (const raw of lines) {
-        const line = raw.trim();
+	// 优先级 1：title 关键字
+	for (const raw of lines) {
+		const line = raw.trim();
 
-        // %%{init}%% 指令内嵌的 "title": "value"
-        if (line.startsWith("%%{")) {
-            const dirTitle = line.match(/"title"\s*:\s*"([^"]+)"/);
-            if (dirTitle) return dirTitle[1];
-            continue;
-        }
+		// %%{init}%% 指令内嵌的 "title": "value"
+		if (line.startsWith("%%{")) {
+			const dirTitle = line.match(/"title"\s*:\s*"([^"]+)"/);
+			if (dirTitle) return dirTitle[1];
+			continue;
+		}
 
-        // title: value（inline 或 YAML frontmatter）
-        const titleMatch = line.match(/^title\s*[:：]\s*(.+)/i);
-        if (titleMatch) {
-            const title = titleMatch[1].trim().replace(/^["']|["']$/g, "");
-            if (title) return title;
-        }
-    }
+		// title: value（inline 或 YAML frontmatter）
+		const titleMatch = line.match(/^title\s*[:：]\s*(.+)/i);
+		if (titleMatch) {
+			const title = titleMatch[1].trim().replace(/^["']|["']$/g, "");
+			if (title) return title;
+		}
+	}
 
-    // 优先级 2：行首 %% 注释（遇到首个非注释行即停）
-    for (const raw of lines) {
-        const line = raw.trim();
-        if (!line) continue;
-        if (line.startsWith("%%{")) continue; // 指令已查过 title
-        if (line.startsWith("%%")) {
-            const text = line
-                .replace(/^%%\s*/, "")
-                .replace(/\s*%%$/, "")
-                .trim();
-            if (text) return text;
-            continue;
-        }
-        break; // 首个有意义的行（图表类型声明）→ 停止
-    }
+	// 优先级 2：行首 %% 注释（遇到首个非注释行即停）
+	for (const raw of lines) {
+		const line = raw.trim();
+		if (!line) continue;
+		if (line.startsWith("%%{")) continue; // 指令已查过 title
+		if (line.startsWith("%%")) {
+			const text = line
+				.replace(/^%%\s*/, "")
+				.replace(/\s*%%$/, "")
+				.trim();
+			if (text) return text;
+			continue;
+		}
+		break; // 首个有意义的行（图表类型声明）→ 停止
+	}
 
-    return FALLBACK_DIAGRAM_LABEL;
+	return FALLBACK_DIAGRAM_LABEL;
 }

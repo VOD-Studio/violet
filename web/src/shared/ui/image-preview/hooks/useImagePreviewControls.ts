@@ -7,16 +7,16 @@ import { useCallback, useEffect, useState } from "react";
 
 /** useImagePreviewControls Hook 的参数 */
 interface UseImagePreviewControlsProps {
-    /** 是否打开预览 */
-    open: boolean;
-    /** 图片列表 */
-    images: string[];
-    /** 当前图片索引 */
-    currentIndex: number;
-    /** 索引变化回调 */
-    onIndexChange?: (index: number) => void;
-    /** 关闭回调 */
-    onClose: () => void;
+	/** 是否打开预览 */
+	open: boolean;
+	/** 图片列表 */
+	images: string[];
+	/** 当前图片索引 */
+	currentIndex: number;
+	/** 索引变化回调 */
+	onIndexChange?: (index: number) => void;
+	/** 关闭回调 */
+	onClose: () => void;
 }
 
 /**
@@ -30,155 +30,155 @@ interface UseImagePreviewControlsProps {
  * - 阻止背景滚动
  */
 export function useImagePreviewControls({
-    open,
-    images,
-    currentIndex,
-    onIndexChange,
-    onClose,
+	open,
+	images,
+	currentIndex,
+	onIndexChange,
+	onClose,
 }: UseImagePreviewControlsProps) {
-    const [index, setIndex] = useState(currentIndex);
-    const [scale, setScale] = useState(1);
-    const [rotate, setRotate] = useState(0);
-    const [flipX, setFlipX] = useState(false);
-    const [flipY, setFlipY] = useState(false);
+	const [index, setIndex] = useState(currentIndex);
+	const [scale, setScale] = useState(1);
+	const [rotate, setRotate] = useState(0);
+	const [flipX, setFlipX] = useState(false);
+	const [flipY, setFlipY] = useState(false);
 
-    useEffect(() => {
-        setIndex(currentIndex);
-    }, [currentIndex]);
+	useEffect(() => {
+		setIndex(currentIndex);
+	}, [currentIndex]);
 
-    // 打开或切换图片时重置状态
-    // biome-ignore lint/correctness/useExhaustiveDependencies: index 是重置触发器，函数体内未直接使用
-    useEffect(() => {
-        if (open) {
-            setScale(1);
-            setRotate(0);
-            setFlipX(false);
-            setFlipY(false);
-        }
-    }, [open, index]);
+	// 打开或切换图片时重置状态
+	// biome-ignore lint/correctness/useExhaustiveDependencies: index 是重置触发器，函数体内未直接使用
+	useEffect(() => {
+		if (open) {
+			setScale(1);
+			setRotate(0);
+			setFlipX(false);
+			setFlipY(false);
+		}
+	}, [open, index]);
 
-    const handlePrevious = useCallback(() => {
-        if (images.length <= 1) return;
-        const newIndex = index > 0 ? index - 1 : images.length - 1;
-        setIndex(newIndex);
-        onIndexChange?.(newIndex);
-    }, [index, images.length, onIndexChange]);
+	const handlePrevious = useCallback(() => {
+		if (images.length <= 1) return;
+		const newIndex = index > 0 ? index - 1 : images.length - 1;
+		setIndex(newIndex);
+		onIndexChange?.(newIndex);
+	}, [index, images.length, onIndexChange]);
 
-    const handleNext = useCallback(() => {
-        if (images.length <= 1) return;
-        const newIndex = index < images.length - 1 ? index + 1 : 0;
-        setIndex(newIndex);
-        onIndexChange?.(newIndex);
-    }, [index, images.length, onIndexChange]);
+	const handleNext = useCallback(() => {
+		if (images.length <= 1) return;
+		const newIndex = index < images.length - 1 ? index + 1 : 0;
+		setIndex(newIndex);
+		onIndexChange?.(newIndex);
+	}, [index, images.length, onIndexChange]);
 
-    const handleZoomIn = useCallback(() => {
-        setScale((prev) => Math.min(prev + 0.5, 3));
-    }, []);
+	const handleZoomIn = useCallback(() => {
+		setScale((prev) => Math.min(prev + 0.5, 3));
+	}, []);
 
-    const handleZoomOut = useCallback(() => {
-        setScale((prev) => Math.max(prev - 0.5, 0.5));
-    }, []);
+	const handleZoomOut = useCallback(() => {
+		setScale((prev) => Math.max(prev - 0.5, 0.5));
+	}, []);
 
-    const handleRotateLeft = useCallback(() => {
-        setRotate((prev) => prev - 90);
-    }, []);
+	const handleRotateLeft = useCallback(() => {
+		setRotate((prev) => prev - 90);
+	}, []);
 
-    const handleRotateRight = useCallback(() => {
-        setRotate((prev) => prev + 90);
-    }, []);
+	const handleRotateRight = useCallback(() => {
+		setRotate((prev) => prev + 90);
+	}, []);
 
-    const handleFlipX = useCallback(() => {
-        setFlipX((prev) => !prev);
-    }, []);
+	const handleFlipX = useCallback(() => {
+		setFlipX((prev) => !prev);
+	}, []);
 
-    const handleFlipY = useCallback(() => {
-        setFlipY((prev) => !prev);
-    }, []);
+	const handleFlipY = useCallback(() => {
+		setFlipY((prev) => !prev);
+	}, []);
 
-    // 重置缩放/旋转/翻转为初始状态（图片位置在 ImagePreviewImage 内自行重置）
-    const handleReset = useCallback(() => {
-        setScale(1);
-        setRotate(0);
-        setFlipX(false);
-        setFlipY(false);
-    }, []);
+	// 重置缩放/旋转/翻转为初始状态（图片位置在 ImagePreviewImage 内自行重置）
+	const handleReset = useCallback(() => {
+		setScale(1);
+		setRotate(0);
+		setFlipX(false);
+		setFlipY(false);
+	}, []);
 
-    const handleWheel = useCallback((delta: number) => {
-        setScale((prev) => {
-            const newScale = prev - delta * 0.001;
-            return Math.max(0.5, Math.min(3, newScale));
-        });
-    }, []);
+	const handleWheel = useCallback((delta: number) => {
+		setScale((prev) => {
+			const newScale = prev - delta * 0.001;
+			return Math.max(0.5, Math.min(3, newScale));
+		});
+	}, []);
 
-    useEffect(() => {
-        if (!open) return;
+	useEffect(() => {
+		if (!open) return;
 
-        const handleKeyDown = (e: KeyboardEvent) => {
-            switch (e.key) {
-                case "Escape":
-                    onClose();
-                    break;
-                case "ArrowLeft":
-                    handlePrevious();
-                    break;
-                case "ArrowRight":
-                    handleNext();
-                    break;
-                case "+":
-                case "=":
-                    handleZoomIn();
-                    break;
-                case "-":
-                    handleZoomOut();
-                    break;
-            }
-        };
+		const handleKeyDown = (e: KeyboardEvent) => {
+			switch (e.key) {
+				case "Escape":
+					onClose();
+					break;
+				case "ArrowLeft":
+					handlePrevious();
+					break;
+				case "ArrowRight":
+					handleNext();
+					break;
+				case "+":
+				case "=":
+					handleZoomIn();
+					break;
+				case "-":
+					handleZoomOut();
+					break;
+			}
+		};
 
-        const handleWheelEvent = (e: WheelEvent) => {
-            e.preventDefault();
-            handleWheel(e.deltaY);
-        };
+		const handleWheelEvent = (e: WheelEvent) => {
+			e.preventDefault();
+			handleWheel(e.deltaY);
+		};
 
-        window.addEventListener("keydown", handleKeyDown);
-        window.addEventListener("wheel", handleWheelEvent, { passive: false });
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-            window.removeEventListener("wheel", handleWheelEvent);
-        };
-    }, [open, onClose, handlePrevious, handleNext, handleZoomIn, handleZoomOut, handleWheel]);
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("wheel", handleWheelEvent, { passive: false });
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("wheel", handleWheelEvent);
+		};
+	}, [open, onClose, handlePrevious, handleNext, handleZoomIn, handleZoomOut, handleWheel]);
 
-    useEffect(() => {
-        if (open) {
-            if (typeof document === "undefined") return;
-            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-            const originalOverflow = document.body.style.overflow;
-            const originalPaddingRight = document.body.style.paddingRight;
-            document.body.style.overflow = "hidden";
-            if (scrollbarWidth > 0) {
-                document.body.style.paddingRight = `${scrollbarWidth}px`;
-            }
-            return () => {
-                document.body.style.overflow = originalOverflow;
-                document.body.style.paddingRight = originalPaddingRight;
-            };
-        }
-    }, [open]);
+	useEffect(() => {
+		if (open) {
+			if (typeof document === "undefined") return;
+			const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+			const originalOverflow = document.body.style.overflow;
+			const originalPaddingRight = document.body.style.paddingRight;
+			document.body.style.overflow = "hidden";
+			if (scrollbarWidth > 0) {
+				document.body.style.paddingRight = `${scrollbarWidth}px`;
+			}
+			return () => {
+				document.body.style.overflow = originalOverflow;
+				document.body.style.paddingRight = originalPaddingRight;
+			};
+		}
+	}, [open]);
 
-    return {
-        index,
-        scale,
-        rotate,
-        flipX,
-        flipY,
-        setIndex,
-        handlePrevious,
-        handleNext,
-        handleZoomIn,
-        handleZoomOut,
-        handleRotateLeft,
-        handleRotateRight,
-        handleFlipX,
-        handleFlipY,
-        handleReset,
-    };
+	return {
+		index,
+		scale,
+		rotate,
+		flipX,
+		flipY,
+		setIndex,
+		handlePrevious,
+		handleNext,
+		handleZoomIn,
+		handleZoomOut,
+		handleRotateLeft,
+		handleRotateRight,
+		handleFlipX,
+		handleFlipY,
+		handleReset,
+	};
 }

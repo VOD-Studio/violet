@@ -4,7 +4,7 @@ export { VideoPreview } from "./components/VideoPreview";
 export { useVideoPlayer } from "./hooks/useVideoPlayer";
 // 类型
 export type {
-    VideoMetadata,
-    VideoPlayerState,
-    VideoPreviewProps,
+	VideoMetadata,
+	VideoPlayerState,
+	VideoPreviewProps,
 } from "./types/video-preview-types";

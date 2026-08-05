@@ -12,66 +12,66 @@ import { ImagePreview } from "../components/ImagePreview";
 
 // jsdom 中让 probe(new Image())立即成功并带 natural size
 class MockImage {
-    onload: (() => void) | null = null;
-    onerror: (() => void) | null = null;
-    naturalWidth = 1920;
-    naturalHeight = 1080;
-    #src = "";
+	onload: (() => void) | null = null;
+	onerror: (() => void) | null = null;
+	naturalWidth = 1920;
+	naturalHeight = 1080;
+	#src = "";
 
-    set src(value: string) {
-        this.#src = value;
-        queueMicrotask(() => this.onload?.());
-    }
+	set src(value: string) {
+		this.#src = value;
+		queueMicrotask(() => this.onload?.());
+	}
 
-    get src() {
-        return this.#src;
-    }
+	get src() {
+		return this.#src;
+	}
 }
 
 describe("ImagePreview 原图替换链路(真实 motion)", () => {
-    const originalImage = global.Image;
+	const originalImage = global.Image;
 
-    beforeEach(() => {
-        vi.stubGlobal("Image", MockImage as unknown as typeof Image);
-    });
+	beforeEach(() => {
+		vi.stubGlobal("Image", MockImage as unknown as typeof Image);
+	});
 
-    afterEach(() => {
-        vi.stubGlobal("Image", originalImage);
-    });
+	afterEach(() => {
+		vi.stubGlobal("Image", originalImage);
+	});
 
-    it("打开预览后,缩略图占位应被原图替换,不停留在 ?w= 缩略图", async () => {
-        const images = ["/uploads/a.png"];
-        const thumbnails = ["/uploads/a.png?w=600&format=webp"];
+	it("打开预览后,缩略图占位应被原图替换,不停留在 ?w= 缩略图", async () => {
+		const images = ["/uploads/a.png"];
+		const thumbnails = ["/uploads/a.png?w=600&format=webp"];
 
-        render(
-            <ImagePreview
-                open
-                onClose={() => {}}
-                images={images}
-                thumbnails={thumbnails}
-                currentIndex={0}
-            />,
-        );
+		render(
+			<ImagePreview
+				open
+				onClose={() => {}}
+				images={images}
+				thumbnails={thumbnails}
+				currentIndex={0}
+			/>,
+		);
 
-        // 1. flyInSettled 后原图 <img> 必须挂载(shouldLoad 门控,依赖真实 onAnimationComplete)
-        const original = await waitFor(
-            () => {
-                const el = document.querySelector("img.object-contain");
-                expect(el).not.toBeNull();
-                return el as HTMLImageElement;
-            },
-            { timeout: 3000 },
-        );
-        expect(original.src).toContain("/uploads/a.png");
+		// 1. flyInSettled 后原图 <img> 必须挂载(shouldLoad 门控,依赖真实 onAnimationComplete)
+		const original = await waitFor(
+			() => {
+				const el = document.querySelector("img.object-contain");
+				expect(el).not.toBeNull();
+				return el as HTMLImageElement;
+			},
+			{ timeout: 3000 },
+		);
+		expect(original.src).toContain("/uploads/a.png");
 
-        // 2. 模拟原图加载完成 → 缩略图层应淡出移除
-        fireEvent.load(original);
+		// 2. 模拟原图加载完成 → 缩略图层应淡出移除
+		fireEvent.load(original);
 
-        await waitFor(
-            () => {
-                expect(document.querySelector('img[src*="w=600"]')).toBeNull();
-            },
-            { timeout: 3000 },
-        );
-    });
+		await waitFor(
+			() => {
+				expect(document.querySelector('img[src*="w=600"]')).toBeNull();
+			},
+			{ timeout: 3000 },
+		);
+	});
 });

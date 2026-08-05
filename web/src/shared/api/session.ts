@@ -20,20 +20,20 @@ import { create } from "zustand";
  * 仅客户端有意义；isSessionActive() 在 SSR 返回 false（守卫在 SSR 用 context.auth）。
  */
 interface SessionState {
-    /** 当前客户端是否处于"已登录且未登出"状态 */
-    sessionActive: boolean;
-    /** 标记已登录（登录成功时调用） */
-    markSessionActive: () => void;
-    /** 标记已登出（登出/取消重登时调用） */
-    clearSessionActive: () => void;
+	/** 当前客户端是否处于"已登录且未登出"状态 */
+	sessionActive: boolean;
+	/** 标记已登录（登录成功时调用） */
+	markSessionActive: () => void;
+	/** 标记已登出（登出/取消重登时调用） */
+	clearSessionActive: () => void;
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
-    // SSR 阶段默认 false；客户端 hydrate 后若已登录，__root.beforeLoad 会读到 SSR 的
-    // context.auth.isAuthenticated 并在客户端 mount 时通过 markSessionActive 校正（见 __root.tsx）。
-    sessionActive: false,
-    markSessionActive: () => set({ sessionActive: true }),
-    clearSessionActive: () => set({ sessionActive: false }),
+	// SSR 阶段默认 false；客户端 hydrate 后若已登录，__root.beforeLoad 会读到 SSR 的
+	// context.auth.isAuthenticated 并在客户端 mount 时通过 markSessionActive 校正（见 __root.tsx）。
+	sessionActive: false,
+	markSessionActive: () => set({ sessionActive: true }),
+	clearSessionActive: () => set({ sessionActive: false }),
 }));
 
 /**
@@ -43,8 +43,8 @@ export const useSessionStore = create<SessionState>((set) => ({
  * SSR 永远返回 false——SSR 阶段守卫只认 context.auth。
  */
 export const isSessionActive = (): boolean => {
-    if (typeof window === "undefined") return false;
-    return useSessionStore.getState().sessionActive;
+	if (typeof window === "undefined") return false;
+	return useSessionStore.getState().sessionActive;
 };
 
 /**

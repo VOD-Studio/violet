@@ -16,13 +16,13 @@ import { mediaKeys } from "./keys";
  * 成功后失效当前用户媒体列表。
  */
 export const useDeleteMedia = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (id: string) => apiDelete<null>(`/media/${id}`),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-        },
-    });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => apiDelete<null>(`/media/${id}`),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
+		},
+	});
 };
 
 /**
@@ -32,12 +32,12 @@ export const useDeleteMedia = () => {
  * 被引用未删的文件不计入 deleted。
  */
 export const useBatchDeleteMedia = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (body: BatchDeleteRequest) =>
-            apiPost<BatchDeleteResult>("/media/batch-delete", body),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-        },
-    });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (body: BatchDeleteRequest) =>
+			apiPost<BatchDeleteResult>("/media/batch-delete", body),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
+		},
+	});
 };

@@ -7,18 +7,18 @@ import { useMe } from "../api/queries";
  * @returns 是否拥有该权限
  */
 export function useHasPermission(code: string): boolean {
-    const { data: user } = useMe({ enabled: true });
+	const { data: user } = useMe({ enabled: true });
 
-    if (!user) {
-        return false;
-    }
+	if (!user) {
+		return false;
+	}
 
-    // 内置超级管理员拥有通配符权限（所有权限），避免后端权限数组短暂缺失时隐藏全部操作。
-    if (user.is_builtin_super_admin) {
-        return true;
-    }
+	// 内置超级管理员拥有通配符权限（所有权限），避免后端权限数组短暂缺失时隐藏全部操作。
+	if (user.is_builtin_super_admin) {
+		return true;
+	}
 
-    return user.permissions?.includes(code) ?? false;
+	return user.permissions?.includes(code) ?? false;
 }
 
 /**
@@ -28,17 +28,17 @@ export function useHasPermission(code: string): boolean {
  * @returns 是否拥有其中任一权限
  */
 export function useHasAnyPermission(codes: string[]): boolean {
-    const { data: user } = useMe({ enabled: true });
+	const { data: user } = useMe({ enabled: true });
 
-    if (!user) {
-        return false;
-    }
+	if (!user) {
+		return false;
+	}
 
-    if (user.is_builtin_super_admin) {
-        return true;
-    }
+	if (user.is_builtin_super_admin) {
+		return true;
+	}
 
-    return codes.some((code) => user.permissions?.includes(code));
+	return codes.some((code) => user.permissions?.includes(code));
 }
 
 /**
@@ -48,17 +48,17 @@ export function useHasAnyPermission(codes: string[]): boolean {
  * @returns 是否拥有所有权限
  */
 export function useHasAllPermissions(codes: string[]): boolean {
-    const { data: user } = useMe({ enabled: true });
+	const { data: user } = useMe({ enabled: true });
 
-    if (!user) {
-        return false;
-    }
+	if (!user) {
+		return false;
+	}
 
-    if (user.is_builtin_super_admin) {
-        return true;
-    }
+	if (user.is_builtin_super_admin) {
+		return true;
+	}
 
-    return codes.every((code) => user.permissions?.includes(code));
+	return codes.every((code) => user.permissions?.includes(code));
 }
 
 /**
@@ -67,13 +67,13 @@ export function useHasAllPermissions(codes: string[]): boolean {
  * @returns 是否为管理员
  */
 export function useIsAdmin(): boolean {
-    const { data: user } = useMe({ enabled: true });
+	const { data: user } = useMe({ enabled: true });
 
-    if (!user) {
-        return false;
-    }
+	if (!user) {
+		return false;
+	}
 
-    return user.role === "admin" || user.role === "superadmin";
+	return user.role === "admin" || user.role === "superadmin";
 }
 
 /**
@@ -85,13 +85,13 @@ export function useIsAdmin(): boolean {
  * @returns 是否为超级管理员
  */
 export function useIsSuperAdmin(): boolean {
-    const { data: user } = useMe({ enabled: true });
+	const { data: user } = useMe({ enabled: true });
 
-    if (!user) {
-        return false;
-    }
+	if (!user) {
+		return false;
+	}
 
-    return user.role === "superadmin";
+	return user.role === "superadmin";
 }
 
 /**
@@ -103,11 +103,11 @@ export function useIsSuperAdmin(): boolean {
  * @returns 是否为内置超级管理员
  */
 export function useIsBuiltinSuperAdmin(): boolean {
-    const { data: user } = useMe({ enabled: true });
+	const { data: user } = useMe({ enabled: true });
 
-    if (!user) {
-        return false;
-    }
+	if (!user) {
+		return false;
+	}
 
-    return user.is_builtin_super_admin === true;
+	return user.is_builtin_super_admin === true;
 }

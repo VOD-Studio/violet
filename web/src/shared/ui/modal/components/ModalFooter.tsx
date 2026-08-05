@@ -3,10 +3,10 @@ import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
 
 interface ModalFooterProps {
-    /** 操作按钮等内容 */
-    children?: ReactNode;
-    /** 额外 className */
-    className?: string;
+	/** 操作按钮等内容 */
+	children?: ReactNode;
+	/** 额外 className */
+	className?: string;
 }
 
 /**
@@ -21,14 +21,14 @@ interface ModalFooterProps {
  * </ModalFooter>
  */
 export function ModalFooter({ children, className }: ModalFooterProps) {
-    return (
-        <div
-            className={cn(
-                "flex shrink-0 flex-col-reverse gap-2 border-t px-6 py-4 sm:flex-row sm:justify-end",
-                className,
-            )}
-        >
-            {children}
-        </div>
-    );
+	return (
+		<div
+			className={cn(
+				"flex shrink-0 flex-col-reverse gap-2 border-t px-6 py-4 sm:flex-row sm:justify-end",
+				className,
+			)}
+		>
+			{children}
+		</div>
+	);
 }

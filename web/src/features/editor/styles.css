@@ -10,67 +10,67 @@
 
 /* 占位符（at-rule，Tiptap 在空段落上加 .is-empty.is-editor-empty:before） */
 .ProseMirror p.is-editor-empty:first-child::before {
-  content: attr(data-placeholder);
-  float: left;
-  color: var(--muted-foreground, hsl(0 0% 45%));
-  pointer-events: none;
-  height: 0;
+	content: attr(data-placeholder);
+	float: left;
+	color: var(--muted-foreground, hsl(0 0% 45%));
+	pointer-events: none;
+	height: 0;
 }
 
 /* 任务列表：NodeView (CustomTaskItem) 渲染 Checkbox + NodeViewContent
  * flex 布局由组件 Tailwind 类控制，这里仅清除首段上边距使文字与 checkbox 对齐 */
 .ProseMirror ul[data-type="taskList"] {
-  list-style: none;
-  padding: 0;
+	list-style: none;
+	padding: 0;
 }
 .ProseMirror ul[data-type="taskList"] p:first-child {
-  margin-top: 0;
+	margin-top: 0;
 }
 
 /* 表格：选中单元格高亮 */
 .ProseMirror .selectedCell::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: hsl(var(--primary) / 0.08);
-  pointer-events: none;
-  z-index: 2;
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: hsl(var(--primary) / 0.08);
+	pointer-events: none;
+	z-index: 2;
 }
 .ProseMirror .tableWrapper {
-  overflow-x: auto;
+	overflow-x: auto;
 }
 .ProseMirror table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 0.75rem 0;
-  overflow: hidden;
-  table-layout: fixed;
+	border-collapse: collapse;
+	width: 100%;
+	margin: 0.75rem 0;
+	overflow: hidden;
+	table-layout: fixed;
 }
 .ProseMirror th,
 .ProseMirror td {
-  border: 1px solid var(--border, hsl(0 0% 85%));
-  padding: 0.5rem 0.75rem;
-  vertical-align: top;
-  position: relative;
-  min-width: 1em;
+	border: 1px solid var(--border, hsl(0 0% 85%));
+	padding: 0.5rem 0.75rem;
+	vertical-align: top;
+	position: relative;
+	min-width: 1em;
 }
 .ProseMirror th {
-  background: hsl(var(--muted) / 0.5);
-  font-weight: 600;
-  text-align: left;
+	background: hsl(var(--muted) / 0.5);
+	font-weight: 600;
+	text-align: left;
 }
 
 /* 代码块：lowlight 产出的 hljs 类，GitHub Dark 色板 */
 .ProseMirror pre {
-  background: #24292e;
-  color: #e6edf3;
-  border-radius: 0.5rem;
-  padding: 0.875rem 1rem;
-  overflow-x: auto;
-  margin: 0.75rem 0;
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.85rem;
-  line-height: 1.6;
+	background: #24292e;
+	color: #e6edf3;
+	border-radius: 0.5rem;
+	padding: 0.875rem 1rem;
+	overflow-x: auto;
+	margin: 0.75rem 0;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 0.85rem;
+	line-height: 1.6;
 }
 /*
  * 兜底：编辑器代码块内所有 hljs-* token 默认浅灰色。
@@ -79,23 +79,23 @@
  * 仅作用于 .ProseMirror pre 内，不影响前台 CodeBlock（shiki）。
  */
 .ProseMirror pre :where([class*="hljs-"]) {
-  color: #c9d1d9;
+	color: #c9d1d9;
 }
 /* 行内代码视觉样式：与详情页 CodeBlock inline 样式一致 */
 .ProseMirror code:not(pre code) {
-  background-color: var(--color-muted);
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  font-family: var(--font-mono);
-  font-size: 0.85em;
-  color: var(--color-primary);
+	background-color: var(--color-muted);
+	padding: 0.125rem 0.375rem;
+	border-radius: 0.25rem;
+	font-family: var(--font-mono);
+	font-size: 0.85em;
+	color: var(--color-primary);
 }
 
 .ProseMirror pre code {
-  background: none;
-  padding: 0;
-  color: inherit;
-  font-size: inherit;
+	background: none;
+	padding: 0;
+	color: inherit;
+	font-size: inherit;
 }
 /*
  * hljs token 颜色对齐 GitHub Dark 主题（shiki github-dark 同色板），
@@ -103,123 +103,123 @@
  */
 .ProseMirror pre .hljs-comment,
 .ProseMirror pre .hljs-quote {
-  color: #8b949e;
-  font-style: italic;
+	color: #8b949e;
+	font-style: italic;
 }
 .ProseMirror pre .hljs-keyword,
 .ProseMirror pre .hljs-selector-tag,
 .ProseMirror pre .hljs-built_in,
 .ProseMirror pre .hljs-literal {
-  color: #ff7b72;
+	color: #ff7b72;
 }
 .ProseMirror pre .hljs-string,
 .ProseMirror pre .hljs-attr,
 .ProseMirror pre .hljs-meta-string {
-  color: #a5d6ff;
+	color: #a5d6ff;
 }
 .ProseMirror pre .hljs-number {
-  color: #79c0ff;
+	color: #79c0ff;
 }
 .ProseMirror pre .hljs-title,
 .ProseMirror pre .hljs-section,
 .ProseMirror pre .hljs-name,
 .ProseMirror pre .hljs-selector-id,
 .ProseMirror pre .hljs-selector-class {
-  color: #d2a8ff;
+	color: #d2a8ff;
 }
 .ProseMirror pre .hljs-type,
 .ProseMirror pre .hljs-class .hljs-title,
 .ProseMirror pre .hljs-function .hljs-title {
-  color: #ffa657;
+	color: #ffa657;
 }
 .ProseMirror pre .hljs-tag {
-  color: #7ee787;
+	color: #7ee787;
 }
 .ProseMirror pre .hljs-attribute {
-  color: #79c0ff;
+	color: #79c0ff;
 }
 .ProseMirror pre .hljs-variable,
 .ProseMirror pre .hljs-template-variable {
-  color: #ffa657;
+	color: #ffa657;
 }
 .ProseMirror pre .hljs-regexp,
 .ProseMirror pre .hljs-link {
-  color: #a5d6ff;
+	color: #a5d6ff;
 }
 /* JSON / 其他语言的标点、属性、meta */
 .ProseMirror pre .hljs-punctuation,
 .ProseMirror pre .hljs-meta {
-  color: #c9d1d9;
+	color: #c9d1d9;
 }
 .ProseMirror pre .hljs-property,
 .ProseMirror pre .hljs-symbol,
 .ProseMirror pre .hljs-bullet {
-  color: #79c0ff;
+	color: #79c0ff;
 }
 .ProseMirror pre .hljs-params {
-  color: #ffa657;
+	color: #ffa657;
 }
 .ProseMirror pre .hljs-deletion {
-  color: #ffa198;
-  background-color: #490202;
+	color: #ffa198;
+	background-color: #490202;
 }
 .ProseMirror pre .hljs-addition {
-  color: #aff5b4;
-  background-color: #033a16;
+	color: #aff5b4;
+	background-color: #033a16;
 }
 
 /* 图片选中态：节点选中时加蓝色描边 */
 .ProseMirror img.ProseMirror-selectednode {
-  outline: 2px solid hsl(var(--primary));
-  outline-offset: 2px;
+	outline: 2px solid hsl(var(--primary));
+	outline-offset: 2px;
 }
 
 /* 编辑器聚焦时无原生 outline（工具栏已在视觉上表达焦点） */
 .ProseMirror:focus {
-  outline: none;
+	outline: none;
 }
 
 /* 链接编辑光标处不显示原生 caret 闪烁异常 */
 .ProseMirror .ProseMirror-gapcursor::after {
-  border-top-color: currentColor;
+	border-top-color: currentColor;
 }
 
 /* —— 数学公式双态编辑 —— */
 .math-node-view {
-  cursor: pointer;
-  border-radius: 0.375rem;
-  padding: 0 0.125rem;
-  transition: background-color 0.15s ease;
+	cursor: pointer;
+	border-radius: 0.375rem;
+	padding: 0 0.125rem;
+	transition: background-color 0.15s ease;
 }
 .math-node-view:hover {
-  background-color: hsl(var(--muted));
+	background-color: hsl(var(--muted));
 }
 .math-node-view--block {
-  margin: 0.5rem 0;
-  padding: 0.5rem;
-  text-align: center;
+	margin: 0.5rem 0;
+	padding: 0.5rem;
+	text-align: center;
 }
 .math-node-view--selected {
-  background-color: hsl(var(--muted));
-  box-shadow: 0 0 0 1px hsl(var(--border));
+	background-color: hsl(var(--muted));
+	box-shadow: 0 0 0 1px hsl(var(--border));
 }
 
 /* —— 图块弹层编辑（Mermaid）—— */
 .diagram-node-view {
-  cursor: pointer;
-  border-radius: 0.375rem;
-  padding: 0.5rem;
-  transition: background-color 0.15s ease;
+	cursor: pointer;
+	border-radius: 0.375rem;
+	padding: 0.5rem;
+	transition: background-color 0.15s ease;
 }
 .diagram-node-view:hover {
-  background-color: hsl(var(--muted));
+	background-color: hsl(var(--muted));
 }
 .diagram-node-view--selected {
-  background-color: hsl(var(--muted));
-  box-shadow: 0 0 0 1px hsl(var(--border));
+	background-color: hsl(var(--muted));
+	box-shadow: 0 0 0 1px hsl(var(--border));
 }
 /* 文档内渲染：流程图常宽屏，居中 + 横向滚动而非缩放变形（PRD 容器决策） */
 .diagram-node-view__render {
-  text-align: center;
-  overflow-x: auto;
+	text-align: center;
+	overflow-x: auto;
 }

@@ -10,16 +10,16 @@
 
 /** 前台一级路由的导航顺序（值越小越靠左） */
 const NAV_ORDER: Record<string, number> = {
-    "": 0, // /
-    blog: 1, // /blog、/blog/$slug、/blog/archive
-    projects: 2,
-    about: 3,
+	"": 0, // /
+	blog: 1, // /blog、/blog/$slug、/blog/archive
+	projects: 2,
+	about: 3,
 };
 
 /** 取路径的首段作为 section key */
 function segmentFor(pathname: string): string {
-    const parts = pathname.split("/").filter(Boolean);
-    return parts[0] ?? "";
+	const parts = pathname.split("/").filter(Boolean);
+	return parts[0] ?? "";
 }
 
 export type NavDirection = "forward" | "back";
@@ -30,23 +30,23 @@ export type NavDirection = "forward" | "back";
  * @returns "forward" | "back" | null（同段或未知段返回 null）
  */
 export function getNavDirection(from?: string, to?: string): NavDirection | null {
-    if (!from || !to) return null;
+	if (!from || !to) return null;
 
-    const fromSeg = segmentFor(from);
-    const toSeg = segmentFor(to);
+	const fromSeg = segmentFor(from);
+	const toSeg = segmentFor(to);
 
-    const fromIdx = NAV_ORDER[fromSeg];
-    const toIdx = NAV_ORDER[toSeg];
+	const fromIdx = NAV_ORDER[fromSeg];
+	const toIdx = NAV_ORDER[toSeg];
 
-    if (fromIdx === undefined || toIdx === undefined) return null;
-    if (fromIdx === toIdx) return null;
+	if (fromIdx === undefined || toIdx === undefined) return null;
+	if (fromIdx === toIdx) return null;
 
-    return toIdx > fromIdx ? "forward" : "back";
+	return toIdx > fromIdx ? "forward" : "back";
 }
 
 /**
  * 判断路径是否属于后台路由
  */
 export function isAdminRoute(pathname: string): boolean {
-    return pathname.startsWith("/admin");
+	return pathname.startsWith("/admin");
 }

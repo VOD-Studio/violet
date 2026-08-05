@@ -40,66 +40,66 @@ const MERMAID_FENCE_RE = /^```[ \t]*mermaid[ \t]*\n([\s\S]*?)\n?```(?=\n|$)/;
  * data-source 由 ProseMirror 在序列化时自动 HTML 转义，阅读端无损提取。
  */
 export const DiagramBlock = Node.create({
-    name: "diagramBlock",
-    group: "block",
-    atom: true,
+	name: "diagramBlock",
+	group: "block",
+	atom: true,
 
-    addAttributes() {
-        return {
-            format: {
-                default: "mermaid",
-                parseHTML: (element) => element.getAttribute("data-format"),
-                renderHTML: (attributes) => ({ "data-format": attributes.format }),
-            },
-            source: {
-                default: "",
-                parseHTML: (element) => element.getAttribute("data-source"),
-                renderHTML: (attributes) => ({ "data-source": attributes.source }),
-            },
-        };
-    },
+	addAttributes() {
+		return {
+			format: {
+				default: "mermaid",
+				parseHTML: (element) => element.getAttribute("data-format"),
+				renderHTML: (attributes) => ({ "data-format": attributes.format }),
+			},
+			source: {
+				default: "",
+				parseHTML: (element) => element.getAttribute("data-source"),
+				renderHTML: (attributes) => ({ "data-source": attributes.source }),
+			},
+		};
+	},
 
-    parseHTML() {
-        return [{ tag: 'div[data-type="diagram-block"]' }];
-    },
+	parseHTML() {
+		return [{ tag: 'div[data-type="diagram-block"]' }];
+	},
 
-    renderHTML({ HTMLAttributes }) {
-        return ["div", mergeAttributes(HTMLAttributes, { "data-type": "diagram-block" })];
-    },
+	renderHTML({ HTMLAttributes }) {
+		return ["div", mergeAttributes(HTMLAttributes, { "data-type": "diagram-block" })];
+	},
 
-    parseMarkdown: (token) => ({
-        type: "diagramBlock",
-        attrs: {
-            format: token.lang ?? "mermaid",
-            source: token.text ?? "",
-        },
-    }),
+	parseMarkdown: (token) => ({
+		type: "diagramBlock",
+		attrs: {
+			format: token.lang ?? "mermaid",
+			source: token.text ?? "",
+		},
+	}),
 
-    renderMarkdown: (node) => {
-        const format = node.attrs?.format || "mermaid";
-        const source = node.attrs?.source || "";
-        const lines = [`\`\`\`${format}`, source, "```"];
-        return lines.join("\n");
-    },
+	renderMarkdown: (node) => {
+		const format = node.attrs?.format || "mermaid";
+		const source = node.attrs?.source || "";
+		const lines = [`\`\`\`${format}`, source, "```"];
+		return lines.join("\n");
+	},
 
-    markdownTokenizer: {
-        name: "diagramBlock",
-        level: "block",
-        start: (src) => src.indexOf("```mermaid"),
-        tokenize: (src) => {
-            const match = src.match(MERMAID_FENCE_RE);
-            if (!match) {
-                return undefined;
-            }
-            const [raw, source] = match;
-            return {
-                type: "diagramBlock",
-                raw,
-                text: source,
-                lang: "mermaid",
-            };
-        },
-    },
+	markdownTokenizer: {
+		name: "diagramBlock",
+		level: "block",
+		start: (src) => src.indexOf("```mermaid"),
+		tokenize: (src) => {
+			const match = src.match(MERMAID_FENCE_RE);
+			if (!match) {
+				return undefined;
+			}
+			const [raw, source] = match;
+			return {
+				type: "diagramBlock",
+				raw,
+				text: source,
+				lang: "mermaid",
+			};
+		},
+	},
 });
 
 /** 图块 NodeView 渲染适配器（diagramBlock 永远是块级，单一适配器即可） */
@@ -113,9 +113,9 @@ const renderDiagramView = (props: NodeViewProps) => <DiagramPopoverView {...prop
  * 仅追加 NodeView。参照 createMathExtensions / createCodeBlockExtension 的工厂形态。
  */
 export function createDiagramBlockExtension() {
-    return DiagramBlock.extend({
-        addNodeView() {
-            return ReactNodeViewRenderer(renderDiagramView);
-        },
-    });
+	return DiagramBlock.extend({
+		addNodeView() {
+			return ReactNodeViewRenderer(renderDiagramView);
+		},
+	});
 }

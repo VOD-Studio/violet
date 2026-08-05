@@ -18,45 +18,45 @@ import { type FormEventHandler, type ReactNode, useId } from "react";
  * @param children           表单 section 内容（不含外层 <form>，由本组件提供）
  */
 export function SettingsSubPage({
-    title,
-    description,
-    isLoading,
-    isPending,
-    onSubmit,
-    children,
+	title,
+	description,
+	isLoading,
+	isPending,
+	onSubmit,
+	children,
 }: {
-    title: string;
-    description: string;
-    isLoading: boolean;
-    isPending: boolean;
-    onSubmit: FormEventHandler<HTMLFormElement>;
-    children: ReactNode;
+	title: string;
+	description: string;
+	isLoading: boolean;
+	isPending: boolean;
+	onSubmit: FormEventHandler<HTMLFormElement>;
+	children: ReactNode;
 }) {
-    const formId = useId();
+	const formId = useId();
 
-    if (isLoading) {
-        return (
-            <PageShell title={title} description={description}>
-                <div className="text-muted-foreground">加载中…</div>
-            </PageShell>
-        );
-    }
+	if (isLoading) {
+		return (
+			<PageShell title={title} description={description}>
+				<div className="text-muted-foreground">加载中…</div>
+			</PageShell>
+		);
+	}
 
-    return (
-        <PageShell
-            title={title}
-            description={description}
-            action={
-                <PermissionGuard permission="settings:update">
-                    <Button type="submit" form={formId} size="sm" disabled={isPending}>
-                        {isPending ? "保存中…" : "保存设置"}
-                    </Button>
-                </PermissionGuard>
-            }
-        >
-            <form id={formId} onSubmit={onSubmit} className="space-y-6">
-                {children}
-            </form>
-        </PageShell>
-    );
+	return (
+		<PageShell
+			title={title}
+			description={description}
+			action={
+				<PermissionGuard permission="settings:update">
+					<Button type="submit" form={formId} size="sm" disabled={isPending}>
+						{isPending ? "保存中…" : "保存设置"}
+					</Button>
+				</PermissionGuard>
+			}
+		>
+			<form id={formId} onSubmit={onSubmit} className="space-y-6">
+				{children}
+			</form>
+		</PageShell>
+	);
 }

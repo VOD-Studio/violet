@@ -14,44 +14,44 @@ import { toast } from "sonner";
 import { useChunkedUpload } from "@/features/upload/hooks/use-chunked-upload";
 
 export function useEditorUpload(editor: Editor | null) {
-    const { uploadFile } = useChunkedUpload({ purpose: "post" });
+	const { uploadFile } = useChunkedUpload({ purpose: "post" });
 
-    /**
-     * uploadAndInsert - 上传单个图片文件并插入编辑器
-     */
-    const uploadAndInsert = useCallback(
-        async (file: File) => {
-            if (!editor) return;
-            if (!file.type.startsWith("image/")) {
-                toast.error("仅支持图片文件");
-                return;
-            }
-            const tid = toast.loading("图片上传中…");
-            try {
-                const result = await uploadFile(file);
-                editor.chain().focus().setImage({ src: result.url, alt: file.name }).run();
-                toast.success("图片已插入", { id: tid });
-            } catch (err) {
-                const msg = err instanceof Error ? err.message : "图片上传失败";
-                toast.error(msg, { id: tid });
-            }
-        },
-        [editor, uploadFile],
-    );
+	/**
+	 * uploadAndInsert - 上传单个图片文件并插入编辑器
+	 */
+	const uploadAndInsert = useCallback(
+		async (file: File) => {
+			if (!editor) return;
+			if (!file.type.startsWith("image/")) {
+				toast.error("仅支持图片文件");
+				return;
+			}
+			const tid = toast.loading("图片上传中…");
+			try {
+				const result = await uploadFile(file);
+				editor.chain().focus().setImage({ src: result.url, alt: file.name }).run();
+				toast.success("图片已插入", { id: tid });
+			} catch (err) {
+				const msg = err instanceof Error ? err.message : "图片上传失败";
+				toast.error(msg, { id: tid });
+			}
+		},
+		[editor, uploadFile],
+	);
 
-    /**
-     * pickLocalFile - 打开文件选择器，选择后上传插入
-     */
-    const pickLocalFile = useCallback(() => {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = "image/*";
-        input.onchange = () => {
-            const f = input.files?.[0];
-            if (f) uploadAndInsert(f);
-        };
-        input.click();
-    }, [uploadAndInsert]);
+	/**
+	 * pickLocalFile - 打开文件选择器，选择后上传插入
+	 */
+	const pickLocalFile = useCallback(() => {
+		const input = document.createElement("input");
+		input.type = "file";
+		input.accept = "image/*";
+		input.onchange = () => {
+			const f = input.files?.[0];
+			if (f) uploadAndInsert(f);
+		};
+		input.click();
+	}, [uploadAndInsert]);
 
-    return { uploadAndInsert, pickLocalFile };
+	return { uploadAndInsert, pickLocalFile };
 }

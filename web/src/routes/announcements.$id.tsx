@@ -19,167 +19,167 @@ import { ArrowLeft, Check, Copy } from "lucide-react";
 import { useState } from "react";
 
 function AnnouncementDetailPage() {
-    const { id } = Route.useParams();
-    const { data: a, isLoading, error } = useAnnouncement(id);
-    const [copied, setCopied] = useState(false);
-    const [acked, setAcked] = useState(false);
-    // 正文图片点击预览(与文章详情同一套:缩略占位 → 原图替换)
-    const articleImages = useArticleImagePreview();
+	const { id } = Route.useParams();
+	const { data: a, isLoading, error } = useAnnouncement(id);
+	const [copied, setCopied] = useState(false);
+	const [acked, setAcked] = useState(false);
+	// 正文图片点击预览(与文章详情同一套:缩略占位 → 原图替换)
+	const articleImages = useArticleImagePreview();
 
-    const handleAck = () => {
-        if (!a) return;
-        try {
-            const raw = localStorage.getItem("announcement:read-ids");
-            const ids: number[] = raw ? JSON.parse(raw) : [];
-            if (!ids.includes(a.id)) {
-                ids.push(a.id);
-                localStorage.setItem("announcement:read-ids", JSON.stringify(ids));
-            }
-        } catch {
-            /* localStorage 不可用时静默 */
-        }
-        setAcked(true);
-    };
+	const handleAck = () => {
+		if (!a) return;
+		try {
+			const raw = localStorage.getItem("announcement:read-ids");
+			const ids: number[] = raw ? JSON.parse(raw) : [];
+			if (!ids.includes(a.id)) {
+				ids.push(a.id);
+				localStorage.setItem("announcement:read-ids", JSON.stringify(ids));
+			}
+		} catch {
+			/* localStorage 不可用时静默 */
+		}
+		setAcked(true);
+	};
 
-    if (isLoading) {
-        return (
-            <div className="container mx-auto px-6 py-32">
-                <div className="mx-auto h-64 max-w-2xl animate-pulse rounded-lg bg-muted" />
-            </div>
-        );
-    }
+	if (isLoading) {
+		return (
+			<div className="container mx-auto px-6 py-32">
+				<div className="mx-auto h-64 max-w-2xl animate-pulse rounded-lg bg-muted" />
+			</div>
+		);
+	}
 
-    if (error || !a) {
-        return (
-            <div className="container mx-auto flex flex-col items-center px-6 py-32 text-center">
-                <h1 className="mb-3 font-mono text-2xl font-bold">公告不存在</h1>
-                <p className="mb-6 text-muted-foreground">该公告可能不存在或已失效。</p>
-                <Link
-                    to="/"
-                    className="inline-flex items-center gap-2 rounded-lg border border-edge-hairline px-4 py-2 text-sm transition-colors hover:bg-accent"
-                >
-                    <ArrowLeft className="size-4" />
-                    返回首页
-                </Link>
-            </div>
-        );
-    }
+	if (error || !a) {
+		return (
+			<div className="container mx-auto flex flex-col items-center px-6 py-32 text-center">
+				<h1 className="mb-3 font-mono text-2xl font-bold">公告不存在</h1>
+				<p className="mb-6 text-muted-foreground">该公告可能不存在或已失效。</p>
+				<Link
+					to="/"
+					className="inline-flex items-center gap-2 rounded-lg border border-edge-hairline px-4 py-2 text-sm transition-colors hover:bg-accent"
+				>
+					<ArrowLeft className="size-4" />
+					返回首页
+				</Link>
+			</div>
+		);
+	}
 
-    const cfg = getAnnouncementSev(a.severity);
-    const stamp = a.created_at
-        ? new Date(a.created_at).toISOString().replace("T", " ").slice(0, 16)
-        : "—";
-    const body = a.content_html?.trim() ? a.content_html : a.content_md || a.content;
+	const cfg = getAnnouncementSev(a.severity);
+	const stamp = a.created_at
+		? new Date(a.created_at).toISOString().replace("T", " ").slice(0, 16)
+		: "—";
+	const body = a.content_html?.trim() ? a.content_html : a.content_md || a.content;
 
-    const handleCopyId = async () => {
-        try {
-            await navigator.clipboard.writeText(String(a.id));
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-        } catch {
-            /* clipboard 不可用时静默 */
-        }
-    };
+	const handleCopyId = async () => {
+		try {
+			await navigator.clipboard.writeText(String(a.id));
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1500);
+		} catch {
+			/* clipboard 不可用时静默 */
+		}
+	};
 
-    return (
-        <div className="container mx-auto px-6 py-16">
-            <Link
-                to="/"
-                className="mb-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-                <ArrowLeft className="size-4" />
-                返回
-            </Link>
+	return (
+		<div className="container mx-auto px-6 py-16">
+			<Link
+				to="/"
+				className="mb-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+			>
+				<ArrowLeft className="size-4" />
+				返回
+			</Link>
 
-            <article className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8">
-                {/* 头部 */}
-                <header className="mb-6 border-b border-edge-hairline pb-4">
-                    <div className="mb-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        <span>发布于 {stamp}</span>
-                        {a.start_time && a.end_time && (
-                            <span>
-                                生效 {new Date(a.start_time).toISOString().slice(0, 10)} →{" "}
-                                {new Date(a.end_time).toISOString().slice(0, 10)}
-                            </span>
-                        )}
-                        <span className="flex items-center gap-1.5">
-                            <span className={`size-1.5 animate-pulse rounded-full ${cfg.dot}`} />
-                            {a.is_active === false ? "已失效" : "生效中"}
-                        </span>
-                    </div>
-                    <BlurText
-                        text={a.title}
-                        animateBy="words"
-                        stepDuration={0.4}
-                        delay={60}
-                        className="text-2xl font-bold leading-tight text-foreground"
-                    />
-                </header>
+			<article className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-8">
+				{/* 头部 */}
+				<header className="mb-6 border-b border-edge-hairline pb-4">
+					<div className="mb-3 flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-muted-foreground">
+						<span>发布于 {stamp}</span>
+						{a.start_time && a.end_time && (
+							<span>
+								生效 {new Date(a.start_time).toISOString().slice(0, 10)} →{" "}
+								{new Date(a.end_time).toISOString().slice(0, 10)}
+							</span>
+						)}
+						<span className="flex items-center gap-1.5">
+							<span className={`size-1.5 animate-pulse rounded-full ${cfg.dot}`} />
+							{a.is_active === false ? "已失效" : "生效中"}
+						</span>
+					</div>
+					<BlurText
+						text={a.title}
+						animateBy="words"
+						stepDuration={0.4}
+						delay={60}
+						className="text-2xl font-bold leading-tight text-foreground"
+					/>
+				</header>
 
-                {/* affects */}
-                {a.affects && a.affects.length > 0 && (
-                    <div className="mb-6 flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">影响范围：</span>
-                        {a.affects.map((m) => (
-                            <span
-                                key={m}
-                                className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-                            >
-                                {m}
-                            </span>
-                        ))}
-                    </div>
-                )}
+				{/* affects */}
+				{a.affects && a.affects.length > 0 && (
+					<div className="mb-6 flex flex-wrap items-center gap-1.5">
+						<span className="text-xs text-muted-foreground">影响范围：</span>
+						{a.affects.map((m) => (
+							<span
+								key={m}
+								className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+							>
+								{m}
+							</span>
+						))}
+					</div>
+				)}
 
-                {/* 正文 */}
-                {body && (
-                    <div className="mb-6">
-                        <div className="mb-3 text-xs text-muted-foreground">正文</div>
-                        <div
-                            className="prose prose-sm prose-neutral max-w-none dark:prose-invert"
-                            data-article-content
-                            onClick={articleImages.bind.onClick}
-                            onKeyDown={articleImages.bind.onKeyDown}
-                        >
-                            <ArticleContent content={body} />
-                        </div>
-                    </div>
-                )}
+				{/* 正文 */}
+				{body && (
+					<div className="mb-6">
+						<div className="mb-3 text-xs text-muted-foreground">正文</div>
+						<div
+							className="prose prose-sm prose-neutral max-w-none dark:prose-invert"
+							data-article-content
+							onClick={articleImages.bind.onClick}
+							onKeyDown={articleImages.bind.onKeyDown}
+						>
+							<ArticleContent content={body} />
+						</div>
+					</div>
+				)}
 
-                {/* footer */}
-                <footer className="flex flex-wrap items-center gap-3 border-t border-edge-hairline pt-4 text-xs">
-                    <Magnet magnetStrength={4} padding={30}>
-                        <button
-                            type="button"
-                            onClick={handleAck}
-                            disabled={acked}
-                            className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted disabled:opacity-50 disabled:hover:bg-transparent"
-                        >
-                            <Check className="size-3" />
-                            {acked ? "已读" : "确认已读"}
-                        </button>
-                    </Magnet>
-                    <button
-                        type="button"
-                        onClick={handleCopyId}
-                        className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
-                    >
-                        {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-                        {copied ? "已复制" : "复制 ID"}
-                    </button>
-                    <Link
-                        to="/"
-                        className="ml-auto rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
-                    >
-                        ← 返回
-                    </Link>
-                </footer>
-            </article>
-            {articleImages.preview}
-        </div>
-    );
+				{/* footer */}
+				<footer className="flex flex-wrap items-center gap-3 border-t border-edge-hairline pt-4 text-xs">
+					<Magnet magnetStrength={4} padding={30}>
+						<button
+							type="button"
+							onClick={handleAck}
+							disabled={acked}
+							className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted disabled:opacity-50 disabled:hover:bg-transparent"
+						>
+							<Check className="size-3" />
+							{acked ? "已读" : "确认已读"}
+						</button>
+					</Magnet>
+					<button
+						type="button"
+						onClick={handleCopyId}
+						className="inline-flex items-center gap-1 rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
+					>
+						{copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+						{copied ? "已复制" : "复制 ID"}
+					</button>
+					<Link
+						to="/"
+						className="ml-auto rounded-full border border-edge-hairline px-4 py-1.5 transition-colors hover:bg-muted"
+					>
+						← 返回
+					</Link>
+				</footer>
+			</article>
+			{articleImages.preview}
+		</div>
+	);
 }
 
 export const Route = createFileRoute("/announcements/$id")({
-    component: AnnouncementDetailPage,
+	component: AnnouncementDetailPage,
 });

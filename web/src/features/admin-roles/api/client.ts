@@ -3,10 +3,10 @@
  */
 import { apiDelete, apiGet, apiPost, apiPut } from "@/shared/api/request";
 import type {
-    CreateRoleRequest,
-    RoleWithPermissionsDTO,
-    UpdateRolePermissionsRequest,
-    UpdateRoleRequest,
+	CreateRoleRequest,
+	RoleWithPermissionsDTO,
+	UpdateRolePermissionsRequest,
+	UpdateRoleRequest,
 } from "../model/role-detail-types";
 import type { RoleDTO } from "../model/types";
 
@@ -17,7 +17,7 @@ import type { RoleDTO } from "../model/types";
  * 返回所有角色（含 user_count）。需管理员权限。
  */
 export const listRoles = async (): Promise<RoleDTO[]> => {
-    return apiGet<RoleDTO[]>("/admin/roles");
+	return apiGet<RoleDTO[]>("/admin/roles");
 };
 
 /**
@@ -27,7 +27,7 @@ export const listRoles = async (): Promise<RoleDTO[]> => {
  * 返回角色详情及关联的权限列表。需管理员权限。
  */
 export const getRoleDetail = async (id: number): Promise<RoleWithPermissionsDTO> => {
-    return apiGet<RoleWithPermissionsDTO>(`/admin/roles/${id}`);
+	return apiGet<RoleWithPermissionsDTO>(`/admin/roles/${id}`);
 };
 
 /**
@@ -37,7 +37,7 @@ export const getRoleDetail = async (id: number): Promise<RoleWithPermissionsDTO>
  * 需管理员权限。
  */
 export const createRole = async (data: CreateRoleRequest): Promise<RoleDTO> => {
-    return apiPost<RoleDTO>("/admin/roles", data);
+	return apiPost<RoleDTO>("/admin/roles", data);
 };
 
 /**
@@ -47,7 +47,7 @@ export const createRole = async (data: CreateRoleRequest): Promise<RoleDTO> => {
  * 需管理员权限。
  */
 export const updateRole = async (id: number, data: UpdateRoleRequest): Promise<RoleDTO> => {
-    return apiPut<RoleDTO>(`/admin/roles/${id}`, data);
+	return apiPut<RoleDTO>(`/admin/roles/${id}`, data);
 };
 
 /**
@@ -57,7 +57,7 @@ export const updateRole = async (id: number, data: UpdateRoleRequest): Promise<R
  * 需管理员权限。
  */
 export const deleteRole = async (id: number): Promise<void> => {
-    return apiDelete<void>(`/admin/roles/${id}`);
+	return apiDelete<void>(`/admin/roles/${id}`);
 };
 
 /**
@@ -67,8 +67,8 @@ export const deleteRole = async (id: number): Promise<void> => {
  * 设置角色的所有权限。需管理员权限。
  */
 export const updateRolePermissions = async (
-    id: number,
-    data: UpdateRolePermissionsRequest,
+	id: number,
+	data: UpdateRolePermissionsRequest,
 ): Promise<void> => {
-    return apiPut<void>(`/admin/roles/${id}/permissions`, data);
+	return apiPut<void>(`/admin/roles/${id}/permissions`, data);
 };

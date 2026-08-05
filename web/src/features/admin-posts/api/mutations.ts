@@ -2,21 +2,21 @@ import { clientQueryClient as queryClient } from "@shared/api/query-client";
 import { apiDelete, apiPatch, apiPost, apiPut } from "@shared/api/request";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-    AdminPost,
-    CreatePost,
-    SetFeatured,
-    UpdatePost,
-    UpdatePostStatus,
+	AdminPost,
+	CreatePost,
+	SetFeatured,
+	UpdatePost,
+	UpdatePostStatus,
 } from "../model/types";
 import { adminPostKeys } from "./keys";
 
 /** useInvalidateAdminPosts - 失效后台文章全部列表与详情缓存 */
 const useInvalidateAdminPosts = () => {
-    const qc = useQueryClient();
-    return () => {
-        qc.invalidateQueries({ queryKey: adminPostKeys.lists() });
-        qc.invalidateQueries({ queryKey: adminPostKeys.details() });
-    };
+	const qc = useQueryClient();
+	return () => {
+		qc.invalidateQueries({ queryKey: adminPostKeys.lists() });
+		qc.invalidateQueries({ queryKey: adminPostKeys.details() });
+	};
 };
 
 /**
@@ -25,11 +25,11 @@ const useInvalidateAdminPosts = () => {
  * 成功后失效后台文章缓存。成功提示由调用方按上下文给出，故此处不 toast。
  */
 export const useCreatePost = () => {
-    const invalidate = useInvalidateAdminPosts();
-    return useMutation({
-        mutationFn: (body: CreatePost) => apiPost<AdminPost>("/admin/posts", body),
-        onSuccess: () => invalidate(),
-    });
+	const invalidate = useInvalidateAdminPosts();
+	return useMutation({
+		mutationFn: (body: CreatePost) => apiPost<AdminPost>("/admin/posts", body),
+		onSuccess: () => invalidate(),
+	});
 };
 
 /**
@@ -38,11 +38,11 @@ export const useCreatePost = () => {
  * @param id 文章 ID
  */
 export const useUpdatePost = (id: string) => {
-    const invalidate = useInvalidateAdminPosts();
-    return useMutation({
-        mutationFn: (body: UpdatePost) => apiPut<null>(`/admin/posts/${id}`, body),
-        onSuccess: () => invalidate(),
-    });
+	const invalidate = useInvalidateAdminPosts();
+	return useMutation({
+		mutationFn: (body: UpdatePost) => apiPut<null>(`/admin/posts/${id}`, body),
+		onSuccess: () => invalidate(),
+	});
 };
 
 /**
@@ -51,12 +51,12 @@ export const useUpdatePost = (id: string) => {
  * @param id 文章 ID
  */
 export const useUpdatePostStatus = (id: string) => {
-    const invalidate = useInvalidateAdminPosts();
-    return useMutation({
-        mutationFn: (body: UpdatePostStatus) =>
-            apiPatch<AdminPost>(`/admin/posts/${id}/status`, body),
-        onSuccess: () => invalidate(),
-    });
+	const invalidate = useInvalidateAdminPosts();
+	return useMutation({
+		mutationFn: (body: UpdatePostStatus) =>
+			apiPatch<AdminPost>(`/admin/posts/${id}/status`, body),
+		onSuccess: () => invalidate(),
+	});
 };
 
 /**
@@ -69,15 +69,15 @@ export const useUpdatePostStatus = (id: string) => {
  * @param id 文章 ID
  */
 export const useSetFeatured = (id: string) => {
-    const qc = useQueryClient();
-    const invalidate = useInvalidateAdminPosts();
-    return useMutation({
-        mutationFn: (body: SetFeatured) => apiPatch<AdminPost>(`/admin/posts/${id}/featured`, body),
-        onSuccess: (data) => {
-            qc.setQueryData(adminPostKeys.detail(id), data);
-            invalidate();
-        },
-    });
+	const qc = useQueryClient();
+	const invalidate = useInvalidateAdminPosts();
+	return useMutation({
+		mutationFn: (body: SetFeatured) => apiPatch<AdminPost>(`/admin/posts/${id}/featured`, body),
+		onSuccess: (data) => {
+			qc.setQueryData(adminPostKeys.detail(id), data);
+			invalidate();
+		},
+	});
 };
 
 /**
@@ -86,11 +86,11 @@ export const useSetFeatured = (id: string) => {
  * @param id 文章 ID
  */
 export const useDeletePost = (id: string) => {
-    const invalidate = useInvalidateAdminPosts();
-    return useMutation({
-        mutationFn: () => apiDelete<null>(`/admin/posts/${id}`),
-        onSuccess: () => invalidate(),
-    });
+	const invalidate = useInvalidateAdminPosts();
+	return useMutation({
+		mutationFn: () => apiDelete<null>(`/admin/posts/${id}`),
+		onSuccess: () => invalidate(),
+	});
 };
 
 /**
@@ -99,11 +99,11 @@ export const useDeletePost = (id: string) => {
  * @param id 文章 ID
  */
 export const useRestorePost = (id: string) => {
-    const invalidate = useInvalidateAdminPosts();
-    return useMutation({
-        mutationFn: () => apiPost<null>(`/admin/posts/${id}/restore`),
-        onSuccess: () => invalidate(),
-    });
+	const invalidate = useInvalidateAdminPosts();
+	return useMutation({
+		mutationFn: () => apiPost<null>(`/admin/posts/${id}/restore`),
+		onSuccess: () => invalidate(),
+	});
 };
 
 /**
@@ -112,11 +112,11 @@ export const useRestorePost = (id: string) => {
  * @param id 文章 ID
  */
 export const useHardDeletePost = (id: string) => {
-    const invalidate = useInvalidateAdminPosts();
-    return useMutation({
-        mutationFn: () => apiDelete<null>(`/admin/posts/${id}/hard`),
-        onSuccess: () => invalidate(),
-    });
+	const invalidate = useInvalidateAdminPosts();
+	return useMutation({
+		mutationFn: () => apiDelete<null>(`/admin/posts/${id}/hard`),
+		onSuccess: () => invalidate(),
+	});
 };
 
 /**
@@ -126,31 +126,31 @@ export const useHardDeletePost = (id: string) => {
  * 用裸 apiPatch 以便在 mutation onSuccess 回调里调用，手动失效缓存。
  */
 export async function publishPost(id: string): Promise<void> {
-    await apiPatch<AdminPost>(`/admin/posts/${id}/status`, { status: "published" });
-    queryClient.invalidateQueries({ queryKey: adminPostKeys.detail(id) });
-    queryClient.invalidateQueries({ queryKey: adminPostKeys.lists() });
+	await apiPatch<AdminPost>(`/admin/posts/${id}/status`, { status: "published" });
+	queryClient.invalidateQueries({ queryKey: adminPostKeys.detail(id) });
+	queryClient.invalidateQueries({ queryKey: adminPostKeys.lists() });
 }
 
 /** ImportPostUrlResult - 远程链接文档解析结果 */
 export interface ImportPostUrlResult {
-    /** 文章正文标题（og:title → JSON-LD → H1 → <title> 兜底），可为空 */
-    title?: string;
-    /** 提取出的正文 HTML */
-    html: string;
-    /** 摘要（SEO description → 正文首段回退） */
-    excerpt?: string;
-    /** SEO 标题，社交分享用，可与正文不同 */
-    seo_title?: string;
-    /** SEO 描述 */
-    seo_description?: string;
-    /** 非致命提示（如 AI 还原失败的公式数） */
-    warnings?: string[];
+	/** 文章正文标题（og:title → JSON-LD → H1 → <title> 兜底），可为空 */
+	title?: string;
+	/** 提取出的正文 HTML */
+	html: string;
+	/** 摘要（SEO description → 正文首段回退） */
+	excerpt?: string;
+	/** SEO 标题，社交分享用，可与正文不同 */
+	seo_title?: string;
+	/** SEO 描述 */
+	seo_description?: string;
+	/** 非致命提示（如 AI 还原失败的公式数） */
+	warnings?: string[];
 }
 
 /** ImportPostUrlOpts - 远程链接导入的可选行为开关 */
 export interface ImportPostUrlOpts {
-    /** 为 true 时调 LLM 反推无源码公式的 LaTeX（需管理员配置 llm_*） */
-    ai_restore_formula?: boolean;
+	/** 为 true 时调 LLM 反推无源码公式的 LaTeX（需管理员配置 llm_*） */
+	ai_restore_formula?: boolean;
 }
 
 /**
@@ -160,13 +160,13 @@ export interface ImportPostUrlOpts {
  * 供编辑器 setContent 插入并自动填入表单空字段。
  */
 export async function importPostUrl(
-    url: string,
-    opts?: ImportPostUrlOpts,
+	url: string,
+	opts?: ImportPostUrlOpts,
 ): Promise<ImportPostUrlResult> {
-    return apiPost<ImportPostUrlResult>("/admin/posts/import-url", {
-        url,
-        ai_restore_formula: opts?.ai_restore_formula ?? false,
-    });
+	return apiPost<ImportPostUrlResult>("/admin/posts/import-url", {
+		url,
+		ai_restore_formula: opts?.ai_restore_formula ?? false,
+	});
 }
 
 /**
@@ -177,18 +177,18 @@ export async function importPostUrl(
  * 替代前端本地 slugify（保留 Unicode 中文，与后端契约冲突）。
  */
 export async function slugifyPost(title: string): Promise<{ slug: string }> {
-    return apiPost<{ slug: string }>("/admin/posts/slugify", { title });
+	return apiPost<{ slug: string }>("/admin/posts/slugify", { title });
 }
 
 export function useRestoreVersion(postId: string, versionId: string) {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async () => {
-            await apiPost(`/admin/posts/${postId}/versions/${versionId}/restore`);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: adminPostKeys.detail(postId) });
-            queryClient.invalidateQueries({ queryKey: adminPostKeys.versions(postId) });
-        },
-    });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async () => {
+			await apiPost(`/admin/posts/${postId}/versions/${versionId}/restore`);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: adminPostKeys.detail(postId) });
+			queryClient.invalidateQueries({ queryKey: adminPostKeys.versions(postId) });
+		},
+	});
 }

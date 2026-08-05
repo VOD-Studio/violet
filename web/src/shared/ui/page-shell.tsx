@@ -2,10 +2,10 @@ import { cn } from "@shared/lib/utils";
 import type { ReactNode } from "react";
 
 interface PageShellProps {
-    /** 页面主体内容 */
-    children: ReactNode;
-    /** 额外 className（与默认容器类合并） */
-    className?: string;
+	/** 页面主体内容 */
+	children: ReactNode;
+	/** 额外 className（与默认容器类合并） */
+	className?: string;
 }
 
 /**
@@ -24,14 +24,14 @@ interface PageShellProps {
  * 这些页面自行管理布局（已有 min-h-screen 提供一致的最小高度）。
  */
 export function PageShell({ children, className }: PageShellProps) {
-    return (
-        <div
-            className={cn(
-                "container mx-auto min-h-[calc(100dvh-4rem)] px-4 py-8 md:px-6 md:py-12",
-                className,
-            )}
-        >
-            {children}
-        </div>
-    );
+	return (
+		<div
+			className={cn(
+				"container mx-auto min-h-[calc(100dvh-4rem)] px-4 py-8 md:px-6 md:py-12",
+				className,
+			)}
+		>
+			{children}
+		</div>
+	);
 }

@@ -23,14 +23,14 @@ const MARKER_CLASS = "annotation-marker-inline";
  * 会让 computeBlockId 在角标注入前后算出不同哈希，破坏 block_id 一致性。
  */
 export function getBlockText(el: HTMLElement): string {
-    if (!el.querySelector(`.${MARKER_CLASS}`)) {
-        return el.textContent ?? "";
-    }
-    const clone = el.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll(`.${MARKER_CLASS}`).forEach((m) => {
-        m.remove();
-    });
-    return clone.textContent ?? "";
+	if (!el.querySelector(`.${MARKER_CLASS}`)) {
+		return el.textContent ?? "";
+	}
+	const clone = el.cloneNode(true) as HTMLElement;
+	clone.querySelectorAll(`.${MARKER_CLASS}`).forEach((m) => {
+		m.remove();
+	});
+	return clone.textContent ?? "";
 }
 
 /**
@@ -40,17 +40,17 @@ export function getBlockText(el: HTMLElement): string {
  * @returns 候选块数组；空块（纯空白）会被 computeBlockId 过滤（返回 null）
  */
 export async function extractCandidateBlocks(root: HTMLElement): Promise<CandidateBlock[]> {
-    const elements = Array.from(root.querySelectorAll<HTMLElement>(BLOCK_SELECTOR));
-    const blocks: CandidateBlock[] = [];
+	const elements = Array.from(root.querySelectorAll<HTMLElement>(BLOCK_SELECTOR));
+	const blocks: CandidateBlock[] = [];
 
-    for (const el of elements) {
-        const text = getBlockText(el);
-        const id = await computeBlockId(text);
-        if (id !== null) {
-            blocks.push({ id, text });
-        }
-    }
-    return blocks;
+	for (const el of elements) {
+		const text = getBlockText(el);
+		const id = await computeBlockId(text);
+		if (id !== null) {
+			blocks.push({ id, text });
+		}
+	}
+	return blocks;
 }
 
 /**
@@ -58,14 +58,14 @@ export async function extractCandidateBlocks(root: HTMLElement): Promise<Candida
  * 重新遍历算 id 匹配——DOM 没有 data-block-id 属性，靠文本 hash 定位。
  */
 export async function findBlockElement(
-    root: HTMLElement,
-    blockId: string,
+	root: HTMLElement,
+	blockId: string,
 ): Promise<HTMLElement | null> {
-    const elements = Array.from(root.querySelectorAll<HTMLElement>(BLOCK_SELECTOR));
-    for (const el of elements) {
-        const text = getBlockText(el);
-        const id = await computeBlockId(text);
-        if (id === blockId) return el;
-    }
-    return null;
+	const elements = Array.from(root.querySelectorAll<HTMLElement>(BLOCK_SELECTOR));
+	for (const el of elements) {
+		const text = getBlockText(el);
+		const id = await computeBlockId(text);
+		if (id === blockId) return el;
+	}
+	return null;
 }

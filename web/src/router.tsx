@@ -14,15 +14,15 @@ import { useViewTransitionStore } from "./shared/lib/view-transition-store";
  * - auth：SSR 期间通过 /auth/session 确定的鉴权快照，client hydrate 时复用
  */
 export interface RouterContext {
-    /** TanStack Query 实例 */
-    queryClient: QueryClient;
-    /** 鉴权状态 */
-    auth: {
-        /** 是否已登录 */
-        isAuthenticated: boolean;
-        /** /auth/session 返回的 claims（未登录为 null） */
-        claims: SessionClaims | null;
-    };
+	/** TanStack Query 实例 */
+	queryClient: QueryClient;
+	/** 鉴权状态 */
+	auth: {
+		/** 是否已登录 */
+		isAuthenticated: boolean;
+		/** /auth/session 返回的 claims（未登录为 null） */
+		claims: SessionClaims | null;
+	};
 }
 
 /**
@@ -32,43 +32,43 @@ export interface RouterContext {
  * auth 初始为未登录态，由 __root 的 beforeLoad 在请求开始时覆盖为真实值。
  */
 export const getRouter = () => {
-    const router = createTanStackRouter({
-        routeTree,
-        scrollRestoration: true,
-        defaultPreload: "intent",
-        defaultPreloadStaleTime: 0,
-        defaultViewTransition: {
-            types: ({ fromLocation, toLocation, pathChanged }) => {
-                if (!pathChanged) return false;
-                const to = toLocation.pathname;
-                const from = fromLocation?.pathname;
+	const router = createTanStackRouter({
+		routeTree,
+		scrollRestoration: true,
+		defaultPreload: "intent",
+		defaultPreloadStaleTime: 0,
+		defaultViewTransition: {
+			types: ({ fromLocation, toLocation, pathChanged }) => {
+				if (!pathChanged) return false;
+				const to = toLocation.pathname;
+				const from = fromLocation?.pathname;
 
-                // 离开博客段时清零共享封面状态
-                const isBlog = (p?: string) => p === "/blog" || p?.startsWith("/blog/");
-                if (!isBlog(to) || !isBlog(from)) {
-                    useViewTransitionStore.getState().setSharedCoverSlug(null);
-                }
+				// 离开博客段时清零共享封面状态
+				const isBlog = (p?: string) => p === "/blog" || p?.startsWith("/blog/");
+				if (!isBlog(to) || !isBlog(from)) {
+					useViewTransitionStore.getState().setSharedCoverSlug(null);
+				}
 
-                // 后台段不做 View Transition：侧边栏/顶栏等静态区域会随整页
-                // root 快照一起淡入淡出，表现为布局闪烁；后台导航无需转场。
-                if (isAdminRoute(to) || (from && isAdminRoute(from))) {
-                    return false;
-                }
-                const dir = getNavDirection(from, to);
-                return dir ? [dir] : ["fade"];
-            },
-        },
-        context: {
-            queryClient: clientQueryClient,
-            auth: { isAuthenticated: false, claims: null },
-        },
-    });
+				// 后台段不做 View Transition：侧边栏/顶栏等静态区域会随整页
+				// root 快照一起淡入淡出，表现为布局闪烁；后台导航无需转场。
+				if (isAdminRoute(to) || (from && isAdminRoute(from))) {
+					return false;
+				}
+				const dir = getNavDirection(from, to);
+				return dir ? [dir] : ["fade"];
+			},
+		},
+		context: {
+			queryClient: clientQueryClient,
+			auth: { isAuthenticated: false, claims: null },
+		},
+	});
 
-    return router;
+	return router;
 };
 
 declare module "@tanstack/react-router" {
-    interface Register {
-        router: ReturnType<typeof getRouter>;
-    }
+	interface Register {
+		router: ReturnType<typeof getRouter>;
+	}
 }

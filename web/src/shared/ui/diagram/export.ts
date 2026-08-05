@@ -17,11 +17,11 @@ const DEFAULT_EXPORT_SIZE = { width: 400, height: 300 };
  * 已有 xmlns 时不重复注入。
  */
 export function serializeSvg(svg: string): string {
-    const hasNamespace = svg.includes(`xmlns="${SVG_NAMESPACE}"`);
-    const withNamespace = hasNamespace
-        ? svg
-        : svg.replace(/^<svg/, `<svg xmlns="${SVG_NAMESPACE}"`);
-    return `${XML_DECLARATION}\n${withNamespace}`;
+	const hasNamespace = svg.includes(`xmlns="${SVG_NAMESPACE}"`);
+	const withNamespace = hasNamespace
+		? svg
+		: svg.replace(/^<svg/, `<svg xmlns="${SVG_NAMESPACE}"`);
+	return `${XML_DECLARATION}\n${withNamespace}`;
 }
 
 /**
@@ -29,19 +29,19 @@ export function serializeSvg(svg: string): string {
  * 无则降级默认值。
  */
 export function parseViewBoxSize(svg: string): { width: number; height: number } {
-    const viewBox = svg.match(/viewBox="[\d.\s-]+\s([\d.]+)\s([\d.]+)"/);
-    if (viewBox?.[1] && viewBox?.[2]) {
-        return { width: Number.parseFloat(viewBox[1]), height: Number.parseFloat(viewBox[2]) };
-    }
-    const widthMatch = svg.match(/\bwidth="([\d.]+)"/);
-    const heightMatch = svg.match(/\bheight="([\d.]+)"/);
-    if (widthMatch?.[1] && heightMatch?.[1]) {
-        return {
-            width: Number.parseFloat(widthMatch[1]),
-            height: Number.parseFloat(heightMatch[1]),
-        };
-    }
-    return DEFAULT_EXPORT_SIZE;
+	const viewBox = svg.match(/viewBox="[\d.\s-]+\s([\d.]+)\s([\d.]+)"/);
+	if (viewBox?.[1] && viewBox?.[2]) {
+		return { width: Number.parseFloat(viewBox[1]), height: Number.parseFloat(viewBox[2]) };
+	}
+	const widthMatch = svg.match(/\bwidth="([\d.]+)"/);
+	const heightMatch = svg.match(/\bheight="([\d.]+)"/);
+	if (widthMatch?.[1] && heightMatch?.[1]) {
+		return {
+			width: Number.parseFloat(widthMatch[1]),
+			height: Number.parseFloat(heightMatch[1]),
+		};
+	}
+	return DEFAULT_EXPORT_SIZE;
 }
 
 /**
@@ -51,36 +51,36 @@ export function parseViewBoxSize(svg: string): { width: number; height: number }
  * @returns PNG Blob
  */
 export function svgToPngBlob(svg: string): Promise<Blob> {
-    const { width, height } = parseViewBoxSize(svg);
-    const svgString = serializeSvg(svg);
-    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
+	const { width, height } = parseViewBoxSize(svg);
+	const svgString = serializeSvg(svg);
+	const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+	const url = URL.createObjectURL(svgBlob);
 
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) {
-                URL.revokeObjectURL(url);
-                reject(new Error("canvas 2d context 不可用"));
-                return;
-            }
-            ctx.drawImage(img, 0, 0, width, height);
-            URL.revokeObjectURL(url);
-            canvas.toBlob((blob) => {
-                if (blob) resolve(blob);
-                else reject(new Error("canvas.toBlob 失败"));
-            }, "image/png");
-        };
-        img.onerror = () => {
-            URL.revokeObjectURL(url);
-            reject(new Error("SVG 加载失败"));
-        };
-        img.src = url;
-    });
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => {
+			const canvas = document.createElement("canvas");
+			canvas.width = width;
+			canvas.height = height;
+			const ctx = canvas.getContext("2d");
+			if (!ctx) {
+				URL.revokeObjectURL(url);
+				reject(new Error("canvas 2d context 不可用"));
+				return;
+			}
+			ctx.drawImage(img, 0, 0, width, height);
+			URL.revokeObjectURL(url);
+			canvas.toBlob((blob) => {
+				if (blob) resolve(blob);
+				else reject(new Error("canvas.toBlob 失败"));
+			}, "image/png");
+		};
+		img.onerror = () => {
+			URL.revokeObjectURL(url);
+			reject(new Error("SVG 加载失败"));
+		};
+		img.src = url;
+	});
 }
 
 /**
@@ -89,25 +89,25 @@ export function svgToPngBlob(svg: string): Promise<Blob> {
  * 创建临时 <a> 挂载到 body、触发 click、立即移除。
  */
 export function downloadBlob(blob: Blob, filename: string): void {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement("a");
+	link.href = url;
+	link.download = filename;
+	document.body.appendChild(link);
+	link.click();
+	document.body.removeChild(link);
+	URL.revokeObjectURL(url);
 }
 
 /** 导出 SVG 文件 */
 export function exportSvg(svg: string, filename = "diagram.svg"): void {
-    const serialized = serializeSvg(svg);
-    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-    downloadBlob(blob, filename);
+	const serialized = serializeSvg(svg);
+	const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+	downloadBlob(blob, filename);
 }
 
 /** 导出 PNG 文件 */
 export async function exportPng(svg: string, filename = "diagram.png"): Promise<void> {
-    const blob = await svgToPngBlob(svg);
-    downloadBlob(blob, filename);
+	const blob = await svgToPngBlob(svg);
+	downloadBlob(blob, filename);
 }

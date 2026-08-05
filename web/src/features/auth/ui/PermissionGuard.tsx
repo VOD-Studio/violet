@@ -1,22 +1,22 @@
 import type { ReactNode } from "react";
 import {
-    useHasAllPermissions,
-    useHasAnyPermission,
-    useHasPermission,
+	useHasAllPermissions,
+	useHasAnyPermission,
+	useHasPermission,
 } from "../hooks/usePermissions";
 
 /**
  * PermissionGuardProps - 权限守卫组件属性
  */
 export interface PermissionGuardProps {
-    /** 单个权限码或权限码数组 */
-    permission: string | string[];
-    /** 多个权限时是否需要全部满足（默认 false，满足任一即可） */
-    requireAll?: boolean;
-    /** 无权限时显示的内容（可选） */
-    fallback?: ReactNode;
-    /** 有权限时渲染的内容 */
-    children: ReactNode;
+	/** 单个权限码或权限码数组 */
+	permission: string | string[];
+	/** 多个权限时是否需要全部满足（默认 false，满足任一即可） */
+	requireAll?: boolean;
+	/** 无权限时显示的内容（可选） */
+	fallback?: ReactNode;
+	/** 有权限时渲染的内容 */
+	children: ReactNode;
 }
 
 /**
@@ -49,31 +49,31 @@ export interface PermissionGuardProps {
  * ```
  */
 export function PermissionGuard({
-    permission,
-    requireAll = false,
-    fallback = null,
-    children,
+	permission,
+	requireAll = false,
+	fallback = null,
+	children,
 }: PermissionGuardProps) {
-    // 单个权限检查
-    const hasSinglePermission = useHasPermission(typeof permission === "string" ? permission : "");
+	// 单个权限检查
+	const hasSinglePermission = useHasPermission(typeof permission === "string" ? permission : "");
 
-    // 多个权限检查（满足任一）
-    const hasAnyPermission = useHasAnyPermission(Array.isArray(permission) ? permission : []);
+	// 多个权限检查（满足任一）
+	const hasAnyPermission = useHasAnyPermission(Array.isArray(permission) ? permission : []);
 
-    // 多个权限检查（需要全部满足）
-    const hasAllPermissions = useHasAllPermissions(Array.isArray(permission) ? permission : []);
+	// 多个权限检查（需要全部满足）
+	const hasAllPermissions = useHasAllPermissions(Array.isArray(permission) ? permission : []);
 
-    // 确定是否有权限
-    let hasPermission = false;
+	// 确定是否有权限
+	let hasPermission = false;
 
-    if (typeof permission === "string") {
-        // 单个权限
-        hasPermission = hasSinglePermission;
-    } else if (Array.isArray(permission)) {
-        // 多个权限
-        hasPermission = requireAll ? hasAllPermissions : hasAnyPermission;
-    }
+	if (typeof permission === "string") {
+		// 单个权限
+		hasPermission = hasSinglePermission;
+	} else if (Array.isArray(permission)) {
+		// 多个权限
+		hasPermission = requireAll ? hasAllPermissions : hasAnyPermission;
+	}
 
-    // 有权限时渲染 children，无权限时渲染 fallback
-    return hasPermission ? children : fallback;
+	// 有权限时渲染 children，无权限时渲染 fallback
+	return hasPermission ? children : fallback;
 }

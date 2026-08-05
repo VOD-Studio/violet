@@ -12,33 +12,33 @@
 import type { CommentSeverity } from "./comment-tree";
 
 export interface CommentSevCfg {
-    /** BorderGlow 配色（HSL 三元组字符串，单色模式三值相同） */
-    glow: [string, string, string];
-    /** 左侧 1px 色条 class */
-    bar: string;
-    /** 作者徽章 class（背景 + 前景，含 dark 变体） */
-    badge: string;
+	/** BorderGlow 配色（HSL 三元组字符串，单色模式三值相同） */
+	glow: [string, string, string];
+	/** 左侧 1px 色条 class */
+	bar: string;
+	/** 作者徽章 class（背景 + 前景，含 dark 变体） */
+	badge: string;
 }
 
 export const COMMENT_SEVERITY: Record<CommentSeverity, CommentSevCfg> = {
-    default: {
-        glow: ["215 16 40", "215 16 40", "215 16 40"],
-        bar: "bg-slate-400",
-        badge: "bg-slate-500/10 text-slate-600 dark:text-slate-400",
-    },
-    discussion: {
-        glow: ["217 91 60", "217 91 60", "217 91 60"],
-        bar: "bg-blue-500",
-        badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    },
-    author: {
-        glow: ["152 76 40", "152 76 40", "152 76 40"],
-        bar: "bg-emerald-500",
-        badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    },
+	default: {
+		glow: ["215 16 40", "215 16 40", "215 16 40"],
+		bar: "bg-slate-400",
+		badge: "bg-slate-500/10 text-slate-600 dark:text-slate-400",
+	},
+	discussion: {
+		glow: ["217 91 60", "217 91 60", "217 91 60"],
+		bar: "bg-blue-500",
+		badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+	},
+	author: {
+		glow: ["152 76 40", "152 76 40", "152 76 40"],
+		bar: "bg-emerald-500",
+		badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+	},
 };
 
 /** 取 severity 配置，未知值回退到 default */
 export function getCommentSev(severity: CommentSeverity): CommentSevCfg {
-    return COMMENT_SEVERITY[severity] ?? COMMENT_SEVERITY.default;
+	return COMMENT_SEVERITY[severity] ?? COMMENT_SEVERITY.default;
 }

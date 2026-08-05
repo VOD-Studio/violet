@@ -13,25 +13,25 @@ import { MathPopoverView } from "./MathPopoverView";
 
 /** 行内公式 NodeView 渲染适配器（displayMode=false） */
 const renderInlineMathView = (props: NodeViewProps) => (
-    <MathPopoverView {...props} displayMode={false} />
+	<MathPopoverView {...props} displayMode={false} />
 );
 
 /** 公式块 NodeView 渲染适配器（displayMode=true） */
 const renderBlockMathView = (props: NodeViewProps) => (
-    <MathPopoverView {...props} displayMode={true} />
+	<MathPopoverView {...props} displayMode={true} />
 );
 
 export function createMathExtensions() {
-    return [
-        InlineMath.extend({
-            addNodeView() {
-                return ReactNodeViewRenderer(renderInlineMathView);
-            },
-        }).configure({ katexOptions: KATEX_OPTIONS }),
-        BlockMath.extend({
-            addNodeView() {
-                return ReactNodeViewRenderer(renderBlockMathView);
-            },
-        }).configure({ katexOptions: KATEX_OPTIONS }),
-    ];
+	return [
+		InlineMath.extend({
+			addNodeView() {
+				return ReactNodeViewRenderer(renderInlineMathView);
+			},
+		}).configure({ katexOptions: KATEX_OPTIONS }),
+		BlockMath.extend({
+			addNodeView() {
+				return ReactNodeViewRenderer(renderBlockMathView);
+			},
+		}).configure({ katexOptions: KATEX_OPTIONS }),
+	];
 }

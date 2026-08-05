@@ -18,13 +18,13 @@ import { ModalHeader } from "./ModalHeader";
  * onPointerDownOutside 回调参数是 CustomEvent，只保证有 target 与 preventDefault。
  */
 function isInsideRadixFloating(event: { target: EventTarget | null }): boolean {
-    const target = event.target as HTMLElement | null;
-    if (!target) return false;
-    return !!target.closest(
-        // 覆盖各类 Radix 浮层：Select（popper 包裹 / listbox / viewport）、
-        // DropdownMenu、Popover、Tooltip 等，避免嵌套点击误关 Dialog。
-        "[data-radix-popper-content-wrapper], [role=listbox], [data-radix-select-viewport], [data-radix-menu-content], [data-radix-popper-anchor]",
-    );
+	const target = event.target as HTMLElement | null;
+	if (!target) return false;
+	return !!target.closest(
+		// 覆盖各类 Radix 浮层：Select（popper 包裹 / listbox / viewport）、
+		// DropdownMenu、Popover、Tooltip 等，避免嵌套点击误关 Dialog。
+		"[data-radix-popper-content-wrapper], [role=listbox], [data-radix-select-viewport], [data-radix-menu-content], [data-radix-popper-anchor]",
+	);
 }
 
 /**
@@ -44,91 +44,91 @@ function isInsideRadixFloating(event: { target: EventTarget | null }): boolean {
  * </Modal>
  */
 export function Modal({
-    open,
-    onOpenChange,
-    title,
-    description,
-    children,
-    footer = null,
-    size = "md",
-    showCloseButton = true,
-    unstyled = false,
-    scrollable = true,
-    titleSrOnly = false,
-    modal = true,
-    onEscapeKeyDown,
-    onInteractOutside,
-    className,
+	open,
+	onOpenChange,
+	title,
+	description,
+	children,
+	footer = null,
+	size = "md",
+	showCloseButton = true,
+	unstyled = false,
+	scrollable = true,
+	titleSrOnly = false,
+	modal = true,
+	onEscapeKeyDown,
+	onInteractOutside,
+	className,
 }: ModalProps) {
-    return (
-        <DialogPrimitive.Root open={open} onOpenChange={onOpenChange} modal={modal}>
-            <AnimatePresence>
-                {open && (
-                    <DialogPrimitive.Portal forceMount>
-                        {/* 遮罩：渐入渐出 */}
-                        <DialogPrimitive.Overlay asChild forceMount>
-                            <motion.div
-                                className="fixed inset-0 z-50 bg-black/50"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                            />
-                        </DialogPrimitive.Overlay>
+	return (
+		<DialogPrimitive.Root open={open} onOpenChange={onOpenChange} modal={modal}>
+			<AnimatePresence>
+				{open && (
+					<DialogPrimitive.Portal forceMount>
+						{/* 遮罩：渐入渐出 */}
+						<DialogPrimitive.Overlay asChild forceMount>
+							<motion.div
+								className="fixed inset-0 z-50 bg-black/50"
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								exit={{ opacity: 0 }}
+								transition={{ duration: 0.2 }}
+							/>
+						</DialogPrimitive.Overlay>
 
-                        {/* 内容：缩放 + 渐入 */}
-                        <DialogPrimitive.Content
-                            forceMount
-                            onEscapeKeyDown={onEscapeKeyDown}
-                            // 合并外部交互处理：
-                            // 1. Select/Popover 等 Radix 浮层的点击不算"外部"（修复 Select 关 Dialog 的 bug）
-                            // 2. 再交给调用方传入的 onInteractOutside（如 lightbox 全屏期间阻断关闭）
-                            onInteractOutside={(e) => {
-                                if (isInsideRadixFloating(e)) {
-                                    e.preventDefault();
-                                    return;
-                                }
-                                onInteractOutside?.(e);
-                            }}
-                            onPointerDownOutside={(e) => {
-                                if (isInsideRadixFloating(e)) {
-                                    e.preventDefault();
-                                }
-                            }}
-                            asChild
-                        >
-                            <motion.div
-                                className={cn(
-                                    "fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-lg bg-background shadow-lg outline-none",
-                                    !unstyled && "border",
-                                    MODAL_SIZES[size],
-                                    className,
-                                )}
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.2, ease: "easeOut" }}
-                            >
-                                <ModalHeader
-                                    title={title}
-                                    description={description}
-                                    titleSrOnly={titleSrOnly}
-                                    showCloseButton={showCloseButton}
-                                    unstyled={unstyled}
-                                />
+						{/* 内容：缩放 + 渐入 */}
+						<DialogPrimitive.Content
+							forceMount
+							onEscapeKeyDown={onEscapeKeyDown}
+							// 合并外部交互处理：
+							// 1. Select/Popover 等 Radix 浮层的点击不算"外部"（修复 Select 关 Dialog 的 bug）
+							// 2. 再交给调用方传入的 onInteractOutside（如 lightbox 全屏期间阻断关闭）
+							onInteractOutside={(e) => {
+								if (isInsideRadixFloating(e)) {
+									e.preventDefault();
+									return;
+								}
+								onInteractOutside?.(e);
+							}}
+							onPointerDownOutside={(e) => {
+								if (isInsideRadixFloating(e)) {
+									e.preventDefault();
+								}
+							}}
+							asChild
+						>
+							<motion.div
+								className={cn(
+									"fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-lg bg-background shadow-lg outline-none",
+									!unstyled && "border",
+									MODAL_SIZES[size],
+									className,
+								)}
+								initial={{ opacity: 0, scale: 0.95 }}
+								animate={{ opacity: 1, scale: 1 }}
+								exit={{ opacity: 0, scale: 0.95 }}
+								transition={{ duration: 0.2, ease: "easeOut" }}
+							>
+								<ModalHeader
+									title={title}
+									description={description}
+									titleSrOnly={titleSrOnly}
+									showCloseButton={showCloseButton}
+									unstyled={unstyled}
+								/>
 
-                                {unstyled ? (
-                                    children
-                                ) : (
-                                    <ModalBody scrollable={scrollable}>{children}</ModalBody>
-                                )}
+								{unstyled ? (
+									children
+								) : (
+									<ModalBody scrollable={scrollable}>{children}</ModalBody>
+								)}
 
-                                {footer && <ModalFooter>{footer}</ModalFooter>}
-                            </motion.div>
-                        </DialogPrimitive.Content>
-                    </DialogPrimitive.Portal>
-                )}
-            </AnimatePresence>
-        </DialogPrimitive.Root>
-    );
+								{footer && <ModalFooter>{footer}</ModalFooter>}
+							</motion.div>
+						</DialogPrimitive.Content>
+					</DialogPrimitive.Portal>
+				)}
+			</AnimatePresence>
+		</DialogPrimitive.Root>
+	);
 }

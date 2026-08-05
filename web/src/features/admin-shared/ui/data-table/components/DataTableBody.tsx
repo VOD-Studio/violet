@@ -7,9 +7,9 @@ import { TooltipProvider } from "@/shared/ui/base/tooltip";
 import Empty from "@/shared/ui/empty";
 import type { DataTableColumn } from "../types/data-table-types";
 import {
-    COLUMNS_CONTROL_KEY,
-    EXPAND_COLUMN_KEY,
-    SELECT_COLUMN_KEY,
+	COLUMNS_CONTROL_KEY,
+	EXPAND_COLUMN_KEY,
+	SELECT_COLUMN_KEY,
 } from "../types/data-table-types";
 import { cellStickyStyle, mergeStickyStyle, type StickyOffset } from "../utils/sticky-utils";
 import { CellWithTooltip } from "./CellWithTooltip";
@@ -17,47 +17,47 @@ import { RowCheckbox } from "./RowCheckbox";
 import { RowExpander } from "./RowExpander";
 
 const ALIGN_CLASS = {
-    left: "text-left",
-    center: "text-center",
-    right: "text-right",
+	left: "text-left",
+	center: "text-center",
+	right: "text-right",
 } as const;
 
 const ALIGN_FLEX_CLASS = {
-    left: "justify-start",
-    center: "justify-center",
-    right: "justify-end",
+	left: "justify-start",
+	center: "justify-center",
+	right: "justify-end",
 } as const;
 
 const SKELETON_ROWS = ["sk-1", "sk-2", "sk-3", "sk-4", "sk-5"];
 
 interface DataTableBodyProps<T> {
-    columns: DataTableColumn<T>[];
-    data: T[];
-    keyExtractor: (row: T) => string;
-    offsets: Map<string, StickyOffset>;
-    loading?: boolean;
-    error?: Error | null;
-    onRetry?: () => void;
-    density: "comfortable" | "compact";
-    /** 筛选态：为 true 且无数据时使用"未找到匹配结果"文案 */
-    filtered?: boolean;
-    emptyTitle?: string;
-    emptyDescription?: string;
-    selectable: boolean;
-    selectedIds: Set<string>;
-    onToggleRow: (id: string) => void;
-    expandable: boolean;
-    expandedRowFixed: boolean;
-    containerWidth: number;
-    expandedRowKeys: Set<string>;
-    onToggleExpand: (id: string) => void;
-    renderExpandedRow?: (row: T) => ReactNode;
-    /** 整行点击回调，提供后行显示 cursor-pointer */
-    onRowClick?: (row: T) => void;
-    /** 根据行数据返回行类名，用于高亮特定状态 */
-    rowClassName?: (row: T) => string;
-    /** 当前页首行在全集中的序号（用于全局 aria-rowindex），通常 (page-1)*pageSize */
-    pageBaseIndex: number;
+	columns: DataTableColumn<T>[];
+	data: T[];
+	keyExtractor: (row: T) => string;
+	offsets: Map<string, StickyOffset>;
+	loading?: boolean;
+	error?: Error | null;
+	onRetry?: () => void;
+	density: "comfortable" | "compact";
+	/** 筛选态：为 true 且无数据时使用"未找到匹配结果"文案 */
+	filtered?: boolean;
+	emptyTitle?: string;
+	emptyDescription?: string;
+	selectable: boolean;
+	selectedIds: Set<string>;
+	onToggleRow: (id: string) => void;
+	expandable: boolean;
+	expandedRowFixed: boolean;
+	containerWidth: number;
+	expandedRowKeys: Set<string>;
+	onToggleExpand: (id: string) => void;
+	renderExpandedRow?: (row: T) => ReactNode;
+	/** 整行点击回调，提供后行显示 cursor-pointer */
+	onRowClick?: (row: T) => void;
+	/** 根据行数据返回行类名，用于高亮特定状态 */
+	rowClassName?: (row: T) => string;
+	/** 当前页首行在全集中的序号（用于全局 aria-rowindex），通常 (page-1)*pageSize */
+	pageBaseIndex: number;
 }
 
 /**
@@ -67,269 +67,269 @@ interface DataTableBodyProps<T> {
  * 行选择列渲染 RowCheckbox，展开列渲染 RowExpander，展开行追加详情子行。
  */
 export function DataTableBody<T>({
-    columns,
-    data,
-    keyExtractor,
-    offsets,
-    loading,
-    error,
-    onRetry,
-    density,
-    filtered = false,
-    emptyTitle,
-    emptyDescription,
-    selectable,
-    selectedIds,
-    onToggleRow,
-    expandable,
-    expandedRowFixed,
-    containerWidth,
-    expandedRowKeys,
-    onToggleExpand,
-    renderExpandedRow,
-    onRowClick,
-    rowClassName,
-    pageBaseIndex,
+	columns,
+	data,
+	keyExtractor,
+	offsets,
+	loading,
+	error,
+	onRetry,
+	density,
+	filtered = false,
+	emptyTitle,
+	emptyDescription,
+	selectable,
+	selectedIds,
+	onToggleRow,
+	expandable,
+	expandedRowFixed,
+	containerWidth,
+	expandedRowKeys,
+	onToggleExpand,
+	renderExpandedRow,
+	onRowClick,
+	rowClassName,
+	pageBaseIndex,
 }: DataTableBodyProps<T>) {
-    const cellPad = density === "compact" ? "py-1.5" : "py-2.5";
-    const colCount = columns.length;
+	const cellPad = density === "compact" ? "py-1.5" : "py-2.5";
+	const colCount = columns.length;
 
-    if (error) {
-        return (
-            <TableBody>
-                <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={colCount} className="p-0">
-                        <div className="py-12" aria-live="assertive">
-                            <Empty
-                                title="ERROR"
-                                description={error.message || "加载失败"}
-                                size="sm"
-                                action={
-                                    onRetry ? (
-                                        <Button variant="outline" size="sm" onClick={onRetry}>
-                                            重试
-                                        </Button>
-                                    ) : undefined
-                                }
-                            />
-                        </div>
-                    </TableCell>
-                </TableRow>
-            </TableBody>
-        );
-    }
+	if (error) {
+		return (
+			<TableBody>
+				<TableRow className="hover:bg-transparent">
+					<TableCell colSpan={colCount} className="p-0">
+						<div className="py-12" aria-live="assertive">
+							<Empty
+								title="ERROR"
+								description={error.message || "加载失败"}
+								size="sm"
+								action={
+									onRetry ? (
+										<Button variant="outline" size="sm" onClick={onRetry}>
+											重试
+										</Button>
+									) : undefined
+								}
+							/>
+						</div>
+					</TableCell>
+				</TableRow>
+			</TableBody>
+		);
+	}
 
-    if (loading) {
-        return (
-            <TableBody>
-                {SKELETON_ROWS.map((sid) => (
-                    <TableRow key={sid} className="hover:bg-transparent">
-                        {columns.map((col) => {
-                            const offset = offsets.get(col.key);
-                            const sticky = cellStickyStyle(offset);
-                            return (
-                                <TableCell
-                                    key={col.key}
-                                    style={mergeStickyStyle(offset, col.width)}
-                                    className={cn(
-                                        cellPad,
-                                        ALIGN_CLASS[col.align ?? "left"],
-                                        sticky.className,
-                                    )}
-                                >
-                                    <div
-                                        className={cn(
-                                            "flex items-center",
-                                            ALIGN_FLEX_CLASS[col.align ?? "left"],
-                                        )}
-                                    >
-                                        <Skeleton className="h-4 w-full max-w-[10rem]" />
-                                    </div>
-                                </TableCell>
-                            );
-                        })}
-                    </TableRow>
-                ))}
-            </TableBody>
-        );
-    }
+	if (loading) {
+		return (
+			<TableBody>
+				{SKELETON_ROWS.map((sid) => (
+					<TableRow key={sid} className="hover:bg-transparent">
+						{columns.map((col) => {
+							const offset = offsets.get(col.key);
+							const sticky = cellStickyStyle(offset);
+							return (
+								<TableCell
+									key={col.key}
+									style={mergeStickyStyle(offset, col.width)}
+									className={cn(
+										cellPad,
+										ALIGN_CLASS[col.align ?? "left"],
+										sticky.className,
+									)}
+								>
+									<div
+										className={cn(
+											"flex items-center",
+											ALIGN_FLEX_CLASS[col.align ?? "left"],
+										)}
+									>
+										<Skeleton className="h-4 w-full max-w-[10rem]" />
+									</div>
+								</TableCell>
+							);
+						})}
+					</TableRow>
+				))}
+			</TableBody>
+		);
+	}
 
-    if (data.length === 0) {
-        const title = filtered ? "NO_MATCH" : (emptyTitle ?? "NO_DATA");
-        const desc = filtered ? "未找到匹配结果，请调整筛选条件" : (emptyDescription ?? "暂无数据");
-        return (
-            <TableBody>
-                <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={colCount} className="p-0">
-                        <div className="py-12" aria-live="polite">
-                            <Empty title={title} description={desc} size="sm" />
-                        </div>
-                    </TableCell>
-                </TableRow>
-            </TableBody>
-        );
-    }
+	if (data.length === 0) {
+		const title = filtered ? "NO_MATCH" : (emptyTitle ?? "NO_DATA");
+		const desc = filtered ? "未找到匹配结果，请调整筛选条件" : (emptyDescription ?? "暂无数据");
+		return (
+			<TableBody>
+				<TableRow className="hover:bg-transparent">
+					<TableCell colSpan={colCount} className="p-0">
+						<div className="py-12" aria-live="polite">
+							<Empty title={title} description={desc} size="sm" />
+						</div>
+					</TableCell>
+				</TableRow>
+			</TableBody>
+		);
+	}
 
-    return (
-        <TooltipProvider>
-            <TableBody>
-                {data.map((row, index) => {
-                    const rowKey = keyExtractor(row);
-                    const isSelected = selectable && selectedIds.has(rowKey);
-                    const isExpanded = expandable && expandedRowKeys.has(rowKey);
-                    return (
-                        <Fragment key={rowKey}>
-                            <TableRow
-                                data-state={isSelected ? "selected" : undefined}
-                                aria-selected={selectable ? isSelected : undefined}
-                                aria-rowindex={pageBaseIndex + index + 1}
-                                onClick={onRowClick ? () => onRowClick(row) : undefined}
-                                className={cn(onRowClick && "cursor-pointer", rowClassName?.(row))}
-                            >
-                                {columns.map((col) => {
-                                    const offset = offsets.get(col.key);
-                                    const sticky = cellStickyStyle(offset);
+	return (
+		<TooltipProvider>
+			<TableBody>
+				{data.map((row, index) => {
+					const rowKey = keyExtractor(row);
+					const isSelected = selectable && selectedIds.has(rowKey);
+					const isExpanded = expandable && expandedRowKeys.has(rowKey);
+					return (
+						<Fragment key={rowKey}>
+							<TableRow
+								data-state={isSelected ? "selected" : undefined}
+								aria-selected={selectable ? isSelected : undefined}
+								aria-rowindex={pageBaseIndex + index + 1}
+								onClick={onRowClick ? () => onRowClick(row) : undefined}
+								className={cn(onRowClick && "cursor-pointer", rowClassName?.(row))}
+							>
+								{columns.map((col) => {
+									const offset = offsets.get(col.key);
+									const sticky = cellStickyStyle(offset);
 
-                                    // 选择列：行 checkbox + 右内边距与下一列分隔
-                                    if (col.key === SELECT_COLUMN_KEY) {
-                                        return (
-                                            <TableCell
-                                                key={col.key}
-                                                style={mergeStickyStyle(offset, col.width)}
-                                                className={cn(
-                                                    cellPad,
-                                                    "pr-3",
-                                                    sticky.className,
-                                                    col.className,
-                                                )}
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                {selectable && (
-                                                    <RowCheckbox
-                                                        selected={isSelected}
-                                                        onToggle={() => onToggleRow(rowKey)}
-                                                        rowNumber={pageBaseIndex + index + 1}
-                                                    />
-                                                )}
-                                            </TableCell>
-                                        );
-                                    }
+									// 选择列：行 checkbox + 右内边距与下一列分隔
+									if (col.key === SELECT_COLUMN_KEY) {
+										return (
+											<TableCell
+												key={col.key}
+												style={mergeStickyStyle(offset, col.width)}
+												className={cn(
+													cellPad,
+													"pr-3",
+													sticky.className,
+													col.className,
+												)}
+												onClick={(e) => e.stopPropagation()}
+											>
+												{selectable && (
+													<RowCheckbox
+														selected={isSelected}
+														onToggle={() => onToggleRow(rowKey)}
+														rowNumber={pageBaseIndex + index + 1}
+													/>
+												)}
+											</TableCell>
+										);
+									}
 
-                                    // 展开列：行展开切换按钮
-                                    if (col.key === EXPAND_COLUMN_KEY) {
-                                        return (
-                                            <TableCell
-                                                key={col.key}
-                                                style={mergeStickyStyle(offset, col.width)}
-                                                className={cn(
-                                                    cellPad,
-                                                    "pr-3",
-                                                    sticky.className,
-                                                    col.className,
-                                                )}
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                {expandable && (
-                                                    <RowExpander
-                                                        expanded={isExpanded}
-                                                        onToggle={() => onToggleExpand(rowKey)}
-                                                    />
-                                                )}
-                                            </TableCell>
-                                        );
-                                    }
+									// 展开列：行展开切换按钮
+									if (col.key === EXPAND_COLUMN_KEY) {
+										return (
+											<TableCell
+												key={col.key}
+												style={mergeStickyStyle(offset, col.width)}
+												className={cn(
+													cellPad,
+													"pr-3",
+													sticky.className,
+													col.className,
+												)}
+												onClick={(e) => e.stopPropagation()}
+											>
+												{expandable && (
+													<RowExpander
+														expanded={isExpanded}
+														onToggle={() => onToggleExpand(rowKey)}
+													/>
+												)}
+											</TableCell>
+										);
+									}
 
-                                    // 列控制列：body 渲染空占位单元格
-                                    if (col.key === COLUMNS_CONTROL_KEY) {
-                                        return (
-                                            <TableCell
-                                                key={col.key}
-                                                style={mergeStickyStyle(offset, col.width)}
-                                                className={cn(sticky.className, col.className)}
-                                            />
-                                        );
-                                    }
+									// 列控制列：body 渲染空占位单元格
+									if (col.key === COLUMNS_CONTROL_KEY) {
+										return (
+											<TableCell
+												key={col.key}
+												style={mergeStickyStyle(offset, col.width)}
+												className={cn(sticky.className, col.className)}
+											/>
+										);
+									}
 
-                                    return (
-                                        <TableCell
-                                            key={col.key}
-                                            style={mergeStickyStyle(offset, col.width)}
-                                            className={cn(
-                                                cellPad,
-                                                ALIGN_CLASS[col.align ?? "left"],
-                                                sticky.className,
-                                                col.className,
-                                            )}
-                                        >
-                                            <div
-                                                className={cn(
-                                                    "flex items-center",
-                                                    ALIGN_FLEX_CLASS[col.align ?? "left"],
-                                                )}
-                                            >
-                                                {col.ellipsis || col.tooltip ? (
-                                                    <CellWithTooltip
-                                                        ellipsis={col.ellipsis}
-                                                        tooltip={
-                                                            col.tooltip
-                                                                ? col.tooltip(row)
-                                                                : undefined
-                                                        }
-                                                    >
-                                                        {renderCell(col, row)}
-                                                    </CellWithTooltip>
-                                                ) : (
-                                                    renderCell(col, row)
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                    );
-                                })}
-                            </TableRow>
-                            {isExpanded && renderExpandedRow && (
-                                <TableRow className="hover:bg-transparent">
-                                    {expandedRowFixed ? (
-                                        <TableCell colSpan={colCount} className="bg-muted/30 p-0">
-                                            <div
-                                                className="sticky left-0 z-30 whitespace-normal bg-muted/30 p-4"
-                                                style={
-                                                    containerWidth
-                                                        ? {
-                                                              width: `${containerWidth}px`,
-                                                              maxWidth: "100%",
-                                                          }
-                                                        : { maxWidth: "100%" }
-                                                }
-                                            >
-                                                {renderExpandedRow(row)}
-                                            </div>
-                                        </TableCell>
-                                    ) : (
-                                        <TableCell
-                                            colSpan={colCount}
-                                            className="whitespace-normal bg-muted/30 p-4"
-                                        >
-                                            {renderExpandedRow(row)}
-                                        </TableCell>
-                                    )}
-                                </TableRow>
-                            )}
-                        </Fragment>
-                    );
-                })}
-            </TableBody>
-        </TooltipProvider>
-    );
+									return (
+										<TableCell
+											key={col.key}
+											style={mergeStickyStyle(offset, col.width)}
+											className={cn(
+												cellPad,
+												ALIGN_CLASS[col.align ?? "left"],
+												sticky.className,
+												col.className,
+											)}
+										>
+											<div
+												className={cn(
+													"flex items-center",
+													ALIGN_FLEX_CLASS[col.align ?? "left"],
+												)}
+											>
+												{col.ellipsis || col.tooltip ? (
+													<CellWithTooltip
+														ellipsis={col.ellipsis}
+														tooltip={
+															col.tooltip
+																? col.tooltip(row)
+																: undefined
+														}
+													>
+														{renderCell(col, row)}
+													</CellWithTooltip>
+												) : (
+													renderCell(col, row)
+												)}
+											</div>
+										</TableCell>
+									);
+								})}
+							</TableRow>
+							{isExpanded && renderExpandedRow && (
+								<TableRow className="hover:bg-transparent">
+									{expandedRowFixed ? (
+										<TableCell colSpan={colCount} className="bg-muted/30 p-0">
+											<div
+												className="sticky left-0 z-30 whitespace-normal bg-muted/30 p-4"
+												style={
+													containerWidth
+														? {
+																width: `${containerWidth}px`,
+																maxWidth: "100%",
+															}
+														: { maxWidth: "100%" }
+												}
+											>
+												{renderExpandedRow(row)}
+											</div>
+										</TableCell>
+									) : (
+										<TableCell
+											colSpan={colCount}
+											className="whitespace-normal bg-muted/30 p-4"
+										>
+											{renderExpandedRow(row)}
+										</TableCell>
+									)}
+								</TableRow>
+							)}
+						</Fragment>
+					);
+				})}
+			</TableBody>
+		</TooltipProvider>
+	);
 }
 
 /** 渲染单元格：优先 cell 回调，否则按 accessorKey 直读 */
 function renderCell<T>(col: DataTableColumn<T>, row: T): ReactNode {
-    if (col.cell) return col.cell(row);
-    if (col.accessorKey != null) {
-        const value = row[col.accessorKey];
-        if (value == null) return null;
-        if (typeof value === "string" || typeof value === "number") return value;
-        return String(value);
-    }
-    return null;
+	if (col.cell) return col.cell(row);
+	if (col.accessorKey != null) {
+		const value = row[col.accessorKey];
+		if (value == null) return null;
+		if (typeof value === "string" || typeof value === "number") return value;
+		return String(value);
+	}
+	return null;
 }

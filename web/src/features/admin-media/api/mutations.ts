@@ -11,13 +11,13 @@ import { adminMediaKeys } from "./keys";
  * 成功后失效后台素材列表。
  */
 export const useAdminDeleteFile = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (id: string) => apiDelete<null>(`/admin/media/${id}`),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
-        },
-    });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => apiDelete<null>(`/admin/media/${id}`),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
+		},
+	});
 };
 
 /**
@@ -27,14 +27,14 @@ export const useAdminDeleteFile = () => {
  * 成功后失效后台素材列表并清空选中态（由调用方处理）。
  */
 export const useBatchDeleteMedia = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (ids: string[]) =>
-            apiPost<{ deleted: number }>("/admin/media/batch-delete", { ids }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
-        },
-    });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (ids: string[]) =>
+			apiPost<{ deleted: number }>("/admin/media/batch-delete", { ids }),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
+		},
+	});
 };
 
 /**
@@ -44,12 +44,12 @@ export const useBatchDeleteMedia = () => {
  * 更新 alt_text/category/original_name，成功后失效列表。
  */
 export const useUpdateMediaMetadata = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: ({ id, data }: { id: string; data: UpdateMediaRequest }) =>
-            apiPatch<MediaFile>(`/admin/media/${id}`, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
-        },
-    });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, data }: { id: string; data: UpdateMediaRequest }) =>
+			apiPatch<MediaFile>(`/admin/media/${id}`, data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: adminMediaKeys.lists() });
+		},
+	});
 };

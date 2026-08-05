@@ -12,28 +12,28 @@
  * // => "/uploads/a.jpg?crop=0.1%2C0.2%2C0.5%2C0.5&w=800"(crop 经 URLSearchParams 往返不丢失)
  */
 interface ImageOpts {
-    w?: number;
-    h?: number;
-    thumb?: string; // "WxH"
-    format?: "jpeg" | "png" | "webp";
-    quality?: number;
-    rotate?: 0 | 90 | 180 | 270;
+	w?: number;
+	h?: number;
+	thumb?: string; // "WxH"
+	format?: "jpeg" | "png" | "webp";
+	quality?: number;
+	rotate?: 0 | 90 | 180 | 270;
 }
 
 /** 后端动态处理参数全集(originalImageUrl 剥离用)。 */
 const PROCESSING_PARAMS = ["w", "h", "thumb", "format", "quality", "rotate"] as const;
 
 export function imageUrl(path: string, opts: ImageOpts = {}): string {
-    const [base, search = ""] = path.split("?");
-    const params = new URLSearchParams(search);
-    if (opts.w) params.set("w", String(opts.w));
-    if (opts.h) params.set("h", String(opts.h));
-    if (opts.thumb) params.set("thumb", opts.thumb);
-    if (opts.format) params.set("format", opts.format);
-    if (opts.quality) params.set("quality", String(opts.quality));
-    if (opts.rotate) params.set("rotate", String(opts.rotate));
-    const qs = params.toString();
-    return qs ? `${base}?${qs}` : base;
+	const [base, search = ""] = path.split("?");
+	const params = new URLSearchParams(search);
+	if (opts.w) params.set("w", String(opts.w));
+	if (opts.h) params.set("h", String(opts.h));
+	if (opts.thumb) params.set("thumb", opts.thumb);
+	if (opts.format) params.set("format", opts.format);
+	if (opts.quality) params.set("quality", String(opts.quality));
+	if (opts.rotate) params.set("rotate", String(opts.rotate));
+	const qs = params.toString();
+	return qs ? `${base}?${qs}` : base;
 }
 
 /**
@@ -44,11 +44,11 @@ export function imageUrl(path: string, opts: ImageOpts = {}): string {
  * 动画静默丢失),直接返回原 path(含已有的 ?crop=)——与 avatarUrl 同一约定。
  */
 export function contentImageUrl(path: string, opts: { width: number }): string {
-    if (!path) return path;
-    if (isGifPath(path)) {
-        return path;
-    }
-    return imageUrl(path, { w: opts.width, format: "webp" });
+	if (!path) return path;
+	if (isGifPath(path)) {
+		return path;
+	}
+	return imageUrl(path, { w: opts.width, format: "webp" });
 }
 
 /**
@@ -57,15 +57,15 @@ export function contentImageUrl(path: string, opts: { width: number }): string {
  * (内容图显示 w 档缩略,点开预览必须加载原图)。
  */
 export function originalImageUrl(path: string): string {
-    const i = path.indexOf("?");
-    if (i < 0) return path;
-    const base = path.slice(0, i);
-    const params = new URLSearchParams(path.slice(i + 1));
-    for (const k of PROCESSING_PARAMS) {
-        params.delete(k);
-    }
-    const qs = params.toString();
-    return qs ? `${base}?${qs}` : base;
+	const i = path.indexOf("?");
+	if (i < 0) return path;
+	const base = path.slice(0, i);
+	const params = new URLSearchParams(path.slice(i + 1));
+	for (const k of PROCESSING_PARAMS) {
+		params.delete(k);
+	}
+	const qs = params.toString();
+	return qs ? `${base}?${qs}` : base;
 }
 
 /**
@@ -77,18 +77,18 @@ export function originalImageUrl(path: string): string {
  * 是「不走任何后端图片处理参数,只用 ?crop + CSS 视觉裁剪」(见 CroppedImage)。
  */
 export function avatarUrl(path: string, username?: string): string {
-    if (!path || path.trim() === "") {
-        // 使用 UI Avatars 生成默认头像
-        const name = username ? encodeURIComponent(username) : "User";
-        return `https://ui-avatars.com/api/?name=${name}&size=200&background=random`;
-    }
-    if (isGifPath(path)) {
-        return path;
-    }
-    return imageUrl(path, { w: 200, thumb: "200x200", format: "webp" });
+	if (!path || path.trim() === "") {
+		// 使用 UI Avatars 生成默认头像
+		const name = username ? encodeURIComponent(username) : "User";
+		return `https://ui-avatars.com/api/?name=${name}&size=200&background=random`;
+	}
+	if (isGifPath(path)) {
+		return path;
+	}
+	return imageUrl(path, { w: 200, thumb: "200x200", format: "webp" });
 }
 
 /** 判断 path(剥离查询参数后)是否 .gif 后缀(大小写不敏感) */
 function isGifPath(path: string): boolean {
-    return path.split("?")[0].toLowerCase().endsWith(".gif");
+	return path.split("?")[0].toLowerCase().endsWith(".gif");
 }

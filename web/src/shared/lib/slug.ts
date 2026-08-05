@@ -26,12 +26,12 @@ const EDGE_DASH = /^-+|-+$/g;
  * 重复调用同值返回同结果。需要去重用 Slugger 类。
  */
 export function slugify(text: string): string {
-    return text
-        .trim()
-        .toLowerCase()
-        .replace(NON_ALNUM, "-")
-        .replace(MULTI_DASH, "-")
-        .replace(EDGE_DASH, "");
+	return text
+		.trim()
+		.toLowerCase()
+		.replace(NON_ALNUM, "-")
+		.replace(MULTI_DASH, "-")
+		.replace(EDGE_DASH, "");
 }
 
 /**
@@ -42,28 +42,28 @@ export function slugify(text: string): string {
  * 不同文章各自 new 新实例。
  */
 export class Slugger {
-    private occurrences = new Map<string, number>();
+	private occurrences = new Map<string, number>();
 
-    /**
-     * 生成唯一 slug,重复文本自动追加递增序号(-1/-2/-3…)。
-     *
-     * 算法对齐 github-slugger:首次出现的 slug 直接用;重复时让原 slug
-     * 的计数自增、拼成 base-N,直到找到未被占用的 result。
-     */
-    slug(text: string): string {
-        const base = slugify(text);
-        let result = base;
-        while (this.occurrences.has(result)) {
-            const count = (this.occurrences.get(base) ?? 0) + 1;
-            this.occurrences.set(base, count);
-            result = `${base}-${count}`;
-        }
-        this.occurrences.set(result, 0);
-        return result;
-    }
+	/**
+	 * 生成唯一 slug,重复文本自动追加递增序号(-1/-2/-3…)。
+	 *
+	 * 算法对齐 github-slugger:首次出现的 slug 直接用;重复时让原 slug
+	 * 的计数自增、拼成 base-N,直到找到未被占用的 result。
+	 */
+	slug(text: string): string {
+		const base = slugify(text);
+		let result = base;
+		while (this.occurrences.has(result)) {
+			const count = (this.occurrences.get(base) ?? 0) + 1;
+			this.occurrences.set(base, count);
+			result = `${base}-${count}`;
+		}
+		this.occurrences.set(result, 0);
+		return result;
+	}
 
-    /** 重置,忘记所有已生成的 slug */
-    reset(): void {
-        this.occurrences.clear();
-    }
+	/** 重置,忘记所有已生成的 slug */
+	reset(): void {
+		this.occurrences.clear();
+	}
 }

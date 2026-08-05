@@ -10,19 +10,19 @@
 import { Slugger } from "@shared/lib/slug";
 
 export function extractMarkdownToc(
-    md: string,
+	md: string,
 ): Array<{ level: 2 | 3 | 4; text: string; id: string }> {
-    const slugger = new Slugger();
-    const lines = md.split("\n");
-    const out: Array<{ level: 2 | 3 | 4; text: string; id: string }> = [];
-    for (const line of lines) {
-        const m = /^(#{2,4})\s+(.+?)\s*$/.exec(line);
-        if (!m) continue;
-        const level = m[1].length as 2 | 3 | 4;
-        const text = m[2].replace(/[*_`~]/g, "").trim();
-        if (text) out.push({ level, text, id: slugger.slug(text) });
-    }
-    return out;
+	const slugger = new Slugger();
+	const lines = md.split("\n");
+	const out: Array<{ level: 2 | 3 | 4; text: string; id: string }> = [];
+	for (const line of lines) {
+		const m = /^(#{2,4})\s+(.+?)\s*$/.exec(line);
+		if (!m) continue;
+		const level = m[1].length as 2 | 3 | 4;
+		const text = m[2].replace(/[*_`~]/g, "").trim();
+		if (text) out.push({ level, text, id: slugger.slug(text) });
+	}
+	return out;
 }
 
 export type { TocItem } from "@shared/lib/hooks/use-toc";

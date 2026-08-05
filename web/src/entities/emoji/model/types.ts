@@ -12,24 +12,24 @@
  * 均带 omitempty，为空时后端会省略，故前端标可选。
  */
 export interface Emoji {
-    /** 表情 ID */
-    id: number;
-    /** 所属分组 ID，列表接口可能省略 */
-    group_id?: number;
-    /** 表情名称，同一分组内唯一 */
-    name: string;
-    /** 静态图片 URL */
-    url: string;
-    /** 来源页 URL，可选 */
-    source_url?: string;
-    /** 动图 URL，可选 */
-    gif_url?: string;
-    /** 文本兜底内容，可选，用于纯文字表情 */
-    text_content?: string;
-    /** 分组内排序值，默认 0 */
-    sort_order?: number;
-    /** 表情元数据，可选，源自 B站 meta 子对象与顶层 type */
-    meta?: EmojiMeta;
+	/** 表情 ID */
+	id: number;
+	/** 所属分组 ID，列表接口可能省略 */
+	group_id?: number;
+	/** 表情名称，同一分组内唯一 */
+	name: string;
+	/** 静态图片 URL */
+	url: string;
+	/** 来源页 URL，可选 */
+	source_url?: string;
+	/** 动图 URL，可选 */
+	gif_url?: string;
+	/** 文本兜底内容，可选，用于纯文字表情 */
+	text_content?: string;
+	/** 分组内排序值，默认 0 */
+	sort_order?: number;
+	/** 表情元数据，可选，源自 B站 meta 子对象与顶层 type */
+	meta?: EmojiMeta;
 }
 
 /**
@@ -38,12 +38,12 @@ export interface Emoji {
  * 对应后端 EmojiMetaDTO，三字段均带 omitempty，为空时后端省略整个 meta。
  */
 export interface EmojiMeta {
-    /** 别名，用于搜索/补全 */
-    alias?: string;
-    /** 尺寸：1=小 2=大 */
-    size?: number;
-    /** 门槛类型：1=普通 2=会员专属 3=购买所得 4=颜文字 */
-    type?: number;
+	/** 别名，用于搜索/补全 */
+	alias?: string;
+	/** 尺寸：1=小 2=大 */
+	size?: number;
+	/** 门槛类型：1=普通 2=会员专属 3=购买所得 4=颜文字 */
+	type?: number;
 }
 
 /**
@@ -53,24 +53,24 @@ export interface EmojiMeta {
  * emojis 字段为分组内表情列表，公开接口仅返回启用分组。
  */
 export interface EmojiGroup {
-    /** 分组 ID */
-    id: number;
-    /** 分组名称，用于 URL 与按名查询 */
-    name: string;
-    /** 分组来源标识，如 system/custom */
-    source: string;
-    /** 分组封面图 URL，优先显示封面而非名称 */
-    cover_url?: string;
-    /** 排序值，越小越靠前 */
-    sort_order: number;
-    /** 是否启用，公开接口恒为 true */
-    is_enabled: boolean;
-    /** 分组类型：1=文字（颜文字组）2=图片。决定 picker 列数与渲染策略 */
-    type: number;
-    /** 分组元数据，可选，size 用于 picker 渲染尺寸（1=小 2=大） */
-    meta?: EmojiMeta;
-    /** 分组内表情列表，按名查询与全量查询均填充 */
-    emojis: Emoji[];
+	/** 分组 ID */
+	id: number;
+	/** 分组名称，用于 URL 与按名查询 */
+	name: string;
+	/** 分组来源标识，如 system/custom */
+	source: string;
+	/** 分组封面图 URL，优先显示封面而非名称 */
+	cover_url?: string;
+	/** 排序值，越小越靠前 */
+	sort_order: number;
+	/** 是否启用，公开接口恒为 true */
+	is_enabled: boolean;
+	/** 分组类型：1=文字（颜文字组）2=图片。决定 picker 列数与渲染策略 */
+	type: number;
+	/** 分组元数据，可选，size 用于 picker 渲染尺寸（1=小 2=大） */
+	meta?: EmojiMeta;
+	/** 分组内表情列表，按名查询与全量查询均填充 */
+	emojis: Emoji[];
 }
 
 /**
@@ -80,12 +80,12 @@ export interface EmojiGroup {
  * 返回相对 URL 供后续 CreateEmoji 引用，不落库。
  */
 export interface EmojiUploadResult {
-    /** 可访问的相对 URL，如 /uploads/emojis/uuid.png */
-    url: string;
-    /** 服务端重命名后的文件名，UUID + 原扩展名 */
-    filename: string;
-    /** 文件字节数 */
-    size: number;
-    /** 嗅探得到的真实 MIME 类型 */
-    mime_type: string;
+	/** 可访问的相对 URL，如 /uploads/emojis/uuid.png */
+	url: string;
+	/** 服务端重命名后的文件名，UUID + 原扩展名 */
+	filename: string;
+	/** 文件字节数 */
+	size: number;
+	/** 嗅探得到的真实 MIME 类型 */
+	mime_type: string;
 }

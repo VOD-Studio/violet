@@ -14,47 +14,47 @@ import { useEffect, useRef, useState } from "react";
  * 本组件负责游标尺寸/hover 检测，不直接消费 useMagnetic。
  */
 const CustomCursor = () => {
-    const [mounted, setMounted] = useState(false);
-    const dotRef = useRef<HTMLDivElement>(null);
-    const [hovering, setHovering] = useState(false);
+	const [mounted, setMounted] = useState(false);
+	const dotRef = useRef<HTMLDivElement>(null);
+	const [hovering, setHovering] = useState(false);
 
-    useEffect(() => {
-        setMounted(true);
-        document.documentElement.classList.add("cursor-custom");
+	useEffect(() => {
+		setMounted(true);
+		document.documentElement.classList.add("cursor-custom");
 
-        const onMove = (e: MouseEvent) => {
-            const dot = dotRef.current;
-            if (!dot) return;
-            dot.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-            const target = e.target as HTMLElement | null;
-            const magnetic = target?.closest('[data-cursor="magnetic"]');
-            setHovering(Boolean(magnetic));
-        };
-        window.addEventListener("mousemove", onMove);
-        return () => {
-            window.removeEventListener("mousemove", onMove);
-            document.documentElement.classList.remove("cursor-custom");
-        };
-    }, []);
+		const onMove = (e: MouseEvent) => {
+			const dot = dotRef.current;
+			if (!dot) return;
+			dot.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+			const target = e.target as HTMLElement | null;
+			const magnetic = target?.closest('[data-cursor="magnetic"]');
+			setHovering(Boolean(magnetic));
+		};
+		window.addEventListener("mousemove", onMove);
+		return () => {
+			window.removeEventListener("mousemove", onMove);
+			document.documentElement.classList.remove("cursor-custom");
+		};
+	}, []);
 
-    if (!mounted) return null;
+	if (!mounted) return null;
 
-    return (
-        <div
-            ref={dotRef}
-            aria-hidden
-            className="pointer-events-none fixed left-0 top-0 z-9998 -ml-2 -mt-2 transition-[width,height,background-color] duration-200"
-            style={{
-                width: hovering ? 32 : 12,
-                height: hovering ? 32 : 12,
-                borderRadius: "9999px",
-                mixBlendMode: "difference",
-                backgroundColor: hovering
-                    ? "hsl(var(--neon-blue) / 0.5)"
-                    : "hsl(var(--foreground))",
-            }}
-        />
-    );
+	return (
+		<div
+			ref={dotRef}
+			aria-hidden
+			className="pointer-events-none fixed left-0 top-0 z-9998 -ml-2 -mt-2 transition-[width,height,background-color] duration-200"
+			style={{
+				width: hovering ? 32 : 12,
+				height: hovering ? 32 : 12,
+				borderRadius: "9999px",
+				mixBlendMode: "difference",
+				backgroundColor: hovering
+					? "hsl(var(--neon-blue) / 0.5)"
+					: "hsl(var(--foreground))",
+			}}
+		/>
+	);
 };
 
 export { CustomCursor };

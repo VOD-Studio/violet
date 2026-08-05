@@ -9,13 +9,13 @@ import { createFileRoute } from "@tanstack/react-router";
  * （PageShell 正常路径同款 px-4 md:px-6），h-full 保持编辑器高度链。
  */
 export const Route = createFileRoute("/admin/posts/new")({
-    component: NewPostPage,
+	component: NewPostPage,
 });
 
 function NewPostPage() {
-    return (
-        <div className="h-full px-4 pt-4 pb-6 md:px-6">
-            <PostEditor />
-        </div>
-    );
+	return (
+		<div className="h-full px-4 pt-4 pb-6 md:px-6">
+			<PostEditor />
+		</div>
+	);
 }

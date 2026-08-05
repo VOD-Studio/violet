@@ -12,68 +12,68 @@ import { isImageURL } from "@shared/lib/url";
 import { Fragment, type ReactNode } from "react";
 
 export interface EmojiTextProps {
-    /** 待解析的文本，可能包含 [name] 占位符 */
-    text: string;
-    /** 表情映射表，key 为 "[name]"，value 为图片 URL */
-    emote?: Record<string, CommentEmoteRef>;
-    /** 外层样式 */
-    className?: string;
+	/** 待解析的文本，可能包含 [name] 占位符 */
+	text: string;
+	/** 表情映射表，key 为 "[name]"，value 为图片 URL */
+	emote?: Record<string, CommentEmoteRef>;
+	/** 外层样式 */
+	className?: string;
 }
 
 const EMOJI_PATTERN = /\[([^\]]+)\]/g;
 
 export function EmojiText({ text, emote, className }: EmojiTextProps) {
-    return <span className={className}>{parseEmojiText(text, emote)}</span>;
+	return <span className={className}>{parseEmojiText(text, emote)}</span>;
 }
 
 function parseEmojiText(text: string, emote?: Record<string, CommentEmoteRef>): ReactNode[] {
-    if (!emote || text.length === 0) {
-        return [text];
-    }
+	if (!emote || text.length === 0) {
+		return [text];
+	}
 
-    const nodes: ReactNode[] = [];
-    let lastIndex = 0;
-    let key = 0;
+	const nodes: ReactNode[] = [];
+	let lastIndex = 0;
+	let key = 0;
 
-    EMOJI_PATTERN.lastIndex = 0;
+	EMOJI_PATTERN.lastIndex = 0;
 
-    let match: RegExpExecArray | null = EMOJI_PATTERN.exec(text);
-    while (match !== null) {
-        const [fullMatch] = match;
-        const startIndex = match.index;
+	let match: RegExpExecArray | null = EMOJI_PATTERN.exec(text);
+	while (match !== null) {
+		const [fullMatch] = match;
+		const startIndex = match.index;
 
-        if (startIndex > lastIndex) {
-            nodes.push(<Fragment key={key++}>{text.slice(lastIndex, startIndex)}</Fragment>);
-        }
+		if (startIndex > lastIndex) {
+			nodes.push(<Fragment key={key++}>{text.slice(lastIndex, startIndex)}</Fragment>);
+		}
 
-        const ref = emote[fullMatch];
-        if (ref) {
-            const src = ref.gif_url || ref.url;
-            if (src && isImageURL(src)) {
-                nodes.push(
-                    <img
-                        key={key++}
-                        src={src}
-                        alt={fullMatch}
-                        // size=2（大）渲染为 40px，其余按 20px（size-5）
-                        className={`inline-block align-text-bottom ${ref.size === 2 ? "size-10" : "size-5"}`}
-                        loading="lazy"
-                    />,
-                );
-            } else {
-                nodes.push(<Fragment key={key++}>{src || fullMatch}</Fragment>);
-            }
-        } else {
-            nodes.push(<Fragment key={key++}>{fullMatch}</Fragment>);
-        }
+		const ref = emote[fullMatch];
+		if (ref) {
+			const src = ref.gif_url || ref.url;
+			if (src && isImageURL(src)) {
+				nodes.push(
+					<img
+						key={key++}
+						src={src}
+						alt={fullMatch}
+						// size=2（大）渲染为 40px，其余按 20px（size-5）
+						className={`inline-block align-text-bottom ${ref.size === 2 ? "size-10" : "size-5"}`}
+						loading="lazy"
+					/>,
+				);
+			} else {
+				nodes.push(<Fragment key={key++}>{src || fullMatch}</Fragment>);
+			}
+		} else {
+			nodes.push(<Fragment key={key++}>{fullMatch}</Fragment>);
+		}
 
-        lastIndex = startIndex + fullMatch.length;
-        match = EMOJI_PATTERN.exec(text);
-    }
+		lastIndex = startIndex + fullMatch.length;
+		match = EMOJI_PATTERN.exec(text);
+	}
 
-    if (lastIndex < text.length) {
-        nodes.push(<Fragment key={key++}>{text.slice(lastIndex)}</Fragment>);
-    }
+	if (lastIndex < text.length) {
+		nodes.push(<Fragment key={key++}>{text.slice(lastIndex)}</Fragment>);
+	}
 
-    return nodes.length > 0 ? nodes : [text];
+	return nodes.length > 0 ? nodes : [text];
 }

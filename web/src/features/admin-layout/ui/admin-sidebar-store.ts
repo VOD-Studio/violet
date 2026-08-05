@@ -13,28 +13,28 @@ import { persist } from "zustand/middleware";
  * 即使命中子路由也保持折叠，兑现「手动折叠后记录为 false」语义。
  */
 export interface AdminSidebarState {
-    collapsed: boolean;
-    toggle: () => void;
-    /** 父项 to → 用户手动展开/折叠意图（undefined 表示未操作，跟随路由） */
-    expandedGroups: Record<string, boolean>;
-    /** 显式设置某父项的展开/折叠态（基于组件当前显示态翻转后传入） */
-    setGroupExpanded: (to: string, expanded: boolean) => void;
+	collapsed: boolean;
+	toggle: () => void;
+	/** 父项 to → 用户手动展开/折叠意图（undefined 表示未操作，跟随路由） */
+	expandedGroups: Record<string, boolean>;
+	/** 显式设置某父项的展开/折叠态（基于组件当前显示态翻转后传入） */
+	setGroupExpanded: (to: string, expanded: boolean) => void;
 }
 
 export const useAdminSidebarStore = create<AdminSidebarState>()(
-    persist(
-        (set) => ({
-            collapsed: false,
-            toggle: () => set((s) => ({ collapsed: !s.collapsed })),
-            expandedGroups: {},
-            setGroupExpanded: (to, expanded) =>
-                set((s) => ({
-                    expandedGroups: {
-                        ...s.expandedGroups,
-                        [to]: expanded,
-                    },
-                })),
-        }),
-        { name: "admin-sidebar" },
-    ),
+	persist(
+		(set) => ({
+			collapsed: false,
+			toggle: () => set((s) => ({ collapsed: !s.collapsed })),
+			expandedGroups: {},
+			setGroupExpanded: (to, expanded) =>
+				set((s) => ({
+					expandedGroups: {
+						...s.expandedGroups,
+						[to]: expanded,
+					},
+				})),
+		}),
+		{ name: "admin-sidebar" },
+	),
 );
