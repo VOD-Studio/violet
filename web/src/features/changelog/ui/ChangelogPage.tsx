@@ -1,10 +1,12 @@
 import { formatDate } from "@features/about/model/format";
+import { useScrollSpy } from "@features/changelog/hooks/use-scroll-spy";
 import { cleanItem, groupItems } from "@features/changelog/model/clean-item";
+import { VersionNav, versionAnchorId } from "@features/changelog/ui/VersionNav";
 import { useReleases } from "@shared/api/releases";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { RefreshCw, TriangleAlert } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChangelogPageSkeleton } from "./ChangelogPageSkeleton";
 
 /** 单分类条目超过该数折叠（如 v2.4.0 的「修复」18 条），点「展开全部」兜底 */
@@ -32,12 +34,19 @@ function categoryColor(label: string): string {
 /**
  * ChangelogPage - 更新日志独立页（/changelog）
  *
- * 条目经 cleanItem 清洗（issue 引用收成行尾小链接、任务号剥除），
- * 同分类内 ≥2 次的 scope 聚合为子组。
+ * 布局：桌面端左 sticky 版本目录（scroll-spy 高亮阅读位置）+ 右侧时间线；
+ * 移动端版本目录收成吸顶横向 chip 条。条目经 cleanItem 清洗（issue 引用
+ * 收成行尾小链接、任务号剥除），同分类内 ≥2 次的 scope 聚合为子组。
  */
 export function ChangelogPage() {
 	const { data, isPending, error, refetch } = useReleases();
 	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+	const anchorIds = useMemo(
+		() => (data?.releases ?? []).map((r) => versionAnchorId(r.tag)),
+		[data],
+	);
+	const activeId = useScrollSpy(anchorIds);
 
 	// 加载中：整页骨架屏（布局 1:1 模拟，避免白屏跳变）
 	if (isPending) return <ChangelogPageSkeleton />;
@@ -64,9 +73,13 @@ export function ChangelogPage() {
 
 	const current = data.current_version;
 	const toggle = (key: string) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+	const navItems = data.releases.map((r) => ({
+		tag: r.tag,
+		itemCount: r.categories.reduce((n, c) => n + c.items.length, 0),
+	}));
 
 	return (
-		<main className="mx-auto w-full max-w-4xl px-6 py-20">
+		<main className="mx-auto w-full max-w-6xl px-6 py-20">
 			<header className="mb-16">
 				<p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
 					Updates
@@ -75,119 +88,135 @@ export function ChangelogPage() {
 				<p className="mt-3 text-base text-muted-foreground">本站各版本的变更记录</p>
 			</header>
 
-			<div className="relative space-y-14 border-l border-edge-hairline pl-10">
-				{data.releases.map((release) => {
-					const isCurrent = release.tag === current;
-					return (
-						<article key={release.tag} className="relative">
-							{/* 时间线节点：当前版本实心强调，历史版本淡化 */}
-							<span
-								className={`absolute top-2 -left-11.75 size-3.5 rounded-full border-2 border-background ${
-									isCurrent ? "bg-primary" : "bg-muted-foreground/40"
-								}`}
-							/>
-							<div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-								<h2 className="font-mono text-2xl font-bold tracking-tight">
-									{release.tag}
-								</h2>
-								{release.published_at ? (
-									<span className="text-sm text-muted-foreground">
-										{formatDate(release.published_at)}
-									</span>
-								) : null}
-								{isCurrent ? (
-									<span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
-										当前版本
-									</span>
-								) : null}
-								{release.breaking ? (
-									<span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
-										<TriangleAlert className="size-3.5" />
-										破坏性变更
-									</span>
-								) : null}
-							</div>
+			<div className="lg:grid lg:grid-cols-[10rem_minmax(0,1fr)] lg:gap-16">
+				<VersionNav items={navItems} current={current} activeId={activeId} />
 
-							{release.categories.length > 0 ? (
-								<div className="mt-6 space-y-7">
-									{release.categories.map((cat) => {
-										const key = `${release.tag}:${cat.label}`;
-										const showAll =
-											expanded[key] || cat.items.length <= COLLAPSE_ITEMS;
-										const groups = groupItems(cat.items.map(cleanItem));
-										// 折叠按条目数跨组截断；组内可见条目为空则不渲染该组
-										let budget = showAll
-											? Number.POSITIVE_INFINITY
-											: COLLAPSE_ITEMS;
-										return (
-											<section key={cat.label}>
-												<h3
-													className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${categoryColor(cat.label)}`}
-												>
-													{cat.label}
-												</h3>
-												<div className="mt-4 space-y-5">
-													{groups.map((g) => {
-														if (budget <= 0) return null;
-														const visible = g.items.slice(0, budget);
-														budget -= visible.length;
-														return (
-															<div key={g.scope ?? "loose"}>
-																{g.scope ? (
-																	<p className="mb-2 font-mono text-sm font-semibold text-foreground/60">
-																		{g.scope}
-																	</p>
-																) : null}
-																<ul className="space-y-2.5">
-																	{visible.map((item, idx) => (
-																		<li
-																			key={idx}
-																			className="break-words text-base leading-relaxed text-foreground/80"
-																		>
-																			{item.text}
-																			{item.refs.map(
-																				(ref) => (
-																					<a
-																						key={
-																							ref.label
-																						}
-																						href={
-																							ref.url
-																						}
-																						target="_blank"
-																						rel="noreferrer"
-																						className="ml-1.5 align-baseline text-xs font-medium text-muted-foreground/70 underline decoration-muted-foreground/30 underline-offset-2 transition-colors hover:text-primary hover:decoration-primary/50"
-																					>
-																						{ref.label}
-																					</a>
-																				),
-																			)}
-																		</li>
-																	))}
-																</ul>
-															</div>
-														);
-													})}
-												</div>
-												{cat.items.length > COLLAPSE_ITEMS && (
-													<button
-														type="button"
-														onClick={() => toggle(key)}
-														className="mt-2.5 text-sm font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary"
-													>
-														{showAll
-															? "收起"
-															: `展开全部 ${cat.items.length - COLLAPSE_ITEMS} 条`}
-													</button>
-												)}
-											</section>
-										);
-									})}
+				<div className="relative space-y-14 border-l border-edge-hairline pl-10">
+					{data.releases.map((release) => {
+						const isCurrent = release.tag === current;
+						return (
+							<article
+								key={release.tag}
+								id={versionAnchorId(release.tag)}
+								// 吸顶 Header(h-16) + 移动端 chip 条：锚点跳转需留出遮挡高度
+								className="relative scroll-mt-32 lg:scroll-mt-24"
+							>
+								{/* 时间线节点：当前版本实心强调，历史版本淡化 */}
+								<span
+									className={`absolute top-2 -left-11.75 size-3.5 rounded-full border-2 border-background ${
+										isCurrent ? "bg-primary" : "bg-muted-foreground/40"
+									}`}
+								/>
+								<div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+									<h2 className="font-mono text-2xl font-bold tracking-tight">
+										{release.tag}
+									</h2>
+									{release.published_at ? (
+										<span className="text-sm text-muted-foreground">
+											{formatDate(release.published_at)}
+										</span>
+									) : null}
+									{isCurrent ? (
+										<span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">
+											当前版本
+										</span>
+									) : null}
+									{release.breaking ? (
+										<span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
+											<TriangleAlert className="size-3.5" />
+											破坏性变更
+										</span>
+									) : null}
 								</div>
-							) : null}
-						</article>
-					);
-				})}
+
+								{release.categories.length > 0 ? (
+									<div className="mt-6 space-y-7">
+										{release.categories.map((cat) => {
+											const key = `${release.tag}:${cat.label}`;
+											const showAll =
+												expanded[key] || cat.items.length <= COLLAPSE_ITEMS;
+											const groups = groupItems(cat.items.map(cleanItem));
+											// 折叠按条目数跨组截断；组内可见条目为空则不渲染该组
+											let budget = showAll
+												? Number.POSITIVE_INFINITY
+												: COLLAPSE_ITEMS;
+											return (
+												<section key={cat.label}>
+													<h3
+														className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${categoryColor(cat.label)}`}
+													>
+														{cat.label}
+													</h3>
+													<div className="mt-4 space-y-5">
+														{groups.map((g) => {
+															if (budget <= 0) return null;
+															const visible = g.items.slice(
+																0,
+																budget,
+															);
+															budget -= visible.length;
+															return (
+																<div key={g.scope ?? "loose"}>
+																	{g.scope ? (
+																		<p className="mb-2 font-mono text-sm font-semibold text-foreground/60">
+																			{g.scope}
+																		</p>
+																	) : null}
+																	<ul className="space-y-2.5">
+																		{visible.map(
+																			(item, idx) => (
+																				<li
+																					key={idx}
+																					className="break-words text-base leading-relaxed text-foreground/80"
+																				>
+																					{item.text}
+																					{item.refs.map(
+																						(ref) => (
+																							<a
+																								key={
+																									ref.label
+																								}
+																								href={
+																									ref.url
+																								}
+																								target="_blank"
+																								rel="noreferrer"
+																								className="ml-1.5 align-baseline text-xs font-medium text-muted-foreground/70 underline decoration-muted-foreground/30 underline-offset-2 transition-colors hover:text-primary hover:decoration-primary/50"
+																							>
+																								{
+																									ref.label
+																								}
+																							</a>
+																						),
+																					)}
+																				</li>
+																			),
+																		)}
+																	</ul>
+																</div>
+															);
+														})}
+													</div>
+													{cat.items.length > COLLAPSE_ITEMS && (
+														<button
+															type="button"
+															onClick={() => toggle(key)}
+															className="mt-2.5 text-sm font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary"
+														>
+															{showAll
+																? "收起"
+																: `展开全部 ${cat.items.length - COLLAPSE_ITEMS} 条`}
+														</button>
+													)}
+												</section>
+											);
+										})}
+									</div>
+								) : null}
+							</article>
+						);
+					})}
+				</div>
 			</div>
 		</main>
 	);
