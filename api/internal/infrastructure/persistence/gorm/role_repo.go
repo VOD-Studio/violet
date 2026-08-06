@@ -200,10 +200,11 @@ func (r *RoleRepository) Delete(ctx context.Context, id int32) error {
 // CountUsers 统计使用该角色的用户数
 func (r *RoleRepository) CountUsers(ctx context.Context, roleID int32) (int64, error) {
 	var count int64
-	// users 表通过 role_id 关联角色
+	// DDD 后用户角色以 users.role 字符串列为唯一来源，role_id 外键已废弃不再维护
+	// （toPO 只写 Role 不写 RoleID，新建用户 RoleID 为 nil）。按角色名统计而非 role_id。
 	err := r.db.WithContext(ctx).
 		Table("users").
-		Where("role_id = ?", roleID).
+		Where("role = (SELECT name FROM roles WHERE id = ?)", roleID).
 		Count(&count).Error
 	if err != nil {
 		return 0, domainshared.Internal("统计角色用户数失败", err)
