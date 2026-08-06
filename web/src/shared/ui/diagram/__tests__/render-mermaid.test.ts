@@ -71,6 +71,28 @@ describe("renderMermaid", () => {
 		);
 	});
 
+	it("渲染走离屏容器：mermaid.render 收到第三参 container，渲染后容器从 body 移除", async () => {
+		// 回归防线：不传 container 时 mermaid 把临时 div 无隐藏样式挂在 body 末尾，
+		// 渲染期间撑开页面（刷新时滚动条 + 底部留白）。必须传离屏容器并事后回收。
+		mermaidRender.mockResolvedValue({ svg: CLEAN_SVG });
+
+		await renderMermaid("graph TD; A-->B", "light");
+
+		const container = mermaidRender.mock.calls[0]?.[2];
+		expect(container).toBeInstanceOf(HTMLElement);
+		expect(document.body.contains(container)).toBe(false);
+	});
+
+	it("渲染抛错时离屏容器同样回收", async () => {
+		mermaidRender.mockRejectedValue(new Error("Parse error"));
+
+		await renderMermaid("graph TD; A-->B", "light");
+
+		const container = mermaidRender.mock.calls[0]?.[2];
+		expect(container).toBeInstanceOf(HTMLElement);
+		expect(document.body.contains(container)).toBe(false);
+	});
+
 	it("默认主题为 light（不传 theme）", async () => {
 		mermaidRender.mockResolvedValue({ svg: CLEAN_SVG });
 		await renderMermaid("graph TD; A-->B");
