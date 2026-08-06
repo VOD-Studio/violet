@@ -26,7 +26,10 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 		}
 	};
 
-	const getRoleBadge = (role: string) => {
+	const getRoleBadge = (role: string, isRoot?: boolean) => {
+		if (isRoot) {
+			return <Badge variant="default">root</Badge>;
+		}
 		const roleMap = {
 			superadmin: { label: "超级管理员", variant: "default" as const },
 			admin: { label: "管理员", variant: "secondary" as const },
@@ -63,7 +66,7 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 						<Shield className="size-4" />
 						<span>角色</span>
 					</div>
-					{getRoleBadge(user.role)}
+					{getRoleBadge(user.role, user.is_root)}
 				</div>
 
 				<Separator />

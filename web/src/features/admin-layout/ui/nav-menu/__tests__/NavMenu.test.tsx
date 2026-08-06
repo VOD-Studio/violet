@@ -42,7 +42,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 vi.mock("@features/auth/api/queries", () => ({
 	useMe: () => ({
-		data: { is_builtin_super_admin: true, permissions: ["*"] },
+		data: { is_root: true, permissions: ["*"] },
 	}),
 }));
 

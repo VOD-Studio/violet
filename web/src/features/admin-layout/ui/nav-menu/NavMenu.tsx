@@ -26,7 +26,7 @@ const renderItem = (item: NavMenuItem, onNavigate?: () => void, collapsed = fals
  *
  * 菜单按 group 字段分组渲染（概览等顶级项在分组之上），空分组整体隐藏；
  * collapsed 时组标题退化为分隔线。菜单项按 permissions 字段过滤：满足任一权限
- * 才显示；无 permissions 字段仅靠后台路由守卫（admin:access）。内置超管通配短路，
+ * 才显示；无 permissions 字段仅靠后台路由守卫（admin:access）。root 通配，
  * 所有项可见。带 children 的项用 NavMenuGroupItem 渲染为可折叠父项，父项可见性 =
  * 任一子项可见。
  */
