@@ -291,8 +291,10 @@ jobs:
   # ── deploy-web: 部署 web + 同步 + 健康检查（api-only 时整体 skip）──
   deploy-web:
     needs: [prepare, deploy-api]
-    # web-only 时 deploy-api 被 skip(result=skipped ≠ failure)自动放行; both 时等 api 健康检查通过
-    if: needs.prepare.outputs.deploy_web == 'true' && needs.deploy-api.result != 'failure'
+    # always() 必须显式写：job if 隐式带 success()，needs 里有 skipped（web-only 时
+    # deploy-api 被跳过）会不求值直接 skip——而不只是 failed 才传播。
+    # both 时 deploy-api failure 仍按 result != 'failure' 拦截。
+    if: always() && needs.prepare.outputs.deploy_web == 'true' && needs.deploy-api.result != 'failure'
     runs-on: [self-hosted, rua]
     environment: production
     timeout-minutes: 15
@@ -389,10 +391,6 @@ jobs:
     runs-on: [self-hosted, rua]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.prepare.outputs.tag }}
-
       - name: reload nginx-proxy 刷新容器 IP
         # 容器重建后 nginx-proxy 的上游 DNS 缓存可能指向旧 IP,导致间歇 502。
         # 健康检查通过后 reload nginx,让它重新解析 blog-api/blog-web 的当前 IP。
@@ -403,7 +401,33 @@ jobs:
             echo "nginx-proxy 不可达,跳过 reload"
           fi
 
+      - name: 按侧回写版本锚点
+        # 放在 checkout 之前：锚点是后续发版 diff 的基线，不能被拉取代码失败连累。
+        # 手动回滚也走此路径:tag 即回滚目标版本,成功后锚点推进到回滚目标,
+        # 避免锚点陈旧导致下次发版 diff 漏掉未部署变更
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          API_RESULT: ${{ needs.deploy-api.result }}
+          WEB_RESULT: ${{ needs.deploy-web.result }}
+        run: |
+          if [ "$API_RESULT" == "success" ]; then
+            echo "$TAG" > /root/docker/violet/.current-version-api
+            echo "api 锚点更新为 $TAG"
+          fi
+          if [ "$WEB_RESULT" == "success" ]; then
+            echo "$TAG" > /root/docker/violet/.current-version-web
+            echo "web 锚点更新为 $TAG"
+          fi
+
+      # checkout 仅为 Release notes 抽 CHANGELOG；tag push 才建 Release，手动 dispatch 跳过
+      # （dispatch 时 checkout github.com 被掐会白死——本次 release job 失败即死于此）
+      - uses: actions/checkout@v7
+        if: github.event_name == 'push'
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
       - name: 从 CHANGELOG 抽取本版本段落
+        if: github.event_name == 'push'
         id: notes
         run: |
           VERSION="${{ needs.prepare.outputs.tag }}"
@@ -440,20 +464,3 @@ jobs:
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           generate_release_notes: true
-
-      - name: 按侧回写版本锚点（最后,reload/Release 翻车不误写）
-        # 手动回滚也走此路径:tag 即回滚目标版本,成功后锚点推进到回滚目标,
-        # 避免锚点陈旧导致下次发版 diff 漏掉未部署变更
-        env:
-          TAG: ${{ needs.prepare.outputs.tag }}
-          API_RESULT: ${{ needs.deploy-api.result }}
-          WEB_RESULT: ${{ needs.deploy-web.result }}
-        run: |
-          if [ "$API_RESULT" == "success" ]; then
-            echo "$TAG" > /root/docker/violet/.current-version-api
-            echo "api 锚点更新为 $TAG"
-          fi
-          if [ "$WEB_RESULT" == "success" ]; then
-            echo "$TAG" > /root/docker/violet/.current-version-web
-            echo "web 锚点更新为 $TAG"
-          fi
