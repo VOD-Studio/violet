@@ -82,13 +82,13 @@ describe("usePermissions", () => {
 		expect(result.current.isBuiltin).toBe(false);
 	});
 
-	it("内置超管拥有通配符权限（任意 code 返回 true）", () => {
+	it("超管（含内置与委派）持有通配码 * 时任意权限通过", () => {
 		qc.setQueryData<UserDTO>(
 			authKeys.me(),
 			makeUser({
 				role: "superadmin",
 				is_builtin_super_admin: true,
-				permissions: [], // 即使权限列表为空也通过
+				permissions: ["*"], // 后端对超管返回通配码，任意权限码判定通过
 			}),
 		);
 

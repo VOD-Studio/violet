@@ -4,10 +4,10 @@ import { NavMenuGroupItem } from "./NavMenuGroupItem";
 import { NavMenuLink } from "./NavMenuLink";
 import { NAV_MENU_GROUPS, NAV_MENU_ITEMS, type NavMenuItem } from "./nav-menu-config";
 
-/** 判断权限：内置超管通配短路，否则看 permissions 任一命中 */
-function isVisible(item: NavMenuItem, isSuper: boolean, perms: Set<string>): boolean {
+/** 判断权限：perms 含通配 "*" 则全可见，否则看 permissions 任一命中 */
+function isVisible(item: NavMenuItem, perms: Set<string>): boolean {
 	if (!item.permissions || item.permissions.length === 0) return true;
-	if (isSuper) return true;
+	if (perms.has("*")) return true;
 	return item.permissions.some((code) => perms.has(code));
 }
 
@@ -39,15 +39,14 @@ export function NavMenu({
 }) {
 	const { data: user } = useMe({ enabled: true });
 	// 一次性取用户权限集合，避免菜单项逐个调 hook
-	const isBuiltinSuperAdmin = user?.is_builtin_super_admin === true;
 	const userPerms = new Set(user?.permissions ?? []);
 
 	const visibleItems = NAV_MENU_ITEMS.filter((item) => {
 		// 父项（有 children）：任一子项可见则父项可见
 		if (item.children && item.children.length > 0) {
-			return item.children.some((c) => isVisible(c, isBuiltinSuperAdmin, userPerms));
+			return item.children.some((c) => isVisible(c, userPerms));
 		}
-		return isVisible(item, isBuiltinSuperAdmin, userPerms);
+		return isVisible(item, userPerms);
 	});
 
 	return (

@@ -42,6 +42,8 @@ export function RolePermissionsDialog({
 	// 后端已返回树：permissions 为 menu 数组，每个 menu.children 为其 action
 	const menuTree = permissions;
 
+	// superadmin 角色固有全部权限，后端返回通配码 ["*"] 且不可编辑。
+	const isWildcard = roleDetail?.permission_codes?.includes("*") === true;
 	const handleToggle = (code: string) => {
 		setSelectedCodes((prev) => {
 			const next = new Set(prev);
@@ -61,12 +63,10 @@ export function RolePermissionsDialog({
 		setSelectedCodes((prev) => {
 			const next = new Set(prev);
 			if (allSelected) {
-				// 取消选中该组的所有权限
 				groupCodes.forEach((code) => {
 					next.delete(code);
 				});
 			} else {
-				// 选中该组的所有权限
 				groupCodes.forEach((code) => {
 					next.add(code);
 				});
@@ -94,107 +94,127 @@ export function RolePermissionsDialog({
 			open={open}
 			onOpenChange={onOpenChange}
 			title={`配置角色权限 - ${roleName}`}
-			description={`选择该角色拥有的权限。已选中 ${selectedCodes.size} 个权限。`}
+			description={
+				isWildcard
+					? "该角色拥有全部权限（固有）"
+					: `选择该角色拥有的权限。已选中 ${selectedCodes.size} 个权限。`
+			}
 			size="lg"
 			footer={
-				<>
-					<Button
-						type="button"
-						variant="outline"
-						onClick={() => onOpenChange(false)}
-						disabled={updateRolePermissions.isPending}
-					>
-						取消
+				isWildcard ? (
+					<Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+						关闭
 					</Button>
-					<Button
-						type="button"
-						onClick={handleSave}
-						disabled={updateRolePermissions.isPending}
-					>
-						{updateRolePermissions.isPending && (
-							<Loader2 className="mr-1 size-4 animate-spin" />
-						)}
-						保存
-					</Button>
-				</>
+				) : (
+					<>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => onOpenChange(false)}
+							disabled={updateRolePermissions.isPending}
+						>
+							取消
+						</Button>
+						<Button
+							type="button"
+							onClick={handleSave}
+							disabled={updateRolePermissions.isPending}
+						>
+							{updateRolePermissions.isPending && (
+								<Loader2 className="mr-1 size-4 animate-spin" />
+							)}
+							保存
+						</Button>
+					</>
+				)
 			}
 		>
-			<div className="space-y-6">
-				{menuTree.map((menu) => {
-					const actions = menu.children || [];
-					if (actions.length === 0) return null;
-					const groupCodes = actions.map((p) => p.code).filter(Boolean) as string[];
-					const selectedCount = groupCodes.filter((code) =>
-						selectedCodes.has(code),
-					).length;
-					const allSelected =
-						groupCodes.length > 0 && selectedCount === groupCodes.length;
-					const someSelected = selectedCount > 0 && selectedCount < groupCodes.length;
+			{isWildcard ? (
+				<div className="flex items-center gap-2 py-8 text-muted-foreground">
+					<Badge variant="secondary">固有</Badge>
+					<span>该角色自动拥有全部权限，无需也无法单独配置。</span>
+				</div>
+			) : (
+				<div className="space-y-6">
+					{menuTree.map((menu) => {
+						const actions = menu.children || [];
+						if (actions.length === 0) return null;
+						const groupCodes = actions
+							.map((p) => p.code)
+							.filter(Boolean) as string[];
+						const selectedCount = groupCodes.filter((code) =>
+							selectedCodes.has(code),
+						).length;
+						const allSelected =
+							groupCodes.length > 0 && selectedCount === groupCodes.length;
+						const someSelected =
+							selectedCount > 0 && selectedCount < groupCodes.length;
 
-					return (
-						<div key={menu.id} className="space-y-3">
-							{/* 分组标题 */}
-							<div className="flex items-center justify-between border-b pb-2">
-								<div className="flex items-center gap-2">
-									<Checkbox
-										id={`group-${menu.id}`}
-										checked={allSelected}
-										onCheckedChange={() => handleToggleGroup(menu)}
-										className={
-											someSelected ? "data-[state=checked]:bg-primary/50" : ""
-										}
-									/>
-									<Label
-										htmlFor={`group-${menu.id}`}
-										className="font-semibold text-sm cursor-pointer"
-									>
-										{menu.name}
-									</Label>
-									<Badge variant="secondary">
-										{selectedCount}/{groupCodes.length}
-									</Badge>
+						return (
+							<div key={menu.id} className="space-y-3">
+								{/* 分组标题 */}
+								<div className="flex items-center justify-between border-b pb-2">
+									<div className="flex items-center gap-2">
+										<Checkbox
+											id={`group-${menu.id}`}
+											checked={allSelected}
+											onCheckedChange={() => handleToggleGroup(menu)}
+											className={
+												someSelected ? "data-[state=checked]:bg-primary/50" : ""
+											}
+										/>
+										<Label
+											htmlFor={`group-${menu.id}`}
+											className="font-semibold text-sm cursor-pointer"
+										>
+											{menu.name}
+										</Label>
+										<Badge variant="secondary">
+											{selectedCount}/{groupCodes.length}
+										</Badge>
+									</div>
+								</div>
+
+								{/* 权限列表 */}
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
+									{actions.map((permission) => {
+										const code = permission.code;
+										if (!code) return null;
+										const isChecked = selectedCodes.has(code);
+
+										return (
+											<div
+												key={permission.id}
+												className="flex items-start gap-3 p-2 rounded hover:bg-muted/50"
+											>
+												<Checkbox
+													id={`permission-${permission.id}`}
+													checked={isChecked}
+													onCheckedChange={() => handleToggle(code)}
+												/>
+												<div className="flex-1">
+													<Label
+														htmlFor={`permission-${permission.id}`}
+														className="font-medium cursor-pointer"
+													>
+														{permission.name}
+													</Label>
+													<p className="text-muted-foreground text-xs mt-0.5">
+														{permission.description}
+													</p>
+													<code className="font-mono text-primary text-xs">
+														{permission.code}
+													</code>
+												</div>
+											</div>
+										);
+									})}
 								</div>
 							</div>
-
-							{/* 权限列表 */}
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
-								{actions.map((permission) => {
-									const code = permission.code;
-									if (!code) return null;
-									const isChecked = selectedCodes.has(code);
-
-									return (
-										<div
-											key={permission.id}
-											className="flex items-start gap-3 p-2 rounded hover:bg-muted/50"
-										>
-											<Checkbox
-												id={`permission-${permission.id}`}
-												checked={isChecked}
-												onCheckedChange={() => handleToggle(code)}
-											/>
-											<div className="flex-1">
-												<Label
-													htmlFor={`permission-${permission.id}`}
-													className="font-medium cursor-pointer"
-												>
-													{permission.name}
-												</Label>
-												<p className="text-muted-foreground text-xs mt-0.5">
-													{permission.description}
-												</p>
-												<code className="font-mono text-primary text-xs">
-													{permission.code}
-												</code>
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						</div>
-					);
-				})}
-			</div>
+						);
+					})}
+				</div>
+			)}
 		</Modal>
 	);
 }

@@ -28,10 +28,10 @@ export const Route = createFileRoute("/admin")({
 			});
 		}
 
-		// 检查用户是否有后台访问权限（admin:access）
+		// 检查用户是否有后台访问权限（admin:access）。
 		// claims 不含权限数组，经 queryClient 取 /auth/me（与 useMe 同缓存键，自动复用）。
-		// 内置超管（is_builtin_super_admin）通配短路放行，不必查权限。
-		if (auth.claims && !auth.claims.is_builtin_super_admin) {
+		// 超管 me.permissions 含通配 "*"，直接放行。
+		if (auth.claims) {
 			let me: UserDTO | undefined;
 			try {
 				me = await queryClient.ensureQueryData({
@@ -44,7 +44,8 @@ export const Route = createFileRoute("/admin")({
 				if (isRedirect(e)) throw e;
 				throw redirect({ to: "/", replace: true });
 			}
-			const hasAccess = me?.permissions?.includes("admin:access") ?? false;
+			const perms = me?.permissions ?? [];
+			const hasAccess = perms.includes("*") || perms.includes("admin:access");
 			if (!hasAccess) {
 				throw redirect({ to: "/", replace: true });
 			}

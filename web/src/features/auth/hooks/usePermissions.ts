@@ -13,12 +13,8 @@ export function useHasPermission(code: string): boolean {
 		return false;
 	}
 
-	// 内置超级管理员拥有通配符权限（所有权限），避免后端权限数组短暂缺失时隐藏全部操作。
-	if (user.is_builtin_super_admin) {
-		return true;
-	}
-
-	return user.permissions?.includes(code) ?? false;
+	const perms = user.permissions ?? [];
+	return perms.includes("*") || perms.includes(code);
 }
 
 /**
@@ -34,11 +30,8 @@ export function useHasAnyPermission(codes: string[]): boolean {
 		return false;
 	}
 
-	if (user.is_builtin_super_admin) {
-		return true;
-	}
-
-	return codes.some((code) => user.permissions?.includes(code));
+	const perms = user.permissions ?? [];
+	return perms.includes("*") || codes.some((code) => perms.includes(code));
 }
 
 /**
@@ -54,11 +47,8 @@ export function useHasAllPermissions(codes: string[]): boolean {
 		return false;
 	}
 
-	if (user.is_builtin_super_admin) {
-		return true;
-	}
-
-	return codes.every((code) => user.permissions?.includes(code));
+	const perms = user.permissions ?? [];
+	return perms.includes("*") || codes.every((code) => perms.includes(code));
 }
 
 /**
