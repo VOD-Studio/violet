@@ -58,8 +58,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # paths-filter 的 base 是历史 tag，需本地有对应提交
-          fetch-depth: 0
+          # 浅克隆当前 tag,paths-filter 用 initial-fetch-depth 增量拉 base ref
+          fetch-depth: 1
 
       - name: 读取两侧版本锚点
         id: anchors
@@ -77,6 +77,7 @@ jobs:
         if: steps.anchors.outputs.api_anchor != ''
         with:
           base: ${{ steps.anchors.outputs.api_anchor }}
+          initial-fetch-depth: '20'
           filters: |
             changed:
               - 'api/**'
@@ -88,6 +89,7 @@ jobs:
         if: steps.anchors.outputs.web_anchor != ''
         with:
           base: ${{ steps.anchors.outputs.web_anchor }}
+          initial-fetch-depth: '20'
           filters: |
             changed:
               - 'web/**'
@@ -164,6 +166,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: 清理悬空镜像
+        # 多阶段构建每次产生中间阶段镜像(dangling),self-hosted runner 无自动 GC 会堆积写满磁盘
+        run: podman image prune -f
 
       - name: 构建 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'

@@ -16,7 +16,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # 需预先创建 public/ 否则 ENOENT
 RUN mkdir -p public
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 
 # ─── 阶段 2：构建 SSR 产物 ───────────────────────────────
 FROM node:22-alpine AS builder
