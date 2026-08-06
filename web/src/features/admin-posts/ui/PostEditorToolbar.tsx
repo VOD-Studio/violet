@@ -83,17 +83,8 @@ export function PostEditorToolbar({
 				</h1>
 			</div>
 			<div className="flex flex-wrap items-center justify-end gap-2">
-				{/* 设置/专注/重置/历史版本：桌面展开，移动端收进「更多」菜单 */}
-				{onOpenSettings && (
-					<Button
-						variant="outline"
-						className="hidden lg:flex"
-						onClick={onOpenSettings}
-						title="编辑文章设置"
-					>
-						设置
-					</Button>
-				)}
+				{/* 专注/重置/历史版本：桌面展开，移动端收进「更多」菜单；
+				    文章设置仅移动端经「更多」打开侧滑抽屉（桌面右侧栏并排常显，无需入口） */}
 				{onToggleSidebar && zenMode && (
 					<Button
 						variant="ghost"
