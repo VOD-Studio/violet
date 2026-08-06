@@ -18,7 +18,7 @@ type UserDTO struct {
 	AvatarURL           string   `json:"avatar_url"`
 	Bio                 string   `json:"bio"`
 	Role                string   `json:"role"`
-	IsBuiltinSuperAdmin bool     `json:"is_builtin_super_admin"`
+	IsRoot              bool     `json:"is_root"`
 	EmailVerified       bool     `json:"email_verified"`
 	IsActive            bool     `json:"is_active"`
 	CreatedAt           string   `json:"created_at"`
@@ -77,7 +77,7 @@ func toUserDTO(u *user.User, permissions []string) UserDTO {
 		AvatarURL:           u.AvatarURL(),
 		Bio:                 u.Bio(),
 		Role:                string(u.Role()),
-		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
+		IsRoot:              u.IsRoot(),
 		EmailVerified:       u.EmailVerified(),
 		IsActive:            u.IsActive(),
 		CreatedAt:           u.CreatedAt().Format(time.RFC3339),

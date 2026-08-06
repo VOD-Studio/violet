@@ -70,7 +70,7 @@ func (h *EnsureSuperAdminHandler) Handle(ctx context.Context, in EnsureSuperAdmi
 	}
 	if existing != nil {
 		existing.ChangePassword(hash)
-		existing.MarkAsBuiltinSuperAdmin() // 校正为内置超管（含 superadmin 角色）
+		existing.MarkAsRoot() // 校正为 root 用户
 		existing.VerifyEmail()
 		existing.Activate()
 		if err := h.userRepo.Save(ctx, existing); err != nil {
@@ -83,9 +83,9 @@ func (h *EnsureSuperAdminHandler) Handle(ctx context.Context, in EnsureSuperAdmi
 		return nil
 	}
 
-	// 新建：内置超管（superadmin 角色 + isBuiltinSuperAdmin 标志），邮箱已验证，账户已激活
+	// 新建：root 用户，superadmin 角色 + isRoot 标志
 	u := user.NewUser(shared.NewID(), email, username, hash)
-	u.MarkAsBuiltinSuperAdmin()
+	u.MarkAsRoot()
 	u.VerifyEmail()
 	u.Activate()
 

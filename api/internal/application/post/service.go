@@ -26,7 +26,7 @@ import (
 
 // PostPermissionChecker 权限检查端口（避免直接依赖 service 包）
 type PostPermissionChecker interface {
-	HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool
+	HasPermission(role string, isRoot bool, codes ...string) bool
 }
 
 // PostDTO 文章读模型
@@ -137,8 +137,8 @@ func NewService(repo domain.PostRepository, userRepo userdomain.UserRepository, 
 func (s *Service) canModify(ctx context.Context, p *domain.Post, code string) bool {
 	opID := middleware.GetUserID(ctx)
 	role := middleware.GetUserRole(ctx)
-	isBuiltin := middleware.GetUserIsBuiltinSuperAdmin(ctx)
-	if isBuiltin {
+	isRoot := middleware.GetUserIsRoot(ctx)
+	if isRoot {
 		return true
 	}
 	if opID != "" && opID == p.AuthorID().String() {
@@ -147,7 +147,7 @@ func (s *Service) canModify(ctx context.Context, p *domain.Post, code string) bo
 	if s.perm == nil {
 		return false
 	}
-	return s.perm.HasPermission(role, isBuiltin, code)
+	return s.perm.HasPermission(role, isRoot, code)
 }
 
 // GetBySlug 按 slug 获取已发布文章
@@ -392,8 +392,8 @@ func (s *Service) SetFeatured(ctx context.Context, id string, featured bool) (Po
 	}
 	// 加精是运营动作，仅权限码控制，不放行所有权
 	role := middleware.GetUserRole(ctx)
-	isBuiltin := middleware.GetUserIsBuiltinSuperAdmin(ctx)
-	if !isBuiltin && (s.perm == nil || !s.perm.HasPermission(role, isBuiltin, "post:publish")) {
+	isRoot := middleware.GetUserIsRoot(ctx)
+	if !isRoot && (s.perm == nil || !s.perm.HasPermission(role, isRoot, "post:publish")) {
 		return PostDTO{}, shared.Forbidden("无权设置精选")
 	}
 	p.SetFeatured(featured)
@@ -515,8 +515,8 @@ func (s *Service) HardDelete(ctx context.Context, id string) error {
 	}
 	_ = p // 仅验证文章存在；彻底删除不可恢复，仅权限码控制，不放行所有权
 	role := middleware.GetUserRole(ctx)
-	isBuiltin := middleware.GetUserIsBuiltinSuperAdmin(ctx)
-	if !isBuiltin && (s.perm == nil || !s.perm.HasPermission(role, isBuiltin, "post:delete")) {
+	isRoot := middleware.GetUserIsRoot(ctx)
+	if !isRoot && (s.perm == nil || !s.perm.HasPermission(role, isRoot, "post:delete")) {
 		return shared.Forbidden("无权彻底删除文章")
 	}
 	return s.repo.HardDelete(ctx, pid)

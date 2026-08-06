@@ -39,8 +39,8 @@ type User struct {
 	AvatarURL    string `gorm:"type:text" json:"avatar_url"`
 	Bio          string `gorm:"type:text" json:"bio"`
 	Role         string `gorm:"type:varchar(32);not null;default:'user'" json:"role"`
-	// IsBuiltinSuperAdmin 内置超管标志位（区分通配符超管与被委派超管）
-	IsBuiltinSuperAdmin bool   `gorm:"not null;default:false" json:"is_builtin_super_admin"`
+	// IsRoot root 用户标志位，区分 root 与被委派超管
+	IsRoot bool `gorm:"column:is_root;not null;default:false" json:"is_root"`
 	EmailVerified       bool   `gorm:"not null;default:false" json:"email_verified"`
 	IsActive            bool   `gorm:"not null;default:false" json:"is_active"`
 	GoogleID            *string `gorm:"type:varchar(255);uniqueIndex" json:"google_id"`

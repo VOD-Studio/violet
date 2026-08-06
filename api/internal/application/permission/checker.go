@@ -49,9 +49,9 @@ func NewChecker(roleRepo domainrole.RoleRepository, ttl time.Duration) *Checker 
 //
 // root 用户与 superadmin 角色通配放行，新增权限点自动拥有。
 // 其他角色查缓存，任一权限码缺失即返回 false。
-func (s *Checker) HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool {
+func (s *Checker) HasPermission(role string, isRoot bool, codes ...string) bool {
 	// root 用户与 superadmin 角色通配：拥有所有权限
-	if isBuiltinSuperAdmin || role == domainrole.SuperadminRole {
+	if isRoot || role == domainrole.SuperadminRole {
 		return true
 	}
 	// 无权限码要求视为通过（仅做角色层校验的场景）

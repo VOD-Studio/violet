@@ -269,10 +269,9 @@ func (r *Role) Revoke(permissionCode string) {
 
 // ReplacePermissions 用新的权限集合完全替换当前权限
 //
-// 允许替换任意角色（含内置角色）的权限：角色管理接口已由 SuperAdminRequired
-// 中间件保护，只有内置超管能调用。superadmin 的通配放行由中间件基于
-// isBuiltinSuperAdmin 标志位短路，与 role_permissions 表内容无关，因此
-// 调整 superadmin 角色的权限行只影响被委派超管的兜底权限，不会影响内置超管。
+// 允许替换任意角色的权限：角色管理接口已由 SuperAdminRequired
+// 中间件保护，只有 root 能调用。superadmin 角色的拒改守卫在 application 层
+// （ReplaceRolePermissionsHandler），domain 方法本身不做角色区分。
 // 记录 RolePermissionsChanged 事件。
 func (r *Role) ReplacePermissions(codes []string) error {
 	// 对比新旧权限集，收集增删（审计 before/after）

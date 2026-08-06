@@ -67,7 +67,7 @@ func registerAuthPaths(t *openapi3.T) {
 		"user_id":                reqStr("用户 ID（UUID）"),
 		"role":                   strEnum("角色", "user", "admin", "superadmin"),
 		"email":                  reqStr("邮箱"),
-		"is_builtin_super_admin": optBool("是否内置超管"),
+		"is_root": optBool("是否 root 用户"),
 	})
 
 	// ProfileResponse：auth/profile 响应的 data

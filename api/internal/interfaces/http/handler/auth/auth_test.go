@@ -125,7 +125,7 @@ func TestSession_ReturnsClaimsWhenAuthenticated(t *testing.T) {
 	ctx := context.WithValue(context.Background(), middleware.UserIDKey, "user-123")
 	ctx = context.WithValue(ctx, middleware.UserRoleKey, "admin")
 	ctx = context.WithValue(ctx, middleware.UserEmailKey, "a@b.c")
-	ctx = context.WithValue(ctx, middleware.UserIsBuiltinSuperAdminKey, false)
+	ctx = context.WithValue(ctx, middleware.UserIsRootKey, false)
 
 	req := httptest.NewRequest(http.MethodGet, "/auth/session", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()

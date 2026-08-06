@@ -45,7 +45,7 @@ func toPO(u *user.User) model.User {
 		Role:                string(u.Role()),
 		GoogleID:            u.GoogleID(),
 		GithubID:            u.GithubID(),
-		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
+		IsRoot:             u.IsRoot(),
 		EmailVerified:       u.EmailVerified(),
 		IsActive:            u.IsActive(),
 	}
@@ -85,7 +85,7 @@ func toDomain(po model.User) (*user.User, error) {
 		role,
 		po.GoogleID,
 		po.GithubID,
-		po.IsBuiltinSuperAdmin,
+		po.IsRoot,
 		po.EmailVerified,
 		po.IsActive,
 		po.CreatedAt,

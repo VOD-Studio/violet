@@ -29,8 +29,8 @@ type sessionPayload struct {
 	Email string `json:"email"`
 	// Role 角色名
 	Role string `json:"role"`
-	// IsBuiltinSuperAdmin 内置超管标志位
-	IsBuiltinSuperAdmin bool `json:"is_builtin_super_admin"`
+	// IsRoot root 用户标志位
+	IsRoot bool `json:"is_root"`
 	// CSRFToken CSRF 凭证
 	CSRFToken string `json:"csrf_token"`
 	// CreatedAt session 创建时间
@@ -149,7 +149,7 @@ func toPayload(sess *domainsession.Session) sessionPayload {
 		UserID:              sess.UserID(),
 		Email:               claims.Email,
 		Role:                claims.Role,
-		IsBuiltinSuperAdmin: claims.IsBuiltinSuperAdmin,
+		IsRoot:             claims.IsRoot,
 		CSRFToken:           claims.CSRFToken,
 		CreatedAt:           sess.CreatedAt(),
 		LastSeenAt:          sess.LastSeenAt(),
@@ -160,7 +160,7 @@ func toPayload(sess *domainsession.Session) sessionPayload {
 // fromPayload 从序列化结构重建 session 聚合。
 func fromPayload(id domainsession.ID, p sessionPayload) *domainsession.Session {
 	return domainsession.Reconstruct(
-		id, p.UserID, p.Email, p.Role, p.IsBuiltinSuperAdmin,
+		id, p.UserID, p.Email, p.Role, p.IsRoot,
 		domainsession.CSRFToken(p.CSRFToken), p.CreatedAt, p.LastSeenAt, p.AbsoluteDeadline,
 	)
 }
