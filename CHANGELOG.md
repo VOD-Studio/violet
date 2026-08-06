@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.4.3](https://github.com/VOD-Studio/violet/compare/v2.4.2...v2.4.3) (2026-08-06)
+
+
+### 修复
+
+* **admin:** 后台权限管理修复与 superadmin 语义化重构 ([#81](https://github.com/VOD-Studio/violet/issues/81)) ([591b079](https://github.com/VOD-Studio/violet/commit/591b0794b304316f0fcbedef4e32a0a9f0623665))
+
 ## [2.4.2](https://github.com/VOD-Studio/violet/compare/v2.4.1...v2.4.2) (2026-08-05)
 
 
