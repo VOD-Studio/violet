@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.4.5](https://github.com/VOD-Studio/violet/compare/v2.4.4...v2.4.5) (2026-08-06)
+
+
+### 修复
+
+* **deploy:** 调大 pnpm 下载超时容忍慢链路 ([#87](https://github.com/VOD-Studio/violet/issues/87)) ([6fa555b](https://github.com/VOD-Studio/violet/commit/6fa555b8647d1ef924b55f1cfcaad96ec3246af3))
+
 ## [2.4.4](https://github.com/VOD-Studio/violet/compare/v2.4.3...v2.4.4) (2026-08-06)
 
 
