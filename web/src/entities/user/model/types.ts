@@ -17,7 +17,8 @@ export interface UserDTO {
 	bio: string;
 	/** 角色：user / admin / superadmin */
 	role: UserRole;
-	/** 是否为 root 用户 */
+	/** 角色描述，来自 roles 表，供界面显示角色标签 */
+	role_description?: string;
 	is_root: boolean;
 	/** 邮箱是否已验证 */
 	email_verified: boolean;
