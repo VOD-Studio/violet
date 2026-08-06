@@ -1,5 +1,20 @@
 import { Button } from "@shared/ui/base/button";
-import { History, Maximize2, Minimize2, PanelRight, RotateCcw, X } from "lucide-react";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@shared/ui/base/dropdown-menu";
+import {
+	History,
+	Maximize2,
+	Minimize2,
+	PanelRight,
+	RotateCcw,
+	SlidersHorizontal,
+	X,
+} from "lucide-react";
 
 interface PostEditorToolbarProps {
 	/** 编辑模式用于显示标题 */
@@ -22,9 +37,8 @@ interface PostEditorToolbarProps {
 	sidebarCollapsed?: boolean;
 	/** 切换右侧栏收起/展开 */
 	onToggleSidebar?: () => void;
-	/** 移动端视图切换：编辑器 ⇄ 侧栏（桌面并排，不参与） */
-	mobileView?: "edit" | "settings";
-	onToggleMobileView?: () => void;
+	/** 打开文章设置（移动端侧滑抽屉） */
+	onOpenSettings?: () => void;
 }
 
 /** PostEditorToolbar - 编辑器顶栏，返回按钮 + 标题 + 重置/保存/发布/专注 */
@@ -41,8 +55,7 @@ export function PostEditorToolbar({
 	zenMode = false,
 	sidebarCollapsed = false,
 	onToggleSidebar,
-	mobileView = "edit",
-	onToggleMobileView,
+	onOpenSettings,
 }: PostEditorToolbarProps) {
 	const isDisabled = saving || disabled;
 
@@ -70,29 +83,33 @@ export function PostEditorToolbar({
 				</h1>
 			</div>
 			<div className="flex flex-wrap items-center justify-end gap-2">
-				{onToggleMobileView && (
+				{/* 设置/专注/重置/历史版本：桌面展开，移动端收进「更多」菜单 */}
+				{onOpenSettings && (
 					<Button
 						variant="outline"
-						className="lg:hidden"
-						onClick={onToggleMobileView}
-						title={mobileView === "settings" ? "返回编辑器" : "编辑文章设置"}
+						className="hidden lg:flex"
+						onClick={onOpenSettings}
+						title="编辑文章设置"
 					>
-						{mobileView === "settings" ? "编辑" : "设置"}
+						设置
 					</Button>
 				)}
 				{onToggleSidebar && zenMode && (
 					<Button
 						variant="ghost"
 						size="icon-sm"
+						className="hidden lg:flex"
 						onClick={onToggleSidebar}
 						title={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
 					>
 						<PanelRight className={sidebarCollapsed ? "size-4 opacity-50" : "size-4"} />
 					</Button>
 				)}
+				{/* 专注/重置/历史版本：桌面展开，移动端收进「更多」菜单 */}
 				{onToggleZen && !zenMode && (
 					<Button
 						variant="ghost"
+						className="hidden lg:flex"
 						onClick={onToggleZen}
 						disabled={isDisabled}
 						title="进入专注模式"
@@ -104,6 +121,7 @@ export function PostEditorToolbar({
 				{onReset && (
 					<Button
 						variant="ghost"
+						className="hidden lg:flex"
 						onClick={onReset}
 						disabled={isDisabled}
 						title={isEdit ? "放弃改动，恢复到原始数据" : "清空所有内容并删除草稿"}
@@ -113,10 +131,48 @@ export function PostEditorToolbar({
 					</Button>
 				)}
 				{isEdit && (
-					<Button variant="outline" onClick={onOpenVersions} disabled={isDisabled}>
+					<Button
+						variant="outline"
+						className="hidden lg:flex"
+						onClick={onOpenVersions}
+						disabled={isDisabled}
+					>
 						<History className="size-4" /> 历史版本
 					</Button>
 				)}
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="outline" className="lg:hidden" title="更多操作">
+							更多
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						{onOpenSettings && (
+							<>
+								<DropdownMenuItem onClick={onOpenSettings} disabled={isDisabled}>
+									<SlidersHorizontal className="size-4" /> 文章设置
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+							</>
+						)}
+						{onToggleZen && !zenMode && (
+							<DropdownMenuItem onClick={onToggleZen} disabled={isDisabled}>
+								<Maximize2 className="size-4" /> 进入专注
+							</DropdownMenuItem>
+						)}
+						{onReset && (
+							<DropdownMenuItem onClick={onReset} disabled={isDisabled}>
+								<RotateCcw className="size-4" />
+								{isEdit ? "重置" : "清空"}
+							</DropdownMenuItem>
+						)}
+						{isEdit && (
+							<DropdownMenuItem onClick={onOpenVersions} disabled={isDisabled}>
+								<History className="size-4" /> 历史版本
+							</DropdownMenuItem>
+						)}
+					</DropdownMenuContent>
+				</DropdownMenu>
 				<Button variant="outline" onClick={onSaveDraft} disabled={isDisabled}>
 					保存草稿
 				</Button>
