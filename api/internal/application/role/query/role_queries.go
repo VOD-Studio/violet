@@ -102,7 +102,22 @@ func (h *GetRoleWithPermissionsHandler) Handle(ctx context.Context, in GetRoleWi
 		return approle.RoleWithPermissionsDTO{}, err
 	}
 
-	// 查询角色拥有的权限点详情
+	// superadmin 角色固有全部权限（语义而非数据），返回通配码 "*"，不枚举权限点详情。
+	// 前端据此显示「全部权限·固有·不可编辑」。
+	if rl.Name().String() == role.SuperadminRole {
+		return approle.RoleWithPermissionsDTO{
+			RoleDTO: approle.RoleDTO{
+				ID:              rl.RoleID(),
+				Name:            rl.Name().String(),
+				Description:     rl.Description(),
+				PermissionCodes: []string{role.WildcardPermission},
+				CreatedAt:       rl.CreatedAt().Format(time.RFC3339),
+			},
+			Permissions: nil,
+		}, nil
+	}
+
+	// 普通角色：查询角色拥有的权限点详情
 	codes := rl.PermissionCodes()
 	permDtos := make([]approle.PermissionDTO, 0, len(codes))
 	for _, code := range codes {

@@ -51,10 +51,11 @@ func (h *GetMeHandler) Handle(ctx context.Context, userID string) (UserDTO, erro
 		return UserDTO{}, err
 	}
 
-	// 内置超管：通配符权限，不依赖 role_permissions 表。前端按 is_builtin_super_admin 标志短路。
-	// 被委派超管 / admin / user：查 role_permissions 表取权限码列表。
+	// root 用户与被委派超管固有全部权限，返回通配码；普通角色查 role_permissions 表。
 	var permissions []string
-	if !u.IsBuiltinSuperAdmin() && h.roleRepo != nil {
+	if u.IsSuperAdmin() {
+		permissions = []string{role.WildcardPermission}
+	} else if h.roleRepo != nil {
 		roleName, err := role.ParseRoleName(string(u.Role()))
 		if err == nil {
 			r, err := h.roleRepo.FindByName(ctx, roleName)

@@ -26,6 +26,14 @@ var BuiltinRoles = map[string]bool{
 	"superadmin": true,
 }
 
+// SuperadminRole superadmin 角色名。
+//
+// 拥有全部权限且为固有语义，不依赖 role_permissions 表，新增权限点自动拥有。
+const SuperadminRole = "superadmin"
+
+// WildcardPermission 通配权限码，超管角色返回此码而非枚举全部权限点。
+const WildcardPermission = "*"
+
 // IsBuiltin 判断角色名是否为内置角色
 func IsBuiltin(name string) bool { return BuiltinRoles[name] }
 

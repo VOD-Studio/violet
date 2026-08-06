@@ -45,14 +45,13 @@ func NewChecker(roleRepo domainrole.RoleRepository, ttl time.Duration) *Checker 
 	}
 }
 
-// HasPermission 判断角色是否拥有所有指定权限码
+// HasPermission 判断角色是否拥有所有指定权限码。
 //
-// 内置超管（isBuiltinSuperAdmin=true）通配放行：拥有所有权限，新增权限自动拥有，无需手动分配。
-// 其他角色（含被委派超管）查缓存（过期则重新加载全部角色权限）。
-// 任一权限码缺失即返回 false。
+// root 用户与 superadmin 角色通配放行，新增权限点自动拥有。
+// 其他角色查缓存，任一权限码缺失即返回 false。
 func (s *Checker) HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool {
-	// 内置超级管理员通配：拥有所有权限
-	if isBuiltinSuperAdmin {
+	// root 用户与 superadmin 角色通配：拥有所有权限
+	if isBuiltinSuperAdmin || role == domainrole.SuperadminRole {
 		return true
 	}
 	// 无权限码要求视为通过（仅做角色层校验的场景）

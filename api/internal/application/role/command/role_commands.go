@@ -245,6 +245,10 @@ func (h *ReplaceRolePermissionsHandler) Handle(ctx context.Context, in ReplaceRo
 		return err
 	}
 
+	// superadmin 角色固有全部权限，拒绝修改其权限分配。
+	if rl.Name().String() == role.SuperadminRole {
+		return role.ErrCannotModifyBuiltin
+	}
 	// 2. 校验所有权限代码格式合法性
 	for _, code := range in.PermissionCodes {
 		if _, err := permission.ParseCode(code); err != nil {
