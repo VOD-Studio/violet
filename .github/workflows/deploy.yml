@@ -58,8 +58,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # 浅克隆当前 tag,paths-filter 用 initial-fetch-depth 增量拉 base ref
-          fetch-depth: 1
+          # 全历史：paths-filter 对比的锚点是 tag，tag 只在全量拉取时落地为本地 ref，
+          # 浅克隆下 base 不可解析会导致误判无变更、整轮跳过部署
+          fetch-depth: 0
+          # 只拉 commit/tree，blob 按需——detect 只做 diff 不读文件内容，流量比全量小得多
+          filter: blob:none
 
       - name: 读取两侧版本锚点
         id: anchors
