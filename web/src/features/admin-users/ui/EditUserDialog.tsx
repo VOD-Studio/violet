@@ -222,9 +222,7 @@ export function EditUserDialog({
 					</Select>
 					{roleDisabled ? (
 						<p className="text-xs text-muted-foreground">
-							{user.is_root
-								? "不可修改 root 用户的角色"
-								: "不可修改自己的角色"}
+							{user.is_root ? "不可修改 root 用户的角色" : "不可修改自己的角色"}
 						</p>
 					) : null}
 				</div>

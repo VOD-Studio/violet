@@ -137,10 +137,7 @@ describe("usePermissions", () => {
 	});
 
 	it("admin 角色判定为管理员但非超管", () => {
-		qc.setQueryData<UserDTO>(
-			authKeys.me(),
-			makeUser({ role: "admin", is_root: false }),
-		);
+		qc.setQueryData<UserDTO>(authKeys.me(), makeUser({ role: "admin", is_root: false }));
 
 		const { result } = renderHook(
 			() => ({
@@ -157,10 +154,7 @@ describe("usePermissions", () => {
 	});
 
 	it("被委派超管（role=superadmin 但非内置）isSuperAdmin 为 true、isBuiltin 为 false", () => {
-		qc.setQueryData<UserDTO>(
-			authKeys.me(),
-			makeUser({ role: "superadmin", is_root: false }),
-		);
+		qc.setQueryData<UserDTO>(authKeys.me(), makeUser({ role: "superadmin", is_root: false }));
 
 		const { result } = renderHook(
 			() => ({

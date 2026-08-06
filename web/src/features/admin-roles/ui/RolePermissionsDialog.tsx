@@ -139,16 +139,13 @@ export function RolePermissionsDialog({
 					{menuTree.map((menu) => {
 						const actions = menu.children || [];
 						if (actions.length === 0) return null;
-						const groupCodes = actions
-							.map((p) => p.code)
-							.filter(Boolean) as string[];
+						const groupCodes = actions.map((p) => p.code).filter(Boolean) as string[];
 						const selectedCount = groupCodes.filter((code) =>
 							selectedCodes.has(code),
 						).length;
 						const allSelected =
 							groupCodes.length > 0 && selectedCount === groupCodes.length;
-						const someSelected =
-							selectedCount > 0 && selectedCount < groupCodes.length;
+						const someSelected = selectedCount > 0 && selectedCount < groupCodes.length;
 
 						return (
 							<div key={menu.id} className="space-y-3">
@@ -160,7 +157,9 @@ export function RolePermissionsDialog({
 											checked={allSelected}
 											onCheckedChange={() => handleToggleGroup(menu)}
 											className={
-												someSelected ? "data-[state=checked]:bg-primary/50" : ""
+												someSelected
+													? "data-[state=checked]:bg-primary/50"
+													: ""
 											}
 										/>
 										<Label

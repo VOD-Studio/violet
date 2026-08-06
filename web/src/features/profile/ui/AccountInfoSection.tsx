@@ -31,11 +31,7 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 			return <Badge variant="default">root</Badge>;
 		}
 		const variant =
-			role === "superadmin"
-				? "default"
-				: role === "admin"
-					? "secondary"
-					: "outline";
+			role === "superadmin" ? "default" : role === "admin" ? "secondary" : "outline";
 		return <Badge variant={variant}>{description || role}</Badge>;
 	};
 
