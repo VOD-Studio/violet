@@ -113,9 +113,14 @@ function AdminRolesPage() {
 			key: "permission_count",
 			header: "权限数",
 			sortable: true,
-			cell: (row) => (
-				<Badge variant="secondary">{row.permission_codes?.length || 0} 个权限</Badge>
-			),
+			cell: (row) => {
+				const count = row.permission_codes?.length ?? 0;
+				return (
+					<Badge variant="secondary">
+						{row.permission_codes?.includes("*") ? "全部" : `${count} 个权限`}
+					</Badge>
+				);
+			},
 		},
 		{
 			key: "created_at",
@@ -192,7 +197,7 @@ function AdminRolesPage() {
 				page={1}
 				pageSize={sortedRoles.length}
 				total={sortedRoles.length}
-				onPageChange={() => {}}
+				onPageChange={() => { }}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

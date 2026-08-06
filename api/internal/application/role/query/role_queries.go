@@ -64,7 +64,10 @@ func (h *ListRolesWithUserCountHandler) Handle(ctx context.Context) ([]approle.R
 	dtos := make([]approle.RoleDTO, 0, len(roles))
 	for _, rl := range roles {
 		dto := toRoleDTO(rl)
-		// 逐角色查询用户数（角色数量通常很少，N+1 可接受）
+		// superadmin 角色固有全部权限，返回通配码而非空数组
+		if rl.Name().String() == role.SuperadminRole {
+			dto.PermissionCodes = []string{role.WildcardPermission}
+		}
 		count, err := h.roleRepo.CountUsers(ctx, rl.RoleID())
 		if err != nil {
 			return nil, err

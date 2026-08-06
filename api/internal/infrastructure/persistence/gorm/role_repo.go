@@ -205,6 +205,7 @@ func (r *RoleRepository) CountUsers(ctx context.Context, roleID int32) (int64, e
 	err := r.db.WithContext(ctx).
 		Table("users").
 		Where("role = (SELECT name FROM roles WHERE id = ?)", roleID).
+		Where("is_root = false").
 		Count(&count).Error
 	if err != nil {
 		return 0, domainshared.Internal("统计角色用户数失败", err)
