@@ -12,16 +12,9 @@ v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/go
 
 ### 修复
 
-* **changelog:** scope 组头 badge 化对齐分类标签范式 ([d76c702](https://github.com/VOD-Studio/violet/commit/d76c702b2da24433490c1338eb12a6c6376d81bb))
-* **changelog:** scope 组头改深色小标题避免与分类 badge 同形 ([4b151b5](https://github.com/VOD-Studio/violet/commit/4b151b5f14545573f116130f3fc7091c2e542316))
-* **changelog:** 更新日志页展示修复与内容治理 ([2adfe18](https://github.com/VOD-Studio/violet/commit/2adfe185857bd5a151f0f847a695883f2db6d766))
-* **changelog:** 条目列表补 bullet 标记 ([7e0fce2](https://github.com/VOD-Studio/violet/commit/7e0fce231758e293433ed62b07840e6e31f6754b))
-* **changelog:** 清洗条目噪音并按 scope 聚合分组 ([027a92e](https://github.com/VOD-Studio/violet/commit/027a92ec78179f26e4f96d4de5fef69ab1b5cc4d))
-* **changelog:** 清洗逻辑去中文标点前残留空格 ([e443523](https://github.com/VOD-Studio/violet/commit/e4435234ce8d9f6c12696ebee03eb10ad2c9d33c))
-* **changelog:** 版本目录导航与阅读位置高亮 ([13866d3](https://github.com/VOD-Studio/violet/commit/13866d3bb94667bac008e241ab750212b6d0045c))
-* **changelog:** 移动端时间线对齐与当前版本徽章浅底化 ([6241f8f](https://github.com/VOD-Studio/violet/commit/6241f8f1ad079060115c0de4c01308b9850bcf70))
-* **changelog:** 聚合阈值改为所有 scope 一律成组 ([e820ffc](https://github.com/VOD-Studio/violet/commit/e820ffce6fba3c26de3066351976905c678dd556))
-* **changelog:** 阅读位置追踪与版本 chip 跟随修复 ([3d4fc6c](https://github.com/VOD-Studio/violet/commit/3d4fc6c7bad186a853a9208e30aeae086682ddbc))
+* **更新日志:** 页面重设计：版本目录导航与阅读位置高亮，移动端横向版本条 ([#77](https://github.com/VOD-Studio/violet/pull/77))
+* **更新日志:** 条目清洗与按模块分组——裸链接、任务号不再显示，同模块变更聚合展示
+* **更新日志:** 移动端时间线对齐与徽章样式统一
 
 ## [2.4.1](https://github.com/VOD-Studio/violet/compare/v2.4.0...v2.4.1) (2026-08-05)
 
