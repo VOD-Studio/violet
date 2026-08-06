@@ -22,6 +22,9 @@ interface PostEditorToolbarProps {
 	sidebarCollapsed?: boolean;
 	/** 切换右侧栏收起/展开 */
 	onToggleSidebar?: () => void;
+	/** 移动端视图切换：编辑器 ⇄ 侧栏（桌面并排，不参与） */
+	mobileView?: "edit" | "settings";
+	onToggleMobileView?: () => void;
 }
 
 /** PostEditorToolbar - 编辑器顶栏，返回按钮 + 标题 + 重置/保存/发布/专注 */
@@ -38,12 +41,14 @@ export function PostEditorToolbar({
 	zenMode = false,
 	sidebarCollapsed = false,
 	onToggleSidebar,
+	mobileView = "edit",
+	onToggleMobileView,
 }: PostEditorToolbarProps) {
 	const isDisabled = saving || disabled;
 
 	return (
-		<div className="flex items-center justify-between gap-3">
-			<div className="flex items-center gap-3">
+		<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+			<div className="flex shrink-0 items-center gap-3 whitespace-nowrap">
 				{zenMode ? (
 					onToggleZen && (
 						<Button
@@ -64,7 +69,17 @@ export function PostEditorToolbar({
 					{zenMode ? "专注写作" : isEdit ? "编辑文章" : "新建文章"}
 				</h1>
 			</div>
-			<div className="flex items-center gap-2">
+			<div className="flex flex-wrap items-center justify-end gap-2">
+				{onToggleMobileView && (
+					<Button
+						variant="outline"
+						className="lg:hidden"
+						onClick={onToggleMobileView}
+						title={mobileView === "settings" ? "返回编辑器" : "编辑文章设置"}
+					>
+						{mobileView === "settings" ? "编辑" : "设置"}
+					</Button>
+				)}
 				{onToggleSidebar && zenMode && (
 					<Button
 						variant="ghost"

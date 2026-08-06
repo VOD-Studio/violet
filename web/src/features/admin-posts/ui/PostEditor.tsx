@@ -33,6 +33,7 @@ import {
 } from "@features/editor";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDebouncedCallback } from "@shared/lib/hooks/use-debounced-callback";
+import { cn } from "@shared/lib/utils";
 import { Input } from "@shared/ui/base/input";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -88,6 +89,18 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 	const zenMode = usePostEditorStore((s) => s.zenMode);
 	const setZen = usePostEditorStore((s) => s.setZen);
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+	// 移动端：编辑器/侧栏为整页二选一视图（桌面并排不受影响）
+	const [mobileView, setMobileView] = useState<"edit" | "settings">("edit");
+	// 移动端编辑器可用高度有限，minHeight 调小避免内容区被 grid 行挤压裁剪
+	const [editorMinHeight, setEditorMinHeight] = useState(400);
+	useEffect(() => {
+		if (typeof window === "undefined" || !window.matchMedia) return;
+		const mq = window.matchMedia("(max-width: 1023px)");
+		const update = () => setEditorMinHeight(mq.matches ? 180 : 400);
+		update();
+		mq.addEventListener("change", update);
+		return () => mq.removeEventListener("change", update);
+	}, []);
 
 	const form = useForm<PostForm>({
 		resolver: zodResolver(postSchema),
@@ -388,8 +401,8 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 					saving={false}
 					disabled
 					onBack={() => navigate({ to: "/admin/posts" })}
-					onSaveDraft={() => {}}
-					onPublish={() => {}}
+					onSaveDraft={() => { }}
+					onPublish={() => { }}
 					onOpenVersions={() => setVersionsOpen(true)}
 				/>
 
@@ -457,6 +470,10 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 				zenMode={zenMode}
 				sidebarCollapsed={sidebarCollapsed}
 				onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
+				mobileView={mobileView}
+				onToggleMobileView={() =>
+					setMobileView((v) => (v === "settings" ? "edit" : "settings"))
+				}
 			/>
 
 			<div
@@ -466,8 +483,14 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 						: "grid flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[1fr_320px]"
 				}
 			>
-				{/* 左：编辑器 */}
-				<div data-testid="editor-workspace" className="flex min-h-0 min-w-0 flex-col gap-2">
+				{/* 左：编辑器。移动端为整页视图（与侧栏二选一），桌面并排 */}
+				<div
+					data-testid="editor-workspace"
+					className={cn(
+						"flex min-h-0 min-w-0 flex-col gap-2",
+						mobileView !== "edit" && "hidden lg:flex",
+					)}
+				>
 					<Input
 						{...register("title", {
 							onChange: (e) => {
@@ -518,7 +541,7 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 									onImportUrlMeta={handleImportUrlMeta}
 									onImportUrlWarnings={handleImportUrlWarnings}
 									className="h-full"
-									minHeight={400}
+									minHeight={editorMinHeight}
 								/>
 							)}
 						/>
@@ -526,8 +549,16 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
 				</div>
 
 				{/* 右侧栏 */}
+				{/* 右侧栏：移动端为整页视图（与编辑器二选一），桌面并排 */}
 				{!(zenMode && sidebarCollapsed) && (
-					<PostEditorSidebar control={control} register={register} />
+					<div
+						className={cn(
+							"min-h-0 overflow-y-auto lg:overflow-visible",
+							mobileView !== "settings" && "hidden lg:block",
+						)}
+					>
+						<PostEditorSidebar control={control} register={register} />
+					</div>
 				)}
 			</div>
 
