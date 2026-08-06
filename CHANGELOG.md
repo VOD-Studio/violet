@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.4.6](https://github.com/VOD-Studio/violet/compare/v2.4.5...v2.4.6) (2026-08-06)
+
+
+### 修复
+
+* **deploy:** npm registry 换国内镜像源 ([#89](https://github.com/VOD-Studio/violet/issues/89)) ([fa44bd3](https://github.com/VOD-Studio/violet/commit/fa44bd312db93495ba6ffc7e218f200b9f1b7624))
+
 ## [2.4.5](https://github.com/VOD-Studio/violet/compare/v2.4.4...v2.4.5) (2026-08-06)
 
 
