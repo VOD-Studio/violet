@@ -207,7 +207,7 @@ func registerAdminRBACPaths(t *openapi3.T) {
 		),
 	})
 
-	patch(t, "/admin/roles/{id}/permissions", &openapi3.Operation{
+	put(t, "/admin/roles/{id}/permissions", &openapi3.Operation{
 		Tags:        []string{"角色管理"},
 		Summary:     "设置角色权限",
 		Description: "设置角色的全部权限。需管理员权限。",
