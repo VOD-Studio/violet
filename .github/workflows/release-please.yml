@@ -14,6 +14,8 @@ name: Release Please
 on:
   push:
     branches: [release/2.0]
+  # push 事件偶发不触发 Actions（曾整晚无 run）时的手动兜底：gh workflow run release-please.yml
+  workflow_dispatch:
 
 permissions:
   contents: write       # 创建 release PR + 打 tag
