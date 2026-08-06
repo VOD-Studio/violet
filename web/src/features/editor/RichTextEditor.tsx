@@ -30,7 +30,6 @@ import { EditorBubbleMenu } from "./bubble-menu/EditorBubbleMenu";
 import "./styles.css";
 import { buildEditorExtensions } from "./extensions";
 import { useEditorUpload } from "./hooks/useEditorUpload";
-import { useTextareaScrollMirror } from "./hooks/useTextareaScrollMirror";
 import { useWordCount } from "./hooks/useWordCount";
 import {
 	type BlockLineEntry,
@@ -43,6 +42,7 @@ import { SlashCommand } from "./slash-menu/SlashCommand";
 import { buildSlashItems } from "./slash-menu/slash-items";
 import { EditorToolbar } from "./toolbar/EditorToolbar";
 import { TableToolbar } from "./toolbar/TableToolbar";
+import { MarkdownSourceEditor, type MarkdownSourceHandle } from "./ui/MarkdownSourceEditor";
 
 /** 命令式句柄：供父组件插入图片、取值等 */
 export interface RichTextEditorHandle {
@@ -245,12 +245,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 		// 映射,切换时对齐到块起点(业界 Joplin/VS Code split-pane 同款)。
 		const [sourceMode, setSourceMode] = useState(false);
 		const [sourceText, setSourceText] = useState("");
-		const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-		const { scrollToLine, getLineAtScrollTop } = useTextareaScrollMirror(textareaRef);
+		const sourceEditorRef = useRef<MarkdownSourceHandle | null>(null);
 		// 进入源码时构建的块映射,退出源码时复用做行号→块 pos 反查
 		const blockMapRef = useRef<ReadonlyArray<BlockLineEntry> | null>(null);
-		// 进入源码后 textarea 要滚动到的目标行号
-		const pendingSourceLineRef = useRef<number | null>(null);
+		// 进入源码后要滚到的目标行号（经 prop 传给 MarkdownSourceEditor，
+		// 由组件在 view 创建后自行滚动，不依赖父组件 effect 时序）
+		const [pendingSourceLine, setPendingSourceLine] = useState<number | null>(null);
 		// 退出源码后要滚动到的目标块 pos,等富文本容器 mount 后消费
 		const pendingBlockPosRef = useRef<number | null>(null);
 
@@ -298,12 +298,13 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				const visibleLine = scrollContainer
 					? findVisibleLine(map, editor, scrollContainer)
 					: 0;
+
 				setSourceText(editor.getMarkdown());
-				pendingSourceLineRef.current = visibleLine;
+				setPendingSourceLine(visibleLine);
 				setSourceMode(true);
 			} else {
 				// 退出源码模式:拿当前行号 → 二分找块 pos → 写回 → 切换
-				const currentLine = getLineAtScrollTop();
+				const currentLine = sourceEditorRef.current?.getVisibleLine() ?? 0;
 				const targetPos = blockMapRef.current
 					? findBlockByLine(blockMapRef.current, currentLine)
 					: null;
@@ -315,15 +316,6 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				setSourceMode(false);
 			}
 		};
-		// 进入源码后 textarea mount → 滚到目标行
-		useEffect(() => {
-			if (sourceMode && pendingSourceLineRef.current != null) {
-				const line = pendingSourceLineRef.current;
-				pendingSourceLineRef.current = null;
-				// textarea 刚 mount,镜像 div 还没建;下一帧再滚
-				requestAnimationFrame(() => scrollToLine(line));
-			}
-		}, [sourceMode, scrollToLine]);
 		// 退出源码后富文本容器 + 新内容渲染完 → 滚到目标块。
 		// 不用 scrollIntoView:它会把块顶贴到窗口顶部,目标接近文档末尾时
 		// 编辑器被强行上推,下方留一大片空白。手动设 scrollContainer.scrollTop
@@ -383,10 +375,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 		return (
 			<div
 				className={cn(
-					// relative：给滚动镜像 div（absolute）建立定位上下文，
-					// 否则其包含块是 initial containing block，overflow-hidden 裁剪不到，
-					// 镜像被 scrollToLine 撑高后会撑开整个页面产生滚动条。
-					"relative flex h-full flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background",
+					"flex h-full flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background",
 					className,
 				)}
 			>
@@ -398,13 +387,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 				/>
 				{editor ? <TableToolbar editor={editor} /> : null}
 				{sourceMode ? (
-					<textarea
-						ref={textareaRef}
+					<MarkdownSourceEditor
+						ref={sourceEditorRef}
 						value={sourceText}
-						onChange={(e) => setSourceText(e.target.value)}
-						spellCheck={false}
-						className="flex-1 resize-none bg-transparent p-4 font-mono text-sm leading-relaxed focus:outline-none"
-						style={{ minHeight }}
+						onChange={setSourceText}
+						minHeight={minHeight}
+						initialScrollLine={pendingSourceLine}
 					/>
 				) : (
 					<div
