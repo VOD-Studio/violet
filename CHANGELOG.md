@@ -7,6 +7,29 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.4.4](https://github.com/VOD-Studio/violet/compare/v2.4.3...v2.4.4) (2026-08-06)
+
+
+### 新增
+
+* **editor:** 源码模式改用 CodeMirror 6 替换滚动镜像 ([309e901](https://github.com/VOD-Studio/violet/commit/309e90111d65d72a8f9cd3c4b991c6bd93cf10fb))
+
+
+### 修复
+
+* **admin:** 文章编辑器移动端布局适配 ([9ccb88f](https://github.com/VOD-Studio/violet/commit/9ccb88fab3be5d0a7b2a2d99e9c4ade010cbcb61))
+* **admin:** 文章设置移动端改侧滑抽屉与工具栏排版 ([cc7ec1f](https://github.com/VOD-Studio/violet/commit/cc7ec1f50d732f696029f8dd2fa78fdbf561acd4))
+* **admin:** 移除桌面端冗余的文章设置按钮 ([7f14136](https://github.com/VOD-Studio/violet/commit/7f14136f9deaffa1174a5b20207db8593ccf007f))
+* **diagram:** mermaid 渲染临时容器改为离屏挂载 ([ff13782](https://github.com/VOD-Studio/violet/commit/ff13782861beeae571158f29124616cc7c63d389))
+* **editor:** 源码模式滚动镜像撑开页面产生滚动条 ([6dcb797](https://github.com/VOD-Studio/violet/commit/6dcb7977fdb707c60b70a24d53b631a6a647989f))
+* **editor:** 源码模式移动端滚动定位修正 ([86e68a3](https://github.com/VOD-Studio/violet/commit/86e68a30f7cb28dc91befddcb2ae4cdbcb6e40eb))
+* **editor:** 编辑器源码模式滚动与移动端布局修复 ([a050496](https://github.com/VOD-Studio/violet/commit/a0504961fb78aef6315aca47fcfaac87c2b1b899))
+
+
+### 内部维护
+
+* **release:** 强制本次发版为补丁版本 2.4.4 ([4e568a0](https://github.com/VOD-Studio/violet/commit/4e568a0eb59b36300879977c93541a676b0105d7))
+
 ## [2.4.3](https://github.com/VOD-Studio/violet/compare/v2.4.2...v2.4.3) (2026-08-06)
 
 
