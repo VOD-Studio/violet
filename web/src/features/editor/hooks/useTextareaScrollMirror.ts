@@ -102,7 +102,11 @@ function syncMirrorStyle(source: HTMLTextAreaElement, mirror: HTMLDivElement): v
 function measureHeightAtPrefix(ctx: MirrorContext, prefix: string): number {
 	// 末尾补一个零宽空格,确保末行(空行或 trailing newline)也被计入
 	ctx.mirror.textContent = `${prefix}\u200b`;
-	return ctx.mirror.scrollHeight;
+	const height = ctx.mirror.scrollHeight;
+	// 量完即清空：镜像文本残留会把镜像撑到对应高度（absolute 元素），
+	// 在无定位祖先时包含块是 initial containing block，会撑开页面产生滚动条。
+	ctx.mirror.textContent = "";
+	return height;
 }
 
 export interface TextareaScrollMirror {

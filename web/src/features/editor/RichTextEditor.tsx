@@ -383,7 +383,10 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 		return (
 			<div
 				className={cn(
-					"flex h-full flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background",
+					// relative：给滚动镜像 div（absolute）建立定位上下文，
+					// 否则其包含块是 initial containing block，overflow-hidden 裁剪不到，
+					// 镜像被 scrollToLine 撑高后会撑开整个页面产生滚动条。
+					"relative flex h-full flex-col overflow-hidden rounded-lg border border-edge-hairline bg-background",
 					className,
 				)}
 			>
