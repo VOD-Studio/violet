@@ -18,7 +18,7 @@ func newSnap() UserSnapshot {
 	uid, _ := domainshared.ParseID(testUserID)
 	return UserSnapshot{
 		UserID: uid, Email: "u@example.com", Role: "user",
-		IsBuiltinSuperAdmin: false,
+		IsRoot: false,
 	}
 }
 

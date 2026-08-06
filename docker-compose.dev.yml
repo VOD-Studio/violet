@@ -87,6 +87,10 @@ services:
       REDIS_DB: 0
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       PORT: 9090
+      SUPERADMIN_ENABLED: ${SUPERADMIN_ENABLED:-false}
+      SUPERADMIN_USERNAME: ${SUPERADMIN_USERNAME:-}
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     develop:

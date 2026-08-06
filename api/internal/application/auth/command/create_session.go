@@ -61,7 +61,7 @@ func (h *CreateSessionHandler) Handle(ctx context.Context, in CreateSessionInput
 		UserID:              u.GetID(),
 		Email:               u.Email().String(),
 		Role:                string(u.Role()),
-		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
+		IsRoot:              u.IsRoot(),
 	}, time.Now(), in.MaxTTL)
 	if err != nil {
 		return CreateSessionOutput{}, shared.Internal("创建 session 失败", err)

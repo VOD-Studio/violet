@@ -23,7 +23,7 @@ func NewHandler(svc *appuseradmin.Service) *Handler {
 func (h *Handler) operatorInfo(r *http.Request) (string, string, bool, string, string) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	role := interfacesmw.GetUserRoleFromContext(r)
-	isBuiltinSuperAdmin := interfacesmw.GetUserIsBuiltinSuperAdminFromContext(r)
+	isRoot := interfacesmw.GetUserIsRootFromContext(r)
 	ip := r.Header.Get("X-Real-IP")
 	if ip == "" {
 		ip = r.Header.Get("X-Forwarded-For")
@@ -31,7 +31,7 @@ func (h *Handler) operatorInfo(r *http.Request) (string, string, bool, string, s
 	if ip == "" {
 		ip = r.RemoteAddr
 	}
-	return userID, role, isBuiltinSuperAdmin, ip, r.Header.Get("User-Agent")
+	return userID, role, isRoot, ip, r.Header.Get("User-Agent")
 }
 
 // ListUsers 用户列表

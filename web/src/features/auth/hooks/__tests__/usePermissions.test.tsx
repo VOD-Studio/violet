@@ -2,9 +2,9 @@
  * usePermissions hook 测试
  *
  * 用真实 QueryClient 预置 me 缓存（不 mock useMe），验证权限判定矩阵：
- *   - 内置超管通配符：任意权限返回 true
+ *   - root 通配：持有 * 时任意权限返回 true
  *   - 普通 user：按 permissions 列表精确匹配
- *   - role 判定：admin / superadmin / builtin_super_admin
+ *   - role 判定：admin / superadmin / root
  *
  * 范式参考 comments/api/__tests__/useCreateComment.test.tsx 的真实 QueryClient 风格。
  */
@@ -18,7 +18,7 @@ import {
 	useHasAnyPermission,
 	useHasPermission,
 	useIsAdmin,
-	useIsBuiltinSuperAdmin,
+	useIsRoot,
 	useIsSuperAdmin,
 } from "../usePermissions";
 
@@ -35,7 +35,7 @@ function makeUser(overrides: Partial<UserDTO> = {}): UserDTO {
 		avatar_url: "",
 		bio: "",
 		role: "user",
-		is_builtin_super_admin: false,
+		is_root: false,
 		email_verified: true,
 		is_active: true,
 		created_at: "2026-01-01T00:00:00Z",
@@ -69,7 +69,7 @@ describe("usePermissions", () => {
 				hasAll: useHasAllPermissions(["post:read"]),
 				isAdmin: useIsAdmin(),
 				isSuperAdmin: useIsSuperAdmin(),
-				isBuiltin: useIsBuiltinSuperAdmin(),
+				isBuiltin: useIsRoot(),
 			}),
 			{ wrapper: createWrapper(qc) },
 		);
@@ -82,13 +82,13 @@ describe("usePermissions", () => {
 		expect(result.current.isBuiltin).toBe(false);
 	});
 
-	it("内置超管拥有通配符权限（任意 code 返回 true）", () => {
+	it("超管（含内置与委派）持有通配码 * 时任意权限通过", () => {
 		qc.setQueryData<UserDTO>(
 			authKeys.me(),
 			makeUser({
 				role: "superadmin",
-				is_builtin_super_admin: true,
-				permissions: [], // 即使权限列表为空也通过
+				is_root: true,
+				permissions: ["*"], // 后端对超管返回通配码，任意权限码判定通过
 			}),
 		);
 
@@ -99,7 +99,7 @@ describe("usePermissions", () => {
 				hasAll: useHasAllPermissions(["a", "b", "c"]),
 				isAdmin: useIsAdmin(),
 				isSuperAdmin: useIsSuperAdmin(),
-				isBuiltin: useIsBuiltinSuperAdmin(),
+				isBuiltin: useIsRoot(),
 			}),
 			{ wrapper: createWrapper(qc) },
 		);
@@ -137,16 +137,13 @@ describe("usePermissions", () => {
 	});
 
 	it("admin 角色判定为管理员但非超管", () => {
-		qc.setQueryData<UserDTO>(
-			authKeys.me(),
-			makeUser({ role: "admin", is_builtin_super_admin: false }),
-		);
+		qc.setQueryData<UserDTO>(authKeys.me(), makeUser({ role: "admin", is_root: false }));
 
 		const { result } = renderHook(
 			() => ({
 				isAdmin: useIsAdmin(),
 				isSuperAdmin: useIsSuperAdmin(),
-				isBuiltin: useIsBuiltinSuperAdmin(),
+				isBuiltin: useIsRoot(),
 			}),
 			{ wrapper: createWrapper(qc) },
 		);
@@ -157,16 +154,13 @@ describe("usePermissions", () => {
 	});
 
 	it("被委派超管（role=superadmin 但非内置）isSuperAdmin 为 true、isBuiltin 为 false", () => {
-		qc.setQueryData<UserDTO>(
-			authKeys.me(),
-			makeUser({ role: "superadmin", is_builtin_super_admin: false }),
-		);
+		qc.setQueryData<UserDTO>(authKeys.me(), makeUser({ role: "superadmin", is_root: false }));
 
 		const { result } = renderHook(
 			() => ({
 				isAdmin: useIsAdmin(),
 				isSuperAdmin: useIsSuperAdmin(),
-				isBuiltin: useIsBuiltinSuperAdmin(),
+				isBuiltin: useIsRoot(),
 			}),
 			{ wrapper: createWrapper(qc) },
 		);

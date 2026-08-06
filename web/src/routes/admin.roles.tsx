@@ -11,7 +11,7 @@ import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Plus, Settings, Shield, Trash2, Users } from "lucide-react";
+import { Pencil, Plus, Settings, Trash2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/admin/roles")({
@@ -36,9 +36,21 @@ function AdminRolesPage() {
 		if (!sort) return roles;
 		const copy = [...roles];
 		copy.sort((a, b) => {
-			const av = a[sort.key as keyof RoleDTO];
-			const bv = b[sort.key as keyof RoleDTO];
-			const cmp = String(av).localeCompare(String(bv), "zh");
+			// permission_count 列无对应 DTO 字段，取 permission_codes 数组长度
+			let av: unknown;
+			let bv: unknown;
+			if (sort.key === "permission_count") {
+				av = a.permission_codes?.length ?? 0;
+				bv = b.permission_codes?.length ?? 0;
+			} else {
+				av = a[sort.key as keyof RoleDTO];
+				bv = b[sort.key as keyof RoleDTO];
+			}
+			// 数值列按数值比，避免字符串排序导致 "10" < "2"
+			const cmp =
+				typeof av === "number" && typeof bv === "number"
+					? av - bv
+					: String(av).localeCompare(String(bv), "zh");
 			return sort.order === "asc" ? cmp : -cmp;
 		});
 		return copy;
@@ -78,12 +90,7 @@ function AdminRolesPage() {
 			accessorKey: "name",
 			sortable: true,
 			ellipsis: true,
-			cell: (row) => (
-				<div className="flex items-center gap-2">
-					<Shield className="size-4 text-muted-foreground" />
-					<span className="font-medium">{row.name}</span>
-				</div>
-			),
+			cell: (row) => <span className="font-medium">{row.name}</span>,
 		},
 		{
 			key: "description",
@@ -106,9 +113,14 @@ function AdminRolesPage() {
 			key: "permission_count",
 			header: "权限数",
 			sortable: true,
-			cell: (row) => (
-				<Badge variant="secondary">{row.permission_codes?.length || 0} 个权限</Badge>
-			),
+			cell: (row) => {
+				const count = row.permission_codes?.length ?? 0;
+				return (
+					<Badge variant="secondary">
+						{row.permission_codes?.includes("*") ? "全部" : `${count} 个权限`}
+					</Badge>
+				);
+			},
 		},
 		{
 			key: "created_at",
@@ -185,7 +197,7 @@ function AdminRolesPage() {
 				page={1}
 				pageSize={sortedRoles.length}
 				total={sortedRoles.length}
-				onPageChange={() => {}}
+				onPageChange={() => { }}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

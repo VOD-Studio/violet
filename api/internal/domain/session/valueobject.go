@@ -61,6 +61,6 @@ type UserSnapshot struct {
 	Email string
 	// Role 角色名（user/admin/superadmin），路由守卫据此判断权限
 	Role string
-	// IsBuiltinSuperAdmin 是否内置超管，true 时权限检查短路放行所有权限码
-	IsBuiltinSuperAdmin bool
+	// IsRoot 是否为 root 用户，true 时权限检查通配放行
+	IsRoot bool
 }

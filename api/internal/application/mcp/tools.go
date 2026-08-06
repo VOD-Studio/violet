@@ -123,7 +123,7 @@ func tokenInfo(req *mcp.CallToolRequest) *auth.TokenInfo {
 //
 // post.Service.canModify 仅凭「操作者 == 文章作者」即可放行（所有权），
 // 故只注入 middleware.UserIDKey——agent 等同 PAT 持有人，仅能动其自己的文章。
-// 不设 isBuiltinSuperAdmin：不让 PAT 越权改他人文章。
+// 不设 isRoot：不让 PAT 越权改他人文章。
 func ctxWithOperator(ctx context.Context, userID string) context.Context {
 	return context.WithValue(ctx, middleware.UserIDKey, userID)
 }

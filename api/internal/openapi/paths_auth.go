@@ -50,8 +50,9 @@ func registerAuthPaths(t *openapi3.T) {
 		"email":          reqStr("邮箱"),
 		"avatar_url":     optStr("头像 URL"),
 		"bio":            optStr("个人简介"),
-		"role":           strEnum("角色", "user", "admin", "superadmin"),
-		"email_verified": optBool("邮箱是否已验证"),
+		"role":              reqStr("角色"),
+		"role_description": optStr("角色描述（来自 roles 表）"),
+		"email_verified":   optBool("邮箱是否已验证"),
 		"is_active":      optBool("是否启用"),
 		"created_at":     optStr("创建时间（RFC3339）"),
 		"permissions":    strArray("权限代码列表"),
@@ -67,7 +68,7 @@ func registerAuthPaths(t *openapi3.T) {
 		"user_id":                reqStr("用户 ID（UUID）"),
 		"role":                   strEnum("角色", "user", "admin", "superadmin"),
 		"email":                  reqStr("邮箱"),
-		"is_builtin_super_admin": optBool("是否内置超管"),
+		"is_root": optBool("是否 root 用户"),
 	})
 
 	// ProfileResponse：auth/profile 响应的 data

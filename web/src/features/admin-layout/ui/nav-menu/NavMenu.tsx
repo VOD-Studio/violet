@@ -4,10 +4,10 @@ import { NavMenuGroupItem } from "./NavMenuGroupItem";
 import { NavMenuLink } from "./NavMenuLink";
 import { NAV_MENU_GROUPS, NAV_MENU_ITEMS, type NavMenuItem } from "./nav-menu-config";
 
-/** 判断权限：内置超管通配短路，否则看 permissions 任一命中 */
-function isVisible(item: NavMenuItem, isSuper: boolean, perms: Set<string>): boolean {
+/** 判断权限：perms 含通配 "*" 则全可见，否则看 permissions 任一命中 */
+function isVisible(item: NavMenuItem, perms: Set<string>): boolean {
 	if (!item.permissions || item.permissions.length === 0) return true;
-	if (isSuper) return true;
+	if (perms.has("*")) return true;
 	return item.permissions.some((code) => perms.has(code));
 }
 
@@ -26,7 +26,7 @@ const renderItem = (item: NavMenuItem, onNavigate?: () => void, collapsed = fals
  *
  * 菜单按 group 字段分组渲染（概览等顶级项在分组之上），空分组整体隐藏；
  * collapsed 时组标题退化为分隔线。菜单项按 permissions 字段过滤：满足任一权限
- * 才显示；无 permissions 字段仅靠后台路由守卫（admin:access）。内置超管通配短路，
+ * 才显示；无 permissions 字段仅靠后台路由守卫（admin:access）。root 通配，
  * 所有项可见。带 children 的项用 NavMenuGroupItem 渲染为可折叠父项，父项可见性 =
  * 任一子项可见。
  */
@@ -39,15 +39,14 @@ export function NavMenu({
 }) {
 	const { data: user } = useMe({ enabled: true });
 	// 一次性取用户权限集合，避免菜单项逐个调 hook
-	const isBuiltinSuperAdmin = user?.is_builtin_super_admin === true;
 	const userPerms = new Set(user?.permissions ?? []);
 
 	const visibleItems = NAV_MENU_ITEMS.filter((item) => {
 		// 父项（有 children）：任一子项可见则父项可见
 		if (item.children && item.children.length > 0) {
-			return item.children.some((c) => isVisible(c, isBuiltinSuperAdmin, userPerms));
+			return item.children.some((c) => isVisible(c, userPerms));
 		}
-		return isVisible(item, isBuiltinSuperAdmin, userPerms);
+		return isVisible(item, userPerms);
 	});
 
 	return (

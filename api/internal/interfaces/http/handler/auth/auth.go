@@ -273,7 +273,7 @@ func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
 		"user_id":                userID,
 		"role":                   interfacesmw.GetUserRoleFromContext(r),
 		"email":                  interfacesmw.GetUserEmailFromContext(r),
-		"is_builtin_super_admin": interfacesmw.GetUserIsBuiltinSuperAdminFromContext(r),
+		"is_root": interfacesmw.GetUserIsRootFromContext(r),
 	})
 }
 

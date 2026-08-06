@@ -13,12 +13,8 @@ export function useHasPermission(code: string): boolean {
 		return false;
 	}
 
-	// 内置超级管理员拥有通配符权限（所有权限），避免后端权限数组短暂缺失时隐藏全部操作。
-	if (user.is_builtin_super_admin) {
-		return true;
-	}
-
-	return user.permissions?.includes(code) ?? false;
+	const perms = user.permissions ?? [];
+	return perms.includes("*") || perms.includes(code);
 }
 
 /**
@@ -34,11 +30,8 @@ export function useHasAnyPermission(codes: string[]): boolean {
 		return false;
 	}
 
-	if (user.is_builtin_super_admin) {
-		return true;
-	}
-
-	return codes.some((code) => user.permissions?.includes(code));
+	const perms = user.permissions ?? [];
+	return perms.includes("*") || codes.some((code) => perms.includes(code));
 }
 
 /**
@@ -54,11 +47,8 @@ export function useHasAllPermissions(codes: string[]): boolean {
 		return false;
 	}
 
-	if (user.is_builtin_super_admin) {
-		return true;
-	}
-
-	return codes.every((code) => user.permissions?.includes(code));
+	const perms = user.permissions ?? [];
+	return perms.includes("*") || codes.every((code) => perms.includes(code));
 }
 
 /**
@@ -79,8 +69,8 @@ export function useIsAdmin(): boolean {
 /**
  * useIsSuperAdmin - 检查当前用户是否为超级管理员
  *
- * 注意：内置超管和被委派超管都是 superadmin 角色。
- * 若需区分"内置超管"（通配符权限、可授权他人），请用 useIsBuiltinSuperAdmin。
+ * 注意：root 用户和被委派超管都是 superadmin 角色。
+ * 若需区分 root 与被委派超管，请用 useIsRoot。
  *
  * @returns 是否为超级管理员
  */
@@ -95,19 +85,19 @@ export function useIsSuperAdmin(): boolean {
 }
 
 /**
- * useIsBuiltinSuperAdmin - 检查当前用户是否为内置超级管理员
+ * useIsRoot - 检查当前用户是否为 root 用户
  *
- * 内置超管拥有通配符权限、可授权他人当超管、不可被任何人降级/删除。
+ * root 拥有通配权限、可授权他人当超管、不可被任何人降级/删除。
  * 被委派超管虽为 superadmin 角色，但本 hook 返回 false。
  *
- * @returns 是否为内置超级管理员
+ * @returns 是否为 root 用户
  */
-export function useIsBuiltinSuperAdmin(): boolean {
+export function useIsRoot(): boolean {
 	const { data: user } = useMe({ enabled: true });
 
 	if (!user) {
 		return false;
 	}
 
-	return user.is_builtin_super_admin === true;
+	return user.is_root === true;
 }

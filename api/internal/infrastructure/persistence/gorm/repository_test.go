@@ -298,8 +298,8 @@ func TestRoleRepository_CountUsers(t *testing.T) {
 		username, _ := user.ParseUsername("user" + string(rune('1'+i)))
 		u := user.NewUser(shared.NewID(), email, username, user.NewPasswordHash("hash"))
 		require.NoError(t, userRepo.Save(ctx, u))
-		// 直接更新 role_id（领域用户聚合不直接持有 role_id，用原生 SQL）
-		require.NoError(t, db.Exec("UPDATE users SET role_id = ? WHERE id = ?", rl.ID, u.GetID().UUID()).Error)
+		// 用户角色以 role 字符串列为来源（DDD 后 role_id 外键废弃），用原生 SQL 写 role
+		require.NoError(t, db.Exec("UPDATE users SET role = ? WHERE id = ?", rl.Name, u.GetID().UUID()).Error)
 	}
 
 	count, err := roleRepo.CountUsers(ctx, rl.ID)

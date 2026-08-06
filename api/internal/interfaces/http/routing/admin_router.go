@@ -99,7 +99,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 			r.Post("/", roleH.CreateRole)
 			r.Patch("/{id}", roleH.UpdateRole)
 			r.Delete("/{id}", roleH.DeleteRole)
-			r.Patch("/{id}/permissions", roleH.UpdateRolePermissions)
+			r.Put("/{id}/permissions", roleH.UpdateRolePermissions)
 		})
 	})
 

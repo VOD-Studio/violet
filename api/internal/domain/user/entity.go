@@ -219,13 +219,12 @@ type User struct {
 	googleID *string
 	// githubID 绑定的 Github 账号 ID
 	githubID *string
-	// isBuiltinSuperAdmin 是否为内置超级管理员
+	// isRoot 是否为 root 用户
 	//
-	// 区分"内置超管"（系统初始化的唯一超管，通配符权限，靠标志位短路）
-	// 与"被委派超管"（被内置超管授予 superadmin 角色的用户，按 role_permissions 表授权）。
-	// 内置超管：拥有 user:assign-superadmin 语义、可授权他人、不可被任何人降级/删除。
-	// 被委派超管：不能再授权第三人（授权链不可传递）。
-	isBuiltinSuperAdmin bool
+	// 区分 root 与被委派超管：root 靠标志位短路通配放行、持有授权与自救主权；
+	// 被委派超管由 root 授予 superadmin 角色，按角色语义通配，不能再授权第三人。
+	// root 可授权他人、不可被任何人降级/删除。
+	isRoot bool
 	// emailVerified 邮箱是否已验证
 	emailVerified bool
 	// isActive 是否启用
@@ -276,7 +275,7 @@ func ReconstructUser(
 	role Role,
 	googleID *string,
 	githubID *string,
-	isBuiltinSuperAdmin bool,
+	isRoot bool,
 	emailVerified bool,
 	isActive bool,
 	createdAt time.Time,
@@ -291,9 +290,9 @@ func ReconstructUser(
 		role:                role,
 		googleID:            googleID,
 		githubID:            githubID,
-		isBuiltinSuperAdmin: isBuiltinSuperAdmin,
-		emailVerified:       emailVerified,
-		isActive:            isActive,
+		isRoot:             isRoot,
+		emailVerified:      emailVerified,
+		isActive:           isActive,
 		timestamps: shared.Timestamps{
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
@@ -354,13 +353,12 @@ func (u *User) ChangeRole(role Role) error {
 	return nil
 }
 
-// MarkAsBuiltinSuperAdmin 标记为内置超级管理员
+// MarkAsRoot 标记为 root 用户
 //
-// 仅由 EnsureSuperAdmin（启动期幂等校正内置超管）调用。
-// 内置超管拥有通配符权限（靠内置超管标志位短路）、可授权他人、不可被任何人降级/删除。
-func (u *User) MarkAsBuiltinSuperAdmin() {
-	u.isBuiltinSuperAdmin = true
-	// 内置超管必然是 superadmin 角色
+// 仅由 EnsureSuperAdmin 启动期调用，幂等校正 root 账户。
+// root 拥有通配权限、可授权他人、不可被任何人降级/删除。
+func (u *User) MarkAsRoot() {
+	u.isRoot = true
 	u.role = RoleSuperAdmin
 }
 
@@ -466,12 +464,11 @@ func (u *User) GithubID() *string { return u.githubID }
 // IsSuperAdmin 是否为超级管理员（便捷方法，权限守卫常用）
 func (u *User) IsSuperAdmin() bool { return u.role.IsSuperAdmin() }
 
-// IsBuiltinSuperAdmin 是否为内置超级管理员
+// IsRoot 是否为 root 用户
 //
-// 区别于 IsSuperAdmin：被委派超管也是 superadmin 角色，但 isBuiltinSuperAdmin=false。
-// 通配符权限、授权权、不可降级/删除等"主权"都以此为准。
-func (u *User) IsBuiltinSuperAdmin() bool { return u.isBuiltinSuperAdmin }
-
+// 区别于 IsSuperAdmin：被委派超管也是 superadmin 角色，但 isRoot=false。
+// 授权权、不可降级/删除等主权都以此为准。
+func (u *User) IsRoot() bool { return u.isRoot }
 func (u *User) EmailVerified() bool { return u.emailVerified }
 
 func (u *User) IsActive() bool { return u.isActive }
