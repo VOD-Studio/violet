@@ -40,6 +40,18 @@ allowBuilds:
 # 容器内无 TTY，跳过交互式确认（node_modules 状态不一致需清理时不再阻塞）
 confirmModulesPurge: false
 
+# 构建期网络容忍：rua（国内生产构建机）直连 registry.npmjs.org 慢链路，默认单包
+# 60s 超时 + 2 次重试下 mermaid/pdfjs-dist 等 10MB+ 大包必 abort。pnpm 11 不识别
+# npm_config_* 环境变量，配置必须声明在此。
+fetchRetries: 5
+fetchTimeout: 600000
+fetchRetryMaxtimeout: 120000
+
+# rua 构建机直连 npmjs 大流量被限速，统一走 npmmirror。
+# lockfile 不锁 resolved URL（仅 integrity hash），换源无需改 lockfile；
+# minimumReleaseAge 检查所需的发布时间是元数据字段，npmmirror 同步该字段。
+registry: https://registry.npmmirror.com
+
 # 由 biome 统一任务迁移自 .npmrc：npm/npx 不识别 pnpm 专属键，统一声明在此
 shamefullyHoist: true
 strictPeerDependencies: false
