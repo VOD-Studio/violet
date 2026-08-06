@@ -22,13 +22,36 @@ type PasswordHasher interface {
 
 // Service 用户管理用例服务
 type Service struct {
-	store  domainuseradmin.AdminUserStore
-	hasher PasswordHasher
-	bus    appshared.EventBus
+	store    domainuseradmin.AdminUserStore
+	hasher   PasswordHasher
+	bus      appshared.EventBus
+	sessions appshared.SessionStore
 }
 
-func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus) *Service {
-	return &Service{store: store, hasher: hasher, bus: bus}
+func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus, sessions appshared.SessionStore) *Service {
+	return &Service{store: store, hasher: hasher, bus: bus, sessions: sessions}
+}
+
+// revokeSessions 吊销指定用户的全部 session（角色/状态变更后强制重登）。
+// 吊销失败仅记录日志不阻断主流程：DB 已更新成功，session 吊销为尽力而为的安全增强。
+func (s *Service) revokeSessions(ctx context.Context, userIDs ...string) {
+	if s.sessions == nil {
+		return
+	}
+	for _, uid := range userIDs {
+		if err := s.sessions.DeleteByUser(ctx, uid); err != nil {
+			log.Warn().Err(err).Str("user_id", uid).Msg("吊销用户 session 失败")
+		}
+	}
+}
+
+// idStrings 将 ID 切片转为字符串切片（批量吊销 session 用）
+func idStrings(ids []shared.ID) []string {
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = id.String()
+	}
+	return out
 }
 
 // UserDTO 用户读模型（管理后台）
@@ -282,6 +305,8 @@ func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, oper
 		return err
 	}
 	s.publishEvents(ctx, u)
+	// 角色变更后吊销目标用户全部 session，强制重登以即时生效新角色（session 缓存了旧 role）
+	s.revokeSessions(ctx, uid.String())
 	return nil
 }
 
@@ -317,6 +342,10 @@ func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool
 		return err
 	}
 	s.publishEvents(ctx, u)
+	// 禁用后吊销 session，防止被禁用用户凭旧 session 继续操作；启用不吊销，用户重登即可
+	if !isActive {
+		s.revokeSessions(ctx, uid.String())
+	}
 	return nil
 }
 
@@ -352,6 +381,10 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActi
 	}
 	log.Info().Int64("affected", affected).Bool("is_active", isActive).Msg("批量更新用户状态")
 	s.publishBatchStatus(ctx, affected, isActive)
+	// 禁用后吊销全部目标用户 session，防止被禁用用户凭旧 session 继续操作
+	if !isActive {
+		s.revokeSessions(ctx, idStrings(ids)...)
+	}
 	return affected, nil
 }
 
@@ -390,6 +423,8 @@ func (s *Service) BatchUpdateRole(ctx context.Context, idStrs []string, role, op
 	}
 	log.Info().Int64("affected", affected).Str("role", role).Msg("批量更新用户角色")
 	s.publishBatchRole(ctx, affected, role)
+	// 角色变更后吊销全部目标用户 session，强制重登即时生效新角色
+	s.revokeSessions(ctx, idStrings(ids)...)
 	return affected, nil
 }
 
