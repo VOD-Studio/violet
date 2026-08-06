@@ -93,10 +93,10 @@ export function RolePermissionsDialog({
 		<Modal
 			open={open}
 			onOpenChange={onOpenChange}
-			title={`配置角色权限 - ${roleName}`}
+			title={isWildcard ? `角色权限 - ${roleName}` : `配置角色权限 - ${roleName}`}
 			description={
 				isWildcard
-					? "该角色拥有全部权限（固有）"
+					? `该角色固有全部权限（共 ${permissions.reduce((n, m) => n + (m.children?.length ?? 0), 0)} 项），不可编辑`
 					: `选择该角色拥有的权限。已选中 ${selectedCodes.size} 个权限。`
 			}
 			size="lg"
@@ -129,91 +129,86 @@ export function RolePermissionsDialog({
 				)
 			}
 		>
-			{isWildcard ? (
-				<div className="flex items-center gap-2 py-8 text-muted-foreground">
-					<Badge variant="secondary">固有</Badge>
-					<span>该角色自动拥有全部权限，无需也无法单独配置。</span>
-				</div>
-			) : (
-				<div className="space-y-6">
-					{menuTree.map((menu) => {
-						const actions = menu.children || [];
-						if (actions.length === 0) return null;
-						const groupCodes = actions.map((p) => p.code).filter(Boolean) as string[];
-						const selectedCount = groupCodes.filter((code) =>
-							selectedCodes.has(code),
-						).length;
-						const allSelected =
-							groupCodes.length > 0 && selectedCount === groupCodes.length;
-						const someSelected = selectedCount > 0 && selectedCount < groupCodes.length;
+			<div className="space-y-6">
+				{menuTree.map((menu) => {
+					const actions = menu.children || [];
+					if (actions.length === 0) return null;
+					const groupCodes = actions.map((p) => p.code).filter(Boolean) as string[];
+					const selectedCount = isWildcard
+						? groupCodes.length
+						: groupCodes.filter((code) => selectedCodes.has(code)).length;
+					const allSelected =
+						groupCodes.length > 0 && selectedCount === groupCodes.length;
+					const someSelected = selectedCount > 0 && selectedCount < groupCodes.length;
 
-						return (
-							<div key={menu.id} className="space-y-3">
-								{/* 分组标题 */}
-								<div className="flex items-center justify-between border-b pb-2">
-									<div className="flex items-center gap-2">
-										<Checkbox
-											id={`group-${menu.id}`}
-											checked={allSelected}
-											onCheckedChange={() => handleToggleGroup(menu)}
-											className={
-												someSelected
-													? "data-[state=checked]:bg-primary/50"
-													: ""
-											}
-										/>
-										<Label
-											htmlFor={`group-${menu.id}`}
-											className="font-semibold text-sm cursor-pointer"
-										>
-											{menu.name}
-										</Label>
-										<Badge variant="secondary">
-											{selectedCount}/{groupCodes.length}
-										</Badge>
-									</div>
-								</div>
-
-								{/* 权限列表 */}
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
-									{actions.map((permission) => {
-										const code = permission.code;
-										if (!code) return null;
-										const isChecked = selectedCodes.has(code);
-
-										return (
-											<div
-												key={permission.id}
-												className="flex items-start gap-3 p-2 rounded hover:bg-muted/50"
-											>
-												<Checkbox
-													id={`permission-${permission.id}`}
-													checked={isChecked}
-													onCheckedChange={() => handleToggle(code)}
-												/>
-												<div className="flex-1">
-													<Label
-														htmlFor={`permission-${permission.id}`}
-														className="font-medium cursor-pointer"
-													>
-														{permission.name}
-													</Label>
-													<p className="text-muted-foreground text-xs mt-0.5">
-														{permission.description}
-													</p>
-													<code className="font-mono text-primary text-xs">
-														{permission.code}
-													</code>
-												</div>
-											</div>
-										);
-									})}
+					return (
+						<div key={menu.id} className="space-y-3">
+							{/* 分组标题 */}
+							<div className="flex items-center justify-between border-b pb-2">
+								<div className="flex items-center gap-2">
+									<Checkbox
+										id={`group-${menu.id}`}
+										checked={allSelected}
+										onCheckedChange={() => handleToggleGroup(menu)}
+										disabled={isWildcard}
+										className={
+											someSelected
+												? "data-[state=checked]:bg-primary/50"
+												: ""
+										}
+									/>
+									<Label
+										htmlFor={`group-${menu.id}`}
+										className="font-semibold text-sm cursor-pointer"
+									>
+										{menu.name}
+									</Label>
+									<Badge variant="secondary">
+										{selectedCount}/{groupCodes.length}
+									</Badge>
 								</div>
 							</div>
-						);
-					})}
-				</div>
-			)}
+
+							{/* 权限列表 */}
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
+								{actions.map((permission) => {
+									const code = permission.code;
+									if (!code) return null;
+									const isChecked = isWildcard || selectedCodes.has(code);
+
+									return (
+										<div
+											key={permission.id}
+											className="flex items-start gap-3 p-2 rounded hover:bg-muted/50"
+										>
+											<Checkbox
+												id={`permission-${permission.id}`}
+												checked={isChecked}
+												onCheckedChange={() => handleToggle(code)}
+												disabled={isWildcard}
+											/>
+											<div className="flex-1">
+												<Label
+													htmlFor={`permission-${permission.id}`}
+													className="font-medium cursor-pointer"
+												>
+													{permission.name}
+												</Label>
+												<p className="text-muted-foreground text-xs mt-0.5">
+													{permission.description}
+												</p>
+												<code className="font-mono text-primary text-xs">
+													{permission.code}
+												</code>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					);
+				})}
+			</div>
 		</Modal>
 	);
 }
