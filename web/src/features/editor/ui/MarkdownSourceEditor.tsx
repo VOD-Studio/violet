@@ -97,30 +97,73 @@ export const MarkdownSourceEditor = forwardRef<MarkdownSourceHandle, MarkdownSou
 		onChangeRef.current = onChange;
 
 		/** 把第 line 行(0 基)滚到视口顶部。
-		 * 多阶段滚动：CM6 对视口外的行用估算高度（半角 charWidth 基准，中文
-		 * 全角段落偏差可达数倍）。第一次估算滚动后，目标行进入「视口 ±1000px
-		 * margin」实测区；链式 requestMeasure 的 write 在每次 measure 完整后
-		 * 执行，后续滚动基于已实测的行高，逐次收敛到精确位置。 */
+		 * 双路径：桌面走 scrollIntoView（CM6 scrollTarget 机制）+ requestMeasure
+		 * 链收敛；移动端 scrollTarget 机制失效（滚动被估算拉回 0），改为直接设
+		 * scrollTop + 实测行高迭代修正，规避中文全角下行高估算偏差。 */
 		const applyScrollToLine = (view: EditorView, line: number) => {
 			const { doc } = view.state;
 			const lineNo = Math.min(Math.max(line + 1, 1), doc.lines);
 			const pos = doc.line(lineNo).from;
-			const scrollTo = () => {
-				view.dispatch({
-					effects: EditorView.scrollIntoView(pos, { y: "start" }),
-				});
+			const clampScroll = () => {
+				const max = view.scrollDOM.scrollHeight - view.scrollDOM.clientHeight;
+				if (view.scrollDOM.scrollTop > max) {
+					view.scrollDOM.scrollTop = Math.max(0, max);
+				}
 			};
-			const chain = (depth: number) => {
-				view.requestMeasure({
-					read: () => true,
-					write: () => {
-						scrollTo();
-						if (depth > 0) chain(depth - 1);
-					},
-				});
-			};
-			scrollTo();
-			chain(2);
+			if (window.innerWidth < 768) {
+				// 移动端：scrollTarget 机制失效，直接设 scrollTop。CM6 行高表与真实
+				// 布局可能脱节（估算偏差），修正基于真实 DOM：视口顶部行文本反查
+				// doc 行号，按实测行高迭代逼近目标行。
+				view.scrollDOM.scrollTop = Math.max(0, view.lineBlockAt(pos).top);
+				clampScroll();
+				const docLines = doc.toString().split("\n");
+				let attempts = 0;
+				const correct = () => {
+					attempts++;
+					const scrollerRect = view.scrollDOM.getBoundingClientRect();
+					// 视口顶部第一个非空行的文本与其真实高度（空行跳过，避免误判）
+					let topText = "";
+					let topHeight = view.defaultLineHeight;
+					for (const el of view.contentDOM.querySelectorAll(".cm-line")) {
+						const r = el.getBoundingClientRect();
+						if (r.bottom > scrollerRect.top + 2) {
+							const t = el.textContent ?? "";
+							if (t.trim()) {
+								topText = t;
+								topHeight = r.height;
+								break;
+							}
+						}
+					}
+					if (!topText) return;
+					const curLine = docLines.findIndex((l) => l === topText);
+					if (curLine < 0) return;
+					const diff = line - curLine;
+					if (Math.abs(diff) <= 1 || attempts >= 5) return;
+					view.scrollDOM.scrollTop += diff * topHeight;
+					clampScroll();
+					requestAnimationFrame(correct);
+				};
+				requestAnimationFrame(correct);
+			} else {
+				// 桌面：scrollTarget 机制 + 链式 measure 收敛（视口外行高估算偏差）
+				const scrollTo = () => {
+					view.dispatch({
+						effects: EditorView.scrollIntoView(pos, { y: "start" }),
+					});
+				};
+				const chain = (depth: number) => {
+					view.requestMeasure({
+						read: () => true,
+						write: () => {
+							scrollTo();
+							if (depth > 0) chain(depth - 1);
+						},
+					});
+				};
+				scrollTo();
+				chain(2);
+			}
 		};
 
 		// mount 创建实例。依赖空数组——只用 ref 读最新回调，避免重建实例丢失光标/撤销栈。
