@@ -6,6 +6,12 @@
 # ─── 阶段 1：依赖安装 ───────────────────────────────────
 FROM node:22-alpine AS deps
 
+# fetch-timeout 默认 60s，mermaid/pdfjs-dist 等 10MB+ 大包在慢链路下不完会被 abort
+#（v2.4.4 build 即死于此），调大到 10 分钟并放宽重试。
+ENV npm_config_fetch_timeout=600000 \
+    npm_config_fetch_retries=5 \
+    npm_config_fetch_retry_maxtimeout=120000
+
 RUN corepack enable
 
 WORKDIR /app
