@@ -32,12 +32,12 @@ export function RolePermissionsDialog({
 
 	const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
 
-	// 角色权限加载后初始化选中状态
+	// 对话框打开时从后端数据同步选中状态，避免未保存的改动残留到下次打开
 	useEffect(() => {
-		if (roleDetail?.permission_codes) {
+		if (open && roleDetail?.permission_codes) {
 			setSelectedCodes(new Set(roleDetail.permission_codes));
 		}
-	}, [roleDetail]);
+	}, [open, roleDetail]);
 
 	// 后端已返回树：permissions 为 menu 数组，每个 menu.children 为其 action
 	const menuTree = permissions;
