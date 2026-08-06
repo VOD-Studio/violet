@@ -291,7 +291,8 @@ func ReconstructUser(
 		googleID:            googleID,
 		githubID:            githubID,
 		isRoot:             isRoot,
-		isActive:            isActive,
+		emailVerified:      emailVerified,
+		isActive:           isActive,
 		timestamps: shared.Timestamps{
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
