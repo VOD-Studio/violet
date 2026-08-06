@@ -132,8 +132,23 @@ export async function renderMermaid(
 			suppressErrorRendering: true,
 		});
 		const id = `diagram-render-${++renderSeq}`;
-		const { svg } = await mermaid.render(id, source);
-		return { svg: DOMPurify.sanitize(svg, SANITIZE_CONFIG) as string };
+		// 离屏容器：mermaid.render 不传 container 时会把临时 div 无隐藏样式地挂在
+		// document.body 末尾（mermaid.core.mjs render 的 else 分支），渲染期间撑开页面
+		// （刷新时出现滚动条 + 底部留白，渲染完删除后恢复）。传 container 后临时 div
+		// 进我们的容器。mermaid draw 依赖 getBBox 布局测量，display:none 无布局会渲染
+		// 失败，故用 absolute + 视口外 + visibility:hidden（可测量、不可见、不占文档流）。
+		const container = document.createElement("div");
+		container.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden;";
+		container.setAttribute("aria-hidden", "true");
+		document.body.appendChild(container);
+		try {
+			const { svg } = await mermaid.render(id, source, container);
+			return { svg: DOMPurify.sanitize(svg, SANITIZE_CONFIG) as string };
+		} finally {
+			// 成功/失败都移除整个容器：mermaid 只清自己 append 的 #d{id} 内层 div，
+			// 传入的 container 由调用方回收。
+			container.remove();
+		}
 	} catch (error) {
 		return { error: error instanceof Error ? error.message : String(error) };
 	}
