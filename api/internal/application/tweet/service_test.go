@@ -29,6 +29,7 @@ type fakeTweetRepo struct {
 	saved        []*domaintweet.Tweet
 	deleted      []shared.ID
 	findByIDData map[string]*domaintweet.Tweet
+	likes        map[string]bool // "tweetID:userID" -> bool
 }
 
 func (f *fakeTweetRepo) Save(_ context.Context, tw *domaintweet.Tweet) error {
@@ -56,6 +57,40 @@ func (f *fakeTweetRepo) FindByAuthor(_ context.Context, authorID shared.ID, curs
 func (f *fakeTweetRepo) Delete(_ context.Context, id shared.ID) error {
 	f.deleted = append(f.deleted, id)
 	return nil
+}
+func (f *fakeTweetRepo) Like(_ context.Context, tweetID, userID shared.ID) error {
+	if f.likes == nil {
+		f.likes = make(map[string]bool)
+	}
+	f.likes[tweetID.String()+":"+userID.String()] = true
+	return nil
+}
+
+func (f *fakeTweetRepo) Unlike(_ context.Context, tweetID, userID shared.ID) error {
+	if f.likes != nil {
+		delete(f.likes, tweetID.String()+":"+userID.String())
+	}
+	return nil
+}
+
+func (f *fakeTweetRepo) IsLiked(_ context.Context, tweetID, userID shared.ID) (bool, error) {
+	if f.likes == nil {
+		return false, nil
+	}
+	return f.likes[tweetID.String()+":"+userID.String()], nil
+}
+
+func (f *fakeTweetRepo) FindLikedTweetIDs(_ context.Context, userID shared.ID, tweetIDs []shared.ID) (map[string]bool, error) {
+	res := make(map[string]bool)
+	if f.likes == nil {
+		return res, nil
+	}
+	for _, tid := range tweetIDs {
+		if f.likes[tid.String()+":"+userID.String()] {
+			res[tid.String()] = true
+		}
+	}
+	return res, nil
 }
 
 // fakeUserRepo 只实现推文 service 用到的两个方法，其余 panic（未被调用）。
@@ -448,6 +483,31 @@ func TestService_GetUserProfile(t *testing.T) {
 
 	_, err = svc.GetUserProfile(context.Background(), "ghost_user")
 	require.ErrorIs(t, err, domainuser.ErrNotFound)
+}
+func TestService_Like_Unlike(t *testing.T) {
+	repo := &fakeTweetRepo{}
+	svc := newService(repo, &fakeUserRepo{}, nil, nil, appshared.NoopEventBus{})
+
+	userID := shared.NewID().String()
+	tweetID := shared.NewID().String()
+
+	err := svc.Like(context.Background(), userID, tweetID)
+	require.NoError(t, err)
+	assert.True(t, repo.likes[tweetID+":"+userID])
+
+	err = svc.Unlike(context.Background(), userID, tweetID)
+	require.NoError(t, err)
+	assert.False(t, repo.likes[tweetID+":"+userID])
+
+	// 结合 middleware.UserIDKey 测试 toDTOs 中的 is_liked
+	tw := cannedTweets(shared.NewID(), time.Now(), 1)[0]
+	repo.findByIDData = map[string]*domaintweet.Tweet{tw.ID().String(): tw}
+	_ = svc.Like(context.Background(), userID, tw.ID().String())
+
+	ctxWithUser := context.WithValue(context.Background(), middleware.UserIDKey, userID)
+	dto, err := svc.GetByID(ctxWithUser, tw.ID().String())
+	require.NoError(t, err)
+	assert.True(t, dto.IsLiked)
 }
 
 // --- cursor 编解码边界 ---

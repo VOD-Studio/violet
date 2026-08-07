@@ -80,6 +80,7 @@ type TweetDTO struct {
 	Content   string    `json:"content"`
 	Images    []string  `json:"images"`
 	LikeCount int       `json:"like_count"`
+	IsLiked   bool      `json:"is_liked"`
 	// CreatedAt RFC3339 格式
 	CreatedAt string `json:"created_at"`
 }
@@ -131,6 +132,32 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	// 物理删除后聚合根不复存在，删除事件由应用层手动构造发布
 	s.publishEvents(ctx, []shared.DomainEvent{domaintweet.NewTweetDeleted(tw)})
 	return nil
+}
+
+// Like 点赞推文（登录）：重复点赞幂等。
+func (s *Service) Like(ctx context.Context, userIDStr, tweetIDStr string) error {
+	userID, err := shared.ParseID(userIDStr)
+	if err != nil {
+		return shared.BadRequest("非法的用户 ID")
+	}
+	tweetID, err := shared.ParseID(tweetIDStr)
+	if err != nil {
+		return shared.BadRequest("非法的推文 ID")
+	}
+	return s.repo.Like(ctx, tweetID, userID)
+}
+
+// Unlike 取消点赞推文（登录）：未点赞幂等，不报错。
+func (s *Service) Unlike(ctx context.Context, userIDStr, tweetIDStr string) error {
+	userID, err := shared.ParseID(userIDStr)
+	if err != nil {
+		return shared.BadRequest("非法的用户 ID")
+	}
+	tweetID, err := shared.ParseID(tweetIDStr)
+	if err != nil {
+		return shared.BadRequest("非法的推文 ID")
+	}
+	return s.repo.Unlike(ctx, tweetID, userID)
 }
 
 // --- 读用例 ---
@@ -291,6 +318,20 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 		}
 	}
 
+	likedMap := make(map[string]bool)
+	currentUserID := middleware.GetUserID(ctx)
+	if currentUserID != "" && len(tweets) > 0 {
+		if uid, err := shared.ParseID(currentUserID); err == nil {
+			tIDs := make([]shared.ID, len(tweets))
+			for i, tw := range tweets {
+				tIDs[i] = tw.ID()
+			}
+			if lm, err := s.repo.FindLikedTweetIDs(ctx, uid, tIDs); err == nil {
+				likedMap = lm
+			}
+		}
+	}
+
 	dtos := make([]TweetDTO, 0, len(tweets))
 	for _, tw := range tweets {
 		dtos = append(dtos, TweetDTO{
@@ -299,6 +340,7 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			Content:   tw.Content(),
 			Images:    tw.Images(),
 			LikeCount: tw.LikeCount(),
+			IsLiked:   likedMap[tw.ID().String()],
 			CreatedAt: tw.CreatedAt().UTC().Format(time.RFC3339),
 		})
 	}

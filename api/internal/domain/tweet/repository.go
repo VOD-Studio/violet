@@ -33,6 +33,15 @@ type TweetRepository interface {
 	FindByAuthor(ctx context.Context, authorID shared.ID, cursor *Cursor, limit int) ([]*Tweet, error)
 	// Delete 物理删除推文（点赞/评论由 DB ON DELETE CASCADE 连带清理）
 	Delete(ctx context.Context, id shared.ID) error
+
+	// Like 点赞推文（重复点赞幂等；推文不存在返回 ErrNotFound）
+	Like(ctx context.Context, tweetID, userID shared.ID) error
+	// Unlike 取消点赞推文（未点赞幂等，不报错）
+	Unlike(ctx context.Context, tweetID, userID shared.ID) error
+	// IsLiked 查询指定用户是否已点赞某推文
+	IsLiked(ctx context.Context, tweetID, userID shared.ID) (bool, error)
+	// FindLikedTweetIDs 批量查询指定用户对推文列表的点赞状态集合
+	FindLikedTweetIDs(ctx context.Context, userID shared.ID, tweetIDs []shared.ID) (map[string]bool, error)
 }
 
 // ErrNotFound 推文不存在

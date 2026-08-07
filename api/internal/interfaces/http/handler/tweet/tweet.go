@@ -97,3 +97,22 @@ func (h *Handler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondOK(w, dto)
 }
+// Like 点赞推文（登录）：POST /tweets/{id}/like
+func (h *Handler) Like(w http.ResponseWriter, r *http.Request) {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	if err := h.svc.Like(r.Context(), userID, r.PathValue("id")); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]string{"message": "已点赞"})
+}
+
+// Unlike 取消点赞推文（登录）：DELETE /tweets/{id}/like
+func (h *Handler) Unlike(w http.ResponseWriter, r *http.Request) {
+	userID := interfacesmw.GetUserIDFromContext(r)
+	if err := h.svc.Unlike(r.Context(), userID, r.PathValue("id")); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]string{"message": "已取消点赞"})
+}

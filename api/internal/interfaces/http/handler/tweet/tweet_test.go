@@ -54,6 +54,10 @@ func (s *stubTweetRepo) Delete(_ context.Context, id shared.ID) error {
 	s.deleted = append(s.deleted, id)
 	return nil
 }
+func (s *stubTweetRepo) Like(_ context.Context, _, _ shared.ID) error { return nil }
+func (s *stubTweetRepo) Unlike(_ context.Context, _, _ shared.ID) error { return nil }
+func (s *stubTweetRepo) IsLiked(_ context.Context, _, _ shared.ID) (bool, error) { return false, nil }
+func (s *stubTweetRepo) FindLikedTweetIDs(_ context.Context, _ shared.ID, _ []shared.ID) (map[string]bool, error) { return map[string]bool{}, nil }
 
 // stubUserRepo 只覆盖 FindByIDs（作者资料填充）。
 type stubUserRepo struct {
@@ -246,4 +250,25 @@ func TestGetUserProfile_NotFound(t *testing.T) {
 	h.GetUserProfile(rr, req)
 
 	assert.Equal(t, http.StatusNotFound, rr.Code)
+}
+func TestLike_OK(t *testing.T) {
+	h := newTestHandler(&stubTweetRepo{})
+	req := httptest.NewRequest(http.MethodPost, "/tweets/00000000-0000-0000-0000-000000000001/like", nil)
+	req.SetPathValue("id", "00000000-0000-0000-0000-000000000001")
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.Like(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestUnlike_OK(t *testing.T) {
+	h := newTestHandler(&stubTweetRepo{})
+	req := httptest.NewRequest(http.MethodDelete, "/tweets/00000000-0000-0000-0000-000000000001/like", nil)
+	req.SetPathValue("id", "00000000-0000-0000-0000-000000000001")
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.Unlike(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
 }

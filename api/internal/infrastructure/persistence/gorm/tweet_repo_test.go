@@ -25,7 +25,7 @@ func setupTweetTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&model.Tweet{}))
+	require.NoError(t, db.AutoMigrate(&model.Tweet{}, &model.TweetLike{}))
 	t.Cleanup(func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
@@ -191,4 +191,50 @@ func TestTweetRepository_Delete(t *testing.T) {
 
 	// 重复删除：不存在
 	require.ErrorIs(t, repo.Delete(ctx, tw.ID()), domaintweet.ErrNotFound)
+}
+func TestTweetRepository_Like_Unlike(t *testing.T) {
+	db := setupTweetTestDB(t)
+	repo := NewTweetRepository(db)
+	ctx := context.Background()
+
+	authorID := domainshared.NewID()
+	userID := domainshared.NewID()
+	tw := mustSeedTweet(t, repo, authorID, "测试点赞", time.Now())
+
+	// 1. 点赞不存在的推文 → ErrNotFound
+	err := repo.Like(ctx, domainshared.NewID(), userID)
+	require.ErrorIs(t, err, domaintweet.ErrNotFound)
+
+	// 2. 第一次点赞成功，like_count=1
+	require.NoError(t, repo.Like(ctx, tw.ID(), userID))
+	found, err := repo.FindByID(ctx, tw.ID())
+	require.NoError(t, err)
+	assert.Equal(t, 1, found.LikeCount())
+
+	liked, err := repo.IsLiked(ctx, tw.ID(), userID)
+	require.NoError(t, err)
+	assert.True(t, liked)
+
+	// 3. 重复点赞幂等：不加计数，仍为 1
+	require.NoError(t, repo.Like(ctx, tw.ID(), userID))
+	found, _ = repo.FindByID(ctx, tw.ID())
+	assert.Equal(t, 1, found.LikeCount())
+
+	// 4. 批量查询已赞集合
+	likedMap, err := repo.FindLikedTweetIDs(ctx, userID, []domainshared.ID{tw.ID(), domainshared.NewID()})
+	require.NoError(t, err)
+	assert.True(t, likedMap[tw.ID().String()])
+
+	// 5. 取消点赞，like_count=0
+	require.NoError(t, repo.Unlike(ctx, tw.ID(), userID))
+	found, _ = repo.FindByID(ctx, tw.ID())
+	assert.Equal(t, 0, found.LikeCount())
+
+	liked, _ = repo.IsLiked(ctx, tw.ID(), userID)
+	assert.False(t, liked)
+
+	// 6. 重复取消点赞幂等，不变成负数
+	require.NoError(t, repo.Unlike(ctx, tw.ID(), userID))
+	found, _ = repo.FindByID(ctx, tw.ID())
+	assert.Equal(t, 0, found.LikeCount())
 }

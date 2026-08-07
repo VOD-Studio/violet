@@ -23,3 +23,12 @@ type Tweet struct {
 
 // TableName 显式指定表名
 func (Tweet) TableName() string { return "tweets" }
+// TweetLike 推文点赞关系持久化模型（对应 tweet_likes 表，migration 068）。
+type TweetLike struct {
+	TweetID   uuid.UUID `gorm:"type:uuid;column:tweet_id;primaryKey" json:"tweet_id"`
+	UserID    uuid.UUID `gorm:"type:uuid;column:user_id;primaryKey" json:"user_id"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+}
+
+// TableName 显式指定表名
+func (TweetLike) TableName() string { return "tweet_likes" }

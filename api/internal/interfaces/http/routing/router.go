@@ -268,15 +268,17 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 	tweetH := d.Tweet
 
 	v1.Route("/tweets", func(r chi.Router) {
-		r.Get("/", tweetH.ListTimeline)
-		r.Get("/{id}", tweetH.Get)
+		r.With(d.OptionalAuth).Get("/", tweetH.ListTimeline)
+		r.With(d.OptionalAuth).Get("/{id}", tweetH.Get)
 		r.With(d.SessionAuth, middleware.TweetRateLimit(d.Redis)).Post("/", tweetH.Create)
 		r.With(d.SessionAuth).Delete("/{id}", tweetH.Delete)
+		r.With(d.SessionAuth).Post("/{id}/like", tweetH.Like)
+		r.With(d.SessionAuth).Delete("/{id}/like", tweetH.Unlike)
 	})
 
-	// 用户主页公开资料与推文列表（公开）
-	v1.Get("/users/{username}", tweetH.GetUserProfile)
-	v1.Get("/users/{username}/tweets", tweetH.ListByUser)
+	// 用户主页公开资料与推文列表（公开，支持 OptionalAuth 获取 is_liked）
+	v1.With(d.OptionalAuth).Get("/users/{username}", tweetH.GetUserProfile)
+	v1.With(d.OptionalAuth).Get("/users/{username}/tweets", tweetH.ListByUser)
 }
 
 // registerCodeRunnerRoutes 注册 /code-runner 路由（登录可执行，SSE 用 GET）。
