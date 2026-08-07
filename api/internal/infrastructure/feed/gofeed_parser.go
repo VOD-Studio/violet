@@ -28,11 +28,11 @@ type GoFeedParser struct {
 	parser *gofeed.Parser
 }
 
-// NewGoFeedParser 构造解析器，内置 SSRF 防护 Transport + 15s 超时 + 10MB 体上限。
+// NewGoFeedParser 构造解析器，内置 SSRF 防护 Transport + 30s 超时 + 10MB 体上限。
 func NewGoFeedParser() *GoFeedParser {
 	return &GoFeedParser{
 		client: &http.Client{
-			Timeout:   15 * time.Second,
+			Timeout:   30 * time.Second,
 			Transport: ssrf.NewSafeTransport(),
 		},
 		parser: gofeed.NewParser(),
