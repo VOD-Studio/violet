@@ -14,6 +14,7 @@ import (
 // 成本过高且与本次改动无关。
 type fakeSlugRepo struct {
 	existing map[string]bool // 模拟已占用的 slug 集合
+	saved    *domain.Post    // 最近一次 Save 的文章（Create 测试断言用）
 }
 
 func (f *fakeSlugRepo) ExistsBySlug(_ context.Context, slug string) (bool, error) {
@@ -36,7 +37,13 @@ func (f *fakeSlugRepo) FindAll(context.Context, int, int, string) ([]*domain.Pos
 func (f *fakeSlugRepo) Search(context.Context, shared.ID, string, string, int, int) ([]*domain.Post, int64, error) {
 	panic("not implemented")
 }
-func (f *fakeSlugRepo) Save(context.Context, *domain.Post) error          { panic("not implemented") }
+func (f *fakeSlugRepo) Save(ctx context.Context, p *domain.Post) error {
+	f.saved = p
+	return nil
+}
+func (f *fakeSlugRepo) SaveVersion(context.Context, *domain.PostVersion) error {
+	return nil
+}
 func (f *fakeSlugRepo) Delete(context.Context, shared.ID) error           { panic("not implemented") }
 func (f *fakeSlugRepo) Restore(context.Context, shared.ID) error          { panic("not implemented") }
 func (f *fakeSlugRepo) HardDelete(context.Context, shared.ID) error       { panic("not implemented") }
@@ -45,9 +52,6 @@ func (f *fakeSlugRepo) IncrementViewAtomic(context.Context, shared.ID, string, s
 }
 func (f *fakeSlugRepo) FindArchiveYears(context.Context) ([]int, error) { panic("not implemented") }
 func (f *fakeSlugRepo) FindPublishedByYear(context.Context, int) ([]*domain.Post, error) {
-	panic("not implemented")
-}
-func (f *fakeSlugRepo) SaveVersion(context.Context, *domain.PostVersion) error {
 	panic("not implemented")
 }
 func (f *fakeSlugRepo) FindVersionsByPostID(context.Context, shared.ID) ([]*domain.PostVersion, error) {
@@ -116,5 +120,30 @@ func TestResolveSlugConflict_ExhaustedReturnsError(t *testing.T) {
 	_, err := s.resolveSlugConflict(context.Background(), "test")
 	if err != domain.ErrSlugConflict {
 		t.Errorf("99 个全占用应返回 ErrSlugConflict, got %v", err)
+	}
+}
+
+// TestService_Create_EmptySlugAutoGenerate 订阅导入等调用方传空 slug 时,
+// Create 应按标题自动生成 slug 而非报「slug 格式无效」。
+func TestService_Create_EmptySlugAutoGenerate(t *testing.T) {
+	s := newServiceWithFakeRepo(nil)
+	dto, err := s.Create(context.Background(), CreateInput{
+		AuthorID:   shared.NewID().String(),
+		Title:      "我的第一篇文章",
+		Slug:       "",
+		ContentMD:  "正文",
+		ContentHTML: "<p>正文</p>",
+	})
+	if err != nil {
+		t.Fatalf("空 slug 应自动生成而非报错: %v", err)
+	}
+	if dto.Slug != "wo-de-di-yi-pian-wen-zhang" {
+		t.Errorf("应按标题拼音生成 slug, got %q", dto.Slug)
+	}
+	if !domain.IsValidSlug(dto.Slug) {
+		t.Errorf("自动生成的 slug %q 未通过 IsValidSlug", dto.Slug)
+	}
+	if s.repo.(*fakeSlugRepo).saved == nil {
+		t.Fatal("Create 应保存文章")
 	}
 }

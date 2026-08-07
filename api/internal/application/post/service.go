@@ -261,7 +261,12 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 	}
 	// slug 冲突时自动追加 -2/-3/… 直到不冲突(上限 99),不再直接报错
 	// 让用户手改。多篇文章同标题(如多篇「随笔」)能各自拿到可用 slug。
-	slug, err := s.resolveSlugConflict(ctx, in.Slug)
+	// 空 slug（订阅导入等调用方）按标题自动生成，兑现 GenerateSlug 兜底契约。
+	slug := in.Slug
+	if slug == "" {
+		slug = domain.GenerateSlug(in.Title)
+	}
+	slug, err = s.resolveSlugConflict(ctx, slug)
 	if err != nil {
 		return PostDTO{}, err
 	}

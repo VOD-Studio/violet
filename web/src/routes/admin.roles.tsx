@@ -197,7 +197,7 @@ function AdminRolesPage() {
 				page={1}
 				pageSize={sortedRoles.length}
 				total={sortedRoles.length}
-				onPageChange={() => { }}
+				onPageChange={() => {}}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

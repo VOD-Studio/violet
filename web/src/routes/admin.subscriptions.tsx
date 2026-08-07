@@ -120,7 +120,7 @@ function AdminSubscriptionsPage() {
 			header: "操作",
 			hideable: false,
 			sticky: "right",
-			width: "140px",
+			width: "156px",
 			align: "center",
 			cell: (row) => {
 				const paused = row.status === "paused";

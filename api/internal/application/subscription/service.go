@@ -565,10 +565,16 @@ func (s *Service) FetchNow(ctx context.Context, subscriptionID string, isSystem 
 			report.SubscriptionError = "订阅状态回写失败：" + err.Error()
 		}
 	}
+	// 操作日志的成功语义:整轮无失败(feed 无错误 且 无条目失败)。
+	// 与订阅健康度判定不同——后者只看 feed 错误(applyFeedError),部分条目失败不暂停订阅。
+	// 条目失败时 error 描述失败条数,避免日志出现 success=true + failed=N 的误导组合。
+	success := report.SubscriptionError == "" && report.Failed == 0
+	errMsg := report.SubscriptionError
+	if !success && report.SubscriptionError == "" {
+		errMsg = fmt.Sprintf("%d 条条目导入失败", report.Failed)
+	}
 	s.publish(ctx, domainsubscription.NewSubscriptionFetched(
-		sub.ID(), sub.Title(),
-		report.SubscriptionError == "", report.Imported, report.Failed,
-		report.SubscriptionError, isSystem,
+		sub.ID(), sub.Title(), success, report.Imported, report.Failed, errMsg, isSystem,
 	))
 	return report
 }
