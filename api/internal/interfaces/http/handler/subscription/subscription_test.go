@@ -168,3 +168,37 @@ func TestUpdate_EmptyBody_Returns400(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, rr.Code, "空 body 应 400")
 }
+
+
+// =====================================================================
+// Fetch —— 立即拉取，返回抓取报告
+// =====================================================================
+
+// fetchStubRepo 专供 Fetch 测试：FindByIDForSchedule 返回预置订阅，Save 记录。
+type fetchStubRepo struct {
+	domainsubscription.SubscriptionRepository
+	sub   *domainsubscription.Subscription
+	saved *domainsubscription.Subscription
+}
+
+func (s *fetchStubRepo) FindByIDForSchedule(_ context.Context, _ domainshared.ID) (*domainsubscription.Subscription, error) {
+	return s.sub, nil
+}
+
+func (s *fetchStubRepo) Save(_ context.Context, sub *domainsubscription.Subscription) error {
+	s.saved = sub
+	return nil
+}
+
+func TestFetch_ReturnsReport(t *testing.T) {
+	sub := sampleSub("源")
+	repo := &fetchStubRepo{sub: sub}
+	h := NewHandler(appsub.NewService(repo, nil)) // 不注入 fetch deps → FetchOne 返回配置错误
+
+	rr := httptest.NewRecorder()
+	h.Fetch(rr, httptest.NewRequest(http.MethodPost, "/admin/subscriptions/"+sub.ID().String()+"/fetch", nil))
+
+	assert.Equal(t, http.StatusOK, rr.Code, "应返回 200（抓取报告，即便有错误也非 HTTP error）")
+	// FetchNow 即使 FetchOne 报配置错误，也会走状态机 + Save（repo 有记录）
+	require.NotNil(t, repo.saved, "FetchNow 应 Save 订阅状态")
+}
