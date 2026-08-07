@@ -115,6 +115,40 @@ func TestService_Create_ConflictSlug(t *testing.T) {
 	repo.AssertExpectations(t)
 }
 
+// CreateOrGet 新建：slug 不存在则落库返回新标签。
+func TestService_CreateOrGet_Create(t *testing.T) {
+	svc, repo := newSvc()
+	repo.On("FindBySlug", mock.Anything, "go").Return(domaintag.Tag{}, domaintag.ErrNotFound).Once()
+	repo.On("Save", mock.Anything, domaintag.NewTag(0, "Go", "go")).Return(int32(7), nil).Once()
+
+	got, err := svc.CreateOrGet(context.Background(), "Go")
+	assert.NoError(t, err)
+	assert.Equal(t, TagDTO{ID: 7, Name: "Go", Slug: "go"}, got)
+	repo.AssertExpectations(t)
+}
+
+// CreateOrGet 幂等：slug 已存在则返回已存在标签，不调 Save。
+func TestService_CreateOrGet_Existing(t *testing.T) {
+	svc, repo := newSvc()
+	existing := domaintag.NewTag(3, "Go", "go")
+	repo.On("FindBySlug", mock.Anything, "go").Return(existing, nil).Once()
+
+	got, err := svc.CreateOrGet(context.Background(), "Go")
+	assert.NoError(t, err)
+	assert.Equal(t, TagDTO{ID: 3, Name: "Go", Slug: "go"}, got)
+	repo.AssertExpectations(t)
+}
+
+// CreateOrGet 存储错误透传（FindBySlug 返回非 NotFound 错误）。
+func TestService_CreateOrGet_StoreError(t *testing.T) {
+	svc, repo := newSvc()
+	repo.On("FindBySlug", mock.Anything, "go").Return(domaintag.Tag{}, assert.AnError).Once()
+
+	_, err := svc.CreateOrGet(context.Background(), "Go")
+	assert.Error(t, err)
+	repo.AssertExpectations(t)
+}
+
 // Update 时 slug 未变，不触发冲突检查。
 func TestService_Update_SlugUnchanged(t *testing.T) {
 	svc, repo := newSvc()

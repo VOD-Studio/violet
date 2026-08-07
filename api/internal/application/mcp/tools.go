@@ -16,6 +16,7 @@ import (
 	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
 	appsub "blog-api/internal/application/subscription"
+	apptag "blog-api/internal/application/tag"
 	"blog-api/internal/middleware"
 )
 
@@ -45,6 +46,13 @@ type SubscriptionService interface {
 	Delete(ctx context.Context, id, userID string) error
 }
 
+// TagService MCP tool 依赖的标签服务端口。
+// application/tag.Service 实现之；抽接口便于单测 fake 替换。
+type TagService interface {
+	CreateOrGet(ctx context.Context, name string) (apptag.TagDTO, error)
+	List(ctx context.Context) ([]apptag.TagDTO, error)
+}
+
 // RobotsChecker robots.txt 预检端口。
 // 抽成接口便于注入假实现（避免单测真实网络拉取 robots.txt）。
 type RobotsChecker interface {
@@ -62,6 +70,17 @@ type PostTools struct {
 // NewPostTools 构造文章 tool 集合。
 func NewPostTools(posts PostService) *PostTools {
 	return &PostTools{posts: posts}
+}
+
+// TagTools 标签 tool 集合，挂在文章 MCP server（/api/v1/mcp）上。
+// 标签是文章的附属元数据：agent 抓取带标签文章时先 create_tag 建缺失标签，再 create_post。
+type TagTools struct {
+	tags TagService
+}
+
+// NewTagTools 构造标签 tool 集合。
+func NewTagTools(tags TagService) *TagTools {
+	return &TagTools{tags: tags}
 }
 
 // ScraperTools 抓取 tool 集合，挂在抓取 MCP server（/api/v1/mcp/scraper）上。
@@ -168,6 +187,13 @@ type listDraftsArgs struct {
 	Page  int `json:"page,omitempty" jsonschema:"页码（从 1 开始，默认 1）"`
 	Limit int `json:"limit,omitempty" jsonschema:"每页条数（默认 20，上限 100）"`
 }
+
+type createTagArgs struct {
+	Name string `json:"name" jsonschema:"标签名称（自动生成 slug）"`
+}
+
+// listTagsArgs 无入参；空 struct 让 SDK 推导出无 input schema 的 tool。
+type listTagsArgs struct{}
 
 type scrapeURLArgs struct {
 	URL string `json:"url" jsonschema:"待抓取的外站文章 URL（仅 http/https）"`

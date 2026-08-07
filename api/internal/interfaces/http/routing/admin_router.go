@@ -141,6 +141,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 		r.Put("/{id}", d.Subscription.Update)
 		r.Post("/{id}/pause", d.Subscription.Pause)
 		r.Post("/{id}/resume", d.Subscription.Resume)
+		r.Post("/{id}/fetch", d.Subscription.Fetch)
 		r.Delete("/{id}", d.Subscription.Delete)
 	})
 

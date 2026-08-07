@@ -82,7 +82,16 @@ function AdminLogsPage() {
 		{
 			key: "actor",
 			header: "操作人",
-			cell: (row) => row.actor.user_name || row.actor.user_id || "匿名",
+			cell: (row) => {
+				const name = row.actor.user_name || row.actor.user_id || "匿名";
+				return row.actor.actor_type === "system" ? (
+					<span className="text-muted-foreground">
+						{name} <Badge variant="outline">系统</Badge>
+					</span>
+				) : (
+					name
+				);
+			},
 		},
 		{
 			key: "action",

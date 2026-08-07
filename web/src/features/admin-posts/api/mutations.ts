@@ -163,10 +163,12 @@ export async function importPostUrl(
 	url: string,
 	opts?: ImportPostUrlOpts,
 ): Promise<ImportPostUrlResult> {
-	return apiPost<ImportPostUrlResult>("/admin/posts/import-url", {
-		url,
-		ai_restore_formula: opts?.ai_restore_formula ?? false,
-	});
+	// 长耗时操作：远程代理 + readability + 可选 AI 公式还原，单独传 5 分钟超时
+	return apiPost<ImportPostUrlResult>(
+		"/admin/posts/import-url",
+		{ url, ai_restore_formula: opts?.ai_restore_formula ?? false },
+		{ timeout: 300000 },
+	);
 }
 
 /**

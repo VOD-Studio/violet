@@ -26,13 +26,13 @@ type AuditEventPO struct {
 	// occurred_at 发生时间（索引，DESC 排序）
 	OccurredAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP;index;column:occurred_at" json:"occurred_at"`
 
-	// actor 操作人字段
-	// ActorUserID 用 *string：空串写入 uuid 列会报 SQLSTATE 22P02，
-	// 匿名操作（未登录）时必须以 NULL 入库
+	// actor_type 操作者类型（user/system）。区分真人与系统自动化，让审计日志
+	// 能分辨「张三删的」vs「定时任务自动删的」（业界共识 AppMaster/Cloudflare）。
+	ActorType     string  `gorm:"type:varchar(10);not null;default:'user';column:actor_type" json:"actor_type"`
 	ActorUserID   *string `gorm:"type:uuid;index;column:actor_user_id" json:"actor_user_id"`
-	ActorUserName string `gorm:"type:varchar(50);column:actor_user_name" json:"actor_user_name"`
-	IPAddress     string `gorm:"type:varchar(45);column:ip_address" json:"ip_address"`
-	UserAgent     string `gorm:"type:varchar(255);column:user_agent" json:"user_agent"`
+	ActorUserName string  `gorm:"type:varchar(50);column:actor_user_name" json:"actor_user_name"`
+	IPAddress     string  `gorm:"type:varchar(45);column:ip_address" json:"ip_address"`
+	UserAgent     string  `gorm:"type:varchar(255);column:user_agent" json:"user_agent"`
 
 	// resource 资源字段
 	ResourceType string `gorm:"type:varchar(50);index;column:resource_type" json:"resource_type"`
@@ -133,9 +133,8 @@ func buildPO(e domainaudit.AuditEvent) (AuditEventPO, error) {
 	po := AuditEventPO{
 		EventID:       e.EventID.String(),
 		Action:        e.Action.String(),
+		ActorType:     string(e.Actor.Type),
 		ActorUserName: e.Actor.UserName,
-		IPAddress:     e.Actor.IPAddress,
-		UserAgent:     e.Actor.UserAgent,
 		ResourceType:  e.Resource.Type,
 		ResourceID:    e.Resource.ID,
 		ResourceName:  e.Resource.Name,
@@ -184,6 +183,7 @@ func poToDomain(po AuditEventPO) domainaudit.AuditEvent {
 		EventID:    eventID,
 		Action:     action,
 		Actor: domainaudit.Actor{
+			Type:      domainaudit.ActorType(po.ActorType),
 			UserName:  po.ActorUserName,
 			IPAddress: po.IPAddress,
 			UserAgent: po.UserAgent,

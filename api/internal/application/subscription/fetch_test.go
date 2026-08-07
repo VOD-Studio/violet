@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,7 +108,7 @@ func setupFetchSvc(t *testing.T) (*Service, *fakeRepo, *fakeEntryRepo, *fakeImpo
 		createRes: apppost.PostDTO{ID: postID.String()},
 	}
 	parser := &fakeParser{}
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 	svc.SetFetchDeps(entryRepo, importer, parser)
 
 	sub, err := domainsubscription.NewSubscription(shared.NewID(), "https://feed.example.com/rss", "源", domainsubscription.IntervalDaily, svc.now())
@@ -315,7 +316,7 @@ func TestFetchOne_GuidFallbackToLink(t *testing.T) {
 
 func TestFetchOne_WithoutFetchDepsReturnsError(t *testing.T) {
 	repo := newFakeRepo()
-	svc := NewService(repo, nil) // 不注入 FetchDeps
+	svc := NewService(repo, nil, nil) // 不注入 FetchDeps
 	sub, _ := domainsubscription.NewSubscription(shared.NewID(), "https://x/feed", "t", domainsubscription.IntervalDaily, svc.now())
 	repo.subs[sub.ID().String()] = sub
 
@@ -374,4 +375,93 @@ func TestFetchOne_BackfillSaveFailureIgnored(t *testing.T) {
 	assert.Equal(t, 1, report.Imported, "entry 应正常导入")
 	require.Len(t, entryRepo.saved, 1)
 	assert.NotNil(t, entryRepo.saved[0].PostID(), "post_id 应回填")
+}
+
+
+// ---- FetchNow（抓取 + 状态更新完整编排）----
+
+func TestFetchNow_SuccessClearsFailureCount(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t)
+	sub.RecordFailure(svc.now(), "old err") // 预置失败计数
+	require.Equal(t, 1, sub.ConsecutiveFailures())
+	repo.subs[sub.ID().String()] = sub // 回写预置计数的 sub
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1", Title: "文章1"}}
+
+	report := svc.FetchNow(context.Background(), sub.ID().String(), false)
+
+	assert.Empty(t, report.SubscriptionError)
+	// FetchNow 内 RecordSuccess 清零计数 + 推进 nextFetchAt + Save
+	got := repo.subs[sub.ID().String()]
+	assert.Equal(t, 0, got.ConsecutiveFailures(), "成功应清零计数")
+}
+
+func TestFetchNow_PermanentErrorPauses(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t)
+	repo.subs[sub.ID().String()] = sub
+	parser.err = &FeedError{Kind: FeedErrPermanent, StatusCode: 404}
+
+	report := svc.FetchNow(context.Background(), sub.ID().String(), false)
+
+	assert.NotEmpty(t, report.SubscriptionError)
+	got := repo.subs[sub.ID().String()]
+	assert.Equal(t, domainsubscription.StatusPaused, got.Status(), "永久错误应立即 paused")
+}
+
+func TestFetchNow_TransientErrorIncrementsCount(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t)
+	repo.subs[sub.ID().String()] = sub
+	parser.err = &FeedError{Kind: FeedErrTransient, StatusCode: 500}
+
+	report := svc.FetchNow(context.Background(), sub.ID().String(), false)
+
+	assert.NotEmpty(t, report.SubscriptionError)
+	got := repo.subs[sub.ID().String()]
+	assert.Equal(t, 1, got.ConsecutiveFailures(), "瞬时错误应计数")
+	assert.Equal(t, domainsubscription.StatusActive, got.Status(), "首次瞬时不应 paused")
+}
+
+func TestFetchNow_RateLimitedSetsRetryAfter(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t)
+	now := svc.now()
+	repo.subs[sub.ID().String()] = sub
+	retry := now.Add(30 * time.Minute)
+	parser.err = &FeedError{Kind: FeedErrRateLimited, RetryAfter: &retry, StatusCode: 429}
+
+	report := svc.FetchNow(context.Background(), sub.ID().String(), false)
+
+	assert.NotEmpty(t, report.SubscriptionError)
+	got := repo.subs[sub.ID().String()]
+	assert.Equal(t, 0, got.ConsecutiveFailures(), "429 不增计数")
+	require.NotNil(t, got.RetryAfterUntil())
+	assert.True(t, got.RetryAfterUntil().Equal(retry))
+	assert.Equal(t, domainsubscription.StatusActive, got.Status(), "429 不 paused")
+}
+
+func TestFetchNow_RateLimitedNoHeaderDefaultBackoff(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t)
+	repo.subs[sub.ID().String()] = sub
+	parser.err = &FeedError{Kind: FeedErrRateLimited, RetryAfter: nil, StatusCode: 429}
+
+	before := svc.now()
+	report := svc.FetchNow(context.Background(), sub.ID().String(), false)
+
+	assert.NotEmpty(t, report.SubscriptionError)
+	got := repo.subs[sub.ID().String()]
+	require.NotNil(t, got.RetryAfterUntil(), "无 Retry-After 头时应用默认退避")
+	assert.WithinDuration(t, before.Add(defaultRateLimitBackoff), *got.RetryAfterUntil(), time.Second, "默认退避应约为 now+1h")
+}
+
+func TestFetchNow_TransientAutoPausesAtThreshold(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t)
+	for range domainsubscription.MaxConsecutiveFailures - 1 {
+		sub.RecordFailure(svc.now(), "err")
+	}
+	repo.subs[sub.ID().String()] = sub
+	parser.err = &FeedError{Kind: FeedErrTransient, StatusCode: 500}
+
+	_ = svc.FetchNow(context.Background(), sub.ID().String(), false)
+
+	got := repo.subs[sub.ID().String()]
+	assert.Equal(t, domainsubscription.StatusPaused, got.Status(), "达阈值应自动 paused")
+	assert.Equal(t, domainsubscription.MaxConsecutiveFailures, got.ConsecutiveFailures())
 }
