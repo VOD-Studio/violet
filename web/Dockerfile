@@ -1,13 +1,9 @@
 # syntax=docker/dockerfile:1
-# 临时 Dockerfile（仅本次部署使用，不入库）
 # 2.0 SSR（TanStack Start + Vite 8）：vite build 产出 dist/server/server.js（裸 { fetch } handler）
 # 由 server.mjs 用 srvx 桥接 node:http 监听；builder 阶段 prune 出生产依赖，runtime 阶段 COPY dist + node_modules
 
 # ─── 阶段 1：依赖安装 ───────────────────────────────────
 FROM node:22-alpine AS deps
-
-# corepack 首次执行 pnpm 时按其 packageManager 字段从 npmjs 下载 tarball，同样走国内镜像
-ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
 
 RUN corepack enable
 
@@ -19,12 +15,18 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # 需预先创建 public/ 否则 ENOENT
 RUN mkdir -p public
 
+# corepack 首次下载 pnpm tarball 用 Node fetch 无重试，registry 偶发 502/超时会直接中断构建；
+# pnpm --version 触发 corepack 下载（无 packageManager 字段时隐式取最新版），退避重试覆盖瞬时故障
+RUN for i in 1 2 3 4 5; do \
+      pnpm --version && exit 0; \
+      echo "corepack 下载 pnpm 失败，重试 $i/5（等待 $((i * 10))s）" >&2; \
+      sleep $((i * 10)); \
+    done; exit 1
+
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 
 # ─── 阶段 2：构建 SSR 产物 ───────────────────────────────
 FROM node:22-alpine AS builder
-
-ENV COREPACK_NPM_REGISTRY=https://registry.npmmirror.com
 
 RUN corepack enable
 
@@ -32,6 +34,14 @@ WORKDIR /app
 
 # CI=true：pnpm 在 CI 模式下不会因 node_modules 与 lockfile 状态不一致而交互式确认
 ENV CI=true
+
+# corepack 缓存不跨阶段共享，builder 需重新下载 pnpm（同退避重试）
+COPY package.json ./
+RUN for i in 1 2 3 4 5; do \
+      pnpm --version && exit 0; \
+      echo "corepack 下载 pnpm 失败，重试 $i/5（等待 $((i * 10))s）" >&2; \
+      sleep $((i * 10)); \
+    done; exit 1
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
