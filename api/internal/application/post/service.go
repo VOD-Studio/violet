@@ -266,7 +266,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (PostDTO, error) {
 	if slug == "" {
 		slug = domain.GenerateSlug(in.Title)
 	}
-	slug, err := s.resolveSlugConflict(ctx, slug)
+	slug, err = s.resolveSlugConflict(ctx, slug)
 	if err != nil {
 		return PostDTO{}, err
 	}

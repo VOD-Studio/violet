@@ -54,9 +54,6 @@ func (f *fakeSlugRepo) FindArchiveYears(context.Context) ([]int, error) { panic(
 func (f *fakeSlugRepo) FindPublishedByYear(context.Context, int) ([]*domain.Post, error) {
 	panic("not implemented")
 }
-func (f *fakeSlugRepo) SaveVersion(context.Context, *domain.PostVersion) error {
-	panic("not implemented")
-}
 func (f *fakeSlugRepo) FindVersionsByPostID(context.Context, shared.ID) ([]*domain.PostVersion, error) {
 	panic("not implemented")
 }

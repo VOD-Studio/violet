@@ -14,6 +14,7 @@ import (
 	"blog-api/internal/domain/shared"
 
 	apppost "blog-api/internal/application/post"
+	appshared "blog-api/internal/application/shared"
 )
 
 // --- FetchOne 依赖的 fake ---
@@ -464,4 +465,55 @@ func TestFetchNow_TransientAutoPausesAtThreshold(t *testing.T) {
 	got := repo.subs[sub.ID().String()]
 	assert.Equal(t, domainsubscription.StatusPaused, got.Status(), "达阈值应自动 paused")
 	assert.Equal(t, domainsubscription.MaxConsecutiveFailures, got.ConsecutiveFailures())
+}
+
+// fakeBus 捕获 Service 发布的事件。
+type fakeBus struct {
+	events []shared.DomainEvent
+}
+
+func (b *fakeBus) Publish(_ context.Context, events []shared.DomainEvent) error {
+	b.events = append(b.events, events...)
+	return nil
+}
+
+func (b *fakeBus) Subscribe(_ string, _ appshared.EventHandler) {}
+
+// TestFetchNow_PartialEntryFailureEventNotSuccess 部分条目失败时,
+// 抓取事件 success 应为 false 且 error 描述失败条数——
+// 修复操作日志出现 success=true + failed=N 的误导组合(订阅健康度仍按 feed 层判定,不受影响)。
+func TestFetchNow_PartialEntryFailureEventNotSuccess(t *testing.T) {
+	svc, repo, _, importer, parser, sub := setupFetchSvc(t)
+	repo.subs[sub.ID().String()] = sub
+	bus := &fakeBus{}
+	svc.bus = bus
+
+	importer.importErr = errors.New("抓正文失败")
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1", Title: "x"}}
+
+	report := svc.FetchNow(context.Background(), sub.ID().String(), false)
+	assert.Empty(t, report.SubscriptionError, "feed 层成功,订阅健康度不受影响")
+
+	require.Len(t, bus.events, 1)
+	ev, ok := bus.events[0].(domainsubscription.SubscriptionFetched)
+	require.True(t, ok, "应发布 SubscriptionFetched 事件")
+	assert.False(t, ev.Success, "有条目失败时 success 应为 false")
+	assert.Equal(t, "1 条条目导入失败", ev.Error)
+	assert.Equal(t, 1, ev.Failed)
+}
+
+func TestFetchNow_AllSuccessEventSuccess(t *testing.T) {
+	svc, repo, _, _, parser, sub := setupFetchSvc(t)
+	repo.subs[sub.ID().String()] = sub
+	bus := &fakeBus{}
+	svc.bus = bus
+
+	parser.items = []FeedItem{{GUID: "g1", Link: "https://example.com/1", Title: "x"}}
+
+	svc.FetchNow(context.Background(), sub.ID().String(), false)
+
+	require.Len(t, bus.events, 1)
+	ev := bus.events[0].(domainsubscription.SubscriptionFetched)
+	assert.True(t, ev.Success)
+	assert.Empty(t, ev.Error)
 }

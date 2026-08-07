@@ -135,13 +135,13 @@ type SubscriptionFetched struct {
 	shared.BaseEvent
 	// Title 订阅标题快照
 	Title string
-	// Success 抓取是否成功（feed 层面；entry 级失败不影响）
+	// Success 整轮抓取是否成功(feed 无错误且无条目失败;部分条目失败视为不成功)
 	Success bool
 	// Imported 本次新导入条目数
 	Imported int
 	// Failed 本次失败条目数
 	Failed int
-	// Error 错误描述（Success=false 时非空）
+	// Error 错误描述(Success=false 时非空:feed 错误原文,或「N 条条目导入失败」)
 	Error string
 	// IsSystem 是否系统调度触发（true=定时调度器，actor_type=system；
 	// false=手动触发，actor_type=user）。审计订阅者据此设置 ActorType。
