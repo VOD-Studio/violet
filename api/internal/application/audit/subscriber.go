@@ -83,6 +83,7 @@ func (s *Subscriber) Handle(ctx context.Context, event shared.DomainEvent) error
 // 事件名是发布即冻结的契约（受控枚举），switch 分支一旦发布不改名。
 func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (domainaudit.AuditEvent, bool) {
 	actor := domainaudit.Actor{
+		Type:      domainaudit.ActorTypeUser,
 		UserID:    middleware.GetUserID(ctx),
 		UserName:  middleware.GetUserEmail(ctx), // 审计上下文无 username key，用 email 作为可读标识
 		IPAddress: middleware.GetClientIPFromContext(ctx),
