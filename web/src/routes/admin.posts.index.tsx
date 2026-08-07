@@ -53,11 +53,11 @@ export const Route = createFileRoute("/admin/posts/")({
 });
 
 const STATUS_META: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> =
-{
-	draft: { label: "草稿", variant: "secondary" },
-	published: { label: "已发布", variant: "default" },
-	archived: { label: "已归档", variant: "outline" },
-};
+	{
+		draft: { label: "草稿", variant: "secondary" },
+		published: { label: "已发布", variant: "default" },
+		archived: { label: "已归档", variant: "outline" },
+	};
 
 const STATUS_OPTIONS = [
 	{ value: "all", label: "全部状态" },

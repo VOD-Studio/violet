@@ -224,10 +224,7 @@ function AdminCommentsPage() {
 	];
 
 	return (
-		<PageShell
-			title="评论审核"
-			description="审核与管理文章评论"
-		>
+		<PageShell title="评论审核" description="审核与管理文章评论">
 			<DataTable<AdminComment>
 				data={data?.data ?? []}
 				columns={columns}

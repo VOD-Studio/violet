@@ -566,7 +566,7 @@ function MediaTable({
 			page={1}
 			pageSize={files.length}
 			total={files.length}
-			onPageChange={() => { }}
+			onPageChange={() => {}}
 			selectable
 			selectedIds={selectedIds}
 			onSelectionChange={onSelectionChange}

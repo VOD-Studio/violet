@@ -152,9 +152,7 @@ export function RolePermissionsDialog({
 										onCheckedChange={() => handleToggleGroup(menu)}
 										disabled={isWildcard}
 										className={
-											someSelected
-												? "data-[state=checked]:bg-primary/50"
-												: ""
+											someSelected ? "data-[state=checked]:bg-primary/50" : ""
 										}
 									/>
 									<Label
