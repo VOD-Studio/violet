@@ -40,9 +40,10 @@ export const pauseSubscription = async (id: string): Promise<SubscriptionDTO> =>
 export const resumeSubscription = async (id: string): Promise<SubscriptionDTO> =>
 	apiPost<SubscriptionDTO>(`${BASE}/${id}/resume`, {});
 
-/** fetchSubscription - 立即拉取一次（手动触发，不等调度器） */
+/** fetchSubscription - 立即拉取一次（手动触发，不等调度器）。
+ * 长耗时操作（拉 feed + 逐条抓正文），单独传 5 分钟超时，不受全局 15s 限制。 */
 export const fetchSubscription = async (id: string): Promise<FetchReportDTO> =>
-	apiPost<FetchReportDTO>(`${BASE}/${id}/fetch`, {});
+	apiPost<FetchReportDTO>(`${BASE}/${id}/fetch`, {}, { timeout: 300000 });
 
 /** deleteSubscription - 删除订阅（连带 entries CASCADE） */
 export const deleteSubscription = async (id: string): Promise<null> =>
