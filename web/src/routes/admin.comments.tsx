@@ -13,12 +13,12 @@ import type {
 import { CommentCell } from "@features/admin-comments/ui/CommentCell";
 import { CommentDetail } from "@features/admin-comments/ui/CommentDetail";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";

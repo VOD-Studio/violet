@@ -23,7 +23,6 @@ import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
 import { usePostEditorStore } from "@features/admin-posts/ui/post-editor-store";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import {
 	type ImportUrlMeta,
 	type ImportUrlOpts,
@@ -34,6 +33,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDebouncedCallback } from "@shared/lib/hooks/use-debounced-callback";
 import { Input } from "@shared/ui/base/input";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";

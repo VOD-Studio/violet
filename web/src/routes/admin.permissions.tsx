@@ -2,13 +2,13 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAdminPermissions, useDeletePermission } from "@features/admin-permissions/api/queries";
 import type { PermissionDTO } from "@features/admin-permissions/model/types";
 import { CreatePermissionDialog } from "@features/admin-permissions/ui/CreatePermissionDialog";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import { useIsSuperAdmin } from "@features/auth/hooks/usePermissions";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@shared/ui/base/tooltip";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronRight, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";

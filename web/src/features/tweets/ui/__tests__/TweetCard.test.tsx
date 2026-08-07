@@ -36,6 +36,11 @@ vi.mock("@features/tweets/api/mutations", () => ({
 const navigateMock = vi.fn();
 vi.mock("@tanstack/react-router", () => ({
 	useNavigate: () => navigateMock,
+	Link: ({ children, onClick, to, params, ...props }: any) => (
+		<a href={to?.replace("$username", params?.username || "")} onClick={onClick} {...props}>
+			{children}
+		</a>
+	),
 }));
 
 // ConfirmDialog 基于 Modal（Radix Dialog），jsdom 下需要 portal 容器，
@@ -129,5 +134,20 @@ describe("TweetCard — 删除确认流", () => {
 		// 这里仅验证 mutate 被调用且首参为 undefined）
 		fireEvent.click(screen.getByTestId("confirm-btn"));
 		expect(deleteMutate).toHaveBeenCalledTimes(1);
+	});
+});
+describe("TweetCard — 作者个人页链接", () => {
+	it("渲染作者个人主页 Link，并且点击时不触发整卡 openDetail", () => {
+		meDataOverride = null;
+		const tweet = makeTweet();
+		render(<TweetCard tweet={tweet} />);
+
+		const userLink = screen.getByRole("link", { name: new RegExp(tweet.author.username) });
+		expect(userLink.getAttribute("href")).toBe(`/users/${tweet.author.username}`);
+
+		fireEvent.click(userLink);
+		expect(navigateMock).not.toHaveBeenCalledWith(
+			expect.objectContaining({ to: "/tweets/$id" }),
+		);
 	});
 });

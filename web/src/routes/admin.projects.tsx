@@ -6,7 +6,6 @@ import {
 	useUpdateProject,
 } from "@features/admin-projects/api/mutations";
 import type { CreateProject } from "@features/admin-projects/model/types";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import {
 	DataTable,
 	type DataTableColumn,
@@ -18,6 +17,7 @@ import type { Project } from "@features/projects/model/types";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { Modal } from "@shared/ui/modal";
 import { createFileRoute } from "@tanstack/react-router";
 import { Code, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";

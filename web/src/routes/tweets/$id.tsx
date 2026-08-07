@@ -1,5 +1,5 @@
-import { fetchTweetDetail, useTweetDetail } from "@features/tweets/api/queries";
 import { tweetKeys } from "@features/tweets/api/keys";
+import { fetchTweetDetail, useTweetDetail } from "@features/tweets/api/queries";
 import TweetCard from "@features/tweets/ui/TweetCard";
 import Empty from "@shared/ui/empty";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";

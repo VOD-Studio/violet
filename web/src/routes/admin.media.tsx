@@ -8,7 +8,6 @@ import { EditMediaDialog } from "@features/admin-media/ui/EditMediaDialog";
 import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
-import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
@@ -19,6 +18,7 @@ import { cropImageToBlob } from "@features/upload/lib/crop-image";
 import { Uploader } from "@features/upload/ui/Uploader";
 import { withCrop } from "@shared/lib/crop-url";
 import { Button } from "@shared/ui/base/button";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { ImageCropper } from "@shared/ui/image-cropper/ImageCropper";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";

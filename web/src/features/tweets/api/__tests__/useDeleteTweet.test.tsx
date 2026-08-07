@@ -10,9 +10,9 @@
  */
 import type { Tweet } from "@entities/tweet/model/types";
 import type { PagedResponse } from "@shared/api/types";
-import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@shared/api/request", () => ({

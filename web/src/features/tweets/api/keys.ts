@@ -25,4 +25,9 @@ export const tweetKeys = {
 		[...tweetKeys.timeline, { limit } satisfies TimelineKeyShape] as const,
 	/** 单条推文详情维度（按 id 区分） */
 	detail: (id: string) => [...tweetsRoot, "detail", id] as const,
+	/** 用户推文列表维度（按 username 与 limit 区分） */
+	userTimelineOf: (username: string, limit: number = TIMELINE_PAGE_SIZE) =>
+		[...tweetsRoot, "userTimeline", username, { limit }] as const,
+	/** 用户公开资料卡维度（按 username 区分） */
+	userProfile: (username: string) => [...tweetsRoot, "userProfile", username] as const,
 };
