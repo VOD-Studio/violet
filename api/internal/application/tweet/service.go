@@ -70,6 +70,7 @@ type UserProfileDTO struct {
 	Username  string `json:"username"`
 	AvatarURL string `json:"avatar_url"`
 	Bio       string `json:"bio"`
+	// CreatedAt RFC3339 格式
 	CreatedAt string `json:"created_at"`
 }
 

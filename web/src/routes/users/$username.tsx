@@ -11,7 +11,7 @@ import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { PageShell } from "@shared/ui/page-shell";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Calendar, Loader2 } from "lucide-react";
@@ -178,9 +178,10 @@ export const Route = createFileRoute("/users/$username")({
 					queryFn: () => fetchUserTimeline(params.username),
 				}),
 			]);
+			if (!profile) throw notFound();
 			return profile;
 		} catch {
-			return undefined;
+			throw notFound();
 		}
 	},
 	head: ({ loaderData, params }) => {

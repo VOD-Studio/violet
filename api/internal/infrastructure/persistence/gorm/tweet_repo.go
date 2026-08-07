@@ -100,12 +100,12 @@ func (r *TweetRepository) Delete(ctx context.Context, id domainshared.ID) error 
 // Like 点赞推文（重复点赞幂等；推文不存在返回 ErrNotFound）。
 func (r *TweetRepository) Like(ctx context.Context, tweetID, userID domainshared.ID) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var exists bool
-		err := tx.Model(&model.Tweet{}).Select("1").Where("id = ?", tweetID.UUID()).Find(&exists).Error
+		var count int64
+		err := tx.Model(&model.Tweet{}).Where("id = ?", tweetID.UUID()).Count(&count).Error
 		if err != nil {
 			return domainshared.Internal("查询推文失败", err)
 		}
-		if !exists {
+		if count == 0 {
 			return domaintweet.ErrNotFound
 		}
 

@@ -87,10 +87,14 @@ export const useToggleLikeTweet = (tweet: Tweet) => {
 		onMutate: async () => {
 			await qc.cancelQueries({ queryKey: tweetKeys.detail(id) });
 			await qc.cancelQueries({ queryKey: tweetKeys.timeline });
+			await qc.cancelQueries({ queryKey: [...tweetKeys.all, "userTimeline"] });
 
 			const prevDetail = qc.getQueryData<Tweet>(tweetKeys.detail(id));
 			const prevTimelines = qc.getQueriesData<TimelineCache>({
 				queryKey: tweetKeys.timeline,
+			});
+			const prevUserTimelines = qc.getQueriesData<TimelineCache>({
+				queryKey: [...tweetKeys.all, "userTimeline"],
 			});
 
 			qc.setQueryData<Tweet>(tweetKeys.detail(id), (old) =>
@@ -128,7 +132,7 @@ export const useToggleLikeTweet = (tweet: Tweet) => {
 				updateCache,
 			);
 
-			return { prevDetail, prevTimelines };
+			return { prevDetail, prevTimelines, prevUserTimelines };
 		},
 		onError: (_err, _vars, context) => {
 			toast.error("操作失败，请重试");
@@ -137,6 +141,11 @@ export const useToggleLikeTweet = (tweet: Tweet) => {
 			}
 			if (context?.prevTimelines) {
 				for (const [key, data] of context.prevTimelines) {
+					qc.setQueryData(key, data);
+				}
+			}
+			if (context?.prevUserTimelines) {
+				for (const [key, data] of context.prevUserTimelines) {
 					qc.setQueryData(key, data);
 				}
 			}

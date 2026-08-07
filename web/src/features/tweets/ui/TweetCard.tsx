@@ -103,39 +103,37 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 			>
 				{/* 作者行：头像 + 用户名 + 时间 + 删除按钮 */}
 				<div className="flex items-center justify-between gap-3">
-					<Link
-						to="/users/$username"
-						params={{ username: tweet.author.username }}
-						onClick={(e) => e.stopPropagation()}
-						className="group flex min-w-0 items-center gap-3"
-					>
-						<img
-							src={avatarUrl(tweet.author.avatar_url, tweet.author.username)}
-							alt={tweet.author.username}
-							loading="lazy"
-							className={`${isDetail ? "size-12" : "size-10"} shrink-0 rounded-full object-cover transition-opacity group-hover:opacity-80`}
-						/>
-						<div className="min-w-0 flex-1">
-							<span className="block truncate text-sm font-semibold text-foreground group-hover:underline">
+					<div className="flex min-w-0 items-center gap-3">
+						<Link
+							to="/users/$username"
+							params={{ username: tweet.author.username }}
+							onClick={(e) => e.stopPropagation()}
+							className="group flex min-w-0 items-center gap-3"
+						>
+							<img
+								src={avatarUrl(tweet.author.avatar_url, tweet.author.username)}
+								alt={tweet.author.username}
+								loading="lazy"
+								className={`${isDetail ? "size-12" : "size-10"} shrink-0 rounded-full object-cover transition-opacity group-hover:opacity-80`}
+							/>
+							<span className="truncate text-sm font-semibold text-foreground group-hover:underline">
 								{tweet.author.username}
 							</span>
-							<time
-								className="block text-xs text-muted-foreground"
-								title={format(new Date(tweet.created_at), "PPPpp", {
-									locale: zhCN,
-								})}
-							>
-								{isDetail
-									? format(new Date(tweet.created_at), "yyyy-MM-dd HH:mm", {
-											locale: zhCN,
-										})
-									: formatDistanceToNow(new Date(tweet.created_at), {
-											addSuffix: true,
-											locale: zhCN,
-										})}
-							</time>
-						</div>
-					</Link>
+						</Link>
+						<time
+							className="block text-xs text-muted-foreground"
+							title={format(new Date(tweet.created_at), "PPPpp", { locale: zhCN })}
+						>
+							{isDetail
+								? format(new Date(tweet.created_at), "yyyy-MM-dd HH:mm", {
+										locale: zhCN,
+									})
+								: formatDistanceToNow(new Date(tweet.created_at), {
+										addSuffix: true,
+										locale: zhCN,
+									})}
+						</time>
+					</div>
 					{/* 删除按钮：阻止冒泡避免触发卡片导航 */}
 					{canDelete && (
 						<button
