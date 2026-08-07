@@ -7,6 +7,30 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.5.0](https://github.com/VOD-Studio/violet/compare/v2.4.8...v2.5.0) (2026-08-07)
+
+
+### 新增
+
+* **audit:** Actor 增加 actor_type 区分真人与系统操作 ([5da1379](https://github.com/VOD-Studio/violet/commit/5da1379e50b1b333dbe0e07572f7acaff116c218))
+* **audit:** 订阅域全部操作补入操作日志 ([af4420f](https://github.com/VOD-Studio/violet/commit/af4420f1ba85e63f43e44c82f6b06e4612b608cb))
+* MCP 标签工具与订阅立即拉取及操作日志 ([6929b3a](https://github.com/VOD-Studio/violet/commit/6929b3a86c914a6bfbc50bdfd50abbbc159a704e))
+* **mcp:** 新增 create_tag 与 list_tags tool ([8f5307c](https://github.com/VOD-Studio/violet/commit/8f5307c1f42f05b9724e860bccceb11171d78f66))
+* **subscription:** 新增立即拉取端点 ([be6dcd1](https://github.com/VOD-Studio/violet/commit/be6dcd1396c272c8b020f7bb0d87075490bfdf74))
+* **web:** 操作日志展示系统操作标记 ([2cb779e](https://github.com/VOD-Studio/violet/commit/2cb779e369397cc71635084f09f526ad18637fc4))
+* **web:** 订阅管理页新增立即抓取按钮 ([6c1004a](https://github.com/VOD-Studio/violet/commit/6c1004a16b649118671e88731e48429c6bb3ffa9))
+
+
+### 修复
+
+* **audit:** buildPO 补全 IPAddress 与 UserAgent 赋值 ([#100](https://github.com/VOD-Studio/violet/issues/100)) ([720cbab](https://github.com/VOD-Studio/violet/commit/720cbabf098d75a7fb3b0224b9e7ddcaf80ee28d))
+* **web:** 长耗时请求单独加 5 分钟超时 ([db6d385](https://github.com/VOD-Studio/violet/commit/db6d3852fcf4125963d32ddab348a08e48c233a8))
+
+
+### 重构
+
+* **subscription:** 抓取状态机从 job 提到 service.FetchNow ([1dc7a9c](https://github.com/VOD-Studio/violet/commit/1dc7a9cce6b4671a84d571f7ba7a37582749acc8))
+
 ## [2.4.8](https://github.com/VOD-Studio/violet/compare/v2.4.7...v2.4.8) (2026-08-06)
 
 
