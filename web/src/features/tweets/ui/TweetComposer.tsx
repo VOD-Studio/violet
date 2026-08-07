@@ -1,18 +1,10 @@
-/**
- * TweetComposer - 推文发布框（仅登录态渲染）
- *
- * 纯文本（≤500 rune）+ 最多 4 张图，文本与图片至少其一。
- * 图片复用分片上传管线（useChunkedUpload, purpose=tweet），紧凑网格预览，
- * 上传中显示进度、可移除。
- *
- * 前端先拦截边界（超 500 字 / 超 4 图 / 空内容+空图），后端聚合根再兜底。
- */
+/** TweetComposer - 推文发布框（登录态：文本 ≤500 rune + ≤4 图，前端拦截边界） */
 
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { ApiError } from "@shared/api/error";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Button } from "@shared/ui/base/button";
-import { ImagePlus, Loader2, Send, X } from "lucide-react";
+import { AlertCircle, ImagePlus, Loader2, Send, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCreateTweet } from "../api/mutations";
@@ -63,6 +55,9 @@ export function TweetComposer() {
 			toast.error(`最多 ${MAX_TWEET_IMAGES} 张图`);
 			return;
 		}
+		if (files.length > slots) {
+			toast.error(`最多 ${MAX_TWEET_IMAGES} 张图，已添加前 ${slots} 张`);
+		}
 		const picked = Array.from(files).slice(0, slots);
 		for (const file of picked) {
 			if (!file.type.startsWith("image/")) {
@@ -90,13 +85,12 @@ export function TweetComposer() {
 						i.id === localId ? { ...i, status: "done", url: res.url } : i,
 					),
 				);
+				URL.revokeObjectURL(preview);
 			} catch (err) {
 				setImages((prev) =>
 					prev.map((i) => (i.id === localId ? { ...i, status: "error" } : i)),
 				);
 				toastError(err, "图片上传失败");
-			} finally {
-				URL.revokeObjectURL(preview);
 			}
 		}
 		// 清空 input value 以便重复选择同一文件
@@ -168,6 +162,12 @@ export function TweetComposer() {
 										className="h-full bg-primary transition-[width]"
 										style={{ width: `${img.progress}%` }}
 									/>
+								</div>
+							)}
+							{img.status === "error" && (
+								<div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-destructive/80 text-white">
+									<AlertCircle className="size-4" />
+									<span className="text-[10px]">上传失败</span>
 								</div>
 							)}
 							<button
