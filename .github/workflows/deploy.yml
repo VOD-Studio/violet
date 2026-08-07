@@ -54,7 +54,7 @@ permissions:
   packages: write   # 推送镜像到 ghcr.io
 
 jobs:
-  # ── detect: 按侧变更检测（对比各侧锚点，输出部署侧布尔）──
+  # ── detect: 按侧变更检测
   detect:
     runs-on: [self-hosted, rua]
     outputs:
@@ -104,7 +104,7 @@ jobs:
               - 'docker-compose*.yml'
               - 'scripts/**'
 
-      - name: 汇总部署侧（锚点缺失或手动模式 → 全量）
+      - name: 汇总部署侧
         id: result
         env:
           API_ANCHOR: ${{ steps.anchors.outputs.api_anchor }}
@@ -146,7 +146,7 @@ jobs:
           echo "rollback=${ROLLBACK}" >> "$GITHUB_OUTPUT"
           echo "目标版本: ${TAG_VALUE}"
 
-      - name: 决定部署侧（回滚按 component 输入;发版按 detect 输出 + component 过滤）
+      - name: 决定部署侧
         id: side
         env:
           VER_INPUT: ${{ inputs.version }}
@@ -169,11 +169,11 @@ jobs:
   # 服务器不再本地构建，基础镜像拉取和构建都走 GitHub。
   # 镜像经 ghcr.io 分发：GitHub push，服务器 podman pull（registry 协议分块校验+重试，
   # 比裸文件下载可靠——服务器直连 Azure blob 下载 artifact 曾反复损坏）。
-  # 回滚模式（skip_build=true）不构建，复用服务器本地缓存镜像（见 prepare-server）。
+  # 回滚模式 skip_build=true 不构建，复用服务器本地缓存镜像。
   build:
     needs: prepare
     runs-on: ubuntu-latest
-    # 无构建缓存的全量构建（go module 下载 + vite build）可能超过 15 分钟
+    # 全量构建 go module 下载 + vite build 可能超过 15 分钟
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -202,7 +202,7 @@ jobs:
       - name: 构建并推送 web 镜像
         if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
         run: |
-          # build args 从 GitHub secrets 读取（OAuth client id 等），与现网配置保持一致。
+          # build args 从 GitHub secrets 读取，与现网配置一致。
           # VITE_API_BASE_URL / VITE_SITE_URL 有默认值，与服务器 .env 一致。
           docker build \
             -t ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} \
@@ -216,16 +216,19 @@ jobs:
           docker push ghcr.io/vod-studio/violet-web:latest
           echo "已推送 ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}"
 
-      - name: 设置镜像包公开（服务器匿名 pull）
+      - name: 设置镜像包公开
         if: needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 仓库是组织，包归属 org；首次推送默认 private，需手动设 public 让服务器匿名 pull
-          gh api -X PATCH /orgs/vod-studio/packages/container/violet-api/visibility -f visibility=public || echo "::warning::violet-api 可见性设置失败（可能已是 public）"
-          gh api -X PATCH /orgs/vod-studio/packages/container/violet-web/visibility -f visibility=public || echo "::warning::violet-web 可见性设置失败（可能已是 public）"
+          [ "${{ needs.prepare.outputs.deploy_api }}" == "true" ] && \
+            gh api -X PATCH /orgs/vod-studio/packages/container/violet-api/visibility -f visibility=public \
+              || echo "::warning::violet-api 可见性设置失败"
+          [ "${{ needs.prepare.outputs.deploy_web }}" == "true" ] && \
+            gh api -X PATCH /orgs/vod-studio/packages/container/violet-web/visibility -f visibility=public \
+              || echo "::warning::violet-web 可见性设置失败"
 
-  # ── prepare-server: 服务器侧准备（回滚复用检查 + compose 同步 + env 迁移）──
+  # ── prepare-server: 回滚复用检查 + 镜像拉取 + compose 同步 + env 迁移 ──
   prepare-server:
     needs: [prepare, build]
     if: needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true'
@@ -235,7 +238,9 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.tag }}
 
-      - name: 登录 ghcr.io（兜底：包可见性设置失败时仍能拉）
+      - name: 登录 ghcr.io
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+      - name: 登录 ghcr.io
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
       - name: 回滚模式复用缓存 api 镜像
@@ -252,7 +257,7 @@ jobs:
           docker tag violet-web:${{ needs.prepare.outputs.tag }} violet-web:latest
           echo "已将 violet-web:${{ needs.prepare.outputs.tag }} 复用为 latest"
 
-      - name: 拉取 api 镜像（ghcr.io）
+      - name: 拉取 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
         run: |
           podman pull ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
@@ -260,7 +265,7 @@ jobs:
           podman tag ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} violet-api:latest
           echo "已载入 violet-api:${{ needs.prepare.outputs.tag }}"
 
-      - name: 拉取 web 镜像（ghcr.io）
+      - name: 拉取 web 镜像
         if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
         run: |
           podman pull ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
@@ -282,7 +287,7 @@ jobs:
             echo "已迁移 api/.env → .env"
           fi
 
-  # ── migrate: 迁移门禁（仅部署 api 时）──
+  # ── migrate: 迁移门禁
   migrate:
     needs: [prepare, build, prepare-server]
     if: needs.prepare.outputs.deploy_api == 'true'
@@ -339,11 +344,11 @@ jobs:
           echo "::error::api 健康检查失败，api 未在超时内就绪"
           exit 1
 
-      - name: 跨组件冒烟（旧 web + 新 api，契约兼容验证）
+      - name: 跨组件冒烟
         run: |
           bash scripts/smoke.sh
 
-  # ── deploy-web: 部署 web + 同步 + 健康检查（api-only 时整体 skip）──
+  # ── deploy-web: 部署 web + 同步 + 健康检查
   deploy-web:
     needs: [prepare, deploy-api, prepare-server]
     # always() 必须显式写：job if 隐式带 success()，needs 里有 skipped（web-only 时
@@ -387,7 +392,7 @@ jobs:
           echo "::error::web 健康检查失败,web 未在超时内就绪"
           exit 1
 
-  # ── rollback: 跨 job 失败聚合自动回滚（按侧回各侧锚点 + 双侧健康检查）──
+  # ── rollback: 失败聚合自动回滚
   rollback:
     needs: [prepare, migrate, deploy-api, deploy-web]
     # 任一部署失败 && 迁移未失败(schema 没变) && 非手动回滚
@@ -475,7 +480,7 @@ jobs:
           fi
 
       # checkout 仅为 Release notes 抽 CHANGELOG；tag push 才建 Release，手动 dispatch 跳过
-      # （dispatch 时 checkout github.com 被掐会白死，本次 release job 失败即死于此）
+      # dispatch 时 checkout github.com 被掐会白死，release job 失败即死于此
       - uses: actions/checkout@v7
         if: github.event_name == 'push'
         with:
