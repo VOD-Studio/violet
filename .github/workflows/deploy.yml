@@ -218,9 +218,12 @@ jobs:
 
       - name: 设置镜像包公开（服务器匿名 pull）
         if: needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh api -X PATCH /user/packages/container/violet-api/visibility -f visibility=public || true
-          gh api -X PATCH /user/packages/container/violet-web/visibility -f visibility=public || true
+          # 仓库是组织，包归属 org；首次推送默认 private，需手动设 public 让服务器匿名 pull
+          gh api -X PATCH /orgs/vod-studio/packages/container/violet-api/visibility -f visibility=public || echo "::warning::violet-api 可见性设置失败（可能已是 public）"
+          gh api -X PATCH /orgs/vod-studio/packages/container/violet-web/visibility -f visibility=public || echo "::warning::violet-web 可见性设置失败（可能已是 public）"
 
   # ── prepare-server: 服务器侧准备（回滚复用检查 + compose 同步 + env 迁移）──
   prepare-server:
@@ -231,6 +234,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: 登录 ghcr.io（兜底：包可见性设置失败时仍能拉）
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
       - name: 回滚模式复用缓存 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build == 'true'
