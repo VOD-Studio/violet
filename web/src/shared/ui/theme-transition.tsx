@@ -1,5 +1,5 @@
 import { useTheme } from "next-themes";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { runThemeRerender, type TargetTheme } from "@/shared/lib/theme-rerender";
 
 /** 过渡原点（百分比，0..100） */
@@ -140,40 +140,6 @@ export function animateThemeRipple(
 		});
 
 	return transition;
-}
-
-/**
- * useThemeTransition - 叠加 View Transitions 圆形扩散的主题切换
- *
- * next-themes setTheme（setState → React 渲染 → effect 改 class）放 VT update
- * 回调里会与新帧捕获互相放大（实测 worst 帧 15s+）。故 update 里只手动切
- * class（applyThemeClass），finished 后再 setTheme 同步 next-themes 状态与
- * 存储——此时 VT 已结束，React 渲染不影响动画。点击点像素坐标缺省居中。
- */
-export function useThemeTransition() {
-	const { theme, setTheme } = useTheme();
-
-	const toggle = useCallback(
-		(ev?: { clientX?: number; clientY?: number }) => {
-			const targetTheme = theme === "dark" ? "light" : "dark";
-			const px = ev?.clientX ?? window.innerWidth / 2;
-			const py = ev?.clientY ?? window.innerHeight / 2;
-			const tr = animateThemeRipple(
-				{ px, py },
-				() => applyThemeClass(targetTheme),
-				targetTheme,
-			);
-			// 同步 next-themes 状态（含存储持久化）；无 VT 降级路径立即同步
-			if (tr) {
-				tr.finished.finally(() => setTheme(targetTheme));
-			} else {
-				setTheme(targetTheme);
-			}
-		},
-		[theme, setTheme],
-	);
-
-	return { toggle, theme };
 }
 
 /**

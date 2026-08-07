@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import type { ThemeOption } from "./types";
+import type { ThemeOption, VariantProps } from "./types";
 import { useThemeSwitcher } from "./use-theme-switcher";
 
 /**
@@ -8,7 +8,8 @@ import { useThemeSwitcher } from "./use-theme-switcher";
  * 按钮内部是一个微缩场景：亮色时太阳高挂、暗色时月亮星星升起、
  * 系统状态时显示自动切换的提示。点击按钮循环切换三态。
  */
-export function SceneButton() {
+export function SceneButton({ size = "default" }: VariantProps) {
+	const containerCls = size === "sm" ? "h-10 w-20" : "h-16 w-28";
 	const { theme, switchTheme } = useThemeSwitcher();
 
 	const cycleOrder: ThemeOption[] = ["light", "dark", "system"];
@@ -23,7 +24,7 @@ export function SceneButton() {
 		<button
 			type="button"
 			onClick={handleClick}
-			className="group relative h-16 w-28 overflow-hidden rounded-2xl border border-border bg-muted outline-none transition-transform hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
+			className={`group relative ${containerCls} overflow-hidden rounded-2xl border border-border bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring`}
 			aria-label="切换主题"
 		>
 			<AnimatePresence mode="wait">

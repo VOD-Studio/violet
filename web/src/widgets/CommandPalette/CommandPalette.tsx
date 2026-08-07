@@ -1,8 +1,8 @@
 import { NAV_ITEMS, type NavItem } from "@shared/config/nav";
 import { type CmdItem, filterCommands } from "@shared/lib/hooks/cmd-filter";
 import { CommandList } from "@shared/ui/command";
-import { useThemeTransition } from "@shared/ui/theme-transition";
 import { useNavigate } from "@tanstack/react-router";
+import { useThemeSwitcher } from "@widgets/ThemeToggle/variants/use-theme-switcher";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCommandUIStore } from "./command-ui-store";
@@ -24,7 +24,7 @@ const CommandPalette = () => {
 	const toggleOpen = useCommandUIStore((s) => s.toggle);
 	const [query, setQuery] = useState("");
 	const navigate = useNavigate();
-	const { toggle, theme } = useThemeTransition();
+	const { theme, switchTheme } = useThemeSwitcher();
 
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
@@ -49,25 +49,34 @@ const CommandPalette = () => {
 				run: () => navigate({ to: item.to }),
 			})),
 			{
-				id: "theme-dark",
-				label: "切换暗色主题",
-				group: "theme",
-				keywords: ["dark", "night"],
-				run: () => {
-					if (theme !== "dark") toggle();
-				},
-			},
-			{
 				id: "theme-light",
 				label: "切换亮色主题",
 				group: "theme",
-				keywords: ["light", "day"],
+				keywords: ["light", "day", "亮色"],
 				run: () => {
-					if (theme === "dark") toggle();
+					if (theme !== "light") switchTheme("light");
+				},
+			},
+			{
+				id: "theme-dark",
+				label: "切换暗黑主题",
+				group: "theme",
+				keywords: ["dark", "night", "暗黑"],
+				run: () => {
+					if (theme !== "dark") switchTheme("dark");
+				},
+			},
+			{
+				id: "theme-system",
+				label: "跟随系统主题",
+				group: "theme",
+				keywords: ["system", "auto", "跟随系统"],
+				run: () => {
+					if (theme !== "system") switchTheme("system");
 				},
 			},
 		],
-		[navigate, toggle, theme],
+		[navigate, switchTheme, theme],
 	);
 
 	const filtered = useMemo(() => filterCommands(all, query), [all, query]);

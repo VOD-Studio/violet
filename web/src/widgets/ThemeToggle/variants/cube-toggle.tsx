@@ -1,7 +1,7 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
-import type { ThemeOption } from "./types";
+import type { ThemeOption, VariantProps } from "./types";
 import { useThemeSwitcher } from "./use-theme-switcher";
 
 const choices: { value: ThemeOption; label: string; icon: typeof Sun; rotation: number }[] = [
@@ -16,9 +16,14 @@ const choices: { value: ThemeOption; label: string; icon: typeof Sun; rotation: 
  * 立方体三个面分别对应三态，点击后沿 Y 轴旋转到对应面。
  * 每个面的背景色略有区分，增强 3D 可读性。
  */
-export function CubeToggle() {
+export function CubeToggle({ size = "default" }: VariantProps) {
 	const { theme, switchTheme } = useThemeSwitcher();
 	const [rotation, setRotation] = useState(0);
+
+	const containerCls = size === "sm" ? "h-10 w-10" : "h-16 w-16";
+	const cubeCls = size === "sm" ? "h-8 w-8" : "h-12 w-12";
+	const translateZ = size === "sm" ? 16 : 24;
+	const iconCls = size === "sm" ? "size-4" : "size-5";
 
 	const current = choices.find((c) => c.value === theme) ?? choices[0];
 
@@ -41,11 +46,11 @@ export function CubeToggle() {
 
 	return (
 		<div
-			className="group relative flex h-16 w-16 items-center justify-center"
+			className={`group relative flex ${containerCls} items-center justify-center`}
 			style={{ perspective: "600px" }}
 		>
 			<motion.div
-				className="relative h-12 w-12"
+				className={`relative ${cubeCls}`}
 				style={{ transformStyle: "preserve-3d" }}
 				animate={{ rotateY: rotation }}
 				transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
@@ -57,7 +62,7 @@ export function CubeToggle() {
 							key={choice.value}
 							className="absolute inset-0 flex items-center justify-center rounded-lg border border-border shadow-sm backface-hidden"
 							style={{
-								transform: `rotateY(${choice.rotation}deg) translateZ(24px)`,
+								transform: `rotateY(${choice.rotation}deg) translateZ(${translateZ}px)`,
 								backgroundColor:
 									choice.value === "light"
 										? "hsl(var(--background))"
@@ -66,7 +71,7 @@ export function CubeToggle() {
 											: "hsl(var(--accent))",
 							}}
 						>
-							<Icon className="size-5 text-foreground" />
+							<Icon className={`${iconCls} text-foreground`} />
 						</div>
 					);
 				})}
