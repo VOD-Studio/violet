@@ -46,7 +46,7 @@ interface RippleOrigin {
 	py: number;
 }
 
-const RIPPLE_DURATION = 500;
+const RIPPLE_DURATION = 300;
 const RIPPLE_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
 
 /**
@@ -91,18 +91,21 @@ export function animateThemeRipple(
 		Math.max(py, window.innerHeight - py),
 	);
 
-	// 抑制所有命名 VT 组（page-main、post-cover 等），让圆形扩散只作用于 root
+	// theme-vt（view-transition-name:none）持续到 finished；theme-vt-freeze
+	// （transition:none）只需持续到 ready——抓帧完成后新 transition 与主题切换
+	// 无关，应正常播放，避免 VT 窗口内元素加载/淡入被压制（实测阻塞感主因）。
 	const root = document.documentElement;
-	root.classList.add("theme-vt");
+	root.classList.add("theme-vt", "theme-vt-freeze");
 
 	// mermaid v11 渲染依赖被 VT 暂停的帧调度，在 update 回调里 await 会死锁
 	// （实测单图渲染都跑不完）。故 update 只做同步 apply，图块以旧色参与扩散
 	// 动画，finished 后统一重渲换新色——动画期间 DOM 零 mermaid 写入，动画顺畅。
 	const transition = document.startViewTransition(() => apply());
 
-	// ready 后用 WAAPI 驱动 ::view-transition-new(root) 的 clip-path 扩散
+	// ready：帧已捕获，解除 transition 冻结（VT 伪元素动画独立于真实 DOM）
 	transition.ready
 		.then(() => {
+			root.classList.remove("theme-vt-freeze");
 			document.documentElement.animate(
 				{
 					clipPath: [
@@ -119,13 +122,13 @@ export function animateThemeRipple(
 			);
 		})
 		.catch(() => {
-			root.classList.remove("theme-vt");
+			root.classList.remove("theme-vt", "theme-vt-freeze");
 			applyAndRerender();
 		});
 
 	// 动画结束后统一重渲图块；VT 异常时走兜底确保仍切完。
-	// 必须先移除 theme-vt 再渲染：其全文档规则（view-transition-name / transition
-	// none）会让 mermaid 测量用临时 div 的插入触发全文档样式重算，13 图并发时崩。
+	// 必须先移除 theme-vt 再渲染：其全文档 view-transition-name:none 规则会让
+	// mermaid 测量用临时 div 的插入触发全文档样式重算，13 图并发时崩。
 	transition.finished
 		.then(() => {
 			root.classList.remove("theme-vt");
@@ -189,18 +192,12 @@ export function applyThemeClass(resolved: "light" | "dark"): void {
 /**
  * useSystemThemeTransition - 跟随系统模式下，OS 切换暗/亮时叠加圆形扩散
  *
- * 根因：theme === 'system' 时，OS 切换由 next-themes 自己监听
- * prefers-color-scheme 并在其回调里同步直接改 <html> 的 class，绕过了
- * 任何 startViewTransition 包装，因此默认无扩散动画。
- *
- * 本 hook 只在 'system' 模式启用，监听同一个 media query 的 change：
- * next-themes 的监听器先注册、先触发，等本回调运行时 DOM 已是新主题；
- * 于是先同步还原成旧主题（此时无 paint），再让 startViewTransition 抓
- * 旧帧、回调里设回新主题抓新帧，从而驱动扩散。原点取视口中心。
- *
- * 依赖 next-themes 在 media change 时只同步改一次 class、不通过副作用
- * 二次重放（已核对其 0.x 实现）；升级 next-themes 时需复查此假设。
- * 不支持 VT 的浏览器放任 next-themes 瞬切，不画蛇添足。
+ * next-themes 0.4.x 监听 prefers-color-scheme 变化后只 setResolvedTheme
+ * （React state），<html> class 变更异步发生在后续 React commit，且它用
+ * 已废弃的 addListener（与我们的 addEventListener 各自独立触发）。故本 hook
+ * 自行监听同一个 media query：回调触发时读当前 <html> class 推断旧主题，
+ * 直接驱动 VT（旧帧 → apply 新主题 → 扩散），不依赖 next-themes 的 DOM 时序。
+ * 不支持 VT 的浏览器放任 next-themes 自行切换，不画蛇添足。
  */
 export function useSystemThemeTransition(): void {
 	const { theme } = useTheme();
@@ -219,17 +216,19 @@ export function useSystemThemeTransition(): void {
 		const mq = window.matchMedia("(prefers-color-scheme: dark)");
 
 		const onChange = (e: MediaQueryListEvent) => {
-			const newResolved = e.matches ? "dark" : "light";
-			const oldResolved = newResolved === "dark" ? "light" : "dark";
-
-			// 先还原旧帧，让 startViewTransition 抓到 旧→新 的两帧
+			const newResolved: TargetTheme = e.matches ? "dark" : "light";
+			// 从当前 <html> class 读旧主题（next-themes 可能已/未改，以实际 DOM 为准）
+			const oldResolved: TargetTheme = document.documentElement.classList.contains("dark")
+				? "dark"
+				: "light";
+			// 旧新相同（next-themes 已先行改完或未变）则无需动画
+			if (oldResolved === newResolved) {
+				return;
+			}
+			// 确保旧帧就位（next-themes 异步改 class，此处同步锁定为旧值）
 			applyThemeClass(oldResolved);
-
 			animateThemeRipple(
-				{
-					px: window.innerWidth / 2,
-					py: window.innerHeight / 2,
-				},
+				{ px: window.innerWidth / 2, py: window.innerHeight / 2 },
 				() => applyThemeClass(newResolved),
 				newResolved,
 			);

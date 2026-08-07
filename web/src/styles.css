@@ -375,14 +375,14 @@ html.theme-vt * {
 	view-transition-name: none !important;
 }
 
-/* 主题切换 VT 期间禁用 CSS transition：替代 next-themes disableTransitionOnChange
-   的 JS 实现（注入 style + 强制 reflow，在 VT update 里是三次全文档重算）。
-   纯 CSS 零 reflow，仅覆盖 VT 窗口；非 VT 降级路径（Firefox）允许元素自然渐变。 */
-html.theme-vt,
-html.theme-vt *,
-html.theme-vt *::before,
-html.theme-vt *::after {
-	/* biome-ignore lint/complexity/noImportantStyles: VT 期间必须禁用 transition，纯 CSS 替代 next-themes disableTransitionOnChange 的 JS 注入 */
+/* 主题切换 VT 抓帧瞬间禁用 CSS transition：替代 next-themes disableTransitionOnChange
+   的 JS 实现。theme-vt-freeze 在 transition.ready 后即移除（帧已捕获），
+   之后新 transition 与主题切换无关应正常播放——避免 VT 窗口内元素加载/淡入被压制。 */
+html.theme-vt-freeze,
+html.theme-vt-freeze *,
+html.theme-vt-freeze *::before,
+html.theme-vt-freeze *::after {
+	/* biome-ignore lint/complexity/noImportantStyles: VT 抓帧瞬间必须禁用 transition，纯 CSS 替代 next-themes disableTransitionOnChange 的 JS 注入 */
 	transition: none !important;
 }
 
