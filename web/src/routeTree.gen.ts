@@ -17,6 +17,7 @@ import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as AnnouncementLabRouteImport } from './routes/announcement-lab'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TweetsIndexRouteImport } from './routes/tweets/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
@@ -90,6 +91,11 @@ const AdminRoute = AdminRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TweetsIndexRoute = TweetsIndexRouteImport.update({
+  id: '/tweets/',
+  path: '/tweets/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
@@ -295,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/blog/': typeof BlogIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/tweets/': typeof TweetsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
@@ -337,6 +344,7 @@ export interface FileRoutesByTo {
   '/blog': typeof BlogIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/tweets': typeof TweetsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
@@ -382,6 +390,7 @@ export interface FileRoutesById {
   '/blog/': typeof BlogIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/tweets/': typeof TweetsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
@@ -428,6 +437,7 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/profile/'
     | '/projects/'
+    | '/tweets/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/settings/about'
@@ -470,6 +480,7 @@ export interface FileRouteTypes {
     | '/blog'
     | '/profile'
     | '/projects'
+    | '/tweets'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/settings/about'
@@ -514,6 +525,7 @@ export interface FileRouteTypes {
     | '/blog/'
     | '/profile/'
     | '/projects/'
+    | '/tweets/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/settings/about'
@@ -543,6 +555,7 @@ export interface RootRouteChildren {
   BlogIndexRoute: typeof BlogIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  TweetsIndexRoute: typeof TweetsIndexRoute
   AuthGithubCallbackRoute: typeof AuthGithubCallbackRoute
 }
 
@@ -602,6 +615,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tweets/': {
+      id: '/tweets/'
+      path: '/tweets'
+      fullPath: '/tweets/'
+      preLoaderRoute: typeof TweetsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects/': {
@@ -941,6 +961,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogIndexRoute: BlogIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  TweetsIndexRoute: TweetsIndexRoute,
   AuthGithubCallbackRoute: AuthGithubCallbackRoute,
 }
 export const routeTree = rootRouteImport
