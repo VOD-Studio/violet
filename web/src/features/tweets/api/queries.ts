@@ -1,9 +1,9 @@
 /** tweets feature 查询层（cursor 分页时间线） */
 
 import type { Tweet } from "@entities/tweet/model/types";
-import { apiGetPaged } from "@shared/api/request";
+import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type { TweetTimelineQuery } from "../model/types";
 import { TIMELINE_PAGE_SIZE, tweetKeys } from "./keys";
 
@@ -21,9 +21,27 @@ export const fetchTimeline = async (
  */
 export const useTimeline = (limit: number = TIMELINE_PAGE_SIZE) =>
 	useInfiniteQuery({
-		queryKey: tweetKeys.timeline(limit),
+		queryKey: tweetKeys.timelineOf(limit),
 		queryFn: ({ pageParam }) => fetchTimeline({ cursor: pageParam, limit }),
 		// 首页无 cursor；pageParam 类型为 string | undefined
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,
+	});
+
+/**
+ * fetchTweetDetail - 调后端 GET /tweets/{id} 拉单条推文详情（公开）
+ */
+export const fetchTweetDetail = (id: string): Promise<Tweet> => apiGet<Tweet>(`/tweets/${id}`);
+
+/**
+ * useTweetDetail - 单条推文详情 hook
+ *
+ * 匿名可访问。详情页通过 route loader ensureQueryData 预取首屏，
+ * 此 hook 跟踪同一 queryKey 保证导航后即时命中缓存。
+ */
+export const useTweetDetail = (id: string) =>
+	useQuery({
+		queryKey: tweetKeys.detail(id),
+		queryFn: () => fetchTweetDetail(id),
+		enabled: !!id,
 	});

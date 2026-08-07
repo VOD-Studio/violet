@@ -12,10 +12,17 @@ interface TimelineKeyShape {
 	limit: number;
 }
 
+/** 推文模块根 key（提取为常量，供 timeline/detail 维度派生） */
+const tweetsRoot = ["tweets"] as const;
+
 export const tweetKeys = {
 	/** 推文模块根 key */
-	all: ["tweets"] as const,
+	all: tweetsRoot,
+	/** 时间线根维度：各 limit 子 key 的公共前缀，用于批量缓存操作 */
+	timeline: [...tweetsRoot, "timeline"] as const,
 	/** 全局时间线维度（按 limit 区分） */
-	timeline: (limit: number = TIMELINE_PAGE_SIZE) =>
-		[...tweetKeys.all, "timeline", { limit } satisfies TimelineKeyShape] as const,
+	timelineOf: (limit: number = TIMELINE_PAGE_SIZE) =>
+		[...tweetKeys.timeline, { limit } satisfies TimelineKeyShape] as const,
+	/** 单条推文详情维度（按 id 区分） */
+	detail: (id: string) => [...tweetsRoot, "detail", id] as const,
 };
