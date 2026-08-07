@@ -135,6 +135,8 @@ func buildPO(e domainaudit.AuditEvent) (AuditEventPO, error) {
 		Action:        e.Action.String(),
 		ActorType:     string(e.Actor.Type),
 		ActorUserName: e.Actor.UserName,
+		IPAddress:     e.Actor.IPAddress,
+		UserAgent:     e.Actor.UserAgent,
 		ResourceType:  e.Resource.Type,
 		ResourceID:    e.Resource.ID,
 		ResourceName:  e.Resource.Name,
