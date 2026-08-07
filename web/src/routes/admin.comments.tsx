@@ -227,20 +227,6 @@ function AdminCommentsPage() {
 		<PageShell
 			title="评论审核"
 			description="审核与管理文章评论"
-			sticky={
-				<div className="flex flex-wrap items-center gap-3 pt-1">
-					<Segmented
-						value={filter}
-						onValueChange={switchFilter}
-						segments={STATUS_SEGMENTS}
-					/>
-					<Segmented
-						value={typeFilter}
-						onValueChange={switchTypeFilter}
-						segments={TYPE_SEGMENTS}
-					/>
-				</div>
-			}
 		>
 			<DataTable<AdminComment>
 				data={data?.data ?? []}
@@ -250,6 +236,20 @@ function AdminCommentsPage() {
 				pageSize={PAGE_SIZE}
 				total={data?.pagination?.total ?? 0}
 				onPageChange={setPage}
+				toolbar={
+					<div className="flex flex-wrap items-center gap-3">
+						<Segmented
+							value={filter}
+							onValueChange={switchFilter}
+							segments={STATUS_SEGMENTS}
+						/>
+						<Segmented
+							value={typeFilter}
+							onValueChange={switchTypeFilter}
+							segments={TYPE_SEGMENTS}
+						/>
+					</div>
+				}
 				selectable
 				selectedIds={selected}
 				onSelectionChange={setSelected}

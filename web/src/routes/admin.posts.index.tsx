@@ -53,11 +53,11 @@ export const Route = createFileRoute("/admin/posts/")({
 });
 
 const STATUS_META: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> =
-	{
-		draft: { label: "草稿", variant: "secondary" },
-		published: { label: "已发布", variant: "default" },
-		archived: { label: "已归档", variant: "outline" },
-	};
+{
+	draft: { label: "草稿", variant: "secondary" },
+	published: { label: "已发布", variant: "default" },
+	archived: { label: "已归档", variant: "outline" },
+};
 
 const STATUS_OPTIONS = [
 	{ value: "all", label: "全部状态" },
@@ -238,22 +238,6 @@ function AdminPostsPage() {
 					</Button>
 				) : null
 			}
-			sticky={
-				<div className="pt-1">
-					<Select value={status} onValueChange={handleStatusChange}>
-						<SelectTrigger className="w-36">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{STATUS_OPTIONS.map((o) => (
-								<SelectItem key={o.value} value={o.value}>
-									{o.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-			}
 		>
 			<DataTable<AdminPostListItem>
 				data={posts}
@@ -267,6 +251,20 @@ function AdminPostsPage() {
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}
 				onRetry={() => refetch()}
+				toolbar={
+					<Select value={status} onValueChange={handleStatusChange}>
+						<SelectTrigger className="h-9 w-36">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{STATUS_OPTIONS.map((o) => (
+								<SelectItem key={o.value} value={o.value}>
+									{o.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				}
 				rowClassName={(row) => (row.is_featured ? "bg-primary/5" : "")}
 				storageKey="admin-posts-columns"
 				caption="文章列表"
