@@ -64,7 +64,7 @@ type fakeFetcher struct {
 	callCount int32
 }
 
-func (f *fakeFetcher) FetchOne(ctx context.Context, subscriptionID string) appsub.FetchReport {
+func (f *fakeFetcher) FetchNow(ctx context.Context, subscriptionID string) appsub.FetchReport {
 	atomic.AddInt32(&f.callCount, 1)
 	if f.onStart != nil {
 		f.onStart()
@@ -96,106 +96,23 @@ func mustDueSub(t *testing.T) *domainsubscription.Subscription {
 	)
 }
 
-// --- applyFeedError 错误分类状态机（核心） ---
 
-func TestApplyFeedError_RateLimited_SetsRetryAfterNoCount(t *testing.T) {
-	j := &SubscriptionJob{now: time.Now}
+// --- fetchAndUpdate（仅记日志，状态更新已在 FetchNow 内完成）---
+
+func TestFetchAndUpdate_SuccessLogsNoError(t *testing.T) {
 	sub := mustDueSub(t)
-	retry := time.Now().Add(30 * time.Minute)
-	fe := &appsub.FeedError{Kind: appsub.FeedErrRateLimited, RetryAfter: &retry, StatusCode: 429}
-
-	j.applyFeedError(sub, fe, time.Now(), "429")
-
-	assert.Equal(t, 0, sub.ConsecutiveFailures(), "429 不增计数")
-	require.NotNil(t, sub.RetryAfterUntil())
-	assert.True(t, sub.RetryAfterUntil().Equal(retry))
-	assert.Equal(t, domainsubscription.StatusActive, sub.Status(), "429 不 paused")
-}
-
-func TestApplyFeedError_RateLimitedNoHeader_DefaultBackoff(t *testing.T) {
-	now := time.Now()
-	j := &SubscriptionJob{now: time.Now}
-	sub := mustDueSub(t)
-	// 429 但源站没给 Retry-After 头（GoFeedParser parseRetryAfter 返回 nil）
-	fe := &appsub.FeedError{Kind: appsub.FeedErrRateLimited, RetryAfter: nil, StatusCode: 429}
-
-	j.applyFeedError(sub, fe, now, "429")
-
-	assert.Equal(t, 0, sub.ConsecutiveFailures(), "429 不增计数")
-	require.NotNil(t, sub.RetryAfterUntil(), "无 Retry-After 头时应用默认退避，不能为空转")
-	assert.True(t, sub.RetryAfterUntil().Equal(now.Add(defaultRateLimitBackoff)),
-		"默认退避应为 now+1h")
-	assert.Equal(t, domainsubscription.StatusActive, sub.Status(), "429 不 paused")
-}
-
-func TestApplyFeedError_Permanent_PausesImmediately(t *testing.T) {
-	j := &SubscriptionJob{now: time.Now}
-	sub := mustDueSub(t)
-	fe := &appsub.FeedError{Kind: appsub.FeedErrPermanent, StatusCode: 404}
-
-	j.applyFeedError(sub, fe, time.Now(), "404 not found")
-
-	assert.Equal(t, domainsubscription.StatusPaused, sub.Status(), "永久错误立即 paused")
-	assert.Equal(t, 0, sub.ConsecutiveFailures(), "永久错误直接 paused 不计数")
-}
-
-func TestApplyFeedError_Transient_IncrementsCount(t *testing.T) {
-	j := &SubscriptionJob{now: time.Now}
-	sub := mustDueSub(t)
-	fe := &appsub.FeedError{Kind: appsub.FeedErrTransient, StatusCode: 500}
-
-	j.applyFeedError(sub, fe, time.Now(), "500")
-
-	assert.Equal(t, 1, sub.ConsecutiveFailures())
-	assert.Equal(t, domainsubscription.StatusActive, sub.Status(), "首次瞬时不应 paused")
-}
-
-func TestApplyFeedError_Transient_AutoPausesAtThreshold(t *testing.T) {
-	j := &SubscriptionJob{now: time.Now}
-	sub := mustDueSub(t)
-	for i := 0; i < domainsubscription.MaxConsecutiveFailures-1; i++ {
-		sub.RecordFailure(time.Now(), "err")
-	}
-	fe := &appsub.FeedError{Kind: appsub.FeedErrTransient, StatusCode: 500}
-
-	j.applyFeedError(sub, fe, time.Now(), "500")
-
-	assert.Equal(t, domainsubscription.StatusPaused, sub.Status(), "达阈值自动 paused")
-	assert.Equal(t, domainsubscription.MaxConsecutiveFailures, sub.ConsecutiveFailures())
-}
-
-func TestApplyFeedError_NilFeedError_TreatedAsTransient(t *testing.T) {
-	j := &SubscriptionJob{now: time.Now}
-	sub := mustDueSub(t)
-	// feedErr=nil（非 *FeedError，如 FindByID 失败）应按瞬时处理
-	j.applyFeedError(sub, nil, time.Now(), "网络断开")
-
-	assert.Equal(t, 1, sub.ConsecutiveFailures())
-	assert.Equal(t, domainsubscription.StatusActive, sub.Status())
-}
-
-// --- fetchAndUpdate 成功路径 ---
-
-func TestFetchAndUpdate_SuccessClearsCount(t *testing.T) {
-	sub := mustDueSub(t)
-	sub.RecordFailure(time.Now(), "old err") // 预置计数
-	require.Equal(t, 1, sub.ConsecutiveFailures())
-
-	repo := &fakeSubRepo{}
 	j := &SubscriptionJob{
-		svc:  &fakeFetcher{}, // 默认返回成功 report
-		repo: repo,
+		svc: &fakeFetcher{}, // 默认返回成功 report
+		repo: &fakeSubRepo{},
 		now:  time.Now,
 	}
-	j.fetchAndUpdate(context.Background(), sub)
-
-	assert.Equal(t, 0, sub.ConsecutiveFailures(), "成功应清零计数")
-	assert.Len(t, repo.saved, 1, "应 Save 状态")
+	require.NotPanics(t, func() {
+		j.fetchAndUpdate(context.Background(), sub)
+	})
 }
 
-func TestFetchAndUpdate_FailureSavesPausedState(t *testing.T) {
+func TestFetchAndUpdate_FailureLogsError(t *testing.T) {
 	sub := mustDueSub(t)
-	repo := &fakeSubRepo{}
 	j := &SubscriptionJob{
 		svc: &fakeFetcher{reports: map[string]appsub.FetchReport{
 			sub.ID().String(): {
@@ -204,13 +121,12 @@ func TestFetchAndUpdate_FailureSavesPausedState(t *testing.T) {
 				FeedErr: &appsub.FeedError{Kind: appsub.FeedErrPermanent, StatusCode: 404},
 			},
 		}},
-		repo: repo,
+		repo: &fakeSubRepo{},
 		now:  time.Now,
 	}
-	j.fetchAndUpdate(context.Background(), sub)
-
-	require.Len(t, repo.saved, 1)
-	assert.Equal(t, domainsubscription.StatusPaused, repo.saved[0].Status())
+	require.NotPanics(t, func() {
+		j.fetchAndUpdate(context.Background(), sub)
+	})
 }
 
 // --- runOnce 并发与隔离 ---
@@ -223,21 +139,22 @@ func TestRunOnce_WorkerPoolParallel(t *testing.T) {
 	}
 	repo := &fakeSubRepo{due: subs}
 
-	j := &SubscriptionJob{
-		svc: &fakeFetcher{
-			onStart: func() {
-				n := atomic.AddInt32(&inflight, 1)
-				for {
-					m := atomic.LoadInt32(&maxInflight)
-					if n <= m || atomic.CompareAndSwapInt32(&maxInflight, m, n) {
-						break
-					}
+	fetcher := &fakeFetcher{
+		onStart: func() {
+			n := atomic.AddInt32(&inflight, 1)
+			for {
+				m := atomic.LoadInt32(&maxInflight)
+				if n <= m || atomic.CompareAndSwapInt32(&maxInflight, m, n) {
+					break
 				}
-				// 模拟抓取耗时，让多个 worker 真正并发
-				time.Sleep(10 * time.Millisecond)
-			},
-			onEnd: func() { atomic.AddInt32(&inflight, -1) },
+			}
+			// 模拟抓取耗时，让多个 worker 真正并发
+			time.Sleep(10 * time.Millisecond)
 		},
+		onEnd: func() { atomic.AddInt32(&inflight, -1) },
+	}
+	j := &SubscriptionJob{
+		svc:    fetcher,
 		repo:   repo,
 		now:    time.Now,
 		worker: 3,
@@ -248,15 +165,16 @@ func TestRunOnce_WorkerPoolParallel(t *testing.T) {
 
 	assert.GreaterOrEqual(t, atomic.LoadInt32(&maxInflight), int32(2), "应有并发（≥2）")
 	assert.LessOrEqual(t, atomic.LoadInt32(&maxInflight), int32(3), "最大并发不应超 worker 数")
-	assert.Len(t, repo.saved, 10, "所有订阅都应被处理")
+	assert.Equal(t, int32(10), atomic.LoadInt32(&fetcher.callCount), "所有订阅都应被处理")
 }
 
 func TestRunOnce_SinglePanicDoesNotAffectOthers(t *testing.T) {
 	subs := []*domainsubscription.Subscription{mustDueSub(t), mustDueSub(t), mustDueSub(t)}
 	repo := &fakeSubRepo{due: subs}
 
+	fetcher := &fakeFetcher{panicIDs: map[string]bool{subs[1].ID().String(): true}}
 	j := &SubscriptionJob{
-		svc: &fakeFetcher{panicIDs: map[string]bool{subs[1].ID().String(): true}},
+		svc:    fetcher,
 		repo:   repo,
 		now:    time.Now,
 		worker: 5,
@@ -267,25 +185,26 @@ func TestRunOnce_SinglePanicDoesNotAffectOthers(t *testing.T) {
 		j.runOnce(context.Background())
 	})
 
-	// panic 的订阅：fetchAndUpdate 中断（svc.FetchOne panic 被 recover），不 Save
-	// 另两个正常 Save
-	assert.Equal(t, 2, len(repo.saved), "panic 订阅不 Save，另两个应 Save")
+	// panic 的订阅：FetchNow panic 被 recover，另两个正常完成
+	assert.Equal(t, int32(3), atomic.LoadInt32(&fetcher.callCount), "三个订阅都应被调用（panic 的也被调用并 recover）")
 }
 
 func TestRunOnce_NoDueSubs_Noop(t *testing.T) {
 	repo := &fakeSubRepo{due: nil}
-	j := &SubscriptionJob{svc: &fakeFetcher{}, repo: repo, now: time.Now, worker: 5, tick: time.Hour}
+	fetcher := &fakeFetcher{}
+	j := &SubscriptionJob{svc: fetcher, repo: repo, now: time.Now, worker: 5, tick: time.Hour}
 	require.NotPanics(t, func() {
 		j.runOnce(context.Background())
 	})
-	assert.Empty(t, repo.saved)
+	assert.Equal(t, int32(0), atomic.LoadInt32(&fetcher.callCount))
 }
 
 func TestRunOnce_FindDueError_Noop(t *testing.T) {
 	repo := &fakeSubRepo{findErr: errors.New("DB 挂")}
-	j := &SubscriptionJob{svc: &fakeFetcher{}, repo: repo, now: time.Now, worker: 5, tick: time.Hour}
+	fetcher := &fakeFetcher{}
+	j := &SubscriptionJob{svc: fetcher, repo: repo, now: time.Now, worker: 5, tick: time.Hour}
 	require.NotPanics(t, func() {
 		j.runOnce(context.Background())
 	})
-	assert.Empty(t, repo.saved, "FindDue 失败不应处理任何订阅")
+	assert.Equal(t, int32(0), atomic.LoadInt32(&fetcher.callCount), "FindDue 失败不应处理任何订阅")
 }
