@@ -4,8 +4,9 @@
 #   - 打 v* tag: 自动发版到 rua 生产环境(release-please 合并 release PR 时触发)
 #   - workflow_dispatch: 手动触发,可选 version 回滚 / skip_build 复用镜像 / component 单组件
 #
-# 构建（build）在 GitHub 托管 runner 上执行：拉基础镜像快、不占服务器资源，
-# 产物经 docker save + artifact 传给服务器 docker load（公开仓库 Actions 免费）。
+# 构建（build）在 GitHub 托管 runner 上执行：拉基础镜像快、不占服务器资源。
+# 镜像经 ghcr.io 分发（GitHub push → 服务器 podman pull），registry 协议分块校验+重试，
+# 比裸文件下载可靠（服务器直连 Azure blob 下载 artifact 曾反复损坏）。
 # 部署/迁移/回滚仍在 rua 的 self-hosted runner 上执行（操作服务器本地环境）。
 # 回滚模式（skip_build）不构建，复用服务器本地缓存镜像，与 GitHub 构建互不影响。
 #
@@ -50,6 +51,7 @@ concurrency:
 
 permissions:
   contents: write   # 创建 GitHub Release 需要
+  packages: write   # 推送镜像到 ghcr.io
 
 jobs:
   # ── detect: 按侧变更检测（对比各侧锚点，输出部署侧布尔）──
@@ -78,7 +80,7 @@ jobs:
           echo "web_anchor=${WEB_ANCHOR}" >> "$GITHUB_OUTPUT"
           echo "锚点: api=${API_ANCHOR:-无} web=${WEB_ANCHOR:-无}"
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter-api
         if: steps.anchors.outputs.api_anchor != ''
         with:
@@ -90,7 +92,7 @@ jobs:
               - 'docker-compose*.yml'
               - 'scripts/**'
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter-web
         if: steps.anchors.outputs.web_anchor != ''
         with:
@@ -163,9 +165,10 @@ jobs:
           echo "deploy_web=${DEPLOY_WEB}" >> "$GITHUB_OUTPUT"
           echo "部署侧: api=${DEPLOY_API} web=${DEPLOY_WEB}"
 
-  # ── build: GitHub 托管 runner 构建镜像 + 上传 artifact（公开仓库 Actions 免费）──
+  # ── build: GitHub 托管 runner 构建镜像并推送 ghcr.io ──
   # 服务器不再本地构建，基础镜像拉取和构建都走 GitHub。
-  # 产物经 docker save + artifact 传给服务器 docker load。
+  # 镜像经 ghcr.io 分发：GitHub push，服务器 podman pull（registry 协议分块校验+重试，
+  # 比裸文件下载可靠——服务器直连 Azure blob 下载 artifact 曾反复损坏）。
   # 回滚模式（skip_build=true）不构建，复用服务器本地缓存镜像（见 prepare-server）。
   build:
     needs: prepare
@@ -177,53 +180,47 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.tag }}
 
-      - name: 构建 api 镜像
+      - name: 登录 GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 构建并推送 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
         run: |
+          # ghcr.io 镜像名必须全小写
           docker build \
-            -t violet-api:${{ needs.prepare.outputs.tag }} \
-            -t violet-api:latest \
+            -t ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} \
+            -t ghcr.io/vod-studio/violet-api:latest \
             -f api/Dockerfile api/
-          echo "已构建 violet-api:${{ needs.prepare.outputs.tag }} 与 violet-api:latest"
+          docker push ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
+          docker push ghcr.io/vod-studio/violet-api:latest
+          echo "已推送 ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}"
 
-      - name: 构建 web 镜像
+      - name: 构建并推送 web 镜像
         if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
         run: |
           # build args 从 GitHub secrets 读取（OAuth client id 等），与现网配置保持一致。
           # VITE_API_BASE_URL / VITE_SITE_URL 有默认值，与服务器 .env 一致。
           docker build \
-            -t violet-web:${{ needs.prepare.outputs.tag }} \
-            -t violet-web:latest \
+            -t ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} \
+            -t ghcr.io/vod-studio/violet-web:latest \
             --build-arg "VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api/v1}" \
             --build-arg "VITE_SITE_URL=${VITE_SITE_URL:-https://xunrua.top}" \
             --build-arg "VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" \
             --build-arg "VITE_GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}" \
             -f web/Dockerfile web/
-          echo "已构建 violet-web:${{ needs.prepare.outputs.tag }} 与 violet-web:latest"
+          docker push ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
+          docker push ghcr.io/vod-studio/violet-web:latest
+          echo "已推送 ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}"
 
-      - name: 保存 api 镜像
-        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
-        run: docker save violet-api:${{ needs.prepare.outputs.tag }} violet-api:latest | gzip > "$RUNNER_TEMP/violet-api.tar.gz"
-
-      - name: 上传 api 镜像 artifact
-        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: violet-api-image
-          path: ${{ runner.temp }}/violet-api.tar.gz
-          retention-days: 7
-
-      - name: 保存 web 镜像
-        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
-        run: docker save violet-web:${{ needs.prepare.outputs.tag }} violet-web:latest | gzip > "$RUNNER_TEMP/violet-web.tar.gz"
-
-      - name: 上传 web 镜像 artifact
-        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: violet-web-image
-          path: ${{ runner.temp }}/violet-web.tar.gz
-          retention-days: 7
+      - name: 设置镜像包公开（服务器匿名 pull）
+        if: needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true'
+        run: |
+          gh api -X PATCH /user/packages/container/violet-api/visibility -f visibility=public || true
+          gh api -X PATCH /user/packages/container/violet-web/visibility -f visibility=public || true
 
   # ── prepare-server: 服务器侧准备（回滚复用检查 + compose 同步 + env 迁移）──
   prepare-server:
@@ -249,6 +246,22 @@ jobs:
           docker tag violet-web:${{ needs.prepare.outputs.tag }} violet-web:latest
           echo "已将 violet-web:${{ needs.prepare.outputs.tag }} 复用为 latest"
 
+      - name: 拉取 api 镜像（ghcr.io）
+        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
+        run: |
+          podman pull ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
+          podman tag ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} violet-api:${{ needs.prepare.outputs.tag }}
+          podman tag ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} violet-api:latest
+          echo "已载入 violet-api:${{ needs.prepare.outputs.tag }}"
+
+      - name: 拉取 web 镜像（ghcr.io）
+        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
+        run: |
+          podman pull ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
+          podman tag ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} violet-web:${{ needs.prepare.outputs.tag }}
+          podman tag ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} violet-web:latest
+          echo "已载入 violet-web:${{ needs.prepare.outputs.tag }}"
+
       - name: 同步 compose 文件到部署目录
         run: |
           cp docker-compose.prod.yml /root/docker/violet/docker-compose.prod.yml
@@ -271,16 +284,6 @@ jobs:
     environment: production
     timeout-minutes: 15
     steps:
-      - uses: actions/download-artifact@v4
-        if: inputs.skip_build != 'true'
-        with:
-          name: violet-api-image
-          path: ${{ runner.temp }}/images
-
-      - name: 载入 api 镜像
-        if: inputs.skip_build != 'true'
-        run: docker load -i "$RUNNER_TEMP/images/violet-api.tar.gz"
-
       - name: 数据库迁移门禁
         id: migrate
         working-directory: /root/docker/violet
@@ -305,16 +308,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.tag }}
-
-      - uses: actions/download-artifact@v4
-        if: inputs.skip_build != 'true'
-        with:
-          name: violet-api-image
-          path: ${{ runner.temp }}/images
-
-      - name: 载入 api 镜像
-        if: inputs.skip_build != 'true'
-        run: docker load -i "$RUNNER_TEMP/images/violet-api.tar.gz"
 
       - name: 部署 api 服务
         id: deploy
@@ -349,22 +342,12 @@ jobs:
     needs: [prepare, deploy-api, prepare-server]
     # always() 必须显式写：job if 隐式带 success()，needs 里有 skipped（web-only 时
     # deploy-api 被跳过）会不求值直接 skip，不只是 failed 才传播。
-    # both 时 deploy-api failure 仍按 result != 'failure' 拦截。
-    if: always() && needs.prepare.outputs.deploy_web == 'true' && needs.deploy-api.result != 'failure'
+    # both 时 deploy-api failure 仍按 result != 'failure' 拦截；migrate 失败同样不部署。
+    if: always() && needs.prepare.outputs.deploy_web == 'true' && needs.deploy-api.result != 'failure' && needs.migrate.result != 'failure'
     runs-on: [self-hosted, rua]
     environment: production
     timeout-minutes: 15
     steps:
-      - uses: actions/download-artifact@v4
-        if: inputs.skip_build != 'true'
-        with:
-          name: violet-web-image
-          path: ${{ runner.temp }}/images
-
-      - name: 载入 web 镜像
-        if: inputs.skip_build != 'true'
-        run: docker load -i "$RUNNER_TEMP/images/violet-web.tar.gz"
-
       - name: 部署 web 服务
         id: deploy-web
         working-directory: /root/docker/violet
