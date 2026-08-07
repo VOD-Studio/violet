@@ -7,6 +7,14 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.5.1](https://github.com/VOD-Studio/violet/compare/v2.5.0...v2.5.1) (2026-08-07)
+
+
+### 修复
+
+* **deploy:** ghcr 包可见性 API 改 org 路径 + 服务器 podman login 兜底 ([175ecf3](https://github.com/VOD-Studio/violet/commit/175ecf334f879945fc4b43ef5a3cf0de54eafb8e))
+* **deploy:** 可见性按实际部署侧设置 + 去括号注释噪声 ([e23158b](https://github.com/VOD-Studio/violet/commit/e23158b932b505769d808185b6f4ee843042ba09))
+
 ## [2.5.0](https://github.com/VOD-Studio/violet/compare/v2.4.8...v2.5.0) (2026-08-07)
 
 
