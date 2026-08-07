@@ -520,14 +520,14 @@ jobs:
       - name: 创建 GitHub Release(CHANGELOG 段落)
         # 仅 tag push 创建 Release;手动 dispatch(部署/回滚)不建
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'changelog'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           body_path: ${{ runner.temp }}/release-notes.md
 
       - name: 创建 GitHub Release(自动生成 notes)
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'generated'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           generate_release_notes: true
