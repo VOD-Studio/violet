@@ -239,8 +239,9 @@ jobs:
           ref: ${{ needs.prepare.outputs.tag }}
 
       - name: 登录 ghcr.io
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-      - name: 登录 ghcr.io
+        env:
+          HTTPS_PROXY: http://127.0.0.1:20172
+          HTTP_PROXY: http://127.0.0.1:20172
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
       - name: 回滚模式复用缓存 api 镜像
@@ -259,6 +260,9 @@ jobs:
 
       - name: 拉取 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
+        env:
+          HTTPS_PROXY: http://127.0.0.1:20172
+          HTTP_PROXY: http://127.0.0.1:20172
         run: |
           podman pull ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
           podman tag ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} violet-api:${{ needs.prepare.outputs.tag }}
@@ -267,6 +271,9 @@ jobs:
 
       - name: 拉取 web 镜像
         if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
+        env:
+          HTTPS_PROXY: http://127.0.0.1:20172
+          HTTP_PROXY: http://127.0.0.1:20172
         run: |
           podman pull ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
           podman tag ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} violet-web:${{ needs.prepare.outputs.tag }}
@@ -310,7 +317,7 @@ jobs:
   # ── deploy-api: 部署 api + 健康检查 + 跨组件冒烟 ──
   deploy-api:
     needs: [prepare, migrate, prepare-server]
-    if: needs.prepare.outputs.deploy_api == 'true'
+    if: needs.prepare.outputs.deploy_api == 'true' && needs.prepare-server.result == 'success'
     runs-on: [self-hosted, rua]
     environment: production
     timeout-minutes: 15
@@ -353,8 +360,8 @@ jobs:
     needs: [prepare, deploy-api, prepare-server]
     # always() 必须显式写：job if 隐式带 success()，needs 里有 skipped（web-only 时
     # deploy-api 被跳过）会不求值直接 skip，不只是 failed 才传播。
-    # both 时 deploy-api failure 仍按 result != 'failure' 拦截；migrate 失败同样不部署。
-    if: always() && needs.prepare.outputs.deploy_web == 'true' && needs.deploy-api.result != 'failure' && needs.migrate.result != 'failure'
+    # 上游任一 failure 都拦住：prepare-server（镜像没拉到）、deploy-api、migrate。
+    if: always() && needs.prepare.outputs.deploy_web == 'true' && needs.prepare-server.result == 'success' && needs.deploy-api.result != 'failure' && needs.migrate.result != 'failure'
     runs-on: [self-hosted, rua]
     environment: production
     timeout-minutes: 15
@@ -394,7 +401,7 @@ jobs:
 
   # ── rollback: 失败聚合自动回滚
   rollback:
-    needs: [prepare, migrate, deploy-api, deploy-web]
+    needs: [prepare, build, prepare-server, migrate, deploy-api, deploy-web]
     # 任一部署失败 && 迁移未失败(schema 没变) && 非手动回滚
     # 构建失败时部署链全 skipped(无 failure) → 不触发,线上未动
     if: always() && needs.prepare.outputs.rollback != 'true' && needs.migrate.result != 'failure' && (needs.deploy-api.result == 'failure' || needs.deploy-web.result == 'failure')
