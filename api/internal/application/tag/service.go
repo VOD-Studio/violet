@@ -3,6 +3,7 @@ package tag
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"unicode"
 
@@ -50,6 +51,26 @@ func (s *Service) Create(ctx context.Context, name string) (TagDTO, error) {
 	}
 	if exists {
 		return TagDTO{}, domaintag.ErrNameExists
+	}
+	id, err := s.repo.Save(ctx, domaintag.NewTag(0, name, slug))
+	if err != nil {
+		return TagDTO{}, err
+	}
+	return TagDTO{ID: id, Name: name, Slug: slug}, nil
+}
+
+// CreateOrGet 幂等创建标签：slug 已存在则返回已存在的标签，否则新建。
+// 供 MCP create_tag 使用——agent 无需先 list 再 create，对每个标签直接调用即可。
+// 与 Create 的区别：Create 重名报 ErrNameExists（admin HTTP 依赖 409 提示用户），
+// CreateOrGet 重名返回已存在。
+func (s *Service) CreateOrGet(ctx context.Context, name string) (TagDTO, error) {
+	slug := GenerateSlug(name)
+	existing, err := s.repo.FindBySlug(ctx, slug)
+	if err == nil {
+		return toDTO(existing), nil
+	}
+	if !errors.Is(err, domaintag.ErrNotFound) {
+		return TagDTO{}, err
 	}
 	id, err := s.repo.Save(ctx, domaintag.NewTag(0, name, slug))
 	if err != nil {

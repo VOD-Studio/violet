@@ -41,11 +41,11 @@ var CommentsServerMeta = &mcp.Implementation{
 // server 选型层告知评论检索定位，与文章域区分。
 const commentsInstructions = `本 server 检索读者评论/批注反馈，仅已审核通过（approved）；用于「读者批注→写作改进」闭环。文章本身（读全文/写文章）用 violet-posts server。批注带 anchor.selected_text 标注读者划中的原文。`
 
-// NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool + 1 个编排 prompt。
+// NewPostServer 构造文章 MCP 服务器（/api/v1/mcp），注册 5 个文章 CRUD tool + 3 个检索 tool + 2 个标签 tool + 1 个编排 prompt。
 // 低风险域：只写自己的草稿/发布自己的文章，无 SSRF。检索为私有视角（PAT 持有人全部文章）。
 // tools 提供具体 handler；AddTool 从参数结构体推导 JSON Schema。
 // prompts 提供 polish_draft 编排 prompt（PAT posts:read）。
-func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools) *mcp.Server {
+func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools, tagTools *TagTools) *mcp.Server {
 	s := mcp.NewServer(ServerMeta, nil)
 
 	mcp.AddTool(s, &mcp.Tool{
@@ -72,6 +72,16 @@ func NewPostServer(tools *PostTools, search *SearchTools, prompts *PromptTools) 
 		Name:        "list_drafts",
 		Description: "列出草稿状态的文章（分页）。需 posts:read 权限。",
 	}, tools.ListDrafts)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "create_tag",
+		Description: "为当前用户创建标签（幂等：同名已存在则返回已存在）。需 posts:write 权限。抓取带标签文章时先用此 tool 建标签，再 create_post 带 tags。",
+	}, tagTools.CreateTag)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "list_tags",
+		Description: "列出所有标签。需 posts:read 权限。create_post 前可先查现有标签。",
+	}, tagTools.ListTags)
 
 	mcp.AddTool(s, &mcp.Tool{
 		Name: "search_posts",
