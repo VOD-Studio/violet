@@ -432,6 +432,23 @@ func TestService_ListByUser(t *testing.T) {
 	_, _, err = svc.ListByUser(context.Background(), "ghost_user", "", 20)
 	require.ErrorIs(t, err, domainuser.ErrNotFound)
 }
+func TestService_GetUserProfile(t *testing.T) {
+	author := newTestUser(t, "alice")
+	users := &fakeUserRepo{
+		byUsername: map[string]*domainuser.User{"alice": author},
+		byIDs:      map[string]*domainuser.User{author.GetID().String(): author},
+	}
+	svc := newService(&fakeTweetRepo{}, users, nil, nil, appshared.NoopEventBus{})
+
+	profile, err := svc.GetUserProfile(context.Background(), "alice")
+	require.NoError(t, err)
+	assert.Equal(t, author.GetID().String(), profile.ID)
+	assert.Equal(t, "alice", profile.Username)
+	assert.NotEmpty(t, profile.CreatedAt)
+
+	_, err = svc.GetUserProfile(context.Background(), "ghost_user")
+	require.ErrorIs(t, err, domainuser.ErrNotFound)
+}
 
 // --- cursor 编解码边界 ---
 

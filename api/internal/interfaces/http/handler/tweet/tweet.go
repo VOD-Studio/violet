@@ -88,3 +88,12 @@ func (h *Handler) ListByUser(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondCursor(w, dtos, limit, nextCursor != "", nextCursor)
 }
+// GetUserProfile 用户公开资料卡（公开）：GET /users/{username}
+func (h *Handler) GetUserProfile(w http.ResponseWriter, r *http.Request) {
+	dto, err := h.svc.GetUserProfile(r.Context(), r.PathValue("username"))
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, dto)
+}

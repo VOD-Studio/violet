@@ -64,6 +64,15 @@ type AuthorDTO struct {
 	AvatarURL string `json:"avatar_url"`
 }
 
+// UserProfileDTO 用户公开资料卡（公开，仅包含不敏感的非私域字段）。
+type UserProfileDTO struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	AvatarURL string `json:"avatar_url"`
+	Bio       string `json:"bio"`
+	CreatedAt string `json:"created_at"`
+}
+
 // TweetDTO 推文读模型（序列化跨层传输）。
 type TweetDTO struct {
 	ID        string    `json:"id"`
@@ -174,6 +183,25 @@ func (s *Service) ListByUser(ctx context.Context, username, cursorStr string, li
 	}
 	dtos, nextCursor := s.buildPage(ctx, tweets, limit)
 	return dtos, nextCursor, nil
+}
+
+// GetUserProfile 获取公开用户资料（公开）：按 username 查找用户并转化公开资料卡。
+func (s *Service) GetUserProfile(ctx context.Context, username string) (UserProfileDTO, error) {
+	uname, err := domainuser.ParseUsername(username)
+	if err != nil {
+		return UserProfileDTO{}, shared.BadRequest("非法的用户名")
+	}
+	u, err := s.userRepo.FindByUsername(ctx, uname)
+	if err != nil {
+		return UserProfileDTO{}, err
+	}
+	return UserProfileDTO{
+		ID:        u.GetID().String(),
+		Username:  u.Username().String(),
+		AvatarURL: u.AvatarURL(),
+		Bio:       u.Bio(),
+		CreatedAt: u.CreatedAt().Format(time.RFC3339),
+	}, nil
 }
 
 // --- 内部辅助 ---

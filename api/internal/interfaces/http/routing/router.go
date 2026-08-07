@@ -274,7 +274,8 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Delete("/{id}", tweetH.Delete)
 	})
 
-	// 用户主页推文列表（公开）
+	// 用户主页公开资料与推文列表（公开）
+	v1.Get("/users/{username}", tweetH.GetUserProfile)
 	v1.Get("/users/{username}/tweets", tweetH.ListByUser)
 }
 

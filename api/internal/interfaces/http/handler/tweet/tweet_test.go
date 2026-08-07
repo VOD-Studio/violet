@@ -70,6 +70,14 @@ func (s *stubUserRepo) FindByIDs(_ context.Context, ids []shared.ID) ([]*domainu
 	}
 	return out, nil
 }
+func (s *stubUserRepo) FindByUsername(_ context.Context, username domainuser.Username) (*domainuser.User, error) {
+	for _, u := range s.users {
+		if u.Username().String() == username.String() {
+			return u, nil
+		}
+	}
+	return nil, domainuser.ErrNotFound
+}
 
 var (
 	authorID   = shared.MustParseID("00000000-0000-0000-0000-0000000000aa")
@@ -212,4 +220,30 @@ func TestDelete_OKForAuthor(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 	require.Len(t, repo.deleted, 1)
+}
+func TestGetUserProfile_OK(t *testing.T) {
+	h := newTestHandler(&stubTweetRepo{})
+	req := httptest.NewRequest(http.MethodGet, "/users/alice", nil)
+	req.SetPathValue("username", "alice")
+	rr := httptest.NewRecorder()
+	h.GetUserProfile(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var body struct {
+		Data struct {
+			Username string `json:"username"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&body))
+	assert.Equal(t, "alice", body.Data.Username)
+}
+
+func TestGetUserProfile_NotFound(t *testing.T) {
+	h := newTestHandler(&stubTweetRepo{})
+	req := httptest.NewRequest(http.MethodGet, "/users/ghost", nil)
+	req.SetPathValue("username", "ghost")
+	rr := httptest.NewRecorder()
+	h.GetUserProfile(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
 }
