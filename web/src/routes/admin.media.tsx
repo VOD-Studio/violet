@@ -254,6 +254,7 @@ function AdminMediaPage() {
 					value={view}
 					onValueChange={(v) => setView(v as ViewMode)}
 					segments={viewTypeSegments()}
+					size="default"
 				/>
 			</div>
 

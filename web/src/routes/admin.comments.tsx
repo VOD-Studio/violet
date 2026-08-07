@@ -242,11 +242,13 @@ function AdminCommentsPage() {
 							value={filter}
 							onValueChange={switchFilter}
 							segments={STATUS_SEGMENTS}
+							size="default"
 						/>
 						<Segmented
 							value={typeFilter}
 							onValueChange={switchTypeFilter}
 							segments={TYPE_SEGMENTS}
+							size="default"
 						/>
 					</div>
 				}
