@@ -58,7 +58,7 @@ MCP server 在 `.omp/mcp.json` 声明：
 
 ### violet-posts — 自己的文章读写
 
-管理**当前用户名下**的文章：建草稿、读全文（含草稿）、发布、检索。文章本身的读写走这个 server，不走 comments。
+管理**当前用户名下**的文章：建草稿、读全文（含草稿）、发布、检索、标签管理。文章本身的读写走这个 server，不走 comments。
 
 | 工具 | 用途 |
 |------|------|
@@ -67,6 +67,8 @@ MCP server 在 `.omp/mcp.json` 声明：
 | `list_drafts` | 列草稿（分页） |
 | `publish_post` | 发布（需独立的 `posts:publish` 权限） |
 | `update_post` | 改自己文章内容 |
+| `create_tag` | 建标签（幂等，同名已存在则返回已存在）。`create_post` 带 `tags` 前需先建标签——后端校验标签必须先存在 |
+| `list_tags` | 列出所有标签 |
 | `search_posts` | 全文检索自己的文章（含草稿），写作前查重/找可引用旧文 |
 | `search_code_blocks` | 按语言/内容搜自己文章的代码块，写作时复用 |
 | `search_formulas` | 按 LaTeX 源码片段搜公式，看「哪篇用过某表达式」 |
@@ -101,3 +103,4 @@ MCP server 在 `.omp/mcp.json` 声明：
 ## 更新日志
 
 - 2026-07-30: 初始版本，记录 reader/comments/posts/scraper 四个 server 的定位与工具清单
+- 2026-08-07: 新增 `create_tag` / `list_tags`（violet-posts），补全标签创建能力——此前 `create_post` 带未创建的标签会失败
