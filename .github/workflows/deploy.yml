@@ -228,7 +228,7 @@ jobs:
             gh api -X PATCH /orgs/vod-studio/packages/container/violet-web/visibility -f visibility=public \
               || echo "::warning::violet-web 可见性设置失败"
 
-  # ── prepare-server: 回滚复用检查 + 镜像拉取 + compose 同步 + env 迁移 ──
+  # ── prepare-server: 回滚复用检查 + 镜像拉取 + compose 同步 ──
   prepare-server:
     needs: [prepare, build]
     if: needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true'
@@ -284,15 +284,6 @@ jobs:
         run: |
           cp docker-compose.prod.yml /root/docker/violet/docker-compose.prod.yml
           cp docker-compose.ci.yml   /root/docker/violet/docker-compose.ci.yml
-
-      - name: 一次性迁移 env 文件(api/.env → .env)
-        working-directory: /root/docker/violet
-        run: |
-          # 配置架构重构后根 .env 是唯一 env 文件;老服务器目录一次性迁移
-          if [ -f api/.env ] && [ ! -f .env ]; then
-            cp api/.env .env
-            echo "已迁移 api/.env → .env"
-          fi
 
   # ── migrate: 迁移门禁
   migrate:
@@ -520,14 +511,14 @@ jobs:
       - name: 创建 GitHub Release(CHANGELOG 段落)
         # 仅 tag push 创建 Release;手动 dispatch(部署/回滚)不建
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'changelog'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           body_path: ${{ runner.temp }}/release-notes.md
 
       - name: 创建 GitHub Release(自动生成 notes)
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'generated'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           generate_release_notes: true
