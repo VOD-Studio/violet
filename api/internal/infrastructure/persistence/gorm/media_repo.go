@@ -515,6 +515,29 @@ func (r *FileRepository) FindByHash(ctx context.Context, hash string, ownerID do
 	return fileToDomain(po)
 }
 
+// FindByURLs 按访问 URL 批量查找就绪文件（推文图片归属校验用）。
+// 空输入直接返回空切片，不触库。
+func (r *FileRepository) FindByURLs(ctx context.Context, urls []string) ([]*upload.File, error) {
+	if len(urls) == 0 {
+		return []*upload.File{}, nil
+	}
+	var pos []model.File
+	if err := r.db.WithContext(ctx).
+		Where("url IN ? AND status = ?", urls, upload.StatusReady).
+		Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("按 URL 批量查询文件失败", err)
+	}
+	result := make([]*upload.File, 0, len(pos))
+	for _, po := range pos {
+		f, err := fileToDomain(po)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, f)
+	}
+	return result, nil
+}
+
 func (r *FileRepository) FindByOwner(ctx context.Context, ownerID domainshared.ID, purpose string, page, limit int) ([]*upload.File, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.File{}).Where("owner_id = ?", ownerID.UUID())
 	if purpose != "" {

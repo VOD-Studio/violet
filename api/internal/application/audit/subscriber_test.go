@@ -20,6 +20,7 @@ import (
 	domainrole "blog-api/internal/domain/role"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
+	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
 )
@@ -309,6 +310,45 @@ func TestSubscriber_AnnouncementDeleted_RecordsDelete(t *testing.T) {
 	require.NoError(t, sub.Handle(ctx, domainannouncement.NewAnnouncementDeleted(9)))
 	require.Len(t, store.appended, 1)
 	assert.Equal(t, domainaudit.ActionDelete, store.appended[0].Action)
+}
+
+func TestSubscriber_TweetCreated_RecordsCreate(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "alice@blog.com", "1.2.3.4", "ua")
+
+	tw := newTweetForAudit(t, "推文内容快照")
+	require.NoError(t, sub.Handle(ctx, domaintweet.NewTweetCreated(tw)))
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionCreate, e.Action)
+	assert.Equal(t, "tweet", e.Resource.Type)
+	assert.Equal(t, tw.ID().String(), e.Resource.ID)
+	assert.Equal(t, "推文内容快照", e.Resource.Name)
+}
+
+func TestSubscriber_TweetDeleted_RecordsDeleteWithAuthor(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	tw := newTweetForAudit(t, "被删推文")
+	require.NoError(t, sub.Handle(ctx, domaintweet.NewTweetDeleted(tw)))
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionDelete, e.Action)
+	assert.Equal(t, "tweet", e.Resource.Type)
+	// 原作者进 metadata：管理员删他人推文时可追溯归属
+	assert.Equal(t, tw.AuthorID().String(), e.Metadata["author_id"])
+}
+
+// newTweetForAudit 构造审计测试用推文。
+func newTweetForAudit(t *testing.T, content string) *domaintweet.Tweet {
+	t.Helper()
+	tw, err := domaintweet.NewTweet(shared.NewID(), content, nil)
+	require.NoError(t, err)
+	tw.PullEvents() // 丢弃创建事件，测试只关心被 Handle 的那个
+	return tw
 }
 
 func TestSubscriber_CommentApproved_RecordsApprove(t *testing.T) {

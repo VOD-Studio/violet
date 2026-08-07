@@ -21,6 +21,7 @@ import (
 	domainrole "blog-api/internal/domain/role"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
+	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
 )
@@ -279,6 +280,26 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID)},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaintweet.TweetCreated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionCreate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "tweet", ID: e.AggregateID().String(), Name: e.Excerpt},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domaintweet.TweetDeleted:
+		// Metadata 记原作者：管理员删他人推文时与操作者（Actor）不同，审计可追溯
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "tweet", ID: e.AggregateID().String(), Name: e.Excerpt},
+			Metadata:   map[string]any{"author_id": e.AuthorID.String()},
 			OccurredAt: e.OccurredAt(),
 		}, true
 

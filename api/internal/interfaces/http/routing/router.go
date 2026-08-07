@@ -58,6 +58,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 评论（前台公开 + 双轨认证 + admin 审核写操作散在 /comments/{id}）
 		registerCommentRoutes(v1, d)
 
+		// 推文（公开时间线/详情/用户列表 + 登录发布/删除）
+		registerTweetRoutes(v1, d)
+
 		// 媒体（公开获取 + 登录上传 + 音乐/表情公开查询）
 		registerMediaRoutes(v1, d)
 
@@ -258,9 +261,25 @@ func registerMediaRoutes(v1 chi.Router, d *Deps) {
 	})
 }
 
+// registerTweetRoutes 注册推文路由（PRD-0013）。
+// 时间线/详情/用户列表公开；发布登录 + 发布限流；删除登录（作者或
+// tweet:delete-any 的双重判定在 application 层，路由仅卡登录）。
+func registerTweetRoutes(v1 chi.Router, d *Deps) {
+	tweetH := d.Tweet
+
+	v1.Route("/tweets", func(r chi.Router) {
+		r.Get("/", tweetH.ListTimeline)
+		r.Get("/{id}", tweetH.Get)
+		r.With(d.SessionAuth, middleware.TweetRateLimit(d.Redis)).Post("/", tweetH.Create)
+		r.With(d.SessionAuth).Delete("/{id}", tweetH.Delete)
+	})
+
+	// 用户主页推文列表（公开）
+	v1.Get("/users/{username}/tweets", tweetH.ListByUser)
+}
+
 // registerCodeRunnerRoutes 注册 /code-runner 路由（登录可执行，SSE 用 GET）。
-func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {
-	redisClient := d.Redis
+func registerCodeRunnerRoutes(v1 chi.Router, d *Deps) {	redisClient := d.Redis
 	codeRunnerH := d.CodeRunner
 
 	v1.Route("/code-runner", func(r chi.Router) {

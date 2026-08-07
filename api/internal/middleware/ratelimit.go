@@ -17,10 +17,29 @@ import (
 // window 时间窗口
 // max    窗口内最大请求数（达到即拒绝）
 func RateLimit(key string, client *redis.Client, window time.Duration, max int64) func(http.Handler) http.Handler {
+	return rateLimitByDimension(key, client, window, max, getClientIP)
+}
+
+// RateLimitByUser 基于登录用户 ID 的滑动窗口限流（须挂在 SessionAuth 之后）。
+//
+// 用户维度适配「防单用户刷屏」场景（如发推文）：共用出口 IP 的多用户互不挤占。
+// 用户 ID 缺失时（中间件顺序错误）降级为 IP 维度，静默放行会架空限流。
+func RateLimitByUser(key string, client *redis.Client, window time.Duration, max int64) func(http.Handler) http.Handler {
+	return rateLimitByDimension(key, client, window, max, func(r *http.Request) string {
+		if uid := GetUserID(r.Context()); uid != "" {
+			return "u:" + uid
+		}
+		return getClientIP(r)
+	})
+}
+
+// rateLimitByDimension 滑动窗口限流共享实现。dimension 从请求解析计数维度
+// （IP / 用户 ID），拼入 redis key 隔离不同接口与维度。
+func rateLimitByDimension(key string, client *redis.Client, window time.Duration, max int64, dimension func(*http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ip := getClientIP(r)
-			redisKey := fmt.Sprintf("ratelimit:%s:%s", key, ip)
+			dim := dimension(r)
+			redisKey := fmt.Sprintf("ratelimit:%s:%s", key, dim)
 
 			ctx := r.Context()
 			now := time.Now()
@@ -41,7 +60,7 @@ func RateLimit(key string, client *redis.Client, window time.Duration, max int64
 
 			if _, err := pipe.Exec(ctx); err != nil {
 				// Redis 出错时放行请求，避免因限流服务故障导致全部请求被拒
-				log.Error().Err(err).Str("ip", ip).Str("path", r.URL.Path).
+				log.Error().Err(err).Str("dim", dim).Str("path", r.URL.Path).
 					Msg("限流 Redis 操作失败，放行请求")
 				next.ServeHTTP(w, r)
 				return
@@ -50,7 +69,7 @@ func RateLimit(key string, client *redis.Client, window time.Duration, max int64
 			// 拒绝条件：countCmd 反映的是加入当前请求之前的窗口内请求数（ZCard 在 ZAdd 之前执行）。
 			// 故 >= max 表示该请求已是第 (max+1) 个，放行前 max 个、拒绝后续。
 			if countCmd.Val() >= max {
-				log.Warn().Str("ip", ip).Str("key", key).Str("method", r.Method).
+				log.Warn().Str("dim", dim).Str("key", key).Str("method", r.Method).
 					Str("path", r.URL.Path).Int64("count", countCmd.Val()).Msg("触发限流")
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("Retry-After", fmt.Sprintf("%d", int(window.Seconds())))
@@ -98,6 +117,14 @@ func RefreshRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler
 // UploadRateLimit 上传类接口限流（每分钟 30 次，防资源 DoS）
 func UploadRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 	return RateLimit("upload", redisClient, time.Minute, 30)
+}
+
+// TweetRateLimit 推文发布限流（每用户每小时 10 条，PRD-0013）。
+//
+// 即发即出模式的防刷屏兜底。按用户维度计数（须挂在 SessionAuth 之后）：
+// IP 维度对共用出口 IP 的多用户会误伤，且换 IP 即绕过的单用户刷屏防不住。
+func TweetRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimitByUser("tweet", redisClient, time.Hour, 10)
 }
 
 // CodeRunnerRateLimit 代码运行器限流（每分钟 5 次/IP）。
