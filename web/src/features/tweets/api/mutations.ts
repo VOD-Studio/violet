@@ -1,10 +1,4 @@
-/**
- * tweets feature 写操作层
- *
- * 发推文走 POST /tweets（即发即出，无审核状态机）。提交成功后把后端返回的
- * 新推文插到全局时间线缓存首页顶部（用 setQueriesData 直接改缓存，不触发重拉，
- * 避免列表闪烁；新推文是最新的，首项即正确位置）。
- */
+/** tweets feature 写操作层（发推文 + 时间线缓存乐观插入） */
 
 import type { Tweet } from "@entities/tweet/model/types";
 import { apiPost } from "@shared/api/request";

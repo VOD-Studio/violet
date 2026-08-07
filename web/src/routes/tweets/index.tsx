@@ -2,12 +2,7 @@ import { TweetTimeline } from "@features/tweets/ui/TweetTimeline";
 import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
 
-/**
- * /tweets - 全局推文时间线（公开）
- *
- * 登录态见发布框在顶部，匿名只见时间线。cursor 滚动加载。
- * 详情页 /tweets/$id 由后续 ticket 接入（故用目录式路由）。
- */
+/** /tweets - 全局推文时间线（公开）：登录态见发布框，匿名只见时间线，cursor 滚动加载 */
 function TweetsPage() {
 	return (
 		<PageShell>

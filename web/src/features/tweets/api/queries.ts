@@ -1,12 +1,4 @@
-/**
- * tweets feature 查询层
- *
- * 全部走 shared/api/request 的封装（httpClient 已自动 withCredentials +
- * 解 envelope + 注入 CSRF），业务层只拿 PagedResponse / 业务数据。
- *
- * cursor 分页是本仓库首个生产消费方：pageParam = 上一页 next_cursor，
- * 首页为 undefined（不带 cursor 参数）。
- */
+/** tweets feature 查询层（cursor 分页时间线） */
 
 import type { Tweet } from "@entities/tweet/model/types";
 import { apiGetPaged } from "@shared/api/request";
