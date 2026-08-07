@@ -13,7 +13,7 @@
 import type { Tweet } from "@entities/tweet/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
-import { useDeleteTweet } from "@features/tweets/api/mutations";
+import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutations";
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { ImageGrid, type ImageGridImage } from "@shared/ui/image-grid";
@@ -42,7 +42,17 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 	const canDeleteAny = useHasPermission("tweet:delete-any");
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const deleteTweet = useDeleteTweet(tweet.id);
+	const toggleLike = useToggleLikeTweet(tweet);
 
+	const handleLikeClick = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		if (!me.data) {
+			toast.info("请先登录后再点赞");
+			navigate({ to: "/login" });
+			return;
+		}
+		toggleLike.mutate();
+	};
 	// 正文非空才渲染（纯图推文 content 为空串）
 	const hasContent = tweet.content.length > 0;
 	const isDetail = variant === "detail";
@@ -160,10 +170,25 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 					</div>
 				)}
 
-				{/* 赞数占位（点赞交互见 T5/T6） */}
-				<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-					<Heart className="size-3.5" />
-					<span>{tweet.like_count}</span>
+				{/* 点赞按钮 */}
+				<div className="flex items-center">
+					<button
+						type="button"
+						data-testid="like-button"
+						aria-label={tweet.is_liked ? "取消点赞" : "点赞推文"}
+						onClick={handleLikeClick}
+						disabled={toggleLike.isPending}
+						className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors ${
+							tweet.is_liked
+								? "font-medium text-rose-500 hover:bg-rose-500/10"
+								: "text-muted-foreground hover:bg-accent hover:text-foreground"
+						}`}
+					>
+						<Heart
+							className={`size-3.5 ${tweet.is_liked ? "fill-current text-rose-500" : ""}`}
+						/>
+						<span>{tweet.like_count}</span>
+					</button>
 				</div>
 			</SpotlightCard>
 

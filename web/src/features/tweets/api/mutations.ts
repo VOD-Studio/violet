@@ -4,6 +4,7 @@ import type { Tweet } from "@entities/tweet/model/types";
 import { apiDelete, apiPost } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { CreateTweetInput } from "../model/types";
 import { tweetKeys } from "./keys";
 
@@ -63,6 +64,82 @@ export const useDeleteTweet = (id: string) => {
 			});
 			// 详情缓存移除：删除后详情不再可访问
 			qc.removeQueries({ queryKey: tweetKeys.detail(id) });
+		},
+	});
+};
+/**
+ * useToggleLikeTweet - 点赞 / 取消点赞推文（乐观更新 + 失败回滚）
+ *
+ * @param tweet 当前推文读模型
+ */
+export const useToggleLikeTweet = (tweet: Tweet) => {
+	const qc = useQueryClient();
+	const isLiked = tweet.is_liked;
+	const delta = isLiked ? -1 : 1;
+	const nextIsLiked = !isLiked;
+	const id = tweet.id;
+
+	return useMutation({
+		mutationFn: () =>
+			isLiked
+				? apiDelete<unknown>(`/tweets/${id}/like`)
+				: apiPost<unknown>(`/tweets/${id}/like`, {}),
+		onMutate: async () => {
+			await qc.cancelQueries({ queryKey: tweetKeys.detail(id) });
+			await qc.cancelQueries({ queryKey: tweetKeys.timeline });
+
+			const prevDetail = qc.getQueryData<Tweet>(tweetKeys.detail(id));
+			const prevTimelines = qc.getQueriesData<TimelineCache>({
+				queryKey: tweetKeys.timeline,
+			});
+
+			qc.setQueryData<Tweet>(tweetKeys.detail(id), (old) =>
+				old
+					? {
+							...old,
+							is_liked: nextIsLiked,
+							like_count: Math.max(0, old.like_count + delta),
+						}
+					: old,
+			);
+
+			const updateCache = (old?: TimelineCache) => {
+				if (!old?.pages) return old;
+				return {
+					...old,
+					pages: old.pages.map((page) => ({
+						...page,
+						data: page.data.map((t) =>
+							t.id === id
+								? {
+										...t,
+										is_liked: nextIsLiked,
+										like_count: Math.max(0, t.like_count + delta),
+									}
+								: t,
+						),
+					})),
+				};
+			};
+
+			qc.setQueriesData<TimelineCache>({ queryKey: tweetKeys.timeline }, updateCache);
+			qc.setQueriesData<TimelineCache>(
+				{ queryKey: [...tweetKeys.all, "userTimeline"] },
+				updateCache,
+			);
+
+			return { prevDetail, prevTimelines };
+		},
+		onError: (_err, _vars, context) => {
+			toast.error("操作失败，请重试");
+			if (context?.prevDetail) {
+				qc.setQueryData(tweetKeys.detail(id), context.prevDetail);
+			}
+			if (context?.prevTimelines) {
+				for (const [key, data] of context.prevTimelines) {
+					qc.setQueryData(key, data);
+				}
+			}
 		},
 	});
 };

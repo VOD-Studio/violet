@@ -27,12 +27,13 @@ vi.mock("@features/auth/hooks/usePermissions", () => ({
 	useHasPermission: () => hasDeleteAny,
 }));
 
-// 删除 mutation：捕获 mutate 入参
+// 删除与点赞 mutation：捕获 mutate 入参
 const deleteMutate = vi.fn();
+const toggleLikeMutate = vi.fn();
 vi.mock("@features/tweets/api/mutations", () => ({
 	useDeleteTweet: () => ({ mutate: deleteMutate, isPending: false }),
+	useToggleLikeTweet: () => ({ mutate: toggleLikeMutate, isPending: false }),
 }));
-
 const navigateMock = vi.fn();
 vi.mock("@tanstack/react-router", () => ({
 	useNavigate: () => navigateMock,
@@ -76,6 +77,7 @@ function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 		content: "hello world",
 		images: [],
 		like_count: 0,
+		is_liked: false,
 		created_at: "2026-01-01T00:00:00Z",
 		...overrides,
 	};
@@ -137,6 +139,8 @@ describe("TweetCard — 删除确认流", () => {
 	});
 });
 describe("TweetCard — 作者个人页链接", () => {
+	afterEach(() => cleanup());
+
 	it("渲染作者个人主页 Link，并且点击时不触发整卡 openDetail", () => {
 		meDataOverride = null;
 		const tweet = makeTweet();
@@ -149,5 +153,44 @@ describe("TweetCard — 作者个人页链接", () => {
 		expect(navigateMock).not.toHaveBeenCalledWith(
 			expect.objectContaining({ to: "/tweets/$id" }),
 		);
+	});
+});
+describe("TweetCard — 点赞交互", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+	afterEach(() => cleanup());
+	it("未登录时点击点赞按钮引导登录跳转", () => {
+		meDataOverride = null;
+		const tweet = makeTweet({ like_count: 5, is_liked: false });
+		render(<TweetCard tweet={tweet} />);
+
+		const likeButton = screen.getByTestId("like-button");
+		fireEvent.click(likeButton);
+
+		expect(toggleLikeMutate).not.toHaveBeenCalled();
+		expect(navigateMock).toHaveBeenCalledWith({ to: "/login" });
+	});
+
+	it("登录状态下点击点赞按钮触发 toggleLike 并且不触发整卡 openDetail", () => {
+		meDataOverride = { id: "u1" };
+		const tweet = makeTweet({ like_count: 5, is_liked: false });
+		render(<TweetCard tweet={tweet} />);
+
+		const likeButton = screen.getByTestId("like-button");
+		fireEvent.click(likeButton);
+
+		expect(toggleLikeMutate).toHaveBeenCalledTimes(1);
+		expect(navigateMock).not.toHaveBeenCalledWith(
+			expect.objectContaining({ to: "/tweets/$id" }),
+		);
+	});
+
+	it("已点赞状态下显示取消点赞 aria-label", () => {
+		meDataOverride = { id: "u1" };
+		const tweet = makeTweet({ like_count: 6, is_liked: true });
+		render(<TweetCard tweet={tweet} />);
+
+		expect(screen.getByTestId("like-button").getAttribute("aria-label")).toBe("取消点赞");
 	});
 });

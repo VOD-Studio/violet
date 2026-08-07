@@ -38,6 +38,8 @@ export interface Tweet {
 	images: string[];
 	/** 赞数（冗余计数，列表页性能用；点赞数据源见 tweet_likes） */
 	like_count: number;
+	/** 当前登录用户是否已点赞 */
+	is_liked: boolean;
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
 }
