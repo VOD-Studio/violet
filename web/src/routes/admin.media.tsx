@@ -8,7 +8,7 @@ import { EditMediaDialog } from "@features/admin-media/ui/EditMediaDialog";
 import { MediaCoverDialog } from "@features/admin-media/ui/MediaCoverDialog";
 import { MediaGrid } from "@features/admin-media/ui/MediaGrid";
 import { MediaLightbox } from "@features/admin-media/ui/MediaLightbox";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { Pagination } from "@features/admin-shared/ui/data-table/components/Pagination";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";

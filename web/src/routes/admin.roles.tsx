@@ -4,7 +4,7 @@ import type { RoleDTO } from "@features/admin-roles/model/types";
 import { CreateRoleDialog } from "@features/admin-roles/ui/CreateRoleDialog";
 import { EditRoleDialog } from "@features/admin-roles/ui/EditRoleDialog";
 import { RolePermissionsDialog } from "@features/admin-roles/ui/RolePermissionsDialog";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";

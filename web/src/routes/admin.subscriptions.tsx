@@ -1,5 +1,5 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import {

@@ -6,7 +6,7 @@ import {
 	useUpdateProject,
 } from "@features/admin-projects/api/mutations";
 import type { CreateProject } from "@features/admin-projects/model/types";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import {
 	DataTable,
 	type DataTableColumn,

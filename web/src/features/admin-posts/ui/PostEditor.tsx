@@ -23,7 +23,7 @@ import { PostEditorSidebar } from "@features/admin-posts/ui/PostEditorSidebar";
 import { PostEditorToolbar } from "@features/admin-posts/ui/PostEditorToolbar";
 import { PostVersionsSheet } from "@features/admin-posts/ui/PostVersionsSheet";
 import { usePostEditorStore } from "@features/admin-posts/ui/post-editor-store";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import {
 	type ImportUrlMeta,
 	type ImportUrlOpts,

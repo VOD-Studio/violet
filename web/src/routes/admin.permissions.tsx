@@ -2,7 +2,7 @@ import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAdminPermissions, useDeletePermission } from "@features/admin-permissions/api/queries";
 import type { PermissionDTO } from "@features/admin-permissions/model/types";
 import { CreatePermissionDialog } from "@features/admin-permissions/ui/CreatePermissionDialog";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import { useIsSuperAdmin } from "@features/auth/hooks/usePermissions";

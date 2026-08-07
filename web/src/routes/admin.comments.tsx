@@ -13,7 +13,7 @@ import type {
 import { CommentCell } from "@features/admin-comments/ui/CommentCell";
 import { CommentDetail } from "@features/admin-comments/ui/CommentDetail";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { avatarUrl } from "@shared/lib/image-url";

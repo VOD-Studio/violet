@@ -1,7 +1,7 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAdminRoles } from "@features/admin-roles/api/queries";
 import { getRoleBadgeVariant, getRoleDisplayName } from "@features/admin-roles/lib/utils";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable, exportToCsv } from "@features/admin-shared/ui/data-table";
 import {

@@ -8,7 +8,7 @@ import {
 } from "@features/admin-posts/api/mutations";
 import { useAdminPosts } from "@features/admin-posts/api/queries";
 import type { AdminPostListItem } from "@features/admin-posts/model/types";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog"
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
