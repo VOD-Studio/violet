@@ -7,6 +7,21 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.5.1](https://github.com/VOD-Studio/violet/compare/v2.5.0...v2.5.1) (2026-08-07)
+
+
+### 修复
+
+* **admin-subscriptions:** 操作列加宽恢复按钮组 padding ([35d3063](https://github.com/VOD-Studio/violet/commit/35d3063529b10c65c7aea030d2bd7a7abb3b28a1))
+* **admin:** 标题行 min-h-9 统一有无 action 页面高度 ([5565fee](https://github.com/VOD-Studio/violet/commit/5565fee3d3b6cb8c935cb58d18bff53cb07ba568))
+* **admin:** 筛选栏 Segmented 统一 h-9 高度消除切换抖动 ([ec7a221](https://github.com/VOD-Studio/violet/commit/ec7a2215e8e2936ba2fd051800fed58bdad5a121))
+* **admin:** 统一各页面筛选项位置到表格工具栏 ([6bc6eba](https://github.com/VOD-Studio/violet/commit/6bc6eba495dc876954117c31d730d0f384d99641))
+* **auth:** 已登录用户访问 /login 自动重定向 ([1f5c882](https://github.com/VOD-Studio/violet/commit/1f5c882c35c1782527c6bda2c34e663757e39e60))
+* **feed:** 抓取超时从 15s 调大到 30s ([a41063b](https://github.com/VOD-Studio/violet/commit/a41063b395eb6f35f557f43d2587f63d8f8d81a4))
+* **header:** nav 激活态改用显式 pathname 判定 ([dc76adf](https://github.com/VOD-Studio/violet/commit/dc76adf7305b2dba0d9d426040724951e443e1c1))
+* **post:** 空 slug 自动按标题生成 ([8955dc3](https://github.com/VOD-Studio/violet/commit/8955dc3f5a50f09cd8c262021bcd3c287ff45c00))
+* **subscription:** 抓取事件 success 语义改为整轮无失败 ([1f968e9](https://github.com/VOD-Studio/violet/commit/1f968e9e1627ea432b5eec0467baebac4c74cc35))
+
 ## [2.5.0](https://github.com/VOD-Studio/violet/compare/v2.4.8...v2.5.0) (2026-08-07)
 
 
