@@ -8,8 +8,7 @@ import { ApiError } from "@shared/api/error";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-
+import { createFileRoute, Link, redirect, useNavigate, useSearch } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -43,6 +42,13 @@ const FALLBACK_BY_STATUS: Record<number, string> = {
 export const Route = createFileRoute("/login")({
 	ssr: false,
 	validateSearch: loginSearchSchema,
+	beforeLoad: ({ context, search }) => {
+		// 已登录(网络确认)则重定向到目标页,避免已登录用户看到登录页。
+		// 只认 context.auth(父路由 __root.beforeLoad 已 await getAuthSession 的准确网络判定)。
+		if (context.auth.isAuthenticated && context.auth.claims) {
+			throw redirect({ to: search.redirect || "/", replace: true });
+		}
+	},
 	component: LoginPage,
 });
 
