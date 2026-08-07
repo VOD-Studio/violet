@@ -72,6 +72,25 @@ export const useResumeSubscription = () => {
 	});
 };
 
+/** useFetchSubscription - 立即拉取一次 hook（手动触发） */
+export const useFetchSubscription = () => {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => api.fetchSubscription(id),
+		onSuccess: (report) => {
+			qc.invalidateQueries({ queryKey: subscriptionKeys.all });
+			if (report.SubscriptionError) {
+				toast.error(`抓取失败：${report.SubscriptionError}`);
+			} else {
+				toast.success(
+					`抓取完成：导入 ${report.Imported}，跳过 ${report.Skipped}，失败 ${report.Failed}`,
+				);
+			}
+		},
+		onError: (e: Error) => toast.error(`抓取失败：${e.message}`),
+	});
+};
+
 /** useDeleteSubscription - 删除订阅 hook */
 export const useDeleteSubscription = () => {
 	const qc = useQueryClient();

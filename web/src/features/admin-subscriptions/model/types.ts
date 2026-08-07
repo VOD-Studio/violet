@@ -54,6 +54,18 @@ export interface SubscriptionListResponse {
 	limit: number;
 }
 
+/** 抓取报告（POST /admin/subscriptions/{id}/fetch 返回） */
+export interface FetchReportDTO {
+	SubscriptionID: string;
+	FeedEntryCount: number;
+	NewEntries: number;
+	Imported: number;
+	Failed: number;
+	Dead: number;
+	Skipped: number;
+	SubscriptionError: string;
+}
+
 /** interval 中文标签 */
 export const intervalLabel = (i: SubscriptionInterval): string => {
 	switch (i) {

@@ -5,6 +5,7 @@ import { DataTable } from "@features/admin-shared/ui/data-table";
 import {
 	useCreateSubscription,
 	useDeleteSubscription,
+	useFetchSubscription,
 	usePauseSubscription,
 	useResumeSubscription,
 	useSubscriptions,
@@ -27,7 +28,7 @@ import {
 	SelectValue,
 } from "@shared/ui/base/select";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Pause, Pencil, Play, Plus, RefreshCw, Trash2 } from "lucide-react";
 import * as React from "react";
 
 export const Route = createFileRoute("/admin/subscriptions")({
@@ -44,6 +45,7 @@ function AdminSubscriptionsPage() {
 	const updateMut = useUpdateSubscription();
 	const pauseMut = usePauseSubscription();
 	const resumeMut = useResumeSubscription();
+	const fetchMut = useFetchSubscription();
 	const deleteMut = useDeleteSubscription();
 
 	const [createOpen, setCreateOpen] = React.useState(false);
@@ -124,6 +126,17 @@ function AdminSubscriptionsPage() {
 				const paused = row.status === "paused";
 				return (
 					<div className="flex justify-center gap-1">
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							title="立即抓取"
+							disabled={fetchMut.isPending}
+							onClick={() => fetchMut.mutate(row.id)}
+						>
+							<RefreshCw
+								className={`size-3.5 ${fetchMut.isPending ? "animate-spin" : ""}`}
+							/>
+						</Button>
 						<Button
 							variant="ghost"
 							size="icon-sm"
