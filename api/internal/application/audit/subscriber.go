@@ -17,8 +17,9 @@ import (
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
 	domaincomment "blog-api/internal/domain/comment"
-	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
+	domainpost "blog-api/internal/domain/post"
+	domainsubscription "blog-api/internal/domain/subscription"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
@@ -367,6 +368,78 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "auth"},
 			Metadata:   map[string]any{"reason": e.Reason},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainsubscription.SubscriptionCreated:
+		return domainaudit.AuditEvent{
+			EventID: e.EventID(),
+			Action:  domainaudit.ActionCreate,
+			Actor:   actor,
+			Resource: domainaudit.ResourceRef{
+				Type: "subscription", ID: e.AggregateID().String(), Name: e.Title,
+			},
+			Metadata:   map[string]any{"feed_url": e.FeedURL},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainsubscription.SubscriptionUpdated:
+		return domainaudit.AuditEvent{
+			EventID:  e.EventID(),
+			Action:   domainaudit.ActionUpdate,
+			Actor:    actor,
+			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: e.Title},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainsubscription.SubscriptionPaused:
+		return domainaudit.AuditEvent{
+			EventID:  e.EventID(),
+			Action:   domainaudit.ActionUpdateStatus,
+			Actor:    actor,
+			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String()},
+			Changes:  []domainaudit.FieldChange{{Field: "status", From: "active", To: "paused"}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainsubscription.SubscriptionResumed:
+		return domainaudit.AuditEvent{
+			EventID:  e.EventID(),
+			Action:   domainaudit.ActionUpdateStatus,
+			Actor:    actor,
+			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String()},
+			Changes:  []domainaudit.FieldChange{{Field: "status", From: "paused", To: "active"}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainsubscription.SubscriptionDeleted:
+		return domainaudit.AuditEvent{
+			EventID:  e.EventID(),
+			Action:   domainaudit.ActionDelete,
+			Actor:    actor,
+			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: e.Title},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainsubscription.SubscriptionFetched:
+		// 调度器自动抓取：actor_type=system，UserName 借用存作业名
+		if e.IsSystem {
+			actor.Type = domainaudit.ActorTypeSystem
+			actor.UserName = "subscription_job"
+		}
+		action := domainaudit.ActionCreate
+		if !e.Success {
+			action = domainaudit.ActionUpdate
+		}
+		return domainaudit.AuditEvent{
+			EventID:  e.EventID(),
+			Action:   action,
+			Actor:    actor,
+			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: e.Title},
+			Metadata: map[string]any{
+				"imported": e.Imported, "failed": e.Failed, "success": e.Success,
+				"error": e.Error,
+			},
 			OccurredAt: e.OccurredAt(),
 		}, true
 

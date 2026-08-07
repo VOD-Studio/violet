@@ -157,7 +157,7 @@ func fixedClock(t *testing.T) (func() time.Time, time.Time) {
 func TestService_Create_BuildsActiveSubscription(t *testing.T) {
 	repo := newFakeRepo()
 	clock, now := fixedClock(t)
-	svc := NewService(repo, clock)
+	svc := NewService(repo, clock, nil)
 
 	dto, err := svc.Create(context.Background(), CreateInput{
 		UserID:            shared.NewID().String(),
@@ -179,7 +179,7 @@ func TestService_Create_BuildsActiveSubscription(t *testing.T) {
 }
 
 func TestService_Create_RejectsInvalidFeedURL(t *testing.T) {
-	svc := NewService(newFakeRepo(), nil)
+	svc := NewService(newFakeRepo(), nil, nil)
 	_, err := svc.Create(context.Background(), CreateInput{
 		UserID:   shared.NewID().String(),
 		FeedURL:  "not-a-url",
@@ -190,7 +190,7 @@ func TestService_Create_RejectsInvalidFeedURL(t *testing.T) {
 
 func TestService_Create_DefaultsIntervalToDaily(t *testing.T) {
 	repo := newFakeRepo()
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 	dto, err := svc.Create(context.Background(), CreateInput{
 		UserID:   shared.NewID().String(),
 		FeedURL:  "https://example.com/feed",
@@ -208,7 +208,7 @@ func TestService_GetByID_OwnerCheck(t *testing.T) {
 	uid := shared.NewID()
 	sub, _ := domainsubscription.NewSubscription(uid, "https://x/feed", "t", domainsubscription.IntervalDaily, clock())
 	repo.subs[sub.ID().String()] = sub
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 
 	// 主人能查
 	_, err := svc.GetByID(context.Background(), sub.ID().String(), uid.String())
@@ -227,7 +227,7 @@ func TestService_Update_UpdatesConfig(t *testing.T) {
 	uid := shared.NewID()
 	sub, _ := domainsubscription.NewSubscription(uid, "https://x/feed", "原", domainsubscription.IntervalDaily, clock())
 	repo.subs[sub.ID().String()] = sub
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 
 	err := svc.Update(context.Background(), UpdateInput{
 		ID: sub.ID().String(), UserID: uid.String(),
@@ -250,7 +250,7 @@ func TestService_PauseAndResume(t *testing.T) {
 	uid := shared.NewID()
 	sub, _ := domainsubscription.NewSubscription(uid, "https://x/feed", "t", domainsubscription.IntervalDaily, clock())
 	repo.subs[sub.ID().String()] = sub
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 
 	// 制造失败计数，验证 Resume 清零
 	sub.RecordFailure(clock(), "err")
@@ -275,7 +275,7 @@ func TestService_Delete(t *testing.T) {
 	uid := shared.NewID()
 	sub, _ := domainsubscription.NewSubscription(uid, "https://x/feed", "t", domainsubscription.IntervalDaily, clock())
 	repo.subs[sub.ID().String()] = sub
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 
 	require.NoError(t, svc.Delete(context.Background(), sub.ID().String(), uid.String()))
 	assert.NotContains(t, repo.subs, sub.ID().String())
@@ -288,7 +288,7 @@ func TestService_Delete_OtherUserReturnsNotFound(t *testing.T) {
 	uid := shared.NewID()
 	sub, _ := domainsubscription.NewSubscription(uid, "https://x/feed", "t", domainsubscription.IntervalDaily, clock())
 	repo.subs[sub.ID().String()] = sub
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 
 	err := svc.Delete(context.Background(), sub.ID().String(), shared.NewID().String())
 	assert.ErrorIs(t, err, domainsubscription.ErrNotFound)
@@ -310,7 +310,7 @@ func TestService_ListByUser_PaginationAndStatusFilter(t *testing.T) {
 		s.Pause()
 		break // 只 pause 第一个（map 迭代顺序不确定，但只 pause 一个就行）
 	}
-	svc := NewService(repo, nil)
+	svc := NewService(repo, nil, nil)
 
 	// 全部
 	all, total, err := svc.ListByUser(context.Background(), uid.String(), "", 1, 10)

@@ -44,7 +44,7 @@ func (s *stubSubRepo) FindAll(_ context.Context, status string, page, limit int)
 var _ domainsubscription.SubscriptionRepository = (*stubSubRepo)(nil)
 
 func newSubHandler(repo *stubSubRepo) *Handler {
-	return NewHandler(appsub.NewService(repo, nil))
+	return NewHandler(appsub.NewService(repo, nil, nil))
 }
 
 func newJSONRequest(method, target, body string) *http.Request {
@@ -193,10 +193,12 @@ func (s *fetchStubRepo) Save(_ context.Context, sub *domainsubscription.Subscrip
 func TestFetch_ReturnsReport(t *testing.T) {
 	sub := sampleSub("源")
 	repo := &fetchStubRepo{sub: sub}
-	h := NewHandler(appsub.NewService(repo, nil)) // 不注入 fetch deps → FetchOne 返回配置错误
+	h := NewHandler(appsub.NewService(repo, nil, nil)) // 不注入 fetch deps → FetchOne 返回配置错误
 
+	req := httptest.NewRequest(http.MethodPost, "/admin/subscriptions/"+sub.ID().String()+"/fetch", nil)
+	req.SetPathValue("id", sub.ID().String())
 	rr := httptest.NewRecorder()
-	h.Fetch(rr, httptest.NewRequest(http.MethodPost, "/admin/subscriptions/"+sub.ID().String()+"/fetch", nil))
+	h.Fetch(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code, "应返回 200（抓取报告，即便有错误也非 HTTP error）")
 	// FetchNow 即使 FetchOne 报配置错误，也会走状态机 + Save（repo 有记录）

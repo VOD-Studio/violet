@@ -64,7 +64,7 @@ type fakeFetcher struct {
 	callCount int32
 }
 
-func (f *fakeFetcher) FetchNow(ctx context.Context, subscriptionID string) appsub.FetchReport {
+func (f *fakeFetcher) FetchNow(ctx context.Context, subscriptionID string, isSystem bool) appsub.FetchReport {
 	atomic.AddInt32(&f.callCount, 1)
 	if f.onStart != nil {
 		f.onStart()

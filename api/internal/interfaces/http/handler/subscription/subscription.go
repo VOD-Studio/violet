@@ -146,7 +146,7 @@ func (h *Handler) Resume(w http.ResponseWriter, r *http.Request) {
 // Fetch 立即拉取一次订阅（手动触发，不等调度器）。
 // 返回抓取报告：新增/导入/失败/dead/跳过计数 + feed 错误（如有）。
 func (h *Handler) Fetch(w http.ResponseWriter, r *http.Request) {
-	report := h.svc.FetchNow(r.Context(), r.PathValue("id"))
+	report := h.svc.FetchNow(r.Context(), r.PathValue("id"), false)
 	response.RespondOK(w, report)
 }
 

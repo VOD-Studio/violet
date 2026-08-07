@@ -22,9 +22,8 @@ const dueOversubscribeFactor = 4
 
 // SubscriptionFetcher 抓取编排端口（*appsub.Service 实现之）。
 // 抽接口便于单测注入 fake（避免 runOnce 测试依赖真 Service + DB）。
-// 用 FetchNow（抓取 + 状态更新完整编排）而非 FetchOne——状态机归 service 管。
 type SubscriptionFetcher interface {
-	FetchNow(ctx context.Context, subscriptionID string) appsub.FetchReport
+	FetchNow(ctx context.Context, subscriptionID string, isSystem bool) appsub.FetchReport
 }
 
 
@@ -105,7 +104,7 @@ func (j *SubscriptionJob) runOnce(ctx context.Context) {
 
 // fetchAndUpdate 抓单个订阅（FetchNow 含状态更新），记日志。
 func (j *SubscriptionJob) fetchAndUpdate(ctx context.Context, sub *domainsubscription.Subscription) {
-	report := j.svc.FetchNow(ctx, sub.ID().String())
+	report := j.svc.FetchNow(ctx, sub.ID().String(), true)
 
 	if report.SubscriptionError == "" {
 		log.Printf("[subscription_job] 订阅 %s 抓取成功：feed=%d 新=%d 导入=%d 失败=%d dead=%d 跳过=%d",

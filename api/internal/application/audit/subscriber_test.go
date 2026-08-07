@@ -18,6 +18,7 @@ import (
 	domaincomment "blog-api/internal/domain/comment"
 	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
+	domainsubscription "blog-api/internal/domain/subscription"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
@@ -375,6 +376,53 @@ func TestSubscriber_Subscribe_UsesWildcard(t *testing.T) {
 	bus := &recordingBus{}
 	sub.Subscribe(bus)
 	require.Equal(t, "", bus.subscribedName, "应通配订阅全部事件")
+}
+
+// ---- subscription 事件 ----
+
+func TestSubscriber_SubscriptionCreated_RecordsCreate(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	sid := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainsubscription.NewSubscriptionCreated(sid, "https://feed.example.com/rss", "我的源")))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionCreate, e.Action)
+	assert.Equal(t, "subscription", e.Resource.Type)
+	assert.Equal(t, sid.String(), e.Resource.ID)
+	assert.Equal(t, "我的源", e.Resource.Name)
+	assert.Equal(t, domainaudit.ActorTypeUser, e.Actor.Type)
+}
+
+func TestSubscriber_SubscriptionFetched_SystemActor(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	sid := shared.NewID()
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", true)
+	require.NoError(t, sub.Handle(ctx, ev))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActorTypeSystem, e.Actor.Type, "调度器抓取应为 system actor")
+	assert.Equal(t, "subscription_job", e.Actor.UserName, "system actor 的 UserName 借用存作业名")
+}
+
+func TestSubscriber_SubscriptionFetched_UserActor(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	sid := shared.NewID()
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", false)
+	require.NoError(t, sub.Handle(ctx, ev))
+
+	require.Len(t, store.appended, 1)
+	assert.Equal(t, domainaudit.ActorTypeUser, store.appended[0].Actor.Type, "手动触发应为 user actor")
 }
 
 // recordingBus 仅记录 Subscribe 参数。
