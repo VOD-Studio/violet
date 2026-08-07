@@ -82,6 +82,7 @@ function AdminLogsPage() {
 		{
 			key: "actor",
 			header: "操作人",
+			ellipsis: true,
 			cell: (row) => {
 				const name = row.actor.user_name || row.actor.user_id || "匿名";
 				return row.actor.actor_type === "system" ? (
