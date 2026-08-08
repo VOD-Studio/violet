@@ -7,6 +7,27 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.5.2](https://github.com/VOD-Studio/violet/compare/v2.5.1...v2.5.2) (2026-08-08)
+
+
+### 修复
+
+* **command:** 亮色模式命令面板发灰 ([e088c37](https://github.com/VOD-Studio/violet/commit/e088c372ae5ddaea21b6c7eb14b7747da4e6c8b8))
+* **header:** 修复刷新瞬间 nav 全部高亮 ([586ac68](https://github.com/VOD-Studio/violet/commit/586ac682aaa6912c1c29ed3103cefd8187f0d2ab))
+* **header:** 刷新时不闪过登录按钮再切换登录态 ([44a4078](https://github.com/VOD-Studio/violet/commit/44a40789ea6e7645837eb4d591c4976a16a639f7))
+* **web:** LandingHero 按钮 transition 防暗黑刷新闪烁 ([9b9a323](https://github.com/VOD-Studio/violet/commit/9b9a323f0938e9c063b7c1c98d4cf5c5aadbd44d))
+* **web:** SSR cookie 读取主题根治暗黑刷新闪烁 ([32f67a9](https://github.com/VOD-Studio/violet/commit/32f67a9b6db6265d51987fc3fc0b2d69fed4c9ee))
+* **web:** 主题切换器补全跟随系统模式 ([816126e](https://github.com/VOD-Studio/violet/commit/816126eda506fae1990bc10501a106fad451985b))
+* **web:** 缩短主题切换 VT 对页面加载的阻塞 ([2959c42](https://github.com/VOD-Studio/violet/commit/2959c423acbfa913fab17b38feb25ee7bdb5ea66))
+
+
+### 重构
+
+* **auth:** 登录内联品牌图标替换为共享图标组件 ([269c3f0](https://github.com/VOD-Studio/violet/commit/269c3f0f4d5dc6647d9d5fff170d00d3dffb61aa))
+* **shared-ui:** 新增 GitHub 与 Google 图标组件 ([5d15b67](https://github.com/VOD-Studio/violet/commit/5d15b67bd73145438d420a156ffe96d97baca77f))
+* **theme-toggle:** 默认变体改为 segmented ([655819f](https://github.com/VOD-Studio/violet/commit/655819fc651ec3aed8a9bbe15d976ba1fc7d5011))
+* **web:** 移除 #/* 路径别名统一用 FSD 别名 ([84c60af](https://github.com/VOD-Studio/violet/commit/84c60afeb2d769b4ab6f99e6b064d6a21ad092be))
+
 ## [2.5.1](https://github.com/VOD-Studio/violet/compare/v2.5.0...v2.5.1) (2026-08-07)
 
 
