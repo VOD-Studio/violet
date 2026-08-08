@@ -1,19 +1,19 @@
 import { useMe } from "@features/auth/api/queries";
 import { AccountInfoSection } from "@features/profile/ui/AccountInfoSection";
-import { AvatarSection } from "@features/profile/ui/AvatarSection";
 import { PasswordSection } from "@features/profile/ui/PasswordSection";
 import { ProfileInfoSection } from "@features/profile/ui/ProfileInfoSection";
+import { ProfileShell } from "@features/profile/ui/ProfileShell";
 import { isSessionActive } from "@shared/api/session";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 /**
  * ProfilePage - 个人中心
  *
- * 功能模块：
- * 1. 头像上传（AvatarSection）
- * 2. 个人资料编辑（ProfileInfoSection）
- * 3. 账户信息展示（AccountInfoSection）
- * 4. 密码修改（PasswordSection）
+ * 布局：ProfileShell 接管（侧栏头像卡 + 三个 Tab）。
+ * Tab 内容：
+ *   - profile：个人资料（用户名 / 简介）
+ *   - account：账户信息（只读：邮箱、角色、注册时间）
+ *   - password：密码修改
  */
 const ProfilePage = () => {
 	const { data: user } = useMe();
@@ -23,16 +23,12 @@ const ProfilePage = () => {
 	}
 
 	return (
-		<div className="container mx-auto max-w-4xl px-4 py-8">
-			<h1 className="mb-8 font-mono text-3xl font-bold">个人中心</h1>
-
-			<div className="space-y-6">
-				<AvatarSection user={user} />
-				<ProfileInfoSection user={user} />
-				<AccountInfoSection user={user} />
-				<PasswordSection />
-			</div>
-		</div>
+		<ProfileShell
+			user={user}
+			profile={<ProfileInfoSection user={user} />}
+			account={<AccountInfoSection user={user} />}
+			password={<PasswordSection />}
+		/>
 	);
 };
 
