@@ -210,8 +210,17 @@ export function useSystemThemeTransition(): void {
  *
  * 必须渲染在 ThemeProvider 内部才能拿到 useTheme；在 __root 的 AppProvider
  * 子树里挂一个即可让任意页面 OS 切换都触发扩散。
+ *
+ * 另同步 resolvedTheme → cookie（"light"/"dark"），供 SSR 读 cookie 给 <html>
+ * 设正确 class 防 FOUC。覆盖所有场景：显式切换、system 模式 OS 切换、首次 mount。
  */
 export function SystemThemeTransition(): null {
 	useSystemThemeTransition();
+	const { resolvedTheme } = useTheme();
+	useEffect(() => {
+		if (resolvedTheme === "light" || resolvedTheme === "dark") {
+			document.cookie = `theme=${resolvedTheme}; path=/; max-age=31536000; SameSite=Lax`;
+		}
+	}, [resolvedTheme]);
 	return null;
 }

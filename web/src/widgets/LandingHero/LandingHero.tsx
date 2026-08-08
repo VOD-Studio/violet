@@ -73,7 +73,7 @@ export default function LandingHero() {
 								</Link>
 								<Link
 									to="/about"
-									className="inline-flex items-center gap-2 rounded-xl border border-edge-hairline px-5 py-2.5 text-sm font-medium transition-colors duration-0 hover:duration-150 hover:bg-accent"
+									className="inline-flex items-center gap-2 rounded-xl border border-edge-hairline px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
 									style={{ background: "var(--surface-glass)" }}
 								>
 									关于
@@ -82,7 +82,7 @@ export default function LandingHero() {
 									href="https://github.com"
 									target="_blank"
 									rel="noreferrer"
-									className="inline-flex size-10 items-center justify-center rounded-xl border border-edge-hairline text-muted-foreground transition-colors duration-0 hover:duration-300 hover:text-foreground"
+									className="inline-flex size-10 items-center justify-center rounded-xl border border-edge-hairline text-muted-foreground transition-colors hover:text-foreground"
 									style={{ background: "var(--surface-glass)" }}
 									aria-label="GitHub"
 								>
