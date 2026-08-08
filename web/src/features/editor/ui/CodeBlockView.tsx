@@ -11,7 +11,7 @@ import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap
 import type { createLowlight } from "lowlight";
 import { Play } from "lucide-react";
 import { useState } from "react";
-import { getExecResult, isTerminalStatus, submitExec } from "#/features/code-run";
+import { getExecResult, isTerminalStatus, submitExec } from "@features/code-run";
 import { Button } from "@/shared/ui/base/button";
 // isTerminalStatus 是值（函数），与上面同属值导入
 import {

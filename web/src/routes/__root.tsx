@@ -20,6 +20,7 @@ import type { RouterContext } from "../router";
 import AppProvider from "../shared/api/provider";
 import { isSessionActive, markSessionActive } from "../shared/api/session";
 import { getAuthSession } from "../shared/server/session";
+import { getSSRTheme } from "../shared/server/theme";
 
 import appCss from "../styles.css?url";
 
@@ -36,6 +37,14 @@ let cachedClaims: ReturnType<typeof getAuthSession> extends Promise<infer T>
 
 export const Route = createRootRouteWithContext<RouterContext>()({
 	beforeLoad: async () => {
+		// SSR 从请求 cookie 读 resolved theme（防 FOUC：<html> 首帧即正确 class）；
+		// 客户端从 document.cookie 读（与 SSR 同源，hydration 时 html className 一致）
+		const theme: "light" | "dark" =
+			typeof window === "undefined"
+				? await getSSRTheme()
+				: document.cookie.match(/(?:^|; )theme=([^;]*)/)?.[1] === "dark"
+					? "dark"
+					: "light";
 		// SSR 或首次客户端 hydrate：网络获取
 		if (typeof window === "undefined" || cachedClaims === undefined) {
 			const claims = await getAuthSession();
@@ -44,6 +53,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 				markSessionActive();
 			}
 			return {
+				theme,
 				auth: {
 					isAuthenticated: claims !== null,
 					claims,
@@ -53,9 +63,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 		// 客户端 SPA 导航：复用缓存，用 sessionActive 检测登出
 		if (!isSessionActive()) {
 			cachedClaims = null;
-			return { auth: { isAuthenticated: false, claims: null } };
+			return { theme, auth: { isAuthenticated: false, claims: null } };
 		}
 		return {
+			theme,
 			auth: {
 				isAuthenticated: cachedClaims !== null,
 				claims: cachedClaims,
@@ -147,8 +158,14 @@ function RootComponent() {
  * 必须渲染 HeadContent 与 Scripts，否则 SSR 不工作。
  */
 function RootDocument({ children }: { children: React.ReactNode }) {
+	const { theme } = Route.useRouteContext();
 	return (
-		<html lang="zh-CN" suppressHydrationWarning>
+		<html
+			lang="zh-CN"
+			className={theme}
+			style={{ colorScheme: theme }}
+			suppressHydrationWarning
+		>
 			<head>
 				<HeadContent />
 			</head>
