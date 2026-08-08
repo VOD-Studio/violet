@@ -11,7 +11,7 @@
  *   GET  /api/v1/code-runner/stream       SSE 消费（?task_id=X）
  *   GET  /api/v1/code-runner/tasks/{id}   轮询查询结果
  */
-import { apiGet, apiPost } from "#/shared/api/request";
+import { apiGet, apiPost } from "@shared/api/request";
 import type { ExecRequest, ExecResult, ExecTask, StreamChunk } from "./types";
 
 /** 提交执行的返回值 */
