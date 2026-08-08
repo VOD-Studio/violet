@@ -56,7 +56,7 @@ const NavLinkActive = ({ item }: { item: NavRouteItem }) => {
 	const pathname = useSyncExternalStore(
 		subscribePopState,
 		() => window.location.pathname,
-		() => item.to, // SSR 快照:无法访问 window,用 to 本身(SSR 不显示 active)
+		() => "", // SSR 快照返回空串：不匹配任何 to，hydration 前全部不激活，避免刷新瞬间 nav 全选
 	);
 	const exact = item.exact ?? false;
 	const isActive = exact
