@@ -20,8 +20,6 @@ import { toast } from "sonner";
 
 interface HeaderActionsProps {
 	user?: UserDTO | null;
-	/** SSR/首屏已知已登录（useMe 尚未到位时渲染骨架而非"登录"按钮，避免刷新闪） */
-	authenticated?: boolean;
 }
 
 /**
@@ -36,7 +34,7 @@ interface HeaderActionsProps {
  * 注意：LoginDialog 是**被动**的——仅在受保护请求收到 401 时由 http 拦截器自动
  * 弹出。主动登录走 /login 页面（完整表单 + redirect 回跳）。
  */
-const HeaderActions = ({ user, authenticated }: HeaderActionsProps) => {
+const HeaderActions = ({ user }: HeaderActionsProps) => {
 	const openCommand = useCommandUIStore((s) => s.open);
 	const logout = useLogout();
 	const navigate = useNavigate();
@@ -84,54 +82,48 @@ const HeaderActions = ({ user, authenticated }: HeaderActionsProps) => {
 			</Button>
 			<ThemeToggle />
 
-		{user ? (
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="sm" className="gap-1">
-						<User className="size-4" />
-						<span className="max-w-28 truncate">{user.username}</span>
-						<ChevronDown className="size-3 opacity-60" />
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end" className="min-w-44">
-					<DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
-					<DropdownMenuSeparator />
-					<DropdownMenuItem asChild>
-						<Link to="/profile">
+			{user ? (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="ghost" size="sm" className="gap-1">
 							<User className="size-4" />
-							个人中心
-						</Link>
-					</DropdownMenuItem>
-					{isAdmin ? (
+							<span className="max-w-28 truncate">{user.username}</span>
+							<ChevronDown className="size-3 opacity-60" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="min-w-44">
+						<DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
+						<DropdownMenuSeparator />
 						<DropdownMenuItem asChild>
-							<Link to="/admin">
-								<LayoutDashboard className="size-4" />
-								后台管理
+							<Link to="/profile">
+								<User className="size-4" />
+								个人中心
 							</Link>
 						</DropdownMenuItem>
-					) : null}
-					<DropdownMenuSeparator />
-					<DropdownMenuItem
-						variant="destructive"
-						onClick={handleLogout}
-						disabled={logout.isPending}
-					>
-						<LogOut className="size-4" />
-						登出
-					</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenu>
-		) : authenticated ? (
-			// SSR 已知已登录但 useMe 尚未到位：渲染等高占位，避免闪过"登录"文字
-			<Button variant="ghost" size="sm" className="gap-1" disabled>
-				<User className="size-4" />
-				<span className="w-16" />
-			</Button>
-		) : (
-			<Button variant="ghost" size="sm" asChild>
-				<Link to="/login">登录</Link>
-			</Button>
-		)}
+						{isAdmin ? (
+							<DropdownMenuItem asChild>
+								<Link to="/admin">
+									<LayoutDashboard className="size-4" />
+									后台管理
+								</Link>
+							</DropdownMenuItem>
+						) : null}
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
+							variant="destructive"
+							onClick={handleLogout}
+							disabled={logout.isPending}
+						>
+							<LogOut className="size-4" />
+							登出
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			) : (
+				<Button variant="ghost" size="sm" asChild>
+					<Link to="/login">登录</Link>
+				</Button>
+			)}
 		</div>
 	);
 };
