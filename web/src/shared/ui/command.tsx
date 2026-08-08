@@ -36,7 +36,7 @@ function CommandList({ open, onOpenChange, items, query, onQueryChange }: Comman
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
 				showCloseButton={false}
-				className="overflow-hidden border-edge-hairline bg-card/80 p-0 backdrop-blur-2xl dark:bg-surface-glass/70"
+				className="overflow-hidden border-edge-hairline bg-card p-0 dark:bg-surface-glass/70 dark:backdrop-blur-2xl"
 			>
 				<input
 					autoFocus
