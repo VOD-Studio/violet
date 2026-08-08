@@ -8,17 +8,16 @@ import { SegmentedToggle } from "./variants/segmented-toggle";
 import type { ThemeVariant } from "./variants/types";
 
 /**
- * ThemeToggle - 主题切换器（Header / AdminTopBar 操作区用）
- *
- * variant prop 选择渲染哪种切换器变体（对应 variants/ 下的原型），
- * 默认 cyclic。size 透传给所有变体，适配 Header 紧凑布局。
+ * ThemeToggle - 主题切换器
  */
 interface ThemeToggleProps {
+	/** 主题切换器变体 */
 	variant?: ThemeVariant;
+	/** 主题切换器尺寸 */
 	size?: "default" | "sm";
 }
 
-const ThemeToggle = ({ variant = "cyclic", size = "sm" }: ThemeToggleProps) => {
+const ThemeToggle = ({ variant = "segmented", size = "sm" }: ThemeToggleProps) => {
 	switch (variant) {
 		case "cyclic":
 			return <CyclicThemeButton size={size} />;
