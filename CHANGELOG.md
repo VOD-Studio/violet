@@ -7,6 +7,25 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.5.3](https://github.com/VOD-Studio/violet/compare/v2.5.2...v2.5.3) (2026-08-09)
+
+
+### 修复
+
+* **header:** 优化下拉菜单视觉与 root 用户冗余信息 ([33f181b](https://github.com/VOD-Studio/violet/commit/33f181bbe6a1f798db08b3cb3ce4425759fdf216))
+* **header:** 登出按钮去掉 destructive variant 视觉提示 ([eac07fb](https://github.com/VOD-Studio/violet/commit/eac07fba7be383c26fba1c28be54d2584954a210))
+* **header:** 锁定用户菜单 trigger 宽度避免登录跳动 ([09c697a](https://github.com/VOD-Studio/violet/commit/09c697a3e12bf993042291fe03efb4f89ba31bba))
+* **profile:** 账户信息 Tab 补回图标 ([307a3ae](https://github.com/VOD-Studio/violet/commit/307a3aeb48cf756a787f7778382781d97e59e082))
+* **profile:** 账户信息补回行首图标 ([7d523b6](https://github.com/VOD-Studio/violet/commit/7d523b6dd978586e246636fae2292f7524b8a466))
+
+
+### 重构
+
+* **header:** 重设计用户菜单 Dropdown ([e3ffb11](https://github.com/VOD-Studio/violet/commit/e3ffb114cc5dc5f029dbdda6966de9590063008d))
+* **profile:** 统一个人中心卡片样式与字号 ([51df7f7](https://github.com/VOD-Studio/violet/commit/51df7f7ddcd871a5e2f828fb2d381fdadd78fcce))
+* **profile:** 重设计个人中心页 ([7106788](https://github.com/VOD-Studio/violet/commit/7106788d05e514411a66f5b3eb62a47c3cbde346))
+* 重设计 Header 用户菜单与个人中心页 ([#124](https://github.com/VOD-Studio/violet/issues/124)) ([7b014da](https://github.com/VOD-Studio/violet/commit/7b014da5abc32ea18ce90c06cb9dc711735fbc84))
+
 ## [2.5.2](https://github.com/VOD-Studio/violet/compare/v2.5.1...v2.5.2) (2026-08-08)
 
 
