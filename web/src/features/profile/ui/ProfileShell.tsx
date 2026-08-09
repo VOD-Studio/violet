@@ -4,7 +4,7 @@ import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/Cro
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
-import { Lock, User as UserIcon } from "lucide-react";
+import { Lock, ShieldCheck, User as UserIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -124,7 +124,11 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 					icon={<UserIcon className="size-4" />}
 					label="个人资料"
 				/>
-				<ProfileSidebarTab value="account" label="账户信息" />
+				<ProfileSidebarTab
+					value="account"
+					icon={<ShieldCheck className="size-4" />}
+					label="账户信息"
+				/>
 				<ProfileSidebarTab
 					value="password"
 					icon={<Lock className="size-4" />}
