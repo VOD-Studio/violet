@@ -130,19 +130,18 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 										className="size-12 shrink-0 rounded-full object-cover ring-1 ring-border/50"
 									/>
 									<div className="min-w-0 flex-1">
-										<div className="flex items-center gap-1.5">
-											<p className="truncate text-sm font-semibold text-foreground">
-												{user.username}
-											</p>
-											{user.email_verified && (
+										<p className="truncate font-mono text-sm font-semibold tracking-tight text-foreground">
+											{user.username}
+										</p>
+										<p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
+											<span className="truncate">{user.email}</span>
+											{/* root 用户必有邮箱，无需重复显示；仅普通用户显示验证勾 */}
+											{!user.is_root && user.email_verified && (
 												<CheckCircle2
-													className="size-3.5 shrink-0 text-emerald-500"
+													className="size-3 shrink-0 text-emerald-500"
 													aria-label="邮箱已验证"
 												/>
 											)}
-										</div>
-										<p className="mt-0.5 truncate text-xs text-muted-foreground">
-											{user.email}
 										</p>
 										<div className="mt-2 flex items-center gap-1.5">
 											{user.is_root ? (
@@ -158,7 +157,6 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 									</div>
 								</div>
 							</div>
-
 							{/* 菜单分组 */}
 							<div className="p-1.5">
 								<DropdownMenuItem asChild>
@@ -211,7 +209,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 									disabled={logout.isPending}
 									className="cursor-pointer rounded-md px-2.5 py-2"
 								>
-									<span className="flex size-7 items-center justify-center rounded-md bg-destructive/10 text-destructive">
+									<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
 										<LogOut className="size-3.5" />
 									</span>
 									<span className="flex-1 text-sm">
