@@ -1,7 +1,7 @@
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useQuery } from "@tanstack/react-query";
-import type { Post, PostDetail, PostListQuery } from "../model/types";
+import type { Post, PostDetail, PostListQuery, PostSearchResult } from "../model/types";
 import { postKeys } from "./keys";
 
 /**
@@ -44,4 +44,28 @@ export const usePost = (slug: string) =>
 		queryKey: postKeys.detail(slug),
 		queryFn: () => fetchPostBySlug(slug),
 		enabled: slug.length > 0,
+	});
+
+/**
+ * fetchSearchPosts - 调后端 GET /posts/search 公开搜索已发布文章
+ *
+ * @param q 关键词（title/excerpt/content 三列 ILIKE）
+ */
+export const fetchSearchPosts = async (
+	q: string,
+	limit = 8,
+): Promise<PagedResponse<PostSearchResult>> =>
+	apiGetPaged<PostSearchResult>("/posts/search", { params: { q, limit } });
+
+/**
+ * useSearchPosts - 前台公开搜索 hook
+ *
+ * q 去空格后长度 < 2 时不启用查询（避免单字符噪音）。
+ */
+export const useSearchPosts = (q: string) =>
+	useQuery({
+		queryKey: postKeys.search(q),
+		queryFn: () => fetchSearchPosts(q),
+		enabled: q.trim().length >= 2,
+		staleTime: 60_000,
 	});

@@ -16,4 +16,6 @@ export const postKeys = {
 	details: () => [...postKeys.all, "detail"] as const,
 	/** 具体文章详情 */
 	detail: (slug: string) => [...postKeys.details(), slug] as const,
+	/** 搜索维度 */
+	search: (query: string) => [...postKeys.all, "search", query] as const,
 };
