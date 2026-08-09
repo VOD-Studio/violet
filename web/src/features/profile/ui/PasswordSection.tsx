@@ -3,19 +3,16 @@ import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
 import { useNavigate } from "@tanstack/react-router";
-import { Check, KeyRound, Lock, PencilLine, ShieldAlert, X } from "lucide-react";
+import { Check, PencilLine, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 /**
  * PasswordSection - 密码修改卡片
  *
- * 与 ProfileShell 配合：作为「安全设置」Tab 内容。
- *
- * 视觉：默认态显示「最后修改时间占位 + 修改按钮」+ 折叠的安全提示；
- * 编辑态显示三段密码输入 + Save/Cancel。
- *
- * 行为保持原样：成功后 1.5s 跳登录页要求重登。
+ * 与 ProfileShell 配合：作为「密码」Tab 内容。
+ * 默认态显示「已设置 + 修改按钮」；编辑态三段密码输入 + Save/Cancel。
+ * 成功后 1.5s 跳登录页要求重登。
  */
 export const PasswordSection = () => {
 	const [isEditing, setIsEditing] = useState(false);
@@ -77,32 +74,16 @@ export const PasswordSection = () => {
 	};
 
 	return (
-		<section
-			className={
-				"rounded-2xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm " +
-				"shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_8px_24px_-12px_rgba(0,0,0,0.08)] " +
-				"dark:shadow-[0_1px_0_0_rgba(255,255,255,0.02)_inset,0_8px_24px_-12px_rgba(0,0,0,0.5)]"
-			}
-		>
-			<header className="mb-5 flex items-start justify-between gap-4">
-				<div className="flex items-start gap-3">
-					<span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground">
-						<KeyRound className="size-4" />
-					</span>
-					<div>
-						<h2 className="font-mono text-base font-semibold tracking-tight">密码</h2>
-						<p className="mt-0.5 text-xs text-muted-foreground">
-							定期修改密码可提高账户安全性
-						</p>
-					</div>
-				</div>
+		<div className="rounded-xl border bg-card p-6 shadow-sm">
+			<div className="mb-5 flex items-center justify-between gap-4">
+				<h2 className="text-base font-semibold">密码</h2>
 				{!isEditing && (
 					<Button size="sm" variant="outline" onClick={handleEdit} className="gap-1.5">
 						<PencilLine className="size-3.5" />
 						修改
 					</Button>
 				)}
-			</header>
+			</div>
 
 			{isEditing ? (
 				<div className="space-y-4">
@@ -152,38 +133,15 @@ export const PasswordSection = () => {
 						</Button>
 					</div>
 
-					<div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
-						<ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-						<p className="text-xs text-amber-900/90 dark:text-amber-200/90">
-							修改密码后需要重新登录
-						</p>
-					</div>
+					<p className="text-sm text-muted-foreground">修改密码后需要重新登录</p>
 				</div>
 			) : (
-				<div className="flex items-center justify-between rounded-xl border border-border/40 bg-background/40 p-4">
-					<div className="flex items-center gap-3">
-						<span className="flex size-9 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground">
-							<Lock className="size-4" />
-						</span>
-						<div>
-							<p className="text-sm font-medium">登录密码</p>
-							<p className="mt-0.5 text-xs text-muted-foreground">
-								使用密码登录账户与 API
-							</p>
-						</div>
-					</div>
-					<span className="font-mono text-xs tracking-wider text-muted-foreground uppercase">
-						已设置
-					</span>
-				</div>
+				<p className="text-sm text-muted-foreground">定期修改密码可提高账户安全性</p>
 			)}
-		</section>
+		</div>
 	);
 };
 
-/**
- * PasswordField - 密码输入项（label + input + error）
- */
 interface PasswordFieldProps {
 	id: string;
 	label: string;

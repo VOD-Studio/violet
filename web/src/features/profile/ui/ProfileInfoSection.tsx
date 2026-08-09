@@ -3,7 +3,7 @@ import { useUpdateProfile } from "@features/auth/api/mutations";
 import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Textarea } from "@shared/ui/base/textarea";
-import { AtSign, Check, FileText, PencilLine, Quote, X } from "lucide-react";
+import { AtSign, Check, PencilLine, Quote, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -19,67 +19,25 @@ interface ProfileInfoSectionProps {
  * 字段内联编辑态——每个字段独立 Edit/Save/Cancel 按钮，
  * 替代旧版"整组进入编辑态"模式，颗粒度更细、保存粒度更准。
  *
- * 单字段变更 + 不变量：保存 username 时不会把 bio 清空，反之亦然。
  */
 export const ProfileInfoSection = ({ user }: ProfileInfoSectionProps) => {
 	return (
-		<Section
-			icon={<FileText className="size-4" />}
-			title="个人资料"
-			description="展示给其他用户的公开信息"
-		>
-			<div className="divide-y divide-border/40">
+		<div className="rounded-xl border bg-card p-6 shadow-sm">
+			<h2 className="mb-5 text-base font-semibold">个人资料</h2>
+			<div className="divide-y">
 				<UsernameField user={user} />
 				<BioField user={user} />
 			</div>
-		</Section>
+		</div>
 	);
 };
 
 // ============================================================
-// 内部组件：Section / Field / UsernameField / BioField
+// 内部组件：Field / UsernameField / BioField
 // ============================================================
-
-interface SectionProps {
-	icon: ReactNode;
-	title: string;
-	description?: string;
-	children: ReactNode;
-}
-
-/**
- * Section - 内容卡片
- *
- * 头部：图标 + 标题 + 描述；内容区：children。
- */
-const Section = ({ icon, title, description, children }: SectionProps) => {
-	return (
-		<section
-			className={
-				"rounded-2xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm " +
-				"shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_8px_24px_-12px_rgba(0,0,0,0.08)] " +
-				"dark:shadow-[0_1px_0_0_rgba(255,255,255,0.02)_inset,0_8px_24px_-12px_rgba(0,0,0,0.5)]"
-			}
-		>
-			<header className="mb-5 flex items-start gap-3">
-				<span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground">
-					{icon}
-				</span>
-				<div>
-					<h2 className="font-mono text-base font-semibold tracking-tight">{title}</h2>
-					{description && (
-						<p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-					)}
-				</div>
-			</header>
-			{children}
-		</section>
-	);
-};
 
 /**
  * Field - 单字段内联编辑容器
- *
  * 显示态：左 label/hint + 右 value（displayValue） + hover 显示编辑按钮；
  * 编辑态：value 区域变成 renderInput + Save/Cancel。
  */
