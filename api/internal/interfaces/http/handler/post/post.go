@@ -88,6 +88,23 @@ func (h *Handler) ArchiveByYear(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
+// SearchPublished 前台公开搜索已发布文章（title/excerpt/content_md 三列）。
+// q 为空时直接返回空集，不查询 DB。
+func (h *Handler) SearchPublished(w http.ResponseWriter, r *http.Request) {
+	page, limit := response.ParsePagingWithMax(r, 50)
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	if q == "" {
+		response.RespondPaged(w, []apppost.SearchPostItem{}, page, limit, 0)
+		return
+	}
+	res, err := h.svc.SearchPublished(r.Context(), q, limit, (page-1)*limit)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondPaged(w, res.Posts, page, limit, res.TotalCount)
+}
+
 // ListAll 列出所有文章（后台）
 func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 	page, limit := response.ParsePaging(r)
