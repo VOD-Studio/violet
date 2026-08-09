@@ -204,7 +204,6 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 
 							<div className="p-1.5">
 								<DropdownMenuItem
-									variant="destructive"
 									onClick={handleLogout}
 									disabled={logout.isPending}
 									className="cursor-pointer rounded-md px-2.5 py-2"
