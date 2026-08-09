@@ -44,8 +44,8 @@ export interface VerifyEmailRequest {
  * LoginRequest - POST /auth/login 请求体
  */
 export interface LoginRequest {
-	/** 邮箱 */
-	email: string;
+	/** 登录标识符（邮箱或用户名） */
+	identifier: string;
 	/** 密码 */
 	password: string;
 }

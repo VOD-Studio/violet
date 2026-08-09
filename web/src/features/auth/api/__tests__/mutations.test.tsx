@@ -104,7 +104,7 @@ describe("auth mutations — 缓存副作用", () => {
 
 		const { result } = renderHook(() => useLogin(), { wrapper: createWrapper(qc) });
 		await result.current.mutateAsync({
-			email: "alice@example.com",
+			identifier: "alice@example.com",
 			password: "secret",
 		});
 

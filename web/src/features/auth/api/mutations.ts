@@ -41,7 +41,7 @@ export const useVerifyEmail = () =>
 	});
 
 /**
- * useLogin - 邮箱密码登录
+ * useLogin - 账号密码登录
  *
  * 成功后后端通过 HttpOnly cookie 下发 session，响应体仅返回 user_id。
  * onSuccess 主动拉取最新用户信息。
