@@ -5,6 +5,7 @@ package command
 
 import (
 	"context"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
@@ -187,8 +188,9 @@ func (h *RegisterUserHandler) checkUsernameAvailable(ctx context.Context, userna
 
 // LoginInput 登录入参
 type LoginInput struct {
-	Email    string
-	Password string
+	// Identifier 登录标识符，可为邮箱或用户名
+	Identifier string
+	Password   string
 }
 
 // LoginOutput 登录出参。
@@ -201,7 +203,7 @@ type LoginOutput struct {
 // LoginHandler 登录用例
 //
 // 编排：
-// 1. 按邮箱查找用户
+// 1. 按邮箱或用户名查找用户
 // 2. 校验密码
 // 3. 校验账户状态（已激活）
 // 4. 发布登录成功/失败事件（审计）
@@ -224,15 +226,11 @@ func NewLoginHandler(
 
 // Handle 执行登录
 func (h *LoginHandler) Handle(ctx context.Context, in LoginInput) (LoginOutput, error) {
-	// 1. 查找用户
-	email, err := user.ParseEmail(in.Email)
+	// 1. 按邮箱或用户名查找用户
+	u, err := h.findUserByIdentifier(ctx, in.Identifier)
 	if err != nil {
-		return LoginOutput{}, user.ErrInvalidCredentials
-	}
-	u, err := h.userRepo.FindByEmail(ctx, email)
-	if err != nil {
-		// 用户不存在统一返回无效凭证（不暴露邮箱是否注册），
-		// 但记审计（邮箱探测/暴力破解也要有痕迹）
+		// 用户不存在统一返回无效凭证（不暴露账号是否注册），
+		// 但记审计（账号探测/暴力破解也要有痕迹）
 		h.publishFailed(ctx, "用户不存在")
 		return LoginOutput{}, user.ErrInvalidCredentials
 	}
@@ -261,6 +259,25 @@ func (h *LoginHandler) Handle(ctx context.Context, in LoginInput) (LoginOutput, 
 	}
 
 	return LoginOutput{UserID: u.GetID().String()}, nil
+}
+
+// findUserByIdentifier 按邮箱或用户名查找用户。
+// 含 @ 视为邮箱，否则视为用户名（与 GitHub/GitLab 等主流平台一致）。
+// 格式无效或用户不存在均返回错误，由 Handle 统一处理为无效凭证（不暴露账号是否存在）。
+func (h *LoginHandler) findUserByIdentifier(ctx context.Context, identifier string) (*user.User, error) {
+	identifier = strings.TrimSpace(identifier)
+	if strings.Contains(identifier, "@") {
+		email, err := user.ParseEmail(identifier)
+		if err != nil {
+			return nil, err
+		}
+		return h.userRepo.FindByEmail(ctx, email)
+	}
+	username, err := user.ParseUsername(identifier)
+	if err != nil {
+		return nil, err
+	}
+	return h.userRepo.FindByUsername(ctx, username)
 }
 
 // publishFailed 发布登录失败事件（失败原因不记密码明文）

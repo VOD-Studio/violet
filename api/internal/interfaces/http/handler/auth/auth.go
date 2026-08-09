@@ -24,7 +24,7 @@ import (
 // Handler auth HTTP 处理器（DDD 版）
 type Handler struct {
 	register      *authcmd.RegisterUserHandler  // 注册用例
-	login         *authcmd.LoginHandler         // 邮箱密码登录用例
+	login         *authcmd.LoginHandler         // 账号密码登录用例
 	google        *authcmd.GoogleLoginHandler   // Google OAuth 登录用例
 	github        *authcmd.GithubLoginHandler   // GitHub OAuth 登录用例
 	logout        *authcmd.LogoutHandler        // 登出用例
@@ -154,8 +154,8 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 // Login POST /auth/login
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Email    string `json:"email" validate:"required,email"`
-		Password string `json:"password" validate:"required"`
+		Identifier string `json:"identifier" validate:"required"`
+		Password   string `json:"password" validate:"required"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -166,7 +166,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.login.Handle(ctxWithAuditInfo(r), authcmd.LoginInput{Email: req.Email, Password: req.Password})
+	out, err := h.login.Handle(ctxWithAuditInfo(r), authcmd.LoginInput{Identifier: req.Identifier, Password: req.Password})
 	if err != nil {
 		response.RespondError(w, r, err)
 		return

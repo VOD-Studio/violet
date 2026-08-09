@@ -76,7 +76,7 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
 	)
 
-	body := `{"email":"u@example.com","password":"` + plainPwd + `"}`
+	body := `{"identifier":"u@example.com","password":"` + plainPwd + `"}`
 	req := httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(body))
 	rec := httptest.NewRecorder()
 	h.Login(rec, req)
@@ -109,6 +109,41 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 	assert.True(t, hasCSRF, "响应应下发 violet_csrf cookie")
 
 	sessionStore.AssertNumberOfCalls(t, "Create", 1)
+}
+
+// TestLogin_ByUsername 验证用用户名（不含 @）登录走 FindByUsername 路径。
+func TestLogin_ByUsername(t *testing.T) {
+	const plainPwd = "pass-word-123"
+	u := hashedTestUser(t, plainPwd)
+
+	userRepo := new(mocks.MockUserRepository)
+	sessionStore := new(mocks.MockSessionStore)
+	hasher := authcmd.NewBcryptHasher()
+
+	bus := infraeventbus.NewInMemory()
+	login := authcmd.NewLoginHandler(userRepo, hasher, bus)
+	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore)
+
+	// 用户名登录走 FindByUsername；createSession 走 FindByID
+	username, _ := domainuser.ParseUsername("alice")
+	userRepo.On("FindByUsername", mock.Anything, username).Return(u, nil)
+	userRepo.On("FindByID", mock.Anything, u.GetID()).Return(u, nil)
+	sessionStore.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	h := NewHandler(
+		nil, login, nil, nil, nil, createSession,
+		nil, nil, nil, nil, nil, nil, nil,
+		testCookieCfg(),
+		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
+	)
+
+	body := `{"identifier":"alice","password":"` + plainPwd + `"}`
+	req := httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	h.Login(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code, "用户名登录应返回 200")
+	userRepo.AssertExpectations(t)
 }
 
 // TestSession_ReturnsClaimsWhenAuthenticated 验证 /auth/session 已登录时返回 claims。
