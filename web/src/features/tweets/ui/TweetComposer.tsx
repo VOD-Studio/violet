@@ -1,9 +1,10 @@
 /** TweetComposer - 推文发布框（登录态：文本 ≤500 rune + ≤4 图，前端拦截边界） */
 
 import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
+import { useMe } from "@features/auth/api/queries";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { ApiError } from "@shared/api/error";
-import { contentImageUrl } from "@shared/lib/image-url";
+import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { Button } from "@shared/ui/base/button";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -40,6 +41,7 @@ export interface TweetComposerProps {
 }
 
 export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetComposerProps = {}) {
+	const me = useMe();
 	const [content, setContent] = useState("");
 	const [images, setImages] = useState<ImageItem[]>([]);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -141,136 +143,145 @@ export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetCo
 	return (
 		<form
 			onSubmit={handleSubmit}
-			className="rounded-xl border border-edge-hairline p-4"
+			className="rounded-2xl border border-edge-hairline bg-surface/30 p-4 sm:p-5 flex gap-3 transition-colors hover:bg-surface/50"
 			aria-label="发布推文"
 		>
-			<textarea
-				value={content}
-				onChange={(e) => setContent(e.target.value)}
-				placeholder="有什么新鲜事？"
-				rows={3}
-				className="w-full resize-none bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
-			/>
-
-			{images.length > 0 && (
-				<div className="mt-2 flex flex-wrap gap-2">
-					{images.map((img) => (
-						<div
-							key={img.id}
-							className="relative size-20 overflow-hidden rounded-lg border border-edge-hairline"
-						>
-							<img
-								src={
-									img.status === "done"
-										? contentImageUrl(img.url, { width: 200 })
-										: img.preview
-								}
-								alt=""
-								className="size-full object-cover"
-							/>
-							{img.status === "uploading" && (
-								<div className="absolute inset-x-0 bottom-0 h-1 bg-secondary">
-									<div
-										className="h-full bg-primary transition-[width]"
-										style={{ width: `${img.progress}%` }}
-									/>
-								</div>
-							)}
-							{img.status === "error" && (
-								<div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-destructive/80 text-white">
-									<AlertCircle className="size-4" />
-									<span className="text-[10px]">上传失败</span>
-								</div>
-							)}
-							<button
-								type="button"
-								onClick={() => removeImage(img.id)}
-								aria-label="移除图片"
-								className="absolute top-1 right-1 inline-flex size-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
-							>
-								<X className="size-3" />
-							</button>
-						</div>
-					))}
-				</div>
+			{me.data && (
+				<img
+					src={avatarUrl(me.data.avatar_url, me.data.username)}
+					alt={me.data.username}
+					className="size-10 shrink-0 rounded-full object-cover"
+				/>
 			)}
-			{quotedTweet && (
-				<div className="relative mt-3 rounded-lg border border-edge-hairline bg-surface/50 p-3 text-xs">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-1.5 font-medium text-foreground">
-							<span>{quotedTweet.author.username}</span>
-							<span className="text-muted-foreground font-normal">
-								·{" "}
-								{formatDistanceToNow(new Date(quotedTweet.created_at), {
-									addSuffix: true,
-									locale: zhCN,
-								})}
-							</span>
-						</div>
-						{onCancelQuote && (
-							<button
-								type="button"
-								onClick={onCancelQuote}
-								className="text-muted-foreground hover:text-foreground"
-								title="取消引用"
+			<div className="flex-1 min-w-0 flex flex-col">
+				<textarea
+					value={content}
+					onChange={(e) => setContent(e.target.value)}
+					placeholder="有什么新鲜事？"
+					rows={3}
+					className="w-full resize-none bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+				/>
+
+				{images.length > 0 && (
+					<div className="mt-2 flex flex-wrap gap-2">
+						{images.map((img) => (
+							<div
+								key={img.id}
+								className="relative size-20 overflow-hidden rounded-lg border border-edge-hairline"
 							>
-								<X className="size-3.5" />
-							</button>
+								<img
+									src={
+										img.status === "done"
+											? contentImageUrl(img.url, { width: 200 })
+											: img.preview
+									}
+									alt=""
+									className="size-full object-cover"
+								/>
+								{img.status === "uploading" && (
+									<div className="absolute inset-x-0 bottom-0 h-1 bg-secondary">
+										<div
+											className="h-full bg-primary transition-[width]"
+											style={{ width: `${img.progress}%` }}
+										/>
+									</div>
+								)}
+								{img.status === "error" && (
+									<div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-destructive/80 text-white">
+										<AlertCircle className="size-4" />
+										<span className="text-[10px]">上传失败</span>
+									</div>
+								)}
+								<button
+									type="button"
+									onClick={() => removeImage(img.id)}
+									aria-label="移除图片"
+									className="absolute top-1 right-1 inline-flex size-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+								>
+									<X className="size-3" />
+								</button>
+							</div>
+						))}
+					</div>
+				)}
+				{quotedTweet && (
+					<div className="relative mt-3 rounded-lg border border-edge-hairline bg-surface/50 p-3 text-xs">
+						<div className="flex items-center justify-between">
+							<div className="flex items-center gap-1.5 font-medium text-foreground">
+								<span>{quotedTweet.author.username}</span>
+								<span className="text-muted-foreground font-normal">
+									·{" "}
+									{formatDistanceToNow(new Date(quotedTweet.created_at), {
+										addSuffix: true,
+										locale: zhCN,
+									})}
+								</span>
+							</div>
+							{onCancelQuote && (
+								<button
+									type="button"
+									onClick={onCancelQuote}
+									className="text-muted-foreground hover:text-foreground"
+									title="取消引用"
+								>
+									<X className="size-3.5" />
+								</button>
+							)}
+						</div>
+						{quotedTweet.content && (
+							<p className="mt-1 line-clamp-2 text-foreground/90 whitespace-pre-wrap">
+								{quotedTweet.content}
+							</p>
+						)}
+						{quotedTweet.images && quotedTweet.images.length > 0 && (
+							<div className="mt-1.5 text-muted-foreground">
+								[{quotedTweet.images.length} 张图片]
+							</div>
 						)}
 					</div>
-					{quotedTweet.content && (
-						<p className="mt-1 line-clamp-2 text-foreground/90 whitespace-pre-wrap">
-							{quotedTweet.content}
-						</p>
-					)}
-					{quotedTweet.images && quotedTweet.images.length > 0 && (
-						<div className="mt-1.5 text-muted-foreground">
-							[{quotedTweet.images.length} 张图片]
-						</div>
-					)}
-				</div>
-			)}
+				)}
 
-			<div className="mt-3 flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<input
-						ref={inputRef}
-						type="file"
-						accept="image/*"
-						multiple
-						className="hidden"
-						onChange={(e) => handleFiles(e.target.files)}
-					/>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon"
-						className="size-8"
-						onClick={() => inputRef.current?.click()}
-						disabled={images.length >= MAX_TWEET_IMAGES || uploading}
-						aria-label="添加图片"
-						title={`图片 ${images.length}/${MAX_TWEET_IMAGES}`}
-					>
-						<ImagePlus className="size-4" />
+				<div className="mt-3 flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<input
+							ref={inputRef}
+							type="file"
+							accept="image/*"
+							multiple
+							className="hidden"
+							onChange={(e) => handleFiles(e.target.files)}
+						/>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							className="size-8"
+							onClick={() => inputRef.current?.click()}
+							disabled={images.length >= MAX_TWEET_IMAGES || uploading}
+							aria-label="添加图片"
+							title={`图片 ${images.length}/${MAX_TWEET_IMAGES}`}
+						>
+							<ImagePlus className="size-4" />
+						</Button>
+						<span
+							className={
+								overLimit
+									? "text-xs font-medium text-destructive"
+									: "text-xs text-muted-foreground"
+							}
+						>
+							{remaining}
+						</span>
+					</div>
+					<Button type="submit" size="sm" disabled={!canSubmit}>
+						{createTweet.isPending ? (
+							<Loader2 className="size-3.5 animate-spin" />
+						) : (
+							<Send className="size-3.5" />
+						)}
+						发布
 					</Button>
-					<span
-						className={
-							overLimit
-								? "text-xs font-medium text-destructive"
-								: "text-xs text-muted-foreground"
-						}
-					>
-						{remaining}
-					</span>
 				</div>
-				<Button type="submit" size="sm" disabled={!canSubmit}>
-					{createTweet.isPending ? (
-						<Loader2 className="size-3.5 animate-spin" />
-					) : (
-						<Send className="size-3.5" />
-					)}
-					发布
-				</Button>
 			</div>
 		</form>
 	);

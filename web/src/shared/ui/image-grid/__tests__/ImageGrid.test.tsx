@@ -21,7 +21,7 @@ describe("ImageGrid", () => {
 		const { container } = render(<ImageGrid images={[{ url: "/a.jpg" }]} />);
 		const grid = container.querySelector(".grid");
 		expect(grid?.className).toContain("grid-cols-1");
-		expect(grid?.className).toContain("max-w-60");
+		expect(grid?.className).toContain("w-full");
 	});
 
 	it("2 张图：双列布局", () => {

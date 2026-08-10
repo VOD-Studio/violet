@@ -45,9 +45,9 @@ export function ImageGrid({ images, className }: ImageGridProps) {
 	const moreCount = count - MAX_DISPLAY;
 
 	const getGridClass = () => {
-		if (count === 1) return "grid-cols-1 max-w-60";
-		if (count === 2) return "grid-cols-2 max-w-90";
-		return "grid-cols-3 max-w-90";
+		if (count === 1) return "grid-cols-1 w-full";
+		if (count === 2 || count === 4) return "grid-cols-2 gap-1.5 w-full";
+		return "grid-cols-3 gap-1.5 w-full";
 	};
 
 	const handleClick = (index: number, target: HTMLElement) => {
@@ -60,9 +60,19 @@ export function ImageGrid({ images, className }: ImageGridProps) {
 
 	return (
 		<>
-			<div className={cn("grid gap-1", getGridClass(), className)}>
+			<div className={cn("grid w-full", getGridClass(), className)}>
 				{displayImages.map((image, index) => (
-					<div key={index} className="relative aspect-square">
+					<div
+						key={index}
+						className={cn(
+							"relative overflow-hidden rounded-xl border border-edge-hairline bg-surface/30",
+							count === 1
+								? "w-full max-h-[380px] aspect-[16/10] sm:aspect-[16/9]"
+								: count === 2
+									? "aspect-[4/3]"
+									: "aspect-square",
+						)}
+					>
 						<div
 							role="button"
 							tabIndex={0}
