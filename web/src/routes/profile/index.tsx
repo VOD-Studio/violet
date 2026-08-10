@@ -41,8 +41,6 @@ const ProfilePage = () => {
 export const Route = createFileRoute("/profile/")({
 	ssr: false,
 	beforeLoad: ({ context, location }) => {
-		// 仅当网络判定未登录 且 客户端确实无活跃会话时才跳登录。
-		// session 过期的瞬态失败（sessionActive 仍 true）不踢人，原地等 401 弹窗恢复。
 		if (!context.auth.isAuthenticated && !isSessionActive()) {
 			throw redirect({
 				to: "/login",
