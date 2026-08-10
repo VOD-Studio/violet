@@ -15,7 +15,6 @@ import CommandPalette from "@widgets/CommandPalette";
 import Footer from "@widgets/Footer";
 import Header from "@widgets/Header";
 import MusicPlayer from "@widgets/MusicPlayer";
-import { clearAuthCache } from "@/features/auth/api/queries";
 import { LoginDialog } from "@/features/auth/ui/LoginDialog";
 import type { RouterContext } from "../router";
 import AppProvider from "../shared/api/provider";
@@ -37,7 +36,7 @@ let cachedClaims: ReturnType<typeof getAuthSession> extends Promise<infer T>
 	: never;
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-	beforeLoad: async ({ context }) => {
+	beforeLoad: async () => {
 		// SSR 从请求 cookie 读 resolved theme（防 FOUC：<html> 首帧即正确 class）；
 		// 客户端从 document.cookie 读（与 SSR 同源，hydration 时 html className 一致）
 		const theme: "light" | "dark" =
@@ -52,12 +51,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			cachedClaims = claims ?? null;
 			if (claims && typeof window !== "undefined") {
 				markSessionActive();
-			} else if (!claims && typeof window !== "undefined") {
-				// session 已过期但 useMe 缓存（staleTime: Infinity）仍残留旧 user：
-				// SSR 探活返回 null 说明 Redis session 已失效，此时必须同步清掉客户端
-				// useMe 缓存，否则 Header 从缓存读到陈旧登录态，与守卫判定（未登录）矛盾。
-				clearAuthCache(context.queryClient);
 			}
+			// 注意：getAuthSession 返回 null 时不清 useMe 缓存也不 clearSessionActive。
+			// server function 的 RPC cookie 转发可能不可靠（与浏览器直连的 /auth/me
+			// 行为不一致），基于它清缓存会导致误清。session 真过期的清理交给 401 拦截器
+			//（走浏览器直连，cookie 正确）：受保护请求收 401 → clearAuthCache +
+			// clearSessionActive → 守卫据此踢人。此处仅设 isAuthenticated 供守卫参考。
 			return {
 				theme,
 				auth: {
