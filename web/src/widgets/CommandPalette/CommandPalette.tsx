@@ -34,7 +34,7 @@ const CommandPalette = () => {
 	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const navigate = useNavigate();
 	const { theme, switchTheme } = useThemeSwitcher();
-	const { data: searchData } = useSearchPosts(debouncedQuery);
+	const { data: searchData, isFetching } = useSearchPosts(debouncedQuery);
 
 	// 输入防抖：避免每次击键都打后端
 	useEffect(() => {
@@ -116,6 +116,8 @@ const CommandPalette = () => {
 		// 文章结果在前，本地命令在后
 		return [...posts, ...filterCommands(localCommands, query)];
 	}, [localCommands, query, searchData, navigate]);
+	// 文章搜索请求飞行中（关键词达查询阈值且请求未完成）
+	const isSearching = debouncedQuery.trim().length >= 2 && isFetching;
 
 	return (
 		<CommandList
@@ -124,6 +126,7 @@ const CommandPalette = () => {
 			items={filtered}
 			query={query}
 			onQueryChange={setQuery}
+			loading={isSearching}
 			groupLabels={GROUP_LABELS}
 		/>
 	);
