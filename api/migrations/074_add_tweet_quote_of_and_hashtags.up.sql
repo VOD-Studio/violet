@@ -1,4 +1,4 @@
--- 070: tweets.quote_of 引用与 tweet_hashtags 话题关联（PRD-0013 P3 / issues #109, #110）
+-- 074: tweets.quote_of 引用与 tweet_hashtags 话题关联（PRD-0013 P3 / issues #109, #110）
 
 -- 1. quote_of：转发引用的推文 ID。不建 FK 约束，保留被引用的 ID，被引用的推文删除后保留 quote_of 值前台渲染"推文已删除"占位
 ALTER TABLE tweets ADD COLUMN quote_of UUID;

@@ -1,4 +1,4 @@
--- 069: tweet_comments 表（推文评论，PRD-0013 P2 / issue #107）
+-- 073: tweet_comments 表（推文评论，PRD-0013 P2 / issue #107）
 -- 独立评论实体挂推文下，两层扁平楼中楼（depth 0=顶层 / 1=回复），即发即出、物理删除。
 -- tweet_id 级联删除：推文被物理删除时其评论自动由 DB 清理。
 -- parent_id 自引用级联删除：删顶层评论时其回复链连带清理（与 comments 表同构）。

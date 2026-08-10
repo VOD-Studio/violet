@@ -7,7 +7,7 @@ import (
 	"gorm.io/datatypes"
 )
 
-// Tweet 推文持久化模型（对应 tweets 表，migration 066）。
+// Tweet 推文持久化模型（对应 tweets 表，migration 070）。
 //
 // 多用户微博短内容（PRD-0013）：纯文本 + 最多 4 张图，即发即出、
 // 不可编辑（无更新路径，updated_at 恒等于 created_at）、物理删除。
@@ -24,7 +24,7 @@ type Tweet struct {
 
 // TableName 显式指定表名
 func (Tweet) TableName() string { return "tweets" }
-// TweetLike 推文点赞关系持久化模型（对应 tweet_likes 表，migration 068）。
+// TweetLike 推文点赞关系持久化模型（对应 tweet_likes 表，migration 072）。
 type TweetLike struct {
 	TweetID   uuid.UUID `gorm:"type:uuid;column:tweet_id;primaryKey" json:"tweet_id"`
 	UserID    uuid.UUID `gorm:"type:uuid;column:user_id;primaryKey" json:"user_id"`
@@ -34,7 +34,7 @@ type TweetLike struct {
 // TableName 显式指定表名
 func (TweetLike) TableName() string { return "tweet_likes" }
 
-// TweetComment 推文评论持久化模型（对应 tweet_comments 表，migration 069）。
+// TweetComment 推文评论持久化模型（对应 tweet_comments 表，migration 073）。
 //
 // 两层扁平楼中楼（depth 0=顶层 / 1=回复），即发即出、纯文本、物理删除。
 // parent_id 自引用 ON DELETE CASCADE：删顶层评论连带清回复链。
@@ -52,7 +52,7 @@ type TweetComment struct {
 // TweetComment 表名显式指定
 func (TweetComment) TableName() string { return "tweet_comments" }
 
-// TweetHashtag 推文话题关联持久化模型（对应 tweet_hashtags 表，migration 070）。
+// TweetHashtag 推文话题关联持久化模型（对应 tweet_hashtags 表，migration 074）。
 type TweetHashtag struct {
 	TweetID   uuid.UUID `gorm:"type:uuid;column:tweet_id;primaryKey" json:"tweet_id"`
 	Tag       string    `gorm:"type:varchar(50);column:tag;primaryKey" json:"tag"`

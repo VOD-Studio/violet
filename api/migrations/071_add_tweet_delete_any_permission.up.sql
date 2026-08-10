@@ -1,4 +1,4 @@
--- 067: 新增 tweet 权限（PRD-0013 / issue #101）
+-- 071: 新增 tweet 权限（PRD-0013 / issue #101）
 -- menu=tweet 分组 + action=tweet:delete-any（管理员删除任意推文）。
 -- 发推文/删自己的推文/点赞不需要权限码，登录即可。
 -- 复用 063 subscription:manage 的 seed 模式。
@@ -20,7 +20,7 @@ FROM permissions m
 WHERE m.type = 'menu' AND m.code = 'tweet'
   AND p.code = 'tweet:delete-any';
 
--- seed 给 admin 角色（superadmin 靠 is_builtin_super_admin 通配短路）
+-- seed 给 admin 角色（superadmin 靠 is_root 通配短路）
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r, permissions p
