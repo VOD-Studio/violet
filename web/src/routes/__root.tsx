@@ -51,16 +51,21 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			cachedClaims = claims ?? null;
 			if (claims && typeof window !== "undefined") {
 				markSessionActive();
+			} else if (!claims && typeof window !== "undefined") {
+				// 客户端 hydrate 时 getAuthSession 返回 null：可能是 RPC cookie 转发
+				// 失败的假阴性（/auth/session 直连带 cookie 200，但 server function RPC
+				// 丢了 cookie → 401）。用 document.cookie 兜底：若有 violet_session cookie，
+				// 说明浏览器确实持有 session，按已登录处理，等浏览器直连的 /auth/me 确认。
+				// session 真过期的清理交给 401 拦截器（走浏览器直连，cookie 正确）。
+				const hasSessionCookie = document.cookie.includes("violet_session=");
+				if (hasSessionCookie) {
+					markSessionActive();
+				}
 			}
-			// 注意：getAuthSession 返回 null 时不清 useMe 缓存也不 clearSessionActive。
-			// server function 的 RPC cookie 转发可能不可靠（与浏览器直连的 /auth/me
-			// 行为不一致），基于它清缓存会导致误清。session 真过期的清理交给 401 拦截器
-			//（走浏览器直连，cookie 正确）：受保护请求收 401 → clearAuthCache +
-			// clearSessionActive → 守卫据此踢人。此处仅设 isAuthenticated 供守卫参考。
 			return {
 				theme,
 				auth: {
-					isAuthenticated: claims !== null,
+					isAuthenticated: claims !== null || isSessionActive(),
 					claims,
 				},
 			};
