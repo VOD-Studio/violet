@@ -75,6 +75,7 @@ func (h *GetMeHandler) Handle(ctx context.Context, userID string) (UserDTO, erro
 // toUserDTO 领域用户转 DTO
 func toUserDTO(u *user.User, permissions []string, roleDescription string) UserDTO {
 	return UserDTO{
+		ID:              u.GetID().String(),
 		Username:        u.Username().String(),
 		DisplayName:     u.DisplayName().String(),
 		Email:           u.Email().String(),
