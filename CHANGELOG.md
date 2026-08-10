@@ -7,6 +7,39 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.6.1](https://github.com/VOD-Studio/violet/compare/v2.6.0...v2.6.1) (2026-08-10)
+
+
+### 新增
+
+* **command-palette:** 搜索结果增加加载骨架与空状态 ([cc15980](https://github.com/VOD-Studio/violet/commit/cc15980c51e1892f9cdfd3c95f43a77bb2fb8376))
+* **domain:** 拆分用户名与显示名并收紧 username 规则 ([96e4efa](https://github.com/VOD-Studio/violet/commit/96e4efa9b65f862f823d711e35ab524ed48d56a9))
+* **web:** 前端适配 display_name 拆分与 username 规则收紧 ([7108843](https://github.com/VOD-Studio/violet/commit/7108843eeeda6dd77a4e6003ad0a413b1be4ecd7))
+
+
+### 修复
+
+* **auth:** beforeLoad 不再基于 getAuthSession 清缓存 ([872061f](https://github.com/VOD-Studio/violet/commit/872061fdde6151c89b108032d8dce1a4fb541e26))
+* **auth:** cookie 兜底改用 violet_csrf 并清除 debug 日志 ([8957cef](https://github.com/VOD-Studio/violet/commit/8957cefe6240fd7dbf21017df1fe621604bfcafa))
+* **auth:** me 接口补全用户 ID 返回 ([5434a9d](https://github.com/VOD-Studio/violet/commit/5434a9d68c69cc95a3348f4fe0173e8e2539022d))
+* **auth:** session 过期时同步清 useMe 缓存消除 Header 假登录 ([90d1701](https://github.com/VOD-Studio/violet/commit/90d17017a7d942e2dcf4f226e135efd58f73d955))
+* **auth:** 守卫加 violet_csrf cookie 判定页面刷新后登录态 ([324e626](https://github.com/VOD-Studio/violet/commit/324e6269a404e7352f48bba326912e151b625f97))
+* **auth:** 守卫追加 me 缓存兜底防止刷新误踢已登录用户 ([aaff231](https://github.com/VOD-Studio/violet/commit/aaff231a450b68676ed1f52b492d8745e9abc5a6))
+* **auth:** 客户端 hydrate 用 cookie 兜底 RPC 探活假阴性 ([1898037](https://github.com/VOD-Studio/violet/commit/1898037c87eaf90d18efc2f18316da636738fda9))
+* **command-palette:** 关闭面板时重置输入查询 ([b370a68](https://github.com/VOD-Studio/violet/commit/b370a68986972554693524d5fd8b704125e416cd))
+* **dev:** dev-mixed 加 --build 确保新代码进入容器 ([12b9c0b](https://github.com/VOD-Studio/violet/commit/12b9c0b59d98e0c79d6cee66c03bd86d3dd53fbf))
+* **domain:** username 测试用例对齐 ASCII-only 规则 ([860a8a0](https://github.com/VOD-Studio/violet/commit/860a8a0f4ce7a64c465440f62b15abbef4ade432))
+* **header:** 用户菜单触发器去掉用户名并统一为圆形头像槽位 ([2bb4196](https://github.com/VOD-Studio/violet/commit/2bb4196f7f008959d550bb18bf46efc79b3690b8))
+* **profile:** 个人中心 root 角色统一显示为 root ([877e483](https://github.com/VOD-Studio/violet/commit/877e48336d616e379092b342191e51288e0fc269))
+* 认证守卫加固与 release/2.0 多项改进整合 ([#128](https://github.com/VOD-Studio/violet/issues/128)) ([c3fa938](https://github.com/VOD-Studio/violet/commit/c3fa93887def241002c0acf3dec82daec6d2c2a7))
+
+
+### 重构
+
+* **admin-users:** 请求类型收敛到 model 层 ([7b6ba98](https://github.com/VOD-Studio/violet/commit/7b6ba98694a22a141e4003406ae3943a0207f9fe))
+* **settings:** 前端同步去除重复字段与 footer_text 归组 ([5e0c9d7](https://github.com/VOD-Studio/violet/commit/5e0c9d7d1b1bb9a0fd0ebc2e68e441dd07ab8012))
+* **settings:** 去除基础信息与关于博主的重复字段 ([3a98225](https://github.com/VOD-Studio/violet/commit/3a98225980f51790226261383c696a3d18dac1a5))
+
 ## [2.6.0](https://github.com/VOD-Studio/violet/compare/v2.5.3...v2.6.0) (2026-08-10)
 
 
