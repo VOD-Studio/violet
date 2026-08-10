@@ -21,7 +21,7 @@ fi
 
 # 启动后端套件（postgres + redis + api），--wait 阻塞至全部 healthcheck 通过
 echo "启动后端套件（PostgreSQL + Redis + API），等待健康检查..."
-docker compose -f docker-compose.dev.yml up -d --wait postgres redis api
+docker compose -f docker-compose.dev.yml up -d --build --wait postgres redis api
 
 echo ""
 echo "后端套件已就绪:"
