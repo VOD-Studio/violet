@@ -5,6 +5,7 @@
  * 此处 AdminPost 直接复用，保持后台引用名不变。
  */
 import type { PostDetail } from "@entities/post/model/types";
+import type { AvatarUser } from "@shared/ui/avatar-group";
 
 /**
  * AdminPostListQuery - 后台文章列表查询参数
@@ -96,8 +97,8 @@ export interface AdminPostListItem {
 	tags: string[];
 	/** 作者 ID（判断所有权，控制操作按钮） */
 	author_id?: string;
-	/** 作者信息，缺失时省略 */
-	author?: { username: string; avatar_url: string };
+	/** 作者信息（用户名+头像+显示名），缺失时省略 */
+	author?: AvatarUser;
 }
 
 /**
@@ -119,8 +120,8 @@ export interface PostVersionDTO {
 	tags: string[];
 	/** 编辑这一版的操作人 ID */
 	editor_id: string;
-	/** 编辑者信息（用户名+头像），后端按 editor_id 批量填充 */
-	editor?: { username: string; avatar_url: string };
+	/** 编辑者信息（用户名+头像+显示名），后端按 editor_id 批量填充 */
+	editor?: AvatarUser;
 	summary: string;
 	created_at: string;
 }

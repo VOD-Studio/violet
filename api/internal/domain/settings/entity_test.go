@@ -14,9 +14,7 @@ func strPtr(v string) *string { return &v }
 func TestMergeFrom_FullMap(t *testing.T) {
 	m := map[string]string{
 		"site_name":                  "紫罗兰",
-		"site_description":           "个人博客",
 		"site_url":                   "https://violet.dev",
-		"admin_email":                "admin@violet.dev",
 		"posts_per_page":             "15",
 		"comments_enabled":           "true",
 		"comments_moderation":        "true",
@@ -58,9 +56,7 @@ func TestMergeFrom_FullMap(t *testing.T) {
 	s := SiteSettings{}.MergeFrom(m)
 
 	assert.Equal(t, "紫罗兰", s.SiteName)
-	assert.Equal(t, "个人博客", s.SiteDescription)
 	assert.Equal(t, "https://violet.dev", s.SiteURL)
-	assert.Equal(t, "admin@violet.dev", s.AdminEmail)
 	assert.Equal(t, 15, s.PostsPerPage)
 	assert.True(t, s.CommentsEnabled)
 	assert.True(t, s.CommentsModeration)

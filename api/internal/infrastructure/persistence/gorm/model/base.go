@@ -34,6 +34,7 @@ type BaseModel struct {
 type User struct {
 	BaseModel
 	Username     string `gorm:"type:varchar(32);unique;not null" json:"username"`
+	DisplayName  string `gorm:"type:varchar(32);default:''" json:"display_name"`
 	Email        string `gorm:"type:varchar(255);unique;not null" json:"email"`
 	PasswordHash string `gorm:"type:varchar(255);not null" json:"-"`
 	AvatarURL    string `gorm:"type:text" json:"avatar_url"`

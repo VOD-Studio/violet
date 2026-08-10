@@ -390,7 +390,7 @@ function AdminUsers() {
 					renderExpandedRow={(row) => (
 						<div className="text-muted-foreground space-y-1 text-sm">
 							<p>ID：{row.id}</p>
-							<p>用户名：{row.username}</p>
+							<p>显示名：{row.display_name || row.username}</p>
 							<p>邮箱：{row.email}</p>
 							<p>角色：{row.role}</p>
 							<p>状态：{row.is_active ? "正常" : "已禁用"}</p>

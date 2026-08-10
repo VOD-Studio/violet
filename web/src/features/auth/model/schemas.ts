@@ -14,11 +14,12 @@ import { z } from "zod";
 /** 邮箱格式（与后端 user.ParseEmail 一致：非空 + 含 @ ） */
 export const emailField = z.string().min(1, "请输入邮箱").email("邮箱格式不正确");
 
-/** 用户名：3-32 字符 */
+/** 用户名：3-32 位字母、数字、下划线或连字符（纯 ASCII 技术标识，展示名用 display_name） */
 export const usernameField = z
 	.string()
 	.min(3, "用户名至少 3 个字符")
-	.max(32, "用户名最多 32 个字符");
+	.max(32, "用户名最多 32 个字符")
+	.regex(/^[a-zA-Z0-9_-]+$/, "用户名只能包含字母、数字、下划线和连字符");
 
 /** 密码：至少 8 位 */
 export const passwordField = z.string().min(8, "密码至少 8 位");

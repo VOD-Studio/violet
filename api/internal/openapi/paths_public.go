@@ -14,7 +14,6 @@ func registerPublicPaths(t *openapi3.T) {
 	// PublicSettings：公开站点配置（不含敏感字段）
 	registerSchema(t, "PublicSettings", openapi3.Schemas{
 		"site_name":            optStr("站点名称"),
-		"site_description":     optStr("站点描述"),
 		"site_url":             optStr("站点 URL"),
 		"posts_per_page":       optInt("每页文章数"),
 		"comments_enabled":     optBool("是否开启评论"),

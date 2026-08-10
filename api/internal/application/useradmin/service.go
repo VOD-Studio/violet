@@ -58,6 +58,7 @@ func idStrings(ids []shared.ID) []string {
 type UserDTO struct {
 	ID                  string `json:"id"`
 	Username            string `json:"username"`
+	DisplayName         string `json:"display_name"`
 	Email               string `json:"email"`
 	Role                string `json:"role"`
 	IsRoot              bool   `json:"is_root"`
@@ -96,7 +97,8 @@ func (s *Service) GetDetail(ctx context.Context, id string) (UserDTO, error) {
 
 // CreateInput 创建用户入参
 type CreateInput struct {
-	Username  string
+	Username    string
+	DisplayName string
 	Email     string
 	Password  string
 	Role      string
@@ -127,6 +129,14 @@ func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operat
 		return UserDTO{}, shared.Internal("密码哈希失败", err)
 	}
 	u := domainuser.NewUser(shared.NewID(), email, username, hash)
+	// 显示名（可选，空则回退 username）
+	displayName, err := domainuser.ParseDisplayName(in.DisplayName)
+	if err != nil {
+		return UserDTO{}, err
+	}
+	if !displayName.IsEmpty() {
+		u.UpdateDisplayName(displayName)
+	}
 	if err := u.ChangeRole(domainuser.Role(in.Role)); err != nil {
 		return UserDTO{}, err
 	}
@@ -232,6 +242,14 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 		} else {
 			u.Deactivate()
 		}
+	}
+	// 显示名变更（允许重复，无需查重）
+	if in.DisplayName != nil {
+		displayName, err := domainuser.ParseDisplayName(*in.DisplayName)
+		if err != nil {
+			return UserDTO{}, err
+		}
+		u.UpdateDisplayName(displayName)
 	}
 	if err := s.store.Save(ctx, u); err != nil {
 		return UserDTO{}, err
@@ -467,7 +485,7 @@ func parseIDs(idStrs []string) ([]shared.ID, error) {
 
 func toDTO(u *domainuser.User) UserDTO {
 	dto := UserDTO{
-		ID: u.GetID().String(), Username: u.Username().String(), Email: u.Email().String(),
+		ID: u.GetID().String(), Username: u.Username().String(), DisplayName: u.DisplayName().String(), Email: u.Email().String(),
 		Role: string(u.Role()), IsRoot: u.IsRoot(),
 		EmailVerified: u.EmailVerified(), IsActive: u.IsActive(),
 		AvatarURL: u.AvatarURL(), Bio: u.Bio(),

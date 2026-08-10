@@ -43,10 +43,8 @@ func hashedTestUser(t *testing.T, plainPassword string) *domainuser.User {
 	uid, _ := domainshared.ParseID("00000000-0000-0000-0000-000000000001")
 	email, _ := domainuser.ParseEmail("u@example.com")
 	username, _ := domainuser.ParseUsername("alice")
-	return domainuser.ReconstructUser(
-		uid, email, username, hash, "", "", domainuser.RoleUser,
-		nil, nil, false, true, true, time.Time{}, time.Time{},
-	)
+	return domainuser.ReconstructUser(uid, email, username, domainuser.DisplayName{}, hash, "", "", domainuser.RoleUser,
+		nil, nil, false, true, true, time.Time{}, time.Time{},)
 }
 
 // TestLogin_SetsSessionAndCSRFCookies 验证登录成功后下发 violet_session + violet_csrf cookie，body 含 user_id。

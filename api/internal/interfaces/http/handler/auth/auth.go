@@ -372,9 +372,10 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID := interfacesmw.GetUserIDFromContext(r)
 	var req struct {
-		Username  *string `json:"username" validate:"omitempty,min=3,max=32"`
-		Bio       *string `json:"bio" validate:"omitempty,max=500"`
-		AvatarURL *string `json:"avatar_url" validate:"omitempty,max=2048"`
+		Username   *string `json:"username" validate:"omitempty,min=3,max=32"`
+		DisplayName *string `json:"display_name" validate:"omitempty,max=32"`
+		Bio        *string `json:"bio" validate:"omitempty,max=500"`
+		AvatarURL  *string `json:"avatar_url" validate:"omitempty,max=2048"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -386,7 +387,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u, err := h.updatePf.Handle(r.Context(), authcmd.UpdateProfileInput{
-		UserID: userID, Username: req.Username, Bio: req.Bio, AvatarURL: req.AvatarURL,
+		UserID: userID, Username: req.Username, DisplayName: req.DisplayName, Bio: req.Bio, AvatarURL: req.AvatarURL,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)
@@ -395,6 +396,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, map[string]any{
 		"id":         u.GetID().String(),
 		"username":   u.Username().String(),
+		"display_name": u.DisplayName().String(),
 		"email":      u.Email().String(),
 		"avatar_url": u.AvatarURL(),
 		"bio":        u.Bio(),

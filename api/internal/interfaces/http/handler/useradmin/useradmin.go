@@ -64,11 +64,12 @@ func (h *Handler) GetUserDetail(w http.ResponseWriter, r *http.Request) {
 // CreateUser 创建用户
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Username string `json:"username" validate:"required"`
-		Email    string `json:"email" validate:"required,email"`
-		Password string `json:"password" validate:"required,min=6"`
-		Role     string `json:"role"`
-		IsActive *bool  `json:"is_active"`
+		Username    string `json:"username" validate:"required"`
+		DisplayName string `json:"display_name" validate:"omitempty,max=32"`
+		Email       string `json:"email" validate:"required,email"`
+		Password    string `json:"password" validate:"required,min=6"`
+		Role        string `json:"role"`
+		IsActive    *bool  `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -84,7 +85,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		role = "user"
 	}
 	dto, err := h.svc.Create(r.Context(), appuseradmin.CreateInput{
-		Username: req.Username, Email: req.Email, Password: req.Password,
+		Username: req.Username, DisplayName: req.DisplayName, Email: req.Email, Password: req.Password,
 		Role: role, IsActive: active, IPAddress: ip, UserAgent: ua,
 	}, opID, opRole, opIsBuiltin)
 	if err != nil {
@@ -97,11 +98,12 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // UpdateUser 更新用户
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Username *string `json:"username"`
-		Email    *string `json:"email"`
-		Password *string `json:"password"`
-		Role     *string `json:"role"`
-		IsActive *bool   `json:"is_active"`
+		Username    *string `json:"username"`
+		DisplayName *string `json:"display_name"`
+		Email       *string `json:"email"`
+		Password    *string `json:"password"`
+		Role        *string `json:"role"`
+		IsActive    *bool   `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.RespondError(w, r, err)
@@ -109,7 +111,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	opID, opRole, opIsBuiltin, ip, ua := h.operatorInfo(r)
 	dto, err := h.svc.Update(r.Context(), appuseradmin.UpdateInput{
-		ID: r.PathValue("id"), Username: req.Username, Email: req.Email,
+		ID: r.PathValue("id"), Username: req.Username, DisplayName: req.DisplayName, Email: req.Email,
 		Password: req.Password, Role: req.Role, IsActive: req.IsActive,
 		IPAddress: ip, UserAgent: ua,
 	}, opID, opRole, opIsBuiltin)

@@ -1,3 +1,4 @@
+import { getDisplayName } from "@entities/user/model/display-name";
 import { AvatarGroup } from "@shared/ui/avatar-group";
 import { Badge } from "@shared/ui/base/badge";
 import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
@@ -122,7 +123,7 @@ const PostCard = ({ post, size = "md" }: PostCardProps) => {
 								highlightFirst
 							/>
 						) : null}
-						{post.author?.username}
+						{post.author ? getDisplayName(post.author) : null}
 					</div>
 					<time>
 						{formatDistanceToNow(new Date(post.published_at), {

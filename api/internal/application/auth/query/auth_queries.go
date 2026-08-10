@@ -14,6 +14,7 @@ import (
 type UserDTO struct {
 	ID                  string   `json:"id"`
 	Username            string   `json:"username"`
+	DisplayName         string   `json:"display_name"`
 	Email               string   `json:"email"`
 	AvatarURL           string   `json:"avatar_url"`
 	Bio                 string   `json:"bio"`
@@ -76,6 +77,7 @@ func toUserDTO(u *user.User, permissions []string, roleDescription string) UserD
 	return UserDTO{
 		ID:              u.GetID().String(),
 		Username:        u.Username().String(),
+		DisplayName:     u.DisplayName().String(),
 		Email:           u.Email().String(),
 		AvatarURL:       u.AvatarURL(),
 		Bio:             u.Bio(),

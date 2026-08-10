@@ -2,8 +2,10 @@ import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
 
 export interface AvatarUser {
-	/** 用户名，同时作 alt 与首字母兜底 */
+	/** 用户名（唯一登录标识，同时作 alt 兜底） */
 	username: string;
+	/** 显示名（可空，空时回退 username） */
+	display_name?: string;
 	/** 头像 URL，为空时渲染首字母占位 */
 	avatar_url: string;
 }

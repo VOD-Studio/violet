@@ -205,8 +205,10 @@ type User struct {
 
 	// email 邮箱（值对象）
 	email Email
-	// username 用户名（值对象）
+	// username 用户名（值对象，唯一登录标识）
 	username Username
+	// displayName 显示名（值对象，可空）。纯展示用途，空时回退 username
+	displayName DisplayName
 	// passwordHash 密码哈希
 	passwordHash PasswordHash
 	// avatarURL 头像地址
@@ -269,6 +271,7 @@ func ReconstructUser(
 	id shared.ID,
 	email Email,
 	username Username,
+	displayName DisplayName,
 	passwordHash PasswordHash,
 	avatarURL string,
 	bio string,
@@ -282,17 +285,18 @@ func ReconstructUser(
 	updatedAt time.Time,
 ) *User {
 	u := &User{
-		email:               email,
-		username:            username,
-		passwordHash:        passwordHash,
-		avatarURL:           avatarURL,
-		bio:                 bio,
-		role:                role,
-		googleID:            googleID,
-		githubID:            githubID,
-		isRoot:             isRoot,
-		emailVerified:      emailVerified,
-		isActive:           isActive,
+		email:          email,
+		username:       username,
+		displayName:    displayName,
+		passwordHash:   passwordHash,
+		avatarURL:      avatarURL,
+		bio:            bio,
+		role:           role,
+		googleID:       googleID,
+		githubID:       githubID,
+		isRoot:         isRoot,
+		emailVerified:  emailVerified,
+		isActive:       isActive,
 		timestamps: shared.Timestamps{
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
@@ -399,6 +403,14 @@ func (u *User) UpdateProfile(avatarURL, bio string) {
 	u.bio = bio
 }
 
+// UpdateDisplayName 更新显示名
+//
+// 值对象校验由调用方在 ParseDisplayName 完成，此处仅赋值。
+// DisplayName 可空（零值表示清除显示名，回退显示 username）。
+func (u *User) UpdateDisplayName(displayName DisplayName) {
+	u.displayName = displayName
+}
+
 // UpdateAvatarURL 仅更新头像地址
 func (u *User) UpdateAvatarURL(url string) {
 	u.avatarURL = url
@@ -439,6 +451,7 @@ func (u *User) MatchPassword(_ string) bool {
 	return false // 占位：实际比较在 infrastructure/auth 包
 }
 
+
 // ============================================================
 // 访问器（只读，保证聚合状态不被外部随意修改）
 // ============================================================
@@ -446,6 +459,8 @@ func (u *User) MatchPassword(_ string) bool {
 func (u *User) Email() Email { return u.email }
 
 func (u *User) Username() Username { return u.username }
+
+func (u *User) DisplayName() DisplayName { return u.displayName }
 
 func (u *User) PasswordHash() PasswordHash { return u.passwordHash }
 

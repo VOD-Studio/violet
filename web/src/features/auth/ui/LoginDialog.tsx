@@ -1,7 +1,5 @@
-import type { UserDTO } from "@entities/user/model/types";
-import { authKeys } from "@features/auth/api/keys";
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
-import { useCsrfToken } from "@features/auth/api/queries";
+import { clearAuthCache, useCsrfToken } from "@features/auth/api/queries";
 import { useOAuthVisibility } from "@features/auth/lib/use-oauth-visibility";
 import type { LoginRequest } from "@features/auth/model/types";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -125,10 +123,9 @@ export function LoginDialog() {
 			open();
 			return;
 		}
-		// 用户取消/关闭弹窗：清会话状态，让守卫允许跳转登录页。
-		// 同样不能把 me 缓存 removeQueries（会触发 401），改为 cancel + 置 null。
-		await qc.cancelQueries({ queryKey: authKeys.me() });
-		qc.setQueryData<UserDTO | null>(authKeys.me(), null);
+		// 用户取消/关闭弹窗：清会话状态（me + csrf + sessionActive），让守卫允许跳转登录页。
+		// 复用 clearAuthCache（与 useLogout 同一逻辑），补上历史遗漏的 csrf-token 清理。
+		clearAuthCache(qc);
 		clearSessionActive();
 		close();
 		setForm((f) => ({ ...f, password: "" }));

@@ -8,7 +8,10 @@ export interface UserDTO {
 	/** 用户 ID（UUID 字符串） */
 	id: string;
 	/** 用户名 */
+	/** 用户名（唯一登录标识，纯 ASCII） */
 	username: string;
+	/** 显示名（可空，空时回退 username） */
+	display_name: string;
 	/** 邮箱 */
 	email: string;
 	/** 头像 URL */

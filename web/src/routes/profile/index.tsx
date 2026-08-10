@@ -1,3 +1,5 @@
+import type { UserDTO } from "@entities/user/model/types";
+import { authKeys } from "@features/auth/api/keys";
 import { useMe } from "@features/auth/api/queries";
 import { AccountInfoSection } from "@features/profile/ui/AccountInfoSection";
 import { PasswordSection } from "@features/profile/ui/PasswordSection";
@@ -41,9 +43,13 @@ const ProfilePage = () => {
 export const Route = createFileRoute("/profile/")({
 	ssr: false,
 	beforeLoad: ({ context, location }) => {
-		// 仅当网络判定未登录 且 客户端确实无活跃会话时才跳登录。
-		// session 过期的瞬态失败（sessionActive 仍 true）不踢人，原地等 401 弹窗恢复。
-		if (!context.auth.isAuthenticated && !isSessionActive()) {
+		// 页面刷新后所有内存状态清空（me 缓存、sessionActive 全失），唯一持久的
+		// 登录态信号是 cookie。violet_csrf 非 HttpOnly，前端可读——有它说明后端
+		// 下发过 session cookie，按已登录处理，真实过期交给 401 拦截器 + 组件处理。
+		const hasAuthCookie =
+			typeof window !== "undefined" && document.cookie.includes("violet_csrf=");
+		const me = context.queryClient.getQueryData<UserDTO | null>(authKeys.me());
+		if (!context.auth.isAuthenticated && !isSessionActive() && !me && !hasAuthCookie) {
 			throw redirect({
 				to: "/login",
 				search: { redirect: location.href },

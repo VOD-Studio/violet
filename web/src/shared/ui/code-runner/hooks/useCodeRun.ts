@@ -8,7 +8,7 @@
  *
  * 降级策略：SSE 连接失败时改用轮询 getExecResult（对应 yggdrasil 的兜底）。
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+
 import type { ExecResult } from "@features/code-run";
 import {
 	type ResourceLimits,
@@ -16,6 +16,7 @@ import {
 	streamExec,
 	submitExecStream,
 } from "@features/code-run";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type RunState = "idle" | "running" | "done";
 

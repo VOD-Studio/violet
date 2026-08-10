@@ -40,13 +40,15 @@ func (e Email) Equal(other Email) bool { return e.value == other.value }
 // Username 值对象
 // ============================================================
 
-// usernamePattern 用户名正则：3-32 位字母、数字、下划线或中文
-// 注意：Go regexp (RE2) 不支持 \u 转义，需用 \x{XXXX} 语法表示 Unicode 码点
-var usernamePattern = regexp.MustCompile(`^[a-zA-Z0-9_\x{4e00}-\x{9fa5}]{3,32}$`)
+// usernamePattern 用户名正则：3-32 位字母、数字、下划线或连字符
+//
+// 纯 ASCII 技术标识符（登录、@寻址、URL slug），不含中文/空格/emoji——
+// 展示性内容交给 DisplayName。参照 GitHub/Discord 的 username 规则。
+var usernamePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{3,32}$`)
 
 // Username 用户名值对象
 type Username struct {
-	// value 校验通过的用户名（满足 usernamePattern：3-32 位字母、数字、下划线或中文）
+	// value 校验通过的用户名（满足 usernamePattern：3-32 位字母、数字、下划线或连字符）
 	value string
 }
 
@@ -54,7 +56,7 @@ type Username struct {
 func ParseUsername(s string) (Username, error) {
 	s = strings.TrimSpace(s)
 	if !usernamePattern.MatchString(s) {
-		return Username{}, shared.BadRequest("用户名须为 3-32 位字母、数字、下划线或中文")
+		return Username{}, shared.BadRequest("用户名须为 3-32 位字母、数字、下划线或连字符")
 	}
 	return Username{value: s}, nil
 }
@@ -64,6 +66,40 @@ func (u Username) String() string { return u.value }
 
 // Equal 比较两个用户名是否相同
 func (u Username) Equal(other Username) bool { return u.value == other.value }
+
+// ============================================================
+// DisplayName 值对象
+// ============================================================
+
+// displayNameMaxLength 显示名最大长度（与 username 一致，32 字符）
+const displayNameMaxLength = 32
+
+// DisplayName 显示名值对象（可空）
+//
+// 与 Username 的区别：纯展示用途，允许重复、允许空格/emoji/任意 Unicode，
+// 可随时修改，不参与登录/寻址。空值合法——前端展示时空回退到 username。
+type DisplayName struct {
+	// value 显示名原文（已 trim）；空串表示未设置
+	value string
+}
+
+// ParseDisplayName 解析并校验显示名
+//
+// 空串合法（返回零值，表示未设置）；非空则 trim 后校验长度 ≤32。
+// 不做字符集限制——展示名允许空格、emoji、任意语言文字。
+func ParseDisplayName(s string) (DisplayName, error) {
+	s = strings.TrimSpace(s)
+	if len([]rune(s)) > displayNameMaxLength {
+		return DisplayName{}, shared.BadRequest("显示名最多 32 个字符")
+	}
+	return DisplayName{value: s}, nil
+}
+
+// String 返回显示名；未设置时返回空串
+func (d DisplayName) String() string { return d.value }
+
+// IsEmpty 是否未设置显示名
+func (d DisplayName) IsEmpty() bool { return d.value == "" }
 
 // ============================================================
 // PasswordHash 值对象

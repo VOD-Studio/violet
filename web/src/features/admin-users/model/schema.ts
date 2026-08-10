@@ -14,6 +14,7 @@ export const createUserSchema = z.object({
 		.max(32, "用户名最多 32 个字符")
 		.regex(/^[a-zA-Z0-9_-]+$/, "用户名只能包含字母、数字、下划线和连字符"),
 	email: z.string().email("请输入有效的邮箱地址"),
+	display_name: z.string().max(32, "显示名最多 32 个字符").optional().or(z.literal("")),
 	password: z.string().min(6, "密码至少 6 位"),
 	role: z.string().min(1, "请选择角色"),
 	is_active: z.boolean(),
@@ -27,6 +28,7 @@ export const editUserSchema = z.object({
 		.max(32, "用户名最多 32 个字符")
 		.regex(/^[a-zA-Z0-9_-]+$/, "用户名只能包含字母、数字、下划线和连字符"),
 	email: z.string().email("请输入有效的邮箱地址"),
+	display_name: z.string().max(32, "显示名最多 32 个字符").optional().or(z.literal("")),
 	password: z.string().min(6, "密码至少 6 位").optional().or(z.literal("")),
 	role: z.string().min(1, "请选择角色"),
 	is_active: z.boolean(),

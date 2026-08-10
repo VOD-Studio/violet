@@ -43,7 +43,7 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 					)}
 				</Row>
 				<Row icon={<UserRound className="size-4" />} label="角色">
-					<span>{user.is_root ? "超级管理员" : user.role_description || user.role}</span>
+					<span>{user.is_root ? "root" : user.role_description || user.role}</span>
 				</Row>
 				<Row icon={<Fingerprint className="size-4" />} label="用户 ID">
 					<code className="text-xs text-muted-foreground">{user.id}</code>

@@ -26,6 +26,7 @@ export const ProfileInfoSection = ({ user }: ProfileInfoSectionProps) => {
 			<h2 className="mb-5 text-base font-semibold">个人资料</h2>
 			<div className="divide-y">
 				<UsernameField user={user} />
+				<DisplayNameField user={user} />
 				<BioField user={user} />
 			</div>
 		</div>
@@ -33,7 +34,7 @@ export const ProfileInfoSection = ({ user }: ProfileInfoSectionProps) => {
 };
 
 // ============================================================
-// 内部组件：Field / UsernameField / BioField
+// 内部组件：Field / UsernameField / DisplayNameField / BioField
 // ============================================================
 
 /**
@@ -150,6 +151,94 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 								autoFocus
 							/>
 						</div>
+						{error && <p className="text-xs text-destructive">{error}</p>}
+					</div>
+					<div className="flex items-center gap-2 pt-1">
+						<Button
+							size="sm"
+							onClick={handleSave}
+							disabled={updateProfile.isPending}
+							className="gap-1.5"
+						>
+							<Check className="size-3.5" />
+							{updateProfile.isPending ? "保存中..." : "保存"}
+						</Button>
+						<Button
+							size="sm"
+							variant="ghost"
+							onClick={handleCancel}
+							disabled={updateProfile.isPending}
+							className="gap-1.5"
+						>
+							<X className="size-3.5" />
+							取消
+						</Button>
+					</div>
+				</>
+			}
+		/>
+	);
+};
+
+/**
+ * DisplayNameField - 显示名编辑
+ *
+ * 显示名可空（空时回退 username），允许中文/emoji/空格，最多 32 字符。
+ * 与 UsernameField（纯 ASCII 登录标识）互补：这里放展示性内容。
+ */
+const DisplayNameField = ({ user }: { user: UserDTO }) => {
+	const updateProfile = useUpdateProfile();
+	const [isEditing, setIsEditing] = useState(false);
+	const [value, setValue] = useState(user.display_name || "");
+	const [error, setError] = useState<string | null>(null);
+
+	const handleEdit = () => {
+		setValue(user.display_name || "");
+		setError(null);
+		setIsEditing(true);
+	};
+	const handleCancel = () => {
+		setValue(user.display_name || "");
+		setError(null);
+		setIsEditing(false);
+	};
+	const handleSave = async () => {
+		const v = value.trim();
+		if (v.length > 32) {
+			setError("显示名最多 32 个字符");
+			return;
+		}
+		try {
+			await updateProfile.mutateAsync({ display_name: v });
+			toast.success("显示名已更新");
+			setIsEditing(false);
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : "保存失败");
+		}
+	};
+
+	return (
+		<FieldShell
+			label="显示名"
+			hint="展示用昵称，可用中文，留空则默认显示用户名"
+			editLabel="编辑显示名"
+			isEditing={isEditing}
+			onEdit={handleEdit}
+			displayValue={
+				<p className="text-base font-medium tracking-tight">
+					{user.display_name || <span className="text-muted-foreground">默认用户名</span>}
+				</p>
+			}
+			editor={
+				<>
+					<div className="space-y-1.5">
+						<Input
+							value={value}
+							onChange={(e) => setValue(e.target.value)}
+							placeholder="留空则默认显示用户名"
+							aria-invalid={!!error}
+							autoFocus
+						/>
 						{error && <p className="text-xs text-destructive">{error}</p>}
 					</div>
 					<div className="flex items-center gap-2 pt-1">
