@@ -1,3 +1,4 @@
+import { useSearchPosts } from "@features/posts/api/queries";
 import { NAV_ITEMS, type NavItem } from "@shared/config/nav";
 import { type CmdItem, filterCommands } from "@shared/lib/hooks/cmd-filter";
 import { CommandList } from "@shared/ui/command";
@@ -7,24 +8,39 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useCommandUIStore } from "./command-ui-store";
 
+/** 分组中文名映射 */
+const GROUP_LABELS: Record<string, string> = {
+	posts: "文章",
+	navigation: "导航",
+	theme: "主题",
+};
+
 /**
- * CommandPalette - 全局 Cmd/Ctrl+K 毛玻璃命令面板
+ * CommandPalette - 全局 Cmd/Ctrl+K 搜索 + 命令面板
  *
- * spec：全站检索 + 快捷切换主题（输入 > Dark）。
- * - Cmd/Ctrl+K 打开（也可由 HeaderActions 命令按钮 open()）
- * - 导航命令派生自 NAV_ITEMS（与 Header 桌面/移动端 nav 同源），避免新增路由时漂移
- * - 主题切换为面板独有，单独补充
- * - 过滤走纯函数 filterCommands
+ * 双模态：输入 ≥ 2 字符触发服务端文章搜索（debounce 250ms），同时本地过滤
+ * 导航/主题命令。文章结果来自服务端（已按 query 检索），不再经 filterCommands
+ * 二次过滤——query 可能命中正文而非标题，本地过滤会误删结果。
+ * - Cmd/Ctrl+K 打开（也可由 HeaderActions 搜索按钮 open()）
+ * - 导航命令派生自 NAV_ITEMS（与 Header nav 同源）；主题切换为面板独有
  *
- * 显隐状态走 useCommandUIStore（与 HeaderActions 共享，同 MusicUIStore 模式）。
+ * 显隐状态走 useCommandUIStore（与 HeaderActions 共享）。
  */
 const CommandPalette = () => {
 	const isOpen = useCommandUIStore((s) => s.isOpen);
 	const close = useCommandUIStore((s) => s.close);
 	const toggleOpen = useCommandUIStore((s) => s.toggle);
 	const [query, setQuery] = useState("");
+	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const navigate = useNavigate();
 	const { theme, switchTheme } = useThemeSwitcher();
+	const { data: searchData } = useSearchPosts(debouncedQuery);
+
+	// 输入防抖：避免每次击键都打后端
+	useEffect(() => {
+		const t = setTimeout(() => setDebouncedQuery(query), 250);
+		return () => clearTimeout(t);
+	}, [query]);
 
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
@@ -37,7 +53,8 @@ const CommandPalette = () => {
 		return () => window.removeEventListener("keydown", onKey);
 	}, [toggleOpen]);
 
-	const all: CmdItem[] = useMemo(
+	// 本地命令：导航 + 主题（经 filterCommands 子串过滤）
+	const localCommands: CmdItem[] = useMemo(
 		() => [
 			// 导航：仅取 route 项（action 项由 Header 解释，面板不承接）
 			...NAV_ITEMS.filter(
@@ -79,7 +96,18 @@ const CommandPalette = () => {
 		[navigate, switchTheme, theme],
 	);
 
-	const filtered = useMemo(() => filterCommands(all, query), [all, query]);
+	const filtered = useMemo(() => {
+		// 文章结果来自服务端搜索，不经本地过滤
+		const posts: CmdItem[] = (searchData?.data ?? []).map((p) => ({
+			id: `post-${p.id}`,
+			label: p.title,
+			group: "posts",
+			description: p.snippet,
+			run: () => navigate({ to: "/blog/$slug", params: { slug: p.slug } }),
+		}));
+		// 文章结果在前，本地命令在后
+		return [...posts, ...filterCommands(localCommands, query)];
+	}, [localCommands, query, searchData, navigate]);
 
 	return (
 		<CommandList
@@ -88,6 +116,7 @@ const CommandPalette = () => {
 			items={filtered}
 			query={query}
 			onQueryChange={setQuery}
+			groupLabels={GROUP_LABELS}
 		/>
 	);
 };

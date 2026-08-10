@@ -15,7 +15,7 @@ import {
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
 import ThemeToggle from "@widgets/ThemeToggle";
-import { CheckCircle2, ChevronDown, Command, LayoutDashboard, LogOut, User } from "lucide-react";
+import { CheckCircle2, ChevronDown, LayoutDashboard, LogOut, Search, User } from "lucide-react";
 
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -80,8 +80,8 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 
 	return (
 		<div className="flex items-center gap-2">
-			<Button variant="ghost" size="icon-sm" aria-label="命令面板" onClick={openCommand}>
-				<Command className="size-4" />
+			<Button variant="ghost" size="icon-sm" aria-label="搜索" onClick={openCommand}>
+				<Search className="size-4" />
 			</Button>
 			<ThemeToggle />
 
@@ -183,21 +183,6 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 										</Link>
 									</DropdownMenuItem>
 								)}
-								<DropdownMenuItem
-									className="cursor-pointer"
-									onSelect={(e) => {
-										e.preventDefault();
-										openCommand();
-									}}
-								>
-									<span className="flex size-7 items-center justify-center rounded-md bg-muted/60 text-muted-foreground">
-										<Command className="size-3.5" />
-									</span>
-									<span className="flex-1 text-sm">命令面板</span>
-									<kbd className="rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-										⌘K
-									</kbd>
-								</DropdownMenuItem>
 							</div>
 
 							<DropdownMenuSeparator className="mx-3 bg-border/40" />

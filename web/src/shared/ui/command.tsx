@@ -10,9 +10,13 @@ export interface CommandListProps {
 		label: string;
 		group: string;
 		run: () => void;
+		/** 副标题（如搜索 snippet），可选 */
+		description?: string;
 	}>;
 	query: string;
 	onQueryChange: (v: string) => void;
+	/** 分组显示名映射（key=group 值，value=显示文案）；缺省回退 group 原值 */
+	groupLabels?: Record<string, string>;
 }
 
 /**
@@ -21,7 +25,14 @@ export interface CommandListProps {
  * 毛玻璃（backdrop-blur）+ 半透明卡，items 分组渲染。
  * 上/下键导航由父组件状态控制（此处简化为列表 + 点击执行）。
  */
-function CommandList({ open, onOpenChange, items, query, onQueryChange }: CommandListProps) {
+function CommandList({
+	open,
+	onOpenChange,
+	items,
+	query,
+	onQueryChange,
+	groupLabels,
+}: CommandListProps) {
 	const groups = React.useMemo(() => {
 		const m = new Map<string, typeof items>();
 		for (const it of items) {
@@ -42,7 +53,7 @@ function CommandList({ open, onOpenChange, items, query, onQueryChange }: Comman
 					autoFocus
 					value={query}
 					onChange={(e) => onQueryChange(e.target.value)}
-					placeholder="搜索页面，或输入 > Dark 切换主题…"
+					placeholder="搜索文章或页面…"
 					className={cn(
 						"w-full border-b border-edge-hairline bg-transparent px-4 py-3 font-mono text-sm",
 						"placeholder:text-muted-foreground focus:outline-none",
@@ -57,7 +68,7 @@ function CommandList({ open, onOpenChange, items, query, onQueryChange }: Comman
 					{groups.map(([group, list]) => (
 						<div key={group} className="mb-2">
 							<p className="px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-								{group}
+								{groupLabels?.[group] ?? group}
 							</p>
 							{list.map((it) => (
 								<button
@@ -67,9 +78,14 @@ function CommandList({ open, onOpenChange, items, query, onQueryChange }: Comman
 										it.run();
 										onOpenChange(false);
 									}}
-									className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+									className="block w-full rounded-md px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground"
 								>
-									{it.label}
+									<span className="block truncate text-sm">{it.label}</span>
+									{it.description ? (
+										<span className="mt-0.5 block truncate text-xs text-muted-foreground">
+											{it.description}
+										</span>
+									) : null}
 								</button>
 							))}
 						</div>

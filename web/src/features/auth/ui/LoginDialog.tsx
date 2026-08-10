@@ -23,7 +23,7 @@ import { Modal } from "@/shared/ui/modal";
  * 后端未返回 message 时的兜底文案（按状态码）。与 /login 页面保持一致。
  */
 const FALLBACK_BY_STATUS: Record<number, string> = {
-	401: "邮箱或密码错误",
+	401: "账号或密码错误",
 	403: "账户不可用，请联系管理员",
 	429: "请求过于频繁，请稍后再试",
 };
@@ -59,7 +59,7 @@ export function LoginDialog() {
 				onSuccess: () => {
 					toast.success("登录成功");
 					close();
-					setForm({ email: "", password: "" });
+					setForm({ identifier: "", password: "" });
 					// useGoogleLoginMutation 的 onSuccess 已 invalidate authKeys.me()
 					// 并 markSessionActive()，Header 等观察者会自动拉取一次 me。
 					// 这里不再显式 refetch，避免与 mutation 的 invalidate 产生双发。
@@ -83,13 +83,13 @@ export function LoginDialog() {
 		window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user:email`;
 	};
 
-	const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
+	const [form, setForm] = useState<LoginRequest>({ identifier: "", password: "" });
 	const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
 
 	const validate = (): boolean => {
 		const next: typeof errors = {};
-		if (!form.email || !/^\S+@\S+\.\S+$/.test(form.email)) {
-			next.email = "请输入有效的邮箱地址";
+		if (!form.identifier) {
+			next.identifier = "请输入账号";
 		}
 		if (!form.password || form.password.length < 8) {
 			next.password = "密码至少 8 位";
@@ -106,7 +106,7 @@ export function LoginDialog() {
 			onSuccess: () => {
 				toast.success("登录成功");
 				close();
-				setForm({ email: "", password: "" });
+				setForm({ identifier: "", password: "" });
 				// useLogin 的 onSuccess 已 invalidate authKeys.me() 并 markSessionActive()，
 				// Header 等观察者会自动拉取一次 me。这里不再显式 refetch，避免双发。
 			},
@@ -114,7 +114,7 @@ export function LoginDialog() {
 				const msg =
 					err instanceof ApiError
 						? err.message || FALLBACK_BY_STATUS[err.status] || "登录失败，请稍后再试"
-						: err.message || "登录失败，请检查邮箱和密码";
+						: err.message || "登录失败，请检查账号和密码";
 				toast.error(msg);
 			},
 		});
@@ -172,18 +172,18 @@ export function LoginDialog() {
 		>
 			<form id="login-dialog-form" onSubmit={handleSubmit} className="space-y-4">
 				<div className="space-y-2">
-					<Label htmlFor="login-dialog-email">邮箱</Label>
+					<Label htmlFor="login-dialog-identifier">账号</Label>
 					<Input
-						id="login-dialog-email"
-						type="email"
-						placeholder="you@example.com"
-						value={form.email}
-						onChange={(e) => setForm({ ...form, email: e.target.value })}
-						aria-invalid={!!errors.email}
-						autoComplete="email"
+						id="login-dialog-identifier"
+						type="text"
+						placeholder="用户名或邮箱"
+						value={form.identifier}
+						onChange={(e) => setForm({ ...form, identifier: e.target.value })}
+						aria-invalid={!!errors.identifier}
+						autoComplete="username"
 					/>
-					{errors.email ? (
-						<p className="text-sm text-destructive">{errors.email}</p>
+					{errors.identifier ? (
+						<p className="text-sm text-destructive">{errors.identifier}</p>
 					) : null}
 				</div>
 

@@ -30,6 +30,11 @@ func (f *fakeSearchRepo) Search(_ context.Context, _ shared.ID, query, status st
 	return f.posts, f.total, nil
 }
 
+func (f *fakeSearchRepo) SearchPublished(_ context.Context, query string, page, limit int) ([]*domain.Post, int64, error) {
+	f.gotQuery, f.gotPage, f.gotLimit = query, page, limit
+	return f.posts, f.total, nil
+}
+
 func newSearchTestService(repo *fakeSearchRepo) *Service {
 	return &Service{repo: repo}
 }
@@ -86,6 +91,39 @@ func TestService_SearchPosts_OffsetPagination(t *testing.T) {
 	assert.Equal(t, int64(40), res.TotalCount)
 	assert.False(t, res.HasMore)
 	assert.Equal(t, 40, res.NextOffset)
+}
+
+func TestService_SearchPublished(t *testing.T) {
+	repo := &fakeSearchRepo{
+		posts: []*domain.Post{
+			mustReconstructPost(t, "quantum-intro", "量子计算入门", "正文讨论量子纠缠与叠加态。", "摘要量子"),
+		},
+		total: 1,
+	}
+	svc := newSearchTestService(repo)
+
+	res, err := svc.SearchPublished(context.Background(), "量子", 20, 0)
+	require.NoError(t, err)
+
+	// 编排参数透传：offset 0 / limit 20 → page 1
+	assert.Equal(t, "量子", repo.gotQuery)
+	assert.Equal(t, 1, repo.gotPage)
+	assert.Equal(t, 20, repo.gotLimit)
+
+	require.Len(t, res.Posts, 1)
+	assert.Equal(t, "quantum-intro", res.Posts[0].Slug)
+	assert.Contains(t, res.Posts[0].Snippet, "量子")
+	assert.Equal(t, int64(1), res.TotalCount)
+}
+
+func TestService_SearchPublished_OffsetPagination(t *testing.T) {
+	repo := &fakeSearchRepo{posts: nil, total: 40}
+	svc := newSearchTestService(repo)
+
+	_, err := svc.SearchPublished(context.Background(), "x", 20, 40)
+	require.NoError(t, err)
+	// offset 40 / limit 20 → page 3
+	assert.Equal(t, 3, repo.gotPage)
 }
 
 func TestMakeSnippet(t *testing.T) {

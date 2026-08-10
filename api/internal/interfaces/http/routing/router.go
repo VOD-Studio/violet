@@ -133,6 +133,7 @@ func registerPostPublicRoutes(v1 chi.Router, d *Deps) {
 		r.Get("/", postH.ListPublished)
 		r.Get("/archive", postH.ArchiveYears)
 		r.Get("/archive/{year}", postH.ArchiveByYear)
+		r.Get("/search", postH.SearchPublished)
 		r.Get("/{slug}", postH.GetBySlug)
 		r.Post("/{id}/view", postH.IncrementView)
 	})

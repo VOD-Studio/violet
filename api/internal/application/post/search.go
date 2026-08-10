@@ -115,6 +115,33 @@ func (s *Service) SearchPosts(ctx context.Context, authorID shared.ID, query, st
 	}, nil
 }
 
+// SearchPublished 前台公开搜索：在已发布文章内检索，复用 snippet 生成。
+// 与 SearchPosts 的区别：无 authorID 过滤（公开），固定 status=published（仓储层收敛）。
+func (s *Service) SearchPublished(ctx context.Context, query string, limit, offset int) (*SearchPostsResult, error) {
+	page := offset/limit + 1
+	posts, total, err := s.repo.SearchPublished(ctx, query, page, limit)
+	if err != nil {
+		return nil, err
+	}
+	keywords := strings.Fields(query)
+	items := make([]SearchPostItem, 0, len(posts))
+	for _, p := range posts {
+		items = append(items, SearchPostItem{
+			ID:        p.ID().String(),
+			Slug:      p.Slug(),
+			Title:     p.Title(),
+			Status:    p.Status(),
+			Tags:      p.Tags(),
+			Snippet:   makeSnippet(p.Title(), p.Excerpt(), p.ContentMD(), keywords, snippetWindow),
+			UpdatedAt: p.UpdatedAt(),
+		})
+	}
+	return &SearchPostsResult{
+		Posts:    items,
+		PageMeta: newPageMeta(total, offset, len(posts)),
+	}, nil
+}
+
 // SearchFormulas 公式检索：ILIKE 初筛候选文章 → 提取器解析 → LaTeX 含 query 过滤。
 // query 是 LaTeX 源码片段，大小写敏感（LaTeX 命令语义敏感，\Frac ≠ \frac）。
 // 无漏保证：latex 是 content_md 的子串，初筛必命中含目标公式的文章。

@@ -30,9 +30,9 @@ export const codeField = z
 	.max(6, "验证码为 6 位数字")
 	.regex(/^\d{6}$/, "验证码只能包含数字");
 
-/** 登录表单 */
+/** 登录表单：identifier 支持邮箱或用户名，仅校验非空 */
 export const loginSchema = z.object({
-	email: emailField,
+	identifier: z.string().min(1, "请输入账号"),
 	password: z.string().min(1, "请输入密码"),
 });
 

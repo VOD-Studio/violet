@@ -30,7 +30,7 @@ const loginSearchSchema = z.object({
  * 明确原因（邮箱未验证 / 账户已被禁用 / 邮箱或密码错误 / 请求过于频繁等）。
  */
 const FALLBACK_BY_STATUS: Record<number, string> = {
-	401: "邮箱或密码错误",
+	401: "账号或密码错误",
 	403: "账户不可用，请联系管理员",
 	429: "请求过于频繁，请稍后再试",
 };
@@ -63,7 +63,7 @@ function LoginPage() {
 		formState: { errors },
 	} = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
-		defaultValues: { email: prefilledEmail ?? "", password: "" },
+		defaultValues: { identifier: prefilledEmail ?? "", password: "" },
 	});
 
 	const csrfToken = useCsrfToken();
@@ -120,7 +120,7 @@ function LoginPage() {
 				const msg =
 					err instanceof ApiError
 						? err.message || FALLBACK_BY_STATUS[err.status] || "登录失败，请稍后重试"
-						: err.message || "登录失败，请检查邮箱和密码";
+						: err.message || "登录失败，请检查账号和密码";
 				toast.error(msg);
 			},
 		});
@@ -131,23 +131,24 @@ function LoginPage() {
 			<div className="w-full max-w-sm space-y-6">
 				<div className="text-center">
 					<h1 className="font-mono text-2xl font-bold tracking-tight">登录</h1>
-					<p className="mt-2 text-sm text-muted-foreground">请输入邮箱和密码访问后台</p>
+				<p className="mt-2 text-sm text-muted-foreground">请输入账号和密码访问后台</p>
 				</div>
 
 				<form onSubmit={onSubmit} className="space-y-4">
-					<div className="space-y-1">
-						<Label htmlFor="email">邮箱</Label>
-						<Input
-							id="email"
-							type="email"
-							placeholder="you@example.com"
-							aria-invalid={!!errors.email}
-							{...registerField("email")}
-						/>
-						{errors.email ? (
-							<p className="text-xs text-destructive">{errors.email.message}</p>
-						) : null}
-					</div>
+				<div className="space-y-1">
+					<Label htmlFor="identifier">账号</Label>
+					<Input
+						id="identifier"
+						type="text"
+						placeholder="用户名或邮箱"
+						autoComplete="username"
+						aria-invalid={!!errors.identifier}
+						{...registerField("identifier")}
+					/>
+					{errors.identifier ? (
+						<p className="text-xs text-destructive">{errors.identifier.message}</p>
+					) : null}
+				</div>
 
 					<div className="space-y-1">
 						<Label htmlFor="password">密码</Label>
