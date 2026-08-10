@@ -22,8 +22,8 @@ type Claims struct {
 	Email string
 	// Role 角色名
 	Role string
-	// IsBuiltinSuperAdmin 内置超管标志位
-	IsBuiltinSuperAdmin bool
+	// IsRoot root 用户标志位
+	IsRoot bool
 	// CSRFToken double-submit CSRF 凭证
 	CSRFToken string
 }
@@ -48,8 +48,8 @@ type Session struct {
 	email string
 	// role 角色名
 	role string
-	// isBuiltinSuperAdmin 内置超管标志位
-	isBuiltinSuperAdmin bool
+	// isRoot root 用户标志位
+	isRoot bool
 	// csrf double-submit CSRF 凭证，与 violet_csrf cookie 同值
 	csrf CSRFToken
 	// createdAt session 创建时间，用于计算绝对寿命是否到点
@@ -79,7 +79,7 @@ func NewSession(snap UserSnapshot, now time.Time, absoluteTTL time.Duration) (*S
 		userID:              snap.UserID.String(),
 		email:               snap.Email,
 		role:                snap.Role,
-		isBuiltinSuperAdmin: snap.IsBuiltinSuperAdmin,
+		isRoot:             snap.IsRoot,
 		csrf:                csrf,
 		createdAt:           now,
 		lastSeenAt:          now,
@@ -95,7 +95,7 @@ func NewSession(snap UserSnapshot, now time.Time, absoluteTTL time.Duration) (*S
 // 与 NewUser 的 ReconstructUser 同理：不触发事件、不设默认值，完全按 Redis
 // 存储的数据恢复。供 SessionStore.Get 反序列化时使用。
 func Reconstruct(
-	id ID, userID, email, role string, isBuiltinSuperAdmin bool,
+	id ID, userID, email, role string, isRoot bool,
 	csrf CSRFToken, createdAt, lastSeenAt, absoluteDeadline time.Time,
 ) *Session {
 	return &Session{
@@ -103,7 +103,7 @@ func Reconstruct(
 		userID:              userID,
 		email:               email,
 		role:                role,
-		isBuiltinSuperAdmin: isBuiltinSuperAdmin,
+		isRoot:             isRoot,
 		csrf:                csrf,
 		createdAt:           createdAt,
 		lastSeenAt:          lastSeenAt,
@@ -137,7 +137,7 @@ func (s *Session) Claims() Claims {
 		UserID:              s.userID,
 		Email:               s.email,
 		Role:                s.role,
-		IsBuiltinSuperAdmin: s.isBuiltinSuperAdmin,
+		IsRoot:             s.isRoot,
 		CSRFToken:           string(s.csrf),
 	}
 }

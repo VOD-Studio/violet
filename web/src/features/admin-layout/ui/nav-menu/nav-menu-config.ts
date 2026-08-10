@@ -43,7 +43,7 @@ export interface NavMenuItem {
 	/**
 	 * 可见所需权限码（满足任一即显示）。
 	 * 省略表示仅需 admin:access（由后台路由守卫统一保证）。
-	 * 内置超管通配短路，永远可见。
+	 * root 通配，永远可见。
 	 */
 	permissions?: string[];
 	/**

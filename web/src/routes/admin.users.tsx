@@ -62,8 +62,8 @@ function AdminUsers() {
 	// 当前登录用户（用于「是不是自己」的判断，禁止删/改自己）
 	const { data: me } = useMe();
 	const currentUserId = me?.id;
-	// 当前登录用户是否为内置超管（决定能否处置其他超管、授权他人）
-	const isOperatorBuiltinSuperAdmin = me?.is_builtin_super_admin === true;
+	// 当前登录用户是否为 root
+	const isOperatorRoot = me?.is_root === true;
 
 	// 查询角色列表
 	const { data: roles = [] } = useAdminRoles();
@@ -88,12 +88,12 @@ function AdminUsers() {
 	const batchUpdateRole = useBatchUpdateRole();
 	const deleteUser = useDeleteUser();
 
-	// 批量选中是否含受保护用户（内置超管或自己）——含则禁用批量改/禁用
-	// 注：被委派超管可被内置超管批量处置，故此处只保护内置超管。
+	// 批量选中是否含受保护用户（root 或自己）——含则禁用批量改/禁用
+	// 注：被委派超管可被 root 批量处置，故此处只保护 root。
 	const selectedHasProtected = useMemo(() => {
 		if (!response?.data || selectedIds.size === 0) return false;
 		return response.data.some(
-			(u) => selectedIds.has(u.id) && (u.is_builtin_super_admin || u.id === currentUserId),
+			(u) => selectedIds.has(u.id) && (u.is_root || u.id === currentUserId),
 		);
 	}, [response?.data, selectedIds, currentUserId]);
 
@@ -209,8 +209,8 @@ function AdminUsers() {
 			header: "角色",
 			sortable: true,
 			cell: (row) => {
-				const variant = getRoleBadgeVariant(row.role);
-				const label = getRoleDisplayName(roles, row.role, row.role);
+				const variant = getRoleBadgeVariant(row.role, row.is_root);
+				const label = getRoleDisplayName(roles, row.role, row.role, row.is_root);
 				return <Badge variant={variant}>{label}</Badge>;
 			},
 		},
@@ -247,10 +247,10 @@ function AdminUsers() {
 			width: "96px",
 			align: "center",
 			cell: (row) => {
-				// 安全防护：内置超管不可被任何人操作；被委派超管仅内置超管可操作；自己不可被操作
+				// 安全防护：root 不可被任何人操作；被委派超管仅 root 可操作；自己不可被操作
 				const isProtected =
-					row.is_builtin_super_admin ||
-					(!isOperatorBuiltinSuperAdmin && row.role === "superadmin") ||
+					row.is_root ||
+					(!isOperatorRoot && row.role === "superadmin") ||
 					row.id === currentUserId;
 				return (
 					<div className="flex justify-center gap-1">
@@ -390,7 +390,7 @@ function AdminUsers() {
 					renderExpandedRow={(row) => (
 						<div className="text-muted-foreground space-y-1 text-sm">
 							<p>ID：{row.id}</p>
-							<p>用户名：{row.username}</p>
+							<p>显示名：{row.display_name || row.username}</p>
 							<p>邮箱：{row.email}</p>
 							<p>角色：{row.role}</p>
 							<p>状态：{row.is_active ? "正常" : "已禁用"}</p>
@@ -400,10 +400,10 @@ function AdminUsers() {
 						</div>
 					)}
 					onRowClick={(row) => {
-						// 受保护用户（内置超管/被委派超管且操作者非内置超管/自己）不可通过行点击编辑
+						// 受保护用户（root/被委派超管且操作者非 root/自己）不可通过行点击编辑
 						const isProtected =
-							row.is_builtin_super_admin ||
-							(!isOperatorBuiltinSuperAdmin && row.role === "superadmin") ||
+							row.is_root ||
+							(!isOperatorRoot && row.role === "superadmin") ||
 							row.id === currentUserId;
 						if (isProtected) {
 							toast.error("不可编辑此用户");
@@ -495,7 +495,7 @@ function AdminUsers() {
 			<CreateUserDialog
 				open={createDialogOpen}
 				onOpenChange={setCreateDialogOpen}
-				isOperatorSuperAdmin={isOperatorBuiltinSuperAdmin}
+				isOperatorRoot={isOperatorRoot}
 			/>
 
 			{/* 编辑用户对话框 */}
@@ -505,7 +505,7 @@ function AdminUsers() {
 					onOpenChange={setEditDialogOpen}
 					user={editingUser}
 					currentUserId={currentUserId}
-					isOperatorSuperAdmin={isOperatorBuiltinSuperAdmin}
+					isOperatorRoot={isOperatorRoot}
 				/>
 			)}
 

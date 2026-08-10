@@ -1,7 +1,5 @@
-import type { UserDTO } from "@entities/user/model/types";
-import { authKeys } from "@features/auth/api/keys";
 import { useGoogleLoginMutation, useLogin } from "@features/auth/api/mutations";
-import { useCsrfToken } from "@features/auth/api/queries";
+import { clearAuthCache, useCsrfToken } from "@features/auth/api/queries";
 import { useOAuthVisibility } from "@features/auth/lib/use-oauth-visibility";
 import type { LoginRequest } from "@features/auth/model/types";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -9,6 +7,7 @@ import { ApiError } from "@shared/api/error";
 import { useLoginDialogStore } from "@shared/api/login-dialog-store";
 import { clearSessionActive } from "@shared/api/session";
 import { Button } from "@shared/ui/base/button";
+import { GithubIcon, GoogleIcon } from "@shared/ui/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
@@ -22,7 +21,7 @@ import { Modal } from "@/shared/ui/modal";
  * 后端未返回 message 时的兜底文案（按状态码）。与 /login 页面保持一致。
  */
 const FALLBACK_BY_STATUS: Record<number, string> = {
-	401: "邮箱或密码错误",
+	401: "账号或密码错误",
 	403: "账户不可用，请联系管理员",
 	429: "请求过于频繁，请稍后再试",
 };
@@ -58,7 +57,7 @@ export function LoginDialog() {
 				onSuccess: () => {
 					toast.success("登录成功");
 					close();
-					setForm({ email: "", password: "" });
+					setForm({ identifier: "", password: "" });
 					// useGoogleLoginMutation 的 onSuccess 已 invalidate authKeys.me()
 					// 并 markSessionActive()，Header 等观察者会自动拉取一次 me。
 					// 这里不再显式 refetch，避免与 mutation 的 invalidate 产生双发。
@@ -82,13 +81,13 @@ export function LoginDialog() {
 		window.location.href = `https://github.com/login/oauth/authorize?client_id=${import.meta.env.VITE_GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user:email`;
 	};
 
-	const [form, setForm] = useState<LoginRequest>({ email: "", password: "" });
+	const [form, setForm] = useState<LoginRequest>({ identifier: "", password: "" });
 	const [errors, setErrors] = useState<Partial<Record<keyof LoginRequest, string>>>({});
 
 	const validate = (): boolean => {
 		const next: typeof errors = {};
-		if (!form.email || !/^\S+@\S+\.\S+$/.test(form.email)) {
-			next.email = "请输入有效的邮箱地址";
+		if (!form.identifier) {
+			next.identifier = "请输入账号";
 		}
 		if (!form.password || form.password.length < 8) {
 			next.password = "密码至少 8 位";
@@ -105,7 +104,7 @@ export function LoginDialog() {
 			onSuccess: () => {
 				toast.success("登录成功");
 				close();
-				setForm({ email: "", password: "" });
+				setForm({ identifier: "", password: "" });
 				// useLogin 的 onSuccess 已 invalidate authKeys.me() 并 markSessionActive()，
 				// Header 等观察者会自动拉取一次 me。这里不再显式 refetch，避免双发。
 			},
@@ -113,7 +112,7 @@ export function LoginDialog() {
 				const msg =
 					err instanceof ApiError
 						? err.message || FALLBACK_BY_STATUS[err.status] || "登录失败，请稍后再试"
-						: err.message || "登录失败，请检查邮箱和密码";
+						: err.message || "登录失败，请检查账号和密码";
 				toast.error(msg);
 			},
 		});
@@ -124,10 +123,9 @@ export function LoginDialog() {
 			open();
 			return;
 		}
-		// 用户取消/关闭弹窗：清会话状态，让守卫允许跳转登录页。
-		// 同样不能把 me 缓存 removeQueries（会触发 401），改为 cancel + 置 null。
-		await qc.cancelQueries({ queryKey: authKeys.me() });
-		qc.setQueryData<UserDTO | null>(authKeys.me(), null);
+		// 用户取消/关闭弹窗：清会话状态（me + csrf + sessionActive），让守卫允许跳转登录页。
+		// 复用 clearAuthCache（与 useLogout 同一逻辑），补上历史遗漏的 csrf-token 清理。
+		clearAuthCache(qc);
 		clearSessionActive();
 		close();
 		setForm((f) => ({ ...f, password: "" }));
@@ -171,18 +169,18 @@ export function LoginDialog() {
 		>
 			<form id="login-dialog-form" onSubmit={handleSubmit} className="space-y-4">
 				<div className="space-y-2">
-					<Label htmlFor="login-dialog-email">邮箱</Label>
+					<Label htmlFor="login-dialog-identifier">账号</Label>
 					<Input
-						id="login-dialog-email"
-						type="email"
-						placeholder="you@example.com"
-						value={form.email}
-						onChange={(e) => setForm({ ...form, email: e.target.value })}
-						aria-invalid={!!errors.email}
-						autoComplete="email"
+						id="login-dialog-identifier"
+						type="text"
+						placeholder="用户名或邮箱"
+						value={form.identifier}
+						onChange={(e) => setForm({ ...form, identifier: e.target.value })}
+						aria-invalid={!!errors.identifier}
+						autoComplete="username"
 					/>
-					{errors.email ? (
-						<p className="text-sm text-destructive">{errors.email}</p>
+					{errors.identifier ? (
+						<p className="text-sm text-destructive">{errors.identifier}</p>
 					) : null}
 				</div>
 
@@ -225,30 +223,7 @@ export function LoginDialog() {
 									onClick={() => handleGoogleLogin()}
 									disabled={googleLogin.isPending}
 								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										viewBox="0 0 48 48"
-										className="size-6"
-									>
-										<title>Google</title>
-										<path
-											fill="#EA4335"
-											d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"
-										/>
-										<path
-											fill="#4285F4"
-											d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-										/>
-										<path
-											fill="#FBBC05"
-											d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-										/>
-										<path
-											fill="#34A853"
-											d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-										/>
-										<path fill="none" d="M0 0h48v48H0z" />
-									</svg>
+									<GoogleIcon title="Google" className="size-6" />
 								</Button>
 							) : null}
 							{showGithub ? (
@@ -259,15 +234,7 @@ export function LoginDialog() {
 									className="ml-4 size-12 rounded-full"
 									onClick={() => handleGithubLogin()}
 								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										viewBox="0 0 24 24"
-										className="size-6"
-										fill="currentColor"
-									>
-										<title>GitHub</title>
-										<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-									</svg>
+									<GithubIcon title="GitHub" className="size-6" />
 								</Button>
 							) : null}
 						</div>

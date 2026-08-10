@@ -44,8 +44,8 @@ export interface VerifyEmailRequest {
  * LoginRequest - POST /auth/login 请求体
  */
 export interface LoginRequest {
-	/** 邮箱 */
-	email: string;
+	/** 登录标识符（邮箱或用户名） */
+	identifier: string;
 	/** 密码 */
 	password: string;
 }
@@ -88,6 +88,8 @@ export interface ResetPasswordRequest {
 export interface UpdateProfileRequest {
 	/** 用户名，3 到 32 字符 */
 	username?: string;
+	/** 显示名，最多 32 字符，空串清除回退 username */
+	display_name?: string;
 	/** 个人简介，最多 500 字符 */
 	bio?: string;
 	/** 头像 URL，最多 2048 字符 */
@@ -105,6 +107,8 @@ export interface UpdatedProfile {
 	id: string;
 	/** 用户名 */
 	username: string;
+	/** 显示名（空串=未设置，回退 username） */
+	display_name: string;
 	/** 邮箱 */
 	email: string;
 	/** 头像 URL */

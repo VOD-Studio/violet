@@ -7,18 +7,21 @@
 export interface UserDTO {
 	/** 用户 ID（UUID 字符串） */
 	id: string;
-	/** 用户名 */
+	/** 用户名（唯一登录标识，纯 ASCII） */
 	username: string;
+	/** 显示名（可空，空时回退 username） */
+	display_name: string;
 	/** 邮箱 */
 	email: string;
 	/** 头像 URL */
 	avatar_url: string;
 	/** 个人简介 */
 	bio: string;
-	/** 角色：user / admin / superadmin */
+	/** 角色 */
 	role: UserRole;
-	/** 是否为内置超级管理员（通配符权限，授权链起点） */
-	is_builtin_super_admin: boolean;
+	/** 角色描述，来自 roles 表，供界面显示角色标签 */
+	role_description?: string;
+	is_root: boolean;
 	/** 邮箱是否已验证 */
 	email_verified: boolean;
 	/** 账户是否启用 */
@@ -28,9 +31,6 @@ export interface UserDTO {
 	/** 权限码列表（仅当后端返回时存在） */
 	permissions?: string[];
 }
-
-/** 用户角色枚举（与后端 context 注入的 role 字符串对应） */
-export type UserRole = "user" | "admin" | "superadmin";
 
 /**
  * SessionClaims - GET /auth/session 返回的只读鉴权声明
@@ -45,8 +45,8 @@ export interface SessionClaims {
 	role: UserRole;
 	/** 用户邮箱 */
 	email: string;
-	/** 是否为内置超级管理员 */
-	is_builtin_super_admin: boolean;
+	/** 是否为 root 用户 */
+	is_root: boolean;
 }
 /**
  * UserProfile - 公开用户资料卡
@@ -65,3 +65,8 @@ export interface UserProfile {
 	/** 注册时间（RFC3339） */
 	created_at: string;
 }
+
+/**
+ * 用户角色类型。列举内置角色供 IDE 补全，{} & string 兼容自定义角色。
+ */
+export type UserRole = "user" | "author" | "admin" | "superadmin" | ({} & string);

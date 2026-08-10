@@ -205,8 +205,10 @@ type User struct {
 
 	// email 邮箱（值对象）
 	email Email
-	// username 用户名（值对象）
+	// username 用户名（值对象，唯一登录标识）
 	username Username
+	// displayName 显示名（值对象，可空）。纯展示用途，空时回退 username
+	displayName DisplayName
 	// passwordHash 密码哈希
 	passwordHash PasswordHash
 	// avatarURL 头像地址
@@ -219,13 +221,12 @@ type User struct {
 	googleID *string
 	// githubID 绑定的 Github 账号 ID
 	githubID *string
-	// isBuiltinSuperAdmin 是否为内置超级管理员
+	// isRoot 是否为 root 用户
 	//
-	// 区分"内置超管"（系统初始化的唯一超管，通配符权限，靠标志位短路）
-	// 与"被委派超管"（被内置超管授予 superadmin 角色的用户，按 role_permissions 表授权）。
-	// 内置超管：拥有 user:assign-superadmin 语义、可授权他人、不可被任何人降级/删除。
-	// 被委派超管：不能再授权第三人（授权链不可传递）。
-	isBuiltinSuperAdmin bool
+	// 区分 root 与被委派超管：root 靠标志位短路通配放行、持有授权与自救主权；
+	// 被委派超管由 root 授予 superadmin 角色，按角色语义通配，不能再授权第三人。
+	// root 可授权他人、不可被任何人降级/删除。
+	isRoot bool
 	// emailVerified 邮箱是否已验证
 	emailVerified bool
 	// isActive 是否启用
@@ -270,30 +271,32 @@ func ReconstructUser(
 	id shared.ID,
 	email Email,
 	username Username,
+	displayName DisplayName,
 	passwordHash PasswordHash,
 	avatarURL string,
 	bio string,
 	role Role,
 	googleID *string,
 	githubID *string,
-	isBuiltinSuperAdmin bool,
+	isRoot bool,
 	emailVerified bool,
 	isActive bool,
 	createdAt time.Time,
 	updatedAt time.Time,
 ) *User {
 	u := &User{
-		email:               email,
-		username:            username,
-		passwordHash:        passwordHash,
-		avatarURL:           avatarURL,
-		bio:                 bio,
-		role:                role,
-		googleID:            googleID,
-		githubID:            githubID,
-		isBuiltinSuperAdmin: isBuiltinSuperAdmin,
-		emailVerified:       emailVerified,
-		isActive:            isActive,
+		email:          email,
+		username:       username,
+		displayName:    displayName,
+		passwordHash:   passwordHash,
+		avatarURL:      avatarURL,
+		bio:            bio,
+		role:           role,
+		googleID:       googleID,
+		githubID:       githubID,
+		isRoot:         isRoot,
+		emailVerified:  emailVerified,
+		isActive:       isActive,
 		timestamps: shared.Timestamps{
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
@@ -354,13 +357,12 @@ func (u *User) ChangeRole(role Role) error {
 	return nil
 }
 
-// MarkAsBuiltinSuperAdmin 标记为内置超级管理员
+// MarkAsRoot 标记为 root 用户
 //
-// 仅由 EnsureSuperAdmin（启动期幂等校正内置超管）调用。
-// 内置超管拥有通配符权限（靠内置超管标志位短路）、可授权他人、不可被任何人降级/删除。
-func (u *User) MarkAsBuiltinSuperAdmin() {
-	u.isBuiltinSuperAdmin = true
-	// 内置超管必然是 superadmin 角色
+// 仅由 EnsureSuperAdmin 启动期调用，幂等校正 root 账户。
+// root 拥有通配权限、可授权他人、不可被任何人降级/删除。
+func (u *User) MarkAsRoot() {
+	u.isRoot = true
 	u.role = RoleSuperAdmin
 }
 
@@ -399,6 +401,14 @@ func (u *User) Deactivate() {
 func (u *User) UpdateProfile(avatarURL, bio string) {
 	u.avatarURL = avatarURL
 	u.bio = bio
+}
+
+// UpdateDisplayName 更新显示名
+//
+// 值对象校验由调用方在 ParseDisplayName 完成，此处仅赋值。
+// DisplayName 可空（零值表示清除显示名，回退显示 username）。
+func (u *User) UpdateDisplayName(displayName DisplayName) {
+	u.displayName = displayName
 }
 
 // UpdateAvatarURL 仅更新头像地址
@@ -441,6 +451,7 @@ func (u *User) MatchPassword(_ string) bool {
 	return false // 占位：实际比较在 infrastructure/auth 包
 }
 
+
 // ============================================================
 // 访问器（只读，保证聚合状态不被外部随意修改）
 // ============================================================
@@ -448,6 +459,8 @@ func (u *User) MatchPassword(_ string) bool {
 func (u *User) Email() Email { return u.email }
 
 func (u *User) Username() Username { return u.username }
+
+func (u *User) DisplayName() DisplayName { return u.displayName }
 
 func (u *User) PasswordHash() PasswordHash { return u.passwordHash }
 
@@ -466,12 +479,11 @@ func (u *User) GithubID() *string { return u.githubID }
 // IsSuperAdmin 是否为超级管理员（便捷方法，权限守卫常用）
 func (u *User) IsSuperAdmin() bool { return u.role.IsSuperAdmin() }
 
-// IsBuiltinSuperAdmin 是否为内置超级管理员
+// IsRoot 是否为 root 用户
 //
-// 区别于 IsSuperAdmin：被委派超管也是 superadmin 角色，但 isBuiltinSuperAdmin=false。
-// 通配符权限、授权权、不可降级/删除等"主权"都以此为准。
-func (u *User) IsBuiltinSuperAdmin() bool { return u.isBuiltinSuperAdmin }
-
+// 区别于 IsSuperAdmin：被委派超管也是 superadmin 角色，但 isRoot=false。
+// 授权权、不可降级/删除等主权都以此为准。
+func (u *User) IsRoot() bool { return u.isRoot }
 func (u *User) EmailVerified() bool { return u.emailVerified }
 
 func (u *User) IsActive() bool { return u.isActive }

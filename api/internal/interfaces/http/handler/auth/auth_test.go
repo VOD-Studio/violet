@@ -43,10 +43,8 @@ func hashedTestUser(t *testing.T, plainPassword string) *domainuser.User {
 	uid, _ := domainshared.ParseID("00000000-0000-0000-0000-000000000001")
 	email, _ := domainuser.ParseEmail("u@example.com")
 	username, _ := domainuser.ParseUsername("alice")
-	return domainuser.ReconstructUser(
-		uid, email, username, hash, "", "", domainuser.RoleUser,
-		nil, nil, false, true, true, time.Time{}, time.Time{},
-	)
+	return domainuser.ReconstructUser(uid, email, username, domainuser.DisplayName{}, hash, "", "", domainuser.RoleUser,
+		nil, nil, false, true, true, time.Time{}, time.Time{},)
 }
 
 // TestLogin_SetsSessionAndCSRFCookies 验证登录成功后下发 violet_session + violet_csrf cookie，body 含 user_id。
@@ -76,7 +74,7 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
 	)
 
-	body := `{"email":"u@example.com","password":"` + plainPwd + `"}`
+	body := `{"identifier":"u@example.com","password":"` + plainPwd + `"}`
 	req := httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(body))
 	rec := httptest.NewRecorder()
 	h.Login(rec, req)
@@ -111,6 +109,41 @@ func TestLogin_SetsSessionAndCSRFCookies(t *testing.T) {
 	sessionStore.AssertNumberOfCalls(t, "Create", 1)
 }
 
+// TestLogin_ByUsername 验证用用户名（不含 @）登录走 FindByUsername 路径。
+func TestLogin_ByUsername(t *testing.T) {
+	const plainPwd = "pass-word-123"
+	u := hashedTestUser(t, plainPwd)
+
+	userRepo := new(mocks.MockUserRepository)
+	sessionStore := new(mocks.MockSessionStore)
+	hasher := authcmd.NewBcryptHasher()
+
+	bus := infraeventbus.NewInMemory()
+	login := authcmd.NewLoginHandler(userRepo, hasher, bus)
+	createSession := authcmd.NewCreateSessionHandler(userRepo, sessionStore)
+
+	// 用户名登录走 FindByUsername；createSession 走 FindByID
+	username, _ := domainuser.ParseUsername("alice")
+	userRepo.On("FindByUsername", mock.Anything, username).Return(u, nil)
+	userRepo.On("FindByID", mock.Anything, u.GetID()).Return(u, nil)
+	sessionStore.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	h := NewHandler(
+		nil, login, nil, nil, nil, createSession,
+		nil, nil, nil, nil, nil, nil, nil,
+		testCookieCfg(),
+		config.SessionConfig{IdleTTL: time.Hour, MaxTTL: 0},
+	)
+
+	body := `{"identifier":"alice","password":"` + plainPwd + `"}`
+	req := httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(body))
+	rec := httptest.NewRecorder()
+	h.Login(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code, "用户名登录应返回 200")
+	userRepo.AssertExpectations(t)
+}
+
 // TestSession_ReturnsClaimsWhenAuthenticated 验证 /auth/session 已登录时返回 claims。
 // 对应 Issue-0003：Handler.Session 读 ctx claims 返回 user_id/role/email。
 func TestSession_ReturnsClaimsWhenAuthenticated(t *testing.T) {
@@ -125,7 +158,7 @@ func TestSession_ReturnsClaimsWhenAuthenticated(t *testing.T) {
 	ctx := context.WithValue(context.Background(), middleware.UserIDKey, "user-123")
 	ctx = context.WithValue(ctx, middleware.UserRoleKey, "admin")
 	ctx = context.WithValue(ctx, middleware.UserEmailKey, "a@b.c")
-	ctx = context.WithValue(ctx, middleware.UserIsBuiltinSuperAdminKey, false)
+	ctx = context.WithValue(ctx, middleware.UserIsRootKey, false)
 
 	req := httptest.NewRequest(http.MethodGet, "/auth/session", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()

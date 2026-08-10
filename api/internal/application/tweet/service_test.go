@@ -287,7 +287,7 @@ func ctxWithUser(userID, role string, isBuiltin bool) context.Context {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, middleware.UserIDKey, userID)
 	ctx = context.WithValue(ctx, middleware.UserRoleKey, role)
-	ctx = context.WithValue(ctx, middleware.UserIsBuiltinSuperAdminKey, isBuiltin)
+	ctx = context.WithValue(ctx, middleware.UserIsRootKey, isBuiltin)
 	return ctx
 }
 

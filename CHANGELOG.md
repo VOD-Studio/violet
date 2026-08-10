@@ -7,6 +7,187 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.6.1](https://github.com/VOD-Studio/violet/compare/v2.6.0...v2.6.1) (2026-08-10)
+
+
+### 新增
+
+* **command-palette:** 搜索结果增加加载骨架与空状态 ([cc15980](https://github.com/VOD-Studio/violet/commit/cc15980c51e1892f9cdfd3c95f43a77bb2fb8376))
+* **domain:** 拆分用户名与显示名并收紧 username 规则 ([96e4efa](https://github.com/VOD-Studio/violet/commit/96e4efa9b65f862f823d711e35ab524ed48d56a9))
+* **web:** 前端适配 display_name 拆分与 username 规则收紧 ([7108843](https://github.com/VOD-Studio/violet/commit/7108843eeeda6dd77a4e6003ad0a413b1be4ecd7))
+
+
+### 修复
+
+* **auth:** beforeLoad 不再基于 getAuthSession 清缓存 ([872061f](https://github.com/VOD-Studio/violet/commit/872061fdde6151c89b108032d8dce1a4fb541e26))
+* **auth:** cookie 兜底改用 violet_csrf 并清除 debug 日志 ([8957cef](https://github.com/VOD-Studio/violet/commit/8957cefe6240fd7dbf21017df1fe621604bfcafa))
+* **auth:** me 接口补全用户 ID 返回 ([5434a9d](https://github.com/VOD-Studio/violet/commit/5434a9d68c69cc95a3348f4fe0173e8e2539022d))
+* **auth:** session 过期时同步清 useMe 缓存消除 Header 假登录 ([90d1701](https://github.com/VOD-Studio/violet/commit/90d17017a7d942e2dcf4f226e135efd58f73d955))
+* **auth:** 守卫加 violet_csrf cookie 判定页面刷新后登录态 ([324e626](https://github.com/VOD-Studio/violet/commit/324e6269a404e7352f48bba326912e151b625f97))
+* **auth:** 守卫追加 me 缓存兜底防止刷新误踢已登录用户 ([aaff231](https://github.com/VOD-Studio/violet/commit/aaff231a450b68676ed1f52b492d8745e9abc5a6))
+* **auth:** 客户端 hydrate 用 cookie 兜底 RPC 探活假阴性 ([1898037](https://github.com/VOD-Studio/violet/commit/1898037c87eaf90d18efc2f18316da636738fda9))
+* **command-palette:** 关闭面板时重置输入查询 ([b370a68](https://github.com/VOD-Studio/violet/commit/b370a68986972554693524d5fd8b704125e416cd))
+* **dev:** dev-mixed 加 --build 确保新代码进入容器 ([12b9c0b](https://github.com/VOD-Studio/violet/commit/12b9c0b59d98e0c79d6cee66c03bd86d3dd53fbf))
+* **domain:** username 测试用例对齐 ASCII-only 规则 ([860a8a0](https://github.com/VOD-Studio/violet/commit/860a8a0f4ce7a64c465440f62b15abbef4ade432))
+* **header:** 用户菜单触发器去掉用户名并统一为圆形头像槽位 ([2bb4196](https://github.com/VOD-Studio/violet/commit/2bb4196f7f008959d550bb18bf46efc79b3690b8))
+* **profile:** 个人中心 root 角色统一显示为 root ([877e483](https://github.com/VOD-Studio/violet/commit/877e48336d616e379092b342191e51288e0fc269))
+* 认证守卫加固与 release/2.0 多项改进整合 ([#128](https://github.com/VOD-Studio/violet/issues/128)) ([c3fa938](https://github.com/VOD-Studio/violet/commit/c3fa93887def241002c0acf3dec82daec6d2c2a7))
+
+
+### 重构
+
+* **admin-users:** 请求类型收敛到 model 层 ([7b6ba98](https://github.com/VOD-Studio/violet/commit/7b6ba98694a22a141e4003406ae3943a0207f9fe))
+* **settings:** 前端同步去除重复字段与 footer_text 归组 ([5e0c9d7](https://github.com/VOD-Studio/violet/commit/5e0c9d7d1b1bb9a0fd0ebc2e68e441dd07ab8012))
+* **settings:** 去除基础信息与关于博主的重复字段 ([3a98225](https://github.com/VOD-Studio/violet/commit/3a98225980f51790226261383c696a3d18dac1a5))
+
+## [2.6.0](https://github.com/VOD-Studio/violet/compare/v2.5.3...v2.6.0) (2026-08-10)
+
+
+### 新增
+
+* **auth:** 登录支持用户名或邮箱 ([7c293d8](https://github.com/VOD-Studio/violet/commit/7c293d8c5b0d10d85aea3efa82d285784229326d))
+* **auth:** 登录表单改为账号输入 ([ef68428](https://github.com/VOD-Studio/violet/commit/ef68428d7144e6e3742a8d53a124f3a16c8ed489))
+* **command-palette:** 命令面板整合文章搜索并去重触发入口 ([c7d3097](https://github.com/VOD-Studio/violet/commit/c7d3097d4f021cceca3c92b5e658ccedbe8d40b2))
+* **post:** 新增前台公开搜索接口 ([3adb781](https://github.com/VOD-Studio/violet/commit/3adb7814066702fe20f1d019a9219b552e8607a6))
+* 前台文章搜索与登录账号输入优化 ([de13f25](https://github.com/VOD-Studio/violet/commit/de13f2571a40c7b2d170a9380275eefa0affbf18))
+
+## [2.5.3](https://github.com/VOD-Studio/violet/compare/v2.5.2...v2.5.3) (2026-08-09)
+
+
+### 修复
+
+* **header:** 优化下拉菜单视觉与 root 用户冗余信息 ([33f181b](https://github.com/VOD-Studio/violet/commit/33f181bbe6a1f798db08b3cb3ce4425759fdf216))
+* **header:** 登出按钮去掉 destructive variant 视觉提示 ([eac07fb](https://github.com/VOD-Studio/violet/commit/eac07fba7be383c26fba1c28be54d2584954a210))
+* **header:** 锁定用户菜单 trigger 宽度避免登录跳动 ([09c697a](https://github.com/VOD-Studio/violet/commit/09c697a3e12bf993042291fe03efb4f89ba31bba))
+* **profile:** 账户信息 Tab 补回图标 ([307a3ae](https://github.com/VOD-Studio/violet/commit/307a3aeb48cf756a787f7778382781d97e59e082))
+* **profile:** 账户信息补回行首图标 ([7d523b6](https://github.com/VOD-Studio/violet/commit/7d523b6dd978586e246636fae2292f7524b8a466))
+
+
+### 重构
+
+* **header:** 重设计用户菜单 Dropdown ([e3ffb11](https://github.com/VOD-Studio/violet/commit/e3ffb114cc5dc5f029dbdda6966de9590063008d))
+* **profile:** 统一个人中心卡片样式与字号 ([51df7f7](https://github.com/VOD-Studio/violet/commit/51df7f7ddcd871a5e2f828fb2d381fdadd78fcce))
+* **profile:** 重设计个人中心页 ([7106788](https://github.com/VOD-Studio/violet/commit/7106788d05e514411a66f5b3eb62a47c3cbde346))
+* 重设计 Header 用户菜单与个人中心页 ([#124](https://github.com/VOD-Studio/violet/issues/124)) ([7b014da](https://github.com/VOD-Studio/violet/commit/7b014da5abc32ea18ce90c06cb9dc711735fbc84))
+
+## [2.5.2](https://github.com/VOD-Studio/violet/compare/v2.5.1...v2.5.2) (2026-08-08)
+
+
+### 修复
+
+* **command:** 亮色模式命令面板发灰 ([e088c37](https://github.com/VOD-Studio/violet/commit/e088c372ae5ddaea21b6c7eb14b7747da4e6c8b8))
+* **header:** 修复刷新瞬间 nav 全部高亮 ([586ac68](https://github.com/VOD-Studio/violet/commit/586ac682aaa6912c1c29ed3103cefd8187f0d2ab))
+* **header:** 刷新时不闪过登录按钮再切换登录态 ([44a4078](https://github.com/VOD-Studio/violet/commit/44a40789ea6e7645837eb4d591c4976a16a639f7))
+* **web:** LandingHero 按钮 transition 防暗黑刷新闪烁 ([9b9a323](https://github.com/VOD-Studio/violet/commit/9b9a323f0938e9c063b7c1c98d4cf5c5aadbd44d))
+* **web:** SSR cookie 读取主题根治暗黑刷新闪烁 ([32f67a9](https://github.com/VOD-Studio/violet/commit/32f67a9b6db6265d51987fc3fc0b2d69fed4c9ee))
+* **web:** 主题切换器补全跟随系统模式 ([816126e](https://github.com/VOD-Studio/violet/commit/816126eda506fae1990bc10501a106fad451985b))
+* **web:** 缩短主题切换 VT 对页面加载的阻塞 ([2959c42](https://github.com/VOD-Studio/violet/commit/2959c423acbfa913fab17b38feb25ee7bdb5ea66))
+
+
+### 重构
+
+* **auth:** 登录内联品牌图标替换为共享图标组件 ([269c3f0](https://github.com/VOD-Studio/violet/commit/269c3f0f4d5dc6647d9d5fff170d00d3dffb61aa))
+* **shared-ui:** 新增 GitHub 与 Google 图标组件 ([5d15b67](https://github.com/VOD-Studio/violet/commit/5d15b67bd73145438d420a156ffe96d97baca77f))
+* **theme-toggle:** 默认变体改为 segmented ([655819f](https://github.com/VOD-Studio/violet/commit/655819fc651ec3aed8a9bbe15d976ba1fc7d5011))
+* **web:** 移除 #/* 路径别名统一用 FSD 别名 ([84c60af](https://github.com/VOD-Studio/violet/commit/84c60afeb2d769b4ab6f99e6b064d6a21ad092be))
+
+## [2.5.1](https://github.com/VOD-Studio/violet/compare/v2.5.0...v2.5.1) (2026-08-07)
+
+
+### 修复
+
+* **admin-subscriptions:** 操作列加宽恢复按钮组 padding ([35d3063](https://github.com/VOD-Studio/violet/commit/35d3063529b10c65c7aea030d2bd7a7abb3b28a1))
+* **admin:** 标题行 min-h-9 统一有无 action 页面高度 ([5565fee](https://github.com/VOD-Studio/violet/commit/5565fee3d3b6cb8c935cb58d18bff53cb07ba568))
+* **admin:** 筛选栏 Segmented 统一 h-9 高度消除切换抖动 ([ec7a221](https://github.com/VOD-Studio/violet/commit/ec7a2215e8e2936ba2fd051800fed58bdad5a121))
+* **admin:** 统一各页面筛选项位置到表格工具栏 ([6bc6eba](https://github.com/VOD-Studio/violet/commit/6bc6eba495dc876954117c31d730d0f384d99641))
+* **auth:** 已登录用户访问 /login 自动重定向 ([1f5c882](https://github.com/VOD-Studio/violet/commit/1f5c882c35c1782527c6bda2c34e663757e39e60))
+* **feed:** 抓取超时从 15s 调大到 30s ([a41063b](https://github.com/VOD-Studio/violet/commit/a41063b395eb6f35f557f43d2587f63d8f8d81a4))
+* **header:** nav 激活态改用显式 pathname 判定 ([dc76adf](https://github.com/VOD-Studio/violet/commit/dc76adf7305b2dba0d9d426040724951e443e1c1))
+* **post:** 空 slug 自动按标题生成 ([8955dc3](https://github.com/VOD-Studio/violet/commit/8955dc3f5a50f09cd8c262021bcd3c287ff45c00))
+* **subscription:** 抓取事件 success 语义改为整轮无失败 ([1f968e9](https://github.com/VOD-Studio/violet/commit/1f968e9e1627ea432b5eec0467baebac4c74cc35))
+
+## [2.5.0](https://github.com/VOD-Studio/violet/compare/v2.4.8...v2.5.0) (2026-08-07)
+
+
+### 新增
+
+* **audit:** Actor 增加 actor_type 区分真人与系统操作 ([5da1379](https://github.com/VOD-Studio/violet/commit/5da1379e50b1b333dbe0e07572f7acaff116c218))
+* **audit:** 订阅域全部操作补入操作日志 ([af4420f](https://github.com/VOD-Studio/violet/commit/af4420f1ba85e63f43e44c82f6b06e4612b608cb))
+* MCP 标签工具与订阅立即拉取及操作日志 ([6929b3a](https://github.com/VOD-Studio/violet/commit/6929b3a86c914a6bfbc50bdfd50abbbc159a704e))
+* **mcp:** 新增 create_tag 与 list_tags tool ([8f5307c](https://github.com/VOD-Studio/violet/commit/8f5307c1f42f05b9724e860bccceb11171d78f66))
+* **subscription:** 新增立即拉取端点 ([be6dcd1](https://github.com/VOD-Studio/violet/commit/be6dcd1396c272c8b020f7bb0d87075490bfdf74))
+* **web:** 操作日志展示系统操作标记 ([2cb779e](https://github.com/VOD-Studio/violet/commit/2cb779e369397cc71635084f09f526ad18637fc4))
+* **web:** 订阅管理页新增立即抓取按钮 ([6c1004a](https://github.com/VOD-Studio/violet/commit/6c1004a16b649118671e88731e48429c6bb3ffa9))
+
+
+### 修复
+
+* **audit:** buildPO 补全 IPAddress 与 UserAgent 赋值 ([#100](https://github.com/VOD-Studio/violet/issues/100)) ([720cbab](https://github.com/VOD-Studio/violet/commit/720cbabf098d75a7fb3b0224b9e7ddcaf80ee28d))
+* **web:** 长耗时请求单独加 5 分钟超时 ([db6d385](https://github.com/VOD-Studio/violet/commit/db6d3852fcf4125963d32ddab348a08e48c233a8))
+
+
+### 重构
+
+* **subscription:** 抓取状态机从 job 提到 service.FetchNow ([1dc7a9c](https://github.com/VOD-Studio/violet/commit/1dc7a9cce6b4671a84d571f7ba7a37582749acc8))
+
+## [2.4.8](https://github.com/VOD-Studio/violet/compare/v2.4.7...v2.4.8) (2026-08-06)
+
+
+### 修复
+
+* **deploy:** deploy-web always() 与 release 锚点前置 ([#94](https://github.com/VOD-Studio/violet/issues/94)) ([e77c98b](https://github.com/VOD-Studio/violet/commit/e77c98ba457b3687693a9cd04dcec8c67e27741e))
+
+## [2.4.7](https://github.com/VOD-Studio/violet/compare/v2.4.6...v2.4.7) (2026-08-06)
+
+
+### 修复
+
+* **deploy:** detect 恢复全量拉取修复锚点 tag 解析 ([#91](https://github.com/VOD-Studio/violet/issues/91)) ([8fb8b06](https://github.com/VOD-Studio/violet/commit/8fb8b06c398fab8f7cf64a33a4df56f5a842629b))
+
+## [2.4.6](https://github.com/VOD-Studio/violet/compare/v2.4.5...v2.4.6) (2026-08-06)
+
+
+### 修复
+
+* **deploy:** npm registry 换国内镜像源 ([#89](https://github.com/VOD-Studio/violet/issues/89)) ([fa44bd3](https://github.com/VOD-Studio/violet/commit/fa44bd312db93495ba6ffc7e218f200b9f1b7624))
+
+## [2.4.5](https://github.com/VOD-Studio/violet/compare/v2.4.4...v2.4.5) (2026-08-06)
+
+
+### 修复
+
+* **deploy:** 调大 pnpm 下载超时容忍慢链路 ([#87](https://github.com/VOD-Studio/violet/issues/87)) ([6fa555b](https://github.com/VOD-Studio/violet/commit/6fa555b8647d1ef924b55f1cfcaad96ec3246af3))
+
+## [2.4.4](https://github.com/VOD-Studio/violet/compare/v2.4.3...v2.4.4) (2026-08-06)
+
+
+### 新增
+
+* **editor:** 源码模式改用 CodeMirror 6 替换滚动镜像 ([309e901](https://github.com/VOD-Studio/violet/commit/309e90111d65d72a8f9cd3c4b991c6bd93cf10fb))
+
+
+### 修复
+
+* **admin:** 文章编辑器移动端布局适配 ([9ccb88f](https://github.com/VOD-Studio/violet/commit/9ccb88fab3be5d0a7b2a2d99e9c4ade010cbcb61))
+* **admin:** 文章设置移动端改侧滑抽屉与工具栏排版 ([cc7ec1f](https://github.com/VOD-Studio/violet/commit/cc7ec1f50d732f696029f8dd2fa78fdbf561acd4))
+* **admin:** 移除桌面端冗余的文章设置按钮 ([7f14136](https://github.com/VOD-Studio/violet/commit/7f14136f9deaffa1174a5b20207db8593ccf007f))
+* **diagram:** mermaid 渲染临时容器改为离屏挂载 ([ff13782](https://github.com/VOD-Studio/violet/commit/ff13782861beeae571158f29124616cc7c63d389))
+* **editor:** 源码模式滚动镜像撑开页面产生滚动条 ([6dcb797](https://github.com/VOD-Studio/violet/commit/6dcb7977fdb707c60b70a24d53b631a6a647989f))
+* **editor:** 源码模式移动端滚动定位修正 ([86e68a3](https://github.com/VOD-Studio/violet/commit/86e68a30f7cb28dc91befddcb2ae4cdbcb6e40eb))
+* **editor:** 编辑器源码模式滚动与移动端布局修复 ([a050496](https://github.com/VOD-Studio/violet/commit/a0504961fb78aef6315aca47fcfaac87c2b1b899))
+
+
+### 内部维护
+
+* **release:** 强制本次发版为补丁版本 2.4.4 ([4e568a0](https://github.com/VOD-Studio/violet/commit/4e568a0eb59b36300879977c93541a676b0105d7))
+
+## [2.4.3](https://github.com/VOD-Studio/violet/compare/v2.4.2...v2.4.3) (2026-08-06)
+
+
+### 修复
+
+* **admin:** 后台权限管理修复与 superadmin 语义化重构 ([#81](https://github.com/VOD-Studio/violet/issues/81)) ([591b079](https://github.com/VOD-Studio/violet/commit/591b0794b304316f0fcbedef4e32a0a9f0623665))
+
 ## [2.4.2](https://github.com/VOD-Studio/violet/compare/v2.4.1...v2.4.2) (2026-08-05)
 
 

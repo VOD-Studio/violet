@@ -58,6 +58,109 @@ var (
 	}
 )
 
+// --- 领域事件（审计订阅者消费 → 操作日志）---
+
+// SubscriptionCreated 订阅已创建。
+// FeedURL/Title 为写入时快照，供审计日志可读标识。
+type SubscriptionCreated struct {
+	shared.BaseEvent
+	// FeedURL 订阅源地址快照
+	FeedURL string
+	// Title 订阅标题快照
+	Title string
+}
+
+// NewSubscriptionCreated 构造订阅创建事件
+func NewSubscriptionCreated(id shared.ID, feedURL, title string) SubscriptionCreated {
+	return SubscriptionCreated{
+		BaseEvent: shared.NewBaseEvent("subscription.created", id),
+		FeedURL:   feedURL,
+		Title:     title,
+	}
+}
+
+// SubscriptionUpdated 订阅配置已更新。
+type SubscriptionUpdated struct {
+	shared.BaseEvent
+	// Title 订阅标题快照
+	Title string
+}
+
+// NewSubscriptionUpdated 构造订阅更新事件
+func NewSubscriptionUpdated(id shared.ID, title string) SubscriptionUpdated {
+	return SubscriptionUpdated{
+		BaseEvent: shared.NewBaseEvent("subscription.updated", id),
+		Title:     title,
+	}
+}
+
+// SubscriptionPaused 订阅已暂停。
+type SubscriptionPaused struct {
+	shared.BaseEvent
+}
+
+// NewSubscriptionPaused 构造订阅暂停事件
+func NewSubscriptionPaused(id shared.ID) SubscriptionPaused {
+	return SubscriptionPaused{BaseEvent: shared.NewBaseEvent("subscription.paused", id)}
+}
+
+// SubscriptionResumed 订阅已恢复。
+type SubscriptionResumed struct {
+	shared.BaseEvent
+}
+
+// NewSubscriptionResumed 构造订阅恢复事件
+func NewSubscriptionResumed(id shared.ID) SubscriptionResumed {
+	return SubscriptionResumed{BaseEvent: shared.NewBaseEvent("subscription.resumed", id)}
+}
+
+// SubscriptionDeleted 订阅已删除。
+type SubscriptionDeleted struct {
+	shared.BaseEvent
+	// Title 订阅标题快照（删除前加载，删除后无法追溯）
+	Title string
+}
+
+// NewSubscriptionDeleted 构造订阅删除事件
+func NewSubscriptionDeleted(id shared.ID, title string) SubscriptionDeleted {
+	return SubscriptionDeleted{
+		BaseEvent: shared.NewBaseEvent("subscription.deleted", id),
+		Title:     title,
+	}
+}
+
+// SubscriptionFetched 订阅已抓取。
+// ActorType 区分手动触发（user）与调度器自动（system），由 service 据调用来源设置。
+type SubscriptionFetched struct {
+	shared.BaseEvent
+	// Title 订阅标题快照
+	Title string
+	// Success 整轮抓取是否成功(feed 无错误且无条目失败;部分条目失败视为不成功)
+	Success bool
+	// Imported 本次新导入条目数
+	Imported int
+	// Failed 本次失败条目数
+	Failed int
+	// Error 错误描述(Success=false 时非空:feed 错误原文,或「N 条条目导入失败」)
+	Error string
+	// IsSystem 是否系统调度触发（true=定时调度器，actor_type=system；
+	// false=手动触发，actor_type=user）。审计订阅者据此设置 ActorType。
+	IsSystem bool
+}
+
+// NewSubscriptionFetched 构造订阅抓取事件
+func NewSubscriptionFetched(id shared.ID, title string, success bool, imported, failed int, errMsg string, isSystem bool) SubscriptionFetched {
+	return SubscriptionFetched{
+		BaseEvent: shared.NewBaseEvent("subscription.fetched", id),
+		Title:     title,
+		Success:   success,
+		Imported:  imported,
+		Failed:    failed,
+		Error:     errMsg,
+		IsSystem:  isSystem,
+	}
+}
+
 // feedURLPattern feed URL 基础格式校验：http/https + 非空 host。
 // 不做 SSRF 预检（那是抓取时的事，由 ssrf 包负责），这里只挡明显非法输入。
 var feedURLPattern = regexp.MustCompile(`^https?://[^\s/$.?#].[^\s]*$`)
@@ -141,7 +244,7 @@ func NewSubscription(userID shared.ID, feedURL, title, interval string, now time
 		return nil, shared.BadRequest("无效的抓取频率：" + interval)
 	}
 	next := now.Add(IntervalDuration(interval))
-	return &Subscription{
+	sub := &Subscription{
 		id:          shared.NewID(),
 		userID:      userID,
 		sourceType:  SourceTypeRSS, // 本期固定 rss
@@ -154,7 +257,9 @@ func NewSubscription(userID shared.ID, feedURL, title, interval string, now time
 		nextFetchAt: &next,
 		createdAt:   now,
 		updatedAt:   now,
-	}, nil
+	}
+	sub.RecordEvent(NewSubscriptionCreated(sub.id, feedURL, title))
+	return sub, nil
 }
 
 // Reconstruct 从持久化数据重建（无校验、无副作用、无默认值填充）。
@@ -217,6 +322,7 @@ func (s *Subscription) UpdateConfig(title, interval string, autoPublish bool, ca
 		tags = []string{}
 	}
 	s.tags = tags
+	s.RecordEvent(NewSubscriptionUpdated(s.id, title))
 	return nil
 }
 
@@ -225,6 +331,7 @@ func (s *Subscription) UpdateConfig(title, interval string, autoPublish bool, ca
 // Pause 手动暂停。
 func (s *Subscription) Pause() {
 	s.status = StatusPaused
+	s.RecordEvent(NewSubscriptionPaused(s.id))
 }
 
 // Resume 手动恢复：清零失败计数回到 active。nextFetchAt 不动（调度器下一轮自然 due）。
@@ -232,6 +339,7 @@ func (s *Subscription) Resume() {
 	s.consecutiveFailures = 0
 	s.lastError = ""
 	s.status = StatusActive
+	s.RecordEvent(NewSubscriptionResumed(s.id))
 }
 
 // RecordSuccess 抓取成功：清零失败计数，推进 nextFetchAt = now + interval。

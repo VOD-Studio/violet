@@ -17,3 +17,18 @@ export interface PostListQuery {
 	/** 标签筛选 */
 	tag?: string;
 }
+
+/**
+ * PostSearchResult - 搜索命中的文章项
+ *
+ * 对接 GET /posts/search，snippet 为命中上下文片段（非全文）。
+ */
+export interface PostSearchResult {
+	id: string;
+	slug: string;
+	title: string;
+	/** 命中上下文片段（高亮定位用，非全文） */
+	snippet: string;
+	tags: string[];
+	updated_at: string;
+}

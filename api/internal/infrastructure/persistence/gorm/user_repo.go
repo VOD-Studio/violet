@@ -38,6 +38,7 @@ func toPO(u *user.User) model.User {
 			UpdatedAt: u.UpdatedAt(),
 		},
 		Username:            u.Username().String(),
+		DisplayName:         u.DisplayName().String(),
 		Email:               u.Email().String(),
 		PasswordHash:        u.PasswordHash().String(),
 		AvatarURL:           u.AvatarURL(),
@@ -45,7 +46,7 @@ func toPO(u *user.User) model.User {
 		Role:                string(u.Role()),
 		GoogleID:            u.GoogleID(),
 		GithubID:            u.GithubID(),
-		IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
+		IsRoot:             u.IsRoot(),
 		EmailVerified:       u.EmailVerified(),
 		IsActive:            u.IsActive(),
 	}
@@ -64,6 +65,10 @@ func toDomain(po model.User) (*user.User, error) {
 	if err != nil {
 		return nil, err
 	}
+	displayName, err := user.ParseDisplayName(po.DisplayName)
+	if err != nil {
+		return nil, err
+	}
 	role := user.Role(po.Role)
 	if !role.IsValid() {
 		return nil, domainshared.BadRequest("数据库中存在非法角色: " + po.Role)
@@ -79,13 +84,14 @@ func toDomain(po model.User) (*user.User, error) {
 		id,
 		email,
 		username,
+		displayName,
 		user.NewPasswordHash(po.PasswordHash),
 		po.AvatarURL,
 		po.Bio,
 		role,
 		po.GoogleID,
 		po.GithubID,
-		po.IsBuiltinSuperAdmin,
+		po.IsRoot,
 		po.EmailVerified,
 		po.IsActive,
 		po.CreatedAt,

@@ -11,11 +11,12 @@ import (
 // TagContainer 标签模块容器
 type TagContainer struct {
 	TagHandler *taghttp.Handler
+	TagService *apptag.Service
 }
 
 // NewTagContainer 装配标签模块
 func NewTagContainer(db *gorm.DB) *TagContainer {
 	repo := gormrepo.NewTagRepository(db)
 	svc := apptag.NewService(repo)
-	return &TagContainer{TagHandler: taghttp.NewHandler(svc)}
+	return &TagContainer{TagHandler: taghttp.NewHandler(svc), TagService: svc}
 }

@@ -100,7 +100,7 @@ export function TerminalCard({
 	return (
 		<aside
 			className={cn(
-				"flex h-[200px] flex-col overflow-hidden rounded-[1.6rem] border border-edge-hairline backdrop-blur-xl transition-colors duration-200",
+				"flex h-50 flex-col overflow-hidden rounded-[1.6rem] border border-edge-hairline backdrop-blur-xl ",
 				className,
 			)}
 			style={{
@@ -126,12 +126,12 @@ export function TerminalCard({
 					<span className="bg-linear-to-br from-neon-blue to-neon-purple bg-clip-text font-medium text-transparent">
 						violet@blog
 					</span>
-					<span className="ml-[1px] text-muted-foreground">:~$</span>
+					<span className="ml-px text-muted-foreground">:~$</span>
 					<span className="ml-1 text-foreground">quote</span>
 				</p>
 
 				<div className="mt-3 flex-1 overflow-y-auto">
-					<p className="m-0 break-words text-[13px] leading-7 text-foreground/80">
+					<p className="m-0 wrap-break-word text-[13px] leading-7 text-foreground/80">
 						<span ref={textRef} />
 						<span
 							className="ml-0.5 inline-block h-[0.95em] w-[0.36em] animate-pulse rounded-[1px] bg-foreground/60 align-[-0.08em]"
@@ -140,7 +140,7 @@ export function TerminalCard({
 					</p>
 					<p
 						ref={authorRef}
-						className="m-0 mt-2 hidden break-words text-[11px] tracking-[0.04em] text-muted-foreground"
+						className="m-0 mt-2 hidden wrap-break-word text-[11px] tracking-[0.04em] text-muted-foreground"
 					/>
 				</div>
 			</div>

@@ -11,10 +11,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ImagePlus, X } from "lucide-react";
 import { useState } from "react";
 
-// 「关于」子页表单值：A 线区块消费字段（头像/标语/名片/技能/社交）+ bio/footer_text。
+// 「关于」子页表单值：A 线区块消费字段（头像/标语/名片/技能/社交）+ bio。
 interface ProfileForm {
 	bio: string;
-	footer_text: string;
 	avatar_url: string;
 	tagline: string;
 	profile_role: string;
@@ -36,7 +35,6 @@ function ProfileSettingsPage() {
 		ProfileSettingsDTO
 	>(useProfileSettings(), useUpdateProfile(), (data) => ({
 		bio: data.bio,
-		footer_text: data.footer_text,
 		avatar_url: data.avatar_url,
 		tagline: data.tagline,
 		profile_role: data.profile_role,
@@ -72,22 +70,14 @@ function ProfileSettingsPage() {
 						/>
 						<span className="text-sm font-medium">头像</span>
 					</div>
-					{/* 右栏：字段（标语/页脚并排，简介在下方同宽） */}
+					{/* 右栏：字段（标语 + 简介） */}
 					<div className="grid flex-1 grid-cols-1 gap-3">
-						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-							<Field label="一句话标语">
-								<Input
-									{...register("tagline")}
-									placeholder="如：全栈开发者 / 独立创造者"
-								/>
-							</Field>
-							<Field label="页脚文案">
-								<Input
-									{...register("footer_text")}
-									placeholder="如：© 2026 Your Name"
-								/>
-							</Field>
-						</div>
+						<Field label="一句话标语">
+							<Input
+								{...register("tagline")}
+								placeholder="如：全栈开发者 / 独立创造者"
+							/>
+						</Field>
 						<Field label="个人简介">
 							<Textarea rows={4} {...register("bio")} />
 						</Field>

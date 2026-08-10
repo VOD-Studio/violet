@@ -89,13 +89,33 @@ var (
 	ActionReject         = MustParse("reject")          // 标记垃圾/拒绝（评论）
 )
 
+// ActorType 操作者类型（区分真人操作与系统自动化）。
+//
+// 业界共识（AppMaster / Cloudflare Audit Log）：审计日志须区分 user 与 system，
+// 让管理员能分辨「张三删的」vs「定时任务自动删的」。
+type ActorType string
+
+const (
+	// ActorTypeUser 真人操作（admin 后台点击、agent 经 MCP 调用）
+	ActorTypeUser ActorType = "user"
+	// ActorTypeSystem 系统自动化（定时调度器、后台 job），无真人操作
+	ActorTypeSystem ActorType = "system"
+)
+
 // Actor 操作人
 //
 // UserID/UserName/IPAddress/UserAgent 全部为写入时快照（用户删除后仍可追溯）。
+// ActorType 区分真人与系统自动化：user 从 session 取身份，system 用作业名作标识。
 type Actor struct {
-	// UserID 操作人 UUID（匿名操作时为空）
+	// Type 操作者类型（user/system）
+	Type ActorType `json:"actor_type"`
+	// UserID 操作人 UUID。
+	// user 类型必填；system 类型无真人，留空。
 	UserID string `json:"user_id"`
-	// UserName 操作人用户名快照（冗余存储，用户删除后仍可追溯）
+	// UserName 操作人可读标识快照。
+	// user 类型存用户名（冗余存储，用户删除后仍可追溯）；
+	// system 类型无用户名，借用此字段存作业名（如 subscription_job），
+	// 让日志活动流能显示「subscription_job 抓取了订阅 X」而非空标识。
 	UserName string `json:"user_name"`
 	// IPAddress 来源 IP
 	IPAddress string `json:"ip_address"`

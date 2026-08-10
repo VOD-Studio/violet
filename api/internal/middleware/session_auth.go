@@ -97,7 +97,7 @@ func authenticateSession(w http.ResponseWriter, r *http.Request, lookup SessionL
 	ctx = context.WithValue(ctx, UserIDKey, claims.UserID)
 	ctx = context.WithValue(ctx, UserRoleKey, claims.Role)
 	ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
-	ctx = context.WithValue(ctx, UserIsBuiltinSuperAdminKey, claims.IsBuiltinSuperAdmin)
+	ctx = context.WithValue(ctx, UserIsRootKey, claims.IsRoot)
 	// 审计上下文：IP/UA 从请求取（登录后同一请求链路内事件发布可达）
 	ctx = context.WithValue(ctx, ClientIPKey, GetClientIP(r))
 	ctx = context.WithValue(ctx, UserAgentKey, r.UserAgent())

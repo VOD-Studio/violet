@@ -10,11 +10,11 @@ import (
 
 // PermissionChecker 权限点检查端口
 //
-// 任何能根据 (role, isBuiltinSuperAdmin, codes) 判断是否授权的实现都能作为 RequirePermission 中间件依赖。
-// isBuiltinSuperAdmin 承载通配符语义：内置超管短路拥有所有权限，不查权限表。
+// 任何能根据 (role, isRoot, codes) 判断是否授权的实现都能作为 RequirePermission 中间件依赖。
+// isRoot 承载通配语义：root 用户短路拥有所有权限，不查权限表。
 // 当前实现：*application/permission.Checker。
 type PermissionChecker interface {
-	HasPermission(role string, isBuiltinSuperAdmin bool, codes ...string) bool
+	HasPermission(role string, isRoot bool, codes ...string) bool
 }
 
 type contextKey string
@@ -23,7 +23,7 @@ const (
 	UserIDKey                  contextKey = "userID"
 	UserRoleKey                contextKey = "userRole"
 	UserEmailKey               contextKey = "userEmail"
-	UserIsBuiltinSuperAdminKey contextKey = "userIsBuiltinSuperAdmin"
+	UserIsRootKey            contextKey = "userIsRoot"
 	// ClientIPKey / UserAgentKey 审计上下文：供审计订阅者从 ctx 提取操作人网络信息
 	ClientIPKey    contextKey = "clientIP"
 	UserAgentKey   contextKey = "userAgent"
@@ -34,7 +34,7 @@ const (
 // 判定规则：拥有 admin:access 权限点即放行（admin/superadmin 角色默认拥有）。
 // 这让权限矩阵可配置——例如 author 角色被授予 admin:access 后即可进入后台，
 // 但具体操作仍由各路由上的 RequirePermission 逐项卡控。
-// 内置超管（isBuiltinSuperAdmin）由 PermissionChecker 短路放行。
+// root 用户由 PermissionChecker 短路放行。
 func AdminRequired(checker PermissionChecker) func(http.Handler) http.Handler {
 	return RequirePermission(checker, "admin:access")
 }
@@ -62,12 +62,12 @@ func SuperAdminRequired(next http.Handler) http.Handler {
 }
 
 // RequirePermission 权限点检查中间件
-// 内置超管（isBuiltinSuperAdmin=true）直接放行，其他角色查询内存缓存判断
+// root 用户直接放行，其他角色查询内存缓存判断
 func RequirePermission(checker PermissionChecker, codes ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			role := GetUserRole(r.Context())
-			isBuiltin := GetUserIsBuiltinSuperAdmin(r.Context())
+			isBuiltin := GetUserIsRoot(r.Context())
 			userID := GetUserID(r.Context())
 
 			if !checker.HasPermission(role, isBuiltin, codes...) {
@@ -128,12 +128,12 @@ func GetUserEmail(ctx context.Context) string {
 	return ""
 }
 
-// GetUserIsBuiltinSuperAdmin 从上下文中获取是否为内置超级管理员
+// GetUserIsRoot 从上下文中获取是否为 root 用户
 //
-// 承载通配符权限语义：true 时 HasPermission 短路放行所有权限码。
-func GetUserIsBuiltinSuperAdmin(ctx context.Context) bool {
-	isBuiltin, ok := ctx.Value(UserIsBuiltinSuperAdminKey).(bool)
-	return ok && isBuiltin
+// 承载通配权限语义：true 时 HasPermission 短路放行所有权限码。
+func GetUserIsRoot(ctx context.Context) bool {
+	isRoot, ok := ctx.Value(UserIsRootKey).(bool)
+	return ok && isRoot
 }
 
 // writeUnauthorized 写 401 JSON 响应。

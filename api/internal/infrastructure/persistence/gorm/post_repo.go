@@ -166,6 +166,33 @@ func (r *PostRepository) Search(ctx context.Context, authorID domainshared.ID, q
 	}
 	return result, total, nil
 }
+// SearchPublished 在已发布文章内做大小写不敏感子串检索（前台公开搜索）。
+// 与 Search 的区别：无 authorID 限制，固定 status=published；检索语义、排序、转义均同 Search。
+func (r *PostRepository) SearchPublished(ctx context.Context, query string, page, limit int) ([]*post.Post, int64, error) {
+	q := r.db.WithContext(ctx).Model(&model.Post{}).Where("status = ?", post.StatusPublished)
+	for _, kw := range strings.Fields(query) {
+		like := "%" + likeEscaper.Replace(kw) + "%"
+		q = q.Where(
+			"(LOWER(title) LIKE LOWER(?) ESCAPE '\\' OR LOWER(excerpt) LIKE LOWER(?) ESCAPE '\\' OR LOWER(content_md) LIKE LOWER(?) ESCAPE '\\')",
+			like, like, like,
+		)
+	}
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, domainshared.Internal("统计检索结果失败", err)
+	}
+	var pos []model.Post
+	offset := (page - 1) * limit
+	if err := q.Preload("Tags").Order("updated_at DESC").Offset(offset).Limit(limit).Find(&pos).Error; err != nil {
+		return nil, 0, domainshared.Internal("查询检索结果失败", err)
+	}
+	result := make([]*post.Post, 0, len(pos))
+	for _, po := range pos {
+		p, _ := postToDomain(po)
+		result = append(result, p)
+	}
+	return result, total, nil
+}
 
 func (r *PostRepository) ExistsBySlug(ctx context.Context, slug string) (bool, error) {	var count int64
 	if err := r.db.WithContext(ctx).Model(&model.Post{}).Where("slug = ?", slug).Count(&count).Error; err != nil {

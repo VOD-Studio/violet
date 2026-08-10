@@ -16,7 +16,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // 当前用户态：每用例通过 meDataOverride 覆写
-let meDataOverride: { id: string; is_builtin_super_admin?: boolean } | null = null;
+let meDataOverride: { id: string; is_root?: boolean } | null = null;
 vi.mock("@features/auth/api/queries", () => ({
 	useMe: () => ({ data: meDataOverride }),
 }));

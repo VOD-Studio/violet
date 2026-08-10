@@ -4,9 +4,8 @@ import type { AboutConfig } from "@features/settings/model/types";
 /** 基础信息组 */
 export interface GeneralSettingsDTO {
 	site_name: string;
-	site_description: string;
 	site_url: string;
-	admin_email: string;
+	footer_text: string;
 	posts_per_page: number;
 	comments_enabled: boolean;
 	comments_moderation: boolean;
@@ -26,10 +25,9 @@ export interface GithubSettingsDTO {
 	releases_repo: string;
 }
 
-/** 关于博主组（头像/标语/名片/技能/社交矩阵/简介/页脚） */
+/** 关于博主组（头像/标语/名片/技能/社交矩阵/简介） */
 export interface ProfileSettingsDTO {
 	bio: string;
-	footer_text: string;
 	avatar_url: string;
 	tagline: string;
 	profile_role: string;

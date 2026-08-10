@@ -82,7 +82,17 @@ function AdminLogsPage() {
 		{
 			key: "actor",
 			header: "操作人",
-			cell: (row) => row.actor.user_name || row.actor.user_id || "匿名",
+			ellipsis: true,
+			cell: (row) => {
+				const name = row.actor.user_name || row.actor.user_id || "匿名";
+				return row.actor.actor_type === "system" ? (
+					<span className="text-muted-foreground">
+						{name} <Badge variant="outline">系统</Badge>
+					</span>
+				) : (
+					name
+				);
+			},
 		},
 		{
 			key: "action",
@@ -131,55 +141,6 @@ function AdminLogsPage() {
 
 	return (
 		<PageShell title="操作日志" description="用户操作审计记录">
-			{/* 过滤栏 */}
-			<div className="mb-4 flex flex-wrap items-center gap-3">
-				<Select
-					value={action}
-					onValueChange={(v) => {
-						setAction(v);
-						setPage(1);
-					}}
-				>
-					<SelectTrigger className="w-36">
-						<SelectValue placeholder="全部动作" />
-					</SelectTrigger>
-					<SelectContent>
-						{ACTION_OPTIONS.map((o) => (
-							<SelectItem key={o.value} value={o.value}>
-								{o.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-				<Select
-					value={resourceType}
-					onValueChange={(v) => {
-						setResourceType(v);
-						setPage(1);
-					}}
-				>
-					<SelectTrigger className="w-36">
-						<SelectValue placeholder="全部资源" />
-					</SelectTrigger>
-					<SelectContent>
-						{RESOURCE_OPTIONS.map((o) => (
-							<SelectItem key={o.value} value={o.value}>
-								{o.label}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-				<Input
-					className="w-48"
-					placeholder="操作人 UUID"
-					value={actor}
-					onChange={(e) => {
-						setActor(e.target.value);
-						setPage(1);
-					}}
-				/>
-			</div>
-
 			<DataTable<AuditEventDTO>
 				data={data?.data ?? []}
 				columns={columns}
@@ -188,6 +149,55 @@ function AdminLogsPage() {
 				pageSize={PAGE_SIZE}
 				total={data?.pagination?.total ?? 0}
 				onPageChange={setPage}
+				toolbar={
+					<div className="flex flex-wrap items-center gap-3">
+						<Select
+							value={action}
+							onValueChange={(v) => {
+								setAction(v);
+								setPage(1);
+							}}
+						>
+							<SelectTrigger className="h-9 w-36">
+								<SelectValue placeholder="全部动作" />
+							</SelectTrigger>
+							<SelectContent>
+								{ACTION_OPTIONS.map((o) => (
+									<SelectItem key={o.value} value={o.value}>
+										{o.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<Select
+							value={resourceType}
+							onValueChange={(v) => {
+								setResourceType(v);
+								setPage(1);
+							}}
+						>
+							<SelectTrigger className="h-9 w-36">
+								<SelectValue placeholder="全部资源" />
+							</SelectTrigger>
+							<SelectContent>
+								{RESOURCE_OPTIONS.map((o) => (
+									<SelectItem key={o.value} value={o.value}>
+										{o.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<Input
+							className="h-9 w-48"
+							placeholder="操作人 UUID"
+							value={actor}
+							onChange={(e) => {
+								setActor(e.target.value);
+								setPage(1);
+							}}
+						/>
+					</div>
+				}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

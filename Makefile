@@ -1,7 +1,7 @@
 # 博客项目 Makefile
 # 使用: make help
 
-.PHONY: help dev docker-dev docker-dev-app docker-dev-redis-app docker-dev-down docker-dev-logs docker-dev-watch up down restart logs \
+.PHONY: help dev dev-mixed docker-dev docker-dev-app docker-dev-redis-app docker-dev-down docker-dev-logs docker-dev-watch up down restart logs \
         migrate migrate-down migrate-version reset-db db-shell redis-shell \
         api api-build api-test api-lint sqlc wire \
         web web-build web-preview web-lint web-format web-typecheck \
@@ -23,6 +23,9 @@ help: ## 显示帮助信息
 
 dev: ## 一键启动完整开发环境
 	@./dev.sh
+
+dev-mixed: ## 混合开发：后端套件容器化 (PostgreSQL+Redis+API) + 本地前端 Vite
+	@./dev-mixed.sh
 
 docker-dev: ## 一键启动完整 Docker 开发环境 (PostgreSQL + Redis + API + Web 均运行于容器内)
 	@if [ ! -f .env ]; then echo "⚠️  缺少 .env 文件，运行 make env 创建"; exit 1; fi

@@ -22,9 +22,9 @@ func GetUserRoleFromContext(r *http.Request) string {
 	return middleware.GetUserRole(r.Context())
 }
 
-// GetUserIsBuiltinSuperAdminFromContext 从 request context 获取是否为内置超级管理员
-func GetUserIsBuiltinSuperAdminFromContext(r *http.Request) bool {
-	return middleware.GetUserIsBuiltinSuperAdmin(r.Context())
+// GetUserIsRootFromContext 从 request context 获取是否为 root 用户
+func GetUserIsRootFromContext(r *http.Request) bool {
+	return middleware.GetUserIsRoot(r.Context())
 }
 
 // GetSessionIDFromContext 从 request context 获取当前 session id。

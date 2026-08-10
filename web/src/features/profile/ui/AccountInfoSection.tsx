@@ -1,8 +1,12 @@
 import type { UserDTO } from "@entities/user/model/types";
-import { Badge } from "@shared/ui/base/badge";
-import { Card } from "@shared/ui/base/card";
-import { Separator } from "@shared/ui/base/separator";
-import { Calendar, Mail, Shield } from "lucide-react";
+import {
+	AlertTriangle,
+	CalendarDays,
+	Fingerprint,
+	Mail,
+	ShieldCheck,
+	UserRound,
+} from "lucide-react";
 
 interface AccountInfoSectionProps {
 	user: UserDTO;
@@ -11,80 +15,69 @@ interface AccountInfoSectionProps {
 /**
  * AccountInfoSection - 账户信息展示（只读）
  *
- * 显示邮箱、角色、注册时间等账户基本信息。
+ * 与 ProfileShell 配合：作为「账户信息」Tab 内容。
+ * 字段纵向列表，label 左 value 右。
  */
 export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
-	const formatDate = (dateStr: string) => {
-		try {
-			return new Date(dateStr).toLocaleDateString("zh-CN", {
-				year: "numeric",
-				month: "long",
-				day: "numeric",
-			});
-		} catch {
-			return dateStr;
-		}
-	};
-
-	const getRoleBadge = (role: string) => {
-		const roleMap = {
-			superadmin: { label: "超级管理员", variant: "default" as const },
-			admin: { label: "管理员", variant: "secondary" as const },
-			user: { label: "普通用户", variant: "outline" as const },
-		};
-		const config = roleMap[role as keyof typeof roleMap] || roleMap.user;
-		return <Badge variant={config.variant}>{config.label}</Badge>;
-	};
-
 	return (
-		<Card className="p-6">
-			<h2 className="mb-6 text-xl font-semibold">账户信息</h2>
+		<div className="rounded-xl border bg-card p-6 shadow-sm">
+			<h2 className="mb-5 text-base font-semibold">账户信息</h2>
 
-			<div className="space-y-4">
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2 text-muted-foreground">
-						<Mail className="size-4" />
-						<span>邮箱</span>
-					</div>
-					<div className="flex items-center gap-2">
-						<span className="text-base">{user.email}</span>
-						{user.email_verified && (
-							<Badge variant="outline" className="text-xs">
-								已验证
-							</Badge>
-						)}
-					</div>
+			{!user.is_active && (
+				<div className="mb-5 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+					<AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+					<span className="text-destructive">该账户已被禁用，如有疑问请联系管理员</span>
 				</div>
+			)}
 
-				<Separator />
+			<dl className="divide-y">
+				<Row icon={<Mail className="size-4" />} label="邮箱">
+					<span className="truncate">{user.email}</span>
+					{user.email_verified ? (
+						<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+							<ShieldCheck className="size-3" />
+							已验证
+						</span>
+					) : (
+						<span className="text-xs text-amber-600 dark:text-amber-400">未验证</span>
+					)}
+				</Row>
+				<Row icon={<UserRound className="size-4" />} label="角色">
+					<span>{user.is_root ? "root" : user.role_description || user.role}</span>
+				</Row>
+				<Row icon={<Fingerprint className="size-4" />} label="用户 ID">
+					<code className="text-xs text-muted-foreground">{user.id}</code>
+				</Row>
+				<Row icon={<CalendarDays className="size-4" />} label="注册时间">
+					<time>
+						{new Date(user.created_at).toLocaleDateString("zh-CN", {
+							year: "numeric",
+							month: "long",
+							day: "numeric",
+						})}
+					</time>
+				</Row>
+			</dl>
+		</div>
+	);
+};
 
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2 text-muted-foreground">
-						<Shield className="size-4" />
-						<span>角色</span>
-					</div>
-					{getRoleBadge(user.role)}
-				</div>
-
-				<Separator />
-
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2 text-muted-foreground">
-						<Calendar className="size-4" />
-						<span>注册时间</span>
-					</div>
-					<span className="text-base">{formatDate(user.created_at)}</span>
-				</div>
-
-				{!user.is_active && (
-					<>
-						<Separator />
-						<div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-							该账户已被禁用，如有疑问请联系管理员
-						</div>
-					</>
-				)}
-			</div>
-		</Card>
+const Row = ({
+	icon,
+	label,
+	children,
+}: {
+	icon: React.ReactNode;
+	label: string;
+	children: React.ReactNode;
+}) => {
+	return (
+		<div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+			<dt className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
+				{icon}
+				{label}
+			</dt>
+			<dd className="flex min-w-0 items-center gap-2 justify-self-end text-sm">{children}</dd>
+		</div>
 	);
 };

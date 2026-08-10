@@ -130,7 +130,7 @@ function GlowCard({ a }: { a: Announcement }) {
 			glowIntensity={0.6}
 			glowRadius={20}
 			animated={false}
-			className="min-h-[220px]"
+			className="min-h-55"
 		>
 			<div className="flex flex-col gap-3 p-6">
 				<div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -182,7 +182,7 @@ function GlowCard({ a }: { a: Announcement }) {
 function MinimalCard({ a }: { a: Announcement }) {
 	const cfg = SEV[a.severity] ?? SEV.info;
 	return (
-		<div className="group flex min-h-[220px] flex-col rounded-2xl border border-border bg-card p-6 transition-shadow hover:shadow-md">
+		<div className="group flex min-h-55 flex-col rounded-2xl border border-border bg-card p-6 transition-shadow hover:shadow-md">
 			<div className="mb-3 flex items-center justify-between">
 				<span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
 					<span className={`size-1.5 rounded-full ${cfg.dot}`} />

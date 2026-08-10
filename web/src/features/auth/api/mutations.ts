@@ -16,6 +16,7 @@ import type {
 	VerifyEmailRequest,
 } from "../model/types";
 import { authKeys } from "./keys";
+import { clearAuthCache } from "./queries";
 
 /**
  * useRegister - 注册并触发邮箱验证邮件
@@ -41,7 +42,7 @@ export const useVerifyEmail = () =>
 	});
 
 /**
- * useLogin - 邮箱密码登录
+ * useLogin - 账号密码登录
  *
  * 成功后后端通过 HttpOnly cookie 下发 session，响应体仅返回 user_id。
  * onSuccess 主动拉取最新用户信息。
@@ -166,18 +167,12 @@ export const useLogout = () => {
 	return useMutation({
 		mutationFn: () =>
 			apiPost<MessageResponse>("/auth/logout", undefined, { __skipAuthDialog: true }),
-		onSuccess: async () => {
-			// 登出后清会话状态。注意：不能用 invalidateQueries——它会触发 refetch，
-			// 而 cookie 已被后端清除 → fetchMe 必然 401 → 弹登录窗（bug：登出反而触发登录弹窗）。
-			// 也不能用 removeQueries——它会让仍挂载的 useMe 观察者重新创建查询并立即 fetch，
-			// 同样导致 401。正确做法：取消进行中的 me 查询 + 把缓存写成 null（不发请求），
-			// 配合 useMe 的 staleTime: Infinity 即可阻止任何自动重试。
-			await qc.cancelQueries({ queryKey: authKeys.me() });
-			qc.setQueryData<UserDTO | null>(authKeys.me(), null);
-			// 登出清 CSRF token 缓存：后端已清 violet_csrf cookie，
-			// 缓存留旧 token 会让下次登录页命中陈旧值，与新 cookie 对不上。
-			qc.removeQueries({ queryKey: authKeys.csrfToken() });
-			// 登出：清除会话活跃标志（守卫据此允许踢人/跳登录）
+		onSuccess: () => {
+			// 复用 clearAuthCache（与 401 拦截器同一逻辑）：me 置 null + csrf 移除。
+			// 不能用 invalidate/remove——会触发 refetch，cookie 已被后端清除 → 401 弹窗。
+			// setQueryData(null) 配合 useMe 的 staleTime: Infinity 阻止自动重试。
+			clearAuthCache(qc);
+			// 清除会话活跃标志（守卫据此允许踢人/跳登录）
 			clearSessionActive();
 		},
 	});

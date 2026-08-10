@@ -3,7 +3,6 @@ import { AboutPageSkeleton } from "@features/about/ui/AboutPageSkeleton";
 import { ABOUT_SECTION_IDS, resolveSectionComponent } from "@features/about/ui/section-registry";
 import { useSettings } from "@features/settings/api/queries";
 import { createFileRoute } from "@tanstack/react-router";
-import { motion } from "motion/react";
 
 /**
  * /about - 关于页
@@ -36,21 +35,6 @@ function AboutPage() {
 				if (!Component) return null;
 				return <Component key={id} section={{ id, enabled: true }} settings={settings} />;
 			})}
-
-			{/* 底部装饰 */}
-			<div className="flex flex-1 items-end">
-				<motion.div
-					initial={{ opacity: 0 }}
-					whileInView={{ opacity: 1 }}
-					viewport={{ once: true }}
-					transition={{ duration: 1 }}
-					className="w-full border-t border-edge-hairline py-12 text-center"
-				>
-					<p className="font-mono text-sm text-muted-foreground">
-						{settings.footer_text || "built with obsession"}
-					</p>
-				</motion.div>
-			</div>
 		</div>
 	);
 }

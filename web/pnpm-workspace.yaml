@@ -40,6 +40,13 @@ allowBuilds:
 # 容器内无 TTY，跳过交互式确认（node_modules 状态不一致需清理时不再阻塞）
 confirmModulesPurge: false
 
+# 构建期网络容忍：registry 偶发超时/502，增大超时与重试次数避免大包
+# （mermaid/pdfjs-dist 等 10MB+）下载中断。pnpm 11 不识别 npm_config_* 环境变量，
+# 配置必须声明在此。
+fetchRetries: 5
+fetchTimeout: 600000
+fetchRetryMaxtimeout: 120000
+
 # 由 biome 统一任务迁移自 .npmrc：npm/npx 不识别 pnpm 专属键，统一声明在此
 shamefullyHoist: true
 strictPeerDependencies: false

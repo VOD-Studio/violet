@@ -23,6 +23,8 @@ export interface RouterContext {
 		/** /auth/session 返回的 claims（未登录为 null） */
 		claims: SessionClaims | null;
 	};
+	/** SSR 已 resolve 的主题（"light"/"dark"），用于 <html> class 防 FOUC */
+	theme: "light" | "dark";
 }
 
 /**
@@ -61,6 +63,7 @@ export const getRouter = () => {
 		context: {
 			queryClient: clientQueryClient,
 			auth: { isAuthenticated: false, claims: null },
+			theme: "light",
 		},
 	});
 

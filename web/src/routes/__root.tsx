@@ -20,6 +20,7 @@ import type { RouterContext } from "../router";
 import AppProvider from "../shared/api/provider";
 import { isSessionActive, markSessionActive } from "../shared/api/session";
 import { getAuthSession } from "../shared/server/session";
+import { getSSRTheme } from "../shared/server/theme";
 
 import appCss from "../styles.css?url";
 
@@ -36,16 +37,34 @@ let cachedClaims: ReturnType<typeof getAuthSession> extends Promise<infer T>
 
 export const Route = createRootRouteWithContext<RouterContext>()({
 	beforeLoad: async () => {
+		// SSR 从请求 cookie 读 resolved theme（防 FOUC：<html> 首帧即正确 class）；
+		// 客户端从 document.cookie 读（与 SSR 同源，hydration 时 html className 一致）
+		const theme: "light" | "dark" =
+			typeof window === "undefined"
+				? await getSSRTheme()
+				: document.cookie.match(/(?:^|; )theme=([^;]*)/)?.[1] === "dark"
+					? "dark"
+					: "light";
 		// SSR 或首次客户端 hydrate：网络获取
 		if (typeof window === "undefined" || cachedClaims === undefined) {
 			const claims = await getAuthSession();
 			cachedClaims = claims ?? null;
 			if (claims && typeof window !== "undefined") {
 				markSessionActive();
+			} else if (!claims && typeof window !== "undefined") {
+				// 客户端 hydrate 时 getAuthSession 返回 null：可能是 server function RPC
+				// 链路问题（SSR 地址配错/cookie 转发失败），不是 session 真过期。
+				// 用非 HttpOnly 的 violet_csrf cookie 兜底：浏览器有它说明后端下发了
+				// session 相关 cookie，按已登录处理，等浏览器直连的 /auth/me 确认。
+				// 不能用 violet_session——它是 HttpOnly，document.cookie 读不到。
+				if (document.cookie.includes("violet_csrf=")) {
+					markSessionActive();
+				}
 			}
 			return {
+				theme,
 				auth: {
-					isAuthenticated: claims !== null,
+					isAuthenticated: claims !== null || isSessionActive(),
 					claims,
 				},
 			};
@@ -53,9 +72,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 		// 客户端 SPA 导航：复用缓存，用 sessionActive 检测登出
 		if (!isSessionActive()) {
 			cachedClaims = null;
-			return { auth: { isAuthenticated: false, claims: null } };
+			return { theme, auth: { isAuthenticated: false, claims: null } };
 		}
 		return {
+			theme,
 			auth: {
 				isAuthenticated: cachedClaims !== null,
 				claims: cachedClaims,
@@ -147,8 +167,14 @@ function RootComponent() {
  * 必须渲染 HeadContent 与 Scripts，否则 SSR 不工作。
  */
 function RootDocument({ children }: { children: React.ReactNode }) {
+	const { theme } = Route.useRouteContext();
 	return (
-		<html lang="zh-CN" suppressHydrationWarning>
+		<html
+			lang="zh-CN"
+			className={theme}
+			style={{ colorScheme: theme }}
+			suppressHydrationWarning
+		>
 			<head>
 				<HeadContent />
 			</head>

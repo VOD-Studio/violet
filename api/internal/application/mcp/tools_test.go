@@ -14,6 +14,7 @@ import (
 	domainapitoken "blog-api/internal/domain/api_token"
 	apppost "blog-api/internal/application/post"
 	appsub "blog-api/internal/application/subscription"
+	apptag "blog-api/internal/application/tag"
 )
 
 // fakePostService 内存版文章服务，记录被调参数。seam #2：不依赖 DB。
@@ -147,6 +148,25 @@ func (f *fakeSubService) Resume(ctx context.Context, id, userID string) error {
 func (f *fakeSubService) Delete(ctx context.Context, id, userID string) error {
 	f.deleteID = id
 	return f.deleteErr
+}
+
+// fakeTagService 内存版标签服务，记录被调参数。seam #2：不依赖 DB。
+type fakeTagService struct {
+	createOrGetName   string
+	createOrGetResult apptag.TagDTO
+	createOrGetErr    error
+
+	listResult []apptag.TagDTO
+	listErr    error
+}
+
+func (f *fakeTagService) CreateOrGet(_ context.Context, name string) (apptag.TagDTO, error) {
+	f.createOrGetName = name
+	return f.createOrGetResult, f.createOrGetErr
+}
+
+func (f *fakeTagService) List(_ context.Context) ([]apptag.TagDTO, error) {
+	return f.listResult, f.listErr
 }
 
 // reqWithToken 构造带 TokenInfo 的 CallToolRequest；scopes/userID 控制身份。
@@ -406,6 +426,59 @@ func TestUpdatePost_PassesContentHTML(t *testing.T) {
 	assert.False(t, res.IsError)
 	require.NotNil(t, fake.updateInput)
 	assert.Equal(t, `<p>新正文</p>`, fake.updateInput.ContentHTML)
+}
+
+// ---- create_tag / list_tags ----
+
+func TestCreateTag_DelegatesWithWriteScope(t *testing.T) {
+	fake := &fakeTagService{createOrGetResult: apptag.TagDTO{ID: 5, Name: "Go", Slug: "go"}}
+	tools := NewTagTools(fake)
+
+	res, _, err := tools.CreateTag(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), createTagArgs{Name: "Go"})
+	require.NoError(t, err)
+	assert.False(t, res.IsError)
+	assert.Equal(t, "Go", fake.createOrGetName, "name 应透传到 CreateOrGet")
+}
+
+func TestCreateTag_RejectedWithoutWriteScope(t *testing.T) {
+	fake := &fakeTagService{}
+	tools := NewTagTools(fake)
+
+	res, _, err := tools.CreateTag(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsRead}, "u-1"), createTagArgs{Name: "Go"})
+	require.NoError(t, err)
+	assert.True(t, res.IsError, "缺 write scope 应返回 tool error")
+}
+
+func TestCreateTag_ServiceErrorBecomesToolError(t *testing.T) {
+	fake := &fakeTagService{createOrGetErr: errors.New("DB down")}
+	tools := NewTagTools(fake)
+
+	res, _, err := tools.CreateTag(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsWrite}, "u-1"), createTagArgs{Name: "Go"})
+	require.NoError(t, err)
+	assert.True(t, res.IsError, "service error 应映射为 tool error")
+}
+
+func TestListTags_DelegatesWithReadScope(t *testing.T) {
+	fake := &fakeTagService{listResult: []apptag.TagDTO{{ID: 1, Name: "Go", Slug: "go"}}}
+	tools := NewTagTools(fake)
+
+	res, _, err := tools.ListTags(context.Background(),
+		reqWithToken([]string{domainapitoken.ScopePostsRead}, "u-1"), listTagsArgs{})
+	require.NoError(t, err)
+	assert.False(t, res.IsError)
+}
+
+func TestListTags_RejectedWithoutReadScope(t *testing.T) {
+	fake := &fakeTagService{}
+	tools := NewTagTools(fake)
+
+	res, _, err := tools.ListTags(context.Background(),
+		reqWithToken([]string{}, "u-1"), listTagsArgs{})
+	require.NoError(t, err)
+	assert.True(t, res.IsError, "缺 read scope 应返回 tool error")
 }
 
 // stringPtr 测试辅助：返回字符串指针。

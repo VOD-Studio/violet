@@ -51,8 +51,8 @@ var (
 	ErrEmailExists = shared.Conflict("邮箱已被注册")
 	// ErrUsernameExists 用户名已被占用
 	ErrUsernameExists = shared.Conflict("用户名已被占用")
-	// ErrInvalidCredentials 凭证无效（登录失败通用错误，不暴露具体是邮箱还是密码错）
-	ErrInvalidCredentials = shared.Unauthorized("邮箱或密码错误")
+	// ErrInvalidCredentials 凭证无效（登录失败通用错误，不暴露具体是账号还是密码错）
+	ErrInvalidCredentials = shared.Unauthorized("账号或密码错误")
 	// ErrEmailNotVerified 邮箱未验证
 	ErrEmailNotVerified = shared.Forbidden("邮箱未验证")
 	// ErrAccountDisabled 账户已被禁用

@@ -57,9 +57,10 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 			<div
 				className={`sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-4 ${scrolled ? "border-b border-edge-hairline bg-background shadow-lg" : ""}`}
 			>
-				{/* 副标题和操作区：固定高度避免有无按钮时抖动 */}
+				{/* 副标题和操作区：min-h-9 保证有无 action 时行高一致(36px),
+					避免切换页面时标题区高度跳动(有 action 36px / 无 action 32px) */}
 				{(description || action) && (
-					<div className="flex min-h-8 flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex min-h-9 flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
 						{description && (
 							<p className="text-muted-foreground text-sm">{description}</p>
 						)}

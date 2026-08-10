@@ -302,7 +302,7 @@ func (s *Service) findByID(ctx context.Context, id string) (*domaintweet.Tweet, 
 //   - 操作者是推文作者（所有权放行）
 //   - 操作者拥有 tweet:delete-any 权限码
 func (s *Service) canDelete(ctx context.Context, tw *domaintweet.Tweet) bool {
-	isBuiltin := middleware.GetUserIsBuiltinSuperAdmin(ctx)
+	isBuiltin := middleware.GetUserIsRoot(ctx)
 	if isBuiltin {
 		return true
 	}
@@ -658,7 +658,7 @@ func (s *Service) commentsToDTOs(ctx context.Context, comments []*domaintweet.Co
 //   - 操作者是评论作者（所有权放行）
 //   - 操作者拥有 tweet:delete-any 权限码
 func (s *Service) canDeleteComment(ctx context.Context, c *domaintweet.Comment) bool {
-	isBuiltin := middleware.GetUserIsBuiltinSuperAdmin(ctx)
+	isBuiltin := middleware.GetUserIsRoot(ctx)
 	if isBuiltin {
 		return true
 	}

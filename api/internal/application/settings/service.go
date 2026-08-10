@@ -41,7 +41,6 @@ func (s *Service) GetPublic(ctx context.Context) (map[string]any, error) {
 	}
 	return map[string]any{
 		"site_name":            settings.SiteName,
-		"site_description":     settings.SiteDescription,
 		"site_url":             settings.SiteURL,
 		"posts_per_page":       settings.PostsPerPage,
 		"comments_enabled":     settings.CommentsEnabled,
@@ -79,14 +78,8 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) (domainsettings.Si
 	if in.SiteName != nil {
 		updates["site_name"] = *in.SiteName
 	}
-	if in.SiteDescription != nil {
-		updates["site_description"] = *in.SiteDescription
-	}
 	if in.SiteURL != nil {
 		updates["site_url"] = *in.SiteURL
-	}
-	if in.AdminEmail != nil {
-		updates["admin_email"] = *in.AdminEmail
 	}
 	if in.PostsPerPage != nil {
 		updates["posts_per_page"] = strconv.Itoa(*in.PostsPerPage)
@@ -236,8 +229,8 @@ func (s *Service) GetGeneral(ctx context.Context) (GeneralView, error) {
 // UpdateGeneral 更新基础信息组
 func (s *Service) UpdateGeneral(ctx context.Context, in GeneralUpdate) (GeneralView, error) {
 	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		SiteName: in.SiteName, SiteDescription: in.SiteDescription,
-		SiteURL: in.SiteURL, AdminEmail: in.AdminEmail,
+		SiteName: in.SiteName,
+		SiteURL: in.SiteURL, FooterText: in.FooterText,
 		PostsPerPage: in.PostsPerPage, CommentsEnabled: in.CommentsEnabled,
 		CommentsModeration: in.CommentsModeration, TechStack: in.TechStack,
 	})
@@ -300,7 +293,7 @@ func (s *Service) GetProfile(ctx context.Context) (ProfileView, error) {
 // UpdateProfile 更新关于博主组
 func (s *Service) UpdateProfile(ctx context.Context, in ProfileUpdate) (ProfileView, error) {
 	all, err := s.Update(ctx, domainsettings.UpdateInput{
-		Bio: in.Bio, FooterText: in.FooterText,
+		Bio: in.Bio,
 		AvatarURL: in.AvatarURL, Tagline: in.Tagline,
 		ProfileRole: in.ProfileRole, ProfileLocation: in.ProfileLocation,
 		AvailableFor: in.AvailableFor, SkillsStrong: in.SkillsStrong,

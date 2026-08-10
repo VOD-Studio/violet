@@ -5,13 +5,14 @@
  * - 下拉改 node.attrs.language → lowlight 自动重新高亮
  * - NodeViewContent 渲染可编辑代码区（contentEditable），保留 lowlight 实时高亮
  */
+
+import { getExecResult, isTerminalStatus, submitExec } from "@features/code-run";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import type { NodeViewProps } from "@tiptap/react";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import type { createLowlight } from "lowlight";
 import { Play } from "lucide-react";
 import { useState } from "react";
-import { getExecResult, isTerminalStatus, submitExec } from "#/features/code-run";
 import { Button } from "@/shared/ui/base/button";
 // isTerminalStatus 是值（函数），与上面同属值导入
 import {

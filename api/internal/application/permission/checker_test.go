@@ -41,6 +41,19 @@ func TestChecker_SuperadminBypass(t *testing.T) {
 	}
 }
 
+// TestChecker_DelegatedSuperadminRoleBypass superadmin 角色通配放行：
+// 被委派超管（isRoot=false 但 role=superadmin）同样拥有所有权限，
+// 无需查缓存。锁住「superadmin 语义化」这一变更。
+func TestChecker_DelegatedSuperadminRoleBypass(t *testing.T) {
+	repo := new(mocks.MockRoleRepository)
+	repo.AssertNotCalled(t, "FindAll")
+	c := NewChecker(repo, time.Minute)
+
+	if !c.HasPermission(domainrole.SuperadminRole, false, "anything", "everything") {
+		t.Fatal("superadmin 角色应通配放行所有权限码")
+	}
+}
+
 // TestChecker_NoCodesRequired 无权限码要求视为通过（仅做角色层校验的场景）。
 func TestChecker_NoCodesRequired(t *testing.T) {
 	repo := new(mocks.MockRoleRepository)

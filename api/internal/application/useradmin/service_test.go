@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	infraeventbus "blog-api/internal/infrastructure/eventbus"
 
+	domainsession "blog-api/internal/domain/session"
 	"blog-api/internal/domain/shared"
 	domainuser "blog-api/internal/domain/user"
 	domainuseradmin "blog-api/internal/domain/useradmin"
@@ -17,7 +19,8 @@ type fakeStore struct {
 	listRes   domainuseradmin.ListResult
 	listErr   error
 	findByIDs []*domainuser.User
-	findErr   error
+	findErr       error
+	findByIDUser  *domainuser.User
 	affected  int64
 	batchErr  error
 
@@ -46,6 +49,9 @@ func (f *fakeStore) List(_ context.Context, filter ListFilter, page, limit int) 
 }
 
 func (f *fakeStore) FindByID(_ context.Context, _ shared.ID) (*domainuser.User, error) {
+	if f.findByIDUser != nil {
+		return f.findByIDUser, nil
+	}
 	return nil, errors.New("not implemented in stub")
 }
 
@@ -104,7 +110,46 @@ func mustUser(t *testing.T, username, email string, role domainuser.Role, active
 }
 
 func newTestService(store *fakeStore) *Service {
-	return NewService(store, noopHasher{}, infraeventbus.NewInMemory())
+	return NewService(store, noopHasher{}, infraeventbus.NewInMemory(), nil)
+}
+
+// fakeSessionStore SessionStore 的测试 stub，仅记录 DeleteByUser 调用。
+type fakeSessionStore struct {
+	revoked []string
+}
+
+func (f *fakeSessionStore) Create(context.Context, *domainsession.Session, time.Duration) error {
+	return nil
+}
+func (f *fakeSessionStore) Get(context.Context, domainsession.ID) (*domainsession.Session, error) {
+	return nil, nil
+}
+func (f *fakeSessionStore) Touch(context.Context, *domainsession.Session, time.Duration) error {
+	return nil
+}
+func (f *fakeSessionStore) DeleteForUser(context.Context, string, domainsession.ID) error {
+	return nil
+}
+func (f *fakeSessionStore) DeleteByUser(_ context.Context, userID string) error {
+	f.revoked = append(f.revoked, userID)
+	return nil
+}
+
+func TestService_UpdateUserRole_RevokesSession(t *testing.T) {
+	target := mustUser(t, "u1", "u1@example.com", domainuser.RoleUser, true)
+	store := &fakeStore{findByIDUser: &target}
+	sessions := &fakeSessionStore{}
+	svc := NewService(store, noopHasher{}, infraeventbus.NewInMemory(), sessions)
+
+	err := svc.UpdateUserRole(context.Background(),
+		target.GetID().String(), string(domainuser.RoleAdmin),
+		"op-1", string(domainuser.RoleAdmin), true, "1.1.1.1", "ua")
+	if err != nil {
+		t.Fatalf("UpdateUserRole 返回错误: %v", err)
+	}
+	if len(sessions.revoked) != 1 || sessions.revoked[0] != target.GetID().String() {
+		t.Errorf("角色变更后应吊销目标用户 session, 实际 revoked=%v", sessions.revoked)
+	}
 }
 
 func TestService_List_MapsToDTOs(t *testing.T) {

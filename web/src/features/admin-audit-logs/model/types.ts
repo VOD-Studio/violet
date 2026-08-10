@@ -12,9 +12,11 @@ export interface FieldChangeDTO {
 
 /** ActorDTO - 操作人快照 */
 export interface ActorDTO {
+	/** 操作者类型（user=真人操作，system=系统自动化如定时任务） */
+	actor_type: "user" | "system";
 	/** 操作人 UUID（匿名操作时为空串） */
 	user_id: string;
-	/** 操作人用户名快照（用户删除后仍可追溯） */
+	/** 操作人用户名快照（用户删除后仍可追溯；system 类型存作业名） */
 	user_name: string;
 	/** 来源 IP */
 	ip_address: string;

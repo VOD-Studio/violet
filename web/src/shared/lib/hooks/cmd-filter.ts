@@ -6,6 +6,8 @@ export interface CmdItem {
 	keywords?: string[];
 	/** 分组 */
 	group: string;
+	/** 副标题（如搜索 snippet） */
+	description?: string;
 	/** 执行 */
 	run: () => void;
 }

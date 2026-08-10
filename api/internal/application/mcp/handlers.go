@@ -112,6 +112,31 @@ func (t *PostTools) ListDrafts(ctx context.Context, req *mcp.CallToolRequest, ar
 	}), nil, nil
 }
 
+// CreateTag 创建标签（幂等：同名已存在则返回已存在；需 posts:write）。
+// 抓取带标签文章时先用此 tool 建标签——create_post 校验 tags 必须先存在。
+func (t *TagTools) CreateTag(ctx context.Context, req *mcp.CallToolRequest, args createTagArgs) (*mcp.CallToolResult, any, error) {
+	if err := requireScope(req, domainapitoken.ScopePostsWrite); err != nil {
+		return errResult(err), nil, nil
+	}
+	dto, err := t.tags.CreateOrGet(ctx, args.Name)
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	return okResult(dto), nil, nil
+}
+
+// ListTags 列出所有标签（需 posts:read）。
+func (t *TagTools) ListTags(ctx context.Context, req *mcp.CallToolRequest, args listTagsArgs) (*mcp.CallToolResult, any, error) {
+	if err := requireScope(req, domainapitoken.ScopePostsRead); err != nil {
+		return errResult(err), nil, nil
+	}
+	tags, err := t.tags.List(ctx)
+	if err != nil {
+		return errResult(err), nil, nil
+	}
+	return okResult(tags), nil, nil
+}
+
 // ScrapeResult scrape_url tool 的返回结构（9 字段，对齐 Firecrawl formats 思路）。
 // content_html 为渲染/编辑权威源，agent 应优先透传给 create_post 的 content_html；
 // content_md 仅作降级（后端在缺 content_html 时自动转 HTML）。

@@ -32,16 +32,18 @@ export function RolePermissionsDialog({
 
 	const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
 
-	// 角色权限加载后初始化选中状态
+	// 对话框打开时从后端数据同步选中状态，避免未保存的改动残留到下次打开
 	useEffect(() => {
-		if (roleDetail?.permission_codes) {
+		if (open && roleDetail?.permission_codes) {
 			setSelectedCodes(new Set(roleDetail.permission_codes));
 		}
-	}, [roleDetail]);
+	}, [open, roleDetail]);
 
 	// 后端已返回树：permissions 为 menu 数组，每个 menu.children 为其 action
 	const menuTree = permissions;
 
+	// superadmin 角色固有全部权限，后端返回通配码 ["*"] 且不可编辑。
+	const isWildcard = roleDetail?.permission_codes?.includes("*") === true;
 	const handleToggle = (code: string) => {
 		setSelectedCodes((prev) => {
 			const next = new Set(prev);
@@ -61,12 +63,10 @@ export function RolePermissionsDialog({
 		setSelectedCodes((prev) => {
 			const next = new Set(prev);
 			if (allSelected) {
-				// 取消选中该组的所有权限
 				groupCodes.forEach((code) => {
 					next.delete(code);
 				});
 			} else {
-				// 选中该组的所有权限
 				groupCodes.forEach((code) => {
 					next.add(code);
 				});
@@ -93,30 +93,40 @@ export function RolePermissionsDialog({
 		<Modal
 			open={open}
 			onOpenChange={onOpenChange}
-			title={`配置角色权限 - ${roleName}`}
-			description={`选择该角色拥有的权限。已选中 ${selectedCodes.size} 个权限。`}
+			title={isWildcard ? `角色权限 - ${roleName}` : `配置角色权限 - ${roleName}`}
+			description={
+				isWildcard
+					? `该角色固有全部权限（共 ${permissions.reduce((n, m) => n + (m.children?.length ?? 0), 0)} 项），不可编辑`
+					: `选择该角色拥有的权限。已选中 ${selectedCodes.size} 个权限。`
+			}
 			size="lg"
 			footer={
-				<>
-					<Button
-						type="button"
-						variant="outline"
-						onClick={() => onOpenChange(false)}
-						disabled={updateRolePermissions.isPending}
-					>
-						取消
+				isWildcard ? (
+					<Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+						关闭
 					</Button>
-					<Button
-						type="button"
-						onClick={handleSave}
-						disabled={updateRolePermissions.isPending}
-					>
-						{updateRolePermissions.isPending && (
-							<Loader2 className="mr-1 size-4 animate-spin" />
-						)}
-						保存
-					</Button>
-				</>
+				) : (
+					<>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => onOpenChange(false)}
+							disabled={updateRolePermissions.isPending}
+						>
+							取消
+						</Button>
+						<Button
+							type="button"
+							onClick={handleSave}
+							disabled={updateRolePermissions.isPending}
+						>
+							{updateRolePermissions.isPending && (
+								<Loader2 className="mr-1 size-4 animate-spin" />
+							)}
+							保存
+						</Button>
+					</>
+				)
 			}
 		>
 			<div className="space-y-6">
@@ -124,9 +134,9 @@ export function RolePermissionsDialog({
 					const actions = menu.children || [];
 					if (actions.length === 0) return null;
 					const groupCodes = actions.map((p) => p.code).filter(Boolean) as string[];
-					const selectedCount = groupCodes.filter((code) =>
-						selectedCodes.has(code),
-					).length;
+					const selectedCount = isWildcard
+						? groupCodes.length
+						: groupCodes.filter((code) => selectedCodes.has(code)).length;
 					const allSelected =
 						groupCodes.length > 0 && selectedCount === groupCodes.length;
 					const someSelected = selectedCount > 0 && selectedCount < groupCodes.length;
@@ -140,6 +150,7 @@ export function RolePermissionsDialog({
 										id={`group-${menu.id}`}
 										checked={allSelected}
 										onCheckedChange={() => handleToggleGroup(menu)}
+										disabled={isWildcard}
 										className={
 											someSelected ? "data-[state=checked]:bg-primary/50" : ""
 										}
@@ -161,7 +172,7 @@ export function RolePermissionsDialog({
 								{actions.map((permission) => {
 									const code = permission.code;
 									if (!code) return null;
-									const isChecked = selectedCodes.has(code);
+									const isChecked = isWildcard || selectedCodes.has(code);
 
 									return (
 										<div
@@ -172,6 +183,7 @@ export function RolePermissionsDialog({
 												id={`permission-${permission.id}`}
 												checked={isChecked}
 												onCheckedChange={() => handleToggle(code)}
+												disabled={isWildcard}
 											/>
 											<div className="flex-1">
 												<Label

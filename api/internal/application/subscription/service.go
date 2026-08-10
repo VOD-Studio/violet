@@ -13,6 +13,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rs/zerolog/log"
+
+	appshared "blog-api/internal/application/shared"
 	domainsubscription "blog-api/internal/domain/subscription"
 	domainentry "blog-api/internal/domain/subscription_entry"
 	"blog-api/internal/domain/shared"
@@ -28,17 +31,18 @@ import (
 type Service struct {
 	repo      domainsubscription.SubscriptionRepository
 	now       func() time.Time // 注入时钟，便于单测控制时间
+	bus       appshared.EventBus
 	entryRepo domainentry.EntryRepository
 	importer  PostImporter
 	parser    FeedParser
 }
 
-// NewService 构造服务。now 为 nil 时用 time.Now。
-func NewService(repo domainsubscription.SubscriptionRepository, now func() time.Time) *Service {
+// NewService 构造服务。now 为 nil 时用 time.Now；bus 为 nil 时不发布事件（CRUD-only 测试场景）。
+func NewService(repo domainsubscription.SubscriptionRepository, now func() time.Time, bus appshared.EventBus) *Service {
 	if now == nil {
 		now = time.Now
 	}
-	return &Service{repo: repo, now: now}
+	return &Service{repo: repo, now: now, bus: bus}
 }
 
 // SetFetchDeps 注入 FetchOne 抓取所需依赖（条目仓储 + 文章导入器 + feed 解析器）。
@@ -120,6 +124,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (SubscriptionDTO, 
 	if err := s.repo.Save(ctx, sub); err != nil {
 		return SubscriptionDTO{}, err
 	}
+	s.publishEvents(ctx, sub)
 	return toDTO(sub), nil
 }
 
@@ -187,40 +192,52 @@ func (s *Service) Update(ctx context.Context, in UpdateInput) error {
 	if err := sub.UpdateConfig(in.Title, in.Interval, in.AutoPublish, in.CanonicalOverride, in.Tags); err != nil {
 		return err
 	}
-	return s.repo.Save(ctx, sub)
+	if err := s.repo.Save(ctx, sub); err != nil {
+		return err
+	}
+	s.publishEvents(ctx, sub)
+	return nil
 }
 
-// Pause 手动暂停订阅。
 func (s *Service) Pause(ctx context.Context, id, userID string) error {
 	sub, err := s.findByID(ctx, id, userID)
 	if err != nil {
 		return err
 	}
 	sub.Pause()
-	return s.repo.Save(ctx, sub)
+	if err := s.repo.Save(ctx, sub); err != nil {
+		return err
+	}
+	s.publishEvents(ctx, sub)
+	return nil
 }
 
-// Resume 手动恢复订阅（清零失败计数回 active）。
 func (s *Service) Resume(ctx context.Context, id, userID string) error {
 	sub, err := s.findByID(ctx, id, userID)
 	if err != nil {
 		return err
 	}
 	sub.Resume()
-	return s.repo.Save(ctx, sub)
+	if err := s.repo.Save(ctx, sub); err != nil {
+		return err
+	}
+	s.publishEvents(ctx, sub)
+	return nil
 }
 
 // Delete 删除订阅（连带其 entries 在 T7 加表后由 ON DELETE CASCADE 处理）。
+// 删除前加载订阅取 title 快照，删除后手动发布事件（聚合根已不可用）。
 func (s *Service) Delete(ctx context.Context, id, userID string) error {
-	sid, err := shared.ParseID(id)
+	sub, err := s.findByID(ctx, id, userID)
 	if err != nil {
 		return err
 	}
-	uid, err := shared.ParseID(userID)
-	if err != nil {
+	title := sub.Title()
+	if err := s.repo.Delete(ctx, sub.ID(), sub.UserID()); err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, sid, uid)
+	s.publish(ctx, domainsubscription.NewSubscriptionDeleted(sub.ID(), title))
+	return nil
 }
 
 // --- admin 视角用例（后台订阅管理，跨用户不校验所有权） ---
@@ -278,6 +295,7 @@ func (s *Service) UpdateForAdmin(ctx context.Context, in AdminUpdateInput) (Subs
 	if err := s.repo.Save(ctx, sub); err != nil {
 		return SubscriptionDTO{}, err
 	}
+	s.publishEvents(ctx, sub)
 	return toDTO(sub), nil
 }
 
@@ -291,6 +309,7 @@ func (s *Service) PauseForAdmin(ctx context.Context, id string) (SubscriptionDTO
 	if err := s.repo.Save(ctx, sub); err != nil {
 		return SubscriptionDTO{}, err
 	}
+	s.publishEvents(ctx, sub)
 	return toDTO(sub), nil
 }
 
@@ -304,17 +323,23 @@ func (s *Service) ResumeForAdmin(ctx context.Context, id string) (SubscriptionDT
 	if err := s.repo.Save(ctx, sub); err != nil {
 		return SubscriptionDTO{}, err
 	}
+	s.publishEvents(ctx, sub)
 	return toDTO(sub), nil
 }
 
 // DeleteForAdmin 删除订阅（admin 后台用，跨用户不校验所有权）。
-// 连带 entries 由 ON DELETE CASCADE 处理。
+// 连带 entries 由 ON DELETE CASCADE 处理。删除后手动发布事件（聚合根已不可用）。
 func (s *Service) DeleteForAdmin(ctx context.Context, id string) error {
 	sub, err := s.findByIDForAdmin(ctx, id)
 	if err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, sub.ID(), sub.UserID())
+	title := sub.Title()
+	if err := s.repo.Delete(ctx, sub.ID(), sub.UserID()); err != nil {
+		return err
+	}
+	s.publish(ctx, domainsubscription.NewSubscriptionDeleted(sub.ID(), title))
+	return nil
 }
 
 // findByIDForAdmin 解析 ID + FindByIDForSchedule（admin 视角，无所有权校验）。
@@ -324,6 +349,33 @@ func (s *Service) findByIDForAdmin(ctx context.Context, id string) (*domainsubsc
 		return nil, err
 	}
 	return s.repo.FindByIDForSchedule(ctx, sid)
+}
+
+// --- 事件发布辅助 ---
+
+// publishEvents 发布聚合根累积的领域事件（审计订阅者消费）。
+// bus 为 nil 时静默跳过（CRUD-only 测试场景）。
+func (s *Service) publishEvents(ctx context.Context, sub *domainsubscription.Subscription) {
+	if s.bus == nil {
+		return
+	}
+	events := sub.PullEvents()
+	if len(events) == 0 {
+		return
+	}
+	if err := s.bus.Publish(ctx, events); err != nil {
+		log.Warn().Err(err).Msg("发布订阅事件失败")
+	}
+}
+
+// publish 发布单个手动构造的事件（用于删除等聚合根已不可用的场景）。
+func (s *Service) publish(ctx context.Context, event shared.DomainEvent) {
+	if s.bus == nil {
+		return
+	}
+	if err := s.bus.Publish(ctx, []shared.DomainEvent{event}); err != nil {
+		log.Warn().Err(err).Msg("发布订阅事件失败")
+	}
 }
 
 // --- 内部辅助 ---
@@ -469,6 +521,93 @@ func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchRepo
 		}
 	}
 	return report
+}
+
+// defaultRateLimitBackoff 429 无 Retry-After 头时的默认退避时长。
+// 源站限流却不给重试时间时，按 1h 推迟避免每轮照打。
+const defaultRateLimitBackoff = time.Hour
+
+// FetchNow 立即拉取一次订阅：查订阅 → FetchOne → 据报告更新订阅运行态 → Save → 发布抓取事件。
+//
+// 把"抓取 + 状态更新 + 审计"的完整编排收敛在 application 层，供调度器（job）与
+// 手动触发（admin 端点）共用，避免状态更新逻辑分散在调用方导致不一致。
+//
+// isSystem 区分触发来源：true=调度器自动（actor_type=system），false=手动（actor_type=user）。
+// 审计订阅者据此设置 ActorType（业界共识：区分真人与系统自动化）。
+//
+// FetchOne 只抓 entry 建草稿，不碰订阅运行态（nextFetchAt/失败计数）——
+// 那是 FetchNow 的职责：据 FetchReport 跑失败状态机（applyFeedError）。
+func (s *Service) FetchNow(ctx context.Context, subscriptionID string, isSystem bool) FetchReport {
+	report := FetchReport{SubscriptionID: subscriptionID}
+
+	sid, err := shared.ParseID(subscriptionID)
+	if err != nil {
+		report.SubscriptionError = "无效的订阅 ID：" + err.Error()
+		return report
+	}
+	sub, err := s.repo.FindByIDForSchedule(ctx, sid)
+	if err != nil {
+		report.SubscriptionError = "查订阅失败：" + err.Error()
+		return report
+	}
+
+	report = s.FetchOne(ctx, subscriptionID)
+
+	now := s.now()
+	if report.SubscriptionError == "" {
+		// feed 拉取成功（即便部分 entry 失败，feed 层算成功）→ 清零计数 + 推进 next_fetch_at
+		sub.RecordSuccess(now)
+	} else {
+		s.applyFeedError(sub, report.FeedErr, now, report.SubscriptionError)
+	}
+	if err := s.repo.Save(ctx, sub); err != nil {
+		if report.SubscriptionError == "" {
+			report.SubscriptionError = "订阅状态回写失败：" + err.Error()
+		}
+	}
+	// 操作日志的成功语义:整轮无失败(feed 无错误 且 无条目失败)。
+	// 与订阅健康度判定不同——后者只看 feed 错误(applyFeedError),部分条目失败不暂停订阅。
+	// 条目失败时 error 描述失败条数,避免日志出现 success=true + failed=N 的误导组合。
+	success := report.SubscriptionError == "" && report.Failed == 0
+	errMsg := report.SubscriptionError
+	if !success && report.SubscriptionError == "" {
+		errMsg = fmt.Sprintf("%d 条条目导入失败", report.Failed)
+	}
+	s.publish(ctx, domainsubscription.NewSubscriptionFetched(
+		sub.ID(), sub.Title(), success, report.Imported, report.Failed, errMsg, isSystem,
+	))
+	return report
+}
+
+// applyFeedError 据 FeedError 分类更新订阅状态（PRD Q5 Miniflux 共识）：
+//   - RateLimited (429)：推迟 retry_after_until，不增计数。
+//     无 Retry-After 头时用默认退避 defaultRateLimitBackoff，避免每轮照打不收敛。
+//   - Permanent (4xx/malformed)：立即 Pause
+//   - Transient (5xx/网络)：RecordFailure 计数，达阈值自动 paused
+//
+// feedErr 为 nil（非 *FeedError，如 FindByID 失败）时按瞬时错误处理。
+func (s *Service) applyFeedError(sub *domainsubscription.Subscription, feedErr *FeedError, now time.Time, desc string) {
+	if feedErr != nil {
+		switch feedErr.Kind {
+		case FeedErrRateLimited:
+			until := feedErr.RetryAfter
+			if until == nil {
+				// 429 但无 Retry-After 头：默认退避 1h，否则不推迟不增计数，每轮照打源站不收敛
+				def := now.Add(defaultRateLimitBackoff)
+				until = &def
+			}
+			sub.SetRetryAfter(*until)
+			return
+		case FeedErrPermanent:
+			sub.Pause()
+			return
+		case FeedErrTransient:
+			// 落到下面 RecordFailure
+		}
+	}
+
+	// 默认/瞬时错误：累积失败计数
+	sub.RecordFailure(now, desc)
 }
 
 // fetchAndImport 抓单条 entry 正文 + 建草稿，回填 entry.postID。

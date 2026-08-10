@@ -77,7 +77,7 @@ export const updateUserStatus = async (
 export const batchUpdateStatus = async (
 	data: BatchUpdateStatusRequest,
 ): Promise<BatchUpdateResponse> => {
-	return apiPost<BatchUpdateResponse>("/admin/users/batch/status", data);
+	return apiPost<BatchUpdateResponse>("/admin/users/batch-status", data);
 };
 
 /**
@@ -86,5 +86,5 @@ export const batchUpdateStatus = async (
 export const batchUpdateRole = async (
 	data: BatchUpdateRoleRequest,
 ): Promise<BatchUpdateResponse> => {
-	return apiPost<BatchUpdateResponse>("/admin/users/batch/role", data);
+	return apiPost<BatchUpdateResponse>("/admin/users/batch-role", data);
 };

@@ -40,7 +40,7 @@ func TestParseUsername(t *testing.T) {
 		wantErr bool
 	}{
 		{"valid ascii", "alice123", false},
-		{"valid chinese", "亲热天堂", false},
+		{"invalid chinese", "亲热天堂", true},
 		{"valid underscore", "user_name", false},
 		{"too short", "ab", true},
 		{"too long", "abcdefghijklmnopqrstuvwxyz0123456789", true}, // 33 字符

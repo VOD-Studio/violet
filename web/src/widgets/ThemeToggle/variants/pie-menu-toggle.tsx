@@ -1,7 +1,7 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-import type { ThemeOption } from "./types";
+import type { ThemeOption, VariantProps } from "./types";
 import { useThemeSwitcher } from "./use-theme-switcher";
 
 const choices: { value: ThemeOption; label: string; icon: typeof Sun; color: string }[] = [
@@ -16,10 +16,11 @@ const choices: { value: ThemeOption; label: string; icon: typeof Sun; color: str
  * 中心显示当前主题图标，点击后 SVG 三等分圆盘展开。每个 120° 扇区
  * 对应一个选项，选中后圆盘收拢，中心图标更新。
  */
-export function PieMenuToggle() {
-	const { theme, switchTheme } = useThemeSwitcher();
+export function PieMenuToggle({ size = "default" }: VariantProps) {
 	const [open, setOpen] = useState(false);
-
+	const { theme, switchTheme } = useThemeSwitcher();
+	const mainCls = size === "sm" ? "h-8 w-8" : "h-14 w-14";
+	const mainIconCls = size === "sm" ? "size-4" : "size-5";
 	const current = choices.find((c) => c.value === theme) ?? choices[0];
 	const CurrentIcon = current.icon;
 
@@ -28,8 +29,9 @@ export function PieMenuToggle() {
 		setOpen(false);
 	};
 
-	const radius = 72;
-	const innerRadius = 28;
+	const radius = size === "sm" ? 42 : 72;
+	const innerRadius = size === "sm" ? 16 : 28;
+	const containerCls = size === "sm" ? "h-28 w-28" : "h-48 w-48";
 
 	const sectorPath = (startAngle: number, endAngle: number): string => {
 		const start = (startAngle * Math.PI) / 180;
@@ -47,7 +49,7 @@ export function PieMenuToggle() {
 	};
 
 	return (
-		<div className="relative flex h-48 w-48 items-center justify-center">
+		<div className={`relative flex ${containerCls} items-center justify-center`}>
 			<AnimatePresence>
 				{open && (
 					<motion.svg
@@ -105,7 +107,7 @@ export function PieMenuToggle() {
 				onClick={() => setOpen((prev) => !prev)}
 				aria-expanded={open}
 				aria-haspopup="true"
-				className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full border border-border bg-background shadow-sm outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
+				className={`relative z-10 flex ${mainCls} items-center justify-center rounded-full border border-border bg-background shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring`}
 			>
 				<motion.div
 					key={theme}
@@ -113,7 +115,7 @@ export function PieMenuToggle() {
 					animate={{ scale: 1, opacity: 1 }}
 					transition={{ type: "spring", stiffness: 300, damping: 20 }}
 				>
-					<CurrentIcon className={`size-5 ${current.color}`} />
+					<CurrentIcon className={`${mainIconCls} ${current.color}`} />
 				</motion.div>
 				<span className="sr-only">切换主题</span>
 			</button>

@@ -1,8 +1,28 @@
 import type { UserDTO } from "@entities/user/model/types";
+import { clientQueryClient } from "@shared/api/query-client";
 import { apiGet } from "@shared/api/request";
-import { type UseQueryResult, useQuery } from "@tanstack/react-query";
+import { registerSessionExpiredHandler } from "@shared/api/session-expired";
+import { type QueryClient, type UseQueryResult, useQuery } from "@tanstack/react-query";
 import type { CsrfTokenResponse } from "../model/types";
 import { authKeys } from "./keys";
+
+/**
+ * useLogout（主动登出）、LoginDialog 取消重登、401 拦截器（被动过期）共用：
+ * me 写成 null 让 useMe 订阅者立即翻回未登录态，csrf 移除防陈旧命中。
+ * 不能用 invalidate/remove——会触发 refetch，配合 useMe 的 staleTime: Infinity
+ * 阻止自动重试。
+ */
+export const clearAuthCache = (qc: QueryClient): void => {
+	void qc.cancelQueries({ queryKey: authKeys.me() });
+	qc.setQueryData<UserDTO | null>(authKeys.me(), null);
+	qc.removeQueries({ queryKey: authKeys.csrfToken() });
+};
+
+// 注册会话失效清理：401 拦截器调 onSessionExpired → clearAuthCache(clientQueryClient)。
+// queries.ts 被 useMe 消费（Header/Profile 必加载），顶层注册保证 401 发生前 handler 已就位。
+registerSessionExpiredHandler(() => {
+	clearAuthCache(clientQueryClient);
+});
 
 /**
  * fetchCsrfToken - 调后端 GET /auth/csrf-token 获取 CSRF token

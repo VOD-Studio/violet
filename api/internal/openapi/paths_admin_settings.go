@@ -9,9 +9,8 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 
 	registerSchema(t, "GeneralSettings", openapi3.Schemas{
 		"site_name":           optStr("站点名称"),
-		"site_description":    optStr("站点描述"),
 		"site_url":            optStr("站点 URL"),
-		"admin_email":         optStr("管理员邮箱"),
+		"footer_text":         optStr("页脚文案"),
 		"posts_per_page":      optInt("每页文章数"),
 		"comments_enabled":    optBool("是否开启评论"),
 		"comments_moderation": optBool("评论是否需要审核"),
@@ -31,7 +30,6 @@ func registerAdminSettingsPaths(t *openapi3.T) {
 
 	registerSchema(t, "ProfileSettings", openapi3.Schemas{
 		"bio":              optStr("个人简介"),
-		"footer_text":      optStr("页脚文案"),
 		"avatar_url":       optStr("头像 URL"),
 		"tagline":          optStr("标语"),
 		"profile_role":     optStr("名片角色"),

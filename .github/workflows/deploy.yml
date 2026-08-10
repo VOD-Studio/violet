@@ -1,13 +1,17 @@
-# CD 发布流水线（结构化：detect → prepare → build → migrate → deploy-api → deploy-web → release + rollback）
+# CD 发布流水线（结构化：detect → prepare → build → prepare-server → migrate → deploy-api → deploy-web → release + rollback）
 #
 # 触发:
 #   - 打 v* tag: 自动发版到 rua 生产环境(release-please 合并 release PR 时触发)
 #   - workflow_dispatch: 手动触发,可选 version 回滚 / skip_build 复用镜像 / component 单组件
 #
-# 运行在 rua 的 self-hosted runner 上,本地构建并部署,不穿越 GFW、无需镜像仓库。
+# 构建（build）在 GitHub 托管 runner 上执行：拉基础镜像快、不占服务器资源。
+# 镜像经 ghcr.io 分发（GitHub push → 服务器 podman pull），registry 协议分块校验+重试，
+# 比裸文件下载可靠（服务器直连 Azure blob 下载 artifact 曾反复损坏）。
+# 部署/迁移/回滚仍在 rua 的 self-hosted runner 上执行（操作服务器本地环境）。
+# 回滚模式（skip_build）不构建，复用服务器本地缓存镜像，与 GitHub 构建互不影响。
 #
 # 变更检测(detect): 按侧锚点(.current-version-api/.current-version-web)做 diff 基线,
-#   只部署实际变更侧——未改动侧不重建容器。锚点缺失(首次发版)或手动模式 → 全量。
+#   只部署实际变更侧，未改动侧不重建容器。锚点缺失(首次发版)或手动模式 → 全量。
 # 契约安全: deploy-api 部署后跑 scripts/smoke.sh 跨组件冒烟(旧 web + 新 api),失败触发 rollback。
 # 回滚: 按侧回滚到各侧锚点 + 双侧健康检查。
 # 锚点: release 按实际部署侧回写(放最后,前面翻车不误写);手动回滚成功后同样按侧回写。
@@ -39,7 +43,7 @@ on:
           - web
         default: both
 
-# 生产部署串行，绝不并发、绝不取消进行中的部署
+# 生产部署串行；进行中的部署不取消
 # 8 job 共享 runner 与 /root/docker/violet(锚点/镜像/compose),并发 run 会交错读写
 concurrency:
   group: deploy-production
@@ -47,9 +51,10 @@ concurrency:
 
 permissions:
   contents: write   # 创建 GitHub Release 需要
+  packages: write   # 推送镜像到 ghcr.io
 
 jobs:
-  # ── detect: 按侧变更检测（对比各侧锚点，输出部署侧布尔）──
+  # ── detect: 按侧变更检测
   detect:
     runs-on: [self-hosted, rua]
     outputs:
@@ -58,8 +63,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # paths-filter 的 base 是历史 tag，需本地有对应提交
+          # 全历史：paths-filter 对比的锚点是 tag，tag 只在全量拉取时落地为本地 ref，
+          # 浅克隆下 base 不可解析会导致误判无变更、整轮跳过部署
           fetch-depth: 0
+          # 只拉 commit/tree，blob 按需；detect 只做 diff 不读文件内容，流量比全量小得多
+          filter: blob:none
 
       - name: 读取两侧版本锚点
         id: anchors
@@ -72,29 +80,31 @@ jobs:
           echo "web_anchor=${WEB_ANCHOR}" >> "$GITHUB_OUTPUT"
           echo "锚点: api=${API_ANCHOR:-无} web=${WEB_ANCHOR:-无}"
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter-api
         if: steps.anchors.outputs.api_anchor != ''
         with:
           base: ${{ steps.anchors.outputs.api_anchor }}
+          initial-fetch-depth: '20'
           filters: |
             changed:
               - 'api/**'
               - 'docker-compose*.yml'
               - 'scripts/**'
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter-web
         if: steps.anchors.outputs.web_anchor != ''
         with:
           base: ${{ steps.anchors.outputs.web_anchor }}
+          initial-fetch-depth: '20'
           filters: |
             changed:
               - 'web/**'
               - 'docker-compose*.yml'
               - 'scripts/**'
 
-      - name: 汇总部署侧（锚点缺失或手动模式 → 全量）
+      - name: 汇总部署侧
         id: result
         env:
           API_ANCHOR: ${{ steps.anchors.outputs.api_anchor }}
@@ -136,7 +146,7 @@ jobs:
           echo "rollback=${ROLLBACK}" >> "$GITHUB_OUTPUT"
           echo "目标版本: ${TAG_VALUE}"
 
-      - name: 决定部署侧（回滚按 component 输入;发版按 detect 输出 + component 过滤）
+      - name: 决定部署侧
         id: side
         env:
           VER_INPUT: ${{ inputs.version }}
@@ -155,39 +165,84 @@ jobs:
           echo "deploy_web=${DEPLOY_WEB}" >> "$GITHUB_OUTPUT"
           echo "部署侧: api=${DEPLOY_API} web=${DEPLOY_WEB}"
 
-  # ── build: 构建/复用镜像 + 同步部署文件（timeout 大头）──
+  # ── build: GitHub 托管 runner 构建镜像并推送 ghcr.io ──
+  # 服务器不再本地构建，基础镜像拉取和构建都走 GitHub。
+  # 镜像经 ghcr.io 分发：GitHub push，服务器 podman pull（registry 协议分块校验+重试，
+  # 比裸文件下载可靠——服务器直连 Azure blob 下载 artifact 曾反复损坏）。
+  # 回滚模式 skip_build=true 不构建，复用服务器本地缓存镜像。
   build:
     needs: prepare
-    runs-on: [self-hosted, rua]
-    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    # 全量构建 go module 下载 + vite build 可能超过 15 分钟
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.tag }}
 
-      - name: 构建 api 镜像
+      - name: 登录 GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 构建并推送 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
         run: |
+          # ghcr.io 镜像名必须全小写
           docker build \
-            -t violet-api:${{ needs.prepare.outputs.tag }} \
-            -t violet-api:latest \
+            -t ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} \
+            -t ghcr.io/vod-studio/violet-api:latest \
             -f api/Dockerfile api/
-          echo "已构建 violet-api:${{ needs.prepare.outputs.tag }} 与 violet-api:latest"
+          docker push ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
+          docker push ghcr.io/vod-studio/violet-api:latest
+          echo "已推送 ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}"
 
-      - name: 构建 web 镜像
+      - name: 构建并推送 web 镜像
         if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
         run: |
-          # build args 从线上 .env 读取(OAuth client id 等),保持与现网配置一致
-          set -a; . /root/docker/violet/.env; set +a
+          # build args 从 GitHub secrets 读取，与现网配置一致。
+          # VITE_API_BASE_URL / VITE_SITE_URL 有默认值，与服务器 .env 一致。
           docker build \
-            -t violet-web:${{ needs.prepare.outputs.tag }} \
-            -t violet-web:latest \
+            -t ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} \
+            -t ghcr.io/vod-studio/violet-web:latest \
             --build-arg "VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api/v1}" \
             --build-arg "VITE_SITE_URL=${VITE_SITE_URL:-https://xunrua.top}" \
-            --build-arg "VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
-            --build-arg "VITE_GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}" \
+            --build-arg "VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" \
+            --build-arg "VITE_GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}" \
             -f web/Dockerfile web/
-          echo "已构建 violet-web:${{ needs.prepare.outputs.tag }} 与 violet-web:latest"
+          docker push ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
+          docker push ghcr.io/vod-studio/violet-web:latest
+          echo "已推送 ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}"
+
+      - name: 设置镜像包公开
+        if: needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [ "${{ needs.prepare.outputs.deploy_api }}" == "true" ] && \
+            gh api -X PATCH /orgs/vod-studio/packages/container/violet-api/visibility -f visibility=public \
+              || echo "::warning::violet-api 可见性设置失败"
+          [ "${{ needs.prepare.outputs.deploy_web }}" == "true" ] && \
+            gh api -X PATCH /orgs/vod-studio/packages/container/violet-web/visibility -f visibility=public \
+              || echo "::warning::violet-web 可见性设置失败"
+
+  # ── prepare-server: 回滚复用检查 + 镜像拉取 + compose 同步 ──
+  prepare-server:
+    needs: [prepare, build]
+    if: needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true'
+    runs-on: [self-hosted, rua]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: 登录 ghcr.io
+        env:
+          HTTPS_PROXY: http://127.0.0.1:20172
+          HTTP_PROXY: http://127.0.0.1:20172
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
       - name: 回滚模式复用缓存 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build == 'true'
@@ -203,23 +258,36 @@ jobs:
           docker tag violet-web:${{ needs.prepare.outputs.tag }} violet-web:latest
           echo "已将 violet-web:${{ needs.prepare.outputs.tag }} 复用为 latest"
 
+      - name: 拉取 api 镜像
+        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
+        env:
+          HTTPS_PROXY: http://127.0.0.1:20172
+          HTTP_PROXY: http://127.0.0.1:20172
+        run: |
+          podman pull ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
+          podman tag ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} violet-api:${{ needs.prepare.outputs.tag }}
+          podman tag ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} violet-api:latest
+          echo "已载入 violet-api:${{ needs.prepare.outputs.tag }}"
+
+      - name: 拉取 web 镜像
+        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
+        env:
+          HTTPS_PROXY: http://127.0.0.1:20172
+          HTTP_PROXY: http://127.0.0.1:20172
+        run: |
+          podman pull ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
+          podman tag ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} violet-web:${{ needs.prepare.outputs.tag }}
+          podman tag ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} violet-web:latest
+          echo "已载入 violet-web:${{ needs.prepare.outputs.tag }}"
+
       - name: 同步 compose 文件到部署目录
         run: |
           cp docker-compose.prod.yml /root/docker/violet/docker-compose.prod.yml
           cp docker-compose.ci.yml   /root/docker/violet/docker-compose.ci.yml
 
-      - name: 一次性迁移 env 文件(api/.env → .env)
-        working-directory: /root/docker/violet
-        run: |
-          # 配置架构重构后根 .env 是唯一 env 文件;老服务器目录一次性迁移
-          if [ -f api/.env ] && [ ! -f .env ]; then
-            cp api/.env .env
-            echo "已迁移 api/.env → .env"
-          fi
-
-  # ── migrate: 迁移门禁（仅部署 api 时）──
+  # ── migrate: 迁移门禁
   migrate:
-    needs: [prepare, build]
+    needs: [prepare, build, prepare-server]
     if: needs.prepare.outputs.deploy_api == 'true'
     runs-on: [self-hosted, rua]
     environment: production
@@ -231,7 +299,7 @@ jobs:
         run: |
           # 破坏性迁移(drop column/rename/alter type)须遵循 expand-contract:
           # 先发兼容代码(忽略待删列/双写新列),下个发版再执行破坏性迁移。
-          # 这样镜像回滚时旧代码面对新 schema 仍兼容——回滚只换镜像不回退 schema。
+          # 这样镜像回滚时旧代码面对新 schema 仍兼容：回滚只换镜像，不回退 schema。
           docker compose \
             -f docker-compose.prod.yml \
             -f docker-compose.ci.yml \
@@ -239,8 +307,8 @@ jobs:
 
   # ── deploy-api: 部署 api + 健康检查 + 跨组件冒烟 ──
   deploy-api:
-    needs: [prepare, migrate]
-    if: needs.prepare.outputs.deploy_api == 'true'
+    needs: [prepare, migrate, prepare-server]
+    if: needs.prepare.outputs.deploy_api == 'true' && needs.prepare-server.result == 'success'
     runs-on: [self-hosted, rua]
     environment: production
     timeout-minutes: 15
@@ -274,15 +342,17 @@ jobs:
           echo "::error::api 健康检查失败，api 未在超时内就绪"
           exit 1
 
-      - name: 跨组件冒烟（旧 web + 新 api，契约兼容验证）
+      - name: 跨组件冒烟
         run: |
           bash scripts/smoke.sh
 
-  # ── deploy-web: 部署 web + 同步 + 健康检查（api-only 时整体 skip）──
+  # ── deploy-web: 部署 web + 同步 + 健康检查
   deploy-web:
-    needs: [prepare, deploy-api]
-    # web-only 时 deploy-api 被 skip(result=skipped ≠ failure)自动放行; both 时等 api 健康检查通过
-    if: needs.prepare.outputs.deploy_web == 'true' && needs.deploy-api.result != 'failure'
+    needs: [prepare, deploy-api, prepare-server]
+    # always() 必须显式写：job if 隐式带 success()，needs 里有 skipped（web-only 时
+    # deploy-api 被跳过）会不求值直接 skip，不只是 failed 才传播。
+    # 上游任一 failure 都拦住：prepare-server（镜像没拉到）、deploy-api、migrate。
+    if: always() && needs.prepare.outputs.deploy_web == 'true' && needs.prepare-server.result == 'success' && needs.deploy-api.result != 'failure' && needs.migrate.result != 'failure'
     runs-on: [self-hosted, rua]
     environment: production
     timeout-minutes: 15
@@ -320,9 +390,9 @@ jobs:
           echo "::error::web 健康检查失败,web 未在超时内就绪"
           exit 1
 
-  # ── rollback: 跨 job 失败聚合自动回滚（按侧回各侧锚点 + 双侧健康检查）──
+  # ── rollback: 失败聚合自动回滚
   rollback:
-    needs: [prepare, migrate, deploy-api, deploy-web]
+    needs: [prepare, build, prepare-server, migrate, deploy-api, deploy-web]
     # 任一部署失败 && 迁移未失败(schema 没变) && 非手动回滚
     # 构建失败时部署链全 skipped(无 failure) → 不触发,线上未动
     if: always() && needs.prepare.outputs.rollback != 'true' && needs.migrate.result != 'failure' && (needs.deploy-api.result == 'failure' || needs.deploy-web.result == 'failure')
@@ -379,10 +449,6 @@ jobs:
     runs-on: [self-hosted, rua]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.prepare.outputs.tag }}
-
       - name: reload nginx-proxy 刷新容器 IP
         # 容器重建后 nginx-proxy 的上游 DNS 缓存可能指向旧 IP,导致间歇 502。
         # 健康检查通过后 reload nginx,让它重新解析 blog-api/blog-web 的当前 IP。
@@ -393,7 +459,33 @@ jobs:
             echo "nginx-proxy 不可达,跳过 reload"
           fi
 
+      - name: 按侧回写版本锚点
+        # 放在 checkout 之前：锚点是后续发版 diff 的基线，不能被拉取代码失败连累。
+        # 手动回滚也走此路径:tag 即回滚目标版本,成功后锚点推进到回滚目标,
+        # 避免锚点陈旧导致下次发版 diff 漏掉未部署变更
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          API_RESULT: ${{ needs.deploy-api.result }}
+          WEB_RESULT: ${{ needs.deploy-web.result }}
+        run: |
+          if [ "$API_RESULT" == "success" ]; then
+            echo "$TAG" > /root/docker/violet/.current-version-api
+            echo "api 锚点更新为 $TAG"
+          fi
+          if [ "$WEB_RESULT" == "success" ]; then
+            echo "$TAG" > /root/docker/violet/.current-version-web
+            echo "web 锚点更新为 $TAG"
+          fi
+
+      # checkout 仅为 Release notes 抽 CHANGELOG；tag push 才建 Release，手动 dispatch 跳过
+      # dispatch 时 checkout github.com 被掐会白死，release job 失败即死于此
+      - uses: actions/checkout@v7
+        if: github.event_name == 'push'
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
       - name: 从 CHANGELOG 抽取本版本段落
+        if: github.event_name == 'push'
         id: notes
         run: |
           VERSION="${{ needs.prepare.outputs.tag }}"
@@ -419,31 +511,14 @@ jobs:
       - name: 创建 GitHub Release(CHANGELOG 段落)
         # 仅 tag push 创建 Release;手动 dispatch(部署/回滚)不建
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'changelog'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           body_path: ${{ runner.temp }}/release-notes.md
 
       - name: 创建 GitHub Release(自动生成 notes)
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'generated'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           generate_release_notes: true
-
-      - name: 按侧回写版本锚点（最后,reload/Release 翻车不误写）
-        # 手动回滚也走此路径:tag 即回滚目标版本,成功后锚点推进到回滚目标,
-        # 避免锚点陈旧导致下次发版 diff 漏掉未部署变更
-        env:
-          TAG: ${{ needs.prepare.outputs.tag }}
-          API_RESULT: ${{ needs.deploy-api.result }}
-          WEB_RESULT: ${{ needs.deploy-web.result }}
-        run: |
-          if [ "$API_RESULT" == "success" ]; then
-            echo "$TAG" > /root/docker/violet/.current-version-api
-            echo "api 锚点更新为 $TAG"
-          fi
-          if [ "$WEB_RESULT" == "success" ]; then
-            echo "$TAG" > /root/docker/violet/.current-version-web
-            echo "web 锚点更新为 $TAG"
-          fi

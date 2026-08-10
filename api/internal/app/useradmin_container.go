@@ -15,8 +15,8 @@ type UserAdminContainer struct {
 	UserAdminHandler *useradminhttp.Handler
 }
 
-func NewUserAdminContainer(db *gorm.DB, hasher authcmd.PasswordHasher, bus appshared.EventBus) *UserAdminContainer {
+func NewUserAdminContainer(db *gorm.DB, hasher authcmd.PasswordHasher, bus appshared.EventBus, sessionStore appshared.SessionStore) *UserAdminContainer {
 	store := gormrepo.NewAdminUserStore(db)
-	svc := appuseradmin.NewService(store, hasher, bus)
+	svc := appuseradmin.NewService(store, hasher, bus, sessionStore)
 	return &UserAdminContainer{UserAdminHandler: useradminhttp.NewHandler(svc)}
 }

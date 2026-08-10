@@ -8,7 +8,9 @@ import type { RoleDTO } from "../model/types";
  */
 export const getRoleBadgeVariant = (
 	roleName?: string,
+	isRoot?: boolean,
 ): "default" | "secondary" | "outline" | "destructive" => {
+	if (isRoot) return "default";
 	switch (roleName) {
 		case "superadmin":
 			return "default";
@@ -30,7 +32,13 @@ export const findRoleByName = (roles: RoleDTO[], name?: string): RoleDTO | undef
 /**
  * 获取角色显示名称（优先使用 description，fallback 到 name）
  */
-export const getRoleDisplayName = (roles: RoleDTO[], name?: string, fallback?: string): string => {
+export const getRoleDisplayName = (
+	roles: RoleDTO[],
+	name?: string,
+	fallback?: string,
+	isRoot?: boolean,
+): string => {
+	if (isRoot) return "root";
 	if (!name) return fallback || "";
 	const role = findRoleByName(roles, name);
 	return role?.description || fallback || name;

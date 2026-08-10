@@ -22,22 +22,46 @@ type PasswordHasher interface {
 
 // Service 用户管理用例服务
 type Service struct {
-	store  domainuseradmin.AdminUserStore
-	hasher PasswordHasher
-	bus    appshared.EventBus
+	store    domainuseradmin.AdminUserStore
+	hasher   PasswordHasher
+	bus      appshared.EventBus
+	sessions appshared.SessionStore
 }
 
-func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus) *Service {
-	return &Service{store: store, hasher: hasher, bus: bus}
+func NewService(store domainuseradmin.AdminUserStore, hasher PasswordHasher, bus appshared.EventBus, sessions appshared.SessionStore) *Service {
+	return &Service{store: store, hasher: hasher, bus: bus, sessions: sessions}
+}
+
+// revokeSessions 吊销指定用户的全部 session（角色/状态变更后强制重登）。
+// 吊销失败仅记录日志不阻断主流程：DB 已更新成功，session 吊销为尽力而为的安全增强。
+func (s *Service) revokeSessions(ctx context.Context, userIDs ...string) {
+	if s.sessions == nil {
+		return
+	}
+	for _, uid := range userIDs {
+		if err := s.sessions.DeleteByUser(ctx, uid); err != nil {
+			log.Warn().Err(err).Str("user_id", uid).Msg("吊销用户 session 失败")
+		}
+	}
+}
+
+// idStrings 将 ID 切片转为字符串切片（批量吊销 session 用）
+func idStrings(ids []shared.ID) []string {
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = id.String()
+	}
+	return out
 }
 
 // UserDTO 用户读模型（管理后台）
 type UserDTO struct {
 	ID                  string `json:"id"`
 	Username            string `json:"username"`
+	DisplayName         string `json:"display_name"`
 	Email               string `json:"email"`
 	Role                string `json:"role"`
-	IsBuiltinSuperAdmin bool   `json:"is_builtin_super_admin"`
+	IsRoot              bool   `json:"is_root"`
 	EmailVerified       bool   `json:"email_verified"`
 	IsActive            bool   `json:"is_active"`
 	Bio                 string `json:"bio"`
@@ -73,7 +97,8 @@ func (s *Service) GetDetail(ctx context.Context, id string) (UserDTO, error) {
 
 // CreateInput 创建用户入参
 type CreateInput struct {
-	Username  string
+	Username    string
+	DisplayName string
 	Email     string
 	Password  string
 	Role      string
@@ -86,7 +111,7 @@ type CreateInput struct {
 //
 // 安全守卫：授予 superadmin 角色需操作者是内置超管（持有 user:assign-superadmin 语义）。
 // 被委派超管不能授权第三人，授权链不可传递。
-func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool) (UserDTO, error) {
+func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operatorRole string, operatorIsRoot bool) (UserDTO, error) {
 	email, err := domainuser.ParseEmail(in.Email)
 	if err != nil {
 		return UserDTO{}, err
@@ -96,7 +121,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operat
 		return UserDTO{}, err
 	}
 	// 守卫：只有内置超管才能创建 superadmin 用户（被委派超管不可，授权链不可传递）
-	if domainuser.Role(in.Role).IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+	if domainuser.Role(in.Role).IsSuperAdmin() && !operatorIsRoot {
 		return UserDTO{}, shared.Forbidden("仅内置超级管理员可授予超级管理员角色")
 	}
 	hash, err := s.hasher.Hash(in.Password)
@@ -104,6 +129,14 @@ func (s *Service) Create(ctx context.Context, in CreateInput, operatorID, operat
 		return UserDTO{}, shared.Internal("密码哈希失败", err)
 	}
 	u := domainuser.NewUser(shared.NewID(), email, username, hash)
+	// 显示名（可选，空则回退 username）
+	displayName, err := domainuser.ParseDisplayName(in.DisplayName)
+	if err != nil {
+		return UserDTO{}, err
+	}
+	if !displayName.IsEmpty() {
+		u.UpdateDisplayName(displayName)
+	}
 	if err := u.ChangeRole(domainuser.Role(in.Role)); err != nil {
 		return UserDTO{}, err
 	}
@@ -141,7 +174,7 @@ type UpdateInput struct {
 //   - 不可修改自己的角色（防止自升降）
 //   - 授予 superadmin 角色需操作者是内置超管（授权链不可传递）
 //   - username 变更需持久化（修复此前 _ = un 丢弃导致用户名不更新的 bug）
-func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool) (UserDTO, error) {
+func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operatorRole string, operatorIsRoot bool) (UserDTO, error) {
 	uid, err := shared.ParseID(in.ID)
 	if err != nil {
 		return UserDTO{}, err
@@ -154,28 +187,28 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 	isSelf := u.GetID().String() == operatorID
 	// 角色变更守卫
 	if in.Role != nil {
-		if u.IsBuiltinSuperAdmin() {
+		if u.IsRoot() {
 			// 不可改内置超管角色
 			return UserDTO{}, shared.Forbidden("不可修改内置超级管理员的角色")
 		}
 		// 被委派超管只能由内置超管改角色
-		if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		if u.IsSuperAdmin() && !operatorIsRoot {
 			return UserDTO{}, shared.Forbidden("仅内置超级管理员可修改其他超管的角色")
 		}
 		if isSelf {
 			return UserDTO{}, shared.Forbidden("不可修改自己的角色")
 		}
 		// 授予 superadmin 需操作者是内置超管（授权链不可传递）
-		if domainuser.Role(*in.Role).IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		if domainuser.Role(*in.Role).IsSuperAdmin() && !operatorIsRoot {
 			return UserDTO{}, shared.Forbidden("仅内置超级管理员可授予超级管理员角色")
 		}
 	}
 	// 状态变更守卫：不可禁用内置超管；被委派超管仅内置超管可禁用；不可禁用自己
 	if in.IsActive != nil && !*in.IsActive {
-		if u.IsBuiltinSuperAdmin() {
+		if u.IsRoot() {
 			return UserDTO{}, shared.Forbidden("不可禁用内置超级管理员")
 		}
-		if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		if u.IsSuperAdmin() && !operatorIsRoot {
 			return UserDTO{}, shared.Forbidden("仅内置超级管理员可禁用其他超管")
 		}
 		if isSelf {
@@ -210,6 +243,14 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 			u.Deactivate()
 		}
 	}
+	// 显示名变更（允许重复，无需查重）
+	if in.DisplayName != nil {
+		displayName, err := domainuser.ParseDisplayName(*in.DisplayName)
+		if err != nil {
+			return UserDTO{}, err
+		}
+		u.UpdateDisplayName(displayName)
+	}
 	if err := s.store.Save(ctx, u); err != nil {
 		return UserDTO{}, err
 	}
@@ -221,7 +262,7 @@ func (s *Service) Update(ctx context.Context, in UpdateInput, operatorID, operat
 //
 // 安全守卫：不可删除内置超级管理员；被委派超管仅内置超管可删；不可删除自己。
 // 即内置超管可删除任何人（除自己和其它内置超管）。
-func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) error {
+func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole string, operatorIsRoot bool, ip, ua string) error {
 	uid, err := shared.ParseID(id)
 	if err != nil {
 		return err
@@ -230,11 +271,11 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole strin
 	if err != nil {
 		return err
 	}
-	if u.IsBuiltinSuperAdmin() {
+	if u.IsRoot() {
 		return shared.Forbidden("不可删除内置超级管理员")
 	}
 	// 被委派超管仅内置超管可删
-	if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+	if u.IsSuperAdmin() && !operatorIsRoot {
 		return shared.Forbidden("仅内置超级管理员可删除其他超管")
 	}
 	if u.GetID().String() == operatorID {
@@ -254,7 +295,7 @@ func (s *Service) Delete(ctx context.Context, id, operatorID, operatorRole strin
 //
 // 安全守卫：不可改内置超管角色；被委派超管仅内置超管可改；不可改自己角色；
 // 授予 superadmin 需操作者是内置超管（授权链不可传递）。
-func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) error {
+func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, operatorRole string, operatorIsRoot bool, ip, ua string) error {
 	uid, err := shared.ParseID(id)
 	if err != nil {
 		return err
@@ -263,16 +304,16 @@ func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, oper
 	if err != nil {
 		return err
 	}
-	if u.IsBuiltinSuperAdmin() {
+	if u.IsRoot() {
 		return shared.Forbidden("不可修改内置超级管理员的角色")
 	}
-	if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+	if u.IsSuperAdmin() && !operatorIsRoot {
 		return shared.Forbidden("仅内置超级管理员可修改其他超管的角色")
 	}
 	if u.GetID().String() == operatorID {
 		return shared.Forbidden("不可修改自己的角色")
 	}
-	if domainuser.Role(role).IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+	if domainuser.Role(role).IsSuperAdmin() && !operatorIsRoot {
 		return shared.Forbidden("仅内置超级管理员可授予超级管理员角色")
 	}
 	if err := u.ChangeRole(domainuser.Role(role)); err != nil {
@@ -282,13 +323,15 @@ func (s *Service) UpdateUserRole(ctx context.Context, id, role, operatorID, oper
 		return err
 	}
 	s.publishEvents(ctx, u)
+	// 角色变更后吊销目标用户全部 session，强制重登以即时生效新角色（session 缓存了旧 role）
+	s.revokeSessions(ctx, uid.String())
 	return nil
 }
 
 // UpdateUserStatus 修改单个用户状态
 //
 // 安全守卫：不可禁用内置超管；被委派超管仅内置超管可禁用；不可禁用自己（启用不受限）。
-func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) error {
+func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool, operatorID, operatorRole string, operatorIsRoot bool, ip, ua string) error {
 	uid, err := shared.ParseID(id)
 	if err != nil {
 		return err
@@ -298,10 +341,10 @@ func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool
 		return err
 	}
 	if !isActive {
-		if u.IsBuiltinSuperAdmin() {
+		if u.IsRoot() {
 			return shared.Forbidden("不可禁用内置超级管理员")
 		}
-		if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		if u.IsSuperAdmin() && !operatorIsRoot {
 			return shared.Forbidden("仅内置超级管理员可禁用其他超管")
 		}
 		if u.GetID().String() == operatorID {
@@ -317,13 +360,17 @@ func (s *Service) UpdateUserStatus(ctx context.Context, id string, isActive bool
 		return err
 	}
 	s.publishEvents(ctx, u)
+	// 禁用后吊销 session，防止被禁用用户凭旧 session 继续操作；启用不吊销，用户重登即可
+	if !isActive {
+		s.revokeSessions(ctx, uid.String())
+	}
 	return nil
 }
 
 // BatchUpdateStatus 批量启用/禁用
 //
 // 安全守卫：禁用场景下，目标含内置超管/被委派超管（操作者非内置超管时）/操作者自己时拒绝。
-func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActive bool, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) (int64, error) {
+func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActive bool, operatorID, operatorRole string, operatorIsRoot bool, ip, ua string) (int64, error) {
 	ids, err := parseIDs(idStrs)
 	if err != nil {
 		return 0, err
@@ -335,10 +382,10 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActi
 			return 0, err
 		}
 		for _, u := range users {
-			if u.IsBuiltinSuperAdmin() {
+			if u.IsRoot() {
 				return 0, shared.Forbidden("选中的用户中包含内置超级管理员，不可批量禁用")
 			}
-			if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+			if u.IsSuperAdmin() && !operatorIsRoot {
 				return 0, shared.Forbidden("选中的用户中包含超级管理员，仅内置超管可批量禁用")
 			}
 			if u.GetID().String() == operatorID {
@@ -352,6 +399,10 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActi
 	}
 	log.Info().Int64("affected", affected).Bool("is_active", isActive).Msg("批量更新用户状态")
 	s.publishBatchStatus(ctx, affected, isActive)
+	// 禁用后吊销全部目标用户 session，防止被禁用用户凭旧 session 继续操作
+	if !isActive {
+		s.revokeSessions(ctx, idStrings(ids)...)
+	}
 	return affected, nil
 }
 
@@ -360,13 +411,13 @@ func (s *Service) BatchUpdateStatus(ctx context.Context, idStrs []string, isActi
 // 安全守卫：授予 superadmin 需操作者是内置超管（授权链不可传递）；
 // 目标含内置超管时拒绝（不可改内置超管角色）；被委派超管仅内置超管可改；
 // 目标含操作者自己时拒绝（不可改自己角色）。
-func (s *Service) BatchUpdateRole(ctx context.Context, idStrs []string, role, operatorID, operatorRole string, operatorIsBuiltinSuperAdmin bool, ip, ua string) (int64, error) {
+func (s *Service) BatchUpdateRole(ctx context.Context, idStrs []string, role, operatorID, operatorRole string, operatorIsRoot bool, ip, ua string) (int64, error) {
 	ids, err := parseIDs(idStrs)
 	if err != nil {
 		return 0, err
 	}
 	// 授予 superadmin 需操作者是内置超管（授权链不可传递）
-	if domainuser.Role(role).IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+	if domainuser.Role(role).IsSuperAdmin() && !operatorIsRoot {
 		return 0, shared.Forbidden("仅内置超级管理员可授予超级管理员角色")
 	}
 	users, err := s.store.FindByIDs(ctx, ids)
@@ -374,10 +425,10 @@ func (s *Service) BatchUpdateRole(ctx context.Context, idStrs []string, role, op
 		return 0, err
 	}
 	for _, u := range users {
-		if u.IsBuiltinSuperAdmin() {
+		if u.IsRoot() {
 			return 0, shared.Forbidden("选中的用户中包含内置超级管理员，不可批量修改其角色")
 		}
-		if u.IsSuperAdmin() && !operatorIsBuiltinSuperAdmin {
+		if u.IsSuperAdmin() && !operatorIsRoot {
 			return 0, shared.Forbidden("选中的用户中包含超级管理员，仅内置超管可批量修改其角色")
 		}
 		if u.GetID().String() == operatorID {
@@ -390,6 +441,8 @@ func (s *Service) BatchUpdateRole(ctx context.Context, idStrs []string, role, op
 	}
 	log.Info().Int64("affected", affected).Str("role", role).Msg("批量更新用户角色")
 	s.publishBatchRole(ctx, affected, role)
+	// 角色变更后吊销全部目标用户 session，强制重登即时生效新角色
+	s.revokeSessions(ctx, idStrings(ids)...)
 	return affected, nil
 }
 
@@ -432,8 +485,8 @@ func parseIDs(idStrs []string) ([]shared.ID, error) {
 
 func toDTO(u *domainuser.User) UserDTO {
 	dto := UserDTO{
-		ID: u.GetID().String(), Username: u.Username().String(), Email: u.Email().String(),
-		Role: string(u.Role()), IsBuiltinSuperAdmin: u.IsBuiltinSuperAdmin(),
+		ID: u.GetID().String(), Username: u.Username().String(), DisplayName: u.DisplayName().String(), Email: u.Email().String(),
+		Role: string(u.Role()), IsRoot: u.IsRoot(),
 		EmailVerified: u.EmailVerified(), IsActive: u.IsActive(),
 		AvatarURL: u.AvatarURL(), Bio: u.Bio(),
 		CreatedAt: u.CreatedAt().Format("2006-01-02T15:04:05Z07:00"),
