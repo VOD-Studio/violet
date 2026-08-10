@@ -1,11 +1,15 @@
 /** tweets feature 查询层（cursor 分页时间线） */
 
-import type { Tweet } from "@entities/tweet/model/types";
+import type { Tweet, TweetComment } from "@entities/tweet/model/types";
 import type { UserProfile } from "@entities/user/model/types";
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import type { TweetTimelineQuery } from "../model/types";
+import {
+	TWEET_COMMENT_PAGE_SIZE,
+	type TweetCommentPageQuery,
+	type TweetTimelineQuery,
+} from "../model/types";
 import { TIMELINE_PAGE_SIZE, tweetKeys } from "./keys";
 
 /**
@@ -81,4 +85,60 @@ export const useUserTimeline = (username: string, limit: number = TIMELINE_PAGE_
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,
 		enabled: !!username,
+	});
+
+// --- 推文评论（P2 / issue #108）---
+
+/**
+ * fetchTweetComments - 调后端 GET /tweets/{id}/comments 拉顶层评论（公开，page/limit 分页）
+ */
+export const fetchTweetComments = async (
+	tweetId: string,
+	query: TweetCommentPageQuery = {},
+): Promise<PagedResponse<TweetComment>> =>
+	apiGetPaged<TweetComment>(`/tweets/${tweetId}/comments`, { params: query });
+
+/** pageBasedNextPageParam - page/limit 分页的 getNextPageParam：有下一页返回 page+1，否则 undefined */
+const pageBasedNextPageParam = (lastPage: PagedResponse<unknown>): number | undefined => {
+	const totalPages = lastPage.pagination?.total_pages ?? 1;
+	const currentPage = lastPage.pagination?.page ?? 1;
+	return currentPage < totalPages ? currentPage + 1 : undefined;
+};
+/** useTweetComments - 推文顶层评论列表 hook（page/limit 滚动加载，最新在前）。回复走 useTweetReplies 按需拉。 */
+export const useTweetComments = (tweetId: string, limit: number = TWEET_COMMENT_PAGE_SIZE) =>
+	useInfiniteQuery({
+		queryKey: tweetKeys.commentList(tweetId),
+		queryFn: ({ pageParam }) => fetchTweetComments(tweetId, { page: pageParam, limit }),
+		initialPageParam: 1,
+		getNextPageParam: pageBasedNextPageParam,
+		enabled: !!tweetId,
+	});
+
+/**
+ * fetchTweetReplies - 调 GET /tweets/{id}/comments/{commentId}/replies 拉某顶层评论的回复
+ *
+ * URL 需 tweetId（路由参数），但后端 ListReplies 仅按 commentId 查（顶层 ancestor path 前缀）。
+ */
+export const fetchTweetReplies = async (
+	tweetId: string,
+	commentId: string,
+	query: TweetCommentPageQuery = {},
+): Promise<PagedResponse<TweetComment>> =>
+	apiGetPaged<TweetComment>(`/tweets/${tweetId}/comments/${commentId}/replies`, {
+		params: query,
+	});
+
+/** useTweetReplies - 某顶层评论的回复列表 hook（page/limit 滚动加载，最早在前） */
+export const useTweetReplies = (
+	tweetId: string,
+	commentId: string,
+	limit: number = TWEET_COMMENT_PAGE_SIZE,
+) =>
+	useInfiniteQuery({
+		queryKey: tweetKeys.replies(commentId),
+		queryFn: ({ pageParam }) =>
+			fetchTweetReplies(tweetId, commentId, { page: pageParam, limit }),
+		initialPageParam: 1,
+		getNextPageParam: pageBasedNextPageParam,
+		enabled: !!tweetId && !!commentId,
 	});

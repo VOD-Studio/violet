@@ -36,3 +36,30 @@ export interface CreateTweetInput {
 	/** 图片 URL 列表，≤4 张；纯文本推文可为空数组 */
 	images: string[];
 }
+
+/** 评论正文长度上限（rune 计，对齐后端 MaxCommentBodyLen） */
+export const MAX_TWEET_COMMENT_LENGTH = 500;
+
+/** 顶层评论 / 回复每页条数（page/limit 分页） */
+export const TWEET_COMMENT_PAGE_SIZE = 10;
+
+/** TweetCommentPageQuery - 评论 / 回复列表分页查询参数（page/limit） */
+export interface TweetCommentPageQuery {
+	/** 页码，从 1 开始；首页省略 */
+	page?: number;
+	/** 每页条数，缺省由后端补（20） */
+	limit?: number;
+}
+
+/**
+ * CreateTweetCommentInput - 评论 / 回复请求体
+ *
+ * 对接后端 createCommentRequest { body, parent_id }。
+ * parent_id 省略为顶层评论；非空为回复（两层扁平：回复一律 depth=1）。
+ */
+export interface CreateTweetCommentInput {
+	/** 正文，trim 后非空且 ≤500 rune */
+	body: string;
+	/** 被回复的评论 id；空串 / 省略为顶层评论 */
+	parent_id?: string;
+}

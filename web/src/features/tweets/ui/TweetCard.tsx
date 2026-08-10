@@ -21,7 +21,7 @@ import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { format, formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Heart, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -167,8 +167,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 						<ImageGrid images={gridImages} />
 					</div>
 				)}
-
-				{/* 点赞按钮 */}
+				{/* 点赞按钮 + 评论数 */}
 				<div className="flex items-center">
 					<button
 						type="button"
@@ -187,6 +186,13 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 						/>
 						<span>{tweet.like_count}</span>
 					</button>
+					{isDetail ? // 详情页评论区就在下方，不重复显示评论数入口
+					null : (
+						<div className="inline-flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground">
+							<MessageCircle className="size-3.5" />
+							<span>{tweet.comment_count}</span>
+						</div>
+					)}
 				</div>
 			</SpotlightCard>
 

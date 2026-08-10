@@ -40,6 +40,32 @@ export interface Tweet {
 	like_count: number;
 	/** 当前登录用户是否已点赞 */
 	is_liked: boolean;
+	/** 评论总数（顶层 + 回复，详情页与卡片展示用） */
+	comment_count: number;
+	/** 创建时间，RFC3339 字符串 */
+	created_at: string;
+}
+
+/**
+ * TweetComment - 推文评论读模型
+ *
+ * 对应后端 application/tweet CommentDTO（GET /tweets/{id}/comments 等）。
+ * 两层扁平楼中楼：depth=0 顶层评论，depth=1 回复（回复不再深嵌套）。
+ * 与 comment 域楼中楼同构但更简单：纯文本、登录可发、即发即出、物理删除。
+ */
+export interface TweetComment {
+	/** 评论 ID */
+	id: string;
+	/** 所属推文 ID */
+	tweet_id: string;
+	/** 作者资料卡（复用 TweetAuthor：推文与评论作者同构） */
+	author: TweetAuthor;
+	/** 正文，≤500 rune */
+	body: string;
+	/** 被回复的评论 id；顶层评论省略（后端 omitempty） */
+	parent_id?: string;
+	/** 展示层级：0=顶层评论，1=回复 */
+	depth: number;
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
 }

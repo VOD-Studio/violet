@@ -1,6 +1,7 @@
 import { tweetKeys } from "@features/tweets/api/keys";
 import { fetchTweetDetail, useTweetDetail } from "@features/tweets/api/queries";
 import TweetCard from "@features/tweets/ui/TweetCard";
+import TweetCommentSection from "@features/tweets/ui/TweetCommentSection";
 import Empty from "@shared/ui/empty";
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -59,6 +60,8 @@ function TweetDetailPage() {
 				// 删除成功后缓存已自动联动，详情页导航回时间线
 				onDeleted={() => navigate({ to: "/tweets" })}
 			/>
+
+			<TweetCommentSection tweetId={current.id} />
 		</div>
 	);
 }

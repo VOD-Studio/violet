@@ -41,6 +41,7 @@ function makeTweet(overrides: Partial<Tweet> = {}): Tweet {
 		images: [],
 		like_count: 0,
 		is_liked: false,
+		comment_count: 0,
 		created_at: "2026-01-01T00:00:00Z",
 		...overrides,
 	};

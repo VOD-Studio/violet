@@ -30,4 +30,8 @@ export const tweetKeys = {
 		[...tweetsRoot, "userTimeline", username, { limit }] as const,
 	/** 用户公开资料卡维度（按 username 区分） */
 	userProfile: (username: string) => [...tweetsRoot, "userProfile", username] as const,
+	/** 推文评论列表维度（按 tweetId 聚合，含 page 维度） */
+	commentList: (tweetId: string) => [...tweetsRoot, "comments", "list", tweetId] as const,
+	/** 推文评论某顶层评论下的回复维度（按 commentId 聚合，含 page 维度） */
+	replies: (commentId: string) => [...tweetsRoot, "comments", "replies", commentId] as const,
 };
