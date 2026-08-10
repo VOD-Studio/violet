@@ -2,9 +2,9 @@ import { motion } from "motion/react";
 import type { AboutSectionProps } from "./AboutSectionPlaceholder";
 
 /**
- * HeroSection - About 页顶部 Hero 区（站点名 + 描述）
+ * HeroSection - About 页顶部 Hero 区（站点名）
  *
- * 渐变光斑背景 + 大字站名 + 描述。从原默认渲染抽取为独立区块组件。
+ * 渐变光斑背景 + 大字站名。从原默认渲染抽取为独立区块组件。
  */
 export function HeroSection({ settings }: AboutSectionProps) {
 	return (
@@ -31,16 +31,6 @@ export function HeroSection({ settings }: AboutSectionProps) {
 				>
 					{settings.site_name || "关于"}
 				</motion.h1>
-				{settings.site_description ? (
-					<motion.p
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						transition={{ delay: 0.8, duration: 1 }}
-						className="max-w-xl text-base text-foreground/70"
-					>
-						{settings.site_description}
-					</motion.p>
-				) : null}
 			</div>
 		</section>
 	);

@@ -26,8 +26,6 @@ export interface AboutConfig {
 export interface SiteSettings {
 	/** 站点名称 */
 	site_name: string;
-	/** 站点描述 */
-	site_description: string;
 	/** 站点 URL */
 	site_url: string;
 	/** 每页文章数 */
