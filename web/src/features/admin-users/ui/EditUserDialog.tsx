@@ -17,7 +17,7 @@ import { Switch } from "@/shared/ui/base/switch";
 import { Modal } from "@/shared/ui/modal";
 import { useUpdateUser } from "../api/queries";
 import { type EditUserForm, editUserSchema } from "../model/schema";
-import type { AdminUserDTO } from "../model/types";
+import type { AdminUserDTO, UpdateUserRequest } from "../model/types";
 
 interface EditUserDialogProps {
 	open: boolean;
@@ -91,14 +91,7 @@ export function EditUserDialog({
 	}, [open, user, reset]);
 
 	const onSubmit = (data: EditUserForm) => {
-		const updateData: {
-			username: string;
-			display_name?: string;
-			email: string;
-			password?: string;
-			role: string;
-			is_active: boolean;
-		} = {
+		const updateData: UpdateUserRequest = {
 			username: data.username,
 			display_name: data.display_name,
 			email: data.email,
