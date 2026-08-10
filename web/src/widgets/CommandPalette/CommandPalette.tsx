@@ -53,6 +53,14 @@ const CommandPalette = () => {
 		return () => window.removeEventListener("keydown", onKey);
 	}, [toggleOpen]);
 
+	// 关闭时清空输入，避免下次打开残留上次查询
+	useEffect(() => {
+		if (!isOpen) {
+			setQuery("");
+			setDebouncedQuery("");
+		}
+	}, [isOpen]);
+
 	// 本地命令：导航 + 主题（经 filterCommands 子串过滤）
 	const localCommands: CmdItem[] = useMemo(
 		() => [
