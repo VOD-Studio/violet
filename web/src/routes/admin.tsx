@@ -17,11 +17,11 @@ export const Route = createFileRoute("/admin")({
 	beforeLoad: async ({ context }) => {
 		const { auth, queryClient } = context;
 
-		// 仅当「网络判定未登录」且「客户端确实没有活跃会话」时才踢人。
-		// 后者（isSessionActive）不受网络瞬态失败影响——登录成功置 true、登出才置 false。
-		// 这样 session 过期导致 getAuthSession 返回 null（auth.isAuthenticated 短暂为 false）
-		// 时，已登录用户不会被误踢，而是原地等弹窗重登。
-		if ((!auth.isAuthenticated || !auth.claims) && !isSessionActive()) {
+		// context.auth.isAuthenticated 来自 getAuthSession（server function RPC），
+		// RPC cookie 转发不可靠，刷新时经常假阴性。追加 me 缓存兜底：me 缓存来自
+		// 浏览器直连的 /auth/me（可靠），有数据说明确实登录过。
+		const meCache = queryClient.getQueryData<UserDTO | null>(authKeys.me());
+		if ((!auth.isAuthenticated || !auth.claims) && !isSessionActive() && !meCache) {
 			throw redirect({
 				to: "/",
 				replace: true,

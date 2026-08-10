@@ -1,3 +1,5 @@
+import type { UserDTO } from "@entities/user/model/types";
+import { authKeys } from "@features/auth/api/keys";
 import { useMe } from "@features/auth/api/queries";
 import { AccountInfoSection } from "@features/profile/ui/AccountInfoSection";
 import { PasswordSection } from "@features/profile/ui/PasswordSection";
@@ -41,7 +43,12 @@ const ProfilePage = () => {
 export const Route = createFileRoute("/profile/")({
 	ssr: false,
 	beforeLoad: ({ context, location }) => {
-		if (!context.auth.isAuthenticated && !isSessionActive()) {
+		// context.auth.isAuthenticated 来自 getAuthSession（server function RPC），
+		// RPC cookie 转发不可靠（SSR 地址配错/转发丢 cookie），刷新时经常假阴性。
+		// 追加 me 缓存判定：useMe 缓存来自浏览器直连的 /auth/me（可靠），有数据说明确实登录过。
+		// 三者（RPC 判定、sessionActive、me 缓存）任一为真就不踢，交给组件/401 处理。
+		const me = context.queryClient.getQueryData<UserDTO | null>(authKeys.me());
+		if (!context.auth.isAuthenticated && !isSessionActive() && !me) {
 			throw redirect({
 				to: "/login",
 				search: { redirect: location.href },
