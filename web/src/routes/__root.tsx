@@ -52,13 +52,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			if (claims && typeof window !== "undefined") {
 				markSessionActive();
 			} else if (!claims && typeof window !== "undefined") {
-				// 客户端 hydrate 时 getAuthSession 返回 null：可能是 RPC cookie 转发
-				// 失败的假阴性（/auth/session 直连带 cookie 200，但 server function RPC
-				// 丢了 cookie → 401）。用 document.cookie 兜底：若有 violet_session cookie，
-				// 说明浏览器确实持有 session，按已登录处理，等浏览器直连的 /auth/me 确认。
-				// session 真过期的清理交给 401 拦截器（走浏览器直连，cookie 正确）。
-				const hasSessionCookie = document.cookie.includes("violet_session=");
-				if (hasSessionCookie) {
+				// 客户端 hydrate 时 getAuthSession 返回 null：可能是 server function RPC
+				// 链路问题（SSR 地址配错/cookie 转发失败），不是 session 真过期。
+				// 用非 HttpOnly 的 violet_csrf cookie 兜底：浏览器有它说明后端下发了
+				// session 相关 cookie，按已登录处理，等浏览器直连的 /auth/me 确认。
+				// 不能用 violet_session——它是 HttpOnly，document.cookie 读不到。
+				if (document.cookie.includes("violet_csrf=")) {
 					markSessionActive();
 				}
 			}
