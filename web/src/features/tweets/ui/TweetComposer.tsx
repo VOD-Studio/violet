@@ -1,9 +1,12 @@
 /** TweetComposer - 推文发布框（登录态：文本 ≤500 rune + ≤4 图，前端拦截边界） */
 
+import type { QuotedTweet, Tweet } from "@entities/tweet/model/types";
 import { useChunkedUpload } from "@features/upload/hooks/use-chunked-upload";
 import { ApiError } from "@shared/api/error";
 import { contentImageUrl } from "@shared/lib/image-url";
 import { Button } from "@shared/ui/base/button";
+import { formatDistanceToNow } from "date-fns";
+import { zhCN } from "date-fns/locale";
 import { AlertCircle, ImagePlus, Loader2, Send, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -27,7 +30,16 @@ interface ImageItem {
 	preview: string;
 }
 
-export function TweetComposer() {
+export interface TweetComposerProps {
+	/** 引用转发的目标推文 */
+	quotedTweet?: Tweet | QuotedTweet;
+	/** 发布成功后的回调 */
+	onSuccess?: () => void;
+	/** 取消引用的回调 */
+	onCancelQuote?: () => void;
+}
+
+export function TweetComposer({ quotedTweet, onSuccess, onCancelQuote }: TweetComposerProps = {}) {
 	const [content, setContent] = useState("");
 	const [images, setImages] = useState<ImageItem[]>([]);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -45,8 +57,7 @@ export function TweetComposer() {
 		!createTweet.isPending &&
 		!uploading &&
 		!overLimit &&
-		(content.trim().length > 0 || doneUrls.length > 0);
-
+		(content.trim().length > 0 || doneUrls.length > 0 || !!quotedTweet);
 	/** 选择文件 → 逐个上传（顺序，避免并发挤占分片通道） */
 	const handleFiles = async (files: FileList | null) => {
 		if (!files || files.length === 0) return;
@@ -109,16 +120,17 @@ export function TweetComposer() {
 			toast.error(`正文不能超过 ${MAX_TWEET_LENGTH} 字`);
 			return;
 		}
-		if (!content.trim() && doneUrls.length === 0) {
+		if (!content.trim() && doneUrls.length === 0 && !quotedTweet) {
 			toast.error("说点什么吧");
 			return;
 		}
 		createTweet.mutate(
-			{ content: content.trim(), images: doneUrls },
+			{ content: content.trim(), images: doneUrls, quote_of: quotedTweet?.id },
 			{
 				onSuccess: () => {
 					setContent("");
 					setImages([]);
+					onSuccess?.();
 					toast.success("已发布");
 				},
 				onError: (err) => toastError(err, "发布失败"),
@@ -180,6 +192,42 @@ export function TweetComposer() {
 							</button>
 						</div>
 					))}
+				</div>
+			)}
+			{quotedTweet && (
+				<div className="relative mt-3 rounded-lg border border-edge-hairline bg-surface/50 p-3 text-xs">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-1.5 font-medium text-foreground">
+							<span>{quotedTweet.author.username}</span>
+							<span className="text-muted-foreground font-normal">
+								·{" "}
+								{formatDistanceToNow(new Date(quotedTweet.created_at), {
+									addSuffix: true,
+									locale: zhCN,
+								})}
+							</span>
+						</div>
+						{onCancelQuote && (
+							<button
+								type="button"
+								onClick={onCancelQuote}
+								className="text-muted-foreground hover:text-foreground"
+								title="取消引用"
+							>
+								<X className="size-3.5" />
+							</button>
+						)}
+					</div>
+					{quotedTweet.content && (
+						<p className="mt-1 line-clamp-2 text-foreground/90 whitespace-pre-wrap">
+							{quotedTweet.content}
+						</p>
+					)}
+					{quotedTweet.images && quotedTweet.images.length > 0 && (
+						<div className="mt-1.5 text-muted-foreground">
+							[{quotedTweet.images.length} 张图片]
+						</div>
+					)}
 				</div>
 			)}
 

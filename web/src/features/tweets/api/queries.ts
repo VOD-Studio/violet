@@ -24,15 +24,39 @@ export const fetchTimeline = async (
  *
  * @param limit 每页条数，默认 20
  */
-export const useTimeline = (limit: number = TIMELINE_PAGE_SIZE) =>
+export const useTimeline = (limit: number = TIMELINE_PAGE_SIZE, enabled: boolean = true) =>
 	useInfiniteQuery({
 		queryKey: tweetKeys.timelineOf(limit),
 		queryFn: ({ pageParam }) => fetchTimeline({ cursor: pageParam, limit }),
 		// 首页无 cursor；pageParam 类型为 string | undefined
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,
+		enabled,
 	});
 
+/**
+ * fetchTopicTimeline - 调后端 GET /tweets/topics/{tag} 拉话题时间线（公开，cursor 分页）
+ */
+export const fetchTopicTimeline = async (
+	tag: string,
+	query: TweetTimelineQuery = {},
+): Promise<PagedResponse<Tweet>> =>
+	apiGetPaged<Tweet>(`/tweets/topics/${encodeURIComponent(tag)}`, { params: query });
+
+/**
+ * useTopicTimeline - 话题时间线 hook（cursor 滚动加载）
+ *
+ * @param tag 话题标签名称
+ * @param limit 每页条数，默认 20
+ */
+export const useTopicTimeline = (tag: string, limit: number = TIMELINE_PAGE_SIZE) =>
+	useInfiniteQuery({
+		queryKey: tweetKeys.topicTimelineOf(tag, limit),
+		queryFn: ({ pageParam }) => fetchTopicTimeline(tag, { cursor: pageParam, limit }),
+		initialPageParam: undefined as string | undefined,
+		getNextPageParam: (lastPage) => lastPage.pagination?.next_cursor || undefined,
+		enabled: !!tag,
+	});
 /**
  * fetchTweetDetail - 调后端 GET /tweets/{id} 拉单条推文详情（公开）
  */

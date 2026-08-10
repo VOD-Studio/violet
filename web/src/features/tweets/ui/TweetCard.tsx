@@ -17,14 +17,16 @@ import { useDeleteTweet, useToggleLikeTweet } from "@features/tweets/api/mutatio
 import { avatarUrl, contentImageUrl } from "@shared/lib/image-url";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { ImageGrid, type ImageGridImage } from "@shared/ui/image-grid";
+import { Modal } from "@shared/ui/modal/components/Modal";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { format, formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Heart, MessageCircle, Trash2 } from "lucide-react";
+import { AlertCircle, Heart, MessageCircle, Repeat2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-
+import TweetComposer from "./TweetComposer";
+import TweetContent from "./TweetContent";
 export type TweetCardVariant = "timeline" | "detail";
 
 export interface TweetCardProps {
@@ -41,6 +43,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 	const navigate = useNavigate();
 	const canDeleteAny = useHasPermission("tweet:delete-any");
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [quoteModalOpen, setQuoteModalOpen] = useState(false);
 	const deleteTweet = useDeleteTweet(tweet.id);
 	const toggleLike = useToggleLikeTweet(tweet);
 
@@ -52,6 +55,16 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 			return;
 		}
 		toggleLike.mutate();
+	};
+
+	const handleQuoteClick = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		if (!me.data) {
+			toast.info("请先登录后再引用转发");
+			navigate({ to: "/login" });
+			return;
+		}
+		setQuoteModalOpen(true);
 	};
 	// 正文非空才渲染（纯图推文 content 为空串）
 	const hasContent = tweet.content.length > 0;
@@ -151,11 +164,7 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 				</div>
 
 				{/* 正文 */}
-				{hasContent && (
-					<p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
-						{tweet.content}
-					</p>
-				)}
+				{hasContent && <TweetContent content={tweet.content} />}
 
 				{/* 图片网格：点击预览而非进详情，阻止冒泡 */}
 				{gridImages.length > 0 && (
@@ -165,6 +174,81 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 						className="contents"
 					>
 						<ImageGrid images={gridImages} />
+					</div>
+				)}
+				{/* 嵌套引用推文 */}
+				{tweet.quoted_tweet && (
+					<div
+						onClick={(e) => {
+							e.stopPropagation();
+							if (tweet.quoted_tweet) {
+								navigate({
+									to: "/tweets/$id",
+									params: { id: tweet.quoted_tweet.id },
+								});
+							}
+						}}
+						onKeyDown={(e) => {
+							if ((e.key === "Enter" || e.key === " ") && tweet.quoted_tweet) {
+								e.preventDefault();
+								e.stopPropagation();
+								navigate({
+									to: "/tweets/$id",
+									params: { id: tweet.quoted_tweet.id },
+								});
+							}
+						}}
+						role="button"
+						tabIndex={0}
+						className="mt-1 rounded-lg border border-edge-hairline bg-surface/40 p-3 text-xs transition-colors hover:border-foreground/20 cursor-pointer"
+					>
+						<div className="flex items-center gap-2 mb-1.5">
+							<img
+								src={avatarUrl(
+									tweet.quoted_tweet.author.avatar_url,
+									tweet.quoted_tweet.author.username,
+								)}
+								alt={tweet.quoted_tweet.author.username}
+								className="size-5 rounded-full object-cover shrink-0"
+							/>
+							<span className="font-semibold text-foreground truncate">
+								{tweet.quoted_tweet.author.username}
+							</span>
+							<span className="text-muted-foreground text-[11px]">
+								·{" "}
+								{formatDistanceToNow(new Date(tweet.quoted_tweet.created_at), {
+									addSuffix: true,
+									locale: zhCN,
+								})}
+							</span>
+						</div>
+						{tweet.quoted_tweet.content && (
+							<TweetContent
+								content={tweet.quoted_tweet.content}
+								className="line-clamp-3 text-xs leading-normal text-foreground/90"
+							/>
+						)}
+						{tweet.quoted_tweet.images && tweet.quoted_tweet.images.length > 0 && (
+							<div
+								className="mt-2"
+								onClick={(e) => e.stopPropagation()}
+								onKeyDown={(e) => e.stopPropagation()}
+								role="presentation"
+							>
+								<ImageGrid
+									images={tweet.quoted_tweet.images.map((url) => ({
+										url,
+										thumbnail: contentImageUrl(url, { width: 300 }),
+									}))}
+								/>
+							</div>
+						)}
+					</div>
+				)}
+				{tweet.quote_of && !tweet.quoted_tweet && (
+					<div className="mt-1 flex items-center gap-2 rounded-lg border border-edge-hairline bg-muted/20 p-3 text-xs text-muted-foreground">
+						<AlertCircle className="size-4 shrink-0" />
+						<span>推文已删除</span>
 					</div>
 				)}
 				{/* 点赞按钮 + 评论数 */}
@@ -186,6 +270,16 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 						/>
 						<span>{tweet.like_count}</span>
 					</button>
+					<button
+						type="button"
+						data-testid="quote-button"
+						aria-label="引用推文"
+						onClick={handleQuoteClick}
+						className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+					>
+						<Repeat2 className="size-3.5" />
+						<span>{tweet.quote_count}</span>
+					</button>
 					{isDetail ? // 详情页评论区就在下方，不重复显示评论数入口
 					null : (
 						<div className="inline-flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground">
@@ -206,6 +300,10 @@ const TweetCard = ({ tweet, variant = "timeline", onDeleted }: TweetCardProps) =
 				loading={deleteTweet.isPending}
 				onConfirm={handleConfirmDelete}
 			/>
+			{/* 引用弹窗 */}
+			<Modal open={quoteModalOpen} onOpenChange={setQuoteModalOpen} title="引用推文">
+				<TweetComposer quotedTweet={tweet} onSuccess={() => setQuoteModalOpen(false)} />
+			</Modal>
 		</>
 	);
 };

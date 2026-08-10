@@ -44,6 +44,7 @@ import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
 import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
+import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
 import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
 import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
@@ -230,6 +231,11 @@ const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminPostsRoute,
 } as any)
+const TweetsTopicsTagRoute = TweetsTopicsTagRouteImport.update({
+  id: '/tweets/topics/$tag',
+  path: '/tweets/topics/$tag',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthGithubCallbackRoute = AuthGithubCallbackRouteImport.update({
   id: '/auth/github/callback',
   path: '/auth/github/callback',
@@ -326,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -371,6 +378,7 @@ export interface FileRoutesByTo {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts': typeof AdminPostsIndexRoute
 }
 export interface FileRoutesById {
@@ -419,6 +427,7 @@ export interface FileRoutesById {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
 }
 export interface FileRouteTypes {
@@ -468,6 +477,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/tweets/topics/$tag'
     | '/admin/posts/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -513,6 +523,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/tweets/topics/$tag'
     | '/admin/posts'
   id:
     | '__root__'
@@ -560,6 +571,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/tweets/topics/$tag'
     | '/admin/posts/'
   fileRoutesById: FileRoutesById
 }
@@ -583,6 +595,7 @@ export interface RootRouteChildren {
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   TweetsIndexRoute: typeof TweetsIndexRoute
   AuthGithubCallbackRoute: typeof AuthGithubCallbackRoute
+  TweetsTopicsTagRoute: typeof TweetsTopicsTagRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -832,6 +845,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPostsIndexRouteImport
       parentRoute: typeof AdminPostsRoute
     }
+    '/tweets/topics/$tag': {
+      id: '/tweets/topics/$tag'
+      path: '/tweets/topics/$tag'
+      fullPath: '/tweets/topics/$tag'
+      preLoaderRoute: typeof TweetsTopicsTagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/github/callback': {
       id: '/auth/github/callback'
       path: '/auth/github/callback'
@@ -1005,16 +1025,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsIndexRoute: ProjectsIndexRoute,
   TweetsIndexRoute: TweetsIndexRoute,
   AuthGithubCallbackRoute: AuthGithubCallbackRoute,
+  TweetsTopicsTagRoute: TweetsTopicsTagRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

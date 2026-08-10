@@ -23,6 +23,26 @@ export interface TweetAuthor {
 }
 
 /**
+ * QuotedTweet - 被引用的推文读模型
+ *
+ * 对应后端 application/tweet QuotedTweetDTO。
+ */
+export interface QuotedTweet {
+	/** 推文 ID */
+	id: string;
+	/** 作者资料卡 */
+	author: TweetAuthor;
+	/** 正文 */
+	content: string;
+	/** 图片 URL 列表 */
+	images: string[];
+	/** 引用计数 */
+	quote_count: number;
+	/** 创建时间，RFC3339 字符串 */
+	created_at: string;
+}
+
+/**
  * Tweet - 推文读模型
  *
  * 对应后端 application/tweet/service.go 的 TweetDTO。
@@ -40,8 +60,13 @@ export interface Tweet {
 	like_count: number;
 	/** 当前登录用户是否已点赞 */
 	is_liked: boolean;
-	/** 评论总数（顶层 + 回复，详情页与卡片展示用） */
 	comment_count: number;
+	/** 引用计数 */
+	quote_count: number;
+	/** 转发引用的推文 ID */
+	quote_of?: string;
+	/** 被引用的推文（如果存在且未被删除） */
+	quoted_tweet?: QuotedTweet;
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
 }

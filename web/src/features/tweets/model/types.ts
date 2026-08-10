@@ -35,6 +35,8 @@ export interface CreateTweetInput {
 	content: string;
 	/** 图片 URL 列表，≤4 张；纯文本推文可为空数组 */
 	images: string[];
+	/** 转发引用的推文 ID */
+	quote_of?: string;
 }
 
 /** 评论正文长度上限（rune 计，对齐后端 MaxCommentBodyLen） */
