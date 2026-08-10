@@ -1,3 +1,4 @@
+import { getDisplayName } from "@entities/user/model/display-name";
 import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
@@ -122,7 +123,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 									/>
 									<div className="min-w-0 flex-1">
 										<p className="truncate font-mono text-sm font-semibold tracking-tight text-foreground">
-											{user.username}
+											{getDisplayName(user)}
 										</p>
 										<p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
 											<span className="truncate">{user.email}</span>

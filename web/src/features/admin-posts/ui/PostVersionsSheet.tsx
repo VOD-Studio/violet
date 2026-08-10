@@ -85,7 +85,7 @@ export function PostVersionsSheet({
 											{v.editor ? (
 												<div className="flex items-center gap-1.5 rounded-full bg-muted/40 px-2.5 py-1">
 													<AvatarGroup users={[v.editor]} size="xs" />
-													{v.editor.username}
+													{v.editor.display_name || v.editor.username}
 												</div>
 											) : null}
 										</div>

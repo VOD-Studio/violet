@@ -122,6 +122,19 @@ export function CreateUserDialog({
 					)}
 				</div>
 
+				{/* 显示名 */}
+				<div className="space-y-2">
+					<Label htmlFor="display-name">显示名</Label>
+					<Input
+						id="display-name"
+						{...register("display_name")}
+						placeholder="留空则默认显示用户名"
+					/>
+					{errors.display_name && (
+						<p className="text-sm text-destructive">{errors.display_name.message}</p>
+					)}
+				</div>
+
 				{/* 邮箱 */}
 				<div className="space-y-2">
 					<Label htmlFor="email">

@@ -14,6 +14,8 @@ export interface AdminUserDTO {
 	id: string;
 	/** 用户名 */
 	username: string;
+	/** 显示名（可空，空时回退 username） */
+	display_name: string;
 	/** 邮箱 */
 	email: string;
 	/** 角色：user / admin / superadmin */

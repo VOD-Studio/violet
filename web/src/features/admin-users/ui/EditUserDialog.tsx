@@ -65,6 +65,7 @@ export function EditUserDialog({
 		resolver: zodResolver(editUserSchema),
 		defaultValues: {
 			username: user.username,
+			display_name: user.display_name || "",
 			email: user.email,
 			password: "",
 			role: user.role,
@@ -80,6 +81,7 @@ export function EditUserDialog({
 		if (open) {
 			reset({
 				username: user.username,
+				display_name: user.display_name || "",
 				email: user.email,
 				password: "",
 				role: user.role,
@@ -89,15 +91,16 @@ export function EditUserDialog({
 	}, [open, user, reset]);
 
 	const onSubmit = (data: EditUserForm) => {
-		// 构建更新数据，排除空密码
 		const updateData: {
 			username: string;
+			display_name?: string;
 			email: string;
 			password?: string;
 			role: string;
 			is_active: boolean;
 		} = {
 			username: data.username,
+			display_name: data.display_name,
 			email: data.email,
 			role: data.role,
 			is_active: data.is_active,
@@ -156,6 +159,19 @@ export function EditUserDialog({
 					/>
 					{errors.username && (
 						<p className="text-sm text-destructive">{errors.username.message}</p>
+					)}
+				</div>
+
+				{/* 显示名 */}
+				<div className="space-y-2">
+					<Label htmlFor="edit-display-name">显示名</Label>
+					<Input
+						id="edit-display-name"
+						{...register("display_name")}
+						placeholder="留空则默认显示用户名"
+					/>
+					{errors.display_name && (
+						<p className="text-sm text-destructive">{errors.display_name.message}</p>
 					)}
 				</div>
 

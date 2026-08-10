@@ -31,6 +31,7 @@ function makeUser(): UserDTO {
 	return {
 		id: "u1",
 		username: "alice",
+		display_name: "",
 		email: "alice@example.com",
 		avatar_url: "",
 		bio: "",

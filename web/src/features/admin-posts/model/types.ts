@@ -120,7 +120,7 @@ export interface PostVersionDTO {
 	/** 编辑这一版的操作人 ID */
 	editor_id: string;
 	/** 编辑者信息（用户名+头像），后端按 editor_id 批量填充 */
-	editor?: { username: string; avatar_url: string };
+	editor?: { username: string; avatar_url: string; display_name?: string };
 	summary: string;
 	created_at: string;
 }
