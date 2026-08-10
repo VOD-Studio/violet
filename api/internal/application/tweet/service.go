@@ -2,10 +2,11 @@
 //
 // 承载推文的发/删/读：即发即出（Create 无审核状态机）、不可编辑（无 Update 用例）、
 // 物理删除（Delete 直接清行，点赞/评论由 DB 级联）。
+// 推文评论（P2）同属本服务：登录可评论/回复、作者或管理员可删、page/limit 分页。
 // 删除鉴权（作者本人或 tweet:delete-any）在应用层做（与 post.canModify 同构：
 // 所有权 OR 权限码的双重判定无法由路由中间件单一表达）。
 //
-// 依赖方向：Service → domain 端口（TweetRepository / UserRepository），
+// 依赖方向：Service → domain 端口（TweetRepository / CommentRepository / UserRepository），
 // 图片归属校验通过 TweetImageChecker 端口反转依赖 upload 域。
 package tweet
 
@@ -27,24 +28,27 @@ const PermDeleteAny = "tweet:delete-any"
 
 // Service 推文用例服务。
 type Service struct {
-	repo     domaintweet.TweetRepository
-	userRepo domainuser.UserRepository
-	checker  TweetImageChecker
-	perm     TweetPermissionChecker
-	bus      appshared.EventBus
+	repo        domaintweet.TweetRepository
+	commentRepo domaintweet.CommentRepository
+	userRepo    domainuser.UserRepository
+	checker     TweetImageChecker
+	perm        TweetPermissionChecker
+	bus         appshared.EventBus
 }
 
 // NewService 构造服务。
 // checker 为 nil 时跳过图片归属校验（仅限测试场景；生产容器必须注入）。
+// commentRepo 为 nil 时跳过评论相关用例与评论数填充（仅限推文单测场景）。
 // perm 为 nil 时仅作者本人可删（无权限码放行路径）。
 func NewService(
 	repo domaintweet.TweetRepository,
+	commentRepo domaintweet.CommentRepository,
 	userRepo domainuser.UserRepository,
 	checker TweetImageChecker,
 	perm TweetPermissionChecker,
 	bus appshared.EventBus,
 ) *Service {
-	return &Service{repo: repo, userRepo: userRepo, checker: checker, perm: perm, bus: bus}
+	return &Service{repo: repo, commentRepo: commentRepo, userRepo: userRepo, checker: checker, perm: perm, bus: bus}
 }
 
 // --- 输入/输出 DTO ---
@@ -82,8 +86,10 @@ type TweetDTO struct {
 	Images    []string  `json:"images"`
 	LikeCount int       `json:"like_count"`
 	IsLiked   bool      `json:"is_liked"`
+	// CommentCount 该推文下的评论总数（顶层 + 回复），详情页与卡片展示用
+	CommentCount int    `json:"comment_count"`
 	// CreatedAt RFC3339 格式
-	CreatedAt string `json:"created_at"`
+	CreatedAt string    `json:"created_at"`
 }
 
 // --- 写用例 ---
@@ -332,17 +338,29 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			}
 		}
 	}
+	// 批量填充评论数（详情页/卡片展示）。commentRepo 为 nil（推文单测）时跳过。
+	commentCountMap := make(map[string]int64)
+	if s.commentRepo != nil && len(tweets) > 0 {
+		tIDs := make([]shared.ID, len(tweets))
+		for i, tw := range tweets {
+			tIDs[i] = tw.ID()
+		}
+		if cm, err := s.commentRepo.CountByTweetIDs(ctx, tIDs); err == nil {
+			commentCountMap = cm
+		}
+	}
 
 	dtos := make([]TweetDTO, 0, len(tweets))
 	for _, tw := range tweets {
 		dtos = append(dtos, TweetDTO{
-			ID:        tw.ID().String(),
-			Author:    authors[tw.AuthorID().String()],
-			Content:   tw.Content(),
-			Images:    tw.Images(),
-			LikeCount: tw.LikeCount(),
-			IsLiked:   likedMap[tw.ID().String()],
-			CreatedAt: tw.CreatedAt().UTC().Format(time.RFC3339),
+			ID:           tw.ID().String(),
+			Author:       authors[tw.AuthorID().String()],
+			Content:      tw.Content(),
+			Images:       tw.Images(),
+			LikeCount:    tw.LikeCount(),
+			IsLiked:      likedMap[tw.ID().String()],
+			CommentCount: int(commentCountMap[tw.ID().String()]),
+			CreatedAt:    tw.CreatedAt().UTC().Format(time.RFC3339),
 		})
 	}
 	return dtos
@@ -358,3 +376,199 @@ func (s *Service) publishEvents(ctx context.Context, events []shared.DomainEvent
 		log.Warn().Err(err).Msg("推文领域事件发布失败")
 	}
 }
+
+// --- 推文评论（P2 / issue #107）---
+
+// CommentDTO 推文评论读模型。
+type CommentDTO struct {
+	ID        string    `json:"id"`
+	TweetID   string    `json:"tweet_id"`
+	Author    AuthorDTO `json:"author"`
+	Body      string    `json:"body"`
+	// ParentID 被回复的评论 id；顶层评论省略（omitempty）
+	ParentID  string    `json:"parent_id,omitempty"`
+	Depth     int16     `json:"depth"`
+	// CreatedAt RFC3339 格式
+	CreatedAt string    `json:"created_at"`
+}
+
+// CreateCommentInput 创建评论入参。
+type CreateCommentInput struct {
+	TweetID  string
+	// AuthorID 当前登录用户 ID（handler 从 session ctx 提取）
+	AuthorID string
+	Body     string
+	// ParentID 被回复的评论 id；空串=顶层评论
+	ParentID string
+}
+
+// CreateComment 创建评论或回复（登录，即发即出：无审核状态机）。
+//
+// 编排：校验推文存在 → 领域工厂（不变量）→ 若有 parent 校验同推文且设回复层级 → Save。
+func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (CommentDTO, error) {
+	if s.commentRepo == nil {
+		return CommentDTO{}, errCommentRepoNotInjected
+	}
+	tweetID, err := shared.ParseID(in.TweetID)
+	if err != nil {
+		return CommentDTO{}, shared.BadRequest("非法的推文 ID")
+	}
+	authorID, err := shared.ParseID(in.AuthorID)
+	if err != nil {
+		return CommentDTO{}, shared.BadRequest("非法的用户 ID")
+	}
+	// 推文必须存在（评论挂推文下，推文删了不可评论）
+	if _, err := s.repo.FindByID(ctx, tweetID); err != nil {
+		return CommentDTO{}, err
+	}
+
+	c, err := domaintweet.NewComment(tweetID, authorID, in.Body)
+	if err != nil {
+		return CommentDTO{}, err
+	}
+
+	if in.ParentID != "" {
+		parentID, err := shared.ParseID(in.ParentID)
+		if err != nil {
+			return CommentDTO{}, shared.BadRequest("非法的父评论 ID")
+		}
+		parent, err := s.commentRepo.FindByID(ctx, parentID)
+		if err != nil {
+			return CommentDTO{}, err
+		}
+		// 跨推文回复非法：parent 必须与当前评论同属一条推文
+		if parent.TweetID() != tweetID {
+			return CommentDTO{}, shared.BadRequest("父评论不属于该推文")
+		}
+		if err := c.SetParent(parent); err != nil {
+			return CommentDTO{}, err
+		}
+	} else {
+		_ = c.SetParent(nil)
+	}
+
+	if err := s.commentRepo.Save(ctx, c); err != nil {
+		return CommentDTO{}, err
+	}
+	return s.commentsToDTOs(ctx, []*domaintweet.Comment{c})[0], nil
+}
+
+// DeleteComment 删除评论（物理删除；顶层评论的回复由 parent_id 自引用
+// ON DELETE CASCADE 连带清理）。
+//
+// 鉴权：评论作者本人，或持 tweet:delete-any 权限者（内置超管通配短路）——
+// 与推文删除同构，复用同一权限码（推文模块管理员管理全部推文内容）。
+func (s *Service) DeleteComment(ctx context.Context, id string) error {
+	if s.commentRepo == nil {
+		return errCommentRepoNotInjected
+	}
+	cid, err := shared.ParseID(id)
+	if err != nil {
+		return err
+	}
+	c, err := s.commentRepo.FindByID(ctx, cid)
+	if err != nil {
+		return err
+	}
+	if !s.canDeleteComment(ctx, c) {
+		return shared.Forbidden("无权删除他人评论")
+	}
+	return s.commentRepo.Delete(ctx, cid)
+}
+
+// ListComments 列出推文下的顶层评论（公开，page/limit 分页，最新在前）。
+func (s *Service) ListComments(ctx context.Context, tweetIDStr string, page, limit int) ([]CommentDTO, int64, error) {
+	if s.commentRepo == nil {
+		return nil, 0, errCommentRepoNotInjected
+	}
+	tweetID, err := shared.ParseID(tweetIDStr)
+	if err != nil {
+		return nil, 0, shared.BadRequest("非法的推文 ID")
+	}
+	comments, total, err := s.commentRepo.FindByTweet(ctx, tweetID, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.commentsToDTOs(ctx, comments), total, nil
+}
+
+// ListReplies 列出某顶层评论下的回复（公开，page/limit 分页，最早在前）。
+func (s *Service) ListReplies(ctx context.Context, parentIDStr string, page, limit int) ([]CommentDTO, int64, error) {
+	if s.commentRepo == nil {
+		return nil, 0, errCommentRepoNotInjected
+	}
+	parentID, err := shared.ParseID(parentIDStr)
+	if err != nil {
+		return nil, 0, shared.BadRequest("非法的评论 ID")
+	}
+	replies, total, err := s.commentRepo.FindReplies(ctx, parentID, page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.commentsToDTOs(ctx, replies), total, nil
+}
+
+// commentsToDTOs 领域评论 → DTO，批量填充作者资料（FindByIDs 一次查询避免 N+1）。
+func (s *Service) commentsToDTOs(ctx context.Context, comments []*domaintweet.Comment) []CommentDTO {
+	authorIDs := make([]shared.ID, 0, len(comments))
+	seen := make(map[string]bool, len(comments))
+	for _, c := range comments {
+		id := c.AuthorID()
+		if !seen[id.String()] {
+			seen[id.String()] = true
+			authorIDs = append(authorIDs, id)
+		}
+	}
+	authors := make(map[string]AuthorDTO, len(authorIDs))
+	if len(authorIDs) > 0 {
+		users, err := s.userRepo.FindByIDs(ctx, authorIDs)
+		if err != nil {
+			log.Warn().Err(err).Msg("推文评论作者资料批量查询失败，降级为空资料")
+		}
+		for _, u := range users {
+			authors[u.GetID().String()] = AuthorDTO{
+				ID: u.GetID().String(), Username: u.Username().String(), AvatarURL: u.AvatarURL(),
+			}
+		}
+	}
+	dtos := make([]CommentDTO, 0, len(comments))
+	for _, c := range comments {
+		parentID := ""
+		if p := c.ParentID(); p != nil {
+			parentID = p.String()
+		}
+		dtos = append(dtos, CommentDTO{
+			ID:        c.ID().String(),
+			TweetID:   c.TweetID().String(),
+			Author:    authors[c.AuthorID().String()],
+			Body:      c.Body(),
+			ParentID:  parentID,
+			Depth:     c.Depth(),
+			CreatedAt: c.CreatedAt().UTC().Format(time.RFC3339),
+		})
+	}
+	return dtos
+}
+
+// canDeleteComment 判断操作者是否有权删除指定评论。
+//
+// 放行规则（任一满足，与推文删除同构）：
+//   - 内置超管（通配短路）
+//   - 操作者是评论作者（所有权放行）
+//   - 操作者拥有 tweet:delete-any 权限码
+func (s *Service) canDeleteComment(ctx context.Context, c *domaintweet.Comment) bool {
+	isBuiltin := middleware.GetUserIsBuiltinSuperAdmin(ctx)
+	if isBuiltin {
+		return true
+	}
+	if opID := middleware.GetUserID(ctx); opID != "" && opID == c.AuthorID().String() {
+		return true
+	}
+	if s.perm == nil {
+		return false
+	}
+	return s.perm.HasPermission(middleware.GetUserRole(ctx), isBuiltin, PermDeleteAny)
+}
+
+// errCommentRepoNotInjected 评论仓储未注入（仅测试场景未传 commentRepo 时触发）。
+var errCommentRepoNotInjected = shared.Internal("评论仓储未注入", nil)

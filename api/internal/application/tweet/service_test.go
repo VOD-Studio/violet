@@ -161,6 +161,80 @@ func (f fakePermChecker) HasPermission(_ string, _ bool, codes ...string) bool {
 	return true
 }
 
+// fakeCommentRepo 推文评论仓储替身，内存存储。
+type fakeCommentRepo struct {
+	byID      map[string]*domaintweet.Comment
+	tweets    map[string]*domaintweet.Tweet // CreateComment 校验推文存在用
+	saved     []*domaintweet.Comment
+	deleted   []shared.ID
+	countByID map[string]int64 // tweetID -> count
+}
+
+func newFakeCommentRepo() *fakeCommentRepo {
+	return &fakeCommentRepo{byID: map[string]*domaintweet.Comment{}, countByID: map[string]int64{}}
+}
+
+func (f *fakeCommentRepo) Save(_ context.Context, c *domaintweet.Comment) error {
+	f.byID[c.ID().String()] = c
+	f.saved = append(f.saved, c)
+	return nil
+}
+
+func (f *fakeCommentRepo) FindByID(_ context.Context, id shared.ID) (*domaintweet.Comment, error) {
+	if c, ok := f.byID[id.String()]; ok {
+		return c, nil
+	}
+	return nil, domaintweet.ErrCommentNotFound
+}
+
+func (f *fakeCommentRepo) FindByTweet(_ context.Context, tweetID shared.ID, page, limit int) ([]*domaintweet.Comment, int64, error) {
+	var tops []*domaintweet.Comment
+	for _, c := range f.byID {
+		if c.TweetID() == tweetID && c.Depth() == 0 {
+			tops = append(tops, c)
+		}
+	}
+	// 简化：返回全部，不分页（分页正确性由 gorm 契约测试覆盖）
+	return tops, int64(len(tops)), nil
+}
+
+func (f *fakeCommentRepo) FindReplies(_ context.Context, parentID shared.ID, page, limit int) ([]*domaintweet.Comment, int64, error) {
+	parent, ok := f.byID[parentID.String()]
+	if !ok {
+		return nil, 0, domaintweet.ErrCommentNotFound
+	}
+	var reps []*domaintweet.Comment
+	prefix := parent.ID().String() + "/"
+	for _, c := range f.byID {
+		if c.Depth() == 1 && len(c.Path()) > len(prefix) && c.Path()[:len(prefix)] == prefix {
+			reps = append(reps, c)
+		}
+	}
+	return reps, int64(len(reps)), nil
+}
+
+
+func (f *fakeCommentRepo) CountByTweet(_ context.Context, tweetID shared.ID) (int64, error) {
+	return f.countByID[tweetID.String()], nil
+}
+
+func (f *fakeCommentRepo) CountByTweetIDs(_ context.Context, tweetIDs []shared.ID) (map[string]int64, error) {
+	res := make(map[string]int64, len(tweetIDs))
+	for _, id := range tweetIDs {
+		res[id.String()] = f.countByID[id.String()]
+	}
+	return res, nil
+}
+
+func (f *fakeCommentRepo) Delete(_ context.Context, id shared.ID) error {
+	if _, ok := f.byID[id.String()]; !ok {
+		return domaintweet.ErrCommentNotFound
+	}
+	delete(f.byID, id.String())
+	f.deleted = append(f.deleted, id)
+	return nil
+}
+
 // captureBus 捕获发布的事件。
 type captureBus struct{ events []shared.DomainEvent }
 
@@ -184,7 +258,13 @@ func newTestUser(t *testing.T, username string) *domainuser.User {
 }
 
 func newService(repo *fakeTweetRepo, users *fakeUserRepo, checker *fakeImageChecker, perm TweetPermissionChecker, bus appshared.EventBus) *Service {
-	return NewService(repo, users, checker, perm, bus)
+	return NewService(repo, nil, users, checker, perm, bus)
+}
+
+// newCommentService 构造带评论仓储的 service（评论用例测试用）。
+func newCommentService(t *testing.T, repo *fakeTweetRepo, comments *fakeCommentRepo, users *fakeUserRepo, perm TweetPermissionChecker) *Service {
+	t.Helper()
+	return NewService(repo, comments, users, nil, perm, appshared.NoopEventBus{})
 }
 
 // ctxWithUser 注入 session 中间件同款身份上下文。
@@ -527,4 +607,297 @@ func TestCursorCodec_InvalidInputs(t *testing.T) {
 		_, err := decodeCursor(s)
 		assert.Error(t, err, "输入 %q 应报错", raw)
 	}
+}
+
+// --- 推文评论 service 测试 ---
+
+func setupCommentService(t *testing.T, authorID shared.ID) (*Service, *fakeTweetRepo, *fakeCommentRepo, *fakeUserRepo) {
+	t.Helper()
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{}}
+	comments := newFakeCommentRepo()
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{}, byUsername: map[string]*domainuser.User{}}
+	// 用传入的 authorID 构造用户，保证 commentsToDTOs 的 FindByIDs 能命中
+	uname, err := domainuser.ParseUsername("commenter")
+	require.NoError(t, err)
+	mail, err := domainuser.ParseEmail("commenter@example.com")
+	require.NoError(t, err)
+	u := domainuser.NewUser(authorID, mail, uname, domainuser.NewPasswordHash("x"))
+	u.UpdateAvatarURL("/uploads/avatar/commenter.webp")
+	users.byIDs[authorID.String()] = u
+	svc := newCommentService(t, repo, comments, users, nil)
+	return svc, repo, comments, users
+}
+
+func TestCreateComment_TopLevel(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, comments, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	dto, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "  好文！  ",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, tweetID.String(), dto.TweetID)
+	assert.Equal(t, "好文！", dto.Body, "正文应 trim")
+	assert.Equal(t, int16(0), dto.Depth)
+	assert.Empty(t, dto.ParentID)
+	require.Len(t, comments.saved, 1)
+	assert.Equal(t, int16(0), comments.saved[0].Depth())
+	assert.Equal(t, comments.saved[0].ID().String()+"/", comments.saved[0].Path())
+	assert.Equal(t, "commenter", dto.Author.Username, "作者资料应填充")
+}
+
+func TestCreateComment_Reply(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, comments, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	// 先发顶层评论
+	top, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "顶层",
+	})
+	require.NoError(t, err)
+
+	// 回复顶层
+	reply, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "回复", ParentID: top.ID,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int16(1), reply.Depth)
+	assert.Equal(t, top.ID, reply.ParentID)
+
+	// 回复一条回复（两层扁平：depth 仍为 1）
+	reply2, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "回复的回复", ParentID: reply.ID,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int16(1), reply2.Depth, "两层扁平：回复回复仍 depth=1")
+	assert.Equal(t, reply.ID, reply2.ParentID, "parent_id 指被回复者")
+
+	require.Len(t, comments.saved, 3)
+	// reply2 的 path 挂在顶层祖先下
+	assert.Equal(t, top.ID+"/"+reply2.ID+"/", comments.saved[2].Path())
+}
+
+func TestCreateComment_TweetNotFound(t *testing.T) {
+	authorID := shared.NewID()
+	svc, _, _, _ := setupCommentService(t, authorID)
+
+	_, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: shared.NewID().String(), AuthorID: authorID.String(), Body: "x",
+	})
+	assert.ErrorIs(t, err, domaintweet.ErrNotFound)
+}
+
+func TestCreateComment_EmptyBody(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, _, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	_, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "   ",
+	})
+	assert.Error(t, err)
+}
+
+func TestCreateComment_ParentWrongTweet(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	otherTweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, comments, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	// 在另一条推文下造一条评论作为 parent
+	otherParent, err := domaintweet.NewComment(otherTweetID, authorID, "另一推文的评论")
+	require.NoError(t, err)
+	require.NoError(t, otherParent.SetParent(nil))
+	comments.byID[otherParent.ID().String()] = otherParent
+
+	_, err = svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "回复", ParentID: otherParent.ID().String(),
+	})
+	assert.Error(t, err, "跨推文回复应拒绝")
+}
+
+func TestCreateComment_ParentNotFound(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, _, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	_, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "回复", ParentID: shared.NewID().String(),
+	})
+	assert.ErrorIs(t, err, domaintweet.ErrCommentNotFound)
+}
+
+func TestDeleteComment_Author(t *testing.T) {
+	authorID := shared.NewID()
+	otherID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, comments, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	c, err := domaintweet.NewComment(tweetID, otherID, "他人的评论")
+	require.NoError(t, err)
+	require.NoError(t, c.SetParent(nil))
+	comments.byID[c.ID().String()] = c
+
+	// 作者本人删自己的
+	err = svc.DeleteComment(ctxWithUser(otherID.String(), "", false), c.ID().String())
+	require.NoError(t, err)
+	assert.Contains(t, comments.deleted, c.ID())
+}
+
+func TestDeleteComment_NonAuthorForbidden(t *testing.T) {
+	authorID := shared.NewID()
+	otherID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, comments, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	c, err := domaintweet.NewComment(tweetID, authorID, "作者的评论")
+	require.NoError(t, err)
+	require.NoError(t, c.SetParent(nil))
+	comments.byID[c.ID().String()] = c
+
+	// 他人删（无权限）→ 403
+	err = svc.DeleteComment(ctxWithUser(otherID.String(), "", false), c.ID().String())
+	assert.Error(t, err)
+	assert.Len(t, comments.deleted, 0, "无权删除不应调用 repo.Delete")
+}
+
+func TestDeleteComment_AdminWithPermission(t *testing.T) {
+	authorID := shared.NewID()
+	adminID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{}}
+	repo.findByIDData[tweetID.String()] = tweet
+	comments := newFakeCommentRepo()
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{}, byUsername: map[string]*domainuser.User{}}
+	users.byIDs[authorID.String()] = newTestUser(t, "author")
+	// perm 放行 tweet:delete-any
+	svc := newCommentService(t, repo, comments, users, fakePermChecker{allowed: map[string]bool{PermDeleteAny: true}})
+
+	c, err := domaintweet.NewComment(tweetID, authorID, "作者的评论")
+	require.NoError(t, err)
+	require.NoError(t, c.SetParent(nil))
+	comments.byID[c.ID().String()] = c
+
+	err = svc.DeleteComment(ctxWithUser(adminID.String(), "admin", false), c.ID().String())
+	require.NoError(t, err, "持 tweet:delete-any 的管理员可删任意评论")
+	assert.Contains(t, comments.deleted, c.ID())
+}
+
+func TestDeleteComment_BuiltinSuperAdmin(t *testing.T) {
+	authorID := shared.NewID()
+	saID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, comments, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	c, err := domaintweet.NewComment(tweetID, authorID, "作者的评论")
+	require.NoError(t, err)
+	require.NoError(t, c.SetParent(nil))
+	comments.byID[c.ID().String()] = c
+
+	// 内置超管通配短路（perm 为 nil 也放行）
+	err = svc.DeleteComment(ctxWithUser(saID.String(), "", true), c.ID().String())
+	require.NoError(t, err)
+}
+
+func TestDeleteComment_NotFound(t *testing.T) {
+	authorID := shared.NewID()
+	svc, _, _, _ := setupCommentService(t, authorID)
+
+	err := svc.DeleteComment(ctxWithUser(authorID.String(), "", false), shared.NewID().String())
+	assert.ErrorIs(t, err, domaintweet.ErrCommentNotFound)
+}
+
+func TestListComments(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, comments, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	for range 3 {
+		c, err := domaintweet.NewComment(tweetID, authorID, "顶层")
+		require.NoError(t, err)
+		require.NoError(t, c.SetParent(nil))
+		comments.byID[c.ID().String()] = c
+	}
+
+	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), 1, 20)
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), total)
+	assert.Len(t, dtos, 3)
+	for _, d := range dtos {
+		assert.Equal(t, int16(0), d.Depth)
+	}
+}
+
+func TestListReplies(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, comments, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+
+	top, err := domaintweet.NewComment(tweetID, authorID, "顶层")
+	require.NoError(t, err)
+	require.NoError(t, top.SetParent(nil))
+	comments.byID[top.ID().String()] = top
+
+	for range 2 {
+		r, err := domaintweet.NewComment(tweetID, authorID, "回复")
+		require.NoError(t, err)
+		require.NoError(t, r.SetParent(top))
+		comments.byID[r.ID().String()] = r
+	}
+
+	dtos, total, err := svc.ListReplies(context.Background(), top.ID().String(), 1, 20)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), total)
+	assert.Len(t, dtos, 2)
+	for _, d := range dtos {
+		assert.Equal(t, int16(1), d.Depth)
+	}
+}
+
+func TestTweetDTO_CommentCount(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+
+	svc, repo, comments, _ := setupCommentService(t, authorID)
+	repo.findByIDData[tweetID.String()] = tweet
+	comments.countByID[tweetID.String()] = 5
+
+	dto, err := svc.GetByID(context.Background(), tweetID.String())
+	require.NoError(t, err)
+	assert.Equal(t, 5, dto.CommentCount, "详情应返回评论数")
 }

@@ -31,9 +31,10 @@ func NewTweetContainer(
 	bus appshared.EventBus,
 ) *TweetContainer {
 	tweetRepo := gormrepo.NewTweetRepository(db)
+	commentRepo := gormrepo.NewTweetCommentRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
 	fileRepo := gormrepo.NewFileRepository(db)
-	svc := apptweet.NewService(tweetRepo, userRepo, &tweetImageCheckerAdapter{repo: fileRepo}, perm, bus)
+	svc := apptweet.NewService(tweetRepo, commentRepo, userRepo, &tweetImageCheckerAdapter{repo: fileRepo}, perm, bus)
 	return &TweetContainer{
 		TweetHandler: tweethttp.NewHandler(svc),
 		TweetService: svc,

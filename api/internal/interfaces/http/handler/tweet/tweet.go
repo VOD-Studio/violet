@@ -116,3 +116,62 @@ func (h *Handler) Unlike(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondOK(w, map[string]string{"message": "已取消点赞"})
 }
+
+
+// --- 推文评论（P2 / issue #107）---
+
+type createCommentRequest struct {
+	Body     string `json:"body"`
+	ParentID string `json:"parent_id"`
+}
+
+// CreateComment 创建评论/回复（登录）：POST /tweets/{id}/comments
+func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request) {
+	var req createCommentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	dto, err := h.svc.CreateComment(r.Context(), apptweet.CreateCommentInput{
+		TweetID:  r.PathValue("id"),
+		AuthorID: interfacesmw.GetUserIDFromContext(r),
+		Body:     req.Body,
+		ParentID: req.ParentID,
+	})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondCreated(w, dto)
+}
+
+// DeleteComment 删除评论（登录，作者或 tweet:delete-any）：DELETE /tweets/{id}/comments/{commentId}
+func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request) {
+	if err := h.svc.DeleteComment(r.Context(), r.PathValue("commentId")); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondMessage(w, http.StatusOK, "评论已删除")
+}
+
+// ListComments 列出推文下的顶层评论（公开）：GET /tweets/{id}/comments
+func (h *Handler) ListComments(w http.ResponseWriter, r *http.Request) {
+	page, limit := response.ParsePaging(r)
+	dtos, total, err := h.svc.ListComments(r.Context(), r.PathValue("id"), page, limit)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondPaged(w, dtos, page, limit, total)
+}
+
+// ListReplies 列出某顶层评论下的回复（公开）：GET /tweets/{id}/comments/{commentId}/replies
+func (h *Handler) ListReplies(w http.ResponseWriter, r *http.Request) {
+	page, limit := response.ParsePaging(r)
+	dtos, total, err := h.svc.ListReplies(r.Context(), r.PathValue("commentId"), page, limit)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondPaged(w, dtos, page, limit, total)
+}

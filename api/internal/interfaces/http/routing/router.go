@@ -262,8 +262,8 @@ func registerMediaRoutes(v1 chi.Router, d *Deps) {
 }
 
 // registerTweetRoutes 注册推文路由（PRD-0013）。
-// 时间线/详情/用户列表公开；发布登录 + 发布限流；删除登录（作者或
-// tweet:delete-any 的双重判定在 application 层，路由仅卡登录）。
+// 时间线/详情/用户列表/评论列表公开；发布登录 + 发布限流；
+// 评论发/删登录（作者或 tweet:delete-any 的双重判定在 application 层，路由仅卡登录）。
 func registerTweetRoutes(v1 chi.Router, d *Deps) {
 	tweetH := d.Tweet
 
@@ -274,6 +274,11 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Delete("/{id}", tweetH.Delete)
 		r.With(d.SessionAuth).Post("/{id}/like", tweetH.Like)
 		r.With(d.SessionAuth).Delete("/{id}/like", tweetH.Unlike)
+		// 评论：列表公开；发/删登录（作者或 tweet:delete-any 在 application 层）
+		r.With(d.OptionalAuth).Get("/{id}/comments", tweetH.ListComments)
+		r.With(d.SessionAuth).Post("/{id}/comments", tweetH.CreateComment)
+		r.With(d.SessionAuth).Delete("/{id}/comments/{commentId}", tweetH.DeleteComment)
+		r.With(d.OptionalAuth).Get("/{id}/comments/{commentId}/replies", tweetH.ListReplies)
 	})
 
 	// 用户主页公开资料与推文列表（公开，支持 OptionalAuth 获取 is_liked）

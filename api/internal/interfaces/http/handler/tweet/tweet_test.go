@@ -83,6 +83,78 @@ func (s *stubUserRepo) FindByUsername(_ context.Context, username domainuser.Use
 	return nil, domainuser.ErrNotFound
 }
 
+// stubCommentRepo 推文评论仓储 stub，内嵌接口保持编译通过，覆盖用到的方法。
+type stubCommentRepo struct {
+	domaintweet.CommentRepository
+	byID    map[string]*domaintweet.Comment
+	saved   []*domaintweet.Comment
+	deleted []shared.ID
+	counts  map[string]int64 // tweetID -> count
+}
+
+func newStubCommentRepo() *stubCommentRepo {
+	return &stubCommentRepo{byID: map[string]*domaintweet.Comment{}, counts: map[string]int64{}}
+}
+
+func (s *stubCommentRepo) Save(_ context.Context, c *domaintweet.Comment) error {
+	s.byID[c.ID().String()] = c
+	s.saved = append(s.saved, c)
+	return nil
+}
+
+func (s *stubCommentRepo) FindByID(_ context.Context, id shared.ID) (*domaintweet.Comment, error) {
+	if c, ok := s.byID[id.String()]; ok {
+		return c, nil
+	}
+	return nil, domaintweet.ErrCommentNotFound
+}
+
+func (s *stubCommentRepo) FindByTweet(_ context.Context, tweetID shared.ID, _, _ int) ([]*domaintweet.Comment, int64, error) {
+	var tops []*domaintweet.Comment
+	for _, c := range s.byID {
+		if c.TweetID() == tweetID && c.Depth() == 0 {
+			tops = append(tops, c)
+		}
+	}
+	return tops, int64(len(tops)), nil
+}
+
+func (s *stubCommentRepo) FindReplies(_ context.Context, parentID shared.ID, _, _ int) ([]*domaintweet.Comment, int64, error) {
+	parent, ok := s.byID[parentID.String()]
+	if !ok {
+		return nil, 0, domaintweet.ErrCommentNotFound
+	}
+	prefix := parent.ID().String() + "/"
+	var reps []*domaintweet.Comment
+	for _, c := range s.byID {
+		if c.Depth() == 1 && len(c.Path()) > len(prefix) && c.Path()[:len(prefix)] == prefix {
+			reps = append(reps, c)
+		}
+	}
+	return reps, int64(len(reps)), nil
+}
+
+func (s *stubCommentRepo) CountByTweet(_ context.Context, tweetID shared.ID) (int64, error) {
+	return s.counts[tweetID.String()], nil
+}
+
+func (s *stubCommentRepo) CountByTweetIDs(_ context.Context, ids []shared.ID) (map[string]int64, error) {
+	res := make(map[string]int64, len(ids))
+	for _, id := range ids {
+		res[id.String()] = s.counts[id.String()]
+	}
+	return res, nil
+}
+
+func (s *stubCommentRepo) Delete(_ context.Context, id shared.ID) error {
+	if _, ok := s.byID[id.String()]; !ok {
+		return domaintweet.ErrCommentNotFound
+	}
+	delete(s.byID, id.String())
+	s.deleted = append(s.deleted, id)
+	return nil
+}
+
 var (
 	authorID   = shared.MustParseID("00000000-0000-0000-0000-0000000000aa")
 	sampleTime = time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)
@@ -100,7 +172,17 @@ func newTestHandler(repo *stubTweetRepo) *Handler {
 	uname, _ := domainuser.ParseUsername("alice")
 	email, _ := domainuser.ParseEmail("alice@example.com")
 	users.users[authorID.String()] = domainuser.NewUser(authorID, email, uname, domainuser.NewPasswordHash("x"))
-	svc := apptweet.NewService(repo, users, nil, nil, appshared.NoopEventBus{})
+	svc := apptweet.NewService(repo, nil, users, nil, nil, appshared.NoopEventBus{})
+	return NewHandler(svc)
+}
+
+// newCommentTestHandler 构造带评论仓储的 handler（评论 handler 测试用）。
+func newCommentTestHandler(repo *stubTweetRepo, comments *stubCommentRepo) *Handler {
+	users := &stubUserRepo{users: map[string]*domainuser.User{}}
+	uname, _ := domainuser.ParseUsername("alice")
+	email, _ := domainuser.ParseEmail("alice@example.com")
+	users.users[authorID.String()] = domainuser.NewUser(authorID, email, uname, domainuser.NewPasswordHash("x"))
+	svc := apptweet.NewService(repo, comments, users, nil, nil, appshared.NoopEventBus{})
 	return NewHandler(svc)
 }
 
@@ -271,4 +353,185 @@ func TestUnlike_OK(t *testing.T) {
 	h.Unlike(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
+// --- 推文评论 handler 测试 ---
+
+func TestCreateComment_OK(t *testing.T) {
+	repo := &stubTweetRepo{byID: map[string]*domaintweet.Tweet{sampleTweet().ID().String(): sampleTweet()}}
+	comments := newStubCommentRepo()
+	h := newCommentTestHandler(repo, comments)
+
+	req := httptest.NewRequest(http.MethodPost, "/tweets/x/comments",
+		bytes.NewBufferString(`{"body":"好文"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue("id", sampleTweet().ID().String())
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.CreateComment(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	require.Len(t, comments.saved, 1)
+	assert.Equal(t, "好文", comments.saved[0].Body())
+}
+
+func TestCreateComment_EmptyBody(t *testing.T) {
+	repo := &stubTweetRepo{byID: map[string]*domaintweet.Tweet{sampleTweet().ID().String(): sampleTweet()}}
+	h := newCommentTestHandler(repo, newStubCommentRepo())
+
+	req := httptest.NewRequest(http.MethodPost, "/tweets/x/comments",
+		bytes.NewBufferString(`{"body":"  "}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue("id", sampleTweet().ID().String())
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.CreateComment(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestCreateComment_TweetNotFound(t *testing.T) {
+	h := newCommentTestHandler(&stubTweetRepo{}, newStubCommentRepo())
+
+	req := httptest.NewRequest(http.MethodPost, "/tweets/x/comments",
+		bytes.NewBufferString(`{"body":"x"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue("id", shared.NewID().String())
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.CreateComment(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestCreateComment_Reply(t *testing.T) {
+	repo := &stubTweetRepo{byID: map[string]*domaintweet.Tweet{sampleTweet().ID().String(): sampleTweet()}}
+	comments := newStubCommentRepo()
+	h := newCommentTestHandler(repo, comments)
+
+	// 先造顶层评论作为 parent
+	top, err := domaintweet.NewComment(sampleTweet().ID(), authorID, "顶层")
+	require.NoError(t, err)
+	require.NoError(t, top.SetParent(nil))
+	comments.byID[top.ID().String()] = top
+
+	req := httptest.NewRequest(http.MethodPost, "/tweets/x/comments",
+		bytes.NewBufferString(`{"body":"回复","parent_id":"`+top.ID().String()+`"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue("id", sampleTweet().ID().String())
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.CreateComment(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	require.Len(t, comments.saved, 1)
+	assert.Equal(t, int16(1), comments.saved[0].Depth())
+}
+
+func TestListComments_OK(t *testing.T) {
+	repo := &stubTweetRepo{}
+	comments := newStubCommentRepo()
+	for range 2 {
+		c, err := domaintweet.NewComment(sampleTweet().ID(), authorID, "顶层")
+		require.NoError(t, err)
+		require.NoError(t, c.SetParent(nil))
+		comments.byID[c.ID().String()] = c
+	}
+	h := newCommentTestHandler(repo, comments)
+
+	req := httptest.NewRequest(http.MethodGet, "/tweets/x/comments?page=1&limit=10", nil)
+	req.SetPathValue("id", sampleTweet().ID().String())
+	rr := httptest.NewRecorder()
+	h.ListComments(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var body struct {
+		Data []struct {
+			Body  string `json:"body"`
+			Depth int16  `json:"depth"`
+		} `json:"data"`
+		Meta struct {
+			Pagination struct {
+				Total int64 `json:"total"`
+			} `json:"pagination"`
+		} `json:"meta"`
+	}
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &body))
+	assert.Len(t, body.Data, 2)
+	assert.Equal(t, int64(2), body.Meta.Pagination.Total)
+}
+
+func TestListComments_BadID(t *testing.T) {
+	h := newCommentTestHandler(&stubTweetRepo{}, newStubCommentRepo())
+
+	req := httptest.NewRequest(http.MethodGet, "/tweets/x/comments", nil)
+	req.SetPathValue("id", "not-a-uuid")
+	rr := httptest.NewRecorder()
+	h.ListComments(rr, req)
+
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestDeleteComment_Author(t *testing.T) {
+	repo := &stubTweetRepo{}
+	comments := newStubCommentRepo()
+	c, err := domaintweet.NewComment(sampleTweet().ID(), authorID, "我的评论")
+	require.NoError(t, err)
+	require.NoError(t, c.SetParent(nil))
+	comments.byID[c.ID().String()] = c
+	h := newCommentTestHandler(repo, comments)
+
+	req := httptest.NewRequest(http.MethodDelete, "/tweets/x/comments/y", nil)
+	req.SetPathValue("commentId", c.ID().String())
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.DeleteComment(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, comments.deleted, c.ID())
+}
+
+func TestDeleteComment_NotFound(t *testing.T) {
+	h := newCommentTestHandler(&stubTweetRepo{}, newStubCommentRepo())
+
+	req := httptest.NewRequest(http.MethodDelete, "/tweets/x/comments/y", nil)
+	req.SetPathValue("commentId", shared.NewID().String())
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.DeleteComment(rr, req)
+
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestListReplies_OK(t *testing.T) {
+	repo := &stubTweetRepo{}
+	comments := newStubCommentRepo()
+	top, err := domaintweet.NewComment(sampleTweet().ID(), authorID, "顶层")
+	require.NoError(t, err)
+	require.NoError(t, top.SetParent(nil))
+	comments.byID[top.ID().String()] = top
+	for range 2 {
+		r, err := domaintweet.NewComment(sampleTweet().ID(), authorID, "回复")
+		require.NoError(t, err)
+		require.NoError(t, r.SetParent(top))
+		comments.byID[r.ID().String()] = r
+	}
+	h := newCommentTestHandler(repo, comments)
+
+	req := httptest.NewRequest(http.MethodGet, "/tweets/x/comments/y/replies?page=1&limit=10", nil)
+	req.SetPathValue("commentId", top.ID().String())
+	rr := httptest.NewRecorder()
+	h.ListReplies(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var body struct {
+		Data []struct {
+			Depth int16 `json:"depth"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &body))
+	assert.Len(t, body.Data, 2)
+	for _, d := range body.Data {
+		assert.Equal(t, int16(1), d.Depth)
+	}
 }
