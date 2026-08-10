@@ -14,6 +14,7 @@ import (
 type UserDTO struct {
 	ID                  string   `json:"id"`
 	Username            string   `json:"username"`
+	DisplayName         string   `json:"display_name"`
 	Email               string   `json:"email"`
 	AvatarURL           string   `json:"avatar_url"`
 	Bio                 string   `json:"bio"`
@@ -74,8 +75,8 @@ func (h *GetMeHandler) Handle(ctx context.Context, userID string) (UserDTO, erro
 // toUserDTO 领域用户转 DTO
 func toUserDTO(u *user.User, permissions []string, roleDescription string) UserDTO {
 	return UserDTO{
-		ID:              u.GetID().String(),
 		Username:        u.Username().String(),
+		DisplayName:     u.DisplayName().String(),
 		Email:           u.Email().String(),
 		AvatarURL:       u.AvatarURL(),
 		Bio:             u.Bio(),

@@ -162,10 +162,11 @@ func (h *ResetPasswordHandler) Handle(ctx context.Context, in ResetPasswordInput
 //
 // 所有字段为指针，nil 表示不更新该字段，空字符串表示清空。
 type UpdateProfileInput struct {
-	UserID    string
-	Username  *string
-	Bio       *string
-	AvatarURL *string
+	UserID     string
+	Username   *string
+	DisplayName *string
+	Bio        *string
+	AvatarURL  *string
 }
 
 // UpdateProfileHandler 更新个人资料用例
@@ -204,6 +205,15 @@ func (h *UpdateProfileHandler) Handle(ctx context.Context, in UpdateProfileInput
 			return nil, user.ErrUsernameExists
 		}
 		u.ChangeUsername(username)
+	}
+
+	// 显示名变更（允许重复，无需查重；空串=清除，回退 username）
+	if in.DisplayName != nil {
+		displayName, err := user.ParseDisplayName(*in.DisplayName)
+		if err != nil {
+			return nil, err
+		}
+		u.UpdateDisplayName(displayName)
 	}
 
 	if in.AvatarURL != nil {
