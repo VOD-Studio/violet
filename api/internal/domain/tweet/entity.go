@@ -8,6 +8,7 @@
 package tweet
 
 import (
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -28,8 +29,10 @@ const (
 // 订阅者：审计服务。Excerpt 供审计列表可读展示（截断的前缀，非全文）。
 type TweetCreated struct {
 	shared.BaseEvent
+	// AuthorID 作者 ID
 	AuthorID shared.ID
-	Excerpt  string
+	// Excerpt 正文前缀快照
+	Excerpt string
 }
 
 // NewTweetCreated 构造推文创建事件
@@ -47,8 +50,10 @@ func NewTweetCreated(t *Tweet) TweetCreated {
 // AuthorID 记录原作者（管理员删他人推文时与操作者不同），Excerpt 供审计追溯。
 type TweetDeleted struct {
 	shared.BaseEvent
+	// AuthorID 原作者 ID
 	AuthorID shared.ID
-	Excerpt  string
+	// Excerpt 正文前缀快照
+	Excerpt string
 }
 
 // NewTweetDeleted 构造推文删除事件
@@ -63,6 +68,32 @@ func NewTweetDeleted(t *Tweet) TweetDeleted {
 // excerptLen 审计快照的正文截断长度（rune）
 const excerptLen = 50
 
+var hashtagRegex = regexp.MustCompile(`#([^#\r\n]{1,50})#`)
+
+// ExtractHashtags 从正文中提取 #话题# 标签，规范化为小写并按首次出现顺序去重。
+func ExtractHashtags(content string) []string {
+	matches := hashtagRegex.FindAllStringSubmatch(content, -1)
+	if len(matches) == 0 {
+		return []string{}
+	}
+	result := make([]string, 0, len(matches))
+	seen := make(map[string]bool, len(matches))
+	for _, m := range matches {
+		if len(m) < 2 {
+			continue
+		}
+		raw := strings.TrimSpace(m[1])
+		if raw == "" {
+			continue
+		}
+		normalized := strings.ToLower(raw)
+		if !seen[normalized] {
+			seen[normalized] = true
+			result = append(result, normalized)
+		}
+	}
+	return result
+}
 // excerpt 取正文前缀快照（rune 安全截断）
 func excerpt(content string) string {
 	runes := []rune(content)
@@ -75,7 +106,7 @@ func excerpt(content string) string {
 // Tweet 推文聚合根。
 //
 // 不变量：
-//   - content trim 后 ≤500 rune；与 images 至少其一非空
+//   - content trim 后 ≤500 rune；与 images 及 quoteOf 至少其一非空
 //   - images ≤4 张，元素为上传文件的访问 URL（/uploads/...）
 //   - authorID 创建时固定，无 setter（无变更路径）
 //   - 无 Update 方法：不可编辑由聚合根层面保证（编译期无法改内容）
@@ -85,10 +116,12 @@ type Tweet struct {
 	id shared.ID
 	// authorID 作者用户 ID（创建时固定，不可变）
 	authorID shared.ID
-	// content 纯文本正文（trim 后存储；可与 images 其一为空，不同为空）
+	// content 纯文本正文（trim 后存储；可与 images/quoteOf 其一为空）
 	content string
 	// images 图片访问 URL 列表（≤4 张；发布时由应用层校验归属作者）
 	images []string
+	// quoteOf 转发引用的推文 ID（可选）
+	quoteOf *shared.ID
 	// likeCount 点赞冗余计数（tweet_likes 表是唯一数据源，此列服务列表性能）
 	likeCount int
 	// timestamps 创建/更新时间（无 Update 路径，updated_at 实际恒等于 created_at）
@@ -97,12 +130,12 @@ type Tweet struct {
 
 // NewTweet 创建新推文。
 //
-// content 先 trim 再校验：纯空白正文视为空，与空图片列表组合时拒绝。
+// content 先 trim 再校验：纯空白正文视为空，无图片无引用时拒绝。
 // 创建成功记录 TweetCreated 事件（应用层 Save 后发布）。
-func NewTweet(authorID shared.ID, content string, images []string) (*Tweet, error) {
+func NewTweet(authorID shared.ID, content string, images []string, quoteOf *shared.ID) (*Tweet, error) {
 	content = strings.TrimSpace(content)
-	if content == "" && len(images) == 0 {
-		return nil, shared.Validation("推文内容与图片至少填写其一")
+	if content == "" && len(images) == 0 && quoteOf == nil {
+		return nil, shared.Validation("推文内容、图片与引用至少包含一项")
 	}
 	if utf8.RuneCountInString(content) > MaxContentRunes {
 		return nil, shared.Validation("推文内容不能超过 500 字")
@@ -125,6 +158,7 @@ func NewTweet(authorID shared.ID, content string, images []string) (*Tweet, erro
 		authorID:   authorID,
 		content:    content,
 		images:     images,
+		quoteOf:    quoteOf,
 		timestamps: shared.Timestamps{CreatedAt: now, UpdatedAt: now},
 	}
 	t.RecordEvent(NewTweetCreated(t))
@@ -136,6 +170,7 @@ func ReconstructTweet(
 	id, authorID shared.ID,
 	content string,
 	images []string,
+	quoteOf *shared.ID,
 	likeCount int,
 	createdAt, updatedAt time.Time,
 ) *Tweet {
@@ -147,6 +182,7 @@ func ReconstructTweet(
 		authorID:   authorID,
 		content:    content,
 		images:     images,
+		quoteOf:    quoteOf,
 		likeCount:  likeCount,
 		timestamps: shared.Timestamps{CreatedAt: createdAt, UpdatedAt: updatedAt},
 	}
@@ -157,6 +193,8 @@ func (t *Tweet) ID() shared.ID        { return t.id }
 func (t *Tweet) AuthorID() shared.ID  { return t.authorID }
 func (t *Tweet) Content() string      { return t.content }
 func (t *Tweet) Images() []string     { return t.images }
+func (t *Tweet) QuoteOf() *shared.ID  { return t.quoteOf }
 func (t *Tweet) LikeCount() int       { return t.likeCount }
 func (t *Tweet) CreatedAt() time.Time { return t.timestamps.CreatedAt }
 func (t *Tweet) UpdatedAt() time.Time { return t.timestamps.UpdatedAt }
+func (t *Tweet) Hashtags() []string   { return ExtractHashtags(t.content) }

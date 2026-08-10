@@ -34,10 +34,21 @@ func (h *Handler) ListTimeline(w http.ResponseWriter, r *http.Request) {
 	}
 	response.RespondCursor(w, dtos, limit, nextCursor != "", nextCursor)
 }
+// ListByTopic 话题时间线（公开）：GET /tweets/topics/{tag}?cursor=&limit=
+func (h *Handler) ListByTopic(w http.ResponseWriter, r *http.Request) {
+	cursor, limit := response.ParseCursor(r)
+	dtos, nextCursor, err := h.svc.ListByTopic(r.Context(), r.PathValue("tag"), cursor, limit)
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondCursor(w, dtos, limit, nextCursor != "", nextCursor)
+}
 
 type createTweetRequest struct {
 	Content string   `json:"content"`
 	Images  []string `json:"images"`
+	QuoteOf *string  `json:"quote_of,omitempty"`
 }
 
 // Create 发推文（登录）：POST /tweets
@@ -51,6 +62,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		AuthorID: interfacesmw.GetUserIDFromContext(r),
 		Content:  req.Content,
 		Images:   req.Images,
+		QuoteOf:  req.QuoteOf,
 	})
 	if err != nil {
 		response.RespondError(w, r, err)

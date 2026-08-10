@@ -12,6 +12,8 @@ package tweet
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -59,6 +61,7 @@ type CreateInput struct {
 	AuthorID string
 	Content  string
 	Images   []string
+	QuoteOf  *string
 }
 
 // AuthorDTO 推文作者资料卡（时间线/详情页展示用）。
@@ -78,18 +81,29 @@ type UserProfileDTO struct {
 	CreatedAt string `json:"created_at"`
 }
 
+// QuotedTweetDTO 被引用推文读模型。
+type QuotedTweetDTO struct {
+	ID         string    `json:"id"`
+	Author     AuthorDTO `json:"author"`
+	Content    string    `json:"content"`
+	Images     []string  `json:"images"`
+	QuoteCount int       `json:"quote_count"`
+	CreatedAt  string    `json:"created_at"`
+}
+
 // TweetDTO 推文读模型（序列化跨层传输）。
 type TweetDTO struct {
-	ID        string    `json:"id"`
-	Author    AuthorDTO `json:"author"`
-	Content   string    `json:"content"`
-	Images    []string  `json:"images"`
-	LikeCount int       `json:"like_count"`
-	IsLiked   bool      `json:"is_liked"`
-	// CommentCount 该推文下的评论总数（顶层 + 回复），详情页与卡片展示用
-	CommentCount int    `json:"comment_count"`
-	// CreatedAt RFC3339 格式
-	CreatedAt string    `json:"created_at"`
+	ID           string          `json:"id"`
+	Author       AuthorDTO       `json:"author"`
+	Content      string          `json:"content"`
+	Images       []string        `json:"images"`
+	LikeCount    int             `json:"like_count"`
+	IsLiked      bool            `json:"is_liked"`
+	CommentCount int             `json:"comment_count"`
+	QuoteCount   int             `json:"quote_count"`
+	QuoteOf      *string         `json:"quote_of,omitempty"`
+	QuotedTweet  *QuotedTweetDTO `json:"quoted_tweet,omitempty"`
+	CreatedAt    string          `json:"created_at"`
 }
 
 // --- 写用例 ---
@@ -103,7 +117,22 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (TweetDTO, error) 
 		return TweetDTO{}, shared.BadRequest("非法的作者 ID")
 	}
 
-	tw, err := domaintweet.NewTweet(authorID, in.Content, in.Images)
+	var quoteOf *shared.ID
+	if in.QuoteOf != nil && *in.QuoteOf != "" {
+		qid, err := shared.ParseID(*in.QuoteOf)
+		if err != nil {
+			return TweetDTO{}, shared.BadRequest("非法的引用推文 ID")
+		}
+		if _, err := s.repo.FindByID(ctx, qid); err != nil {
+			if errors.Is(err, domaintweet.ErrNotFound) {
+				return TweetDTO{}, shared.NotFound("被引用的推文")
+			}
+			return TweetDTO{}, err
+		}
+		quoteOf = &qid
+	}
+
+	tw, err := domaintweet.NewTweet(authorID, in.Content, in.Images, quoteOf)
 	if err != nil {
 		return TweetDTO{}, err
 	}
@@ -188,6 +217,23 @@ func (s *Service) ListTimeline(ctx context.Context, cursorStr string, limit int)
 		return nil, "", err
 	}
 	tweets, err := s.repo.FindTimeline(ctx, cursor, limit+1)
+	if err != nil {
+		return nil, "", err
+	}
+	dtos, nextCursor := s.buildPage(ctx, tweets, limit)
+	return dtos, nextCursor, nil
+}
+// ListByTopic 话题时间线（公开）：按话题标签倒序 cursor 分页。
+func (s *Service) ListByTopic(ctx context.Context, tag, cursorStr string, limit int) ([]TweetDTO, string, error) {
+	tag = strings.TrimSpace(tag)
+	if tag == "" {
+		return []TweetDTO{}, "", nil
+	}
+	cursor, err := s.decodeCursorOrNil(cursorStr)
+	if err != nil {
+		return nil, "", err
+	}
+	tweets, err := s.repo.FindByTopic(ctx, tag, cursor, limit+1)
 	if err != nil {
 		return nil, "", err
 	}
@@ -300,6 +346,26 @@ func (s *Service) buildPage(ctx context.Context, tweets []*domaintweet.Tweet, li
 // 作者缺失时留零值 AuthorDTO：users 表 ON DELETE CASCADE 保证作者恒存在，
 // 缺失只会是数据异常，此时不阻断时间线读取（降级展示）。
 func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []TweetDTO {
+	quoteIDs := make([]shared.ID, 0, len(tweets))
+	quoteSeen := make(map[string]bool)
+	for _, tw := range tweets {
+		if q := tw.QuoteOf(); q != nil {
+			qs := q.String()
+			if !quoteSeen[qs] {
+				quoteSeen[qs] = true
+				quoteIDs = append(quoteIDs, *q)
+			}
+		}
+	}
+	quotedTweetsMap := make(map[string]*domaintweet.Tweet)
+	if len(quoteIDs) > 0 {
+		if qts, err := s.repo.FindByIDs(ctx, quoteIDs); err == nil {
+			for _, qt := range qts {
+				quotedTweetsMap[qt.ID().String()] = qt
+			}
+		}
+	}
+
 	authorIDs := make([]shared.ID, 0, len(tweets))
 	seen := make(map[string]bool, len(tweets))
 	for _, tw := range tweets {
@@ -309,6 +375,14 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			authorIDs = append(authorIDs, id)
 		}
 	}
+	for _, qt := range quotedTweetsMap {
+		aid := qt.AuthorID()
+		if !seen[aid.String()] {
+			seen[aid.String()] = true
+			authorIDs = append(authorIDs, aid)
+		}
+	}
+
 	authors := make(map[string]AuthorDTO, len(authorIDs))
 	if len(authorIDs) > 0 {
 		users, err := s.userRepo.FindByIDs(ctx, authorIDs)
@@ -325,14 +399,18 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 		}
 	}
 
+	var tIDs []shared.ID
+	if len(tweets) > 0 {
+		tIDs = make([]shared.ID, len(tweets))
+		for i, tw := range tweets {
+			tIDs[i] = tw.ID()
+		}
+	}
+
 	likedMap := make(map[string]bool)
 	currentUserID := middleware.GetUserID(ctx)
-	if currentUserID != "" && len(tweets) > 0 {
+	if currentUserID != "" && len(tIDs) > 0 {
 		if uid, err := shared.ParseID(currentUserID); err == nil {
-			tIDs := make([]shared.ID, len(tweets))
-			for i, tw := range tweets {
-				tIDs[i] = tw.ID()
-			}
 			if lm, err := s.repo.FindLikedTweetIDs(ctx, uid, tIDs); err == nil {
 				likedMap = lm
 			}
@@ -340,18 +418,38 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 	}
 	// 批量填充评论数（详情页/卡片展示）。commentRepo 为 nil（推文单测）时跳过。
 	commentCountMap := make(map[string]int64)
-	if s.commentRepo != nil && len(tweets) > 0 {
-		tIDs := make([]shared.ID, len(tweets))
-		for i, tw := range tweets {
-			tIDs[i] = tw.ID()
-		}
+	if s.commentRepo != nil && len(tIDs) > 0 {
 		if cm, err := s.commentRepo.CountByTweetIDs(ctx, tIDs); err == nil {
 			commentCountMap = cm
+		}
+	}
+	// 批量填充被引用次数
+	quoteCountMap := make(map[string]int64)
+	if len(tIDs) > 0 {
+		if qm, err := s.repo.CountQuotesByTweetIDs(ctx, tIDs); err == nil {
+			quoteCountMap = qm
 		}
 	}
 
 	dtos := make([]TweetDTO, 0, len(tweets))
 	for _, tw := range tweets {
+		var quoteOfStr *string
+		var quotedTweetDTO *QuotedTweetDTO
+		if q := tw.QuoteOf(); q != nil {
+			qs := q.String()
+			quoteOfStr = &qs
+			if qt, ok := quotedTweetsMap[qs]; ok {
+				quotedTweetDTO = &QuotedTweetDTO{
+					ID:         qt.ID().String(),
+					Author:     authors[qt.AuthorID().String()],
+					Content:    qt.Content(),
+					Images:     qt.Images(),
+					QuoteCount: int(quoteCountMap[qt.ID().String()]),
+					CreatedAt:  qt.CreatedAt().UTC().Format(time.RFC3339),
+				}
+			}
+		}
+
 		dtos = append(dtos, TweetDTO{
 			ID:           tw.ID().String(),
 			Author:       authors[tw.AuthorID().String()],
@@ -360,6 +458,9 @@ func (s *Service) toDTOs(ctx context.Context, tweets []*domaintweet.Tweet) []Twe
 			LikeCount:    tw.LikeCount(),
 			IsLiked:      likedMap[tw.ID().String()],
 			CommentCount: int(commentCountMap[tw.ID().String()]),
+			QuoteCount:   int(quoteCountMap[tw.ID().String()]),
+			QuoteOf:      quoteOfStr,
+			QuotedTweet:  quotedTweetDTO,
 			CreatedAt:    tw.CreatedAt().UTC().Format(time.RFC3339),
 		})
 	}

@@ -45,9 +45,24 @@ func (s *stubTweetRepo) FindByID(_ context.Context, id shared.ID) (*domaintweet.
 	}
 	return nil, domaintweet.ErrNotFound
 }
+func (s *stubTweetRepo) FindByIDs(_ context.Context, ids []shared.ID) ([]*domaintweet.Tweet, error) {
+	out := make([]*domaintweet.Tweet, 0, len(ids))
+	for _, id := range ids {
+		if tw, ok := s.byID[id.String()]; ok {
+			out = append(out, tw)
+		}
+	}
+	return out, nil
+}
 
 func (s *stubTweetRepo) FindTimeline(_ context.Context, _ *domaintweet.Cursor, _ int) ([]*domaintweet.Tweet, error) {
 	return s.timeline, nil
+}
+func (s *stubTweetRepo) FindByTopic(_ context.Context, _ string, _ *domaintweet.Cursor, _ int) ([]*domaintweet.Tweet, error) {
+	return s.timeline, nil
+}
+func (s *stubTweetRepo) CountQuotesByTweetIDs(_ context.Context, _ []shared.ID) (map[string]int64, error) {
+	return map[string]int64{}, nil
 }
 
 func (s *stubTweetRepo) Delete(_ context.Context, id shared.ID) error {
@@ -163,7 +178,7 @@ var (
 func sampleTweet() *domaintweet.Tweet {
 	return domaintweet.ReconstructTweet(
 		shared.MustParseID("00000000-0000-0000-0000-000000000001"),
-		authorID, "示例推文", []string{}, 0, sampleTime, sampleTime,
+		authorID, "示例推文", []string{}, nil, 0, sampleTime, sampleTime,
 	)
 }
 
@@ -223,6 +238,17 @@ func TestListTimeline_OK(t *testing.T) {
 	assert.Equal(t, "alice", body.Data[0].Author.Username)
 	assert.Equal(t, 10, body.Meta.Pagination.Limit)
 	assert.False(t, body.Meta.Pagination.HasMore)
+}
+func TestListByTopic_OK(t *testing.T) {
+	repo := &stubTweetRepo{timeline: []*domaintweet.Tweet{sampleTweet()}}
+	h := newTestHandler(repo)
+
+	req := httptest.NewRequest(http.MethodGet, "/tweets/topics/Golang?limit=10", nil)
+	req.SetPathValue("tag", "Golang")
+	rr := httptest.NewRecorder()
+	h.ListByTopic(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
 }
 
 func TestGet_NotFound(t *testing.T) {

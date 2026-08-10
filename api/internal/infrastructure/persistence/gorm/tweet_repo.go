@@ -3,10 +3,12 @@ package gorm
 import (
 	"context"
 	"errors"
-
+	"strings"
+	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
 	domainshared "blog-api/internal/domain/shared"
 	domaintweet "blog-api/internal/domain/tweet"
 	"blog-api/internal/infrastructure/persistence/gorm/model"
@@ -30,6 +32,20 @@ func (r *TweetRepository) Save(ctx context.Context, t *domaintweet.Tweet) error 
 	if err := r.db.WithContext(ctx).Save(&po).Error; err != nil {
 		return domainshared.Internal("保存推文失败", err)
 	}
+	tags := t.Hashtags()
+	if len(tags) > 0 {
+		hashtags := make([]model.TweetHashtag, len(tags))
+		for i, tag := range tags {
+			hashtags[i] = model.TweetHashtag{
+				TweetID:   t.ID().UUID(),
+				Tag:       tag,
+				CreatedAt: po.CreatedAt,
+			}
+		}
+		if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&hashtags).Error; err != nil {
+			return domainshared.Internal("保存推文话题关联失败", err)
+		}
+	}
 	return nil
 }
 
@@ -44,6 +60,64 @@ func (r *TweetRepository) FindByID(ctx context.Context, id domainshared.ID) (*do
 		return nil, domainshared.Internal("查询推文失败", err)
 	}
 	return tweetToDomain(po)
+}
+// FindByIDs 批量按 ID 查找推文（服务 toDTOs 预加载引用推文）。
+func (r *TweetRepository) FindByIDs(ctx context.Context, ids []domainshared.ID) ([]*domaintweet.Tweet, error) {
+	if len(ids) == 0 {
+		return []*domaintweet.Tweet{}, nil
+	}
+	uuids := make([]uuid.UUID, len(ids))
+	for i, id := range ids {
+		uuids[i] = id.UUID()
+	}
+	var pos []model.Tweet
+	if err := r.db.WithContext(ctx).Where("id IN ?", uuids).Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("批量查询推文失败", err)
+	}
+	result := make([]*domaintweet.Tweet, 0, len(pos))
+	for _, po := range pos {
+		t, err := tweetToDomain(po)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, t)
+	}
+	return result, nil
+}
+
+// FindByTopic 话题时间线：按话题标签过滤的 keyset 分页。
+func (r *TweetRepository) FindByTopic(ctx context.Context, tag string, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
+	tag = strings.ToLower(strings.TrimSpace(tag))
+	if tag == "" {
+		return []*domaintweet.Tweet{}, nil
+	}
+	query := r.db.WithContext(ctx).
+		Table("tweets").
+		Select("tweets.*").
+		Joins("JOIN tweet_hashtags ON tweets.id = tweet_hashtags.tweet_id").
+		Where("tweet_hashtags.tag = ?", tag)
+
+	if cursor != nil {
+		query = query.Where(
+			"tweets.created_at < ? OR (tweets.created_at = ? AND tweets.id < ?)",
+			cursor.CreatedAt, cursor.CreatedAt, cursor.ID.UUID(),
+		)
+	}
+
+	var pos []model.Tweet
+	if err := query.Order("tweets.created_at DESC, tweets.id DESC").Limit(limit).Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("查询话题推文列表失败", err)
+	}
+
+	result := make([]*domaintweet.Tweet, 0, len(pos))
+	for _, po := range pos {
+		t, err := tweetToDomain(po)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, t)
+	}
+	return result, nil
 }
 
 // FindTimeline 全局时间线：按 (created_at, id) 倒序 keyset 分页（走 idx_tweets_timeline）。
@@ -176,6 +250,35 @@ func (r *TweetRepository) FindLikedTweetIDs(ctx context.Context, userID domainsh
 	}
 	return result, nil
 }
+// CountQuotesByTweetIDs 批量查询推文列表的被引用次数。
+func (r *TweetRepository) CountQuotesByTweetIDs(ctx context.Context, tweetIDs []domainshared.ID) (map[string]int64, error) {
+	res := make(map[string]int64, len(tweetIDs))
+	if len(tweetIDs) == 0 {
+		return res, nil
+	}
+	uuids := make([]uuid.UUID, len(tweetIDs))
+	for i, id := range tweetIDs {
+		uuids[i] = id.UUID()
+	}
+	type countRow struct {
+		QuoteOf uuid.UUID `gorm:"column:quote_of"`
+		Cnt     int64     `gorm:"column:cnt"`
+	}
+	var rows []countRow
+	err := r.db.WithContext(ctx).
+		Table("tweets").
+		Select("quote_of, COUNT(*) as cnt").
+		Where("quote_of IN ?", uuids).
+		Group("quote_of").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, domainshared.Internal("批量查询推文引用数失败", err)
+	}
+	for _, row := range rows {
+		res[row.QuoteOf.String()] = row.Cnt
+	}
+	return res, nil
+}
 
 // tweetToPO 领域实体 → 持久化模型。
 func tweetToPO(t *domaintweet.Tweet) model.Tweet {
@@ -185,6 +288,10 @@ func tweetToPO(t *domaintweet.Tweet) model.Tweet {
 		Content:   t.Content(),
 		Images:    datatypes.JSONSlice[string](t.Images()),
 		LikeCount: t.LikeCount(),
+	}
+	if q := t.QuoteOf(); q != nil {
+		u := q.UUID()
+		po.QuoteOf = &u
 	}
 	if c := t.CreatedAt(); !c.IsZero() {
 		po.CreatedAt = c
@@ -197,11 +304,17 @@ func tweetToPO(t *domaintweet.Tweet) model.Tweet {
 
 // tweetToDomain 持久化模型 → 领域实体。
 func tweetToDomain(po model.Tweet) (*domaintweet.Tweet, error) {
+	var quoteOf *domainshared.ID
+	if po.QuoteOf != nil {
+		id := domainshared.MustParseID(po.QuoteOf.String())
+		quoteOf = &id
+	}
 	return domaintweet.ReconstructTweet(
 		domainshared.MustParseID(po.ID.String()),
 		domainshared.MustParseID(po.AuthorID.String()),
 		po.Content,
 		[]string(po.Images),
+		quoteOf,
 		po.LikeCount,
 		po.CreatedAt,
 		po.UpdatedAt,

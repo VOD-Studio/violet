@@ -270,6 +270,7 @@ func registerTweetRoutes(v1 chi.Router, d *Deps) {
 	v1.Route("/tweets", func(r chi.Router) {
 		r.With(d.OptionalAuth).Get("/", tweetH.ListTimeline)
 		r.With(d.OptionalAuth).Get("/{id}", tweetH.Get)
+		r.With(d.OptionalAuth).Get("/topics/{tag}", tweetH.ListByTopic)
 		r.With(d.SessionAuth, middleware.TweetRateLimit(d.Redis)).Post("/", tweetH.Create)
 		r.With(d.SessionAuth).Delete("/{id}", tweetH.Delete)
 		r.With(d.SessionAuth).Post("/{id}/like", tweetH.Like)

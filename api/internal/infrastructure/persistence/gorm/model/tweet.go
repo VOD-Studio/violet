@@ -16,6 +16,7 @@ type Tweet struct {
 	AuthorID  uuid.UUID                   `gorm:"type:uuid;column:author_id;not null" json:"author_id"`
 	Content   string                      `gorm:"type:text;not null;default:''" json:"content"`
 	Images    datatypes.JSONSlice[string] `gorm:"type:jsonb;not null;default:'[]'" json:"images"`
+	QuoteOf   *uuid.UUID                  `gorm:"type:uuid;column:quote_of" json:"quote_of,omitempty"`
 	LikeCount int                         `gorm:"column:like_count;not null;default:0" json:"like_count"`
 	CreatedAt time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
@@ -48,6 +49,15 @@ type TweetComment struct {
 	CreatedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
-
-// TableName 显式指定表名
+// TweetComment 表名显式指定
 func (TweetComment) TableName() string { return "tweet_comments" }
+
+// TweetHashtag 推文话题关联持久化模型（对应 tweet_hashtags 表，migration 070）。
+type TweetHashtag struct {
+	TweetID   uuid.UUID `gorm:"type:uuid;column:tweet_id;primaryKey" json:"tweet_id"`
+	Tag       string    `gorm:"type:varchar(50);column:tag;primaryKey" json:"tag"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+}
+
+// TweetHashtag 表名显式指定
+func (TweetHashtag) TableName() string { return "tweet_hashtags" }

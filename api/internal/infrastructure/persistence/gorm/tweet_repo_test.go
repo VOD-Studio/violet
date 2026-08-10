@@ -25,7 +25,7 @@ func setupTweetTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&model.Tweet{}, &model.TweetLike{}))
+	require.NoError(t, db.AutoMigrate(&model.Tweet{}, &model.TweetLike{}, &model.TweetHashtag{}))
 	t.Cleanup(func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
@@ -39,7 +39,7 @@ func setupTweetTestDB(t *testing.T) *gorm.DB {
 func mustSeedTweet(t *testing.T, repo *TweetRepository, authorID domainshared.ID, content string, createdAt time.Time) *domaintweet.Tweet {
 	t.Helper()
 	ts := createdAt.UTC().Truncate(time.Microsecond)
-	tw := domaintweet.ReconstructTweet(domainshared.NewID(), authorID, content, []string{}, 0, ts, ts)
+	tw := domaintweet.ReconstructTweet(domainshared.NewID(), authorID, content, []string{}, nil, 0, ts, ts)
 	require.NoError(t, repo.Save(context.Background(), tw))
 	return tw
 }
@@ -50,7 +50,7 @@ func TestTweetRepository_SaveAndFindByID(t *testing.T) {
 	ctx := context.Background()
 	authorID := domainshared.NewID()
 
-	tw, err := domaintweet.NewTweet(authorID, "第一条推文", []string{"/uploads/tweet/a.webp"})
+	tw, err := domaintweet.NewTweet(authorID, "第一条推文", []string{"/uploads/tweet/a.webp"}, nil)
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, tw))
 
@@ -62,6 +62,56 @@ func TestTweetRepository_SaveAndFindByID(t *testing.T) {
 	assert.Equal(t, []string{"/uploads/tweet/a.webp"}, got.Images())
 	assert.Equal(t, 0, got.LikeCount())
 	assert.False(t, got.CreatedAt().IsZero())
+}
+func TestTweetRepository_SaveAndFindByIDs_WithQuote(t *testing.T) {
+	db := setupTweetTestDB(t)
+	repo := NewTweetRepository(db)
+	ctx := context.Background()
+	authorID := domainshared.NewID()
+
+	quoted, err := domaintweet.NewTweet(authorID, "被引用的推文", nil, nil)
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, quoted))
+
+	quotedID := quoted.ID()
+	quoting, err := domaintweet.NewTweet(authorID, "转发推文", nil, &quotedID)
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, quoting))
+
+	got, err := repo.FindByID(ctx, quoting.ID())
+	require.NoError(t, err)
+	require.NotNil(t, got.QuoteOf())
+	assert.Equal(t, quotedID, *got.QuoteOf())
+
+	batch, err := repo.FindByIDs(ctx, []domainshared.ID{quotedID, quoting.ID()})
+	require.NoError(t, err)
+	assert.Len(t, batch, 2)
+}
+func TestTweetRepository_FindByTopic(t *testing.T) {
+	db := setupTweetTestDB(t)
+	repo := NewTweetRepository(db)
+	ctx := context.Background()
+	authorID := domainshared.NewID()
+
+	tw1, err := domaintweet.NewTweet(authorID, "讨论一下 #Golang# 吧", nil, nil)
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, tw1))
+
+	tw2, err := domaintweet.NewTweet(authorID, "再发一条 #golang# 相关内容", nil, nil)
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, tw2))
+
+	tw3, err := domaintweet.NewTweet(authorID, "这条只包含 #Python#", nil, nil)
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, tw3))
+
+	got, err := repo.FindByTopic(ctx, "Golang", nil, 10)
+	require.NoError(t, err)
+	assert.Len(t, got, 2)
+
+	pyGot, err := repo.FindByTopic(ctx, "python", nil, 10)
+	require.NoError(t, err)
+	assert.Len(t, pyGot, 1)
 }
 
 func TestTweetRepository_FindByID_NotFound(t *testing.T) {

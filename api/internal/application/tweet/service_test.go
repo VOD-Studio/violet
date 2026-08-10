@@ -43,7 +43,15 @@ func (f *fakeTweetRepo) FindByID(_ context.Context, id shared.ID) (*domaintweet.
 	}
 	return nil, domaintweet.ErrNotFound
 }
-
+func (f *fakeTweetRepo) FindByIDs(_ context.Context, ids []shared.ID) ([]*domaintweet.Tweet, error) {
+	var res []*domaintweet.Tweet
+	for _, id := range ids {
+		if tw, ok := f.findByIDData[id.String()]; ok {
+			res = append(res, tw)
+		}
+	}
+	return res, nil
+}
 func (f *fakeTweetRepo) FindTimeline(_ context.Context, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
 	f.gotCursor, f.gotLimit = cursor, limit
 	return f.tweets, nil
@@ -52,6 +60,13 @@ func (f *fakeTweetRepo) FindTimeline(_ context.Context, cursor *domaintweet.Curs
 func (f *fakeTweetRepo) FindByAuthor(_ context.Context, authorID shared.ID, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
 	f.gotAuthorID, f.gotCursor, f.gotLimit = &authorID, cursor, limit
 	return f.tweets, nil
+}
+func (f *fakeTweetRepo) FindByTopic(_ context.Context, tag string, cursor *domaintweet.Cursor, limit int) ([]*domaintweet.Tweet, error) {
+	f.gotCursor, f.gotLimit = cursor, limit
+	return f.tweets, nil
+}
+func (f *fakeTweetRepo) CountQuotesByTweetIDs(_ context.Context, _ []shared.ID) (map[string]int64, error) {
+	return map[string]int64{}, nil
 }
 
 func (f *fakeTweetRepo) Delete(_ context.Context, id shared.ID) error {
@@ -281,7 +296,7 @@ func cannedTweets(authorID shared.ID, base time.Time, n int) []*domaintweet.Twee
 	out := make([]*domaintweet.Tweet, 0, n)
 	for i := range n {
 		ts := base.Add(time.Duration(i) * time.Minute)
-		out = append(out, domaintweet.ReconstructTweet(shared.NewID(), authorID, "推文", []string{}, 0, ts, ts))
+		out = append(out, domaintweet.ReconstructTweet(shared.NewID(), authorID, "推文", []string{}, nil, 0, ts, ts))
 	}
 	return out
 }
@@ -366,12 +381,48 @@ func TestService_Create_DomainInvariantRejected(t *testing.T) {
 	require.Error(t, err)
 	assert.Empty(t, repo.saved)
 }
+func TestService_Create_WithQuote(t *testing.T) {
+	author := newTestUser(t, "alice")
+	quotedID := shared.NewID()
+	now := time.Now()
+	quotedTweet := domaintweet.ReconstructTweet(quotedID, author.GetID(), "原推文", nil, nil, 0, now, now)
+
+	repo := &fakeTweetRepo{
+		findByIDData: map[string]*domaintweet.Tweet{
+			quotedID.String(): quotedTweet,
+		},
+	}
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{author.GetID().String(): author}}
+	svc := newService(repo, users, nil, nil, appshared.NoopEventBus{})
+
+	qidStr := quotedID.String()
+	dto, err := svc.Create(context.Background(), CreateInput{
+		AuthorID: author.GetID().String(),
+		Content:  "引用转发",
+		QuoteOf:  &qidStr,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, dto.QuoteOf)
+	assert.Equal(t, qidStr, *dto.QuoteOf)
+	require.NotNil(t, dto.QuotedTweet)
+	assert.Equal(t, "原推文", dto.QuotedTweet.Content)
+	assert.Equal(t, "alice", dto.QuotedTweet.Author.Username)
+
+	// 不存在的引用推文拒绝
+	badID := shared.NewID().String()
+	_, err = svc.Create(context.Background(), CreateInput{
+		AuthorID: author.GetID().String(),
+		Content:  "引用转发",
+		QuoteOf:  &badID,
+	})
+	require.Error(t, err)
+}
 
 // --- Delete 三分支 ---
 
 // seedTweet 构造待删除推文并放入 repo。
 func seedTweet(authorID shared.ID) *domaintweet.Tweet {
-	return domaintweet.ReconstructTweet(shared.NewID(), authorID, "待删", []string{}, 0, time.Now(), time.Now())
+	return domaintweet.ReconstructTweet(shared.NewID(), authorID, "待删", []string{}, nil, 0, time.Now(), time.Now())
 }
 
 func TestService_Delete_ByAuthor(t *testing.T) {
@@ -480,6 +531,18 @@ func TestService_ListTimeline_PageTrimming(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, last.ID(), decoded.ID)
 	assert.True(t, last.CreatedAt().Equal(decoded.CreatedAt))
+}
+
+func TestService_ListByTopic(t *testing.T) {
+	authorID := shared.NewID()
+	base := time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)
+	repo := &fakeTweetRepo{tweets: cannedTweets(authorID, base, 3)}
+	svc := newService(repo, &fakeUserRepo{}, nil, nil, appshared.NoopEventBus{})
+
+	dtos, nextCursor, err := svc.ListByTopic(context.Background(), "Golang", "", 2)
+	require.NoError(t, err)
+	assert.Len(t, dtos, 2)
+	assert.NotEmpty(t, nextCursor)
 }
 
 func TestService_ListTimeline_LastPageNoCursor(t *testing.T) {
@@ -631,7 +694,7 @@ func setupCommentService(t *testing.T, authorID shared.ID) (*Service, *fakeTweet
 func TestCreateComment_TopLevel(t *testing.T) {
 	authorID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -653,7 +716,7 @@ func TestCreateComment_TopLevel(t *testing.T) {
 func TestCreateComment_Reply(t *testing.T) {
 	authorID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -698,7 +761,7 @@ func TestCreateComment_TweetNotFound(t *testing.T) {
 func TestCreateComment_EmptyBody(t *testing.T) {
 	authorID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, _, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -713,7 +776,7 @@ func TestCreateComment_ParentWrongTweet(t *testing.T) {
 	authorID := shared.NewID()
 	tweetID := shared.NewID()
 	otherTweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -733,7 +796,7 @@ func TestCreateComment_ParentWrongTweet(t *testing.T) {
 func TestCreateComment_ParentNotFound(t *testing.T) {
 	authorID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, _, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -748,7 +811,7 @@ func TestDeleteComment_Author(t *testing.T) {
 	authorID := shared.NewID()
 	otherID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -768,7 +831,7 @@ func TestDeleteComment_NonAuthorForbidden(t *testing.T) {
 	authorID := shared.NewID()
 	otherID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -788,7 +851,7 @@ func TestDeleteComment_AdminWithPermission(t *testing.T) {
 	authorID := shared.NewID()
 	adminID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{}}
 	repo.findByIDData[tweetID.String()] = tweet
@@ -812,7 +875,7 @@ func TestDeleteComment_BuiltinSuperAdmin(t *testing.T) {
 	authorID := shared.NewID()
 	saID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -838,7 +901,7 @@ func TestDeleteComment_NotFound(t *testing.T) {
 func TestListComments(t *testing.T) {
 	authorID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -862,7 +925,7 @@ func TestListComments(t *testing.T) {
 func TestListReplies(t *testing.T) {
 	authorID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
@@ -891,7 +954,7 @@ func TestListReplies(t *testing.T) {
 func TestTweetDTO_CommentCount(t *testing.T) {
 	authorID := shared.NewID()
 	tweetID := shared.NewID()
-	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, 0, time.Now(), time.Now())
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
 
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet

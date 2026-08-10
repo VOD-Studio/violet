@@ -26,11 +26,15 @@ type TweetRepository interface {
 	Save(ctx context.Context, t *Tweet) error
 	// FindByID 按 ID 查找推文
 	FindByID(ctx context.Context, id shared.ID) (*Tweet, error)
+	// FindByIDs 批量按 ID 查找推文
+	FindByIDs(ctx context.Context, ids []shared.ID) ([]*Tweet, error)
 	// FindTimeline 全局时间线：按 (created_at, id) 倒序 keyset 分页。
 	// cursor 为 nil 时取第一页；返回最多 limit 条。
 	FindTimeline(ctx context.Context, cursor *Cursor, limit int) ([]*Tweet, error)
 	// FindByAuthor 用户主页推文列表：按作者过滤的同构 keyset 分页。
 	FindByAuthor(ctx context.Context, authorID shared.ID, cursor *Cursor, limit int) ([]*Tweet, error)
+	// FindByTopic 话题时间线：按话题标签过滤的 keyset 分页。
+	FindByTopic(ctx context.Context, tag string, cursor *Cursor, limit int) ([]*Tweet, error)
 	// Delete 物理删除推文（点赞/评论由 DB ON DELETE CASCADE 连带清理）
 	Delete(ctx context.Context, id shared.ID) error
 
@@ -40,6 +44,8 @@ type TweetRepository interface {
 	Unlike(ctx context.Context, tweetID, userID shared.ID) error
 	// IsLiked 查询指定用户是否已点赞某推文
 	IsLiked(ctx context.Context, tweetID, userID shared.ID) (bool, error)
+	// CountQuotesByTweetIDs 批量查询推文列表的被引用次数
+	CountQuotesByTweetIDs(ctx context.Context, tweetIDs []shared.ID) (map[string]int64, error)
 	// FindLikedTweetIDs 批量查询指定用户对推文列表的点赞状态集合
 	FindLikedTweetIDs(ctx context.Context, userID shared.ID, tweetIDs []shared.ID) (map[string]bool, error)
 }

@@ -345,7 +345,7 @@ func TestSubscriber_TweetDeleted_RecordsDeleteWithAuthor(t *testing.T) {
 // newTweetForAudit 构造审计测试用推文。
 func newTweetForAudit(t *testing.T, content string) *domaintweet.Tweet {
 	t.Helper()
-	tw, err := domaintweet.NewTweet(shared.NewID(), content, nil)
+	tw, err := domaintweet.NewTweet(shared.NewID(), content, nil, nil)
 	require.NoError(t, err)
 	tw.PullEvents() // 丢弃创建事件，测试只关心被 Handle 的那个
 	return tw
