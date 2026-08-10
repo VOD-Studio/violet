@@ -15,7 +15,7 @@ import {
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
 import ThemeToggle from "@widgets/ThemeToggle";
-import { CheckCircle2, ChevronDown, LayoutDashboard, LogOut, Search, User } from "lucide-react";
+import { CheckCircle2, LayoutDashboard, LogOut, Search, User } from "lucide-react";
 
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -29,10 +29,10 @@ interface HeaderActionsProps {
  *
  * - 命令面板触发按钮（调 useCommandUIStore.open，与 Cmd+K 同源）
  * - ThemeToggle（机械轴体）
- * - 未登录：单个「登录」按钮（跳 /login，登录页内含注册/找回密码入口）
- *   + Cmd+L 快捷键直达登录页
- * - 已登录：圆形头像 trigger 触发下拉菜单——
- *   顶部用户信息卡（头像/用户名/邮箱/角色）+ 分组菜单（账户 / 后台 / 登出）
+ * - 用户槽位（size-8 圆形，B 站式统一占位）：
+ *   未登录 → 用户剪影图标，点击跳 /login（登录页内含注册/找回密码入口）
+ *   已登录 → 真实头像，点击展开下拉菜单（用户信息卡 + 账户/后台/登出）
+ *   + Cmd+L 快捷键直达登录页（仅未登录）
  *
  * 注意：LoginDialog 是**被动**的——仅在受保护请求收到 401 时由 http 拦截器自动
  * 弹出。主动登录走 /login 页面（完整表单 + redirect 回跳）。
@@ -85,8 +85,8 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 			</Button>
 			<ThemeToggle />
 
-			{/* 用户槽位：固定宽度，避免登录/登出触发 Header 跳动 */}
-			<div className="flex w-[136px] justify-end">
+			{/* 用户槽位：登录/未登录均为 size-8 圆形，宽度恒定 */}
+			<div className="flex w-8 justify-end">
 				{user ? (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
@@ -94,7 +94,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 								type="button"
 								aria-label="用户菜单"
 								className={cn(
-									"group relative flex items-center gap-1.5 rounded-full border border-transparent p-0.5 pr-2.5",
+									"group relative flex items-center justify-center rounded-full border border-transparent size-8",
 									"transition-all duration-200 hover:border-border/60 hover:bg-accent/40",
 									"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-1",
 									"data-[state=open]:border-border/80 data-[state=open]:bg-accent/50",
@@ -104,15 +104,6 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 									src={avatarUrl(user.avatar_url, user.username)}
 									alt={user.username}
 									className="size-7 rounded-full object-cover ring-1 ring-border/40"
-								/>
-								<span className="hidden text-sm font-medium md:inline-block md:max-w-24 md:truncate">
-									{user.username}
-								</span>
-								<ChevronDown
-									className={cn(
-										"size-3.5 text-muted-foreground transition-transform duration-200",
-										"group-data-[state=open]:rotate-180",
-									)}
 								/>
 							</button>
 						</DropdownMenuTrigger>
@@ -204,9 +195,17 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 						</DropdownMenuContent>
 					</DropdownMenu>
 				) : (
-					<Button variant="ghost" size="sm" asChild>
-						<Link to="/login">登录</Link>
-					</Button>
+					<Link
+						to="/login"
+						aria-label="登录"
+						className={cn(
+							"group flex items-center justify-center rounded-full border border-transparent bg-muted/60 size-8",
+							"transition-all duration-200 hover:border-border/60 hover:bg-accent",
+							"focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:outline-1",
+						)}
+					>
+						<User className="size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
+					</Link>
 				)}
 			</div>
 		</div>
