@@ -131,24 +131,24 @@ function LoginPage() {
 			<div className="w-full max-w-sm space-y-6">
 				<div className="text-center">
 					<h1 className="font-mono text-2xl font-bold tracking-tight">登录</h1>
-				<p className="mt-2 text-sm text-muted-foreground">请输入账号和密码访问后台</p>
+					<p className="mt-2 text-sm text-muted-foreground">请输入账号和密码访问后台</p>
 				</div>
 
 				<form onSubmit={onSubmit} className="space-y-4">
-				<div className="space-y-1">
-					<Label htmlFor="identifier">账号</Label>
-					<Input
-						id="identifier"
-						type="text"
-						placeholder="用户名或邮箱"
-						autoComplete="username"
-						aria-invalid={!!errors.identifier}
-						{...registerField("identifier")}
-					/>
-					{errors.identifier ? (
-						<p className="text-xs text-destructive">{errors.identifier.message}</p>
-					) : null}
-				</div>
+					<div className="space-y-1">
+						<Label htmlFor="identifier">账号</Label>
+						<Input
+							id="identifier"
+							type="text"
+							placeholder="用户名或邮箱"
+							autoComplete="username"
+							aria-invalid={!!errors.identifier}
+							{...registerField("identifier")}
+						/>
+						{errors.identifier ? (
+							<p className="text-xs text-destructive">{errors.identifier.message}</p>
+						) : null}
+					</div>
 
 					<div className="space-y-1">
 						<Label htmlFor="password">密码</Label>
