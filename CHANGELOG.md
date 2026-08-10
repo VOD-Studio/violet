@@ -7,6 +7,17 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.6.0](https://github.com/VOD-Studio/violet/compare/v2.5.3...v2.6.0) (2026-08-10)
+
+
+### 新增
+
+* **auth:** 登录支持用户名或邮箱 ([7c293d8](https://github.com/VOD-Studio/violet/commit/7c293d8c5b0d10d85aea3efa82d285784229326d))
+* **auth:** 登录表单改为账号输入 ([ef68428](https://github.com/VOD-Studio/violet/commit/ef68428d7144e6e3742a8d53a124f3a16c8ed489))
+* **command-palette:** 命令面板整合文章搜索并去重触发入口 ([c7d3097](https://github.com/VOD-Studio/violet/commit/c7d3097d4f021cceca3c92b5e658ccedbe8d40b2))
+* **post:** 新增前台公开搜索接口 ([3adb781](https://github.com/VOD-Studio/violet/commit/3adb7814066702fe20f1d019a9219b552e8607a6))
+* 前台文章搜索与登录账号输入优化 ([de13f25](https://github.com/VOD-Studio/violet/commit/de13f2571a40c7b2d170a9380275eefa0affbf18))
+
 ## [2.5.3](https://github.com/VOD-Studio/violet/compare/v2.5.2...v2.5.3) (2026-08-09)
 
 
