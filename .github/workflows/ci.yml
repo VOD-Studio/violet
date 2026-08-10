@@ -1,8 +1,8 @@
 # CI 流水线
 #
 # PR 和 push 到 main / release/2.0 时触发，并行跑后端与前端检查。
-# 后端: go vet + go test + golangci-lint + build + Docker 镜像构建验证
-# 前端: biome check + tsc + vitest + build
+# 后端：go vet、go test、golangci-lint、build 与 Docker 镜像构建验证
+# 前端：biome check、tsc、vitest 与 build
 #
 # 任一 job 失败则 PR 检查失败，阻止合并。
 
@@ -11,8 +11,17 @@ name: CI
 on:
   push:
     branches: [main, release/2.0]
+    # release-please 创建的 release PR 只改 CHANGELOG.md 与 manifest 两个纯文本文件，
+    # 不含代码变更，跳过它们可避免发版链路重复跑两轮 CI。功能代码合并会改动
+    # .go、.ts 等文件，不命中忽略列表，CI 照常执行。
+    paths-ignore:
+      - 'CHANGELOG.md'
+      - '.release-please-manifest.json'
   pull_request:
     branches: [main, release/2.0]
+    paths-ignore:
+      - 'CHANGELOG.md'
+      - '.release-please-manifest.json'
 
 # 同一 PR 多次 push 时取消旧的运行
 concurrency:

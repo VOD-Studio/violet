@@ -1,20 +1,20 @@
-# CD 发布流水线（结构化：detect → prepare → build → prepare-server → migrate → deploy-api → deploy-web → release + rollback）
+# CD 发布流水线（结构化：detect、prepare、build-api 与 build-web 并行、prepare-server、migrate、deploy-api、deploy-web、release 与 rollback）
 #
 # 触发:
 #   - 打 v* tag: 自动发版到 rua 生产环境(release-please 合并 release PR 时触发)
 #   - workflow_dispatch: 手动触发,可选 version 回滚 / skip_build 复用镜像 / component 单组件
 #
 # 构建（build）在 GitHub 托管 runner 上执行：拉基础镜像快、不占服务器资源。
-# 镜像经 ghcr.io 分发（GitHub push → 服务器 podman pull），registry 协议分块校验+重试，
+# 镜像经 ghcr.io 分发（GitHub push 后服务器 podman pull），registry 协议分块校验与重试，
 # 比裸文件下载可靠（服务器直连 Azure blob 下载 artifact 曾反复损坏）。
 # 部署/迁移/回滚仍在 rua 的 self-hosted runner 上执行（操作服务器本地环境）。
 # 回滚模式（skip_build）不构建，复用服务器本地缓存镜像，与 GitHub 构建互不影响。
 #
-# 变更检测(detect): 按侧锚点(.current-version-api/.current-version-web)做 diff 基线,
-#   只部署实际变更侧，未改动侧不重建容器。锚点缺失(首次发版)或手动模式 → 全量。
-# 契约安全: deploy-api 部署后跑 scripts/smoke.sh 跨组件冒烟(旧 web + 新 api),失败触发 rollback。
-# 回滚: 按侧回滚到各侧锚点 + 双侧健康检查。
-# 锚点: release 按实际部署侧回写(放最后,前面翻车不误写);手动回滚成功后同样按侧回写。
+# 变更检测（detect）：按侧锚点（.current-version-api 与 .current-version-web）做 diff 基线，
+#   只部署实际变更侧，未改动侧不重建容器。锚点缺失（首次发版）或手动模式时全量部署。
+# 契约安全：deploy-api 部署后跑 scripts/smoke.sh 跨组件冒烟（旧 web 配新 api），失败触发 rollback。
+# 回滚：按侧回滚到各侧锚点，再做双侧健康检查。
+# 锚点：release 按实际部署侧回写（放最后，前面翻车不误写）；手动回滚成功后同样按侧回写。
 
 name: Deploy
 
@@ -122,7 +122,7 @@ jobs:
           echo "web=${WEB}" >> "$GITHUB_OUTPUT"
           echo "检测结果: api=${API} web=${WEB}"
 
-  # ── prepare: 解析目标版本 + 决定最终部署侧 ──
+  # ── prepare: 解析目标版本并决定最终部署侧 ──
   prepare:
     needs: detect
     runs-on: [self-hosted, rua]
@@ -167,20 +167,27 @@ jobs:
 
   # ── build: GitHub 托管 runner 构建镜像并推送 ghcr.io ──
   # 服务器不再本地构建，基础镜像拉取和构建都走 GitHub。
-  # 镜像经 ghcr.io 分发：GitHub push，服务器 podman pull（registry 协议分块校验+重试，
+  # 镜像经 ghcr.io 分发：GitHub push 后服务器 podman pull（registry 协议分块校验与重试，
   # 比裸文件下载可靠——服务器直连 Azure blob 下载 artifact 曾反复损坏）。
   # 回滚模式 skip_build=true 不构建，复用服务器本地缓存镜像。
-  build:
+  # api 与 web 拆成两个 job 并行构建：GitHub runner 无共享状态，两个镜像构建完全独立。
+  # job 不加 if，按需构建下沉到 step：GitHub 语义下 needs 中 skipped 的 job 会级联跳过
+  # 下游，job 恒为 success 才能保证单侧部署时 prepare-server 等下游正常执行。
+  build-api:
     needs: prepare
     runs-on: ubuntu-latest
-    # 全量构建 go module 下载 + vite build 可能超过 15 分钟
+    # 全量 go module 下载与构建可能超过 15 分钟
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        # 与构建 step 同条件：该侧不部署时整条 step 链跳过，job 仍 success，
+        # 避免无谓 checkout/login 与无关失败阻塞流水线
+        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
         with:
           ref: ${{ needs.prepare.outputs.tag }}
 
       - name: 登录 GHCR
+        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -199,6 +206,26 @@ jobs:
           docker push ghcr.io/vod-studio/violet-api:latest
           echo "已推送 ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}"
 
+  build-web:
+    needs: prepare
+    runs-on: ubuntu-latest
+    # 全量 vite build 可能超过 15 分钟
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        # 与构建 step 同条件：该侧不部署时整条 step 链跳过，job 仍 success
+        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: 登录 GHCR
+        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: 构建并推送 web 镜像
         if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
         run: |
@@ -216,22 +243,32 @@ jobs:
           docker push ghcr.io/vod-studio/violet-web:latest
           echo "已推送 ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}"
 
+  # ── set-visibility: 镜像推送成功后设置包公开 ──
+  # 仅对本轮实际构建的包设置公开，避免单侧部署时对未构建包做无意义调用
+  set-visibility:
+    needs: [prepare, build-api, build-web]
+    if: always() && ((needs.build-api.result == 'success' && needs.prepare.outputs.deploy_api == 'true') || (needs.build-web.result == 'success' && needs.prepare.outputs.deploy_web == 'true'))
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
       - name: 设置镜像包公开
-        if: needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          [ "${{ needs.prepare.outputs.deploy_api }}" == "true" ] && \
+          if [ "${{ needs.prepare.outputs.deploy_api }}" == "true" ] && [ "${{ needs.build-api.result }}" == "success" ]; then
             gh api -X PATCH /orgs/vod-studio/packages/container/violet-api/visibility -f visibility=public \
               || echo "::warning::violet-api 可见性设置失败"
-          [ "${{ needs.prepare.outputs.deploy_web }}" == "true" ] && \
+          fi
+          if [ "${{ needs.prepare.outputs.deploy_web }}" == "true" ] && [ "${{ needs.build-web.result }}" == "success" ]; then
             gh api -X PATCH /orgs/vod-studio/packages/container/violet-web/visibility -f visibility=public \
               || echo "::warning::violet-web 可见性设置失败"
+          fi
 
-  # ── prepare-server: 回滚复用检查 + 镜像拉取 + compose 同步 ──
+  # ── prepare-server: 回滚复用检查、镜像拉取、compose 同步 ──
   prepare-server:
-    needs: [prepare, build]
-    if: needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true'
+    needs: [prepare, build-api, build-web]
+    # 显式 if 会覆盖默认 success() 检查，需手动排除构建失败
+    # （拆分前靠 needs 默认检查拦住，拆分后 build 失败时此处必须拦截）
+    if: (needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true') && needs.build-api.result != 'failure' && needs.build-web.result != 'failure'
     runs-on: [self-hosted, rua]
     steps:
       - uses: actions/checkout@v7
@@ -287,8 +324,9 @@ jobs:
 
   # ── migrate: 迁移门禁
   migrate:
-    needs: [prepare, build, prepare-server]
-    if: needs.prepare.outputs.deploy_api == 'true'
+    needs: [prepare, build-api, build-web, prepare-server]
+    # 构建失败或服务器准备失败时不得执行迁移：镜像未产出或环境未就绪
+    if: needs.prepare.outputs.deploy_api == 'true' && needs.prepare-server.result == 'success' && needs.build-api.result != 'failure' && needs.build-web.result != 'failure'
     runs-on: [self-hosted, rua]
     environment: production
     timeout-minutes: 15
@@ -305,7 +343,7 @@ jobs:
             -f docker-compose.ci.yml \
             run --rm --no-deps --entrypoint /migrate api up
 
-  # ── deploy-api: 部署 api + 健康检查 + 跨组件冒烟 ──
+  # ── deploy-api: 部署 api、健康检查、跨组件冒烟 ──
   deploy-api:
     needs: [prepare, migrate, prepare-server]
     if: needs.prepare.outputs.deploy_api == 'true' && needs.prepare-server.result == 'success'
@@ -346,9 +384,9 @@ jobs:
         run: |
           bash scripts/smoke.sh
 
-  # ── deploy-web: 部署 web + 同步 + 健康检查
+  # ── deploy-web: 部署 web、同步静态资源、健康检查 ──
   deploy-web:
-    needs: [prepare, deploy-api, prepare-server]
+    needs: [prepare, migrate, deploy-api, prepare-server]
     # always() 必须显式写：job if 隐式带 success()，needs 里有 skipped（web-only 时
     # deploy-api 被跳过）会不求值直接 skip，不只是 failed 才传播。
     # 上游任一 failure 都拦住：prepare-server（镜像没拉到）、deploy-api、migrate。
@@ -392,9 +430,9 @@ jobs:
 
   # ── rollback: 失败聚合自动回滚
   rollback:
-    needs: [prepare, build, prepare-server, migrate, deploy-api, deploy-web]
-    # 任一部署失败 && 迁移未失败(schema 没变) && 非手动回滚
-    # 构建失败时部署链全 skipped(无 failure) → 不触发,线上未动
+    needs: [prepare, build-api, build-web, prepare-server, migrate, deploy-api, deploy-web]
+    # 任一部署失败、迁移未失败（schema 没变）、非手动回滚时触发
+    # 构建失败时部署链全为 skipped，没有 failure，不触发回滚，线上未动
     if: always() && needs.prepare.outputs.rollback != 'true' && needs.migrate.result != 'failure' && (needs.deploy-api.result == 'failure' || needs.deploy-web.result == 'failure')
     runs-on: [self-hosted, rua]
     environment: production
@@ -440,12 +478,14 @@ jobs:
           echo "::error::建议优先向前修复(部署兼容新 schema 的修复版本);migrate down 回退 schema 有数据丢失风险"
           exit 1
 
-  # ── release: nginx reload + GitHub Release + 按侧回写锚点(最后) ──
+  # ── release: nginx reload、GitHub Release、按侧回写锚点（最后） ──
   release:
-    needs: [prepare, build, migrate, deploy-api, deploy-web, rollback]
-    # !failure() 拦截 migrate/deploy 失败; prepare/build 必须 success 拦截 detect/prepare 失败;
-    # 纯非部署物变更(两侧全 skip)时 prepare/build 均 success → 仍建 Release(tag 已打,About 更新日志依赖 Releases)
-    if: always() && !cancelled() && !failure() && needs.prepare.result == 'success' && needs.build.result == 'success'
+    needs: [prepare, build-api, build-web, migrate, deploy-api, deploy-web, rollback]
+    # prepare 必须 success，拦截 detect 或 prepare 自身的失败；migrate 与部署失败已被
+    # !failure() 拦截。构建失败同样被 !failure() 覆盖，但单侧不部署时构建 job 为
+    # skipped 状态，不算失败，故显式排除 failure 状态，保证单侧构建跳过时仍创建
+    # Release。tag 已打，About 页面更新日志依赖 Releases
+    if: always() && !cancelled() && !failure() && needs.prepare.result == 'success' && needs.build-api.result != 'failure' && needs.build-web.result != 'failure'
     runs-on: [self-hosted, rua]
     timeout-minutes: 10
     steps:

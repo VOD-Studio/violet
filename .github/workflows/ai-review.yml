@@ -1,0 +1,50 @@
+# AI 代码评审
+#
+# PR 打开或更新时，用配置的 LLM（默认 DeepSeek）自动评审 diff，评审意见以
+# review 评论形式出现在 PR 的 File changes 页面。辅助人工 review，不构成合并门禁。
+#
+# 评审逻辑由独立的 GitHub Action VOD-Studio/inori 提供，支持任意 OpenAI 兼容接口。
+# 首次使用前在仓库 Settings → Secrets and variables 添加 DEEPSEEK_API_KEY
+# （platform.deepseek.com 创建）。未配置时本 workflow 跳过，不影响 PR 检查。
+#
+# 排除：
+#   - release-please 自动生成的 release PR（只改 CHANGELOG 与 manifest 文本，无代码变更）
+#   - 锁文件与发版文本（inori 的 ignore_patterns），避免噪音评论
+
+name: AI Review
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main, release/2.0]
+
+# 同一 PR 多次 push 时取消旧评审，避免并发产生重复评论
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write   # 提交 review 评论
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    env:
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: 检查 API key
+        if: env.DEEPSEEK_API_KEY == ''
+        run: echo "::warning::DEEPSEEK_API_KEY 未配置，AI 评审跳过。在 Settings → Secrets 添加后生效"
+
+      - name: AI 评审
+        if: env.DEEPSEEK_API_KEY != ''
+        uses: VOD-Studio/inori@v0.1.0
+        with:
+          llm_endpoint: https://api.deepseek.com/v1
+          llm_model: deepseek-v4-flash
+          llm_api_key: ${{ secrets.DEEPSEEK_API_KEY }}
+          ignore_patterns: pnpm-lock.yaml,go.sum,package-lock.json,yarn.lock,CHANGELOG.md,.release-please-manifest.json

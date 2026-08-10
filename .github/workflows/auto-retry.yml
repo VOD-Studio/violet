@@ -1,0 +1,69 @@
+# Deploy 失败自动重试
+#
+# Deploy 流水线任一 job 失败即整体失败，网络抖动等瞬时错误（例如 pnpm install 遇
+# 502）只能人工去 Actions 页面手动 Re-run。本 workflow 监听 Deploy 完成事件，
+# 失败时自动重跑失败的 job，最多重试 2 次，间隔按 60 秒、120 秒递增。
+#
+# 重试覆盖构建、拉取推送镜像、部署、健康检查、Release 创建等所有 job。
+# 以下情况不重试：
+#   - migrate 失败：数据库迁移非幂等，重跑可能重复执行迁移，须人工介入
+#   - 手动 workflow_dispatch：人为发起的部署或回滚，失败由人决定
+#   - 已达 3 次尝试：重跑完成会再次触发本 workflow，用 run_attempt 递增防死循环
+#
+# 与 rollback 的交互：deploy-api 或 deploy-web 失败会先触发 rollback，把线上回滚到
+# 锚点版本；重试成功后重新部署新版本，锚点由 release job 在成功后回写。
+
+name: Auto Retry Deploy
+
+on:
+  workflow_run:
+    workflows: ["Deploy"]
+    types:
+      - completed
+
+permissions:
+  actions: write   # gh run rerun 需要
+
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - name: 失败 job 检查并自动重试
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+        run: |
+          set -e
+          echo "Deploy run ${RUN_ID} 失败 (attempt ${RUN_ATTEMPT}, 事件 ${RUN_EVENT})"
+
+          # 手动触发不重试，人为操作的失败由人决定下一步
+          if [ "${RUN_EVENT}" == "workflow_dispatch" ]; then
+            echo "::warning::workflow_dispatch 手动触发,不自动重试"
+            exit 0
+          fi
+
+          # 最多 3 次尝试（初始 1 次加重试 2 次）；rerun 后 run_attempt 递增，防死循环
+          if [ "${RUN_ATTEMPT}" -ge 3 ]; then
+            echo "::warning::已达最大尝试次数 (${RUN_ATTEMPT}/3),不再重试,需人工介入"
+            exit 0
+          fi
+
+          # migrate 失败不重试，数据库迁移非幂等，重跑可能重复执行迁移
+          # jq 输出 JSON 数组，按 "migrate" 精确匹配，避免误命中含 migrate 字样的其他 job 名
+          FAILED_JOBS=$(gh run view "${RUN_ID}" --json jobs --jq '[.jobs[] | select(.conclusion == "failure") | .name]')
+          echo "失败的 job: ${FAILED_JOBS}"
+          if echo "${FAILED_JOBS}" | grep -q '"migrate"'; then
+            echo "::warning::migrate 失败不重试(数据库迁移非幂等),需人工介入"
+            exit 0
+          fi
+
+          # 间隔按尝试次数递增，第 1 次失败等 60 秒，第 2 次失败等 120 秒
+          SLEEP_SEC=$(( RUN_ATTEMPT * 60 ))
+          echo "等待 ${SLEEP_SEC}s 后重试 (attempt ${RUN_ATTEMPT} → $(( RUN_ATTEMPT + 1 )))..."
+          sleep "${SLEEP_SEC}"
+
+          gh run rerun "${RUN_ID}" --failed
+          echo "已触发自动重试: https://github.com/${{ github.repository }}/actions/runs/${RUN_ID}"
