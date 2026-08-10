@@ -24,12 +24,11 @@ import (
 
 // ---- 分组读模型（admin GET 返回视图，聚合字段的子集）----
 
-// GeneralView 基础信息组：站点名称/描述/URL/管理员邮箱/分页/评论开关/技术栈
+// GeneralView 基础信息组：站点名称/URL/页脚文案/分页/评论开关/技术栈
 type GeneralView struct {
 	SiteName           string `json:"site_name"`
-	SiteDescription    string `json:"site_description"`
 	SiteURL            string `json:"site_url"`
-	AdminEmail         string `json:"admin_email"`
+	FooterText         string `json:"footer_text"`
 	PostsPerPage       int    `json:"posts_per_page"`
 	CommentsEnabled    bool   `json:"comments_enabled"`
 	CommentsModeration bool   `json:"comments_moderation"`
@@ -49,10 +48,9 @@ type GithubView struct {
 	ReleasesRepo   string `json:"releases_repo"`
 }
 
-// ProfileView 关于博主组：简介/页脚/头像/标语/名片/技能/社交矩阵
+// ProfileView 关于博主组：简介/头像/标语/名片/技能/社交矩阵
 type ProfileView struct {
 	Bio             string `json:"bio"`
-	FooterText      string `json:"footer_text"`
 	AvatarURL       string `json:"avatar_url"`
 	Tagline         string `json:"tagline"`
 	ProfileRole     string `json:"profile_role"`
@@ -98,9 +96,8 @@ type CodeRunnerView struct {
 func generalView(s domainsettings.SiteSettings) GeneralView {
 	return GeneralView{
 		SiteName:           s.SiteName,
-		SiteDescription:    s.SiteDescription,
 		SiteURL:            s.SiteURL,
-		AdminEmail:         s.AdminEmail,
+		FooterText:         s.FooterText,
 		PostsPerPage:       s.PostsPerPage,
 		CommentsEnabled:    s.CommentsEnabled,
 		CommentsModeration: s.CommentsModeration,
@@ -126,7 +123,6 @@ func githubView(s domainsettings.SiteSettings) GithubView {
 func profileView(s domainsettings.SiteSettings) ProfileView {
 	return ProfileView{
 		Bio:             s.Bio,
-		FooterText:      s.FooterText,
 		AvatarURL:       s.AvatarURL,
 		Tagline:         s.Tagline,
 		ProfileRole:     s.ProfileRole,
@@ -176,9 +172,8 @@ func codeRunnerView(s domainsettings.SiteSettings) CodeRunnerView {
 // GeneralUpdate 基础信息组更新入参
 type GeneralUpdate struct {
 	SiteName           *string
-	SiteDescription    *string
 	SiteURL            *string
-	AdminEmail         *string
+	FooterText         *string
 	PostsPerPage       *int
 	CommentsEnabled    *bool
 	CommentsModeration *bool
@@ -201,7 +196,6 @@ type GithubUpdate struct {
 // ProfileUpdate 关于博主组更新入参
 type ProfileUpdate struct {
 	Bio             *string
-	FooterText      *string
 	AvatarURL       *string
 	Tagline         *string
 	ProfileRole     *string

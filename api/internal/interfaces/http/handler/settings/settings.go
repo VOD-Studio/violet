@@ -57,9 +57,8 @@ func (h *Handler) GetGeneral(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateGeneral(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		SiteName           *string `json:"site_name"`
-		SiteDescription    *string `json:"site_description"`
 		SiteURL            *string `json:"site_url"`
-		AdminEmail         *string `json:"admin_email"`
+		FooterText         *string `json:"footer_text"`
 		PostsPerPage       *int    `json:"posts_per_page"`
 		CommentsEnabled    *bool   `json:"comments_enabled"`
 		CommentsModeration *bool   `json:"comments_moderation"`
@@ -70,8 +69,8 @@ func (h *Handler) UpdateGeneral(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data, err := h.svc.UpdateGeneral(r.Context(), appsettings.GeneralUpdate{
-		SiteName: req.SiteName, SiteDescription: req.SiteDescription,
-		SiteURL: req.SiteURL, AdminEmail: req.AdminEmail,
+		SiteName: req.SiteName,
+		SiteURL: req.SiteURL, FooterText: req.FooterText,
 		PostsPerPage: req.PostsPerPage, CommentsEnabled: req.CommentsEnabled,
 		CommentsModeration: req.CommentsModeration, TechStack: req.TechStack,
 	})
@@ -158,7 +157,6 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Bio             *string `json:"bio"`
-		FooterText      *string `json:"footer_text"`
 		AvatarURL       *string `json:"avatar_url"`
 		Tagline         *string `json:"tagline"`
 		ProfileRole     *string `json:"profile_role"`
@@ -178,7 +176,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data, err := h.svc.UpdateProfile(r.Context(), appsettings.ProfileUpdate{
-		Bio: req.Bio, FooterText: req.FooterText,
+		Bio: req.Bio,
 		AvatarURL: req.AvatarURL, Tagline: req.Tagline,
 		ProfileRole: req.ProfileRole, ProfileLocation: req.ProfileLocation,
 		AvailableFor: req.AvailableFor, SkillsStrong: req.SkillsStrong,

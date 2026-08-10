@@ -34,12 +34,8 @@ func NewSettingsUpdated(changedKeys []string) SettingsUpdated {
 type SiteSettings struct {
 	// SiteName 站点名称
 	SiteName string `json:"site_name"`
-	// SiteDescription 站点描述（用于 SEO meta description）
-	SiteDescription string `json:"site_description"`
 	// SiteURL 站点公开访问根 URL（用于生成绝对链接与 SEO canonical）
 	SiteURL string `json:"site_url"`
-	// AdminEmail 站点管理员联系邮箱
-	AdminEmail string `json:"admin_email"`
 	// PostsPerPage 列表页每页文章数（fromMap 默认 10）
 	PostsPerPage int `json:"posts_per_page"`
 	// CommentsEnabled 是否全局开启评论
@@ -128,12 +124,8 @@ type SiteSettings struct {
 type UpdateInput struct {
 	// SiteName 站点名称（nil 不更新）
 	SiteName *string
-	// SiteDescription 站点描述（nil 不更新）
-	SiteDescription *string
 	// SiteURL 站点公开访问根 URL（nil 不更新）
 	SiteURL *string
-	// AdminEmail 管理员联系邮箱（nil 不更新）
-	AdminEmail *string
 	// PostsPerPage 列表页每页文章数（nil 不更新）
 	PostsPerPage *int
 	// CommentsEnabled 是否开启评论（nil 不更新）
@@ -235,9 +227,7 @@ func (s SiteSettings) MergeFrom(m map[string]string) SiteSettings {
 func fromMap(m map[string]string) SiteSettings {
 	s := SiteSettings{PostsPerPage: 10}
 	s.SiteName = m["site_name"]
-	s.SiteDescription = m["site_description"]
 	s.SiteURL = m["site_url"]
-	s.AdminEmail = m["admin_email"]
 	if v, ok := parseInt(m["posts_per_page"]); ok {
 		s.PostsPerPage = v
 	}
