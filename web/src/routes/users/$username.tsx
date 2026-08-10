@@ -1,3 +1,4 @@
+import type { Tweet } from "@entities/tweet/model/types";
 import { tweetKeys } from "@features/tweets/api/keys";
 import {
 	fetchUserProfile,
@@ -6,6 +7,7 @@ import {
 	useUserTimeline,
 } from "@features/tweets/api/queries";
 import TweetCard from "@features/tweets/ui/TweetCard";
+import type { PagedResponse } from "@shared/api/types";
 import { avatarUrl } from "@shared/lib/image-url";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
@@ -173,10 +175,16 @@ export const Route = createFileRoute("/users/$username")({
 					queryKey: tweetKeys.userProfile(params.username),
 					queryFn: () => fetchUserProfile(params.username),
 				}),
-				context.queryClient.ensureQueryData({
-					queryKey: tweetKeys.userTimelineOf(params.username),
-					queryFn: () => fetchUserTimeline(params.username),
-				}),
+				context.queryClient
+					.ensureInfiniteQueryData({
+						queryKey: tweetKeys.userTimelineOf(params.username),
+						queryFn: ({ pageParam }) =>
+							fetchUserTimeline(params.username, { cursor: pageParam }),
+						initialPageParam: undefined as string | undefined,
+						getNextPageParam: (lastPage: PagedResponse<Tweet>) =>
+							lastPage.pagination?.next_cursor || undefined,
+					})
+					.catch(() => {}),
 			]);
 			if (!profile) throw notFound();
 			return profile;
