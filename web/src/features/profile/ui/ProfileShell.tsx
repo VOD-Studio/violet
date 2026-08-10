@@ -107,7 +107,7 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 				<h1 className="mt-4 text-lg font-semibold">{user.username}</h1>
 				<p className="mt-0.5 truncate text-sm text-muted-foreground">{user.email}</p>
 				<p className="mt-1 text-xs text-muted-foreground">
-					{user.is_root ? "超级管理员" : user.role_description || user.role}
+					{user.is_root ? "root" : user.role_description || user.role}
 				</p>
 			</div>
 
