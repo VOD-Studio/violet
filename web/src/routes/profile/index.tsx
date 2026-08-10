@@ -43,12 +43,13 @@ const ProfilePage = () => {
 export const Route = createFileRoute("/profile/")({
 	ssr: false,
 	beforeLoad: ({ context, location }) => {
-		// context.auth.isAuthenticated 来自 getAuthSession（server function RPC），
-		// RPC cookie 转发不可靠（SSR 地址配错/转发丢 cookie），刷新时经常假阴性。
-		// 追加 me 缓存判定：useMe 缓存来自浏览器直连的 /auth/me（可靠），有数据说明确实登录过。
-		// 三者（RPC 判定、sessionActive、me 缓存）任一为真就不踢，交给组件/401 处理。
+		// 页面刷新后所有内存状态清空（me 缓存、sessionActive 全失），唯一持久的
+		// 登录态信号是 cookie。violet_csrf 非 HttpOnly，前端可读——有它说明后端
+		// 下发过 session cookie，按已登录处理，真实过期交给 401 拦截器 + 组件处理。
+		const hasAuthCookie =
+			typeof window !== "undefined" && document.cookie.includes("violet_csrf=");
 		const me = context.queryClient.getQueryData<UserDTO | null>(authKeys.me());
-		if (!context.auth.isAuthenticated && !isSessionActive() && !me) {
+		if (!context.auth.isAuthenticated && !isSessionActive() && !me && !hasAuthCookie) {
 			throw redirect({
 				to: "/login",
 				search: { redirect: location.href },

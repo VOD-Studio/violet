@@ -17,11 +17,16 @@ export const Route = createFileRoute("/admin")({
 	beforeLoad: async ({ context }) => {
 		const { auth, queryClient } = context;
 
-		// context.auth.isAuthenticated 来自 getAuthSession（server function RPC），
-		// RPC cookie 转发不可靠，刷新时经常假阴性。追加 me 缓存兜底：me 缓存来自
-		// 浏览器直连的 /auth/me（可靠），有数据说明确实登录过。
+		// 页面刷新后内存状态全失，violet_csrf cookie 是唯一持久的登录态信号。
+		const hasAuthCookie =
+			typeof window !== "undefined" && document.cookie.includes("violet_csrf=");
 		const meCache = queryClient.getQueryData<UserDTO | null>(authKeys.me());
-		if ((!auth.isAuthenticated || !auth.claims) && !isSessionActive() && !meCache) {
+		if (
+			(!auth.isAuthenticated || !auth.claims) &&
+			!isSessionActive() &&
+			!meCache &&
+			!hasAuthCookie
+		) {
 			throw redirect({
 				to: "/",
 				replace: true,
