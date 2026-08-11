@@ -29,7 +29,8 @@ const MaxCommentDepth = 1
 // 评论只在推文详情页出现，不进时间线。
 //
 // 不变量：
-//   - body trim 后非空且 ≤ MaxCommentBodyLen rune
+//   - body trim 后 ≤ MaxCommentBodyLen rune；body 与 pictures 至少其一非空
+//     （纯图评论 body 为空串，由 SetPictures 兜底校验）
 //   - pictures ≤ MaxCommentPictures 张，URL 归属经应用层校验（TweetImageChecker）
 //   - tweetID/authorID 创建时固定，无 setter
 //   - depth ≤ MaxCommentDepth（两层扁平）
@@ -66,13 +67,11 @@ type Picture struct {
 
 // NewComment 创建新评论（顶层，未设置 parent）。
 //
-// body 先 trim 再校验：纯空白视为空。创建后需调用 SetParent 设置层级与物化路径
-// （SetParent(nil) 标记顶层，SetParent(parent) 标记回复）。
+// body 先 trim：纯图评论允许空串（「内容非空」由 SetPictures 在 pictures 接线后
+// 兜底校验——body 与 pictures 至少其一非空）。创建后需调用 SetParent 设置层级
+// 与物化路径（SetParent(nil) 标记顶层，SetParent(parent) 标记回复）。
 func NewComment(tweetID, authorID shared.ID, body string) (*Comment, error) {
 	body = strings.TrimSpace(body)
-	if body == "" {
-		return nil, shared.Validation("评论内容不能为空")
-	}
 	if utf8.RuneCountInString(body) > MaxCommentBodyLen {
 		return nil, shared.Validation("评论内容不能超过 500 字")
 	}
@@ -119,12 +118,17 @@ func ReconstructComment(
 // SetPictures 设置评论附图（创建后接线；评论无更新路径，仅创建期调用）。
 //
 // nil 归一为空数组；超过 MaxCommentPictures 拒绝（聚合根不变量）。
+// 内容兜底：pictures 为空时 body 必须非空——「body 与 pictures 至少其一非空」
+// 的不变量在此校验（工厂在纯图评论场景已放行空 body）。
 func (c *Comment) SetPictures(pics []Picture) error {
 	if pics == nil {
 		pics = []Picture{}
 	}
 	if len(pics) > MaxCommentPictures {
 		return shared.Validation("评论图片不能超过 10 张")
+	}
+	if len(pics) == 0 && strings.TrimSpace(c.body) == "" {
+		return shared.Validation("评论内容不能为空")
 	}
 	c.pictures = pics
 	return nil

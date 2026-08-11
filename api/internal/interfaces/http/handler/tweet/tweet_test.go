@@ -435,6 +435,25 @@ func TestCreateComment_WithPictures_PassedToService(t *testing.T) {
 	assert.Equal(t, int64(1024), comments.saved[0].Pictures()[0].Size)
 }
 
+func TestCreateComment_PictureOnly(t *testing.T) {
+	repo := &stubTweetRepo{byID: map[string]*domaintweet.Tweet{sampleTweet().ID().String(): sampleTweet()}}
+	comments := newStubCommentRepo()
+	h := newCommentTestHandler(repo, comments)
+
+	body := `{"body":"","pictures":[{"url":"/uploads/comment/a.webp","width":1,"height":1,"size":1}]}`
+	req := httptest.NewRequest(http.MethodPost, "/tweets/x/comments", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue("id", sampleTweet().ID().String())
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.CreateComment(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code, "纯图评论应 201")
+	require.Len(t, comments.saved, 1)
+	assert.Equal(t, "", comments.saved[0].Body())
+	require.Len(t, comments.saved[0].Pictures(), 1)
+}
+
 func TestCreateComment_EmptyBody(t *testing.T) {
 	repo := &stubTweetRepo{byID: map[string]*domaintweet.Tweet{sampleTweet().ID().String(): sampleTweet()}}
 	h := newCommentTestHandler(repo, newStubCommentRepo())

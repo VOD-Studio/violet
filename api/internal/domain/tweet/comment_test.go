@@ -24,11 +24,18 @@ func TestNewComment_Valid(t *testing.T) {
 	assert.False(t, c.CreatedAt().IsZero())
 }
 
-func TestNewComment_EmptyBody(t *testing.T) {
-	cases := []string{"", "   ", "\n\t "}
-	for _, body := range cases {
-		_, err := NewComment(shared.NewID(), shared.NewID(), body)
-		assert.Error(t, err, "纯空白正文应拒绝: %q", body)
+func TestNewComment_EmptyBodyAllowed_PictureOnlyEnforcedBySetPictures(t *testing.T) {
+	// 纯图评论：工厂允许空 body，「内容非空」由 SetPictures 在图片接线后兜底
+	for _, body := range []string{"", "   ", "\n\t "} {
+		c, err := NewComment(shared.NewID(), shared.NewID(), body)
+		require.NoError(t, err, "纯图评论 body 可为空: %q", body)
+		assert.Equal(t, "", c.Body(), "body 应 trim 后存储")
+
+		// 空 body + 无图 → 拒绝
+		assert.Error(t, c.SetPictures(nil), "body 与 pictures 均空应拒绝: %q", body)
+		// 空 body + 有图 → 通过
+		require.NoError(t, c.SetPictures([]Picture{{URL: "/uploads/a.webp"}}))
+		assert.Len(t, c.Pictures(), 1)
 	}
 }
 

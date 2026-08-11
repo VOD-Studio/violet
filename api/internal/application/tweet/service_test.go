@@ -1067,6 +1067,27 @@ func TestCreateComment_PicturesOwnershipRejected(t *testing.T) {
 	assert.Empty(t, comments.saved, "校验失败不落库")
 }
 
+func TestCreateComment_PictureOnly(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{tweetID.String(): tweet}}
+	comments := newFakeCommentRepo()
+	checker := &fakeImageChecker{}
+	svc := newCommentCapabilityService(t, repo, comments, authorID, checker, nil)
+
+	dto, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "",
+		Pictures: []domaintweet.Picture{{URL: "/uploads/comment/a.webp", Width: 1, Height: 1, Size: 1}},
+	})
+	require.NoError(t, err, "纯图评论应允许")
+	assert.Equal(t, "", dto.Body)
+	require.Len(t, dto.Pictures, 1)
+	assert.Equal(t, "/uploads/comment/a.webp", dto.Pictures[0].URL)
+	require.Len(t, comments.saved, 1)
+	assert.Empty(t, comments.saved[0].Body())
+}
+
 func TestCreateComment_TooManyPictures(t *testing.T) {
 	authorID := shared.NewID()
 	tweetID := shared.NewID()
