@@ -137,3 +137,19 @@ func TweetRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 func CodeRunnerRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
 	return RateLimit("code_runner", redisClient, time.Minute, 5)
 }
+
+// FriendLinkRateLimit 友链申请限流
+//
+// 申请限流与发码限流走独立 key（friendlink vs friendlink_code），
+// 避免发码与提交共桶互相挤占——发码限流不应影响用户提交申请的能力。
+func FriendLinkRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimit("friendlink", redisClient, time.Minute, 3)
+}
+
+// FriendLinkCodeRateLimit 友链申请验证码发送限流（每分钟 5 次/IP，镜像 CommentCodeRateLimit）。
+//
+// 阈值理由：5 次/min 对正常用户（输错邮箱重发）足够宽松，
+// 但能挡住邮件轰炸（攻击者用脚本对大量邮箱发垃圾验证码）。
+func FriendLinkCodeRateLimit(redisClient *redis.Client) func(http.Handler) http.Handler {
+	return RateLimit("friendlink_code", redisClient, time.Minute, 5)
+}

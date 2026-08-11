@@ -39,11 +39,12 @@ type Container struct {
 	CodeRunner      *CodeRunnerContainer
 	Image           *ImageContainer
 	Tweet           *TweetContainer
+	FriendLink      *FriendLinkContainer
 }
 
 // 跨模块依赖（装配顺序即依赖序）：
 //   - role 无依赖但持有 cleanup
-//   - emailSender 从 cfg 派生，被 auth + comment 复用
+//   - emailSender 从 cfg 派生，被 auth + comment + friendlink 复用
 //   - post.PostService 被 subscription + mcp 依赖
 //   - apiToken.TokenLookup + comment.CommentService 被 mcp 依赖
 //
@@ -95,13 +96,14 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
 	tweet := NewTweetContainer(db, permissionChecker, bus)
+	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
 		Post: post, Tag: tag, GitHub: github, Releases: releases, Audit: audit,
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
-		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet,
+		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
 	}
 	return c, roleCleanup, nil
 }
