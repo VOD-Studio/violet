@@ -31,6 +31,7 @@ jobs:
   # ============================================================
   backend:
     name: Backend (Go)
+    timeout-minutes: 20
     permissions:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
       contents: read
@@ -54,18 +55,19 @@ jobs:
       - name: Go vet
         run: go vet ./...
 
-      - name: Go build
-        run: go build ./...
-
-      - name: Go test
-        run: go test ./... -v -count=1
-
+      # lint 前置到 build/test 之前:比 test 快,提前暴露静态错误,fail fast
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12.2
           working-directory: api
           args: --timeout 5m
+
+      - name: Go build
+        run: go build ./...
+
+      - name: Go test
+        run: go test ./... -v -count=1
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -84,6 +86,7 @@ jobs:
   # ============================================================
   frontend:
     name: Frontend (React)
+    timeout-minutes: 20
     permissions:
       actions: write   # buildx type=gha 缓存读写;同 backend job
       contents: read
@@ -148,6 +151,7 @@ jobs:
   # ============================================================
   security:
     name: Dependency Security
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
