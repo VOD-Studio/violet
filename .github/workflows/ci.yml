@@ -158,12 +158,13 @@ jobs:
           cache-dependency-path: api/go.sum
 
       - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+        # pin 版本:@latest 行为漂移可能突然 break CI;升级走 dependabot 或人工
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
 
       - name: govulncheck (Go)
-        # govulncheck exit 3 = 发现漏洞。过滤策略:
-        # - Fixed-in-N/A(上游未发修复版,如 docker/docker 的 daemon 端漏洞)降级为 warning
-        # - 有修复版本的漏洞阻断 CI,迫使升级依赖
+        # 非零退出时分流:输出含漏洞报告特征(Vulnerability #N / Fixed in:)走
+        # Fixed-in 过滤;否则是工具自身执行错误(编译失败/网络等),必须失败——
+        # 此前一律落入过滤逻辑,执行错误因无 "Fixed in:" 被吞成绿色 warning(#138)
         working-directory: api
         run: |
           set +e
@@ -172,6 +173,10 @@ jobs:
           echo "$output"
           set -e
           [ "$code" -eq 0 ] && exit 0
+          if ! echo "$output" | grep -qE "Vulnerability #[0-9]|Fixed in:"; then
+            echo "::error::govulncheck 执行失败(exit ${code}),输出无漏洞报告特征,疑为工具自身错误"
+            exit 1
+          fi
           # 提取有修复版本的漏洞(Fixed in: 非 N/A)
           fixable=$(echo "$output" | grep "Fixed in:" | grep -v "N/A" || true)
           if [ -n "$fixable" ]; then
