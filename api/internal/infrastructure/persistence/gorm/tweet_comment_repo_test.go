@@ -244,6 +244,30 @@ func TestTweetCommentRepository_CountByTweetIDs_Batch(t *testing.T) {
 	assert.Empty(t, empty)
 }
 
+func TestTweetCommentRepository_CountRepliesByParents(t *testing.T) {
+	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
+	ctx := context.Background()
+	tweetID := domainshared.NewID()
+	authorID := domainshared.NewID()
+	base := time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)
+
+	top1 := mustSeedComment(t, repo, tweetID, authorID, "顶层1", nil, base)
+	top2 := mustSeedComment(t, repo, tweetID, authorID, "顶层2", nil, base.Add(time.Minute))
+	r1 := mustSeedComment(t, repo, tweetID, authorID, "回复1", top1, base.Add(2*time.Minute))
+	// 回复的回复：path 仍挂 top1 顶层，应计入 top1
+	mustSeedComment(t, repo, tweetID, authorID, "回复2 回复 r1", r1, base.Add(3*time.Minute))
+
+	counts, err := repo.CountRepliesByParents(ctx, []domainshared.ID{top1.ID(), top2.ID()})
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), counts[top1.ID().String()], "顶层1 下应计 2 条回复（含回复的回复）")
+	assert.Equal(t, int64(0), counts[top2.ID().String()], "顶层2 无回复应为 0")
+
+	// 空入参
+	empty, err := repo.CountRepliesByParents(ctx, nil)
+	require.NoError(t, err)
+	assert.Empty(t, empty)
+}
+
 func TestTweetCommentRepository_Delete(t *testing.T) {
 	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
 	ctx := context.Background()

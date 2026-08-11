@@ -161,6 +161,19 @@ func (s *stubCommentRepo) CountByTweetIDs(_ context.Context, ids []shared.ID) (m
 	return res, nil
 }
 
+func (s *stubCommentRepo) CountRepliesByParents(_ context.Context, parentIDs []shared.ID) (map[string]int64, error) {
+	res := make(map[string]int64, len(parentIDs))
+	for _, pid := range parentIDs {
+		prefix := pid.String() + "/"
+		for _, c := range s.byID {
+			if c.Depth() == 1 && len(c.Path()) > len(prefix) && c.Path()[:len(prefix)] == prefix {
+				res[pid.String()]++
+			}
+		}
+	}
+	return res, nil
+}
+
 func (s *stubCommentRepo) Delete(_ context.Context, id shared.ID) error {
 	if _, ok := s.byID[id.String()]; !ok {
 		return domaintweet.ErrCommentNotFound

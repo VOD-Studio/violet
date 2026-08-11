@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"gorm.io/gorm"
 	domainshared "blog-api/internal/domain/shared"
@@ -126,6 +127,39 @@ func (r *TweetCommentRepository) CountByTweetIDs(ctx context.Context, tweetIDs [
 	}
 	for _, row := range rows {
 		result[row.TweetID] = row.Count
+	}
+	return result, nil
+}
+
+// CountRepliesByParents 批量统计多条顶层评论各自的回复数。
+//
+// 回复的 path 以顶层评论 id 为前缀（形如 "<topID>/..."，两层扁平下「回复 @yyy」
+// 的回复也挂同一顶层），故按 SUBSTR(path, 1, 37) 取顶层前缀 GROUP BY 聚合，
+// 一次查询拿到全部计数，避免每评论一条 COUNT 的 N+1。
+// 用 SUBSTR 而非 LEFT：兼容 SQLite（测试库）与 PostgreSQL。
+func (r *TweetCommentRepository) CountRepliesByParents(ctx context.Context, parentIDs []domainshared.ID) (map[string]int64, error) {
+	result := make(map[string]int64, len(parentIDs))
+	if len(parentIDs) == 0 {
+		return result, nil
+	}
+	prefixes := make([]interface{}, 0, len(parentIDs))
+	for _, id := range parentIDs {
+		prefixes = append(prefixes, id.String()+"/")
+	}
+	var rows []struct {
+		TopPath string `gorm:"column:top_path"`
+		Count   int64  `gorm:"column:cnt"`
+	}
+	err := r.db.WithContext(ctx).Model(&model.TweetComment{}).
+		Select("SUBSTR(path, 1, 37) AS top_path, COUNT(*) AS cnt").
+		Where("depth = ?", 1).
+		Where("SUBSTR(path, 1, 37) IN ?", prefixes).
+		Group("top_path").Scan(&rows).Error
+	if err != nil {
+		return nil, domainshared.Internal("批量统计推文回复数失败", err)
+	}
+	for _, row := range rows {
+		result[strings.TrimSuffix(row.TopPath, "/")] = row.Count
 	}
 	return result, nil
 }

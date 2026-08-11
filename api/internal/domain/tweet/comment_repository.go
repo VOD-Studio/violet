@@ -28,6 +28,12 @@ type CommentRepository interface {
 	// CountByTweetIDs 批量统计多推文的评论数（服务时间线/用户主页卡片展示）。
 	// 返回 tweetID 字符串 → 评论数 的映射；入参为空时返回空 map。
 	CountByTweetIDs(ctx context.Context, tweetIDs []shared.ID) (map[string]int64, error)
+	// CountRepliesByParents 批量统计多条顶层评论各自的回复数（顶层评论列表展示用，
+	// 驱动前端「查看回复」toggle 显隐）。
+	// parentIDs 是顶层评论 id；回复的 path 以顶层 id 为前缀（含「回复 @yyy」链），
+	// 按 path 前缀聚合一次查询。返回 顶层评论 id 字符串 → 回复数 的映射；
+	// 入参为空或某评论无回复时返回空 map / 缺省 0。
+	CountRepliesByParents(ctx context.Context, parentIDs []shared.ID) (map[string]int64, error)
 	// Delete 物理删除评论。
 	// 顶层评论删除时，其回复由 parent_id 自引用 ON DELETE CASCADE 连带清理。
 	Delete(ctx context.Context, id shared.ID) error

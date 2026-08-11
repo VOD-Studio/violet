@@ -489,6 +489,8 @@ type CommentDTO struct {
 	// ParentID 被回复的评论 id；顶层评论省略（omitempty）
 	ParentID  string    `json:"parent_id,omitempty"`
 	Depth     int16     `json:"depth"`
+	// RepliesCount 该评论的回复数；顶层评论列表批量统计，回复恒 0
+	RepliesCount int64  `json:"replies_count"`
 	// CreatedAt RFC3339 格式
 	CreatedAt string    `json:"created_at"`
 }
@@ -590,7 +592,30 @@ func (s *Service) ListComments(ctx context.Context, tweetIDStr string, page, lim
 	if err != nil {
 		return nil, 0, err
 	}
-	return s.commentsToDTOs(ctx, comments), total, nil
+	dtos := s.commentsToDTOs(ctx, comments)
+	if err := s.attachRepliesCount(ctx, comments, dtos); err != nil {
+		return nil, 0, err
+	}
+	return dtos, total, nil
+}
+
+// attachRepliesCount 批量填充顶层评论的回复数（一次 GROUP BY 查询，避免 N+1）。
+func (s *Service) attachRepliesCount(ctx context.Context, comments []*domaintweet.Comment, dtos []CommentDTO) error {
+	if s.commentRepo == nil || len(comments) == 0 {
+		return nil
+	}
+	ids := make([]shared.ID, 0, len(comments))
+	for _, c := range comments {
+		ids = append(ids, c.ID())
+	}
+	counts, err := s.commentRepo.CountRepliesByParents(ctx, ids)
+	if err != nil {
+		return err
+	}
+	for i := range dtos {
+		dtos[i].RepliesCount = counts[dtos[i].ID]
+	}
+	return nil
 }
 
 // ListReplies 列出某顶层评论下的回复（公开，page/limit 分页，最早在前）。

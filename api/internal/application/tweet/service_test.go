@@ -241,6 +241,19 @@ func (f *fakeCommentRepo) CountByTweetIDs(_ context.Context, tweetIDs []shared.I
 	return res, nil
 }
 
+func (f *fakeCommentRepo) CountRepliesByParents(_ context.Context, parentIDs []shared.ID) (map[string]int64, error) {
+	res := make(map[string]int64, len(parentIDs))
+	for _, pid := range parentIDs {
+		prefix := pid.String() + "/"
+		for _, c := range f.byID {
+			if c.Depth() == 1 && len(c.Path()) > len(prefix) && c.Path()[:len(prefix)] == prefix {
+				res[pid.String()]++
+			}
+		}
+	}
+	return res, nil
+}
+
 func (f *fakeCommentRepo) Delete(_ context.Context, id shared.ID) error {
 	if _, ok := f.byID[id.String()]; !ok {
 		return domaintweet.ErrCommentNotFound
@@ -906,20 +919,33 @@ func TestListComments(t *testing.T) {
 	svc, repo, comments, _ := setupCommentService(t, authorID)
 	repo.findByIDData[tweetID.String()] = tweet
 
+	var tops = make([]*domaintweet.Comment, 0, 3)
 	for range 3 {
 		c, err := domaintweet.NewComment(tweetID, authorID, "顶层")
 		require.NoError(t, err)
 		require.NoError(t, c.SetParent(nil))
 		comments.byID[c.ID().String()] = c
+		tops = append(tops, c)
+	}
+	// 给第一条顶层评论挂 2 条回复（含回复的回复，path 同挂该顶层）
+	for _, body := range []string{"回复1", "回复2"} {
+		r, err := domaintweet.NewComment(tweetID, authorID, body)
+		require.NoError(t, err)
+		require.NoError(t, r.SetParent(tops[0]))
+		comments.byID[r.ID().String()] = r
 	}
 
 	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), 1, 20)
 	require.NoError(t, err)
 	assert.Equal(t, int64(3), total)
 	assert.Len(t, dtos, 3)
+	repliesCount := map[string]int64{}
 	for _, d := range dtos {
 		assert.Equal(t, int16(0), d.Depth)
+		repliesCount[d.ID] = d.RepliesCount
 	}
+	assert.Equal(t, int64(2), repliesCount[tops[0].ID().String()], "有回复的顶层评论应返回回复数")
+	assert.Equal(t, int64(0), repliesCount[tops[1].ID().String()], "无回复的顶层评论回复数应为 0")
 }
 
 func TestListReplies(t *testing.T) {
