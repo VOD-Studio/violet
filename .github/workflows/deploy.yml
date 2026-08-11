@@ -50,8 +50,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write   # 创建 GitHub Release 需要
-  packages: write   # 推送镜像到 ghcr.io
+  contents: read   # 基础权限;写操作按 job 最小化授予(packages/contents/issues)
 
 jobs:
   # ── verify-ci: 部署前校验 tag commit 的主干 CI 全绿
@@ -98,6 +97,8 @@ jobs:
   # ── detect: 按侧变更检测
   detect:
     runs-on: [self-hosted, rua]
+    # self-hosted 挂起会占住 deploy-production 并发组,必须兜超时
+    timeout-minutes: 10
     outputs:
       api: ${{ steps.result.outputs.api }}
       web: ${{ steps.result.outputs.web }}
@@ -167,6 +168,7 @@ jobs:
   prepare:
     needs: [detect, verify-ci]
     runs-on: [self-hosted, rua]
+    timeout-minutes: 5
     outputs:
       tag: ${{ steps.ver.outputs.tag }}
       rollback: ${{ steps.ver.outputs.rollback }}
@@ -219,6 +221,9 @@ jobs:
     runs-on: ubuntu-latest
     # 缓存命中时分钟级;30 分钟是冷缓存(依赖大版本升级)全量构建的余量
     timeout-minutes: 30
+    permissions:
+      contents: read   # checkout
+      packages: write  # 推送镜像到 ghcr.io
     steps:
       - uses: actions/checkout@v7
         # 与构建 step 同条件：该侧不部署时整条 step 链跳过，job 仍 success，
@@ -258,6 +263,9 @@ jobs:
     runs-on: ubuntu-latest
     # 缓存命中时分钟级;30 分钟是冷缓存全量 vite build 的余量
     timeout-minutes: 30
+    permissions:
+      contents: read   # checkout
+      packages: write  # 推送镜像到 ghcr.io
     steps:
       - uses: actions/checkout@v7
         # 与构建 step 同条件：该侧不部署时整条 step 链跳过，job 仍 success
@@ -295,26 +303,6 @@ jobs:
             VITE_GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
           cache-from: type=gha,scope=violet-web
           cache-to: type=gha,mode=max,scope=violet-web
-
-  # ── set-visibility: 镜像推送成功后设置包公开 ──
-  # 仅对本轮实际构建的包设置公开，避免单侧部署时对未构建包做无意义调用
-  set-visibility:
-    needs: [prepare, build-api, build-web]
-    if: always() && ((needs.build-api.result == 'success' && needs.prepare.outputs.deploy_api == 'true') || (needs.build-web.result == 'success' && needs.prepare.outputs.deploy_web == 'true'))
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: 设置镜像包公开
-        run: |
-          if [ "${{ needs.prepare.outputs.deploy_api }}" == "true" ] && [ "${{ needs.build-api.result }}" == "success" ]; then
-            gh api -X PATCH /orgs/vod-studio/packages/container/violet-api/visibility -f visibility=public \
-              || echo "::warning::violet-api 可见性设置失败"
-          fi
-          if [ "${{ needs.prepare.outputs.deploy_web }}" == "true" ] && [ "${{ needs.build-web.result }}" == "success" ]; then
-            gh api -X PATCH /orgs/vod-studio/packages/container/violet-web/visibility -f visibility=public \
-              || echo "::warning::violet-web 可见性设置失败"
-          fi
 
   # ── prepare-server: 回滚复用检查、镜像拉取、compose 同步 ──
   prepare-server:
@@ -531,13 +519,12 @@ jobs:
           echo "::error::建议优先向前修复(部署兼容新 schema 的修复版本);migrate down 回退 schema 有数据丢失风险"
           exit 1
 
-  # ── release: nginx reload、GitHub Release、按侧回写锚点（最后） ──
+  # ── release: nginx reload、按侧回写锚点（最后） ──
   release:
     needs: [prepare, build-api, build-web, migrate, deploy-api, deploy-web, rollback]
     # prepare 必须 success，拦截 detect 或 prepare 自身的失败；migrate 与部署失败已被
     # !failure() 拦截。构建失败同样被 !failure() 覆盖，但单侧不部署时构建 job 为
-    # skipped 状态，不算失败，故显式排除 failure 状态，保证单侧构建跳过时仍创建
-    # Release。tag 已打，About 页面更新日志依赖 Releases
+    # skipped 状态，不算失败，故显式排除 failure 状态，保证单侧构建跳过时仍执行
     if: always() && !cancelled() && !failure() && needs.prepare.result == 'success' && needs.build-api.result != 'failure' && needs.build-web.result != 'failure'
     runs-on: [self-hosted, rua]
     timeout-minutes: 10
@@ -553,9 +540,8 @@ jobs:
           fi
 
       - name: 按侧回写版本锚点
-        # 放在 checkout 之前：锚点是后续发版 diff 的基线，不能被拉取代码失败连累。
-        # 手动回滚也走此路径:tag 即回滚目标版本,成功后锚点推进到回滚目标,
-        # 避免锚点陈旧导致下次发版 diff 漏掉未部署变更
+        # 锚点是后续发版 diff 的基线。手动回滚也走此路径:tag 即回滚目标版本,
+        # 成功后锚点推进到回滚目标,避免锚点陈旧导致下次发版 diff 漏掉未部署变更
         env:
           TAG: ${{ needs.prepare.outputs.tag }}
           API_RESULT: ${{ needs.deploy-api.result }}
@@ -570,15 +556,23 @@ jobs:
             echo "web 锚点更新为 $TAG"
           fi
 
-      # checkout 仅为 Release notes 抽 CHANGELOG；tag push 才建 Release，手动 dispatch 跳过
-      # dispatch 时 checkout github.com 被掐会白死，release job 失败即死于此
+  # ── github-release: 创建 GitHub Release（仅 tag push） ──
+  # 放 GitHub 托管 runner:rua 访问 github.com 不稳定(checkout 曾被掐白死),
+  # 建 Release 只需 changelog 与 gh api,不依赖服务器本地状态。
+  # 与 release(锚点回写)无依赖,并行执行
+  github-release:
+    needs: [prepare, build-api, build-web, migrate, deploy-api, deploy-web, rollback]
+    if: always() && !cancelled() && !failure() && needs.prepare.result == 'success' && needs.build-api.result != 'failure' && needs.build-web.result != 'failure' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # 创建 GitHub Release
+    steps:
       - uses: actions/checkout@v7
-        if: github.event_name == 'push'
         with:
           ref: ${{ needs.prepare.outputs.tag }}
 
       - name: 从 CHANGELOG 抽取本版本段落
-        if: github.event_name == 'push'
         id: notes
         run: |
           VERSION="${{ needs.prepare.outputs.tag }}"
@@ -602,15 +596,14 @@ jobs:
           fi
 
       - name: 创建 GitHub Release(CHANGELOG 段落)
-        # 仅 tag push 创建 Release;手动 dispatch(部署/回滚)不建
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'changelog'
+        if: steps.notes.outputs.source == 'changelog'
         uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           body_path: ${{ runner.temp }}/release-notes.md
 
       - name: 创建 GitHub Release(自动生成 notes)
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'generated'
+        if: steps.notes.outputs.source == 'generated'
         uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
@@ -623,7 +616,7 @@ jobs:
   # github.com 不稳定)。issue 未关闭期间同时作为「tag 已发布但生产未部署」漂移
   # 状态的可见记录;auto-retry 接力重试或下次发版覆盖后,人工确认关闭。
   notify-failure:
-    needs: [detect, prepare, build-api, build-web, prepare-server, migrate, deploy-api, deploy-web, rollback, release]
+    needs: [detect, prepare, build-api, build-web, prepare-server, migrate, deploy-api, deploy-web, rollback, release, github-release]
     if: always() && failure()
     runs-on: ubuntu-latest
     permissions:
