@@ -54,6 +54,47 @@ permissions:
   packages: write   # 推送镜像到 ghcr.io
 
 jobs:
+  # ── verify-ci: 部署前校验 tag commit 的主干 CI 全绿
+  # 合并即打 tag 即部署,与主干 CI 并发执行;本 job 轮询等待 CI 完成并校验结论,
+  # 拦截「CI 未跑完或失败时被部署」(#142,ruleset required checks 之外的部署侧兜底,
+  # 覆盖 admin bypass 强合路径)。job 恒 success:workflow_dispatch 手动部署/回滚时
+  # step 整体跳过(回滚救火不应被 CI 门禁拦截),避免 skipped 级联跳过下游 prepare。
+  verify-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      checks: read   # 查询 check-runs
+    steps:
+      - name: 等待并校验主干 CI 全绿
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -e
+          # tag push 时 GITHUB_SHA = tag 指向的 commit(release PR 的 merge commit,
+          # paths-ignore 删除后其 push CI 必跑)。白名单只列 CI 三 job:
+          # deploy 自身的 check 同样挂在该 commit 上,必须排除
+          for i in $(seq 1 30); do
+            STATE=$(gh api "repos/${GH_REPO}/commits/${GITHUB_SHA}/check-runs?per_page=100" \
+              --jq '[.check_runs[] | select(.name == "Backend (Go)" or .name == "Frontend (React)" or .name == "Dependency Security") | {status, conclusion: (.conclusion // "pending")}]')
+            TOTAL=$(echo "${STATE}" | jq 'length')
+            PENDING=$(echo "${STATE}" | jq '[.[] | select(.status != "completed")] | length')
+            echo "[${i}/30] CI checks: ${TOTAL}/3 已注册, ${PENDING} 进行中"
+            if [ "${TOTAL}" -ge 3 ] && [ "${PENDING}" -eq 0 ]; then
+              BAD=$(echo "${STATE}" | jq -r '[.[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | map(.conclusion) | join(", ")')
+              if [ -z "${BAD}" ]; then
+                echo "主干 CI 全绿,放行部署"
+                exit 0
+              fi
+              echo "::error::主干 CI 未通过(${BAD}),中止部署;修复后重发版,或确认风险后 workflow_dispatch 手动部署"
+              exit 1
+            fi
+            sleep 20
+          done
+          echo "::error::等待主干 CI 超时(10 分钟),中止部署"
+          exit 1
+
   # ── detect: 按侧变更检测
   detect:
     runs-on: [self-hosted, rua]
@@ -122,9 +163,9 @@ jobs:
           echo "web=${WEB}" >> "$GITHUB_OUTPUT"
           echo "检测结果: api=${API} web=${WEB}"
 
-  # ── prepare: 解析目标版本并决定最终部署侧 ──
+   # ── prepare: 解析目标版本并决定最终部署侧 ──
   prepare:
-    needs: detect
+    needs: [detect, verify-ci]
     runs-on: [self-hosted, rua]
     outputs:
       tag: ${{ steps.ver.outputs.tag }}
