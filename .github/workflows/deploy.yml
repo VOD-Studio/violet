@@ -60,7 +60,9 @@ jobs:
   # step 整体跳过(回滚救火不应被 CI 门禁拦截),避免 skipped 级联跳过下游 prepare。
   verify-ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 等待窗口对齐 CI 最长 job timeout(20 分钟):冷缓存(依赖大版本升级)时
+    # CI 可能跑满,窗口过短会把正常发版误拦
+    timeout-minutes: 25
     permissions:
       checks: read   # 查询 check-runs
     steps:
@@ -74,14 +76,15 @@ jobs:
           # tag push 时 GITHUB_SHA = tag 指向的 commit(release PR 的 merge commit,
           # paths-ignore 删除后其 push CI 必跑)。白名单只列 CI 三 job:
           # deploy 自身的 check 同样挂在该 commit 上,必须排除
-          for i in $(seq 1 30); do
+          for i in $(seq 1 40); do
+            # gh api 瞬断(网络抖动)不等于 CI 失败:跳过当轮继续等
             STATE=$(gh api "repos/${GH_REPO}/commits/${GITHUB_SHA}/check-runs?per_page=100" \
-              --jq '[.check_runs[] | select(.name == "Backend (Go)" or .name == "Frontend (React)" or .name == "Dependency Security") | {status, conclusion: (.conclusion // "pending")}]')
+              --jq '[.check_runs[] | select(.name == "Backend (Go)" or .name == "Frontend (React)" or .name == "Dependency Security") | {status, conclusion: (.conclusion // "pending")}]' || echo '[]')
             TOTAL=$(echo "${STATE}" | jq 'length')
             PENDING=$(echo "${STATE}" | jq '[.[] | select(.status != "completed")] | length')
-            echo "[${i}/30] CI checks: ${TOTAL}/3 已注册, ${PENDING} 进行中"
+            echo "[${i}/40] CI checks: ${TOTAL}/3 已注册, ${PENDING} 进行中"
             if [ "${TOTAL}" -ge 3 ] && [ "${PENDING}" -eq 0 ]; then
-              BAD=$(echo "${STATE}" | jq -r '[.[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | map(.conclusion) | join(", ")')
+              BAD=$(echo "${STATE}" | jq -r '[.[] | select(.conclusion != "success" and .conclusion != "skipped")] | map(.conclusion) | join(", ")')
               if [ -z "${BAD}" ]; then
                 echo "主干 CI 全绿,放行部署"
                 exit 0
@@ -89,9 +92,9 @@ jobs:
               echo "::error::主干 CI 未通过(${BAD}),中止部署;修复后重发版,或确认风险后 workflow_dispatch 手动部署"
               exit 1
             fi
-            sleep 20
+            sleep 30
           done
-          echo "::error::等待主干 CI 超时(10 分钟),中止部署"
+          echo "::error::等待主干 CI 超时(20 分钟)。若 CI job 有重命名或增减,需同步本 job 的白名单"
           exit 1
 
   # ── detect: 按侧变更检测
@@ -222,6 +225,7 @@ jobs:
     # 缓存命中时分钟级;30 分钟是冷缓存(依赖大版本升级)全量构建的余量
     timeout-minutes: 30
     permissions:
+      actions: write   # buildx type=gha 缓存读写(缺了 cache-to 失败会让构建失败)
       contents: read   # checkout
       packages: write  # 推送镜像到 ghcr.io
     steps:
@@ -264,6 +268,7 @@ jobs:
     # 缓存命中时分钟级;30 分钟是冷缓存全量 vite build 的余量
     timeout-minutes: 30
     permissions:
+      actions: write   # buildx type=gha 缓存读写(缺了 cache-to 失败会让构建失败)
       contents: read   # checkout
       packages: write  # 推送镜像到 ghcr.io
     steps:
