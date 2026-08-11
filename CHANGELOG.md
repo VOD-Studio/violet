@@ -7,6 +7,29 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.7.0](https://github.com/VOD-Studio/violet/compare/v2.6.1...v2.7.0) (2026-08-11)
+
+
+### 新增
+
+* **tweets:** 推文功能完整实现 ([1dcfc1b](https://github.com/VOD-Studio/violet/commit/1dcfc1b56faa43a39472c1fce259bb4e745db914))
+* **tweets:** 推文评论输入与展示接入表情图片 ([b8ccb40](https://github.com/VOD-Studio/violet/commit/b8ccb40eea298dd489182a95fb89fa7b53ce1e0a))
+* **tweets:** 评论展示接入 replies_count 驱动回复区显隐 ([688bd34](https://github.com/VOD-Studio/violet/commit/688bd3417b06b7285aec426c10eaaaef9b0dc4ea))
+* **tweet:** 推文评论支持表情与图片 ([9b98b47](https://github.com/VOD-Studio/violet/commit/9b98b47ea2bad6a97dfd9d29982a6f7c018fbffe))
+* **tweet:** 评论列表返回回复数 replies_count ([336bea1](https://github.com/VOD-Studio/violet/commit/336bea170d620cba8f7b207d7dc98b4558044d44))
+* **tweet:** 评论支持纯图片发布 ([f258766](https://github.com/VOD-Studio/violet/commit/f258766f5abb105b196f9e9bfe545c0e9b514c2b))
+
+
+### 修复
+
+* **migrations:** 推文迁移重编号为 070-074 解决合并版本冲突 ([3a4bde7](https://github.com/VOD-Studio/violet/commit/3a4bde7f185af187dfaf56a73980b78006c43139))
+* **shared-ui:** 无回复的评论不显示「查看回复」toggle ([533c979](https://github.com/VOD-Studio/violet/commit/533c979946f37a14474fc6b88aac33e3a4f78b63))
+
+
+### 重构
+
+* **shared-ui:** 评论区展示层抽离为公共组件供文章与推文复用 ([1c3b769](https://github.com/VOD-Studio/violet/commit/1c3b769f0f8fc441dd448e98484872a565780bf2))
+
 ## [2.6.1](https://github.com/VOD-Studio/violet/compare/v2.6.0...v2.6.1) (2026-08-10)
 
 
