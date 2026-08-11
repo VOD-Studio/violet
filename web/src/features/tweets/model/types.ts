@@ -63,7 +63,7 @@ export interface TweetCommentPageQuery {
  * pictures 可选：上传后由 RichCommentInput 回调携带，后端做归属校验。
  */
 export interface CreateTweetCommentInput {
-	/** 正文，trim 后非空且 ≤500 rune */
+	/** 正文（纯图评论可为空串），trim 后 ≤500 rune */
 	body: string;
 	/** 附图（可选，url/width/height/size，≤10 张）；无图省略 */
 	pictures?: PictureInput[];
