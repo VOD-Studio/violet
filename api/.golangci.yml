@@ -24,8 +24,6 @@ linters:
 
   exclusions:
     paths:
-      - internal/repository/generated
-      - internal/app/wire_gen.go$
       - ".*_gen\\.go$"
 
 issues:

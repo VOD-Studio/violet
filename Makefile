@@ -3,7 +3,7 @@
 
 .PHONY: help dev dev-mixed docker-dev docker-dev-app docker-dev-redis-app docker-dev-down docker-dev-logs docker-dev-watch up down restart logs \
         migrate migrate-down migrate-version reset-db db-shell redis-shell \
-        api api-build api-test api-lint sqlc wire \
+        api api-build api-test api-lint \
         web web-build web-preview web-lint web-format web-typecheck \
         build docker-build docker-up \
         deploy-prod-init deploy-prod deploy-prod-down \
@@ -137,14 +137,6 @@ api-lint: ## 后端代码检查 (golangci-lint 优先，不可用则回退 go ve
 		echo "⚠️  golangci-lint 未安装，回退到 go vet (建议: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)"; \
 		go vet ./...; \
 	fi
-
-sqlc: ## 生成 sqlc 代码
-	cd api && sqlc generate
-	@echo "sqlc 代码生成完成"
-
-wire: ## 生成 wire 依赖注入代码 (DDD app 层)
-	cd api && go run github.com/google/wire/cmd/wire ./internal/app/
-	@echo "wire 代码生成完成"
 
 apifox: ## 生成 OpenAPI 文档并导入到 Apifox
 	@echo "生成并上传 OpenAPI 文档到 Apifox..."
