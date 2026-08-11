@@ -91,6 +91,8 @@ export interface TweetComment {
 	parent_id?: string;
 	/** 展示层级：0=顶层评论，1=回复 */
 	depth: number;
+	/** 该评论的回复数（顶层评论列表批量统计；回复恒 0） */
+	replies_count: number;
 	/** 创建时间，RFC3339 字符串 */
 	created_at: string;
 }

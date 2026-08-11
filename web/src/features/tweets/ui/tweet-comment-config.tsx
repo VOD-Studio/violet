@@ -56,6 +56,8 @@ export function buildTweetCommentConfig({
 			isPending: false,
 			body: c.body,
 			createdAt: c.created_at,
+			// 回复数驱动「查看回复」toggle 显隐（0 回复不显示）
+			repliesTotal: c.replies_count,
 			tone: "default",
 			raw: c,
 		}),
