@@ -1,0 +1,65 @@
+# Deploy 失败告警:按 run id 去重,创建或追加 GitHub issue 并 @维护者。
+#
+# 为什么用 issue 而非 IM webhook:webhook 需要预先配置 secret,未配置时告警
+# 静默失效(2026-08-11 auto-retry 因缺 GH_REPO 失败且无人知晓的教训)。
+# issue + @mention 走 GitHub 原生通知,零配置、合并即生效;issue 未关闭期间
+# 同时作为「tag 已发布但生产未部署」漂移状态的可见记录。
+#
+# 调用方需提供 GH_TOKEN(issues: write)。action 内显式设 GH_REPO:
+# gh 不读 runner 自带的 GITHUB_REPOSITORY,无 .git 时推断 base repo 会失败。
+
+name: deploy-alert
+description: Deploy 失败时创建/追加 GitHub issue 告警(按 run id 去重)
+inputs:
+  run_id:
+    description: Deploy run ID
+    required: true
+  reason:
+    description: 告警原因(如「已达最大重试次数」),留空显示默认文案
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: 创建或追加告警 issue
+      shell: bash
+      env:
+        RUN_ID: ${{ inputs.run_id }}
+        REASON: ${{ inputs.reason }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+
+        RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+        FAILED_JOBS=$(gh run view "${RUN_ID}" --json jobs \
+          --jq '[.jobs[] | select(.conclusion == "failure") | .name] | join(", ")' || echo "查询失败")
+        ATTEMPT=$(gh run view "${RUN_ID}" --json attempt --jq '.attempt' || echo "?")
+        TIMESTAMP=$(date -u +'%Y-%m-%d %H:%M:%S UTC')
+
+        ENTRY="### ${TIMESTAMP}(attempt ${ATTEMPT})
+        - 失败 job: ${FAILED_JOBS:-未知}
+        - 原因: ${REASON:-见 run 日志}
+        - Run: ${RUN_URL}"
+
+        # 同 run 去重:issue 开着则追加评论;已关闭(人工处理过)再失败则重开
+        EXISTING=$(gh issue list --search "in:title \"run ${RUN_ID} 部署失败\"" --state open \
+          --json number --jq '.[0].number // empty')
+
+        if [ -n "${EXISTING}" ]; then
+          gh issue comment "${EXISTING}" --body "${ENTRY}
+
+        @DefectingCat @xunrua @JingpengZhang"
+          echo "已追加告警评论到 issue #${EXISTING}"
+        else
+          gh issue create --title "[deploy] run ${RUN_ID} 部署失败" --body "## Deploy 失败告警
+
+        ${ENTRY}
+
+        ---
+        本 issue 由 CI 自动创建,同一 run 的后续失败将追加评论。
+        生产恢复(重试成功或下次发版覆盖)后请手动关闭。
+
+        @DefectingCat @xunrua @JingpengZhang"
+          echo "已创建告警 issue"
+        fi
