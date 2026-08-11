@@ -217,7 +217,7 @@ jobs:
   build-api:
     needs: prepare
     runs-on: ubuntu-latest
-    # 全量 go module 下载与构建可能超过 15 分钟
+    # 缓存命中时分钟级;30 分钟是冷缓存(依赖大版本升级)全量构建的余量
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -235,22 +235,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup Docker Buildx
+        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
+        uses: docker/setup-buildx-action@v3
+
       - name: 构建并推送 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
-        run: |
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          push: true
           # ghcr.io 镜像名必须全小写
-          docker build \
-            -t ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} \
-            -t ghcr.io/vod-studio/violet-api:latest \
-            -f api/Dockerfile api/
-          docker push ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
-          docker push ghcr.io/vod-studio/violet-api:latest
-          echo "已推送 ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}"
+          tags: |
+            ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
+            ghcr.io/vod-studio/violet-api:latest
+          # 与 ci.yml 镜像构建验证共用 scope:同 commit 在 CI 已构建的层直接命中
+          cache-from: type=gha,scope=violet-api
+          cache-to: type=gha,mode=max,scope=violet-api
 
   build-web:
     needs: prepare
     runs-on: ubuntu-latest
-    # 全量 vite build 可能超过 15 分钟
+    # 缓存命中时分钟级;30 分钟是冷缓存全量 vite build 的余量
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -267,22 +273,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup Docker Buildx
+        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
+        uses: docker/setup-buildx-action@v3
+
       - name: 构建并推送 web 镜像
         if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
-        run: |
-          # build args 从 GitHub secrets 读取，与现网配置一致。
-          # VITE_API_BASE_URL / VITE_SITE_URL 有默认值，与服务器 .env 一致。
-          docker build \
-            -t ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} \
-            -t ghcr.io/vod-studio/violet-web:latest \
-            --build-arg "VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api/v1}" \
-            --build-arg "VITE_SITE_URL=${VITE_SITE_URL:-https://xunrua.top}" \
-            --build-arg "VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" \
-            --build-arg "VITE_GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}" \
-            -f web/Dockerfile web/
-          docker push ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
-          docker push ghcr.io/vod-studio/violet-web:latest
-          echo "已推送 ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}"
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          push: true
+          # ghcr.io 镜像名必须全小写;VITE_API_BASE_URL / VITE_SITE_URL 与 Dockerfile
+          # ARG 默认值一致,显式列出仅为可读性
+          tags: |
+            ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
+            ghcr.io/vod-studio/violet-web:latest
+          build-args: |
+            VITE_API_BASE_URL=/api/v1
+            VITE_SITE_URL=https://xunrua.top
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            VITE_GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
+          cache-from: type=gha,scope=violet-web
+          cache-to: type=gha,mode=max,scope=violet-web
 
   # ── set-visibility: 镜像推送成功后设置包公开 ──
   # 仅对本轮实际构建的包设置公开，避免单侧部署时对未构建包做无意义调用

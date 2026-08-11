@@ -78,8 +78,10 @@ jobs:
           context: ./api
           push: false
           tags: violet-api:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # scope 与 deploy.yml 构建一致:发版时 deploy 直接命中 CI 已构建的层;
+          # PR 分支命中率低,仅主干 push 写缓存
+          cache-from: type=gha,scope=violet-api
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=violet-api' || '' }}
 
   # ============================================================
   # 前端检查（TypeScript）
@@ -138,8 +140,8 @@ jobs:
           context: ./web
           push: false
           tags: violet-web:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=violet-web
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=violet-web' || '' }}
 
   # ============================================================
   # 依赖漏洞扫描
