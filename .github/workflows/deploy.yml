@@ -71,9 +71,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -e
-          # tag push 时 GITHUB_SHA = tag 指向的 commit(release PR 的 merge commit,
-          # paths-ignore 删除后其 push CI 必跑)。白名单只列 CI 三 job:
-          # deploy 自身的 check 同样挂在该 commit 上,必须排除
           for i in $(seq 1 30); do
             STATE=$(gh api "repos/${GH_REPO}/commits/${GITHUB_SHA}/check-runs?per_page=100" \
               --jq '[.check_runs[] | select(.name == "Backend (Go)" or .name == "Frontend (React)" or .name == "Dependency Security") | {status, conclusion: (.conclusion // "pending")}]')
@@ -222,6 +219,7 @@ jobs:
     # 缓存命中时分钟级;30 分钟是冷缓存(依赖大版本升级)全量构建的余量
     timeout-minutes: 30
     permissions:
+      actions: write   # buildx type=gha 缓存读写(缺了 cache-to 失败会让构建失败)
       contents: read   # checkout
       packages: write  # 推送镜像到 ghcr.io
     steps:
@@ -264,6 +262,7 @@ jobs:
     # 缓存命中时分钟级;30 分钟是冷缓存全量 vite build 的余量
     timeout-minutes: 30
     permissions:
+      actions: write   # buildx type=gha 缓存读写(缺了 cache-to 失败会让构建失败)
       contents: read   # checkout
       packages: write  # 推送镜像到 ghcr.io
     steps:
