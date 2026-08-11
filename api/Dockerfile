@@ -1,5 +1,7 @@
-# 阶段1: 依赖下载
-FROM golang:1.26-alpine AS deps
+# syntax=docker/dockerfile:1
+# 单构建阶段:go module 与编译缓存走 BuildKit cache mount,跨构建共享;
+# 不做 deps 阶段 COPY --from 传递(mount 内容不进镜像层,COPY 只能拿到空目录)
+FROM golang:1.26-alpine AS builder
 
 # 临时：服务器在国内，用 goproxy.cn 加速 module 下载
 ENV GOPROXY=https://goproxy.cn,direct
@@ -7,24 +9,17 @@ ENV GOPROXY=https://goproxy.cn,direct
 WORKDIR /app
 
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
-# 阶段2: 构建
-FROM golang:1.26-alpine AS builder
-
-ENV GOPROXY=https://goproxy.cn,direct
-
-WORKDIR /app
-
-COPY go.mod go.sum ./
-COPY --from=deps /go/pkg/mod /go/pkg/mod
 COPY . .
 
 # 构建 server 与 migrate 两个二进制，ldflags 去除调试信息减小体积
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server && \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /server ./cmd/server && \
     CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /migrate ./cmd/migrate
 
-# 阶段3: 运行时，保留 shell 与 wget 以便健康检查和调试
+# 阶段2: 运行时，保留 shell 与 wget 以便健康检查和调试
 FROM alpine:3.20
 
 WORKDIR /app
