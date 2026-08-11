@@ -35,7 +35,7 @@ func setupTweetCommentTestDB(t *testing.T) *gorm.DB {
 func mustSeedComment(t *testing.T, repo *TweetCommentRepository, tweetID, authorID domainshared.ID, body string, parent *domaintweet.Comment, createdAt time.Time) *domaintweet.Comment {
 	t.Helper()
 	ts := createdAt.UTC().Truncate(time.Microsecond)
-	c := domaintweet.ReconstructComment(domainshared.NewID(), tweetID, authorID, body, nil, 0, "", ts, ts)
+	c := domaintweet.ReconstructComment(domainshared.NewID(), tweetID, authorID, body, nil, nil, 0, "", ts, ts)
 	if parent != nil {
 		require.NoError(t, c.SetParent(parent))
 	} else {
@@ -71,6 +71,26 @@ func TestTweetCommentRepository_FindByID_NotFound(t *testing.T) {
 	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
 	_, err := repo.FindByID(context.Background(), domainshared.NewID())
 	require.ErrorIs(t, err, domaintweet.ErrCommentNotFound)
+}
+
+// TestTweetCommentRepository_Save_RoundTripPictures pictures 写入后读出一致。
+func TestTweetCommentRepository_Save_RoundTripPictures(t *testing.T) {
+	repo := NewTweetCommentRepository(setupTweetCommentTestDB(t))
+	ctx := context.Background()
+	tweetID := domainshared.NewID()
+	authorID := domainshared.NewID()
+	c := domaintweet.ReconstructComment(domainshared.NewID(), tweetID, authorID,
+		"带图", []domaintweet.Picture{{URL: "/uploads/comment/a.webp", Width: 100, Height: 200, Size: 1024}},
+		nil, 0, "", time.Now(), time.Now())
+	require.NoError(t, c.SetParent(nil))
+	require.NoError(t, repo.Save(ctx, c))
+
+	got, err := repo.FindByID(ctx, c.ID())
+	require.NoError(t, err)
+	require.Len(t, got.Pictures(), 1)
+	assert.Equal(t, "/uploads/comment/a.webp", got.Pictures()[0].URL)
+	assert.Equal(t, 100, got.Pictures()[0].Width)
+	assert.Equal(t, int64(1024), got.Pictures()[0].Size)
 }
 
 func TestTweetCommentRepository_FindByTweet_DescOrder(t *testing.T) {

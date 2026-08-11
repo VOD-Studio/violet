@@ -2,6 +2,7 @@ package gorm
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 
@@ -178,11 +179,18 @@ func (r *TweetCommentRepository) Delete(ctx context.Context, id domainshared.ID)
 
 // commentToPO 领域实体 → 持久化模型。
 func tweetCommentToPO(c *domaintweet.Comment) model.TweetComment {
+	var picturesJSON []byte
+	if len(c.Pictures()) > 0 {
+		picturesJSON, _ = json.Marshal(c.Pictures())
+	} else {
+		picturesJSON = []byte("[]")
+	}
 	po := model.TweetComment{
 		ID:       c.ID().UUID(),
 		TweetID:  c.TweetID().UUID(),
 		AuthorID: c.AuthorID().UUID(),
 		Body:     c.Body(),
+		Pictures: picturesJSON,
 		ParentID: nil,
 		Path:     c.Path(),
 		Depth:    c.Depth(),
@@ -207,11 +215,16 @@ func tweetCommentToDomain(po model.TweetComment) *domaintweet.Comment {
 		pid := domainshared.MustParseID(po.ParentID.String())
 		parentID = &pid
 	}
+	var pictures []domaintweet.Picture
+	if len(po.Pictures) > 0 {
+		_ = json.Unmarshal(po.Pictures, &pictures)
+	}
 	return domaintweet.ReconstructComment(
 		domainshared.MustParseID(po.ID.String()),
 		domainshared.MustParseID(po.TweetID.String()),
 		domainshared.MustParseID(po.AuthorID.String()),
 		po.Body,
+		pictures,
 		parentID,
 		po.Depth,
 		po.Path,

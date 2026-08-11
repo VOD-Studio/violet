@@ -8,6 +8,7 @@ import (
 	appshared "blog-api/internal/application/shared"
 	apptweet "blog-api/internal/application/tweet"
 	"blog-api/internal/domain/shared"
+	domainemoji "blog-api/internal/domain/emoji"
 	domainupload "blog-api/internal/domain/upload"
 	gormrepo "blog-api/internal/infrastructure/persistence/gorm"
 	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
@@ -22,6 +23,7 @@ type TweetContainer struct {
 // NewTweetContainer 装配推文 DDD 模块。
 //
 // fileRepo 适配为 TweetImageChecker（发布时图片归属校验）；
+// emojiRepo 适配为 EmojiLookup（评论 emote 富化，解析 body [name] 查表）；
 // userRepo 供作者资料填充与 username 解析；
 // perm 供「作者或 tweet:delete-any」删除判定的权限码分支；
 // bus 发布 TweetCreated/TweetDeleted（审计订阅者消费）。
@@ -34,11 +36,53 @@ func NewTweetContainer(
 	commentRepo := gormrepo.NewTweetCommentRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
 	fileRepo := gormrepo.NewFileRepository(db)
-	svc := apptweet.NewService(tweetRepo, commentRepo, userRepo, &tweetImageCheckerAdapter{repo: fileRepo}, perm, bus)
+	emojiRepo := gormrepo.NewEmojiGroupRepository(db)
+	svc := apptweet.NewService(
+		tweetRepo,
+		commentRepo,
+		userRepo,
+		&tweetImageCheckerAdapter{repo: fileRepo},
+		perm,
+		&tweetEmojiLookupAdapter{repo: emojiRepo},
+		bus,
+	)
 	return &TweetContainer{
 		TweetHandler: tweethttp.NewHandler(svc),
 		TweetService: svc,
 	}
+}
+
+// tweetEmojiLookupAdapter 将 EmojiGroupRepository 适配为 tweet.EmojiLookup 端口。
+// 通过 FindAll 加载全部启用表情，按 names 过滤返回 EmojiRef 映射
+// （与 comment 容器 emojiLookupAdapter 同构，仅返回类型按 tweet 域独立）。
+type tweetEmojiLookupAdapter struct {
+	repo domainemoji.EmojiGroupRepository
+}
+
+var _ apptweet.EmojiLookup = (*tweetEmojiLookupAdapter)(nil)
+
+func (a *tweetEmojiLookupAdapter) FindByNames(ctx context.Context, names []string) (map[string]apptweet.EmojiRef, error) {
+	nameSet := make(map[string]bool, len(names))
+	for _, n := range names {
+		nameSet[n] = true
+	}
+	groups, err := a.repo.FindAll(ctx, true) // enabledOnly=true
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]apptweet.EmojiRef)
+	for _, g := range groups {
+		for _, e := range g.Emojis() {
+			if nameSet[e.Name()] {
+				result[e.Name()] = apptweet.EmojiRef{
+					URL:    e.URL(),
+					GifURL: e.GifURL(),
+					Size:   int(e.Meta().Size()),
+				}
+			}
+		}
+	}
+	return result, nil
 }
 
 // tweetImageCheckerAdapter 将 upload.FileRepository 适配为 TweetImageChecker 端口

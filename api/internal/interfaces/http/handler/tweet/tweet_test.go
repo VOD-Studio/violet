@@ -200,7 +200,7 @@ func newTestHandler(repo *stubTweetRepo) *Handler {
 	uname, _ := domainuser.ParseUsername("alice")
 	email, _ := domainuser.ParseEmail("alice@example.com")
 	users.users[authorID.String()] = domainuser.NewUser(authorID, email, uname, domainuser.NewPasswordHash("x"))
-	svc := apptweet.NewService(repo, nil, users, nil, nil, appshared.NoopEventBus{})
+	svc := apptweet.NewService(repo, nil, users, nil, nil, nil, appshared.NoopEventBus{})
 	return NewHandler(svc)
 }
 
@@ -210,7 +210,7 @@ func newCommentTestHandler(repo *stubTweetRepo, comments *stubCommentRepo) *Hand
 	uname, _ := domainuser.ParseUsername("alice")
 	email, _ := domainuser.ParseEmail("alice@example.com")
 	users.users[authorID.String()] = domainuser.NewUser(authorID, email, uname, domainuser.NewPasswordHash("x"))
-	svc := apptweet.NewService(repo, comments, users, nil, nil, appshared.NoopEventBus{})
+	svc := apptweet.NewService(repo, comments, users, nil, nil, nil, appshared.NoopEventBus{})
 	return NewHandler(svc)
 }
 
@@ -412,6 +412,27 @@ func TestCreateComment_OK(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, rr.Code)
 	require.Len(t, comments.saved, 1)
 	assert.Equal(t, "好文", comments.saved[0].Body())
+}
+
+func TestCreateComment_WithPictures_PassedToService(t *testing.T) {
+	repo := &stubTweetRepo{byID: map[string]*domaintweet.Tweet{sampleTweet().ID().String(): sampleTweet()}}
+	comments := newStubCommentRepo()
+	h := newCommentTestHandler(repo, comments)
+
+	body := `{"body":"带图","pictures":[{"url":"/uploads/comment/a.webp","width":100,"height":200,"size":1024}]}`
+	req := httptest.NewRequest(http.MethodPost, "/tweets/x/comments", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue("id", sampleTweet().ID().String())
+	req = withIdentity(req, authorID.String())
+	rr := httptest.NewRecorder()
+	h.CreateComment(rr, req)
+
+	assert.Equal(t, http.StatusCreated, rr.Code)
+	require.Len(t, comments.saved, 1)
+	require.Len(t, comments.saved[0].Pictures(), 1)
+	assert.Equal(t, "/uploads/comment/a.webp", comments.saved[0].Pictures()[0].URL)
+	assert.Equal(t, 100, comments.saved[0].Pictures()[0].Width)
+	assert.Equal(t, int64(1024), comments.saved[0].Pictures()[0].Size)
 }
 
 func TestCreateComment_EmptyBody(t *testing.T) {

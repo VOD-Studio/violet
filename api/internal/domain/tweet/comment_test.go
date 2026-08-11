@@ -98,7 +98,7 @@ func TestReconstructComment(t *testing.T) {
 	parentID := shared.NewID()
 	created := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	c := ReconstructComment(id, tweetID, authorID, "body", &parentID, 1, "aaa/bbb/", created, created)
+	c := ReconstructComment(id, tweetID, authorID, "body", []Picture{{URL: "/uploads/a.webp", Width: 10, Height: 20, Size: 100}}, &parentID, 1, "aaa/bbb/", created, created)
 	assert.Equal(t, id, c.ID())
 	assert.Equal(t, tweetID, c.TweetID())
 	assert.Equal(t, authorID, c.AuthorID())
@@ -107,4 +107,32 @@ func TestReconstructComment(t *testing.T) {
 	assert.Equal(t, parentID, *c.ParentID())
 	assert.Equal(t, int16(1), c.Depth())
 	assert.Equal(t, "aaa/bbb/", c.Path())
+	require.Len(t, c.Pictures(), 1)
+	assert.Equal(t, "/uploads/a.webp", c.Pictures()[0].URL)
+	assert.Equal(t, int64(100), c.Pictures()[0].Size)
+}
+
+func TestReconstructComment_NilPicturesNormalized(t *testing.T) {
+	created := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	c := ReconstructComment(shared.NewID(), shared.NewID(), shared.NewID(), "body", nil, nil, 0, "", created, created)
+	require.NotNil(t, c.Pictures())
+	assert.Empty(t, c.Pictures(), "nil pictures 应归一为空数组")
+}
+
+func TestComment_SetPictures(t *testing.T) {
+	c, err := NewComment(shared.NewID(), shared.NewID(), "hi")
+	require.NoError(t, err)
+	// nil → 空数组
+	require.NoError(t, c.SetPictures(nil))
+	assert.Empty(t, c.Pictures())
+	// ≤10 张通过
+	pics := []Picture{{URL: "/uploads/a.webp", Width: 1, Height: 1, Size: 1}}
+	require.NoError(t, c.SetPictures(pics))
+	assert.Equal(t, pics, c.Pictures())
+	// 超过上限拒绝（聚合根不变量）
+	over := make([]Picture, MaxCommentPictures+1)
+	for i := range over {
+		over[i] = Picture{URL: "/uploads/a.webp"}
+	}
+	assert.Error(t, c.SetPictures(over), "超过 MaxCommentPictures 应拒绝")
 }

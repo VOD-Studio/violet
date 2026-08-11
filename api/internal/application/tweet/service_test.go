@@ -286,13 +286,13 @@ func newTestUser(t *testing.T, username string) *domainuser.User {
 }
 
 func newService(repo *fakeTweetRepo, users *fakeUserRepo, checker *fakeImageChecker, perm TweetPermissionChecker, bus appshared.EventBus) *Service {
-	return NewService(repo, nil, users, checker, perm, bus)
+	return NewService(repo, nil, users, checker, perm, nil, bus)
 }
 
 // newCommentService 构造带评论仓储的 service（评论用例测试用）。
 func newCommentService(t *testing.T, repo *fakeTweetRepo, comments *fakeCommentRepo, users *fakeUserRepo, perm TweetPermissionChecker) *Service {
 	t.Helper()
-	return NewService(repo, comments, users, nil, perm, appshared.NoopEventBus{})
+	return NewService(repo, comments, users, nil, perm, nil, appshared.NoopEventBus{})
 }
 
 // ctxWithUser 注入 session 中间件同款身份上下文。
@@ -989,4 +989,144 @@ func TestTweetDTO_CommentCount(t *testing.T) {
 	dto, err := svc.GetByID(context.Background(), tweetID.String())
 	require.NoError(t, err)
 	assert.Equal(t, 5, dto.CommentCount, "详情应返回评论数")
+}
+
+// --- 评论表情 / 图片（issue 推文评论表情图片）---
+
+// fakeEmojiLookup emote 查表替身：按名字返回固定 EmojiRef。
+type fakeEmojiLookup struct {
+	refs map[string]EmojiRef
+}
+
+func (f *fakeEmojiLookup) FindByNames(_ context.Context, names []string) (map[string]EmojiRef, error) {
+	out := make(map[string]EmojiRef, len(names))
+	for _, n := range names {
+		if ref, ok := f.refs[n]; ok {
+			out[n] = ref
+		}
+	}
+	return out, nil
+}
+
+// newCommentCapabilityService 构造带 checker + emojiLookup 的 service（评论图片/表情用例）。
+// users 预置 authorID 对应评论者，保证 commentsToDTOs 作者资料命中。
+func newCommentCapabilityService(t *testing.T, repo *fakeTweetRepo, comments *fakeCommentRepo, authorID shared.ID, checker TweetImageChecker, lookup EmojiLookup) *Service {
+	t.Helper()
+	users := &fakeUserRepo{byIDs: map[string]*domainuser.User{}}
+	uname, err := domainuser.ParseUsername("commenter")
+	require.NoError(t, err)
+	mail, err := domainuser.ParseEmail("commenter@example.com")
+	require.NoError(t, err)
+	u := domainuser.NewUser(authorID, mail, uname, domainuser.NewPasswordHash("x"))
+	users.byIDs[authorID.String()] = u
+	return NewService(repo, comments, users, checker, nil, lookup, appshared.NoopEventBus{})
+}
+
+func TestCreateComment_WithPictures_PassesOwnershipAndSaves(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{tweetID.String(): tweet}}
+	comments := newFakeCommentRepo()
+	checker := &fakeImageChecker{}
+	svc := newCommentCapabilityService(t, repo, comments, authorID, checker, nil)
+
+	pics := []domaintweet.Picture{
+		{URL: "/uploads/comment/a.webp", Width: 100, Height: 200, Size: 1024},
+	}
+	dto, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "带图评论", Pictures: pics,
+	})
+	require.NoError(t, err)
+	// 归属校验：URL 与作者透传给 upload 域端口
+	assert.True(t, checker.called, "图片归属校验应执行")
+	assert.Equal(t, []string{"/uploads/comment/a.webp"}, checker.gotURLs)
+	assert.Equal(t, authorID, checker.gotOwner)
+	// 落库与 DTO 均带 pictures
+	require.Len(t, comments.saved, 1)
+	assert.Equal(t, pics, comments.saved[0].Pictures())
+	require.Len(t, dto.Pictures, 1)
+	assert.Equal(t, "/uploads/comment/a.webp", dto.Pictures[0].URL)
+	assert.Equal(t, int64(1024), dto.Pictures[0].Size)
+}
+
+func TestCreateComment_PicturesOwnershipRejected(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{tweetID.String(): tweet}}
+	comments := newFakeCommentRepo()
+	checker := &fakeImageChecker{err: shared.Forbidden("推文图片不存在或不属于当前用户")}
+	svc := newCommentCapabilityService(t, repo, comments, authorID, checker, nil)
+
+	_, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "盗图",
+		Pictures: []domaintweet.Picture{{URL: "/uploads/other/x.webp"}},
+	})
+	assert.Error(t, err, "非本人上传的图片应被拒绝")
+	assert.Empty(t, comments.saved, "校验失败不落库")
+}
+
+func TestCreateComment_TooManyPictures(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{tweetID.String(): tweet}}
+	comments := newFakeCommentRepo()
+	svc := newCommentCapabilityService(t, repo, comments, authorID, &fakeImageChecker{}, nil)
+
+	pics := make([]domaintweet.Picture, domaintweet.MaxCommentPictures+1)
+	for i := range pics {
+		pics[i] = domaintweet.Picture{URL: "/uploads/comment/x.webp"}
+	}
+	_, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "图太多", Pictures: pics,
+	})
+	assert.Error(t, err, "超过 10 张应被聚合根拒绝")
+	assert.Empty(t, comments.saved)
+}
+
+func TestListComments_EmoteEnriched(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	comments := newFakeCommentRepo()
+	lookup := &fakeEmojiLookup{refs: map[string]EmojiRef{
+		"[doge]": {URL: "https://emoji/doge.png", GifURL: "https://emoji/doge.gif", Size: 2},
+	}}
+
+	// 种子：一条带 [doge] 占位符 + 附图的顶层评论
+	c := domaintweet.ReconstructComment(shared.NewID(), tweetID, authorID,
+		"[doge] 表情 + 图", []domaintweet.Picture{{URL: "/uploads/comment/a.webp", Width: 1, Height: 1, Size: 1}},
+		nil, 0, shared.NewID().String()+"/", time.Now(), time.Now())
+	comments.byID[c.ID().String()] = c
+
+	svc := newCommentCapabilityService(t, &fakeTweetRepo{}, comments, authorID, nil, lookup)
+	dtos, total, err := svc.ListComments(context.Background(), tweetID.String(), 1, 20)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), total)
+	require.Len(t, dtos, 1)
+	// emote 映射按 body 占位符富化
+	require.Contains(t, dtos[0].Emote, "[doge]")
+	assert.Equal(t, "https://emoji/doge.png", dtos[0].Emote["[doge]"].URL)
+	assert.Equal(t, 2, dtos[0].Emote["[doge]"].Size)
+	// pictures 透传
+	require.Len(t, dtos[0].Pictures, 1)
+	assert.Equal(t, "/uploads/comment/a.webp", dtos[0].Pictures[0].URL)
+}
+
+func TestCreateComment_EmoteEnriched(t *testing.T) {
+	authorID := shared.NewID()
+	tweetID := shared.NewID()
+	tweet := domaintweet.ReconstructTweet(tweetID, authorID, "hi", nil, nil, 0, time.Now(), time.Now())
+	repo := &fakeTweetRepo{findByIDData: map[string]*domaintweet.Tweet{tweetID.String(): tweet}}
+	comments := newFakeCommentRepo()
+	lookup := &fakeEmojiLookup{refs: map[string]EmojiRef{"[dog]": {URL: "https://emoji/dog.png"}}}
+	svc := newCommentCapabilityService(t, repo, comments, authorID, &fakeImageChecker{}, lookup)
+
+	dto, err := svc.CreateComment(ctxWithUser(authorID.String(), "", false), CreateCommentInput{
+		TweetID: tweetID.String(), AuthorID: authorID.String(), Body: "[dog] 汪汪",
+	})
+	require.NoError(t, err)
+	require.Contains(t, dto.Emote, "[dog]", "创建返回的单条 DTO 也应富化 emote")
+	assert.Equal(t, "https://emoji/dog.png", dto.Emote["[dog]"].URL)
 }

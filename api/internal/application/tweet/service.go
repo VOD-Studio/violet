@@ -13,6 +13,7 @@ package tweet
 import (
 	"context"
 	"errors"
+	"regexp"
 	"strings"
 	"time"
 
@@ -35,6 +36,7 @@ type Service struct {
 	userRepo    domainuser.UserRepository
 	checker     TweetImageChecker
 	perm        TweetPermissionChecker
+	emojiLookup EmojiLookup
 	bus         appshared.EventBus
 }
 
@@ -42,15 +44,17 @@ type Service struct {
 // checker 为 nil 时跳过图片归属校验（仅限测试场景；生产容器必须注入）。
 // commentRepo 为 nil 时跳过评论相关用例与评论数填充（仅限推文单测场景）。
 // perm 为 nil 时仅作者本人可删（无权限码放行路径）。
+// emojiLookup 为 nil 时跳过评论 emote 富化（仅限测试场景；生产容器必须注入）。
 func NewService(
 	repo domaintweet.TweetRepository,
 	commentRepo domaintweet.CommentRepository,
 	userRepo domainuser.UserRepository,
 	checker TweetImageChecker,
 	perm TweetPermissionChecker,
+	emojiLookup EmojiLookup,
 	bus appshared.EventBus,
 ) *Service {
-	return &Service{repo: repo, commentRepo: commentRepo, userRepo: userRepo, checker: checker, perm: perm, bus: bus}
+	return &Service{repo: repo, commentRepo: commentRepo, userRepo: userRepo, checker: checker, perm: perm, emojiLookup: emojiLookup, bus: bus}
 }
 
 // --- 输入/输出 DTO ---
@@ -480,12 +484,33 @@ func (s *Service) publishEvents(ctx context.Context, events []shared.DomainEvent
 
 // --- 推文评论（P2 / issue #107）---
 
+// EmojiRef 表情映射值（emote map 的 value）。
+// 前端渲染 body 中的 [name] 占位符时查此表，优先使用 GifURL。
+// Size 携带表情尺寸（1=小 2=大），供前端按尺寸渲染内联表情。
+type EmojiRef struct {
+	URL    string `json:"url"`
+	GifURL string `json:"gif_url,omitempty"`
+	Size   int    `json:"size,omitempty"`
+}
+
+// EmojiLookup 表情批量查找端口（application 层端口）。
+// 评论 toDTO 后解析 body 中的 [name] 占位符，批量查表构建 emote 映射
+// （与 comment 域 enrichEmotes 同构；实现方在 infrastructure 层）。
+type EmojiLookup interface {
+	FindByNames(ctx context.Context, names []string) (map[string]EmojiRef, error)
+}
+
 // CommentDTO 推文评论读模型。
 type CommentDTO struct {
 	ID        string    `json:"id"`
 	TweetID   string    `json:"tweet_id"`
 	Author    AuthorDTO `json:"author"`
 	Body      string    `json:"body"`
+	// Pictures 评论附图（Bilibili 式，url/width/height/size）；无图恒为空数组
+	Pictures []domaintweet.Picture `json:"pictures"`
+	// Emote 表情映射表。key 为 [name]（含方括号），value 为表情图片 URL。
+	// toDTO 后由 enrichEmotes 批量填充。body 中没有 [name] 时为 nil（JSON 省略）。
+	Emote map[string]EmojiRef `json:"emote,omitempty"`
 	// ParentID 被回复的评论 id；顶层评论省略（omitempty）
 	ParentID  string    `json:"parent_id,omitempty"`
 	Depth     int16     `json:"depth"`
@@ -501,8 +526,30 @@ type CreateCommentInput struct {
 	// AuthorID 当前登录用户 ID（handler 从 session ctx 提取）
 	AuthorID string
 	Body     string
+	// Pictures 评论附图（可选）。URL 归属校验通过 TweetImageChecker 端口。
+	Pictures []domaintweet.Picture
 	// ParentID 被回复的评论 id；空串=顶层评论
 	ParentID string
+}
+
+// PictureInput 评论附图请求 DTO（handler 层接收的 JSON 形态，转成 domain.Picture）。
+type PictureInput struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Size   int64  `json:"size"`
+}
+
+// PicturesToDomain 切片转换：[]PictureInput → []domaintweet.Picture。
+func PicturesToDomain(in []PictureInput) []domaintweet.Picture {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]domaintweet.Picture, len(in))
+	for i, p := range in {
+		out[i] = domaintweet.Picture{URL: p.URL, Width: p.Width, Height: p.Height, Size: p.Size}
+	}
+	return out
 }
 
 // CreateComment 创建评论或回复（登录，即发即出：无审核状态机）。
@@ -530,6 +577,21 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 		return CommentDTO{}, err
 	}
 
+	// 附图接线：数量不变量在聚合根（SetPictures），URL 归属走 upload 域校验
+	// （防越权引用他人上传文件，与发推文 Create 的 checker 校验同构）。
+	if err := c.SetPictures(in.Pictures); err != nil {
+		return CommentDTO{}, err
+	}
+	if s.checker != nil && len(c.Pictures()) > 0 {
+		urls := make([]string, len(c.Pictures()))
+		for i, p := range c.Pictures() {
+			urls[i] = p.URL
+		}
+		if err := s.checker.CheckImagesOwnedBy(ctx, urls, authorID); err != nil {
+			return CommentDTO{}, err
+		}
+	}
+
 	if in.ParentID != "" {
 		parentID, err := shared.ParseID(in.ParentID)
 		if err != nil {
@@ -553,7 +615,11 @@ func (s *Service) CreateComment(ctx context.Context, in CreateCommentInput) (Com
 	if err := s.commentRepo.Save(ctx, c); err != nil {
 		return CommentDTO{}, err
 	}
-	return s.commentsToDTOs(ctx, []*domaintweet.Comment{c})[0], nil
+	dto := s.commentsToDTOs(ctx, []*domaintweet.Comment{c})[0]
+	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
+		return CommentDTO{}, err
+	}
+	return dto, nil
 }
 
 // DeleteComment 删除评论（物理删除；顶层评论的回复由 parent_id 自引用
@@ -596,6 +662,9 @@ func (s *Service) ListComments(ctx context.Context, tweetIDStr string, page, lim
 	if err := s.attachRepliesCount(ctx, comments, dtos); err != nil {
 		return nil, 0, err
 	}
+	if err := s.enrichEmotes(ctx, dtos); err != nil {
+		return nil, 0, err
+	}
 	return dtos, total, nil
 }
 
@@ -631,7 +700,11 @@ func (s *Service) ListReplies(ctx context.Context, parentIDStr string, page, lim
 	if err != nil {
 		return nil, 0, err
 	}
-	return s.commentsToDTOs(ctx, replies), total, nil
+	dtos := s.commentsToDTOs(ctx, replies)
+	if err := s.enrichEmotes(ctx, dtos); err != nil {
+		return nil, 0, err
+	}
+	return dtos, total, nil
 }
 
 // commentsToDTOs 领域评论 → DTO，批量填充作者资料（FindByIDs 一次查询避免 N+1）。
@@ -668,6 +741,7 @@ func (s *Service) commentsToDTOs(ctx context.Context, comments []*domaintweet.Co
 			TweetID:   c.TweetID().String(),
 			Author:    authors[c.AuthorID().String()],
 			Body:      c.Body(),
+			Pictures:  c.Pictures(),
 			ParentID:  parentID,
 			Depth:     c.Depth(),
 			CreatedAt: c.CreatedAt().UTC().Format(time.RFC3339),
@@ -698,3 +772,73 @@ func (s *Service) canDeleteComment(ctx context.Context, c *domaintweet.Comment) 
 
 // errCommentRepoNotInjected 评论仓储未注入（仅测试场景未传 commentRepo 时触发）。
 var errCommentRepoNotInjected = shared.Internal("评论仓储未注入", nil)
+
+// emojiBodyPattern 匹配 body 中的 [name] 表情占位符（含方括号）。
+var emojiBodyPattern = regexp.MustCompile(`\[([^\]]+)\]`)
+
+// collectEmojiNames 将 body 中所有 [name] 占位符加入 set（key 含方括号，如 "[doge]"）。
+func collectEmojiNames(body string, set map[string]bool) {
+	for _, m := range emojiBodyPattern.FindAllString(body, -1) {
+		set[m] = true
+	}
+}
+
+// filterEmoteForBody 从全量 emote 表中筛出 body 实际用到的表情。
+func filterEmoteForBody(body string, all map[string]EmojiRef) map[string]EmojiRef {
+	result := make(map[string]EmojiRef)
+	for _, m := range emojiBodyPattern.FindAllString(body, -1) {
+		if ref, ok := all[m]; ok {
+			result[m] = ref
+		}
+	}
+	return result
+}
+
+// enrichEmotes 批量填充 DTO 切片的 Emote 字段（ListComments / ListReplies 路径）。
+// 从所有 body 中提取唯一 [name]，一次批量查表，逐个按 body 过滤填充。
+func (s *Service) enrichEmotes(ctx context.Context, dtos []CommentDTO) error {
+	if s.emojiLookup == nil || len(dtos) == 0 {
+		return nil
+	}
+	nameSet := make(map[string]bool)
+	for i := range dtos {
+		collectEmojiNames(dtos[i].Body, nameSet)
+	}
+	if len(nameSet) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(nameSet))
+	for n := range nameSet {
+		names = append(names, n)
+	}
+	emoteMap, err := s.emojiLookup.FindByNames(ctx, names)
+	if err != nil {
+		return err
+	}
+	for i := range dtos {
+		dtos[i].Emote = filterEmoteForBody(dtos[i].Body, emoteMap)
+	}
+	return nil
+}
+
+// enrichSingleEmote 单条 DTO 富化（CreateComment 返回路径）。
+func (s *Service) enrichSingleEmote(ctx context.Context, dto *CommentDTO) error {
+	if s.emojiLookup == nil {
+		return nil
+	}
+	nameSet := make(map[string]bool)
+	collectEmojiNames(dto.Body, nameSet)
+	if len(nameSet) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(nameSet))
+	for n := range nameSet {
+		names = append(names, n)
+	}
+	emoteMap, err := s.emojiLookup.FindByNames(ctx, names)
+	if err != nil {
+		return err
+	}
+	dto.Emote = filterEmoteForBody(dto.Body, emoteMap)
+	return nil
+}

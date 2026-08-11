@@ -133,8 +133,10 @@ func (h *Handler) Unlike(w http.ResponseWriter, r *http.Request) {
 // --- 推文评论（P2 / issue #107）---
 
 type createCommentRequest struct {
-	Body     string `json:"body"`
-	ParentID string `json:"parent_id"`
+	Body     string               `json:"body"`
+	ParentID string               `json:"parent_id"`
+	// Pictures 评论附图（可选，Bilibili 式，url/width/height/size）
+	Pictures []apptweet.PictureInput `json:"pictures"`
 }
 
 // CreateComment 创建评论/回复（登录）：POST /tweets/{id}/comments
@@ -148,6 +150,7 @@ func (h *Handler) CreateComment(w http.ResponseWriter, r *http.Request) {
 		TweetID:  r.PathValue("id"),
 		AuthorID: interfacesmw.GetUserIDFromContext(r),
 		Body:     req.Body,
+		Pictures: apptweet.PicturesToDomain(req.Pictures),
 		ParentID: req.ParentID,
 	})
 	if err != nil {

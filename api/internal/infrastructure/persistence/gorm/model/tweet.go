@@ -36,13 +36,15 @@ func (TweetLike) TableName() string { return "tweet_likes" }
 
 // TweetComment 推文评论持久化模型（对应 tweet_comments 表，migration 073）。
 //
-// 两层扁平楼中楼（depth 0=顶层 / 1=回复），即发即出、纯文本、物理删除。
+// 两层扁平楼中楼（depth 0=顶层 / 1=回复），即发即出、物理删除。
 // parent_id 自引用 ON DELETE CASCADE：删顶层评论连带清回复链。
+// pictures 为评论附图 JSON（migration 075），空评论存 '[]'。
 type TweetComment struct {
 	ID        uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	TweetID   uuid.UUID  `gorm:"type:uuid;column:tweet_id;not null" json:"tweet_id"`
 	AuthorID  uuid.UUID  `gorm:"type:uuid;column:author_id;not null" json:"author_id"`
 	Body      string     `gorm:"type:text;not null" json:"body"`
+	Pictures  []byte     `gorm:"type:jsonb;not null;default:'[]'" json:"pictures"`
 	ParentID  *uuid.UUID `gorm:"type:uuid;column:parent_id" json:"parent_id,omitempty"`
 	Path      string     `gorm:"type:text;not null;default:''" json:"path"`
 	Depth     int16      `gorm:"type:smallint;not null;default:0" json:"depth"`
