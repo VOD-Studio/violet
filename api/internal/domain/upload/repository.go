@@ -12,6 +12,9 @@ type FileRepository interface {
 	FindByID(ctx context.Context, id shared.ID) (*File, error)
 	// FindByHash 秒传检查:仅命中该 owner 自己上传过的文件,防越权秒传他人文件
 	FindByHash(ctx context.Context, hash string, ownerID shared.ID) (*File, error)
+	// FindByURLs 按访问 URL 批量查找就绪（status=ready）文件。
+	// 推文发布归属校验用（TweetImageChecker）：命中数少于传入数即有 URL 不存在/未就绪。
+	FindByURLs(ctx context.Context, urls []string) ([]*File, error)
 	FindByOwner(ctx context.Context, ownerID shared.ID, purpose string, page, limit int) ([]*File, int64, error)
 	// FindAll 全局查询文件列表（后台素材管理用，不限 owner）
 	FindAll(ctx context.Context, filter FileListFilter, page, limit int) (*FileListResult, error)

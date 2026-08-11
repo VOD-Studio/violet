@@ -7,7 +7,6 @@
 export interface UserDTO {
 	/** 用户 ID（UUID 字符串） */
 	id: string;
-	/** 用户名 */
 	/** 用户名（唯一登录标识，纯 ASCII） */
 	username: string;
 	/** 显示名（可空，空时回退 username） */
@@ -48,6 +47,23 @@ export interface SessionClaims {
 	email: string;
 	/** 是否为 root 用户 */
 	is_root: boolean;
+}
+/**
+ * UserProfile - 公开用户资料卡
+ *
+ * 对接后端 GET /api/v1/users/{username}。只包含公开字段（头像/用户名/简介/注册时间）。
+ */
+export interface UserProfile {
+	/** 用户 ID */
+	id: string;
+	/** 用户名 */
+	username: string;
+	/** 头像 URL */
+	avatar_url: string;
+	/** 个人简介 */
+	bio: string;
+	/** 注册时间（RFC3339） */
+	created_at: string;
 }
 
 /**

@@ -219,3 +219,27 @@ _Avoid_: About 设置（未点明聚合配置语义）、区块开关（仅显�
 **更新日志（Changelog / Releases）**:
 关于页 B 线区块，展示博客项目的版本演进。**数据源是 GitHub Releases API（后端代理 + Redis 缓存）**——GitHub Releases 是 release-please 发版的天然副产物，发版即更新、零手工维护。后端复用现有 `github_token` 提限流到 5000/小时，结果用 Redis 缓存（~1h）解决访客直连必爆限流。呈现对齐业界最佳实践（个人博客变体）：版本时间线卡片 + 日期戳 + **分类标签直接从 release body 的 emoji 行解析**（release-please 已把 commit 类型映射成 ✨新增/🐛修复/♻️重构等）+ Breaking change 醒目标记。**变通业界实践**：受众是技术读者，保留技术事实而非营销话术；舍弃截图/GIF（保证发版零维护）。该能力对齐并增强现有 `/api/v1/github/contributions` 代理模式（后者无缓存，releases 是加缓存层的演进版）。
 _Avoid_: CHANGELOG（指仓库根的 release-please 维护文件，非应用能力）、版本日志（口语）
+
+## 推文（Tweets）
+
+> 多用户微博能力，见 PRD-0013。`tweet` 是与 post / comment 平级的独立 bounded context。
+
+**推文（Tweet）**:
+登录用户发布的短内容单元：纯文本（≤500 字）+ 最多 4 张图，文本与图片至少其一。三条领域规则：**即发即出**（无先审后发，管理员凭 `tweet:delete-any` 事后删除兜底）、**不可编辑**（聚合根无 Update 路径，反悔 = 删除重发）、**物理删除**（无软删，点赞/评论级联删除）。作者 `author_id` 创建时固定不可变。
+_Avoid_: 动态、说说（口语，未对应 tweet 域）、微博（产品名，非领域术语）
+
+**全局时间线（Global Timeline）**:
+全站推文按时间倒序的公共信息流，挂在 `/tweets`，匿名可浏览。本功能是**唯一的信息流组织方式**——明确否决 follow 关系与关注首页流。分页用 **cursor**（`(created_at, id)` 复合游标），不用项目惯用的 page/limit：feed 顶部持续插入新数据，offset 分页会重复/漏数据。
+_Avoid_: feed（与 RSS 订阅域的 feed 混淆）、关注流（已否决）
+
+**用户主页（推文资料卡）**:
+公开路由 `/users/$username`，展示用户头像、用户名、注册时间与其推文列表。**只聚合推文**，不展示其文章/评论等其他活动。是全站第一个公开用户页概念，与登录私域 `/profile` 区分。
+_Avoid_: 个人空间（暗示含更多聚合内容）、profile（指登录私域路由）
+
+**推文评论 —— 候选，P2 实现**:
+挂推文下的独立评论实体，复用 comment 域楼中楼模式，只在推文详情页出现，**不进时间线**。刻意不采用推特原版「回复即推文」模型。
+_Avoid_: 回复推文（混淆了已否决的 reply-as-tweet 模型）
+
+**引用推文（Quote Tweet）—— 候选，P3 实现**:
+转发的建模方式：转发本身是一条带 `quote_of` 引用的推文，可带自己的文字（纯转发 = 无文本的引用推文），出现在自己与全局时间线。
+_Avoid_: retweet（未体现带引用的内容载体语义）

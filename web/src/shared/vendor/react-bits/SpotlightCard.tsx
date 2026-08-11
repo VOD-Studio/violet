@@ -67,7 +67,7 @@ function SpotlightCard({
                         "inset 0 0 0 1px hsl(var(--neon-blue) / 0.35), inset 0 0 24px hsl(var(--neon-blue) / 0.08)",
                 }}
             />
-            <div className="relative z-10">{children}</div>
+            <div className="relative z-10 contents">{children}</div>
         </Comp>
     );
 }

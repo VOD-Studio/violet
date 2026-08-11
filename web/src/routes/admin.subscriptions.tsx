@@ -1,5 +1,4 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import {
@@ -27,6 +26,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@shared/ui/base/select";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Pause, Pencil, Play, Plus, RefreshCw, Trash2 } from "lucide-react";
 import * as React from "react";

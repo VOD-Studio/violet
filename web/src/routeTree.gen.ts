@@ -17,11 +17,14 @@ import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as AnnouncementLabRouteImport } from './routes/announcement-lab'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TweetsIndexRouteImport } from './routes/tweets/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
+import { Route as UsersUsernameRouteImport } from './routes/users/$username'
+import { Route as TweetsIdRouteImport } from './routes/tweets/$id'
 import { Route as BlogArchiveRouteImport } from './routes/blog/archive'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as AnnouncementsIdRouteImport } from './routes/announcements.$id'
@@ -41,6 +44,7 @@ import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
 import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminPostsIndexRouteImport } from './routes/admin.posts.index'
+import { Route as TweetsTopicsTagRouteImport } from './routes/tweets/topics/$tag'
 import { Route as AuthGithubCallbackRouteImport } from './routes/auth.github.callback'
 import { Route as AdminSettingsProfileRouteImport } from './routes/admin.settings.profile'
 import { Route as AdminSettingsLlmRouteImport } from './routes/admin.settings.llm'
@@ -92,6 +96,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TweetsIndexRoute = TweetsIndexRouteImport.update({
+  id: '/tweets/',
+  path: '/tweets/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
@@ -115,6 +124,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AboutIndexRoute = AboutIndexRouteImport.update({
   id: '/about/',
   path: '/about/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersUsernameRoute = UsersUsernameRouteImport.update({
+  id: '/users/$username',
+  path: '/users/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TweetsIdRoute = TweetsIdRouteImport.update({
+  id: '/tweets/$id',
+  path: '/tweets/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogArchiveRoute = BlogArchiveRouteImport.update({
@@ -212,6 +231,11 @@ const AdminPostsIndexRoute = AdminPostsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminPostsRoute,
 } as any)
+const TweetsTopicsTagRoute = TweetsTopicsTagRouteImport.update({
+  id: '/tweets/topics/$tag',
+  path: '/tweets/topics/$tag',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthGithubCallbackRoute = AuthGithubCallbackRouteImport.update({
   id: '/auth/github/callback',
   path: '/auth/github/callback',
@@ -290,11 +314,14 @@ export interface FileRoutesByFullPath {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/tweets/$id': typeof TweetsIdRoute
+  '/users/$username': typeof UsersUsernameRoute
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/tweets/': typeof TweetsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
@@ -305,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -332,11 +360,14 @@ export interface FileRoutesByTo {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/tweets/$id': typeof TweetsIdRoute
+  '/users/$username': typeof UsersUsernameRoute
   '/about': typeof AboutIndexRoute
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/tweets': typeof TweetsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
@@ -347,6 +378,7 @@ export interface FileRoutesByTo {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts': typeof AdminPostsIndexRoute
 }
 export interface FileRoutesById {
@@ -377,11 +409,14 @@ export interface FileRoutesById {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/tweets/$id': typeof TweetsIdRoute
+  '/users/$username': typeof UsersUsernameRoute
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/tweets/': typeof TweetsIndexRoute
   '/admin/posts/$id': typeof AdminPostsIdRoute
   '/admin/posts/new': typeof AdminPostsNewRoute
   '/admin/settings/about': typeof AdminSettingsAboutRoute
@@ -392,6 +427,7 @@ export interface FileRoutesById {
   '/admin/settings/llm': typeof AdminSettingsLlmRoute
   '/admin/settings/profile': typeof AdminSettingsProfileRoute
   '/auth/github/callback': typeof AuthGithubCallbackRoute
+  '/tweets/topics/$tag': typeof TweetsTopicsTagRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
 }
 export interface FileRouteTypes {
@@ -423,11 +459,14 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/tweets/$id'
+    | '/users/$username'
     | '/about/'
     | '/admin/'
     | '/blog/'
     | '/profile/'
     | '/projects/'
+    | '/tweets/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/settings/about'
@@ -438,6 +477,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/tweets/topics/$tag'
     | '/admin/posts/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -465,11 +505,14 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/tweets/$id'
+    | '/users/$username'
     | '/about'
     | '/admin'
     | '/blog'
     | '/profile'
     | '/projects'
+    | '/tweets'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/settings/about'
@@ -480,6 +523,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/tweets/topics/$tag'
     | '/admin/posts'
   id:
     | '__root__'
@@ -509,11 +553,14 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/tweets/$id'
+    | '/users/$username'
     | '/about/'
     | '/admin/'
     | '/blog/'
     | '/profile/'
     | '/projects/'
+    | '/tweets/'
     | '/admin/posts/$id'
     | '/admin/posts/new'
     | '/admin/settings/about'
@@ -524,6 +571,7 @@ export interface FileRouteTypes {
     | '/admin/settings/llm'
     | '/admin/settings/profile'
     | '/auth/github/callback'
+    | '/tweets/topics/$tag'
     | '/admin/posts/'
   fileRoutesById: FileRoutesById
 }
@@ -539,11 +587,15 @@ export interface RootRouteChildren {
   AnnouncementsIdRoute: typeof AnnouncementsIdRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogArchiveRoute: typeof BlogArchiveRoute
+  TweetsIdRoute: typeof TweetsIdRoute
+  UsersUsernameRoute: typeof UsersUsernameRoute
   AboutIndexRoute: typeof AboutIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
+  TweetsIndexRoute: typeof TweetsIndexRoute
   AuthGithubCallbackRoute: typeof AuthGithubCallbackRoute
+  TweetsTopicsTagRoute: typeof TweetsTopicsTagRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -604,6 +656,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tweets/': {
+      id: '/tweets/'
+      path: '/tweets'
+      fullPath: '/tweets/'
+      preLoaderRoute: typeof TweetsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/': {
       id: '/projects/'
       path: '/projects'
@@ -637,6 +696,20 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about/'
       preLoaderRoute: typeof AboutIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/$username': {
+      id: '/users/$username'
+      path: '/users/$username'
+      fullPath: '/users/$username'
+      preLoaderRoute: typeof UsersUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tweets/$id': {
+      id: '/tweets/$id'
+      path: '/tweets/$id'
+      fullPath: '/tweets/$id'
+      preLoaderRoute: typeof TweetsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/archive': {
@@ -771,6 +844,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/posts/'
       preLoaderRoute: typeof AdminPostsIndexRouteImport
       parentRoute: typeof AdminPostsRoute
+    }
+    '/tweets/topics/$tag': {
+      id: '/tweets/topics/$tag'
+      path: '/tweets/topics/$tag'
+      fullPath: '/tweets/topics/$tag'
+      preLoaderRoute: typeof TweetsTopicsTagRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/github/callback': {
       id: '/auth/github/callback'
@@ -937,11 +1017,15 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementsIdRoute: AnnouncementsIdRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogArchiveRoute: BlogArchiveRoute,
+  TweetsIdRoute: TweetsIdRoute,
+  UsersUsernameRoute: UsersUsernameRoute,
   AboutIndexRoute: AboutIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
+  TweetsIndexRoute: TweetsIndexRoute,
   AuthGithubCallbackRoute: AuthGithubCallbackRoute,
+  TweetsTopicsTagRoute: TweetsTopicsTagRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

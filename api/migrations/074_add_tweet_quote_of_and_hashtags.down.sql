@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS tweet_hashtags;
+ALTER TABLE tweets DROP COLUMN IF EXISTS quote_of;

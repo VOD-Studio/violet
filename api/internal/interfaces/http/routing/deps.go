@@ -34,6 +34,7 @@ import (
 	subscriptionhttp "blog-api/internal/interfaces/http/handler/subscription"
 	systemhttp "blog-api/internal/interfaces/http/handler/system"
 	taghttp "blog-api/internal/interfaces/http/handler/tag"
+	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
 	useradminhttp "blog-api/internal/interfaces/http/handler/useradmin"
 	"blog-api/internal/middleware"
 )
@@ -80,6 +81,7 @@ type Deps struct {
 	CodeRunner      *codehttp.Handler
 	System          *systemhttp.Handler
 	Image           *imagehttp.Handler
+	Tweet           *tweethttp.Handler
 
 	MCP MCPHandlers
 }

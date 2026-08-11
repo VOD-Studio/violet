@@ -1,7 +1,6 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import { useAdminRoles } from "@features/admin-roles/api/queries";
 import { getRoleBadgeVariant, getRoleDisplayName } from "@features/admin-roles/lib/utils";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable, exportToCsv } from "@features/admin-shared/ui/data-table";
 import {
@@ -16,6 +15,7 @@ import { EditUserDialog } from "@features/admin-users/ui/EditUserDialog";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Pencil, Plus, RefreshCw, Trash2, UserCog } from "lucide-react";
 import { useMemo, useState } from "react";

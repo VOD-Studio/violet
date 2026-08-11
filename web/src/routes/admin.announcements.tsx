@@ -8,12 +8,12 @@ import type {
 	AnnouncementType,
 } from "@features/admin-announcements/model/types";
 import { PageShell } from "@features/admin-layout/ui/PageShell";
-import { ConfirmDialog } from "@features/admin-shared/ui/confirm-dialog";
 import type { DataTableColumn, DataTableSort } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
 import { PermissionGuard } from "@features/auth/ui/PermissionGuard";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { ConfirmDialog } from "@shared/ui/confirm-dialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";

@@ -97,3 +97,57 @@ func TestRateLimit_IsolatesByKey(t *testing.T) {
 	}
 	assert.Equal(t, 2, served)
 }
+
+func TestRateLimitByUser_IsolatesByUser(t *testing.T) {
+	ipExtractor = newIPExtractor(nil)
+	client := newTestRedis(t)
+
+	rl := RateLimitByUser("tweet_test", client, time.Hour, 1)
+	served := 0
+	handler := rl(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		served++
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// 同一 IP 不同登录用户：各自独立计数，都应放行
+	for _, uid := range []string{"user-a", "user-b"} {
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		req.RemoteAddr = "1.1.1.1:1234"
+		req = req.WithContext(context.WithValue(req.Context(), UserIDKey, uid))
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		assert.Equal(t, http.StatusOK, rr.Code, "用户 %s 首次请求应放行", uid)
+	}
+	assert.Equal(t, 2, served)
+
+	// 同一用户第二次请求：被限流（即使换 IP）
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	req.RemoteAddr = "2.2.2.2:5678"
+	req = req.WithContext(context.WithValue(req.Context(), UserIDKey, "user-a"))
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusTooManyRequests, rr.Code, "同一用户换 IP 也应被限流")
+	assert.Equal(t, 2, served)
+}
+
+func TestRateLimitByUser_FallsBackToIP(t *testing.T) {
+	ipExtractor = newIPExtractor(nil)
+	client := newTestRedis(t)
+
+	rl := RateLimitByUser("tweet_fallback", client, time.Hour, 1)
+	served := 0
+	handler := rl(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		served++
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// 无用户上下文（中间件顺序错误）降级为 IP 维度：同 IP 第二次被限流
+	for i, want := range []int{http.StatusOK, http.StatusTooManyRequests} {
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		req.RemoteAddr = "3.3.3.3:3"
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		assert.Equal(t, want, rr.Code, "第 %d 个请求状态码不符", i+1)
+	}
+	assert.Equal(t, 1, served)
+}

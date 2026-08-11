@@ -11,16 +11,16 @@
  */
 import type { Comment } from "@entities/comment/model/types";
 import { avatarUrl } from "@shared/lib/image-url";
+import { type CommentToneCfg, getCommentToneCfg } from "@shared/ui/comment-section/tone";
 import { EmojiText } from "@shared/ui/emoji-text";
+import PendingBadge from "@shared/ui/pending-badge";
 import { SpotlightCard } from "@shared/vendor/react-bits/SpotlightCard";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { MessageCircle } from "lucide-react";
 import { useState } from "react";
 import type { CommentTreeNode } from "../lib/comment-tree";
-import { getCommentSev } from "../lib/severity";
 import { CommentForm } from "./CommentForm";
-import { PendingBadge } from "./PendingBadge";
 
 /** 批注面板空间小，回复折叠阈值比评论区更紧 */
 const REPLIES_PREVIEW_COUNT = 2;
@@ -49,7 +49,7 @@ export function AnnotationCard({
 	isLoggedIn = false,
 }: AnnotationCardProps) {
 	const { comment, replies } = node;
-	const sev = getCommentSev(comment.is_author ? "author" : "default");
+	const sev = getCommentToneCfg(comment.is_author ? "author" : "default");
 	const isPending = comment.status === "pending";
 
 	const [replying, setReplying] = useState(false);
@@ -157,7 +157,7 @@ function CommentMeta({
 	isPending,
 }: {
 	comment: Comment;
-	sev: ReturnType<typeof getCommentSev>;
+	sev: CommentToneCfg;
 	isPending: boolean;
 }) {
 	return (
@@ -194,13 +194,7 @@ function CommentMeta({
  * AnnotationReply 批注的扁平回复（不再嵌回复表单，两层结构到顶）。
  * 比 AnnotationCard 更紧凑：无引言区、无 BorderGlow 外壳。
  */
-function AnnotationReply({
-	comment,
-	sev,
-}: {
-	comment: Comment;
-	sev: ReturnType<typeof getCommentSev>;
-}) {
+function AnnotationReply({ comment, sev }: { comment: Comment; sev: CommentToneCfg }) {
 	return (
 		<div className="rounded-md bg-muted/30 p-2">
 			<CommentMeta comment={comment} sev={sev} isPending={comment.status === "pending"} />

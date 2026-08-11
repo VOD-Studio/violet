@@ -1,0 +1,65 @@
+package model
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/datatypes"
+)
+
+// Tweet 推文持久化模型（对应 tweets 表，migration 070）。
+//
+// 多用户微博短内容（PRD-0013）：纯文本 + 最多 4 张图，即发即出、
+// 不可编辑（无更新路径，updated_at 恒等于 created_at）、物理删除。
+type Tweet struct {
+	ID        uuid.UUID                   `gorm:"type:uuid;primaryKey" json:"id"`
+	AuthorID  uuid.UUID                   `gorm:"type:uuid;column:author_id;not null" json:"author_id"`
+	Content   string                      `gorm:"type:text;not null;default:''" json:"content"`
+	Images    datatypes.JSONSlice[string] `gorm:"type:jsonb;not null;default:'[]'" json:"images"`
+	QuoteOf   *uuid.UUID                  `gorm:"type:uuid;column:quote_of" json:"quote_of,omitempty"`
+	LikeCount int                         `gorm:"column:like_count;not null;default:0" json:"like_count"`
+	CreatedAt time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt time.Time                   `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+}
+
+// TableName 显式指定表名
+func (Tweet) TableName() string { return "tweets" }
+// TweetLike 推文点赞关系持久化模型（对应 tweet_likes 表，migration 072）。
+type TweetLike struct {
+	TweetID   uuid.UUID `gorm:"type:uuid;column:tweet_id;primaryKey" json:"tweet_id"`
+	UserID    uuid.UUID `gorm:"type:uuid;column:user_id;primaryKey" json:"user_id"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+}
+
+// TableName 显式指定表名
+func (TweetLike) TableName() string { return "tweet_likes" }
+
+// TweetComment 推文评论持久化模型（对应 tweet_comments 表，migration 073）。
+//
+// 两层扁平楼中楼（depth 0=顶层 / 1=回复），即发即出、物理删除。
+// parent_id 自引用 ON DELETE CASCADE：删顶层评论连带清回复链。
+// pictures 为评论附图 JSON（migration 075），空评论存 '[]'。
+type TweetComment struct {
+	ID        uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	TweetID   uuid.UUID  `gorm:"type:uuid;column:tweet_id;not null" json:"tweet_id"`
+	AuthorID  uuid.UUID  `gorm:"type:uuid;column:author_id;not null" json:"author_id"`
+	Body      string     `gorm:"type:text;not null" json:"body"`
+	Pictures  []byte     `gorm:"type:jsonb;not null;default:'[]'" json:"pictures"`
+	ParentID  *uuid.UUID `gorm:"type:uuid;column:parent_id" json:"parent_id,omitempty"`
+	Path      string     `gorm:"type:text;not null;default:''" json:"path"`
+	Depth     int16      `gorm:"type:smallint;not null;default:0" json:"depth"`
+	CreatedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt time.Time  `gorm:"not null;default:CURRENT_TIMESTAMP" json:"updated_at"`
+}
+// TweetComment 表名显式指定
+func (TweetComment) TableName() string { return "tweet_comments" }
+
+// TweetHashtag 推文话题关联持久化模型（对应 tweet_hashtags 表，migration 074）。
+type TweetHashtag struct {
+	TweetID   uuid.UUID `gorm:"type:uuid;column:tweet_id;primaryKey" json:"tweet_id"`
+	Tag       string    `gorm:"type:varchar(50);column:tag;primaryKey" json:"tag"`
+	CreatedAt time.Time `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
+}
+
+// TweetHashtag 表名显式指定
+func (TweetHashtag) TableName() string { return "tweet_hashtags" }

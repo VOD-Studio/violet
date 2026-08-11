@@ -38,6 +38,7 @@ type Container struct {
 	Media           *MediaContainer
 	CodeRunner      *CodeRunnerContainer
 	Image           *ImageContainer
+	Tweet           *TweetContainer
 }
 
 // 跨模块依赖（装配顺序即依赖序）：
@@ -93,13 +94,14 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	media := NewMediaContainer(db, rdb, cfg)
 	codeRunner := NewCodeRunnerContainer(rdb, settings.Store, cfg.CodeRunner)
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
+	tweet := NewTweetContainer(db, permissionChecker, bus)
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
 		Post: post, Tag: tag, GitHub: github, Releases: releases, Audit: audit,
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
-		Media: media, CodeRunner: codeRunner, Image: image,
+		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet,
 	}
 	return c, roleCleanup, nil
 }
