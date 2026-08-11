@@ -5,7 +5,7 @@
  * 预览占位层与比例探测依赖该前提;格子 bg-cover 显示不受参数变化影响。
  */
 import { describe, expect, it } from "vitest";
-import { toGridImages } from "../CommentItem";
+import { toGridImages } from "../comment-config";
 
 const pic = (url: string) => ({ url, width: 0, height: 0, size: 1024 });
 

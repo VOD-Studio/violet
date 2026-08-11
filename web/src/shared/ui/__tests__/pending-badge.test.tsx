@@ -6,7 +6,7 @@
  */
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { PendingBadge } from "../PendingBadge";
+import { PendingBadge } from "../pending-badge";
 
 describe("PendingBadge", () => {
 	afterEach(() => {

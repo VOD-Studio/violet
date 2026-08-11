@@ -1,78 +1,72 @@
 /**
  * TweetCommentSection - 推文详情页评论区容器
  *
- * 与文章评论（features/comments CommentSection）同构但简化：
- *   - 匿名可读评论，登录可发评论 / 回复
- *   - 顶层评论 page/limit 滚动加载（最新在前），回复在 TweetCommentItem 内按需拉
+ * 与文章评论共用 shared/ui/comment-section 展示层（SpotlightCard / 头像兜底 / 作者徽章），
+ * 差异经适配配置注入（tweet-comment-config）：
+ *   - 匿名可读评论（无黑洞），登录可发评论 / 回复
+ *   - 回复区 toggle 模式（后端无 replies_total/预览，展开才懒加载）
+ *   - 删除按钮（作者本人 / tweet:delete-any）经 renderActions 注入
  *
- * 数据流：useInfiniteQuery 滚动加载顶层评论，每页 10 条。
+ * 数据流：useTweetComments 滚动加载顶层评论（page/limit，最新在前），每页 10 条。
  */
-
 import { useMe } from "@features/auth/api/queries";
-import { Button } from "@shared/ui/base/button";
-import Empty from "@shared/ui/empty";
-import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
-import { MessageSquare } from "lucide-react";
+import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { CommentList, CommentSection as CommentSectionShell } from "@shared/ui/comment-section";
+import { useMemo } from "react";
+import { useDeleteTweetComment } from "../api/mutations";
 import { useTweetComments } from "../api/queries";
 import { TweetCommentForm } from "./TweetCommentForm";
-import { TweetCommentItem } from "./TweetCommentItem";
+import { buildTweetCommentConfig } from "./tweet-comment-config";
 
 export interface TweetCommentSectionProps {
 	/** 所属推文 id */
 	tweetId: string;
+	/** 推文作者 id（作者徽章判定：comment.author.id === tweetAuthorId） */
+	tweetAuthorId?: string;
 }
 
-export function TweetCommentSection({ tweetId }: TweetCommentSectionProps) {
+export function TweetCommentSection({ tweetId, tweetAuthorId }: TweetCommentSectionProps) {
 	const me = useMe();
 	const isLoggedIn = !!me.data;
+	const canDeleteAny = useHasPermission("tweet:delete-any");
+	const deleteComment = useDeleteTweetComment(tweetId);
+
 	const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
 		useTweetComments(tweetId);
 
 	const comments = data?.pages.flatMap((p) => p.data) ?? [];
 	const total = data?.pages[0]?.pagination?.total ?? 0;
 
+	const config = useMemo(
+		() =>
+			buildTweetCommentConfig({
+				tweetId,
+				tweetAuthorId,
+				isLoggedIn,
+				currentUserId: me.data?.id,
+				canDeleteAny,
+				onDelete: (commentId) => deleteComment.mutate(commentId),
+				isDeleting: (commentId) =>
+					deleteComment.isPending && deleteComment.variables === commentId,
+			}),
+		[tweetId, tweetAuthorId, isLoggedIn, me.data?.id, canDeleteAny, deleteComment],
+	);
+
 	return (
-		<section className="flex flex-col gap-3" aria-label="评论区">
-			<div className="flex items-center gap-2 text-sm font-medium text-foreground">
-				<MessageSquare className="size-4" />
-				<span>评论 {total > 0 ? total : ""}</span>
-			</div>
-
-			<TweetCommentForm tweetId={tweetId} isLoggedIn={isLoggedIn} />
-
-			{isLoading ? (
-				<div className="space-y-2">
-					<ShimmerSkeleton className="h-16 w-full rounded-lg" />
-					<ShimmerSkeleton className="h-16 w-full rounded-lg" />
-				</div>
-			) : comments.length === 0 ? (
-				<Empty title="还没有评论" description="成为第一个评论的人" size="sm" />
-			) : (
-				<div className="divide-y divide-edge-hairline">
-					{comments.map((comment) => (
-						<TweetCommentItem
-							key={comment.id}
-							comment={comment}
-							tweetId={tweetId}
-							isLoggedIn={isLoggedIn}
-						/>
-					))}
-				</div>
-			)}
-
-			{hasNextPage && (
-				<div className="flex justify-center py-2">
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={() => fetchNextPage()}
-						disabled={isFetchingNextPage}
-					>
-						{isFetchingNextPage ? "加载中..." : "加载更多"}
-					</Button>
-				</div>
-			)}
-		</section>
+		<CommentSectionShell
+			title={`评论 ${total > 0 ? total : ""}`}
+			form={<TweetCommentForm tweetId={tweetId} isLoggedIn={isLoggedIn} />}
+			isLoggedIn={isLoggedIn}
+		>
+			<CommentList
+				comments={comments}
+				config={config}
+				isLoggedIn={isLoggedIn}
+				isLoading={isLoading}
+				onLoadMore={hasNextPage ? fetchNextPage : undefined}
+				isLoadingMore={isFetchingNextPage}
+			/>
+		</CommentSectionShell>
 	);
 }
 

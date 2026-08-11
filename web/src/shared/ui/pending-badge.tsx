@@ -3,9 +3,9 @@
  *
  * 仅在评论 status === 'pending' 时渲染。
  * 登录提交者本人能看到自己刚提交的 pending 评论（带此徽章）；
- * 他人永远只看到 approved（后端 ListByPost 黑洞/可见性保证），不会看到此徽章。
+ * 他人永远只看到 approved（后端黑洞/可见性保证），不会看到此徽章。
  *
- * PRD-0001「审批与状态可见性」。
+ * 文章评论（CommentMeta）与批注卡片（AnnotationCard）共用。
  */
 import { Clock } from "lucide-react";
 

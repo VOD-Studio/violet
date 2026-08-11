@@ -61,7 +61,7 @@ function TweetDetailPage() {
 				onDeleted={() => navigate({ to: "/tweets" })}
 			/>
 
-			<TweetCommentSection tweetId={current.id} />
+			<TweetCommentSection tweetId={current.id} tweetAuthorId={current.author.id} />
 		</div>
 	);
 }
