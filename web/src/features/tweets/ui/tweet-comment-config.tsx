@@ -2,18 +2,22 @@
  * buildTweetCommentConfig - 推文评论的 shared 展示层适配配置
  *
  * 归一化 TweetComment → CommentDisplayItem，注入推文专属插槽：
+ *   - renderBody：EmojiText 表情 + 图片网格（ImageGrid，与文章评论同款）
  *   - renderActions：删除按钮（作者本人 / tweet:delete-any，乐观删除 + 失败回滚）
- *   - renderReplyForm：TweetCommentForm（登录专用纯文本）
+ *   - renderReplyForm：TweetCommentForm（登录专用，富文本 + 图片在表单内部）
  *   - renderExpandedReplies：包装 useTweetReplies（展开时才挂载 → 懒加载，
  *     修复旧实现顶层评论挂载即拉回复的 N+1）
  *   - 作者徽章：comment.author.id === tweetAuthorId（后端无 is_author，前端推导）
  */
-import type { TweetComment } from "@entities/tweet/model/types";
+import type { TweetComment, TweetCommentPicture } from "@entities/tweet/model/types";
+import { contentImageUrl, imageUrl } from "@shared/lib/image-url";
 import {
 	type CommentDisplayItem,
 	type CommentSectionConfig,
 	ExpandedReplies,
 } from "@shared/ui/comment-section";
+import { EmojiText } from "@shared/ui/emoji-text";
+import { ImageGrid } from "@shared/ui/image-grid";
 import { Trash2 } from "lucide-react";
 import { useTweetReplies } from "../api/queries";
 import { TweetCommentForm } from "./TweetCommentForm";
@@ -33,6 +37,20 @@ export interface BuildTweetCommentConfigArgs {
 	onDelete: (commentId: string) => void;
 	/** 删除请求进行中判定（禁用对应按钮） */
 	isDeleting: (commentId: string) => boolean;
+}
+
+/**
+ * 评论图片 → ImageGrid 入参：与文章评论同款缩略图策略
+ * （单图 w=800 保比例，多图 w=400 保比例，点开预览才加载原图）。
+ */
+function toGridImages(pictures: TweetCommentPicture[]) {
+	return pictures.map((p) => ({
+		url: p.url,
+		thumbnail:
+			pictures.length === 1
+				? contentImageUrl(p.url, { width: 800 })
+				: imageUrl(p.url, { w: 400, format: "webp" }),
+	}));
 }
 
 export function buildTweetCommentConfig({
@@ -62,6 +80,18 @@ export function buildTweetCommentConfig({
 			raw: c,
 		}),
 		repliesMode: "toggle",
+		renderBody: (item) => (
+			<>
+				<p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
+					<EmojiText text={item.body} emote={item.raw.emote} />
+				</p>
+				{item.raw.pictures && item.raw.pictures.length > 0 && (
+					<div className="mt-2">
+						<ImageGrid images={toGridImages(item.raw.pictures)} />
+					</div>
+				)}
+			</>
+		),
 		renderActions: (item) => {
 			const comment = item.raw;
 			// 作者本人 或 持 tweet:delete-any 权限者可删（鉴权双重判定在后端应用层）

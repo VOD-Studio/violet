@@ -5,6 +5,8 @@
  * 查询参数、请求体与领域边界常量。
  */
 
+import type { PictureInput } from "@features/comments/ui/RichCommentInput";
+
 /** 正文长度上限（rune 计，对齐后端聚合根不变量 content ≤500） */
 export const MAX_TWEET_LENGTH = 500;
 
@@ -56,12 +58,15 @@ export interface TweetCommentPageQuery {
 /**
  * CreateTweetCommentInput - 评论 / 回复请求体
  *
- * 对接后端 createCommentRequest { body, parent_id }。
+ * 对接后端 createCommentRequest { body, parent_id, pictures }。
  * parent_id 省略为顶层评论；非空为回复（两层扁平：回复一律 depth=1）。
+ * pictures 可选：上传后由 RichCommentInput 回调携带，后端做归属校验。
  */
 export interface CreateTweetCommentInput {
 	/** 正文，trim 后非空且 ≤500 rune */
 	body: string;
+	/** 附图（可选，url/width/height/size，≤10 张）；无图省略 */
+	pictures?: PictureInput[];
 	/** 被回复的评论 id；空串 / 省略为顶层评论 */
 	parent_id?: string;
 }

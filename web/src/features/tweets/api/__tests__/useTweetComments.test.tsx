@@ -57,6 +57,7 @@ function makeComment(overrides: Partial<TweetComment> = {}): TweetComment {
 		tweet_id: "t1",
 		author,
 		body: "hi",
+		pictures: [],
 		depth: 0,
 		replies_count: 0,
 		created_at: "2026-01-01T00:00:00Z",

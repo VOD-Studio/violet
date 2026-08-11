@@ -72,11 +72,42 @@ export interface Tweet {
 }
 
 /**
+ * TweetCommentPicture - 推文评论附图
+ *
+ * 对应后端 domain/tweet/comment.go 的 Picture（与文章评论 CommentPicture 同构）。
+ */
+export interface TweetCommentPicture {
+	/** 图片 URL */
+	url: string;
+	/** 图片宽度，像素 */
+	width: number;
+	/** 图片高度，像素 */
+	height: number;
+	/** 图片字节数 */
+	size: number;
+}
+
+/**
+ * TweetCommentEmoteRef - 推文评论表情映射值（emote map 的 value）
+ *
+ * 对应后端 application/tweet/service.go 的 EmojiRef。
+ */
+export interface TweetCommentEmoteRef {
+	/** 静态图片 URL */
+	url: string;
+	/** 动图 URL，可选 */
+	gif_url?: string;
+	/** 表情尺寸：1=小 2=大，缺省按小渲染 */
+	size?: number;
+}
+
+/**
  * TweetComment - 推文评论读模型
  *
  * 对应后端 application/tweet CommentDTO（GET /tweets/{id}/comments 等）。
  * 两层扁平楼中楼：depth=0 顶层评论，depth=1 回复（回复不再深嵌套）。
- * 与 comment 域楼中楼同构但更简单：纯文本、登录可发、即发即出、物理删除。
+ * 与 comment 域楼中楼同构但更简单：登录可发、即发即出、物理删除。
+ * 支持表情（emote 映射表，渲染 [name] 占位符）与附图（pictures）。
  */
 export interface TweetComment {
 	/** 评论 ID */
@@ -85,8 +116,13 @@ export interface TweetComment {
 	tweet_id: string;
 	/** 作者资料卡（复用 TweetAuthor：推文与评论作者同构） */
 	author: TweetAuthor;
-	/** 正文，≤500 rune */
+	/** 正文，≤500 rune，支持 [name] 表情占位符 */
 	body: string;
+	/** 附图列表，无图为空数组 */
+	pictures: TweetCommentPicture[];
+	/** 表情映射表。key 为 [name]（含方括号），渲染时查表替换为 img。
+	 *  body 中没有 [name] 时省略。对应后端 CommentDTO.emote。 */
+	emote?: Record<string, TweetCommentEmoteRef>;
 	/** 被回复的评论 id；顶层评论省略（后端 omitempty） */
 	parent_id?: string;
 	/** 展示层级：0=顶层评论，1=回复 */
