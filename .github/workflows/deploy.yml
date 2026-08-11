@@ -562,3 +562,27 @@ jobs:
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           generate_release_notes: true
+
+  # ── notify-failure: 部署失败告警
+  # 任一 job 失败时创建/追加告警 issue(按 run id 去重)@维护者,避免静默失败
+  # (2026-08-11 2.7.0 prepare-server 网络失败 + auto-retry 自身故障,双重静默的教训)。
+  # 必须放 GitHub 托管 runner:告警通道不能依赖被告警对象的网络(rua 访问
+  # github.com 不稳定)。issue 未关闭期间同时作为「tag 已发布但生产未部署」漂移
+  # 状态的可见记录;auto-retry 接力重试或下次发版覆盖后,人工确认关闭。
+  notify-failure:
+    needs: [detect, prepare, build-api, build-web, prepare-server, migrate, deploy-api, deploy-web, rollback, release]
+    if: always() && failure()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read   # checkout(composite action 在仓库内)
+      issues: write    # 创建告警 issue
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: 创建告警 issue
+        uses: ./.github/actions/deploy-alert
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          run_id: ${{ github.run_id }}
+          reason: 部署流水线存在失败 job(rollback 成功则线上已自动回滚),详见 run 日志

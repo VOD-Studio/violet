@@ -1,17 +1,25 @@
 # Deploy 失败自动重试
 #
-# Deploy 流水线任一 job 失败即整体失败，网络抖动等瞬时错误（例如 pnpm install 遇
-# 502）只能人工去 Actions 页面手动 Re-run。本 workflow 监听 Deploy 完成事件，
-# 失败时自动重跑失败的 job，最多重试 2 次，间隔按 60 秒、120 秒递增。
+# Deploy 流水线任一 job 失败即整体失败,网络抖动等瞬时错误(例如 pnpm install 遇
+# 502)只能人工去 Actions 页面手动 Re-run。本 workflow 监听 Deploy 完成事件,
+# 失败时自动重跑失败的 job,最多重试 2 次,间隔按 60 秒、120 秒递增。
 #
 # 重试覆盖构建、拉取推送镜像、部署、健康检查、Release 创建等所有 job。
-# 以下情况不重试：
-#   - migrate 失败：数据库迁移非幂等，重跑可能重复执行迁移，须人工介入
-#   - 手动 workflow_dispatch：人为发起的部署或回滚，失败由人决定
-#   - 已达 3 次尝试：重跑完成会再次触发本 workflow，用 run_attempt 递增防死循环
+# 以下情况不重试:
+#   - migrate 失败:数据库迁移非幂等,重跑可能重复执行迁移,须人工介入
+#   - 手动 workflow_dispatch 触发的 Deploy:人为发起的部署或回滚,失败由人决定
+#   - 已达 3 次尝试:重跑完成会再次触发本 workflow,用 run_attempt 递增防死循环
 #
-# 与 rollback 的交互：deploy-api 或 deploy-web 失败会先触发 rollback，把线上回滚到
-# 锚点版本；重试成功后重新部署新版本，锚点由 release job 在成功后回写。
+# 放弃重试或本 workflow 自身执行失败时,创建/追加告警 issue(按 run id 去重)
+# @维护者——2026-08-11 2.7.0 部署失败 + auto-retry 因缺 GH_REPO 自身失败,
+# 双重静默的教训:重试机制本身也必须可观测。
+#
+# workflow_dispatch 手动补救:auto-retry 自身故障错过 completed 事件后(事件不
+# 会重放),人工指定 run id 重新评估;跳过事件来源与尝试次数检查,migrate 保护
+# 仍生效。
+#
+# 与 rollback 的交互:deploy-api 或 deploy-web 失败会先触发 rollback,把线上回滚到
+# 锚点版本;重试成功后重新部署新版本,锚点由 release job 在成功后回写。
 
 name: Auto Retry Deploy
 
@@ -20,50 +28,101 @@ on:
     workflows: ["Deploy"]
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: '要重试的 Deploy run ID(Actions 页面 URL 中的数字)'
+        required: true
 
 permissions:
+  contents: read   # checkout(告警 composite action 在仓库内)
   actions: write   # gh run rerun 需要
+  issues: write    # 创建告警 issue 需要
 
 jobs:
   retry:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'failure'
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure'
     steps:
+      # workflow_run 事件 checkout 默认拉默认分支,告警逻辑始终用最新版
+      - uses: actions/checkout@v7
+
       - name: 失败 job 检查并自动重试
+        id: retry
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
-          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          # workflow_run 触发时本 job 无 checkout 之外的 .git 上下文保障,
+          # gh 推断 base repo 会因无 .git 失败,必须显式提供 GH_REPO
+          # (gh 不读 runner 自带的 GITHUB_REPOSITORY)
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+          WR_RUN_ID: ${{ github.event.workflow_run.id }}
+          WR_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          WR_RUN_EVENT: ${{ github.event.workflow_run.event }}
         run: |
           set -e
-          echo "Deploy run ${RUN_ID} 失败 (attempt ${RUN_ATTEMPT}, 事件 ${RUN_EVENT})"
+          echo "alert=false" >> "$GITHUB_OUTPUT"
 
-          # 手动触发不重试，人为操作的失败由人决定下一步
-          if [ "${RUN_EVENT}" == "workflow_dispatch" ]; then
-            echo "::warning::workflow_dispatch 手动触发,不自动重试"
-            exit 0
+          if [ "${EVENT_NAME}" == "workflow_dispatch" ]; then
+            # 手动补救:跳过事件来源与尝试次数检查,直接评估指定 run
+            RUN_ID="${INPUT_RUN_ID}"
+            STATE=$(gh run view "${RUN_ID}" --json conclusion,attempt --jq '[.conclusion, (.attempt | tostring)] | join(" ")')
+            CONCLUSION="${STATE% *}"
+            RUN_ATTEMPT="${STATE##* }"
+            if [ "${CONCLUSION}" != "failure" ]; then
+              echo "::warning::run ${RUN_ID} 状态为 ${CONCLUSION:-未知},非失败,无需重试"
+              exit 0
+            fi
+            echo "手动模式:评估 run ${RUN_ID} (attempt ${RUN_ATTEMPT})"
+          else
+            RUN_ID="${WR_RUN_ID}"
+            RUN_ATTEMPT="${WR_RUN_ATTEMPT}"
+            echo "Deploy run ${RUN_ID} 失败 (attempt ${RUN_ATTEMPT}, 事件 ${WR_RUN_EVENT})"
+
+            # 手动 dispatch 发起的部署,失败由人决定下一步
+            if [ "${WR_RUN_EVENT}" == "workflow_dispatch" ]; then
+              echo "::warning::workflow_dispatch 手动触发的部署,不自动重试"
+              exit 0
+            fi
+
+            # 最多 3 次尝试(初始 1 次加重试 2 次);rerun 后 run_attempt 递增,防死循环
+            if [ "${RUN_ATTEMPT}" -ge 3 ]; then
+              echo "::warning::已达最大尝试次数 (${RUN_ATTEMPT}/3),不再重试,需人工介入"
+              echo "alert=true" >> "$GITHUB_OUTPUT"
+              echo "reason=已达最大重试次数 (${RUN_ATTEMPT}/3),自动重试放弃" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           fi
 
-          # 最多 3 次尝试（初始 1 次加重试 2 次）；rerun 后 run_attempt 递增，防死循环
-          if [ "${RUN_ATTEMPT}" -ge 3 ]; then
-            echo "::warning::已达最大尝试次数 (${RUN_ATTEMPT}/3),不再重试,需人工介入"
-            exit 0
-          fi
-
-          # migrate 失败不重试，数据库迁移非幂等，重跑可能重复执行迁移
-          # jq 输出 JSON 数组，按 "migrate" 精确匹配，避免误命中含 migrate 字样的其他 job 名
+          # migrate 失败不重试,数据库迁移非幂等,重跑可能重复执行迁移(手动模式同样守住)
+          # jq 输出 JSON 数组,按 "migrate" 精确匹配,避免误命中含 migrate 字样的其他 job 名
           FAILED_JOBS=$(gh run view "${RUN_ID}" --json jobs --jq '[.jobs[] | select(.conclusion == "failure") | .name]')
           echo "失败的 job: ${FAILED_JOBS}"
           if echo "${FAILED_JOBS}" | grep -q '"migrate"'; then
             echo "::warning::migrate 失败不重试(数据库迁移非幂等),需人工介入"
+            echo "alert=true" >> "$GITHUB_OUTPUT"
+            echo "reason=migrate 失败,数据库迁移非幂等,不自动重试" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # 间隔按尝试次数递增，第 1 次失败等 60 秒，第 2 次失败等 120 秒
-          SLEEP_SEC=$(( RUN_ATTEMPT * 60 ))
-          echo "等待 ${SLEEP_SEC}s 后重试 (attempt ${RUN_ATTEMPT} → $(( RUN_ATTEMPT + 1 )))..."
-          sleep "${SLEEP_SEC}"
+          # 自动模式间隔按尝试次数递增(60s/120s);手动模式立即重试
+          if [ "${EVENT_NAME}" != "workflow_dispatch" ]; then
+            SLEEP_SEC=$(( RUN_ATTEMPT * 60 ))
+            echo "等待 ${SLEEP_SEC}s 后重试 (attempt ${RUN_ATTEMPT} → $(( RUN_ATTEMPT + 1 )))..."
+            sleep "${SLEEP_SEC}"
+          fi
 
           gh run rerun "${RUN_ID}" --failed
-          echo "已触发自动重试: https://github.com/${{ github.repository }}/actions/runs/${RUN_ID}"
+          echo "已触发重试: https://github.com/${GH_REPO}/actions/runs/${RUN_ID}"
+
+      # 两种告警:放弃重试(alert=true,不重试场景)与执行失败(failure(),如 gh 报错)。
+      # 同 run id 在 action 内去重,与 deploy.yml 的 notify-failure 告警合并到同一 issue
+      - name: 放弃重试或执行失败时告警
+        if: steps.retry.outputs.alert == 'true' || failure()
+        uses: ./.github/actions/deploy-alert
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          run_id: ${{ inputs.run_id || github.event.workflow_run.id }}
+          reason: ${{ steps.retry.outputs.reason }}
