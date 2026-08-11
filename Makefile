@@ -155,7 +155,7 @@ web-preview: ## 预览前端构建结果
 	cd web && pnpm preview
 
 web-lint: ## 前端代码检查 (Biome)
-	cd web && npx biome check .
+	cd web && pnpm check
 
 web-format: ## 前端格式化与 lint 自动修复（biome check --write，与 web-lint 配对）
 	cd web && npx biome check --write .

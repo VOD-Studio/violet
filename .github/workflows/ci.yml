@@ -110,8 +110,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # biome check = lint + format + import 排序;
+      # 此前跑 pnpm lint(biome lint)不查格式,CI 与本地红绿不一致(#140)
       - name: Biome check
-        run: pnpm lint
+        run: pnpm check
 
       - name: TypeScript check
         run: pnpm typecheck
