@@ -4,8 +4,8 @@
  * 两种模式（CommentSectionConfig.repliesMode）：
  *   - preview（文章）：后端返回 comment.replies 预览 + replies_total，
  *     显示预览 + 「查看全部 N 条回复」按钮，点击后懒加载分页
- *   - toggle（推文）：后端无回复数据，「查看回复」按钮始终可点，
- *     点击后懒加载分页，可「收起回复」
+ *   - toggle（推文）：后端返回 replies_count（无预览），有回复才显示
+ *     「查看回复」按钮，点击后懒加载分页，可「收起回复」
  *
  * 渲染策略（纯追加，无替换，避免视觉抖动）：
  *   1. 预览（preview 模式）与内联 pending 永远显示——位置不动
@@ -77,31 +77,31 @@ export function CommentRepliesBlock<T extends CommentRaw>({
 				})}
 
 			{/* 展开按钮：preview=「查看全部 N 条回复」；toggle=「查看回复 / 收起回复」 */}
-			{config.repliesMode === "preview" ? (
-				!expanded &&
-				comment.repliesTotal !== undefined &&
-				comment.repliesTotal > visibleCount && (
-					<button
-						type="button"
-						onClick={() => setExpanded(true)}
-						className="flex items-center gap-1 text-xs text-primary hover:underline"
-					>
-						<ChevronDown className="size-3" />
-						查看全部 {comment.repliesTotal} 条回复
-					</button>
-				)
-			) : (
-				<button
-					type="button"
-					onClick={() => setExpanded((v) => !v)}
-					className="flex items-center gap-1 py-1 pl-1 text-xs text-primary hover:underline"
-				>
-					<ChevronDown
-						className={`size-3 transition-transform ${expanded ? "rotate-180" : ""}`}
-					/>
-					{expanded ? "收起回复" : "查看回复"}
-				</button>
-			)}
+			{config.repliesMode === "preview"
+				? !expanded &&
+					comment.repliesTotal !== undefined &&
+					comment.repliesTotal > visibleCount && (
+						<button
+							type="button"
+							onClick={() => setExpanded(true)}
+							className="flex items-center gap-1 text-xs text-primary hover:underline"
+						>
+							<ChevronDown className="size-3" />
+							查看全部 {comment.repliesTotal} 条回复
+						</button>
+					)
+				: (comment.repliesTotal === undefined || (comment.repliesTotal ?? 0) > 0) && (
+						<button
+							type="button"
+							onClick={() => setExpanded((v) => !v)}
+							className="flex items-center gap-1 py-1 pl-1 text-xs text-primary hover:underline"
+						>
+							<ChevronDown
+								className={`size-3 transition-transform ${expanded ? "rotate-180" : ""}`}
+							/>
+							{expanded ? "收起回复" : "查看回复"}
+						</button>
+					)}
 		</div>
 	);
 }

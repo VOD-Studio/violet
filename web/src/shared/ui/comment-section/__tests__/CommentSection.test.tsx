@@ -86,6 +86,18 @@ describe("CommentItem", () => {
 		expect(screen.queryByText("回复")).toBeNull();
 	});
 
+	it("toggle 模式：顶层评论 repliesTotal 为 0 且无 pending 时整块回复区不渲染", () => {
+		render(
+			<CommentItem
+				item={mk("c1", { depth: 0, repliesTotal: 0 })}
+				level={0}
+				isLoggedIn={true}
+				config={stubConfig()}
+			/>,
+		);
+		expect(screen.queryByText("查看回复")).toBeNull();
+	});
+
 	it("登录后点「回复」展开内联回复表单", () => {
 		const renderReplyForm = vi.fn(() => <form>reply-form</form>);
 		const config = stubConfig({ renderReplyForm });
@@ -119,6 +131,35 @@ describe("CommentRepliesBlock", () => {
 		expect(renderExpanded).toHaveBeenCalledTimes(1);
 		expect(screen.getByText("expanded-content")).toBeTruthy();
 		expect(screen.getAllByText("收起回复").length).toBe(1);
+	});
+
+	it("toggle 模式：repliesTotal 为 0 时不显示「查看回复」按钮", () => {
+		const config = stubConfig({ repliesMode: "toggle" });
+		render(
+			<CommentRepliesBlock
+				comment={mk("top", { depth: 0, repliesTotal: 0 })}
+				isLoggedIn={true}
+				config={config}
+				pendingReplies={[]}
+				onReplyAdded={() => {}}
+			/>,
+		);
+		expect(screen.queryByText("查看回复")).toBeNull();
+	});
+
+	it("toggle 模式：repliesTotal 为 0 但有 pending 回复时只显示 pending，不显示按钮", () => {
+		const config = stubConfig({ repliesMode: "toggle" });
+		render(
+			<CommentRepliesBlock
+				comment={mk("top", { depth: 0, repliesTotal: 0 })}
+				isLoggedIn={true}
+				config={config}
+				pendingReplies={[mk("r1")]}
+				onReplyAdded={() => {}}
+			/>,
+		);
+		expect(screen.getAllByText("body-r1").length).toBe(1);
+		expect(screen.queryByText("查看回复")).toBeNull();
 	});
 
 	it("preview 模式：回复总数超已显示时出现「查看全部 N 条回复」", () => {

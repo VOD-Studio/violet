@@ -92,11 +92,16 @@ export function CommentItem<T extends CommentRaw>({
 
 			{/* 回复区：仅顶层评论渲染（两层扁平，回复不再嵌套回复区） */}
 			{level === 0 &&
-				(config.repliesMode === "toggle" ||
-					(config.repliesMode === "preview" &&
+				(config.repliesMode === "toggle"
+					? // 有回复数（含未知=undefined 兜底）或刚提交的 pending 回复才渲染；
+						// repliesTotal 为 0 时整块不渲染，避免空回复的「查看回复」误导
+						item.repliesTotal === undefined ||
+						(item.repliesTotal ?? 0) > 0 ||
+						pendingReplies.length > 0
+					: config.repliesMode === "preview" &&
 						((item.repliesTotal ?? 0) > 0 ||
 							(item.repliesPreview?.length ?? 0) > 0 ||
-							pendingReplies.length > 0))) && (
+							pendingReplies.length > 0)) && (
 					<CommentRepliesBlock
 						comment={item}
 						isLoggedIn={isLoggedIn}
