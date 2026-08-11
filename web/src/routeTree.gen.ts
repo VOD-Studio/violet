@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ThemeLabRouteImport } from './routes/theme-lab'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as FriendsLabRouteImport } from './routes/friends-lab'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as AnnouncementLabRouteImport } from './routes/announcement-lab'
@@ -69,6 +70,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FriendsLabRoute = FriendsLabRouteImport.update({
+  id: '/friends-lab',
+  path: '/friends-lab',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -293,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/announcement-lab': typeof AnnouncementLabRoute
   '/changelog': typeof ChangelogRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/friends-lab': typeof FriendsLabRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/theme-lab': typeof ThemeLabRoute
@@ -340,6 +347,7 @@ export interface FileRoutesByTo {
   '/announcement-lab': typeof AnnouncementLabRoute
   '/changelog': typeof ChangelogRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/friends-lab': typeof FriendsLabRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/theme-lab': typeof ThemeLabRoute
@@ -388,6 +396,7 @@ export interface FileRoutesById {
   '/announcement-lab': typeof AnnouncementLabRoute
   '/changelog': typeof ChangelogRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/friends-lab': typeof FriendsLabRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/theme-lab': typeof ThemeLabRoute
@@ -438,6 +447,7 @@ export interface FileRouteTypes {
     | '/announcement-lab'
     | '/changelog'
     | '/forgot-password'
+    | '/friends-lab'
     | '/login'
     | '/register'
     | '/theme-lab'
@@ -485,6 +495,7 @@ export interface FileRouteTypes {
     | '/announcement-lab'
     | '/changelog'
     | '/forgot-password'
+    | '/friends-lab'
     | '/login'
     | '/register'
     | '/theme-lab'
@@ -532,6 +543,7 @@ export interface FileRouteTypes {
     | '/announcement-lab'
     | '/changelog'
     | '/forgot-password'
+    | '/friends-lab'
     | '/login'
     | '/register'
     | '/theme-lab'
@@ -581,6 +593,7 @@ export interface RootRouteChildren {
   AnnouncementLabRoute: typeof AnnouncementLabRoute
   ChangelogRoute: typeof ChangelogRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  FriendsLabRoute: typeof FriendsLabRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ThemeLabRoute: typeof ThemeLabRoute
@@ -619,6 +632,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/friends-lab': {
+      id: '/friends-lab'
+      path: '/friends-lab'
+      fullPath: '/friends-lab'
+      preLoaderRoute: typeof FriendsLabRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -1011,6 +1031,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementLabRoute: AnnouncementLabRoute,
   ChangelogRoute: ChangelogRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  FriendsLabRoute: FriendsLabRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ThemeLabRoute: ThemeLabRoute,
