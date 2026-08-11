@@ -4,24 +4,18 @@
 # 后端：go vet、go test、golangci-lint、build 与 Docker 镜像构建验证
 # 前端：biome check、tsc、vitest 与 build
 #
-# 任一 job 失败则 PR 检查失败，阻止合并。
+# 任一 job 失败则 PR 检查失败，阻止合并（ruleset required status checks）。
+# release-please 的 release PR 只改 CHANGELOG 与 manifest，也必须跑 CI：
+# 它是 required checks 的适用对象，paths-ignore 跳过的 check 永远 pending
+# 无法合并（#142）。代价是每次发版多跑约 5 分钟 CI，远小于门禁价值。
 
 name: CI
 
 on:
   push:
     branches: [main, release/2.0]
-    # release-please 创建的 release PR 只改 CHANGELOG.md 与 manifest 两个纯文本文件，
-    # 不含代码变更，跳过它们可避免发版链路重复跑两轮 CI。功能代码合并会改动
-    # .go、.ts 等文件，不命中忽略列表，CI 照常执行。
-    paths-ignore:
-      - 'CHANGELOG.md'
-      - '.release-please-manifest.json'
   pull_request:
     branches: [main, release/2.0]
-    paths-ignore:
-      - 'CHANGELOG.md'
-      - '.release-please-manifest.json'
 
 # 同一 PR 多次 push 时取消旧的运行
 concurrency:
@@ -37,6 +31,7 @@ jobs:
   # ============================================================
   backend:
     name: Backend (Go)
+    timeout-minutes: 20
     permissions:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
       contents: read
@@ -60,18 +55,19 @@ jobs:
       - name: Go vet
         run: go vet ./...
 
-      - name: Go build
-        run: go build ./...
-
-      - name: Go test
-        run: go test ./... -v -count=1
-
+      # lint 前置到 build/test 之前:比 test 快,提前暴露静态错误,fail fast
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12.2
           working-directory: api
           args: --timeout 5m
+
+      - name: Go build
+        run: go build ./...
+
+      - name: Go test
+        run: go test ./... -v -count=1
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -82,14 +78,17 @@ jobs:
           context: ./api
           push: false
           tags: violet-api:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # scope 与 deploy.yml 构建一致:发版时 deploy 直接命中 CI 已构建的层;
+          # PR 分支命中率低,仅主干 push 写缓存
+          cache-from: type=gha,scope=violet-api
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=violet-api' || '' }}
 
   # ============================================================
   # 前端检查（TypeScript）
   # ============================================================
   frontend:
     name: Frontend (React)
+    timeout-minutes: 20
     permissions:
       actions: write   # buildx type=gha 缓存读写;同 backend job
       contents: read
@@ -116,8 +115,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # biome check = lint + format + import 排序;
+      # 此前跑 pnpm lint(biome lint)不查格式,CI 与本地红绿不一致(#140)
       - name: Biome check
-        run: pnpm lint
+        run: pnpm check
 
       - name: TypeScript check
         run: pnpm typecheck
@@ -139,8 +140,8 @@ jobs:
           context: ./web
           push: false
           tags: violet-web:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=violet-web
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=violet-web' || '' }}
 
   # ============================================================
   # 依赖漏洞扫描
@@ -152,6 +153,7 @@ jobs:
   # ============================================================
   security:
     name: Dependency Security
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
@@ -164,12 +166,13 @@ jobs:
           cache-dependency-path: api/go.sum
 
       - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+        # pin 版本:@latest 行为漂移可能突然 break CI;升级走 dependabot 或人工
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
 
       - name: govulncheck (Go)
-        # govulncheck exit 3 = 发现漏洞。过滤策略:
-        # - Fixed-in-N/A(上游未发修复版,如 docker/docker 的 daemon 端漏洞)降级为 warning
-        # - 有修复版本的漏洞阻断 CI,迫使升级依赖
+        # 非零退出时分流:输出含漏洞报告特征(Vulnerability #N / Fixed in:)走
+        # Fixed-in 过滤;否则是工具自身执行错误(编译失败/网络等),必须失败——
+        # 此前一律落入过滤逻辑,执行错误因无 "Fixed in:" 被吞成绿色 warning(#138)
         working-directory: api
         run: |
           set +e
@@ -178,6 +181,10 @@ jobs:
           echo "$output"
           set -e
           [ "$code" -eq 0 ] && exit 0
+          if ! echo "$output" | grep -qE "Vulnerability #[0-9]|Fixed in:"; then
+            echo "::error::govulncheck 执行失败(exit ${code}),输出无漏洞报告特征,疑为工具自身错误"
+            exit 1
+          fi
           # 提取有修复版本的漏洞(Fixed in: 非 N/A)
           fixable=$(echo "$output" | grep "Fixed in:" | grep -v "N/A" || true)
           if [ -n "$fixable" ]; then

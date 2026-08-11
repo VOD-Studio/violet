@@ -50,13 +50,55 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write   # 创建 GitHub Release 需要
-  packages: write   # 推送镜像到 ghcr.io
+  contents: read   # 基础权限;写操作按 job 最小化授予(packages/contents/issues)
 
 jobs:
+  # ── verify-ci: 部署前校验 tag commit 的主干 CI 全绿
+  # 合并即打 tag 即部署,与主干 CI 并发执行;本 job 轮询等待 CI 完成并校验结论,
+  # 拦截「CI 未跑完或失败时被部署」(#142,ruleset required checks 之外的部署侧兜底,
+  # 覆盖 admin bypass 强合路径)。job 恒 success:workflow_dispatch 手动部署/回滚时
+  # step 整体跳过(回滚救火不应被 CI 门禁拦截),避免 skipped 级联跳过下游 prepare。
+  verify-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      checks: read   # 查询 check-runs
+    steps:
+      - name: 等待并校验主干 CI 全绿
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -e
+          # tag push 时 GITHUB_SHA = tag 指向的 commit(release PR 的 merge commit,
+          # paths-ignore 删除后其 push CI 必跑)。白名单只列 CI 三 job:
+          # deploy 自身的 check 同样挂在该 commit 上,必须排除
+          for i in $(seq 1 30); do
+            STATE=$(gh api "repos/${GH_REPO}/commits/${GITHUB_SHA}/check-runs?per_page=100" \
+              --jq '[.check_runs[] | select(.name == "Backend (Go)" or .name == "Frontend (React)" or .name == "Dependency Security") | {status, conclusion: (.conclusion // "pending")}]')
+            TOTAL=$(echo "${STATE}" | jq 'length')
+            PENDING=$(echo "${STATE}" | jq '[.[] | select(.status != "completed")] | length')
+            echo "[${i}/30] CI checks: ${TOTAL}/3 已注册, ${PENDING} 进行中"
+            if [ "${TOTAL}" -ge 3 ] && [ "${PENDING}" -eq 0 ]; then
+              BAD=$(echo "${STATE}" | jq -r '[.[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | map(.conclusion) | join(", ")')
+              if [ -z "${BAD}" ]; then
+                echo "主干 CI 全绿,放行部署"
+                exit 0
+              fi
+              echo "::error::主干 CI 未通过(${BAD}),中止部署;修复后重发版,或确认风险后 workflow_dispatch 手动部署"
+              exit 1
+            fi
+            sleep 20
+          done
+          echo "::error::等待主干 CI 超时(10 分钟),中止部署"
+          exit 1
+
   # ── detect: 按侧变更检测
   detect:
     runs-on: [self-hosted, rua]
+    # self-hosted 挂起会占住 deploy-production 并发组,必须兜超时
+    timeout-minutes: 10
     outputs:
       api: ${{ steps.result.outputs.api }}
       web: ${{ steps.result.outputs.web }}
@@ -122,10 +164,11 @@ jobs:
           echo "web=${WEB}" >> "$GITHUB_OUTPUT"
           echo "检测结果: api=${API} web=${WEB}"
 
-  # ── prepare: 解析目标版本并决定最终部署侧 ──
+   # ── prepare: 解析目标版本并决定最终部署侧 ──
   prepare:
-    needs: detect
+    needs: [detect, verify-ci]
     runs-on: [self-hosted, rua]
+    timeout-minutes: 5
     outputs:
       tag: ${{ steps.ver.outputs.tag }}
       rollback: ${{ steps.ver.outputs.rollback }}
@@ -176,8 +219,11 @@ jobs:
   build-api:
     needs: prepare
     runs-on: ubuntu-latest
-    # 全量 go module 下载与构建可能超过 15 分钟
+    # 缓存命中时分钟级;30 分钟是冷缓存(依赖大版本升级)全量构建的余量
     timeout-minutes: 30
+    permissions:
+      contents: read   # checkout
+      packages: write  # 推送镜像到 ghcr.io
     steps:
       - uses: actions/checkout@v7
         # 与构建 step 同条件：该侧不部署时整条 step 链跳过，job 仍 success，
@@ -194,23 +240,32 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup Docker Buildx
+        if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
+        uses: docker/setup-buildx-action@v3
+
       - name: 构建并推送 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
-        run: |
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          push: true
           # ghcr.io 镜像名必须全小写
-          docker build \
-            -t ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }} \
-            -t ghcr.io/vod-studio/violet-api:latest \
-            -f api/Dockerfile api/
-          docker push ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
-          docker push ghcr.io/vod-studio/violet-api:latest
-          echo "已推送 ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}"
+          tags: |
+            ghcr.io/vod-studio/violet-api:${{ needs.prepare.outputs.tag }}
+            ghcr.io/vod-studio/violet-api:latest
+          # 与 ci.yml 镜像构建验证共用 scope:同 commit 在 CI 已构建的层直接命中
+          cache-from: type=gha,scope=violet-api
+          cache-to: type=gha,mode=max,scope=violet-api
 
   build-web:
     needs: prepare
     runs-on: ubuntu-latest
-    # 全量 vite build 可能超过 15 分钟
+    # 缓存命中时分钟级;30 分钟是冷缓存全量 vite build 的余量
     timeout-minutes: 30
+    permissions:
+      contents: read   # checkout
+      packages: write  # 推送镜像到 ghcr.io
     steps:
       - uses: actions/checkout@v7
         # 与构建 step 同条件：该侧不部署时整条 step 链跳过，job 仍 success
@@ -226,42 +281,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup Docker Buildx
+        if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
+        uses: docker/setup-buildx-action@v3
+
       - name: 构建并推送 web 镜像
         if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
-        run: |
-          # build args 从 GitHub secrets 读取，与现网配置一致。
-          # VITE_API_BASE_URL / VITE_SITE_URL 有默认值，与服务器 .env 一致。
-          docker build \
-            -t ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }} \
-            -t ghcr.io/vod-studio/violet-web:latest \
-            --build-arg "VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api/v1}" \
-            --build-arg "VITE_SITE_URL=${VITE_SITE_URL:-https://xunrua.top}" \
-            --build-arg "VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" \
-            --build-arg "VITE_GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}" \
-            -f web/Dockerfile web/
-          docker push ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
-          docker push ghcr.io/vod-studio/violet-web:latest
-          echo "已推送 ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}"
-
-  # ── set-visibility: 镜像推送成功后设置包公开 ──
-  # 仅对本轮实际构建的包设置公开，避免单侧部署时对未构建包做无意义调用
-  set-visibility:
-    needs: [prepare, build-api, build-web]
-    if: always() && ((needs.build-api.result == 'success' && needs.prepare.outputs.deploy_api == 'true') || (needs.build-web.result == 'success' && needs.prepare.outputs.deploy_web == 'true'))
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: 设置镜像包公开
-        run: |
-          if [ "${{ needs.prepare.outputs.deploy_api }}" == "true" ] && [ "${{ needs.build-api.result }}" == "success" ]; then
-            gh api -X PATCH /orgs/vod-studio/packages/container/violet-api/visibility -f visibility=public \
-              || echo "::warning::violet-api 可见性设置失败"
-          fi
-          if [ "${{ needs.prepare.outputs.deploy_web }}" == "true" ] && [ "${{ needs.build-web.result }}" == "success" ]; then
-            gh api -X PATCH /orgs/vod-studio/packages/container/violet-web/visibility -f visibility=public \
-              || echo "::warning::violet-web 可见性设置失败"
-          fi
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          push: true
+          # ghcr.io 镜像名必须全小写;VITE_API_BASE_URL / VITE_SITE_URL 与 Dockerfile
+          # ARG 默认值一致,显式列出仅为可读性
+          tags: |
+            ghcr.io/vod-studio/violet-web:${{ needs.prepare.outputs.tag }}
+            ghcr.io/vod-studio/violet-web:latest
+          build-args: |
+            VITE_API_BASE_URL=/api/v1
+            VITE_SITE_URL=https://xunrua.top
+            VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            VITE_GITHUB_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}
+          cache-from: type=gha,scope=violet-web
+          cache-to: type=gha,mode=max,scope=violet-web
 
   # ── prepare-server: 回滚复用检查、镜像拉取、compose 同步 ──
   prepare-server:
@@ -478,13 +519,12 @@ jobs:
           echo "::error::建议优先向前修复(部署兼容新 schema 的修复版本);migrate down 回退 schema 有数据丢失风险"
           exit 1
 
-  # ── release: nginx reload、GitHub Release、按侧回写锚点（最后） ──
+  # ── release: nginx reload、按侧回写锚点（最后） ──
   release:
     needs: [prepare, build-api, build-web, migrate, deploy-api, deploy-web, rollback]
     # prepare 必须 success，拦截 detect 或 prepare 自身的失败；migrate 与部署失败已被
     # !failure() 拦截。构建失败同样被 !failure() 覆盖，但单侧不部署时构建 job 为
-    # skipped 状态，不算失败，故显式排除 failure 状态，保证单侧构建跳过时仍创建
-    # Release。tag 已打，About 页面更新日志依赖 Releases
+    # skipped 状态，不算失败，故显式排除 failure 状态，保证单侧构建跳过时仍执行
     if: always() && !cancelled() && !failure() && needs.prepare.result == 'success' && needs.build-api.result != 'failure' && needs.build-web.result != 'failure'
     runs-on: [self-hosted, rua]
     timeout-minutes: 10
@@ -500,9 +540,8 @@ jobs:
           fi
 
       - name: 按侧回写版本锚点
-        # 放在 checkout 之前：锚点是后续发版 diff 的基线，不能被拉取代码失败连累。
-        # 手动回滚也走此路径:tag 即回滚目标版本,成功后锚点推进到回滚目标,
-        # 避免锚点陈旧导致下次发版 diff 漏掉未部署变更
+        # 锚点是后续发版 diff 的基线。手动回滚也走此路径:tag 即回滚目标版本,
+        # 成功后锚点推进到回滚目标,避免锚点陈旧导致下次发版 diff 漏掉未部署变更
         env:
           TAG: ${{ needs.prepare.outputs.tag }}
           API_RESULT: ${{ needs.deploy-api.result }}
@@ -517,15 +556,23 @@ jobs:
             echo "web 锚点更新为 $TAG"
           fi
 
-      # checkout 仅为 Release notes 抽 CHANGELOG；tag push 才建 Release，手动 dispatch 跳过
-      # dispatch 时 checkout github.com 被掐会白死，release job 失败即死于此
+  # ── github-release: 创建 GitHub Release（仅 tag push） ──
+  # 放 GitHub 托管 runner:rua 访问 github.com 不稳定(checkout 曾被掐白死),
+  # 建 Release 只需 changelog 与 gh api,不依赖服务器本地状态。
+  # 与 release(锚点回写)无依赖,并行执行
+  github-release:
+    needs: [prepare, build-api, build-web, migrate, deploy-api, deploy-web, rollback]
+    if: always() && !cancelled() && !failure() && needs.prepare.result == 'success' && needs.build-api.result != 'failure' && needs.build-web.result != 'failure' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # 创建 GitHub Release
+    steps:
       - uses: actions/checkout@v7
-        if: github.event_name == 'push'
         with:
           ref: ${{ needs.prepare.outputs.tag }}
 
       - name: 从 CHANGELOG 抽取本版本段落
-        if: github.event_name == 'push'
         id: notes
         run: |
           VERSION="${{ needs.prepare.outputs.tag }}"
@@ -549,15 +596,14 @@ jobs:
           fi
 
       - name: 创建 GitHub Release(CHANGELOG 段落)
-        # 仅 tag push 创建 Release;手动 dispatch(部署/回滚)不建
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'changelog'
+        if: steps.notes.outputs.source == 'changelog'
         uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           body_path: ${{ runner.temp }}/release-notes.md
 
       - name: 创建 GitHub Release(自动生成 notes)
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && steps.notes.outputs.source == 'generated'
+        if: steps.notes.outputs.source == 'generated'
         uses: softprops/action-gh-release@v3.0.2
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
@@ -570,7 +616,7 @@ jobs:
   # github.com 不稳定)。issue 未关闭期间同时作为「tag 已发布但生产未部署」漂移
   # 状态的可见记录;auto-retry 接力重试或下次发版覆盖后,人工确认关闭。
   notify-failure:
-    needs: [detect, prepare, build-api, build-web, prepare-server, migrate, deploy-api, deploy-web, rollback, release]
+    needs: [detect, prepare, build-api, build-web, prepare-server, migrate, deploy-api, deploy-web, rollback, release, github-release]
     if: always() && failure()
     runs-on: ubuntu-latest
     permissions:

@@ -21,6 +21,12 @@ permissions:
   contents: write       # 创建 release PR + 打 tag
   pull-requests: write  # 开/合并 release PR
 
+# 连续 push 并发跑会竞争同一 release PR(开 PR/打 tag),串行排队;
+# 不取消进行中 run:release-please 操作 git 状态,取消可能留下中间态
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
