@@ -32,6 +32,9 @@ jobs:
       - name: 失败 job 检查并自动重试
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # workflow_run 触发时本 job 无 checkout，gh 推断 base repo 会因无 .git 失败，
+          # 必须显式提供 GH_REPO（gh 不读 runner 自带的 GITHUB_REPOSITORY）
+          GH_REPO: ${{ github.repository }}
           RUN_ID: ${{ github.event.workflow_run.id }}
           RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
           RUN_EVENT: ${{ github.event.workflow_run.event }}
