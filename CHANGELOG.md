@@ -7,6 +7,23 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.0](https://github.com/VOD-Studio/violet/compare/v2.7.0...v2.8.0) (2026-08-12)
+
+
+### 新增
+
+* **admin-friend-links:** 友链后台审核管理页 ([d81308e](https://github.com/VOD-Studio/violet/commit/d81308e0c04a8019ccb3ffb9774c8e0371317fb8))
+* **friend-links:** 前台友链页与申请弹窗 ([d56411b](https://github.com/VOD-Studio/violet/commit/d56411bc88c3662169e7723b6155148f145e884c))
+* **friendlink:** 友链后端与审核流落地 ([10a695b](https://github.com/VOD-Studio/violet/commit/10a695b38a680d0934b36749c75dd3219e00183e))
+* **friendlink:** 友链模块（申请制全栈） ([7c1a2e5](https://github.com/VOD-Studio/violet/commit/7c1a2e5edf3c0b7e45b536b7b435048b56117fd7))
+* **friends-lab:** 友链页视觉原型实验室 ([3df6a6d](https://github.com/VOD-Studio/violet/commit/3df6a6df1815b11444c0b183b6c934c2dedac20e))
+
+
+### 修复
+
+* **friend-links:** 修正 ApplyDialog 行首多余空格 ([a9928b9](https://github.com/VOD-Studio/violet/commit/a9928b9a46fddc99198866e1f1303aef5ee64d3a))
+* **middleware:** GetClientIP 返回剥离端口的纯 IP ([7778082](https://github.com/VOD-Studio/violet/commit/777808262e283976d6afe59e1f1f5d68a8487496))
+
 ## [2.7.0](https://github.com/VOD-Studio/violet/compare/v2.6.1...v2.7.0) (2026-08-11)
 
 
