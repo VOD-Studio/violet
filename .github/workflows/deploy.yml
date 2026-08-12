@@ -317,7 +317,8 @@ jobs:
     if: (needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true') && needs.build-api.result != 'failure' && needs.build-web.result != 'failure'
     runs-on: [self-hosted, rua]
     permissions:
-      packages: read   # podman pull ghcr.io 镜像需要读权限（#64 重构时回归遗漏）
+      contents: read  # actions/checkout 需要（job 级 permissions 未指定的 scope 会变 none）
+      packages: read  # podman pull ghcr.io 镜像需要读权限（#64 重构时回归遗漏）
     steps:
       - uses: actions/checkout@v7
         with:
