@@ -100,9 +100,9 @@ func TestSubscriber_UserPasswordChanged_RecordsUpdateWithChange(t *testing.T) {
 
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
-	assert.Equal(t, domainaudit.ActionUpdate, e.Action)
-	require.Len(t, e.Changes, 1)
+	assert.Equal(t, domainaudit.ActionChangePassword, e.Action)
 	assert.Equal(t, "password", e.Changes[0].Field)
+	assert.Equal(t, "修改用户密码", e.Summary)
 }
 
 func TestSubscriber_RoleCreated_RecordsCreateWithRoleName(t *testing.T) {
@@ -401,11 +401,12 @@ func TestSubscriber_SettingsUpdated_RecordsChangedKeys(t *testing.T) {
 
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
-	assert.Equal(t, domainaudit.ActionUpdate, e.Action)
+	assert.Equal(t, domainaudit.ActionUpdateConfig, e.Action)
 	assert.Equal(t, "settings", e.Resource.Type)
 	changed, ok := e.Metadata["changed_keys"].([]string)
 	require.True(t, ok)
 	assert.ElementsMatch(t, []string{"site_name", "bio"}, changed)
+	assert.Contains(t, e.Summary, "更新站点设置")
 }
 
 func TestSubscriber_Subscribe_UsesWildcard(t *testing.T) {
@@ -445,9 +446,9 @@ func TestSubscriber_SubscriptionFetched_SystemActor(t *testing.T) {
 	sid := shared.NewID()
 	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", true)
 	require.NoError(t, sub.Handle(ctx, ev))
-
-	require.Len(t, store.appended, 1)
 	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionFetchFeed, e.Action, "抓取应映射 fetch_feed 而非 create/update")
+	assert.Contains(t, e.Summary, "成功", "成功抓取摘要应包含「成功」")
 	assert.Equal(t, domainaudit.ActorTypeSystem, e.Actor.Type, "调度器抓取应为 system actor")
 	assert.Equal(t, "subscription_job", e.Actor.UserName, "system actor 的 UserName 借用存作业名")
 }
@@ -460,9 +461,9 @@ func TestSubscriber_SubscriptionFetched_UserActor(t *testing.T) {
 	sid := shared.NewID()
 	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", false)
 	require.NoError(t, sub.Handle(ctx, ev))
-
-	require.Len(t, store.appended, 1)
-	assert.Equal(t, domainaudit.ActorTypeUser, store.appended[0].Actor.Type, "手动触发应为 user actor")
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionFetchFeed, e.Action, "手动抓取同样映射 fetch_feed")
+	assert.Equal(t, domainaudit.ActorTypeUser, e.Actor.Type, "手动触发应为 user actor")
 }
 
 // recordingBus 仅记录 Subscribe 参数。
