@@ -1,6 +1,5 @@
 import { cn } from "@shared/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@shared/ui/base/tooltip";
-import { useRouterState } from "@tanstack/react-router";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { useAdminSidebarStore } from "../admin-sidebar-store";
 import { NAV_ITEM_BASE, NavMenuLink } from "./NavMenuLink";
@@ -8,10 +7,8 @@ import type { NavMenuItem } from "./nav-menu-config";
 
 /**
  * NavMenuGroupItem - 带子菜单的父项
- *
  * 父项是纯分组容器：点按只切换展开/折叠，不导航（避免无意义的父级页面）。
- * 子项缩进渲染，命中任一子项时父项自动展开并高亮。
- *
+ * 子项缩进渲染，默认折叠，用户手动点按后展开/收起。
  * collapsed（侧边栏收起）时：父项退化为图标 + Tooltip，子项不可见
  * （收起态下展开子菜单会撑破窄栏，与现有 collapsed 语义冲突；保持图标入口即可）。
  */
@@ -24,20 +21,11 @@ export function NavMenuGroupItem({
 	onNavigate?: () => void;
 	collapsed?: boolean;
 }) {
-	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const setGroupExpanded = useAdminSidebarStore((s) => s.setGroupExpanded);
 	const expandedGroups = useAdminSidebarStore((s) => s.expandedGroups);
-
-	// 命中任一子项（或父项路径本身）时视为激活，自动展开
-	const childHit =
-		pathname === item.to ||
-		pathname.startsWith(`${item.to}/`) ||
-		(item.children?.some((c) => pathname === c.to || pathname.startsWith(`${c.to}/`)) ?? false);
-
-	// 手动状态优先于命中路由：未操作时跟随 childHit，手动展开/折叠后固定。
-	// 否则命中子路由时 childHit 恒为 true 会覆盖手动折叠，导致无法收起。
+	// 用户手动操作优先；未操作时默认折叠。
 	const manualState = expandedGroups[item.to];
-	const expanded = manualState !== undefined ? manualState : childHit;
+	const expanded = manualState ?? false;
 
 	const Icon: LucideIcon = item.icon;
 	const trigger = (

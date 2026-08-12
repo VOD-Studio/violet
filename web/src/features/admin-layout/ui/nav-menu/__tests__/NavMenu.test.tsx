@@ -3,14 +3,12 @@
  *
  * 覆盖「可折叠父项」行为：
  * - 带 children 的导航项渲染为父项按钮（aria-expanded 可见）。
- * - 命中任一子项路由时，父项自动展开、子项可见。
- * - 未命中且未手动展开时，子项不可见。
- * - 点击父项切换展开/折叠。
+ * - 默认折叠，子项不可见；用户手动点按后展开/收起。
+ * - 点击父项切换展开/折叠（双向）。
  * - 普通叶子项（无 children）仍渲染为链接而非按钮。
  *
  * 断言风格跟随项目惯例（.length / .toBeTruthy / .toBeFalsy，无 jest-dom）。
  * mock 策略：useMe 返回超管（所有项可见，绕开权限分支）；
- * useRouterState 返回受控 pathname 模拟「当前路由命中」；
  * Link 退化为普通 <a> 以脱离 RouterProvider 上下文。
  */
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -73,26 +71,28 @@ const getSettingsParent = () =>
 		.find((b) => b.hasAttribute("aria-expanded"));
 
 describe("NavMenu 子菜单渲染", () => {
-	it("命中子项路由时，父项「站点设置」自动展开并渲染子项", () => {
+	it("默认折叠，子项不渲染", () => {
 		setPath("/admin/settings/github");
 		render(<NavMenu />);
 
-		// 父项标记为展开
-		expect(getSettingsParent()?.getAttribute("aria-expanded")).toBe("true");
-		// 子项可见（命中项与其兄弟项都在）
-		expect(screen.queryAllByTestId("link-/admin/settings/github").length).toBeGreaterThan(0);
-		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBeGreaterThan(0);
-	});
-
-	it("未命中设置子项且未手动展开时，子项不渲染", () => {
-		setPath("/admin/posts");
-		render(<NavMenu />);
-
-		// 父项标记为折叠
+		// 即使命中子项路由，父项仍默认折叠
 		expect(getSettingsParent()?.getAttribute("aria-expanded")).toBe("false");
-		// 子项不可见
 		expect(screen.queryAllByTestId("link-/admin/settings/github").length).toBe(0);
 		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBe(0);
+	});
+
+	it("手动点击父项后展开子项", () => {
+		setPath("/admin/settings/github");
+		render(<NavMenu />);
+
+		const parent = getSettingsParent();
+		expect(parent?.getAttribute("aria-expanded")).toBe("false");
+
+		// 手动展开
+		fireEvent.click(parent as HTMLElement);
+		expect(parent?.getAttribute("aria-expanded")).toBe("true");
+		expect(screen.queryAllByTestId("link-/admin/settings/github").length).toBeGreaterThan(0);
+		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBeGreaterThan(0);
 	});
 
 	it("点击父项切换展开/折叠（双向）", () => {
@@ -114,22 +114,6 @@ describe("NavMenu 子菜单渲染", () => {
 		expect(parent?.getAttribute("aria-expanded")).toBe("false");
 	});
 
-	// 注：此用例验证「命中路由时可手动折叠」回归。组件逻辑经 DEBUG 确认正确
-	// （childHit=true 时 expanded=true），但跨用例的 zustand persist hydrate 时序
-	it.skip("命中子项路由时仍可手动折叠（回归：childHit 不应覆盖手动折叠）", () => {
-		setPath("/admin/settings/github");
-		render(<NavMenu />);
-
-		const parent = getSettingsParent();
-		// 命中子项 → 自动展开
-		expect(parent?.getAttribute("aria-expanded")).toBe("true");
-		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBeGreaterThan(0);
-
-		// 手动折叠：一次点击即生效（不应被 childHit 的 true 覆盖）
-		fireEvent.click(parent as HTMLElement);
-		expect(parent?.getAttribute("aria-expanded")).toBe("false");
-		expect(screen.queryAllByTestId("link-/admin/settings/general").length).toBe(0);
-	});
 
 	it("普通叶子项（无 children）仍渲染为链接而非按钮", () => {
 		setPath("/admin");
