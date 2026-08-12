@@ -7,6 +7,22 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.2](https://github.com/VOD-Studio/violet/compare/v2.8.1...v2.8.2) (2026-08-12)
+
+
+### 新增
+
+* **admin:** 操作日志列表与详情页支持 summary 展现 ([2177cc5](https://github.com/VOD-Studio/violet/commit/2177cc561bf281964d01c556ac6226c9653b73d8)), closes [#175](https://github.com/VOD-Studio/violet/issues/175)
+* **audit:** mapEvent 升级为业务 Action 与人话摘要 ([b2a847b](https://github.com/VOD-Studio/violet/commit/b2a847b837197dd8fd9b75da1810d3d05664a856)), closes [#174](https://github.com/VOD-Studio/violet/issues/174)
+* **audit:** 操作日志 Action 业务化与人话摘要重构 ([048912e](https://github.com/VOD-Studio/violet/commit/048912e0595f35da9ce8d8993c2339288224054d))
+* **domain:** audit 新增 summary 字段与业务 Action 枚举 ([5c2ac25](https://github.com/VOD-Studio/violet/commit/5c2ac25bc71bb3b92f1ebbc35e8f475e8cc71981)), closes [#173](https://github.com/VOD-Studio/violet/issues/173)
+
+
+### 修复
+
+* **audit:** Summary 边界文案修复 ([c361976](https://github.com/VOD-Studio/violet/commit/c361976efb89a186aa33aad025b796ac877f107f))
+* **audit:** 修复评审两处边界问题 ([9c638e8](https://github.com/VOD-Studio/violet/commit/9c638e833ddb0447d045ee4e08c3c2c7fef92012))
+
 ## [2.8.1](https://github.com/VOD-Studio/violet/compare/v2.8.0...v2.8.1) (2026-08-12)
 
 
