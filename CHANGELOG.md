@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.1](https://github.com/VOD-Studio/violet/compare/v2.8.0...v2.8.1) (2026-08-12)
+
+
+### 修复
+
+* 消除前端 Biome 基线 lint 残留 ([#166](https://github.com/VOD-Studio/violet/issues/166)) ([c951377](https://github.com/VOD-Studio/violet/commit/c951377b0124be466308f1739e6088bd76dc213f))
+
 ## [2.8.0](https://github.com/VOD-Studio/violet/compare/v2.7.0...v2.8.0) (2026-08-12)
 
 
