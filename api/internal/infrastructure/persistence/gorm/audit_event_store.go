@@ -39,6 +39,9 @@ type AuditEventPO struct {
 	ResourceID   string `gorm:"type:varchar(255);column:resource_id" json:"resource_id"`
 	ResourceName string `gorm:"type:varchar(255);column:resource_name" json:"resource_name"`
 
+	// summary 人话摘要（后端写入时生成，存量旧记录为空串）
+	Summary string `gorm:"type:text;not null;default:'';column:summary" json:"summary"`
+
 	// changes 字段变更列表（jsonb，结构化 before/after）
 	// *string：空时以 NULL 入库（jsonb 列拒绝空串）
 	Changes *string `gorm:"type:jsonb;column:changes" json:"changes"`
@@ -140,6 +143,7 @@ func buildPO(e domainaudit.AuditEvent) (AuditEventPO, error) {
 		ResourceType:  e.Resource.Type,
 		ResourceID:    e.Resource.ID,
 		ResourceName:  e.Resource.Name,
+		Summary:       e.Summary,
 		OccurredAt:    e.OccurredAt,
 	}
 	if e.Actor.UserID != "" {
@@ -182,8 +186,8 @@ func poToDomain(po AuditEventPO) domainaudit.AuditEvent {
 	}
 	action, _ := domainaudit.Parse(po.Action) // 脏数据降级为零值，读路径不 panic
 	event := domainaudit.AuditEvent{
-		EventID:    eventID,
-		Action:     action,
+		EventID: eventID,
+		Action:  action,
 		Actor: domainaudit.Actor{
 			Type:      domainaudit.ActorType(po.ActorType),
 			UserName:  po.ActorUserName,
@@ -195,6 +199,7 @@ func poToDomain(po AuditEventPO) domainaudit.AuditEvent {
 			ID:   po.ResourceID,
 			Name: po.ResourceName,
 		},
+		Summary:    po.Summary,
 		OccurredAt: po.OccurredAt,
 	}
 	if po.Changes != nil {
