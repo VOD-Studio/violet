@@ -301,11 +301,29 @@ export function DataTable<T>({
 		const container = scrollContainerRef.current;
 		if (!container) return;
 		const { scrollLeft, scrollWidth, clientWidth } = container;
-		setScrollState({
-			isScrolledLeft: scrollLeft > 0,
-			isScrolledRight: scrollLeft < scrollWidth - clientWidth - 1,
-		});
+		const isScrolledLeft = scrollLeft > 0;
+		const isScrolledRight = scrollLeft < scrollWidth - clientWidth - 1;
+		// 值未变时复用旧引用，避免无意义的重渲染（滚动/resize 高频触发）
+		setScrollState((prev) =>
+			prev.isScrolledLeft === isScrolledLeft && prev.isScrolledRight === isScrolledRight
+				? prev
+				: { isScrolledLeft, isScrolledRight },
+		);
 	}, []);
+
+	// containerWidth 仅供展开行面板定宽（DataTableBody）。无展开行时跳过更新：
+	// 侧边栏宽度过渡期间容器逐帧 resize，RO 每帧回调，无条件 setState 会让
+	// 整个表格每帧重渲染（表现为侧边栏展开/收起掉帧）。
+	const tracksExpandedWidth = renderExpandedRow != null && expanded.size > 0;
+	const tracksExpandedWidthRef = useRef(tracksExpandedWidth);
+	tracksExpandedWidthRef.current = tracksExpandedWidth;
+
+	// 行展开时同步一次容器宽度，供展开面板定宽
+	useEffect(() => {
+		if (!tracksExpandedWidth) return;
+		const container = scrollContainerRef.current;
+		if (container) setContainerWidth(container.clientWidth);
+	}, [tracksExpandedWidth]);
 
 	useEffect(() => {
 		const container = scrollContainerRef.current;
@@ -322,7 +340,9 @@ export function DataTable<T>({
 
 		// 监听容器尺寸变化（侧边栏折叠、列宽拖拽等）
 		const ro = new ResizeObserver(() => {
-			setContainerWidth(container.clientWidth);
+			if (tracksExpandedWidthRef.current) {
+				setContainerWidth(container.clientWidth);
+			}
 			checkScroll();
 		});
 		ro.observe(container);
@@ -372,7 +392,11 @@ export function DataTable<T>({
 
 	return (
 		<div className={cn("flex max-h-full w-full flex-col", className)}>
-			<DataTableToolbar className="shrink-0" toolbar={toolbar} selectedCount={selectable ? selected.size : 0} />
+			<DataTableToolbar
+				className="shrink-0"
+				toolbar={toolbar}
+				selectedCount={selectable ? selected.size : 0}
+			/>
 
 			<div className="border-border bg-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border">
 				{/* Header — 独立容器，无滚动条；table 宽度由 JS 同步为 body clientWidth */}
