@@ -21,6 +21,7 @@ export function NavMenuLink({
 	collapsed?: boolean;
 }) {
 	const Icon = item.icon;
+	const ItemBadge = item.badge;
 	const link = (
 		<Link
 			to={item.to}
@@ -38,6 +39,7 @@ export function NavMenuLink({
 			>
 				{item.label}
 			</span>
+			{ItemBadge ? <ItemBadge collapsed={collapsed} /> : null}
 		</Link>
 	);
 	if (!collapsed) return link;

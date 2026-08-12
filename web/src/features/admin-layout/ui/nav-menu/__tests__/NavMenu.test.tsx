@@ -46,6 +46,11 @@ vi.mock("@features/auth/api/queries", () => ({
 	}),
 }));
 
+// 友链菜单项的 pending 计数角标自带 useQuery，本测试无 QueryClientProvider，替身掉
+vi.mock("@features/admin-friend-links/ui/FriendLinkNavBadge", () => ({
+	FriendLinkNavBadge: () => null,
+}));
+
 import { useAdminSidebarStore } from "../../admin-sidebar-store";
 import { NavMenu } from "../NavMenu";
 

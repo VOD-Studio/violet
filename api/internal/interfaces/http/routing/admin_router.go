@@ -25,6 +25,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 	postH := d.Post
 	mediaH := d.Media
 	contentH := d.Content
+	friendLinkH := d.FriendLink
 
 	// 仪表盘统计
 	r.Get("/stats", d.Stats.GetDashboardStats)
@@ -233,6 +234,26 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.Route("/system", func(r chi.Router) {
 		r.With(middleware.RequirePermission(perm, "system:view")).Get("/snapshot", d.System.GetSnapshot)
 		r.With(middleware.RequirePermission(perm, "system:view")).Get("/history", d.System.GetHistory)
+	})
+
+	// 友链审核（读：friendlink:view；写：friendlink:manage）。
+	// 与评论域同构：view 角色可读 pending/count（后台菜单角标）+ 全量列表；manage 角色可改。
+	r.Route("/friend-links", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "friendlink:view"))
+			r.Get("/pending/count", friendLinkH.CountPending)
+			r.Get("/", friendLinkH.ListByStatus)
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequirePermission(perm, "friendlink:manage"))
+			r.Post("/", friendLinkH.CreateManual)
+			r.Patch("/{id}", friendLinkH.Update)
+			r.Post("/{id}/approve", friendLinkH.Approve)
+			r.Post("/{id}/reject", friendLinkH.Reject)
+			r.Post("/{id}/disable", friendLinkH.Disable)
+			r.Post("/{id}/restore", friendLinkH.Restore)
+			r.Delete("/{id}", friendLinkH.Delete)
+		})
 	})
 
 	return r

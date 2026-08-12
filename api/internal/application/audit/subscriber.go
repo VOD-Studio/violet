@@ -17,6 +17,7 @@ import (
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
 	domaincomment "blog-api/internal/domain/comment"
+	domainfriendlink "blog-api/internal/domain/friendlink"
 	domainrole "blog-api/internal/domain/role"
 	domainpost "blog-api/internal/domain/post"
 	domainsubscription "blog-api/internal/domain/subscription"
@@ -302,6 +303,78 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "tweet", ID: e.AggregateID().String(), Name: e.Excerpt},
 			Metadata:   map[string]any{"author_id": e.AuthorID.String()},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainfriendlink.FriendLinkCreated:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionCreate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainfriendlink.FriendLinkApproved:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionApprove,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Changes:    []domainaudit.FieldChange{{Field: "status", From: e.From, To: e.To}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainfriendlink.FriendLinkRejected:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionReject,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Changes:    []domainaudit.FieldChange{{Field: "status", From: e.From, To: e.To}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainfriendlink.FriendLinkDisabled:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdateStatus,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Changes:    []domainaudit.FieldChange{{Field: "status", From: e.From, To: e.To}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainfriendlink.FriendLinkRestored:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdateStatus,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Changes:    []domainaudit.FieldChange{{Field: "status", From: e.From, To: e.To}},
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainfriendlink.FriendLinkUpdated:
+		changes := make([]domainaudit.FieldChange, 0, len(e.Changes))
+		for _, c := range e.Changes {
+			changes = append(changes, domainaudit.FieldChange{Field: c.Field, From: c.From, To: c.To})
+		}
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Changes:    changes,
+			OccurredAt: e.OccurredAt(),
+		}, true
+
+	case domainfriendlink.FriendLinkDeleted:
+		return domainaudit.AuditEvent{
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
 			OccurredAt: e.OccurredAt(),
 		}, true
 

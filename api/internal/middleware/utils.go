@@ -89,7 +89,13 @@ func GetClientIP(r *http.Request) string {
 			return realIP
 		}
 	}
-	return r.RemoteAddr
+	// RemoteAddr 带临时端口（"127.0.0.1:52341"），直连部署下每次连接端口都变。
+	// 配额/反应去重/审计都按 IP 识别身份，必须只取主机部分。
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }
 
 // extractFirstIP 从 X-Forwarded-For 头部提取第一个 IP

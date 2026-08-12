@@ -74,6 +74,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 			r.Get("/{id}", d.Content.GetActiveAnnouncement)
 		})
 
+		// 友链（前台公开：列表 + 申请 + 发码）
+		registerFriendLinkRoutes(v1, d)
+
 		// 代码运行器（登录可执行，SSE 用 GET 绕过 CSRF）
 		registerCodeRunnerRoutes(v1, d)
 
@@ -316,4 +319,27 @@ func registerMCPRoutes(r chi.Router, d *Deps) {
 		Handle("/api/v1/mcp/reader", mcp.Public)
 	r.With(middleware.RateLimit("mcp-comments", redisClient, time.Minute, 60)).
 		Handle("/api/v1/mcp/comments", mcp.Comments)
+}
+// registerFriendLinkRoutes 注册友链前台公开路由。
+//
+// 公开端点：
+//   - GET /friend-links：仅 approved 列表（前台首页展示）
+//   - POST /friend-links：申请友链（OptionalAuth + 申请限流；登录跳验证码）
+//   - POST /friend-links/code：匿名申请第一步，发送邮箱验证码（独立限流）
+//
+// 审核/写操作在 admin sub-router 内（friendlink:view/manage 权限码细分）。
+// 与评论域同构：OptionalAuth 让登录态享受简化流程，匿名走邮箱验证码两步流。
+func registerFriendLinkRoutes(v1 chi.Router, d *Deps) {
+	redisClient := d.Redis
+	friendLinkH := d.FriendLink
+
+	v1.Route("/friend-links", func(r chi.Router) {
+		r.Get("/", friendLinkH.ListPublic)
+		r.With(
+			d.OptionalAuth,
+			middleware.FriendLinkRateLimit(redisClient),
+		).Post("/", friendLinkH.Apply)
+		r.With(middleware.FriendLinkCodeRateLimit(redisClient)).
+			Post("/code", friendLinkH.SendCode)
+	})
 }

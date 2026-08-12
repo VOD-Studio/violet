@@ -15,7 +15,7 @@ func TestGetClientIP_IgnoresForwardedHeadersWhenNoTrustedProxies(t *testing.T) {
 	req.Header.Set("X-Real-IP", "5.6.7.8")
 	req.RemoteAddr = "9.9.9.9:1234"
 
-	assert.Equal(t, "9.9.9.9:1234", getClientIP(req))
+	assert.Equal(t, "9.9.9.9", getClientIP(req))
 }
 
 func TestGetClientIP_TrustsForwardedHeaderFromTrustedProxy(t *testing.T) {
@@ -33,5 +33,5 @@ func TestGetClientIP_IgnoresForwardedHeaderFromUntrustedRemoteAddr(t *testing.T)
 	req.Header.Set("X-Forwarded-For", "1.2.3.4")
 	req.RemoteAddr = "8.8.8.8:1234" // 不是受信代理
 
-	assert.Equal(t, "8.8.8.8:1234", getClientIP(req))
+	assert.Equal(t, "8.8.8.8", getClientIP(req))
 }

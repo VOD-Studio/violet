@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ThemeLabRouteImport } from './routes/theme-lab'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as FriendsLabRouteImport } from './routes/friends-lab'
+import { Route as FriendsRouteImport } from './routes/friends'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as AnnouncementLabRouteImport } from './routes/announcement-lab'
@@ -40,6 +42,7 @@ import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions
 import { Route as AdminMediaRouteImport } from './routes/admin.media'
 import { Route as AdminMcpRouteImport } from './routes/admin.mcp'
 import { Route as AdminLogsRouteImport } from './routes/admin.logs'
+import { Route as AdminFriendLinksRouteImport } from './routes/admin.friend-links'
 import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
 import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
@@ -69,6 +72,16 @@ const RegisterRoute = RegisterRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FriendsLabRoute = FriendsLabRouteImport.update({
+  id: '/friends-lab',
+  path: '/friends-lab',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FriendsRoute = FriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -211,6 +224,11 @@ const AdminLogsRoute = AdminLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFriendLinksRoute = AdminFriendLinksRouteImport.update({
+  id: '/friend-links',
+  path: '/friend-links',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEmojisRoute = AdminEmojisRouteImport.update({
   id: '/emojis',
   path: '/emojis',
@@ -293,12 +311,15 @@ export interface FileRoutesByFullPath {
   '/announcement-lab': typeof AnnouncementLabRoute
   '/changelog': typeof ChangelogRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/friends': typeof FriendsRoute
+  '/friends-lab': typeof FriendsLabRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/theme-lab': typeof ThemeLabRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/friend-links': typeof AdminFriendLinksRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/mcp': typeof AdminMcpRoute
   '/admin/media': typeof AdminMediaRoute
@@ -340,12 +361,15 @@ export interface FileRoutesByTo {
   '/announcement-lab': typeof AnnouncementLabRoute
   '/changelog': typeof ChangelogRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/friends': typeof FriendsRoute
+  '/friends-lab': typeof FriendsLabRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/theme-lab': typeof ThemeLabRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/friend-links': typeof AdminFriendLinksRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/mcp': typeof AdminMcpRoute
   '/admin/media': typeof AdminMediaRoute
@@ -388,12 +412,15 @@ export interface FileRoutesById {
   '/announcement-lab': typeof AnnouncementLabRoute
   '/changelog': typeof ChangelogRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/friends': typeof FriendsRoute
+  '/friends-lab': typeof FriendsLabRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/theme-lab': typeof ThemeLabRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/friend-links': typeof AdminFriendLinksRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/mcp': typeof AdminMcpRoute
   '/admin/media': typeof AdminMediaRoute
@@ -438,12 +465,15 @@ export interface FileRouteTypes {
     | '/announcement-lab'
     | '/changelog'
     | '/forgot-password'
+    | '/friends'
+    | '/friends-lab'
     | '/login'
     | '/register'
     | '/theme-lab'
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
+    | '/admin/friend-links'
     | '/admin/logs'
     | '/admin/mcp'
     | '/admin/media'
@@ -485,12 +515,15 @@ export interface FileRouteTypes {
     | '/announcement-lab'
     | '/changelog'
     | '/forgot-password'
+    | '/friends'
+    | '/friends-lab'
     | '/login'
     | '/register'
     | '/theme-lab'
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
+    | '/admin/friend-links'
     | '/admin/logs'
     | '/admin/mcp'
     | '/admin/media'
@@ -532,12 +565,15 @@ export interface FileRouteTypes {
     | '/announcement-lab'
     | '/changelog'
     | '/forgot-password'
+    | '/friends'
+    | '/friends-lab'
     | '/login'
     | '/register'
     | '/theme-lab'
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
+    | '/admin/friend-links'
     | '/admin/logs'
     | '/admin/mcp'
     | '/admin/media'
@@ -581,6 +617,8 @@ export interface RootRouteChildren {
   AnnouncementLabRoute: typeof AnnouncementLabRoute
   ChangelogRoute: typeof ChangelogRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  FriendsRoute: typeof FriendsRoute
+  FriendsLabRoute: typeof FriendsLabRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ThemeLabRoute: typeof ThemeLabRoute
@@ -619,6 +657,20 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/friends-lab': {
+      id: '/friends-lab'
+      path: '/friends-lab'
+      fullPath: '/friends-lab'
+      preLoaderRoute: typeof FriendsLabRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/friends': {
+      id: '/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof FriendsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -817,6 +869,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLogsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/friend-links': {
+      id: '/admin/friend-links'
+      path: '/friend-links'
+      fullPath: '/admin/friend-links'
+      preLoaderRoute: typeof AdminFriendLinksRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/emojis': {
       id: '/admin/emojis'
       path: '/emojis'
@@ -969,6 +1028,7 @@ interface AdminRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCommentsRoute: typeof AdminCommentsRoute
   AdminEmojisRoute: typeof AdminEmojisRoute
+  AdminFriendLinksRoute: typeof AdminFriendLinksRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminMcpRoute: typeof AdminMcpRoute
   AdminMediaRoute: typeof AdminMediaRoute
@@ -988,6 +1048,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminCommentsRoute: AdminCommentsRoute,
   AdminEmojisRoute: AdminEmojisRoute,
+  AdminFriendLinksRoute: AdminFriendLinksRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminMcpRoute: AdminMcpRoute,
   AdminMediaRoute: AdminMediaRoute,
@@ -1011,6 +1072,8 @@ const rootRouteChildren: RootRouteChildren = {
   AnnouncementLabRoute: AnnouncementLabRoute,
   ChangelogRoute: ChangelogRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  FriendsRoute: FriendsRoute,
+  FriendsLabRoute: FriendsLabRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ThemeLabRoute: ThemeLabRoute,

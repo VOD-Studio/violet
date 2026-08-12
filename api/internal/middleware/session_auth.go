@@ -35,16 +35,20 @@ func SessionAuth(lookup SessionLookup, cookieCfg config.CookieConfig, idleTTL ti
 	}
 }
 
-// OptionalSessionAuth 软鉴权：无 cookie 放行不注入（评论匿名/登录双轨用）；
-// 有 cookie 但失效 → 401（防过期 session 被误当匿名）。
+// OptionalSessionAuth 软鉴权：无 cookie 放行（评论/友链匿名与登录双轨用），
+// 仅注入审计上下文 IP/UA（匿名事件的 actor 取证）；有 cookie 但失效 → 401（防过期 session 被误当匿名）。
 func OptionalSessionAuth(lookup SessionLookup, cookieCfg config.CookieConfig, idleTTL time.Duration) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if _, err := r.Cookie(cookieCfg.SessionName); err != nil {
-				next.ServeHTTP(w, r)
-				return
-			}
-			ctx, ok := authenticateSession(w, r, lookup, cookieCfg, idleTTL, true)
+	ctx := r.Context()
+			// 匿名也注入审计 IP/UA：匿名友链申请等事件的 actor 取证
+			ctx = context.WithValue(ctx, ClientIPKey, GetClientIP(r))
+			ctx = context.WithValue(ctx, UserAgentKey, r.UserAgent())
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+		ctx, ok := authenticateSession(w, r, lookup, cookieCfg, idleTTL, true)
 			if !ok {
 				return
 			}

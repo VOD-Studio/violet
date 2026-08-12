@@ -23,6 +23,7 @@ import (
 	commenthttp "blog-api/internal/interfaces/http/handler/comment"
 	crhttp "blog-api/internal/interfaces/http/handler/commentreaction"
 	contenthttp "blog-api/internal/interfaces/http/handler/content"
+	friendlinkhttp "blog-api/internal/interfaces/http/handler/friendlink"
 	githubhttp "blog-api/internal/interfaces/http/handler/github"
 	imagehttp "blog-api/internal/interfaces/http/handler/image"
 	mediahttp "blog-api/internal/interfaces/http/handler/media"
@@ -82,6 +83,7 @@ type Deps struct {
 	System          *systemhttp.Handler
 	Image           *imagehttp.Handler
 	Tweet           *tweethttp.Handler
+	FriendLink      *friendlinkhttp.Handler
 
 	MCP MCPHandlers
 }

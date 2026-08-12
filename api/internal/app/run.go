@@ -128,6 +128,7 @@ func buildRoutingDeps(cfg *config.Config, redisClient *redis.Client, c *Containe
 		System:                c.System.SystemHandler,
 		Image:                 c.Image.ImageHandler,
 		Tweet:                 c.Tweet.TweetHandler,
+		FriendLink:            c.FriendLink.FriendLinkHandler,
 		MCP: routing.MCPHandlers{
 			Post:     c.MCP.PostHandler,
 			Scraper:  c.MCP.ScraperHandler,
