@@ -43,11 +43,11 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 	// PageShell 后,此分支是页面唯一的内边距来源,缺失会导致内容紧贴边缘。
 	// 注意:early return 必须在所有 hooks 之后,否则违反 React Hooks 规则。
 	if (!description && !action && !sticky) {
-		return <div className="px-4 pt-4 pb-6 md:px-6">{children}</div>;
+		return <div className="flex h-full flex-col px-4 pt-4 pb-6 md:px-6">{children}</div>;
 	}
 
 	return (
-		<div className="space-y-2 pb-6" ref={elRef}>
+		<div className="flex h-full flex-col pb-6" ref={elRef}>
 			{/*
 			 * sticky top-0：粘性定位，滚动到顶部后自动固定。
 			 * z-10 + children 用 isolate 建独立层叠上下文，DataTable 内部 z-30~z-50 被困在其中，
@@ -55,7 +55,7 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 			 * bg-background 100% 不透明。
 			 */}
 			<div
-				className={`sticky top-0 z-10 bg-background px-4 md:px-6 pt-4 pb-4 ${scrolled ? "border-b border-edge-hairline bg-background shadow-lg" : ""}`}
+				className={`sticky top-0 z-10 shrink-0 bg-background px-4 md:px-6 pt-4 pb-4 ${scrolled ? "border-b border-edge-hairline bg-background shadow-lg" : ""}`}
 			>
 				{/* 副标题和操作区：min-h-9 保证有无 action 时行高一致(36px),
 					避免切换页面时标题区高度跳动(有 action 36px / 无 action 32px) */}
@@ -71,7 +71,7 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 				{sticky}
 			</div>
 			{/* isolate 包裹内容区：困住 DataTable 固定列的 z-index，防止穿透 sticky header */}
-			<div className="relative isolate space-y-6 px-4 md:px-6">{children}</div>
+		<div className="relative isolate flex min-h-0 flex-1 flex-col gap-6 px-4 md:px-6">{children}</div>
 		</div>
 	);
 }

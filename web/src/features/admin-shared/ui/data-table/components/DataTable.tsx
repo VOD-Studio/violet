@@ -28,12 +28,7 @@ export function DataTable<T>({
 	columns,
 	data,
 	keyExtractor,
-	page,
-	pageSize,
-	total,
-	onPageChange,
-	pageSizeOptions,
-	onPageSizeChange,
+	pagination,
 	sort,
 	onSortChange,
 	loading,
@@ -57,12 +52,12 @@ export function DataTable<T>({
 	filtered = false,
 	density = "comfortable",
 	stickyHeader = false,
-	maxHeight = "60vh",
 	caption,
 	emptyTitle,
 	emptyDescription,
 	className,
 }: DataTableProps<T>) {
+	void stickyHeader; // 预留：表头 CSS sticky 吸顶功能待实现
 	// —— 列可见性状态 ——
 	const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => {
 		if (!storageKey) return new Set();
@@ -257,7 +252,7 @@ export function DataTable<T>({
 		return sum;
 	}, [visibleColumns, columnWidthMap]);
 
-	const showFooter = total > 0;
+	const showFooter = pagination != null && pagination.total > 0;
 	const showBulkBar = bulkActions != null && selected.size > 0;
 
 	// —— 首次渲染后，从 DOM 读取所有列的实际宽度 ——
@@ -376,12 +371,12 @@ export function DataTable<T>({
 	}, []);
 
 	return (
-		<div className={cn("w-full space-y-0", className)}>
-			<DataTableToolbar toolbar={toolbar} selectedCount={selectable ? selected.size : 0} />
+		<div className={cn("flex max-h-full w-full flex-col", className)}>
+			<DataTableToolbar className="shrink-0" toolbar={toolbar} selectedCount={selectable ? selected.size : 0} />
 
-			<div className="border-border bg-card overflow-hidden rounded-md border">
+			<div className="border-border bg-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border">
 				{/* Header — 独立容器，无滚动条；table 宽度由 JS 同步为 body clientWidth */}
-				<div ref={headerScrollRef} className="overflow-hidden">
+				<div ref={headerScrollRef} className="shrink-0 overflow-hidden">
 					<table
 						ref={tableRef}
 						className="caption-bottom text-sm"
@@ -430,7 +425,7 @@ export function DataTable<T>({
 				{/* Body — OverlayScroll 自定义滚动条，不占据布局空间 */}
 				<OverlayScroll
 					ref={scrollContainerRef}
-					style={stickyHeader ? { maxHeight } : undefined}
+					className="min-h-0 flex-1"
 					aria-busy={loading ? true : undefined}
 				>
 					<table
@@ -470,21 +465,24 @@ export function DataTable<T>({
 							renderExpandedRow={renderExpandedRow}
 							onRowClick={onRowClick}
 							rowClassName={rowClassName}
-							pageBaseIndex={(page - 1) * pageSize}
+							pageBaseIndex={
+								pagination ? (pagination.page - 1) * pagination.pageSize : 0
+							}
 						/>
 					</table>
 				</OverlayScroll>
 			</div>
 
-			{showFooter && (
-				<DataTableFooter
-					page={page}
-					pageSize={pageSize}
-					total={total}
-					onPageChange={onPageChange}
-					pageSizeOptions={pageSizeOptions}
-					onPageSizeChange={onPageSizeChange}
-				/>
+			{showFooter && pagination && (
+				<div className="shrink-0">
+					<DataTableFooter
+						page={pagination.page}
+						pageSize={pagination.pageSize}
+						total={pagination.total}
+						onChange={pagination.onChange}
+						pageSizeOptions={pagination.pageSizeOptions}
+					/>
+				</div>
 			)}
 
 			{showBulkBar && (

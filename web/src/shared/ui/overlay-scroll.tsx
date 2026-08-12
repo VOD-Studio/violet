@@ -158,46 +158,46 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 			);
 
 		return (
+		<div
+			className={cn("relative", className)}
+			onMouseEnter={() => {
+				hoveringRef.current = true;
+				show();
+			}}
+			onMouseLeave={() => {
+				hoveringRef.current = false;
+				scheduleHide(400);
+			}}
+		>
 			<div
-				className="relative"
-				onMouseEnter={() => {
-					hoveringRef.current = true;
-					show();
-				}}
-				onMouseLeave={() => {
-					hoveringRef.current = false;
-					scheduleHide(400);
-				}}
+				ref={scrollRef}
+				className="os-host h-full overflow-auto"
+				style={style}
+				{...props}
 			>
-				<div
-					ref={scrollRef}
-					className={cn("os-host overflow-auto", className)}
-					style={style}
-					{...props}
-				>
-					{children}
-				</div>
-				{hasV && (
-					<div className="pointer-events-none absolute right-0.5 top-0.5 bottom-0.5 z-50 w-1.5">
-						<div
-							ref={vThumbRef}
-							className={thumbClass("absolute left-0 w-full")}
-							style={{ willChange: "height, transform" }}
-							onPointerDown={onVPointerDown}
-						/>
-					</div>
-				)}
-				{hasH && (
-					<div className="pointer-events-none absolute bottom-0.5 left-0.5 right-0.5 z-50 h-1.5">
-						<div
-							ref={hThumbRef}
-							className={thumbClass("absolute top-0 h-full")}
-							style={{ willChange: "width, transform" }}
-							onPointerDown={onHPointerDown}
-						/>
-					</div>
-				)}
+				{children}
 			</div>
+			{hasV && (
+				<div className="pointer-events-none absolute right-0.5 top-0.5 bottom-0.5 z-50 w-1.5">
+					<div
+						ref={vThumbRef}
+						className={thumbClass("absolute left-0 w-full")}
+						style={{ willChange: "height, transform" }}
+						onPointerDown={onVPointerDown}
+					/>
+				</div>
+			)}
+			{hasH && (
+				<div className="pointer-events-none absolute bottom-0.5 left-0.5 right-0.5 z-50 h-1.5">
+					<div
+						ref={hThumbRef}
+						className={thumbClass("absolute top-0 h-full")}
+						style={{ willChange: "width, transform" }}
+						onPointerDown={onHPointerDown}
+					/>
+				</div>
+			)}
+		</div>
 		);
 	},
 );
