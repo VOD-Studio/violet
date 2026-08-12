@@ -1,3 +1,4 @@
+import { FriendLinkNavBadge } from "@features/admin-friend-links/ui/FriendLinkNavBadge";
 import type { LucideIcon } from "lucide-react";
 import {
 	Activity,
@@ -10,6 +11,7 @@ import {
 	KeyRound,
 	LayoutDashboard,
 	LayoutPanelLeft,
+	Link2,
 	Megaphone,
 	MessageSquare,
 	Rss,
@@ -22,6 +24,7 @@ import {
 	UserCog,
 	Users,
 } from "lucide-react";
+import type { ComponentType } from "react";
 
 /**
  * NavMenuItem - 后台导航项
@@ -46,6 +49,11 @@ export interface NavMenuItem {
 	 * root 通配，永远可见。
 	 */
 	permissions?: string[];
+	/**
+	 * 可选角标组件（如待审核计数）。由 NavMenuLink 在标签后渲染，
+	 * 组件自带数据查询；collapsed 时由组件自行退化为圆点。
+	 */
+	badge?: ComponentType<{ collapsed?: boolean }>;
 	/**
 	 * 子菜单项。存在时该项渲染为可折叠父项（点按切换展开/收起，不直接导航），
 	 * 父项本身只作分组容器。父项可见性 = 任一子项可见（权限逻辑同上）。
@@ -103,6 +111,14 @@ export const NAV_MENU_ITEMS: NavMenuItem[] = [
 		icon: MessageSquare,
 		group: "content",
 		permissions: ["comment:view"],
+	},
+	{
+		label: "友链管理",
+		to: "/admin/friend-links",
+		icon: Link2,
+		group: "content",
+		permissions: ["friendlink:view"],
+		badge: FriendLinkNavBadge,
 	},
 	{
 		label: "订阅管理",

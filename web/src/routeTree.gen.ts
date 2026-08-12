@@ -41,6 +41,7 @@ import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions
 import { Route as AdminMediaRouteImport } from './routes/admin.media'
 import { Route as AdminMcpRouteImport } from './routes/admin.mcp'
 import { Route as AdminLogsRouteImport } from './routes/admin.logs'
+import { Route as AdminFriendLinksRouteImport } from './routes/admin.friend-links'
 import { Route as AdminEmojisRouteImport } from './routes/admin.emojis'
 import { Route as AdminCommentsRouteImport } from './routes/admin.comments'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
@@ -217,6 +218,11 @@ const AdminLogsRoute = AdminLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFriendLinksRoute = AdminFriendLinksRouteImport.update({
+  id: '/friend-links',
+  path: '/friend-links',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEmojisRoute = AdminEmojisRouteImport.update({
   id: '/emojis',
   path: '/emojis',
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/friend-links': typeof AdminFriendLinksRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/mcp': typeof AdminMcpRoute
   '/admin/media': typeof AdminMediaRoute
@@ -354,6 +361,7 @@ export interface FileRoutesByTo {
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/friend-links': typeof AdminFriendLinksRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/mcp': typeof AdminMcpRoute
   '/admin/media': typeof AdminMediaRoute
@@ -403,6 +411,7 @@ export interface FileRoutesById {
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
+  '/admin/friend-links': typeof AdminFriendLinksRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/mcp': typeof AdminMcpRoute
   '/admin/media': typeof AdminMediaRoute
@@ -454,6 +463,7 @@ export interface FileRouteTypes {
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
+    | '/admin/friend-links'
     | '/admin/logs'
     | '/admin/mcp'
     | '/admin/media'
@@ -502,6 +512,7 @@ export interface FileRouteTypes {
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
+    | '/admin/friend-links'
     | '/admin/logs'
     | '/admin/mcp'
     | '/admin/media'
@@ -550,6 +561,7 @@ export interface FileRouteTypes {
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
+    | '/admin/friend-links'
     | '/admin/logs'
     | '/admin/mcp'
     | '/admin/media'
@@ -837,6 +849,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLogsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/friend-links': {
+      id: '/admin/friend-links'
+      path: '/friend-links'
+      fullPath: '/admin/friend-links'
+      preLoaderRoute: typeof AdminFriendLinksRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/emojis': {
       id: '/admin/emojis'
       path: '/emojis'
@@ -989,6 +1008,7 @@ interface AdminRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCommentsRoute: typeof AdminCommentsRoute
   AdminEmojisRoute: typeof AdminEmojisRoute
+  AdminFriendLinksRoute: typeof AdminFriendLinksRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminMcpRoute: typeof AdminMcpRoute
   AdminMediaRoute: typeof AdminMediaRoute
@@ -1008,6 +1028,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminCommentsRoute: AdminCommentsRoute,
   AdminEmojisRoute: AdminEmojisRoute,
+  AdminFriendLinksRoute: AdminFriendLinksRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminMcpRoute: AdminMcpRoute,
   AdminMediaRoute: AdminMediaRoute,
