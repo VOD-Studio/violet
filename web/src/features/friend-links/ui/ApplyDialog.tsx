@@ -75,7 +75,7 @@ export function ApplyDialog({ open, onOpenChange, isLoggedIn, currentUsername }:
 	// axios interceptor 自动从 cookie 读并注入 X-CSRF-Token header。
 	// /friends 对纯匿名访客无其他写入口，不预取则发码/提交首请求 403。
 	useCsrfToken({ enabled: open });
- 	const sendCode = useSendFriendLinkCode();
+	const sendCode = useSendFriendLinkCode();
 	const apply = useApplyFriendLink();
 
 	const set = (key: keyof FriendLinkForm) => (value: string) =>
