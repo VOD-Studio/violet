@@ -316,6 +316,8 @@ jobs:
     # （拆分前靠 needs 默认检查拦住，拆分后 build 失败时此处必须拦截）
     if: (needs.prepare.outputs.deploy_api == 'true' || needs.prepare.outputs.deploy_web == 'true') && needs.build-api.result != 'failure' && needs.build-web.result != 'failure'
     runs-on: [self-hosted, rua]
+    permissions:
+      packages: read   # podman pull ghcr.io 镜像需要读权限（#64 重构时回归遗漏）
     steps:
       - uses: actions/checkout@v7
         with:
@@ -325,7 +327,7 @@ jobs:
         env:
           HTTPS_PROXY: http://127.0.0.1:20172
           HTTP_PROXY: http://127.0.0.1:20172
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: 回滚模式复用缓存 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build == 'true'
