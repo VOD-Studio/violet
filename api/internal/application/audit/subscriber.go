@@ -13,18 +13,18 @@ import (
 
 	"github.com/rs/zerolog"
 
-	appshared "blog-api/internal/application/shared"
 	authcmd "blog-api/internal/application/auth/command"
+	appshared "blog-api/internal/application/shared"
 	domainannouncement "blog-api/internal/domain/announcement"
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
-	domainrole "blog-api/internal/domain/role"
 	domainpost "blog-api/internal/domain/post"
-	domainsubscription "blog-api/internal/domain/subscription"
+	domainrole "blog-api/internal/domain/role"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
+	domainsubscription "blog-api/internal/domain/subscription"
 	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
@@ -467,12 +467,16 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 		}, true
 
 	case domainsettings.SettingsUpdated:
+		summary := "更新站点设置"
+		if len(e.ChangedKeys) > 0 {
+			summary = fmt.Sprintf("更新站点设置（%s）", strings.Join(e.ChangedKeys, ", "))
+		}
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionUpdateConfig,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "settings"},
-			Summary:    fmt.Sprintf("更新站点设置（%s）", strings.Join(e.ChangedKeys, ", ")),
+			Summary:    summary,
 			Metadata:   map[string]any{"changed_keys": e.ChangedKeys},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -576,6 +580,9 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 		var summary string
 		if e.Success {
 			summary = fmt.Sprintf("拉取订阅源「%s」成功，导入 %d 篇", e.Title, e.Imported)
+			if e.Failed > 0 {
+				summary += fmt.Sprintf("，失败 %d 篇", e.Failed)
+			}
 		} else {
 			summary = fmt.Sprintf("拉取订阅源「%s」失败：%s", e.Title, e.Error)
 		}
