@@ -143,21 +143,26 @@ type SubscriptionFetched struct {
 	Failed int
 	// Error 错误描述(Success=false 时非空:feed 错误原文,或「N 条条目导入失败」)
 	Error string
+	// FeedErrorKind feed 层错误分类(空串=非 feed 错误或成功;"transient"/"permanent"/"rate_limited")。
+	// 审计订阅者据此生成人类可读摘要，完整技术错误保留在 Error 字段供 debug。
+	FeedErrorKind string
 	// IsSystem 是否系统调度触发（true=定时调度器，actor_type=system；
 	// false=手动触发，actor_type=user）。审计订阅者据此设置 ActorType。
 	IsSystem bool
 }
 
-// NewSubscriptionFetched 构造订阅抓取事件
-func NewSubscriptionFetched(id shared.ID, title string, success bool, imported, failed int, errMsg string, isSystem bool) SubscriptionFetched {
+// NewSubscriptionFetched 构造订阅抓取事件。
+// feedErrKind 取值见 FeedErrorKind 字段注释，非 feed 层错误传空串。
+func NewSubscriptionFetched(id shared.ID, title string, success bool, imported, failed int, errMsg, feedErrKind string, isSystem bool) SubscriptionFetched {
 	return SubscriptionFetched{
-		BaseEvent: shared.NewBaseEvent("subscription.fetched", id),
-		Title:     title,
-		Success:   success,
-		Imported:  imported,
-		Failed:    failed,
-		Error:     errMsg,
-		IsSystem:  isSystem,
+		BaseEvent:     shared.NewBaseEvent("subscription.fetched", id),
+		Title:         title,
+		Success:       success,
+		Imported:      imported,
+		Failed:        failed,
+		Error:         errMsg,
+		FeedErrorKind: feedErrKind,
+		IsSystem:      isSystem,
 	}
 }
 

@@ -470,7 +470,7 @@ func TestSubscriber_SubscriptionFetched_SystemActor(t *testing.T) {
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
 	sid := shared.NewID()
-	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", true)
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", "", true)
 	require.NoError(t, sub.Handle(ctx, ev))
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
@@ -486,7 +486,7 @@ func TestSubscriber_SubscriptionFetched_UserActor(t *testing.T) {
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
 	sid := shared.NewID()
-	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", false)
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", "", false)
 	require.NoError(t, sub.Handle(ctx, ev))
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
@@ -500,14 +500,59 @@ func TestSubscriber_SubscriptionFetched_FailureSummary(t *testing.T) {
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
 	sid := shared.NewID()
-	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "i/o timeout", true)
+	// feed 层 transient 错误：summary 应显示人类可读分类，不含 Go error 技术细节
+	rawErr := `feed 拉取失败：feed transient 错误 (status=0): Get "https://rua.plus/feed.xml": EOF`
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, rawErr, "transient", true)
 	require.NoError(t, sub.Handle(ctx, ev))
 
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
 	assert.Equal(t, domainaudit.ActionFetchFeed, e.Action, "失败抓取同样映射 fetch_feed")
 	assert.Contains(t, e.Summary, "失败")
-	assert.Contains(t, e.Summary, "i/o timeout")
+	assert.Contains(t, e.Summary, "源站连接失败", "transient 错误应映射为人类可读摘要")
+	assert.NotContains(t, e.Summary, `Get "`, "摘要不应泄露 Go HTTP error 技术细节")
+	assert.Contains(t, e.Metadata["error"], rawErr, "metadata 保留完整技术错误供 debug")
+}
+
+func TestSubscriber_SubscriptionFetched_EmptyTitleFallback(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	sid := shared.NewID()
+	// 标题为空（首次抓取前未回填）：摘要应兜底「未命名订阅」而非「「」」
+	ev := domainsubscription.NewSubscriptionFetched(sid, "", false, 0, 0, "boom", "", true)
+	require.NoError(t, sub.Handle(ctx, ev))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Contains(t, e.Summary, "未命名订阅")
+	assert.Equal(t, "未命名订阅", e.Resource.Name, "Resource.Name 也应兜底")
+}
+
+func TestSubscriber_SubscriptionFetched_FeedErrorKindMapping(t *testing.T) {
+	tests := []struct {
+		name     string
+		kind     string
+		want     string
+	}{
+		{"transient 映射网络失败", "transient", "源站连接失败"},
+		{"permanent 映射源站不可用", "permanent", "源站不可用"},
+		{"rate_limited 映射限流", "rate_limited", "源站限流"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := &fakeStore{}
+			sub := newTestSubscriber(store)
+			ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+			sid := shared.NewID()
+			ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "技术细节", tt.kind, true)
+			require.NoError(t, sub.Handle(ctx, ev))
+			e := store.appended[0]
+			assert.Contains(t, e.Summary, tt.want)
+			assert.NotContains(t, e.Summary, "技术细节", "%s: 摘要不应包含原始技术错误", tt.name)
+		})
+	}
 }
 
 func TestSubscriber_SubscriptionFetched_EmptyErrorFallback(t *testing.T) {
@@ -517,7 +562,7 @@ func TestSubscriber_SubscriptionFetched_EmptyErrorFallback(t *testing.T) {
 
 	sid := shared.NewID()
 	// 失败但 error 为空串：摘要应回退「未知错误」而非以「失败：」结尾
-	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "", true)
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "", "", true)
 	require.NoError(t, sub.Handle(ctx, ev))
 
 	require.Len(t, store.appended, 1)

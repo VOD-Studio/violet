@@ -577,24 +577,25 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			actor.Type = domainaudit.ActorTypeSystem
 			actor.UserName = "subscription_job"
 		}
+		// 标题为空时（首次抓取失败，title 尚未从 feed 回填）用兜底文案
+		title := e.Title
+		if title == "" {
+			title = "未命名订阅"
+		}
 		var summary string
 		if e.Success {
-			summary = fmt.Sprintf("拉取订阅源「%s」成功，导入 %d 篇", e.Title, e.Imported)
+			summary = fmt.Sprintf("拉取订阅源「%s」成功，导入 %d 篇", title, e.Imported)
 			if e.Failed > 0 {
 				summary += fmt.Sprintf("，失败 %d 篇", e.Failed)
 			}
 		} else {
-			errMsg := e.Error
-			if errMsg == "" {
-				errMsg = "未知错误"
-			}
-			summary = fmt.Sprintf("拉取订阅源「%s」失败：%s", e.Title, errMsg)
+			summary = fmt.Sprintf("拉取订阅源「%s」失败：%s", title, humanizeFeedError(e))
 		}
 		return domainaudit.AuditEvent{
 			EventID:  e.EventID(),
 			Action:   domainaudit.ActionFetchFeed,
 			Actor:    actor,
-			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: e.Title},
+			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: title},
 			Summary:  summary,
 			Metadata: map[string]any{
 				"imported": e.Imported, "failed": e.Failed, "success": e.Success,
@@ -605,6 +606,25 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 
 	default:
 		return domainaudit.AuditEvent{}, false
+	}
+}
+
+// humanizeFeedError 把 feed 抓取错误映射为人类可读摘要。
+// 完整技术错误保留在 AuditEvent.Metadata["error"] 供 debug。
+func humanizeFeedError(e domainsubscription.SubscriptionFetched) string {
+	switch e.FeedErrorKind {
+	case "transient":
+		return "源站连接失败"
+	case "permanent":
+		return "源站不可用"
+	case "rate_limited":
+		return "源站限流，已自动推迟"
+	default:
+		// 非 feed 层错误（如查订阅失败）或条目失败，直接用原始描述
+		if e.Error == "" {
+			return "未知错误"
+		}
+		return e.Error
 	}
 }
 
