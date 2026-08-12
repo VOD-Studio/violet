@@ -38,12 +38,14 @@ export interface ResourceDTO {
 export interface AuditEventDTO {
 	/** 事件 UUID（幂等去重） */
 	event_id: string;
-	/** 操作类型（受控枚举：create/update/delete/publish/login 等） */
+	/** 操作类型（受控枚举：create/update/delete/publish/fetch_feed 等） */
 	action: string;
 	/** 操作人 */
 	actor: ActorDTO;
 	/** 资源引用 */
 	resource: ResourceDTO;
+	/** 人话摘要（后端生成，存量旧记录为空） */
+	summary?: string;
 	/** 字段变更列表（before/after，update 类事件有值） */
 	changes?: FieldChangeDTO[];
 	/** 兜底元数据（如登录 provider、批量 count） */

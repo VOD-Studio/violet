@@ -30,15 +30,22 @@ const ACTION_OPTIONS = [
 	{ value: "publish", label: "发布" },
 	{ value: "unpublish", label: "取消发布" },
 	{ value: "archive", label: "归档" },
+	{ value: "change_password", label: "改密码" },
+	{ value: "verify_email", label: "邮箱验证" },
+	{ value: "change_username", label: "改用户名" },
 	{ value: "update_role", label: "改角色" },
 	{ value: "update_status", label: "改状态" },
 	{ value: "batch_update", label: "批量更新" },
 	{ value: "update_perms", label: "改权限" },
+	{ value: "update_config", label: "改配置" },
 	{ value: "approve", label: "审核通过" },
 	{ value: "reject", label: "标记垃圾" },
 	{ value: "login", label: "登录" },
 	{ value: "logout", label: "登出" },
 	{ value: "login_failed", label: "登录失败" },
+	{ value: "fetch_feed", label: "拉取订阅" },
+	{ value: "pause_feed", label: "暂停订阅" },
+	{ value: "resume_feed", label: "恢复订阅" },
 ];
 
 /** 资源类型选项（与后端订阅者映射对齐） */
@@ -52,6 +59,9 @@ const RESOURCE_OPTIONS = [
 	{ value: "settings", label: "站点设置" },
 	{ value: "api_token", label: "访问令牌" },
 	{ value: "auth", label: "认证" },
+	{ value: "subscription", label: "订阅" },
+	{ value: "friendlink", label: "友链" },
+	{ value: "tweet", label: "推文" },
 ];
 
 function AdminLogsPage() {
@@ -100,23 +110,17 @@ function AdminLogsPage() {
 			cell: (row) => <Badge variant="secondary">{row.action}</Badge>,
 		},
 		{
-			key: "resource",
-			header: "资源",
-			ellipsis: true,
-			cell: (row) =>
-				`${row.resource.type}${row.resource.name ? ` · ${row.resource.name}` : ""}`,
-		},
-		{
-			key: "changes",
-			header: "变更",
+			key: "summary",
+			header: "摘要",
 			ellipsis: true,
 			cell: (row) => {
-				if (!row.changes?.length) {
-					return <span className="text-muted-foreground">-</span>;
+				if (row.summary) {
+					return row.summary;
 				}
+				// 存量旧记录无 summary，降级到 action + resource 拼接
 				return (
-					<span className="text-xs text-muted-foreground">
-						{row.changes.map((c) => c.field).join(", ")}
+					<span className="text-muted-foreground">
+						{`${row.resource.type}${row.resource.name ? ` · ${row.resource.name}` : ""}`}
 					</span>
 				);
 			},
@@ -237,6 +241,14 @@ function AuditEventDetail({ event }: { event: AuditEventDTO }) {
 				/>
 				<DetailItem label="IP" value={event.actor.ip_address || "-"} />
 			</div>
+
+			{/* 摘要：后端生成的人话描述（存量旧记录为空，不渲染） */}
+			{event.summary && (
+				<div className="rounded-md border border-primary/20 bg-primary/5 p-3">
+					<div className="mb-1 text-xs text-muted-foreground">摘要</div>
+					<div className="text-sm">{event.summary}</div>
+				</div>
+			)}
 
 			{/* 资源：拆行展示（type/id/name 各自一行，长 ID 可换行） */}
 			<div className="rounded-md border p-3">
