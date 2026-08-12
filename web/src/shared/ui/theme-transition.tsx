@@ -219,7 +219,14 @@ export function SystemThemeTransition(): null {
 	const { resolvedTheme } = useTheme();
 	useEffect(() => {
 		if (resolvedTheme === "light" || resolvedTheme === "dark") {
-			document.cookie = `theme=${resolvedTheme}; path=/; max-age=31536000; SameSite=Lax`;
+			cookieStore.set({
+				name: "theme",
+				value: resolvedTheme,
+				path: "/",
+				sameSite: "lax",
+				// CookieInit 无 maxAge 字段，用 expires（epoch ms）等价 max-age=31536000s（1 年）
+				expires: Date.now() + 31536000_000,
+			});
 		}
 	}, [resolvedTheme]);
 	return null;

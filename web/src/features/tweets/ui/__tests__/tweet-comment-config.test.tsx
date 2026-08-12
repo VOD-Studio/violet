@@ -43,7 +43,7 @@ describe("buildTweetCommentConfig.renderBody", () => {
 	it("渲染表情图片与评论附图", () => {
 		const config = buildConfig();
 		const item = config.map(makeComment());
-		render(<>{config.renderBody?.(item)}</>);
+		render(config.renderBody?.(item));
 
 		// 表情：[doge] 占位符替换为表情 img
 		const emojiImg = screen.getByAltText("[doge]");
@@ -57,7 +57,7 @@ describe("buildTweetCommentConfig.renderBody", () => {
 	it("无图片无表情时不渲染网格", () => {
 		const config = buildConfig();
 		const item = config.map(makeComment({ pictures: [], emote: undefined, body: "纯文本" }));
-		render(<>{config.renderBody?.(item)}</>);
+		render(config.renderBody?.(item));
 
 		expect(screen.getByText("纯文本")).toBeTruthy();
 		expect(screen.queryByRole("img")).toBeNull();

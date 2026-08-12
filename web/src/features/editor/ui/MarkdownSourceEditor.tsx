@@ -136,7 +136,7 @@ export const MarkdownSourceEditor = forwardRef<MarkdownSourceHandle, MarkdownSou
 						}
 					}
 					if (!topText) return;
-					const curLine = docLines.findIndex((l) => l === topText);
+					const curLine = docLines.indexOf(topText);
 					if (curLine < 0) return;
 					const diff = line - curLine;
 					if (Math.abs(diff) <= 1 || attempts >= 5) return;
@@ -204,6 +204,7 @@ export const MarkdownSourceEditor = forwardRef<MarkdownSourceHandle, MarkdownSou
 			};
 		}, []);
 
+		// biome-ignore lint/correctness/useExhaustiveDependencies: handle 刻意只创建一次：applyScrollToLine 是无组件依赖的纯函数，随其重建无意义（与上方 mount-once useEffect 同理）
 		useImperativeHandle(
 			ref,
 			() => ({
