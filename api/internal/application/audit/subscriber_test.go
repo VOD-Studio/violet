@@ -3,14 +3,15 @@ package audit
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	appshared "blog-api/internal/application/shared"
 	authcmd "blog-api/internal/application/auth/command"
+	appshared "blog-api/internal/application/shared"
 
 	domainannouncement "blog-api/internal/domain/announcement"
 	domainapitoken "blog-api/internal/domain/api_token"
@@ -18,9 +19,9 @@ import (
 	domaincomment "blog-api/internal/domain/comment"
 	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
-	domainsubscription "blog-api/internal/domain/subscription"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
+	domainsubscription "blog-api/internal/domain/subscription"
 	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
@@ -83,6 +84,7 @@ func TestSubscriber_UserRegistered_RecordsCreateEvent(t *testing.T) {
 	assert.Equal(t, "user", e.Resource.Type)
 	assert.Equal(t, userID.String(), e.Resource.ID)
 	assert.Equal(t, "alice@example.com", e.Resource.Name)
+	assert.Contains(t, e.Summary, "注册新用户")
 	// Actor 从 ctx 提取
 	assert.Equal(t, "actor-1", e.Actor.UserID)
 	assert.Equal(t, "admin@blog.com", e.Actor.UserName)
@@ -100,9 +102,10 @@ func TestSubscriber_UserPasswordChanged_RecordsUpdateWithChange(t *testing.T) {
 
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
-	assert.Equal(t, domainaudit.ActionUpdate, e.Action)
+	assert.Equal(t, domainaudit.ActionChangePassword, e.Action)
 	require.Len(t, e.Changes, 1)
 	assert.Equal(t, "password", e.Changes[0].Field)
+	assert.Equal(t, "修改用户密码", e.Summary)
 }
 
 func TestSubscriber_RoleCreated_RecordsCreateWithRoleName(t *testing.T) {
@@ -120,6 +123,7 @@ func TestSubscriber_RoleCreated_RecordsCreateWithRoleName(t *testing.T) {
 	assert.Equal(t, "role", e.Resource.Type)
 	assert.Equal(t, "42", e.Resource.ID)
 	assert.Equal(t, "admin", e.Resource.Name)
+	assert.Contains(t, e.Summary, "创建角色")
 }
 
 func TestSubscriber_UnknownEvent_Ignored(t *testing.T) {
@@ -158,6 +162,7 @@ func TestSubscriber_UserLoggedIn_RecordsLoginWithProvider(t *testing.T) {
 	assert.Equal(t, "auth", e.Resource.Type)
 	assert.Equal(t, userID.String(), e.Resource.ID)
 	assert.Equal(t, "password", e.Metadata["provider"])
+	assert.Contains(t, e.Summary, "用户登录")
 	// 登录发布在 session 创建前，Actor.UserID 从事件 payload 取（被登录用户）
 	assert.Equal(t, userID.String(), e.Actor.UserID)
 	assert.Equal(t, "1.2.3.4", e.Actor.IPAddress)
@@ -172,7 +177,9 @@ func TestSubscriber_UserLoggedOut_RecordsLogout(t *testing.T) {
 	require.NoError(t, sub.Handle(ctx, authcmd.NewUserLoggedOut(userID)))
 
 	require.Len(t, store.appended, 1)
-	assert.Equal(t, domainaudit.ActionLogout, store.appended[0].Action)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionLogout, e.Action)
+	assert.Equal(t, "用户登出", e.Summary)
 }
 
 func TestSubscriber_UserLoginFailed_RecordsFailureWithReason(t *testing.T) {
@@ -186,6 +193,7 @@ func TestSubscriber_UserLoginFailed_RecordsFailureWithReason(t *testing.T) {
 	e := store.appended[0]
 	assert.Equal(t, domainaudit.ActionLoginFailed, e.Action)
 	assert.Equal(t, "密码错误", e.Metadata["reason"])
+	assert.Contains(t, e.Summary, "登录失败")
 }
 
 func TestSubscriber_UserRoleChanged_RecordsUpdateRoleWithBeforeAfter(t *testing.T) {
@@ -203,6 +211,7 @@ func TestSubscriber_UserRoleChanged_RecordsUpdateRoleWithBeforeAfter(t *testing.
 	assert.Equal(t, "role", e.Changes[0].Field)
 	assert.Equal(t, string(domainuser.RoleUser), e.Changes[0].From)
 	assert.Equal(t, string(domainuser.RoleAdmin), e.Changes[0].To)
+	assert.Contains(t, e.Summary, "修改用户")
 }
 
 func TestSubscriber_UserStatusChanged_RecordsUpdateStatus(t *testing.T) {
@@ -220,6 +229,7 @@ func TestSubscriber_UserStatusChanged_RecordsUpdateStatus(t *testing.T) {
 	assert.Equal(t, "is_active", e.Changes[0].Field)
 	assert.Equal(t, true, e.Changes[0].From)
 	assert.Equal(t, false, e.Changes[0].To)
+	assert.Contains(t, e.Summary, "禁用用户")
 }
 
 func TestSubscriber_UserDeleted_RecordsDelete(t *testing.T) {
@@ -234,6 +244,7 @@ func TestSubscriber_UserDeleted_RecordsDelete(t *testing.T) {
 	e := store.appended[0]
 	assert.Equal(t, domainaudit.ActionDelete, e.Action)
 	assert.Equal(t, userID.String(), e.Resource.ID)
+	assert.Contains(t, e.Summary, "删除用户")
 }
 
 func TestSubscriber_BatchUserStatusChanged_RecordsCount(t *testing.T) {
@@ -248,6 +259,7 @@ func TestSubscriber_BatchUserStatusChanged_RecordsCount(t *testing.T) {
 	assert.Equal(t, domainaudit.ActionBatchUpdate, e.Action)
 	assert.Equal(t, int64(5), e.Metadata["count"])
 	assert.Equal(t, false, e.Metadata["is_active"])
+	assert.Contains(t, e.Summary, "批量禁用 5")
 }
 
 func TestSubscriber_PostPublished_RecordsPublish(t *testing.T) {
@@ -263,6 +275,7 @@ func TestSubscriber_PostPublished_RecordsPublish(t *testing.T) {
 	assert.Equal(t, domainaudit.ActionPublish, e.Action)
 	assert.Equal(t, "post", e.Resource.Type)
 	assert.Equal(t, postID.String(), e.Resource.ID)
+	assert.Contains(t, e.Summary, "发布文章")
 }
 
 func TestSubscriber_PostArchived_RecordsArchive(t *testing.T) {
@@ -272,7 +285,9 @@ func TestSubscriber_PostArchived_RecordsArchive(t *testing.T) {
 
 	require.NoError(t, sub.Handle(ctx, domainpost.NewPostArchived(shared.NewID(), "测试文章")))
 	require.Len(t, store.appended, 1)
-	assert.Equal(t, domainaudit.ActionArchive, store.appended[0].Action)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionArchive, e.Action)
+	assert.Contains(t, e.Summary, "归档文章")
 }
 
 func TestSubscriber_RoleUpdated_RecordsNameChange(t *testing.T) {
@@ -288,6 +303,7 @@ func TestSubscriber_RoleUpdated_RecordsNameChange(t *testing.T) {
 	assert.Equal(t, "name", e.Changes[0].Field)
 	assert.Equal(t, "old-name", e.Changes[0].From)
 	assert.Equal(t, "new-name", e.Changes[0].To)
+	assert.Contains(t, e.Summary, "更新角色名称")
 }
 
 func TestSubscriber_AnnouncementCreated_RecordsCreate(t *testing.T) {
@@ -301,6 +317,7 @@ func TestSubscriber_AnnouncementCreated_RecordsCreate(t *testing.T) {
 	assert.Equal(t, domainaudit.ActionCreate, e.Action)
 	assert.Equal(t, "announcement", e.Resource.Type)
 	assert.Equal(t, "42", e.Resource.ID)
+	assert.Contains(t, e.Summary, "创建公告")
 }
 
 func TestSubscriber_AnnouncementDeleted_RecordsDelete(t *testing.T) {
@@ -310,7 +327,9 @@ func TestSubscriber_AnnouncementDeleted_RecordsDelete(t *testing.T) {
 
 	require.NoError(t, sub.Handle(ctx, domainannouncement.NewAnnouncementDeleted(9)))
 	require.Len(t, store.appended, 1)
-	assert.Equal(t, domainaudit.ActionDelete, store.appended[0].Action)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionDelete, e.Action)
+	assert.Contains(t, e.Summary, "删除公告")
 }
 
 func TestSubscriber_TweetCreated_RecordsCreate(t *testing.T) {
@@ -326,6 +345,7 @@ func TestSubscriber_TweetCreated_RecordsCreate(t *testing.T) {
 	assert.Equal(t, "tweet", e.Resource.Type)
 	assert.Equal(t, tw.ID().String(), e.Resource.ID)
 	assert.Equal(t, "推文内容快照", e.Resource.Name)
+	assert.Equal(t, "发布推文", e.Summary)
 }
 
 func TestSubscriber_TweetDeleted_RecordsDeleteWithAuthor(t *testing.T) {
@@ -339,6 +359,7 @@ func TestSubscriber_TweetDeleted_RecordsDeleteWithAuthor(t *testing.T) {
 	e := store.appended[0]
 	assert.Equal(t, domainaudit.ActionDelete, e.Action)
 	assert.Equal(t, "tweet", e.Resource.Type)
+	assert.Equal(t, "删除推文", e.Summary)
 	// 原作者进 metadata：管理员删他人推文时可追溯归属
 	assert.Equal(t, tw.AuthorID().String(), e.Metadata["author_id"])
 }
@@ -365,6 +386,7 @@ func TestSubscriber_CommentApproved_RecordsApprove(t *testing.T) {
 	assert.Equal(t, domainaudit.ActionApprove, e.Action)
 	assert.Equal(t, "comment", e.Resource.Type)
 	assert.Equal(t, commentID.String(), e.Resource.ID)
+	assert.Equal(t, "通过评论审核", e.Summary)
 }
 
 func TestSubscriber_CommentSpammed_RecordsReject(t *testing.T) {
@@ -374,7 +396,9 @@ func TestSubscriber_CommentSpammed_RecordsReject(t *testing.T) {
 
 	require.NoError(t, sub.Handle(ctx, domaincomment.NewCommentSpammed(shared.NewID())))
 	require.Len(t, store.appended, 1)
-	assert.Equal(t, domainaudit.ActionReject, store.appended[0].Action)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionReject, e.Action)
+	assert.Equal(t, "标记评论为垃圾", e.Summary)
 }
 
 func TestSubscriber_PATCreated_RecordsCreateWithName(t *testing.T) {
@@ -390,6 +414,7 @@ func TestSubscriber_PATCreated_RecordsCreateWithName(t *testing.T) {
 	assert.Equal(t, domainaudit.ActionCreate, e.Action)
 	assert.Equal(t, "api_token", e.Resource.Type)
 	assert.Equal(t, "ci-token", e.Resource.Name)
+	assert.Contains(t, e.Summary, "创建访问令牌")
 }
 
 func TestSubscriber_SettingsUpdated_RecordsChangedKeys(t *testing.T) {
@@ -401,11 +426,12 @@ func TestSubscriber_SettingsUpdated_RecordsChangedKeys(t *testing.T) {
 
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
-	assert.Equal(t, domainaudit.ActionUpdate, e.Action)
+	assert.Equal(t, domainaudit.ActionUpdateConfig, e.Action)
 	assert.Equal(t, "settings", e.Resource.Type)
 	changed, ok := e.Metadata["changed_keys"].([]string)
 	require.True(t, ok)
 	assert.ElementsMatch(t, []string{"site_name", "bio"}, changed)
+	assert.Contains(t, e.Summary, "更新站点设置")
 }
 
 func TestSubscriber_Subscribe_UsesWildcard(t *testing.T) {
@@ -435,6 +461,7 @@ func TestSubscriber_SubscriptionCreated_RecordsCreate(t *testing.T) {
 	assert.Equal(t, sid.String(), e.Resource.ID)
 	assert.Equal(t, "我的源", e.Resource.Name)
 	assert.Equal(t, domainaudit.ActorTypeUser, e.Actor.Type)
+	assert.Contains(t, e.Summary, "创建订阅")
 }
 
 func TestSubscriber_SubscriptionFetched_SystemActor(t *testing.T) {
@@ -445,9 +472,10 @@ func TestSubscriber_SubscriptionFetched_SystemActor(t *testing.T) {
 	sid := shared.NewID()
 	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", true)
 	require.NoError(t, sub.Handle(ctx, ev))
-
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionFetchFeed, e.Action, "抓取应映射 fetch_feed 而非 create/update")
+	assert.Contains(t, e.Summary, "成功", "成功抓取摘要应包含「成功」")
 	assert.Equal(t, domainaudit.ActorTypeSystem, e.Actor.Type, "调度器抓取应为 system actor")
 	assert.Equal(t, "subscription_job", e.Actor.UserName, "system actor 的 UserName 借用存作业名")
 }
@@ -460,9 +488,102 @@ func TestSubscriber_SubscriptionFetched_UserActor(t *testing.T) {
 	sid := shared.NewID()
 	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", false)
 	require.NoError(t, sub.Handle(ctx, ev))
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionFetchFeed, e.Action, "手动抓取同样映射 fetch_feed")
+	assert.Equal(t, domainaudit.ActorTypeUser, e.Actor.Type, "手动触发应为 user actor")
+}
+
+func TestSubscriber_SubscriptionFetched_FailureSummary(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	sid := shared.NewID()
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "i/o timeout", true)
+	require.NoError(t, sub.Handle(ctx, ev))
 
 	require.Len(t, store.appended, 1)
-	assert.Equal(t, domainaudit.ActorTypeUser, store.appended[0].Actor.Type, "手动触发应为 user actor")
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionFetchFeed, e.Action, "失败抓取同样映射 fetch_feed")
+	assert.Contains(t, e.Summary, "失败")
+	assert.Contains(t, e.Summary, "i/o timeout")
+}
+
+func TestSubscriber_SubscriptionFetched_EmptyErrorFallback(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	sid := shared.NewID()
+	// 失败但 error 为空串：摘要应回退「未知错误」而非以「失败：」结尾
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "", true)
+	require.NoError(t, sub.Handle(ctx, ev))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Contains(t, e.Summary, "未知错误")
+	assert.False(t, strings.HasSuffix(e.Summary, "失败："), "空 error 不应以冒号结尾")
+}
+
+func TestSubscriber_UserEmailVerified_RecordsVerifyEmail(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	userID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainuser.NewUserEmailVerified(userID)))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionVerifyEmail, e.Action)
+	assert.Equal(t, "验证用户邮箱", e.Summary)
+}
+
+func TestSubscriber_UserUsernameChanged_RecordsChangeUsername(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	userID := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainuser.NewUserUsernameChanged(userID, "old-name", "new-name")))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionChangeUsername, e.Action)
+	require.Len(t, e.Changes, 1)
+	assert.Equal(t, "username", e.Changes[0].Field)
+	assert.Equal(t, "old-name", e.Changes[0].From)
+	assert.Equal(t, "new-name", e.Changes[0].To)
+	assert.Contains(t, e.Summary, "修改用户名")
+}
+
+func TestSubscriber_SubscriptionPaused_RecordsPauseFeed(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	sid := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainsubscription.NewSubscriptionPaused(sid)))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionPauseFeed, e.Action)
+	assert.Equal(t, "暂停订阅", e.Summary)
+}
+
+func TestSubscriber_SubscriptionResumed_RecordsResumeFeed(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	sid := shared.NewID()
+	require.NoError(t, sub.Handle(ctx, domainsubscription.NewSubscriptionResumed(sid)))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Equal(t, domainaudit.ActionResumeFeed, e.Action)
+	assert.Equal(t, "恢复订阅", e.Summary)
 }
 
 // recordingBus 仅记录 Subscribe 参数。

@@ -7,22 +7,24 @@ package audit
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/rs/zerolog"
 
-	appshared "blog-api/internal/application/shared"
 	authcmd "blog-api/internal/application/auth/command"
+	appshared "blog-api/internal/application/shared"
 	domainannouncement "blog-api/internal/domain/announcement"
 	domainapitoken "blog-api/internal/domain/api_token"
 	domainaudit "blog-api/internal/domain/audit"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
-	domainrole "blog-api/internal/domain/role"
 	domainpost "blog-api/internal/domain/post"
-	domainsubscription "blog-api/internal/domain/subscription"
+	domainrole "blog-api/internal/domain/role"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
+	domainsubscription "blog-api/internal/domain/subscription"
 	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
@@ -100,15 +102,17 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionCreate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String(), Name: e.Email.String()},
+			Summary:    fmt.Sprintf("注册新用户 %s", e.Email.String()),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
 	case domainuser.UserPasswordChanged:
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
-			Action:     domainaudit.ActionUpdate,
+			Action:     domainaudit.ActionChangePassword,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Summary:    "修改用户密码",
 			Changes:    []domainaudit.FieldChange{{Field: "password", From: nil, To: "changed"}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -116,9 +120,10 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 	case domainuser.UserEmailVerified:
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
-			Action:     domainaudit.ActionUpdate,
+			Action:     domainaudit.ActionVerifyEmail,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Summary:    "验证用户邮箱",
 			Changes:    []domainaudit.FieldChange{{Field: "email_verified", From: false, To: true}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -129,16 +134,22 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUpdateRole,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String(), Name: e.UserName},
+			Summary:    fmt.Sprintf("修改用户「%s」角色：%s → %s", e.UserName, e.From, e.To),
 			Changes:    []domainaudit.FieldChange{{Field: "role", From: string(e.From), To: string(e.To)}},
 			OccurredAt: e.OccurredAt(),
 		}, true
 
 	case domainuser.UserStatusChanged:
+		verb := "禁用"
+		if e.To {
+			verb = "启用"
+		}
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionUpdateStatus,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String(), Name: e.UserName},
+			Summary:    fmt.Sprintf("%s用户「%s」", verb, e.UserName),
 			Changes:    []domainaudit.FieldChange{{Field: "is_active", From: e.From, To: e.To}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -146,9 +157,10 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 	case domainuser.UserUsernameChanged:
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
-			Action:     domainaudit.ActionUpdate,
+			Action:     domainaudit.ActionChangeUsername,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String()},
+			Summary:    fmt.Sprintf("修改用户名：%s → %s", e.From, e.To),
 			Changes:    []domainaudit.FieldChange{{Field: "username", From: e.From, To: e.To}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -159,15 +171,21 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "user", ID: e.AggregateID().String(), Name: e.UserName},
+			Summary:    fmt.Sprintf("删除用户「%s」", e.UserName),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
 	case domainuser.BatchUserStatusChanged:
+		verb := "禁用"
+		if e.IsActive {
+			verb = "启用"
+		}
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
 			Action:     domainaudit.ActionBatchUpdate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "user"},
+			Summary:    fmt.Sprintf("批量%s %d 个用户", verb, e.Affected),
 			Metadata:   map[string]any{"count": e.Affected, "is_active": e.IsActive},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -178,6 +196,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionBatchUpdate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "user"},
+			Summary:    fmt.Sprintf("批量修改 %d 个用户角色为 %s", e.Affected, e.Role),
 			Metadata:   map[string]any{"count": e.Affected, "role": e.Role},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -188,6 +207,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionCreate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "role", ID: idToString(e.RoleID), Name: e.RoleName.String()},
+			Summary:    fmt.Sprintf("创建角色「%s」", e.RoleName.String()),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -204,6 +224,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUpdatePerms,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "role", ID: idToString(e.RoleID)},
+			Summary:    "修改角色权限",
 			Changes:    changes,
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -214,6 +235,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUpdate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "role", ID: idToString(e.RoleID)},
+			Summary:    fmt.Sprintf("更新角色名称：%s → %s", e.FromName, e.ToName),
 			Changes:    []domainaudit.FieldChange{{Field: "name", From: e.FromName, To: e.ToName}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -224,6 +246,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "role", ID: idToString(e.RoleID), Name: e.RoleName},
+			Summary:    fmt.Sprintf("删除角色「%s」", e.RoleName),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -233,6 +256,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionPublish,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("发布文章「%s」", e.Title),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -242,6 +266,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionArchive,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("归档文章「%s」", e.Title),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -251,6 +276,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUnpublish,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "post", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("将文章「%s」撤回为草稿", e.Title),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -260,6 +286,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionCreate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID)},
+			Summary:    "创建公告",
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -273,6 +300,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUpdate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID), Name: e.Title},
+			Summary:    fmt.Sprintf("更新公告「%s」", e.Title),
 			Changes:    changes,
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -283,6 +311,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "announcement", ID: idToString(e.ID)},
+			Summary:    "删除公告",
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -292,6 +321,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionCreate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "tweet", ID: e.AggregateID().String(), Name: e.Excerpt},
+			Summary:    "发布推文",
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -302,6 +332,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "tweet", ID: e.AggregateID().String(), Name: e.Excerpt},
+			Summary:    "删除推文",
 			Metadata:   map[string]any{"author_id": e.AuthorID.String()},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -312,6 +343,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionCreate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("创建友链「%s」", e.Name),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -321,6 +353,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionApprove,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("通过友链申请「%s」", e.Name),
 			Changes:    []domainaudit.FieldChange{{Field: "status", From: e.From, To: e.To}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -331,6 +364,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionReject,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("拒绝友链申请「%s」", e.Name),
 			Changes:    []domainaudit.FieldChange{{Field: "status", From: e.From, To: e.To}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -341,6 +375,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUpdateStatus,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("下柜友链「%s」", e.Name),
 			Changes:    []domainaudit.FieldChange{{Field: "status", From: e.From, To: e.To}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -351,6 +386,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUpdateStatus,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("恢复友链「%s」", e.Name),
 			Changes:    []domainaudit.FieldChange{{Field: "status", From: e.From, To: e.To}},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -365,6 +401,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionUpdate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("更新友链「%s」", e.Name),
 			Changes:    changes,
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -375,6 +412,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "friendlink", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("删除友链「%s」", e.Name),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -384,6 +422,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionApprove,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "comment", ID: e.AggregateID().String()},
+			Summary:    "通过评论审核",
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -393,6 +432,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionReject,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "comment", ID: e.AggregateID().String()},
+			Summary:    "标记评论为垃圾",
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -402,6 +442,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "comment", ID: e.AggregateID().String()},
+			Summary:    "删除评论",
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -411,6 +452,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionCreate,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "api_token", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("创建访问令牌「%s」", e.Name),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -420,15 +462,21 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionDelete,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "api_token", ID: e.AggregateID().String(), Name: e.Name},
+			Summary:    fmt.Sprintf("删除访问令牌「%s」", e.Name),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
 	case domainsettings.SettingsUpdated:
+		summary := "更新站点设置"
+		if len(e.ChangedKeys) > 0 {
+			summary = fmt.Sprintf("更新站点设置（%s）", strings.Join(e.ChangedKeys, ", "))
+		}
 		return domainaudit.AuditEvent{
 			EventID:    e.EventID(),
-			Action:     domainaudit.ActionUpdate,
+			Action:     domainaudit.ActionUpdateConfig,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "settings"},
+			Summary:    summary,
 			Metadata:   map[string]any{"changed_keys": e.ChangedKeys},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -442,6 +490,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionLogin,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "auth", ID: e.AggregateID().String()},
+			Summary:    fmt.Sprintf("用户登录（%s）", e.Provider),
 			Metadata:   map[string]any{"provider": e.Provider},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -452,6 +501,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionLogout,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "auth", ID: e.AggregateID().String()},
+			Summary:    "用户登出",
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -461,6 +511,7 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Action:     domainaudit.ActionLoginFailed,
 			Actor:      actor,
 			Resource:   domainaudit.ResourceRef{Type: "auth"},
+			Summary:    fmt.Sprintf("登录失败：%s", e.Reason),
 			Metadata:   map[string]any{"reason": e.Reason},
 			OccurredAt: e.OccurredAt(),
 		}, true
@@ -473,45 +524,50 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			Resource: domainaudit.ResourceRef{
 				Type: "subscription", ID: e.AggregateID().String(), Name: e.Title,
 			},
+			Summary:    fmt.Sprintf("创建订阅「%s」", e.Title),
 			Metadata:   map[string]any{"feed_url": e.FeedURL},
 			OccurredAt: e.OccurredAt(),
 		}, true
 
 	case domainsubscription.SubscriptionUpdated:
 		return domainaudit.AuditEvent{
-			EventID:  e.EventID(),
-			Action:   domainaudit.ActionUpdate,
-			Actor:    actor,
-			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: e.Title},
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionUpdate,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("更新订阅「%s」配置", e.Title),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
 	case domainsubscription.SubscriptionPaused:
 		return domainaudit.AuditEvent{
-			EventID:  e.EventID(),
-			Action:   domainaudit.ActionUpdateStatus,
-			Actor:    actor,
-			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String()},
-			Changes:  []domainaudit.FieldChange{{Field: "status", From: "active", To: "paused"}},
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionPauseFeed,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String()},
+			Summary:    "暂停订阅",
+			Changes:    []domainaudit.FieldChange{{Field: "status", From: "active", To: "paused"}},
 			OccurredAt: e.OccurredAt(),
 		}, true
 
 	case domainsubscription.SubscriptionResumed:
 		return domainaudit.AuditEvent{
-			EventID:  e.EventID(),
-			Action:   domainaudit.ActionUpdateStatus,
-			Actor:    actor,
-			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String()},
-			Changes:  []domainaudit.FieldChange{{Field: "status", From: "paused", To: "active"}},
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionResumeFeed,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String()},
+			Summary:    "恢复订阅",
+			Changes:    []domainaudit.FieldChange{{Field: "status", From: "paused", To: "active"}},
 			OccurredAt: e.OccurredAt(),
 		}, true
 
 	case domainsubscription.SubscriptionDeleted:
 		return domainaudit.AuditEvent{
-			EventID:  e.EventID(),
-			Action:   domainaudit.ActionDelete,
-			Actor:    actor,
-			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: e.Title},
+			EventID:    e.EventID(),
+			Action:     domainaudit.ActionDelete,
+			Actor:      actor,
+			Resource:   domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:    fmt.Sprintf("删除订阅「%s」", e.Title),
 			OccurredAt: e.OccurredAt(),
 		}, true
 
@@ -521,15 +577,25 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 			actor.Type = domainaudit.ActorTypeSystem
 			actor.UserName = "subscription_job"
 		}
-		action := domainaudit.ActionCreate
-		if !e.Success {
-			action = domainaudit.ActionUpdate
+		var summary string
+		if e.Success {
+			summary = fmt.Sprintf("拉取订阅源「%s」成功，导入 %d 篇", e.Title, e.Imported)
+			if e.Failed > 0 {
+				summary += fmt.Sprintf("，失败 %d 篇", e.Failed)
+			}
+		} else {
+			errMsg := e.Error
+			if errMsg == "" {
+				errMsg = "未知错误"
+			}
+			summary = fmt.Sprintf("拉取订阅源「%s」失败：%s", e.Title, errMsg)
 		}
 		return domainaudit.AuditEvent{
 			EventID:  e.EventID(),
-			Action:   action,
+			Action:   domainaudit.ActionFetchFeed,
 			Actor:    actor,
 			Resource: domainaudit.ResourceRef{Type: "subscription", ID: e.AggregateID().String(), Name: e.Title},
+			Summary:  summary,
 			Metadata: map[string]any{
 				"imported": e.Imported, "failed": e.Failed, "success": e.Success,
 				"error": e.Error,

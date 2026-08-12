@@ -70,23 +70,47 @@ func (a *Action) UnmarshalJSON(b []byte) error {
 
 // 预定义操作类型常量（覆盖全站核心操作）
 //
-// 命名规范：动词过去时描述「事实已发生」，与领域事件命名风格一致。
+// 命名规范：动词原形祈使句描述「执行了什么操作」，与领域事件的过去分词命名区分。
+// CRUD 动词（create/update/delete）仅保留给纯粹的 CRUD 操作（如创建用户、删除角色）。
+// 业务动词（fetch_feed/change_password 等）描述具体的业务操作，信噪比更高。
 var (
-	ActionCreate         = MustParse("create")          // 创建资源
-	ActionUpdate         = MustParse("update")          // 更新资源
-	ActionDelete         = MustParse("delete")          // 删除资源
-	ActionPublish        = MustParse("publish")         // 文章发布
-	ActionUnpublish      = MustParse("unpublish")       // 文章取消发布
-	ActionArchive        = MustParse("archive")         // 文章归档
+	// --- CRUD 泛动词（纯 CRUD 操作保留） ---
+	ActionCreate = MustParse("create") // 创建资源
+	ActionUpdate = MustParse("update") // 更新资源（无更具体业务动词时的兜底）
+	ActionDelete = MustParse("delete") // 删除资源
+
+	// --- 文章 ---
+	ActionPublish   = MustParse("publish")   // 文章发布
+	ActionUnpublish = MustParse("unpublish") // 文章取消发布
+	ActionArchive   = MustParse("archive")   // 文章归档
+
+	// --- 用户 ---
+	ActionChangePassword = MustParse("change_password") // 修改密码
+	ActionVerifyEmail    = MustParse("verify_email")    // 邮箱验证
+	ActionChangeUsername = MustParse("change_username") // 修改用户名
 	ActionUpdateRole     = MustParse("update_role")     // 用户角色变更
 	ActionUpdateStatus   = MustParse("update_status")   // 用户状态变更
 	ActionBatchUpdate    = MustParse("batch_update")    // 批量更新
-	ActionUpdatePerms    = MustParse("update_perms")    // 角色权限变更
-	ActionLogin          = MustParse("login")           // 登录成功
-	ActionLogout         = MustParse("logout")          // 登出
-	ActionLoginFailed    = MustParse("login_failed")    // 登录失败
-	ActionApprove        = MustParse("approve")         // 审核通过（评论）
-	ActionReject         = MustParse("reject")          // 标记垃圾/拒绝（评论）
+
+	// --- 角色权限 ---
+	ActionUpdatePerms = MustParse("update_perms") // 角色权限变更
+
+	// --- 配置 ---
+	ActionUpdateConfig = MustParse("update_config") // 更新配置（站点设置等）
+
+	// --- 认证 ---
+	ActionLogin       = MustParse("login")        // 登录成功
+	ActionLogout      = MustParse("logout")       // 登出
+	ActionLoginFailed = MustParse("login_failed") // 登录失败
+
+	// --- 审核 ---
+	ActionApprove = MustParse("approve") // 审核通过
+	ActionReject  = MustParse("reject")  // 标记垃圾/拒绝
+
+	// --- 订阅 ---
+	ActionFetchFeed  = MustParse("fetch_feed")  // 拉取订阅源
+	ActionPauseFeed  = MustParse("pause_feed")  // 暂停订阅
+	ActionResumeFeed = MustParse("resume_feed") // 恢复订阅
 )
 
 // ActorType 操作者类型（区分真人操作与系统自动化）。
@@ -162,6 +186,11 @@ type AuditEvent struct {
 	Actor Actor `json:"actor"`
 	// Resource 资源引用
 	Resource ResourceRef `json:"resource"`
+	// Summary 人话摘要（后端写入时生成的中文可读描述）
+	//
+	// 衍生字段，真相源是 Action + Resource + Changes + Metadata。
+	// 存量旧记录此字段为空串，前端降级到 action + resource 拼接展示。
+	Summary string `json:"summary,omitempty"`
 	// Changes 字段变更列表（update 类事件必填）
 	Changes []FieldChange `json:"changes,omitempty"`
 	// Metadata 兜底元数据（无法结构化的额外信息）
