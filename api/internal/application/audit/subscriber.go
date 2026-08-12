@@ -584,7 +584,11 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 				summary += fmt.Sprintf("，失败 %d 篇", e.Failed)
 			}
 		} else {
-			summary = fmt.Sprintf("拉取订阅源「%s」失败：%s", e.Title, e.Error)
+			errMsg := e.Error
+			if errMsg == "" {
+				errMsg = "未知错误"
+			}
+			summary = fmt.Sprintf("拉取订阅源「%s」失败：%s", e.Title, errMsg)
 		}
 		return domainaudit.AuditEvent{
 			EventID:  e.EventID(),

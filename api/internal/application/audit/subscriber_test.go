@@ -3,14 +3,15 @@ package audit
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	appshared "blog-api/internal/application/shared"
 	authcmd "blog-api/internal/application/auth/command"
+	appshared "blog-api/internal/application/shared"
 
 	domainannouncement "blog-api/internal/domain/announcement"
 	domainapitoken "blog-api/internal/domain/api_token"
@@ -18,9 +19,9 @@ import (
 	domaincomment "blog-api/internal/domain/comment"
 	domainpost "blog-api/internal/domain/post"
 	domainrole "blog-api/internal/domain/role"
-	domainsubscription "blog-api/internal/domain/subscription"
 	domainsettings "blog-api/internal/domain/settings"
 	"blog-api/internal/domain/shared"
+	domainsubscription "blog-api/internal/domain/subscription"
 	domaintweet "blog-api/internal/domain/tweet"
 	domainuser "blog-api/internal/domain/user"
 	"blog-api/internal/middleware"
@@ -507,6 +508,22 @@ func TestSubscriber_SubscriptionFetched_FailureSummary(t *testing.T) {
 	assert.Equal(t, domainaudit.ActionFetchFeed, e.Action, "失败抓取同样映射 fetch_feed")
 	assert.Contains(t, e.Summary, "失败")
 	assert.Contains(t, e.Summary, "i/o timeout")
+}
+
+func TestSubscriber_SubscriptionFetched_EmptyErrorFallback(t *testing.T) {
+	store := &fakeStore{}
+	sub := newTestSubscriber(store)
+	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
+
+	sid := shared.NewID()
+	// 失败但 error 为空串：摘要应回退「未知错误」而非以「失败：」结尾
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "", true)
+	require.NoError(t, sub.Handle(ctx, ev))
+
+	require.Len(t, store.appended, 1)
+	e := store.appended[0]
+	assert.Contains(t, e.Summary, "未知错误")
+	assert.False(t, strings.HasSuffix(e.Summary, "失败："), "空 error 不应以冒号结尾")
 }
 
 func TestSubscriber_UserEmailVerified_RecordsVerifyEmail(t *testing.T) {

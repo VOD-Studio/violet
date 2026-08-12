@@ -87,28 +87,30 @@ var (
 	// --- 用户 ---
 	ActionChangePassword = MustParse("change_password") // 修改密码
 	ActionVerifyEmail    = MustParse("verify_email")    // 邮箱验证
-	ActionChangeUsername = MustParse("change_username")  // 修改用户名
+	ActionChangeUsername = MustParse("change_username") // 修改用户名
 	ActionUpdateRole     = MustParse("update_role")     // 用户角色变更
 	ActionUpdateStatus   = MustParse("update_status")   // 用户状态变更
 	ActionBatchUpdate    = MustParse("batch_update")    // 批量更新
 
 	// --- 角色权限 ---
-	ActionUpdatePerms  = MustParse("update_perms")  // 角色权限变更
+	ActionUpdatePerms = MustParse("update_perms") // 角色权限变更
+
+	// --- 配置 ---
 	ActionUpdateConfig = MustParse("update_config") // 更新配置（站点设置等）
 
 	// --- 认证 ---
 	ActionLogin       = MustParse("login")        // 登录成功
-	ActionLogout      = MustParse("logout")        // 登出
-	ActionLoginFailed = MustParse("login_failed")  // 登录失败
+	ActionLogout      = MustParse("logout")       // 登出
+	ActionLoginFailed = MustParse("login_failed") // 登录失败
 
 	// --- 审核 ---
 	ActionApprove = MustParse("approve") // 审核通过
 	ActionReject  = MustParse("reject")  // 标记垃圾/拒绝
 
 	// --- 订阅 ---
-	ActionFetchFeed    = MustParse("fetch_feed")    // 拉取订阅源
-	ActionPauseFeed    = MustParse("pause_feed")    // 暂停订阅
-	ActionResumeFeed   = MustParse("resume_feed")   // 恢复订阅
+	ActionFetchFeed  = MustParse("fetch_feed")  // 拉取订阅源
+	ActionPauseFeed  = MustParse("pause_feed")  // 暂停订阅
+	ActionResumeFeed = MustParse("resume_feed") // 恢复订阅
 )
 
 // ActorType 操作者类型（区分真人操作与系统自动化）。
