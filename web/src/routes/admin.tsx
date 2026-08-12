@@ -80,10 +80,12 @@ function useAdminTitle(): string {
 function AdminLayout() {
 	const title = useAdminTitle();
 
+	// overflow-hidden：侧边栏切换走 FLIP——内容区宽度瞬时到位后以 translateX
+	// 滑入，滑动期间视觉右缘短暂超出视口，需裁剪防止横向滚动条闪现。
 	return (
-		<div className="bg-background flex h-screen w-full">
+		<div className="bg-background flex h-screen w-full overflow-hidden">
 			<AdminSidebar />
-			<div className="flex min-w-0 flex-1 flex-col">
+			<div id="admin-content" className="flex min-w-0 flex-1 flex-col">
 				<AdminTopBar title={title} />
 				<main className="min-h-0 flex-1 overflow-hidden">
 					<Outlet />
