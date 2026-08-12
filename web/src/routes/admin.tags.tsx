@@ -131,10 +131,6 @@ function AdminTagsPage() {
 				data={sortedTags}
 				columns={columns}
 				keyExtractor={(row) => String(row.id)}
-				page={1}
-				pageSize={sortedTags.length}
-				total={sortedTags.length}
-				onPageChange={() => {}}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

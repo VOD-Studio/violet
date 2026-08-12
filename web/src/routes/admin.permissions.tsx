@@ -233,10 +233,6 @@ function AdminPermissionsPage() {
 					data={flatRows}
 					columns={columns}
 					keyExtractor={(r) => `${r.menuId}-${r.row.id}`}
-					page={1}
-					pageSize={flatRows.length}
-					total={flatRows.length}
-					onPageChange={() => {}}
 					selectable={false}
 					loading={isLoading}
 					error={error ? new Error(error.message) : null}

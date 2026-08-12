@@ -173,10 +173,6 @@ function AdminProjectsPage() {
 				data={sortedProjects}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				page={1}
-				pageSize={sortedProjects.length}
-				total={sortedProjects.length}
-				onPageChange={() => {}}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

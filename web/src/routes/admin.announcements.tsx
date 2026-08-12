@@ -182,10 +182,6 @@ function AdminAnnouncementsPage() {
 				data={sortedAnnouncements}
 				columns={columns}
 				keyExtractor={(row) => String(row.id)}
-				page={1}
-				pageSize={sortedAnnouncements.length}
-				total={sortedAnnouncements.length}
-				onPageChange={() => {}}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

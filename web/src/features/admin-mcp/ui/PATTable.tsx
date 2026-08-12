@@ -91,10 +91,6 @@ export function PATTable({ tokens, loading, onConnect }: PATTableProps) {
 			columns={columns}
 			data={tokens}
 			keyExtractor={(row) => row.id}
-			page={1}
-			pageSize={tokens.length || 1}
-			total={tokens.length}
-			onPageChange={() => {}}
 			loading={loading}
 			storageKey="admin-mcp-pat-columns"
 			emptyTitle="还没有令牌"

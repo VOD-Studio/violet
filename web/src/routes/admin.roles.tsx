@@ -194,10 +194,6 @@ function AdminRolesPage() {
 				data={sortedRoles}
 				columns={columns}
 				keyExtractor={(row) => String(row.id)}
-				page={1}
-				pageSize={sortedRoles.length}
-				total={sortedRoles.length}
-				onPageChange={() => {}}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

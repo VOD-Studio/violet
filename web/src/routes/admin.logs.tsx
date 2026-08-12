@@ -149,10 +149,12 @@ function AdminLogsPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.event_id}
-				page={page}
-				pageSize={PAGE_SIZE}
-				total={data?.pagination?.total ?? 0}
-				onPageChange={setPage}
+				pagination={{
+					page,
+					pageSize: PAGE_SIZE,
+					total: data?.pagination?.total ?? 0,
+					onChange: (page) => setPage(page),
+				}}
 				toolbar={
 					<div className="flex flex-wrap items-center gap-3">
 						<Select

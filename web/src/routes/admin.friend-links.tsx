@@ -251,10 +251,12 @@ function AdminFriendLinksPage() {
 				data={data?.data ?? []}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				page={page}
-				pageSize={PAGE_SIZE}
-				total={data?.pagination?.total ?? 0}
-				onPageChange={setPage}
+				pagination={{
+					page,
+					pageSize: PAGE_SIZE,
+					total: data?.pagination?.total ?? 0,
+					onChange: (page) => setPage(page),
+				}}
 				toolbar={
 					<Segmented
 						value={filter}
