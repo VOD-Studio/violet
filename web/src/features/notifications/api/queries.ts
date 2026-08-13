@@ -35,17 +35,16 @@ export const useMarkNotificationRead = () => {
 		mutationFn: (id: string) => markNotificationRead(id),
 		onMutate: async (id: string) => {
 			await qc.cancelQueries({ queryKey: notificationKeys.all });
-			// 通知列表 key 带 { page, limit } 后缀，用 setQueriesData + predicate 匹配
-			qc.setQueriesData({ queryKey: notificationKeys.list }, (old: unknown) => {
-				if (!old || typeof old !== "object") return old;
-				const typed = old as PagedResponse<NotificationItem>;
-				if (!Array.isArray(typed.data)) return old;
-				return {
-					...typed,
-					data: typed.data.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
-				};
-			});
-			// 未读计数 -1
+			qc.setQueryData<PagedResponse<NotificationItem>>(
+				[...notificationKeys.list, { page: 1, limit: 10 }],
+				(old) =>
+					old
+						? {
+								...old,
+								data: old.data.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+							}
+						: old,
+			);
 			qc.setQueryData<{ unread_count: number }>(notificationKeys.unreadCount, (old) =>
 				old ? { unread_count: Math.max(0, old.unread_count - 1) } : old,
 			);
@@ -63,15 +62,13 @@ export const useMarkAllRead = () => {
 		mutationFn: () => markAllNotificationsRead(),
 		onMutate: async () => {
 			await qc.cancelQueries({ queryKey: notificationKeys.all });
-			qc.setQueriesData({ queryKey: notificationKeys.list }, (old: unknown) => {
-				if (!old || typeof old !== "object") return old;
-				const typed = old as PagedResponse<NotificationItem>;
-				if (!Array.isArray(typed.data)) return old;
-				return {
-					...typed,
-					data: typed.data.map((n) => ({ ...n, is_read: true })),
-				};
-			});
+			qc.setQueryData<PagedResponse<NotificationItem>>(
+				[...notificationKeys.list, { page: 1, limit: 10 }],
+				(old) =>
+					old
+						? { ...old, data: old.data.map((n) => ({ ...n, is_read: true })) }
+						: old,
+			);
 			qc.setQueryData<{ unread_count: number }>(notificationKeys.unreadCount, () => ({
 				unread_count: 0,
 			}));
