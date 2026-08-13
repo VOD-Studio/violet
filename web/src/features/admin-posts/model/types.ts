@@ -15,9 +15,27 @@ export interface AdminPostListQuery {
 	page?: number;
 	/** 每页条数 */
 	limit?: number;
-	/** 状态筛选，draft / published / archived */
+	/** 状态筛选，draft / published / archived / trashed */
 	status?: string;
+	/** 搜索关键词（标题+正文，空格分词 AND） */
+	keyword?: string;
+	/** 标签 slug 列表，AND 关系（文章须同时包含所有标签）；HTTP 层逗号拼接 */
+	tags?: string[];
 }
+
+/**
+ * PostBatchAction - 批量操作类型
+ *
+ * 对接 POST /admin/posts/batch 的 action 字段。
+ */
+export type PostBatchAction =
+	| "delete"
+	| "hard_delete"
+	| "publish"
+	| "archive"
+	| "restore"
+	| "feature"
+	| "unfeature";
 
 /**
  * CreatePost - 创建文章请求体

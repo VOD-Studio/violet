@@ -106,10 +106,16 @@ func (h *Handler) SearchPublished(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListAll 列出所有文章（后台）
+// 支持 keyword（标题+正文搜索）与 tags（逗号分隔的标签 slug，AND 关系）查询参数。
 func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 	page, limit := response.ParsePaging(r)
 	status := r.URL.Query().Get("status")
-	items, total, err := h.svc.ListAll(r.Context(), page, limit, status)
+	keyword := r.URL.Query().Get("keyword")
+	var tags []string
+	if tagsStr := r.URL.Query().Get("tags"); tagsStr != "" {
+		tags = strings.Split(tagsStr, ",")
+	}
+	items, total, err := h.svc.ListAll(r.Context(), page, limit, status, keyword, tags)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
@@ -276,6 +282,32 @@ func (h *Handler) HardDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.RespondMessage(w, http.StatusOK, "文章已彻底删除")
+}
+
+// batchActionRequest 批量操作请求体
+type batchActionRequest struct {
+	IDs    []string `json:"ids" validate:"required,min=1"`
+	Action string   `json:"action" validate:"required"`
+}
+
+// BatchAction 对多篇文章执行同一操作（delete/hard_delete/publish/archive/
+// restore/feature/unfeature）。鉴权与分发在 service 层逐条执行，返回受影响数。
+func (h *Handler) BatchAction(w http.ResponseWriter, r *http.Request) {
+	var req batchActionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	if err := h.validate.Struct(req); err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	affected, err := h.svc.BatchAction(r.Context(), apppost.BatchActionInput{IDs: req.IDs, Action: req.Action})
+	if err != nil {
+		response.RespondError(w, r, err)
+		return
+	}
+	response.RespondOK(w, map[string]int{"affected": affected})
 }
 
 

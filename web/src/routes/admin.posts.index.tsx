@@ -1,5 +1,6 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import {
+	useBatchAction,
 	useDeletePost,
 	useHardDeletePost,
 	useRestorePost,
@@ -7,12 +8,14 @@ import {
 	useUpdatePostStatus,
 } from "@features/admin-posts/api/mutations";
 import { useAdminPosts } from "@features/admin-posts/api/queries";
-import type { AdminPostListItem } from "@features/admin-posts/model/types";
+import type { AdminPostListItem, PostBatchAction } from "@features/admin-posts/model/types";
 import { DataTable, type DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { useMe } from "@features/auth/api/queries";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import { useTags } from "@features/tags/api/queries";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
+import { Checkbox } from "@shared/ui/base/checkbox";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -20,7 +23,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@shared/ui/base/dropdown-menu";
+import { Input } from "@shared/ui/base/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@shared/ui/base/popover";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+import { SearchInput } from "@shared/ui/search-input";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
 	Archive,
@@ -28,12 +34,17 @@ import {
 	MoreHorizontal,
 	Pencil,
 	Plus,
+	RotateCcw,
+	Send,
 	Star,
+	StarOff,
+	Tag,
 	Trash2,
 	Undo2,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import type { Tag as TagEntity } from "@/entities/tag/model/types";
 import {
 	Select,
 	SelectContent,
@@ -70,26 +81,46 @@ const STATUS_OPTIONS = [
 const PAGE_SIZE = 10;
 
 // TODO: 文章列表当前无排序能力；后端 /admin/posts 需支持 sort_by + order 查询参数。
-// TODO: 文章管理缺少批量操作后端接口（批量删除、批量发布、批量归档、批量加精）。
+
+/** 批量操作 -> 中文动词，用于确认文案与 toast */
+const BATCH_ACTION_LABEL: Record<PostBatchAction, string> = {
+	delete: "删除",
+	hard_delete: "彻底删除",
+	publish: "发布",
+	archive: "归档",
+	feature: "加精",
+	unfeature: "取消精选",
+	restore: "恢复",
+};
 
 function AdminPostsPage() {
 	const navigate = useNavigate();
 	const [status, setStatus] = useState("all");
 	const [page, setPage] = useState(1);
+	const [pageSize, setPageSize] = useState(PAGE_SIZE);
+	const [keyword, setKeyword] = useState("");
+	const [selectedTags, setSelectedTags] = useState<string[]>([]);
+	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deleting, setDeleting] = useState<AdminPostListItem | null>(null);
+	// 需二次确认的批量操作（delete / hard_delete）；其余操作直接执行
+	const [pendingBulk, setPendingBulk] = useState<PostBatchAction | null>(null);
 
 	const canCreate = useHasPermission("post:create");
 	const { data: me } = useMe({ enabled: true });
+	const { data: tags = [] } = useTags();
 
 	const { data, isLoading, error, refetch } = useAdminPosts({
 		page,
-		limit: PAGE_SIZE,
+		limit: pageSize,
 		status: status === "all" ? undefined : status,
+		keyword: keyword || undefined,
+		tags: selectedTags.length > 0 ? selectedTags : undefined,
 	});
 	const deletePost = useDeletePost(deleting?.id ?? "");
 	const hardDeletePost = useHardDeletePost(deleting?.id ?? "");
+	const batchMut = useBatchAction();
 
 	const posts = data?.data ?? [];
 	const total = data?.pagination?.total ?? 0;
@@ -97,6 +128,19 @@ function AdminPostsPage() {
 	const handleStatusChange = (v: string) => {
 		setStatus(v);
 		setPage(1);
+		setSelectedIds(new Set());
+	};
+
+	// 搜索 / 标签筛选改变时重置分页与选中（数据集已变）
+	const handleSearch = (v: string) => {
+		setKeyword(v);
+		setPage(1);
+		setSelectedIds(new Set());
+	};
+	const handleTagsChange = (slugs: string[]) => {
+		setSelectedTags(slugs);
+		setPage(1);
+		setSelectedIds(new Set());
 	};
 
 	const confirmDelete = () => {
@@ -110,6 +154,37 @@ function AdminPostsPage() {
 			},
 			onError: (err) => toast.error(err.message),
 		});
+	};
+
+	// 直接执行的批量操作（无需二次确认）
+	const runBulk = (action: PostBatchAction) => {
+		if (selectedIds.size === 0) return;
+		batchMut.mutate(
+			{ ids: [...selectedIds], action },
+			{
+				onSuccess: (res) => {
+					toast.success(`已${BATCH_ACTION_LABEL[action]} ${res.affected} 篇文章`);
+					setSelectedIds(new Set());
+				},
+				onError: (err) => toast.error(err.message),
+			},
+		);
+	};
+
+	// 二次确认后执行的批量删除 / 彻底删除
+	const confirmBulk = () => {
+		if (!pendingBulk || selectedIds.size === 0) return;
+		batchMut.mutate(
+			{ ids: [...selectedIds], action: pendingBulk },
+			{
+				onSuccess: (res) => {
+					toast.success(`已${BATCH_ACTION_LABEL[pendingBulk]} ${res.affected} 篇文章`);
+					setSelectedIds(new Set());
+					setPendingBulk(null);
+				},
+				onError: (err) => toast.error(err.message),
+			},
+		);
 	};
 
 	const columns: DataTableColumn<AdminPostListItem>[] = [
@@ -245,28 +320,119 @@ function AdminPostsPage() {
 				keyExtractor={(row) => row.id}
 				pagination={{
 					page,
-					pageSize: PAGE_SIZE,
+					pageSize,
 					total,
-					onChange: (page) => setPage(page),
-					hidePageSizeSelect: true,
+					onChange: (p, ps) => {
+						setPage(p);
+						setPageSize(ps);
+					},
 				}}
-				selectable={false}
+				selectable
+				selectedIds={selectedIds}
+				onSelectionChange={setSelectedIds}
+				bulkActions={
+					status === "trashed" ? (
+						<>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => runBulk("restore")}
+								disabled={batchMut.isPending}
+							>
+								<RotateCcw className="size-3.5" />
+								恢复
+							</Button>
+							<Button
+								variant="destructive"
+								size="sm"
+								onClick={() => setPendingBulk("hard_delete")}
+								disabled={batchMut.isPending}
+							>
+								<Trash2 className="size-3.5" />
+								彻底删除
+							</Button>
+						</>
+					) : (
+						<>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => runBulk("publish")}
+								disabled={batchMut.isPending}
+							>
+								<Send className="size-3.5" />
+								发布
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => runBulk("archive")}
+								disabled={batchMut.isPending}
+							>
+								<Archive className="size-3.5" />
+								归档
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => runBulk("feature")}
+								disabled={batchMut.isPending}
+							>
+								<Star className="size-3.5" />
+								加精
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => runBulk("unfeature")}
+								disabled={batchMut.isPending}
+							>
+								<StarOff className="size-3.5" />
+								取消精选
+							</Button>
+							<Button
+								variant="destructive"
+								size="sm"
+								onClick={() => setPendingBulk("delete")}
+								disabled={batchMut.isPending}
+							>
+								<Trash2 className="size-3.5" />
+								删除
+							</Button>
+						</>
+					)
+				}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}
 				onRetry={() => refetch()}
+				filtered={keyword.trim().length > 0 || selectedTags.length > 0}
 				toolbar={
-					<Select value={status} onValueChange={handleStatusChange}>
-						<SelectTrigger className="h-9 w-36">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{STATUS_OPTIONS.map((o) => (
-								<SelectItem key={o.value} value={o.value}>
-									{o.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<>
+						<div className="min-w-50 max-w-80 flex-1">
+							<SearchInput
+								defaultValue=""
+								placeholder="搜索标题 / 正文..."
+								onSearch={handleSearch}
+							/>
+						</div>
+						<Select value={status} onValueChange={handleStatusChange}>
+							<SelectTrigger className="h-9 w-36">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{STATUS_OPTIONS.map((o) => (
+									<SelectItem key={o.value} value={o.value}>
+										{o.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<TagFilter
+							tags={tags}
+							selected={selectedTags}
+							onChange={handleTagsChange}
+						/>
+					</>
 				}
 				rowClassName={(row) => (row.is_featured ? "bg-primary/5" : "")}
 				storageKey="admin-posts-columns"
@@ -286,6 +452,19 @@ function AdminPostsPage() {
 				}
 				confirmLabel={status === "trashed" ? "彻底删除" : "删除"}
 				loading={status === "trashed" ? hardDeletePost.isPending : deletePost.isPending}
+			/>
+			<ConfirmDialog
+				open={pendingBulk !== null}
+				onOpenChange={(open) => !open && setPendingBulk(null)}
+				onConfirm={confirmBulk}
+				title={pendingBulk === "hard_delete" ? "确认彻底删除" : "确认删除"}
+				description={
+					pendingBulk === "hard_delete"
+						? `确定要彻底删除选中的 ${selectedIds.size} 篇文章吗？此操作无法恢复！`
+						: `确定要删除选中的 ${selectedIds.size} 篇文章吗？文章将移至回收站，后续可恢复。`
+				}
+				confirmLabel={pendingBulk === "hard_delete" ? "彻底删除" : "删除"}
+				loading={batchMut.isPending}
 			/>
 		</PageShell>
 	);
@@ -454,6 +633,102 @@ function RowActions({
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</div>
+	);
+}
+
+/**
+ * TagFilter - 标签多选筛选器
+ *
+ * Popover + 复选框列表实现（项目无现成 Combobox）。
+ * 值为标签 slug 列表，AND 关系由后端过滤。
+ */
+function TagFilter({
+	tags,
+	selected,
+	onChange,
+}: {
+	tags: TagEntity[];
+	selected: string[];
+	onChange: (slugs: string[]) => void;
+}) {
+	const [open, setOpen] = useState(false);
+	const [query, setQuery] = useState("");
+
+	const filtered = useMemo(() => {
+		const q = query.trim().toLowerCase();
+		if (!q) return tags;
+		return tags.filter(
+			(t) => t.name.toLowerCase().includes(q) || t.slug.toLowerCase().includes(q),
+		);
+	}, [tags, query]);
+
+	const toggle = (slug: string) => {
+		onChange(
+			selected.includes(slug) ? selected.filter((s) => s !== slug) : [...selected, slug],
+		);
+	};
+
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<Button variant="outline" size="sm" className="h-9 gap-1.5">
+					<Tag className="size-3.5" />
+					{selected.length > 0 ? `标签 (${selected.length})` : "标签筛选"}
+					<ChevronDown className="size-3 opacity-50" />
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent className="w-60 p-0" align="start">
+				<div className="border-b p-2">
+					<Input
+						placeholder="搜索标签..."
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						className="h-8"
+					/>
+				</div>
+				<div className="max-h-60 overflow-y-auto p-1">
+					{filtered.length === 0 ? (
+						<p className="text-muted-foreground px-3 py-4 text-center text-sm">
+							无匹配标签
+						</p>
+					) : (
+						filtered.map((t) => {
+							const checked = selected.includes(t.slug);
+							return (
+								<button
+									key={t.id}
+									type="button"
+									className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+									onClick={() => toggle(t.slug)}
+								>
+									<Checkbox
+										checked={checked}
+										tabIndex={-1}
+										className="pointer-events-none"
+									/>
+									<span className="flex-1 truncate">{t.name}</span>
+									<span className="text-muted-foreground shrink-0 text-xs">
+										{t.slug}
+									</span>
+								</button>
+							);
+						})
+					)}
+				</div>
+				{selected.length > 0 ? (
+					<div className="border-t p-2">
+						<Button
+							variant="ghost"
+							size="sm"
+							className="w-full"
+							onClick={() => onChange([])}
+						>
+							清除全部
+						</Button>
+					</div>
+				) : null}
+			</PopoverContent>
+		</Popover>
 	);
 }
 

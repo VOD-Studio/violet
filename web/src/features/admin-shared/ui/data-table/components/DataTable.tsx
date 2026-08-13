@@ -390,11 +390,7 @@ export function DataTable<T>({
 
 	return (
 		<div className={cn("flex max-h-full w-full flex-col", className)}>
-			<DataTableToolbar
-				className="shrink-0"
-				toolbar={toolbar}
-				selectedCount={selectable ? selected.size : 0}
-			/>
+			<DataTableToolbar className="shrink-0" toolbar={toolbar} />
 
 			<div className="border-border bg-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border">
 				{/* Header — 独立容器，无滚动条；table 宽度由 JS 同步为 body clientWidth */}

@@ -107,12 +107,34 @@ func (r *PostRepository) FindPublished(ctx context.Context, page, limit int, tag
 	return result, total, nil
 }
 
-func (r *PostRepository) FindAll(ctx context.Context, page, limit int, status string) ([]*post.Post, int64, error) {
+func (r *PostRepository) FindAll(ctx context.Context, page, limit int, status, keyword string, tags []string) ([]*post.Post, int64, error) {
 	query := r.db.WithContext(ctx).Model(&model.Post{})
 	if status == "trashed" {
+		// 回收站视图：切 Unscoped 取软删除行（deleted_at IS NOT NULL）
 		query = query.Unscoped().Where("deleted_at IS NOT NULL")
 	} else if status != "" {
 		query = query.Where("status = ?", status)
+	}
+	// keyword：复用 Search 的 LOWER LIKE（空格分词 AND，title/excerpt/content_md 三列）
+	for _, kw := range strings.Fields(keyword) {
+		like := "%" + likeEscaper.Replace(kw) + "%"
+		query = query.Where(
+			"(LOWER(title) LIKE LOWER(?) ESCAPE '\\' OR LOWER(excerpt) LIKE LOWER(?) ESCAPE '\\' OR LOWER(content_md) LIKE LOWER(?) ESCAPE '\\')",
+			like, like, like,
+		)
+	}
+	// tags（slug 列表，AND 关系）：每个 tag 要求 posts.id 属于该标签的文章集合，
+	// 多个条件叠加即「同时关联全部标签」。用子查询而非 JOIN+HAVING，避免 GROUP BY
+	// 与分页 Count/Preload 冲突。
+	for _, slug := range tags {
+		slug = strings.TrimSpace(slug)
+		if slug == "" {
+			continue
+		}
+		query = query.Where(
+			"posts.id IN (SELECT post_id FROM post_tags JOIN tags ON tags.id = post_tags.tag_id WHERE tags.slug = ?)",
+			slug,
+		)
 	}
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -129,6 +151,28 @@ func (r *PostRepository) FindAll(ctx context.Context, page, limit int, status st
 		result = append(result, p)
 	}
 	return result, total, nil
+}
+
+// BatchGetByIDs 批量按 ID 查文章（Unscoped，含软删除行）。
+// 批量操作前一次性校验存在性与所有权，避免逐条 FindByID 查询。
+func (r *PostRepository) BatchGetByIDs(ctx context.Context, ids []domainshared.ID) ([]*post.Post, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	uuids := make([]interface{}, len(ids))
+	for i, id := range ids {
+		uuids[i] = id.UUID()
+	}
+	var pos []model.Post
+	if err := r.db.WithContext(ctx).Unscoped().Preload("Tags").Where("id IN ?", uuids).Find(&pos).Error; err != nil {
+		return nil, domainshared.Internal("批量查询文章失败", err)
+	}
+	result := make([]*post.Post, 0, len(pos))
+	for _, po := range pos {
+		p, _ := postToDomain(po)
+		result = append(result, p)
+	}
+	return result, nil
 }
 
 // likeEscaper 转义 LIKE 模式中的特殊字符，配合 ESCAPE '\' 使用。

@@ -31,7 +31,10 @@ func (f *fakeSlugRepo) FindBySlug(context.Context, string) (*domain.Post, error)
 func (f *fakeSlugRepo) FindPublished(context.Context, int, int, string) ([]*domain.Post, int64, error) {
 	panic("not implemented")
 }
-func (f *fakeSlugRepo) FindAll(context.Context, int, int, string) ([]*domain.Post, int64, error) {
+func (f *fakeSlugRepo) FindAll(context.Context, int, int, string, string, []string) ([]*domain.Post, int64, error) {
+	panic("not implemented")
+}
+func (f *fakeSlugRepo) BatchGetByIDs(context.Context, []shared.ID) ([]*domain.Post, error) {
 	panic("not implemented")
 }
 func (f *fakeSlugRepo) Search(context.Context, shared.ID, string, string, int, int) ([]*domain.Post, int64, error) {

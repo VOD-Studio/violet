@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
 	AdminPost,
 	CreatePost,
+	PostBatchAction,
 	SetFeatured,
 	UpdatePost,
 	UpdatePostStatus,
@@ -115,6 +116,20 @@ export const useHardDeletePost = (id: string) => {
 	const invalidate = useInvalidateAdminPosts();
 	return useMutation({
 		mutationFn: () => apiDelete<null>(`/admin/posts/${id}/hard`),
+		onSuccess: () => invalidate(),
+	});
+};
+
+/**
+ * useBatchAction - 调后端 POST /admin/posts/batch 批量操作文章
+ *
+ * 成功后失效后台文章列表与详情缓存，选中态清理由调用方处理。
+ */
+export const useBatchAction = () => {
+	const invalidate = useInvalidateAdminPosts();
+	return useMutation({
+		mutationFn: (params: { ids: string[]; action: PostBatchAction }) =>
+			apiPost<{ affected: number }>("/admin/posts/batch", params),
 		onSuccess: () => invalidate(),
 	});
 };

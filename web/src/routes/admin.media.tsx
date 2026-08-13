@@ -575,7 +575,7 @@ function MediaTable({
 						disabled={batchDeleting}
 					>
 						<Trash2 className="size-3.5" />
-						批量删除
+						删除
 					</Button>
 				) : null
 			}

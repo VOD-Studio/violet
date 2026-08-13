@@ -40,6 +40,7 @@ Thumbs.db
 .env.local
 .env.*.local
 .env.production
+.env.docker-dev
 
 # Config(config.yaml 入库:承载非敏感默认值;密钥走根 .env)
 api/jwt_*.pem

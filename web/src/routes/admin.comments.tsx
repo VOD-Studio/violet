@@ -23,7 +23,7 @@ import { Segmented, type SegmentedItem } from "@shared/ui/segmented";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Check, Trash2 } from "lucide-react";
+import { Ban, Check, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 /** 评论分页大小 */
@@ -263,20 +263,21 @@ function AdminCommentsPage() {
 						<>
 							<Button
 								variant="outline"
-								className="h-9"
+								size="sm"
 								onClick={handleBatchApprove}
 								disabled={batchMut.isPending}
 							>
 								<Check className="size-3.5" />
-								批量通过
+								通过
 							</Button>
 							<Button
 								variant="outline"
-								className="h-9"
+								size="sm"
 								onClick={handleBatchSpam}
 								disabled={batchMut.isPending}
 							>
-								批量标垃圾
+								<Ban className="size-3.5" />
+								标垃圾
 							</Button>
 						</>
 					) : null
