@@ -613,11 +613,11 @@ func (s *Subscriber) mapEvent(ctx context.Context, event shared.DomainEvent) (do
 // 完整技术错误保留在 AuditEvent.Metadata["error"] 供 debug。
 func humanizeFeedError(e domainsubscription.SubscriptionFetched) string {
 	switch e.FeedErrorKind {
-	case "transient":
+	case domainsubscription.FeedErrKindTransient:
 		return "源站连接失败"
-	case "permanent":
+	case domainsubscription.FeedErrKindPermanent:
 		return "源站不可用"
-	case "rate_limited":
+	case domainsubscription.FeedErrKindRateLimited:
 		return "源站限流，已自动推迟"
 	default:
 		// 非 feed 层错误（如查订阅失败）或条目失败，直接用原始描述

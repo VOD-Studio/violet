@@ -588,11 +588,11 @@ func feedErrorKindString(fe *FeedError) string {
 	}
 	switch fe.Kind {
 	case FeedErrTransient:
-		return "transient"
+		return domainsubscription.FeedErrKindTransient
 	case FeedErrPermanent:
-		return "permanent"
+		return domainsubscription.FeedErrKindPermanent
 	case FeedErrRateLimited:
-		return "rate_limited"
+		return domainsubscription.FeedErrKindRateLimited
 	}
 	return ""
 }

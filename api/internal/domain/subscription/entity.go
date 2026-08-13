@@ -35,6 +35,14 @@ const (
 	StatusPaused = "paused"
 )
 
+// SubscriptionFetched.FeedErrorKind 字段的合法取值。
+// 空串表示非 feed 层错误或成功。
+const (
+	FeedErrKindTransient   = "transient"   // 瞬时错误（网络/超时/5xx）
+	FeedErrKindPermanent   = "permanent"   // 永久错误（4xx/malformed XML）
+	FeedErrKindRateLimited = "rate_limited" // 429 + Retry-After
+)
+
 // 失败处理阈值（PRD Q5，Miniflux 共识）。
 const (
 	// MaxConsecutiveFailures 连续失败达此值自动转 paused。
@@ -143,7 +151,7 @@ type SubscriptionFetched struct {
 	Failed int
 	// Error 错误描述(Success=false 时非空:feed 错误原文,或「N 条条目导入失败」)
 	Error string
-	// FeedErrorKind feed 层错误分类(空串=非 feed 错误或成功;"transient"/"permanent"/"rate_limited")。
+	// FeedErrorKind feed 层错误分类，取值见 FeedErrKind* 常量(空串=非 feed 错误或成功)。
 	// 审计订阅者据此生成人类可读摘要，完整技术错误保留在 Error 字段供 debug。
 	FeedErrorKind string
 	// IsSystem 是否系统调度触发（true=定时调度器，actor_type=system；
@@ -152,7 +160,7 @@ type SubscriptionFetched struct {
 }
 
 // NewSubscriptionFetched 构造订阅抓取事件。
-// feedErrKind 取值见 FeedErrorKind 字段注释，非 feed 层错误传空串。
+// feedErrKind 取值见 FeedErrKind* 常量，非 feed 层错误传空串。
 func NewSubscriptionFetched(id shared.ID, title string, success bool, imported, failed int, errMsg, feedErrKind string, isSystem bool) SubscriptionFetched {
 	return SubscriptionFetched{
 		BaseEvent:     shared.NewBaseEvent("subscription.fetched", id),
