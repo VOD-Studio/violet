@@ -7,6 +7,21 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.4](https://github.com/VOD-Studio/violet/compare/v2.8.3...v2.8.4) (2026-08-13)
+
+
+### 新增
+
+* **posts:** 文章管理批量操作搜索与标签筛选 ([cabb804](https://github.com/VOD-Studio/violet/commit/cabb80402a2f6d3504c2fc71e9fa13c50d1728a7))
+* **post:** 文章批量操作接口与列表搜索 ([c44ca8d](https://github.com/VOD-Studio/violet/commit/c44ca8dd15eeeb7137ce9f660d3be5e6b614684a))
+
+
+### 修复
+
+* **admin-layout:** 恢复 DataTable 高度链修复表格内部滚动失效 ([663fd3b](https://github.com/VOD-Studio/violet/commit/663fd3bf446f2ee2660d7dca9c2d00ddcd581640))
+* **admin:** 后台表格交互优化与文章管理增强 ([1f1b020](https://github.com/VOD-Studio/violet/commit/1f1b020a95060ead51aaf3d2ff3928067885a7c1))
+* **data-table:** 移除工具栏重复的已选数量显示 ([75013ba](https://github.com/VOD-Studio/violet/commit/75013baeb5fe06042422f66b0f5751d173786cc3))
+
 ## [2.8.3](https://github.com/VOD-Studio/violet/compare/v2.8.2...v2.8.3) (2026-08-13)
 
 
