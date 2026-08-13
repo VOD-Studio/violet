@@ -1,7 +1,7 @@
 # 博客项目 Makefile
 # 使用: make help
 
-.PHONY: help dev dev-mixed docker-dev docker-dev-app docker-dev-redis-app docker-dev-down docker-dev-logs docker-dev-watch up down restart logs \
+.PHONY: help dev dev-dind dev-mixed docker-dev docker-dev-app docker-dev-redis-app docker-dev-down docker-dev-logs docker-dev-watch up down restart logs \
         migrate migrate-down migrate-version reset-db db-shell redis-shell \
         api api-build api-test api-lint \
         web web-build web-preview web-lint web-format web-typecheck \
@@ -23,6 +23,9 @@ help: ## 显示帮助信息
 
 dev: ## 一键启动完整开发环境
 	@./dev.sh
+
+dev-dind: ## 容器内开发（Docker-in-Docker）：DB 经 host.docker.internal 连宿主容器
+	@./dev-dind.sh
 
 dev-mixed: ## 混合开发：后端套件容器化 (PostgreSQL+Redis+API) + 本地前端 Vite
 	@./dev-mixed.sh
