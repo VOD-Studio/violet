@@ -35,8 +35,12 @@ export const useMarkNotificationRead = () => {
 		onMutate: async (id: string) => {
 			await qc.cancelQueries({ queryKey: notificationKeys.all });
 			// 列表乐观更新
-			qc.setQueryData(notificationKeys.list, (old: NotificationItem[] | undefined) =>
-				old?.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+			qc.setQueryData(
+				notificationKeys.list,
+				(old: { data?: NotificationItem[]; pagination?: unknown } | undefined) =>
+					old?.data
+						? { ...old, data: old.data.map((n) => (n.id === id ? { ...n, is_read: true } : n)) }
+						: old,
 			);
 			// 未读计数 -1
 			qc.setQueryData(
@@ -58,8 +62,10 @@ export const useMarkAllRead = () => {
 		mutationFn: () => markAllNotificationsRead(),
 		onMutate: async () => {
 			await qc.cancelQueries({ queryKey: notificationKeys.all });
-			qc.setQueryData(notificationKeys.list, (old: NotificationItem[] | undefined) =>
-				old?.map((n) => ({ ...n, is_read: true })),
+			qc.setQueryData(
+				notificationKeys.list,
+				(old: { data?: NotificationItem[]; pagination?: unknown } | undefined) =>
+					old?.data ? { ...old, data: old.data.map((n) => ({ ...n, is_read: true })) } : old,
 			);
 			qc.setQueryData(notificationKeys.unreadCount, () => ({ unread_count: 0 }));
 		},

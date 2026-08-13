@@ -33,7 +33,6 @@ export interface NotificationSSEEvent {
 export interface UnreadCountResponse {
 	unread_count: number;
 }
-
 /** 通知列表查询 */
 export const fetchNotifications = (page = 1, limit = 20) =>
 	apiGetPaged<NotificationItem>("/notifications", {

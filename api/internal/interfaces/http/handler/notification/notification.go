@@ -6,7 +6,6 @@ package notification
 
 import (
 	"net/http"
-	"strconv"
 
 	appnotification "blog-api/internal/application/notification"
 	domainshared "blog-api/internal/domain/shared"
@@ -27,26 +26,14 @@ func NewHandler(svc *appnotification.Service) *Handler {
 // List 列出当前用户的通知（分页）。
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	userID := mustGetUserID(r)
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 {
-		limit = 20
-	}
-	if limit > 100 {
-		limit = 100
-	}
+	page, limit := response.ParsePaging(r)
 
 	dtos, total, err := h.svc.ListByUser(r.Context(), userID, page, limit)
 	if err != nil {
 		response.RespondError(w, r, err)
 		return
 	}
-	response.RespondOK(w, map[string]any{
-		"items": dtos, "total": total, "page": page, "limit": limit,
-	})
+	response.RespondPaged(w, dtos, page, limit, total)
 }
 
 // UnreadCount 返回当前用户的未读通知数。
