@@ -16,7 +16,8 @@ describe("PageShell 内边距", () => {
 				<p>内容</p>
 			</PageShell>,
 		);
-		const wrapper = container.firstElementChild;
+		// 滚动容器无水平 padding(滚动条贴边),padding 下沉到内层 wrapper
+		const wrapper = container.firstElementChild?.firstElementChild;
 		expect(wrapper?.className).toContain("px-4");
 	});
 
@@ -26,7 +27,8 @@ describe("PageShell 内边距", () => {
 				<p>内容</p>
 			</PageShell>,
 		);
-		const content = container.querySelector(".isolate");
+		// .isolate 是滚动容器(无水平 padding),其内层 wrapper 带 padding
+		const content = container.querySelector(".isolate > div");
 		expect(content?.className).toContain("px-4");
 	});
 });
