@@ -196,6 +196,7 @@ function AdminSubscriptionsPage() {
 							setPage(page);
 							setPageSize(pageSize);
 						},
+						pageSizeOptions: [10, 20, 50],
 					}}
 					loading={isLoading}
 					error={error}
