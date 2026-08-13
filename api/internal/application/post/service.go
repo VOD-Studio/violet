@@ -225,9 +225,10 @@ func (s *Service) ListPublished(ctx context.Context, page, limit int, tag string
 	return dtos, total, nil
 }
 
-// ListAll 列出所有文章（后台），返回不含正文的列表项，避免响应过大
-func (s *Service) ListAll(ctx context.Context, page, limit int, status string) ([]PostListItemDTO, int64, error) {
-	items, total, err := s.repo.FindAll(ctx, page, limit, status)
+// ListAll 列出所有文章（后台），返回不含正文的列表项，避免响应过大。
+// keyword 标题+正文搜索（空格分词 AND）；tags 为标签 slug 列表（AND 关系）。
+func (s *Service) ListAll(ctx context.Context, page, limit int, status, keyword string, tags []string) ([]PostListItemDTO, int64, error) {
+	items, total, err := s.repo.FindAll(ctx, page, limit, status, keyword, tags)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -525,6 +526,99 @@ func (s *Service) HardDelete(ctx context.Context, id string) error {
 		return shared.Forbidden("无权彻底删除文章")
 	}
 	return s.repo.HardDelete(ctx, pid)
+}
+
+// BatchActionInput 批量操作入参。
+// Action 取值：delete|hard_delete|publish|archive|restore|feature|unfeature。
+type BatchActionInput struct {
+	IDs    []string
+	Action string
+}
+
+// batchActionPerm action → 所有权鉴权权限码映射。
+var batchActionPerm = map[string]string{
+	"delete":      "post:delete",
+	"hard_delete": "post:delete",
+	"restore":     "post:delete",
+	"publish":     "post:publish",
+	"archive":     "post:publish",
+	"feature":     "post:publish",
+	"unfeature":   "post:publish",
+}
+
+// BatchAction 对多篇文章执行同一操作，返回成功操作数。
+//
+// BatchGetByIDs 一次性校验存在性（含回收站行）；逐条按 action 映射的权限码 +
+// 所有权（canModify）鉴权，鉴权或执行失败的单条跳过，不中断批次（与
+// BatchDeleteFiles 一致的部分成功语义）。
+func (s *Service) BatchAction(ctx context.Context, in BatchActionInput) (int, error) {
+	permCode, ok := batchActionPerm[in.Action]
+	if !ok {
+		return 0, shared.BadRequest("无效的批量操作类型")
+	}
+	if len(in.IDs) == 0 {
+		return 0, shared.BadRequest("文章 ID 列表不能为空")
+	}
+	ids := make([]shared.ID, 0, len(in.IDs))
+	for _, idStr := range in.IDs {
+		id, err := shared.ParseID(idStr)
+		if err != nil {
+			return 0, err
+		}
+		ids = append(ids, id)
+	}
+	posts, err := s.repo.BatchGetByIDs(ctx, ids)
+	if err != nil {
+		return 0, err
+	}
+	// BatchGetByIDs 按 DB 顺序返回；建 id→post 索引以按请求顺序处理
+	byID := make(map[string]*domain.Post, len(posts))
+	for _, p := range posts {
+		byID[p.ID().String()] = p
+	}
+	affected := 0
+	for _, id := range ids {
+		p := byID[id.String()]
+		if p == nil {
+			continue // 不存在跳过
+		}
+		if !s.canModify(ctx, p, permCode) {
+			continue // 无权限跳过
+		}
+		if s.applyBatchAction(ctx, p, id, in.Action) {
+			affected++
+		}
+	}
+	return affected, nil
+}
+
+// applyBatchAction 对单篇文章执行 action，返回是否成功。失败不 panic，由调用方计入跳过。
+func (s *Service) applyBatchAction(ctx context.Context, p *domain.Post, id shared.ID, action string) bool {
+	switch action {
+	case "delete":
+		return s.repo.Delete(ctx, id) == nil
+	case "hard_delete":
+		return s.repo.HardDelete(ctx, id) == nil
+	case "restore":
+		return s.repo.Restore(ctx, id) == nil
+	case "publish":
+		p.Publish()
+		if err := s.repo.Save(ctx, p); err != nil {
+			return false
+		}
+		s.publishEvents(ctx, p)
+		return true
+	case "archive":
+		p.Archive()
+		return s.repo.Save(ctx, p) == nil
+	case "feature":
+		p.SetFeatured(true)
+		return s.repo.Save(ctx, p) == nil
+	case "unfeature":
+		p.SetFeatured(false)
+		return s.repo.Save(ctx, p) == nil
+	}
+	return false
 }
 
 

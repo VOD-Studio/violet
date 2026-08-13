@@ -171,6 +171,7 @@ func NewAdminRouter(d *Deps) chi.Router {
 	r.Delete("/posts/{id}", postH.Delete)              // 应用层鉴权
 	r.Post("/posts/{id}/restore", postH.Restore)       // 应用层鉴权
 	r.Delete("/posts/{id}/hard", postH.HardDelete)     // 应用层鉴权
+	r.With(middleware.RequirePermission(perm, "post:create")).Post("/posts/batch", postH.BatchAction) // 鉴权下放应用层逐条
 
 	// 文章版本管理
 	r.With(middleware.RequirePermission(perm, "post:view")).Get("/posts/{id}/versions", postH.ListVersions)

@@ -103,7 +103,7 @@ func (t *PostTools) ListDrafts(ctx context.Context, req *mcp.CallToolRequest, ar
 	if limit > 100 {
 		limit = 100
 	}
-	items, total, err := t.posts.ListAll(ctx, page, limit, "draft")
+	items, total, err := t.posts.ListAll(ctx, page, limit, "draft", "", nil)
 	if err != nil {
 		return errResult(err), nil, nil
 	}
