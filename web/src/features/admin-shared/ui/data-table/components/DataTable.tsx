@@ -51,13 +51,11 @@ export function DataTable<T>({
 	storageKey,
 	filtered = false,
 	density = "comfortable",
-	stickyHeader = false,
 	caption,
 	emptyTitle,
 	emptyDescription,
 	className,
 }: DataTableProps<T>) {
-	void stickyHeader; // 预留：表头 CSS sticky 吸顶功能待实现
 	// —— 列可见性状态 ——
 	const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => {
 		if (!storageKey) return new Set();

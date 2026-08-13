@@ -120,8 +120,6 @@ export interface DataTableProps<T> {
 
 	/** 行密度，默认 comfortable */
 	density?: "comfortable" | "compact";
-	/** 表头吸顶开关（预留：滚动时表头 CSS sticky 吸顶） */
-	stickyHeader?: boolean;
 	/** 无障碍标题，渲染为 sr-only caption */
 	caption?: string;
 	/** 空状态标题（filtered=false 时） */
