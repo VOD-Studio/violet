@@ -44,9 +44,11 @@ export function AdminSidebar() {
 				[{ transform: `translateX(${delta}px)` }, { transform: "translateX(0)" }],
 				{ duration: 200, easing: "ease-out" },
 			);
-			anim.finished.finally(() => {
-				content.style.willChange = "";
-			});
+			anim.finished
+				.catch(() => {})
+				.finally(() => {
+					content.style.willChange = "";
+				});
 		});
 	};
 
