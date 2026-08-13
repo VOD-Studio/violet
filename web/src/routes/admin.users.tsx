@@ -327,7 +327,7 @@ function AdminUsers() {
 							<PermissionGuard permission="user:ban">
 								<Button
 									variant="outline"
-									className="h-9"
+									size="sm"
 									onClick={handleBatchEnable}
 									disabled={
 										selectedIds.size === 0 ||
@@ -341,7 +341,7 @@ function AdminUsers() {
 							<PermissionGuard permission="user:ban">
 								<Button
 									variant="destructive"
-									className="h-9"
+									size="sm"
 									onClick={handleBatchDisable}
 									disabled={
 										selectedIds.size === 0 ||
@@ -363,7 +363,7 @@ function AdminUsers() {
 										selectedHasProtected
 									}
 								>
-									<SelectTrigger className="h-9 w-40">
+									<SelectTrigger size="sm" className="w-40">
 										<UserCog className="size-3.5 mr-1" />
 										批量修改角色
 									</SelectTrigger>

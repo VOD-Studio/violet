@@ -263,7 +263,7 @@ function AdminCommentsPage() {
 						<>
 							<Button
 								variant="outline"
-								className="h-9"
+								size="sm"
 								onClick={handleBatchApprove}
 								disabled={batchMut.isPending}
 							>
@@ -272,7 +272,7 @@ function AdminCommentsPage() {
 							</Button>
 							<Button
 								variant="outline"
-								className="h-9"
+								size="sm"
 								onClick={handleBatchSpam}
 								disabled={batchMut.isPending}
 							>
