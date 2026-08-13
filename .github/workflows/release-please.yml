@@ -20,6 +20,7 @@ on:
 permissions:
   contents: write       # 创建 release PR + 打 tag
   pull-requests: write  # 开/合并 release PR
+  issues: write         # 失败告警 issue(deploy-alert)
 
 # 连续 push 并发跑会竞争同一 release PR(开 PR/打 tag),串行排队;
 # 不取消进行中 run:release-please 操作 git 状态,取消可能留下中间态
@@ -30,11 +31,86 @@ concurrency:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    # 正常 10-20s,基线紊乱回溯全历史时 3m30s+;10 分钟上限兜住异常放大
+    timeout-minutes: 10
     steps:
-      - uses: googleapis/release-please-action@v5
+      - uses: actions/checkout@v7
+        # 仅为失败告警 step 提供仓库内 composite action(deploy-alert)
+      - id: release
+        uses: googleapis/release-please-action@v5
         with:
           # PAT 绕过组织对 GITHUB_TOKEN 创建 PR 的限制
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           # v4 自定义配置走 manifest 文件
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      - id: guard
+        name: manifest-tag 一致性守卫
+        # always():即使 release-please-action 因 GitHub API 瞬时故障(Server Error)失败也运行。
+        # 事故根因:release PR 合并后 run 被 Server Error 打断,
+        # manifest 已更新为新版本但 tag 未创建 → 后续 run 找不到 last release tag →
+        # 回溯全历史 → 开版本倒挂的损坏 PR(#189/#191)。
+        # 此守卫在不一致时 fail fast,代替静默开损坏 PR。
+        # API 故障(5xx/限流)与 tag 缺失区分:守卫检测基线紊乱,
+        # 不应成为 API 故障的第二个受害者——API 错误时跳过,避免误报。
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # 软编码默认分支,不硬编码分支名
+          DEFAULT_BRANCH=$(gh api "repos/${GH_REPO}" --jq '.default_branch' 2>/dev/null || echo "")
+          # manifest 声称的 last released version
+          MANIFEST_VER=$(gh api "repos/${GH_REPO}/contents/.release-please-manifest.json?ref=${DEFAULT_BRANCH}" \
+            --jq '.content' 2>/dev/null | base64 -d 2>/dev/null | jq -r '."."' 2>/dev/null || echo "")
+          if [ -z "${DEFAULT_BRANCH}" ] || [ -z "${MANIFEST_VER}" ]; then
+            echo "::warning::GitHub API 读取失败(默认分支或 manifest),跳过守卫避免误报"
+            exit 0
+          fi
+          # matching-refs 对不存在的 ref 返回空数组(200),API 故障返回错误——据此区分
+          REF_COUNT=$(gh api "repos/${GH_REPO}/git/matching-refs/tags/v${MANIFEST_VER}" \
+            --jq 'length' 2>/dev/null || echo "err")
+          if [ "${REF_COUNT}" = "err" ]; then
+            echo "::warning::GitHub API 读取 tag 列表失败,跳过守卫避免误报"
+            exit 0
+          fi
+          if [ "${REF_COUNT}" -gt 0 ]; then
+            echo "✓ manifest ${MANIFEST_VER} ↔ tag v${MANIFEST_VER} 一致"
+            exit 0
+          fi
+          echo "::error::manifest 版本 ${MANIFEST_VER} 缺少对应 tag v${MANIFEST_VER}"
+          echo "::error::release-please 基线紊乱,通常因 GitHub API 瞬时失败导致 release PR 合并后未打 tag"
+          echo "::error::修复:确认 ${DEFAULT_BRANCH} HEAD 是该版本的 release commit,补打 tag 后重跑"
+          exit 1
+
+      - name: release-please 失败告警
+        # 失败不再静默:事故根因之一(#182 run Server Error 失败 7 分钟无人知晓)。
+        # 复用 deploy-alert(按 run id 去重、@维护者、issue 而非 webhook,零配置)。
+        # 守卫失败(检测到基线紊乱)同样告警;checkout 失败不告警(几乎不发生)。
+        if: failure() && (steps.release.outcome == 'failure' || steps.guard.outcome == 'failure')
+        uses: ./.github/actions/deploy-alert
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          run_id: ${{ github.run_id }}
+          reason: release-please 失败(API 瞬时故障或 manifest-tag 不一致),详见 run 日志
+
+  retry-on-failure:
+    needs: release-please
+    # 仅首次失败自动重试一次:rerun 后 attempt=2,失败不再重试,防死循环。
+    # release-please 幂等(重跑不重复开 PR/打 tag),重试安全。
+    if: failure() && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write   # gh run rerun
+    steps:
+      - name: 等待后自动重试
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          sleep 60
+          gh run rerun "${{ github.run_id }}" --failed
+          echo "已触发重试: https://github.com/${GH_REPO}/actions/runs/${{ github.run_id }}"
