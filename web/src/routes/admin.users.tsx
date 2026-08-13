@@ -316,7 +316,6 @@ function AdminUsers() {
 							setPage(page);
 							setPageSize(pageSize);
 						},
-						pageSizeOptions: [10, 20, 50],
 					}}
 					sort={sort}
 					onSortChange={setSort}

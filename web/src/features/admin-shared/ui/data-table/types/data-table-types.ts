@@ -66,6 +66,8 @@ export interface DataTableProps<T> {
 		onChange: (page: number, pageSize: number) => void;
 		/** 可选每页条数选项，默认 `[10, 20, 50]` */
 		pageSizeOptions?: number[];
+		/** 是否隐藏每页条数选择器，默认 false（显示）。用固定 pageSize 的页面传 true */
+		hidePageSizeSelect?: boolean;
 	};
 
 	/** 排序态（受控，可选） */

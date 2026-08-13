@@ -234,6 +234,7 @@ function AdminCommentsPage() {
 					pageSize: PAGE_SIZE,
 					total: data?.pagination?.total ?? 0,
 					onChange: (page) => setPage(page),
+					hidePageSizeSelect: true,
 				}}
 				toolbar={
 					<div className="flex flex-wrap items-center gap-3">

@@ -503,6 +503,7 @@ export function DataTable<T>({
 						total={pagination.total}
 						onChange={pagination.onChange}
 						pageSizeOptions={pagination.pageSizeOptions}
+						hidePageSizeSelect={pagination.hidePageSizeSelect}
 					/>
 				</div>
 			)}

@@ -248,6 +248,7 @@ function AdminPostsPage() {
 					pageSize: PAGE_SIZE,
 					total,
 					onChange: (page) => setPage(page),
+					hidePageSizeSelect: true,
 				}}
 				selectable={false}
 				loading={isLoading}

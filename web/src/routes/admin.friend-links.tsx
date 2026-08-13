@@ -256,6 +256,7 @@ function AdminFriendLinksPage() {
 					pageSize: PAGE_SIZE,
 					total: data?.pagination?.total ?? 0,
 					onChange: (page) => setPage(page),
+					hidePageSizeSelect: true,
 				}}
 				toolbar={
 					<Segmented

@@ -14,8 +14,10 @@ interface DataTableFooterProps {
 	pageSize: number;
 	total: number;
 	onChange: (page: number, pageSize: number) => void;
-	/** 可选每页条数选项；提供时才显示切换器 */
+	/** 可选每页条数选项，默认 `[10, 20, 50]` */
 	pageSizeOptions?: number[];
+	/** 是否隐藏每页条数选择器，默认 false（显示） */
+	hidePageSizeSelect?: boolean;
 }
 
 /**
@@ -29,10 +31,11 @@ export function DataTableFooter({
 	total,
 	onChange,
 	pageSizeOptions,
+	hidePageSizeSelect,
 }: DataTableFooterProps) {
 	const totalPages = Math.max(1, Math.ceil(total / pageSize));
 	const sizeOptions = pageSizeOptions ?? DEFAULT_PAGE_SIZE_OPTIONS;
-	const showSizeSelect = pageSizeOptions != null;
+	const showSizeSelect = !hidePageSizeSelect;
 
 	return (
 		<div className="flex flex-wrap items-center justify-between gap-3 px-1 pt-3">
