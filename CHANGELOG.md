@@ -7,6 +7,13 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.5](https://github.com/VOD-Studio/violet/compare/v2.8.4...v2.8.5) (2026-08-13)
+
+
+### 修复
+
+* **shared-ui:** OverlayScroll 困住 z-index 到组件内 ([#182](https://github.com/VOD-Studio/violet/issues/182)) ([07075b2](https://github.com/VOD-Studio/violet/commit/07075b2ecd92d0f6f0d84e1284990fa0b071db54))
+
 ## [2.8.4](https://github.com/VOD-Studio/violet/compare/v2.8.3...v2.8.4) (2026-08-13)
 
 
