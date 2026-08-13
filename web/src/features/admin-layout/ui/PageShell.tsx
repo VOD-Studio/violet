@@ -71,7 +71,9 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 				{sticky}
 			</div>
 			{/* isolate 包裹内容区：困住 DataTable 固定列的 z-index，防止穿透 sticky header */}
-		<div className="relative isolate flex min-h-0 flex-1 flex-col gap-6 px-4 md:px-6">{children}</div>
+			<div className="relative isolate flex min-h-0 flex-1 flex-col gap-6 px-4 md:px-6">
+				{children}
+			</div>
 		</div>
 	);
 }
