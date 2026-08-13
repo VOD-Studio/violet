@@ -563,10 +563,6 @@ function MediaTable({
 			data={files}
 			columns={columns}
 			keyExtractor={(file) => file.id}
-			page={1}
-			pageSize={files.length}
-			total={files.length}
-			onPageChange={() => {}}
 			selectable
 			selectedIds={selectedIds}
 			onSelectionChange={onSelectionChange}

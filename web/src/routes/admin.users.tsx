@@ -308,13 +308,14 @@ function AdminUsers() {
 					columns={columns}
 					data={sortedData}
 					keyExtractor={(row) => row.id}
-					page={page}
-					pageSize={pageSize}
-					total={response?.pagination?.total || 0}
-					onPageChange={setPage}
-					onPageSizeChange={(size) => {
-						setPageSize(size);
-						setPage(1);
+					pagination={{
+						page,
+						pageSize,
+						total: response?.pagination?.total || 0,
+						onChange: (page, pageSize) => {
+							setPage(page);
+							setPageSize(pageSize);
+						},
 					}}
 					sort={sort}
 					onSortChange={setSort}
@@ -383,8 +384,6 @@ function AdminUsers() {
 					storageKey="admin-users-columns"
 					filtered={keyword.length > 0 || roleFilter !== "all" || statusFilter !== "all"}
 					density={density}
-					stickyHeader
-					maxHeight="60vh"
 					resizable
 					expandable
 					renderExpandedRow={(row) => (

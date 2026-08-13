@@ -38,11 +38,11 @@ function AdminPermissionsPage() {
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deleting, setDeleting] = useState<PermissionDTO | null>(null);
 
-	// 已折叠的 menu id 集合（默认全部展开，集合为空）
-	const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+	// 已展开的 menu id 集合（默认全部折叠，集合为空）
+	const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
 	const toggleMenu = (menuId: string) => {
-		setCollapsed((prev) => {
+		setExpanded((prev) => {
 			const next = new Set(prev);
 			if (next.has(menuId)) {
 				next.delete(menuId);
@@ -82,16 +82,16 @@ function AdminPermissionsPage() {
 		const rows: FlatRow[] = [];
 		tree.forEach((menu) => {
 			const menuId = String(menu.id);
-			const isCollapsed = collapsed.has(menuId);
+			const isExpanded = expanded.has(menuId);
 			rows.push({ row: menu, depth: 0, menuId, visible: true });
-			if (!isCollapsed) {
+			if (isExpanded) {
 				(menu.children || []).forEach((action) => {
 					rows.push({ row: action, depth: 1, menuId, visible: true });
 				});
 			}
 		});
 		return rows;
-	}, [tree, collapsed]);
+	}, [tree, expanded]);
 
 	const columns: DataTableColumn<FlatRow>[] = [
 		{
@@ -102,20 +102,17 @@ function AdminPermissionsPage() {
 			cell: (r) => {
 				// 仅 menu 行显示展开/折叠箭头
 				if (r.row.type !== "menu") return null;
-				const isCollapsed = collapsed.has(r.menuId);
+				const isExpanded = expanded.has(r.menuId);
 				return (
 					<button
 						type="button"
 						onClick={() => toggleMenu(r.menuId)}
 						className="hover:bg-accent flex size-6 items-center justify-center rounded transition-colors"
-						aria-expanded={!isCollapsed}
-						aria-label={isCollapsed ? "展开" : "折叠"}
+						aria-expanded={isExpanded}
+						aria-label={isExpanded ? "折叠" : "展开"}
 					>
 						<ChevronRight
-							className={cn(
-								"size-4 transition-transform",
-								!isCollapsed && "rotate-90",
-							)}
+							className={cn("size-4 transition-transform", isExpanded && "rotate-90")}
 						/>
 					</button>
 				);
@@ -233,10 +230,6 @@ function AdminPermissionsPage() {
 					data={flatRows}
 					columns={columns}
 					keyExtractor={(r) => `${r.menuId}-${r.row.id}`}
-					page={1}
-					pageSize={flatRows.length}
-					total={flatRows.length}
-					onPageChange={() => {}}
 					selectable={false}
 					loading={isLoading}
 					error={error ? new Error(error.message) : null}

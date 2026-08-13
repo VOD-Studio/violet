@@ -243,10 +243,13 @@ function AdminPostsPage() {
 				data={posts}
 				columns={columns}
 				keyExtractor={(row) => row.id}
-				page={page}
-				pageSize={PAGE_SIZE}
-				total={total}
-				onPageChange={setPage}
+				pagination={{
+					page,
+					pageSize: PAGE_SIZE,
+					total,
+					onChange: (page) => setPage(page),
+					hidePageSizeSelect: true,
+				}}
 				selectable={false}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}

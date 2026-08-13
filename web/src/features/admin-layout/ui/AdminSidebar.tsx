@@ -23,11 +23,40 @@ export function AdminSidebar() {
 	const collapsed = useAdminSidebarStore((s) => s.collapsed);
 	const toggle = useAdminSidebarStore((s) => s.toggle);
 
+	// FLIP：宽度瞬时切换（一次重排），内容区用 translateX 反向补偿做滑动。
+	// transform 走合成器，滑动期间内容零逐帧 reflow/paint——宽度过渡会让
+	// 大表格页（如权限管理全展开）每帧按新宽度重排重绘，造成掉帧。
+	const handleToggle = () => {
+		const content = document.getElementById("admin-content");
+		content?.getAnimations().forEach((a) => {
+			a.cancel();
+		});
+		const before = content?.getBoundingClientRect().left ?? 0;
+		toggle();
+		if (!content) return;
+		requestAnimationFrame(() => {
+			const delta = before - content.getBoundingClientRect().left;
+			if (delta === 0) return;
+			// 强制提升为合成层：transform 动画才能走合成器，
+			// 否则逐帧主线程重绘大子树，等同退回到原掉帧。
+			content.style.willChange = "transform";
+			const anim = content.animate(
+				[{ transform: `translateX(${delta}px)` }, { transform: "translateX(0)" }],
+				{ duration: 200, easing: "ease-out" },
+			);
+			anim.finished
+				.catch(() => {})
+				.finally(() => {
+					content.style.willChange = "";
+				});
+		});
+	};
+
 	return (
 		<TooltipProvider delayDuration={200}>
 			<aside
 				className={cn(
-					"relative hidden shrink-0 flex-col border-r bg-card transition-[width] duration-200 md:flex",
+					"relative hidden shrink-0 flex-col border-r bg-card md:flex",
 					collapsed ? "w-16" : "w-64",
 				)}
 			>
@@ -36,7 +65,7 @@ export function AdminSidebar() {
 						<Button
 							variant="outline"
 							size="icon"
-							onClick={toggle}
+							onClick={handleToggle}
 							aria-label={collapsed ? "展开侧边栏" : "收起侧边栏"}
 							className="bg-background absolute top-7 -right-3.5 z-40 size-7 -translate-y-1/2 rounded-full shadow-sm"
 						>

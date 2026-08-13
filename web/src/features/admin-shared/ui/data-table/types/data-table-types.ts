@@ -47,18 +47,28 @@ export interface DataTableProps<T> {
 	/** 行唯一键提取器，生成的 id 同时用于行选择与展开状态 */
 	keyExtractor: (row: T) => string;
 
-	/** 当前页码（从 1 开始） */
-	page: number;
-	/** 每页条数 */
-	pageSize: number;
-	/** 总条数，组件据此计算 totalPages */
-	total: number;
-	/** 翻页回调 */
-	onPageChange: (page: number) => void;
-	/** 可选每页条数，默认 [10, 20, 50]；提供 onPageSizeChange 时才显示切换器 */
-	pageSizeOptions?: number[];
-	/** 每页条数变更回调 */
-	onPageSizeChange?: (size: number) => void;
+	/**
+	 * 分页配置；不传则不显示分页栏，适合前端全量列表（tags/roles 等）
+	 */
+	pagination?: {
+		/** 当前页码（从 1 开始） */
+		page: number;
+		/** 每页条数 */
+		pageSize: number;
+		/** 总条数，组件据此计算 totalPages */
+		total: number;
+		/**
+		 * 分页变更回调
+		 *
+		 * @param page 新页码
+		 * @param pageSize 新每页条数（翻页时不变，切换条数时为新值且 page 重置为 1）
+		 */
+		onChange: (page: number, pageSize: number) => void;
+		/** 可选每页条数选项，默认 `[10, 20, 50]` */
+		pageSizeOptions?: number[];
+		/** 是否隐藏每页条数选择器，默认 false（显示）。用固定 pageSize 的页面传 true */
+		hidePageSizeSelect?: boolean;
+	};
 
 	/** 排序态（受控，可选） */
 	sort?: DataTableSort | null;
@@ -112,10 +122,6 @@ export interface DataTableProps<T> {
 
 	/** 行密度，默认 comfortable */
 	density?: "comfortable" | "compact";
-	/** 开启吸顶表头，配合 maxHeight 形成纵向滚动 */
-	stickyHeader?: boolean;
-	/** 滚动容器最大高度，配合 stickyHeader */
-	maxHeight?: string;
 	/** 无障碍标题，渲染为 sr-only caption */
 	caption?: string;
 	/** 空状态标题（filtered=false 时） */

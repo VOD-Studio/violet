@@ -13,10 +13,11 @@ interface DataTableFooterProps {
 	page: number;
 	pageSize: number;
 	total: number;
-	onPageChange: (page: number) => void;
-	/** 可选每页条数；提供 onPageSizeChange 时才显示切换器 */
+	onChange: (page: number, pageSize: number) => void;
+	/** 可选每页条数选项，默认 `[10, 20, 50]` */
 	pageSizeOptions?: number[];
-	onPageSizeChange?: (size: number) => void;
+	/** 是否隐藏每页条数选择器，默认 false（显示） */
+	hidePageSizeSelect?: boolean;
 }
 
 /**
@@ -28,13 +29,13 @@ export function DataTableFooter({
 	page,
 	pageSize,
 	total,
-	onPageChange,
+	onChange,
 	pageSizeOptions,
-	onPageSizeChange,
+	hidePageSizeSelect,
 }: DataTableFooterProps) {
 	const totalPages = Math.max(1, Math.ceil(total / pageSize));
 	const sizeOptions = pageSizeOptions ?? DEFAULT_PAGE_SIZE_OPTIONS;
-	const showSizeSelect = onPageSizeChange != null;
+	const showSizeSelect = !hidePageSizeSelect;
 
 	return (
 		<div className="flex flex-wrap items-center justify-between gap-3 px-1 pt-3">
@@ -44,10 +45,7 @@ export function DataTableFooter({
 					{totalPages} 页
 				</span>
 				{showSizeSelect && (
-					<Select
-						value={String(pageSize)}
-						onValueChange={(v) => onPageSizeChange?.(Number(v))}
-					>
+					<Select value={String(pageSize)} onValueChange={(v) => onChange(1, Number(v))}>
 						<SelectTrigger size="sm" className="h-7 w-28 text-xs" aria-label="每页条数">
 							<SelectValue />
 						</SelectTrigger>
@@ -61,7 +59,11 @@ export function DataTableFooter({
 					</Select>
 				)}
 			</div>
-			<Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
+			<Pagination
+				page={page}
+				totalPages={totalPages}
+				onPageChange={(p) => onChange(p, pageSize)}
+			/>
 		</div>
 	);
 }

@@ -188,13 +188,14 @@ function AdminSubscriptionsPage() {
 					columns={columns}
 					data={data?.items ?? []}
 					keyExtractor={(row) => row.id}
-					page={page}
-					pageSize={pageSize}
-					total={data?.total ?? 0}
-					onPageChange={setPage}
-					onPageSizeChange={(s) => {
-						setPageSize(s);
-						setPage(1);
+					pagination={{
+						page,
+						pageSize,
+						total: data?.total ?? 0,
+						onChange: (page, pageSize) => {
+							setPage(page);
+							setPageSize(pageSize);
+						},
 					}}
 					loading={isLoading}
 					error={error}

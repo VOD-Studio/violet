@@ -574,9 +574,27 @@ func (s *Service) FetchNow(ctx context.Context, subscriptionID string, isSystem 
 		errMsg = fmt.Sprintf("%d 条条目导入失败", report.Failed)
 	}
 	s.publish(ctx, domainsubscription.NewSubscriptionFetched(
-		sub.ID(), sub.Title(), success, report.Imported, report.Failed, errMsg, isSystem,
+		sub.ID(), sub.Title(), success, report.Imported, report.Failed,
+		errMsg, feedErrorKindString(report.FeedErr), isSystem,
 	))
 	return report
+}
+
+// feedErrorKindString 把结构化 FeedError 分类映射为 domain 事件用的 string。
+// FeedErr 为 nil（非 feed 层错误，如查订阅失败）时返回空串。
+func feedErrorKindString(fe *FeedError) string {
+	if fe == nil {
+		return ""
+	}
+	switch fe.Kind {
+	case FeedErrTransient:
+		return domainsubscription.FeedErrKindTransient
+	case FeedErrPermanent:
+		return domainsubscription.FeedErrKindPermanent
+	case FeedErrRateLimited:
+		return domainsubscription.FeedErrKindRateLimited
+	}
+	return ""
 }
 
 // applyFeedError 据 FeedError 分类更新订阅状态（PRD Q5 Miniflux 共识）：

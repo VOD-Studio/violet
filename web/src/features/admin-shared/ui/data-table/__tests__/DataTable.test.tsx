@@ -32,10 +32,7 @@ describe("DataTable", () => {
 				columns={columns}
 				data={data}
 				keyExtractor={(r) => r.id}
-				page={1}
-				pageSize={10}
-				total={2}
-				onPageChange={() => {}}
+				pagination={{ page: 1, pageSize: 10, total: 2, onChange: () => {} }}
 				density="comfortable"
 			/>,
 		);
