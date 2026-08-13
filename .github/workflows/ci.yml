@@ -7,7 +7,11 @@
 # 任一 job 失败则 PR 检查失败，阻止合并（ruleset required status checks）。
 # release-please 的 release PR 只改 CHANGELOG 与 manifest，也必须跑 CI：
 # 它是 required checks 的适用对象，paths-ignore 跳过的 check 永远 pending
-# 无法合并（#142）。代价是每次发版多跑约 5 分钟 CI，远小于门禁价值。
+# 无法合并（#142）。
+#
+# 按变更侧裁剪：changes job 检测 api/web 变更，无变更侧的 job 空跑 success
+# （而非 skip）——required checks 接受 success，skip/pending 会卡合并（#142）。
+# 空跑保持 job 名与恒 success 语义，verify-ci（deploy.yml）白名单不受影响。
 
 name: CI
 
@@ -27,10 +31,42 @@ permissions:
 
 jobs:
   # ============================================================
+  # 变更侧检测：后续 job 按需执行，无变更侧空跑 success
+  # ============================================================
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # paths-filter 对比需要历史；只拉 commit/tree，blob 按需
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          initial-fetch-depth: '20'
+          # YAML 1.1 的 api/web 键需引号（裸写会解析为布尔值）
+          # ci.yml 自身变更强制双侧全量：检查代码的代码坏了会让所有检查失效
+          filters: |
+            'api':
+              - 'api/**'
+              - '.github/workflows/ci.yml'
+            'web':
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+
+  # ============================================================
   # 后端检查（Go）
   # ============================================================
   backend:
     name: Backend (Go)
+    needs: changes
     timeout-minutes: 20
     permissions:
       actions: write   # buildx type=gha 缓存读写;workflow 级仅 contents:read 会把 actions 收为 none
@@ -41,22 +77,34 @@ jobs:
         working-directory: api
 
     steps:
+      # 无 api 侧变更时空跑 success：required check 需要 success 而非 skip（#142）
+      - name: 无 api 侧变更，跳过
+        if: needs.changes.outputs.api != 'true'
+        # 覆盖 defaults：checkout 被跳过时 api/ 目录不存在
+        working-directory: .
+        run: echo "无 api 侧变更，跳过后端检查"
+
       - uses: actions/checkout@v7
+        if: needs.changes.outputs.api == 'true'
 
       - name: Setup Go
+        if: needs.changes.outputs.api == 'true'
         uses: actions/setup-go@v5
         with:
           go-version: "1.26"
           cache-dependency-path: api/go.sum
 
       - name: Download dependencies
+        if: needs.changes.outputs.api == 'true'
         run: go mod download
 
       - name: Go vet
+        if: needs.changes.outputs.api == 'true'
         run: go vet ./...
 
       # lint 前置到 build/test 之前:比 test 快,提前暴露静态错误,fail fast
       - name: golangci-lint
+        if: needs.changes.outputs.api == 'true'
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.12.2
@@ -64,15 +112,19 @@ jobs:
           args: --timeout 5m
 
       - name: Go build
+        if: needs.changes.outputs.api == 'true'
         run: go build ./...
 
       - name: Go test
+        if: needs.changes.outputs.api == 'true'
         run: go test ./... -v -count=1
 
       - name: Setup Docker Buildx
+        if: needs.changes.outputs.api == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Docker 镜像构建验证
+        if: needs.changes.outputs.api == 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./api
@@ -88,6 +140,7 @@ jobs:
   # ============================================================
   frontend:
     name: Frontend (React)
+    needs: changes
     timeout-minutes: 20
     permissions:
       actions: write   # buildx type=gha 缓存读写;同 backend job
@@ -98,14 +151,23 @@ jobs:
         working-directory: web
 
     steps:
+      # 无 web 侧变更时空跑 success（同 backend 的 #142 说明）
+      - name: 无 web 侧变更，跳过
+        if: needs.changes.outputs.web != 'true'
+        working-directory: .
+        run: echo "无 web 侧变更，跳过前端检查"
+
       - uses: actions/checkout@v7
+        if: needs.changes.outputs.web == 'true'
 
       - name: Setup pnpm
+        if: needs.changes.outputs.web == 'true'
         uses: pnpm/action-setup@v6
         with:
           version: 10
 
       - name: Setup Node.js
+        if: needs.changes.outputs.web == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: "22"
@@ -113,28 +175,35 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Install dependencies
+        if: needs.changes.outputs.web == 'true'
         run: pnpm install --frozen-lockfile
 
       # biome check = lint + format + import 排序;
       # 此前跑 pnpm lint(biome lint)不查格式,CI 与本地红绿不一致(#140)
       - name: Biome check
+        if: needs.changes.outputs.web == 'true'
         run: pnpm check
 
       - name: TypeScript check
+        if: needs.changes.outputs.web == 'true'
         run: pnpm typecheck
 
       - name: Vitest
+        if: needs.changes.outputs.web == 'true'
         run: pnpm test
 
       - name: Build
+        if: needs.changes.outputs.web == 'true'
         run: pnpm build
 
       - name: Setup Docker Buildx
+        if: needs.changes.outputs.web == 'true'
         uses: docker/setup-buildx-action@v3
 
       # 镜像构建验证:Dockerfile COPY 引用失效文件、lockfile 与依赖漂移等问题
       # 在此拦截,避免流入生产部署才暴露
       - name: Docker 镜像构建验证
+        if: needs.changes.outputs.web == 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./web
@@ -150,16 +219,25 @@ jobs:
   # violet 作为 client 不触发,属于模块级假阳性。
   # pnpm audit 无 reachability 分析,高危漏洞未必被实际调用,初期仅告警不阻断。
   # 待前端依赖基线清理后,移除 continue-on-error 升级为阻断。
+  # 按变更侧裁剪:govulncheck 只查 api 依赖,pnpm audit 只查 web 依赖。
   # ============================================================
   security:
     name: Dependency Security
+    needs: changes
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
+      # 无依赖文件变更时空跑 success（同 backend 的 #142 说明）
+      - name: 无依赖文件变更，跳过
+        if: needs.changes.outputs.api != 'true' && needs.changes.outputs.web != 'true'
+        run: echo "无 api/web 依赖文件变更，跳过依赖扫描"
+
       - uses: actions/checkout@v7
+        if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
 
       - name: Setup Go
+        if: needs.changes.outputs.api == 'true'
         uses: actions/setup-go@v5
         with:
           go-version: "1.26"
@@ -167,12 +245,14 @@ jobs:
 
       - name: Install govulncheck
         # pin 版本:@latest 行为漂移可能突然 break CI;升级走 dependabot 或人工
+        if: needs.changes.outputs.api == 'true'
         run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
 
       - name: govulncheck (Go)
         # 非零退出时分流:输出含漏洞报告特征(Vulnerability #N / Fixed in:)走
         # Fixed-in 过滤;否则是工具自身执行错误(编译失败/网络等),必须失败——
         # 此前一律落入过滤逻辑,执行错误因无 "Fixed in:" 被吞成绿色 warning(#138)
+        if: needs.changes.outputs.api == 'true'
         working-directory: api
         run: |
           set +e
@@ -188,18 +268,43 @@ jobs:
           # 提取有修复版本的漏洞(Fixed in: 非 N/A)
           fixable=$(echo "$output" | grep "Fixed in:" | grep -v "N/A" || true)
           if [ -n "$fixable" ]; then
+            # fix 版本可能尚未进入 setup-go 清单(Go 刚发布/即将发布的窗口期):
+            # govulncheck DB 从 release dashboard prepared 态就提前标记 fix 版本,
+            # 但 runner 装不到,升级无门。fix 版本严格高于当前 toolchain 时
+            # 降级 warning;setup-go 清单同步后 toolchain 升级,漏洞自动消失。
+            CURRENT_GO=$(go version | grep -oE 'go[0-9]+\.[0-9]+\.[0-9]+' || true)
+            if [ -z "${CURRENT_GO}" ]; then
+              # 解析失败(rc/devel 等非三段版本号)时跳过降级、保持 error:
+              # 窗口期降级的 fail-safe 方向是宁可误报,不可漏报可修复漏洞
+              echo "::warning::无法解析当前 Go 版本,跳过窗口期降级(保持 error 语义)"
+            else
+              for FIX_VER in $(echo "$fixable" | grep -oE 'go[0-9]+\.[0-9]+\.[0-9]+' | sort -u); do
+                # fix 严格高于当前 → runner 装不到 → 窗口期降级;
+                # fix <= 当前时保持 error(go.mod 声明过旧导致,升级声明即可)
+                if [ "$(printf '%s\n%s\n' "$CURRENT_GO" "$FIX_VER" | sort -V | tail -1)" = "$FIX_VER" ] && [ "$CURRENT_GO" != "$FIX_VER" ]; then
+                  echo "::warning::${FIX_VER} 尚未进入 setup-go 清单(当前 ${CURRENT_GO}),相关漏洞降级为 advisory"
+                  # @ 锚定行尾:govulncheck 格式为 "Fixed in: module@version",
+                  # 避免子串误删(go1.26.6 误删 go1.26.60 的行)
+                  fixable=$(echo "$fixable" | grep -v "@${FIX_VER}\$" || true)
+                fi
+              done
+            fi
+          fi
+          if [ -n "$fixable" ]; then
             echo "::error::发现可修复的漏洞,请升级依赖:"
             echo "$fixable"
             exit 1
           fi
-          echo "::warning::所有漏洞均为 Fixed-in-N/A(上游未发修复版),降级为 advisory"
+          echo "::warning::所有漏洞均为 Fixed-in-N/A 或 fix 版本尚未进入 toolchain 清单,降级为 advisory"
 
       - name: Setup pnpm
+        if: needs.changes.outputs.web == 'true'
         uses: pnpm/action-setup@v6
         with:
           version: 10
 
       - name: pnpm audit (frontend)
+        if: needs.changes.outputs.web == 'true'
         working-directory: web
         run: pnpm audit --audit-level=high
         continue-on-error: true
