@@ -120,6 +120,25 @@ func TestSubscriber_SubscriptionFetched_Success_NoNotification(t *testing.T) {
 	assert.Empty(t, store.saved)
 }
 
+func TestSubscriber_SubscriptionFetched_ManualSuccess_WritesNotification(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	ownerID := newID()
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{ownerID: ownerID},
+		&fakeCommentLookup{},
+		&fakeAdminLookup{},
+	)
+
+	// 手动触发（isSystem=false）+ 成功 → 应通知
+	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
+		newID(), "rua.plus", true, 3, 0, "", "", false,
+	))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Contains(t, store.saved[0].Title(), "抓取完成")
+	assert.Contains(t, store.saved[0].Body(), "3 篇")
+}
+
 func TestSubscriber_FriendLinkCreated_NotifiesAdmins(t *testing.T) {
 	store := &fakeStoreCorrect{}
 	admin1, admin2 := newID(), newID()

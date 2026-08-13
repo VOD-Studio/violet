@@ -126,8 +126,10 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 // --- 事件处理 ---
 
 func (s *Subscriber) handleSubscriptionFetched(ctx context.Context, e domainsubscription.SubscriptionFetched) ([]notifyAction, bool) {
-	// 只有失败才通知
-	if e.Error == "" {
+	// 通知规则：
+	//   - 调度器自动（IsSystem=true）：仅失败通知
+	//   - 手动触发（IsSystem=false）：成功/失败都通知（用户点了"立即抓取"，要等结果）
+	if e.IsSystem && e.Error == "" {
 		return nil, false
 	}
 
@@ -137,14 +139,30 @@ func (s *Subscriber) handleSubscriptionFetched(ctx context.Context, e domainsubs
 		return nil, false
 	}
 
-	title := fmt.Sprintf("订阅「%s」抓取失败", e.Title)
+	var title, body string
+	if e.Success {
+		title = fmt.Sprintf("订阅「%s」抓取完成", e.Title)
+		if e.Imported > 0 {
+			body = fmt.Sprintf("新增 %d 篇文章", e.Imported)
+		} else {
+			body = "无新文章"
+		}
+	} else {
+		title = fmt.Sprintf("订阅「%s」抓取失败", e.Title)
+		body = e.Error
+	}
 	return []notifyAction{{
 		userID:     ownerID,
 		sourceType: domainnotification.SourceSubscriptionFailed,
 		sourceID:   e.AggregateID(),
 		title:      title,
-		body:       e.Error,
-		payload:    map[string]any{"subscription_id": e.AggregateID().String()},
+		body:       body,
+		payload: map[string]any{
+			"subscription_id": e.AggregateID().String(),
+			"success":         e.Success,
+			"imported":        e.Imported,
+			"failed":          e.Failed,
+		},
 	}}, true
 }
 
