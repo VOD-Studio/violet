@@ -24,8 +24,8 @@ interface PageShellProps {
  *
  * 标题区用 shrink-0 固定在内容区滚动容器上方，不随滚动消失；
  * 内容超出视口时由内容区滚动容器接管滚动，滚动条贴 main 视口边缘（无水平 padding）。
- * min-h-full 让内容少时撑满高度（表格页 DataTable flex-1 填充并内部滚动），
- * 内容多时溢出触发滚动（非表格页如 settings 长表单、emojis 卡片网格）。
+ * flex-1 让内容少时撑满高度（表格页 DataTable max-h-full 据此限高并内部滚动），
+ * 内容多时由 flex 子项默认 min-height:auto 撑开触发外层滚动（非表格页如 settings 长表单）。
  */
 export function PageShell({ description, action, sticky, children }: PageShellProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -83,7 +83,7 @@ export function PageShell({ description, action, sticky, children }: PageShellPr
 				ref={scrollRef}
 				className="relative isolate flex min-h-0 flex-1 flex-col overflow-y-auto"
 			>
-				<div className="flex min-h-full flex-col gap-6 px-4 pb-6 md:px-6">{children}</div>
+				<div className="flex flex-1 flex-col gap-6 px-4 pb-6 md:px-6">{children}</div>
 			</div>
 		</div>
 	);
