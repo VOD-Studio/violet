@@ -77,15 +77,9 @@ export const useFetchSubscription = () => {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: (id: string) => api.fetchSubscription(id),
-		onSuccess: (report) => {
+		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: subscriptionKeys.all });
-			if (report.SubscriptionError) {
-				toast.error(`抓取失败：${report.SubscriptionError}`);
-			} else {
-				toast.success(
-					`抓取完成：导入 ${report.Imported}，跳过 ${report.Skipped}，失败 ${report.Failed}`,
-				);
-			}
+			toast.success("抓取已开始，完成后会通知你");
 		},
 		onError: (e: Error) => toast.error(`抓取失败：${e.message}`),
 	});

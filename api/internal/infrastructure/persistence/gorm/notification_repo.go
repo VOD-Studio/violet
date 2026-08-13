@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
+
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
@@ -159,6 +161,8 @@ func notificationToPO(n *domainnotification.Notification) model.Notification {
 	}
 	if id := n.GetID(); !id.IsZero() {
 		po.ID = id.UUID()
+	} else {
+		po.ID = uuid.New()
 	}
 	// payload → JSONB
 	if p := n.Payload(); len(p) > 0 {
