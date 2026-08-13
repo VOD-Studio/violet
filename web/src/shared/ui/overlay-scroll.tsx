@@ -11,6 +11,12 @@ const THUMB_TRANSITION = "opacity 150ms, background-color 150ms";
  * 隐藏原生滚动条，渲染自定义 thumb 浮于内容上方，不占据布局空间。
  * 支持垂直/水平方向自动检测、拖拽 thumb 滚动。
  * thumb 在鼠标移入内容区或滚动时显示，移出后自动隐藏。
+ *
+ * Stacking context 隔离：
+ * - wrapper `isolation: isolate` 防止 track 的 z-index 泄漏到外部
+ * - .os-host `isolation: isolate` 困住 children 的 z-index（sticky 列等），
+ *   使其不与 track 竞争
+ * - track 只需 `z-index: 1`（仅需高于 .os-host 这个兄弟节点）
  */
 const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 	({ children, className, style, ...props }, ref) => {
@@ -185,10 +191,10 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 		}, []);
 
 		return (
-			<div className={cn("relative", className)}>
+			<div className={cn("relative isolate", className)}>
 				<div
 					ref={scrollRef}
-					className="os-host h-full overflow-auto"
+					className="os-host isolate h-full overflow-auto"
 					style={style}
 					{...props}
 				>
@@ -197,7 +203,7 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 				{/* 垂直滚动条 track — 始终挂载，通过 display:none 控制 */}
 				<div
 					ref={vTrackRef}
-					className="pointer-events-none absolute right-0.5 top-0.5 bottom-0.5 z-50 w-1.5"
+					className="pointer-events-none absolute right-0.5 top-0.5 bottom-0.5 z-1 w-1.5"
 					style={{ display: "none" }}
 				>
 					<div
@@ -213,7 +219,7 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 				{/* 水平滚动条 track */}
 				<div
 					ref={hTrackRef}
-					className="pointer-events-none absolute bottom-0.5 left-0.5 right-0.5 z-50 h-1.5"
+					className="pointer-events-none absolute bottom-0.5 left-0.5 right-0.5 z-1 h-1.5"
 					style={{ display: "none" }}
 				>
 					<div
