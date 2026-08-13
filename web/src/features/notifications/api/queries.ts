@@ -8,6 +8,7 @@ import {
 	markNotificationRead,
 	type NotificationItem,
 } from "@shared/api/notifications";
+import type { PagedResponse } from "@shared/api/types";
 import { notificationKeys } from "./keys";
 
 const PAGE_SIZE = 20;
@@ -24,7 +25,7 @@ export const useUnreadCount = () =>
 	useQuery({
 		queryKey: notificationKeys.unreadCount,
 		queryFn: () => fetchUnreadCount(),
-		refetchInterval: 60_000, // SSE 断连时 60s fallback 轮询
+		refetchInterval: 60_000,
 	});
 
 /** useMarkNotificationRead - 标记单条已读（乐观更新） */
@@ -34,19 +35,19 @@ export const useMarkNotificationRead = () => {
 		mutationFn: (id: string) => markNotificationRead(id),
 		onMutate: async (id: string) => {
 			await qc.cancelQueries({ queryKey: notificationKeys.all });
-			// 列表乐观更新
-			qc.setQueryData(
-				notificationKeys.list,
-				(old: { data?: NotificationItem[]; pagination?: unknown } | undefined) =>
-					old?.data
-						? { ...old, data: old.data.map((n) => (n.id === id ? { ...n, is_read: true } : n)) }
-						: old,
-			);
+			// 通知列表 key 带 { page, limit } 后缀，用 setQueriesData + predicate 匹配
+			qc.setQueriesData({ queryKey: notificationKeys.list }, (old: unknown) => {
+				if (!old || typeof old !== "object") return old;
+				const typed = old as PagedResponse<NotificationItem>;
+				if (!Array.isArray(typed.data)) return old;
+				return {
+					...typed,
+					data: typed.data.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+				};
+			});
 			// 未读计数 -1
-			qc.setQueryData(
-				notificationKeys.unreadCount,
-				(old: { unread_count: number } | undefined) =>
-					old ? { unread_count: Math.max(0, old.unread_count - 1) } : old,
+			qc.setQueryData<{ unread_count: number }>(notificationKeys.unreadCount, (old) =>
+				old ? { unread_count: Math.max(0, old.unread_count - 1) } : old,
 			);
 		},
 		onSettled: () => {
@@ -62,12 +63,18 @@ export const useMarkAllRead = () => {
 		mutationFn: () => markAllNotificationsRead(),
 		onMutate: async () => {
 			await qc.cancelQueries({ queryKey: notificationKeys.all });
-			qc.setQueryData(
-				notificationKeys.list,
-				(old: { data?: NotificationItem[]; pagination?: unknown } | undefined) =>
-					old?.data ? { ...old, data: old.data.map((n) => ({ ...n, is_read: true })) } : old,
-			);
-			qc.setQueryData(notificationKeys.unreadCount, () => ({ unread_count: 0 }));
+			qc.setQueriesData({ queryKey: notificationKeys.list }, (old: unknown) => {
+				if (!old || typeof old !== "object") return old;
+				const typed = old as PagedResponse<NotificationItem>;
+				if (!Array.isArray(typed.data)) return old;
+				return {
+					...typed,
+					data: typed.data.map((n) => ({ ...n, is_read: true })),
+				};
+			});
+			qc.setQueryData<{ unread_count: number }>(notificationKeys.unreadCount, () => ({
+				unread_count: 0,
+			}));
 		},
 		onSettled: () => {
 			qc.invalidateQueries({ queryKey: notificationKeys.all });
