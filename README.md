@@ -116,6 +116,25 @@ make dev
 - 后端 API: http://localhost:9090
 - 健康检查: http://localhost:9090/api/health
 
+<details>
+<summary>在 Docker 容器内开发（coder / code-server / OMP 等）</summary>
+
+容器内无法经 `localhost` 访问宿主机上的数据库容器，需用 `host.docker.internal` 覆盖 host：
+
+```bash
+# 1. 复制环境变量模板
+make env
+
+# 2. 复制容器开发覆盖配置
+cp .env.docker-dev.example .env.docker-dev
+
+# 3. 启动容器内开发环境
+make dev-dind
+```
+
+前置条件：`docker.sock` 可访问（已加入 `docker` 组）。`host.docker.internal` 由 Docker Desktop 内置；Linux 原生 Docker 需在容器加 `--add-host=host.docker.internal:host-gateway`。
+
+
 ## 生产部署
 
 线上环境为 **xunrua.top**（rua 服务器，SSR 容器 + nginx-proxy 反代 + Let's Encrypt TLS）。日常发版全自动，不需要手动登录服务器：
@@ -159,6 +178,7 @@ make help           # 查看所有可用命令
 
 # 开发
 make dev            # 启动完整开发环境（api + web + postgres + redis）
+make dev-dind       # 容器内开发（Docker-in-Docker，DB 经 host.docker.internal）
 make up             # 仅启动 PostgreSQL + Redis
 make logs           # 查看日志
 make check          # 检查环境依赖（Go/Node/Docker）
