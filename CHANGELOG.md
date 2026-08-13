@@ -7,6 +7,40 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.3](https://github.com/VOD-Studio/violet/compare/v2.8.2...v2.8.3) (2026-08-13)
+
+
+### 新增
+
+* **nav-menu:** 收起态分组图标支持飞出菜单并指示子路由激活 ([f8c47a7](https://github.com/VOD-Studio/violet/commit/f8c47a710cb324f768732eee4471e4d6271a845a))
+
+
+### 修复
+
+* **admin-layout:** FLIP 动画 finished promise 加 catch 防未处理拒绝 ([1614849](https://github.com/VOD-Studio/violet/commit/161484904e6387cdbd57460593f81f2087f98dfd))
+* **admin-layout:** 非表格页内容溢出可滚动 ([e6af4e4](https://github.com/VOD-Studio/violet/commit/e6af4e4cafb613ecb494f8f97de4a3d5d6cfaa34))
+* **admin:** 全部表格迁移到 pagination 属性 ([06eadcc](https://github.com/VOD-Studio/violet/commit/06eadcc155dc503633b29ac24750539db33381e6))
+* **admin:** 恢复 subscriptions 与 users 每页条数选择器 ([4868ed5](https://github.com/VOD-Studio/violet/commit/4868ed5b3eb7a2fe3e60d66e97e5819d12b49bbe))
+* **admin:** 权限分组默认折叠、侧边栏切换掉帧与分组导航交互 ([99bb67b](https://github.com/VOD-Studio/violet/commit/99bb67b30815e8ea782ea0818c7aa80a88cede31))
+* **audit:** 订阅抓取摘要隐藏技术错误并兜底空标题 ([22c71a8](https://github.com/VOD-Studio/violet/commit/22c71a806b7a58e042ed6db3ad536fbe950e9944))
+* **data-table:** 每页条数选择器默认显示并支持 opt-out ([df6019c](https://github.com/VOD-Studio/violet/commit/df6019cba9d77c22e8a6ed8361d162d1849b444a))
+* **data-table:** 移除未实现的 stickyHeader prop ([96760f6](https://github.com/VOD-Studio/violet/commit/96760f6d1a70c9768783cc08be11f69d700c3668))
+* **data-table:** 表格自适应剩余空间并内部滚动 ([4d1a6ec](https://github.com/VOD-Studio/violet/commit/4d1a6eceaa09c42a9298b60f09986c763312dd27))
+* **nav-menu:** 父项默认折叠不再跟随路由自动展开 ([5b36fe8](https://github.com/VOD-Studio/violet/commit/5b36fe81d10ab8bbe50d9aa78a8ddaa2076bc0ee))
+* **permissions:** 权限分组默认折叠 ([5cebd98](https://github.com/VOD-Studio/violet/commit/5cebd98c09c5da834e528f640997af44ec77dcf0))
+
+
+### 性能优化
+
+* **data-table:** 无展开行时容器 resize 不再触发表格重渲染 ([1febc31](https://github.com/VOD-Studio/violet/commit/1febc318c29b7ea7023ed1e4f1eafbae4d279ca0))
+* **overlay-scroll:** 消除滚动时 React 重渲染 ([c39b597](https://github.com/VOD-Studio/violet/commit/c39b597ca384ab19ee2023684d2fe6e7d91fc144))
+* **sidebar:** 侧边栏切换改 FLIP 滑动消除大表格页掉帧 ([ace2d51](https://github.com/VOD-Studio/violet/commit/ace2d51bd6fbbff40589a2f2370f96fdec2d92c2))
+
+
+### 重构
+
+* **subscription:** 提取 feed 错误分类字符串为 domain 常量 ([97c9033](https://github.com/VOD-Studio/violet/commit/97c90338e2bc8a1455b682652c8e5facd1fe073d))
+
 ## [2.8.2](https://github.com/VOD-Studio/violet/compare/v2.8.1...v2.8.2) (2026-08-12)
 
 
