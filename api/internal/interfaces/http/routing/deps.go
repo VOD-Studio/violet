@@ -86,6 +86,7 @@ type Deps struct {
 	Tweet           *tweethttp.Handler
 	FriendLink      *friendlinkhttp.Handler
 	Notification    *notificationhttp.Handler
+	NotificationStream *notificationhttp.StreamHandler
 
 	MCP MCPHandlers
 }

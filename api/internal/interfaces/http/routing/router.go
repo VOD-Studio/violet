@@ -355,6 +355,7 @@ func registerNotificationRoutes(v1 chi.Router, d *Deps) {
 		r.With(d.SessionAuth).Group(func(r chi.Router) {
 			r.Get("/", notifH.List)
 			r.Get("/unread-count", notifH.UnreadCount)
+			r.Get("/stream", d.NotificationStream.Stream)
 			r.Post("/read-all", notifH.MarkAllRead)
 			r.Post("/{id}/read", notifH.MarkRead)
 		})

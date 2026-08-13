@@ -63,6 +63,11 @@ func (s *Service) MarkAllAsRead(ctx context.Context, userID domainshared.ID) err
 	return s.repo.MarkAllAsRead(ctx, userID, s.now())
 }
 
+// FindAfterID 查某用户在指定 ID 之后的通知（SSE 断连补发用）。
+func (s *Service) FindAfterID(ctx context.Context, userID, afterID domainshared.ID, limit int) ([]*domainnotification.Notification, error) {
+	return s.repo.FindAfterID(ctx, userID, afterID, limit)
+}
+
 // toDTO 领域实体 → DTO。
 func toDTO(n *domainnotification.Notification) NotificationDTO {
 	dto := NotificationDTO{

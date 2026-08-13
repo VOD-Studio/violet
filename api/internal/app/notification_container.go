@@ -19,6 +19,7 @@ import (
 type NotificationContainer struct {
 	NotificationService *appnotification.Service
 	NotificationHandler *notificationhttp.Handler
+	StreamHandler       *notificationhttp.StreamHandler
 }
 
 // NewNotificationContainer 装配通知模块（领域 + 仓储 + subscriber + handler）。
@@ -30,18 +31,23 @@ func NewNotificationContainer(db *gorm.DB, bus appshared.EventBus) *Notification
 	svc := appnotification.NewService(repo, nil)
 	handler := notificationhttp.NewHandler(svc)
 
+	// SSE 连接管理器 + 推送 subscriber
+	connMgr := appnotification.NewConnectionManager(log.Logger)
+	streamH := notificationhttp.NewStreamHandler(connMgr, svc)
+
 	// 接收者解析适配器（实现 application/notification 的 lookup 接口）
 	subLookup := &subscriptionOwnerAdapter{repo: gormrepo.NewSubscriptionRepository(db)}
 	commentLookup := &commentAuthorAdapter{repo: gormrepo.NewCommentRepository(db)}
 	adminLookup := &adminUserAdapter{db: db}
 
-	// 通知 subscriber 订阅事件总线
-	subscriber := appnotification.NewSubscriber(repo, subLookup, commentLookup, adminLookup, log.Logger)
+	// 通知 subscriber 订阅事件总线（带 SSE 推送）
+	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, connMgr, log.Logger)
 	subscriber.Subscribe(bus)
 
 	return &NotificationContainer{
 		NotificationService: svc,
 		NotificationHandler: handler,
+		StreamHandler:       streamH,
 	}
 }
 
