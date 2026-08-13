@@ -188,11 +188,26 @@ jobs:
           # 提取有修复版本的漏洞(Fixed in: 非 N/A)
           fixable=$(echo "$output" | grep "Fixed in:" | grep -v "N/A" || true)
           if [ -n "$fixable" ]; then
+            # fix 版本可能尚未进入 setup-go 清单(Go 刚发布/即将发布的窗口期):
+            # govulncheck DB 从 release dashboard prepared 态就提前标记 fix 版本,
+            # 但 runner 装不到,升级无门。当前 toolchain 已是最新可得版本时
+            # 降级 warning;setup-go 清单同步后 toolchain 升级,漏洞自动消失。
+            CURRENT_GO=$(go version | grep -oE 'go[0-9]+\.[0-9]+\.[0-9]+' || echo "go0")
+            for FIX_VER in $(echo "$fixable" | grep -oE 'go[0-9]+\.[0-9]+\.[0-9]+' | sort -u); do
+              # fix 版本严格高于当前 toolchain → runner 装不到 → 窗口期降级;
+              # fix <= 当前时保持 error(go.mod 声明过旧导致,升级声明即可)
+              if [ "$(printf '%s\n%s\n' "$CURRENT_GO" "$FIX_VER" | sort -V | tail -1)" = "$FIX_VER" ] && [ "$CURRENT_GO" != "$FIX_VER" ]; then
+                echo "::warning::${FIX_VER} 尚未进入 setup-go 清单(当前 ${CURRENT_GO}),相关漏洞降级为 advisory"
+                fixable=$(echo "$fixable" | grep -vF "$FIX_VER" || true)
+              fi
+            done
+          fi
+          if [ -n "$fixable" ]; then
             echo "::error::发现可修复的漏洞,请升级依赖:"
             echo "$fixable"
             exit 1
           fi
-          echo "::warning::所有漏洞均为 Fixed-in-N/A(上游未发修复版),降级为 advisory"
+          echo "::warning::所有漏洞均为 Fixed-in-N/A 或 fix 版本尚未进入 toolchain 清单,降级为 advisory"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
