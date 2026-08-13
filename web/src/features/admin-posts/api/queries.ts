@@ -16,8 +16,16 @@ import { adminPostKeys } from "./keys";
  */
 export const fetchAdminPosts = async (
 	query: AdminPostListQuery = {},
-): Promise<PagedResponse<AdminPostListItem>> =>
-	apiGetPaged<AdminPostListItem>("/admin/posts", { params: query });
+): Promise<PagedResponse<AdminPostListItem>> => {
+	// tags 类型层为 string[]，后端约定逗号分隔，故在 HTTP 边界拼接。
+	const { tags, ...rest } = query;
+	return apiGetPaged<AdminPostListItem>("/admin/posts", {
+		params: {
+			...rest,
+			tags: tags && tags.length > 0 ? tags.join(",") : undefined,
+		},
+	});
+};
 
 /**
  * useAdminPosts - 后台文章列表 hook
