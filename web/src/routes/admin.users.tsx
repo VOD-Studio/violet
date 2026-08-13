@@ -350,7 +350,7 @@ function AdminUsers() {
 									}
 								>
 									<Trash2 className="size-3.5" />
-									批量禁用
+									禁用
 								</Button>
 							</PermissionGuard>
 							<PermissionGuard permission="user:update-role">
@@ -365,7 +365,7 @@ function AdminUsers() {
 								>
 									<SelectTrigger size="sm" className="w-40">
 										<UserCog className="size-3.5 mr-1" />
-										批量修改角色
+										修改角色
 									</SelectTrigger>
 									<SelectContent>
 										{roles.map((role) => (
