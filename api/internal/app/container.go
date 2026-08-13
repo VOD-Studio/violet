@@ -98,7 +98,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
 	tweet := NewTweetContainer(db, permissionChecker, bus)
 	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
-	notification := NewNotificationContainer(db)
+	notification := NewNotificationContainer(db, bus)
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
