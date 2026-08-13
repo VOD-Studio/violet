@@ -90,7 +90,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus, auth.SessionStore)
 	commentReaction := NewCommentReactionContainer(db)
 	apiToken := NewAPITokenContainer(db, bus)
-	subscription := NewSubscriptionContainer(db, post.PostService, bus)
+	subscription := NewSubscriptionContainer(db, post.PostService, bus, cfg.FeedProxyURL)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService)
 	system := NewSystemContainer(db, rdb, ctx)
 	media := NewMediaContainer(db, rdb, cfg)
