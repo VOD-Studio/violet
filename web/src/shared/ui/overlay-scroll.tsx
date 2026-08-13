@@ -203,7 +203,11 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 					<div
 						ref={vThumbRef}
 						className={cn(THUMB_CLS, "left-0 w-full")}
-						style={{ willChange: "transform", transition: THUMB_TRANSITION, opacity: 0 }}
+						style={{
+							willChange: "transform",
+							transition: THUMB_TRANSITION,
+							opacity: 0,
+						}}
 					/>
 				</div>
 				{/* 水平滚动条 track */}
@@ -215,7 +219,11 @@ const OverlayScroll = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
 					<div
 						ref={hThumbRef}
 						className={cn(THUMB_CLS, "top-0 h-full")}
-						style={{ willChange: "transform", transition: THUMB_TRANSITION, opacity: 0 }}
+						style={{
+							willChange: "transform",
+							transition: THUMB_TRANSITION,
+							opacity: 0,
+						}}
 					/>
 				</div>
 			</div>
