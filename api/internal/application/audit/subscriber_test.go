@@ -470,7 +470,7 @@ func TestSubscriber_SubscriptionFetched_SystemActor(t *testing.T) {
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
 	sid := shared.NewID()
-	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", "", true)
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", "", true, false)
 	require.NoError(t, sub.Handle(ctx, ev))
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
@@ -486,7 +486,7 @@ func TestSubscriber_SubscriptionFetched_UserActor(t *testing.T) {
 	ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 
 	sid := shared.NewID()
-	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", "", false)
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", true, 3, 0, "", "", false, false)
 	require.NoError(t, sub.Handle(ctx, ev))
 	require.Len(t, store.appended, 1)
 	e := store.appended[0]
@@ -502,7 +502,7 @@ func TestSubscriber_SubscriptionFetched_FailureSummary(t *testing.T) {
 	sid := shared.NewID()
 	// feed 层 transient 错误：summary 应显示人类可读分类，不含 Go error 技术细节
 	rawErr := `feed 拉取失败：feed transient 错误 (status=0): Get "https://rua.plus/feed.xml": EOF`
-	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, rawErr, "transient", true)
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, rawErr, "transient", true, false)
 	require.NoError(t, sub.Handle(ctx, ev))
 
 	require.Len(t, store.appended, 1)
@@ -521,7 +521,7 @@ func TestSubscriber_SubscriptionFetched_EmptyTitleFallback(t *testing.T) {
 
 	sid := shared.NewID()
 	// 标题为空（首次抓取前未回填）：摘要应兜底「未命名订阅」而非「「」」
-	ev := domainsubscription.NewSubscriptionFetched(sid, "", false, 0, 0, "boom", "", true)
+	ev := domainsubscription.NewSubscriptionFetched(sid, "", false, 0, 0, "boom", "", true, false)
 	require.NoError(t, sub.Handle(ctx, ev))
 
 	require.Len(t, store.appended, 1)
@@ -546,7 +546,7 @@ func TestSubscriber_SubscriptionFetched_FeedErrorKindMapping(t *testing.T) {
 			sub := newTestSubscriber(store)
 			ctx := auditCtx(t, "actor-1", "admin@blog.com", "1.2.3.4", "ua")
 			sid := shared.NewID()
-			ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "技术细节", tt.kind, true)
+			ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "技术细节", tt.kind, true, false)
 			require.NoError(t, sub.Handle(ctx, ev))
 			e := store.appended[0]
 			assert.Contains(t, e.Summary, tt.want)
@@ -562,7 +562,7 @@ func TestSubscriber_SubscriptionFetched_EmptyErrorFallback(t *testing.T) {
 
 	sid := shared.NewID()
 	// 失败但 error 为空串：摘要应回退「未知错误」而非以「失败：」结尾
-	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "", "", true)
+	ev := domainsubscription.NewSubscriptionFetched(sid, "源", false, 0, 0, "", "", true, false)
 	require.NoError(t, sub.Handle(ctx, ev))
 
 	require.Len(t, store.appended, 1)
