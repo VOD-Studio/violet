@@ -89,7 +89,7 @@ jobs:
 
       - name: Setup Go
         if: needs.changes.outputs.api == 'true'
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: "1.26"
           cache-dependency-path: api/go.sum
@@ -238,7 +238,7 @@ jobs:
 
       - name: Setup Go
         if: needs.changes.outputs.api == 'true'
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: "1.26"
           cache-dependency-path: api/go.sum
