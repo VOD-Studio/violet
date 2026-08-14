@@ -224,9 +224,9 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 			isEditing={isEditing}
 			onEdit={handleEdit}
 			displayValue={
-				<p className="text-base font-medium tracking-tight">
+				<p className="text-sm font-medium">
 					{user.display_name || (
-						<span className="text-muted-foreground">未设置，显示用户名</span>
+						<span className="font-normal text-muted-foreground">未设置</span>
 					)}
 				</p>
 			}

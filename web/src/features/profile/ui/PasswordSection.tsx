@@ -121,9 +121,13 @@ const ChangePasswordCard = () => {
 			description={isEditing ? "定期更换密码有助于保障账户安全" : undefined}
 			action={
 				!isEditing ? (
-					<Button size="sm" variant="outline" onClick={handleEdit} className="gap-1.5">
+					<Button
+						size="icon-xs"
+						variant="ghost"
+						onClick={handleEdit}
+						aria-label="修改密码"
+					>
 						<PencilLine className="size-3.5" />
-						修改
 					</Button>
 				) : undefined
 			}
