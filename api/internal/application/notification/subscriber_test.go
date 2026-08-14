@@ -465,3 +465,21 @@ func TestSubscriber_CommentApproved_Anonymous_NotifiesPostAuthor(t *testing.T) {
 	assert.Equal(t, domainnotification.SourceCommentCreated, store.saved[0].SourceType())
 	assert.Equal(t, postAuthorID, store.saved[0].UserID())
 }
+
+func TestSubscriber_CommentSpammed_NotifiesAuthor(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	authorID := newID()
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{},
+		&fakeCommentLookup{authorID: &authorID},
+		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{},
+		&fakePostAuthorLookup{},
+	)
+
+	err := sub.Handle(context.Background(), domaincomment.NewCommentSpammed(newID()))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, domainnotification.SourceCommentRejected, store.saved[0].SourceType())
+	assert.Equal(t, authorID, store.saved[0].UserID())
+}

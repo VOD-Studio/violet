@@ -144,6 +144,9 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 	case domaincomment.CommentApproved:
 		return s.handleCommentApproved(ctx, e)
 
+	case domaincomment.CommentSpammed:
+		return s.handleCommentSpammed(ctx, e)
+
 	case domainuser.UserPasswordChanged:
 		return s.handlePasswordChanged(e), true
 
@@ -318,6 +321,27 @@ func (s *Subscriber) handleFriendlinkReviewed(ctx context.Context, linkID domain
 		title:      title,
 		body:       body,
 		payload:    map[string]any{"name": name, "approved": approved},
+	}}, true
+}
+
+// handleCommentSpammed 评论被标垃圾 → 通知评论作者审核未通过；匿名评论跳过。
+func (s *Subscriber) handleCommentSpammed(ctx context.Context, e domaincomment.CommentSpammed) ([]notifyAction, bool) {
+	authorID, err := s.commentLookup.FindAuthorID(ctx, e.AggregateID())
+	if err != nil {
+		s.log.Warn().Err(err).Str("comment_id", e.AggregateID().String()).Msg("解析评论作者失败")
+		return nil, false
+	}
+	if authorID == nil {
+		return nil, false
+	}
+
+	return []notifyAction{{
+		userID:     *authorID,
+		sourceType: domainnotification.SourceCommentRejected,
+		sourceID:   e.AggregateID(),
+		title:      "你的评论未通过审核",
+		body:       "",
+		payload:    map[string]any{"comment_id": e.AggregateID().String()},
 	}}, true
 }
 
