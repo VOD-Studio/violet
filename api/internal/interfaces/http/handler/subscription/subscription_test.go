@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -177,6 +178,7 @@ func TestUpdate_EmptyBody_Returns400(t *testing.T) {
 // fetchStubRepo 专供 Fetch 测试：FindByIDForSchedule 返回预置订阅，Save 记录。
 type fetchStubRepo struct {
 	domainsubscription.SubscriptionRepository
+	mu    sync.Mutex
 	sub   *domainsubscription.Subscription
 	saved *domainsubscription.Subscription
 }
@@ -186,6 +188,8 @@ func (s *fetchStubRepo) FindByIDForSchedule(_ context.Context, _ domainshared.ID
 }
 
 func (s *fetchStubRepo) Save(_ context.Context, sub *domainsubscription.Subscription) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.saved = sub
 	return nil
 }
@@ -200,7 +204,11 @@ func TestFetch_ReturnsReport(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.Fetch(rr, req)
 
-	assert.Equal(t, http.StatusOK, rr.Code, "应返回 200（抓取报告，即便有错误也非 HTTP error）")
-	// FetchNow 即使 FetchOne 报配置错误，也会走状态机 + Save（repo 有记录）
-	require.NotNil(t, repo.saved, "FetchNow 应 Save 订阅状态")
+	assert.Equal(t, http.StatusAccepted, rr.Code, "应返回 202（异步抓取，结果通过通知告知）")
+	// FetchNow 在后台 goroutine 跑：即使 FetchOne 报配置错误，也会走状态机 + Save（repo 有记录）
+	require.Eventually(t, func() bool {
+		repo.mu.Lock()
+		defer repo.mu.Unlock()
+		return repo.saved != nil
+	}, time.Second, 10*time.Millisecond, "FetchNow 应 Save 订阅状态")
 }
