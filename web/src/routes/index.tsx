@@ -7,11 +7,14 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
 import PostList from "@features/posts/ui/PostList";
 import { settingsKeys } from "@features/settings/api/keys";
-import { fetchAnnouncements } from "@features/settings/api/queries";
+import { fetchAnnouncements, fetchSettings, useSettings } from "@features/settings/api/queries";
+import type { SiteSettings } from "@features/settings/model/types";
 import { createFileRoute } from "@tanstack/react-router";
 import LandingHero from "@widgets/LandingHero";
 
 function HomePage() {
+	// 最新文章条数与「每页文章数」设置保持一致
+	const limit = useSettings().data?.posts_per_page;
 	return (
 		<div className="flex flex-col">
 			<LandingHero />
@@ -23,7 +26,7 @@ function HomePage() {
 
 				<div>
 					<h2 className="mb-12 text-3xl font-bold tracking-tight">最新文章</h2>
-					<PostList />
+					<PostList query={limit ? { limit } : {}} />
 				</div>
 
 				<div>
@@ -42,10 +45,19 @@ function HomePage() {
 
 export const Route = createFileRoute("/")({
 	loader: async ({ context }) => {
-		await context.queryClient
+		const qc = context.queryClient;
+		// 先取站点设置，最新文章条数与 posts_per_page 对齐（与组件 queryKey 一致）
+		await qc
+			.ensureQueryData({ queryKey: settingsKeys.public(), queryFn: fetchSettings })
+			.catch(() => {});
+		const postsQuery = (() => {
+			const limit = qc.getQueryData<SiteSettings>(settingsKeys.public())?.posts_per_page;
+			return limit ? { limit } : {};
+		})();
+		await qc
 			.ensureQueryData({
-				queryKey: postKeys.list({}),
-				queryFn: () => fetchPosts({}),
+				queryKey: postKeys.list(postsQuery),
+				queryFn: () => fetchPosts(postsQuery),
 			})
 			.catch(() => {});
 

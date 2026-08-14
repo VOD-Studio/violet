@@ -6,6 +6,7 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
 import MobileTocFab from "@features/posts/ui/MobileTocFab";
+import { useSettings } from "@features/settings/api/queries";
 import { apiPost } from "@shared/api/request";
 import { SITE_URL } from "@shared/config/env";
 import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
@@ -64,6 +65,9 @@ function BlogDetailPage() {
 	const { data: summary } = useAnnotationSummary(post?.id ?? "");
 	const me = useMe();
 	const isLoggedIn = !!me.data;
+	// 站点评论总开关：关闭时整页隐藏评论互动（底部评论区 + 批注层 + 划线工具条），
+	// 后端 Create 同样拒绝，此处只管 UI 呈现
+	const commentsEnabled = useSettings().data?.comments_enabled ?? true;
 
 	// 进入页面增加浏览量（仅一次，失败静默不影响阅读）
 	useEffect(() => {
@@ -240,17 +244,19 @@ function BlogDetailPage() {
 				</div>
 
 				{/* 批注角标 + 气泡层（懒加载：summary 计数渲染角标，点击后按块拉批注） */}
-				<Suspense fallback={null}>
-					<AnnotationLayer
-						contentRef={contentRef}
-						summary={summary ?? []}
-						postId={post?.id}
-						isLoggedIn={isLoggedIn}
-					/>
-				</Suspense>
+				{commentsEnabled && (
+					<Suspense fallback={null}>
+						<AnnotationLayer
+							contentRef={contentRef}
+							summary={summary ?? []}
+							postId={post?.id}
+							isLoggedIn={isLoggedIn}
+						/>
+					</Suspense>
+				)}
 
 				{/* 划线批注浮动工具条（选区上方浮动，提交后高亮落定） */}
-				{post?.id && (
+				{post?.id && commentsEnabled && (
 					<Suspense fallback={null}>
 						<FloatingToolbar
 							contentRef={contentRef}
@@ -262,7 +268,7 @@ function BlogDetailPage() {
 
 				{/* 底部自由评论区：放在 article 内、正文+TOC 容器之后，
                     复用同样的 flex 结构保证与正文严格对齐（含大屏 TOC 偏移）。 */}
-				{post?.id && (
+				{post?.id && commentsEnabled && (
 					<div className="relative mx-auto mt-16 flex max-w-6xl justify-center gap-8">
 						{toc.length > 1 ? (
 							<aside className="hidden w-56 shrink-0 2xl:block" />
