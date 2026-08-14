@@ -16,7 +16,7 @@
 
 - **文章创作**：Markdown 富文本（TipTap）、流程图/时序图/饼图等图块、公式、代码高亮（Shiki）、版本管理、草稿/发布/归档状态机
 - **阅读体验**：SSR 首屏、目录导航、深色主题、锚点批注 + 评论互动（GIF 表情、图片上传）、音乐播放
-- **社区能力**：批注审核工作流、按 IP 哈希匿名的表情反应、公告、项目展示
+- **社区能力**：批注审核工作流、按 IP 哈希匿名的表情反应、公告、项目展示、友链申请与审核、站内通知中心（SSE 实时推送）
 - **平台能力**：RBAC 角色权限（内置超管 + 委派超管）、登录态审计、操作日志（事件驱动 append-only）、用户/媒体/订阅管理
 - **可运行代码块**：代码沙箱执行（Python/Node/Go/Rust/Bun，复用 yggdrasil runner 镜像）
 - **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/评论检索/RSS 抓取，最小权限拆分）
@@ -30,11 +30,11 @@
 |------|------|
 | 语言 | Go 1.26 |
 | 路由 | chi v5 |
-| 数据库 | PostgreSQL 16（GORM + golang-migrate + sqlc） |
+| 数据库 | PostgreSQL 16（GORM 数据访问 + golang-migrate SQL 迁移） |
 | 缓存 | Redis 7 |
 | 认证 | Opaque session cookie（Redis 后端）+ CSRF double-submit |
 | 日志 | zerolog（结构化） |
-| 依赖注入 | google/wire（部分模块）+ 手工装配 |
+| 依赖注入 | 手工装配（`internal/app/*_container.go` 模块容器） |
 | 架构 | DDD 四层（domain/application/infrastructure/interfaces） |
 
 ### 前端 (`web/`)
@@ -69,7 +69,7 @@ violet/
 │   │   ├── application/    应用层（用例编排、CQRS command/query）
 │   │   ├── infrastructure/ 基础设施层（GORM 实现、Redis、外部 API 适配）
 │   │   ├── interfaces/     接口层（HTTP handler、路由、中间件）
-│   │   ├── app/            依赖注入容器（wire / 手工装配）
+│   │   ├── app/            依赖注入容器（手工装配，每模块一个 *_container.go）
 │   │   └── middleware/     HTTP 中间件（session/CSRF/限流/审计）
 │   ├── migrations/         数据库迁移（golang-migrate）
 │   └── config.yaml         入库配置（全量配置文档，敏感值走根 .env）
@@ -195,9 +195,6 @@ make api-test       # 后端测试
 make web-lint       # 前端 biome
 make web-typecheck  # TypeScript 类型检查
 make web-test       # 前端 Vitest
-
-# 代码生成
-make wire           # 生成 wire 依赖注入代码
 
 # 构建
 make build          # 构建前后端生产版本

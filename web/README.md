@@ -36,7 +36,8 @@ web/src/
 │   ├── ui/           # 通用 UI 组件
 │   ├── lib/          # 工具函数
 │   ├── config/       # 环境配置与常量
-│   └── server/       # SSR server 端辅助函数
+│   ├── server/       # SSR server 端辅助函数
+│   └── vendor/       # 外部库本地适配
 ├── test/             # 测试配置与 setup
 ├── router.tsx        # 路由器入口
 └── styles.css        # 全局样式与 Tailwind 入口
@@ -96,13 +97,15 @@ pnpm sync:pdf-worker     # 同步 pdfjs worker 到 public/（postinstall 已自�
 |------|------|
 | `/` | 首页/文章列表 |
 | `/blog/:slug` | 文章详情 |
+| `/blog/archive` | 文章归档 |
 | `/announcements/:id` | 公告详情 |
 | `/projects` | 项目展示 |
+| `/friends` | 友链页 |
+| `/about` | 关于页 |
 | `/profile` | 个人资料 |
 | `/login`, `/register`, `/forgot-password` | 认证 |
 | `/changelog` | 更新日志 |
-| `/announcement-lab` | 公告实验页 |
-| `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/审计日志/MCP/订阅/设置等） |
+| `/admin/*` | 后台管理（文章/评论/媒体/用户/角色权限/友链/审计日志/MCP/订阅/设置等） |
 
 路由配置入口：`src/router.tsx`。根布局：`src/routes/__root.tsx`。
 
