@@ -361,3 +361,29 @@ func TestSubscriber_StatusDisabled_NotifiesSelf(t *testing.T) {
 	require.Len(t, store.saved, 1)
 	assert.Contains(t, store.saved[0].Title(), "停用")
 }
+
+func TestSubscriber_UserRegistered_NotifiesAdmins(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	adminID := newID()
+	newUser := newID()
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{},
+		&fakeCommentLookup{},
+		&fakeAdminLookup{ids: []domainshared.ID{adminID}},
+		&fakeFriendlinkLookup{},
+	)
+
+	err := sub.Handle(context.Background(), domainuser.NewUserRegistered(newUser, mustEmail(t, "new@example.com")))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, adminID, store.saved[0].UserID())
+	assert.Equal(t, domainnotification.SourceUserRegistered, store.saved[0].SourceType())
+	assert.Equal(t, "new@example.com", store.saved[0].Body())
+}
+
+func mustEmail(t *testing.T, raw string) domainuser.Email {
+	t.Helper()
+	e, err := domainuser.ParseEmail(raw)
+	require.NoError(t, err)
+	return e
+}

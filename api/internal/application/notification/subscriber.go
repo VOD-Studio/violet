@@ -150,6 +150,9 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 	case domainuser.UserStatusChanged:
 		return s.handleStatusChanged(e), true
 
+	case domainuser.UserRegistered:
+		return s.handleUserRegistered(ctx, e)
+
 	default:
 		return nil, false
 	}
@@ -307,6 +310,28 @@ func (s *Subscriber) handleFriendlinkReviewed(ctx context.Context, linkID domain
 		body:       body,
 		payload:    map[string]any{"name": name, "approved": approved},
 	}}, true
+}
+
+// handleUserRegistered 新用户注册通知管理员（复用 adminLookup，与友链申请同通道）。
+func (s *Subscriber) handleUserRegistered(ctx context.Context, e domainuser.UserRegistered) ([]notifyAction, bool) {
+	adminIDs, err := s.adminLookup.FindAdminIDs(ctx)
+	if err != nil {
+		s.log.Warn().Err(err).Msg("解析管理员用户失败")
+		return nil, false
+	}
+
+	actions := make([]notifyAction, 0, len(adminIDs))
+	for _, adminID := range adminIDs {
+		actions = append(actions, notifyAction{
+			userID:     adminID,
+			sourceType: domainnotification.SourceUserRegistered,
+			sourceID:   e.AggregateID(),
+			title:      "新用户注册",
+			body:       e.Email.String(),
+			payload:    map[string]any{"user_id": e.AggregateID().String(), "email": e.Email.String()},
+		})
+	}
+	return actions, true
 }
 
 func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.CommentApproved) ([]notifyAction, bool) {
