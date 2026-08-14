@@ -52,6 +52,30 @@ function AdminSubscriptionsPage() {
 	const [editing, setEditing] = React.useState<SubscriptionDTO | null>(null);
 	const [deleting, setDeleting] = React.useState<SubscriptionDTO | null>(null);
 
+	// 正在抓取的订阅 ID 集合：202 返回后后台仍在异步抓取，保持 spin 直到列表刷新或超时
+	const [fetchingIds, setFetchingIds] = React.useState<Set<string>>(new Set());
+
+	const handleFetch = (id: string) => {
+		setFetchingIds((prev) => new Set(prev).add(id));
+		fetchMut.mutate(id, {
+			onError: () => {
+				setFetchingIds((prev) => {
+					const next = new Set(prev);
+					next.delete(id);
+					return next;
+				});
+			},
+		});
+		// 保底 60s 清除：抓取不应超过 60s，防止 spin 卡死
+		setTimeout(() => {
+			setFetchingIds((prev) => {
+				const next = new Set(prev);
+				next.delete(id);
+				return next;
+			});
+		}, 60000);
+	};
+
 	const columns: DataTableColumn<SubscriptionDTO>[] = [
 		{
 			key: "title",
@@ -130,11 +154,11 @@ function AdminSubscriptionsPage() {
 							variant="ghost"
 							size="icon-sm"
 							title="立即抓取"
-							disabled={fetchMut.isPending}
-							onClick={() => fetchMut.mutate(row.id)}
+							disabled={fetchingIds.has(row.id)}
+							onClick={() => handleFetch(row.id)}
 						>
 							<RefreshCw
-								className={`size-3.5 ${fetchMut.isPending ? "animate-spin" : ""}`}
+								className={`size-3.5 ${fetchingIds.has(row.id) ? "animate-spin" : ""}`}
 							/>
 						</Button>
 						<Button
