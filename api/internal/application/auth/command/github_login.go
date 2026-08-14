@@ -165,21 +165,13 @@ func (h *GithubLoginHandler) Handle(ctx context.Context, in GithubLoginInput) (L
 	}
 
 	if u == nil {
-		b := make([]byte, 16)
-		rand.Read(b)
-		randomPwd := hex.EncodeToString(b)
-
-		hash, err := h.hasher.Hash(randomPwd)
-		if err != nil {
-			return LoginOutput{}, shared.Internal("密码哈希失败", err)
-		}
-
+		// 密码存空哈希（同 Google 登录：OAuth 建号无密码，忘记密码流程补设）
 		username, err := generateGithubUsername(ctx, userInfo.Login, emailStr, h.userRepo)
 		if err != nil {
 			return LoginOutput{}, shared.Internal("生成用户名失败", err)
 		}
 
-		u = user.NewUser(shared.NewID(), email, username, hash)
+		u = user.NewUser(shared.NewID(), email, username, user.NewPasswordHash(""))
 		u.VerifyEmail()
 		u.SetGithubID(githubIDStr)
 		
