@@ -7,6 +7,19 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.7](https://github.com/VOD-Studio/violet/compare/v2.8.6...v2.8.7) (2026-08-14)
+
+
+### 修复
+
+* **admin/media:** 筛选栏移入 PageShell sticky 区域 ([8a32a06](https://github.com/VOD-Studio/violet/commit/8a32a066f6a0efb666c425b73eb350824b229f68))
+* **admin/subscriptions:** 抓取按钮改为按行 loading 并保持反馈 ([f7caefb](https://github.com/VOD-Studio/violet/commit/f7caefba3e8efa7fa10ff342759ca88a662d35b1))
+* **admin/subscriptions:** 抓取轮询改为订阅详情并修复 timer 管理 ([8c0902a](https://github.com/VOD-Studio/violet/commit/8c0902ae5257487121d7279421359f237b486ec1))
+* **admin/subscriptions:** 轮询检测到完成后调用 clearFetching 清除 spin ([2193f62](https://github.com/VOD-Studio/violet/commit/2193f6238bc4c1d7b4d7db77896f829c2959b27b))
+* **admin:** 全部表格页筛选栏移入 PageShell sticky ([64173ea](https://github.com/VOD-Studio/violet/commit/64173ea7e8025d7a7349e6618b660dcce0548a94))
+* **subscription:** 抓取事件 title 回填修复与 FeedReport 补全 ([cb6d92f](https://github.com/VOD-Studio/violet/commit/cb6d92f5cca4e0408fb95dee1615012e67a97b66))
+* 后台筛选栏固定与订阅抓取体验修复 ([#199](https://github.com/VOD-Studio/violet/issues/199)) ([6431ebe](https://github.com/VOD-Studio/violet/commit/6431ebe499b1ed8071fc2ecdc68b5fda63643740))
+
 ## [2.8.6](https://github.com/VOD-Studio/violet/compare/v2.8.5...v2.8.6) (2026-08-14)
 
 
