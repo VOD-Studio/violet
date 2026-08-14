@@ -1,4 +1,4 @@
-# Blog API
+# violet / api
 
 Go 后端服务，为博客平台提供 RESTful API。采用 **DDD 四层架构**（领域驱动设计），支持文章、评论、音乐、表情、项目管理、用户认证与权限等功能。
 
@@ -42,7 +42,7 @@ make api     # 启动 API
 
 ## 目录结构
 
-```
+```text
 api/
 ├── cmd/
 │   ├── server/            # 应用入口（路由注册 + 依赖装配 + 启动）
@@ -169,7 +169,7 @@ func NewAuthContainer(db, redis, cfg, emailSender, bus) (*AuthContainer, error) 
 
 ### 1. domain 层
 
-```
+```text
 internal/domain/newsletter/
 ├── entity.go       # Subscription 聚合根 + 值对象
 └── repository.go   # SubscriptionRepository 接口（端口）+ 领域错误
@@ -199,7 +199,7 @@ type SubscriptionRepository interface {
 
 ### 2. infrastructure 层
 
-```
+```text
 internal/infrastructure/persistence/gorm/
 └── newsletter_repo.go     # 实现 SubscriptionRepository 接口
 ```
@@ -208,7 +208,7 @@ GORM PO 模型放在 `persistence/gorm/model/`。
 
 ### 3. application 层
 
-```
+```text
 internal/application/newsletter/
 └── service.go             # 用例（Subscribe/Unsubscribe/List）
 ```
@@ -225,7 +225,7 @@ func (s *Service) Subscribe(ctx context.Context, email string) error {
 
 ### 4. interfaces 层
 
-```
+```text
 internal/interfaces/http/handler/newsletter/
 └── newsletter.go          # HTTP handler + 请求/响应 DTO
 ```

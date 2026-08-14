@@ -24,7 +24,7 @@
 
 ## 技术栈
 
-### 后端 (`api/`)
+### 后端（`api/`）
 
 | 类别 | 选型 |
 |------|------|
@@ -37,7 +37,7 @@
 | 依赖注入 | 手工装配（`internal/app/*_container.go` 模块容器） |
 | 架构 | DDD 四层（domain/application/infrastructure/interfaces） |
 
-### 前端 (`web/`)
+### 前端（`web/`）
 
 | 类别 | 选型 |
 |------|------|
@@ -57,7 +57,7 @@
 
 ## 架构概览
 
-```
+```text
 violet/
 ├── api/                    Go 后端服务（DDD 四层）
 │   ├── cmd/
@@ -112,9 +112,9 @@ make dev
 
 启动后：
 
-- 前端: http://localhost:5173
-- 后端 API: http://localhost:9090
-- 健康检查: http://localhost:9090/api/health
+- 前端：http://localhost:5173
+- 后端 API：http://localhost:9090
+- 健康检查：http://localhost:9090/api/health
 
 <details>
 <summary>在 Docker 容器内开发（coder / code-server / OMP 等）</summary>
@@ -133,7 +133,6 @@ make dev-dind
 ```
 
 前置条件：`docker.sock` 可访问（已加入 `docker` 组）。`host.docker.internal` 由 Docker Desktop 内置；Linux 原生 Docker 需在容器加 `--add-host=host.docker.internal:host-gateway`。
-
 
 ## 生产部署
 
@@ -210,7 +209,7 @@ make build          # 构建前后端生产版本
 
 启用后：
 
-- **pre-commit**: 检查 Go 文件 gofmt 格式与前端 biome 检查
+- **pre-commit**：检查 Go 文件 gofmt 格式与前端 biome 检查
 
 提交规范（Conventional Commits，中文 subject）与分支命名详见 [贡献指南](CONTRIBUTING.md)。
 

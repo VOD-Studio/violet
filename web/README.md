@@ -25,7 +25,7 @@
 
 前端采用 **Feature-Sliced Design** 组织代码：
 
-```
+```text
 web/src/
 ├── routes/           # TanStack Start 文件路由
 ├── features/         # 业务模块（每个模块包含 api / ui / hooks / types 等）
@@ -68,7 +68,7 @@ make dev          # 同时启动 API + Web + Postgres + Redis
 ```bash
 # 开发
 pnpm dev                 # 启动 Vite 开发服务器
-pnpm generate-routes     # 重新生成文件路由 (tsr generate)
+pnpm generate-routes     # 重新生成文件路由（tsr generate）
 
 # 构建
 pnpm build               # 生产构建
