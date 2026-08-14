@@ -31,6 +31,8 @@ const (
 	SourceCommentApproved SourceType = "comment_approved"
 	// SourceCommentCreated 文章收到新评论（通知文章作者）
 	SourceCommentCreated SourceType = "comment_created"
+	// SourceCommentPending 评论待审核（通知管理员）
+	SourceCommentPending SourceType = "comment_pending"
 	// SourceCommentRejected 评论未通过审核（通知评论作者）
 	SourceCommentRejected SourceType = "comment_rejected"
 	// SourceUserRegistered 新用户注册（通知管理员）
@@ -47,6 +49,7 @@ var validSourceTypes = map[SourceType]bool{
 	SourceFriendLinkReviewed:    true,
 	SourceCommentApproved:       true,
 	SourceCommentCreated:        true,
+	SourceCommentPending:        true,
 	SourceCommentRejected:       true,
 	SourceUserRegistered:        true,
 	SourceAccountSecurity:       true,

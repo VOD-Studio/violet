@@ -8,6 +8,7 @@ export type NotificationSourceType =
 	| "friendlink_reviewed"
 	| "comment_approved"
 	| "comment_created"
+	| "comment_pending"
 	| "comment_rejected"
 	| "user_registered"
 	| "account_security";

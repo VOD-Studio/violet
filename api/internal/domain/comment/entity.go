@@ -64,6 +64,20 @@ func NewCommentDeleted(commentID shared.ID) CommentDeleted {
 	}
 }
 
+// CommentSubmitted 评论已提交待审事件
+//
+// 订阅者：通知服务（管理员待审提醒）。评论创建即 pending（人工审核制）。
+type CommentSubmitted struct {
+	shared.BaseEvent
+}
+
+// NewCommentSubmitted 构造评论提交事件
+func NewCommentSubmitted(commentID shared.ID) CommentSubmitted {
+	return CommentSubmitted{
+		BaseEvent: shared.NewBaseEvent("comment.submitted", commentID),
+	}
+}
+
 // MaxDepth 展示层级上限。
 // 0 是顶层评论，1 是回复。回复不再往下嵌套（B站式两层扁平）——
 // 回复另一条回复时，depth 还是 1，对话关系靠 parent_id 和 reply_to_name 标。

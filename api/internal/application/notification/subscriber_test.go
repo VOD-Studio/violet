@@ -503,3 +503,21 @@ func TestSubscriber_SubscriptionFetched_AutoPaused_AppendsHint(t *testing.T) {
 	assert.Contains(t, store.saved[0].Body(), "自动暂停")
 	assert.Contains(t, store.saved[0].Body(), "源站连接失败")
 }
+
+func TestSubscriber_CommentSubmitted_NotifiesAdmins(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	adminID := newID()
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{},
+		&fakeCommentLookup{},
+		&fakeAdminLookup{ids: []domainshared.ID{adminID}},
+		&fakeFriendlinkLookup{},
+		&fakePostAuthorLookup{},
+	)
+
+	err := sub.Handle(context.Background(), domaincomment.NewCommentSubmitted(newID()))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, adminID, store.saved[0].UserID())
+	assert.Equal(t, domainnotification.SourceCommentPending, store.saved[0].SourceType())
+}

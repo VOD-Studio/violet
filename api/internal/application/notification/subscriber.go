@@ -147,6 +147,9 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 	case domaincomment.CommentSpammed:
 		return s.handleCommentSpammed(ctx, e)
 
+	case domaincomment.CommentSubmitted:
+		return s.handleCommentSubmitted(ctx, e)
+
 	case domainuser.UserPasswordChanged:
 		return s.handlePasswordChanged(e), true
 
@@ -346,6 +349,28 @@ func (s *Subscriber) handleCommentSpammed(ctx context.Context, e domaincomment.C
 		body:       "",
 		payload:    map[string]any{"comment_id": e.AggregateID().String()},
 	}}, true
+}
+
+// handleCommentSubmitted 评论提交待审 → 通知管理员（与友链申请/新注册同通道）。
+func (s *Subscriber) handleCommentSubmitted(ctx context.Context, e domaincomment.CommentSubmitted) ([]notifyAction, bool) {
+	adminIDs, err := s.adminLookup.FindAdminIDs(ctx)
+	if err != nil {
+		s.log.Warn().Err(err).Msg("解析管理员用户失败")
+		return nil, false
+	}
+
+	actions := make([]notifyAction, 0, len(adminIDs))
+	for _, adminID := range adminIDs {
+		actions = append(actions, notifyAction{
+			userID:     adminID,
+			sourceType: domainnotification.SourceCommentPending,
+			sourceID:   e.AggregateID(),
+			title:      "有新评论待审核",
+			body:       "",
+			payload:    map[string]any{"comment_id": e.AggregateID().String()},
+		})
+	}
+	return actions, true
 }
 
 // handleUserRegistered 新用户注册通知管理员（复用 adminLookup，与友链申请同通道）。

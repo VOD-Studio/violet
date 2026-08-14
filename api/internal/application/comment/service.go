@@ -498,6 +498,8 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 	if err := s.commentRepo.Save(ctx, c); err != nil {
 		return CommentDTO{}, err
 	}
+	// 提交即 pending（人工审核制），发事件供通知管理员待审
+	s.publish(ctx, domain.NewCommentSubmitted(c.ID()))
 	dto := toDTO(c, nil, replyToName)
 	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
 		return CommentDTO{}, err
