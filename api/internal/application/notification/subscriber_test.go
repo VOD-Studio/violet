@@ -38,11 +38,15 @@ func (f *fakeStoreCorrect) FindByID(context.Context, domainshared.ID, domainshar
 func (f *fakeStoreCorrect) FindNotify(context.Context, domainshared.ID, int, int) ([]*domainnotification.Notification, int64, error) {
 	return nil, 0, nil
 }
-func (f *fakeStoreCorrect) CountUnread(context.Context, domainshared.ID) (int64, error) { return 0, nil }
+func (f *fakeStoreCorrect) CountUnread(context.Context, domainshared.ID) (int64, error) {
+	return 0, nil
+}
 func (f *fakeStoreCorrect) MarkAsRead(context.Context, domainshared.ID, domainshared.ID, time.Time) error {
 	return nil
 }
-func (f *fakeStoreCorrect) MarkAllAsRead(context.Context, domainshared.ID, time.Time) error { return nil }
+func (f *fakeStoreCorrect) MarkAllAsRead(context.Context, domainshared.ID, time.Time) error {
+	return nil
+}
 func (f *fakeStoreCorrect) FindAfterID(context.Context, domainshared.ID, domainshared.ID, int) ([]*domainnotification.Notification, error) {
 	return nil, nil
 }
@@ -74,10 +78,19 @@ func (f *fakeAdminLookup) FindAdminIDs(context.Context) ([]domainshared.ID, erro
 	return f.ids, f.err
 }
 
+type fakeFriendlinkLookup struct {
+	applicantID *domainshared.ID
+	err         error
+}
+
+func (f *fakeFriendlinkLookup) FindApplicantID(context.Context, domainshared.ID) (*domainshared.ID, error) {
+	return f.applicantID, f.err
+}
+
 // --- test helpers ---
 
-func newTestSubscriber(store *fakeStoreCorrect, subLookup SubscriptionOwnerLookup, commentLookup CommentAuthorLookup, adminLookup AdminUserLookup) *Subscriber {
-	return NewSubscriber(store, subLookup, commentLookup, adminLookup, zerolog.Nop())
+func newTestSubscriber(store *fakeStoreCorrect, subLookup SubscriptionOwnerLookup, commentLookup CommentAuthorLookup, adminLookup AdminUserLookup, friendlinkLookup FriendLinkApplicantLookup) *Subscriber {
+	return NewSubscriber(store, subLookup, commentLookup, adminLookup, friendlinkLookup, zerolog.Nop())
 }
 
 func newID() domainshared.ID { return domainshared.NewID() }
@@ -92,6 +105,7 @@ func TestSubscriber_SubscriptionFetched_Failure_WritesNotification(t *testing.T)
 		&fakeSubLookup{ownerID: ownerID},
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
@@ -111,7 +125,7 @@ func TestSubscriber_SubscriptionFetched_Failure_WritesNotification(t *testing.T)
 
 func TestSubscriber_SubscriptionFetched_Success_NoNotification(t *testing.T) {
 	store := &fakeStoreCorrect{}
-	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{})
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{})
 
 	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
 		newID(), "test", true, 5, 0, "", "", true,
@@ -127,6 +141,7 @@ func TestSubscriber_SubscriptionFetched_ManualSuccess_WritesNotification(t *test
 		&fakeSubLookup{ownerID: ownerID},
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{},
 	)
 
 	// 手动触发（isSystem=false）+ 成功 → 应通知
@@ -147,6 +162,7 @@ func TestSubscriber_FriendLinkCreated_NotifiesAdmins(t *testing.T) {
 		&fakeSubLookup{},
 		&fakeCommentLookup{},
 		&fakeAdminLookup{ids: []domainshared.ID{admin1, admin2}},
+		&fakeFriendlinkLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domainfriendlink.NewFriendLinkCreated(
@@ -168,6 +184,7 @@ func TestSubscriber_CommentApproved_NotifiesAuthor(t *testing.T) {
 		&fakeSubLookup{},
 		&fakeCommentLookup{authorID: &authorID},
 		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domaincomment.NewCommentApproved(commentID))
@@ -184,6 +201,7 @@ func TestSubscriber_CommentApproved_Anonymous_NoNotification(t *testing.T) {
 		&fakeSubLookup{},
 		&fakeCommentLookup{authorID: nil},
 		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{},
 	)
 
 	err := sub.Handle(context.Background(), domaincomment.NewCommentApproved(newID()))
@@ -193,10 +211,60 @@ func TestSubscriber_CommentApproved_Anonymous_NoNotification(t *testing.T) {
 
 func TestSubscriber_UnknownEvent_NoNotification(t *testing.T) {
 	store := &fakeStoreCorrect{}
-	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{})
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{})
 
 	// 用未映射的事件类型
-	err := sub.Handle(context.Background(), domainfriendlink.NewFriendLinkApproved(newID(), "test", "pending"))
+	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionPaused(newID()))
+	require.NoError(t, err)
+	assert.Empty(t, store.saved)
+}
+
+func TestSubscriber_FriendLinkApproved_NotifiesApplicant(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	applicantID := newID()
+	linkID := newID()
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{},
+		&fakeCommentLookup{},
+		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{applicantID: &applicantID},
+	)
+
+	err := sub.Handle(context.Background(), domainfriendlink.NewFriendLinkApproved(linkID, "测试站", "pending"))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, applicantID, store.saved[0].UserID())
+	assert.Equal(t, domainnotification.SourceFriendLinkReviewed, store.saved[0].SourceType())
+	assert.Contains(t, store.saved[0].Title(), "已通过")
+}
+
+func TestSubscriber_FriendLinkRejected_NotifiesApplicant(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	applicantID := newID()
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{},
+		&fakeCommentLookup{},
+		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{applicantID: &applicantID},
+	)
+
+	err := sub.Handle(context.Background(), domainfriendlink.NewFriendLinkRejected(newID(), "测试站", "pending"))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, domainnotification.SourceFriendLinkReviewed, store.saved[0].SourceType())
+	assert.Contains(t, store.saved[0].Title(), "未通过")
+}
+
+func TestSubscriber_FriendLinkReviewed_Anonymous_NoNotification(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{},
+		&fakeCommentLookup{},
+		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{applicantID: nil},
+	)
+
+	err := sub.Handle(context.Background(), domainfriendlink.NewFriendLinkApproved(newID(), "测试站", "pending"))
 	require.NoError(t, err)
 	assert.Empty(t, store.saved)
 }
@@ -207,6 +275,7 @@ func TestSubscriber_StoreError_FailSafeReturnsNil(t *testing.T) {
 		&fakeSubLookup{ownerID: newID()},
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{},
 	)
 
 	// 写入失败应降级（fail-safe）：记日志后返回 nil，不阻断 EventBus
@@ -230,6 +299,7 @@ func TestPushingSubscriber_StoreError_FailSafeNoPush(t *testing.T) {
 		&fakeSubLookup{ownerID: newID()},
 		&fakeCommentLookup{},
 		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{},
 		notif,
 		zerolog.Nop(),
 	)

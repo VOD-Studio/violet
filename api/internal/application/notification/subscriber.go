@@ -34,16 +34,23 @@ type AdminUserLookup interface {
 	FindAdminIDs(ctx context.Context) ([]domainshared.ID, error)
 }
 
+// FriendLinkApplicantLookup 解析友链登录申请者（审核结果通知用）。
+type FriendLinkApplicantLookup interface {
+	// FindApplicantID 返回申请者的 userID；nil 表示匿名申请（无通知接收者）。
+	FindApplicantID(ctx context.Context, friendlinkID domainshared.ID) (*domainshared.ID, error)
+}
+
 // Subscriber 通知订阅者：消费领域事件 → 计算接收者 → 写通知。
 //
 // 镜像审计 subscriber 结构（通配订阅 + 按事件类型分发）。
 // 写通知失败记降级日志（fail-safe），不阻断其他订阅者（EventBus 容错隔离）。
 type Subscriber struct {
-	store         domainnotification.NotificationRepository
-	subLookup     SubscriptionOwnerLookup
-	commentLookup CommentAuthorLookup
-	adminLookup   AdminUserLookup
-	log           zerolog.Logger
+	store            domainnotification.NotificationRepository
+	subLookup        SubscriptionOwnerLookup
+	commentLookup    CommentAuthorLookup
+	adminLookup      AdminUserLookup
+	friendlinkLookup FriendLinkApplicantLookup
+	log              zerolog.Logger
 }
 
 // NewSubscriber 构造通知订阅者。
@@ -52,14 +59,16 @@ func NewSubscriber(
 	subLookup SubscriptionOwnerLookup,
 	commentLookup CommentAuthorLookup,
 	adminLookup AdminUserLookup,
+	friendlinkLookup FriendLinkApplicantLookup,
 	log zerolog.Logger,
 ) *Subscriber {
 	return &Subscriber{
-		store:         store,
-		subLookup:     subLookup,
-		commentLookup: commentLookup,
-		adminLookup:   adminLookup,
-		log:           log,
+		store:            store,
+		subLookup:        subLookup,
+		commentLookup:    commentLookup,
+		adminLookup:      adminLookup,
+		friendlinkLookup: friendlinkLookup,
+		log:              log,
 	}
 }
 
@@ -114,6 +123,12 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 
 	case domainfriendlink.FriendLinkCreated:
 		return s.handleFriendlinkCreated(ctx, e)
+
+	case domainfriendlink.FriendLinkApproved:
+		return s.handleFriendlinkReviewed(ctx, e.AggregateID(), e.Name, true)
+
+	case domainfriendlink.FriendLinkRejected:
+		return s.handleFriendlinkReviewed(ctx, e.AggregateID(), e.Name, false)
 
 	case domaincomment.CommentApproved:
 		return s.handleCommentApproved(ctx, e)
@@ -189,6 +204,35 @@ func (s *Subscriber) handleFriendlinkCreated(ctx context.Context, e domainfriend
 		})
 	}
 	return actions, true
+}
+
+// handleFriendlinkReviewed 友链审核结果通知登录申请者；匿名申请无接收者跳过。
+func (s *Subscriber) handleFriendlinkReviewed(ctx context.Context, linkID domainshared.ID, name string, approved bool) ([]notifyAction, bool) {
+	applicantID, err := s.friendlinkLookup.FindApplicantID(ctx, linkID)
+	if err != nil {
+		s.log.Warn().Err(err).Str("friendlink_id", linkID.String()).Msg("解析友链申请者失败")
+		return nil, false
+	}
+	if applicantID == nil {
+		return nil, false
+	}
+
+	var title, body string
+	if approved {
+		title = fmt.Sprintf("你的友链申请「%s」已通过", name)
+		body = "已上架到友链页"
+	} else {
+		title = fmt.Sprintf("你的友链申请「%s」未通过", name)
+		body = "可调整站点信息后重新申请"
+	}
+	return []notifyAction{{
+		userID:     *applicantID,
+		sourceType: domainnotification.SourceFriendLinkReviewed,
+		sourceID:   linkID,
+		title:      title,
+		body:       body,
+		payload:    map[string]any{"name": name, "approved": approved},
+	}}, true
 }
 
 func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.CommentApproved) ([]notifyAction, bool) {

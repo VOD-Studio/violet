@@ -40,9 +40,10 @@ func NewNotificationContainer(db *gorm.DB, bus appshared.EventBus) *Notification
 	subLookup := &subscriptionOwnerAdapter{repo: gormrepo.NewSubscriptionRepository(db)}
 	commentLookup := &commentAuthorAdapter{repo: gormrepo.NewCommentRepository(db)}
 	adminLookup := &adminUserAdapter{db: db}
+	friendlinkLookup := &friendlinkApplicantAdapter{db: db}
 
 	// 通知 subscriber 订阅事件总线（带 SSE 推送）
-	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, connMgr, log.Logger)
+	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, friendlinkLookup, connMgr, log.Logger)
 	subscriber.Subscribe(bus)
 
 	return &NotificationContainer{
@@ -78,6 +79,29 @@ func (a *commentAuthorAdapter) FindAuthorID(ctx context.Context, commentID domai
 		return nil, err
 	}
 	return c.UserID(), nil
+}
+
+// friendlinkApplicantAdapter 查询友链登录申请者（匿名申请 user_id 为 NULL）。
+type friendlinkApplicantAdapter struct {
+	db *gorm.DB
+}
+
+func (a *friendlinkApplicantAdapter) FindApplicantID(ctx context.Context, linkID domainshared.ID) (*domainshared.ID, error) {
+	var uid *uuid.UUID
+	err := a.db.WithContext(ctx).
+		Table("friendlinks").
+		Select("user_id").
+		Where("id = ?", linkID.UUID()).
+		Limit(1).
+		Scan(&uid).Error
+	if err != nil {
+		return nil, domainshared.Internal("查询友链申请者失败", err)
+	}
+	if uid == nil {
+		return nil, nil
+	}
+	id := domainshared.IDFromUUID(*uid)
+	return &id, nil
 }
 
 // adminUserAdapter 查询管理员用户（root 或 admin/superadmin 角色）。
