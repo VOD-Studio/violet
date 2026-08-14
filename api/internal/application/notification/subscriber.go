@@ -7,11 +7,13 @@ import (
 	"github.com/rs/zerolog"
 
 	appshared "blog-api/internal/application/shared"
+	domainapitoken "blog-api/internal/domain/api_token"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
 	domainnotification "blog-api/internal/domain/notification"
 	domainshared "blog-api/internal/domain/shared"
 	domainsubscription "blog-api/internal/domain/subscription"
+	domainuser "blog-api/internal/domain/user"
 )
 
 // --- 接收者解析端口（由 wiring 层适配现有仓储实现）---
@@ -133,9 +135,81 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 	case domaincomment.CommentApproved:
 		return s.handleCommentApproved(ctx, e)
 
+	case domainuser.UserPasswordChanged:
+		return s.handlePasswordChanged(e), true
+
+	case domainapitoken.PATCreated:
+		return s.handlePATCreated(e), true
+
+	case domainapitoken.PATDeleted:
+		return s.handlePATDeleted(e), true
+
+	case domainuser.UserRoleChanged:
+		return s.handleRoleChanged(e), true
+
+	case domainuser.UserStatusChanged:
+		return s.handleStatusChanged(e), true
+
 	default:
 		return nil, false
 	}
+}
+
+// --- 账号安全通知（接收者即本人 = 聚合 ID，无需 lookup）---
+
+func (s *Subscriber) selfSecurityAction(userID domainshared.ID, title, body string, payload map[string]any) []notifyAction {
+	return []notifyAction{{
+		userID:     userID,
+		sourceType: domainnotification.SourceAccountSecurity,
+		sourceID:   userID,
+		title:      title,
+		body:       body,
+		payload:    payload,
+	}}
+}
+
+func (s *Subscriber) handlePasswordChanged(e domainuser.UserPasswordChanged) []notifyAction {
+	return s.selfSecurityAction(e.AggregateID(),
+		"密码已修改",
+		"如非本人操作，请立即重置密码并退出所有登录会话",
+		map[string]any{"action": "password_changed"},
+	)
+}
+
+func (s *Subscriber) handlePATCreated(e domainapitoken.PATCreated) []notifyAction {
+	return s.selfSecurityAction(e.AggregateID(),
+		fmt.Sprintf("API Token「%s」已创建", e.Name),
+		"如非本人操作，请立即删除该 Token 并修改密码",
+		map[string]any{"action": "api_token_created", "name": e.Name},
+	)
+}
+
+func (s *Subscriber) handlePATDeleted(e domainapitoken.PATDeleted) []notifyAction {
+	return s.selfSecurityAction(e.AggregateID(),
+		fmt.Sprintf("API Token「%s」已删除", e.Name),
+		"",
+		map[string]any{"action": "api_token_deleted", "name": e.Name},
+	)
+}
+
+func (s *Subscriber) handleRoleChanged(e domainuser.UserRoleChanged) []notifyAction {
+	return s.selfSecurityAction(e.AggregateID(),
+		fmt.Sprintf("你的角色已变更为「%s」", e.To),
+		fmt.Sprintf("原角色「%s」", e.From),
+		map[string]any{"action": "role_changed", "from": string(e.From), "to": string(e.To), "username": e.UserName},
+	)
+}
+
+func (s *Subscriber) handleStatusChanged(e domainuser.UserStatusChanged) []notifyAction {
+	title := "你的账号已启用"
+	if !e.To {
+		title = "你的账号已被停用"
+	}
+	return s.selfSecurityAction(e.AggregateID(),
+		title,
+		"",
+		map[string]any{"action": "status_changed", "active": e.To, "username": e.UserName},
+	)
 }
 
 // --- 事件处理 ---

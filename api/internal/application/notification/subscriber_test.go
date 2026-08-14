@@ -10,11 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	domainapitoken "blog-api/internal/domain/api_token"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
 	domainnotification "blog-api/internal/domain/notification"
 	domainshared "blog-api/internal/domain/shared"
 	domainsubscription "blog-api/internal/domain/subscription"
+	domainuser "blog-api/internal/domain/user"
 )
 
 // --- fakes ---
@@ -309,4 +311,53 @@ func TestPushingSubscriber_StoreError_FailSafeNoPush(t *testing.T) {
 	))
 	assert.NoError(t, err)
 	assert.Empty(t, notif.pushed) // Save 失败不应推送
+}
+
+// --- 账号安全通知 ---
+
+func TestSubscriber_PasswordChanged_NotifiesSelf(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	userID := newID()
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{})
+
+	err := sub.Handle(context.Background(), domainuser.NewUserPasswordChanged(userID))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, userID, store.saved[0].UserID())
+	assert.Equal(t, domainnotification.SourceAccountSecurity, store.saved[0].SourceType())
+}
+
+func TestSubscriber_PATCreated_NotifiesSelf(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	userID := newID()
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{})
+
+	err := sub.Handle(context.Background(), domainapitoken.NewPATCreated(userID, "ci-deploy"))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, userID, store.saved[0].UserID())
+	assert.Contains(t, store.saved[0].Title(), "ci-deploy")
+}
+
+func TestSubscriber_RoleChanged_NotifiesSelf(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	userID := newID()
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{})
+
+	err := sub.Handle(context.Background(), domainuser.NewUserRoleChanged(userID, domainuser.RoleUser, domainuser.RoleAuthor, "rua"))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, domainnotification.SourceAccountSecurity, store.saved[0].SourceType())
+	assert.Contains(t, store.saved[0].Title(), "author")
+}
+
+func TestSubscriber_StatusDisabled_NotifiesSelf(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	userID := newID()
+	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{})
+
+	err := sub.Handle(context.Background(), domainuser.NewUserStatusChanged(userID, true, false, "rua"))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Contains(t, store.saved[0].Title(), "停用")
 }
