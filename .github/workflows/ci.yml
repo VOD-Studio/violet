@@ -121,7 +121,7 @@ jobs:
 
       - name: Setup Docker Buildx
         if: needs.changes.outputs.api == 'true'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Docker 镜像构建验证
         if: needs.changes.outputs.api == 'true'
@@ -198,7 +198,7 @@ jobs:
 
       - name: Setup Docker Buildx
         if: needs.changes.outputs.web == 'true'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # 镜像构建验证:Dockerfile COPY 引用失效文件、lockfile 与依赖漂移等问题
       # 在此拦截,避免流入生产部署才暴露
