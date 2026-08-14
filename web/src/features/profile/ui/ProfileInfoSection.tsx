@@ -74,7 +74,7 @@ const FieldShell = ({
 					<div className="group/field flex items-start gap-3">
 						<div className="min-w-0 flex-1">{displayValue}</div>
 						<Button
-							size="icon-xs"
+							size="icon-sm"
 							variant="ghost"
 							onClick={onEdit}
 							// 触屏没有 hover，移动端常显；桌面保持 hover 显现的克制感

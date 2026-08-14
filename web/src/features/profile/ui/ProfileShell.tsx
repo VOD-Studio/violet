@@ -6,6 +6,7 @@ import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
 import { Camera, ShieldCheck, User as UserIcon } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -35,12 +36,19 @@ export const ProfileShell = ({
 	profile,
 	security,
 }: ProfileShellProps) => {
+	// 受控 tabs：滑动指示块（layoutId 共享元素）需要感知激活项
+	const [tab, setTab] = useState<ProfileTab>(defaultTab);
 	return (
-		<Tabs defaultValue={defaultTab} orientation="vertical" className="gap-0">
+		<Tabs
+			value={tab}
+			onValueChange={(v) => setTab(v as ProfileTab)}
+			orientation="vertical"
+			className="gap-0"
+		>
 			<div className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
 				<div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr] md:gap-8">
 					<aside className="md:sticky md:top-24 md:self-start">
-						<ProfileSidebar user={user} />
+						<ProfileSidebar user={user} activeTab={tab} />
 					</aside>
 					<div className="min-w-0">
 						<TabsContent
@@ -62,7 +70,7 @@ export const ProfileShell = ({
 	);
 };
 
-const ProfileSidebar = ({ user }: { user: UserDTO }) => {
+const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: ProfileTab }) => {
 	const [pendingFile, setPendingFile] = useState<File | null>(null);
 	const [cropOpen, setCropOpen] = useState(false);
 	const updateProfile = useUpdateProfile();
@@ -132,11 +140,13 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 			>
 				<ProfileSidebarTab
 					value="profile"
+					active={activeTab === "profile"}
 					icon={<UserIcon className="size-4" />}
 					label="个人资料"
 				/>
 				<ProfileSidebarTab
 					value="security"
+					active={activeTab === "security"}
 					icon={<ShieldCheck className="size-4" />}
 					label="账户与安全"
 				/>
@@ -157,15 +167,39 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 
 const ProfileSidebarTab = ({
 	value,
+	active,
 	icon,
 	label,
 }: {
 	value: ProfileTab;
+	active: boolean;
 	icon?: ReactNode;
 	label: string;
 }) => {
+	const reduceMotion = useReducedMotion();
 	return (
-		<TabsTrigger value={value} className="w-full justify-start gap-2 py-2 pr-3 pl-3 text-left">
+		<TabsTrigger
+			value={value}
+			className={cn(
+				"w-full justify-start gap-2 py-2 pr-3 pl-3 text-left",
+				// 抑制分段器自身的 per-tab 激活底色/投影，激活视觉全部交给滑动指示块
+				"data-[state=active]:bg-transparent dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent",
+				"group-data-[variant=default]/tabs-list:data-[state=active]:shadow-none",
+			)}
+		>
+			{/* 滑动指示块：layoutId 共享元素，激活态切换时在 tab 间平滑滑动 */}
+			{active && (
+				<motion.span
+					aria-hidden
+					layoutId="profile-tab-thumb"
+					transition={
+						reduceMotion
+							? { duration: 0 }
+							: { type: "spring", stiffness: 400, damping: 34 }
+					}
+					className="absolute inset-0 rounded-md bg-background shadow-sm dark:border dark:border-input dark:bg-input/30"
+				/>
+			)}
 			{icon}
 			<span className="flex-1">{label}</span>
 		</TabsTrigger>
