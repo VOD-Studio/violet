@@ -30,6 +30,12 @@ type CommentAuthorLookup interface {
 	FindAuthorID(ctx context.Context, commentID domainshared.ID) (*domainshared.ID, error)
 }
 
+// CommentPostAuthorLookup 解析评论所属文章的作者（文章新评论通知用）。
+type CommentPostAuthorLookup interface {
+	// FindPostAuthorID 返回文章作者的 userID；nil 表示文章已删除等无接收者场景。
+	FindPostAuthorID(ctx context.Context, commentID domainshared.ID) (*domainshared.ID, error)
+}
+
 // AdminUserLookup 解析管理员用户（友链申请等 admin 通知用）。
 type AdminUserLookup interface {
 	// FindAdminIDs 返回应接收管理通知的用户 ID 列表。
@@ -47,12 +53,13 @@ type FriendLinkApplicantLookup interface {
 // 镜像审计 subscriber 结构（通配订阅 + 按事件类型分发）。
 // 写通知失败记降级日志（fail-safe），不阻断其他订阅者（EventBus 容错隔离）。
 type Subscriber struct {
-	store            domainnotification.NotificationRepository
-	subLookup        SubscriptionOwnerLookup
-	commentLookup    CommentAuthorLookup
-	adminLookup      AdminUserLookup
-	friendlinkLookup FriendLinkApplicantLookup
-	log              zerolog.Logger
+	store             domainnotification.NotificationRepository
+	subLookup         SubscriptionOwnerLookup
+	commentLookup     CommentAuthorLookup
+	adminLookup       AdminUserLookup
+	friendlinkLookup  FriendLinkApplicantLookup
+	postAuthorLookup  CommentPostAuthorLookup
+	log               zerolog.Logger
 }
 
 // NewSubscriber 构造通知订阅者。
@@ -62,15 +69,17 @@ func NewSubscriber(
 	commentLookup CommentAuthorLookup,
 	adminLookup AdminUserLookup,
 	friendlinkLookup FriendLinkApplicantLookup,
+	postAuthorLookup CommentPostAuthorLookup,
 	log zerolog.Logger,
 ) *Subscriber {
 	return &Subscriber{
-		store:            store,
-		subLookup:        subLookup,
-		commentLookup:    commentLookup,
-		adminLookup:      adminLookup,
-		friendlinkLookup: friendlinkLookup,
-		log:              log,
+		store:             store,
+		subLookup:         subLookup,
+		commentLookup:     commentLookup,
+		adminLookup:       adminLookup,
+		friendlinkLookup:  friendlinkLookup,
+		postAuthorLookup:  postAuthorLookup,
+		log:               log,
 	}
 }
 
@@ -334,22 +343,42 @@ func (s *Subscriber) handleUserRegistered(ctx context.Context, e domainuser.User
 	return actions, true
 }
 
+// handleCommentApproved 评论审核通过 → 双接收者：评论作者（comment_approved）
+// 与文章作者（comment_created，自评跳过）。
 func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.CommentApproved) ([]notifyAction, bool) {
-	authorID, err := s.commentLookup.FindAuthorID(ctx, e.AggregateID())
+	commentID := e.AggregateID()
+
+	authorID, err := s.commentLookup.FindAuthorID(ctx, commentID)
 	if err != nil {
-		s.log.Warn().Err(err).Str("comment_id", e.AggregateID().String()).Msg("解析评论作者失败")
-		return nil, false
-	}
-	if authorID == nil {
+		s.log.Warn().Err(err).Str("comment_id", commentID.String()).Msg("解析评论作者失败")
 		return nil, false
 	}
 
-	return []notifyAction{{
-		userID:     *authorID,
-		sourceType: domainnotification.SourceCommentApproved,
-		sourceID:   e.AggregateID(),
-		title:      "你的评论已审核通过",
-		body:       "",
-		payload:    map[string]any{"comment_id": e.AggregateID().String()},
-	}}, true
+	actions := make([]notifyAction, 0, 2)
+	if authorID != nil {
+		actions = append(actions, notifyAction{
+			userID:     *authorID,
+			sourceType: domainnotification.SourceCommentApproved,
+			sourceID:   commentID,
+			title:      "你的评论已审核通过",
+			body:       "",
+			payload:    map[string]any{"comment_id": commentID.String()},
+		})
+	}
+
+	postAuthorID, err := s.postAuthorLookup.FindPostAuthorID(ctx, commentID)
+	if err != nil {
+		s.log.Warn().Err(err).Str("comment_id", commentID.String()).Msg("解析文章作者失败")
+	} else if postAuthorID != nil && (authorID == nil || *postAuthorID != *authorID) {
+		actions = append(actions, notifyAction{
+			userID:     *postAuthorID,
+			sourceType: domainnotification.SourceCommentCreated,
+			sourceID:   commentID,
+			title:      "你的文章收到新评论",
+			body:       "",
+			payload:    map[string]any{"comment_id": commentID.String()},
+		})
+	}
+
+	return actions, len(actions) > 0
 }

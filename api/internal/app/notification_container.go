@@ -41,9 +41,10 @@ func NewNotificationContainer(db *gorm.DB, bus appshared.EventBus) *Notification
 	commentLookup := &commentAuthorAdapter{repo: gormrepo.NewCommentRepository(db)}
 	adminLookup := &adminUserAdapter{db: db}
 	friendlinkLookup := &friendlinkApplicantAdapter{db: db}
+	postAuthorLookup := &commentPostAuthorAdapter{db: db}
 
 	// 通知 subscriber 订阅事件总线（带 SSE 推送）
-	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, friendlinkLookup, connMgr, log.Logger)
+	subscriber := appnotification.NewPushingSubscriber(repo, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, connMgr, log.Logger)
 	subscriber.Subscribe(bus)
 
 	return &NotificationContainer{
@@ -96,6 +97,31 @@ func (a *friendlinkApplicantAdapter) FindApplicantID(ctx context.Context, linkID
 		Scan(&uid).Error
 	if err != nil {
 		return nil, domainshared.Internal("查询友链申请者失败", err)
+	}
+	if uid == nil {
+		return nil, nil
+	}
+	id := domainshared.IDFromUUID(*uid)
+	return &id, nil
+}
+
+// commentPostAuthorAdapter 通过 comments JOIN posts 解析文章作者。
+// 排除软删文章：评论挂在已删文章下时不该再通知作者。
+type commentPostAuthorAdapter struct {
+	db *gorm.DB
+}
+
+func (a *commentPostAuthorAdapter) FindPostAuthorID(ctx context.Context, commentID domainshared.ID) (*domainshared.ID, error) {
+	var uid *uuid.UUID
+	err := a.db.WithContext(ctx).
+		Table("comments").
+		Select("posts.author_id").
+		Joins("JOIN posts ON posts.id = comments.post_id AND posts.deleted_at IS NULL").
+		Where("comments.id = ?", commentID.UUID()).
+		Limit(1).
+		Scan(&uid).Error
+	if err != nil {
+		return nil, domainshared.Internal("查询文章作者失败", err)
 	}
 	if uid == nil {
 		return nil, nil

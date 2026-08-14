@@ -124,11 +124,12 @@ func NewPushingSubscriber(
 	commentLookup CommentAuthorLookup,
 	adminLookup AdminUserLookup,
 	friendlinkLookup FriendLinkApplicantLookup,
+	postAuthorLookup CommentPostAuthorLookup,
 	notifier Notifier,
 	log zerolog.Logger,
 ) *PushingSubscriber {
 	return &PushingSubscriber{
-		Subscriber: NewSubscriber(store, subLookup, commentLookup, adminLookup, friendlinkLookup, log),
+		Subscriber: NewSubscriber(store, subLookup, commentLookup, adminLookup, friendlinkLookup, postAuthorLookup, log),
 		notifier:   notifier,
 	}
 }
