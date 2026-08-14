@@ -404,6 +404,7 @@ type FetchReport struct {
 	Skipped           int // 已处理（imported/dead），跳过
 	SubscriptionError string // feed 拉取层面的错误描述（非空表示整轮失败）
 	FeedErr           *FeedError // 结构化 feed 错误，T8 据此分类；非 feed 错误为 nil
+	FeedTitle         string    // feed 级标题（Parse 成功时非空），供 FetchNow 回填事件 title
 }
 
 // FetchOne 单订阅单次抓取编排（T7 核心）。
@@ -452,6 +453,7 @@ func (s *Service) FetchOne(ctx context.Context, subscriptionID string) FetchRepo
 		return report
 	}
 	report.FeedEntryCount = len(items)
+	report.FeedTitle = feedTitle
 
 	// title 回填：创建订阅时未指定标题，用 feed 级标题补齐（首次抓取触发）。
 	// 其它配置（autoPublish/canonicalOverride/tags）须传现值，UpdateConfig 全量覆盖。
@@ -573,8 +575,18 @@ func (s *Service) FetchNow(ctx context.Context, subscriptionID string, isSystem 
 	if !success && report.SubscriptionError == "" {
 		errMsg = fmt.Sprintf("%d 条条目导入失败", report.Failed)
 	}
+	// title 优先用 sub.Title()（已回填或用户指定）；为空时用本轮 feed 标题；仍空用 URL 兜底。
+	// FetchOne 内部回填的 title 只更新了它自己的 sub 实例，此处 sub 是独立加载的，
+	// 可能仍是空 title——用 report.FeedTitle 补上，避免通知显示「订阅「」抓取完成」。
+	title := sub.Title()
+	if title == "" {
+		title = report.FeedTitle
+	}
+	if title == "" {
+		title = sub.FeedURL()
+	}
 	s.publish(ctx, domainsubscription.NewSubscriptionFetched(
-		sub.ID(), sub.Title(), success, report.Imported, report.Failed,
+		sub.ID(), title, success, report.Imported, report.Failed,
 		errMsg, feedErrorKindString(report.FeedErr), isSystem,
 	))
 	return report
