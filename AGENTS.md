@@ -291,7 +291,7 @@ type User struct {
 开 PR 时(`gh pr create`)固定配齐:
 
 - **assignees**:`@me`(当前 gh 账号,即 `--assignee @me`)。
-- **reviewers**:仓库全部 collaborator(艾特全部人)——`DefectingCat`、`xunrua`、`JingpengZhang`。用 `--reviewer DefectingCat,xunrua,JingpengZhang`。
+<!-- - **reviewers**:仓库全部 collaborator(艾特全部人)——`DefectingCat`、`xunrua`、`JingpengZhang`。用 `--reviewer DefectingCat,xunrua,JingpengZhang`。 -->
 - **labels**:**默认不加 label**。仅当改动性质明确匹配 GitHub 内置语义 label 时才加(如纯文档加 `documentation`、修 bug 加 `bug`)。**禁止加 `ready-for-agent`** 等流程性 label(对人工 review 无信息量)。
 - **base**:指向 `release/2.0`(仓库主开发分支,非 `main`)。
 - **关联 issue**:PR 有对应 issue 时,在 body 用 `Closes #N`(或 `Fixes #N`)关键字引用,合并后自动关闭该 issue。纯关联不关 issue 的用普通链接(如 `issue #N`)——两者语义不同,别混用。
