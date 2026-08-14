@@ -246,6 +246,16 @@ function AdminFriendLinksPage() {
 					</Button>
 				) : null
 			}
+			sticky={
+				<div className="flex flex-wrap items-center gap-3 pt-1">
+					<Segmented
+						value={filter}
+						onValueChange={switchFilter}
+						segments={STATUS_SEGMENTS}
+						size="default"
+					/>
+				</div>
+			}
 		>
 			<DataTable<FriendLinkAdminDTO>
 				data={data?.data ?? []}
@@ -258,14 +268,6 @@ function AdminFriendLinksPage() {
 					onChange: (page) => setPage(page),
 					hidePageSizeSelect: true,
 				}}
-				toolbar={
-					<Segmented
-						value={filter}
-						onValueChange={switchFilter}
-						segments={STATUS_SEGMENTS}
-						size="default"
-					/>
-				}
 				loading={isLoading}
 				error={error ? new Error(error.message) : null}
 				onRetry={() => refetch()}

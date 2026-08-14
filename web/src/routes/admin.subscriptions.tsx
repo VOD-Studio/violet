@@ -182,6 +182,26 @@ function AdminSubscriptionsPage() {
 					新建订阅
 				</Button>
 			}
+			sticky={
+				<div className="flex flex-wrap items-center gap-3 pt-1">
+					<Select
+						value={statusFilter || "all"}
+						onValueChange={(v) => {
+							setStatusFilter(v === "all" ? "" : v);
+							setPage(1);
+						}}
+					>
+						<SelectTrigger className="h-9 w-32">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">全部状态</SelectItem>
+							<SelectItem value="active">活跃</SelectItem>
+							<SelectItem value="paused">已暂停</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+			}
 		>
 			<PermissionGuard permission="subscription:manage">
 				<DataTable
@@ -200,24 +220,6 @@ function AdminSubscriptionsPage() {
 					loading={isLoading}
 					error={error}
 					onRetry={refetch}
-					toolbar={
-						<Select
-							value={statusFilter || "all"}
-							onValueChange={(v) => {
-								setStatusFilter(v === "all" ? "" : v);
-								setPage(1);
-							}}
-						>
-							<SelectTrigger className="h-9 w-32">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">全部状态</SelectItem>
-								<SelectItem value="active">活跃</SelectItem>
-								<SelectItem value="paused">已暂停</SelectItem>
-							</SelectContent>
-						</Select>
-					}
 				/>
 			</PermissionGuard>
 

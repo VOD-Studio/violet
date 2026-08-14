@@ -313,6 +313,30 @@ function AdminPostsPage() {
 					</Button>
 				) : null
 			}
+			sticky={
+				<div className="flex flex-wrap items-center gap-3 pt-1">
+					<div className="min-w-50 max-w-80 flex-1">
+						<SearchInput
+							defaultValue=""
+							placeholder="搜索标题 / 正文..."
+							onSearch={handleSearch}
+						/>
+					</div>
+					<Select value={status} onValueChange={handleStatusChange}>
+						<SelectTrigger className="h-9 w-36">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{STATUS_OPTIONS.map((o) => (
+								<SelectItem key={o.value} value={o.value}>
+									{o.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<TagFilter tags={tags} selected={selectedTags} onChange={handleTagsChange} />
+				</div>
+			}
 		>
 			<DataTable<AdminPostListItem>
 				data={posts}
@@ -406,34 +430,6 @@ function AdminPostsPage() {
 				error={error ? new Error(error.message) : null}
 				onRetry={() => refetch()}
 				filtered={keyword.trim().length > 0 || selectedTags.length > 0}
-				toolbar={
-					<>
-						<div className="min-w-50 max-w-80 flex-1">
-							<SearchInput
-								defaultValue=""
-								placeholder="搜索标题 / 正文..."
-								onSearch={handleSearch}
-							/>
-						</div>
-						<Select value={status} onValueChange={handleStatusChange}>
-							<SelectTrigger className="h-9 w-36">
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{STATUS_OPTIONS.map((o) => (
-									<SelectItem key={o.value} value={o.value}>
-										{o.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-						<TagFilter
-							tags={tags}
-							selected={selectedTags}
-							onChange={handleTagsChange}
-						/>
-					</>
-				}
 				rowClassName={(row) => (row.is_featured ? "bg-primary/5" : "")}
 				storageKey="admin-posts-columns"
 				caption="文章列表"
