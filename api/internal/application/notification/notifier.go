@@ -88,14 +88,13 @@ func (m *ConnectionManager) Register(userID domainshared.ID) (<-chan SSEEvent, f
 
 // Push 给指定用户的所有在线连接推送通知。
 //
-// 非阻塞：缓冲满时丢弃（通知不比连接稳定性重要）。
+// 持锁发送：cleanup 在锁内 close(ch)，锁外发送会与 close 竞态导致
+// send on closed channel panic。select default 非阻塞，持锁时间可忽略。
 func (m *ConnectionManager) Push(userID domainshared.ID, event SSEEvent) {
 	m.mu.Lock()
-	conns := make([]chan SSEEvent, len(m.conns[userID]))
-	copy(conns, m.conns[userID])
-	m.mu.Unlock()
+	defer m.mu.Unlock()
 
-	for _, ch := range conns {
+	for _, ch := range m.conns[userID] {
 		select {
 		case ch <- event:
 		default:
