@@ -106,3 +106,14 @@ func TestConnectionManager_BufferFullDropsSilently(t *testing.T) {
 	}
 	require.Equal(t, 16, count)
 }
+
+func TestConnectionManager_CleanupIdempotent(t *testing.T) {
+	mgr := NewConnectionManager(zerolog.Nop())
+	userID := domainshared.NewID()
+
+	_, cleanup := mgr.Register(userID)
+
+	// cleanup 重复调用不应 panic（sync.Once 保护 close）
+	cleanup()
+	assert.NotPanics(t, func() { cleanup() })
+}

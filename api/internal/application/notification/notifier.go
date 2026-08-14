@@ -64,6 +64,8 @@ func NewConnectionManager(log zerolog.Logger) *ConnectionManager {
 func (m *ConnectionManager) Register(userID domainshared.ID) (<-chan SSEEvent, func()) {
 	ch := make(chan SSEEvent, 16)
 
+	var closeOnce sync.Once
+
 	m.mu.Lock()
 	m.conns[userID] = append(m.conns[userID], ch)
 	m.mu.Unlock()
@@ -81,7 +83,7 @@ func (m *ConnectionManager) Register(userID domainshared.ID) (<-chan SSEEvent, f
 		if len(m.conns[userID]) == 0 {
 			delete(m.conns, userID)
 		}
-		close(ch)
+		closeOnce.Do(func() { close(ch) })
 	}
 	return ch, cleanup
 }
