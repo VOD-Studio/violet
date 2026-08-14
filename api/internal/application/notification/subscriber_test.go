@@ -201,7 +201,7 @@ func TestSubscriber_UnknownEvent_NoNotification(t *testing.T) {
 	assert.Empty(t, store.saved)
 }
 
-func TestSubscriber_StoreError_PropagatesError(t *testing.T) {
+func TestSubscriber_StoreError_FailSafeReturnsNil(t *testing.T) {
 	store := &fakeStoreCorrect{err: errors.New("db down")}
 	sub := newTestSubscriber(store,
 		&fakeSubLookup{ownerID: newID()},
@@ -209,8 +209,34 @@ func TestSubscriber_StoreError_PropagatesError(t *testing.T) {
 		&fakeAdminLookup{},
 	)
 
+	// 写入失败应降级（fail-safe）：记日志后返回 nil，不阻断 EventBus
 	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
 		newID(), "test", false, 0, 1, "err", "transient", true,
 	))
-	assert.Error(t, err)
+	assert.NoError(t, err)
+}
+
+// fakeNotifier 记录 Push 调用，验证 PushingSubscriber 仅在 Save 成功时才推送。
+type fakeNotifier struct {
+	pushed []domainshared.ID
+}
+
+func (f *fakeNotifier) Push(id domainshared.ID, _ SSEEvent) { f.pushed = append(f.pushed, id) }
+
+func TestPushingSubscriber_StoreError_FailSafeNoPush(t *testing.T) {
+	store := &fakeStoreCorrect{err: errors.New("db down")}
+	notif := &fakeNotifier{}
+	sub := NewPushingSubscriber(store,
+		&fakeSubLookup{ownerID: newID()},
+		&fakeCommentLookup{},
+		&fakeAdminLookup{},
+		notif,
+		zerolog.Nop(),
+	)
+
+	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
+		newID(), "test", false, 0, 1, "err", "transient", true,
+	))
+	assert.NoError(t, err)
+	assert.Empty(t, notif.pushed) // Save 失败不应推送
 }

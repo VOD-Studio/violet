@@ -88,7 +88,7 @@ func (s *Subscriber) Handle(ctx context.Context, event domainshared.DomainEvent)
 				Str("event_id", event.EventID().String()).
 				Str("user_id", act.userID.String()).
 				Msg("通知写入失败")
-			return err
+			continue
 		}
 	}
 	return nil
@@ -193,7 +193,11 @@ func (s *Subscriber) handleFriendlinkCreated(ctx context.Context, e domainfriend
 
 func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.CommentApproved) ([]notifyAction, bool) {
 	authorID, err := s.commentLookup.FindAuthorID(ctx, e.AggregateID())
-	if err != nil || authorID == nil {
+	if err != nil {
+		s.log.Warn().Err(err).Str("comment_id", e.AggregateID().String()).Msg("解析评论作者失败")
+		return nil, false
+	}
+	if authorID == nil {
 		return nil, false
 	}
 

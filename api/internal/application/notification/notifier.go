@@ -145,10 +145,17 @@ func (s *PushingSubscriber) Handle(ctx context.Context, event domainshared.Domai
 	for _, act := range actions {
 		n, err := domainnotification.NewNotification(act.userID, domainshared.MustParseID(event.EventID().String()), act.sourceType, act.sourceID, act.title, act.body, act.payload)
 		if err != nil {
+			s.log.Error().Err(err).Str("event", event.EventName()).Msg("构造通知失败")
 			continue
 		}
 		if err := s.store.Save(ctx, n); err != nil {
-			return err
+			s.log.Error().
+				Err(err).
+				Str("event", event.EventName()).
+				Str("event_id", event.EventID().String()).
+				Str("user_id", act.userID.String()).
+				Msg("通知写入失败")
+			continue
 		}
 		// 推送给在线用户
 		s.notifier.Push(act.userID, SSEEvent{
