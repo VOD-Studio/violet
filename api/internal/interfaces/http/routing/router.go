@@ -64,6 +64,9 @@ func RegisterRoutes(r chi.Router, d *Deps) {
 		// 媒体（公开获取 + 登录上传 + 音乐/表情公开查询）
 		registerMediaRoutes(v1, d)
 
+		// 通知（登录用户：列表/未读计数/标记已读）
+		registerNotificationRoutes(v1, d)
+
 		// 项目 / 公告（公开）
 		v1.Route("/projects", func(r chi.Router) {
 			r.Get("/", d.Content.ListProjects)
@@ -341,5 +344,20 @@ func registerFriendLinkRoutes(v1 chi.Router, d *Deps) {
 		).Post("/", friendLinkH.Apply)
 		r.With(middleware.FriendLinkCodeRateLimit(redisClient)).
 			Post("/code", friendLinkH.SendCode)
+	})
+}
+
+// registerNotificationRoutes 注册通知路由（全部登录鉴权）。
+func registerNotificationRoutes(v1 chi.Router, d *Deps) {
+	notifH := d.Notification
+
+	v1.Route("/notifications", func(r chi.Router) {
+		r.With(d.SessionAuth).Group(func(r chi.Router) {
+			r.Get("/", notifH.List)
+			r.Get("/unread-count", notifH.UnreadCount)
+			r.Get("/stream", d.NotificationStream.Stream)
+			r.Post("/read-all", notifH.MarkAllRead)
+			r.Post("/{id}/read", notifH.MarkRead)
+		})
 	})
 }

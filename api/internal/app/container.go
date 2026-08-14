@@ -40,6 +40,7 @@ type Container struct {
 	Image           *ImageContainer
 	Tweet           *TweetContainer
 	FriendLink      *FriendLinkContainer
+	Notification     *NotificationContainer
 }
 
 // 跨模块依赖（装配顺序即依赖序）：
@@ -89,7 +90,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	userAdmin := NewUserAdminContainer(db, authcmd.NewBcryptHasher(), bus, auth.SessionStore)
 	commentReaction := NewCommentReactionContainer(db)
 	apiToken := NewAPITokenContainer(db, bus)
-	subscription := NewSubscriptionContainer(db, post.PostService, bus)
+	subscription := NewSubscriptionContainer(db, post.PostService, bus, cfg.FeedProxyURL)
 	mcp := NewMCPContainer(apiToken.TokenLookup, post.PostService, tag.TagService, subscription.SubscriptionService, comment.CommentService)
 	system := NewSystemContainer(db, rdb, ctx)
 	media := NewMediaContainer(db, rdb, cfg)
@@ -97,6 +98,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	image := NewImageContainer(cfg.UploadDir, cfg.UploadPathPrefix)
 	tweet := NewTweetContainer(db, permissionChecker, bus)
 	friendLink := NewFriendLinkContainer(db, rdb, emailSender, bus)
+	notification := NewNotificationContainer(db, bus)
 
 	c := &Container{
 		Role: role, Settings: settings, Auth: auth, Content: content, Comment: comment,
@@ -104,6 +106,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 		Stats: stats, UserAdmin: userAdmin, CommentReaction: commentReaction,
 		APIToken: apiToken, Subscription: subscription, MCP: mcp, System: system,
 		Media: media, CodeRunner: codeRunner, Image: image, Tweet: tweet, FriendLink: friendLink,
+		Notification: notification,
 	}
 	return c, roleCleanup, nil
 }

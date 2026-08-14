@@ -11,6 +11,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -28,12 +29,32 @@ type GoFeedParser struct {
 	parser *gofeed.Parser
 }
 
-// NewGoFeedParser 构造解析器，内置 SSRF 防护 Transport + 30s 超时 + 10MB 体上限。
-func NewGoFeedParser() *GoFeedParser {
+// NewGoFeedParser 构造解析器。
+//
+// 代理检测两级策略：
+//   - 自动检测：http.ProxyFromEnvironment 读 HTTPS_PROXY/HTTP_PROXY/NO_PROXY（零配置，Go 标准）。
+//   - 保底：fallbackProxyURL（来自 config FeedProxyURL），环境变量没设时兜底。
+//
+// 有代理 → 标准 Transport（SSRF 防护交给代理服务器；代理地址是 loopback 会被 SafeTransport block）。
+// 无代理 → SafeTransport（SSRF 防护，生产默认）。
+func NewGoFeedParser(fallbackProxyURL string) *GoFeedParser {
+	transport := ssrf.NewSafeTransport()
+
+	// 自动检测环境变量代理
+	testReq := &http.Request{URL: &url.URL{Scheme: "https", Host: "feed"}}
+	if proxy, err := http.ProxyFromEnvironment(testReq); err == nil && proxy != nil {
+		transport = &http.Transport{Proxy: http.ProxyFromEnvironment}
+	} else if fallbackProxyURL != "" {
+		// 保底：config 显式指定的代理
+		if u, err := url.Parse(fallbackProxyURL); err == nil {
+			transport = &http.Transport{Proxy: http.ProxyURL(u)}
+		}
+	}
+
 	return &GoFeedParser{
 		client: &http.Client{
 			Timeout:   30 * time.Second,
-			Transport: ssrf.NewSafeTransport(),
+			Transport: transport,
 		},
 		parser: gofeed.NewParser(),
 	}
@@ -133,6 +154,7 @@ func parseRetryAfter(resp *http.Response, now time.Time) *time.Time {
 	}
 	return nil
 }
+
 
 // 编译期断言：实现 FeedParser 端口。
 var _ appsub.FeedParser = (*GoFeedParser)(nil)

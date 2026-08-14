@@ -25,13 +25,13 @@ type SubscriptionContainer struct {
 
 // NewSubscriptionContainer 装配订阅模块（领域 + 应用 + 抓取依赖 + admin handler）。
 // postSvc 供 FetchOne 抓正文建草稿（实现 PostImporter 端口）。可为 nil（仅 CRUD 场景）。
-func NewSubscriptionContainer(db *gorm.DB, postSvc *apppost.Service, bus appshared.EventBus) *SubscriptionContainer {
+func NewSubscriptionContainer(db *gorm.DB, postSvc *apppost.Service, bus appshared.EventBus, feedProxyURL string) *SubscriptionContainer {
 	subRepo := gormrepo.NewSubscriptionRepository(db)
 	entryRepo := gormrepo.NewSubscriptionEntryRepository(db)
 	svc := appsub.NewService(subRepo, nil, bus)
 	// 注入 FetchOne 依赖：post.Service 满足 PostImporter 端口（结构化类型）
 	if postSvc != nil {
-		svc.SetFetchDeps(entryRepo, postSvc, infrafeed.NewGoFeedParser())
+		svc.SetFetchDeps(entryRepo, postSvc, infrafeed.NewGoFeedParser(feedProxyURL))
 	}
 	return &SubscriptionContainer{
 		SubscriptionService:   svc,

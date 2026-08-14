@@ -35,6 +35,7 @@ import (
 	subscriptionhttp "blog-api/internal/interfaces/http/handler/subscription"
 	systemhttp "blog-api/internal/interfaces/http/handler/system"
 	taghttp "blog-api/internal/interfaces/http/handler/tag"
+	notificationhttp "blog-api/internal/interfaces/http/handler/notification"
 	tweethttp "blog-api/internal/interfaces/http/handler/tweet"
 	useradminhttp "blog-api/internal/interfaces/http/handler/useradmin"
 	"blog-api/internal/middleware"
@@ -84,6 +85,8 @@ type Deps struct {
 	Image           *imagehttp.Handler
 	Tweet           *tweethttp.Handler
 	FriendLink      *friendlinkhttp.Handler
+	Notification    *notificationhttp.Handler
+	NotificationStream *notificationhttp.StreamHandler
 
 	MCP MCPHandlers
 }

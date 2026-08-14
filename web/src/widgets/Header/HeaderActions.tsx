@@ -2,6 +2,7 @@ import { getDisplayName } from "@entities/user/model/display-name";
 import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
@@ -84,6 +85,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 			<Button variant="ghost" size="icon-sm" aria-label="搜索" onClick={openCommand}>
 				<Search className="size-4" />
 			</Button>
+			{user && <NotificationBell />}
 			<ThemeToggle />
 
 			{/* 用户槽位：登录/未登录均为 size-8 圆形，宽度恒定 */}

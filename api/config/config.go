@@ -61,6 +61,9 @@ type Config struct {
 	// CodeRunner 代码运行器配置（可运行代码块的沙箱执行）。
 	// 见 docs/adr/0006-code-runner-architecture.md。为空（Enabled=false）时功能关闭。
 	CodeRunner CodeRunnerConfig
+	// FeedProxyURL feed 抓取出站代理地址（如 http://127.0.0.1:7890）。
+	// 空串 = 直连 + SSRF 防护（生产默认）；非空 = 走代理，SSRF 防护交给代理（本地开发穿 GFW）。
+	FeedProxyURL string
 }
 
 // CodeRunnerConfig 代码运行器配置。
@@ -373,6 +376,7 @@ func Load() *Config {
 			DockerSocketPath: v.GetString("code_runner.docker_socket_path"),
 			Languages:        getStringSlice(v, "code_runner.languages"),
 		},
+		FeedProxyURL: v.GetString("feed_proxy_url"),
 	}
 
 	// 验证必需配置

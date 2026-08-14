@@ -6,6 +6,7 @@
 package subscription
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -143,11 +144,18 @@ func (h *Handler) Resume(w http.ResponseWriter, r *http.Request) {
 	response.RespondOK(w, dto)
 }
 
-// Fetch 立即拉取一次订阅（手动触发，不等调度器）。
-// 返回抓取报告：新增/导入/失败/dead/跳过计数 + feed 错误（如有）。
+// Fetch 异步拉取订阅（手动触发，不等调度器）。
+//
+// 立即返回 202 Accepted，FetchNow 在后台 goroutine 跑。
+// 用 context.Background() 脱离 HTTP request 生命周期——request 取消不影响抓取。
+// 抓取完成后 FetchNow 内部发布的 SubscriptionFetched 事件 → 通知 subscriber
+// 给触发者写通知（PRD-0015 N5）。
 func (h *Handler) Fetch(w http.ResponseWriter, r *http.Request) {
-	report := h.svc.FetchNow(r.Context(), r.PathValue("id"), false)
-	response.RespondOK(w, report)
+	subID := r.PathValue("id")
+	go func() {
+		h.svc.FetchNow(context.Background(), subID, false)
+	}()
+	response.RespondMessage(w, http.StatusAccepted, "抓取已开始，完成后会通知你")
 }
 
 // Delete 删除订阅（连带 entries 由 ON DELETE CASCADE 处理）。
