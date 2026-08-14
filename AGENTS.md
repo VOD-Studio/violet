@@ -291,7 +291,7 @@ type User struct {
 开 PR 时(`gh pr create`)固定配齐:
 
 - **assignees**:`@me`(当前 gh 账号,即 `--assignee @me`)。
-<!-- - **reviewers**:仓库全部 collaborator(艾特全部人)——`DefectingCat`、`xunrua`、`JingpengZhang`。用 `--reviewer DefectingCat,xunrua,JingpengZhang`。 -->
+- **reviewers**:**默认不指定**——不自动艾特全部 collaborator(邮件通知太烦)。需要 review 时人工在 PR UI 添加指定 reviewer。
 - **labels**:**默认不加 label**。仅当改动性质明确匹配 GitHub 内置语义 label 时才加(如纯文档加 `documentation`、修 bug 加 `bug`)。**禁止加 `ready-for-agent`** 等流程性 label(对人工 review 无信息量)。
 - **base**:指向 `release/2.0`(仓库主开发分支,非 `main`)。
 - **关联 issue**:PR 有对应 issue 时,在 body 用 `Closes #N`(或 `Fixes #N`)关键字引用,合并后自动关闭该 issue。纯关联不关 issue 的用普通链接(如 `issue #N`)——两者语义不同,别混用。
@@ -303,4 +303,10 @@ type User struct {
 - **merge commit 的前提**:分支上每个 commit 必须是 final 形态的 Conventional Commit(无 WIP/中间态/回退 commit)——release-please 会把分支上每个发版型 commit 都写进 CHANGELOG(粒度 = commit 而非 PR),废 commit 会污染 changelog 且无法用 squash 的「只留 PR title」遮丑。
 - 已知坑:merge commit 合并时 release-please 会以 PR title 与原始 commit 各记一条导致 changelog 重复条目,`api/internal/application/releases/service.go` 已有去重兜底。
 - 合并后:**自动删除分支**(`gh pr merge --delete-branch`,合并即删远程+本地 feature 分支)。
+
+### 版本号
+
+- **按需触发，非默认**。release-please 默认从 commit 类型推导版本号(`feat` → minor, `fix` → patch)。**只有用户明确说「发补丁 / release as patch / 发 patch」时**,才在 footer 加 `Release-As: v<版本>` 锁定为 patch;用户不提就不加,让 release-please 自行推导。
+- **做法**:用户要求发补丁时,在合并到 `release/2.0` 的 feature 分支上,最后一个发版型 commit(`feat`/`fix`/`perf`/`refactor`)的 footer 加 `Release-As: v<下个 patch>`。算下个 patch:查最新 tag(`git tag --sort=-v:refname | head -1`),patch +1。
+- **minor/major**:同理,用户明确要求时在 footer 写对应版本号(如 `Release-As: v2.9.0`),否则不干预。
 
