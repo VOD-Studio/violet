@@ -21,6 +21,8 @@ type SourceType string
 const (
 	// SourceSubscriptionFailed 订阅抓取失败
 	SourceSubscriptionFailed SourceType = "subscription_failed"
+	// SourceSubscriptionSucceeded 订阅手动抓取成功
+	SourceSubscriptionSucceeded SourceType = "subscription_succeeded"
 	// SourceFriendLinkApplied 友链申请
 	SourceFriendLinkApplied SourceType = "friendlink_applied"
 	// SourceCommentApproved 评论审核通过
@@ -29,9 +31,10 @@ const (
 
 // validSourceTypes 合法来源类型集合，供校验与 DB CHECK 同步参照。
 var validSourceTypes = map[SourceType]bool{
-	SourceSubscriptionFailed: true,
-	SourceFriendLinkApplied:  true,
-	SourceCommentApproved:    true,
+	SourceSubscriptionFailed:    true,
+	SourceSubscriptionSucceeded: true,
+	SourceFriendLinkApplied:     true,
+	SourceCommentApproved:       true,
 }
 
 // IsValidSourceType 判断来源类型是否合法。
@@ -53,6 +56,8 @@ type Notification struct {
 	domainshared.AggregateRoot
 	// userID 接收者（通知归属，创建后不可变）
 	userID domainshared.ID
+	// eventID 触发此通知的领域事件 ID（幂等键：UNIQUE(event_id, user_id) 防重复写入）
+	eventID domainshared.ID
 	// sourceType 通知来源类型（渲染分支 + 筛选，受控枚举）
 	sourceType SourceType
 	// sourceID 关联资源 ID（如 comment_id / subscription_id / friendlink_id）
@@ -72,9 +77,8 @@ type Notification struct {
 // NewNotification 创建新通知。
 //
 // title/body 是写入时快照（subscriber 生成），不实时查关联资源——
-// 通知是"事件发生时的快照"，不是"当前状态的视图"。
 func NewNotification(
-	userID domainshared.ID,
+	userID, eventID domainshared.ID,
 	sourceType SourceType,
 	sourceID domainshared.ID,
 	title, body string,
@@ -82,6 +86,9 @@ func NewNotification(
 ) (*Notification, error) {
 	if userID.IsZero() {
 		return nil, domainshared.BadRequest("接收者不能为空")
+	}
+	if eventID.IsZero() {
+		return nil, domainshared.BadRequest("触发事件不能为空")
 	}
 	if !IsValidSourceType(sourceType) {
 		return nil, ErrInvalidSourceType
@@ -92,20 +99,22 @@ func NewNotification(
 	if title == "" {
 		return nil, domainshared.BadRequest("通知标题不能为空")
 	}
+	now := time.Now()
 	return &Notification{
-		AggregateRoot: domainshared.AggregateRoot{},
-		userID:        userID,
-		sourceType:    sourceType,
-		sourceID:      sourceID,
-		title:         title,
-		body:          body,
-		payload:       payload,
+		userID:     userID,
+		eventID:    eventID,
+		sourceType: sourceType,
+		sourceID:   sourceID,
+		title:      title,
+		body:       body,
+		payload:    payload,
+		Timestamps: domainshared.Timestamps{CreatedAt: now, UpdatedAt: now},
 	}, nil
 }
 
 // Reconstruct 从持久化数据重建（无校验、无副作用、无默认值填充）。
 func Reconstruct(
-	id, userID domainshared.ID,
+	id, userID, eventID domainshared.ID,
 	sourceType SourceType,
 	sourceID domainshared.ID,
 	title, body string,
@@ -115,6 +124,7 @@ func Reconstruct(
 ) *Notification {
 	n := &Notification{
 		userID:     userID,
+		eventID:    eventID,
 		sourceType: sourceType,
 		sourceID:   sourceID,
 		title:      title,
@@ -122,7 +132,7 @@ func Reconstruct(
 		payload:    payload,
 		readAt:     readAt,
 	}
-	n.AggregateRoot.SetID(id)
+	n.SetID(id)
 	n.Timestamps = domainshared.Timestamps{CreatedAt: createdAt, UpdatedAt: createdAt}
 	return n
 }
@@ -142,6 +152,7 @@ func (n *Notification) IsRead() bool { return n.readAt != nil }
 // --- 访问器 ---
 
 func (n *Notification) UserID() domainshared.ID     { return n.userID }
+func (n *Notification) EventID() domainshared.ID    { return n.eventID }
 func (n *Notification) SourceType() SourceType      { return n.sourceType }
 func (n *Notification) SourceID() domainshared.ID   { return n.sourceID }
 func (n *Notification) Title() string               { return n.title }

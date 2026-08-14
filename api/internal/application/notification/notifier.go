@@ -138,14 +138,13 @@ func (s *PushingSubscriber) Subscribe(bus appshared.EventBus) {
 
 // Handle 处理事件 → 写通知 → 推送。
 func (s *PushingSubscriber) Handle(ctx context.Context, event domainshared.DomainEvent) error {
-	// 先用内层 Subscriber 的 mapEvent 解析动作
-	actions, ok := s.Subscriber.mapEvent(ctx, event)
+	actions, ok := s.mapEvent(ctx, event)
 	if !ok || len(actions) == 0 {
 		return nil
 	}
 
 	for _, act := range actions {
-		n, err := domainnotification.NewNotification(act.userID, act.sourceType, act.sourceID, act.title, act.body, act.payload)
+		n, err := domainnotification.NewNotification(act.userID, domainshared.MustParseID(event.EventID().String()), act.sourceType, act.sourceID, act.title, act.body, act.payload)
 		if err != nil {
 			continue
 		}
@@ -160,7 +159,7 @@ func (s *PushingSubscriber) Handle(ctx context.Context, event domainshared.Domai
 			Title:      act.title,
 			Body:       act.body,
 			Payload:    act.payload,
-			CreatedAt:  time.Now().Format(time.RFC3339),
+			CreatedAt:  n.CreatedAt().Format(time.RFC3339),
 		})
 	}
 	return nil

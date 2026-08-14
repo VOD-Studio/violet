@@ -135,6 +135,7 @@ func TestSubscriber_SubscriptionFetched_ManualSuccess_WritesNotification(t *test
 	))
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
+	assert.Equal(t, domainnotification.SourceSubscriptionSucceeded, store.saved[0].SourceType())
 	assert.Contains(t, store.saved[0].Title(), "抓取完成")
 	assert.Contains(t, store.saved[0].Body(), "3 篇")
 }

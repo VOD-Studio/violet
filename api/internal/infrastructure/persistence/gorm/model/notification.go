@@ -13,7 +13,8 @@ import (
 // nullable 语义：read_at NULL = 未读；非空 = 已读时间戳。
 type Notification struct {
 	ID         uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
-	UserID     uuid.UUID      `gorm:"type:uuid;column:user_id;not null" json:"user_id"`
+	UserID     uuid.UUID      `gorm:"type:uuid;column:user_id;not null;uniqueIndex:uq_notifications_event_user" json:"user_id"`
+	EventID    uuid.UUID      `gorm:"type:uuid;column:event_id;not null;uniqueIndex:uq_notifications_event_user" json:"event_id"`
 	SourceType string         `gorm:"type:varchar(50);column:source_type;not null" json:"source_type"`
 	SourceID   uuid.UUID      `gorm:"type:uuid;column:source_id;not null" json:"source_id"`
 	Title      string         `gorm:"type:varchar(200);not null" json:"title"`

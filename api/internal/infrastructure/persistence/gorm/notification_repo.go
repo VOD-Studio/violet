@@ -10,6 +10,7 @@ import (
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	domainnotification "blog-api/internal/domain/notification"
 	domainshared "blog-api/internal/domain/shared"
@@ -27,12 +28,15 @@ func NewNotificationRepository(db *gorm.DB) *NotificationRepository {
 }
 
 // Save 创建通知（只新增）。
+//
+// (event_id, user_id) 冲突时静默跳过——同一领域事件重复分发/重放时
+// 不产生重复通知（幂等）。GORM Create 走 INSERT ... ON CONFLICT DO NOTHING。
 func (r *NotificationRepository) Save(ctx context.Context, n *domainnotification.Notification) error {
 	po := notificationToPO(n)
-	if err := r.db.WithContext(ctx).Create(&po).Error; err != nil {
+	if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&po).Error; err != nil {
 		return domainshared.Internal("保存通知失败", err)
 	}
-	n.AggregateRoot.SetID(domainshared.MustParseID(po.ID.String()))
+	n.SetID(domainshared.MustParseID(po.ID.String()))
 	return nil
 }
 
@@ -149,10 +153,10 @@ func (r *NotificationRepository) FindAfterID(ctx context.Context, userID domains
 	return result, nil
 }
 
-// notificationToPO 领域实体 → 持久化模型。
 func notificationToPO(n *domainnotification.Notification) model.Notification {
 	po := model.Notification{
 		UserID:     n.UserID().UUID(),
+		EventID:    n.EventID().UUID(),
 		SourceType: string(n.SourceType()),
 		SourceID:   n.SourceID().UUID(),
 		Title:      n.Title(),
@@ -187,6 +191,7 @@ func notificationToDomain(po model.Notification) (*domainnotification.Notificati
 	return domainnotification.Reconstruct(
 		domainshared.MustParseID(po.ID.String()),
 		domainshared.MustParseID(po.UserID.String()),
+		domainshared.MustParseID(po.EventID.String()),
 		domainnotification.SourceType(po.SourceType),
 		domainshared.MustParseID(po.SourceID.String()),
 		po.Title, po.Body, payload,

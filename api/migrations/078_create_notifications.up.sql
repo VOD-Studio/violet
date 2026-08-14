@@ -5,6 +5,7 @@
 CREATE TABLE notifications (
     id          UUID        PRIMARY KEY,
     user_id     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    event_id    UUID        NOT NULL,
     source_type VARCHAR(50) NOT NULL,
     source_id   UUID        NOT NULL,
     title       VARCHAR(200) NOT NULL,
@@ -14,6 +15,9 @@ CREATE TABLE notifications (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 幂等：同一领域事件给同一接收者只写一行（EventBus 重放/重试防重）
+ALTER TABLE notifications ADD CONSTRAINT uq_notifications_event_user UNIQUE (event_id, user_id);
+
 -- 通知列表分页：按用户查 + 倒序
 CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at DESC);
 
@@ -22,4 +26,5 @@ CREATE INDEX idx_notifications_unread ON notifications(user_id) WHERE read_at IS
 
 -- source_type 受控枚举：扩展时加值
 ALTER TABLE notifications ADD CONSTRAINT chk_notifications_source_type
-    CHECK (source_type IN ('subscription_failed', 'friendlink_applied', 'comment_approved'));
+    CHECK (source_type IN ('subscription_failed', 'subscription_succeeded', 'friendlink_applied', 'comment_approved'));
+

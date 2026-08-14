@@ -76,7 +76,7 @@ func (s *Subscriber) Handle(ctx context.Context, event domainshared.DomainEvent)
 	}
 
 	for _, act := range actions {
-		n, err := domainnotification.NewNotification(act.userID, act.sourceType, act.sourceID, act.title, act.body, act.payload)
+		n, err := domainnotification.NewNotification(act.userID, domainshared.MustParseID(event.EventID().String()), act.sourceType, act.sourceID, act.title, act.body, act.payload)
 		if err != nil {
 			s.log.Error().Err(err).Str("event", event.EventName()).Msg("构造通知失败")
 			continue
@@ -151,9 +151,13 @@ func (s *Subscriber) handleSubscriptionFetched(ctx context.Context, e domainsubs
 		title = fmt.Sprintf("订阅「%s」抓取失败", e.Title)
 		body = e.Error
 	}
+	sourceType := domainnotification.SourceSubscriptionFailed
+	if e.Success {
+		sourceType = domainnotification.SourceSubscriptionSucceeded
+	}
 	return []notifyAction{{
 		userID:     ownerID,
-		sourceType: domainnotification.SourceSubscriptionFailed,
+		sourceType: sourceType,
 		sourceID:   e.AggregateID(),
 		title:      title,
 		body:       body,
