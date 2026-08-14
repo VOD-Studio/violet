@@ -94,6 +94,7 @@ function AdminSubscriptionsPage() {
 					try {
 						const detail = await getSubscription(id);
 						if ((detail.last_fetched_at ?? null) !== prevFetchedAt) {
+							clearFetching();
 							qc.invalidateQueries({ queryKey: subscriptionKeys.all });
 							return;
 						}
