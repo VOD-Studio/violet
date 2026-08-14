@@ -7,6 +7,36 @@
 
 v2.0.0 之前手工维护；v2.0.1 起由 [release-please](https://github.com/googleapis/release-please) 自动维护。分类由 `release-please-config.json` 的 `changelog-sections` 按 Conventional Commit type 归类。
 
+## [2.8.6](https://github.com/VOD-Studio/violet/compare/v2.8.5...v2.8.6) (2026-08-14)
+
+
+### 新增
+
+* **application:** 通知 EventBus subscriber 与查询 API ([cc472ff](https://github.com/VOD-Studio/violet/commit/cc472ff8514764896700fcf191b4e190bc457123))
+* **application:** 通知 SSE 实时推送通道 ([b0f8fdd](https://github.com/VOD-Studio/violet/commit/b0f8fdde9e4fda5240aff9adad8c86064f463df0))
+* **domain:** 通知领域模型与迁移与仓储装配 ([d9fd6f1](https://github.com/VOD-Studio/violet/commit/d9fd6f1f5f0d5288268b25b459313f4eb52f044d))
+* **handler:** 订阅抓取异步化与完成通知 ([d90c67a](https://github.com/VOD-Studio/violet/commit/d90c67a0fccbd2d73cd0c36c44a8ae0ceaa434a9))
+* **web:** 通知铃铛与 SSE 实时推送前端 ([1b8aab5](https://github.com/VOD-Studio/violet/commit/1b8aab5ea304416c31ab13fe9b3ac9252c76c05b))
+* 全站通知系统 ([5a735a3](https://github.com/VOD-Studio/violet/commit/5a735a3d65f223b0d18a9922632ae676dd0ebba9))
+
+
+### 修复
+
+* **application/notification:** 写入失败降级不阻断并补全日志 ([8088a82](https://github.com/VOD-Studio/violet/commit/8088a828752b5232bece4392f81dc30eec6f726f))
+* **domain:** 通知幂等键与订阅成功来源类型 ([e836113](https://github.com/VOD-Studio/violet/commit/e8361136ea7820ce1c1645462e14ceb569c117ff))
+* **feed:** feed 抓取支持代理（自动检测 + config 保底） ([f2dae7d](https://github.com/VOD-Studio/violet/commit/f2dae7d63e5aed2efc964defb34ae52946c4f78c))
+* **handler:** 通知列表改用 RespondPaged 统一信封格式 ([7090f33](https://github.com/VOD-Studio/violet/commit/7090f3362b8d55df74d57def52ea747cc04c2c9a))
+* **notifier:** cleanup 闭包用 sync.Once 防重复 close panic ([3894ca0](https://github.com/VOD-Studio/violet/commit/3894ca0cb0b4b4f23c40770b223a4302c61ce637))
+* **notifier:** SSE 推送持锁消除连接清理竞态 ([0dd9a76](https://github.com/VOD-Studio/violet/commit/0dd9a76556accb7b7843a68d156d7c03024c3461))
+* **web:** 通知乐观更新用 setQueryData 泛型推导类型替代 unknown as ([1e709b9](https://github.com/VOD-Studio/violet/commit/1e709b950da6eec9ef5b661db4981e604b2ac4e1))
+* **web:** 通知乐观更新用项目 PagedResponse 类型与 setQueriesData 模式 ([4a23c56](https://github.com/VOD-Studio/violet/commit/4a23c56d986a51604f9fe0a64a4a7e7678a93da5))
+* 通知 ID 零值导致主键冲突与前端异步抓取 report 解析错误 ([e9f40ff](https://github.com/VOD-Studio/violet/commit/e9f40ffc26faaa7b6b4635c0c09769c5d6f09a37))
+
+
+### 重构
+
+* **domain:** 新增 IDFromUUID 消除 uuid-string-id 绕路 ([2099354](https://github.com/VOD-Studio/violet/commit/2099354aaccef6bf0dfad6d8fd791c34994600af))
+
 ## [2.8.5](https://github.com/VOD-Studio/violet/compare/v2.8.4...v2.8.5) (2026-08-13)
 
 
