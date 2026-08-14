@@ -3,8 +3,14 @@ import { apiGet, apiGetPaged, apiPost } from "./request";
 /** 通知来源类型（与后端 source_type 受控枚举同步） */
 export type NotificationSourceType =
 	| "subscription_failed"
+	| "subscription_succeeded"
 	| "friendlink_applied"
-	| "comment_approved";
+	| "friendlink_reviewed"
+	| "comment_approved"
+	| "comment_created"
+	| "comment_rejected"
+	| "user_registered"
+	| "account_security";
 
 /** 通知读模型（后端 NotificationDTO 对应） */
 export interface NotificationItem {

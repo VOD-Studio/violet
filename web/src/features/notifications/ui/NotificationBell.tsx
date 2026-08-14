@@ -17,7 +17,18 @@ import {
 } from "@shared/ui/base/dropdown-menu";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Bell, BellRing, CheckCheck, MessageCircle, Rss, Users } from "lucide-react";
+import {
+	Bell,
+	BellRing,
+	CheckCheck,
+	Link2,
+	MessageCircle,
+	MessageCircleX,
+	Rss,
+	ShieldCheck,
+	UserPlus,
+	Users,
+} from "lucide-react";
 import { useState } from "react";
 import {
 	useMarkAllRead,
@@ -30,15 +41,27 @@ import { useNotificationStream } from "../hooks/useNotificationStream";
 /** source_type → 图标映射 */
 const sourceIcon: Record<NotificationSourceType, typeof Bell> = {
 	subscription_failed: Rss,
+	subscription_succeeded: Rss,
 	friendlink_applied: Users,
+	friendlink_reviewed: Link2,
 	comment_approved: MessageCircle,
+	comment_created: MessageCircle,
+	comment_rejected: MessageCircleX,
+	user_registered: UserPlus,
+	account_security: ShieldCheck,
 };
 
 /** source_type → 颜色映射 */
 const sourceColor: Record<NotificationSourceType, string> = {
 	subscription_failed: "text-orange-500",
+	subscription_succeeded: "text-emerald-500",
 	friendlink_applied: "text-blue-500",
+	friendlink_reviewed: "text-blue-500",
 	comment_approved: "text-emerald-500",
+	comment_created: "text-emerald-500",
+	comment_rejected: "text-red-500",
+	user_registered: "text-blue-500",
+	account_security: "text-purple-500",
 };
 
 const NotificationBell = () => {
