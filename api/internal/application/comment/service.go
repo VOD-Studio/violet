@@ -524,8 +524,8 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 		return CommentDTO{}, err
 	}
 	if c.Status() == domain.StatusApproved {
-		// 免审直接公开：等同审核通过，发 approved 事件（通知评论者/文章作者）
-		s.publish(ctx, domain.NewCommentApproved(c.ID()))
+		// 免审直接公开：发 approved 事件（Auto=true，通知侧跳过评论者自我通知）
+		s.publish(ctx, domain.NewCommentAutoApproved(c.ID()))
 	} else {
 		// 提交即 pending（人工审核制），发事件供通知管理员待审
 		s.publish(ctx, domain.NewCommentSubmitted(c.ID()))

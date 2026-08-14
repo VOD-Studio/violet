@@ -397,6 +397,8 @@ func (s *Subscriber) handleUserRegistered(ctx context.Context, e domainuser.User
 
 // handleCommentApproved 评论审核通过 → 双接收者：评论作者（comment_approved）
 // 与文章作者（comment_created，自评跳过）。
+// Auto（免审自动通过）跳过评论作者通知——刚发完就收到「已审核通过」是噪音；
+// 文章作者的新评论通知不受影响。
 func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.CommentApproved) ([]notifyAction, bool) {
 	commentID := e.AggregateID()
 
@@ -407,7 +409,7 @@ func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.
 	}
 
 	actions := make([]notifyAction, 0, 2)
-	if authorID != nil {
+	if authorID != nil && !e.Auto {
 		actions = append(actions, notifyAction{
 			userID:     *authorID,
 			sourceType: domainnotification.SourceCommentApproved,

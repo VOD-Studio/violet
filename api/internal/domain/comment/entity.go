@@ -29,14 +29,26 @@ const (
 // CommentApproved 评论已审核通过事件
 //
 // 订阅者：审计服务。PostID 供资源定位（评论聚合 ID 是评论自身）。
+// Auto 区分人工审核与免审模式自动通过——通知订阅者据此跳过评论者的
+// 「已审核通过」自我通知（刚发完就通知本人是噪音），文章作者通知不受影响。
 type CommentApproved struct {
 	shared.BaseEvent
+	// Auto 是否免审模式自动通过（true=非人工审核）
+	Auto bool
 }
 
-// NewCommentApproved 构造评论审核通过事件
+// NewCommentApproved 构造评论审核通过事件（人工审核）
 func NewCommentApproved(commentID shared.ID) CommentApproved {
 	return CommentApproved{
 		BaseEvent: shared.NewBaseEvent("comment.approved", commentID),
+	}
+}
+
+// NewCommentAutoApproved 构造评论自动通过事件（免审模式，创建即公开）
+func NewCommentAutoApproved(commentID shared.ID) CommentApproved {
+	return CommentApproved{
+		BaseEvent: shared.NewBaseEvent("comment.approved", commentID),
+		Auto:      true,
 	}
 }
 

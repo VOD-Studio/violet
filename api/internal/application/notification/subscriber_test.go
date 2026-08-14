@@ -521,3 +521,22 @@ func TestSubscriber_CommentSubmitted_NotifiesAdmins(t *testing.T) {
 	assert.Equal(t, adminID, store.saved[0].UserID())
 	assert.Equal(t, domainnotification.SourceCommentPending, store.saved[0].SourceType())
 }
+
+func TestSubscriber_CommentAutoApproved_SkipsCommenterNotifiesPostAuthor(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	commenterID := newID()
+	postAuthorID := newID()
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{},
+		&fakeCommentLookup{authorID: &commenterID},
+		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{},
+		&fakePostAuthorLookup{authorID: &postAuthorID},
+	)
+
+	err := sub.Handle(context.Background(), domaincomment.NewCommentAutoApproved(newID()))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Equal(t, domainnotification.SourceCommentCreated, store.saved[0].SourceType())
+	assert.Equal(t, postAuthorID, store.saved[0].UserID())
+}
