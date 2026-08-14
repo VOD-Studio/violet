@@ -157,11 +157,14 @@ type SubscriptionFetched struct {
 	// IsSystem 是否系统调度触发（true=定时调度器，actor_type=system；
 	// false=手动触发，actor_type=user）。审计订阅者据此设置 ActorType。
 	IsSystem bool
+	// AutoPaused 本轮抓取触发了自动暂停（连续失败达阈值或永久错误直接 Pause）。
+	// 通知订阅者据此在失败通知中告知 owner 订阅已停、恢复需手动操作。
+	AutoPaused bool
 }
 
 // NewSubscriptionFetched 构造订阅抓取事件。
 // feedErrKind 取值见 FeedErrKind* 常量，非 feed 层错误传空串。
-func NewSubscriptionFetched(id shared.ID, title string, success bool, imported, failed int, errMsg, feedErrKind string, isSystem bool) SubscriptionFetched {
+func NewSubscriptionFetched(id shared.ID, title string, success bool, imported, failed int, errMsg, feedErrKind string, isSystem, autoPaused bool) SubscriptionFetched {
 	return SubscriptionFetched{
 		BaseEvent:     shared.NewBaseEvent("subscription.fetched", id),
 		Title:         title,
@@ -171,6 +174,7 @@ func NewSubscriptionFetched(id shared.ID, title string, success bool, imported, 
 		Error:         errMsg,
 		FeedErrorKind: feedErrKind,
 		IsSystem:      isSystem,
+		AutoPaused:    autoPaused,
 	}
 }
 

@@ -121,7 +121,7 @@ func TestSubscriber_SubscriptionFetched_Failure_WritesNotification(t *testing.T)
 	)
 
 	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
-		subID, "rua.plus", false, 0, 1, "源站连接失败", "transient", true,
+		subID, "rua.plus", false, 0, 1, "源站连接失败", "transient", true, false,
 	))
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
@@ -140,7 +140,7 @@ func TestSubscriber_SubscriptionFetched_Success_NoNotification(t *testing.T) {
 	sub := newTestSubscriber(store, &fakeSubLookup{}, &fakeCommentLookup{}, &fakeAdminLookup{}, &fakeFriendlinkLookup{}, &fakePostAuthorLookup{})
 
 	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
-		newID(), "test", true, 5, 0, "", "", true,
+		newID(), "test", true, 5, 0, "", "", true, false,
 	))
 	require.NoError(t, err)
 	assert.Empty(t, store.saved)
@@ -159,7 +159,7 @@ func TestSubscriber_SubscriptionFetched_ManualSuccess_WritesNotification(t *test
 
 	// 手动触发（isSystem=false）+ 成功 → 应通知
 	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
-		newID(), "rua.plus", true, 3, 0, "", "", false,
+		newID(), "rua.plus", true, 3, 0, "", "", false, false,
 	))
 	require.NoError(t, err)
 	require.Len(t, store.saved, 1)
@@ -300,7 +300,7 @@ func TestSubscriber_StoreError_FailSafeReturnsNil(t *testing.T) {
 
 	// 写入失败应降级（fail-safe）：记日志后返回 nil，不阻断 EventBus
 	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
-		newID(), "test", false, 0, 1, "err", "transient", true,
+		newID(), "test", false, 0, 1, "err", "transient", true, false,
 	))
 	assert.NoError(t, err)
 }
@@ -326,7 +326,7 @@ func TestPushingSubscriber_StoreError_FailSafeNoPush(t *testing.T) {
 	)
 
 	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
-		newID(), "test", false, 0, 1, "err", "transient", true,
+		newID(), "test", false, 0, 1, "err", "transient", true, false,
 	))
 	assert.NoError(t, err)
 	assert.Empty(t, notif.pushed) // Save 失败不应推送
@@ -482,4 +482,24 @@ func TestSubscriber_CommentSpammed_NotifiesAuthor(t *testing.T) {
 	require.Len(t, store.saved, 1)
 	assert.Equal(t, domainnotification.SourceCommentRejected, store.saved[0].SourceType())
 	assert.Equal(t, authorID, store.saved[0].UserID())
+}
+
+func TestSubscriber_SubscriptionFetched_AutoPaused_AppendsHint(t *testing.T) {
+	store := &fakeStoreCorrect{}
+	ownerID := newID()
+	sub := newTestSubscriber(store,
+		&fakeSubLookup{ownerID: ownerID},
+		&fakeCommentLookup{},
+		&fakeAdminLookup{},
+		&fakeFriendlinkLookup{},
+		&fakePostAuthorLookup{},
+	)
+
+	err := sub.Handle(context.Background(), domainsubscription.NewSubscriptionFetched(
+		newID(), "rua.plus", false, 0, 1, "源站连接失败", "transient", true, true,
+	))
+	require.NoError(t, err)
+	require.Len(t, store.saved, 1)
+	assert.Contains(t, store.saved[0].Body(), "自动暂停")
+	assert.Contains(t, store.saved[0].Body(), "源站连接失败")
 }

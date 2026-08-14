@@ -556,11 +556,16 @@ func (s *Service) FetchNow(ctx context.Context, subscriptionID string, isSystem 
 	report = s.FetchOne(ctx, subscriptionID)
 
 	now := s.now()
+	autoPaused := false
 	if report.SubscriptionError == "" {
 		// feed 拉取成功（即便部分 entry 失败，feed 层算成功）→ 清零计数 + 推进 next_fetch_at
 		sub.RecordSuccess(now)
 	} else {
+		// 自动暂停信号用状态差分捕获：applyFeedError 内部（永久错误直接 Pause 或
+		// 瞬时错误 RecordFailure 达阈值）把 active 转为 paused 即本轮触发。
+		wasActive := sub.Status() == domainsubscription.StatusActive
 		s.applyFeedError(sub, report.FeedErr, now, report.SubscriptionError)
+		autoPaused = wasActive && sub.Status() == domainsubscription.StatusPaused
 	}
 	if err := s.repo.Save(ctx, sub); err != nil {
 		if report.SubscriptionError == "" {
@@ -587,7 +592,7 @@ func (s *Service) FetchNow(ctx context.Context, subscriptionID string, isSystem 
 	}
 	s.publish(ctx, domainsubscription.NewSubscriptionFetched(
 		sub.ID(), title, success, report.Imported, report.Failed,
-		errMsg, feedErrorKindString(report.FeedErr), isSystem,
+		errMsg, feedErrorKindString(report.FeedErr), isSystem, autoPaused,
 	))
 	return report
 }

@@ -254,6 +254,9 @@ func (s *Subscriber) handleSubscriptionFetched(ctx context.Context, e domainsubs
 	} else {
 		title = fmt.Sprintf("订阅「%s」抓取失败", e.Title)
 		body = e.Error
+		if e.AutoPaused {
+			body += "；已达失败阈值，订阅已自动暂停，恢复需到订阅管理手动操作"
+		}
 	}
 	sourceType := domainnotification.SourceSubscriptionFailed
 	if e.Success {
