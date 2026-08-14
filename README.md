@@ -136,39 +136,11 @@ make dev-dind
 
 ## 生产部署
 
-线上环境为 **xunrua.top**（rua 服务器，SSR 容器 + nginx-proxy 反代 + Let's Encrypt TLS）。日常发版全自动，不需要手动登录服务器：
+线上环境为 **xunrua.top**（rua 服务器，SSR 容器 + nginx-proxy 反代 + Let's Encrypt TLS）。日常发版全自动：向 `release/2.0` 推送 `feat`/`fix` 等发版型 commit → release-please 自动开 release PR → 合并即打 tag 并触发自动部署（按侧变更检测、迁移门禁、健康检查与跨组件冒烟，失败自动回滚）。`docs`/`chore`/`ci` 类型不发版。
 
-```mermaid
-graph LR
-    A[push 到 release/2.0] --> B[CI 检查]
-    B --> C[release-please 开 release PR]
-    C --> D[合并 release PR]
-    D --> E[自动打 tag]
-    E --> F[deploy.yml 自动部署]
-    F --> G{变更检测}
-    G --> H[构建镜像<br/>迁移门禁]
-    H --> I[健康检查 + 跨组件冒烟]
-    I --> J[失败自动回滚]
-```
-
-```text
-https://xunrua.top
-       │
-       ▼
-┌────────────────┐   /api/* /uploads/*   ┌──────────────┐
-│  nginx-proxy   │ ────────────────────► │ blog-api:9090 │──► postgres / redis
-│  (TLS + 反代)  │                        └──────────────┘
-│                │   / (SSR)              ┌──────────────┐
-│                │ ────────────────────► │ blog-web:3000 │
-└────────────────┘   VIRTUAL_HOST        └──────────────┘
-```
-
-要点：
-
-- **发版**：向 `release/2.0` 推送 `feat`/`fix` 等发版型 commit，release-please 自动开 release PR；合并即打 tag 并触发部署。`docs`/`chore`/`ci` 类型不发版。
-- **部署**：deploy.yml 在 rua 的 self-hosted runner 上按侧（api/web）变更检测、构建、迁移门禁、健康检查与跨组件冒烟；失败自动回滚到上一版本锚点。
-- **手动兜底**：runner 不可用或紧急发布时，见 [手动部署手册](docs/deploy/manual-deploy.md)；发布全流程见 [发布手册](docs/deploy/release-runbook.md)。
-- **本地 Docker 生产模式**（无需服务器）：`make deploy-prod-init` 初始化 `.env`，`make deploy-prod` 构建并启动。
+- [发布手册](docs/deploy/release-runbook.md)：发版流程、回滚、迁移门禁、线上拓扑
+- [手动部署手册](docs/deploy/manual-deploy.md)：runner 不可用或紧急发布时兜底
+- 本地 Docker 生产模式（无需服务器）：`make deploy-prod-init` 初始化 `.env`，`make deploy-prod` 构建并启动
 
 ## 常用命令
 

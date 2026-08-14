@@ -1,8 +1,35 @@
 # 发布与回滚手册
 
+## 线上拓扑
+
+```text
+https://xunrua.top
+       │
+       ▼
+┌────────────────┐   /api/* /uploads/*   ┌──────────────┐
+│  nginx-proxy   │ ────────────────────► │ blog-api:9090 │──► postgres / redis
+│  (TLS + 反代)  │                        └──────────────┘
+│                │   / (SSR)              ┌──────────────┐
+│                │ ────────────────────► │ blog-web:3000 │
+└────────────────┘   VIRTUAL_HOST        └──────────────┘
+```
+
 ## 发版流程（release-please 自动化）
 
 发版由 [release-please](https://github.com/googleapis/release-please) 自动化驱动,从 Conventional Commits 推导版本号并维护 CHANGELOG。
+
+```mermaid
+graph LR
+    A[push 到 release/2.0] --> B[CI 检查]
+    B --> C[release-please 开 release PR]
+    C --> D[合并 release PR]
+    D --> E[自动打 tag]
+    E --> F[deploy.yml 自动部署]
+    F --> G{变更检测}
+    G --> H[构建镜像<br/>迁移门禁]
+    H --> I[健康检查 + 跨组件冒烟]
+    I --> J[失败自动回滚]
+```
 
 ### 日常发版步骤
 
