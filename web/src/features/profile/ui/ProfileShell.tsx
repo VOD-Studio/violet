@@ -187,7 +187,8 @@ const ProfileSidebarTab = ({
 				"group-data-[variant=default]/tabs-list:data-[state=active]:shadow-none",
 			)}
 		>
-			{/* 滑动指示块：layoutId 共享元素，激活态切换时在 tab 间平滑滑动 */}
+			{/* 滑动指示块：layoutId 共享元素，激活态切换时在 tab 间平滑滑动。
+			    absolute 定位元素默认画在静态内容之上，内容需包 relative z-10 压住 */}
 			{active && (
 				<motion.span
 					aria-hidden
@@ -197,11 +198,13 @@ const ProfileSidebarTab = ({
 							? { duration: 0 }
 							: { type: "spring", stiffness: 400, damping: 34 }
 					}
-					className="absolute inset-0 rounded-md bg-background shadow-sm dark:border dark:border-input dark:bg-input/30"
+					className="absolute inset-0 z-0 rounded-md bg-background shadow-sm dark:border dark:border-input dark:bg-input/30"
 				/>
 			)}
-			{icon}
-			<span className="flex-1">{label}</span>
+			<span className="relative z-10 flex min-w-0 flex-1 items-center gap-2">
+				{icon}
+				<span className="flex-1">{label}</span>
+			</span>
 		</TabsTrigger>
 	);
 };
