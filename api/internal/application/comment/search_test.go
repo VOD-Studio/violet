@@ -15,7 +15,7 @@ import (
 )
 
 func TestService_SearchComments(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	pid := shared.NewID()
 	repo.On("Search", mock.Anything, domain.StatusApproved, "公式", domain.AnchorFilterAll, 1, 20).
 		Return([]*domain.CommentWithPost{
@@ -31,7 +31,7 @@ func TestService_SearchComments(t *testing.T) {
 }
 
 func TestService_SearchComments_LimitDefault(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	repo.On("Search", mock.Anything, domain.StatusApproved, "x", domain.AnchorFilterAll, 1, 20).
 		Return(nil, int64(0), nil)
 
@@ -41,7 +41,7 @@ func TestService_SearchComments_LimitDefault(t *testing.T) {
 }
 
 func TestService_SearchComments_OffsetToPage(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	// offset 20 / limit 20 → page 2
 	repo.On("Search", mock.Anything, domain.StatusApproved, "x", domain.AnchorFilterAll, 2, 20).
 		Return(nil, int64(0), nil)
@@ -51,7 +51,7 @@ func TestService_SearchComments_OffsetToPage(t *testing.T) {
 }
 
 func TestService_ListRecentComments(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	pid := shared.NewID()
 	// 复用 FindAll（仓储已 ORDER BY created_at DESC）
 	repo.On("FindAll", mock.Anything, domain.StatusApproved, domain.AnchorFilterAll, 1, 20).
@@ -66,7 +66,7 @@ func TestService_ListRecentComments(t *testing.T) {
 }
 
 func TestService_CommentStats(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	pid1 := shared.NewID()
 	pid2 := shared.NewID()
 	repo.On("Stats", mock.Anything, domain.StatusApproved).
@@ -88,7 +88,7 @@ func TestService_CommentStats(t *testing.T) {
 }
 
 func TestService_CommentStats_Empty(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	repo.On("Stats", mock.Anything, domain.StatusApproved).Return([]domain.PostCommentStat{}, nil)
 
 	res, err := svc.CommentStats(context.Background())

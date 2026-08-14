@@ -114,15 +114,23 @@ type Service struct {
 	codeStore   appshared.CodeStore
 	emailSender EmailSender
 	emojiLookup EmojiLookup
+	sitePolicy  SitePolicy
 	bus         appshared.EventBus
+}
+
+// SitePolicy 站点级评论策略端口（由 wiring 适配 settings 模块）。
+type SitePolicy interface {
+	// CommentPolicy 返回评论总开关与是否需人工审核。
+	CommentPolicy(ctx context.Context) (enabled bool, moderation bool, err error)
 }
 
 // NewService 构造评论用例服务。
 //
 // codeStore 和 emailSender 用于匿名评论的邮箱验证码两步流（PRD-0001）。
 // emojiLookup 用于 toDTO 后解析 body 中的 [name] 构建 emote 映射，nil 时跳过。
-func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, bus appshared.EventBus) *Service {
-	return &Service{commentRepo: repo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, bus: bus}
+// sitePolicy 用于 Create 时的开关/审核分流，nil 时按「开评论 + 需审核」兜底。
+func NewService(repo domain.CommentRepository, codeStore appshared.CodeStore, emailSender EmailSender, emojiLookup EmojiLookup, sitePolicy SitePolicy, bus appshared.EventBus) *Service {
+	return &Service{commentRepo: repo, codeStore: codeStore, emailSender: emailSender, emojiLookup: emojiLookup, sitePolicy: sitePolicy, bus: bus}
 }
 
 // ListByPost 按文章列出评论。
@@ -426,6 +434,19 @@ type CreateInput struct {
 //
 // ip_hash 一律由 handler 填充（登录/匿名都需要，配额与反垃圾元数据都用）。
 func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error) {
+	// 站点评论总开关：关闭时拒绝（含匿名与批注入口，二者共用本用例）
+	enabled, moderation := true, true
+	if s.sitePolicy != nil {
+		var err error
+		enabled, moderation, err = s.sitePolicy.CommentPolicy(ctx)
+		if err != nil {
+			return CommentDTO{}, shared.Internal("读取评论设置失败", err)
+		}
+	}
+	if !enabled {
+		return CommentDTO{}, shared.Forbidden("评论已关闭")
+	}
+
 	postID, err := shared.ParseID(in.PostID)
 	if err != nil {
 		return CommentDTO{}, err
@@ -495,11 +516,20 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CommentDTO, error
 	} else {
 		_ = c.SetParent(nil)
 	}
+	// 免审核模式：跳过待审直接公开；需审核则保持 pending 由管理员处理
+	if !moderation {
+		c.Approve()
+	}
 	if err := s.commentRepo.Save(ctx, c); err != nil {
 		return CommentDTO{}, err
 	}
-	// 提交即 pending（人工审核制），发事件供通知管理员待审
-	s.publish(ctx, domain.NewCommentSubmitted(c.ID()))
+	if c.Status() == domain.StatusApproved {
+		// 免审直接公开：等同审核通过，发 approved 事件（通知评论者/文章作者）
+		s.publish(ctx, domain.NewCommentApproved(c.ID()))
+	} else {
+		// 提交即 pending（人工审核制），发事件供通知管理员待审
+		s.publish(ctx, domain.NewCommentSubmitted(c.ID()))
+	}
 	dto := toDTO(c, nil, replyToName)
 	if err := s.enrichSingleEmote(ctx, &dto); err != nil {
 		return CommentDTO{}, err

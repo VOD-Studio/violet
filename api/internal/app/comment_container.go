@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	appcomment "blog-api/internal/application/comment"
+	appsettings "blog-api/internal/application/settings"
 	appshared "blog-api/internal/application/shared"
 	domainemoji "blog-api/internal/domain/emoji"
 	infraauth "blog-api/internal/infrastructure/auth"
@@ -27,17 +28,30 @@ type CommentContainer struct {
 // emailSender 用于匿名评论邮箱验证码两步流（PRD-0001）；
 // userRepo 用于登录评论者的 author_* 资料填充；
 // emojiRepo 用于评论 emote 映射（解析 body 中的 [name] 查表构建）。
-func NewCommentContainer(db *gorm.DB, redisClient *redis.Client, emailSender *infraemail.Sender, bus appshared.EventBus) *CommentContainer {
+func NewCommentContainer(db *gorm.DB, redisClient *redis.Client, emailSender *infraemail.Sender, settingsSvc *appsettings.Service, bus appshared.EventBus) *CommentContainer {
 	commentRepo := gormrepo.NewCommentRepository(db)
 	userRepo := gormrepo.NewUserRepository(db)
 	postRepo := gormrepo.NewPostRepository(db)
 	emojiRepo := gormrepo.NewEmojiGroupRepository(db)
 	codeStore := infraauth.NewRedisCodeStore(redisClient)
-	commentSvc := appcomment.NewService(commentRepo, codeStore, emailSender, &emojiLookupAdapter{repo: emojiRepo}, bus)
+	commentSvc := appcomment.NewService(commentRepo, codeStore, emailSender, &emojiLookupAdapter{repo: emojiRepo}, &commentSitePolicy{svc: settingsSvc}, bus)
 	return &CommentContainer{
 		CommentHandler: commenthttp.NewHandler(commentSvc, userRepo, postRepo),
 		CommentService: commentSvc,
 	}
+}
+
+// commentSitePolicy 将 settings 模块适配为 comment.SitePolicy 端口。
+type commentSitePolicy struct {
+	svc *appsettings.Service
+}
+
+func (a *commentSitePolicy) CommentPolicy(ctx context.Context) (bool, bool, error) {
+	s, err := a.svc.GetAll(ctx)
+	if err != nil {
+		return false, false, err
+	}
+	return s.CommentsEnabled, s.CommentsModeration, nil
 }
 
 // emojiLookupAdapter 将 EmojiGroupRepository 适配为 comment.EmojiLookup 端口。

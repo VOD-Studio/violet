@@ -80,7 +80,7 @@ func NewContainer(ctx context.Context, infra *Infra, cfg *config.Config) (*Conta
 	}
 
 	content := NewContentContainer(db, bus)
-	comment := NewCommentContainer(db, rdb, emailSender, bus)
+	comment := NewCommentContainer(db, rdb, emailSender, settings.Service, bus)
 	post := NewPostContainer(db, permissionChecker, settings.Store, bus)
 	tag := NewTagContainer(db)
 	github := NewGitHubContainer(settings.Store)
