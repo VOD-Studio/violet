@@ -1,6 +1,8 @@
 import { PageShell } from "@features/admin-layout/ui/PageShell";
 import type { DataTableColumn } from "@features/admin-shared/ui/data-table";
 import { DataTable } from "@features/admin-shared/ui/data-table";
+import { getSubscription } from "@features/admin-subscriptions/api/client";
+import { subscriptionKeys } from "@features/admin-subscriptions/api/keys";
 import {
 	useCreateSubscription,
 	useDeleteSubscription,
@@ -27,6 +29,7 @@ import {
 	SelectValue,
 } from "@shared/ui/base/select";
 import { ConfirmDialog } from "@shared/ui/confirm-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Pause, Pencil, Play, Plus, RefreshCw, Trash2 } from "lucide-react";
 import * as React from "react";
@@ -41,6 +44,7 @@ function AdminSubscriptionsPage() {
 	const [pageSize, setPageSize] = React.useState(20);
 
 	const { data, isLoading, error, refetch } = useSubscriptions(statusFilter, page, pageSize);
+	const qc = useQueryClient();
 	const createMut = useCreateSubscription();
 	const updateMut = useUpdateSubscription();
 	const pauseMut = usePauseSubscription();
@@ -52,28 +56,61 @@ function AdminSubscriptionsPage() {
 	const [editing, setEditing] = React.useState<SubscriptionDTO | null>(null);
 	const [deleting, setDeleting] = React.useState<SubscriptionDTO | null>(null);
 
-	// 正在抓取的订阅 ID 集合：202 返回后后台仍在异步抓取，保持 spin 直到列表刷新或超时
+	// 正在抓取的订阅 ID 集合：202 返回后后台异步抓取，保持 spin 直到 last_fetched_at 变化
 	const [fetchingIds, setFetchingIds] = React.useState<Set<string>>(new Set());
 
+	// 轮询 timer 管理：组件卸载时统一清除，避免 setState on unmounted
+	const timersRef = React.useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+	React.useEffect(() => {
+		return () => {
+			for (const t of timersRef.current) clearTimeout(t);
+			timersRef.current.clear();
+		};
+	}, []);
+
 	const handleFetch = (id: string) => {
+		const sub = data?.items?.find((s) => s.id === id);
+		const prevFetchedAt = sub?.last_fetched_at ?? null;
+
 		setFetchingIds((prev) => new Set(prev).add(id));
-		fetchMut.mutate(id, {
-			onError: () => {
-				setFetchingIds((prev) => {
-					const next = new Set(prev);
-					next.delete(id);
-					return next;
-				});
-			},
-		});
-		// 保底 60s 清除：抓取不应超过 60s，防止 spin 卡死
-		setTimeout(() => {
+		const clearFetching = () =>
 			setFetchingIds((prev) => {
+				if (!prev.has(id)) return prev;
 				const next = new Set(prev);
 				next.delete(id);
 				return next;
 			});
-		}, 60000);
+
+		fetchMut.mutate(id, {
+			onSuccess: () => {
+				// 202 返回后后台异步抓取。轮询单个订阅详情检测 last_fetched_at 变化——
+				// 不读 list 缓存，避免筛选/分页切换导致读不到数据。
+				const startTime = Date.now();
+				const MAX_MS = 300_000; // 5min 保底
+				const INTERVAL = 5000;
+
+				const poll = async () => {
+					if (Date.now() - startTime > MAX_MS) return;
+					try {
+						const detail = await getSubscription(id);
+						if ((detail.last_fetched_at ?? null) !== prevFetchedAt) {
+							qc.invalidateQueries({ queryKey: subscriptionKeys.all });
+							return;
+						}
+					} catch {
+						// 网络错误不中断轮询，下轮重试
+					}
+					const timer = setTimeout(poll, INTERVAL);
+					timersRef.current.add(timer);
+				};
+				const timer = setTimeout(poll, INTERVAL);
+				timersRef.current.add(timer);
+				// 保底：MAX_MS 后强制清除
+				const fallback = setTimeout(clearFetching, MAX_MS);
+				timersRef.current.add(fallback);
+			},
+			onError: clearFetching,
+		});
 	};
 
 	const columns: DataTableColumn<SubscriptionDTO>[] = [
