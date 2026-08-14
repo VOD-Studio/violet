@@ -1,12 +1,13 @@
 # 依赖自动更新:govulncheck/pnpm audit 发现的漏洞需要自动修复通道,否则会积压(#143)
-# 每周一拉取;minor/patch 合并为一个 PR 减少噪音,major 单独开 PR 便于单独评估
+# 每月一次拉取;minor/patch 合并为一个 PR 减少噪音,major 单独开 PR 便于单独评估。
+# GitHub Actions 也合并为一个 PR(govulncheck/构建用到的 action 升级,单独开太多噪音)。
 
 version: 2
 updates:
   - package-ecosystem: gomod
     directory: /api
     schedule:
-      interval: weekly
+      interval: monthly
     groups:
       minor-patch:
         applies-to: version-updates
@@ -15,7 +16,7 @@ updates:
   - package-ecosystem: npm
     directory: /web
     schedule:
-      interval: weekly
+      interval: monthly
     groups:
       minor-patch:
         applies-to: version-updates
@@ -24,4 +25,8 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]

@@ -303,6 +303,75 @@ function AdminUsers() {
 						</Button>
 					</PermissionGuard>
 				}
+				sticky={
+					<div className="flex flex-wrap items-center gap-3 pt-1">
+						<div className="min-w-50 max-w-80 flex-1">
+							<SearchInput
+								defaultValue=""
+								placeholder="搜索用户名 / 邮箱..."
+								onSearch={(v) => {
+									setKeyword(v);
+									setPage(1);
+								}}
+							/>
+						</div>
+						<Select value={roleFilter} onValueChange={setRoleFilter}>
+							<SelectTrigger className="h-9 w-30" aria-label="角色筛选">
+								<SelectValue placeholder="选择角色" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">全部角色</SelectItem>
+								{roles.map((role) => (
+									<SelectItem key={role.name} value={role.name || ""}>
+										{role.description || role.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<Select value={statusFilter} onValueChange={setStatusFilter}>
+							<SelectTrigger className="h-9 w-30" aria-label="状态筛选">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">全部状态</SelectItem>
+								<SelectItem value="active">正常</SelectItem>
+								<SelectItem value="inactive">已禁用</SelectItem>
+							</SelectContent>
+						</Select>
+						<Select
+							value={density}
+							onValueChange={(v) => setDensity(v as "comfortable" | "compact")}
+						>
+							<SelectTrigger className="h-9 w-30" aria-label="行密度">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="comfortable">标准密度</SelectItem>
+								<SelectItem value="compact">紧凑密度</SelectItem>
+							</SelectContent>
+						</Select>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => refetch()}
+							disabled={isLoading}
+						>
+							<RefreshCw className="size-3.5" />
+							刷新
+						</Button>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								exportToCsv("用户列表", columns, sortedData);
+								toast.success("已导出当前页 CSV");
+							}}
+						>
+							<Download className="size-3.5" />
+							导出 CSV
+						</Button>
+					</div>
+				}
 			>
 				<DataTable
 					columns={columns}
@@ -418,75 +487,6 @@ function AdminUsers() {
 					caption="用户列表"
 					emptyTitle="暂无用户"
 					emptyDescription="还没有任何用户，点击上方按钮创建第一个用户"
-					toolbar={
-						<>
-							<div className="min-w-50 max-w-80 flex-1">
-								<SearchInput
-									defaultValue=""
-									placeholder="搜索用户名 / 邮箱..."
-									onSearch={(v) => {
-										setKeyword(v);
-										setPage(1);
-									}}
-								/>
-							</div>
-							<Select value={roleFilter} onValueChange={setRoleFilter}>
-								<SelectTrigger className="h-9 w-30" aria-label="角色筛选">
-									<SelectValue placeholder="选择角色" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">全部角色</SelectItem>
-									{roles.map((role) => (
-										<SelectItem key={role.name} value={role.name || ""}>
-											{role.description || role.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-							<Select value={statusFilter} onValueChange={setStatusFilter}>
-								<SelectTrigger className="h-9 w-30" aria-label="状态筛选">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">全部状态</SelectItem>
-									<SelectItem value="active">正常</SelectItem>
-									<SelectItem value="inactive">已禁用</SelectItem>
-								</SelectContent>
-							</Select>
-							<Select
-								value={density}
-								onValueChange={(v) => setDensity(v as "comfortable" | "compact")}
-							>
-								<SelectTrigger className="h-9 w-30" aria-label="行密度">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="comfortable">标准密度</SelectItem>
-									<SelectItem value="compact">紧凑密度</SelectItem>
-								</SelectContent>
-							</Select>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => refetch()}
-								disabled={isLoading}
-							>
-								<RefreshCw className="size-3.5" />
-								刷新
-							</Button>
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => {
-									exportToCsv("用户列表", columns, sortedData);
-									toast.success("已导出当前页 CSV");
-								}}
-							>
-								<Download className="size-3.5" />
-								导出 CSV
-							</Button>
-						</>
-					}
 				/>
 			</PageShell>
 
