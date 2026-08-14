@@ -43,10 +43,16 @@ export const ProfileShell = ({
 						<ProfileSidebar user={user} />
 					</aside>
 					<div className="min-w-0">
-						<TabsContent value="profile" className="mt-0 outline-none">
+						<TabsContent
+							value="profile"
+							className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
+						>
 							{profile}
 						</TabsContent>
-						<TabsContent value="security" className="mt-0 outline-none">
+						<TabsContent
+							value="security"
+							className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
+						>
 							{security}
 						</TabsContent>
 					</div>
@@ -117,11 +123,10 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 				</p>
 			</div>
 
-			{/* Tab 列表 */}
+			{/* Tab 列表：default 分段式（自带激活态过渡），移动端横排可滚动 */}
 			<TabsList
-				variant="line"
 				className={cn(
-					"mt-6 h-auto w-full justify-start border-t pt-2",
+					"mt-6 h-auto w-full justify-start",
 					"flex-row overflow-x-auto md:flex-col md:items-stretch md:overflow-visible",
 				)}
 			>
@@ -160,14 +165,7 @@ const ProfileSidebarTab = ({
 	label: string;
 }) => {
 	return (
-		<TabsTrigger
-			value={value}
-			className={cn(
-				"relative flex w-full items-center justify-start gap-2 rounded-md py-2 pr-3 pl-3 text-left text-sm font-medium",
-				"text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground",
-				"data-[state=active]:bg-accent data-[state=active]:text-foreground",
-			)}
-		>
+		<TabsTrigger value={value} className="w-full justify-start gap-2 py-2 pr-3 pl-3 text-left">
 			{icon}
 			<span className="flex-1">{label}</span>
 		</TabsTrigger>

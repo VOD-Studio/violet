@@ -117,8 +117,8 @@ const ChangePasswordCard = () => {
 
 	return (
 		<SectionCard
-			title="密码"
-			description={isEditing ? undefined : "定期更换密码有助于保障账户安全"}
+			title={isEditing ? "修改密码" : "密码"}
+			description={isEditing ? "定期更换密码有助于保障账户安全" : undefined}
 			action={
 				!isEditing ? (
 					<Button size="sm" variant="outline" onClick={handleEdit} className="gap-1.5">

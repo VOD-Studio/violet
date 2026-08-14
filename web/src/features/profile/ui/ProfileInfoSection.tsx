@@ -135,13 +135,11 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 			editLabel="编辑用户名"
 			isEditing={isEditing}
 			onEdit={handleEdit}
-			displayValue={
-				<p className="font-mono text-base font-medium tracking-tight">{user.username}</p>
-			}
+			displayValue={<p className="font-mono text-sm font-medium">{user.username}</p>}
 			editor={
 				<>
-					<div className="space-y-1.5">
-						<div className="relative">
+					<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+						<div className="relative flex-1">
 							<AtSign className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
 							<Input
 								value={value}
@@ -152,29 +150,29 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 								autoFocus
 							/>
 						</div>
-						{error && <p className="text-xs text-destructive">{error}</p>}
+						<div className="flex shrink-0 items-center gap-2">
+							<Button
+								size="sm"
+								onClick={handleSave}
+								disabled={updateProfile.isPending}
+								className="gap-1.5"
+							>
+								<Check className="size-3.5" />
+								{updateProfile.isPending ? "保存中..." : "保存"}
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={handleCancel}
+								disabled={updateProfile.isPending}
+								className="gap-1.5"
+							>
+								<X className="size-3.5" />
+								取消
+							</Button>
+						</div>
 					</div>
-					<div className="flex items-center gap-2 pt-1">
-						<Button
-							size="sm"
-							onClick={handleSave}
-							disabled={updateProfile.isPending}
-							className="gap-1.5"
-						>
-							<Check className="size-3.5" />
-							{updateProfile.isPending ? "保存中..." : "保存"}
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							onClick={handleCancel}
-							disabled={updateProfile.isPending}
-							className="gap-1.5"
-						>
-							<X className="size-3.5" />
-							取消
-						</Button>
-					</div>
+					{error && <p className="text-xs text-destructive">{error}</p>}
 				</>
 			}
 		/>
@@ -234,37 +232,38 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 			}
 			editor={
 				<>
-					<div className="space-y-1.5">
+					<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
 						<Input
+							className="flex-1"
 							value={value}
 							onChange={(e) => setValue(e.target.value)}
-							placeholder="留空则默认显示用户名"
+							placeholder="留空显示用户名"
 							aria-invalid={!!error}
 							autoFocus
 						/>
-						{error && <p className="text-xs text-destructive">{error}</p>}
+						<div className="flex shrink-0 items-center gap-2">
+							<Button
+								size="sm"
+								onClick={handleSave}
+								disabled={updateProfile.isPending}
+								className="gap-1.5"
+							>
+								<Check className="size-3.5" />
+								{updateProfile.isPending ? "保存中..." : "保存"}
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={handleCancel}
+								disabled={updateProfile.isPending}
+								className="gap-1.5"
+							>
+								<X className="size-3.5" />
+								取消
+							</Button>
+						</div>
 					</div>
-					<div className="flex items-center gap-2 pt-1">
-						<Button
-							size="sm"
-							onClick={handleSave}
-							disabled={updateProfile.isPending}
-							className="gap-1.5"
-						>
-							<Check className="size-3.5" />
-							{updateProfile.isPending ? "保存中..." : "保存"}
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							onClick={handleCancel}
-							disabled={updateProfile.isPending}
-							className="gap-1.5"
-						>
-							<X className="size-3.5" />
-							取消
-						</Button>
-					</div>
+					{error && <p className="text-xs text-destructive">{error}</p>}
 				</>
 			}
 		/>
