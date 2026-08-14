@@ -143,7 +143,7 @@ func (s *PushingSubscriber) Handle(ctx context.Context, event domainshared.Domai
 	}
 
 	for _, act := range actions {
-		n, err := domainnotification.NewNotification(act.userID, domainshared.MustParseID(event.EventID().String()), act.sourceType, act.sourceID, act.title, act.body, act.payload)
+		n, err := domainnotification.NewNotification(act.userID, domainshared.IDFromUUID(event.EventID()), act.sourceType, act.sourceID, act.title, act.body, act.payload)
 		if err != nil {
 			s.log.Error().Err(err).Str("event", event.EventName()).Msg("构造通知失败")
 			continue

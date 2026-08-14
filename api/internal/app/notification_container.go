@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 
@@ -85,22 +86,17 @@ type adminUserAdapter struct {
 }
 
 func (a *adminUserAdapter) FindAdminIDs(ctx context.Context) ([]domainshared.ID, error) {
-	var ids []string
+	var ids []uuid.UUID
 	err := a.db.WithContext(ctx).
 		Table("users").
-		Select("id::text").
 		Where("is_active = true AND (is_root = true OR role IN ('admin', 'superadmin'))").
-		Pluck("id::text", &ids).Error
+		Pluck("id", &ids).Error
 	if err != nil {
 		return nil, domainshared.Internal("查询管理员用户失败", err)
 	}
 	result := make([]domainshared.ID, 0, len(ids))
-	for _, idStr := range ids {
-		id, err := domainshared.ParseID(idStr)
-		if err != nil {
-			continue
-		}
-		result = append(result, id)
+	for _, u := range ids {
+		result = append(result, domainshared.IDFromUUID(u))
 	}
 	return result, nil
 }

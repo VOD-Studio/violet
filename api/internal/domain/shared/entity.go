@@ -107,6 +107,12 @@ func MustParseID(s string) ID {
 	return id
 }
 
+// IDFromUUID 从已有的 uuid.UUID 构造 ID（UUID 的逆向构造，无 string round-trip）。
+//
+// 用于已有 uuid.UUID（如领域事件的 EventID）需转为 ID 的场景，
+// 避免先 String() 再 ParseID 的绕路。
+func IDFromUUID(u uuid.UUID) ID { return ID{value: u} }
+
 // String 返回 ID 的字符串表示
 func (i ID) String() string { return i.value.String() }
 
