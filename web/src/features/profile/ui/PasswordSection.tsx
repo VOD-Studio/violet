@@ -3,18 +3,57 @@ import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
 import { useNavigate } from "@tanstack/react-router";
-import { Check, PencilLine, X } from "lucide-react";
+import { Check, KeyRound, PencilLine, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+interface PasswordSectionProps {
+	/** 是否已设置密码；false 时展示「设置密码」引导（OAuth 建号用户） */
+	hasPassword: boolean;
+}
+
 /**
- * PasswordSection - 密码修改卡片
+ * PasswordSection - 密码卡片
  *
- * 与 ProfileShell 配合：作为「密码」Tab 内容。
- * 默认态显示「已设置 + 修改按钮」；编辑态三段密码输入 + Save/Cancel。
+ * 与 ProfileShell 配合：作为「账户与安全」Tab 内容之一。
+ * 已设置密码：默认态显示「修改按钮」；编辑态三段密码输入 + Save/Cancel，
  * 成功后 1.5s 跳登录页要求重登。
+ * 未设置密码（OAuth 建号）：引导走忘记密码邮箱验证流程补设。
  */
-export const PasswordSection = () => {
+export const PasswordSection = ({ hasPassword }: PasswordSectionProps) => {
+	const navigate = useNavigate();
+
+	if (!hasPassword) {
+		return (
+			<div className="rounded-xl border bg-card p-6 shadow-sm">
+				<h2 className="mb-5 text-base font-semibold">密码</h2>
+				<div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="flex items-start gap-3">
+						<KeyRound className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+						<div>
+							<p className="text-sm">未设置密码，当前通过第三方账号登录</p>
+							<p className="mt-1 text-xs text-muted-foreground">
+								通过邮箱验证设置密码后，即可使用邮箱密码登录
+							</p>
+						</div>
+					</div>
+					<Button
+						size="sm"
+						className="shrink-0 gap-1.5"
+						onClick={() => navigate({ to: "/forgot-password" })}
+					>
+						<Check className="size-3.5" />
+						设置密码
+					</Button>
+				</div>
+			</div>
+		);
+	}
+
+	return <ChangePasswordCard />;
+};
+
+const ChangePasswordCard = () => {
 	const [isEditing, setIsEditing] = useState(false);
 	const [oldPassword, setOldPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
@@ -51,7 +90,13 @@ export const PasswordSection = () => {
 					}, 1500);
 				},
 				onError: (err) => {
-					toast.error(err instanceof Error ? err.message : "密码修改失败");
+					// 存量 OAuth 建号用户（随机哈希）不知道原密码，失败时引导走邮箱重置
+					toast.error(err instanceof Error ? err.message : "密码修改失败", {
+						action: {
+							label: "忘记密码？",
+							onClick: () => navigate({ to: "/forgot-password" }),
+						},
+					});
 				},
 			},
 		);

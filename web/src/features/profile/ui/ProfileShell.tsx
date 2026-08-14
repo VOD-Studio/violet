@@ -5,7 +5,7 @@ import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/Cro
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
-import { Lock, ShieldCheck, User as UserIcon } from "lucide-react";
+import { ShieldCheck, User as UserIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -13,14 +13,13 @@ interface ProfileShellProps {
 	user: UserDTO;
 	defaultTab?: ProfileTab;
 	profile: ReactNode;
-	account: ReactNode;
-	password: ReactNode;
+	security: ReactNode;
 }
 
 /**
  * ProfileTab - 个人中心 Tab 标识
  */
-export type ProfileTab = "profile" | "account" | "password";
+export type ProfileTab = "profile" | "security";
 
 /**
  * ProfileShell - 个人中心布局壳
@@ -34,8 +33,7 @@ export const ProfileShell = ({
 	user,
 	defaultTab = "profile",
 	profile,
-	account,
-	password,
+	security,
 }: ProfileShellProps) => {
 	return (
 		<Tabs defaultValue={defaultTab} orientation="vertical" className="gap-0">
@@ -48,11 +46,8 @@ export const ProfileShell = ({
 						<TabsContent value="profile" className="mt-0 outline-none">
 							{profile}
 						</TabsContent>
-						<TabsContent value="account" className="mt-0 outline-none">
-							{account}
-						</TabsContent>
-						<TabsContent value="password" className="mt-0 outline-none">
-							{password}
+						<TabsContent value="security" className="mt-0 outline-none">
+							{security}
 						</TabsContent>
 					</div>
 				</div>
@@ -126,14 +121,9 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 					label="个人资料"
 				/>
 				<ProfileSidebarTab
-					value="account"
+					value="security"
 					icon={<ShieldCheck className="size-4" />}
-					label="账户信息"
-				/>
-				<ProfileSidebarTab
-					value="password"
-					icon={<Lock className="size-4" />}
-					label="密码"
+					label="账户与安全"
 				/>
 			</TabsList>
 

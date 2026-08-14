@@ -77,7 +77,8 @@ const FieldShell = ({
 							size="icon-xs"
 							variant="ghost"
 							onClick={onEdit}
-							className="opacity-0 transition-opacity group-hover/field:opacity-100 focus-visible:opacity-100"
+							// 触屏没有 hover，移动端常显；桌面保持 hover 显现的克制感
+							className="opacity-100 transition-opacity md:opacity-0 md:group-hover/field:opacity-100 md:focus-visible:opacity-100"
 							aria-label={editLabel}
 						>
 							<PencilLine className="size-3" />
