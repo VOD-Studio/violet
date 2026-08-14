@@ -7,10 +7,10 @@
  * - 未登录 → 不建连
  */
 
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
 import type { NotificationSSEEvent } from "@shared/api/notifications";
 import { useSessionStore } from "@shared/api/session";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { notificationKeys } from "../api/keys";
 
 export const useNotificationStream = () => {

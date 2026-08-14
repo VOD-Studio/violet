@@ -5,6 +5,7 @@
  * SSE 实时推送新通知 → Badge 更新；点击通知标记已读。
  */
 
+import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
 import { cn } from "@shared/lib/utils";
 import { Button } from "@shared/ui/base/button";
 import {
@@ -18,7 +19,6 @@ import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Bell, BellRing, CheckCheck, MessageCircle, Rss, Users } from "lucide-react";
 import { useState } from "react";
-import type { NotificationItem, NotificationSourceType } from "@shared/api/notifications";
 import {
 	useMarkAllRead,
 	useMarkNotificationRead,

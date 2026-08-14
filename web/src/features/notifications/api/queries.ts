@@ -1,6 +1,5 @@
 /** notifications feature 查询与 mutation hooks */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	fetchNotifications,
 	fetchUnreadCount,
@@ -9,6 +8,7 @@ import {
 	type NotificationItem,
 } from "@shared/api/notifications";
 import type { PagedResponse } from "@shared/api/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationKeys } from "./keys";
 
 const PAGE_SIZE = 20;
@@ -41,7 +41,9 @@ export const useMarkNotificationRead = () => {
 					old
 						? {
 								...old,
-								data: old.data.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+								data: old.data.map((n) =>
+									n.id === id ? { ...n, is_read: true } : n,
+								),
 							}
 						: old,
 			);
@@ -65,9 +67,7 @@ export const useMarkAllRead = () => {
 			qc.setQueryData<PagedResponse<NotificationItem>>(
 				[...notificationKeys.list, { page: 1, limit: 10 }],
 				(old) =>
-					old
-						? { ...old, data: old.data.map((n) => ({ ...n, is_read: true })) }
-						: old,
+					old ? { ...old, data: old.data.map((n) => ({ ...n, is_read: true })) } : old,
 			);
 			qc.setQueryData<{ unread_count: number }>(notificationKeys.unreadCount, () => ({
 				unread_count: 0,

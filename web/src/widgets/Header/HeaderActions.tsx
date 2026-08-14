@@ -1,8 +1,8 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
-import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
