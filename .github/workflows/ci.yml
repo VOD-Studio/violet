@@ -125,7 +125,7 @@ jobs:
 
       - name: Docker 镜像构建验证
         if: needs.changes.outputs.api == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./api
           push: false
@@ -204,7 +204,7 @@ jobs:
       # 在此拦截,避免流入生产部署才暴露
       - name: Docker 镜像构建验证
         if: needs.changes.outputs.web == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./web
           push: false

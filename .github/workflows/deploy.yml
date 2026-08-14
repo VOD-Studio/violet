@@ -250,7 +250,7 @@ jobs:
 
       - name: 构建并推送 api 镜像
         if: needs.prepare.outputs.deploy_api == 'true' && inputs.skip_build != 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./api
           push: true
@@ -292,7 +292,7 @@ jobs:
 
       - name: 构建并推送 web 镜像
         if: needs.prepare.outputs.deploy_web == 'true' && inputs.skip_build != 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./web
           push: true
