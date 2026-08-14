@@ -7,6 +7,7 @@ import { AtSign, Check, PencilLine, Quote, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { SectionCard } from "./SectionCard";
 
 interface ProfileInfoSectionProps {
 	user: UserDTO;
@@ -22,14 +23,13 @@ interface ProfileInfoSectionProps {
  */
 export const ProfileInfoSection = ({ user }: ProfileInfoSectionProps) => {
 	return (
-		<div className="rounded-xl border bg-card p-6 shadow-sm">
-			<h2 className="mb-5 text-base font-semibold">个人资料</h2>
+		<SectionCard title="个人资料" description="这些信息会公开展示给其他访客">
 			<div className="divide-y">
 				<UsernameField user={user} />
 				<DisplayNameField user={user} />
 				<BioField user={user} />
 			</div>
-		</div>
+		</SectionCard>
 	);
 };
 
@@ -81,7 +81,7 @@ const FieldShell = ({
 							className="opacity-100 transition-opacity md:opacity-0 md:group-hover/field:opacity-100 md:focus-visible:opacity-100"
 							aria-label={editLabel}
 						>
-							<PencilLine className="size-3" />
+							<PencilLine className="size-3.5" />
 						</Button>
 					</div>
 				)}
@@ -131,7 +131,7 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 	return (
 		<FieldShell
 			label="用户名"
-			hint="3-32 个字符，作为你的唯一标识"
+			hint="唯一登录标识，3-32 个字符"
 			editLabel="编辑用户名"
 			isEditing={isEditing}
 			onEdit={handleEdit}
@@ -221,13 +221,15 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 	return (
 		<FieldShell
 			label="显示名"
-			hint="展示用昵称，可用中文，留空则默认显示用户名"
+			hint="展示昵称，可用中文；留空显示用户名"
 			editLabel="编辑显示名"
 			isEditing={isEditing}
 			onEdit={handleEdit}
 			displayValue={
 				<p className="text-base font-medium tracking-tight">
-					{user.display_name || <span className="text-muted-foreground">默认用户名</span>}
+					{user.display_name || (
+						<span className="text-muted-foreground">未设置，显示用户名</span>
+					)}
 				</p>
 			}
 			editor={
@@ -305,7 +307,7 @@ const BioField = ({ user }: { user: UserDTO }) => {
 	return (
 		<FieldShell
 			label="个人简介"
-			hint="最多 500 字，让大家认识你"
+			hint="一句话介绍自己，最多 500 字"
 			editLabel="编辑个人简介"
 			isEditing={isEditing}
 			onEdit={handleEdit}

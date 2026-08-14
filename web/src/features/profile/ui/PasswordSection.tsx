@@ -6,6 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Check, KeyRound, PencilLine, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { SectionCard } from "./SectionCard";
 
 interface PasswordSectionProps {
 	/** 是否已设置密码；false 时展示「设置密码」引导（OAuth 建号用户） */
@@ -25,28 +26,24 @@ export const PasswordSection = ({ hasPassword }: PasswordSectionProps) => {
 
 	if (!hasPassword) {
 		return (
-			<div className="rounded-xl border bg-card p-6 shadow-sm">
-				<h2 className="mb-5 text-base font-semibold">密码</h2>
-				<div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div className="flex items-start gap-3">
-						<KeyRound className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-						<div>
-							<p className="text-sm">未设置密码，当前通过第三方账号登录</p>
-							<p className="mt-1 text-xs text-muted-foreground">
-								通过邮箱验证设置密码后，即可使用邮箱密码登录
-							</p>
-						</div>
-					</div>
+			<SectionCard
+				title="密码"
+				description="当前使用第三方账号登录，未设置密码"
+				action={
 					<Button
 						size="sm"
-						className="shrink-0 gap-1.5"
+						className="gap-1.5"
 						onClick={() => navigate({ to: "/forgot-password" })}
 					>
-						<Check className="size-3.5" />
+						<KeyRound className="size-3.5" />
 						设置密码
 					</Button>
-				</div>
-			</div>
+				}
+			>
+				<p className="text-sm text-muted-foreground">
+					通过邮箱验证设置密码后，即可使用邮箱密码登录；第三方登录不受影响。
+				</p>
+			</SectionCard>
 		);
 	}
 
@@ -119,17 +116,18 @@ const ChangePasswordCard = () => {
 	};
 
 	return (
-		<div className="rounded-xl border bg-card p-6 shadow-sm">
-			<div className="mb-5 flex items-center justify-between gap-4">
-				<h2 className="text-base font-semibold">密码</h2>
-				{!isEditing && (
+		<SectionCard
+			title="密码"
+			description={isEditing ? undefined : "定期更换密码有助于保障账户安全"}
+			action={
+				!isEditing ? (
 					<Button size="sm" variant="outline" onClick={handleEdit} className="gap-1.5">
 						<PencilLine className="size-3.5" />
 						修改
 					</Button>
-				)}
-			</div>
-
+				) : undefined
+			}
+		>
 			{isEditing ? (
 				<div className="space-y-4">
 					<PasswordField
@@ -158,7 +156,7 @@ const ChangePasswordCard = () => {
 						error={errors.confirmPassword}
 					/>
 
-					<div className="flex items-center gap-2 pt-1">
+					<div className="flex flex-wrap items-center gap-2 pt-1">
 						<Button
 							onClick={handleSave}
 							disabled={changePassword.isPending}
@@ -178,12 +176,12 @@ const ChangePasswordCard = () => {
 						</Button>
 					</div>
 
-					<p className="text-sm text-muted-foreground">修改密码后需要重新登录</p>
+					<p className="text-sm text-muted-foreground">修改成功后需重新登录</p>
 				</div>
 			) : (
-				<p className="text-sm text-muted-foreground">定期修改密码可提高账户安全性</p>
+				<p className="text-sm text-muted-foreground">已设置密码，可使用邮箱密码登录</p>
 			)}
-		</div>
+		</SectionCard>
 	);
 };
 

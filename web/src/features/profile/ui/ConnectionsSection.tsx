@@ -1,6 +1,7 @@
 import type { UserDTO } from "@entities/user/model/types";
 import { GithubIcon } from "@shared/ui/icons/github";
 import { CheckCircle2, KeyRound, Link2Off, Mail } from "lucide-react";
+import { SectionCard } from "./SectionCard";
 
 interface ConnectionsSectionProps {
 	user: UserDTO;
@@ -14,8 +15,7 @@ interface ConnectionsSectionProps {
  */
 export const ConnectionsSection = ({ user }: ConnectionsSectionProps) => {
 	return (
-		<div className="rounded-xl border bg-card p-6 shadow-sm">
-			<h2 className="mb-5 text-base font-semibold">登录方式</h2>
+		<SectionCard title="登录方式" description="当前可用的登录途径">
 			<dl className="divide-y">
 				<Row
 					icon={<KeyRound className="size-4" />}
@@ -39,7 +39,7 @@ export const ConnectionsSection = ({ user }: ConnectionsSectionProps) => {
 					unboundText="未绑定"
 				/>
 			</dl>
-		</div>
+		</SectionCard>
 	);
 };
 
