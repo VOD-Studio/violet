@@ -14,7 +14,8 @@ import LandingHero from "@widgets/LandingHero";
 
 function HomePage() {
 	// 最新文章条数与「每页文章数」设置保持一致
-	const limit = useSettings().data?.posts_per_page;
+	const { data: siteSettings } = useSettings();
+	const limit = siteSettings?.posts_per_page;
 	return (
 		<div className="flex flex-col">
 			<LandingHero />

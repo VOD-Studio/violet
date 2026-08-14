@@ -18,7 +18,8 @@ const DEFAULT_PAGE_SIZE = 12;
  */
 function BlogPage() {
 	// 每页文章数由站点设置控制（后台「常规设置」）
-	const limit = useSettings().data?.posts_per_page ?? DEFAULT_PAGE_SIZE;
+	const { data: siteSettings } = useSettings();
+	const limit = siteSettings?.posts_per_page ?? DEFAULT_PAGE_SIZE;
 	return (
 		<PageShell>
 			<header className="mb-10">

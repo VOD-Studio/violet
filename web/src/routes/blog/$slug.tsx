@@ -67,7 +67,8 @@ function BlogDetailPage() {
 	const isLoggedIn = !!me.data;
 	// 站点评论总开关：关闭时整页隐藏评论互动（底部评论区 + 批注层 + 划线工具条），
 	// 后端 Create 同样拒绝，此处只管 UI 呈现
-	const commentsEnabled = useSettings().data?.comments_enabled ?? true;
+	const { data: siteSettings } = useSettings();
+	const commentsEnabled = siteSettings?.comments_enabled ?? true;
 
 	// 进入页面增加浏览量（仅一次，失败静默不影响阅读）
 	useEffect(() => {
