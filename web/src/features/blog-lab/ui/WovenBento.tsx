@@ -11,17 +11,17 @@ import { useState } from "react";
 /**
  * WovenBento - 织纹 Bento
  *
- * 确定性跨格节奏（每 6 篇铺满一循环）：2×2 主格 + 高瘦 + 宽扁 + 2 方 + 宽扁。
- * 文字浮于图上（渐变遮罩），格子入场交错缩放（scale 0.94→1），
- * hover 封面推进。「大小不一」就是设计本身。
+ * 确定性跨格节奏：6 篇恰好铺满 4 列 × 3 行（面积 4+2+1+2+2+1=12），
+ * 自动布局零留白。文字浮于图上（渐变遮罩），格子入场交错缩放（scale
+ * 0.94→1），hover 封面推进。「大小不一」就是设计本身。
  */
 const SPANS = [
-	"md:col-span-2 md:row-span-2",
-	"md:row-span-2",
-	"md:col-span-2",
-	"",
-	"",
-	"md:col-span-2",
+	"md:col-span-2 md:row-span-2", // 主格 2×2 → r1-2 c1-2
+	"md:col-span-2", // 宽扁 → r1 c3-4
+	"", // 方 → r2 c3
+	"md:row-span-2", // 高瘦 → r2-3 c4
+	"md:col-span-2", // 宽扁 → r3 c1-2
+	"", // 方 → r3 c3
 ];
 
 export function WovenBento({ posts }: { posts: Post[] }) {

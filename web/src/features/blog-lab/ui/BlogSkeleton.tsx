@@ -1,7 +1,15 @@
 import { cn } from "@shared/lib/utils";
 
 /** LabDirection - 博客排版实验室方向标识 */
-export type LabDirection = "cascade" | "terminal" | "rail" | "bento" | "paper" | "film" | "toc";
+export type LabDirection =
+	| "cascade"
+	| "terminal"
+	| "rail"
+	| "bento"
+	| "paper"
+	| "film"
+	| "toc"
+	| "featured";
 
 const Bar = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
 	<div className={cn("animate-pulse rounded bg-muted", className)} style={style} />
@@ -60,7 +68,7 @@ export function BlogSkeleton({ direction }: { direction: LabDirection }) {
 					<div className="absolute top-0 bottom-0 left-0 w-px bg-edge-hairline" />
 					{[0, 1, 2, 3, 4].map((i) => (
 						<div key={i} className="relative pb-12">
-							<div className="absolute top-1 -left-[41px] size-2.5 rounded-full bg-muted" />
+							<div className="absolute top-1 -left-[44.5px] size-2.5 rounded-full bg-muted" />
 							<Bar className="h-3 w-24" />
 							<Bar className="mt-2 h-5 w-2/3" />
 							<Bar className="mt-3 h-3 w-full max-w-md" />
@@ -73,13 +81,14 @@ export function BlogSkeleton({ direction }: { direction: LabDirection }) {
 			return (
 				<div className="grid auto-rows-[170px] grid-cols-2 gap-3 md:grid-cols-4">
 					{[0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5].map((slot, i) => {
+						// 与 WovenBento.SPANS 同步:6 格恰好铺满 4×3
 						const spans = [
 							"md:col-span-2 md:row-span-2",
+							"md:col-span-2",
+							"",
 							"md:row-span-2",
 							"md:col-span-2",
 							"",
-							"",
-							"md:col-span-2",
 						];
 						return <Bar key={i} className={cn("rounded-xl", spans[slot])} />;
 					})}
@@ -136,6 +145,36 @@ export function BlogSkeleton({ direction }: { direction: LabDirection }) {
 							<div key={i} className="space-y-2 border-b border-edge-hairline py-5">
 								<Bar className="h-4 w-3/4" />
 								<Bar className="h-3 w-full" />
+							</div>
+						))}
+					</div>
+				</div>
+			);
+
+		case "featured":
+			return (
+				<div>
+					<div className="grid gap-8 md:grid-cols-2 md:items-center">
+						<Bar className="aspect-[16/10] w-full rounded-2xl" />
+						<div>
+							<Bar className="h-3 w-24" />
+							<Bar className="mt-3 h-10 w-4/5" />
+							<Bar className="mt-3 h-10 w-3/5" />
+							<Bar className="mt-4 h-4 w-full" />
+						</div>
+					</div>
+					<div className="mt-12 border-t border-edge-hairline">
+						{[0, 1, 2, 3, 4, 5].map((i) => (
+							<div
+								key={i}
+								className="flex items-center gap-4 border-b border-edge-hairline py-4"
+							>
+								<Bar className="h-3 w-6" />
+								<Bar
+									className="h-4 flex-1"
+									style={{ maxWidth: `${70 - i * 6}%` }}
+								/>
+								<Bar className="h-3 w-10" />
 							</div>
 						))}
 					</div>
