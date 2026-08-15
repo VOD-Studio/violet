@@ -67,7 +67,7 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 						{headline.excerpt}
 					</p>
 					<p className="mt-5 text-center font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
-						{headline.author ? getDisplayName(headline.author) : "佚名"} 撰 ·{" "}
+						{headline.author ? getDisplayName(headline.author) : "佚名"} ·{" "}
 						{formatDistanceToNow(new Date(headline.published_at), {
 							addSuffix: true,
 							locale: zhCN,
