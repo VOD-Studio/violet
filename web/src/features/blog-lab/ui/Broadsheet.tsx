@@ -5,19 +5,22 @@ import { Link } from "@tanstack/react-router";
 import { format, formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { motion, useReducedMotion } from "motion/react";
+import { useEffect, useState } from "react";
 
 /**
  * Broadsheet - 头版报纸
  *
- * 报纸解剖学：日期线 → 居中衬线报头 → 粗细双线 → 通栏头条（kicker/衬线
- * 大标题/斜体 deck/署名）→ 三栏 briefs（栏间细线，无图即纯文字简讯，
- * 符合报纸惯例）。动效克制：报线先画，整版随后一次浮现，无逐项飞入。
+ * 报纸解剖学：日期线 → 居中衬线报头 → 粗细双线 → 通栏头条 → 分版简讯。
+ * 图文版/文字版按封面**运行时可加载性**分流（预探测），死链封面不再
+ * 留在图文版产生空洞。动效克制：报线先画，整版一次浮现。
  */
 export function Broadsheet({ posts }: { posts: Post[] }) {
 	const reduce = useReducedMotion();
 	const [headline, ...briefs] = posts;
-	const photoBriefs = briefs.filter((p) => p.cover_image);
-	const textBriefs = briefs.filter((p) => !p.cover_image);
+	// 探测全部完成前 alive 为空 → 简讯暂全在文字版,探测后一次性分版
+	const alive = useAliveCovers(briefs);
+	const photoBriefs = briefs.filter((p) => alive.has(p.cover_image));
+	const textBriefs = briefs.filter((p) => !alive.has(p.cover_image));
 	const issue = String(posts.length).padStart(3, "0");
 
 	return (
@@ -150,4 +153,28 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 			</motion.div>
 		</div>
 	);
+}
+
+function useAliveCovers(posts: Post[]): Set<string> {
+	const [alive, setAlive] = useState<Set<string>>(new Set());
+	useEffect(() => {
+		const withCover = posts.filter((p) => p.cover_image);
+		if (withCover.length === 0) return;
+		const ok = new Set<string>();
+		let done = 0;
+		const settle = () => {
+			done += 1;
+			if (done === withCover.length) setAlive(new Set(ok));
+		};
+		for (const p of withCover) {
+			const img = new Image();
+			img.onload = () => {
+				ok.add(p.cover_image);
+				settle();
+			};
+			img.onerror = settle;
+			img.src = contentImageUrl(p.cover_image, { width: 480 });
+		}
+	}, [posts]);
+	return alive;
 }
