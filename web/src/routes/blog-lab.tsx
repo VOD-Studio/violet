@@ -86,7 +86,7 @@ function BlogLab() {
 	const active = DIRECTIONS.find((d) => d.value === direction) ?? DIRECTIONS[0];
 
 	return (
-		<div className="container mx-auto max-w-6xl px-6 py-24">
+		<div className="container mx-auto px-6 py-24">
 			<div className="mb-16 text-center">
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">博客排版实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
