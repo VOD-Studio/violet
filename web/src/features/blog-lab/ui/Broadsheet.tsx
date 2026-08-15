@@ -17,10 +17,11 @@ import { useEffect, useState } from "react";
 export function Broadsheet({ posts }: { posts: Post[] }) {
 	const reduce = useReducedMotion();
 	const [headline, ...briefs] = posts;
-	// 探测全部完成前 alive 为空 → 简讯暂全在文字版,探测后一次性分版
-	const alive = useAliveCovers(briefs);
-	const photoBriefs = briefs.filter((p) => alive.has(p.cover_image));
-	const textBriefs = briefs.filter((p) => !alive.has(p.cover_image));
+	// 图文版最多收 3 条,溢出退入文字版;孤图在外层升格为图片故事
+	const aliveAll = useAliveCovers(briefs);
+	const photoBriefs = briefs.filter((p) => aliveAll.has(p.cover_image)).slice(0, 3);
+	const photoIds = new Set(photoBriefs.map((p) => p.id));
+	const textBriefs = briefs.filter((p) => !photoIds.has(p.id));
 	const issue = String(posts.length).padStart(3, "0");
 
 	return (
@@ -75,15 +76,52 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 				</Link>
 			)}
 
-			{/* 分版：有图简讯同质成行（3 栏），无图简讯退入密集文字版（4 窄栏）。
-				混排时一行只有一图会参差——报纸组版从不让异质内容同行 */}
+			{/* 分版按存活图数量自适应：孤图升格「图片故事」整行图文并排，
+				2 图双栏、3 图三栏、溢出退入文字版——孤图塞多栏格会留大片空栏 */}
 			<motion.div
 				initial={reduce ? false : { opacity: 0, y: 10 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
 			>
-				{photoBriefs.length > 0 && (
-					<div className="grid border-b border-edge-hairline md:grid-cols-3">
+				{photoBriefs.length === 1 && (
+					<Link
+						to="/blog/$slug"
+						params={{ slug: photoBriefs[0].slug }}
+						className="group grid gap-6 border-b border-edge-hairline py-6 md:grid-cols-2 md:items-center"
+					>
+						<img
+							src={contentImageUrl(photoBriefs[0].cover_image, { width: 960 })}
+							alt={photoBriefs[0].title}
+							onError={(e) => {
+								e.currentTarget.style.display = "none";
+							}}
+							className="aspect-[3/2] w-full object-cover grayscale transition-all duration-500 group-hover:grayscale-0"
+						/>
+						<div>
+							<p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/70 uppercase">
+								图片故事 · Picture Story
+							</p>
+							<h4 className="mt-3 text-2xl leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
+								{photoBriefs[0].title}
+							</h4>
+							<p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+								{photoBriefs[0].excerpt}
+							</p>
+							<p className="mt-3 font-mono text-[11px] text-muted-foreground">
+								{photoBriefs[0].author
+									? getDisplayName(photoBriefs[0].author)
+									: "佚名"}{" "}
+								· {format(new Date(photoBriefs[0].published_at), "MM-dd")}
+							</p>
+						</div>
+					</Link>
+				)}
+				{photoBriefs.length >= 2 && (
+					<div
+						className={`grid border-b border-edge-hairline ${
+							photoBriefs.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3"
+						}`}
+					>
 						{photoBriefs.map((p, i) => (
 							<article
 								key={p.id}
