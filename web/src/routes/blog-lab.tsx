@@ -2,6 +2,7 @@ import { BlogSkeleton, type LabDirection } from "@features/blog-lab/ui/BlogSkele
 import { Broadsheet } from "@features/blog-lab/ui/Broadsheet";
 import { CascadeFlow } from "@features/blog-lab/ui/CascadeFlow";
 import { ChronoStream } from "@features/blog-lab/ui/ChronoStream";
+import { FeaturedList } from "@features/blog-lab/ui/FeaturedList";
 import { Filmstrip } from "@features/blog-lab/ui/Filmstrip";
 import { JournalToc } from "@features/blog-lab/ui/JournalToc";
 import { TerminalFeed } from "@features/blog-lab/ui/TerminalFeed";
@@ -16,6 +17,11 @@ import { useState } from "react";
 type PreviewState = "data" | "skeleton" | "empty";
 
 const DIRECTIONS: { value: LabDirection; label: string; intent: string }[] = [
+	{
+		value: "featured",
+		label: "特写列表",
+		intent: "顶级博客主流范式：一篇大特写建立视线锚点（封面+标题+摘要+阅读引导），其余收敛为紧凑索引行。特写管情绪，列表管扫读，层级最清晰、最稳。",
+	},
 	{
 		value: "cascade",
 		label: "主轴瀑布",
@@ -34,27 +40,29 @@ const DIRECTIONS: { value: LabDirection; label: string; intent: string }[] = [
 	{
 		value: "bento",
 		label: "织纹 Bento",
-		intent: "确定性跨格节奏（每 6 篇铺满一循环），文字浮于图上，格子交错缩放入场。图主导、律动最强。",
+		intent: "确定性跨格节奏：6 篇恰好铺满 4×3 一循环（零留白），文字浮于图上，格子交错缩放入场。图主导、律动最强。",
 	},
 	{
 		value: "paper",
 		label: "头版报纸",
-		intent: "报头先落、头条 blur-in、三栏 briefs 按栏序入场——像报纸摊开。信息密度与编辑气派拉满。",
+		intent: "报纸解剖学：日期线、居中衬线报头、粗细双线、通栏头条、三栏简讯（黑白图 hover 复色）。动效克制——报线先画，整版一次浮现。",
 	},
 	{
 		value: "film",
-		label: "胶片条",
-		intent: "横向 scroll-snap 胶片带：齿孔装饰 + hover 帧上浮推进。垂直占用最小，适合页首「最新」带。",
+		label: "胶片条·辅助",
+		intent: "辅助模块而非完整列表：暗色胶卷带（齿孔+场记板帧）适合放页首「最新速览」或首页混排，垂直占用最小。不单独承担 /blog 列表职责。",
 	},
 	{
 		value: "toc",
 		label: "杂志目录",
-		intent: "纯排版零图片：头条大字 + 双列目录自上而下交错入场。最安静，碎图问题从根上不存在。",
+		intent: "真目录语法：栏目分区 + 「编号·标题·点线引导·日期」单行条目，纯排版零图片。最安静，信息密度最高。",
 	},
 ];
 
 function renderDirection(direction: LabDirection, posts: Post[]) {
 	switch (direction) {
+		case "featured":
+			return <FeaturedList posts={posts} />;
 		case "cascade":
 			return <CascadeFlow posts={posts} />;
 		case "terminal":
@@ -75,7 +83,7 @@ function renderDirection(direction: LabDirection, posts: Post[]) {
 /**
  * /blog-lab - 博客排版原型实验室
  *
- * 真实文章数据渲染七个候选排版方向，可切换数据 / 骨架屏 / 空态三态
+ * 真实文章数据渲染八个候选排版方向，可切换数据 / 骨架屏 / 空态三态
  * 对比（结构对齐 /friends-lab）。选定方向后 /blog 生产实现按此落地。
  */
 function BlogLab() {
