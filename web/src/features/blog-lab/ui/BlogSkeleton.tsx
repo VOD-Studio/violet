@@ -9,7 +9,7 @@ export type LabDirection =
 	| "paper"
 	| "toc"
 	| "featured"
-	| "digest";
+	| "spread";
 
 const Bar = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
 	<div className={cn("animate-pulse rounded bg-muted", className)} style={style} />
@@ -192,34 +192,27 @@ export function BlogSkeleton({ direction }: { direction: LabDirection }) {
 				</div>
 			);
 
-		case "digest":
+		case "spread":
 			return (
-				<div>
-					{[3, 2, 2].map((rows, d) => (
+				<div className="divide-y divide-edge-hairline">
+					{[0, 1, 2].map((i) => (
 						<div
-							key={d}
-							className="border-b-2 border-t border-edge-hairline py-6 first:border-t-2 first:border-t-foreground md:grid md:grid-cols-[110px_1fr] md:gap-8"
+							key={i}
+							className={`grid items-center gap-8 py-10 first:pt-0 last:pb-0 md:grid-cols-2 ${
+								i % 2 === 1 ? "md:[&>*:first-child]:order-2" : ""
+							}`}
 						>
+							<Bar className="aspect-[3/2] w-full rounded-2xl" />
 							<div>
-								<Bar className="h-9 w-12 rounded-none" />
-								<Bar className="mt-2 h-2.5 w-20" />
-							</div>
-							<div className="mt-4 space-y-3.5 md:mt-0">
-								{Array.from({ length: rows }).map((_, i) => (
-									<div key={i} className="flex items-center gap-4">
-										<Bar className="h-3 w-9" />
-										<Bar
-											className="h-4 flex-1"
-											style={{ maxWidth: `${78 - i * 9}%` }}
-										/>
-										<Bar className="hidden h-2.5 w-12 sm:block" />
-									</div>
-								))}
+								<Bar className="h-8 w-4/5" />
+								<Bar className="mt-3 h-8 w-3/5" />
+								<Bar className="mt-4 h-3.5 w-full" />
+								<Bar className="mt-1.5 h-3.5 w-5/6" />
+								<Bar className="mt-4 h-2.5 w-32" />
 							</div>
 						</div>
 					))}
-					</div>
-				);
-		}
+				</div>
+			);
 	}
-
+}

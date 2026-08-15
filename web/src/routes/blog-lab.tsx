@@ -1,8 +1,8 @@
+import { AlternatingSpread } from "@features/blog-lab/ui/AlternatingSpread";
 import { BlogSkeleton, type LabDirection } from "@features/blog-lab/ui/BlogSkeleton";
 import { Broadsheet } from "@features/blog-lab/ui/Broadsheet";
 import { CascadeFlow } from "@features/blog-lab/ui/CascadeFlow";
 import { ChronoStream } from "@features/blog-lab/ui/ChronoStream";
-import { DailyDigest } from "@features/blog-lab/ui/DailyDigest";
 import { FeaturedList } from "@features/blog-lab/ui/FeaturedList";
 import { JournalToc } from "@features/blog-lab/ui/JournalToc";
 import { TerminalFeed } from "@features/blog-lab/ui/TerminalFeed";
@@ -53,9 +53,9 @@ const DIRECTIONS: { value: LabDirection; label: string; intent: string }[] = [
 		intent: "分区目录：按栏目分组的 standing head + 双列「编号·标题·点线引导·日期」条目，纯排版零图片，信息密度最高。",
 	},
 	{
-		value: "digest",
-		label: "日刊分组",
-		intent: "newsletter 式按天分组：日期立头（衬线大日期+星期）在左、当日条目在右，天与天粗细线分隔。以「发行日」为轴，介于目录与轨道之间。",
+		value: "spread",
+		label: "对开特写",
+		intent: "editorial 对开页：每篇一整行、封面与文字左右交替、大序号压角、留白充分。每篇都是主角，节奏来自交替而非卡片网格；无图行退化为整行排版特写。",
 	},
 ];
 
@@ -75,8 +75,8 @@ function renderDirection(direction: LabDirection, posts: Post[]) {
 			return <Broadsheet posts={posts} />;
 		case "toc":
 			return <JournalToc posts={posts} />;
-		case "digest":
-			return <DailyDigest posts={posts} />;
+		case "spread":
+			return <AlternatingSpread posts={posts} />;
 	}
 }
 
