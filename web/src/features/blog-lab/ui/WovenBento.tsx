@@ -71,7 +71,8 @@ function BentoCell({ post, big }: { post: Post; big: boolean }) {
 					className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 				/>
 			) : (
-				<div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-muted to-muted" />
+				// 深色底而非 muted:文字层是白色,浅色兜底会把标题吞掉
+				<div className="absolute inset-0 bg-gradient-to-br from-primary/50 via-zinc-800 to-zinc-900" />
 			)}
 			<div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
 			<div className="absolute inset-x-0 bottom-0 p-4 text-white">

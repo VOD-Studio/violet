@@ -144,7 +144,7 @@ function BlogLab() {
 							key={`empty-${direction}`}
 							size="lg"
 							title="NO POSTS YET"
-							description="还没有发布任何文章。写下第一篇，时间轴从此开始流动。"
+							description="还没有发布任何文章。写下第一篇，这个版面等你来填。"
 							className="py-16"
 						/>
 					) : null}

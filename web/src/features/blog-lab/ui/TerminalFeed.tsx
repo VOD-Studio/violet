@@ -70,7 +70,7 @@ export function TerminalFeed({ posts }: { posts: Post[] }) {
 										<p className="line-clamp-2 font-sans text-xs leading-relaxed text-muted-foreground">
 											{p.excerpt}
 										</p>
-										<p className="mt-1.5 text-[11px] text-muted-foreground/70">
+										<p className="mt-1.5 text-[11px] text-muted-foreground">
 											{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
 											{formatDistanceToNow(new Date(p.published_at), {
 												addSuffix: true,

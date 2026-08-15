@@ -6,7 +6,7 @@ import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 /**
  * Filmstrip - 胶片条
@@ -30,40 +30,7 @@ export function Filmstrip({ posts }: { posts: Post[] }) {
 				className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-1 py-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
 			>
 				{posts.map((p) => (
-					<Link
-						key={p.id}
-						to="/blog/$slug"
-						params={{ slug: p.slug }}
-						className="group w-60 shrink-0 snap-start"
-					>
-						<div className="overflow-hidden rounded-lg border border-edge-hairline transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/5">
-							{p.cover_image ? (
-								<img
-									src={contentImageUrl(p.cover_image, { width: 480 })}
-									alt={p.title}
-									loading="lazy"
-									onError={(e) => {
-										e.currentTarget.style.display = "none";
-									}}
-									className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-105"
-								/>
-							) : (
-								<div className="flex aspect-video w-full items-center justify-center bg-muted p-4 text-center font-mono text-xs leading-relaxed text-muted-foreground">
-									{p.title.slice(0, 14)}
-								</div>
-							)}
-						</div>
-						<h3 className="mt-2 line-clamp-1 text-sm font-medium transition-colors group-hover:text-neon-blue">
-							{p.title}
-						</h3>
-						<p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-							{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
-							{formatDistanceToNow(new Date(p.published_at), {
-								addSuffix: true,
-								locale: zhCN,
-							})}
-						</p>
-					</Link>
+					<Frame key={p.id} post={p} />
 				))}
 			</div>
 			<div
@@ -90,5 +57,41 @@ export function Filmstrip({ posts }: { posts: Post[] }) {
 				</Button>
 			</div>
 		</div>
+	);
+}
+
+function Frame({ post: p }: { post: Post }) {
+	// 死图兜底用排版化帧而非隐藏 img,避免画幅塌成空框
+	const [brokenFor, setBrokenFor] = useState<string | null>(null);
+	const hasCover = !!p.cover_image && brokenFor !== p.cover_image;
+
+	return (
+		<Link to="/blog/$slug" params={{ slug: p.slug }} className="group w-60 shrink-0 snap-start">
+			<div className="overflow-hidden rounded-lg border border-edge-hairline transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/5">
+				{hasCover ? (
+					<img
+						src={contentImageUrl(p.cover_image, { width: 480 })}
+						alt={p.title}
+						loading="lazy"
+						onError={() => setBrokenFor(p.cover_image)}
+						className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-105"
+					/>
+				) : (
+					<div className="flex aspect-video w-full items-center justify-center bg-muted p-4 text-center font-mono text-xs leading-relaxed text-muted-foreground">
+						{p.title.slice(0, 14)}
+					</div>
+				)}
+			</div>
+			<h3 className="mt-2 line-clamp-1 text-sm font-medium transition-colors group-hover:text-neon-blue">
+				{p.title}
+			</h3>
+			<p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+				{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
+				{formatDistanceToNow(new Date(p.published_at), {
+					addSuffix: true,
+					locale: zhCN,
+				})}
+			</p>
+		</Link>
 	);
 }
