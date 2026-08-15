@@ -50,7 +50,7 @@ function TimelineItem({ post: p, reduce }: { post: Post; reduce: boolean | null 
 				whileInView={{ scale: 1 }}
 				viewport={{ once: true }}
 				transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.1 }}
-				className="absolute top-1 -left-[41px] size-2.5 rounded-full border-2 border-background bg-primary shadow-[0_0_12px] shadow-primary/60"
+				className="absolute top-1 -left-[44.5px] size-2.5 rounded-full border-2 border-background bg-primary shadow-[0_0_12px] shadow-primary/60"
 			/>
 			<p className="font-mono text-xs text-muted-foreground">
 				{format(new Date(p.published_at), "MM·dd")} ·{" "}
