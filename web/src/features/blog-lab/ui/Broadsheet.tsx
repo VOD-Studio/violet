@@ -16,6 +16,8 @@ import { motion, useReducedMotion } from "motion/react";
 export function Broadsheet({ posts }: { posts: Post[] }) {
 	const reduce = useReducedMotion();
 	const [headline, ...briefs] = posts;
+	const photoBriefs = briefs.filter((p) => p.cover_image);
+	const textBriefs = briefs.filter((p) => !p.cover_image);
 	const issue = String(posts.length).padStart(3, "0");
 
 	return (
@@ -70,51 +72,81 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 				</Link>
 			)}
 
-			{/* 三栏简讯:栏间细线,整版一次浮现 */}
+			{/* 分版：有图简讯同质成行（3 栏），无图简讯退入密集文字版（4 窄栏）。
+				混排时一行只有一图会参差——报纸组版从不让异质内容同行 */}
 			<motion.div
 				initial={reduce ? false : { opacity: 0, y: 10 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-				className="grid md:grid-cols-3"
 			>
-				{briefs.map((p, i) => (
-					<article
-						key={p.id}
-						className="border-b border-edge-hairline py-6 md:border-l md:px-6 md:first:border-l-0 md:first:pl-0 md:last:pr-0"
-					>
-						{/* 结构预算:标题限2行、摘要限3行、署名 mt-auto 钉底——有图/无图简讯底线对齐 */}
-						<Link
-							to="/blog/$slug"
-							params={{ slug: p.slug }}
-							className="group flex h-full flex-col"
-						>
-							<p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/70 uppercase">
-								简讯 {String(i + 1).padStart(2, "0")}
-							</p>
-							{p.cover_image && (
-								<img
-									src={contentImageUrl(p.cover_image, { width: 480 })}
-									alt={p.title}
-									loading="lazy"
-									onError={(e) => {
-										e.currentTarget.style.display = "none";
-									}}
-									className="mt-3 aspect-video w-full object-cover grayscale transition-all duration-500 group-hover:scale-[1.02] group-hover:grayscale-0"
-								/>
-							)}
-							<h4 className="mt-3 line-clamp-2 text-lg leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
-								{p.title}
-							</h4>
-							<p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-								{p.excerpt}
-							</p>
-							<p className="mt-auto pt-3 font-mono text-[11px] text-muted-foreground">
-								{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
-								{format(new Date(p.published_at), "MM-dd")}
-							</p>
-						</Link>
-					</article>
-				))}
+				{photoBriefs.length > 0 && (
+					<div className="grid border-b border-edge-hairline md:grid-cols-3">
+						{photoBriefs.map((p, i) => (
+							<article
+								key={p.id}
+								className="flex flex-col py-6 md:border-l md:px-6 md:first:border-l-0 md:first:pl-0 md:last:pr-0"
+							>
+								<Link
+									to="/blog/$slug"
+									params={{ slug: p.slug }}
+									className="group flex h-full flex-col"
+								>
+									<p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/70 uppercase">
+										图文 {String(i + 1).padStart(2, "0")}
+									</p>
+									<img
+										src={contentImageUrl(p.cover_image, { width: 480 })}
+										alt={p.title}
+										loading="lazy"
+										onError={(e) => {
+											e.currentTarget.style.display = "none";
+										}}
+										className="mt-3 aspect-video w-full object-cover grayscale transition-all duration-500 group-hover:scale-[1.02] group-hover:grayscale-0"
+									/>
+									<h4 className="mt-3 line-clamp-2 text-lg leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
+										{p.title}
+									</h4>
+									<p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+										{p.excerpt}
+									</p>
+									<p className="mt-auto pt-3 font-mono text-[11px] text-muted-foreground">
+										{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
+										{format(new Date(p.published_at), "MM-dd")}
+									</p>
+								</Link>
+							</article>
+						))}
+					</div>
+				)}
+
+				{textBriefs.length > 0 && (
+					<div>
+						<p className="border-b border-edge-hairline py-2 font-mono text-[10px] tracking-[0.35em] text-muted-foreground uppercase">
+							简讯版 · Briefs
+						</p>
+						<div className="grid gap-x-6 md:grid-cols-4">
+							{textBriefs.map((p) => (
+								<article key={p.id} className="border-b border-edge-hairline py-4">
+									<Link
+										to="/blog/$slug"
+										params={{ slug: p.slug }}
+										className="group block"
+									>
+										<h4 className="line-clamp-2 font-bold leading-snug tracking-tight transition-colors group-hover:text-neon-blue">
+											{p.title}
+										</h4>
+										<p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">
+											{p.excerpt}
+										</p>
+										<p className="mt-2 font-mono text-[10px] text-muted-foreground">
+											{format(new Date(p.published_at), "MM-dd")}
+										</p>
+									</Link>
+								</article>
+							))}
+						</div>
+					</div>
+				)}
 			</motion.div>
 		</div>
 	);
