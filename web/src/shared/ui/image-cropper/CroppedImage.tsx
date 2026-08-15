@@ -114,6 +114,7 @@ export function CroppedImage({
 					src={displaySrc}
 					alt={alt}
 					loading={loading}
+					onError={() => setFailedFor(displaySrc)}
 					className={cn("h-full w-full object-cover", imgClassName)}
 				/>
 			</div>

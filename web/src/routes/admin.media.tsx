@@ -468,6 +468,10 @@ function MediaTable({
 							src={file.thumbnail || file.url}
 							alt=""
 							className="size-full object-cover"
+							// 缩略图失效时隐藏，父按钮的灰底块自然兜底
+							onError={(e) => {
+								e.currentTarget.style.display = "none";
+							}}
 						/>
 					) : file.mime_type.startsWith("video/") && file.thumbnail ? (
 						<img
@@ -475,6 +479,9 @@ function MediaTable({
 							src={`${file.thumbnail}?v=${encodeURIComponent(file.updated_at ?? file.created_at)}`}
 							alt=""
 							className="size-full object-cover"
+							onError={(e) => {
+								e.currentTarget.style.display = "none";
+							}}
 						/>
 					) : (
 						<span className="flex size-full items-center justify-center text-[10px] text-muted-foreground">
