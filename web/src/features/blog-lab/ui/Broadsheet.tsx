@@ -82,7 +82,12 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 						key={p.id}
 						className="border-b border-edge-hairline py-6 md:border-l md:px-6 md:first:border-l-0 md:first:pl-0 md:last:pr-0"
 					>
-						<Link to="/blog/$slug" params={{ slug: p.slug }} className="group block">
+						{/* 结构预算:标题限2行、摘要限3行、署名 mt-auto 钉底——有图/无图简讯底线对齐 */}
+						<Link
+							to="/blog/$slug"
+							params={{ slug: p.slug }}
+							className="group flex h-full flex-col"
+						>
 							<p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/70 uppercase">
 								简讯 {String(i + 1).padStart(2, "0")}
 							</p>
@@ -97,13 +102,13 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 									className="mt-3 aspect-video w-full object-cover grayscale transition-all duration-500 group-hover:scale-[1.02] group-hover:grayscale-0"
 								/>
 							)}
-							<h4 className="mt-3 text-lg leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
+							<h4 className="mt-3 line-clamp-2 text-lg leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
 								{p.title}
 							</h4>
 							<p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
 								{p.excerpt}
 							</p>
-							<p className="mt-3 font-mono text-[11px] text-muted-foreground">
+							<p className="mt-auto pt-3 font-mono text-[11px] text-muted-foreground">
 								{p.author ? getDisplayName(p.author) : "佚名"} ·{" "}
 								{format(new Date(p.published_at), "MM-dd")}
 							</p>
