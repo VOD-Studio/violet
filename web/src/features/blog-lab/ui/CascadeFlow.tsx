@@ -12,8 +12,8 @@ import { useState } from "react";
 /**
  * CascadeFlow - 主轴瀑布
  *
- * 最新一篇做全宽主轴（封面 + 渐变遮罩 + 大字浮排，blur-in 入场对齐
- * LandingHero DNA）；其余走 CSS columns 自然高度瀑布流——封面自然宽高比、
+ * 最新一篇做全宽主轴（封面 + 渐变遮罩 + 大字浮排，封面短促余韵 blur、
+ * 文字清晰淡入上升）；其余走 CSS columns 自然高度瀑布流——封面自然宽高比、
  * 摘要不锁行数，「大小不一」是节奏不是缺陷。无封面/失效封面退化为排版卡
  * （№ 序号 + 大字标题），与图片卡交织出杂志感。卡片用全站签名 SpotlightCard
  * 冷光 + 上浮 + 封面缩放三层 hover。
@@ -24,10 +24,13 @@ export function CascadeFlow({ posts }: { posts: Post[] }) {
 
 	return (
 		<div>
-			{/* ===== 主轴 hero ===== */}
+			{/* ===== 主轴 hero =====
+				文字必须清晰入场（blur 会牺牲正文可读性），余韵 blur 只留给封面图 */}
 			<motion.div
-				initial={false}
-				className="animate-blur-in group relative mb-8 overflow-hidden rounded-2xl border border-edge-hairline"
+				initial={{ opacity: 0, y: 16 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+				className="group relative mb-8 overflow-hidden rounded-2xl border border-edge-hairline"
 			>
 				<HeroCover post={hero} />
 				<div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
@@ -74,10 +77,13 @@ function HeroCover({ post }: { post: Post }) {
 		);
 	}
 	return (
-		<img
+		<motion.img
 			src={contentImageUrl(post.cover_image, { width: 1280 })}
 			alt={post.title}
 			onError={() => setBrokenFor(post.cover_image)}
+			initial={{ filter: "blur(10px)" }}
+			animate={{ filter: "blur(0px)" }}
+			transition={{ duration: 0.5, ease: "easeOut" }}
 			className="aspect-[21/9] w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
 		/>
 	);
