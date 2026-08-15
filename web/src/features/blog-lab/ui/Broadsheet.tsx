@@ -165,21 +165,25 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 						<p className="border-b border-edge-hairline py-2 font-mono text-[10px] tracking-[0.35em] text-muted-foreground uppercase">
 							简讯版 · Briefs
 						</p>
-						<div className="grid gap-x-6 md:grid-cols-4">
+						{/* 双栏+中缝竖线:4 列会把中文标题挤断成碎片,报纸摘要栏从不这样排 */}
+						<div className="grid md:grid-cols-2">
 							{textBriefs.map((p) => (
-								<article key={p.id} className="border-b border-edge-hairline py-4">
+								<article
+									key={p.id}
+									className="border-b border-edge-hairline py-5 md:px-8 md:first:pl-0 md:[&:nth-child(2)]:pr-0 md:[&:nth-child(even)]:border-l md:[&:nth-child(even)]:border-edge-hairline"
+								>
 									<Link
 										to="/blog/$slug"
 										params={{ slug: p.slug }}
 										className="group block"
 									>
-										<h4 className="line-clamp-2 font-bold leading-snug tracking-tight transition-colors group-hover:text-neon-blue">
+										<h4 className="line-clamp-2 text-[17px] leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
 											{p.title}
 										</h4>
-										<p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">
+										<p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
 											{p.excerpt}
 										</p>
-										<p className="mt-2 font-mono text-[10px] text-muted-foreground">
+										<p className="mt-2.5 font-mono text-[10px] text-muted-foreground">
 											{format(new Date(p.published_at), "MM-dd")}
 										</p>
 									</Link>
