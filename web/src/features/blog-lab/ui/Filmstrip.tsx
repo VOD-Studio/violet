@@ -11,6 +11,9 @@ import { useRef, useState } from "react";
 // 齿孔:白亮短划在暗带上排成两行,读作胶卷穿孔而非随机虚线
 const SPROCKET =
 	"repeating-linear-gradient(90deg, rgba(255,255,255,0.22) 0 10px, transparent 10px 24px)";
+// 场记板板条:顶边黑白斜纹,胶片语法的专属标记,与织纹的交叉纹理区分
+const CLAPPER =
+	"repeating-linear-gradient(45deg, rgba(255,255,255,0.5) 0 5px, transparent 5px 10px)";
 
 /**
  * Filmstrip - 胶片条
@@ -86,13 +89,20 @@ function Frame({ post: p, index }: { post: Post; index: number }) {
 					className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-105"
 				/>
 			) : (
-				<div className="flex aspect-video w-full flex-col items-start gap-2 bg-zinc-800 p-3">
-					<span className="font-mono text-[10px] tracking-[0.25em] text-white/40">
-						№ {String(index + 1).padStart(2, "0")}
-					</span>
-					<p className="line-clamp-3 text-left text-xs leading-snug font-medium text-zinc-100">
-						{p.title}
-					</p>
+				<div className="flex aspect-video w-full flex-col bg-zinc-800">
+					<div
+						aria-hidden
+						className="h-2.5 w-full shrink-0"
+						style={{ backgroundImage: CLAPPER }}
+					/>
+					<div className="flex flex-1 flex-col items-start gap-2 p-3 pt-2.5">
+						<span className="font-mono text-[10px] tracking-[0.25em] text-white/40">
+							№ {String(index + 1).padStart(2, "0")}
+						</span>
+						<p className="line-clamp-3 text-left text-xs leading-snug font-medium text-zinc-100">
+							{p.title}
+						</p>
+					</div>
 				</div>
 			)}
 			<div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-3 pt-6 pb-2">

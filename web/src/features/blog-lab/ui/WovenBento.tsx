@@ -71,8 +71,17 @@ function BentoCell({ post, big }: { post: Post; big: boolean }) {
 					className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 				/>
 			) : (
-				// 深色底而非 muted:文字层是白色,浅色兜底会把标题吞掉
-				<div className="absolute inset-0 bg-gradient-to-br from-primary/50 via-zinc-800 to-zinc-900" />
+				// 织纹兜底:交叉织线纹理呼应方向名,与胶片条的场记板帧拉开视觉差异
+				<div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-zinc-800 to-zinc-900">
+					<div
+						aria-hidden
+						className="absolute inset-0"
+						style={{
+							backgroundImage:
+								"repeating-linear-gradient(45deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 9px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 9px)",
+						}}
+					/>
+				</div>
 			)}
 			<div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
 			<div className="absolute inset-x-0 bottom-0 p-4 text-white">
