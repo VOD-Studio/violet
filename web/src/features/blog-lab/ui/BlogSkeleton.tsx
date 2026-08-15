@@ -7,9 +7,9 @@ export type LabDirection =
 	| "rail"
 	| "bento"
 	| "paper"
-	| "film"
 	| "toc"
-	| "featured";
+	| "featured"
+	| "digest";
 
 const Bar = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
 	<div className={cn("animate-pulse rounded bg-muted", className)} style={style} />
@@ -98,56 +98,67 @@ export function BlogSkeleton({ direction }: { direction: LabDirection }) {
 		case "paper":
 			return (
 				<div>
-					<Bar className="mb-3 h-5 w-full rounded-none" />
-					<div className="border-b border-edge-hairline py-8">
-						<Bar className="h-9 w-4/5" />
-						<Bar className="mt-4 h-4 w-3/5" />
+					{/* 日期线 */}
+					<div className="flex justify-between border-b border-edge-hairline pb-2">
+						<Bar className="h-3 w-28" />
+						<Bar className="h-3 w-16" />
 					</div>
+					{/* 报头 */}
+					<Bar className="mx-auto my-6 h-12 w-52 rounded-none" />
+					{/* 粗细双线 */}
+					<div className="border-t-[3px] border-b border-foreground pb-1" />
+					{/* 通栏头条 */}
+					<div className="border-b border-edge-hairline py-8 text-center">
+						<Bar className="mx-auto h-3 w-20" />
+						<Bar className="mx-auto mt-4 h-9 w-4/5 rounded-none" />
+						<Bar className="mx-auto mt-3 h-9 w-3/5 rounded-none" />
+						<Bar className="mx-auto mt-4 h-3.5 w-2/5" />
+					</div>
+					{/* 三栏文字简讯:底线对齐 */}
 					<div className="grid md:grid-cols-3">
 						{[0, 1, 2].map((i) => (
 							<div
 								key={i}
-								className="py-6 md:border-l md:px-5 md:first:border-l-0 md:first:pl-0"
+								className="flex flex-col py-6 md:border-l md:px-6 md:first:border-l-0 md:first:pl-0 md:last:pr-0"
 							>
-								<Bar className="aspect-video w-full" />
-								<Bar className="mt-3 h-4 w-4/5" />
-								<Bar className="mt-2 h-3 w-full" />
+								<Bar className="h-2.5 w-14" />
+								<Bar className="mt-3 h-5 w-4/5 rounded-none" />
+								<Bar className="mt-2 h-5 w-3/5 rounded-none" />
+								<Bar className="mt-3 h-3 w-full" />
+								<Bar className="mt-1.5 h-3 w-5/6" />
+								<Bar className="mt-auto pt-3 h-2.5 w-20" />
 							</div>
 						))}
 					</div>
-				</div>
-			);
-
-		case "film":
-			return (
-				<div className="py-2">
-					<Bar className="mb-5 h-2 w-full opacity-20" />
-					<div className="flex gap-4 overflow-hidden">
-						{[0, 1, 2, 3, 4, 5].map((i) => (
-							<div key={i} className="w-60 shrink-0">
-								<Bar className="aspect-video w-full rounded-lg" />
-								<Bar className="mt-2 h-3.5 w-4/5" />
-							</div>
-						))}
-					</div>
-					<Bar className="mt-5 h-2 w-full opacity-20" />
 				</div>
 			);
 
 		case "toc":
 			return (
 				<div>
-					<Bar className="mb-4 h-3 w-28" />
-					<Bar className="h-10 w-4/5" />
-					<Bar className="mt-3 h-4 w-3/5" />
-					<div className="mt-8 grid gap-x-12 md:grid-cols-2">
-						{[0, 1, 2, 3, 4, 5].map((i) => (
-							<div key={i} className="space-y-2 border-b border-edge-hairline py-5">
-								<Bar className="h-4 w-3/4" />
-								<Bar className="h-3 w-full" />
-							</div>
-						))}
+					<div className="flex items-center gap-4 border-y-2 border-foreground py-2.5">
+						<Bar className="h-3 w-24" />
+						<Bar className="h-2.5 w-16" />
 					</div>
+					{[0, 1].map((s) => (
+						<div key={s} className="mt-8">
+							<Bar className="h-6 w-28 rounded-none" />
+							<div className="mt-2 grid gap-x-12 md:grid-cols-2">
+								{[0, 1, 2, 3].map((i) => (
+									<div
+										key={i}
+										className="flex items-center gap-3 border-b border-edge-hairline py-3.5"
+									>
+										<Bar className="h-3 w-5" />
+										<Bar
+											className="h-4 flex-1"
+											style={{ maxWidth: `${75 - i * 8}%` }}
+										/>
+									</div>
+								))}
+							</div>
+						</div>
+					))}
 				</div>
 			);
 
@@ -180,5 +191,35 @@ export function BlogSkeleton({ direction }: { direction: LabDirection }) {
 					</div>
 				</div>
 			);
+
+		case "digest":
+			return (
+				<div>
+					{[3, 2, 2].map((rows, d) => (
+						<div
+							key={d}
+							className="border-b-2 border-t border-edge-hairline py-6 first:border-t-2 first:border-t-foreground md:grid md:grid-cols-[110px_1fr] md:gap-8"
+						>
+							<div>
+								<Bar className="h-9 w-12 rounded-none" />
+								<Bar className="mt-2 h-2.5 w-20" />
+							</div>
+							<div className="mt-4 space-y-3.5 md:mt-0">
+								{Array.from({ length: rows }).map((_, i) => (
+									<div key={i} className="flex items-center gap-4">
+										<Bar className="h-3 w-9" />
+										<Bar
+											className="h-4 flex-1"
+											style={{ maxWidth: `${78 - i * 9}%` }}
+										/>
+										<Bar className="hidden h-2.5 w-12 sm:block" />
+									</div>
+								))}
+							</div>
+						</div>
+					))}
+					</div>
+				);
+		}
 	}
-}
+

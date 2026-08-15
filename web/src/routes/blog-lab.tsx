@@ -2,8 +2,8 @@ import { BlogSkeleton, type LabDirection } from "@features/blog-lab/ui/BlogSkele
 import { Broadsheet } from "@features/blog-lab/ui/Broadsheet";
 import { CascadeFlow } from "@features/blog-lab/ui/CascadeFlow";
 import { ChronoStream } from "@features/blog-lab/ui/ChronoStream";
+import { DailyDigest } from "@features/blog-lab/ui/DailyDigest";
 import { FeaturedList } from "@features/blog-lab/ui/FeaturedList";
-import { Filmstrip } from "@features/blog-lab/ui/Filmstrip";
 import { JournalToc } from "@features/blog-lab/ui/JournalToc";
 import { TerminalFeed } from "@features/blog-lab/ui/TerminalFeed";
 import { WovenBento } from "@features/blog-lab/ui/WovenBento";
@@ -45,17 +45,17 @@ const DIRECTIONS: { value: LabDirection; label: string; intent: string }[] = [
 	{
 		value: "paper",
 		label: "头版报纸",
-		intent: "报纸解剖学：日期线、居中衬线报头、粗细双线、通栏头条、三栏简讯（黑白图 hover 复色）。动效克制——报线先画，整版一次浮现。",
-	},
-	{
-		value: "film",
-		label: "胶片条·辅助",
-		intent: "辅助模块而非完整列表：暗色胶卷带（齿孔+场记板帧）适合放页首「最新速览」或首页混排，垂直占用最小。不单独承担 /blog 列表职责。",
+		intent: "报纸解剖学：日期线、居中衬线报头、粗细双线、通栏头条、三栏简讯（底线对齐，黑白图 hover 复色）。动效克制——报线先画，整版一次浮现。",
 	},
 	{
 		value: "toc",
 		label: "杂志目录",
-		intent: "真目录语法：栏目分区 + 「编号·标题·点线引导·日期」单行条目，纯排版零图片。最安静，信息密度最高。",
+		intent: "分区目录：按栏目分组的 standing head + 双列「编号·标题·点线引导·日期」条目，纯排版零图片，信息密度最高。",
+	},
+	{
+		value: "digest",
+		label: "日刊分组",
+		intent: "newsletter 式按天分组：日期立头（衬线大日期+星期）在左、当日条目在右，天与天粗细线分隔。以「发行日」为轴，介于目录与轨道之间。",
 	},
 ];
 
@@ -73,10 +73,10 @@ function renderDirection(direction: LabDirection, posts: Post[]) {
 			return <WovenBento posts={posts} />;
 		case "paper":
 			return <Broadsheet posts={posts} />;
-		case "film":
-			return <Filmstrip posts={posts} />;
 		case "toc":
 			return <JournalToc posts={posts} />;
+		case "digest":
+			return <DailyDigest posts={posts} />;
 	}
 }
 
