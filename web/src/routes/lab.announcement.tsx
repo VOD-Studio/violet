@@ -5,7 +5,7 @@ import {
 	AnnouncementSkeleton,
 } from "@features/lab/announcement/ui/AnnouncementSkeleton";
 import { BannerCrossfade } from "@features/lab/announcement/ui/BannerCrossfade";
-import { BannerFlip } from "@features/lab/announcement/ui/BannerFlip";
+import { BannerPrism } from "@features/lab/announcement/ui/BannerPrism";
 import { BannerSlide } from "@features/lab/announcement/ui/BannerSlide";
 import { BannerTeletype } from "@features/lab/announcement/ui/BannerTeletype";
 import { EventLog } from "@features/lab/announcement/ui/EventLog";
@@ -20,7 +20,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 type PreviewState = "data" | "skeleton" | "empty";
-type BannerDirection = "flip" | "crossfade" | "slide" | "teletype";
+type BannerDirection = "prism" | "crossfade" | "slide" | "teletype";
 
 const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string }[] = [
 	{
@@ -52,9 +52,9 @@ const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string 
 
 const BANNER_DIRECTIONS: { value: BannerDirection; label: string; intent: string }[] = [
 	{
-		value: "flip",
-		label: "翻牌折叠",
-		intent: "split-flap 路牌的两段式换页：旧面折平消失、新面展开。正交投影无透视，静止态文字始终清晰，两条公告也照常翻——修正现役棱柱的模糊与两条退化问题。",
+		value: "prism",
+		label: "棱柱旋转",
+		intent: "N 条公告 = N 面实体棱柱绕 X 轴旋转到当前面，面自带底色、转的是面板不是文字。动画落定后切静态层，静止态文字始终清晰；两条时特判半面厚度，翻面有实体板感。",
 	},
 	{
 		value: "crossfade",
@@ -77,14 +77,14 @@ const BANNER_DIRECTIONS: { value: BannerDirection; label: string; intent: string
  * /lab/announcement - 公告原型实验室
  *
  * 两个对比面：首页公告区（card / article 两形态，五方向 × 三态）
- * 与顶部横幅（banner 形态，四候选，棱柱现役因模糊与两条退化已重做
- * 为翻牌折叠）。静态 mock 不接 API；横幅三条不变约束（后端排序 /
- * 关闭即已读 / 动画可暂停）在每个方向上保持。
+ * 与顶部横幅（banner 形态，四候选——棱柱旋转为真 3D 修复版：静止
+ * 态切静态层根治模糊，两条时特判厚度）。静态 mock 不接 API；
+ * 横幅三条不变约束（后端排序 / 关闭即已读 / 动画可暂停）在每个方向上保持。
  */
 function AnnouncementLab() {
 	const [direction, setDirection] = useState<AnnouncementDirection>("log");
 	const [preview, setPreview] = useState<PreviewState>("data");
-	const [banner, setBanner] = useState<BannerDirection>("flip");
+	const [banner, setBanner] = useState<BannerDirection>("prism");
 	const active = DIRECTIONS.find((d) => d.value === direction) ?? DIRECTIONS[0];
 	const activeBanner = BANNER_DIRECTIONS.find((d) => d.value === banner) ?? BANNER_DIRECTIONS[0];
 
@@ -179,9 +179,8 @@ function AnnouncementLab() {
 			<section>
 				<h2 className="mb-2 text-2xl font-semibold">横幅展示方向</h2>
 				<p className="mb-8 max-w-3xl text-sm text-muted-foreground">
-					banner 形态（display=banner）渲染在全站顶部横幅条。现役棱柱因文字模糊与
-					两条退化在 lab
-					内已重做为翻牌折叠，四个候选并排比选。三条不变约束在所有方向上保持：后端排序不重排、
+					banner 形态（display=banner）渲染在全站顶部横幅条。棱柱旋转为真 3D 修复版，
+					与渐隐轮换、滑轨推入、电传打字四个候选并排比选。三条不变约束在所有方向上保持：后端排序不重排、
 					关闭即标记已读、动画可暂停（hover / 滚轮手动翻，reduced-motion 降级）。
 				</p>
 
@@ -210,7 +209,7 @@ function AnnouncementLab() {
 						Preview · violet.blog 页顶 · {activeBanner.label}
 					</p>
 
-					{banner === "flip" ? <BannerFlip items={MOCK_BANNERS} /> : null}
+					{banner === "prism" ? <BannerPrism items={MOCK_BANNERS} /> : null}
 					{banner === "crossfade" ? <BannerCrossfade items={MOCK_BANNERS} /> : null}
 					{banner === "slide" ? <BannerSlide items={MOCK_BANNERS} /> : null}
 					{banner === "teletype" ? <BannerTeletype items={MOCK_BANNERS} /> : null}

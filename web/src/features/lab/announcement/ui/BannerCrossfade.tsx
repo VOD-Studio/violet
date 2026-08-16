@@ -13,7 +13,13 @@ export function BannerCrossfade({ items }: { items: Announcement[] }) {
 	const { index, hoverHandlers, wheelRef } = useBannerTicker(items.length);
 
 	return (
-		<BannerStage items={items} index={index} stageRef={wheelRef} {...hoverHandlers}>
+		<BannerStage
+			items={items}
+			index={index}
+			stageRef={wheelRef}
+			{...hoverHandlers}
+			className="h-7 overflow-hidden"
+		>
 			<AnimatePresence mode="wait" initial={false}>
 				<motion.div
 					key={items[index].id}

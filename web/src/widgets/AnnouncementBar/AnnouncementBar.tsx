@@ -100,14 +100,20 @@ export default function AnnouncementBar() {
 	}, [n, index]);
 
 	// 滚轮翻页需接管滚动：React 合成 wheel 事件是 passive 的拦不下页面滚动，
-	// 换原生非被动监听（条不渲染时 ref 为 null，监听自然不生效）
+	// 换原生非被动监听。触控板惯性是大量小 delta 事件，全部 preventDefault
+	// 锁死页面，翻页带 400ms 冷却防止一次轻扫连翻多页。
 	const barRef = useRef<HTMLDivElement>(null);
+	const lastStepRef = useRef(0);
 	useEffect(() => {
 		const el = barRef.current;
 		if (!el) return;
 		const handler = (e: WheelEvent) => {
-			if (Math.abs(e.deltaY) < 10) return;
+			if (e.deltaY === 0) return;
 			e.preventDefault();
+			if (Math.abs(e.deltaY) < 4) return;
+			const now = performance.now();
+			if (now - lastStepRef.current < 400) return;
+			lastStepRef.current = now;
 			if (e.deltaY > 0) setIndex((i) => (i + 1) % n);
 			else setIndex((i) => (i - 1 + n) % n);
 		};

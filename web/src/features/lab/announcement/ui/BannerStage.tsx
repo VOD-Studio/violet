@@ -44,7 +44,10 @@ export function BannerStage({
 
 	if (dismissed) {
 		return (
-			<div className="border-b border-edge-hairline bg-primary/95 font-mono text-[10px] dark:bg-zinc-900">
+			<div
+				ref={stageRef}
+				className="border-b border-edge-hairline bg-primary/95 font-mono text-[10px] dark:bg-zinc-900"
+			>
 				<button
 					type="button"
 					onClick={() => setDismissed(false)}
@@ -82,13 +85,14 @@ export function BannerStage({
 	);
 }
 
-/** 横幅单面内容（所有方向共用）：severity neon 图标 + 单行文本 */
+/** 横幅单面内容（所有方向共用）：severity neon 图标 + 单行文本。
+ * 面自带横幅底色——棱柱旋转时是实体面板在转，不是透明文字浮在条上 */
 export function BannerFace({ a }: { a: Announcement }) {
 	const cfg = getAnnouncementSev(a.severity);
 	return (
 		<span
 			className={cn(
-				"flex h-7 items-center justify-center gap-2 px-12",
+				"flex h-7 items-center justify-center gap-2 bg-primary/95 px-12 dark:bg-zinc-900",
 				BANNER_NEON[a.severity] ?? BANNER_NEON.info,
 			)}
 		>
