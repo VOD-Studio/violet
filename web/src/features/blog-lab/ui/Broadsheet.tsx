@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 /**
  * Broadsheet - 头版报纸
  *
- * 报纸解剖学：日期线 → 居中衬线报头 → 粗细双线 → 通栏头条 → 分版简讯。
+ * 报纸解剖学：报耳（期数/栏目速览）→ 居中衬线报头 → 粗细双线夹日期线 →
+ * 通栏头条 → 图文分版 → 简讯版（版块头 + 三栏中缝线 + 分条解剖）。
  * 图文版/文字版按封面**运行时可加载性**分流（预探测），死链封面不再
  * 留在图文版产生空洞。动效克制：报线先画，整版一次浮现。
  */
@@ -26,30 +27,42 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 
 	return (
 		<div className="font-serif">
-			{/* 日期线 */}
-			<div className="flex items-center justify-between border-b border-edge-hairline pb-2 font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
-				<span>{format(Date.now(), "yyyy年MM月dd日")}</span>
-				<span>第 {issue} 期</span>
+			{/* 报耳：篇数速览 + 最近更新 */}
+			<div className="flex items-center justify-between border-b border-edge-hairline pb-2 font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+				<span>共 {posts.length} 篇</span>
+				{headline && (
+					<span>
+						最近更新{" "}
+						{formatDistanceToNow(new Date(headline.published_at), {
+							addSuffix: true,
+							locale: zhCN,
+						})}
+					</span>
+				)}
 			</div>
 
-			{/* 报头 */}
+			{/* 报头：宽字距居中，pl 补偿末字母尾距保持光学居中 */}
 			<motion.h2
 				initial={reduce ? false : { opacity: 0 }}
 				animate={{ opacity: 1 }}
 				transition={{ duration: 0.4 }}
-				className="py-6 text-center text-5xl font-black tracking-[0.18em]"
+				className="py-8 pl-[0.22em] text-center text-5xl font-black tracking-[0.22em] md:text-6xl"
 			>
 				VIOLET
 			</motion.h2>
 
-			{/* 粗细双线 */}
+			{/* 粗线 + 双线夹日期线（folio） */}
 			<motion.div
 				aria-hidden
 				initial={reduce ? false : { scaleX: 0 }}
 				animate={{ scaleX: 1 }}
 				transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-				className="border-t-[3px] border-b border-foreground pb-1"
+				className="border-t-[3px] border-foreground"
 			/>
+			<div className="flex items-center justify-between border-b border-foreground py-2 font-mono text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+				<span>{format(Date.now(), "yyyy年MM月dd日 EEEE", { locale: zhCN })}</span>
+				<span>第 {issue} 期</span>
+			</div>
 
 			{headline && (
 				<Link
@@ -161,34 +174,41 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 				)}
 
 				{textBriefs.length > 0 && (
-					<div className="mt-2 border-t border-edge-hairline pt-4">
-						{/* 三栏流式短讯:CSS columns 自动均分,不依赖标签数据;
-							条目单元 = 加粗标题+破折号+一句导语,与特写列表的索引行区分 */}
-						<div className="columns-1 gap-8 md:columns-3">
+					<section>
+						{/* 版块头：粗线 + 站头行 + 细线，与报头双线呼应 */}
+						<div className="border-t-2 border-foreground">
+							<div className="flex items-baseline justify-between border-b border-edge-hairline py-2.5">
+								<h3 className="text-xl font-black tracking-[0.3em]">简讯</h3>
+								<p className="font-mono text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
+									In Brief · 共 {textBriefs.length} 条
+								</p>
+							</div>
+						</div>
+						{/* 三栏中缝：column-rule 竖线是报纸独有的分栏信号；
+							条目解剖 = 加粗标题 / 两端对齐导语 / 日期尾注，
+							多行文字块与特写的单行索引、目录的点线行彻底区分。
+							无栏目标签可用（数据 tags 为空），不造无信息量的 kicker */}
+						<div className="columns-1 gap-8 pt-5 sm:columns-2 lg:columns-3 [column-rule:1px_solid_var(--edge-hairline)]">
 							{textBriefs.map((p) => (
 								<Link
 									key={p.id}
 									to="/blog/$slug"
 									params={{ slug: p.slug }}
-									className="group mb-3 block break-inside-avoid border-b border-edge-hairline/60 pb-3"
+									className="group mb-5 block break-inside-avoid border-b border-edge-hairline/60 pb-5"
 								>
-									<p className="text-sm leading-relaxed">
-										<span className="font-bold tracking-tight transition-colors group-hover:text-neon-blue">
-											{p.title}
-										</span>
-										<span className="text-muted-foreground">
-											{" "}
-											—— {p.excerpt.slice(0, 40)}
-											{p.excerpt.length > 40 ? "…" : ""}
-										</span>
+									<h4 className="break-words text-[15px] leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
+										{p.title}
+									</h4>
+									<p className="mt-2 line-clamp-3 text-justify text-[13px] leading-relaxed text-muted-foreground">
+										{p.excerpt}
 									</p>
-									<p className="mt-1 font-mono text-[10px] text-muted-foreground">
+									<p className="mt-2.5 font-mono text-[10px] text-muted-foreground/70 tabular-nums">
 										{format(new Date(p.published_at), "MM-dd")}
 									</p>
 								</Link>
 							))}
 						</div>
-					</div>
+					</section>
 				)}
 			</motion.div>
 		</div>

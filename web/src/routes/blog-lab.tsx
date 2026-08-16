@@ -45,7 +45,7 @@ const DIRECTIONS: { value: LabDirection; label: string; intent: string }[] = [
 	{
 		value: "paper",
 		label: "头版报纸",
-		intent: "报纸解剖学：日期线、居中衬线报头、粗细双线、通栏头条、三栏简讯（底线对齐，黑白图 hover 复色）。动效克制——报线先画，整版一次浮现。",
+		intent: "报纸解剖学：报耳（篇数/最近更新）、居中衬线报头、粗细双线夹日期线、通栏头条、图文分版、简讯版（版块头 + 三栏中缝线 + 标题/两端对齐导语/日期分条解剖）。动效克制，报线先画，整版一次浮现。",
 	},
 	{
 		value: "toc",
