@@ -1,3 +1,4 @@
+import { LabHeader } from "@features/lab/ui/LabHeader";
 import { AlternatingSpread } from "@features/lab/blog/ui/AlternatingSpread";
 import { BlogSkeleton, type LabDirection } from "@features/lab/blog/ui/BlogSkeleton";
 import { Broadsheet } from "@features/lab/blog/ui/Broadsheet";
@@ -7,7 +8,6 @@ import { FeaturedList } from "@features/lab/blog/ui/FeaturedList";
 import { JournalToc } from "@features/lab/blog/ui/JournalToc";
 import { TerminalFeed } from "@features/lab/blog/ui/TerminalFeed";
 import { WovenBento } from "@features/lab/blog/ui/WovenBento";
-import { BackLink } from "@features/lab/nav/ui/BackLink";
 import { usePosts } from "@features/posts/api/queries";
 import type { Post } from "@features/posts/model/types";
 import Empty from "@shared/ui/empty";
@@ -96,13 +96,7 @@ function BlogLab() {
 
 	return (
 		<div className="container mx-auto px-6 py-24">
-			<BackLink to="/lab" label="Labs" className="mb-12" />
-			<div className="mb-16 text-center">
-				<h1 className="mb-4 text-4xl font-bold tracking-tight">博客排版实验室</h1>
-				<p className="mx-auto max-w-xl text-muted-foreground">
-					博客列表页的八套排版方案，任选一套替换到正式页面。
-				</p>
-			</div>
+			<LabHeader to="/lab/blog" />
 
 			<section>
 				<div className="mb-6 flex flex-wrap items-center justify-between gap-4">

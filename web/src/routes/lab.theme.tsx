@@ -1,4 +1,4 @@
-import { BackLink } from "@features/lab/nav/ui/BackLink";
+import { LabHeader } from "@features/lab/ui/LabHeader";
 import ThemeToggle, { type ThemeSize, type ThemeVariant } from "@features/lab/theme/ui";
 import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute } from "@tanstack/react-router";
@@ -47,13 +47,7 @@ function ThemeLab() {
 
 	return (
 		<div className="container mx-auto px-6 py-24">
-			<BackLink to="/lab" label="Labs" className="mb-12" />
-			<div className="mb-16 text-center">
-				<h1 className="mb-4 text-4xl font-bold tracking-tight">主题切换器实验室</h1>
-				<p className="mx-auto max-w-xl text-muted-foreground">
-					四种主题切换控件，按大、默认、小三档陈列。
-				</p>
-			</div>
+			<LabHeader to="/lab/theme" />
 
 			<section>
 				<div className="mb-6 flex flex-wrap items-center justify-between gap-4">

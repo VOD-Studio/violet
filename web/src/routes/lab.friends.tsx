@@ -4,7 +4,7 @@ import { CardWall } from "@features/lab/friends/ui/CardWall";
 import { FriendsSkeleton, type LabDirection } from "@features/lab/friends/ui/FriendsSkeleton";
 import { PostcardWall } from "@features/lab/friends/ui/PostcardWall";
 import { TerminalList } from "@features/lab/friends/ui/TerminalList";
-import { BackLink } from "@features/lab/nav/ui/BackLink";
+import { LabHeader } from "@features/lab/ui/LabHeader";
 import { Button } from "@shared/ui/base/button";
 import Empty from "@shared/ui/empty";
 import { Segmented } from "@shared/ui/segmented";
@@ -48,13 +48,7 @@ function FriendsLab() {
 
 	return (
 		<div className="container mx-auto px-6 py-24">
-			<BackLink to="/lab" label="Labs" className="mb-12" />
-			<div className="mb-16 text-center">
-				<h1 className="mb-4 text-4xl font-bold tracking-tight">友链原型实验室</h1>
-				<p className="mx-auto max-w-xl text-muted-foreground">
-					友链页的三套视觉方案，附申请弹窗交互原型。
-				</p>
-			</div>
+			<LabHeader to="/lab/friends" />
 
 			{/* ============ 展示态：方向对比 ============ */}
 			<section className="mb-24">

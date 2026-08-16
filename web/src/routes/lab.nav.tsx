@@ -1,4 +1,4 @@
-import { BackLink } from "@features/lab/nav/ui/BackLink";
+import { LabHeader } from "@features/lab/ui/LabHeader";
 import { FloatingBackButton } from "@features/lab/nav/ui/FloatingBackButton";
 import { ProgressBackRail } from "@features/lab/nav/ui/ProgressBackRail";
 import { ScrollRevealChip } from "@features/lab/nav/ui/ScrollRevealChip";
@@ -36,7 +36,7 @@ const DIRECTIONS: { value: NavDirection; label: string; intent: string }[] = [
  * /lab/nav - 返回导航实验室
  *
  * 问题：返回入口只存在于页头，滚动到中段后完全离场。常态入口已
- * 统一为页头返回胶囊（BackLink，lab 页头与文章页头共用，即本页
+ * 统一为页头返回胶囊（BackLink，LabHeader 内置，lab 页头与文章页头
  * 页头那颗）；滚动离场后的接管策略由四个候选方向对比，覆盖四种
  * 位置哲学：顶（吸顶）/ 侧（浮钮）/ 底（上滑显现）/ 线（进度）。
  * 选定方向后落到文章详情页。
@@ -47,13 +47,7 @@ function NavLab() {
 
 	return (
 		<div className="container mx-auto px-6 py-24">
-			<BackLink to="/lab" label="Labs" className="mb-12" />
-			<div className="mb-16 text-center">
-				<h1 className="mb-4 text-4xl font-bold tracking-tight">返回导航实验室</h1>
-				<p className="mx-auto max-w-xl text-muted-foreground">
-					常态入口统一为页头返回胶囊，滚动离场后由四种方向接管。
-				</p>
-			</div>
+			<LabHeader to="/lab/nav" />
 
 			<section>
 				<div className="mb-6 flex flex-wrap items-center justify-between gap-4">
