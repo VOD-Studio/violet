@@ -180,7 +180,18 @@ const ChangePasswordCard = () => {
 						</Button>
 					</div>
 
-					<p className="text-sm text-muted-foreground">修改成功后需重新登录</p>
+					<div className="flex flex-wrap items-center justify-between gap-2">
+						<p className="text-sm text-muted-foreground">修改成功后需重新登录</p>
+						{/* 存量 OAuth 建号用户不知原密码（随机哈希），入口前置免得先失败一次 */}
+						<Button
+							variant="link"
+							size="sm"
+							className="h-auto px-0 text-xs"
+							onClick={() => navigate({ to: "/forgot-password" })}
+						>
+							忘记原密码?
+						</Button>
+					</div>
 				</div>
 			) : (
 				<p className="text-sm text-muted-foreground">已设置密码，可使用邮箱密码登录</p>
