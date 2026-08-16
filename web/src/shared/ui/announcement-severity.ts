@@ -17,6 +17,8 @@ export type AnnouncementSeverity = "info" | "warning" | "success" | "error";
 export interface AnnouncementSevCfg {
 	/** 药丸徽章 class（背景 + 前景，含 dark 变体） */
 	badge: string;
+	/** 纯前景色 class（无底色），供日志电码、状态图标等着色 */
+	text: string;
 	/** 圆点背景 class */
 	dot: string;
 	/** BorderGlow 配色（HSL 三元组字符串，组件要 HSL "h s%" 形式）；单色模式三值相同 */
@@ -30,6 +32,7 @@ export interface AnnouncementSevCfg {
 export const ANNOUNCEMENT_SEVERITY: Record<AnnouncementSeverity, AnnouncementSevCfg> = {
 	info: {
 		badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+		text: "text-blue-600 dark:text-blue-400",
 		dot: "bg-blue-500",
 		glow: ["217 91 60", "217 91 60", "217 91 60"],
 		Icon: Info,
@@ -37,6 +40,7 @@ export const ANNOUNCEMENT_SEVERITY: Record<AnnouncementSeverity, AnnouncementSev
 	},
 	warning: {
 		badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+		text: "text-amber-600 dark:text-amber-400",
 		dot: "bg-amber-500",
 		glow: ["38 92 50", "38 92 50", "38 92 50"],
 		Icon: TriangleAlert,
@@ -44,6 +48,7 @@ export const ANNOUNCEMENT_SEVERITY: Record<AnnouncementSeverity, AnnouncementSev
 	},
 	success: {
 		badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+		text: "text-emerald-600 dark:text-emerald-400",
 		dot: "bg-emerald-500",
 		glow: ["152 76 40", "152 76 40", "152 76 40"],
 		Icon: CircleCheck,
@@ -51,6 +56,7 @@ export const ANNOUNCEMENT_SEVERITY: Record<AnnouncementSeverity, AnnouncementSev
 	},
 	error: {
 		badge: "bg-red-500/10 text-red-600 dark:text-red-400",
+		text: "text-red-600 dark:text-red-400",
 		dot: "bg-red-500",
 		glow: ["0 84 60", "0 84 60", "0 84 60"],
 		Icon: CircleX,
