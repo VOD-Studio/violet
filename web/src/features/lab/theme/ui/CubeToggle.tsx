@@ -20,10 +20,10 @@ export function CubeToggle({ size = "default" }: VariantProps) {
 	const { theme, switchTheme } = useThemeSwitcher();
 	const [rotation, setRotation] = useState(0);
 
-	const containerCls = size === "sm" ? "h-10 w-10" : "h-16 w-16";
-	const cubeCls = size === "sm" ? "h-8 w-8" : "h-12 w-12";
-	const translateZ = size === "sm" ? 16 : 24;
-	const iconCls = size === "sm" ? "size-4" : "size-5";
+	const containerCls = size === "sm" ? "h-10 w-10" : size === "lg" ? "h-20 w-20" : "h-16 w-16";
+	const cubeCls = size === "sm" ? "h-8 w-8" : size === "lg" ? "h-16 w-16" : "h-12 w-12";
+	const translateZ = size === "sm" ? 16 : size === "lg" ? 32 : 24;
+	const iconCls = size === "sm" ? "size-4" : size === "lg" ? "size-6" : "size-5";
 
 	const current = choices.find((c) => c.value === theme) ?? choices[0];
 

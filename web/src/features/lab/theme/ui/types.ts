@@ -19,21 +19,14 @@ export interface ThemeChoice {
  *
  * 对应同目录的各原型组件，ThemeToggle 按 variant prop 分发。
  */
-export type ThemeVariant =
-	| "cyclic"
-	| "cube"
-	| "orbiting"
-	| "pie"
-	| "rotary"
-	| "scene"
-	| "segmented";
+export type ThemeVariant = "cyclic" | "cube" | "scene" | "segmented";
 
 /**
  * ThemeSize - 切换器尺寸档位
  *
- * default 用于 theme-lab 展示，sm 用于 Header/AdminTopBar 紧凑操作区。
+ * lg / default 用于 theme-lab 尺寸陈列，sm 用于 Header/AdminTopBar 紧凑操作区。
  */
-export type ThemeSize = "default" | "sm";
+export type ThemeSize = "lg" | "default" | "sm";
 
 /**
  * VariantProps - 所有变体共享的尺寸 prop。

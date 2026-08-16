@@ -1,11 +1,8 @@
 import { CubeToggle } from "./CubeToggle";
 import { CyclicThemeButton } from "./CyclicThemeButton";
-import { OrbitingPlanets } from "./OrbitingPlanets";
-import { PieMenuToggle } from "./PieMenuToggle";
-import { RotaryDial } from "./RotaryDial";
 import { SceneButton } from "./SceneButton";
 import { SegmentedToggle } from "./SegmentedToggle";
-import type { ThemeVariant } from "./types";
+import type { ThemeSize, ThemeVariant } from "./types";
 
 /**
  * ThemeToggle - 主题切换器
@@ -14,7 +11,7 @@ interface ThemeToggleProps {
 	/** 主题切换器变体 */
 	variant?: ThemeVariant;
 	/** 主题切换器尺寸 */
-	size?: "default" | "sm";
+	size?: ThemeSize;
 }
 
 const ThemeToggle = ({ variant = "segmented", size = "sm" }: ThemeToggleProps) => {
@@ -23,18 +20,12 @@ const ThemeToggle = ({ variant = "segmented", size = "sm" }: ThemeToggleProps) =
 			return <CyclicThemeButton size={size} />;
 		case "cube":
 			return <CubeToggle size={size} />;
-		case "orbiting":
-			return <OrbitingPlanets size={size} />;
-		case "pie":
-			return <PieMenuToggle size={size} />;
-		case "rotary":
-			return <RotaryDial size={size} />;
 		case "scene":
 			return <SceneButton size={size} />;
 		case "segmented":
 			return <SegmentedToggle size={size} />;
 		default:
-			return <CyclicThemeButton size={size} />;
+			return <SegmentedToggle size={size} />;
 	}
 };
 

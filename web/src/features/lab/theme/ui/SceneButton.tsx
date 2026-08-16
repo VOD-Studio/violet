@@ -9,7 +9,7 @@ import { useThemeSwitcher } from "./use-theme-switcher";
  * 系统状态时显示自动切换的提示。点击按钮循环切换三态。
  */
 export function SceneButton({ size = "default" }: VariantProps) {
-	const containerCls = size === "sm" ? "h-10 w-20" : "h-16 w-28";
+	const containerCls = size === "sm" ? "h-10 w-20" : size === "lg" ? "h-20 w-36" : "h-16 w-28";
 	const { theme, switchTheme } = useThemeSwitcher();
 
 	const cycleOrder: ThemeOption[] = ["light", "dark", "system"];

@@ -1,7 +1,7 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { motion } from "motion/react";
 import { useId } from "react";
-import type { ThemeOption } from "./types";
+import type { ThemeOption, ThemeSize } from "./types";
 import { useThemeSwitcher } from "./use-theme-switcher";
 
 const choices: { value: ThemeOption; label: string; icon: typeof Sun }[] = [
@@ -10,9 +10,15 @@ const choices: { value: ThemeOption; label: string; icon: typeof Sun }[] = [
 	{ value: "system", label: "跟随系统", icon: Monitor },
 ];
 
+const dims: Record<ThemeSize, { pad: string; cell: string; icon: string }> = {
+	lg: { pad: "p-1.5", cell: "h-12 w-20", icon: "size-5" },
+	default: { pad: "p-1", cell: "h-9 w-16", icon: "size-4" },
+	sm: { pad: "p-0.5", cell: "size-7", icon: "size-3.5" },
+};
+
 interface SegmentedToggleProps {
-	/** 紧凑尺寸适配 Header 操作区，默认尺寸用于 theme-lab 展示 */
-	size?: "default" | "sm";
+	/** 紧凑尺寸适配 Header 操作区，lg/default 用于 theme-lab 陈列 */
+	size?: ThemeSize;
 }
 
 /**
@@ -25,13 +31,11 @@ export function SegmentedToggle({ size = "default" }: SegmentedToggleProps) {
 	const { theme, switchTheme } = useThemeSwitcher();
 	const layoutId = useId();
 
-	const compact = size === "sm";
+	const { pad, cell, icon } = dims[size];
 
 	return (
 		<div
-			className={`relative inline-flex items-center rounded-full border border-border bg-muted ${
-				compact ? "p-0.5" : "p-1"
-			}`}
+			className={`relative inline-flex items-center rounded-full border border-border bg-muted ${pad}`}
 			role="radiogroup"
 			aria-label="主题切换"
 		>
@@ -51,9 +55,7 @@ export function SegmentedToggle({ size = "default" }: SegmentedToggleProps) {
 								clientY: e.clientY,
 							})
 						}
-						className={`group relative z-10 flex items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${
-							compact ? "size-7" : "h-9 w-16"
-						}`}
+						className={`group relative z-10 flex items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${cell}`}
 					>
 						{isActive && (
 							<motion.div
@@ -64,9 +66,7 @@ export function SegmentedToggle({ size = "default" }: SegmentedToggleProps) {
 							/>
 						)}
 						<Icon
-							className={`relative z-10 transition-colors ${
-								compact ? "size-3.5" : "size-4"
-							} ${
+							className={`relative z-10 transition-colors ${icon} ${
 								isActive
 									? "text-foreground"
 									: "text-muted-foreground group-hover:text-foreground/80"

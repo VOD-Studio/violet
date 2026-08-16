@@ -21,8 +21,8 @@ export function CyclicThemeButton({ size = "default" }: VariantProps) {
 		switchTheme(next, { clientX: e.clientX, clientY: e.clientY });
 	};
 
-	const sizeCls = size === "sm" ? "size-9" : "size-12";
-	const iconCls = size === "sm" ? "size-4" : "size-5";
+	const sizeCls = size === "sm" ? "size-9" : size === "lg" ? "size-16" : "size-12";
+	const iconCls = size === "sm" ? "size-4" : size === "lg" ? "size-6" : "size-5";
 
 	return (
 		<button

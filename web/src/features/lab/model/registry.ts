@@ -33,7 +33,7 @@ export const LABS = [
 		to: "/lab/theme",
 		en: "Theme",
 		title: "主题切换器实验室",
-		description: "七种主题切换控件逐一试用。",
-		meta: "切换器 ×7",
+		description: "四种主题切换控件，按大、默认、小三档陈列。",
+		meta: "切换器 ×4",
 	},
 ] as const;

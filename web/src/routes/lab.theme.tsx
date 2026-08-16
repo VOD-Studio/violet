@@ -1,4 +1,4 @@
-import ThemeToggle, { type ThemeVariant } from "@features/lab/theme/ui";
+import ThemeToggle, { type ThemeSize, type ThemeVariant } from "@features/lab/theme/ui";
 import { Segmented } from "@shared/ui/segmented";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
@@ -11,24 +11,9 @@ const DIRECTIONS: { value: ThemeVariant; label: string; intent: string }[] = [
 		intent: "三段胶囊滑块，滑块滑移指示当前主题，图标加文字。生产 Header 现役方案，最稳。",
 	},
 	{
-		value: "rotary",
-		label: "旋钮",
-		intent: "点击中心后三个选项按 120° 扇形弹出，选后收拢并更新中心图标，弹出式保证点击区域够大。",
-	},
-	{
-		value: "pie",
-		label: "三分圆盘",
-		intent: "SVG 三等分圆盘展开，每个 120° 扇区对应一个主题，选中后收拢回中心图标。",
-	},
-	{
 		value: "cyclic",
 		label: "单键循环",
 		intent: "单按钮循环三态，图标缩放旋转形变，点击位置作圆形扩散起点。最省空间。",
-	},
-	{
-		value: "orbiting",
-		label: "天体轨道",
-		intent: "当前主题居中为主星，另两颗小行星沿椭圆轨道运行，点击小行星与主星交换位置。",
 	},
 	{
 		value: "cube",
@@ -42,12 +27,19 @@ const DIRECTIONS: { value: ThemeVariant; label: string; intent: string }[] = [
 	},
 ];
 
+/** 尺寸陈列档位：lg 是展示位大尺寸，sm 是 Header 生产尺寸 */
+const SIZE_LADDER: { size: ThemeSize; label: string }[] = [
+	{ size: "lg", label: "大" },
+	{ size: "default", label: "默认" },
+	{ size: "sm", label: "小" },
+];
+
 /**
  * /lab/theme - 主题切换器实验室
  *
  * 与其他 lab 同构：方向切换 Segmented + Intent 行 + 近生产预览框。
- * 预览框上半是页头实景（sm 尺寸，切换器的生产位在站点 Header 右侧），
- * 下半是 default 尺寸的居中交互台。控件无数据态，不设骨架/空态切换。
+ * theme 的预览是尺寸陈列：当前方向按 大 / 默认 / 小 三档纵向排列，
+ * 标签右对齐成阶梯读出比例关系。控件无数据态，不设骨架/空态切换。
  */
 function ThemeLab() {
 	const [direction, setDirection] = useState<ThemeVariant>("segmented");
@@ -64,7 +56,9 @@ function ThemeLab() {
 					Labs
 				</Link>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">主题切换器实验室</h1>
-				<p className="mx-auto max-w-xl text-muted-foreground">七种主题切换控件逐一试用。</p>
+				<p className="mx-auto max-w-xl text-muted-foreground">
+					四种主题切换控件，按大、默认、小三档陈列。
+				</p>
 			</div>
 
 			<section>
@@ -88,17 +82,16 @@ function ThemeLab() {
 						Preview · violet.blog · {active.label}
 					</p>
 
-					{/* 页头实景：切换器的生产位是站点 Header 右侧操作区 */}
-					<div className="flex items-center justify-between border-b border-edge-hairline pb-4">
-						<p className="pl-[0.22em] font-serif text-lg font-black tracking-[0.22em]">
-							VIOLET
-						</p>
-						<ThemeToggle variant={direction} size="sm" />
-					</div>
-
-					{/* 交互台：default 尺寸居中，预留扇形弹出/轨道/立方所需空间；key 随方向重挂载复位内部开合态 */}
-					<div key={direction} className="flex items-center justify-center py-20">
-						<ThemeToggle variant={direction} size="default" />
+					{/* 尺寸陈列：key 随方向重挂载，复位立方体朝向等内部状态 */}
+					<div key={direction} className="flex flex-col items-center gap-10 py-14">
+						{SIZE_LADDER.map(({ size, label }) => (
+							<div key={size} className="flex items-center justify-center gap-6">
+								<span className="w-8 text-right font-mono text-[10px] tracking-[0.2em] text-muted-foreground/70">
+									{label}
+								</span>
+								<ThemeToggle variant={direction} size={size} />
+							</div>
+						))}
 					</div>
 				</div>
 			</section>
