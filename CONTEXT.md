@@ -143,11 +143,11 @@ _Avoid_: 公告类型（历史上叫 `type`，既管颜色又被期待管布局�
 _Avoid_: 公告类型（同上，混淆了视觉与布局两个正交关注点）
 
 **翻牌横幅（banner 的渲染约定）—— 生产现役：N 面棱柱**:
-`banner` 形态由生产 `AnnouncementBar` 现役承担：N 条 banner 公告 = N 面棱柱，所有面绕 X 轴排列（每面 360/N 度），容器整体 `rotateX` 旋转到当前面；hover 暂停、滚轮可手动翻阅。旧翻牌候选原型（3D rotateX 翻转、翻立方）已于 2026-08-16 随公告实验室重做废弃删除。不变约束三条继续有效：(1) **排序权威是后端返回顺序**，前端不重排，`severity` 仅为纯视觉维度（配色 + 标签）；(2) **关闭即标记当前可见全部已读**（localStorage），新 id 出现才重现，状态不跨设备同步；(3) **WCAG 2.2.2 底线**——自动动画必须可暂停/停止，`prefers-reduced-motion` 下降级为静态可翻阅。
+`banner` 形态由生产 `AnnouncementBar` 现役承担：N 条 banner 公告 = N 面棱柱，所有面绕 X 轴排列（每面 360/N 度），容器整体 `rotateX` 旋转到当前面；hover 暂停、滚轮可手动翻阅。lab 内另陈列两个候选（渐隐轮换 / 滑轨推入）供对比，未选型换装前棱柱继续现役。旧翻牌候选原型（3D rotateX 翻转、翻立方）已于 2026-08-16 随公告实验室重做废弃删除。不变约束三条继续有效：(1) **排序权威是后端返回顺序**，前端不重排，`severity` 仅为纯视觉维度（配色 + 标签）；(2) **关闭即标记当前可见全部已读**（localStorage），新 id 出现才重现，状态不跨设备同步；(3) **WCAG 2.2.2 底线**——自动动画必须可暂停/停止，`prefers-reduced-motion` 下降级为静态可翻阅。
 _Avoid_: 通知条、横幅（未体现创意候选与 severity→标签映射）
 
 **announcement-lab（公告原型实验室）**:
-`/lab/announcement`（`/lab` 聚合路由子页，registry 注册）。2026-08-16 重做，仿 friends-lab 三态实验室：聚焦**首页公告区**（card / article 两形态）的三方向对比——事件日志（倒序 mono 日志流）/ 状态面板（status page 式健康总览 + 进行中 / 未生效 / 已收档分组）/ 告示板（severity 定纸张大小的层级张贴），配数据/骨架/空三态。静态 mock（7 条，覆盖四种 severity 与三种生命周期）不接 API。**事件日志方向已于同日选型落地生产**（首页 `AnnouncementFeed` 直接复用 lab 的 `EventLog`，先例同 theme toggle）。banner 形态不在本 lab 范围（见「翻牌横幅」）。旧内容（卡片 BorderGlow vs 极简对比、AnimatedList 详情时间轴预览、FlipX / CubeFlipY banner 原型）已全部废弃。
+`/lab/announcement`（`/lab` 聚合路由子页，registry 注册）。2026-08-16 重做并当日两轮扩容，两个对比面：**首页公告区**（card / article 两形态）五方向——事件日志（倒序 mono 日志流，已选型落生产）/ 状态面板（status page 式健康总览 + 进行中 / 未生效 / 已收档分组）/ 告示板（severity 定纸张大小的层级张贴）/ 速览带（横向无缝滚动的 NOTICE 带）/ 票据卷（等宽锯齿小票 + 存根联），配数据/骨架/空三态，静态 mock 不接 API。**顶部横幅**（banner 形态）三方向——棱柱旋转（生产现役基准）/ 渐隐轮换 / 滑轨推入（驻留进度线），共享 `useBannerTicker`（自动推进 + hover/focus 暂停 + 滚轮手动翻），三条不变约束在每个方向上保持。旧内容（卡片 BorderGlow vs 极简对比、AnimatedList 详情时间轴预览、FlipX / CubeFlipY banner 原型）已全部废弃。
 
 **事件日志流（首页公告区的渲染约定）—— 生产现役**:
 首页公告区渲染为一条站点运营事件日志（`AnnouncementFeed`，数据/骨架/空三态）：每行 = mono 时间戳 + severity 色点 + 三字母电码（INFO/WARN/OK/ERROR）+ 标题，一行一条、hairline 分隔。`card` 形态自包含不可点，`article` 形态整行链接入 `/announcements/:id` 简报（行尾箭头 hover 滑入）。进行中的 error / warning 行压左侧色边线；生命周期（未生效/进行中/已收档）由 `statusOf` 从停用位与生效窗口派生。排序权威是后端返回顺序，前端不重排（`EventLog` 纯渲染，倒序流由 lab 调用方自行 `byNewest`）。banner 形态不进事件流（顶部 AnnouncementBar 已承担，避免双曝光）。原 BorderGlow 卡片瀑布约定已废弃。
