@@ -8,34 +8,21 @@ import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
+import { Waterfall } from "./Waterfall";
 
 /**
  * CascadeFlow - 主轴瀑布
  *
- * 最新一篇做全宽主轴（封面 + 渐变遮罩 + 大字浮排，封面短促余韵 blur、
- * 文字清晰淡入上升）；其余走 CSS columns 自然高度瀑布流——封面自然宽高比、
- * 摘要不锁行数，「大小不一」是节奏不是缺陷。无封面/失效封面退化为排版卡
- * （№ 序号 + 大字标题），与图片卡交织出杂志感。卡片用全站签名 SpotlightCard
- * 冷光 + 上浮 + 封面缩放三层 hover。
+ * 最新一篇做全宽主轴(封面 + 渐变遮罩 + 大字浮排),其余走 Waterfall 分列
+ * 瀑布;无封面/失效封面退化为排版卡(№ 序号 + 大字标题)。
  */
-export function CascadeFlow({ posts, noHero }: { posts: Post[]; noHero?: boolean }) {
+export function CascadeFlow({ posts }: { posts: Post[] }) {
 	const [hero, ...rest] = posts;
 	if (!hero) return null;
-	// noHero：追加页等场景全部走瀑布流，不再出主轴
-	if (noHero) {
-		return (
-			<div className="columns-1 gap-6 sm:columns-2 lg:columns-3">
-				{posts.map((p, i) => (
-					<CascadeCard key={p.id} post={p} index={i} />
-				))}
-			</div>
-		);
-	}
 
 	return (
 		<div>
-			{/* ===== 主轴 hero =====
-				文字必须清晰入场（blur 会牺牲正文可读性），余韵 blur 只留给封面图 */}
+			{/* 文字必须清晰入场(blur 会牺牲正文可读性),余韵 blur 只留给封面图 */}
 			<motion.div
 				initial={{ opacity: 0, y: 16 }}
 				animate={{ opacity: 1, y: 0 }}
@@ -68,17 +55,12 @@ export function CascadeFlow({ posts, noHero }: { posts: Post[]; noHero?: boolean
 				</Link>
 			</motion.div>
 
-			{/* ===== 瀑布流 ===== */}
-			<div className="columns-1 gap-6 sm:columns-2 lg:columns-3">
-				{rest.map((p, i) => (
-					<CascadeCard key={p.id} post={p} index={i} />
-				))}
-			</div>
+			<Waterfall posts={rest} />
 		</div>
 	);
 }
 
-/** hero 封面：有图自然比例 21:9，失效/缺失退化为品牌渐变底 */
+/** hero 封面:有图自然比例 21:9,失效/缺失退化为品牌渐变底 */
 function HeroCover({ post }: { post: Post }) {
 	const [brokenFor, setBrokenFor] = useState<string | null>(null);
 	if (!post.cover_image || brokenFor === post.cover_image) {
@@ -99,7 +81,7 @@ function HeroCover({ post }: { post: Post }) {
 	);
 }
 
-function CascadeCard({ post, index }: { post: Post; index: number }) {
+export function CascadeCard({ post, index }: { post: Post; index: number }) {
 	const reduce = useReducedMotion();
 	const [brokenFor, setBrokenFor] = useState<string | null>(null);
 	const coverBroken = brokenFor === post.cover_image;
