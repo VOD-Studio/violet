@@ -6,13 +6,16 @@ import { createFileRoute } from "@tanstack/react-router";
 function TweetsPage() {
 	return (
 		<PageShell>
-			<header className="mb-8">
-				<p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
-					Timeline
-				</p>
-				<h1 className="font-mono text-4xl font-bold">推文</h1>
-			</header>
-			<TweetTimeline />
+			{/* 页头随时间线同列对齐(话题页同构),避免贴宽容器左缘与内容错位 */}
+			<div className="mx-auto w-full max-w-2xl">
+				<header className="mb-10">
+					<p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground">
+						Timeline
+					</p>
+					<h1 className="font-mono text-4xl font-bold">推文</h1>
+				</header>
+				<TweetTimeline />
+			</div>
 		</PageShell>
 	);
 }
