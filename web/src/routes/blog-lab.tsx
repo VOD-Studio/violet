@@ -40,7 +40,7 @@ const DIRECTIONS: { value: LabDirection; label: string; intent: string }[] = [
 	{
 		value: "bento",
 		label: "织纹 Bento",
-		intent: "确定性跨格节奏：6 篇恰好铺满 4×3 一循环（零留白），文字浮于图上，格子交错缩放入场。图主导、律动最强。",
+		intent: "确定性跨格节奏：6 篇恰好铺满 4×3 一循环（零留白），文字浮于图上，格子交错缩放入场。无图格退化为排版织块（织线纹理面 + 按格型分级的字块），死图数据下尺寸节奏靠字级与信息密度保持。图主导、律动最强。",
 	},
 	{
 		value: "paper",
