@@ -147,18 +147,18 @@ _Avoid_: 公告类型（同上，混淆了视觉与布局两个正交关注点�
 _Avoid_: 通知条、横幅（未体现创意候选与 severity→标签映射）
 
 **announcement-lab（公告原型实验室）**:
-`/lab/announcement`（`/lab` 聚合路由子页，registry 注册）。2026-08-16 重做并当日两轮扩容，两个对比面：**首页公告区**（card / article 两形态）五方向——事件日志（倒序 mono 日志流，曾落生产后让位）/ 状态面板（status page 式健康总览 + 进行中 / 未生效 / 已收档分组）/ 告示板（severity 定纸张大小的层级张贴，**现役**——2026-08-16 二次选型落生产首页）/ 速览带（横向无缝滚动的 NOTICE 带）/ 票据卷（等宽锯齿小票 + 存根联），配数据/骨架/空三态，静态 mock 不接 API。**顶部横幅**（banner 形态）四方向——棱柱旋转（**正交 3D 滚筒修复版**：N 面实体棱柱（面底色比槽底亮一档 + 细轮廓），**无 perspective 正交投影**（机场翻牌屏式——单点透视的近大远小与梯形畸变会被读作「特意放大再缩小」）；旋转角用**累计角度**（落定角上按方向 ±360/n 单调步进），按 index 推导目标角会在循环边界（第 n 条翻回第 1 条）反向倒转一大圈、观感是「重置」；动画落定后切无 transform 静态层根治文字模糊；n=2 特判半面厚度；面板分布公式 r=(h/2)/tan(π/N) 同 desandro 3D carousel）/ 渐隐轮换 / 滑轨推入（驻留进度线）/ 电传打字（逐字打出 → 驻留 → 退格清屏，**现役**——2026-08-16 选型落生产 AnnouncementBar）。共享 `useBannerTicker`：单一 rAF 时钟同时驱动换页与进度（hover/focus 暂停、滚轮手动翻作用于同一时钟，永不漂移）；滚轮接管用原生非被动监听，且**对任何非零 delta 都 preventDefault + 400ms 翻页冷却**——触控板惯性是大量小 delta 事件，按阈值放行会让页面跟着滚（React 合成 wheel 是 passive 的教训之外的第二课）。三条不变约束在每个方向上保持。旧内容（卡片 BorderGlow vs 极简对比、AnimatedList 详情时间轴预览、FlipX / CubeFlipY banner 原型）已全部废弃。
+`/lab/announcement`（`/lab` 聚合路由子页，registry 注册）。2026-08-16 重做并当日两轮扩容，两个对比面：**首页公告区**（card / article 两形态）六方向——事件日志（倒序 mono 日志流，曾落生产后让位）/ 状态面板（status page 式健康总览 + 进行中 / 未生效 / 已收档分组）/ 告示板（severity 定纸张大小的层级张贴，曾落生产后因布告栏气质与首页不搭让位）/ 编辑索引（/lab 索引页同款目录语言：字号 / 字重 / 摘要行做层级，**现役**——2026-08-16 三次选型落生产首页）/ 速览带（横向无缝滚动的 NOTICE 带）/ 票据卷（等宽锯齿小票 + 存根联），配数据/骨架/空三态，静态 mock 不接 API。**顶部横幅**（banner 形态）四方向——棱柱旋转（**正交 3D 滚筒修复版**：N 面实体棱柱（面底色比槽底亮一档 + 细轮廓），**无 perspective 正交投影**（机场翻牌屏式——单点透视的近大远小与梯形畸变会被读作「特意放大再缩小」）；旋转角用**累计角度**（落定角上按方向 ±360/n 单调步进），按 index 推导目标角会在循环边界（第 n 条翻回第 1 条）反向倒转一大圈、观感是「重置」；动画落定后切无 transform 静态层根治文字模糊；n=2 特判半面厚度；面板分布公式 r=(h/2)/tan(π/N) 同 desandro 3D carousel）/ 渐隐轮换 / 滑轨推入（驻留进度线）/ 电传打字（逐字打出 → 驻留 → 退格清屏，**现役**——2026-08-16 选型落生产 AnnouncementBar）。共享 `useBannerTicker`：单一 rAF 时钟同时驱动换页与进度（hover/focus 暂停、滚轮手动翻作用于同一时钟，永不漂移）；滚轮接管用原生非被动监听，且**对任何非零 delta 都 preventDefault + 400ms 翻页冷却**——触控板惯性是大量小 delta 事件，按阈值放行会让页面跟着滚（React 合成 wheel 是 passive 的教训之外的第二课）。三条不变约束在每个方向上保持。旧内容（卡片 BorderGlow vs 极简对比、AnimatedList 详情时间轴预览、FlipX / CubeFlipY banner 原型）已全部废弃。
 
-**告示板（首页公告区的渲染约定）—— 生产现役**:
-首页公告区渲染为布告栏（`AnnouncementFeed`，数据/骨架/空三态，直接复用 lab 的 `NoticeBoard`）：severity 与生命周期决定纸张大小——进行中的故障与维护是整栏大告示，发布动态是半栏中告示，日常信息与已收档是指甲盖小票据（1/3 宽）。图钉颜色跟 severity 走，已收档褪色盖戳；kicker 用布告语汇（通知/维护/发布/故障）。`card` 形态整纸不可点读完即止，`article` 形态整纸链接入 `/announcements/:id` 简报（hover 抚平旋转并拿起）。banner 形态不进告示板（顶部 AnnouncementBar 已承担，避免双曝光）。排序权威是后端返回顺序，前端不重排（`NoticeBoard` 纯渲染）。前现役事件日志流（2026-08-16 同日曾选型）回 lab 候选池。
-_Avoid_: 卡片瀑布、通知卡片（公告是运营事件不是内容卡片）
+**编辑索引（首页公告区的渲染约定）—— 生产现役**:
+首页公告区渲染为 /lab 索引页同款目录（`AnnouncementFeed`，数据/骨架/空三态，直接复用 lab 的 `EditorialIndex`）：栏头（ANNOUNCEMENTS · N）+ hairline 行条目 + 序号，公告区是首页内嵌的一页目录。层级不靠卡片尺寸，靠**字号 / 字重 / 摘要行**——进行中的故障与维护（active error / scheduled+active warning）标题更大且带一行摘要，发布动态常规字重，日常信息与已收档是紧凑小字行且整体淡化。severity 只用色点，行尾状态用中文（进行中 / 未生效 / 已收档 / 简报 →）。`card` 形态整行不可点读完即止，`article` 形态整行链接入 `/announcements/:id` 简报。banner 形态不进索引（顶部 AnnouncementBar 已承担，避免双曝光）。排序权威是后端返回顺序，前端不重排（`EditorialIndex` 纯渲染）。前现役：事件日志流 → 告示板（均 2026-08-16 一日内选型，告示板因布告栏气质与首页编辑排版不搭让位，回 lab 候选池）。
+_Avoid_: 卡片瀑布、通知卡片（公告是运营事件不是内容卡片）；布告栏 / 终端 UI 拟物（与首页编辑排版气质不符）
 
 **通知卡片（card 形态的渲染约定）—— 已废弃，并入事件日志流**:
 `card` 形态的核心约束不变：**自包含、无封面图、不可点击、无详情页**——`content`/`excerpt` 读完即止。渲染不再是独立卡片：card 与 article 一起进首页**事件日志流**（见「事件日志流」词条），card 渲染为不可点的日志行。原 BorderGlow 发光卡片 + BlurText 标题渐显 + Counter 数字滚动约定已废弃（2026-08-16）。
 _Avoid_: 文章卡片、PostCard（混淆了通知与作品）
 
 **简报（article 形态的渲染约定）**:
-`article` 形态渲染为**简报入口 + 详情页**两层。首页事件日志流中是入口：整行可点（行尾箭头），跳转 `/announcements/:id` 详情页。详情页是简报，不是文章详情页：无 TOC、无作者头像组、无浏览量。详情页结构：severity 徽章 + **静态渲染的标题**（与文章详情页一致，文字不做模糊/逐词入场动画）+ affects chip 标签 + `ArticleContent` 渲染 `content_html ?? content_md` 正文 + footer（确认已读用 `Magnet` 磁吸 / 复制 ID / 返回）。severity 配色同样走 `shared/announcement-severity`。
+`article` 形态渲染为**简报入口 + 详情页**两层。首页事件日志流中是入口：整行可点（行尾箭头），跳转 `/announcements/:id` 详情页。详情页是简报，不是文章详情页：无 TOC、无作者头像组、无浏览量。详情页（2026-08-16 重做，对齐文章详情页排版）：容器 + BackLink + 居中头部（severity 中文标签 + № + 生效状态脉冲点的 eyebrow、mono 静态大标题、发布时间 / 生效窗口 / 影响范围 meta 行）+ `ArticleContent` 渲染 `content_html ?? content_md` 正文 + footer 轻量动作（确认已读 / 复制 ID）。无圆角卡片壳、无 react-bits 微交互。severity 配色同样走 `shared/announcement-severity`。
 _Avoid_: 文章详情页、blog/$slug（混淆了简报与文章阅读）
 
 **影响范围（Affects）**:
@@ -187,7 +187,7 @@ _Avoid_: 公开 server（未区分通道语义）、reader API（HTTP REST 语�
 公开通道 Resources 用 `blog://` scheme（品牌解耦，非 `violet://`，因 scheme 是长期标识符）。路径段编码文章状态：`blog://posts/{slug}` = 已发布（reader 注册）；`blog://drafts/{slug}` = 草稿（仅 `polish_draft` prompt 内部 embed 用，reader 不注册，保持公开通道仅 published 边界）。区分原因是 `EmbeddedResource.URI` 是可寻址标识，agent 可能 `resources/read` 它，草稿必须用独立 URI 避免读到内容不符的已发布旧版。
 
 **react-bits 组件依赖**:
-公告 card/article 视觉依赖 react-bits（`https://reactbits.dev/`）的以下组件，项目已配置 `@react-bits` registry（shadcn），用 `pnpm dlx shadcn@latest add @react-bits/<Name>-TS-TW` 安装到 `web/src/shared/vendor/react-bits/`。**仍在使用**：`Magnet`（公告详情页按钮磁吸）、`DecryptedText`（empty / 404 状态）、`SpotlightCard`（PostCard / 批注卡）。注意：`FluidGlass`（依赖 three.js）与 `SplitText`（依赖 GSAP 商用插件）曾试用后已移除；`ClickSpark`、`Aurora`、`GradientText`、`ParticleField`、`ShinyText`、`CountUp`、`Counter`、`AnimatedList`、`BlurText`、`BorderGlow`（公告展示 2026-08-16 换事件日志流与静态标题后无消费方）等历史原型组件也已移除，不要再装。
+公告 card/article 视觉依赖 react-bits（`https://reactbits.dev/`）的以下组件，项目已配置 `@react-bits` registry（shadcn），用 `pnpm dlx shadcn@latest add @react-bits/<Name>-TS-TW` 安装到 `web/src/shared/vendor/react-bits/`。**仍在使用**：`DecryptedText`（empty / 404 状态）、`SpotlightCard`（PostCard / 批注卡）。注意：`FluidGlass`（依赖 three.js）与 `SplitText`（依赖 GSAP 商用插件）曾试用后已移除；`ClickSpark`、`Aurora`、`GradientText`、`ParticleField`、`ShinyText`、`CountUp`、`Counter`、`AnimatedList`、`BlurText`、`BorderGlow`、`Magnet`（公告展示 2026-08-16 多轮重做后无消费方）等历史原型组件也已移除，不要再装。
 
 
 ## MCP 通道（MCP Channels）
