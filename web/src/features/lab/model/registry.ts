@@ -10,14 +10,14 @@ export const LABS = [
 		to: "/lab/blog",
 		en: "Blog",
 		title: "博客排版实验室",
-		description: "/blog 列表页的候选排版方向对比，真实文章数据渲染，含动效与三态。",
+		description: "博客列表页（/blog）的候选排版方向对比，真实文章数据渲染，含动效与三态。",
 		meta: "8 方向 · 真实数据",
 	},
 	{
 		to: "/lab/friends",
 		en: "Friends",
 		title: "友链原型实验室",
-		description: "/friends 页的候选视觉方向对比，附「交换名片」申请弹窗的交互仪式原型。",
+		description: "友链页（/friends）的候选视觉方向对比，附「交换名片」申请弹窗的交互仪式原型。",
 		meta: "3 方向 · 静态 mock",
 	},
 	{
