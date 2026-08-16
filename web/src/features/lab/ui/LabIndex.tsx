@@ -16,9 +16,7 @@ export function LabIndex() {
 					Lab
 				</p>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">原型实验室</h1>
-				<p className="mx-auto max-w-xl text-muted-foreground">
-					并排对比站内页面的候选设计方案。
-				</p>
+				<p className="mx-auto max-w-xl text-muted-foreground">站内页面的设计方案库。</p>
 			</div>
 
 			<div className="grid gap-4 md:grid-cols-2">

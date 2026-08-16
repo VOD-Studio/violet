@@ -57,7 +57,7 @@ function FriendsLab() {
 				</Link>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">友链原型实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
-					友链页候选视觉方案的并排对比，示例数据。
+					友链页的三套视觉方案，附申请弹窗交互原型。
 				</p>
 			</div>
 

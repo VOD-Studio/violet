@@ -341,7 +341,7 @@ function AnnouncementLab() {
 				</Link>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">公告原型实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
-					公告卡片与详情页的原型对比，附历史 banner 原型。
+					公告卡片与详情页的原型方案，附历史 banner 原型。
 				</p>
 			</div>
 

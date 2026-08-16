@@ -106,7 +106,7 @@ function BlogLab() {
 				</Link>
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">博客排版实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
-					博客列表页候选排版方案的并排对比，真实文章数据渲染。
+					博客列表页的八套排版方案，任选一套替换到正式页面。
 				</p>
 			</div>
 
