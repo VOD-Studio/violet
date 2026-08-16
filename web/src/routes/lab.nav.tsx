@@ -1,10 +1,10 @@
+import { BackLink } from "@features/lab/nav/ui/BackLink";
 import { FloatingBackButton } from "@features/lab/nav/ui/FloatingBackButton";
 import { ProgressBackRail } from "@features/lab/nav/ui/ProgressBackRail";
 import { ScrollRevealChip } from "@features/lab/nav/ui/ScrollRevealChip";
 import { StickyBackBar } from "@features/lab/nav/ui/StickyBackBar";
 import { Segmented } from "@shared/ui/segmented";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 type NavDirection = "sticky" | "fab" | "reveal" | "progress";
@@ -35,10 +35,11 @@ const DIRECTIONS: { value: NavDirection; label: string; intent: string }[] = [
 /**
  * /lab/nav - 返回导航实验室
  *
- * 问题：返回入口只存在于页头（「← Labs」「← 博客」），滚动到中段后
- * 完全离场。四个候选方向在同一个可滚动演示长文里对比，覆盖四种
+ * 问题：返回入口只存在于页头，滚动到中段后完全离场。常态入口已
+ * 统一为页头返回胶囊（BackLink，lab 页头与文章页头共用，即本页
+ * 页头那颗）；滚动离场后的接管策略由四个候选方向对比，覆盖四种
  * 位置哲学：顶（吸顶）/ 侧（浮钮）/ 底（上滑显现）/ 线（进度）。
- * 选定方向后落到 lab 页头与文章详情页。
+ * 选定方向后落到文章详情页。
  */
 function NavLab() {
 	const [direction, setDirection] = useState<NavDirection>("sticky");
@@ -47,16 +48,10 @@ function NavLab() {
 	return (
 		<div className="container mx-auto px-6 py-24">
 			<div className="mb-16 text-center">
-				<Link
-					to="/lab"
-					className="mb-6 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.25em] text-muted-foreground uppercase transition-colors hover:text-foreground"
-				>
-					<ArrowLeft className="size-3.5" />
-					Labs
-				</Link>
+				<BackLink to="/lab" label="Labs" className="mb-6" />
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">返回导航实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
-					长页面滚动后仍可达的四种返回方案。
+					常态入口统一为页头返回胶囊，滚动离场后由四种方向接管。
 				</p>
 			</div>
 

@@ -1,6 +1,7 @@
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
-import { ArrowLeft, Calendar, Eye } from "lucide-react";
+import { Calendar, Eye } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
+import { BackLink } from "./BackLink";
 
 const DEMO_MARKDOWN = [
 	"返回入口的传统位置在文章头之上，阅读到中段后完全离场——退路应该跟着读者走，还是留在原地等读者回来。",
@@ -54,10 +55,7 @@ export function DemoStage({
 export function DemoHeader() {
 	return (
 		<header className="mx-auto mb-12 max-w-3xl px-6 pt-16 md:px-10">
-			<p className="mb-8 inline-flex cursor-pointer items-center gap-1.5 text-sm text-muted-foreground">
-				<ArrowLeft className="size-4" />
-				博客
-			</p>
+			<BackLink label="博客" className="mb-8" />
 			<div className="mb-4 flex flex-wrap gap-2">
 				{["演示", "返回导航"].map((tag) => (
 					<span

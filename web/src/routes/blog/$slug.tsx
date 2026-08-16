@@ -2,6 +2,7 @@ import type { PostDetail } from "@entities/post/model/types";
 import { useMe } from "@features/auth/api/queries";
 import { commentKeys } from "@features/comments/api/keys";
 import { fetchAnnotationSummary, useAnnotationSummary } from "@features/comments/api/queries";
+import { BackLink } from "@features/lab/nav/ui/BackLink";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPostBySlug, usePost } from "@features/posts/api/queries";
 import ArticleToc from "@features/posts/ui/ArticleToc";
@@ -135,17 +136,10 @@ function BlogDetailPage() {
 			</div>
 
 			<article className="container mx-auto px-6 py-16">
-				{/* 返回链接 */}
-				<Link
-					to="/blog"
-					className="mb-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-				>
-					<ArrowLeft className="size-4" />
-					博客
-				</Link>
-
 				{/* 文章头 */}
 				<header className="mx-auto mb-12 max-w-3xl">
+					<BackLink to="/blog" label="博客" className="mb-8" />
+
 					{/* 标签 */}
 					{post.tags.length > 0 ? (
 						<div className="mb-4 flex flex-wrap gap-2">

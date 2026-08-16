@@ -1,4 +1,5 @@
 import { CubeFlipY, FlipX } from "@features/lab/announcement";
+import { BackLink } from "@features/lab/nav/ui/BackLink";
 import type { Announcement } from "@features/settings/model/types";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import AnimatedList from "@vendor/react-bits/AnimatedList";
@@ -332,13 +333,7 @@ function AnnouncementLab() {
 	return (
 		<div className="container mx-auto px-6 py-24">
 			<div className="mb-16 text-center">
-				<Link
-					to="/lab"
-					className="mb-6 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.25em] text-muted-foreground uppercase transition-colors hover:text-foreground"
-				>
-					<ArrowLeft className="size-3.5" />
-					Labs
-				</Link>
+				<BackLink to="/lab" label="Labs" className="mb-6" />
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">公告原型实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
 					公告卡片与详情页的原型方案，附历史 banner 原型。

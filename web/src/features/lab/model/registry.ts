@@ -40,7 +40,7 @@ export const LABS = [
 		to: "/lab/nav",
 		en: "Back Nav",
 		title: "返回导航实验室",
-		description: "长页面滚动后仍可达的四种返回方案，滚动演示区对比。",
+		description: "常态返回胶囊已落地全站页头，滚动后四种接管方案对比。",
 		meta: "方案 ×4",
 	},
 ] as const;

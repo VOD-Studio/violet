@@ -1,7 +1,7 @@
+import { BackLink } from "@features/lab/nav/ui/BackLink";
 import ThemeToggle, { type ThemeSize, type ThemeVariant } from "@features/lab/theme/ui";
 import { Segmented } from "@shared/ui/segmented";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 const DIRECTIONS: { value: ThemeVariant; label: string; intent: string }[] = [
@@ -48,13 +48,7 @@ function ThemeLab() {
 	return (
 		<div className="container mx-auto px-6 py-24">
 			<div className="mb-16 text-center">
-				<Link
-					to="/lab"
-					className="mb-6 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.25em] text-muted-foreground uppercase transition-colors hover:text-foreground"
-				>
-					<ArrowLeft className="size-3.5" />
-					Labs
-				</Link>
+				<BackLink to="/lab" label="Labs" className="mb-6" />
 				<h1 className="mb-4 text-4xl font-bold tracking-tight">主题切换器实验室</h1>
 				<p className="mx-auto max-w-xl text-muted-foreground">
 					四种主题切换控件，按大、默认、小三档陈列。
