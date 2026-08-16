@@ -57,6 +57,10 @@ export default function AnnouncementBar() {
 	const [chars, setChars] = useState(0);
 	const [phase, setPhase] = useState<Phase>("typing");
 	const [paused, setPaused] = useState(false);
+	// 已读标记在 localStorage（客户端概念），SSR 与 hydration 首帧不渲染
+	// 横幅——否则 SSR 渲染的条会在 hydration 读到已读后被移除，闪现空壳
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => setMounted(true), []);
 
 	// 打字状态机最新值进 ref：rAF 循环里读写，避免每帧重建循环
 	const stateRef = useRef({ index, chars, phase });
@@ -64,6 +68,16 @@ export default function AnnouncementBar() {
 	const accRef = useRef(0); // 当前阶段已积累 ms
 
 	const current = banners[index];
+
+	// 首条公告跳过打字机直接全显：数据到达的瞬间条已是完整内容，
+	// 不出现「空深条 + 光标」的空壳开场；打字动画留给后续轮换
+	const bootedRef = useRef(false);
+	useEffect(() => {
+		if (bootedRef.current || banners.length === 0) return;
+		bootedRef.current = true;
+		setChars(banners[0].content.length);
+		setPhase("holding");
+	}, [banners]);
 
 	// 打字节拍：rAF 累积 dt 推进状态机，暂停即冻结（reduced 下不跑）
 	useEffect(() => {
@@ -150,7 +164,7 @@ export default function AnnouncementBar() {
 		}
 	};
 
-	if (!current) return null;
+	if (!mounted || !current) return null;
 	const cfg = getAnnouncementSev(current.severity);
 	const text = current.content.slice(0, chars);
 
