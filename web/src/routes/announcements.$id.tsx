@@ -2,10 +2,9 @@
  * /announcements/$id - 公告详情页（article 形态）
  *
  * 视觉语言：
- * - 标题用 BlurText 按词模糊渐显
+ * - 标题静态渲染，与文章详情页一致（文字不做模糊/逐词入场动画）
  * - 按钮用 Magnet 磁吸微交互
  * - severity 配色走 shared/announcement-severity（shadcn 色阶）
- * - 去掉硬编码 hex 与 font-mono 装饰
  */
 
 import { useAnnouncement } from "@features/settings/api/queries";
@@ -13,7 +12,6 @@ import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-prev
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import BlurText from "@vendor/react-bits/BlurText";
 import Magnet from "@vendor/react-bits/Magnet";
 import { ArrowLeft, Check, Copy } from "lucide-react";
 import { useState } from "react";
@@ -107,13 +105,7 @@ function AnnouncementDetailPage() {
 							{a.is_active === false ? "已失效" : "生效中"}
 						</span>
 					</div>
-					<BlurText
-						text={a.title}
-						animateBy="words"
-						stepDuration={0.4}
-						delay={60}
-						className="text-2xl font-bold leading-tight text-foreground"
-					/>
+					<h1 className="text-2xl font-bold leading-tight text-foreground">{a.title}</h1>
 				</header>
 
 				{/* affects */}
