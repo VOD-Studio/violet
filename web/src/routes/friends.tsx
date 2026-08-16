@@ -25,6 +25,8 @@ function FriendsPage() {
 	const isLoggedIn = !!user;
 	const currentUsername = user?.username;
 	const [applyOpen, setApplyOpen] = useState(false);
+	// 空态自带「递出第一张名片」主行动作，此时常驻入口收敛掉，避免同屏双入口
+	const isEmpty = !isLoading && !error && (!links || links.length === 0);
 
 	return (
 		<PageShell>
@@ -35,10 +37,12 @@ function FriendsPage() {
 					</p>
 					<h1 className="font-mono text-4xl font-bold">友链</h1>
 				</div>
-				<Button variant="outline" onClick={() => setApplyOpen(true)}>
-					<Plus className="size-4" />
-					申请友链
-				</Button>
+				{!isEmpty ? (
+					<Button variant="outline" onClick={() => setApplyOpen(true)}>
+						<Plus className="size-4" />
+						申请友链
+					</Button>
+				) : null}
 			</header>
 
 			{isLoading ? (

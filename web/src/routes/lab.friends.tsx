@@ -96,10 +96,13 @@ function FriendsLab() {
 							</p>
 							<h3 className="font-mono text-4xl font-bold">友链</h3>
 						</div>
-						<Button variant="outline" onClick={() => setApplyOpen(true)}>
-							<Plus className="size-4" />
-							申请友链
-						</Button>
+						{/* 空态自带「递出第一张名片」主行动作，此时常驻入口收敛掉，避免同屏双入口 */}
+						{preview !== "empty" ? (
+							<Button variant="outline" onClick={() => setApplyOpen(true)}>
+								<Plus className="size-4" />
+								申请友链
+							</Button>
+						) : null}
 					</header>
 
 					{preview === "data" ? (
