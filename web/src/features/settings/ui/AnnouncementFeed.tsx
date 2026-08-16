@@ -1,15 +1,15 @@
 import { AnnouncementSkeleton } from "@features/lab/announcement/ui/AnnouncementSkeleton";
-import { NoticeBoard } from "@features/lab/announcement/ui/NoticeBoard";
+import { EditorialIndex } from "@features/lab/announcement/ui/EditorialIndex";
 import { useAnnouncements } from "@features/settings/api/queries";
 import Empty from "@shared/ui/empty";
 
 /**
- * AnnouncementFeed - 首页公告区（告示板方向）
+ * AnnouncementFeed - 首页公告区（编辑索引方向）
  *
- * 公告实验室选型落地：告示板方向（/lab/announcement）升为现役。
- * banner 形态在此排除——顶部 AnnouncementBar 已承担，告示板只收
+ * 公告实验室选型落地：编辑索引方向（/lab/announcement）升为现役（/lab 索引页同款目录语言：栏头 + hairline 行条目 + 序号，字号 / 字重 / 摘要行做层级）。
+ * banner 形态在此排除——顶部 AnnouncementBar 已承担，索引只收
  * card / article，避免同一条公告双曝光。排序权威是后端返回顺序
- * （sort_order ASC, created_at DESC），前端不重排（NoticeBoard
+ * （sort_order ASC, created_at DESC），前端不重排（EditorialIndex
  * 纯渲染）。
  */
 export default function AnnouncementFeed() {
@@ -17,7 +17,7 @@ export default function AnnouncementFeed() {
 	const items = (data ?? []).filter((a) => a.display !== "banner");
 
 	if (isLoading) {
-		return <AnnouncementSkeleton direction="board" />;
+		return <AnnouncementSkeleton direction="editorial" />;
 	}
 
 	if (isError) {
@@ -40,5 +40,5 @@ export default function AnnouncementFeed() {
 		);
 	}
 
-	return <NoticeBoard items={items} />;
+	return <EditorialIndex items={items} />;
 }

@@ -8,6 +8,7 @@ import { BannerCrossfade } from "@features/lab/announcement/ui/BannerCrossfade";
 import { BannerPrism } from "@features/lab/announcement/ui/BannerPrism";
 import { BannerSlide } from "@features/lab/announcement/ui/BannerSlide";
 import { BannerTeletype } from "@features/lab/announcement/ui/BannerTeletype";
+import { EditorialIndex } from "@features/lab/announcement/ui/EditorialIndex";
 import { EventLog } from "@features/lab/announcement/ui/EventLog";
 import { NoticeBoard } from "@features/lab/announcement/ui/NoticeBoard";
 import { Receipts } from "@features/lab/announcement/ui/Receipts";
@@ -26,7 +27,7 @@ const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string 
 	{
 		value: "log",
 		label: "事件日志",
-		intent: "公告是站点的运营日志：倒序事件流一行一条，mono 时间戳 + 三字母电码 + 色点，进行中的故障与维护压色边线。占地最小、密度最高，已落生产首页。",
+		intent: "公告是站点的运营日志：倒序事件流一行一条，mono 时间戳 + 三字母电码 + 色点，进行中的故障与维护压色边线。占地最小、密度最高，最安静的一版（曾落生产，现让位）。",
 	},
 	{
 		value: "status",
@@ -47,6 +48,11 @@ const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string 
 		value: "receipts",
 		label: "票据卷",
 		intent: "公告是系统开出的票据：等宽打印小票无大小层级，锯齿毛边 + 虚线撕裂线 + 存根联（条码 / 编号 / 状态章），article 的存根联就是简报入口。与告示板的层级张贴错开。",
+	},
+	{
+		value: "editorial",
+		label: "编辑索引",
+		intent: "/lab 索引页的同款目录语言：栏头 + hairline 行条目 + 序号，公告区是首页内嵌的一页目录。层级不靠卡片尺寸，靠字号 / 字重 / 摘要行——故障与维护标题更大且带摘要，日常信息是紧凑小字行。severity 只用色点（生产现役）。",
 	},
 ];
 
@@ -155,6 +161,9 @@ function AnnouncementLab() {
 							) : null}
 							{direction === "receipts" ? (
 								<Receipts items={MOCK_ANNOUNCEMENTS} />
+							) : null}
+							{direction === "editorial" ? (
+								<EditorialIndex items={byNewest(MOCK_ANNOUNCEMENTS)} />
 							) : null}
 						</div>
 					) : null}

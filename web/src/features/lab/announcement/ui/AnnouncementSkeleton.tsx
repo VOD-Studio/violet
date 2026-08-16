@@ -1,6 +1,12 @@
 import { ShimmerSkeleton } from "@shared/ui/shimmer-skeleton";
 
-export type AnnouncementDirection = "log" | "status" | "board" | "ticker" | "receipts";
+export type AnnouncementDirection =
+	| "log"
+	| "status"
+	| "board"
+	| "ticker"
+	| "receipts"
+	| "editorial";
 
 /**
  * AnnouncementSkeleton - 各方向的骨架屏预览
@@ -64,6 +70,33 @@ export function AnnouncementSkeleton({ direction }: { direction: AnnouncementDir
 								<ShimmerSkeleton className="h-2.5 w-10" />
 							</div>
 						))}
+					</div>
+				))}
+			</div>
+		);
+	}
+
+	if (direction === "editorial") {
+		return (
+			<div>
+				<div className="flex justify-between border-b border-edge-hairline pb-2.5">
+					<ShimmerSkeleton className="h-2.5 w-36" />
+					<ShimmerSkeleton className="h-2.5 w-10" />
+				</div>
+				{[true, true, false, false, false].map((major, i) => (
+					<div
+						key={i}
+						className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-5 border-b border-edge-hairline px-2 py-3.5 last:border-b-0"
+					>
+						<ShimmerSkeleton className="h-4 w-6" />
+						<span>
+							<ShimmerSkeleton
+								className={major ? "h-5" : "h-3.5"}
+								style={{ width: `${72 - i * 10}%` }}
+							/>
+							{major ? <ShimmerSkeleton className="mt-1.5 h-2.5 w-3/5" /> : null}
+						</span>
+						<ShimmerSkeleton className="h-2.5 w-14" />
 					</div>
 				))}
 			</div>
