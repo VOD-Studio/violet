@@ -434,7 +434,7 @@ function AdminPostsPage() {
 				storageKey="admin-posts-columns"
 				caption="文章列表"
 				emptyTitle="暂无文章"
-				emptyDescription="点击右上角「新建文章」开始创作"
+				emptyDescription="还没有发布任何文章"
 			/>
 			<ConfirmDialog
 				open={deleteOpen}

@@ -266,7 +266,7 @@ function AdminMediaPage() {
 			) : files.length === 0 ? (
 				<div className="flex h-40 flex-col items-center justify-center gap-2 text-muted-foreground">
 					<Images className="size-8 opacity-40" />
-					<p className="text-sm">暂无素材，点击上方按钮上传</p>
+					<p className="text-sm">暂无素材</p>
 				</div>
 			) : view === "grid" ? (
 				<MediaGrid

@@ -203,7 +203,7 @@ function AdminRolesPage() {
 				storageKey="admin-roles-columns"
 				caption="角色列表"
 				emptyTitle="暂无角色"
-				emptyDescription="还没有创建任何角色，点击上方按钮创建第一个角色"
+				emptyDescription="还没有创建任何角色"
 			/>
 
 			{/* 创建角色对话框 */}
