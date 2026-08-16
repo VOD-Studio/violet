@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { BannerFace, BannerStage } from "./BannerStage";
 import { useBannerTicker, usePrefersReducedMotion } from "./use-banner-ticker";
 
-// 远透视（1600px）压住「转到侧面近大远小」的呼吸感，避免读作放大缩小
-// 的顿挫；快起缓收让落定前速度已慢下来，切静态层不显跳变
+// 正交投影（无 perspective）的滚筒翻面——机场翻牌显示屏的做法：
+// 3D 结构感来自 N 面滚筒与遮挡关系，旋转只是垂直压扁再展开，
+// 没有单点透视的梯形畸变（近侧放大远侧缩小会被读作「特意放大」）
 const FLIP_EASE = [0.2, 0, 0, 1] as const;
 const FLIP_DURATION = 0.45;
-const PERSPECTIVE = 1600;
 const FACE_HEIGHT = 28; // 每面高度 px（h-7），与生产 AnnouncementBar 一致
 
 /** N 面棱柱的每面 transform：绕 X 轴 360/N 度 + 内切半径 translateZ。
@@ -21,12 +21,14 @@ function faceTransform(i: number, n: number): string {
 }
 
 /**
- * 横幅方向 A · 棱柱旋转（真 3D）
+ * 横幅方向 A · 棱柱旋转（正交 3D 滚筒）
  *
- * N 条公告 = N 面实体棱柱绕 X 轴旋转到当前面（面自带横幅底色，
- * 转的是面板不是透明文字）。文字模糊的修法：3D 层只承担旋转过渡，
- * 动画落定后切到无 transform 的静态层——静止态永远清晰，模糊只
- * 存在于旋转过程中。reduced-motion 下直接静态展示。
+ * N 条公告 = N 面实体滚筒绕 X 轴翻到当前面（面底色比槽底亮一档，
+ * 转的是有边界的面板）。**无 perspective 的正交投影**：结构感来自
+ * 滚筒遮挡关系，旋转只是垂直压扁再展开——没有单点透视的近大远小
+ * 与梯形畸变（会被读作「特意放大再缩小」）。文字模糊的修法：3D 层
+ * 只承担旋转过渡，落定后切无 transform 静态层。reduced-motion 下
+ * 直接静态展示。
  */
 export function BannerPrism({ items }: { items: Announcement[] }) {
 	const { index, hoverHandlers, wheelRef } = useBannerTicker(items.length);
@@ -34,15 +36,24 @@ export function BannerPrism({ items }: { items: Announcement[] }) {
 	const n = items.length;
 
 	const [settled, setSettled] = useState(true);
-	// 动画层从上一落定角起转，避免连续翻页时跳回 0 度
+	/** 累计角度：每次翻页在上次落定角上 ±360/n，单调递进。
+	 * 若按 index 推导（-(360/n)*index），第 n 条翻回第 1 条时目标从
+	 * -(n-1)·360/n 跳回 0，动画会反向倒转一大圈——观感是「重置」 */
+	const [rotation, setRotation] = useState(0);
+	const prevIndexRef = useRef(0);
+	// 动画层从上一落定角起转，避免动画层重挂载时跳回 0 度
 	const prevRotationRef = useRef(0);
-	const targetRotation = -(360 / n) * index;
 
-	// reduced 仅作守卫：翻页要播动画；reduced 切 true 时渲染分支直接走静态层，无需 effect 响应
-	// biome-ignore lint/correctness/useExhaustiveDependencies: 见上
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reduced 切 true 时渲染分支直接走静态层，无需 effect 响应
 	useEffect(() => {
-		if (reduced) return;
-		setSettled(false);
+		const prev = prevIndexRef.current;
+		if (index === prev) return;
+		prevIndexRef.current = index;
+		// 新旧 index 的最短方向：差 1 = 下一条（顺向翻），差 n-1 = 上一条（逆向翻）
+		const delta = (((index - prev) % n) + n) % n;
+		const dir = delta === n - 1 ? -1 : 1;
+		setRotation((r) => r - dir * (360 / n));
+		if (!reduced) setSettled(false);
 	}, [index]);
 
 	// reduced-motion / 单条：静态层兜底（effect 不会 unsettle）
@@ -73,16 +84,15 @@ export function BannerPrism({ items }: { items: Announcement[] }) {
 			stageRef={wheelRef}
 			{...hoverHandlers}
 			className="h-7 overflow-hidden"
-			style={{ perspective: `${PERSPECTIVE}px` }}
 		>
 			<motion.div
 				className="relative"
 				style={{ transformStyle: "preserve-3d", height: FACE_HEIGHT }}
 				initial={{ rotateX: prevRotationRef.current }}
-				animate={{ rotateX: targetRotation }}
+				animate={{ rotateX: rotation }}
 				transition={{ duration: FLIP_DURATION, ease: FLIP_EASE }}
 				onAnimationComplete={() => {
-					prevRotationRef.current = targetRotation;
+					prevRotationRef.current = rotation;
 					setSettled(true);
 				}}
 			>

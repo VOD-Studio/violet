@@ -54,7 +54,7 @@ const BANNER_DIRECTIONS: { value: BannerDirection; label: string; intent: string
 	{
 		value: "prism",
 		label: "棱柱旋转",
-		intent: "N 条公告 = N 面实体棱柱绕 X 轴旋转到当前面，面自带底色、转的是面板不是文字。动画落定后切静态层，静止态文字始终清晰；两条时特判半面厚度，翻面有实体板感。",
+		intent: "机场翻牌显示屏式的正交 3D 滚筒：N 面实体面板翻到当前面，结构感来自滚筒遮挡，旋转只是压扁再展开——没有透视的近大远小，不会有「放大再缩小」的呼吸感。落定后切静态层，静止态文字始终清晰。",
 	},
 	{
 		value: "crossfade",
@@ -77,8 +77,8 @@ const BANNER_DIRECTIONS: { value: BannerDirection; label: string; intent: string
  * /lab/announcement - 公告原型实验室
  *
  * 两个对比面：首页公告区（card / article 两形态，五方向 × 三态）
- * 与顶部横幅（banner 形态，四候选——棱柱旋转为真 3D 修复版：静止
- * 态切静态层根治模糊，两条时特判厚度）。静态 mock 不接 API；
+ * 与顶部横幅（banner 形态，四候选——棱柱旋转为正交 3D 滚筒：无
+ * 透视畸变，落定切静态层根治模糊）。静态 mock 不接 API；
  * 横幅三条不变约束（后端排序 / 关闭即已读 / 动画可暂停）在每个方向上保持。
  */
 function AnnouncementLab() {
@@ -179,7 +179,7 @@ function AnnouncementLab() {
 			<section>
 				<h2 className="mb-2 text-2xl font-semibold">横幅展示方向</h2>
 				<p className="mb-8 max-w-3xl text-sm text-muted-foreground">
-					banner 形态（display=banner）渲染在全站顶部横幅条。棱柱旋转为真 3D 修复版，
+					banner 形态（display=banner）渲染在全站顶部横幅条。棱柱旋转为正交 3D 滚筒，
 					与渐隐轮换、滑轨推入、电传打字四个候选并排比选。三条不变约束在所有方向上保持：后端排序不重排、
 					关闭即标记已读、动画可暂停（hover / 滚轮手动翻，reduced-motion 降级）。
 				</p>
