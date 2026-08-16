@@ -2,6 +2,7 @@ import { getDisplayName } from "@entities/user/model/display-name";
 import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import ThemeToggle from "@features/lab/theme/ui";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
@@ -16,7 +17,6 @@ import {
 } from "@shared/ui/base/dropdown-menu";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
-import ThemeToggle from "@widgets/ThemeToggle";
 import { CheckCircle2, LayoutDashboard, LogOut, Search, User } from "lucide-react";
 
 import { useEffect } from "react";
@@ -116,7 +116,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 							className="w-72 overflow-hidden rounded-xl border-border/40 p-0 shadow-xl shadow-black/5 backdrop-blur-xl dark:shadow-black/40"
 						>
 							{/* 用户信息卡：头像 + 邮箱 + 角色徽章 */}
-							<div className="relative border-b border-border/40 bg-gradient-to-br from-accent/40 via-transparent to-transparent px-4 pb-4 pt-4">
+							<div className="relative border-b border-border/40 bg-linear-to-br from-accent/40 via-transparent to-transparent px-4 pb-4 pt-4">
 								<div className="flex items-start gap-3">
 									<img
 										src={avatarUrl(user.avatar_url, user.username)}

@@ -25,8 +25,20 @@ const (
 	SourceSubscriptionSucceeded SourceType = "subscription_succeeded"
 	// SourceFriendLinkApplied 友链申请
 	SourceFriendLinkApplied SourceType = "friendlink_applied"
-	// SourceCommentApproved 评论审核通过
+	// SourceFriendLinkReviewed 友链审核结果（通知登录申请者）
+	SourceFriendLinkReviewed SourceType = "friendlink_reviewed"
+	// SourceCommentApproved 评论审核通过（通知评论作者）
 	SourceCommentApproved SourceType = "comment_approved"
+	// SourceCommentCreated 文章收到新评论（通知文章作者）
+	SourceCommentCreated SourceType = "comment_created"
+	// SourceCommentPending 评论待审核（通知管理员）
+	SourceCommentPending SourceType = "comment_pending"
+	// SourceCommentRejected 评论未通过审核（通知评论作者）
+	SourceCommentRejected SourceType = "comment_rejected"
+	// SourceUserRegistered 新用户注册（通知管理员）
+	SourceUserRegistered SourceType = "user_registered"
+	// SourceAccountSecurity 账号安全提醒：改密 / API token 增删 / 角色与状态变更（通知本人）
+	SourceAccountSecurity SourceType = "account_security"
 )
 
 // validSourceTypes 合法来源类型集合，供校验与 DB CHECK 同步参照。
@@ -34,7 +46,13 @@ var validSourceTypes = map[SourceType]bool{
 	SourceSubscriptionFailed:    true,
 	SourceSubscriptionSucceeded: true,
 	SourceFriendLinkApplied:     true,
+	SourceFriendLinkReviewed:    true,
 	SourceCommentApproved:       true,
+	SourceCommentCreated:        true,
+	SourceCommentPending:        true,
+	SourceCommentRejected:       true,
+	SourceUserRegistered:        true,
+	SourceAccountSecurity:       true,
 }
 
 // IsValidSourceType 判断来源类型是否合法。

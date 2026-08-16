@@ -34,7 +34,7 @@ export function CommentCell({ row }: CommentCellProps) {
 			)}
 			<p
 				className={cn(
-					"line-clamp-2 text-sm leading-relaxed break-words",
+					"line-clamp-2 text-sm leading-relaxed wrap-break-word",
 					anchorText && "text-foreground",
 				)}
 			>

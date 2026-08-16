@@ -10,10 +10,11 @@
 	--animate-blob: blob 7s infinite;
 	--animate-nexus-shimmer: nexus-shimmer 1.6s ease-in-out infinite;
 	--animate-caret-blink: caret-blink 1s ease infinite;
-	--animate-blur-in: blur-in 0.8s ease-out both;
-	--animate-clip-reveal: clip-reveal 0.6s 0.15s ease-out both;
 	--font-mono: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	--animate-diagram-enter: diagram-enter 0.25s ease-out;
+	--animate-tab-panel-in: tab-panel-in 0.2s ease-out;
+	--animate-marquee: marquee 40s linear infinite;
+	--animate-banner-progress: banner-progress 5s linear infinite;
 
 	/* —— 设计 token 映射到 Tailwind v4 颜色工具类 —— */
 	/* bg-background / text-foreground / bg-primary / border-border 等 */
@@ -191,6 +192,17 @@
 	}
 }
 
+@keyframes tab-panel-in {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
 @keyframes diagram-enter {
 	from {
 		opacity: 0;
@@ -203,31 +215,7 @@
 /* —— LandingHero 入场动画（纯 CSS，合成线程驱动，零 JS 开销） —— */
 
 /* 左栏：模糊聚焦 — 从模糊缩小渐变到清晰，"对焦"隐喻 */
-@keyframes blur-in {
-	from {
-		opacity: 0;
-		filter: blur(12px);
-		transform: scale(0.98);
-	}
-	to {
-		opacity: 1;
-		filter: blur(0);
-		transform: scale(1);
-	}
-}
-
 /* 右栏：终端开机 — clip-path 从上往下揭开，模拟终端窗口启动 */
-@keyframes clip-reveal {
-	from {
-		opacity: 0;
-		clip-path: inset(0 0 100% 0 round 1.6rem);
-	}
-	to {
-		opacity: 1;
-		clip-path: inset(0 0 0 0 round 1.6rem);
-	}
-}
-
 @keyframes caret-blink {
 	0%,
 	100% {
@@ -235,6 +223,26 @@
 	}
 	50% {
 		opacity: 0;
+	}
+}
+
+/* 速览带无缝横滚：内容渲染两遍，整体位移 -50% 循环 */
+@keyframes marquee {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}
+
+/* 横幅驻留进度线：scaleX 拉满一轮 = 一条公告的驻留时长 */
+@keyframes banner-progress {
+	from {
+		transform: scaleX(0);
+	}
+	to {
+		transform: scaleX(1);
 	}
 }
 
@@ -277,8 +285,38 @@ body {
  * ——————————————————————————————————————————
  */
 
-/* Header 保持静止，不跟随内容滑动 */
-::view-transition-group(site-header) {
+/* —— theme：主题切换圆形扩散（对齐 yggdrasil 基准）——
+ * 纯 CSS 声明式：动画挂在伪元素上，ready 后即刻开播，无 WAAPI 注册竞态；
+ * new 帧压顶层且带不透明背景（防快照透明透叠）；0.4s ease-out 的
+ * 快起长收读作「顺滑」。坐标/半径由 JS 注入 CSS 变量。 */
+:active-view-transition-type(theme)::view-transition-old(root),
+:active-view-transition-type(theme)::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+:active-view-transition-type(theme)::view-transition-old(root) {
+	z-index: 1;
+}
+:active-view-transition-type(theme)::view-transition-new(root) {
+	z-index: 2;
+	animation: theme-ripple 0.4s ease-out forwards;
+	background: var(--background);
+}
+@keyframes theme-ripple {
+	from {
+		clip-path: circle(0px at var(--theme-ripple-x, 50%) var(--theme-ripple-y, 50%));
+	}
+	to {
+		clip-path: circle(
+			var(--theme-ripple-r, 100vmax) at var(--theme-ripple-x, 50%) var(--theme-ripple-y, 50%)
+		);
+	}
+}
+
+/* Header 与顶部公告条保持静止，不跟随内容滑动（公告条全站同数据，
+ * 导航转场时 old/new 快照一致，静止即无缝） */
+::view-transition-group(site-header),
+::view-transition-group(announcement-bar) {
 	animation: none;
 }
 

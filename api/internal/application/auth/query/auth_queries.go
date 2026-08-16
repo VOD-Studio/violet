@@ -12,19 +12,27 @@ import (
 
 // UserDTO 用户读模型（query 返回，供 HTTP handler 序列化）
 type UserDTO struct {
-	ID                  string   `json:"id"`
-	Username            string   `json:"username"`
-	DisplayName         string   `json:"display_name"`
-	Email               string   `json:"email"`
-	AvatarURL           string   `json:"avatar_url"`
-	Bio                 string   `json:"bio"`
-	Role                string   `json:"role"`
-	RoleDescription     string   `json:"role_description"`
-	IsRoot              bool     `json:"is_root"`
-	EmailVerified       bool     `json:"email_verified"`
-	IsActive            bool     `json:"is_active"`
-	CreatedAt           string   `json:"created_at"`
-	Permissions         []string `json:"permissions,omitempty"`
+	ID              string `json:"id"`
+	Username        string `json:"username"`
+	DisplayName     string `json:"display_name"`
+	Email           string `json:"email"`
+	AvatarURL       string `json:"avatar_url"`
+	Bio             string `json:"bio"`
+	Role            string `json:"role"`
+	RoleDescription string `json:"role_description"`
+	IsRoot          bool   `json:"is_root"`
+	EmailVerified   bool   `json:"email_verified"`
+	IsActive        bool   `json:"is_active"`
+	CreatedAt       string `json:"created_at"`
+	Permissions     []string `json:"permissions,omitempty"`
+	// HasPassword 是否设置了密码（false=仅 OAuth 登录，OAuth 建号存空哈希）。
+	// 存量 OAuth 用户建号时被写入随机哈希、无法与真密码区分，会误报 true，
+	// 其「修改密码」失败由忘记密码流程兜底。
+	HasPassword bool `json:"has_password"`
+	// GoogleBound 是否绑定 Google 登录
+	GoogleBound bool `json:"google_bound"`
+	// GithubBound 是否绑定 GitHub 登录
+	GithubBound bool `json:"github_bound"`
 }
 
 // GetMeHandler 获取当前登录用户信息
@@ -88,5 +96,8 @@ func toUserDTO(u *user.User, permissions []string, roleDescription string) UserD
 		IsActive:        u.IsActive(),
 		CreatedAt:       u.CreatedAt().Format(time.RFC3339),
 		Permissions:     permissions,
+		HasPassword:     u.PasswordHash().String() != "",
+		GoogleBound:     u.GoogleID() != nil,
+		GithubBound:     u.GithubID() != nil,
 	}
 }

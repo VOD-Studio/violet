@@ -7,6 +7,7 @@ import {
 	ShieldCheck,
 	UserRound,
 } from "lucide-react";
+import { SectionCard } from "./SectionCard";
 
 interface AccountInfoSectionProps {
 	user: UserDTO;
@@ -20,9 +21,7 @@ interface AccountInfoSectionProps {
  */
 export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 	return (
-		<div className="rounded-xl border bg-card p-6 shadow-sm">
-			<h2 className="mb-5 text-base font-semibold">账户信息</h2>
-
+		<SectionCard title="账户信息">
 			{!user.is_active && (
 				<div className="mb-5 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
 					<AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
@@ -58,7 +57,7 @@ export const AccountInfoSection = ({ user }: AccountInfoSectionProps) => {
 					</time>
 				</Row>
 			</dl>
-		</div>
+		</SectionCard>
 	);
 };
 

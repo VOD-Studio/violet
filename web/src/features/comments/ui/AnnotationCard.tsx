@@ -84,7 +84,7 @@ export function AnnotationCard({
 
 					<CommentMeta comment={comment} sev={sev} isPending={isPending} />
 
-					<p className="whitespace-pre-wrap break-words text-sm text-foreground">
+					<p className="whitespace-pre-wrap wrap-break-word text-sm text-foreground">
 						<EmojiText text={comment.body} emote={comment.emote} />
 					</p>
 
@@ -198,7 +198,7 @@ function AnnotationReply({ comment, sev }: { comment: Comment; sev: CommentToneC
 	return (
 		<div className="rounded-md bg-muted/30 p-2">
 			<CommentMeta comment={comment} sev={sev} isPending={comment.status === "pending"} />
-			<p className="mt-0.5 whitespace-pre-wrap break-words text-xs text-foreground">
+			<p className="mt-0.5 whitespace-pre-wrap wrap-break-word text-xs text-foreground">
 				<EmojiText text={comment.body} emote={comment.emote} />
 			</p>
 		</div>

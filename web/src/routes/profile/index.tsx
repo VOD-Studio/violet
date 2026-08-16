@@ -2,6 +2,7 @@ import type { UserDTO } from "@entities/user/model/types";
 import { authKeys } from "@features/auth/api/keys";
 import { useMe } from "@features/auth/api/queries";
 import { AccountInfoSection } from "@features/profile/ui/AccountInfoSection";
+import { ConnectionsSection } from "@features/profile/ui/ConnectionsSection";
 import { PasswordSection } from "@features/profile/ui/PasswordSection";
 import { ProfileInfoSection } from "@features/profile/ui/ProfileInfoSection";
 import { ProfileShell } from "@features/profile/ui/ProfileShell";
@@ -11,11 +12,10 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 /**
  * ProfilePage - 个人中心
  *
- * 布局：ProfileShell 接管（侧栏头像卡 + 三个 Tab）。
+ * 布局：ProfileShell 接管（侧栏头像卡 + 两个 Tab）。
  * Tab 内容：
- *   - profile：个人资料（用户名 / 简介）
- *   - account：账户信息（只读：邮箱、角色、注册时间）
- *   - password：密码修改
+ *   - profile：个人资料（用户名 / 显示名 / 简介）
+ *   - security：账户与安全（账号信息 / 登录方式 / 密码）
  */
 const ProfilePage = () => {
 	const { data: user } = useMe();
@@ -28,8 +28,13 @@ const ProfilePage = () => {
 		<ProfileShell
 			user={user}
 			profile={<ProfileInfoSection user={user} />}
-			account={<AccountInfoSection user={user} />}
-			password={<PasswordSection />}
+			security={
+				<div className="space-y-6">
+					<AccountInfoSection user={user} />
+					<ConnectionsSection user={user} />
+					<PasswordSection hasPassword={user.has_password} />
+				</div>
+			}
 		/>
 	);
 };

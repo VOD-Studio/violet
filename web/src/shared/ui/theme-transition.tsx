@@ -46,43 +46,48 @@ interface RippleOrigin {
 	py: number;
 }
 
-const RIPPLE_DURATION = 300;
-const RIPPLE_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+// 扩散动画由 CSS 声明（styles.css :active-view-transition-type(theme) 的
+// theme-ripple，0.4s ease-out——对齐 yggdrasil 基准），JS 只注入坐标变量。
 
 /**
  * animateThemeRipple - 围绕一次主题 DOM 变更跑圆形扩散动画
  *
  * 实现：
- * 1. document.startViewTransition(apply) — 浏览器抓 apply 前后两帧。
- * 2. transition.ready resolve 后，对 ::view-transition-new(root) 伪元素用
- *    Web Animations API 跑 clip-path circle，从原点 0 半径展开到最远角。
+ * 1. document.startViewTransition({ types: ["theme"], update }) — 浏览器抓
+ *    apply 前后两帧；update 里 apply 后强制 reflow，保证新快照是最终颜色。
+ * 2. 扩散动画是纯 CSS（theme type 作用域的 theme-ripple keyframes），ready
+ *    后即刻开播，无 WAAPI 注册竞态；new 帧压顶层且带不透明背景防透叠。
  * 3. transition.finished 后 runThemeRerender(target) 统一重渲图块——
  *    mermaid v11 渲染依赖被 VT 暂停的帧调度，放 update 回调里会死锁，
  *    且动画期间的 mermaid DOM 写入会把 VT 动画拖住（实测 finished 从
  *    ~500ms 拖到 9.5s），故图块以旧色参与动画，结束后 ~400ms 换新色。
- * 4. 旧帧默认在底层、新帧从其上圆形揭开 → 无瞬时跳变（不闪）。
  *
- * apply 负责真正的 DOM 变更（手动切换走 setTheme，跟随系统走直接改 class）。
+ * apply 负责真正的 DOM 变更（手动切换走同步 class 翻转，跟随系统走直接改 class）。
  * target 显式传目标主题：next-themes setTheme 只 setState，<html> class 变更
  * 落在 React effect，update 回调执行时 classList 还是旧主题，订阅方读不到。
- * 不支持 VT 的浏览器（如 Firefox）或 VT 异常时降级为直接 apply，瞬时切换。
+ * 不支持 VT 的浏览器（如 Firefox）、reduced-motion 或 VT 异常时降级为直接 apply，瞬时切换。
  */
 export function animateThemeRipple(
 	origin: RippleOrigin,
 	apply: () => void,
 	target: TargetTheme,
 ): ViewTransition | null {
-	if (!supportsViewTransitions()) {
-		apply();
-		void runThemeRerender(target);
-		return null;
-	}
-
 	// 降级/兜底路径统一走这里：apply 后手动驱动重渲（VT 路径由 update 回调 await）
 	const applyAndRerender = () => {
 		apply();
 		void runThemeRerender(target);
 	};
+
+	if (!supportsViewTransitions()) {
+		applyAndRerender();
+		return null;
+	}
+
+	// reduced-motion：不做扩散，直接切（WCAG）
+	if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+		applyAndRerender();
+		return null;
+	}
 
 	const { px, py } = origin;
 	// 圆形扩散终点半径 = 原点到视口四角的最大距离（保证覆盖整屏）
@@ -96,30 +101,27 @@ export function animateThemeRipple(
 	// 无关，应正常播放，避免 VT 窗口内元素加载/淡入被压制（实测阻塞感主因）。
 	const root = document.documentElement;
 	root.classList.add("theme-vt", "theme-vt-freeze");
+	// 扩散坐标交给 CSS keyframes（theme-ripple）
+	root.style.setProperty("--theme-ripple-x", `${px}px`);
+	root.style.setProperty("--theme-ripple-y", `${py}px`);
+	root.style.setProperty("--theme-ripple-r", `${endRadius}px`);
 
 	// mermaid v11 渲染依赖被 VT 暂停的帧调度，在 update 回调里 await 会死锁
-	// （实测单图渲染都跑不完）。故 update 只做同步 apply，图块以旧色参与扩散
-	// 动画，finished 后统一重渲换新色——动画期间 DOM 零 mermaid 写入，动画顺畅。
-	const transition = document.startViewTransition(() => apply());
+	// （实测单图渲染都跑不完）。故 update 只做同步 apply + 强制 reflow
+	// （保证新快照抓到最终颜色，而非过渡中间态），图块以旧色参与扩散，
+	// finished 后统一重渲换新色。
+	const transition = document.startViewTransition({
+		types: ["theme"],
+		update: () => {
+			apply();
+			getComputedStyle(document.body).backgroundColor;
+		},
+	});
 
 	// ready：帧已捕获，解除 transition 冻结（VT 伪元素动画独立于真实 DOM）
 	transition.ready
 		.then(() => {
 			root.classList.remove("theme-vt-freeze");
-			document.documentElement.animate(
-				{
-					clipPath: [
-						`circle(0px at ${px}px ${py}px)`,
-						`circle(${endRadius}px at ${px}px ${py}px)`,
-					],
-				},
-				{
-					duration: RIPPLE_DURATION,
-					easing: RIPPLE_EASING,
-					// 关键：把动画作用到 VT 新帧伪元素上
-					pseudoElement: "::view-transition-new(root)",
-				},
-			);
 		})
 		.catch(() => {
 			root.classList.remove("theme-vt", "theme-vt-freeze");
@@ -132,10 +134,16 @@ export function animateThemeRipple(
 	transition.finished
 		.then(() => {
 			root.classList.remove("theme-vt");
+			root.style.removeProperty("--theme-ripple-x");
+			root.style.removeProperty("--theme-ripple-y");
+			root.style.removeProperty("--theme-ripple-r");
 			return runThemeRerender(target);
 		})
 		.catch(() => {
 			root.classList.remove("theme-vt");
+			root.style.removeProperty("--theme-ripple-x");
+			root.style.removeProperty("--theme-ripple-y");
+			root.style.removeProperty("--theme-ripple-r");
 			applyAndRerender();
 		});
 

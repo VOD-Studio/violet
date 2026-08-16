@@ -5,7 +5,8 @@ import { CropUploadDialog, type CropUploadResult } from "@features/upload/ui/Cro
 import { avatarUrl } from "@shared/lib/image-url";
 import { cn } from "@shared/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/base/tabs";
-import { Lock, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Camera, ShieldCheck, User as UserIcon } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -13,14 +14,13 @@ interface ProfileShellProps {
 	user: UserDTO;
 	defaultTab?: ProfileTab;
 	profile: ReactNode;
-	account: ReactNode;
-	password: ReactNode;
+	security: ReactNode;
 }
 
 /**
  * ProfileTab - 个人中心 Tab 标识
  */
-export type ProfileTab = "profile" | "account" | "password";
+export type ProfileTab = "profile" | "security";
 
 /**
  * ProfileShell - 个人中心布局壳
@@ -34,25 +34,34 @@ export const ProfileShell = ({
 	user,
 	defaultTab = "profile",
 	profile,
-	account,
-	password,
+	security,
 }: ProfileShellProps) => {
+	// 受控 tabs：滑动指示块（layoutId 共享元素）需要感知激活项
+	const [tab, setTab] = useState<ProfileTab>(defaultTab);
 	return (
-		<Tabs defaultValue={defaultTab} orientation="vertical" className="gap-0">
+		<Tabs
+			value={tab}
+			onValueChange={(v) => setTab(v as ProfileTab)}
+			orientation="vertical"
+			className="gap-0"
+		>
 			<div className="container mx-auto max-w-5xl px-4 py-8 md:py-12">
 				<div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr] md:gap-8">
 					<aside className="md:sticky md:top-24 md:self-start">
-						<ProfileSidebar user={user} />
+						<ProfileSidebar user={user} activeTab={tab} />
 					</aside>
 					<div className="min-w-0">
-						<TabsContent value="profile" className="mt-0 outline-none">
+						<TabsContent
+							value="profile"
+							className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
+						>
 							{profile}
 						</TabsContent>
-						<TabsContent value="account" className="mt-0 outline-none">
-							{account}
-						</TabsContent>
-						<TabsContent value="password" className="mt-0 outline-none">
-							{password}
+						<TabsContent
+							value="security"
+							className="mt-0 outline-none data-[state=active]:animate-tab-panel-in"
+						>
+							{security}
 						</TabsContent>
 					</div>
 				</div>
@@ -61,7 +70,7 @@ export const ProfileShell = ({
 	);
 };
 
-const ProfileSidebar = ({ user }: { user: UserDTO }) => {
+const ProfileSidebar = ({ user, activeTab }: { user: UserDTO; activeTab: ProfileTab }) => {
 	const [pendingFile, setPendingFile] = useState<File | null>(null);
 	const [cropOpen, setCropOpen] = useState(false);
 	const updateProfile = useUpdateProfile();
@@ -89,6 +98,16 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 							updateProfile.isPending && "opacity-60",
 						)}
 					/>
+					{/* 触屏没有 hover，角标常显提示「可点击更换」 */}
+					<span
+						className={cn(
+							"absolute right-0 bottom-0 flex size-6 items-center justify-center",
+							"rounded-full border-2 border-card bg-muted text-muted-foreground",
+							"transition-colors group-hover/avatar:bg-primary group-hover/avatar:text-primary-foreground",
+						)}
+					>
+						<Camera className="size-3" />
+					</span>
 					<input
 						type="file"
 						accept="image/jpeg,image/png,image/gif,image/webp"
@@ -112,28 +131,24 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 				</p>
 			</div>
 
-			{/* Tab 列表 */}
+			{/* Tab 列表：default 分段式（自带激活态过渡），移动端横排可滚动 */}
 			<TabsList
-				variant="line"
 				className={cn(
-					"mt-6 h-auto w-full justify-start border-t pt-2",
+					"mt-6 h-auto w-full justify-start",
 					"flex-row overflow-x-auto md:flex-col md:items-stretch md:overflow-visible",
 				)}
 			>
 				<ProfileSidebarTab
 					value="profile"
+					active={activeTab === "profile"}
 					icon={<UserIcon className="size-4" />}
 					label="个人资料"
 				/>
 				<ProfileSidebarTab
-					value="account"
+					value="security"
+					active={activeTab === "security"}
 					icon={<ShieldCheck className="size-4" />}
-					label="账户信息"
-				/>
-				<ProfileSidebarTab
-					value="password"
-					icon={<Lock className="size-4" />}
-					label="密码"
+					label="账户与安全"
 				/>
 			</TabsList>
 
@@ -152,24 +167,44 @@ const ProfileSidebar = ({ user }: { user: UserDTO }) => {
 
 const ProfileSidebarTab = ({
 	value,
+	active,
 	icon,
 	label,
 }: {
 	value: ProfileTab;
+	active: boolean;
 	icon?: ReactNode;
 	label: string;
 }) => {
+	const reduceMotion = useReducedMotion();
 	return (
 		<TabsTrigger
 			value={value}
 			className={cn(
-				"relative flex w-full items-center justify-start gap-2 rounded-md py-2 pr-3 pl-3 text-left text-sm font-medium",
-				"text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground",
-				"data-[state=active]:bg-accent data-[state=active]:text-foreground",
+				"w-full justify-start gap-2 py-2 pr-3 pl-3 text-left",
+				// 抑制分段器自身的 per-tab 激活底色/投影，激活视觉全部交给滑动指示块
+				"data-[state=active]:bg-transparent dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent",
+				"group-data-[variant=default]/tabs-list:data-[state=active]:shadow-none",
 			)}
 		>
-			{icon}
-			<span className="flex-1">{label}</span>
+			{/* 滑动指示块：layoutId 共享元素，激活态切换时在 tab 间平滑滑动。
+			    absolute 定位元素默认画在静态内容之上，内容需包 relative z-10 压住 */}
+			{active && (
+				<motion.span
+					aria-hidden
+					layoutId="profile-tab-thumb"
+					transition={
+						reduceMotion
+							? { duration: 0 }
+							: { type: "spring", stiffness: 400, damping: 34 }
+					}
+					className="absolute inset-0 z-0 rounded-md bg-background shadow-sm dark:border dark:border-input dark:bg-input/30"
+				/>
+			)}
+			<span className="relative z-10 flex min-w-0 flex-1 items-center gap-2">
+				{icon}
+				<span className="flex-1">{label}</span>
+			</span>
 		</TabsTrigger>
 	);
 };

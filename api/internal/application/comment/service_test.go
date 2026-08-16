@@ -23,16 +23,28 @@ func (noopEmojiLookup) FindByNames(_ context.Context, _ []string) (map[string]Em
 	return nil, nil
 }
 
+// fakeSitePolicy 可配置的站点评论策略 stub
+type fakeSitePolicy struct {
+	enabled    bool
+	moderation bool
+	err        error
+}
+
+func (f *fakeSitePolicy) CommentPolicy(context.Context) (bool, bool, error) {
+	return f.enabled, f.moderation, f.err
+}
+
 // newServiceWithMocks 构造带 mock 的 service，返回 service + 各 mock 便于断言。
-func newServiceWithMocks() (*Service, *mocks.MockCommentRepository, *mocks.MockCommentCodeStore, *mocks.MockCommentEmailSender) {
+// policy 传 nil 时 service 内部按「开评论 + 需审核」兜底，等价旧行为。
+func newServiceWithMocks(policy SitePolicy) (*Service, *mocks.MockCommentRepository, *mocks.MockCommentCodeStore, *mocks.MockCommentEmailSender) {
 	repo := new(mocks.MockCommentRepository)
 	codeStore := new(mocks.MockCommentCodeStore)
 	emailSender := new(mocks.MockCommentEmailSender)
-	return NewService(repo, codeStore, emailSender, noopEmojiLookup{}, infraeventbus.NewInMemory()), repo, codeStore, emailSender
+	return NewService(repo, codeStore, emailSender, noopEmojiLookup{}, policy, infraeventbus.NewInMemory()), repo, codeStore, emailSender
 }
 
 func TestCreate_LoggedIn_SkipsCodeAndQuota(t *testing.T) {
-	svc, repo, codeStore, _ := newServiceWithMocks()
+	svc, repo, codeStore, _ := newServiceWithMocks(nil)
 	uid := shared.NewID()
 
 	// 登录路径：不应查 CodeStore / 配额
@@ -51,7 +63,7 @@ func TestCreate_LoggedIn_SkipsCodeAndQuota(t *testing.T) {
 }
 
 func TestCreate_Anon_ValidCode_NoQuota_Succeeds(t *testing.T) {
-	svc, repo, codeStore, _ := newServiceWithMocks()
+	svc, repo, codeStore, _ := newServiceWithMocks(nil)
 	postID := shared.NewID()
 
 	// 验证码校验通过 + 配额为 0 → 落库。
@@ -74,7 +86,7 @@ func TestCreate_Anon_ValidCode_NoQuota_Succeeds(t *testing.T) {
 }
 
 func TestCreate_Anon_InvalidCode_ReturnsErrInvalidCode(t *testing.T) {
-	svc, repo, codeStore, _ := newServiceWithMocks()
+	svc, repo, codeStore, _ := newServiceWithMocks(nil)
 
 	codeStore.On("Verify", mock.Anything, "comment", "alice@x.com", mock.Anything).
 		Return(false, nil).Once()
@@ -92,7 +104,7 @@ func TestCreate_Anon_InvalidCode_ReturnsErrInvalidCode(t *testing.T) {
 }
 
 func TestCreate_Anon_QuotaExceeded_ReturnsErrAnonQuotaExceeded(t *testing.T) {
-	svc, repo, codeStore, _ := newServiceWithMocks()
+	svc, repo, codeStore, _ := newServiceWithMocks(nil)
 	postID := shared.NewID()
 
 	codeStore.On("Verify", mock.Anything, "comment", "alice@x.com", mock.Anything).
@@ -113,7 +125,7 @@ func TestCreate_Anon_QuotaExceeded_ReturnsErrAnonQuotaExceeded(t *testing.T) {
 }
 
 func TestCreate_AnchorWithoutLogin_Rejected(t *testing.T) {
-	svc, _, _, _ := newServiceWithMocks()
+	svc, _, _, _ := newServiceWithMocks(nil)
 	// 匿名带 anchor：domain.NewComment 会拒绝（批注强制登录）
 	anchor := &domain.Anchor{BlockID: "abc12345", StartOffset: 0, EndOffset: 5, SelectedText: "hello", BlockHashSync: "deadbeef"}
 	// 注意：匿名路径会先走验证码校验，code 为空会 ErrInvalidCode；这里测的是
@@ -129,7 +141,7 @@ func TestCreate_AnchorWithoutLogin_Rejected(t *testing.T) {
 }
 
 func TestCreate_LoggedIn_WithAnchor_Succeeds(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	uid := shared.NewID()
 	anchor := &domain.Anchor{BlockID: "abc12345", StartOffset: 0, EndOffset: 5, SelectedText: "hello", BlockHashSync: "deadbeef"}
 
@@ -150,7 +162,7 @@ func TestCreate_LoggedIn_WithAnchor_Succeeds(t *testing.T) {
 
 // TestCreate_PicturesPassedToDomain 验证 pictures 接线：CreateInput.Pictures 流入 domain（Issue-0003）。
 func TestCreate_PicturesPassedToDomain(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	uid := shared.NewID()
 	pics := []domain.Picture{{URL: "https://x/a.png", Width: 100, Height: 200, Size: 1024}}
 
@@ -169,7 +181,7 @@ func TestCreate_PicturesPassedToDomain(t *testing.T) {
 }
 
 func TestSendCode_StoresAndSends(t *testing.T) {
-	svc, _, codeStore, emailSender := newServiceWithMocks()
+	svc, _, codeStore, emailSender := newServiceWithMocks(nil)
 	postID := shared.NewID()
 
 	codeStore.On("Store", mock.Anything, "comment", "alice@x.com", mock.Anything).
@@ -186,7 +198,7 @@ func TestSendCode_StoresAndSends(t *testing.T) {
 }
 
 func TestSendCode_EmptyEmail_ReturnsErr(t *testing.T) {
-	svc, _, codeStore, _ := newServiceWithMocks()
+	svc, _, codeStore, _ := newServiceWithMocks(nil)
 	err := svc.SendCode(context.Background(), SendCodeInput{
 		PostID: shared.NewID().String(), Email: "  ",
 	})
@@ -194,8 +206,18 @@ func TestSendCode_EmptyEmail_ReturnsErr(t *testing.T) {
 	codeStore.AssertNotCalled(t, "Store")
 }
 
+func TestSendCode_SiteDisabled_RejectsWithoutMail(t *testing.T) {
+	svc, _, codeStore, emailSender := newServiceWithMocks(&fakeSitePolicy{enabled: false})
+	err := svc.SendCode(context.Background(), SendCodeInput{
+		PostID: shared.NewID().String(), Email: "alice@x.com",
+	})
+	assert.Error(t, err)
+	codeStore.AssertNotCalled(t, "Store")
+	emailSender.AssertNotCalled(t, "SendVerificationCode")
+}
+
 func TestListByPost_AnonViewer_ReturnsEmpty_BlackHole(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	// 匿名 viewer 不应查 DB
 	repo.AssertNotCalled(t, "FindByPost")
 
@@ -206,7 +228,7 @@ func TestListByPost_AnonViewer_ReturnsEmpty_BlackHole(t *testing.T) {
 }
 
 func TestListByPost_LoggedInViewer_ReturnsApprovedAndOwnPending(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	viewer := shared.NewID()
 	postID := shared.NewID()
 
@@ -226,7 +248,7 @@ func TestListByPost_LoggedInViewer_ReturnsApprovedAndOwnPending(t *testing.T) {
 // TestListByPost_AnchorFilter_PassthroughToRepo 验证 service 把 anchorFilter 透传给 repo，
 // 不在 service 层做任何 anchor 维度的逻辑（仅作为透明管道）。
 func TestListByPost_AnchorFilter_PassthroughToRepo(t *testing.T) {
-	svc, repo, _, _ := newServiceWithMocks()
+	svc, repo, _, _ := newServiceWithMocks(nil)
 	viewer := shared.NewID()
 	postID := shared.NewID()
 
@@ -252,3 +274,42 @@ func newDomainComment(id, postID shared.ID, author, status string) (*domain.Comm
 
 // 编译期断言
 var _ = appshared.SHA256Hash
+
+func TestCreate_CommentsDisabled_Rejected(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(&fakeSitePolicy{enabled: false})
+
+	dto, err := svc.Create(context.Background(), CreateInput{
+		PostID: shared.NewID().String(), UserID: shared.NewID().String(),
+		AuthorName: "bob", Body: "hi",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "评论已关闭")
+	assert.Empty(t, dto)
+	repo.AssertNotCalled(t, "Save", mock.Anything, mock.Anything)
+}
+
+func TestCreate_NoModeration_AutoApproved(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(&fakeSitePolicy{enabled: true, moderation: false})
+	repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+
+	dto, err := svc.Create(context.Background(), CreateInput{
+		PostID: shared.NewID().String(), UserID: shared.NewID().String(),
+		AuthorName: "bob", Body: "hi",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "approved", dto.Status)
+	repo.AssertExpectations(t)
+}
+
+func TestCreate_ModerationOn_StaysPending(t *testing.T) {
+	svc, repo, _, _ := newServiceWithMocks(&fakeSitePolicy{enabled: true, moderation: true})
+	repo.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+
+	dto, err := svc.Create(context.Background(), CreateInput{
+		PostID: shared.NewID().String(), UserID: shared.NewID().String(),
+		AuthorName: "bob", Body: "hi",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "pending", dto.Status)
+	repo.AssertExpectations(t)
+}

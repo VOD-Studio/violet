@@ -7,11 +7,13 @@ import (
 	"github.com/rs/zerolog"
 
 	appshared "blog-api/internal/application/shared"
+	domainapitoken "blog-api/internal/domain/api_token"
 	domaincomment "blog-api/internal/domain/comment"
 	domainfriendlink "blog-api/internal/domain/friendlink"
 	domainnotification "blog-api/internal/domain/notification"
 	domainshared "blog-api/internal/domain/shared"
 	domainsubscription "blog-api/internal/domain/subscription"
+	domainuser "blog-api/internal/domain/user"
 )
 
 // --- 接收者解析端口（由 wiring 层适配现有仓储实现）---
@@ -28,10 +30,22 @@ type CommentAuthorLookup interface {
 	FindAuthorID(ctx context.Context, commentID domainshared.ID) (*domainshared.ID, error)
 }
 
+// CommentPostAuthorLookup 解析评论所属文章的作者（文章新评论通知用）。
+type CommentPostAuthorLookup interface {
+	// FindPostAuthorID 返回文章作者的 userID；nil 表示文章已删除等无接收者场景。
+	FindPostAuthorID(ctx context.Context, commentID domainshared.ID) (*domainshared.ID, error)
+}
+
 // AdminUserLookup 解析管理员用户（友链申请等 admin 通知用）。
 type AdminUserLookup interface {
 	// FindAdminIDs 返回应接收管理通知的用户 ID 列表。
 	FindAdminIDs(ctx context.Context) ([]domainshared.ID, error)
+}
+
+// FriendLinkApplicantLookup 解析友链登录申请者（审核结果通知用）。
+type FriendLinkApplicantLookup interface {
+	// FindApplicantID 返回申请者的 userID；nil 表示匿名申请（无通知接收者）。
+	FindApplicantID(ctx context.Context, friendlinkID domainshared.ID) (*domainshared.ID, error)
 }
 
 // Subscriber 通知订阅者：消费领域事件 → 计算接收者 → 写通知。
@@ -39,11 +53,13 @@ type AdminUserLookup interface {
 // 镜像审计 subscriber 结构（通配订阅 + 按事件类型分发）。
 // 写通知失败记降级日志（fail-safe），不阻断其他订阅者（EventBus 容错隔离）。
 type Subscriber struct {
-	store         domainnotification.NotificationRepository
-	subLookup     SubscriptionOwnerLookup
-	commentLookup CommentAuthorLookup
-	adminLookup   AdminUserLookup
-	log           zerolog.Logger
+	store             domainnotification.NotificationRepository
+	subLookup         SubscriptionOwnerLookup
+	commentLookup     CommentAuthorLookup
+	adminLookup       AdminUserLookup
+	friendlinkLookup  FriendLinkApplicantLookup
+	postAuthorLookup  CommentPostAuthorLookup
+	log               zerolog.Logger
 }
 
 // NewSubscriber 构造通知订阅者。
@@ -52,14 +68,18 @@ func NewSubscriber(
 	subLookup SubscriptionOwnerLookup,
 	commentLookup CommentAuthorLookup,
 	adminLookup AdminUserLookup,
+	friendlinkLookup FriendLinkApplicantLookup,
+	postAuthorLookup CommentPostAuthorLookup,
 	log zerolog.Logger,
 ) *Subscriber {
 	return &Subscriber{
-		store:         store,
-		subLookup:     subLookup,
-		commentLookup: commentLookup,
-		adminLookup:   adminLookup,
-		log:           log,
+		store:             store,
+		subLookup:         subLookup,
+		commentLookup:     commentLookup,
+		adminLookup:       adminLookup,
+		friendlinkLookup:  friendlinkLookup,
+		postAuthorLookup:  postAuthorLookup,
+		log:               log,
 	}
 }
 
@@ -115,12 +135,99 @@ func (s *Subscriber) mapEvent(ctx context.Context, event domainshared.DomainEven
 	case domainfriendlink.FriendLinkCreated:
 		return s.handleFriendlinkCreated(ctx, e)
 
+	case domainfriendlink.FriendLinkApproved:
+		return s.handleFriendlinkReviewed(ctx, e.AggregateID(), e.Name, true)
+
+	case domainfriendlink.FriendLinkRejected:
+		return s.handleFriendlinkReviewed(ctx, e.AggregateID(), e.Name, false)
+
 	case domaincomment.CommentApproved:
 		return s.handleCommentApproved(ctx, e)
+
+	case domaincomment.CommentSpammed:
+		return s.handleCommentSpammed(ctx, e)
+
+	case domaincomment.CommentSubmitted:
+		return s.handleCommentSubmitted(ctx, e)
+
+	case domainuser.UserPasswordChanged:
+		return s.handlePasswordChanged(e), true
+
+	case domainapitoken.PATCreated:
+		return s.handlePATCreated(e), true
+
+	case domainapitoken.PATDeleted:
+		return s.handlePATDeleted(e), true
+
+	case domainuser.UserRoleChanged:
+		return s.handleRoleChanged(e), true
+
+	case domainuser.UserStatusChanged:
+		return s.handleStatusChanged(e), true
+
+	case domainuser.UserRegistered:
+		return s.handleUserRegistered(ctx, e)
 
 	default:
 		return nil, false
 	}
+}
+
+// --- 账号安全通知（接收者即本人 = 聚合 ID，无需 lookup）---
+
+func (s *Subscriber) selfSecurityAction(userID domainshared.ID, title, body string, payload map[string]any) []notifyAction {
+	return []notifyAction{{
+		userID:     userID,
+		sourceType: domainnotification.SourceAccountSecurity,
+		sourceID:   userID,
+		title:      title,
+		body:       body,
+		payload:    payload,
+	}}
+}
+
+func (s *Subscriber) handlePasswordChanged(e domainuser.UserPasswordChanged) []notifyAction {
+	return s.selfSecurityAction(e.AggregateID(),
+		"密码已修改",
+		"如非本人操作，请立即重置密码并退出所有登录会话",
+		map[string]any{"action": "password_changed"},
+	)
+}
+
+func (s *Subscriber) handlePATCreated(e domainapitoken.PATCreated) []notifyAction {
+	return s.selfSecurityAction(e.AggregateID(),
+		fmt.Sprintf("API Token「%s」已创建", e.Name),
+		"如非本人操作，请立即删除该 Token 并修改密码",
+		map[string]any{"action": "api_token_created", "name": e.Name},
+	)
+}
+
+func (s *Subscriber) handlePATDeleted(e domainapitoken.PATDeleted) []notifyAction {
+	return s.selfSecurityAction(e.AggregateID(),
+		fmt.Sprintf("API Token「%s」已删除", e.Name),
+		"",
+		map[string]any{"action": "api_token_deleted", "name": e.Name},
+	)
+}
+
+func (s *Subscriber) handleRoleChanged(e domainuser.UserRoleChanged) []notifyAction {
+	return s.selfSecurityAction(e.AggregateID(),
+		fmt.Sprintf("你的角色已变更为「%s」", e.To),
+		fmt.Sprintf("原角色「%s」", e.From),
+		map[string]any{"action": "role_changed", "from": string(e.From), "to": string(e.To), "username": e.UserName},
+	)
+}
+
+func (s *Subscriber) handleStatusChanged(e domainuser.UserStatusChanged) []notifyAction {
+	title := "你的账号已启用"
+	if !e.To {
+		title = "你的账号已被停用"
+	}
+	return s.selfSecurityAction(e.AggregateID(),
+		title,
+		"",
+		map[string]any{"action": "status_changed", "active": e.To, "username": e.UserName},
+	)
 }
 
 // --- 事件处理 ---
@@ -150,6 +257,9 @@ func (s *Subscriber) handleSubscriptionFetched(ctx context.Context, e domainsubs
 	} else {
 		title = fmt.Sprintf("订阅「%s」抓取失败", e.Title)
 		body = e.Error
+		if e.AutoPaused {
+			body += "；已达失败阈值，订阅已自动暂停，恢复需到订阅管理手动操作"
+		}
 	}
 	sourceType := domainnotification.SourceSubscriptionFailed
 	if e.Success {
@@ -191,7 +301,37 @@ func (s *Subscriber) handleFriendlinkCreated(ctx context.Context, e domainfriend
 	return actions, true
 }
 
-func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.CommentApproved) ([]notifyAction, bool) {
+// handleFriendlinkReviewed 友链审核结果通知登录申请者；匿名申请无接收者跳过。
+func (s *Subscriber) handleFriendlinkReviewed(ctx context.Context, linkID domainshared.ID, name string, approved bool) ([]notifyAction, bool) {
+	applicantID, err := s.friendlinkLookup.FindApplicantID(ctx, linkID)
+	if err != nil {
+		s.log.Warn().Err(err).Str("friendlink_id", linkID.String()).Msg("解析友链申请者失败")
+		return nil, false
+	}
+	if applicantID == nil {
+		return nil, false
+	}
+
+	var title, body string
+	if approved {
+		title = fmt.Sprintf("你的友链申请「%s」已通过", name)
+		body = "已上架到友链页"
+	} else {
+		title = fmt.Sprintf("你的友链申请「%s」未通过", name)
+		body = "可调整站点信息后重新申请"
+	}
+	return []notifyAction{{
+		userID:     *applicantID,
+		sourceType: domainnotification.SourceFriendLinkReviewed,
+		sourceID:   linkID,
+		title:      title,
+		body:       body,
+		payload:    map[string]any{"name": name, "approved": approved},
+	}}, true
+}
+
+// handleCommentSpammed 评论被标垃圾 → 通知评论作者审核未通过；匿名评论跳过。
+func (s *Subscriber) handleCommentSpammed(ctx context.Context, e domaincomment.CommentSpammed) ([]notifyAction, bool) {
 	authorID, err := s.commentLookup.FindAuthorID(ctx, e.AggregateID())
 	if err != nil {
 		s.log.Warn().Err(err).Str("comment_id", e.AggregateID().String()).Msg("解析评论作者失败")
@@ -203,10 +343,96 @@ func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.
 
 	return []notifyAction{{
 		userID:     *authorID,
-		sourceType: domainnotification.SourceCommentApproved,
+		sourceType: domainnotification.SourceCommentRejected,
 		sourceID:   e.AggregateID(),
-		title:      "你的评论已审核通过",
+		title:      "你的评论未通过审核",
 		body:       "",
 		payload:    map[string]any{"comment_id": e.AggregateID().String()},
 	}}, true
+}
+
+// handleCommentSubmitted 评论提交待审 → 通知管理员（与友链申请/新注册同通道）。
+func (s *Subscriber) handleCommentSubmitted(ctx context.Context, e domaincomment.CommentSubmitted) ([]notifyAction, bool) {
+	adminIDs, err := s.adminLookup.FindAdminIDs(ctx)
+	if err != nil {
+		s.log.Warn().Err(err).Msg("解析管理员用户失败")
+		return nil, false
+	}
+
+	actions := make([]notifyAction, 0, len(adminIDs))
+	for _, adminID := range adminIDs {
+		actions = append(actions, notifyAction{
+			userID:     adminID,
+			sourceType: domainnotification.SourceCommentPending,
+			sourceID:   e.AggregateID(),
+			title:      "有新评论待审核",
+			body:       "",
+			payload:    map[string]any{"comment_id": e.AggregateID().String()},
+		})
+	}
+	return actions, true
+}
+
+// handleUserRegistered 新用户注册通知管理员（复用 adminLookup，与友链申请同通道）。
+func (s *Subscriber) handleUserRegistered(ctx context.Context, e domainuser.UserRegistered) ([]notifyAction, bool) {
+	adminIDs, err := s.adminLookup.FindAdminIDs(ctx)
+	if err != nil {
+		s.log.Warn().Err(err).Msg("解析管理员用户失败")
+		return nil, false
+	}
+
+	actions := make([]notifyAction, 0, len(adminIDs))
+	for _, adminID := range adminIDs {
+		actions = append(actions, notifyAction{
+			userID:     adminID,
+			sourceType: domainnotification.SourceUserRegistered,
+			sourceID:   e.AggregateID(),
+			title:      "新用户注册",
+			body:       e.Email.String(),
+			payload:    map[string]any{"user_id": e.AggregateID().String(), "email": e.Email.String()},
+		})
+	}
+	return actions, true
+}
+
+// handleCommentApproved 评论审核通过 → 双接收者：评论作者（comment_approved）
+// 与文章作者（comment_created，自评跳过）。
+// Auto（免审自动通过）跳过评论作者通知——刚发完就收到「已审核通过」是噪音；
+// 文章作者的新评论通知不受影响。
+func (s *Subscriber) handleCommentApproved(ctx context.Context, e domaincomment.CommentApproved) ([]notifyAction, bool) {
+	commentID := e.AggregateID()
+
+	authorID, err := s.commentLookup.FindAuthorID(ctx, commentID)
+	if err != nil {
+		s.log.Warn().Err(err).Str("comment_id", commentID.String()).Msg("解析评论作者失败")
+		return nil, false
+	}
+
+	actions := make([]notifyAction, 0, 2)
+	if authorID != nil && !e.Auto {
+		actions = append(actions, notifyAction{
+			userID:     *authorID,
+			sourceType: domainnotification.SourceCommentApproved,
+			sourceID:   commentID,
+			title:      "你的评论已审核通过",
+			body:       "",
+			payload:    map[string]any{"comment_id": commentID.String()},
+		})
+	}
+
+	postAuthorID, err := s.postAuthorLookup.FindPostAuthorID(ctx, commentID)
+	if err != nil {
+		s.log.Warn().Err(err).Str("comment_id", commentID.String()).Msg("解析文章作者失败")
+	} else if postAuthorID != nil && (authorID == nil || *postAuthorID != *authorID) {
+		actions = append(actions, notifyAction{
+			userID:     *postAuthorID,
+			sourceType: domainnotification.SourceCommentCreated,
+			sourceID:   commentID,
+			title:      "你的文章收到新评论",
+			body:       "",
+			payload:    map[string]any{"comment_id": commentID.String()},
+		})
+	}
+
+	return actions, len(actions) > 0
 }

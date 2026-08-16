@@ -53,6 +53,9 @@ function makeUser(overrides: Partial<UserDTO> = {}): UserDTO {
 		email_verified: true,
 		is_active: true,
 		created_at: "2026-01-01T00:00:00Z",
+		has_password: true,
+		google_bound: false,
+		github_bound: false,
 		permissions: [],
 		...overrides,
 	};

@@ -16,7 +16,7 @@
 
 - **文章创作**：Markdown 富文本（TipTap）、流程图/时序图/饼图等图块、公式、代码高亮（Shiki）、版本管理、草稿/发布/归档状态机
 - **阅读体验**：SSR 首屏、目录导航、深色主题、锚点批注 + 评论互动（GIF 表情、图片上传）、音乐播放
-- **社区能力**：批注审核工作流、按 IP 哈希匿名的表情反应、公告、项目展示
+- **社区能力**：批注审核工作流、按 IP 哈希匿名的表情反应、公告、项目展示、友链申请与审核、站内通知中心（SSE 实时推送）
 - **平台能力**：RBAC 角色权限（内置超管 + 委派超管）、登录态审计、操作日志（事件驱动 append-only）、用户/媒体/订阅管理
 - **可运行代码块**：代码沙箱执行（Python/Node/Go/Rust/Bun，复用 yggdrasil runner 镜像）
 - **开放接口**：RESTful API + OpenAPI 文档、MCP 服务（写作/评论检索/RSS 抓取，最小权限拆分）
@@ -24,20 +24,20 @@
 
 ## 技术栈
 
-### 后端 (`api/`)
+### 后端（`api/`）
 
 | 类别 | 选型 |
 |------|------|
 | 语言 | Go 1.26 |
 | 路由 | chi v5 |
-| 数据库 | PostgreSQL 16（GORM + golang-migrate + sqlc） |
+| 数据库 | PostgreSQL 16（GORM 数据访问 + golang-migrate SQL 迁移） |
 | 缓存 | Redis 7 |
 | 认证 | Opaque session cookie（Redis 后端）+ CSRF double-submit |
 | 日志 | zerolog（结构化） |
-| 依赖注入 | google/wire（部分模块）+ 手工装配 |
+| 依赖注入 | 手工装配（`internal/app/*_container.go` 模块容器） |
 | 架构 | DDD 四层（domain/application/infrastructure/interfaces） |
 
-### 前端 (`web/`)
+### 前端（`web/`）
 
 | 类别 | 选型 |
 |------|------|
@@ -57,7 +57,7 @@
 
 ## 架构概览
 
-```
+```text
 violet/
 ├── api/                    Go 后端服务（DDD 四层）
 │   ├── cmd/
@@ -69,7 +69,7 @@ violet/
 │   │   ├── application/    应用层（用例编排、CQRS command/query）
 │   │   ├── infrastructure/ 基础设施层（GORM 实现、Redis、外部 API 适配）
 │   │   ├── interfaces/     接口层（HTTP handler、路由、中间件）
-│   │   ├── app/            依赖注入容器（wire / 手工装配）
+│   │   ├── app/            依赖注入容器（手工装配，每模块一个 *_container.go）
 │   │   └── middleware/     HTTP 中间件（session/CSRF/限流/审计）
 │   ├── migrations/         数据库迁移（golang-migrate）
 │   └── config.yaml         入库配置（全量配置文档，敏感值走根 .env）
@@ -112,9 +112,9 @@ make dev
 
 启动后：
 
-- 前端: http://localhost:5173
-- 后端 API: http://localhost:9090
-- 健康检查: http://localhost:9090/api/health
+- 前端：http://localhost:5173
+- 后端 API：http://localhost:9090
+- 健康检查：http://localhost:9090/api/health
 
 <details>
 <summary>在 Docker 容器内开发（coder / code-server / OMP 等）</summary>
@@ -134,42 +134,13 @@ make dev-dind
 
 前置条件：`docker.sock` 可访问（已加入 `docker` 组）。`host.docker.internal` 由 Docker Desktop 内置；Linux 原生 Docker 需在容器加 `--add-host=host.docker.internal:host-gateway`。
 
-
 ## 生产部署
 
-线上环境为 **xunrua.top**（rua 服务器，SSR 容器 + nginx-proxy 反代 + Let's Encrypt TLS）。日常发版全自动，不需要手动登录服务器：
+线上环境为 **xunrua.top**（rua 服务器，SSR 容器 + nginx-proxy 反代 + Let's Encrypt TLS）。日常发版全自动：向 `release/2.0` 推送 `feat`/`fix` 等发版型 commit → release-please 自动开 release PR → 合并即打 tag 并触发自动部署（按侧变更检测、迁移门禁、健康检查与跨组件冒烟，失败自动回滚）。`docs`/`chore`/`ci` 类型不发版。
 
-```mermaid
-graph LR
-    A[push 到 release/2.0] --> B[CI 检查]
-    B --> C[release-please 开 release PR]
-    C --> D[合并 release PR]
-    D --> E[自动打 tag]
-    E --> F[deploy.yml 自动部署]
-    F --> G{变更检测}
-    G --> H[构建镜像<br/>迁移门禁]
-    H --> I[健康检查 + 跨组件冒烟]
-    I --> J[失败自动回滚]
-```
-
-```text
-https://xunrua.top
-       │
-       ▼
-┌────────────────┐   /api/* /uploads/*   ┌──────────────┐
-│  nginx-proxy   │ ────────────────────► │ blog-api:9090 │──► postgres / redis
-│  (TLS + 反代)  │                        └──────────────┘
-│                │   / (SSR)              ┌──────────────┐
-│                │ ────────────────────► │ blog-web:3000 │
-└────────────────┘   VIRTUAL_HOST        └──────────────┘
-```
-
-要点：
-
-- **发版**：向 `release/2.0` 推送 `feat`/`fix` 等发版型 commit，release-please 自动开 release PR；合并即打 tag 并触发部署。`docs`/`chore`/`ci` 类型不发版。
-- **部署**：deploy.yml 在 rua 的 self-hosted runner 上按侧（api/web）变更检测、构建、迁移门禁、健康检查与跨组件冒烟；失败自动回滚到上一版本锚点。
-- **手动兜底**：runner 不可用或紧急发布时，见 [手动部署手册](docs/deploy/manual-deploy.md)；发布全流程见 [发布手册](docs/deploy/release-runbook.md)。
-- **本地 Docker 生产模式**（无需服务器）：`make deploy-prod-init` 初始化 `.env`，`make deploy-prod` 构建并启动。
+- [发布手册](docs/deploy/release-runbook.md)：发版流程、回滚、迁移门禁、线上拓扑
+- [手动部署手册](docs/deploy/manual-deploy.md)：runner 不可用或紧急发布时兜底
+- 本地 Docker 生产模式（无需服务器）：`make deploy-prod-init` 初始化 `.env`，`make deploy-prod` 构建并启动
 
 ## 常用命令
 
@@ -196,9 +167,6 @@ make web-lint       # 前端 biome
 make web-typecheck  # TypeScript 类型检查
 make web-test       # 前端 Vitest
 
-# 代码生成
-make wire           # 生成 wire 依赖注入代码
-
 # 构建
 make build          # 构建前后端生产版本
 ```
@@ -213,7 +181,7 @@ make build          # 构建前后端生产版本
 
 启用后：
 
-- **pre-commit**: 检查 Go 文件 gofmt 格式与前端 biome 检查
+- **pre-commit**：检查 Go 文件 gofmt 格式与前端 biome 检查
 
 提交规范（Conventional Commits，中文 subject）与分支命名详见 [贡献指南](CONTRIBUTING.md)。
 

@@ -92,7 +92,7 @@ function UserPublicProfilePage() {
 								{profile.username}
 							</h1>
 							{profile.bio && (
-								<p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground">
+								<p className="mt-1 whitespace-pre-wrap wrap-break-word text-sm text-muted-foreground">
 									{profile.bio}
 								</p>
 							)}

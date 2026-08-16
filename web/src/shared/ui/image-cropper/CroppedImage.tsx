@@ -1,5 +1,6 @@
 import { parseCrop } from "@shared/lib/crop-url";
 import { contentImageUrl } from "@shared/lib/image-url";
+import { ImageOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/shared/lib/utils";
 import { coverCropTransform, type Size } from "./lib/crop-display";
@@ -47,9 +48,11 @@ export function CroppedImage({
 	const imgRef = useRef<HTMLImageElement>(null);
 	const [natural, setNatural] = useState<Size | null>(null);
 	const [box, setBox] = useState<Size | null>(null);
-
-	// 显示层缩略:crop 参数经 imageUrl 合并保留,聚焦逻辑不受影响
+	// 加载失败兜底：外链图失效时占位，避免露出原生碎图。
+	// 失败态按 src 记录——src 变化天然重置，无需 reset effect
 	const displaySrc = width ? contentImageUrl(src, { width }) : src;
+	const [failedFor, setFailedFor] = useState<string | null>(null);
+	const failed = failedFor === displaySrc;
 
 	// 容器尺寸:首次测量 + ResizeObserver 跟踪(容器随视口响应式变化)
 	useEffect(() => {
@@ -83,6 +86,23 @@ export function CroppedImage({
 
 	const transform = rect && natural && box ? coverCropTransform(rect, natural, box) : null;
 
+	// 失败兜底：容器尺寸照旧（调用方 className 撑住布局），灰底 + 图标占位
+	if (failed) {
+		return (
+			<div
+				role="img"
+				aria-label={alt}
+				className={cn(
+					"flex items-center justify-center overflow-hidden bg-muted",
+					className,
+				)}
+				style={aspect ? { aspectRatio: aspect } : undefined}
+			>
+				<ImageOff className="size-8 max-h-[60%] max-w-[60%] text-muted-foreground/50" />
+			</div>
+		);
+	}
+
 	// 无 ?crop=:普通居中 cover(旧行为)
 	if (!rect) {
 		return (
@@ -94,6 +114,7 @@ export function CroppedImage({
 					src={displaySrc}
 					alt={alt}
 					loading={loading}
+					onError={() => setFailedFor(displaySrc)}
 					className={cn("h-full w-full object-cover", imgClassName)}
 				/>
 			</div>
@@ -117,6 +138,7 @@ export function CroppedImage({
 						h: e.currentTarget.naturalHeight,
 					})
 				}
+				onError={() => setFailedFor(displaySrc)}
 				className={cn("absolute max-w-none", imgClassName)}
 				style={
 					transform

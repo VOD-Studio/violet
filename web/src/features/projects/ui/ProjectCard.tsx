@@ -3,6 +3,7 @@ import { contentImageUrl } from "@shared/lib/image-url";
 import { Badge } from "@shared/ui/base/badge";
 import { Button } from "@shared/ui/base/button";
 import { Code, ExternalLink } from "lucide-react";
+import { useState } from "react";
 
 interface ProjectCardProps {
 	project: Project;
@@ -14,16 +15,22 @@ interface ProjectCardProps {
  * 按接口完整字段排版：封面图、标题、描述、技术栈标签、演示链接、GitHub 链接。
  */
 export function ProjectCard({ project }: ProjectCardProps) {
+	// 外链封面失效时回落到占位分支，避免原生碎图。
+	// 失败态按 image_url 记录——url 变化天然重置
+	const [brokenFor, setBrokenFor] = useState<string | null>(null);
+	const imgBroken = brokenFor === project.image_url;
+
 	return (
 		<article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-edge-hairline bg-background transition-colors hover:bg-muted/50">
 			{/* 封面图 */}
 			<div className="relative aspect-video overflow-hidden">
-				{project.image_url ? (
+				{project.image_url && !imgBroken ? (
 					<img
 						src={contentImageUrl(project.image_url, { width: 600 })}
 						alt={project.title}
 						className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 						loading="lazy"
+						onError={() => setBrokenFor(project.image_url)}
 					/>
 				) : (
 					<div className="flex h-full w-full items-center justify-center bg-muted">

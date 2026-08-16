@@ -11,6 +11,7 @@ import type { NotificationSSEEvent } from "@shared/api/notifications";
 import { useSessionStore } from "@shared/api/session";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { notificationKeys } from "../api/keys";
 
 export const useNotificationStream = () => {
@@ -25,6 +26,13 @@ export const useNotificationStream = () => {
 		const url = "/api/v1/notifications/stream";
 		const es = new EventSource(url);
 
+		// 建连即对账：后端推送是 fire-and-forget（无连接时直接丢弃），
+		// 通知可能落在「铃铛挂载后的初次查询」与「本次建连」之间的空窗，补拉一次消除盲区
+		es.onopen = () => {
+			qc.invalidateQueries({ queryKey: notificationKeys.list });
+			qc.invalidateQueries({ queryKey: notificationKeys.unreadCount });
+		};
+
 		es.onmessage = (e) => {
 			try {
 				const event: NotificationSSEEvent = JSON.parse(e.data);
@@ -32,6 +40,11 @@ export const useNotificationStream = () => {
 				// 新通知到达 → 刷新列表 + 未读数
 				qc.invalidateQueries({ queryKey: notificationKeys.list });
 				qc.invalidateQueries({ queryKey: notificationKeys.unreadCount });
+				// badge +1 太隐蔽，「完成后会通知你」的承诺靠 toast 兑现；
+				// 只弹 1 分钟内的新通知——重连补发（Last-Event-ID）的是旧通知，不再弹
+				if (Date.now() - new Date(event.created_at).getTime() < 60_000) {
+					toast(event.title, { description: event.body || undefined });
+				}
 			} catch {
 				// 忽略解析失败（如心跳注释行）
 			}

@@ -5,14 +5,14 @@ export default function Hero() {
 		<div className="relative flex h-[100vh] w-full items-center justify-center overflow-hidden">
 			{/* 渐变光斑 — 三色（蓝/紫/青），dark 模式切换 screen 混合 */}
 			<div className="absolute inset-0 opacity-40 dark:opacity-30">
-				<div className="absolute top-1/4 left-1/4 size-96 rounded-full bg-blue-400/30 mix-blend-multiply blur-3xl animate-blob dark:mix-blend-screen" />
-				<div className="absolute top-1/3 right-1/4 size-96 rounded-full bg-purple-400/30 mix-blend-multiply blur-3xl animate-blob [animation-delay:2s] dark:mix-blend-screen" />
-				<div className="absolute bottom-1/4 left-1/3 size-80 rounded-full bg-cyan-400/20 mix-blend-multiply blur-3xl animate-blob [animation-delay:4s] dark:mix-blend-screen" />
+				<div className="absolute top-1/4 left-1/4 size-96 rounded-full bg-[radial-gradient(circle,rgba(96,165,250,0.32),rgba(96,165,250,0.12)_45%,transparent_70%)] dark:bg-[radial-gradient(circle,rgba(96,165,250,0.38),rgba(96,165,250,0.14)_45%,transparent_70%)] motion-safe:animate-blob" />
+				<div className="absolute top-1/3 right-1/4 size-96 rounded-full bg-[radial-gradient(circle,rgba(192,132,252,0.30),rgba(192,132,252,0.10)_45%,transparent_70%)] dark:bg-[radial-gradient(circle,rgba(192,132,252,0.38),rgba(192,132,252,0.14)_45%,transparent_70%)] motion-safe:animate-blob [animation-delay:2s]" />
+				<div className="absolute bottom-1/4 left-1/3 size-80 rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.22),rgba(34,211,238,0.08)_45%,transparent_70%)] dark:bg-[radial-gradient(circle,rgba(34,211,238,0.30),rgba(34,211,238,0.12)_45%,transparent_70%)] motion-safe:animate-blob [animation-delay:4s]" />
 			</div>
 
 			{/* 网格底纹 — 径向遮罩聚焦中心 */}
 			<div
-				className="absolute inset-0 text-foreground opacity-[0.03]"
+				className="absolute inset-0 text-foreground opacity-3"
 				style={{
 					backgroundImage:
 						"linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
@@ -68,7 +68,7 @@ export default function Hero() {
 				className="absolute bottom-10 flex flex-col items-center opacity-50"
 			>
 				<span className="mb-2 text-xs">Scroll</span>
-				<div className="h-8 w-[1px] bg-foreground" />
+				<div className="h-8 w-0.25 bg-foreground" />
 			</motion.div>
 		</div>
 	);

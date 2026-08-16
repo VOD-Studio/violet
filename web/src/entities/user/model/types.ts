@@ -28,6 +28,12 @@ export interface UserDTO {
 	is_active: boolean;
 	/** 创建时间（RFC3339） */
 	created_at: string;
+	/** 是否设置了密码（false=仅 OAuth 登录，设置密码走忘记密码邮箱流程） */
+	has_password: boolean;
+	/** 是否绑定 Google 登录 */
+	google_bound: boolean;
+	/** 是否绑定 GitHub 登录 */
+	github_bound: boolean;
 	/** 权限码列表（仅当后端返回时存在） */
 	permissions?: string[];
 }

@@ -3,18 +3,54 @@ import { Button } from "@shared/ui/base/button";
 import { Input } from "@shared/ui/base/input";
 import { Label } from "@shared/ui/base/label";
 import { useNavigate } from "@tanstack/react-router";
-import { Check, PencilLine, X } from "lucide-react";
+import { Check, KeyRound, PencilLine, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { SectionCard } from "./SectionCard";
+
+interface PasswordSectionProps {
+	/** 是否已设置密码；false 时展示「设置密码」引导（OAuth 建号用户） */
+	hasPassword: boolean;
+}
 
 /**
- * PasswordSection - 密码修改卡片
+ * PasswordSection - 密码卡片
  *
- * 与 ProfileShell 配合：作为「密码」Tab 内容。
- * 默认态显示「已设置 + 修改按钮」；编辑态三段密码输入 + Save/Cancel。
+ * 与 ProfileShell 配合：作为「账户与安全」Tab 内容之一。
+ * 已设置密码：默认态显示「修改按钮」；编辑态三段密码输入 + Save/Cancel，
  * 成功后 1.5s 跳登录页要求重登。
+ * 未设置密码（OAuth 建号）：引导走忘记密码邮箱验证流程补设。
  */
-export const PasswordSection = () => {
+export const PasswordSection = ({ hasPassword }: PasswordSectionProps) => {
+	const navigate = useNavigate();
+
+	if (!hasPassword) {
+		return (
+			<SectionCard
+				title="密码"
+				description="当前使用第三方账号登录，未设置密码"
+				action={
+					<Button
+						size="sm"
+						className="gap-1.5"
+						onClick={() => navigate({ to: "/forgot-password" })}
+					>
+						<KeyRound className="size-3.5" />
+						设置密码
+					</Button>
+				}
+			>
+				<p className="text-sm text-muted-foreground">
+					通过邮箱验证设置密码后，即可使用邮箱密码登录；第三方登录不受影响。
+				</p>
+			</SectionCard>
+		);
+	}
+
+	return <ChangePasswordCard />;
+};
+
+const ChangePasswordCard = () => {
 	const [isEditing, setIsEditing] = useState(false);
 	const [oldPassword, setOldPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
@@ -51,7 +87,13 @@ export const PasswordSection = () => {
 					}, 1500);
 				},
 				onError: (err) => {
-					toast.error(err instanceof Error ? err.message : "密码修改失败");
+					// 存量 OAuth 建号用户（随机哈希）不知道原密码，失败时引导走邮箱重置
+					toast.error(err instanceof Error ? err.message : "密码修改失败", {
+						action: {
+							label: "忘记密码？",
+							onClick: () => navigate({ to: "/forgot-password" }),
+						},
+					});
 				},
 			},
 		);
@@ -74,17 +116,22 @@ export const PasswordSection = () => {
 	};
 
 	return (
-		<div className="rounded-xl border bg-card p-6 shadow-sm">
-			<div className="mb-5 flex items-center justify-between gap-4">
-				<h2 className="text-base font-semibold">密码</h2>
-				{!isEditing && (
-					<Button size="sm" variant="outline" onClick={handleEdit} className="gap-1.5">
+		<SectionCard
+			title={isEditing ? "修改密码" : "密码"}
+			description={isEditing ? "定期更换密码有助于保障账户安全" : undefined}
+			action={
+				!isEditing ? (
+					<Button
+						size="icon-sm"
+						variant="ghost"
+						onClick={handleEdit}
+						aria-label="修改密码"
+					>
 						<PencilLine className="size-3.5" />
-						修改
 					</Button>
-				)}
-			</div>
-
+				) : undefined
+			}
+		>
 			{isEditing ? (
 				<div className="space-y-4">
 					<PasswordField
@@ -113,7 +160,7 @@ export const PasswordSection = () => {
 						error={errors.confirmPassword}
 					/>
 
-					<div className="flex items-center gap-2 pt-1">
+					<div className="flex flex-wrap items-center gap-2 pt-1">
 						<Button
 							onClick={handleSave}
 							disabled={changePassword.isPending}
@@ -133,12 +180,23 @@ export const PasswordSection = () => {
 						</Button>
 					</div>
 
-					<p className="text-sm text-muted-foreground">修改密码后需要重新登录</p>
+					<div className="flex flex-wrap items-center justify-between gap-2">
+						<p className="text-sm text-muted-foreground">修改成功后需重新登录</p>
+						{/* 存量 OAuth 建号用户不知原密码（随机哈希），入口前置免得先失败一次 */}
+						<Button
+							variant="link"
+							size="sm"
+							className="h-auto px-0 text-xs"
+							onClick={() => navigate({ to: "/forgot-password" })}
+						>
+							忘记原密码?
+						</Button>
+					</div>
 				</div>
 			) : (
-				<p className="text-sm text-muted-foreground">定期修改密码可提高账户安全性</p>
+				<p className="text-sm text-muted-foreground">已设置密码，可使用邮箱密码登录</p>
 			)}
-		</div>
+		</SectionCard>
 	);
 };
 

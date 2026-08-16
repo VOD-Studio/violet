@@ -171,9 +171,9 @@ function CustomColorPicker({ value, onChange }: CustomColorPickerProps) {
 				style={{ backgroundColor: `hsl(${hsv.h} 100% 50%)` }}
 			>
 				{/* 白色横向渐变（饱和度）*/}
-				<div className="absolute inset-0 bg-gradient-to-r from-white to-transparent" />
+				<div className="absolute inset-0 bg-linear-to-r from-white to-transparent" />
 				{/* 黑色纵向渐变（明度）*/}
-				<div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+				<div className="absolute inset-0 bg-linear-to-t from-black to-transparent" />
 				{/* 指针 */}
 				<div
 					className="pointer-events-none absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow"

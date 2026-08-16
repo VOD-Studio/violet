@@ -9,24 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ThemeLabRouteImport } from './routes/theme-lab'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as FriendsLabRouteImport } from './routes/friends-lab'
 import { Route as FriendsRouteImport } from './routes/friends'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ChangelogRouteImport } from './routes/changelog'
-import { Route as AnnouncementLabRouteImport } from './routes/announcement-lab'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TweetsIndexRouteImport } from './routes/tweets/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as LabIndexRouteImport } from './routes/lab.index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as UsersUsernameRouteImport } from './routes/users/$username'
 import { Route as TweetsIdRouteImport } from './routes/tweets/$id'
+import { Route as LabThemeRouteImport } from './routes/lab.theme'
+import { Route as LabNavRouteImport } from './routes/lab.nav'
+import { Route as LabFriendsRouteImport } from './routes/lab.friends'
+import { Route as LabBlogRouteImport } from './routes/lab.blog'
+import { Route as LabAnnouncementRouteImport } from './routes/lab.announcement'
 import { Route as BlogArchiveRouteImport } from './routes/blog/archive'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as AnnouncementsIdRouteImport } from './routes/announcements.$id'
@@ -59,11 +62,6 @@ import { Route as AdminSettingsAboutRouteImport } from './routes/admin.settings.
 import { Route as AdminPostsNewRouteImport } from './routes/admin.posts.new'
 import { Route as AdminPostsIdRouteImport } from './routes/admin.posts.$id'
 
-const ThemeLabRoute = ThemeLabRouteImport.update({
-  id: '/theme-lab',
-  path: '/theme-lab',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -72,11 +70,6 @@ const RegisterRoute = RegisterRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FriendsLabRoute = FriendsLabRouteImport.update({
-  id: '/friends-lab',
-  path: '/friends-lab',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FriendsRoute = FriendsRouteImport.update({
@@ -92,11 +85,6 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const ChangelogRoute = ChangelogRouteImport.update({
   id: '/changelog',
   path: '/changelog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AnnouncementLabRoute = AnnouncementLabRouteImport.update({
-  id: '/announcement-lab',
-  path: '/announcement-lab',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -124,6 +112,11 @@ const ProfileIndexRoute = ProfileIndexRouteImport.update({
   path: '/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LabIndexRoute = LabIndexRouteImport.update({
+  id: '/lab/',
+  path: '/lab/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/blog/',
   path: '/blog/',
@@ -147,6 +140,31 @@ const UsersUsernameRoute = UsersUsernameRouteImport.update({
 const TweetsIdRoute = TweetsIdRouteImport.update({
   id: '/tweets/$id',
   path: '/tweets/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabThemeRoute = LabThemeRouteImport.update({
+  id: '/lab/theme',
+  path: '/lab/theme',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabNavRoute = LabNavRouteImport.update({
+  id: '/lab/nav',
+  path: '/lab/nav',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabFriendsRoute = LabFriendsRouteImport.update({
+  id: '/lab/friends',
+  path: '/lab/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabBlogRoute = LabBlogRouteImport.update({
+  id: '/lab/blog',
+  path: '/lab/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabAnnouncementRoute = LabAnnouncementRouteImport.update({
+  id: '/lab/announcement',
+  path: '/lab/announcement',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogArchiveRoute = BlogArchiveRouteImport.update({
@@ -308,14 +326,11 @@ const AdminPostsIdRoute = AdminPostsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/announcement-lab': typeof AnnouncementLabRoute
   '/changelog': typeof ChangelogRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
-  '/friends-lab': typeof FriendsLabRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/theme-lab': typeof ThemeLabRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
@@ -335,11 +350,17 @@ export interface FileRoutesByFullPath {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/lab/announcement': typeof LabAnnouncementRoute
+  '/lab/blog': typeof LabBlogRoute
+  '/lab/friends': typeof LabFriendsRoute
+  '/lab/nav': typeof LabNavRoute
+  '/lab/theme': typeof LabThemeRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/lab/': typeof LabIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/tweets/': typeof TweetsIndexRoute
@@ -358,14 +379,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/announcement-lab': typeof AnnouncementLabRoute
   '/changelog': typeof ChangelogRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
-  '/friends-lab': typeof FriendsLabRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/theme-lab': typeof ThemeLabRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
@@ -384,11 +402,17 @@ export interface FileRoutesByTo {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/lab/announcement': typeof LabAnnouncementRoute
+  '/lab/blog': typeof LabBlogRoute
+  '/lab/friends': typeof LabFriendsRoute
+  '/lab/nav': typeof LabNavRoute
+  '/lab/theme': typeof LabThemeRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
   '/about': typeof AboutIndexRoute
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
+  '/lab': typeof LabIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/tweets': typeof TweetsIndexRoute
@@ -409,14 +433,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/announcement-lab': typeof AnnouncementLabRoute
   '/changelog': typeof ChangelogRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/friends': typeof FriendsRoute
-  '/friends-lab': typeof FriendsLabRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
-  '/theme-lab': typeof ThemeLabRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/comments': typeof AdminCommentsRoute
   '/admin/emojis': typeof AdminEmojisRoute
@@ -436,11 +457,17 @@ export interface FileRoutesById {
   '/announcements/$id': typeof AnnouncementsIdRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/archive': typeof BlogArchiveRoute
+  '/lab/announcement': typeof LabAnnouncementRoute
+  '/lab/blog': typeof LabBlogRoute
+  '/lab/friends': typeof LabFriendsRoute
+  '/lab/nav': typeof LabNavRoute
+  '/lab/theme': typeof LabThemeRoute
   '/tweets/$id': typeof TweetsIdRoute
   '/users/$username': typeof UsersUsernameRoute
   '/about/': typeof AboutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
+  '/lab/': typeof LabIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/tweets/': typeof TweetsIndexRoute
@@ -462,14 +489,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/announcement-lab'
     | '/changelog'
     | '/forgot-password'
     | '/friends'
-    | '/friends-lab'
     | '/login'
     | '/register'
-    | '/theme-lab'
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
@@ -489,11 +513,17 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/lab/announcement'
+    | '/lab/blog'
+    | '/lab/friends'
+    | '/lab/nav'
+    | '/lab/theme'
     | '/tweets/$id'
     | '/users/$username'
     | '/about/'
     | '/admin/'
     | '/blog/'
+    | '/lab/'
     | '/profile/'
     | '/projects/'
     | '/tweets/'
@@ -512,14 +542,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/announcement-lab'
     | '/changelog'
     | '/forgot-password'
     | '/friends'
-    | '/friends-lab'
     | '/login'
     | '/register'
-    | '/theme-lab'
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
@@ -538,11 +565,17 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/lab/announcement'
+    | '/lab/blog'
+    | '/lab/friends'
+    | '/lab/nav'
+    | '/lab/theme'
     | '/tweets/$id'
     | '/users/$username'
     | '/about'
     | '/admin'
     | '/blog'
+    | '/lab'
     | '/profile'
     | '/projects'
     | '/tweets'
@@ -562,14 +595,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
-    | '/announcement-lab'
     | '/changelog'
     | '/forgot-password'
     | '/friends'
-    | '/friends-lab'
     | '/login'
     | '/register'
-    | '/theme-lab'
     | '/admin/announcements'
     | '/admin/comments'
     | '/admin/emojis'
@@ -589,11 +619,17 @@ export interface FileRouteTypes {
     | '/announcements/$id'
     | '/blog/$slug'
     | '/blog/archive'
+    | '/lab/announcement'
+    | '/lab/blog'
+    | '/lab/friends'
+    | '/lab/nav'
+    | '/lab/theme'
     | '/tweets/$id'
     | '/users/$username'
     | '/about/'
     | '/admin/'
     | '/blog/'
+    | '/lab/'
     | '/profile/'
     | '/projects/'
     | '/tweets/'
@@ -614,21 +650,24 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  AnnouncementLabRoute: typeof AnnouncementLabRoute
   ChangelogRoute: typeof ChangelogRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FriendsRoute: typeof FriendsRoute
-  FriendsLabRoute: typeof FriendsLabRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
-  ThemeLabRoute: typeof ThemeLabRoute
   AnnouncementsIdRoute: typeof AnnouncementsIdRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogArchiveRoute: typeof BlogArchiveRoute
+  LabAnnouncementRoute: typeof LabAnnouncementRoute
+  LabBlogRoute: typeof LabBlogRoute
+  LabFriendsRoute: typeof LabFriendsRoute
+  LabNavRoute: typeof LabNavRoute
+  LabThemeRoute: typeof LabThemeRoute
   TweetsIdRoute: typeof TweetsIdRoute
   UsersUsernameRoute: typeof UsersUsernameRoute
   AboutIndexRoute: typeof AboutIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  LabIndexRoute: typeof LabIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   TweetsIndexRoute: typeof TweetsIndexRoute
@@ -638,13 +677,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/theme-lab': {
-      id: '/theme-lab'
-      path: '/theme-lab'
-      fullPath: '/theme-lab'
-      preLoaderRoute: typeof ThemeLabRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -657,13 +689,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/friends-lab': {
-      id: '/friends-lab'
-      path: '/friends-lab'
-      fullPath: '/friends-lab'
-      preLoaderRoute: typeof FriendsLabRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/friends': {
@@ -685,13 +710,6 @@ declare module '@tanstack/react-router' {
       path: '/changelog'
       fullPath: '/changelog'
       preLoaderRoute: typeof ChangelogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/announcement-lab': {
-      id: '/announcement-lab'
-      path: '/announcement-lab'
-      fullPath: '/announcement-lab'
-      preLoaderRoute: typeof AnnouncementLabRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -729,6 +747,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lab/': {
+      id: '/lab/'
+      path: '/lab'
+      fullPath: '/lab/'
+      preLoaderRoute: typeof LabIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/': {
       id: '/blog/'
       path: '/blog'
@@ -762,6 +787,41 @@ declare module '@tanstack/react-router' {
       path: '/tweets/$id'
       fullPath: '/tweets/$id'
       preLoaderRoute: typeof TweetsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/theme': {
+      id: '/lab/theme'
+      path: '/lab/theme'
+      fullPath: '/lab/theme'
+      preLoaderRoute: typeof LabThemeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/nav': {
+      id: '/lab/nav'
+      path: '/lab/nav'
+      fullPath: '/lab/nav'
+      preLoaderRoute: typeof LabNavRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/friends': {
+      id: '/lab/friends'
+      path: '/lab/friends'
+      fullPath: '/lab/friends'
+      preLoaderRoute: typeof LabFriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/blog': {
+      id: '/lab/blog'
+      path: '/lab/blog'
+      fullPath: '/lab/blog'
+      preLoaderRoute: typeof LabBlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/announcement': {
+      id: '/lab/announcement'
+      path: '/lab/announcement'
+      fullPath: '/lab/announcement'
+      preLoaderRoute: typeof LabAnnouncementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/archive': {
@@ -1069,21 +1129,24 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  AnnouncementLabRoute: AnnouncementLabRoute,
   ChangelogRoute: ChangelogRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   FriendsRoute: FriendsRoute,
-  FriendsLabRoute: FriendsLabRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
-  ThemeLabRoute: ThemeLabRoute,
   AnnouncementsIdRoute: AnnouncementsIdRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogArchiveRoute: BlogArchiveRoute,
+  LabAnnouncementRoute: LabAnnouncementRoute,
+  LabBlogRoute: LabBlogRoute,
+  LabFriendsRoute: LabFriendsRoute,
+  LabNavRoute: LabNavRoute,
+  LabThemeRoute: LabThemeRoute,
   TweetsIdRoute: TweetsIdRoute,
   UsersUsernameRoute: UsersUsernameRoute,
   AboutIndexRoute: AboutIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
+  LabIndexRoute: LabIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   TweetsIndexRoute: TweetsIndexRoute,

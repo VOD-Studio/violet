@@ -90,23 +90,17 @@ func (h *GoogleLoginHandler) Handle(ctx context.Context, in GoogleLoginInput) (L
 	}
 
 	if u == nil {
-		// 用户不存在，创建新用户
-		b := make([]byte, 16)
-		rand.Read(b)
-		randomPwd := hex.EncodeToString(b)
-
-		hash, err := h.hasher.Hash(randomPwd)
-		if err != nil {
-			return LoginOutput{}, shared.Internal("密码哈希失败", err)
-		}
-
+		// 用户不存在，创建新用户。
+		// 密码存空哈希：OAuth 建号用户没有密码（bcrypt 对空哈希必然校验失败，
+		// 不构成可登录凭证），has_password=false 供前端展示「设置密码」入口；
+		// 需要密码登录时走忘记密码邮箱验证流程补设。
 		username, err := generateGoogleUsername(ctx, email, h.userRepo)
 		if err != nil {
 			return LoginOutput{}, shared.Internal("生成用户名失败", err)
 		}
 
-		u = user.NewUser(shared.NewID(), email, username, hash)
-		u.VerifyEmail()       // 谷歌账号已验证
+		u = user.NewUser(shared.NewID(), email, username, user.NewPasswordHash(""))
+		u.VerifyEmail() // 谷歌账号已验证
 		u.SetGoogleID(subject)
 		
 		if payload.Picture != "" {

@@ -61,7 +61,7 @@ export function CommentItem<T extends CommentRaw>({
 					{config.renderBody ? (
 						config.renderBody(item)
 					) : (
-						<p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
+						<p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">
 							{item.body}
 						</p>
 					)}

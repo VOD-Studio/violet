@@ -1,4 +1,4 @@
-# Blog API
+# violet / api
 
 Go 后端服务，为博客平台提供 RESTful API。采用 **DDD 四层架构**（领域驱动设计），支持文章、评论、音乐、表情、项目管理、用户认证与权限等功能。
 
@@ -8,11 +8,11 @@ Go 后端服务，为博客平台提供 RESTful API。采用 **DDD 四层架构*
 |------|------|
 | 语言 | Go 1.26 |
 | Web 框架 | chi v5 |
-| ORM | GORM（AutoMigrate） |
-| 数据库 | PostgreSQL 16 |
+| ORM | GORM（仓储实现，表结构由 SQL 迁移管理，无 AutoMigrate） |
+| 数据库 | PostgreSQL 16 + golang-migrate（SQL 迁移） |
 | 缓存 | Redis 7（session / 验证码 / 限流 / 状态存储） |
 | 认证 | Opaque session cookie + CSRF double-submit |
-| 依赖注入 | google/wire（role/permission 模块）+ 手工装配（其余模块） |
+| 依赖注入 | 手工装配（`internal/app/*_container.go` 模块容器，wire 已移除） |
 | 邮件 | Resend API |
 | 配置 | Viper（YAML + 环境变量） |
 | 日志 | zerolog |
@@ -42,7 +42,7 @@ make api     # 启动 API
 
 ## 目录结构
 
-```
+```text
 api/
 ├── cmd/
 │   ├── server/            # 应用入口（路由注册 + 依赖装配 + 启动）
@@ -57,7 +57,7 @@ api/
 │   ├── infrastructure/    # 基础设施层：仓储实现、外部 API 适配器、SessionStore
 │   ├── interfaces/http/   # 接口层：HTTP handler + 中间件
 │   ├── middleware/        # 全局 HTTP 中间件（Session/CSRF/限流/CORS/审计）
-│   ├── job/               # 定时任务（文件清理）
+│   ├── job/               # 定时任务（订阅抓取调度、文件清理）
 │   ├── migrate/           # 迁移执行器
 │   ├── openapi/           # OpenAPI 文档生成
 │   └── service/           # 启动期服务（B站表情种子）
@@ -108,22 +108,28 @@ api/
 | **post** | post | post | 文章 CRUD、发布/归档/草稿状态机、浏览计数、版本管理 |
 | **comment** | comment | comment | 评论 CRUD、回复、批注、审核（通过/垃圾/删除）、批量操作 |
 | **commentreaction** | commentreaction | commentreaction | 评论表情反应（IP 哈希匿名） |
+| **friendlink** | friendlink | friendlink | 友链申请、审核、上下架管理 |
+| **notification** | notification | notification | 站内通知（SSE 实时推送、未读中心、事件订阅写通知） |
+| **api_token** | api_token | api_token | 个人访问令牌 PAT（MCP 授权凭证） |
 | **project** | project | project | 项目展示 CRUD |
 | **announcement** | announcement | announcement（并入 content） | 公告管理 |
 | **emoji** | emoji | media | 表情分组/表情 CRUD、B站表情导入、文件上传 |
 | **upload** | upload | media | 分片上传（秒传/断点续传/合并）、文件管理 |
 | **media** | upload, music | media | 文件详情/批量删除/缩略图、音乐解析 |
 | **music** | music | media | 歌单管理、歌曲 CRUD、网易云解析（kite） |
+| **image** | image | image | 图片处理 |
+| **tweet** | tweet | tweet | 推文/动态发布 |
 | **settings** | settings | settings | 站点配置（key-value） |
 | **tag** | tag | tag | 标签 CRUD |
 | **github** | github | github | GitHub 贡献日历/仓库数据（GraphQL API） |
 | **mcp** | — | mcp | MCP 服务（写作/评论检索/RSS 抓取，按 PAT scope 拆分） |
 | **system** | — | system | 系统级设置（site settings） |
 | **coderunner** | coderunner | coderunner | 可运行代码块沙箱执行（复用 yggdrasil runner 镜像） |
-| **subscription** | subscription | subscription | RSS 订阅源管理、抓取与转载 |
+| **subscription** | subscription, subscription_entry | subscription | RSS 订阅源管理、抓取调度与转载 |
 | **audit** | audit | audit | 操作日志记录与查询 |
 | **stats** | stats | stats | 仪表盘统计聚合 |
 | **useradmin** | useradmin | useradmin | 用户管理（CRUD/角色/状态/批量操作） |
+| **releases** | releases | releases | 版本发布（release-please 集成） |
 
 > **注意**：`media` application 层同时服务 emoji/upload/music/media 四个 domain，因为它们共享基础设施（文件存储、音乐解析）。
 
@@ -135,7 +141,7 @@ api/
 |------|---------------------|------|------|
 | `auth/` | `SessionStore`, `CodeStore` | RedisSessionStore, RedisCodeStore | session 存储、验证码存储 |
 | `email/` | `EmailSender` | Sender (Resend) | 验证码/密码重置邮件 |
-| `eventbus/` | `EventBus` | Noop / InMemory | 领域事件总线（audit 订阅者事件驱动写日志） |
+| `eventbus/` | `EventBus` | Noop / InMemory | 领域事件总线（audit / notification 订阅者消费事件） |
 | `github/` | `GitHubProvider` | Adapter | GitHub GraphQL + REST API |
 | `music/` | `MusicProvider` | Provider | 网易云解析（kite SDK） |
 | `storage/` | `ChunkStorage` | LocalStorage | 分片文件存储、缩略图生成（imaging + ffmpeg） |
@@ -143,9 +149,7 @@ api/
 
 ## 依赖注入
 
-### 手工装配（多数模块）
-
-每个模块在 `internal/app/` 有一个 `*_container.go`，由 `main.go` 调用：
+手工装配：每个模块在 `internal/app/` 有一个 `*_container.go`，由根容器（`container.go` / `run.go`）统一构造：
 
 ```go
 // internal/app/auth_container.go
@@ -157,16 +161,7 @@ func NewAuthContainer(db, redis, cfg, emailSender, bus) (*AuthContainer, error) 
 }
 ```
 
-### wire 编译期注入（role/permission 模块）
-
-role/permission 模块依赖复杂，使用 google/wire：
-
-```bash
-# 修改 wire.go 后重新生成
-cd api && go generate ./internal/app/
-# 或从根目录
-make wire
-```
+> 历史说明：role/permission 模块曾用 google/wire 生成装配代码，为统一 DI 方式已移除（全仓手工装配），go.mod 中的 wire 依赖为待清理残留。
 
 ## 如何新增一个模块
 
@@ -174,7 +169,7 @@ make wire
 
 ### 1. domain 层
 
-```
+```text
 internal/domain/newsletter/
 ├── entity.go       # Subscription 聚合根 + 值对象
 └── repository.go   # SubscriptionRepository 接口（端口）+ 领域错误
@@ -204,7 +199,7 @@ type SubscriptionRepository interface {
 
 ### 2. infrastructure 层
 
-```
+```text
 internal/infrastructure/persistence/gorm/
 └── newsletter_repo.go     # 实现 SubscriptionRepository 接口
 ```
@@ -213,7 +208,7 @@ GORM PO 模型放在 `persistence/gorm/model/`。
 
 ### 3. application 层
 
-```
+```text
 internal/application/newsletter/
 └── service.go             # 用例（Subscribe/Unsubscribe/List）
 ```
@@ -230,7 +225,7 @@ func (s *Service) Subscribe(ctx context.Context, email string) error {
 
 ### 4. interfaces 层
 
-```
+```text
 internal/interfaces/http/handler/newsletter/
 └── newsletter.go          # HTTP handler + 请求/响应 DTO
 ```
@@ -250,11 +245,14 @@ v1.Route("/newsletter", func(r chi.Router) {
 
 ### 6. 数据库
 
-GORM AutoMigrate 会自动建表。如需复杂索引/约束，在 `migrations/` 添加 SQL 迁移：
+表结构由 golang-migrate SQL 迁移管理（无 AutoMigrate）：在 `api/migrations/` 手写递增序号的 `NNN_xxx.{up,down}.sql` 后执行迁移：
 
 ```bash
-make migrate-create name=create_newsletter
+make migrate              # 应用新迁移
+make migrate-down n=1     # 回滚最近一次迁移
 ```
+
+> 已应用到任何环境的迁移文件**禁止原地修改**（改动不会同步进库，产生 schema 漂移），变更一律新增迁移。
 
 ## 常用命令
 
@@ -266,7 +264,6 @@ make api-lint     # golangci-lint 检查（或回退 go vet）
 make migrate      # 执行数据库迁移
 make migrate-down n=1  # 回滚最近一次迁移
 make reset-db     # 重置数据库
-make wire         # 重新生成 wire 依赖注入代码
 make apifox       # 导出 OpenAPI 并导入 Apifox
 make help         # 查看所有命令
 ```
@@ -309,6 +306,5 @@ make api-test
 
 - [项目总览](../README.md)
 - [项目级代理规范与开发须知](../AGENTS.md)
-- [数据库迁移](../docs/database-migrations.md)
-- [API 设计规范](../docs/api-design.md)
+- [文档目录](../docs/README.md)（PRD / ADR / 指南 / 部署手册）
 - [架构决策记录](../docs/adr/)

@@ -7,6 +7,7 @@ import { AtSign, Check, PencilLine, Quote, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { SectionCard } from "./SectionCard";
 
 interface ProfileInfoSectionProps {
 	user: UserDTO;
@@ -22,14 +23,13 @@ interface ProfileInfoSectionProps {
  */
 export const ProfileInfoSection = ({ user }: ProfileInfoSectionProps) => {
 	return (
-		<div className="rounded-xl border bg-card p-6 shadow-sm">
-			<h2 className="mb-5 text-base font-semibold">个人资料</h2>
+		<SectionCard title="个人资料" description="这些信息会公开展示给其他访客">
 			<div className="divide-y">
 				<UsernameField user={user} />
 				<DisplayNameField user={user} />
 				<BioField user={user} />
 			</div>
-		</div>
+		</SectionCard>
 	);
 };
 
@@ -74,13 +74,14 @@ const FieldShell = ({
 					<div className="group/field flex items-start gap-3">
 						<div className="min-w-0 flex-1">{displayValue}</div>
 						<Button
-							size="icon-xs"
+							size="icon-sm"
 							variant="ghost"
 							onClick={onEdit}
-							className="opacity-0 transition-opacity group-hover/field:opacity-100 focus-visible:opacity-100"
+							// 触屏没有 hover，移动端常显；桌面保持 hover 显现的克制感
+							className="opacity-100 transition-opacity md:opacity-0 md:group-hover/field:opacity-100 md:focus-visible:opacity-100"
 							aria-label={editLabel}
 						>
-							<PencilLine className="size-3" />
+							<PencilLine className="size-3.5" />
 						</Button>
 					</div>
 				)}
@@ -130,17 +131,15 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 	return (
 		<FieldShell
 			label="用户名"
-			hint="3-32 个字符，作为你的唯一标识"
+			hint="唯一登录标识，3-32 个字符"
 			editLabel="编辑用户名"
 			isEditing={isEditing}
 			onEdit={handleEdit}
-			displayValue={
-				<p className="font-mono text-base font-medium tracking-tight">{user.username}</p>
-			}
+			displayValue={<p className="font-mono text-sm font-medium">{user.username}</p>}
 			editor={
 				<>
-					<div className="space-y-1.5">
-						<div className="relative">
+					<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+						<div className="relative flex-1">
 							<AtSign className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
 							<Input
 								value={value}
@@ -151,29 +150,29 @@ const UsernameField = ({ user }: { user: UserDTO }) => {
 								autoFocus
 							/>
 						</div>
-						{error && <p className="text-xs text-destructive">{error}</p>}
+						<div className="flex shrink-0 items-center gap-2">
+							<Button
+								size="sm"
+								onClick={handleSave}
+								disabled={updateProfile.isPending}
+								className="gap-1.5"
+							>
+								<Check className="size-3.5" />
+								{updateProfile.isPending ? "保存中..." : "保存"}
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={handleCancel}
+								disabled={updateProfile.isPending}
+								className="gap-1.5"
+							>
+								<X className="size-3.5" />
+								取消
+							</Button>
+						</div>
 					</div>
-					<div className="flex items-center gap-2 pt-1">
-						<Button
-							size="sm"
-							onClick={handleSave}
-							disabled={updateProfile.isPending}
-							className="gap-1.5"
-						>
-							<Check className="size-3.5" />
-							{updateProfile.isPending ? "保存中..." : "保存"}
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							onClick={handleCancel}
-							disabled={updateProfile.isPending}
-							className="gap-1.5"
-						>
-							<X className="size-3.5" />
-							取消
-						</Button>
-					</div>
+					{error && <p className="text-xs text-destructive">{error}</p>}
 				</>
 			}
 		/>
@@ -220,48 +219,51 @@ const DisplayNameField = ({ user }: { user: UserDTO }) => {
 	return (
 		<FieldShell
 			label="显示名"
-			hint="展示用昵称，可用中文，留空则默认显示用户名"
+			hint="展示昵称，可用中文；留空显示用户名"
 			editLabel="编辑显示名"
 			isEditing={isEditing}
 			onEdit={handleEdit}
 			displayValue={
-				<p className="text-base font-medium tracking-tight">
-					{user.display_name || <span className="text-muted-foreground">默认用户名</span>}
+				<p className="text-sm font-medium">
+					{user.display_name || (
+						<span className="font-normal text-muted-foreground">未设置</span>
+					)}
 				</p>
 			}
 			editor={
 				<>
-					<div className="space-y-1.5">
+					<div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
 						<Input
+							className="flex-1"
 							value={value}
 							onChange={(e) => setValue(e.target.value)}
-							placeholder="留空则默认显示用户名"
+							placeholder="留空显示用户名"
 							aria-invalid={!!error}
 							autoFocus
 						/>
-						{error && <p className="text-xs text-destructive">{error}</p>}
+						<div className="flex shrink-0 items-center gap-2">
+							<Button
+								size="sm"
+								onClick={handleSave}
+								disabled={updateProfile.isPending}
+								className="gap-1.5"
+							>
+								<Check className="size-3.5" />
+								{updateProfile.isPending ? "保存中..." : "保存"}
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={handleCancel}
+								disabled={updateProfile.isPending}
+								className="gap-1.5"
+							>
+								<X className="size-3.5" />
+								取消
+							</Button>
+						</div>
 					</div>
-					<div className="flex items-center gap-2 pt-1">
-						<Button
-							size="sm"
-							onClick={handleSave}
-							disabled={updateProfile.isPending}
-							className="gap-1.5"
-						>
-							<Check className="size-3.5" />
-							{updateProfile.isPending ? "保存中..." : "保存"}
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							onClick={handleCancel}
-							disabled={updateProfile.isPending}
-							className="gap-1.5"
-						>
-							<X className="size-3.5" />
-							取消
-						</Button>
-					</div>
+					{error && <p className="text-xs text-destructive">{error}</p>}
 				</>
 			}
 		/>
@@ -304,7 +306,7 @@ const BioField = ({ user }: { user: UserDTO }) => {
 	return (
 		<FieldShell
 			label="个人简介"
-			hint="最多 500 字，让大家认识你"
+			hint="一句话介绍自己，最多 500 字"
 			editLabel="编辑个人简介"
 			isEditing={isEditing}
 			onEdit={handleEdit}
