@@ -36,4 +36,11 @@ export const LABS = [
 		description: "四种主题切换控件，按大、默认、小三档陈列。",
 		meta: "切换器 ×4",
 	},
+	{
+		to: "/lab/nav",
+		en: "Back Nav",
+		title: "返回导航实验室",
+		description: "长页面滚动后仍可达的四种返回方案，滚动演示区对比。",
+		meta: "方案 ×4",
+	},
 ] as const;
