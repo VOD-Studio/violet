@@ -4,7 +4,7 @@ import Contributions from "@features/github/ui/Contributions";
 import RepoList from "@features/github/ui/RepoList";
 import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
-import PostList from "@features/posts/ui/PostList";
+import LatestPosts from "@features/posts/ui/LatestPosts";
 import { settingsKeys } from "@features/settings/api/keys";
 import { fetchAnnouncements, fetchSettings, useSettings } from "@features/settings/api/queries";
 import type { SiteSettings } from "@features/settings/model/types";
@@ -27,7 +27,7 @@ function HomePage() {
 
 				<div>
 					<h2 className="mb-12 text-3xl font-bold tracking-tight">最新文章</h2>
-					<PostList query={limit ? { limit } : {}} />
+					<LatestPosts query={{ limit }} />
 				</div>
 
 				<div>
