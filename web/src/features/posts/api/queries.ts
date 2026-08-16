@@ -1,6 +1,6 @@
 import { apiGet, apiGetPaged } from "@shared/api/request";
 import type { PagedResponse } from "@shared/api/types";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { Post, PostDetail, PostListQuery, PostSearchResult } from "../model/types";
 import { postKeys } from "./keys";
 
@@ -24,24 +24,6 @@ export const usePosts = (query: PostListQuery = {}) =>
 	useQuery({
 		queryKey: postKeys.list(query),
 		queryFn: () => fetchPosts(query),
-	});
-
-/**
- * useInfinitePosts - 无限加载的文章列表
- *
- * 触底翻页（offset 模式），total_pages 用尽后 hasNextPage 归 false。
- * 固定 limit，翻页 param 即页码。
- */
-export const useInfinitePosts = (limit: number) =>
-	useInfiniteQuery({
-		queryKey: [...postKeys.all, "infinite", limit],
-		queryFn: ({ pageParam }) => fetchPosts({ page: pageParam, limit }),
-		initialPageParam: 1,
-		getNextPageParam: (last) => {
-			const page = last.pagination.page ?? 1;
-			const total = last.pagination.total_pages ?? 1;
-			return page < total ? page + 1 : undefined;
-		},
 	});
 
 /**

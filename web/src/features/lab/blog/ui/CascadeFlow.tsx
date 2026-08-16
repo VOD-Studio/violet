@@ -18,9 +18,19 @@ import { useState } from "react";
  * （№ 序号 + 大字标题），与图片卡交织出杂志感。卡片用全站签名 SpotlightCard
  * 冷光 + 上浮 + 封面缩放三层 hover。
  */
-export function CascadeFlow({ posts }: { posts: Post[] }) {
+export function CascadeFlow({ posts, noHero }: { posts: Post[]; noHero?: boolean }) {
 	const [hero, ...rest] = posts;
 	if (!hero) return null;
+	// noHero：追加页等场景全部走瀑布流，不再出主轴
+	if (noHero) {
+		return (
+			<div className="columns-1 gap-6 sm:columns-2 lg:columns-3">
+				{posts.map((p, i) => (
+					<CascadeCard key={p.id} post={p} index={i} />
+				))}
+			</div>
+		);
+	}
 
 	return (
 		<div>
