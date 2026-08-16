@@ -158,7 +158,7 @@ _Avoid_: 卡片瀑布、通知卡片（公告是运营事件不是内容卡片�
 _Avoid_: 文章卡片、PostCard（混淆了通知与作品）
 
 **简报（article 形态的渲染约定）**:
-`article` 形态渲染为**简报入口 + 详情页**两层。首页事件日志流中是入口：整行可点（行尾箭头），跳转 `/announcements/:id` 详情页。详情页是简报，不是文章详情页：无 TOC、无作者头像组、无浏览量。详情页（2026-08-16 重做，对齐文章详情页排版）：容器 + BackLink + 居中头部（severity 中文标签 + № + 生效状态脉冲点的 eyebrow、mono 静态大标题、发布时间 / 生效窗口 / 影响范围 meta 行）+ `ArticleContent` 渲染 `content_html ?? content_md` 正文 + footer 轻量动作（确认已读 / 复制 ID）。无圆角卡片壳、无 react-bits 微交互。severity 配色同样走 `shared/announcement-severity`。
+`article` 形态渲染为**简报入口 + 详情页**两层。首页事件日志流中是入口：整行可点（行尾箭头），跳转 `/announcements/:id` 详情页。详情页是简报，不是文章详情页：无 TOC、无作者头像组、无浏览量。详情页（2026-08-16 重做，对齐文章详情页排版）：容器 + BackLink + 居中头部（mono 静态大标题直起、meta 行 = 生效状态脉冲点 + 发布时间 / 生效窗口 / 影响范围——标题已说明公告是什么，不标 severity 分类与编号）+ `ArticleContent` 渲染 `content_html ?? content_md` 正文 + footer 轻量动作（确认已读 / 复制 ID）。无圆角卡片壳、无 react-bits 微交互。severity 配色同样走 `shared/announcement-severity`。
 _Avoid_: 文章详情页、blog/$slug（混淆了简报与文章阅读）
 
 **影响范围（Affects）**:

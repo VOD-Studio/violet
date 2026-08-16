@@ -2,20 +2,13 @@ import { statusOf } from "@features/lab/announcement/model/event";
 import { BackLink } from "@features/lab/nav/ui/BackLink";
 import { useAnnouncement } from "@features/settings/api/queries";
 import { useArticleImagePreview } from "@shared/lib/hooks/use-article-image-preview";
+import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { Button } from "@shared/ui/base/button";
 import ArticleContent from "@shared/ui/markdown-preview/ArticleContent";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowLeft, Check, Copy } from "lucide-react";
 import { useState } from "react";
-
-/** severity → 中文标签（通知 / 维护 / 发布 / 故障，中性语汇非电码） */
-const SEV_LABEL: Record<string, string> = {
-	info: "通知",
-	warning: "维护",
-	success: "发布",
-	error: "故障",
-};
 
 /** 生命周期 → 状态行文案 */
 const STATUS_LABEL: Record<string, string> = {
@@ -30,8 +23,8 @@ const STATUS_LABEL: Record<string, string> = {
  * 2026-08-16 重做：对齐文章详情页的排版语言（容器 / BackLink /
  * 居中头部 / mono 大标题 / meta 行 / prose 正文），去掉圆角卡片壳
  * 与 react-bits 微交互——简报是阅读页，不是浮在页面上的组件。
- * 头部：电码 eyebrow（№ + severity 电码 + 状态脉冲点）+ 标题 +
- * meta（发布时间 / 生效窗口 / 影响范围）；footer 保留确认已读 /
+ * 头部：标题 + meta 行（生效状态脉冲点 / 发布时间 / 生效窗口 /
+ * 影响范围——标题已说明公告是什么，不再标 severity 分类）；footer 保留确认已读 /
  * 复制 ID 两个轻量动作。
  */
 
@@ -101,33 +94,24 @@ function AnnouncementDetailPage() {
 			<BackLink to="/" label="首页" className="mb-8" />
 
 			<header className="mx-auto mb-12 max-w-3xl">
-				{/* 电码 eyebrow：severity 图标电码 + № + 生命周期状态 */}
-				<p className="mb-4 flex flex-wrap items-center gap-2.5 font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
-					<span className={cfg.text}>
-						<cfg.Icon className="mr-1 inline size-3.5" />
-						{SEV_LABEL[a.severity] ?? "通知"}
-					</span>
-					№{String(a.id).padStart(3, "0")}
-					<span
-						className={
-							status === "scheduled"
-								? "text-amber-600 dark:text-amber-400"
-								: "text-muted-foreground/70"
-						}
-					>
-						{STATUS_LABEL[status]}
-						{status === "active" ? (
-							<span className="ml-1 inline-block size-1.5 animate-pulse rounded-full bg-current align-[1px]" />
-						) : null}
-					</span>
-				</p>
-
 				<h1 className="mb-3 font-mono text-4xl font-bold leading-tight tracking-tight md:text-5xl">
 					{a.title}
 				</h1>
 
-				{/* 元信息：发布时间 + 生效窗口 + 影响范围 */}
+				{/* 元信息：生效状态 + 发布时间 + 生效窗口 + 影响范围 */}
 				<div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-sm text-muted-foreground">
+					<span
+						className={
+							status === "scheduled"
+								? "inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400"
+								: "inline-flex items-center gap-1.5"
+						}
+					>
+						{status === "active" ? (
+							<span className={cn("size-1.5 animate-pulse rounded-full", cfg.dot)} />
+						) : null}
+						{STATUS_LABEL[status]}
+					</span>
 					<span>{stamp}</span>
 					{a.start_time && a.end_time ? (
 						<span>
