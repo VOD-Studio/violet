@@ -15,7 +15,7 @@ import { useAnnouncements } from "@features/settings/api/queries";
 import { CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import { motion } from "motion/react";
 import type { ComponentType } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const STORAGE_KEY = "announcement:read-ids";
 const FLIP_EASE = [0.4, 0, 0.2, 1] as const;
@@ -99,6 +99,22 @@ export default function AnnouncementBar() {
 		if (index >= n) setIndex(0);
 	}, [n, index]);
 
+	// 滚轮翻页需接管滚动：React 合成 wheel 事件是 passive 的拦不下页面滚动，
+	// 换原生非被动监听（条不渲染时 ref 为 null，监听自然不生效）
+	const barRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		const el = barRef.current;
+		if (!el) return;
+		const handler = (e: WheelEvent) => {
+			if (Math.abs(e.deltaY) < 10) return;
+			e.preventDefault();
+			if (e.deltaY > 0) setIndex((i) => (i + 1) % n);
+			else setIndex((i) => (i - 1 + n) % n);
+		};
+		el.addEventListener("wheel", handler, { passive: false });
+		return () => el.removeEventListener("wheel", handler);
+	}, [n]);
+
 	const handleClose = () => {
 		const ids = banners.map((a) => a.id);
 		const next = new Set([...readIds, ...ids]);
@@ -140,15 +156,11 @@ export default function AnnouncementBar() {
 
 	return (
 		<div
+			ref={barRef}
 			className="relative border-b border-edge-hairline bg-primary/95 font-mono text-xs dark:bg-zinc-900"
 			style={{ perspective: "800px" }}
 			onMouseEnter={() => setIsPaused(true)}
 			onMouseLeave={() => setIsPaused(false)}
-			onWheel={(e) => {
-				if (Math.abs(e.deltaY) < 10) return;
-				if (e.deltaY > 0) setIndex((i) => (i + 1) % n);
-				else setIndex((i) => (i - 1 + n) % n);
-			}}
 		>
 			<motion.div
 				className="relative"
