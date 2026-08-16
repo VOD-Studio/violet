@@ -26,7 +26,7 @@ export const LABS = [
 		to: "/lab/announcement",
 		en: "Announcement",
 		title: "公告原型实验室",
-		description: "公告卡片、详情页与 banner 的原型方案。",
+		description: "公告卡片、详情页与 banner 的原型方案，四档 severity 各有对应视觉语言。",
 		meta: "卡片 ×2 · 详情 · banner ×3",
 	},
 	{
