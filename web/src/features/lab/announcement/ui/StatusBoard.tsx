@@ -3,7 +3,7 @@ import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { byNewest, type EventStatus, fmtDate, fmtStamp, fmtWindow, statusOf } from "../model/mock";
+import { byNewest, type EventStatus, fmtDate, fmtStamp, fmtWindow, statusOf } from "../model/event";
 
 /** 站点总览状态：只由「进行中」公告推导，未生效的预告不算当前故障 */
 function overallOf(active: Announcement[]): { sev: string; label: string } {

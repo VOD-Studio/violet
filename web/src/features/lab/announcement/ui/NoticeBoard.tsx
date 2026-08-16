@@ -3,7 +3,7 @@ import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { byNewest, fmtDate, fmtStamp, statusOf } from "../model/mock";
+import { byNewest, fmtDate, fmtStamp, statusOf } from "../model/event";
 
 /** 显要度：severity 与生命周期共同决定纸张大小 */
 type Salience = "major" | "standard" | "minor";

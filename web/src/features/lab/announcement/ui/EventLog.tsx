@@ -4,7 +4,7 @@ import { getAnnouncementSev } from "@shared/ui/announcement-severity";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
-import { byNewest, fmtStamp, SEV_CODE, statusOf } from "../model/mock";
+import { fmtStamp, SEV_CODE, statusOf } from "../model/event";
 
 /** 生命周期 → 行尾注记；进行中不占位 */
 const TAIL_MARK = { scheduled: "未生效", ended: "已收档" } as const;
@@ -18,15 +18,18 @@ function edgeClass(a: Announcement, status: string): string {
 }
 
 /**
- * 方向 A · 事件日志
+ * 方向 A · 事件日志（生产现役：首页 AnnouncementFeed）
  *
  * 设计意图：公告是站点的运营日志——倒序事件流一行一条，
  * mono 时间戳 + 三字母电码 + severity 色点，进行中的故障与维护
  * 压左侧色边线。占地最小、密度最高，三个方向里最安静的一版。
  * article 形态整行可点入简报，card 形态读完即止。
+ *
+ * 纯渲染组件，按传入顺序渲染（排序权威是后端返回顺序）；
+ * lab 里要倒序流时由调用方先 byNewest。
  */
 export function EventLog({ items }: { items: Announcement[] }) {
-	const feed = byNewest(items);
+	const feed = items;
 
 	return (
 		<div>

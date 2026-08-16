@@ -1,4 +1,3 @@
-import AnnouncementGrid from "@features/admin-announcements/ui/AnnouncementGrid";
 import { githubKeys } from "@features/github/api/keys";
 import { fetchContributions, fetchRepos } from "@features/github/api/queries";
 import Contributions from "@features/github/ui/Contributions";
@@ -9,6 +8,7 @@ import PostList from "@features/posts/ui/PostList";
 import { settingsKeys } from "@features/settings/api/keys";
 import { fetchAnnouncements, fetchSettings, useSettings } from "@features/settings/api/queries";
 import type { SiteSettings } from "@features/settings/model/types";
+import AnnouncementFeed from "@features/settings/ui/AnnouncementFeed";
 import { createFileRoute } from "@tanstack/react-router";
 import LandingHero from "@widgets/LandingHero";
 
@@ -22,7 +22,7 @@ function HomePage() {
 			<section className="container mx-auto flex flex-col gap-32 bg-background px-6 py-32">
 				<div>
 					<h2 className="mb-12 text-3xl font-bold tracking-tight">公告</h2>
-					<AnnouncementGrid />
+					<AnnouncementFeed />
 				</div>
 
 				<div>

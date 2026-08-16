@@ -1,3 +1,4 @@
+import { byNewest } from "@features/lab/announcement/model/event";
 import { MOCK_ANNOUNCEMENTS } from "@features/lab/announcement/model/mock";
 import {
 	type AnnouncementDirection,
@@ -97,7 +98,9 @@ function AnnouncementLab() {
 
 					{preview === "data" ? (
 						<div key={direction}>
-							{direction === "log" ? <EventLog items={MOCK_ANNOUNCEMENTS} /> : null}
+							{direction === "log" ? (
+								<EventLog items={byNewest(MOCK_ANNOUNCEMENTS)} />
+							) : null}
 							{direction === "status" ? (
 								<StatusBoard items={MOCK_ANNOUNCEMENTS} />
 							) : null}
