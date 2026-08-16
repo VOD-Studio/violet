@@ -285,6 +285,34 @@ body {
  * ——————————————————————————————————————————
  */
 
+/* —— theme：主题切换圆形扩散（对齐 yggdrasil 基准）——
+ * 纯 CSS 声明式：动画挂在伪元素上，ready 后即刻开播，无 WAAPI 注册竞态；
+ * new 帧压顶层且带不透明背景（防快照透明透叠）；0.4s ease-out 的
+ * 快起长收读作「顺滑」。坐标/半径由 JS 注入 CSS 变量。 */
+:active-view-transition-type(theme)::view-transition-old(root),
+:active-view-transition-type(theme)::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+:active-view-transition-type(theme)::view-transition-old(root) {
+	z-index: 1;
+}
+:active-view-transition-type(theme)::view-transition-new(root) {
+	z-index: 2;
+	animation: theme-ripple 0.4s ease-out forwards;
+	background: var(--background);
+}
+@keyframes theme-ripple {
+	from {
+		clip-path: circle(0px at var(--theme-ripple-x, 50%) var(--theme-ripple-y, 50%));
+	}
+	to {
+		clip-path: circle(
+			var(--theme-ripple-r, 100vmax) at var(--theme-ripple-x, 50%) var(--theme-ripple-y, 50%)
+		);
+	}
+}
+
 /* Header 保持静止，不跟随内容滑动 */
 ::view-transition-group(site-header) {
 	animation: none;
