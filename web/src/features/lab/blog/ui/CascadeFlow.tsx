@@ -40,7 +40,7 @@ export function CascadeFlow({ posts }: { posts: Post[] }) {
 					className="absolute inset-0 flex flex-col justify-end p-6 md:p-10"
 				>
 					<p className="mb-3 inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1 font-mono text-[10px] tracking-[0.25em] text-white/90 uppercase backdrop-blur-sm">
-						Latest
+						{hero.is_featured ? "★ Featured" : "Latest"}
 					</p>
 					<h2 className="max-w-3xl text-2xl leading-tight font-bold tracking-tight text-white md:text-4xl">
 						{hero.title}
@@ -135,6 +135,11 @@ function CascadeCard({ post, index }: { post: Post; index: number }) {
 						{post.tags.length > 0 && (
 							<p className="mb-2 font-mono text-[10px] text-muted-foreground">
 								{post.tags.slice(0, 3).join(" / ")}
+							</p>
+						)}
+						{post.is_featured && (
+							<p className="mb-1.5 flex items-center gap-1.5 font-mono text-[10px] tracking-[0.2em] text-neon-blue uppercase">
+								<span aria-hidden>★</span> Featured
 							</p>
 						)}
 						<h3
