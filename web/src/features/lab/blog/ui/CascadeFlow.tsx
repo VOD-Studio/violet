@@ -1,6 +1,6 @@
 import { getDisplayName } from "@entities/user/model/display-name";
 import type { Post } from "@features/posts/model/types";
-import { contentImageUrl } from "@shared/lib/image-url";
+import { CroppedImage } from "@shared/ui/image-cropper/CroppedImage";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
@@ -58,7 +58,7 @@ export function CascadeFlow({ posts }: { posts: Post[] }) {
 	);
 }
 
-/** hero 封面:有图自然比例 21:9,失效/缺失退化为品牌渐变底 */
+/** hero 封面:有图带选区裁剪复现,失效/缺失退化为品牌渐变底 */
 function HeroCover({ post }: { post: Post }) {
 	const [brokenFor, setBrokenFor] = useState<string | null>(null);
 	if (!post.cover_image || brokenFor === post.cover_image) {
@@ -67,14 +67,20 @@ function HeroCover({ post }: { post: Post }) {
 		);
 	}
 	return (
-		<motion.img
-			src={contentImageUrl(post.cover_image, { width: 1280 })}
-			alt={post.title}
-			onError={() => setBrokenFor(post.cover_image)}
+		// 余韵 blur 动画落在容器:CroppedImage 渲染普通 img,挂不了 motion 属性
+		<motion.div
 			initial={{ filter: "blur(10px)" }}
 			animate={{ filter: "blur(0px)" }}
 			transition={{ duration: 0.5, ease: "easeOut" }}
-			className="aspect-16/10 w-full object-cover transition-transform duration-700 group-hover:scale-[1.03] md:aspect-21/9"
-		/>
+		>
+			<CroppedImage
+				src={post.cover_image}
+				width={1280}
+				alt={post.title}
+				onError={() => setBrokenFor(post.cover_image)}
+				className="aspect-16/10 w-full md:aspect-21/9"
+				imgClassName="transition-transform duration-700 group-hover:scale-[1.03]"
+			/>
+		</motion.div>
 	);
 }
