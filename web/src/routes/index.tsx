@@ -6,16 +6,16 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
 import LatestPosts from "@features/posts/ui/LatestPosts";
 import { settingsKeys } from "@features/settings/api/keys";
-import { fetchAnnouncements, fetchSettings, useSettings } from "@features/settings/api/queries";
+import { fetchAnnouncements, fetchSettings } from "@features/settings/api/queries";
 import type { SiteSettings } from "@features/settings/model/types";
 import AnnouncementFeed from "@features/settings/ui/AnnouncementFeed";
 import { createFileRoute } from "@tanstack/react-router";
 import LandingHero from "@widgets/LandingHero";
 
 function HomePage() {
-	// 最新文章条数跟随「每页文章数」设置，但首页速览最多 6 篇
-	const { data: siteSettings } = useSettings();
-	const limit = Math.min(siteSettings?.posts_per_page ?? 6, 6);
+	// 最新文章条数跟随「每页文章数」设置，但首页速览最多 6 篇；
+	// limit 由 loader 解析传入，避免 hydration 首帧 settings 未就绪的双请求
+	const { limit } = Route.useLoaderData();
 	return (
 		<div className="flex flex-col">
 			<LandingHero />
@@ -75,6 +75,7 @@ export const Route = createFileRoute("/")({
 		context.queryClient
 			.ensureQueryData({ queryKey: githubKeys.repos(), queryFn: fetchRepos })
 			.catch(() => {});
+		return { limit: postsQuery.limit };
 	},
 	component: HomePage,
 });

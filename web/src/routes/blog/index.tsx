@@ -2,7 +2,7 @@ import { postKeys } from "@features/posts/api/keys";
 import { fetchPosts } from "@features/posts/api/queries";
 import BlogCascade from "@features/posts/ui/BlogCascade";
 import { settingsKeys } from "@features/settings/api/keys";
-import { fetchSettings, useSettings } from "@features/settings/api/queries";
+import { fetchSettings } from "@features/settings/api/queries";
 import type { SiteSettings } from "@features/settings/model/types";
 import { PageShell } from "@shared/ui/page-shell";
 import { createFileRoute } from "@tanstack/react-router";
@@ -18,9 +18,10 @@ const DEFAULT_PAGE_SIZE = 12;
  * loader SSR 预取第一页，dehydrate 到 HTML。
  */
 function BlogPage() {
-	// 每页文章数由站点设置控制（后台「常规设置」）
-	const { data: siteSettings } = useSettings();
-	const limit = siteSettings?.posts_per_page ?? DEFAULT_PAGE_SIZE;
+	// limit 由 loader 解析（settings 已就绪）经 loaderData 传入：
+	// 组件若自行从 useSettings 推导，hydration 首帧 settings 缓存为空
+	// 会先用兜底值发一次请求、设置到达再发一次（双请求根因）
+	const { limit } = Route.useLoaderData();
 	return (
 		<PageShell>
 			<header className="mb-10">
@@ -48,6 +49,7 @@ export const Route = createFileRoute("/blog/")({
 			queryKey: postKeys.list({ page: 1, limit }),
 			queryFn: () => fetchPosts({ page: 1, limit }),
 		});
+		return { limit };
 	},
 	component: BlogPage,
 });
