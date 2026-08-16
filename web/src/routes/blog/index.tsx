@@ -29,7 +29,7 @@ function BlogPage() {
 				</p>
 				<h1 className="font-mono text-4xl font-bold">博客</h1>
 			</header>
-			<BlogCascade query={{ page: 1, limit }} />
+			<BlogCascade limit={limit} />
 		</PageShell>
 	);
 }
