@@ -36,7 +36,7 @@ const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string 
 	{
 		value: "board",
 		label: "告示板",
-		intent: "布告栏的显要度语法：severity 决定纸张大小——进行中的故障与维护是整栏大告示，发布动态是半栏中告示，日常信息与已收档是小票据，已收档的褪色盖戳让位。",
+		intent: "布告栏的显要度语法：进行中的故障与未生效的维护预告是整栏大告示（两枚图钉），发布动态是半栏中告示，日常信息与已收档是半栏便条，已收档的褪色盖戳让位；kicker 用布告语汇（通知 / 维护 / 发布 / 故障）。",
 	},
 	{
 		value: "ticker",
