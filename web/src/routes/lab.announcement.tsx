@@ -5,8 +5,9 @@ import {
 	AnnouncementSkeleton,
 } from "@features/lab/announcement/ui/AnnouncementSkeleton";
 import { BannerCrossfade } from "@features/lab/announcement/ui/BannerCrossfade";
-import { BannerPrism } from "@features/lab/announcement/ui/BannerPrism";
+import { BannerFlip } from "@features/lab/announcement/ui/BannerFlip";
 import { BannerSlide } from "@features/lab/announcement/ui/BannerSlide";
+import { BannerTeletype } from "@features/lab/announcement/ui/BannerTeletype";
 import { EventLog } from "@features/lab/announcement/ui/EventLog";
 import { NoticeBoard } from "@features/lab/announcement/ui/NoticeBoard";
 import { Receipts } from "@features/lab/announcement/ui/Receipts";
@@ -19,7 +20,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 type PreviewState = "data" | "skeleton" | "empty";
-type BannerDirection = "prism" | "crossfade" | "slide";
+type BannerDirection = "flip" | "crossfade" | "slide" | "teletype";
 
 const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string }[] = [
 	{
@@ -51,9 +52,9 @@ const DIRECTIONS: { value: AnnouncementDirection; label: string; intent: string 
 
 const BANNER_DIRECTIONS: { value: BannerDirection; label: string; intent: string }[] = [
 	{
-		value: "prism",
-		label: "棱柱旋转",
-		intent: "N 条公告 = N 面棱柱绕 X 轴排列，容器整体旋转到当前面。生产 AnnouncementBar 现役方案，作为对比基准陈列。",
+		value: "flip",
+		label: "翻牌折叠",
+		intent: "split-flap 路牌的两段式换页：旧面折平消失、新面展开。正交投影无透视，静止态文字始终清晰，两条公告也照常翻——修正现役棱柱的模糊与两条退化问题。",
 	},
 	{
 		value: "crossfade",
@@ -65,20 +66,25 @@ const BANNER_DIRECTIONS: { value: BannerDirection; label: string; intent: string
 		label: "滑轨推入",
 		intent: "新公告从右侧推入、旧公告推出，底部 2px 驻留进度线把「还有几秒换下一条」可视化。信息最透明的一版。",
 	},
+	{
+		value: "teletype",
+		label: "电传打字",
+		intent: "公告像电传机逐字打上横幅：打出 → 驻留（光标闪烁）→ 快速退格清屏 → 打下一条，节拍由文本长度自然决定。与全站终端 DNA 同源，叙事感最强的一版。",
+	},
 ];
 
 /**
  * /lab/announcement - 公告原型实验室
  *
  * 两个对比面：首页公告区（card / article 两形态，五方向 × 三态）
- * 与顶部横幅（banner 形态，现役棱柱基准 + 两个新候选）。静态 mock
- * 不接 API；横幅三条不变约束（后端排序 / 关闭即已读 / 动画可暂停）
- * 在每个方向上保持。选定方向后生产实现按选定方向落地。
+ * 与顶部横幅（banner 形态，四候选，棱柱现役因模糊与两条退化已重做
+ * 为翻牌折叠）。静态 mock 不接 API；横幅三条不变约束（后端排序 /
+ * 关闭即已读 / 动画可暂停）在每个方向上保持。
  */
 function AnnouncementLab() {
 	const [direction, setDirection] = useState<AnnouncementDirection>("log");
 	const [preview, setPreview] = useState<PreviewState>("data");
-	const [banner, setBanner] = useState<BannerDirection>("prism");
+	const [banner, setBanner] = useState<BannerDirection>("flip");
 	const active = DIRECTIONS.find((d) => d.value === direction) ?? DIRECTIONS[0];
 	const activeBanner = BANNER_DIRECTIONS.find((d) => d.value === banner) ?? BANNER_DIRECTIONS[0];
 
@@ -86,9 +92,9 @@ function AnnouncementLab() {
 		<div className="container mx-auto px-6 py-24">
 			<LabHeader to="/lab/announcement" />
 
-			{/* ============ 首页公告区：五方向 × 三态 ============ */}
+			{/* ============ 公告区展示方向：五方向 × 三态 ============ */}
 			<section className="mb-24">
-				<h2 className="mb-2 text-2xl font-semibold">首页公告区方向</h2>
+				<h2 className="mb-2 text-2xl font-semibold">公告区展示方向</h2>
 				<p className="mb-8 text-sm text-muted-foreground">
 					同一组 mock 公告（7 条，覆盖四种 severity 与 card / article
 					两形态，含未生效与已收档样本）在五个方向下的渲染。 右侧可切换数据 / 骨架屏 /
@@ -169,12 +175,13 @@ function AnnouncementLab() {
 				</div>
 			</section>
 
-			{/* ============ 顶部横幅：banner 形态三方向 ============ */}
+			{/* ============ 横幅展示方向：banner 形态四候选 ============ */}
 			<section>
-				<h2 className="mb-2 text-2xl font-semibold">顶部横幅方向</h2>
+				<h2 className="mb-2 text-2xl font-semibold">横幅展示方向</h2>
 				<p className="mb-8 max-w-3xl text-sm text-muted-foreground">
-					banner 形态（display=banner）渲染在全站顶部横幅条。现役是棱柱旋转，
-					两个新候选并排对比。三条不变约束在所有方向上保持：后端排序不重排、
+					banner 形态（display=banner）渲染在全站顶部横幅条。现役棱柱因文字模糊与
+					两条退化在 lab
+					内已重做为翻牌折叠，四个候选并排比选。三条不变约束在所有方向上保持：后端排序不重排、
 					关闭即标记已读、动画可暂停（hover / 滚轮手动翻，reduced-motion 降级）。
 				</p>
 
@@ -203,9 +210,10 @@ function AnnouncementLab() {
 						Preview · violet.blog 页顶 · {activeBanner.label}
 					</p>
 
-					{banner === "prism" ? <BannerPrism items={MOCK_BANNERS} /> : null}
+					{banner === "flip" ? <BannerFlip items={MOCK_BANNERS} /> : null}
 					{banner === "crossfade" ? <BannerCrossfade items={MOCK_BANNERS} /> : null}
 					{banner === "slide" ? <BannerSlide items={MOCK_BANNERS} /> : null}
+					{banner === "teletype" ? <BannerTeletype items={MOCK_BANNERS} /> : null}
 
 					<div className="flex h-56 items-center justify-center">
 						<p className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground/40 uppercase">

@@ -9,17 +9,19 @@ const SLIDE_DURATION = 0.45;
  * 横幅方向 C · 滑轨推入
  *
  * 新公告从右侧推入、旧公告向左推出（绝对定位叠放同时进出），
- * 底部 2px 驻留进度线把「还有几秒换下一条」可视化——信息最
- * 透明的一版。hover/focus 时节拍与进度线同步暂停。
+ * 底部 2px 驻留进度线由 useBannerTicker 的单一 rAF 时钟驱动
+ * （scaleX = progress）——暂停与手动翻页作用于同一时钟，进度
+ * 与换页永不漂移。
  */
 export function BannerSlide({ items }: { items: Announcement[] }) {
-	const { index, intervalMs, handlers } = useBannerTicker(items.length);
+	const { index, progress, hoverHandlers, wheelRef } = useBannerTicker(items.length);
 
 	return (
 		<BannerStage
 			items={items}
 			index={index}
-			{...handlers}
+			stageRef={wheelRef}
+			{...hoverHandlers}
 			className="group h-7 overflow-hidden"
 		>
 			<AnimatePresence initial={false}>
@@ -34,12 +36,11 @@ export function BannerSlide({ items }: { items: Announcement[] }) {
 					<BannerFace a={items[index]} />
 				</motion.div>
 			</AnimatePresence>
-			{/* 驻留进度线：key 随公告切换重置，hover 时与节拍一起暂停 */}
+			{/* 驻留进度线：同一 rAF 时钟，暂停/翻页即时联动 */}
 			<span
-				key={`p-${items[index].id}`}
 				aria-hidden
-				className="absolute bottom-0 left-0 z-10 h-0.5 w-full origin-left bg-primary-foreground/40 motion-safe:animate-banner-progress group-hover:[animation-play-state:paused] dark:bg-foreground/40"
-				style={{ animationDuration: `${intervalMs}ms` }}
+				className="absolute bottom-0 left-0 z-10 h-0.5 w-full origin-left bg-primary-foreground/40 dark:bg-foreground/40"
+				style={{ transform: `scaleX(${progress})` }}
 			/>
 		</BannerStage>
 	);

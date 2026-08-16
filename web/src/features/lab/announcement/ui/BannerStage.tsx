@@ -1,7 +1,7 @@
 import type { Announcement } from "@features/settings/model/types";
 import { cn } from "@shared/lib/utils";
 import { getAnnouncementSev } from "@shared/ui/announcement-severity";
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { useState } from "react";
 
 /**
@@ -26,6 +26,7 @@ export function BannerStage({
 	children,
 	footer,
 	className,
+	stageRef,
 	...rest
 }: {
 	items: Announcement[];
@@ -34,6 +35,8 @@ export function BannerStage({
 	/** 条内额外层（滑轨方向的驻留进度线），贴在条底部 */
 	footer?: ReactNode;
 	className?: string;
+	/** 滚轮接管容器 ref（useBannerTicker().wheelRef），原生非被动监听 */
+	stageRef?: Ref<HTMLDivElement>;
 } & React.HTMLAttributes<HTMLDivElement>) {
 	const [dismissed, setDismissed] = useState(false);
 	const current = items[index];
@@ -55,6 +58,7 @@ export function BannerStage({
 
 	return (
 		<div
+			ref={stageRef}
 			{...rest}
 			className={cn(
 				"relative border-b border-edge-hairline bg-primary/95 font-mono text-xs dark:bg-zinc-900",
