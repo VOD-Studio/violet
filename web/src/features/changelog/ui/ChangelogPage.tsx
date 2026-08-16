@@ -167,7 +167,7 @@ export function ChangelogPage() {
 																			(item, idx) => (
 																				<li
 																					key={idx}
-																					className="break-words text-base leading-relaxed text-foreground/80"
+																					className="wrap-break-word text-base leading-relaxed text-foreground/80"
 																				>
 																					{item.text}
 																					{item.refs.map(

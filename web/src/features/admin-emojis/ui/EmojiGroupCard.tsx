@@ -10,10 +10,10 @@ import { toast } from "sonner";
 
 /** 来源标签的颜色映射 */
 const SOURCE_COLORS: Record<string, string> = {
-	system: "bg-gradient-to-r from-blue-500/10 to-blue-600/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+	system: "bg-linear-to-r from-blue-500/10 to-blue-600/10 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
 	bilibili:
-		"bg-gradient-to-r from-pink-500/10 to-pink-600/10 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800",
-	custom: "bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+		"bg-linear-to-r from-pink-500/10 to-pink-600/10 text-pink-700 dark:text-pink-300 border-pink-200 dark:border-pink-800",
+	custom: "bg-linear-to-r from-emerald-500/10 to-emerald-600/10 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
 };
 
 /** 来源标签的中文映射 */
@@ -58,8 +58,8 @@ export function EmojiGroupCard({ group, onEdit, onDelete, onManageEmojis }: Emoj
 			className={cn(
 				"relative overflow-hidden transition-all duration-300",
 				!isDisabled && [
-					"before:absolute before:inset-0 before:rounded-xl before:p-[1px]",
-					"before:bg-gradient-to-br before:from-primary/40 before:via-primary/20 before:to-transparent",
+					"before:absolute before:inset-0 before:rounded-xl before:p-0.25",
+					"before:bg-linear-to-br before:from-primary/40 before:via-primary/20 before:to-transparent",
 					"before:-z-10",
 					"shadow-md shadow-primary/5 hover:shadow-lg hover:shadow-primary/10",
 				],

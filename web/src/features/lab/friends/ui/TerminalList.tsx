@@ -119,7 +119,7 @@ export function TerminalList({ links }: { links: FriendLinkDTO[] }) {
 					<span className="ml-px text-muted-foreground">:~$</span>
 					<span
 						aria-hidden
-						className="ml-1 inline-block h-[0.95em] w-[0.5em] animate-caret-blink rounded-[1px] bg-foreground/70 align-[-0.1em]"
+						className="ml-1 inline-block h-[0.95em] w-[0.5em] animate-caret-blink rounded-0.25 bg-foreground/70 align-[-0.1em]"
 					/>
 				</p>
 			</div>

@@ -45,7 +45,7 @@ const Empty = ({ title, description, action, size = "md", className }: EmptyProp
 					speed={50}
 					maxIterations={10}
 					parentClassName="inline-block"
-					className="bg-gradient-to-r from-muted-foreground to-muted-foreground bg-clip-text text-transparent"
+					className="bg-linear-to-r from-muted-foreground to-muted-foreground bg-clip-text text-transparent"
 					encryptedClassName="text-muted-foreground/50"
 				/>
 			</h3>

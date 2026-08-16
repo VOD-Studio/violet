@@ -28,7 +28,7 @@ export default function NotFound({ className }: NotFoundProps) {
 					speed={40}
 					maxIterations={12}
 					parentClassName="inline-block"
-					className="bg-gradient-to-r from-muted-foreground to-muted-foreground bg-clip-text text-transparent"
+					className="bg-linear-to-r from-muted-foreground to-muted-foreground bg-clip-text text-transparent"
 					encryptedClassName="text-muted-foreground/50"
 				/>
 			</h1>

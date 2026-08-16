@@ -41,7 +41,7 @@ export function CommentDetail({ row }: CommentDetailProps) {
 
 				{/* 评论正文 — 气泡 */}
 				<div className="inline-block rounded-2xl rounded-tl-sm bg-muted/40 px-4 py-2.5">
-					<p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+					<p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed">
 						{row.body}
 					</p>
 				</div>

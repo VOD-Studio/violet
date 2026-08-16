@@ -116,7 +116,7 @@ const HeaderActions = ({ user }: HeaderActionsProps) => {
 							className="w-72 overflow-hidden rounded-xl border-border/40 p-0 shadow-xl shadow-black/5 backdrop-blur-xl dark:shadow-black/40"
 						>
 							{/* 用户信息卡：头像 + 邮箱 + 角色徽章 */}
-							<div className="relative border-b border-border/40 bg-gradient-to-br from-accent/40 via-transparent to-transparent px-4 pb-4 pt-4">
+							<div className="relative border-b border-border/40 bg-linear-to-br from-accent/40 via-transparent to-transparent px-4 pb-4 pt-4">
 								<div className="flex items-start gap-3">
 									<img
 										src={avatarUrl(user.avatar_url, user.username)}

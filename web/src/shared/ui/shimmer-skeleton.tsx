@@ -15,7 +15,7 @@ function ShimmerSkeleton({ className, ...props }: React.ComponentProps<"div">) {
 			{...props}
 		>
 			{/* 顶部极细高光线 */}
-			<span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-edge-hairline to-transparent" />
+			<span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-edge-hairline to-transparent" />
 			{/* 光影扫过 */}
 			<span
 				className="pointer-events-none absolute inset-0 -translate-x-full"

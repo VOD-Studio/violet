@@ -196,7 +196,7 @@ export function Broadsheet({ posts }: { posts: Post[] }) {
 									params={{ slug: p.slug }}
 									className="group mb-5 block break-inside-avoid border-b border-edge-hairline/60 pb-5"
 								>
-									<h4 className="break-words text-[15px] leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
+									<h4 className="wrap-break-word text-[15px] leading-snug font-bold tracking-tight transition-colors group-hover:text-neon-blue">
 										{p.title}
 									</h4>
 									<p className="mt-2 line-clamp-3 text-justify text-[13px] leading-relaxed text-muted-foreground">

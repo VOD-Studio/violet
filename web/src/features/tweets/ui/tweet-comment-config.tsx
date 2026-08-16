@@ -82,7 +82,7 @@ export function buildTweetCommentConfig({
 		repliesMode: "toggle",
 		renderBody: (item) => (
 			<>
-				<p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground">
+				<p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-foreground">
 					<EmojiText text={item.body} emote={item.raw.emote} />
 				</p>
 				{item.raw.pictures && item.raw.pictures.length > 0 && (

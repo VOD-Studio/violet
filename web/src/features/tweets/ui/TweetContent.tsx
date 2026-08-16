@@ -61,7 +61,7 @@ export function TweetContent({ content, className }: TweetContentProps) {
 
 	return (
 		<p
-			className={`whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground ${className ?? ""}`}
+			className={`whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-foreground ${className ?? ""}`}
 		>
 			{elements}
 		</p>

@@ -45,7 +45,7 @@ export function PostcardWall({ links }: { links: FriendLinkDTO[] }) {
 						<FriendAvatar
 							name={link.name}
 							avatarUrl={link.avatar_url}
-							className="size-12 rounded-[2px] text-xl"
+							className="size-12 rounded-0.5 text-xl"
 						/>
 					</div>
 

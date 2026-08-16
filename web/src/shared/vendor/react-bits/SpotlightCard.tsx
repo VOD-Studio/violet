@@ -38,7 +38,7 @@ function SpotlightCard({
                 "transition-[box-shadow,transform] duration-300",
                 // dark 毛玻璃 + glow；light 多层柔阴影（由 --shadow-physical 控制）
                 "dark:bg-surface-glass/60 dark:backdrop-blur-xl",
-                "shadow-[var(--shadow-physical)]",
+                "shadow-(--shadow-physical)",
                 className,
             )}
             style={

@@ -12,7 +12,7 @@ export default function Hero() {
 
 			{/* 网格底纹 — 径向遮罩聚焦中心 */}
 			<div
-				className="absolute inset-0 text-foreground opacity-[0.03]"
+				className="absolute inset-0 text-foreground opacity-3"
 				style={{
 					backgroundImage:
 						"linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
@@ -68,7 +68,7 @@ export default function Hero() {
 				className="absolute bottom-10 flex flex-col items-center opacity-50"
 			>
 				<span className="mb-2 text-xs">Scroll</span>
-				<div className="h-8 w-[1px] bg-foreground" />
+				<div className="h-8 w-0.25 bg-foreground" />
 			</motion.div>
 		</div>
 	);

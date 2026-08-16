@@ -134,7 +134,7 @@ export function TerminalCard({
 					<p className="m-0 wrap-break-word text-[13px] leading-7 text-foreground/80">
 						<span ref={textRef} />
 						<span
-							className="ml-0.5 inline-block h-[0.95em] w-[0.36em] animate-pulse rounded-[1px] bg-foreground/60 align-[-0.08em]"
+							className="ml-0.5 inline-block h-[0.95em] w-[0.36em] animate-pulse rounded-0.25 bg-foreground/60 align-[-0.08em]"
 							aria-hidden="true"
 						/>
 					</p>
