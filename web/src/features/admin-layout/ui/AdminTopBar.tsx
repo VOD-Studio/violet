@@ -1,6 +1,6 @@
+import ThemeToggle from "@features/lab/theme/ui/ThemeToggle";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { useSessionStore } from "@shared/api/session";
-import ThemeToggle from "@widgets/ThemeToggle/ThemeToggle";
 import { AdminMobileNav } from "./AdminMobileNav";
 
 interface AdminTopBarProps {

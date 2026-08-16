@@ -1,11 +1,11 @@
-import { CubeToggle } from "./variants/cube-toggle";
-import { CyclicThemeButton } from "./variants/cyclic-theme-button";
-import { OrbitingPlanets } from "./variants/orbiting-planets";
-import { PieMenuToggle } from "./variants/pie-menu-toggle";
-import { RotaryDial } from "./variants/rotary-dial";
-import { SceneButton } from "./variants/scene-button";
-import { SegmentedToggle } from "./variants/segmented-toggle";
-import type { ThemeVariant } from "./variants/types";
+import { CubeToggle } from "./CubeToggle";
+import { CyclicThemeButton } from "./CyclicThemeButton";
+import { OrbitingPlanets } from "./OrbitingPlanets";
+import { PieMenuToggle } from "./PieMenuToggle";
+import { RotaryDial } from "./RotaryDial";
+import { SceneButton } from "./SceneButton";
+import { SegmentedToggle } from "./SegmentedToggle";
+import type { ThemeVariant } from "./types";
 
 /**
  * ThemeToggle - 主题切换器

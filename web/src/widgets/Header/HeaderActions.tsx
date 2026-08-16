@@ -2,6 +2,7 @@ import { getDisplayName } from "@entities/user/model/display-name";
 import type { UserDTO } from "@entities/user/model/types";
 import { useLogout } from "@features/auth/api/mutations";
 import { useHasPermission } from "@features/auth/hooks/usePermissions";
+import ThemeToggle from "@features/lab/theme/ui";
 import NotificationBell from "@features/notifications/ui/NotificationBell";
 import { ApiError } from "@shared/api/error";
 import { avatarUrl } from "@shared/lib/image-url";
@@ -16,7 +17,6 @@ import {
 } from "@shared/ui/base/dropdown-menu";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCommandUIStore } from "@widgets/CommandPalette/command-ui-store";
-import ThemeToggle from "@widgets/ThemeToggle";
 import { CheckCircle2, LayoutDashboard, LogOut, Search, User } from "lucide-react";
 
 import { useEffect } from "react";

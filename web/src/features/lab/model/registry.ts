@@ -1,10 +1,11 @@
 /**
  * Lab 注册表 - /lab 索引页数据源
  *
- * 新增实验室三步：features/lab/<name>/ 建目录（小 lab 也可路由内自包含，
- * 原型件被生产组件复用时可留在原层，如 widgets/ThemeToggle/variants）、
+ * 新增实验室三步：features/lab/<name>/ 建目录（小 lab 也可路由内自包含）、
  * routes/lab.<name>.tsx 建路由（createFileRoute("/lab/<name>")）、在此追加
  * 一条注册。lab 是原型工作台，不进主导航，选定方向后生产实现按此落地。
+ * 生产组件可直接引用 lab 内的原型件（如 Header 用 @features/lab/theme/ui
+ * 的默认 segmented 变体），选定的方案升为现役。
  */
 export const LABS = [
 	{
@@ -32,7 +33,7 @@ export const LABS = [
 		to: "/lab/theme",
 		en: "Theme",
 		title: "主题切换器实验室",
-		description: "七种主题切换控件并排试用。",
+		description: "七种主题切换控件逐一试用。",
 		meta: "切换器 ×7",
 	},
 ] as const;

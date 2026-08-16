@@ -1,7 +1,7 @@
 /**
  * CubeFlipY - 原型 ⑥：CubeToggle 式 Y 轴翻立方
  *
- * 复刻 theme-lab/variants/cube-toggle.tsx 的 rotateY + preserve-3d 手法，
+ * 复刻 @features/lab/theme/ui/CubeToggle 的 rotateY + preserve-3d 手法，
  * 但立方体的每个面承载一条公告（最多 4 条 = 4 面，每面 90°）。
  * 点击切下一面，配合 useRotation 同步 index。
  *

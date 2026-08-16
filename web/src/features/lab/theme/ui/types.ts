@@ -17,7 +17,7 @@ export interface ThemeChoice {
 /**
  * ThemeVariant - ThemeToggle 可渲染的切换器变体
  *
- * 对应 variants/ 下的各原型组件，ThemeToggle 按 variant prop 分发。
+ * 对应同目录的各原型组件，ThemeToggle 按 variant prop 分发。
  */
 export type ThemeVariant =
 	| "cyclic"
